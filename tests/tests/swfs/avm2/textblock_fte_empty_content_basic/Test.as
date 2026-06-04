@@ -9,7 +9,7 @@ import flash.text.engine.TextLine;
 
 [SWF(width="200", height="100")]
 public class Test extends Sprite {
-    [Embed(source="LiberationSans-Regular.ttf", fontName="Liberation Sans", embedAsCFF="true", unicodeRange="U+000A,U+0020-U+007E")]
+    [Embed(source="LiberationSans-Regular.ttf", fontName="Liberation Sans", embedAsCFF="true", unicodeRange="U+000A,U+000D,U+0020-U+007E")]
     private var LiberationSans:Class;
 
     public function Test() {

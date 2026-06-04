@@ -4,23 +4,104 @@ space.line is null: false
 space.creation result: success
 space.width: 100
 space.textWidth: 6
-space.textHeight: 22.3
-space.ascent: 18.1
-space.descent: 4.2
+space.textHeight: 22.299999237060547
+space.ascent: 18.100000381469727
+space.descent: 4.199999809265137
+space.totalAscent: 12
+space.totalDescent: 3
+space.unjustifiedTextWidth: 100
 space.rawTextLength: 1
+space.textBlockBeginIndex: 0
+space.specifiedWidth: 100
+space.textBlock matches: true
+space.previousLine is null: true
+space.nextLine is null: true
+space.validity: valid
+space.hasGraphicElement: false
+space.atomCount: 1
+space.hasTabs: false
+space.userData: undefined
 twoSpaces.line is null: false
 twoSpaces.creation result: success
 twoSpaces.width: 100
 twoSpaces.textWidth: 12
-twoSpaces.textHeight: 22.3
-twoSpaces.ascent: 18.1
-twoSpaces.descent: 4.2
+twoSpaces.textHeight: 22.299999237060547
+twoSpaces.ascent: 18.100000381469727
+twoSpaces.descent: 4.199999809265137
+twoSpaces.totalAscent: 12
+twoSpaces.totalDescent: 3
+twoSpaces.unjustifiedTextWidth: 100
 twoSpaces.rawTextLength: 2
+twoSpaces.textBlockBeginIndex: 0
+twoSpaces.specifiedWidth: 100
+twoSpaces.textBlock matches: true
+twoSpaces.previousLine is null: true
+twoSpaces.nextLine is null: true
+twoSpaces.validity: valid
+twoSpaces.hasGraphicElement: false
+twoSpaces.atomCount: 2
+twoSpaces.hasTabs: false
+twoSpaces.userData: undefined
 newline.line is null: false
 newline.creation result: success
 newline.width: 100
 newline.textWidth: 0
-newline.textHeight: 22.3
-newline.ascent: 18.1
-newline.descent: 4.2
+newline.textHeight: 22.299999237060547
+newline.ascent: 18.100000381469727
+newline.descent: 4.199999809265137
+newline.totalAscent: 12
+newline.totalDescent: 3
+newline.unjustifiedTextWidth: 100
 newline.rawTextLength: 1
+newline.textBlockBeginIndex: 0
+newline.specifiedWidth: 100
+newline.textBlock matches: true
+newline.previousLine is null: true
+newline.nextLine is null: true
+newline.validity: valid
+newline.hasGraphicElement: false
+newline.atomCount: 1
+newline.hasTabs: false
+newline.userData: undefined
+carriageReturn.line is null: false
+carriageReturn.creation result: success
+carriageReturn.width: 100
+carriageReturn.textWidth: 0
+carriageReturn.textHeight: 22.299999237060547
+carriageReturn.ascent: 18.100000381469727
+carriageReturn.descent: 4.199999809265137
+carriageReturn.totalAscent: 12
+carriageReturn.totalDescent: 3
+carriageReturn.unjustifiedTextWidth: 100
+carriageReturn.rawTextLength: 1
+carriageReturn.textBlockBeginIndex: 0
+carriageReturn.specifiedWidth: 100
+carriageReturn.textBlock matches: true
+carriageReturn.previousLine is null: true
+carriageReturn.nextLine is null: true
+carriageReturn.validity: valid
+carriageReturn.hasGraphicElement: false
+carriageReturn.atomCount: 1
+carriageReturn.hasTabs: false
+carriageReturn.userData: undefined
+crlf.line is null: false
+crlf.creation result: success
+crlf.width: 100
+crlf.textWidth: 0
+crlf.textHeight: 22.299999237060547
+crlf.ascent: 18.100000381469727
+crlf.descent: 4.199999809265137
+crlf.totalAscent: 12
+crlf.totalDescent: 3
+crlf.unjustifiedTextWidth: 100
+crlf.rawTextLength: 1
+crlf.textBlockBeginIndex: 0
+crlf.specifiedWidth: 100
+crlf.textBlock matches: true
+crlf.previousLine is null: true
+crlf.nextLine is null: true
+crlf.validity: valid
+crlf.hasGraphicElement: false
+crlf.atomCount: 1
+crlf.hasTabs: false
+crlf.userData: undefined

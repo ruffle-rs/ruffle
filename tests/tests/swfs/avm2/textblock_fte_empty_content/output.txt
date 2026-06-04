@@ -5,22 +5,103 @@ space.creation result: success
 space.width: 0
 space.textWidth: 0
 space.textHeight: 20
-space.ascent: 15.2
-space.descent: 4.8
+space.ascent: 15.1953125
+space.descent: 4.8046875
+space.totalAscent: 15.1953125
+space.totalDescent: 4.8046875
+space.unjustifiedTextWidth: 0
 space.rawTextLength: 1
+space.textBlockBeginIndex: 0
+space.specifiedWidth: 100
+space.textBlock matches: true
+space.previousLine is null: true
+space.nextLine is null: true
+space.validity: valid
+space.hasGraphicElement: false
+space.atomCount: 1
+space.hasTabs: false
+space.userData: null
 twoSpaces.line is null: false
 twoSpaces.creation result: success
 twoSpaces.width: 0
 twoSpaces.textWidth: 0
 twoSpaces.textHeight: 20
-twoSpaces.ascent: 15.2
-twoSpaces.descent: 4.8
+twoSpaces.ascent: 15.1953125
+twoSpaces.descent: 4.8046875
+twoSpaces.totalAscent: 15.1953125
+twoSpaces.totalDescent: 4.8046875
+twoSpaces.unjustifiedTextWidth: 0
 twoSpaces.rawTextLength: 2
+twoSpaces.textBlockBeginIndex: 0
+twoSpaces.specifiedWidth: 100
+twoSpaces.textBlock matches: true
+twoSpaces.previousLine is null: true
+twoSpaces.nextLine is null: true
+twoSpaces.validity: valid
+twoSpaces.hasGraphicElement: false
+twoSpaces.atomCount: 2
+twoSpaces.hasTabs: false
+twoSpaces.userData: null
 newline.line is null: false
 newline.creation result: success
 newline.width: 0
 newline.textWidth: 0
 newline.textHeight: 20
-newline.ascent: 15.2
-newline.descent: 4.8
+newline.ascent: 15.1953125
+newline.descent: 4.8046875
+newline.totalAscent: 15.1953125
+newline.totalDescent: 4.8046875
+newline.unjustifiedTextWidth: 0
 newline.rawTextLength: 1
+newline.textBlockBeginIndex: 0
+newline.specifiedWidth: 100
+newline.textBlock matches: true
+newline.previousLine is null: true
+newline.nextLine is null: true
+newline.validity: valid
+newline.hasGraphicElement: false
+newline.atomCount: 1
+newline.hasTabs: false
+newline.userData: null
+carriageReturn.line is null: false
+carriageReturn.creation result: success
+carriageReturn.width: 0
+carriageReturn.textWidth: 0
+carriageReturn.textHeight: 20
+carriageReturn.ascent: 15.1953125
+carriageReturn.descent: 4.8046875
+carriageReturn.totalAscent: 15.1953125
+carriageReturn.totalDescent: 4.8046875
+carriageReturn.unjustifiedTextWidth: 0
+carriageReturn.rawTextLength: 1
+carriageReturn.textBlockBeginIndex: 0
+carriageReturn.specifiedWidth: 100
+carriageReturn.textBlock matches: true
+carriageReturn.previousLine is null: true
+carriageReturn.nextLine is null: true
+carriageReturn.validity: valid
+carriageReturn.hasGraphicElement: false
+carriageReturn.atomCount: 1
+carriageReturn.hasTabs: false
+carriageReturn.userData: null
+crlf.line is null: false
+crlf.creation result: success
+crlf.width: 0
+crlf.textWidth: 0
+crlf.textHeight: 20
+crlf.ascent: 15.1953125
+crlf.descent: 4.8046875
+crlf.totalAscent: 15.1953125
+crlf.totalDescent: 4.8046875
+crlf.unjustifiedTextWidth: 0
+crlf.rawTextLength: 2
+crlf.textBlockBeginIndex: 0
+crlf.specifiedWidth: 100
+crlf.textBlock matches: true
+crlf.previousLine is null: true
+crlf.nextLine is null: true
+crlf.validity: valid
+crlf.hasGraphicElement: false
+crlf.atomCount: 1
+crlf.hasTabs: false
+crlf.userData: null
