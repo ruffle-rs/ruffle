@@ -62,6 +62,7 @@ mod object;
 mod point;
 mod print_job;
 mod rectangle;
+mod remote_lso_usage;
 mod selection;
 pub(crate) mod shared_object;
 pub(crate) mod sound;
@@ -643,6 +644,7 @@ pub fn create_globals<'gc>(
 
     let as_setup_error = as_setup_error::create_class(context, object.proto);
     let asset_cache = asset_cache::create_class(context, object.proto);
+    let remote_lso_usage = remote_lso_usage::create_class(context, object.proto);
 
     // Top-level
     let globals = Object::new_without_proto(context.gc());
@@ -671,7 +673,7 @@ pub fn create_globals<'gc>(
         "Error" => value(error.constr; DONT_ENUM);
         "AsSetupError" => value(as_setup_error.constr; DONT_ENUM);
         "AssetCache" => value(asset_cache.constr; DONT_ENUM);
-        // TODO: RemoteLSOUsage
+        "RemoteLSOUsage" => value(remote_lso_usage.constr; DONT_ENUM);
 
         "ASSetPropFlags" => method(object::as_set_prop_flags; DONT_ENUM); // TODO: (1, 0)
 

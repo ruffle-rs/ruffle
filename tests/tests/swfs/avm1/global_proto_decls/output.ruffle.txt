@@ -1593,6 +1593,16 @@ Testing _global.ASSetPropFlags
   call, type=[function]
   constructor, type=[function]
   __proto__, own, type=[object]
+Testing _global.RemoteLSOUsage
+  apply, type=[function]
+  call, type=[function]
+  constructor, type=[function]
+  getURLPageSupport, own, DONT_ENUM, type=[function]
+  prototype, own, DONT_ENUM, type=[object]
+  __proto__, own, type=[object]
+Testing _global.RemoteLSOUsage.prototype
+  constructor, own, type=[function]
+  __proto__, own, type=[object]
 Testing _global.AssetCache
   apply, type=[function]
   call, type=[function]
