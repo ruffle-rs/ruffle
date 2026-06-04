@@ -568,6 +568,18 @@ Testing _global.Key
   addListener, DONT_DELETE
   broadcastMessage, DONT_DELETE
   __proto__, DONT_DELETE
+Testing _global.Mouse.setTrailerMode
+  apply, DONT_DELETE
+  call, DONT_DELETE
+  __proto__, DONT_DELETE
+Testing _global.Mouse.setTrailerPosition
+  apply, DONT_DELETE
+  call, DONT_DELETE
+  __proto__, DONT_DELETE
+Testing _global.Mouse.setTrailer
+  apply, DONT_DELETE
+  call, DONT_DELETE
+  __proto__, DONT_DELETE
 Testing _global.Mouse.hide
   apply, DONT_DELETE
   call, DONT_DELETE
@@ -608,6 +620,9 @@ Testing _global.Mouse.broadcastMessage.prototype
   call, DONT_DELETE
   __proto__, DONT_DELETE
 Testing _global.Mouse
+  setTrailerMode, DONT_DELETE
+  setTrailerPosition, DONT_DELETE
+  setTrailer, DONT_DELETE
   hide, DONT_DELETE
   show, DONT_DELETE
   _listeners, DONT_DELETE
