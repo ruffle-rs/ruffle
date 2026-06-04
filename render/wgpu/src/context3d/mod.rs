@@ -927,7 +927,7 @@ impl Context3D for WgpuContext3D {
 
                 self.current_pipeline.set_shaders(shaders)
             }
-            Context3DCommand::SetProgramConstantsFromVector {
+            Context3DCommand::SetProgramConstants {
                 program_type,
                 first_register,
                 matrix_raw_data_column_major,
@@ -948,19 +948,15 @@ impl Context3D for WgpuContext3D {
                     &mut self.buffer_command_encoder,
                     buffer,
                     offset,
-                    NonZeroU64::new(
-                        (matrix_raw_data_column_major.len() * std::mem::size_of::<f32>()) as u64,
-                    )
-                    .unwrap(),
+                    NonZeroU64::new(std::mem::size_of_val(matrix_raw_data_column_major) as u64)
+                        .unwrap(),
                     &self.descriptors.device,
                 );
                 // Despite what the docs claim, we copy in *column* major order, rather than *row* major order.
                 // See this code in OpenFL: https://github.com/openfl/openfl/blob/971a4c9e43b5472fd84d73920a2b7c1b3d8d9257/src/openfl/display3D/Context3D.hx#L1532-L1550
                 // When the 'transposedMatrix' flag is false, it copies data *directly* from matrix.rawData,
                 // which is stored in column-major order
-                buffer_view.copy_from_slice(bytemuck::cast_slice::<f32, u8>(
-                    &matrix_raw_data_column_major,
-                ));
+                buffer_view.copy_from_slice(matrix_raw_data_column_major.as_flattened());
             }
             Context3DCommand::SetCulling { face } => {
                 self.current_pipeline.set_culling(face);
