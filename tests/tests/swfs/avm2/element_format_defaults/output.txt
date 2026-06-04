@@ -4,6 +4,7 @@ fontDescription.fontPosture: normal
 fontDescription.fontLookup: device
 fontDescription.renderingMode: cff
 fontDescription.cffHinting: horizontalStem
+fontDescription.locked: false
 fontSize: 12
 color: 0
 alpha: 1
@@ -20,3 +21,4 @@ digitCase: default
 digitWidth: default
 ligatureLevel: common
 typographicCase: default
+locked: false

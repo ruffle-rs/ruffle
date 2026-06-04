@@ -12,6 +12,7 @@ package {
             trace("fontDescription.fontLookup: " + format.fontDescription.fontLookup);
             trace("fontDescription.renderingMode: " + format.fontDescription.renderingMode);
             trace("fontDescription.cffHinting: " + format.fontDescription.cffHinting);
+            trace("fontDescription.locked: " + format.fontDescription.locked);
             trace("fontSize: " + format.fontSize);
             trace("color: " + format.color);
             trace("alpha: " + format.alpha);
@@ -28,6 +29,7 @@ package {
             trace("digitWidth: " + format.digitWidth);
             trace("ligatureLevel: " + format.ligatureLevel);
             trace("typographicCase: " + format.typographicCase);
+            trace("locked: " + format.locked);
         }
     }
 }
