@@ -177,9 +177,21 @@ jobs:
           name: selfhosted-dist
           path: web/packages/selfhosted/dist
 
+      - name: Install pinned Chrome (workaround for actions/runner-images#14169)
+        if: matrix.browser == 'chrome'
+        id: setup-chrome
+        uses: browser-actions/setup-chrome@v2
+        with:
+          chrome-version: '148.0.7778.167'
+          install-dependencies: true
+          install-chromedriver: true
+
       - name: Run browser-based tests
         working-directory: web
         shell: bash -l {0}
+        env:
+          CHROME_BIN: ${{ steps.setup-chrome.outputs.chrome-path }}
+          CHROMEWEBDRIVER: ${{ steps.setup-chrome.outputs.chromedriver-path }}
         run: |
           npm ci
           npm run wdio -- --headless --parallel --${{ matrix.browser }}
