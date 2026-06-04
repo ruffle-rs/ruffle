@@ -19,6 +19,7 @@ pub(super) mod array;
 pub(crate) mod as_broadcaster;
 mod as_setup_error;
 mod asnative;
+mod asset_cache;
 mod automation_action_generator;
 mod automation_configuration;
 mod automation_stage_capture;
@@ -641,6 +642,7 @@ pub fn create_globals<'gc>(
     let automation_configuration = automation_configuration::create_class(context, object.proto);
 
     let as_setup_error = as_setup_error::create_class(context, object.proto);
+    let asset_cache = asset_cache::create_class(context, object.proto);
 
     // Top-level
     let globals = Object::new_without_proto(context.gc());
@@ -668,7 +670,7 @@ pub fn create_globals<'gc>(
         "ContextMenu" => value(context_menu.constr; DONT_ENUM);
         "Error" => value(error.constr; DONT_ENUM);
         "AsSetupError" => value(as_setup_error.constr; DONT_ENUM);
-        // TODO: AssetCache
+        "AssetCache" => value(asset_cache.constr; DONT_ENUM);
         // TODO: RemoteLSOUsage
 
         "ASSetPropFlags" => method(object::as_set_prop_flags; DONT_ENUM); // TODO: (1, 0)

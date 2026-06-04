@@ -1593,6 +1593,17 @@ Testing _global.ASSetPropFlags
   call, type=[function]
   constructor, type=[function]
   __proto__, own, type=[object]
+Testing _global.AssetCache
+  apply, type=[function]
+  call, type=[function]
+  constructor, type=[function]
+  getDiskUsage, own, DONT_ENUM, type=[function]
+  purge, own, DONT_ENUM, type=[function]
+  prototype, own, DONT_ENUM, type=[object]
+  __proto__, own, type=[object]
+Testing _global.AssetCache.prototype
+  constructor, own, type=[function]
+  __proto__, own, type=[object]
 Testing _global.AsSetupError
   apply, type=[function]
   call, type=[function]
