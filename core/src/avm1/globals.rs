@@ -63,6 +63,7 @@ mod rectangle;
 mod selection;
 pub(crate) mod shared_object;
 pub(crate) mod sound;
+mod sound_codec;
 mod stage;
 pub(crate) mod string;
 pub(crate) mod style_sheet;
@@ -626,6 +627,7 @@ pub fn create_globals<'gc>(
     let system_product = system_product::create_class(context, object.proto);
 
     let math = math::create(context);
+    let sound_codec = sound_codec::create(context);
     let mouse = mouse::create(context, broadcaster_fns, array.proto);
     let key = key::create(context, broadcaster_fns, array.proto);
     let stage = stage::create(context, broadcaster_fns, array.proto);
@@ -717,6 +719,7 @@ pub fn create_globals<'gc>(
         "Stage" => value(stage; DONT_ENUM);
         "Video" => value(video.constr; DONT_ENUM);
         "Accessibility" => value(accessibility; DONT_ENUM);
+        "SoundCodec" => value(sound_codec; DONT_ENUM);
         "System" => value(system; DONT_ENUM);
         "flash" => value(flash; DONT_ENUM | VERSION_8);
         "textRenderer" => value(text_renderer.constr);
