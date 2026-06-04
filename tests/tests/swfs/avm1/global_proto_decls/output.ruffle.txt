@@ -991,12 +991,30 @@ Testing _global.Key.broadcastMessage.prototype
   constructor, own, type=[function]
   __proto__, own, type=[object]
 Testing _global.Mouse
+  setTrailerMode, own, DONT_ENUM, READ_ONLY, type=[function]
+  setTrailerPosition, own, DONT_ENUM, READ_ONLY, type=[function]
+  setTrailer, own, DONT_ENUM, READ_ONLY, type=[function]
   hide, own, DONT_ENUM, READ_ONLY, type=[function]
   show, own, DONT_ENUM, READ_ONLY, type=[function]
   _listeners, own, DONT_ENUM, type=[object]
   removeListener, own, DONT_ENUM, type=[function]
   addListener, own, DONT_ENUM, type=[function]
   broadcastMessage, own, DONT_ENUM, type=[function]
+  __proto__, own, type=[object]
+Testing _global.Mouse.setTrailerMode
+  apply, type=[function]
+  call, type=[function]
+  constructor, type=[function]
+  __proto__, own, type=[object]
+Testing _global.Mouse.setTrailerPosition
+  apply, type=[function]
+  call, type=[function]
+  constructor, type=[function]
+  __proto__, own, type=[object]
+Testing _global.Mouse.setTrailer
+  apply, type=[function]
+  call, type=[function]
+  constructor, type=[function]
   __proto__, own, type=[object]
 Testing _global.Mouse.hide
   apply, type=[function]

@@ -457,6 +457,21 @@ Testing __constructor__()
 testing _global.Key.broadcastMessage.__constructor__(undefined)
 Testing __proto__()
 testing _global.Mouse(object)
+testing _global.Mouse.setTrailerMode(function)
+Trying to construct _global.Mouse.setTrailerMode
+Object was constructed
+Testing __constructor__()
+Testing __proto__()
+testing _global.Mouse.setTrailerPosition(function)
+Trying to construct _global.Mouse.setTrailerPosition
+Object was constructed
+Testing __constructor__()
+Testing __proto__()
+testing _global.Mouse.setTrailer(function)
+Trying to construct _global.Mouse.setTrailer
+Object was constructed
+Testing __constructor__()
+Testing __proto__()
 testing _global.Mouse.hide(function)
 Trying to construct _global.Mouse.hide
 Object was constructed
