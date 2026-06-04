@@ -1055,6 +1055,13 @@ Testing _global.ASSetPropFlags
   apply, DONT_DELETE
   call, DONT_DELETE
   __proto__, DONT_DELETE
+Testing _global.RemoteLSOUsage
+  apply, DONT_DELETE
+  call, DONT_DELETE
+  prototype, DONT_DELETE
+  __proto__, DONT_DELETE
+Testing _global.RemoteLSOUsage.prototype
+  __proto__, DONT_DELETE
 Testing _global.AssetCache
   apply, DONT_DELETE
   call, DONT_DELETE
