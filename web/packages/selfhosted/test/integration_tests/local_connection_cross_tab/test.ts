@@ -12,7 +12,7 @@ import { Player, Setup } from "ruffle-core";
 async function createPlayer(
     browser: WebdriverIO.Browser,
     swfPath: string,
-): Promise<ChainablePromiseElement> {
+): Promise<WebdriverIO.Element> {
     const player = await browser.execute((swfPath) => {
         const ruffle = (window.RufflePlayer as Setup.PublicAPI).newest();
         const player = ruffle!.createPlayer();
@@ -35,7 +35,7 @@ async function createPlayer(
 
 async function callExternalInterface(
     browser: WebdriverIO.Browser,
-    player: ChainablePromiseElement,
+    player: WebdriverIO.Element | Promise<WebdriverIO.Element>,
     methodName: string,
     ...args: unknown[]
 ): Promise<unknown> {
@@ -58,7 +58,7 @@ async function callExternalInterface(
 
 async function connectReceiver(
     browser: WebdriverIO.Browser,
-    player: ChainablePromiseElement,
+    player: WebdriverIO.Element | Promise<WebdriverIO.Element>,
     channelName: string,
 ): Promise<string> {
     return (await callExternalInterface(
@@ -71,14 +71,14 @@ async function connectReceiver(
 
 async function disconnectReceiver(
     browser: WebdriverIO.Browser,
-    player: ChainablePromiseElement,
+    player: WebdriverIO.Element | Promise<WebdriverIO.Element>,
 ): Promise<void> {
     await callExternalInterface(browser, player, "disconnectLC");
 }
 
 async function sendMessage(
     browser: WebdriverIO.Browser,
-    player: ChainablePromiseElement,
+    player: WebdriverIO.Element | Promise<WebdriverIO.Element>,
     connectionName: string,
     methodName: string,
     ...args: unknown[]
@@ -95,7 +95,7 @@ async function sendMessage(
 
 async function connectSender(
     browser: WebdriverIO.Browser,
-    player: ChainablePromiseElement,
+    player: WebdriverIO.Element | Promise<WebdriverIO.Element>,
     channelName: string,
 ): Promise<string> {
     return (await callExternalInterface(
@@ -131,8 +131,8 @@ async function cleanupLocalStorage(browser: WebdriverIO.Browser) {
 describe("LocalConnection cross-tab", () => {
     let tabA: string;
     let tabB: string;
-    let receiverPlayer: ChainablePromiseElement;
-    let senderPlayer: ChainablePromiseElement;
+    let receiverPlayer: WebdriverIO.Element;
+    let senderPlayer: WebdriverIO.Element;
 
     before("Set up two tabs", async () => {
         // Tab A: receiver
