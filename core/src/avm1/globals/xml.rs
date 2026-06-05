@@ -141,37 +141,61 @@ impl<'gc> Xml<'gc> {
     ) -> Result<(), quick_xml::Error> {
         let data_utf8 = data.to_utf8_lossy();
         let mut parser = Reader::from_str(&data_utf8);
+        // Flash is lenient with lone `&` in text content.
+        parser.config_mut().allow_dangling_amp = true;
+
         let mut open_tags = vec![self.root()];
+        let mut text_buf: Vec<u8> = Vec::new();
 
         self.0.status.set(XmlStatus::NoError);
 
         loop {
-            let event = parser.read_event().map_err(|error| {
-                self.0.status.set(match error {
-                    quick_xml::Error::Syntax(_)
-                    | quick_xml::Error::InvalidAttr(AttrError::ExpectedEq(_))
-                    | quick_xml::Error::InvalidAttr(AttrError::Duplicated(_, _)) => {
-                        XmlStatus::ElementMalformed
+            let event = match parser.read_event() {
+                Ok(event) => event,
+                Err(error) => {
+                    // Flash keeps nodes parsed so far on a parse error. Flush
+                    // any buffered text (quick-xml emits entities as separate
+                    // events; the last run may still be in the buffer) before
+                    // bailing so it is not lost.
+                    if !text_buf.is_empty() {
+                        Self::handle_text_cdata(&text_buf, ignore_white, &open_tags, activation);
+                        text_buf.clear();
                     }
-                    quick_xml::Error::IllFormed(
-                        IllFormedError::MismatchedEndTag { .. }
-                        | IllFormedError::UnmatchedEndTag { .. },
-                    ) => XmlStatus::MismatchedEnd,
-                    quick_xml::Error::IllFormed(IllFormedError::MissingDeclVersion(_)) => {
-                        XmlStatus::DeclNotTerminated
-                    }
-                    quick_xml::Error::InvalidAttr(AttrError::UnquotedValue(_)) => {
-                        XmlStatus::AttributeNotTerminated
-                    }
-                    _ => XmlStatus::OutOfMemory,
-                    // Not accounted for:
-                    // quick_xml::Error::UnexpectedToken(_)
-                    // quick_xml::Error::UnexpectedBang
-                    // quick_xml::Error::TextNotFound
-                    // quick_xml::Error::EscapeError(_)
-                });
-                error
-            })?;
+                    self.0.status.set(match error {
+                        quick_xml::Error::Syntax(_)
+                        | quick_xml::Error::InvalidAttr(AttrError::ExpectedEq(_))
+                        | quick_xml::Error::InvalidAttr(AttrError::Duplicated(_, _)) => {
+                            XmlStatus::ElementMalformed
+                        }
+                        quick_xml::Error::IllFormed(
+                            IllFormedError::MismatchedEndTag { .. }
+                            | IllFormedError::UnmatchedEndTag { .. },
+                        ) => XmlStatus::MismatchedEnd,
+                        quick_xml::Error::IllFormed(IllFormedError::MissingDeclVersion(_)) => {
+                            XmlStatus::DeclNotTerminated
+                        }
+                        quick_xml::Error::InvalidAttr(AttrError::UnquotedValue(_)) => {
+                            XmlStatus::AttributeNotTerminated
+                        }
+                        _ => XmlStatus::OutOfMemory,
+                        // Not accounted for:
+                        // quick_xml::Error::UnexpectedToken(_)
+                        // quick_xml::Error::UnexpectedBang
+                        // quick_xml::Error::TextNotFound
+                        // quick_xml::Error::EscapeError(_)
+                    });
+                    return Err(error);
+                }
+            };
+
+            // Flush any buffered text before handling non-text events.
+            // CData stays a separate child, so flush before it too.
+            let needs_flush = !matches!(event, Event::Text(_) | Event::GeneralRef(_));
+
+            if needs_flush && !text_buf.is_empty() {
+                Self::handle_text_cdata(&text_buf, ignore_white, &open_tags, activation);
+                text_buf.clear();
+            }
 
             match event {
                 Event::Start(bs) => {
@@ -192,14 +216,20 @@ impl<'gc> Xml<'gc> {
                 Event::End(_) => {
                     open_tags.pop();
                 }
-                Event::Text(bt) => {
-                    Self::handle_text_cdata(
-                        avm1_unescape(&bt)
+                Event::Text(ref bt) => {
+                    text_buf.extend_from_slice(
+                        avm1_unescape(bt)
                             .map_err(|e| quick_xml::Error::Encoding(EncodingError::Utf8(e)))?
                             .as_bytes(),
-                        ignore_white,
-                        &open_tags,
-                        activation,
+                    );
+                }
+                Event::GeneralRef(ref br) => {
+                    let entity = crate::xml_util::reconstruct_entity_ref(br);
+
+                    text_buf.extend_from_slice(
+                        avm1_unescape(&entity)
+                            .map_err(|e| quick_xml::Error::Encoding(EncodingError::Utf8(e)))?
+                            .as_bytes(),
                     );
                 }
                 Event::CData(bt) => {

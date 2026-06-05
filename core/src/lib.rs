@@ -48,6 +48,7 @@ mod tessellation_cache;
 pub mod timer;
 mod types;
 mod vminterface;
+mod xml_util;
 
 pub mod backend;
 pub mod compatibility_rules;

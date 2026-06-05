@@ -713,12 +713,22 @@ impl FormatSpans {
 
         // Helper function to decode a byte sequence returned by quick_xml into a WString.
         // TODO: use Cow<'_, WStr>?
-        let decode_to_wstr = |raw: &[u8]| -> WString {
+        let decode_to_wstr = |raw: Cow<'_, [u8]>| -> WString {
             if is_raw_latin1 {
-                WString::from_buf(raw.to_vec())
+                WString::from_buf(raw.into_owned())
             } else {
-                let utf8 = std::str::from_utf8(raw).expect("raw should be valid utf8");
-                WString::from_utf8(utf8)
+                match raw {
+                    Cow::Borrowed(borrowed) => {
+                        let str = std::str::from_utf8(borrowed).expect("raw should be valid utf8");
+
+                        WString::from_utf8(str)
+                    }
+                    Cow::Owned(owned) => {
+                        let string = String::from_utf8(owned).expect("raw should be valid utf8");
+
+                        WString::from_utf8_owned(string)
+                    }
+                }
             }
         };
 
@@ -785,7 +795,7 @@ impl FormatSpans {
                                 .key
                                 .into_inner()
                                 .eq_ignore_ascii_case(name)
-                                .then(|| decode_to_wstr(&attribute.value))
+                                .then(|| decode_to_wstr(Cow::Borrowed(&attribute.value)))
                         })
                     };
                     let mut format = format_stack.last().unwrap().clone();
@@ -997,8 +1007,22 @@ impl FormatSpans {
                     opened_buffer.extend(tag_name);
                     format_stack.push(format);
                 }
+                Ok(Event::GeneralRef(ref br)) => {
+                    let raw = crate::xml_util::reconstruct_entity_ref(br);
+
+                    let e = decode_to_wstr(Cow::Owned(raw));
+                    let e = process_html_entity(&e).unwrap_or(e);
+                    let format = format_stack.last().unwrap().clone();
+
+                    if let Some(TextDisplay::None) = format.display {
+                        continue;
+                    }
+
+                    text.push_str(&e);
+                    spans.push(TextSpan::with_length_and_format(e.len(), &format));
+                }
                 Ok(Event::Text(e)) if !e.is_empty() => 'text: {
-                    let e = decode_to_wstr(&e.into_inner());
+                    let e = decode_to_wstr(e.into_inner());
                     let e = process_html_entity(&e).unwrap_or(e);
                     let format = format_stack.last().unwrap().clone();
                     if let Some(TextDisplay::None) = format.display {
