@@ -3,7 +3,7 @@ name: Release Nightly
 on:
   # Run nightly
   push:
-    branches: [FFF]
+    branches: [FFF_Based]
 
   # Allow for manual dispatch on GitHub
   workflow_dispatch:
