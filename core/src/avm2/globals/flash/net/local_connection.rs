@@ -64,6 +64,7 @@ pub fn send<'gc>(
             connection_name,
             method_name,
             amf_arguments,
+            activation.context.local_connection_backend,
         );
     }
 
