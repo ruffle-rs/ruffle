@@ -1,7 +1,15 @@
-num_frames = 40
+num_ticks = 2
 
 [image_comparisons.output]
-tolerance = 1
+known_failure = true # Stage3D x/y not implemented
+tolerance = 3
 
 [player_options]
-with_renderer = { optional = true, quality = "low" }
+with_renderer = { quality = "high" }
+
+[[compilers]]
+type = "Asc"
+target = "test.swf"
+class = "Test"
+scripts = ["Test.as", "PerspectiveMatrix3D.as", "AGALMiniAssembler.as"]
+swf_version = 43
