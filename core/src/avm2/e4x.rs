@@ -903,9 +903,10 @@ impl<'gc> E4XNode<'gc> {
                 }
                 Err(XmlError::Syntax(syntax_error)) => {
                     let code = match syntax_error {
-                        XmlSyntaxError::UnclosedPIOrXmlDecl => {
+                        XmlSyntaxError::UnclosedPI => {
                             XmlErrorCode::UnterminatedProcessingInstruction
                         }
+                        XmlSyntaxError::UnclosedXmlDecl => XmlErrorCode::UnterminatedXmlDecl,
                         XmlSyntaxError::UnclosedComment => XmlErrorCode::UnterminatedComment,
                         XmlSyntaxError::UnclosedDoctype => XmlErrorCode::UnterminatedDoctype,
                         XmlSyntaxError::UnclosedCData => XmlErrorCode::UnterminatedCData,
@@ -1063,7 +1064,7 @@ impl<'gc> E4XNode<'gc> {
                 .map_err(|_| make_xml_error(activation, XmlErrorCode::ElementMalformed))?;
             let value = AvmString::new_utf8(activation.gc(), value_str);
 
-            let (ns, local_name) = parser.resolve_attribute(attribute.key);
+            let (ns, local_name) = parser.resolver().resolve_attribute(attribute.key);
 
             let local_name = ruffle_wstr::from_utf8_bytes(local_name.into_inner());
             let name = activation.strings().intern_wstr(local_name).into();
@@ -1112,7 +1113,7 @@ impl<'gc> E4XNode<'gc> {
             attribute_nodes.push(attribute);
         }
 
-        let (ns, local_name) = parser.resolve_element(bs.name());
+        let (ns, local_name) = parser.resolver().resolve_element(bs.name());
 
         let local_name = ruffle_wstr::from_utf8_bytes(local_name.into_inner());
         let name = activation.strings().intern_wstr(local_name).into();
