@@ -29,7 +29,9 @@ impl DiskStorageBackend {
     }
 
     fn get_shared_object_path(&self, name: &str) -> PathBuf {
-        self.shared_objects_path.join(format!("{name}.sol"))
+            let parts = name.split("/").collect::<Vec<&str>>();
+            let path = format!("{}/{}", parts.first().unwrap(), parts.last().unwrap());
+            self.shared_objects_path.join(path)
     }
 }
 

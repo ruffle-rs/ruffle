@@ -2,11 +2,11 @@ use std::str::FromStr;
 
 #[derive(clap::ValueEnum, Clone, Copy, Debug, Eq, PartialEq, Default)]
 pub enum GraphicsBackend {
-    #[default]
     Default,
     Vulkan,
     Metal,
     Dx12,
+    #[default]
     Gl,
 }
 

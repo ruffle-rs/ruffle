@@ -1,3 +1,5 @@
+#[cfg(feature = "steamworks")]
+use crate::backends::SteamWorksExternalInterfaceProvider;
 use crate::backends::{
     DesktopExternalInterfaceProvider, DesktopFSCommandProvider, DesktopNavigatorInterface,
     DesktopUiBackend, PathAllowList,
@@ -276,11 +278,18 @@ impl ActivePlayer {
             .expect("Couldn't create wgpu rendering backend");
         RENDER_INFO.with(|i| *i.borrow_mut() = Some(renderer.debug_info().to_string()));
 
-        if opt.player.dummy_external_interface.unwrap_or_default() {
-            builder = builder.with_external_interface(Box::new(DesktopExternalInterfaceProvider {
-                spoof_url: opt.player.spoof_url.clone(),
-            }));
-        }
+        //if opt.player.dummy_external_interface.unwrap_or_default() {
+        //    builder = builder.with_external_interface(Box::new(DesktopExternalInterfaceProvider {
+        //        spoof_url: opt.player.spoof_url.clone(),
+        //    }));
+        // } else {
+            #[cfg(feature = "steamworks")]
+            {
+                builder = builder.with_external_interface(Box::new(
+                    SteamWorksExternalInterfaceProvider::default(),
+                ));
+            }
+        //}
 
         if !opt.gamepad_button_mapping.is_empty() {
             builder = builder.with_gamepad_button_mapping(opt.gamepad_button_mapping.clone());
@@ -339,7 +348,7 @@ impl ActivePlayer {
             .with_avm2_optimizer_enabled(opt.avm2_optimizer_enabled);
         let player = builder.build();
 
-        window.set_title(&format!("Ruffle - {readable_name}"));
+        window.set_title(&format!("FAST FOOD FUNKIN'"));
 
         SWF_INFO.with(|i| *i.borrow_mut() = Some(readable_name));
 

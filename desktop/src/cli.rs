@@ -14,22 +14,27 @@ use std::time::Duration;
 use url::Url;
 
 fn get_default_save_directory() -> std::path::PathBuf {
-    dirs::data_local_dir()
+    std::env::current_exe()
+        .unwrap()
+        .parent()
         .expect("Couldn't find a valid data_local dir")
-        .join("ruffle")
-        .join("SharedObjects")
+        .join("Saves")
 }
 
 fn get_default_config_directory() -> std::path::PathBuf {
-    dirs::config_local_dir()
+    std::env::current_exe()
+        .unwrap()
+        .parent()
         .expect("Couldn't find a valid config_local dir")
-        .join("ruffle")
+        .join("Config")
 }
 
 fn get_default_cache_directory() -> std::path::PathBuf {
-    dirs::cache_dir()
+    std::env::current_exe()
+        .unwrap()
+        .parent()
         .expect("Couldn't find a valid cache dir")
-        .join("ruffle")
+        .join("Cache")
 }
 
 #[derive(Parser, Debug, Clone)]

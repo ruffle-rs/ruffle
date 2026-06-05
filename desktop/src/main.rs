@@ -131,7 +131,7 @@ fn panic_hook(info: &PanicHookInfo) {
             params.push(("extra_info", extra_info.join("\n")));
         }
         if let Ok(url) = Url::parse_with_params(
-            "https://github.com/ruffle-rs/ruffle/issues/new?assignees=&labels=bug&template=crash_report.yml",
+            "https://github.com/Fancy2209/ruffle/issues/new?assignees=&labels=bug&template=crash_report.yml",
             &params,
         ) {
             let _ = webbrowser::open(url.as_str());

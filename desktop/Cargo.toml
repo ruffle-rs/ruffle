@@ -43,7 +43,7 @@ futures = { workspace = true }
 chrono = { workspace = true }
 fluent-templates = { workspace = true }
 toml_edit = { workspace = true, features = ["parse"] }
-gilrs = "0.11"
+#gilrs = "0.11"
 tokio = { workspace = true, features = ["rt-multi-thread", "macros", "fs"] }
 
 tracing-tracy = { version = "0.11.3", optional = true, features = ["demangle"] }
@@ -54,6 +54,8 @@ unicode-bidi = "0.3.18"
 memmap2.workspace = true
 walkdir.workspace = true
 async-task = "4.7.1"
+
+steamworks = { version = "0.13.03", optional = true }
 
 [target.'cfg(unix)'.dependencies]
 fontconfig = { version = "0.10.2", optional = true }
@@ -72,9 +74,9 @@ winresource = "0.1"
 [package.metadata.winresource]
 # https://learn.microsoft.com/en-us/windows/win32/menurc/stringfileinfo-block
 ProductName = "Ruffle"
-FileDescription = "Adobe Flash Player emulator"
-CompanyName = "Ruffle LLC"
-LegalCopyright = "Copyright © 2018 Ruffle LLC and Ruffle contributors"
+FileDescription = "FAST FOOD FUNKIN"
+CompanyName = "BrandyBuizel"
+LegalCopyright = "Copyright © 2026 BrandyBuizel"
 # InternalName should be the same as the module name
 InternalName = "ruffle_desktop"
 OriginalFilename = "ruffle.exe"

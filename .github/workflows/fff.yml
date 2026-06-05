@@ -1,0 +1,94 @@
+name: Release Nightly
+
+on:
+  # Run nightly
+  push:
+    branches: [FFF]
+
+  # Allow for manual dispatch on GitHub
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build ${{ matrix.build_name }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - build_name: linux-x86_64
+            os: ubuntu-24.04
+            container: registry.gitlab.steamos.cloud/steamrt/sniper/sdk:latest
+            DESKTOP_FEATURES: steamworks
+
+          #- build_name: linux-aarch64
+          #  os: ubuntu-24.04-arm
+
+          # Mac does two Rust builds to make a universal binary
+          - build_name: macos-x86_64
+            os: macos-15
+            target: x86_64-apple-darwin
+            MACOSX_DEPLOYMENT_TARGET: 10.7
+            DESKTOP_FEATURES: sandbox,steamworks
+
+          - build_name: macos-aarch64
+            os: macos-15
+            target: aarch64-apple-darwin
+            MACOSX_DEPLOYMENT_TARGET: 11.0
+            DESKTOP_FEATURES: sandbox,steamworks
+
+          - build_name: windows-x86_32
+            os: windows-2025
+            target: i686-pc-windows-msvc
+            RUSTFLAGS: -Ctarget-feature=+crt-static
+            DESKTOP_FEATURES: steamworks
+            MSI_ARCH: x86
+
+          - build_name: windows-x86_64
+            os: windows-2025
+            target: x86_64-pc-windows-msvc
+            RUSTFLAGS: -Ctarget-feature=+crt-static
+            DESKTOP_FEATURES: steamworks
+            MSI_ARCH: x64
+
+    env:
+      PACKAGE_FILE: ${{ matrix.build_name }}.${{ startsWith(matrix.build_name, 'win') && 'zip' || 'tar.gz' }}
+      CARGO_BUILD_DIR: target/${{ matrix.target }}/release
+
+    runs-on: ${{ matrix.os }}
+    container: ${{ matrix.container }}
+    steps:
+      - name: Clone Ruffle repo
+        uses: actions/checkout@v5
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
+          targets: ${{ matrix.target }}
+
+      - name: Install Linux dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt install -y libasound2-dev libudev-dev default-jdk
+
+      - name: Cargo build
+        run: cargo build --package ruffle_desktop --release ${{matrix.DESKTOP_FEATURES && '--features' }} ${{matrix.DESKTOP_FEATURES}} ${{ matrix.target && '--target' }} ${{ matrix.target }}
+        env:
+          CFG_RELEASE_CHANNEL: nightly
+          RUSTFLAGS: ${{ matrix.RUSTFLAGS }}
+          MACOSX_DEPLOYMENT_TARGET: ${{ matrix.MACOSX_DEPLOYMENT_TARGET }}
+
+      - name: Upload build artifact
+        if: runner.os != 'Windows'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.build_name }}
+          path: ${{ env.CARGO_BUILD_DIR }}/ruffle_desktop
+
+      - name: Upload build artifact
+        if: runner.os == 'Windows'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.build_name }}
+          path: ${{ env.CARGO_BUILD_DIR }}/ruffle_desktop.exe

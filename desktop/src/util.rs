@@ -1,7 +1,7 @@
 use anyhow::{Error, anyhow};
-use gilrs::Button;
+//use gilrs::Button;
 use ruffle_core::events::{
-    GamepadButton, KeyDescriptor, KeyLocation, LogicalKey, NamedKey as RuffleNamedKey, PhysicalKey,
+    /*GamepadButton, */KeyDescriptor, KeyLocation, LogicalKey, NamedKey as RuffleNamedKey, PhysicalKey,
     TextControlCode,
 };
 use std::path::Path;
@@ -333,6 +333,7 @@ fn map_key_location(event: &KeyEvent) -> KeyLocation {
     }
 }
 
+/*
 pub fn gilrs_button_to_gamepad_button(button: Button) -> Option<GamepadButton> {
     match button {
         Button::South => Some(GamepadButton::South),
@@ -353,7 +354,7 @@ pub fn gilrs_button_to_gamepad_button(button: Button) -> Option<GamepadButton> {
         // like C or Z.
         _ => None,
     }
-}
+}*/
 
 pub fn get_screen_size(window: &Window) -> PhysicalSize<u32> {
     let mut min_x = 0;
