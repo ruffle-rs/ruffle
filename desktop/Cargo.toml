@@ -55,7 +55,7 @@ memmap2.workspace = true
 walkdir.workspace = true
 async-task = "4.7.1"
 
-steamworks = { version = "0.13.03", optional = true }
+steamworks = { version = "0.13.0", optional = true }
 
 [target.'cfg(unix)'.dependencies]
 fontconfig = { version = "0.10.2", optional = true }
