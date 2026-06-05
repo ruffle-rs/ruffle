@@ -190,6 +190,12 @@ pub struct Avm2<'gc> {
     pub debug_output: bool,
 
     pub optimizer_enabled: bool,
+
+    /// Set to `true` by `flash.system.System.gc()`. Read and cleared by
+    /// `Player::update` after each frame's incremental GC pass; when set,
+    /// a full collection cycle is performed.
+    #[collect(require_static)]
+    pub force_full_gc: std::cell::Cell<bool>,
 }
 
 impl<'gc> Avm2<'gc> {
@@ -240,6 +246,8 @@ impl<'gc> Avm2<'gc> {
             debug_output: false,
 
             optimizer_enabled: true,
+
+            force_full_gc: std::cell::Cell::new(false),
         }
     }
 

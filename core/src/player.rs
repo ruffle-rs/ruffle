@@ -2384,6 +2384,24 @@ impl Player {
         // GC
         self.gc_arena.borrow_mut().collect_debt();
 
+        // If AS3 called `flash.system.System.gc()` since the previous update,
+        // run a full collection cycle now. The flag is set by
+        // `flash::system::system::gc` and cleared here. The incremental
+        // `collect_debt()` above is paced on a per-frame budget and does not,
+        // by itself, drain weak references and dead handler shells quickly
+        // enough for workloads that discard thousands of long-lived objects
+        // in bursts; the explicit full cycle requested by AS3 closes that
+        // gap.
+        let force_full_gc = self.gc_arena.borrow().mutate(|_, root| {
+            let data = root.data.borrow();
+            let flag = data.avm2.force_full_gc.get();
+            data.avm2.force_full_gc.set(false);
+            flag
+        });
+        if force_full_gc {
+            self.gc_arena.borrow_mut().finish_cycle();
+        }
+
         rval
     }
 
