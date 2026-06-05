@@ -20,7 +20,7 @@
     import flash.utils.Timer;
     
 	// Based on the example from https://help.adobe.com/en_US/FlashPlatform/reference/actionscript/3/flash/display3D/Context3D.html#setScissorRectangle()
-    public class Main extends Sprite
+    public class Test extends Sprite
     {
         public const viewWidth:Number = 640;
         public const viewHeight:Number = 480;
@@ -44,11 +44,9 @@
         private var scissorOn:Boolean = true;
         private var toggler:Timer = new Timer( 750 );
         
-        public function Main()
+        public function Test()
         {            
             stage3D = this.stage.stage3Ds[0];
-            stage3D.x = 10;
-            stage3D.y = 10;
 
             //Add event listener before requesting the context
             stage3D.addEventListener( Event.CONTEXT3D_CREATE, contextCreated );            
