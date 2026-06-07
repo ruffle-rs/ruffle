@@ -25,28 +25,11 @@ fn format_from_content<'gc>(
     activation: &mut Activation<'_, 'gc>,
     content: Object<'gc>,
 ) -> Result<TextFormat, Error<'gc>> {
-    // Match the AS defaults from new ElementFormat() and new FontDescription().
-    let mut format = TextFormat {
-        font: Some(WString::from_utf8("_serif")),
-        size: Some(12.0),
-        color: Some(swf::Color::from_rgb(0, 0xff)),
-        ..Default::default()
-    };
-
-    if let Some(ef) = content.get_slot(element_slots::_ELEMENT_FORMAT).as_object() {
-        let color = ef.get_slot(format_slots::_COLOR).as_u32();
-        format.color = Some(swf::Color::from_rgb(color & 0xff_ffff, 0xff));
-        format.size = Some(ef.get_slot(format_slots::_FONT_SIZE).as_f64());
-        if let Value::Object(fd) = ef.get_slot(format_slots::_FONT_DESCRIPTION) {
-            format.font = Some(WString::from(
-                fd.get_slot(font_desc_slots::_FONT_NAME)
-                    .coerce_to_string(activation)?
-                    .as_wstr(),
-            ));
-        }
-    }
-
-    Ok(format)
+    text_format_from_element_format(
+        activation,
+        content.get_slot(element_slots::_ELEMENT_FORMAT).as_object(),
+    )
+    .map(|(format, _)| format)
 }
 
 pub fn create_text_line<'gc>(
@@ -174,16 +157,37 @@ fn apply_format<'gc>(
     text: &WStr,
     element_format: Option<Object<'gc>>,
 ) -> Result<(), Error<'gc>> {
-    if let Some(element_format) = element_format {
-        // TODO: Support more ElementFormat properties
-        let color = element_format
-            .get_slot(format_slots::_COLOR)
-            .coerce_to_u32(activation)?;
-        let size = element_format
-            .get_slot(format_slots::_FONT_SIZE)
-            .coerce_to_number(activation)?;
+    let (format, is_device_font) = text_format_from_element_format(activation, element_format)?;
+    display_object.set_is_device_font(activation.context, is_device_font);
+    display_object.set_text_format(0, text.len(), format.clone(), activation.context);
+    display_object.set_new_text_format(format);
 
-        let (font, bold, italic, is_device_font) = if let Value::Object(font_description) =
+    display_object.set_word_wrap(true, activation.context);
+
+    let measured_text = display_object.measure_text(activation.context);
+
+    display_object.set_height(activation.context, measured_text.1.to_pixels());
+
+    Ok(())
+}
+
+fn text_format_from_element_format<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    element_format: Option<Object<'gc>>,
+) -> Result<(TextFormat, bool), Error<'gc>> {
+    let Some(element_format) = element_format else {
+        return Ok((TextFormat::default(), true));
+    };
+
+    let color = element_format
+        .get_slot(format_slots::_COLOR)
+        .coerce_to_u32(activation)?;
+    let size = element_format
+        .get_slot(format_slots::_FONT_SIZE)
+        .coerce_to_number(activation)?;
+
+    let (font, bold, italic, is_device_font) =
+        if let Value::Object(font_description) =
             element_format.get_slot(format_slots::_FONT_DESCRIPTION)
         {
             (
@@ -215,27 +219,15 @@ fn apply_format<'gc>(
             (None, None, None, true)
         };
 
-        let format = TextFormat {
+    Ok((
+        TextFormat {
             color: Some(swf::Color::from_rgb(color, 0xFF)),
             size: Some(size),
             font,
             bold,
             italic,
             ..TextFormat::default()
-        };
-
-        display_object.set_is_device_font(activation.context, is_device_font);
-        display_object.set_text_format(0, text.len(), format.clone(), activation.context);
-        display_object.set_new_text_format(format);
-    } else {
-        display_object.set_is_device_font(activation.context, true);
-    }
-
-    display_object.set_word_wrap(true, activation.context);
-
-    let measured_text = display_object.measure_text(activation.context);
-
-    display_object.set_height(activation.context, measured_text.1.to_pixels());
-
-    Ok(())
+        },
+        is_device_font,
+    ))
 }

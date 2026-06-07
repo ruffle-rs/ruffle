@@ -29,10 +29,10 @@ package flash.text.engine {
         private var _textBlockBeginIndex:int = 0;
 
         [Ruffle(NativeAccessible)]
-        internal var _nextLine:TextLine = null;
+        private var _nextLine:TextLine = null;
 
         [Ruffle(NativeAccessible)]
-        internal var _previousLine:TextLine = null;
+        private var _previousLine:TextLine = null;
 
         internal var _validity:String = "valid";
 
@@ -64,7 +64,10 @@ package flash.text.engine {
             return this._previousLine;
         }
 
-        public native function get ascent():Number;
+        public function get ascent():Number {
+            stub_getter("flash.text.engine.TextLine", "ascent");
+            return 18.1;
+        }
 
         [API("670")]
         public function get totalAscent():Number {
@@ -72,7 +75,10 @@ package flash.text.engine {
             return 12.0;
         }
 
-        public native function get descent():Number;
+        public function get descent():Number {
+            stub_getter("flash.text.engine.TextLine", "descent");
+            return 4.2;
+        }
 
         [API("670")]
         public function get totalDescent():Number {
@@ -85,8 +91,15 @@ package flash.text.engine {
             return this._specifiedWidth;
         }
 
-        public native function get textWidth():Number;
-        public native function get textHeight():Number;
+        public function get textWidth():Number {
+            stub_getter("flash.text.engine.TextLine", "textWidth");
+            return this._rawTextLength * 6;
+        }
+
+        public function get textHeight():Number {
+            stub_getter("flash.text.engine.TextLine", "textHeight");
+            return 22.3;
+        }
 
         public function get validity():String {
             stub_getter("flash.text.engine.TextLine", "validity");

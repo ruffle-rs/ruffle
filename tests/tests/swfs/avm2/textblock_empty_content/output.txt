@@ -105,3 +105,45 @@ crlf.hasGraphicElement: false
 crlf.atomCount: 1
 crlf.hasTabs: false
 crlf.userData: null
+tab.line is null: false
+tab.creation result: success
+tab.width: 48
+tab.textWidth: 48
+tab.textHeight: 20
+tab.ascent: 15.1953125
+tab.descent: 4.8046875
+tab.totalAscent: 15.1953125
+tab.totalDescent: 4.8046875
+tab.unjustifiedTextWidth: 48
+tab.rawTextLength: 1
+tab.textBlockBeginIndex: 0
+tab.specifiedWidth: 100
+tab.textBlock matches: true
+tab.previousLine is null: true
+tab.nextLine is null: true
+tab.validity: valid
+tab.hasGraphicElement: false
+tab.atomCount: 1
+tab.hasTabs: true
+tab.userData: null
+spaceNewlineSpace.line is null: false
+spaceNewlineSpace.creation result: success
+spaceNewlineSpace.width: 0
+spaceNewlineSpace.textWidth: 0
+spaceNewlineSpace.textHeight: 20
+spaceNewlineSpace.ascent: 15.1953125
+spaceNewlineSpace.descent: 4.8046875
+spaceNewlineSpace.totalAscent: 15.1953125
+spaceNewlineSpace.totalDescent: 4.8046875
+spaceNewlineSpace.unjustifiedTextWidth: 0
+spaceNewlineSpace.rawTextLength: 2
+spaceNewlineSpace.textBlockBeginIndex: 0
+spaceNewlineSpace.specifiedWidth: 100
+spaceNewlineSpace.textBlock matches: true
+spaceNewlineSpace.previousLine is null: true
+spaceNewlineSpace.nextLine is null: true
+spaceNewlineSpace.validity: valid
+spaceNewlineSpace.hasGraphicElement: false
+spaceNewlineSpace.atomCount: 2
+spaceNewlineSpace.hasTabs: false
+spaceNewlineSpace.userData: null
