@@ -1,0 +1,4 @@
+narrow.textWidth: 6
+text.textWidth: 30
+narrow.textHeight: 22.3
+text.textHeight: 22.3
