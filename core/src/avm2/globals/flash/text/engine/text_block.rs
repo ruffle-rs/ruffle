@@ -291,7 +291,12 @@ pub fn create_text_line<'gc>(
     let element_format = content_obj
         .get_slot(element_slots::_ELEMENT_FORMAT)
         .as_object();
-    apply_format(activation, fallback, fallback_text.as_wstr(), element_format)?;
+    apply_format(
+        activation,
+        fallback,
+        fallback_text.as_wstr(),
+        element_format,
+    )?;
 
     let text_line = TextLine::new(activation.context, movie, text_line_layout, fallback);
     let class = activation.avm2().classes().textline;
@@ -498,7 +503,12 @@ pub fn recreate_text_line<'gc>(
     let element_format = content_obj
         .get_slot(element_slots::_ELEMENT_FORMAT)
         .as_object();
-    apply_format(activation, fallback, fallback_text.as_wstr(), element_format)?;
+    apply_format(
+        activation,
+        fallback,
+        fallback_text.as_wstr(),
+        element_format,
+    )?;
     text_line_display.set_line(activation.context, text_line_layout, fallback);
 
     text_line.set_slot(line_slots::_TEXT_BLOCK, this.into(), activation)?;

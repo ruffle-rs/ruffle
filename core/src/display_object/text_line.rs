@@ -225,9 +225,7 @@ fn typo_metrics(line: &LayoutLine<'_>, text: &WStr) -> (f32, f32) {
     let mut ascent = 0.0_f32;
     let mut descent = 0.0_f32;
     let mut found = false;
-    let blank_line = line
-        .text_range()
-        .all(|pos| is_blank_unit(text.get(pos)));
+    let blank_line = line.text_range().all(|pos| is_blank_unit(text.get(pos)));
 
     for lbox in line.boxes_iter() {
         if let Some((_, _, font_set, params, _)) = lbox.as_renderable_text(text) {

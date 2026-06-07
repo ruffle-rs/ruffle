@@ -106,6 +106,7 @@ pub struct LayoutContext<'a, 'gc> {
 }
 
 impl<'a, 'gc> LayoutContext<'a, 'gc> {
+    #[expect(clippy::too_many_arguments)]
     fn new(
         movie: Arc<SwfMovie>,
         max_bounds: Twips,
