@@ -186,38 +186,37 @@ fn text_format_from_element_format<'gc>(
         .get_slot(format_slots::_FONT_SIZE)
         .coerce_to_number(activation)?;
 
-    let (font, bold, italic, is_device_font) =
-        if let Value::Object(font_description) =
-            element_format.get_slot(format_slots::_FONT_DESCRIPTION)
-        {
-            (
-                Some(
-                    font_description
-                        .get_slot(font_desc_slots::_FONT_NAME)
-                        .coerce_to_string(activation)?
-                        .as_wstr()
-                        .into(),
-                ),
-                Some(
-                    &font_description
-                        .get_slot(font_desc_slots::_FONT_WEIGHT)
-                        .coerce_to_string(activation)?
-                        == b"bold",
-                ),
-                Some(
-                    &font_description
-                        .get_slot(font_desc_slots::_FONT_POSTURE)
-                        .coerce_to_string(activation)?
-                        == b"italic",
-                ),
-                &font_description
-                    .get_slot(font_desc_slots::_FONT_LOOKUP)
+    let (font, bold, italic, is_device_font) = if let Value::Object(font_description) =
+        element_format.get_slot(format_slots::_FONT_DESCRIPTION)
+    {
+        (
+            Some(
+                font_description
+                    .get_slot(font_desc_slots::_FONT_NAME)
                     .coerce_to_string(activation)?
-                    == b"device",
-            )
-        } else {
-            (None, None, None, true)
-        };
+                    .as_wstr()
+                    .into(),
+            ),
+            Some(
+                &font_description
+                    .get_slot(font_desc_slots::_FONT_WEIGHT)
+                    .coerce_to_string(activation)?
+                    == b"bold",
+            ),
+            Some(
+                &font_description
+                    .get_slot(font_desc_slots::_FONT_POSTURE)
+                    .coerce_to_string(activation)?
+                    == b"italic",
+            ),
+            &font_description
+                .get_slot(font_desc_slots::_FONT_LOOKUP)
+                .coerce_to_string(activation)?
+                == b"device",
+        )
+    } else {
+        (None, None, None, true)
+    };
 
     Ok((
         TextFormat {
