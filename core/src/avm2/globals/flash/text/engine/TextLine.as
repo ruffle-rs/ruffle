@@ -31,10 +31,10 @@ package flash.text.engine {
         private var _textBlockBeginIndex:int = 0;
 
         [Ruffle(NativeAccessible)]
-        internal var _nextLine:TextLine = null;
+        private var _nextLine:TextLine = null;
 
         [Ruffle(NativeAccessible)]
-        internal var _previousLine:TextLine = null;
+        private var _previousLine:TextLine = null;
 
         [Ruffle(NativeAccessible)]
         internal var _validity:String = "valid";

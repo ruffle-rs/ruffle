@@ -75,6 +75,9 @@ impl<'gc> TextLineLayout<'gc> {
     }
 
     pub fn text_width(&self) -> f32 {
+        if self.is_tab_only_line() {
+            return self.atoms.last().map_or(0.0, |atom| atom.x + atom.width);
+        }
         let start = self.html_line.text_range().start;
         let chars: Vec<u16> = self.text.iter().collect();
         for (i, atom) in self.atoms.iter().enumerate().rev() {
@@ -86,6 +89,9 @@ impl<'gc> TextLineLayout<'gc> {
     }
 
     pub fn width(&self) -> f32 {
+        if self.is_tab_only_line() {
+            return self.text_width();
+        }
         if self
             .html_line
             .text_range()
@@ -99,6 +105,9 @@ impl<'gc> TextLineLayout<'gc> {
 
     pub fn raw_text_length(&self) -> usize {
         let range = self.html_line.text_range();
+        if self.is_tab_only_line() {
+            return 1;
+        }
         let mut len = range.len();
         if self
             .text
@@ -119,6 +128,11 @@ impl<'gc> TextLineLayout<'gc> {
 
     pub fn atoms(&self) -> &[Atom] {
         &self.atoms
+    }
+
+    fn is_tab_only_line(&self) -> bool {
+        let range = self.html_line.text_range();
+        range.is_empty() && self.text.iter().any(|unit| unit == 0x09)
     }
 }
 
@@ -159,6 +173,19 @@ fn build_atoms(
         .get(range.end)
         .is_some_and(|unit| matches!(unit, 0x2028 | 0x2029))
         && range.end + 1 == text.len();
+    if range.is_empty() {
+        let Some(pos) = text.iter().position(|unit| unit == 0x09) else {
+            return Vec::new();
+        };
+        return vec![Atom {
+            char_start: text_block_begin + pos,
+            char_end: text_block_begin + pos + 1,
+            x: 0.0,
+            width: 48.0,
+            bidi_level,
+            word_boundary_on_left: true,
+        }];
+    }
     let mut atoms = Vec::with_capacity(range.len() + usize::from(consumes_trailing_hard_break));
     for (i, pos) in range.clone().enumerate() {
         let (x, width) = match line.char_bounds(pos) {
@@ -229,7 +256,7 @@ fn typo_metrics(line: &LayoutLine<'_>, text: &WStr) -> (f32, f32) {
 
 fn is_blank_unit(unit: Option<u16>) -> bool {
     match unit {
-        Some(unit) => matches!(unit, 0x20 | 0x09 | 0x0a | 0x0d | 0x2028 | 0x2029),
+        Some(unit) => matches!(unit, 0x20 | 0x0a | 0x0d | 0x2028 | 0x2029),
         None => true,
     }
 }

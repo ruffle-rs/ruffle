@@ -25,7 +25,7 @@ package flash.text.engine {
         private var _kerning:String;
         private var _ligatureLevel:String;
         private var _locale:String;
-        private var _locked:Boolean = false;
+        private var _locked:Boolean;
         private var _textRotation:String;
         [Ruffle(NativeAccessible)]
         private var _trackingLeft:Number;
@@ -66,6 +66,7 @@ package flash.text.engine {
             this.kerning = kerning;
             this.ligatureLevel = ligatureLevel;
             this.locale = locale;
+            this._locked = false;
             this.textRotation = textRotation;
             this.trackingLeft = trackingLeft;
             this.trackingRight = trackingRight;
