@@ -44,7 +44,7 @@ package {
 			trace(bmd.hitTest(origin, 0x9F, new Point(2, 3)));
 
 			// --- hit_test_bitmapdata: threshold = 0 ---
-			// Two fully-transparent bmds: must NOT collide with threshold=0
+			// Two fully-transparent bmds: Flash returns true (straight alpha >= threshold, no clamp)
 			var trans1:BitmapData = new BitmapData(3, 3, true, 0x00000000);
 			var trans2:BitmapData = new BitmapData(3, 3, true, 0x00000000);
 			trace("bmd-vs-bmd threshold=0, both transparent:");
@@ -56,7 +56,7 @@ package {
 			trace("bmd-vs-bmd threshold=0, both opaque:");
 			trace(opaque1.hitTest(origin, 0, opaque2, origin, 0));
 
-			// src opaque, test transparent: must NOT collide
+			// src opaque, test transparent: still true with threshold=0 (both sides satisfy alpha >= 0)
 			trace("bmd-vs-bmd threshold=0, src opaque / test transparent:");
 			trace(opaque1.hitTest(origin, 0, trans1, origin, 0));
 		}
