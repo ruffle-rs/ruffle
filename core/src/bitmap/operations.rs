@@ -809,6 +809,7 @@ pub fn hit_test_point(
             .read_area(PixelRegion::for_pixel(x, y), renderer)
             .get_pixel32_raw(x, y)
             .alpha()
+            // If `alpha_threshold` is 0, consider it to be 1.
             >= alpha_threshold.max(1)
     } else {
         false

@@ -864,7 +864,7 @@ pub fn hit_test<'gc>(
         );
         let second_threshold = args.get_u32(4).clamp(0, u8::MAX.into()) as u8;
 
-        Ok(Value::Bool(operations::hit_test_bitmapdata(
+        let result = operations::hit_test_bitmapdata(
             activation.context.renderer,
             bitmap_data,
             top_left,
@@ -872,7 +872,9 @@ pub fn hit_test<'gc>(
             other_bmd,
             second_point,
             second_threshold,
-        )))
+        );
+
+        Ok(Value::Bool(result))
     } else if let Some(bitmap) = compare_object
         .as_display_object()
         .and_then(|dobj| dobj.as_bitmap())
