@@ -21,17 +21,6 @@ use swf::Twips;
 
 const TEXT_LINE_MAX_LINE_WIDTH: f64 = 1_000_000.0;
 
-fn format_from_content<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    content: Object<'gc>,
-) -> Result<TextFormat, Error<'gc>> {
-    text_format_from_element_format(
-        activation,
-        content.get_slot(element_slots::_ELEMENT_FORMAT).as_object(),
-    )
-    .map(|(format, _)| format)
-}
-
 pub fn create_text_line<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
@@ -83,16 +72,24 @@ pub fn create_text_line<'gc>(
     let Value::Object(content_obj) = content else {
         unreachable!("TextBlock content slot must be ContentElement");
     };
-    let spans = FormatSpans::from_text(
-        WString::from(text.as_wstr()),
-        format_from_content(activation, content_obj)?,
-    );
+    let movie = activation.caller_movie_or_root();
+    let fallback = EditText::new_fte(activation.context, movie.clone(), 0.0, 0.0, width, 15.0);
+    fallback.set_text(text.as_wstr(), activation.context);
+    let element_format = content_obj
+        .get_slot(element_slots::_ELEMENT_FORMAT)
+        .as_object();
+    let format = apply_format(activation, fallback, text.as_wstr(), element_format)?;
+    fallback.set_word_wrap(true, activation.context);
+
+    let measured_text = fallback.measure_text(activation.context);
+    fallback.set_height(activation.context, measured_text.1.to_pixels());
+
+    let spans = FormatSpans::from_text(WString::from(text.as_wstr()), format);
     let requested_width = if width >= TEXT_LINE_MAX_LINE_WIDTH {
         None
     } else {
         Some(Twips::from_pixels(width))
     };
-    let movie = activation.caller_movie_or_root();
     let layout = lower_from_text_spans(
         &spans,
         activation.context,
@@ -109,13 +106,6 @@ pub fn create_text_line<'gc>(
         .expect("TextLine layout must contain a line for nonempty text");
     let text_line_layout = TextLineLayout::new(html_line, WString::from(text.as_wstr()));
     let raw_text_length = text_line_layout.raw_text_length();
-
-    let fallback = EditText::new_fte(activation.context, movie.clone(), 0.0, 0.0, width, 15.0);
-    fallback.set_text(text.as_wstr(), activation.context);
-    let element_format = content_obj
-        .get_slot(element_slots::_ELEMENT_FORMAT)
-        .as_object();
-    apply_format(activation, fallback, text.as_wstr(), element_format)?;
 
     let text_line = TextLine::new(activation.context, movie, text_line_layout, fallback);
     let class = activation.avm2().classes().textline;
@@ -156,19 +146,13 @@ fn apply_format<'gc>(
     display_object: EditText<'gc>,
     text: &WStr,
     element_format: Option<Object<'gc>>,
-) -> Result<(), Error<'gc>> {
+) -> Result<TextFormat, Error<'gc>> {
     let (format, is_device_font) = text_format_from_element_format(activation, element_format)?;
     display_object.set_is_device_font(activation.context, is_device_font);
     display_object.set_text_format(0, text.len(), format.clone(), activation.context);
-    display_object.set_new_text_format(format);
+    display_object.set_new_text_format(format.clone());
 
-    display_object.set_word_wrap(true, activation.context);
-
-    let measured_text = display_object.measure_text(activation.context);
-
-    display_object.set_height(activation.context, measured_text.1.to_pixels());
-
-    Ok(())
+    Ok(format)
 }
 
 fn text_format_from_element_format<'gc>(
