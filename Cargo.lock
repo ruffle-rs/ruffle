@@ -4631,6 +4631,18 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6c20b6793b5c2fa6553b250154b78d6d0db37e72700ae35fad9387a46f487c97"
 
 [[package]]
+name = "ruffle_api_report"
+version = "0.1.0"
+source = "git+https://github.com/ruffle-rs/api-report?rev=5d9eab96fa1db90944e51450113c532505e52bd6#5d9eab96fa1db90944e51450113c532505e52bd6"
+dependencies = [
+ "anyhow",
+ "clap",
+ "fnv",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "ruffle_common"
 version = "0.2.0"
 dependencies = [
@@ -5560,7 +5572,9 @@ version = "0.2.0"
 dependencies = [
  "anyhow",
  "clap",
+ "ruffle_api_report",
  "ruffle_core",
+ "tempfile",
 ]
 
 [[package]]
