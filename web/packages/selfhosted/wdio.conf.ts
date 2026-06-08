@@ -1,3 +1,4 @@
+import { execSync } from "child_process";
 import type { Services } from "@wdio/types";
 import { BrowserStackCapabilities } from "@wdio/types/build/Capabilities";
 
@@ -237,7 +238,30 @@ export const config: WebdriverIO.Config = {
         ui: "bdd",
         timeout: 120000,
     },
+    async onWorkerEnd(cid, exitCode, specs, retries) {
+        // We only want to run this cleanup on Linux/CI environments
+        if (process.platform === "linux") {
+            try {
+                // Find processes containing 'chrome' or 'chromedriver' 
+                // whose Parent PID ($2) is 1 (meaning they are orphaned)
+                const findOrphansCmd = `ps -eo pid,ppid,comm | awk '$2==1 && /chrome/ {print $1}'`;
+                const pids = execSync(findOrphansCmd).toString().trim().split("\n").filter(Boolean);
 
+                if (pids.length > 0) {
+                    console.warn(`[Cleanup] Found ${pids.length} orphaned Chrome processes after worker ${cid} ended. Terminating...`);
+                    for (const pid of pids) {
+                        try {
+                            execSync(`kill -9 ${pid}`); // Force kill the zombie
+                        } catch (killErr) {
+                            console.warn(`[Cleanup] Failed to kill orphaned PID: ${pid}`);
+                        }
+                    }
+                }
+            } catch (err) {
+                // Fail silently if 'ps' is unavailable or no orphans exist
+            }
+        }
+    },
     async beforeSuite() {
         if (!browserstack) {
             await browser.sessionSubscribe({ events: ["log.entryAdded"] });
