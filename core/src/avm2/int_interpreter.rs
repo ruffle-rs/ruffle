@@ -53,6 +53,10 @@ impl<'a, 'gc> IntInterpreter<'a, 'gc> {
         }
     }
 
+    pub fn stack_pointer(&self) -> usize {
+        self.stack_pointer
+    }
+
     pub fn push_stack(&mut self, value: i32) {
         self.frame[self.stack_pointer] = value;
         self.stack_pointer += 1;
@@ -76,7 +80,7 @@ impl<'a, 'gc> IntInterpreter<'a, 'gc> {
     }
 
     #[inline(never)]
-    pub fn run(&mut self, opcodes: &[IntOp]) -> Result<(usize, usize), DomainMemoryError> {
+    pub fn run(&mut self, opcodes: &[IntOp]) -> Result<usize, DomainMemoryError> {
         let mut ip = 0;
 
         loop {
@@ -127,13 +131,10 @@ impl<'a, 'gc> IntInterpreter<'a, 'gc> {
                         ip = *offset as usize;
                     }
                 }
-                IntOp::IfFalseExternal {
-                    offset,
-                    final_stack_height,
-                } => {
+                IntOp::IfFalseExternal { offset } => {
                     if self.pop_stack() == 0 {
                         // Jump back into the normal interpreter
-                        return Ok((*offset as usize, *final_stack_height as usize));
+                        return Ok(*offset as usize);
                     }
                 }
                 IntOp::IfTrue { offset } => {
@@ -141,24 +142,18 @@ impl<'a, 'gc> IntInterpreter<'a, 'gc> {
                         ip = *offset as usize;
                     }
                 }
-                IntOp::IfTrueExternal {
-                    offset,
-                    final_stack_height,
-                } => {
+                IntOp::IfTrueExternal { offset } => {
                     if self.pop_stack() != 0 {
                         // Jump back into the normal interpreter
-                        return Ok((*offset as usize, *final_stack_height as usize));
+                        return Ok(*offset as usize);
                     }
                 }
                 IntOp::Jump { offset } => {
                     ip = *offset as usize;
                 }
-                IntOp::JumpExternal {
-                    offset,
-                    final_stack_height,
-                } => {
+                IntOp::JumpExternal { offset } => {
                     // Jump back into the normal interpreter
-                    return Ok((*offset as usize, *final_stack_height as usize));
+                    return Ok(*offset as usize);
                 }
             }
         }

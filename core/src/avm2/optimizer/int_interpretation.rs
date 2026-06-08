@@ -395,10 +395,6 @@ fn run_single_analysis<'gc>(
 
                 IntOp::IfFalseExternal {
                     offset: offset as u32,
-
-                    // The frame size of the abstract interpreter should fit in
-                    // a u8
-                    final_stack_height: stack.len() as u8,
                 }
             }
             Op::IfTrue { offset } => {
@@ -411,19 +407,11 @@ fn run_single_analysis<'gc>(
 
                 IntOp::IfTrueExternal {
                     offset: offset as u32,
-
-                    // See comment on `Op::IfFalse`
-                    final_stack_height: stack.len() as u8,
                 }
             }
-            Op::Jump { offset } => {
-                IntOp::JumpExternal {
-                    offset: offset as u32,
-
-                    // See comment on `Op::IfFalse`
-                    final_stack_height: stack.len() as u8,
-                }
-            }
+            Op::Jump { offset } => IntOp::JumpExternal {
+                offset: offset as u32,
+            },
             Op::IncLocalI { index } => {
                 if !integral_locals.get(index as usize) {
                     // Can't access a non-int
@@ -784,7 +772,6 @@ fn run_single_analysis<'gc>(
     if start_index + num_ops != ops.len() {
         output_vec.push(IntOp::JumpExternal {
             offset: (start_index + num_ops) as u32,
-            final_stack_height: stack.len() as u8,
         });
     }
 

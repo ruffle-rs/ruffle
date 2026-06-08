@@ -3259,7 +3259,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         // exception handlers to which that state is observable to (this method
         // will simply immediately return to its caller with the error).
         let result = interpreter.run(&*ops);
-        let (new_ip, final_stack_height) = match result {
+        let new_ip = match result {
             Ok(info) => info,
             Err(_) => {
                 // The only exception that can happen from the int interpreter is
@@ -3281,7 +3281,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         // Finally, synchronize the stack from the int interpreter to this
         // interpreter.
         let num_locals = info.synchronize_locals.len();
-        for i in num_locals..num_locals + final_stack_height {
+        for i in num_locals..interpreter.stack_pointer() {
             self.push_stack(interpreter.frame_at(i as u32));
         }
 
