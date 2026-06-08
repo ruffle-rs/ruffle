@@ -371,7 +371,7 @@ jobs:
           toolchain: stable
 
       - name: Generate report
-        run: ./stub-report/generate-report.sh
+        run: cargo run --locked --package stub-report -- --avm2-report avm2_report.json
 
       - name: Upload report
         run: gh release upload "${{ needs.create-release.outputs.tag_name }}" avm2_report.json
