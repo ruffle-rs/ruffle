@@ -133,7 +133,7 @@ impl<'a, 'gc> IntInterpreter<'a, 'gc> {
                 } => {
                     if self.pop_stack() == 0 {
                         // Jump back into the normal interpreter
-                        return Ok((offset.get() as usize, *final_stack_height as usize));
+                        return Ok((*offset as usize, *final_stack_height as usize));
                     }
                 }
                 IntOp::IfTrue { offset } => {
@@ -147,7 +147,7 @@ impl<'a, 'gc> IntInterpreter<'a, 'gc> {
                 } => {
                     if self.pop_stack() != 0 {
                         // Jump back into the normal interpreter
-                        return Ok((offset.get() as usize, *final_stack_height as usize));
+                        return Ok((*offset as usize, *final_stack_height as usize));
                     }
                 }
                 IntOp::Jump { offset } => {
@@ -158,7 +158,7 @@ impl<'a, 'gc> IntInterpreter<'a, 'gc> {
                     final_stack_height,
                 } => {
                     // Jump back into the normal interpreter
-                    return Ok((offset.get() as usize, *final_stack_height as usize));
+                    return Ok((*offset as usize, *final_stack_height as usize));
                 }
             }
         }

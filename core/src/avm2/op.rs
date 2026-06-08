@@ -8,7 +8,7 @@ use crate::avm2::script::Script;
 use crate::string::AvmAtom;
 
 use gc_arena::{Collect, Gc};
-use std::cell::Cell;
+use std::cell::{Cell, RefCell};
 
 #[derive(Clone, Collect, Copy, Debug)]
 #[collect(no_drop)]
@@ -452,13 +452,13 @@ pub struct IntInterpreterInfo {
     pub synchronize_locals: SmallBitSet,
 
     /// The ops run by the int interpreter.
-    pub ops: Vec<IntOp>,
+    pub ops: RefCell<Vec<IntOp>>,
 }
 
 /// An op used in the int interpreter.
 ///
 /// These ops only work on `i32` values.
-#[derive(Debug)]
+#[derive(Clone, Copy, Debug)]
 pub enum IntOp {
     Add,
     BitAnd,
@@ -482,11 +482,8 @@ pub enum IntOp {
         offset: u32,
     },
     IfFalseExternal {
-        // NOTE: This has interior mutability so that we can rewrite the offset
-        // from the optimizer when we need to.
-        offset: Cell<u32>,
+        offset: u32,
 
-        // There can be at most 15 stack entries :p
         // Each external branch can lead to execution ending with a different
         // number of entries left on the stack, so we have to keep track
         final_stack_height: u8,
@@ -495,18 +492,18 @@ pub enum IntOp {
         offset: u32,
     },
     IfTrueExternal {
-        // See comments on IfFalseExternal
-        offset: Cell<u32>,
+        offset: u32,
 
+        // See comment on IfFalseExternal
         final_stack_height: u8,
     },
     Jump {
         offset: u32,
     },
     JumpExternal {
-        // See comment on IfFalseExternal
-        offset: Cell<u32>,
+        offset: u32,
 
+        // See comment on IfFalseExternal
         final_stack_height: u8,
     },
     IncLocal {

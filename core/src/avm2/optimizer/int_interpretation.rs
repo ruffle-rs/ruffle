@@ -9,7 +9,7 @@ use crate::avm2::optimizer::utils::SmallBitSet;
 
 use enum_map::EnumMap;
 use gc_arena::Gc;
-use std::cell::Cell;
+use std::cell::{Cell, RefCell};
 use std::collections::{BTreeMap, HashMap, HashSet};
 use std::ops::Range;
 
@@ -391,7 +391,7 @@ fn run_single_analysis<'gc>(
                 stack.pop();
 
                 IntOp::IfFalseExternal {
-                    offset: Cell::new(offset as u32),
+                    offset: offset as u32,
 
                     // The frame size of the abstract interpreter should fit in
                     // a u8
@@ -407,7 +407,7 @@ fn run_single_analysis<'gc>(
                 stack.pop();
 
                 IntOp::IfTrueExternal {
-                    offset: Cell::new(offset as u32),
+                    offset: offset as u32,
 
                     // See comment on `Op::IfFalse`
                     final_stack_height: stack.len() as u8,
@@ -415,7 +415,7 @@ fn run_single_analysis<'gc>(
             }
             Op::Jump { offset } => {
                 IntOp::JumpExternal {
-                    offset: Cell::new(offset as u32),
+                    offset: offset as u32,
 
                     // See comment on `Op::IfFalse`
                     final_stack_height: stack.len() as u8,
@@ -729,7 +729,7 @@ fn run_single_analysis<'gc>(
     for (i, op) in output_vec.iter_mut().enumerate() {
         match op {
             IntOp::IfFalseExternal { offset, .. } => {
-                let offset = offset.get() as usize;
+                let offset = *offset as usize;
                 if (start_index..start_index + num_ops).contains(&offset) {
                     let new_offset = offset - start_index;
 
@@ -743,7 +743,7 @@ fn run_single_analysis<'gc>(
                 }
             }
             IntOp::IfTrueExternal { offset, .. } => {
-                let offset = offset.get() as usize;
+                let offset = *offset as usize;
                 if (start_index..start_index + num_ops).contains(&offset) {
                     let new_offset = offset - start_index;
 
@@ -757,7 +757,7 @@ fn run_single_analysis<'gc>(
                 }
             }
             IntOp::JumpExternal { offset, .. } => {
-                let offset = offset.get() as usize;
+                let offset = *offset as usize;
                 if (start_index..start_index + num_ops).contains(&offset) {
                     let new_offset = offset - start_index;
 
@@ -793,14 +793,14 @@ fn run_single_analysis<'gc>(
     // remover.
     if start_index + num_ops != ops.len() {
         output_vec.push(IntOp::JumpExternal {
-            offset: Cell::new((start_index + num_ops) as u32),
+            offset: (start_index + num_ops) as u32,
             final_stack_height: stack.len() as u8,
         });
     }
 
     let info = IntInterpreterInfo {
         synchronize_locals: used_locals,
-        ops: output_vec,
+        ops: RefCell::new(output_vec),
     };
 
     Some((info, num_ops))

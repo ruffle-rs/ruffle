@@ -3250,12 +3250,14 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             }
         }
 
+        let ops = info.ops.borrow();
+
         // NOTE: Int interpreter promotion is never done if this method has
         // exception handlers. This means that it's fine to not synchronize
         // correct state of locals once this throws an error, as there are no
         // exception handlers to which that state is observable to (this method
         // will simply immediately return to its caller with the error).
-        let result = interpreter.run(&info.ops);
+        let result = interpreter.run(&*ops);
         let (new_ip, final_stack_height) = match result {
             Ok(info) => info,
             Err(_) => {
