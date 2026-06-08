@@ -12,7 +12,8 @@ use rfd::{
 };
 use ruffle_core::backend::ui::{
     DialogResultFuture, FileDialogResult, FileDialogSelection, FileFilter, FontDefinition,
-    FullscreenError, LanguageIdentifier, MouseCursor, UiBackend,
+    FullscreenError, LanguageIdentifier, MouseCursor, MultiDialogResultFuture,
+    MultiFileDialogResult, UiBackend,
 };
 use ruffle_core::font::{FontFileData, FontQuery};
 use std::fs::File;
@@ -152,6 +153,20 @@ impl DesktopUiBackend {
             font_database,
             file_picker,
         })
+    }
+
+    fn show_open_dialog<F, O>(&self, filters: &[FileFilter], f: F) -> Option<O>
+    where
+        F: FnOnce(AsyncFileDialog) -> O,
+    {
+        let mut dialog = AsyncFileDialog::new();
+
+        for filter in filters {
+            let extensions = filter.extensions_for_dialog(cfg!(target_os = "macos"));
+            dialog = dialog.add_filter(&filter.description, &extensions);
+        }
+
+        self.file_picker.show_dialog(dialog, f)
     }
 
     pub fn cursor(&self) -> egui::CursorIcon {
@@ -325,21 +340,33 @@ impl UiBackend for DesktopUiBackend {
     }
 
     fn display_file_open_dialog(&mut self, filters: Vec<FileFilter>) -> Option<DialogResultFuture> {
-        let mut dialog = AsyncFileDialog::new();
-
-        for filter in &filters {
-            let extensions = filter.extensions_for_dialog(cfg!(target_os = "macos"));
-
-            dialog = dialog.add_filter(&filter.description, &extensions);
-        }
-
-        let result = self.file_picker.show_dialog(dialog, |d| d.pick_file())?;
+        let result = self.show_open_dialog(&filters, |d| d.pick_file())?;
 
         Some(Box::pin(async move {
             Ok(if let Some(handle) = result.await {
                 FileDialogResult::Selection(Box::new(DesktopFileSelection::new(handle).await))
             } else {
                 FileDialogResult::Canceled
+            })
+        }))
+    }
+
+    fn display_file_open_dialog_multiple(
+        &mut self,
+        filters: Vec<FileFilter>,
+    ) -> Option<MultiDialogResultFuture> {
+        let result = self.show_open_dialog(&filters, |d| d.pick_files())?;
+
+        Some(Box::pin(async move {
+            Ok(if let Some(handles) = result.await {
+                let selections = futures::future::join_all(handles.into_iter().map(|h| async {
+                    Box::new(DesktopFileSelection::new(h).await) as Box<dyn FileDialogSelection>
+                }))
+                .await;
+
+                MultiFileDialogResult::Selection(selections)
+            } else {
+                MultiFileDialogResult::Canceled
             })
         }))
     }

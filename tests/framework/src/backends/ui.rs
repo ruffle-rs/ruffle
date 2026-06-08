@@ -4,7 +4,8 @@ use crate::test::Font;
 use chrono::{DateTime, Utc};
 use ruffle_core::backend::ui::{
     DialogResultFuture, FileDialogResult, FileDialogSelection, FileFilter, FontDefinition,
-    FullscreenError, LanguageIdentifier, MouseCursor, US_ENGLISH, UiBackend,
+    FullscreenError, LanguageIdentifier, MouseCursor, MultiDialogResultFuture,
+    MultiFileDialogResult, US_ENGLISH, UiBackend,
 };
 use ruffle_core::font::{FontFileData, FontQuery};
 use url::Url;
@@ -158,6 +159,29 @@ impl UiBackend for TestUiBackend {
                     )))
                 } else {
                     FileDialogResult::Canceled
+                },
+            )
+        }))
+    }
+
+    fn display_file_open_dialog_multiple(
+        &mut self,
+        filters: Vec<FileFilter>,
+    ) -> Option<MultiDialogResultFuture> {
+        Some(Box::pin(async move {
+            // Same magic filter as single-file, but returns multiple fake files
+            Ok(
+                if filters
+                    .iter()
+                    .any(|f| f.description == "debug-select-success")
+                {
+                    MultiFileDialogResult::Selection(vec![
+                        Box::new(TestFileSelection::new("test1.txt".to_string())),
+                        Box::new(TestFileSelection::new("test2.txt".to_string())),
+                        Box::new(TestFileSelection::new("test3.txt".to_string())),
+                    ])
+                } else {
+                    MultiFileDialogResult::Canceled
                 },
             )
         }))

@@ -1,6 +1,7 @@
 package flash.events {
     import flash.display.InteractiveObject;
 
+    [API("670")]
     public class SoftKeyboardEvent extends Event {
         public static const SOFT_KEYBOARD_ACTIVATE:String = "softKeyboardActivate";
         public static const SOFT_KEYBOARD_ACTIVATING:String = "softKeyboardActivating";

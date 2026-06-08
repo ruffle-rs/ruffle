@@ -2,7 +2,7 @@ SWF6
 
 [Function.as debug-22403-05c7ba106]
 PASSED: Function.prototype.__proto__ == Object.prototype [./Function.as:30]
-FAILED: expected: Function obtained: [type Function] [./Function.as:31]
+PASSED: Function.constructor == Function [./Function.as:31]
 PASSED: ! Function.hasOwnProperty('__constructor__') [./Function.as:32]
 PASSED: getThisName.prototype.__proto__ == Object.prototype [./Function.as:47]
 PASSED: getThisName != undefined [./Function.as:50]
@@ -266,6 +266,6 @@ FAILED: expected: "function" obtained: undefined [./Function.as:1118]
 FAILED: f.hasOwnProperty("__proto__") [./Function.as:1120]
 FAILED: f.hasOwnProperty("constructor") [./Function.as:1121]
 PASSED: called == 0 [./Function.as:1123]
-#passed: 234
-#failed: 29
+#passed: 235
+#failed: 28
 #total tests run: 263
