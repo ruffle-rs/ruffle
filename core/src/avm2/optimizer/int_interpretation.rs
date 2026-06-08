@@ -774,6 +774,21 @@ fn run_single_analysis<'gc>(
         }
     }
 
+    // Once all ops are done executing, jump to the normal interpreter at the
+    // position where we should continue. Unless we got to the end of the
+    // method, in which case don't add this last op, as it'll confuse the nop
+    // remover.
+    if start_index + num_ops != ops.len() {
+        output_vec.push(IntOp::JumpExternal {
+            offset: (start_index + num_ops) as u32,
+            final_stack_height: stack.len() as u8,
+        });
+    }
+
+    remove_nops(&mut output_vec);
+
+    let num_ops = output_vec.len();
+
     // Not enough ops for entering the int interpreter to be worth it
     // (unless there's a backwards branch within the int interpreter; in that
     // case it's likely that this is a hot loop)
@@ -785,17 +800,6 @@ fn run_single_analysis<'gc>(
     // interpreter and the int interpreter, so we don't support it
     if !stack.is_entirely_ints() {
         return None;
-    }
-
-    // Once all ops are done executing, jump to the normal interpreter at the
-    // position where we should continue. Unless we got to the end of the
-    // method, in which case don't add this last op, as it'll confuse the nop
-    // remover.
-    if start_index + num_ops != ops.len() {
-        output_vec.push(IntOp::JumpExternal {
-            offset: (start_index + num_ops) as u32,
-            final_stack_height: stack.len() as u8,
-        });
     }
 
     let info = IntInterpreterInfo {
@@ -885,5 +889,38 @@ impl Stack {
 
     pub fn len(&self) -> usize {
         self.0.len()
+    }
+}
+
+fn remove_nops(code: &mut Vec<IntOp>) {
+    let mut offset_vec = vec![0; code.len()];
+    let mut current_offset = 0;
+
+    // First, remove nops
+    let mut i = 0;
+    while i < code.len() {
+        offset_vec[i] = (i - current_offset) as u32;
+        if matches!(code[i], IntOp::Nop) {
+            current_offset += 1;
+        } else {
+            // Shift the ops over the nops
+            code[i - current_offset] = code[i];
+        }
+
+        i += 1;
+    }
+
+    // The ops have all been shifted over now, so remove the garbage ops left
+    // at the end of the code Vec
+    code.truncate(code.len() - current_offset);
+
+    // Rewrite jump offsets
+    for op in code {
+        match op {
+            IntOp::IfTrue { offset } | IntOp::IfFalse { offset } | IntOp::Jump { offset } => {
+                *offset = offset_vec[*offset as usize];
+            }
+            _ => {}
+        }
     }
 }
