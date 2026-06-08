@@ -191,7 +191,7 @@ fn distance<'gc>(
     let b = args.get(1).unwrap_or(&Value::Undefined);
     let delta = a.call_method(
         istr!("subtract"),
-        &[b.to_owned()],
+        std::slice::from_ref(b),
         activation,
         ExecutionReason::FunctionCall,
     )?;

@@ -153,7 +153,7 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
 
         let params = EvalParameters::from_span(span);
 
-        for text in span_text.split(&[b'\n', b'\r', b'\t'][..]) {
+        for text in span_text.split([b'\n', b'\r', b'\t']) {
             let slice_start = text.offset_in(span_text).unwrap();
             let delimiter = if slice_start > 0 {
                 span_text
@@ -682,10 +682,10 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
         let metrics = font_set.metrics();
         let ascent = metrics.ascent(params.height());
         let descent = metrics.descent(params.height());
-        let text_width = font_set.measure(text, params);
         let box_origin = self.cursor - (Twips::ZERO, ascent).into();
 
         let mut new_box = LayoutBox::from_text(text, start, end, font_set, span);
+        let text_width = new_box.text_width();
         new_box.bounds = BoxBounds::from_position_and_size(
             box_origin,
             Size::from((text_width, ascent + descent)),
@@ -1386,6 +1386,15 @@ impl<'gc> LayoutBox<'gc> {
 
     pub fn text_range(&self) -> Range<usize> {
         self.start()..self.end()
+    }
+
+    pub fn text_width(&self) -> Twips {
+        match &self.content {
+            LayoutContent::Text { char_end_pos, .. } => {
+                char_end_pos.last().copied().unwrap_or_default()
+            }
+            _ => Twips::ZERO,
+        }
     }
 
     /// Return x-axis char bounds of the given char relative to the whole layout.

@@ -159,7 +159,7 @@ jobs:
 
     env:
       PACKAGE_FILE: ${{ needs.create-release.outputs.package_prefix }}-${{ matrix.build_name }}.${{ startsWith(matrix.build_name, 'win') && 'zip' || 'tar.gz' }}
-      CARGO_BUILD_DIR: target/${{ matrix.target }}/release
+      CARGO_BUILD_DIR: target/${{ matrix.target }}/dist
 
     runs-on: ${{ matrix.os }}
     steps:
@@ -188,7 +188,7 @@ jobs:
           wix extension add -g WixToolset.Util.wixext/5.0.2
 
       - name: Cargo build
-        run: cargo build --locked --package ruffle_desktop --release ${{matrix.DESKTOP_FEATURES && '--features' }} ${{matrix.DESKTOP_FEATURES}} ${{ matrix.target && '--target' }} ${{ matrix.target }}
+        run: cargo build --locked --package ruffle_desktop --profile dist ${{matrix.DESKTOP_FEATURES && '--features' }} ${{matrix.DESKTOP_FEATURES}} ${{ matrix.target && '--target' }} ${{ matrix.target }}
         env:
           CFG_RELEASE_CHANNEL: ${{ needs.create-release.outputs.release_channel }}
           RUSTFLAGS: ${{ matrix.RUSTFLAGS }}
@@ -206,7 +206,7 @@ jobs:
           wix build ruffle.wxs -ext WixToolset.UI.wixext -ext WixToolset.Util.wixext -arch ${{ matrix.MSI_ARCH }} -o ../../../../package/setup.msi -pdbtype none
         env:
           RUFFLE_VERSION: ${{ needs.create-release.outputs.version4 }}
-          CARGO_BUILD_DIR: ../../../../target/${{ matrix.target }}/release
+          CARGO_BUILD_DIR: ../../../../target/${{ matrix.target }}/dist
         if: runner.os == 'Windows'
 
       - name: Package Windows
@@ -238,7 +238,7 @@ jobs:
 
       - name: Build Safari Web Extension stub binary
         if: runner.os == 'macOS'
-        run: cargo build --locked --package ruffle_web_safari --release ${{ matrix.target && '--target' }} ${{ matrix.target }}
+        run: cargo build --locked --package ruffle_web_safari --profile dist ${{ matrix.target && '--target' }} ${{ matrix.target }}
         env:
           CFG_RELEASE_CHANNEL: ${{ needs.create-release.outputs.release_channel }}
           RUSTFLAGS: ${{ matrix.RUSTFLAGS }}
@@ -283,13 +283,13 @@ jobs:
 
       - name: Make universal desktop binary
         run: |
-          lipo -create -output package/ruffle target/x86_64-apple-darwin/release/ruffle_desktop target/aarch64-apple-darwin/release/ruffle_desktop
+          lipo -create -output package/ruffle target/x86_64-apple-darwin/dist/ruffle_desktop target/aarch64-apple-darwin/dist/ruffle_desktop
           chmod +x package/ruffle
 
       - name: Make universal Safari stub binary
         continue-on-error: true
         run: |
-          lipo -create -output package/ruffle_web_safari target/x86_64-apple-darwin/release/ruffle_web_safari target/aarch64-apple-darwin/release/ruffle_web_safari
+          lipo -create -output package/ruffle_web_safari target/x86_64-apple-darwin/dist/ruffle_web_safari target/aarch64-apple-darwin/dist/ruffle_web_safari
           chmod +x package/ruffle_web_safari
 
       - name: Create app bundle

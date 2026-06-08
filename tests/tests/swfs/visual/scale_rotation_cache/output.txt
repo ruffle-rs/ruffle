@@ -1,0 +1,106 @@
+img_mc SWF version:
+15
+img_mc SWF version immediately after load:
+15
+setting _xscale to -100 on img_mc
+_xscale:
+-100
+_yscale:
+100
+_rotation:
+0
+matrix:
+-1
+0
+0
+1
+160
+0
+SWF version:
+-1
+---
+setting _xscale to -100 on bmd_mc
+_xscale:
+-100
+_yscale:
+100
+_rotation:
+0
+matrix:
+-1
+0
+0
+1
+160
+160
+SWF version:
+15
+---
+setting _xscale to -100 on img_mc
+_xscale:
+-100
+_yscale:
+100
+_rotation:
+0
+matrix:
+-1
+0
+0
+1
+160
+0
+SWF version:
+-1
+---
+setting _xscale to -100 on bmd_mc
+_xscale:
+-100
+_yscale:
+100
+_rotation:
+0
+matrix:
+-1
+0
+0
+1
+160
+160
+SWF version:
+15
+---
+setting _xscale to -100 on img_mc
+_xscale:
+-100
+_yscale:
+100
+_rotation:
+0
+matrix:
+-1
+0
+0
+1
+160
+0
+SWF version:
+-1
+---
+setting _xscale to -100 on bmd_mc
+_xscale:
+-100
+_yscale:
+100
+_rotation:
+0
+matrix:
+-1
+0
+0
+1
+160
+160
+SWF version:
+15
+---

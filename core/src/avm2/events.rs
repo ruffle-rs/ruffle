@@ -224,7 +224,7 @@ impl<'gc> DispatchList<'gc> {
         let new_handler = EventHandler::new(handler, use_capture);
 
         if let Some(event_sheaf) = self.get_event(event) {
-            for (_other_prio, other_set) in event_sheaf.iter() {
+            for other_set in event_sheaf.values() {
                 if other_set.contains(&new_handler) {
                     return;
                 }
@@ -247,7 +247,7 @@ impl<'gc> DispatchList<'gc> {
     ) {
         let old_handler = EventHandler::new(handler, use_capture);
 
-        for (_prio, set) in self.get_event_mut(event).iter_mut() {
+        for set in self.get_event_mut(event).values_mut() {
             if let Some(pos) = set.iter().position(|h| *h == old_handler) {
                 set.remove(pos);
             }
@@ -257,7 +257,7 @@ impl<'gc> DispatchList<'gc> {
     /// Determine if there are any event listeners in this dispatch list.
     pub fn has_event_listener(&self, event: AvmString<'gc>) -> bool {
         if let Some(event_sheaf) = self.get_event(event) {
-            for (_prio, set) in event_sheaf.iter() {
+            for set in event_sheaf.values() {
                 if !set.is_empty() {
                     return true;
                 }

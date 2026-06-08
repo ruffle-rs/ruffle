@@ -1539,6 +1539,7 @@ impl<'gc> MovieClip<'gc> {
                         // Convert from `swf::ClipAction` to Ruffle's `ClipEventHandler`.
                         clip.init_clip_event_handlers(
                             clip_actions
+                                .records
                                 .iter()
                                 .cloned()
                                 .map(|a| ClipEventHandler::from_action_and_movie(a, movie.clone()))
@@ -2911,50 +2912,49 @@ impl<'gc> TInteractiveObject<'gc> for MovieClip<'gc> {
         }
 
         let mut handled = ClipEventResult::NotHandled;
-        if let Some(object) = self.0.object1.get() {
-            let swf_version = self.0.movie().version();
-            if swf_version >= 5 {
-                if let Some(flag) = event.flag() {
-                    for event_handler in self
-                        .clip_actions()
-                        .iter()
-                        .filter(|handler| handler.events.contains(flag))
-                    {
-                        // KeyPress event must have matching key code.
-                        if let ClipEvent::KeyPress { key_code } = event {
-                            if key_code == event_handler.key_code {
-                                // KeyPress events are consumed by a single instance.
-                                handled = ClipEventResult::Handled;
-                            } else {
-                                continue;
-                            }
-                        }
-
-                        context.action_queue.queue_action(
-                            self.into(),
-                            ActionType::Normal {
-                                bytecode: event_handler.action_data.clone(),
-                            },
-                            event == ClipEvent::Unload,
-                        );
-                    }
-                }
-
-                // Queue ActionScript-defined event handlers after the SWF defined ones.
-                // (e.g., clip.onEnterFrame = foo).
-                if self.should_fire_event_handlers(context, event)
-                    && let Some(name) = event.method_name(&context.strings)
+        if self.0.movie().version() >= 5
+            && let Some(object) = self.0.object1.get()
+        {
+            if let Some(flag) = event.flag() {
+                for event_handler in self
+                    .clip_actions()
+                    .iter()
+                    .filter(|handler| handler.events.contains(flag))
                 {
+                    // KeyPress event must have matching key code.
+                    if let ClipEvent::KeyPress { key_code } = event {
+                        if key_code == event_handler.key_code {
+                            // KeyPress events are consumed by a single instance.
+                            handled = ClipEventResult::Handled;
+                        } else {
+                            continue;
+                        }
+                    }
+
                     context.action_queue.queue_action(
                         self.into(),
-                        ActionType::Method {
-                            object,
-                            name,
-                            args: vec![],
+                        ActionType::Normal {
+                            bytecode: event_handler.action_data.clone(),
                         },
                         event == ClipEvent::Unload,
                     );
                 }
+            }
+
+            // Queue ActionScript-defined event handlers after the SWF defined ones.
+            // (e.g., clip.onEnterFrame = foo).
+            if self.should_fire_event_handlers(context, event)
+                && let Some(name) = event.method_name(&context.strings)
+            {
+                context.action_queue.queue_action(
+                    self.into(),
+                    ActionType::Method {
+                        object,
+                        name,
+                        args: vec![],
+                    },
+                    event == ClipEvent::Unload,
+                );
             }
         }
 

@@ -36,6 +36,8 @@ members = [
     "tests/socket-format",
     "tests/mocket",
     "tests/framework",
+
+    "tools/asc",
 ]
 default-members = ["desktop"]
 resolver = "2"
@@ -57,7 +59,7 @@ egui = "0.33.3"
 clap = { version = "4.6.1", features = ["derive"] }
 cpal = "0.16.0"
 anyhow = "1.0"
-gc-arena = { git = "https://github.com/kyren/gc-arena.git", rev = "75671ae03f53718357b741ed4027560f14e90836", features = ["hashbrown", "indexmap", "smallvec", "slotmap"] }
+gc-arena = { git = "https://github.com/kyren/gc-arena.git", rev = "75671ae03f53718357b741ed4027560f14e90836", features = ["enum-map", "hashbrown", "indexmap", "slotmap", "smallvec"] }
 slotmap = "1.1.1"
 async-channel = "2.5.0"
 bitflags = "2.11.1"
@@ -106,6 +108,7 @@ lzma-rs = "0.3.0"
 tempfile = "3.27.0"
 tracing-wasm = "0.2.1"
 rascal = "0.3.4"
+jpegxr = { git = "https://github.com/ruffle-rs/jpegxr", rev = "5281b4ae42be742779269a9f1a986101f101f32f" }
 
 [workspace.lints.rust]
 # Clippy nightly often adds new/buggy lints that we want to ignore.
@@ -136,6 +139,9 @@ manual_range_contains = "allow"  # Less readable: Suggests `(a..b).contains(n)` 
 assigning_clones = "allow"       # Sometimes useful, but more often than not it doesn't do anything as
                                  # we overwrite an empty item. And sometimes it can even be a footgun
                                  # by keeping big allocations alive.
+byte_char_slices = "allow"       # Less expressive: Suggests `b"abc"` byte string literal instead of an explicit
+                                 # `[b'a', b'b', b'c']` array. The array form is clearer when the elements
+                                 # represent a set of alternatives (any-of) rather than a byte sequence.
 
 # Don't optimize build scripts and macros.
 [profile.release.build-override]
@@ -146,6 +152,11 @@ panic = "unwind"
 
 [profile.release]
 panic = "abort"
+
+[profile.dist]
+inherits = "release"
+lto = true
+codegen-units = 1
 
 [profile.dev.package.h263-rs]
 opt-level = 3

@@ -855,7 +855,7 @@ impl FormatSpans {
 
                             if let Some(size) = attribute(b"size") {
                                 // if the number starts with + or -, the size is relative
-                                let (prefix, size) = if size.starts_with(&[b'+', b'-'][..]) {
+                                let (prefix, size) = if size.starts_with([b'+', b'-']) {
                                     (Some(size.at(0) as u8), &size[1..])
                                 } else {
                                     (None, &size[..])

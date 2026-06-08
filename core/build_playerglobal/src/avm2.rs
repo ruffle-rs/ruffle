@@ -7,10 +7,8 @@ use std::collections::HashMap;
 use std::ffi::OsStr;
 use std::fs;
 use std::fs::File;
-use std::io::ErrorKind;
 use std::io::Write;
 use std::path::Path;
-use std::process::Command;
 use std::str::FromStr;
 use swf::avm2::read::Reader;
 use swf::avm2::types::*;
@@ -58,49 +56,45 @@ pub fn build_avm2_playerglobal(
     with_stubs: bool,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let classes_dir = repo_root.join("core/src/avm2/globals/");
-    let asc_path = repo_root.join("core/build_playerglobal/asc.jar");
 
     let out_path = out_dir.join("playerglobal_avm2.swf");
 
+    let mut asc_config = asc::AscConfig::new([
+        "-optimize".to_string(),
+        "-builtin".to_string(),
+        "-apiversioning".to_string(),
+        "-version".to_string(),
+        "9".to_string(),
+        "-outdir".to_string(),
+        out_dir.to_string_lossy().into_owned(),
+        "-out".to_string(),
+        "playerglobal_avm2".to_string(),
+        classes_dir
+            .join("Toplevel.as")
+            .to_string_lossy()
+            .into_owned(),
+        classes_dir
+            .join("globals.as")
+            .to_string_lossy()
+            .into_owned(),
+    ]);
+
+    asc_config.custom_main_class("macromedia.asc.embedding.ScriptCompiler");
+
     // This will create 'playerglobal_avm2.abc', 'playerglobal_avm2.cpp', and 'playerglobal_avm2.h'
     // in `out_dir`
-    let status = Command::new("java")
-        .args([
-            "-classpath",
-            &asc_path.to_string_lossy(),
-            "macromedia.asc.embedding.ScriptCompiler",
-            "-optimize",
-            "-builtin",
-            "-apiversioning",
-            "-version",
-            "9",
-            "-outdir",
-            &out_dir.to_string_lossy(),
-            "-out",
-            "playerglobal_avm2",
-            &classes_dir.join("Toplevel.as").to_string_lossy(),
-            &classes_dir.join("globals.as").to_string_lossy(),
-        ])
-        .status();
-    match status {
-        Ok(code) => {
-            if !code.success() {
-                return Err(format!("Compiling failed with code {code:?}").into());
-            }
-        }
-        Err(err) => {
-            if err.kind() == ErrorKind::NotFound {
-                return Err("Java could not be found on your computer. Please install java, then try compiling again.".into());
-            }
-            return Err(err.into());
-        }
-    }
+    asc::run_asc(asc_config)?;
 
     let playerglobal = out_dir.join("playerglobal_avm2");
     let mut bytes = std::fs::read(playerglobal.with_extension("abc"))?;
 
+    // Keep a copy of the raw ABC for use as an asc.jar import library.
+    std::fs::rename(
+        playerglobal.with_extension("abc"),
+        out_dir.join("playerglobal_import.abc"),
+    )?;
+
     // Cleanup the temporary files written out by 'asc.jar'
-    std::fs::remove_file(playerglobal.with_extension("abc"))?;
     std::fs::remove_file(playerglobal.with_extension("cpp"))?;
     std::fs::remove_file(playerglobal.with_extension("h"))?;
 

@@ -106,6 +106,7 @@ impl<'gc> MovieClipReference<'gc> {
         // In swfv5 paths resolve to the first MovieClip parent if the target isn't a movieclip
         if activation.swf_version() <= 5 {
             while display_object.as_movie_clip().is_none() {
+                #[allow(clippy::question_mark)]
                 if let Some(p) = display_object.avm1_parent() {
                     display_object = p;
                 } else {

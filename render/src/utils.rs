@@ -11,6 +11,7 @@ use swf::Color;
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum JpegTagFormat {
     Jpeg,
+    JpegXr,
     Png,
     Gif,
     Unknown,
@@ -21,6 +22,7 @@ pub fn determine_jpeg_tag_format(data: &[u8]) -> JpegTagFormat {
     match data {
         [0xff, 0xd8, ..] => JpegTagFormat::Jpeg,
         [0xff, 0xd9, 0xff, 0xd8, ..] => JpegTagFormat::Jpeg, // erroneous header in SWF
+        [0x49, 0x49, 0xbc, 0x01, ..] => JpegTagFormat::JpegXr, // TODO: JPEG-XR was only supported in FP 10+
         [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, ..] => JpegTagFormat::Png,
         [0x47, 0x49, 0x46, 0x38, 0x37, 0x61, ..] => JpegTagFormat::Gif, // GIF87a
         [0x47, 0x49, 0x46, 0x38, 0x39, 0x61, ..] => JpegTagFormat::Gif, // GIF89a
@@ -41,6 +43,7 @@ pub fn decode_define_bits_jpeg(
     }
     match format {
         JpegTagFormat::Jpeg => decode_jpeg(data, alpha_data),
+        JpegTagFormat::JpegXr => decode_jpegxr(data),
         JpegTagFormat::Png => decode_png(data),
         JpegTagFormat::Gif => decode_gif(data),
         JpegTagFormat::Unknown => Err(Error::UnknownType),
@@ -51,6 +54,7 @@ pub fn decode_define_bits_jpeg_dimensions(data: &[u8]) -> Result<(u32, u32), Err
     let format = determine_jpeg_tag_format(data);
     match format {
         JpegTagFormat::Jpeg => decode_jpeg_dimensions(data).map(|(w, h)| (w.into(), h.into())),
+        JpegTagFormat::JpegXr => decode_jpegxr_dimensions(data).map(|(w, h)| (w.into(), h.into())),
         JpegTagFormat::Png => decode_png_dimensions(data),
         JpegTagFormat::Gif => decode_gif_dimensions(data).map(|(w, h)| (w.into(), h.into())),
         JpegTagFormat::Unknown => Err(Error::UnknownType),
@@ -459,6 +463,68 @@ fn decode_gif(data: &[u8]) -> Result<Bitmap<'static>, Error> {
         BitmapFormat::Rgba,
         data,
     ))
+}
+
+#[cfg(feature = "jpegxr")]
+fn decode_jpegxr(data: &[u8]) -> Result<Bitmap<'static>, Error> {
+    // TODO: Could this be unified with 'core/src/avm2/globals/flash/display3D/textures/atf_jpegxr'?
+
+    let mut decoder =
+        jpegxr::ImageDecode::with_reader(Cursor::new(data)).map_err(Error::InvalidJpegXr)?;
+
+    let pixel_format = decoder.get_pixel_format().map_err(Error::InvalidJpegXr)?;
+
+    let (jpeg_width, jpeg_height) = decoder.get_size().map_err(Error::InvalidJpegXr)?;
+    let jpeg_width = jpeg_width as u32;
+    let jpeg_height = jpeg_height as u32;
+
+    let info = jpegxr::PixelInfo::from_format(pixel_format);
+    let stride = jpeg_width as usize * info.bits_per_pixel() / 8;
+    let size = stride * jpeg_height as usize;
+
+    // We convert the result to a TIFF - this makes the jpegxr library handle
+    // all of the weird JPEG-XR alpha formats for us. We can then use the normal
+    // `image` crate to decode the TIFF to an rgba array.
+    let mut bmp_buffer = vec![0; size];
+    decoder
+        .convert_to_tiff(&mut Cursor::new(&mut bmp_buffer))
+        .map_err(Error::InvalidJpegXr)?;
+
+    let image_reader =
+        image::ImageReader::with_format(Cursor::new(bmp_buffer), image::ImageFormat::Tiff);
+
+    let data = image_reader
+        .decode()
+        .map_err(Error::MalformedTiffFromJpegXr)?
+        .to_rgba8()
+        .into_vec();
+
+    Ok(Bitmap::new(
+        jpeg_width,
+        jpeg_height,
+        BitmapFormat::Rgba,
+        data,
+    ))
+}
+
+#[cfg(not(feature = "jpegxr"))]
+fn decode_jpegxr(_: &[u8]) -> Result<Bitmap<'static>, Error> {
+    Err(Error::Unimplemented("JPEG-XR decoding not compiled".into()))
+}
+
+#[cfg(feature = "jpegxr")]
+fn decode_jpegxr_dimensions(data: &[u8]) -> Result<(u16, u16), Error> {
+    let (jpeg_width, jpeg_height) = jpegxr::ImageDecode::with_reader(Cursor::new(data))
+        .map_err(Error::InvalidJpegXr)?
+        .get_size()
+        .map_err(Error::InvalidJpegXr)?;
+
+    Ok((jpeg_width as u16, jpeg_height as u16))
+}
+
+#[cfg(not(feature = "jpegxr"))]
+fn decode_jpegxr_dimensions(_: &[u8]) -> Result<(u16, u16), Error> {
+    Err(Error::Unimplemented("JPEG-XR decoding not compiled".into()))
 }
 
 /// Converts standard RBGA to premultiplied alpha.
