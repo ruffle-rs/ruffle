@@ -7,6 +7,7 @@ use crate::avm2::method::{Method, MethodAssociation, MethodKind, ResolvedParamCo
 use crate::avm2::multiname::Multiname;
 use crate::avm2::op::Op;
 use crate::avm2::optimizer::blocks::assemble_blocks;
+use crate::avm2::optimizer::utils::SmallBitSet;
 use crate::avm2::property::Property;
 use crate::avm2::verify::Exception;
 use crate::avm2::vtable::VTable;
@@ -14,10 +15,10 @@ use crate::avm2::{Activation, Class, Error};
 
 use gc_arena::Gc;
 use std::cell::Cell;
-use std::collections::{HashMap, HashSet};
+use std::collections::{BTreeMap, HashMap, HashSet};
 
 #[derive(Clone, Copy, Debug, PartialEq)]
-enum ConstantValue {
+pub enum ConstantValue {
     True,
     False,
     Null,
@@ -33,7 +34,7 @@ impl ConstantValue {
 }
 
 #[derive(Clone, Copy, PartialEq)]
-struct OptValue<'gc> {
+pub struct OptValue<'gc> {
     // This corresponds to the compile-time assumptions about the type:
     // - primitive types can't be undefined or null,
     // - Object (and any other non-primitive type) is non-undefined, but can be null
@@ -289,7 +290,7 @@ impl std::fmt::Debug for OptValue<'_> {
 }
 
 #[derive(Clone, Debug, PartialEq)]
-struct Locals<'gc>(Vec<OptValue<'gc>>);
+pub struct Locals<'gc>(Vec<OptValue<'gc>>);
 
 impl<'gc> Locals<'gc> {
     fn new(size: usize) -> Self {
@@ -304,17 +305,17 @@ impl<'gc> Locals<'gc> {
         self.0[index] = value;
     }
 
-    fn at(&self, index: usize) -> OptValue<'gc> {
+    pub fn at(&self, index: usize) -> OptValue<'gc> {
         self.0[index]
     }
 
-    fn len(&self) -> usize {
+    pub fn len(&self) -> usize {
         self.0.len()
     }
 }
 
 #[derive(Clone, Debug, PartialEq)]
-struct Stack<'gc>(Vec<OptValue<'gc>>, usize);
+pub struct Stack<'gc>(Vec<OptValue<'gc>>, usize);
 
 impl<'gc> Stack<'gc> {
     fn new(max_height: usize) -> Self {
@@ -410,11 +411,11 @@ impl<'gc> Stack<'gc> {
         self.0[index] = value;
     }
 
-    fn at(&self, index: usize) -> OptValue<'gc> {
+    pub fn at(&self, index: usize) -> OptValue<'gc> {
         self.0[index]
     }
 
-    fn len(&self) -> usize {
+    pub fn len(&self) -> usize {
         self.0.len()
     }
 
@@ -424,7 +425,7 @@ impl<'gc> Stack<'gc> {
 }
 
 #[derive(Clone, Debug, PartialEq)]
-struct ScopeStack<'gc>(Vec<(OptValue<'gc>, bool)>, usize);
+pub struct ScopeStack<'gc>(Vec<(OptValue<'gc>, bool)>, usize);
 
 impl<'gc> ScopeStack<'gc> {
     fn new(max_height: usize) -> Self {
@@ -491,10 +492,10 @@ impl<'gc> ScopeStack<'gc> {
 }
 
 #[derive(Clone, Debug)]
-struct AbstractState<'gc> {
-    locals: Locals<'gc>,
-    stack: Stack<'gc>,
-    scope_stack: ScopeStack<'gc>,
+pub struct AbstractState<'gc> {
+    pub locals: Locals<'gc>,
+    pub stack: Stack<'gc>,
+    pub scope_stack: ScopeStack<'gc>,
 }
 
 struct AbstractStateRef<'a, 'gc> {
@@ -609,7 +610,8 @@ pub fn type_aware_optimize<'gc>(
     method_exceptions: &mut [Exception<'gc>],
     resolved_parameters: &[ResolvedParamConfig<'gc>],
     jump_targets: &mut HashSet<usize>,
-) -> Result<(), Error<'gc>> {
+    mut empty_stack_positions: &mut BTreeMap<usize, SmallBitSet>,
+) -> Result<(HashMap<usize, usize>, Vec<Option<AbstractState<'gc>>>), Error<'gc>> {
     let (block_list, op_index_to_block_index_table) = assemble_blocks(code_slice, jump_targets);
 
     let types = Types {
@@ -697,29 +699,31 @@ pub fn type_aware_optimize<'gc>(
             &types,
             &op_index_to_block_index_table,
             method_exceptions,
+            &mut empty_stack_positions,
             &mut worklist,
             false,
         )?;
     }
 
-    if activation.avm2().optimizer_enabled() {
-        // Now run through the ops and actually optimize them
-        for (i, block) in block_list.iter().enumerate() {
-            // todo: don't need to clone here
-            let block_entry_state = abstract_states[i].clone().expect("Entry state not found");
-            abstract_interpret_ops(
-                activation,
-                block.start_index,
-                block.ops,
-                block_entry_state,
-                &mut abstract_states,
-                &types,
-                &op_index_to_block_index_table,
-                method_exceptions,
-                &mut worklist,
-                true,
-            )?;
-        }
+    // Now run through the ops for the final pass for actual optimizations. No
+    // actual optimizations will be done if `activation.avm2().optimizer_enabled`
+    // is `false`.
+    for (i, block) in block_list.iter().enumerate() {
+        // todo: don't need to clone here
+        let block_entry_state = abstract_states[i].clone().expect("Entry state not found");
+        abstract_interpret_ops(
+            activation,
+            block.start_index,
+            block.ops,
+            block_entry_state,
+            &mut abstract_states,
+            &types,
+            &op_index_to_block_index_table,
+            method_exceptions,
+            &mut empty_stack_positions,
+            &mut worklist,
+            true,
+        )?;
     }
 
     // It's possible that an optimization removed some jumps, so let's
@@ -727,7 +731,7 @@ pub fn type_aware_optimize<'gc>(
     // as dead code elimination, more likely to happen.
     recalculate_jump_targets(code_slice, method_exceptions, jump_targets);
 
-    Ok(())
+    Ok((op_index_to_block_index_table, abstract_states))
 }
 
 fn process_jump<'gc>(
@@ -776,12 +780,15 @@ fn abstract_interpret_ops<'gc>(
     types: &Types<'gc>,
     op_index_to_block_index_table: &HashMap<usize, usize>,
     method_exceptions: &[Exception<'gc>],
+    empty_stack_positions: &mut BTreeMap<usize, SmallBitSet>,
     worklist: &mut Vec<usize>,
     do_optimize: bool,
 ) -> Result<(), Error<'gc>> {
     let mut locals = initial_state.locals;
     let mut stack = initial_state.stack;
     let mut scope_stack = initial_state.scope_stack;
+
+    let optimizer_enabled = activation.avm2().optimizer_enabled();
 
     for (i, op) in ops.iter().enumerate() {
         if op.get().can_throw_error() {
@@ -817,9 +824,29 @@ fn abstract_interpret_ops<'gc>(
             }
         }
 
+        // During the final optimization pass, for all empty stack positions,
+        // determine which of the locals are integral at each of those stack
+        // positions.
+        if do_optimize {
+            if stack.len() == 0 {
+                // `FromIterator` will truncate the bitset if there are too many
+                // locals. However, that doesn't matter, as that would mean that
+                // there are so many locals that int interpreter analysis will
+                // never be done, which means that this bitset's contents will
+                // be discarded.
+                let locals_integral_state = locals
+                    .0
+                    .iter()
+                    .map(|l| l.class.is_some_and(|c| c.is_builtin_int()))
+                    .collect::<SmallBitSet>();
+
+                empty_stack_positions.insert(start_index + i, locals_integral_state);
+            }
+        }
+
         macro_rules! optimize_op_to {
             ($replacement_op:expr) => {
-                if do_optimize {
+                if optimizer_enabled && do_optimize {
                     op.set($replacement_op);
                 }
             };
@@ -893,14 +920,54 @@ fn abstract_interpret_ops<'gc>(
                 }
                 stack.push_class(activation, types.uint)?;
             }
-            Op::Equals
-            | Op::StrictEquals
-            | Op::LessEquals
-            | Op::LessThan
-            | Op::GreaterThan
-            | Op::GreaterEquals => {
-                stack.pop(activation)?;
-                stack.pop(activation)?;
+            Op::Equals | Op::StrictEquals => {
+                let value2 = stack.pop(activation)?;
+                let value1 = stack.pop(activation)?;
+
+                if value1.class == Some(types.int) && value2.class == Some(types.int) {
+                    optimize_op_to!(Op::EqualsIntegral);
+                }
+
+                stack.push_class(activation, types.boolean)?;
+            }
+            Op::GreaterEquals => {
+                let value2 = stack.pop(activation)?;
+                let value1 = stack.pop(activation)?;
+
+                if value1.class == Some(types.int) && value2.class == Some(types.int) {
+                    optimize_op_to!(Op::GreaterEqualsIntegral);
+                }
+
+                stack.push_class(activation, types.boolean)?;
+            }
+            Op::GreaterThan => {
+                let value2 = stack.pop(activation)?;
+                let value1 = stack.pop(activation)?;
+
+                if value1.class == Some(types.int) && value2.class == Some(types.int) {
+                    optimize_op_to!(Op::GreaterThanIntegral);
+                }
+
+                stack.push_class(activation, types.boolean)?;
+            }
+            Op::LessEquals => {
+                let value2 = stack.pop(activation)?;
+                let value1 = stack.pop(activation)?;
+
+                if value1.class == Some(types.int) && value2.class == Some(types.int) {
+                    optimize_op_to!(Op::LessEqualsIntegral);
+                }
+
+                stack.push_class(activation, types.boolean)?;
+            }
+            Op::LessThan => {
+                let value2 = stack.pop(activation)?;
+                let value1 = stack.pop(activation)?;
+
+                if value1.class == Some(types.int) && value2.class == Some(types.int) {
+                    optimize_op_to!(Op::LessThanIntegral);
+                }
+
                 stack.push_class(activation, types.boolean)?;
             }
             Op::Not => {
@@ -1026,8 +1093,13 @@ fn abstract_interpret_ops<'gc>(
                 stack.push_class(activation, types.number)?;
             }
             Op::Multiply => {
-                stack.pop(activation)?;
-                stack.pop(activation)?;
+                let value2 = stack.pop(activation)?;
+                let value1 = stack.pop(activation)?;
+
+                if value1.class == Some(types.int) && value2.class == Some(types.int) {
+                    optimize_op_to!(Op::MultiplyIntegral);
+                }
+
                 stack.push_class(activation, types.number)?;
             }
             Op::Divide => {
@@ -2141,11 +2213,20 @@ fn abstract_interpret_ops<'gc>(
             | Op::CoerceISwapPop
             | Op::CoerceUSwapPop
             | Op::ConstructSlot { .. }
+            | Op::EqualsIntegral
             | Op::GetScriptGlobals { .. }
+            | Op::GreaterEqualsIntegral
+            | Op::GreaterThanIntegral
+            | Op::LessEqualsIntegral
+            | Op::LessThanIntegral
+            | Op::MultiplyIntegral
+            | Op::MultiplyIntegralI
             | Op::PopJump { .. }
+            | Op::RunIntInterpreter { .. }
             | Op::SetSlotCoerceI { .. }
             | Op::SetSlotNoCoerce { .. }
-            | Op::SubtractIntegral => unreachable!("Custom ops should not be encountered"),
+            | Op::SubtractIntegral
+            | Op::URShiftI => unreachable!("Custom ops should not be encountered"),
         }
     }
 

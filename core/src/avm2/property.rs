@@ -117,6 +117,16 @@ impl<'gc> PropertyClass<'gc> {
         }
     }
 
+    pub fn get_existing_class(&self) -> Option<Class<'gc>> {
+        match self {
+            PropertyClass::Class(class) => Some(*class),
+            PropertyClass::Name(_, _) => {
+                panic!("get_existing_class was called but class was not initialized")
+            }
+            PropertyClass::Any => None,
+        }
+    }
+
     pub fn get_name(&self, context: &mut StringContext<'gc>) -> AvmString<'gc> {
         match self {
             PropertyClass::Class(class) => class.name().to_qualified_name(context.gc()),

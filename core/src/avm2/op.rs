@@ -1,12 +1,14 @@
 use crate::avm2::class::Class;
+use crate::avm2::int_interpreter::ObjectType;
 use crate::avm2::method::{Method, NativeMethodImpl};
 use crate::avm2::multiname::Multiname;
 use crate::avm2::namespace::Namespace;
+use crate::avm2::optimizer::utils::SmallBitSet;
 use crate::avm2::script::Script;
 use crate::string::AvmAtom;
 
 use gc_arena::{Collect, Gc};
-use std::cell::Cell;
+use std::cell::{Cell, RefCell};
 
 #[derive(Clone, Collect, Copy, Debug)]
 #[collect(no_drop)]
@@ -130,6 +132,7 @@ pub enum Op<'gc> {
     },
     DxnsLate,
     Equals,
+    EqualsIntegral,
     EscXAttr,
     EscXElem,
     FindDef {
@@ -181,7 +184,9 @@ pub enum Op<'gc> {
         multiname: Gc<'gc, Multiname<'gc>>,
     },
     GreaterEquals,
+    GreaterEqualsIntegral,
     GreaterThan,
+    GreaterThanIntegral,
     HasNext,
     HasNext2 {
         object_register: u32,
@@ -217,7 +222,9 @@ pub enum Op<'gc> {
         index: u32,
     },
     LessEquals,
+    LessEqualsIntegral,
     LessThan,
+    LessThanIntegral,
     Lf32,
     Lf64,
     Li16,
@@ -227,7 +234,15 @@ pub enum Op<'gc> {
     LShift,
     Modulo,
     Multiply,
+    MultiplyIntegral,
     MultiplyI,
+
+    // NOTE: This is different from `MultiplyI`: this op is equivalent to
+    // `MultiplyIntegral`+`CoerceI`, rather than just `MultiplyI`.
+    // The former, which is essentially a `f64` multiplication that then becomes
+    // `as i32`, is different from the latter, an `i32` multiplication.
+    MultiplyIntegralI,
+
     Negate,
     NegateI,
     NewActivation {
@@ -284,6 +299,7 @@ pub enum Op<'gc> {
     ReturnVoid {
         return_type: Option<Class<'gc>>,
     },
+    RunIntInterpreter(Gc<'gc, IntInterpreterInfo>),
     RShift,
     SetGlobalSlot {
         // note: 0-indexed, as opposed to FP.
@@ -338,7 +354,11 @@ pub enum Op<'gc> {
     TypeOf,
     Timestamp,
     URShift,
+    URShiftI,
 }
+
+#[cfg(target_pointer_width = "64")]
+const _: () = assert!(std::mem::size_of::<Op>() == 16);
 
 impl Op<'_> {
     pub fn can_throw_error(&self) -> bool {
@@ -425,5 +445,104 @@ pub struct LookupSwitch {
     pub case_offsets: Box<[Cell<usize>]>,
 }
 
-#[cfg(target_pointer_width = "64")]
-const _: () = assert!(std::mem::size_of::<Op>() == 16);
+#[derive(Collect, Debug)]
+#[collect(require_static)]
+pub struct IntInterpreterInfo {
+    /// The locals that are read and written to by the int interpreter.
+    pub synchronize_locals: SmallBitSet,
+
+    /// The ops run by the int interpreter.
+    pub ops: RefCell<Vec<IntOp>>,
+}
+
+/// An op used in the int interpreter.
+///
+/// These ops only work on `i32` values.
+#[derive(Clone, Copy, Debug)]
+pub enum IntOp {
+    Add,
+    BitAnd,
+    BitNot,
+    BitOr,
+    BitXor,
+    DecLocal {
+        index: u32,
+    },
+    Dup,
+    Equals,
+    GetLocal {
+        index: u32,
+    },
+    GetSlot {
+        index: u32,
+    },
+    GreaterEquals,
+    GreaterThan,
+    IfFalse {
+        offset: u32,
+    },
+    IfFalseExternal {
+        offset: u32,
+
+        // Only used during int interpretation analysis. At runtime, this should
+        // always be true.
+        valid: bool,
+    },
+    IfTrue {
+        offset: u32,
+    },
+    IfTrueExternal {
+        offset: u32,
+
+        // See comment on IfFalseExternal
+        valid: bool,
+    },
+    Jump {
+        offset: u32,
+    },
+    JumpExternal {
+        offset: u32,
+
+        // See comment on IfFalseExternal
+        valid: bool,
+    },
+    IncLocal {
+        index: u32,
+    },
+    LessEquals,
+    LessThan,
+    Li16,
+    Li32,
+    Li8,
+    LShift,
+    MultiplyNumbers,
+    Nop,
+    Not,
+    Pop,
+    PushInt {
+        value: i32,
+    },
+    PushObject {
+        value: ObjectType,
+    },
+    RShift,
+    SetLocal {
+        index: u32,
+    },
+    SetSlot {
+        index: u32,
+    },
+    Si16,
+    Si32,
+    Si8,
+    StoreLocal {
+        index: u32,
+    },
+    Subtract,
+    Swap,
+    Sxi16,
+    Sxi8,
+    URShift,
+}
+
+const _: () = assert!(std::mem::size_of::<IntOp>() == 8);

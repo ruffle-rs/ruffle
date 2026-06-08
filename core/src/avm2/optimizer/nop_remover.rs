@@ -1,4 +1,4 @@
-use crate::avm2::op::Op;
+use crate::avm2::op::{IntOp, Op};
 use crate::avm2::verify::Exception;
 
 pub fn remove_nops<'gc>(code: &mut Vec<Op<'gc>>, exceptions: &mut [Exception<'gc>]) {
@@ -39,6 +39,20 @@ pub fn remove_nops<'gc>(code: &mut Vec<Op<'gc>>, exceptions: &mut [Exception<'gc
                     .chain(std::slice::from_ref(&lookup_switch.default_offset))
                 {
                     target.set(offset_vec[target.get()]);
+                }
+            }
+            Op::RunIntInterpreter(info) => {
+                let mut ops = info.ops.borrow_mut();
+
+                for op in &mut *ops {
+                    match op {
+                        IntOp::IfFalseExternal { offset, .. }
+                        | IntOp::IfTrueExternal { offset, .. }
+                        | IntOp::JumpExternal { offset, .. } => {
+                            *offset = offset_vec[*offset as usize] as u32;
+                        }
+                        _ => {}
+                    }
                 }
             }
             _ => {}

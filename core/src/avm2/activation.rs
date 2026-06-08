@@ -12,13 +12,14 @@ use crate::avm2::error::{
     make_null_or_undefined_error,
 };
 use crate::avm2::function::FunctionArgs;
+use crate::avm2::int_interpreter::{IntInterpreter, ObjectType};
 use crate::avm2::method::{Method, NativeMethodImpl, ResolvedParamConfig};
 use crate::avm2::object::TObject;
 use crate::avm2::object::{
     ArrayObject, ByteArrayObject, ClassObject, FunctionObject, NamespaceObject, ScriptObject,
     XmlListObject,
 };
-use crate::avm2::op::{LookupSwitch, Op};
+use crate::avm2::op::{IntInterpreterInfo, LookupSwitch, Op};
 use crate::avm2::scope::{Scope, ScopeChain, search_scope_stack};
 use crate::avm2::script::Script;
 use crate::avm2::stack::StackFrame;
@@ -27,6 +28,7 @@ use crate::avm2::{Avm2, Error};
 use crate::context::UpdateContext;
 use crate::string::{AvmAtom, AvmString, HasStringContext, StringContext};
 use crate::tag_utils::SwfMovie;
+use enum_map::EnumMap;
 use gc_arena::Gc;
 use ruffle_macros::istr;
 use std::cell::Cell;
@@ -772,7 +774,9 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                 Op::LShift => self.op_lshift(),
                 Op::Modulo => self.op_modulo(),
                 Op::Multiply => self.op_multiply(),
+                Op::MultiplyIntegral => self.op_multiply_integral(),
                 Op::MultiplyI => self.op_multiply_i(),
+                Op::MultiplyIntegralI => self.op_multiply_integral_i(),
                 Op::Negate => self.op_negate(),
                 Op::NegateI => self.op_negate_i(),
                 Op::RShift => self.op_rshift(),
@@ -781,12 +785,18 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                 Op::SubtractI => self.op_subtract_i(),
                 Op::Swap => self.op_swap(),
                 Op::URShift => self.op_urshift(),
+                Op::URShiftI => self.op_urshift_i(),
                 Op::StrictEquals => self.op_strict_equals(),
                 Op::Equals => self.op_equals(),
+                Op::EqualsIntegral => self.op_equals_integral(),
                 Op::GreaterEquals => self.op_greater_equals(),
+                Op::GreaterEqualsIntegral => self.op_greater_equals_integral(),
                 Op::GreaterThan => self.op_greater_than(),
+                Op::GreaterThanIntegral => self.op_greater_than_integral(),
                 Op::LessEquals => self.op_less_equals(),
+                Op::LessEqualsIntegral => self.op_less_equals_integral(),
                 Op::LessThan => self.op_less_than(),
+                Op::LessThanIntegral => self.op_less_than_integral(),
                 Op::Nop => Ok(()),
                 Op::Not => self.op_not(),
                 Op::HasNext => self.op_has_next(),
@@ -833,6 +843,20 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                 Op::Sxi8 => self.op_sxi8(),
                 Op::Sxi16 => self.op_sxi16(),
                 Op::Throw => self.op_throw(),
+
+                Op::RunIntInterpreter(info) => {
+                    // NOTE: Int interpreter promotion is never done if this
+                    // method has exception handlers. This means that we don't
+                    // need to worry about this error not making it to an
+                    // exception handler; we can simply throw it from here (as
+                    // there are no exception handlers in this method that could
+                    // handle the error).
+                    let new_ip = self.run_int_interpreter(info)?;
+
+                    ip = new_ip;
+
+                    continue;
+                }
 
                 // Branch ops
                 Op::Jump { offset } => {
@@ -2263,11 +2287,47 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         Ok(())
     }
 
+    fn op_multiply_integral(&mut self) -> Result<(), Error<'gc>> {
+        let value2 = self.pop_stack();
+        let value1 = self.pop_stack();
+
+        if let (Value::Integer(n1), Value::Integer(n2)) = (value1, value2)
+            && let Some(result) = n1.checked_mul(n2)
+        {
+            self.push_stack(result);
+            return Ok(());
+        }
+        let value2 = value2.as_f64();
+        let value1 = value1.as_f64();
+        self.push_stack(value1 * value2);
+
+        Ok(())
+    }
+
     fn op_multiply_i(&mut self) -> Result<(), Error<'gc>> {
         let value2 = self.pop_stack().coerce_to_i32(self)?;
         let value1 = self.pop_stack().coerce_to_i32(self)?;
 
         self.push_stack(value1.wrapping_mul(value2));
+
+        Ok(())
+    }
+
+    fn op_multiply_integral_i(&mut self) -> Result<(), Error<'gc>> {
+        let value2 = self.pop_stack();
+        let value1 = self.pop_stack();
+
+        if let (Value::Integer(n1), Value::Integer(n2)) = (value1, value2)
+            && let Some(result) = n1.checked_mul(n2)
+        {
+            self.push_stack(result);
+            return Ok(());
+        }
+        let value2 = value2.as_f64();
+        let value1 = value1.as_f64();
+        self.push_stack(crate::ecma_conversions::f64_to_wrapping_i32(
+            value1 * value2,
+        ));
 
         Ok(())
     }
@@ -2383,6 +2443,15 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         Ok(())
     }
 
+    fn op_urshift_i(&mut self) -> Result<(), Error<'gc>> {
+        let value2 = self.pop_stack().coerce_to_u32(self)?;
+        let value1 = self.pop_stack().coerce_to_u32(self)?;
+
+        self.push_stack((value1 >> (value2 & 0x1F)) as i32);
+
+        Ok(())
+    }
+
     fn check_if_true(&mut self) -> bool {
         let value = self.pop_stack();
 
@@ -2408,11 +2477,33 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         Ok(())
     }
 
+    fn op_equals_integral(&mut self) -> Result<(), Error<'gc>> {
+        let value2 = self.pop_stack().as_i32();
+        let value1 = self.pop_stack().as_i32();
+
+        let result = value1 == value2;
+
+        self.push_stack(result);
+
+        Ok(())
+    }
+
     fn op_greater_equals(&mut self) -> Result<(), Error<'gc>> {
         let value2 = self.pop_stack();
         let value1 = self.pop_stack();
 
         let result = !value1.abstract_lt(&value2, self)?.unwrap_or(true);
+
+        self.push_stack(result);
+
+        Ok(())
+    }
+
+    fn op_greater_equals_integral(&mut self) -> Result<(), Error<'gc>> {
+        let value2 = self.pop_stack().as_i32();
+        let value1 = self.pop_stack().as_i32();
+
+        let result = value1 >= value2;
 
         self.push_stack(result);
 
@@ -2430,6 +2521,17 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         Ok(())
     }
 
+    fn op_greater_than_integral(&mut self) -> Result<(), Error<'gc>> {
+        let value2 = self.pop_stack().as_i32();
+        let value1 = self.pop_stack().as_i32();
+
+        let result = value1 > value2;
+
+        self.push_stack(result);
+
+        Ok(())
+    }
+
     fn op_less_equals(&mut self) -> Result<(), Error<'gc>> {
         let value2 = self.pop_stack();
         let value1 = self.pop_stack();
@@ -2441,11 +2543,33 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         Ok(())
     }
 
+    fn op_less_equals_integral(&mut self) -> Result<(), Error<'gc>> {
+        let value2 = self.pop_stack().as_i32();
+        let value1 = self.pop_stack().as_i32();
+
+        let result = value1 <= value2;
+
+        self.push_stack(result);
+
+        Ok(())
+    }
+
     fn op_less_than(&mut self) -> Result<(), Error<'gc>> {
         let value2 = self.pop_stack();
         let value1 = self.pop_stack();
 
         let result = value1.abstract_lt(&value2, self)?.unwrap_or(false);
+
+        self.push_stack(result);
+
+        Ok(())
+    }
+
+    fn op_less_than_integral(&mut self) -> Result<(), Error<'gc>> {
+        let value2 = self.pop_stack().as_i32();
+        let value1 = self.pop_stack().as_i32();
+
+        let result = value1 < value2;
 
         self.push_stack(result);
 
@@ -2825,7 +2949,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             return Err(make_error_1506(self));
         }
         dm.write_at_nongrowing(&val.to_le_bytes(), address)
-            .map_err(|e| e.to_avm(self))?;
+            .expect("Just checked that the address was valid");
 
         Ok(())
     }
@@ -2844,7 +2968,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             return Err(make_error_1506(self));
         }
         dm.write_at_nongrowing(&val.to_le_bytes(), address)
-            .map_err(|e| e.to_avm(self))?;
+            .expect("Just checked that the address was valid");
 
         Ok(())
     }
@@ -2863,7 +2987,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             return Err(make_error_1506(self));
         }
         dm.write_at_nongrowing(&val.to_le_bytes(), address)
-            .map_err(|e| e.to_avm(self))?;
+            .expect("Just checked that the address was valid");
 
         Ok(())
     }
@@ -2882,7 +3006,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             return Err(make_error_1506(self));
         }
         dm.write_at_nongrowing(&val.to_le_bytes(), address)
-            .map_err(|e| e.to_avm(self))?;
+            .expect("Just checked that the address was valid");
 
         Ok(())
     }
@@ -2920,7 +3044,9 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             return Err(make_error_1506(self));
         }
 
-        let val = dm.read_at(2, address).map_err(|e| e.to_avm(self))?;
+        let val = dm
+            .read_at(2, address)
+            .expect("Just checked that the address was valid");
         self.push_stack(u16::from_le_bytes(val.try_into().unwrap()));
 
         Ok(())
@@ -2939,7 +3065,9 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             return Err(make_error_1506(self));
         }
 
-        let val = dm.read_at(4, address).map_err(|e| e.to_avm(self))?;
+        let val = dm
+            .read_at(4, address)
+            .expect("Just checked that the address was valid");
         self.push_stack(i32::from_le_bytes(val.try_into().unwrap()));
         Ok(())
     }
@@ -2957,7 +3085,9 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             return Err(make_error_1506(self));
         }
 
-        let val = dm.read_at(4, address).map_err(|e| e.to_avm(self))?;
+        let val = dm
+            .read_at(4, address)
+            .expect("Just checked that the address was valid");
         self.push_stack(f32::from_le_bytes(val.try_into().unwrap()));
 
         Ok(())
@@ -2976,7 +3106,9 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             return Err(make_error_1506(self));
         }
 
-        let val = dm.read_at(8, address).map_err(|e| e.to_avm(self))?;
+        let val = dm
+            .read_at(8, address)
+            .expect("Just checked that the address was valid");
         self.push_stack(f64::from_le_bytes(val.try_into().unwrap()));
         Ok(())
     }
@@ -3085,5 +3217,74 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     fn op_throw(&mut self) -> Result<(), Error<'gc>> {
         let error_val = self.pop_stack();
         Err(Error::from_value(self, error_val))
+    }
+
+    #[inline(never)]
+    fn run_int_interpreter(&mut self, info: &IntInterpreterInfo) -> Result<usize, Error<'gc>> {
+        // Code run in the int interpreter does not have the ability to borrow
+        // or swap out the domain memory, so borrow it here. This means that
+        // domain memory ops run in the int interpreter can just access the
+        // stored domain memory bytearray.
+        let domain_memory = self.domain_memory().storage_mut();
+
+        let topmost_outer_scope = self.outer().get(0).and_then(|o| o.values().as_object());
+        let receiver = self.local_register(0).as_object();
+
+        let objects = EnumMap::from_fn(|t| match t {
+            ObjectType::TopOuterScope => topmost_outer_scope,
+            ObjectType::Receiver => receiver,
+        });
+
+        let mut interpreter = IntInterpreter::new(self.gc(), domain_memory, objects);
+
+        // Synchronize all the int locals in this interpreter to the int
+        // interpreter
+        for (i, is_read) in info.synchronize_locals.iter().enumerate() {
+            if is_read {
+                // This local might be read from the code run in the int
+                // interpreter, so pass it to it properly.
+                interpreter.push_stack(self.local_register(i as u32).as_i32());
+            } else {
+                // This local won't be read from by the code run in the int
+                // interpreter, so we can just pass nothing.
+                interpreter.push_stack(0);
+            }
+        }
+
+        let ops = info.ops.borrow();
+
+        // NOTE: Int interpreter promotion is never done if this method has
+        // exception handlers. This means that it's fine to not synchronize
+        // correct state of locals once this throws an error, as there are no
+        // exception handlers to which that state is observable to (this method
+        // will simply immediately return to its caller with the error).
+        let result = interpreter.run(&*ops);
+        let new_ip = match result {
+            Ok(info) => info,
+            Err(_) => {
+                // The only exception that can happen from the int interpreter is
+                // an out-of-bounds domain memory read/write.
+                return Err(make_error_1506(self));
+            }
+        };
+
+        // Synchronize all the int locals in the int interpreter to this
+        // interpreter
+        for (i, is_read) in info.synchronize_locals.iter().enumerate() {
+            if is_read {
+                // This local might have been written to by the code run in the
+                // int interpreter, so synchronize it back to us.
+                self.set_local_register(i as u32, interpreter.frame_at(i as u32));
+            }
+        }
+
+        // Finally, synchronize the stack from the int interpreter to this
+        // interpreter.
+        let num_locals = info.synchronize_locals.len();
+        for i in num_locals..interpreter.stack_pointer() {
+            self.push_stack(interpreter.frame_at(i as u32));
+        }
+
+        Ok(new_ip)
     }
 }

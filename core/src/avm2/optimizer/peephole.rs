@@ -1,7 +1,8 @@
 use crate::avm2::op::Op;
+use crate::avm2::optimizer::utils::SmallBitSet;
 
 use std::cell::Cell;
-use std::collections::HashSet;
+use std::collections::{BTreeMap, HashSet};
 
 /// A peephole optimizer to run before type-aware optimizations. This should be
 /// called once on the entire code slice.
@@ -24,6 +25,7 @@ pub fn preprocess_peephole(ops: &[Cell<Op<'_>>]) {
 pub fn postprocess_peephole<'a>(
     ops: &'a [Cell<Op<'_>>],
     jump_targets: &HashSet<usize>,
+    empty_stack_positions: &mut BTreeMap<usize, SmallBitSet>,
     has_exceptions: bool,
 ) {
     // Gather some information...
@@ -66,6 +68,10 @@ pub fn postprocess_peephole<'a>(
             last_op = None;
         }
 
+        // NOTE: If a peephole optimization changes the stack from being empty
+        // to being non-empty at a certain position, it MUST make sure to
+        // invalidate that position in `empty_stack_positions`.
+
         if let Some(last_op) = last_op {
             // Optimizations on both the current and the last op
             match (last_op.get(), current_op.get()) {
@@ -94,6 +100,13 @@ pub fn postprocess_peephole<'a>(
                     // SetLocal+GetLocal becomes Nop+StoreLocal
                     last_op.set(Op::Nop);
                     current_op.set(Op::StoreLocal { index: index1 });
+
+                    // It's possible that before this peephole optimization, the
+                    // stack was empty at the `GetLocal`'s position. However,
+                    // after this optimization, it is guaranteed that the stack
+                    // is no longer empty at the `GetLocal`'s position, as the
+                    // `StoreLocal` keeps one entry on the stack.
+                    empty_stack_positions.remove(&i);
                 }
                 (Op::AddIntegral, Op::CoerceI) => {
                     // An integral addition that yields Number on overflow
@@ -105,6 +118,19 @@ pub fn postprocess_peephole<'a>(
                 (Op::SubtractIntegral, Op::CoerceI) => {
                     // The same is true for subtraction
                     last_op.set(Op::SubtractI);
+                    current_op.set(Op::Nop);
+                }
+                (Op::MultiplyIntegral, Op::CoerceI) => {
+                    // The same is *not* true for multiplication, but we do have
+                    // a specialized `MultiplyIntegralI` op for this purpose.
+                    last_op.set(Op::MultiplyIntegralI);
+                    current_op.set(Op::Nop);
+                }
+                (Op::URShift, Op::CoerceI) => {
+                    // An unsigned right shift followed by coerce-to-integer is
+                    // equivalent to an unsigned right shift with the result
+                    // interpreted as a signed integer
+                    last_op.set(Op::URShiftI);
                     current_op.set(Op::Nop);
                 }
                 (
@@ -121,6 +147,18 @@ pub fn postprocess_peephole<'a>(
                     // The same is true for subtraction
                     last_op.set(Op::SubtractI);
                 }
+                (
+                    Op::MultiplyIntegral,
+                    Op::Li8 | Op::Li16 | Op::Li32 | Op::Si8 | Op::Si16 | Op::Si32,
+                ) => {
+                    // The same is *not* true for multiplication, but we do have
+                    // a specialized `MultiplyIntegralI` op for this purpose.
+                    last_op.set(Op::MultiplyIntegralI);
+                }
+                (Op::URShift, Op::Li8 | Op::Li16 | Op::Li32 | Op::Si8 | Op::Si16 | Op::Si32) => {
+                    // See comments above
+                    last_op.set(Op::URShiftI);
+                }
                 (Op::AddIntegral, Op::SetSlotCoerceI { index }) => {
                     // See comments above
                     last_op.set(Op::AddI);
@@ -129,6 +167,17 @@ pub fn postprocess_peephole<'a>(
                 (Op::SubtractIntegral, Op::SetSlotCoerceI { index }) => {
                     // The same is true for subtraction
                     last_op.set(Op::SubtractI);
+                    current_op.set(Op::SetSlotNoCoerce { index });
+                }
+                (Op::MultiplyIntegral, Op::SetSlotCoerceI { index }) => {
+                    // The same is *not* true for multiplication, but we do have
+                    // a specialized `MultiplyIntegralI` op for this purpose.
+                    last_op.set(Op::MultiplyIntegralI);
+                    current_op.set(Op::SetSlotNoCoerce { index });
+                }
+                (Op::URShift, Op::SetSlotCoerceI { index }) => {
+                    // See comments above
+                    last_op.set(Op::URShiftI);
                     current_op.set(Op::SetSlotNoCoerce { index });
                 }
                 _ => {}
