@@ -24,8 +24,6 @@ members = [
     "render/wgpu",
     "render/webgl",
 
-    "stub-report",
-
     "video",
     "video/software",
     "video/external",
@@ -38,6 +36,7 @@ members = [
     "tests/framework",
 
     "tools/asc",
+    "tools/stub-report",
 ]
 default-members = ["desktop"]
 resolver = "2"
