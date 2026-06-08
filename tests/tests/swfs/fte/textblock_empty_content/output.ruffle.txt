@@ -4,7 +4,7 @@ space.line is null: false
 space.creation result: success
 space.width: 100
 space.textWidth: 6
-space.textHeight: 22.3
+space.textHeight: 22.299999237060547
 space.ascent: 18.1
 space.descent: 4.2
 space.totalAscent: 12
@@ -25,7 +25,7 @@ twoSpaces.line is null: false
 twoSpaces.creation result: success
 twoSpaces.width: 100
 twoSpaces.textWidth: 12
-twoSpaces.textHeight: 22.3
+twoSpaces.textHeight: 22.299999237060547
 twoSpaces.ascent: 18.1
 twoSpaces.descent: 4.2
 twoSpaces.totalAscent: 12
@@ -45,8 +45,8 @@ twoSpaces.userData: undefined
 newline.line is null: false
 newline.creation result: success
 newline.width: 100
-newline.textWidth: 6
-newline.textHeight: 22.3
+newline.textWidth: 0
+newline.textHeight: 22.299999237060547
 newline.ascent: 18.1
 newline.descent: 4.2
 newline.totalAscent: 12
@@ -66,8 +66,8 @@ newline.userData: undefined
 carriageReturn.line is null: false
 carriageReturn.creation result: success
 carriageReturn.width: 100
-carriageReturn.textWidth: 6
-carriageReturn.textHeight: 22.3
+carriageReturn.textWidth: 0
+carriageReturn.textHeight: 22.299999237060547
 carriageReturn.ascent: 18.1
 carriageReturn.descent: 4.2
 carriageReturn.totalAscent: 12
@@ -87,8 +87,8 @@ carriageReturn.userData: undefined
 crlf.line is null: false
 crlf.creation result: success
 crlf.width: 100
-crlf.textWidth: 6
-crlf.textHeight: 22.3
+crlf.textWidth: 0
+crlf.textHeight: 22.299999237060547
 crlf.ascent: 18.1
 crlf.descent: 4.2
 crlf.totalAscent: 12
@@ -109,7 +109,7 @@ tab.line is null: false
 tab.creation result: success
 tab.width: 100
 tab.textWidth: 0
-tab.textHeight: 22.3
+tab.textHeight: 22.299999237060547
 tab.ascent: 18.1
 tab.descent: 4.2
 tab.totalAscent: 12
@@ -129,8 +129,8 @@ tab.userData: undefined
 spaceNewlineSpace.line is null: false
 spaceNewlineSpace.creation result: success
 spaceNewlineSpace.width: 100
-spaceNewlineSpace.textWidth: 12
-spaceNewlineSpace.textHeight: 22.3
+spaceNewlineSpace.textWidth: 6
+spaceNewlineSpace.textHeight: 22.299999237060547
 spaceNewlineSpace.ascent: 18.1
 spaceNewlineSpace.descent: 4.2
 spaceNewlineSpace.totalAscent: 12

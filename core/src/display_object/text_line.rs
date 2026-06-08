@@ -26,34 +26,27 @@ pub struct TextLineLayout<'gc> {
     html_line: LayoutLine<'gc>,
     #[collect(require_static)]
     text: WString,
-    #[collect(require_static)]
-    ascent: f32,
-    #[collect(require_static)]
-    descent: f32,
 }
 
 impl<'gc> TextLineLayout<'gc> {
     pub fn new(html_line: LayoutLine<'gc>, text: WString) -> Self {
-        let ascent = html_line.ascent().to_pixels() as f32;
-        let descent = html_line.descent().to_pixels() as f32;
-        Self {
-            html_line,
-            text,
-            ascent,
-            descent,
-        }
+        Self { html_line, text }
     }
 
     pub fn ascent(&self) -> f32 {
-        self.ascent
+        self.html_line.ascent().to_pixels() as f32
     }
 
     pub fn descent(&self) -> f32 {
-        self.descent
+        self.html_line.descent().to_pixels() as f32
     }
 
     pub fn text_width(&self) -> f32 {
         self.html_line.bounds().width().to_pixels() as f32
+    }
+
+    pub fn text_height(&self) -> f32 {
+        self.ascent() + self.descent()
     }
 
     pub fn raw_text_length(&self) -> usize {
@@ -125,8 +118,6 @@ impl<'gc> TDisplayObject<'gc> for TextLine<'gc> {
                 line: RefLock::new(TextLineLayout {
                     html_line: borrowed.html_line.clone(),
                     text: borrowed.text.clone(),
-                    ascent: borrowed.ascent,
-                    descent: borrowed.descent,
                 }),
                 fallback: self.0.fallback,
                 movie: self.0.movie.clone(),

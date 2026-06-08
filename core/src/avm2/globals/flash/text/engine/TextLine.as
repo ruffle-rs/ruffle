@@ -91,15 +91,8 @@ package flash.text.engine {
             return this._specifiedWidth;
         }
 
-        public function get textWidth():Number {
-            stub_getter("flash.text.engine.TextLine", "textWidth");
-            return this._rawTextLength * 6;
-        }
-
-        public function get textHeight():Number {
-            stub_getter("flash.text.engine.TextLine", "textHeight");
-            return 22.3;
-        }
+        public native function get textWidth():Number;
+        public native function get textHeight():Number;
 
         public function get validity():String {
             stub_getter("flash.text.engine.TextLine", "validity");

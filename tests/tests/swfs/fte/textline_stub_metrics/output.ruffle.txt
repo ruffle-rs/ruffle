@@ -1,4 +1,4 @@
-narrow.textWidth: 6
-text.textWidth: 30
-narrow.textHeight: 22.3
-text.textHeight: 22.3
+narrow.textWidth: 3
+text.textWidth: 32
+narrow.textHeight: 15.6
+text.textHeight: 15.6
