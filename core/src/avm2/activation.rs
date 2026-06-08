@@ -753,8 +753,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                 Op::CoerceUSwapPop => self.op_coerce_u_swap_pop(),
                 Op::ConvertO => self.op_convert_o(),
                 Op::ConvertS => self.op_convert_s(),
-                Op::Add => self.op_add(),
-                Op::AddIntegral => self.op_add_integral(),
+                Op::Add { .. } => self.op_add(),
                 Op::AddI => self.op_add_i(),
                 Op::BitAnd => self.op_bitand(),
                 Op::BitNot => self.op_bitnot(),
@@ -776,8 +775,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                 Op::Negate => self.op_negate(),
                 Op::NegateI => self.op_negate_i(),
                 Op::RShift => self.op_rshift(),
-                Op::Subtract => self.op_subtract(),
-                Op::SubtractIntegral => self.op_subtract_integral(),
+                Op::Subtract { .. } => self.op_subtract(),
                 Op::SubtractI => self.op_subtract_i(),
                 Op::Swap => self.op_swap(),
                 Op::URShift => self.op_urshift(),
@@ -2074,29 +2072,6 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         Ok(())
     }
 
-    fn op_add_integral(&mut self) -> Result<(), Error<'gc>> {
-        let value2 = self.pop_stack();
-        let value1 = self.pop_stack();
-
-        let sum_value: Value<'gc> = match (value1, value2) {
-            (Value::Integer(n1), Value::Integer(n2)) => {
-                if let Some(res) = n1.checked_add(n2) {
-                    res.into()
-                } else {
-                    ((n1 as i64 + n2 as i64) as f64).into()
-                }
-            }
-            (Value::Number(n1), Value::Number(n2)) => (n1 + n2).into(),
-            (Value::Integer(n1), Value::Number(n2)) => (n1 as f64 + n2).into(),
-            (Value::Number(n1), Value::Integer(n2)) => (n1 + n2 as f64).into(),
-            _ => unreachable!("Guaranteed by verifier"),
-        };
-
-        self.push_stack(sum_value);
-
-        Ok(())
-    }
-
     fn op_add_i(&mut self) -> Result<(), Error<'gc>> {
         let value2 = self.pop_stack();
         let value1 = self.pop_stack();
@@ -2315,29 +2290,6 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                 let value1 = value1.coerce_to_number(self)?;
                 (value1 - value2).into()
             }
-        };
-
-        self.push_stack(sub_value);
-
-        Ok(())
-    }
-
-    fn op_subtract_integral(&mut self) -> Result<(), Error<'gc>> {
-        let value2 = self.pop_stack();
-        let value1 = self.pop_stack();
-
-        let sub_value: Value<'gc> = match (value1, value2) {
-            (Value::Integer(n1), Value::Integer(n2)) => {
-                if let Some(res) = n1.checked_sub(n2) {
-                    res.into()
-                } else {
-                    ((n1 as i64 - n2 as i64) as f64).into()
-                }
-            }
-            (Value::Number(n1), Value::Number(n2)) => (n1 - n2).into(),
-            (Value::Integer(n1), Value::Number(n2)) => (n1 as f64 - n2).into(),
-            (Value::Number(n1), Value::Integer(n2)) => (n1 - n2 as f64).into(),
-            _ => unreachable!("Guaranteed by verifier"),
         };
 
         self.push_stack(sub_value);
