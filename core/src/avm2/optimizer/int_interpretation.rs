@@ -136,8 +136,10 @@ pub fn run_analysis<'gc>(
         );
 
         if let Some((info, num_ops)) = analysis_results {
+            let code = info.ops.borrow();
             already_covered_ranges.push(start_index..start_index + num_ops);
-            println!("    Success for {} ({} ops)!", start_index, info.ops.len());
+            println!("    Success for {} ({} ops)!", start_index, code.len());
+            drop(code);
 
             let op = Op::RunIntInterpreter(Gc::new(activation.gc(), info));
             ops[start_index].set(op);
