@@ -242,7 +242,7 @@ export const config: WebdriverIO.Config = {
         // We only want to run this cleanup on Linux/CI environments
         if (process.platform === "linux") {
             try {
-                // Find processes containing 'chrome' or 'chromedriver' 
+                // Find processes containing 'chrome' or 'chromedriver'
                 // whose Parent PID ($2) is 1 (meaning they are orphaned)
                 const findOrphansCmd = `ps -eo pid,ppid,comm | awk '$2==1 && /chrome/ {print $1}'`;
                 const pids = execSync(findOrphansCmd).toString().trim().split("\n").filter(Boolean);
