@@ -1,0 +1,5 @@
+artifacts/
+out/
+target/
+
+corpus/swf/swf_tests/
