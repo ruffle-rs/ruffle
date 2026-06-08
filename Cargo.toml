@@ -36,6 +36,7 @@ members = [
     "tests/framework",
 
     "tools/asc",
+    "tools/fuzzer",
     "tools/stub-report",
 ]
 default-members = ["desktop"]
