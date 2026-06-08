@@ -1,0 +1,66 @@
+name: Quick Fuzz
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  fuzz:
+    name: Quick Fuzz ${{ matrix.target }} / ${{ matrix.fuzzer }}
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        fuzzer: [libfuzzer, afl]
+        target: [parse_swf]
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@nightly
+
+      - name: Cache Cargo output
+        uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: "fuzz-${{ matrix.fuzzer }}"
+          save-if: ${{ github.ref == 'refs/heads/master' }}
+
+      - name: Install cargo-fuzz
+        if: matrix.fuzzer == 'libfuzzer'
+        run: cargo install cargo-fuzz
+
+      - name: Install cargo-afl
+        if: matrix.fuzzer == 'afl'
+        run: cargo install --force cargo-afl
+
+      - name: Configure AFL++ for CI
+        if: matrix.fuzzer == 'afl'
+        run: |
+          echo core | sudo tee /proc/sys/kernel/core_pattern
+
+      - name: Run fuzzer
+        run: cargo fuzzer run --fuzzer ${{ matrix.fuzzer }} --time 5m ${{ matrix.target }}
+
+      - name: Archive fuzz artifacts
+        if: always()
+        # actions/upload-artifact errors out on : in paths, which is used by
+        # AFL++, so we need to compress it manually.
+        env:
+          # Exclude the queue directory which contains the transient corpus.
+          TAR_OPTS: --exclude=fuzz/out/*/afl/*/queue
+        run: tar -czf fuzz-artifacts.tar.gz $TAR_OPTS fuzz/out/ || true
+
+      - name: Upload artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fuzz-artifacts-${{ matrix.target }}-${{ matrix.fuzzer }}
+          path: fuzz-artifacts.tar.gz
+          if-no-files-found: ignore
