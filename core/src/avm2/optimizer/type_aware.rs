@@ -991,12 +991,14 @@ fn abstract_interpret_ops<'gc>(
                 stack.pop(activation)?;
                 stack.push_class(activation, types.int)?;
             }
-            Op::Add => {
+            Op::Add { .. } => {
                 let value2 = stack.pop(activation)?;
                 let value1 = stack.pop(activation)?;
 
                 if value1.class == Some(types.int) && value2.class == Some(types.int) {
-                    optimize_op_to!(Op::AddIntegral);
+                    optimize_op_to!(Op::Add {
+                        inputs_integral: true
+                    });
                 }
 
                 if (value1.class == Some(types.int)
@@ -1015,12 +1017,14 @@ fn abstract_interpret_ops<'gc>(
                     stack.push_any(activation)?;
                 }
             }
-            Op::Subtract => {
+            Op::Subtract { .. } => {
                 let value2 = stack.pop(activation)?;
                 let value1 = stack.pop(activation)?;
 
                 if value1.class == Some(types.int) && value2.class == Some(types.int) {
-                    optimize_op_to!(Op::SubtractIntegral);
+                    optimize_op_to!(Op::Subtract {
+                        inputs_integral: true
+                    });
                 }
 
                 stack.push_class(activation, types.number)?;
@@ -2133,8 +2137,7 @@ fn abstract_interpret_ops<'gc>(
                 return Ok(());
             }
 
-            Op::AddIntegral
-            | Op::CallMethod { .. }
+            Op::CallMethod { .. }
             | Op::CallNative { .. }
             | Op::CoerceSwapPop { .. }
             | Op::CoerceDSwapPop
@@ -2144,8 +2147,7 @@ fn abstract_interpret_ops<'gc>(
             | Op::GetScriptGlobals { .. }
             | Op::PopJump { .. }
             | Op::SetSlotCoerceI { .. }
-            | Op::SetSlotNoCoerce { .. }
-            | Op::SubtractIntegral => unreachable!("Custom ops should not be encountered"),
+            | Op::SetSlotNoCoerce { .. } => unreachable!("Custom ops should not be encountered"),
         }
     }
 

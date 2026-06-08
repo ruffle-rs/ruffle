@@ -11,8 +11,11 @@ use std::cell::Cell;
 #[derive(Clone, Collect, Copy, Debug)]
 #[collect(no_drop)]
 pub enum Op<'gc> {
-    Add,
-    AddIntegral,
+    Add {
+        /// Whether the two inputs to this op are both guaranteed to be
+        /// integers. This field is used in the optimizer.
+        inputs_integral: bool,
+    },
     AddI,
     ApplyType {
         num_types: u32,
@@ -327,8 +330,10 @@ pub enum Op<'gc> {
     StoreLocal {
         index: u32,
     },
-    Subtract,
-    SubtractIntegral,
+    Subtract {
+        /// See comment on `Op::Add`
+        inputs_integral: bool,
+    },
     SubtractI,
     Swap,
     Sxi1,

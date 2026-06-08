@@ -95,38 +95,62 @@ pub fn postprocess_peephole<'a>(
                     last_op.set(Op::Nop);
                     current_op.set(Op::StoreLocal { index: index1 });
                 }
-                (Op::AddIntegral, Op::CoerceI) => {
+                (
+                    Op::Add {
+                        inputs_integral: true,
+                    },
+                    Op::CoerceI,
+                ) => {
                     // An integral addition that yields Number on overflow
                     // followed by coerce-to-integer is equivalent to wrapping
                     // integral addition
                     last_op.set(Op::AddI);
                     current_op.set(Op::Nop);
                 }
-                (Op::SubtractIntegral, Op::CoerceI) => {
+                (
+                    Op::Subtract {
+                        inputs_integral: true,
+                    },
+                    Op::CoerceI,
+                ) => {
                     // The same is true for subtraction
                     last_op.set(Op::SubtractI);
                     current_op.set(Op::Nop);
                 }
                 (
-                    Op::AddIntegral,
+                    Op::Add {
+                        inputs_integral: true,
+                    },
                     Op::Li8 | Op::Li16 | Op::Li32 | Op::Si8 | Op::Si16 | Op::Si32,
                 ) => {
                     // See comments above
                     last_op.set(Op::AddI);
                 }
                 (
-                    Op::SubtractIntegral,
+                    Op::Subtract {
+                        inputs_integral: true,
+                    },
                     Op::Li8 | Op::Li16 | Op::Li32 | Op::Si8 | Op::Si16 | Op::Si32,
                 ) => {
                     // The same is true for subtraction
                     last_op.set(Op::SubtractI);
                 }
-                (Op::AddIntegral, Op::SetSlotCoerceI { index }) => {
+                (
+                    Op::Add {
+                        inputs_integral: true,
+                    },
+                    Op::SetSlotCoerceI { index },
+                ) => {
                     // See comments above
                     last_op.set(Op::AddI);
                     current_op.set(Op::SetSlotNoCoerce { index });
                 }
-                (Op::SubtractIntegral, Op::SetSlotCoerceI { index }) => {
+                (
+                    Op::Subtract {
+                        inputs_integral: true,
+                    },
+                    Op::SetSlotCoerceI { index },
+                ) => {
                     // The same is true for subtraction
                     last_op.set(Op::SubtractI);
                     current_op.set(Op::SetSlotNoCoerce { index });
