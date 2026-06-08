@@ -39,6 +39,10 @@ impl SmallBitSet {
         }
     }
 
+    pub fn count_ones(&self) -> usize {
+        self.bits.count_ones() as usize
+    }
+
     pub fn len(&self) -> usize {
         self.len
     }

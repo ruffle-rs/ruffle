@@ -19,7 +19,7 @@ use std::ops::Range;
 /// ops. On the other hand, if this number is too high, some sequences of ops
 /// that would benefit from being run in the integer interpreter may end up
 /// being considered too short to be run in it.
-const MIN_INT_OPS_LENGTH: usize = 50;
+const MIN_INT_OPS_LENGTH: usize = 40;
 
 /// The maximum number of ops in a method that can be considered for int
 /// interpreter analysis.
@@ -779,10 +779,17 @@ fn run_single_analysis<'gc>(
 
     let num_ops = output_vec.len();
 
+    // The more locals are used, the more overhead is required for entering and
+    // exiting the int interpreter. Therefore, if there are a high number of
+    // used locals (locals for which the corresponding bit is set), increase the
+    // number of ops required to be running in the int interpreter.
+    // TODO fine-tune this
+    let minimum_op_count = MIN_INT_OPS_LENGTH + used_locals.count_ones();
+
     // Not enough ops for entering the int interpreter to be worth it
     // (unless there's a backwards branch within the int interpreter; in that
     // case it's likely that this is a hot loop)
-    if num_ops < MIN_INT_OPS_LENGTH && !has_backwards_branch {
+    if num_ops < minimum_op_count && !has_backwards_branch {
         return None;
     }
 
