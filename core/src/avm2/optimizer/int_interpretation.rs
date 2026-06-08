@@ -907,10 +907,6 @@ impl Stack {
     pub fn clear(&mut self) {
         self.0.clear();
     }
-
-    pub fn len(&self) -> usize {
-        self.0.len()
-    }
 }
 
 fn remove_nops(code: &mut Vec<IntOp>) {
