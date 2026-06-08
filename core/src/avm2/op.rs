@@ -465,20 +465,50 @@ pub enum IntOp {
     BitNot,
     BitOr,
     BitXor,
-    DecLocal { index: u32 },
+    DecLocal {
+        index: u32,
+    },
     Dup,
     Equals,
-    GetLocal { index: u32 },
-    GetSlot { index: u32 },
+    GetLocal {
+        index: u32,
+    },
+    GetSlot {
+        index: u32,
+    },
     GreaterEquals,
     GreaterThan,
-    IfFalse { offset: u32 },
-    IfFalseExternal { offset: u32 },
-    IfTrue { offset: u32 },
-    IfTrueExternal { offset: u32 },
-    Jump { offset: u32 },
-    JumpExternal { offset: u32 },
-    IncLocal { index: u32 },
+    IfFalse {
+        offset: u32,
+    },
+    IfFalseExternal {
+        offset: u32,
+
+        // Only used during int interpretation analysis. At runtime, this should
+        // always be true.
+        valid: bool,
+    },
+    IfTrue {
+        offset: u32,
+    },
+    IfTrueExternal {
+        offset: u32,
+
+        // See comment on IfFalseExternal
+        valid: bool,
+    },
+    Jump {
+        offset: u32,
+    },
+    JumpExternal {
+        offset: u32,
+
+        // See comment on IfFalseExternal
+        valid: bool,
+    },
+    IncLocal {
+        index: u32,
+    },
     LessEquals,
     LessThan,
     Li16,
@@ -489,15 +519,25 @@ pub enum IntOp {
     Nop,
     Not,
     Pop,
-    PushInt { value: i32 },
-    PushObject { value: ObjectType },
+    PushInt {
+        value: i32,
+    },
+    PushObject {
+        value: ObjectType,
+    },
     RShift,
-    SetLocal { index: u32 },
-    SetSlot { index: u32 },
+    SetLocal {
+        index: u32,
+    },
+    SetSlot {
+        index: u32,
+    },
     Si16,
     Si32,
     Si8,
-    StoreLocal { index: u32 },
+    StoreLocal {
+        index: u32,
+    },
     Subtract,
     Swap,
     Sxi16,

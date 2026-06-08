@@ -395,6 +395,14 @@ fn run_single_analysis<'gc>(
 
                 IntOp::IfFalseExternal {
                     offset: offset as u32,
+
+                    // If the stack isn't entirely ints, keeping this op as an
+                    // external jump is invalid, as when the int interpreter is
+                    // exited the entire stack must be integers (to keep
+                    // synchronization of stack simple). However, it's also
+                    // possible that this op will be an internal jump, in which
+                    // case this flag can be ignored.
+                    valid: stack.is_entirely_ints(),
                 }
             }
             Op::IfTrue { offset } => {
@@ -407,10 +415,16 @@ fn run_single_analysis<'gc>(
 
                 IntOp::IfTrueExternal {
                     offset: offset as u32,
+
+                    // See comment on `Op::IfFalse`
+                    valid: stack.is_entirely_ints(),
                 }
             }
             Op::Jump { offset } => IntOp::JumpExternal {
                 offset: offset as u32,
+
+                // See comment on `Op::IfFalse`
+                valid: stack.is_entirely_ints(),
             },
             Op::IncLocalI { index } => {
                 if !integral_locals.get(index as usize) {
@@ -772,7 +786,23 @@ fn run_single_analysis<'gc>(
     if start_index + num_ops != ops.len() {
         output_vec.push(IntOp::JumpExternal {
             offset: (start_index + num_ops) as u32,
+            valid: stack.is_entirely_ints(),
         });
+    }
+
+    // If there are any invalid external jumps (the stack state at them isn't
+    // entirely integers), abort.
+    for op in &mut output_vec {
+        match op {
+            IntOp::IfFalseExternal { valid, .. }
+            | IntOp::IfTrueExternal { valid, .. }
+            | IntOp::JumpExternal { valid, .. } => {
+                if !*valid {
+                    return None;
+                }
+            }
+            _ => {}
+        }
     }
 
     remove_nops(&mut output_vec);
@@ -790,12 +820,6 @@ fn run_single_analysis<'gc>(
     // (unless there's a backwards branch within the int interpreter; in that
     // case it's likely that this is a hot loop)
     if num_ops < minimum_op_count && !has_backwards_branch {
-        return None;
-    }
-
-    // This massively complicates synchronization of locals between the normal
-    // interpreter and the int interpreter, so we don't support it
-    if !stack.is_entirely_ints() {
         return None;
     }
 

@@ -131,7 +131,7 @@ impl<'a, 'gc> IntInterpreter<'a, 'gc> {
                         ip = *offset as usize;
                     }
                 }
-                IntOp::IfFalseExternal { offset } => {
+                IntOp::IfFalseExternal { offset, .. } => {
                     if self.pop_stack() == 0 {
                         // Jump back into the normal interpreter
                         return Ok(*offset as usize);
@@ -142,7 +142,7 @@ impl<'a, 'gc> IntInterpreter<'a, 'gc> {
                         ip = *offset as usize;
                     }
                 }
-                IntOp::IfTrueExternal { offset } => {
+                IntOp::IfTrueExternal { offset, .. } => {
                     if self.pop_stack() != 0 {
                         // Jump back into the normal interpreter
                         return Ok(*offset as usize);
@@ -151,7 +151,7 @@ impl<'a, 'gc> IntInterpreter<'a, 'gc> {
                 IntOp::Jump { offset } => {
                     ip = *offset as usize;
                 }
-                IntOp::JumpExternal { offset } => {
+                IntOp::JumpExternal { offset, .. } => {
                     // Jump back into the normal interpreter
                     return Ok(*offset as usize);
                 }
