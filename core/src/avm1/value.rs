@@ -618,8 +618,7 @@ fn f64_to_string<'gc>(activation: &mut Activation<'_, 'gc>, mut n: f64) -> AvmSt
     } else if n == f64::INFINITY {
         istr!("Infinity")
     } else if n == f64::NEG_INFINITY {
-        // FIXME is there an easy way to use istr! here?
-        AvmString::new_utf8_bytes(activation.gc(), b"-Infinity")
+        istr!("-Infinity")
     } else if n == 0.0 {
         istr!("0")
     } else if n >= -2147483648.0 && n <= 2147483647.0 && n.fract() == 0.0 {
