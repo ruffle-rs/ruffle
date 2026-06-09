@@ -3041,19 +3041,11 @@ pub struct Avm1TextFieldBinding<'gc> {
 impl<'gc> Avm1TextFieldBinding<'gc> {
     pub fn bind_variables(activation: &mut Activation<'_, 'gc>) {
         // Check all unbound text fields to see if they apply to this object.
-        // TODO: Replace with `Vec::drain_filter` when stable.
-        let mut i = 0;
-        let mut len = activation.context.unbound_text_fields.len();
-        while i < len {
-            if activation.context.unbound_text_fields[i]
-                .try_bind_text_field_variable(activation, false)
-            {
-                activation.context.unbound_text_fields.swap_remove(i);
-                len -= 1;
-            } else {
-                i += 1;
-            }
-        }
+        let mut text_fields = std::mem::take(activation.context.unbound_text_fields);
+
+        text_fields.retain(|field| !field.try_bind_text_field_variable(activation, false));
+
+        *activation.context.unbound_text_fields = text_fields;
     }
 
     /// Registers a text field variable binding for this stage object.
