@@ -40,8 +40,8 @@ use itertools::Itertools;
 /// If is_start_of_line, the function is guaranteed to not return 0.
 ///
 /// This function yields `None` if the line is not broken.
-pub fn wrap_line(
-    font: &dyn FontLike<'_>,
+pub fn wrap_line<'gc, T: FontLike<'gc>>(
+    font: &T,
     text: &WStr,
     params: EvalParameters,
     width: Twips,
