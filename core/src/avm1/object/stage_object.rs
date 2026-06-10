@@ -158,12 +158,22 @@ fn resolve_path_property<'gc>(
                 .map(Value::Object)
                 .unwrap_or(Value::Undefined),
         );
-    } else if activation.swf_version() > 5 && name.eq_with_case(b"_global", case_sensitive) {
+    } else if activation.swf_version() >= 6 && name.eq_with_case(b"_global", case_sensitive) {
         // _global is available only in SWF6+
         return Some(activation.global_object().into());
     }
 
-    // Resolve level names `_levelN`.
+    if let Some(level) = parse_level(name.as_wstr(), activation) {
+        return Some(level);
+    }
+
+    None
+}
+
+/// Parse _levelN and _flashN level names.
+pub fn parse_level<'gc>(name: &WStr, activation: &mut Activation<'_, 'gc>) -> Option<Value<'gc>> {
+    let case_sensitive = activation.is_case_sensitive();
+
     if let Some(prefix) = name.slice(..6) {
         // `_flash` is a synonym of `_level`, a relic from the earliest Flash versions.
         if prefix.eq_with_case(b"_level", case_sensitive)
