@@ -217,7 +217,7 @@ path root_var
 path :root_var
   _x:
   _name:
-  typeof eval:number
+  typeof eval:undefined
   tellTarget
   _x:
   _name:
@@ -322,7 +322,7 @@ path /.root_var
 path .root_var
   _x:
   _name:
-  typeof eval:number
+  typeof eval:undefined
   tellTarget
   _x:
   _name:
