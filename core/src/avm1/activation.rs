@@ -2522,7 +2522,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let root = start.avm1_root();
         let start = start.object1_or_bare(self.gc());
         Ok(self
-            .resolve_target_path(root, start, &path, false)?
+            .resolve_target_path(root, start, &path, true, false)?
             .and_then(|o| o.as_display_object()))
     }
 
@@ -2541,6 +2541,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         start: Object<'gc>,
         mut path: &WStr,
         mut first_element: bool,
+        handle_this: bool,
     ) -> Result<Option<Object<'gc>>, Error<'gc>> {
         // Empty path resolves immediately to start clip.
         if path.is_empty() {
@@ -2551,6 +2552,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         // (`/bar` means `_root.bar`)
         let (mut object, mut is_slash_path) = if path.starts_with(b'/') {
             path = &path[1..];
+            first_element = false;
             (root.object1_or_bare(self.gc()), true)
         } else {
             (start, false)
@@ -2602,7 +2604,10 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                 let name = &path[..pos];
                 path = path.slice(pos + 1..).unwrap_or_default();
 
-                if first_element && name == b"this" {
+                if handle_this && name == b"this" {
+                    // TODO This doesn't seem to be entirely right, but Ruffle
+                    // does not support the `this` variable/keyword properly.
+                    // We probably shouldn't handle `this` here at all.
                     self.this_cell()
                 } else if first_element && name == b"_root" {
                     self.base_clip().avm1_root().object1_or_undef()
@@ -2666,7 +2671,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                 let avm1_root = start.avm1_root();
 
                 if let Some(object) =
-                    self.resolve_target_path(avm1_root, *scope.locals(), path, true)?
+                    self.resolve_target_path(avm1_root, *scope.locals(), path, true, true)?
                 {
                     return Ok(Some((object, var_name)));
                 }
@@ -2728,7 +2733,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                 let avm1_root = start.avm1_root();
 
                 if let Some(object) =
-                    self.resolve_target_path(avm1_root, *scope.locals(), path, true)?
+                    self.resolve_target_path(avm1_root, *scope.locals(), path, true, true)?
                 {
                     let var_name = AvmString::new(self.gc(), var_name);
                     if object.has_property(self, var_name) {
@@ -2747,7 +2752,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                 let avm1_root = start.avm1_root();
 
                 if let Some(object) =
-                    self.resolve_target_path(avm1_root, *scope.locals(), &path, false)?
+                    self.resolve_target_path(avm1_root, *scope.locals(), &path, false, false)?
                 {
                     return Ok(CallableValue::UnCallable(object.into()));
                 }
@@ -2813,7 +2818,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                 let avm1_root = start.avm1_root();
 
                 if let Some(object) =
-                    self.resolve_target_path(avm1_root, *scope.locals(), path, true)?
+                    self.resolve_target_path(avm1_root, *scope.locals(), path, true, true)?
                 {
                     let var_name = AvmString::new(self.gc(), var_name);
                     object.set(var_name, value, self)?;
@@ -3031,7 +3036,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         if target.is_empty() {
             new_target_clip = Some(base_clip);
         } else if let Some(clip) = self
-            .resolve_target_path(root, start, target, false)?
+            .resolve_target_path(root, start, target, true, false)?
             .and_then(|o| o.as_display_object())
             .filter(|_| !self.base_clip.avm1_removed())
         // All properties invalid if base clip is removed.

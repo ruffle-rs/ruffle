@@ -439,12 +439,12 @@ path a.child
   _x:1
   _name:child
 path _level0.a/child
-  _x:
-  _name:
+  _x:1
+  _name:child
   typeof eval:undefined
   tellTarget
-  _x:
-  _name:
+  _x:1
+  _name:child
 path _level0/a.child
   _x:
   _name:
@@ -453,40 +453,40 @@ path _level0/a.child
   _x:
   _name:
 path _level0:a:child
-  _x:
-  _name:
+  _x:1
+  _name:child
   typeof eval:undefined
   tellTarget
-  _x:
-  _name:
+  _x:1
+  _name:child
 path _level0.a:child
-  _x:
-  _name:
+  _x:1
+  _name:child
   typeof eval:undefined
   tellTarget
-  _x:
-  _name:
+  _x:1
+  _name:child
 path _level0:a.child
-  _x:
-  _name:
+  _x:1
+  _name:child
   typeof eval:undefined
   tellTarget
-  _x:
-  _name:
+  _x:1
+  _name:child
 path _level0:a/child
-  _x:
-  _name:
+  _x:1
+  _name:child
   typeof eval:undefined
   tellTarget
-  _x:
-  _name:
+  _x:1
+  _name:child
 path _level0/a:child
-  _x:
-  _name:
+  _x:1
+  _name:child
   typeof eval:undefined
   tellTarget
-  _x:
-  _name:
+  _x:1
+  _name:child
 path /_level0
   _x:
   _name:
@@ -495,11 +495,11 @@ path /_level0
   _x:
   _name:
 path _level0
-  _x:
+  _x:0
   _name:
   typeof eval:undefined
   tellTarget
-  _x:
+  _x:0
   _name:
 path _level0/_level0
   _x:
@@ -523,12 +523,12 @@ path _level0/a:_level0
   _x:
   _name:
 path _level0/a
-  _x:
-  _name:
+  _x:2
+  _name:a
   typeof eval:undefined
   tellTarget
-  _x:
-  _name:
+  _x:2
+  _name:a
 path _level0/../a
   _x:
   _name:
@@ -544,12 +544,12 @@ path _level0/../_level0
   _x:
   _name:
 path _level0/:a/
-  _x:
-  _name:
+  _x:2
+  _name:a
   typeof eval:undefined
   tellTarget
-  _x:
-  _name:
+  _x:2
+  _name:a
 path _level0/.a/
   _x:
   _name:
@@ -572,12 +572,12 @@ path _level0/:a:_level0
   _x:
   _name:
 path _level0/:a:
-  _x:
-  _name:
+  _x:2
+  _name:a
   typeof eval:undefined
   tellTarget
-  _x:
-  _name:
+  _x:2
+  _name:a
 path _level0/.a:
   _x:
   _name:
@@ -586,12 +586,12 @@ path _level0/.a:
   _x:
   _name:
 path _level0/:a
-  _x:
-  _name:
+  _x:2
+  _name:a
   typeof eval:undefined
   tellTarget
-  _x:
-  _name:
+  _x:2
+  _name:a
 path _level0/.a
   _x:
   _name:
@@ -600,19 +600,19 @@ path _level0/.a
   _x:
   _name:
 path _level0/::a
-  _x:
-  _name:
+  _x:2
+  _name:a
   typeof eval:undefined
   tellTarget
-  _x:
-  _name:
+  _x:2
+  _name:a
 path _level0/:::a
-  _x:
-  _name:
+  _x:2
+  _name:a
   typeof eval:undefined
   tellTarget
-  _x:
-  _name:
+  _x:2
+  _name:a
 path _level0/:::_level0
   _x:
   _name:
@@ -656,19 +656,19 @@ path /_root
   _x:
   _name:
 path _root
-  _x:
+  _x:0
   _name:
   typeof eval:undefined
   tellTarget
-  _x:
+  _x:0
   _name:
 path _root/a
-  _x:
-  _name:
+  _x:2
+  _name:a
   typeof eval:undefined
   tellTarget
-  _x:
-  _name:
+  _x:2
+  _name:a
 path /_level0/a
   _x:
   _name:
@@ -677,18 +677,18 @@ path /_level0/a
   _x:
   _name:
 path _flash0
-  _x:
+  _x:0
   _name:
   typeof eval:undefined
   tellTarget
-  _x:
+  _x:0
   _name:
 path _flash0/
-  _x:
+  _x:0
   _name:
   typeof eval:undefined
   tellTarget
-  _x:
+  _x:0
   _name:
 path /_flash0
   _x:
@@ -698,12 +698,12 @@ path /_flash0
   _x:
   _name:
 path _flash0/a
-  _x:
-  _name:
+  _x:2
+  _name:a
   typeof eval:undefined
   tellTarget
-  _x:
-  _name:
+  _x:2
+  _name:a
 path _flash0...:
   _x:
   _name:
