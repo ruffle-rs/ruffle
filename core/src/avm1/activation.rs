@@ -2701,12 +2701,24 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         // Resolve a variable path for a GetVariable action.
         let start = self.target_clip_or_root();
 
+        let is_swf5 = self.swf_version() >= 5;
+        let variable_separator = if is_swf5 {
+            // The separator . appeared in SWF5.
+            b":.".as_ref()
+        } else {
+            b":".as_ref()
+        };
+
         // Find the right-most : or . in the path.
         // If we have one, we must resolve as a target path.
-        if let Some(separator) = path.rfind(b":.".as_ref()) {
+        if let Some(separator) = path.rfind(variable_separator) {
             // We have a . or :, so this is a path to an object plus a variable name.
             // We resolve it directly on the targeted object.
             let (path, var_name) = (&path[..separator], &path[separator + 1..]);
+
+            if path.is_empty() {
+                return Ok(CallableValue::UnCallable(Value::Undefined));
+            }
 
             for scope in Scope::ancestors(self.scope()) {
                 let avm1_root = start.avm1_root();
@@ -2725,7 +2737,8 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         }
 
         // If it doesn't have a trailing variable, it can still be a slash path.
-        if path.contains(b'/') {
+        // In SWF4 it has to have a trailing variable.
+        if is_swf5 && path.contains(b'/') {
             for scope in Scope::ancestors(self.scope()) {
                 let avm1_root = start.avm1_root();
 
