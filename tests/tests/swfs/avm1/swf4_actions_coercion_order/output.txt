@@ -104,7 +104,6 @@ obj_2.toString()
 
 // SetTarget2
 obj_2.toString()
-Target not found: Target="[type Object]" Base="_level0"
 tellTarget
 
 // GetProperty
