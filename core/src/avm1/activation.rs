@@ -2548,6 +2548,10 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             return Ok(Some(start));
         }
 
+        // this, _root, and delimiters . and : are supported only in SWF5+.
+        // In general, SWF4 is more restrictive when it comes to paths.
+        let is_swf5 = self.swf_version() >= 5;
+
         // Starting / means an absolute path starting from root.
         // (`/bar` means `_root.bar`)
         let (mut object, mut is_slash_path) = if path.starts_with(b'/') {
@@ -2562,12 +2566,14 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
         // Iterate through each token in the path.
         while !path.is_empty() {
-            // Skip any number of leading :
-            // `foo`, `:foo`, and `:::foo` are all the same
-            path = path.trim_start_matches(b':');
+            if is_swf5 {
+                // Skip any number of leading :
+                // `foo`, `:foo`, and `:::foo` are all the same
+                path = path.trim_start_matches(b':');
+            }
 
             let prefix = &path[..path.len().min(3)];
-            let val = if prefix == b".." || prefix == b"../" || prefix == b"..:" {
+            let val = if prefix == b".." || prefix == b"../" || (is_swf5 && prefix == b"..:") {
                 // Check for ..
                 // SWF-4 style _parent
                 if path.get(2) == Some(u16::from(b'/')) {
@@ -2585,12 +2591,11 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                 // : . / all act as path delimiters.
                 // The only restriction is that after a / appears,
                 // . is no longer considered a delimiter.
-                // TODO: SWF4 is probably more restrictive.
                 let mut pos = 0;
                 while pos < path.len() {
                     match u8::try_from(path.at(pos)) {
-                        Ok(b':') => break,
-                        Ok(b'.') if !is_slash_path => break,
+                        Ok(b':') if is_swf5 => break,
+                        Ok(b'.') if is_swf5 && !is_slash_path => break,
                         Ok(b'/') => {
                             is_slash_path = true;
                             break;
@@ -2604,12 +2609,12 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                 let name = &path[..pos];
                 path = path.slice(pos + 1..).unwrap_or_default();
 
-                if handle_this && name == b"this" {
+                if is_swf5 && handle_this && name == b"this" {
                     // TODO This doesn't seem to be entirely right, but Ruffle
                     // does not support the `this` variable/keyword properly.
                     // We probably shouldn't handle `this` here at all.
                     self.this_cell()
-                } else if first_element && name == b"_root" {
+                } else if is_swf5 && first_element && name == b"_root" {
                     self.base_clip().avm1_root().object1_or_undef()
                 } else if first_element
                     && let Some(level) = super::object::stage_object::parse_level(name, self)
