@@ -2606,6 +2606,10 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                     self.this_cell()
                 } else if first_element && name == b"_root" {
                     self.base_clip().avm1_root().object1_or_undef()
+                } else if first_element
+                    && let Some(level) = super::object::stage_object::parse_level(name, self)
+                {
+                    level
                 } else {
                     // Get the value from the object.
                     // Resolves display object instances first, then local variables.
