@@ -3016,21 +3016,6 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             new_target_clip = Some(clip);
         } else {
             avm_warn!(self, "SetTarget failed: {} not found", target);
-            // TODO: Emulate AVM1 trace error message.
-            let path = if base_clip.avm1_removed() {
-                None
-            } else {
-                Some(base_clip.path())
-            };
-            let message = format!(
-                "Target not found: Target=\"{}\" Base=\"{}\"",
-                target,
-                match &path {
-                    Some(p) => p,
-                    None => WStr::from_units(b"?"),
-                }
-            );
-            self.context.avm_trace(&message);
 
             // When SetTarget has an invalid target, subsequent GetVariables act
             // as if they are targeting root, but subsequent Play/Stop/etc.
