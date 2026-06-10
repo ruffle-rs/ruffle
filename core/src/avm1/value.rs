@@ -455,6 +455,17 @@ impl<'gc> Value<'gc> {
             _ => None,
         }
     }
+
+    /// Converts a value to a SWF4-compatible variable.
+    ///
+    /// SWF4 variables do not support display objects.
+    pub fn as_swf4_variable(self) -> Self {
+        match self {
+            Value::MovieClip(_) => Value::Undefined,
+            Value::Object(obj) if obj.as_display_object().is_some() => Value::Undefined,
+            value => value,
+        }
+    }
 }
 
 /// Value operators.

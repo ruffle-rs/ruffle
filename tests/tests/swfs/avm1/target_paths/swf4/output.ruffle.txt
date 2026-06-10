@@ -1,5 +1,5 @@
-_level0.a
-_level0.b
+undefined
+undefined
 undefined
 5
 number
@@ -7,7 +7,7 @@ object
 path /
   _x:0
   _name:
-  typeof eval:movieclip
+  typeof eval:undefined
   tellTarget
   _x:0
   _name:
@@ -21,7 +21,7 @@ path //
 path /a
   _x:2
   _name:a
-  typeof eval:movieclip
+  typeof eval:undefined
   tellTarget
   _x:2
   _name:a
@@ -35,35 +35,35 @@ path //a
 path /
   _x:0
   _name:
-  typeof eval:movieclip
+  typeof eval:undefined
   tellTarget
   _x:0
   _name:
 path /a
   _x:2
   _name:a
-  typeof eval:movieclip
+  typeof eval:undefined
   tellTarget
   _x:2
   _name:a
 path /a/
   _x:2
   _name:a
-  typeof eval:movieclip
+  typeof eval:undefined
   tellTarget
   _x:2
   _name:a
 path a
   _x:2
   _name:a
-  typeof eval:movieclip
+  typeof eval:undefined
   tellTarget
   _x:2
   _name:a
 path a/
   _x:2
   _name:a
-  typeof eval:movieclip
+  typeof eval:undefined
   tellTarget
   _x:2
   _name:a
@@ -98,7 +98,7 @@ path a/../a
 path a/..:a
   _x:2
   _name:a
-  typeof eval:movieclip
+  typeof eval:undefined
   tellTarget
   _x:2
   _name:a
@@ -420,21 +420,21 @@ path _level0/.variable
 path a/child
   _x:1
   _name:child
-  typeof eval:movieclip
+  typeof eval:undefined
   tellTarget
   _x:1
   _name:child
 path a:child
   _x:1
   _name:child
-  typeof eval:movieclip
+  typeof eval:undefined
   tellTarget
   _x:1
   _name:child
 path a.child
   _x:1
   _name:child
-  typeof eval:movieclip
+  typeof eval:undefined
   tellTarget
   _x:1
   _name:child

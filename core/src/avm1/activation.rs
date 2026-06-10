@@ -1150,6 +1150,12 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
         let value: Value<'gc> = self.get_variable(path)?.into();
 
+        let value = if self.swf_version() <= 4 {
+            value.as_swf4_variable()
+        } else {
+            value
+        };
+
         self.stack_push(value);
 
         Ok(FrameControl::Continue)
