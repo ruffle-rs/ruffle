@@ -11,6 +11,11 @@ use simple_asn1::ASN1Block;
 use std::borrow::Cow;
 use std::io::{self, Read};
 
+/// Maximum buffer capacity for reading the SWF.
+///
+/// Prevents large allocations in case the SWF has a malformed length.
+const MAX_DATA_CAPACITY: u32 = 128 * 1024 * 1024; // 128 MiB
+
 /// Parse a decompressed SWF.
 ///
 /// # Example
@@ -96,12 +101,15 @@ pub fn decompress_swf<'a, R: Read + 'a>(mut input: R) -> Result<SwfBuf> {
             }
             // Uncompressed length includes the 4-byte header and 4-byte uncompressed length itself,
             // subtract it here.
-            make_lzma_reader(input, uncompressed_len - 8)?
+            let unpacked_size = uncompressed_len
+                .checked_sub(8)
+                .ok_or_else(|| Error::invalid_data("Malformed LZMA length"))?;
+            make_lzma_reader(input, unpacked_size)?
         }
     };
 
     // Decompress the entire SWF.
-    let mut data = Vec::with_capacity(uncompressed_len as usize);
+    let mut data = Vec::with_capacity(uncompressed_len.min(MAX_DATA_CAPACITY) as usize);
     if let Err(e) = decompress_stream.read_to_end(&mut data) {
         log::error!("Error decompressing SWF: {e}");
     }
@@ -185,7 +193,7 @@ fn make_zlib_reader<'a, R: Read + 'a>(_input: R) -> Result<Box<dyn Read + 'a>> {
 #[cfg(feature = "lzma")]
 fn make_lzma_reader<'a, R: Read + 'a>(
     mut input: R,
-    uncompressed_length: u32,
+    unpacked_size: u32,
 ) -> Result<Box<dyn Read + 'a>> {
     use lzma_rs::{
         decompress::{Options, UnpackedSize},
@@ -210,12 +218,12 @@ fn make_lzma_reader<'a, R: Read + 'a>(
     let _ = input.read_u32::<LittleEndian>()?;
 
     // TODO: Switch to lzma-rs streaming API when stable.
-    let mut output = Vec::with_capacity(uncompressed_length as usize);
+    let mut output = Vec::with_capacity(unpacked_size.min(MAX_DATA_CAPACITY) as usize);
     lzma_decompress_with_options(
         &mut io::BufReader::new(input),
         &mut output,
         &Options {
-            unpacked_size: UnpackedSize::UseProvided(Some(uncompressed_length.into())),
+            unpacked_size: UnpackedSize::UseProvided(Some(unpacked_size.into())),
             allow_incomplete: true,
             memlimit: None,
         },
@@ -228,7 +236,7 @@ fn make_lzma_reader<'a, R: Read + 'a>(
 #[cfg(not(feature = "lzma"))]
 fn make_lzma_reader<'a, R: Read + 'a>(
     _input: R,
-    _uncompressed_length: u32,
+    _unpacked_size: u32,
 ) -> Result<Box<dyn Read + 'a>> {
     Err(Error::unsupported(
         "Support for LZMA compressed SWFs is not enabled.",
@@ -2581,9 +2589,13 @@ pub mod tests {
         Reader::new(data, default_version)
     }
 
-    fn read_from_file(path: &str) -> SwfBuf {
+    fn try_read_from_file(path: &str) -> Result<SwfBuf> {
         let data = std::fs::read(path).unwrap();
-        decompress_swf(&data[..]).unwrap()
+        decompress_swf(&data[..])
+    }
+
+    fn read_from_file(path: &str) -> SwfBuf {
+        try_read_from_file(path).unwrap()
     }
 
     pub fn read_tag_bytes_from_file_with_index(
@@ -2656,6 +2668,8 @@ pub mod tests {
                 read_from_file("tests/swfs/lzma.swf").header.compression(),
                 Compression::Lzma
             );
+            assert!(try_read_from_file("tests/swfs/lzma-malformed-length.swf").is_err());
+            assert!(try_read_from_file("tests/swfs/lzma-length-too-large.swf").is_err());
         }
     }
 
