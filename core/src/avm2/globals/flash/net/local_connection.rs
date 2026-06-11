@@ -5,7 +5,7 @@ use crate::avm2::error::{
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::{Activation, Error, Value};
 use crate::string::AvmString;
-use flash_lso::types::{AMFVersion, Value as AmfValue};
+use flash_lso::types::AMFVersion;
 
 pub use crate::avm2::object::local_connection_allocator;
 use crate::local_connection::LocalConnections;
@@ -51,10 +51,8 @@ pub fn send<'gc>(
 
     let mut amf_arguments = Vec::with_capacity(args.len() - 2);
     for arg in &args[2..] {
-        amf_arguments.push(
-            serialize_value(activation, *arg, AMFVersion::AMF0, &mut Default::default())
-                .unwrap_or(AmfValue::Undefined),
-        );
+        let value = serialize_value(activation, *arg, AMFVersion::AMF0, &mut Default::default());
+        amf_arguments.push(value);
     }
 
     if let Some(local_connection) = this.as_local_connection_object() {
