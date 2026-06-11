@@ -1,4 +1,5 @@
 package flash.events {
+    [API("690")]
     public class DRMReturnVoucherErrorEvent extends ErrorEvent {
         public static const RETURN_VOUCHER_ERROR:String = "returnVoucherError";
 

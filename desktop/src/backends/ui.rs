@@ -11,8 +11,9 @@ use rfd::{
     AsyncFileDialog, FileHandle, MessageButtons, MessageDialog, MessageDialogResult, MessageLevel,
 };
 use ruffle_core::backend::ui::{
-    DialogLoaderError, DialogResultFuture, FileDialogResult, FileFilter, FontDefinition,
-    FullscreenError, LanguageIdentifier, MouseCursor, UiBackend,
+    DialogResultFuture, FileDialogResult, FileDialogSelection, FileFilter, FontDefinition,
+    FullscreenError, LanguageIdentifier, MouseCursor, MultiDialogResultFuture,
+    MultiFileDialogResult, UiBackend,
 };
 use ruffle_core::font::{FontFileData, FontQuery};
 use std::fs::File;
@@ -25,15 +26,15 @@ use winit::event_loop::EventLoopProxy;
 use winit::raw_window_handle::HasDisplayHandle;
 use winit::window::{Fullscreen, Window};
 
-pub struct DesktopFileDialogResult {
-    handle: Option<FileHandle>,
+pub struct DesktopFileSelection {
+    handle: FileHandle,
     md: Option<std::fs::Metadata>,
     contents: Vec<u8>,
 }
 
-impl DesktopFileDialogResult {
-    /// Create a new [`DesktopFileDialogResult`] from a given file handle
-    pub async fn new(handle: Option<FileHandle>) -> Self {
+impl DesktopFileSelection {
+    /// Create a new [`DesktopFileSelection`] from a given file handle.
+    pub async fn new(handle: FileHandle) -> Self {
         async fn read_file(path: &Path) -> (Option<std::fs::Metadata>, Vec<u8>) {
             let file = match tokio::fs::File::open(path).await {
                 Ok(file) => file,
@@ -62,11 +63,7 @@ impl DesktopFileDialogResult {
             (metadata, contents)
         }
 
-        let (md, contents) = if let Some(ref handle) = handle {
-            read_file(handle.path()).await
-        } else {
-            (None, Vec::new())
-        };
+        let (md, contents) = read_file(handle.path()).await;
 
         Self {
             handle,
@@ -76,29 +73,23 @@ impl DesktopFileDialogResult {
     }
 }
 
-impl FileDialogResult for DesktopFileDialogResult {
-    fn is_cancelled(&self) -> bool {
-        self.handle.is_none()
-    }
-
+impl FileDialogSelection for DesktopFileSelection {
     fn creation_time(&self) -> Option<DateTime<Utc>> {
-        if let Some(md) = &self.md {
-            md.created().ok().map(DateTime::<Utc>::from)
-        } else {
-            None
-        }
+        self.md
+            .as_ref()
+            .and_then(|md| md.created().ok())
+            .map(DateTime::<Utc>::from)
     }
 
     fn modification_time(&self) -> Option<DateTime<Utc>> {
-        if let Some(md) = &self.md {
-            md.modified().ok().map(DateTime::<Utc>::from)
-        } else {
-            None
-        }
+        self.md
+            .as_ref()
+            .and_then(|md| md.modified().ok())
+            .map(DateTime::<Utc>::from)
     }
 
-    fn file_name(&self) -> Option<String> {
-        self.handle.as_ref().map(|handle| handle.file_name())
+    fn file_name(&self) -> String {
+        self.handle.file_name()
     }
 
     fn size(&self) -> Option<u64> {
@@ -106,15 +97,11 @@ impl FileDialogResult for DesktopFileDialogResult {
     }
 
     fn file_type(&self) -> Option<String> {
-        if let Some(handle) = &self.handle {
-            handle
-                .path()
-                .extension()
-                .and_then(|x| x.to_str())
-                .map(|x| ".".to_owned() + x)
-        } else {
-            None
-        }
+        self.handle
+            .path()
+            .extension()
+            .and_then(|x| x.to_str())
+            .map(|x| ".".to_owned() + x)
     }
 
     fn contents(&self) -> &[u8] {
@@ -122,25 +109,9 @@ impl FileDialogResult for DesktopFileDialogResult {
     }
 
     fn write_and_refresh(&mut self, data: &[u8]) {
-        // write
-        if let Some(handle) = &self.handle {
-            let _ = std::fs::write(handle.path(), data);
-        }
-
-        // refresh
-        let md = self
-            .handle
-            .as_ref()
-            .and_then(|x| std::fs::metadata(x.path()).ok());
-
-        let contents = if let Some(handle) = &self.handle {
-            std::fs::read(handle.path()).unwrap_or_default()
-        } else {
-            Vec::new()
-        };
-
-        self.md = md;
-        self.contents = contents;
+        let _ = std::fs::write(self.handle.path(), data);
+        self.md = std::fs::metadata(self.handle.path()).ok();
+        self.contents = std::fs::read(self.handle.path()).unwrap_or_default();
     }
 }
 
@@ -182,6 +153,20 @@ impl DesktopUiBackend {
             font_database,
             file_picker,
         })
+    }
+
+    fn show_open_dialog<F, O>(&self, filters: &[FileFilter], f: F) -> Option<O>
+    where
+        F: FnOnce(AsyncFileDialog) -> O,
+    {
+        let mut dialog = AsyncFileDialog::new();
+
+        for filter in filters {
+            let extensions = filter.extensions_for_dialog(cfg!(target_os = "macos"));
+            dialog = dialog.add_filter(&filter.description, &extensions);
+        }
+
+        self.file_picker.show_dialog(dialog, f)
     }
 
     pub fn cursor(&self) -> egui::CursorIcon {
@@ -355,20 +340,34 @@ impl UiBackend for DesktopUiBackend {
     }
 
     fn display_file_open_dialog(&mut self, filters: Vec<FileFilter>) -> Option<DialogResultFuture> {
-        let mut dialog = AsyncFileDialog::new();
-
-        for filter in &filters {
-            let extensions = filter.extensions_for_dialog(cfg!(target_os = "macos"));
-
-            dialog = dialog.add_filter(&filter.description, &extensions);
-        }
-
-        let result = self.file_picker.show_dialog(dialog, |d| d.pick_file())?;
+        let result = self.show_open_dialog(&filters, |d| d.pick_file())?;
 
         Some(Box::pin(async move {
-            let result: Result<Box<dyn FileDialogResult>, DialogLoaderError> =
-                Ok(Box::new(DesktopFileDialogResult::new(result.await).await));
-            result
+            Ok(if let Some(handle) = result.await {
+                FileDialogResult::Selection(Box::new(DesktopFileSelection::new(handle).await))
+            } else {
+                FileDialogResult::Canceled
+            })
+        }))
+    }
+
+    fn display_file_open_dialog_multiple(
+        &mut self,
+        filters: Vec<FileFilter>,
+    ) -> Option<MultiDialogResultFuture> {
+        let result = self.show_open_dialog(&filters, |d| d.pick_files())?;
+
+        Some(Box::pin(async move {
+            Ok(if let Some(handles) = result.await {
+                let selections = futures::future::join_all(handles.into_iter().map(|h| async {
+                    Box::new(DesktopFileSelection::new(h).await) as Box<dyn FileDialogSelection>
+                }))
+                .await;
+
+                MultiFileDialogResult::Selection(selections)
+            } else {
+                MultiFileDialogResult::Canceled
+            })
         }))
     }
 
@@ -385,9 +384,11 @@ impl UiBackend for DesktopUiBackend {
         let result = self.file_picker.show_dialog(dialog, |d| d.save_file())?;
 
         Some(Box::pin(async move {
-            let result: Result<Box<dyn FileDialogResult>, DialogLoaderError> =
-                Ok(Box::new(DesktopFileDialogResult::new(result.await).await));
-            result
+            Ok(if let Some(handle) = result.await {
+                FileDialogResult::Selection(Box::new(DesktopFileSelection::new(handle).await))
+            } else {
+                FileDialogResult::Canceled
+            })
         }))
     }
 

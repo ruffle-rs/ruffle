@@ -30,7 +30,7 @@ anyhow = { workspace = true }
 async-channel = { workspace = true }
 vfs = { workspace = true }
 percent-encoding = { workspace = true }
-cfg-expr = "0.20.7"
+cfg-expr = "0.20.8"
 oxipng = "10.1.1"
 rascal = { workspace = true }
 sha2 = { workspace = true }

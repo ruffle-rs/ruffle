@@ -240,14 +240,14 @@ impl<'gc> Context3DObject<'gc> {
         });
     }
 
-    pub fn set_program_constants_from_matrix(
+    pub fn set_program_constants(
         self,
         program_type: ProgramType,
         first_register: u32,
-        matrix_raw_data_column_major: Vec<f32>,
+        matrix_raw_data_column_major: &[[u8; 4]],
     ) {
         self.with_context_3d(|ctx| {
-            ctx.process_command(Context3DCommand::SetProgramConstantsFromVector {
+            ctx.process_command(Context3DCommand::SetProgramConstants {
                 program_type,
                 first_register,
                 matrix_raw_data_column_major,

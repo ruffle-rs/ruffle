@@ -1028,22 +1028,7 @@ impl<'a> Reader<'a> {
 
             // GlyphShapeTable
             for (i, glyph) in glyphs.iter_mut().enumerate() {
-                // The glyph shapes are assumed to be positioned per the offset table.
-                // Panic on debug builds if this assumption is wrong, maybe we need to
-                // seek into these offsets instead?
-                debug_assert_eq!(self.pos(offsets_ref), offsets[i] as usize);
-
-                // The glyph shapes must not overlap. Avoid exceeding to the next one.
-                // TODO: What happens on decreasing offsets?
-                let available_bytes = if i < num_glyphs - 1 {
-                    offsets[i + 1] - offsets[i]
-                } else {
-                    code_table_offset - offsets[i]
-                };
-
-                if available_bytes == 0 {
-                    continue;
-                }
+                self.seek_absolute(offsets_ref, offsets[i] as usize);
 
                 let num_bits = self.read_u8()?;
                 let mut shape_context = ShapeContext {
@@ -1053,21 +1038,13 @@ impl<'a> Reader<'a> {
                     num_line_bits: num_bits & 0b1111,
                 };
 
-                if available_bytes == 1 {
-                    continue;
-                }
-
-                // TODO: Avoid reading more than `available_bytes - 1`?
                 let mut bits = self.bits();
                 while let Some(record) = Self::read_shape_record(&mut bits, &mut shape_context)? {
                     glyph.shape_records.push(record);
                 }
             }
 
-            // The code table is assumed to be positioned right after the glyph shapes.
-            // Panic on debug builds if this assumption is wrong, maybe we need to seek
-            // into the code table offset instead?
-            debug_assert_eq!(self.pos(offsets_ref), code_table_offset as usize);
+            self.seek_absolute(offsets_ref, code_table_offset as usize);
 
             // CodeTable
             for glyph in &mut glyphs {
@@ -2057,14 +2034,17 @@ impl<'a> Reader<'a> {
         BlendMode::from_u8(self.read_u8()?).ok_or_else(|| Error::invalid_data("Invalid blend mode"))
     }
 
-    fn read_clip_actions(&mut self) -> Result<Vec<ClipAction<'a>>> {
+    fn read_clip_actions(&mut self) -> Result<ClipActions<'a>> {
         self.read_u16()?; // Must be 0
-        self.read_clip_event_flags(); // All event flags
-        let mut clip_actions = vec![];
+        let all_event_flags = self.read_clip_event_flags();
+        let mut records = vec![];
         while let Some(clip_action) = self.read_clip_action()? {
-            clip_actions.push(clip_action);
+            records.push(clip_action);
         }
-        Ok(clip_actions)
+        Ok(ClipActions {
+            all_event_flags,
+            records,
+        })
     }
 
     fn read_clip_action(&mut self) -> Result<Option<ClipAction<'a>>> {

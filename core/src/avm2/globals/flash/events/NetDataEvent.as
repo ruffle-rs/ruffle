@@ -1,4 +1,5 @@
 package flash.events {
+    [API("672")]
     public class NetDataEvent extends Event {
         public static const MEDIA_TYPE_DATA:String = "mediaTypeData";
 

@@ -1,7 +1,7 @@
 //! `flash.text.TextField` builtin/prototype
 
 use crate::avm2::activation::Activation;
-use crate::avm2::error::{make_error_2006, make_error_2008};
+use crate::avm2::error::{Error2006Type, make_error_2006, make_error_2008};
 use crate::avm2::globals::flash::display::display_object::initialize_for_allocator;
 use crate::avm2::object::{ClassObject, Object, TextFormatObject};
 use crate::avm2::parameters::ParametersExt;
@@ -777,7 +777,7 @@ pub fn get_text_format<'gc>(
         let mut end_index = args.get_i32(1);
 
         if end_index >= 0 && (begin_index >= end_index || begin_index < 0) {
-            return Err(make_error_2006(activation));
+            return Err(make_error_2006(activation, Error2006Type::RangeError));
         }
 
         if begin_index < 0 {
@@ -957,7 +957,7 @@ pub fn set_text_format<'gc>(
         }
 
         if begin_index as usize > this.text_length() {
-            return Err(make_error_2006(activation));
+            return Err(make_error_2006(activation, Error2006Type::RangeError));
         }
 
         if end_index < 0 {
@@ -965,7 +965,7 @@ pub fn set_text_format<'gc>(
         }
 
         if end_index as usize > this.text_length() {
-            return Err(make_error_2006(activation));
+            return Err(make_error_2006(activation, Error2006Type::RangeError));
         }
 
         this.set_text_format(
@@ -1187,13 +1187,13 @@ pub fn get_line_metrics<'gc>(
 
     let line_num = args.get_i32(0);
     if line_num < 0 {
-        return Err(make_error_2006(activation));
+        return Err(make_error_2006(activation, Error2006Type::RangeError));
     }
 
     let metrics = this.line_metrics(line_num as usize);
 
     let Some(metrics) = metrics else {
-        return Err(make_error_2006(activation));
+        return Err(make_error_2006(activation, Error2006Type::RangeError));
     };
 
     let metrics_class = activation.avm2().classes().textlinemetrics;
@@ -1226,13 +1226,13 @@ pub fn get_line_length<'gc>(
 
     let line_num = args.get_i32(0);
     if line_num < 0 {
-        return Err(make_error_2006(activation));
+        return Err(make_error_2006(activation, Error2006Type::RangeError));
     }
 
     if let Some(length) = this.line_length(line_num as usize) {
         Ok(Value::from_usize_lossy(length))
     } else {
-        Err(make_error_2006(activation))
+        Err(make_error_2006(activation, Error2006Type::RangeError))
     }
 }
 
@@ -1251,7 +1251,7 @@ pub fn get_line_text<'gc>(
         return if let Some(text) = this.line_text(line_num as usize) {
             Ok(AvmString::new(activation.gc(), text).into())
         } else {
-            Err(make_error_2006(activation))
+            Err(make_error_2006(activation, Error2006Type::RangeError))
         };
     }
 
@@ -1274,13 +1274,13 @@ pub fn get_line_offset<'gc>(
 
     let line_num = args.get_i32(0);
     if line_num < 0 {
-        return Err(make_error_2006(activation));
+        return Err(make_error_2006(activation, Error2006Type::RangeError));
     }
 
     if let Some(offset) = this.line_offset(line_num as usize) {
         Ok(Value::from_usize_lossy(offset))
     } else {
-        Err(make_error_2006(activation))
+        Err(make_error_2006(activation, Error2006Type::RangeError))
     }
 }
 

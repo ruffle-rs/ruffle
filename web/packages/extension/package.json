@@ -18,18 +18,18 @@
     "devDependencies": {
         "@tsconfig/strictest": "^2.0.8",
         "@types/archiver": "^7.0.0",
-        "@types/chrome": "^0.1.42",
+        "@types/chrome": "^0.1.43",
         "@types/common-tags": "^1.8.4",
         "@types/firefox-webext-browser": "^143.0.0",
         "@types/jsonwebtoken": "^9.0.10",
         "archiver": "^7.0.1",
         "json5": "^2.2.3",
-        "ts-loader": "^9.5.7",
+        "ts-loader": "^9.6.0",
         "typescript": "^5.9.3",
-        "webpack-cli": "^7.0.2",
-        "axios": "^1.16.1",
+        "webpack-cli": "^7.0.3",
+        "axios": "^1.17.0",
         "form-data": "^4.0.5",
         "jsonwebtoken": "^9.0.3",
-        "tsx": "^4.22.3"
+        "tsx": "^4.22.4"
     }
 }

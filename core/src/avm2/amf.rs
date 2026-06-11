@@ -101,8 +101,14 @@ pub fn serialize_value<'gc>(
                     ))
                 }
             } else if let Some(date) = o.as_date_object() {
-                date.date_time()
-                    .map(|date_time| AmfValue::Date(date_time.timestamp_millis() as f64, None))
+                let time = date
+                    .date_time()
+                    .map(|date_time| date_time.timestamp_millis() as f64);
+
+                // "Invalid Date" is serialized as a NaN
+                let time = time.unwrap_or(f64::NAN);
+
+                Some(AmfValue::Date(time, None))
             } else if let Some(xml) = o.as_xml_object() {
                 // `is_string` is `true` for the AS3 XML class
                 Some(AmfValue::XML(

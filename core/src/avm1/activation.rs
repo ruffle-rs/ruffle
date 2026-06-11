@@ -1150,6 +1150,12 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
         let value: Value<'gc> = self.get_variable(path)?.into();
 
+        let value = if self.swf_version() <= 4 {
+            value.as_swf4_variable()
+        } else {
+            value
+        };
+
         self.stack_push(value);
 
         Ok(FrameControl::Continue)
@@ -2516,7 +2522,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let root = start.avm1_root();
         let start = start.object1_or_bare(self.gc());
         Ok(self
-            .resolve_target_path(root, start, &path, false)?
+            .resolve_target_path(root, start, &path, true, false)?
             .and_then(|o| o.as_display_object()))
     }
 
@@ -2535,16 +2541,22 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         start: Object<'gc>,
         mut path: &WStr,
         mut first_element: bool,
+        handle_this: bool,
     ) -> Result<Option<Object<'gc>>, Error<'gc>> {
         // Empty path resolves immediately to start clip.
         if path.is_empty() {
             return Ok(Some(start));
         }
 
+        // this, _root, and delimiters . and : are supported only in SWF5+.
+        // In general, SWF4 is more restrictive when it comes to paths.
+        let is_swf5 = self.swf_version() >= 5;
+
         // Starting / means an absolute path starting from root.
         // (`/bar` means `_root.bar`)
         let (mut object, mut is_slash_path) = if path.starts_with(b'/') {
             path = &path[1..];
+            first_element = false;
             (root.object1_or_bare(self.gc()), true)
         } else {
             (start, false)
@@ -2554,12 +2566,14 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
         // Iterate through each token in the path.
         while !path.is_empty() {
-            // Skip any number of leading :
-            // `foo`, `:foo`, and `:::foo` are all the same
-            path = path.trim_start_matches(b':');
+            if is_swf5 {
+                // Skip any number of leading :
+                // `foo`, `:foo`, and `:::foo` are all the same
+                path = path.trim_start_matches(b':');
+            }
 
             let prefix = &path[..path.len().min(3)];
-            let val = if prefix == b".." || prefix == b"../" || prefix == b"..:" {
+            let val = if prefix == b".." || prefix == b"../" || (is_swf5 && prefix == b"..:") {
                 // Check for ..
                 // SWF-4 style _parent
                 if path.get(2) == Some(u16::from(b'/')) {
@@ -2577,12 +2591,11 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                 // : . / all act as path delimiters.
                 // The only restriction is that after a / appears,
                 // . is no longer considered a delimiter.
-                // TODO: SWF4 is probably more restrictive.
                 let mut pos = 0;
                 while pos < path.len() {
                     match u8::try_from(path.at(pos)) {
-                        Ok(b':') => break,
-                        Ok(b'.') if !is_slash_path => break,
+                        Ok(b':') if is_swf5 => break,
+                        Ok(b'.') if is_swf5 && !is_slash_path => break,
                         Ok(b'/') => {
                             is_slash_path = true;
                             break;
@@ -2596,10 +2609,17 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                 let name = &path[..pos];
                 path = path.slice(pos + 1..).unwrap_or_default();
 
-                if first_element && name == b"this" {
+                if is_swf5 && handle_this && name == b"this" {
+                    // TODO This doesn't seem to be entirely right, but Ruffle
+                    // does not support the `this` variable/keyword properly.
+                    // We probably shouldn't handle `this` here at all.
                     self.this_cell()
-                } else if first_element && name == b"_root" {
+                } else if is_swf5 && first_element && name == b"_root" {
                     self.base_clip().avm1_root().object1_or_undef()
+                } else if first_element
+                    && let Some(level) = super::object::stage_object::parse_level(name, self)
+                {
+                    level
                 } else {
                     // Get the value from the object.
                     // Resolves display object instances first, then local variables.
@@ -2656,7 +2676,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                 let avm1_root = start.avm1_root();
 
                 if let Some(object) =
-                    self.resolve_target_path(avm1_root, *scope.locals(), path, true)?
+                    self.resolve_target_path(avm1_root, *scope.locals(), path, true, true)?
                 {
                     return Ok(Some((object, var_name)));
                 }
@@ -2695,18 +2715,30 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         // Resolve a variable path for a GetVariable action.
         let start = self.target_clip_or_root();
 
+        let is_swf5 = self.swf_version() >= 5;
+        let variable_separator = if is_swf5 {
+            // The separator . appeared in SWF5.
+            b":.".as_ref()
+        } else {
+            b":".as_ref()
+        };
+
         // Find the right-most : or . in the path.
         // If we have one, we must resolve as a target path.
-        if let Some(separator) = path.rfind(b":.".as_ref()) {
+        if let Some(separator) = path.rfind(variable_separator) {
             // We have a . or :, so this is a path to an object plus a variable name.
             // We resolve it directly on the targeted object.
             let (path, var_name) = (&path[..separator], &path[separator + 1..]);
+
+            if path.is_empty() {
+                return Ok(CallableValue::UnCallable(Value::Undefined));
+            }
 
             for scope in Scope::ancestors(self.scope()) {
                 let avm1_root = start.avm1_root();
 
                 if let Some(object) =
-                    self.resolve_target_path(avm1_root, *scope.locals(), path, true)?
+                    self.resolve_target_path(avm1_root, *scope.locals(), path, true, true)?
                 {
                     let var_name = AvmString::new(self.gc(), var_name);
                     if object.has_property(self, var_name) {
@@ -2719,12 +2751,13 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         }
 
         // If it doesn't have a trailing variable, it can still be a slash path.
-        if path.contains(b'/') {
+        // In SWF4 it has to have a trailing variable.
+        if is_swf5 && path.contains(b'/') {
             for scope in Scope::ancestors(self.scope()) {
                 let avm1_root = start.avm1_root();
 
                 if let Some(object) =
-                    self.resolve_target_path(avm1_root, *scope.locals(), &path, false)?
+                    self.resolve_target_path(avm1_root, *scope.locals(), &path, false, false)?
                 {
                     return Ok(CallableValue::UnCallable(object.into()));
                 }
@@ -2790,7 +2823,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                 let avm1_root = start.avm1_root();
 
                 if let Some(object) =
-                    self.resolve_target_path(avm1_root, *scope.locals(), path, true)?
+                    self.resolve_target_path(avm1_root, *scope.locals(), path, true, true)?
                 {
                     let var_name = AvmString::new(self.gc(), var_name);
                     object.set(var_name, value, self)?;
@@ -3008,7 +3041,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         if target.is_empty() {
             new_target_clip = Some(base_clip);
         } else if let Some(clip) = self
-            .resolve_target_path(root, start, target, false)?
+            .resolve_target_path(root, start, target, true, false)?
             .and_then(|o| o.as_display_object())
             .filter(|_| !self.base_clip.avm1_removed())
         // All properties invalid if base clip is removed.
@@ -3016,21 +3049,6 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             new_target_clip = Some(clip);
         } else {
             avm_warn!(self, "SetTarget failed: {} not found", target);
-            // TODO: Emulate AVM1 trace error message.
-            let path = if base_clip.avm1_removed() {
-                None
-            } else {
-                Some(base_clip.path())
-            };
-            let message = format!(
-                "Target not found: Target=\"{}\" Base=\"{}\"",
-                target,
-                match &path {
-                    Some(p) => p,
-                    None => WStr::from_units(b"?"),
-                }
-            );
-            self.context.avm_trace(&message);
 
             // When SetTarget has an invalid target, subsequent GetVariables act
             // as if they are targeting root, but subsequent Play/Stop/etc.

@@ -1,0 +1,818 @@
+_level0.a
+_level0.b
+undefined
+5
+number
+object
+path /
+  _x:0
+  _name:
+  typeof eval:movieclip
+  tellTarget
+  _x:0
+  _name:
+path //
+  _x:
+  _name:
+  typeof eval:undefined
+  tellTarget
+  _x:
+  _name:
+path /a
+  _x:2
+  _name:a
+  typeof eval:movieclip
+  tellTarget
+  _x:2
+  _name:a
+path //a
+  _x:
+  _name:
+  typeof eval:undefined
+  tellTarget
+  _x:
+  _name:
+path /
+  _x:0
+  _name:
+  typeof eval:movieclip
+  tellTarget
+  _x:0
+  _name:
+path /a
+  _x:2
+  _name:a
+  typeof eval:movieclip
+  tellTarget
+  _x:2
+  _name:a
+path /a/
+  _x:2
+  _name:a
+  typeof eval:movieclip
+  tellTarget
+  _x:2
+  _name:a
+path a
+  _x:2
+  _name:a
+  typeof eval:movieclip
+  tellTarget
+  _x:2
+  _name:a
+path a/
+  _x:2
+  _name:a
+  typeof eval:movieclip
+  tellTarget
+  _x:2
+  _name:a
+path a/..
+  _x:0
+  _name:
+  typeof eval:undefined
+  tellTarget
+  _x:0
+  _name:
+path a/../
+  _x:0
+  _name:
+  typeof eval:undefined
+  tellTarget
+  _x:0
+  _name:
+path a/..:
+  _x:0
+  _name:
+  typeof eval:undefined
+  tellTarget
+  _x:0
+  _name:
+path a/../a
+  _x:2
+  _name:a
+  typeof eval:undefined
+  tellTarget
+  _x:2
+  _name:a
+path a/..:a
+  _x:2
+  _name:a
+  typeof eval:movieclip
+  tellTarget
+  _x:2
+  _name:a
+path ../a
+  _x:
+  _name:
+  typeof eval:undefined
+  tellTarget
+  _x:
+  _name:
+path a/a/..
+  _x:
+  _name:
+  typeof eval:undefined
+  tellTarget
+  _x:
+  _name:
+path a/a/../
+  _x:
+  _name:
+  typeof eval:undefined
+  tellTarget
+  _x:
+  _name:
+path a/a/../..
+  _x:
+  _name:
+  typeof eval:undefined
+  tellTarget
+  _x:
+  _name:
+path a/a/../../
+  _x:
+  _name:
+  typeof eval:undefined
+  tellTarget
+  _x:
+  _name:
+path a/a/../../a
+  _x:
+  _name:
+  typeof eval:undefined
+  tellTarget
+  _x:
+  _name:
+path variable
+  _x:
+  _name:
+  typeof eval:undefined
+  tellTarget
+  _x:
+  _name:
+path /:variable
+  _x:
+  _name:
+  typeof eval:undefined
+  tellTarget
+  _x:
+  _name:
+path :variable
+  _x:
+  _name:
+  typeof eval:undefined
+  tellTarget
+  _x:
+  _name:
+path /a:variable
+  _x:
+  _name:
+  typeof eval:string
+  tellTarget
+  _x:
+  _name:
+path a:variable
+  _x:
+  _name:
+  typeof eval:string
+  tellTarget
+  _x:
+  _name:
+path /a/:variable
+  _x:
+  _name:
+  typeof eval:string
+  tellTarget
+  _x:
+  _name:
+path a/:variable
+  _x:
+  _name:
+  typeof eval:string
+  tellTarget
+  _x:
+  _name:
+path a/../a:variable
+  _x:
+  _name:
+  typeof eval:string
+  tellTarget
+  _x:
+  _name:
+path /:root_var
+  _x:
+  _name:
+  typeof eval:number
+  tellTarget
+  _x:
+  _name:
+path root_var
+  _x:
+  _name:
+  typeof eval:number
+  tellTarget
+  _x:
+  _name:
+path :root_var
+  _x:
+  _name:
+  typeof eval:undefined
+  tellTarget
+  _x:
+  _name:
+path /a:root_var
+  _x:
+  _name:
+  typeof eval:undefined
+  tellTarget
+  _x:
+  _name:
+path a:root_var
+  _x:
+  _name:
+  typeof eval:undefined
+  tellTarget
+  _x:
+  _name:
+path /a/:root_var
+  _x:
+  _name:
+  typeof eval:undefined
+  tellTarget
+  _x:
+  _name:
+path a/:root_var
+  _x:
+  _name:
+  typeof eval:undefined
+  tellTarget
+  _x:
+  _name:
+path a/../a:root_var
+  _x:
+  _name:
+  typeof eval:undefined
+  tellTarget
+  _x:
+  _name:
+path /:obj_var
+  _x:
+  _name:
+  typeof eval:object
+  tellTarget
+  _x:
+  _name:
+path /.variable
+  _x:
+  _name:
+  typeof eval:undefined
+  tellTarget
+  _x:
+  _name:
+path .variable
+  _x:
+  _name:
+  typeof eval:undefined
+  tellTarget
+  _x:
+  _name:
+path /a.variable
+  _x:
+  _name:
+  typeof eval:string
+  tellTarget
+  _x:
+  _name:
+path a.variable
+  _x:
+  _name:
+  typeof eval:string
+  tellTarget
+  _x:
+  _name:
+path /a/.variable
+  _x:
+  _name:
+  typeof eval:string
+  tellTarget
+  _x:
+  _name:
+path a/.variable
+  _x:
+  _name:
+  typeof eval:string
+  tellTarget
+  _x:
+  _name:
+path a/../a.variable
+  _x:
+  _name:
+  typeof eval:string
+  tellTarget
+  _x:
+  _name:
+path /.root_var
+  _x:
+  _name:
+  typeof eval:number
+  tellTarget
+  _x:
+  _name:
+path .root_var
+  _x:
+  _name:
+  typeof eval:undefined
+  tellTarget
+  _x:
+  _name:
+path /a.root_var
+  _x:
+  _name:
+  typeof eval:undefined
+  tellTarget
+  _x:
+  _name:
+path a.root_var
+  _x:
+  _name:
+  typeof eval:undefined
+  tellTarget
+  _x:
+  _name:
+path /a/.root_var
+  _x:
+  _name:
+  typeof eval:undefined
+  tellTarget
+  _x:
+  _name:
+path a/.root_var
+  _x:
+  _name:
+  typeof eval:undefined
+  tellTarget
+  _x:
+  _name:
+path a/../a.root_var
+  _x:
+  _name:
+  typeof eval:undefined
+  tellTarget
+  _x:
+  _name:
+path _level0:root_var
+  _x:
+  _name:
+  typeof eval:number
+  tellTarget
+  _x:
+  _name:
+path _level0:variable
+  _x:
+  _name:
+  typeof eval:undefined
+  tellTarget
+  _x:
+  _name:
+path _level0/:root_var
+  _x:
+  _name:
+  typeof eval:number
+  tellTarget
+  _x:
+  _name:
+path _level0/:variable
+  _x:
+  _name:
+  typeof eval:undefined
+  tellTarget
+  _x:
+  _name:
+path _level0.root_var
+  _x:
+  _name:
+  typeof eval:number
+  tellTarget
+  _x:
+  _name:
+path _level0.variable
+  _x:
+  _name:
+  typeof eval:undefined
+  tellTarget
+  _x:
+  _name:
+path _level0/.root_var
+  _x:
+  _name:
+  typeof eval:number
+  tellTarget
+  _x:
+  _name:
+path _level0/.variable
+  _x:
+  _name:
+  typeof eval:undefined
+  tellTarget
+  _x:
+  _name:
+path a/child
+  _x:1
+  _name:child
+  typeof eval:movieclip
+  tellTarget
+  _x:1
+  _name:child
+path a:child
+  _x:1
+  _name:child
+  typeof eval:movieclip
+  tellTarget
+  _x:1
+  _name:child
+path a.child
+  _x:1
+  _name:child
+  typeof eval:movieclip
+  tellTarget
+  _x:1
+  _name:child
+path _level0.a/child
+  _x:1
+  _name:child
+  typeof eval:undefined
+  tellTarget
+  _x:1
+  _name:child
+path _level0/a.child
+  _x:
+  _name:
+  typeof eval:movieclip
+  tellTarget
+  _x:
+  _name:
+path _level0:a:child
+  _x:1
+  _name:child
+  typeof eval:movieclip
+  tellTarget
+  _x:1
+  _name:child
+path _level0.a:child
+  _x:1
+  _name:child
+  typeof eval:movieclip
+  tellTarget
+  _x:1
+  _name:child
+path _level0:a.child
+  _x:1
+  _name:child
+  typeof eval:movieclip
+  tellTarget
+  _x:1
+  _name:child
+path _level0:a/child
+  _x:1
+  _name:child
+  typeof eval:undefined
+  tellTarget
+  _x:1
+  _name:child
+path _level0/a:child
+  _x:1
+  _name:child
+  typeof eval:movieclip
+  tellTarget
+  _x:1
+  _name:child
+path /_level0
+  _x:0
+  _name:
+  typeof eval:movieclip
+  tellTarget
+  _x:0
+  _name:
+path _level0
+  _x:0
+  _name:
+  typeof eval:movieclip
+  tellTarget
+  _x:0
+  _name:
+path _level0/_level0
+  _x:0
+  _name:
+  typeof eval:movieclip
+  tellTarget
+  _x:0
+  _name:
+path unknown/_level0
+  _x:
+  _name:
+  typeof eval:undefined
+  tellTarget
+  _x:
+  _name:
+path _level0/a:_level0
+  _x:0
+  _name:
+  typeof eval:movieclip
+  tellTarget
+  _x:0
+  _name:
+path _level0/a
+  _x:2
+  _name:a
+  typeof eval:movieclip
+  tellTarget
+  _x:2
+  _name:a
+path _level0/../a
+  _x:
+  _name:
+  typeof eval:undefined
+  tellTarget
+  _x:
+  _name:
+path _level0/../_level0
+  _x:
+  _name:
+  typeof eval:undefined
+  tellTarget
+  _x:
+  _name:
+path _level0/:a/
+  _x:2
+  _name:a
+  typeof eval:undefined
+  tellTarget
+  _x:2
+  _name:a
+path _level0/.a/
+  _x:
+  _name:
+  typeof eval:undefined
+  tellTarget
+  _x:
+  _name:
+path _level0/:a/_level0
+  _x:0
+  _name:
+  typeof eval:undefined
+  tellTarget
+  _x:0
+  _name:
+path _level0/:a:_level0
+  _x:0
+  _name:
+  typeof eval:movieclip
+  tellTarget
+  _x:0
+  _name:
+path _level0/:a:
+  _x:2
+  _name:a
+  typeof eval:undefined
+  tellTarget
+  _x:2
+  _name:a
+path _level0/.a:
+  _x:
+  _name:
+  typeof eval:undefined
+  tellTarget
+  _x:
+  _name:
+path _level0/:a
+  _x:2
+  _name:a
+  typeof eval:movieclip
+  tellTarget
+  _x:2
+  _name:a
+path _level0/.a
+  _x:
+  _name:
+  typeof eval:movieclip
+  tellTarget
+  _x:
+  _name:
+path _level0/::a
+  _x:2
+  _name:a
+  typeof eval:undefined
+  tellTarget
+  _x:2
+  _name:a
+path _level0/:::a
+  _x:2
+  _name:a
+  typeof eval:undefined
+  tellTarget
+  _x:2
+  _name:a
+path _level0/:::_level0
+  _x:0
+  _name:
+  typeof eval:undefined
+  tellTarget
+  _x:0
+  _name:
+path _level0/::_level0
+  _x:0
+  _name:
+  typeof eval:undefined
+  tellTarget
+  _x:0
+  _name:
+path _level0/:_level0
+  _x:0
+  _name:
+  typeof eval:movieclip
+  tellTarget
+  _x:0
+  _name:
+path /this
+  _x:
+  _name:
+  typeof eval:undefined
+  tellTarget
+  _x:
+  _name:
+path this
+  _x:
+  _name:
+  typeof eval:movieclip
+  tellTarget
+  _x:
+  _name:
+path /_root
+  _x:0
+  _name:
+  typeof eval:movieclip
+  tellTarget
+  _x:0
+  _name:
+path _root
+  _x:0
+  _name:
+  typeof eval:movieclip
+  tellTarget
+  _x:0
+  _name:
+path _root/a
+  _x:2
+  _name:a
+  typeof eval:movieclip
+  tellTarget
+  _x:2
+  _name:a
+path /_level0/a
+  _x:2
+  _name:a
+  typeof eval:movieclip
+  tellTarget
+  _x:2
+  _name:a
+path _flash0
+  _x:0
+  _name:
+  typeof eval:movieclip
+  tellTarget
+  _x:0
+  _name:
+path _flash0/
+  _x:0
+  _name:
+  typeof eval:movieclip
+  tellTarget
+  _x:0
+  _name:
+path /_flash0
+  _x:0
+  _name:
+  typeof eval:movieclip
+  tellTarget
+  _x:0
+  _name:
+path _flash0/a
+  _x:2
+  _name:a
+  typeof eval:movieclip
+  tellTarget
+  _x:2
+  _name:a
+path _flash0...:
+  _x:
+  _name:
+  typeof eval:undefined
+  tellTarget
+  _x:
+  _name:
+path _level0...
+  _x:
+  _name:
+  typeof eval:undefined
+  tellTarget
+  _x:
+  _name:
+path :_flash0:/
+  _x:
+  _name:
+  typeof eval:undefined
+  tellTarget
+  _x:
+  _name:
+path _level0:_level0:/
+  _x:
+  _name:
+  typeof eval:undefined
+  tellTarget
+  _x:
+  _name:
+path _flash0..:
+  _x:
+  _name:
+  typeof eval:undefined
+  tellTarget
+  _x:
+  _name:
+path ::_flash0..
+  _x:
+  _name:
+  typeof eval:undefined
+  tellTarget
+  _x:
+  _name:
+path _root/_level0:/
+  _x:
+  _name:
+  typeof eval:undefined
+  tellTarget
+  _x:
+  _name:
+path a:_level0..
+  _x:
+  _name:
+  typeof eval:undefined
+  tellTarget
+  _x:
+  _name:
+path _level0..:_flash0
+  _x:
+  _name:
+  typeof eval:undefined
+  tellTarget
+  _x:
+  _name:
+path _level0..:/
+  _x:
+  _name:
+  typeof eval:undefined
+  tellTarget
+  _x:
+  _name:
+path _root:_flash0..
+  _x:
+  _name:
+  typeof eval:undefined
+  tellTarget
+  _x:
+  _name:
+path _flash0..
+  _x:
+  _name:
+  typeof eval:undefined
+  tellTarget
+  _x:
+  _name:
+path _flash0/_flash0:/
+  _x:
+  _name:
+  typeof eval:undefined
+  tellTarget
+  _x:
+  _name:
+path _level0..:_flash0
+  _x:
+  _name:
+  typeof eval:undefined
+  tellTarget
+  _x:
+  _name:
+path /:_level0:/
+  _x:
+  _name:
+  typeof eval:undefined
+  tellTarget
+  _x:
+  _name:
+path a/_flash0:/
+  _x:
+  _name:
+  typeof eval:undefined
+  tellTarget
+  _x:
+  _name:

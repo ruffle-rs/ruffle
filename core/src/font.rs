@@ -874,7 +874,7 @@ pub trait FontLike<'gc> {
         text: &WStr, // TODO: take an `IntoIterator<Item=char>`, to not depend on string representation?
         mut transform: Transform,
         params: EvalParameters,
-        glyph_func: &mut dyn FnMut(usize, &Transform, GlyphRef, Twips, Twips),
+        mut glyph_func: impl FnMut(usize, &Transform, GlyphRef, Twips, Twips),
     ) {
         let baseline = self.metrics().ascent(params.height);
 
@@ -944,7 +944,7 @@ pub trait FontLike<'gc> {
             text,
             Default::default(),
             params,
-            &mut |_pos, _transform, _glyph, advance, x| {
+            |_pos, _transform, _glyph, advance, x| {
                 width = width.max(x + advance);
             },
         );

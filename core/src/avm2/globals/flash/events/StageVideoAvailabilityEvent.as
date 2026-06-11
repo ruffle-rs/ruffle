@@ -1,4 +1,5 @@
 package flash.events {
+    [API("670")]
     public class StageVideoAvailabilityEvent extends Event {
         public static const STAGE_VIDEO_AVAILABILITY:String = "stageVideoAvailability";
 

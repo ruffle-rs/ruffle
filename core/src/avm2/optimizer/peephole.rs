@@ -21,8 +21,8 @@ pub fn preprocess_peephole(ops: &[Cell<Op<'_>>]) {
 
 /// A peephole optimizer to run after type-aware optimizations. This should be
 /// called once on the entire code slice.
-pub fn postprocess_peephole(
-    ops: &[Cell<Op<'_>>],
+pub fn postprocess_peephole<'a>(
+    ops: &'a [Cell<Op<'_>>],
     jump_targets: &HashSet<usize>,
     has_exceptions: bool,
 ) {
@@ -58,7 +58,7 @@ pub fn postprocess_peephole(
         simple_scope_structure(ops, jump_targets).filter(|_| !has_exceptions);
 
     // Now actually run the peephole optimizer.
-    let mut last_op = None;
+    let mut last_op: Option<&'a Cell<Op<'_>>> = None;
 
     for (i, current_op) in ops.iter().enumerate() {
         if jump_targets.contains(&i) {
@@ -66,44 +66,106 @@ pub fn postprocess_peephole(
             last_op = None;
         }
 
-        match (last_op, last_op.map(Cell::get), current_op.get()) {
-            (Some(last_op), Some(push_op), Op::Pop) if push_op.is_pure_push() => {
-                // Eliminate PushXXX+Pop and GetLocal+Pop
-                last_op.set(Op::Nop);
-                current_op.set(Op::Nop);
+        if let Some(last_op) = last_op {
+            // Optimizations on both the current and the last op
+            match (last_op.get(), current_op.get()) {
+                (push_op, Op::Pop) if push_op.is_pure_push() => {
+                    // Eliminate PushXXX+Pop and GetLocal+Pop
+                    last_op.set(Op::Nop);
+                    current_op.set(Op::Nop);
+                }
+                (push_op, Op::PopJump { offset }) if push_op.is_pure_push() => {
+                    // PushXXX+PopJump becomes Nop+Jump
+                    last_op.set(Op::Nop);
+                    current_op.set(Op::Jump { offset });
+                }
+                (Op::CoerceB, Op::IfTrue { .. } | Op::IfFalse { .. } | Op::Not) => {
+                    // Remove CoerceB before IfTrue, IfFalse, and Not
+                    last_op.set(Op::Nop);
+                }
+                (Op::Dup, Op::SetLocal { index }) => {
+                    // Dup+SetLocal becomes Nop+StoreLocal
+                    last_op.set(Op::Nop);
+                    current_op.set(Op::StoreLocal { index });
+                }
+                (Op::SetLocal { index: index1 }, Op::GetLocal { index: index2 })
+                    if index1 == index2 =>
+                {
+                    // SetLocal+GetLocal becomes Nop+StoreLocal
+                    last_op.set(Op::Nop);
+                    current_op.set(Op::StoreLocal { index: index1 });
+                }
+                (
+                    Op::Add {
+                        inputs_integral: true,
+                    },
+                    Op::CoerceI,
+                ) => {
+                    // An integral addition that yields Number on overflow
+                    // followed by coerce-to-integer is equivalent to wrapping
+                    // integral addition
+                    last_op.set(Op::AddI);
+                    current_op.set(Op::Nop);
+                }
+                (
+                    Op::Subtract {
+                        inputs_integral: true,
+                    },
+                    Op::CoerceI,
+                ) => {
+                    // The same is true for subtraction
+                    last_op.set(Op::SubtractI);
+                    current_op.set(Op::Nop);
+                }
+                (
+                    Op::Add {
+                        inputs_integral: true,
+                    },
+                    Op::Li8 | Op::Li16 | Op::Li32 | Op::Si8 | Op::Si16 | Op::Si32,
+                ) => {
+                    // See comments above
+                    last_op.set(Op::AddI);
+                }
+                (
+                    Op::Subtract {
+                        inputs_integral: true,
+                    },
+                    Op::Li8 | Op::Li16 | Op::Li32 | Op::Si8 | Op::Si16 | Op::Si32,
+                ) => {
+                    // The same is true for subtraction
+                    last_op.set(Op::SubtractI);
+                }
+                (
+                    Op::Add {
+                        inputs_integral: true,
+                    },
+                    Op::SetSlotCoerceI { index },
+                ) => {
+                    // See comments above
+                    last_op.set(Op::AddI);
+                    current_op.set(Op::SetSlotNoCoerce { index });
+                }
+                (
+                    Op::Subtract {
+                        inputs_integral: true,
+                    },
+                    Op::SetSlotCoerceI { index },
+                ) => {
+                    // The same is true for subtraction
+                    last_op.set(Op::SubtractI);
+                    current_op.set(Op::SetSlotNoCoerce { index });
+                }
+                _ => {}
             }
-            (Some(last_op), Some(push_op), Op::PopJump { offset }) if push_op.is_pure_push() => {
-                // PushXXX+PopJump becomes Nop+Jump
-                last_op.set(Op::Nop);
-                current_op.set(Op::Jump { offset });
-            }
-            (
-                Some(last_op),
-                Some(Op::CoerceB),
-                Op::IfTrue { .. } | Op::IfFalse { .. } | Op::Not,
-            ) => {
-                // Remove CoerceB before IfTrue, IfFalse, and Not
-                last_op.set(Op::Nop);
-            }
-            (_, _, Op::GetScopeObject { index: 0 })
+        }
+
+        // Optimizations on the current op
+        match current_op.get() {
+            Op::GetScopeObject { index: 0 }
                 if simple_scope_op_positions.is_some() && !sets_local_0 =>
             {
                 // Replace `getscopeobject 0` with `getlocal 0` if possible
                 current_op.set(Op::GetLocal { index: 0 })
-            }
-            (Some(last_op), Some(Op::Dup), Op::SetLocal { index }) => {
-                // Dup+SetLocal becomes Nop+StoreLocal
-                last_op.set(Op::Nop);
-                current_op.set(Op::StoreLocal { index });
-            }
-            (
-                Some(last_op),
-                Some(Op::SetLocal { index: index1 }),
-                Op::GetLocal { index: index2 },
-            ) if index1 == index2 => {
-                // SetLocal+GetLocal becomes Nop+StoreLocal
-                last_op.set(Op::Nop);
-                current_op.set(Op::StoreLocal { index: index1 });
             }
             _ => {}
         }
