@@ -1,8 +1,9 @@
+use super::context::StringContext;
 use super::interner::AvmAtom;
 use super::repr::AvmStringRepr;
 
 use gc_arena::{Collect, Gc, Mutation};
-use ruffle_wstr::{WStr, WString, wstr_impl_traits};
+use ruffle_wstr::{Pattern, WStr, WString, wstr_impl_traits};
 use std::borrow::Cow;
 use std::ops::Deref;
 
@@ -102,6 +103,20 @@ impl<'gc> AvmString<'gc> {
     #[inline]
     pub fn ptr_eq(this: &Self, other: &Self) -> bool {
         std::ptr::eq(this.as_wstr(), other.as_wstr())
+    }
+
+    /// Like [`WStr::split`], but yields dependent `AvmString`s
+    pub fn split_dependent<'a, P>(
+        self,
+        context: &'a StringContext<'gc>,
+        pattern: P,
+    ) -> impl Iterator<Item = AvmString<'gc>> + 'a
+    where
+        P: Pattern<'gc> + 'a,
+    {
+        self.as_wstr()
+            .split_indices(pattern)
+            .map(move |range| context.substring(self, range))
     }
 }
 

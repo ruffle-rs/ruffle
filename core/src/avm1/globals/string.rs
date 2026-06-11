@@ -273,12 +273,11 @@ fn split<'gc>(
                 )
                 .into())
         } else {
-            // TODO(moulins): make dependent AvmStrings instead of reallocating.
             Ok(ArrayBuilder::new(activation)
                 .with(
-                    this.split(&delimiter)
+                    this.split_dependent(activation.strings(), delimiter.as_wstr())
                         .take(limit)
-                        .map(|c| AvmString::new(activation.gc(), c).into()),
+                        .map(Value::from),
                 )
                 .into())
         }
