@@ -61,12 +61,12 @@ The following are typical dependencies for Linux:
 
 * Ubuntu/Debian:
   ```shell
-  sudo apt install pkg-config libasound2-dev libudev-dev libfontconfig-dev default-jre-headless libssl-dev g++
+  sudo apt install pkg-config libasound2-dev libudev-dev libfontconfig-dev libssl-dev default-jre-headless g++
   ```
 
 * Fedora/RHEL:
   ```shell
-  sudo dnf install pkgconf-pkg-config alsa-lib-devel systemd-devel fontconfig-devel java-latest-openjdk-headless openssl-devel gcc-c++
+  sudo dnf install pkgconf-pkg-config alsa-lib-devel systemd-devel fontconfig-devel openssl-devel java-latest-openjdk-headless gcc-c++
   ```
 
 ### Desktop
