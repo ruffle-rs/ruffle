@@ -153,8 +153,10 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
 
         let params = EvalParameters::from_span(span);
 
-        for text in span_text.split([b'\n', b'\r', b'\t']) {
-            let slice_start = text.offset_in(span_text).unwrap();
+        for range in span_text.split_indices([b'\n', b'\r', b'\t']) {
+            let slice_start = range.start;
+            let text = &span_text[range];
+
             let delimiter = if slice_start > 0 {
                 span_text
                     .get(slice_start - 1)
@@ -651,9 +653,9 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
     fn append_text(&mut self, text: &'a WStr, start: usize, end: usize, span: &TextSpan) {
         let empty = start == end;
         if !empty && self.effective_alignment() == swf::TextAlign::Justify {
-            for word in text.split(b' ') {
-                let word_start = word.offset_in(text).unwrap();
-                let word_end = min(word_start + word.len() + 1, text.len());
+            for range in text.split_indices(b' ') {
+                let word_start = range.start;
+                let word_end = min(range.end + 1, text.len());
 
                 if word_start == word_end {
                     // Do not append empty boxes
