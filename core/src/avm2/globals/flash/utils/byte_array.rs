@@ -838,8 +838,7 @@ pub fn write_object<'gc>(
             obj,
             amf_version,
             &mut Default::default(),
-        )
-        .unwrap_or(flash_lso::types::Value::Undefined);
+        );
 
         let element = Element::new("", Rc::new(amf));
         let mut lso = flash_lso::types::Lso::new(vec![element], "", amf_version);

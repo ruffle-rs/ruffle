@@ -24,17 +24,17 @@ pub fn serialize_value<'gc>(
     elem: Value<'gc>,
     amf_version: AMFVersion,
     object_table: &mut ObjectTable<'gc>,
-) -> Option<AmfValue> {
+) -> AmfValue {
     match elem.normalize() {
-        Value::Undefined => Some(AmfValue::Undefined),
-        Value::Null => Some(AmfValue::Null),
-        Value::Bool(b) => Some(AmfValue::Bool(b)),
-        Value::Number(f) => Some(AmfValue::Number(f)),
+        Value::Undefined => AmfValue::Undefined,
+        Value::Null => AmfValue::Null,
+        Value::Bool(b) => AmfValue::Bool(b),
+        Value::Number(f) => AmfValue::Number(f),
         // Integers are unsupported in AMF0, and must be converted to Number regardless of whether
         // it can be represented as an integer.
-        Value::Integer(i) if amf_version == AMFVersion::AMF0 => Some(AmfValue::Number(i as f64)),
-        Value::Integer(i) => Some(AmfValue::Integer(i)),
-        Value::String(s) => Some(AmfValue::String(s.to_string())),
+        Value::Integer(i) if amf_version == AMFVersion::AMF0 => AmfValue::Number(i as f64),
+        Value::Integer(i) => AmfValue::Integer(i),
+        Value::String(s) => AmfValue::String(s.to_string()),
         Value::Object(o) => {
             if o.as_function_object().is_some() {
                 // NOTE: `FunctionObject`-valued keys are skipped during
@@ -42,9 +42,9 @@ pub fn serialize_value<'gc>(
                 // if AS3 attempts to directly serialize a `Function` with e.g.
                 // `byteArray.writeObject(new Function())`, this path will be
                 // hit and an `undefined` will be written.
-                Some(AmfValue::Undefined)
+                AmfValue::Undefined
             } else if o.as_display_object().is_some() {
-                Some(AmfValue::Undefined)
+                AmfValue::Undefined
             } else if let Some(array_storage) = o.as_array_storage() {
                 let len = array_storage.length() as u32;
                 drop(array_storage);
@@ -68,40 +68,32 @@ pub fn serialize_value<'gc>(
                         }
                     }
 
-                    Some(AmfValue::ECMAArray(ObjectId::INVALID, dense, sparse, len))
+                    AmfValue::ECMAArray(ObjectId::INVALID, dense, sparse, len)
                 } else {
                     // TODO: is this right?
-                    Some(AmfValue::ECMAArray(ObjectId::INVALID, vec![], values, len))
+                    AmfValue::ECMAArray(ObjectId::INVALID, vec![], values, len)
                 }
             } else if let Some(vec) = o.as_vector_storage() {
                 let val_type = vec.value_type();
                 if val_type == Some(activation.avm2().class_defs().int) {
                     let int_vec: Vec<_> = vec.iter().map(|v| v.as_i32()).collect();
-                    Some(AmfValue::VectorInt(int_vec, vec.is_fixed()))
+                    AmfValue::VectorInt(int_vec, vec.is_fixed())
                 } else if val_type == Some(activation.avm2().class_defs().uint) {
                     let uint_vec: Vec<_> = vec.iter().map(|v| v.as_u32()).collect();
-                    Some(AmfValue::VectorUInt(uint_vec, vec.is_fixed()))
+                    AmfValue::VectorUInt(uint_vec, vec.is_fixed())
                 } else if val_type == Some(activation.avm2().class_defs().number) {
                     let num_vec: Vec<_> = vec.iter().map(|v| v.as_f64()).collect();
-                    Some(AmfValue::VectorDouble(num_vec, vec.is_fixed()))
+                    AmfValue::VectorDouble(num_vec, vec.is_fixed())
                 } else {
                     let obj_vec: Vec<_> = vec
                         .iter()
-                        .map(|v| {
-                            serialize_value(activation, v, amf_version, object_table)
-                                .unwrap_or(AmfValue::Undefined)
-                        })
+                        .map(|v| serialize_value(activation, v, amf_version, object_table))
                         .collect();
 
                     let val_type = val_type.unwrap_or(activation.avm2().class_defs().object);
 
                     let name = class_to_alias(activation, val_type);
-                    Some(AmfValue::VectorObject(
-                        ObjectId::INVALID,
-                        obj_vec,
-                        name,
-                        vec.is_fixed(),
-                    ))
+                    AmfValue::VectorObject(ObjectId::INVALID, obj_vec, name, vec.is_fixed())
                 }
             } else if let Some(date) = o.as_date_object() {
                 let time = date
@@ -111,15 +103,12 @@ pub fn serialize_value<'gc>(
                 // "Invalid Date" is serialized as a NaN
                 let time = time.unwrap_or(f64::NAN);
 
-                Some(AmfValue::Date(time, None))
+                AmfValue::Date(time, None)
             } else if let Some(xml) = o.as_xml_object() {
                 // `is_string` is `true` for the AS3 XML class
-                Some(AmfValue::XML(
-                    xml.node().xml_to_xml_string(activation).to_string(),
-                    true,
-                ))
+                AmfValue::XML(xml.node().xml_to_xml_string(activation).to_string(), true)
             } else if let Some(bytearray) = o.as_bytearray() {
-                Some(AmfValue::ByteArray(bytearray.bytes().to_vec()))
+                AmfValue::ByteArray(bytearray.bytes().to_vec())
             } else if let Some(dictionary) = o.as_dictionary_object() {
                 // FIXME change this once weak keys are implemented
                 let has_weak_keys = false;
@@ -148,11 +137,7 @@ pub fn serialize_value<'gc>(
                         .unwrap();
                 }
 
-                Some(AmfValue::Dictionary(
-                    ObjectId::INVALID,
-                    dictionary_body,
-                    has_weak_keys,
-                ))
+                AmfValue::Dictionary(ObjectId::INVALID, dictionary_body, has_weak_keys)
             } else {
                 let class = o.instance_class();
                 let name = class_to_alias(activation, class);
@@ -173,7 +158,7 @@ pub fn serialize_value<'gc>(
                     object_table,
                 )
                 .unwrap();
-                Some(AmfValue::Object(
+                AmfValue::Object(
                     ObjectId::INVALID,
                     object_body,
                     if amf_version == AMFVersion::AMF3 {
@@ -186,7 +171,7 @@ pub fn serialize_value<'gc>(
                     } else {
                         None
                     },
-                ))
+                )
             }
         }
     }
@@ -310,20 +295,17 @@ fn get_or_create_value<'gc>(
                 Some(rc_val.clone())
             }
             None => {
-                if let Some(value) = serialize_value(activation, val, amf_version, object_table) {
-                    let rc_val = Rc::new(value);
-                    // We cannot use Entry, since we need to pass in 'object_table' to 'serialize_value'
-                    object_table.insert(obj, rc_val.clone());
-                    Some(rc_val)
-                } else {
-                    None
-                }
+                let value = serialize_value(activation, val, amf_version, object_table);
+                let rc_val = Rc::new(value);
+
+                // We cannot use Entry, since we need to pass in 'object_table' to 'serialize_value'
+                object_table.insert(obj, rc_val.clone());
+                Some(rc_val)
             }
         }
-    } else if let Some(value) = serialize_value(activation, val, amf_version, object_table) {
-        Some(Rc::new(value))
     } else {
-        None
+        let value = serialize_value(activation, val, amf_version, object_table);
+        Some(Rc::new(value))
     }
 }
 
