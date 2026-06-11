@@ -931,7 +931,7 @@ impl<'a> Reader<'a> {
         &mut self,
     ) -> Result<DefineSceneAndFrameLabelData<'a>> {
         let num_scenes = self.read_encoded_u32()? as usize;
-        let mut scenes = Vec::with_capacity(num_scenes);
+        let mut scenes = Vec::with_capacity(num_scenes.min(256));
         for _ in 0..num_scenes {
             scenes.push(FrameLabelData {
                 frame_num: self.read_encoded_u32()?,
@@ -940,7 +940,7 @@ impl<'a> Reader<'a> {
         }
 
         let num_frame_labels = self.read_encoded_u32()? as usize;
-        let mut frame_labels = Vec::with_capacity(num_frame_labels);
+        let mut frame_labels = Vec::with_capacity(num_frame_labels.min(256));
         for _ in 0..num_frame_labels {
             frame_labels.push(FrameLabelData {
                 frame_num: self.read_encoded_u32()?,
