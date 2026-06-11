@@ -2055,7 +2055,9 @@ impl<'a> Reader<'a> {
             let mut length = self.read_u32()?;
             let key_code = if events.contains(ClipEventFlag::KEY_PRESS) {
                 // ActionData length includes the 1 byte key code.
-                length -= 1;
+                length = length
+                    .checked_sub(1)
+                    .ok_or_else(|| Error::invalid_data("keyPress clip action without key code"))?;
                 Some(self.read_u8()?)
             } else {
                 None
