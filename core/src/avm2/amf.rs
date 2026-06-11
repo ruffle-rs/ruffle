@@ -128,9 +128,7 @@ pub fn serialize_value<'gc>(
                     let name = get_or_create_value(activation, name, object_table, amf_version);
                     let value = get_or_create_value(activation, value, object_table, amf_version);
 
-                    if let (Some(name), Some(value)) = (name, value) {
-                        dictionary_body.push((name, value));
-                    }
+                    dictionary_body.push((name, value));
 
                     last_index = dictionary
                         .get_next_enumerant(last_index, activation)
@@ -222,14 +220,14 @@ pub fn recursive_serialize<'gc>(
             {
                 continue;
             }
+
             let value = Value::from(obj).get_public_property(name, activation)?;
             let name = name.to_utf8_lossy().to_string();
-            if let Some(elem) =
-                get_or_create_element(activation, name.clone(), value, object_table, amf_version)
-            {
-                elements.push(elem);
-                static_properties.push(name);
-            }
+            let elem =
+                get_or_create_element(activation, name.clone(), value, object_table, amf_version);
+
+            elements.push(elem);
+            static_properties.push(name);
         }
     }
 
@@ -248,11 +246,9 @@ pub fn recursive_serialize<'gc>(
             .is_none()
         {
             let name = name.to_utf8_lossy().to_string();
-            if let Some(elem) =
-                get_or_create_element(activation, name.clone(), value, object_table, amf_version)
-            {
-                elements.push(elem);
-            }
+            let elem =
+                get_or_create_element(activation, name.clone(), value, object_table, amf_version);
+            elements.push(elem);
         }
 
         last_index = obj.get_next_enumerant(last_index, activation)?;
@@ -266,13 +262,10 @@ fn get_or_create_element<'gc>(
     val: Value<'gc>,
     object_table: &mut ObjectTable<'gc>,
     amf_version: AMFVersion,
-) -> Option<Element> {
+) -> Element {
     let value = get_or_create_value(activation, val, object_table, amf_version);
-    if let Some(value) = value {
-        Some(Element::new(name, value))
-    } else {
-        None
-    }
+
+    Element::new(name, value)
 }
 
 fn get_or_create_value<'gc>(
@@ -280,7 +273,7 @@ fn get_or_create_value<'gc>(
     val: Value<'gc>,
     object_table: &mut ObjectTable<'gc>,
     amf_version: AMFVersion,
-) -> Option<Rc<AmfValue>> {
+) -> Rc<AmfValue> {
     if let Some(obj) = val.as_object() {
         match object_table.get(&obj) {
             Some(rc_val) => {
@@ -292,7 +285,7 @@ fn get_or_create_value<'gc>(
                     "writeObject",
                     "with same Object used multiple times"
                 );
-                Some(rc_val.clone())
+                rc_val.clone()
             }
             None => {
                 let value = serialize_value(activation, val, amf_version, object_table);
@@ -300,12 +293,12 @@ fn get_or_create_value<'gc>(
 
                 // We cannot use Entry, since we need to pass in 'object_table' to 'serialize_value'
                 object_table.insert(obj, rc_val.clone());
-                Some(rc_val)
+                rc_val
             }
         }
     } else {
         let value = serialize_value(activation, val, amf_version, object_table);
-        Some(Rc::new(value))
+        Rc::new(value)
     }
 }
 
