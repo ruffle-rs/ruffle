@@ -36,10 +36,13 @@ pub fn serialize_value<'gc>(
         Value::Integer(i) => Some(AmfValue::Integer(i)),
         Value::String(s) => Some(AmfValue::String(s.to_string())),
         Value::Object(o) => {
-            // TODO: Find a more general rule for which object types should be skipped,
-            // and which turn into undefined.
             if o.as_function_object().is_some() {
-                None
+                // NOTE: `FunctionObject`-valued keys are skipped during
+                // serialization of objects in `recursive_serialize`. However,
+                // if AS3 attempts to directly serialize a `Function` with e.g.
+                // `byteArray.writeObject(new Function())`, this path will be
+                // hit and an `undefined` will be written.
+                Some(AmfValue::Undefined)
             } else if o.as_display_object().is_some() {
                 Some(AmfValue::Undefined)
             } else if let Some(array_storage) = o.as_array_storage() {
@@ -253,12 +256,20 @@ pub fn recursive_serialize<'gc>(
             .coerce_to_string(activation)?;
         let value = obj.get_enumerant_value(last_index, activation)?;
 
-        let name = name.to_utf8_lossy().to_string();
-        if let Some(elem) =
-            get_or_create_element(activation, name.clone(), value, object_table, amf_version)
+        // If the value is a `Function`, skip the entry.
+        if value
+            .as_object()
+            .and_then(|o| o.as_function_object())
+            .is_none()
         {
-            elements.push(elem);
+            let name = name.to_utf8_lossy().to_string();
+            if let Some(elem) =
+                get_or_create_element(activation, name.clone(), value, object_table, amf_version)
+            {
+                elements.push(elem);
+            }
         }
+
         last_index = obj.get_next_enumerant(last_index, activation)?;
     }
     Ok(())
