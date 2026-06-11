@@ -2162,7 +2162,7 @@ impl<'a> Reader<'a> {
         let num_matrix_rows = self.read_u8()?;
         let divisor = self.read_f32()?;
         let bias = self.read_f32()?;
-        let num_entries = num_matrix_cols * num_matrix_rows;
+        let num_entries = num_matrix_cols as u16 * num_matrix_rows as u16;
         let mut matrix = Vec::with_capacity(num_entries as usize);
         for _ in 0..num_entries {
             matrix.push(self.read_f32()?);
