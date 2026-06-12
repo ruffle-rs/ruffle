@@ -38,6 +38,15 @@
     "settings_player_version": {
         "message": "Versão do Flash Player a emular (entre 1 e 32)"
     },
+    "settings_background_execution_mode": {
+        "message": "Execução em segundo plano"
+    },
+    "settings_background_execution_mode_none": {
+        "message": "Pausar"
+    },
+    "settings_background_execution_mode_main_thread": {
+        "message": "Executar na thread principal"
+    },
     "settings_preferred_renderer": {
         "message": "Renderizador preferido"
     },

@@ -1,7 +1,9 @@
 message-cant-embed =
     Ruffle non è stato in grado di eseguire il Flash incorporato in questa pagina.
     Puoi provare ad aprire il file in una scheda separata, per evitare questo problema.
-message-restored-from-bfcache = Il tuo browser ha ripristinato il contenuto del Flash da una sessione precedente. Per iniziare da capo, ricarica la pagina.
+message-restored-from-bfcache =
+    Il tuo browser ha ripristinato il contenuto del Flash da una sessione precedente.
+    Per iniziare da capo, ricarica la pagina.
 panic-title = Qualcosa è andato storto :(
 more-info = Maggiori informazioni
 run-anyway = Esegui comunque

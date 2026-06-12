@@ -38,6 +38,15 @@
     "settings_player_version": {
         "message": "Numărul versiunii Flash Player de emulat (interval 1-32)"
     },
+    "settings_background_execution_mode": {
+        "message": "Execuție în fundal"
+    },
+    "settings_background_execution_mode_none": {
+        "message": "Pauză"
+    },
+    "settings_background_execution_mode_main_thread": {
+        "message": "Rulează în firul de execuție principal"
+    },
     "settings_preferred_renderer": {
         "message": "Renderer preferat"
     },

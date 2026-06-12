@@ -38,11 +38,23 @@
     "settings_player_version": {
         "message": "Flashspelarversion att emulera (mellan 1-32)"
     },
+    "settings_background_execution_mode_none": {
+        "message": "Pausa"
+    },
+    "settings_background_execution_mode_main_thread": {
+        "message": "Kör på huvudtråden"
+    },
     "settings_preferred_renderer": {
         "message": "Föredragen renderare"
     },
     "settings_preferred_renderer_auto": {
         "message": "Automatisk"
+    },
+    "settings_device_font_renderer": {
+        "message": "Renderare för enhetens typsnitt"
+    },
+    "device_font_renderer_embedded": {
+        "message": "Inbäddad"
     },
     "settings_advanced_options": {
         "message": "Avancerade inställningar"
