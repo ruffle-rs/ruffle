@@ -333,6 +333,8 @@ impl<'gc> VTable<'gc> {
             }
         }
 
+        let inherited_ns_counts = resolved_traits.ns_counts();
+
         for trait_data in defining_class_def.traits() {
             match trait_data.kind() {
                 TraitKind::Method { method, .. } => {
@@ -517,6 +519,8 @@ impl<'gc> VTable<'gc> {
                 }
             }
         }
+
+        resolved_traits.promote_since(&inherited_ns_counts);
 
         // Append the new slots to the slot table now.
         for slot in new_slots {
