@@ -1930,36 +1930,12 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         }
 
         match target {
-            Value::String(target) => {
-                return self.set_target(&target);
-            }
             Value::Undefined => {
                 // In SWF6 and below, SetTarget2 on an undefined object resets the target to the base clip
                 if self.swf_version() > 6 {
                     self.set_target_clip(None);
                 } else {
                     self.set_target_clip(Some(base_clip));
-                }
-            }
-            Value::Object(o) => {
-                if let Some(clip) = o.as_display_object() {
-                    // MovieClips can be targeted directly.
-                    self.set_target_clip(Some(clip));
-                } else {
-                    // Other objects get coerced to string.
-                    let target = target.coerce_to_string(self)?;
-                    return self.set_target(&target);
-                }
-            }
-            Value::MovieClip(_) => {
-                let o = target.coerce_to_object_or_bare(self)?;
-                if let Some(clip) = o.as_display_object() {
-                    // MovieClips can be targeted directly.
-                    self.set_target_clip(Some(clip));
-                } else {
-                    // Other objects get coerced to string.
-                    let target = target.coerce_to_string(self)?;
-                    return self.set_target(&target);
                 }
             }
             _ => {
