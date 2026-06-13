@@ -124,25 +124,6 @@ impl<'gc, V> PropertyMap<'gc, V> {
         }
     }
 
-    pub fn insert_with_namespace(
-        &mut self,
-        ns: Namespace<'gc>,
-        name: AvmString<'gc>,
-        mut value: V,
-    ) -> Option<V> {
-        let bucket = self.0.entry(name).or_default();
-
-        if let Some((_, old_value)) = bucket.iter_mut().find(|(n, _)| n.matches_ns(ns)) {
-            swap(old_value, &mut value);
-
-            Some(value)
-        } else {
-            bucket.push((ns, value));
-
-            None
-        }
-    }
-
     pub fn remove(&mut self, name: QName<'gc>) -> Option<V> {
         let bucket = self.0.get_mut(&name.local_name());
 
