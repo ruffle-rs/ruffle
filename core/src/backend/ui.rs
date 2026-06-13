@@ -168,9 +168,7 @@ pub trait UiBackend: Any {
     fn display_file_open_dialog_multiple(
         &mut self,
         _filters: Vec<FileFilter>,
-    ) -> Option<MultiDialogResultFuture> {
-        None
-    }
+    ) -> Option<MultiDialogResultFuture>;
 
     /// Display a dialog allowing a user to select a destination to save a file to
     ///
@@ -265,6 +263,13 @@ impl UiBackend for NullUiBackend {
         _filters: Vec<FileFilter>,
     ) -> Option<DialogResultFuture> {
         Some(Box::pin(async move { Ok(FileDialogResult::Canceled) }))
+    }
+
+    fn display_file_open_dialog_multiple(
+        &mut self,
+        _filters: Vec<FileFilter>,
+    ) -> Option<MultiDialogResultFuture> {
+        Some(Box::pin(async move { Ok(MultiFileDialogResult::Canceled) }))
     }
 
     fn close_file_dialog(&mut self) {}

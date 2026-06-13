@@ -220,6 +220,88 @@ pub fn file_type<'gc>(
     Ok(Value::Undefined)
 }
 
+/// Read a filter field. Only honors own properties (not those inherited from
+/// the prototype) and invokes virtual getters defined via `Object.addProperty`.
+/// Per Flash, exceptions thrown from such a getter are silently swallowed and
+/// the field is treated as missing.
+fn get_own_filter_field<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    object: Object<'gc>,
+    name: AvmString<'gc>,
+) -> Option<Value<'gc>> {
+    if !object.has_own_property(activation, name) {
+        return None;
+    }
+
+    object.get(name, activation).ok()
+}
+
+fn parse_file_filter_array<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    array: Object<'gc>,
+) -> Result<Option<Vec<FileFilter>>, Error<'gc>> {
+    let length = array.length(activation)?;
+
+    // Empty array is not allowed
+    if length == 0 {
+        return Ok(None);
+    }
+
+    let mut filters = Vec::with_capacity(length as usize);
+
+    for i in 0..length {
+        let Value::Object(element) = array.get_element(activation, i) else {
+            // Method will abort if any non-Object elements are in the list
+            return Ok(None);
+        };
+
+        let (Some(description), Some(extension), mac_type) = (
+            get_own_filter_field(activation, element, istr!("description")),
+            get_own_filter_field(activation, element, istr!("extension")),
+            get_own_filter_field(activation, element, istr!("macType")),
+        ) else {
+            return Ok(None);
+        };
+
+        let description = description.coerce_to_string(activation)?.to_string();
+        let extensions = extension.coerce_to_string(activation)?.to_string();
+        let mac_type = match mac_type {
+            Some(v) => Some(v.coerce_to_string(activation)?.to_string()),
+            None => None,
+        };
+
+        // Empty strings are not allowed for desc / extension
+        if description.is_empty() || extensions.is_empty() {
+            return Ok(None);
+        }
+
+        filters.push(FileFilter {
+            description,
+            extensions,
+            mac_type,
+        });
+    }
+
+    Ok(Some(filters))
+}
+
+/// Parse the file filter argument used by `FileReference.browse` and
+/// `FileReferenceList.browse`.
+///
+/// Returns `Ok(Some(filters))` on success, or `Ok(None)` if `browse()` should
+/// bail out and return `false` without opening a dialog. Exceptions raised
+/// during property coercion are propagated.
+pub fn parse_file_filters<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    value: Option<Value<'gc>>,
+) -> Result<Option<Vec<FileFilter>>, Error<'gc>> {
+    match value {
+        Some(Value::Object(array)) => parse_file_filter_array(activation, array),
+        Some(_) => Ok(None),
+        None => Ok(Some(Vec::new())),
+    }
+}
+
 pub fn browse<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
@@ -229,58 +311,9 @@ pub fn browse<'gc>(
         return Ok(Value::Undefined);
     }
 
-    let file_filters = match args.get(0) {
-        Some(Value::Object(array)) => {
-            // Array of filter objects.
-            let length = array.length(activation)?;
-
-            // Empty array is not allowed
-            if length == 0 {
-                return Ok(false.into());
-            }
-
-            let mut results = Vec::with_capacity(length as usize);
-
-            for i in 0..length {
-                if let Value::Object(element) = array.get_element(activation, i) {
-                    let mac_type =
-                        if let Some(val) = element.get_local_stored(istr!("macType"), activation) {
-                            Some(val.coerce_to_string(activation)?.to_string())
-                        } else {
-                            None
-                        };
-
-                    let description = element.get_local_stored(istr!("description"), activation);
-                    let extension = element.get_local_stored(istr!("extension"), activation);
-
-                    if let (Some(description), Some(extension)) = (description, extension) {
-                        let description = description.coerce_to_string(activation)?.to_string();
-
-                        let extensions = extension.coerce_to_string(activation)?.to_string();
-
-                        // Empty strings are not allowed for desc / extension
-                        if description.is_empty() || extensions.is_empty() {
-                            return Ok(false.into());
-                        }
-
-                        results.push(FileFilter {
-                            description,
-                            extensions,
-                            mac_type,
-                        });
-                    } else {
-                        return Ok(false.into());
-                    }
-                } else {
-                    // Method will abort if any non-Object elements are in the list
-                    return Ok(false.into());
-                }
-            }
-
-            results
-        }
-        None => Vec::new(),
-        _ => return Ok(Value::Undefined),
+    let file_filters = match parse_file_filters(activation, args.first().copied())? {
+        Some(filters) => filters,
+        None => return Ok(false.into()),
     };
 
     let dialog = activation.context.ui.display_file_open_dialog(file_filters);
