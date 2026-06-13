@@ -5,11 +5,12 @@ use crate::display_object::TDisplayObject;
 use crate::string::AvmString;
 use flash_lso::amf0::read::AMF0Decoder;
 use flash_lso::amf0::writer::{Amf0Writer, CacheKey, ObjWriter};
-use flash_lso::types::{Lso, ObjectId, Reference, Value as AmfValue};
+use flash_lso::types::{Element, Lso, ObjectId, Reference, Value as AmfValue};
 use gc_arena::{Collect, Gc};
 use ruffle_macros::istr;
 use std::borrow::Cow;
 use std::collections::BTreeMap;
+use std::rc::Rc;
 
 #[derive(Default, Clone, Collect)]
 #[collect(require_static)]
@@ -86,10 +87,54 @@ pub fn serialize<'gc>(activation: &mut Activation<'_, 'gc>, value: Value<'gc>) -
         Value::Number(number) => AmfValue::Number(number),
         Value::String(string) => AmfValue::String(string.to_string()),
         Value::Object(object) => {
-            let lso = new_lso(activation, "root", object);
-            AmfValue::Object(ObjectId::INVALID, lso.into_iter().collect(), None)
+            if let NativeObject::Array(_) = object.native() {
+                serialize_array(activation, object)
+            } else {
+                let lso = new_lso(activation, "root", object);
+                AmfValue::Object(ObjectId::INVALID, lso.into_iter().collect(), None)
+            }
         }
         Value::MovieClip(_) => AmfValue::Undefined,
+    }
+}
+
+fn serialize_array<'gc>(activation: &mut Activation<'_, 'gc>, array: Object<'gc>) -> AmfValue {
+    let length = array.length(activation).unwrap_or(0).max(0) as usize;
+    let keys = array.get_keys(activation, false);
+    let mut has_custom_properties = false;
+    let mut associative = Vec::new();
+    // Flash expects insertion order for these properties
+    for key in keys.into_iter().rev() {
+        if key.as_wstr() == b"length" {
+            continue;
+        }
+        // A property is "custom" if it is non-numeric or an index >= length
+        let parsed_num = key.to_utf8_lossy().parse::<usize>().ok();
+        if parsed_num.is_none_or(|index| index >= length) {
+            has_custom_properties = true;
+        }
+        let value = array
+            .get(key, activation)
+            .map(|v| serialize(activation, v))
+            .unwrap_or(AmfValue::Undefined);
+        associative.push(Element::new(key.to_string(), Rc::new(value)));
+    }
+    if has_custom_properties {
+        // Mixed Array: Has non-numeric keys or out-of-bounds indices
+        AmfValue::ECMAArray(ObjectId::INVALID, Vec::new(), associative, length as u32)
+    } else {
+        // Pure Dense Array: Pad holes with Undefined to maintain contiguous indices
+        let mut dense = Vec::with_capacity(length);
+        for i in 0..length {
+            let elem_name = AvmString::new_utf8(activation.gc(), i.to_string());
+            let value = array
+                .get(elem_name, activation)
+                .map(|v| serialize(activation, v))
+                .unwrap_or(AmfValue::Undefined);
+            dense.push(Rc::new(value));
+        }
+        // Output as a StrictArray.
+        AmfValue::StrictArray(ObjectId::INVALID, dense)
     }
 }
 
@@ -198,6 +243,30 @@ pub fn deserialize_value<'gc>(
                 Value::Undefined
             }
         }
+        AmfValue::StrictArray(_, values) => {
+            // Flash uses StrictArray for dense Arrays sent over NetConnection.call
+            // (#16381), so the AVM1 receiver has to reconstruct an Array
+            // here rather than falling through to `Undefined`.
+            let array_constructor = activation.prototypes().array_constructor;
+            if let Ok(Value::Object(obj)) =
+                array_constructor.construct(activation, &[(values.len() as i32).into()])
+            {
+                let v: Value<'gc> = obj.into();
+                if let Some(reference) = lso.as_reference(val) {
+                    reference_cache.insert(reference, v);
+                }
+
+                for (i, item) in values.iter().enumerate() {
+                    let value = deserialize_value(activation, item, lso, reference_cache);
+                    obj.set_element(activation, i as i32, value).unwrap();
+                }
+
+                v
+            } else {
+                Value::Undefined
+            }
+        }
+
         AmfValue::Object(_, elements, _) => {
             // Deserialize Object
             let obj = Object::new(
