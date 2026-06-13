@@ -42,7 +42,7 @@ pub(crate) mod drop_shadow_filter;
 pub(crate) mod error;
 mod external_interface;
 pub(crate) mod file_reference;
-mod file_reference_list;
+pub(crate) mod file_reference_list;
 mod function;
 pub(crate) mod glow_filter;
 pub(crate) mod gradient_filter;
@@ -508,6 +508,7 @@ pub struct SystemPrototypes<'gc> {
     pub context_menu_item_constructor: Object<'gc>,
     pub date_constructor: Object<'gc>,
     pub bitmap_data: Object<'gc>,
+    pub file_reference: Object<'gc>,
     pub video: Object<'gc>,
     pub blur_filter: Object<'gc>,
     pub bevel_filter: Object<'gc>,
@@ -607,7 +608,8 @@ pub fn create_globals<'gc>(
     let bitmap_data = bitmap_data::create_class(context, object.proto);
     let file_reference =
         file_reference::create_class(context, object.proto, broadcaster_fns, array.proto);
-    let file_reference_list = file_reference_list::create_class(context, object.proto);
+    let file_reference_list =
+        file_reference_list::create_class(context, object.proto, broadcaster_fns, array.proto);
     let shared_object = shared_object::create_class(context, object.proto);
     let selection = selection::create(context, broadcaster_fns, array.proto);
     let camera = camera::create_class(context, object.proto);
@@ -838,6 +840,7 @@ pub fn create_globals<'gc>(
             context_menu_item_constructor: context_menu_item.constr,
             date_constructor: date.constr,
             bitmap_data: bitmap_data.proto,
+            file_reference: file_reference.proto,
             video: video.proto,
             blur_filter: blur_filter.proto,
             bevel_filter: bevel_filter.proto,

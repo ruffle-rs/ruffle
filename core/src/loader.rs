@@ -20,7 +20,9 @@ use crate::avm2_stub_method_context;
 use crate::backend::navigator::{
     ErrorResponse, FetchReason, OwnedFuture, Request, SuccessResponse,
 };
-use crate::backend::ui::{DialogResultFuture, FileDialogResult};
+use crate::backend::ui::{
+    DialogResultFuture, FileDialogResult, MultiDialogResultFuture, MultiFileDialogResult,
+};
 use crate::bitmap::bitmap_data::BitmapData;
 use crate::bitmap::bitmap_data::Color;
 use crate::context::{ActionQueue, ActionType, UpdateContext};
@@ -2392,6 +2394,49 @@ pub fn select_file_dialog_avm1<'gc>(
                 broadcast_avm1_file_event(target_object, istr!("onSelect"), &mut activation)?;
             }
             Ok(FileDialogResult::Canceled) => {
+                broadcast_avm1_file_event(target_object, istr!("onCancel"), &mut activation)?;
+            }
+            Err(err) => {
+                tracing::warn!("Error on file dialog: {:?}", err);
+            }
+        }
+
+        Ok(())
+    })
+}
+
+/// Display a multi-file selection dialog from an AVM1 scope (`FileReferenceList.browse`).
+///
+/// Returns a future that will be resolved when files are selected or the dialog is canceled.
+#[must_use]
+pub fn select_multi_file_dialog_avm1<'gc>(
+    uc: &UpdateContext<'gc>,
+    target_object: Object<'gc>,
+    dialog: MultiDialogResultFuture,
+) -> OwnedFuture<(), Error> {
+    let handle = ObjectHandle::stash(uc, target_object);
+
+    run_file_dialog(uc, dialog, move |uc, dialog_result| {
+        let target_object = handle.fetch(uc);
+
+        let mut activation = Activation::from_stub(uc, ActivationIdentifier::root("[File Dialog]"));
+
+        match dialog_result {
+            Ok(MultiFileDialogResult::Selection(selections)) => {
+                let file_list = crate::avm1::globals::file_reference_list::build_file_list(
+                    &mut activation,
+                    &selections,
+                );
+                target_object.define_value(
+                    activation.gc(),
+                    istr!("fileList"),
+                    file_list.into(),
+                    Attribute::DONT_ENUM | Attribute::DONT_DELETE | Attribute::READ_ONLY,
+                );
+
+                broadcast_avm1_file_event(target_object, istr!("onSelect"), &mut activation)?;
+            }
+            Ok(MultiFileDialogResult::Canceled) => {
                 broadcast_avm1_file_event(target_object, istr!("onCancel"), &mut activation)?;
             }
             Err(err) => {
