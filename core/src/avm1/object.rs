@@ -205,18 +205,29 @@ impl<'gc> Object<'gc> {
     }
 
     /// Set a named property on this object, or its prototype.
+    #[inline]
     pub fn set(
         self,
         name: impl Into<AvmString<'gc>>,
-        value: Value<'gc>,
+        value: impl Into<Value<'gc>>,
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<(), Error<'gc>> {
-        let name = name.into();
+        self.set_internal(name.into(), value.into(), activation)
+    }
+
+    /// Non-generic body of `set`, kept separate to avoid duplicating this large
+    /// function across every monomorphization of the outer wrapper.
+    #[inline(never)]
+    fn set_internal(
+        self,
+        name: AvmString<'gc>,
+        mut value: Value<'gc>,
+        activation: &mut Activation<'_, 'gc>,
+    ) -> Result<(), Error<'gc>> {
         if name.is_empty() {
             return Ok(());
         }
 
-        let mut value = value;
         let (this, mut proto) = if let Some(super_object) = self.as_super_object() {
             (super_object.this(), super_object.proto(activation))
         } else {

@@ -1435,7 +1435,7 @@ impl<'gc> EditText<'gc> {
                             if !text.is_empty() {
                                 let _ = object.set(
                                     property,
-                                    AvmString::new(activation.gc(), self.text()).into(),
+                                    AvmString::new(activation.gc(), self.text()),
                                     activation,
                                 );
                             }
@@ -1483,7 +1483,7 @@ impl<'gc> EditText<'gc> {
                         let property = AvmString::new(activation.gc(), property);
                         let _ = object.set(
                             property,
-                            AvmString::new(activation.gc(), self.html_text()).into(),
+                            AvmString::new(activation.gc(), self.html_text()),
                             activation,
                         );
                     },

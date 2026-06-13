@@ -1075,7 +1075,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             Attribute::DONT_ENUM,
         );
 
-        subclass.set(istr!(self, "prototype"), sub_prototype.into(), self)?;
+        subclass.set(istr!(self, "prototype"), sub_prototype, self)?;
 
         Ok(FrameControl::Continue)
     }

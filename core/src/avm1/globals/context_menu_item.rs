@@ -41,19 +41,15 @@ fn constructor<'gc>(
         .unwrap_or(&true.into())
         .as_bool(activation.swf_version());
 
-    this.set(istr!("caption"), caption.into(), activation)?;
+    this.set(istr!("caption"), caption, activation)?;
 
     if let Some(callback) = callback {
         this.set(istr!("onSelect"), callback, activation)?;
     }
 
-    this.set(
-        istr!("separatorBefore"),
-        separator_before.into(),
-        activation,
-    )?;
-    this.set(istr!("enabled"), enabled.into(), activation)?;
-    this.set(istr!("visible"), visible.into(), activation)?;
+    this.set(istr!("separatorBefore"), separator_before, activation)?;
+    this.set(istr!("enabled"), enabled, activation)?;
+    this.set(istr!("visible"), visible, activation)?;
 
     Ok(Value::Undefined)
 }

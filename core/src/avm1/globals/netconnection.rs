@@ -64,8 +64,8 @@ impl<'gc> NetConnection<'gc> {
             .construct(&mut activation, &[])?
             .coerce_to_object_or_bare(&mut activation)?;
         let code = AvmString::new_utf8(activation.gc(), code);
-        event.set(istr!("code"), code.into(), &mut activation)?;
-        event.set(istr!("level"), istr!("status").into(), &mut activation)?;
+        event.set(istr!("code"), code, &mut activation)?;
+        event.set(istr!("level"), istr!("status"), &mut activation)?;
         this.call_method(
             istr!("onStatus"),
             &[event.into()],

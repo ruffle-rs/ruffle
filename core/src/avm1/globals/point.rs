@@ -87,8 +87,8 @@ fn constructor<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if args.is_empty() {
-        this.set(istr!("y"), 0.into(), activation)?;
-        this.set(istr!("x"), 0.into(), activation)?;
+        this.set(istr!("y"), 0, activation)?;
+        this.set(istr!("x"), 0, activation)?;
     } else {
         this.set(
             istr!("y"),
@@ -286,8 +286,8 @@ fn normalize<'gc>(
             )
         };
 
-        this.set(istr!("x"), x.into(), activation)?;
-        this.set(istr!("y"), y.into(), activation)?;
+        this.set(istr!("x"), x, activation)?;
+        this.set(istr!("y"), y, activation)?;
     }
 
     Ok(Value::Undefined)
@@ -308,8 +308,8 @@ fn offset<'gc>(
         .unwrap_or(&Value::Undefined)
         .coerce_to_f64(activation)?;
 
-    this.set(istr!("x"), (point.0 + dx).into(), activation)?;
-    this.set(istr!("y"), (point.1 + dy).into(), activation)?;
+    this.set(istr!("x"), point.0 + dx, activation)?;
+    this.set(istr!("y"), point.1 + dy, activation)?;
 
     Ok(Value::Undefined)
 }
