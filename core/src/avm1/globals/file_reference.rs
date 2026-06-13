@@ -21,6 +21,10 @@ use url::Url;
 pub struct FileReferenceObject<'gc>(Gc<'gc, FileReferenceData<'gc>>);
 
 impl<'gc> FileReferenceObject<'gc> {
+    pub fn new(mc: &gc_arena::Mutation<'gc>) -> Self {
+        Self(Gc::new(mc, Default::default()))
+    }
+
     pub fn init_from_file_selection(
         self,
         activation: &mut Activation<'_, 'gc>,
@@ -450,10 +454,7 @@ fn constructor<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     this.set_native(
         activation.gc(),
-        NativeObject::FileReference(FileReferenceObject(Gc::new(
-            activation.gc(),
-            Default::default(),
-        ))),
+        NativeObject::FileReference(FileReferenceObject::new(activation.gc())),
     );
     Ok(Value::Undefined)
 }

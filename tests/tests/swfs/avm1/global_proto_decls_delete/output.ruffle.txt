@@ -123,6 +123,10 @@ Testing _global.flash.net.FileReferenceList
   __proto__, DONT_DELETE
   constructor, DONT_DELETE
 Testing _global.flash.net.FileReferenceList.prototype
+  _listeners, DONT_DELETE
+  removeListener, DONT_DELETE
+  addListener, DONT_DELETE
+  broadcastMessage, DONT_DELETE
   __proto__, DONT_DELETE
   constructor, DONT_DELETE
 Testing _global.flash.net.FileReference
