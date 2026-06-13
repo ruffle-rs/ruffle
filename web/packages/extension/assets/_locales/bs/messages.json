@@ -1,4 +1,7 @@
 {
+    "settings_ruffle_enable": {
+        "message": "Pokreni Flash sadržaj unutar Ruffle-u"
+    },
     "settings_ignore_optout": {
         "message": "Pokreni Flash sadržaj čak i na stranicama koje ne dozvoljavaju Ruffle"
     },
