@@ -21,8 +21,11 @@ theme = Tema
 theme-system = Sistemska podrazumevana vrednost
 theme-light = Svetla
 theme-dark = Tamna
-# See for context https://github.com/FeralInteractive/gamemode
+gamemode-tooltip =
+    GameMode privremeno primenjuje skup optimizacija na vaš računar i/ili Ruffle.
+    Ruffle zahteva GameMode samo prilikom reprodukcije filma.
 gamemode-default = Podrazumevano
+gamemode-default-tooltip = GameMode će biti omogućen samo kada je podešavanje napajanja podešeno na visoko.
 # See for context https://wiki.archlinux.org/title/Input_method
 ime-enabled = Metod unosa
 ime-enabled-experimental = (eksperimentalno)

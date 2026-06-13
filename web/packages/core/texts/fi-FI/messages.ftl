@@ -10,6 +10,7 @@ update-ruffle = Päivitä Ruffle
 ruffle-desktop = Työpöytäsovellus
 ruffle-wiki = Näytä Rufflen wiki
 enable-hardware-acceleration = Vaikuttaa siltä, että laitteistokiihdytys on pois käytöstä. Ruffle saattaa silti toimia, mutta hitaasti. Lisätietoja laitteistokiihdytyksen ottamisesta käyttöön on saatavilla alla olevan linkin kautta:
+enable-hardware-acceleration-link = UKK - Chromen laitteistokiihdytys
 view-error-details = Näytä virheen tiedot
 open-in-new-tab = Avaa uudessa välilehdessä
 click-to-unmute = Napsauta palauttaaksesi äänet

@@ -1,6 +1,6 @@
 message-cant-embed =
-    Ruffle konnte den Flash in dieser Seite nicht ausführen.
-    Du kannst versuchen, die Datei in einem separaten Tab zu öffnen, um dieses Problem zu umgehen.
+    Ruffle konnte das in diese Seite eingebettete Flash-Element nicht ausführen.
+    Sie können versuchen, die Datei in einem separaten Tab zu öffnen, um dieses Problem zu umgehen.
 message-restored-from-bfcache =
     Ihr Browser hat diesen Flash-Inhalt aus einer vorherigen Sitzung wiederhergestellt.
     Laden Sie die Seite neu, um neu zu starten.
