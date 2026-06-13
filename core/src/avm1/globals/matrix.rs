@@ -189,12 +189,12 @@ pub fn apply_matrix_to_object<'gc>(
     object: Object<'gc>,
     activation: &mut Activation<'_, 'gc>,
 ) -> Result<(), Error<'gc>> {
-    object.set(istr!("a"), matrix.a.into(), activation)?;
-    object.set(istr!("b"), matrix.b.into(), activation)?;
-    object.set(istr!("c"), matrix.c.into(), activation)?;
-    object.set(istr!("d"), matrix.d.into(), activation)?;
-    object.set(istr!("tx"), matrix.tx.to_pixels().into(), activation)?;
-    object.set(istr!("ty"), matrix.ty.to_pixels().into(), activation)?;
+    object.set(istr!("a"), matrix.a, activation)?;
+    object.set(istr!("b"), matrix.b, activation)?;
+    object.set(istr!("c"), matrix.c, activation)?;
+    object.set(istr!("d"), matrix.d, activation)?;
+    object.set(istr!("tx"), matrix.tx.to_pixels(), activation)?;
+    object.set(istr!("ty"), matrix.ty.to_pixels(), activation)?;
     Ok(())
 }
 
@@ -234,12 +234,12 @@ fn identity<'gc>(
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    this.set(istr!("d"), 1.0.into(), activation)?;
-    this.set(istr!("a"), 1.0.into(), activation)?;
-    this.set(istr!("c"), 0.0.into(), activation)?;
-    this.set(istr!("b"), 0.0.into(), activation)?;
-    this.set(istr!("ty"), 0.0.into(), activation)?;
-    this.set(istr!("tx"), 0.0.into(), activation)?;
+    this.set(istr!("d"), 1.0, activation)?;
+    this.set(istr!("a"), 1.0, activation)?;
+    this.set(istr!("c"), 0.0, activation)?;
+    this.set(istr!("b"), 0.0, activation)?;
+    this.set(istr!("ty"), 0.0, activation)?;
+    this.set(istr!("tx"), 0.0, activation)?;
     Ok(Value::Undefined)
 }
 

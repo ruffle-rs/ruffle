@@ -96,28 +96,28 @@ fn get_transform<'gc>(
         );
         out.set(
             istr!("ra"),
-            (color_transform.r_multiply.to_f64() * 100.0).into(),
+            color_transform.r_multiply.to_f64() * 100.0,
             activation,
         )?;
         out.set(
             istr!("ga"),
-            (color_transform.g_multiply.to_f64() * 100.0).into(),
+            color_transform.g_multiply.to_f64() * 100.0,
             activation,
         )?;
         out.set(
             istr!("ba"),
-            (color_transform.b_multiply.to_f64() * 100.0).into(),
+            color_transform.b_multiply.to_f64() * 100.0,
             activation,
         )?;
         out.set(
             istr!("aa"),
-            (color_transform.a_multiply.to_f64() * 100.0).into(),
+            color_transform.a_multiply.to_f64() * 100.0,
             activation,
         )?;
-        out.set(istr!("rb"), color_transform.r_add.into(), activation)?;
-        out.set(istr!("gb"), color_transform.g_add.into(), activation)?;
-        out.set(istr!("bb"), color_transform.b_add.into(), activation)?;
-        out.set(istr!("ab"), color_transform.a_add.into(), activation)?;
+        out.set(istr!("rb"), color_transform.r_add, activation)?;
+        out.set(istr!("gb"), color_transform.g_add, activation)?;
+        out.set(istr!("bb"), color_transform.b_add, activation)?;
+        out.set(istr!("ab"), color_transform.a_add, activation)?;
         Ok(out.into())
     } else {
         Ok(Value::Undefined)

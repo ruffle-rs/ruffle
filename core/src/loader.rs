@@ -1010,7 +1010,7 @@ pub fn load_form_into_object<'gc>(
             for (k, v) in form_urlencoded::parse(utf8_body) {
                 let k = AvmString::new_utf8(activation.gc(), k);
                 let v = AvmString::new_utf8(activation.gc(), v);
-                that.set(k, v.into(), &mut activation)?;
+                that.set(k, v, &mut activation)?;
             }
 
             // Fire the onData method and event.

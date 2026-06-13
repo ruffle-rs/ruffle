@@ -1411,8 +1411,8 @@ fn local_to_global<'gc>(
         ) {
             let local = Point::from_pixels(x, y);
             let global = movie_clip.local_to_global(local);
-            point.set(istr!("x"), global.x.to_pixels().into(), activation)?;
-            point.set(istr!("y"), global.y.to_pixels().into(), activation)?;
+            point.set(istr!("x"), global.x.to_pixels(), activation)?;
+            point.set(istr!("y"), global.y.to_pixels(), activation)?;
         } else {
             avm_warn!(
                 activation,
@@ -1488,26 +1488,10 @@ fn get_bounds<'gc>(
             &activation.context.strings,
             Some(activation.prototypes().object),
         );
-        out.set(
-            istr!("xMin"),
-            out_bounds.x_min.to_pixels().into(),
-            activation,
-        )?;
-        out.set(
-            istr!("xMax"),
-            out_bounds.x_max.to_pixels().into(),
-            activation,
-        )?;
-        out.set(
-            istr!("yMin"),
-            out_bounds.y_min.to_pixels().into(),
-            activation,
-        )?;
-        out.set(
-            istr!("yMax"),
-            out_bounds.y_max.to_pixels().into(),
-            activation,
-        )?;
+        out.set(istr!("xMin"), out_bounds.x_min.to_pixels(), activation)?;
+        out.set(istr!("xMax"), out_bounds.x_max.to_pixels(), activation)?;
+        out.set(istr!("yMin"), out_bounds.y_min.to_pixels(), activation)?;
+        out.set(istr!("yMax"), out_bounds.y_max.to_pixels(), activation)?;
         Ok(out.into())
     } else {
         Ok(Value::Undefined)
@@ -1593,8 +1577,8 @@ fn global_to_local<'gc>(
         ) {
             let global = Point::from_pixels(x, y);
             let local = movie_clip.global_to_local(global).unwrap_or(global);
-            point.set(istr!("x"), local.x.to_pixels().into(), activation)?;
-            point.set(istr!("y"), local.y.to_pixels().into(), activation)?;
+            point.set(istr!("x"), local.x.to_pixels(), activation)?;
+            point.set(istr!("y"), local.y.to_pixels(), activation)?;
         } else {
             avm_warn!(
                 activation,
