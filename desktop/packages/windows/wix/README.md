@@ -1,6 +1,7 @@
 # Ruffle installer (.msi)
 ## Prerequisites
 To build the msi, you need to set up your environment first:
+
 - [Install `wix`](https://wixtoolset.org/docs/intro/#nettool) (`dotnet tool install --global wix`)
 - `wix extension add -g WixToolset.UI.wixext` to add the UI extension
 - `wix extension add -g WixToolset.Util.wixext` to add the util extension
@@ -23,3 +24,5 @@ You can change `-arch` to `x86` to mark the msi as x86 (and install to, for exam
 Add `-pdbtype none` to disable generation of the `.wixpdb` if you wish.
 
 Add `-o foo.msi` to control where the MSI is placed.
+
+[@fancy2209](https://github.com/fancy2209/)'s epic build code: `cargo build --release --features steamworks`
