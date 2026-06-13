@@ -2352,6 +2352,19 @@ fn run_file_dialog<D: 'static>(
     })
 }
 
+fn broadcast_avm1_file_event<'gc>(
+    target: Object<'gc>,
+    event: AvmString<'gc>,
+    activation: &mut Activation<'_, 'gc>,
+) -> Result<bool, crate::avm1::Error<'gc>> {
+    crate::avm1::globals::as_broadcaster::broadcast_internal(
+        target,
+        &[target.into()],
+        event,
+        activation,
+    )
+}
+
 /// Display a dialog allowing a user to select a file from an AVM1 scope.
 ///
 /// Returns a future that will be resolved when a file is selected.
@@ -2375,25 +2388,11 @@ pub fn select_file_dialog_avm1<'gc>(
 
         match dialog_result {
             Ok(FileDialogResult::Selection(selection)) => {
-                use crate::avm1::globals::as_broadcaster;
-
                 file_ref.init_from_file_selection(&mut activation, &*selection);
-                as_broadcaster::broadcast_internal(
-                    target_object,
-                    &[target_object.into()],
-                    istr!("onSelect"),
-                    &mut activation,
-                )?;
+                broadcast_avm1_file_event(target_object, istr!("onSelect"), &mut activation)?;
             }
             Ok(FileDialogResult::Canceled) => {
-                use crate::avm1::globals::as_broadcaster;
-
-                as_broadcaster::broadcast_internal(
-                    target_object,
-                    &[target_object.into()],
-                    istr!("onCancel"),
-                    &mut activation,
-                )?;
+                broadcast_avm1_file_event(target_object, istr!("onCancel"), &mut activation)?;
             }
             Err(err) => {
                 tracing::warn!("Error on file dialog: {:?}", err);
