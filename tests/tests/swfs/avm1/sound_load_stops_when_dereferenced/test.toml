@@ -1,0 +1,13 @@
+num_frames = 2
+
+[player_options]
+with_audio = true
+
+# Flash Player automatically stops externally loaded sounds
+# when all references to the Sound object that started it are lost.
+# Ruffle currently does not do this.
+
+[audio_assertions.silence]
+frames = [2]
+max_amplitude = 0.0
+known_failure = true

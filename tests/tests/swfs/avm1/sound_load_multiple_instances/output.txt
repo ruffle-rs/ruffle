@@ -1,0 +1,19 @@
+frame 1 - loading sound.mp3
+frame 2
+frame 3 - starting more instances
+frame 4
+frame 5 - muting volume
+frame 6
+frame 7 - calling loadSound again
+frame 8
+frame 9 - calling loadSound with streaming
+frame 10
+frame 11 - starting more instances
+frame 12
+frame 13 - calling loadSound, stopped
+frame 14
+frame 15 - start
+frame 16
+frame 17 - starting another
+frame 18 - stopping
+frame 19
