@@ -15,3 +15,4 @@ clap = { workspace = true }
 humantime = "2.2.0"
 toml = { workspace = true }
 walkdir = { workspace = true }
+anyhow = { workspace = true }

@@ -4,10 +4,28 @@ use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 use std::time::Duration;
 
+use anyhow::anyhow;
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, clap::ValueEnum)]
 pub enum Fuzzer {
     Afl,
     Libfuzzer,
+}
+
+impl Fuzzer {
+    pub fn cargo_tool_name(self) -> &'static str {
+        match self {
+            Fuzzer::Afl => "cargo-afl",
+            Fuzzer::Libfuzzer => "cargo-fuzz",
+        }
+    }
+
+    pub fn cargo_tool_command(self) -> &'static str {
+        match self {
+            Fuzzer::Afl => "afl",
+            Fuzzer::Libfuzzer => "fuzz",
+        }
+    }
 }
 
 impl std::fmt::Display for Fuzzer {
@@ -144,6 +162,61 @@ pub fn list_targets() -> Targets {
             (name, target)
         })
         .collect()
+}
+
+/// Check the selected fuzzers, and report any issues related to their setup.
+pub fn check_fuzzers(fuzzer: &[Fuzzer]) -> Result<(), anyhow::Error> {
+    if fuzzer.is_empty() || fuzzer.contains(&Fuzzer::Libfuzzer) {
+        check_fuzzer(Fuzzer::Libfuzzer)?;
+    }
+
+    if fuzzer.is_empty() || fuzzer.contains(&Fuzzer::Afl) {
+        check_fuzzer(Fuzzer::Afl)?;
+    }
+
+    Ok(())
+}
+
+fn check_fuzzer(fuzzer: Fuzzer) -> Result<(), anyhow::Error> {
+    let different_engine_message = "Alternatively, you can use --fuzzer \
+        to select a different fuzzing engine.";
+
+    if fuzzer == Fuzzer::Libfuzzer {
+        let version = Command::new("rustc")
+            .args(["--version"])
+            .stdin(Stdio::null())
+            .stderr(Stdio::null())
+            .output()?
+            .stdout;
+        let version = String::from_utf8_lossy(&version);
+        if !version.contains("nightly") {
+            return Err(anyhow!(
+                "{fuzzer} requires a nightly Rust toolchain, but the active \
+                toolchain is not nightly:\n\n    {}\n\n\
+                {different_engine_message}",
+                version.trim()
+            ));
+        }
+    }
+
+    let available = Command::new("cargo")
+        .args([fuzzer.cargo_tool_command(), "--help"])
+        .stdin(Stdio::null())
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
+        .status()?
+        .success();
+    if !available {
+        return Err(anyhow!(
+            "In order to use {fuzzer}, {} needs to be installed:\n\n    \
+                cargo install {}\n\n\
+            {different_engine_message}",
+            fuzzer.cargo_tool_name(),
+            fuzzer.cargo_tool_name()
+        ));
+    }
+
+    Ok(())
 }
 
 pub fn build_fuzz_targets(all: &Targets, target: Option<&str>, fuzzer: &[Fuzzer]) {
