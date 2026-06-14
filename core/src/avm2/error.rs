@@ -894,6 +894,16 @@ pub fn make_error_1078<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> 
 
 #[inline(never)]
 #[cold]
+pub fn make_error_1079<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
+    make_error!(verify_error(
+        activation,
+        "Error #1079: Native methods are not allowed in loaded code.",
+        1079,
+    ))
+}
+
+#[inline(never)]
+#[cold]
 pub fn make_error_1080<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
     make_error!(type_error(
         activation,

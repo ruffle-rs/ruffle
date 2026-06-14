@@ -3,7 +3,9 @@
 use crate::avm2::Multiname;
 use crate::avm2::activation::Activation;
 use crate::avm2::class::Class;
-use crate::avm2::error::{Error, Error1014Type, make_error_1014, make_error_1027, make_error_1107};
+use crate::avm2::error::{
+    Error, Error1014Type, make_error_1014, make_error_1027, make_error_1079, make_error_1107,
+};
 use crate::avm2::script::TranslationUnit;
 use crate::avm2::value::{Value, abc_default_value};
 use crate::avm2::verify::VerifiedMethodInfo;
@@ -184,16 +186,22 @@ impl<'gc> Method<'gc> {
         }
 
         let mut native_info = None;
-        if txunit.domain().is_playerglobals_domain(activation.avm2())
-            && let Some(native_method) = activation.avm2().native_method_table[method_index]
-        {
-            let fast_call = activation
-                .avm2()
-                .native_fast_call_list
-                .contains(&method_index);
+        if method.flags.contains(AbcMethodFlags::NATIVE) {
+            if txunit.domain().is_playerglobals_domain(activation.avm2()) {
+                let native_method = activation.avm2().native_method_table[method_index]
+                    .expect("Native method table is generated from playerglobals");
 
-            native_info = Some((native_method, fast_call));
-        };
+                let fast_call = activation
+                    .avm2()
+                    .native_fast_call_list
+                    .contains(&method_index);
+
+                native_info = Some((native_method, fast_call));
+            } else {
+                // Native method in non-playerglobals code throws an error
+                return Err(make_error_1079(activation));
+            }
+        }
 
         let method_kind = if let Some((native_method, fast_call)) = native_info {
             MethodKind::Native {
