@@ -280,6 +280,23 @@ pub fn make_unknown_ns_error<'gc>(
 
 #[inline(never)]
 #[cold]
+pub fn make_error_1001<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    method: Method<'gc>,
+) -> Error<'gc> {
+    let mut function_name = WString::new();
+
+    display_function(&mut function_name, method);
+
+    make_error!(verify_error(
+        activation,
+        format!("Error #1001: The method {function_name} is not implemented.",),
+        1001,
+    ))
+}
+
+#[inline(never)]
+#[cold]
 pub fn make_error_1002<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
     make_error!(range_error(
         activation,
