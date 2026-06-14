@@ -54,6 +54,7 @@
         "build:dual-wasm": "cross-env BUILD_WASM_MVP=true npm run build",
         "build:repro": "cross-env ENABLE_VERSION_SEAL=true npm run build",
         "build:dual-wasm-repro": "cross-env BUILD_WASM_MVP=true ENABLE_VERSION_SEAL=true npm run build",
+        "build:wasm64": "cross-env BUILD_WASM64=true npm run build",
         "demo": "npm run preview --workspace ruffle-demo",
         "test": "npm test --workspaces --if-present",
         "wdio": "npm run wdio --workspaces --if-present --",

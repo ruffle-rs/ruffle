@@ -3,6 +3,9 @@
 //! Ruffle web frontend.
 mod audio;
 mod builder;
+// TEMP (wasm64 spike): provide getrandom's custom backend symbol on wasm64.
+#[cfg(target_arch = "wasm64")]
+mod getrandom_custom;
 mod external_interface;
 mod input;
 mod log_adapter;
