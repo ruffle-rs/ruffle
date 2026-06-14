@@ -1,6 +1,7 @@
 use clap::{CommandFactory, FromArgMatches, Parser, Subcommand};
 use ruffle_fuzzer::{
-    Fuzzer, build_fuzz_targets, list_targets, prepare_swf_tests_corpus, run_fuzz_targets,
+    Fuzzer, build_fuzz_targets, check_fuzzers, list_targets, prepare_swf_tests_corpus,
+    run_fuzz_targets,
 };
 use std::collections::HashSet;
 use std::time::Duration;
@@ -75,7 +76,7 @@ enum Commands {
     },
 }
 
-fn main() {
+fn main() -> Result<(), anyhow::Error> {
     let matches = Cli::command().bin_name("cargo fuzzer").get_matches();
     let cli = Cli::from_arg_matches(&matches).unwrap_or_else(|e| e.exit());
 
@@ -104,6 +105,7 @@ fn main() {
             prepare_swf_tests_corpus();
         }
         Commands::Build { target, fuzzer } => {
+            check_fuzzers(&fuzzer)?;
             build_fuzz_targets(&all, target.as_deref(), &fuzzer);
         }
         Commands::Run {
@@ -113,6 +115,8 @@ fn main() {
             time,
             fuzzer,
         } => {
+            check_fuzzers(&fuzzer)?;
+
             if !no_prepare {
                 prepare_swf_tests_corpus();
             }
@@ -131,4 +135,6 @@ fn main() {
             }
         }
     }
+
+    Ok(())
 }
