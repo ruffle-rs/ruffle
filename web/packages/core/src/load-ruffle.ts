@@ -111,7 +111,23 @@ async function fetchRuffle(
         response = wasmResponse;
     }
 
-    await init({ module_or_path: response });
+    // Electron renderers with `nodeIntegration` enabled crash inside
+    // `WebAssembly.instantiateStreaming` with
+    // `Assertion failed: !impl.IsEmpty()` from node_wasm_web_api.cc
+    // (electron/electron#36282). The streaming path is what wasm-bindgen
+    // picks when `module_or_path` is a `Response`; since the bump to
+    // wasm-bindgen 0.2.120 this is the default dispatch and any Node-like
+    // host now hits the crash. Read the bytes first when we're in a
+    // Node-like environment so wasm-bindgen falls back to the non-streaming
+    // `WebAssembly.instantiate`. Plain browsers (where `process` is
+    // undefined) keep the streaming-compile fast path.
+    const isNodeLike =
+        typeof (globalThis as { process?: { versions?: { node?: string } } })
+            .process?.versions?.node === "string";
+
+    await init({
+        module_or_path: isNodeLike ? await response.arrayBuffer() : response,
+    });
 
     return [RuffleInstanceBuilder, ZipWriter];
 }
