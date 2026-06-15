@@ -1,0 +1,6 @@
+o1.prop setter: b,
+o1.prop getter: ,
+Done: o1.prop: b
+o2.prop setter: b,
+o2.prop getter: ,
+Done: o2.prop: e
