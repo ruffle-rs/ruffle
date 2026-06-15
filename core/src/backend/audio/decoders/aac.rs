@@ -10,8 +10,15 @@ use symphonia::{
     default::codecs::AacDecoder as SymphoniaAacDecoder,
 };
 
+/// Decodes AAC audio out of an FLV `Substream`.
+///
 /// Unlike MP3, AAC can only be in FLV, not SWF. Therefore, no need for an
 /// `AacStreamDecoder`, nor for our own `AacDecoder` type wrapping Symphonia's.
+///
+/// The substream holds only raw AAC access units: the container layer (see
+/// `NetStream::flv_audio_tag`) demuxes the `AudioSpecificConfig` out-of-band and
+/// hands it to us via [`SoundStreamInfo::extra_data`], so no FLV-specific packet
+/// framing reaches this decoder.
 pub struct AacSubstreamDecoder {
     tag_reader: SubstreamTagReader,
     decoder: SymphoniaAacDecoder,
@@ -29,11 +36,18 @@ impl AacSubstreamDecoder {
             audio::Layout::Mono
         };
         let sample_rate = stream_info.stream_format.sample_rate.into();
+
         let mut codec_params = CodecParameters::new();
         codec_params
             .for_codec(core::codecs::CODEC_TYPE_AAC)
             .with_channel_layout(layout)
             .with_sample_rate(sample_rate);
+        // The `AudioSpecificConfig`, if the container provided one ahead of the
+        // audio data (for FLV, this is the AAC sequence header). It refines the
+        // channel layout and sample rate guessed above.
+        if let Some(extra_data) = &stream_info.extra_data {
+            codec_params.with_extra_data(extra_data.clone());
+        }
 
         let decoder = SymphoniaAacDecoder::try_new(&codec_params, &Default::default())?;
 
@@ -69,45 +83,24 @@ impl Iterator for AacSubstreamDecoder {
                 self.stream_ended = true;
                 self.cur_sample = 0;
                 for chunk in Iterator::by_ref(&mut self.tag_reader) {
-                    match chunk.data()[0] {
-                        // This is an `AacSequenceHeader` chunk
-                        0 => {
-                            let mut codec_params = CodecParameters::new();
-                            codec_params.for_codec(core::codecs::CODEC_TYPE_AAC);
-                            codec_params.with_extra_data(chunk.data()[1..].into());
-
-                            self.decoder =
-                                SymphoniaAacDecoder::try_new(&codec_params, &Default::default())
-                                    .unwrap();
-
-                            let spec = *(self.decoder.last_decoded().spec());
-                            self.sample_buf = audio::SampleBuffer::new(0, spec);
-                        }
-                        // This is an `AacRaw` chunk
-                        1 => {
-                            let packet = Packet::new_from_slice(0, 0, 0, &chunk.data()[1..]);
-                            match self.decoder.decode(&packet) {
-                                Ok(decoded) => {
-                                    if self.sample_buf.capacity() < decoded.capacity() {
-                                        // Ensure our buffer has enough space for the decoded samples.
-                                        self.sample_buf = audio::SampleBuffer::new(
-                                            decoded.capacity() as core::units::Duration,
-                                            *decoded.spec(),
-                                        );
-                                    }
-                                    self.sample_buf.copy_interleaved_ref(decoded);
-
-                                    self.stream_ended = false;
-                                    break;
-                                }
-                                // Decode errors are not fatal.
-                                Err(errors::Error::DecodeError(_)) => (),
-                                Err(_) => break,
+                    let packet = Packet::new_from_slice(0, 0, 0, &chunk.data());
+                    match self.decoder.decode(&packet) {
+                        Ok(decoded) => {
+                            if self.sample_buf.capacity() < decoded.capacity() {
+                                // Ensure our buffer has enough space for the decoded samples.
+                                self.sample_buf = audio::SampleBuffer::new(
+                                    decoded.capacity() as core::units::Duration,
+                                    *decoded.spec(),
+                                );
                             }
+                            self.sample_buf.copy_interleaved_ref(decoded);
+
+                            self.stream_ended = false;
+                            break;
                         }
-                        x => {
-                            tracing::error!("AacSubstreamDecoder: unknown chunk type {}", x);
-                        }
+                        // Decode errors are not fatal.
+                        Err(errors::Error::DecodeError(_)) => (),
+                        Err(_) => break,
                     }
                 }
             }
