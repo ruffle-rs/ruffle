@@ -1,0 +1,18 @@
+o1.prop changed
+  o1.prop: a
+  p: prop,a,b,
+Set to c, returning d
+  o1.prop: c
+Done
+  o1.prop: d
+o2.prop changed
+  o2.prop:
+  p: prop,,b,
+Set to c, returning d
+  o2.prop: c
+o2.prop setter
+  p: d,
+Done
+o2.prop getter
+  p: ,
+  o2.prop: e
