@@ -1,0 +1,11 @@
+calls: 0,65, 33
+calls: 0,130, 65
+calls: 0,196, 97
+o1.prop: x
+calls: 65,196, 130
+o2.prop: x
+calls: 130,196, 162
+o3.prop: x
+calls: 196,196, 194
+o4.prop: x
+calls: 326,196, 259
