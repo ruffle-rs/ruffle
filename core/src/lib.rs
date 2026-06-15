@@ -1,3 +1,8 @@
+// Enable the wasm64 intrinsics used by the tilemalloc-backed memory getters in
+// `avm2::globals::flash::system`. `wasm64::memory_size` is nightly-gated
+// (tracking #90599); the wasm64 build uses `RUSTC_BOOTSTRAP=1` so this is fine.
+// Inert on every other target. Remove once `simd_wasm64` is stabilized.
+#![cfg_attr(target_arch = "wasm64", feature(simd_wasm64))]
 // This lint is helpful, but right now we have too many instances of it.
 // TODO: Remove this once all instances are fixed.
 #![allow(clippy::needless_pass_by_ref_mut)]
@@ -45,6 +50,7 @@ pub mod string;
 mod system_properties;
 pub mod tag_utils;
 mod tessellation_cache;
+pub mod tilemalloc;
 pub mod timer;
 mod types;
 mod vminterface;

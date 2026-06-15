@@ -2,7 +2,6 @@ package flash.system {
     [Ruffle(Abstract)]
     public final class System {
         import __ruffle__.stub_method;
-        import __ruffle__.stub_getter;
 
         public static function gc():void {}
 
@@ -16,20 +15,11 @@ package flash.system {
             stub_method("flash.system.System", "disposeXML");
         }
 
-        public static function get freeMemory():Number {
-            stub_getter("flash.system.System", "freeMemory");
-            return 1024*1024*10; // 10MB
-        }
+        public static native function get freeMemory():Number;
 
-        public static function get privateMemory():Number {
-            stub_getter("flash.system.System", "privateMemory");
-            return 1024*1024*100; // 100MB
-        }
+        public static native function get privateMemory():Number;
 
-        public static function get totalMemoryNumber():Number {
-            stub_getter("flash.system.System", "totalMemoryNumber");
-            return 1024*1024*90; // 90MB
-        }
+        public static native function get totalMemoryNumber():Number;
 
         public static function get totalMemory():uint {
             return totalMemoryNumber as uint;
