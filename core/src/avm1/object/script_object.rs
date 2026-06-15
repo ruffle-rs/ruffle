@@ -528,11 +528,18 @@ impl<'gc> Object<'gc> {
             let old_value = self.get_stored(name, activation)?;
             match watcher.call(activation, name, old_value, *value, this) {
                 Ok(v) => *value = v,
-                Err(Error::ThrownValue(e)) => {
+                Err(e @ Error::ThrownValue(_)) => {
+                    // The watcher sets undefined when throwing.
                     *value = Value::Undefined;
-                    result = Err(Error::ThrownValue(e));
+                    result = Err(e);
                 }
-                Err(_) => *value = Value::Undefined,
+                Err(Error::SpecialRecursionLimit) => {
+                    // Just ignore the call on special recursion limit.
+                }
+                Err(e) => {
+                    // Propagate any other errors (e.g. stack overflow).
+                    result = Err(e);
+                }
             };
         }
 
