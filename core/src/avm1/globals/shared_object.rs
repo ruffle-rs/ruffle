@@ -99,38 +99,41 @@ pub fn serialize<'gc>(activation: &mut Activation<'_, 'gc>, value: Value<'gc>) -
 }
 
 fn serialize_array<'gc>(activation: &mut Activation<'_, 'gc>, array: Object<'gc>) -> AmfValue {
-    let length = array.length(activation).unwrap_or(0).max(0) as usize;
+    let mut length = array.length(activation).unwrap_or(0).max(0) as usize;
     let keys = array.get_keys(activation, false);
+
+    // Flash treats any numeric key as an array element. If a numeric key
+    // exceeds the current length, it expands the array's serialization length.
+    for key in &keys {
+        if let Ok(index) = key.to_utf8_lossy().parse::<usize>() {
+            length = length.max(index + 1);
+        }
+    }
+
     let mut has_custom_properties = false;
     let mut associative = Vec::new();
+
     // Flash expects insertion order for these properties
     for key in keys.into_iter().rev() {
-        if key.as_wstr() == b"length" {
-            continue;
-        }
-        // A property is "custom" if it is non-numeric or an index >= length
-        let parsed_num = key.to_utf8_lossy().parse::<usize>().ok();
-        if parsed_num.is_none_or(|index| index >= length) {
+        // A property is "custom" if it is entirely non-numeric
+        if key.to_utf8_lossy().parse::<usize>().is_err() {
             has_custom_properties = true;
         }
-        let value = array
-            .get(key, activation)
-            .map(|v| serialize(activation, v))
-            .unwrap_or(AmfValue::Undefined);
+
+        let prop_value = array.get(key, activation).unwrap_or(Value::Undefined);
+        let value = serialize(activation, prop_value);
         associative.push(Element::new(key.to_string(), Rc::new(value)));
     }
     if has_custom_properties {
-        // Mixed Array: Has non-numeric keys or out-of-bounds indices
+        // Mixed Array: Has true non-numeric keys
         AmfValue::ECMAArray(ObjectId::INVALID, Vec::new(), associative, length as u32)
     } else {
         // Pure Dense Array: Pad holes with Undefined to maintain contiguous indices
         let mut dense = Vec::with_capacity(length);
         for i in 0..length {
             let elem_name = AvmString::new_utf8(activation.gc(), i.to_string());
-            let value = array
-                .get(elem_name, activation)
-                .map(|v| serialize(activation, v))
-                .unwrap_or(AmfValue::Undefined);
+            let prop_value = array.get(elem_name, activation).unwrap_or(Value::Undefined);
+            let value = serialize(activation, prop_value);
             dense.push(Rc::new(value));
         }
         // Output as a StrictArray.
@@ -244,27 +247,24 @@ pub fn deserialize_value<'gc>(
             }
         }
         AmfValue::StrictArray(_, values) => {
-            // Flash uses StrictArray for dense Arrays sent over NetConnection.call
-            // (#16381), so the AVM1 receiver has to reconstruct an Array
-            // here rather than falling through to `Undefined`.
             let array_constructor = activation.prototypes().array_constructor;
-            if let Ok(Value::Object(obj)) =
-                array_constructor.construct(activation, &[(values.len() as i32).into()])
-            {
-                let v: Value<'gc> = obj.into();
-                if let Some(reference) = lso.as_reference(val) {
-                    reference_cache.insert(reference, v);
-                }
+            let obj = array_constructor
+                .construct(activation, &[Value::from_usize_lossy(values.len())])
+                .expect("AVM1 Array constructor should be infallible")
+                .as_object(activation)
+                .expect("AVM1 Array constructor should return an object");
 
-                for (i, item) in values.iter().enumerate() {
-                    let value = deserialize_value(activation, item, lso, reference_cache);
-                    obj.set_element(activation, i as i32, value).unwrap();
-                }
-
-                v
-            } else {
-                Value::Undefined
+            let v: Value<'gc> = obj.into();
+            if let Some(reference) = lso.as_reference(val) {
+                reference_cache.insert(reference, v);
             }
+
+            for (i, item) in values.iter().enumerate() {
+                let value = deserialize_value(activation, item, lso, reference_cache);
+                obj.set_element(activation, i as i32, value).unwrap();
+            }
+
+            v
         }
 
         AmfValue::Object(_, elements, _) => {
