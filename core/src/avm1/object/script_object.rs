@@ -380,42 +380,85 @@ impl<'gc> Object<'gc> {
         }
     }
 
-    /// Retrieve a getter defined on this object.
-    pub(super) fn getter(
+    /// Call a property getter defined on this object.
+    ///
+    /// Returns the value returned by the getter if the getter was present and
+    /// called.
+    pub(super) fn call_getter(
         self,
         name: AvmString<'gc>,
+        this: Value<'gc>,
         activation: &mut Activation<'_, 'gc>,
-    ) -> Option<Object<'gc>> {
+    ) -> Result<Option<Value<'gc>>, Error<'gc>> {
         // TODO(moulins): is this special case necessary?
         if let Some(zuper) = self.as_super_object() {
-            return zuper.this().getter(name, activation);
+            return zuper.this().call_getter(name, this, activation);
         }
 
-        self.0
+        let getter = self
+            .0
             .borrow()
             .properties
             .get(name, activation.is_case_sensitive())
             .filter(|property| property.allow_swf_version(activation.swf_version()))
-            .and_then(|property| property.getter())
+            .and_then(|property| property.getter());
+
+        if let Some(getter) = getter
+            && let Some(exec) = getter.as_function()
+        {
+            Ok(Some(exec.exec(
+                ExecutionName::Static("[Getter]"),
+                activation,
+                this,
+                1,
+                &[],
+                ExecutionReason::Special,
+                getter,
+            )?))
+        } else {
+            Ok(None)
+        }
     }
 
-    /// Retrieve a setter defined on this object.
-    pub(super) fn setter(
+    /// Call a property setter defined on this object.
+    ///
+    /// Returns the value returned by the setter if the setter was present and
+    /// called.
+    pub(super) fn call_setter(
         self,
         name: AvmString<'gc>,
+        this: Value<'gc>,
+        value: Value<'gc>,
         activation: &mut Activation<'_, 'gc>,
-    ) -> Option<Object<'gc>> {
+    ) -> Result<Option<Value<'gc>>, Error<'gc>> {
         // TODO(moulins): is this special case necessary?
         if let Some(zuper) = self.as_super_object() {
-            return zuper.this().setter(name, activation);
+            return zuper.this().call_setter(name, this, value, activation);
         }
 
-        self.0
+        let setter = self
+            .0
             .borrow()
             .properties
             .get(name, activation.is_case_sensitive())
             .filter(|property| property.allow_swf_version(activation.swf_version()))
-            .and_then(|property| property.setter())
+            .and_then(|property| property.setter());
+
+        if let Some(setter) = setter
+            && let Some(exec) = setter.as_function()
+        {
+            Ok(Some(exec.exec(
+                ExecutionName::Static("[Setter]"),
+                activation,
+                this,
+                1,
+                &[value],
+                ExecutionReason::Special,
+                setter,
+            )?))
+        } else {
+            Ok(None)
+        }
     }
 
     /// Delete a named property from the object.

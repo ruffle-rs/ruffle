@@ -240,19 +240,7 @@ impl<'gc> Object<'gc> {
             // prototype chain for virtual setters.
             while let Value::Object(this_proto) = proto {
                 if this_proto.has_own_virtual(activation, name) {
-                    if let Some(setter) = this_proto.setter(name, activation)
-                        && let Some(exec) = setter.as_function()
-                    {
-                        exec.exec(
-                            ExecutionName::Static("[Setter]"),
-                            activation,
-                            this.into(),
-                            1,
-                            &[value],
-                            ExecutionReason::Special,
-                            setter,
-                        )?;
-                    }
+                    this_proto.call_setter(name, this.into(), value, activation)?;
                     return Ok(());
                 }
 
@@ -410,19 +398,7 @@ pub fn search_prototype<'gc>(
             return Err(Error::PrototypeRecursionLimit);
         }
 
-        if let Some(getter) = p.getter(name, activation)
-            && let Some(exec) = getter.as_function()
-        {
-            let result = exec.exec(
-                ExecutionName::Static("[Getter]"),
-                activation,
-                this.into(),
-                1,
-                &[],
-                ExecutionReason::Special,
-                getter,
-            );
-
+        if let Some(result) = p.call_getter(name, this.into(), activation).transpose() {
             match result {
                 Err(Error::ThrownValue(e)) => return Err(Error::ThrownValue(e)),
                 Err(Error::SpecialRecursionLimit) => {
