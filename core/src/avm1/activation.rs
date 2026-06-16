@@ -2163,15 +2163,26 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
     fn action_trace(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
         let val = self.context.avm1.pop();
-        // trace always prints "undefined" even though SWF6 and below normally
-        // coerce undefined to "".
+
+        let mut ctrl = Ok(FrameControl::Continue);
         let out = if val == Value::Undefined {
-            WStr::from_units(b"undefined")
+            // trace always prints "undefined" even though SWF6 and below normally
+            // coerce undefined to "".
+            "undefined".into()
         } else {
-            &val.coerce_to_string(self)?
+            match val.coerce_to_string(self) {
+                Ok(s) => s.as_wstr().to_utf8_lossy(),
+                // If the coercion throws, trace both prints a fallback value and
+                // propagates the exception.
+                Err(err) => {
+                    ctrl = Err(err);
+                    "[type Object]".into()
+                }
+            }
         };
-        self.context.avm_trace(&out.to_utf8_lossy());
-        Ok(FrameControl::Continue)
+
+        self.context.avm_trace(&out);
+        ctrl
     }
 
     fn action_try(
