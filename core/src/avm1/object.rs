@@ -240,7 +240,16 @@ impl<'gc> Object<'gc> {
             // prototype chain for virtual setters.
             while let Value::Object(this_proto) = proto {
                 if this_proto.has_own_virtual(activation, name) {
-                    this_proto.call_setter(name, this.into(), value, activation)?;
+                    let result = this_proto.call_setter(name, this.into(), value, activation);
+                    match result {
+                        Ok(_) => {}
+                        Err(Error::SpecialRecursionLimit) => {
+                            // Flash ignores it for compatibility with SWF<7.
+                        }
+                        Err(e) => {
+                            return Err(e);
+                        }
+                    }
                     return Ok(());
                 }
 
@@ -402,7 +411,7 @@ pub fn search_prototype<'gc>(
             match result {
                 Err(Error::ThrownValue(e)) => return Err(Error::ThrownValue(e)),
                 Err(Error::SpecialRecursionLimit) => {
-                    // Fall back to local resolution for compatibility
+                    // Flash falls back to local resolution for compatibility
                     // with SWF<7.
                 }
                 _ => {
