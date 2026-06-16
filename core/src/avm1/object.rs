@@ -243,7 +243,7 @@ impl<'gc> Object<'gc> {
                     let result = this_proto.call_setter(name, this.into(), value, activation);
                     match result {
                         Ok(_) => {}
-                        Err(Error::SpecialRecursionLimit) => {
+                        Err(Error::PropertyRecursionLimit) => {
                             // Flash ignores it for compatibility with SWF<7.
                         }
                         Err(e) => {
@@ -409,11 +409,13 @@ pub fn search_prototype<'gc>(
 
         if let Some(result) = p.call_getter(name, this.into(), activation).transpose() {
             match result {
-                Err(Error::ThrownValue(e)) => return Err(Error::ThrownValue(e)),
-                Err(Error::SpecialRecursionLimit) => {
+                Err(Error::PropertyRecursionLimit) => {
                     // Flash falls back to local resolution for compatibility
                     // with SWF<7.
                 }
+                // TODO Should we propagate all errors here?
+                Err(e @ Error::ThrownValue(_)) => return Err(e),
+                Err(e @ Error::FunctionRecursionLimit(_)) => return Err(e),
                 _ => {
                     let value = result.unwrap_or(Value::Undefined);
                     return Ok(Some((value, depth)));

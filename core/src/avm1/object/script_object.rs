@@ -35,6 +35,7 @@ impl<'gc> Watcher<'gc> {
     fn call(
         &self,
         activation: &mut Activation<'_, 'gc>,
+        property_id: u32,
         name: AvmString<'gc>,
         old_value: Value<'gc>,
         new_value: Value<'gc>,
@@ -48,7 +49,7 @@ impl<'gc> Watcher<'gc> {
             this.into(),
             0,
             &args,
-            ExecutionReason::Special,
+            ExecutionReason::PropertyCall { property_id },
             self.callback,
         )
     }
@@ -292,12 +293,12 @@ impl<'gc> Object<'gc> {
             }
         }
 
-        let setter = self
+        let (property_id, setter) = self
             .0
             .borrow()
             .properties
             .get(name, activation.is_case_sensitive())
-            .and_then(|v| v.setter());
+            .map_or((0, None), |v| (v.id(), v.setter()));
 
         if let Some(setter) = setter
             && let Some(exec) = setter.as_function()
@@ -307,7 +308,7 @@ impl<'gc> Object<'gc> {
                 this.into(),
                 1,
                 &[value],
-                ExecutionReason::Special,
+                ExecutionReason::PropertyCall { property_id },
                 setter,
             )
         {
@@ -395,13 +396,13 @@ impl<'gc> Object<'gc> {
             return zuper.this().call_getter(name, this, activation);
         }
 
-        let getter = self
+        let (property_id, getter) = self
             .0
             .borrow()
             .properties
             .get(name, activation.is_case_sensitive())
             .filter(|property| property.allow_swf_version(activation.swf_version()))
-            .and_then(|property| property.getter());
+            .map_or((0, None), |v| (v.id(), v.getter()));
 
         if let Some(getter) = getter
             && let Some(exec) = getter.as_function()
@@ -412,7 +413,7 @@ impl<'gc> Object<'gc> {
                 this,
                 1,
                 &[],
-                ExecutionReason::Special,
+                ExecutionReason::PropertyCall { property_id },
                 getter,
             )?))
         } else {
@@ -436,13 +437,13 @@ impl<'gc> Object<'gc> {
             return zuper.this().call_setter(name, this, value, activation);
         }
 
-        let setter = self
+        let (property_id, setter) = self
             .0
             .borrow()
             .properties
             .get(name, activation.is_case_sensitive())
             .filter(|property| property.allow_swf_version(activation.swf_version()))
-            .and_then(|property| property.setter());
+            .map_or((0, None), |v| (v.id(), v.setter()));
 
         if let Some(setter) = setter
             && let Some(exec) = setter.as_function()
@@ -453,7 +454,7 @@ impl<'gc> Object<'gc> {
                 this,
                 1,
                 &[value],
-                ExecutionReason::Special,
+                ExecutionReason::PropertyCall { property_id },
                 setter,
             )?))
         } else {
@@ -561,23 +562,36 @@ impl<'gc> Object<'gc> {
         }
 
         let mut result = Ok(());
+
+        // We can watch built-in properties (like tabEnabled), so property_id
+        // might be 0 in that case.
+        // TODO How should we handle this situation? Add some tests.
+        let property_id = self
+            .0
+            .borrow()
+            .properties
+            .get(name, activation.is_case_sensitive())
+            .map(|p| p.id())
+            .unwrap_or_default();
+
         let watcher = self
             .0
             .borrow()
             .watchers
             .get(name, activation.is_case_sensitive())
             .cloned();
+
         if let Some(watcher) = watcher {
             let old_value = self.get_stored(name, activation)?;
-            match watcher.call(activation, name, old_value, *value, this) {
+            match watcher.call(activation, property_id, name, old_value, *value, this) {
                 Ok(v) => *value = v,
                 Err(e @ Error::ThrownValue(_)) => {
                     // The watcher sets undefined when throwing.
                     *value = Value::Undefined;
                     result = Err(e);
                 }
-                Err(Error::SpecialRecursionLimit) => {
-                    // Just ignore the call on special recursion limit.
+                Err(Error::PropertyRecursionLimit) => {
+                    // Just ignore the call on property recursion limit.
                 }
                 Err(e) => {
                     // Propagate any other errors (e.g. stack overflow).
