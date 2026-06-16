@@ -5,7 +5,7 @@ use crate::display_object::TDisplayObject;
 use crate::string::AvmString;
 use flash_lso::amf0::read::AMF0Decoder;
 use flash_lso::amf0::writer::{Amf0Writer, CacheKey, ObjWriter};
-use flash_lso::types::{Lso, ObjectId, Reference, Value as AmfValue};
+use flash_lso::types::{ClassDefinition, Lso, ObjectId, Reference, Value as AmfValue};
 use gc_arena::{Collect, Gc};
 use ruffle_macros::istr;
 use std::borrow::Cow;
@@ -87,7 +87,27 @@ pub fn serialize<'gc>(activation: &mut Activation<'_, 'gc>, value: Value<'gc>) -
         Value::String(string) => AmfValue::String(string.to_string()),
         Value::Object(object) => {
             let lso = new_lso(activation, "root", object);
-            AmfValue::Object(ObjectId::INVALID, lso.into_iter().collect(), None)
+            let constructor_key = AvmString::new_utf8(activation.gc(), "constructor");
+            let magic_constructor_key = AvmString::new_utf8(activation.gc(), "__constructor__");
+            // 1. Check for a mutated local 'constructor' property (matches Flash's forged_ctor behavior)
+            // 2. Fall back to the hidden '__constructor__' property to bypass the prototype chain
+            //    (matches Flash's forged_proto behavior by ignoring dynamic __proto__ reassignments)
+            let ctor_val = if object.has_own_property(activation, constructor_key) {
+                object.get(constructor_key, activation)
+            } else {
+                object.get(magic_constructor_key, activation)
+            };
+            let class_alias = if let Ok(Value::Object(ctor_obj)) = ctor_val {
+                activation
+                    .context
+                    .avm1
+                    .get_alias_by_constructor(activation.swf_version(), ctor_obj)
+                    .map(|alias| alias.to_utf8_lossy().into_owned())
+            } else {
+                None
+            };
+            let class_def = class_alias.map(ClassDefinition::default_with_name);
+            AmfValue::Object(ObjectId::INVALID, lso.into_iter().collect(), class_def)
         }
         Value::MovieClip(_) => AmfValue::Undefined,
     }
