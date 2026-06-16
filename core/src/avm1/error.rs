@@ -19,6 +19,9 @@ pub enum Error<'gc> {
     )]
     SpecialRecursionLimit,
 
+    #[error("Property recursion limit has been hit.")]
+    PropertyRecursionLimit,
+
     #[error("Couldn't parse SWF")]
     InvalidSwf(#[from] swf::error::Error),
 

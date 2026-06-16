@@ -111,8 +111,12 @@ impl<'a> ActivationIdentifier<'a> {
     ) -> Result<Self, Error<'gc>> {
         let (function_count, special_count) = match reason {
             ExecutionReason::FunctionCall | ExecutionReason::ConstructorCall => {
-                if self.function_count >= max_recursion_depth - 1 {
-                    return Err(Error::FunctionRecursionLimit(max_recursion_depth));
+                (self.function_count + 1, self.special_count)
+            }
+            ExecutionReason::PropertyCall { property_id } => {
+                const PROPERTY_RECURSION_LIMIT: u16 = 65;
+                if self.is_over_property_recursion_limit(property_id, PROPERTY_RECURSION_LIMIT) {
+                    return Err(Error::PropertyRecursionLimit);
                 }
                 (self.function_count + 1, self.special_count)
             }
@@ -123,6 +127,11 @@ impl<'a> ActivationIdentifier<'a> {
                 (self.function_count, self.special_count + 1)
             }
         };
+
+        if function_count >= max_recursion_depth {
+            return Err(Error::FunctionRecursionLimit(max_recursion_depth));
+        }
+
         Ok(Self {
             parent: Some(self),
             reason,
@@ -131,6 +140,34 @@ impl<'a> ActivationIdentifier<'a> {
             function_count,
             special_count,
         })
+    }
+
+    fn is_over_property_recursion_limit(&self, property_id: u32, limit: u16) -> bool {
+        if limit == 0 {
+            return true;
+        }
+
+        if self.depth < limit {
+            // The stack is not big enough, the limit couldn't have been hit.
+            // Exit early.
+            return false;
+        }
+
+        let parent_limit = if let ExecutionReason::PropertyCall {
+            property_id: other_id,
+        } = self.reason
+            && other_id == property_id
+        {
+            limit - 1
+        } else {
+            limit
+        };
+
+        if let Some(parent) = self.parent {
+            parent.is_over_property_recursion_limit(property_id, parent_limit)
+        } else {
+            false
+        }
     }
 
     pub fn depth(&self) -> u16 {
