@@ -33,8 +33,29 @@ class Test {
         trace(obj2);
         trace("");
 
-        trace("// obj3: methods through __resolve");
-        var obj3 = {
+        trace("// obj3: methods as throwing properties");
+        var obj3 = { __proto__: null };
+        Object.prototype.addProperty.call(obj3, "valueOf", function() {
+            throw "error from valueOf!";
+        }, null);
+        Object.prototype.addProperty.call(obj3, "toString", function() {
+            throw "error from toString!";
+        }, null);
+
+        try {
+            trace("obj3 as num: " + (0 + obj3));
+        } catch(e) {
+            trace("obj3 as num: caught " + e);
+        }
+        try {
+            trace(obj3);
+        } catch(e) {
+            trace("obj3 as string: caught " + e);
+        }
+        trace("");
+
+        trace("// obj4: methods through __resolve");
+        var obj4 = {
             __proto__: null,
             __resolve: function(name) {
                 trace("__resolve(" + name + ") called!");
@@ -44,8 +65,8 @@ class Test {
             }
         };
 
-        trace("obj3 as num: " + (0 + obj3));
-        trace(obj3);
+        trace("obj4 as num: " + (0 + obj4));
+        trace(obj4);
 
         fscommand("quit");
     }
