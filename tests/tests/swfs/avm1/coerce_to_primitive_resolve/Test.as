@@ -1,5 +1,3 @@
-// Compile with:
-//  mtasc -main -header 200:200:30 -version 8 Test.as -swf test.swf
 class Test {
     
     static function main(current) {
