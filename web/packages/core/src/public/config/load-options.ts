@@ -325,6 +325,9 @@ export enum BackgroundExecutionMode {
 
 /**
  * Represents a host, port and proxyUrl. Used when a SWF file tries to use a Socket.
+ * A proxy with `host: "*"` and `port: 0` is used as a fallback for sockets
+ * without an exact match. When a fallback proxy is used, Ruffle appends the
+ * requested socket target as `host` and `port` query parameters.
  */
 export interface SocketProxy {
     /**

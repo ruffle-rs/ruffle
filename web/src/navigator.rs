@@ -501,11 +501,15 @@ impl NavigatorBackend for WebNavigatorBackend {
         receiver: Receiver<Vec<u8>>,
         sender: Sender<SocketAction>,
     ) {
-        let Some(proxy) = self
+        let exact_proxy = self
             .socket_proxies
             .iter()
-            .find(|x| x.host == host && x.port == port)
-        else {
+            .find(|x| x.host == host && x.port == port);
+        let wildcard_proxy = self
+            .socket_proxies
+            .iter()
+            .find(|x| x.host == "*" && x.port == 0);
+        let Some(proxy) = exact_proxy.or(wildcard_proxy) else {
             tracing::warn!("Missing WebSocket proxy for host {}, port {}", host, port);
             sender
                 .try_send(SocketAction::Connect(handle, ConnectionState::Failed))
@@ -513,9 +517,11 @@ impl NavigatorBackend for WebNavigatorBackend {
             return;
         };
 
-        tracing::info!("Connecting to {}", proxy.proxy_url);
+        let proxy_url =
+            socket_proxy_url_with_target(&proxy.proxy_url, &host, port, exact_proxy.is_none());
+        tracing::info!("Connecting socket {}:{} via {}", host, port, proxy_url);
 
-        let ws = match WebSocket::open(&proxy.proxy_url) {
+        let ws = match WebSocket::open(&proxy_url) {
             Ok(x) => x,
             Err(e) => {
                 tracing::error!("Failed to create WebSocket, reason {:?}", e);
@@ -569,6 +575,25 @@ impl NavigatorBackend for WebNavigatorBackend {
             Ok(())
         }));
     }
+}
+
+fn socket_proxy_url_with_target(
+    proxy_url: &str,
+    host: &str,
+    port: u16,
+    include_target: bool,
+) -> String {
+    if !include_target {
+        return proxy_url.to_string();
+    }
+
+    let Ok(mut url) = Url::parse(proxy_url) else {
+        return proxy_url.to_string();
+    };
+    url.query_pairs_mut()
+        .append_pair("host", host)
+        .append_pair("port", &port.to_string());
+    url.to_string()
 }
 
 struct WebResponseWrapper {
