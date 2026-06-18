@@ -217,6 +217,12 @@ pub struct SocketProxy {
     proxy_url: String,
 }
 
+#[derive(Debug, Clone)]
+pub struct HttpProxy {
+    origin: String,
+    proxy_url: String,
+}
+
 /// Metadata about the playing SWF file to be passed back to JavaScript.
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]

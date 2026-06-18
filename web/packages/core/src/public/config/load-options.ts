@@ -344,6 +344,26 @@ export interface SocketProxy {
 }
 
 /**
+ * Represents an origin and proxyUrl. Used when a SWF file tries to make an HTTP
+ * request that should be tunneled through a proxy.
+ *
+ * A proxy with `origin: "*"` is used as a fallback for HTTP requests without an
+ * exact origin match. Ruffle appends the requested target as a `url` query
+ * parameter to the proxy URL.
+ */
+export interface HttpProxy {
+    /**
+     * Origin used by the SWF, for example `https://example.com`.
+     */
+    origin: string;
+
+    /**
+     * The proxy URL to use for matching HTTP requests.
+     */
+    proxyUrl: string;
+}
+
+/**
  * Defines the names of the fonts to use for each "default" Flash device font.
  *
  * The name of each font provided will be used, in priority order.
@@ -712,6 +732,20 @@ export interface BaseLoadOptions {
      * @default []
      */
     socketProxy?: Array<SocketProxy>;
+
+    /**
+     * An array of HttpProxy objects.
+     *
+     * When a SWF tries to make an HTTP request, Ruffle will search for a
+     * matching HttpProxy object in this array and fetch the proxy URL instead,
+     * appending the original target URL as a `url` query parameter.
+     *
+     * When none are found, Ruffle will fetch the original URL normally.
+     * When multiple matching HttpProxy objects exist, the first one is used.
+     *
+     * @default []
+     */
+    httpProxy?: Array<HttpProxy>;
 
     /**
      * An array of font URLs to eagerly load and provide to Ruffle.

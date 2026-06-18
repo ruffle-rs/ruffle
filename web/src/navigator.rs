@@ -1,5 +1,5 @@
 //! Navigator backend for web
-use crate::SocketProxy;
+use crate::{HttpProxy, SocketProxy};
 use async_channel::{Receiver, Sender};
 use futures_util::future::Either;
 use futures_util::{SinkExt, StreamExt, future};
@@ -57,6 +57,7 @@ pub struct WebNavigatorBackend {
     base_url: Option<Url>,
     open_url_mode: OpenUrlMode,
     socket_proxies: Vec<SocketProxy>,
+    http_proxies: Vec<HttpProxy>,
     credential_allow_list: Vec<String>,
     player: Weak<Mutex<Player>>,
 }
@@ -72,6 +73,7 @@ impl WebNavigatorBackend {
         log_subscriber: Arc<Layered<WASMLayer, Registry>>,
         open_url_mode: OpenUrlMode,
         socket_proxies: Vec<SocketProxy>,
+        http_proxies: Vec<HttpProxy>,
         credential_allow_list: Vec<String>,
     ) -> Self {
         let window = web_sys::window().expect("window()");
@@ -116,6 +118,7 @@ impl WebNavigatorBackend {
             log_subscriber,
             open_url_mode,
             socket_proxies,
+            http_proxies,
             credential_allow_list,
             player: Weak::new(),
         }
@@ -174,6 +177,53 @@ impl WebNavigatorBackend {
             break;
         }
         None
+    }
+
+    fn proxied_http_url(&self, target_url: &Url) -> Option<Url> {
+        let proxy = self.find_http_proxy(target_url)?;
+        let proxied_url = self.http_proxy_url_with_target(&proxy.proxy_url, target_url)?;
+        tracing::info!("Fetching {} via HTTP proxy {}", target_url, proxied_url);
+        Some(proxied_url)
+    }
+
+    fn find_http_proxy(&self, target_url: &Url) -> Option<&HttpProxy> {
+        let target_origin = http_origin(target_url)?;
+        let exact_proxy = self.http_proxies.iter().find(|proxy| {
+            proxy.origin != "*"
+                && normalized_http_origin(&proxy.origin).as_deref() == Some(target_origin.as_str())
+        });
+        let wildcard_proxy = self.http_proxies.iter().find(|proxy| proxy.origin == "*");
+        exact_proxy.or(wildcard_proxy)
+    }
+
+    fn http_proxy_url_with_target(&self, proxy_url: &str, target_url: &Url) -> Option<Url> {
+        let mut url = match Url::parse(proxy_url) {
+            Ok(url) => url,
+            Err(ParseError::RelativeUrlWithoutBase) => {
+                let Some(base_url) = self.base_url.as_ref() else {
+                    tracing::error!(
+                        "HTTP proxy URL is relative but no base URL is available: {}",
+                        proxy_url
+                    );
+                    return None;
+                };
+                match base_url.join(proxy_url) {
+                    Ok(url) => url,
+                    Err(err) => {
+                        tracing::error!("HTTP proxy URL is not valid: {}, {}", proxy_url, err);
+                        return None;
+                    }
+                }
+            }
+            Err(err) => {
+                tracing::error!("HTTP proxy URL is not valid: {}, {}", proxy_url, err);
+                return None;
+            }
+        };
+
+        url.query_pairs_mut()
+            .append_pair("url", target_url.as_str());
+        Some(url)
     }
 }
 
@@ -315,12 +365,19 @@ impl NavigatorBackend for WebNavigatorBackend {
     }
 
     fn fetch(&self, request: Request) -> OwnedFuture<Box<dyn SuccessResponse>, ErrorResponse> {
-        let url = match self.resolve_url(request.url()) {
+        let target_url = match self.resolve_url(request.url()) {
             Ok(url) => url,
             Err(e) => {
                 return async_return(Err(create_fetch_error(request.url(), e)));
             }
         };
+
+        let (url, response_url_override) =
+            if let Some(proxied_url) = self.proxied_http_url(&target_url) {
+                (proxied_url, Some(target_url.to_string()))
+            } else {
+                (target_url, None)
+            };
 
         let credentials = if let Some(host) = url.host_str() {
             if self
@@ -337,6 +394,9 @@ impl NavigatorBackend for WebNavigatorBackend {
         };
 
         Box::pin(async move {
+            let display_url = response_url_override
+                .clone()
+                .unwrap_or_else(|| url.to_string());
             let init = RequestInit::new();
 
             init.set_method(&request.method().to_string());
@@ -350,12 +410,12 @@ impl NavigatorBackend for WebNavigatorBackend {
                     &options,
                 )
                 .map_err(|_| ErrorResponse {
-                    url: url.to_string(),
+                    url: display_url.clone(),
                     error: Error::FetchError("Got JS error".to_string()),
                 })?
                 .dyn_into()
                 .map_err(|_| ErrorResponse {
-                    url: url.to_string(),
+                    url: display_url.clone(),
                     error: Error::FetchError("Got JS error".to_string()),
                 })?;
 
@@ -367,7 +427,7 @@ impl NavigatorBackend for WebNavigatorBackend {
                 Err(_) => {
                     return Err(create_specific_fetch_error(
                         "Unable to create request for",
-                        url.as_str(),
+                        &display_url,
                         "",
                     ));
                 }
@@ -379,7 +439,7 @@ impl NavigatorBackend for WebNavigatorBackend {
                 headers
                     .set(header_name, header_val)
                     .map_err(|_| ErrorResponse {
-                        url: url.to_string(),
+                        url: display_url.clone(),
                         error: Error::FetchError("Got JS error".to_string()),
                     })?;
             }
@@ -396,20 +456,21 @@ impl NavigatorBackend for WebNavigatorBackend {
                         )
                     } else {
                         ErrorResponse {
-                            url: url.to_string(),
+                            url: display_url.clone(),
                             error: Error::FetchError("Got JS error".to_string()),
                         }
                     }
                 })?;
 
             let response: WebResponse = fetchval.dyn_into().map_err(|_| ErrorResponse {
-                url: url.to_string(),
+                url: display_url.clone(),
                 error: Error::FetchError("Fetch result wasn't a WebResponse".to_string()),
             })?;
             let url = response.url();
             let status = response.status();
             let redirected = response.redirected();
             if !response.ok() {
+                let url = response_url_override.clone().unwrap_or(url);
                 let error = Error::HttpNotOk(
                     format!("Got {}", response.status_text()),
                     status,
@@ -420,7 +481,7 @@ impl NavigatorBackend for WebNavigatorBackend {
             }
 
             let wrapper: Box<dyn SuccessResponse> = Box::new(WebResponseWrapper {
-                rewritten_url: None,
+                rewritten_url: response_url_override,
                 response,
                 body_stream: None,
             });
@@ -594,6 +655,22 @@ fn socket_proxy_url_with_target(
         .append_pair("host", host)
         .append_pair("port", &port.to_string());
     url.to_string()
+}
+
+fn http_origin(url: &Url) -> Option<String> {
+    if !matches!(url.scheme(), "http" | "https") {
+        return None;
+    }
+
+    Some(url.origin().ascii_serialization())
+}
+
+fn normalized_http_origin(origin: &str) -> Option<String> {
+    if origin == "*" {
+        return Some(origin.to_string());
+    }
+
+    Url::parse(origin).ok().and_then(|url| http_origin(&url))
 }
 
 struct WebResponseWrapper {

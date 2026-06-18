@@ -1,8 +1,8 @@
 use crate::external_interface::JavascriptInterface;
 use crate::navigator::{OpenUrlMode, WebNavigatorBackend};
 use crate::{
-    DeviceFontRenderer, JavascriptPlayer, RUFFLE_GLOBAL_PANIC, RuffleHandle, ScrollingBehavior,
-    SocketProxy, audio, log_adapter, storage, ui,
+    DeviceFontRenderer, HttpProxy, JavascriptPlayer, RUFFLE_GLOBAL_PANIC, RuffleHandle,
+    ScrollingBehavior, SocketProxy, audio, log_adapter, storage, ui,
 };
 use js_sys::{Promise, RegExp};
 use ruffle_core::backend::audio::{AudioBackend, NullAudioBackend};
@@ -57,6 +57,7 @@ pub struct RuffleInstanceBuilder {
     pub(crate) open_url_mode: OpenUrlMode,
     pub(crate) allow_networking: NetworkingAccessMode,
     pub(crate) socket_proxy: Vec<SocketProxy>,
+    pub(crate) http_proxy: Vec<HttpProxy>,
     pub(crate) credential_allow_list: Vec<String>,
     pub(crate) player_runtime: PlayerRuntime,
     pub(crate) volume: f32,
@@ -97,6 +98,7 @@ impl Default for RuffleInstanceBuilder {
             open_url_mode: OpenUrlMode::Allow,
             allow_networking: NetworkingAccessMode::All,
             socket_proxy: vec![],
+            http_proxy: vec![],
             credential_allow_list: vec![],
             player_runtime: PlayerRuntime::FlashPlayer,
             volume: 1.0,
@@ -280,6 +282,11 @@ impl RuffleInstanceBuilder {
             port,
             proxy_url,
         })
+    }
+
+    #[wasm_bindgen(js_name = "addHttpProxy")]
+    pub fn add_http_proxy(&mut self, origin: String, proxy_url: String) {
+        self.http_proxy.push(HttpProxy { origin, proxy_url })
     }
 
     #[wasm_bindgen(js_name = "setCredentialAllowList")]
@@ -683,6 +690,7 @@ impl RuffleInstanceBuilder {
             log_subscriber,
             self.open_url_mode,
             self.socket_proxy.clone(),
+            self.http_proxy.clone(),
             self.credential_allow_list.clone(),
         )
     }
