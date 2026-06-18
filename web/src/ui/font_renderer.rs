@@ -106,6 +106,39 @@ impl CanvasFontRenderer {
         ctx.set_font(font_str);
     }
 
+    fn has_non_white_pixels(pixels: &[u8]) -> bool {
+        pixels.chunks_exact(4).any(|pixel| {
+            let alpha = pixel[3];
+            alpha > 8 && (pixel[0] < 240 || pixel[1] < 240 || pixel[2] < 240)
+        })
+    }
+
+    fn has_native_color(white_pixels: &[u8], black_pixels: &[u8]) -> bool {
+        let mut visible_pixels = 0;
+        let mut changed_pixels = 0;
+
+        for (white, black) in white_pixels
+            .chunks_exact(4)
+            .zip(black_pixels.chunks_exact(4))
+        {
+            if white[3].max(black[3]) <= 8 {
+                continue;
+            }
+
+            visible_pixels += 1;
+
+            let delta = i16::from(white[0]).abs_diff(i16::from(black[0]))
+                + i16::from(white[1]).abs_diff(i16::from(black[1]))
+                + i16::from(white[2]).abs_diff(i16::from(black[2]));
+
+            if delta > 96 {
+                changed_pixels += 1;
+            }
+        }
+
+        visible_pixels > 0 && changed_pixels * 4 < visible_pixels
+    }
+
     fn calculate_width(&self, text: &str) -> Result<f64, JsValue> {
         Ok(self.ctx.measure_text(text)?.width())
     }
@@ -148,9 +181,39 @@ impl CanvasFontRenderer {
         let height = image_data.height();
         let pixels = image_data.data().0;
 
+        let has_native_color = if Self::has_non_white_pixels(&pixels) {
+            self.ctx.set_fill_style_str("black");
+            self.ctx.clear_rect(
+                0.0,
+                0.0,
+                self.canvas.width() as f64,
+                self.canvas.height() as f64,
+            );
+            let black_pixels = (|| -> Result<Vec<u8>, JsValue> {
+                self.ctx.fill_text(text, -bitmap_tx, self.ascent)?;
+                Ok(self
+                    .ctx
+                    .get_image_data(0, 0, bitmap_width, bitmap_height)?
+                    .data()
+                    .0)
+            })();
+            self.ctx.set_fill_style_str("white");
+            let black_pixels = black_pixels?;
+
+            Self::has_native_color(&pixels, &black_pixels)
+        } else {
+            false
+        };
+
         let bitmap = Bitmap::new(width, height, BitmapFormat::Rgba, pixels);
         let bitmap_tx = Twips::from_pixels(-metrics.actual_bounding_box_left());
-        Ok(Glyph::from_bitmap(character, bitmap, advance, bitmap_tx))
+        Ok(Glyph::from_bitmap_with_native_color(
+            character,
+            bitmap,
+            advance,
+            bitmap_tx,
+            has_native_color,
+        ))
     }
 
     fn calculate_kerning_internal(&self, left: char, right: char) -> Result<Twips, JsValue> {

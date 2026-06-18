@@ -379,18 +379,35 @@ impl RuffleInstanceBuilder {
 
 impl RuffleInstanceBuilder {
     pub fn setup_canvas_fonts(&self, player: &mut Player) {
-        player.set_default_font(DefaultFont::Sans, vec!["sans-serif".to_string()]);
-        player.set_default_font(DefaultFont::Serif, vec!["serif".to_string()]);
-        player.set_default_font(DefaultFont::Typewriter, vec!["monospace".to_string()]);
-        player.set_default_font(
+        for default in [
+            DefaultFont::Sans,
+            DefaultFont::Serif,
+            DefaultFont::Typewriter,
             DefaultFont::JapaneseGothicMono,
-            vec!["monospace".to_string()],
-        );
-        player.set_default_font(DefaultFont::JapaneseGothic, vec!["sans-serif".to_string()]);
-        player.set_default_font(DefaultFont::JapaneseMincho, vec!["serif".to_string()]);
+            DefaultFont::JapaneseGothic,
+            DefaultFont::JapaneseMincho,
+        ] {
+            player.set_default_font(
+                default,
+                vec![Self::canvas_generic_font(default).to_string()],
+            );
+        }
 
         for (default, names) in &self.default_fonts {
-            player.set_default_font(*default, names.clone());
+            let mut names = names.clone();
+            let generic = Self::canvas_generic_font(*default);
+            if !names.iter().any(|name| name == generic) {
+                names.push(generic.to_string());
+            }
+            player.set_default_font(*default, names);
+        }
+    }
+
+    fn canvas_generic_font(font: DefaultFont) -> &'static str {
+        match font {
+            DefaultFont::Serif | DefaultFont::JapaneseMincho => "serif",
+            DefaultFont::Typewriter | DefaultFont::JapaneseGothicMono => "monospace",
+            DefaultFont::Sans | DefaultFont::JapaneseGothic => "sans-serif",
         }
     }
 

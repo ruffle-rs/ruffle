@@ -499,13 +499,12 @@ impl<'gc> Library<'gc> {
         }
 
         let mut result = vec![];
-        // First try to find any exactly matching fonts.
+        // First try to find exactly matching fonts in the configured order.
         for name in self.default_font_names.entry(name).or_default().clone() {
             let query = FontQuery::new(FontType::Device, name, is_bold, is_italic);
             if let Some(font) = self.get_or_load_exact_device_font(&query, ui, renderer, gc_context)
             {
                 result.push(font);
-                break; // TODO: Return multiple fonts when it's needed.
             }
         }
 
@@ -515,7 +514,6 @@ impl<'gc> Library<'gc> {
                 let query = FontQuery::new(FontType::Device, name, is_bold, is_italic);
                 if let Some(font) = self.device_fonts.find(&query) {
                     result.push(font);
-                    break; // TODO: Return multiple fonts when it's needed.
                 }
             }
         }

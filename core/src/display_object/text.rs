@@ -171,7 +171,13 @@ impl<'gc> TDisplayObject<'gc> for Text<'gc> {
                 for c in &block.glyphs {
                     if let Some(glyph) = font.get_glyph(c.index as usize) {
                         if glyph.renderable(context) {
-                            context.transform_stack.push(&transform);
+                            if glyph.has_native_color() {
+                                let mut glyph_transform = transform.clone();
+                                glyph_transform.color_transform = Default::default();
+                                context.transform_stack.push(&glyph_transform);
+                            } else {
+                                context.transform_stack.push(&transform);
+                            }
                             glyph.render(context);
                             context.transform_stack.pop();
                         }

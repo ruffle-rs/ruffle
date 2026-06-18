@@ -1287,13 +1287,14 @@ impl<'gc> EditText<'gc> {
                 |pos, transform, glyph, advance, x| {
                     if glyph.renderable(context) {
                         // If it's highlighted, override the color.
-                        if matches!(visible_selection, Some(visible_selection) if visible_selection.contains(start + pos)) {
-                            // Set text color to white
-                            context.transform_stack.push(&Transform {
-                                matrix: transform.matrix,
-                                color_transform: ColorTransform::IDENTITY,
-                                perspective_projection: transform.perspective_projection,
-                            });
+                        let use_native_color = glyph.has_native_color();
+                        let selected = matches!(visible_selection, Some(visible_selection) if visible_selection.contains(start + pos));
+                        if selected || use_native_color {
+                            // Selected text renders as white; native-color glyphs
+                            // already carry their own fill colors.
+                            let mut glyph_transform = transform.clone();
+                            glyph_transform.color_transform = ColorTransform::IDENTITY;
+                            context.transform_stack.push(&glyph_transform);
                         } else {
                             context.transform_stack.push(transform);
                         }
