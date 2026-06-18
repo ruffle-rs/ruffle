@@ -7,7 +7,6 @@ use crate::avm1::globals::bitmap_filter;
 use crate::avm1::globals::movie_clip::{new_rectangle, object_to_rectangle};
 use crate::avm1::property_decl::{DeclContext, PropertyOrder, StaticDeclarations, SystemClass};
 use crate::avm1::{Object, Value, globals};
-use crate::avm1_stub;
 use crate::display_object::{Avm1Button, TDisplayObject, TInteractiveObject};
 use crate::string::AvmString;
 
@@ -137,7 +136,6 @@ fn scale_9_grid<'gc>(
     this: Avm1Button<'gc>,
     activation: &mut Activation<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm1_stub!(activation, "Button", "scale9Grid");
     let rect = this.scaling_grid();
     if rect.is_valid() {
         new_rectangle(activation, rect)
@@ -151,7 +149,6 @@ fn set_scale_9_grid<'gc>(
     activation: &mut Activation<'_, 'gc>,
     value: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
-    avm1_stub!(activation, "Button", "scale9Grid");
     if let Value::Object(object) = value {
         if let Some(rectangle) = object_to_rectangle(activation, object)? {
             this.set_scaling_grid(rectangle);

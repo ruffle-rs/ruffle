@@ -933,6 +933,246 @@ struct DrawCacheInfo {
     filters: Vec<Filter>,
 }
 
+#[derive(Clone, Copy)]
+struct ScalingGridAxis {
+    source: [Twips; 4],
+    dest: [Twips; 4],
+}
+
+struct ScalingGridInfo {
+    object_matrix_inverse: Matrix,
+    x: ScalingGridAxis,
+    y: ScalingGridAxis,
+}
+
+fn scale_twips(value: Twips, scale: f32) -> Twips {
+    Twips::new(
+        (value.get() as f32 * scale)
+            .round()
+            .clamp(i32::MIN as f32, i32::MAX as f32) as i32,
+    )
+}
+
+fn twips_from_f32(value: f32) -> Twips {
+    Twips::new(value.round().clamp(i32::MIN as f32, i32::MAX as f32) as i32)
+}
+
+fn scaling_grid_axis(
+    scale: f32,
+    translate: Twips,
+    outer_min: Twips,
+    inner_min: Twips,
+    inner_max: Twips,
+    outer_max: Twips,
+) -> ScalingGridAxis {
+    let source = [outer_min, inner_min, inner_max, outer_max];
+    let dest_outer_min = translate + scale_twips(outer_min, scale);
+    let dest_outer_max = translate + scale_twips(outer_max, scale);
+    let leading_width = inner_min - outer_min;
+    let trailing_width = outer_max - inner_max;
+
+    let dest = if scale >= 0.0 {
+        [
+            dest_outer_min,
+            dest_outer_min + leading_width,
+            dest_outer_max - trailing_width,
+            dest_outer_max,
+        ]
+    } else {
+        [
+            dest_outer_min,
+            dest_outer_min - leading_width,
+            dest_outer_max + trailing_width,
+            dest_outer_max,
+        ]
+    };
+
+    ScalingGridAxis { source, dest }
+}
+
+fn scaling_grid_info<'gc>(
+    this: DisplayObject<'gc>,
+    options: &RenderOptions,
+) -> Option<ScalingGridInfo> {
+    // scale9Grid is a replacement for the object's own 2D scale. Other callers
+    // such as BitmapData.draw can deliberately skip the object's matrix.
+    if !options.apply_transform || !options.apply_matrix || this.scroll_rect().is_some() {
+        return None;
+    }
+
+    let grid = this.scaling_grid();
+    if !grid.is_valid()
+        || grid.x_min >= grid.x_max
+        || grid.y_min >= grid.y_max
+        || this.base().perspective_projection.get().is_some()
+    {
+        return None;
+    }
+
+    let object_matrix = this.base().matrix();
+    // Parent transforms can still rotate/skew the final sliced result, but a
+    // rotated/skewed object matrix itself uses normal scaling.
+    if object_matrix.b.abs() > f32::EPSILON || object_matrix.c.abs() > f32::EPSILON {
+        return None;
+    }
+    let object_matrix_inverse = object_matrix.inverse()?;
+
+    let bounds = this.bounds(BoundsMode::Engine);
+    if !bounds.is_valid()
+        || bounds.is_point()
+        || grid.x_min <= bounds.x_min
+        || grid.x_max >= bounds.x_max
+        || grid.y_min <= bounds.y_min
+        || grid.y_max >= bounds.y_max
+    {
+        return None;
+    }
+
+    Some(ScalingGridInfo {
+        object_matrix_inverse,
+        x: scaling_grid_axis(
+            object_matrix.a,
+            object_matrix.tx,
+            bounds.x_min,
+            grid.x_min,
+            grid.x_max,
+            bounds.x_max,
+        ),
+        y: scaling_grid_axis(
+            object_matrix.d,
+            object_matrix.ty,
+            bounds.y_min,
+            grid.y_min,
+            grid.y_max,
+            bounds.y_max,
+        ),
+    })
+}
+
+fn slice_axis_transform(
+    source_min: Twips,
+    source_max: Twips,
+    dest_min: Twips,
+    dest_max: Twips,
+) -> Option<(f32, Twips)> {
+    let source_width = source_max - source_min;
+    if source_width == Twips::ZERO {
+        return None;
+    }
+
+    let scale = (dest_max - dest_min).get() as f32 / source_width.get() as f32;
+    if !scale.is_finite() {
+        return None;
+    }
+
+    let translate = twips_from_f32(dest_min.get() as f32 - source_min.get() as f32 * scale);
+    Some((scale, translate))
+}
+
+fn render_self_with_scaling_grid<'gc>(
+    this: DisplayObject<'gc>,
+    context: &mut RenderContext<'_, 'gc>,
+    options: &RenderOptions,
+) {
+    let Some(grid) = scaling_grid_info(this, options) else {
+        this.render_self(context);
+        return;
+    };
+
+    for y in 0..3 {
+        let Some((scale_y, translate_y)) = slice_axis_transform(
+            grid.y.source[y],
+            grid.y.source[y + 1],
+            grid.y.dest[y],
+            grid.y.dest[y + 1],
+        ) else {
+            continue;
+        };
+
+        for x in 0..3 {
+            let Some((scale_x, translate_x)) = slice_axis_transform(
+                grid.x.source[x],
+                grid.x.source[x + 1],
+                grid.x.dest[x],
+                grid.x.dest[x + 1],
+            ) else {
+                continue;
+            };
+
+            let source_rect = Rectangle {
+                x_min: grid.x.source[x],
+                x_max: grid.x.source[x + 1],
+                y_min: grid.y.source[y],
+                y_max: grid.y.source[y + 1],
+            };
+            let piece_matrix = Matrix {
+                a: scale_x,
+                d: scale_y,
+                tx: translate_x,
+                ty: translate_y,
+                ..Default::default()
+            };
+            let local_piece_matrix = grid.object_matrix_inverse * piece_matrix;
+            let piece_transform = Transform {
+                matrix: local_piece_matrix,
+                color_transform: Default::default(),
+                perspective_projection: None,
+            };
+
+            context.transform_stack.push(&piece_transform);
+            let mask_matrix = context.transform_stack.transform().matrix
+                * Matrix::create_box_from_rectangle(&source_rect);
+
+            context.commands.push_mask();
+            context.commands.draw_rect(Color::WHITE, mask_matrix);
+            context.commands.activate_mask();
+            this.render_self(context);
+            context.commands.deactivate_mask();
+            context.commands.draw_rect(Color::WHITE, mask_matrix);
+            context.commands.pop_mask();
+
+            context.transform_stack.pop();
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn px(value: i32) -> Twips {
+        Twips::from_pixels_i32(value)
+    }
+
+    #[test]
+    fn scaling_grid_axis_preserves_fixed_edges_with_positive_scale() {
+        let axis = scaling_grid_axis(2.0, px(10), px(0), px(20), px(60), px(100));
+
+        assert_eq!(axis.source, [px(0), px(20), px(60), px(100)]);
+        assert_eq!(axis.dest, [px(10), px(30), px(170), px(210)]);
+
+        let (center_scale, center_translate) =
+            slice_axis_transform(axis.source[1], axis.source[2], axis.dest[1], axis.dest[2])
+                .unwrap();
+        assert_eq!(center_scale, 3.5);
+        assert_eq!(center_translate, px(-40));
+    }
+
+    #[test]
+    fn scaling_grid_axis_preserves_fixed_edges_with_negative_scale() {
+        let axis = scaling_grid_axis(-2.0, px(210), px(0), px(20), px(60), px(100));
+
+        assert_eq!(axis.source, [px(0), px(20), px(60), px(100)]);
+        assert_eq!(axis.dest, [px(210), px(190), px(50), px(10)]);
+
+        let (center_scale, center_translate) =
+            slice_axis_transform(axis.source[1], axis.source[2], axis.dest[1], axis.dest[2])
+                .unwrap();
+        assert_eq!(center_scale, -3.5);
+        assert_eq!(center_translate, px(260));
+    }
+}
+
 pub fn render_base<'gc>(
     this: DisplayObject<'gc>,
     context: &mut RenderContext<'_, 'gc>,
@@ -1071,7 +1311,7 @@ pub fn render_base<'gc>(
                 use_bitmap_cache: true,
                 stage: context.stage,
             };
-            this.render_self(&mut offscreen_context);
+            render_self_with_scaling_grid(this, &mut offscreen_context, &options);
             offscreen_context.cache_draws.push(BitmapCacheEntry {
                 handle: cache_info.handle.clone(),
                 commands: offscreen_context.commands,
@@ -1118,7 +1358,7 @@ pub fn render_base<'gc>(
         apply_standard_mask_and_scroll(
             this,
             context,
-            |context| this.render_self(context),
+            |context| render_self_with_scaling_grid(this, context, &options),
             &options,
         );
     }
@@ -2015,7 +2255,10 @@ pub trait TDisplayObject<'gc>:
 
     #[no_dynamic]
     fn set_scaling_grid(self, rect: Rectangle<Twips>) {
-        self.base().scaling_grid.set(rect);
+        if self.base().scaling_grid.get() != rect {
+            self.base().scaling_grid.set(rect);
+            self.invalidate_cached_bitmap();
+        }
     }
 
     #[no_dynamic]

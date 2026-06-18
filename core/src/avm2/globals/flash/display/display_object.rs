@@ -126,7 +126,6 @@ pub fn get_scale9grid<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
-    avm2_stub_getter!(activation, "flash.display.DisplayObject", "scale9Grid");
     if let Some(dobj) = this.as_display_object() {
         let rect = dobj.scaling_grid();
         return if rect.is_valid() {
@@ -141,13 +140,12 @@ pub fn get_scale9grid<'gc>(
 
 /// Implements `scale9Grid`'s setter.
 pub fn set_scale9grid<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
-    avm2_stub_setter!(activation, "flash.display.DisplayObject", "scale9Grid");
     if let Some(dobj) = this.as_display_object() {
         let rect = match args.try_get_object(0) {
             None => Rectangle::default(),
