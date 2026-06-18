@@ -292,8 +292,6 @@ export enum DeviceFontRenderer {
      *
      * It cannot access device fonts and uses fonts provided in the
      * configuration and the default Noto Sans font as a fallback.
-     *
-     * This is the default method.
      */
     Embedded = "embedded",
 
@@ -302,7 +300,7 @@ export enum DeviceFontRenderer {
      *
      * It can access and render device fonts, glyphs are rendered as bitmaps.
      *
-     * This is an experimental method and some features might not work properly.
+     * This is the default method. Some features might not work properly.
      */
     Canvas = "canvas",
 }
@@ -805,7 +803,7 @@ export interface BaseLoadOptions {
     /**
      * Specify how device fonts should be rendered.
      *
-     * @default DeviceFontRenderer.Embedded
+     * @default DeviceFontRenderer.Canvas
      */
     deviceFontRenderer?: DeviceFontRenderer;
 

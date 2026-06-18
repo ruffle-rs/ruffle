@@ -68,12 +68,37 @@ impl CanvasFontRenderer {
         let italic = if italic { "italic " } else { "" };
         let bold = if bold { "bold " } else { "" };
 
-        // Escape font family properly
-        let font_family = JSON::stringify(&JsValue::from_str(font_family))
-            .ok()
-            .and_then(|js_str| js_str.as_string())
-            .unwrap_or_else(|| format!("\"{font_family}\""));
+        let font_family = if Self::is_css_generic_family(font_family) {
+            font_family.to_owned()
+        } else {
+            // Escape font family properly, and let the browser choose a
+            // default sans-serif font if the requested family is unavailable.
+            let font_family = JSON::stringify(&JsValue::from_str(font_family))
+                .ok()
+                .and_then(|js_str| js_str.as_string())
+                .unwrap_or_else(|| format!("\"{font_family}\""));
+            format!("{font_family}, sans-serif")
+        };
         format!("{italic}{bold}{size}px {font_family}")
+    }
+
+    fn is_css_generic_family(font_family: &str) -> bool {
+        matches!(
+            font_family.to_ascii_lowercase().as_str(),
+            "serif"
+                | "sans-serif"
+                | "monospace"
+                | "cursive"
+                | "fantasy"
+                | "system-ui"
+                | "ui-serif"
+                | "ui-sans-serif"
+                | "ui-monospace"
+                | "ui-rounded"
+                | "math"
+                | "emoji"
+                | "fangsong"
+        )
     }
 
     fn apply_style(ctx: &OffscreenCanvasRenderingContext2d, font_str: &str) {

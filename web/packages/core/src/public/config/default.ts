@@ -58,6 +58,6 @@ export const DEFAULT_CONFIG: Required<BaseLoadOptions> = {
     gamepadButtonMapping: {},
     urlRewriteRules: [],
     scrollingBehavior: ScrollingBehavior.Smart,
-    deviceFontRenderer: DeviceFontRenderer.Embedded,
+    deviceFontRenderer: DeviceFontRenderer.Canvas,
     backgroundExecutionMode: BackgroundExecutionMode.MainThread,
 };

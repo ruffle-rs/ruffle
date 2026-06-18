@@ -105,7 +105,7 @@ impl Default for RuffleInstanceBuilder {
             gamepad_button_mapping: HashMap::new(),
             url_rewrite_rules: vec![],
             scrolling_behavior: ScrollingBehavior::Smart,
-            device_font_renderer: DeviceFontRenderer::Embedded,
+            device_font_renderer: DeviceFontRenderer::Canvas,
         }
     }
 }
@@ -378,6 +378,22 @@ impl RuffleInstanceBuilder {
 }
 
 impl RuffleInstanceBuilder {
+    pub fn setup_canvas_fonts(&self, player: &mut Player) {
+        player.set_default_font(DefaultFont::Sans, vec!["sans-serif".to_string()]);
+        player.set_default_font(DefaultFont::Serif, vec!["serif".to_string()]);
+        player.set_default_font(DefaultFont::Typewriter, vec!["monospace".to_string()]);
+        player.set_default_font(
+            DefaultFont::JapaneseGothicMono,
+            vec!["monospace".to_string()],
+        );
+        player.set_default_font(DefaultFont::JapaneseGothic, vec!["sans-serif".to_string()]);
+        player.set_default_font(DefaultFont::JapaneseMincho, vec!["serif".to_string()]);
+
+        for (default, names) in &self.default_fonts {
+            player.set_default_font(*default, names.clone());
+        }
+    }
+
     pub fn setup_fonts(&self, player: &mut Player) {
         for (font_name, bytes) in &self.custom_fonts {
             let bytes_slice = &bytes[..];
@@ -730,8 +746,9 @@ impl RuffleInstanceBuilder {
             core.set_allow_fullscreen(self.allow_fullscreen);
             core.set_window_mode(self.wmode.as_deref().unwrap_or("window"));
 
-            if matches!(self.device_font_renderer, DeviceFontRenderer::Embedded) {
-                self.setup_fonts(&mut core);
+            match self.device_font_renderer {
+                DeviceFontRenderer::Embedded => self.setup_fonts(&mut core),
+                DeviceFontRenderer::Canvas => self.setup_canvas_fonts(&mut core),
             }
         }
 
