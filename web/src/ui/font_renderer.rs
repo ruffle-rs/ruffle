@@ -139,6 +139,21 @@ impl CanvasFontRenderer {
         visible_pixels > 0 && changed_pixels * 4 < visible_pixels
     }
 
+    fn sharpen_mono_glyph(pixels: &mut [u8]) {
+        for pixel in pixels.chunks_exact_mut(4) {
+            let alpha = pixel[3];
+            if alpha == 0 {
+                continue;
+            }
+
+            let boost = (u16::from(alpha) * u16::from(255 - alpha)) / (255 * 2);
+            pixel[0] = 255;
+            pixel[1] = 255;
+            pixel[2] = 255;
+            pixel[3] = alpha.saturating_add(boost as u8);
+        }
+    }
+
     fn calculate_width(&self, text: &str) -> Result<f64, JsValue> {
         Ok(self.ctx.measure_text(text)?.width())
     }
@@ -179,7 +194,7 @@ impl CanvasFontRenderer {
         let image_data = self.ctx.get_image_data(0, 0, bitmap_width, bitmap_height)?;
         let width = image_data.width();
         let height = image_data.height();
-        let pixels = image_data.data().0;
+        let mut pixels = image_data.data().0;
 
         let has_native_color = if Self::has_non_white_pixels(&pixels) {
             self.ctx.set_fill_style_str("black");
@@ -204,6 +219,10 @@ impl CanvasFontRenderer {
         } else {
             false
         };
+
+        if !has_native_color {
+            Self::sharpen_mono_glyph(&mut pixels);
+        }
 
         let bitmap = Bitmap::new(width, height, BitmapFormat::Rgba, pixels);
         let bitmap_tx = Twips::from_pixels(-metrics.actual_bounding_box_left());
