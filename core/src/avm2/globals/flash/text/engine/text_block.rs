@@ -83,8 +83,8 @@ pub fn create_text_line<'gc>(
         .as_object();
     apply_format(activation, fallback, text.as_wstr(), element_format)?;
 
-    let fte = TextLine::new(activation.context, movie, Some(fallback));
-    let instance = initialize_for_allocator(activation.context, fte.into(), class);
+    let text_line = TextLine::new(activation.context, movie, fallback);
+    let instance = initialize_for_allocator(activation.context, text_line.into(), class);
 
     instance.set_slot(line_slots::_TEXT_BLOCK, this.into(), activation)?;
     instance.set_slot(line_slots::_SPECIFIED_WIDTH, args.get_value(1), activation)?;
