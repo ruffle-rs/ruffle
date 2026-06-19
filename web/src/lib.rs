@@ -1408,6 +1408,19 @@ pub fn tilemalloc_table() -> String {
         .to_table()
 }
 
+/// Release every fully-empty tilemalloc pool extent back to the system
+/// allocator (dlmalloc) and return the bytes reclaimed (no logging). Call it
+/// from an idle or post-GC hook — when the GC has just freed a transient
+/// spike's objects, the extents that held only that garbage become fully free
+/// and can be handed back, so later allocations (including the fallback path)
+/// reuse the memory instead of growing past the WASM cap. Inspect the effect
+/// via `tilemallocTable` (the `released` counter / dropping `ext`). See
+/// `TileAllocator::trim`.
+#[wasm_bindgen(js_name = "tilemallocTrim")]
+pub fn tilemalloc_trim() -> f64 {
+    ruffle_core::tilemalloc::GLOBAL_TILEMALLOC.trim() as f64
+}
+
 #[wasm_bindgen(start)]
 fn global_init() {
     // Redirect Log to Tracing
@@ -1471,6 +1484,7 @@ fn global_init() {
     //
     //     window.tilemallocStats()   → returns JSON snapshot
     //     window.tilemallocTable()   → returns String snapshot
+    //     window.tilemallocTrim()    → releases empty extents, returns bytes freed
     //
     // No JS import wiring is required by the host page. The closures
     // are intentionally leaked via `forget()`: they live for the
@@ -1499,6 +1513,16 @@ fn global_init() {
             table_cb.as_ref(),
         );
         table_cb.forget();
+
+        let trim_cb = Closure::<dyn Fn() -> f64>::new(|| {
+            ruffle_core::tilemalloc::GLOBAL_TILEMALLOC.trim() as f64
+        });
+        let _ = js_sys::Reflect::set(
+            &window,
+            &JsValue::from_str("tilemallocTrim"),
+            trim_cb.as_ref(),
+        );
+        trim_cb.forget();
     }
 
     tracing::info!("Ruffle WASM module has been initialized");

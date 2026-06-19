@@ -17,8 +17,12 @@
 //! - **dealloc** = push back onto the free list head. Always O(1).
 //! - **add_extent** = ask the system allocator for one extent and set
 //!   the class's bump range to span it. No per-tile setup write. Each
-//!   extent is tracked so we can report `extent_count` for stats and
-//!   (eventually) walk the extents for cleanup.
+//!   extent is tracked so we can report `extent_count` for stats and so
+//!   `trim_empty_extents` can hand fully-free extents back.
+//! - **trim** (on demand only) = sweep the free lists and return every
+//!   fully-empty extent to the system allocator, undoing a transient
+//!   spike that stranded extents in the otherwise grow-only pool. Never
+//!   runs on the alloc/dealloc hot path. See `trim_empty_extents`.
 //!
 //! Concurrency: the allocator is `Sync` via interior mutability
 //! (`UnsafeCell`). On `wasm32-unknown-unknown` execution is
@@ -48,12 +52,18 @@ struct FreeTile {
 
 /// Metadata for one extent (a contiguous region obtained from the
 /// system allocator and split into `tiles_per_extent` tiles). Kept in
-/// a `Vec` for stats reporting and as the anchor any future extent
-/// cleanup would need (the allocator is currently grow-only).
-#[allow(dead_code)]
+/// a `Vec` for stats reporting and as the anchor `trim_empty_extents`
+/// uses to hand fully-free extents back to the system allocator.
 struct ExtentRecord {
     ptr: *mut u8,
     total_bytes: usize,
+    /// Transient scratch, meaningful **only** during a single
+    /// `trim_empty_extents` sweep: how many of this extent's tiles are
+    /// currently on the free list, and the head of those same tiles
+    /// re-chained into a per-extent bucket. Reset at the start of every
+    /// sweep; never read on the alloc/dealloc hot path.
+    free_count: usize,
+    bucket: *mut FreeTile,
 }
 
 /// Per–size-class runtime state.
@@ -87,15 +97,20 @@ struct ClassState {
     /// `add_extent`, so the check `bump_ptr < bump_end` is sufficient
     /// to guarantee at least one full tile fits before the carve.
     bump_end: *mut u8,
-    /// Extent tracking (for stats and potential cleanup).
+    /// Extent tracking (for stats and `trim_empty_extents` reclamation).
     extents: Vec<ExtentRecord>,
     /// Cumulative counters.
     alloc_total: usize,
     dealloc_total: usize,
     /// Cumulative count of extents added to this class since boot.
-    /// Equals `extents.len()` as long as the allocator stays
-    /// grow-only.
+    /// `extents.len()` equals `extents_added - extents_released`; before
+    /// any `trim_empty_extents` reclaims an extent the latter is 0 and it
+    /// equals `extents_added`.
     extents_added: usize,
+    /// Cumulative count of extents handed back to the system allocator by
+    /// `trim_empty_extents` since boot. The current extent count is
+    /// `extents_added - extents_released`.
+    extents_released: usize,
     /// **Live** byte count of internal fragmentation currently held by
     /// this class: sum of `(tile_size - layout.size())` over every tile
     /// currently alive in the pool. Incremented in `class_alloc`,
@@ -201,6 +216,7 @@ impl ClassState {
             alloc_total: 0,
             dealloc_total: 0,
             extents_added: 0,
+            extents_released: 0,
             wasted_bytes_total: 0,
             requested_bytes_total: 0,
             peak_alive_tiles: 0,
@@ -238,6 +254,7 @@ impl ClassState {
             extent_bytes: self.extents.iter().map(|s| s.total_bytes).sum(),
             extent_count: self.extents.len(),
             extents_added: self.extents_added,
+            extents_released: self.extents_released,
             alloc_total: self.alloc_total,
             dealloc_total: self.dealloc_total,
             peak_alive_tiles: self.peak_alive_tiles,
@@ -523,6 +540,8 @@ impl TileInner {
         class.extents.push(ExtentRecord {
             ptr: extent_ptr,
             total_bytes: extent_total,
+            free_count: 0,
+            bucket: ptr::null_mut(),
         });
         class.extents_added += 1;
         true
@@ -661,6 +680,114 @@ impl TileInner {
                 class.align_histogram[align_bucket].saturating_sub(1);
         }
     }
+
+    /// Release fully-empty extents back to the system allocator, returning the
+    /// total bytes reclaimed.
+    ///
+    /// The pool is otherwise grow-only: a transient spike — e.g. millions of
+    /// short-lived objects that all land in one size class faster than the GC
+    /// can reclaim them — permanently inflates `extents`. On WASM, where linear
+    /// memory never shrinks, that memory then stays reserved by the pool and
+    /// starves later allocations (including the fallback path other code relies
+    /// on), even though it is entirely free. This hands the empty extents back
+    /// to dlmalloc, where any size class *or* the fallback can reuse them.
+    ///
+    /// An extent is releasable when *every* one of its tiles is on the free
+    /// list (all were carved and then freed). The current bump extent is never
+    /// released; its un-carved tail keeps its `free_count` below
+    /// `tiles_per_extent` anyway, but the `is_current` guard makes that
+    /// explicit (and covers the fully-carved-then-drained edge).
+    ///
+    /// Cost: O(free tiles · log extents), paid only when called — typically on
+    /// memory pressure or after a GC — never on the alloc/dealloc hot path.
+    ///
+    /// **Allocation-free** by construction: this runs *as* the global
+    /// allocator, so it must not route back through `self`. It uses only
+    /// in-place scratch — an in-place `sort_unstable` (which never allocates)
+    /// and the per-extent `free_count`/`bucket` fields on the existing Vec.
+    ///
+    /// Safety / soundness: single-threaded on wasm32 (see the `Sync` impl).
+    unsafe fn trim_empty_extents(&mut self) -> usize {
+        let mut released_total = 0usize;
+        for ci in 0..self.class_count {
+            let Some(class) = self.classes[ci].as_mut() else {
+                continue;
+            };
+            if class.extents.is_empty() || class.free_head.is_null() {
+                continue;
+            }
+
+            // Sort extents by base address so a free tile's owning extent is a
+            // binary search. `sort_unstable` is in place and never allocates.
+            class.extents.sort_unstable_by_key(|e| e.ptr as usize);
+            for e in class.extents.iter_mut() {
+                e.free_count = 0;
+                e.bucket = ptr::null_mut();
+            }
+
+            // Pass 1: drain the free list, re-chaining each tile into its
+            // owning extent's bucket and counting per extent. Each bucket stays
+            // entirely within one extent, so a released extent's chain never
+            // dangles into a retained one.
+            let mut orphans: *mut FreeTile = ptr::null_mut();
+            let mut tile = class.free_head;
+            while !tile.is_null() {
+                let next = unsafe { (*tile).next };
+                let addr = tile as usize;
+                let pp = class.extents.partition_point(|e| (e.ptr as usize) <= addr);
+                if pp > 0 && addr < class.extents[pp - 1].ptr as usize + class.extents[pp - 1].total_bytes {
+                    let e = &mut class.extents[pp - 1];
+                    unsafe { (*tile).next = e.bucket };
+                    e.bucket = tile;
+                    e.free_count += 1;
+                } else {
+                    // A free tile mapping to no extent should be impossible;
+                    // park it on the orphan chain rather than leak it.
+                    unsafe { (*tile).next = orphans };
+                    orphans = tile;
+                }
+                tile = next;
+            }
+
+            // Pass 2: release fully-free extents, re-chain the rest. Start the
+            // rebuilt free list from any orphans so none are lost.
+            let tpe = class.tiles_per_extent;
+            let tile_align = class.tile_align;
+            let bump_end = class.bump_end;
+            let mut new_head: *mut FreeTile = orphans;
+            let mut released = 0usize;
+            let mut released_count = 0usize;
+            class.extents.retain(|e| {
+                let e_end = unsafe { e.ptr.add(e.total_bytes) };
+                let is_current = !bump_end.is_null() && bump_end == e_end;
+                if e.free_count == tpe && !is_current {
+                    let layout =
+                        unsafe { Layout::from_size_align_unchecked(e.total_bytes, tile_align) };
+                    unsafe { System.dealloc(e.ptr, layout) };
+                    released += e.total_bytes;
+                    released_count += 1;
+                    false
+                } else {
+                    if !e.bucket.is_null() {
+                        // Prepend this extent's self-contained bucket chain.
+                        let mut t = e.bucket;
+                        unsafe {
+                            while !(*t).next.is_null() {
+                                t = (*t).next;
+                            }
+                            (*t).next = new_head;
+                        }
+                        new_head = e.bucket;
+                    }
+                    true
+                }
+            });
+            class.free_head = new_head;
+            class.extents_released += released_count;
+            released_total += released;
+        }
+        released_total
+    }
 }
 
 /// Public allocator. Wraps `TileInner` in an `UnsafeCell` and asserts
@@ -719,6 +846,18 @@ impl TileAllocator {
             cross_class_realloc_total: inner.cross_class_realloc_total,
         }
     }
+
+    /// Release every fully-empty pool extent back to the system allocator and
+    /// return the bytes reclaimed. Use from a memory-pressure or post-GC hook
+    /// to undo a transient spike that stranded extents in the (otherwise
+    /// grow-only) pool. Cheap when there is nothing to release; the cost scales
+    /// with the number of free tiles, so prefer calling it while idle rather
+    /// than per frame. See [`TileInner::trim_empty_extents`].
+    pub fn trim(&self) -> usize {
+        // SAFETY: see Sync impl. Single-threaded on wasm32.
+        let inner = unsafe { &mut *self.inner.get() };
+        unsafe { inner.trim_empty_extents() }
+    }
 }
 
 unsafe impl GlobalAlloc for TileAllocator {
@@ -736,7 +875,15 @@ unsafe impl GlobalAlloc for TileAllocator {
         }
 
         // Fallback path.
-        let p = unsafe { System.alloc(layout) };
+        let mut p = unsafe { System.alloc(layout) };
+        if p.is_null() {
+            // dlmalloc could not satisfy the request within the current WASM
+            // pages. A transient pool spike may have stranded reusable memory
+            // in fully-empty extents — hand them back to the system allocator
+            // and retry once. (Trim is allocation-free, so this can't recurse.)
+            unsafe { inner.trim_empty_extents() };
+            p = unsafe { System.alloc(layout) };
+        }
         if !p.is_null() {
             inner.fallback_alloc_total += 1;
             inner.fallback_bytes_alloc += layout.size() as u64;
@@ -858,5 +1005,64 @@ unsafe impl GlobalAlloc for TileAllocator {
             unsafe { self.dealloc(ptr, layout) };
         }
         new_ptr
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::alloc::{GlobalAlloc, Layout};
+
+    /// Fill three extents of one class, free every tile, and confirm `trim`
+    /// hands back the two fully-free non-current extents (16 MiB) while keeping
+    /// the current bump extent — and that its recycled tiles stay usable.
+    #[test]
+    fn trim_releases_fully_empty_extents() {
+        let a = TileAllocator::new();
+        let layout = Layout::from_size_align(256, 8).unwrap();
+        // Mirror config: extent_mb = 8 for the 256-byte class.
+        let tpe = (8 * 1024 * 1024) / 256;
+        let extent_bytes = tpe * 256;
+        let n = tpe * 2 + 10; // two full extents + a partly-carved third
+
+        let mut ptrs = Vec::with_capacity(n);
+        for _ in 0..n {
+            let p = unsafe { a.alloc(layout) };
+            assert!(!p.is_null());
+            ptrs.push(p);
+        }
+
+        let count_256 = |s: &TileAllocatorStats| {
+            s.classes.iter().find(|c| c.size_max == 256).unwrap().extent_count
+        };
+        assert_eq!(count_256(&a.snapshot_stats()), 3);
+
+        for p in &ptrs {
+            unsafe { a.dealloc(*p, layout) };
+        }
+
+        let released = a.trim();
+        assert_eq!(released, 2 * extent_bytes);
+
+        // Stats must reflect the reclamation, not just the byte count: one
+        // extent survives, `extents_released` records the two handed back, and
+        // the derived counters re-track (capacity shrank so `free_tiles` drops
+        // to one extent's worth; `extents_added` stays a lifetime total).
+        let snap = a.snapshot_stats();
+        let cls = snap.classes.iter().find(|c| c.size_max == 256).unwrap();
+        assert_eq!(cls.extent_count, 1);
+        assert_eq!(cls.extents_added, 3);
+        assert_eq!(cls.extents_released, 2);
+        assert_eq!(cls.extent_count, cls.extents_added - cls.extents_released);
+        assert_eq!(cls.alive_tiles, 0);
+        assert_eq!(cls.free_tiles, tpe);
+
+        // Recycled tiles from the surviving extent must still allocate.
+        for _ in 0..10 {
+            assert!(!unsafe { a.alloc(layout) }.is_null());
+        }
+
+        // Trimming again is a no-op (nothing fully free now).
+        assert_eq!(a.trim(), 0);
     }
 }

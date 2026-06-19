@@ -36,6 +36,16 @@
 //! — **no additional `memory.grow()` calls** past the initial extent
 //! fills.
 //!
+//! - **trim** (`TileAllocator::trim`, on demand): the steady state above
+//!   is grow-only — extents are never given back. A *one-off* spike (e.g.
+//!   millions of short-lived objects in one size class faster than the GC
+//!   reclaims them) would otherwise strand its extents forever. `trim`
+//!   sweeps the free lists and hands every fully-empty extent back to the
+//!   system allocator, so any class or the fallback can reuse it. It is
+//!   allocation-free and runs only when called (a memory-pressure or
+//!   post-GC hook), never on the hot path; it also fires automatically as
+//!   a last resort when a fallback allocation would otherwise OOM.
+//!
 //! ## How to use
 //!
 //! Install as the binary's global allocator:
@@ -48,7 +58,9 @@
 //! ```
 //!
 //! Inspect at runtime via `GLOBAL.snapshot_stats()` (cheap; copies
-//! a handful of `usize`s per class).
+//! a handful of `usize`s per class), and reclaim a transient spike via
+//! `GLOBAL.trim()` (the web binary re-exports both as wasm-bindgen JS
+//! functions — `tilemallocStats` / `tilemallocTrim`).
 //!
 //! ## How to tune
 //!

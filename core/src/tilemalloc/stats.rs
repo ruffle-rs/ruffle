@@ -49,8 +49,15 @@ pub struct TileClassStats {
     /// addition adds `tiles_per_extent` to capacity. Growth in this
     /// counter between snapshots means the working set for this class
     /// is exceeding the extent pool — consider increasing `extent_mb`
-    /// in the config.
+    /// in the config. The current `extent_count` is
+    /// `extents_added - extents_released`.
     pub extents_added: usize,
+
+    /// Cumulative count of extents handed back to the system allocator
+    /// by `TileAllocator::trim` since boot. Non-zero only after a trim
+    /// reclaimed a transient spike; `extent_count = extents_added -
+    /// extents_released`.
+    pub extents_released: usize,
 
     /// Cumulative alloc calls served by this class (does NOT count
     /// allocations that fell back to the system allocator).
@@ -226,7 +233,9 @@ impl TileAllocatorStats {
     /// schema where applicable):
     /// - `class` = `size_max` (the tile size of the class).
     /// - `free` / `alive` = `free_tiles` / `alive_tiles`.
-    /// - `ext` / `added` = `extent_count` / `extents_added`.
+    /// - `ext` / `added` / `released` = `extent_count` / `extents_added`
+    ///   / `extents_released` (so `ext = added - released`; `released`
+    ///   is non-zero only after a `trim` reclaimed empty extents).
     /// - `alloc` / `dealloc` = `alloc_total` / `dealloc_total`.
     /// - `peak` = lifetime peak of `alive_tiles` (sizing hint for `extent_mb`).
     /// - `live_mb` = `alive_tiles * size_max / 1 MiB` (the working set
@@ -271,12 +280,13 @@ impl TileAllocatorStats {
                 live_bytes as f64 * 100.0 / c.extent_bytes as f64
             };
             s.push_str(&format!(
-                "{{class={} free={} alive={} ext={} added={} alloc={} dealloc={} peak={} live_mb={:.2} util_pct={:.1} waste_pct={:.1}}}",
+                "{{class={} free={} alive={} ext={} added={} released={} alloc={} dealloc={} peak={} live_mb={:.2} util_pct={:.1} waste_pct={:.1}}}",
                 c.size_max,
                 c.free_tiles,
                 c.alive_tiles,
                 c.extent_count,
                 c.extents_added,
+                c.extents_released,
                 c.alloc_total,
                 c.dealloc_total,
                 c.peak_alive_tiles,
@@ -354,6 +364,7 @@ impl TileAllocatorStats {
     ///     { "size_min": N, "size_max": N,
     ///       "free_tiles": N, "alive_tiles": N,
     ///       "extent_bytes": N, "extent_count": N, "extents_added": N,
+    ///       "extents_released": N,
     ///       "alloc_total": N, "dealloc_total": N,
     ///       "peak_alive_tiles": N,
     ///       "wasted_bytes_total": N, "requested_bytes_total": N,
@@ -380,6 +391,7 @@ impl TileAllocatorStats {
     /// All `*_total` and `*_histogram` values are **live** (= reflecting
     /// the current pool state, alloc-minus-dealloc), except for
     /// `alloc_total`, `dealloc_total`, `extents_added`,
+    /// `extents_released`,
     /// `inplace_realloc_total`, `inbound_realloc_total_{grow,shrink}`,
     /// `outbound_realloc_total_{grow,shrink}`,
     /// `cross_class_realloc_total`, and `peak_alive_tiles`, which are
@@ -437,6 +449,7 @@ impl TileAllocatorStats {
             s.push_str(&format!("\"extent_bytes\":{},", c.extent_bytes));
             s.push_str(&format!("\"extent_count\":{},", c.extent_count));
             s.push_str(&format!("\"extents_added\":{},", c.extents_added));
+            s.push_str(&format!("\"extents_released\":{},", c.extents_released));
             s.push_str(&format!("\"alloc_total\":{},", c.alloc_total));
             s.push_str(&format!("\"dealloc_total\":{},", c.dealloc_total));
             s.push_str(&format!("\"peak_alive_tiles\":{},", c.peak_alive_tiles));
