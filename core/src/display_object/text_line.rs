@@ -14,8 +14,37 @@ use core::fmt;
 use gc_arena::barrier::unlock;
 use gc_arena::lock::Lock;
 use gc_arena::{Collect, Gc, Mutation};
+use ruffle_common::avm_string::AvmString;
 use ruffle_common::utils::HasPrefixField;
+use ruffle_macros::istr;
+use ruffle_wstr::WStr;
 use std::sync::Arc;
+
+#[derive(Clone, Copy, Collect, PartialEq)]
+#[collect(require_static)]
+pub enum TextLineValidity {
+    Valid,
+    Invalid,
+    Static,
+    PossiblyInvalid,
+    UserInvalid,
+}
+
+impl TextLineValidity {
+    pub fn parse(string: &WStr) -> Self {
+        if string == b"valid" {
+            Self::Valid
+        } else if string == b"invalid" {
+            Self::Invalid
+        } else if string == b"static" {
+            Self::Static
+        } else if string == b"possiblyInvalid" {
+            Self::PossiblyInvalid
+        } else {
+            Self::UserInvalid
+        }
+    }
+}
 
 #[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]
@@ -38,6 +67,11 @@ pub struct TextLineData<'gc> {
     fallback: EditText<'gc>,
     #[collect(require_static)]
     movie: Arc<SwfMovie>,
+
+    /// Validity can be any user-defined string, we can't use an enum here.
+    ///
+    /// See [`TextLineValidity`] for the known values of validity.
+    validity: Lock<AvmString<'gc>>,
 }
 
 impl<'gc> TextLine<'gc> {
@@ -53,12 +87,21 @@ impl<'gc> TextLine<'gc> {
                 avm2_object: Lock::new(None),
                 fallback,
                 movie,
+                validity: Lock::new(istr!(context, "valid")),
             },
         ))
     }
 
     pub fn measure_text(self, context: &mut UpdateContext<'gc>) -> (Twips, Twips) {
         self.0.fallback.measure_text(context)
+    }
+
+    pub fn validity(self) -> AvmString<'gc> {
+        self.0.validity.get()
+    }
+
+    pub fn set_validity(self, validity: AvmString<'gc>, context: &mut UpdateContext<'gc>) {
+        unlock!(Gc::write(context.gc(), self.0), TextLineData, validity).set(validity);
     }
 }
 
@@ -76,6 +119,7 @@ impl<'gc> TDisplayObject<'gc> for TextLine<'gc> {
                 avm2_object: Lock::new(None),
                 fallback: self.0.fallback,
                 movie: self.0.movie.clone(),
+                validity: Lock::new(self.0.validity.get()),
             },
         ))
         .into()

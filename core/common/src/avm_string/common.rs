@@ -311,6 +311,7 @@ ruffle_macros::define_common_strings! {
     "undefined",
     "uri",
     "useHandCursor",
+    "valid",
     "value",
     "valueOf",
     "variables",
