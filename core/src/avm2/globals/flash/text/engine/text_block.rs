@@ -1,3 +1,4 @@
+use ruffle_common::avm_string::AvmString;
 use ruffle_macros::istr;
 
 use crate::avm2::activation::Activation;
@@ -29,49 +30,45 @@ pub fn create_text_line<'gc>(
     let previous_text_line = args.try_get_object(0);
     let width = args.get_f64(1);
 
-    let content = this.get_slot(block_slots::_CONTENT);
-
-    let content = if matches!(content, Value::Null) {
-        return Ok(Value::Null);
+    let previous_position = if let Some(previous_text_line) = previous_text_line {
+        previous_text_line.get_slot(line_slots::_END_INDEX).as_u32() as usize
     } else {
-        content
+        0
     };
 
-    let text = match previous_text_line {
-        Some(_) => {
-            // Some SWFs rely on eventually getting `null` from createLineText.
-            // TODO: Support multiple lines
-            this.set_slot(
-                block_slots::_TEXT_LINE_CREATION_RESULT,
-                istr!("complete").into(),
-                activation,
-            )?;
-            return Ok(Value::Null);
-        }
-        // Get the content element's text property (it's a getter).
-        // TODO: GraphicElement?
-        None => {
-            let txt = content
-                .call_method(element_methods::GET_TEXT, &[], activation)
-                .unwrap_or_else(|_| istr!("").into());
+    let content = this.get_slot(block_slots::_CONTENT);
+    let text = get_text_from_content(content, activation)?
+        .unwrap_or_else(|| istr!(""))
+        .as_wstr();
 
-            if matches!(txt, Value::Null) {
-                // FP returns a null TextLine when `o` is null- note that
-                // `o` is already coerced to a String because of the AS bindings.
-                return Ok(Value::Null);
-            } else {
-                txt.coerce_to_string(activation)
-                    .expect("Guaranteed by AS bindings")
-            }
-        }
+    let next_position = next_line_break(text, previous_position);
+
+    if text.is_empty() || next_position == text.len() && previous_position == next_position {
+        // No more text.
+        this.set_slot(
+            block_slots::_TEXT_LINE_CREATION_RESULT,
+            istr!("complete").into(),
+            activation,
+        )?;
+        return Ok(Value::Null);
+    }
+
+    let line_index = if let Some(previous_text_line) = previous_text_line {
+        previous_text_line
+            .get_slot(line_slots::_LINE_INDEX)
+            .as_u32()
+            + 1
+    } else {
+        0
     };
+
+    let subtext = &text[previous_position..next_position];
 
     let class = activation.avm2().classes().textline;
     let movie = activation.caller_movie_or_root();
 
     let fallback = EditText::new_fte(activation.context, movie.clone(), 0.0, 0.0, width, 15.0);
-
-    fallback.set_text(text.as_wstr(), activation.context);
+    fallback.set_text(subtext, activation.context);
 
     // FIXME: This needs to use `intrinsic_bounds` to measure the width
     // of the provided text, and set the width of the EditText to that.
@@ -81,7 +78,7 @@ pub fn create_text_line<'gc>(
     let element_format = content_obj
         .get_slot(element_slots::_ELEMENT_FORMAT)
         .as_object();
-    apply_format(activation, fallback, text.as_wstr(), element_format)?;
+    apply_format(activation, fallback, element_format, line_index)?;
 
     let text_line = TextLine::new(activation.context, movie, fallback);
     let instance = initialize_for_allocator(activation.context, text_line.into(), class);
@@ -93,6 +90,31 @@ pub fn create_text_line<'gc>(
         Value::from_usize_lossy(text.len()),
         activation,
     )?;
+    instance.set_slot(
+        line_slots::_BEGIN_INDEX,
+        Value::from_usize_lossy(previous_position),
+        activation,
+    )?;
+    instance.set_slot(
+        line_slots::_END_INDEX,
+        Value::from_usize_lossy(next_position),
+        activation,
+    )?;
+    instance.set_slot(line_slots::_LINE_INDEX, line_index.into(), activation)?;
+
+    if let Some(previous_text_line) = previous_text_line {
+        instance.set_slot(
+            line_slots::_PREVIOUS_LINE,
+            previous_text_line.into(),
+            activation,
+        )?;
+        previous_text_line.set_slot(
+            //
+            line_slots::_NEXT_LINE,
+            instance.into(),
+            activation,
+        )?;
+    }
 
     this.set_slot(
         block_slots::_TEXT_LINE_CREATION_RESULT,
@@ -104,11 +126,50 @@ pub fn create_text_line<'gc>(
     Ok(instance.into())
 }
 
+fn get_text_from_content<'gc>(
+    content: Value<'gc>,
+    activation: &mut Activation<'_, 'gc>,
+) -> Result<Option<AvmString<'gc>>, Error<'gc>> {
+    if matches!(content, Value::Null) {
+        return Ok(None);
+    }
+
+    let text = content.call_method(element_methods::GET_TEXT, &[], activation)?;
+
+    if matches!(text, Value::Null) {
+        return Ok(None);
+    }
+
+    let text = text
+        .coerce_to_string(activation)
+        .expect("Guaranteed by AS bindings");
+
+    if text.is_empty() {
+        return Ok(None);
+    }
+
+    Ok(Some(text))
+}
+
+fn next_line_break(text: &WStr, start: usize) -> usize {
+    let len = text[start..]
+        .iter()
+        .position(|ch| ch == b'\n' as u16)
+        // Include the newline.
+        .map(|pos| pos + 1);
+
+    if let Some(len) = len {
+        start + len
+    } else {
+        text.len()
+    }
+}
+
 fn apply_format<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    display_object: EditText<'gc>,
-    text: &WStr,
+    edit_text: EditText<'gc>,
     element_format: Option<Object<'gc>>,
+    line_index: u32,
 ) -> Result<(), Error<'gc>> {
     if let Some(element_format) = element_format {
         // TODO: Support more ElementFormat properties
@@ -160,18 +221,24 @@ fn apply_format<'gc>(
             ..TextFormat::default()
         };
 
-        display_object.set_is_device_font(activation.context, is_device_font);
-        display_object.set_text_format(0, text.len(), format.clone(), activation.context);
-        display_object.set_new_text_format(format);
+        edit_text.set_is_device_font(activation.context, is_device_font);
+        edit_text.set_text_format(
+            0,
+            edit_text.text_length(),
+            format.clone(),
+            activation.context,
+        );
+        edit_text.set_new_text_format(format);
     } else {
-        display_object.set_is_device_font(activation.context, true);
+        edit_text.set_is_device_font(activation.context, true);
     }
 
-    display_object.set_word_wrap(true, activation.context);
+    edit_text.set_word_wrap(true, activation.context);
 
-    let measured_text = display_object.measure_text(activation.context);
+    let measured_text = edit_text.measure_text(activation.context);
 
-    display_object.set_height(activation.context, measured_text.1.to_pixels());
+    edit_text.set_height(activation.context, measured_text.1.to_pixels());
+    edit_text.set_y(measured_text.1 * line_index as i32);
 
     Ok(())
 }
