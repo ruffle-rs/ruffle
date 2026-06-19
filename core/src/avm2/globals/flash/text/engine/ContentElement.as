@@ -28,6 +28,7 @@ package flash.text.engine {
         public native function get textBlockBeginIndex():int;
         public native function get groupElement():GroupElement;
 
+        [Ruffle(NativeCallable)]
         public native function get elementFormat():ElementFormat;
         public native function set elementFormat(value:ElementFormat):void;
 
