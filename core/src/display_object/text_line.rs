@@ -1,4 +1,4 @@
-//! The TextLine DisplayObject, backing flash.text.engine TextLine.
+//! The TextLine display object, backing flash.text.engine.TextLine.
 
 use crate::avm2::StageObject as Avm2StageObject;
 use crate::backend::ui::MouseCursor;
@@ -35,7 +35,7 @@ impl fmt::Debug for TextLine<'_> {
 pub struct TextLineData<'gc> {
     base: InteractiveObjectBase<'gc>,
     avm2_object: Lock<Option<Avm2StageObject<'gc>>>,
-    fallback: Option<EditText<'gc>>,
+    fallback: EditText<'gc>,
     #[collect(require_static)]
     movie: Arc<SwfMovie>,
 }
@@ -44,7 +44,7 @@ impl<'gc> TextLine<'gc> {
     pub fn new(
         context: &mut UpdateContext<'gc>,
         movie: Arc<SwfMovie>,
-        fallback: Option<EditText<'gc>>,
+        fallback: EditText<'gc>,
     ) -> Self {
         TextLine(Gc::new(
             context.gc(),
@@ -57,10 +57,8 @@ impl<'gc> TextLine<'gc> {
         ))
     }
 
-    pub fn measure_text(self, context: &mut UpdateContext<'gc>) -> Option<(Twips, Twips)> {
-        self.0
-            .fallback
-            .map(|fallback| fallback.measure_text(context))
+    pub fn measure_text(self, context: &mut UpdateContext<'gc>) -> (Twips, Twips) {
+        self.0.fallback.measure_text(context)
     }
 }
 
@@ -94,16 +92,11 @@ impl<'gc> TDisplayObject<'gc> for TextLine<'gc> {
     fn replace_with(self, _context: &mut UpdateContext<'gc>, _id: CharacterId) {}
 
     fn render_self(self, context: &mut RenderContext<'_, 'gc>) {
-        if let Some(fallback) = self.0.fallback {
-            fallback.render_self(context);
-        }
+        self.0.fallback.render_self(context);
     }
 
-    fn self_bounds(self, _mode: BoundsMode) -> Rectangle<Twips> {
-        self.0
-            .fallback
-            .map(|fallback| fallback.self_bounds(_mode))
-            .unwrap_or_default()
+    fn self_bounds(self, mode: BoundsMode) -> Rectangle<Twips> {
+        self.0.fallback.self_bounds(mode)
     }
 
     fn hit_test_shape(
