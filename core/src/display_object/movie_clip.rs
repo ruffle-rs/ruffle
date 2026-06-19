@@ -12,7 +12,7 @@ use crate::avm2::{
     Avm2, ClassObject as Avm2ClassObject, FunctionArgs as Avm2FunctionArgs, LoaderInfoObject,
     Object as Avm2Object, StageObject as Avm2StageObject, Value as Avm2Value,
 };
-use crate::backend::audio::{AudioManager, SoundInstanceHandle};
+use crate::backend::audio::{AudioManager, AudioSlice, SoundInstanceHandle};
 use crate::backend::navigator::Request;
 use crate::backend::ui::MouseCursor;
 use crate::binary_data::BinaryData;
@@ -4533,7 +4533,17 @@ impl<'gc, 'a> MovieClip<'gc> {
                 let mut slice = self.0.shared.get().swf.clone();
                 slice.end = slice.start + self.0.tag_stream_len();
                 slice.start += self.0.tag_stream_pos.get() as usize;
-                Some(context.start_stream(self, self.0.current_frame(), slice, stream_info))
+                // Convert SwfSlice to AudioSlice for thread-safe audio processing.
+                // Only copy the block's data, not the entire SWF.
+                let audio_slice = AudioSlice::new(Arc::from(slice.data()));
+                let version = slice.version();
+                Some(context.start_stream(
+                    self,
+                    self.0.current_frame(),
+                    audio_slice,
+                    version,
+                    stream_info,
+                ))
             } else {
                 None
             }

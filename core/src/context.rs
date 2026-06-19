@@ -9,7 +9,7 @@ use crate::avm2::Activation as Avm2Activation;
 use crate::avm2::api_version::ApiVersion;
 use crate::avm2::{Avm2, LoaderInfoObject, SharedObjectObject, SoundChannelObject};
 use crate::backend::{
-    audio::{AudioBackend, AudioManager, SoundHandle, SoundInstanceHandle},
+    audio::{AudioBackend, AudioManager, AudioSlice, SoundHandle, SoundInstanceHandle},
     log::LogBackend,
     navigator::NavigatorBackend,
     storage::StorageBackend,
@@ -326,11 +326,12 @@ impl<'gc> UpdateContext<'gc> {
         &mut self,
         movie_clip: MovieClip<'gc>,
         frame: u16,
-        data: SwfSlice,
+        data: AudioSlice,
+        version: u8,
         stream_info: &swf::SoundStreamHead,
     ) -> Option<SoundInstanceHandle> {
         self.audio_manager
-            .start_stream(self.audio, movie_clip, frame, data, stream_info)
+            .start_stream(self.audio, movie_clip, frame, data, version, stream_info)
     }
 
     pub fn set_sound_transforms_dirty(&mut self) {
