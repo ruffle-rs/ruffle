@@ -1,0 +1,235 @@
+useDominantBaseline
+1
+0
+auto
+0
+default
+default
+roman
+[object FontDescription]
+12
+on
+common
+en
+false
+auto
+0
+0
+default
+alignmentBaseline
+  Caught error:TypeError: Error #2007: Parameter alignmentBaseline must be non-null.
+	at flash.text.engine::ElementFormat/set alignmentBaseline()
+  Value:useDominantBaseline
+  Caught error:ArgumentError: Error #2008: Parameter alignmentBaseline must be one of the accepted values.
+	at flash.text.engine::ElementFormat/set alignmentBaseline()
+  Value:useDominantBaseline
+  Caught error:ArgumentError: Error #2008: Parameter alignmentBaseline must be one of the accepted values.
+	at flash.text.engine::ElementFormat/set alignmentBaseline()
+  Value:useDominantBaseline
+  Value:ascent
+  Value:descent
+  Value:ideographicBottom
+  Value:ideographicCenter
+  Value:ideographicTop
+  Value:roman
+  Value:useDominantBaseline
+alpha
+  Value:0
+  Value:0
+  Value:0.7
+  Value:1
+  Value:0
+  Value:1
+  Value:1
+  Value:0
+  Value:1
+  Value:0
+baselineShift
+  Value:0
+  Value:0
+  Value:0.7
+  Value:1
+  Value:-1
+  Value:5
+  Value:5.2
+  Value:NaN
+  Value:Infinity
+  Value:-Infinity
+breakOpportunity
+  Caught error:TypeError: Error #2007: Parameter breakOpportunity must be non-null.
+	at flash.text.engine::ElementFormat/set breakOpportunity()
+  Value:auto
+  Caught error:ArgumentError: Error #2008: Parameter breakOpportunity must be one of the accepted values.
+	at flash.text.engine::ElementFormat/set breakOpportunity()
+  Value:auto
+  Caught error:ArgumentError: Error #2008: Parameter breakOpportunity must be one of the accepted values.
+	at flash.text.engine::ElementFormat/set breakOpportunity()
+  Value:auto
+  Value:all
+  Value:any
+  Value:auto
+  Value:none
+color
+  Value:0
+  Value:0
+  Value:16777215
+  Value:3735928559
+  Value:4294967295
+digitCase
+  Caught error:TypeError: Error #2007: Parameter digitCase must be non-null.
+	at flash.text.engine::ElementFormat/set digitCase()
+  Value:default
+  Caught error:ArgumentError: Error #2008: Parameter digitCase must be one of the accepted values.
+	at flash.text.engine::ElementFormat/set digitCase()
+  Value:default
+  Caught error:ArgumentError: Error #2008: Parameter digitCase must be one of the accepted values.
+	at flash.text.engine::ElementFormat/set digitCase()
+  Value:default
+  Value:default
+  Value:lining
+  Value:oldStyle
+digitWidth
+  Caught error:TypeError: Error #2007: Parameter digitWidth must be non-null.
+	at flash.text.engine::ElementFormat/set digitWidth()
+  Value:default
+  Caught error:ArgumentError: Error #2008: Parameter digitWidth must be one of the accepted values.
+	at flash.text.engine::ElementFormat/set digitWidth()
+  Value:default
+  Caught error:ArgumentError: Error #2008: Parameter digitWidth must be one of the accepted values.
+	at flash.text.engine::ElementFormat/set digitWidth()
+  Value:default
+  Value:default
+  Value:proportional
+  Value:tabular
+dominantBaseline
+  Caught error:TypeError: Error #2007: Parameter dominantBaseline must be non-null.
+	at flash.text.engine::ElementFormat/set dominantBaseline()
+  Value:roman
+  Caught error:ArgumentError: Error #2008: Parameter dominantBaseline must be one of the accepted values.
+	at flash.text.engine::ElementFormat/set dominantBaseline()
+  Value:roman
+  Caught error:ArgumentError: Error #2008: Parameter dominantBaseline must be one of the accepted values.
+	at flash.text.engine::ElementFormat/set dominantBaseline()
+  Value:roman
+  Value:ascent
+  Value:descent
+  Value:ideographicBottom
+  Value:ideographicCenter
+  Value:ideographicTop
+  Value:roman
+  Caught error:ArgumentError: Error #2008: Parameter dominantBaseline must be one of the accepted values.
+	at flash.text.engine::ElementFormat/set dominantBaseline()
+  Value:roman
+fontDescription
+  Caught error:TypeError: Error #2007: Parameter fontDescription must be non-null.
+	at flash.text.engine::ElementFormat/set fontDescription()
+  Value:[object FontDescription]
+  Value:[object FontDescription]
+fontSize
+  Value:0
+  Value:0
+  Value:0.7
+  Value:1
+  Caught error:ArgumentError: Error #2004: One of the parameters is invalid.
+	at flash.text.engine::ElementFormat/set fontSize()
+  Value:1
+  Value:5
+  Value:5.2
+  Value:0
+  Value:Infinity
+  Caught error:ArgumentError: Error #2004: One of the parameters is invalid.
+	at flash.text.engine::ElementFormat/set fontSize()
+  Value:Infinity
+kerning
+  Caught error:TypeError: Error #2007: Parameter kerning must be non-null.
+	at flash.text.engine::ElementFormat/set kerning()
+  Value:on
+  Caught error:ArgumentError: Error #2008: Parameter kerning must be one of the accepted values.
+	at flash.text.engine::ElementFormat/set kerning()
+  Value:on
+  Caught error:ArgumentError: Error #2008: Parameter kerning must be one of the accepted values.
+	at flash.text.engine::ElementFormat/set kerning()
+  Value:on
+  Value:on
+  Value:off
+  Value:auto
+ligatureLevel
+  Caught error:TypeError: Error #2007: Parameter ligatureLevel must be non-null.
+	at flash.text.engine::ElementFormat/set ligatureLevel()
+  Value:common
+  Caught error:ArgumentError: Error #2008: Parameter ligatureLevel must be one of the accepted values.
+	at flash.text.engine::ElementFormat/set ligatureLevel()
+  Value:common
+  Caught error:ArgumentError: Error #2008: Parameter ligatureLevel must be one of the accepted values.
+	at flash.text.engine::ElementFormat/set ligatureLevel()
+  Value:common
+  Value:none
+  Value:minimum
+  Value:common
+  Value:uncommon
+  Value:exotic
+locale
+  Caught error:TypeError: Error #2007: Parameter locale must be non-null.
+	at flash.text.engine::ElementFormat/set locale()
+  Value:en
+  Value:
+  Value:<invalid>
+  Value:!@#$%^&*()_+:"{}\
+locked
+  Value:false
+  Value:false
+  Value:true
+textRotation
+  Caught error:TypeError: Error #2007: Parameter textRotation must be non-null.
+	at flash.text.engine::ElementFormat/set textRotation()
+  Value:auto
+  Caught error:ArgumentError: Error #2008: Parameter textRotation must be one of the accepted values.
+	at flash.text.engine::ElementFormat/set textRotation()
+  Value:auto
+  Caught error:ArgumentError: Error #2008: Parameter textRotation must be one of the accepted values.
+	at flash.text.engine::ElementFormat/set textRotation()
+  Value:auto
+  Value:auto
+  Value:rotate0
+  Value:rotate90
+  Value:rotate180
+  Value:rotate270
+trackingLeft
+  Value:0
+  Value:0
+  Value:0.7
+  Value:1
+  Value:-1
+  Value:5
+  Value:5.2
+  Value:0
+  Value:Infinity
+  Value:-Infinity
+trackingRight
+  Value:0
+  Value:0
+  Value:0.7
+  Value:1
+  Value:-1
+  Value:5
+  Value:5.2
+  Value:0
+  Value:Infinity
+  Value:-Infinity
+typographicCase
+  Caught error:TypeError: Error #2007: Parameter typographicCase must be non-null.
+	at flash.text.engine::ElementFormat/set typographicCase()
+  Value:default
+  Caught error:ArgumentError: Error #2008: Parameter typographicCase must be one of the accepted values.
+	at flash.text.engine::ElementFormat/set typographicCase()
+  Value:default
+  Caught error:ArgumentError: Error #2008: Parameter typographicCase must be one of the accepted values.
+	at flash.text.engine::ElementFormat/set typographicCase()
+  Value:default
+  Value:caps
+  Value:capsAndSmallCaps
+  Value:default
+  Value:lowercase
+  Value:smallCaps
+  Value:title
+  Value:uppercase
