@@ -303,7 +303,7 @@ use_network = false
 optimize = true
 
 # Whether to include debug info in the bytecode.
-debug = true
+debug = false
 
 ```
 
