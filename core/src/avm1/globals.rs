@@ -523,7 +523,7 @@ pub struct SystemPrototypes<'gc> {
 
 pub fn load_playerglobal<'gc>(context: &mut UpdateContext<'gc>) {
     let movie = Arc::new(
-        SwfMovie::from_data(PLAYERGLOBAL, "file:///".into(), None)
+        SwfMovie::from_data(PLAYERGLOBAL, "file:///".into(), false, None)
             .expect("playerglobal_avm1.swf should be valid"),
     );
 

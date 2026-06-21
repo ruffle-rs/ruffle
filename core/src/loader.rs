@@ -352,8 +352,9 @@ impl<'gc> LoadManager<'gc> {
                         let importer_movie = importer_movie.fetch(uc);
 
                         if matches!(content_type, ContentType::Swf) {
-                            let movie = SwfMovie::from_data(&body, url.clone(), Some(url.clone()))
-                                .expect("Could not load movie");
+                            let movie =
+                                SwfMovie::from_data(&body, url.clone(), false, Some(url.clone()))
+                                    .expect("Could not load movie");
 
                             let movie = Arc::new(movie);
 
@@ -758,7 +759,7 @@ impl<'gc> MovieLoader<'gc> {
     ) -> Result<(), Error> {
         ContentType::sniff(&body).expect(ContentType::Swf)?;
 
-        let movie = SwfMovie::from_data(&body, url, loader_url)?;
+        let movie = SwfMovie::from_data(&body, url, false, loader_url)?;
         player.mutate_with_update_context(|uc| {
             // Make a copy of the properties on the root, so we can put them back after replacing it
             let mut root_properties: IndexMap<AvmString, Value> = IndexMap::new();
@@ -926,7 +927,7 @@ pub fn load_root_movie<'gc>(
             .unwrap_or(swf_url);
 
         let mut movie =
-            SwfMovie::from_data(&body, spoofed_or_swf_url, None).inspect_err(|error| {
+            SwfMovie::from_data(&body, spoofed_or_swf_url, false, None).inspect_err(|error| {
                 player
                     .lock()
                     .unwrap()
@@ -1632,7 +1633,8 @@ impl<'gc> MovieLoader<'gc> {
 
         let movie = match sniffed_type {
             ContentType::Swf => {
-                let mut movie = SwfMovie::from_data(data, url.clone(), loader_url.clone())?;
+                let mut movie =
+                    SwfMovie::from_data(data, url.clone(), from_bytes, loader_url.clone())?;
 
                 if matches!(vm_data, MovieLoaderVMData::Avm1 { .. }) {
                     // If AVM1 loads a SWF, that SWF is always interpreted as
@@ -1648,6 +1650,7 @@ impl<'gc> MovieLoader<'gc> {
                         .unwrap_or((0, 0));
                 Arc::new(SwfMovie::from_loaded_image(
                     url.clone(),
+                    from_bytes,
                     length,
                     width,
                     height,

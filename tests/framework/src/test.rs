@@ -76,8 +76,13 @@ impl Test {
 
     pub fn movie(&self) -> Result<SwfMovie> {
         let data = read_bytes(&self.swf_path)?;
-        let movie = SwfMovie::from_data(&data, format!("file://{}", self.swf_path.as_str()), None)
-            .map_err(|e| anyhow!(e.to_string()))?;
+        let movie = SwfMovie::from_data(
+            &data,
+            format!("file://{}", self.swf_path.as_str()),
+            false,
+            None,
+        )
+        .map_err(|e| anyhow!(e.to_string()))?;
         Ok(movie)
     }
 

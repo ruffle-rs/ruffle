@@ -103,5 +103,5 @@ pub fn movie_from_path<P: AsRef<std::path::Path>>(
     let abs_path = path.as_ref().canonicalize()?;
     let url = url::Url::from_file_path(abs_path).map_err(|()| Error::InvalidSwfUrl)?;
 
-    SwfMovie::from_data(&data, url.into(), loader_url).map_err(Error::InvalidSwf)
+    SwfMovie::from_data(&data, url.into(), false, loader_url).map_err(Error::InvalidSwf)
 }
