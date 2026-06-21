@@ -70,11 +70,42 @@ impl<F: FutureSpawner<Error>, I: NavigatorInterface> ExternalNavigatorBackend<F,
     /// Construct a navigator backend with fetch and async capability.
     #[expect(clippy::too_many_arguments)]
     pub fn new(
+        base_url: Url,
+        referer: Option<Url>,
+        cookie: Option<String>,
+        future_spawner: F,
+        proxy: Option<Url>,
+        upgrade_to_https: bool,
+        socket_allowed: HashSet<String>,
+        socket_mode: SocketMode,
+        content: Rc<PlayingContent>,
+        interface: I,
+    ) -> Self {
+        Self::new_with_environment_proxies(
+            base_url,
+            referer,
+            cookie,
+            future_spawner,
+            proxy,
+            true,
+            upgrade_to_https,
+            socket_allowed,
+            socket_mode,
+            content,
+            interface,
+        )
+    }
+
+    /// Construct a navigator backend while controlling whether reqwest reads
+    /// proxy settings from the process environment.
+    #[expect(clippy::too_many_arguments)]
+    pub fn new_with_environment_proxies(
         mut base_url: Url,
         referer: Option<Url>,
         cookie: Option<String>,
         future_spawner: F,
         proxy: Option<Url>,
+        use_environment_proxies: bool,
         upgrade_to_https: bool,
         socket_allowed: HashSet<String>,
         socket_mode: SocketMode,
@@ -88,6 +119,10 @@ impl<F: FutureSpawner<Error>, I: NavigatorInterface> ExternalNavigatorBackend<F,
                 env!("CARGO_PKG_VERSION"),
                 " (https://ruffle.rs)"
             ));
+
+        if !use_environment_proxies {
+            builder = builder.no_proxy();
+        }
 
         if let Some(referer) = referer {
             let mut headers = header::HeaderMap::new();
@@ -114,12 +149,7 @@ impl<F: FutureSpawner<Error>, I: NavigatorInterface> ExternalNavigatorBackend<F,
         }
 
         let client = builder.build().ok().map(Rc::new);
-
-        // Force replace the last segment with empty. //
-
-        if let Ok(mut base_url) = base_url.path_segments_mut() {
-            base_url.pop().pop_if_empty().push("");
-        }
+        base_url = Self::directory_base_url(base_url);
 
         Self {
             future_spawner,
@@ -131,6 +161,27 @@ impl<F: FutureSpawner<Error>, I: NavigatorInterface> ExternalNavigatorBackend<F,
             content,
             interface,
         }
+    }
+
+    /// Update the URL used to resolve relative requests.
+    ///
+    /// The URL is normalized to its containing directory, matching the behavior
+    /// used when the navigator is initially constructed.
+    pub fn set_base_url(&mut self, base_url: Url) {
+        self.base_url = Self::directory_base_url(base_url);
+    }
+
+    /// Update the currently playing content and its relative request base URL.
+    pub fn set_content(&mut self, base_url: Url, content: Rc<PlayingContent>) {
+        self.set_base_url(base_url);
+        self.content = content;
+    }
+
+    fn directory_base_url(mut url: Url) -> Url {
+        if let Ok(mut segments) = url.path_segments_mut() {
+            segments.pop().pop_if_empty().push("");
+        }
+        url
     }
 }
 
@@ -241,11 +292,12 @@ impl<F: FutureSpawner<Error> + 'static, I: NavigatorInterface> NavigatorBackend
                 request_builder = request_builder.body(body_data);
 
                 let response = spawn_tokio(request_builder.send()).await.map_err(|e| {
-                    let inner = if e.is_connect() {
-                        Error::InvalidDomain(processed_url.to_string())
+                    let message = if e.is_connect() {
+                        format!("Connection failed for {processed_url}: {e:?}")
                     } else {
-                        Error::FetchError(e.to_string())
+                        e.to_string()
                     };
+                    let inner = Error::FetchError(message);
                     ErrorResponse {
                         url: processed_url.to_string(),
                         error: inner,
