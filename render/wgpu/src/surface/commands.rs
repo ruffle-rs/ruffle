@@ -844,9 +844,29 @@ impl CommandHandler for WgpuCommandHandler<'_> {
                 (self.width, self.height, self.offset_x, self.offset_y)
             };
 
+        // Skip MSAA for bitmap-only content that is axis-aligned: the pixels are
+        // pre-rasterized (no internal vector edges to smooth), and an unrotated,
+        // unskewed bitmap's outer quad edges run along the pixel grid. A rotated or
+        // skewed bitmap (matrix.b/c != 0) has diagonal edges that still need MSAA.
+        // The `b == 0 && c == 0` test mirrors the axis-aligned check in
+        // `PixelSnapping::Auto`.
+        let offscreen_quality = if commands.commands.iter().all(|c| match c {
+            Command::RenderBitmap { transform, .. } => {
+                transform.matrix.b == 0.0 && transform.matrix.c == 0.0
+            }
+            Command::PushMask
+            | Command::ActivateMask
+            | Command::DeactivateMask
+            | Command::PopMask => true,
+            _ => false,
+        }) {
+            StageQuality::Low
+        } else {
+            self.quality
+        };
         let surface = Surface::new(
             self.descriptors,
-            self.quality,
+            offscreen_quality,
             surface_w,
             surface_h,
             wgpu::TextureFormat::Rgba8Unorm,
