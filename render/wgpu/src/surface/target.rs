@@ -5,7 +5,7 @@ use crate::descriptors::Descriptors;
 use crate::globals::Globals;
 use crate::utils::create_buffer_with_data;
 use crate::utils::run_copy_pipeline;
-use std::cell::OnceCell;
+use std::cell::{Cell, OnceCell};
 use std::sync::Arc;
 
 #[derive(Debug)]
@@ -202,6 +202,8 @@ pub struct CommandTarget {
     whole_frame_bind_group: OnceCell<(wgpu::Buffer, wgpu::BindGroup)>,
     color_needs_clear: OnceCell<bool>,
     render_target_mode: RenderTargetMode,
+    /// Whether the framebuffer has been modified since the last blend buffer copy.
+    blend_buffer_stale: Cell<bool>,
 }
 
 impl CommandTarget {
@@ -337,6 +339,7 @@ impl CommandTarget {
             whole_frame_bind_group,
             color_needs_clear: OnceCell::new(),
             render_target_mode,
+            blend_buffer_stale: Cell::new(true),
         }
     }
 
@@ -420,7 +423,12 @@ impl CommandTarget {
         })
     }
 
-    /// Get the full-viewport blend source.
+    /// Mark the framebuffer as modified (needs re-copy before next blend).
+    pub fn mark_blend_buffer_stale(&self) {
+        self.blend_buffer_stale.set(true);
+    }
+
+    /// Get the full-viewport blend source, skipping copy if unchanged since last call.
     pub fn update_blend_buffer(
         &self,
         descriptors: &Descriptors,
@@ -438,6 +446,10 @@ impl CommandTarget {
                 pool,
             )
         });
+        if !self.blend_buffer_stale.get() {
+            return blend_buffer.as_source();
+        }
+        self.blend_buffer_stale.set(false);
         self.ensure_cleared(encoder);
         encoder.copy_texture_to_texture(
             wgpu::TexelCopyTextureInfo {
@@ -488,6 +500,27 @@ impl CommandTarget {
                 | wgpu::TextureUsages::COPY_SRC,
             pool,
         );
+        // Prefer copying from cached full blend buffer when available
+        if !self.blend_buffer_stale.get()
+            && let Some(full_bb) = self.blend_buffer.get()
+        {
+            encoder.copy_texture_to_texture(
+                wgpu::TexelCopyTextureInfo {
+                    texture: full_bb.texture(),
+                    mip_level: 0,
+                    origin: wgpu::Origin3d { x, y, z: 0 },
+                    aspect: Default::default(),
+                },
+                wgpu::TexelCopyTextureInfo {
+                    texture: blend_buffer.texture(),
+                    mip_level: 0,
+                    origin: Default::default(),
+                    aspect: Default::default(),
+                },
+                alloc_size,
+            );
+            return blend_buffer;
+        }
         self.ensure_cleared(encoder);
         encoder.copy_texture_to_texture(
             wgpu::TexelCopyTextureInfo {

@@ -259,6 +259,7 @@ impl Surface {
 
                     num_masks = renderer.num_masks();
                     mask_state = renderer.mask_state();
+                    target.mark_blend_buffer_stale();
                 }
                 Chunk::Blend {
                     texture,
@@ -298,6 +299,7 @@ impl Surface {
                         &FilterSource::for_entire_texture(texture.texture()),
                     )
                     .expect("Failed to run PixelBender blend mode");
+                    target.mark_blend_buffer_stale();
                 }
                 Chunk::Blend {
                     texture,
@@ -454,6 +456,7 @@ impl Surface {
                     );
 
                     render_pass.draw_indexed(0..6, 0, 0..1);
+                    target.mark_blend_buffer_stale();
                 }
             }
         }
