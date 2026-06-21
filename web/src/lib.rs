@@ -286,8 +286,8 @@ impl RuffleHandle {
             segments.push(&swf_name);
         }
 
-        let mut movie =
-            SwfMovie::from_data(&swf_data.to_vec(), url.to_string(), None).map_err(|e| {
+        let mut movie = SwfMovie::from_data(&swf_data.to_vec(), url.to_string(), false, None)
+            .map_err(|e| {
                 let _ = self.with_core_mut(|core| {
                     core.ui_mut()
                         .display_root_movie_download_failed_message(true, e.to_string());

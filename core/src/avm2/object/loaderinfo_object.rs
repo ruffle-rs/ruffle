@@ -210,19 +210,19 @@ impl<'gc> LoaderInfoObject<'gc> {
         if !self.0.complete_event_fired.get() {
             // NOTE: We have to check load progress here because this function
             // is called unconditionally at the end of every frame.
-            let (should_complete, from_url) = match &*self.0.loaded_stream.borrow() {
+            let (should_complete, from_bytes) = match &*self.0.loaded_stream.borrow() {
                 LoaderStream::Swf(movie, root) => (
                     root.as_movie_clip()
                         .map(|mc| mc.loaded_bytes() as i32 >= mc.total_bytes())
                         .unwrap_or(true),
-                    movie.url() != "file:///",
+                    movie.is_from_bytes(),
                 ),
                 _ => (false, false),
             };
 
             if should_complete {
                 let mut activation = Activation::from_nothing(context);
-                if from_url {
+                if !from_bytes {
                     let http_status_evt =
                         EventObject::http_status_event(&mut activation, status, redirected);
 
