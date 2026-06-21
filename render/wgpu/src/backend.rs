@@ -151,10 +151,18 @@ impl WgpuRenderBackend<SwapChainTarget> {
         size: (u32, u32),
     ) -> Result<(), Error> {
         let descriptors = &self.descriptors;
+        self.target.release_surface();
         let surface = unsafe { descriptors.wgpu_instance.create_surface_unsafe(window)? };
-        self.target =
-            SwapChainTarget::new(surface, &descriptors.adapter, size, &descriptors.device);
+        self.target
+            .recreate_surface(surface, &descriptors.adapter, size, &descriptors.device);
         Ok(())
+    }
+
+    pub fn release_surface(&mut self) {
+        self.target.release_surface();
+        self.texture_pool = TexturePool::new();
+        self.offscreen_texture_pool = TexturePool::new();
+        self.active_frame = ActiveFrame::new(&self.descriptors);
     }
 }
 
@@ -631,6 +639,10 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
         self.active_frame
             .submit_for_target(&self.descriptors, &self.target, frame_output);
         self.offscreen_texture_pool = TexturePool::new();
+        #[cfg(target_os = "android")]
+        {
+            self.texture_pool = TexturePool::new();
+        }
     }
 
     #[instrument(level = "debug", skip_all)]

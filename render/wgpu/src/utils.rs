@@ -183,6 +183,14 @@ pub fn supported_sample_count(
     mut sample_count: u32,
     format: wgpu::TextureFormat,
 ) -> u32 {
+    // Mobile Vulkan drivers can abort the whole process when framebuffer allocation
+    // fails. Keep Android render targets single-sampled to avoid large transient
+    // framebuffer spikes from filters, masks, blends, and cache-as-bitmap layers.
+    #[cfg(target_os = "android")]
+    {
+        sample_count = sample_count.min(1);
+    }
+
     let features = adapter.get_texture_format_features(format).flags;
 
     // Keep halving the sample count until we get one that's supported - or 1 (no multisampling)
