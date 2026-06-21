@@ -59,7 +59,7 @@ impl AscOptions {
             stage_transform: self.stage_transform,
             use_network: self.use_network.unwrap_or(false),
             optimize: self.optimize.unwrap_or(true),
-            debug: self.debug.unwrap_or(true),
+            debug: self.debug.unwrap_or(false),
         }))
     }
 }
