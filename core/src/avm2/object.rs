@@ -36,6 +36,7 @@ mod date_object;
 mod dictionary_object;
 mod dispatch_object;
 mod domain_object;
+mod element_format_object;
 mod error_object;
 mod event_object;
 mod file_reference_object;
@@ -90,6 +91,9 @@ pub use crate::avm2::object::dictionary_object::{
 pub use crate::avm2::object::dispatch_object::{DispatchObject, DispatchObjectWeak};
 pub use crate::avm2::object::domain_object::{
     DomainObject, DomainObjectWeak, application_domain_allocator,
+};
+pub use crate::avm2::object::element_format_object::{
+    ElementFormatObject, ElementFormatObjectWeak, element_format_allocator,
 };
 pub use crate::avm2::object::error_object::{ErrorObject, ErrorObjectWeak, error_allocator};
 pub use crate::avm2::object::event_object::{EventObject, EventObjectWeak, event_allocator};
@@ -216,6 +220,7 @@ use crate::font::Font;
         ShaderDataObject(ShaderDataObject<'gc>),
         SocketObject(SocketObject<'gc>),
         FileReferenceObject(FileReferenceObject<'gc>),
+        ElementFormatObject(ElementFormatObject<'gc>),
         FontDescriptionObject(FontDescriptionObject<'gc>),
         FontObject(FontObject<'gc>),
         LocalConnectionObject(LocalConnectionObject<'gc>),
@@ -752,6 +757,7 @@ impl<'gc> Object<'gc> {
         pub fn as_domain_object for DomainObject;
         pub fn as_event_object for EventObject;
         pub fn as_dispatch_object for DispatchObject;
+        pub fn as_element_format_object for ElementFormatObject;
         pub fn as_font_description_object for FontDescriptionObject;
         pub fn as_font_object for FontObject;
         pub fn as_regexp_object for RegExpObject;
@@ -974,6 +980,7 @@ define_weak_enum! {
         ShaderDataObject(ShaderDataObjectWeak<'gc>),
         SocketObject(SocketObjectWeak<'gc>),
         FileReferenceObject(FileReferenceObjectWeak<'gc>),
+        ElementFormatObject(ElementFormatObjectWeak<'gc>),
         FontDescriptionObject(FontDescriptionObjectWeak<'gc>),
         FontObject(FontObjectWeak<'gc>),
         LocalConnectionObject(LocalConnectionObjectWeak<'gc>),

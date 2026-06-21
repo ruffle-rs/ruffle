@@ -5,7 +5,6 @@ use crate::avm2::error::Error;
 use crate::avm2::globals::flash::display::display_object::initialize_for_allocator;
 use crate::avm2::globals::methods::flash_text_engine_content_element as element_methods;
 use crate::avm2::globals::slots::flash_text_engine_content_element as element_slots;
-use crate::avm2::globals::slots::flash_text_engine_element_format as format_slots;
 use crate::avm2::globals::slots::flash_text_engine_text_block as block_slots;
 use crate::avm2::globals::slots::flash_text_engine_text_line as line_slots;
 use crate::avm2::object::{FontLookupValue, FontPostureValue, FontWeightValue, Object, TObject};
@@ -109,19 +108,9 @@ fn apply_format<'gc>(
     text: &WStr,
     element_format: Option<Object<'gc>>,
 ) -> Result<(), Error<'gc>> {
-    if let Some(element_format) = element_format {
+    if let Some(ef) = element_format.and_then(|o| o.as_element_format_object()) {
         // TODO: Support more ElementFormat properties
-        let color = element_format
-            .get_slot(format_slots::_COLOR)
-            .coerce_to_u32(activation)?;
-        let size = element_format
-            .get_slot(format_slots::_FONT_SIZE)
-            .coerce_to_number(activation)?;
-
-        let (font, bold, italic, is_device_font) = if let Value::Object(font_description) =
-            element_format.get_slot(format_slots::_FONT_DESCRIPTION)
-            && let Some(fd) = font_description.as_font_description_object()
-        {
+        let (font, bold, italic, is_device_font) = if let Some(fd) = ef.font_description() {
             (
                 Some(fd.font_name().as_wstr().into()),
                 Some(fd.font_weight() == FontWeightValue::Bold),
@@ -133,8 +122,8 @@ fn apply_format<'gc>(
         };
 
         let format = TextFormat {
-            color: Some(swf::Color::from_rgb(color, 0xFF)),
-            size: Some(size),
+            color: Some(ef.color()),
+            size: Some(ef.font_size()),
             font,
             bold,
             italic,

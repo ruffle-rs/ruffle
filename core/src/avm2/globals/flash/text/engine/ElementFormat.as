@@ -4,28 +4,8 @@ package flash.text.engine {
     import flash.geom.Rectangle;
 
     [API("662")]
+    [Ruffle(InstanceAllocator)]
     public final class ElementFormat {
-        private var _alignmentBaseline:String;
-        private var _alpha:Number;
-        private var _baselineShift:Number;
-        private var _breakOpportunity:String;
-        [Ruffle(NativeAccessible)]
-        private var _color:uint;
-        private var _digitCase:String;
-        private var _digitWidth:String;
-        private var _dominantBaseline:String;
-        [Ruffle(NativeAccessible)]
-        private var _fontDescription:FontDescription;
-        [Ruffle(NativeAccessible)]
-        private var _fontSize:Number;
-        private var _kerning:String;
-        private var _ligatureLevel:String;
-        private var _locale:String;
-        private var _textRotation:String;
-        private var _trackingLeft:Number;
-        private var _trackingRight:Number;
-        private var _typographicCase:String;
-
         public function ElementFormat(
             fontDescription:FontDescription = null,
             fontSize:Number = 12,
@@ -37,7 +17,8 @@ package flash.text.engine {
             baselineShift:Number = 0,
             kerning:String = "on",
             trackingRight:Number = 0,
-            trackingLeft:Number = 0, locale:String = "en",
+            trackingLeft:Number = 0,
+            locale:String = "en",
             breakOpportunity:String = "auto",
             digitCase:String = "default",
             digitWidth:String = "default",
@@ -45,7 +26,6 @@ package flash.text.engine {
             typographicCase:String = "default"
         ) {
             this.fontDescription = (fontDescription != null) ? fontDescription : new FontDescription();
-
             this.alignmentBaseline = alignmentBaseline;
             this.alpha = alpha;
             this.baselineShift = baselineShift;
@@ -64,144 +44,62 @@ package flash.text.engine {
             this.typographicCase = typographicCase;
         }
 
-        public function get alignmentBaseline():String {
-            return this._alignmentBaseline;
-        }
+        public native function get alignmentBaseline():String;
+        public native function set alignmentBaseline(value:String):void;
 
-        public function set alignmentBaseline(value:String):void {
-            this._alignmentBaseline = value;
-        }
+        public native function get alpha():Number;
+        public native function set alpha(value:Number):void;
 
-        public function get alpha():Number {
-            return this._alpha;
-        }
+        public native function get baselineShift():Number;
+        public native function set baselineShift(value:Number):void;
 
-        public function set alpha(value:Number):void {
-            this._alpha = value;
-        }
+        public native function get breakOpportunity():String;
+        public native function set breakOpportunity(value:String):void;
 
-        public function get baselineShift():Number {
-            return this._baselineShift;
-        }
+        public native function get color():uint;
+        public native function set color(value:uint):void;
 
-        public function set baselineShift(value:Number):void {
-            this._baselineShift = value;
-        }
+        public native function get digitCase():String;
+        public native function set digitCase(value:String):void;
 
-        public function get breakOpportunity():String {
-            return this._breakOpportunity;
-        }
+        public native function get digitWidth():String;
+        public native function set digitWidth(value:String):void;
 
-        public function set breakOpportunity(value:String):void {
-            this._breakOpportunity = value;
-        }
+        public native function get dominantBaseline():String;
+        public native function set dominantBaseline(value:String):void;
 
-        public function get color():uint {
-            return this._color;
-        }
+        public native function get fontDescription():FontDescription;
+        public native function set fontDescription(value:FontDescription):void;
 
-        public function set color(value:uint):void {
-            this._color = value;
-        }
+        public native function get fontSize():Number;
+        public native function set fontSize(value:Number):void;
 
-        public function get digitCase():String {
-            return this._digitCase;
-        }
+        public native function get kerning():String;
+        public native function set kerning(value:String):void;
 
-        public function set digitCase(value:String):void {
-            this._digitCase = value;
-        }
+        public native function get ligatureLevel():String;
+        public native function set ligatureLevel(value:String):void;
 
-        public function get digitWidth():String {
-            return this._digitWidth;
-        }
+        public native function get locale():String;
+        public native function set locale(value:String):void;
 
-        public function set digitWidth(value:String):void {
-            this._digitWidth = value;
-        }
+        public native function get textRotation():String;
+        public native function set textRotation(value:String):void;
 
-        public function get dominantBaseline():String {
-            return this._dominantBaseline;
-        }
+        public native function get trackingLeft():Number;
+        public native function set trackingLeft(value:Number):void;
 
-        public function set dominantBaseline(value:String):void {
-            this._dominantBaseline = value;
-        }
+        public native function get trackingRight():Number;
+        public native function set trackingRight(value:Number):void;
 
-        public function get fontDescription():FontDescription {
-            return this._fontDescription;
-        }
+        public native function get typographicCase():String;
+        public native function set typographicCase(value:String):void;
 
-        public function set fontDescription(value:FontDescription):void {
-            this._fontDescription = value;
-        }
-
-        public function get fontSize():Number {
-            return this._fontSize;
-        }
-
-        public function set fontSize(value:Number):void {
-            this._fontSize = value;
-        }
-
-        public function get kerning():String {
-            return this._kerning;
-        }
-
-        public function set kerning(value:String):void {
-            this._kerning = value;
-        }
-
-        public function get ligatureLevel():String {
-            return this._ligatureLevel;
-        }
-
-        public function set ligatureLevel(value:String):void {
-            this._ligatureLevel = value;
-        }
-
-        public function get locale():String {
-            return this._locale;
-        }
-
-        public function set locale(value:String):void {
-            this._locale = value;
-        }
-
-        public function get textRotation():String {
-            return this._textRotation;
-        }
-
-        public function set textRotation(value:String):void {
-            this._textRotation = value;
-        }
-
-        public function get trackingLeft():Number {
-            return this._trackingLeft;
-        }
-
-        public function set trackingLeft(value:Number):void {
-            this._trackingLeft = value;
-        }
-
-        public function get trackingRight():Number {
-            return this._trackingRight;
-        }
-
-        public function set trackingRight(value:Number):void {
-            this._trackingRight = value;
-        }
-
-        public function get typographicCase():String {
-            return this._typographicCase;
-        }
-
-        public function set typographicCase(value:String):void {
-            this._typographicCase = value;
-        }
+        public native function get locked():Boolean;
+        public native function set locked(value:Boolean):void;
 
         public function clone():ElementFormat {
-            var fd = this.fontDescription ? this.fontDescription.clone() : null;
+            var fd:FontDescription = this.fontDescription ? this.fontDescription.clone() : null;
             return new ElementFormat(
                 fd,
                 this.fontSize,
@@ -225,7 +123,7 @@ package flash.text.engine {
 
         public function getFontMetrics():FontMetrics {
             stub_method("flash.text.engine.ElementFormat", "getFontMetrics");
-            var emBox:Rectangle = new Rectangle(0, _fontSize * -0.8, _fontSize, _fontSize);
+            var emBox:Rectangle = new Rectangle(0, this.fontSize * -0.8, this.fontSize, this.fontSize);
             return new FontMetrics(
                 emBox, -5, 1.2, 1.8, 1.2, 0.075, 0.6, -0.35, 0.6, 0.0
             );
