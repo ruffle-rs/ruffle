@@ -6,10 +6,9 @@ use crate::avm2::globals::flash::display::display_object::initialize_for_allocat
 use crate::avm2::globals::methods::flash_text_engine_content_element as element_methods;
 use crate::avm2::globals::slots::flash_text_engine_content_element as element_slots;
 use crate::avm2::globals::slots::flash_text_engine_element_format as format_slots;
-use crate::avm2::globals::slots::flash_text_engine_font_description as font_desc_slots;
 use crate::avm2::globals::slots::flash_text_engine_text_block as block_slots;
 use crate::avm2::globals::slots::flash_text_engine_text_line as line_slots;
-use crate::avm2::object::{Object, TObject};
+use crate::avm2::object::{FontLookupValue, FontPostureValue, FontWeightValue, Object, TObject};
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
 use crate::avm2_stub_method;
@@ -121,31 +120,13 @@ fn apply_format<'gc>(
 
         let (font, bold, italic, is_device_font) = if let Value::Object(font_description) =
             element_format.get_slot(format_slots::_FONT_DESCRIPTION)
+            && let Some(fd) = font_description.as_font_description_object()
         {
             (
-                Some(
-                    font_description
-                        .get_slot(font_desc_slots::_FONT_NAME)
-                        .coerce_to_string(activation)?
-                        .as_wstr()
-                        .into(),
-                ),
-                Some(
-                    &font_description
-                        .get_slot(font_desc_slots::_FONT_WEIGHT)
-                        .coerce_to_string(activation)?
-                        == b"bold",
-                ),
-                Some(
-                    &font_description
-                        .get_slot(font_desc_slots::_FONT_POSTURE)
-                        .coerce_to_string(activation)?
-                        == b"italic",
-                ),
-                &font_description
-                    .get_slot(font_desc_slots::_FONT_LOOKUP)
-                    .coerce_to_string(activation)?
-                    == b"device",
+                Some(fd.font_name().as_wstr().into()),
+                Some(fd.font_weight() == FontWeightValue::Bold),
+                Some(fd.font_posture() == FontPostureValue::Italic),
+                fd.font_lookup() == FontLookupValue::Device,
             )
         } else {
             (None, None, None, true)
