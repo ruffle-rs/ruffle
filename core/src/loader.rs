@@ -870,12 +870,6 @@ impl<'gc> MovieLoader<'gc> {
             None => return Err(Error::Cancelled),
         };
 
-        let replacing_root_movie = uc
-            .stage
-            .root_clip()
-            .map(|root| DisplayObject::ptr_eq(clip, root))
-            .unwrap_or(false);
-
         if let Some(mc) = clip.as_movie_clip() {
             if !mc.movie().is_action_script_3() {
                 mc.avm1_unload(uc);
@@ -884,20 +878,6 @@ impl<'gc> MovieLoader<'gc> {
         }
 
         let loader_url = Some(uc.root_swf.url().to_string());
-
-        if replacing_root_movie {
-            ContentType::sniff(&bytes).expect(ContentType::Swf)?;
-
-            let movie = SwfMovie::from_data(&bytes, "file:///".into(), loader_url)?;
-            avm2_stub_method_context!(
-                uc,
-                "flash.display.Loader",
-                "loadBytes",
-                "replacing root movie"
-            );
-            uc.replace_root_movie(movie);
-            return Ok(());
-        }
 
         MovieLoader::movie_loader_data(handle, uc, &bytes, "file:///".into(), 0, false, loader_url)
     }
