@@ -1,0 +1,1051 @@
+<!DOCTYPE html>
+<html lang="en" data-doc="pluggable-font-renderer">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pluggable Device Font Renderer — Ruffle</title>
+<style>
+  :root{
+    --bg:#ffffff; --surface:#f6f6f4; --surface2:#efeee9;
+    --text:#1d1d1b; --text2:#5f5e5a;
+    --border:#d3d1c7; --border2:#b4b2a9;
+    --accent:#534ab7; --accent-soft:#7f77dd;
+    --good:#1d9e75; --warn:#d85a30; --info:#378add;
+    --code-bg:#f1efe8;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --bg:#1a1a18; --surface:#242420; --surface2:#2c2c28;
+      --text:#ecece9; --text2:#b4b2a9;
+      --border:#444441; --border2:#5f5e5a;
+      --accent:#afa9ec; --accent-soft:#7f77dd;
+      --good:#5dcaa5; --warn:#f0997b; --info:#85b7eb;
+      --code-bg:#26261f;
+    }
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    margin:0; background:var(--bg); color:var(--text);
+    font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+    font-size:16px; line-height:1.65;
+  }
+  .wrap{max-width:900px; margin:0 auto; padding:48px 28px 96px}
+  header.doc{border-bottom:1px solid var(--border); padding-bottom:24px; margin-bottom:8px}
+  header.doc h1{font-size:30px; margin:0 0 6px; letter-spacing:-.01em}
+  header.doc .sub{color:var(--text2); font-size:15px}
+  header.doc dl{display:grid; grid-template-columns:max-content 1fr; gap:2px 16px; margin:18px 0 0; font-size:13px}
+  header.doc dt{color:var(--text2); text-transform:uppercase; letter-spacing:.05em; font-size:11px; padding-top:2px}
+  header.doc dd{margin:0}
+  header.doc code{font-size:12px}
+  h2{font-size:23px; margin:52px 0 4px; letter-spacing:-.01em; scroll-margin-top:20px}
+  h2 .n{color:var(--accent); font-variant-numeric:tabular-nums; margin-right:10px}
+  h3{font-size:17px; margin:30px 0 4px; scroll-margin-top:20px}
+  h4{font-size:15px; margin:22px 0 2px; color:var(--text)}
+  p{margin:12px 0}
+  a{color:var(--accent)}
+  code{font-family:ui-monospace,Menlo,Consolas,monospace; font-size:.86em;
+    background:var(--code-bg); padding:.12em .4em; border-radius:4px}
+  pre{background:var(--code-bg); border:1px solid var(--border); border-radius:8px;
+    padding:14px 16px; overflow:auto; font-size:12.5px; line-height:1.5}
+  pre code{background:none; padding:0; font-size:inherit}
+  .lead{font-size:18px; color:var(--text)}
+  ul,ol{padding-left:22px} li{margin:5px 0}
+  nav.toc{background:var(--surface); border:1px solid var(--border); border-radius:10px;
+    padding:18px 22px; margin:28px 0 8px}
+  nav.toc strong{display:block; font-size:13px; text-transform:uppercase; letter-spacing:.06em;
+    color:var(--text2); margin-bottom:8px}
+  nav.toc ol{margin:0; columns:2; column-gap:32px; font-size:14px}
+  nav.toc a{text-decoration:none; color:var(--text)}
+  nav.toc a:hover{color:var(--accent)}
+  .note{border-left:3px solid var(--accent); background:var(--surface);
+    padding:12px 16px; border-radius:0 8px 8px 0; margin:18px 0; font-size:15px}
+  .note .lbl{font-weight:600; font-size:12px; text-transform:uppercase; letter-spacing:.05em;
+    color:var(--text2); display:block; margin-bottom:2px}
+  figure{margin:24px 0; background:var(--surface); border:1px solid var(--border);
+    border-radius:10px; padding:20px}
+  figure svg{display:block; width:100%; height:auto}
+  figcaption{color:var(--text2); font-size:13px; margin-top:12px; text-align:center}
+  table{width:100%; border-collapse:collapse; margin:20px 0; font-size:14px}
+  th,td{text-align:left; padding:9px 12px; border-bottom:1px solid var(--border); vertical-align:top}
+  th{font-size:12px; text-transform:uppercase; letter-spacing:.04em; color:var(--text2);
+    border-bottom:2px solid var(--border2)}
+  td code{white-space:nowrap}
+  .footer{margin-top:64px; padding-top:20px; border-top:1px solid var(--border);
+    color:var(--text2); font-size:13px}
+  svg text{font-family:ui-sans-serif,system-ui,sans-serif}
+  .s-h{font-weight:600; fill:var(--text); font-size:12px}
+  .s-t{fill:var(--text); font-size:11px}
+  .s-s{fill:var(--text2); font-size:9px}
+  .s-mono{font-family:ui-monospace,Menlo,Consolas,monospace}
+  .s-box{fill:var(--bg); stroke:var(--border2); stroke-width:1.4}
+  .s-hi{fill:var(--accent); fill-opacity:.13; stroke:var(--accent); stroke-width:1.6}
+  .s-acc{fill:var(--accent)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="doc">
+  <h1>Pluggable Device Font Renderer</h1>
+  <div class="sub">Architecture, integration, and module reference.</div>
+  <dl>
+    <dt>Project</dt><dd>Ruffle — Flash Player emulator (Rust + WebAssembly + TypeScript)</dd>
+    <dt>Branch</dt><dd><code>pluggable-font-renderer</code></dd>
+    <dt>Status</dt><dd>Working draft, prepared after the swash-renderer rendering fix</dd>
+    <dt>Audience</dt><dd>Maintainers, integrators, third-party renderer authors</dd>
+    <dt>Scope</dt><dd>Web platform — any JavaScript host able to load a bridge module (browsers, Electron, and similar embedders)</dd>
+  </dl>
+</header>
+
+<p style="margin-top:22px">
+  This document describes the existing Ruffle device-font rendering pipeline, the additive integration that lets
+  external renderers be plugged in at runtime, the contract those renderers must honour, and the two reference
+  implementations developed alongside the contract: <strong>gdi-font-renderer</strong> (Windows GDI via
+  napi-rs) and <strong>swash-font-renderer</strong> (pure-WebAssembly via swash).
+</p>
+
+<nav class="toc" aria-label="Contents">
+  <strong>Contents</strong>
+  <ol>
+    <li><a href="#arch">1. Font rendering architecture, before &amp; after</a>
+      <ol>
+        <li><a href="#glossary">1.1 Glossary</a></li>
+        <li><a href="#pipeline">1.2 Pipeline overview</a></li>
+        <li><a href="#cache">1.3 Cache strategy &amp; intrinsic_scale</a></li>
+        <li><a href="#builtin">1.4 Existing built-in renderers</a></li>
+      </ol>
+    </li>
+    <li><a href="#integration">2. Integrating a custom renderer</a></li>
+    <li><a href="#contract">3. The pluggable module contract</a></li>
+    <li><a href="#gdi">4. The gdi-font-renderer module</a></li>
+    <li><a href="#swash">5. The swash-font-renderer module</a></li>
+    <li><a href="#appendix">Appendix A. The JS / WASM boundary</a></li>
+  </ol>
+</nav>
+
+<!-- ============================================================ -->
+<h2 id="arch"><span class="n">1</span>Ruffle font rendering architecture, before and after</h2>
+<p>
+  Ruffle's text pipeline is split into three layers that each own a different concern: the SWF interpreter and
+  ActionScript layout in <code>ruffle_core</code>, a font abstraction that hides the difference between embedded
+  (SWF-supplied) fonts and host ("device") fonts in <code>ruffle_core::font</code>, and a per-platform
+  <code>UiBackend</code> implementation that decides where unknown device fonts come from. On the web, that
+  backend is <code>WebUiBackend</code>.
+</p>
+<p>
+  This three-layer split is pre-existing, and this branch does not change it. What does change is the set of
+  rasterizers that <code>WebUiBackend</code> can dispatch to. On mainline Ruffle there are two:
+  <strong>Embedded</strong> (bitmaps from SWF-provided outlines or from TTFs passed via
+  <code>fontSources</code>) and <strong>Canvas</strong>
+  (<code>OffscreenCanvas.measureText/fillText</code>). This branch adds a third variant,
+  <strong>Custom</strong>, that routes every per-glyph call to a JS-side bridge object installed by the embedding
+  host on <code>globalThis.__ruffleCustomFontRenderer</code> — the pluggable renderer that gives this
+  document its name. The branch also teaches the shared glyph cache how to accommodate pixel-locked backends
+  that cannot reuse a single bitmap across sizes.
+</p>
+
+<h3 id="glossary">1.1 Glossary</h3>
+<table>
+  <thead><tr><th>Term</th><th>Meaning</th></tr></thead>
+  <tbody>
+    <tr><td><strong>Twips</strong></td><td>Internal Flash unit. 1 px = 20 twips. Most metrics are stored as twips to keep the rasterizer free of floating-point drift.</td></tr>
+    <tr><td><strong>FontQuery</strong></td><td><code>{name, is_bold, is_italic}</code> tuple the layout uses to look up a font.</td></tr>
+    <tr><td><strong>FontMetrics</strong></td><td><code>{scale, ascent, descent, leading}</code> in twips. <code>scale</code> is the em-size at which the bitmap was rasterized.</td></tr>
+    <tr><td><strong>Glyph</strong></td><td>Per-codepoint result. Holds either a vector outline or a rasterized bitmap, plus an advance and an optional <code>intrinsic_scale</code>.</td></tr>
+    <tr><td><strong>FontType</strong></td><td><code>Embedded</code> when the SWF brought its own outlines, <code>Device</code> when Ruffle had to ask the host.</td></tr>
+    <tr><td><strong>DefaultFont</strong></td><td>Symbolic mapping for Flash's <code>_sans</code>, <code>_serif</code>, <code>_typewriter</code>, and the Japanese defaults.</td></tr>
+    <tr><td><strong>FontRenderer</strong></td><td>Trait implemented by every device-font backend. Owns metrics and per-glyph rasterization.</td></tr>
+    <tr><td><strong>DeviceFontRenderer</strong></td><td>Web-only enum chosen at builder time: <code>Embedded</code>, <code>Canvas</code>, or <code>Custom</code>. The bridge object for <code>Custom</code> is looked up lazily on <code>globalThis.__ruffleCustomFontRenderer</code>.</td></tr>
+  </tbody>
+</table>
+
+<h3 id="pipeline">1.2 Pipeline overview</h3>
+<p>
+  Common to both mainline and this branch: when the AVM needs to draw text, <code>EditText</code> in
+  <code>core/src/html</code> walks the run of formatted text, asks the resident <code>Font</code> for each glyph
+  at the requested height, and feeds the resulting <code>GlyphRef</code>s to the active render backend. If the
+  requested font is unknown — no SWF tag defined it and no previous lookup cached it — the layout falls back to
+  the Player's <code>load_device_font()</code> hook, which the web build delegates to
+  <code>WebUiBackend::load_device_font</code>. That method inspects the chosen
+  <code>DeviceFontRenderer</code> variant and registers a <code>FontDefinition</code> carrying the appropriate
+  <code>FontRenderer</code> implementation. From that point on the layout loop treats the font like any other:
+  metrics come from the trait, bitmaps from per-glyph calls, and the cache in
+  <code>ruffle_core::font::Font</code> makes sure no glyph is rasterized twice.
+</p>
+<p>
+  <strong>What this branch changes</strong> (highlighted in the diagram): the <code>FontRenderer</code> trait
+  gains a <code>Custom</code> arm that forwards per-glyph calls to the JS bridge; the
+  <code>ruffle_core::font::Font</code> cache key grows from a single code point to a
+  <code>(code_point, size_px)</code> tuple (size-unaware backends keep sharing one bucket via
+  <code>cache_size = 0</code>); pixel-locked glyphs carry an optional <code>intrinsic_scale</code> so the layout
+  can draw them 1:1 to device pixels; and new <code>_at_size</code> trait overloads let backends opt into
+  size-aware rasterization. The top four boxes — the SWF interpreter, the <code>EditText</code> layout, the
+  <code>load_device_font</code> hook, and the <code>WebUiBackend</code> dispatcher — are unchanged. The
+  branch is deliberately additive: any path that does not ask for a <code>Custom</code> renderer produces the
+  same bitmaps as mainline.
+</p>
+
+<figure>
+<svg viewBox="0 0 820 500" role="img" aria-labelledby="figt figd">
+  <title id="figt">Figure 1 — the device-font pipeline, mainline vs this branch</title>
+  <desc id="figd">Two vertical pipelines side by side. The top four stages are identical; the bottom three boxes and the trait-call/Glyph arrow labels are highlighted on the "after" column to mark what the branch modifies.</desc>
+  <defs><marker id="ah" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto">
+    <path d="M0,0 L9,4.5 L0,9 z" fill="var(--border2)"/></marker></defs>
+  <text class="s-h" x="204" y="26" text-anchor="middle">Before — mainline Ruffle</text>
+  <text class="s-h" x="616" y="26" text-anchor="middle">After — this branch</text>
+
+  <!-- arrows left -->
+  <g stroke="var(--border2)" stroke-width="1.4" fill="none">
+    <line x1="204" y1="88" x2="204" y2="104" marker-end="url(#ah)"/>
+    <line x1="204" y1="152" x2="204" y2="168" marker-end="url(#ah)"/>
+    <line x1="204" y1="216" x2="204" y2="232" marker-end="url(#ah)"/>
+    <line x1="204" y1="280" x2="204" y2="296" marker-end="url(#ah)"/>
+    <line x1="204" y1="344" x2="204" y2="360" marker-end="url(#ah)"/>
+    <line x1="204" y1="408" x2="204" y2="424" marker-end="url(#ah)"/>
+    <line x1="616" y1="88" x2="616" y2="104" marker-end="url(#ah)"/>
+    <line x1="616" y1="152" x2="616" y2="168" marker-end="url(#ah)"/>
+    <line x1="616" y1="216" x2="616" y2="232" marker-end="url(#ah)"/>
+    <line x1="616" y1="280" x2="616" y2="296" marker-end="url(#ah)"/>
+    <line x1="616" y1="344" x2="616" y2="360" marker-end="url(#ah)"/>
+    <line x1="616" y1="408" x2="616" y2="424" marker-end="url(#ah)"/>
+  </g>
+  <text class="s-s" x="212" y="228">FontQuery</text>
+  <text class="s-s" x="624" y="228">FontQuery</text>
+  <text class="s-s" x="212" y="420">Glyph</text>
+  <text class="s-acc s-s" x="624" y="420" style="font-weight:600">Glyph + intrinsic_scale</text>
+
+  <!-- LEFT column boxes -->
+  <g>
+    <rect class="s-box" x="30" y="42" width="348" height="46" rx="5"/>
+    <text class="s-t s-mono" x="42" y="62">SWF / AVM2</text><text class="s-s" x="42" y="78">DefineEditText · TextField.text</text>
+    <rect class="s-box" x="30" y="106" width="348" height="46" rx="5"/>
+    <text class="s-t s-mono" x="42" y="126">ruffle_core::EditText</text><text class="s-s" x="42" y="142">resolves device font via FontQuery</text>
+    <rect class="s-box" x="30" y="170" width="348" height="46" rx="5"/>
+    <text class="s-t s-mono" x="42" y="190">Player.load_device_font()</text><text class="s-s" x="42" y="206">first-touch hook for unknown fonts</text>
+    <rect class="s-box" x="30" y="234" width="348" height="46" rx="5"/>
+    <text class="s-t s-mono" x="42" y="254">WebUiBackend::load_device_font</text><text class="s-s" x="42" y="270">branch on DeviceFontRenderer · register FontDefinition</text>
+    <rect class="s-box" x="30" y="298" width="348" height="46" rx="5"/>
+    <text class="s-t s-mono" x="42" y="318">FontRenderer trait impl</text><text class="s-s" x="42" y="334">Embedded | Canvas — render_glyph, kerning</text>
+    <rect class="s-box" x="30" y="362" width="348" height="46" rx="5"/>
+    <text class="s-t s-mono" x="42" y="382">ruffle_core::font::Font</text><text class="s-s" x="42" y="398">caches Glyphs by code_point</text>
+    <rect class="s-box" x="30" y="426" width="348" height="46" rx="5"/>
+    <text class="s-t s-mono" x="42" y="446">Render backend (wgpu / webgl)</text><text class="s-s" x="42" y="462">draws glyph bitmaps</text>
+  </g>
+
+  <!-- RIGHT column boxes (5,6,7 highlighted) -->
+  <g>
+    <rect class="s-box" x="442" y="42" width="348" height="46" rx="5"/>
+    <text class="s-t s-mono" x="454" y="62">SWF / AVM2</text><text class="s-s" x="454" y="78">DefineEditText · TextField.text</text>
+    <rect class="s-box" x="442" y="106" width="348" height="46" rx="5"/>
+    <text class="s-t s-mono" x="454" y="126">ruffle_core::EditText</text><text class="s-s" x="454" y="142">resolves device font via FontQuery</text>
+    <rect class="s-box" x="442" y="170" width="348" height="46" rx="5"/>
+    <text class="s-t s-mono" x="454" y="190">Player.load_device_font()</text><text class="s-s" x="454" y="206">first-touch hook for unknown fonts</text>
+    <rect class="s-box" x="442" y="234" width="348" height="46" rx="5"/>
+    <text class="s-t s-mono" x="454" y="254">WebUiBackend::load_device_font</text><text class="s-s" x="454" y="270">branch on DeviceFontRenderer · register FontDefinition</text>
+    <rect class="s-hi" x="442" y="298" width="348" height="46" rx="5"/>
+    <text class="s-t s-mono" x="454" y="318">FontRenderer trait impl</text><text class="s-s" x="454" y="334">Embedded | Canvas | Custom — render_glyph_at_size</text>
+    <rect class="s-hi" x="442" y="362" width="348" height="46" rx="5"/>
+    <text class="s-t s-mono" x="454" y="382">ruffle_core::font::Font</text><text class="s-s" x="454" y="398">caches Glyphs by (code_point, size_px)</text>
+    <rect class="s-hi" x="442" y="426" width="348" height="46" rx="5"/>
+    <text class="s-t s-mono" x="454" y="446">Render backend (wgpu / webgl)</text><text class="s-s" x="454" y="462">draws bitmaps with intrinsic_scale</text>
+  </g>
+</svg>
+<figcaption>Figure 1. The device-font pipeline, mainline (left) versus this branch (right). The highlighted boxes and arrow label mark what the branch modifies; everything else is identical by design.</figcaption>
+</figure>
+
+<h3 id="cache">1.3 Cache strategy and intrinsic_scale</h3>
+<p>
+  The per-glyph cache inside <code>ruffle_core::font::Font</code> is the pivot around which the whole pluggable
+  renderer contract is designed. Ruffle already had a cache, but it was built on an assumption — one bitmap per
+  code point is enough — that pixel-locked backends like GDI cannot honour.
+</p>
+
+<h4>1.3.1 The original size-agnostic cache</h4>
+<p>On mainline, the <code>ExternalRenderer</code> variant of <code>GlyphSource</code> stored two <code>RefCell&lt;HashMap&gt;</code>s:</p>
+<pre><code>// Before (mainline)
+ExternalRenderer {
+    glyph_cache:   RefCell&lt;FnvHashMap&lt;u16, Option&lt;Glyph&gt;&gt;&gt;,
+    kerning_cache: RefCell&lt;FnvHashMap&lt;(u16, u16), Twips&gt;&gt;,
+    font_renderer: Box&lt;dyn FontRenderer&gt;,
+}</code></pre>
+<p>
+  <code>get_by_code_point(&amp;self, code_point: char)</code> took no size argument, and the trait had a single
+  <code>render_glyph(char) -&gt; Option&lt;Glyph&gt;</code>. The implicit contract: the renderer rasterizes once at
+  a canonical em-size (64 px for the canvas backend), and the layout computes a runtime scale factor:
+</p>
+<pre><code>// Before (mainline layout loop)
+let scale = params.height.get() as f32 / resolution.font.scale();</code></pre>
+<p>
+  Multiplying every glyph by <code>scale</code> happens on the GPU as part of the normal draw transform. The
+  cache could therefore be keyed solely by code point, and memory stayed bounded regardless of how many sizes
+  a movie used: one bitmap served them all. This worked because the canvas backend uses the browser's vector
+  <code>fillText</code> pipeline (scaling a 64 px-em rasterization to a 12 px run is acceptable — the browser
+  hints internally), and the embedded path feeds vector outlines to the GPU (scaled with no quality loss).
+  Neither needed per-size storage.
+</p>
+
+<h4>1.3.2 Why this broke for pixel-locked backends</h4>
+<p>
+  The defining property of a GDI-style backend is that the only way to get a crisp glyph is to ask the OS to
+  rasterize it at the exact display size — with its own hinting, stem snapping, and native antialiasing
+  (ClearType on Windows). The moment the layout scales such a bitmap by any factor other than 1.0, bilinear
+  filtering smears the subpixel-tuned output into the blur the renderer was supposed to avoid. To keep GDI
+  output pixel-perfect, the bitmap must reach the framebuffer with <code>scale = 1.0</code>. That requires two
+  things the mainline cache did not provide:
+</p>
+<ul>
+  <li>A separate cache entry per display size, so a 12 px and a 24 px render of the same code point do not
+    collide on the same key.</li>
+  <li>A way for a bitmap to carry its own em-scale, so the layout divisor cancels and the runtime scale collapses
+    to 1.0 rather than stretching the bitmap.</li>
+</ul>
+<p>
+  A naive fix — always key by <code>(code_point, size_px)</code> — would have solved the GDI case at a
+  substantial memory cost for canvas and embedded: the same glyph re-stored for every size, even though the
+  bytes are identical modulo GPU scaling.
+</p>
+
+<h4>1.3.3 The size-aware rework, free for existing backends</h4>
+<p>The redesign splits "how to key the cache" away from the cache itself, and lets each backend opt in. Three changes to the trait:</p>
+<pre><code>pub trait FontRenderer: std::fmt::Debug {
+    // Unchanged size-agnostic hooks (used by canvas / embedded):
+    fn render_glyph(&amp;self, character: char) -&gt; Option&lt;Glyph&gt;;
+    fn calculate_kerning(&amp;self, left: char, right: char) -&gt; Twips;
+    // New: opt-in size-aware variants, default-delegate.
+    fn render_glyph_at_size(&amp;self, character: char, _height_px: u32)
+        -&gt; Option&lt;Glyph&gt; { self.render_glyph(character) }
+    fn calculate_kerning_at_size(&amp;self, left: char, right: char,
+                                 _height_px: u32) -&gt; Twips {
+        self.calculate_kerning(left, right)
+    }
+    // New: tells the cache whether to key by size.
+    fn is_size_aware(&amp;self) -&gt; bool { false }
+}</code></pre>
+<p>The cache then extends its key tuples with a <code>height_px</code> component and picks the effective key at lookup time based on the backend's own flag:</p>
+<pre><code>// After (this branch)
+ExternalRenderer {
+    glyph_cache:   RefCell&lt;FnvHashMap&lt;(u16, u32), Option&lt;Glyph&gt;&gt;&gt;,
+    kerning_cache: RefCell&lt;FnvHashMap&lt;(u16, u16, u32), Twips&gt;&gt;,
+    font_renderer: Box&lt;dyn FontRenderer&gt;,
+}
+
+let cache_size = if font_renderer.is_size_aware() {
+    height_px   // one entry per display size
+} else {
+    0           // every size collapses onto the same bucket
+};
+glyph_cache.borrow_mut()
+    .entry((code_point, cache_size))
+    .or_insert_with(|| font_renderer.render_glyph_at_size(ch, cache_size));</code></pre>
+<p>
+  The <code>cache_size = 0</code> branch is the whole point: size-unaware backends keep using a single bucket
+  per code point, so canvas and embedded fonts pay zero extra memory after the rework — the only change for
+  them is the extra <code>u32</code> in the key and an unused <code>_height_px</code> argument the defaults
+  discard. Two auxiliary pieces make it end-to-end:
+</p>
+<ul>
+  <li><strong>Twips-to-pixel quantization.</strong> A helper <code>twips_to_px_for_cache(Twips) -&gt; u32</code>
+    converts heights with half-pixel rounding (<code>(twips + 10) / 20</code>, clamped to ≥ 1). Without it,
+    floating-point noise would fragment the cache into near-duplicate entries at 11.97 / 12.00 / 12.03 px.</li>
+  <li><strong>Height plumbed through the lookup APIs.</strong> <code>Font::get_glyph_for_char</code>,
+    <code>GlyphSource::get_by_code_point</code>, <code>FontLike::resolve_glyph</code> and
+    <code>get_kerning_offset</code> all gained a <code>height: Twips</code> parameter, carried by the layout
+    loop via <code>params.height</code>. Existence-only probes (<code>has_glyphs_for_str</code>) pass
+    <code>Twips::ZERO</code>, which canonicalizes to the shared <code>cache_size = 0</code> slot.</li>
+</ul>
+
+<h4>1.3.4 Glyph::intrinsic_scale and the 1:1 layout path</h4>
+<p>Cache keying alone is not enough: the layout also needs to stop rescaling the bitmap. <code>Glyph</code> gained an <code>intrinsic_scale: Option&lt;f32&gt;</code> field and a constructor <code>from_bitmap_at_scale</code> used by pixel-locked backends:</p>
+<pre><code>pub struct Glyph {
+    shape: GlyphShape,
+    advance: Twips,
+    character: char,
+    /// Em-size (in twips) at which this bitmap was rasterized.
+    /// None falls back to the owning font's canonical scale.
+    intrinsic_scale: Option&lt;f32&gt;,
+}</code></pre>
+<p>The layout loop then consults it:</p>
+<pre><code>// After (this branch)
+let glyph_scale_basis = glyph
+    .intrinsic_scale()
+    .unwrap_or_else(|| resolution.font.scale());
+let scale = params.height.get() as f32 / glyph_scale_basis;</code></pre>
+<p>
+  When a backend rasterizes at the display size and sets <code>intrinsic_scale = params.height</code>, the
+  divisor cancels and <code>scale</code> collapses to 1.0 — every bitmap pixel lands on exactly one device
+  pixel, with no bilinear blur. Backends that do not set the field (canvas, embedded) keep using the font's
+  canonical scale exactly as before. Net effect: two independent mechanisms — size-aware cache keying and
+  <code>intrinsic_scale</code> — each a pure addition guarded by a default that preserves the old behavior, each
+  solving half of the GDI problem.
+</p>
+
+<h3 id="builtin">1.4 Existing built-in renderers</h3>
+<table>
+  <thead><tr><th>Variant</th><th>Where the bitmap comes from</th><th>Notes</th></tr></thead>
+  <tbody>
+    <tr><td><strong>Embedded</strong></td><td>SWF tags + any TTF/OTF/SWF passed via <code>fontSources</code></td><td>Synchronous, registered up-front by the builder. Default.</td></tr>
+    <tr><td><strong>Canvas</strong></td><td><code>OffscreenCanvas.measureText / fillText</code></td><td>Browser does the rasterization; access to OS fonts via the CSS font system, but no glyph index, so kerning is approximated.</td></tr>
+  </tbody>
+</table>
+
+<!-- ============================================================ -->
+<h2 id="integration"><span class="n">2</span>Integrating a custom renderer into Ruffle</h2>
+<p>
+  The integration is deliberately additive: a single new variant is added to the existing
+  <code>DeviceFontRenderer</code> enum, and the rest is the minimum plumbing needed to (a) carry that variant
+  from JS configuration to the Rust UI backend and (b) bridge per-glyph calls across the JS/WASM boundary. No
+  previous code path was removed. All paths below are relative to the repository root.
+</p>
+
+<h3>2.1 <code>core/src/font.rs</code> — extend the FontRenderer trait</h3>
+<p>Two responsibilities were grafted onto the trait: size-aware rasterization, and a way for backends to tag bitmaps with the em-scale they chose. The defaults are no-ops, so the canvas renderer is unaffected.</p>
+<pre><code>pub trait FontRenderer: std::fmt::Debug {
+    fn scale(&amp;self) -&gt; f32;
+    fn get_font_metrics(&amp;self) -&gt; FontMetrics;
+    fn has_kerning_info(&amp;self) -&gt; bool;
+    fn render_glyph(&amp;self, character: char) -&gt; Option&lt;Glyph&gt;;
+    fn calculate_kerning(&amp;self, left: char, right: char) -&gt; Twips;
+    fn render_glyph_at_size(&amp;self, character: char, _height_px: u32)
+        -&gt; Option&lt;Glyph&gt; { self.render_glyph(character) }
+    fn calculate_kerning_at_size(&amp;self, left: char, right: char,
+                                 _height_px: u32) -&gt; Twips {
+        self.calculate_kerning(left, right)
+    }
+    fn is_size_aware(&amp;self) -&gt; bool { false }
+}</code></pre>
+<p>
+  The <code>Glyph</code> struct also gained <code>intrinsic_scale: Option&lt;f32&gt;</code> and a constructor that
+  sets it (<code>from_bitmap_at_scale</code>); <code>Font::evaluate_layout_operation</code> consults it so that a
+  backend rasterizing at the display size produces a glyph whose em-scale equals <code>params.height</code>, the
+  divisor cancels, and <code>scale</code> collapses to 1.0 (no bilinear blur).
+</p>
+
+<h3>2.2 <code>web/src/lib.rs</code> — new DeviceFontRenderer variant</h3>
+<pre><code>#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum DeviceFontRenderer {
+    Embedded,
+    Canvas,
+    /// Delegates glyph rasterization to a pluggable bridge
+    /// object installed on `globalThis.__ruffleCustomFontRenderer`.
+    /// Fetched lazily on every font request.
+    Custom,
+}</code></pre>
+<p>
+  <strong>Why a unit variant:</strong> it keeps <code>RuffleInstanceBuilder</code> clonable without carrying any
+  JS-side state. The bridge lives entirely in the JS global namespace and is read through reflection by
+  <code>WebUiBackend</code>; so the same bridge can be shared across every player instance on the page, and
+  bridges that load asynchronously (ES modules with top-level await) can be assigned after player construction
+  without further plumbing.
+</p>
+
+<h3>2.3 <code>web/src/builder.rs</code> — recognise "custom"</h3>
+<pre><code>#[wasm_bindgen(js_name = "setDeviceFontRenderer")]
+pub fn set_device_font_renderer(&amp;mut self, value: String) {
+    self.device_font_renderer = match value.as_str() {
+        "embedded" =&gt; DeviceFontRenderer::Embedded,
+        "canvas"   =&gt; DeviceFontRenderer::Canvas,
+        "custom"   =&gt; DeviceFontRenderer::Custom,
+        _ =&gt; return,
+    };
+}
+// Inside create_player:
+if matches!(self.device_font_renderer, DeviceFontRenderer::Embedded) {
+    self.setup_fonts(&amp;mut core);
+}</code></pre>
+<p>
+  The match is intentionally tolerant — an unknown value keeps the previous default rather than panicking. The
+  <code>setup_fonts</code> guard prevents Ruffle from registering its own TTF parses on top of the bridge: the
+  bridge is the sole owner of the names it claims. There is no setter for the bridge itself — it lives on the JS
+  global slot and is fetched by the UI backend, so the builder carries no per-instance state.
+</p>
+
+<h3>2.4 <code>web/src/ui.rs</code> — dispatch in load_device_font</h3>
+<p><code>WebUiBackend</code> now stores the chosen <code>DeviceFontRenderer</code> and dispatches on it. The <code>Custom</code> arm looks up the bridge on the global slot at each call, then tries to instantiate the bridge-backed renderer — falling back to canvas if the slot is empty, the structural check fails, or the bridge rejects the family.</p>
+<pre><code>const CUSTOM_FONT_RENDERER_GLOBAL: &amp;str = "__ruffleCustomFontRenderer";
+
+fn lookup_custom_font_bridge() -&gt; Option&lt;JsValue&gt; {
+    let global = js_sys::global();
+    let bridge =
+        js_sys::Reflect::get(&amp;global, &amp;JsValue::from_str(CUSTOM_FONT_RENDERER_GLOBAL)).ok()?;
+    if bridge.is_undefined() || bridge.is_null() { return None; }
+    let create =
+        js_sys::Reflect::get(&amp;bridge, &amp;JsValue::from_str("createRenderer")).ok()?;
+    if !create.is_function() { return None; }
+    Some(bridge)
+}
+
+fn load_device_font(&amp;self, query: &amp;FontQuery,
+                    register: &amp;mut dyn FnMut(FontDefinition)) {
+    match &amp;self.device_font_renderer {
+        DeviceFontRenderer::Embedded =&gt; { /* registered up-front */ }
+        DeviceFontRenderer::Canvas =&gt; register_canvas_font_renderer(query, register),
+        DeviceFontRenderer::Custom =&gt; {
+            let Some(bridge) = lookup_custom_font_bridge() else {
+                tracing::warn!("...missing or invalid...");
+                register_canvas_font_renderer(query, register);
+                return;
+            };
+            match font_renderer::CustomFontRenderer::new(
+                query.is_italic, query.is_bold, &amp;query.name, &amp;bridge,
+            ) {
+                Ok(r) =&gt; register(FontDefinition::ExternalRenderer { /* ... */ }),
+                Err(e) =&gt; { tracing::warn!("..."); register_canvas_font_renderer(query, register); }
+            }
+        }
+    }
+}</code></pre>
+<p>
+  <strong>Why lookup on every call:</strong> the bridge is produced and installed by the embedding host — Ruffle
+  never loads an addon itself — so the slot may be empty at player construction and materialize later (e.g. a
+  <code>&lt;script type="module"&gt;</code> with top-level await finishing after <code>DOMContentLoaded</code>).
+  Reading the global on every font request means any bridge that arrives before the first glyph is picked up
+  automatically. Any host condition can still leave the slot empty; the soft fallback keeps the experience at
+  "some text quality, no broken page".
+</p>
+
+<h3>2.5 <code>web/src/ui/font_renderer.rs</code> — the bridge proxy</h3>
+<p>
+  <code>CustomFontRenderer</code> is the new <code>FontRenderer</code> implementation. It receives the bridge
+  as a <code>&amp;JsValue</code>, invokes <code>createRenderer(family, bold, italic)</code> on it, caches the
+  canonical-size metrics and the kerning-support flag, and forwards every per-glyph call via reflection
+  (<code>js_sys::Reflect</code>). Any per-backend caching belongs to the addon, not to Ruffle.
+</p>
+<ul>
+  <li><strong>Bridge plumbing:</strong> the constructor accepts the bridge as <code>&amp;JsValue</code> (no global
+    lookup inside the renderer), calls <code>createRenderer</code> once, and stores the returned JS object.</li>
+  <li><strong>Metrics cache:</strong> <code>getFontMetrics</code> is invoked once at the canonical size (64 px)
+    and stored as twips — steady-state operation never hits JS for metrics.</li>
+  <li><strong>Per-glyph forwarding:</strong> <code>renderGlyph(code, size_px)</code> returns
+    <code>{ width, height, bitmapTx, advance, pixels }</code> or <code>null</code>; the proxy converts pixel
+    fields to twips and produces <code>Glyph::from_bitmap_at_scale(...)</code> with
+    <code>intrinsic_scale = size_px * 20</code>.</li>
+  <li><strong>Kerning:</strong> routed through <code>calculate_kerning_at_size</code>; pixel values are converted
+    back to twips on the Rust side, so the addon API stays in pixel units.</li>
+  <li><strong>Lifecycle:</strong> <code>Drop</code> calls <code>destroy()</code> on the JS object, ignoring errors
+    (best effort).</li>
+</ul>
+<p>
+  <strong>Why this shape:</strong> pushing caches down into the addon avoids growing Ruffle with addon-specific
+  knowledge (HFONT pools, swash <code>ScaleContext</code>s, ttf-parser <code>Face</code>s). What stays in Rust
+  is purely the JS plumbing.
+</p>
+
+<h3>2.6 <code>web/packages/core/src/internal/custom-font-bridge.ts</code></h3>
+<p>This module owns the JS side of the contract: the <code>FontBridge</code>, <code>CustomFontRenderer</code>, <code>FontMetrics</code> and <code>GlyphRaster</code> interfaces plus helpers. There is no JS-side registry object: the bridge lives directly on <code>globalThis.__ruffleCustomFontRenderer</code> and is read on demand.</p>
+<table>
+  <thead><tr><th>Export</th><th>Role</th></tr></thead>
+  <tbody>
+    <tr><td><code>CUSTOM_FONT_RENDERER_GLOBAL</code></td><td>The well-known name of the global slot, <code>"__ruffleCustomFontRenderer"</code>. Kept in sync with the constant of the same name in <code>web/src/ui.rs</code> so TS and Rust never disagree on where to look.</td></tr>
+    <tr><td><code>isFontBridge</code></td><td>Structural check that a value is an object with a <code>createRenderer</code> function. Everything else in the contract is optional and probed later through reflection on the Rust side.</td></tr>
+    <tr><td><code>getCustomFontRenderer</code></td><td>Reads <code>globalThis.__ruffleCustomFontRenderer</code>, runs it through <code>isFontBridge</code>, returns the bridge or <code>undefined</code>. Each call re-reads the global, so bridges assigned after player construction are picked up as soon as they materialize.</td></tr>
+  </tbody>
+</table>
+<p>
+  <strong>Why one global slot and not a registry:</strong> an earlier iteration kept a
+  <code>__ruffleFontBridges</code> object keyed by module id so multiple addons could coexist. That bought
+  nothing in practice — Ruffle only ever dispatches to one renderer per player — and made the contract harder to
+  reason about. The final shape is deliberately minimal: one JS global, one structural check, one lazy getter.
+  Producing the bridge object remains entirely the host's responsibility.
+</p>
+
+<h3>2.7 <code>public/config/custom-font-bridge.ts</code> and <code>load-options.ts</code></h3>
+<p>The public <code>@ruffle-rs/core</code> entry point needed one new re-export module (consumer-facing types only — there is nothing for an addon to call on the Ruffle side) and a three-state enum.</p>
+<pre><code>// public/config/custom-font-bridge.ts
+export {
+    type FontBridge,
+    type CustomFontRenderer,
+    type FontMetrics,
+    type GlyphRaster,
+} from "../../internal/custom-font-bridge";
+
+// public/config/load-options.ts
+export enum DeviceFontRenderer {
+    Embedded = "embedded",
+    Canvas   = "canvas",
+    Custom   = "custom",
+}
+deviceFontRenderer?: DeviceFontRenderer;</code></pre>
+<p>
+  Because the bridge is identified by a fixed global slot — not a per-addon module id — the option collapses to a
+  plain enum with three discrete states. An earlier design used a literal-template type
+  <code>`custom:${string}`</code> to carry a module id; that field is gone because no such id exists anymore.
+</p>
+
+<h3>2.8 <code>web/packages/core/src/internal/builder.ts</code></h3>
+<p>With the bridge living on a single global slot that may be populated asynchronously, the JS side no longer pre-validates the bridge — any such check would race the async loading it was meant to guard — and simply forwards the verbatim string to Rust. Validation and soft fallback happen later, at font-request time.</p>
+<pre><code>if (isExplicit(config.deviceFontRenderer)) {
+    builder.setDeviceFontRenderer(config.deviceFontRenderer);
+}</code></pre>
+<p>
+  The previous design parsed a <code>"custom:&lt;id&gt;"</code> prefix and looked the id up in a JS registry,
+  downgrading to canvas on a miss. That logic was removed with the registry; checking the global at this exact
+  moment would produce false negatives for bridges that legitimately arrive a few microtasks later. Letting the
+  Rust side own the lookup — once per font request, where the answer has to be right anyway — is simpler and
+  more accurate.
+</p>
+
+<h3>2.9 <code>web/packages/core/src/internal/player/inner.tsx</code></h3>
+<p>Ruffle already fetches every URL from <code>fontSources</code> at startup; the bytes were only pushed to the embedded path (<code>builder.addFont</code>). With Custom renderers, <code>inner.tsx</code> also forwards the same bytes to the bridge (when present and implementing <code>registerFontData</code>), so bridges without OS-font access can build their face index from the same blob with no extra fetch.</p>
+<pre><code>if (this.loadedConfig?.fontSources) {
+    const isCustom =
+        this.loadedConfig.deviceFontRenderer === DeviceFontRenderer.Custom;
+    for (const url of this.loadedConfig.fontSources) {
+        try {
+            const response = await fetch(url);
+            const bytes = new Uint8Array(await response.arrayBuffer());
+            builder.addFont(url, bytes);
+            if (isCustom) {
+                // Lazy lookup: a bridge that finishes its async
+                // init mid-fetch still gets the bytes fetched after it.
+                const bridge = getCustomFontRenderer();
+                if (bridge?.registerFontData) {
+                    try { bridge.registerFontData(url, bytes); }
+                    catch (err) {
+                        console.warn(
+                            `Ruffle: __ruffleCustomFontRenderer threw ` +
+                            `from registerFontData("${url}")`, err,
+                        );
+                    }
+                }
+            }
+        } catch (err) { /* fetch failure is logged */ }
+    }
+}</code></pre>
+<p>
+  <strong>Why lazily in the loop:</strong> the bridge may be assigned by an async module that finishes loading
+  while <code>inner.tsx</code> is still iterating. Capturing it once outside the loop would strand later font
+  sources; re-reading the global inside each iteration closes that window. The alternative — having each bridge
+  fetch the URLs itself — would duplicate the request and push CORS concerns onto the addon, so Ruffle stays the
+  single I/O owner and the bridge merely receives bytes it has already paid for.
+</p>
+
+<h3>2.10 <code>Cargo.toml</code> — workspace</h3>
+<p>
+  The new module crates live under <code>font-renderers/</code> at the repository root but are <em>not</em> added
+  to the workspace members list; each defines an empty <code>[workspace]</code> table in its own
+  <code>Cargo.toml</code> so Cargo treats them as standalone workspaces. The motivation is twofold: their build
+  targets differ from the main project (a custom cdylib on Windows for the napi addon,
+  <code>wasm32-unknown-unknown</code> for swash) and their dependency closures pull in libraries the rest of
+  Ruffle does not need.
+</p>
+
+<!-- ============================================================ -->
+<h2 id="contract"><span class="n">3</span>The pluggable module contract</h2>
+<p>
+  Everything Ruffle asks of a custom font renderer is spelled out by two TypeScript interfaces,
+  <code>FontBridge</code> and <code>CustomFontRenderer</code>. A bridge object is a plain JavaScript value
+  assigned to the well-known global slot <code>globalThis.__ruffleCustomFontRenderer</code>; Ruffle reads it on
+  every font request and invokes methods by reflection. No part of the contract prescribes how the bridge is
+  built.
+</p>
+
+<h3>3.1 Technology is up to the module author</h3>
+<p>
+  Ruffle is deliberately blind to the runtime nature of a bridge: <code>web/src/ui.rs</code> reads the global,
+  confirms a <code>createRenderer</code> function, and hands the <code>JsValue</code> to the proxy, which forwards
+  per-glyph calls via <code>js_sys::Reflect</code>. Whatever lives on the other side is opaque. The two reference
+  modules — <strong>gdi-font-renderer</strong> (napi-rs native addon over the Windows GDI text stack) and
+  <strong>swash-font-renderer</strong> (wasm-bindgen module rasterizing with pure-Rust swash) — are worked
+  examples of two technologies, not exclusive choices. Other plausible implementations: a Core Text addon for
+  macOS, a fontconfig-backed addon for Linux, a FreeType-based WASM module, a pure-JS Canvas 2D wrapper, or a
+  test stub injecting deterministic bitmaps. Ruffle treats them all identically. The practical consequences of the
+  technology choice fall entirely on the addon author and host: build pipeline, platform coverage, whether font
+  bytes need feeding via <code>registerFontData</code>, and how the bridge ends up on the slot.
+</p>
+
+<h3>3.2 The shared FontBridge contract</h3>
+<pre><code>interface FontBridge {
+    createRenderer(
+        family: string,
+        bold: boolean,
+        italic: boolean,
+    ): CustomFontRenderer | null | undefined;
+    // Optional. Implemented by bridges that need raw font bytes.
+    registerFontData?(source: string, bytes: Uint8Array): void;
+}</code></pre>
+<p>
+  <code>createRenderer</code> is the only required method. Returning <code>null</code>/<code>undefined</code>
+  tells Ruffle the bridge does not handle that family — the fallback to canvas is taken on the Rust side.
+  Throwing is a hard error and surfaces as a one-time tracing warning. <code>registerFontData</code> is invoked
+  once per <code>fontSources</code> entry, after the bytes are fetched, before the first
+  <code>createRenderer</code> call. TTC/OTC collections are delivered in a single call — the bridge iterates the
+  faces inside. Any exception is logged and swallowed; this method must never abort Ruffle's font-source
+  processing.
+</p>
+
+<h3>3.3 The CustomFontRenderer instance contract</h3>
+<pre><code>interface CustomFontRenderer {
+    hasKerningInfo(): boolean;
+    getFontMetrics(sizePx: number): FontMetrics;
+    renderGlyph(codePoint: number, sizePx: number): GlyphRaster | null;
+    calculateKerning(left: number, right: number, sizePx: number): number;
+    destroy(): void;
+}
+interface FontMetrics { ascent: number; descent: number; leading: number; }
+interface GlyphRaster {
+    width: number;       // bitmap width, &gt;= 1
+    height: number;      // bitmap height, &gt;= 1
+    bitmapTx: number;    // x offset of bitmap from pen, may be negative
+    advance: number;     // pen advance after this glyph
+    pixels: Uint8Array;  // RGBA, row-major top-down, premultiplied
+}</code></pre>
+<p>Conventions enforced by Ruffle:</p>
+<ul>
+  <li>All numeric values are in pixels at <code>sizePx</code>. Ruffle converts to twips on the Rust side — addons
+    never see the twips coordinate system.</li>
+  <li>Bitmaps are RGBA, top-down, row-major, premultiplied alpha. Non-ink pixels are <code>(0, 0, 0, 0)</code>.
+    The buffer length must equal <code>width * height * 4</code>.</li>
+  <li>Bitmap layout uses the canvas convention: <code>height = ascent + descent</code>, baseline at row
+    <code>y = ascent</code>. The result must already be padded vertically; Ruffle does not adjust it.</li>
+  <li><code>destroy()</code> is called exactly once when Ruffle drops the renderer; the addon releases every
+    native handle it owns. Calling it twice must be a no-op.</li>
+</ul>
+
+<h3>3.4 How a bridge is registered</h3>
+<p>One mechanism, regardless of what the addon is made of: the bridge object must sit on <code>globalThis.__ruffleCustomFontRenderer</code> before the first device-font glyph is requested. Ruffle performs no dynamic loading of its own — if the slot is empty or lacks a <code>createRenderer</code> function when a request arrives, <code>load_device_font</code> falls back to canvas for that request, logs a warning, and the page keeps rendering. The registration is a single assignment:</p>
+<pre><code>globalThis.__ruffleCustomFontRenderer = bridge;</code></pre>
+<p>Because the slot is read lazily, the assignment can happen before or after the player is constructed — what matters is that the bridge is in place by the time the first glyph has to be rasterized.</p>
+<p><strong>Example — Electron preload script (synchronous require):</strong></p>
+<pre><code>// preload.js (runs with nodeIntegration available):
+const bridge = require("@example/some-font-addon");
+globalThis.__ruffleCustomFontRenderer = bridge;</code></pre>
+<p><strong>Example — pure-browser ESM module (async import):</strong></p>
+<pre><code>&lt;script type="module"&gt;
+  import init, * as bridge from "./some-font-addon.js";
+  await init();
+  globalThis.__ruffleCustomFontRenderer = bridge;
+&lt;/script&gt;</code></pre>
+<p>In the Electron snippet the assignment is synchronous and finishes before the page runs any scripts. In the ESM snippet it is asynchronous and may finish after the player is constructed — that is fine: the per-request lookup honours any bridge that lands before the first glyph. If it genuinely arrives too late (or never), Ruffle serves the affected fonts from canvas.</p>
+
+<!-- ============================================================ -->
+<h2 id="gdi"><span class="n">4</span>The gdi-font-renderer module</h2>
+<p>
+  <strong>gdi-font-renderer</strong> is one of the two reference renderers. It is a napi-rs native Node addon that
+  delegates rasterization to the Windows GDI text stack, targeting Electron-based hosts on Windows where the
+  goal is pixel-perfect, hinted output matching the native UI — the look the original Flash Player produced for
+  device fonts. Ruffle does not depend on it and is unaware of its technology; what follows is an example of how
+  a native-addon bridge is put together.
+</p>
+
+<h3>4.1 Module shape</h3>
+<table>
+  <tbody>
+    <tr><th>Crate path</th><td><code>font-renderers/gdi-font-renderer</code></td></tr>
+    <tr><th>Crate name</th><td><code>ruffle-gdi-font-renderer</code></td></tr>
+    <tr><th>Build</th><td><code>napi build --release</code> → <code>gdi-font-renderer.node</code></td></tr>
+    <tr><th>JS package</th><td><code>@ruffle-rs/gdi-font-renderer</code></td></tr>
+    <tr><th>Public exports</th><td><code>createRenderer(family, bold, italic): GdiFontRenderer</code> and the <code>GdiFontRenderer</code> class</td></tr>
+    <tr><th>Platforms</th><td>Windows only. The addon calls directly into the Win32 GDI text stack, so only Windows targets compile. The napi CLI is invoked without <code>--platform</code>, emitting a single <code>.node</code> file with no architecture suffix — consumers <code>require()</code> it directly.</td></tr>
+  </tbody>
+</table>
+
+<h3>4.2 Architecture</h3>
+<p>A single napi-rs class plus a thin factory. The class lazily creates a per-pixel-size <code>SizedFont</code>, each owning one <code>HFONT</code>. Per-size caches share a single <code>Mutex&lt;Inner&gt;</code> guard so napi-rs threads don't race on the GDI device context.</p>
+<pre><code>pub struct GdiFontRenderer {
+    family: String,
+    bold: bool,
+    italic: bool,
+    inner: Mutex&lt;Inner&gt;,
+}
+struct Inner {
+    /// HDC bound to the screen, used as the rasterization device.
+    hdc: HDC,
+    /// One SizedFont per pixel size requested by Ruffle.
+    sizes: HashMap&lt;u32, SizedFont&gt;,
+}
+struct SizedFont {
+    hfont: HFONT,
+    metrics: GdiFontMetrics,
+    /// Glyph cache keyed by code point.
+    glyphs: HashMap&lt;u32, Option&lt;GdiGlyphRaster&gt;&gt;,
+}</code></pre>
+
+<h3>4.3 Rasterization details</h3>
+<ul>
+  <li><strong>Font handle:</strong> <code>CreateFontW</code> with <code>lfHeight = -size_px</code> (em-height in
+    pixels), <code>lfWeight FW_BOLD</code> when bold, <code>lfItalic = TRUE</code> when italic.
+    <code>CLEARTYPE_QUALITY</code> is requested.</li>
+  <li><strong>Metrics:</strong> from <code>GetTextMetricsW</code>. <code>tmAscent + tmDescent</code> becomes the
+    bitmap height; <code>tmExternalLeading</code> becomes <code>FontMetrics.leading</code>.</li>
+  <li><strong>Glyph bitmap:</strong> <code>GetGlyphOutlineW</code> with <code>GGO_GRAY8_BITMAP</code> retrieves a
+    65-level gray ink mask plus a <code>GLYPHMETRICS</code> describing the black box and cell origin. The mask is
+    expanded to RGBA premultiplied, alpha derived from the gray level.</li>
+  <li><strong>Bitmap layout:</strong> padded vertically to <code>height = ascent + descent</code>, ink placed so
+    the baseline lands at <code>y = ascent</code>. <code>bitmapTx</code> is the horizontal offset from the pen
+    origin to the left edge of the ink box — usually 0 for ASCII, negative for left-overhanging italics.</li>
+  <li><strong>Advance:</strong> <code>GetCharABCWidthsW</code> when available, falling back to
+    <code>GetCharWidth32W</code>; in pixels.</li>
+  <li><strong>Kerning:</strong> <code>GetKerningPairsW</code> queried lazily on first <code>calculateKerning</code>
+    and hashed by <code>(left, right)</code>. Absent pairs return 0.</li>
+</ul>
+
+<h3>4.4 hasKerningInfo policy</h3>
+<p>The implementation always returns <code>true</code>. Returning <code>false</code> would force Ruffle to skip <code>calculateKerning</code> for every pair, but pairs without a dedicated entry already return 0 — indistinguishable from "no kerning info" for that pair. Truthful self-reporting would require eagerly creating an <code>HFONT</code> and reading its kerning table; deferring to the first kerning request is cheaper.</p>
+
+<h3>4.5 Reported interface (auto-generated by napi-rs)</h3>
+<pre><code>export interface GdiFontMetrics { ascent: number; descent: number; leading: number; }
+export interface GdiGlyphRaster {
+    width: number;
+    height: number;
+    bitmapTx: number;
+    advance: number;
+    pixels: Buffer; // RGBA, row-major top-down
+}
+export declare function createRenderer(
+    family: string, bold: boolean, italic: boolean,
+): GdiFontRenderer;
+export declare class GdiFontRenderer {
+    constructor(family: string, bold: boolean, italic: boolean);
+    hasKerningInfo(): boolean;
+    getFontMetrics(sizePx: number): GdiFontMetrics;
+    renderGlyph(codePoint: number, sizePx: number): GdiGlyphRaster | null;
+    calculateKerning(left: number, right: number, sizePx: number): number;
+    destroy(): void;
+}</code></pre>
+<p>This interface is structurally identical to §3.3, with napi-rs-specific naming (<code>Buffer</code> instead of <code>Uint8Array</code>, <code>GdiFontMetrics</code> for the value type) — it satisfies the contracts as-is.</p>
+
+<h3>4.6 Usage</h3>
+<p>The addon must be on <code>globalThis.__ruffleCustomFontRenderer</code> before the first device-font request — in Electron, naturally done from a preload script that has <code>require</code> access regardless of <code>nodeIntegration</code>:</p>
+<pre><code>// Ruffle config:
+{ deviceFontRenderer: "custom" }
+
+// preload.js - runs before the renderer's page scripts:
+const bridge = require("@ruffle-rs/gdi-font-renderer");
+globalThis.__ruffleCustomFontRenderer = bridge;</code></pre>
+
+<!-- ============================================================ -->
+<h2 id="swash"><span class="n">5</span>The swash-font-renderer module</h2>
+<p>
+  <strong>swash-font-renderer</strong> is the other reference renderer: a wasm-bindgen WebAssembly module built
+  around the swash rasterization library — a natural fit when the host is a regular browser and no OS font
+  database is available. Font bytes are supplied through <code>registerFontData</code>, parsed once with
+  ttf-parser, indexed by family/style, and rasterized on demand with hinted grayscale output.
+</p>
+
+<h3>5.1 Module shape</h3>
+<table>
+  <tbody>
+    <tr><th>Crate path</th><td><code>font-renderers/swash-font-renderer</code></td></tr>
+    <tr><th>Crate name</th><td><code>ruffle-swash-font-renderer</code></td></tr>
+    <tr><th>Build</th><td><code>cargo build --release --target wasm32-unknown-unknown</code> + <code>wasm-bindgen --target web</code> (optional <code>wasm-opt</code>)</td></tr>
+    <tr><th>Output</th><td><code>pkg/swash-font-renderer.js</code> + <code>pkg/swash-font-renderer_bg.wasm</code> (ESM)</td></tr>
+    <tr><th>Public exports</th><td><code>registerFontData(source, bytes)</code>, <code>createRenderer(family, bold, italic)</code>, the <code>CustomFontRenderer</code> wasm-bindgen class</td></tr>
+    <tr><th>Platforms</th><td>Any wasm32 host (browsers, also usable in Node with the corresponding loader)</td></tr>
+  </tbody>
+</table>
+
+<h3>5.2 Architecture</h3>
+<p>Single-threaded by construction: the WASM module runs on the main thread. State is kept in a <code>thread_local!</code> registry, avoiding the cost of a <code>Mutex</code> and matching the model wasm-bindgen offers.</p>
+<pre><code>#[derive(Clone, Eq, Hash, PartialEq)]
+struct FaceKey { family_lower: String, bold: bool, italic: bool }
+
+#[derive(Clone)]
+struct RegisteredFace {
+    data: Rc&lt;Vec&lt;u8&gt;&gt;,    // shared font blob
+    offset: u32,           // face offset (TTC/OTC support)
+    has_kern_table: bool,
+    units_per_em: u16,
+}
+thread_local! {
+    static REGISTRY: RefCell&lt;HashMap&lt;FaceKey, RegisteredFace&gt;&gt;
+        = RefCell::new(HashMap::new());
+}</code></pre>
+
+<h3>5.3 registerFontData — face indexing</h3>
+<p>Called once per <code>fontSources</code> entry (§2.9). The implementation:</p>
+<ul>
+  <li>Calls <code>ttf_parser::fonts_in_collection</code> to figure out whether the blob is a single TTF/OTF or a
+    TTC/OTC.</li>
+  <li>Iterates every face, parsing with <code>ttf_parser::Face::parse(bytes, offset)</code>.</li>
+  <li>Pulls the family name from the <code>name</code> table (Unicode entries only), lowercases it, and combines
+    it with the bold/italic flags into a <code>FaceKey</code>.</li>
+  <li>Stores a <code>RegisteredFace</code> sharing the underlying <code>Rc&lt;Vec&lt;u8&gt;&gt;</code> with all faces
+    from the same blob — one heap allocation for the blob, regardless of face count.</li>
+  <li>Logs and returns silently on parse failures, matching the embedded path's graceful degradation.</li>
+</ul>
+
+<h3>5.4 createRenderer and the SizedFont cache</h3>
+<pre><code>#[wasm_bindgen]
+pub struct CustomFontRenderer {
+    face: RegisteredFace,
+    charmap_proxy: CharmapProxy,
+    metrics_proxy: MetricsProxy,
+    scale_context: ScaleContext,
+    by_size: HashMap&lt;u32, SizedFont&gt;,
+}
+struct SizedFont {
+    ascent_px: i32,
+    descent_px: i32,
+    leading_px: i32,
+    glyphs: HashMap&lt;u32, Option&lt;CachedGlyph&gt;&gt;,
+}
+#[derive(Clone)]
+struct CachedGlyph {
+    width: u32, height: u32,
+    bitmap_tx: f32, advance: f32,
+    pixels: Vec&lt;u8&gt;,
+}</code></pre>
+<p>
+  <code>createRenderer</code> looks up the requested <code>FaceKey</code>. A miss returns <code>None</code> (JS
+  <code>null</code>), which Ruffle reads as "the bridge does not handle this family" and falls back to canvas. A
+  hit produces a fresh <code>CustomFontRenderer</code> with its own <code>ScaleContext</code> (swash's per-thread
+  rasterization scratch) and an empty per-size cache. <code>getFontMetrics(sizePx)</code> populates
+  <code>by_size[size_px]</code> on first call by querying <code>MetricsProxy</code>, scaling by
+  <code>size_px / units_per_em</code>, and rounding.
+</p>
+
+<h3>5.5 renderGlyph — rasterization with bitmap padding</h3>
+<p>swash returns a tight bitmap whose origin is the glyph's vector origin (baseline, left side of the ink box). Ruffle expects a line-box bitmap where <code>height = ascent + descent</code> and the baseline sits at row <code>y = ascent</code>. The implementation pads the swash output vertically — this was the bug fix that resolved the early "text appears too high in the line box" issue.</p>
+<pre><code>fn render_glyph_entry(
+    scale_context: &amp;mut ScaleContext,
+    font_ref: &amp;FontRef&lt;'_&gt;,
+    glyph_id: u16,
+    ppem: f32,
+    ascent_px: i32,
+    descent_px: i32,
+) -&gt; Option&lt;CachedGlyph&gt; {
+    let mut scaler = scale_context
+        .builder(*font_ref)
+        .size(ppem)
+        .hint(true)
+        .build();
+    let image = Render::new(&amp;[Source::Outline])
+        .format(Format::Alpha)
+        .render(&amp;mut scaler, glyph_id)?;
+    let placement = image.placement; // zeno::Placement, BottomLeft origin
+    let in_w = placement.width as i32;
+    let in_h = placement.height as i32;
+    let out_w = in_w.max(1) as u32;
+    let out_h = (ascent_px + descent_px).max(1) as u32;
+    // Vertical padding: baseline sits at row `ascent_px`,
+    // ink spans `placement.top` rows above the baseline.
+    let dst_y_offset = ascent_px - placement.top;
+    let mut pixels = vec![0u8; (out_w * out_h * 4) as usize];
+    for src_y in 0..in_h {
+        let dst_y = src_y + dst_y_offset;
+        if dst_y &lt; 0 || dst_y &gt;= out_h as i32 { continue; }
+        for src_x in 0..in_w {
+            let alpha = image.data[(src_y * in_w + src_x) as usize];
+            let i = ((dst_y as u32 * out_w + src_x as u32) * 4) as usize;
+            // Premultiplied white
+            pixels[i + 0] = alpha;
+            pixels[i + 1] = alpha;
+            pixels[i + 2] = alpha;
+            pixels[i + 3] = alpha;
+        }
+    }
+    Some(CachedGlyph {
+        width: out_w, height: out_h,
+        bitmap_tx: placement.left as f32,
+        advance: scaler.advance(glyph_id).x,
+        pixels,
+    })
+}</code></pre>
+<p>
+  <strong>Quality settings:</strong> full hinting via <code>.hint(true)</code> and grayscale alpha
+  (<code>Format::Alpha</code>) rather than subpixel — the result is portable across screens of any
+  orientation/subpixel layout, which matches what a generic Flash player needs to look right on any setup.
+</p>
+
+<h3>5.6 calculateKerning</h3>
+<p>Kerning is read directly from the OpenType <code>kern</code> table via ttf-parser, iterating every subtable until a pair matches. The result, in font units, is scaled by <code>size_px / units_per_em</code> and returned in pixels. <code>hasKerningInfo()</code> honestly reports whether the parsed face has a <code>kern</code> table, so Ruffle can skip the per-pair calls when there is no point.</p>
+
+<h3>5.7 Lifecycle and memory</h3>
+<ul>
+  <li>The <code>Rc&lt;Vec&lt;u8&gt;&gt;</code> blob is shared between the registry and every renderer derived from it;
+    dropping a renderer alone does not free the blob.</li>
+  <li><code>destroy()</code> is exposed but is essentially a no-op in WASM — the per-size cache is freed when the
+    wasm-bindgen object is GC'd. It exists to satisfy contract symmetry with the napi-rs side.</li>
+  <li>Calling <code>registerFontData</code> twice for the same source is idempotent: identical
+    <code>FaceKey</code>s overwrite the entry, letting the host re-register fonts without leaking the previous
+    <code>Rc</code>.</li>
+</ul>
+
+<h3>5.8 Usage</h3>
+<p>The <code>postbuild.mjs</code> script rewrites the wasm-bindgen glue so the module self-initialises via top-level await. The bridge methods are plain named exports, so the whole module namespace object satisfies the <code>FontBridge</code> contract — a single <code>await import(...)</code> produces a value assignable to the slot as-is:</p>
+<pre><code>&lt;script type="module"&gt;
+  globalThis.__ruffleCustomFontRenderer =
+      await import("swash-font-renderer.js");
+&lt;/script&gt;
+&lt;script src="ruffle.js"&gt;&lt;/script&gt;
+&lt;script&gt;
+  window.RufflePlayer.config = {
+      deviceFontRenderer: "custom",
+      fontSources: ["tahoma.ttf", "tahomabd.ttf"],
+  };
+&lt;/script&gt;</code></pre>
+<p>
+  Script ordering here is convenient but not critical: the browser blocks the classic <code>ruffle.js</code> tag
+  until the preceding module script finishes its top-level await, so the bridge is in place by the time the
+  player is instantiated. Even if it were not, the per-request lookup in <code>load_device_font</code> would pick
+  up a later bridge before the first glyph. Import failure is non-fatal: if the module script throws, the slot is
+  never assigned and the first device-font request falls back to canvas with a logged warning. Wrapping the
+  <code>await import(...)</code> in try/catch is advisable in production for diagnostics, but not required for
+  correctness.
+</p>
+
+<!-- ============================================================ -->
+<h2 id="appendix"><span class="n">A</span>Appendix — Future work: the JS / WASM boundary</h2>
+<p>
+  Every pluggable renderer call — <code>renderGlyph</code>, <code>calculateKerning</code>,
+  <code>getFontMetrics</code> — crosses the WASM/JavaScript boundary twice: Ruffle's WASM module calls into the
+  bridge through <code>js_sys::Reflect</code>, the bridge dispatches to the backend, and the result is marshaled
+  back. This is true whether the backend is a napi-rs native addon (GDI) or another WASM module (swash): both
+  reach Ruffle through the same JS-side bridge object, so the marshaling cost is paid in both topologies.
+</p>
+
+<h3>A.1 What each boundary crossing costs</h3>
+<p>Per call, enough overhead to become visible in profiles when the cache is cold:</p>
+<ul>
+  <li>Copying primitive arguments (code point, size, bold/italic flags) through wasm-bindgen's generated glue.</li>
+  <li>For <code>renderGlyph</code>, allocating a JS object with five fields and a <code>Uint8Array</code> view of
+    the pixel buffer.</li>
+  <li>Reading those fields back from Rust via <code>Reflect::get</code>, one call per field, with an
+    <code>Option&lt;JsValue&gt;</code> round trip each time.</li>
+  <li>Copying the <code>Uint8Array</code> contents into a <code>Vec&lt;u8&gt;</code> so Rust can own the pixels.</li>
+</ul>
+<p>The swash backend avoids the last step slightly — its pixels view aliases WASM linear memory directly — but the other four items are identical, including the reflective property lookups.</p>
+
+<h3>A.2 Why it is not a problem today</h3>
+<p>
+  The Rust-side cache (§1.3) already amortizes the cost: every <code>(code_point, height_px)</code> bitmap
+  crosses the boundary exactly once, when the layout first asks for it. Subsequent frames, retraced strings, and
+  most re-layouts with the same runs hit the cache and never touch JavaScript. Metrics are cached at the
+  canonical size on renderer creation; kerning is cached per pair per size. A typical movie in steady state is
+  rendered with essentially no boundary traffic — it is the warm-up phase of a new font size that dominates, and
+  that is bounded by the glyph set the movie actually uses.
+</p>
+
+<h3>A.3 When it might be worth optimizing</h3>
+<p>If profiling ever shows measurable boundary overhead — a frame-time spike when a long, glyph-diverse text field is first displayed, or a movie cycling through many sizes — these directions are worth considering, roughly in order of effort vs. benefit:</p>
+<ul>
+  <li><strong>Batch glyph requests.</strong> A <code>renderGlyphs(codes: Uint32Array, sizePx: number)</code>
+    entry point returning an array of descriptors in one JS call would collapse per-glyph overhead into
+    per-string overhead.</li>
+  <li><strong>Shared memory for pixel buffers.</strong> Rust preallocates a scratch <code>ArrayBuffer</code>
+    sized to the largest expected glyph bitmap and hands it to the bridge for in-place writes — removing the
+    <code>Vec&lt;u8&gt;</code> copy and the per-glyph <code>Uint8Array</code> allocation.</li>
+  <li><strong>Bulk kerning queries.</strong> A <code>getKerningTable(sizePx)</code> hook returning the whole
+    table once, indexed locally by Rust.</li>
+  <li><strong>Flat struct ABI.</strong> Drop the object-return convention for a packed <code>Int32Array</code>
+    whose known slots carry the metrics fields — no <code>Reflect::get</code> lookups, just array indexing. The
+    object-based API would be kept as a compatibility mode.</li>
+</ul>
+<p>
+  <strong>Why deferred:</strong> each requires extending the public bridge contract and the TypeScript surface,
+  which a third-party addon could not ignore without losing functionality. Introducing them speculatively would
+  lock in an API shape before real workloads reveal the hot path. The cache-first design keeps the bridge narrow
+  and the hot path cold; these should be revisited only once there is a concrete performance signal.
+</p>
+
+<div class="footer">
+  Self-contained document — no external dependencies (the pipeline figure is inline SVG). Light/dark theme
+  follows <code>prefers-color-scheme</code>. Editable directly as a text file. Converted from the branch's PDF
+  technical documentation. Companion documents: <code>tilemalloc.html</code>, <code>xml-readonly.html</code>,
+  <code>xml-general-optimizations.html</code>.
+</div>
+
+</div>
+</body>
+</html>
