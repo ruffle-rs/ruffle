@@ -878,9 +878,26 @@ impl<'gc> MovieLoader<'gc> {
             mc.replace_with_movie(uc, None, false, None);
         }
 
-        let loader_url = Some(uc.root_swf.url().to_string());
+        let loader_url = uc.root_swf.url().to_string();
 
-        MovieLoader::movie_loader_data(handle, uc, &bytes, "file:///".into(), 0, false, loader_url)
+        // We need to generate a URL for `SwfMovie`s that are loaded using
+        // `Loader.loadBytes`. In FP, the URL looks like
+        // "url-of-loader-swf.swf/[[DYNAMIC]]/2", where the number at the end is
+        // a counter that increases every time a SWF loads another SWF using
+        // `Loader.loadBytes`. This counter is not reset across new root SWF
+        // loads. We don't support this- we just use 1 as the number at the end.
+        let id = 1;
+        let generated_url = format!("{}/[[DYNAMIC]]/{}", loader_url, id);
+
+        MovieLoader::movie_loader_data(
+            handle,
+            uc,
+            &bytes,
+            generated_url,
+            0,
+            false,
+            Some(loader_url),
+        )
     }
 }
 
