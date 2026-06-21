@@ -115,7 +115,68 @@ impl Surface {
         nearest_layer: LayerRef<'frame>,
         texture_pool: &mut TexturePool,
     ) -> CommandTarget {
-        let target = CommandTarget::new(
+        self.draw_commands_internal(
+            render_target_mode,
+            descriptors,
+            meshes,
+            commands,
+            staging_belt,
+            dynamic_transforms,
+            draw_encoder,
+            nearest_layer,
+            texture_pool,
+            0,
+            0,
+        )
+    }
+
+    #[expect(clippy::too_many_arguments)]
+    #[instrument(level = "debug", skip_all)]
+    pub fn draw_commands_with_offset<'frame, 'global: 'frame>(
+        &self,
+        render_target_mode: RenderTargetMode,
+        descriptors: &'global Descriptors,
+        meshes: &'global Vec<Mesh>,
+        commands: CommandList,
+        staging_belt: &'global mut wgpu::util::StagingBelt,
+        dynamic_transforms: &'global DynamicTransforms,
+        draw_encoder: &'frame mut wgpu::CommandEncoder,
+        nearest_layer: LayerRef<'frame>,
+        texture_pool: &mut TexturePool,
+        offset_x: u32,
+        offset_y: u32,
+    ) -> CommandTarget {
+        self.draw_commands_internal(
+            render_target_mode,
+            descriptors,
+            meshes,
+            commands,
+            staging_belt,
+            dynamic_transforms,
+            draw_encoder,
+            nearest_layer,
+            texture_pool,
+            offset_x,
+            offset_y,
+        )
+    }
+
+    #[expect(clippy::too_many_arguments)]
+    fn draw_commands_internal<'frame, 'global: 'frame>(
+        &self,
+        render_target_mode: RenderTargetMode,
+        descriptors: &'global Descriptors,
+        meshes: &'global Vec<Mesh>,
+        commands: CommandList,
+        staging_belt: &'global mut wgpu::util::StagingBelt,
+        dynamic_transforms: &'global DynamicTransforms,
+        draw_encoder: &'frame mut wgpu::CommandEncoder,
+        nearest_layer: LayerRef<'frame>,
+        texture_pool: &mut TexturePool,
+        offset_x: u32,
+        offset_y: u32,
+    ) -> CommandTarget {
+        let target = CommandTarget::new_with_offset(
             descriptors,
             texture_pool,
             self.size,
@@ -123,6 +184,8 @@ impl Surface {
             self.sample_count,
             render_target_mode,
             draw_encoder,
+            offset_x,
+            offset_y,
         );
 
         let mut num_masks = 0;
@@ -137,6 +200,8 @@ impl Surface {
             self.quality,
             target.width(),
             target.height(),
+            offset_x,
+            offset_y,
             match nearest_layer {
                 LayerRef::Current => LayerRef::Parent(&target),
                 layer => layer,
@@ -144,7 +209,8 @@ impl Surface {
             texture_pool,
         );
 
-        for chunk in chunks {
+        let mut chunks = std::collections::VecDeque::from(chunks);
+        while let Some(chunk) = chunks.pop_front() {
             match chunk {
                 Chunk::Draw {
                     chunk,
@@ -198,8 +264,11 @@ impl Surface {
                     texture,
                     blend_mode: ChunkBlendMode::Shader(shader),
                     needs_stencil,
+                    region: _,
+                    blend_transform: _,
                 } => {
                     assert!(!needs_stencil, "Shader blend mode not implemented in masks");
+                    // PixelBender shaders use their own UV — always full-viewport blend buffer.
                     let parent_blend_buffer =
                         target.update_blend_buffer(descriptors, texture_pool, draw_encoder);
                     run_pixelbender_shader_impl(
@@ -212,7 +281,7 @@ impl Surface {
                                 channels: 0xFF,
                                 name: "background".to_string(),
                                 texture: Some(ImageInputTexture::TextureRef(
-                                    parent_blend_buffer.texture(),
+                                    parent_blend_buffer.texture,
                                 )),
                             },
                             PixelBenderShaderArgument::ImageInput {
@@ -222,7 +291,7 @@ impl Surface {
                                 texture: Some(ImageInputTexture::TextureRef(texture.texture())),
                             },
                         ],
-                        parent_blend_buffer.texture(),
+                        parent_blend_buffer.texture,
                         draw_encoder,
                         target.color_attachments(),
                         target.sample_count(),
@@ -234,6 +303,8 @@ impl Surface {
                     texture,
                     blend_mode: ChunkBlendMode::Complex(blend_mode),
                     needs_stencil,
+                    region,
+                    blend_transform,
                 } => {
                     let parent = match blend_mode {
                         ComplexBlend::Alpha | ComplexBlend::Erase => {
@@ -249,29 +320,46 @@ impl Surface {
                         _ => &target,
                     };
 
-                    let parent_blend_buffer =
-                        parent.update_blend_buffer(descriptors, texture_pool, draw_encoder);
+                    let region = region.filter(|r| {
+                        r.x + r.width <= parent.width() && r.y + r.height <= parent.height()
+                    });
+                    // If the region was rejected above we fall back to a
+                    // full-viewport parent blend buffer, so the region
+                    // positioning/UV transform must be dropped too — otherwise it
+                    // would be applied against the full-viewport buffer and sample
+                    // the wrong texels.
+                    let blend_transform = if region.is_some() {
+                        blend_transform
+                    } else {
+                        None
+                    };
+                    let _region_blend_buf;
+                    let parent_blend_buffer = if let Some(r) = region {
+                        _region_blend_buf = parent.update_blend_buffer_region(
+                            descriptors,
+                            texture_pool,
+                            draw_encoder,
+                            r.x,
+                            r.y,
+                            r.width,
+                            r.height,
+                        );
+                        _region_blend_buf.as_source()
+                    } else {
+                        parent.update_blend_buffer(descriptors, texture_pool, draw_encoder)
+                    };
 
                     let blend_bind_group =
                         descriptors
                             .device
                             .create_bind_group(&wgpu::BindGroupDescriptor {
-                                label: create_debug_label!(
-                                    "Complex blend binds {:?} {}",
-                                    blend_mode,
-                                    if needs_stencil {
-                                        "(with stencil)"
-                                    } else {
-                                        "(Stencilless)"
-                                    }
-                                )
-                                .as_deref(),
+                                label: None,
                                 layout: &descriptors.bind_layouts.blend,
                                 entries: &[
                                     wgpu::BindGroupEntry {
                                         binding: 0,
                                         resource: wgpu::BindingResource::TextureView(
-                                            parent_blend_buffer.view(),
+                                            parent_blend_buffer.view,
                                         ),
                                     },
                                     wgpu::BindGroupEntry {
@@ -288,6 +376,24 @@ impl Surface {
                                     },
                                 ],
                             });
+
+                    // Upload blend transform (region positioning + UV offset/scale)
+                    // BEFORE starting the render pass.
+                    let use_blend_transform = if let Some(ref bt) = blend_transform {
+                        let data = bytemuck::cast_slice(std::slice::from_ref(bt.as_ref()));
+                        let size = std::num::NonZeroU64::new(data.len() as u64).unwrap();
+                        let mut staging = staging_belt.write_buffer(
+                            draw_encoder,
+                            &dynamic_transforms.buffer,
+                            0,
+                            size,
+                            &descriptors.device,
+                        );
+                        staging.copy_from_slice(data);
+                        true
+                    } else {
+                        false
+                    };
 
                     let mut render_pass =
                         draw_encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
@@ -333,7 +439,12 @@ impl Surface {
                         );
                     }
 
-                    render_pass.set_bind_group(1, target.whole_frame_bind_group(descriptors), &[0]);
+                    let transforms_bind_group = if use_blend_transform {
+                        &dynamic_transforms.bind_group
+                    } else {
+                        target.whole_frame_bind_group(descriptors)
+                    };
+                    render_pass.set_bind_group(1, transforms_bind_group, &[0]);
                     render_pass.set_bind_group(2, &blend_bind_group, &[]);
 
                     render_pass.set_vertex_buffer(0, descriptors.quad.vertices_pos.slice(..));
