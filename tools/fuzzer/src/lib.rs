@@ -166,12 +166,16 @@ pub fn list_targets() -> Targets {
 
 /// Check the selected fuzzers, and report any issues related to their setup.
 pub fn check_fuzzers(fuzzer: &[Fuzzer]) -> Result<(), anyhow::Error> {
-    if fuzzer.is_empty() || fuzzer.contains(&Fuzzer::Libfuzzer) {
+    if fuzzer.contains(&Fuzzer::Libfuzzer) {
         check_fuzzer(Fuzzer::Libfuzzer)?;
     }
 
-    if fuzzer.is_empty() || fuzzer.contains(&Fuzzer::Afl) {
+    if fuzzer.contains(&Fuzzer::Afl) {
         check_fuzzer(Fuzzer::Afl)?;
+    }
+
+    if fuzzer.iter().collect::<HashSet<_>>().len() != fuzzer.len() {
+        return Err(anyhow!("Duplicated fuzzers: {fuzzer:?}"));
     }
 
     Ok(())
@@ -228,8 +232,8 @@ pub fn build_fuzz_targets(all: &Targets, target: Option<&str>, fuzzer: &[Fuzzer]
         None => all.keys().cloned().collect(),
     };
 
-    let build_afl = fuzzer.is_empty() || fuzzer.contains(&Fuzzer::Afl);
-    let build_lf = fuzzer.is_empty() || fuzzer.contains(&Fuzzer::Libfuzzer);
+    let build_afl = fuzzer.contains(&Fuzzer::Afl);
+    let build_lf = fuzzer.contains(&Fuzzer::Libfuzzer);
 
     let mut afl_bins: Vec<String> = vec![];
     let mut lf_targets: Vec<String> = vec![];
@@ -294,11 +298,7 @@ pub fn run_fuzz_targets(
 
         let corpus = corpus_for(name);
 
-        for f in [Fuzzer::Afl, Fuzzer::Libfuzzer] {
-            if !fuzzer.is_empty() && !fuzzer.contains(&f) {
-                // Filtered out.
-                continue;
-            }
+        for &f in fuzzer {
             if !supported.contains(&f) {
                 // Not supported by target.
                 continue;

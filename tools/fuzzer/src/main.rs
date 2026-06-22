@@ -36,7 +36,7 @@ enum Commands {
 
         /// List of fuzzers to list targets for. By default lists targets for
         /// all fuzzers.
-        #[arg(long, value_enum)]
+        #[arg(long, value_enum, default_values_t = [Fuzzer::Afl, Fuzzer::Libfuzzer])]
         fuzzer: Vec<Fuzzer>,
     },
 
@@ -49,7 +49,7 @@ enum Commands {
         target: Option<String>,
 
         /// List of fuzzers to build for. By default builds for all fuzzers.
-        #[arg(long, value_enum)]
+        #[arg(long, value_enum, default_values_t = [Fuzzer::Afl, Fuzzer::Libfuzzer])]
         fuzzer: Vec<Fuzzer>,
     },
 
@@ -71,7 +71,7 @@ enum Commands {
         time: Option<Duration>,
 
         /// List of fuzzers to run. By default runs all fuzzers.
-        #[arg(long, value_enum)]
+        #[arg(long, value_enum, default_values_t = [Fuzzer::Afl, Fuzzer::Libfuzzer])]
         fuzzer: Vec<Fuzzer>,
     },
 }
