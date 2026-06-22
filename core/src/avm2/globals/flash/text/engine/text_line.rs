@@ -2,7 +2,7 @@ use crate::avm2::activation::Activation;
 use crate::avm2::error::{Error, make_error_2008};
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
-use crate::display_object::TextLineValidity;
+use crate::fte::TextLineValidity;
 
 pub fn get_text_width<'gc>(
     activation: &mut Activation<'_, 'gc>,
