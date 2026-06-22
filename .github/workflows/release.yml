@@ -37,7 +37,7 @@ jobs:
     if: github.repository == 'ruffle-rs/ruffle' || github.event_name == 'repository_dispatch' || github.event_name == 'workflow_dispatch'
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           token: ${{ secrets.RUFFLE_BUILD_TOKEN }}
 
@@ -164,7 +164,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - name: Clone Ruffle repo
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           ref: ${{ needs.create-release.outputs.tag_name }}
 
@@ -262,7 +262,7 @@ jobs:
       PACKAGE_FILE: ${{ needs.create-release.outputs.package_prefix }}-macos-universal.tar.gz
     steps:
       - name: Clone Ruffle repo
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           ref: ${{ needs.create-release.outputs.tag_name }}
 
@@ -361,7 +361,7 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - name: Clone Ruffle repo
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           ref: ${{ needs.create-release.outputs.tag_name }}
 
@@ -394,7 +394,7 @@ jobs:
       statuses: write
     steps:
       - name: Clone Ruffle repo
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           ref: ${{ needs.create-release.outputs.tag_name }}
 
@@ -577,7 +577,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Clone JS docs
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         if: needs.create-release.outputs.release_channel == 'nightly'
         with:
           repository: ruffle-rs/js-docs
@@ -612,7 +612,7 @@ jobs:
           force: true
 
       - name: Clone web demo
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         if: needs.create-release.outputs.release_channel == 'nightly'
         with:
           repository: ruffle-rs/demo
@@ -655,7 +655,7 @@ jobs:
     runs-on: ubuntu-24.04
     if: github.repository == 'ruffle-rs/ruffle' && needs.create-release.outputs.release_channel == 'nightly'
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           ref: ${{ needs.create-release.outputs.tag_name }}
 
