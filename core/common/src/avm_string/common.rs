@@ -119,6 +119,7 @@ ruffle_macros::define_common_strings! {
     "declaredBy",
     "decode",
     "default",
+    "deflate",
     "descent",
     "description",
     "device",
@@ -186,6 +187,7 @@ ruffle_macros::define_common_strings! {
     "loop",
     "lowercase",
     "lr",
+    "lzma",
     "macType",
     "matrixType",
     "menu",
@@ -357,5 +359,6 @@ ruffle_macros::define_common_strings! {
     "year",
     "yMax",
     "yMin",
+    "zlib",
     "zoom",
 }

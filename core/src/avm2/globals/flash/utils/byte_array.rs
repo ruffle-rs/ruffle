@@ -1,8 +1,9 @@
 use std::rc::Rc;
 
+use crate::avm2::Avm2StrRepresentable;
 use crate::avm2::Error;
 use crate::avm2::activation::Activation;
-use crate::avm2::bytearray::{Endian, ObjectEncoding};
+use crate::avm2::bytearray::{CompressionAlgorithm, Endian, ObjectEncoding};
 use crate::avm2::error::{make_error_2008, make_error_2058};
 use crate::avm2::object::Object;
 use crate::avm2::parameters::ParametersExt;
@@ -735,9 +736,9 @@ pub fn compress<'gc>(
 
     if let Some(mut bytearray) = this.as_bytearray_mut() {
         let algorithm = args.get_string_non_null(activation, 0, "algorithm")?;
-        let algorithm = match algorithm.parse() {
-            Ok(algorithm) => algorithm,
-            Err(_) => return Err(make_error_2058(activation)),
+        let algorithm = match CompressionAlgorithm::from_avm2_str(&algorithm) {
+            Some(algorithm) => algorithm,
+            None => return Err(make_error_2058(activation)),
         };
         let buffer = bytearray.compress(algorithm);
         bytearray.clear();
@@ -759,9 +760,9 @@ pub fn uncompress<'gc>(
 
     if let Some(mut bytearray) = this.as_bytearray_mut() {
         let algorithm = args.get_string_non_null(activation, 0, "algorithm")?;
-        let algorithm = match algorithm.parse() {
-            Ok(algorithm) => algorithm,
-            Err(_) => return Err(make_error_2058(activation)),
+        let algorithm = match CompressionAlgorithm::from_avm2_str(&algorithm) {
+            Some(algorithm) => algorithm,
+            None => return Err(make_error_2058(activation)),
         };
         let buffer = match bytearray.decompress(algorithm) {
             Some(buffer) => buffer,
