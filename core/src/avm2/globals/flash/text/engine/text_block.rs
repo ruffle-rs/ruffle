@@ -7,11 +7,14 @@ use crate::avm2::globals::methods::flash_text_engine_content_element as element_
 use crate::avm2::globals::slots::flash_text_engine_content_element as element_slots;
 use crate::avm2::globals::slots::flash_text_engine_text_block as block_slots;
 use crate::avm2::globals::slots::flash_text_engine_text_line as line_slots;
-use crate::avm2::object::{FontLookupValue, FontPostureValue, FontWeightValue, Object, TObject};
+use crate::avm2::object::{Object, TObject};
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
 use crate::avm2_stub_method;
 use crate::display_object::{EditText, TDisplayObject, TextLine};
+use crate::fte::FontLookupValue;
+use crate::fte::FontPostureValue;
+use crate::fte::FontWeightValue;
 use crate::html::TextFormat;
 use crate::string::WStr;
 

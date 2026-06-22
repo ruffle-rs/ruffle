@@ -1,12 +1,11 @@
 use crate::avm2::Error;
 use crate::avm2::activation::Activation;
 use crate::avm2::error::make_error_2008;
-use crate::avm2::object::{
-    CffHintingValue, FontLookupValue, FontPostureValue, FontWeightValue, RenderingModeValue,
-};
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
-use ruffle_macros::istr;
+use crate::fte::{
+    CffHintingValue, FontLookupValue, FontPostureValue, FontWeightValue, RenderingModeValue,
+};
 
 pub use crate::avm2::object::font_description_allocator;
 
@@ -48,10 +47,7 @@ pub fn get_font_weight<'gc>(
         .unwrap()
         .as_font_description_object()
         .unwrap();
-    Ok(match this.font_weight() {
-        FontWeightValue::Normal => istr!("normal").into(),
-        FontWeightValue::Bold => istr!("bold").into(),
-    })
+    Ok(this.font_weight().as_string(activation).into())
 }
 
 pub fn set_font_weight<'gc>(
@@ -65,13 +61,10 @@ pub fn set_font_weight<'gc>(
         .as_font_description_object()
         .unwrap();
     let s = args.get_string_non_null(activation, 0, "fontWeight")?;
-    this.set_font_weight(if &s == b"normal" {
-        FontWeightValue::Normal
-    } else if &s == b"bold" {
-        FontWeightValue::Bold
-    } else {
-        return Err(make_error_2008(activation, "fontWeight"));
-    });
+    this.set_font_weight(
+        FontWeightValue::parse_string(&s)
+            .ok_or_else(|| make_error_2008(activation, "fontWeight"))?,
+    );
     Ok(Value::Undefined)
 }
 
@@ -85,10 +78,7 @@ pub fn get_font_posture<'gc>(
         .unwrap()
         .as_font_description_object()
         .unwrap();
-    Ok(match this.font_posture() {
-        FontPostureValue::Normal => istr!("normal").into(),
-        FontPostureValue::Italic => istr!("italic").into(),
-    })
+    Ok(this.font_posture().as_string(activation).into())
 }
 
 pub fn set_font_posture<'gc>(
@@ -102,13 +92,10 @@ pub fn set_font_posture<'gc>(
         .as_font_description_object()
         .unwrap();
     let s = args.get_string_non_null(activation, 0, "fontPosture")?;
-    this.set_font_posture(if &s == b"normal" {
-        FontPostureValue::Normal
-    } else if &s == b"italic" {
-        FontPostureValue::Italic
-    } else {
-        return Err(make_error_2008(activation, "fontPosture"));
-    });
+    this.set_font_posture(
+        FontPostureValue::parse_string(&s)
+            .ok_or_else(|| make_error_2008(activation, "fontPosture"))?,
+    );
     Ok(Value::Undefined)
 }
 
@@ -122,10 +109,7 @@ pub fn get_font_lookup<'gc>(
         .unwrap()
         .as_font_description_object()
         .unwrap();
-    Ok(match this.font_lookup() {
-        FontLookupValue::Device => istr!("device").into(),
-        FontLookupValue::EmbeddedCFF => istr!("embeddedCFF").into(),
-    })
+    Ok(this.font_lookup().as_string(activation).into())
 }
 
 pub fn set_font_lookup<'gc>(
@@ -139,13 +123,10 @@ pub fn set_font_lookup<'gc>(
         .as_font_description_object()
         .unwrap();
     let s = args.get_string_non_null(activation, 0, "fontLookup")?;
-    this.set_font_lookup(if &s == b"device" {
-        FontLookupValue::Device
-    } else if &s == b"embeddedCFF" {
-        FontLookupValue::EmbeddedCFF
-    } else {
-        return Err(make_error_2008(activation, "fontLookup"));
-    });
+    this.set_font_lookup(
+        FontLookupValue::parse_string(&s)
+            .ok_or_else(|| make_error_2008(activation, "fontLookup"))?,
+    );
     Ok(Value::Undefined)
 }
 
@@ -159,10 +140,7 @@ pub fn get_rendering_mode<'gc>(
         .unwrap()
         .as_font_description_object()
         .unwrap();
-    Ok(match this.rendering_mode() {
-        RenderingModeValue::Normal => istr!("normal").into(),
-        RenderingModeValue::Cff => istr!("cff").into(),
-    })
+    Ok(this.rendering_mode().as_string(activation).into())
 }
 
 pub fn set_rendering_mode<'gc>(
@@ -176,13 +154,10 @@ pub fn set_rendering_mode<'gc>(
         .as_font_description_object()
         .unwrap();
     let s = args.get_string_non_null(activation, 0, "renderingMode")?;
-    this.set_rendering_mode(if &s == b"normal" {
-        RenderingModeValue::Normal
-    } else if &s == b"cff" {
-        RenderingModeValue::Cff
-    } else {
-        return Err(make_error_2008(activation, "renderingMode"));
-    });
+    this.set_rendering_mode(
+        RenderingModeValue::parse_string(&s)
+            .ok_or_else(|| make_error_2008(activation, "renderingMode"))?,
+    );
     Ok(Value::Undefined)
 }
 
@@ -196,10 +171,7 @@ pub fn get_cff_hinting<'gc>(
         .unwrap()
         .as_font_description_object()
         .unwrap();
-    Ok(match this.cff_hinting() {
-        CffHintingValue::None => istr!("none").into(),
-        CffHintingValue::HorizontalStem => istr!("horizontalStem").into(),
-    })
+    Ok(this.cff_hinting().as_string(activation).into())
 }
 
 pub fn set_cff_hinting<'gc>(
@@ -213,13 +185,10 @@ pub fn set_cff_hinting<'gc>(
         .as_font_description_object()
         .unwrap();
     let s = args.get_string_non_null(activation, 0, "cffHinting")?;
-    this.set_cff_hinting(if &s == b"none" {
-        CffHintingValue::None
-    } else if &s == b"horizontalStem" {
-        CffHintingValue::HorizontalStem
-    } else {
-        return Err(make_error_2008(activation, "cffHinting"));
-    });
+    this.set_cff_hinting(
+        CffHintingValue::parse_string(&s)
+            .ok_or_else(|| make_error_2008(activation, "cffHinting"))?,
+    );
     Ok(Value::Undefined)
 }
 

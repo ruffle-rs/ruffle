@@ -2,6 +2,9 @@ use crate::avm2::Error;
 use crate::avm2::activation::Activation;
 use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{ClassObject, Object, TObject};
+use crate::fte::{
+    CffHintingValue, FontLookupValue, FontPostureValue, FontWeightValue, RenderingModeValue,
+};
 use crate::string::AvmString;
 use core::fmt;
 use gc_arena::barrier::unlock;
@@ -10,41 +13,6 @@ use gc_arena::{Collect, Gc, GcWeak, Mutation};
 use ruffle_common::utils::HasPrefixField;
 use ruffle_macros::istr;
 use std::cell::Cell;
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Collect)]
-#[collect(require_static)]
-pub enum FontWeightValue {
-    Normal,
-    Bold,
-}
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Collect)]
-#[collect(require_static)]
-pub enum FontPostureValue {
-    Normal,
-    Italic,
-}
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Collect)]
-#[collect(require_static)]
-pub enum FontLookupValue {
-    Device,
-    EmbeddedCFF,
-}
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Collect)]
-#[collect(require_static)]
-pub enum RenderingModeValue {
-    Normal,
-    Cff,
-}
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Collect)]
-#[collect(require_static)]
-pub enum CffHintingValue {
-    None,
-    HorizontalStem,
-}
 
 pub fn font_description_allocator<'gc>(
     class: ClassObject<'gc>,
