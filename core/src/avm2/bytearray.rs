@@ -2,13 +2,12 @@ use crate::avm2::Activation;
 use crate::avm2::Error;
 use crate::avm2::error::{Error2006Type, make_error_2006, make_error_2030};
 use crate::context::UpdateContext;
-use crate::string::{FromWStr, WStr};
 use flate2::Compression;
 use flate2::read::*;
 use gc_arena::Collect;
+use ruffle_macros::Avm2Enum;
 use std::cell::Cell;
 use std::cmp;
-use std::fmt::{self, Display, Formatter};
 use std::io::prelude::*;
 use std::io::{self, SeekFrom};
 
@@ -19,10 +18,13 @@ pub enum Endian {
     Little,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Avm2Enum)]
 pub enum CompressionAlgorithm {
+    #[avm2_variant("zlib")]
     Zlib,
+    #[avm2_variant("deflate")]
     Deflate,
+    #[avm2_variant("lzma")]
     Lzma,
 }
 
@@ -40,33 +42,6 @@ impl ByteArrayError {
             ByteArrayError::IndexOutOfBounds => {
                 make_error_2006(activation, Error2006Type::RangeError)
             }
-        }
-    }
-}
-
-impl Display for CompressionAlgorithm {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        let s = match *self {
-            CompressionAlgorithm::Zlib => "zlib",
-            CompressionAlgorithm::Deflate => "deflate",
-            CompressionAlgorithm::Lzma => "lzma",
-        };
-        f.write_str(s)
-    }
-}
-
-impl FromWStr for CompressionAlgorithm {
-    type Err = ();
-
-    fn from_wstr(s: &WStr) -> Result<Self, Self::Err> {
-        if s == b"zlib" {
-            Ok(CompressionAlgorithm::Zlib)
-        } else if s == b"deflate" {
-            Ok(CompressionAlgorithm::Deflate)
-        } else if s == b"lzma" {
-            Ok(CompressionAlgorithm::Lzma)
-        } else {
-            Err(())
         }
     }
 }
