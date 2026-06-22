@@ -1,0 +1,12 @@
+Loaded new SWF!
+    url: 
+    loader url: 
+Loaded new SWF!
+    url: /[[DYNAMIC]]/<id>
+    loader url: 
+Loaded new SWF!
+    url: /[[DYNAMIC]]/<id>
+    loader url: 
+Loaded new SWF!
+    url: /[[DYNAMIC]]/<id>
+    loader url: 
