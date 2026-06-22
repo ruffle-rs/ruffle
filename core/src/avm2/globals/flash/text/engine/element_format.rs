@@ -1,8 +1,8 @@
-use crate::avm2::Error;
 use crate::avm2::activation::Activation;
 use crate::avm2::error::{Error2004Type, make_error_2004, make_error_2007, make_error_2008};
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
+use crate::avm2::{Avm2StrRepresentable, Error};
 use crate::fte::{
     BreakOpportunityValue, DigitCaseValue, DigitWidthValue, KerningValue, LigatureLevelValue,
     TextBaselineValue, TextRotationValue, TypographicCaseValue,
@@ -20,7 +20,7 @@ pub fn get_alignment_baseline<'gc>(
         .unwrap()
         .as_element_format_object()
         .unwrap();
-    Ok(this.alignment_baseline().as_string(activation).into())
+    Ok(this.alignment_baseline().as_avm2_str(activation).into())
 }
 
 pub fn set_alignment_baseline<'gc>(
@@ -34,7 +34,7 @@ pub fn set_alignment_baseline<'gc>(
         .as_element_format_object()
         .unwrap();
     let s = args.get_string_non_null(activation, 0, "alignmentBaseline")?;
-    let Some(value) = TextBaselineValue::parse_string(&s) else {
+    let Some(value) = TextBaselineValue::from_avm2_str(&s) else {
         return Err(make_error_2008(activation, "alignmentBaseline"));
     };
     this.set_alignment_baseline(value);
@@ -105,7 +105,7 @@ pub fn get_break_opportunity<'gc>(
         .unwrap()
         .as_element_format_object()
         .unwrap();
-    Ok(this.break_opportunity().as_string(activation).into())
+    Ok(this.break_opportunity().as_avm2_str(activation).into())
 }
 
 pub fn set_break_opportunity<'gc>(
@@ -119,7 +119,7 @@ pub fn set_break_opportunity<'gc>(
         .as_element_format_object()
         .unwrap();
     let s = args.get_string_non_null(activation, 0, "breakOpportunity")?;
-    let Some(value) = BreakOpportunityValue::parse_string(&s) else {
+    let Some(value) = BreakOpportunityValue::from_avm2_str(&s) else {
         return Err(make_error_2008(activation, "breakOpportunity"));
     };
     this.set_break_opportunity(value);
@@ -163,7 +163,7 @@ pub fn get_digit_case<'gc>(
         .unwrap()
         .as_element_format_object()
         .unwrap();
-    Ok(this.digit_case().as_string(activation).into())
+    Ok(this.digit_case().as_avm2_str(activation).into())
 }
 
 pub fn set_digit_case<'gc>(
@@ -177,7 +177,7 @@ pub fn set_digit_case<'gc>(
         .as_element_format_object()
         .unwrap();
     let s = args.get_string_non_null(activation, 0, "digitCase")?;
-    let Some(value) = DigitCaseValue::parse_string(&s) else {
+    let Some(value) = DigitCaseValue::from_avm2_str(&s) else {
         return Err(make_error_2008(activation, "digitCase"));
     };
     this.set_digit_case(value);
@@ -194,7 +194,7 @@ pub fn get_digit_width<'gc>(
         .unwrap()
         .as_element_format_object()
         .unwrap();
-    Ok(this.digit_width().as_string(activation).into())
+    Ok(this.digit_width().as_avm2_str(activation).into())
 }
 
 pub fn set_digit_width<'gc>(
@@ -208,7 +208,7 @@ pub fn set_digit_width<'gc>(
         .as_element_format_object()
         .unwrap();
     let s = args.get_string_non_null(activation, 0, "digitWidth")?;
-    let Some(value) = DigitWidthValue::parse_string(&s) else {
+    let Some(value) = DigitWidthValue::from_avm2_str(&s) else {
         return Err(make_error_2008(activation, "digitWidth"));
     };
     this.set_digit_width(value);
@@ -225,7 +225,7 @@ pub fn get_dominant_baseline<'gc>(
         .unwrap()
         .as_element_format_object()
         .unwrap();
-    Ok(this.dominant_baseline().as_string(activation).into())
+    Ok(this.dominant_baseline().as_avm2_str(activation).into())
 }
 
 pub fn set_dominant_baseline<'gc>(
@@ -239,7 +239,7 @@ pub fn set_dominant_baseline<'gc>(
         .as_element_format_object()
         .unwrap();
     let s = args.get_string_non_null(activation, 0, "dominantBaseline")?;
-    let Some(value) = TextBaselineValue::parse_string(&s) else {
+    let Some(value) = TextBaselineValue::from_avm2_str(&s) else {
         return Err(make_error_2008(activation, "dominantBaseline"));
     };
     if value == TextBaselineValue::UseDominantBaseline {
@@ -327,7 +327,7 @@ pub fn get_kerning<'gc>(
         .unwrap()
         .as_element_format_object()
         .unwrap();
-    Ok(this.kerning().as_string(activation).into())
+    Ok(this.kerning().as_avm2_str(activation).into())
 }
 
 pub fn set_kerning<'gc>(
@@ -341,7 +341,7 @@ pub fn set_kerning<'gc>(
         .as_element_format_object()
         .unwrap();
     let s = args.get_string_non_null(activation, 0, "kerning")?;
-    let Some(value) = KerningValue::parse_string(&s) else {
+    let Some(value) = KerningValue::from_avm2_str(&s) else {
         return Err(make_error_2008(activation, "kerning"));
     };
     this.set_kerning(value);
@@ -358,7 +358,7 @@ pub fn get_ligature_level<'gc>(
         .unwrap()
         .as_element_format_object()
         .unwrap();
-    Ok(this.ligature_level().as_string(activation).into())
+    Ok(this.ligature_level().as_avm2_str(activation).into())
 }
 
 pub fn set_ligature_level<'gc>(
@@ -372,7 +372,7 @@ pub fn set_ligature_level<'gc>(
         .as_element_format_object()
         .unwrap();
     let s = args.get_string_non_null(activation, 0, "ligatureLevel")?;
-    let Some(value) = LigatureLevelValue::parse_string(&s) else {
+    let Some(value) = LigatureLevelValue::from_avm2_str(&s) else {
         return Err(make_error_2008(activation, "ligatureLevel"));
     };
     this.set_ligature_level(value);
@@ -417,7 +417,7 @@ pub fn get_text_rotation<'gc>(
         .unwrap()
         .as_element_format_object()
         .unwrap();
-    Ok(this.text_rotation().as_string(activation).into())
+    Ok(this.text_rotation().as_avm2_str(activation).into())
 }
 
 pub fn set_text_rotation<'gc>(
@@ -431,7 +431,7 @@ pub fn set_text_rotation<'gc>(
         .as_element_format_object()
         .unwrap();
     let s = args.get_string_non_null(activation, 0, "textRotation")?;
-    let Some(value) = TextRotationValue::parse_string(&s) else {
+    let Some(value) = TextRotationValue::from_avm2_str(&s) else {
         return Err(make_error_2008(activation, "textRotation"));
     };
     this.set_text_rotation(value);
@@ -502,7 +502,7 @@ pub fn get_typographic_case<'gc>(
         .unwrap()
         .as_element_format_object()
         .unwrap();
-    Ok(this.typographic_case().as_string(activation).into())
+    Ok(this.typographic_case().as_avm2_str(activation).into())
 }
 
 pub fn set_typographic_case<'gc>(
@@ -516,7 +516,7 @@ pub fn set_typographic_case<'gc>(
         .as_element_format_object()
         .unwrap();
     let s = args.get_string_non_null(activation, 0, "typographicCase")?;
-    let Some(value) = TypographicCaseValue::parse_avm2_string(&s) else {
+    let Some(value) = TypographicCaseValue::from_avm2_str(&s) else {
         return Err(make_error_2008(activation, "typographicCase"));
     };
     this.set_typographic_case(value);

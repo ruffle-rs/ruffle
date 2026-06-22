@@ -1,431 +1,166 @@
 //! Various structs related to FTE used across the whole codebase.
 
-use crate::avm2::activation::Activation;
-use crate::string::AvmString;
 use gc_arena::Collect;
-use ruffle_macros::istr;
+use ruffle_macros::Avm2Enum;
 use ruffle_wstr::WStr;
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Collect)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Collect, Avm2Enum)]
 #[collect(require_static)]
 pub enum FontWeightValue {
+    #[avm2_variant("normal")]
     Normal,
+    #[avm2_variant("bold")]
     Bold,
 }
 
-impl FontWeightValue {
-    pub fn parse_string(s: &WStr) -> Option<Self> {
-        Some(if s == b"normal" {
-            Self::Normal
-        } else if s == b"bold" {
-            Self::Bold
-        } else {
-            return None;
-        })
-    }
-
-    pub fn as_string<'gc>(self, activation: &mut Activation<'_, 'gc>) -> AvmString<'gc> {
-        match self {
-            Self::Normal => istr!("normal"),
-            Self::Bold => istr!("bold"),
-        }
-    }
-}
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Collect)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Collect, Avm2Enum)]
 #[collect(require_static)]
 pub enum FontPostureValue {
+    #[avm2_variant("normal")]
     Normal,
+    #[avm2_variant("italic")]
     Italic,
 }
 
-impl FontPostureValue {
-    pub fn parse_string(s: &WStr) -> Option<Self> {
-        Some(if s == b"normal" {
-            Self::Normal
-        } else if s == b"italic" {
-            Self::Italic
-        } else {
-            return None;
-        })
-    }
-
-    pub fn as_string<'gc>(self, activation: &mut Activation<'_, 'gc>) -> AvmString<'gc> {
-        match self {
-            Self::Normal => istr!("normal"),
-            Self::Italic => istr!("italic"),
-        }
-    }
-}
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Collect)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Collect, Avm2Enum)]
 #[collect(require_static)]
 pub enum FontLookupValue {
+    #[avm2_variant("device")]
     Device,
+    #[avm2_variant("embeddedCFF")]
     EmbeddedCFF,
 }
 
-impl FontLookupValue {
-    pub fn parse_string(s: &WStr) -> Option<Self> {
-        Some(if s == b"device" {
-            Self::Device
-        } else if s == b"embeddedCFF" {
-            Self::EmbeddedCFF
-        } else {
-            return None;
-        })
-    }
-
-    pub fn as_string<'gc>(self, activation: &mut Activation<'_, 'gc>) -> AvmString<'gc> {
-        match self {
-            Self::Device => istr!("device"),
-            Self::EmbeddedCFF => istr!("embeddedCFF"),
-        }
-    }
-}
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Collect)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Collect, Avm2Enum)]
 #[collect(require_static)]
 pub enum RenderingModeValue {
+    #[avm2_variant("normal")]
     Normal,
+    #[avm2_variant("cff")]
     Cff,
 }
 
-impl RenderingModeValue {
-    pub fn parse_string(s: &WStr) -> Option<Self> {
-        Some(if s == b"normal" {
-            Self::Normal
-        } else if s == b"cff" {
-            Self::Cff
-        } else {
-            return None;
-        })
-    }
-
-    pub fn as_string<'gc>(self, activation: &mut Activation<'_, 'gc>) -> AvmString<'gc> {
-        match self {
-            Self::Normal => istr!("normal"),
-            Self::Cff => istr!("cff"),
-        }
-    }
-}
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Collect)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Collect, Avm2Enum)]
 #[collect(require_static)]
 pub enum CffHintingValue {
+    #[avm2_variant("none")]
     None,
+    #[avm2_variant("horizontalStem")]
     HorizontalStem,
 }
 
-impl CffHintingValue {
-    pub fn parse_string(s: &WStr) -> Option<Self> {
-        Some(if s == b"none" {
-            Self::None
-        } else if s == b"horizontalStem" {
-            Self::HorizontalStem
-        } else {
-            return None;
-        })
-    }
-
-    pub fn as_string<'gc>(self, activation: &mut Activation<'_, 'gc>) -> AvmString<'gc> {
-        match self {
-            Self::None => istr!("none"),
-            Self::HorizontalStem => istr!("horizontalStem"),
-        }
-    }
-}
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Collect)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Collect, Avm2Enum)]
 #[collect(require_static)]
 pub enum TextBaselineValue {
+    #[avm2_variant("ascent")]
     Ascent,
+    #[avm2_variant("descent")]
     Descent,
+    #[avm2_variant("ideographicBottom")]
     IdeographicBottom,
+    #[avm2_variant("ideographicCenter")]
     IdeographicCenter,
+    #[avm2_variant("ideographicTop")]
     IdeographicTop,
+    #[avm2_variant("roman")]
     Roman,
+    #[avm2_variant("useDominantBaseline")]
     UseDominantBaseline,
 }
 
-impl TextBaselineValue {
-    pub fn parse_string(s: &WStr) -> Option<Self> {
-        Some(if s == b"ascent" {
-            Self::Ascent
-        } else if s == b"descent" {
-            Self::Descent
-        } else if s == b"ideographicBottom" {
-            Self::IdeographicBottom
-        } else if s == b"ideographicCenter" {
-            Self::IdeographicCenter
-        } else if s == b"ideographicTop" {
-            Self::IdeographicTop
-        } else if s == b"roman" {
-            Self::Roman
-        } else if s == b"useDominantBaseline" {
-            Self::UseDominantBaseline
-        } else {
-            return None;
-        })
-    }
-
-    pub fn as_string<'gc>(self, activation: &mut Activation<'_, 'gc>) -> AvmString<'gc> {
-        match self {
-            TextBaselineValue::Ascent => istr!("ascent"),
-            TextBaselineValue::Descent => istr!("descent"),
-            TextBaselineValue::IdeographicBottom => istr!("ideographicBottom"),
-            TextBaselineValue::IdeographicCenter => istr!("ideographicCenter"),
-            TextBaselineValue::IdeographicTop => istr!("ideographicTop"),
-            TextBaselineValue::Roman => istr!("roman"),
-            TextBaselineValue::UseDominantBaseline => istr!("useDominantBaseline"),
-        }
-    }
-}
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Collect)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Collect, Avm2Enum)]
 #[collect(require_static)]
 pub enum BreakOpportunityValue {
+    #[avm2_variant("all")]
     All,
+    #[avm2_variant("any")]
     Any,
+    #[avm2_variant("auto")]
     Auto,
+    #[avm2_variant("none")]
     None,
 }
 
-impl BreakOpportunityValue {
-    pub fn parse_string(s: &WStr) -> Option<Self> {
-        Some(if s == b"all" {
-            Self::All
-        } else if s == b"any" {
-            Self::Any
-        } else if s == b"auto" {
-            Self::Auto
-        } else if s == b"none" {
-            Self::None
-        } else {
-            return None;
-        })
-    }
-
-    pub fn as_string<'gc>(self, activation: &mut Activation<'_, 'gc>) -> AvmString<'gc> {
-        match self {
-            Self::All => istr!("all"),
-            Self::Any => istr!("any"),
-            Self::Auto => istr!("auto"),
-            Self::None => istr!("none"),
-        }
-    }
-}
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Collect)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Collect, Avm2Enum)]
 #[collect(require_static)]
 pub enum DigitCaseValue {
+    #[avm2_variant("default")]
     Default,
+    #[avm2_variant("lining")]
     Lining,
+    #[avm2_variant("oldStyle")]
     OldStyle,
 }
 
-impl DigitCaseValue {
-    pub fn parse_string(s: &WStr) -> Option<Self> {
-        Some(if s == b"default" {
-            Self::Default
-        } else if s == b"lining" {
-            Self::Lining
-        } else if s == b"oldStyle" {
-            Self::OldStyle
-        } else {
-            return None;
-        })
-    }
-
-    pub fn as_string<'gc>(self, activation: &mut Activation<'_, 'gc>) -> AvmString<'gc> {
-        match self {
-            Self::Default => istr!("default"),
-            Self::Lining => istr!("lining"),
-            Self::OldStyle => istr!("oldStyle"),
-        }
-    }
-}
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Collect)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Collect, Avm2Enum)]
 #[collect(require_static)]
 pub enum DigitWidthValue {
+    #[avm2_variant("default")]
     Default,
+    #[avm2_variant("proportional")]
     Proportional,
+    #[avm2_variant("tabular")]
     Tabular,
 }
 
-impl DigitWidthValue {
-    pub fn parse_string(s: &WStr) -> Option<Self> {
-        Some(if s == b"default" {
-            Self::Default
-        } else if s == b"proportional" {
-            Self::Proportional
-        } else if s == b"tabular" {
-            Self::Tabular
-        } else {
-            return None;
-        })
-    }
-
-    pub fn as_string<'gc>(self, activation: &mut Activation<'_, 'gc>) -> AvmString<'gc> {
-        match self {
-            Self::Default => istr!("default"),
-            Self::Proportional => istr!("proportional"),
-            Self::Tabular => istr!("tabular"),
-        }
-    }
-}
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Collect)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Collect, Avm2Enum)]
 #[collect(require_static)]
 pub enum KerningValue {
+    #[avm2_variant("auto")]
     Auto,
+    #[avm2_variant("off")]
     Off,
+    #[avm2_variant("on")]
     On,
 }
 
-impl KerningValue {
-    pub fn parse_string(s: &WStr) -> Option<Self> {
-        Some(if s == b"auto" {
-            Self::Auto
-        } else if s == b"off" {
-            Self::Off
-        } else if s == b"on" {
-            Self::On
-        } else {
-            return None;
-        })
-    }
-
-    pub fn as_string<'gc>(self, activation: &mut Activation<'_, 'gc>) -> AvmString<'gc> {
-        match self {
-            Self::Auto => istr!("auto"),
-            Self::Off => istr!("off"),
-            Self::On => istr!("on"),
-        }
-    }
-}
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Collect)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Collect, Avm2Enum)]
 #[collect(require_static)]
 pub enum LigatureLevelValue {
+    #[avm2_variant("common")]
     Common,
+    #[avm2_variant("exotic")]
     Exotic,
+    #[avm2_variant("minimum")]
     Minimum,
+    #[avm2_variant("none")]
     None,
+    #[avm2_variant("uncommon")]
     Uncommon,
 }
 
-impl LigatureLevelValue {
-    pub fn parse_string(s: &WStr) -> Option<Self> {
-        Some(if s == b"common" {
-            Self::Common
-        } else if s == b"exotic" {
-            Self::Exotic
-        } else if s == b"minimum" {
-            Self::Minimum
-        } else if s == b"none" {
-            Self::None
-        } else if s == b"uncommon" {
-            Self::Uncommon
-        } else {
-            return None;
-        })
-    }
-
-    pub fn as_string<'gc>(self, activation: &mut Activation<'_, 'gc>) -> AvmString<'gc> {
-        match self {
-            Self::Common => istr!("common"),
-            Self::Exotic => istr!("exotic"),
-            Self::Minimum => istr!("minimum"),
-            Self::None => istr!("none"),
-            Self::Uncommon => istr!("uncommon"),
-        }
-    }
-}
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Collect)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Collect, Avm2Enum)]
 #[collect(require_static)]
 pub enum TextRotationValue {
+    #[avm2_variant("auto")]
     Auto,
+    #[avm2_variant("rotate0")]
     Rotate0,
+    #[avm2_variant("rotate180")]
     Rotate180,
+    #[avm2_variant("rotate270")]
     Rotate270,
+    #[avm2_variant("rotate90")]
     Rotate90,
 }
 
-impl TextRotationValue {
-    pub fn parse_string(s: &WStr) -> Option<Self> {
-        Some(if s == b"auto" {
-            Self::Auto
-        } else if s == b"rotate0" {
-            Self::Rotate0
-        } else if s == b"rotate180" {
-            Self::Rotate180
-        } else if s == b"rotate270" {
-            Self::Rotate270
-        } else if s == b"rotate90" {
-            Self::Rotate90
-        } else {
-            return None;
-        })
-    }
-
-    pub fn as_string<'gc>(self, activation: &mut Activation<'_, 'gc>) -> AvmString<'gc> {
-        match self {
-            Self::Auto => istr!("auto"),
-            Self::Rotate0 => istr!("rotate0"),
-            Self::Rotate180 => istr!("rotate180"),
-            Self::Rotate270 => istr!("rotate270"),
-            Self::Rotate90 => istr!("rotate90"),
-        }
-    }
-}
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Collect)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Collect, Avm2Enum)]
 #[collect(require_static)]
 pub enum TypographicCaseValue {
+    #[avm2_variant("caps")]
     Caps,
+    #[avm2_variant("capsAndSmallCaps")]
     CapsAndSmallCaps,
+    #[avm2_variant("default")]
     Default,
+    #[avm2_variant("lowercase")]
     Lowercase,
+    #[avm2_variant("smallCaps")]
     SmallCaps,
+    #[avm2_variant("title")]
     Title,
+    #[avm2_variant("uppercase")]
     Uppercase,
-}
-
-impl TypographicCaseValue {
-    pub fn parse_avm2_string(s: &WStr) -> Option<Self> {
-        Some(if s == b"caps" {
-            Self::Caps
-        } else if s == b"capsAndSmallCaps" {
-            Self::CapsAndSmallCaps
-        } else if s == b"default" {
-            Self::Default
-        } else if s == b"lowercase" {
-            Self::Lowercase
-        } else if s == b"smallCaps" {
-            Self::SmallCaps
-        } else if s == b"title" {
-            Self::Title
-        } else if s == b"uppercase" {
-            Self::Uppercase
-        } else {
-            return None;
-        })
-    }
-
-    pub fn as_string<'gc>(self, activation: &mut Activation<'_, 'gc>) -> AvmString<'gc> {
-        match self {
-            Self::Caps => istr!("caps"),
-            Self::CapsAndSmallCaps => istr!("capsAndSmallCaps"),
-            Self::Default => istr!("default"),
-            Self::Lowercase => istr!("lowercase"),
-            Self::SmallCaps => istr!("smallCaps"),
-            Self::Title => istr!("title"),
-            Self::Uppercase => istr!("uppercase"),
-        }
-    }
 }
 
 #[derive(Clone, Copy, Collect, PartialEq)]
