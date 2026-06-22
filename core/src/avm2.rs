@@ -27,6 +27,7 @@ use crate::tag_utils::SwfMovie;
 use fnv::FnvHashMap;
 use gc_arena::lock::GcRefLock;
 use gc_arena::{Collect, Gc, Mutation};
+use ruffle_wstr::WStr;
 use std::sync::Arc;
 use swf::DoAbc2Flag;
 use swf::avm2::read::Reader;
@@ -686,4 +687,13 @@ impl<'gc> Avm2<'gc> {
 
         // TODO: push the error onto `loaderInfo.uncaughtErrorEvents`
     }
+}
+
+pub trait Avm2StrRepresentable: Sized {
+    fn from_avm2_str(s: &WStr) -> Option<Self>;
+
+    fn as_avm2_str<'gc>(
+        &self,
+        context: &impl crate::string::HasStringContext<'gc>,
+    ) -> AvmString<'gc>;
 }
