@@ -1812,7 +1812,7 @@ impl<'gc> MovieLoader<'gc> {
                 // since Bitmap and BitmapData never have AVM1-side objects.
                 let bitmap = ruffle_render::utils::decode_define_bits_jpeg(data, None)?;
 
-                let transparency = true;
+                let transparency = bitmap.format().supports_transparency();
                 let bitmapdata = BitmapData::new_with_pixels(
                     activation.gc(),
                     bitmap.width(),
