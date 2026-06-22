@@ -427,3 +427,29 @@ impl TypographicCaseValue {
         }
     }
 }
+
+#[derive(Clone, Copy, Collect, PartialEq)]
+#[collect(require_static)]
+pub enum TextLineValidity {
+    Valid,
+    Invalid,
+    Static,
+    PossiblyInvalid,
+    UserInvalid,
+}
+
+impl TextLineValidity {
+    pub fn parse(string: &WStr) -> Self {
+        if string == b"valid" {
+            Self::Valid
+        } else if string == b"invalid" {
+            Self::Invalid
+        } else if string == b"static" {
+            Self::Static
+        } else if string == b"possiblyInvalid" {
+            Self::PossiblyInvalid
+        } else {
+            Self::UserInvalid
+        }
+    }
+}
