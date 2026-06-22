@@ -8,6 +8,136 @@ use ruffle_wstr::WStr;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Collect)]
 #[collect(require_static)]
+pub enum FontWeightValue {
+    Normal,
+    Bold,
+}
+
+impl FontWeightValue {
+    pub fn parse_string(s: &WStr) -> Option<Self> {
+        Some(if s == b"normal" {
+            Self::Normal
+        } else if s == b"bold" {
+            Self::Bold
+        } else {
+            return None;
+        })
+    }
+
+    pub fn as_string<'gc>(self, activation: &mut Activation<'_, 'gc>) -> AvmString<'gc> {
+        match self {
+            Self::Normal => istr!("normal"),
+            Self::Bold => istr!("bold"),
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Collect)]
+#[collect(require_static)]
+pub enum FontPostureValue {
+    Normal,
+    Italic,
+}
+
+impl FontPostureValue {
+    pub fn parse_string(s: &WStr) -> Option<Self> {
+        Some(if s == b"normal" {
+            Self::Normal
+        } else if s == b"italic" {
+            Self::Italic
+        } else {
+            return None;
+        })
+    }
+
+    pub fn as_string<'gc>(self, activation: &mut Activation<'_, 'gc>) -> AvmString<'gc> {
+        match self {
+            Self::Normal => istr!("normal"),
+            Self::Italic => istr!("italic"),
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Collect)]
+#[collect(require_static)]
+pub enum FontLookupValue {
+    Device,
+    EmbeddedCFF,
+}
+
+impl FontLookupValue {
+    pub fn parse_string(s: &WStr) -> Option<Self> {
+        Some(if s == b"device" {
+            Self::Device
+        } else if s == b"embeddedCFF" {
+            Self::EmbeddedCFF
+        } else {
+            return None;
+        })
+    }
+
+    pub fn as_string<'gc>(self, activation: &mut Activation<'_, 'gc>) -> AvmString<'gc> {
+        match self {
+            Self::Device => istr!("device"),
+            Self::EmbeddedCFF => istr!("embeddedCFF"),
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Collect)]
+#[collect(require_static)]
+pub enum RenderingModeValue {
+    Normal,
+    Cff,
+}
+
+impl RenderingModeValue {
+    pub fn parse_string(s: &WStr) -> Option<Self> {
+        Some(if s == b"normal" {
+            Self::Normal
+        } else if s == b"cff" {
+            Self::Cff
+        } else {
+            return None;
+        })
+    }
+
+    pub fn as_string<'gc>(self, activation: &mut Activation<'_, 'gc>) -> AvmString<'gc> {
+        match self {
+            Self::Normal => istr!("normal"),
+            Self::Cff => istr!("cff"),
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Collect)]
+#[collect(require_static)]
+pub enum CffHintingValue {
+    None,
+    HorizontalStem,
+}
+
+impl CffHintingValue {
+    pub fn parse_string(s: &WStr) -> Option<Self> {
+        Some(if s == b"none" {
+            Self::None
+        } else if s == b"horizontalStem" {
+            Self::HorizontalStem
+        } else {
+            return None;
+        })
+    }
+
+    pub fn as_string<'gc>(self, activation: &mut Activation<'_, 'gc>) -> AvmString<'gc> {
+        match self {
+            Self::None => istr!("none"),
+            Self::HorizontalStem => istr!("horizontalStem"),
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Collect)]
+#[collect(require_static)]
 pub enum TextBaselineValue {
     Ascent,
     Descent,

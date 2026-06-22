@@ -102,8 +102,7 @@ pub use crate::avm2::object::file_reference_object::{
     file_reference_allocator,
 };
 pub use crate::avm2::object::font_description_object::{
-    CffHintingValue, FontDescriptionObject, FontDescriptionObjectWeak, FontLookupValue,
-    FontPostureValue, FontWeightValue, RenderingModeValue, font_description_allocator,
+    FontDescriptionObject, FontDescriptionObjectWeak, font_description_allocator,
 };
 pub use crate::avm2::object::font_object::{FontObject, FontObjectWeak, font_allocator};
 pub use crate::avm2::object::function_object::{FunctionObject, FunctionObjectWeak};
