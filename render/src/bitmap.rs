@@ -310,6 +310,15 @@ impl BitmapFormat {
             }
         }
     }
+
+    pub fn supports_transparency(self) -> bool {
+        match self {
+            BitmapFormat::Rgb => false,
+            BitmapFormat::Rgba => true,
+            BitmapFormat::Yuv420p => false,
+            BitmapFormat::Yuva420p => true,
+        }
+    }
 }
 
 #[inline]
