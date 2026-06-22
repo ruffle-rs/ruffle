@@ -161,6 +161,12 @@ jobs:
         env:
           RUSTDOCFLAGS: -D warnings
 
+      - name: Check fuzz/ formatting and clippy
+        run: |
+          cd fuzz/
+          cargo fmt --all -- --check
+          cargo clippy --all ${{ (matrix.rust_version != 'nightly' && '-- -D warnings') || '' }}
+
   coverage:
     needs: changes
     if: needs.changes.outputs.should_run == 'true'
