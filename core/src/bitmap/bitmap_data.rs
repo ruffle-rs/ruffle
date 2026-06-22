@@ -970,27 +970,26 @@ fn copy_pixels_to_bitmapdata(
     area: PixelRegion,
 ) {
     let buffer_width_pixels = buffer_width / 4;
+    let row_width = area.width() as usize;
+    let transparency = write.transparency();
 
     for y in area.y_min..area.y_max {
-        for x in area.x_min..area.x_max {
-            // note: this order of conversions helps llvm realize the index is 4-byte-aligned
-            let ind = (((x - area.x_min) + (y - area.y_min) * buffer_width_pixels) as usize) * 4;
+        let src_row_start = (((y - area.y_min) * buffer_width_pixels) as usize) * 4;
+        let src_row = &buffer[src_row_start..src_row_start + row_width * 4];
+        let dst_start = (area.x_min + y * write.width()) as usize;
+        let dst_row = &mut write.pixels[dst_start..dst_start + row_width];
 
-            // TODO(mid): optimize this A LOT
-            let r = buffer[ind];
-            let g = buffer[ind + 1usize];
-            let b = buffer[ind + 2usize];
-            let a = if write.transparency() {
-                buffer[ind + 3usize]
-            } else {
-                255
+        if transparency {
+            // SAFETY: Color is #[repr(C)] with Rgba8 layout; transparent bitmaps store
+            // premultiplied RGBA bytes matching the GPU readback buffer format.
+            let dst_bytes = unsafe {
+                std::slice::from_raw_parts_mut(dst_row.as_mut_ptr().cast::<u8>(), row_width * 4)
             };
-
-            let nc = Color::rgba(r, g, b, a);
-
-            // Ignore the original color entirely - the blending (including alpha)
-            // was done by the renderer when it wrote over the previous texture contents.
-            write.set_pixel32_raw(x, y, nc);
+            dst_bytes.copy_from_slice(src_row);
+        } else {
+            for (dst, src) in dst_row.iter_mut().zip(src_row.chunks_exact(4)) {
+                *dst = Color::rgba(src[0], src[1], src[2], 0xFF);
+            }
         }
     }
 }
