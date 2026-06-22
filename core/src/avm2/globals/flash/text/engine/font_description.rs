@@ -1,3 +1,4 @@
+use crate::avm2::Avm2StrRepresentable;
 use crate::avm2::Error;
 use crate::avm2::activation::Activation;
 use crate::avm2::error::make_error_2008;
@@ -47,7 +48,7 @@ pub fn get_font_weight<'gc>(
         .unwrap()
         .as_font_description_object()
         .unwrap();
-    Ok(this.font_weight().as_string(activation).into())
+    Ok(this.font_weight().as_avm2_str(activation).into())
 }
 
 pub fn set_font_weight<'gc>(
@@ -62,7 +63,7 @@ pub fn set_font_weight<'gc>(
         .unwrap();
     let s = args.get_string_non_null(activation, 0, "fontWeight")?;
     this.set_font_weight(
-        FontWeightValue::parse_string(&s)
+        FontWeightValue::from_avm2_str(&s)
             .ok_or_else(|| make_error_2008(activation, "fontWeight"))?,
     );
     Ok(Value::Undefined)
@@ -78,7 +79,7 @@ pub fn get_font_posture<'gc>(
         .unwrap()
         .as_font_description_object()
         .unwrap();
-    Ok(this.font_posture().as_string(activation).into())
+    Ok(this.font_posture().as_avm2_str(activation).into())
 }
 
 pub fn set_font_posture<'gc>(
@@ -93,7 +94,7 @@ pub fn set_font_posture<'gc>(
         .unwrap();
     let s = args.get_string_non_null(activation, 0, "fontPosture")?;
     this.set_font_posture(
-        FontPostureValue::parse_string(&s)
+        FontPostureValue::from_avm2_str(&s)
             .ok_or_else(|| make_error_2008(activation, "fontPosture"))?,
     );
     Ok(Value::Undefined)
@@ -109,7 +110,7 @@ pub fn get_font_lookup<'gc>(
         .unwrap()
         .as_font_description_object()
         .unwrap();
-    Ok(this.font_lookup().as_string(activation).into())
+    Ok(this.font_lookup().as_avm2_str(activation).into())
 }
 
 pub fn set_font_lookup<'gc>(
@@ -124,7 +125,7 @@ pub fn set_font_lookup<'gc>(
         .unwrap();
     let s = args.get_string_non_null(activation, 0, "fontLookup")?;
     this.set_font_lookup(
-        FontLookupValue::parse_string(&s)
+        FontLookupValue::from_avm2_str(&s)
             .ok_or_else(|| make_error_2008(activation, "fontLookup"))?,
     );
     Ok(Value::Undefined)
@@ -140,7 +141,7 @@ pub fn get_rendering_mode<'gc>(
         .unwrap()
         .as_font_description_object()
         .unwrap();
-    Ok(this.rendering_mode().as_string(activation).into())
+    Ok(this.rendering_mode().as_avm2_str(activation).into())
 }
 
 pub fn set_rendering_mode<'gc>(
@@ -155,7 +156,7 @@ pub fn set_rendering_mode<'gc>(
         .unwrap();
     let s = args.get_string_non_null(activation, 0, "renderingMode")?;
     this.set_rendering_mode(
-        RenderingModeValue::parse_string(&s)
+        RenderingModeValue::from_avm2_str(&s)
             .ok_or_else(|| make_error_2008(activation, "renderingMode"))?,
     );
     Ok(Value::Undefined)
@@ -171,7 +172,7 @@ pub fn get_cff_hinting<'gc>(
         .unwrap()
         .as_font_description_object()
         .unwrap();
-    Ok(this.cff_hinting().as_string(activation).into())
+    Ok(this.cff_hinting().as_avm2_str(activation).into())
 }
 
 pub fn set_cff_hinting<'gc>(
@@ -186,7 +187,7 @@ pub fn set_cff_hinting<'gc>(
         .unwrap();
     let s = args.get_string_non_null(activation, 0, "cffHinting")?;
     this.set_cff_hinting(
-        CffHintingValue::parse_string(&s)
+        CffHintingValue::from_avm2_str(&s)
             .ok_or_else(|| make_error_2008(activation, "cffHinting"))?,
     );
     Ok(Value::Undefined)
