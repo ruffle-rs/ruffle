@@ -1,5 +1,6 @@
 package flash.text.engine {
     import flash.events.EventDispatcher;
+    import flash.utils.getQualifiedClassName;
 
     [API("662")]
     [Ruffle(InstanceAllocator)]
@@ -13,7 +14,10 @@ package flash.text.engine {
             eventMirror:EventDispatcher = null,
             textRotation:String = "rotate0"
         ) {
-            // FIXME: `new ContentElement()` throws an error in Flash; see TextJustifier
+            if (getQualifiedClassName(this) === "flash.text.engine::ContentElement") {
+                throw new ArgumentError("Error #2012: ContentElement class cannot be instantiated.", 2012);
+            }
+
             this.elementFormat = elementFormat;
         }
 
