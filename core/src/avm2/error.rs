@@ -1305,6 +1305,16 @@ pub fn make_error_2002<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> 
 
 #[inline(never)]
 #[cold]
+pub fn make_error_2029<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
+    make_error!(io_error(
+        activation,
+        "Error #2029: This URLStream object does not have an open stream.",
+        2029,
+    ))
+}
+
+#[inline(never)]
+#[cold]
 pub fn make_error_2003<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
     make_error!(security_error(
         activation,
