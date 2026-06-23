@@ -31,6 +31,7 @@ mod array_object;
 mod bitmapdata_object;
 mod bytearray_object;
 mod class_object;
+mod content_element_object;
 mod context3d_object;
 mod date_object;
 mod dictionary_object;
@@ -83,6 +84,9 @@ pub use crate::avm2::object::bytearray_object::{
     ByteArrayObject, ByteArrayObjectWeak, byte_array_allocator,
 };
 pub use crate::avm2::object::class_object::{ClassObject, ClassObjectWeak};
+pub use crate::avm2::object::content_element_object::{
+    ContentElementObject, ContentElementObjectWeak, content_element_allocator,
+};
 pub use crate::avm2::object::context3d_object::{Context3DObject, Context3DObjectWeak};
 pub use crate::avm2::object::date_object::{DateObject, DateObjectWeak, date_allocator};
 pub use crate::avm2::object::dictionary_object::{
@@ -219,6 +223,7 @@ use crate::font::Font;
         ShaderDataObject(ShaderDataObject<'gc>),
         SocketObject(SocketObject<'gc>),
         FileReferenceObject(FileReferenceObject<'gc>),
+        ContentElementObject(ContentElementObject<'gc>),
         ElementFormatObject(ElementFormatObject<'gc>),
         FontDescriptionObject(FontDescriptionObject<'gc>),
         FontObject(FontObject<'gc>),
@@ -756,6 +761,7 @@ impl<'gc> Object<'gc> {
         pub fn as_domain_object for DomainObject;
         pub fn as_event_object for EventObject;
         pub fn as_dispatch_object for DispatchObject;
+        pub fn as_content_element_object for ContentElementObject;
         pub fn as_element_format_object for ElementFormatObject;
         pub fn as_font_description_object for FontDescriptionObject;
         pub fn as_font_object for FontObject;
@@ -979,6 +985,7 @@ define_weak_enum! {
         ShaderDataObject(ShaderDataObjectWeak<'gc>),
         SocketObject(SocketObjectWeak<'gc>),
         FileReferenceObject(FileReferenceObjectWeak<'gc>),
+        ContentElementObject(ContentElementObjectWeak<'gc>),
         ElementFormatObject(ElementFormatObjectWeak<'gc>),
         FontDescriptionObject(FontDescriptionObjectWeak<'gc>),
         FontObject(FontObjectWeak<'gc>),
