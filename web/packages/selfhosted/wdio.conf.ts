@@ -20,32 +20,21 @@ let reportLogging = async () => {};
 if (chrome) {
     const args = ["--disable-gpu", "--enable-unsafe-swiftshader"];
     if (headless) {
-        args.push("--headless");
-        if (process.env["CHROME_BIN"]) {
-            args.push("--no-sandbox", "--disable-dev-shm-usage");
-        }
+        args.push("--headless=new", "--no-sandbox", "--disable-dev-shm-usage");
     }
-    const chromeOptions: { args: string[]; binary?: string } = { args };
-    if (process.env["CHROME_BIN"]) {
-        chromeOptions.binary = process.env["CHROME_BIN"];
-    }
-    const chromeCaps: WebdriverIO.Capabilities = {
+    capabilities.push({
         "wdio:maxInstances": maxInstances,
         browserName: "chrome",
-        "goog:chromeOptions": chromeOptions,
-    };
-    if (process.env["CHROMEWEBDRIVER"]) {
-        chromeCaps["wdio:chromedriverOptions"] = {
-            binary: process.env["CHROMEWEBDRIVER"],
-        };
-    }
-    capabilities.push(chromeCaps);
+        "goog:chromeOptions": {
+            args,
+        }
+    });
 }
 
 if (edge) {
     const args = ["--disable-gpu", "--enable-unsafe-swiftshader"];
     if (headless) {
-        args.push("--headless");
+        args.push("--headless", "--no-sandbox", "--disable-dev-shm-usage");
     }
     capabilities.push({
         "wdio:maxInstances": maxInstances,
