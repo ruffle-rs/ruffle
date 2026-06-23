@@ -1351,6 +1351,241 @@ pub fn load_data_into_url_loader<'gc>(
     })
 }
 
+/// Kick off an incremental data load into a `URLStream`.
+///
+/// Unlike [`load_data_into_url_loader`], this consumes the response chunk by
+/// chunk via [`SuccessResponse::next_chunk`] and feeds bytes into the
+/// stream's internal `ByteArray` as they arrive, dispatching a
+/// `ProgressEvent` after each chunk. This matches the Adobe spec for
+/// `URLStream`: "Data is made available to application code immediately as
+/// it is downloaded, instead of waiting until the entire file is complete."
+///
+/// The fetch loop polls the `_closed` slot after every chunk and after the
+/// initial response. When `close()` is called from AS3 it flips this flag
+/// and the loop exits silently without dispatching any further events.
+#[must_use]
+pub fn load_data_into_url_stream<'gc>(
+    uc: &UpdateContext<'gc>,
+    target: Avm2ScriptObject<'gc>,
+    request: Request,
+) -> OwnedFuture<(), Error> {
+    let player = uc.player_handle();
+    let target = Avm2ScriptObjectHandle::stash(uc, target);
+
+    Box::pin(async move {
+        // Use `FetchReason::UrlLoader` so the same compatibility rewrites
+        // (e.g. fpdownload.adobe.com -> cdn.ruffle.rs) apply to URLStream
+        // requests as well, since the two APIs are semantically equivalent
+        // network fetches.
+        let fetch = player
+            .lock()
+            .unwrap()
+            .fetch(request, FetchReason::UrlLoader);
+
+        // Await the initial response (headers/status). On success this
+        // yields a streamable body; on failure we go straight to the error
+        // path.
+        let initial = fetch.await;
+
+        let mut response = match initial {
+            Ok(response) => response,
+            Err(response) => {
+                tracing::error!(
+                    "Error during URLStream load of {:?}: {:?}",
+                    response.url,
+                    response.error
+                );
+
+                player.lock().unwrap().update(|uc| {
+                    let target = Avm2Object::from(target.fetch(uc));
+                    if is_url_stream_closed(uc, target) {
+                        return;
+                    }
+
+                    let mut activation = Avm2Activation::from_nothing(uc);
+
+                    let (status_code, redirected) =
+                        if let Error::HttpNotOk(_, status_code, redirected, _) = response.error {
+                            (status_code, redirected)
+                        } else {
+                            (0, false)
+                        };
+                    if status_code != 0 {
+                        let http_status_evt = Avm2EventObject::http_status_event(
+                            &mut activation,
+                            status_code,
+                            redirected,
+                        );
+                        Avm2::dispatch_event(activation.context, http_status_evt, target);
+                    }
+
+                    let io_error_evt = Avm2EventObject::io_error_event(
+                        &mut activation,
+                        "Error #2032: Stream Error",
+                        2032,
+                    );
+                    set_url_stream_disconnected(uc, target);
+                    Avm2::dispatch_event(uc, io_error_evt, target);
+                });
+
+                return Ok(());
+            }
+        };
+
+        let status = response.status();
+        let redirected = response.redirected();
+        let expected_length = response.expected_length().ok().flatten().unwrap_or(0);
+
+        // Fire the OPEN and httpStatus events as soon as the connection
+        // is established. Per Adobe docs OPEN is dispatched "when a load
+        // operation commences" and httpStatus when the status code is
+        // detected, both of which are now known.
+        let early_dispatch_ok = player.lock().unwrap().update(|uc| {
+            let target = Avm2Object::from(target.fetch(uc));
+            if is_url_stream_closed(uc, target) {
+                return false;
+            }
+
+            // `_connected` was already set true synchronously in `load()`.
+            // It stays true here through OPEN/progress and is cleared on
+            // COMPLETE, error, or close(), matching Adobe semantics.
+
+            let mut activation = Avm2Activation::from_nothing(uc);
+
+            let open_evt = Avm2EventObject::bare_default_event(activation.context, "open");
+            Avm2::dispatch_event(activation.context, open_evt, target);
+
+            if status != 0 {
+                let http_status_evt =
+                    Avm2EventObject::http_status_event(&mut activation, status, redirected);
+                Avm2::dispatch_event(activation.context, http_status_evt, target);
+            }
+
+            true
+        });
+
+        if !early_dispatch_ok {
+            return Ok(());
+        }
+
+        // Pump chunks. Each successful chunk is appended to the internal
+        // ByteArray and produces a `progress` event. We track the running
+        // count locally; `bytes_total` is the server-announced length when
+        // known, or 0 when the body length is indefinite (e.g. chunked
+        // transfer encoding). This mirrors Flash, where `bytesTotal` stays
+        // 0 for streams of unknown length.
+        let mut bytes_loaded: u64 = 0;
+        let bytes_total: u64 = expected_length;
+
+        loop {
+            let next = response.next_chunk().await;
+            match next {
+                Ok(Some(chunk)) => {
+                    bytes_loaded = bytes_loaded.saturating_add(chunk.len() as u64);
+
+                    let stop = player.lock().unwrap().update(|uc| {
+                        let target = Avm2Object::from(target.fetch(uc));
+                        if is_url_stream_closed(uc, target) {
+                            return true;
+                        }
+
+                        append_url_stream_chunk(uc, target, &chunk);
+
+                        let mut activation = Avm2Activation::from_nothing(uc);
+                        let progress_evt = Avm2EventObject::progress_event(
+                            &mut activation,
+                            "progress",
+                            bytes_loaded as usize,
+                            bytes_total as usize,
+                        );
+                        Avm2::dispatch_event(activation.context, progress_evt, target);
+
+                        false
+                    });
+
+                    if stop {
+                        return Ok(());
+                    }
+                }
+                Ok(None) => break,
+                Err(error) => {
+                    tracing::error!("Error during URLStream chunked read: {:?}", error);
+
+                    player.lock().unwrap().update(|uc| {
+                        let target = Avm2Object::from(target.fetch(uc));
+                        if is_url_stream_closed(uc, target) {
+                            return;
+                        }
+
+                        let mut activation = Avm2Activation::from_nothing(uc);
+                        let io_error_evt = Avm2EventObject::io_error_event(
+                            &mut activation,
+                            "Error #2032: Stream Error",
+                            2032,
+                        );
+                        set_url_stream_disconnected(uc, target);
+                        Avm2::dispatch_event(uc, io_error_evt, target);
+                    });
+
+                    return Ok(());
+                }
+            }
+        }
+
+        // Success path: dispatch COMPLETE after all chunks have been
+        // appended. We also drop `connected` here per Adobe semantics.
+        player.lock().unwrap().update(|uc| {
+            let target = Avm2Object::from(target.fetch(uc));
+            if is_url_stream_closed(uc, target) {
+                return;
+            }
+
+            set_url_stream_disconnected(uc, target);
+
+            let complete_evt = Avm2EventObject::bare_default_event(uc, "complete");
+            Avm2::dispatch_event(uc, complete_evt, target);
+        });
+
+        Ok(())
+    })
+}
+
+/// Returns `true` if `close()` has been invoked on the URLStream while the
+/// fetch was in flight.
+fn is_url_stream_closed<'gc>(_uc: &UpdateContext<'gc>, target: Avm2Object<'gc>) -> bool {
+    use crate::avm2::globals::slots::flash_net_url_stream as slots;
+    matches!(target.get_slot(slots::_CLOSED), Avm2Value::Bool(true))
+}
+
+fn set_url_stream_connected<'gc>(uc: &UpdateContext<'gc>, target: Avm2Object<'gc>, value: bool) {
+    use crate::avm2::globals::slots::flash_net_url_stream as slots;
+    target.set_slot_no_coerce(slots::_CONNECTED, Avm2Value::Bool(value), uc.gc());
+}
+
+fn set_url_stream_disconnected<'gc>(uc: &UpdateContext<'gc>, target: Avm2Object<'gc>) {
+    set_url_stream_connected(uc, target, false);
+}
+
+fn append_url_stream_chunk<'gc>(_uc: &UpdateContext<'gc>, target: Avm2Object<'gc>, chunk: &[u8]) {
+    use crate::avm2::globals::slots::flash_net_url_stream as slots;
+
+    let data_value = target.get_slot(slots::_DATA);
+    let bytearray = match data_value.as_object().and_then(|o| o.as_bytearray_object()) {
+        Some(ba) => ba,
+        None => return,
+    };
+
+    let mut storage = bytearray.storage_mut();
+    // We want appends to land at the end of the buffer, not at the
+    // current read position. Save the read position, jump to the end,
+    // write, restore.
+    let saved_position = storage.position();
+    let end = storage.len();
+    storage.set_position(end);
+    let _ = storage.write_bytes(chunk);
+    storage.set_position(saved_position);
+}
+
 /// Kick off an AVM1 audio load.
 ///
 /// Returns the loader's async process, which you will need to spawn.
