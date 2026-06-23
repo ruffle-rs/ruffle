@@ -4,7 +4,6 @@ use crate::avm2::activation::Activation;
 use crate::avm2::error::Error;
 use crate::avm2::globals::flash::display::display_object::initialize_for_allocator;
 use crate::avm2::globals::methods::flash_text_engine_content_element as element_methods;
-use crate::avm2::globals::slots::flash_text_engine_content_element as element_slots;
 use crate::avm2::globals::slots::flash_text_engine_text_block as block_slots;
 use crate::avm2::globals::slots::flash_text_engine_text_line as line_slots;
 use crate::avm2::object::{Object, TObject};
@@ -80,8 +79,9 @@ pub fn create_text_line<'gc>(
 
     let content_obj = content.as_object().unwrap();
     let element_format = content_obj
-        .get_slot(element_slots::_ELEMENT_FORMAT)
-        .as_object();
+        .as_content_element_object()
+        .and_then(|ce| ce.element_format())
+        .map(|ef| ef.into());
     apply_format(activation, fallback, text.as_wstr(), element_format)?;
 
     let text_line = TextLine::new(activation.context, movie, fallback);
