@@ -1,16 +1,28 @@
 //! Declarative macro for defining AVM1 properties.
 
 use gc_arena::Mutation;
+use ruffle_macros::istr;
 
 use crate::avm1::function::{FunctionObject, NativeFunction, TableNativeFunction};
 use crate::avm1::property::Attribute;
 use crate::avm1::{Object, Value};
 use crate::string::{HasStringContext, StringContext, WStr};
 
+/// Selects the own-property insertion order Flash uses when building a given
+/// system class object.
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+pub enum PropertyOrder {
+    /// `prototype, constructor, __proto__`.
+    PrototypeFirst,
+    /// `constructor, __proto__, prototype`.
+    PrototypeLast,
+}
+
 pub struct DeclContext<'a, 'gc> {
     pub strings: &'a mut StringContext<'gc>,
     pub object_proto: Object<'gc>,
     pub fn_proto: Object<'gc>,
+    pub function_class: Object<'gc>,
 }
 
 impl<'gc> HasStringContext<'gc> for DeclContext<'_, 'gc> {
@@ -19,7 +31,51 @@ impl<'gc> HasStringContext<'gc> for DeclContext<'_, 'gc> {
     }
 }
 
-impl<'gc> DeclContext<'_, 'gc> {
+impl<'a, 'gc> DeclContext<'a, 'gc> {
+    pub fn new(
+        strings: &'a mut StringContext<'gc>,
+        build_object: impl FnOnce(&mut Self) -> SystemClass<'gc>,
+        build_function: impl FnOnce(&mut Self) -> SystemClass<'gc>,
+    ) -> (Self, SystemClass<'gc>, SystemClass<'gc>) {
+        let object_proto = Object::new_without_proto(strings.gc());
+        let fn_proto = Object::new_without_proto(strings.gc());
+        let mut ctx = Self {
+            object_proto,
+            fn_proto,
+            // Placeholder, rewritten below.
+            function_class: object_proto,
+            strings,
+        };
+
+        let object = build_object(&mut ctx);
+        let function = build_function(&mut ctx);
+
+        ctx.function_class = function.constr;
+
+        let constructor_name = istr!(ctx.strings, "constructor");
+        object.constr.define_value(
+            ctx.gc(),
+            constructor_name,
+            function.constr.into(),
+            Attribute::DONT_ENUM | Attribute::DONT_DELETE,
+        );
+        function.constr.define_value(
+            ctx.gc(),
+            constructor_name,
+            function.constr.into(),
+            Attribute::DONT_ENUM | Attribute::DONT_DELETE,
+        );
+
+        fn_proto.define_value(
+            ctx.gc(),
+            istr!(ctx.strings, "__proto__"),
+            object_proto.into(),
+            Attribute::DONT_ENUM | Attribute::DONT_DELETE,
+        );
+
+        (ctx, object, function)
+    }
+
     pub fn gc(&self) -> &'gc Mutation<'gc> {
         self.strings.gc()
     }
@@ -31,19 +87,19 @@ impl<'gc> DeclContext<'_, 'gc> {
         }
     }
 
-    pub fn empty_class(&self, super_proto: Object<'gc>) -> SystemClass<'gc> {
-        let proto = Object::new(self.strings, Some(super_proto));
-        let constr = FunctionObject::empty().build(self.strings, self.fn_proto, Some(proto));
-        SystemClass { proto, constr }
+    pub fn empty_class(&self, super_proto: Object<'gc>, order: PropertyOrder) -> SystemClass<'gc> {
+        self.build_class(FunctionObject::empty(), super_proto, order)
     }
 
     /// Creates a class with a 'normal' constructor. This should be used for classes whose constructor
     /// is implemented in bytecode in Flash Player's `playerglobals.swf`.
-    pub fn class(&self, function: NativeFunction, super_proto: Object<'gc>) -> SystemClass<'gc> {
-        let proto = Object::new(self.strings, Some(super_proto));
-        let constr =
-            FunctionObject::native(function).build(self.strings, self.fn_proto, Some(proto));
-        SystemClass { proto, constr }
+    pub fn class(
+        &self,
+        function: NativeFunction,
+        super_proto: Object<'gc>,
+        order: PropertyOrder,
+    ) -> SystemClass<'gc> {
+        self.build_class(FunctionObject::native(function), super_proto, order)
     }
 
     /// Creates a class with a 'special' constructor. This should be used for classes with a native
@@ -53,22 +109,66 @@ impl<'gc> DeclContext<'_, 'gc> {
         constructor: NativeFunction,
         function: Option<NativeFunction>,
         super_proto: Object<'gc>,
+        order: PropertyOrder,
     ) -> SystemClass<'gc> {
-        let proto = Object::new(self.strings, Some(super_proto));
-        Self::native_class_with_proto(self, constructor, function, proto)
+        self.build_class(
+            FunctionObject::constructor(constructor, function),
+            super_proto,
+            order,
+        )
     }
 
+    /// Like [`Self::native_class`] but uses the supplied `proto` instead of
+    /// allocating a fresh one and does not attach a super-prototype to it.
+    /// Used by `Object` and `Function`'s bootstraps, where `proto` is
+    /// `object_proto` / `fn_proto` respectively.
     pub fn native_class_with_proto(
         &self,
         constructor: NativeFunction,
         function: Option<NativeFunction>,
         proto: Object<'gc>,
+        order: PropertyOrder,
     ) -> SystemClass<'gc> {
-        let constr = FunctionObject::constructor(constructor, function).build(
+        self.build_class_with_proto(
+            FunctionObject::constructor(constructor, function),
+            proto,
+            order,
+        )
+    }
+
+    fn build_class(
+        &self,
+        function_object: FunctionObject<'gc>,
+        super_proto: Object<'gc>,
+        order: PropertyOrder,
+    ) -> SystemClass<'gc> {
+        let proto = Object::new_without_proto(self.gc());
+        let class = self.build_class_with_proto(function_object, proto, order);
+
+        proto.define_value(
+            self.gc(),
+            istr!(self.strings, "__proto__"),
+            super_proto.into(),
+            Attribute::DONT_ENUM | Attribute::DONT_DELETE,
+        );
+
+        class
+    }
+
+    fn build_class_with_proto(
+        &self,
+        function_object: FunctionObject<'gc>,
+        proto: Object<'gc>,
+        order: PropertyOrder,
+    ) -> SystemClass<'gc> {
+        let constr = function_object.build_class_object(
             self.strings,
             self.fn_proto,
-            Some(proto),
+            proto,
+            self.function_class,
+            order,
         );
+
         SystemClass { proto, constr }
     }
 }

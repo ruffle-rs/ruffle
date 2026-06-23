@@ -1,11 +1,14 @@
 Testing _global.TextSnapshot
-  prototype, DONT_DELETE
   __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+  prototype, DONT_DELETE
 Testing _global.TextSnapshot.prototype
   __proto__, DONT_DELETE
+  constructor, DONT_DELETE
 Testing _global.PrintJob
-  prototype, DONT_DELETE
   __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+  prototype, DONT_DELETE
 Testing _global.PrintJob.prototype
   orientation, DONT_DELETE
   pageWidth, DONT_DELETE
@@ -16,20 +19,25 @@ Testing _global.PrintJob.prototype
   addPage, DONT_DELETE
   start, DONT_DELETE
   __proto__, DONT_DELETE
+  constructor, DONT_DELETE
 Testing _global.MovieClipLoader
-  prototype, DONT_DELETE
   __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+  prototype, DONT_DELETE
 Testing _global.MovieClipLoader.prototype
-  broadcastMessage, DONT_DELETE
+  _listeners, DONT_DELETE
   removeListener, DONT_DELETE
   addListener, DONT_DELETE
-  getProgress, DONT_DELETE
+  broadcastMessage, DONT_DELETE
   unloadClip, DONT_DELETE
+  getProgress, DONT_DELETE
   loadClip, DONT_DELETE
   __proto__, DONT_DELETE
+  constructor, DONT_DELETE
 Testing _global.LocalConnection
-  prototype, DONT_DELETE
   __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+  prototype, DONT_DELETE
 Testing _global.LocalConnection.prototype
   isPerUser, DONT_DELETE
   domain, DONT_DELETE
@@ -37,24 +45,32 @@ Testing _global.LocalConnection.prototype
   send, DONT_DELETE
   connect, DONT_DELETE
   __proto__, DONT_DELETE
+  constructor, DONT_DELETE
 Testing _global.textRenderer
-  prototype, DONT_DELETE
   __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+  prototype, DONT_DELETE
 Testing _global.textRenderer.prototype
   __proto__, DONT_DELETE
+  constructor, DONT_DELETE
 Testing _global.flash.automation.Configuration
   prototype, DONT_DELETE
   __proto__, DONT_DELETE
+  constructor, DONT_DELETE
 Testing _global.flash.automation.Configuration.prototype
   __proto__, DONT_DELETE
+  constructor, DONT_DELETE
 Testing _global.flash.automation.ActionGenerator
   prototype, DONT_DELETE
   __proto__, DONT_DELETE
+  constructor, DONT_DELETE
 Testing _global.flash.automation.ActionGenerator.prototype
   __proto__, DONT_DELETE
+  constructor, DONT_DELETE
 Testing _global.flash.automation.StageCapture
-  prototype, DONT_DELETE
   __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+  prototype, DONT_DELETE
 Testing _global.flash.automation.StageCapture.prototype
   toString, DONT_DELETE
   valueOf, DONT_DELETE
@@ -66,6 +82,7 @@ Testing _global.flash.automation.StageCapture.prototype
   cancel, DONT_DELETE
   capture, DONT_DELETE
   __proto__, DONT_DELETE
+  constructor, DONT_DELETE
 Testing _global.flash.automation
   __proto__, DONT_DELETE
 Testing _global.flash.external.ExternalInterface
@@ -95,125 +112,170 @@ Testing _global.flash.external.ExternalInterface
   _initJS, DONT_DELETE
   prototype, DONT_DELETE
   __proto__, DONT_DELETE
+  constructor, DONT_DELETE
 Testing _global.flash.external.ExternalInterface.prototype
   __proto__, DONT_DELETE
+  constructor, DONT_DELETE
 Testing _global.flash.external
   __proto__, DONT_DELETE
 Testing _global.flash.net.FileReferenceList
   prototype, DONT_DELETE
   __proto__, DONT_DELETE
+  constructor, DONT_DELETE
 Testing _global.flash.net.FileReferenceList.prototype
+  _listeners, DONT_DELETE
+  removeListener, DONT_DELETE
+  addListener, DONT_DELETE
+  broadcastMessage, DONT_DELETE
   __proto__, DONT_DELETE
+  constructor, DONT_DELETE
 Testing _global.flash.net.FileReference
   prototype, DONT_DELETE
   __proto__, DONT_DELETE
+  constructor, DONT_DELETE
 Testing _global.flash.net.FileReference.prototype
-  broadcastMessage, DONT_DELETE
+  _listeners, DONT_DELETE
   removeListener, DONT_DELETE
   addListener, DONT_DELETE
+  broadcastMessage, DONT_DELETE
   __proto__, DONT_DELETE
+  constructor, DONT_DELETE
 Testing _global.flash.net
   __proto__, DONT_DELETE
 Testing _global.flash.geom.Transform
-  prototype, DONT_DELETE
   __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+  prototype, DONT_DELETE
 Testing _global.flash.geom.Transform.prototype
   __proto__, DONT_DELETE
+  constructor, DONT_DELETE
 Testing _global.flash.geom.ColorTransform
-  prototype, DONT_DELETE
   __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+  prototype, DONT_DELETE
 Testing _global.flash.geom.ColorTransform.prototype
   __proto__, DONT_DELETE
+  constructor, DONT_DELETE
 Testing _global.flash.geom.Matrix
   prototype, DONT_DELETE
   __proto__, DONT_DELETE
+  constructor, DONT_DELETE
 Testing _global.flash.geom.Matrix.prototype
   __proto__, DONT_DELETE
+  constructor, DONT_DELETE
 Testing _global.flash.geom.Point
   prototype, DONT_DELETE
   __proto__, DONT_DELETE
+  constructor, DONT_DELETE
 Testing _global.flash.geom.Point.prototype
   __proto__, DONT_DELETE
+  constructor, DONT_DELETE
 Testing _global.flash.geom.Rectangle
   prototype, DONT_DELETE
   __proto__, DONT_DELETE
+  constructor, DONT_DELETE
 Testing _global.flash.geom.Rectangle.prototype
   __proto__, DONT_DELETE
+  constructor, DONT_DELETE
 Testing _global.flash.geom
   __proto__, DONT_DELETE
 Testing _global.flash.filters.DisplacementMapFilter
-  prototype, DONT_DELETE
   __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+  prototype, DONT_DELETE
 Testing _global.flash.filters.DisplacementMapFilter.prototype
   clone, DONT_DELETE
   __proto__, DONT_DELETE
+  constructor, DONT_DELETE
 Testing _global.flash.filters.ColorMatrixFilter
-  prototype, DONT_DELETE
   __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+  prototype, DONT_DELETE
 Testing _global.flash.filters.ColorMatrixFilter.prototype
   clone, DONT_DELETE
   __proto__, DONT_DELETE
+  constructor, DONT_DELETE
 Testing _global.flash.filters.ConvolutionFilter
-  prototype, DONT_DELETE
   __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+  prototype, DONT_DELETE
 Testing _global.flash.filters.ConvolutionFilter.prototype
   clone, DONT_DELETE
   __proto__, DONT_DELETE
+  constructor, DONT_DELETE
 Testing _global.flash.filters.GradientBevelFilter
-  prototype, DONT_DELETE
   __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+  prototype, DONT_DELETE
 Testing _global.flash.filters.GradientBevelFilter.prototype
   clone, DONT_DELETE
   __proto__, DONT_DELETE
+  constructor, DONT_DELETE
 Testing _global.flash.filters.GradientGlowFilter
-  prototype, DONT_DELETE
   __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+  prototype, DONT_DELETE
 Testing _global.flash.filters.GradientGlowFilter.prototype
   clone, DONT_DELETE
   __proto__, DONT_DELETE
+  constructor, DONT_DELETE
 Testing _global.flash.filters.BevelFilter
-  prototype, DONT_DELETE
   __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+  prototype, DONT_DELETE
 Testing _global.flash.filters.BevelFilter.prototype
   clone, DONT_DELETE
   __proto__, DONT_DELETE
+  constructor, DONT_DELETE
 Testing _global.flash.filters.GlowFilter
-  prototype, DONT_DELETE
   __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+  prototype, DONT_DELETE
 Testing _global.flash.filters.GlowFilter.prototype
   clone, DONT_DELETE
   __proto__, DONT_DELETE
+  constructor, DONT_DELETE
 Testing _global.flash.filters.BlurFilter
-  prototype, DONT_DELETE
   __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+  prototype, DONT_DELETE
 Testing _global.flash.filters.BlurFilter.prototype
   clone, DONT_DELETE
   __proto__, DONT_DELETE
+  constructor, DONT_DELETE
 Testing _global.flash.filters.DropShadowFilter
-  prototype, DONT_DELETE
   __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+  prototype, DONT_DELETE
 Testing _global.flash.filters.DropShadowFilter.prototype
   clone, DONT_DELETE
   __proto__, DONT_DELETE
+  constructor, DONT_DELETE
 Testing _global.flash.filters.BitmapFilter
-  prototype, DONT_DELETE
   __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+  prototype, DONT_DELETE
 Testing _global.flash.filters.BitmapFilter.prototype
   __proto__, DONT_DELETE
+  constructor, DONT_DELETE
 Testing _global.flash.filters
   __proto__, DONT_DELETE
 Testing _global.flash.display.BitmapData
-  prototype, DONT_DELETE
   __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+  prototype, DONT_DELETE
 Testing _global.flash.display.BitmapData.prototype
   __proto__, DONT_DELETE
+  constructor, DONT_DELETE
 Testing _global.flash.display
   __proto__, DONT_DELETE
 Testing _global.flash.text.TextRenderer
-  prototype, DONT_DELETE
   __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+  prototype, DONT_DELETE
 Testing _global.flash.text.TextRenderer.prototype
   __proto__, DONT_DELETE
+  constructor, DONT_DELETE
 Testing _global.flash.text
   __proto__, DONT_DELETE
 Testing _global.flash
@@ -240,35 +302,35 @@ Testing _global.System.IME.JAPANESE_KATAKANA_FULL
 Testing _global.System.IME.JAPANESE_KATAKANA_HALF
 Testing _global.System.IME.KOREAN
 Testing _global.System.IME.UNKNOWN
-Testing _global.System.IME.broadcastMessage
-  prototype, DONT_DELETE
-  __proto__, DONT_DELETE
-Testing _global.System.IME.broadcastMessage.prototype
-  apply, DONT_DELETE
-  call, DONT_DELETE
+Testing _global.System.IME._listeners.length
+Testing _global.System.IME._listeners
+  length, DONT_DELETE
   __proto__, DONT_DELETE
 Testing _global.System.IME.removeListener
-  apply, DONT_DELETE
-  call, DONT_DELETE
   prototype, DONT_DELETE
   __proto__, DONT_DELETE
 Testing _global.System.IME.removeListener.prototype
+  __proto__, DONT_DELETE
   apply, DONT_DELETE
   call, DONT_DELETE
-  __proto__, DONT_DELETE
 Testing _global.System.IME.addListener
   apply, DONT_DELETE
   call, DONT_DELETE
   prototype, DONT_DELETE
   __proto__, DONT_DELETE
 Testing _global.System.IME.addListener.prototype
+  __proto__, DONT_DELETE
   apply, DONT_DELETE
   call, DONT_DELETE
+Testing _global.System.IME.broadcastMessage
+  apply, DONT_DELETE
+  call, DONT_DELETE
+  prototype, DONT_DELETE
   __proto__, DONT_DELETE
-Testing _global.System.IME._listeners.length
-Testing _global.System.IME._listeners
-  length, DONT_DELETE
+Testing _global.System.IME.broadcastMessage.prototype
   __proto__, DONT_DELETE
+  apply, DONT_DELETE
+  call, DONT_DELETE
 Testing _global.System.IME
   onIMEComposition, DONT_DELETE
   doConversion, DONT_DELETE
@@ -285,9 +347,10 @@ Testing _global.System.IME
   JAPANESE_KATAKANA_HALF, DONT_DELETE
   KOREAN, DONT_DELETE
   UNKNOWN, DONT_DELETE
-  broadcastMessage, DONT_DELETE
+  _listeners, DONT_DELETE
   removeListener, DONT_DELETE
   addListener, DONT_DELETE
+  broadcastMessage, DONT_DELETE
   __proto__, DONT_DELETE
 Testing _global.System.security.PolicyFileResolver
   apply, DONT_DELETE
@@ -316,10 +379,12 @@ Testing _global.System.security
 Testing _global.System.Product
   apply, DONT_DELETE
   call, DONT_DELETE
-  prototype, DONT_DELETE
   __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+  prototype, DONT_DELETE
 Testing _global.System.Product.prototype
   __proto__, DONT_DELETE
+  constructor, DONT_DELETE
 Testing _global.System.capabilities.supports64BitProcesses
 Testing _global.System.capabilities.supports32BitProcesses
 Testing _global.System.capabilities.hasIME
@@ -371,6 +436,10 @@ Testing _global.System.useCodepage
 Testing _global.System.exactSettings
 Testing _global.System
   __proto__, DONT_DELETE
+Testing _global.SoundCodec.NELLYMOSER
+Testing _global.SoundCodec.SPEEX
+Testing _global.SoundCodec
+  __proto__, DONT_DELETE
 Testing _global.Accessibility.updateProperties
   apply, DONT_DELETE
   call, DONT_DELETE
@@ -391,25 +460,22 @@ Testing _global.Accessibility
 Testing _global.Video
   apply, DONT_DELETE
   call, DONT_DELETE
-  prototype, DONT_DELETE
   __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+  prototype, DONT_DELETE
 Testing _global.Video.prototype
   attachVideo, DONT_DELETE
   __proto__, DONT_DELETE
+  constructor, DONT_DELETE
 Testing _global.Stage.displayState
 Testing _global.Stage.showMenu
 Testing _global.Stage.width
 Testing _global.Stage.height
 Testing _global.Stage.scaleMode
 Testing _global.Stage.align
-Testing _global.Stage.broadcastMessage
-  apply, DONT_DELETE
-  call, DONT_DELETE
-  prototype, DONT_DELETE
-  __proto__, DONT_DELETE
-Testing _global.Stage.broadcastMessage.prototype
-  apply, DONT_DELETE
-  call, DONT_DELETE
+Testing _global.Stage._listeners.length
+Testing _global.Stage._listeners
+  length, DONT_DELETE
   __proto__, DONT_DELETE
 Testing _global.Stage.removeListener
   apply, DONT_DELETE
@@ -417,40 +483,49 @@ Testing _global.Stage.removeListener
   prototype, DONT_DELETE
   __proto__, DONT_DELETE
 Testing _global.Stage.removeListener.prototype
+  __proto__, DONT_DELETE
   apply, DONT_DELETE
   call, DONT_DELETE
-  __proto__, DONT_DELETE
 Testing _global.Stage.addListener
   apply, DONT_DELETE
   call, DONT_DELETE
   prototype, DONT_DELETE
   __proto__, DONT_DELETE
 Testing _global.Stage.addListener.prototype
+  __proto__, DONT_DELETE
   apply, DONT_DELETE
   call, DONT_DELETE
+Testing _global.Stage.broadcastMessage
+  apply, DONT_DELETE
+  call, DONT_DELETE
+  prototype, DONT_DELETE
   __proto__, DONT_DELETE
-Testing _global.Stage._listeners.length
-Testing _global.Stage._listeners
-  length, DONT_DELETE
+Testing _global.Stage.broadcastMessage.prototype
   __proto__, DONT_DELETE
+  apply, DONT_DELETE
+  call, DONT_DELETE
 Testing _global.Stage
-  broadcastMessage, DONT_DELETE
+  _listeners, DONT_DELETE
   removeListener, DONT_DELETE
   addListener, DONT_DELETE
+  broadcastMessage, DONT_DELETE
   __proto__, DONT_DELETE
 Testing _global.TextFormat
   apply, DONT_DELETE
   call, DONT_DELETE
-  prototype, DONT_DELETE
   __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+  prototype, DONT_DELETE
 Testing _global.TextFormat.prototype
   getTextExtent, DONT_DELETE
   __proto__, DONT_DELETE
+  constructor, DONT_DELETE
 Testing _global.TextField
   apply, DONT_DELETE
   call, DONT_DELETE
-  prototype, DONT_DELETE
   __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+  prototype, DONT_DELETE
 Testing _global.TextField.prototype
   filters, DONT_DELETE
   replaceText, DONT_DELETE
@@ -462,13 +537,16 @@ Testing _global.TextField.prototype
   getTextFormat, DONT_DELETE
   replaceSel, DONT_DELETE
   __proto__, DONT_DELETE
+  constructor, DONT_DELETE
 Testing _global.Button
   apply, DONT_DELETE
   call, DONT_DELETE
-  prototype, DONT_DELETE
   __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+  prototype, DONT_DELETE
 Testing _global.Button.prototype
   __proto__, DONT_DELETE
+  constructor, DONT_DELETE
 Testing _global.Key.isToggled
   apply, DONT_DELETE
   call, DONT_DELETE
@@ -504,14 +582,9 @@ Testing _global.Key.INSERT
 Testing _global.Key.DELETEKEY
 Testing _global.Key.BACKSPACE
 Testing _global.Key.CAPSLOCK
-Testing _global.Key.broadcastMessage
-  apply, DONT_DELETE
-  call, DONT_DELETE
-  prototype, DONT_DELETE
-  __proto__, DONT_DELETE
-Testing _global.Key.broadcastMessage.prototype
-  apply, DONT_DELETE
-  call, DONT_DELETE
+Testing _global.Key._listeners.length
+Testing _global.Key._listeners
+  length, DONT_DELETE
   __proto__, DONT_DELETE
 Testing _global.Key.removeListener
   apply, DONT_DELETE
@@ -519,22 +592,27 @@ Testing _global.Key.removeListener
   prototype, DONT_DELETE
   __proto__, DONT_DELETE
 Testing _global.Key.removeListener.prototype
+  __proto__, DONT_DELETE
   apply, DONT_DELETE
   call, DONT_DELETE
-  __proto__, DONT_DELETE
 Testing _global.Key.addListener
   apply, DONT_DELETE
   call, DONT_DELETE
   prototype, DONT_DELETE
   __proto__, DONT_DELETE
 Testing _global.Key.addListener.prototype
+  __proto__, DONT_DELETE
   apply, DONT_DELETE
   call, DONT_DELETE
+Testing _global.Key.broadcastMessage
+  apply, DONT_DELETE
+  call, DONT_DELETE
+  prototype, DONT_DELETE
   __proto__, DONT_DELETE
-Testing _global.Key._listeners.length
-Testing _global.Key._listeners
-  length, DONT_DELETE
+Testing _global.Key.broadcastMessage.prototype
   __proto__, DONT_DELETE
+  apply, DONT_DELETE
+  call, DONT_DELETE
 Testing _global.Key
   isToggled, DONT_DELETE
   isDown, DONT_DELETE
@@ -559,9 +637,22 @@ Testing _global.Key
   DELETEKEY, DONT_DELETE
   BACKSPACE, DONT_DELETE
   CAPSLOCK, DONT_DELETE
-  broadcastMessage, DONT_DELETE
+  _listeners, DONT_DELETE
   removeListener, DONT_DELETE
   addListener, DONT_DELETE
+  broadcastMessage, DONT_DELETE
+  __proto__, DONT_DELETE
+Testing _global.Mouse.setTrailerMode
+  apply, DONT_DELETE
+  call, DONT_DELETE
+  __proto__, DONT_DELETE
+Testing _global.Mouse.setTrailerPosition
+  apply, DONT_DELETE
+  call, DONT_DELETE
+  __proto__, DONT_DELETE
+Testing _global.Mouse.setTrailer
+  apply, DONT_DELETE
+  call, DONT_DELETE
   __proto__, DONT_DELETE
 Testing _global.Mouse.hide
   apply, DONT_DELETE
@@ -571,14 +662,9 @@ Testing _global.Mouse.show
   apply, DONT_DELETE
   call, DONT_DELETE
   __proto__, DONT_DELETE
-Testing _global.Mouse.broadcastMessage
-  apply, DONT_DELETE
-  call, DONT_DELETE
-  prototype, DONT_DELETE
-  __proto__, DONT_DELETE
-Testing _global.Mouse.broadcastMessage.prototype
-  apply, DONT_DELETE
-  call, DONT_DELETE
+Testing _global.Mouse._listeners.length
+Testing _global.Mouse._listeners
+  length, DONT_DELETE
   __proto__, DONT_DELETE
 Testing _global.Mouse.removeListener
   apply, DONT_DELETE
@@ -586,28 +672,37 @@ Testing _global.Mouse.removeListener
   prototype, DONT_DELETE
   __proto__, DONT_DELETE
 Testing _global.Mouse.removeListener.prototype
+  __proto__, DONT_DELETE
   apply, DONT_DELETE
   call, DONT_DELETE
-  __proto__, DONT_DELETE
 Testing _global.Mouse.addListener
   apply, DONT_DELETE
   call, DONT_DELETE
   prototype, DONT_DELETE
   __proto__, DONT_DELETE
 Testing _global.Mouse.addListener.prototype
+  __proto__, DONT_DELETE
   apply, DONT_DELETE
   call, DONT_DELETE
+Testing _global.Mouse.broadcastMessage
+  apply, DONT_DELETE
+  call, DONT_DELETE
+  prototype, DONT_DELETE
   __proto__, DONT_DELETE
-Testing _global.Mouse._listeners.length
-Testing _global.Mouse._listeners
-  length, DONT_DELETE
+Testing _global.Mouse.broadcastMessage.prototype
   __proto__, DONT_DELETE
+  apply, DONT_DELETE
+  call, DONT_DELETE
 Testing _global.Mouse
+  setTrailerMode, DONT_DELETE
+  setTrailerPosition, DONT_DELETE
+  setTrailer, DONT_DELETE
   hide, DONT_DELETE
   show, DONT_DELETE
-  broadcastMessage, DONT_DELETE
+  _listeners, DONT_DELETE
   removeListener, DONT_DELETE
   addListener, DONT_DELETE
+  broadcastMessage, DONT_DELETE
   __proto__, DONT_DELETE
 Testing _global.Selection.setSelection
   apply, DONT_DELETE
@@ -633,14 +728,9 @@ Testing _global.Selection.getBeginIndex
   apply, DONT_DELETE
   call, DONT_DELETE
   __proto__, DONT_DELETE
-Testing _global.Selection.broadcastMessage
-  apply, DONT_DELETE
-  call, DONT_DELETE
-  prototype, DONT_DELETE
-  __proto__, DONT_DELETE
-Testing _global.Selection.broadcastMessage.prototype
-  apply, DONT_DELETE
-  call, DONT_DELETE
+Testing _global.Selection._listeners.length
+Testing _global.Selection._listeners
+  length, DONT_DELETE
   __proto__, DONT_DELETE
 Testing _global.Selection.removeListener
   apply, DONT_DELETE
@@ -648,22 +738,27 @@ Testing _global.Selection.removeListener
   prototype, DONT_DELETE
   __proto__, DONT_DELETE
 Testing _global.Selection.removeListener.prototype
+  __proto__, DONT_DELETE
   apply, DONT_DELETE
   call, DONT_DELETE
-  __proto__, DONT_DELETE
 Testing _global.Selection.addListener
   apply, DONT_DELETE
   call, DONT_DELETE
   prototype, DONT_DELETE
   __proto__, DONT_DELETE
 Testing _global.Selection.addListener.prototype
+  __proto__, DONT_DELETE
   apply, DONT_DELETE
   call, DONT_DELETE
+Testing _global.Selection.broadcastMessage
+  apply, DONT_DELETE
+  call, DONT_DELETE
+  prototype, DONT_DELETE
   __proto__, DONT_DELETE
-Testing _global.Selection._listeners.length
-Testing _global.Selection._listeners
-  length, DONT_DELETE
+Testing _global.Selection.broadcastMessage.prototype
   __proto__, DONT_DELETE
+  apply, DONT_DELETE
+  call, DONT_DELETE
 Testing _global.Selection
   setSelection, DONT_DELETE
   setFocus, DONT_DELETE
@@ -671,15 +766,17 @@ Testing _global.Selection
   getCaretIndex, DONT_DELETE
   getEndIndex, DONT_DELETE
   getBeginIndex, DONT_DELETE
-  broadcastMessage, DONT_DELETE
+  _listeners, DONT_DELETE
   removeListener, DONT_DELETE
   addListener, DONT_DELETE
+  broadcastMessage, DONT_DELETE
   __proto__, DONT_DELETE
 Testing _global.LoadVars
   apply, DONT_DELETE
   call, DONT_DELETE
-  prototype, DONT_DELETE
   __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+  prototype, DONT_DELETE
 Testing _global.LoadVars.prototype
   addRequestHeader, DONT_DELETE
   onData, DONT_DELETE
@@ -693,11 +790,13 @@ Testing _global.LoadVars.prototype
   send, DONT_DELETE
   load, DONT_DELETE
   __proto__, DONT_DELETE
+  constructor, DONT_DELETE
 Testing _global.XML
   apply, DONT_DELETE
   call, DONT_DELETE
-  prototype, DONT_DELETE
   __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+  prototype, DONT_DELETE
 Testing _global.XML.prototype
   namespaceURI, DONT_DELETE
   localName, DONT_DELETE
@@ -721,18 +820,22 @@ Testing _global.XML.prototype
   removeNode, DONT_DELETE
   cloneNode, DONT_DELETE
   __proto__, DONT_DELETE
+  constructor, DONT_DELETE
 Testing _global.XMLNode
   apply, DONT_DELETE
   call, DONT_DELETE
-  prototype, DONT_DELETE
   __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+  prototype, DONT_DELETE
 Testing _global.XMLNode.prototype
   __proto__, DONT_DELETE
+  constructor, DONT_DELETE
 Testing _global.Sound
   apply, DONT_DELETE
   call, DONT_DELETE
-  prototype, DONT_DELETE
   __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+  prototype, DONT_DELETE
 Testing _global.Sound.prototype
   getBytesTotal, DONT_DELETE
   getBytesLoaded, DONT_DELETE
@@ -751,6 +854,7 @@ Testing _global.Sound.prototype
   getTransform, DONT_DELETE
   getPan, DONT_DELETE
   __proto__, DONT_DELETE
+  constructor, DONT_DELETE
 Testing _global.Math.pow
   apply, DONT_DELETE
   call, DONT_DELETE
@@ -862,8 +966,9 @@ Testing _global.Math
 Testing _global.Array
   apply, DONT_DELETE
   call, DONT_DELETE
-  prototype, DONT_DELETE
   __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+  prototype, DONT_DELETE
 Testing _global.Array.prototype
   sortOn, DONT_DELETE
   reverse, DONT_DELETE
@@ -878,12 +983,14 @@ Testing _global.Array.prototype
   pop, DONT_DELETE
   push, DONT_DELETE
   __proto__, DONT_DELETE
+  constructor, DONT_DELETE
 Testing _global.String
   apply, DONT_DELETE
   call, DONT_DELETE
   fromCharCode, DONT_DELETE
-  prototype, DONT_DELETE
   __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+  prototype, DONT_DELETE
 Testing _global.String.prototype
   substr, DONT_DELETE
   split, DONT_DELETE
@@ -899,12 +1006,14 @@ Testing _global.String.prototype
   toString, DONT_DELETE
   valueOf, DONT_DELETE
   __proto__, DONT_DELETE
+  constructor, DONT_DELETE
 Testing _global.Date
   apply, DONT_DELETE
   call, DONT_DELETE
   UTC, DONT_DELETE
-  prototype, DONT_DELETE
   __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+  prototype, DONT_DELETE
 Testing _global.Date.prototype
   valueOf, DONT_DELETE
   setUTCMilliseconds, DONT_DELETE
@@ -945,15 +1054,18 @@ Testing _global.Date.prototype
   getYear, DONT_DELETE
   getFullYear, DONT_DELETE
   __proto__, DONT_DELETE
+  constructor, DONT_DELETE
 Testing _global.Boolean
   apply, DONT_DELETE
   call, DONT_DELETE
-  prototype, DONT_DELETE
   __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+  prototype, DONT_DELETE
 Testing _global.Boolean.prototype
   toString, DONT_DELETE
   valueOf, DONT_DELETE
   __proto__, DONT_DELETE
+  constructor, DONT_DELETE
 Testing _global.Number
   apply, DONT_DELETE
   call, DONT_DELETE
@@ -962,12 +1074,14 @@ Testing _global.Number
   NaN, DONT_DELETE
   MIN_VALUE, DONT_DELETE
   MAX_VALUE, DONT_DELETE
-  prototype, DONT_DELETE
   __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+  prototype, DONT_DELETE
 Testing _global.Number.prototype
   toString, DONT_DELETE
   valueOf, DONT_DELETE
   __proto__, DONT_DELETE
+  constructor, DONT_DELETE
 Testing _global.o
 Testing _global.setTimeout
   apply, DONT_DELETE
@@ -1029,35 +1143,69 @@ Testing _global.ASSetPropFlags
   apply, DONT_DELETE
   call, DONT_DELETE
   __proto__, DONT_DELETE
+Testing _global.RemoteLSOUsage
+  apply, DONT_DELETE
+  call, DONT_DELETE
+  prototype, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.RemoteLSOUsage.prototype
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.AssetCache
+  apply, DONT_DELETE
+  call, DONT_DELETE
+  prototype, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.AssetCache.prototype
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.AsSetupError
+  apply, DONT_DELETE
+  call, DONT_DELETE
+  prototype, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.AsSetupError.prototype
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
 Testing _global.Error
   apply, DONT_DELETE
   call, DONT_DELETE
   prototype, DONT_DELETE
   __proto__, DONT_DELETE
+  constructor, DONT_DELETE
 Testing _global.Error.prototype
   __proto__, DONT_DELETE
+  constructor, DONT_DELETE
 Testing _global.ContextMenu
   apply, DONT_DELETE
   call, DONT_DELETE
   prototype, DONT_DELETE
   __proto__, DONT_DELETE
+  constructor, DONT_DELETE
 Testing _global.ContextMenu.prototype
   hideBuiltInItems, DONT_DELETE
   copy, DONT_DELETE
   __proto__, DONT_DELETE
+  constructor, DONT_DELETE
 Testing _global.ContextMenuItem
   apply, DONT_DELETE
   call, DONT_DELETE
   prototype, DONT_DELETE
   __proto__, DONT_DELETE
+  constructor, DONT_DELETE
 Testing _global.ContextMenuItem.prototype
   copy, DONT_DELETE
   __proto__, DONT_DELETE
+  constructor, DONT_DELETE
 Testing _global.SharedObject
   apply, DONT_DELETE
   call, DONT_DELETE
   prototype, DONT_DELETE
   __proto__, DONT_DELETE
+  constructor, DONT_DELETE
 Testing _global.SharedObject.prototype
   onSync, DONT_DELETE
   onStatus, DONT_DELETE
@@ -1069,11 +1217,13 @@ Testing _global.SharedObject.prototype
   send, DONT_DELETE
   connect, DONT_DELETE
   __proto__, DONT_DELETE
+  constructor, DONT_DELETE
 Testing _global.Microphone
   apply, DONT_DELETE
   call, DONT_DELETE
   prototype, DONT_DELETE
   __proto__, DONT_DELETE
+  constructor, DONT_DELETE
 Testing _global.Microphone.prototype
   setEncodeQuality, DONT_DELETE
   setFramesPerPacket, DONT_DELETE
@@ -1083,11 +1233,13 @@ Testing _global.Microphone.prototype
   setRate, DONT_DELETE
   setSilenceLevel, DONT_DELETE
   __proto__, DONT_DELETE
+  constructor, DONT_DELETE
 Testing _global.Camera
   apply, DONT_DELETE
   call, DONT_DELETE
   prototype, DONT_DELETE
   __proto__, DONT_DELETE
+  constructor, DONT_DELETE
 Testing _global.Camera.prototype
   setCursor, DONT_DELETE
   setLoopback, DONT_DELETE
@@ -1096,11 +1248,13 @@ Testing _global.Camera.prototype
   setQuality, DONT_DELETE
   setMode, DONT_DELETE
   __proto__, DONT_DELETE
+  constructor, DONT_DELETE
 Testing _global.NetStream
   apply, DONT_DELETE
   call, DONT_DELETE
-  prototype, DONT_DELETE
   __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+  prototype, DONT_DELETE
 Testing _global.NetStream.prototype
   backBufferTime, DONT_DELETE
   maxPauseBufferTime, DONT_DELETE
@@ -1120,28 +1274,33 @@ Testing _global.NetStream.prototype
   play, DONT_DELETE
   publish, DONT_DELETE
   __proto__, DONT_DELETE
+  constructor, DONT_DELETE
 Testing _global.NetConnection
   apply, DONT_DELETE
   call, DONT_DELETE
-  prototype, DONT_DELETE
   __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+  prototype, DONT_DELETE
 Testing _global.NetConnection.prototype
   addHeader, DONT_DELETE
   call, DONT_DELETE
   close, DONT_DELETE
   connect, DONT_DELETE
   __proto__, DONT_DELETE
+  constructor, DONT_DELETE
 Testing _global.Color
   apply, DONT_DELETE
   call, DONT_DELETE
   prototype, DONT_DELETE
   __proto__, DONT_DELETE
+  constructor, DONT_DELETE
 Testing _global.Color.prototype
   getTransform, DONT_DELETE
   getRGB, DONT_DELETE
   setTransform, DONT_DELETE
   setRGB, DONT_DELETE
   __proto__, DONT_DELETE
+  constructor, DONT_DELETE
 Testing _global.AsBroadcaster
   apply, DONT_DELETE
   call, DONT_DELETE
@@ -1151,24 +1310,29 @@ Testing _global.AsBroadcaster
   initialize, DONT_DELETE
   prototype, DONT_DELETE
   __proto__, DONT_DELETE
+  constructor, DONT_DELETE
 Testing _global.AsBroadcaster.prototype
   __proto__, DONT_DELETE
+  constructor, DONT_DELETE
 Testing _global.XMLSocket
   apply, DONT_DELETE
   call, DONT_DELETE
   prototype, DONT_DELETE
   __proto__, DONT_DELETE
+  constructor, DONT_DELETE
 Testing _global.XMLSocket.prototype
   onXML, DONT_DELETE
   onData, DONT_DELETE
   onClose, DONT_DELETE
   onConnect, DONT_DELETE
   __proto__, DONT_DELETE
+  constructor, DONT_DELETE
 Testing _global.MovieClip
   apply, DONT_DELETE
   call, DONT_DELETE
   prototype, DONT_DELETE
   __proto__, DONT_DELETE
+  constructor, DONT_DELETE
 Testing _global.MovieClip.prototype
   getTextSnapshot, DONT_DELETE
   createTextField, DONT_DELETE
@@ -1221,23 +1385,26 @@ Testing _global.MovieClip.prototype
   cacheAsBitmap, DONT_DELETE
   _lockroot, DONT_DELETE
   __proto__, DONT_DELETE
+  constructor, DONT_DELETE
 Testing _global.Infinity
 Testing _global.NaN
 Testing _global.Function
   apply, DONT_DELETE
   call, DONT_DELETE
-  prototype, DONT_DELETE
   __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+  prototype, DONT_DELETE
 Testing _global.Function.prototype
+  __proto__, DONT_DELETE
   apply, DONT_DELETE
   call, DONT_DELETE
-  __proto__, DONT_DELETE
 Testing _global.Object
   apply, DONT_DELETE
   call, DONT_DELETE
   registerClass, DONT_DELETE
-  prototype, DONT_DELETE
   __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+  prototype, DONT_DELETE
 Testing _global.Object.prototype
   toLocaleString, DONT_DELETE
   isPropertyEnumerable, DONT_DELETE
@@ -1248,6 +1415,7 @@ Testing _global.Object.prototype
   addProperty, DONT_DELETE
   unwatch, DONT_DELETE
   watch, DONT_DELETE
+  constructor, DONT_DELETE
 Testing _global.ASnative
   toLocaleString, DONT_DELETE
   isPropertyEnumerable, DONT_DELETE
@@ -1258,6 +1426,7 @@ Testing _global.ASnative
   addProperty, DONT_DELETE
   unwatch, DONT_DELETE
   watch, DONT_DELETE
+  constructor, DONT_DELETE
   apply, DONT_DELETE
   call, DONT_DELETE
   __proto__, DONT_DELETE

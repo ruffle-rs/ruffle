@@ -5,7 +5,7 @@ use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::function::ExecutionReason;
 use crate::avm1::property::Attribute;
-use crate::avm1::property_decl::{DeclContext, StaticDeclarations, SystemClass};
+use crate::avm1::property_decl::{DeclContext, PropertyOrder, StaticDeclarations, SystemClass};
 use crate::avm1::{Object, Value};
 use crate::avm1_stub;
 use crate::backend::navigator::{NavigationMethod, Request};
@@ -31,7 +31,7 @@ pub fn create_class<'gc>(
     context: &mut DeclContext<'_, 'gc>,
     super_proto: Object<'gc>,
 ) -> SystemClass<'gc> {
-    let class = context.empty_class(super_proto);
+    let class = context.empty_class(super_proto, PropertyOrder::PrototypeFirst);
     context.define_properties_on(class.proto, PROTO_DECLS(context));
     class
 }
@@ -61,7 +61,7 @@ fn decode<'gc>(
     for (k, v) in url::form_urlencoded::parse(data.to_utf8_lossy().as_bytes()) {
         let k = AvmString::new_utf8(activation.gc(), k);
         let v = AvmString::new_utf8(activation.gc(), v);
-        this.set(k, v.into(), activation)?;
+        this.set(k, v, activation)?;
     }
 
     Ok(Value::Undefined)
@@ -115,7 +115,7 @@ fn on_data<'gc>(
                 activation,
                 ExecutionReason::FunctionCall,
             )?;
-            this.set(istr!("loaded"), true.into(), activation)?;
+            this.set(istr!("loaded"), true, activation)?;
             true
         }
     };
@@ -277,7 +277,7 @@ fn spawn_load_var_fetch<'gc>(
             Attribute::DONT_DELETE | Attribute::DONT_ENUM,
         );
     } else {
-        loader_object.set(bytes_loaded_string, 0.into(), activation)?;
+        loader_object.set(bytes_loaded_string, 0, activation)?;
     }
 
     let bytes_total_string = istr!("_bytesTotal");
@@ -303,7 +303,7 @@ fn spawn_load_var_fetch<'gc>(
             Attribute::DONT_DELETE | Attribute::DONT_ENUM,
         );
     } else {
-        loader_object.set(loaded_string, false.into(), activation)?;
+        loader_object.set(loaded_string, false, activation)?;
     }
 
     Ok(true.into())

@@ -37,7 +37,7 @@ jobs:
     if: github.repository == 'ruffle-rs/ruffle' || github.event_name == 'repository_dispatch' || github.event_name == 'workflow_dispatch'
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           token: ${{ secrets.RUFFLE_BUILD_TOKEN }}
 
@@ -159,12 +159,12 @@ jobs:
 
     env:
       PACKAGE_FILE: ${{ needs.create-release.outputs.package_prefix }}-${{ matrix.build_name }}.${{ startsWith(matrix.build_name, 'win') && 'zip' || 'tar.gz' }}
-      CARGO_BUILD_DIR: target/${{ matrix.target }}/release
+      CARGO_BUILD_DIR: target/${{ matrix.target }}/dist
 
     runs-on: ${{ matrix.os }}
     steps:
       - name: Clone Ruffle repo
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           ref: ${{ needs.create-release.outputs.tag_name }}
 
@@ -188,7 +188,7 @@ jobs:
           wix extension add -g WixToolset.Util.wixext/5.0.2
 
       - name: Cargo build
-        run: cargo build --locked --package ruffle_desktop --release ${{matrix.DESKTOP_FEATURES && '--features' }} ${{matrix.DESKTOP_FEATURES}} ${{ matrix.target && '--target' }} ${{ matrix.target }}
+        run: cargo build --locked --package ruffle_desktop --profile dist ${{matrix.DESKTOP_FEATURES && '--features' }} ${{matrix.DESKTOP_FEATURES}} ${{ matrix.target && '--target' }} ${{ matrix.target }}
         env:
           CFG_RELEASE_CHANNEL: ${{ needs.create-release.outputs.release_channel }}
           RUSTFLAGS: ${{ matrix.RUSTFLAGS }}
@@ -206,7 +206,7 @@ jobs:
           wix build ruffle.wxs -ext WixToolset.UI.wixext -ext WixToolset.Util.wixext -arch ${{ matrix.MSI_ARCH }} -o ../../../../package/setup.msi -pdbtype none
         env:
           RUFFLE_VERSION: ${{ needs.create-release.outputs.version4 }}
-          CARGO_BUILD_DIR: ../../../../target/${{ matrix.target }}/release
+          CARGO_BUILD_DIR: ../../../../target/${{ matrix.target }}/dist
         if: runner.os == 'Windows'
 
       - name: Package Windows
@@ -238,7 +238,7 @@ jobs:
 
       - name: Build Safari Web Extension stub binary
         if: runner.os == 'macOS'
-        run: cargo build --locked --package ruffle_web_safari --release ${{ matrix.target && '--target' }} ${{ matrix.target }}
+        run: cargo build --locked --package ruffle_web_safari --profile dist ${{ matrix.target && '--target' }} ${{ matrix.target }}
         env:
           CFG_RELEASE_CHANNEL: ${{ needs.create-release.outputs.release_channel }}
           RUSTFLAGS: ${{ matrix.RUSTFLAGS }}
@@ -262,7 +262,7 @@ jobs:
       PACKAGE_FILE: ${{ needs.create-release.outputs.package_prefix }}-macos-universal.tar.gz
     steps:
       - name: Clone Ruffle repo
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           ref: ${{ needs.create-release.outputs.tag_name }}
 
@@ -283,13 +283,13 @@ jobs:
 
       - name: Make universal desktop binary
         run: |
-          lipo -create -output package/ruffle target/x86_64-apple-darwin/release/ruffle_desktop target/aarch64-apple-darwin/release/ruffle_desktop
+          lipo -create -output package/ruffle target/x86_64-apple-darwin/dist/ruffle_desktop target/aarch64-apple-darwin/dist/ruffle_desktop
           chmod +x package/ruffle
 
       - name: Make universal Safari stub binary
         continue-on-error: true
         run: |
-          lipo -create -output package/ruffle_web_safari target/x86_64-apple-darwin/release/ruffle_web_safari target/aarch64-apple-darwin/release/ruffle_web_safari
+          lipo -create -output package/ruffle_web_safari target/x86_64-apple-darwin/dist/ruffle_web_safari target/aarch64-apple-darwin/dist/ruffle_web_safari
           chmod +x package/ruffle_web_safari
 
       - name: Create app bundle
@@ -361,7 +361,7 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - name: Clone Ruffle repo
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           ref: ${{ needs.create-release.outputs.tag_name }}
 
@@ -371,7 +371,7 @@ jobs:
           toolchain: stable
 
       - name: Generate report
-        run: ./stub-report/generate-report.sh
+        run: cargo run --locked --package stub-report -- --avm2-report avm2_report.json
 
       - name: Upload report
         run: gh release upload "${{ needs.create-release.outputs.tag_name }}" avm2_report.json
@@ -394,7 +394,7 @@ jobs:
       statuses: write
     steps:
       - name: Clone Ruffle repo
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           ref: ${{ needs.create-release.outputs.tag_name }}
 
@@ -415,7 +415,7 @@ jobs:
       # Be sure to update in test_web.yml, Cargo.toml, web/docker/Dockerfile,
       # and web/README.md as well.
       - name: Install wasm-bindgen
-        run: cargo install wasm-bindgen-cli --version 0.2.120
+        run: cargo install --locked wasm-bindgen-cli --version 0.2.120
 
       # Keep the version number in sync in all workflows,
       # and in the extension builder Dockerfile!
@@ -496,7 +496,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Publish Chrome extension
-        if: env.CHROME_EXTENSION_ID != '' && needs.create-release.outputs.release_channel == 'nightly'
+        if: env.CHROME_EXTENSION_ID != '' && needs.create-release.outputs.release_channel == 'stable'
         id: publish-chrome-extension
         continue-on-error: true
         env:
@@ -510,7 +510,7 @@ jobs:
           file-path: ./web/packages/extension/dist/ruffle_extension.zip
 
       - name: Publish Edge extension
-        if: env.EDGE_PRODUCT_ID != '' && needs.create-release.outputs.release_channel == 'nightly'
+        if: env.EDGE_PRODUCT_ID != '' && needs.create-release.outputs.release_channel == 'stable'
         id: publish-edge-extension
         continue-on-error: true
         env:
@@ -523,7 +523,7 @@ jobs:
           api-key: ${{ secrets.EDGE_API_KEY }}
 
       - name: Publish Firefox extension
-        if: env.FIREFOX_EXTENSION_ID != '' && needs.create-release.outputs.release_channel == 'nightly'
+        if: env.FIREFOX_EXTENSION_ID != '' && needs.create-release.outputs.release_channel == 'stable'
         id: publish-firefox-extension
         continue-on-error: true
         env:
@@ -577,7 +577,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Clone JS docs
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         if: needs.create-release.outputs.release_channel == 'nightly'
         with:
           repository: ruffle-rs/js-docs
@@ -612,7 +612,7 @@ jobs:
           force: true
 
       - name: Clone web demo
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         if: needs.create-release.outputs.release_channel == 'nightly'
         with:
           repository: ruffle-rs/demo
@@ -655,7 +655,7 @@ jobs:
     runs-on: ubuntu-24.04
     if: github.repository == 'ruffle-rs/ruffle' && needs.create-release.outputs.release_channel == 'nightly'
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           ref: ${{ needs.create-release.outputs.tag_name }}
 

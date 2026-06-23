@@ -1,0 +1,12 @@
+// connect() no args
+Navigator::connect_socket
+    Host: localhost; Port: 0
+// connect(null)
+Navigator::connect_socket
+    Host: localhost; Port: 0
+// connect(undefined)
+Navigator::connect_socket
+    Host: localhost; Port: 0
+// connect("example.com", 1234)
+Navigator::connect_socket
+    Host: example.com; Port: 1234

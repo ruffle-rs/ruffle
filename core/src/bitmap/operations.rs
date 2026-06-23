@@ -1,5 +1,5 @@
 use crate::avm2::bytearray::{ByteArrayError, ByteArrayStorage};
-use crate::avm2::error::make_error_2006;
+use crate::avm2::error::{Error2006Type, make_error_2006};
 use crate::avm2::vector::VectorStorage;
 use crate::avm2::{Activation, Error, Value as Avm2Value};
 use crate::bitmap::bitmap_data::{
@@ -809,7 +809,8 @@ pub fn hit_test_point(
             .read_area(PixelRegion::for_pixel(x, y), renderer)
             .get_pixel32_raw(x, y)
             .alpha()
-            >= alpha_threshold
+            // If `alpha_threshold` is 0, consider it to be 1.
+            >= alpha_threshold.max(1)
     } else {
         false
     }
@@ -1104,6 +1105,19 @@ pub fn copy_pixels_with_alpha_source<'gc>(
 
     let (src_min_x, src_min_y, src_width, src_height) = src_rect;
     let (dest_min_x, dest_min_y) = dest_point;
+
+    let mut dest_region = PixelRegion::encompassing_pixels_i32(
+        ((dest_min_x), (dest_min_y)),
+        ((dest_min_x + src_width), (dest_min_y + src_height)),
+    );
+    dest_region.clamp(target.width(), target.height());
+
+    if dest_region.width() == 0 || dest_region.height() == 0 {
+        // Either the destination rectangle was entirely out of bounds,
+        // or the source rectangle's width or height was zero.
+        return;
+    }
+
     let transparency = target.transparency();
     let source_transparency = source_bitmap.transparency();
     let alpha_transparency = alpha_bitmap.transparency();
@@ -1207,12 +1221,7 @@ pub fn copy_pixels_with_alpha_source<'gc>(
             write.set_pixel32_raw(dest_x as u32, dest_y as u32, dest_color);
         }
     }
-    let mut dirty_region = PixelRegion::encompassing_pixels_i32(
-        ((dest_min_x), (dest_min_y)),
-        ((dest_min_x + src_width), (dest_min_y + src_height)),
-    );
-    dirty_region.clamp(write.width(), write.height());
-    write.set_cpu_dirty(context.gc(), dirty_region);
+    write.set_cpu_dirty(context.gc(), dest_region);
 }
 
 pub fn apply_filter<'gc>(
@@ -1654,7 +1663,7 @@ pub fn set_vector<'gc>(
     let width = (x_max - x_min) as usize;
     let height = (y_max - y_min) as usize;
     if vector.length() < width * height {
-        return Err(make_error_2006(activation));
+        return Err(make_error_2006(activation, Error2006Type::RangeError));
     }
 
     let region = PixelRegion::for_region(x_min, y_min, width as u32, height as u32);

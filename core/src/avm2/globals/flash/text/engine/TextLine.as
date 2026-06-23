@@ -25,8 +25,6 @@ package flash.text.engine {
         [Ruffle(NativeAccessible)]
         private var _rawTextLength:int = 0;
 
-        internal var _validity:String = "valid";
-
         public static const MAX_LINE_WIDTH:int = 1000000;
 
         public var userData;
@@ -78,15 +76,8 @@ package flash.text.engine {
         public native function get textWidth():Number;
         public native function get textHeight():Number;
 
-        public function get validity():String {
-            stub_getter("flash.text.engine.TextLine", "validity");
-            return this._validity;
-        }
-
-        public function set validity(value:String):void {
-            stub_setter("flash.text.engine.TextLine", "validity");
-            this._validity = value;
-        }
+        public native function get validity():String;
+        public native function set validity(value:String):void;
 
         public function get hasGraphicElement():Boolean {
             stub_getter("flash.text.engine.TextLine", "hasGraphicElement");

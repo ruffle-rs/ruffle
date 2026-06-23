@@ -22,6 +22,7 @@ file-menu-export = Vie...
 controls-menu = Säätimet
 controls-menu-suspend = Keskeytä
 controls-menu-resume = Jatka
+controls-menu-step-once = Askella kerran
 controls-menu-volume = Äänenvoimakkuuden säätö
 help-menu = Ohje
 help-menu-join-discord = Liity Discordiin

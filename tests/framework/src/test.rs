@@ -52,6 +52,8 @@ impl Test {
     }
 
     pub fn create_test_runner(&self, environment: &impl Environment) -> Result<TestRunner> {
+        self.compile(environment.compile_mode())?;
+
         let movie = self.movie()?;
         let viewport_dimensions = self.options.player_options.viewport_dimensions(&movie);
         let renderer = self
@@ -59,7 +61,6 @@ impl Test {
             .player_options
             .create_renderer(environment, viewport_dimensions);
 
-        self.compile(environment.compile_mode())?;
         let injector = self.input_injector()?;
         let socket_events = self.socket_events()?;
         let runner = TestRunner::new(

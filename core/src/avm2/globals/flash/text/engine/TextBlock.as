@@ -187,7 +187,7 @@ package flash.text.engine {
                 stub_method("flash.text.engine.TextBlock", "releaseLines", "with start != end or multiple lines");
                 return;
             }
-            this._firstLine._validity = "invalid";
+            this._firstLine.validity = "invalid";
             this._firstLine._textBlock = null;
         }
     }

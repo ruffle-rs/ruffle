@@ -1,0 +1,10 @@
+# More than one tick has to pass for the renderer to try to write back
+# the dirty region of the bitmap to the GPU, which is what triggers
+# the relevant panic.
+num_ticks = 5
+
+[image_comparisons.output]
+tolerance = 0
+
+[player_options]
+with_renderer = { optional = false }

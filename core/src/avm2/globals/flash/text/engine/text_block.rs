@@ -5,8 +5,6 @@ use crate::avm2::error::Error;
 use crate::avm2::globals::flash::display::display_object::initialize_for_allocator;
 use crate::avm2::globals::methods::flash_text_engine_content_element as element_methods;
 use crate::avm2::globals::slots::flash_text_engine_content_element as element_slots;
-use crate::avm2::globals::slots::flash_text_engine_element_format as format_slots;
-use crate::avm2::globals::slots::flash_text_engine_font_description as font_desc_slots;
 use crate::avm2::globals::slots::flash_text_engine_text_block as block_slots;
 use crate::avm2::globals::slots::flash_text_engine_text_line as line_slots;
 use crate::avm2::object::{Object, TObject};
@@ -14,6 +12,9 @@ use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
 use crate::avm2_stub_method;
 use crate::display_object::{EditText, TDisplayObject, TextLine};
+use crate::fte::FontLookupValue;
+use crate::fte::FontPostureValue;
+use crate::fte::FontWeightValue;
 use crate::html::TextFormat;
 use crate::string::WStr;
 
@@ -83,8 +84,8 @@ pub fn create_text_line<'gc>(
         .as_object();
     apply_format(activation, fallback, text.as_wstr(), element_format)?;
 
-    let fte = TextLine::new(activation.context, movie, Some(fallback));
-    let instance = initialize_for_allocator(activation.context, fte.into(), class);
+    let text_line = TextLine::new(activation.context, movie, fallback);
+    let instance = initialize_for_allocator(activation.context, text_line.into(), class);
 
     instance.set_slot(line_slots::_TEXT_BLOCK, this.into(), activation)?;
     instance.set_slot(line_slots::_SPECIFIED_WIDTH, args.get_value(1), activation)?;
@@ -110,50 +111,22 @@ fn apply_format<'gc>(
     text: &WStr,
     element_format: Option<Object<'gc>>,
 ) -> Result<(), Error<'gc>> {
-    if let Some(element_format) = element_format {
+    if let Some(ef) = element_format.and_then(|o| o.as_element_format_object()) {
         // TODO: Support more ElementFormat properties
-        let color = element_format
-            .get_slot(format_slots::_COLOR)
-            .coerce_to_u32(activation)?;
-        let size = element_format
-            .get_slot(format_slots::_FONT_SIZE)
-            .coerce_to_number(activation)?;
-
-        let (font, bold, italic, is_device_font) = if let Value::Object(font_description) =
-            element_format.get_slot(format_slots::_FONT_DESCRIPTION)
-        {
+        let (font, bold, italic, is_device_font) = if let Some(fd) = ef.font_description() {
             (
-                Some(
-                    font_description
-                        .get_slot(font_desc_slots::_FONT_NAME)
-                        .coerce_to_string(activation)?
-                        .as_wstr()
-                        .into(),
-                ),
-                Some(
-                    &font_description
-                        .get_slot(font_desc_slots::_FONT_WEIGHT)
-                        .coerce_to_string(activation)?
-                        == b"bold",
-                ),
-                Some(
-                    &font_description
-                        .get_slot(font_desc_slots::_FONT_POSTURE)
-                        .coerce_to_string(activation)?
-                        == b"italic",
-                ),
-                &font_description
-                    .get_slot(font_desc_slots::_FONT_LOOKUP)
-                    .coerce_to_string(activation)?
-                    == b"device",
+                Some(fd.font_name().as_wstr().into()),
+                Some(fd.font_weight() == FontWeightValue::Bold),
+                Some(fd.font_posture() == FontPostureValue::Italic),
+                fd.font_lookup() == FontLookupValue::Device,
             )
         } else {
             (None, None, None, true)
         };
 
         let format = TextFormat {
-            color: Some(swf::Color::from_rgb(color, 0xFF)),
-            size: Some(size),
+            color: Some(ef.color()),
+            size: Some(ef.font_size()),
             font,
             bold,
             italic,

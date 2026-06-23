@@ -6,7 +6,7 @@ use crate::avm1::globals::color_transform::ColorTransformObject;
 use crate::avm1::globals::movie_clip::object_to_rectangle;
 use crate::avm1::object::NativeObject;
 use crate::avm1::parameters::{ParametersExt, UndefinedAs};
-use crate::avm1::property_decl::{DeclContext, StaticDeclarations, SystemClass};
+use crate::avm1::property_decl::{DeclContext, PropertyOrder, StaticDeclarations, SystemClass};
 use crate::avm1::{Activation, Attribute, Error, Object, Value};
 use crate::bitmap::bitmap_data::BitmapData;
 use crate::bitmap::bitmap_data::{BitmapDataDrawError, IBitmapDrawable};
@@ -62,7 +62,12 @@ pub fn create_class<'gc>(
     context: &mut DeclContext<'_, 'gc>,
     super_proto: Object<'gc>,
 ) -> SystemClass<'gc> {
-    let class = context.native_class(constructor, None, super_proto);
+    let class = context.native_class(
+        constructor,
+        None,
+        super_proto,
+        PropertyOrder::PrototypeFirst,
+    );
     context.define_properties_on(class.proto, PROTO_DECLS(context));
     context.define_properties_on(class.constr, OBJECT_DECLS(context));
     class

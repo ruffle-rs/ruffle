@@ -1284,7 +1284,7 @@ impl<'gc> EditText<'gc> {
                 text,
                 self.text_transform(color),
                 params,
-                &mut |pos, transform, glyph, advance, x| {
+                |pos, transform, glyph, advance, x| {
                     if glyph.renderable(context) {
                         // If it's highlighted, override the color.
                         if matches!(visible_selection, Some(visible_selection) if visible_selection.contains(start + pos)) {
@@ -1435,7 +1435,7 @@ impl<'gc> EditText<'gc> {
                             if !text.is_empty() {
                                 let _ = object.set(
                                     property,
-                                    AvmString::new(activation.gc(), self.text()).into(),
+                                    AvmString::new(activation.gc(), self.text()),
                                     activation,
                                 );
                             }
@@ -1483,7 +1483,7 @@ impl<'gc> EditText<'gc> {
                         let property = AvmString::new(activation.gc(), property);
                         let _ = object.set(
                             property,
-                            AvmString::new(activation.gc(), self.html_text()).into(),
+                            AvmString::new(activation.gc(), self.html_text()),
                             activation,
                         );
                     },
@@ -1636,7 +1636,7 @@ impl<'gc> EditText<'gc> {
                     text,
                     self.text_transform(color),
                     params,
-                    &mut |pos, _transform, _glyph, advance, x| {
+                    |pos, _transform, _glyph, advance, x| {
                         if local_position.x >= x {
                             if local_position.x > x + (advance / 2) {
                                 result = string_utils::next_char_boundary(text, pos);
@@ -2724,10 +2724,18 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
             .get()
             .intersects(EditTextFlag::BORDER | EditTextFlag::HAS_BACKGROUND)
         {
-            let background_color = Some(self.0.background_color.get())
-                .filter(|_| self.0.flags.get().contains(EditTextFlag::HAS_BACKGROUND));
-            let border_color = Some(self.0.border_color.get())
-                .filter(|_| self.0.flags.get().contains(EditTextFlag::BORDER));
+            let background_color = self
+                .0
+                .flags
+                .get()
+                .contains(EditTextFlag::HAS_BACKGROUND)
+                .then_some(self.0.background_color.get());
+            let border_color = self
+                .0
+                .flags
+                .get()
+                .contains(EditTextFlag::BORDER)
+                .then_some(self.0.border_color.get());
 
             if self.is_device_font() {
                 self.draw_device_text_box(

@@ -11,6 +11,11 @@ use simple_asn1::ASN1Block;
 use std::borrow::Cow;
 use std::io::{self, Read};
 
+/// Maximum buffer capacity for reading the SWF.
+///
+/// Prevents large allocations in case the SWF has a malformed length.
+const MAX_DATA_CAPACITY: u32 = 128 * 1024 * 1024; // 128 MiB
+
 /// Parse a decompressed SWF.
 ///
 /// # Example
@@ -96,12 +101,15 @@ pub fn decompress_swf<'a, R: Read + 'a>(mut input: R) -> Result<SwfBuf> {
             }
             // Uncompressed length includes the 4-byte header and 4-byte uncompressed length itself,
             // subtract it here.
-            make_lzma_reader(input, uncompressed_len - 8)?
+            let unpacked_size = uncompressed_len
+                .checked_sub(8)
+                .ok_or_else(|| Error::invalid_data("Malformed LZMA length"))?;
+            make_lzma_reader(input, unpacked_size)?
         }
     };
 
     // Decompress the entire SWF.
-    let mut data = Vec::with_capacity(uncompressed_len as usize);
+    let mut data = Vec::with_capacity(uncompressed_len.min(MAX_DATA_CAPACITY) as usize);
     if let Err(e) = decompress_stream.read_to_end(&mut data) {
         log::error!("Error decompressing SWF: {e}");
     }
@@ -185,7 +193,7 @@ fn make_zlib_reader<'a, R: Read + 'a>(_input: R) -> Result<Box<dyn Read + 'a>> {
 #[cfg(feature = "lzma")]
 fn make_lzma_reader<'a, R: Read + 'a>(
     mut input: R,
-    uncompressed_length: u32,
+    unpacked_size: u32,
 ) -> Result<Box<dyn Read + 'a>> {
     use lzma_rs::{
         decompress::{Options, UnpackedSize},
@@ -210,12 +218,12 @@ fn make_lzma_reader<'a, R: Read + 'a>(
     let _ = input.read_u32::<LittleEndian>()?;
 
     // TODO: Switch to lzma-rs streaming API when stable.
-    let mut output = Vec::with_capacity(uncompressed_length as usize);
+    let mut output = Vec::with_capacity(unpacked_size.min(MAX_DATA_CAPACITY) as usize);
     lzma_decompress_with_options(
         &mut io::BufReader::new(input),
         &mut output,
         &Options {
-            unpacked_size: UnpackedSize::UseProvided(Some(uncompressed_length.into())),
+            unpacked_size: UnpackedSize::UseProvided(Some(unpacked_size.into())),
             allow_incomplete: true,
             memlimit: None,
         },
@@ -228,7 +236,7 @@ fn make_lzma_reader<'a, R: Read + 'a>(
 #[cfg(not(feature = "lzma"))]
 fn make_lzma_reader<'a, R: Read + 'a>(
     _input: R,
-    _uncompressed_length: u32,
+    _unpacked_size: u32,
 ) -> Result<Box<dyn Read + 'a>> {
     Err(Error::unsupported(
         "Support for LZMA compressed SWFs is not enabled.",
@@ -923,7 +931,7 @@ impl<'a> Reader<'a> {
         &mut self,
     ) -> Result<DefineSceneAndFrameLabelData<'a>> {
         let num_scenes = self.read_encoded_u32()? as usize;
-        let mut scenes = Vec::with_capacity(num_scenes);
+        let mut scenes = Vec::with_capacity(num_scenes.min(256));
         for _ in 0..num_scenes {
             scenes.push(FrameLabelData {
                 frame_num: self.read_encoded_u32()?,
@@ -932,7 +940,7 @@ impl<'a> Reader<'a> {
         }
 
         let num_frame_labels = self.read_encoded_u32()? as usize;
-        let mut frame_labels = Vec::with_capacity(num_frame_labels);
+        let mut frame_labels = Vec::with_capacity(num_frame_labels.min(256));
         for _ in 0..num_frame_labels {
             frame_labels.push(FrameLabelData {
                 frame_num: self.read_encoded_u32()?,
@@ -1028,22 +1036,7 @@ impl<'a> Reader<'a> {
 
             // GlyphShapeTable
             for (i, glyph) in glyphs.iter_mut().enumerate() {
-                // The glyph shapes are assumed to be positioned per the offset table.
-                // Panic on debug builds if this assumption is wrong, maybe we need to
-                // seek into these offsets instead?
-                debug_assert_eq!(self.pos(offsets_ref), offsets[i] as usize);
-
-                // The glyph shapes must not overlap. Avoid exceeding to the next one.
-                // TODO: What happens on decreasing offsets?
-                let available_bytes = if i < num_glyphs - 1 {
-                    offsets[i + 1] - offsets[i]
-                } else {
-                    code_table_offset - offsets[i]
-                };
-
-                if available_bytes == 0 {
-                    continue;
-                }
+                self.seek_absolute(offsets_ref, offsets[i] as usize);
 
                 let num_bits = self.read_u8()?;
                 let mut shape_context = ShapeContext {
@@ -1053,21 +1046,13 @@ impl<'a> Reader<'a> {
                     num_line_bits: num_bits & 0b1111,
                 };
 
-                if available_bytes == 1 {
-                    continue;
-                }
-
-                // TODO: Avoid reading more than `available_bytes - 1`?
                 let mut bits = self.bits();
                 while let Some(record) = Self::read_shape_record(&mut bits, &mut shape_context)? {
                     glyph.shape_records.push(record);
                 }
             }
 
-            // The code table is assumed to be positioned right after the glyph shapes.
-            // Panic on debug builds if this assumption is wrong, maybe we need to seek
-            // into the code table offset instead?
-            debug_assert_eq!(self.pos(offsets_ref), code_table_offset as usize);
+            self.seek_absolute(offsets_ref, code_table_offset as usize);
 
             // CodeTable
             for glyph in &mut glyphs {
@@ -2057,14 +2042,17 @@ impl<'a> Reader<'a> {
         BlendMode::from_u8(self.read_u8()?).ok_or_else(|| Error::invalid_data("Invalid blend mode"))
     }
 
-    fn read_clip_actions(&mut self) -> Result<Vec<ClipAction<'a>>> {
+    fn read_clip_actions(&mut self) -> Result<ClipActions<'a>> {
         self.read_u16()?; // Must be 0
-        self.read_clip_event_flags(); // All event flags
-        let mut clip_actions = vec![];
+        let all_event_flags = self.read_clip_event_flags();
+        let mut records = vec![];
         while let Some(clip_action) = self.read_clip_action()? {
-            clip_actions.push(clip_action);
+            records.push(clip_action);
         }
-        Ok(clip_actions)
+        Ok(ClipActions {
+            all_event_flags,
+            records,
+        })
     }
 
     fn read_clip_action(&mut self) -> Result<Option<ClipAction<'a>>> {
@@ -2075,7 +2063,9 @@ impl<'a> Reader<'a> {
             let mut length = self.read_u32()?;
             let key_code = if events.contains(ClipEventFlag::KEY_PRESS) {
                 // ActionData length includes the 1 byte key code.
-                length -= 1;
+                length = length
+                    .checked_sub(1)
+                    .ok_or_else(|| Error::invalid_data("keyPress clip action without key code"))?;
                 Some(self.read_u8()?)
             } else {
                 None
@@ -2180,7 +2170,7 @@ impl<'a> Reader<'a> {
         let num_matrix_rows = self.read_u8()?;
         let divisor = self.read_f32()?;
         let bias = self.read_f32()?;
-        let num_entries = num_matrix_cols * num_matrix_rows;
+        let num_entries = num_matrix_cols as u16 * num_matrix_rows as u16;
         let mut matrix = Vec::with_capacity(num_entries as usize);
         for _ in 0..num_entries {
             matrix.push(self.read_f32()?);
@@ -2599,9 +2589,13 @@ pub mod tests {
         Reader::new(data, default_version)
     }
 
-    fn read_from_file(path: &str) -> SwfBuf {
+    fn try_read_from_file(path: &str) -> Result<SwfBuf> {
         let data = std::fs::read(path).unwrap();
-        decompress_swf(&data[..]).unwrap()
+        decompress_swf(&data[..])
+    }
+
+    fn read_from_file(path: &str) -> SwfBuf {
+        try_read_from_file(path).unwrap()
     }
 
     pub fn read_tag_bytes_from_file_with_index(
@@ -2674,6 +2668,8 @@ pub mod tests {
                 read_from_file("tests/swfs/lzma.swf").header.compression(),
                 Compression::Lzma
             );
+            assert!(try_read_from_file("tests/swfs/lzma-malformed-length.swf").is_err());
+            assert!(try_read_from_file("tests/swfs/lzma-length-too-large.swf").is_err());
         }
     }
 

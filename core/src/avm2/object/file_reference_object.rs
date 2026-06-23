@@ -1,7 +1,7 @@
 use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{ClassObject, Object, TObject};
 use crate::avm2::{Activation, Error};
-use crate::backend::ui::FileDialogResult;
+use crate::backend::ui::FileDialogSelection;
 use crate::context::UpdateContext;
 use gc_arena::{Collect, DynamicRoot, Gc, GcWeak, Rootable};
 use ruffle_common::utils::HasPrefixField;
@@ -53,10 +53,13 @@ impl<'gc> TObject<'gc> for FileReferenceObject<'gc> {
 }
 
 impl FileReferenceObject<'_> {
-    pub fn init_from_dialog_result(self, result: Box<dyn FileDialogResult>) -> FileReference {
+    pub fn init_from_file_selection(
+        self,
+        selection: Box<dyn FileDialogSelection>,
+    ) -> FileReference {
         self.0
             .reference
-            .replace(FileReference::FileDialogResult(result))
+            .replace(FileReference::FileDialogSelection(selection))
     }
 
     pub fn file_reference(&self) -> Ref<'_, FileReference> {
@@ -74,7 +77,7 @@ impl FileReferenceObject<'_> {
 
 pub enum FileReference {
     None,
-    FileDialogResult(Box<dyn FileDialogResult>),
+    FileDialogSelection(Box<dyn FileDialogSelection>),
 }
 
 #[derive(Collect, HasPrefixField)]

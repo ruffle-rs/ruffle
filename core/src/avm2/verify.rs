@@ -992,7 +992,9 @@ fn translate_op<'gc>(
         AbcOp::CoerceU | AbcOp::ConvertU => Op::CoerceU,
         AbcOp::ConvertO => Op::ConvertO,
         AbcOp::ConvertS => Op::ConvertS,
-        AbcOp::Add => Op::Add,
+        AbcOp::Add => Op::Add {
+            inputs_integral: false,
+        },
         AbcOp::AddI => Op::AddI,
         AbcOp::BitAnd => Op::BitAnd,
         AbcOp::BitNot => Op::BitNot,
@@ -1014,7 +1016,9 @@ fn translate_op<'gc>(
         AbcOp::Negate => Op::Negate,
         AbcOp::NegateI => Op::NegateI,
         AbcOp::RShift => Op::RShift,
-        AbcOp::Subtract => Op::Subtract,
+        AbcOp::Subtract => Op::Subtract {
+            inputs_integral: false,
+        },
         AbcOp::SubtractI => Op::SubtractI,
         AbcOp::Swap => Op::Swap,
         AbcOp::URShift => Op::URShift,

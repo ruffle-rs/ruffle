@@ -280,6 +280,23 @@ pub fn make_unknown_ns_error<'gc>(
 
 #[inline(never)]
 #[cold]
+pub fn make_error_1001<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    method: Method<'gc>,
+) -> Error<'gc> {
+    let mut function_name = WString::new();
+
+    display_function(&mut function_name, method);
+
+    make_error!(verify_error(
+        activation,
+        format!("Error #1001: The method {function_name} is not implemented.",),
+        1001,
+    ))
+}
+
+#[inline(never)]
+#[cold]
 pub fn make_error_1002<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
     make_error!(range_error(
         activation,
@@ -877,6 +894,16 @@ pub fn make_error_1078<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> 
 
 #[inline(never)]
 #[cold]
+pub fn make_error_1079<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
+    make_error!(verify_error(
+        activation,
+        "Error #1079: Native methods are not allowed in loaded code.",
+        1079,
+    ))
+}
+
+#[inline(never)]
+#[cold]
 pub fn make_error_1080<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
     make_error!(type_error(
         activation,
@@ -1322,14 +1349,24 @@ pub fn make_error_2005<'gc>(
     ))
 }
 
+pub enum Error2006Type {
+    // Stage3D x/y setters (not yet implemented) can throw this error as an ArgumentError
+    #[expect(unused)]
+    ArgumentError,
+    RangeError,
+}
+
 #[inline(never)]
 #[cold]
-pub fn make_error_2006<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
-    make_error!(range_error(
-        activation,
-        "Error #2006: The supplied index is out of bounds.",
-        2006,
-    ))
+pub fn make_error_2006<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    kind: Error2006Type,
+) -> Error<'gc> {
+    let message = "Error #2006: The supplied index is out of bounds.";
+    make_error!(match kind {
+        Error2006Type::ArgumentError => argument_error(activation, message, 2006),
+        Error2006Type::RangeError => range_error(activation, message, 2006),
+    })
 }
 
 #[inline(never)]

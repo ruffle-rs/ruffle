@@ -63,7 +63,7 @@ pub fn execute_report_main(execute_report_opt: ExecuteReportOpt) -> Result<(), s
         .into_owned();
 
     LOCAL_LOGGER.with(|log_buffer| {
-        log_buffer.borrow_mut().truncate(0);
+        log_buffer.borrow_mut().clear();
     });
 
     let mut file_result = FileResults::new(&name);

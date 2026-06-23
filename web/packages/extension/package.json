@@ -1,6 +1,6 @@
 {
     "name": "ruffle-extension",
-    "version": "0.2.0",
+    "version": "0.3.0",
     "description": "Extension packaging for Ruffle Flash emulator",
     "license": "(MIT OR Apache-2.0)",
     "private": true,
@@ -13,23 +13,23 @@
         "checkTypes": "tsc --noemit && tsc --noemit -p tools"
     },
     "dependencies": {
-        "ruffle-core": "^0.2.0"
+        "ruffle-core": "^0.3.0"
     },
     "devDependencies": {
         "@tsconfig/strictest": "^2.0.8",
         "@types/archiver": "^7.0.0",
-        "@types/chrome": "^0.1.42",
+        "@types/chrome": "^0.2.0",
         "@types/common-tags": "^1.8.4",
         "@types/firefox-webext-browser": "^143.0.0",
         "@types/jsonwebtoken": "^9.0.10",
         "archiver": "^7.0.1",
         "json5": "^2.2.3",
-        "ts-loader": "^9.5.7",
+        "ts-loader": "^9.6.2",
         "typescript": "^5.9.3",
-        "webpack-cli": "^7.0.2",
-        "axios": "^1.16.1",
-        "form-data": "^4.0.5",
+        "webpack-cli": "^7.0.3",
+        "axios": "^1.18.1",
+        "form-data": "^4.0.6",
         "jsonwebtoken": "^9.0.3",
-        "tsx": "^4.22.3"
+        "tsx": "^4.22.4"
     }
 }

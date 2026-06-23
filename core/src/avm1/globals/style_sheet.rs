@@ -1,6 +1,6 @@
 use std::fmt;
 
-use crate::avm1::property_decl::{DeclContext, StaticDeclarations, SystemClass};
+use crate::avm1::property_decl::{DeclContext, PropertyOrder, StaticDeclarations, SystemClass};
 use crate::avm1::{Activation, Error, Object, Value};
 use crate::avm1::{ArrayBuilder, ExecutionReason, NativeObject};
 use crate::backend::navigator::Request;
@@ -52,7 +52,12 @@ pub fn create_class<'gc>(
     context: &mut DeclContext<'_, 'gc>,
     super_proto: Object<'gc>,
 ) -> SystemClass<'gc> {
-    let class = context.native_class(constructor, None, super_proto);
+    let class = context.native_class(
+        constructor,
+        None,
+        super_proto,
+        PropertyOrder::PrototypeFirst,
+    );
     context.define_properties_on(class.proto, PROTO_DECLS(context));
     class
 }
@@ -94,16 +99,12 @@ fn set_style<'gc>(
     if !this.has_property(activation, istr!("_styles")) {
         this.set(
             istr!("_styles"),
-            ArrayBuilder::empty(activation).into(),
+            ArrayBuilder::empty(activation),
             activation,
         )?;
     }
     if !this.has_property(activation, istr!("_css")) {
-        this.set(
-            istr!("_css"),
-            ArrayBuilder::empty(activation).into(),
-            activation,
-        )?;
+        this.set(istr!("_css"), ArrayBuilder::empty(activation), activation)?;
     }
     let css = this
         .get_stored(istr!("_css"), activation)?
@@ -399,7 +400,7 @@ fn parse_css<'gc>(
                 for (key, value) in properties.into_iter() {
                     object.set(
                         AvmString::new(activation.gc(), transform_dashes_to_camel_case(key)),
-                        AvmString::new(activation.gc(), value).into(),
+                        AvmString::new(activation.gc(), value),
                         activation,
                     )?;
                 }
@@ -427,13 +428,9 @@ fn clear<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     this.set(
         istr!("_styles"),
-        ArrayBuilder::empty(activation).into(),
+        ArrayBuilder::empty(activation),
         activation,
     )?;
-    this.set(
-        istr!("_css"),
-        ArrayBuilder::empty(activation).into(),
-        activation,
-    )?;
+    this.set(istr!("_css"), ArrayBuilder::empty(activation), activation)?;
     Ok(Value::Undefined)
 }

@@ -13,7 +13,7 @@ use crate::avm1::activation::Activation;
 use crate::avm1::clamp::Clamp;
 use crate::avm1::error::Error;
 use crate::avm1::function::FunctionObject;
-use crate::avm1::property_decl::{DeclContext, StaticDeclarations, SystemClass};
+use crate::avm1::property_decl::{DeclContext, PropertyOrder, StaticDeclarations, SystemClass};
 use crate::avm1::{ArrayBuilder, Attribute, ExecutionReason, NativeObject, Object, Value};
 use crate::backend::audio::{SoundHandle, SoundInstanceHandle};
 use crate::backend::navigator::Request;
@@ -338,7 +338,7 @@ impl<'gc> Sound<'gc> {
         }
 
         if !sound_object.has_property(activation, istr!("id3")) {
-            sound_object.set(istr!("id3"), id3.into(), activation)?;
+            sound_object.set(istr!("id3"), id3, activation)?;
             sound_object.set_attributes(
                 activation.gc(),
                 Some(istr!("id3")),
@@ -385,7 +385,12 @@ pub fn create_class<'gc>(
     context: &mut DeclContext<'_, 'gc>,
     super_proto: Object<'gc>,
 ) -> SystemClass<'gc> {
-    let class = context.native_class(constructor, None, super_proto);
+    let class = context.native_class(
+        constructor,
+        None,
+        super_proto,
+        PropertyOrder::PrototypeFirst,
+    );
     context.define_properties_on(class.proto, PROTO_DECLS(context));
     class
 }
@@ -529,10 +534,10 @@ fn get_transform<'gc>(
             Some(activation.prototypes().object),
         );
         // Surprisingly `lr` means "right-to-left" and `rl` means "left-to-right".
-        obj.set(istr!("ll"), transform.left_to_left.into(), activation)?;
-        obj.set(istr!("lr"), transform.right_to_left.into(), activation)?;
-        obj.set(istr!("rr"), transform.right_to_right.into(), activation)?;
-        obj.set(istr!("rl"), transform.left_to_right.into(), activation)?;
+        obj.set(istr!("ll"), transform.left_to_left, activation)?;
+        obj.set(istr!("lr"), transform.right_to_left, activation)?;
+        obj.set(istr!("rr"), transform.right_to_right, activation)?;
+        obj.set(istr!("rl"), transform.left_to_right, activation)?;
         Ok(obj.into())
     } else {
         Ok(Value::Undefined)

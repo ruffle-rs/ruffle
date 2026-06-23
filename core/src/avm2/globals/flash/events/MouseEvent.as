@@ -110,10 +110,12 @@ package flash.events {
             );
         }
 
+        [API("662")]
         public function get isRelatedObjectInaccessible():Boolean {
             return this._isRelatedObjectInaccessible;
         }
 
+        [API("662")]
         public function set isRelatedObjectInaccessible(value:Boolean):void {
             this._isRelatedObjectInaccessible = value;
         }

@@ -12,7 +12,6 @@ use serde::Serialize;
 use std::borrow::Cow;
 use std::fs::File;
 use std::path::Path;
-use std::process::exit;
 
 // This function is used in macros and they require such signature with &bool.
 #[allow(clippy::trivially_copy_pass_by_ref)]
@@ -492,5 +491,4 @@ pub fn capture_specification(context: &mut UpdateContext, output: &Path) {
     }
     serde_json::to_writer_pretty(&File::create(output).unwrap(), &definitions).unwrap();
     tracing::info!("Wrote stub report to {output:?}");
-    exit(0);
 }

@@ -38,6 +38,15 @@
     "settings_player_version": {
         "message": "Flash speler versienummer om na te bootsen (bereik 1-32)"
     },
+    "settings_background_execution_mode": {
+        "message": "Achtergronduitvoering"
+    },
+    "settings_background_execution_mode_none": {
+        "message": "Pauzeren"
+    },
+    "settings_background_execution_mode_main_thread": {
+        "message": "Uitvoeren in de hoofdthread"
+    },
     "settings_preferred_renderer": {
         "message": "Voorkeursrenderer"
     },

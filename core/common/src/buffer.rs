@@ -1,9 +1,8 @@
 //! Shared-ownership buffer types
 
 use gc_arena::Collect;
-use std::cmp::min;
 use std::fmt::{Debug, Formatter, LowerHex, UpperHex};
-use std::io::{Error as IoError, Read, Result as IoResult};
+use std::io::{Read, Result as IoResult};
 use std::ops::{Bound, Deref, RangeBounds};
 use std::sync::{Arc, RwLock, RwLockReadGuard};
 use thiserror::Error;
@@ -163,55 +162,9 @@ impl Slice {
         }
     }
 
-    /// Create a subslice of this buffer slice, without bounds checking.
-    ///
-    /// The parameter `slice` must be derived from the same buffer this slice
-    /// was, otherwise the returned slice will be empty
-    ///
-    /// This emulates "unbounded reads" in file formats that don't bounds-check
-    /// things properly.
-    pub fn to_unbounded_subslice(&self, slice: &[u8]) -> Self {
-        let self_guard = self.buf.0.read().expect("unlock read");
-        let self_pval = self_guard.as_ptr() as usize;
-        let self_len = self.buf.len();
-        let slice_pval = slice.as_ptr() as usize;
-
-        if self_pval <= slice_pval && slice_pval < (self_pval + self_len) {
-            Slice {
-                buf: self.buf.clone(),
-                start: slice_pval - self_pval,
-                end: (slice_pval - self_pval) + slice.len(),
-            }
-        } else {
-            self.buf.to_empty_slice()
-        }
-    }
-
-    /// Construct a new Slice from a start and an end.
-    ///
-    /// The start and end values will be relative to the current slice.
-    /// Furthermore, this function will yield an empty slice if the calculated
-    /// slice would be invalid (e.g. negative length) or would extend past the
-    /// end of the current slice.
-    pub fn to_start_and_end(&self, start: usize, end: usize) -> Self {
-        let new_start = self.start + start;
-        let new_end = self.start + end;
-
-        if new_start <= new_end && new_end <= self.end {
-            if let Some(result) = self.buf.get(new_start..new_end) {
-                result
-            } else {
-                self.buf.to_empty_slice()
-            }
-        } else {
-            self.buf.to_empty_slice()
-        }
-    }
-
     /// Get a subslice of this slice.
     ///
-    /// Normal subslicing bounds rules will be respected. If you want to get a
-    /// slice outside the bounds of this one, use `to_unbounded_subslice`.
+    /// Normal subslicing bounds rules will be respected.
     pub fn get<T: RangeBounds<usize>>(&self, range: T) -> Option<Slice> {
         let s = self.buf.0.read().expect("unlock read");
 
@@ -267,13 +220,13 @@ impl Slice {
     pub fn buffer(&self) -> &Buffer {
         &self.buf
     }
+}
 
-    /// Create a readable cursor into the `Slice`.
-    pub fn as_cursor(&self) -> SliceCursor {
-        SliceCursor {
-            slice: self.clone(),
-            pos: 0,
-        }
+impl Read for Slice {
+    fn read(&mut self, data: &mut [u8]) -> IoResult<usize> {
+        let len = <&[u8] as Read>::read(&mut self.data().as_ref(), data)?;
+        self.start += len;
+        Ok(len)
     }
 }
 
@@ -286,27 +239,6 @@ impl LowerHex for Slice {
 impl UpperHex for Slice {
     fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
         UpperHex::fmt(&self.data(), f)
-    }
-}
-
-/// A readable cursor into a buffer slice.
-pub struct SliceCursor {
-    slice: Slice,
-    pos: usize,
-}
-
-impl Read for SliceCursor {
-    fn read(&mut self, data: &mut [u8]) -> IoResult<usize> {
-        let copy_count = min(data.len(), self.slice.len() - self.pos);
-        let slice = self
-            .slice
-            .get(self.pos..self.pos + copy_count)
-            .expect("Slice offsets are always valid");
-        let slice_data = slice.data();
-
-        data[..copy_count].copy_from_slice(&slice_data);
-        self.pos += copy_count;
-        Ok(copy_count)
     }
 }
 
@@ -358,18 +290,6 @@ impl Substream {
     /// Calculate the number of chunks in the `Substream`.
     pub fn num_chunks(&self) -> usize {
         self.chunks.read().unwrap().len()
-    }
-
-    /// Create a readable cursor into the `Substream`.
-    ///
-    /// The returned cursor clones the `Substream` and thus shares a chunk list
-    /// with it.
-    pub fn as_cursor(&self) -> SubstreamCursor {
-        SubstreamCursor {
-            substream: self.clone(),
-            chunk_pos: 0,
-            bytes_pos: 0,
-        }
     }
 
     /// Calculate the number of bytes in the `Substream`.
@@ -443,62 +363,6 @@ impl From<Slice> for Substream {
             buf: slice.buf,
             chunks: Arc::new(RwLock::new(vec![(slice.start, slice.end)])),
         }
-    }
-}
-
-/// A readable cursor into a buffer substream.
-///
-/// Reads from the cursor (via `Read` etc) will be filled as if the substream
-/// referred to in the chunks list is a single contiguous stream of bytes with
-/// no other data in between. Code using a `SubstreamCursor` can thus work with
-/// both multiplexed and unmultiplexed data in the same way.
-pub struct SubstreamCursor {
-    substream: Substream,
-    chunk_pos: usize,
-    bytes_pos: usize,
-}
-
-impl Read for SubstreamCursor {
-    fn read(&mut self, data: &mut [u8]) -> IoResult<usize> {
-        let mut out_count = 0;
-        let buf_owned = self.substream.buf.clone();
-        let buf = buf_owned.0.read().map_err(|_| {
-            IoError::other("the underlying substream is locked by a panicked process")
-        })?;
-
-        let chunks = self.substream.chunks.read().unwrap();
-
-        while out_count < data.len() {
-            let cur_chunk = chunks.get(self.chunk_pos);
-            if cur_chunk.is_none() {
-                //out of chunks to read
-                return Ok(out_count);
-            }
-
-            let cur_chunk = cur_chunk.expect("cur_chunk should never be None");
-
-            let chunk_len = cur_chunk.1 - cur_chunk.0;
-            let copy_count = min(data.len() - out_count, chunk_len - self.bytes_pos);
-
-            data[out_count..out_count + copy_count].copy_from_slice(
-                buf.get(cur_chunk.0 + self.bytes_pos..cur_chunk.0 + self.bytes_pos + copy_count)
-                    .expect("Slice offsets are always valid"),
-            );
-
-            self.bytes_pos += copy_count;
-            out_count += copy_count;
-
-            if self.bytes_pos < chunk_len {
-                //`data` is full
-                break;
-            }
-
-            //`data` not full, move onto next chunk
-            self.chunk_pos += 1;
-            self.bytes_pos = 0;
-        }
-
-        Ok(out_count)
     }
 }
 
@@ -580,7 +444,7 @@ impl UpperHex for SliceRef<'_> {
 
 #[cfg(test)]
 mod test {
-    use crate::buffer::{Buffer, Substream};
+    use crate::buffer::Buffer;
     use std::io::Read;
 
     #[test]
@@ -604,12 +468,12 @@ mod test {
     }
 
     #[test]
-    fn slice_cursor_read() {
+    fn slice_read() {
         let buf = Buffer::from(vec![
             38, 26, 99, 1, 1, 1, 1, 38, 12, 14, 1, 1, 93, 86, 1, 88,
         ]);
         let slice = buf.to_full_slice();
-        let mut cursor = slice.as_cursor();
+        let mut cursor = slice.clone();
         let refdata = slice.data();
 
         let mut data = vec![0; 1];
@@ -622,12 +486,12 @@ mod test {
     }
 
     #[test]
-    fn slice_cursor_read_all() {
+    fn slice_read_all() {
         let buf = Buffer::from(vec![
             38, 26, 99, 1, 1, 1, 1, 38, 12, 14, 1, 1, 93, 86, 1, 88,
         ]);
         let slice = buf.to_full_slice();
-        let mut cursor = slice.as_cursor();
+        let mut cursor = slice.clone();
         let refdata = slice.data();
 
         let mut data = vec![0; slice.len() + 32];
@@ -635,64 +499,5 @@ mod test {
         let result = cursor.read(&mut data);
         assert_eq!(result.unwrap(), slice.len());
         assert_eq!(&data[..slice.len()], &refdata[..]);
-    }
-
-    #[test]
-    fn substream_cursor_read_inside() {
-        let buf = Buffer::from(vec![
-            38, 26, 99, 1, 1, 1, 1, 38, 12, 14, 1, 1, 93, 86, 1, 88,
-        ]);
-        let mut substream = Substream::new(buf.clone());
-
-        substream.append(buf.get(3..7).unwrap()).unwrap();
-        substream.append(buf.get(10..12).unwrap()).unwrap();
-        substream.append(buf.get(14..15).unwrap()).unwrap();
-
-        let mut cursor = substream.as_cursor();
-        let mut data = vec![0; 7];
-        let result = cursor.read(&mut data);
-        assert_eq!(result.unwrap(), 7);
-        assert_eq!(data, vec![1; 7]);
-    }
-
-    #[test]
-    fn substream_cursor_read_outside() {
-        let buf = Buffer::from(vec![
-            38, 26, 99, 1, 1, 1, 1, 38, 12, 14, 1, 1, 93, 86, 1, 88,
-        ]);
-        let mut substream = Substream::new(buf.clone());
-
-        substream.append(buf.get(0..3).unwrap()).unwrap();
-        substream.append(buf.get(7..10).unwrap()).unwrap();
-        substream.append(buf.get(12..14).unwrap()).unwrap();
-        substream.append(buf.get(15..).unwrap()).unwrap();
-
-        let mut cursor = substream.as_cursor();
-        let mut data = vec![0; 7];
-        let result = cursor.read(&mut data);
-        assert_eq!(result.unwrap(), 7);
-        assert_eq!(data, vec![38, 26, 99, 38, 12, 14, 93]);
-
-        let mut data = vec![0; 2];
-        let result = cursor.read(&mut data);
-        assert_eq!(result.unwrap(), 2);
-        assert_eq!(data, vec![86, 88]);
-
-        let mut cursor = substream.as_cursor();
-        let mut data = vec![0; 8];
-        let result = cursor.read(&mut data);
-        assert_eq!(result.unwrap(), 8);
-        assert_eq!(data, vec![38, 26, 99, 38, 12, 14, 93, 86]);
-
-        let mut data = vec![0; 1];
-        let result = cursor.read(&mut data);
-        assert_eq!(result.unwrap(), 1);
-        assert_eq!(data, vec![88]);
-
-        let mut cursor = substream.as_cursor();
-        let mut data = vec![0; 9];
-        let result = cursor.read(&mut data);
-        assert_eq!(result.unwrap(), 9);
-        assert_eq!(data, vec![38, 26, 99, 38, 12, 14, 93, 86, 88]);
     }
 }

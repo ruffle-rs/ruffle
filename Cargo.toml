@@ -24,8 +24,6 @@ members = [
     "render/wgpu",
     "render/webgl",
 
-    "stub-report",
-
     "video",
     "video/software",
     "video/external",
@@ -38,6 +36,8 @@ members = [
     "tests/framework",
 
     "tools/asc",
+    "tools/fuzzer",
+    "tools/stub-report",
 ]
 default-members = ["desktop"]
 resolver = "2"
@@ -48,7 +48,7 @@ edition = "2024"
 homepage = "https://ruffle.rs"
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/ruffle-rs/ruffle"
-version = "0.2.0"
+version = "0.3.0"
 
 [workspace.dependencies]
 tracing = "0.1.43"
@@ -62,7 +62,7 @@ anyhow = "1.0"
 gc-arena = { git = "https://github.com/kyren/gc-arena.git", rev = "75671ae03f53718357b741ed4027560f14e90836", features = ["enum-map", "hashbrown", "indexmap", "slotmap", "smallvec"] }
 slotmap = "1.1.1"
 async-channel = "2.5.0"
-bitflags = "2.11.1"
+bitflags = "2.12.1"
 bytemuck = "1.25.0"
 chrono = { version = "0.4.44", default-features = false }
 enum-map = "2.7.3"
@@ -87,6 +87,7 @@ rfd = { version = "0.17.2", default-features = false, features = ["wayland", "xd
 memmap2 = "0.9.10"
 libtest-mimic = "0.8.2"
 regex = "1.12.3"
+reqwest = { version = "0.12.28", default-features = false }
 toml = "1.0.6"
 toml_edit = "0.25.4"
 vfs = "0.13.0"
@@ -139,6 +140,9 @@ manual_range_contains = "allow"  # Less readable: Suggests `(a..b).contains(n)` 
 assigning_clones = "allow"       # Sometimes useful, but more often than not it doesn't do anything as
                                  # we overwrite an empty item. And sometimes it can even be a footgun
                                  # by keeping big allocations alive.
+byte_char_slices = "allow"       # Less expressive: Suggests `b"abc"` byte string literal instead of an explicit
+                                 # `[b'a', b'b', b'c']` array. The array form is clearer when the elements
+                                 # represent a set of alternatives (any-of) rather than a byte sequence.
 
 # Don't optimize build scripts and macros.
 [profile.release.build-override]
@@ -149,6 +153,11 @@ panic = "unwind"
 
 [profile.release]
 panic = "abort"
+
+[profile.dist]
+inherits = "release"
+lto = true
+codegen-units = 1
 
 [profile.dev.package.h263-rs]
 opt-level = 3

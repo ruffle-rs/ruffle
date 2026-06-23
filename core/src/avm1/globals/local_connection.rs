@@ -3,7 +3,7 @@
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::globals::shared_object::{deserialize_value, serialize};
-use crate::avm1::property_decl::{DeclContext, StaticDeclarations, SystemClass};
+use crate::avm1::property_decl::{DeclContext, PropertyOrder, StaticDeclarations, SystemClass};
 use crate::avm1::{ActivationIdentifier, ExecutionReason, NativeObject, Object, Value};
 use crate::avm1_stub;
 use crate::context::UpdateContext;
@@ -83,7 +83,7 @@ impl<'gc> LocalConnection<'gc> {
         let event = constructor
             .construct(&mut activation, &[])?
             .coerce_to_object_or_bare(&mut activation)?;
-        event.set(istr!("level"), status.into(), &mut activation)?;
+        event.set(istr!("level"), status, &mut activation)?;
         this.call_method(
             istr!("onStatus"),
             &[event.into()],
@@ -141,7 +141,12 @@ pub fn create_class<'gc>(
     context: &mut DeclContext<'_, 'gc>,
     super_proto: Object<'gc>,
 ) -> SystemClass<'gc> {
-    let class = context.native_class(constructor, None, super_proto);
+    let class = context.native_class(
+        constructor,
+        None,
+        super_proto,
+        PropertyOrder::PrototypeFirst,
+    );
     context.define_properties_on(class.proto, PROTO_DECLS(context));
     class
 }

@@ -991,9 +991,16 @@ fn abstract_interpret_ops<'gc>(
                 stack.pop(activation)?;
                 stack.push_class(activation, types.int)?;
             }
-            Op::Add => {
+            Op::Add { .. } => {
                 let value2 = stack.pop(activation)?;
                 let value1 = stack.pop(activation)?;
+
+                if value1.class == Some(types.int) && value2.class == Some(types.int) {
+                    optimize_op_to!(Op::Add {
+                        inputs_integral: true
+                    });
+                }
+
                 if (value1.class == Some(types.int)
                     || value1.class == Some(types.uint)
                     || value1.class == Some(types.number))
@@ -1010,9 +1017,16 @@ fn abstract_interpret_ops<'gc>(
                     stack.push_any(activation)?;
                 }
             }
-            Op::Subtract => {
-                stack.pop(activation)?;
-                stack.pop(activation)?;
+            Op::Subtract { .. } => {
+                let value2 = stack.pop(activation)?;
+                let value1 = stack.pop(activation)?;
+
+                if value1.class == Some(types.int) && value2.class == Some(types.int) {
+                    optimize_op_to!(Op::Subtract {
+                        inputs_integral: true
+                    });
+                }
+
                 stack.push_class(activation, types.number)?;
             }
             Op::Multiply => {

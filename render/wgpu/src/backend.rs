@@ -696,6 +696,12 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
         bitmap: Bitmap<'_>,
         mut region: PixelRegion,
     ) -> Result<(), BitmapError> {
+        if region.width() == 0 || region.height() == 0 {
+            // Nothing to do. It's important to bail out now, as the
+            // write_texture call panics when the source buffer is of zero size.
+            return Ok(());
+        }
+
         let texture = as_texture(handle);
 
         let mut bitmap = bitmap.to_rgba();

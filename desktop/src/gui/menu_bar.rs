@@ -252,6 +252,9 @@ impl MenuBar {
 
             let recent_menu_response = ui
                 .menu_button(text(locale, "file-menu-recents"), |ui| {
+                    ui.style_mut().wrap_mode = Some(egui::TextWrapMode::Truncate);
+                    ui.set_min_width(250.0);
+
                     if self
                         .cached_recents
                         .as_ref()

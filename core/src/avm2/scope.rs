@@ -5,14 +5,14 @@ use crate::avm2::activation::Activation;
 use crate::avm2::class::Class;
 use crate::avm2::domain::Domain;
 use crate::avm2::object::TObject;
+use crate::avm2::property_map::PropertyMap;
+use crate::avm2::qname::QName;
 use crate::avm2::value::Value;
 use crate::avm2::{Multiname, Namespace};
 use core::fmt;
 use gc_arena::barrier::field;
 use gc_arena::lock::RefLock;
 use gc_arena::{Collect, Gc, Mutation};
-
-use super::property_map::PropertyMap;
 
 /// Represents a Scope that can be on either a ScopeChain or local ScopeStack.
 #[derive(Collect, Clone, Copy, Debug)]
@@ -232,10 +232,9 @@ impl<'gc> ScopeChain<'gc> {
                 let name = multiname
                     .local_name()
                     .expect("Resolvable multinames should always have a local name");
-                cache
-                    .unlock()
-                    .borrow_mut()
-                    .insert_with_namespace(ns, name, obj);
+                let qname = QName::new(ns, name);
+
+                cache.unlock().borrow_mut().insert(qname, obj);
             }
         }
         Ok(found.map(|o| o.1))

@@ -3,7 +3,8 @@ mod font_renderer;
 use super::JavascriptPlayer;
 use rfd::{AsyncFileDialog, FileHandle};
 use ruffle_core::backend::ui::{
-    DialogLoaderError, DialogResultFuture, FileDialogResult, FileFilter,
+    DialogResultFuture, FileDialogResult, FileDialogSelection, FileFilter, MultiDialogResultFuture,
+    MultiFileDialogResult,
 };
 use ruffle_core::backend::ui::{
     FontDefinition, FullscreenError, LanguageIdentifier, MouseCursor, US_ENGLISH, UiBackend,
@@ -21,39 +22,22 @@ use web_sys::{
 use chrono::{DateTime, Utc};
 use js_sys::{Array, Uint8Array};
 
-pub struct WebFileDialogResult {
-    canceled: bool,
-    file_name: Option<String>,
+pub struct WebFileSelection {
+    file_name: String,
     modification_time: Option<DateTime<Utc>>,
     contents: Vec<u8>,
 }
 
-impl WebFileDialogResult {
-    pub async fn new_pick(handle: Option<FileHandle>) -> Self {
-        let contents = if let Some(handle) = handle.as_ref() {
-            handle.read().await
-        } else {
-            Vec::new()
-        };
+impl WebFileSelection {
+    pub async fn new_pick(handle: FileHandle) -> Self {
+        let contents = handle.read().await;
 
-        #[cfg(not(target_arch = "wasm32"))]
-        let file_name = None;
-
-        #[cfg(target_arch = "wasm32")]
-        let file_name = handle.as_ref().map(|handle| handle.file_name());
-
-        #[cfg(not(target_arch = "wasm32"))]
-        let modification_time = None;
-
-        #[cfg(target_arch = "wasm32")]
-        let modification_time = if let Some(ref handle) = handle {
-            DateTime::from_timestamp(handle.inner().last_modified() as i64, 0)
-        } else {
-            None
+        let (file_name, modification_time) = cfg_select! {
+            target_arch = "wasm32" => (handle.file_name(), DateTime::from_timestamp(handle.inner().last_modified() as i64, 0)),
+            _ => (String::new(), None)
         };
 
         Self {
-            canceled: handle.is_none(),
             file_name,
             modification_time,
             contents,
@@ -62,12 +46,22 @@ impl WebFileDialogResult {
 
     fn new_download(file_name: String) -> Self {
         Self {
-            canceled: false,
-            file_name: Some(file_name),
+            file_name,
             modification_time: None,
             contents: Vec::new(),
         }
     }
+}
+
+fn build_file_dialog(filters: &[FileFilter], is_mac: bool) -> AsyncFileDialog {
+    let mut dialog = AsyncFileDialog::new();
+
+    for filter in filters {
+        let extensions = filter.extensions_for_dialog(is_mac);
+        dialog = dialog.add_filter(&filter.description, &extensions);
+    }
+
+    dialog
 }
 
 fn get_extension_from_filename(filename: &str) -> Option<String> {
@@ -94,11 +88,7 @@ fn download_as_file(filename: Option<&str>, data: &[u8]) -> Result<(), JsValue> 
     Ok(())
 }
 
-impl FileDialogResult for WebFileDialogResult {
-    fn is_cancelled(&self) -> bool {
-        self.canceled
-    }
-
+impl FileDialogSelection for WebFileSelection {
     fn creation_time(&self) -> Option<DateTime<Utc>> {
         // Creation time is not available in JS
         None
@@ -108,7 +98,7 @@ impl FileDialogResult for WebFileDialogResult {
         self.modification_time
     }
 
-    fn file_name(&self) -> Option<String> {
+    fn file_name(&self) -> String {
         self.file_name.clone()
     }
 
@@ -117,11 +107,7 @@ impl FileDialogResult for WebFileDialogResult {
     }
 
     fn file_type(&self) -> Option<String> {
-        if let Some(ref file_name) = self.file_name {
-            get_extension_from_filename(file_name)
-        } else {
-            None
-        }
+        get_extension_from_filename(&self.file_name)
     }
 
     fn contents(&self) -> &[u8] {
@@ -132,7 +118,7 @@ impl FileDialogResult for WebFileDialogResult {
         self.contents = data.to_vec();
         self.modification_time = Some(Utc::now());
 
-        if let Err(err) = download_as_file(self.file_name.as_deref(), &self.contents[..]) {
+        if let Err(err) = download_as_file(Some(&self.file_name), &self.contents[..]) {
             tracing::error!("Download failed: {:?}", err);
         }
     }
@@ -195,6 +181,34 @@ impl WebUiBackend {
 
     pub fn set_clipboard_content_buffer(&mut self, content: String) {
         self.clipboard_content = content;
+    }
+
+    fn check_dialog_open(&mut self) -> Option<()> {
+        if self.dialog_open {
+            return None;
+        }
+
+        self.dialog_open = true;
+
+        Some(())
+    }
+
+    fn show_open_dialog<F, O>(&mut self, filters: &[FileFilter], f: F) -> Option<O>
+    where
+        F: FnOnce(AsyncFileDialog) -> O,
+    {
+        self.check_dialog_open()?;
+
+        let is_mac = web_sys::window()
+            .expect("window()")
+            .navigator()
+            .platform()
+            .expect("navigator.platform")
+            .contains("Mac");
+
+        let dialog = build_file_dialog(filters, is_mac);
+
+        Some(f(dialog))
     }
 }
 
@@ -353,33 +367,34 @@ impl UiBackend for WebUiBackend {
     }
 
     fn display_file_open_dialog(&mut self, filters: Vec<FileFilter>) -> Option<DialogResultFuture> {
-        // Prevent opening multiple dialogs at the same time
-        if self.dialog_open {
-            return None;
-        }
-        self.dialog_open = true;
-
-        // Create the dialog future
-        let is_mac = web_sys::window()
-            .expect("window()")
-            .navigator()
-            .platform()
-            .expect("navigator.platform")
-            .contains("Mac");
+        let result = self.show_open_dialog(&filters, |d| d.pick_file())?;
 
         Some(Box::pin(async move {
-            let mut dialog = AsyncFileDialog::new();
+            Ok(if let Some(handle) = result.await {
+                FileDialogResult::Selection(Box::new(WebFileSelection::new_pick(handle).await))
+            } else {
+                FileDialogResult::Canceled
+            })
+        }))
+    }
 
-            for filter in &filters {
-                let extensions = filter.extensions_for_dialog(is_mac);
+    fn display_file_open_dialog_multiple(
+        &mut self,
+        filters: Vec<FileFilter>,
+    ) -> Option<MultiDialogResultFuture> {
+        let result = self.show_open_dialog(&filters, |d| d.pick_files())?;
 
-                dialog = dialog.add_filter(&filter.description, &extensions);
-            }
+        Some(Box::pin(async move {
+            Ok(if let Some(handles) = result.await {
+                let selections = futures::future::join_all(handles.into_iter().map(|h| async {
+                    Box::new(WebFileSelection::new_pick(h).await) as Box<dyn FileDialogSelection>
+                }))
+                .await;
 
-            let result: Result<Box<dyn FileDialogResult>, DialogLoaderError> = Ok(Box::new(
-                WebFileDialogResult::new_pick(dialog.pick_file().await).await,
-            ));
-            result
+                MultiFileDialogResult::Selection(selections)
+            } else {
+                MultiFileDialogResult::Canceled
+            })
         }))
     }
 
@@ -392,16 +407,12 @@ impl UiBackend for WebUiBackend {
         file_name: String,
         _title: String,
     ) -> Option<DialogResultFuture> {
-        // Prevent opening multiple dialogs at the same time
-        if self.dialog_open {
-            return None;
-        }
-        self.dialog_open = true;
+        self.check_dialog_open()?;
 
         Some(Box::pin(async move {
-            let result: Result<Box<dyn FileDialogResult>, DialogLoaderError> =
-                Ok(Box::new(WebFileDialogResult::new_download(file_name)));
-            result
+            Ok(FileDialogResult::Selection(Box::new(
+                WebFileSelection::new_download(file_name),
+            )))
         }))
     }
 }

@@ -67,7 +67,7 @@ impl TestRunner {
         if test.options.num_frames.is_none() && test.options.num_ticks.is_none() {
             return Err(anyhow!(
                 "Test {} must specify at least one of num_frames or num_ticks",
-                &test.name
+                test.name
             ));
         }
 
@@ -304,7 +304,7 @@ impl TestRunner {
             return Err(anyhow!("Audio assertions require audio"));
         };
 
-        for assertion in self.audio_assertions.values() {
+        for (assertion_name, assertion) in &self.audio_assertions {
             if !assertion.frames.includes_frame(self.current_iteration) {
                 continue;
             }
@@ -315,27 +315,34 @@ impl TestRunner {
                 .map(|&v| v.abs())
                 .reduce(|a, b| a.max(b))
                 .expect("buffer should not be empty");
+            let frame = self.current_iteration;
 
-            if let Some(max_amplitude) = assertion.max_amplitude
+            let result = if let Some(max_amplitude) = assertion.max_amplitude
                 && current_max > max_amplitude
             {
-                return Err(anyhow!(
-                    "Expected max audio amplitude to be {}, was {} at frame {}",
-                    max_amplitude,
-                    current_max,
-                    self.current_iteration
-                ));
-            }
-
-            if let Some(min_max_amplitude) = assertion.min_max_amplitude
+                Err(anyhow!(
+                    "Audio assertion '{assertion_name}': expected max audio amplitude to be {max_amplitude}, was {current_max} at frame {frame}"
+                ))
+            } else if let Some(min_max_amplitude) = assertion.min_max_amplitude
                 && current_max < min_max_amplitude
             {
-                return Err(anyhow!(
-                    "Expected max audio amplitude to be at least {}, was {} at frame {}",
-                    min_max_amplitude,
-                    current_max,
-                    self.current_iteration
-                ));
+                Err(anyhow!(
+                    "Audio assertion '{assertion_name}': expected max audio amplitude to be at least {min_max_amplitude}, was {current_max} at frame {frame}",
+                ))
+            } else {
+                Ok(())
+            };
+
+            match result {
+                Err(err) if !assertion.known_failure => return Err(err),
+                Ok(()) if assertion.known_failure => {
+                    // TODO: should we allow known_failure assertions to succeed on *some* frames as long as they fail at least once?
+                    return Err(anyhow!(
+                        "Audio assertion '{assertion_name}': check was known to be failing (at frame {frame}) but now passes successfully. \
+                        Please update the test and remove `known_failure = true`",
+                    ));
+                }
+                _ => (),
             }
         }
 

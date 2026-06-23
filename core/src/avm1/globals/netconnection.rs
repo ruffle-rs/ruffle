@@ -1,5 +1,5 @@
 use crate::avm1::globals::shared_object::{deserialize_value, serialize};
-use crate::avm1::property_decl::{DeclContext, StaticDeclarations, SystemClass};
+use crate::avm1::property_decl::{DeclContext, PropertyOrder, StaticDeclarations, SystemClass};
 use crate::avm1::{
     Activation, ActivationIdentifier, Error, ExecutionReason, NativeObject, Object, Value,
 };
@@ -64,8 +64,8 @@ impl<'gc> NetConnection<'gc> {
             .construct(&mut activation, &[])?
             .coerce_to_object_or_bare(&mut activation)?;
         let code = AvmString::new_utf8(activation.gc(), code);
-        event.set(istr!("code"), code.into(), &mut activation)?;
-        event.set(istr!("level"), istr!("status").into(), &mut activation)?;
+        event.set(istr!("code"), code, &mut activation)?;
+        event.set(istr!("level"), istr!("status"), &mut activation)?;
         this.call_method(
             istr!("onStatus"),
             &[event.into()],
@@ -167,7 +167,7 @@ pub fn create_class<'gc>(
     context: &mut DeclContext<'_, 'gc>,
     super_proto: Object<'gc>,
 ) -> SystemClass<'gc> {
-    let class = context.class(constructor, super_proto);
+    let class = context.class(constructor, super_proto, PropertyOrder::PrototypeFirst);
     context.define_properties_on(class.proto, PROTO_DECLS(context));
     class
 }

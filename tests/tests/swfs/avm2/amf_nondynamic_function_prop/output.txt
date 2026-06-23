@@ -1,0 +1,6 @@
+get _theProp called
+Finished writing object
+set _theProp called with value undefined
+Read back: [object MyClass]
+get _theProp called
+undefined

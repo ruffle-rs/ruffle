@@ -1,0 +1,18 @@
+threshold=0, transparent pixel (alpha=0):
+false
+threshold=0, opaque pixel (alpha=0xFF):
+true
+threshold=0, out-of-bounds point:
+false
+threshold=0xA0, pixel alpha=0xA0 (boundary):
+true
+threshold=0xA1, pixel alpha=0xA0 (just below):
+false
+threshold=0x9F, pixel alpha=0xA0 (just above):
+true
+bmd-vs-bmd threshold=0, both transparent:
+true
+bmd-vs-bmd threshold=0, both opaque:
+true
+bmd-vs-bmd threshold=0, src opaque / test transparent:
+true

@@ -181,6 +181,10 @@ max_amplitude = 0.5
 # The max is calculated per frame.
 min_max_amplitude = 0.4
 
+# If true, this audio assertion is known to fail and the test runner will expect it to fail.
+# When the assertion passes in the future, it'll fail and alert that it now passes.
+known_failure = false
+
 # A single device font provided for this test.
 [fonts.FONT_NAME] # FONT_NAME is a name of this particular font
 
@@ -299,7 +303,7 @@ use_network = false
 optimize = true
 
 # Whether to include debug info in the bytecode.
-debug = true
+debug = false
 
 ```
 

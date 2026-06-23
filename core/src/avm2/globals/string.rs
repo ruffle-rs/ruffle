@@ -453,9 +453,8 @@ pub fn split<'gc>(
                 .collect()
         }
     } else {
-        this.split(&delimiter)
+        this.split_dependent(activation.strings(), delimiter.as_wstr())
             .take(limit.get())
-            .map(|c| AvmString::new(activation.gc(), c))
             .collect()
     };
 

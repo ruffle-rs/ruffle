@@ -14,7 +14,7 @@ jobs:
     runs-on: ubuntu-24.04
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
@@ -30,7 +30,7 @@ jobs:
           registry-url: https://registry.npmjs.org
 
       - name: Install wasm-bindgen
-        run: cargo install wasm-bindgen-cli --version 0.2.120
+        run: cargo install --locked wasm-bindgen-cli --version 0.2.120
 
       # Keep the version number in sync in all workflows,
       # and in the extension builder Dockerfile!
@@ -42,7 +42,7 @@ jobs:
           name: wasm-opt
 
       - name: Install fclones
-        run: cargo install fclones
+        run: cargo install --locked fclones
 
       - name: Install node packages
         working-directory: web

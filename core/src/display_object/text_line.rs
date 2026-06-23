@@ -1,4 +1,4 @@
-//! The TextLine DisplayObject, backing flash.text.engine TextLine.
+//! The TextLine display object, backing flash.text.engine.TextLine.
 
 use crate::avm2::StageObject as Avm2StageObject;
 use crate::backend::ui::MouseCursor;
@@ -14,7 +14,9 @@ use core::fmt;
 use gc_arena::barrier::unlock;
 use gc_arena::lock::Lock;
 use gc_arena::{Collect, Gc, Mutation};
+use ruffle_common::avm_string::AvmString;
 use ruffle_common::utils::HasPrefixField;
+use ruffle_macros::istr;
 use std::sync::Arc;
 
 #[derive(Clone, Collect, Copy)]
@@ -35,16 +37,21 @@ impl fmt::Debug for TextLine<'_> {
 pub struct TextLineData<'gc> {
     base: InteractiveObjectBase<'gc>,
     avm2_object: Lock<Option<Avm2StageObject<'gc>>>,
-    fallback: Option<EditText<'gc>>,
+    fallback: EditText<'gc>,
     #[collect(require_static)]
     movie: Arc<SwfMovie>,
+
+    /// Validity can be any user-defined string, we can't use an enum here.
+    ///
+    /// See [`TextLineValidity`] for the known values of validity.
+    validity: Lock<AvmString<'gc>>,
 }
 
 impl<'gc> TextLine<'gc> {
     pub fn new(
         context: &mut UpdateContext<'gc>,
         movie: Arc<SwfMovie>,
-        fallback: Option<EditText<'gc>>,
+        fallback: EditText<'gc>,
     ) -> Self {
         TextLine(Gc::new(
             context.gc(),
@@ -53,14 +60,21 @@ impl<'gc> TextLine<'gc> {
                 avm2_object: Lock::new(None),
                 fallback,
                 movie,
+                validity: Lock::new(istr!(context, "valid")),
             },
         ))
     }
 
-    pub fn measure_text(self, context: &mut UpdateContext<'gc>) -> Option<(Twips, Twips)> {
-        self.0
-            .fallback
-            .map(|fallback| fallback.measure_text(context))
+    pub fn measure_text(self, context: &mut UpdateContext<'gc>) -> (Twips, Twips) {
+        self.0.fallback.measure_text(context)
+    }
+
+    pub fn validity(self) -> AvmString<'gc> {
+        self.0.validity.get()
+    }
+
+    pub fn set_validity(self, validity: AvmString<'gc>, context: &mut UpdateContext<'gc>) {
+        unlock!(Gc::write(context.gc(), self.0), TextLineData, validity).set(validity);
     }
 }
 
@@ -78,6 +92,7 @@ impl<'gc> TDisplayObject<'gc> for TextLine<'gc> {
                 avm2_object: Lock::new(None),
                 fallback: self.0.fallback,
                 movie: self.0.movie.clone(),
+                validity: Lock::new(self.0.validity.get()),
             },
         ))
         .into()
@@ -94,16 +109,11 @@ impl<'gc> TDisplayObject<'gc> for TextLine<'gc> {
     fn replace_with(self, _context: &mut UpdateContext<'gc>, _id: CharacterId) {}
 
     fn render_self(self, context: &mut RenderContext<'_, 'gc>) {
-        if let Some(fallback) = self.0.fallback {
-            fallback.render_self(context);
-        }
+        self.0.fallback.render_self(context);
     }
 
-    fn self_bounds(self, _mode: BoundsMode) -> Rectangle<Twips> {
-        self.0
-            .fallback
-            .map(|fallback| fallback.self_bounds(_mode))
-            .unwrap_or_default()
+    fn self_bounds(self, mode: BoundsMode) -> Rectangle<Twips> {
+        self.0.fallback.self_bounds(mode)
     }
 
     fn hit_test_shape(
