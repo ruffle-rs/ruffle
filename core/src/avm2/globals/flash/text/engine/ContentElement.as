@@ -19,12 +19,18 @@ package flash.text.engine {
 
         [Ruffle(NativeCallable)]
         public native function get text():String;
-
-        public function get rawText():String {
-            return this.text;
-        }
+        public native function get rawText():String;
+        public native function get textBlock():TextBlock;
+        public native function get textBlockBeginIndex():int;
+        public native function get groupElement():GroupElement;
 
         public native function get elementFormat():ElementFormat;
         public native function set elementFormat(value:ElementFormat):void;
+
+        public native function get eventMirror():EventDispatcher;
+        public native function set eventMirror(eventMirror:EventDispatcher):void;
+
+        public native function get textRotation():String;
+        public native function set textRotation(textRotation:String):void;
     }
 }

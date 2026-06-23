@@ -3,12 +3,14 @@ use crate::avm2::activation::Activation;
 use crate::avm2::object::element_format_object::ElementFormatObject;
 use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{ClassObject, Object, TObject};
+use crate::fte::TextRotationValue;
 use crate::string::AvmString;
 use core::fmt;
 use gc_arena::barrier::unlock;
 use gc_arena::lock::Lock;
 use gc_arena::{Collect, Gc, GcWeak, Mutation};
 use ruffle_common::utils::HasPrefixField;
+use std::cell::Cell;
 
 pub fn content_element_allocator<'gc>(
     class: ClassObject<'gc>,
@@ -20,6 +22,8 @@ pub fn content_element_allocator<'gc>(
             base: ScriptObjectData::new(class),
             element_format: Lock::new(None),
             text: Lock::new(None),
+            text_rotation: Cell::new(TextRotationValue::Rotate0),
+            event_mirror: Lock::new(None),
         },
     ))
     .into())
@@ -48,6 +52,8 @@ pub struct ContentElementObjectData<'gc> {
     base: ScriptObjectData<'gc>,
     element_format: Lock<Option<ElementFormatObject<'gc>>>,
     text: Lock<Option<AvmString<'gc>>>,
+    text_rotation: Cell<TextRotationValue>,
+    event_mirror: Lock<Option<Object<'gc>>>,
 }
 
 impl<'gc> ContentElementObject<'gc> {
@@ -70,6 +76,27 @@ impl<'gc> ContentElementObject<'gc> {
 
     pub fn set_text(self, value: Option<AvmString<'gc>>, mc: &Mutation<'gc>) {
         unlock!(Gc::write(mc, self.0), ContentElementObjectData, text).set(value);
+    }
+
+    pub fn text_rotation(self) -> TextRotationValue {
+        self.0.text_rotation.get()
+    }
+
+    pub fn set_text_rotation(self, value: TextRotationValue) {
+        self.0.text_rotation.set(value);
+    }
+
+    pub fn event_mirror(self) -> Option<Object<'gc>> {
+        self.0.event_mirror.get()
+    }
+
+    pub fn set_event_mirror(self, value: Option<Object<'gc>>, mc: &Mutation<'gc>) {
+        unlock!(
+            Gc::write(mc, self.0),
+            ContentElementObjectData,
+            event_mirror
+        )
+        .set(value);
     }
 }
 
