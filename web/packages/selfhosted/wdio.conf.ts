@@ -46,14 +46,27 @@ if (edge) {
     const args = ["--disable-gpu", "--enable-unsafe-swiftshader"];
     if (headless) {
         args.push("--headless");
+        if (process.env["EDGE_BIN"]) {
+            args.push("--no-sandbox", "--disable-dev-shm-usage");
+        }
     }
-    capabilities.push({
+    const edgeOptions: { args: string[]; binary?: string } = { args };
+    if (process.env["EDGE_BIN"]) {
+        edgeOptions.binary = process.env["EDGE_BIN"];
+    }
+
+    const edgeCaps: WebdriverIO.Capabilities = {
         "wdio:maxInstances": maxInstances,
         browserName: "MicrosoftEdge",
-        "ms:edgeOptions": {
-            args,
-        },
-    });
+        "ms:edgeOptions": edgeOptions,
+    };
+    if (process.env["EDGEWEBDRIVER"]) {
+        edgeCaps["wdio:edgedriverOptions"] = {
+            binary: process.env["EDGEWEBDRIVER"],
+        };
+    }
+
+    capabilities.push(edgeCaps);
 }
 
 if (firefox) {

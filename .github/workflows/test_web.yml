@@ -186,6 +186,23 @@ jobs:
           install-dependencies: true
           install-chromedriver: true
 
+      - name: Install pinned Edge (workaround for actions/runner-images#14223)
+        if: matrix.browser == 'edge'
+        run: |
+          # Download and install pinned Edge
+          wget https://packages.microsoft.com/repos/edge/pool/main/m/microsoft-edge-stable/microsoft-edge-stable_148.0.3967.96-1_amd64.deb
+          sudo apt-get install --allow-downgrades -y ./microsoft-edge-stable_148.0.3967.96-1_amd64.deb
+
+          # Download and extract pinned EdgeDriver
+          wget https://msedgedriver.microsoft.com/148.0.3967.96/edgedriver_linux64.zip
+          unzip edgedriver_linux64.zip
+          sudo mv msedgedriver /usr/local/bin/msedgedriver
+          sudo chmod +x /usr/local/bin/msedgedriver
+
+          # Export paths for WDIO
+          echo "EDGE_BIN=/usr/bin/microsoft-edge" >> "$GITHUB_ENV"
+          echo "EDGEWEBDRIVER=/usr/local/bin/msedgedriver" >> "$GITHUB_ENV"
+
       - name: Run browser-based tests
         working-directory: web
         shell: bash -l {0}
