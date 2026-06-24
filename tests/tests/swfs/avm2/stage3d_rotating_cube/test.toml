@@ -1,8 +1,16 @@
 num_ticks = 2
 
-[image_comparisons.output]
-known_failure = true # Stage3D x/y not implemented
+[[image_comparisons.output.checks]]
 tolerance = 3
+max_outliers = 2160
+
+[[image_comparisons.output.checks]]
+tolerance = 16
+max_outliers = 1250
+
+[[image_comparisons.output.checks]]
+tolerance = 32
+max_outliers = 250
 
 [player_options]
 with_renderer = { quality = "high" }
