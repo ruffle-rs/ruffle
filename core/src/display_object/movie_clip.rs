@@ -4325,21 +4325,10 @@ impl<'gc, 'a> MovieClip<'gc> {
                             Some(Character::BinaryData(_)) => {}
                             Some(Character::Font(_)) => {}
                             Some(Character::Sound(_)) => {}
-                            Some(Character::Bitmap { .. }) => {
+                            Some(Character::Bitmap(bitmap)) => {
                                 if let Some(bitmap_class) =
                                     BitmapClass::from_class_object(class_object, activation.context)
                                 {
-                                    // We need to re-fetch the library and character to satisfy the borrow checker
-                                    let library = activation
-                                        .context
-                                        .library
-                                        .library_for_movie_mut(movie.clone());
-
-                                    let Some(Character::Bitmap(bitmap)) =
-                                        library.character_by_id(id)
-                                    else {
-                                        unreachable!();
-                                    };
                                     BitmapCharacter::set_avm2_class(
                                         bitmap,
                                         bitmap_class,
