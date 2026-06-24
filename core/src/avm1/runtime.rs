@@ -581,6 +581,33 @@ impl<'gc> Avm1<'gc> {
         registry.get(symbol, is_case_sensitive).copied()
     }
 
+    /// Finds the class name associated with a given constructor function.
+    /// This is specifically required for AMF0 TypedObject serialization.
+    pub fn get_class_name_by_constructor(
+        &self,
+        swf_version: u8,
+        constructor: Object<'gc>,
+    ) -> Option<AvmString<'gc>> {
+        let is_case_sensitive = Self::is_case_sensitive(swf_version);
+        let registry = if is_case_sensitive {
+            &self.env_case_sensitive.constructor_registry
+        } else {
+            &self.env_case_insensitive.constructor_registry
+        };
+        // Iterate through the PropertyMap to find the matching constructor reference.
+        // If multiple aliases point to the same constructor, this will grab the one
+        // based on the PropertyMap's iteration order.
+        for (alias, registered_constructor) in registry.iter() {
+            // We compare by pointer identity because `Object.registerClass` associates
+            // a string with a specific Function object reference in memory. We need to
+            // verify it is the exact same object, not just an object with equal values.
+            if Object::ptr_eq(*registered_constructor, constructor) {
+                return Some(alias);
+            }
+        }
+        None
+    }
+
     pub fn register_constructor(
         &mut self,
         swf_version: u8,
