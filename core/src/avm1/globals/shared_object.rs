@@ -141,6 +141,61 @@ fn serialize_array<'gc>(activation: &mut Activation<'_, 'gc>, array: Object<'gc>
     }
 }
 
+/// Helper to serialize a specific value into the ObjWriter cache architecture.
+fn serialize_value_to_writer<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    name: &str,
+    elem: Value<'gc>,
+    writer: &mut dyn ObjWriter<'_>,
+) {
+    match elem {
+        Value::Object(o) => {
+            if o.as_function().is_some() {
+                // Flash entirely skips functions during object serialization
+            } else if o.as_display_object().is_some() {
+                writer.undefined(name)
+            } else if let NativeObject::Array(_) = o.native() {
+                let (aw, token) = writer.array(CacheKey::from_ptr(o.as_ptr()));
+
+                if let Some(mut aw) = aw {
+                    recursive_serialize(activation, o, &mut aw);
+
+                    // TODO: What happens if an exception is thrown here?
+                    let length = o
+                        .length(activation)
+                        .expect("Failed to get length for SharedObject array");
+
+                    aw.commit(name, length as u32);
+                } else {
+                    writer.reference(name, token);
+                }
+            } else if let Some(xml_node) = o.as_xml_node() {
+                // TODO: What happens if an exception is thrown here?
+                let string = xml_node
+                    .into_string(activation)
+                    .expect("Failed to convert xml to string in SharedObject");
+                writer.xml(name, string.to_utf8_lossy().as_ref(), true)
+            } else if let NativeObject::Date(date) = o.native() {
+                writer.date(name, date.get().time(), None)
+            } else {
+                let (ow, token) = writer.object(CacheKey::from_ptr(o.as_ptr()));
+
+                if let Some(mut ow) = ow {
+                    recursive_serialize(activation, o, &mut ow);
+                    ow.commit(name);
+                } else {
+                    writer.reference(name, token);
+                }
+            }
+        }
+        Value::Number(f) => writer.number(name, f),
+        Value::String(s) => writer.string(name, s.to_utf8_lossy().as_ref()),
+        Value::Undefined | Value::MovieClip(_) => writer.undefined(name),
+        Value::Null => writer.null(name),
+        Value::Bool(b) => writer.bool(name, b),
+    }
+}
+
 /// Serialize an Object and any children to a JSON object
 fn recursive_serialize<'gc>(
     activation: &mut Activation<'_, 'gc>,
@@ -151,52 +206,7 @@ fn recursive_serialize<'gc>(
     for element_name in obj.get_keys(activation, false).into_iter().rev() {
         if let Ok(elem) = obj.get(element_name, activation) {
             let name = element_name.to_utf8_lossy();
-
-            match elem {
-                Value::Object(o) => {
-                    if o.as_function().is_some() {
-                    } else if o.as_display_object().is_some() {
-                        writer.undefined(name.as_ref())
-                    } else if let NativeObject::Array(_) = o.native() {
-                        let (aw, token) = writer.array(CacheKey::from_ptr(o.as_ptr()));
-
-                        if let Some(mut aw) = aw {
-                            recursive_serialize(activation, o, &mut aw);
-
-                            // TODO: What happens if an exception is thrown here?
-                            let length = o
-                                .length(activation)
-                                .expect("Failed to get length for SharedObject array");
-
-                            aw.commit(name, length as u32);
-                        } else {
-                            writer.reference(name.as_ref(), token);
-                        }
-                    } else if let Some(xml_node) = o.as_xml_node() {
-                        // TODO: What happens if an exception is thrown here?
-                        let string = xml_node
-                            .into_string(activation)
-                            .expect("Failed to convert xml to string in SharedObject");
-                        writer.xml(name.as_ref(), string.to_utf8_lossy().as_ref(), true)
-                    } else if let NativeObject::Date(date) = o.native() {
-                        writer.date(name.as_ref(), date.get().time(), None)
-                    } else {
-                        let (ow, token) = writer.object(CacheKey::from_ptr(o.as_ptr()));
-
-                        if let Some(mut ow) = ow {
-                            recursive_serialize(activation, o, &mut ow);
-                            ow.commit(name);
-                        } else {
-                            writer.reference(name.as_ref(), token);
-                        }
-                    }
-                }
-                Value::Number(f) => writer.number(name.as_ref(), f),
-                Value::String(s) => writer.string(name.as_ref(), s.to_utf8_lossy().as_ref()),
-                Value::Undefined | Value::MovieClip(_) => writer.undefined(name.as_ref()),
-                Value::Null => writer.null(name.as_ref()),
-                Value::Bool(b) => writer.bool(name.as_ref(), b),
-            }
+            serialize_value_to_writer(activation, name.as_ref(), elem, writer);
         }
     }
 }
