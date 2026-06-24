@@ -87,8 +87,17 @@ pub fn serialize<'gc>(activation: &mut Activation<'_, 'gc>, value: Value<'gc>) -
         Value::Number(number) => AmfValue::Number(number),
         Value::String(string) => AmfValue::String(string.to_string()),
         Value::Object(object) => {
-            if let NativeObject::Array(_) = object.native() {
+            if object.as_display_object().is_some() {
+                AmfValue::Undefined
+            } else if let NativeObject::Array(_) = object.native() {
                 serialize_array(activation, object)
+            } else if let Some(xml_node) = object.as_xml_node() {
+                let string = xml_node
+                    .into_string(activation)
+                    .expect("Failed to convert xml to string in SharedObject");
+                AmfValue::XML(string.to_utf8_lossy().into_owned(), true)
+            } else if let NativeObject::Date(date) = object.native() {
+                AmfValue::Date(date.get().time(), None)
             } else {
                 let lso = new_lso(activation, "root", object);
                 AmfValue::Object(ObjectId::INVALID, lso.into_iter().collect(), None)
