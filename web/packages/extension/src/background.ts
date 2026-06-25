@@ -1,11 +1,31 @@
 import * as utils from "./utils";
 import { isMessage } from "./messages";
 
-async function contentScriptRegistered() {
+/**
+ * Returns whether the plugin polyfill content script is registered and whether
+ * its JS file matches the expected variant.
+ */
+async function getPluginPolyfillRegistration(
+    expectedScript?: string,
+): Promise<{ registered: boolean; matches: boolean }> {
     const matchingScripts = await utils.scripting.getRegisteredContentScripts({
         ids: ["plugin-polyfill"],
     });
-    return matchingScripts?.length > 0;
+
+    if (matchingScripts?.length === 0) {
+        return {
+            registered: false,
+            matches: false,
+        };
+    }
+
+    // Content script IDs are unique, so there is at most one matching script.
+    const script = matchingScripts[0];
+
+    return {
+        registered: true,
+        matches: script?.js?.[0] === expectedScript,
+    };
 }
 
 // Copied from https://github.com/w3c/webextensions/issues/638#issuecomment-2181124486
@@ -164,7 +184,7 @@ async function disableSWFTakeover() {
 }
 
 async function enable() {
-    const { swfTakeover } = await utils.getOptions();
+    const { swfTakeover, ignoreOptout } = await utils.getOptions();
     if (swfTakeover) {
         await enableSWFTakeover();
     }
@@ -174,7 +194,18 @@ async function enable() {
     ) {
         return;
     }
-    if (!(await contentScriptRegistered())) {
+    const expectedScript = ignoreOptout
+        ? "dist/pluginPolyfillIgnoreOptout.js"
+        : "dist/pluginPolyfill.js";
+
+    const { registered, matches } =
+        await getPluginPolyfillRegistration(expectedScript);
+    if (!matches) {
+        if (registered) {
+            await utils.scripting.unregisterContentScripts({
+                ids: ["ruffle", "plugin-polyfill", "4399"],
+            });
+        }
         // Reuse the exclude_matches of dist/content.js in the manifest.
         const excludeMatches =
             utils.runtime.getManifest().content_scripts![0]!.exclude_matches!;
@@ -191,7 +222,7 @@ async function enable() {
             },
             {
                 id: "plugin-polyfill",
-                js: ["dist/pluginPolyfill.js"],
+                js: [expectedScript],
                 persistAcrossSessions: true,
                 matches: ["<all_urls>"],
                 excludeMatches,
@@ -222,7 +253,8 @@ async function disable() {
     ) {
         return;
     }
-    if (await contentScriptRegistered()) {
+    const { registered } = await getPluginPolyfillRegistration();
+    if (registered) {
         await utils.scripting.unregisterContentScripts({
             ids: ["ruffle", "plugin-polyfill", "4399"],
         });
@@ -275,6 +307,14 @@ if (chrome?.runtime && !chrome.runtime.onMessage.hasListener(onMessage)) {
 utils.storage.onChanged.addListener(async (changes, namespace) => {
     if (namespace === "sync" && "ruffleEnable" in changes) {
         if (changes["ruffleEnable"]!.newValue) {
+            await enable();
+        } else {
+            await disable();
+        }
+    }
+    if (namespace === "sync" && "ignoreOptout" in changes) {
+        const { ruffleEnable } = await utils.getOptions();
+        if (ruffleEnable) {
             await enable();
         } else {
             await disable();
