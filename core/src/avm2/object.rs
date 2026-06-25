@@ -823,6 +823,7 @@ impl<'gc> Object<'gc> {
         pub fn as_style_sheet for StyleSheetObject;
         pub fn as_matrix3d_object for Matrix3DObject;
         pub fn as_collator for CollatorObject;
+        pub fn as_worker_object for WorkerObject;
     }
 
     /// Unwrap this object's `Namespace`, if the object is a boxed namespace.
