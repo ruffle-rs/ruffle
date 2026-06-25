@@ -612,6 +612,7 @@ impl Player {
 
         self.update_sockets();
         self.update_net_connections();
+        self.update_workers();
         self.update_timers(dt);
         self.update(|context| {
             StreamManager::tick(context, dt);
@@ -2430,6 +2431,13 @@ impl Player {
         self.mutate_with_update_context(|context| {
             Sockets::update_sockets(context);
         })
+    }
+
+    /// Apply worker state changes and dispatch their `workerState` events.
+    pub fn update_workers(&mut self) {
+        self.update(|context| {
+            Avm2::update_pending_workers(context);
+        });
     }
 
     /// Update connected NetConnections.
