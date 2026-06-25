@@ -98,6 +98,8 @@ export default function (/** @type {Record<string, any>} */ env, _argv) {
             background: "./src/background.ts",
             player: "./src/player.ts",
             pluginPolyfill: "./src/plugin-polyfill.ts",
+            pluginPolyfillIgnoreOptout:
+                "./src/plugin-polyfill-ignore-optout.ts",
             siteContentScript4399: "./src/4399-content-script.ts",
         },
         output: {
