@@ -4,11 +4,11 @@ use crate::avm2::Avm2;
 use crate::avm2::activation::Activation;
 use crate::avm2::function::FunctionArgs;
 use crate::avm2::globals::slots::flash_events_event_dispatcher as slots;
-use crate::avm2::object::{EventObject, FunctionObject, Object, TObject as _};
+use crate::avm2::object::{EventObject, FunctionObject, FunctionObjectWeak, Object, TObject as _};
 use crate::display_object::TDisplayObject;
 use crate::string::AvmString;
 use fnv::FnvHashMap;
-use gc_arena::Collect;
+use gc_arena::{Collect, Gc, GcWeak, Mutation};
 use std::collections::BTreeMap;
 use std::hash::{Hash, Hasher};
 
@@ -214,14 +214,37 @@ impl<'gc> DispatchList<'gc> {
     /// more than one priority (since we can't enforce that with clever-er data
     /// structure selection). If an event handler already exists, it will not
     /// be added again, and this function will silently fail.
+    ///
+    /// When `use_weak_reference` is true, the dispatch list holds a weak
+    /// reference to the handler — letting it (and anything captured by it)
+    /// be collected when the only references are weak. Matches Flash's
+    /// `addEventListener(..., useWeakReference=true)` behavior.
+    ///
+    /// Before adding the new handler, dead weak entries for the same event
+    /// name are pruned. The other prune path inside `iter_event_handlers`
+    /// fires only when the dispatcher actually dispatches that event;
+    /// long-lived event sources whose subscribers register but rarely
+    /// receive the event would otherwise accumulate one dead weak entry
+    /// per discarded listener indefinitely. The add-time prune cost is
+    /// O(N) over the existing entries for the same event, trivial
+    /// relative to the unbounded growth it prevents.
     pub fn add_event_listener(
         &mut self,
+        mc: &Mutation<'gc>,
         event: AvmString<'gc>,
         priority: i32,
         handler: FunctionObject<'gc>,
         use_capture: bool,
+        use_weak_reference: bool,
     ) {
-        let new_handler = EventHandler::new(handler, use_capture);
+        // Lazy weak cleanup for this event name. See doc above.
+        if let Some(event_sheaf) = self.0.get_mut(&event) {
+            for set in event_sheaf.values_mut() {
+                set.retain(|eh| eh.handler.upgrade(mc).is_some());
+            }
+        }
+
+        let new_handler = EventHandler::new(handler, use_capture, use_weak_reference);
 
         if let Some(event_sheaf) = self.get_event(event) {
             for other_set in event_sheaf.values() {
@@ -238,14 +261,17 @@ impl<'gc> DispatchList<'gc> {
     /// Remove an event handler from this dispatch list.
     ///
     /// Any listener that has the same handler and capture-phase flag will be
-    /// removed from any priority in the list.
+    /// removed from any priority in the list. Matches against both strong and
+    /// weak registrations of the same handler (pointer identity).
     pub fn remove_event_listener(
         &mut self,
         event: AvmString<'gc>,
         handler: FunctionObject<'gc>,
         use_capture: bool,
     ) {
-        let old_handler = EventHandler::new(handler, use_capture);
+        // `use_weak_reference` is irrelevant for matching: `HandlerRef::as_ptr`
+        // yields the same identity for Strong and Weak of the same allocation.
+        let old_handler = EventHandler::new(handler, use_capture, false);
 
         for set in self.get_event_mut(event).values_mut() {
             if let Some(pos) = set.iter().position(|h| *h == old_handler) {
@@ -275,17 +301,29 @@ impl<'gc> DispatchList<'gc> {
     /// `use_capture` indicates if you want handlers that execute during the
     /// capture phase, or handlers that execute during the bubble and target
     /// phases.
+    ///
+    /// Weak handlers whose target has already been garbage collected are
+    /// transparently pruned from the dispatch list as a side effect.
     pub fn iter_event_handlers<'a>(
         &'a mut self,
+        mc: &'a Mutation<'gc>,
         event: AvmString<'gc>,
         use_capture: bool,
     ) -> impl 'a + Iterator<Item = FunctionObject<'gc>> {
-        self.get_event_mut(event)
+        // Prune dead weak listeners before iterating. Keeps DispatchList from
+        // growing unbounded when Flex (or other code) registers many weak
+        // listeners over the lifetime of a long-lived event source.
+        let bucket = self.get_event_mut(event);
+        for set in bucket.values_mut() {
+            set.retain(|eh| eh.handler.upgrade(mc).is_some());
+        }
+
+        bucket
             .iter()
             .rev()
             .flat_map(|(_p, v)| v.iter())
             .filter(move |eh| eh.use_capture == use_capture)
-            .map(|eh| eh.handler)
+            .filter_map(move |eh| eh.handler.upgrade(mc))
     }
 }
 
@@ -295,12 +333,51 @@ impl Default for DispatchList<'_> {
     }
 }
 
+/// A reference to an event handler, either strong (default) or weak
+/// (when `useWeakReference=true` is passed to `addEventListener`).
+///
+/// Weak listener references are required by frameworks whose binding system
+/// subscribes short-lived observers to long-lived event sources. The Flex
+/// SDK's `mx.binding.PropertyWatcher`, for example, registers every
+/// `propertyChange` listener as weak so the watcher (and its enclosing
+/// document) is not retained by every singleton it subscribes to. Treating
+/// those references as strong creates an unbounded retention chain across
+/// the lifetime of those singletons.
+#[derive(Clone, Collect)]
+#[collect(no_drop)]
+enum HandlerRef<'gc> {
+    Strong(FunctionObject<'gc>),
+    Weak(FunctionObjectWeak<'gc>),
+}
+
+impl<'gc> HandlerRef<'gc> {
+    /// Stable pointer identity for the underlying allocation. Both Strong and
+    /// Weak variants for the same function yield the same value, so a listener
+    /// registered weak can still be removed via `removeEventListener` (which
+    /// always calls in with a strong FunctionObject).
+    fn as_ptr(&self) -> *const () {
+        match self {
+            HandlerRef::Strong(f) => Gc::as_ptr(f.0).cast(),
+            HandlerRef::Weak(w) => GcWeak::as_ptr(w.0).cast(),
+        }
+    }
+
+    /// Upgrade to a callable FunctionObject. Returns None if the listener was
+    /// weak and the underlying object has been collected.
+    fn upgrade(&self, mc: &Mutation<'gc>) -> Option<FunctionObject<'gc>> {
+        match self {
+            HandlerRef::Strong(f) => Some(*f),
+            HandlerRef::Weak(w) => w.0.upgrade(mc).map(FunctionObject),
+        }
+    }
+}
+
 /// A single instance of an event handler.
 #[derive(Clone, Collect)]
 #[collect(no_drop)]
 struct EventHandler<'gc> {
     /// The event handler to call.
-    handler: FunctionObject<'gc>,
+    handler: HandlerRef<'gc>,
 
     /// Indicates if this handler should only be called for capturing events
     /// (when `true`), or if it should only be called for bubbling and
@@ -309,7 +386,12 @@ struct EventHandler<'gc> {
 }
 
 impl<'gc> EventHandler<'gc> {
-    fn new(handler: FunctionObject<'gc>, use_capture: bool) -> Self {
+    fn new(handler: FunctionObject<'gc>, use_capture: bool, use_weak_reference: bool) -> Self {
+        let handler = if use_weak_reference {
+            HandlerRef::Weak(FunctionObjectWeak(Gc::downgrade(handler.0)))
+        } else {
+            HandlerRef::Strong(handler)
+        };
         Self {
             handler,
             use_capture,
@@ -329,7 +411,7 @@ impl Eq for EventHandler<'_> {}
 impl Hash for EventHandler<'_> {
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.use_capture.hash(state);
-        self.handler.as_ptr().hash(state);
+        (self.handler.as_ptr() as usize).hash(state);
     }
 }
 
@@ -383,10 +465,11 @@ fn dispatch_event_to_target<'gc>(
     let name = evtmut.event_type();
     let use_capture = evtmut.phase() == EventPhase::Capturing;
 
+    let mc = activation.gc();
     let handlers: Vec<FunctionObject<'gc>> = dispatch_list
-        .as_dispatch_mut(activation.gc())
+        .as_dispatch_mut(mc)
         .expect("Internal dispatch list is missing during dispatch!")
-        .iter_event_handlers(name, use_capture)
+        .iter_event_handlers(mc, name, use_capture)
         .collect();
 
     if !handlers.is_empty() {
