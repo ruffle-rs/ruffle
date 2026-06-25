@@ -5,6 +5,7 @@ use crate::avm1::Avm1;
 use crate::avm1::Object;
 use crate::avm1::Value;
 use crate::avm1::{Activation, ActivationIdentifier};
+use crate::avm2::globals::flash::system::worker::update_pending_workers;
 use crate::avm2::object::EventObject as Avm2EventObject;
 use crate::avm2::{
     Activation as Avm2Activation, Avm2, CallStack, OptimizerSettings, SharedObjectObject,
@@ -612,6 +613,7 @@ impl Player {
 
         self.update_sockets();
         self.update_net_connections();
+        self.update_workers();
         self.update_timers(dt);
         self.update(|context| {
             StreamManager::tick(context, dt);
@@ -2430,6 +2432,11 @@ impl Player {
         self.mutate_with_update_context(|context| {
             Sockets::update_sockets(context);
         })
+    }
+
+    /// Apply worker state changes and dispatch their `workerState` events.
+    pub fn update_workers(&mut self) {
+        self.update(update_pending_workers);
     }
 
     /// Update connected NetConnections.
