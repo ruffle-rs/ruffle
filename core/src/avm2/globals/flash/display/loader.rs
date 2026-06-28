@@ -109,12 +109,13 @@ pub fn load<'gc>(
 
     let request = request_from_url_request(activation, url_request)?;
 
-    let url = request.url().to_string();
+    let loader_url = activation.caller_movie_or_root().url().to_string();
+
     let future = activation.context.load_manager.load_movie_into_clip(
         activation.context.player_handle(),
         content.into(),
         request,
-        Some(url),
+        Some(loader_url),
         MovieLoaderVMData::Avm2 {
             loader_info,
             context,
@@ -272,7 +273,7 @@ pub fn load_bytes<'gc>(
         .caller_domain()
         .expect("Missing caller domain in Loader.loadBytes");
 
-    let loader_url = activation.context.root_swf.url().to_string();
+    let loader_url = activation.caller_movie_or_root().url().to_string();
 
     if let Err(e) = LoadManager::load_movie_into_clip_bytes(
         activation.context,
