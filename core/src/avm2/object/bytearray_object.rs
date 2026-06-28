@@ -21,17 +21,17 @@ pub fn byte_array_allocator<'gc>(
         .context
         .library
         .avm2_class_registry()
-        .class_symbol(class.inner_class_definition())
+        .class_symbol(
+            class.inner_class_definition(),
+            activation.context.gc_context,
+        )
+        && let Some(lib) = activation.context.library_for_movie(movie)
     {
-        if let Some(lib) = activation.context.library.library_for_movie(movie) {
-            if let Some(Character::BinaryData(binary_data)) = lib.character_by_id(id) {
-                Some(ByteArrayStorage::from_vec(
-                    activation.context,
-                    binary_data.to_vec(),
-                ))
-            } else {
-                None
-            }
+        if let Some(Character::BinaryData(binary_data)) = lib.borrow().character_by_id(id) {
+            Some(ByteArrayStorage::from_vec(
+                activation.context,
+                binary_data.to_vec(),
+            ))
         } else {
             None
         }

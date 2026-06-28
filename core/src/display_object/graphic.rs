@@ -6,7 +6,7 @@ use crate::avm2::{
 use crate::context::{RenderContext, UpdateContext};
 use crate::display_object::{BoundsMode, DisplayObjectBase};
 use crate::drawing::Drawing;
-use crate::library::MovieLibrarySource;
+use crate::library::{MovieLibrary, MovieLibrarySource};
 use crate::prelude::*;
 use crate::tag_utils::SwfMovie;
 use crate::tessellation_cache::TessellationCache;
@@ -14,12 +14,12 @@ use crate::vminterface::Instantiator;
 use core::fmt;
 use gc_arena::barrier::unlock;
 use gc_arena::lock::Lock;
+use gc_arena::lock::RefLock;
 use gc_arena::{Collect, Gc, Mutation};
 use ruffle_common::utils::HasPrefixField;
 use ruffle_render::backend::ShapeHandle;
 use ruffle_render::commands::CommandHandler;
 use std::cell::{OnceCell, RefCell, RefMut};
-use std::sync::Arc;
 
 #[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]
@@ -38,7 +38,7 @@ impl fmt::Debug for Graphic<'_> {
 #[repr(C, align(8))]
 pub struct GraphicData<'gc> {
     base: DisplayObjectBase<'gc>,
-    shared: Lock<Gc<'gc, GraphicShared>>,
+    shared: Lock<Gc<'gc, GraphicShared<'gc>>>,
     class: Lock<Option<Avm2ClassObject<'gc>>>,
     avm2_object: Lock<Option<Avm2StageObject<'gc>>>,
     /// This is lazily allocated on demand, to make `GraphicData` smaller in the common case.
@@ -51,17 +51,17 @@ impl<'gc> Graphic<'gc> {
     pub fn from_swf_tag(
         context: &mut UpdateContext<'gc>,
         swf_shape: swf::Shape,
-        movie: Arc<SwfMovie>,
+        movie: Gc<'gc, SwfMovie>,
+        library: Gc<'gc, RefLock<MovieLibrary<'gc>>>,
     ) -> Self {
-        let library = context.library.library_for_movie(movie.clone()).unwrap();
+        let library = library.borrow();
         let shared = GraphicShared {
             id: swf_shape.id,
             bounds: swf_shape.shape_bounds,
-            render_handle: Some(
-                context
-                    .renderer
-                    .register_shape((&swf_shape).into(), &MovieLibrarySource { library }),
-            ),
+            render_handle: Some(context.renderer.register_shape(
+                (&swf_shape).into(),
+                &MovieLibrarySource { library: &library },
+            )),
             shape: swf_shape,
             movie,
             scaled_handle: RefCell::new(TessellationCache::new()),
@@ -97,7 +97,7 @@ impl<'gc> Graphic<'gc> {
                 },
                 shape: Vec::new(),
             },
-            movie: context.root_swf.clone(),
+            movie: *context.root_swf,
             scaled_handle: RefCell::new(TessellationCache::new()),
         };
 
@@ -121,7 +121,7 @@ impl<'gc> Graphic<'gc> {
         unlock!(Gc::write(mc, self.0), GraphicData, class).set(Some(class));
     }
 
-    fn set_shared(self, mc: &Mutation<'gc>, shared: Gc<'gc, GraphicShared>) {
+    fn set_shared(self, mc: &Mutation<'gc>, shared: Gc<'gc, GraphicShared<'gc>>) {
         unlock!(Gc::write(mc, self.0), GraphicData, shared).set(shared);
     }
 
@@ -145,11 +145,11 @@ impl<'gc> Graphic<'gc> {
         }
 
         // Retessellate at the new scale
-        let library = context.library.library_for_movie(shared.movie.clone());
-        if let Some(library) = library {
+        if let Some(library) = self.library() {
+            let library = library.borrow();
             let new_handle = context.renderer.register_shape_with_scale(
                 (&shared.shape).into(),
-                &MovieLibrarySource { library },
+                &MovieLibrarySource { library: &library },
                 current_scale,
             );
 
@@ -225,11 +225,7 @@ impl<'gc> TDisplayObject<'gc> for Graphic<'gc> {
     fn replace_with(self, context: &mut UpdateContext<'gc>, id: CharacterId) {
         // Static assets like Graphics can replace themselves via a PlaceObject tag with PlaceObjectAction::Replace.
         // This does not create a new instance, but instead swaps out the underlying static data to point to the new art.
-        if let Some(new_graphic) = context
-            .library
-            .library_for_movie_mut(self.movie())
-            .get_graphic(id)
-        {
+        if let Some(new_graphic) = self.library().unwrap().borrow().get_graphic(id) {
             self.set_shared(context.gc(), new_graphic.0.shared.get());
         } else {
             tracing::warn!("PlaceObject: expected Graphic at character ID {}", id);
@@ -304,8 +300,8 @@ impl<'gc> TDisplayObject<'gc> for Graphic<'gc> {
         }
     }
 
-    fn movie(self) -> Arc<SwfMovie> {
-        self.0.shared.get().movie.clone()
+    fn movie(self) -> Gc<'gc, SwfMovie> {
+        self.0.shared.get().movie
     }
 
     fn object1(self) -> Option<Avm1Object<'gc>> {
@@ -328,13 +324,17 @@ impl<'gc> TDisplayObject<'gc> for Graphic<'gc> {
 
 /// Data shared between all instances of a Graphic.
 #[derive(Collect)]
-#[collect(require_static)]
-struct GraphicShared {
+#[collect(no_drop)]
+struct GraphicShared<'gc> {
+    #[collect(require_static)]
     id: CharacterId,
+    #[collect(require_static)]
     shape: swf::Shape,
+    #[collect(require_static)]
     render_handle: Option<ShapeHandle>,
+    #[collect(require_static)]
     bounds: Rectangle<Twips>,
-    movie: Arc<SwfMovie>,
+    movie: Gc<'gc, SwfMovie>,
     #[collect(require_static)]
     scaled_handle: RefCell<TessellationCache>,
 }

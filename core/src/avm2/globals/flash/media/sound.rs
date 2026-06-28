@@ -32,14 +32,10 @@ pub fn init<'gc>(
             .context
             .library
             .avm2_class_registry()
-            .class_symbol(class_def)
+            .class_symbol(class_def, activation.context.gc_context)
+            && let Some(lib) = activation.context.library_for_movie(movie)
         {
-            if let Some(Character::Sound(sound)) = activation
-                .context
-                .library
-                .library_for_movie_mut(movie)
-                .character_by_id(symbol)
-            {
+            if let Some(Character::Sound(sound)) = lib.borrow().character_by_id(symbol) {
                 sound_object.set_sound(activation.context, sound);
             } else {
                 tracing::warn!(

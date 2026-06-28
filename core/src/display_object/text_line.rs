@@ -17,7 +17,6 @@ use gc_arena::{Collect, Gc, Mutation};
 use ruffle_common::avm_string::AvmString;
 use ruffle_common::utils::HasPrefixField;
 use ruffle_macros::istr;
-use std::sync::Arc;
 
 #[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]
@@ -38,8 +37,7 @@ pub struct TextLineData<'gc> {
     base: InteractiveObjectBase<'gc>,
     avm2_object: Lock<Option<Avm2StageObject<'gc>>>,
     fallback: EditText<'gc>,
-    #[collect(require_static)]
-    movie: Arc<SwfMovie>,
+    movie: Gc<'gc, SwfMovie>,
 
     /// Validity can be any user-defined string, we can't use an enum here.
     ///
@@ -50,7 +48,7 @@ pub struct TextLineData<'gc> {
 impl<'gc> TextLine<'gc> {
     pub fn new(
         context: &mut UpdateContext<'gc>,
-        movie: Arc<SwfMovie>,
+        movie: Gc<'gc, SwfMovie>,
         fallback: EditText<'gc>,
     ) -> Self {
         TextLine(Gc::new(
@@ -91,7 +89,7 @@ impl<'gc> TDisplayObject<'gc> for TextLine<'gc> {
                 base: Default::default(),
                 avm2_object: Lock::new(None),
                 fallback: self.0.fallback,
-                movie: self.0.movie.clone(),
+                movie: self.0.movie,
                 validity: Lock::new(self.0.validity.get()),
             },
         ))
@@ -102,8 +100,8 @@ impl<'gc> TDisplayObject<'gc> for TextLine<'gc> {
         0
     }
 
-    fn movie(self) -> Arc<SwfMovie> {
-        self.0.movie.clone()
+    fn movie(self) -> Gc<'gc, SwfMovie> {
+        self.0.movie
     }
 
     fn replace_with(self, _context: &mut UpdateContext<'gc>, _id: CharacterId) {}

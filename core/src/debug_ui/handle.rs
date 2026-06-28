@@ -189,3 +189,54 @@ impl Hash for DomainHandle {
 }
 
 impl Eq for DomainHandle {}
+
+// Movie
+
+#[derive(Clone)]
+#[expect(clippy::type_complexity)]
+pub struct MovieHandle {
+    root: DynamicRoot<Rootable![Gc<'_, crate::tag_utils::SwfMovie>]>,
+    ptr: *const crate::tag_utils::SwfMovie,
+}
+
+impl MovieHandle {
+    pub fn new<'gc>(
+        context: &mut UpdateContext<'gc>,
+        movie: Gc<'gc, crate::tag_utils::SwfMovie>,
+    ) -> Self {
+        Self {
+            root: context
+                .dynamic_root
+                .stash(context.gc(), Gc::new(context.gc(), movie)),
+            ptr: Gc::as_ptr(movie),
+        }
+    }
+
+    pub fn fetch<'gc>(
+        &self,
+        dynamic_root_set: DynamicRootSet<'gc>,
+    ) -> Gc<'gc, crate::tag_utils::SwfMovie> {
+        *dynamic_root_set.fetch(&self.root)
+    }
+}
+
+impl Debug for MovieHandle {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.debug_tuple("MovieHandle").field(&self.ptr).finish()
+    }
+}
+
+impl PartialEq<MovieHandle> for MovieHandle {
+    #[inline(always)]
+    fn eq(&self, other: &MovieHandle) -> bool {
+        std::ptr::eq(self.ptr, other.ptr)
+    }
+}
+
+impl Hash for MovieHandle {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.ptr.hash(state);
+    }
+}
+
+impl Eq for MovieHandle {}
