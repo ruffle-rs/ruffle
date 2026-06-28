@@ -399,6 +399,7 @@ impl<'gc> LoadManager<'gc> {
         context: &mut UpdateContext<'gc>,
         target_clip: DisplayObject<'gc>,
         bytes: Vec<u8>,
+        loader_url: String,
         vm_data: MovieLoaderVMData<'gc>,
     ) -> Result<(), Error> {
         let loader = MovieLoader {
@@ -410,7 +411,7 @@ impl<'gc> LoadManager<'gc> {
             from_bytes: true,
         };
         let handle = context.load_manager.add_loader(loader);
-        MovieLoader::movie_loader_bytes(handle, context, bytes)
+        MovieLoader::movie_loader_bytes(handle, context, loader_url, bytes)
     }
 
     /// Fires the `onLoad` listener event for every MovieClip that has been
@@ -864,6 +865,7 @@ impl<'gc> MovieLoader<'gc> {
     pub fn movie_loader_bytes(
         handle: LoaderHandle,
         uc: &mut UpdateContext<'gc>,
+        loader_url: String,
         bytes: Vec<u8>,
     ) -> Result<(), Error> {
         let clip = match uc.load_manager.get_loader(handle) {
@@ -877,8 +879,6 @@ impl<'gc> MovieLoader<'gc> {
             }
             mc.replace_with_movie(uc, None, false, None);
         }
-
-        let loader_url = uc.root_swf.url().to_string();
 
         // We need to generate a URL for `SwfMovie`s that are loaded using
         // `Loader.loadBytes`. In FP, the URL looks like
