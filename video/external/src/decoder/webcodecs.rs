@@ -247,35 +247,22 @@ impl VideoDecoder for H264Decoder {
         trace!("decoder state: {:?}", self.decoder.state());
         trace!("queue size: {}", self.decoder.decode_queue_size());
 
-        for (nalu_type, nalu) in iter_nalus(encoded_frame.data, self.length_size as usize) {
-            let frame_type = match nalu_type {
-                0 => {
-                    trace!("skipping NALU of unspecified type");
-                    continue;
-                }
-                // 1 is "Coded slice of a non-IDR picture"
-                // 2, 3, and 4 are "Coded slice data partition ..." A, B, and C
-                1..NALU_TYPE_IDR => EncodedVideoChunkType::Delta,
-                // This is 5.
-                NALU_TYPE_IDR => EncodedVideoChunkType::Key,
-                // Skipping any NALUs that are not for the VCL, such as SEI (6), SPS (7), PPS (8), etc.
-                // TODO: Maybe handle the SPS and PPS NALUs by reconfiguring the decoder?
-                _ => {
-                    trace!("skipping NALU of type {}", nalu_type);
-                    continue;
-                }
-            };
-            trace!("frame type: {:?}", frame_type);
-
-            // The timestamp doesn't matter for us.
-            let init = EncodedVideoChunkInit::new(&Uint8Array::from(nalu), 0, frame_type);
-            let chunk = EncodedVideoChunk::new(&init).unwrap();
-
-            self.decoder
-                .decode(&chunk)
-                .map_err(js_error_to_decoder_error)?;
-            trace!("decoder state: {:?}", self.decoder.state());
+        let mut frame_type = EncodedVideoChunkType::Delta;
+        for (nalu_type, _nalu) in iter_nalus(encoded_frame.data, self.length_size as usize) {
+            if nalu_type == NALU_TYPE_IDR {
+                frame_type = EncodedVideoChunkType::Key;
+            }
         }
+        trace!("frame type: {:?}", frame_type);
+
+        // The timestamp doesn't matter for us.
+        let init = EncodedVideoChunkInit::new(&Uint8Array::from(encoded_frame.data), 0, frame_type);
+        let chunk = EncodedVideoChunk::new(&init).unwrap();
+
+        self.decoder
+            .decode(&chunk)
+            .map_err(js_error_to_decoder_error)?;
+        trace!("decoder state: {:?}", self.decoder.state());
 
         match self.last_frame.borrow_mut().take() {
             Some(frame) => Ok(frame),
