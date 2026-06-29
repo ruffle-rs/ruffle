@@ -1,0 +1,20 @@
+== primordial ==
+isPrimordial = true
+state = running
+primordial terminate threw:
+Error: Error #3732: Worker.terminate is only available for background workers.
+	at flash.system::Worker/terminate()
+	at Test/tryTerminate()
+	at Test()
+state after = running
+== createWorker(null) ==
+TypeError: Error #2007: Parameter swf must be non-null.
+	at flash.system::WorkerDomain/createWorker()
+	at Test()
+== created ==
+isPrimordial = false
+state = new
+first terminate returned false
+state = new
+second terminate returned false
+state = new
