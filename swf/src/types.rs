@@ -11,6 +11,7 @@ use std::borrow::Cow;
 use std::fmt::{self, Display, Formatter};
 use std::num::NonZeroU8;
 use std::str::FromStr;
+use zerocopy::{FromBytes, I16, Immutable, IntoBytes, KnownLayout, LE, Unaligned};
 
 mod bevel_filter;
 mod blur_filter;
@@ -541,7 +542,7 @@ pub enum Tag<'a> {
     DefineFontAlignZones {
         id: CharacterId,
         thickness: FontThickness,
-        zones: Vec<FontAlignZone>,
+        zones: &'a [FontAlignZone],
     },
     DefineFontInfo(Box<FontInfo<'a>>),
     DefineFontName {
@@ -1655,13 +1656,22 @@ impl TextAlign {
     }
 }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(
+    Clone, Copy, Debug, Eq, PartialEq, KnownLayout, Immutable, Unaligned, FromBytes, IntoBytes,
+)]
+#[repr(C)]
 pub struct FontAlignZone {
+    /// Number of `ZoneData` entries that follow. Per the spec this is variable,
+    /// but Flash should always emit 2. Currently not validated when parsing.
+    pub num_zones: u8,
     // TODO(Herschel): Read these as f16s.
-    pub left: i16,
-    pub width: i16,
-    pub bottom: i16,
-    pub height: i16,
+    pub left: I16<LE>,
+    pub width: I16<LE>,
+    pub bottom: I16<LE>,
+    pub height: I16<LE>,
+    /// Bit 0 = has X-zone, bit 1 = has Y-zone.
+    /// Currently not used.
+    pub zone_mask: u8,
 }
 
 #[derive(Clone, Copy, Debug, Eq, FromPrimitive, PartialEq)]

@@ -603,20 +603,30 @@ pub fn tag_tests() -> Vec<TagTestData> {
             Tag::DefineFontAlignZones {
                 id: 1,
                 thickness: FontThickness::Thin,
-                zones: vec![
-                    FontAlignZone {
-                        left: 13098,
-                        width: 0,
-                        bottom: 0,
-                        height: 17102,
-                    },
-                    FontAlignZone {
-                        left: 15333,
-                        width: 0,
-                        bottom: 0,
-                        height: 17102,
-                    },
-                ],
+                zones: {
+                    use zerocopy::I16;
+
+                    static ZONES: [FontAlignZone; 2] = [
+                        FontAlignZone {
+                            num_zones: 2,
+                            left: I16::new(13098),
+                            width: I16::new(0),
+                            bottom: I16::new(0),
+                            height: I16::new(17102),
+                            zone_mask: 0b11,
+                        },
+                        FontAlignZone {
+                            num_zones: 2,
+                            left: I16::new(15333),
+                            width: I16::new(0),
+                            bottom: I16::new(0),
+                            height: I16::new(17102),
+                            zone_mask: 0b11,
+                        },
+                    ];
+
+                    &ZONES
+                },
             },
             read_tag_bytes_from_file(
                 "tests/swfs/DefineFont3-CS6.swf",

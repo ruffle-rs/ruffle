@@ -23,6 +23,7 @@ flate2 = { workspace = true, optional = true }
 lzma-rs = { workspace = true, optional = true }
 enum-map = { workspace = true }
 simple_asn1 = "0.6.4"
+zerocopy = { workspace = true }
 
 [features]
 default = ["flate2", "lzma"]
