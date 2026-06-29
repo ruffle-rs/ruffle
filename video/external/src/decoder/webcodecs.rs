@@ -218,6 +218,7 @@ impl VideoDecoder for H264Decoder {
         let data = Uint8Array::from(configuration_data);
         config.set_description(&data);
         config.set_optimize_for_latency(true);
+        config.set_hardware_acceleration(web_sys::HardwareAcceleration::PreferSoftware);
         self.decoder
             .configure(&config)
             .map_err(js_error_to_decoder_error)?;
