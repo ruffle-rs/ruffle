@@ -1,14 +1,12 @@
-// Compile with:
-//  mtasc -main -header 200:150:30 Test.as -swf test.swf
+package {
 
-class Test {
-	static function main(current) {
-		_root.createTextField("tf", 0, 0, 0, 200, 150);
-		_root.tf.html = true;
+import flash.display.Sprite;
+import flash.text.TextField;
+
+public class Test extends Sprite {
+	public function Test() {
+		var testField:TextField = new TextField;
 		var tests:Array = new Array(
-			// this will be the last and thus what's displayed, and should be a playing card black joker, but it gets truncated
-			"&#127183;",
-
 			// all the explicit entities supported
 			"This is an ampersand: &amp;",
 			"This is a less-than sign: &lt;",
@@ -74,6 +72,12 @@ class Test {
 			"This is a right parenthesis: &# 41  ;",
 			"This is an asterisk: &#x  2a ;",
 
+			// newlines too!
+			"This is a greater-than sign: &#\n62;",
+			"This is an ampersand: &#x\n26;",
+			"This is a colon: &#58\n;",
+			"This is a semicolon: &#x3b\n;",
+
 			// but only around the numbers!
 			"This is not an entity: & #58;",
 			"This is not an entity: &#  x3b;",
@@ -127,8 +131,10 @@ class Test {
 		);
 		for (var s:String in tests) {
 			trace("\nSource: " + tests[s]);
-			_root.tf.htmlText = tests[s];
-			trace("Parsed: " + _root.tf.text);
+			testField.htmlText = tests[s];
+			trace("Parsed: " + testField.text);
 		}
 	}
+}
+
 }
