@@ -64,10 +64,10 @@ class Test {
 
 			// make sure we support positive numbers too!
 			"This is a left parenthesis: &#+40;",
-			"This is a less-than sign: &#x+2c;",
+			"This is a comma: &#x+2c;",
 			
 			// mind the gap!
-			"This is a left parenthesis: &# 60;",
+			"This is a less-than sign: &# 60;",
 			"This is a question mark: &#x  3f;",
 			"This is a greater-than sign: &#62   ;",
 			"This is an ampersand: &#x26     ;",

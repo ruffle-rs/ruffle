@@ -95,11 +95,11 @@ Parsed: This is a greater-than sign: >
 Source: This is a question mark: &#x  3f;
 Parsed: This is a question mark: ?
 
-Source: This is a left parenthesis: &# 60;
-Parsed: This is a left parenthesis: <
+Source: This is a less-than sign: &# 60;
+Parsed: This is a less-than sign: <
 
-Source: This is a less-than sign: &#x+2c;
-Parsed: This is a less-than sign: ,
+Source: This is a comma: &#x+2c;
+Parsed: This is a comma: ,
 
 Source: This is a left parenthesis: &#+40;
 Parsed: This is a left parenthesis: (
