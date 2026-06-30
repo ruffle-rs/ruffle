@@ -155,8 +155,8 @@ Parsed: This entity should not be valid: &1;
 Source: This entity should not be valid: &jjjjj;
 Parsed: This entity should not be valid: &jjjjj;
 
-Source: This is how you write an empty string: &quot&quot
-Parsed: This is how you write an empty string: &quot&quot
+Source: This is how you write an empty string: &quot;&quot;
+Parsed: This is how you write an empty string: ""
 
 Source: Suppose we have two objects, &quot;foo&quot; and &quot;bar&quot;
 Parsed: Suppose we have two objects, "foo" and "bar"

@@ -25,7 +25,7 @@ class Test {
 			"Suppose we have two objects, &quot;foo&quot; and &quot;bar&quot;",
 
 			// adjacent entities
-			"This is how you write an empty string: &quot&quot",
+			"This is how you write an empty string: &quot;&quot;",
 
 			// an entity-alike that should not resolve
 			"This entity should not be valid: &jjjjj;",
