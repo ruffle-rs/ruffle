@@ -52,17 +52,35 @@ fn process_html_entity(src: &WStr) -> Option<WString> {
                     result_str.push_byte(b'\xA0');
                 } else if s.len() >= 2 && s.at(0) == b'#' as u16 {
                     // Number entity: &#nnnn; or &#xhhhh;
-                    let (digits, radix) = if s.at(1) == b'x' as u16 {
-                        // Only trailing 4 hex digits are used.
-                        let start = usize::max(s.len(), 6) - 4;
-                        (&s[start..], 16)
+                    let (radix, start_index) = if s.at(1) == b'x' as u16 {
+                        (16, 2)
                     } else {
-                        // Only trailing 16 digits are used.
-                        let start = usize::max(s.len(), 17) - 16;
-                        (&s[start..], 10)
+                        (10, 1)
                     };
-                    if let Ok(n) = u32::from_wstr_radix(digits, radix) {
-                        if let Some(c) = std::char::from_u32(n) {
+                    let numeric_parse_start = s[start_index..].trim();
+                    let numeral_start_index = match s.get(start_index).map(u8::try_from) {
+                        Some(Ok(b'-')) | Some(Ok(b'+')) => 1,
+                        _ => 0,
+                    };
+                    let numeral_segment = &numeric_parse_start[numeral_start_index..];
+                    let end = if radix == 16 {
+                        numeral_segment
+                            .find(|c| {
+                                !((c >= b'0' as u16 && c <= b'9' as u16)
+                                    || (c >= b'a' as u16 && c <= b'f' as u16)
+                                    || (c >= b'A' as u16 && c <= b'F' as u16))
+                            })
+                            .unwrap_or(numeral_segment.len())
+                            + numeral_start_index
+                    } else {
+                        numeral_segment
+                            .find(|c| !(c >= b'0' as u16 && c <= b'9' as u16))
+                            .unwrap_or(numeral_segment.len())
+                            + numeral_start_index
+                    };
+                    let digits = &numeric_parse_start[..end]; // using numeric_parse_start to include any potential sign
+                    if let Ok(n) = i32::from_wstr_radix_wrapping(digits, radix) {
+                        if let Some(c) = std::char::from_u32((n as u16) as u32) {
                             result_str.push_char(c);
                         }
                     } else {
