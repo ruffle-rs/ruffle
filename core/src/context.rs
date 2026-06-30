@@ -567,7 +567,10 @@ pub struct RenderContext<'a, 'gc> {
     /// Any offscreen draws that should be used to redraw a cacheAsBitmap
     pub cache_draws: &'a mut Vec<BitmapCacheEntry>,
 
-    /// Number of no-filter bitmap cache rebuilds already allowed this frame.
+    /// Remaining bitmap cache rebuilds allowed by the current time-based budget.
+    pub bitmap_cache_rebuilds_remaining: &'a mut usize,
+
+    /// Number of bitmap cache rebuilds already allowed this frame.
     pub bitmap_cache_rebuilds_used: &'a mut usize,
 
     /// Number of filtered bitmap cache rebuilds this frame.

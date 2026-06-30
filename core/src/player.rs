@@ -79,6 +79,9 @@ use std::time::Duration;
 use tracing::instrument;
 use web_time::Instant;
 
+const BITMAP_CACHE_REBUILD_BUDGET_PER_SECOND: f64 = 192.0;
+const BITMAP_CACHE_REBUILD_BUDGET_BURST: f64 = 64.0;
+
 #[cfg(feature = "default_font")]
 pub const FALLBACK_DEVICE_FONT: &[u8] = include_bytes!("../assets/notosans.subset.ttf.gz");
 
@@ -308,6 +311,8 @@ pub struct Player {
 
     run_state: RunState,
     needs_render: bool,
+    bitmap_cache_rebuild_budget_tokens: f64,
+    bitmap_cache_rebuild_budget_last_refill: Instant,
     bitmap_cache_rebuilds_allowed: u64,
     bitmap_cache_filtered_rebuilds: u64,
     bitmap_cache_rebuilds_max_frame: usize,
@@ -521,6 +526,18 @@ impl Player {
     /// Returns the duration of a single frame.
     fn frame_duration(&self) -> FloatDuration {
         FloatDuration::from_millis(self.frame_time(1000.0))
+    }
+
+    fn refill_bitmap_cache_rebuild_budget(&mut self) {
+        let now = Instant::now();
+        let elapsed = now
+            .duration_since(self.bitmap_cache_rebuild_budget_last_refill)
+            .as_secs_f64();
+        self.bitmap_cache_rebuild_budget_last_refill = now;
+
+        self.bitmap_cache_rebuild_budget_tokens = (self.bitmap_cache_rebuild_budget_tokens
+            + elapsed * BITMAP_CACHE_REBUILD_BUDGET_PER_SECOND)
+            .min(BITMAP_CACHE_REBUILD_BUDGET_BURST);
     }
 
     pub fn tick(&mut self, dt: FloatDuration) {
@@ -2053,7 +2070,11 @@ impl Player {
         let (cache_draws, commands) = self.enter_arena_mut(|gc_context, gc_root, this| {
             let stage = gc_root.stage;
 
+            this.refill_bitmap_cache_rebuild_budget();
+
             let mut cache_draws = vec![];
+            let mut bitmap_cache_rebuilds_remaining =
+                this.bitmap_cache_rebuild_budget_tokens.floor() as usize;
             let mut bitmap_cache_rebuilds_used = 0;
             let mut bitmap_cache_filtered_rebuilds = 0;
             let mut bitmap_cache_rebuilds_skipped = 0;
@@ -2061,6 +2082,7 @@ impl Player {
                 renderer: this.renderer.deref_mut(),
                 commands: CommandList::new(),
                 cache_draws: &mut cache_draws,
+                bitmap_cache_rebuilds_remaining: &mut bitmap_cache_rebuilds_remaining,
                 bitmap_cache_rebuilds_used: &mut bitmap_cache_rebuilds_used,
                 bitmap_cache_filtered_rebuilds: &mut bitmap_cache_filtered_rebuilds,
                 bitmap_cache_rebuilds_skipped: &mut bitmap_cache_rebuilds_skipped,
@@ -2089,6 +2111,9 @@ impl Player {
                 };
 
             let commands = render_context.commands;
+            this.bitmap_cache_rebuild_budget_tokens = (this.bitmap_cache_rebuild_budget_tokens
+                - bitmap_cache_rebuilds_used as f64)
+                .max(0.0);
             this.bitmap_cache_rebuilds_allowed = this
                 .bitmap_cache_rebuilds_allowed
                 .saturating_add(bitmap_cache_rebuilds_used as u64);
@@ -2143,8 +2168,10 @@ impl Player {
 
     pub fn diagnostic_info(&self) -> String {
         format!(
-            "{} bitmap_cache_rebuilds_allowed={} bitmap_cache_filtered_rebuilds={} bitmap_cache_rebuilds_max_frame={} bitmap_cache_rebuild_skips={}",
+            "{} bitmap_cache_rebuild_budget_rate={:.0} bitmap_cache_rebuild_budget_tokens={:.1} bitmap_cache_rebuilds_allowed={} bitmap_cache_filtered_rebuilds={} bitmap_cache_rebuilds_max_frame={} bitmap_cache_rebuild_skips={}",
             self.renderer.diagnostic_info(),
+            BITMAP_CACHE_REBUILD_BUDGET_PER_SECOND,
+            self.bitmap_cache_rebuild_budget_tokens,
             self.bitmap_cache_rebuilds_allowed,
             self.bitmap_cache_filtered_rebuilds,
             self.bitmap_cache_rebuilds_max_frame,
@@ -3091,6 +3118,8 @@ impl PlayerBuilder {
                     RunState::Suspended
                 },
                 needs_render: true,
+                bitmap_cache_rebuild_budget_tokens: BITMAP_CACHE_REBUILD_BUDGET_BURST,
+                bitmap_cache_rebuild_budget_last_refill: Instant::now(),
                 bitmap_cache_rebuilds_allowed: 0,
                 bitmap_cache_filtered_rebuilds: 0,
                 bitmap_cache_rebuilds_max_frame: 0,

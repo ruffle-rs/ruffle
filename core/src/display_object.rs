@@ -933,8 +933,6 @@ struct DrawCacheInfo {
     filters: Vec<Filter>,
 }
 
-const MAX_BITMAP_CACHE_REBUILDS_PER_FRAME: usize = 32;
-
 #[derive(Clone, Copy)]
 struct ScalingGridAxis {
     source: [Twips; 4],
@@ -1237,8 +1235,7 @@ pub fn render_base<'gc>(
                 let draw_offset = Point::new(filter_rect.x_min, filter_rect.y_min);
                 if cache.is_dirty(&base_transform.matrix, width, height) {
                     let is_filtered_rebuild = !filters.is_empty();
-                    let defer_rebuild =
-                        *context.bitmap_cache_rebuilds_used >= MAX_BITMAP_CACHE_REBUILDS_PER_FRAME;
+                    let defer_rebuild = *context.bitmap_cache_rebuilds_remaining == 0;
                     if defer_rebuild {
                         *context.bitmap_cache_rebuilds_skipped =
                             context.bitmap_cache_rebuilds_skipped.saturating_add(1);
@@ -1251,6 +1248,8 @@ pub fn render_base<'gc>(
                             filters: Vec::new(),
                         });
                     } else {
+                        *context.bitmap_cache_rebuilds_remaining =
+                            context.bitmap_cache_rebuilds_remaining.saturating_sub(1);
                         *context.bitmap_cache_rebuilds_used =
                             context.bitmap_cache_rebuilds_used.saturating_add(1);
                         if is_filtered_rebuild {
@@ -1328,6 +1327,7 @@ pub fn render_base<'gc>(
                 renderer: context.renderer,
                 commands: CommandList::new(),
                 cache_draws: context.cache_draws,
+                bitmap_cache_rebuilds_remaining: &mut *context.bitmap_cache_rebuilds_remaining,
                 bitmap_cache_rebuilds_used: &mut *context.bitmap_cache_rebuilds_used,
                 bitmap_cache_filtered_rebuilds: &mut *context.bitmap_cache_filtered_rebuilds,
                 bitmap_cache_rebuilds_skipped: &mut *context.bitmap_cache_rebuilds_skipped,
