@@ -52,7 +52,7 @@ fn process_html_entity(src: &WStr) -> Option<WString> {
                     result_str.push_byte(b'\xA0');
                 } else if s.len() >= 2 && s.at(0) == b'#' as u16 {
                     // Number entity: &#nnnn; or &#xhhhh;
-                    let (digits, radix) = if src.at(1) == b'x' as u16 {
+                    let (digits, radix) = if s.at(1) == b'x' as u16 {
                         // Only trailing 4 hex digits are used.
                         let start = usize::max(s.len(), 6) - 4;
                         (&s[start..], 16)
