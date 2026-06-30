@@ -6,7 +6,7 @@ use crate::string::{Integer, SwfStrExt as _, Units, WStr, WString};
 use crate::tag_utils::SwfMovie;
 use gc_arena::Collect;
 use quick_xml::{Reader, escape::escape, events::Event};
-use ruffle_wstr::utils::swf_is_newline;
+use ruffle_wstr::utils::{swf_is_ascii_hexdigit, swf_is_newline, swf_is_whitespace};
 use std::borrow::Cow;
 use std::cmp::{Ordering, min};
 use std::collections::VecDeque;
@@ -57,27 +57,20 @@ fn process_html_entity(src: &WStr) -> Option<WString> {
                     } else {
                         (10, 1)
                     };
-                    let numeric_parse_start = s[start_index..].trim();
+                    let numeric_parse_start = s[start_index..].trim_matches(swf_is_whitespace);
                     let numeral_start_index = match s.get(start_index).map(u8::try_from) {
                         Some(Ok(b'-')) | Some(Ok(b'+')) => 1,
                         _ => 0,
                     };
                     let numeral_segment = &numeric_parse_start[numeral_start_index..];
-                    let end = if radix == 16 {
-                        numeral_segment
-                            .find(|c| {
-                                !((c >= b'0' as u16 && c <= b'9' as u16)
-                                    || (c >= b'a' as u16 && c <= b'f' as u16)
-                                    || (c >= b'A' as u16 && c <= b'F' as u16))
-                            })
-                            .unwrap_or(numeral_segment.len())
-                            + numeral_start_index
-                    } else {
-                        numeral_segment
-                            .find(|c| !(c >= b'0' as u16 && c <= b'9' as u16))
-                            .unwrap_or(numeral_segment.len())
-                            + numeral_start_index
-                    };
+                    let end = numeral_segment
+                        .find(if radix == 16 {
+                            |c| !swf_is_ascii_hexdigit(c)
+                        } else {
+                            |c| c < b'0' as u16 || c > b'9' as u16
+                        })
+                        .unwrap_or(numeral_segment.len())
+                        + numeral_start_index;
                     let digits = &numeric_parse_start[..end]; // using numeric_parse_start to include any potential sign
                     if let Ok(n) = i32::from_wstr_radix_wrapping(digits, radix) {
                         if let Some(c) = std::char::from_u32((n as u16) as u32) {
@@ -912,10 +905,8 @@ impl FormatSpans {
                                 && let Some(hex) = color.strip_prefix(b'#')
                             {
                                 let hex = hex.trim_start();
-                                let end = hex
-                                    .iter()
-                                    .take_while(|c| ruffle_wstr::utils::swf_is_ascii_hexdigit(*c))
-                                    .count();
+                                let end =
+                                    hex.iter().take_while(|c| swf_is_ascii_hexdigit(*c)).count();
                                 let start = end.saturating_sub(6);
                                 if let Ok(rgb) = u32::from_wstr_radix(&hex[start..end], 16) {
                                     format.color = Some(swf::Color::from_rgb(rgb, 0));
