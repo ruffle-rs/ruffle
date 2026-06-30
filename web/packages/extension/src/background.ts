@@ -232,8 +232,7 @@ async function disable() {
 
 async function onAdded(
     permissions:
-        | browser.permissions.Permissions
-        | chrome.permissions.Permissions,
+        browser.permissions.Permissions | chrome.permissions.Permissions,
 ) {
     if (
         permissions.origins &&
