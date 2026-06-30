@@ -11,6 +11,7 @@ mod backends;
 mod cli;
 mod custom_event;
 mod dbus;
+mod diagnostics;
 mod gui;
 mod log;
 mod player;

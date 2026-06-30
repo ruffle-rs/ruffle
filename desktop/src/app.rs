@@ -1,4 +1,5 @@
 use crate::custom_event::{OpenType, RuffleEvent};
+use crate::diagnostics::{ProcessDiagnosticsSampler, ProcessMetrics};
 use crate::gui::{GuiController, MENU_HEIGHT};
 use crate::player::{LaunchOptions, PlayerController};
 use crate::preferences::GlobalPreferences;
@@ -15,7 +16,7 @@ use ruffle_core::swf::HeaderExt;
 use ruffle_frontend_utils::content::ContentDescriptor;
 use ruffle_render::backend::ViewportDimensions;
 use std::sync::Arc;
-use std::time::Instant;
+use std::time::{Duration, Instant};
 use winit::application::ApplicationHandler;
 use winit::dpi::{LogicalSize, PhysicalPosition, PhysicalSize, Size};
 use winit::event::{ElementState, Ime, KeyEvent, Modifiers, StartCause, WindowEvent};
@@ -40,6 +41,11 @@ struct MainWindow {
     time: Instant,
     next_frame_time: Option<Instant>,
     event_loop_proxy: EventLoopProxy<RuffleEvent>,
+    process_diagnostics: ProcessDiagnosticsSampler,
+    diagnostics_enabled: bool,
+    last_diagnostics_log: Instant,
+    host_ticks: u64,
+    rendered_frames: u64,
 }
 
 impl MainWindow {
@@ -51,6 +57,7 @@ impl MainWindow {
                 if let Some(ref mut player) = player {
                     // Even if the movie is paused, user interaction with debug tools can change the render output
                     player.render();
+                    self.rendered_frames = self.rendered_frames.saturating_add(1);
                 }
 
                 self.gui.render(player);
@@ -377,6 +384,7 @@ impl MainWindow {
             let dt = FloatDuration::from_std(new_time.duration_since(self.time));
             if dt.as_millis() > 0.0 {
                 self.time = new_time;
+                self.host_ticks = self.host_ticks.saturating_add(1);
                 self.next_frame_time = self.player.get().map(|mut player| {
                     player.tick(dt);
                     new_time + player.time_til_next_frame()
@@ -384,6 +392,8 @@ impl MainWindow {
                 self.check_redraw();
             }
         }
+
+        self.log_diagnostics_if_due();
     }
 
     fn check_redraw(&self) {
@@ -392,6 +402,57 @@ impl MainWindow {
             self.gui.window().request_redraw();
         }
     }
+
+    fn log_diagnostics_if_due(&mut self) {
+        if !self.diagnostics_enabled {
+            return;
+        }
+
+        if self.last_diagnostics_log.elapsed() < Duration::from_secs(1) {
+            return;
+        }
+        self.last_diagnostics_log = Instant::now();
+
+        let metrics = self.process_diagnostics.sample();
+        let renderer_info = self.player.diagnostic_info().unwrap_or_default();
+
+        match metrics {
+            Some(metrics) => tracing::info!(
+                target: "ruffle_desktop::diagnostics",
+                "perf {} host_ticks={} rendered_frames={} {}",
+                format_process_metrics(metrics),
+                self.host_ticks,
+                self.rendered_frames,
+                renderer_info,
+            ),
+            None => tracing::info!(
+                target: "ruffle_desktop::diagnostics",
+                "perf process_metrics=unavailable host_ticks={} rendered_frames={} {}",
+                self.host_ticks,
+                self.rendered_frames,
+                renderer_info,
+            ),
+        }
+    }
+}
+
+fn format_process_metrics(metrics: ProcessMetrics) -> String {
+    let cpu = metrics
+        .cpu_percent
+        .map(|value| format!("{value:.1}"))
+        .unwrap_or_else(|| "n/a".to_string());
+
+    format!(
+        "rss_mb={:.1} peak_rss_mb={:.1} private_mb={:.1} cpu_percent={}",
+        bytes_to_mb(metrics.working_set_bytes),
+        bytes_to_mb(metrics.peak_working_set_bytes),
+        bytes_to_mb(metrics.private_bytes),
+        cpu,
+    )
+}
+
+fn bytes_to_mb(bytes: u64) -> f64 {
+    bytes as f64 / (1024.0 * 1024.0)
 }
 
 pub struct App {
@@ -531,7 +592,10 @@ impl ApplicationHandler<RuffleEvent> for App {
                 loaded = LoadingState::Loaded;
             }
 
+            let diagnostics_enabled = preferences.cli.diagnostics;
+
             self.main_window = Some(MainWindow {
+                diagnostics_enabled,
                 preferences,
                 gui,
                 player,
@@ -548,6 +612,10 @@ impl ApplicationHandler<RuffleEvent> for App {
                 time: Instant::now(),
                 next_frame_time: None,
                 event_loop_proxy,
+                process_diagnostics: ProcessDiagnosticsSampler::new(),
+                last_diagnostics_log: Instant::now(),
+                host_ticks: 0,
+                rendered_frames: 0,
             });
         }
     }

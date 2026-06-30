@@ -10,8 +10,8 @@ use crate::target::{MaybeOwnedBuffer, TextureTarget};
 use crate::target::{RenderTargetFrame, TextureBufferInfo};
 use crate::utils::{BufferDimensions, run_copy_pipeline};
 use crate::{
-    Descriptors, Error, QueueSyncHandle, RenderTarget, SwapChainTarget, Texture, as_texture,
-    format_list, get_backend_names,
+    Descriptors, Error, QueueSyncHandle, RenderTarget, SwapChainTarget, Texture,
+    TextureDiagnosticCounters, TextureDiagnosticKind, as_texture, format_list, get_backend_names,
 };
 use image::imageops::FilterType;
 use ruffle_render::backend::{
@@ -31,7 +31,6 @@ use ruffle_render::shape_utils::DistilledShape;
 use ruffle_render::tessellator::ShapeTessellator;
 use std::any::Any;
 use std::borrow::Cow;
-use std::cell::Cell;
 use std::num::NonZeroU32;
 use std::sync::Arc;
 use swf::Color;
@@ -76,6 +75,38 @@ pub struct WgpuRenderBackend<T: RenderTarget> {
     pub(crate) offscreen_buffer_pool: Arc<BufferPool<wgpu::Buffer, BufferDimensions>>,
     dynamic_transforms: DynamicTransforms,
     active_frame: ActiveFrame,
+    diagnostics: WgpuRenderDiagnostics,
+    texture_diagnostics: Arc<TextureDiagnosticCounters>,
+}
+
+#[derive(Debug, Default)]
+struct WgpuRenderDiagnostics {
+    submitted_frames: u64,
+    cache_entries: u64,
+    registered_bitmaps: u64,
+    registered_bitmap_bytes: u64,
+    updated_textures: u64,
+    updated_texture_bytes: u64,
+    empty_textures: u64,
+    empty_texture_bytes: u64,
+    offscreen_renders: u64,
+    offscreen_render_bytes: u64,
+    filters_applied: u64,
+    filter_copy_bytes: u64,
+    pixelbender_shaders: u64,
+    pixelbender_runs: u64,
+    pixelbender_temporary_textures: u64,
+    sync_handles_resolved: u64,
+}
+
+fn rgba_bytes(width: u32, height: u32) -> u64 {
+    u64::from(width)
+        .saturating_mul(u64::from(height))
+        .saturating_mul(4)
+}
+
+fn bytes_to_mb(bytes: u64) -> f64 {
+    bytes as f64 / (1024.0 * 1024.0)
 }
 
 impl WgpuRenderBackend<SwapChainTarget> {
@@ -243,6 +274,7 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
 
         let transforms = DynamicTransforms::new(&descriptors);
         let active_frame = ActiveFrame::new(&descriptors);
+        let texture_diagnostics = Arc::new(TextureDiagnosticCounters::default());
 
         Ok(Self {
             descriptors,
@@ -256,6 +288,8 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
             offscreen_buffer_pool: Arc::new(offscreen_buffer_pool),
             dynamic_transforms: transforms,
             active_frame,
+            diagnostics: WgpuRenderDiagnostics::default(),
+            texture_diagnostics,
         })
     }
 
@@ -464,6 +498,36 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
         Cow::Owned(result.join("\n"))
     }
 
+    fn diagnostic_info(&self) -> Cow<'static, str> {
+        let diagnostics = &self.diagnostics;
+        let texture_diagnostics = self.texture_diagnostics.snapshot();
+        Cow::Owned(format!(
+            "renderer=wgpu submitted_frames={} cache_entries={} registered_bitmaps={} registered_bitmap_mb={:.1} updated_textures={} updated_texture_mb={:.1} empty_textures={} empty_texture_mb={:.1} offscreen_renders={} offscreen_render_mb={:.1} filters_applied={} filter_copy_mb={:.1} pixelbender_shaders={} pixelbender_runs={} pixelbender_temporary_textures={} sync_handles_resolved={} live_registered_bitmaps={} live_registered_bitmap_mb={:.1} live_empty_textures={} live_empty_texture_mb={:.1} live_pixelbender_temporary_textures={} live_pixelbender_temporary_mb={:.1}",
+            diagnostics.submitted_frames,
+            diagnostics.cache_entries,
+            diagnostics.registered_bitmaps,
+            bytes_to_mb(diagnostics.registered_bitmap_bytes),
+            diagnostics.updated_textures,
+            bytes_to_mb(diagnostics.updated_texture_bytes),
+            diagnostics.empty_textures,
+            bytes_to_mb(diagnostics.empty_texture_bytes),
+            diagnostics.offscreen_renders,
+            bytes_to_mb(diagnostics.offscreen_render_bytes),
+            diagnostics.filters_applied,
+            bytes_to_mb(diagnostics.filter_copy_bytes),
+            diagnostics.pixelbender_shaders,
+            diagnostics.pixelbender_runs,
+            diagnostics.pixelbender_temporary_textures,
+            diagnostics.sync_handles_resolved,
+            texture_diagnostics.live_registered_bitmaps,
+            bytes_to_mb(texture_diagnostics.live_registered_bitmap_bytes),
+            texture_diagnostics.live_empty_textures,
+            bytes_to_mb(texture_diagnostics.live_empty_texture_bytes),
+            texture_diagnostics.live_pixelbender_temporaries,
+            bytes_to_mb(texture_diagnostics.live_pixelbender_temporary_bytes),
+        ))
+    }
+
     fn name(&self) -> &'static str {
         if cfg!(target_family = "wasm") {
             let info = self.descriptors.adapter.get_info();
@@ -523,6 +587,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
         commands: CommandList,
         cache_entries: Vec<BitmapCacheEntry>,
     ) {
+        let cache_entry_count = cache_entries.len() as u64;
         let frame_output = match self.target.get_next_texture() {
             Ok(frame) => frame,
             Err(e) => {
@@ -536,6 +601,12 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
                 return;
             }
         };
+
+        self.diagnostics.submitted_frames = self.diagnostics.submitted_frames.saturating_add(1);
+        self.diagnostics.cache_entries = self
+            .diagnostics
+            .cache_entries
+            .saturating_add(cache_entry_count);
 
         for entry in cache_entries {
             let texture = as_texture(&entry.handle);
@@ -656,6 +727,11 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
             height: bitmap.height(),
             depth_or_array_layers: 1,
         };
+        self.diagnostics.registered_bitmaps = self.diagnostics.registered_bitmaps.saturating_add(1);
+        self.diagnostics.registered_bitmap_bytes = self
+            .diagnostics
+            .registered_bitmap_bytes
+            .saturating_add(rgba_bytes(extent.width, extent.height));
 
         let texture_label = create_debug_label!("Bitmap");
         let texture = self
@@ -691,12 +767,12 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
             extent,
         );
 
-        let handle = BitmapHandle(Arc::new(Texture {
+        let handle = BitmapHandle(Arc::new(Texture::new_with_diagnostic(
             texture,
-            bind_linear: Default::default(),
-            bind_nearest: Default::default(),
-            copy_count: Cell::new(0),
-        }));
+            &self.texture_diagnostics,
+            TextureDiagnosticKind::RegisteredBitmap,
+            rgba_bytes(extent.width, extent.height),
+        )));
 
         Ok(handle)
     }
@@ -728,6 +804,11 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
             height: region.height(),
             depth_or_array_layers: 1,
         };
+        self.diagnostics.updated_textures = self.diagnostics.updated_textures.saturating_add(1);
+        self.diagnostics.updated_texture_bytes = self
+            .diagnostics
+            .updated_texture_bytes
+            .saturating_add(rgba_bytes(extent.width, extent.height));
 
         self.active_frame.submit_direct(&self.descriptors);
         self.descriptors.queue.write_texture(
@@ -763,6 +844,14 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
         bounds: PixelRegion,
     ) -> Option<Box<dyn SyncHandle>> {
         let texture = as_texture(&handle);
+        self.diagnostics.offscreen_renders = self.diagnostics.offscreen_renders.saturating_add(1);
+        self.diagnostics.offscreen_render_bytes = self
+            .diagnostics
+            .offscreen_render_bytes
+            .saturating_add(rgba_bytes(
+                texture.texture.width(),
+                texture.texture.height(),
+            ));
 
         let extent = wgpu::Extent3d {
             width: texture.texture.width(),
@@ -883,6 +972,12 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
             return None;
         }
 
+        self.diagnostics.filters_applied = self.diagnostics.filters_applied.saturating_add(1);
+        self.diagnostics.filter_copy_bytes = self
+            .diagnostics
+            .filter_copy_bytes
+            .saturating_add(rgba_bytes(copy_width, copy_height));
+
         self.active_frame.command_encoder.copy_texture_to_texture(
             wgpu::TexelCopyTextureInfo {
                 texture: applied_filter.color_texture(),
@@ -919,7 +1014,10 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
         &mut self,
         shader: PixelBenderShader,
     ) -> Result<PixelBenderShaderHandle, BitmapError> {
-        self.compile_pixelbender_shader_impl(shader)
+        let shader = self.compile_pixelbender_shader_impl(shader)?;
+        self.diagnostics.pixelbender_shaders =
+            self.diagnostics.pixelbender_shaders.saturating_add(1);
+        Ok(shader)
     }
 
     fn run_pixelbender_shader(
@@ -928,6 +1026,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
         arguments: &[PixelBenderShaderArgument],
         target: &PixelBenderTarget,
     ) -> Result<PixelBenderOutput, BitmapError> {
+        self.diagnostics.pixelbender_runs = self.diagnostics.pixelbender_runs.saturating_add(1);
         let output_channels = shader
             .0
             .parsed_shader()
@@ -941,6 +1040,10 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
         let target_handle = match target {
             PixelBenderTarget::Bitmap(handle) => handle.clone(),
             PixelBenderTarget::Bytes { width, height } => {
+                self.diagnostics.pixelbender_temporary_textures = self
+                    .diagnostics
+                    .pixelbender_temporary_textures
+                    .saturating_add(1);
                 let extent = wgpu::Extent3d {
                     width: *width,
                     height: *height,
@@ -965,12 +1068,12 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
                             | wgpu::TextureUsages::RENDER_ATTACHMENT
                             | wgpu::TextureUsages::COPY_SRC,
                     });
-                BitmapHandle(Arc::new(Texture {
+                BitmapHandle(Arc::new(Texture::new_with_diagnostic(
                     texture,
-                    bind_linear: Default::default(),
-                    bind_nearest: Default::default(),
-                    copy_count: Cell::new(0),
-                }))
+                    &self.texture_diagnostics,
+                    TextureDiagnosticKind::PixelBenderTemporary,
+                    rgba_bytes(extent.width, extent.height),
+                )))
             }
         };
 
@@ -1104,6 +1207,11 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
             height,
             depth_or_array_layers: 1,
         };
+        self.diagnostics.empty_textures = self.diagnostics.empty_textures.saturating_add(1);
+        self.diagnostics.empty_texture_bytes = self
+            .diagnostics
+            .empty_texture_bytes
+            .saturating_add(rgba_bytes(width, height));
 
         let texture_label = create_debug_label!("Bitmap");
         let texture = self
@@ -1122,12 +1230,12 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
                     | wgpu::TextureUsages::RENDER_ATTACHMENT
                     | wgpu::TextureUsages::COPY_SRC,
             });
-        Ok(BitmapHandle(Arc::new(Texture {
+        Ok(BitmapHandle(Arc::new(Texture::new_with_diagnostic(
             texture,
-            bind_linear: Default::default(),
-            bind_nearest: Default::default(),
-            copy_count: Cell::new(0),
-        })))
+            &self.texture_diagnostics,
+            TextureDiagnosticKind::EmptyTexture,
+            rgba_bytes(extent.width, extent.height),
+        ))))
     }
 
     fn resolve_sync_handle(
@@ -1135,6 +1243,8 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
         handle: Box<dyn SyncHandle>,
         with_rgba: RgbaBufRead,
     ) -> Result<(), ruffle_render::error::Error> {
+        self.diagnostics.sync_handles_resolved =
+            self.diagnostics.sync_handles_resolved.saturating_add(1);
         let handle = Box::<dyn Any>::downcast::<QueueSyncHandle>(handle).unwrap();
         handle.capture(with_rgba, &mut self.active_frame);
         Ok(())

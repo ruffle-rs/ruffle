@@ -104,6 +104,11 @@ pub trait RenderBackend: Any {
     fn create_context3d(&mut self, profile: Context3DProfile) -> Result<Box<dyn Context3D>, Error>;
 
     fn debug_info(&self) -> Cow<'static, str>;
+
+    fn diagnostic_info(&self) -> Cow<'static, str> {
+        Cow::Borrowed("")
+    }
+
     /// An internal name that is used to identify the render-backend.
     fn name(&self) -> &'static str;
 

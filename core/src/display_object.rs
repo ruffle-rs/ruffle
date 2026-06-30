@@ -933,6 +933,8 @@ struct DrawCacheInfo {
     filters: Vec<Filter>,
 }
 
+const MAX_BITMAP_CACHE_REBUILDS_PER_FRAME: usize = 32;
+
 #[derive(Clone, Copy)]
 struct ScalingGridAxis {
     source: [Twips; 4],
@@ -1234,24 +1236,46 @@ pub fn render_base<'gc>(
                 };
                 let draw_offset = Point::new(filter_rect.x_min, filter_rect.y_min);
                 if cache.is_dirty(&base_transform.matrix, width, height) {
-                    cache.update(
-                        context.renderer,
-                        base_transform.matrix,
-                        width,
-                        height,
-                        filter_rect.width() as u32,
-                        filter_rect.height() as u32,
-                        draw_offset,
-                        swf_version,
-                    );
-                    cache_info = cache.handle().map(|handle| DrawCacheInfo {
-                        handle,
-                        dirty: true,
-                        base_transform,
-                        bounds,
-                        draw_offset,
-                        filters,
-                    });
+                    let is_filtered_rebuild = !filters.is_empty();
+                    let defer_rebuild =
+                        *context.bitmap_cache_rebuilds_used >= MAX_BITMAP_CACHE_REBUILDS_PER_FRAME;
+                    if defer_rebuild {
+                        *context.bitmap_cache_rebuilds_skipped =
+                            context.bitmap_cache_rebuilds_skipped.saturating_add(1);
+                        cache_info = cache.handle().map(|handle| DrawCacheInfo {
+                            handle,
+                            dirty: false,
+                            base_transform,
+                            bounds,
+                            draw_offset: cache.draw_offset,
+                            filters: Vec::new(),
+                        });
+                    } else {
+                        *context.bitmap_cache_rebuilds_used =
+                            context.bitmap_cache_rebuilds_used.saturating_add(1);
+                        if is_filtered_rebuild {
+                            *context.bitmap_cache_filtered_rebuilds =
+                                context.bitmap_cache_filtered_rebuilds.saturating_add(1);
+                        }
+                        cache.update(
+                            context.renderer,
+                            base_transform.matrix,
+                            width,
+                            height,
+                            filter_rect.width() as u32,
+                            filter_rect.height() as u32,
+                            draw_offset,
+                            swf_version,
+                        );
+                        cache_info = cache.handle().map(|handle| DrawCacheInfo {
+                            handle,
+                            dirty: true,
+                            base_transform,
+                            bounds,
+                            draw_offset,
+                            filters,
+                        });
+                    }
                 } else {
                     cache_info = cache.handle().map(|handle| DrawCacheInfo {
                         handle,
@@ -1304,6 +1328,9 @@ pub fn render_base<'gc>(
                 renderer: context.renderer,
                 commands: CommandList::new(),
                 cache_draws: context.cache_draws,
+                bitmap_cache_rebuilds_used: &mut *context.bitmap_cache_rebuilds_used,
+                bitmap_cache_filtered_rebuilds: &mut *context.bitmap_cache_filtered_rebuilds,
+                bitmap_cache_rebuilds_skipped: &mut *context.bitmap_cache_rebuilds_skipped,
                 gc_context: context.gc_context,
                 library: context.library,
                 transform_stack: &mut transform_stack,

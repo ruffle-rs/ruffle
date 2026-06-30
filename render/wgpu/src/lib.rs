@@ -21,6 +21,7 @@ use ruffle_render::tessellator::{Gradient as TessGradient, Vertex as TessVertex}
 use std::any::Any;
 use std::cell::{Cell, OnceCell};
 use std::sync::Arc;
+use std::sync::atomic::{AtomicU64, Ordering};
 use swf::GradientSpread;
 pub use wgpu;
 
@@ -250,9 +251,131 @@ pub struct Texture {
     bind_linear: OnceCell<BitmapBinds>,
     bind_nearest: OnceCell<BitmapBinds>,
     copy_count: Cell<u8>,
+    _diagnostic_registration: Option<TextureDiagnosticRegistration>,
+}
+
+#[derive(Clone, Copy, Debug)]
+pub(crate) enum TextureDiagnosticKind {
+    RegisteredBitmap,
+    EmptyTexture,
+    PixelBenderTemporary,
+}
+
+#[derive(Debug, Default)]
+pub(crate) struct TextureDiagnosticCounters {
+    live_registered_bitmaps: AtomicU64,
+    live_registered_bitmap_bytes: AtomicU64,
+    live_empty_textures: AtomicU64,
+    live_empty_texture_bytes: AtomicU64,
+    live_pixelbender_temporaries: AtomicU64,
+    live_pixelbender_temporary_bytes: AtomicU64,
+}
+
+#[derive(Clone, Copy, Debug, Default)]
+pub(crate) struct TextureDiagnosticSnapshot {
+    pub live_registered_bitmaps: u64,
+    pub live_registered_bitmap_bytes: u64,
+    pub live_empty_textures: u64,
+    pub live_empty_texture_bytes: u64,
+    pub live_pixelbender_temporaries: u64,
+    pub live_pixelbender_temporary_bytes: u64,
+}
+
+impl TextureDiagnosticCounters {
+    pub fn register(
+        self: &Arc<Self>,
+        kind: TextureDiagnosticKind,
+        bytes: u64,
+    ) -> TextureDiagnosticRegistration {
+        self.add(kind, bytes);
+        TextureDiagnosticRegistration {
+            counters: self.clone(),
+            kind,
+            bytes,
+        }
+    }
+
+    pub fn snapshot(&self) -> TextureDiagnosticSnapshot {
+        TextureDiagnosticSnapshot {
+            live_registered_bitmaps: self.live_registered_bitmaps.load(Ordering::Relaxed),
+            live_registered_bitmap_bytes: self.live_registered_bitmap_bytes.load(Ordering::Relaxed),
+            live_empty_textures: self.live_empty_textures.load(Ordering::Relaxed),
+            live_empty_texture_bytes: self.live_empty_texture_bytes.load(Ordering::Relaxed),
+            live_pixelbender_temporaries: self.live_pixelbender_temporaries.load(Ordering::Relaxed),
+            live_pixelbender_temporary_bytes: self
+                .live_pixelbender_temporary_bytes
+                .load(Ordering::Relaxed),
+        }
+    }
+
+    fn add(&self, kind: TextureDiagnosticKind, bytes: u64) {
+        let (count, byte_count) = self.counters(kind);
+        count.fetch_add(1, Ordering::Relaxed);
+        byte_count.fetch_add(bytes, Ordering::Relaxed);
+    }
+
+    fn remove(&self, kind: TextureDiagnosticKind, bytes: u64) {
+        let (count, byte_count) = self.counters(kind);
+        count.fetch_sub(1, Ordering::Relaxed);
+        byte_count.fetch_sub(bytes, Ordering::Relaxed);
+    }
+
+    fn counters(&self, kind: TextureDiagnosticKind) -> (&AtomicU64, &AtomicU64) {
+        match kind {
+            TextureDiagnosticKind::RegisteredBitmap => (
+                &self.live_registered_bitmaps,
+                &self.live_registered_bitmap_bytes,
+            ),
+            TextureDiagnosticKind::EmptyTexture => {
+                (&self.live_empty_textures, &self.live_empty_texture_bytes)
+            }
+            TextureDiagnosticKind::PixelBenderTemporary => (
+                &self.live_pixelbender_temporaries,
+                &self.live_pixelbender_temporary_bytes,
+            ),
+        }
+    }
+}
+
+#[derive(Debug)]
+pub(crate) struct TextureDiagnosticRegistration {
+    counters: Arc<TextureDiagnosticCounters>,
+    kind: TextureDiagnosticKind,
+    bytes: u64,
+}
+
+impl Drop for TextureDiagnosticRegistration {
+    fn drop(&mut self) {
+        self.counters.remove(self.kind, self.bytes);
+    }
 }
 
 impl Texture {
+    pub(crate) fn new(texture: wgpu::Texture) -> Self {
+        Self {
+            texture,
+            bind_linear: Default::default(),
+            bind_nearest: Default::default(),
+            copy_count: Cell::new(0),
+            _diagnostic_registration: None,
+        }
+    }
+
+    pub(crate) fn new_with_diagnostic(
+        texture: wgpu::Texture,
+        counters: &Arc<TextureDiagnosticCounters>,
+        kind: TextureDiagnosticKind,
+        bytes: u64,
+    ) -> Self {
+        Self {
+            texture,
+            bind_linear: Default::default(),
+            bind_nearest: Default::default(),
+            copy_count: Cell::new(0),
+            _diagnostic_registration: Some(counters.register(kind, bytes)),
+        }
+    }
+
     pub fn bind_group(
         &self,
         smoothed: bool,

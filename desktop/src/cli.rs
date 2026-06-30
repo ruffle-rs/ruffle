@@ -209,6 +209,10 @@ pub struct Opt {
     #[clap(long)]
     pub no_gui: bool,
 
+    /// Log process and renderer diagnostics once per second.
+    #[clap(long, action)]
+    pub diagnostics: bool,
+
     /// Remaps a specific button on a gamepad to a keyboard key.
     /// This can be used to add new gamepad support to existing games, for example mapping
     /// the D-pad to the arrow keys with -B d-pad-up=up -B d-pad-down=down etc.

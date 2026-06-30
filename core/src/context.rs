@@ -567,6 +567,15 @@ pub struct RenderContext<'a, 'gc> {
     /// Any offscreen draws that should be used to redraw a cacheAsBitmap
     pub cache_draws: &'a mut Vec<BitmapCacheEntry>,
 
+    /// Number of no-filter bitmap cache rebuilds already allowed this frame.
+    pub bitmap_cache_rebuilds_used: &'a mut usize,
+
+    /// Number of filtered bitmap cache rebuilds this frame.
+    pub bitmap_cache_filtered_rebuilds: &'a mut u64,
+
+    /// Number of bitmap cache rebuilds skipped this frame due to rebuild budgeting.
+    pub bitmap_cache_rebuilds_skipped: &'a mut u64,
+
     /// The GC context, used to perform any `Gc` writes that must occur during rendering.
     pub gc_context: &'gc Mutation<'gc>,
 

@@ -308,6 +308,10 @@ pub struct Player {
 
     run_state: RunState,
     needs_render: bool,
+    bitmap_cache_rebuilds_allowed: u64,
+    bitmap_cache_filtered_rebuilds: u64,
+    bitmap_cache_rebuilds_max_frame: usize,
+    bitmap_cache_rebuilds_skipped: u64,
 
     renderer: Box<dyn RenderBackend>,
     audio: Box<dyn AudioBackend>,
@@ -2050,10 +2054,16 @@ impl Player {
             let stage = gc_root.stage;
 
             let mut cache_draws = vec![];
+            let mut bitmap_cache_rebuilds_used = 0;
+            let mut bitmap_cache_filtered_rebuilds = 0;
+            let mut bitmap_cache_rebuilds_skipped = 0;
             let mut render_context = RenderContext {
                 renderer: this.renderer.deref_mut(),
                 commands: CommandList::new(),
                 cache_draws: &mut cache_draws,
+                bitmap_cache_rebuilds_used: &mut bitmap_cache_rebuilds_used,
+                bitmap_cache_filtered_rebuilds: &mut bitmap_cache_filtered_rebuilds,
+                bitmap_cache_rebuilds_skipped: &mut bitmap_cache_rebuilds_skipped,
                 gc_context,
                 library: &gc_root.library,
                 transform_stack: &mut this.transform_stack,
@@ -2079,6 +2089,18 @@ impl Player {
                 };
 
             let commands = render_context.commands;
+            this.bitmap_cache_rebuilds_allowed = this
+                .bitmap_cache_rebuilds_allowed
+                .saturating_add(bitmap_cache_rebuilds_used as u64);
+            this.bitmap_cache_filtered_rebuilds = this
+                .bitmap_cache_filtered_rebuilds
+                .saturating_add(bitmap_cache_filtered_rebuilds);
+            this.bitmap_cache_rebuilds_max_frame = this
+                .bitmap_cache_rebuilds_max_frame
+                .max(bitmap_cache_rebuilds_used);
+            this.bitmap_cache_rebuilds_skipped = this
+                .bitmap_cache_rebuilds_skipped
+                .saturating_add(bitmap_cache_rebuilds_skipped);
             (cache_draws, commands)
         });
 
@@ -2117,6 +2139,17 @@ impl Player {
 
     pub fn renderer(&self) -> &dyn RenderBackend {
         &*self.renderer
+    }
+
+    pub fn diagnostic_info(&self) -> String {
+        format!(
+            "{} bitmap_cache_rebuilds_allowed={} bitmap_cache_filtered_rebuilds={} bitmap_cache_rebuilds_max_frame={} bitmap_cache_rebuild_skips={}",
+            self.renderer.diagnostic_info(),
+            self.bitmap_cache_rebuilds_allowed,
+            self.bitmap_cache_filtered_rebuilds,
+            self.bitmap_cache_rebuilds_max_frame,
+            self.bitmap_cache_rebuilds_skipped
+        )
     }
 
     pub fn renderer_mut(&mut self) -> &mut dyn RenderBackend {
@@ -3058,6 +3091,10 @@ impl PlayerBuilder {
                     RunState::Suspended
                 },
                 needs_render: true,
+                bitmap_cache_rebuilds_allowed: 0,
+                bitmap_cache_filtered_rebuilds: 0,
+                bitmap_cache_rebuilds_max_frame: 0,
+                bitmap_cache_rebuilds_skipped: 0,
                 self_reference: self_ref.clone(),
                 load_behavior: self.load_behavior,
                 spoofed_url: self.spoofed_url.clone(),

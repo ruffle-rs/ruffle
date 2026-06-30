@@ -491,6 +491,10 @@ impl PlayerController {
         }
     }
 
+    pub fn diagnostic_info(&self) -> Option<String> {
+        self.get().map(|player| player.diagnostic_info())
+    }
+
     pub fn handle_event(&self, event: PlayerEvent) -> bool {
         if let Some(mut player) = self.get()
             && player.is_playing()

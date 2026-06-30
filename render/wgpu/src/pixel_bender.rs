@@ -2,7 +2,7 @@ use std::any::Any;
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::num::NonZeroU64;
-use std::{borrow::Cow, cell::Cell, sync::Arc};
+use std::{borrow::Cow, sync::Arc};
 
 use indexmap::IndexMap;
 use ruffle_render::bitmap::BitmapHandle;
@@ -482,12 +482,7 @@ pub(super) fn run_pixelbender_shader_impl(
                             extent,
                         );
 
-                        BitmapHandle(Arc::new(Texture {
-                            texture: fresh_texture,
-                            bind_linear: Default::default(),
-                            bind_nearest: Default::default(),
-                            copy_count: Cell::new(0),
-                        }))
+                        BitmapHandle(Arc::new(Texture::new(fresh_texture)))
                     });
                     *texture = Some(cached_fresh_handle.clone().into());
                 }
