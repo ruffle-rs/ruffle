@@ -1,0 +1,3 @@
+ctor: bytesLoaded=747 bytesTotal=747
+init: bytesLoaded=747 bytesTotal=747
+complete: bytesLoaded=747 bytesTotal=747
