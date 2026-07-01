@@ -148,7 +148,24 @@ pub fn request_from_url_request<'gc>(
         .get_slot(url_request_slots::_REQUEST_HEADERS)
         .as_object();
 
+    // Send a Shockwave-Flash-branded `User-Agent` by default, matching real
+    // Flash Player.  Inserted before the user-headers loop so a user-supplied
+    // entry wins per the existing last-write-wins semantics.  Web platforms
+    // silently drop user-supplied `User-Agent` on `fetch()` per browser
+    // security restrictions, so this only takes effect on desktop, but that
+    // already overrides the `Ruffle/<version>` `reqwest` default which leaks
+    // the runtime name to Flash-aware servers.  Closes #9395 for the
+    // User-Agent piece; broader header parity (Content-Type, Accept,
+    // Accept-Encoding) tracked separately.
     let mut string_headers = IndexMap::default();
+    string_headers.insert(
+        "User-Agent".into(),
+        format!(
+            "Mozilla/5.0 (compatible; Shockwave Flash {}.0.0.0)",
+            activation.avm2().player_version
+        ),
+    );
+
     if let Some(headers) = headers {
         let headers = headers.as_array_storage().unwrap();
 
