@@ -57,7 +57,7 @@ fn process_html_entity(src: &WStr) -> Option<WString> {
                     } else {
                         (10, 1)
                     };
-                    let numeric_parse_start = s[start_index..].trim_matches(swf_is_whitespace);
+                    let numeric_parse_start = s[start_index..].trim();
                     let numeral_start_index = match s.get(start_index).map(u8::try_from) {
                         Some(Ok(b'-')) | Some(Ok(b'+')) => 1,
                         _ => 0,
@@ -72,8 +72,8 @@ fn process_html_entity(src: &WStr) -> Option<WString> {
                         .unwrap_or(numeral_segment.len())
                         + numeral_start_index;
                     let digits = &numeric_parse_start[..end]; // using numeric_parse_start to include any potential sign
-                    if let Ok(n) = i32::from_wstr_radix_wrapping(digits, radix) {
-                        if let Some(c) = std::char::from_u32((n as u16) as u32) {
+                    if let Ok(n) = u16::from_wstr_radix_wrapping(digits, radix) {
+                        if let Some(c) = std::char::from_u32(n as u32) {
                             result_str.push_char(c);
                         }
                     } else {
