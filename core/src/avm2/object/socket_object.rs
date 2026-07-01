@@ -29,6 +29,7 @@ pub fn socket_allocator<'gc>(
             handle: Cell::new(None),
             read_buffer: RefCell::new(VecDeque::new()),
             write_buffer: RefCell::new(vec![]),
+            certificate_status: RefCell::new("unknown".to_string()),
         },
     ))
     .into())
@@ -81,6 +82,14 @@ impl<'gc> SocketObject<'gc> {
 
     pub fn set_handle(self, handle: SocketHandle) -> Option<SocketHandle> {
         self.0.handle.replace(Some(handle))
+    }
+
+    pub fn certificate_status(self) -> String {
+        self.0.certificate_status.borrow().clone()
+    }
+
+    pub fn set_certificate_status(self, status: String) {
+        *self.0.certificate_status.borrow_mut() = status;
     }
 
     pub fn read_buffer(&self) -> RefMut<'_, VecDeque<u8>> {
@@ -202,6 +211,10 @@ pub struct SocketObjectData<'gc> {
 
     read_buffer: RefCell<VecDeque<u8>>,
     write_buffer: RefCell<Vec<u8>>,
+
+    /// The server certificate status (used by SecureSocket).
+    #[collect(require_static)]
+    certificate_status: RefCell<String>,
 }
 
 impl fmt::Debug for SocketObject<'_> {
