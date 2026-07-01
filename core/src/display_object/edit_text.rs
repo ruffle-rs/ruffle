@@ -2468,11 +2468,11 @@ impl<'gc> EditText<'gc> {
     }
 
     fn open_url(self, context: &mut UpdateContext<'gc>, url: &WStr, target: &WStr) {
-        if let Some(address) = url.strip_prefix(WStr::from_units(b"asfunction:")) {
+        if let Some(address) = strip_link_scheme(url, WStr::from_units(b"asfunction:")) {
             if let Err(e) = self.execute_avm1_asfunction(context, address) {
                 error!("Couldn't execute URL \"{url:?}\": {e:?}");
             }
-        } else if let Some(address) = url.strip_prefix(WStr::from_units(b"event:")) {
+        } else if let Some(address) = strip_link_scheme(url, WStr::from_units(b"event:")) {
             if let Some(object) = self.object2() {
                 let mut activation = Avm2Activation::from_nothing(context);
                 let text = AvmString::new(activation.gc(), address);
@@ -3670,6 +3670,19 @@ impl<'gc> EditTextStyleSheet<'gc> {
     }
 }
 
+/// Flash matches the `asfunction:` and `event:` URL schemes case-insensitively,
+/// so HREFs like `asFunction:toggle_music` (Submachine HD builds, #23514) must
+/// route the same way as `asfunction:toggle_music`. `WStr::strip_prefix` is
+/// byte-exact, so we do the prefix check against a lowercased head and then
+/// slice the original URL from the back to preserve the address's original
+/// casing for downstream consumers (the AVM1 function name, the AVM2 link
+/// event text).
+fn strip_link_scheme<'a>(url: &'a WStr, scheme: &WStr) -> Option<&'a WStr> {
+    let lowercase = url.to_ascii_lowercase();
+    let tail_len = lowercase.strip_prefix(scheme)?.len();
+    Some(&url[url.len() - tail_len..])
+}
+
 #[derive(Clone, Debug)]
 struct ImeData {
     ime_start: usize,
@@ -3682,4 +3695,63 @@ struct EditTextRenderState {
     /// Used for delaying rendering the caret, so that it's
     /// rendered outside of the text mask.
     draw_caret_command: Option<RenderCommand>,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::strip_link_scheme;
+    use crate::string::{WStr, WString};
+
+    fn ws(s: &str) -> WString {
+        WString::from_utf8(s)
+    }
+
+    #[test]
+    fn asfunction_canonical_case_matches() {
+        let url = ws("asfunction:toggle_music");
+        let address = strip_link_scheme(&url, WStr::from_units(b"asfunction:"));
+        assert_eq!(address, Some(WStr::from_units(b"toggle_music")));
+    }
+
+    #[test]
+    fn asfunction_mixed_case_matches_and_preserves_address_case() {
+        let url = ws("asFunction:ToggleMusic");
+        let address = strip_link_scheme(&url, WStr::from_units(b"asfunction:"));
+        assert_eq!(address, Some(WStr::from_units(b"ToggleMusic")));
+    }
+
+    #[test]
+    fn asfunction_upper_case_matches() {
+        let url = ws("ASFUNCTION:play");
+        let address = strip_link_scheme(&url, WStr::from_units(b"asfunction:"));
+        assert_eq!(address, Some(WStr::from_units(b"play")));
+    }
+
+    #[test]
+    fn event_mixed_case_matches() {
+        let url = ws("Event:clicked");
+        let address = strip_link_scheme(&url, WStr::from_units(b"event:"));
+        assert_eq!(address, Some(WStr::from_units(b"clicked")));
+    }
+
+    #[test]
+    fn non_matching_scheme_returns_none() {
+        let url = ws("https://example.com/");
+        assert!(strip_link_scheme(&url, WStr::from_units(b"asfunction:")).is_none());
+        assert!(strip_link_scheme(&url, WStr::from_units(b"event:")).is_none());
+    }
+
+    #[test]
+    fn empty_address_after_scheme_returns_empty_slice() {
+        let url = ws("asfunction:");
+        let address = strip_link_scheme(&url, WStr::from_units(b"asfunction:"));
+        assert_eq!(address, Some(WStr::from_units(b"")));
+    }
+
+    #[test]
+    fn scheme_prefix_only_substring_does_not_match() {
+        // "asfunction" without the trailing colon should not match "asfunction:"
+        let url = ws("asfunctionfoo");
+        assert!(strip_link_scheme(&url, WStr::from_units(b"asfunction:")).is_none());
+    }
 }
