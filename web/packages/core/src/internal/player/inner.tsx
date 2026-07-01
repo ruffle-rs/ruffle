@@ -754,7 +754,21 @@ export class InnerPlayer {
 
         this.rendererDebugInfo = this.instance!.renderer_debug_info();
 
-        if (this.rendererDebugInfo.includes("Adapter Device Type: Cpu")) {
+        // Show a hardware acceleration warning when software rendering is detected.
+        // The device type is unreliable through WebGL/ANGLE (always "Other"), so we
+        // also match known software renderer names (WARP, SwiftShader, Mesa llvmpipe).
+        const softwareRendererIndicators = [
+            "Adapter Device Type: Cpu",
+            "Adapter Device Type: VirtualGpu",
+            "Microsoft Basic Render Driver",
+            "SwiftShader",
+            "llvmpipe",
+            "softpipe",
+        ];
+        const isSoftwareRenderer = softwareRendererIndicators.some(
+            (indicator) => this.rendererDebugInfo.includes(indicator),
+        );
+        if (isSoftwareRenderer) {
             this.container.addEventListener(
                 "mouseover",
                 this.openHardwareAccelerationModal.bind(this),
