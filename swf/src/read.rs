@@ -10,6 +10,7 @@ use byteorder::{LittleEndian, ReadBytesExt};
 use simple_asn1::ASN1Block;
 use std::borrow::Cow;
 use std::io::{self, Read};
+use zerocopy::FromBytes;
 
 /// Maximum buffer capacity for reading the SWF.
 ///
@@ -1154,27 +1155,15 @@ impl<'a> Reader<'a> {
         let id = self.read_character_id()?;
         let thickness = FontThickness::from_u8(self.read_u8()? >> 6)
             .ok_or_else(|| Error::invalid_data("Invalid font thickness type."))?;
-        let mut zones = vec![];
-        while let Ok(zone) = self.read_font_align_zone() {
-            zones.push(zone);
-        }
+        let (zones, rest) = <[FontAlignZone]>::ref_from_prefix(self.get_ref())
+            .map_err(|_| Error::invalid_data("Invalid DefineFontAlignZones payload."))?;
+        *self.get_mut() = rest;
+
         Ok(Tag::DefineFontAlignZones {
             id,
             thickness,
             zones,
         })
-    }
-
-    fn read_font_align_zone(&mut self) -> Result<FontAlignZone> {
-        self.read_u8()?; // Always 2.
-        let zone = FontAlignZone {
-            left: self.read_i16()?,
-            width: self.read_i16()?,
-            bottom: self.read_i16()?,
-            height: self.read_i16()?,
-        };
-        self.read_u8()?; // Always 0b000000_11 (2 dimensions).
-        Ok(zone)
     }
 
     fn read_define_font_info(&mut self, version: u8) -> Result<FontInfo<'a>> {

@@ -666,23 +666,16 @@ impl<W: Write> Writer<W> {
             Tag::DefineFont2(ref font) => self.write_define_font_2(font)?,
             Tag::DefineFont4(ref font) => self.write_define_font_4(font)?,
 
-            #[expect(clippy::unusual_byte_groupings)]
             Tag::DefineFontAlignZones {
                 id,
                 thickness,
-                ref zones,
+                zones,
             } => {
                 self.write_tag_header(TagCode::DefineFontAlignZones, 3 + 10 * zones.len() as u32)?;
                 self.write_character_id(id)?;
                 self.write_u8((thickness as u8) << 6)?;
-                for zone in zones {
-                    self.write_u8(2)?; // Always 2 dimensions.
-                    self.write_i16(zone.left)?;
-                    self.write_i16(zone.width)?;
-                    self.write_i16(zone.bottom)?;
-                    self.write_i16(zone.height)?;
-                    self.write_u8(0b000000_11)?; // Always 2 dimensions.
-                }
+                let bytes = zerocopy::IntoBytes::as_bytes(zones);
+                self.output.write_all(bytes)?;
             }
 
             Tag::DefineFontInfo(ref font_info) => self.write_define_font_info(font_info)?,
