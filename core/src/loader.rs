@@ -2722,6 +2722,153 @@ pub fn download_file_dialog<'gc>(
     })
 }
 
+/// Display a dialog allowing a user to download a file from an AVM2 scope.
+///
+/// Fetches the data described by `request`, saves it to the selected destination,
+/// and dispatches the corresponding events on the AVM2 `FileReference` object.
+/// Mirrors the AVM1 [`download_file_dialog`] flow, translated to AVM2 events
+/// (`select`/`open`/`progress`/`complete`/`ioError`/`cancel`).
+///
+/// Returns a future that resolves once a destination is chosen and the download
+/// has completed.
+#[must_use]
+pub fn download_file_dialog_avm2<'gc>(
+    uc: &UpdateContext<'gc>,
+    target_object: FileReferenceObject<'gc>,
+    dialog: DialogResultFuture,
+    request: Request,
+) -> OwnedFuture<(), Error> {
+    let player = uc.player_handle();
+    let handle = FileReferenceObjectHandle::stash(uc, target_object);
+
+    Box::pin(async move {
+        let dialog_result = dialog.await;
+
+        // Dialog is done, allow opening new dialogs
+        player.lock().unwrap().ui_mut().close_file_dialog();
+
+        // Download the data.
+        // Doing this in two steps to prevent holding the player lock during fetch.
+        let future = player.lock().unwrap().fetch(request, FetchReason::Other);
+        let download_res = wait_for_full_response(future).await;
+
+        // Fire the relevant events.
+        player.lock().unwrap().update(|uc| -> Result<(), Error> {
+            let target_object = handle.fetch(uc);
+            let mut activation = Avm2Activation::from_nothing(uc);
+
+            match dialog_result {
+                Ok(FileDialogResult::Selection(mut selection)) => match download_res {
+                    Ok((body, _, _, _)) => {
+                        // We simulate an instant 100% download from the perspective of
+                        // AS, so refresh the file reference with the body before the
+                        // `select`/`open` events make `name`/`size` observable.
+                        selection.write_and_refresh(&body);
+                        target_object.init_from_file_selection(selection);
+
+                        let select_evt =
+                            Avm2EventObject::bare_default_event(activation.context, "select");
+                        Avm2::dispatch_event(activation.context, select_evt, target_object.into());
+
+                        let open_evt =
+                            Avm2EventObject::bare_default_event(activation.context, "open");
+                        Avm2::dispatch_event(activation.context, open_evt, target_object.into());
+
+                        let total_bytes = body.len();
+                        let progress_evt = Avm2EventObject::progress_event(
+                            &mut activation,
+                            "progress",
+                            total_bytes,
+                            total_bytes,
+                        );
+                        Avm2::dispatch_event(
+                            activation.context,
+                            progress_evt,
+                            target_object.into(),
+                        );
+
+                        let complete_evt =
+                            Avm2EventObject::bare_default_event(activation.context, "complete");
+                        Avm2::dispatch_event(uc, complete_evt, target_object.into());
+                    }
+                    Err(err) => {
+                        // `select` fires even on error (the user did pick a location),
+                        // with the chosen file's metadata available.
+                        target_object.init_from_file_selection(selection);
+
+                        let select_evt =
+                            Avm2EventObject::bare_default_event(activation.context, "select");
+                        Avm2::dispatch_event(activation.context, select_evt, target_object.into());
+
+                        // Whether the connection opened before failing decides if an
+                        // `open` event precedes the `ioError`, and `HttpNotOk` also fires
+                        // a trailing `progress` (matching the AVM1 `download_file_dialog`).
+                        let (fire_open, progress_len) = match err.error {
+                            // A connection that never opened (e.g. bad domain).
+                            Error::InvalidDomain(_) => (false, None),
+                            // An established connection that returned a non-OK status.
+                            Error::HttpNotOk(_, _, _, body_len) => (true, Some(body_len)),
+                            Error::FetchError(_) => (true, None),
+                            _ => {
+                                tracing::warn!(
+                                    "Unhandled non-fetch error on download: {:?}",
+                                    err.error
+                                );
+                                (false, None)
+                            }
+                        };
+
+                        if fire_open {
+                            let open_evt =
+                                Avm2EventObject::bare_default_event(activation.context, "open");
+                            Avm2::dispatch_event(
+                                activation.context,
+                                open_evt,
+                                target_object.into(),
+                            );
+                        }
+
+                        // FIXME - match the exact error message generated by Flash.
+                        let io_error_evt = Avm2EventObject::io_error_event(
+                            &mut activation,
+                            "Error #2038: File I/O Error.",
+                            2038,
+                        );
+                        Avm2::dispatch_event(
+                            activation.context,
+                            io_error_evt,
+                            target_object.into(),
+                        );
+
+                        if let Some(body_len) = progress_len {
+                            let progress_evt = Avm2EventObject::progress_event(
+                                &mut activation,
+                                "progress",
+                                body_len as usize,
+                                body_len as usize,
+                            );
+                            Avm2::dispatch_event(
+                                activation.context,
+                                progress_evt,
+                                target_object.into(),
+                            );
+                        }
+                    }
+                },
+                Ok(FileDialogResult::Canceled) => {
+                    let cancel_evt = Avm2EventObject::bare_default_event(uc, "cancel");
+                    Avm2::dispatch_event(uc, cancel_evt, target_object.into());
+                }
+                Err(err) => {
+                    tracing::warn!("Download dialog had an error {:?}", err);
+                }
+            }
+
+            Ok(())
+        })
+    })
+}
+
 /// Uploads the given `data` to the provided `url`.
 /// `file_name` is sent along with the data, as part of the multipart/form-data body.
 ///

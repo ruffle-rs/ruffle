@@ -1,0 +1,2 @@
+select: name=debug-success.txt type=.txt
+ioError
