@@ -76,6 +76,24 @@ pub struct Transforms {
     add_color: [f32; 4],
 }
 
+/// Per-draw uniform for the complex-blend pipeline.
+///
+/// The blend shaders never apply a color transform, so this is a byte-compatible
+/// reinterpretation of [`Transforms`] that carries UV transforms instead of the
+/// color-transform vectors. Each UV transform is `[off_x, off_y, scale_x, scale_y]`
+/// applied as `uv * scale + off`; an all-zero vector is treated as identity.
+#[repr(C)]
+#[derive(Copy, Clone, Debug, Pod, Zeroable)]
+pub struct BlendTransforms {
+    world_matrix: [[f32; 4]; 4],
+    /// UV transform for sampling the parent (destination) texture.
+    dst_uv_transform: [f32; 4],
+    /// UV transform for sampling the current (source) texture.
+    src_uv_transform: [f32; 4],
+}
+
+const _: () = assert!(std::mem::size_of::<BlendTransforms>() == std::mem::size_of::<Transforms>());
+
 #[repr(C)]
 #[derive(Copy, Clone, Debug, Pod, Zeroable)]
 struct TextureTransforms {
