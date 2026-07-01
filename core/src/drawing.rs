@@ -319,10 +319,102 @@ impl Drawing {
 
     pub fn render(&self, context: &mut RenderContext) {
         if let Some(handle) = self.register_or_replace(context.renderer) {
-            context
-                .commands
-                .render_shape(handle, context.transform_stack.transform());
+            let mut transform = context.transform_stack.transform();
+            // For drawings made entirely of 1-pixel orthogonal strokes (e.g. a
+            // Spark `<s:Line>` separator, or any custom hairline divider),
+            // snap the world translation down to the pixel grid with `floor`.
+            // The tessellator pre-shifts these strokes by +0.5 px in the
+            // perpendicular direction so the lyon quad falls on integer pixel
+            // boundaries; if the parent layout places the host Sprite at a
+            // fractional X (Spark groups frequently produce `X.5`), the
+            // pre-shift combined with the fractional translation would slip
+            // the quad back off the grid. Using `floor` (rather than `round`)
+            // keeps the pixel position visually stable across fractions of
+            // the same integer — a Sprite at `X.5` and one at `X.0` end up
+            // activating the same pixel column.
+            //
+            // Only `tx`/`ty` are touched, and only when the matrix is a pure
+            // translation (no scale, no rotation/skew): for transformed
+            // shapes this snap wouldn't be visually meaningful.
+            if self.is_orthogonal_hairline_only()
+                && transform.matrix.a == 1.0
+                && transform.matrix.d == 1.0
+                && transform.matrix.b == 0.0
+                && transform.matrix.c == 0.0
+            {
+                transform.matrix.tx = Twips::from_pixels(transform.matrix.tx.to_pixels().floor());
+                transform.matrix.ty = Twips::from_pixels(transform.matrix.ty.to_pixels().floor());
+            }
+            context.commands.render_shape(handle, transform);
         }
+    }
+
+    /// Returns `true` if **any** path in the drawing is a 1-pixel-wide
+    /// orthogonal (horizontal or vertical) stroke. Unlike
+    /// [`Self::is_orthogonal_hairline_only`], this method tolerates fills or
+    /// other stroke kinds coexisting with the hairline stroke — it only asks
+    /// whether at least one such stroke is present. That is the precise
+    /// condition under which `stretch_bounds` expands `shape_bounds` by
+    /// ±0.5 px (the stroke radius for a 1 px stroke), producing a fractional
+    /// `bounds.x_min`/`y_min` and, in the cacheAsBitmap path, a half-pixel
+    /// shift of the whole subtree on the offscreen bitmap.
+    pub fn contains_orthogonal_hairline_stroke(&self) -> bool {
+        if self.is_empty {
+            return false;
+        }
+        for path in &self.paths {
+            if let DrawingPath::Line(line) = path
+                && is_hairline_orthogonal_line(line)
+            {
+                return true;
+            }
+        }
+        for line in &self.pending_lines {
+            if is_hairline_orthogonal_line(line) {
+                return true;
+            }
+        }
+        if let Some(line) = &self.current_line
+            && is_hairline_orthogonal_line(line)
+        {
+            return true;
+        }
+        false
+    }
+
+    /// Returns `true` if every path in the drawing is a 1-pixel-wide
+    /// solid-color stroke whose segments are all horizontal or all vertical,
+    /// with no fills, curves, or diagonals. These drawings benefit from
+    /// snapping the world translation so the tessellator's pre-shifted quad
+    /// lands on the pixel grid.
+    fn is_orthogonal_hairline_only(&self) -> bool {
+        if self.is_empty {
+            return false;
+        }
+        if self.current_fill.is_some() {
+            return false;
+        }
+        for path in &self.paths {
+            match path {
+                DrawingPath::Fill(_) => return false,
+                DrawingPath::Line(line) => {
+                    if !is_hairline_orthogonal_line(line) {
+                        return false;
+                    }
+                }
+            }
+        }
+        for line in &self.pending_lines {
+            if !is_hairline_orthogonal_line(line) {
+                return false;
+            }
+        }
+        if let Some(line) = &self.current_line
+            && !is_hairline_orthogonal_line(line)
+        {
+            return false;
+        }
+        true
     }
 
     pub fn self_bounds(&self) -> Rectangle<Twips> {
@@ -447,6 +539,43 @@ struct DrawingLine {
 enum DrawingPath {
     Fill(DrawingFill),
     Line(DrawingLine),
+}
+
+/// Returns `true` if the line is a 1-pixel-wide solid-color stroke whose
+/// segments are all horizontal or all vertical. The SWF hairline default
+/// (`width = 0` twips) rasterizes as 1-pixel-wide, so it qualifies.
+fn is_hairline_orthogonal_line(line: &DrawingLine) -> bool {
+    // 1 pixel = 20 twips. Include hairline strokes (width = 0 in SWF) up to and
+    // including exactly 1 pixel.
+    if line.style.width().get() > 20 {
+        return false;
+    }
+    if !matches!(line.style.fill_style(), FillStyle::Color(_)) {
+        return false;
+    }
+    let mut cursor: Option<Point<Twips>> = None;
+    for cmd in &line.commands {
+        match cmd {
+            DrawCommand::MoveTo(p) => cursor = Some(*p),
+            DrawCommand::LineTo(p) => {
+                let from = match cursor {
+                    Some(c) => c,
+                    None => return false,
+                };
+                let dx = p.x.get() - from.x.get();
+                let dy = p.y.get() - from.y.get();
+                // Pure horizontal or pure vertical only — no diagonals.
+                if dx != 0 && dy != 0 {
+                    return false;
+                }
+                cursor = Some(*p);
+            }
+            DrawCommand::QuadraticCurveTo { .. } | DrawCommand::CubicCurveTo { .. } => {
+                return false;
+            }
+        }
+    }
+    true
 }
 
 fn stretch_bounds(
