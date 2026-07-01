@@ -5,8 +5,9 @@ use ruffle_render::commands::CommandHandler;
 use ruffle_render::shape_utils::{
     DistilledShape, DrawCommand, DrawPath, FillRule, cubic_curve_bounds, quadratic_curve_bounds,
 };
+use ruffle_render::triangles::Triangles;
 use std::cell::OnceCell;
-use swf::{FillStyle, LineStyle, Point, Rectangle, Twips};
+use swf::{FillStyle, LineStyle, Point, PointDelta, Rectangle, Twips};
 
 #[derive(Clone, Debug)]
 pub struct Drawing {
@@ -98,6 +99,7 @@ impl Drawing {
 
                     this.set_fill_style(None);
                 }
+                DrawPath::Triangles { style, triangles } => todo!(),
             }
         }
 
@@ -233,6 +235,24 @@ impl Drawing {
         self.mark_dirty()
     }
 
+    pub fn draw_triangles(&mut self, triangles: Triangles) {
+        let stroke_width = Twips::ZERO;
+        self.shape_bounds = stretch_bounds_triangles(self.shape_bounds, &triangles, stroke_width);
+        self.edge_bounds = stretch_bounds_triangles(self.edge_bounds, &triangles, Twips::ZERO);
+
+        if let Some(fill) = &mut self.current_fill {
+            self.paths.push(DrawingPath::Triangles {
+                style: fill.style.clone(),
+                triangles,
+            });
+        } else {
+            self.paths.push(DrawingPath::Triangles {
+                style: swf::FillStyle::Color(swf::Color::MAGENTA),
+                triangles,
+            });
+        }
+    }
+
     pub fn add_bitmap(&mut self, bitmap: BitmapInfo) -> u16 {
         let id = self.bitmaps.len() as u16;
         self.bitmaps.push(bitmap);
@@ -263,6 +283,9 @@ impl Drawing {
                             commands: line.commands.to_owned(),
                             is_closed: line.is_closed,
                         });
+                    }
+                    DrawingPath::Triangles { style, triangles } => {
+                        paths.push(DrawPath::Triangles { style, triangles });
                     }
                 }
             }
@@ -351,6 +374,9 @@ impl Drawing {
                     ) {
                         return true;
                     }
+                }
+                DrawingPath::Triangles { style, triangles } => {
+                    // TODO
                 }
             }
         }
@@ -447,6 +473,10 @@ struct DrawingLine {
 enum DrawingPath {
     Fill(DrawingFill),
     Line(DrawingLine),
+    Triangles {
+        style: FillStyle,
+        triangles: Triangles,
+    },
 }
 
 fn stretch_bounds(
@@ -477,4 +507,19 @@ fn stretch_bounds(
             anchor,
         )),
     }
+}
+
+fn stretch_bounds_triangles(
+    mut bounds: Rectangle<Twips>,
+    triangles: &Triangles,
+    stroke_width: Twips,
+) -> Rectangle<Twips> {
+    let radius = stroke_width / 2;
+    let delta = PointDelta::new(radius, radius);
+
+    for &point in triangles.points() {
+        bounds = bounds.encompass(point + delta).encompass(point - delta);
+    }
+
+    bounds
 }
