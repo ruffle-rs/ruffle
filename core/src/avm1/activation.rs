@@ -1201,37 +1201,28 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     fn action_get_url(&mut self, action: GetUrl) -> Result<FrameControl<'gc>, Error<'gc>> {
         let target = action.target.decode(self.encoding());
         let url = action.url.decode(self.encoding());
-        // TODO: Use `StageObject::get_level_by_path`.
-        if target.starts_with(WStr::from_units(b"_level")) && target.len() > 6 {
-            match target[6..].parse::<i32>() {
-                Ok(level_id) => {
-                    if url.is_empty() {
-                        let level = self.get_level(level_id);
-                        // Blank URL on movie loads = unload!
-                        if let Some(mc) = level.and_then(|o| o.as_movie_clip()) {
-                            mc.avm1_unload_movie(self.context);
-                        }
-                    } else {
-                        let level = self.get_or_create_level(level_id);
-                        let future = self.context.load_manager.load_movie_into_clip(
-                            self.context.player_handle(),
-                            level,
-                            Request::get(url.to_string()),
-                            None,
-                            MovieLoaderVMData::Avm1 {
-                                broadcaster: None,
-                                base_clip: self.base_clip,
-                            },
-                        );
-                        self.context.navigator.spawn_future(future);
-                    }
+        if let Some(level_id) =
+            crate::avm1::object::stage_object::parse_level_target(&target, self.is_case_sensitive())
+        {
+            if url.is_empty() {
+                let level = self.get_level(level_id);
+                // Blank URL on movie loads = unload!
+                if let Some(mc) = level.and_then(|o| o.as_movie_clip()) {
+                    mc.avm1_unload_movie(self.context);
                 }
-                Err(e) => avm_warn!(
-                    self,
-                    "Couldn't parse level id {} for action_get_url: {}",
-                    target,
-                    e
-                ),
+            } else {
+                let level = self.get_or_create_level(level_id);
+                let future = self.context.load_manager.load_movie_into_clip(
+                    self.context.player_handle(),
+                    level,
+                    Request::get(url.to_string()),
+                    None,
+                    MovieLoaderVMData::Avm1 {
+                        broadcaster: None,
+                        base_clip: self.base_clip,
+                    },
+                );
+                self.context.navigator.spawn_future(future);
             }
             return Ok(FrameControl::Continue);
         }
@@ -1263,21 +1254,12 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             return Ok(FrameControl::Continue);
         }
 
-        // TODO: Use `StageObject::get_level_by_path`.
-        let level_target = if target.starts_with(WStr::from_units(b"_level")) && target.len() >= 6 {
-            match target[6..].parse::<f64>() {
-                Ok(level_id) => level_id as i32,
-                Err(_) => {
-                    if target.len() == 6 {
-                        0
-                    } else {
-                        -1
-                    }
-                }
-            }
-        } else {
-            -1
-        };
+        // `-1` is the "not a level" sentinel used by the branches below.
+        let level_target = crate::avm1::object::stage_object::parse_level_target(
+            &target,
+            self.is_case_sensitive(),
+        )
+        .unwrap_or(-1);
 
         let mut clip_target: Option<DisplayObject<'gc>> = if level_target > -1 {
             self.get_level(level_target)
