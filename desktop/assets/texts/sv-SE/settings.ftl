@@ -3,6 +3,7 @@ player-settings = Spelarinställningar
 movie-parameters = Filmparametrar
 custom-base-url = Anpassad bas-URL
 spoof-swf-url = Förfalska SWF-URL
+referer-url = Refererar-URL
 cookie = Kakor
 proxy = Proxy
 upgrade-http = Uppgradera HTTP till HTTPS
