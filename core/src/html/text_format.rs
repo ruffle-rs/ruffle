@@ -1123,7 +1123,7 @@ impl FormatSpans {
         let mut result = WString::with_capacity(string.len(), string.is_wide());
         let mut last_white = false;
         for ch in string.iter() {
-            if ruffle_wstr::utils::swf_is_whitespace(ch) {
+            if swf_is_whitespace(ch) {
                 if !last_white {
                     result.push(HTML_SPACE);
                     last_white = true;
