@@ -14,7 +14,7 @@ use crate::ecma_conversions::f64_to_wrapping_i32;
 use crate::prelude::*;
 use crate::string::AvmString;
 use crate::vminterface::Instantiator;
-use crate::{avm_error, avm_warn, avm1_stub};
+use crate::{avm_error, avm_warn};
 use ruffle_macros::istr;
 use ruffle_render::shape_utils::{DrawCommand, GradientType};
 use swf::{
@@ -198,7 +198,6 @@ fn scale_9_grid<'gc>(
     this: MovieClip<'gc>,
     activation: &mut Activation<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm1_stub!(activation, "MovieClip", "scale9Grid");
     let rect = this.scaling_grid();
     if rect.is_valid() {
         new_rectangle(activation, rect)
@@ -212,13 +211,12 @@ fn set_scale_9_grid<'gc>(
     activation: &mut Activation<'_, 'gc>,
     value: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
-    avm1_stub!(activation, "MovieClip", "scale9Grid");
     if let Value::Object(object) = value {
         if let Some(rectangle) = object_to_rectangle(activation, object)? {
             this.set_scaling_grid(rectangle);
         }
     } else {
-        this.set_scaling_grid(Rectangle::default());
+        this.set_scaling_grid(Rectangle::INVALID);
     };
     Ok(())
 }
