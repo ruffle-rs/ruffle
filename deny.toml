@@ -91,4 +91,5 @@ github = [
 version = 2
 
 # `paste` crate is no longer maintained https://rustsec.org/advisories/RUSTSEC-2024-0436
-ignore = ["RUSTSEC-2024-0436"]
+# `ttf-parser` crate is no longer maintained https://rustsec.org/advisories/RUSTSEC-2026-0192
+ignore = ["RUSTSEC-2024-0436", "RUSTSEC-2026-0192"]
