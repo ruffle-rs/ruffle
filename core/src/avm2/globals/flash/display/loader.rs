@@ -148,7 +148,17 @@ pub fn request_from_url_request<'gc>(
         .get_slot(url_request_slots::_REQUEST_HEADERS)
         .as_object();
 
+    // Send `Accept: */*` by default, matching Flash Player's URLLoader /
+    // Loader behavior.  Inserted before the user-headers loop so a
+    // user-supplied entry wins per the existing last-write-wins semantics.
+    // `reqwest` does not auto-add an `Accept` header on desktop, so this
+    // makes the wire-level request match Flash; on web platforms the
+    // browser's own Accept value flows through unless overridden.  Closes
+    // the Accept piece of #9395; Accept-Encoding remains as a follow-up
+    // pending reqwest gzip/deflate feature enablement.
     let mut string_headers = IndexMap::default();
+    string_headers.insert("Accept".into(), "*/*".into());
+
     if let Some(headers) = headers {
         let headers = headers.as_array_storage().unwrap();
 
