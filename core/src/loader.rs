@@ -1403,7 +1403,7 @@ pub fn load_sound_avm1<'gc>(
             );
 
             // Streaming sounds should auto-play.
-            if is_streaming {
+            if is_streaming && !sound.is_stopped() {
                 crate::avm1::start_sound(&mut activation, sound_object, &[])?;
             }
 
