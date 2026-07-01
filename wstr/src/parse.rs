@@ -149,10 +149,6 @@ mod int_parse {
             return None;
         }
 
-        if is_neg && !T::SIGNED {
-            return None;
-        }
-
         digits.iter().try_fold(T::from_digit(0), |num, c| {
             let byte = u8::try_from(c).ok()?;
             let digit = (byte as char).to_digit(radix)?;
@@ -210,7 +206,7 @@ macro_rules! impl_int_parse {
     )* }
 }
 
-impl_int_parse! { u8 u32 i32 usize }
+impl_int_parse! { u8 u16 u32 i32 usize }
 
 macro_rules! impl_wrapping_int_parse {
     ($($ty:ty)*) => { $(
@@ -256,7 +252,7 @@ macro_rules! impl_wrapping_int_parse {
     )* }
 }
 
-impl_wrapping_int_parse! { u8 u32 i32 usize }
+impl_wrapping_int_parse! { u8 u16 u32 i32 usize }
 
 macro_rules! impl_from_str_int {
     ($($ty:ty)*) => { $(
@@ -300,4 +296,4 @@ macro_rules! impl_from_str_int {
     )* }
 }
 
-impl_from_str_int! { u8 u32 i32 usize }
+impl_from_str_int! { u8 u16 u32 i32 usize }
