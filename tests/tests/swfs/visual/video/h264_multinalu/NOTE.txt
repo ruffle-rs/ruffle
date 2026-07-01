@@ -1,0 +1,1 @@
+ffmpeg -loop 1 -i input.png -frames:v 8 -r 8 -c:v libx264 -pix_fmt yuv420p -x264-params slices=8 -an test.flv
