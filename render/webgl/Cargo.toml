@@ -11,19 +11,9 @@ version.workspace = true
 workspace = true
 
 [dependencies]
-js-sys = { workspace = true }
 log = { workspace = true }
-ruffle_web_common = { path = "../../web/common" }
 ruffle_render = { path = "..", features = ["tessellator", "web"] }
-wasm-bindgen = { workspace = true }
 bytemuck = { workspace = true, features = ["derive"] }
 swf = { path = "../../swf" }
 thiserror = { workspace = true }
-
-[dependencies.web-sys]
-workspace = true
-features = [
-    "HtmlCanvasElement", "OesVertexArrayObject", "WebGl2RenderingContext", "WebGlBuffer", "WebglDebugRendererInfo",
-    "WebGlFramebuffer", "WebGlProgram", "WebGlRenderbuffer", "WebGlRenderingContext", "WebGlShader", "WebGlTexture",
-    "WebGlUniformLocation", "WebGlVertexArrayObject",
-]
+glow = { workspace = true }

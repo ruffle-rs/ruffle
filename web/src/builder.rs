@@ -582,7 +582,7 @@ impl RuffleInstanceBuilder {
                         }
                     }
                 }
-                #[cfg(feature = "webgl")]
+                #[cfg(all(feature = "webgl", target_family = "wasm"))]
                 "webgl" => {
                     tracing::info!("Creating WebGL renderer...");
                     let canvas: HtmlCanvasElement = document
@@ -590,17 +590,77 @@ impl RuffleInstanceBuilder {
                         .into_js_result()?
                         .dyn_into()
                         .map_err(|_| "Expected HtmlCanvasElement")?;
-                    match ruffle_render_webgl::WebGlRenderBackend::new(
-                        &canvas,
-                        is_transparent,
-                        self.quality,
-                    ) {
-                        Ok(renderer) => {
-                            return Ok((Box::new(renderer), canvas));
+                    // Create WebGL context.
+                    let options = [
+                        ("stencil", JsValue::TRUE),
+                        ("alpha", JsValue::from_bool(is_transparent)),
+                        ("antialias", JsValue::FALSE),
+                        ("depth", JsValue::FALSE),
+                        ("failIfMajorPerformanceCaveat", JsValue::TRUE), // fail if no GPU available
+                        ("premultipliedAlpha", JsValue::TRUE),
+                    ];
+                    let context_options = js_sys::Object::new();
+                    for (name, value) in options.into_iter() {
+                        js_sys::Reflect::set(&context_options, &JsValue::from(name), &value)
+                            .warn_on_error();
+                    }
+
+                    // Attempt to create a WebGL2 context, but fall back to WebGL1 if unavailable.
+                    let gl = if let Ok(Some(gl)) =
+                        canvas.get_context_with_context_options("webgl2", &context_options)
+                    {
+                        log::info!("Creating WebGL2 context.");
+                        let gl2: web_sys::WebGl2RenderingContext = gl
+                            .dyn_into::<web_sys::WebGl2RenderingContext>()
+                            .map_err(|_| "Expected WebGL Context")?;
+                        Some(ruffle_render_webgl::glow::Context::from_webgl2_context(gl2))
+                    } else {
+                        // Fall back to WebGL1.
+                        // Request antialiasing on WebGL1, because there isn't general MSAA support.
+                        js_sys::Reflect::set(
+                            &context_options,
+                            &JsValue::from("antialias"),
+                            &JsValue::TRUE,
+                        )
+                        .warn_on_error();
+
+                        if let Ok(Some(gl)) =
+                            canvas.get_context_with_context_options("webgl", &context_options)
+                        {
+                            log::info!("Falling back to WebGL1.");
+
+                            let gl = gl
+                                .dyn_into::<web_sys::WebGlRenderingContext>()
+                                .map_err(|_| "Expected WebGL Context")?;
+                            Some(ruffle_render_webgl::glow::Context::from_webgl1_context(gl))
+                        } else {
+                            None
                         }
-                        Err(error) => {
-                            tracing::error!("Error creating WebGL renderer: {}", error)
+                    };
+
+                    if let Some(glow) = gl {
+                        if log::log_enabled!(log::Level::Info) {
+                            // Get WebGL driver info.
+                            unsafe {
+                                let driver_info = glow.get_parameter_string(glow::RENDERER);
+                                log::info!("WebGL graphics driver: {driver_info}");
+                            }
                         }
+                        use ruffle_render_webgl::glow::HasContext;
+                        match ruffle_render_webgl::WebGlRenderBackend::new(
+                            Arc::new(glow),
+                            is_transparent,
+                            self.quality,
+                        ) {
+                            Ok(renderer) => {
+                                return Ok((Box::new(renderer), canvas));
+                            }
+                            Err(error) => {
+                                tracing::error!("Error creating WebGL renderer: {}", error)
+                            }
+                        }
+                    } else {
+                        tracing::error!("Error creating WebGL renderer!")
                     }
                 }
                 #[cfg(feature = "canvas")]
