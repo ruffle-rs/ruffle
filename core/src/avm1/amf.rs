@@ -2,9 +2,36 @@ use crate::avm1::{Activation, Attribute, NativeObject, Object, Value};
 use crate::string::AvmString;
 use flash_lso::amf0::read::AMF0Decoder;
 use flash_lso::amf0::writer::{Amf0Writer, CacheKey, ObjWriter};
-use flash_lso::types::{Element, ObjectId, Reference, Value as AmfValue};
+use flash_lso::types::{ClassDefinition, Element, ObjectId, Reference, Value as AmfValue};
 use std::collections::BTreeMap;
 use std::rc::Rc;
+
+/// Get class alias of object
+fn object_class_alias<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    object: Object<'gc>,
+) -> Option<String> {
+    // Check for a mutated local 'constructor' property (matches Flash's forged_ctor behavior)
+    // Fall back to the hidden '__constructor__' property to bypass the prototype chain
+    // (matches Flash's forged_proto behavior by ignoring dynamic __proto__ reassignments)
+    let constructor_key = AvmString::new_utf8(activation.gc(), "constructor");
+    let magic_constructor_key = AvmString::new_utf8(activation.gc(), "__constructor__");
+
+    let ctor = if object.has_own_property(activation, constructor_key) {
+        object.get(constructor_key, activation)
+    } else {
+        object.get(magic_constructor_key, activation)
+    };
+
+    match ctor {
+        Ok(Value::Object(ctor_obj)) => activation
+            .context
+            .avm1
+            .get_alias_by_constructor(activation.swf_version(), ctor_obj)
+            .map(|alias| alias.to_utf8_lossy().into_owned()),
+        _ => None,
+    }
+}
 
 /// Serialize AMF data in NetConnection.addHeader, NetConnection.call, and LocalConnection.send
 pub fn serialize<'gc>(activation: &mut Activation<'_, 'gc>, value: Value<'gc>) -> AmfValue {
@@ -27,8 +54,10 @@ pub fn serialize<'gc>(activation: &mut Activation<'_, 'gc>, value: Value<'gc>) -
             } else if let NativeObject::Date(date) = object.native() {
                 AmfValue::Date(date.get().time(), None)
             } else {
+                let class_def =
+                    object_class_alias(activation, object).map(ClassDefinition::default_with_name);
                 let elements = serialize_object_properties(activation, object);
-                AmfValue::Object(ObjectId::INVALID, elements, None)
+                AmfValue::Object(ObjectId::INVALID, elements, class_def)
             }
         }
         Value::MovieClip(_) => AmfValue::Undefined,
