@@ -257,13 +257,40 @@ fn serialize_value_to_writer<'gc>(
             } else if let NativeObject::Date(date) = o.native() {
                 writer.date(name, date.get().time(), None)
             } else {
-                let (ow, token) = writer.object(CacheKey::from_ptr(o.as_ptr()));
-
-                if let Some(mut ow) = ow {
-                    recursive_serialize(activation, o, &mut ow, context);
-                    ow.commit(name);
+                let constructor_key = AvmString::new_utf8(activation.gc(), "constructor");
+                let magic_constructor_key = AvmString::new_utf8(activation.gc(), "__constructor__");
+                let ctor_val = if o.has_own_property(activation, constructor_key) {
+                    o.get(constructor_key, activation)
                 } else {
-                    writer.reference(name, token);
+                    o.get(magic_constructor_key, activation)
+                };
+
+                let class_alias = if let Ok(Value::Object(ctor_obj)) = ctor_val {
+                    activation
+                        .context
+                        .avm1
+                        .get_alias_by_constructor(activation.swf_version(), ctor_obj)
+                        .map(|alias| alias.to_utf8_lossy().into_owned())
+                } else {
+                    None
+                };
+
+                if let Some(alias) = class_alias {
+                    let (ow, token) = writer.typed_object(&alias, CacheKey::from_ptr(o.as_ptr()));
+                    if let Some(mut ow) = ow {
+                        recursive_serialize(activation, o, &mut ow, context);
+                        ow.commit(name);
+                    } else {
+                        writer.reference(name, token);
+                    }
+                } else {
+                    let (ow, token) = writer.object(CacheKey::from_ptr(o.as_ptr()));
+                    if let Some(mut ow) = ow {
+                        recursive_serialize(activation, o, &mut ow, context);
+                        ow.commit(name);
+                    } else {
+                        writer.reference(name, token);
+                    }
                 }
             }
         }
