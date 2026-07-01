@@ -2468,11 +2468,24 @@ impl<'gc> EditText<'gc> {
     }
 
     fn open_url(self, context: &mut UpdateContext<'gc>, url: &WStr, target: &WStr) {
-        if let Some(address) = url.strip_prefix(WStr::from_units(b"asfunction:")) {
+        fn strip_url_prefix<'a>(url: &'a WStr, prefix: &'a WStr) -> Option<&'a WStr> {
+            let stripped_prefix = url.slice(..prefix.len());
+            if stripped_prefix.is_some() {
+                if stripped_prefix?.eq_ignore_case(prefix) {
+                    url.slice(prefix.len()..url.len())
+                } else {
+                    None
+                }
+            } else {
+                None
+            }
+        }
+
+        if let Some(address) = strip_url_prefix(url, WStr::from_units(b"asfunction:")) {
             if let Err(e) = self.execute_avm1_asfunction(context, address) {
                 error!("Couldn't execute URL \"{url:?}\": {e:?}");
             }
-        } else if let Some(address) = url.strip_prefix(WStr::from_units(b"event:")) {
+        } else if let Some(address) = strip_url_prefix(url, WStr::from_units(b"event:")) {
             if let Some(object) = self.object2() {
                 let mut activation = Avm2Activation::from_nothing(context);
                 let text = AvmString::new(activation.gc(), address);
