@@ -11,7 +11,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  FEATURES: lzma,jpegxr
+  FEATURES: lzma,jpegxr,imgtests
   TEST_OPTS: --workspace --locked --no-fail-fast -j 4
   LLVM_COV_OPTS: --branch --profile ci
   LLVM_COV_TEST_OPTS: ${LLVM_COV_OPTS} ${TEST_OPTS} --features ${FEATURES},imgtests
@@ -84,11 +84,6 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt install -y ${{ env.LINUX_DEPENDENCIES }}
-
-      - name: Enable image tests
-        if: runner.os != 'macOS'
-        shell: bash
-        run: echo FEATURES=${FEATURES},imgtests | tee -a $GITHUB_ENV
 
       - name: Cache Cargo output
         uses: Swatinem/rust-cache@v2
