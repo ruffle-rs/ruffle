@@ -13,6 +13,8 @@ undefined
 Navigator::fetch:
   URL: http://localhost:8000
   Method: GET
+  Headers:
+X-Flash-Version: 32,0,0,0
 
 Test 1
 // request.url
@@ -29,6 +31,8 @@ undefined
 Navigator::fetch:
   URL: http://localhost:8000
   Method: POST
+  Headers:
+X-Flash-Version: 32,0,0,0
   Mime-Type: application/x-www-form-urlencoded
   Body: [object Object]
 
@@ -47,6 +51,8 @@ undefined
 Navigator::fetch:
   URL: http://localhost:8000
   Method: GET
+  Headers:
+X-Flash-Version: 32,0,0,0
 
 Test 3
 // request.url
@@ -63,6 +69,8 @@ undefined
 Navigator::fetch:
   URL: http://localhost:8000
   Method: GET
+  Headers:
+X-Flash-Version: 32,0,0,0
 
 Test 4
 // request.url
@@ -79,5 +87,7 @@ undefined
 Navigator::fetch:
   URL: http://localhost:8000
   Method: GET
+  Headers:
+X-Flash-Version: 32,0,0,0
 
 Test 5
