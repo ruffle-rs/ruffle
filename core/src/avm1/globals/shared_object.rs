@@ -20,6 +20,12 @@ pub struct SharedObject {
     // In future this will also handle remote SharedObjects
 }
 
+#[derive(Copy, Clone, PartialEq, Eq)]
+enum AmfContext {
+    SharedObject, // Always uses ECMA arrays (Matches Flash .sol behavior)
+    Connection,   // Uses StrictArray for dense arrays (Matches Flash Net/LocalConnection)
+}
+
 impl SharedObject {
     fn name(&self) -> String {
         self.name.clone().unwrap_or_default()
@@ -99,12 +105,21 @@ pub fn serialize<'gc>(activation: &mut Activation<'_, 'gc>, value: Value<'gc>) -
             } else if let NativeObject::Date(date) = object.native() {
                 AmfValue::Date(date.get().time(), None)
             } else {
-                let lso = new_lso(activation, "root", object);
-                AmfValue::Object(ObjectId::INVALID, lso.into_iter().collect(), None)
+                let elements = serialize_object_properties(activation, object);
+                AmfValue::Object(ObjectId::INVALID, elements, None)
             }
         }
         Value::MovieClip(_) => AmfValue::Undefined,
     }
+}
+
+fn serialize_object_properties<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    object: Object<'gc>,
+) -> Vec<Element> {
+    let mut w = Amf0Writer::default();
+    recursive_serialize(activation, object, &mut w, AmfContext::Connection);
+    w.commit_lso("root").into_iter().collect()
 }
 
 fn serialize_array<'gc>(activation: &mut Activation<'_, 'gc>, array: Object<'gc>) -> AmfValue {
@@ -156,6 +171,7 @@ fn serialize_value_to_writer<'gc>(
     name: &str,
     elem: Value<'gc>,
     writer: &mut dyn ObjWriter<'_>,
+    context: AmfContext,
 ) {
     match elem {
         Value::Object(o) => {
@@ -164,19 +180,51 @@ fn serialize_value_to_writer<'gc>(
             } else if o.as_display_object().is_some() {
                 writer.undefined(name)
             } else if let NativeObject::Array(_) = o.native() {
-                let (aw, token) = writer.array(CacheKey::from_ptr(o.as_ptr()));
+                let keys = o.get_keys(activation, false);
+                let mut length = o.length(activation).unwrap_or(0).max(0) as usize;
 
-                if let Some(mut aw) = aw {
-                    recursive_serialize(activation, o, &mut aw);
+                for key in &keys {
+                    if let Ok(index) = key.to_utf8_lossy().parse::<usize>() {
+                        length = length.max(index + 1);
+                    }
+                }
 
-                    // TODO: What happens if an exception is thrown here?
-                    let length = o
-                        .length(activation)
-                        .expect("Failed to get length for SharedObject array");
+                let has_custom_properties = keys.iter().any(|k| {
+                    let s = k.to_utf8_lossy();
+                    if let Ok(idx) = s.parse::<isize>() {
+                        idx < 0 || idx >= length as isize
+                    } else {
+                        true
+                    }
+                });
 
-                    aw.commit(name, length as u32);
+                if context == AmfContext::SharedObject || has_custom_properties {
+                    let (aw, token) = writer.array(CacheKey::from_ptr(o.as_ptr()));
+                    if let Some(mut aw) = aw {
+                        recursive_serialize(activation, o, &mut aw, context);
+                        aw.commit(name, length as u32);
+                    } else {
+                        writer.reference(name, token);
+                    }
                 } else {
-                    writer.reference(name, token);
+                    let (aw, token) = writer.strict_array(CacheKey::from_ptr(o.as_ptr()));
+                    if let Some(mut aw) = aw {
+                        for i in 0..length {
+                            let elem_name = AvmString::new_utf8(activation.gc(), i.to_string());
+                            let prop_value =
+                                o.get(elem_name, activation).unwrap_or(Value::Undefined);
+                            serialize_value_to_writer(
+                                activation,
+                                &i.to_string(),
+                                prop_value,
+                                &mut aw,
+                                context,
+                            );
+                        }
+                        aw.commit(name);
+                    } else {
+                        writer.reference(name, token);
+                    }
                 }
             } else if let Some(xml_node) = o.as_xml_node() {
                 // TODO: What happens if an exception is thrown here?
@@ -190,7 +238,7 @@ fn serialize_value_to_writer<'gc>(
                 let (ow, token) = writer.object(CacheKey::from_ptr(o.as_ptr()));
 
                 if let Some(mut ow) = ow {
-                    recursive_serialize(activation, o, &mut ow);
+                    recursive_serialize(activation, o, &mut ow, context);
                     ow.commit(name);
                 } else {
                     writer.reference(name, token);
@@ -210,12 +258,13 @@ fn recursive_serialize<'gc>(
     activation: &mut Activation<'_, 'gc>,
     obj: Object<'gc>,
     writer: &mut dyn ObjWriter<'_>,
+    context: AmfContext,
 ) {
     // Reversed to match flash player ordering
     for element_name in obj.get_keys(activation, false).into_iter().rev() {
         if let Ok(elem) = obj.get(element_name, activation) {
             let name = element_name.to_utf8_lossy();
-            serialize_value_to_writer(activation, name.as_ref(), elem, writer);
+            serialize_value_to_writer(activation, name.as_ref(), elem, writer, context);
         }
     }
 }
@@ -280,7 +329,9 @@ pub fn deserialize_value<'gc>(
 
             for (i, item) in values.iter().enumerate() {
                 let value = deserialize_value(activation, item, lso, reference_cache);
-                obj.set_element(activation, i as i32, value).unwrap();
+                if !matches!(value, Value::Undefined) {
+                    obj.set_element(activation, i as i32, value).unwrap();
+                }
             }
 
             v
@@ -366,7 +417,7 @@ fn deserialize_lso<'gc>(
 
 fn new_lso<'gc>(activation: &mut Activation<'_, 'gc>, name: &str, data: Object<'gc>) -> Lso {
     let mut w = Amf0Writer::default();
-    recursive_serialize(activation, data, &mut w);
+    recursive_serialize(activation, data, &mut w, AmfContext::SharedObject);
     w.commit_lso(
         &name
             .split('/')
