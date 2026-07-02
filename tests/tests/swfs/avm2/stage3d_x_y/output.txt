@@ -1,0 +1,22 @@
+x: -1.1234567891234566, y: 0
+x: -1.1234567891234566, y: 4.569999
+setting x to empty string
+x: 0, y: 4.569999
+setting x to "2.4"
+x: 2.4, y: 4.569999
+setting x to "#"
+ArgumentError: Error #2006: The supplied index is out of bounds.
+setting y to "#"
+ArgumentError: Error #2006: The supplied index is out of bounds.
+setting x to null
+x: 0, y: 4.569999
+setting y to null
+x: 0, y: 0
+x: 8191, y: 0
+ArgumentError: Error #2006: The supplied index is out of bounds.
+x: -8192, y: 0
+ArgumentError: Error #2006: The supplied index is out of bounds.
+x: -8192, y: 8191
+ArgumentError: Error #2006: The supplied index is out of bounds.
+x: -8192, y: -8192
+ArgumentError: Error #2006: The supplied index is out of bounds.
