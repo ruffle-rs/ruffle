@@ -14,7 +14,7 @@ use crate::avm2::globals::{
     init_native_system_classes,
 };
 use crate::avm2::method::{Method, NativeMethodImpl};
-use crate::avm2::object::FunctionObject;
+use crate::avm2::object::{FunctionObject, WorkerObject};
 use crate::avm2::scope::ScopeChain;
 use crate::avm2::script::{Script, TranslationUnit};
 use crate::avm2::stack::Stack;
@@ -145,6 +145,14 @@ pub struct Avm2<'gc> {
     /// However, it's not strictly defined which items end up there.
     toplevel_global_object: Option<Object<'gc>>,
 
+    /// The `Worker` whose runtime this `Avm2` instance represents — what
+    /// `Worker.current` returns from any AS3 code executed by this `Avm2`.
+    /// For the main `Avm2` this is the primordial worker; for an `Avm2`
+    /// owned by a background worker thread it will be that worker.
+    /// Populated during AVM2 initialization, once system classes are loaded,
+    /// and remains set for the rest of the worker's lifetime.
+    current_worker: Option<WorkerObject<'gc>>,
+
     /// Pre-created known namespaces.
     namespaces: Gc<'gc, CommonNamespaces<'gc>>,
 
@@ -216,6 +224,7 @@ impl<'gc> Avm2<'gc> {
             system_classes: None,
             system_class_defs: None,
             toplevel_global_object: None,
+            current_worker: None,
 
             namespaces: Gc::new(mc, namespaces),
 
@@ -267,6 +276,16 @@ impl<'gc> Avm2<'gc> {
 
     pub fn toplevel_global_object(&self) -> Option<Object<'gc>> {
         self.toplevel_global_object
+    }
+
+    /// Returns the `Worker` whose runtime this `Avm2` instance represents.
+    /// For the main `Avm2` this is the primordial worker; for an `Avm2`
+    /// owned by a background worker thread this is that worker.
+    ///
+    /// Panics if called before AVM2 initialization is complete.
+    pub fn current_worker(&self) -> WorkerObject<'gc> {
+        self.current_worker
+            .expect("current worker should be initialized before any AVM2 code runs")
     }
 
     pub fn register_class_alias(&mut self, name: AvmString<'gc>, class_object: ClassObject<'gc>) {

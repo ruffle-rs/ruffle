@@ -1765,6 +1765,16 @@ pub fn make_error_3679<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> 
 
 #[inline(never)]
 #[cold]
+pub fn make_error_3732<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
+    make_error!(error(
+        activation,
+        "Error #3732: Worker.terminate is only available for background workers.",
+        3732,
+    ))
+}
+
+#[inline(never)]
+#[cold]
 pub fn make_error_3771<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
     make_error!(argument_error(
         activation,
