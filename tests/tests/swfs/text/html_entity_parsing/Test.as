@@ -126,6 +126,14 @@ public class Test extends Sprite {
 			"This is a Hangul tyaelp: &#1311768467463786786;",
 			"This is a Hangul tyaelh: &#x123456789ABCD123;",
 
+			// over 64-bit
+			"This is a period: &#85968058283706962477102;",
+			"This is a comma: &#x123456789ABCDEF1002c;",
+
+			// over 128-bit
+			"This is an asterisk: &#1585830769673288737308020686468841410199594;",
+			"This is an ampersand: &#x123456789ABCDEF1123456789ABCDEF10026;",
+
 			// a double-decode trap
 			"This is a double-encoded quotation mark and, unless first XML-parsed, should only be singly decoded: &amp;#x22;"
 		);

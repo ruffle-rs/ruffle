@@ -198,5 +198,17 @@ Parsed: This is a Hangul tyaelp: 턢
 Source: This is a Hangul tyaelh: &#x123456789ABCD123;
 Parsed: This is a Hangul tyaelh: 턣
 
+Source: This is a period: &#85968058283706962477102;
+Parsed: This is a period: .
+
+Source: This is a comma: &#x123456789ABCDEF1002c;
+Parsed: This is a comma: ,
+
+Source: This is an asterisk: &#1585830769673288737308020686468841410199594;
+Parsed: This is an asterisk: *
+
+Source: This is an ampersand: &#x123456789ABCDEF1123456789ABCDEF10026;
+Parsed: This is an ampersand: &
+
 Source: This is a double-encoded quotation mark and, unless first XML-parsed, should only be singly decoded: &amp;#x22;
 Parsed: This is a double-encoded quotation mark and, unless first XML-parsed, should only be singly decoded: &#x22;
