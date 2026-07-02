@@ -17,6 +17,7 @@ pub mod responder;
 pub mod shared_object;
 pub mod socket;
 pub mod url_loader;
+pub mod url_stream;
 pub mod xml_socket;
 
 fn object_to_index_map<'gc>(
