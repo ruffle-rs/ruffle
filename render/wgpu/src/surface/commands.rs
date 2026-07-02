@@ -570,7 +570,15 @@ impl<'a> WgpuCommandHandler<'a> {
         // DirectX does support drawing lines, but it's very inconsistent.
         // With MSAA, lines have 1.4px thickness, which makes them too thick.
         // Without MSAA, lines have 1px thickness, but their placement is sometimes off.
-        let emulate_lines = descriptors.backend == Backend::Dx12;
+        //
+        // The GL backend inherits the same problem wherever GL is implemented
+        // on top of DirectX: on Windows, ANGLE translates GL lines into D3D11
+        // ones, so the web build running in a Chromium-based browser (or
+        // Electron) via WebGL2 draws antialiased ~1.4px lines too — visibly
+        // blurry text carets, underlines, and device text field borders.
+        // Emulated lines are quads with exact whole-pixel edges, which
+        // rasterize identically — and crisply — everywhere.
+        let emulate_lines = matches!(descriptors.backend, Backend::Dx12 | Backend::Gl);
 
         Self {
             descriptors,
