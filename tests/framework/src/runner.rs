@@ -16,6 +16,7 @@ use crate::test::Test;
 use anyhow::{Result, anyhow};
 use ruffle_core::FloatDuration;
 use ruffle_core::backend::navigator::NullExecutor;
+use ruffle_core::backend::storage::MemoryStorageBackend;
 use ruffle_core::limits::ExecutionLimit;
 use ruffle_core::tag_utils::SwfMovie;
 use ruffle_core::{Player, PlayerBuilder};
@@ -95,6 +96,7 @@ impl TestRunner {
             .with_navigator(navigator)
             .with_max_execution_duration(Duration::from_secs(300))
             .with_fs_commands(Box::new(fs_command_provider))
+            .with_storage(Box::new(MemoryStorageBackend::new()))
             .with_ui(TestUiBackend::new(test.fonts()?, test.font_sorts()))
             .with_viewport_dimensions(
                 viewport_dimensions.width,
