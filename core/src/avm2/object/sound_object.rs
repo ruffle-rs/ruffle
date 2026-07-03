@@ -37,9 +37,7 @@ pub fn sound_allocator<'gc>(
         SoundObjectData {
             base,
             loading_state: Cell::new(SoundLoadingState::New),
-            sound_data: RefLock::new(SoundData::NotLoaded {
-                queued_plays: Vec::new(),
-            }),
+            sound_data: RefLock::new(SoundData::Empty),
             id3: Lock::new(None),
         },
     ))
@@ -95,13 +93,17 @@ pub struct SoundObjectData<'gc> {
 #[derive(Collect)]
 #[collect(no_drop)]
 pub enum SoundData<'gc> {
-    NotLoaded {
-        queued_plays: Vec<QueuedPlay<'gc>>,
-    },
+    /// Initial state: no load or play called yet.
+    Empty,
+    /// `load()` was called; waiting for data.
+    Loading { queued_plays: Vec<QueuedPlay<'gc>> },
     Loaded {
         #[collect(require_static)]
         sound: SoundHandle,
     },
+    /// `play()` was called on an empty sound (no load initiated);
+    /// audio data comes from `SampleDataEvent` dispatches.
+    Generated,
 }
 
 #[derive(Clone, Collect)]
@@ -120,14 +122,15 @@ pub enum SoundLoadingState {
     New,
     Loading,
     Loaded,
+    Generated,
 }
 
 impl<'gc> SoundObject<'gc> {
     pub fn sound_handle(self) -> Option<SoundHandle> {
         let sound_data = self.0.sound_data.borrow();
         match &*sound_data {
-            SoundData::NotLoaded { .. } => None,
             SoundData::Loaded { sound } => Some(*sound),
+            _ => None,
         }
     }
 
@@ -148,7 +151,13 @@ impl<'gc> SoundObject<'gc> {
         )
         .borrow_mut();
         match &mut *sound_data {
-            SoundData::NotLoaded { queued_plays } => {
+            SoundData::Empty => {
+                // play() was called before load() — this becomes a generated sound.
+                *sound_data = SoundData::Generated;
+                // We don't know the length yet, so return the `SoundChannel`
+                true
+            }
+            SoundData::Loading { queued_plays } => {
                 // Avoid to enqueue more unloaded sounds than the maximum allowed to be played
                 if queued_plays.len() >= AudioManager::MAX_SOUNDS {
                     tracing::warn!("Sound.play: too many unloaded sounds queued");
@@ -161,7 +170,45 @@ impl<'gc> SoundObject<'gc> {
                 true
             }
             SoundData::Loaded { sound } => play_queued(queued, *sound, activation.context),
+            SoundData::Generated => {
+                // Already generated, return a channel
+                true
+            }
         }
+    }
+
+    /// Returns `true` if this sound is in the `Empty` state
+    /// (no `load()` call has been made yet).
+    pub fn is_empty(self) -> bool {
+        matches!(&*self.0.sound_data.borrow(), SoundData::Empty)
+    }
+
+    /// Transitions from `Empty` → `Loading`. Called when `Sound.load()` is invoked.
+    pub fn load_called(self, activation: &mut Activation<'_, 'gc>) -> Result<(), Error<'gc>> {
+        let mut sound_data = unlock!(
+            Gc::write(activation.gc(), self.0),
+            SoundObjectData,
+            sound_data
+        )
+        .borrow_mut();
+        match &*sound_data {
+            SoundData::Empty => {
+                *sound_data = SoundData::Loading {
+                    queued_plays: Vec::new(),
+                };
+            }
+            SoundData::Loading { .. } => {
+                panic!("Tried to load sound that is already Loading");
+            }
+            SoundData::Loaded { .. } => {
+                panic!("Tried to load sound that is already Loaded");
+            }
+            SoundData::Generated => {
+                use crate::avm2::error::make_error_2037;
+                return Err(make_error_2037(activation));
+            }
+        }
+        Ok(())
     }
 
     pub fn set_sound(self, context: &mut UpdateContext<'gc>, sound: SoundHandle) {
@@ -169,7 +216,10 @@ impl<'gc> SoundObject<'gc> {
             unlock!(Gc::write(context.gc(), self.0), SoundObjectData, sound_data).borrow_mut();
 
         match &mut *sound_data {
-            SoundData::NotLoaded { queued_plays } => {
+            SoundData::Empty => {
+                *sound_data = SoundData::Loaded { sound };
+            }
+            SoundData::Loading { queued_plays } => {
                 for queued in std::mem::take(queued_plays) {
                     play_queued(queued, sound, context);
                 }
@@ -177,6 +227,9 @@ impl<'gc> SoundObject<'gc> {
             }
             SoundData::Loaded { sound: old_sound } => {
                 panic!("Tried to replace sound {old_sound:?} with {sound:?}")
+            }
+            SoundData::Generated => {
+                panic!("Tried to replace generated sound with {sound:?}")
             }
         }
         self.set_loading_state(SoundLoadingState::Loaded);
