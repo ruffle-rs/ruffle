@@ -41,6 +41,7 @@ use chardetng::EncodingDetector;
 use encoding_rs::{UTF_8, WINDOWS_1252};
 use gc_arena::Collect;
 use indexmap::IndexMap;
+use ruffle_common::tag_utils::LoadBytesInfo;
 use ruffle_macros::istr;
 use ruffle_render::utils::{JpegTagFormat, determine_jpeg_tag_format};
 use slotmap::{SlotMap, new_key_type};
@@ -318,7 +319,6 @@ impl<'gc> LoadManager<'gc> {
             target_clip,
             vm_data,
             loader_status: LoaderStatus::Pending,
-            from_bytes: false,
             movie: None,
         };
         let handle = self.add_loader(loader);
@@ -353,7 +353,7 @@ impl<'gc> LoadManager<'gc> {
 
                         if matches!(content_type, ContentType::Swf) {
                             let movie =
-                                SwfMovie::from_data(&body, url.clone(), false, Some(url.clone()))
+                                SwfMovie::from_data(&body, url.clone(), Some(url.clone()), None)
                                     .expect("Could not load movie");
 
                             let movie = Arc::new(movie);
@@ -408,7 +408,6 @@ impl<'gc> LoadManager<'gc> {
             vm_data,
             loader_status: LoaderStatus::Pending,
             movie: None,
-            from_bytes: true,
         };
         let handle = context.load_manager.add_loader(loader);
         MovieLoader::movie_loader_bytes(handle, context, loader_url, bytes)
@@ -544,7 +543,23 @@ pub enum MovieLoaderVMData<'gc> {
 
         /// The default domain this SWF will use.
         default_domain: Avm2Domain<'gc>,
+
+        /// Extra information; provided only if the SWF was loaded using
+        /// `Loader.loadBytes`.
+        #[collect(require_static)]
+        load_bytes_info: Option<LoadBytesInfo>,
     },
+}
+
+impl<'gc> MovieLoaderVMData<'gc> {
+    fn load_bytes_info(&self) -> Option<LoadBytesInfo> {
+        match self {
+            MovieLoaderVMData::Avm2 {
+                load_bytes_info, ..
+            } => *load_bytes_info,
+            _ => None,
+        }
+    }
 }
 
 /// A struct that holds the state for asynchronous movie loads.
@@ -578,9 +593,6 @@ pub struct MovieLoader<'gc> {
     /// completed and we expect the Player to periodically tick preload
     /// until loading completes.
     movie: Option<Arc<SwfMovie>>,
-
-    /// Whether or not this was loaded as a result of a `Loader.loadBytes` call
-    from_bytes: bool,
 }
 
 impl<'gc> MovieLoader<'gc> {
@@ -612,16 +624,18 @@ impl<'gc> MovieLoader<'gc> {
             Some(Self {
                 target_clip,
                 movie,
-                from_bytes,
+                vm_data,
                 ..
             }) => {
+                let from_bytes = vm_data.load_bytes_info().is_some();
+
                 if movie.is_none() {
                     //Non-SWF load or file not loaded yet
                     return Ok(false);
                 }
 
                 // Loader.loadBytes movies never participate in preloading
-                if *from_bytes {
+                if from_bytes {
                     return Ok(true);
                 }
 
@@ -760,7 +774,7 @@ impl<'gc> MovieLoader<'gc> {
     ) -> Result<(), Error> {
         ContentType::sniff(&body).expect(ContentType::Swf)?;
 
-        let movie = SwfMovie::from_data(&body, url, false, loader_url)?;
+        let movie = SwfMovie::from_data(&body, url, loader_url, None)?;
         player.mutate_with_update_context(|uc| {
             // Make a copy of the properties on the root, so we can put them back after replacing it
             let mut root_properties: IndexMap<AvmString, Value> = IndexMap::new();
@@ -944,7 +958,7 @@ pub fn load_root_movie<'gc>(
             .unwrap_or(swf_url);
 
         let mut movie =
-            SwfMovie::from_data(&body, spoofed_or_swf_url, false, None).inspect_err(|error| {
+            SwfMovie::from_data(&body, spoofed_or_swf_url, None, None).inspect_err(|error| {
                 player
                     .lock()
                     .unwrap()
@@ -1611,15 +1625,18 @@ impl<'gc> MovieLoader<'gc> {
         {
             return Self::movie_loader_data(handle, uc, &data, url, status, redirected, loader_url);
         }
-        let (clip, vm_data, from_bytes) = match uc.load_manager.get_loader(handle) {
+        let (clip, vm_data) = match uc.load_manager.get_loader(handle) {
             Some(Self {
                 target_clip,
                 vm_data,
-                from_bytes,
                 ..
-            }) => (*target_clip, *vm_data, *from_bytes),
+            }) => (*target_clip, *vm_data),
             None => return Err(Error::Cancelled),
         };
+
+        let load_bytes_info = vm_data.load_bytes_info();
+
+        let from_bytes = load_bytes_info.is_some();
 
         if uc.load_manager.load_cancelled_avm1(handle) {
             tracing::warn!("movie_loader_data: Target clip was already avm1_removed");
@@ -1651,7 +1668,7 @@ impl<'gc> MovieLoader<'gc> {
         let movie = match sniffed_type {
             ContentType::Swf => {
                 let mut movie =
-                    SwfMovie::from_data(data, url.clone(), from_bytes, loader_url.clone())?;
+                    SwfMovie::from_data(data, url.clone(), loader_url.clone(), load_bytes_info)?;
 
                 if matches!(vm_data, MovieLoaderVMData::Avm1 { .. }) {
                     // If AVM1 loads a SWF, that SWF is always interpreted as

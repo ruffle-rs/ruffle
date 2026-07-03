@@ -79,7 +79,7 @@ impl Test {
         let movie = SwfMovie::from_data(
             &data,
             format!("file://{}", self.swf_path.as_str()),
-            false,
+            None,
             None,
         )
         .map_err(|e| anyhow!("Error parsing SWF: {e}"))?;
