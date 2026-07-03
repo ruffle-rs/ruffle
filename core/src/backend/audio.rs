@@ -1,8 +1,19 @@
 use std::any::Any;
+use std::{
+    collections::VecDeque,
+    sync::{
+        Arc, RwLock,
+        atomic::{AtomicBool, Ordering},
+    },
+};
 
 use crate::{
     avm1::{NativeObject, Object as Avm1Object},
-    avm2::{Avm2, EventObject as Avm2EventObject, SoundChannelObject},
+    avm2::{
+        Activation, Avm2, EventObject as Avm2EventObject, SoundChannelObject,
+        SoundObject as Avm2SoundObject, TObject,
+        globals::slots::flash_events_sample_data_event as sample_data_event_slots,
+    },
     context::UpdateContext,
     display_object::{self, DisplayObject, MovieClip, TDisplayObject},
     string::AvmString,
@@ -132,6 +143,19 @@ pub trait AudioBackend: Any {
         stream_data: Substream,
         stream_info: &SoundStreamInfo,
     ) -> Result<SoundInstanceHandle, DecodeError>;
+
+    /// Starts a generated (synthesized) sound stream.
+    ///
+    /// Audio data is provided externally via the shared `deque` on each frame
+    /// by dispatching `SampleDataEvent` to the associated ActionScript object.
+    ///
+    /// `ended` is set once ActionScript stops supplying samples; the backend
+    /// should finish the sound after the already-buffered audio has drained.
+    fn start_generated_sound(
+        &mut self,
+        deque: Arc<RwLock<VecDeque<f32>>>,
+        ended: Arc<AtomicBool>,
+    ) -> SoundInstanceHandle;
 
     /// Stops a playing sound instance.
     /// No-op if the sound is not playing.
@@ -283,6 +307,14 @@ impl AudioBackend for NullAudioBackend {
         Ok(SoundInstanceHandle::null())
     }
 
+    fn start_generated_sound(
+        &mut self,
+        _deque: Arc<RwLock<VecDeque<f32>>>,
+        _ended: Arc<AtomicBool>,
+    ) -> SoundInstanceHandle {
+        SoundInstanceHandle::null()
+    }
+
     fn stop_sound(&mut self, _sound: SoundInstanceHandle) {}
 
     fn stop_all_sounds(&mut self) {}
@@ -369,6 +401,25 @@ impl<'gc> AudioManager<'gc> {
     /// The player will adjust animation speed to stay within this many seconds of the audio track.
     pub const STREAM_DEFAULT_SYNC_THRESHOLD: f64 = 0.2;
 
+    /// Sample rate for generated sounds (Hz).
+    const GENERATED_SOUND_SAMPLE_RATE: f32 = 44100.0;
+
+    /// Number of channels for generated sounds.
+    const GENERATED_SOUND_CHANNELS: f32 = 2.0;
+
+    /// How many frames of audio to buffer ahead for generated sounds.
+    const GENERATED_SOUND_LOOKAHEAD_FRAMES: f32 = 3.0;
+
+    /// Upper bound on the number of channel-samples buffered ahead, regardless of frame rate.
+    /// Prevents runaway pre-buffering (~100 ms) when the frame rate is very low or throttled.
+    /// 44100 Hz × 2 channels × 0.1 s = 8820 channel-samples.
+    const GENERATED_SOUND_MAX_LOOKAHEAD_SAMPLES: usize = 8820;
+
+    /// Minimum number of *bytes* that must be present in the `SampleDataEvent` data ByteArray
+    /// per dispatch before buffering is considered complete for one iteration.
+    /// Flash typically provides 2048 stereo pairs per callback: 2048 pairs × 2 floats × 4 bytes = 16384 bytes.
+    const GENERATED_SOUND_MIN_EVENT_BYTES: usize = 2048 * 8;
+
     pub fn new() -> Self {
         Self {
             sounds: Vec::with_capacity(Self::MAX_SOUNDS),
@@ -400,11 +451,20 @@ impl<'gc> AudioManager<'gc> {
                 }
                 true
             } else {
+                // The sound is no longer playing in the backend. A generated
+                // sound reaches this point once ActionScript has stopped
+                // supplying samples and its buffered audio has fully drained.
+
                 // Sound ended.
-                let duration = sound
-                    .sound
-                    .and_then(|sound| context.audio.get_sound_duration(sound))
-                    .unwrap_or_default();
+                let duration =
+                    if let SoundInstanceSourceData::Event(sound_handle) = &sound.source_data {
+                        context
+                            .audio
+                            .get_sound_duration(*sound_handle)
+                            .unwrap_or_default()
+                    } else {
+                        Default::default()
+                    };
                 if let Some(object) = sound.avm1_object {
                     if let NativeObject::Sound(sound) = object.native() {
                         sound.set_position(duration.as_millis().round() as u32);
@@ -439,8 +499,93 @@ impl<'gc> AudioManager<'gc> {
             Avm2::dispatch_event(context, event, target.into());
         }
 
+        // Pump audio data for all generated sounds.
+        let domain = context.avm2.stage_domain();
+        let mut activation = Activation::from_domain(context, domain);
+        Self::update_generated_sounds(&mut activation);
+
         // Update sound transforms, if dirty.
         context.audio_manager.update_sound_transforms(context.audio);
+    }
+
+    fn update_generated_sounds(activation: &mut Activation<'_, 'gc>) {
+        let mut states = Vec::new();
+        for sound in &activation.context.audio_manager.sounds {
+            if let SoundInstanceSourceData::Generated(state) = &sound.source_data {
+                // Once a sound has ended, stop dispatching events to it; it just
+                // plays out whatever is already buffered and is then removed.
+                if !state.ended.load(Ordering::Relaxed) {
+                    states.push(state.clone());
+                }
+            }
+        }
+
+        for sound_state in &mut states {
+            let fps = activation.caller_movie_or_root().frame_rate().to_f32();
+
+            let mut pos = sound_state.position.write().unwrap();
+            // Pre-buffer a few frames of audio to reduce stuttering, capped to
+            // avoid excessive pre-buffering at very low or throttled frame rates.
+            let lookahead_samples = ((Self::GENERATED_SOUND_SAMPLE_RATE
+                * Self::GENERATED_SOUND_CHANNELS
+                * Self::GENERATED_SOUND_LOOKAHEAD_FRAMES
+                / fps)
+                .ceil() as usize)
+                .min(Self::GENERATED_SOUND_MAX_LOOKAHEAD_SAMPLES);
+            loop {
+                // Check the queue length with a short-lived lock.  The lock
+                // must NOT be held across the AS3 dispatch below: the audio
+                // callback thread also needs it, and blocking it causes glitches.
+                let current_len = sound_state.next_samples.read().unwrap().len();
+                if current_len >= lookahead_samples {
+                    break;
+                }
+
+                let sample_data_evt = Avm2EventObject::sample_data_event(activation, *pos);
+                Avm2::dispatch_event(
+                    activation.context,
+                    sample_data_evt,
+                    sound_state.sound_object.into(),
+                );
+
+                let data_value = sample_data_evt
+                    .get_slot(sample_data_event_slots::_DATA)
+                    .as_object()
+                    .unwrap();
+                let ba = data_value.as_bytearray().unwrap();
+
+                let ba_len = ba.len();
+                ba.set_position(0);
+
+                // Collect samples into a local buffer first, then push to the
+                // shared queue with a brief write lock.
+                let mut local_samples = Vec::with_capacity(ba_len / 4);
+                for _ in 0..ba_len / 4 {
+                    // Since we're doing floor(length/4) reads, starting from
+                    // the beginning of the array, and every read consumes
+                    // 4 bytes, we are guaranteed to have enough data.
+                    // And any 4 bytes can be reinterpreted as f32, so the
+                    // conversion can't fail.
+                    local_samples.push(ba.read_float().expect("float can be read"));
+                }
+
+                {
+                    let mut ns = sound_state.next_samples.write().unwrap();
+                    ns.extend(local_samples);
+                }
+
+                *pos += ba_len as u32 / 8;
+
+                if ba_len < Self::GENERATED_SOUND_MIN_EVENT_BYTES {
+                    // ActionScript supplied fewer than the required number of
+                    // samples (Flash requires at least 2048 stereo pairs per
+                    // callback). This ends the generated sound: no more events
+                    // are dispatched, and it stops once the buffer drains.
+                    sound_state.ended.store(true, Ordering::Relaxed);
+                    break;
+                }
+            }
+        }
     }
 
     /// Starts a sound and optionally associates it with a Display Object.
@@ -460,7 +605,7 @@ impl<'gc> AudioManager<'gc> {
                 .map_err(|e| tracing::warn!("Cannot start sound: {e}"))
                 .ok()?;
             let mut instance = SoundInstance {
-                sound: Some(sound),
+                source_data: SoundInstanceSourceData::Event(sound),
                 instance: handle,
                 display_object,
                 transform: display_object::SoundTransform::default(),
@@ -510,12 +655,13 @@ impl<'gc> AudioManager<'gc> {
 
     pub fn stop_sounds_with_handle(&mut self, audio: &mut dyn AudioBackend, sound: SoundHandle) {
         self.sounds.retain(move |other| {
-            if other.sound == Some(sound) {
+            if let SoundInstanceSourceData::Event(other_sound) = other.source_data
+                && other_sound == sound
+            {
                 audio.stop_sound(other.instance);
-                false
-            } else {
-                true
+                return false;
             }
+            true
         });
     }
 
@@ -576,7 +722,9 @@ impl<'gc> AudioManager<'gc> {
     }
 
     pub fn is_sound_playing_with_handle(&self, sound: SoundHandle) -> bool {
-        self.sounds.iter().any(|other| other.sound == Some(sound))
+        self.sounds.iter().any(
+            |other| matches!(other.source_data, SoundInstanceSourceData::Event(s) if s == sound),
+        )
     }
 
     pub fn start_stream(
@@ -590,7 +738,7 @@ impl<'gc> AudioManager<'gc> {
         if self.sounds.len() < Self::MAX_SOUNDS {
             let handle = audio.start_stream(data, stream_info).ok()?;
             let instance = SoundInstance {
-                sound: None,
+                source_data: SoundInstanceSourceData::Stream,
                 instance: handle,
                 display_object: Some(movie_clip.into()),
                 transform: display_object::SoundTransform::default(),
@@ -616,9 +764,40 @@ impl<'gc> AudioManager<'gc> {
         if self.sounds.len() < Self::MAX_SOUNDS {
             let handle = audio.start_substream(stream_data, stream_info)?;
             let instance = SoundInstance {
-                sound: None,
+                source_data: SoundInstanceSourceData::Stream,
                 instance: handle,
                 display_object: Some(movie_clip.into()),
+                transform: display_object::SoundTransform::default(),
+                avm1_object: None,
+                avm2_object: None,
+                stream_start_frame: None,
+            };
+            audio.set_sound_transform(handle, self.transform_for_sound(&instance));
+            self.sounds.push(instance);
+            Ok(handle)
+        } else {
+            Err(DecodeError::TooManySounds)
+        }
+    }
+
+    /// Starts a generated (synthesized) sound stream.
+    pub fn start_generated_sound(
+        &mut self,
+        audio: &mut dyn AudioBackend,
+        sound_object: Avm2SoundObject<'gc>,
+    ) -> Result<SoundInstanceHandle, DecodeError> {
+        if self.sounds.len() < Self::MAX_SOUNDS {
+            let sample_queue = Arc::new(RwLock::new(VecDeque::new()));
+            let ended = Arc::new(AtomicBool::new(false));
+            let handle = audio.start_generated_sound(sample_queue.clone(), ended.clone());
+            let instance = SoundInstance {
+                source_data: SoundInstanceSourceData::Generated(GeneratedSoundState::new(
+                    sound_object,
+                    sample_queue,
+                    ended,
+                )),
+                instance: handle,
+                display_object: None,
                 transform: display_object::SoundTransform::default(),
                 avm1_object: None,
                 avm2_object: None,
@@ -813,6 +992,53 @@ impl Default for AudioManager<'_> {
     }
 }
 
+/// State for a sound synthesized by ActionScript via `SampleDataEvent`.
+#[derive(Clone, Collect)]
+#[collect(no_drop)]
+pub struct GeneratedSoundState<'gc> {
+    /// The AS3 `Sound` object that dispatches `SampleDataEvent`s.
+    sound_object: Avm2SoundObject<'gc>,
+    /// Pre-filled audio samples shared with the audio backend mixer thread.
+    #[collect(require_static)]
+    next_samples: Arc<RwLock<VecDeque<f32>>>,
+    /// Current playback position in samples (stereo pairs written so far).
+    #[collect(require_static)]
+    position: Arc<RwLock<u32>>,
+    /// Set once a `SampleDataEvent` callback supplies fewer than the required
+    /// number of samples. This signals that no further events should be
+    /// dispatched and that the sound should stop once its buffered audio (here
+    /// and in the mixer) has drained. Shared with the mixer's stream.
+    #[collect(require_static)]
+    ended: Arc<AtomicBool>,
+}
+
+impl<'gc> GeneratedSoundState<'gc> {
+    pub fn new(
+        sound_object: Avm2SoundObject<'gc>,
+        sample_queue: Arc<RwLock<VecDeque<f32>>>,
+        ended: Arc<AtomicBool>,
+    ) -> Self {
+        Self {
+            sound_object,
+            next_samples: sample_queue,
+            position: Arc::new(RwLock::new(0)),
+            ended,
+        }
+    }
+}
+
+/// Describes the source of a `SoundInstance`.
+#[derive(Clone, Collect)]
+#[collect(no_drop)]
+pub enum SoundInstanceSourceData<'gc> {
+    /// A regular event sound loaded from a SWF or URL.
+    Event(#[collect(require_static)] SoundHandle),
+    /// A stream sound embedded in a SWF MovieClip or video container.
+    Stream,
+    /// A synthesized sound driven by `SampleDataEvent`.
+    Generated(GeneratedSoundState<'gc>),
+}
+
 #[derive(Clone, Collect)]
 #[collect(no_drop)]
 pub struct SoundInstance<'gc> {
@@ -820,10 +1046,8 @@ pub struct SoundInstance<'gc> {
     #[collect(require_static)]
     instance: SoundInstanceHandle,
 
-    /// The handle to the sound definition in the audio backend.
-    /// This will be `None` for stream sounds.
-    #[collect(require_static)]
-    sound: Option<SoundHandle>,
+    /// Source of audio data for this sound.
+    source_data: SoundInstanceSourceData<'gc>,
 
     /// The display object that this sound is playing in, if any.
     /// Used for volume mixing and `Sound.stop()`.
