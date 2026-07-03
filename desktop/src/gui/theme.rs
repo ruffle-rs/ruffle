@@ -151,6 +151,7 @@ impl ThemeController {
     }
 
     #[cfg(not(target_os = "linux"))]
+    #[allow(clippy::unused_async)]
     pub async fn get_system_theme(&self) -> Result<Theme, Box<dyn Error>> {
         #[derive(thiserror::Error, Debug)]
         #[error("Unsupported operation")]

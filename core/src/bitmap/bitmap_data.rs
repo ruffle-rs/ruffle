@@ -8,6 +8,17 @@ use ruffle_render::backend::RenderBackend;
 use ruffle_render::bitmap::{
     Bitmap, BitmapFormat, BitmapHandle, PixelRegion, PixelSnapping, SyncHandle,
 };
+use std::sync::atomic::{AtomicUsize, Ordering};
+
+static BITMAP_MEMORY_BYTES: AtomicUsize = AtomicUsize::new(0);
+
+/// Returns the current total bitmap memory in kilobytes,
+/// including both CPU-side BitmapData pixels and GPU-registered character bitmaps.
+pub fn bitmap_memory_kb() -> i32 {
+    let cpu_bytes = BITMAP_MEMORY_BYTES.load(Ordering::Relaxed);
+    let gpu_bytes = crate::character::registered_bitmap_memory_kb() as usize * 1024;
+    ((cpu_bytes + gpu_bytes) / 1024) as i32
+}
 use ruffle_wstr::WStr;
 use std::cell::Ref;
 use std::fmt::Debug;
@@ -417,6 +428,7 @@ pub enum DirtyState {
 }
 
 mod wrapper {
+    use super::BITMAP_MEMORY_BYTES;
     use crate::avm2::object::BitmapDataObject;
     use crate::context::RenderContext;
     use crate::display_object::DisplayObjectWeak;
@@ -427,6 +439,7 @@ mod wrapper {
     use ruffle_render::bitmap::{BitmapHandle, PixelRegion, PixelSnapping};
     use ruffle_render::commands::CommandHandler;
     use std::cell::Ref;
+    use std::sync::atomic::Ordering;
 
     use super::{BitmapRawData, DirtyState, copy_pixels_to_bitmapdata};
 
@@ -494,9 +507,11 @@ mod wrapper {
         /// Clones the underlying data, producing a new `BitmapData`
         /// that has no GPU texture or associated display objects
         pub fn clone_data(&self, renderer: &mut dyn RenderBackend) -> BitmapRawData<'gc> {
-            // Sync from the GPU to CPU, since our new BitmapData starts out
-            // with no GPU texture
             let data = self.sync(renderer).borrow();
+            BITMAP_MEMORY_BYTES.fetch_add(
+                BitmapRawData::pixel_byte_size(data.width, data.height),
+                Ordering::Relaxed,
+            );
             BitmapRawData {
                 pixels: data.pixels.clone(),
                 width: data.width,
@@ -506,7 +521,6 @@ mod wrapper {
                 bitmap_handle: None,
                 avm2_object: None,
                 display_objects: vec![],
-                // We have no GPU texture, so there's no need to mark as dirty
                 dirty_state: DirtyState::Clean,
                 #[cfg(feature = "egui")]
                 egui_texture: Default::default(),
@@ -728,7 +742,12 @@ impl std::fmt::Debug for BitmapRawData<'_> {
 }
 
 impl<'gc> BitmapRawData<'gc> {
+    fn pixel_byte_size(width: u32, height: u32) -> usize {
+        width as usize * height as usize * std::mem::size_of::<Color>()
+    }
+
     pub fn new(width: u32, height: u32, transparency: bool, fill_color: u32) -> Self {
+        BITMAP_MEMORY_BYTES.fetch_add(Self::pixel_byte_size(width, height), Ordering::Relaxed);
         Self {
             pixels: vec![
                 Color::bgra_u32(fill_color).to_premultiplied_alpha(transparency);
@@ -753,6 +772,7 @@ impl<'gc> BitmapRawData<'gc> {
         transparency: bool,
         pixels: Vec<Color>,
     ) -> Self {
+        BITMAP_MEMORY_BYTES.fetch_add(Self::pixel_byte_size(width, height), Ordering::Relaxed);
         Self {
             pixels,
             width,
@@ -773,11 +793,14 @@ impl<'gc> BitmapRawData<'gc> {
     }
 
     pub fn dispose(&mut self) {
+        BITMAP_MEMORY_BYTES.fetch_sub(
+            Self::pixel_byte_size(self.width, self.height),
+            Ordering::Relaxed,
+        );
         self.width = 0;
         self.height = 0;
-        self.pixels = Vec::new(); // free the CPU pixel buffer
+        self.pixels = Vec::new();
         self.bitmap_handle = None;
-        // There's no longer a handle to update
         self.dirty_state = DirtyState::Clean;
         self.disposed = true;
     }

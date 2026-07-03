@@ -243,6 +243,10 @@ pub struct Opt {
     /// (like inlining constant pool entries) can't be disabled.
     #[clap(long)]
     pub no_avm2_optimizer: bool,
+
+    /// Enable telemetry capture and write a `.flm` file on exit.
+    #[clap(long)]
+    pub telemetry: bool,
 }
 
 fn parse_movie_file_or_url(path: &str) -> Result<Url, Error> {

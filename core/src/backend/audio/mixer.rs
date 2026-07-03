@@ -687,6 +687,10 @@ impl AudioMixer {
         self.sounds.get(sound).map(|s| s.data.len() as u32)
     }
 
+    pub fn total_sound_memory_kb(&self) -> i32 {
+        (self.sounds.values().map(|s| s.data.len()).sum::<usize>() / 1024) as i32
+    }
+
     pub fn get_sound_format(&self, sound: SoundHandle) -> Option<&swf::SoundFormat> {
         self.sounds.get(sound).map(|s| &s.format)
     }
@@ -1166,6 +1170,11 @@ macro_rules! impl_audio_mixer_backend {
 
         fn get_sample_history(&self) -> [[f32; 2]; 1024] {
             self.$mixer.get_sample_history()
+        }
+
+        #[inline]
+        fn total_sound_memory_kb(&self) -> i32 {
+            self.$mixer.total_sound_memory_kb()
         }
     };
 }
