@@ -303,6 +303,7 @@ ruffle_macros::define_common_strings! {
     "rotate270",
     "rotate90",
     "rr",
+    "sampleData",
     "save",
     "Selection",
     "separatorBefore",
