@@ -286,7 +286,7 @@ impl RuffleHandle {
             segments.push(&swf_name);
         }
 
-        let mut movie = SwfMovie::from_data(&swf_data.to_vec(), url.to_string(), false, None)
+        let mut movie = SwfMovie::from_data(&swf_data.to_vec(), url.to_string(), None, None)
             .map_err(|e| {
                 let _ = self.with_core_mut(|core| {
                     core.ui_mut()

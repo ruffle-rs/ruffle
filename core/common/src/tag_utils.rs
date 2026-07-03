@@ -161,17 +161,28 @@ impl SwfMovie {
         }
     }
 
-    /// Construct a movie based on the contents of the SWF datastream.
+    /// Construct a movie based on the contents of the SWF datastream. If the
+    /// SWF was loaded specifically from the AVM2 method `Loader.loadBytes`,
+    /// this method accepts extra information as a `LoadBytesInfo`.
     pub fn from_data(
         swf_data: &[u8],
         url: String,
-        is_from_bytes: bool,
         loader_url: Option<String>,
+        load_bytes_info: Option<LoadBytesInfo>,
     ) -> Result<Self, swf::error::Error> {
         let compressed_len = swf_data.len();
         let swf_buf = swf::read::decompress_swf(swf_data)?;
         let encoding = swf::SwfStr::encoding_for_version(swf_buf.header.version());
-        let sandbox_type = SandboxType::infer(url.as_str(), &swf_buf.header);
+
+        // The loader SWF has full control over the tags of a SWF loaded using
+        // `Loader.loadBytes`, so if we were to use the sandbox type declared in
+        // that SWF's header, the SWF could break sandboxing. Instead, always
+        // use the sandbox type of the loader SWF, to ensure that it can't load
+        // a child SWF with different sandboxing.
+        let sandbox_type = load_bytes_info
+            .map(|i| i.loader_sandbox_type)
+            .unwrap_or_else(|| SandboxType::infer(url.as_str(), &swf_buf.header));
+
         let mut movie = Self {
             header: swf_buf.header,
             data: swf_buf.data,
@@ -182,7 +193,7 @@ impl SwfMovie {
             compressed_len,
             is_movie: true,
             force_avm1: false,
-            is_from_bytes,
+            is_from_bytes: load_bytes_info.is_some(),
             sandbox_type,
         };
         movie.append_parameters_from_url();
@@ -477,4 +488,11 @@ impl SwfSlice {
     pub fn len(&self) -> usize {
         self.end - self.start
     }
+}
+
+/// Extra information provided when a SWF is loaded using `Loader.loadBytes`
+/// (as opposed to when it is loaded from a URL).
+#[derive(Clone, Copy)]
+pub struct LoadBytesInfo {
+    pub loader_sandbox_type: SandboxType,
 }

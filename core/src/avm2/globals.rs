@@ -825,7 +825,7 @@ pub fn load_playerglobal<'gc>(context: &mut UpdateContext<'gc>, domain: Domain<'
     context.avm2.native_fast_call_list = native::NATIVE_FAST_CALL_LIST;
 
     let movie = Arc::new(
-        SwfMovie::from_data(PLAYERGLOBAL, "file:///".into(), false, None)
+        SwfMovie::from_data(PLAYERGLOBAL, "file:///".into(), None, None)
             .expect("playerglobal_avm2.swf should be valid"),
     );
 
