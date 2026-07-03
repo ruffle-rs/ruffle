@@ -6,6 +6,8 @@ use std::time::Duration;
 
 use anyhow::anyhow;
 
+pub mod corpus;
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, clap::ValueEnum)]
 pub enum Fuzzer {
     Afl,
@@ -74,38 +76,6 @@ pub fn fuzz_dir() -> PathBuf {
     let dir = std::env::var("LOCAL_RUFFLE_FUZZ_WORKSPACE_DIR")
         .expect("LOCAL_RUFFLE_FUZZ_WORKSPACE_DIR is not defined");
     PathBuf::from(dir)
-}
-
-pub fn swf_tests_dir() -> PathBuf {
-    let dir = std::env::var("LOCAL_RUFFLE_TESTS_SWFS_DIR")
-        .expect("LOCAL_RUFFLE_TESTS_SWFS_DIR is not defined");
-    PathBuf::from(dir)
-}
-
-pub fn prepare_swf_tests_corpus() {
-    let swf_tests_dir = swf_tests_dir();
-    let dest = fuzz_dir().join("corpus").join("swf").join("swf_tests");
-
-    if dest.exists() {
-        fs::remove_dir_all(&dest).unwrap();
-    }
-
-    fs::create_dir_all(&dest).unwrap();
-
-    for entry in walkdir::WalkDir::new(&swf_tests_dir)
-        .follow_links(false)
-        .into_iter()
-        .filter_map(|e| e.ok())
-        .filter(|e| e.path().extension().is_some_and(|ext| ext == "swf"))
-    {
-        let relative = entry.path().strip_prefix(&swf_tests_dir).unwrap();
-        let flat_name = relative
-            .components()
-            .map(|c| c.as_os_str().to_string_lossy())
-            .collect::<Vec<_>>()
-            .join("_");
-        fs::copy(entry.path(), dest.join(flat_name)).unwrap();
-    }
 }
 
 fn corpus_for(target: &str) -> PathBuf {
