@@ -1,2 +1,1 @@
 num_ticks = 16
-known_failure.panic = "attempt to subtract with overflow"
