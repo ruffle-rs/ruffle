@@ -333,6 +333,7 @@ jobs:
           codesign --verify -vvvv package/Ruffle.app
 
       - name: Notarize bundle
+        id: notarize-bundle
         continue-on-error: true
         run: |
           xcrun notarytool store-credentials "Ruffle" --apple-id ${{ secrets.APPLE_ID }} --team-id ${{ secrets.APPLE_TEAM }} --password ${{ secrets.APPLE_APP_PASSWORD }}
@@ -342,6 +343,16 @@ jobs:
           cd ..
           xcrun notarytool submit Ruffle.zip --keychain-profile Ruffle --wait
           xcrun stapler staple package/Ruffle.app
+
+      - name: Report notarization failure on Discord
+        uses: th0th/notify-discord@v0.4.1
+        if: ${{ steps.notarize-bundle.outcome == 'failure' && github.repository == 'ruffle-rs/ruffle' }}
+        continue-on-error: true
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_UPDATES }}
+          GITHUB_ACTOR: ${{ github.actor }}
+          GITHUB_JOB_NAME: "Notarize macOS universal binary bundle"
+          GITHUB_JOB_STATUS: ${{ steps.notarize-bundle.outcome }}
 
       - name: Package macOS
         run: |
