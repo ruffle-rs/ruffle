@@ -489,8 +489,8 @@ impl<'gc> Avm1<'gc> {
         let mut out = Vec::new();
 
         // Find objects to remove
-        if let Some(root_clip) = context.stage.root_clip() {
-            Self::find_display_objects_pending_removal(root_clip, &mut out);
+        for level in context.stage.iter_render_list() {
+            Self::find_display_objects_pending_removal(level, &mut out);
         }
 
         for &child in &out {
