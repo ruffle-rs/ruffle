@@ -1,0 +1,19 @@
+Start
+  loaded: 347
+  total: 347
+Finished
+Frame 1
+  loaded: 347
+  total: 347
+Frame 2
+  loaded: 347
+  total: 347
+Frame 3
+  loaded: 347
+  total: 347
+Frame 4
+  loaded: 347
+  total: 347
+Frame 5
+  loaded: 347
+  total: 347
