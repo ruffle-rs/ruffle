@@ -82,7 +82,7 @@ impl Test {
             false,
             None,
         )
-        .map_err(|e| anyhow!(e.to_string()))?;
+        .map_err(|e| anyhow!("Error parsing SWF: {e}"))?;
         Ok(movie)
     }
 
