@@ -86,8 +86,14 @@ pub fn decompress_swf<'a, R: Read + 'a>(mut input: R) -> Result<SwfBuf> {
         return Err(Error::invalid_data("Invalid SWF version"));
     }
 
+    // Uncompressed length includes the 4-byte header and 4-byte uncompressed length itself,
+    // subtract it here.
+    let body_len = uncompressed_len
+        .checked_sub(8)
+        .ok_or_else(|| Error::invalid_data("Malformed SWF length"))?;
+
     // Now the SWF switches to a compressed stream.
-    let mut decompress_stream: Box<dyn Read> = match compression {
+    let decompress_stream: Box<dyn Read> = match compression {
         Compression::None => Box::new(input),
         Compression::Zlib => {
             if version < 6 {
@@ -99,18 +105,17 @@ pub fn decompress_swf<'a, R: Read + 'a>(mut input: R) -> Result<SwfBuf> {
             if version < 13 {
                 log::warn!("LZMA compressed SWF is version {version} but minimum version is 13");
             }
-            // Uncompressed length includes the 4-byte header and 4-byte uncompressed length itself,
-            // subtract it here.
-            let unpacked_size = uncompressed_len
-                .checked_sub(8)
-                .ok_or_else(|| Error::invalid_data("Malformed LZMA length"))?;
-            make_lzma_reader(input, unpacked_size)?
+            make_lzma_reader(input, body_len)?
         }
     };
 
-    // Decompress the entire SWF.
-    let mut data = Vec::with_capacity(uncompressed_len.min(MAX_DATA_CAPACITY) as usize);
-    if let Err(e) = decompress_stream.read_to_end(&mut data) {
+    // Flash Player allocates a fixed buffer based on the header length and
+    // never accesses data beyond it. Match that behavior by capping reads here.
+    let mut data = Vec::with_capacity(body_len.min(MAX_DATA_CAPACITY) as usize);
+    if let Err(e) = decompress_stream
+        .take(body_len as u64)
+        .read_to_end(&mut data)
+    {
         log::error!("Error decompressing SWF: {e}");
     }
 
