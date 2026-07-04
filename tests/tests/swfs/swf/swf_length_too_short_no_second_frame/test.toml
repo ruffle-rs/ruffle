@@ -1,0 +1,3 @@
+num_ticks = 16
+# TODO This test panics.
+ignore = true

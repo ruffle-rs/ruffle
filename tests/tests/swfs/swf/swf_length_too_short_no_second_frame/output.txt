@@ -1,0 +1,18 @@
+Start
+  loaded: 383
+  total: 383
+Frame 1
+  loaded: 383
+  total: 383
+Frame 2
+  loaded: 383
+  total: 383
+Frame 3
+  loaded: 383
+  total: 383
+Frame 4
+  loaded: 383
+  total: 383
+Frame 5
+  loaded: 383
+  total: 383
