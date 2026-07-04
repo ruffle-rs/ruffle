@@ -23,7 +23,6 @@ impl fmt::Display for ParseNumError {
 /// Trait implemented for all integer types that can be parsed from a [`WStr`].
 pub trait Integer: FromWStr<Err = ParseNumError> {
     fn from_wstr_radix(s: &WStr, radix: u32) -> Result<Self, Self::Err>;
-    fn from_wstr_radix_wrapping(s: &WStr, radix: u32) -> Result<Self, Self::Err>;
 }
 
 fn parse_special_floats(s: &WStr) -> Option<f64> {
@@ -87,14 +86,12 @@ mod int_parse {
 
     pub trait IntParse: Sized {
         const SIGNED: bool;
+        const WRAPPING: bool;
 
         fn from_digit(n: u32) -> Self;
         fn checked_add(self, n: u32) -> Option<Self>;
         fn checked_sub(self, n: u32) -> Option<Self>;
         fn checked_mul(self, n: u32) -> Option<Self>;
-        fn wrapping_add(self, n: u32) -> Self;
-        fn wrapping_sub(self, n: u32) -> Self;
-        fn wrapping_mul(self, n: u32) -> Self;
     }
 
     pub fn from_wstr_radix<T: IntParse>(s: &WStr, radix: u32) -> Option<T> {
@@ -115,7 +112,7 @@ mod int_parse {
             return None;
         }
 
-        if is_neg && !T::SIGNED {
+        if is_neg && !T::WRAPPING && !T::SIGNED {
             return None;
         }
 
@@ -130,36 +127,6 @@ mod int_parse {
             }
         })
     }
-
-    pub fn from_wstr_radix_wrapping<T: IntParse>(s: &WStr, radix: u32) -> Option<T> {
-        assert!(
-            radix >= 2 && radix <= 36,
-            "from_str_radix: radix must be between 2 and 36, got {radix}",
-        );
-
-        let (is_neg, digits) = match s.get(0).map(u8::try_from) {
-            Some(Ok(b'-')) => (true, &s[1..]),
-            Some(Ok(b'+')) => (false, &s[1..]),
-            Some(_) => (false, s),
-            None => return None,
-        };
-
-        // "-", "+"
-        if digits.is_empty() {
-            return None;
-        }
-
-        digits.iter().try_fold(T::from_digit(0), |num, c| {
-            let byte = u8::try_from(c).ok()?;
-            let digit = (byte as char).to_digit(radix)?;
-            let num = num.wrapping_mul(radix);
-            if is_neg {
-                Some(num.wrapping_sub(digit))
-            } else {
-                Some(num.wrapping_add(digit))
-            }
-        })
-    }
 }
 
 macro_rules! impl_int_parse {
@@ -167,6 +134,7 @@ macro_rules! impl_int_parse {
         impl int_parse::IntParse for $ty {
             #[allow(unused_comparisons)]
             const SIGNED: bool = <$ty>::MIN < 0;
+            const WRAPPING: bool = false;
 
             #[inline]
             fn from_digit(n: u32) -> Self {
@@ -187,21 +155,6 @@ macro_rules! impl_int_parse {
             fn checked_mul(self, n: u32) -> Option<Self> {
                 <$ty>::checked_mul(self, n as $ty)
             }
-
-            #[inline]
-            fn wrapping_add(self, n: u32) -> Self {
-                <$ty>::wrapping_add(self, n as $ty)
-            }
-
-            #[inline]
-            fn wrapping_sub(self, n: u32) -> Self {
-                <$ty>::wrapping_sub(self, n as $ty)
-            }
-
-            #[inline]
-            fn wrapping_mul(self, n: u32) -> Self {
-                <$ty>::wrapping_mul(self, n as $ty)
-            }
         }
     )* }
 }
@@ -213,6 +166,7 @@ macro_rules! impl_wrapping_int_parse {
         impl int_parse::IntParse for Wrapping<$ty> {
             #[allow(unused_comparisons)]
             const SIGNED: bool = <$ty>::MIN < 0;
+            const WRAPPING: bool = true;
 
             #[inline]
             fn from_digit(n: u32) -> Self {
@@ -233,21 +187,6 @@ macro_rules! impl_wrapping_int_parse {
             fn checked_mul(self, n: u32) -> Option<Self> {
                 Some(self * Self::from_digit(n))
             }
-
-            #[inline]
-            fn wrapping_add(self, n: u32) -> Self {
-                self + Self::from_digit(n)
-            }
-
-            #[inline]
-            fn wrapping_sub(self, n: u32) -> Self {
-                self - Self::from_digit(n)
-            }
-
-            #[inline]
-            fn wrapping_mul(self, n: u32) -> Self {
-                self * Self::from_digit(n)
-            }
         }
     )* }
 }
@@ -261,20 +200,12 @@ macro_rules! impl_from_str_int {
             fn from_wstr_radix(s: &WStr, radix: u32) -> Result<Self, ParseNumError> {
                 int_parse::from_wstr_radix(s, radix).ok_or(ParseNumError(()))
             }
-            #[inline]
-            fn from_wstr_radix_wrapping(s: &WStr, radix: u32) -> Result<Self, ParseNumError> {
-                int_parse::from_wstr_radix_wrapping(s, radix).ok_or(ParseNumError(()))
-            }
         }
 
         impl Integer for Wrapping<$ty> {
             #[inline]
             fn from_wstr_radix(s: &WStr, radix: u32) -> Result<Self, ParseNumError> {
                 int_parse::from_wstr_radix(s, radix).ok_or(ParseNumError(()))
-            }
-            #[inline]
-            fn from_wstr_radix_wrapping(s: &WStr, radix: u32) -> Result<Self, ParseNumError> {
-                int_parse::from_wstr_radix_wrapping(s, radix).ok_or(ParseNumError(()))
             }
         }
 

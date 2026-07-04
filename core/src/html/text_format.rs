@@ -11,6 +11,7 @@ use std::borrow::Cow;
 use std::cmp::{Ordering, min};
 use std::collections::VecDeque;
 use std::fmt::Write;
+use std::num::Wrapping;
 use std::sync::Arc;
 
 use super::StyleSheet;
@@ -72,8 +73,8 @@ fn process_html_entity(src: &WStr) -> Option<WString> {
                         .unwrap_or(numeral_segment.len())
                         + numeral_start_index;
                     let digits = &numeric_parse_start[..end]; // using numeric_parse_start to include any potential sign
-                    if let Ok(n) = u16::from_wstr_radix_wrapping(digits, radix) {
-                        if let Some(c) = std::char::from_u32(n as u32) {
+                    if let Ok(n) = Wrapping::<u16>::from_wstr_radix(digits, radix) {
+                        if let Some(c) = std::char::from_u32(n.0 as u32) {
                             result_str.push_char(c);
                         }
                     } else {
