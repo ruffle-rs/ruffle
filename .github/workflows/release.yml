@@ -345,14 +345,17 @@ jobs:
           xcrun stapler staple package/Ruffle.app
 
       - name: Report notarization failure on Discord
-        uses: th0th/notify-discord@v0.4.1
+        uses: stegzilla/discord-notify@v2
         if: ${{ steps.notarize-bundle.outcome == 'failure' && github.repository == 'ruffle-rs/ruffle' }}
         continue-on-error: true
-        env:
-          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_UPDATES }}
-          GITHUB_ACTOR: ${{ github.actor }}
-          GITHUB_JOB_NAME: "Notarize macOS universal binary bundle"
-          GITHUB_JOB_STATUS: ${{ steps.notarize-bundle.outcome }}
+        with:
+          webhook_url: ${{ secrets.DISCORD_WEBHOOK_UPDATES }}
+          title: "macOS notarization failed"
+          message: |
+            Notarize macOS universal binary bundle step failed
+            [View workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+          username: ${{ github.actor }}
+          colour: "#e5534b"
 
       - name: Package macOS
         run: |

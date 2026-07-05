@@ -94,11 +94,19 @@ jobs:
           name: result
           path: firefox_extensions/
 
+  report-result:
+    name: Report result to Discord
+    runs-on: ubuntu-24.04
+    needs: test-dockerfile
+    if: always() && github.repository == 'ruffle-rs/ruffle'
+    steps:
       - name: Notify Discord
-        uses: th0th/notify-discord@v0.4.1
-        if: ${{ always() && github.repository == 'ruffle-rs/ruffle' }}
-        env:
-          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_UPDATES }}
-          GITHUB_ACTOR: ${{ github.actor }}
-          GITHUB_JOB_NAME: "Build extension via Dockerfile"
-          GITHUB_JOB_STATUS: ${{ job.status }}
+        uses: stegzilla/discord-notify@v2
+        with:
+          webhook_url: ${{ secrets.DISCORD_WEBHOOK_UPDATES }}
+          title: "Ruffle extension builder Dockerfile test result"
+          message: |
+            ${{ github.workflow }} run completed with status: ${{ needs.test-dockerfile.result }}
+            [View workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+          username: ${{ github.actor }}
+          colour: ${{ needs.test-dockerfile.result == 'success' && '##57ab5a' || '#e5534b' }}
