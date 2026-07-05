@@ -304,6 +304,12 @@ impl SwfMovie {
         self.header.uncompressed_len()
     }
 
+    /// The actual decompressed SWF data length, capped at the header-declared
+    /// value. Equals `uncompressed_len()` for non-corrupt SWFs.
+    pub fn actual_uncompressed_len(&self) -> u32 {
+        self.header.actual_uncompressed_len()
+    }
+
     /// Whether the SWF's FileAttributes tag declares the SWF to be AVM2.
     pub fn is_declared_action_script_3(&self) -> bool {
         self.header.is_action_script_3()
