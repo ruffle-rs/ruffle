@@ -22,7 +22,7 @@ use ruffle_wstr::WString;
 use std::cell::{Cell, Ref, RefMut};
 use std::fmt::{self, Debug};
 
-use super::{ClassObject, XmlObject};
+use super::{ClassObject, NotificationCommand, XmlObject};
 
 /// A class instance allocator that allocates XMLList objects.
 pub fn xml_list_allocator<'gc>(
@@ -886,17 +886,49 @@ impl<'gc> TObject<'gc> for XmlListObject<'gc> {
 
                     if let Some(q) = q {
                         // 2.f.iii.2. Call the [[Replace]] method of parent with arguments q and c
-                        parent.replace(q, c.into(), activation)?;
+                        parent.replace(q, c.into(), None, activation)?;
 
-                        let E4XNodeKind::Element { children, .. } = &*parent.kind() else {
-                            unreachable!()
-                        };
-
-                        // 2.f.iii.3. For j = 0 to c.[[Length]]-1
-                        for (index, child) in c.children_mut(activation.gc()).iter_mut().enumerate()
                         {
-                            // 2.f.iii.3.a. Let c[j] = parent[ToUint32(q)+j]
-                            *child = E4XOrXml::E4X(children[q + index]);
+                            let E4XNodeKind::Element { children, .. } = &*parent.kind() else {
+                                unreachable!()
+                            };
+
+                            // 2.f.iii.3. For j = 0 to c.[[Length]]-1
+                            for (index, child) in
+                                c.children_mut(activation.gc()).iter_mut().enumerate()
+                            {
+                                // 2.f.iii.3.a. Let c[j] = parent[ToUint32(q)+j]
+                                *child = E4XOrXml::E4X(children[q + index]);
+                            }
+                        }
+
+                        // avmplus XMLListObject::setUintProperty notifies per
+                        // inserted child: "nodeChanged" for the first slot when
+                        // the node actually changed, "nodeAdded" for the rest.
+                        if parent.notify_needed() {
+                            let parent_obj = XmlObject::new(parent, activation);
+                            for i2 in 0..c.length() {
+                                let node = c.children()[i2].node();
+                                if i2 == 0 {
+                                    if !E4XNode::ptr_eq(node, child) {
+                                        let value_obj = XmlObject::new(node, activation);
+                                        parent_obj.trigger_child_changes(
+                                            activation,
+                                            NotificationCommand::NodeChanged,
+                                            value_obj.into(),
+                                            Some(child),
+                                        );
+                                    }
+                                } else {
+                                    let value_obj = XmlObject::new(node, activation);
+                                    parent_obj.trigger_child_changes(
+                                        activation,
+                                        NotificationCommand::NodeAdded,
+                                        value_obj.into(),
+                                        None,
+                                    );
+                                }
+                            }
                         }
                     }
                 }
@@ -922,6 +954,13 @@ impl<'gc> TObject<'gc> for XmlListObject<'gc> {
                 // 2.g.i. Let parent = x[i].[[Parent]]
                 let parent = child.parent();
 
+                // NOTE: Whether V is XML decides if a "nodeChanged" notification
+                //       is due (a string value notifies "textSet" from within
+                //       [[Replace]] instead, like avmplus).
+                let value_is_xml = value
+                    .as_object()
+                    .is_some_and(|x| x.as_xml_object().is_some());
+
                 // 2.g.ii. If parent is not null
                 if let Some(parent) = parent {
                     // 2.g.ii.1. Let q be the property of parent, such that parent[q] is the same object as x[i]
@@ -933,14 +972,28 @@ impl<'gc> TObject<'gc> for XmlListObject<'gc> {
 
                     if let Some(q) = q {
                         // 2.g.ii.2. Call the [[Replace]] method of parent with arguments q and V
-                        parent.replace(q, value, activation)?;
+                        parent.replace(q, value, None, activation)?;
 
-                        let E4XNodeKind::Element { children, .. } = &*parent.kind() else {
-                            unreachable!()
-                        };
+                        {
+                            let E4XNodeKind::Element { children, .. } = &*parent.kind() else {
+                                unreachable!()
+                            };
 
-                        // 2.g.ii.3. Let V = parent[q]
-                        value = XmlObject::new(children[q], activation).into();
+                            // 2.g.ii.3. Let V = parent[q]
+                            value = XmlObject::new(children[q], activation).into();
+                        }
+
+                        // avmplus XMLListObject::setUintProperty notifies
+                        // "nodeAdded" on the parent after the replace.
+                        if value_is_xml && parent.notify_needed() {
+                            let parent = XmlObject::new(parent, activation);
+                            parent.trigger_child_changes(
+                                activation,
+                                NotificationCommand::NodeAdded,
+                                value,
+                                None,
+                            );
+                        }
                     }
                 }
 
@@ -994,10 +1047,14 @@ impl<'gc> TObject<'gc> for XmlListObject<'gc> {
                 self.append(r.as_object().into(), activation.gc());
             }
 
-            let mut children = self.children_mut(activation.gc());
-
             // 3.b. Call the [[Put]] method of x[0] with arguments P and V
-            let xml = children.first_mut().unwrap().get_or_create_xml(activation);
+            // NOTE: The borrow is scoped to this statement so it isn't held when
+            //       [[Put]] triggers change notifications.
+            let xml = self
+                .children_mut(activation.gc())
+                .first_mut()
+                .unwrap()
+                .get_or_create_xml(activation);
             return xml.set_property_local(name, value, activation);
         }
 
@@ -1065,32 +1122,60 @@ impl<'gc> TObject<'gc> for XmlListObject<'gc> {
         activation: &mut Activation<'_, 'gc>,
         name: &Multiname<'gc>,
     ) -> Result<bool, Error<'gc>> {
-        let mut children = self.children_mut(activation.gc());
-
         if !name.is_any_name()
             && !name.is_attribute()
             && let Some(local_name) = name.local_name()
             && let Ok(index) = local_name.parse::<usize>()
         {
-            if index < children.len() {
-                let removed = children.remove(index);
-                let removed_node = removed.node();
-                if let Some(parent) = removed_node.parent() {
-                    if removed_node.is_attribute() {
-                        parent.remove_attribute(activation.gc(), removed_node);
+            // NOTE: The removal happens in its own scope so that no borrow is
+            //       held when the notification below runs AS3 code.
+            let removed_info = {
+                let mut children = self.children_mut(activation.gc());
+
+                if index < children.len() {
+                    let removed = children.remove(index);
+                    let removed_node = removed.node();
+                    if let Some(parent) = removed_node.parent() {
+                        if removed_node.is_attribute() {
+                            parent.remove_attribute(activation.gc(), removed_node);
+                        } else {
+                            parent.remove_child(activation.gc(), removed_node);
+                        }
+                        Some((parent, removed_node))
                     } else {
-                        parent.remove_child(activation.gc(), removed_node);
+                        None
                     }
+                } else {
+                    None
                 }
+            };
+
+            // avmplus XMLListObject::delUintProperty notifies "nodeRemoved" on
+            // the removed node's parent.
+            if let Some((parent, removed_node)) = removed_info
+                && parent.notify_needed()
+            {
+                let parent = XmlObject::new(parent, activation);
+                let removed_child = XmlObject::new(removed_node, activation);
+                parent.trigger_child_changes(
+                    activation,
+                    NotificationCommand::NodeRemoved,
+                    removed_child.into(),
+                    None,
+                );
             }
+
             return Ok(true);
         }
 
-        for child in children.iter_mut() {
-            if child.node().is_element() {
-                child
-                    .get_or_create_xml(activation)
-                    .delete_property_local(activation, name)?;
+        // NOTE: The children are collected first so that no borrow is held when
+        //       the recursive deletes trigger notifications.
+        let child_nodes: Vec<E4XNode<'gc>> =
+            self.children().iter().map(|child| child.node()).collect();
+
+        for node in child_nodes {
+            if node.is_element() {
+                XmlObject::new(node, activation).delete_property_local(activation, name)?;
             }
         }
 
