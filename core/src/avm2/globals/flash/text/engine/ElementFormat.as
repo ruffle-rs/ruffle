@@ -26,21 +26,21 @@ package flash.text.engine {
             typographicCase:String = "default"
         ) {
             this.fontDescription = (fontDescription != null) ? fontDescription : new FontDescription();
-            this.alignmentBaseline = alignmentBaseline;
-            this.alpha = alpha;
-            this.baselineShift = baselineShift;
-            this.breakOpportunity = breakOpportunity;
+            this.fontSize = fontSize;
             this.color = color;
+            this.alpha = alpha;
+            this.textRotation = textRotation;
+            this.dominantBaseline = dominantBaseline;
+            this.alignmentBaseline = alignmentBaseline;
+            this.baselineShift = baselineShift;
+            this.kerning = kerning;
+            this.trackingRight = trackingRight;
+            this.trackingLeft = trackingLeft;
+            this.locale = locale;
+            this.breakOpportunity = breakOpportunity;
             this.digitCase = digitCase;
             this.digitWidth = digitWidth;
-            this.dominantBaseline = dominantBaseline;
-            this.fontSize = fontSize;
-            this.kerning = kerning;
             this.ligatureLevel = ligatureLevel;
-            this.locale = locale;
-            this.textRotation = textRotation;
-            this.trackingLeft = trackingLeft;
-            this.trackingRight = trackingRight;
             this.typographicCase = typographicCase;
         }
 
