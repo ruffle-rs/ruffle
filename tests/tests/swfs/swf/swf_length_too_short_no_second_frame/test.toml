@@ -1,3 +1,2 @@
 num_ticks = 16
-# TODO This test panics.
-ignore = true
+known_failure.panic = "attempt to subtract with overflow"
