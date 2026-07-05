@@ -67,6 +67,7 @@ mod soundtransform_object;
 mod stage3d_object;
 mod stage_object;
 mod stylesheet_object;
+mod text_block_object;
 mod textformat_object;
 mod texture_object;
 mod vector_object;
@@ -162,6 +163,9 @@ pub use crate::avm2::object::stage3d_object::{Stage3DObject, Stage3DObjectWeak};
 pub use crate::avm2::object::stylesheet_object::{
     StyleSheetObject, StyleSheetObjectWeak, style_sheet_allocator,
 };
+pub use crate::avm2::object::text_block_object::{
+    TextBlockObject, TextBlockObjectWeak, text_block_allocator,
+};
 pub use crate::avm2::object::textformat_object::{
     TextFormatObject, TextFormatObjectWeak, textformat_allocator,
 };
@@ -226,6 +230,7 @@ use crate::font::Font;
         ContentElementObject(ContentElementObject<'gc>),
         ElementFormatObject(ElementFormatObject<'gc>),
         FontDescriptionObject(FontDescriptionObject<'gc>),
+        TextBlockObject(TextBlockObject<'gc>),
         FontObject(FontObject<'gc>),
         LocalConnectionObject(LocalConnectionObject<'gc>),
         SharedObjectObject(SharedObjectObject<'gc>),
@@ -764,6 +769,7 @@ impl<'gc> Object<'gc> {
         pub fn as_content_element_object for ContentElementObject;
         pub fn as_element_format_object for ElementFormatObject;
         pub fn as_font_description_object for FontDescriptionObject;
+        pub fn as_text_block_object for TextBlockObject;
         pub fn as_font_object for FontObject;
         pub fn as_regexp_object for RegExpObject;
         pub fn as_sound_object for SoundObject;
@@ -988,6 +994,7 @@ define_weak_enum! {
         ContentElementObject(ContentElementObjectWeak<'gc>),
         ElementFormatObject(ElementFormatObjectWeak<'gc>),
         FontDescriptionObject(FontDescriptionObjectWeak<'gc>),
+        TextBlockObject(TextBlockObjectWeak<'gc>),
         FontObject(FontObjectWeak<'gc>),
         LocalConnectionObject(LocalConnectionObjectWeak<'gc>),
         SharedObjectObject(SharedObjectObjectWeak<'gc>),
