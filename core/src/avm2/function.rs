@@ -347,18 +347,27 @@ pub fn display_function<'gc>(output: &mut WString, method: Method<'gc>) {
                 } else {
                     output.push_str(&method_trait.name().local_name());
                 }
-            } else if !method.method_name().is_empty() {
+            } else if let Some(method_name) = method.method_name()
+                && !method_name.is_empty()
+            {
                 // Last resort if we can't find a name anywhere else.
                 // SWF's with debug information will provide a method name attached
                 // to the method definition, so we can use that.
                 output.push_char('/');
-                output.push_utf8(&method.method_name());
+                output.push_utf8(&method_name);
             }
             // TODO: What happens if we can't find the trait?
         }
-    } else if method.is_function() && !method.method_name().is_empty() {
+    } else if method.is_function()
+        && let Some(method_name) = method.method_name()
+    {
         output.push_utf8("Function/");
-        output.push_utf8(&method.method_name());
+
+        if !method_name.is_empty() {
+            output.push_utf8(&method_name);
+        } else {
+            output.push_utf8("<anonymous>");
+        }
     } else {
         output.push_utf8("MethodInfo-");
         output.push_utf8(&method.abc_method_index().to_string());
