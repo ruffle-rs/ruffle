@@ -333,19 +333,21 @@ impl<'gc> Method<'gc> {
     }
 
     /// Get the name of this method.
-    pub fn method_name(&self) -> Cow<'_, str> {
+    pub fn method_name(&self) -> Option<Cow<'_, str>> {
         let name_index = self.method().name.0 as usize;
         if name_index == 0 {
-            return Cow::Borrowed("");
+            return None;
         }
 
-        self.0
-            .abc
-            .constant_pool
-            .strings
-            .get(name_index - 1)
-            .map(|s| String::from_utf8_lossy(s))
-            .unwrap_or(Cow::Borrowed(""))
+        Some(
+            self.0
+                .abc
+                .constant_pool
+                .strings
+                .get(name_index - 1)
+                .map(|s| String::from_utf8_lossy(s))
+                .unwrap_or(Cow::Borrowed("")),
+        )
     }
 
     /// Determine if a given method is variadic.

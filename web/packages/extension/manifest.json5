@@ -18,6 +18,11 @@
                 "https://sso.godaddy.com/*", // See https://github.com/ruffle-rs/ruffle/pull/7146
                 "https://authentication.td.com/*", // See https://github.com/ruffle-rs/ruffle/issues/2158
                 "https://*.twitch.tv/*", // See https://github.com/ruffle-rs/ruffle/pull/8150
+                "https://*.twitchcdn.net/*", // See https://github.com/ruffle-rs/ruffle/issues/23929
+                "https://*.ext-twitch.tv/*", // See https://github.com/ruffle-rs/ruffle/issues/23929
+                "https://*.jtvnw.net/*", // See https://github.com/ruffle-rs/ruffle/issues/23929
+                "https://*.ttvnw.net/*", // See https://github.com/ruffle-rs/ruffle/issues/23929
+                "https://*.live-video.net/*", // See https://github.com/ruffle-rs/ruffle/issues/23929
                 "https://www.tuxedocomputers.com/*", // See https://github.com/ruffle-rs/ruffle/issues/11906
                 "https://*.taobao.com/*", // See https://github.com/ruffle-rs/ruffle/pull/12650
                 "https://*.time4learning.com/*", // See https://github.com/ruffle-rs/ruffle/pull/16186

@@ -52,6 +52,7 @@ mod domain;
 mod dynamic_map;
 mod e4x;
 pub mod error;
+pub mod error_messages;
 mod events;
 mod filters;
 mod flv;

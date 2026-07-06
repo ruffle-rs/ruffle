@@ -1,0 +1,7 @@
+num_ticks = 16
+
+[[compilers]]
+type = "Rascal"
+target = "original.swf"
+scripts = ["test.as"]
+swf_version = 8
