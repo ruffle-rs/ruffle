@@ -1228,18 +1228,19 @@ impl<'a> Reader<'a> {
         let id = self.read_character_id()?;
         let start_shape_bounds = self.read_rectangle()?;
         let end_shape_bounds = self.read_rectangle()?;
-        let start_edge_bounds;
-        let end_edge_bounds;
-        let flags;
-        if version >= 2 {
-            start_edge_bounds = self.read_rectangle()?;
-            end_edge_bounds = self.read_rectangle()?;
-            flags = DefineMorphShapeFlag::from_bits_truncate(self.read_u8()?);
+        let (start_edge_bounds, end_edge_bounds, flags) = if version >= 2 {
+            (
+                self.read_rectangle()?,
+                self.read_rectangle()?,
+                DefineMorphShapeFlag::from_bits_truncate(self.read_u8()?),
+            )
         } else {
-            start_edge_bounds = start_shape_bounds;
-            end_edge_bounds = end_shape_bounds;
-            flags = DefineMorphShapeFlag::HAS_NON_SCALING_STROKES;
-        }
+            (
+                start_shape_bounds,
+                end_shape_bounds,
+                DefineMorphShapeFlag::HAS_NON_SCALING_STROKES,
+            )
+        };
 
         self.read_u32()?; // Offset to EndEdges.
 
@@ -1477,15 +1478,14 @@ impl<'a> Reader<'a> {
     pub fn read_define_shape(&mut self, version: u8) -> Result<Shape> {
         let id = self.read_u16()?;
         let shape_bounds = self.read_rectangle()?;
-        let edge_bounds;
-        let flags;
-        if version >= 4 {
-            edge_bounds = self.read_rectangle()?;
-            flags = ShapeFlag::from_bits_truncate(self.read_u8()?);
+        let (edge_bounds, flags) = if version >= 4 {
+            (
+                self.read_rectangle()?,
+                ShapeFlag::from_bits_truncate(self.read_u8()?),
+            )
         } else {
-            edge_bounds = shape_bounds;
-            flags = ShapeFlag::HAS_NON_SCALING_STROKES;
-        }
+            (shape_bounds, ShapeFlag::HAS_NON_SCALING_STROKES)
+        };
 
         let (styles, num_fill_bits, num_line_bits) = self.read_shape_styles(version)?;
         let mut records = Vec::new();
