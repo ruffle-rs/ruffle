@@ -51,7 +51,7 @@ use crate::orphan_manager::OrphanManager;
 use crate::prelude::*;
 use crate::socket::Sockets;
 use crate::streams::StreamManager;
-use crate::string::{AvmStringInterner, StringContext};
+use crate::string::{AvmString, AvmStringInterner, StringContext};
 use crate::stub::StubCollection;
 use crate::system_properties::SystemProperties;
 use crate::tag_utils::SwfMovie;
@@ -1309,15 +1309,43 @@ impl Player {
             }
 
             // KeyPress events take precedence over text input.
-            if !key_press_handled && let Some(text) = context.focus_tracker.get_as_edit_text() {
-                if let InputEvent::TextInput { codepoint } = &event {
-                    text.text_input((*codepoint).to_string(), context);
-                }
-                if let InputEvent::TextControl { code } = &event {
-                    text.text_control_input(*code, context);
-                }
-                if let InputEvent::Ime(ime) = &event {
-                    text.ime(ime.clone(), context);
+            if !key_press_handled {
+                if let Some(text) = context.focus_tracker.get_as_edit_text() {
+                    if let InputEvent::TextInput { codepoint } = &event {
+                        text.text_input((*codepoint).to_string(), context);
+                    }
+                    if let InputEvent::TextControl { code } = &event {
+                        text.text_control_input(*code, context);
+                    }
+                    if let InputEvent::Ime(ime) = &event {
+                        text.ime(ime.clone(), context);
+                    }
+                } else if let InputEvent::TextInput { codepoint } = &event
+                    && let Some(focus) = context.focus_tracker.get()
+                {
+                    // The focused object is an interactive object other than a
+                    // native text field (e.g. a Sprite hosting a Text Layout
+                    // Framework EditManager). Flash Player dispatches typed
+                    // characters as a `TextEvent` to whatever object holds
+                    // focus, which is how such components receive keyboard
+                    // input; mirror that so they can be typed into.
+                    //
+                    // TODO: Route IME composition events here as well.
+                    let target = focus.as_displayobject();
+                    if target.movie().is_action_script_3()
+                        && let Some(target_object) = target.object2()
+                    {
+                        let mut activation = Avm2Activation::from_nothing(context);
+                        let text = AvmString::new_utf8(activation.gc(), codepoint.to_string());
+                        let text_evt = Avm2EventObject::text_event(
+                            &mut activation,
+                            "textInput",
+                            text,
+                            true,
+                            true,
+                        );
+                        Avm2::dispatch_event(activation.context, text_evt, target_object.into());
+                    }
                 }
             }
 
