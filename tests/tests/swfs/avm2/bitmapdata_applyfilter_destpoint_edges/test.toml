@@ -1,7 +1,9 @@
 num_frames = 1
 
 [image_comparisons.output]
-tolerance = 1
+# The blur margins fade gradually, and those pixels vary by up to 2 per
+# channel across GPUs/drivers (measured between the CI runners themselves).
+tolerance = 2
 max_outliers = 35
 known_failure = true
 
