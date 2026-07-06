@@ -59,6 +59,10 @@ pub trait RenderBackend: Any {
     /// Both `source_rect` and `destination_rect` must be valid (`BoundingBox::valid`).
     /// `source` may equal `destination`, in which case a temporary buffer is used internally.
     ///
+    /// `dest_point` is where the top-left corner of the source rect lands in the
+    /// destination; the filter's output may extend beyond it on every side by
+    /// `Filter::calculate_dest_margins`, as `BitmapData.generateFilterRect` reports.
+    ///
     /// Returns None if the backend does not support this filter.
     fn apply_filter(
         &mut self,
