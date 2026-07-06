@@ -8,7 +8,7 @@ use crate::avm2::error::{
     make_error_2027,
 };
 use crate::avm2::filters::FilterAvm2Ext;
-use crate::avm2::globals::flash::display::display_object::object_to_rectangle;
+use crate::avm2::globals::flash::display::display_object::{new_rectangle, object_to_rectangle};
 use crate::avm2::globals::flash::geom::transform::object_to_color_transform;
 use crate::avm2::globals::flash::geom::transform::object_to_matrix;
 use crate::avm2::globals::slots::{
@@ -1199,6 +1199,51 @@ pub fn apply_filter<'gc>(
             dest_point,
             filter,
         );
+    }
+    Ok(Value::Undefined)
+}
+
+/// Implements `BitmapData.generateFilterRect`
+pub fn generate_filter_rect<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Value<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
+    if let Some(bitmap_data) = this.as_bitmap_data() {
+        bitmap_data.check_valid(activation)?;
+
+        let source_rect = args.get_object(activation, 0, "sourceRect")?;
+        let source_rect = object_to_rectangle(source_rect);
+        let filter = args.get_object(activation, 1, "filter")?;
+        let filter = Filter::from_avm2_object(activation, filter)?;
+
+        // Flash always reports that a ShaderFilter affects the entire
+        // BitmapData, ignoring sourceRect.
+        if matches!(filter, Filter::ShaderFilter(_)) {
+            let rect = Rectangle {
+                x_min: Twips::ZERO,
+                y_min: Twips::ZERO,
+                x_max: Twips::from_pixels_i32(bitmap_data.width() as i32),
+                y_max: Twips::from_pixels_i32(bitmap_data.height() as i32),
+            };
+            return new_rectangle(activation, rect);
+        }
+
+        let x = source_rect.x_min.to_pixels().floor() as i32;
+        let y = source_rect.y_min.to_pixels().floor() as i32;
+        let width = source_rect.width().to_pixels().ceil() as u32;
+        let height = source_rect.height().to_pixels().ceil() as u32;
+        let margins = filter.calculate_dest_margins();
+
+        let dest_rect = Rectangle {
+            x_min: Twips::from_pixels_i32(x - margins.left as i32),
+            y_min: Twips::from_pixels_i32(y - margins.top as i32),
+            x_max: Twips::from_pixels_i32(x + (width + margins.right) as i32),
+            y_max: Twips::from_pixels_i32(y + (height + margins.bottom) as i32),
+        };
+        return new_rectangle(activation, dest_rect);
     }
     Ok(Value::Undefined)
 }

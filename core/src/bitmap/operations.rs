@@ -1234,12 +1234,9 @@ pub fn apply_filter<'gc>(
     filter: Filter,
 ) {
     // Prevent creating 0x0 textures.
-    // FIXME: this is not correct.
-    // Currently at minimum, applyFilter(blur) is bugged in that
-    // it doesn't include the blur's dimensions (see calculate_dest_rect).
-    // In other words, blur with 0x0 source rect is not supposed to be a noop.
-    // Once it is fixed, this check should be removed or replaced by
-    // "if after including size adjustment the size is still 0, return".
+    // FIXME: in Flash a filter with a 0x0 source rect is not always a noop:
+    // the filter's expansion (e.g. blur margins) is still written to the
+    // destination.
     if source_size.0 == 0 || source_size.1 == 0 {
         return;
     }

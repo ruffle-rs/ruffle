@@ -863,7 +863,7 @@ pub fn set_blend_mode<'gc>(
     Ok(Value::Undefined)
 }
 
-fn new_rectangle<'gc>(
+pub fn new_rectangle<'gc>(
     activation: &mut Activation<'_, 'gc>,
     rectangle: Rectangle<Twips>,
 ) -> Result<Value<'gc>, Error<'gc>> {

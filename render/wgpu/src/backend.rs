@@ -23,7 +23,7 @@ use ruffle_render::bitmap::{
 };
 use ruffle_render::commands::CommandList;
 use ruffle_render::error::Error as BitmapError;
-use ruffle_render::filters::Filter;
+use ruffle_render::filters::{Filter, FilterMargins};
 use ruffle_render::pixel_bender::{PixelBenderShader, PixelBenderShaderHandle};
 use ruffle_render::pixel_bender_support::PixelBenderShaderArgument;
 use ruffle_render::quality::StageQuality;
@@ -838,29 +838,169 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
             buffer: None,
         };
 
+        // The filter's output can extend beyond the source rect (e.g. blur
+        // margins, drop shadow offset), and Flash writes those pixels too.
+        // Copy the source into a padded texture, run the filter over the
+        // whole padded area, and shift the destination point back by the
+        // margins. The margins must agree with what
+        // `BitmapData.generateFilterRect` reports, so both use
+        // `calculate_dest_margins`.
+        //
+        // A blur also *samples* real source pixels beyond the source rect
+        // (verified against Flash Player captures), so it gets an extra ring
+        // of real source pixels around the written area for the outermost
+        // output pixels to sample; beyond the source texture's physical
+        // bounds the padding stays transparent (textures are
+        // zero-initialized). Filters that composite the source over their
+        // output (glow, drop shadow, bevel) must not see neighbor pixels, or
+        // they would paint them into the margins; their padding stays
+        // transparent.
+        let margins = filter.calculate_dest_margins();
+        let sample_ring = if matches!(filter, Filter::BlurFilter(_)) {
+            margins
+        } else {
+            FilterMargins::default()
+        };
+        let pad = FilterMargins {
+            left: margins.left + sample_ring.left,
+            top: margins.top + sample_ring.top,
+            right: margins.right + sample_ring.right,
+            bottom: margins.bottom + sample_ring.bottom,
+        };
+        let padded_width = source_size.0 + pad.left + pad.right;
+        let padded_height = source_size.1 + pad.top + pad.bottom;
+        let max_dimension = self.descriptors.limits.max_texture_dimension_2d;
+        let padded_source = if !margins.is_empty()
+            && padded_width <= max_dimension
+            && padded_height <= max_dimension
+        {
+            let texture_label = create_debug_label!("Padded filter source");
+            let texture = self
+                .descriptors
+                .device
+                .create_texture(&wgpu::TextureDescriptor {
+                    label: texture_label.as_deref(),
+                    size: wgpu::Extent3d {
+                        width: padded_width,
+                        height: padded_height,
+                        depth_or_array_layers: 1,
+                    },
+                    mip_level_count: 1,
+                    sample_count: 1,
+                    dimension: wgpu::TextureDimension::D2,
+                    format: source_texture.texture.format(),
+                    view_formats: &[],
+                    usage: wgpu::TextureUsages::COPY_DST | wgpu::TextureUsages::TEXTURE_BINDING,
+                });
+
+            // The copy region: the source rect, grown by the whole padding
+            // for blur (real neighbor pixels), clamped to the source
+            // texture's bounds.
+            let grow = if sample_ring.is_empty() {
+                FilterMargins::default()
+            } else {
+                pad
+            };
+            let tex_width = source_texture.texture.width();
+            let tex_height = source_texture.texture.height();
+            let copy_x0 = source_point.0.saturating_sub(grow.left).min(tex_width);
+            let copy_y0 = source_point.1.saturating_sub(grow.top).min(tex_height);
+            let copy_x1 = source_point
+                .0
+                .saturating_add(source_size.0)
+                .saturating_add(grow.right)
+                .min(tex_width);
+            let copy_y1 = source_point
+                .1
+                .saturating_add(source_size.1)
+                .saturating_add(grow.bottom)
+                .min(tex_height);
+            if copy_x1 > copy_x0 && copy_y1 > copy_y0 {
+                // Where the clamped region lands inside the padded texture.
+                let into_x = pad.left - (source_point.0.min(tex_width) - copy_x0);
+                let into_y = pad.top - (source_point.1.min(tex_height) - copy_y0);
+                self.active_frame.command_encoder.copy_texture_to_texture(
+                    wgpu::TexelCopyTextureInfo {
+                        texture: &source_texture.texture,
+                        mip_level: 0,
+                        origin: wgpu::Origin3d {
+                            x: copy_x0,
+                            y: copy_y0,
+                            z: 0,
+                        },
+                        aspect: Default::default(),
+                    },
+                    wgpu::TexelCopyTextureInfo {
+                        texture: &texture,
+                        mip_level: 0,
+                        origin: wgpu::Origin3d {
+                            x: into_x,
+                            y: into_y,
+                            z: 0,
+                        },
+                        aspect: Default::default(),
+                    },
+                    wgpu::Extent3d {
+                        width: copy_x1 - copy_x0,
+                        height: copy_y1 - copy_y0,
+                        depth_or_array_layers: 1,
+                    },
+                );
+            }
+            Some(texture)
+        } else {
+            None
+        };
+
+        let (filter_source, dest_point) = match &padded_source {
+            Some(texture) => (
+                FilterSource::for_entire_texture(texture),
+                (
+                    dest_point.0 - margins.left as i32,
+                    dest_point.1 - margins.top as i32,
+                ),
+            ),
+            None => (
+                FilterSource {
+                    texture: &source_texture.texture,
+                    point: source_point,
+                    size: source_size,
+                },
+                dest_point,
+            ),
+        };
+
         let applied_filter = self.descriptors.filters.apply(
             &self.descriptors,
             &mut self.active_frame.command_encoder,
             &mut self.offscreen_texture_pool,
             &mut self.active_frame.staging_belt,
-            FilterSource {
-                texture: &source_texture.texture,
-                point: source_point,
-                size: source_size,
-            },
+            filter_source,
             filter,
         );
 
+        // The written region excludes the blur sampling ring, which exists
+        // only to feed the kernel.
+        let (write_offset, write_width, write_height) = if padded_source.is_some() {
+            (
+                (sample_ring.left, sample_ring.top),
+                source_size.0 + margins.left + margins.right,
+                source_size.1 + margins.top + margins.bottom,
+            )
+        } else {
+            ((0, 0), source_size.0, source_size.1)
+        };
+
         let (dest_x, dest_y) = dest_point;
 
-        let src_offset_x = dest_x.min(0).unsigned_abs();
-        let src_offset_y = dest_y.min(0).unsigned_abs();
+        let src_offset_x = write_offset.0 + dest_x.min(0).unsigned_abs();
+        let src_offset_y = write_offset.1 + dest_y.min(0).unsigned_abs();
 
         let final_dest_x = dest_x.max(0) as u32;
         let final_dest_y = dest_y.max(0) as u32;
 
-        let available_width = applied_filter.width().saturating_sub(src_offset_x);
-        let available_height = applied_filter.height().saturating_sub(src_offset_y);
+        let available_width = write_width.saturating_sub(dest_x.min(0).unsigned_abs());
+        let available_height = write_height.saturating_sub(dest_y.min(0).unsigned_abs());
         let dest_available_width = dest_texture.texture.width().saturating_sub(final_dest_x);
         let dest_available_height = dest_texture.texture.height().saturating_sub(final_dest_y);
 

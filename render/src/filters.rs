@@ -82,6 +82,66 @@ impl Filter {
         }
     }
 
+    /// Calculates how far this filter's output extends beyond the source rect
+    /// in `BitmapData` operations, in whole pixels.
+    ///
+    /// `BitmapData.generateFilterRect` reports this expansion and
+    /// `BitmapData.applyFilter` writes it, so both must use this method.
+    ///
+    /// Unlike `calculate_dest_rect` (used for display object filter bounds,
+    /// where over-estimating is harmless), these margins define exactly which
+    /// destination pixels get replaced, so they follow Flash Player's values:
+    /// a blur with strength `b` and `q` passes reaches `ceil((b - 1) * q / 2)`
+    /// pixels per side (verified against Flash Player captures: blur 4
+    /// quality 1 writes exactly 2 pixels beyond the source rect).
+    pub fn calculate_dest_margins(&self) -> FilterMargins {
+        match self {
+            Filter::BlurFilter(filter) => FilterMargins::from_blur(
+                filter.blur_x.to_f64(),
+                filter.blur_y.to_f64(),
+                filter.num_passes(),
+            ),
+            Filter::GlowFilter(filter) => {
+                if filter.is_inner() {
+                    FilterMargins::default()
+                } else {
+                    FilterMargins::from_blur(
+                        filter.blur_x.to_f64(),
+                        filter.blur_y.to_f64(),
+                        filter.num_passes(),
+                    )
+                }
+            }
+            Filter::DropShadowFilter(filter) => {
+                if filter.is_inner() {
+                    FilterMargins::default()
+                } else {
+                    let distance = filter.distance.to_f64();
+                    let angle = filter.angle.to_f64();
+                    FilterMargins::from_blur(
+                        filter.blur_x.to_f64(),
+                        filter.blur_y.to_f64(),
+                        filter.num_passes(),
+                    )
+                    .with_offset(angle.cos() * distance, angle.sin() * distance)
+                }
+            }
+            Filter::BevelFilter(filter) => {
+                let distance = filter.distance.to_f64();
+                let angle = filter.angle.to_f64();
+                // Bevel draws highlight and shadow on opposite sides.
+                FilterMargins::from_blur(
+                    filter.blur_x.to_f64(),
+                    filter.blur_y.to_f64(),
+                    filter.num_passes(),
+                )
+                .with_offset(angle.cos() * distance, angle.sin() * distance)
+                .with_offset(-angle.cos() * distance, -angle.sin() * distance)
+            }
+            _ => FilterMargins::default(),
+        }
+    }
+
     /// Checks if this filter is impotent.
     /// Impotent filters will have no effect if applied, and can safely be skipped.
     pub fn impotent(&self) -> bool {
@@ -91,6 +151,61 @@ impl Filter {
             Filter::ColorMatrixFilter(filter) => filter.impotent(),
             _ => false,
         }
+    }
+}
+
+/// How far a filter's output extends beyond the source image
+/// on each edge, in pixels.
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
+pub struct FilterMargins {
+    pub left: u32,
+    pub top: u32,
+    pub right: u32,
+    pub bottom: u32,
+}
+
+impl FilterMargins {
+    pub fn is_empty(&self) -> bool {
+        *self == Self::default()
+    }
+
+    /// The per-side reach of a box blur with the given strength and passes,
+    /// matching Flash Player's `generateFilterRect` values.
+    fn from_blur(blur_x: f64, blur_y: f64, passes: u8) -> Self {
+        fn axis(blur: f64, passes: u8) -> u32 {
+            if blur <= 1.0 || passes == 0 {
+                return 0;
+            }
+            (((blur - 1.0) * passes as f64) / 2.0).ceil() as u32
+        }
+        let x = axis(blur_x, passes);
+        let y = axis(blur_y, passes);
+        Self {
+            left: x,
+            top: y,
+            right: x,
+            bottom: y,
+        }
+    }
+
+    /// Extends the margins on the side(s) an offset vector points towards
+    /// (e.g. a drop shadow's distance/angle displacement).
+    fn with_offset(mut self, dx: f64, dy: f64) -> Self {
+        // Strip float noise (cos(PI/2) is not exactly zero, near-integer
+        // products can land just above the integer) so that axis-aligned
+        // offsets neither leak a spurious margin nor round an extra pixel.
+        const EPSILON: f64 = 1e-6;
+        if dx > EPSILON {
+            self.right += (dx - EPSILON).ceil() as u32;
+        } else if dx < -EPSILON {
+            self.left += (-dx - EPSILON).ceil() as u32;
+        }
+        if dy > EPSILON {
+            self.bottom += (dy - EPSILON).ceil() as u32;
+        } else if dy < -EPSILON {
+            self.top += (-dy - EPSILON).ceil() as u32;
+        }
+        self
     }
 }
 
