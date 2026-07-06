@@ -210,14 +210,18 @@ pub fn strip_bom<'gc>(activation: &mut Activation<'_, 'gc>, mut bytes: &[u8]) ->
     // Little-endian UTF-16 BOM
     } else if let Some(without_bom) = bytes.strip_prefix(&[0xFF, 0xFE]) {
         let utf16_bytes: Vec<_> = without_bom
-            .chunks_exact(2)
+            .as_chunks::<2>()
+            .0
+            .iter()
             .map(|pair| u16::from_le_bytes([pair[0], pair[1]]))
             .collect();
         return AvmString::new(activation.gc(), WString::from_buf(utf16_bytes));
     // Big-endian UTF-16 BOM
     } else if let Some(without_bom) = bytes.strip_prefix(&[0xFE, 0xFF]) {
         let utf16_bytes: Vec<_> = without_bom
-            .chunks_exact(2)
+            .as_chunks::<2>()
+            .0
+            .iter()
             .map(|pair| u16::from_be_bytes([pair[0], pair[1]]))
             .collect();
         return AvmString::new(activation.gc(), WString::from_buf(utf16_bytes));

@@ -172,7 +172,9 @@ impl<'a> Bitmap<'a> {
                 let v = &self.data[luma_len + chroma_len..luma_len + 2 * chroma_len];
 
                 self.data = yuv420_to_rgba(y, u, v, self.width as usize)
-                    .chunks_exact(4)
+                    .as_chunks_mut::<4>()
+                    .0
+                    .iter_mut()
                     .flat_map(|rgba| [rgba[0], rgba[1], rgba[2]])
                     .collect();
             }
@@ -190,7 +192,9 @@ impl<'a> Bitmap<'a> {
             BitmapFormat::Rgb => {
                 self.data = self
                     .data
-                    .chunks_exact(3)
+                    .as_chunks::<3>()
+                    .0
+                    .iter()
                     .flat_map(|rgb| [rgb[0], rgb[1], rgb[2], 255])
                     .collect();
             }
@@ -218,7 +222,9 @@ impl<'a> Bitmap<'a> {
 
                 // RGB components need to be clamped to alpha to avoid invalid premultiplied colors
                 self.data = rgba
-                    .chunks_exact(4)
+                    .as_chunks::<4>()
+                    .0
+                    .iter()
                     .zip(a)
                     .flat_map(|(rgba, a)| [rgba[0].min(*a), rgba[1].min(*a), rgba[2].min(*a), *a])
                     .collect()

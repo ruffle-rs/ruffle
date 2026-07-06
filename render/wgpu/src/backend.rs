@@ -1048,8 +1048,9 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
                             for row in raw_pixels.chunks(buffer_width as usize) {
                                 let actual_row = &row[0..(width * std::mem::size_of::<[f32; 4]>())];
 
-                                for pixel in
-                                    actual_row.chunks_exact(std::mem::size_of::<[f32; 4]>())
+                                for pixel in actual_row
+                                    .as_chunks::<{ std::mem::size_of::<[f32; 4]>() }>()
+                                    .0
                                 {
                                     if has_padding {
                                         // Take the first three channels
