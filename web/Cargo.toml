@@ -54,7 +54,7 @@ thiserror = { workspace = true }
 base64 = "0.22.1"
 async-channel = { workspace = true }
 futures-util = { version = "0.3.30", features = ["sink"] }
-gloo-net =  { version = "0.6.0", default-features = false, features = ["websocket"] }
+gloo-net =  { version = "0.7.0", default-features = false, features = ["websocket"] }
 rfd = { workspace = true, features = ["file-handle-inner"] }
 wasm-streams = "0.5.0"
 futures = { workspace = true }
