@@ -67,6 +67,7 @@ mod soundtransform_object;
 mod stage3d_object;
 mod stage_object;
 mod stylesheet_object;
+mod tab_stop_object;
 mod text_block_object;
 mod textformat_object;
 mod texture_object;
@@ -163,6 +164,9 @@ pub use crate::avm2::object::stage3d_object::{Stage3DObject, Stage3DObjectWeak};
 pub use crate::avm2::object::stylesheet_object::{
     StyleSheetObject, StyleSheetObjectWeak, style_sheet_allocator,
 };
+pub use crate::avm2::object::tab_stop_object::{
+    TabStopObject, TabStopObjectWeak, tab_stop_allocator,
+};
 pub use crate::avm2::object::text_block_object::{
     TextBlockObject, TextBlockObjectWeak, text_block_allocator,
 };
@@ -230,6 +234,7 @@ use crate::font::Font;
         ContentElementObject(ContentElementObject<'gc>),
         ElementFormatObject(ElementFormatObject<'gc>),
         FontDescriptionObject(FontDescriptionObject<'gc>),
+        TabStopObject(TabStopObject<'gc>),
         TextBlockObject(TextBlockObject<'gc>),
         FontObject(FontObject<'gc>),
         LocalConnectionObject(LocalConnectionObject<'gc>),
@@ -769,6 +774,7 @@ impl<'gc> Object<'gc> {
         pub fn as_content_element_object for ContentElementObject;
         pub fn as_element_format_object for ElementFormatObject;
         pub fn as_font_description_object for FontDescriptionObject;
+        pub fn as_tab_stop_object for TabStopObject;
         pub fn as_text_block_object for TextBlockObject;
         pub fn as_font_object for FontObject;
         pub fn as_regexp_object for RegExpObject;
@@ -994,6 +1000,7 @@ define_weak_enum! {
         ContentElementObject(ContentElementObjectWeak<'gc>),
         ElementFormatObject(ElementFormatObjectWeak<'gc>),
         FontDescriptionObject(FontDescriptionObjectWeak<'gc>),
+        TabStopObject(TabStopObjectWeak<'gc>),
         TextBlockObject(TextBlockObjectWeak<'gc>),
         FontObject(FontObjectWeak<'gc>),
         LocalConnectionObject(LocalConnectionObjectWeak<'gc>),
