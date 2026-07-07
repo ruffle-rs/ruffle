@@ -1,4 +1,4 @@
-use crate::avm1::globals::shared_object::{deserialize_value, serialize};
+use crate::avm1::amf::{deserialize_value, serialize};
 use crate::avm1::property_decl::{DeclContext, PropertyOrder, StaticDeclarations, SystemClass};
 use crate::avm1::{
     Activation, ActivationIdentifier, Error, ExecutionReason, NativeObject, Object, Value,

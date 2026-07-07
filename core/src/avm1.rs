@@ -10,6 +10,7 @@ mod function;
 mod property_decl;
 
 mod activation;
+mod amf;
 mod callable_value;
 mod clamp;
 mod debug;
