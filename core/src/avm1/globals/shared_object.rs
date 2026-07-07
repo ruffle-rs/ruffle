@@ -99,12 +99,21 @@ pub fn serialize<'gc>(activation: &mut Activation<'_, 'gc>, value: Value<'gc>) -
             } else if let NativeObject::Date(date) = object.native() {
                 AmfValue::Date(date.get().time(), None)
             } else {
-                let lso = new_lso(activation, "root", object);
-                AmfValue::Object(ObjectId::INVALID, lso.into_iter().collect(), None)
+                let elements = serialize_object_properties(activation, object);
+                AmfValue::Object(ObjectId::INVALID, elements, None)
             }
         }
         Value::MovieClip(_) => AmfValue::Undefined,
     }
+}
+
+fn serialize_object_properties<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    object: Object<'gc>,
+) -> Vec<Element> {
+    let mut w = Amf0Writer::default();
+    recursive_serialize(activation, object, &mut w);
+    w.commit_lso("root").into_iter().collect()
 }
 
 fn serialize_array<'gc>(activation: &mut Activation<'_, 'gc>, array: Object<'gc>) -> AmfValue {
