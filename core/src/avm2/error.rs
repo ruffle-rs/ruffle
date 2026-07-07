@@ -341,6 +341,23 @@ pub fn make_error_1014<'gc>(
 
 #[inline(never)]
 #[cold]
+pub fn make_error_1015<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    method: Method<'gc>,
+) -> Error<'gc> {
+    let mut function_name = WString::new();
+
+    display_function(&mut function_name, method);
+
+    make_error!(verify_error(
+        activation,
+        error_message!(1015, function_name),
+        1015,
+    ))
+}
+
+#[inline(never)]
+#[cold]
 pub fn make_error_1016<'gc>(activation: &mut Activation<'_, 'gc>, class: Class<'gc>) -> Error<'gc> {
     let class_name = class.name().to_qualified_name_err_message(activation.gc());
     make_error!(type_error(
@@ -872,17 +889,6 @@ pub fn make_error_1112<'gc>(activation: &mut Activation<'_, 'gc>, arg_count: usi
 #[cold]
 pub fn make_error_1113<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
     make_error!(verify_error(activation, error_message!(1113), 1113))
-}
-
-#[inline(never)]
-#[cold]
-pub fn make_error_1114<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
-    // TODO This doesn't match the message reported in Error.getErrorMessage().
-    make_error!(verify_error(
-        activation,
-        "Error #1114: Illegal default xml namespace.",
-        1114,
-    ))
 }
 
 #[inline(never)]
