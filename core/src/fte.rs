@@ -188,3 +188,16 @@ impl TextLineValidity {
         }
     }
 }
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Collect, Avm2Enum)]
+#[collect(require_static)]
+pub enum TabAlignmentValue {
+    #[avm2_variant("center")]
+    Center,
+    #[avm2_variant("decimal")]
+    Decimal,
+    #[avm2_variant("end")]
+    End,
+    #[avm2_variant("start")]
+    Start,
+}
