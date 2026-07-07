@@ -1,6 +1,7 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::amf::deserialize_value;
 use crate::avm2::function::FunctionArgs;
+use crate::avm2::object::kind;
 use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{ClassObject, EventObject, Object, TObject};
 use crate::avm2::value::Value;
@@ -11,7 +12,7 @@ use crate::string::AvmString;
 use core::fmt;
 use flash_lso::types::Value as AmfValue;
 use gc_arena::barrier::unlock;
-use gc_arena::{Collect, Gc, GcWeak, Mutation, lock::Lock};
+use gc_arena::{Collect, Gc, Mutation, lock::Lock};
 use ruffle_common::utils::HasPrefixField;
 use ruffle_macros::istr;
 use std::cell::RefCell;
@@ -41,10 +42,6 @@ pub fn local_connection_allocator<'gc>(
 #[collect(no_drop)]
 pub struct LocalConnectionObject<'gc>(pub Gc<'gc, LocalConnectionObjectData<'gc>>);
 
-#[derive(Clone, Collect, Copy, Debug)]
-#[collect(no_drop)]
-pub struct LocalConnectionObjectWeak<'gc>(pub GcWeak<'gc, LocalConnectionObjectData<'gc>>);
-
 impl fmt::Debug for LocalConnectionObject<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("LocalConnectionObject")
@@ -58,7 +55,7 @@ impl fmt::Debug for LocalConnectionObject<'_> {
 #[repr(C, align(8))]
 pub struct LocalConnectionObjectData<'gc> {
     /// Base script object
-    base: ScriptObjectData<'gc>,
+    base: ScriptObjectData<'gc, kind::LocalConnectionObject>,
 
     connection_handle: RefCell<Option<LocalConnectionHandle>>,
 
@@ -177,6 +174,6 @@ impl<'gc> LocalConnectionObject<'gc> {
 
 impl<'gc> TObject<'gc> for LocalConnectionObject<'gc> {
     fn gc_base(&self) -> Gc<'gc, ScriptObjectData<'gc>> {
-        HasPrefixField::as_prefix_gc(self.0)
+        ScriptObjectData::erase_kind(HasPrefixField::as_prefix_gc(self.0))
     }
 }

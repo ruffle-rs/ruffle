@@ -1,12 +1,13 @@
 use crate::avm2::Error;
 use crate::avm2::activation::Activation;
+use crate::avm2::object::kind;
 use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{ClassObject, Object, TObject};
 use crate::avm2::value::Hint;
 use crate::context::UpdateContext;
 use chrono::{DateTime, Utc};
 use core::fmt;
-use gc_arena::{Collect, Gc, GcWeak};
+use gc_arena::{Collect, Gc};
 use ruffle_common::utils::HasPrefixField;
 use std::cell::Cell;
 
@@ -27,10 +28,6 @@ pub fn date_allocator<'gc>(
 #[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]
 pub struct DateObject<'gc>(pub Gc<'gc, DateObjectData<'gc>>);
-
-#[derive(Clone, Collect, Copy, Debug)]
-#[collect(no_drop)]
-pub struct DateObjectWeak<'gc>(pub GcWeak<'gc, DateObjectData<'gc>>);
 
 impl fmt::Debug for DateObject<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -95,14 +92,14 @@ impl<'gc> DateObject<'gc> {
 #[repr(C, align(8))]
 pub struct DateObjectData<'gc> {
     /// Base script object
-    base: ScriptObjectData<'gc>,
+    base: ScriptObjectData<'gc, kind::DateObject>,
 
     date_time: Cell<Option<DateTime<Utc>>>,
 }
 
 impl<'gc> TObject<'gc> for DateObject<'gc> {
     fn gc_base(&self) -> Gc<'gc, ScriptObjectData<'gc>> {
-        HasPrefixField::as_prefix_gc(self.0)
+        ScriptObjectData::erase_kind(HasPrefixField::as_prefix_gc(self.0))
     }
 
     fn default_hint(&self) -> Hint {

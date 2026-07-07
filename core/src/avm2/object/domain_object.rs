@@ -3,11 +3,12 @@
 use crate::avm2::Error;
 use crate::avm2::activation::Activation;
 use crate::avm2::domain::Domain;
+use crate::avm2::object::kind;
 use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{ClassObject, Object, TObject};
 use core::fmt;
 use gc_arena::barrier::unlock;
-use gc_arena::{Collect, Gc, GcWeak, Mutation, lock::Lock};
+use gc_arena::{Collect, Gc, Mutation, lock::Lock};
 use ruffle_common::utils::HasPrefixField;
 
 /// A class instance allocator that allocates AppDomain objects.
@@ -32,10 +33,6 @@ pub fn application_domain_allocator<'gc>(
 #[collect(no_drop)]
 pub struct DomainObject<'gc>(pub Gc<'gc, DomainObjectData<'gc>>);
 
-#[derive(Clone, Collect, Copy, Debug)]
-#[collect(no_drop)]
-pub struct DomainObjectWeak<'gc>(pub GcWeak<'gc, DomainObjectData<'gc>>);
-
 impl fmt::Debug for DomainObject<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("DomainObject")
@@ -49,7 +46,7 @@ impl fmt::Debug for DomainObject<'_> {
 #[repr(C, align(8))]
 pub struct DomainObjectData<'gc> {
     /// Base script object
-    base: ScriptObjectData<'gc>,
+    base: ScriptObjectData<'gc, kind::DomainObject>,
 
     /// The domain this object holds
     domain: Lock<Domain<'gc>>,
@@ -83,6 +80,6 @@ impl<'gc> DomainObject<'gc> {
 
 impl<'gc> TObject<'gc> for DomainObject<'gc> {
     fn gc_base(&self) -> Gc<'gc, ScriptObjectData<'gc>> {
-        HasPrefixField::as_prefix_gc(self.0)
+        ScriptObjectData::erase_kind(HasPrefixField::as_prefix_gc(self.0))
     }
 }

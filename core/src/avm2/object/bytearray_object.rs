@@ -2,13 +2,14 @@ use crate::avm2::Error;
 use crate::avm2::Multiname;
 use crate::avm2::activation::Activation;
 use crate::avm2::bytearray::ByteArrayStorage;
+use crate::avm2::object::kind;
 use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{ArrayObject, ClassObject, Object, TObject};
 use crate::avm2::value::Value;
 use crate::character::Character;
 use crate::context::UpdateContext;
 use core::fmt;
-use gc_arena::{Collect, Gc, GcWeak};
+use gc_arena::{Collect, Gc};
 use ruffle_common::utils::HasPrefixField;
 use std::cell::{Ref, RefCell, RefMut};
 
@@ -59,10 +60,6 @@ pub fn byte_array_allocator<'gc>(
 #[collect(no_drop)]
 pub struct ByteArrayObject<'gc>(pub Gc<'gc, ByteArrayObjectData<'gc>>);
 
-#[derive(Clone, Collect, Copy, Debug)]
-#[collect(no_drop)]
-pub struct ByteArrayObjectWeak<'gc>(pub GcWeak<'gc, ByteArrayObjectData<'gc>>);
-
 impl fmt::Debug for ByteArrayObject<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("ByteArrayObject")
@@ -76,7 +73,7 @@ impl fmt::Debug for ByteArrayObject<'_> {
 #[repr(C, align(8))]
 pub struct ByteArrayObjectData<'gc> {
     /// Base script object
-    base: ScriptObjectData<'gc>,
+    base: ScriptObjectData<'gc, kind::ByteArrayObject>,
 
     storage: RefCell<ByteArrayStorage>,
 }
@@ -120,7 +117,7 @@ impl<'gc> ByteArrayObject<'gc> {
 
 impl<'gc> TObject<'gc> for ByteArrayObject<'gc> {
     fn gc_base(&self) -> Gc<'gc, ScriptObjectData<'gc>> {
-        HasPrefixField::as_prefix_gc(self.0)
+        ScriptObjectData::erase_kind(HasPrefixField::as_prefix_gc(self.0))
     }
 
     fn get_property_local(

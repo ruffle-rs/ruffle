@@ -1,10 +1,10 @@
 use crate::avm2::Activation;
 use crate::avm2::bytearray::{ByteArrayError, Endian, ObjectEncoding};
 use crate::avm2::error::{Error, Error2006Type, make_error_2006};
+use crate::avm2::object::kind;
 use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{ClassObject, Object, TObject};
 use crate::socket::SocketHandle;
-use gc_arena::GcWeak;
 use gc_arena::{Collect, Gc};
 use ruffle_common::utils::HasPrefixField;
 use std::cell::{Cell, RefCell, RefMut};
@@ -38,13 +38,9 @@ pub fn socket_allocator<'gc>(
 #[collect(no_drop)]
 pub struct SocketObject<'gc>(pub Gc<'gc, SocketObjectData<'gc>>);
 
-#[derive(Clone, Collect, Copy, Debug)]
-#[collect(no_drop)]
-pub struct SocketObjectWeak<'gc>(pub GcWeak<'gc, SocketObjectData<'gc>>);
-
 impl<'gc> TObject<'gc> for SocketObject<'gc> {
     fn gc_base(&self) -> Gc<'gc, ScriptObjectData<'gc>> {
-        HasPrefixField::as_prefix_gc(self.0)
+        ScriptObjectData::erase_kind(HasPrefixField::as_prefix_gc(self.0))
     }
 }
 
@@ -191,7 +187,7 @@ impl_read!(read_float 4; f32, read_double 8; f64, read_int 4; i32, read_unsigned
 #[repr(C, align(8))]
 pub struct SocketObjectData<'gc> {
     /// Base script object
-    base: ScriptObjectData<'gc>,
+    base: ScriptObjectData<'gc, kind::SocketObject>,
 
     handle: Cell<Option<SocketHandle>>,
 

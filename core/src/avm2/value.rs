@@ -932,6 +932,35 @@ impl<'gc> Value<'gc> {
         }
     }
 
+    /// Combined `null_check` + `as_object` + `panic` for slot/super ops where
+    /// the verifier guarantees the value is either an Object or Null/Undefined.
+    #[inline(always)]
+    pub fn as_object_null_check(
+        self,
+        activation: &mut Activation<'_, 'gc>,
+        name: Option<&Multiname<'gc>>,
+        msg: &'static str,
+    ) -> Result<Object<'gc>, Error<'gc>> {
+        // Outlined to keep the formatting machinery out of the hot path.
+        // `panic!("{msg}")` builds a `fmt::Arguments` whose address escapes,
+        // which forces LLVM to materialize ptr+len on the stack before the
+        // discriminant check; isolating it behind a cold helper keeps the
+        // caller's hot path free of any setup for the panic.
+        #[cold]
+        #[inline(never)]
+        fn panic_str(msg: &'static str) -> ! {
+            panic!("{msg}")
+        }
+
+        match self {
+            Value::Object(o) => Ok(o),
+            Value::Null | Value::Undefined => {
+                Err(error::make_null_or_undefined_error(activation, self, name))
+            }
+            _ => panic_str(msg),
+        }
+    }
+
     /// Retrieve a property by Multiname lookup.
     ///
     /// This corresponds directly to the AVM2 operation `getproperty`, with the

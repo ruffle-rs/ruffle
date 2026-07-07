@@ -2,10 +2,11 @@
 
 use crate::avm2::Error;
 use crate::avm2::activation::Activation;
+use crate::avm2::object::kind;
 use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{ClassObject, Object, TObject};
 use crate::net_connection::NetConnectionHandle;
-use gc_arena::{Collect, Gc, GcWeak};
+use gc_arena::{Collect, Gc};
 use ruffle_common::utils::HasPrefixField;
 use std::cell::Cell;
 use std::fmt;
@@ -32,22 +33,18 @@ pub fn net_connection_allocator<'gc>(
 #[collect(no_drop)]
 pub struct NetConnectionObject<'gc>(pub Gc<'gc, NetConnectionObjectData<'gc>>);
 
-#[derive(Collect, Clone, Copy, Debug)]
-#[collect(no_drop)]
-pub struct NetConnectionObjectWeak<'gc>(pub GcWeak<'gc, NetConnectionObjectData<'gc>>);
-
 #[derive(Collect, HasPrefixField)]
 #[collect(no_drop)]
 #[repr(C, align(8))]
 pub struct NetConnectionObjectData<'gc> {
-    base: ScriptObjectData<'gc>,
+    base: ScriptObjectData<'gc, kind::NetConnectionObject>,
 
     handle: Cell<Option<NetConnectionHandle>>,
 }
 
 impl<'gc> TObject<'gc> for NetConnectionObject<'gc> {
     fn gc_base(&self) -> Gc<'gc, ScriptObjectData<'gc>> {
-        HasPrefixField::as_prefix_gc(self.0)
+        ScriptObjectData::erase_kind(HasPrefixField::as_prefix_gc(self.0))
     }
 }
 

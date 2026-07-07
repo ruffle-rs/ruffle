@@ -1,6 +1,7 @@
 use crate::avm2::Error;
 use crate::avm2::activation::Activation;
 use crate::avm2::object::element_format_object::ElementFormatObject;
+use crate::avm2::object::kind;
 use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{ClassObject, Object, TObject};
 use crate::fte::TextRotationValue;
@@ -8,7 +9,7 @@ use crate::string::AvmString;
 use core::fmt;
 use gc_arena::barrier::unlock;
 use gc_arena::lock::Lock;
-use gc_arena::{Collect, Gc, GcWeak, Mutation};
+use gc_arena::{Collect, Gc, Mutation};
 use ruffle_common::utils::HasPrefixField;
 use std::cell::Cell;
 
@@ -33,10 +34,6 @@ pub fn content_element_allocator<'gc>(
 #[collect(no_drop)]
 pub struct ContentElementObject<'gc>(pub Gc<'gc, ContentElementObjectData<'gc>>);
 
-#[derive(Clone, Collect, Copy, Debug)]
-#[collect(no_drop)]
-pub struct ContentElementObjectWeak<'gc>(pub GcWeak<'gc, ContentElementObjectData<'gc>>);
-
 impl fmt::Debug for ContentElementObject<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("ContentElementObject")
@@ -49,7 +46,7 @@ impl fmt::Debug for ContentElementObject<'_> {
 #[collect(no_drop)]
 #[repr(C, align(8))]
 pub struct ContentElementObjectData<'gc> {
-    base: ScriptObjectData<'gc>,
+    base: ScriptObjectData<'gc, kind::ContentElementObject>,
     element_format: Lock<Option<ElementFormatObject<'gc>>>,
     text: Lock<Option<AvmString<'gc>>>,
     text_rotation: Cell<TextRotationValue>,
@@ -102,6 +99,6 @@ impl<'gc> ContentElementObject<'gc> {
 
 impl<'gc> TObject<'gc> for ContentElementObject<'gc> {
     fn gc_base(&self) -> Gc<'gc, ScriptObjectData<'gc>> {
-        HasPrefixField::as_prefix_gc(self.0)
+        ScriptObjectData::erase_kind(HasPrefixField::as_prefix_gc(self.0))
     }
 }

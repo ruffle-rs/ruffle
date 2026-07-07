@@ -35,6 +35,14 @@ pub unsafe trait HasPrefixField<Inner>: Sized {
     }
 }
 
+// Every type is a trivial prefix of itself.
+unsafe impl<T> HasPrefixField<T> for T {
+    #[inline(always)]
+    fn as_prefix_gc(gc: Gc<'_, Self>) -> Gc<'_, T> {
+        gc
+    }
+}
+
 /// A `u8` which is always zero. Useful to artificially introduce niches into a struct.
 #[derive(Copy, Clone, Collect, Default, Eq, PartialEq, Ord, PartialOrd, Hash)]
 #[collect(require_static)]

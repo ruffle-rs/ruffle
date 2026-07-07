@@ -1,9 +1,10 @@
 //! Object representation for IndexBuffer3D objects
 
 use crate::avm2::activation::Activation;
+use crate::avm2::object::kind;
 use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{Object, TObject};
-use gc_arena::{Collect, Gc, GcWeak};
+use gc_arena::{Collect, Gc};
 use ruffle_common::utils::HasPrefixField;
 use ruffle_render::backend::IndexBuffer;
 use std::cell::{Cell, RefCell, RefMut};
@@ -13,10 +14,6 @@ use super::Context3DObject;
 #[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]
 pub struct IndexBuffer3DObject<'gc>(pub Gc<'gc, IndexBuffer3DObjectData<'gc>>);
-
-#[derive(Clone, Collect, Copy, Debug)]
-#[collect(no_drop)]
-pub struct IndexBuffer3DObjectWeak<'gc>(pub GcWeak<'gc, IndexBuffer3DObjectData<'gc>>);
 
 impl<'gc> IndexBuffer3DObject<'gc> {
     pub fn from_handle(
@@ -60,7 +57,7 @@ impl<'gc> IndexBuffer3DObject<'gc> {
 #[repr(C, align(8))]
 pub struct IndexBuffer3DObjectData<'gc> {
     /// Base script object
-    base: ScriptObjectData<'gc>,
+    base: ScriptObjectData<'gc, kind::IndexBuffer3DObject>,
 
     handle: RefCell<Box<dyn IndexBuffer>>,
 
@@ -71,7 +68,7 @@ pub struct IndexBuffer3DObjectData<'gc> {
 
 impl<'gc> TObject<'gc> for IndexBuffer3DObject<'gc> {
     fn gc_base(&self) -> Gc<'gc, ScriptObjectData<'gc>> {
-        HasPrefixField::as_prefix_gc(self.0)
+        ScriptObjectData::erase_kind(HasPrefixField::as_prefix_gc(self.0))
     }
 }
 

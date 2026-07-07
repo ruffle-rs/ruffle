@@ -22,7 +22,8 @@ use crate::html::TextFormat;
 use crate::streams::NetStream;
 use crate::string::AvmString;
 use gc_arena::{Collect, Gc, GcWeak, Mutation};
-use ruffle_macros::enum_trait_object;
+use ruffle_common::utils::HasPrefixField;
+use ruffle_macros::tagged_trait_object;
 use std::cell::{Ref, RefMut};
 use std::fmt::Debug;
 use std::hash::{Hash, Hasher};
@@ -77,116 +78,100 @@ mod worker_object;
 mod xml_list_object;
 mod xml_object;
 
-pub use crate::avm2::object::array_object::{ArrayObject, ArrayObjectWeak, array_allocator};
-pub use crate::avm2::object::bitmapdata_object::{
-    BitmapDataObject, BitmapDataObjectWeak, bitmap_data_allocator,
-};
-pub use crate::avm2::object::bytearray_object::{
-    ByteArrayObject, ByteArrayObjectWeak, byte_array_allocator,
-};
-pub use crate::avm2::object::class_object::{ClassObject, ClassObjectWeak};
+pub(crate) mod cast;
+pub mod kind;
+
+pub use crate::avm2::object::array_object::{ArrayObject, array_allocator};
+pub use crate::avm2::object::bitmapdata_object::{BitmapDataObject, bitmap_data_allocator};
+pub use crate::avm2::object::bytearray_object::{ByteArrayObject, byte_array_allocator};
+pub use crate::avm2::object::class_object::ClassObject;
 pub use crate::avm2::object::content_element_object::{
-    ContentElementObject, ContentElementObjectWeak, content_element_allocator,
+    ContentElementObject, content_element_allocator,
 };
-pub use crate::avm2::object::context3d_object::{Context3DObject, Context3DObjectWeak};
-pub use crate::avm2::object::date_object::{DateObject, DateObjectWeak, date_allocator};
-pub use crate::avm2::object::dictionary_object::{
-    DictionaryObject, DictionaryObjectWeak, dictionary_allocator,
-};
-pub use crate::avm2::object::dispatch_object::{DispatchObject, DispatchObjectWeak};
-pub use crate::avm2::object::domain_object::{
-    DomainObject, DomainObjectWeak, application_domain_allocator,
-};
+pub use crate::avm2::object::context3d_object::Context3DObject;
+pub use crate::avm2::object::date_object::{DateObject, date_allocator};
+pub use crate::avm2::object::dictionary_object::{DictionaryObject, dictionary_allocator};
+pub use crate::avm2::object::dispatch_object::DispatchObject;
+pub use crate::avm2::object::domain_object::{DomainObject, application_domain_allocator};
 pub use crate::avm2::object::element_format_object::{
-    ElementFormatObject, ElementFormatObjectWeak, element_format_allocator,
+    ElementFormatObject, element_format_allocator,
 };
-pub use crate::avm2::object::error_object::{ErrorObject, ErrorObjectWeak, error_allocator};
-pub use crate::avm2::object::event_object::{EventObject, EventObjectWeak, event_allocator};
+pub use crate::avm2::object::error_object::{ErrorObject, error_allocator};
+pub use crate::avm2::object::event_object::{EventObject, event_allocator};
 pub use crate::avm2::object::file_reference_object::{
-    FileReference, FileReferenceObject, FileReferenceObjectHandle, FileReferenceObjectWeak,
-    file_reference_allocator,
+    FileReference, FileReferenceObject, FileReferenceObjectHandle, file_reference_allocator,
 };
 pub use crate::avm2::object::font_description_object::{
-    FontDescriptionObject, FontDescriptionObjectWeak, font_description_allocator,
+    FontDescriptionObject, font_description_allocator,
 };
-pub use crate::avm2::object::font_object::{FontObject, FontObjectWeak, font_allocator};
-pub use crate::avm2::object::function_object::{FunctionObject, FunctionObjectWeak};
-pub use crate::avm2::object::index_buffer_3d_object::{
-    IndexBuffer3DObject, IndexBuffer3DObjectWeak,
-};
-pub use crate::avm2::object::loaderinfo_object::{
-    LoaderInfoObject, LoaderInfoObjectWeak, LoaderStream,
-};
+pub use crate::avm2::object::font_object::{FontObject, font_allocator};
+pub use crate::avm2::object::function_object::FunctionObject;
+pub use crate::avm2::object::index_buffer_3d_object::IndexBuffer3DObject;
+pub use crate::avm2::object::loaderinfo_object::{LoaderInfoObject, LoaderStream};
 pub use crate::avm2::object::local_connection_object::{
-    LocalConnectionObject, LocalConnectionObjectWeak, local_connection_allocator,
+    LocalConnectionObject, local_connection_allocator,
 };
-pub use crate::avm2::object::message_channel_object::{
-    MessageChannelObject, MessageChannelObjectWeak,
-};
-pub use crate::avm2::object::namespace_object::{NamespaceObject, NamespaceObjectWeak};
+pub use crate::avm2::object::message_channel_object::MessageChannelObject;
+pub use crate::avm2::object::namespace_object::NamespaceObject;
 pub use crate::avm2::object::net_connection_object::{
-    NetConnectionObject, NetConnectionObjectWeak, net_connection_allocator,
+    NetConnectionObject, net_connection_allocator,
 };
-pub use crate::avm2::object::netstream_object::{
-    NetStreamObject, NetStreamObjectWeak, netstream_allocator,
-};
-pub use crate::avm2::object::program_3d_object::{Program3DObject, Program3DObjectWeak};
-pub use crate::avm2::object::proxy_object::{ProxyObject, ProxyObjectWeak, proxy_allocator};
-pub use crate::avm2::object::qname_object::{QNameObject, QNameObjectWeak};
-pub use crate::avm2::object::regexp_object::{RegExpObject, RegExpObjectWeak, reg_exp_allocator};
-pub use crate::avm2::object::responder_object::{
-    ResponderObject, ResponderObjectWeak, responder_allocator,
-};
+pub use crate::avm2::object::netstream_object::{NetStreamObject, netstream_allocator};
+pub use crate::avm2::object::program_3d_object::Program3DObject;
+pub use crate::avm2::object::proxy_object::{ProxyObject, proxy_allocator};
+pub use crate::avm2::object::qname_object::QNameObject;
+pub use crate::avm2::object::regexp_object::{RegExpObject, reg_exp_allocator};
+pub use crate::avm2::object::responder_object::{ResponderObject, responder_allocator};
 pub use crate::avm2::object::script_object::{
-    ScriptObject, ScriptObjectData, ScriptObjectHandle, ScriptObjectWeak, ScriptObjectWrapper,
-    get_dynamic_property, scriptobject_allocator,
+    ScriptObject, ScriptObjectData, ScriptObjectHandle, ScriptObjectWrapper, get_dynamic_property,
+    scriptobject_allocator,
 };
-pub use crate::avm2::object::security_domain_object::{
-    SecurityDomainObject, SecurityDomainObjectWeak,
-};
-pub use crate::avm2::object::shader_data_object::{
-    ShaderDataObject, ShaderDataObjectWeak, shader_data_allocator,
-};
-pub use crate::avm2::object::shared_object_object::{SharedObjectObject, SharedObjectObjectWeak};
-pub use crate::avm2::object::socket_object::{SocketObject, SocketObjectWeak, socket_allocator};
+pub use crate::avm2::object::security_domain_object::SecurityDomainObject;
+pub use crate::avm2::object::shader_data_object::{ShaderDataObject, shader_data_allocator};
+pub use crate::avm2::object::shared_object_object::SharedObjectObject;
+pub use crate::avm2::object::socket_object::{SocketObject, socket_allocator};
 pub use crate::avm2::object::sound_object::{
-    QueuedPlay, SoundLoadingState, SoundObject, SoundObjectHandle, SoundObjectWeak, sound_allocator,
+    QueuedPlay, SoundLoadingState, SoundObject, SoundObjectHandle, sound_allocator,
 };
-pub use crate::avm2::object::soundchannel_object::{
-    SoundChannelObject, SoundChannelObjectWeak, sound_channel_allocator,
-};
+pub use crate::avm2::object::soundchannel_object::{SoundChannelObject, sound_channel_allocator};
 pub use crate::avm2::object::soundtransform_object::{
-    SoundTransformObject, SoundTransformObjectWeak, sound_transform_allocator,
+    SoundTransformObject, sound_transform_allocator,
 };
-pub use crate::avm2::object::stage_object::{StageObject, StageObjectWeak};
-pub use crate::avm2::object::stage3d_object::{Stage3DObject, Stage3DObjectWeak};
-pub use crate::avm2::object::stylesheet_object::{
-    StyleSheetObject, StyleSheetObjectWeak, style_sheet_allocator,
-};
-pub use crate::avm2::object::text_block_object::{
-    TextBlockObject, TextBlockObjectWeak, text_block_allocator,
-};
-pub use crate::avm2::object::textformat_object::{
-    TextFormatObject, TextFormatObjectWeak, textformat_allocator,
-};
-pub use crate::avm2::object::texture_object::{TextureObject, TextureObjectWeak};
-pub use crate::avm2::object::vector_object::{VectorObject, VectorObjectWeak, vector_allocator};
-pub use crate::avm2::object::vertex_buffer_3d_object::{
-    VertexBuffer3DObject, VertexBuffer3DObjectWeak,
-};
-pub use crate::avm2::object::worker_domain_object::{WorkerDomainObject, WorkerDomainObjectWeak};
-pub use crate::avm2::object::worker_object::{WorkerObject, WorkerObjectWeak};
-pub use crate::avm2::object::xml_list_object::{
-    E4XOrXml, XmlListObject, XmlListObjectWeak, xml_list_allocator,
-};
-pub use crate::avm2::object::xml_object::{
-    NotificationCommand, XmlObject, XmlObjectWeak, xml_allocator,
-};
+pub use crate::avm2::object::stage_object::StageObject;
+pub use crate::avm2::object::stage3d_object::Stage3DObject;
+pub use crate::avm2::object::stylesheet_object::{StyleSheetObject, style_sheet_allocator};
+pub use crate::avm2::object::text_block_object::{TextBlockObject, text_block_allocator};
+pub use crate::avm2::object::textformat_object::{TextFormatObject, textformat_allocator};
+pub use crate::avm2::object::texture_object::TextureObject;
+pub use crate::avm2::object::vector_object::{VectorObject, vector_allocator};
+pub use crate::avm2::object::vertex_buffer_3d_object::VertexBuffer3DObject;
+pub use crate::avm2::object::worker_domain_object::WorkerDomainObject;
+pub use crate::avm2::object::worker_object::WorkerObject;
+pub use crate::avm2::object::xml_list_object::{E4XOrXml, XmlListObject, xml_list_allocator};
+pub use crate::avm2::object::xml_object::{NotificationCommand, XmlObject, xml_allocator};
 use crate::font::Font;
+
+/// # Safety
+/// - `Self` is a `Copy` newtype wrapping `Gc<'gc, Self::Data>`.
+/// - `Self::Data` has `ScriptObjectData<'gc, Self::Kind>` as its first field at
+///   offset 0 (expressed by the `HasPrefixField` bound).
+/// - Every safely constructed `Self::Data` has its base's runtime kind equal to
+///   `Self::Kind::ID`.
+#[allow(dead_code)]
+pub(crate) unsafe trait ObjectVariant<'gc>: Copy {
+    type Kind: kind::Kind;
+    type Data: HasPrefixField<ScriptObjectData<'gc, Self::Kind>> + 'gc;
+
+    fn data_gc(self) -> Gc<'gc, Self::Data>;
+
+    /// # Safety
+    /// `gc` must point to an allocation originally allocated as `Self::Data`.
+    unsafe fn from_data_gc_unchecked(gc: Gc<'gc, Self::Data>) -> Self;
+}
 
 /// Represents an object that can be directly interacted with by the AVM2
 /// runtime.
-#[enum_trait_object(
+#[tagged_trait_object(
     #[expect(clippy::enum_variant_names)]
     #[derive(Clone, Collect, Debug, Copy)]
     #[collect(no_drop)]
@@ -239,8 +224,8 @@ use crate::font::Font;
         WorkerObject(WorkerObject<'gc>),
         WorkerDomainObject(WorkerDomainObject<'gc>),
         MessageChannelObject(MessageChannelObject<'gc>),
-        SecurityDomainObject(SecurityDomainObject<'gc>),
-    }
+        SecurityDomainObject(SecurityDomainObject<'gc>)
+}
 )]
 pub trait TObject<'gc>: 'gc + Collect<'gc> + Debug + Into<Object<'gc>> + Clone + Copy {
     /// Get the base of this object.
@@ -738,11 +723,7 @@ macro_rules! impl_downcast_methods {
         #[doc = concat!("Downcast this object as a `", stringify!($variant), "`.")]
         #[inline(always)]
         $vis fn $fn_name(self) -> Option<$variant<'gc>> {
-            if let Self::$variant(obj) = self {
-                Some(obj)
-            } else {
-                None
-            }
+            cast::downcast::<$variant<'gc>>(self.0)
         }
     )* }
 }
@@ -866,7 +847,7 @@ impl<'gc> Object<'gc> {
     }
 
     /// Unwrap this object as a font.
-    pub fn as_font(&self) -> Option<Font<'gc>> {
+    pub fn as_font(self) -> Option<Font<'gc>> {
         self.as_font_object().and_then(|o| o.font())
     }
 
@@ -881,7 +862,7 @@ impl<'gc> Object<'gc> {
     }
 
     /// Unwrap this object as a bitmap data.
-    pub fn as_bitmap_data(&self) -> Option<BitmapData<'gc>> {
+    pub fn as_bitmap_data(self) -> Option<BitmapData<'gc>> {
         self.as_bitmap_data_object().map(|o| o.get_bitmap_data())
     }
 
@@ -914,96 +895,35 @@ impl Hash for Object<'_> {
     }
 }
 
-macro_rules! define_weak_enum {
-    (
-        $(#[$attrs:meta])*
-        $vis:ident enum $weak_enum:ident<'gc> for $strong_enum:ident<'gc> {
-            $( $variant:ident($weak_ty:ident<'gc>) ),* $(,)?
-        }
-    ) => {
-        $(#[$attrs])*
-        $vis enum $weak_enum<'gc> {
-            $( $variant($weak_ty<'gc>), )*
-        }
+/// Pointer-sized weak reference to an `Object`.
+///
+/// Like `Object` itself, this erases the concrete variant type: the kind tag
+/// stays in the `ScriptObjectData` allocation, so upgrading yields a full
+/// `Object` without a separate variant match.
+#[derive(Clone, Copy, Collect)]
+#[collect(no_drop)]
+#[repr(transparent)]
+pub struct WeakObject<'gc>(pub GcWeak<'gc, ScriptObjectData<'gc, kind::Erased>>);
 
-        impl<'gc> $weak_enum<'gc> {
-            $vis fn as_ptr(self) -> *const ObjectPtr {
-                match self {
-                    $( Self::$variant(o) => GcWeak::as_ptr(o.0).cast(), )*
-                }
-            }
+impl<'gc> WeakObject<'gc> {
+    pub fn as_ptr(self) -> *const ObjectPtr {
+        GcWeak::as_ptr(self.0).cast()
+    }
 
-            $vis fn upgrade(self, mc: &Mutation<'gc>) -> Option<$strong_enum<'gc>> {
-                match self {
-                    $( Self::$variant(o) => $strong_enum::$variant($variant(o.0.upgrade(mc)?)).into(), )*
-                }
-            }
-        }
-
-        impl<'gc> $strong_enum<'gc> {
-            $vis fn downgrade(self) -> $weak_enum<'gc> {
-                match self {
-                    $( Self::$variant(o) => $weak_enum::$variant($weak_ty(Gc::downgrade(o.0))), )*
-                }
-            }
-        }
+    pub fn upgrade(self, mc: &Mutation<'gc>) -> Option<Object<'gc>> {
+        Some(Object(self.0.upgrade(mc)?))
     }
 }
 
-define_weak_enum! {
-    #[expect(clippy::enum_variant_names)]
-    #[derive(Clone, Collect, Debug, Copy)]
-    #[collect(no_drop)]
-    pub enum WeakObject<'gc> for Object<'gc> {
-        ScriptObject(ScriptObjectWeak<'gc>),
-        FunctionObject(FunctionObjectWeak<'gc>),
-        NamespaceObject(NamespaceObjectWeak<'gc>),
-        ArrayObject(ArrayObjectWeak<'gc>),
-        StageObject(StageObjectWeak<'gc>),
-        DomainObject(DomainObjectWeak<'gc>),
-        EventObject(EventObjectWeak<'gc>),
-        DispatchObject(DispatchObjectWeak<'gc>),
-        XmlObject(XmlObjectWeak<'gc>),
-        XmlListObject(XmlListObjectWeak<'gc>),
-        RegExpObject(RegExpObjectWeak<'gc>),
-        ByteArrayObject(ByteArrayObjectWeak<'gc>),
-        LoaderInfoObject(LoaderInfoObjectWeak<'gc>),
-        ClassObject(ClassObjectWeak<'gc>),
-        VectorObject(VectorObjectWeak<'gc>),
-        SoundObject(SoundObjectWeak<'gc>),
-        SoundChannelObject(SoundChannelObjectWeak<'gc>),
-        BitmapDataObject(BitmapDataObjectWeak<'gc>),
-        DateObject(DateObjectWeak<'gc>),
-        DictionaryObject(DictionaryObjectWeak<'gc>),
-        QNameObject(QNameObjectWeak<'gc>),
-        TextFormatObject(TextFormatObjectWeak<'gc>),
-        ProxyObject(ProxyObjectWeak<'gc>),
-        ErrorObject(ErrorObjectWeak<'gc>),
-        Stage3DObject(Stage3DObjectWeak<'gc>),
-        Context3DObject(Context3DObjectWeak<'gc>),
-        IndexBuffer3DObject(IndexBuffer3DObjectWeak<'gc>),
-        VertexBuffer3DObject(VertexBuffer3DObjectWeak<'gc>),
-        TextureObject(TextureObjectWeak<'gc>),
-        Program3DObject(Program3DObjectWeak<'gc>),
-        NetStreamObject(NetStreamObjectWeak<'gc>),
-        NetConnectionObject(NetConnectionObjectWeak<'gc>),
-        ResponderObject(ResponderObjectWeak<'gc>),
-        ShaderDataObject(ShaderDataObjectWeak<'gc>),
-        SocketObject(SocketObjectWeak<'gc>),
-        FileReferenceObject(FileReferenceObjectWeak<'gc>),
-        ContentElementObject(ContentElementObjectWeak<'gc>),
-        ElementFormatObject(ElementFormatObjectWeak<'gc>),
-        FontDescriptionObject(FontDescriptionObjectWeak<'gc>),
-        TextBlockObject(TextBlockObjectWeak<'gc>),
-        FontObject(FontObjectWeak<'gc>),
-        LocalConnectionObject(LocalConnectionObjectWeak<'gc>),
-        SharedObjectObject(SharedObjectObjectWeak<'gc>),
-        SoundTransformObject(SoundTransformObjectWeak<'gc>),
-        StyleSheetObject(StyleSheetObjectWeak<'gc>),
-        WorkerObject(WorkerObjectWeak<'gc>),
-        WorkerDomainObject(WorkerDomainObjectWeak<'gc>),
-        MessageChannelObject(MessageChannelObjectWeak<'gc>),
-        SecurityDomainObject(SecurityDomainObjectWeak<'gc>),
+impl Debug for WeakObject<'_> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_tuple("WeakObject").field(&self.as_ptr()).finish()
+    }
+}
+
+impl<'gc> Object<'gc> {
+    pub fn downgrade(self) -> WeakObject<'gc> {
+        WeakObject(Gc::downgrade(self.0))
     }
 }
 

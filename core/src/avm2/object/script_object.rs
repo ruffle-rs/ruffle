@@ -4,6 +4,7 @@ use crate::avm2::activation::Activation;
 use crate::avm2::class::Class;
 use crate::avm2::dynamic_map::{DynamicKey, DynamicMap};
 use crate::avm2::error;
+use crate::avm2::object::kind::{self, Erased, Kind, ObjectKind};
 use crate::avm2::object::{ArrayObject, ClassObject, FunctionObject, Object, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::vtable::VTable;
@@ -12,11 +13,12 @@ use crate::context::UpdateContext;
 use crate::string::AvmString;
 use gc_arena::barrier::{field, unlock};
 use gc_arena::{
-    Collect, DynamicRoot, Gc, GcWeak, Mutation, Rootable,
+    Collect, DynamicRoot, Gc, Mutation, Rootable,
     lock::{Lock, RefLock},
 };
 use std::cell::{Ref, RefMut};
 use std::fmt::Debug;
+use std::marker::PhantomData;
 
 /// A class instance allocator that allocates `ScriptObject`s.
 pub fn scriptobject_allocator<'gc>(
@@ -31,14 +33,11 @@ pub fn scriptobject_allocator<'gc>(
 /// Default implementation of `avm2::Object`.
 #[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]
-pub struct ScriptObject<'gc>(pub Gc<'gc, ScriptObjectData<'gc>>);
-
-#[derive(Clone, Collect, Copy, Debug)]
-#[collect(no_drop)]
-pub struct ScriptObjectWeak<'gc>(pub GcWeak<'gc, ScriptObjectData<'gc>>);
+pub struct ScriptObject<'gc>(pub Gc<'gc, ScriptObjectData<'gc, kind::ScriptObject>>);
 
 #[derive(Clone)]
-pub struct ScriptObjectHandle(DynamicRoot<Rootable![ScriptObjectData<'_>]>);
+#[allow(clippy::type_complexity)]
+pub struct ScriptObjectHandle(DynamicRoot<Rootable![ScriptObjectData<'_, kind::ScriptObject>]>);
 
 impl ScriptObjectHandle {
     pub fn stash<'gc>(context: &UpdateContext<'gc>, this: ScriptObject<'gc>) -> Self {
@@ -57,13 +56,24 @@ impl ScriptObjectHandle {
 /// struct.
 #[derive(Clone, Collect)]
 #[collect(no_drop)]
-#[repr(align(8))]
-pub struct ScriptObjectData<'gc> {
-    /// Values stored on this object.
-    values: RefLock<DynamicMap<DynamicKey<'gc>, Value<'gc>>>,
+#[repr(C, align(8))]
+pub struct ScriptObjectData<'gc, K = Erased> {
+    kind: ObjectKind,
 
     /// Slots stored on this object.
+    ///
+    /// Hot field — touched on every `op_get_slot` / `op_set_slot`. Declared
+    /// early so that under `#[repr(C)]` the slice header lands in the same
+    /// cache line as `kind`.
     slots: Box<[Lock<Value<'gc>>]>,
+
+    /// The table used for non-dynamic property lookups.
+    ///
+    /// Also hot — every property dispatch reads through it.
+    vtable: Lock<VTable<'gc>>,
+
+    /// Values stored on this object.
+    values: RefLock<DynamicMap<DynamicKey<'gc>, Value<'gc>>>,
 
     /// Methods stored on this object.
     bound_methods: RefLock<Vec<Option<FunctionObject<'gc>>>>,
@@ -74,13 +84,12 @@ pub struct ScriptObjectData<'gc> {
     /// The `Class` that this is an instance of.
     instance_class: Class<'gc>,
 
-    /// The table used for non-dynamic property lookups.
-    vtable: Lock<VTable<'gc>>,
+    _kind: PhantomData<fn() -> K>,
 }
 
 impl<'gc> TObject<'gc> for ScriptObject<'gc> {
     fn gc_base(&self) -> Gc<'gc, ScriptObjectData<'gc>> {
-        self.0
+        ScriptObjectData::erase_kind(self.0)
     }
 }
 
@@ -129,7 +138,21 @@ impl<'gc> ScriptObject<'gc> {
     }
 }
 
-impl<'gc> ScriptObjectData<'gc> {
+impl<'gc, K> ScriptObjectData<'gc, K> {
+    #[inline(always)]
+    pub fn kind(&self) -> ObjectKind {
+        self.kind
+    }
+
+    #[inline(always)]
+    pub fn erase_kind(this: Gc<'gc, Self>) -> Gc<'gc, ScriptObjectData<'gc, Erased>> {
+        // SAFETY: K only appears in PhantomData and the struct is #[repr(C)], so
+        // ScriptObjectData<'gc, K> has the same layout as ScriptObjectData<'gc, Erased>.
+        unsafe { Gc::cast(this) }
+    }
+}
+
+impl<'gc, K: Kind> ScriptObjectData<'gc, K> {
     /// Create new object data of a given class.
     /// This is a low-level function used to implement things like object allocators.
     pub fn new(instance_of: ClassObject<'gc>) -> Self {
@@ -160,12 +183,14 @@ impl<'gc> ScriptObjectData<'gc> {
             .collect::<Box<_>>();
 
         ScriptObjectData {
+            kind: K::ID,
             values: RefLock::new(Default::default()),
             slots,
             bound_methods: RefLock::new(Vec::new()),
             proto: Lock::new(proto),
             instance_class,
             vtable: Lock::new(vtable),
+            _kind: PhantomData,
         }
     }
 }
@@ -395,7 +420,10 @@ impl<'gc> ScriptObjectWrapper<'gc> {
 impl Debug for ScriptObject<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
         f.debug_struct("ScriptObject")
-            .field("name", &ScriptObjectWrapper(self.0).class_name())
+            .field(
+                "name",
+                &ScriptObjectWrapper(ScriptObjectData::erase_kind(self.0)).class_name(),
+            )
             .field("ptr", &Gc::as_ptr(self.0))
             .finish()
     }

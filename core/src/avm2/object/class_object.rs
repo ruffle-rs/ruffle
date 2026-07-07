@@ -12,6 +12,7 @@ use crate::avm2::error::{
 use crate::avm2::function::{FunctionArgs, exec};
 use crate::avm2::method::{Method, MethodAssociation, NativeMethodImpl};
 use crate::avm2::object::function_object::FunctionObject;
+use crate::avm2::object::kind;
 use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{Object, ScriptObject, TObject};
 use crate::avm2::property::Property;
@@ -23,7 +24,7 @@ use crate::string::AvmString;
 use fnv::FnvHashMap;
 use gc_arena::barrier::unlock;
 use gc_arena::{
-    Collect, Gc, GcWeak, Mutation,
+    Collect, Gc, Mutation,
     lock::{Lock, RefLock},
 };
 use ruffle_common::utils::HasPrefixField;
@@ -36,16 +37,12 @@ use std::hash::{Hash, Hasher};
 #[collect(no_drop)]
 pub struct ClassObject<'gc>(pub Gc<'gc, ClassObjectData<'gc>>);
 
-#[derive(Collect, Clone, Copy, Debug)]
-#[collect(no_drop)]
-pub struct ClassObjectWeak<'gc>(pub GcWeak<'gc, ClassObjectData<'gc>>);
-
 #[derive(Collect, Clone, HasPrefixField)]
 #[collect(no_drop)]
 #[repr(C, align(8))]
 pub struct ClassObjectData<'gc> {
     /// Base script object
-    base: ScriptObjectData<'gc>,
+    base: ScriptObjectData<'gc, kind::ClassObject>,
 
     /// The class associated with this class object.
     class: Class<'gc>,
@@ -780,7 +777,7 @@ impl<'gc> ClassObject<'gc> {
 
 impl<'gc> TObject<'gc> for ClassObject<'gc> {
     fn gc_base(&self) -> Gc<'gc, ScriptObjectData<'gc>> {
-        HasPrefixField::as_prefix_gc(self.0)
+        ScriptObjectData::erase_kind(HasPrefixField::as_prefix_gc(self.0))
     }
 
     fn to_string(&self, mc: &Mutation<'gc>) -> AvmString<'gc> {

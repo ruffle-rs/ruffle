@@ -6,6 +6,7 @@ use crate::avm2::e4x::{
 };
 use crate::avm2::error::make_error_1089;
 use crate::avm2::function::FunctionArgs;
+use crate::avm2::object::kind;
 use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{Object, TObject};
 use crate::avm2::value::Value;
@@ -13,7 +14,7 @@ use crate::avm2::{Error, Multiname, Namespace};
 use crate::string::AvmString;
 use gc_arena::barrier::unlock;
 use gc_arena::{
-    Collect, Gc, GcWeak, Mutation,
+    Collect, Gc, Mutation,
     lock::{Lock, RefLock},
 };
 use ruffle_common::utils::HasPrefixField;
@@ -49,10 +50,6 @@ pub fn xml_list_allocator<'gc>(
 #[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]
 pub struct XmlListObject<'gc>(pub Gc<'gc, XmlListObjectData<'gc>>);
-
-#[derive(Clone, Collect, Copy, Debug)]
-#[collect(no_drop)]
-pub struct XmlListObjectWeak<'gc>(pub GcWeak<'gc, XmlListObjectData<'gc>>);
 
 impl Debug for XmlListObject<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -355,7 +352,7 @@ impl<'gc> XmlListObject<'gc> {
 #[repr(C, align(8))]
 pub struct XmlListObjectData<'gc> {
     /// Base script object
-    base: ScriptObjectData<'gc>,
+    base: ScriptObjectData<'gc, kind::XmlListObject>,
 
     /// The children stored by this list.
     children: RefLock<Vec<E4XOrXml<'gc>>>,
@@ -476,7 +473,7 @@ impl<'gc> From<XmlObject<'gc>> for XmlOrXmlListObject<'gc> {
 
 impl<'gc> TObject<'gc> for XmlListObject<'gc> {
     fn gc_base(&self) -> Gc<'gc, ScriptObjectData<'gc>> {
-        HasPrefixField::as_prefix_gc(self.0)
+        ScriptObjectData::erase_kind(HasPrefixField::as_prefix_gc(self.0))
     }
 
     fn xml_descendants(
