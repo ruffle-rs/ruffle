@@ -28,9 +28,23 @@ use std::sync::Arc;
 #[derive(Clone, Copy, Collect, Default)]
 #[collect(require_static)]
 pub struct LineMetrics {
+    /// Ascent reported to ActionScript (`TextLine.ascent`). For device text
+    /// this is the typographic ascent (OS/2 `sTypoAscender`), matching Flash
+    /// Player's FTE, which is tighter than the GDI cell ascent.
     pub ascent: Twips,
+    /// Descent reported to ActionScript (`TextLine.descent`); typographic for
+    /// device text, like [`ascent`](Self::ascent).
     pub descent: Twips,
     pub text_width: Twips,
+    /// Ascent of the underlying fallback `EditText` layout (the GDI cell
+    /// ascent). The glyphs are laid out and rendered against this, so the
+    /// line's fallback offset and atom-coordinate transforms use it, while the
+    /// box height / baseline reported to Spark use the typographic
+    /// [`ascent`](Self::ascent)/[`descent`](Self::descent).
+    pub fallback_ascent: Twips,
+    /// Descent of the fallback `EditText` layout (GDI cell descent), paired
+    /// with [`fallback_ascent`](Self::fallback_ascent).
+    pub fallback_descent: Twips,
 }
 
 #[derive(Clone, Collect, Copy)]
@@ -105,7 +119,10 @@ impl<'gc> TextLine<'gc> {
     /// is the start of the text baseline, like in Flash Player.
     fn fallback_offset(self) -> (Twips, Twips) {
         let gutter = EditText::GUTTER;
-        let ascent = self.0.metrics.get().ascent;
+        // The fallback lays out/renders glyphs against the cell ascent, so the
+        // offset that puts the text baseline at this line's origin must use the
+        // cell ascent — not the (tighter) typographic ascent reported to Spark.
+        let ascent = self.0.metrics.get().fallback_ascent;
         (-gutter, -(gutter + ascent))
     }
 

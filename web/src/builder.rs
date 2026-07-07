@@ -354,6 +354,7 @@ impl RuffleInstanceBuilder {
         self.device_font_renderer = match device_font_renderer.as_str() {
             "embedded" => DeviceFontRenderer::Embedded,
             "canvas" => DeviceFontRenderer::Canvas,
+            "custom" => DeviceFontRenderer::Custom,
             _ => return,
         };
     }
@@ -689,14 +690,12 @@ impl RuffleInstanceBuilder {
         }
 
         let trace_observer: Rc<RefCell<JsValue>> = Rc::new(RefCell::new(JsValue::UNDEFINED));
-        let use_canvas_font_renderer =
-            matches!(self.device_font_renderer, DeviceFontRenderer::Canvas);
         let core = builder
             .with_log(log_adapter::WebLogBackend::new(trace_observer.clone()))
             .with_ui(ui::WebUiBackend::new(
                 js_player.clone(),
                 &canvas,
-                use_canvas_font_renderer,
+                self.device_font_renderer.clone(),
             ))
             // `ExternalVideoBackend` has an internal `SoftwareVideoBackend` that it uses for any non-H.264 video.
             .with_video(ExternalVideoBackend::new_with_webcodecs(

@@ -97,8 +97,10 @@ pub fn get_atom_bounds<'gc>(
     let bounds = match fallback.layout().char_bounds(index as usize) {
         // `char_bounds` is in the fallback's layout space (gutter-less); the
         // line's coordinate origin is on the baseline, so shift up by the
-        // ascent. Kept consistent with `get_atom_index_at_point`.
-        Some(bounds) => Matrix::translate(Twips::ZERO, -metrics.ascent) * bounds,
+        // fallback (cell) ascent the glyphs were laid out against — not the
+        // typographic ascent reported to Spark. Kept consistent with
+        // `get_atom_index_at_point`.
+        Some(bounds) => Matrix::translate(Twips::ZERO, -metrics.fallback_ascent) * bounds,
         // The index is a valid atom (a trailing line terminator counted in
         // `rawTextLength`) with no displayed glyph. Flash Player reports a
         // zero-width box at the end of the line's text; the invalid default
@@ -107,8 +109,8 @@ pub fn get_atom_bounds<'gc>(
         None => Rectangle {
             x_min: metrics.text_width,
             x_max: metrics.text_width,
-            y_min: -metrics.ascent,
-            y_max: metrics.descent,
+            y_min: -metrics.fallback_ascent,
+            y_max: metrics.fallback_descent,
         },
     };
 
@@ -145,7 +147,10 @@ pub fn get_atom_index_at_point<'gc>(
     // line applies when it renders the fallback (`(-gutter, -(gutter + ascent))`).
     // Kept consistent with `get_atom_bounds`.
     let gutter = crate::display_object::EditText::GUTTER;
-    let ascent = text_line.metrics().ascent;
+    // Undo the fallback offset, which uses the cell ascent (see
+    // `TextLine::fallback_offset`); the typographic ascent reported to Spark
+    // must not be used here.
+    let ascent = text_line.metrics().fallback_ascent;
     let fallback_point = Point::new(local.x + gutter, local.y + gutter + ascent);
 
     let index = text_line

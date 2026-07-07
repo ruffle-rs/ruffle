@@ -468,7 +468,7 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
         self.has_line_break = true;
 
         let font_size = Twips::from_pixels(self.current_line_span.font.size);
-        let metrics = self.font_set.unwrap().metrics();
+        let metrics = self.font_set.unwrap().metrics_at(font_size);
         self.max_font_size = font_size;
         self.max_ascent = metrics.ascent(font_size);
         self.max_descent = metrics.descent(font_size);
@@ -503,7 +503,7 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
     /// Enter a new span.
     fn newspan(&mut self, first_span: &TextSpan) {
         let font_size = Twips::from_pixels(first_span.font.size);
-        let metrics = self.font_set.unwrap().metrics();
+        let metrics = self.font_set.unwrap().metrics_at(font_size);
         let ascent = metrics.ascent(font_size);
         let descent = metrics.descent(font_size);
         let leading = Twips::from_pixels(first_span.leading);
@@ -692,7 +692,7 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
     fn append_text_fragment(&mut self, text: &'a WStr, start: usize, end: usize, span: &TextSpan) {
         let font_set = self.font_set.expect("text fragment requires a font");
         let params = EvalParameters::from_span(span);
-        let metrics = font_set.metrics();
+        let metrics = font_set.metrics_at(params.height());
         let ascent = metrics.ascent(params.height());
         let descent = metrics.descent(params.height());
         let box_origin = self.cursor - (Twips::ZERO, ascent).into();
@@ -723,7 +723,7 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
         );
 
         let params = EvalParameters::from_span(span);
-        let metrics = bullet_font.metrics();
+        let metrics = bullet_font.metrics_at(params.height());
         let ascent = metrics.ascent(params.height());
         let descent = metrics.descent(params.height());
         let bullet = WStr::from_units(&[0x2022u16]);
@@ -1041,6 +1041,33 @@ impl<'gc> LayoutLine<'gc> {
 
     pub fn leading(&self) -> Twips {
         self.leading
+    }
+
+    /// The typographic ascent/descent for this line (OS/2 `sTypo*`), taken as
+    /// the max over its text boxes, if the resolved fonts provide them.
+    ///
+    /// Unlike [`ascent`](Self::ascent)/[`descent`](Self::descent) — the GDI
+    /// cell metrics used to lay out and render the glyphs — these are what the
+    /// Flash Text Engine reports to ActionScript, so `TextLine` measurements
+    /// match Flash Player. `None` when no text box exposes typographic metrics
+    /// (the caller then falls back to the cell ascent/descent).
+    pub fn typo_ascent_descent(&self) -> Option<(Twips, Twips)> {
+        let mut result: Option<(Twips, Twips)> = None;
+        for layout_box in &self.boxes {
+            if let LayoutContent::Text {
+                font_set, params, ..
+            } = layout_box.content()
+                && let Some(metrics) = font_set.typo_metrics_at(params.height())
+            {
+                let ascent = metrics.ascent(params.height());
+                let descent = metrics.descent(params.height());
+                result = Some(match result {
+                    Some((a, d)) => (a.max(ascent), d.max(descent)),
+                    None => (ascent, descent),
+                });
+            }
+        }
+        result
     }
 
     pub fn len(&self) -> usize {

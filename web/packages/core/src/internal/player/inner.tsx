@@ -28,6 +28,8 @@ import { showPanicScreen } from "../ui/panic";
 import { createRuffleBuilder } from "../../load-ruffle";
 import { lookupElement } from "../register-element";
 import { configureBuilder } from "../builder";
+import { getCustomFontRenderer } from "../custom-font-bridge";
+import { DeviceFontRenderer } from "../../public/config/load-options";
 
 const DIMENSION_REGEX = /^\s*(\d+(\.\d+)?(%)?)/;
 
@@ -719,13 +721,36 @@ export class InnerPlayer {
         builder.setVolume(this.volumeSettings.get_volume());
 
         if (this.loadedConfig?.fontSources) {
+            // When a custom device-font renderer is configured, forward
+            // each fetched font to the bridge as well so that backends
+            // without access to an OS font database (e.g. the swash
+            // renderer) can build their own face index from the same
+            // bytes Ruffle already loads for the embedded path. The
+            // bridge is looked up lazily on each fetch so that modules
+            // finishing their async init mid-fetch still get their
+            // share of the font data.
+            const isCustom =
+                this.loadedConfig.deviceFontRenderer ===
+                DeviceFontRenderer.Custom;
+
             for (const url of this.loadedConfig.fontSources) {
                 try {
                     const response = await fetch(url);
-                    builder.addFont(
-                        url,
-                        new Uint8Array(await response.arrayBuffer()),
-                    );
+                    const bytes = new Uint8Array(await response.arrayBuffer());
+                    builder.addFont(url, bytes);
+                    if (isCustom) {
+                        const bridge = getCustomFontRenderer();
+                        if (bridge?.registerFontData) {
+                            try {
+                                bridge.registerFontData(url, bytes);
+                            } catch (err) {
+                                console.warn(
+                                    `Ruffle: __ruffleCustomFontRenderer threw from registerFontData("${url}")`,
+                                    err,
+                                );
+                            }
+                        }
+                    }
                 } catch (error) {
                     console.warn(
                         `Couldn't download font source from ${url}`,

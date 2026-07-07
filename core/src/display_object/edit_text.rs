@@ -1284,7 +1284,7 @@ impl<'gc> EditText<'gc> {
         if let Some((text, _tf, font, params, color)) =
             lbox.as_renderable_text(self.0.text_spans.borrow().displayed_text())
         {
-            let metrics = font.metrics();
+            let metrics = font.metrics_at(params.height());
             let ascent = metrics.ascent(params.height());
             let descent = metrics.descent(params.height());
             let caret_height = ascent + descent;
@@ -2263,7 +2263,7 @@ impl<'gc> EditText<'gc> {
         let text_format = first_format?;
         let size = Twips::from_pixels(text_format.size?);
 
-        let metrics = font_set.metrics();
+        let metrics = font_set.metrics_at(size);
         let ascent = metrics.ascent(size);
         let descent = metrics.descent(size);
         let leading = Twips::from_pixels(text_format.leading?);

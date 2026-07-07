@@ -1,0 +1,24 @@
+[package]
+name = "ruffle-swash-font-renderer"
+version = "0.1.0"
+edition = "2024"
+authors = ["Ruffle LLC <ruffle@ruffle.rs>"]
+license = "MIT OR Apache-2.0"
+description = "Pluggable swash-based device font renderer for Ruffle, built as a standalone WASM module."
+publish = false
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+# Keep wasm-bindgen pinned to the same version Ruffle's main WASM build
+# uses so that consumers can reuse a single wasm-bindgen-cli install.
+wasm-bindgen = "=0.2.120"
+js-sys = "0.3.97"
+swash = "0.2"
+ttf-parser = "0.25"
+
+[profile.release]
+lto = true
+opt-level = "s"
+codegen-units = 1

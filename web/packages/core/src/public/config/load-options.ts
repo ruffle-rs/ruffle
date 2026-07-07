@@ -285,6 +285,14 @@ export enum ScrollingBehavior {
 
 /**
  * Specifies how device fonts should be rendered.
+ *
+ * Selecting {@link DeviceFontRenderer.Custom} delegates glyph
+ * rasterization to the bridge object installed on the well-known
+ * global slot `globalThis.__ruffleCustomFontRenderer`. The bridge is
+ * agnostic about the backing technology — a napi-rs native addon, a
+ * separate WebAssembly module, or a pure-JavaScript implementation
+ * all work, as long as the object satisfies the `FontBridge`
+ * contract.
  */
 export enum DeviceFontRenderer {
     /**
@@ -305,6 +313,14 @@ export enum DeviceFontRenderer {
      * This is an experimental method and some features might not work properly.
      */
     Canvas = "canvas",
+
+    /**
+     * Delegate glyph rasterization to the pluggable bridge installed
+     * on `globalThis.__ruffleCustomFontRenderer`. Falls back to
+     * {@link DeviceFontRenderer.Canvas} when no valid bridge is
+     * found at font-request time.
+     */
+    Custom = "custom",
 }
 
 /**
@@ -800,7 +816,13 @@ export interface BaseLoadOptions {
     scrollingBehavior?: ScrollingBehavior;
 
     /**
-     * Specify how device fonts should be rendered.
+     * Specify how device fonts should be rendered. When set to
+     * {@link DeviceFontRenderer.Custom}, glyph rasterization is
+     * delegated to the bridge object installed on
+     * `globalThis.__ruffleCustomFontRenderer`; if that global slot is
+     * missing or does not implement the `FontBridge` contract, Ruffle
+     * transparently falls back to {@link DeviceFontRenderer.Canvas}
+     * on a per-font basis.
      *
      * @default DeviceFontRenderer.Embedded
      */

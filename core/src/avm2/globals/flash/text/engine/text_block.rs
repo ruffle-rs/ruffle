@@ -802,10 +802,21 @@ fn break_text_line<'gc>(
     let metrics = {
         let layout = fallback.layout();
         if let Some(line) = layout.lines().first() {
+            let cell_ascent = line.ascent();
+            let cell_descent = line.descent();
+            // Report the typographic ascent/descent (OS/2 `sTypo*`) to Spark so
+            // `TextLine` measurements match Flash Player's FTE; fall back to the
+            // cell metrics when the font exposes no typographic ones. The glyphs
+            // are still laid out and rendered against the cell metrics.
+            let (ascent, descent) = line
+                .typo_ascent_descent()
+                .unwrap_or((cell_ascent, cell_descent));
             LineMetrics {
-                ascent: line.ascent(),
-                descent: line.descent(),
+                ascent,
+                descent,
                 text_width: layout.text_size().width(),
+                fallback_ascent: cell_ascent,
+                fallback_descent: cell_descent,
             }
         } else {
             LineMetrics::default()
