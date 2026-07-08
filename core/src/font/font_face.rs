@@ -94,6 +94,12 @@ pub struct FontFace {
     ascender: i32,
     descender: i32,
     leading: i16,
+    /// Typographic ascent/descent from the OS/2 table (`sTypoAscender` /
+    /// `sTypoDescender`), if present. Flash Player sizes Flash Text Engine and
+    /// Spark text with these, unlike the hhea `ascender`/`descender` above.
+    typo_ascender: Option<i32>,
+    typo_descender: Option<i32>,
+    typo_leading: i16,
     scale: f32,
     might_have_kerning: bool,
 }
@@ -108,6 +114,23 @@ impl FontFace {
         let ascender = face.ascender() as i32;
         let descender = -face.descender() as i32;
         let leading = face.line_gap();
+
+        // Typographic metrics live in the OS/2 table. Some fonts ship it
+        // zeroed, so treat an all-zero sTypo pair as absent.
+        let typo = face.tables().os2.and_then(|os2| {
+            let a = os2.typographic_ascender() as i32;
+            let d = -os2.typographic_descender() as i32;
+            if a == 0 && d == 0 {
+                None
+            } else {
+                Some((a, d, os2.typographic_line_gap()))
+            }
+        });
+        let (typo_ascender, typo_descender, typo_leading) = match typo {
+            Some((a, d, l)) => (Some(a), Some(d), l),
+            None => (None, None, 0),
+        };
+
         let scale = face.units_per_em() as f32;
         let glyphs = vec![OnceCell::new(); face.number_of_glyphs() as usize];
 
@@ -130,6 +153,9 @@ impl FontFace {
             ascender,
             descender,
             leading,
+            typo_ascender,
+            typo_descender,
+            typo_leading,
             scale,
             might_have_kerning,
         })
@@ -150,6 +176,18 @@ impl FontFace {
             descent: self.descender,
             leading: self.leading,
         }
+    }
+
+    /// Typographic metrics (OS/2 `sTypo*`), if this font provides them. Flash
+    /// Player sizes Flash Text Engine / Spark text with these, unlike the
+    /// hhea/cell metrics returned by [`FontFace::metrics`].
+    pub fn typo_metrics(&self) -> Option<FontMetrics> {
+        Some(FontMetrics {
+            scale: self.scale,
+            ascent: self.typo_ascender?,
+            descent: self.typo_descender?,
+            leading: self.typo_leading,
+        })
     }
 
     pub fn get_glyph(&self, character: char) -> Option<&Glyph> {
