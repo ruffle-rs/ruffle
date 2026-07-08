@@ -7,6 +7,15 @@ pub trait FontRenderer: std::fmt::Debug {
 
     fn get_font_metrics(&self) -> FontMetrics;
 
+    /// Typographic metrics (OS/2 `sTypo*`) for this font, if the renderer can
+    /// provide them. The Flash Text Engine reports these (like Flash Player),
+    /// so a renderer that has access to the font's OS/2 table should override
+    /// this. The default returns `None`, which falls back to the hhea/cell
+    /// metrics from [`FontRenderer::get_font_metrics`].
+    fn get_typo_font_metrics(&self) -> Option<FontMetrics> {
+        None
+    }
+
     fn has_kerning_info(&self) -> bool;
 
     fn render_glyph(&self, character: char) -> Option<Glyph>;
