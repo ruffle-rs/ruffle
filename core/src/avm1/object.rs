@@ -380,6 +380,28 @@ impl<'gc> Object<'gc> {
     pub fn ptr_eq(a: Object<'gc>, b: Object<'gc>) -> bool {
         std::ptr::eq(a.as_ptr(), b.as_ptr())
     }
+
+    pub fn get_stored_property(
+        self,
+        activation: &mut Activation<'_, 'gc>,
+        name: AvmString<'gc>,
+    ) -> Option<Value<'gc>> {
+        let mut current_obj = Some(self);
+        while let Some(obj) = current_obj {
+            if obj.has_own_property(activation, name) {
+                if obj.has_own_virtual(activation, name) {
+                    // Ignore getters/setters
+                    return None;
+                }
+                return obj.get_local_stored(name, activation);
+            }
+            current_obj = match obj.proto(activation) {
+                Value::Object(o) => Some(o),
+                _ => None,
+            };
+        }
+        None
+    }
 }
 
 pub enum ObjectPtr {}
