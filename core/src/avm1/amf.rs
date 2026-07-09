@@ -2,9 +2,46 @@ use crate::avm1::{Activation, Attribute, NativeObject, Object, Value};
 use crate::string::AvmString;
 use flash_lso::amf0::read::AMF0Decoder;
 use flash_lso::amf0::writer::{Amf0Writer, CacheKey, ObjWriter};
-use flash_lso::types::{Element, ObjectId, Reference, Value as AmfValue};
+use flash_lso::types::{ClassDefinition, Element, ObjectId, Reference, Value as AmfValue};
+use ruffle_macros::istr;
 use std::collections::BTreeMap;
 use std::rc::Rc;
+
+/// AMF0 serializes an object as a TypedObject if its constructor has a class
+/// name registered through `Object.registerClass`; otherwise it serializes it as
+/// an anonymous object. The registered name is written as the AMF0 class name.
+/// Flash determines this name by resolving the object's constructor, avoiding
+/// prototype-chain modifications and accessor invocation. This mirrors that
+/// behavior by locating the constructor and looking up its registered class name.
+fn object_class_name<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    object: Object<'gc>,
+) -> Option<String> {
+    let constructor_key = istr!("constructor");
+    let magic_constructor_key = istr!("__constructor__");
+    // 1. Check for a mutated local 'constructor' property first.
+    // 2. Fall back to the hidden '__constructor__' property (which may be inherited).
+    // ASSetPropFlags attributes have no effect on typed object resolution.
+    // Instead, as done here, we must look up "constructor"/"__constructor__ directly.
+    let ctor = if object.has_own_property(activation, constructor_key) {
+        if object.has_own_virtual(activation, constructor_key) {
+            None
+        } else {
+            object.get(constructor_key, activation).ok()
+        }
+    } else {
+        object.get_stored_property(activation, magic_constructor_key)
+    };
+
+    match ctor {
+        Some(Value::Object(ctor_obj)) => activation
+            .context
+            .avm1
+            .get_class_name_by_constructor(activation.swf_version(), ctor_obj)
+            .map(|class_name| class_name.to_utf8_lossy().into_owned()),
+        _ => None,
+    }
+}
 
 /// Serialize AMF data in NetConnection.addHeader, NetConnection.call, and LocalConnection.send
 pub fn serialize<'gc>(activation: &mut Activation<'_, 'gc>, value: Value<'gc>) -> AmfValue {
@@ -27,8 +64,10 @@ pub fn serialize<'gc>(activation: &mut Activation<'_, 'gc>, value: Value<'gc>) -
             } else if let NativeObject::Date(date) = object.native() {
                 AmfValue::Date(date.get().time(), None)
             } else {
+                let class_def =
+                    object_class_name(activation, object).map(ClassDefinition::default_with_name);
                 let elements = serialize_object_properties(activation, object);
-                AmfValue::Object(ObjectId::INVALID, elements, None)
+                AmfValue::Object(ObjectId::INVALID, elements, class_def)
             }
         }
         Value::MovieClip(_) => AmfValue::Undefined,
