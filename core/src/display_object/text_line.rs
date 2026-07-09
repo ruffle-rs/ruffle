@@ -1,5 +1,6 @@
 //! The TextLine display object, backing flash.text.engine.TextLine.
 
+use crate::avm1::Object as Avm1Object;
 use crate::avm2::StageObject as Avm2StageObject;
 use crate::backend::ui::MouseCursor;
 use crate::context::{RenderContext, UpdateContext};
@@ -10,6 +11,7 @@ use crate::display_object::{
 use crate::events::{ClipEvent, ClipEventResult};
 use crate::prelude::*;
 use crate::tag_utils::SwfMovie;
+use crate::vminterface::Instantiator;
 use core::fmt;
 use gc_arena::barrier::unlock;
 use gc_arena::lock::Lock;
@@ -139,6 +141,16 @@ impl<'gc> TDisplayObject<'gc> for TextLine<'gc> {
     fn set_object2(self, context: &mut UpdateContext<'gc>, to: Avm2StageObject<'gc>) {
         let mc = context.gc();
         unlock!(Gc::write(mc, self.0), TextLineData, avm2_object).set(Some(to));
+    }
+
+    fn post_instantiation(
+        self,
+        context: &mut UpdateContext<'gc>,
+        _init_object: Option<Avm1Object<'gc>>,
+        _instantiated_by: Instantiator,
+        _run_frame: bool,
+    ) {
+        self.set_default_instance_name(context);
     }
 }
 
