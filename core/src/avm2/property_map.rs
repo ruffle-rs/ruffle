@@ -118,29 +118,24 @@ impl<'gc, V> PropertyMap<'gc, V> {
 
             Some(old_value)
         } else {
-            bucket.push((name.namespace(), value));
+            bucket.insert(0, (name.namespace(), value));
 
             None
         }
     }
 
-    pub fn ns_counts(&self) -> HashMap<AvmString<'gc>, usize, FnvBuildHasher> {
-        self.0
-            .iter()
-            .map(|(name, bucket)| (*name, bucket.len()))
-            .collect()
-    }
+    /// Preserves Flash Player ordering in scope caches and application domains.
+    pub fn insert_at_end(&mut self, name: QName<'gc>, value: V) -> Option<V> {
+        let bucket = self.0.entry(name.local_name()).or_default();
 
-    pub fn promote_since(
-        &mut self,
-        saved_ns_counts: &HashMap<AvmString<'gc>, usize, FnvBuildHasher>,
-    ) {
-        for (name, &old_size) in saved_ns_counts {
-            if let Some(bucket) = self.0.get_mut(name)
-                && bucket.len() > old_size
-            {
-                bucket.rotate_left(old_size);
-            }
+        if let Some((_, old_value)) = bucket
+            .iter_mut()
+            .find(|(n, _)| n.matches_ns(name.namespace()))
+        {
+            Some(std::mem::replace(old_value, value))
+        } else {
+            bucket.push((name.namespace(), value));
+            None
         }
     }
 

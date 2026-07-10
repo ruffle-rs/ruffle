@@ -335,7 +335,7 @@ impl<'gc> Domain<'gc> {
             return;
         }
 
-        self.cell_mut(mc).defs.insert(name, script);
+        self.cell_mut(mc).defs.insert_at_end(name, script);
     }
 
     /// Export a class into the current application domain.
@@ -345,7 +345,7 @@ impl<'gc> Domain<'gc> {
         if self.has_class(export_name) {
             return;
         }
-        self.cell_mut(mc).classes.insert(export_name, class);
+        self.cell_mut(mc).classes.insert_at_end(export_name, class);
     }
 
     pub fn defs(&self) -> Ref<'_, PropertyMap<'gc, Script<'gc>>> {

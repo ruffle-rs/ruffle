@@ -234,7 +234,7 @@ impl<'gc> ScopeChain<'gc> {
                     .expect("Resolvable multinames should always have a local name");
                 let qname = QName::new(ns, name);
 
-                cache.unlock().borrow_mut().insert(qname, obj);
+                cache.unlock().borrow_mut().insert_at_end(qname, obj);
             }
         }
         Ok(found.map(|o| o.1))
