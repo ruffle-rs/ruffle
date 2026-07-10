@@ -2443,15 +2443,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         object_register: u32,
         index_register: u32,
     ) -> Result<(), Error<'gc>> {
-        let cur_index = self.local_register(index_register).coerce_to_i32(self)?;
-
-        if cur_index < 0 {
-            self.push_stack(false);
-
-            return Ok(());
-        }
-
-        let mut cur_index = cur_index as u32;
+        let mut cur_index = self.local_register(index_register).coerce_to_u32(self)?;
 
         let object_reg = self.local_register(object_register);
         let mut result_value = object_reg;
@@ -2493,10 +2485,10 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     }
 
     fn op_next_name(&mut self) -> Result<(), Error<'gc>> {
-        let cur_index = self.pop_stack().coerce_to_i32(self)?;
+        let cur_index = self.pop_stack().coerce_to_u32(self)?;
         let value = self.pop_stack();
 
-        if cur_index <= 0 {
+        if cur_index == 0 {
             self.push_stack(Value::Null);
 
             return Ok(());
@@ -2509,17 +2501,17 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                 .expect("Primitives always have a prototype"),
         };
 
-        let name = object.get_enumerant_name(cur_index as u32, self)?;
+        let name = object.get_enumerant_name(cur_index, self)?;
         self.push_stack(name);
 
         Ok(())
     }
 
     fn op_next_value(&mut self) -> Result<(), Error<'gc>> {
-        let cur_index = self.pop_stack().coerce_to_i32(self)?;
+        let cur_index = self.pop_stack().coerce_to_u32(self)?;
         let value = self.pop_stack();
 
-        if cur_index <= 0 {
+        if cur_index == 0 {
             self.push_stack(Value::Undefined);
 
             return Ok(());
@@ -2532,7 +2524,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                 .expect("Primitives always have a prototype"),
         };
 
-        let value = object.get_enumerant_value(cur_index as u32, self)?;
+        let value = object.get_enumerant_value(cur_index, self)?;
         self.push_stack(value);
 
         Ok(())
