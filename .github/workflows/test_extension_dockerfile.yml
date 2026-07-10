@@ -109,4 +109,4 @@ jobs:
             ${{ github.workflow }} run completed with status: ${{ needs.test-dockerfile.result }}
             [View workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
           username: ${{ github.actor }}
-          colour: ${{ needs.test-dockerfile.result == 'success' && '##57ab5a' || '#e5534b' }}
+          colour: ${{ needs.test-dockerfile.result == 'success' && '#57ab5a' || '#e5534b' }}
