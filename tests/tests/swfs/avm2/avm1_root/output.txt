@@ -1,6 +1,58 @@
-avm1_child this: _root
+=== avm1_child
+this: _root
 _level0: undefined
+_root: _root
+_parent: undefined
 _level-61440: undefined
 _level0.foo: undefined
-_level-61440.foo: undefined
-emptyMC._target: /emptyMC
+child_via_mcl._target: /child_via_mcl
+
+=== other_child.swf (child_via_mcl)
+this: _level0.as3Loader.defined_avm1_name.child_via_mcl
+this._target: /child_via_mcl
+_level0: _level0
+_root: _root
+_parent: _root
+_parent._parent: undefined
+_level0.foo: undefined
+_level0.as3Loader: _level0.as3Loader
+_level0.as3Loader.defined_avm1_name: _root
+typeof _level0.as3Loader: movieclip
+_level0.as3Loader._target: /as3Loader
+_level0.level0Clip: _level0.level0Clip
+_level0.as3Loader.as3LoaderClip: _level0.as3Loader.as3LoaderClip
+typeof _level0.level0Clip: movieclip
+typeof _level0.as3Loader.as3LoaderClip: movieclip
+_level0.as3Loader.defined_avm1_name._x: 10
+
+ReferenceError: Error #1056: Cannot create property level0Clip on Test.
+
+=== other_child.swf (child_via_loadmovie)
+this: _root.child_via_loadmovie
+this._target: /child_via_loadmovie
+_level0: _level0
+_root: _root
+_parent: _root
+_parent._parent: undefined
+_level0.foo: undefined
+_level0.as3Loader: _level0.as3Loader
+_level0.as3Loader.defined_avm1_name: _root
+typeof _level0.as3Loader: movieclip
+_level0.as3Loader._target: /as3Loader
+_level0.level0Clip: _level0.level0Clip
+_level0.as3Loader.as3LoaderClip: _level0.as3Loader.as3LoaderClip
+typeof _level0.level0Clip: movieclip
+typeof _level0.as3Loader.as3LoaderClip: movieclip
+_level0.as3Loader.defined_avm1_name._x: 10
+
+ReferenceError: Error #1056: Cannot create property level0Clip on Test.
+
+=== avm2 root
+loader.x: 50
+getChildByName("level0Clip"): [object MovieClip]
+level0Clip.x: 25
+getChildIndex(level0Clip): 1
+ctr.getChildAt(0): [object AVM1Movie]
+ctr.getChildAt(1): null
+ctr.numChildren: 2
+ctr.getChildByName("as3LoaderClip"): null
