@@ -239,10 +239,18 @@ pub enum ScrollingBehavior {
     Smart,
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum DeviceFontRenderer {
     Embedded,
     Canvas,
+    /// Delegates glyph rasterization to a pluggable bridge object that
+    /// the embedding host installs on the JS global slot
+    /// `globalThis.__ruffleCustomFontRenderer`. The bridge is fetched
+    /// lazily on every font request by `WebUiBackend::load_device_font`.
+    /// See `web/packages/core/src/internal/custom-font-bridge.ts` for
+    /// the TS contract and `web/src/ui/font_renderer.rs::CustomFontRenderer`
+    /// for how the bridge is consumed on the Rust side.
+    Custom,
 }
 
 #[wasm_bindgen]

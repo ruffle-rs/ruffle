@@ -19,7 +19,35 @@ use gc_arena::{Collect, Gc, Mutation};
 use ruffle_common::avm_string::AvmString;
 use ruffle_common::utils::HasPrefixField;
 use ruffle_macros::istr;
+use ruffle_render::transform::Transform;
+use std::cell::Cell;
 use std::sync::Arc;
+
+/// Metrics of a laid-out text line, in the line's own coordinate space.
+///
+/// The origin of a `TextLine` is the start of its baseline: the text extends
+/// `ascent` above and `descent` below y=0.
+#[derive(Clone, Copy, Collect, Default)]
+#[collect(require_static)]
+pub struct LineMetrics {
+    /// Ascent reported to ActionScript (`TextLine.ascent`). For device text
+    /// this is the typographic ascent (OS/2 `sTypoAscender`), matching Flash
+    /// Player's FTE, which is tighter than the GDI cell ascent.
+    pub ascent: Twips,
+    /// Descent reported to ActionScript (`TextLine.descent`); typographic for
+    /// device text, like [`ascent`](Self::ascent).
+    pub descent: Twips,
+    pub text_width: Twips,
+    /// Ascent of the underlying fallback `EditText` layout (the GDI cell
+    /// ascent). The glyphs are laid out and rendered against this, so the
+    /// line's fallback offset and atom-coordinate transforms use it, while the
+    /// box height / baseline reported to Spark use the typographic
+    /// [`ascent`](Self::ascent)/[`descent`](Self::descent).
+    pub fallback_ascent: Twips,
+    /// Descent of the fallback `EditText` layout (GDI cell descent), paired
+    /// with [`fallback_ascent`](Self::fallback_ascent).
+    pub fallback_descent: Twips,
+}
 
 #[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]
@@ -47,6 +75,9 @@ pub struct TextLineData<'gc> {
     ///
     /// See [`TextLineValidity`] for the known values of validity.
     validity: Lock<AvmString<'gc>>,
+
+    /// Metrics of this line, calculated when the line is (re)created.
+    metrics: Cell<LineMetrics>,
 }
 
 impl<'gc> TextLine<'gc> {
@@ -63,12 +94,38 @@ impl<'gc> TextLine<'gc> {
                 fallback,
                 movie,
                 validity: Lock::new(istr!(context, "valid")),
+                metrics: Cell::new(LineMetrics::default()),
             },
         ))
     }
 
     pub fn measure_text(self, context: &mut UpdateContext<'gc>) -> (Twips, Twips) {
         self.0.fallback.measure_text(context)
+    }
+
+    /// The `EditText` this line delegates layout and rendering to.
+    pub fn fallback(self) -> EditText<'gc> {
+        self.0.fallback
+    }
+
+    pub fn metrics(self) -> LineMetrics {
+        self.0.metrics.get()
+    }
+
+    pub fn set_metrics(self, metrics: LineMetrics) {
+        self.0.metrics.set(metrics);
+    }
+
+    /// Offset translating the fallback `EditText` (whose origin is its
+    /// top-left corner, inset by the gutter) so that this line's origin
+    /// is the start of the text baseline, like in Flash Player.
+    fn fallback_offset(self) -> (Twips, Twips) {
+        let gutter = EditText::GUTTER;
+        // The fallback lays out/renders glyphs against the cell ascent, so the
+        // offset that puts the text baseline at this line's origin must use the
+        // cell ascent — not the (tighter) typographic ascent reported to Spark.
+        let ascent = self.0.metrics.get().fallback_ascent;
+        (-gutter, -(gutter + ascent))
     }
 
     pub fn validity(self) -> AvmString<'gc> {
@@ -95,6 +152,7 @@ impl<'gc> TDisplayObject<'gc> for TextLine<'gc> {
                 fallback: self.0.fallback,
                 movie: self.0.movie.clone(),
                 validity: Lock::new(self.0.validity.get()),
+                metrics: Cell::new(self.0.metrics.get()),
             },
         ))
         .into()
@@ -111,11 +169,24 @@ impl<'gc> TDisplayObject<'gc> for TextLine<'gc> {
     fn replace_with(self, _context: &mut UpdateContext<'gc>, _id: CharacterId) {}
 
     fn render_self(self, context: &mut RenderContext<'_, 'gc>) {
+        let (dx, dy) = self.fallback_offset();
+        context.transform_stack.push(&Transform {
+            matrix: Matrix::translate(dx, dy),
+            ..Default::default()
+        });
         self.0.fallback.render_self(context);
+        context.transform_stack.pop();
     }
 
     fn self_bounds(self, mode: BoundsMode) -> Rectangle<Twips> {
-        self.0.fallback.self_bounds(mode)
+        let (dx, dy) = self.fallback_offset();
+        let bounds = self.0.fallback.self_bounds(mode);
+        Rectangle {
+            x_min: bounds.x_min + dx,
+            x_max: bounds.x_max + dx,
+            y_min: bounds.y_min + dy,
+            y_max: bounds.y_max + dy,
+        }
     }
 
     fn hit_test_shape(

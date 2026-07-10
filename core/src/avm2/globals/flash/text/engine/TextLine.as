@@ -1,8 +1,4 @@
 package flash.text.engine {
-    import __ruffle__.stub_getter;
-    import __ruffle__.stub_setter;
-    import __ruffle__.stub_method;
-
     import flash.display.DisplayObject;
     import flash.display.DisplayObjectContainer;
     import flash.errors.IllegalOperationError;
@@ -25,6 +21,15 @@ package flash.text.engine {
         [Ruffle(NativeAccessible)]
         private var _rawTextLength:int = 0;
 
+        [Ruffle(NativeAccessible)]
+        internal var _textBlockBeginIndex:int = 0;
+
+        [Ruffle(NativeAccessible)]
+        internal var _nextLine:TextLine = null;
+
+        [Ruffle(NativeAccessible)]
+        internal var _previousLine:TextLine = null;
+
         public static const MAX_LINE_WIDTH:int = 1000000;
 
         public var userData;
@@ -34,8 +39,7 @@ package flash.text.engine {
         }
 
         public function get textBlockBeginIndex():int {
-            stub_getter("flash.text.engine.TextLine", "textBlockBeginIndex");
-            return 0;
+            return this._textBlockBeginIndex;
         }
 
         public function get specifiedWidth():Number {
@@ -46,31 +50,30 @@ package flash.text.engine {
             return this._textBlock;
         }
 
-        public function get ascent():Number {
-            stub_getter("flash.text.engine.TextLine", "ascent");
-            return 12.0;
-        }
+        public native function get ascent():Number;
+        public native function get descent():Number;
 
+        // TODO: totalAscent/totalDescent must also take GraphicElements into
+        // account once GraphicElement is supported; for text-only lines they
+        // equal ascent/descent.
         [API("670")]
         public function get totalAscent():Number {
-            stub_getter("flash.text.engine.TextLine", "totalAscent");
-            return 12.0;
-        }
-
-        public function get descent():Number {
-            stub_getter("flash.text.engine.TextLine", "descent");
-            return 3.0;
+            return this.ascent;
         }
 
         [API("670")]
         public function get totalDescent():Number {
-            stub_getter("flash.text.engine.TextLine", "totalDescent");
-            return 3.0;
+            return this.descent;
+        }
+
+        [API("670")]
+        public function get totalHeight():Number {
+            return this.totalAscent + this.totalDescent;
         }
 
         public function get unjustifiedTextWidth():Number {
-            stub_getter("flash.text.engine.TextLine", "unjustifiedTextWidth");
-            return this._specifiedWidth;
+            // TODO: Return the pre-justification width once justification is supported.
+            return this.textWidth;
         }
 
         public native function get textWidth():Number;
@@ -80,81 +83,119 @@ package flash.text.engine {
         public native function set validity(value:String):void;
 
         public function get hasGraphicElement():Boolean {
-            stub_getter("flash.text.engine.TextLine", "hasGraphicElement");
+            // TODO: Implement together with GraphicElement support.
             return false;
         }
 
         public function get atomCount():int {
-            stub_getter("flash.text.engine.TextLine", "atomCount");
+            // TODO: This is an approximation- combining characters should
+            // collapse into a single atom, and graphic elements count as one.
             return this._rawTextLength;
         }
 
         public function get nextLine():TextLine {
-            return null;
+            return this._nextLine;
         }
 
         public function get previousLine():TextLine {
-            return null;
+            return this._previousLine;
         }
 
         public function getBaselinePosition(baseline:String):Number {
-            stub_method("flash.text.engine.TextLine", "getBaselinePosition");
-            return 0.0;
+            if (baseline == null) {
+                throw new TypeError("Error #2007: Parameter baseline must be non-null.", 2007);
+            }
+
+            // Baseline positions are expressed in this line's coordinate
+            // space, whose origin is the roman baseline (adjusted by the
+            // block's baselineZero setting).
+            var zero:String = TextBaseline.ROMAN;
+            if (this._textBlock) {
+                zero = this._textBlock.baselineZero;
+            }
+
+            return this.baselineOffset(baseline) - this.baselineOffset(zero);
+        }
+
+        private function baselineOffset(baseline:String):Number {
+            // Offsets relative to the roman baseline, positive going down.
+            switch (baseline) {
+                case TextBaseline.ROMAN:
+                    return 0.0;
+                case TextBaseline.ASCENT:
+                case TextBaseline.IDEOGRAPHIC_TOP:
+                    return -this.ascent;
+                case TextBaseline.DESCENT:
+                case TextBaseline.IDEOGRAPHIC_BOTTOM:
+                    return this.descent;
+                case TextBaseline.IDEOGRAPHIC_CENTER:
+                    return (this.descent - this.ascent) / 2;
+                default:
+                    throw new ArgumentError("Error #2008: Parameter baseline must be one of the accepted values.", 2008);
+            }
         }
 
         public function get hasTabs():Boolean {
-            stub_getter("flash.text.engine.TextLine", "hasTabs");
+            // TODO: Implement together with TabStop support.
             return false;
         }
 
-        public function getAtomIndexAtPoint(stageX:Number, stageY:Number):int {
-            stub_method("flash.text.engine.TextLine", "getAtomIndexAtPoint");
-            return -1;
-        }
+        public native function getAtomIndexAtPoint(stageX:Number, stageY:Number):int;
 
         public function getAtomIndexAtCharIndex(charIndex:int):int {
-            stub_method("flash.text.engine.TextLine", "getAtomIndexAtCharIndex");
-            return -1;
+            // charIndex is an index into the parent TextBlock; map it to a
+            // zero-based atom index relative to this line, or -1 if it does
+            // not belong to this line.
+            // TODO: This is an approximation- combining characters should
+            // collapse into a single atom, see atomCount.
+            var relative:int = charIndex - this._textBlockBeginIndex;
+            if (relative < 0 || relative >= this._rawTextLength) {
+                return -1;
+            }
+            return relative;
         }
 
         public function getAtomBidiLevel(index:int):int {
-            stub_method("flash.text.engine.TextLine", "getAtomBidiLevel");
+            this.checkAtomIndex(index);
+            // TODO: Implement together with bidi support.
             return 0;
         }
 
-        public function getAtomBounds(index:int):Rectangle {
-            stub_method("flash.text.engine.TextLine", "getAtomBounds");
-            return new Rectangle(0, 0, 0, 0);
-        }
+        public native function getAtomBounds(index:int):Rectangle;
 
         public function getAtomCenter(index:int):Number {
-            stub_method("flash.text.engine.TextLine", "getAtomCenter");
-            return 1.0;
+            var bounds:Rectangle = this.getAtomBounds(index);
+            return bounds.x + bounds.width / 2;
         }
 
         public function getAtomGraphic(index:int):DisplayObject {
-            stub_method("flash.text.engine.TextLine", "getAtomGraphic");
+            this.checkAtomIndex(index);
+            // TODO: Implement together with GraphicElement support.
             return null;
         }
 
         public function getAtomTextBlockBeginIndex(index:int):int {
-            stub_method("flash.text.engine.TextLine", "getAtomTextBlockBeginIndex");
-            return 0;
+            this.checkAtomIndex(index);
+            return this._textBlockBeginIndex + index;
         }
 
         public function getAtomTextBlockEndIndex(index:int):int {
-            stub_method("flash.text.engine.TextLine", "getAtomTextBlockEndIndex");
-            return 0;
+            this.checkAtomIndex(index);
+            return this._textBlockBeginIndex + index + 1;
         }
 
         public function getAtomTextRotation(index:int):String {
-            stub_method("flash.text.engine.TextLine", "getAtomTextRotation");
+            this.checkAtomIndex(index);
+            // TODO: Implement together with textRotation support.
             return TextRotation.ROTATE_0;
         }
 
-        public function getAtomWordBoundaryOnLeft(index:int):Boolean {
-            stub_method("flash.text.engine.TextLine", "getAtomWordBoundaryOnLeft");
-            return false;
+        public native function getAtomWordBoundaryOnLeft(index:int):Boolean;
+
+        internal function checkAtomIndex(index:int):void {
+            if (index < 0 || index >= this.atomCount) {
+                throw new RangeError("Error #2006: The supplied index is out of bounds.", 2006);
+            }
         }
 
         // This function does nothing in Flash Player 32
