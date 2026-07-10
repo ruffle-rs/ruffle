@@ -136,10 +136,10 @@ impl<'gc, V> PropertyMap<'gc, V> {
         saved_ns_counts: &HashMap<AvmString<'gc>, usize, FnvBuildHasher>,
     ) {
         for (name, &old_size) in saved_ns_counts {
-            if let Some(bucket) = self.0.get_mut(name) {
-                if bucket.len() > old_size {
-                    bucket.rotate_left(old_size);
-                }
+            if let Some(bucket) = self.0.get_mut(name)
+                && bucket.len() > old_size
+            {
+                bucket.rotate_left(old_size);
             }
         }
     }
