@@ -1,0 +1,11 @@
+num_ticks = 100
+
+[player_options]
+with_audio = true
+
+[[compilers]]
+type = "Rascal"
+target = "test.swf"
+scripts = ["test.as"]
+swf_version = 15
+use_network = true
