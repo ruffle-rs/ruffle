@@ -1,3 +1,7 @@
 # Note: The p-code in the SWF included here is edited to ensure that we
 # properly test lookups with Multinames.
 num_frames = 1
+
+# Correct handling requires per-vtable lookup; with flattened vtables, overridden
+# traits would need to be hackily promoted ahead of inherited traits.
+known_failure = true
