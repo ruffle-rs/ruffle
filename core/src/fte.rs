@@ -201,3 +201,16 @@ pub enum TabAlignmentValue {
     #[avm2_variant("start")]
     Start,
 }
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Collect, Avm2Enum)]
+#[collect(require_static)]
+pub enum TextLineCreationResultValue {
+    #[avm2_variant("complete")]
+    Complete,
+    #[avm2_variant("emergency")]
+    Emergency,
+    #[avm2_variant("insufficientWidth")]
+    InsufficientWidth,
+    #[avm2_variant("success")]
+    Success,
+}

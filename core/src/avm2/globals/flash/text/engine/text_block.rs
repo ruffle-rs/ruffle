@@ -12,6 +12,7 @@ use crate::avm2::value::Value;
 use crate::avm2_stub_method;
 use crate::display_object::{EditText, TDisplayObject, TextLine};
 use crate::fte::FontWeightValue;
+use crate::fte::TextLineCreationResultValue;
 use crate::fte::{FontLookupValue, TextBaselineValue};
 use crate::fte::{FontPostureValue, TextRotationValue};
 use crate::html::TextFormat;
@@ -224,14 +225,14 @@ pub fn set_content<'gc>(
 }
 
 pub fn get_text_line_creation_result<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap().as_text_block_object().unwrap();
     Ok(this
         .text_line_creation_result()
-        .map(Value::from)
+        .map(|v| v.as_avm2_str(activation).into())
         .unwrap_or(Value::Null))
 }
 
@@ -283,7 +284,7 @@ pub fn create_text_line<'gc>(
 
     if text.is_empty() || next_position == text.len() && previous_position == next_position {
         // No more text.
-        block.set_text_line_creation_result(Some(istr!("complete")), activation.gc());
+        block.set_text_line_creation_result(Some(TextLineCreationResultValue::Complete));
         return Ok(Value::Null);
     }
 
@@ -355,7 +356,7 @@ pub fn create_text_line<'gc>(
         )?;
     }
 
-    block.set_text_line_creation_result(Some(istr!("success")), activation.gc());
+    block.set_text_line_creation_result(Some(TextLineCreationResultValue::Success));
     block.set_first_line(Some(instance), activation.gc());
 
     Ok(instance.into())
