@@ -123,7 +123,7 @@ package flash.text.engine {
                 return;
             }
             this.firstLine.validity = "invalid";
-            this.firstLine._textBlock = null;
+            this.firstLine.setTextBlock(null);
         }
     }
 }

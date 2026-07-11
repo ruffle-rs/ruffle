@@ -2,6 +2,7 @@
 
 use crate::avm1::Object as Avm1Object;
 use crate::avm2::StageObject as Avm2StageObject;
+use crate::avm2::object::TextBlockObject;
 use crate::backend::ui::MouseCursor;
 use crate::context::{RenderContext, UpdateContext};
 use crate::display_object::interactive::{InteractiveObjectBase, TInteractiveObject};
@@ -47,6 +48,8 @@ pub struct TextLineData<'gc> {
     ///
     /// See [`TextLineValidity`] for the known values of validity.
     validity: Lock<AvmString<'gc>>,
+
+    text_block: Lock<Option<TextBlockObject<'gc>>>,
 }
 
 impl<'gc> TextLine<'gc> {
@@ -63,6 +66,7 @@ impl<'gc> TextLine<'gc> {
                 fallback,
                 movie,
                 validity: Lock::new(istr!(context, "valid")),
+                text_block: Lock::new(None),
             },
         ))
     }
@@ -77,6 +81,14 @@ impl<'gc> TextLine<'gc> {
 
     pub fn set_validity(self, validity: AvmString<'gc>, context: &mut UpdateContext<'gc>) {
         unlock!(Gc::write(context.gc(), self.0), TextLineData, validity).set(validity);
+    }
+
+    pub fn text_block(self) -> Option<TextBlockObject<'gc>> {
+        self.0.text_block.get()
+    }
+
+    pub fn set_text_block(self, text_block: Option<TextBlockObject<'gc>>, mc: &Mutation<'gc>) {
+        unlock!(Gc::write(mc, self.0), TextLineData, text_block).set(text_block);
     }
 }
 
@@ -95,6 +107,7 @@ impl<'gc> TDisplayObject<'gc> for TextLine<'gc> {
                 fallback: self.0.fallback,
                 movie: self.0.movie.clone(),
                 validity: Lock::new(self.0.validity.get()),
+                text_block: Lock::new(self.0.text_block.get()),
             },
         ))
         .into()
