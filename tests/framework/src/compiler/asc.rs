@@ -135,8 +135,17 @@ impl SwfCompiler for AscCompiler {
         asc::run_asc(asc_config)?;
 
         let abc_bytes = std::fs::read(tmp_dir.join(format!("{}.abc", self.class)))?;
+        let swf_bytes = self.build_swf(&abc_bytes)?;
 
-        let metadata = read_swf_metadata(&abc_bytes, &self.class)?;
+        let output_path = root_dir.join(&self.target)?;
+
+        write_bytes_and_verify_if_changed(&output_path, &swf_bytes, verify_if_changed)
+    }
+}
+
+impl AscCompiler {
+    fn build_swf(&self, abc_bytes: &[u8]) -> anyhow::Result<Vec<u8>> {
+        let metadata = read_swf_metadata(abc_bytes, &self.class)?;
         let StageTransform { x, y } = self.stage_transform;
 
         let header = Header {
@@ -162,7 +171,7 @@ impl SwfCompiler for AscCompiler {
             Tag::DoAbc2(DoAbc2 {
                 flags: DoAbc2Flag::LAZY_INITIALIZE,
                 name: SwfStr::from_utf8_str(""),
-                data: &abc_bytes,
+                data: abc_bytes,
             }),
             Tag::SymbolClass(vec![SymbolClassLink {
                 id: 0,
@@ -174,9 +183,7 @@ impl SwfCompiler for AscCompiler {
         let mut swf_bytes = Vec::new();
         ruffle_core::swf::write_swf(&header, &tags, &mut swf_bytes)?;
 
-        let output_path = root_dir.join(&self.target)?;
-
-        write_bytes_and_verify_if_changed(&output_path, &swf_bytes, verify_if_changed)
+        Ok(swf_bytes)
     }
 }
 
