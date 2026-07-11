@@ -1,0 +1,18 @@
+0
+false
+accLocation(): null
+get_accDefaultAction(): null
+get_accFocus(): 0
+get_accName(): null
+get_accSelection(): null
+get_accValue(): null
+getChildIDArray(): null
+isLabeledBy(): false
+get_accRole(): Error: Error #2143: AccessibilityImplementation.get_accRole() must be overridden from its default.
+	at Error$/throwError()
+	at flash.accessibility::AccessibilityImplementation/get_accRole()
+	at Test()
+get_accState(): Error: Error #2144: AccessibilityImplementation.get_accState() must be overridden from its default.
+	at Error$/throwError()
+	at flash.accessibility::AccessibilityImplementation/get_accState()
+	at Test()
