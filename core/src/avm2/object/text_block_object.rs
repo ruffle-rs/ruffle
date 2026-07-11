@@ -30,6 +30,7 @@ pub fn text_block_allocator<'gc>(
             content: Lock::new(None),
             text_line_creation_result: Lock::new(None),
             first_line: Lock::new(None),
+            last_line: Lock::new(None),
         },
     ))
     .into())
@@ -67,6 +68,9 @@ pub struct TextBlockObjectData<'gc> {
     content: Lock<Option<Object<'gc>>>,
     text_line_creation_result: Lock<Option<AvmString<'gc>>>,
     first_line: Lock<Option<Object<'gc>>>,
+    /// Last line broken out of this block. Set by the native line breaker;
+    /// added on top of upstream's TextBlockObject for the FTE implementation.
+    last_line: Lock<Option<Object<'gc>>>,
 }
 
 impl<'gc> TextBlockObject<'gc> {
@@ -166,6 +170,14 @@ impl<'gc> TextBlockObject<'gc> {
 
     pub fn set_first_line(self, value: Option<Object<'gc>>, mc: &Mutation<'gc>) {
         unlock!(Gc::write(mc, self.0), TextBlockObjectData, first_line).set(value);
+    }
+
+    pub fn last_line(self) -> Option<Object<'gc>> {
+        self.0.last_line.get()
+    }
+
+    pub fn set_last_line(self, value: Option<Object<'gc>>, mc: &Mutation<'gc>) {
+        unlock!(Gc::write(mc, self.0), TextBlockObjectData, last_line).set(value);
     }
 }
 

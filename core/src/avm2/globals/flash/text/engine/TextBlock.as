@@ -1,5 +1,4 @@
 package flash.text.engine {
-    import __ruffle__.stub_getter;
     import __ruffle__.stub_method;
 
     [API("662")]
@@ -83,28 +82,13 @@ package flash.text.engine {
             fitSomething:Boolean = false
         ):TextLine;
 
-        public function recreateTextLine(
+        public native function recreateTextLine(
             textLine:TextLine,
             previousLine:TextLine = null,
             width:Number = 1000000,
             lineOffset:Number = 0,
             fitSomething:Boolean = false
-        ):TextLine {
-            if (textLine == null) {
-                throw new ArgumentError("Error #2004: One of the parameters is invalid.", 2004);
-            }
-
-            if (previousLine) {
-                return null;
-            }
-
-            stub_method("flash.text.engine.TextBlock", "recreateTextLine");
-
-            // FIXME: Properly recalculate new properties of new TextLine. Text layout
-            // modules often depend on this returning the same textLine, so we can't
-            // call `createTextLine` again.
-            return textLine;
-        }
+        ):TextLine;
 
         public native function get textLineCreationResult():String;
 
@@ -112,18 +96,76 @@ package flash.text.engine {
 
         public native function get firstLine():TextLine;
 
-        public function get lastLine():TextLine {
-            stub_getter("flash.text.engine.TextBlock", "lastLine");
-            return this.firstLine;
+        public native function get lastLine():TextLine;
+
+        public native function releaseLines(firstLine:TextLine, lastLine:TextLine):void;
+
+        public function findNextAtomBoundary(afterCharIndex:int):int {
+            // TODO: This is an approximation- combining characters should be
+            // skipped over, as they belong to the previous atom.
+            var text:String = this.contentText();
+            if (afterCharIndex < 0 || afterCharIndex >= text.length) {
+                throw new RangeError("Error #2006: The supplied index is out of bounds.", 2006);
+            }
+            return afterCharIndex + 1;
         }
 
-        public function releaseLines(start:TextLine, end:TextLine):void {
-            if (start != end || end != this.firstLine) {
-                stub_method("flash.text.engine.TextBlock", "releaseLines", "with start != end or multiple lines");
-                return;
+        public function findPreviousAtomBoundary(beforeCharIndex:int):int {
+            // TODO: This is an approximation, see findNextAtomBoundary.
+            var text:String = this.contentText();
+            if (beforeCharIndex <= 0 || beforeCharIndex > text.length) {
+                throw new RangeError("Error #2006: The supplied index is out of bounds.", 2006);
             }
-            this.firstLine.validity = "invalid";
-            this.firstLine._textBlock = null;
+            return beforeCharIndex - 1;
+        }
+
+        public function findNextWordBoundary(afterCharIndex:int):int {
+            var text:String = this.contentText();
+            if (afterCharIndex < 0 || afterCharIndex >= text.length) {
+                throw new RangeError("Error #2006: The supplied index is out of bounds.", 2006);
+            }
+            var wasSpace:Boolean = TextBlock.isWordSeparator(text.charCodeAt(afterCharIndex));
+            for (var i:int = afterCharIndex + 1; i < text.length; i++) {
+                var isSpace:Boolean = TextBlock.isWordSeparator(text.charCodeAt(i));
+                if (isSpace != wasSpace) {
+                    return i;
+                }
+            }
+            return text.length;
+        }
+
+        public function findPreviousWordBoundary(beforeCharIndex:int):int {
+            var text:String = this.contentText();
+            if (beforeCharIndex <= 0 || beforeCharIndex > text.length) {
+                throw new RangeError("Error #2006: The supplied index is out of bounds.", 2006);
+            }
+            var wasSpace:Boolean = TextBlock.isWordSeparator(text.charCodeAt(beforeCharIndex - 1));
+            for (var i:int = beforeCharIndex - 1; i > 0; i--) {
+                var isSpace:Boolean = TextBlock.isWordSeparator(text.charCodeAt(i - 1));
+                if (isSpace != wasSpace) {
+                    return i;
+                }
+            }
+            return 0;
+        }
+
+        public function dump():String {
+            stub_method("flash.text.engine.TextBlock", "dump");
+            return "";
+        }
+
+        private static function isWordSeparator(charCode:uint):Boolean {
+            return charCode == 0x20 || charCode == 0x09 || charCode == 0x0A
+                || charCode == 0x0D || charCode == 0xA0 || charCode == 0x2028
+                || charCode == 0x2029 || charCode == 0x3000;
+        }
+
+        private function contentText():String {
+            var c:ContentElement = this.content;
+            if (c == null || c.text == null) {
+                return "";
+            }
+            return c.text;
         }
     }
 }

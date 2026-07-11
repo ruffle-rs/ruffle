@@ -99,6 +99,13 @@ pub struct LayoutContext<'a, 'gc> {
 
     /// The total width of the text field being laid out.
     max_bounds: Twips,
+
+    /// When set, the final line of the layout is justified too, not only the
+    /// interior lines. The Flash Text Engine sets this on the single-line
+    /// fallback backing each `TextLine`, so a wrapped FTE line is spread to the
+    /// full width even though, on its own, it is the layout's only (and thus
+    /// "final") line.
+    justify_final_line: bool,
 }
 
 impl<'a, 'gc> LayoutContext<'a, 'gc> {
@@ -109,6 +116,7 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
         is_input: bool,
         is_word_wrap: bool,
         font_type: FontType,
+        justify_final_line: bool,
     ) -> Self {
         Self {
             movie,
@@ -131,6 +139,7 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
             is_input,
             is_word_wrap,
             font_type,
+            justify_final_line,
         }
     }
 
@@ -333,7 +342,9 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
             Twips::ZERO,
         );
         let interim_adjustment = max(
-            if !final_line_of_para && self.effective_alignment() == swf::TextAlign::Justify {
+            if (!final_line_of_para || self.justify_final_line)
+                && self.effective_alignment() == swf::TextAlign::Justify
+            {
                 misalignment / max(box_count.saturating_sub(1), 1)
             } else {
                 Twips::ZERO
@@ -803,6 +814,7 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
 }
 
 /// Construct a new layout from text spans.
+#[allow(clippy::too_many_arguments)]
 pub fn lower_from_text_spans<'gc>(
     fs: &FormatSpans,
     context: &mut UpdateContext<'gc>,
@@ -811,6 +823,7 @@ pub fn lower_from_text_spans<'gc>(
     is_input: bool,
     is_word_wrap: bool,
     font_type: FontType,
+    justify_final_line: bool,
 ) -> Layout<'gc> {
     let requested_width = requested_width.unwrap_or_else(|| {
         // When we don't know the width of the text field, we have to lay out
@@ -824,6 +837,7 @@ pub fn lower_from_text_spans<'gc>(
             is_input,
             false,
             font_type,
+            false,
         );
         let max_width = layout
             .lines()
@@ -840,9 +854,11 @@ pub fn lower_from_text_spans<'gc>(
         is_input,
         is_word_wrap,
         font_type,
+        justify_final_line,
     )
 }
 
+#[allow(clippy::too_many_arguments)]
 fn lower_from_text_spans_known_width<'gc>(
     fs: &FormatSpans,
     context: &mut UpdateContext<'gc>,
@@ -851,6 +867,7 @@ fn lower_from_text_spans_known_width<'gc>(
     is_input: bool,
     is_word_wrap: bool,
     font_type: FontType,
+    justify_final_line: bool,
 ) -> Layout<'gc> {
     let mut layout_context = LayoutContext::new(
         movie,
@@ -859,6 +876,7 @@ fn lower_from_text_spans_known_width<'gc>(
         is_input,
         is_word_wrap,
         font_type,
+        justify_final_line,
     );
 
     layout_context.lay_out_spans(context, fs);

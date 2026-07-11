@@ -3,6 +3,7 @@ package flash.text.engine {
 
     [API("662")]
     public final class GroupElement extends ContentElement {
+        [Ruffle(NativeAccessible)]
         internal var _elements = null;
 
         public function GroupElement(
