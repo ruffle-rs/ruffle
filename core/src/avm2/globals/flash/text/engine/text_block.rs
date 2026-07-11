@@ -263,16 +263,15 @@ pub fn create_text_line<'gc>(
 
     avm2_stub_method!(activation, "flash.text.TextBlock", "createTextLine");
 
-    let previous_text_line = args.try_get_object(0);
+    let previous_text_line = args
+        .try_get_object(0)
+        .and_then(|o| o.as_display_object())
+        .and_then(|o| o.as_text_line());
+
     let width = args.get_f64(1);
 
     let previous_position = if let Some(previous_text_line) = previous_text_line {
-        previous_text_line
-            .as_display_object()
-            .unwrap()
-            .as_text_line()
-            .unwrap()
-            .end_index() as usize
+        previous_text_line.end_index() as usize
     } else {
         0
     };
@@ -294,13 +293,7 @@ pub fn create_text_line<'gc>(
     }
 
     let line_index = if let Some(previous_text_line) = previous_text_line {
-        previous_text_line
-            .as_display_object()
-            .unwrap()
-            .as_text_line()
-            .unwrap()
-            .line_index()
-            + 1
+        previous_text_line.line_index() + 1
     } else {
         0
     };
@@ -337,12 +330,7 @@ pub fn create_text_line<'gc>(
     text_line.set_end_index(next_position as u32);
     text_line.set_line_index(line_index);
 
-    if let Some(previous_text_line) = previous_text_line {
-        let previous_line = previous_text_line
-            .as_display_object()
-            .unwrap()
-            .as_text_line()
-            .unwrap();
+    if let Some(previous_line) = previous_text_line {
         text_line.set_previous_line(Some(previous_line), activation.gc());
         previous_line.set_next_line(Some(text_line), activation.gc());
     }
