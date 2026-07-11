@@ -1,0 +1,285 @@
+// String.prototype.valueOf()
+
+// Boolean.prototype.valueOf()
+false
+// Number.prototype.valueOf()
+0
+
+// value
+abc
+// Object.prototype.valueOf.call(value)
+abc
+// String.prototype.valueOf.call(value)
+abc
+// Boolean.prototype.valueOf.call(value)
+TypeError: Error #1004: Method Boolean.prototype.valueOf was invoked on an incompatible object.
+	at Error$/throwError()
+	at Function/<anonymous>()
+	at Function/http://adobe.com/AS3/2006/builtin::call()
+	at global$init() [TU=]
+// Number.prototype.valueOf.call(value)
+TypeError: Error #1004: Method Number.prototype.valueOf was invoked on an incompatible object.
+	at Error$/throwError()
+	at Function/<anonymous>()
+	at Function/http://adobe.com/AS3/2006/builtin::call()
+	at global$init() [TU=]
+// int.prototype.valueOf.call(value)
+TypeError: Error #1004: Method int.prototype.valueOf was invoked on an incompatible object.
+	at Error$/throwError()
+	at Function/<anonymous>()
+	at Function/http://adobe.com/AS3/2006/builtin::call()
+	at global$init() [TU=]
+// uint.prototype.valueOf.call(value)
+TypeError: Error #1004: Method uint.prototype.valueOf was invoked on an incompatible object.
+	at Error$/throwError()
+	at Function/<anonymous>()
+	at Function/http://adobe.com/AS3/2006/builtin::call()
+	at global$init() [TU=]
+
+// value
+true
+// Object.prototype.valueOf.call(value)
+true
+// String.prototype.valueOf.call(value)
+TypeError: Error #1004: Method String.prototype.valueOf was invoked on an incompatible object.
+	at Error$/throwError()
+	at Function/<anonymous>()
+	at Function/http://adobe.com/AS3/2006/builtin::call()
+	at global$init() [TU=]
+// Boolean.prototype.valueOf.call(value)
+true
+// Number.prototype.valueOf.call(value)
+TypeError: Error #1004: Method Number.prototype.valueOf was invoked on an incompatible object.
+	at Error$/throwError()
+	at Function/<anonymous>()
+	at Function/http://adobe.com/AS3/2006/builtin::call()
+	at global$init() [TU=]
+// int.prototype.valueOf.call(value)
+TypeError: Error #1004: Method int.prototype.valueOf was invoked on an incompatible object.
+	at Error$/throwError()
+	at Function/<anonymous>()
+	at Function/http://adobe.com/AS3/2006/builtin::call()
+	at global$init() [TU=]
+// uint.prototype.valueOf.call(value)
+TypeError: Error #1004: Method uint.prototype.valueOf was invoked on an incompatible object.
+	at Error$/throwError()
+	at Function/<anonymous>()
+	at Function/http://adobe.com/AS3/2006/builtin::call()
+	at global$init() [TU=]
+
+// value
+1.5
+// Object.prototype.valueOf.call(value)
+1.5
+// String.prototype.valueOf.call(value)
+TypeError: Error #1004: Method String.prototype.valueOf was invoked on an incompatible object.
+	at Error$/throwError()
+	at Function/<anonymous>()
+	at Function/http://adobe.com/AS3/2006/builtin::call()
+	at global$init() [TU=]
+// Boolean.prototype.valueOf.call(value)
+TypeError: Error #1004: Method Boolean.prototype.valueOf was invoked on an incompatible object.
+	at Error$/throwError()
+	at Function/<anonymous>()
+	at Function/http://adobe.com/AS3/2006/builtin::call()
+	at global$init() [TU=]
+// Number.prototype.valueOf.call(value)
+1.5
+// int.prototype.valueOf.call(value)
+TypeError: Error #1004: Method int.prototype.valueOf was invoked on an incompatible object.
+	at Error$/throwError()
+	at Function/<anonymous>()
+	at Function/http://adobe.com/AS3/2006/builtin::call()
+	at global$init() [TU=]
+// uint.prototype.valueOf.call(value)
+TypeError: Error #1004: Method uint.prototype.valueOf was invoked on an incompatible object.
+	at Error$/throwError()
+	at Function/<anonymous>()
+	at Function/http://adobe.com/AS3/2006/builtin::call()
+	at global$init() [TU=]
+
+// value
+2
+// Object.prototype.valueOf.call(value)
+2
+// String.prototype.valueOf.call(value)
+TypeError: Error #1004: Method String.prototype.valueOf was invoked on an incompatible object.
+	at Error$/throwError()
+	at Function/<anonymous>()
+	at Function/http://adobe.com/AS3/2006/builtin::call()
+	at global$init() [TU=]
+// Boolean.prototype.valueOf.call(value)
+TypeError: Error #1004: Method Boolean.prototype.valueOf was invoked on an incompatible object.
+	at Error$/throwError()
+	at Function/<anonymous>()
+	at Function/http://adobe.com/AS3/2006/builtin::call()
+	at global$init() [TU=]
+// Number.prototype.valueOf.call(value)
+2
+// int.prototype.valueOf.call(value)
+2
+// uint.prototype.valueOf.call(value)
+2
+
+// value
+-2
+// Object.prototype.valueOf.call(value)
+-2
+// String.prototype.valueOf.call(value)
+TypeError: Error #1004: Method String.prototype.valueOf was invoked on an incompatible object.
+	at Error$/throwError()
+	at Function/<anonymous>()
+	at Function/http://adobe.com/AS3/2006/builtin::call()
+	at global$init() [TU=]
+// Boolean.prototype.valueOf.call(value)
+TypeError: Error #1004: Method Boolean.prototype.valueOf was invoked on an incompatible object.
+	at Error$/throwError()
+	at Function/<anonymous>()
+	at Function/http://adobe.com/AS3/2006/builtin::call()
+	at global$init() [TU=]
+// Number.prototype.valueOf.call(value)
+-2
+// int.prototype.valueOf.call(value)
+-2
+// uint.prototype.valueOf.call(value)
+TypeError: Error #1004: Method uint.prototype.valueOf was invoked on an incompatible object.
+	at Error$/throwError()
+	at Function/<anonymous>()
+	at Function/http://adobe.com/AS3/2006/builtin::call()
+	at global$init() [TU=]
+
+// value
+null
+// Object.prototype.valueOf.call(value)
+[object global]
+// String.prototype.valueOf.call(value)
+TypeError: Error #1004: Method String.prototype.valueOf was invoked on an incompatible object.
+	at Error$/throwError()
+	at Function/<anonymous>()
+	at Function/http://adobe.com/AS3/2006/builtin::call()
+	at global$init() [TU=]
+// Boolean.prototype.valueOf.call(value)
+TypeError: Error #1004: Method Boolean.prototype.valueOf was invoked on an incompatible object.
+	at Error$/throwError()
+	at Function/<anonymous>()
+	at Function/http://adobe.com/AS3/2006/builtin::call()
+	at global$init() [TU=]
+// Number.prototype.valueOf.call(value)
+TypeError: Error #1004: Method Number.prototype.valueOf was invoked on an incompatible object.
+	at Error$/throwError()
+	at Function/<anonymous>()
+	at Function/http://adobe.com/AS3/2006/builtin::call()
+	at global$init() [TU=]
+// int.prototype.valueOf.call(value)
+TypeError: Error #1004: Method int.prototype.valueOf was invoked on an incompatible object.
+	at Error$/throwError()
+	at Function/<anonymous>()
+	at Function/http://adobe.com/AS3/2006/builtin::call()
+	at global$init() [TU=]
+// uint.prototype.valueOf.call(value)
+TypeError: Error #1004: Method uint.prototype.valueOf was invoked on an incompatible object.
+	at Error$/throwError()
+	at Function/<anonymous>()
+	at Function/http://adobe.com/AS3/2006/builtin::call()
+	at global$init() [TU=]
+
+// value
+undefined
+// Object.prototype.valueOf.call(value)
+[object global]
+// String.prototype.valueOf.call(value)
+TypeError: Error #1004: Method String.prototype.valueOf was invoked on an incompatible object.
+	at Error$/throwError()
+	at Function/<anonymous>()
+	at Function/http://adobe.com/AS3/2006/builtin::call()
+	at global$init() [TU=]
+// Boolean.prototype.valueOf.call(value)
+TypeError: Error #1004: Method Boolean.prototype.valueOf was invoked on an incompatible object.
+	at Error$/throwError()
+	at Function/<anonymous>()
+	at Function/http://adobe.com/AS3/2006/builtin::call()
+	at global$init() [TU=]
+// Number.prototype.valueOf.call(value)
+TypeError: Error #1004: Method Number.prototype.valueOf was invoked on an incompatible object.
+	at Error$/throwError()
+	at Function/<anonymous>()
+	at Function/http://adobe.com/AS3/2006/builtin::call()
+	at global$init() [TU=]
+// int.prototype.valueOf.call(value)
+TypeError: Error #1004: Method int.prototype.valueOf was invoked on an incompatible object.
+	at Error$/throwError()
+	at Function/<anonymous>()
+	at Function/http://adobe.com/AS3/2006/builtin::call()
+	at global$init() [TU=]
+// uint.prototype.valueOf.call(value)
+TypeError: Error #1004: Method uint.prototype.valueOf was invoked on an incompatible object.
+	at Error$/throwError()
+	at Function/<anonymous>()
+	at Function/http://adobe.com/AS3/2006/builtin::call()
+	at global$init() [TU=]
+
+// value
+[object Object]
+// Object.prototype.valueOf.call(value)
+[object Object]
+// String.prototype.valueOf.call(value)
+TypeError: Error #1004: Method String.prototype.valueOf was invoked on an incompatible object.
+	at Error$/throwError()
+	at Function/<anonymous>()
+	at Function/http://adobe.com/AS3/2006/builtin::call()
+	at global$init() [TU=]
+// Boolean.prototype.valueOf.call(value)
+TypeError: Error #1004: Method Boolean.prototype.valueOf was invoked on an incompatible object.
+	at Error$/throwError()
+	at Function/<anonymous>()
+	at Function/http://adobe.com/AS3/2006/builtin::call()
+	at global$init() [TU=]
+// Number.prototype.valueOf.call(value)
+TypeError: Error #1004: Method Number.prototype.valueOf was invoked on an incompatible object.
+	at Error$/throwError()
+	at Function/<anonymous>()
+	at Function/http://adobe.com/AS3/2006/builtin::call()
+	at global$init() [TU=]
+// int.prototype.valueOf.call(value)
+TypeError: Error #1004: Method int.prototype.valueOf was invoked on an incompatible object.
+	at Error$/throwError()
+	at Function/<anonymous>()
+	at Function/http://adobe.com/AS3/2006/builtin::call()
+	at global$init() [TU=]
+// uint.prototype.valueOf.call(value)
+TypeError: Error #1004: Method uint.prototype.valueOf was invoked on an incompatible object.
+	at Error$/throwError()
+	at Function/<anonymous>()
+	at Function/http://adobe.com/AS3/2006/builtin::call()
+	at global$init() [TU=]
+
+// value
+
+// Object.prototype.valueOf.call(value)
+
+// String.prototype.valueOf.call(value)
+
+// Boolean.prototype.valueOf.call(value)
+TypeError: Error #1004: Method Boolean.prototype.valueOf was invoked on an incompatible object.
+	at Error$/throwError()
+	at Function/<anonymous>()
+	at Function/http://adobe.com/AS3/2006/builtin::call()
+	at global$init() [TU=]
+// Number.prototype.valueOf.call(value)
+TypeError: Error #1004: Method Number.prototype.valueOf was invoked on an incompatible object.
+	at Error$/throwError()
+	at Function/<anonymous>()
+	at Function/http://adobe.com/AS3/2006/builtin::call()
+	at global$init() [TU=]
+// int.prototype.valueOf.call(value)
+TypeError: Error #1004: Method int.prototype.valueOf was invoked on an incompatible object.
+	at Error$/throwError()
+	at Function/<anonymous>()
+	at Function/http://adobe.com/AS3/2006/builtin::call()
+	at global$init() [TU=]
+// uint.prototype.valueOf.call(value)
+TypeError: Error #1004: Method uint.prototype.valueOf was invoked on an incompatible object.
+	at Error$/throwError()
+	at Function/<anonymous>()
+	at Function/http://adobe.com/AS3/2006/builtin::call()
+	at global$init() [TU=]
