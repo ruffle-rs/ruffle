@@ -20,6 +20,7 @@ use gc_arena::{Collect, Gc, Mutation};
 use ruffle_common::avm_string::AvmString;
 use ruffle_common::utils::HasPrefixField;
 use ruffle_macros::istr;
+use std::cell::Cell;
 use std::sync::Arc;
 
 #[derive(Clone, Collect, Copy)]
@@ -50,6 +51,8 @@ pub struct TextLineData<'gc> {
     validity: Lock<AvmString<'gc>>,
 
     text_block: Lock<Option<TextBlockObject<'gc>>>,
+
+    specified_width: Cell<f64>,
 }
 
 impl<'gc> TextLine<'gc> {
@@ -67,6 +70,7 @@ impl<'gc> TextLine<'gc> {
                 movie,
                 validity: Lock::new(istr!(context, "valid")),
                 text_block: Lock::new(None),
+                specified_width: Cell::new(0.0),
             },
         ))
     }
@@ -90,6 +94,14 @@ impl<'gc> TextLine<'gc> {
     pub fn set_text_block(self, text_block: Option<TextBlockObject<'gc>>, mc: &Mutation<'gc>) {
         unlock!(Gc::write(mc, self.0), TextLineData, text_block).set(text_block);
     }
+
+    pub fn specified_width(self) -> f64 {
+        self.0.specified_width.get()
+    }
+
+    pub fn set_specified_width(self, value: f64) {
+        self.0.specified_width.set(value);
+    }
 }
 
 impl<'gc> TDisplayObject<'gc> for TextLine<'gc> {
@@ -108,6 +120,7 @@ impl<'gc> TDisplayObject<'gc> for TextLine<'gc> {
                 movie: self.0.movie.clone(),
                 validity: Lock::new(self.0.validity.get()),
                 text_block: Lock::new(self.0.text_block.get()),
+                specified_width: Cell::new(self.0.specified_width.get()),
             },
         ))
         .into()

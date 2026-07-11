@@ -17,9 +17,6 @@ package flash.text.engine {
     [API("662")]
     public final class TextLine extends DisplayObjectContainer {
         [Ruffle(NativeAccessible)]
-        private var _specifiedWidth:Number = 0.0;
-
-        [Ruffle(NativeAccessible)]
         private var _rawTextLength:int = 0;
 
         [Ruffle(NativeAccessible)]
@@ -46,9 +43,7 @@ package flash.text.engine {
             return this._beginIndex;
         }
 
-        public function get specifiedWidth():Number {
-            return this._specifiedWidth;
-        }
+        public native function get specifiedWidth():Number;
 
         public native function get textBlock():TextBlock;
 
@@ -80,7 +75,7 @@ package flash.text.engine {
 
         public function get unjustifiedTextWidth():Number {
             stub_getter("flash.text.engine.TextLine", "unjustifiedTextWidth");
-            return this._specifiedWidth;
+            return this.specifiedWidth;
         }
 
         public native function get textWidth():Number;
