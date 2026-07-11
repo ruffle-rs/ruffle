@@ -144,23 +144,23 @@ package flash.text.engine {
         // Overrides
 
         override public function set contextMenu(cm:ContextMenu):void {
-            throw new IllegalOperationError("Error #2181: The TextLine class does not implement this property or method.", 2181);
+            Error.throwError(IllegalOperationError, 2181);
         }
 
         override public function set focusRect(value:Object):void {
-            throw new IllegalOperationError("Error #2181: The TextLine class does not implement this property or method.", 2181);
+            Error.throwError(IllegalOperationError, 2181);
         }
 
         override public function set tabChildren(value:Boolean):void {
-            throw new IllegalOperationError("Error #2181: The TextLine class does not implement this property or method.", 2181);
+            Error.throwError(IllegalOperationError, 2181);
         }
 
         override public function set tabEnabled(value:Boolean):void {
-            throw new IllegalOperationError("Error #2181: The TextLine class does not implement this property or method.", 2181);
+            Error.throwError(IllegalOperationError, 2181);
         }
 
         override public function set tabIndex(index:int):void {
-            throw new IllegalOperationError("Error #2181: The TextLine class does not implement this property or method.", 2181);
+            Error.throwError(IllegalOperationError, 2181);
         }
 
         // End of overrides
