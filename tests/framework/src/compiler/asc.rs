@@ -79,6 +79,12 @@ impl Default for AscOptions {
     }
 }
 
+struct SwfMetadata {
+    width: f64,
+    height: f64,
+    frame_rate: f32,
+}
+
 #[derive(Debug)]
 pub struct AscCompiler {
     target: String,
@@ -130,7 +136,7 @@ impl SwfCompiler for AscCompiler {
 
         let abc_bytes = std::fs::read(tmp_dir.join(format!("{}.abc", self.class)))?;
 
-        let (width, height, fps) = read_swf_metadata(&abc_bytes, &self.class)?;
+        let metadata = read_swf_metadata(&abc_bytes, &self.class)?;
         let StageTransform { x, y } = self.stage_transform;
 
         let header = Header {
@@ -138,11 +144,11 @@ impl SwfCompiler for AscCompiler {
             version: self.swf_version,
             stage_size: Rectangle {
                 x_min: Twips::from_pixels(x),
-                x_max: Twips::from_pixels(x + width),
+                x_max: Twips::from_pixels(x + metadata.width),
                 y_min: Twips::from_pixels(y),
-                y_max: Twips::from_pixels(y + height),
+                y_max: Twips::from_pixels(y + metadata.height),
             },
-            frame_rate: Fixed8::from_f32(fps),
+            frame_rate: Fixed8::from_f32(metadata.frame_rate),
             num_frames: 1,
         };
 
@@ -174,16 +180,18 @@ impl SwfCompiler for AscCompiler {
     }
 }
 
-fn read_swf_metadata(abc_bytes: &[u8], class: &str) -> anyhow::Result<(f64, f64, f32)> {
+fn read_swf_metadata(abc_bytes: &[u8], class: &str) -> anyhow::Result<SwfMetadata> {
     use ruffle_core::swf::avm2::read::Reader;
     use ruffle_core::swf::avm2::types::Multiname;
 
     let abc = Reader::new(abc_bytes).read().unwrap();
     let strings = &abc.constant_pool.strings;
 
-    let mut width: f64 = 550.0;
-    let mut height: f64 = 400.0;
-    let mut fps: f32 = 24.0;
+    let mut ret = SwfMetadata {
+        width: 550.0,
+        height: 400.0,
+        frame_rate: 24.0,
+    };
 
     let Some(class_trait) = abc
         .scripts
@@ -198,7 +206,7 @@ fn read_swf_metadata(abc_bytes: &[u8], class: &str) -> anyhow::Result<(f64, f64,
             )
         })
     else {
-        return Ok((width, height, fps));
+        return Ok(ret);
     };
 
     let Some(metadata) = class_trait
@@ -207,7 +215,7 @@ fn read_swf_metadata(abc_bytes: &[u8], class: &str) -> anyhow::Result<(f64, f64,
         .map(|&idx| &abc.metadata[idx.0 as usize])
         .find(|m| m.name.0 != 0 && strings[m.name.0 as usize - 1] == b"SWF")
     else {
-        return Ok((width, height, fps));
+        return Ok(ret);
     };
 
     for item in &metadata.items {
@@ -218,9 +226,9 @@ fn read_swf_metadata(abc_bytes: &[u8], class: &str) -> anyhow::Result<(f64, f64,
         let value = std::str::from_utf8(&strings[item.value.0 as usize - 1]).unwrap();
 
         match key.as_slice() {
-            b"width" => width = value.parse()?,
-            b"height" => height = value.parse()?,
-            b"frameRate" => fps = value.parse()?,
+            b"width" => ret.width = value.parse()?,
+            b"height" => ret.height = value.parse()?,
+            b"frameRate" => ret.frame_rate = value.parse()?,
             key => {
                 return Err(anyhow!(
                     "Unknown SWF annotation key: {}",
@@ -230,5 +238,5 @@ fn read_swf_metadata(abc_bytes: &[u8], class: &str) -> anyhow::Result<(f64, f64,
         }
     }
 
-    Ok((width, height, fps))
+    Ok(ret)
 }
