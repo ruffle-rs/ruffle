@@ -17,8 +17,6 @@ package flash.text.engine {
     [API("662")]
     public final class TextLine extends DisplayObjectContainer {
         [Ruffle(NativeAccessible)]
-        private var _lineIndex:int = 0;
-        [Ruffle(NativeAccessible)]
         private var _previousLine:TextLine = null;
         [Ruffle(NativeAccessible)]
         private var _nextLine:TextLine = null;
