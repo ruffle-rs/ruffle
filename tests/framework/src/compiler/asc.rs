@@ -2,6 +2,7 @@ use crate::compiler::SwfCompiler;
 use crate::util::read_bytes;
 use crate::util::write_bytes_and_verify_if_changed;
 use anyhow::anyhow;
+use ruffle_core::Color;
 use ruffle_core::swf::{
     Compression, DoAbc2, DoAbc2Flag, FileAttributes, Fixed8, Header, Rectangle, SwfStr,
     SymbolClassLink, Tag, Twips,
@@ -83,6 +84,7 @@ struct SwfMetadata {
     width: f64,
     height: f64,
     frame_rate: f32,
+    background_color: Option<Color>,
 }
 
 #[derive(Debug)]
@@ -166,19 +168,21 @@ impl AscCompiler {
             attributes.set(FileAttributes::USE_NETWORK_SANDBOX, true);
         }
 
-        let tags = [
-            Tag::FileAttributes(attributes),
-            Tag::DoAbc2(DoAbc2 {
-                flags: DoAbc2Flag::LAZY_INITIALIZE,
-                name: SwfStr::from_utf8_str(""),
-                data: abc_bytes,
-            }),
-            Tag::SymbolClass(vec![SymbolClassLink {
-                id: 0,
-                class_name: SwfStr::from_utf8_str(&self.class),
-            }]),
-            Tag::ShowFrame,
-        ];
+        let mut tags = Vec::new();
+        tags.push(Tag::FileAttributes(attributes));
+        if let Some(color) = metadata.background_color {
+            tags.push(Tag::SetBackgroundColor(color));
+        }
+        tags.push(Tag::DoAbc2(DoAbc2 {
+            flags: DoAbc2Flag::LAZY_INITIALIZE,
+            name: SwfStr::from_utf8_str(""),
+            data: abc_bytes,
+        }));
+        tags.push(Tag::SymbolClass(vec![SymbolClassLink {
+            id: 0,
+            class_name: SwfStr::from_utf8_str(&self.class),
+        }]));
+        tags.push(Tag::ShowFrame);
 
         let mut swf_bytes = Vec::new();
         ruffle_core::swf::write_swf(&header, &tags, &mut swf_bytes)?;
@@ -198,6 +202,7 @@ fn read_swf_metadata(abc_bytes: &[u8], class: &str) -> anyhow::Result<SwfMetadat
         width: 550.0,
         height: 400.0,
         frame_rate: 24.0,
+        background_color: None,
     };
 
     let Some(class_trait) = abc
@@ -236,6 +241,7 @@ fn read_swf_metadata(abc_bytes: &[u8], class: &str) -> anyhow::Result<SwfMetadat
             b"width" => ret.width = value.parse()?,
             b"height" => ret.height = value.parse()?,
             b"frameRate" => ret.frame_rate = value.parse()?,
+            b"backgroundColor" => ret.background_color = Some(parse_metadata_color(value)?),
             key => {
                 return Err(anyhow!(
                     "Unknown SWF annotation key: {}",
@@ -246,4 +252,12 @@ fn read_swf_metadata(abc_bytes: &[u8], class: &str) -> anyhow::Result<SwfMetadat
     }
 
     Ok(ret)
+}
+
+fn parse_metadata_color(str: &str) -> anyhow::Result<Color> {
+    let hex = str
+        .strip_prefix('#')
+        .ok_or_else(|| anyhow!("Color must start with '#': {}", str))?;
+    let rgb = u32::from_str_radix(hex, 16).map_err(|_| anyhow!("Invalid color value: {}", str))?;
+    Ok(Color::from_rgb(rgb, 255))
 }
