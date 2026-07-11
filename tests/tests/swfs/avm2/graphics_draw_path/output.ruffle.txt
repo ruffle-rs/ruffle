@@ -48,8 +48,6 @@ Lowercase winding rule
 ===== GraphicsPath
 Odd number of data coordinates
   Error thrown: ArgumentError: Error #2004: One of the parameters is invalid.
-	at flash.display::Graphics/drawPath()
-	at flash.display::Graphics/drawPathObject()
 	at flash.display::Graphics/drawGraphicsData()
 	at Function/<anonymous>()
 	at Function/<anonymous>()
@@ -62,8 +60,6 @@ Odd number of data coordinates with no commands
   No error thrown
 Odd number of superfluous data coordinates
   Error thrown: ArgumentError: Error #2004: One of the parameters is invalid.
-	at flash.display::Graphics/drawPath()
-	at flash.display::Graphics/drawPathObject()
 	at flash.display::Graphics/drawGraphicsData()
 	at Function/<anonymous>()
 	at Function/<anonymous>()
