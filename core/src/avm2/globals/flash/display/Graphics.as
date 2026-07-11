@@ -5,10 +5,6 @@ package flash.display {
 
     [Ruffle(Abstract)]
     public final class Graphics {
-        public function Graphics() {
-            throw new Error("You cannot construct Graphics directly.");
-        }
-
         public native function beginBitmapFill(
             bitmap:BitmapData,
             matrix:Matrix = null,
