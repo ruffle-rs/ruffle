@@ -17,7 +17,11 @@ package flash.display {
         ) {
             this.commands = commands;
             this.data = data;
-            this.winding = winding;
+
+            if (winding != GraphicsPathWinding.EVEN_ODD && winding != GraphicsPathWinding.NON_ZERO) {
+                Error.throwError(ArgumentError, 2008, "winding");
+            }
+            this._winding = winding;
         }
 
         public function get winding():String {
@@ -25,8 +29,8 @@ package flash.display {
         }
 
         public function set winding(value:String):void {
-            if (value != "evenOdd" && value != "nonZero") {
-                throw new ArgumentError("Error #2008: Parameter winding must be one of the accepted values.", 2008);
+            if (value != GraphicsPathWinding.EVEN_ODD && value != GraphicsPathWinding.NON_ZERO) {
+                Error.throwError(ArgumentError, 2008, "winding");
             } else {
                 this._winding = value;
             }
