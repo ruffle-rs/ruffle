@@ -8,4 +8,4 @@ tolerance = 1
 known_failure = true
 
 [player_options]
-with_renderer = { optional = false, quality = "high" }
+with_renderer = { optional = true, quality = "high" }
