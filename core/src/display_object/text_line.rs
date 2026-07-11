@@ -55,6 +55,9 @@ pub struct TextLineData<'gc> {
     specified_width: Cell<f64>,
 
     raw_text_length: Cell<u32>,
+
+    begin_index: Cell<u32>,
+    end_index: Cell<u32>,
 }
 
 impl<'gc> TextLine<'gc> {
@@ -74,6 +77,8 @@ impl<'gc> TextLine<'gc> {
                 text_block: Lock::new(None),
                 specified_width: Cell::new(0.0),
                 raw_text_length: Cell::new(0),
+                begin_index: Cell::new(0),
+                end_index: Cell::new(0),
             },
         ))
     }
@@ -113,6 +118,22 @@ impl<'gc> TextLine<'gc> {
     pub fn set_raw_text_length(self, value: u32) {
         self.0.raw_text_length.set(value);
     }
+
+    pub fn begin_index(self) -> u32 {
+        self.0.begin_index.get()
+    }
+
+    pub fn set_begin_index(self, value: u32) {
+        self.0.begin_index.set(value);
+    }
+
+    pub fn end_index(self) -> u32 {
+        self.0.end_index.get()
+    }
+
+    pub fn set_end_index(self, value: u32) {
+        self.0.end_index.set(value);
+    }
 }
 
 impl<'gc> TDisplayObject<'gc> for TextLine<'gc> {
@@ -133,6 +154,8 @@ impl<'gc> TDisplayObject<'gc> for TextLine<'gc> {
                 text_block: Lock::new(self.0.text_block.get()),
                 specified_width: Cell::new(self.0.specified_width.get()),
                 raw_text_length: Cell::new(self.0.raw_text_length.get()),
+                begin_index: Cell::new(self.0.begin_index.get()),
+                end_index: Cell::new(self.0.end_index.get()),
             },
         ))
         .into()

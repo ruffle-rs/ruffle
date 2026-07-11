@@ -19,11 +19,6 @@ package flash.text.engine {
         [Ruffle(NativeAccessible)]
         private var _lineIndex:int = 0;
         [Ruffle(NativeAccessible)]
-        private var _beginIndex:int = 0;
-        [Ruffle(NativeAccessible)]
-        private var _endIndex:int = 0;
-
-        [Ruffle(NativeAccessible)]
         private var _previousLine:TextLine = null;
         [Ruffle(NativeAccessible)]
         private var _nextLine:TextLine = null;
@@ -34,9 +29,7 @@ package flash.text.engine {
 
         public native function get rawTextLength():int;
 
-        public function get textBlockBeginIndex():int {
-            return this._beginIndex;
-        }
+        public native function get textBlockBeginIndex():int;
 
         public native function get specifiedWidth():Number;
 
