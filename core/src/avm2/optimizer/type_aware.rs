@@ -2219,9 +2219,6 @@ fn optimize_get_property<'gc>(
     multiname: Gc<'gc, Multiname<'gc>>,
     stack_value: OptValue<'gc>,
 ) -> Result<Option<(Op<'gc>, Option<Class<'gc>>)>, Error<'gc>> {
-    // Makes the code less readable
-    #![allow(clippy::collapsible_if)]
-
     if let Some(vtable) = stack_value.vtable() {
         match vtable.get_trait(&multiname) {
             Some(Property::Slot { slot_id } | Property::ConstSlot { slot_id }) => {
@@ -2276,9 +2273,6 @@ fn optimize_call_property<'gc>(
     passed_args: &[OptValue<'gc>],
     push_return_value: bool,
 ) -> Result<Option<(Op<'gc>, Option<Class<'gc>>)>, Error<'gc>> {
-    // Makes the code less readable
-    #![allow(clippy::collapsible_if)]
-
     let num_args = passed_args.len() as u32;
 
     if let Some(vtable) = stack_value.vtable() {
@@ -2311,38 +2305,33 @@ fn optimize_call_property<'gc>(
             #[allow(clippy::collapsible_match)]
             Some(Property::Slot { slot_id } | Property::ConstSlot { slot_id }) => {
                 // Don't optimize this for `callpropvoid`
-                if push_return_value {
-                    if stack_value.not_null() {
-                        if num_args == 1 {
-                            let mut value_class =
-                                vtable.slot_class(slot_id).expect("Slot should exist");
-                            let resolved_value_class = value_class.get_class(activation)?;
+                if push_return_value && stack_value.not_null() && num_args == 1 {
+                    let mut value_class = vtable.slot_class(slot_id).expect("Slot should exist");
+                    let resolved_value_class = value_class.get_class(activation)?;
 
-                            if let Some(slot_class) = resolved_value_class {
-                                if let Some(called_class) = slot_class.i_class() {
-                                    // Calling a c_class will perform a simple coercion to the class
-                                    let result = if called_class.call_handler().is_none() {
-                                        Some((
-                                            Op::CoerceSwapPop {
-                                                class: called_class,
-                                            },
-                                            called_class,
-                                        ))
-                                    } else if called_class == types.int {
-                                        Some((Op::CoerceISwapPop, types.int))
-                                    } else if called_class == types.uint {
-                                        Some((Op::CoerceUSwapPop, types.uint))
-                                    } else if called_class == types.number {
-                                        Some((Op::CoerceDSwapPop, types.number))
-                                    } else {
-                                        None
-                                    };
+                    if let Some(slot_class) = resolved_value_class
+                        && let Some(called_class) = slot_class.i_class()
+                    {
+                        // Calling a c_class will perform a simple coercion to the class
+                        let result = if called_class.call_handler().is_none() {
+                            Some((
+                                Op::CoerceSwapPop {
+                                    class: called_class,
+                                },
+                                called_class,
+                            ))
+                        } else if called_class == types.int {
+                            Some((Op::CoerceISwapPop, types.int))
+                        } else if called_class == types.uint {
+                            Some((Op::CoerceUSwapPop, types.uint))
+                        } else if called_class == types.number {
+                            Some((Op::CoerceDSwapPop, types.number))
+                        } else {
+                            None
+                        };
 
-                                    if let Some((new_op, return_type)) = result {
-                                        return Ok(Some((new_op, Some(return_type))));
-                                    }
-                                }
-                            }
+                        if let Some((new_op, return_type)) = result {
+                            return Ok(Some((new_op, Some(return_type))));
                         }
                     }
                 }
