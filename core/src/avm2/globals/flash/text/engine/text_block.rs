@@ -322,8 +322,9 @@ pub fn create_text_line<'gc>(
     let instance = initialize_for_allocator(activation.context, text_line.into(), class);
     let instance: Object<'gc> = instance.into();
 
+    text_line.set_text_block(Some(block), activation.gc());
+
     use crate::avm2::globals::slots::flash_text_engine_text_line as line_slots;
-    instance.set_slot(line_slots::_TEXT_BLOCK, this, activation)?;
     instance.set_slot(line_slots::_SPECIFIED_WIDTH, args.get_value(1), activation)?;
     instance.set_slot(
         line_slots::_RAW_TEXT_LENGTH,

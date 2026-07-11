@@ -20,9 +20,6 @@ package flash.text.engine {
         private var _specifiedWidth:Number = 0.0;
 
         [Ruffle(NativeAccessible)]
-        internal var _textBlock:TextBlock = null;
-
-        [Ruffle(NativeAccessible)]
         private var _rawTextLength:int = 0;
 
         [Ruffle(NativeAccessible)]
@@ -53,9 +50,11 @@ package flash.text.engine {
             return this._specifiedWidth;
         }
 
-        public function get textBlock():TextBlock {
-            return this._textBlock;
-        }
+        public native function get textBlock():TextBlock;
+
+        // TODO: remove this setter once releaseLines() is implemented natively;
+        // it only exists so AS-side releaseLines() can clear textBlock.
+        internal native function setTextBlock(value:TextBlock):void;
 
         public function get ascent():Number {
             stub_getter("flash.text.engine.TextLine", "ascent");

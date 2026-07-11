@@ -66,6 +66,42 @@ pub fn set_validity<'gc>(
     Ok(Value::Undefined)
 }
 
+pub fn get_text_block<'gc>(
+    _activation: &mut Activation<'_, 'gc>,
+    this: Value<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this
+        .as_object()
+        .unwrap()
+        .as_display_object()
+        .unwrap()
+        .as_text_line()
+        .unwrap();
+
+    Ok(this.text_block().map(Value::from).unwrap_or(Value::Null))
+}
+
+pub fn set_text_block<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Value<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this
+        .as_object()
+        .unwrap()
+        .as_display_object()
+        .unwrap()
+        .as_text_line()
+        .unwrap();
+
+    let text_block = args
+        .try_get_object(0)
+        .and_then(|o| o.as_text_block_object());
+    this.set_text_block(text_block, activation.gc());
+    Ok(Value::Undefined)
+}
+
 pub fn get_text_height<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
