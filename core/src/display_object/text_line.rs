@@ -53,6 +53,8 @@ pub struct TextLineData<'gc> {
     text_block: Lock<Option<TextBlockObject<'gc>>>,
 
     specified_width: Cell<f64>,
+
+    raw_text_length: Cell<u32>,
 }
 
 impl<'gc> TextLine<'gc> {
@@ -71,6 +73,7 @@ impl<'gc> TextLine<'gc> {
                 validity: Lock::new(istr!(context, "valid")),
                 text_block: Lock::new(None),
                 specified_width: Cell::new(0.0),
+                raw_text_length: Cell::new(0),
             },
         ))
     }
@@ -102,6 +105,14 @@ impl<'gc> TextLine<'gc> {
     pub fn set_specified_width(self, value: f64) {
         self.0.specified_width.set(value);
     }
+
+    pub fn raw_text_length(self) -> u32 {
+        self.0.raw_text_length.get()
+    }
+
+    pub fn set_raw_text_length(self, value: u32) {
+        self.0.raw_text_length.set(value);
+    }
 }
 
 impl<'gc> TDisplayObject<'gc> for TextLine<'gc> {
@@ -121,6 +132,7 @@ impl<'gc> TDisplayObject<'gc> for TextLine<'gc> {
                 validity: Lock::new(self.0.validity.get()),
                 text_block: Lock::new(self.0.text_block.get()),
                 specified_width: Cell::new(self.0.specified_width.get()),
+                raw_text_length: Cell::new(self.0.raw_text_length.get()),
             },
         ))
         .into()

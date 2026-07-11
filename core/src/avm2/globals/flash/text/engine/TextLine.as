@@ -17,9 +17,6 @@ package flash.text.engine {
     [API("662")]
     public final class TextLine extends DisplayObjectContainer {
         [Ruffle(NativeAccessible)]
-        private var _rawTextLength:int = 0;
-
-        [Ruffle(NativeAccessible)]
         private var _lineIndex:int = 0;
         [Ruffle(NativeAccessible)]
         private var _beginIndex:int = 0;
@@ -35,9 +32,7 @@ package flash.text.engine {
 
         public var userData;
 
-        public function get rawTextLength():int {
-            return this._rawTextLength;
-        }
+        public native function get rawTextLength():int;
 
         public function get textBlockBeginIndex():int {
             return this._beginIndex;
@@ -91,7 +86,7 @@ package flash.text.engine {
 
         public function get atomCount():int {
             stub_getter("flash.text.engine.TextLine", "atomCount");
-            return this._rawTextLength;
+            return this.rawTextLength;
         }
 
         public function get nextLine():TextLine {

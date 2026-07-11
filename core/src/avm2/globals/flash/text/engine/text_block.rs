@@ -324,13 +324,9 @@ pub fn create_text_line<'gc>(
 
     text_line.set_text_block(Some(block), activation.gc());
     text_line.set_specified_width(width);
+    text_line.set_raw_text_length(text.len() as u32);
 
     use crate::avm2::globals::slots::flash_text_engine_text_line as line_slots;
-    instance.set_slot(
-        line_slots::_RAW_TEXT_LENGTH,
-        Value::from_usize_lossy(text.len()),
-        activation,
-    )?;
     instance.set_slot(
         line_slots::_BEGIN_INDEX,
         Value::from_usize_lossy(previous_position),
