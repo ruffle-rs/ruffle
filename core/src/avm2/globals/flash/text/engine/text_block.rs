@@ -267,7 +267,12 @@ pub fn create_text_line<'gc>(
     let width = args.get_f64(1);
 
     let previous_position = if let Some(previous_text_line) = previous_text_line {
-        previous_text_line.get_slot(line_slots::_END_INDEX).as_u32() as usize
+        previous_text_line
+            .as_display_object()
+            .unwrap()
+            .as_text_line()
+            .unwrap()
+            .end_index() as usize
     } else {
         0
     };
@@ -325,18 +330,10 @@ pub fn create_text_line<'gc>(
     text_line.set_text_block(Some(block), activation.gc());
     text_line.set_specified_width(width);
     text_line.set_raw_text_length(text.len() as u32);
+    text_line.set_begin_index(previous_position as u32);
+    text_line.set_end_index(next_position as u32);
 
     use crate::avm2::globals::slots::flash_text_engine_text_line as line_slots;
-    instance.set_slot(
-        line_slots::_BEGIN_INDEX,
-        Value::from_usize_lossy(previous_position),
-        activation,
-    )?;
-    instance.set_slot(
-        line_slots::_END_INDEX,
-        Value::from_usize_lossy(next_position),
-        activation,
-    )?;
     instance.set_slot(line_slots::_LINE_INDEX, line_index.into(), activation)?;
 
     if let Some(previous_text_line) = previous_text_line {
