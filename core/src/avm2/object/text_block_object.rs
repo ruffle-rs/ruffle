@@ -2,8 +2,7 @@ use crate::avm2::Error;
 use crate::avm2::activation::Activation;
 use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{ClassObject, Object, TObject, VectorObject};
-use crate::fte::{TextBaselineValue, TextRotationValue};
-use crate::string::AvmString;
+use crate::fte::{TextBaselineValue, TextLineCreationResultValue, TextRotationValue};
 use core::fmt;
 use gc_arena::barrier::unlock;
 use gc_arena::lock::Lock;
@@ -28,7 +27,7 @@ pub fn text_block_allocator<'gc>(
             tab_stops: Lock::new(None),
             text_justifier: Lock::new(None),
             content: Lock::new(None),
-            text_line_creation_result: Lock::new(None),
+            text_line_creation_result: Cell::new(None),
             first_line: Lock::new(None),
         },
     ))
@@ -65,7 +64,7 @@ pub struct TextBlockObjectData<'gc> {
     tab_stops: Lock<Option<VectorObject<'gc>>>,
     text_justifier: Lock<Option<Object<'gc>>>,
     content: Lock<Option<Object<'gc>>>,
-    text_line_creation_result: Lock<Option<AvmString<'gc>>>,
+    text_line_creation_result: Cell<Option<TextLineCreationResultValue>>,
     first_line: Lock<Option<Object<'gc>>>,
 }
 
@@ -147,17 +146,12 @@ impl<'gc> TextBlockObject<'gc> {
         unlock!(Gc::write(mc, self.0), TextBlockObjectData, content).set(value);
     }
 
-    pub fn text_line_creation_result(self) -> Option<AvmString<'gc>> {
+    pub fn text_line_creation_result(self) -> Option<TextLineCreationResultValue> {
         self.0.text_line_creation_result.get()
     }
 
-    pub fn set_text_line_creation_result(self, value: Option<AvmString<'gc>>, mc: &Mutation<'gc>) {
-        unlock!(
-            Gc::write(mc, self.0),
-            TextBlockObjectData,
-            text_line_creation_result
-        )
-        .set(value);
+    pub fn set_text_line_creation_result(self, value: Option<TextLineCreationResultValue>) {
+        self.0.text_line_creation_result.set(value);
     }
 
     pub fn first_line(self) -> Option<Object<'gc>> {
