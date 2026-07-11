@@ -1,0 +1,56 @@
+Threw: ArgumentError: Error #2008: Parameter winding must be one of the accepted values.
+	at Error$/throwError()
+	at flash.display::GraphicsPath()
+	at Function/<anonymous>()
+	at Test/testThrowing()
+	at Test()
+Did not throw
+Threw: ArgumentError: Error #2008: Parameter winding must be one of the accepted values.
+	at Error$/throwError()
+	at flash.display::GraphicsPath()
+	at Function/<anonymous>()
+	at Test/testThrowing()
+	at Test()
+Threw: ArgumentError: Error #2008: Parameter winding must be one of the accepted values.
+	at Error$/throwError()
+	at flash.display::GraphicsPath()
+	at Function/<anonymous>()
+	at Test/testThrowing()
+	at Test()
+Threw: ArgumentError: Error #2008: Parameter winding must be one of the accepted values.
+	at Error$/throwError()
+	at flash.display::GraphicsPath()
+	at Function/<anonymous>()
+	at Test/testThrowing()
+	at Test()
+gp.commands=null
+gp.data=null
+gp.winding=evenOdd
+gp.commands=1
+gp.data=1
+gp.winding=evenOdd
+gp.winding=nonZero
+Threw: ArgumentError: Error #2008: Parameter winding must be one of the accepted values.
+	at Error$/throwError()
+	at flash.display::GraphicsPath/set winding()
+	at Function/<anonymous>()
+	at Test/testThrowing()
+	at Test()
+Threw: ArgumentError: Error #2008: Parameter winding must be one of the accepted values.
+	at Error$/throwError()
+	at flash.display::GraphicsPath/set winding()
+	at Function/<anonymous>()
+	at Test/testThrowing()
+	at Test()
+Threw: ArgumentError: Error #2008: Parameter winding must be one of the accepted values.
+	at Error$/throwError()
+	at flash.display::GraphicsPath/set winding()
+	at Function/<anonymous>()
+	at Test/testThrowing()
+	at Test()
+Threw: ArgumentError: Error #2008: Parameter winding must be one of the accepted values.
+	at Error$/throwError()
+	at flash.display::GraphicsPath/set winding()
+	at Function/<anonymous>()
+	at Test/testThrowing()
+	at Test()
