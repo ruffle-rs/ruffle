@@ -59,6 +59,9 @@ pub struct TextLineData<'gc> {
     begin_index: Cell<u32>,
     end_index: Cell<u32>,
     line_index: Cell<u32>,
+
+    previous_line: Lock<Option<TextLine<'gc>>>,
+    next_line: Lock<Option<TextLine<'gc>>>,
 }
 
 impl<'gc> TextLine<'gc> {
@@ -81,6 +84,8 @@ impl<'gc> TextLine<'gc> {
                 begin_index: Cell::new(0),
                 end_index: Cell::new(0),
                 line_index: Cell::new(0),
+                previous_line: Lock::new(None),
+                next_line: Lock::new(None),
             },
         ))
     }
@@ -144,6 +149,22 @@ impl<'gc> TextLine<'gc> {
     pub fn set_line_index(self, value: u32) {
         self.0.line_index.set(value);
     }
+
+    pub fn previous_line(self) -> Option<TextLine<'gc>> {
+        self.0.previous_line.get()
+    }
+
+    pub fn set_previous_line(self, value: Option<TextLine<'gc>>, mc: &Mutation<'gc>) {
+        unlock!(Gc::write(mc, self.0), TextLineData, previous_line).set(value);
+    }
+
+    pub fn next_line(self) -> Option<TextLine<'gc>> {
+        self.0.next_line.get()
+    }
+
+    pub fn set_next_line(self, value: Option<TextLine<'gc>>, mc: &Mutation<'gc>) {
+        unlock!(Gc::write(mc, self.0), TextLineData, next_line).set(value);
+    }
 }
 
 impl<'gc> TDisplayObject<'gc> for TextLine<'gc> {
@@ -167,6 +188,8 @@ impl<'gc> TDisplayObject<'gc> for TextLine<'gc> {
                 begin_index: Cell::new(self.0.begin_index.get()),
                 end_index: Cell::new(self.0.end_index.get()),
                 line_index: Cell::new(self.0.line_index.get()),
+                previous_line: Lock::new(self.0.previous_line.get()),
+                next_line: Lock::new(self.0.next_line.get()),
             },
         ))
         .into()

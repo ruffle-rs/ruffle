@@ -6,7 +6,7 @@ use crate::avm2::activation::Activation;
 use crate::avm2::error::{Error, Error2004Type, make_error_2004, make_error_2008};
 use crate::avm2::globals::flash::display::display_object::initialize_for_allocator;
 use crate::avm2::globals::methods::flash_text_engine_content_element as element_methods;
-use crate::avm2::object::{Object, TObject, VectorObject};
+use crate::avm2::object::{Object, VectorObject};
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
 use crate::avm2_stub_method;
@@ -337,20 +337,14 @@ pub fn create_text_line<'gc>(
     text_line.set_end_index(next_position as u32);
     text_line.set_line_index(line_index);
 
-    use crate::avm2::globals::slots::flash_text_engine_text_line as line_slots;
-
     if let Some(previous_text_line) = previous_text_line {
-        instance.set_slot(
-            line_slots::_PREVIOUS_LINE,
-            previous_text_line.into(),
-            activation,
-        )?;
-        previous_text_line.set_slot(
-            //
-            line_slots::_NEXT_LINE,
-            instance.into(),
-            activation,
-        )?;
+        let previous_line = previous_text_line
+            .as_display_object()
+            .unwrap()
+            .as_text_line()
+            .unwrap();
+        text_line.set_previous_line(Some(previous_line), activation.gc());
+        previous_line.set_next_line(Some(text_line), activation.gc());
     }
 
     block.set_text_line_creation_result(Some(TextLineCreationResultValue::Success));

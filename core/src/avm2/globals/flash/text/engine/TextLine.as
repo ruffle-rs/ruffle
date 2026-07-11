@@ -16,11 +16,6 @@ package flash.text.engine {
     [Ruffle(Abstract)]
     [API("662")]
     public final class TextLine extends DisplayObjectContainer {
-        [Ruffle(NativeAccessible)]
-        private var _previousLine:TextLine = null;
-        [Ruffle(NativeAccessible)]
-        private var _nextLine:TextLine = null;
-
         public static const MAX_LINE_WIDTH:int = 1000000;
 
         public var userData;
@@ -80,13 +75,8 @@ package flash.text.engine {
             return this.rawTextLength;
         }
 
-        public function get nextLine():TextLine {
-            return this._nextLine;
-        }
-
-        public function get previousLine():TextLine {
-            return this._previousLine;
-        }
+        public native function get previousLine():TextLine;
+        public native function get nextLine():TextLine;
 
         public function getBaselinePosition(baseline:String):Number {
             stub_method("flash.text.engine.TextLine", "getBaselinePosition");

@@ -2,6 +2,7 @@ use crate::avm2::activation::Activation;
 use crate::avm2::error::{Error, make_error_2008};
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
+use crate::display_object::TDisplayObject;
 use crate::fte::TextLineValidity;
 
 pub fn get_text_width<'gc>(
@@ -148,6 +149,46 @@ pub fn get_text_block_begin_index<'gc>(
         .unwrap();
 
     Ok(this.begin_index().into())
+}
+
+pub fn get_previous_line<'gc>(
+    _activation: &mut Activation<'_, 'gc>,
+    this: Value<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this
+        .as_object()
+        .unwrap()
+        .as_display_object()
+        .unwrap()
+        .as_text_line()
+        .unwrap();
+
+    Ok(this
+        .previous_line()
+        .and_then(|line| line.object2())
+        .map(Value::from)
+        .unwrap_or(Value::Null))
+}
+
+pub fn get_next_line<'gc>(
+    _activation: &mut Activation<'_, 'gc>,
+    this: Value<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this
+        .as_object()
+        .unwrap()
+        .as_display_object()
+        .unwrap()
+        .as_text_line()
+        .unwrap();
+
+    Ok(this
+        .next_line()
+        .and_then(|line| line.object2())
+        .map(Value::from)
+        .unwrap_or(Value::Null))
 }
 
 pub fn get_text_height<'gc>(
