@@ -295,8 +295,11 @@ pub fn create_text_line<'gc>(
 
     let line_index = if let Some(previous_text_line) = previous_text_line {
         previous_text_line
-            .get_slot(line_slots::_LINE_INDEX)
-            .as_u32()
+            .as_display_object()
+            .unwrap()
+            .as_text_line()
+            .unwrap()
+            .line_index()
             + 1
     } else {
         0
@@ -332,9 +335,9 @@ pub fn create_text_line<'gc>(
     text_line.set_raw_text_length(text.len() as u32);
     text_line.set_begin_index(previous_position as u32);
     text_line.set_end_index(next_position as u32);
+    text_line.set_line_index(line_index);
 
     use crate::avm2::globals::slots::flash_text_engine_text_line as line_slots;
-    instance.set_slot(line_slots::_LINE_INDEX, line_index.into(), activation)?;
 
     if let Some(previous_text_line) = previous_text_line {
         instance.set_slot(

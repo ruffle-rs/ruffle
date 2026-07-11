@@ -58,6 +58,7 @@ pub struct TextLineData<'gc> {
 
     begin_index: Cell<u32>,
     end_index: Cell<u32>,
+    line_index: Cell<u32>,
 }
 
 impl<'gc> TextLine<'gc> {
@@ -79,6 +80,7 @@ impl<'gc> TextLine<'gc> {
                 raw_text_length: Cell::new(0),
                 begin_index: Cell::new(0),
                 end_index: Cell::new(0),
+                line_index: Cell::new(0),
             },
         ))
     }
@@ -134,6 +136,14 @@ impl<'gc> TextLine<'gc> {
     pub fn set_end_index(self, value: u32) {
         self.0.end_index.set(value);
     }
+
+    pub fn line_index(self) -> u32 {
+        self.0.line_index.get()
+    }
+
+    pub fn set_line_index(self, value: u32) {
+        self.0.line_index.set(value);
+    }
 }
 
 impl<'gc> TDisplayObject<'gc> for TextLine<'gc> {
@@ -156,6 +166,7 @@ impl<'gc> TDisplayObject<'gc> for TextLine<'gc> {
                 raw_text_length: Cell::new(self.0.raw_text_length.get()),
                 begin_index: Cell::new(self.0.begin_index.get()),
                 end_index: Cell::new(self.0.end_index.get()),
+                line_index: Cell::new(self.0.line_index.get()),
             },
         ))
         .into()
