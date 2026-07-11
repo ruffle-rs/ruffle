@@ -1,8 +1,5 @@
 //! `flash.display.Graphics` builtin/prototype
 
-// See: https://github.com/rust-lang/rust-clippy/issues/12917
-#![allow(clippy::doc_lazy_continuation)]
-
 use crate::avm2::activation::Activation;
 use crate::avm2::error::{Error2004Type, make_error_2004, make_error_2007, make_error_2008};
 use crate::avm2::globals::flash::geom::transform::object_to_matrix;

@@ -1059,10 +1059,6 @@ impl<'gc> EditText<'gc> {
     /// Returns the selection, but takes into account whether the selection should be rendered.
     fn visible_selection(self) -> Option<TextSelection> {
         let selection = self.0.selection.get()?;
-        // TODO: Remove this #[allow] once Rust 1.94 is released.
-        // Clippy 0.1.94+ (PR #16286) no longer fires collapsible_else_if when both
-        // branches contain if-else expressions, recognizing the parallel structure.
-        #[allow(clippy::collapsible_else_if)]
         if selection.is_caret() {
             if self.has_focus() && !self.0.flags.get().contains(EditTextFlag::READ_ONLY) {
                 Some(selection)
