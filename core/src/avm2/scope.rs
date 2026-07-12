@@ -53,33 +53,6 @@ impl<'gc> Scope<'gc> {
     }
 }
 
-/// Internal container that a ScopeChain uses
-#[derive(Collect, Clone, Debug)]
-#[collect(no_drop)]
-struct ScopeContainer<'gc> {
-    /// The scopes of this ScopeChain
-    scopes: Vec<Scope<'gc>>,
-}
-
-impl<'gc> ScopeContainer<'gc> {
-    fn new(scopes: Vec<Scope<'gc>>) -> Self {
-        Self { scopes }
-    }
-
-    fn get(&self, index: usize) -> Option<Scope<'gc>> {
-        self.scopes.get(index).cloned()
-    }
-
-    /// Like `get`, but panics if the scope index is out of bounds.
-    pub fn get_unchecked(&self, index: usize) -> Scope<'gc> {
-        self.scopes[index]
-    }
-
-    fn is_empty(&self) -> bool {
-        self.scopes.is_empty()
-    }
-}
-
 /// A ScopeChain "chains" scopes together.
 ///
 /// A ScopeChain is used for "remembering" what a scope looked like. A ScopeChain also
@@ -96,14 +69,14 @@ impl<'gc> ScopeContainer<'gc> {
 #[derive(Collect, Clone, Copy)]
 #[collect(no_drop)]
 pub struct ScopeChain<'gc> {
-    container: Option<Gc<'gc, ScopeContainer<'gc>>>,
+    scopes: Option<Gc<'gc, Vec<Scope<'gc>>>>,
     domain: Domain<'gc>,
 }
 
 impl fmt::Debug for ScopeChain<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("ScopeChain")
-            .field("container", &self.container)
+            .field("scopes", &self.scopes)
             .finish()
     }
 }
@@ -112,7 +85,7 @@ impl<'gc> ScopeChain<'gc> {
     /// Creates a brand new ScopeChain with a domain. The domain should be the current domain in use.
     pub fn new(domain: Domain<'gc>) -> Self {
         Self {
-            container: None,
+            scopes: None,
             domain,
         }
     }
@@ -124,14 +97,14 @@ impl<'gc> ScopeChain<'gc> {
             return *self;
         }
         // TODO: This current implementation is a bit expensive, but it is exactly what avmplus does, so it's good enough for now.
-        match self.container {
-            Some(container) => {
+        match self.scopes {
+            Some(scopes) => {
                 // The new ScopeChain is created by cloning the scopes of this ScopeChain,
                 // and pushing the new scopes on top of that.
-                let mut cloned = container.scopes.clone();
+                let mut cloned = (*scopes).clone();
                 cloned.extend_from_slice(new_scopes);
                 Self {
-                    container: Some(Gc::new(mc, ScopeContainer::new(cloned))),
+                    scopes: Some(Gc::new(mc, cloned)),
                     domain: self.domain,
                 }
             }
@@ -139,7 +112,7 @@ impl<'gc> ScopeChain<'gc> {
                 // We are chaining on top of an empty ScopeChain, so we don't actually
                 // need to chain anything.
                 Self {
-                    container: Some(Gc::new(mc, ScopeContainer::new(new_scopes.to_vec()))),
+                    scopes: Some(Gc::new(mc, new_scopes.to_vec())),
                     domain: self.domain,
                 }
             }
@@ -147,19 +120,17 @@ impl<'gc> ScopeChain<'gc> {
     }
 
     pub fn get(&self, index: usize) -> Option<Scope<'gc>> {
-        self.container.and_then(|container| container.get(index))
+        self.scopes.and_then(|scopes| scopes.get(index).copied())
     }
 
-    /// Like `get`, but panics if the container doesn't exist or
+    /// Like `get`, but panics if the scopes doesn't exist or
     /// the scope index is out of bounds.
     pub fn get_unchecked(&self, index: usize) -> Scope<'gc> {
-        self.container.unwrap().get_unchecked(index)
+        self.scopes.unwrap()[index]
     }
 
     pub fn is_empty(&self) -> bool {
-        self.container
-            .map(|container| container.is_empty())
-            .unwrap_or(true)
+        self.scopes.map(|scopes| scopes.is_empty()).unwrap_or(true)
     }
 
     /// Returns the domain associated with this ScopeChain.
@@ -172,9 +143,9 @@ impl<'gc> ScopeChain<'gc> {
         multiname: &Multiname<'gc>,
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<Option<Value<'gc>>, Error<'gc>> {
-        if let Some(container) = self.container {
+        if let Some(scopes) = self.scopes {
             // We skip the scope at depth 0 (the global scope). The global scope will be checked in a different phase.
-            for scope in container.scopes.iter().skip(1).rev() {
+            for scope in scopes.iter().skip(1).rev() {
                 let values = scope.values();
                 let vtable = values.vtable(activation);
 
@@ -201,8 +172,8 @@ impl<'gc> ScopeChain<'gc> {
         activation: &mut Activation<'_, 'gc>,
         multiname: &Multiname<'gc>,
     ) -> Option<Option<(Class<'gc>, usize)>> {
-        if let Some(container) = self.container {
-            for (index, scope) in container.scopes.iter().enumerate().skip(1).rev() {
+        if let Some(scopes) = self.scopes {
+            for (index, scope) in scopes.iter().enumerate().skip(1).rev() {
                 if scope.with() {
                     // If this is a `with` scope, stop here because
                     // dynamic properties could be added at any time
