@@ -354,8 +354,8 @@ jobs:
           message: |
             Notarize macOS universal binary bundle step failed
             [View workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
-          username: ${{ github.actor }}
-          colour: "#e5534b"
+          username: "GitHub Actions"
+          colour: "#fc2929"
 
       - name: Package macOS
         run: |
