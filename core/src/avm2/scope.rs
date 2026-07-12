@@ -1,17 +1,13 @@
 //! Represents AVM2 scope chain resolution.
 
 use crate::avm2::Error;
+use crate::avm2::Multiname;
 use crate::avm2::activation::Activation;
 use crate::avm2::class::Class;
 use crate::avm2::domain::Domain;
 use crate::avm2::object::TObject;
-use crate::avm2::property_map::PropertyMap;
-use crate::avm2::qname::QName;
 use crate::avm2::value::Value;
-use crate::avm2::{Multiname, Namespace};
 use core::fmt;
-use gc_arena::barrier::field;
-use gc_arena::lock::RefLock;
 use gc_arena::{Collect, Gc, Mutation};
 
 /// Represents a Scope that can be on either a ScopeChain or local ScopeStack.
@@ -63,16 +59,11 @@ impl<'gc> Scope<'gc> {
 struct ScopeContainer<'gc> {
     /// The scopes of this ScopeChain
     scopes: Vec<Scope<'gc>>,
-
-    /// The cache of this ScopeChain. A value of None indicates that caching is disabled
-    /// for this ScopeChain.
-    cache: Option<RefLock<PropertyMap<'gc, Value<'gc>>>>,
 }
 
 impl<'gc> ScopeContainer<'gc> {
     fn new(scopes: Vec<Scope<'gc>>) -> Self {
-        let cache = (!scopes.iter().any(|scope| scope.with)).then(RefLock::default);
-        Self { scopes, cache }
+        Self { scopes }
     }
 
     fn get(&self, index: usize) -> Option<Scope<'gc>> {
@@ -176,68 +167,33 @@ impl<'gc> ScopeChain<'gc> {
         self.domain
     }
 
-    fn find_internal(
-        &self,
-        multiname: &Multiname<'gc>,
-        activation: &mut Activation<'_, 'gc>,
-    ) -> Result<Option<(Option<Namespace<'gc>>, Value<'gc>)>, Error<'gc>> {
-        if let Some(container) = self.container {
-            // We skip the scope at depth 0 (the global scope). The global scope will be checked in a different phase.
-            for scope in container.scopes.iter().skip(1).rev() {
-                // NOTE: We are manually searching the vtable's traits so we can figure out which namespace the trait
-                // belongs to.
-                let values = scope.values();
-                let vtable = values.vtable(activation);
-                if let Some((namespace, _)) = vtable.get_trait_with_ns(multiname) {
-                    return Ok(Some((Some(namespace), values)));
-                }
-
-                // Wasn't in the objects traits, let's try dynamic properties if this is a with scope.
-                if scope.with() && values.has_own_property(activation, multiname) {
-                    // NOTE: We return the QName as `None` to indicate that we should never cache this result.
-                    // We NEVER cache the result of dynamic properties (and can't anyway because of the check
-                    // in ScopeContainer::new).
-                    return Ok(Some((None, values)));
-                }
-            }
-        }
-        // That didn't work... let's try searching the domain now.
-        if let Some((qname, script)) = self.domain.get_defining_script(multiname) {
-            return Ok(Some((
-                Some(qname.namespace()),
-                script.globals(activation.context)?.into(),
-            )));
-        }
-        Ok(None)
-    }
-
     pub fn find(
         &self,
         multiname: &Multiname<'gc>,
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<Option<Value<'gc>>, Error<'gc>> {
-        // First we check the cache of our container
-        if let Some(container) = self.container
-            && let Some(cache) = &container.cache
-            && let Some(cached) = cache.borrow().get_for_multiname(multiname)
-        {
-            return Ok(Some(*cached));
-        }
+        if let Some(container) = self.container {
+            // We skip the scope at depth 0 (the global scope). The global scope will be checked in a different phase.
+            for scope in container.scopes.iter().skip(1).rev() {
+                let values = scope.values();
+                let vtable = values.vtable(activation);
 
-        let found = self.find_internal(multiname, activation)?;
-        if let (Some((Some(ns), obj)), Some(container)) = (found, self.container) {
-            // We found a value that hasn't been cached yet, so let's try to cache it now
-            let cache = field!(Gc::write(activation.gc(), container), ScopeContainer, cache);
-            if let Some(cache) = cache.as_write() {
-                let name = multiname
-                    .local_name()
-                    .expect("Resolvable multinames should always have a local name");
-                let qname = QName::new(ns, name);
+                // TODO: Can we switch this to `VTable::has_trait`?
+                if vtable.get_trait(multiname).is_some() {
+                    return Ok(Some(values));
+                }
 
-                cache.unlock().borrow_mut().insert_at_end(qname, obj);
+                // Wasn't in the objects traits, let's try dynamic properties if this is a with scope.
+                if scope.with() && values.has_own_property(activation, multiname) {
+                    return Ok(Some(values));
+                }
             }
         }
-        Ok(found.map(|o| o.1))
+        // That didn't work... let's try searching the domain now.
+        if let Some((_, script)) = self.domain.get_defining_script(multiname) {
+            return Ok(Some(script.globals(activation.context)?.into()));
+        }
+        Ok(None)
     }
 
     pub fn get_entry_for_multiname(
@@ -263,18 +219,6 @@ impl<'gc> ScopeChain<'gc> {
         // Nothing was found, and we can be sure that nothing will be
         // found here at all (there were no `with` scopes).
         None
-    }
-
-    pub fn resolve(
-        &self,
-        name: &Multiname<'gc>,
-        activation: &mut Activation<'_, 'gc>,
-    ) -> Result<Option<Value<'gc>>, Error<'gc>> {
-        if let Some(object) = self.find(name, activation)? {
-            Ok(Some(object.get_property(name, activation)?))
-        } else {
-            Ok(None)
-        }
     }
 }
 
