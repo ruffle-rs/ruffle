@@ -101,7 +101,7 @@ jobs:
     if: always() && github.repository == 'ruffle-rs/ruffle'
     steps:
       - name: Notify Discord
-        uses: stegzilla/discord-notify@v2
+        uses: stegzilla/discord-notify@v5
         with:
           webhook_url: ${{ secrets.DISCORD_WEBHOOK_UPDATES }}
           title: "Ruffle extension builder Dockerfile test result"
