@@ -2,7 +2,9 @@ mod automation;
 mod image_test;
 mod trace;
 
-use crate::backends::{TestAudioBackend, TestLogBackend, TestNavigatorBackend, TestUiBackend};
+use crate::backends::{
+    TestAudioBackend, TestLogBackend, TestNavigatorBackend, TestStorageBackend, TestUiBackend,
+};
 use crate::environment::RenderInterface;
 use crate::fs_commands::{FsCommand, TestFsCommandProvider};
 use crate::image_trigger::ImageTrigger;
@@ -93,6 +95,7 @@ impl TestRunner {
         let mut builder = PlayerBuilder::new()
             .with_log(log.clone())
             .with_navigator(navigator)
+            .with_storage(Box::new(TestStorageBackend::new()))
             .with_max_execution_duration(Duration::from_secs(300))
             .with_fs_commands(Box::new(fs_command_provider))
             .with_ui(TestUiBackend::new(test.fonts()?, test.font_sorts()))
@@ -349,6 +352,119 @@ impl TestRunner {
         Ok(())
     }
 
+    fn diff_binary(actual: &[u8], expected: &[u8], label: &str) -> Option<String> {
+        if actual == expected {
+            return None;
+        }
+
+        let mut message = format!(
+            "{} mismatch. Actual length: {}, Expected length: {}.",
+            label,
+            actual.len(),
+            expected.len()
+        );
+
+        if let Some((idx, (a, b))) = actual
+            .iter()
+            .zip(expected.iter())
+            .enumerate()
+            .find(|(_, (a, b))| a != b)
+        {
+            message.push_str(&format!(
+                "\nFirst mismatch at index {}: Actual 0x{:02x}, Expected 0x{:02x}",
+                idx, a, b
+            ));
+        } else {
+            message.push_str(&format!(
+                "\nLengths differ. Mismatch starts at index {}",
+                actual.len().min(expected.len())
+            ));
+        }
+
+        Some(message)
+    }
+
+    fn check_shared_objects(&self) -> Result<()> {
+        for (name, so_config) in &self.options.shared_objects {
+            let player = self.player.lock().unwrap();
+            if let Some(test_storage) =
+                <dyn std::any::Any>::downcast_ref::<TestStorageBackend>(player.storage())
+            {
+                let stored_lsos = test_storage.get_stored_data();
+
+                let actual_bytes = match stored_lsos.get(name) {
+                    Some(bytes) => bytes,
+                    None => {
+                        let available_keys: Vec<_> = stored_lsos.keys().cloned().collect();
+                        anyhow::bail!(
+                            "SharedObject '{}' was expected by the test config but wasn't created by the SWF.\nAvailable SharedObjects in storage: {:?}",
+                            name,
+                            available_keys
+                        );
+                    }
+                };
+
+                let expected_path = self.root_path.join(format!("{}.sol", so_config.expected))?;
+                if !expected_path.exists()? {
+                    anyhow::bail!(
+                        "Expected SharedObject file missing: '{}'. Please ensure it exists.",
+                        so_config.expected
+                    );
+                }
+
+                let mut expected_bytes = Vec::new();
+                expected_path
+                    .open_file()?
+                    .read_to_end(&mut expected_bytes)?;
+
+                if so_config.known_failure {
+                    if actual_bytes.as_slice() == expected_bytes.as_slice() {
+                        anyhow::bail!(
+                            "SharedObject test {} was marked as a known failure, but the output matched the expected Flash output. Remove `known_failure = true`!",
+                            name
+                        );
+                    }
+
+                    let ruffle_path = self
+                        .root_path
+                        .join(format!("{}.ruffle.sol", so_config.expected))?;
+
+                    if !ruffle_path.exists()? {
+                        let mut file = ruffle_path.create_file()?;
+                        file.write_all(actual_bytes)?;
+
+                        anyhow::bail!(
+                            "Created '{}.ruffle.sol'. Please verify it and rerun the test.",
+                            so_config.expected
+                        );
+                    }
+
+                    let mut ruffle_bytes = Vec::new();
+                    ruffle_path.open_file()?.read_to_end(&mut ruffle_bytes)?;
+
+                    if let Some(mismatch) = Self::diff_binary(
+                        actual_bytes,
+                        &ruffle_bytes,
+                        &format!("Known failure SharedObject '{}'", name),
+                    ) {
+                        anyhow::bail!(
+                            "{}\nThe tracked Ruffle output has changed. Please inspect and update '{}.ruffle.sol' if this change is expected.",
+                            mismatch,
+                            so_config.expected
+                        );
+                    }
+                } else if let Some(mismatch) = Self::diff_binary(
+                    actual_bytes,
+                    &expected_bytes,
+                    &format!("SharedObject '{}'", name),
+                ) {
+                    anyhow::bail!(mismatch);
+                }
+            }
+        }
+        Ok(())
+    }
+
     fn last_test(&mut self) -> Result<()> {
         // Last iteration, let's check everything went well
         if let KnownFailure::Panic { .. } = &self.options.known_failure {
@@ -376,6 +492,7 @@ impl TestRunner {
             ));
         }
 
+        self.check_shared_objects()?;
         self.executor.run();
 
         compare_trace_output(
