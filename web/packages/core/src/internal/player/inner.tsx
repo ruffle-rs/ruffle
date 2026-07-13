@@ -21,6 +21,7 @@ import { RUFFLE_ORIGIN } from "../constants";
 import {
     InvalidOptionsError,
     InvalidSwfError,
+    LoadBeginError,
     LoadRuffleWasmError,
     LoadSwfError,
 } from "../errors";
@@ -1022,7 +1023,7 @@ export class InnerPlayer {
             }
         } catch (e) {
             console.error(`Serious error occurred loading SWF file: ${e}`);
-            const err = new Error(e as string);
+            const err = new LoadBeginError(e as string);
             this.panic(err);
             throw err;
         }
