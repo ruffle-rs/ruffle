@@ -2023,6 +2023,8 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                     ((n1 as i64 + n2 as i64) as f64).into()
                 }
             }
+            (Value::Integer(n1), Value::Number(n2)) => (n1 as f64 + n2).into(),
+            (Value::Number(n1), Value::Integer(n2)) => (n1 + n2 as f64).into(),
             (Value::Number(n1), Value::Number(n2)) => (n1 + n2).into(),
             (Value::String(s), value2) => Value::String(AvmString::concat(
                 self.gc(),
