@@ -1878,30 +1878,62 @@ impl<'gc> Value<'gc> {
     /// This abstract relational comparison algorithm is intended to match
     /// ECMA-262 3rd edition, section 11.8.5. It returns `true`, `false`, *or*
     /// `undefined` (to signal NaN), the latter of which we represent as `None`.
+    ///
+    /// This function can be very hot, so we try to inline this fast-path and
+    /// fall back to a non-inlined slow-path if necessary.
     pub fn abstract_lt(
         &self,
         other: &Value<'gc>,
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<Option<bool>, Error<'gc>> {
+        // Full abstract-lt implementation. This is the slow-path.
+        #[inline(never)]
+        fn abstract_lt_slow<'gc>(
+            self_value: &Value<'gc>,
+            other_value: &Value<'gc>,
+            activation: &mut Activation<'_, 'gc>,
+        ) -> Result<Option<bool>, Error<'gc>> {
+            let prim_self = self_value.coerce_to_primitive(Some(Hint::Number), activation)?;
+            let prim_other = other_value.coerce_to_primitive(Some(Hint::Number), activation)?;
+
+            if let (Value::String(s), Value::String(o)) = (&prim_self, &prim_other) {
+                return Ok(Some(s.as_wstr() < o.as_wstr()));
+            }
+
+            let num_self = prim_self.coerce_to_number(activation)?;
+            let num_other = prim_other.coerce_to_number(activation)?;
+
+            if num_self.is_nan() || num_other.is_nan() {
+                return Ok(None);
+            }
+
+            Ok(Some(num_self < num_other))
+        }
+
         match (self, other) {
             (Value::Integer(a), Value::Integer(b)) => Ok(Some(a < b)),
-            _ => {
-                let prim_self = self.coerce_to_primitive(Some(Hint::Number), activation)?;
-                let prim_other = other.coerce_to_primitive(Some(Hint::Number), activation)?;
-
-                if let (Value::String(s), Value::String(o)) = (&prim_self, &prim_other) {
-                    return Ok(Some(s.as_wstr() < o.as_wstr()));
-                }
-
-                let num_self = prim_self.coerce_to_number(activation)?;
-                let num_other = prim_other.coerce_to_number(activation)?;
-
-                if num_self.is_nan() || num_other.is_nan() {
+            (Value::Integer(a), Value::Number(b)) => {
+                if b.is_nan() {
                     return Ok(None);
                 }
 
-                Ok(Some(num_self < num_other))
+                Ok(Some((*a as f64) < *b))
             }
+            (Value::Number(a), Value::Integer(b)) => {
+                if a.is_nan() {
+                    return Ok(None);
+                }
+
+                Ok(Some(*a < *b as f64))
+            }
+            (Value::Number(a), Value::Number(b)) => {
+                if a.is_nan() || b.is_nan() {
+                    return Ok(None);
+                }
+
+                Ok(Some(a < b))
+            }
+            _ => abstract_lt_slow(self, other, activation),
         }
     }
 }
