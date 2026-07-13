@@ -345,7 +345,7 @@ jobs:
           xcrun stapler staple package/Ruffle.app
 
       - name: Report notarization failure on Discord
-        uses: stegzilla/discord-notify@v2
+        uses: stegzilla/discord-notify@v5
         if: ${{ steps.notarize-bundle.outcome == 'failure' && github.repository == 'ruffle-rs/ruffle' }}
         continue-on-error: true
         with:
