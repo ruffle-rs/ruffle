@@ -504,50 +504,51 @@ pub fn normalize<'gc>(
         // a. If list[i].[[Class]] == "element"
         if child.is_element() {
             // i. Call the normalize method of list[i]
-            child.normalize(activation.gc());
+            child.normalize(activation);
 
             // ii. Let i = i + 1
             index += 1;
         // b. Else if list[i].[[Class]] == "text"
         } else if child.is_text() {
-            let should_remove = {
-                let (E4XNodeKind::Text(text) | E4XNodeKind::CData(text)) =
-                    &mut *child.kind_mut(activation.gc())
-                else {
-                    unreachable!()
-                };
+            // i. While ((i+1) < list.[[Length]]) and (list[i + 1].[[Class]] == "text")
+            // NOTE: Short borrows per step, so the deletion notifications can
+            //       safely run arbitrary AS3.
+            loop {
+                if index + 1 >= list.length() {
+                    break;
+                }
+                let other = list
+                    .node_child(index + 1)
+                    .expect("index should be between 0 and length");
+                if !other.is_text() {
+                    break;
+                }
 
-                // i. While ((i+1) < list.[[Length]]) and (list[i + 1].[[Class]] == "text")
-                while index + 1 < list.length()
-                    && list
-                        .node_child(index + 1)
-                        .expect("index should be between 0 and length")
-                        .is_text()
+                // 1. Let list[i].[[Value]] be the result of concatenating list[i].[[Value]] and list[i + 1].[[Value]]
                 {
-                    let other = list
-                        .node_child(index + 1)
-                        .expect("index should be between 0 and length");
-
-                    let (E4XNodeKind::Text(other) | E4XNodeKind::CData(other)) = &*other.kind()
+                    let other_value = other.node_value().expect("Text node should have a value");
+                    let (E4XNodeKind::Text(text) | E4XNodeKind::CData(text)) =
+                        &mut *child.kind_mut(activation.gc())
                     else {
                         unreachable!()
                     };
-
-                    // 1. Let list[i].[[Value]] be the result of concatenating list[i].[[Value]] and list[i + 1].[[Value]]
-                    *text = AvmString::concat(activation.gc(), *text, *other);
-
-                    // 2. Call the [[Delete]] method of list with argument ToString(i + 1)
-                    list.delete_property_local(
-                        activation,
-                        &Multiname::new(
-                            namespaces.public_all(),
-                            AvmString::new_utf8(activation.gc(), (index + 1).to_string()),
-                        ),
-                    )?;
+                    *text = AvmString::concat(activation.gc(), *text, other_value);
                 }
 
-                text.is_empty()
-            };
+                // 2. Call the [[Delete]] method of list with argument ToString(i + 1)
+                list.delete_property_local(
+                    activation,
+                    &Multiname::new(
+                        namespaces.public_all(),
+                        AvmString::new_utf8(activation.gc(), (index + 1).to_string()),
+                    ),
+                )?;
+            }
+
+            let should_remove = child
+                .node_value()
+                .expect("Text node should have a value")
+                .is_empty();
 
             // ii. If list[i].[[Value]].length == 0
             if should_remove {

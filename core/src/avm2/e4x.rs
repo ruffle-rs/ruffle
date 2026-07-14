@@ -4,7 +4,9 @@ use crate::avm2::error::{
 };
 use crate::avm2::function::FunctionArgs;
 use crate::avm2::multiname::NamespaceSet;
-use crate::avm2::object::{E4XOrXml, FunctionObject, NamespaceObject};
+use crate::avm2::object::{
+    E4XOrXml, FunctionObject, NamespaceObject, NotificationCommand, XmlObject,
+};
 use crate::avm2::{Activation, Error, Multiname, Namespace, Value};
 use crate::string::{AvmString, StringContext, WStr, WString};
 
@@ -399,27 +401,31 @@ impl<'gc> E4XNode<'gc> {
         }
     }
 
-    /// Removes all matching children matching provided name, returns the first child removed along with its index (if any).
+    /// Removes all matching children matching provided name, returns the first child removed
+    /// along with its index (if any), plus every removed node in document order (for change
+    /// notifications).
     pub fn remove_matching_children(
         self,
         gc_context: &Mutation<'gc>,
         name: &Multiname<'gc>,
-    ) -> Option<(usize, E4XNode<'gc>)> {
+    ) -> (Option<(usize, E4XNode<'gc>)>, Vec<E4XNode<'gc>>) {
         let E4XNodeKind::Element { children, .. } = &mut *self.kind_mut(gc_context) else {
-            return None;
+            return (None, Vec::new());
         };
 
         self.remove_matching_nodes(gc_context, children, name)
     }
 
-    /// Removes all matching attributes matching provided name, returns the first attribute removed along with its index (if any).
+    /// Removes all matching attributes matching provided name, returns the first attribute removed
+    /// along with its index (if any), plus every removed node in document order (for change
+    /// notifications).
     pub fn remove_matching_attribute(
         self,
         gc_context: &Mutation<'gc>,
         name: &Multiname<'gc>,
-    ) -> Option<(usize, E4XNode<'gc>)> {
+    ) -> (Option<(usize, E4XNode<'gc>)>, Vec<E4XNode<'gc>>) {
         let E4XNodeKind::Element { attributes, .. } = &mut *self.kind_mut(gc_context) else {
-            return None;
+            return (None, Vec::new());
         };
 
         self.remove_matching_nodes(gc_context, attributes, name)
@@ -430,7 +436,7 @@ impl<'gc> E4XNode<'gc> {
         gc_context: &Mutation<'gc>,
         nodes: &mut Vec<E4XNode<'gc>>,
         name: &Multiname<'gc>,
-    ) -> Option<(usize, E4XNode<'gc>)> {
+    ) -> (Option<(usize, E4XNode<'gc>)>, Vec<E4XNode<'gc>>) {
         let index = nodes
             .iter()
             .position(|x| name.is_any_name() || x.matches_name(name));
@@ -441,17 +447,19 @@ impl<'gc> E4XNode<'gc> {
             None
         };
 
+        let mut removed = Vec::new();
         nodes.retain(|x| {
             if name.is_any_name() || x.matches_name(name) {
                 // Remove parent.
                 x.set_parent(None, gc_context);
+                removed.push(*x);
                 false
             } else {
                 true
             }
         });
 
-        val
+        (val, removed)
     }
 
     pub fn insert_at(self, gc_context: &Mutation<'gc>, index: usize, node: E4XNode<'gc>) {
@@ -575,7 +583,7 @@ impl<'gc> E4XNode<'gc> {
                 // NOTE: Make room for the replace operation.
                 children.insert(index, E4XNode::dummy(activation.gc()))
             }
-            self.replace(index, value, activation)?;
+            self.replace(index, value, None, activation)?;
         }
 
         // 12. Return
@@ -583,10 +591,16 @@ impl<'gc> E4XNode<'gc> {
     }
 
     // ECMA-357 9.1.1.12 [[Replace]] (P, V)
+    //
+    // `past_value` mirrors avmplus's `pastValue` argument: when the caller has
+    // already cleared the replaced content (the primitive [[Put]] deletes all
+    // properties of x[i] before replacing), it passes the old content here so
+    // the "textSet" notification can still report it as detail.
     pub fn replace(
         self,
         index: usize,
         value: Value<'gc>,
+        past_value: Option<Value<'gc>>,
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<(), Error<'gc>> {
         // 1. If x.[[Class]] ∈ {"text", "comment", "processing-instruction", "attribute"}, return
@@ -641,21 +655,46 @@ impl<'gc> E4XNode<'gc> {
             // 7.b. Create a new XML object t with t.[[Class]] = "text", t.[[Parent]] = x and t.[[Value]] = s
             let text_node = E4XNode::text(activation.gc(), s, Some(self));
 
-            let E4XNodeKind::Element { children, .. } = &mut *self.kind_mut(activation.gc()) else {
-                unreachable!("E4XNode should be of element kind");
+            let prior_value = {
+                let E4XNodeKind::Element { children, .. } = &mut *self.kind_mut(activation.gc())
+                else {
+                    unreachable!("E4XNode should be of element kind");
+                };
+
+                // 7.c. If x has a property with name P
+                let prior_value = children.get(index).and_then(|node| {
+                    // 7.c.i. Let x[P].[[Parent]] = null
+                    node.set_parent(None, activation.gc());
+                    node.node_value()
+                });
+
+                // 7.d. Let the value of property P of x be t
+                if index >= children.len() {
+                    children.push(text_node);
+                } else {
+                    children[index] = text_node;
+                }
+
+                prior_value
             };
 
-            // 7.c. If x has a property with name P
-            if let Some(node) = children.get(index) {
-                // 7.c.i. Let x[P].[[Parent]] = null
-                node.set_parent(None, activation.gc());
-            }
-
-            // 7.d. Let the value of property P of x be t
-            if index >= children.len() {
-                children.push(text_node);
-            } else {
-                children[index] = text_node;
+            // avmplus issues a "textSet" notification from the newly created text
+            // node (see ElementE4XNode::_replace), so watchers on any ancestor see
+            // target = the text node and value = the new text. The detail is the
+            // replaced node's value, falling back to the caller-provided
+            // `past_value` when the slot was already cleared.
+            if self.notify_needed() {
+                let target = XmlObject::new(text_node, activation);
+                let detail = prior_value
+                    .map(Value::from)
+                    .or(past_value)
+                    .unwrap_or(Value::Undefined);
+                target.trigger_notification(
+                    activation,
+                    NotificationCommand::TextSet,
+                    s.into(),
+                    detail,
+                );
             }
         }
 
@@ -697,77 +736,128 @@ impl<'gc> E4XNode<'gc> {
     }
 
     // ECMA-357 13.4.4.26 XML.prototype.normalize ()
-    pub fn normalize(self, mc: &Mutation<'gc>) {
-        if let E4XNodeKind::Element { children, .. } = &mut *self.kind_mut(mc) {
-            // 1. Let i = 0
-            let mut index = 0;
+    pub fn normalize(self, activation: &mut Activation<'_, 'gc>) {
+        if !self.is_element() {
+            return;
+        }
 
-            // 2. While i < x.[[Length]]
-            while index < children.len() {
-                let child = children[index];
+        // avmplus AS3_normalize computes the notification fast path once up front.
+        let notify = self.notify_needed();
 
-                // 2.a. If x[i].[[Class]] == "element"
-                if child.is_element() {
-                    // 2.a.i. Call the normalize method of x[i]
-                    child.normalize(mc);
-                    // 2.a.ii. Let i = i + 1
-                    index += 1;
-                // 2.b. Else if x[i].[[Class]] == "text"
-                } else if child.is_text() {
-                    let is_whitespace_text = {
+        // 1. Let i = 0
+        let mut index = 0;
+
+        // 2. While i < x.[[Length]]
+        // NOTE: Every iteration takes short borrows and re-validates `index`
+        //       instead of holding one borrow across the loop, so that the
+        //       change notifications below can safely run arbitrary AS3.
+        loop {
+            let child = {
+                let E4XNodeKind::Element { children, .. } = &*self.kind() else {
+                    unreachable!("Node should be of Element kind")
+                };
+                match children.get(index) {
+                    Some(child) => *child,
+                    None => break,
+                }
+            };
+
+            // 2.a. If x[i].[[Class]] == "element"
+            if child.is_element() {
+                // 2.a.i. Call the normalize method of x[i]
+                child.normalize(activation);
+                // 2.a.ii. Let i = i + 1
+                index += 1;
+            // 2.b. Else if x[i].[[Class]] == "text"
+            } else if child.is_text() {
+                let prior_value = child.node_value().expect("Text node should have a value");
+                let mut value_changed = false;
+
+                // 2.b.i. While ((i+1) < x.[[Length]]) and (x[i + 1].[[Class]] == "text")
+                loop {
+                    let next = {
+                        let E4XNodeKind::Element { children, .. } = &*self.kind() else {
+                            unreachable!("Node should be of Element kind")
+                        };
+                        match children.get(index + 1) {
+                            Some(next) if next.is_text() => *next,
+                            _ => break,
+                        }
+                    };
+
+                    // 2.b.i.1. Let x[i].[[Value]] be the result of concatenating x[i].[[Value]] and x[i + 1].[[Value]]
+                    {
+                        let other = next.node_value().expect("Text node should have a value");
                         let (E4XNodeKind::Text(text) | E4XNodeKind::CData(text)) =
-                            &mut *child.kind_mut(mc)
+                            &mut *child.kind_mut(activation.gc())
                         else {
                             unreachable!()
                         };
-
-                        // 2.b.i. While ((i+1) < x.[[Length]]) and (x[i + 1].[[Class]] == "text")
-                        while index + 1 < children.len() && children[index + 1].is_text() {
-                            {
-                                let (E4XNodeKind::Text(other) | E4XNodeKind::CData(other)) =
-                                    &*children[index + 1].kind()
-                                else {
-                                    unreachable!()
-                                };
-
-                                // 2.b.i.1. Let x[i].[[Value]] be the result of concatenating x[i].[[Value]] and x[i + 1].[[Value]]
-                                *text = AvmString::concat(mc, *text, *other);
-                            }
-
-                            // 2.b.i.2. Call the [[DeleteByIndex]] method of x with argument ToString(i + 1)
-                            // NOTE: We cannot call [[DeleteByIndex]] directly because of borrow errors, so we do it manually.
-                            let child = children.remove(index + 1);
-                            child.set_parent(None, mc);
-                        }
-
-                        // NOTE: Non-standard avmplus behavior, spec says to check if length is 0, but avmplus
-                        //       checks if the string is made out of whitespace characters.
-                        let mut chars = text.chars();
-                        chars.all(|c| {
-                            if let Ok(c) = c {
-                                matches!(c, '\t' | '\n' | '\r' | ' ')
-                            } else {
-                                false
-                            }
-                        })
-                    };
-
-                    // 2.b.ii. If x[i].[[Value]].length == 0
-                    if is_whitespace_text {
-                        // 2.b.ii.1. Call the [[DeleteByIndex]] method of x with argument ToString(i)
-                        // NOTE: We cannot call [[DeleteByIndex]] directly because of borrow errors, so we do it manually.
-                        let child = children.remove(index);
-                        child.set_parent(None, mc);
-                    // 2.b.iii. Else
-                    } else {
-                        // 2.b.iii.1. Let i = i + 1
-                        index += 1
+                        *text = AvmString::concat(activation.gc(), *text, other);
                     }
-                // 2.c. Else
+                    value_changed = true;
+
+                    // 2.b.i.2. Call the [[DeleteByIndex]] method of x with argument ToString(i + 1)
+                    self.delete_by_index(index + 1, activation);
+
+                    // avmplus notifies the removal of the merged-away node.
+                    if notify {
+                        let removed = XmlObject::new(next, activation);
+                        XmlObject::new(self, activation).trigger_notification(
+                            activation,
+                            NotificationCommand::NodeRemoved,
+                            removed.into(),
+                            Value::Undefined,
+                        );
+                    }
+                }
+
+                // NOTE: Non-standard avmplus behavior, spec says to check if length is 0, but avmplus
+                //       checks if the string is made out of whitespace characters.
+                let current_value = child.node_value().expect("Text node should have a value");
+                let is_whitespace_text = current_value.chars().all(|c| {
+                    if let Ok(c) = c {
+                        matches!(c, '\t' | '\n' | '\r' | ' ')
+                    } else {
+                        false
+                    }
+                });
+
+                // 2.b.ii. If x[i].[[Value]].length == 0
+                if is_whitespace_text {
+                    // 2.b.ii.1. Call the [[DeleteByIndex]] method of x with argument ToString(i)
+                    self.delete_by_index(index, activation);
+
+                    if notify {
+                        let removed = XmlObject::new(child, activation);
+                        XmlObject::new(self, activation).trigger_notification(
+                            activation,
+                            NotificationCommand::NodeRemoved,
+                            removed.into(),
+                            Value::Undefined,
+                        );
+                    }
+                // 2.b.iii. Else
                 } else {
-                    // 2.c.i. Let i = i + 1
+                    // 2.b.iii.1. Let i = i + 1
                     index += 1;
                 }
+
+                // avmplus notifies "textSet" from the text node once merging
+                // changed its value, even when the merged node was then dropped
+                // as whitespace (matching AS3_normalize).
+                if value_changed && notify {
+                    XmlObject::new(child, activation).trigger_notification(
+                        activation,
+                        NotificationCommand::TextSet,
+                        current_value.into(),
+                        prior_value.into(),
+                    );
+                }
+            // 2.c. Else
+            } else {
+                // 2.c.i. Let i = i + 1
+                index += 1;
             }
         }
     }
@@ -1192,6 +1282,33 @@ impl<'gc> E4XNode<'gc> {
 
     pub fn notification(self) -> Option<FunctionObject<'gc>> {
         self.0.notification.get()
+    }
+
+    /// Whether a change notification on this node would reach a notification
+    /// function on it or one of its ancestors (avmplus `XMLObject::notifyNeeded`).
+    /// Used as a fast path to skip building notification arguments.
+    pub fn notify_needed(self) -> bool {
+        let mut node = Some(self);
+        while let Some(current) = node {
+            if current.notification().is_some() {
+                return true;
+            }
+            node = current.parent();
+        }
+        false
+    }
+
+    /// The string value carried by this node, if it is a value kind
+    /// (text, CDATA, comment, processing instruction or attribute).
+    pub fn node_value(self) -> Option<AvmString<'gc>> {
+        match &*self.kind() {
+            E4XNodeKind::Text(s)
+            | E4XNodeKind::CData(s)
+            | E4XNodeKind::Comment(s)
+            | E4XNodeKind::ProcessingInstruction(s)
+            | E4XNodeKind::Attribute(s) => Some(*s),
+            E4XNodeKind::Element { .. } => None,
+        }
     }
 
     // 13.3.5.4 [[GetNamespace]] ( [ InScopeNamespaces ] )
