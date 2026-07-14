@@ -7,3 +7,9 @@ length indirect 1K PASSED!
 length direct wrap PASSED!
 length indirect wrap PASSED!
 pub pop arrays PASSED!
+TypeError: Error #1034: Type Coercion failed: cannot convert Object@00000000000 to Namespace.
+	at MethodInfo-10()
+	at Array/http://adobe.com/AS3/2006/builtin::map()
+	at MethodInfo-32()
+	at MethodInfo-21()
+	at global$init() [TU=frame1]

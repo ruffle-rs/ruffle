@@ -12,3 +12,4 @@ property is XML with non-null parent    : PASSED!
 AssignmentExpression = XML value        : PASSED!
 AssignmentExpression = XMLList object   : PASSED!
 AssignmentExpression != XML/XMLList     : PASSED!
+TypeError: Error #2023: Class Test$ must inherit from Sprite to link to the root.

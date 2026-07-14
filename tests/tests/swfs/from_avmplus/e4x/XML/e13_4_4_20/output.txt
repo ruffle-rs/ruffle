@@ -8,3 +8,4 @@ MYXML = new XML(null), MYXML.length() PASSED!
 MYXML = new XML(undefined), MYXML.length() PASSED!
 MYXML = new XML('foo'), MYXML.length() PASSED!
 MYXML = new XML('<XML><!-- comment --></XML>'), MYXML.length() PASSED!
+TypeError: Error #2023: Class Test$ must inherit from Sprite to link to the root.

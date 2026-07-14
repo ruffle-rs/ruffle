@@ -1,0 +1,3 @@
+ReferenceError: Error #1081: Property nonpub::0 not found on Array and there is no default value.
+	at Test$cinit()
+	at global$init() [TU=New DoABC]

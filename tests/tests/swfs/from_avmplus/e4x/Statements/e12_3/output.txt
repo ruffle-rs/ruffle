@@ -2,3 +2,4 @@ for-each-in       : PASSED!
 for-each-in (var) : PASSED!
 for-each-in       : PASSED!
 for-each-in (var) : PASSED!
+TypeError: Error #2023: Class Test$ must inherit from Sprite to link to the root.

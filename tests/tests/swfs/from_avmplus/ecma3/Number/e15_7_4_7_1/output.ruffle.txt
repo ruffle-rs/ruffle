@@ -1,1 +1,5 @@
 Section A of test: no error intended! PASSED!
+RangeError: Error #1002: Number.toPrecision has a range of 1 to 21. Number.toFixed and Number.toExponential have a range of 0 to 20. Specified value is not within expected range.
+	at Number/http://adobe.com/AS3/2006/builtin::toPrecision()
+	at MethodInfo-2()
+	at global$init() [TU=frame1]

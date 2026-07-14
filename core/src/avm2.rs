@@ -1,6 +1,5 @@
 //! ActionScript Virtual Machine 2 (AS3) support
 
-use crate::PlayerRuntime;
 use crate::avm2::bytearray::ObjectEncoding;
 use crate::avm2::class::{AllocatorFn, CustomConstructorFn};
 use crate::avm2::e4x::XmlSettings;
@@ -23,6 +22,7 @@ use crate::context::UpdateContext;
 use crate::display_object::{DisplayObject, MovieClip, TDisplayObject};
 use crate::string::{AvmString, StringContext};
 use crate::tag_utils::SwfMovie;
+use crate::{PlayerMode, PlayerRuntime};
 
 use fnv::FnvHashMap;
 use gc_arena::lock::GcRefLock;
@@ -682,6 +682,14 @@ impl<'gc> Avm2<'gc> {
         error: Error<'gc>,
         extra_info: &str,
     ) {
+        // Flash Player traces uncaught errors, but when trace is disabled
+        // (e.g. release mode), FP doesn't stringify the error for the second
+        // time, which is observable.
+        if activation.context.player_mode == PlayerMode::Debug {
+            let stringified = error.to_string(activation);
+            activation.context.avm_trace(&stringified);
+        }
+
         // This will print the properly formatted error
         let stringified = error.to_string(activation);
         tracing::error!("{}: {}", extra_info, stringified);

@@ -12,3 +12,4 @@ Adding namespace to something other than top node: PASSED!
 Adding namespace to XMLList element: PASSED!
 Original XML PASSED!
 Adding namespace that previously existed with a different prefix PASSED!
+TypeError: Error #2023: Class Test$ must inherit from Sprite to link to the root.

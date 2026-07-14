@@ -3,3 +3,6 @@ str.replace(pattern, "$9-$8-$7-$6-$5-$4-$3-$2-$1") PASSED!
 str.replace(pattern, "$10-$1") PASSED!
 str.replace(pattern, "$2-$A") PASSED!
 str.replace(pattern, "$02-$01") FAILED! expected: two-one got: two2-one1
+TypeError: Error #1009: Cannot access a property or method of a null object reference. (accessing field: 1)
+	at MethodInfo-0()
+	at global$init() [TU=frame1]

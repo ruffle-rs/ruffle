@@ -31,6 +31,6 @@ null
 ///second.prop2
 [object First]
 //first.prop1 = new Object();
-TypeError: Error #1034: Type Coercion failed: cannot convert Object@ca74cb9 to Test.as$38.Second.
-	at global$init()[Z:\tests\tests\swfs\avm2\coerce_property\Test.as:95]
-	at test_fla::MainTimeline/frame1()[test_fla.MainTimeline::frame1:3]
+TypeError: Error #1034: Type Coercion failed: cannot convert Object@00000000000 to Test.as$38.Second.
+	at global$init() [TU=]
+	at test_fla::MainTimeline/frame1()

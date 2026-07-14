@@ -13,3 +13,4 @@ MYXML = new XML(xmlDoc), MYXML.children()[0].localName() PASSED!
 MYXML = new XML(xmlDoc), MYXML.children()[0].localName() instanceof QName PASSED!
 MYXML = new XML(xmlDoc), MYXML.children()[0].localName() instanceof String PASSED!
 MYXML = new XML(xmlDoc), typeof(MYXML.children()[0].localName()) PASSED!
+TypeError: Error #2023: Class Test$ must inherit from Sprite to link to the root.
