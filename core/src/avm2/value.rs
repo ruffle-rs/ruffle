@@ -757,8 +757,9 @@ impl<'gc> Value<'gc> {
     /// ToUint32 algorithm which appears to match AVM2.
     ///
     /// This function can be very hot, so we inline a fast-path for
-    /// `Value::Number` and `Value::Integer`, and fall back to a non-inlined
-    /// slow-path handling the rest of the cases if necessary.
+    /// `Value::Integer` and fall back to a non-inlined slow path handling the
+    /// rest of the cases if necessary.
+    #[inline]
     pub fn coerce_to_u32(&self, activation: &mut Activation<'_, 'gc>) -> Result<u32, Error<'gc>> {
         // Full coerce-to-u32 implementation. This is the slow-path.
         #[inline(never)]
@@ -767,7 +768,8 @@ impl<'gc> Value<'gc> {
             activation: &mut Activation<'_, 'gc>,
         ) -> Result<u32, Error<'gc>> {
             Ok(match value {
-                Value::Integer(_) | Value::Number(_) => unreachable!("Handled by fast path"),
+                Value::Integer(_) => unreachable!("Handled by fast path"),
+                Value::Number(n) => f64_to_wrapping_u32(*n),
                 Value::Bool(b) => *b as u32,
                 Value::Undefined | Value::Null => 0,
                 Value::String(_) | Value::Object(_) => {
@@ -777,7 +779,6 @@ impl<'gc> Value<'gc> {
         }
 
         match self {
-            Value::Number(n) => Ok(f64_to_wrapping_u32(*n)),
             Value::Integer(i) => Ok(*i as u32),
             _ => {
                 // Fall back to slow path
@@ -795,8 +796,9 @@ impl<'gc> Value<'gc> {
     /// ToInt32 algorithm which appears to match AVM2.
     ///
     /// This function can be very hot, so we inline a fast-path for
-    /// `Value::Number` and `Value::Integer`, and fall back to a non-inlined
-    /// slow-path handling the rest of the cases if necessary.
+    /// `Value::Integer` and fall back to a non-inlined slow path handling the
+    /// rest of the cases if necessary.
+    #[inline]
     pub fn coerce_to_i32(&self, activation: &mut Activation<'_, 'gc>) -> Result<i32, Error<'gc>> {
         // Full coerce-to-i32 implementation. This is the slow-path.
         #[inline(never)]
@@ -805,7 +807,8 @@ impl<'gc> Value<'gc> {
             activation: &mut Activation<'_, 'gc>,
         ) -> Result<i32, Error<'gc>> {
             Ok(match value {
-                Value::Integer(_) | Value::Number(_) => unreachable!("Handled by fast path"),
+                Value::Integer(_) => unreachable!("Handled by fast path"),
+                Value::Number(n) => f64_to_wrapping_i32(*n),
                 Value::Bool(b) => *b as i32,
                 Value::Undefined | Value::Null => 0,
                 Value::String(_) | Value::Object(_) => {
@@ -815,7 +818,6 @@ impl<'gc> Value<'gc> {
         }
 
         match self {
-            Value::Number(n) => Ok(f64_to_wrapping_i32(*n)),
             Value::Integer(i) => Ok(*i),
             _ => {
                 // Fall back to slow path
