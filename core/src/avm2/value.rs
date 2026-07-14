@@ -493,6 +493,17 @@ pub fn abc_default_value<'gc>(
     }
 }
 
+/// Given an `f64`, return an `i32` value that losslessly represents it, or
+/// `None` if there is no such `i32` value.
+fn try_promote_f64(value: f64) -> Option<i32> {
+    let i = value as i32;
+    if value.to_bits() == (i as f64).to_bits() {
+        Some(i)
+    } else {
+        None
+    }
+}
+
 impl<'gc> Value<'gc> {
     /// Do the best effort of converting the [`usize`] value to [`Value`].
     ///
@@ -524,8 +535,7 @@ impl<'gc> Value<'gc> {
     pub fn normalize(self) -> Self {
         match self {
             Value::Number(n) => {
-                let i = n as i32;
-                if n.to_bits() == (i as f64).to_bits() && fits_in_value_integer_i32(i) {
+                if let Some(i) = try_promote_f64(n).filter(|i| fits_in_value_integer_i32(*i)) {
                     Value::Integer(i)
                 } else {
                     self
@@ -538,6 +548,16 @@ impl<'gc> Value<'gc> {
                     self
                 }
             }
+            _ => self,
+        }
+    }
+
+    /// If this `Value` is a `Value::Number` that can be losslessly represented
+    /// as a `Value::Integer`, return that `Value::Integer`. Otherwise return
+    /// the original value.
+    pub fn try_promote_number(self) -> Self {
+        match self {
+            Value::Number(n) if let Some(i) = try_promote_f64(n) => Value::Integer(i),
             _ => self,
         }
     }
