@@ -4,6 +4,7 @@ pub mod font;
 pub mod image_comparison;
 pub mod known_failure;
 pub mod player;
+pub mod shared_object;
 
 use crate::compiler::SwfCompilerOptions;
 use crate::environment::Environment;
