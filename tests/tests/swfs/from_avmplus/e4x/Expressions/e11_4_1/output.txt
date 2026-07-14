@@ -15,3 +15,4 @@ XML     + XML:      PASSED!
 XML     + XMLList:  PASSED!
 XMLList + XML:      PASSED!
 XMLList + XMLList:  PASSED!
+TypeError: Error #2023: Class Test$ must inherit from Sprite to link to the root.

@@ -33,3 +33,4 @@ var MYXML:XML = new XML() PASSED!
 var MYXML:XML = new XML(5) PASSED!
 XML with PI and comments PASSED!
 new XML("<a/><b/>") PASSED!
+TypeError: Error #2023: Class Test$ must inherit from Sprite to link to the root.

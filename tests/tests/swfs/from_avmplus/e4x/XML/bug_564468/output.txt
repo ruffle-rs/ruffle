@@ -7,3 +7,4 @@ mixed xml PASSED!
 lower CDATA PASSED!
 mixed CDATA PASSED!
 upper CDATA PASSED!
+TypeError: Error #2023: Class Test$ must inherit from Sprite to link to the root.

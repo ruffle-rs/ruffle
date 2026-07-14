@@ -132,3 +132,4 @@ Infinity
 NaN
 // parseInt(String.fromCharCode(0x2000) + "123")
 123
+TypeError: Error #2023: Class Test$ must inherit from Sprite to link to the root.

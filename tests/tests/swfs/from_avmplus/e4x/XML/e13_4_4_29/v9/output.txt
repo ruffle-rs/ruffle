@@ -16,3 +16,4 @@ Prepend a string to child node PASSED!
 Prepend a string to top node PASSED!
 Prepend a node to child node PASSED!
 a = <a><b><c/></b></a>, a.b.prependChild(a) PASSED!
+TypeError: Error #2023: Class Test$ must inherit from Sprite to link to the root.

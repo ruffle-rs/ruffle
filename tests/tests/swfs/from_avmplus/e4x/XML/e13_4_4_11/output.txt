@@ -9,3 +9,4 @@ MYXML = new XML(), XMLCOPY = MYXML.copy() PASSED!
 MYXML = new XML(xmlDoc), XMLCOPY = MYXML.Team.copy() PASSED!
 MYXML == MYXML.copy() PASSED!
 MYXML == MYXML2 where MYXML2 is a copy that has been changed PASSED!
+TypeError: Error #2023: Class Test$ must inherit from Sprite to link to the root.

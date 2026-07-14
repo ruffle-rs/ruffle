@@ -3,3 +3,6 @@ stringify an AS3 class PASSED!
 stringify an AS3 object with various methods PASSED!
 stringify an AS3 object with toJSON PASSED!
 stringify an AS3 object with toJSON PASSED!
+TypeError: Error #1006: value is not a function.
+	at JSON$/stringify()
+	at global$init() [TU=frame1]
