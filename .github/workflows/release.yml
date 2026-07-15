@@ -30,6 +30,7 @@ jobs:
       upload_url: ${{ steps.create_release.outputs.upload_url }}
       package_prefix: ${{ steps.create_release.outputs.package_prefix }}
       tag_name: ${{ steps.commit.outputs.tag_name }}
+      version: ${{ steps.version.outputs.version }}
       version4: ${{ steps.version.outputs.version4 }}
       release_channel: ${{ steps.configure.outputs.release_channel }}
 
@@ -297,6 +298,13 @@ jobs:
           cp -r desktop/packages/macOS package/Ruffle.app
           mkdir package/Ruffle.app/Contents/MacOS
           mv package/ruffle package/Ruffle.app/Contents/MacOS/ruffle
+
+      - name: Set app version in plist
+        # This needs to be stable only because Apple doesn't support semver
+        if: needs.create-release.outputs.release_channel == 'stable'
+        run: |
+          plutil -replace CFBundleShortVersionString -string "${{ needs.create-release.outputs.version }}" package/Ruffle.app/Contents/Info.plist
+          plutil -replace CFBundleVersion -string "${{ needs.create-release.outputs.version }}" package/Ruffle.app/Contents/Info.plist
 
       - name: Compile asset catalog
         run: |
