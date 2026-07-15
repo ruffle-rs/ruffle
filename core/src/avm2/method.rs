@@ -166,7 +166,7 @@ impl<'gc> Method<'gc> {
         let abc = txunit.abc();
 
         let Some(method) = abc.methods.get(method_index) else {
-            return Err(make_error_1027(activation));
+            return Err(make_error_1027(activation, method_index, abc.methods.len()));
         };
 
         let mut signature = Vec::new();

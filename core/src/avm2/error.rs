@@ -447,9 +447,16 @@ pub fn make_error_1026<'gc>(
 
 #[inline(never)]
 #[cold]
-pub fn make_error_1027<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
-    // TODO: Add proper arguments.
-    make_error!(verify_error(activation, error_message!(1027, "", ""), 1027))
+pub fn make_error_1027<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    method_index: usize,
+    method_count: usize,
+) -> Error<'gc> {
+    make_error!(verify_error(
+        activation,
+        error_message!(1027, method_index, method_count),
+        1027
+    ))
 }
 
 #[inline(never)]
