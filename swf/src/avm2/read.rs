@@ -533,7 +533,11 @@ impl<'a> Reader<'a> {
         let byte = self.read_u8()?;
         let opcode = match OpCode::from_u8(byte) {
             Some(o) => o,
-            None => return Err(Error::invalid_data(format!("Unknown ABC opcode {byte:#x}"))),
+            None => {
+                return Err(Error::AbcParseError(AbcParseError::IllegalOpcode {
+                    opcode: byte,
+                }));
+            }
         };
 
         let op = match opcode {
