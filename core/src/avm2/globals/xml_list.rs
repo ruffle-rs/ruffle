@@ -52,25 +52,18 @@ pub fn init<'gc>(
         return Ok(Value::Undefined);
     }
 
-    match E4XNode::parse(
+    let nodes = E4XNode::parse(
         value,
         activation,
         ignore_comments,
         ignore_processing_instructions,
         ignore_whitespace,
-    ) {
-        Ok(nodes) => {
-            this.set_children(
-                activation.gc(),
-                nodes.into_iter().map(E4XOrXml::E4X).collect(),
-            );
-        }
-        Err(e) => {
-            return Err(Error::rust_error(
-                format!("Failed to parse XML: {e:?}").into(),
-            ));
-        }
-    }
+    )?;
+
+    this.set_children(
+        activation.gc(),
+        nodes.into_iter().map(E4XOrXml::E4X).collect(),
+    );
 
     Ok(Value::Undefined)
 }
