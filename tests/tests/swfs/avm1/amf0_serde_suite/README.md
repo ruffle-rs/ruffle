@@ -1,5 +1,6 @@
  # Running the test
 
+You need to either set your system's timezone, or if possible, Flash Player's time zone to UTC to get the right output for this test due to time zone offset information being included in AMF Date data.
 
 To verify the actual data sent over the network, run 'server.py' from this directory. Then, run 'test.swf' in either Flash Player or the Ruffle Desktop player.
 
