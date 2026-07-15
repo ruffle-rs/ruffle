@@ -137,6 +137,9 @@ pub enum AbcParseError {
         method_count: usize,
         method_index: usize,
     },
+    IllegalOpcode {
+        opcode: u8,
+    },
 }
 
 impl fmt::Display for AbcParseError {
@@ -149,6 +152,9 @@ impl fmt::Display for AbcParseError {
                 f,
                 "Method body refers to index {method_index} but there are only {method_count} method infos"
             ),
+            AbcParseError::IllegalOpcode { opcode } => {
+                write!(f, "Illegal opcode {opcode:#x}")
+            }
         }
     }
 }
@@ -157,6 +163,7 @@ impl error::Error for AbcParseError {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
         match self {
             AbcParseError::MethodInfoOutOfBounds { .. } => None,
+            AbcParseError::IllegalOpcode { .. } => None,
         }
     }
 }

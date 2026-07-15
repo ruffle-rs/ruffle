@@ -310,11 +310,17 @@ pub enum Error1014Type {
 
 #[inline(never)]
 #[cold]
-pub fn make_error_1011<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
-    // TODO: Add proper arguments.
+pub fn make_error_1011<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    method: Method<'gc>,
+    opcode: u8,
+    offset: usize,
+) -> Error<'gc> {
+    let mut function_name = WString::new();
+    display_function(&mut function_name, method);
     make_error!(verify_error(
         activation,
-        error_message!(1011, "", "", ""),
+        error_message!(1011, function_name, opcode, offset),
         1011
     ))
 }
