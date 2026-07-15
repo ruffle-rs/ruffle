@@ -4,8 +4,8 @@ use crate::avm2::bytearray::ObjectEncoding;
 use crate::avm2::class::{AllocatorFn, CustomConstructorFn};
 use crate::avm2::e4x::XmlSettings;
 use crate::avm2::error::{
-    Error1014Type, make_error_1014, make_error_1047, make_error_1107, make_error_2022,
-    make_error_2023,
+    Error1014Type, make_error_1014, make_error_1027, make_error_1047, make_error_1107,
+    make_error_2022, make_error_2023,
 };
 use crate::avm2::function::exec;
 use crate::avm2::globals::{
@@ -31,6 +31,7 @@ use ruffle_wstr::WStr;
 use std::sync::Arc;
 use swf::DoAbc2Flag;
 use swf::avm2::read::Reader;
+use swf::error::AbcParseError;
 
 #[macro_export]
 macro_rules! avm_debug {
@@ -511,6 +512,13 @@ impl<'gc> Avm2<'gc> {
         let mut reader = Reader::new(data);
         let abc = match reader.read() {
             Ok(abc) => abc,
+            Err(swf::error::Error::AbcParseError(AbcParseError::MethodInfoOutOfBounds {
+                method_count,
+                method_index,
+            })) => {
+                let mut activation = Activation::from_nothing(context);
+                return Err(make_error_1027(&mut activation, method_index, method_count));
+            }
             Err(_) => {
                 let mut activation = Activation::from_nothing(context);
                 return Err(make_error_1107(&mut activation));
