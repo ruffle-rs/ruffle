@@ -83,6 +83,24 @@ pub struct WgpuRenderBackend<T: RenderTarget> {
     active_frame: ActiveFrame,
 }
 
+/// The display handle of the web platform - it carries no data.
+///
+/// In wgpu 29, a display handle must be provided when creating either the
+/// instance or the surface, but `SurfaceTarget::Canvas` does not carry one
+/// (fixed upstream only in wgpu 30, see
+/// <https://github.com/gfx-rs/wgpu/pull/9476>), so this is passed at
+/// instance creation instead.
+#[cfg(target_family = "wasm")]
+#[derive(Debug)]
+struct WebDisplay;
+
+#[cfg(target_family = "wasm")]
+impl wgpu::rwh::HasDisplayHandle for WebDisplay {
+    fn display_handle(&self) -> Result<wgpu::rwh::DisplayHandle<'_>, wgpu::rwh::HandleError> {
+        Ok(wgpu::rwh::DisplayHandle::web())
+    }
+}
+
 impl WgpuRenderBackend<SwapChainTarget> {
     #[cfg(target_family = "wasm")]
     pub async fn for_canvas(
@@ -104,7 +122,7 @@ impl WgpuRenderBackend<SwapChainTarget> {
                 },
                 ..Default::default()
             },
-            None,
+            Some(Box::new(WebDisplay)),
         );
         let surface = instance.create_surface(wgpu::SurfaceTarget::Canvas(canvas))?;
         let (adapter, device, queue) = request_adapter_and_device(
