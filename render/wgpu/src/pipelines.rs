@@ -80,7 +80,7 @@ impl Pipelines {
         msaa_sample_count: u32,
         bind_layouts: &BindLayouts,
     ) -> Self {
-        let colort_bindings = vec![&bind_layouts.globals, &bind_layouts.transforms];
+        let colort_bindings = vec![Some(&bind_layouts.globals), Some(&bind_layouts.transforms)];
 
         let color_pipelines = create_shape_pipeline(
             "Color",
@@ -109,9 +109,9 @@ impl Pipelines {
         );
 
         let gradient_bindings = vec![
-            &bind_layouts.globals,
-            &bind_layouts.transforms,
-            &bind_layouts.gradient,
+            Some(&bind_layouts.globals),
+            Some(&bind_layouts.transforms),
+            Some(&bind_layouts.gradient),
         ];
 
         let gradient_pipeline = create_shape_pipeline(
@@ -128,9 +128,9 @@ impl Pipelines {
         );
 
         let complex_blend_bindings = vec![
-            &bind_layouts.globals,
-            &bind_layouts.transforms,
-            &bind_layouts.blend,
+            Some(&bind_layouts.globals),
+            Some(&bind_layouts.transforms),
+            Some(&bind_layouts.blend),
         ];
 
         let complex_blend_pipelines = enum_map! {
@@ -149,9 +149,9 @@ impl Pipelines {
         };
 
         let bitmap_blend_bindings = vec![
-            &bind_layouts.globals,
-            &bind_layouts.transforms,
-            &bind_layouts.bitmap,
+            Some(&bind_layouts.globals),
+            Some(&bind_layouts.transforms),
+            Some(&bind_layouts.bitmap),
         ];
 
         let bitmap_pipelines = EnumMap::from_fn(|blend: TrivialBlend| {
@@ -224,9 +224,9 @@ impl Pipelines {
         ));
 
         let alpha_mask_bindings = vec![
-            &bind_layouts.globals,
-            &bind_layouts.transforms,
-            &bind_layouts.alpha_mask,
+            Some(&bind_layouts.globals),
+            Some(&bind_layouts.transforms),
+            Some(&bind_layouts.alpha_mask),
         ];
 
         let alpha_mask_pipeline = create_shape_pipeline(
@@ -314,7 +314,7 @@ fn create_shape_pipeline(
     shader: &wgpu::ShaderModule,
     msaa_sample_count: u32,
     vertex_buffers_layout: &[wgpu::VertexBufferLayout<'_>],
-    bind_group_layouts: &[&wgpu::BindGroupLayout],
+    bind_group_layouts: &[Option<&wgpu::BindGroupLayout>],
     blend: BlendState,
     immediate_size: u32,
     primitive_topology: PrimitiveTopology,

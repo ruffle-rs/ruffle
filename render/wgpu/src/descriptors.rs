@@ -83,9 +83,9 @@ impl Descriptors {
                         .create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
                             label: create_debug_label!("Copy pipeline layout").as_deref(),
                             bind_group_layouts: &[
-                                &self.bind_layouts.globals,
-                                &self.bind_layouts.transforms,
-                                &self.bind_layouts.bitmap,
+                                Some(&self.bind_layouts.globals),
+                                Some(&self.bind_layouts.transforms),
+                                Some(&self.bind_layouts.bitmap),
                             ],
                             immediate_size: 0,
                         });

@@ -402,7 +402,7 @@ impl CurrentPipeline {
                 .device
                 .create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
                     label: pipeline_layout_label.as_deref(),
-                    bind_group_layouts: &[&compiled_shaders.bind_group_layout],
+                    bind_group_layouts: &[Some(&compiled_shaders.bind_group_layout)],
                     immediate_size: 0,
                 });
 
