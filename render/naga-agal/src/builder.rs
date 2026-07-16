@@ -697,6 +697,7 @@ impl<'a> NagaBuilder<'a> {
                     Span::UNDEFINED,
                 ),
                 init: None,
+                memory_decorations: naga::MemoryDecorations::empty(),
             },
             Span::UNDEFINED,
         );
@@ -856,6 +857,7 @@ impl<'a> NagaBuilder<'a> {
                         Dimension::Cube => self.imagecube,
                     },
                     init: None,
+                    memory_decorations: naga::MemoryDecorations::empty(),
                 },
                 Span::UNDEFINED,
             );
@@ -876,6 +878,7 @@ impl<'a> NagaBuilder<'a> {
                         Span::UNDEFINED,
                     ),
                     init: None,
+                    memory_decorations: naga::MemoryDecorations::empty(),
                 },
                 Span::UNDEFINED,
             );
