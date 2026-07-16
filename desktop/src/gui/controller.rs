@@ -61,10 +61,9 @@ impl GuiController {
         initial_movie_url: Option<Url>,
         no_gui: bool,
     ) -> anyhow::Result<Self> {
-        let (instance, backend) = select_wgpu_backend(preferences.graphics_backends().into())?;
-        let surface = unsafe {
-            instance.create_surface_unsafe(wgpu::SurfaceTargetUnsafe::from_window(window.as_ref())?)
-        }?;
+        let (instance, backend) =
+            select_wgpu_backend(preferences.graphics_backends().into(), &window)?;
+        let surface = instance.create_surface(window.clone())?;
         let (adapter, device, queue) = futures::executor::block_on(request_adapter_and_device(
             backend,
             &instance,
@@ -510,9 +509,10 @@ impl GuiController {
 
 fn select_wgpu_backend(
     preferred_backends: wgpu::Backends,
+    window: &Arc<Window>,
 ) -> anyhow::Result<(wgpu::Instance, wgpu::Backends)> {
     for backend in preferred_backends.iter() {
-        if let Some(instance) = try_wgpu_backend(backend) {
+        if let Some(instance) = try_wgpu_backend(backend, window.clone()) {
             tracing::info!(
                 "Using preferred backend {}",
                 format_list(&get_backend_names(backend), "and")
@@ -527,7 +527,7 @@ fn select_wgpu_backend(
     );
 
     for backend in wgpu::Backends::all() - preferred_backends {
-        if let Some(instance) = try_wgpu_backend(backend) {
+        if let Some(instance) = try_wgpu_backend(backend, window.clone()) {
             tracing::info!(
                 "Using fallback backend {}",
                 format_list(&get_backend_names(backend), "and")
@@ -541,8 +541,12 @@ fn select_wgpu_backend(
     ))
 }
 
-fn try_wgpu_backend(backend: wgpu::Backends) -> Option<wgpu::Instance> {
-    let instance = create_wgpu_instance(backend, wgpu::BackendOptions::default());
+fn try_wgpu_backend(backend: wgpu::Backends, window: Arc<Window>) -> Option<wgpu::Instance> {
+    let instance = create_wgpu_instance(
+        backend,
+        wgpu::BackendOptions::default(),
+        Some(Box::new(window)),
+    );
     if futures::executor::block_on(instance.enumerate_adapters(backend)).is_empty() {
         None
     } else {

@@ -7,6 +7,7 @@ use egui::{Align2, Button, Checkbox, ComboBox, DragValue, Grid, Ui, Widget, Wind
 use ruffle_render_wgpu::backend::create_wgpu_instance;
 use ruffle_render_wgpu::clap::{GraphicsBackend, PowerPreference};
 use std::borrow::Cow;
+use std::sync::Arc;
 use unic_langid::LanguageIdentifier;
 
 pub struct PreferencesDialog {
@@ -58,8 +59,8 @@ pub struct PreferencesDialog {
 }
 
 impl PreferencesDialog {
-    pub fn new(preferences: GlobalPreferences) -> Self {
-        let available_backends = find_available_graphics_backends();
+    pub fn new(preferences: GlobalPreferences, window: Option<Arc<winit::window::Window>>) -> Self {
+        let available_backends = find_available_graphics_backends(window);
 
         let audio_host = cpal::default_host();
         let mut available_output_devices = Vec::new();
@@ -708,12 +709,18 @@ fn backend_availability(instance: &wgpu::Instance, backend: wgpu::Backends) -> w
     }
 }
 
-fn find_available_graphics_backends() -> wgpu::Backends {
+fn find_available_graphics_backends(window: Option<Arc<winit::window::Window>>) -> wgpu::Backends {
     let mut available_backends = wgpu::Backends::empty();
 
     // We have to make a new instance here, as the one created for the entire application may not have
-    // all backends enabled
-    let instance = create_wgpu_instance(wgpu::Backends::all(), wgpu::BackendOptions::default());
+    // all backends enabled. Probe with the same display handle the runtime
+    // backend selection uses, so the two paths can't disagree about which
+    // backends are usable (the EGL platform is chosen from it, for example).
+    let instance = create_wgpu_instance(
+        wgpu::Backends::all(),
+        wgpu::BackendOptions::default(),
+        window.map(|window| Box::new(window) as Box<dyn wgpu::wgt::WgpuHasDisplayHandle>),
+    );
 
     available_backends |= backend_availability(&instance, wgpu::Backends::VULKAN);
     available_backends |= backend_availability(&instance, wgpu::Backends::GL);
