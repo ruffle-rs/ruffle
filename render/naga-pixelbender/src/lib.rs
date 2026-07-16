@@ -272,6 +272,7 @@ impl ShaderBuilder<'_> {
                         Span::UNDEFINED,
                     ),
                     init: None,
+                    memory_decorations: naga::MemoryDecorations::empty(),
                 },
                 Span::UNDEFINED,
             );
@@ -356,6 +357,7 @@ impl ShaderBuilder<'_> {
                 }),
                 ty: vec4f,
                 init: None,
+                memory_decorations: naga::MemoryDecorations::empty(),
             },
             Span::UNDEFINED,
         );
@@ -544,6 +546,7 @@ impl ShaderBuilder<'_> {
                             }),
                             ty: self.image2d,
                             init: None,
+                            memory_decorations: naga::MemoryDecorations::empty(),
                         },
                         Span::UNDEFINED,
                     );
@@ -584,6 +587,7 @@ impl ShaderBuilder<'_> {
                     Span::UNDEFINED,
                 ),
                 init: None,
+                memory_decorations: naga::MemoryDecorations::empty(),
             },
             Span::UNDEFINED,
         );
@@ -608,6 +612,7 @@ impl ShaderBuilder<'_> {
                     Span::UNDEFINED,
                 ),
                 init: None,
+                memory_decorations: naga::MemoryDecorations::empty(),
             },
             Span::UNDEFINED,
         );
