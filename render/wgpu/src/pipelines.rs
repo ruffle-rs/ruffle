@@ -202,8 +202,8 @@ impl Pipelines {
             &bitmap_opaque_pipeline_layout,
             Some(wgpu::DepthStencilState {
                 format: wgpu::TextureFormat::Stencil8,
-                depth_write_enabled: false,
-                depth_compare: wgpu::CompareFunction::Always,
+                depth_write_enabled: Some(false),
+                depth_compare: Some(wgpu::CompareFunction::Always),
                 stencil: wgpu::StencilState {
                     front: wgpu::StencilFaceState::IGNORE,
                     back: wgpu::StencilFaceState::IGNORE,
@@ -334,8 +334,8 @@ fn create_shape_pipeline(
             &pipeline_layout,
             Some(wgpu::DepthStencilState {
                 format: wgpu::TextureFormat::Stencil8,
-                depth_write_enabled: false,
-                depth_compare: wgpu::CompareFunction::Always,
+                depth_write_enabled: Some(false),
+                depth_compare: Some(wgpu::CompareFunction::Always),
                 stencil: wgpu::StencilState {
                     front: stencil_state,
                     back: stencil_state,

@@ -502,8 +502,8 @@ impl CurrentPipeline {
         let depth_stencil = if self.has_depth_texture {
             Some(DepthStencilState {
                 format: TextureFormat::Depth24PlusStencil8,
-                depth_write_enabled: self.depth_mask,
-                depth_compare: self.pass_compare_mode,
+                depth_write_enabled: Some(self.depth_mask),
+                depth_compare: Some(self.pass_compare_mode),
                 stencil: self.stencil.clone(),
                 bias: Default::default(),
             })
