@@ -24,36 +24,10 @@ pub fn preprocess_peephole(ops: &[Cell<Op<'_>>]) {
 pub fn postprocess_peephole<'a>(
     ops: &'a [Cell<Op<'_>>],
     jump_targets: &HashSet<usize>,
+    sets_local_0: bool,
     has_exceptions: bool,
 ) {
     // Gather some information...
-    let mut sets_local_0 = false;
-
-    for op in ops {
-        match op.get() {
-            Op::SetLocal { index }
-            | Op::Kill { index }
-            | Op::DecLocal { index }
-            | Op::DecLocalI { index }
-            | Op::IncLocal { index }
-            | Op::IncLocalI { index }
-                if index == 0 =>
-            {
-                sets_local_0 = true;
-                break;
-            }
-            Op::HasNext2 {
-                object_register,
-                index_register,
-            } if object_register == 0 || index_register == 0 => {
-                sets_local_0 = true;
-                break;
-            }
-
-            _ => {}
-        }
-    }
-
     let simple_scope_op_positions =
         simple_scope_structure(ops, jump_targets).filter(|_| !has_exceptions);
 
