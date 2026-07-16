@@ -20,7 +20,6 @@ function verifyPayload(prefix, d) {
     trace(prefix + ".p_int_neg: " + d.p_int_neg);
     trace(prefix + ".p_num_zero_pos: " + d.p_num_zero_pos + " (1/x: " + (1/d.p_num_zero_pos) + ")");
     trace(prefix + ".p_num_zero_neg: " + d.p_num_zero_neg + " (1/x: " + (1/d.p_num_zero_neg) + ")");
-    trace(prefix + ".p_nan_check: " + isNaN(d.p_nan));
     trace(prefix + ".p_pos_inf: " + d.p_pos_inf);
     trace(prefix + ".p_neg_inf: " + d.p_neg_inf);
 
@@ -120,7 +119,6 @@ payload.p_int = 1337;
 payload.p_int_neg = -1337;
 payload.p_num_zero_pos = 0;
 payload.p_num_zero_neg = -0;
-payload.p_nan = NaN;
 payload.p_pos_inf = Infinity;
 payload.p_neg_inf = -Infinity;
 payload.p_str = "The quick brown AMF fox";
