@@ -338,10 +338,9 @@ impl GuiController {
 
         let raw_input = self.egui_winit.take_egui_input(&self.window);
         let show_menu = self.window.fullscreen().is_none() && !self.no_gui;
-        let mut full_output = self.egui_winit.egui_ctx().run_ui(raw_input, |ui| {
+        let mut full_output = self.egui_winit.egui_ctx().run(raw_input, |context| {
             self.gui.update(
-                self.egui_winit.egui_ctx(),
-                ui,
+                context,
                 show_menu,
                 player.as_deref_mut(),
                 if show_menu {
@@ -358,7 +357,7 @@ impl GuiController {
             .repaint_delay;
 
         // If we're not in a UI, tell egui which cursor we prefer to use instead
-        if !self.egui_winit.egui_ctx().egui_wants_pointer_input()
+        if !self.egui_winit.egui_ctx().wants_pointer_input()
             && let Some(player) = player.as_deref()
         {
             full_output.platform_output.cursor_icon =
@@ -543,7 +542,7 @@ fn select_wgpu_backend(
 
 fn try_wgpu_backend(backend: wgpu::Backends) -> Option<wgpu::Instance> {
     let instance = create_wgpu_instance(backend, wgpu::BackendOptions::default());
-    if futures::executor::block_on(instance.enumerate_adapters(backend)).is_empty() {
+    if instance.enumerate_adapters(backend).is_empty() {
         None
     } else {
         Some(instance)

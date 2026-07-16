@@ -621,7 +621,6 @@ impl<'a> NagaBuilder<'a> {
                             interpolation: None,
                             sampling: None,
                             blend_src: None,
-                            per_primitive: false,
                         }),
                         offset: 0,
                     }],
@@ -645,7 +644,6 @@ impl<'a> NagaBuilder<'a> {
                         interpolation: None,
                         sampling: None,
                         blend_src: None,
-                        per_primitive: false,
                     }),
                 });
             }
@@ -759,7 +757,6 @@ impl<'a> NagaBuilder<'a> {
                     interpolation: None,
                     sampling: None,
                     blend_src: None,
-                    per_primitive: false,
                 }),
             });
 
@@ -1792,8 +1789,6 @@ impl<'a> NagaBuilder<'a> {
             workgroup_size: [0; 3],
             workgroup_size_overrides: None,
             function: self.func,
-            mesh_info: None,
-            task_payload: None,
         };
 
         self.module.entry_points.push(entry_point);

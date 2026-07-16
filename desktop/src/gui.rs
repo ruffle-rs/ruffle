@@ -84,7 +84,6 @@ impl RuffleGui {
     fn update(
         &mut self,
         egui_ctx: &egui::Context,
-        egui_ui: &mut egui::Ui,
         show_menu: bool,
         mut player: Option<&mut Player>,
         menu_height_offset: f64,
@@ -95,7 +94,7 @@ impl RuffleGui {
             .consume_shortcuts(egui_ctx, &mut self.dialogs, player.as_deref_mut());
         if show_menu {
             self.menu_bar
-                .show(&locale, egui_ui, &mut self.dialogs, player.as_deref_mut());
+                .show(&locale, egui_ctx, &mut self.dialogs, player.as_deref_mut());
         }
 
         self.dialogs.show(&locale, egui_ctx, player.as_deref_mut());

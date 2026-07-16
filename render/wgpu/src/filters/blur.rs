@@ -91,7 +91,7 @@ impl BlurFilter {
         let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
             label: None,
             bind_group_layouts: &[&bind_group_layout],
-            immediate_size: 0,
+            push_constant_ranges: &[],
         });
 
         Self {
@@ -140,7 +140,7 @@ impl BlurFilter {
                         targets: &[Some(wgpu::TextureFormat::Rgba8Unorm.into())],
                         compilation_options: Default::default(),
                     }),
-                    multiview_mask: None,
+                    multiview: None,
                     cache: None,
                 })
         })
@@ -187,7 +187,13 @@ impl BlurFilter {
         );
 
         staging_belt
-            .write_buffer(draw_encoder, &self.vertex_buffer, 0, self.vertices_size)
+            .write_buffer(
+                draw_encoder,
+                &self.vertex_buffer,
+                0,
+                self.vertices_size,
+                &descriptors.device,
+            )
             .copy_from_slice(bytemuck::cast_slice(&[source.vertices()]));
 
         let source_view = source.texture.create_view(&Default::default());
@@ -264,7 +270,13 @@ impl BlurFilter {
                     last_weight,
                 };
                 staging_belt
-                    .write_buffer(draw_encoder, &self.uniform_buffer, 0, self.uniform_size)
+                    .write_buffer(
+                        draw_encoder,
+                        &self.uniform_buffer,
+                        0,
+                        self.uniform_size,
+                        &descriptors.device,
+                    )
                     .copy_from_slice(bytemuck::cast_slice(&[uniform]));
 
                 self.render_with_uniform_buffers(

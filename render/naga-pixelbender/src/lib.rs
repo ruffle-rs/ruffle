@@ -240,7 +240,6 @@ impl ShaderBuilder<'_> {
                 interpolation: Some(naga::Interpolation::Perspective),
                 sampling: Some(naga::Sampling::Center),
                 blend_src: None,
-                per_primitive: false,
             }),
         });
 
@@ -251,7 +250,6 @@ impl ShaderBuilder<'_> {
                 interpolation: None,
                 sampling: None,
                 blend_src: None,
-                per_primitive: false,
             }),
         });
 
@@ -443,8 +441,6 @@ impl ShaderBuilder<'_> {
             workgroup_size: [0; 3],
             workgroup_size_overrides: None,
             function: builder.func,
-            mesh_info: None,
-            task_payload: None,
         });
 
         Ok(NagaModules {
