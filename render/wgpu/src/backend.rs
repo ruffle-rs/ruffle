@@ -529,18 +529,14 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
         commands: CommandList,
         cache_entries: Vec<BitmapCacheEntry>,
     ) {
-        let frame_output = match self.target.get_next_texture() {
-            Ok(frame) => frame,
-            Err(e) => {
-                tracing::warn!("Couldn't begin new render frame: {}", e);
-                // Attempt to recreate the swap chain in this case.
-                self.target.resize(
-                    &self.descriptors.device,
-                    self.target.width(),
-                    self.target.height(),
-                );
-                return;
-            }
+        let Some(frame_output) = self.target.get_next_texture() else {
+            // Attempt to recreate the swap chain in this case.
+            self.target.resize(
+                &self.descriptors.device,
+                self.target.width(),
+                self.target.height(),
+            );
+            return;
         };
 
         for entry in cache_entries {

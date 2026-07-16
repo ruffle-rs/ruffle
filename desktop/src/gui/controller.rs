@@ -22,7 +22,6 @@ use std::path::Path;
 use std::sync::{Arc, MutexGuard};
 use std::time::{Duration, Instant};
 use url::Url;
-use wgpu::SurfaceError;
 use winit::dpi::{PhysicalPosition, PhysicalSize};
 use winit::event::WindowEvent;
 use winit::event_loop::EventLoopProxy;
@@ -304,8 +303,16 @@ impl GuiController {
 
     pub fn render(&mut self, mut player: Option<MutexGuard<Player>>) {
         let surface_texture = match self.surface.get_current_texture() {
-            Ok(surface_texture) => surface_texture,
-            Err(e @ (SurfaceError::Lost | SurfaceError::Outdated)) => {
+            wgpu::CurrentSurfaceTexture::Success(surface_texture) => surface_texture,
+            wgpu::CurrentSurfaceTexture::Suboptimal(surface_texture) => {
+                // The acquired texture is still usable - no reason to waste
+                // this frame. The surface should ideally be reconfigured
+                // before the next acquire; usually a resize event arrives and
+                // does that, but not always (e.g. on a display transform
+                // change) - we accept staying suboptimal in that case for now.
+                surface_texture
+            }
+            state @ (wgpu::CurrentSurfaceTexture::Lost | wgpu::CurrentSurfaceTexture::Outdated) => {
                 // Reconfigure the surface if lost or outdated.
                 // Some sources suggest ignoring `Outdated` and waiting for the next frame,
                 // but I suspect this advice is related explicitly to resizing,
@@ -314,24 +321,21 @@ impl GuiController {
                 // to become outdated (resolution / refresh rate change, some internal
                 // platform-specific reasons, wgpu bugs?).
                 // Testing on Vulkan shows that reconfiguring the surface works in that case.
-                tracing::warn!("Surface became unavailable: {:?}, reconfiguring", e);
+                tracing::warn!("Surface became unavailable: {:?}, reconfiguring", state);
                 self.reconfigure_surface();
                 return;
             }
-            Err(e @ SurfaceError::Timeout) => {
-                // An operation related to the surface took too long to complete.
-                // This error may happen due to many reasons (GPU overload, GPU driver bugs, etc.),
-                // the best thing we can do is skip a frame and wait.
-                tracing::warn!("Surface became unavailable: {:?}, skipping a frame", e);
+            state @ (wgpu::CurrentSurfaceTexture::Timeout
+            | wgpu::CurrentSurfaceTexture::Occluded) => {
+                // Acquiring the frame took too long, or the window is occluded
+                // (e.g. minimized or fully covered by another window).
+                // The best thing we can do is skip a frame and wait.
+                tracing::warn!("Surface became unavailable: {:?}, skipping a frame", state);
                 return;
             }
-            Err(SurfaceError::OutOfMemory) => {
-                // Cannot help with that :(
-                panic!("wgpu: Out of memory: no more memory left to allocate a new frame");
-            }
-            Err(SurfaceError::Other) => {
+            wgpu::CurrentSurfaceTexture::Validation => {
                 // Generic error, not much we can do.
-                panic!("wgpu: Acquiring a texture failed with a generic error");
+                panic!("wgpu: Acquiring a texture failed with a validation error");
             }
         };
 
