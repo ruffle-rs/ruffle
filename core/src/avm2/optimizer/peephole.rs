@@ -24,7 +24,6 @@ pub fn preprocess_peephole(ops: &[Cell<Op<'_>>]) {
 pub fn postprocess_peephole<'a>(
     ops: &'a [Cell<Op<'_>>],
     jump_targets: &HashSet<usize>,
-    sets_local_0: bool,
     has_exceptions: bool,
 ) {
     // Gather some information...
@@ -131,17 +130,6 @@ pub fn postprocess_peephole<'a>(
                 }
                 _ => {}
             }
-        }
-
-        // Optimizations on the current op
-        match current_op.get() {
-            Op::GetScopeObject { index: 0 }
-                if simple_scope_op_positions.is_some() && !sets_local_0 =>
-            {
-                // Replace `getscopeobject 0` with `getlocal 0` if possible
-                current_op.set(Op::GetLocal { index: 0 })
-            }
-            _ => {}
         }
 
         // Don't set last_op to the current_op if the current op does nothing.
