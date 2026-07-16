@@ -1229,8 +1229,15 @@ fn abstract_interpret_ops<'gc>(
 
                 stack.push(activation, new_value)?;
             }
-            Op::PushScope => {
+            Op::PushScope { .. } => {
                 let stack_value = stack.pop(activation)?;
+
+                if stack_value.not_null() {
+                    optimize_op_to!(Op::PushScope {
+                        input_not_null: true
+                    });
+                }
+
                 scope_stack.push(activation, stack_value)?;
             }
             Op::PushWith => {

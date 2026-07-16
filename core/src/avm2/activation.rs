@@ -712,7 +712,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                 Op::GetSuper { multiname } => self.op_get_super(*multiname),
                 Op::SetSuper { multiname } => self.op_set_super(*multiname),
                 Op::In => self.op_in(),
-                Op::PushScope => self.op_push_scope(),
+                Op::PushScope { .. } => self.op_push_scope(),
                 Op::NewCatch { index } => self.op_newcatch(method, *index),
                 Op::PushWith => self.op_push_with(),
                 Op::PopScope => self.op_pop_scope(),
