@@ -447,6 +447,7 @@ impl ShaderBuilder<'_> {
             function: builder.func,
             mesh_info: None,
             task_payload: None,
+            incoming_ray_payload: None,
         });
 
         Ok(NagaModules {

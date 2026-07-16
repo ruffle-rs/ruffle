@@ -1797,6 +1797,7 @@ impl<'a> NagaBuilder<'a> {
             function: self.func,
             mesh_info: None,
             task_payload: None,
+            incoming_ray_payload: None,
         };
 
         self.module.entry_points.push(entry_point);
