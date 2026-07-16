@@ -21,6 +21,7 @@ enum ConstantValue {
     True,
     False,
     Null,
+    Receiver,
 }
 impl ConstantValue {
     pub fn is_truthy(self) -> bool {
@@ -262,7 +263,7 @@ impl<'gc> OptValue<'gc> {
     pub fn known_falsey(self) -> bool {
         if self.constant_value.is_some_and(|v| v.is_falsey()) {
             // If this value is known to be a constant value, and that value is
-            // truthy, then return true
+            // falsey, then return false
             // NOTE: This condition is also met if this value is known to be
             // `null`, since we represent that using `ConstantValue::Null`
             true
@@ -609,6 +610,7 @@ pub fn type_aware_optimize<'gc>(
     method_exceptions: &mut [Exception<'gc>],
     resolved_parameters: &[ResolvedParamConfig<'gc>],
     jump_targets: &mut HashSet<usize>,
+    sets_local_0: bool,
 ) -> Result<(), Error<'gc>> {
     let (block_list, op_index_to_block_index_table) = assemble_blocks(code_slice, jump_targets);
 
@@ -639,6 +641,7 @@ pub fn type_aware_optimize<'gc>(
     let mut this_value = OptValue::any();
     this_value.class = Some(this_class);
     this_value.not_null = true;
+    this_value.constant_value = Some(ConstantValue::Receiver);
 
     let argument_types = resolved_parameters
         .iter()
@@ -697,6 +700,7 @@ pub fn type_aware_optimize<'gc>(
             &types,
             &op_index_to_block_index_table,
             method_exceptions,
+            sets_local_0,
             &mut worklist,
             false,
         )?;
@@ -716,6 +720,7 @@ pub fn type_aware_optimize<'gc>(
                 &types,
                 &op_index_to_block_index_table,
                 method_exceptions,
+                sets_local_0,
                 &mut worklist,
                 true,
             )?;
@@ -776,6 +781,7 @@ fn abstract_interpret_ops<'gc>(
     types: &Types<'gc>,
     op_index_to_block_index_table: &HashMap<usize, usize>,
     method_exceptions: &[Exception<'gc>],
+    sets_local_0: bool,
     worklist: &mut Vec<usize>,
     do_optimize: bool,
 ) -> Result<(), Error<'gc>> {
@@ -1239,7 +1245,20 @@ fn abstract_interpret_ops<'gc>(
                     return Err(make_error_1019(activation, Some(index)));
                 }
 
-                stack.push(activation, scope_stack.at(index).0)?;
+                let value = scope_stack.at(index).0;
+
+                if matches!(value.constant_value, Some(ConstantValue::Receiver)) && !sets_local_0 {
+                    // If the value on the scope stack was the receiver, and
+                    // local #0's value hasn't changed (i.e. local #0 is still
+                    // set to the reciever), we can optimize this op to a
+                    // `getlocal0`.
+
+                    // NOTE: We also perform this optimization in the handling
+                    // of `Op::FindPropStrict`/`Op::FindProperty`.
+                    optimize_op_to!(Op::GetLocal { index: 0 });
+                }
+
+                stack.push(activation, value)?;
             }
             Op::GetOuterScope { index } => {
                 let class = activation
@@ -1302,13 +1321,16 @@ fn abstract_interpret_ops<'gc>(
 
                         let checked_scope = scope_stack.at(i);
 
+                        let value = checked_scope.0;
+                        let is_with = checked_scope.1;
+
                         // This was a `with` scope; we don't know what could be on it
                         // and we should stop looking now
-                        if checked_scope.1 {
+                        if is_with {
                             stack_push_done = true;
                             stack.push_any(activation)?;
                             break;
-                        } else if let Some(vtable) = checked_scope.0.vtable() {
+                        } else if let Some(vtable) = value.vtable() {
                             // NOTE: There is a subtle issue with this logic;
                             // if pushing an object of type `Subclass` that was
                             // declared to be of type `Superclass` with a coerce,
@@ -1316,11 +1338,22 @@ fn abstract_interpret_ops<'gc>(
                             // `Subclass` when it assumes the value is of type
                             // `Superclass`. However, this matches avmplus's
                             // behavior- see the test `avm2/scope_optimizations`.
+
                             if vtable.has_trait(&multiname) {
-                                optimize_op_to!(Op::GetScopeObject { index: i });
+                                // See `Op::GetScopeObject`'s handling for an
+                                // explanation for this additional optimization
+                                // to `Op::GetLocal` rather than
+                                // `Op::GetScopeObject`.
+                                if matches!(value.constant_value, Some(ConstantValue::Receiver))
+                                    && !sets_local_0
+                                {
+                                    optimize_op_to!(Op::GetLocal { index: 0 });
+                                } else {
+                                    optimize_op_to!(Op::GetScopeObject { index: i });
+                                }
 
                                 stack_push_done = true;
-                                stack.push(activation, checked_scope.0)?;
+                                stack.push(activation, value)?;
                                 break;
                             }
                         } else {

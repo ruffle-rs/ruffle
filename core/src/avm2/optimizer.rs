@@ -41,14 +41,10 @@ pub fn optimize<'gc>(
         method_exceptions,
         resolved_parameters,
         &mut jump_targets,
+        sets_local_0,
     )?;
 
-    peephole::postprocess_peephole(
-        code_slice,
-        &jump_targets,
-        sets_local_0,
-        !method_exceptions.is_empty(),
-    );
+    peephole::postprocess_peephole(code_slice, &jump_targets, !method_exceptions.is_empty());
 
     dce::eliminate_dead_code(code_slice, &jump_targets);
 
