@@ -376,18 +376,18 @@ dependencies = [
 
 [[package]]
 name = "bit-set"
-version = "0.8.0"
+version = "0.9.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "08807e080ed7f9d5433fa9b275196cfc35414f66a0c79d864dc51a0d825231a3"
+checksum = "34ddef2995421ab6a5c779542c81ee77c115206f4ad9d5a8e05f4ff49716a3dd"
 dependencies = [
  "bit-vec",
 ]
 
 [[package]]
 name = "bit-vec"
-version = "0.8.0"
+version = "0.9.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5e764a1d40d510daf35e07be9eb06e75770908c27d411ee6c92109c9840eaaf7"
+checksum = "b71798fca2c1fe1086445a7258a4bc81e6e49dcd24c8d0dd9a1e57395b603f51"
 
 [[package]]
 name = "bitflags"
@@ -427,12 +427,6 @@ dependencies = [
  "tap",
  "wyz",
 ]
-
-[[package]]
-name = "block"
-version = "0.1.6"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0d8c1fef690941d3e7788d328517591fecc684c084084702d6ff1641e993699a"
 
 [[package]]
 name = "block-buffer"
@@ -744,9 +738,9 @@ dependencies = [
 
 [[package]]
 name = "codespan-reporting"
-version = "0.12.0"
+version = "0.13.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fe6d2e5af09e8c8ad56c969f2157a3d4238cebc7c55f0a517728c38f7b200f81"
+checksum = "af491d569909a7e4dee0ad7db7f5341fef5c614d5b8ec8cf765732aba3cff681"
 dependencies = [
  "serde",
  "termcolor",
@@ -887,7 +881,7 @@ checksum = "c07782be35f9e1140080c6b96f0d44b739e2278479f64e02fdab4e32dfd8b081"
 dependencies = [
  "bitflags 1.3.2",
  "core-foundation 0.9.4",
- "core-graphics-types 0.1.3",
+ "core-graphics-types",
  "foreign-types 0.5.0",
  "libc",
 ]
@@ -900,17 +894,6 @@ checksum = "45390e6114f68f718cc7a830514a96f903cccd70d02a8f6d9f643ac4ba45afaf"
 dependencies = [
  "bitflags 1.3.2",
  "core-foundation 0.9.4",
- "libc",
-]
-
-[[package]]
-name = "core-graphics-types"
-version = "0.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3d44a101f213f6c4cdc1853d4b78aef6db6bdfa3468798cc1d9912f4735013eb"
-dependencies = [
- "bitflags 2.13.0",
- "core-foundation 0.10.1",
  "libc",
 ]
 
@@ -1399,8 +1382,9 @@ checksum = "d8b14ccef22fc6f5a8f4d7d768562a182c04ce9a3b3157b91390b52ddfdf1a76"
 
 [[package]]
 name = "ecolor"
-version = "0.33.3"
-source = "git+https://github.com/emilk/egui.git?rev=b077cf910297884a4f1b431e8da99806ae925168#b077cf910297884a4f1b431e8da99806ae925168"
+version = "0.34.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a05fbfa222ffb51989d5ccf33e5f7aebfcf96c5023413856b0c3618a7f79896e"
 dependencies = [
  "bytemuck",
  "emath",
@@ -1408,8 +1392,9 @@ dependencies = [
 
 [[package]]
 name = "egui"
-version = "0.33.3"
-source = "git+https://github.com/emilk/egui.git?rev=b077cf910297884a4f1b431e8da99806ae925168#b077cf910297884a4f1b431e8da99806ae925168"
+version = "0.34.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "42112be0ae157289312b92b3dfaf20e911b5a3c4c65d4aab0e7c47fbc0ce16e3"
 dependencies = [
  "accesskit",
  "ahash",
@@ -1425,8 +1410,9 @@ dependencies = [
 
 [[package]]
 name = "egui-wgpu"
-version = "0.33.3"
-source = "git+https://github.com/emilk/egui.git?rev=b077cf910297884a4f1b431e8da99806ae925168#b077cf910297884a4f1b431e8da99806ae925168"
+version = "0.34.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9f0c0559ac5598a1b887a6206dccbab7e3e6246c57cb00ae287262bd44776c9c"
 dependencies = [
  "ahash",
  "bytemuck",
@@ -1444,16 +1430,17 @@ dependencies = [
 
 [[package]]
 name = "egui-winit"
-version = "0.33.3"
-source = "git+https://github.com/emilk/egui.git?rev=b077cf910297884a4f1b431e8da99806ae925168#b077cf910297884a4f1b431e8da99806ae925168"
+version = "0.34.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "967c5b323625d46d46a59b5daba3fef742248d27693cc18972458619858c4239"
 dependencies = [
  "arboard",
  "bytemuck",
  "egui",
  "log",
- "objc2 0.5.2",
- "objc2-foundation 0.2.2",
- "objc2-ui-kit",
+ "objc2 0.6.4",
+ "objc2-foundation 0.3.2",
+ "objc2-ui-kit 0.3.2",
  "profiling",
  "raw-window-handle",
  "smithay-clipboard",
@@ -1464,8 +1451,9 @@ dependencies = [
 
 [[package]]
 name = "egui_extras"
-version = "0.33.3"
-source = "git+https://github.com/emilk/egui.git?rev=b077cf910297884a4f1b431e8da99806ae925168#b077cf910297884a4f1b431e8da99806ae925168"
+version = "0.34.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "598d8675f6fd9088db8a93d8c7aacda936b2f3d0c2b0660ad1744a45b5caf922"
 dependencies = [
  "ahash",
  "egui",
@@ -1483,8 +1471,9 @@ checksum = "91622ff5e7162018101f2fea40d6ebf4a78bbe5a49736a2020649edf9693679e"
 
 [[package]]
 name = "emath"
-version = "0.33.3"
-source = "git+https://github.com/emilk/egui.git?rev=b077cf910297884a4f1b431e8da99806ae925168#b077cf910297884a4f1b431e8da99806ae925168"
+version = "0.34.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b53f0d33a479321da6b0caa71366c9f67e8a2c149762d90bdc0d16e601ee8ecb"
 dependencies = [
  "bytemuck",
 ]
@@ -1597,8 +1586,9 @@ dependencies = [
 
 [[package]]
 name = "epaint"
-version = "0.33.3"
-source = "git+https://github.com/emilk/egui.git?rev=b077cf910297884a4f1b431e8da99806ae925168#b077cf910297884a4f1b431e8da99806ae925168"
+version = "0.34.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6675898a291ec212fc3df04f537d177fce8496120244590e6359dcaa4c25da79"
 dependencies = [
  "ahash",
  "bytemuck",
@@ -1618,8 +1608,9 @@ dependencies = [
 
 [[package]]
 name = "epaint_default_fonts"
-version = "0.33.3"
-source = "git+https://github.com/emilk/egui.git?rev=b077cf910297884a4f1b431e8da99806ae925168#b077cf910297884a4f1b431e8da99806ae925168"
+version = "0.34.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f8970033a4282a7bcf899b38b5ed3a58b732fe093d03785d58648515d8d309da"
 
 [[package]]
 name = "equivalent"
@@ -2284,9 +2275,9 @@ dependencies = [
 
 [[package]]
 name = "glow"
-version = "0.16.0"
+version = "0.17.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c5e5ea60d70410161c8bf5da3fdfeaa1c72ed2c15f8bbb9d19fe3a4fad085f08"
+checksum = "29038e1c483364cc6bb3cf78feee1816002e127c331a1eec55a4d202b9e1adb5"
 dependencies = [
  "js-sys",
  "slotmap",
@@ -3145,15 +3136,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "670fdfda89751bc4a84ac13eaa63e205cf0fd22b4c9a5fbfa085b63c1f1d3a30"
 
 [[package]]
-name = "malloc_buf"
-version = "0.0.6"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "62bb907fe88d54d8d9ce32a3cceab4218ed2f6b7d35617cafe9adf84e43919cb"
-dependencies = [
- "libc",
-]
-
-[[package]]
 name = "matchers"
 version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3184,21 +3166,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "488016bfae457b036d996092f6cb448677611ce4449e970ceaf42695203f218a"
 dependencies = [
  "autocfg",
-]
-
-[[package]]
-name = "metal"
-version = "0.33.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c7047791b5bc903b8cd963014b355f71dc9864a9a0b727057676c1dcae5cbc15"
-dependencies = [
- "bitflags 2.13.0",
- "block",
- "core-graphics-types 0.2.0",
- "foreign-types 0.5.0",
- "log",
- "objc",
- "paste",
 ]
 
 [[package]]
@@ -3257,9 +3224,9 @@ dependencies = [
 
 [[package]]
 name = "naga"
-version = "28.0.0"
+version = "29.0.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "618f667225063219ddfc61251087db8a9aec3c3f0950c916b614e403486f1135"
+checksum = "b2bf919621e7975acb27d881bae2fb993e0d45c8e0446e85e6272971e00dc8df"
 dependencies = [
  "arrayvec",
  "bit-set",
@@ -3522,15 +3489,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "objc"
-version = "0.2.7"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "915b1b472bc21c53464d6c8461c9d3af805ba1ef837e1cac254428f4a77177b1"
-dependencies = [
- "malloc_buf",
-]
-
-[[package]]
 name = "objc-sys"
 version = "0.3.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3568,7 +3526,7 @@ dependencies = [
  "objc2-core-data",
  "objc2-core-image",
  "objc2-foundation 0.2.2",
- "objc2-quartz-core",
+ "objc2-quartz-core 0.2.2",
 ]
 
 [[package]]
@@ -3690,7 +3648,7 @@ dependencies = [
  "block2 0.5.1",
  "objc2 0.5.2",
  "objc2-foundation 0.2.2",
- "objc2-metal",
+ "objc2-metal 0.2.2",
 ]
 
 [[package]]
@@ -3782,6 +3740,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "objc2-metal"
+version = "0.3.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a0125f776a10d00af4152d74616409f0d4a2053a6f57fa5b7d6aa2854ac04794"
+dependencies = [
+ "bitflags 2.13.0",
+ "block2 0.6.2",
+ "objc2 0.6.4",
+ "objc2-foundation 0.3.2",
+]
+
+[[package]]
 name = "objc2-quartz-core"
 version = "0.2.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3791,7 +3761,20 @@ dependencies = [
  "block2 0.5.1",
  "objc2 0.5.2",
  "objc2-foundation 0.2.2",
- "objc2-metal",
+ "objc2-metal 0.2.2",
+]
+
+[[package]]
+name = "objc2-quartz-core"
+version = "0.3.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "96c1358452b371bf9f104e21ec536d37a650eb10f7ee379fff67d2e08d537f1f"
+dependencies = [
+ "bitflags 2.13.0",
+ "objc2 0.6.4",
+ "objc2-core-foundation",
+ "objc2-foundation 0.3.2",
+ "objc2-metal 0.3.2",
 ]
 
 [[package]]
@@ -3819,10 +3802,22 @@ dependencies = [
  "objc2-core-location",
  "objc2-foundation 0.2.2",
  "objc2-link-presentation",
- "objc2-quartz-core",
+ "objc2-quartz-core 0.2.2",
  "objc2-symbols",
  "objc2-uniform-type-identifiers",
  "objc2-user-notifications",
+]
+
+[[package]]
+name = "objc2-ui-kit"
+version = "0.3.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d87d638e33c06f577498cbcc50491496a3ed4246998a7fbba7ccb98b1e7eab22"
+dependencies = [
+ "bitflags 2.13.0",
+ "objc2 0.6.4",
+ "objc2-core-foundation",
+ "objc2-foundation 0.3.2",
 ]
 
 [[package]]
@@ -4478,6 +4473,18 @@ name = "raw-window-handle"
 version = "0.6.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "20675572f6f24e9e76ef639bc5552774ed45f1c30e2951e1e99c59888861c539"
+
+[[package]]
+name = "raw-window-metal"
+version = "1.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "40d213455a5f1dc59214213c7330e074ddf8114c9a42411eb890c767357ce135"
+dependencies = [
+ "objc2 0.6.4",
+ "objc2-core-foundation",
+ "objc2-foundation 0.3.2",
+ "objc2-quartz-core 0.3.2",
+]
 
 [[package]]
 name = "rayon"
@@ -5624,9 +5631,9 @@ dependencies = [
 
 [[package]]
 name = "spirv"
-version = "0.3.0+sdk-1.3.268.0"
+version = "0.4.0+sdk-1.4.341.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "eda41003dc44290527a59b13432d4a0379379fa074b70174882adfbdfd917844"
+checksum = "d9571ea910ebd84c86af4b3ed27f9dbdc6ad06f17c5f96146b2b671e2976744f"
 dependencies = [
  "bitflags 2.13.0",
 ]
@@ -6878,9 +6885,9 @@ checksum = "a28ac98ddc8b9274cb41bb4d9d4d5c425b6020c50c46f25559911905610b4a88"
 
 [[package]]
 name = "wgpu"
-version = "28.0.0"
+version = "29.0.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f9cb534d5ffd109c7d1135f34cdae29e60eab94855a625dcfe1705f8bc7ad79f"
+checksum = "76e8840e1ba2881d4cbb18d2147627a56af426ff064c0401eb0c8410c6325d07"
 dependencies = [
  "arrayvec",
  "bitflags 2.13.0",
@@ -6908,9 +6915,9 @@ dependencies = [
 
 [[package]]
 name = "wgpu-core"
-version = "28.0.1"
+version = "29.0.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d23f4642f53f666adcfd2d3218ab174d1e6681101aef18696b90cbe64d1c10f9"
+checksum = "2f519832254e56965a9940c4af57dcb75f702b6f6fa4a0b172f685395843a4d7"
 dependencies = [
  "arrayvec",
  "bit-set",
@@ -6936,61 +6943,61 @@ dependencies = [
  "wgpu-core-deps-wasm",
  "wgpu-core-deps-windows-linux-android",
  "wgpu-hal",
+ "wgpu-naga-bridge",
  "wgpu-types",
 ]
 
 [[package]]
 name = "wgpu-core-deps-apple"
-version = "28.0.0"
+version = "29.0.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "87b7b696b918f337c486bf93142454080a32a37832ba8a31e4f48221890047da"
+checksum = "f5e39e26c4c0e07589e67d18546cf79ff45383659fc72fca4dd293358a0347f3"
 dependencies = [
  "wgpu-hal",
 ]
 
 [[package]]
 name = "wgpu-core-deps-emscripten"
-version = "28.0.0"
+version = "29.0.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "34b251c331f84feac147de3c4aa3aa45112622a95dd7ee1b74384fa0458dbd79"
+checksum = "01e09be551dc939498bdd5f6b2c66e55ab275dad25825267a08605a80fc9f0af"
 dependencies = [
  "wgpu-hal",
 ]
 
 [[package]]
 name = "wgpu-core-deps-wasm"
-version = "28.0.0"
+version = "29.0.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "12a2cf578ce8d7d50d0e63ddc2345c7dcb599f6eb90b888813406ea78b9b7010"
+checksum = "af1fb1798be2a912497d4c224f72d39bb0cb34af50e8bcc29865bc339c943059"
 dependencies = [
  "wgpu-hal",
 ]
 
 [[package]]
 name = "wgpu-core-deps-windows-linux-android"
-version = "28.0.0"
+version = "29.0.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "68ca976e72b2c9964eb243e281f6ce7f14a514e409920920dcda12ae40febaae"
+checksum = "4e592c1bbef6ad047647ae6e666ebd8cee7a32bb4544d9700ec96cbf73230257"
 dependencies = [
  "wgpu-hal",
 ]
 
 [[package]]
 name = "wgpu-hal"
-version = "28.0.1"
+version = "29.0.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "44d6cb474beb218824dcc9e1ce679d973f719262789bfb27407da560cac20eeb"
+checksum = "97ace1c17727311c22a46e4e3faf56ea6de81af99dcc839bdfb54857b94d448d"
 dependencies = [
  "android_system_properties",
  "arrayvec",
  "ash",
  "bit-set",
  "bitflags 2.13.0",
- "block",
+ "block2 0.6.2",
  "bytemuck",
  "cfg-if",
  "cfg_aliases",
- "core-graphics-types 0.2.0",
  "glow",
  "glutin_wgl_sys",
  "gpu-allocator",
@@ -7001,10 +7008,13 @@ dependencies = [
  "libc",
  "libloading",
  "log",
- "metal",
  "naga",
  "ndk-sys",
- "objc",
+ "objc2 0.6.4",
+ "objc2-core-foundation",
+ "objc2-foundation 0.3.2",
+ "objc2-metal 0.3.2",
+ "objc2-quartz-core 0.3.2",
  "once_cell",
  "ordered-float",
  "parking_lot",
@@ -7013,26 +7023,41 @@ dependencies = [
  "profiling",
  "range-alloc",
  "raw-window-handle",
+ "raw-window-metal",
  "renderdoc-sys",
  "smallvec",
  "thiserror 2.0.18",
  "wasm-bindgen",
+ "wayland-sys",
  "web-sys",
+ "wgpu-naga-bridge",
  "wgpu-types",
  "windows 0.62.2",
  "windows-core 0.62.2",
+ "windows-result 0.4.1",
+]
+
+[[package]]
+name = "wgpu-naga-bridge"
+version = "29.0.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "95226013f547544b223281cd16a4fb549aa9dcb562adbda0faae4c73ffbbc161"
+dependencies = [
+ "naga",
+ "wgpu-types",
 ]
 
 [[package]]
 name = "wgpu-types"
-version = "28.0.0"
+version = "29.0.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e18308757e594ed2cd27dddbb16a139c42a683819d32a2e0b1b0167552f5840c"
+checksum = "84bf84cd9ca8ca45e2b223a3868f1adf9bfc0c66aeac212e76ee7e40fdadf8f5"
 dependencies = [
  "bitflags 2.13.0",
  "bytemuck",
  "js-sys",
  "log",
+ "raw-window-handle",
  "web-sys",
 ]
 
@@ -7484,7 +7509,7 @@ dependencies = [
  "objc2 0.5.2",
  "objc2-app-kit 0.2.2",
  "objc2-foundation 0.2.2",
- "objc2-ui-kit",
+ "objc2-ui-kit 0.2.2",
  "orbclient",
  "percent-encoding",
  "pin-project",
