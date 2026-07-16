@@ -288,7 +288,13 @@ fn create_pipeline_descriptor<'a>(
         }),
         primitive: wgpu::PrimitiveState {
             topology: primitive_topology,
-            strip_index_format: None,
+            // All indexed draws in this backend use `Uint32` indices, and wgpu
+            // requires this to be set for indexed drawing with strip topologies.
+            strip_index_format: matches!(
+                primitive_topology,
+                PrimitiveTopology::LineStrip | PrimitiveTopology::TriangleStrip
+            )
+            .then_some(wgpu::IndexFormat::Uint32),
             front_face: wgpu::FrontFace::Ccw,
             cull_mode: None,
             polygon_mode: wgpu::PolygonMode::default(),
