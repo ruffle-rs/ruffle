@@ -51,14 +51,19 @@ use wgpu::SubmissionIndex;
 pub fn create_wgpu_instance(
     backends: wgpu::Backends,
     backend_options: wgpu::BackendOptions,
+    display: Option<Box<dyn wgpu::wgt::WgpuHasDisplayHandle>>,
 ) -> wgpu::Instance {
-    wgpu::Instance::new(&wgpu::InstanceDescriptor {
+    let descriptor = match display {
+        Some(display) => wgpu::InstanceDescriptor::new_with_display_handle(display),
+        None => wgpu::InstanceDescriptor::new_without_display_handle(),
+    };
+    wgpu::Instance::new(wgpu::InstanceDescriptor {
         backends,
         flags: wgpu::InstanceFlags::default()
             .difference(wgpu::InstanceFlags::VALIDATION_INDIRECT_CALL)
             .with_env(),
         backend_options,
-        ..Default::default()
+        ..descriptor
     })
 }
 
@@ -99,6 +104,7 @@ impl WgpuRenderBackend<SwapChainTarget> {
                 },
                 ..Default::default()
             },
+            None,
         );
         let surface = instance.create_surface(wgpu::SurfaceTarget::Canvas(canvas))?;
         let (adapter, device, queue) = request_adapter_and_device(
@@ -116,12 +122,20 @@ impl WgpuRenderBackend<SwapChainTarget> {
 
     /// # Safety
     ///  See [`wgpu::SurfaceTargetUnsafe`] variants for safety requirements.
+    ///
+    /// Since wgpu 29, a display handle is needed at instance creation time:
+    /// pass one via `display`, or make sure the `window` target carries a raw
+    /// display handle (note that `SurfaceTargetUnsafe::from_window` does not
+    /// provide one). Prefer passing `display` - some backends (e.g. GL via
+    /// EGL) select their platform when the instance is created, before the
+    /// target's display handle is seen.
     #[cfg(not(target_family = "wasm"))]
     pub unsafe fn for_window_unsafe(
         window: wgpu::SurfaceTargetUnsafe,
         size: (u32, u32),
         backend: wgpu::Backends,
         power_preference: wgpu::PowerPreference,
+        display: Option<Box<dyn wgpu::wgt::WgpuHasDisplayHandle>>,
     ) -> Result<Self, Error> {
         if wgpu::Backends::SECONDARY.contains(backend) {
             tracing::warn!(
@@ -129,7 +143,7 @@ impl WgpuRenderBackend<SwapChainTarget> {
                 format_list(&get_backend_names(backend), "and")
             );
         }
-        let instance = create_wgpu_instance(backend, wgpu::BackendOptions::default());
+        let instance = create_wgpu_instance(backend, wgpu::BackendOptions::default(), display);
         let surface = unsafe { instance.create_surface_unsafe(window)? };
         let (adapter, device, queue) = futures::executor::block_on(request_adapter_and_device(
             backend,
@@ -171,7 +185,7 @@ impl WgpuRenderBackend<crate::target::TextureTarget> {
                 format_list(&get_backend_names(backend), "and")
             );
         }
-        let instance = create_wgpu_instance(backend, wgpu::BackendOptions::default());
+        let instance = create_wgpu_instance(backend, wgpu::BackendOptions::default(), None);
         let (adapter, device, queue) = futures::executor::block_on(request_adapter_and_device(
             backend,
             &instance,
