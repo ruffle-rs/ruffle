@@ -271,7 +271,11 @@ pub enum Op<'gc> {
         namespace: Namespace<'gc>,
     },
     PushNull,
-    PushScope,
+    PushScope {
+        // Whether the input to this op is guaranteed to be not-null. This field
+        // is used in the optimizer.
+        input_not_null: bool,
+    },
     PushString {
         string: AvmAtom<'gc>,
     },
