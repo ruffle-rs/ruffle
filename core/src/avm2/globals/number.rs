@@ -50,52 +50,22 @@ pub fn call_handler<'gc>(
         .into())
 }
 
-fn to_exponential<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    number: f64,
-    digits: i32,
-) -> Result<Value<'gc>, Error<'gc>> {
-    if digits < 0 || digits > 20 {
-        return Err(make_error_1002(activation));
-    }
-
-    let digits = digits as usize;
-
-    let string = match (number, digits) {
+fn to_exponential(number: f64, digits: usize) -> String {
+    match (number, digits) {
         (0.0, 0) => "1e-15".to_owned(),
         (0.0, _) => format!("0.{}e-16", "0".repeat(digits)),
-        (f64::INFINITY, _) => return Ok(istr!("Infinity").into()),
-        (f64::NEG_INFINITY, _) => return Ok(istr!("-Infinity").into()),
         _ => format!("{number:.digits$e}")
             .replace('e', "e+")
             .replace("e+-", "e-")
             .replace("e+0", ""),
-    };
-
-    Ok(AvmString::new_utf8(activation.gc(), string).into())
+    }
 }
 
-fn to_fixed<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    number: f64,
-    digits: i32,
-) -> Result<Value<'gc>, Error<'gc>> {
-    if digits < 0 || digits > 20 {
-        return Err(make_error_1002(activation));
-    }
-
-    Ok(AvmString::new_utf8(activation.gc(), format!("{0:.1$}", number, digits as usize)).into())
+fn to_fixed(number: f64, digits: usize) -> String {
+    format!("{0:.1$}", number + 0.0, digits)
 }
 
-fn print_with_precision<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    number: f64,
-    wanted_digits: u32,
-) -> Result<AvmString<'gc>, Error<'gc>> {
-    if number.is_infinite() || number.is_nan() {
-        return Value::from(number).coerce_to_string(activation);
-    }
-
+fn to_precision(number: f64, wanted_digits: usize) -> String {
     let mut available_digits = number.abs().log10().floor();
     if available_digits.is_nan() || available_digits.is_infinite() {
         available_digits = 1.0;
@@ -105,30 +75,15 @@ fn print_with_precision<'gc>(
         / 10.0_f64.powf(wanted_digits as f64 - available_digits - 1.0);
 
     if (wanted_digits as f64) <= available_digits {
-        Ok(AvmString::new_utf8(
-            activation.gc(),
-            format!(
-                "{}e{}{}",
-                precision / 10.0_f64.powf(available_digits),
-                if available_digits < 0.0 { "-" } else { "+" },
-                available_digits.abs()
-            ),
-        ))
+        format!(
+            "{}e{}{}",
+            precision / 10.0_f64.powf(available_digits),
+            if available_digits < 0.0 { "-" } else { "+" },
+            available_digits.abs()
+        )
     } else {
-        Ok(AvmString::new_utf8(activation.gc(), format!("{precision}")))
+        format!("{precision}")
     }
-}
-
-fn to_precision<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    number: f64,
-    wanted_digits: i32,
-) -> Result<Value<'gc>, Error<'gc>> {
-    if wanted_digits < 1 || wanted_digits > 21 {
-        return Err(make_error_1002(activation));
-    }
-
-    Ok(print_with_precision(activation, number, wanted_digits as u32)?.into())
 }
 
 /// Implements `Number._convert`
@@ -139,14 +94,29 @@ pub fn _convert<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let number = args.get_f64(0);
     let digits = args.get_i32(1);
+
+    // mode 0: toExponential
+    // mode 1: toFixed
+    // mode 2: toPrecision
     let mode = args.get_i32(2);
 
-    match mode {
-        0 => to_exponential(activation, number, digits),
-        1 => to_fixed(activation, number, digits),
-        2 => to_precision(activation, number, digits),
-        _ => unreachable!(),
+    if !(0..=20).contains(&if mode == 2 { digits - 1 } else { digits }) {
+        return Err(make_error_1002(activation));
     }
+
+    if !number.is_finite() {
+        return Ok(Value::from(number).coerce_to_string(activation)?.into());
+    }
+
+    let digits = digits as usize;
+    let result = match mode {
+        0 => to_exponential(number, digits),
+        1 => to_fixed(number, digits),
+        2 => to_precision(number, digits),
+        _ => unreachable!(),
+    };
+
+    Ok(AvmString::new_utf8(activation.gc(), result).into())
 }
 
 pub fn print_with_radix<'gc>(
