@@ -7,4 +7,4 @@ mixed xml FAILED! expected: Error #1092 got: Error #1097
 TypeError: Error #1091: XML parser failure: Unterminated CDATA section.
 	at XML/init()
 	at XML()
-	at global$init() [TU=frame1]
+	at global$init()
