@@ -1,0 +1,871 @@
+1 (Number.toPrecision, -1) -> RangeError: Error #1002: Number.toPrecision has a range of 1 to 21. Number.toFixed and Number.toExponential have a range of 0 to 20. Specified value is not within expected range.
+	at Number$/_convert()
+	at Number/http://adobe.com/AS3/2006/builtin::toPrecision()
+	at Function/<anonymous>()
+	at Test/tryCatch()
+	at Test()
+1 (Number.toFixed, -1) -> RangeError: Error #1002: Number.toPrecision has a range of 1 to 21. Number.toFixed and Number.toExponential have a range of 0 to 20. Specified value is not within expected range.
+	at Number$/_convert()
+	at Number/http://adobe.com/AS3/2006/builtin::toFixed()
+	at Function/<anonymous>()
+	at Test/tryCatch()
+	at Test()
+1 (Number.toExponential, -1) -> RangeError: Error #1002: Number.toPrecision has a range of 1 to 21. Number.toFixed and Number.toExponential have a range of 0 to 20. Specified value is not within expected range.
+	at Number$/_convert()
+	at Number/http://adobe.com/AS3/2006/builtin::toExponential()
+	at Function/<anonymous>()
+	at Test/tryCatch()
+	at Test()
+1 (int.toPrecision, -1) -> RangeError: Error #1002: Number.toPrecision has a range of 1 to 21. Number.toFixed and Number.toExponential have a range of 0 to 20. Specified value is not within expected range.
+	at Number$/_convert()
+	at Number/http://adobe.com/AS3/2006/builtin::toPrecision()
+	at int/http://adobe.com/AS3/2006/builtin::toPrecision()
+	at Function/<anonymous>()
+	at Test/tryCatch()
+	at Test()
+1 (uint.toPrecision, -1) -> RangeError: Error #1002: Number.toPrecision has a range of 1 to 21. Number.toFixed and Number.toExponential have a range of 0 to 20. Specified value is not within expected range.
+	at Number$/_convert()
+	at Number/http://adobe.com/AS3/2006/builtin::toPrecision()
+	at uint/http://adobe.com/AS3/2006/builtin::toPrecision()
+	at Function/<anonymous>()
+	at Test/tryCatch()
+	at Test()
+1 (int.toFixed, -1) -> RangeError: Error #1002: Number.toPrecision has a range of 1 to 21. Number.toFixed and Number.toExponential have a range of 0 to 20. Specified value is not within expected range.
+	at Number$/_convert()
+	at Number/http://adobe.com/AS3/2006/builtin::toFixed()
+	at int/http://adobe.com/AS3/2006/builtin::toFixed()
+	at Function/<anonymous>()
+	at Test/tryCatch()
+	at Test()
+1 (uint.toFixed, -1) -> RangeError: Error #1002: Number.toPrecision has a range of 1 to 21. Number.toFixed and Number.toExponential have a range of 0 to 20. Specified value is not within expected range.
+	at Number$/_convert()
+	at Number/http://adobe.com/AS3/2006/builtin::toFixed()
+	at uint/http://adobe.com/AS3/2006/builtin::toFixed()
+	at Function/<anonymous>()
+	at Test/tryCatch()
+	at Test()
+1 (int.toFixed, -1) -> RangeError: Error #1002: Number.toPrecision has a range of 1 to 21. Number.toFixed and Number.toExponential have a range of 0 to 20. Specified value is not within expected range.
+	at Number$/_convert()
+	at Number/http://adobe.com/AS3/2006/builtin::toFixed()
+	at int/http://adobe.com/AS3/2006/builtin::toFixed()
+	at Function/<anonymous>()
+	at Test/tryCatch()
+	at Test()
+1 (uint.toFixed, -1) -> RangeError: Error #1002: Number.toPrecision has a range of 1 to 21. Number.toFixed and Number.toExponential have a range of 0 to 20. Specified value is not within expected range.
+	at Number$/_convert()
+	at Number/http://adobe.com/AS3/2006/builtin::toFixed()
+	at uint/http://adobe.com/AS3/2006/builtin::toFixed()
+	at Function/<anonymous>()
+	at Test/tryCatch()
+	at Test()
+1 (Number.toPrecision, 0) -> RangeError: Error #1002: Number.toPrecision has a range of 1 to 21. Number.toFixed and Number.toExponential have a range of 0 to 20. Specified value is not within expected range.
+	at Number$/_convert()
+	at Number/http://adobe.com/AS3/2006/builtin::toPrecision()
+	at Function/<anonymous>()
+	at Test/tryCatch()
+	at Test()
+1 (Number.toFixed, 0) -> 1
+1 (Number.toExponential, 0) -> 1
+1 (int.toPrecision, 0) -> RangeError: Error #1002: Number.toPrecision has a range of 1 to 21. Number.toFixed and Number.toExponential have a range of 0 to 20. Specified value is not within expected range.
+	at Number$/_convert()
+	at Number/http://adobe.com/AS3/2006/builtin::toPrecision()
+	at int/http://adobe.com/AS3/2006/builtin::toPrecision()
+	at Function/<anonymous>()
+	at Test/tryCatch()
+	at Test()
+1 (uint.toPrecision, 0) -> RangeError: Error #1002: Number.toPrecision has a range of 1 to 21. Number.toFixed and Number.toExponential have a range of 0 to 20. Specified value is not within expected range.
+	at Number$/_convert()
+	at Number/http://adobe.com/AS3/2006/builtin::toPrecision()
+	at uint/http://adobe.com/AS3/2006/builtin::toPrecision()
+	at Function/<anonymous>()
+	at Test/tryCatch()
+	at Test()
+1 (int.toFixed, 0) -> 1
+1 (uint.toFixed, 0) -> 1
+1 (int.toFixed, 0) -> 1
+1 (uint.toFixed, 0) -> 1
+1 (Number.toPrecision, 1) -> 1
+1 (Number.toFixed, 1) -> 1.0
+1 (Number.toExponential, 1) -> 1.0
+1 (int.toPrecision, 1) -> 1
+1 (uint.toPrecision, 1) -> 1
+1 (int.toFixed, 1) -> 1.0
+1 (uint.toFixed, 1) -> 1.0
+1 (int.toFixed, 1) -> 1.0
+1 (uint.toFixed, 1) -> 1.0
+1 (Number.toPrecision, 20) -> 1.0000000000000000000
+1 (Number.toFixed, 20) -> 1.00000000000000000000
+1 (Number.toExponential, 20) -> 1.00000000000000000000
+1 (int.toPrecision, 20) -> 1.0000000000000000000
+1 (uint.toPrecision, 20) -> 1.0000000000000000000
+1 (int.toFixed, 20) -> 1.00000000000000000000
+1 (uint.toFixed, 20) -> 1.00000000000000000000
+1 (int.toFixed, 20) -> 1.00000000000000000000
+1 (uint.toFixed, 20) -> 1.00000000000000000000
+1 (Number.toPrecision, 21) -> 1.00000000000000000000
+1 (Number.toFixed, 21) -> RangeError: Error #1002: Number.toPrecision has a range of 1 to 21. Number.toFixed and Number.toExponential have a range of 0 to 20. Specified value is not within expected range.
+	at Number$/_convert()
+	at Number/http://adobe.com/AS3/2006/builtin::toFixed()
+	at Function/<anonymous>()
+	at Test/tryCatch()
+	at Test()
+1 (Number.toExponential, 21) -> RangeError: Error #1002: Number.toPrecision has a range of 1 to 21. Number.toFixed and Number.toExponential have a range of 0 to 20. Specified value is not within expected range.
+	at Number$/_convert()
+	at Number/http://adobe.com/AS3/2006/builtin::toExponential()
+	at Function/<anonymous>()
+	at Test/tryCatch()
+	at Test()
+1 (int.toPrecision, 21) -> 1.00000000000000000000
+1 (uint.toPrecision, 21) -> 1.00000000000000000000
+1 (int.toFixed, 21) -> RangeError: Error #1002: Number.toPrecision has a range of 1 to 21. Number.toFixed and Number.toExponential have a range of 0 to 20. Specified value is not within expected range.
+	at Number$/_convert()
+	at Number/http://adobe.com/AS3/2006/builtin::toFixed()
+	at int/http://adobe.com/AS3/2006/builtin::toFixed()
+	at Function/<anonymous>()
+	at Test/tryCatch()
+	at Test()
+1 (uint.toFixed, 21) -> RangeError: Error #1002: Number.toPrecision has a range of 1 to 21. Number.toFixed and Number.toExponential have a range of 0 to 20. Specified value is not within expected range.
+	at Number$/_convert()
+	at Number/http://adobe.com/AS3/2006/builtin::toFixed()
+	at uint/http://adobe.com/AS3/2006/builtin::toFixed()
+	at Function/<anonymous>()
+	at Test/tryCatch()
+	at Test()
+1 (int.toFixed, 21) -> RangeError: Error #1002: Number.toPrecision has a range of 1 to 21. Number.toFixed and Number.toExponential have a range of 0 to 20. Specified value is not within expected range.
+	at Number$/_convert()
+	at Number/http://adobe.com/AS3/2006/builtin::toFixed()
+	at int/http://adobe.com/AS3/2006/builtin::toFixed()
+	at Function/<anonymous>()
+	at Test/tryCatch()
+	at Test()
+1 (uint.toFixed, 21) -> RangeError: Error #1002: Number.toPrecision has a range of 1 to 21. Number.toFixed and Number.toExponential have a range of 0 to 20. Specified value is not within expected range.
+	at Number$/_convert()
+	at Number/http://adobe.com/AS3/2006/builtin::toFixed()
+	at uint/http://adobe.com/AS3/2006/builtin::toFixed()
+	at Function/<anonymous>()
+	at Test/tryCatch()
+	at Test()
+1 (Number.toPrecision, 22) -> RangeError: Error #1002: Number.toPrecision has a range of 1 to 21. Number.toFixed and Number.toExponential have a range of 0 to 20. Specified value is not within expected range.
+	at Number$/_convert()
+	at Number/http://adobe.com/AS3/2006/builtin::toPrecision()
+	at Function/<anonymous>()
+	at Test/tryCatch()
+	at Test()
+1 (Number.toFixed, 22) -> RangeError: Error #1002: Number.toPrecision has a range of 1 to 21. Number.toFixed and Number.toExponential have a range of 0 to 20. Specified value is not within expected range.
+	at Number$/_convert()
+	at Number/http://adobe.com/AS3/2006/builtin::toFixed()
+	at Function/<anonymous>()
+	at Test/tryCatch()
+	at Test()
+1 (Number.toExponential, 22) -> RangeError: Error #1002: Number.toPrecision has a range of 1 to 21. Number.toFixed and Number.toExponential have a range of 0 to 20. Specified value is not within expected range.
+	at Number$/_convert()
+	at Number/http://adobe.com/AS3/2006/builtin::toExponential()
+	at Function/<anonymous>()
+	at Test/tryCatch()
+	at Test()
+1 (int.toPrecision, 22) -> RangeError: Error #1002: Number.toPrecision has a range of 1 to 21. Number.toFixed and Number.toExponential have a range of 0 to 20. Specified value is not within expected range.
+	at Number$/_convert()
+	at Number/http://adobe.com/AS3/2006/builtin::toPrecision()
+	at int/http://adobe.com/AS3/2006/builtin::toPrecision()
+	at Function/<anonymous>()
+	at Test/tryCatch()
+	at Test()
+1 (uint.toPrecision, 22) -> RangeError: Error #1002: Number.toPrecision has a range of 1 to 21. Number.toFixed and Number.toExponential have a range of 0 to 20. Specified value is not within expected range.
+	at Number$/_convert()
+	at Number/http://adobe.com/AS3/2006/builtin::toPrecision()
+	at uint/http://adobe.com/AS3/2006/builtin::toPrecision()
+	at Function/<anonymous>()
+	at Test/tryCatch()
+	at Test()
+1 (int.toFixed, 22) -> RangeError: Error #1002: Number.toPrecision has a range of 1 to 21. Number.toFixed and Number.toExponential have a range of 0 to 20. Specified value is not within expected range.
+	at Number$/_convert()
+	at Number/http://adobe.com/AS3/2006/builtin::toFixed()
+	at int/http://adobe.com/AS3/2006/builtin::toFixed()
+	at Function/<anonymous>()
+	at Test/tryCatch()
+	at Test()
+1 (uint.toFixed, 22) -> RangeError: Error #1002: Number.toPrecision has a range of 1 to 21. Number.toFixed and Number.toExponential have a range of 0 to 20. Specified value is not within expected range.
+	at Number$/_convert()
+	at Number/http://adobe.com/AS3/2006/builtin::toFixed()
+	at uint/http://adobe.com/AS3/2006/builtin::toFixed()
+	at Function/<anonymous>()
+	at Test/tryCatch()
+	at Test()
+1 (int.toFixed, 22) -> RangeError: Error #1002: Number.toPrecision has a range of 1 to 21. Number.toFixed and Number.toExponential have a range of 0 to 20. Specified value is not within expected range.
+	at Number$/_convert()
+	at Number/http://adobe.com/AS3/2006/builtin::toFixed()
+	at int/http://adobe.com/AS3/2006/builtin::toFixed()
+	at Function/<anonymous>()
+	at Test/tryCatch()
+	at Test()
+1 (uint.toFixed, 22) -> RangeError: Error #1002: Number.toPrecision has a range of 1 to 21. Number.toFixed and Number.toExponential have a range of 0 to 20. Specified value is not within expected range.
+	at Number$/_convert()
+	at Number/http://adobe.com/AS3/2006/builtin::toFixed()
+	at uint/http://adobe.com/AS3/2006/builtin::toFixed()
+	at Function/<anonymous>()
+	at Test/tryCatch()
+	at Test()
+1 (Number.toPrecision, 28) -> RangeError: Error #1002: Number.toPrecision has a range of 1 to 21. Number.toFixed and Number.toExponential have a range of 0 to 20. Specified value is not within expected range.
+	at Number$/_convert()
+	at Number/http://adobe.com/AS3/2006/builtin::toPrecision()
+	at Function/<anonymous>()
+	at Test/tryCatch()
+	at Test()
+1 (Number.toFixed, 28) -> RangeError: Error #1002: Number.toPrecision has a range of 1 to 21. Number.toFixed and Number.toExponential have a range of 0 to 20. Specified value is not within expected range.
+	at Number$/_convert()
+	at Number/http://adobe.com/AS3/2006/builtin::toFixed()
+	at Function/<anonymous>()
+	at Test/tryCatch()
+	at Test()
+1 (Number.toExponential, 28) -> RangeError: Error #1002: Number.toPrecision has a range of 1 to 21. Number.toFixed and Number.toExponential have a range of 0 to 20. Specified value is not within expected range.
+	at Number$/_convert()
+	at Number/http://adobe.com/AS3/2006/builtin::toExponential()
+	at Function/<anonymous>()
+	at Test/tryCatch()
+	at Test()
+1 (int.toPrecision, 28) -> RangeError: Error #1002: Number.toPrecision has a range of 1 to 21. Number.toFixed and Number.toExponential have a range of 0 to 20. Specified value is not within expected range.
+	at Number$/_convert()
+	at Number/http://adobe.com/AS3/2006/builtin::toPrecision()
+	at int/http://adobe.com/AS3/2006/builtin::toPrecision()
+	at Function/<anonymous>()
+	at Test/tryCatch()
+	at Test()
+1 (uint.toPrecision, 28) -> RangeError: Error #1002: Number.toPrecision has a range of 1 to 21. Number.toFixed and Number.toExponential have a range of 0 to 20. Specified value is not within expected range.
+	at Number$/_convert()
+	at Number/http://adobe.com/AS3/2006/builtin::toPrecision()
+	at uint/http://adobe.com/AS3/2006/builtin::toPrecision()
+	at Function/<anonymous>()
+	at Test/tryCatch()
+	at Test()
+1 (int.toFixed, 28) -> RangeError: Error #1002: Number.toPrecision has a range of 1 to 21. Number.toFixed and Number.toExponential have a range of 0 to 20. Specified value is not within expected range.
+	at Number$/_convert()
+	at Number/http://adobe.com/AS3/2006/builtin::toFixed()
+	at int/http://adobe.com/AS3/2006/builtin::toFixed()
+	at Function/<anonymous>()
+	at Test/tryCatch()
+	at Test()
+1 (uint.toFixed, 28) -> RangeError: Error #1002: Number.toPrecision has a range of 1 to 21. Number.toFixed and Number.toExponential have a range of 0 to 20. Specified value is not within expected range.
+	at Number$/_convert()
+	at Number/http://adobe.com/AS3/2006/builtin::toFixed()
+	at uint/http://adobe.com/AS3/2006/builtin::toFixed()
+	at Function/<anonymous>()
+	at Test/tryCatch()
+	at Test()
+1 (int.toFixed, 28) -> RangeError: Error #1002: Number.toPrecision has a range of 1 to 21. Number.toFixed and Number.toExponential have a range of 0 to 20. Specified value is not within expected range.
+	at Number$/_convert()
+	at Number/http://adobe.com/AS3/2006/builtin::toFixed()
+	at int/http://adobe.com/AS3/2006/builtin::toFixed()
+	at Function/<anonymous>()
+	at Test/tryCatch()
+	at Test()
+1 (uint.toFixed, 28) -> RangeError: Error #1002: Number.toPrecision has a range of 1 to 21. Number.toFixed and Number.toExponential have a range of 0 to 20. Specified value is not within expected range.
+	at Number$/_convert()
+	at Number/http://adobe.com/AS3/2006/builtin::toFixed()
+	at uint/http://adobe.com/AS3/2006/builtin::toFixed()
+	at Function/<anonymous>()
+	at Test/tryCatch()
+	at Test()
+-1 (Number.toPrecision, -1) -> RangeError: Error #1002: Number.toPrecision has a range of 1 to 21. Number.toFixed and Number.toExponential have a range of 0 to 20. Specified value is not within expected range.
+	at Number$/_convert()
+	at Number/http://adobe.com/AS3/2006/builtin::toPrecision()
+	at Function/<anonymous>()
+	at Test/tryCatch()
+	at Test()
+-1 (Number.toFixed, -1) -> RangeError: Error #1002: Number.toPrecision has a range of 1 to 21. Number.toFixed and Number.toExponential have a range of 0 to 20. Specified value is not within expected range.
+	at Number$/_convert()
+	at Number/http://adobe.com/AS3/2006/builtin::toFixed()
+	at Function/<anonymous>()
+	at Test/tryCatch()
+	at Test()
+-1 (Number.toExponential, -1) -> RangeError: Error #1002: Number.toPrecision has a range of 1 to 21. Number.toFixed and Number.toExponential have a range of 0 to 20. Specified value is not within expected range.
+	at Number$/_convert()
+	at Number/http://adobe.com/AS3/2006/builtin::toExponential()
+	at Function/<anonymous>()
+	at Test/tryCatch()
+	at Test()
+-1 (int.toPrecision, -1) -> RangeError: Error #1002: Number.toPrecision has a range of 1 to 21. Number.toFixed and Number.toExponential have a range of 0 to 20. Specified value is not within expected range.
+	at Number$/_convert()
+	at Number/http://adobe.com/AS3/2006/builtin::toPrecision()
+	at int/http://adobe.com/AS3/2006/builtin::toPrecision()
+	at Function/<anonymous>()
+	at Test/tryCatch()
+	at Test()
+-1 (uint.toPrecision, -1) -> RangeError: Error #1002: Number.toPrecision has a range of 1 to 21. Number.toFixed and Number.toExponential have a range of 0 to 20. Specified value is not within expected range.
+	at Number$/_convert()
+	at Number/http://adobe.com/AS3/2006/builtin::toPrecision()
+	at uint/http://adobe.com/AS3/2006/builtin::toPrecision()
+	at Function/<anonymous>()
+	at Test/tryCatch()
+	at Test()
+-1 (int.toFixed, -1) -> RangeError: Error #1002: Number.toPrecision has a range of 1 to 21. Number.toFixed and Number.toExponential have a range of 0 to 20. Specified value is not within expected range.
+	at Number$/_convert()
+	at Number/http://adobe.com/AS3/2006/builtin::toFixed()
+	at int/http://adobe.com/AS3/2006/builtin::toFixed()
+	at Function/<anonymous>()
+	at Test/tryCatch()
+	at Test()
+-1 (uint.toFixed, -1) -> RangeError: Error #1002: Number.toPrecision has a range of 1 to 21. Number.toFixed and Number.toExponential have a range of 0 to 20. Specified value is not within expected range.
+	at Number$/_convert()
+	at Number/http://adobe.com/AS3/2006/builtin::toFixed()
+	at uint/http://adobe.com/AS3/2006/builtin::toFixed()
+	at Function/<anonymous>()
+	at Test/tryCatch()
+	at Test()
+-1 (int.toFixed, -1) -> RangeError: Error #1002: Number.toPrecision has a range of 1 to 21. Number.toFixed and Number.toExponential have a range of 0 to 20. Specified value is not within expected range.
+	at Number$/_convert()
+	at Number/http://adobe.com/AS3/2006/builtin::toFixed()
+	at int/http://adobe.com/AS3/2006/builtin::toFixed()
+	at Function/<anonymous>()
+	at Test/tryCatch()
+	at Test()
+-1 (uint.toFixed, -1) -> RangeError: Error #1002: Number.toPrecision has a range of 1 to 21. Number.toFixed and Number.toExponential have a range of 0 to 20. Specified value is not within expected range.
+	at Number$/_convert()
+	at Number/http://adobe.com/AS3/2006/builtin::toFixed()
+	at uint/http://adobe.com/AS3/2006/builtin::toFixed()
+	at Function/<anonymous>()
+	at Test/tryCatch()
+	at Test()
+-1 (Number.toPrecision, 0) -> RangeError: Error #1002: Number.toPrecision has a range of 1 to 21. Number.toFixed and Number.toExponential have a range of 0 to 20. Specified value is not within expected range.
+	at Number$/_convert()
+	at Number/http://adobe.com/AS3/2006/builtin::toPrecision()
+	at Function/<anonymous>()
+	at Test/tryCatch()
+	at Test()
+-1 (Number.toFixed, 0) -> -1
+-1 (Number.toExponential, 0) -> -1
+-1 (int.toPrecision, 0) -> RangeError: Error #1002: Number.toPrecision has a range of 1 to 21. Number.toFixed and Number.toExponential have a range of 0 to 20. Specified value is not within expected range.
+	at Number$/_convert()
+	at Number/http://adobe.com/AS3/2006/builtin::toPrecision()
+	at int/http://adobe.com/AS3/2006/builtin::toPrecision()
+	at Function/<anonymous>()
+	at Test/tryCatch()
+	at Test()
+-1 (uint.toPrecision, 0) -> RangeError: Error #1002: Number.toPrecision has a range of 1 to 21. Number.toFixed and Number.toExponential have a range of 0 to 20. Specified value is not within expected range.
+	at Number$/_convert()
+	at Number/http://adobe.com/AS3/2006/builtin::toPrecision()
+	at uint/http://adobe.com/AS3/2006/builtin::toPrecision()
+	at Function/<anonymous>()
+	at Test/tryCatch()
+	at Test()
+-1 (int.toFixed, 0) -> -1
+-1 (uint.toFixed, 0) -> 4294967295
+-1 (int.toFixed, 0) -> -1
+-1 (uint.toFixed, 0) -> 4294967295
+-1 (Number.toPrecision, 1) -> -1
+-1 (Number.toFixed, 1) -> -1.0
+-1 (Number.toExponential, 1) -> -1.0
+-1 (int.toPrecision, 1) -> -1
+-1 (uint.toPrecision, 1) -> 4e+9
+-1 (int.toFixed, 1) -> -1.0
+-1 (uint.toFixed, 1) -> 4294967295.0
+-1 (int.toFixed, 1) -> -1.0
+-1 (uint.toFixed, 1) -> 4294967295.0
+-1 (Number.toPrecision, 20) -> -1.0000000000000000000
+-1 (Number.toFixed, 20) -> -1.00000000000000000000
+-1 (Number.toExponential, 20) -> -1.00000000000000000000
+-1 (int.toPrecision, 20) -> -1.0000000000000000000
+-1 (uint.toPrecision, 20) -> 4294967295.0000000000
+-1 (int.toFixed, 20) -> -1.00000000000000000000
+-1 (uint.toFixed, 20) -> 4294967295.00000000000000000000
+-1 (int.toFixed, 20) -> -1.00000000000000000000
+-1 (uint.toFixed, 20) -> 4294967295.00000000000000000000
+-1 (Number.toPrecision, 21) -> -1.00000000000000000000
+-1 (Number.toFixed, 21) -> RangeError: Error #1002: Number.toPrecision has a range of 1 to 21. Number.toFixed and Number.toExponential have a range of 0 to 20. Specified value is not within expected range.
+	at Number$/_convert()
+	at Number/http://adobe.com/AS3/2006/builtin::toFixed()
+	at Function/<anonymous>()
+	at Test/tryCatch()
+	at Test()
+-1 (Number.toExponential, 21) -> RangeError: Error #1002: Number.toPrecision has a range of 1 to 21. Number.toFixed and Number.toExponential have a range of 0 to 20. Specified value is not within expected range.
+	at Number$/_convert()
+	at Number/http://adobe.com/AS3/2006/builtin::toExponential()
+	at Function/<anonymous>()
+	at Test/tryCatch()
+	at Test()
+-1 (int.toPrecision, 21) -> -1.00000000000000000000
+-1 (uint.toPrecision, 21) -> 4294967295.00000000000
+-1 (int.toFixed, 21) -> RangeError: Error #1002: Number.toPrecision has a range of 1 to 21. Number.toFixed and Number.toExponential have a range of 0 to 20. Specified value is not within expected range.
+	at Number$/_convert()
+	at Number/http://adobe.com/AS3/2006/builtin::toFixed()
+	at int/http://adobe.com/AS3/2006/builtin::toFixed()
+	at Function/<anonymous>()
+	at Test/tryCatch()
+	at Test()
+-1 (uint.toFixed, 21) -> RangeError: Error #1002: Number.toPrecision has a range of 1 to 21. Number.toFixed and Number.toExponential have a range of 0 to 20. Specified value is not within expected range.
+	at Number$/_convert()
+	at Number/http://adobe.com/AS3/2006/builtin::toFixed()
+	at uint/http://adobe.com/AS3/2006/builtin::toFixed()
+	at Function/<anonymous>()
+	at Test/tryCatch()
+	at Test()
+-1 (int.toFixed, 21) -> RangeError: Error #1002: Number.toPrecision has a range of 1 to 21. Number.toFixed and Number.toExponential have a range of 0 to 20. Specified value is not within expected range.
+	at Number$/_convert()
+	at Number/http://adobe.com/AS3/2006/builtin::toFixed()
+	at int/http://adobe.com/AS3/2006/builtin::toFixed()
+	at Function/<anonymous>()
+	at Test/tryCatch()
+	at Test()
+-1 (uint.toFixed, 21) -> RangeError: Error #1002: Number.toPrecision has a range of 1 to 21. Number.toFixed and Number.toExponential have a range of 0 to 20. Specified value is not within expected range.
+	at Number$/_convert()
+	at Number/http://adobe.com/AS3/2006/builtin::toFixed()
+	at uint/http://adobe.com/AS3/2006/builtin::toFixed()
+	at Function/<anonymous>()
+	at Test/tryCatch()
+	at Test()
+-1 (Number.toPrecision, 22) -> RangeError: Error #1002: Number.toPrecision has a range of 1 to 21. Number.toFixed and Number.toExponential have a range of 0 to 20. Specified value is not within expected range.
+	at Number$/_convert()
+	at Number/http://adobe.com/AS3/2006/builtin::toPrecision()
+	at Function/<anonymous>()
+	at Test/tryCatch()
+	at Test()
+-1 (Number.toFixed, 22) -> RangeError: Error #1002: Number.toPrecision has a range of 1 to 21. Number.toFixed and Number.toExponential have a range of 0 to 20. Specified value is not within expected range.
+	at Number$/_convert()
+	at Number/http://adobe.com/AS3/2006/builtin::toFixed()
+	at Function/<anonymous>()
+	at Test/tryCatch()
+	at Test()
+-1 (Number.toExponential, 22) -> RangeError: Error #1002: Number.toPrecision has a range of 1 to 21. Number.toFixed and Number.toExponential have a range of 0 to 20. Specified value is not within expected range.
+	at Number$/_convert()
+	at Number/http://adobe.com/AS3/2006/builtin::toExponential()
+	at Function/<anonymous>()
+	at Test/tryCatch()
+	at Test()
+-1 (int.toPrecision, 22) -> RangeError: Error #1002: Number.toPrecision has a range of 1 to 21. Number.toFixed and Number.toExponential have a range of 0 to 20. Specified value is not within expected range.
+	at Number$/_convert()
+	at Number/http://adobe.com/AS3/2006/builtin::toPrecision()
+	at int/http://adobe.com/AS3/2006/builtin::toPrecision()
+	at Function/<anonymous>()
+	at Test/tryCatch()
+	at Test()
+-1 (uint.toPrecision, 22) -> RangeError: Error #1002: Number.toPrecision has a range of 1 to 21. Number.toFixed and Number.toExponential have a range of 0 to 20. Specified value is not within expected range.
+	at Number$/_convert()
+	at Number/http://adobe.com/AS3/2006/builtin::toPrecision()
+	at uint/http://adobe.com/AS3/2006/builtin::toPrecision()
+	at Function/<anonymous>()
+	at Test/tryCatch()
+	at Test()
+-1 (int.toFixed, 22) -> RangeError: Error #1002: Number.toPrecision has a range of 1 to 21. Number.toFixed and Number.toExponential have a range of 0 to 20. Specified value is not within expected range.
+	at Number$/_convert()
+	at Number/http://adobe.com/AS3/2006/builtin::toFixed()
+	at int/http://adobe.com/AS3/2006/builtin::toFixed()
+	at Function/<anonymous>()
+	at Test/tryCatch()
+	at Test()
+-1 (uint.toFixed, 22) -> RangeError: Error #1002: Number.toPrecision has a range of 1 to 21. Number.toFixed and Number.toExponential have a range of 0 to 20. Specified value is not within expected range.
+	at Number$/_convert()
+	at Number/http://adobe.com/AS3/2006/builtin::toFixed()
+	at uint/http://adobe.com/AS3/2006/builtin::toFixed()
+	at Function/<anonymous>()
+	at Test/tryCatch()
+	at Test()
+-1 (int.toFixed, 22) -> RangeError: Error #1002: Number.toPrecision has a range of 1 to 21. Number.toFixed and Number.toExponential have a range of 0 to 20. Specified value is not within expected range.
+	at Number$/_convert()
+	at Number/http://adobe.com/AS3/2006/builtin::toFixed()
+	at int/http://adobe.com/AS3/2006/builtin::toFixed()
+	at Function/<anonymous>()
+	at Test/tryCatch()
+	at Test()
+-1 (uint.toFixed, 22) -> RangeError: Error #1002: Number.toPrecision has a range of 1 to 21. Number.toFixed and Number.toExponential have a range of 0 to 20. Specified value is not within expected range.
+	at Number$/_convert()
+	at Number/http://adobe.com/AS3/2006/builtin::toFixed()
+	at uint/http://adobe.com/AS3/2006/builtin::toFixed()
+	at Function/<anonymous>()
+	at Test/tryCatch()
+	at Test()
+-1 (Number.toPrecision, 28) -> RangeError: Error #1002: Number.toPrecision has a range of 1 to 21. Number.toFixed and Number.toExponential have a range of 0 to 20. Specified value is not within expected range.
+	at Number$/_convert()
+	at Number/http://adobe.com/AS3/2006/builtin::toPrecision()
+	at Function/<anonymous>()
+	at Test/tryCatch()
+	at Test()
+-1 (Number.toFixed, 28) -> RangeError: Error #1002: Number.toPrecision has a range of 1 to 21. Number.toFixed and Number.toExponential have a range of 0 to 20. Specified value is not within expected range.
+	at Number$/_convert()
+	at Number/http://adobe.com/AS3/2006/builtin::toFixed()
+	at Function/<anonymous>()
+	at Test/tryCatch()
+	at Test()
+-1 (Number.toExponential, 28) -> RangeError: Error #1002: Number.toPrecision has a range of 1 to 21. Number.toFixed and Number.toExponential have a range of 0 to 20. Specified value is not within expected range.
+	at Number$/_convert()
+	at Number/http://adobe.com/AS3/2006/builtin::toExponential()
+	at Function/<anonymous>()
+	at Test/tryCatch()
+	at Test()
+-1 (int.toPrecision, 28) -> RangeError: Error #1002: Number.toPrecision has a range of 1 to 21. Number.toFixed and Number.toExponential have a range of 0 to 20. Specified value is not within expected range.
+	at Number$/_convert()
+	at Number/http://adobe.com/AS3/2006/builtin::toPrecision()
+	at int/http://adobe.com/AS3/2006/builtin::toPrecision()
+	at Function/<anonymous>()
+	at Test/tryCatch()
+	at Test()
+-1 (uint.toPrecision, 28) -> RangeError: Error #1002: Number.toPrecision has a range of 1 to 21. Number.toFixed and Number.toExponential have a range of 0 to 20. Specified value is not within expected range.
+	at Number$/_convert()
+	at Number/http://adobe.com/AS3/2006/builtin::toPrecision()
+	at uint/http://adobe.com/AS3/2006/builtin::toPrecision()
+	at Function/<anonymous>()
+	at Test/tryCatch()
+	at Test()
+-1 (int.toFixed, 28) -> RangeError: Error #1002: Number.toPrecision has a range of 1 to 21. Number.toFixed and Number.toExponential have a range of 0 to 20. Specified value is not within expected range.
+	at Number$/_convert()
+	at Number/http://adobe.com/AS3/2006/builtin::toFixed()
+	at int/http://adobe.com/AS3/2006/builtin::toFixed()
+	at Function/<anonymous>()
+	at Test/tryCatch()
+	at Test()
+-1 (uint.toFixed, 28) -> RangeError: Error #1002: Number.toPrecision has a range of 1 to 21. Number.toFixed and Number.toExponential have a range of 0 to 20. Specified value is not within expected range.
+	at Number$/_convert()
+	at Number/http://adobe.com/AS3/2006/builtin::toFixed()
+	at uint/http://adobe.com/AS3/2006/builtin::toFixed()
+	at Function/<anonymous>()
+	at Test/tryCatch()
+	at Test()
+-1 (int.toFixed, 28) -> RangeError: Error #1002: Number.toPrecision has a range of 1 to 21. Number.toFixed and Number.toExponential have a range of 0 to 20. Specified value is not within expected range.
+	at Number$/_convert()
+	at Number/http://adobe.com/AS3/2006/builtin::toFixed()
+	at int/http://adobe.com/AS3/2006/builtin::toFixed()
+	at Function/<anonymous>()
+	at Test/tryCatch()
+	at Test()
+-1 (uint.toFixed, 28) -> RangeError: Error #1002: Number.toPrecision has a range of 1 to 21. Number.toFixed and Number.toExponential have a range of 0 to 20. Specified value is not within expected range.
+	at Number$/_convert()
+	at Number/http://adobe.com/AS3/2006/builtin::toFixed()
+	at uint/http://adobe.com/AS3/2006/builtin::toFixed()
+	at Function/<anonymous>()
+	at Test/tryCatch()
+	at Test()
+123 (Number.toPrecision, -1) -> RangeError: Error #1002: Number.toPrecision has a range of 1 to 21. Number.toFixed and Number.toExponential have a range of 0 to 20. Specified value is not within expected range.
+	at Number$/_convert()
+	at Number/http://adobe.com/AS3/2006/builtin::toPrecision()
+	at Function/<anonymous>()
+	at Test/tryCatch()
+	at Test()
+123 (Number.toFixed, -1) -> RangeError: Error #1002: Number.toPrecision has a range of 1 to 21. Number.toFixed and Number.toExponential have a range of 0 to 20. Specified value is not within expected range.
+	at Number$/_convert()
+	at Number/http://adobe.com/AS3/2006/builtin::toFixed()
+	at Function/<anonymous>()
+	at Test/tryCatch()
+	at Test()
+123 (Number.toExponential, -1) -> RangeError: Error #1002: Number.toPrecision has a range of 1 to 21. Number.toFixed and Number.toExponential have a range of 0 to 20. Specified value is not within expected range.
+	at Number$/_convert()
+	at Number/http://adobe.com/AS3/2006/builtin::toExponential()
+	at Function/<anonymous>()
+	at Test/tryCatch()
+	at Test()
+123 (int.toPrecision, -1) -> RangeError: Error #1002: Number.toPrecision has a range of 1 to 21. Number.toFixed and Number.toExponential have a range of 0 to 20. Specified value is not within expected range.
+	at Number$/_convert()
+	at Number/http://adobe.com/AS3/2006/builtin::toPrecision()
+	at int/http://adobe.com/AS3/2006/builtin::toPrecision()
+	at Function/<anonymous>()
+	at Test/tryCatch()
+	at Test()
+123 (uint.toPrecision, -1) -> RangeError: Error #1002: Number.toPrecision has a range of 1 to 21. Number.toFixed and Number.toExponential have a range of 0 to 20. Specified value is not within expected range.
+	at Number$/_convert()
+	at Number/http://adobe.com/AS3/2006/builtin::toPrecision()
+	at uint/http://adobe.com/AS3/2006/builtin::toPrecision()
+	at Function/<anonymous>()
+	at Test/tryCatch()
+	at Test()
+123 (int.toFixed, -1) -> RangeError: Error #1002: Number.toPrecision has a range of 1 to 21. Number.toFixed and Number.toExponential have a range of 0 to 20. Specified value is not within expected range.
+	at Number$/_convert()
+	at Number/http://adobe.com/AS3/2006/builtin::toFixed()
+	at int/http://adobe.com/AS3/2006/builtin::toFixed()
+	at Function/<anonymous>()
+	at Test/tryCatch()
+	at Test()
+123 (uint.toFixed, -1) -> RangeError: Error #1002: Number.toPrecision has a range of 1 to 21. Number.toFixed and Number.toExponential have a range of 0 to 20. Specified value is not within expected range.
+	at Number$/_convert()
+	at Number/http://adobe.com/AS3/2006/builtin::toFixed()
+	at uint/http://adobe.com/AS3/2006/builtin::toFixed()
+	at Function/<anonymous>()
+	at Test/tryCatch()
+	at Test()
+123 (int.toFixed, -1) -> RangeError: Error #1002: Number.toPrecision has a range of 1 to 21. Number.toFixed and Number.toExponential have a range of 0 to 20. Specified value is not within expected range.
+	at Number$/_convert()
+	at Number/http://adobe.com/AS3/2006/builtin::toFixed()
+	at int/http://adobe.com/AS3/2006/builtin::toFixed()
+	at Function/<anonymous>()
+	at Test/tryCatch()
+	at Test()
+123 (uint.toFixed, -1) -> RangeError: Error #1002: Number.toPrecision has a range of 1 to 21. Number.toFixed and Number.toExponential have a range of 0 to 20. Specified value is not within expected range.
+	at Number$/_convert()
+	at Number/http://adobe.com/AS3/2006/builtin::toFixed()
+	at uint/http://adobe.com/AS3/2006/builtin::toFixed()
+	at Function/<anonymous>()
+	at Test/tryCatch()
+	at Test()
+123 (Number.toPrecision, 0) -> RangeError: Error #1002: Number.toPrecision has a range of 1 to 21. Number.toFixed and Number.toExponential have a range of 0 to 20. Specified value is not within expected range.
+	at Number$/_convert()
+	at Number/http://adobe.com/AS3/2006/builtin::toPrecision()
+	at Function/<anonymous>()
+	at Test/tryCatch()
+	at Test()
+123 (Number.toFixed, 0) -> 123
+123 (Number.toExponential, 0) -> 1e+2
+123 (int.toPrecision, 0) -> RangeError: Error #1002: Number.toPrecision has a range of 1 to 21. Number.toFixed and Number.toExponential have a range of 0 to 20. Specified value is not within expected range.
+	at Number$/_convert()
+	at Number/http://adobe.com/AS3/2006/builtin::toPrecision()
+	at int/http://adobe.com/AS3/2006/builtin::toPrecision()
+	at Function/<anonymous>()
+	at Test/tryCatch()
+	at Test()
+123 (uint.toPrecision, 0) -> RangeError: Error #1002: Number.toPrecision has a range of 1 to 21. Number.toFixed and Number.toExponential have a range of 0 to 20. Specified value is not within expected range.
+	at Number$/_convert()
+	at Number/http://adobe.com/AS3/2006/builtin::toPrecision()
+	at uint/http://adobe.com/AS3/2006/builtin::toPrecision()
+	at Function/<anonymous>()
+	at Test/tryCatch()
+	at Test()
+123 (int.toFixed, 0) -> 123
+123 (uint.toFixed, 0) -> 123
+123 (int.toFixed, 0) -> 123
+123 (uint.toFixed, 0) -> 123
+123 (Number.toPrecision, 1) -> 1e+2
+123 (Number.toFixed, 1) -> 123.0
+123 (Number.toExponential, 1) -> 1.2e+2
+123 (int.toPrecision, 1) -> 1e+2
+123 (uint.toPrecision, 1) -> 1e+2
+123 (int.toFixed, 1) -> 123.0
+123 (uint.toFixed, 1) -> 123.0
+123 (int.toFixed, 1) -> 123.0
+123 (uint.toFixed, 1) -> 123.0
+123 (Number.toPrecision, 20) -> 123.00000000000000000
+123 (Number.toFixed, 20) -> 123.00000000000000000000
+123 (Number.toExponential, 20) -> 1.23000000000000000000e+2
+123 (int.toPrecision, 20) -> 123.00000000000000000
+123 (uint.toPrecision, 20) -> 123.00000000000000000
+123 (int.toFixed, 20) -> 123.00000000000000000000
+123 (uint.toFixed, 20) -> 123.00000000000000000000
+123 (int.toFixed, 20) -> 123.00000000000000000000
+123 (uint.toFixed, 20) -> 123.00000000000000000000
+123 (Number.toPrecision, 21) -> 123.000000000000000000
+123 (Number.toFixed, 21) -> RangeError: Error #1002: Number.toPrecision has a range of 1 to 21. Number.toFixed and Number.toExponential have a range of 0 to 20. Specified value is not within expected range.
+	at Number$/_convert()
+	at Number/http://adobe.com/AS3/2006/builtin::toFixed()
+	at Function/<anonymous>()
+	at Test/tryCatch()
+	at Test()
+123 (Number.toExponential, 21) -> RangeError: Error #1002: Number.toPrecision has a range of 1 to 21. Number.toFixed and Number.toExponential have a range of 0 to 20. Specified value is not within expected range.
+	at Number$/_convert()
+	at Number/http://adobe.com/AS3/2006/builtin::toExponential()
+	at Function/<anonymous>()
+	at Test/tryCatch()
+	at Test()
+123 (int.toPrecision, 21) -> 123.000000000000000000
+123 (uint.toPrecision, 21) -> 123.000000000000000000
+123 (int.toFixed, 21) -> RangeError: Error #1002: Number.toPrecision has a range of 1 to 21. Number.toFixed and Number.toExponential have a range of 0 to 20. Specified value is not within expected range.
+	at Number$/_convert()
+	at Number/http://adobe.com/AS3/2006/builtin::toFixed()
+	at int/http://adobe.com/AS3/2006/builtin::toFixed()
+	at Function/<anonymous>()
+	at Test/tryCatch()
+	at Test()
+123 (uint.toFixed, 21) -> RangeError: Error #1002: Number.toPrecision has a range of 1 to 21. Number.toFixed and Number.toExponential have a range of 0 to 20. Specified value is not within expected range.
+	at Number$/_convert()
+	at Number/http://adobe.com/AS3/2006/builtin::toFixed()
+	at uint/http://adobe.com/AS3/2006/builtin::toFixed()
+	at Function/<anonymous>()
+	at Test/tryCatch()
+	at Test()
+123 (int.toFixed, 21) -> RangeError: Error #1002: Number.toPrecision has a range of 1 to 21. Number.toFixed and Number.toExponential have a range of 0 to 20. Specified value is not within expected range.
+	at Number$/_convert()
+	at Number/http://adobe.com/AS3/2006/builtin::toFixed()
+	at int/http://adobe.com/AS3/2006/builtin::toFixed()
+	at Function/<anonymous>()
+	at Test/tryCatch()
+	at Test()
+123 (uint.toFixed, 21) -> RangeError: Error #1002: Number.toPrecision has a range of 1 to 21. Number.toFixed and Number.toExponential have a range of 0 to 20. Specified value is not within expected range.
+	at Number$/_convert()
+	at Number/http://adobe.com/AS3/2006/builtin::toFixed()
+	at uint/http://adobe.com/AS3/2006/builtin::toFixed()
+	at Function/<anonymous>()
+	at Test/tryCatch()
+	at Test()
+123 (Number.toPrecision, 22) -> RangeError: Error #1002: Number.toPrecision has a range of 1 to 21. Number.toFixed and Number.toExponential have a range of 0 to 20. Specified value is not within expected range.
+	at Number$/_convert()
+	at Number/http://adobe.com/AS3/2006/builtin::toPrecision()
+	at Function/<anonymous>()
+	at Test/tryCatch()
+	at Test()
+123 (Number.toFixed, 22) -> RangeError: Error #1002: Number.toPrecision has a range of 1 to 21. Number.toFixed and Number.toExponential have a range of 0 to 20. Specified value is not within expected range.
+	at Number$/_convert()
+	at Number/http://adobe.com/AS3/2006/builtin::toFixed()
+	at Function/<anonymous>()
+	at Test/tryCatch()
+	at Test()
+123 (Number.toExponential, 22) -> RangeError: Error #1002: Number.toPrecision has a range of 1 to 21. Number.toFixed and Number.toExponential have a range of 0 to 20. Specified value is not within expected range.
+	at Number$/_convert()
+	at Number/http://adobe.com/AS3/2006/builtin::toExponential()
+	at Function/<anonymous>()
+	at Test/tryCatch()
+	at Test()
+123 (int.toPrecision, 22) -> RangeError: Error #1002: Number.toPrecision has a range of 1 to 21. Number.toFixed and Number.toExponential have a range of 0 to 20. Specified value is not within expected range.
+	at Number$/_convert()
+	at Number/http://adobe.com/AS3/2006/builtin::toPrecision()
+	at int/http://adobe.com/AS3/2006/builtin::toPrecision()
+	at Function/<anonymous>()
+	at Test/tryCatch()
+	at Test()
+123 (uint.toPrecision, 22) -> RangeError: Error #1002: Number.toPrecision has a range of 1 to 21. Number.toFixed and Number.toExponential have a range of 0 to 20. Specified value is not within expected range.
+	at Number$/_convert()
+	at Number/http://adobe.com/AS3/2006/builtin::toPrecision()
+	at uint/http://adobe.com/AS3/2006/builtin::toPrecision()
+	at Function/<anonymous>()
+	at Test/tryCatch()
+	at Test()
+123 (int.toFixed, 22) -> RangeError: Error #1002: Number.toPrecision has a range of 1 to 21. Number.toFixed and Number.toExponential have a range of 0 to 20. Specified value is not within expected range.
+	at Number$/_convert()
+	at Number/http://adobe.com/AS3/2006/builtin::toFixed()
+	at int/http://adobe.com/AS3/2006/builtin::toFixed()
+	at Function/<anonymous>()
+	at Test/tryCatch()
+	at Test()
+123 (uint.toFixed, 22) -> RangeError: Error #1002: Number.toPrecision has a range of 1 to 21. Number.toFixed and Number.toExponential have a range of 0 to 20. Specified value is not within expected range.
+	at Number$/_convert()
+	at Number/http://adobe.com/AS3/2006/builtin::toFixed()
+	at uint/http://adobe.com/AS3/2006/builtin::toFixed()
+	at Function/<anonymous>()
+	at Test/tryCatch()
+	at Test()
+123 (int.toFixed, 22) -> RangeError: Error #1002: Number.toPrecision has a range of 1 to 21. Number.toFixed and Number.toExponential have a range of 0 to 20. Specified value is not within expected range.
+	at Number$/_convert()
+	at Number/http://adobe.com/AS3/2006/builtin::toFixed()
+	at int/http://adobe.com/AS3/2006/builtin::toFixed()
+	at Function/<anonymous>()
+	at Test/tryCatch()
+	at Test()
+123 (uint.toFixed, 22) -> RangeError: Error #1002: Number.toPrecision has a range of 1 to 21. Number.toFixed and Number.toExponential have a range of 0 to 20. Specified value is not within expected range.
+	at Number$/_convert()
+	at Number/http://adobe.com/AS3/2006/builtin::toFixed()
+	at uint/http://adobe.com/AS3/2006/builtin::toFixed()
+	at Function/<anonymous>()
+	at Test/tryCatch()
+	at Test()
+123 (Number.toPrecision, 28) -> RangeError: Error #1002: Number.toPrecision has a range of 1 to 21. Number.toFixed and Number.toExponential have a range of 0 to 20. Specified value is not within expected range.
+	at Number$/_convert()
+	at Number/http://adobe.com/AS3/2006/builtin::toPrecision()
+	at Function/<anonymous>()
+	at Test/tryCatch()
+	at Test()
+123 (Number.toFixed, 28) -> RangeError: Error #1002: Number.toPrecision has a range of 1 to 21. Number.toFixed and Number.toExponential have a range of 0 to 20. Specified value is not within expected range.
+	at Number$/_convert()
+	at Number/http://adobe.com/AS3/2006/builtin::toFixed()
+	at Function/<anonymous>()
+	at Test/tryCatch()
+	at Test()
+123 (Number.toExponential, 28) -> RangeError: Error #1002: Number.toPrecision has a range of 1 to 21. Number.toFixed and Number.toExponential have a range of 0 to 20. Specified value is not within expected range.
+	at Number$/_convert()
+	at Number/http://adobe.com/AS3/2006/builtin::toExponential()
+	at Function/<anonymous>()
+	at Test/tryCatch()
+	at Test()
+123 (int.toPrecision, 28) -> RangeError: Error #1002: Number.toPrecision has a range of 1 to 21. Number.toFixed and Number.toExponential have a range of 0 to 20. Specified value is not within expected range.
+	at Number$/_convert()
+	at Number/http://adobe.com/AS3/2006/builtin::toPrecision()
+	at int/http://adobe.com/AS3/2006/builtin::toPrecision()
+	at Function/<anonymous>()
+	at Test/tryCatch()
+	at Test()
+123 (uint.toPrecision, 28) -> RangeError: Error #1002: Number.toPrecision has a range of 1 to 21. Number.toFixed and Number.toExponential have a range of 0 to 20. Specified value is not within expected range.
+	at Number$/_convert()
+	at Number/http://adobe.com/AS3/2006/builtin::toPrecision()
+	at uint/http://adobe.com/AS3/2006/builtin::toPrecision()
+	at Function/<anonymous>()
+	at Test/tryCatch()
+	at Test()
+123 (int.toFixed, 28) -> RangeError: Error #1002: Number.toPrecision has a range of 1 to 21. Number.toFixed and Number.toExponential have a range of 0 to 20. Specified value is not within expected range.
+	at Number$/_convert()
+	at Number/http://adobe.com/AS3/2006/builtin::toFixed()
+	at int/http://adobe.com/AS3/2006/builtin::toFixed()
+	at Function/<anonymous>()
+	at Test/tryCatch()
+	at Test()
+123 (uint.toFixed, 28) -> RangeError: Error #1002: Number.toPrecision has a range of 1 to 21. Number.toFixed and Number.toExponential have a range of 0 to 20. Specified value is not within expected range.
+	at Number$/_convert()
+	at Number/http://adobe.com/AS3/2006/builtin::toFixed()
+	at uint/http://adobe.com/AS3/2006/builtin::toFixed()
+	at Function/<anonymous>()
+	at Test/tryCatch()
+	at Test()
+123 (int.toFixed, 28) -> RangeError: Error #1002: Number.toPrecision has a range of 1 to 21. Number.toFixed and Number.toExponential have a range of 0 to 20. Specified value is not within expected range.
+	at Number$/_convert()
+	at Number/http://adobe.com/AS3/2006/builtin::toFixed()
+	at int/http://adobe.com/AS3/2006/builtin::toFixed()
+	at Function/<anonymous>()
+	at Test/tryCatch()
+	at Test()
+123 (uint.toFixed, 28) -> RangeError: Error #1002: Number.toPrecision has a range of 1 to 21. Number.toFixed and Number.toExponential have a range of 0 to 20. Specified value is not within expected range.
+	at Number$/_convert()
+	at Number/http://adobe.com/AS3/2006/builtin::toFixed()
+	at uint/http://adobe.com/AS3/2006/builtin::toFixed()
+	at Function/<anonymous>()
+	at Test/tryCatch()
+	at Test()
+coercion errors
+coercion error (Number.toPrecision) -> Error: Failed
+	at FailingValueOf/valueOf()
+	at Number/http://adobe.com/AS3/2006/builtin::toPrecision()
+	at Function/<anonymous>()
+	at Test/tryCatch()
+	at Test/testCoercionErrors()
+	at Test()
+coercion error (Number.toFixed) -> Error: Failed
+	at FailingValueOf/valueOf()
+	at Number/http://adobe.com/AS3/2006/builtin::toFixed()
+	at Function/<anonymous>()
+	at Test/tryCatch()
+	at Test/testCoercionErrors()
+	at Test()
+coercion error (Number.toExponential) -> Error: Failed
+	at FailingValueOf/valueOf()
+	at Number/http://adobe.com/AS3/2006/builtin::toExponential()
+	at Function/<anonymous>()
+	at Test/tryCatch()
+	at Test/testCoercionErrors()
+	at Test()
+coercion error (int.toPrecision) -> Error: Failed
+	at FailingValueOf/valueOf()
+	at Number/http://adobe.com/AS3/2006/builtin::toPrecision()
+	at int/http://adobe.com/AS3/2006/builtin::toPrecision()
+	at Function/<anonymous>()
+	at Test/tryCatch()
+	at Test/testCoercionErrors()
+	at Test()
+coercion error (int.toFixed) -> Error: Failed
+	at FailingValueOf/valueOf()
+	at Number/http://adobe.com/AS3/2006/builtin::toFixed()
+	at int/http://adobe.com/AS3/2006/builtin::toFixed()
+	at Function/<anonymous>()
+	at Test/tryCatch()
+	at Test/testCoercionErrors()
+	at Test()
+coercion error (int.toExponential) -> Error: Failed
+	at FailingValueOf/valueOf()
+	at Number/http://adobe.com/AS3/2006/builtin::toExponential()
+	at int/http://adobe.com/AS3/2006/builtin::toExponential()
+	at Function/<anonymous>()
+	at Test/tryCatch()
+	at Test/testCoercionErrors()
+	at Test()
+coercion error (uint.toPrecision) -> Error: Failed
+	at FailingValueOf/valueOf()
+	at Number/http://adobe.com/AS3/2006/builtin::toPrecision()
+	at uint/http://adobe.com/AS3/2006/builtin::toPrecision()
+	at Function/<anonymous>()
+	at Test/tryCatch()
+	at Test/testCoercionErrors()
+	at Test()
+coercion error (uint.toFixed) -> Error: Failed
+	at FailingValueOf/valueOf()
+	at Number/http://adobe.com/AS3/2006/builtin::toFixed()
+	at uint/http://adobe.com/AS3/2006/builtin::toFixed()
+	at Function/<anonymous>()
+	at Test/tryCatch()
+	at Test/testCoercionErrors()
+	at Test()
+coercion error (uint.toExponential) -> Error: Failed
+	at FailingValueOf/valueOf()
+	at Number/http://adobe.com/AS3/2006/builtin::toExponential()
+	at uint/http://adobe.com/AS3/2006/builtin::toExponential()
+	at Function/<anonymous>()
+	at Test/tryCatch()
+	at Test/testCoercionErrors()
+	at Test()
