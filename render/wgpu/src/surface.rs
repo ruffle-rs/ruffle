@@ -151,7 +151,12 @@ impl Surface {
                     needs_stencil,
                     transforms,
                 } => {
-                    transforms.copy_to(staging_belt, draw_encoder, &dynamic_transforms.buffer);
+                    transforms.copy_to(
+                        staging_belt,
+                        &descriptors.device,
+                        draw_encoder,
+                        &dynamic_transforms.buffer,
+                    );
                     let mut render_pass =
                         draw_encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                             label: create_debug_label!(
