@@ -32,5 +32,5 @@ null
 [object First]
 //first.prop1 = new Object();
 TypeError: Error #1034: Type Coercion failed: cannot convert Object@00000000000 to Test.as$38.Second.
-	at global$init() [TU=]
+	at global$init()
 	at test_fla::MainTimeline/frame1()
