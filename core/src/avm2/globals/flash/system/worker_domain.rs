@@ -18,7 +18,7 @@ pub fn create_worker<'gc>(
     let _swf = args.get_object(activation, 0, "swf")?;
     let _give_app_privileges = args.get_bool(1);
 
-    let worker = WorkerObject::new(activation);
+    let worker = WorkerObject::new_regular(activation);
 
     Ok(worker.into())
 }

@@ -2,7 +2,7 @@ use crate::avm2::activation::Activation;
 use crate::avm2::api_version::ApiVersion;
 use crate::avm2::class::{BuiltinType, Class};
 use crate::avm2::domain::Domain;
-use crate::avm2::object::{ClassObject, ScriptObject};
+use crate::avm2::object::{ClassObject, ScriptObject, WorkerObject};
 use crate::avm2::scope::{Scope, ScopeChain};
 use crate::avm2::script::TranslationUnit;
 use crate::avm2::{Avm2, Error, Multiname, Namespace, QName};
@@ -853,4 +853,8 @@ pub fn load_playerglobal<'gc>(context: &mut UpdateContext<'gc>, domain: Domain<'
         .avm2
         .stage_domain()
         .init_default_domain_memory(context);
+
+    // The primordial worker exists for the player's entire lifetime.
+    let primordial = WorkerObject::new_primordial(context);
+    context.avm2.current_worker = Some(primordial);
 }
