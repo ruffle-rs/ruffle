@@ -1,3 +1,12 @@
+export-bundle-dialog-title = Exportera Ruffle-samling
+export-bundle-dialog-bundle-name = Samlingsnamn:
+export-bundle-dialog-files-description = Välj filer att samla:
+export-bundle-dialog-files-select-all = Välj alla
 export-bundle-dialog-export = Exportera
 export-bundle-dialog-exporting = Exporterar...
+export-bundle-dialog-exporting-failed = Exportering misslyckades.
 export-bundle-dialog-error-user-canceled = Avbruten av användare.
+export-bundle-dialog-error-failed-to-show-picker = Misslyckades att visa filväljaren.
+export-bundle-dialog-error-io-error = Misslyckades att skapa samlingen.
+export-bundle-dialog-info-title = Vad är e Ruffle-samling?
+export-bundle-dialog-info-description = En Ruffle-samling är ett universellt paket som innehåller allt som behövs för att köra en SWF-fil — alla nödvändiga resurser och konfigurationer. Med en samling kommer din SWF fungera som den ska — inga filer som saknas, inga manuella inställningar, bara att börja spela.

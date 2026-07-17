@@ -1,6 +1,6 @@
 use crate::avm2::error::{
-    XmlErrorCode, make_error_1010, make_error_1085, make_error_1088, make_error_1118,
-    make_unknown_ns_error, make_xml_error,
+    XmlErrorCode, make_error_1010, make_error_1085, make_error_1088, make_error_1098,
+    make_error_1118, make_unknown_ns_error, make_xml_error,
 };
 use crate::avm2::function::FunctionArgs;
 use crate::avm2::multiname::NamespaceSet;
@@ -141,22 +141,38 @@ impl<'gc> E4XNamespace<'gc> {
         &self,
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<NamespaceObject<'gc>, Error<'gc>> {
-        let args: &[Value<'gc>] = if let Some(prefix) = self.prefix {
-            &[prefix.into(), self.uri.into()]
-        } else {
-            &[self.uri.into()]
-        };
-        let obj = activation
-            .avm2()
-            .classes()
-            .namespace
-            .construct(activation, args)?;
+        let api_version = activation.avm2().root_api_version;
+        let namespace = Namespace::package(self.uri, api_version, activation.strings());
 
-        Ok(obj
-            .as_object()
-            .unwrap()
-            .as_namespace_object()
-            .expect("just constructed a namespace"))
+        let prefix = if let Some(prefix) = self.prefix {
+            // The only allowed prefix if the uri is empty is the literal empty string
+            // TODO - This logic is copied from the `Namespace` constructor, but
+            // is this true for XML? Seems like Flash prevents this situation
+            // from happening during XML parsing.
+            if self.uri.is_empty() && !prefix.is_empty() {
+                return Err(make_error_1098(activation, prefix));
+            }
+
+            if !prefix.is_empty() && !is_xml_name(prefix) {
+                None
+            } else {
+                Some(prefix)
+            }
+        } else {
+            // `self.prefix` is `None`; if the URI is empty the prefix must be
+            // the empty string.
+            // TODO - See comment above, does Flash allow for this scenario
+            // to happen in parsed XML?
+            if self.uri.is_empty() {
+                Some(istr!(""))
+            } else {
+                None
+            }
+        };
+
+        Ok(NamespaceObject::from_ns_and_prefix(
+            activation, namespace, prefix,
+        ))
     }
 }
 

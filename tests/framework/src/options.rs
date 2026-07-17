@@ -4,6 +4,7 @@ pub mod font;
 pub mod image_comparison;
 pub mod known_failure;
 pub mod player;
+pub mod shared_object;
 
 use crate::compiler::SwfCompilerOptions;
 use crate::environment::Environment;
@@ -84,6 +85,14 @@ pub struct AudioAssertion {
 }
 
 #[derive(Clone, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct SharedObjectConfig {
+    pub expected: String,
+    #[serde(default)]
+    pub known_failure: bool,
+}
+
+#[derive(Clone, Deserialize)]
 #[serde(default, deny_unknown_fields)]
 pub struct TestOptions {
     // Only set when the `test.toml` file has multiple configs,
@@ -110,6 +119,7 @@ pub struct TestOptions {
     pub font_sorts: HashMap<String, FontSortOptions>,
     pub default_fonts: DefaultFontsOptions,
     pub compilers: Vec<SwfCompilerOptions>,
+    pub shared_objects: HashMap<String, SharedObjectConfig>,
 }
 
 impl Default for TestOptions {
@@ -135,6 +145,7 @@ impl Default for TestOptions {
             font_sorts: Default::default(),
             default_fonts: Default::default(),
             compilers: Default::default(),
+            shared_objects: Default::default(),
         }
     }
 }
@@ -227,6 +238,7 @@ impl TestOptions {
     pub fn has_known_failure(&self) -> bool {
         !matches!(self.known_failure, KnownFailure::None)
             || self.image_comparisons.values().any(|cmp| cmp.known_failure)
+            || self.shared_objects.values().any(|so| so.known_failure)
     }
 
     pub fn output_path(&self, test_directory: &VfsPath) -> Result<VfsPath> {

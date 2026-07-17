@@ -1,0 +1,3 @@
+Did super() upgrade instance? YES
+--- Testing SharedObject ---
+SharedObject flushed successfully.

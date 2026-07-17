@@ -42,8 +42,12 @@ pub enum ExecutionReason {
     /// This execution is a "normal" constructor call from ActionScript bytecode.
     ConstructorCall,
 
+    /// This execution is a property call, such as a getter, a setter, or
+    /// a watcher call.
+    PropertyCall { property_id: u32 },
+
     /// This execution is a "special" internal function call from the player,
-    /// such as getters, setters, `toString`, or event handlers.
+    /// such as `toString` or event handlers.
     Special,
 }
 

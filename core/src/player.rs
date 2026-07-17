@@ -2229,7 +2229,7 @@ impl Player {
     /// This takes cares of populating the `UpdateContext` struct, avoiding borrow issues.
     pub fn mutate_with_update_context<F, R>(&mut self, f: F) -> R
     where
-        F: for<'a, 'gc> FnOnce(&mut UpdateContext<'gc>) -> R,
+        F: for<'gc> FnOnce(&mut UpdateContext<'gc>) -> R,
     {
         self.enter_arena_mut(|gc_context, gc_root, this| {
             #[allow(unused_variables)]
@@ -2365,7 +2365,7 @@ impl Player {
     /// hover state up to date, and running garbage collection.
     pub fn update<F, R>(&mut self, func: F) -> R
     where
-        F: for<'a, 'gc> FnOnce(&mut UpdateContext<'gc>) -> R,
+        F: for<'gc> FnOnce(&mut UpdateContext<'gc>) -> R,
     {
         let rval = self.mutate_with_update_context(|context| {
             let rval = func(context);

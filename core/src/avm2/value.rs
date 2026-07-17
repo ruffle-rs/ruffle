@@ -493,6 +493,17 @@ pub fn abc_default_value<'gc>(
     }
 }
 
+/// Given an `f64`, return an `i32` value that losslessly represents it, or
+/// `None` if there is no such `i32` value.
+fn try_promote_f64(value: f64) -> Option<i32> {
+    let i = value as i32;
+    if value.to_bits() == (i as f64).to_bits() {
+        Some(i)
+    } else {
+        None
+    }
+}
+
 impl<'gc> Value<'gc> {
     /// Do the best effort of converting the [`usize`] value to [`Value`].
     ///
@@ -524,8 +535,7 @@ impl<'gc> Value<'gc> {
     pub fn normalize(self) -> Self {
         match self {
             Value::Number(n) => {
-                let i = n as i32;
-                if n.to_bits() == (i as f64).to_bits() && fits_in_value_integer_i32(i) {
+                if let Some(i) = try_promote_f64(n).filter(|i| fits_in_value_integer_i32(*i)) {
                     Value::Integer(i)
                 } else {
                     self
@@ -538,6 +548,16 @@ impl<'gc> Value<'gc> {
                     self
                 }
             }
+            _ => self,
+        }
+    }
+
+    /// If this `Value` is a `Value::Number` that can be losslessly represented
+    /// as a `Value::Integer`, return that `Value::Integer`. Otherwise return
+    /// the original value.
+    pub fn try_promote_number(self) -> Self {
+        match self {
+            Value::Number(n) if let Some(i) = try_promote_f64(n) => Value::Integer(i),
             _ => self,
         }
     }
@@ -737,8 +757,9 @@ impl<'gc> Value<'gc> {
     /// ToUint32 algorithm which appears to match AVM2.
     ///
     /// This function can be very hot, so we inline a fast-path for
-    /// `Value::Number` and `Value::Integer`, and fall back to a non-inlined
-    /// slow-path handling the rest of the cases if necessary.
+    /// `Value::Integer` and fall back to a non-inlined slow path handling the
+    /// rest of the cases if necessary.
+    #[inline]
     pub fn coerce_to_u32(&self, activation: &mut Activation<'_, 'gc>) -> Result<u32, Error<'gc>> {
         // Full coerce-to-u32 implementation. This is the slow-path.
         #[inline(never)]
@@ -747,7 +768,8 @@ impl<'gc> Value<'gc> {
             activation: &mut Activation<'_, 'gc>,
         ) -> Result<u32, Error<'gc>> {
             Ok(match value {
-                Value::Integer(_) | Value::Number(_) => unreachable!("Handled by fast path"),
+                Value::Integer(_) => unreachable!("Handled by fast path"),
+                Value::Number(n) => f64_to_wrapping_u32(*n),
                 Value::Bool(b) => *b as u32,
                 Value::Undefined | Value::Null => 0,
                 Value::String(_) | Value::Object(_) => {
@@ -757,7 +779,6 @@ impl<'gc> Value<'gc> {
         }
 
         match self {
-            Value::Number(n) => Ok(f64_to_wrapping_u32(*n)),
             Value::Integer(i) => Ok(*i as u32),
             _ => {
                 // Fall back to slow path
@@ -775,8 +796,9 @@ impl<'gc> Value<'gc> {
     /// ToInt32 algorithm which appears to match AVM2.
     ///
     /// This function can be very hot, so we inline a fast-path for
-    /// `Value::Number` and `Value::Integer`, and fall back to a non-inlined
-    /// slow-path handling the rest of the cases if necessary.
+    /// `Value::Integer` and fall back to a non-inlined slow path handling the
+    /// rest of the cases if necessary.
+    #[inline]
     pub fn coerce_to_i32(&self, activation: &mut Activation<'_, 'gc>) -> Result<i32, Error<'gc>> {
         // Full coerce-to-i32 implementation. This is the slow-path.
         #[inline(never)]
@@ -785,7 +807,8 @@ impl<'gc> Value<'gc> {
             activation: &mut Activation<'_, 'gc>,
         ) -> Result<i32, Error<'gc>> {
             Ok(match value {
-                Value::Integer(_) | Value::Number(_) => unreachable!("Handled by fast path"),
+                Value::Integer(_) => unreachable!("Handled by fast path"),
+                Value::Number(n) => f64_to_wrapping_i32(*n),
                 Value::Bool(b) => *b as i32,
                 Value::Undefined | Value::Null => 0,
                 Value::String(_) | Value::Object(_) => {
@@ -795,7 +818,6 @@ impl<'gc> Value<'gc> {
         }
 
         match self {
-            Value::Number(n) => Ok(f64_to_wrapping_i32(*n)),
             Value::Integer(i) => Ok(*i),
             _ => {
                 // Fall back to slow path
@@ -1878,30 +1900,62 @@ impl<'gc> Value<'gc> {
     /// This abstract relational comparison algorithm is intended to match
     /// ECMA-262 3rd edition, section 11.8.5. It returns `true`, `false`, *or*
     /// `undefined` (to signal NaN), the latter of which we represent as `None`.
+    ///
+    /// This function can be very hot, so we try to inline this fast-path and
+    /// fall back to a non-inlined slow-path if necessary.
     pub fn abstract_lt(
         &self,
         other: &Value<'gc>,
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<Option<bool>, Error<'gc>> {
+        // Full abstract-lt implementation. This is the slow-path.
+        #[inline(never)]
+        fn abstract_lt_slow<'gc>(
+            self_value: &Value<'gc>,
+            other_value: &Value<'gc>,
+            activation: &mut Activation<'_, 'gc>,
+        ) -> Result<Option<bool>, Error<'gc>> {
+            let prim_self = self_value.coerce_to_primitive(Some(Hint::Number), activation)?;
+            let prim_other = other_value.coerce_to_primitive(Some(Hint::Number), activation)?;
+
+            if let (Value::String(s), Value::String(o)) = (&prim_self, &prim_other) {
+                return Ok(Some(s.as_wstr() < o.as_wstr()));
+            }
+
+            let num_self = prim_self.coerce_to_number(activation)?;
+            let num_other = prim_other.coerce_to_number(activation)?;
+
+            if num_self.is_nan() || num_other.is_nan() {
+                return Ok(None);
+            }
+
+            Ok(Some(num_self < num_other))
+        }
+
         match (self, other) {
             (Value::Integer(a), Value::Integer(b)) => Ok(Some(a < b)),
-            _ => {
-                let prim_self = self.coerce_to_primitive(Some(Hint::Number), activation)?;
-                let prim_other = other.coerce_to_primitive(Some(Hint::Number), activation)?;
-
-                if let (Value::String(s), Value::String(o)) = (&prim_self, &prim_other) {
-                    return Ok(Some(s.as_wstr() < o.as_wstr()));
-                }
-
-                let num_self = prim_self.coerce_to_number(activation)?;
-                let num_other = prim_other.coerce_to_number(activation)?;
-
-                if num_self.is_nan() || num_other.is_nan() {
+            (Value::Integer(a), Value::Number(b)) => {
+                if b.is_nan() {
                     return Ok(None);
                 }
 
-                Ok(Some(num_self < num_other))
+                Ok(Some((*a as f64) < *b))
             }
+            (Value::Number(a), Value::Integer(b)) => {
+                if a.is_nan() {
+                    return Ok(None);
+                }
+
+                Ok(Some(*a < *b as f64))
+            }
+            (Value::Number(a), Value::Number(b)) => {
+                if a.is_nan() || b.is_nan() {
+                    return Ok(None);
+                }
+
+                Ok(Some(a < b))
+            }
+            _ => abstract_lt_slow(self, other, activation),
         }
     }
 }

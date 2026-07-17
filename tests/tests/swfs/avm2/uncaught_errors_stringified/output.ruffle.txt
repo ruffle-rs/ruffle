@@ -1,0 +1,11 @@
+1 - err.toString called
+undefined
+	at Function/<anonymous>()
+1 - err.toString called
+2 - prototype toString called
+undefined
+	at Function/<anonymous>()
+2 - prototype toString called
+3 - throwing an error
+<failed to display AVM error>
+3 - throwing an error

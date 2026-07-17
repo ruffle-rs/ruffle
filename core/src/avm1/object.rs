@@ -205,18 +205,29 @@ impl<'gc> Object<'gc> {
     }
 
     /// Set a named property on this object, or its prototype.
+    #[inline]
     pub fn set(
         self,
         name: impl Into<AvmString<'gc>>,
-        value: Value<'gc>,
+        value: impl Into<Value<'gc>>,
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<(), Error<'gc>> {
-        let name = name.into();
+        self.set_internal(name.into(), value.into(), activation)
+    }
+
+    /// Non-generic body of `set`, kept separate to avoid duplicating this large
+    /// function across every monomorphization of the outer wrapper.
+    #[inline(never)]
+    fn set_internal(
+        self,
+        name: AvmString<'gc>,
+        mut value: Value<'gc>,
+        activation: &mut Activation<'_, 'gc>,
+    ) -> Result<(), Error<'gc>> {
         if name.is_empty() {
             return Ok(());
         }
 
-        let mut value = value;
         let (this, mut proto) = if let Some(super_object) = self.as_super_object() {
             (super_object.this(), super_object.proto(activation))
         } else {
@@ -229,18 +240,15 @@ impl<'gc> Object<'gc> {
             // prototype chain for virtual setters.
             while let Value::Object(this_proto) = proto {
                 if this_proto.has_own_virtual(activation, name) {
-                    if let Some(setter) = this_proto.setter(name, activation)
-                        && let Some(exec) = setter.as_function()
-                    {
-                        exec.exec(
-                            ExecutionName::Static("[Setter]"),
-                            activation,
-                            this.into(),
-                            1,
-                            &[value],
-                            ExecutionReason::Special,
-                            setter,
-                        )?;
+                    let result = this_proto.call_setter(name, this.into(), value, activation);
+                    match result {
+                        Ok(_) => {}
+                        Err(Error::PropertyRecursionLimit) => {
+                            // Flash ignores it for compatibility with SWF<7.
+                        }
+                        Err(e) => {
+                            return Err(e);
+                        }
                     }
                     return Ok(());
                 }
@@ -399,25 +407,15 @@ pub fn search_prototype<'gc>(
             return Err(Error::PrototypeRecursionLimit);
         }
 
-        if let Some(getter) = p.getter(name, activation)
-            && let Some(exec) = getter.as_function()
-        {
-            let result = exec.exec(
-                ExecutionName::Static("[Getter]"),
-                activation,
-                this.into(),
-                1,
-                &[],
-                ExecutionReason::Special,
-                getter,
-            );
-
+        if let Some(result) = p.call_getter(name, this.into(), activation).transpose() {
             match result {
-                Err(Error::ThrownValue(e)) => return Err(Error::ThrownValue(e)),
-                Err(Error::SpecialRecursionLimit) => {
-                    // Fall back to local resolution for compatibility
+                Err(Error::PropertyRecursionLimit) => {
+                    // Flash falls back to local resolution for compatibility
                     // with SWF<7.
                 }
+                // TODO Should we propagate all errors here?
+                Err(e @ Error::ThrownValue(_)) => return Err(e),
+                Err(e @ Error::FunctionRecursionLimit(_)) => return Err(e),
                 _ => {
                     let value = result.unwrap_or(Value::Undefined);
                     return Ok(Some((value, depth)));

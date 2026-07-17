@@ -34,3 +34,4 @@ P
 PQR
 // String.fromCharCode(80, 0, 82)
 PR
+TypeError: Error #2023: Class test$ must inherit from Sprite to link to the root.

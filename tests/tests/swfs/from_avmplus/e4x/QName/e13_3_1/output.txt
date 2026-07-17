@@ -19,3 +19,4 @@ foo = QName('foo'), bar = Qname("", foo), bar === foo PASSED!
 ns = new Namespace('duh'), QName(ns, 'name') PASSED!
 ns = new Namespace('duh'), typeof QName(ns, 'name') PASSED!
 ns = new Namespace('duh'), typeof QName(ns, 'name') PASSED!
+TypeError: Error #2023: Class Test$ must inherit from Sprite to link to the root.

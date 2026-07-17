@@ -1,5 +1,5 @@
 use crate::avm2::types::*;
-use crate::error::{Error, Result};
+use crate::error::{AbcParseError, Error, Result};
 use crate::extensions::ReadSwfExt;
 use std::io::Read;
 
@@ -69,11 +69,18 @@ impl<'a> Reader<'a> {
         let mut method_bodies = Vec::with_capacity(len as usize);
         for body_idx in 0..len {
             let body = self.read_method_body()?;
-            if methods[body.method.0 as usize].body.is_some() {
+            let index = body.method.0 as usize;
+            if index >= methods.len() {
+                return Err(Error::AbcParseError(AbcParseError::MethodInfoOutOfBounds {
+                    method_count: methods.len(),
+                    method_index: index,
+                }));
+            }
+            if methods[index].body.is_some() {
                 // TODO: this should somehow throw error 1121 in FP.
                 return Err(Error::invalid_data("Duplicate method body"));
             }
-            methods[body.method.0 as usize].body = Some(Index::new(body_idx));
+            methods[index].body = Some(Index::new(body_idx));
             method_bodies.push(body);
         }
 
@@ -526,7 +533,11 @@ impl<'a> Reader<'a> {
         let byte = self.read_u8()?;
         let opcode = match OpCode::from_u8(byte) {
             Some(o) => o,
-            None => return Err(Error::invalid_data(format!("Unknown ABC opcode {byte:#x}"))),
+            None => {
+                return Err(Error::AbcParseError(AbcParseError::IllegalOpcode {
+                    opcode: byte,
+                }));
+            }
         };
 
         let op = match opcode {

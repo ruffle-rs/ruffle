@@ -158,6 +158,11 @@ Testing _global.flash.net.FileReferenceList
   __proto__, own, type=[object]
   constructor, own, type=[function]
 Testing _global.flash.net.FileReferenceList.prototype
+  _listeners, own, DONT_ENUM, type=[object]
+  removeListener, own, DONT_ENUM, type=[function]
+  addListener, own, DONT_ENUM, type=[function]
+  broadcastMessage, own, DONT_ENUM, type=[function]
+  browse, own, DONT_ENUM, type=[function]
   __proto__, own, type=[object]
   constructor, own, type=[function]
 Testing _global.flash.net.FileReference

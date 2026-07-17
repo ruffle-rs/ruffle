@@ -448,7 +448,7 @@ fn on_data<'gc>(
             ExecutionReason::Special,
         )?;
 
-        this.set(istr!("loaded"), true.into(), activation)?;
+        this.set(istr!("loaded"), true, activation)?;
 
         this.call_method(
             istr!("onLoad"),
@@ -548,7 +548,7 @@ fn spawn_xml_fetch<'gc>(
             Attribute::DONT_DELETE | Attribute::DONT_ENUM,
         );
     } else {
-        this.set(bytes_loaded_string, 0.into(), activation)?;
+        this.set(bytes_loaded_string, 0, activation)?;
     }
 
     let bytes_total_string = istr!("_bytesTotal");
@@ -574,7 +574,7 @@ fn spawn_xml_fetch<'gc>(
             Attribute::DONT_DELETE | Attribute::DONT_ENUM,
         );
     } else {
-        this.set(loaded_string, false.into(), activation)?;
+        this.set(loaded_string, false, activation)?;
     }
 
     let future =

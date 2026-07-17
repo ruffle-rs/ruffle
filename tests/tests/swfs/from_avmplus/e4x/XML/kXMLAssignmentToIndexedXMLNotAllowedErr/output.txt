@@ -1,2 +1,3 @@
 Asserting for TypeError PASSED!
 xml[0] = 5 PASSED!
+TypeError: Error #2023: Class Test$ must inherit from Sprite to link to the root.

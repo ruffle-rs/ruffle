@@ -85,6 +85,9 @@ error-csp-conflict =
     Ruffle has encountered a major issue whilst trying to initialize.
     This web server's Content Security Policy does not allow the required ".wasm" component to run.
     If you are the server administrator, please consult the Ruffle wiki for help.
+error-url-invalid =
+    Ruffle failed to load the Flash SWF file.
+    The most likely reason is that an invalid URL for the SWF file was passed to Ruffle.
 error-unknown =
     Ruffle has encountered a major issue whilst trying to display this Flash content.
     {$outdated ->

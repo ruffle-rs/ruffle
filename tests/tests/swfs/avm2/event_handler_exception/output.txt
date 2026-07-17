@@ -1,4 +1,11 @@
 First listener!
+Error: Exception in first listener
+	at Function/<anonymous>()[Z:\tests\tests\swfs\avm2\event_handler_exception\Test.as:10]
 Second listener!
 First custom event listener!
+Error: Exception in custom event handler
+	at Function/<anonymous>()[Z:\tests\tests\swfs\avm2\event_handler_exception\Test.as:19]
+	at flash.events::EventDispatcher/dispatchEventFunction()
+	at flash.events::EventDispatcher/dispatchEvent()
+	at Function/<anonymous>()[Z:\tests\tests\swfs\avm2\event_handler_exception\Test.as:26]
 Second custom event listener!

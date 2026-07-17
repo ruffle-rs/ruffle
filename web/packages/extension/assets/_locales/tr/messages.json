@@ -38,6 +38,15 @@
     "settings_player_version": {
         "message": "Benzetilecek Flash oynatıcı sürüm numarası (aralık 1-32)"
     },
+    "settings_background_execution_mode": {
+        "message": "Arka plan yürütme"
+    },
+    "settings_background_execution_mode_none": {
+        "message": "Durdur"
+    },
+    "settings_background_execution_mode_main_thread": {
+        "message": "Ana iş parçacığında çalıştır"
+    },
     "settings_preferred_renderer": {
         "message": "Tercih edilen işleyici"
     },

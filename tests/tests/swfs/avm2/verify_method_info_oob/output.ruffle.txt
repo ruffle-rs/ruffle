@@ -1,0 +1,2 @@
+VerifyError: Error #1027: Method_info 7 exceeds method_count=4.
+ReferenceError: Error #1065: Variable Test is not defined.

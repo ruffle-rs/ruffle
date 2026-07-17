@@ -99,16 +99,12 @@ fn set_style<'gc>(
     if !this.has_property(activation, istr!("_styles")) {
         this.set(
             istr!("_styles"),
-            ArrayBuilder::empty(activation).into(),
+            ArrayBuilder::empty(activation),
             activation,
         )?;
     }
     if !this.has_property(activation, istr!("_css")) {
-        this.set(
-            istr!("_css"),
-            ArrayBuilder::empty(activation).into(),
-            activation,
-        )?;
+        this.set(istr!("_css"), ArrayBuilder::empty(activation), activation)?;
     }
     let css = this
         .get_stored(istr!("_css"), activation)?
@@ -404,7 +400,7 @@ fn parse_css<'gc>(
                 for (key, value) in properties.into_iter() {
                     object.set(
                         AvmString::new(activation.gc(), transform_dashes_to_camel_case(key)),
-                        AvmString::new(activation.gc(), value).into(),
+                        AvmString::new(activation.gc(), value),
                         activation,
                     )?;
                 }
@@ -432,13 +428,9 @@ fn clear<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     this.set(
         istr!("_styles"),
-        ArrayBuilder::empty(activation).into(),
+        ArrayBuilder::empty(activation),
         activation,
     )?;
-    this.set(
-        istr!("_css"),
-        ArrayBuilder::empty(activation).into(),
-        activation,
-    )?;
+    this.set(istr!("_css"), ArrayBuilder::empty(activation), activation)?;
     Ok(Value::Undefined)
 }

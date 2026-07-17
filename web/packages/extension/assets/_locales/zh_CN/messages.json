@@ -38,6 +38,15 @@
     "settings_player_version": {
         "message": "要模拟的 Flash 播放器版本号 (范围 1-32)"
     },
+    "settings_background_execution_mode": {
+        "message": "后台运行"
+    },
+    "settings_background_execution_mode_none": {
+        "message": "暂停"
+    },
+    "settings_background_execution_mode_main_thread": {
+        "message": "在主线程运行"
+    },
     "settings_preferred_renderer": {
         "message": "首选渲染器"
     },

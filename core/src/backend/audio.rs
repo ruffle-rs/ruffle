@@ -67,6 +67,13 @@ pub struct SoundStreamInfo {
     pub stream_format: swf::SoundFormat,
     pub num_samples_per_block: u16,
     pub latency_seek: i16,
+
+    /// Codec-specific configuration data ("decoder specific info"), demuxed out
+    /// of the container ahead of the audio data itself, if any.
+    ///
+    /// For AAC this holds the `AudioSpecificConfig` (from an FLV AAC sequence
+    /// header, or an MP4 `esds` box). Codecs that don't need it leave it `None`.
+    pub extra_data: Option<Box<[u8]>>,
 }
 
 impl From<swf::SoundStreamHead> for SoundStreamInfo {
@@ -76,6 +83,7 @@ impl From<swf::SoundStreamHead> for SoundStreamInfo {
             stream_format: swfhead.stream_format,
             num_samples_per_block: swfhead.num_samples_per_block,
             latency_seek: swfhead.latency_seek,
+            extra_data: None,
         }
     }
 }

@@ -119,6 +119,11 @@ testing _global.flash.net(object)
 testing _global.flash.net.FileReferenceList(function)
 Trying to construct _global.flash.net.FileReferenceList
 Object was constructed
+Testing _listeners()
+Testing removeListener()
+Testing addListener()
+Testing broadcastMessage()
+Testing browse()
 Testing constructor()
 Testing __constructor__()
 testing _global.flash.net.FileReferenceList.__constructor__(undefined)

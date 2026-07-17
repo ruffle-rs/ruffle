@@ -1,6 +1,4 @@
 package flash.display {
-    import __ruffle__.stub_setter;
-
     import flash.events.ErrorEvent;
     import flash.events.EventDispatcher;
     import flash.display3D.Context3D;
@@ -45,24 +43,11 @@ package flash.display {
             }
         }
 
-        private var _x:Number;
-        private var _y:Number;
+        public native function get x():Number;
+        public native function set x(value:Number):void;
 
-        public function get x():Number {
-            return this._x;
-        }
-        public function set x(value:Number):void {
-            stub_setter("flash.display.Stage3D", "x");
-            this._x = value;
-        }
-
-        public function get y():Number {
-            return this._y;
-        }
-        public function set y(value:Number):void {
-            stub_setter("flash.display.Stage3D", "y");
-            this._y = value;
-        }
+        public native function get y():Number;
+        public native function set y(value:Number):void;
 
         public native function get visible():Boolean;
         public native function set visible(value:Boolean):void;

@@ -5,6 +5,8 @@ drop1
 dragging start
 dragging done
 // child.dropTarget.name
+TypeError: Error #1009: Cannot access a property or method of a null object reference. (accessing field: name)
+	at MethodInfo-2()
 dragging start
 dragging done
 // child.dropTarget.name

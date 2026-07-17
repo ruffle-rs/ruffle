@@ -36,3 +36,4 @@ y1.@b PASSED!
 y1.@* PASSED!
 Reserved keyword used as attribute name PASSED!
 Access non-existent attribute PASSED!
+TypeError: Error #2023: Class Test$ must inherit from Sprite to link to the root.

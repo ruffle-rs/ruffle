@@ -1,0 +1,10 @@
+num_ticks = 10
+
+[[compilers]]
+type = "Rascal"
+target = "test.swf"
+scripts = ["test.as"]
+swf_version = 8
+
+[shared_objects."localhost/test.swf/strict_array_test"]
+expected = "strict_array_test"

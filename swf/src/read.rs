@@ -11,6 +11,11 @@ use simple_asn1::ASN1Block;
 use std::borrow::Cow;
 use std::io::{self, Read};
 
+/// Maximum buffer capacity for reading the SWF.
+///
+/// Prevents large allocations in case the SWF has a malformed length.
+const MAX_DATA_CAPACITY: u32 = 128 * 1024 * 1024; // 128 MiB
+
 /// Parse a decompressed SWF.
 ///
 /// # Example
@@ -81,8 +86,14 @@ pub fn decompress_swf<'a, R: Read + 'a>(mut input: R) -> Result<SwfBuf> {
         return Err(Error::invalid_data("Invalid SWF version"));
     }
 
+    // Uncompressed length includes the 4-byte header and 4-byte uncompressed length itself,
+    // subtract it here.
+    let body_len = uncompressed_len
+        .checked_sub(8)
+        .ok_or_else(|| Error::invalid_data("Malformed SWF length"))?;
+
     // Now the SWF switches to a compressed stream.
-    let mut decompress_stream: Box<dyn Read> = match compression {
+    let decompress_stream: Box<dyn Read> = match compression {
         Compression::None => Box::new(input),
         Compression::Zlib => {
             if version < 6 {
@@ -94,15 +105,17 @@ pub fn decompress_swf<'a, R: Read + 'a>(mut input: R) -> Result<SwfBuf> {
             if version < 13 {
                 log::warn!("LZMA compressed SWF is version {version} but minimum version is 13");
             }
-            // Uncompressed length includes the 4-byte header and 4-byte uncompressed length itself,
-            // subtract it here.
-            make_lzma_reader(input, uncompressed_len - 8)?
+            make_lzma_reader(input, body_len)?
         }
     };
 
-    // Decompress the entire SWF.
-    let mut data = Vec::with_capacity(uncompressed_len as usize);
-    if let Err(e) = decompress_stream.read_to_end(&mut data) {
+    // Flash Player allocates a fixed buffer based on the header length and
+    // never accesses data beyond it. Match that behavior by capping reads here.
+    let mut data = Vec::with_capacity(body_len.min(MAX_DATA_CAPACITY) as usize);
+    if let Err(e) = decompress_stream
+        .take(body_len as u64)
+        .read_to_end(&mut data)
+    {
         log::error!("Error decompressing SWF: {e}");
     }
 
@@ -185,7 +198,7 @@ fn make_zlib_reader<'a, R: Read + 'a>(_input: R) -> Result<Box<dyn Read + 'a>> {
 #[cfg(feature = "lzma")]
 fn make_lzma_reader<'a, R: Read + 'a>(
     mut input: R,
-    uncompressed_length: u32,
+    unpacked_size: u32,
 ) -> Result<Box<dyn Read + 'a>> {
     use lzma_rs::{
         decompress::{Options, UnpackedSize},
@@ -210,12 +223,12 @@ fn make_lzma_reader<'a, R: Read + 'a>(
     let _ = input.read_u32::<LittleEndian>()?;
 
     // TODO: Switch to lzma-rs streaming API when stable.
-    let mut output = Vec::with_capacity(uncompressed_length as usize);
+    let mut output = Vec::with_capacity(unpacked_size.min(MAX_DATA_CAPACITY) as usize);
     lzma_decompress_with_options(
         &mut io::BufReader::new(input),
         &mut output,
         &Options {
-            unpacked_size: UnpackedSize::UseProvided(Some(uncompressed_length.into())),
+            unpacked_size: UnpackedSize::UseProvided(Some(unpacked_size.into())),
             allow_incomplete: true,
             memlimit: None,
         },
@@ -228,7 +241,7 @@ fn make_lzma_reader<'a, R: Read + 'a>(
 #[cfg(not(feature = "lzma"))]
 fn make_lzma_reader<'a, R: Read + 'a>(
     _input: R,
-    _uncompressed_length: u32,
+    _unpacked_size: u32,
 ) -> Result<Box<dyn Read + 'a>> {
     Err(Error::unsupported(
         "Support for LZMA compressed SWFs is not enabled.",
@@ -923,7 +936,7 @@ impl<'a> Reader<'a> {
         &mut self,
     ) -> Result<DefineSceneAndFrameLabelData<'a>> {
         let num_scenes = self.read_encoded_u32()? as usize;
-        let mut scenes = Vec::with_capacity(num_scenes);
+        let mut scenes = Vec::with_capacity(num_scenes.min(256));
         for _ in 0..num_scenes {
             scenes.push(FrameLabelData {
                 frame_num: self.read_encoded_u32()?,
@@ -932,7 +945,7 @@ impl<'a> Reader<'a> {
         }
 
         let num_frame_labels = self.read_encoded_u32()? as usize;
-        let mut frame_labels = Vec::with_capacity(num_frame_labels);
+        let mut frame_labels = Vec::with_capacity(num_frame_labels.min(256));
         for _ in 0..num_frame_labels {
             frame_labels.push(FrameLabelData {
                 frame_num: self.read_encoded_u32()?,
@@ -1215,18 +1228,19 @@ impl<'a> Reader<'a> {
         let id = self.read_character_id()?;
         let start_shape_bounds = self.read_rectangle()?;
         let end_shape_bounds = self.read_rectangle()?;
-        let start_edge_bounds;
-        let end_edge_bounds;
-        let flags;
-        if version >= 2 {
-            start_edge_bounds = self.read_rectangle()?;
-            end_edge_bounds = self.read_rectangle()?;
-            flags = DefineMorphShapeFlag::from_bits_truncate(self.read_u8()?);
+        let (start_edge_bounds, end_edge_bounds, flags) = if version >= 2 {
+            (
+                self.read_rectangle()?,
+                self.read_rectangle()?,
+                DefineMorphShapeFlag::from_bits_truncate(self.read_u8()?),
+            )
         } else {
-            start_edge_bounds = start_shape_bounds;
-            end_edge_bounds = end_shape_bounds;
-            flags = DefineMorphShapeFlag::HAS_NON_SCALING_STROKES;
-        }
+            (
+                start_shape_bounds,
+                end_shape_bounds,
+                DefineMorphShapeFlag::HAS_NON_SCALING_STROKES,
+            )
+        };
 
         self.read_u32()?; // Offset to EndEdges.
 
@@ -1464,15 +1478,14 @@ impl<'a> Reader<'a> {
     pub fn read_define_shape(&mut self, version: u8) -> Result<Shape> {
         let id = self.read_u16()?;
         let shape_bounds = self.read_rectangle()?;
-        let edge_bounds;
-        let flags;
-        if version >= 4 {
-            edge_bounds = self.read_rectangle()?;
-            flags = ShapeFlag::from_bits_truncate(self.read_u8()?);
+        let (edge_bounds, flags) = if version >= 4 {
+            (
+                self.read_rectangle()?,
+                ShapeFlag::from_bits_truncate(self.read_u8()?),
+            )
         } else {
-            edge_bounds = shape_bounds;
-            flags = ShapeFlag::HAS_NON_SCALING_STROKES;
-        }
+            (shape_bounds, ShapeFlag::HAS_NON_SCALING_STROKES)
+        };
 
         let (styles, num_fill_bits, num_line_bits) = self.read_shape_styles(version)?;
         let mut records = Vec::new();
@@ -2055,7 +2068,9 @@ impl<'a> Reader<'a> {
             let mut length = self.read_u32()?;
             let key_code = if events.contains(ClipEventFlag::KEY_PRESS) {
                 // ActionData length includes the 1 byte key code.
-                length -= 1;
+                length = length
+                    .checked_sub(1)
+                    .ok_or_else(|| Error::invalid_data("keyPress clip action without key code"))?;
                 Some(self.read_u8()?)
             } else {
                 None
@@ -2160,7 +2175,7 @@ impl<'a> Reader<'a> {
         let num_matrix_rows = self.read_u8()?;
         let divisor = self.read_f32()?;
         let bias = self.read_f32()?;
-        let num_entries = num_matrix_cols * num_matrix_rows;
+        let num_entries = num_matrix_cols as u16 * num_matrix_rows as u16;
         let mut matrix = Vec::with_capacity(num_entries as usize);
         for _ in 0..num_entries {
             matrix.push(self.read_f32()?);
@@ -2579,9 +2594,13 @@ pub mod tests {
         Reader::new(data, default_version)
     }
 
-    fn read_from_file(path: &str) -> SwfBuf {
+    fn try_read_from_file(path: &str) -> Result<SwfBuf> {
         let data = std::fs::read(path).unwrap();
-        decompress_swf(&data[..]).unwrap()
+        decompress_swf(&data[..])
+    }
+
+    fn read_from_file(path: &str) -> SwfBuf {
+        try_read_from_file(path).unwrap()
     }
 
     pub fn read_tag_bytes_from_file_with_index(
@@ -2654,6 +2673,8 @@ pub mod tests {
                 read_from_file("tests/swfs/lzma.swf").header.compression(),
                 Compression::Lzma
             );
+            assert!(try_read_from_file("tests/swfs/lzma-malformed-length.swf").is_err());
+            assert!(try_read_from_file("tests/swfs/lzma-length-too-large.swf").is_err());
         }
     }
 

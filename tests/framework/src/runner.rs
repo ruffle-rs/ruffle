@@ -2,12 +2,15 @@ mod automation;
 mod image_test;
 mod trace;
 
-use crate::backends::{TestAudioBackend, TestLogBackend, TestNavigatorBackend, TestUiBackend};
+use crate::backends::{
+    TestAudioBackend, TestLogBackend, TestNavigatorBackend, TestStorageBackend, TestUiBackend,
+};
 use crate::environment::RenderInterface;
 use crate::fs_commands::{FsCommand, TestFsCommandProvider};
 use crate::image_trigger::ImageTrigger;
 use crate::options::image_comparison::ImageComparison;
 use crate::options::known_failure::KnownFailure;
+use crate::options::shared_object::check_shared_objects;
 use crate::options::{AudioAssertion, TestOptions};
 use crate::runner::automation::perform_automated_event;
 use crate::runner::image_test::capture_and_compare_image;
@@ -93,6 +96,7 @@ impl TestRunner {
         let mut builder = PlayerBuilder::new()
             .with_log(log.clone())
             .with_navigator(navigator)
+            .with_storage(Box::new(TestStorageBackend::new()))
             .with_max_execution_duration(Duration::from_secs(300))
             .with_fs_commands(Box::new(fs_command_provider))
             .with_ui(TestUiBackend::new(test.fonts()?, test.font_sorts()))
@@ -376,6 +380,9 @@ impl TestRunner {
             ));
         }
 
+        if !self.options.shared_objects.is_empty() {
+            check_shared_objects(&self.player, &self.options.shared_objects, &self.root_path)?;
+        }
         self.executor.run();
 
         compare_trace_output(

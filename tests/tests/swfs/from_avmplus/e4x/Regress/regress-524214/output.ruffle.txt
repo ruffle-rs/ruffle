@@ -1,0 +1,1 @@
+RustError("Cannot set attribute Multiname { ns: Multiple([Namespace(Some(Namespace(\"\", SWF_38))), Namespace(Some(Private(\"\"))), Namespace(Some(Namespace(\"http://adobe.com/AS3/2006/builtin\", SWF_38)))]), name: None, param: None, flags: MultinameFlags(ATTRIBUTE | HAS_MULTIPLE_NS) } without a local name")

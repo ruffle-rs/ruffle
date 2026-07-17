@@ -34,8 +34,7 @@ export let runtime: typeof browser.runtime | typeof chrome.runtime;
 export let permissions: typeof browser.permissions | typeof chrome.permissions;
 
 export let declarativeNetRequest:
-    | typeof browser.declarativeNetRequest
-    | typeof chrome.declarativeNetRequest;
+    typeof browser.declarativeNetRequest | typeof chrome.declarativeNetRequest;
 
 function promisify<T>(
     func: (callback: (result: T) => void) => void,

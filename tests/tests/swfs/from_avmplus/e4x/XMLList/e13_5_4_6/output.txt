@@ -3,3 +3,4 @@ XML.ignoreComments = false, MYXML = new XMLList(xmlDoc), MYXML.comments() instan
 XML.ignoreComments = false, MYXML = new XMLList(xmlDoc), MYXML.comments() instanceof XML PASSED!
 XML.ignoreComments = false, MYXML = new XMLList(xmlDoc), MYXML.comments().length() PASSED!
 XML.ignoreComments = false, MYXML = new XMLList(xmlDoc), XML.ignoreComments = true, MYXML.comments().toString() PASSED!
+TypeError: Error #2023: Class Test$ must inherit from Sprite to link to the root.

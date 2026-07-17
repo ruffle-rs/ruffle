@@ -12,3 +12,4 @@ MYXML = new XML("<!-- this is a comment -->"), MYXML.nodeKind() PASSED!
 MYXML = new XML("<!-- this is a comment -->"), MYXML.children()[0].nodeKind() PASSED!
 MYXML = new XML("<XML><?foo this is a pi ?></XML>"), MYXML.nodeKind() PASSED!
 MYXML = new XML("<XML><?foo this is a pi ?></XML>"), MYXML.children()[0].nodeKind() PASSED!
+TypeError: Error #2023: Class Test$ must inherit from Sprite to link to the root.

@@ -40,7 +40,9 @@ pub fn do_copy<'gc>(
             let colors: Vec<_> = bytearray
                 .read_at((4 * width * height) as usize, byte_array_offset as usize)
                 .expect("Failed to read")
-                .chunks_exact(4)
+                .as_chunks::<4>()
+                .0
+                .iter()
                 .map(|chunk| {
                     // The ByteArray is in BGRA format. FIXME - should this be premultiplied?
                     Color::rgba(chunk[2], chunk[1], chunk[0], chunk[3])

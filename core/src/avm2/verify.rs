@@ -1,9 +1,9 @@
 use crate::avm2::class::Class;
 use crate::avm2::error::{
-    Error1014Type, make_error_1011, make_error_1014, make_error_1019, make_error_1020,
-    make_error_1021, make_error_1025, make_error_1026, make_error_1043, make_error_1051,
-    make_error_1054, make_error_1072, make_error_1078, make_error_1107, make_error_1113,
-    make_error_1114, make_error_1124,
+    Error1014Type, make_error_1011, make_error_1014, make_error_1015, make_error_1019,
+    make_error_1020, make_error_1021, make_error_1025, make_error_1026, make_error_1043,
+    make_error_1051, make_error_1054, make_error_1072, make_error_1078, make_error_1107,
+    make_error_1113, make_error_1124,
 };
 use crate::avm2::method::Method;
 use crate::avm2::op::{LookupSwitch, Op};
@@ -18,7 +18,7 @@ use swf::avm2::read::Reader;
 use swf::avm2::types::{
     Index, MethodFlags as AbcMethodFlags, Multiname as AbcMultiname, Op as AbcOp,
 };
-use swf::error::Error as AbcReadError;
+use swf::error::{AbcParseError, Error as AbcReadError};
 
 #[derive(Collect)]
 #[collect(no_drop)]
@@ -103,22 +103,23 @@ pub fn verify_method<'gc>(
     while let Some(i) = worklist.pop() {
         reader.seek_absolute(&body.code, i as usize);
         loop {
-            let previous_position = reader.pos(&body.code) as i32;
+            let previous_position = reader.pos(&body.code);
 
             // We've already verified this chunk of code, let's not run the logic again
-            if matches!(
-                byte_info.get(previous_position as usize),
-                Some(ByteInfo::OpStart(_))
-            ) {
+            if matches!(byte_info.get(previous_position), Some(ByteInfo::OpStart(_))) {
                 break;
             }
 
             let op = match reader.read_op() {
                 Ok(op) => op,
 
-                Err(AbcReadError::InvalidData(_)) => {
-                    // Invalid opcode
-                    return Err(make_error_1011(activation));
+                Err(AbcReadError::AbcParseError(AbcParseError::IllegalOpcode { opcode })) => {
+                    return Err(make_error_1011(
+                        activation,
+                        method,
+                        opcode,
+                        previous_position,
+                    ));
                 }
                 Err(AbcReadError::IoError(_)) => {
                     // Code flow continued past end of method
@@ -126,6 +127,8 @@ pub fn verify_method<'gc>(
                 }
                 Err(_) => unreachable!(),
             };
+
+            let previous_position = previous_position as i32;
 
             if op_can_throw_error(&op) {
                 for (exception_index, exception) in body.exceptions.iter().enumerate() {
@@ -686,7 +689,7 @@ fn translate_op<'gc>(
         }
 
         AbcOp::Dxns { .. } | AbcOp::DxnsLate if !method.sets_dxns() => {
-            return Err(make_error_1114(activation));
+            return Err(make_error_1015(activation, method));
         }
 
         _ => {}

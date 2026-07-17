@@ -104,10 +104,10 @@ impl TryFrom<u8> for SoundType {
     }
 }
 
-/// NOTE: For the `Aac*` variants, the discriminator byte is kept in the payload.
-///
-/// This is `0x00` for `AacSequenceHeader` and `0x01` for `AacRaw`.
-/// While it's redundant, it's useful for the substream decoder.
+/// NOTE: For the `Aac*` variants, the leading packet-type byte (`0x00` for a
+/// sequence header, `0x01` for a raw access unit) has been stripped off: the
+/// variant itself already encodes that distinction, so the payload holds only
+/// the actual AAC data.
 #[derive(PartialEq, Eq, Debug, Clone)]
 pub enum AudioDataType<'a> {
     Raw(&'a [u8]),
@@ -152,12 +152,14 @@ impl<'a> AudioData<'a> {
 
         let data = match format {
             SoundFormat::Aac => {
-                let aac_packet_type = data.first().ok_or(Error::ShortAudioBlock)?;
-                // NOTE: The first byte is kept in the payload.
+                // The leading packet-type byte is FLV-specific framing; strip it
+                // here so the payload holds only the raw AAC data.
+                let (aac_packet_type, aac_data) =
+                    data.split_first().ok_or(Error::ShortAudioBlock)?;
                 match aac_packet_type {
                     //TODO: The FLV spec says this is explained in ISO 14496-3.
-                    0 => AudioDataType::AacSequenceHeader(data),
-                    1 => AudioDataType::AacRaw(data),
+                    0 => AudioDataType::AacSequenceHeader(aac_data),
+                    1 => AudioDataType::AacRaw(aac_data),
                     unk => return Err(Error::UnknownAacPacketType(*unk)),
                 }
             }
@@ -237,7 +239,7 @@ mod tests {
                 rate: SoundRate::R44_000,
                 size: SoundSize::Bits8,
                 sound_type: SoundType::Stereo,
-                data: AudioDataType::AacRaw(&[0x01, 0x12, 0x34, 0x56, 0x78])
+                data: AudioDataType::AacRaw(&[0x12, 0x34, 0x56, 0x78])
             })
         );
     }

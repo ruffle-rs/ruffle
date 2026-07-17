@@ -6,8 +6,8 @@ use proc_macro2::{Span, TokenStream as TokenStream2};
 use quote::{format_ident, quote};
 use syn::parse::{Parse, ParseStream};
 use syn::{
-    DeriveInput, FnArg, ImplItem, ImplItemFn, ItemEnum, ItemTrait, LitStr, Meta, Pat, TraitItem,
-    Visibility, parse_macro_input, parse_quote,
+    Data, DeriveInput, FnArg, ImplItem, ImplItemFn, ItemEnum, ItemTrait, LitStr, Meta, Pat,
+    TraitItem, Visibility, parse_macro_input, parse_quote,
 };
 
 /// Define an enum whose variants each implement a trait.
@@ -464,4 +464,118 @@ fn atom_internal(
     }
 
     transform(atom).into()
+}
+
+struct AvmEnumConfig {
+    attr_name: &'static str,
+    trait_path: TokenStream2,
+    from_method: &'static str,
+    as_method: &'static str,
+}
+
+fn derive_avm_enum_impl(input: DeriveInput, config: AvmEnumConfig) -> syn::Result<TokenStream2> {
+    let name = &input.ident;
+
+    let variants = match &input.data {
+        Data::Enum(data) => &data.variants,
+        _ => {
+            return Err(syn::Error::new_spanned(
+                &input.ident,
+                "can only be derived for enums",
+            ));
+        }
+    };
+
+    let mut str_vals: Vec<LitStr> = Vec::new();
+    let mut variant_idents: Vec<&syn::Ident> = Vec::new();
+
+    for variant in variants {
+        if !variant.fields.is_empty() {
+            return Err(syn::Error::new_spanned(
+                variant,
+                "variants with fields are not supported",
+            ));
+        }
+        let attr = variant
+            .attrs
+            .iter()
+            .find(|a| a.path().is_ident(config.attr_name));
+        match attr {
+            Some(a) => {
+                str_vals.push(a.parse_args::<LitStr>()?);
+                variant_idents.push(&variant.ident);
+            }
+            None => {
+                return Err(syn::Error::new_spanned(
+                    variant,
+                    format!("missing `#[{}(\"...\")]` attribute", config.attr_name),
+                ));
+            }
+        }
+    }
+
+    let byte_strs: Vec<syn::LitByteStr> = str_vals
+        .iter()
+        .map(|s| syn::LitByteStr::new(s.value().as_bytes(), s.span()))
+        .collect();
+
+    let trait_path = &config.trait_path;
+    let from_method = format_ident!("{}", config.from_method);
+    let as_method = format_ident!("{}", config.as_method);
+
+    let (impl_generics, ty_generics, where_clause) = input.generics.split_for_impl();
+
+    Ok(quote! {
+        #[automatically_derived]
+        impl #impl_generics #trait_path for #name #ty_generics #where_clause {
+            fn #from_method(s: &::ruffle_wstr::WStr) -> ::core::option::Option<Self> {
+                #(if s == #byte_strs { return ::core::option::Option::Some(Self::#variant_idents); })*
+                ::core::option::Option::None
+            }
+
+            fn #as_method<'gc>(&self, context: &impl crate::string::HasStringContext<'gc>) -> crate::string::AvmString<'gc> {
+                match self {
+                    #(Self::#variant_idents => ::ruffle_macros::istr!(context, #str_vals),)*
+                }
+            }
+        }
+    })
+}
+
+/// Derives [`crate::avm1::Avm1StrRepresentable`] for an enum.
+///
+/// Each variant must be annotated with `#[avm1_variant("string")]`.
+#[proc_macro_derive(Avm1Enum, attributes(avm1_variant))]
+pub fn derive_avm1_enum(input: TokenStream) -> TokenStream {
+    let input = parse_macro_input!(input as DeriveInput);
+    derive_avm_enum_impl(
+        input,
+        AvmEnumConfig {
+            attr_name: "avm1_variant",
+            trait_path: quote!(crate::avm1::Avm1StrRepresentable),
+            from_method: "from_avm1_str",
+            as_method: "as_avm1_str",
+        },
+    )
+    .unwrap_or_else(|e| e.to_compile_error())
+    .into()
+}
+
+/// Derives [`crate::avm2::Avm2StrRepresentable`] for an enum.
+///
+/// Each variant must be annotated with `#[avm2_variant("string")]`.
+#[proc_macro_derive(Avm2Enum, attributes(avm2_variant))]
+pub fn derive_avm2_enum(input: TokenStream) -> TokenStream {
+    let input = parse_macro_input!(input as DeriveInput);
+    derive_avm_enum_impl(
+        input,
+        AvmEnumConfig {
+            attr_name: "avm2_variant",
+            trait_path: quote!(crate::avm2::Avm2StrRepresentable),
+            from_method: "from_avm2_str",
+            as_method: "as_avm2_str",
+        },
+    )
+    .unwrap_or_else(|e| e.to_compile_error())
+    .into()
 }

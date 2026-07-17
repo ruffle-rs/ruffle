@@ -30,6 +30,7 @@ jobs:
       upload_url: ${{ steps.create_release.outputs.upload_url }}
       package_prefix: ${{ steps.create_release.outputs.package_prefix }}
       tag_name: ${{ steps.commit.outputs.tag_name }}
+      version: ${{ steps.version.outputs.version }}
       version4: ${{ steps.version.outputs.version4 }}
       release_channel: ${{ steps.configure.outputs.release_channel }}
 
@@ -37,7 +38,7 @@ jobs:
     if: github.repository == 'ruffle-rs/ruffle' || github.event_name == 'repository_dispatch' || github.event_name == 'workflow_dispatch'
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           token: ${{ secrets.RUFFLE_BUILD_TOKEN }}
 
@@ -164,7 +165,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - name: Clone Ruffle repo
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           ref: ${{ needs.create-release.outputs.tag_name }}
 
@@ -262,7 +263,7 @@ jobs:
       PACKAGE_FILE: ${{ needs.create-release.outputs.package_prefix }}-macos-universal.tar.gz
     steps:
       - name: Clone Ruffle repo
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           ref: ${{ needs.create-release.outputs.tag_name }}
 
@@ -297,6 +298,13 @@ jobs:
           cp -r desktop/packages/macOS package/Ruffle.app
           mkdir package/Ruffle.app/Contents/MacOS
           mv package/ruffle package/Ruffle.app/Contents/MacOS/ruffle
+
+      - name: Set app version in plist
+        # This needs to be stable only because Apple doesn't support semver
+        if: needs.create-release.outputs.release_channel == 'stable'
+        run: |
+          plutil -replace CFBundleShortVersionString -string "${{ needs.create-release.outputs.version }}" package/Ruffle.app/Contents/Info.plist
+          plutil -replace CFBundleVersion -string "${{ needs.create-release.outputs.version }}" package/Ruffle.app/Contents/Info.plist
 
       - name: Compile asset catalog
         run: |
@@ -333,6 +341,7 @@ jobs:
           codesign --verify -vvvv package/Ruffle.app
 
       - name: Notarize bundle
+        id: notarize-bundle
         continue-on-error: true
         run: |
           xcrun notarytool store-credentials "Ruffle" --apple-id ${{ secrets.APPLE_ID }} --team-id ${{ secrets.APPLE_TEAM }} --password ${{ secrets.APPLE_APP_PASSWORD }}
@@ -342,6 +351,19 @@ jobs:
           cd ..
           xcrun notarytool submit Ruffle.zip --keychain-profile Ruffle --wait
           xcrun stapler staple package/Ruffle.app
+
+      - name: Report notarization failure on Discord
+        uses: stegzilla/discord-notify@v5
+        if: ${{ steps.notarize-bundle.outcome == 'failure' && github.repository == 'ruffle-rs/ruffle' }}
+        continue-on-error: true
+        with:
+          webhook_url: ${{ secrets.DISCORD_WEBHOOK_UPDATES }}
+          title: "macOS notarization failed"
+          message: |
+            Notarize macOS universal binary bundle step failed
+            [View workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+          username: "GitHub Actions"
+          colour: "#fc2929"
 
       - name: Package macOS
         run: |
@@ -361,7 +383,7 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - name: Clone Ruffle repo
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           ref: ${{ needs.create-release.outputs.tag_name }}
 
@@ -371,7 +393,7 @@ jobs:
           toolchain: stable
 
       - name: Generate report
-        run: ./stub-report/generate-report.sh
+        run: cargo run --locked --package stub-report -- --avm2-report avm2_report.json
 
       - name: Upload report
         run: gh release upload "${{ needs.create-release.outputs.tag_name }}" avm2_report.json
@@ -394,7 +416,7 @@ jobs:
       statuses: write
     steps:
       - name: Clone Ruffle repo
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           ref: ${{ needs.create-release.outputs.tag_name }}
 
@@ -415,7 +437,7 @@ jobs:
       # Be sure to update in test_web.yml, Cargo.toml, web/docker/Dockerfile,
       # and web/README.md as well.
       - name: Install wasm-bindgen
-        run: cargo install wasm-bindgen-cli --version 0.2.120
+        run: cargo install --locked wasm-bindgen-cli --version 0.2.120
 
       # Keep the version number in sync in all workflows,
       # and in the extension builder Dockerfile!
@@ -496,7 +518,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Publish Chrome extension
-        if: env.CHROME_EXTENSION_ID != '' && needs.create-release.outputs.release_channel == 'nightly'
+        if: env.CHROME_EXTENSION_ID != '' && needs.create-release.outputs.release_channel == 'stable'
         id: publish-chrome-extension
         continue-on-error: true
         env:
@@ -510,7 +532,7 @@ jobs:
           file-path: ./web/packages/extension/dist/ruffle_extension.zip
 
       - name: Publish Edge extension
-        if: env.EDGE_PRODUCT_ID != '' && needs.create-release.outputs.release_channel == 'nightly'
+        if: env.EDGE_PRODUCT_ID != '' && needs.create-release.outputs.release_channel == 'stable'
         id: publish-edge-extension
         continue-on-error: true
         env:
@@ -523,7 +545,7 @@ jobs:
           api-key: ${{ secrets.EDGE_API_KEY }}
 
       - name: Publish Firefox extension
-        if: env.FIREFOX_EXTENSION_ID != '' && needs.create-release.outputs.release_channel == 'nightly'
+        if: env.FIREFOX_EXTENSION_ID != '' && needs.create-release.outputs.release_channel == 'stable'
         id: publish-firefox-extension
         continue-on-error: true
         env:
@@ -577,7 +599,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Clone JS docs
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         if: needs.create-release.outputs.release_channel == 'nightly'
         with:
           repository: ruffle-rs/js-docs
@@ -612,7 +634,7 @@ jobs:
           force: true
 
       - name: Clone web demo
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         if: needs.create-release.outputs.release_channel == 'nightly'
         with:
           repository: ruffle-rs/demo
@@ -655,7 +677,7 @@ jobs:
     runs-on: ubuntu-24.04
     if: github.repository == 'ruffle-rs/ruffle' && needs.create-release.outputs.release_channel == 'nightly'
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           ref: ${{ needs.create-release.outputs.tag_name }}
 

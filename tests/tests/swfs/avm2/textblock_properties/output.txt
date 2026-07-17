@@ -1,0 +1,118 @@
+true
+null
+12
+roman
+0
+null
+null
+null
+null
+rotate0
+null
+[object SpaceJustifier]
+null
+applyNonLinearFontScaling
+  Value:true
+  Value:false
+baselineFontDescription
+  Value:null
+  Value:[object FontDescription]
+baselineFontSize
+  Value:0
+  Value:0
+  Value:0.1
+  Value:0.5
+  Value:0.9
+  Value:1.1
+  Value:1.5
+  Value:100
+  Value:100000
+  Caught error:ArgumentError: Error #2004: One of the parameters is invalid.
+	at flash.text.engine::TextBlock/set baselineFontSize()
+  Value:100000
+  Caught error:ArgumentError: Error #2004: One of the parameters is invalid.
+	at flash.text.engine::TextBlock/set baselineFontSize()
+  Value:100000
+  Value:NaN
+  Value:Infinity
+  Caught error:ArgumentError: Error #2004: One of the parameters is invalid.
+	at flash.text.engine::TextBlock/set baselineFontSize()
+  Value:Infinity
+baselineZero
+  Caught error:TypeError: Error #2007: Parameter baselineZero must be non-null.
+	at flash.text.engine::TextBlock/set baselineZero()
+  Value:roman
+  Caught error:ArgumentError: Error #2008: Parameter baselineZero must be one of the accepted values.
+	at flash.text.engine::TextBlock/set baselineZero()
+  Value:roman
+  Caught error:ArgumentError: Error #2008: Parameter baselineZero must be one of the accepted values.
+	at flash.text.engine::TextBlock/set baselineZero()
+  Value:roman
+  Value:ascent
+  Caught error:ArgumentError: Error #2008: Parameter baselineZero must be one of the accepted values.
+	at flash.text.engine::TextBlock/set baselineZero()
+  Value:ascent
+  Value:descent
+  Value:ideographicBottom
+  Value:ideographicCenter
+  Value:ideographicTop
+  Value:roman
+  Caught error:ArgumentError: Error #2008: Parameter baselineZero must be one of the accepted values.
+	at flash.text.engine::TextBlock/set baselineZero()
+  Value:roman
+bidiLevel
+  Value:0
+  Value:0
+  Value:1
+  Value:2
+  Value:5
+  Value:50
+  Value:5000
+  Caught error:ArgumentError: Error #2004: One of the parameters is invalid.
+	at flash.text.engine::TextBlock/set bidiLevel()
+  Value:5000
+  Caught error:ArgumentError: Error #2004: One of the parameters is invalid.
+	at flash.text.engine::TextBlock/set bidiLevel()
+  Value:5000
+content
+  Value:null
+  Value:[object TextElement]
+lineRotation
+  Caught error:TypeError: Error #2007: Parameter lineRotation must be non-null.
+	at flash.text.engine::TextBlock/set lineRotation()
+  Value:rotate0
+  Caught error:ArgumentError: Error #2008: Parameter lineRotation must be one of the accepted values.
+	at flash.text.engine::TextBlock/set lineRotation()
+  Value:rotate0
+  Caught error:ArgumentError: Error #2008: Parameter lineRotation must be one of the accepted values.
+	at flash.text.engine::TextBlock/set lineRotation()
+  Value:rotate0
+  Caught error:ArgumentError: Error #2008: Parameter lineRotation must be one of the accepted values.
+	at flash.text.engine::TextBlock/set lineRotation()
+  Value:rotate0
+  Caught error:ArgumentError: Error #2008: Parameter lineRotation must be one of the accepted values.
+	at flash.text.engine::TextBlock/set lineRotation()
+  Value:rotate0
+  Value:rotate0
+  Caught error:ArgumentError: Error #2008: Parameter lineRotation must be one of the accepted values.
+	at flash.text.engine::TextBlock/set lineRotation()
+  Value:rotate0
+  Value:rotate90
+  Value:rotate180
+  Value:rotate270
+tabStops
+  Value:null
+  Value:
+textJustifier
+  Caught error:TypeError: Error #2007: Parameter textJustifier must be non-null.
+	at flash.text.engine::TextBlock/setTextJustifier()
+  Value:[object SpaceJustifier]
+  Value:[object SpaceJustifier]
+tabStops mutability
+1
+1
+1
+0
+2
+3
+4

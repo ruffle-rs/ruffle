@@ -5,4 +5,6 @@ import {
     FLASH_PLUGIN,
 } from "ruffle-core/dist/plugin-polyfill.js";
 
-installPlugin(FLASH_PLUGIN);
+if (!document.documentElement.hasAttribute("data-ruffle-optout")) {
+    installPlugin(FLASH_PLUGIN);
+}

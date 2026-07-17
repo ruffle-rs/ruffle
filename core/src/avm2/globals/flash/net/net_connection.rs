@@ -282,10 +282,8 @@ pub fn call<'gc>(
 
     let mut object_table = FnvHashMap::default();
     for arg in &args[2..] {
-        if let Some(value) = serialize_value(activation, *arg, AMFVersion::AMF0, &mut object_table)
-        {
-            arguments.push(Rc::new(value));
-        }
+        let value = serialize_value(activation, *arg, AMFVersion::AMF0, &mut object_table);
+        arguments.push(Rc::new(value));
     }
 
     if let Some(handle) = connection.handle() {
@@ -340,8 +338,7 @@ pub fn add_header<'gc>(
         args.get_value(2),
         AMFVersion::AMF0,
         &mut Default::default(),
-    )
-    .unwrap_or(AMFValue::Null);
+    );
 
     if let Some(handle) = connection.handle() {
         activation.context.net_connections.set_header(

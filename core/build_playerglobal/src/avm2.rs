@@ -318,6 +318,28 @@ fn rust_path_and_trait_name(
     (path, name)
 }
 
+/// When compiling playerglobal, `asc` leaves the name of anonymous functions
+/// unset (index 0), instead of pointing it at an empty string like in FP's
+/// playerglobal. This function patches it.
+///
+/// This is observable in FP because you can have a playerglobal anonymous
+/// function in the stack trace.
+fn fix_anonymous_methods(abc: &mut AbcFile) {
+    let empty_string_index = match abc.constant_pool.strings.iter().position(Vec::is_empty) {
+        Some(pos) => pos as u32 + 1,
+        None => {
+            abc.constant_pool.strings.push(Vec::new());
+            abc.constant_pool.strings.len() as u32
+        }
+    };
+
+    for method in &mut abc.methods {
+        if method.name.0 == 0 {
+            method.name = Index::new(empty_string_index);
+        }
+    }
+}
+
 fn strip_metadata(abc: &mut AbcFile) {
     abc.metadata.clear();
     for instance in &mut abc.instances {
@@ -766,6 +788,8 @@ fn write_native_table(data: &[u8], out_dir: &Path) -> Result<Vec<u8>, Box<dyn st
 
     let mut native_table_file = File::create(out_dir.join("native_table.rs"))?;
     native_table_file.write_all(make_native_table.as_bytes())?;
+
+    fix_anonymous_methods(&mut abc);
 
     // Ruffle doesn't need metadata items at runtime, so strip
     // them out to save space

@@ -111,8 +111,12 @@ impl<'a> ActivationIdentifier<'a> {
     ) -> Result<Self, Error<'gc>> {
         let (function_count, special_count) = match reason {
             ExecutionReason::FunctionCall | ExecutionReason::ConstructorCall => {
-                if self.function_count >= max_recursion_depth - 1 {
-                    return Err(Error::FunctionRecursionLimit(max_recursion_depth));
+                (self.function_count + 1, self.special_count)
+            }
+            ExecutionReason::PropertyCall { property_id } => {
+                const PROPERTY_RECURSION_LIMIT: u16 = 65;
+                if self.is_over_property_recursion_limit(property_id, PROPERTY_RECURSION_LIMIT) {
+                    return Err(Error::PropertyRecursionLimit);
                 }
                 (self.function_count + 1, self.special_count)
             }
@@ -123,6 +127,11 @@ impl<'a> ActivationIdentifier<'a> {
                 (self.function_count, self.special_count + 1)
             }
         };
+
+        if function_count >= max_recursion_depth {
+            return Err(Error::FunctionRecursionLimit(max_recursion_depth));
+        }
+
         Ok(Self {
             parent: Some(self),
             reason,
@@ -131,6 +140,34 @@ impl<'a> ActivationIdentifier<'a> {
             function_count,
             special_count,
         })
+    }
+
+    fn is_over_property_recursion_limit(&self, property_id: u32, limit: u16) -> bool {
+        if limit == 0 {
+            return true;
+        }
+
+        if self.depth < limit {
+            // The stack is not big enough, the limit couldn't have been hit.
+            // Exit early.
+            return false;
+        }
+
+        let parent_limit = if let ExecutionReason::PropertyCall {
+            property_id: other_id,
+        } = self.reason
+            && other_id == property_id
+        {
+            limit - 1
+        } else {
+            limit
+        };
+
+        if let Some(parent) = self.parent {
+            parent.is_over_property_recursion_limit(property_id, parent_limit)
+        } else {
+            false
+        }
     }
 
     pub fn depth(&self) -> u16 {
@@ -1075,7 +1112,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             Attribute::DONT_ENUM,
         );
 
-        subclass.set(istr!(self, "prototype"), sub_prototype.into(), self)?;
+        subclass.set(istr!(self, "prototype"), sub_prototype, self)?;
 
         Ok(FrameControl::Continue)
     }
@@ -1930,36 +1967,12 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         }
 
         match target {
-            Value::String(target) => {
-                return self.set_target(&target);
-            }
             Value::Undefined => {
                 // In SWF6 and below, SetTarget2 on an undefined object resets the target to the base clip
                 if self.swf_version() > 6 {
                     self.set_target_clip(None);
                 } else {
                     self.set_target_clip(Some(base_clip));
-                }
-            }
-            Value::Object(o) => {
-                if let Some(clip) = o.as_display_object() {
-                    // MovieClips can be targeted directly.
-                    self.set_target_clip(Some(clip));
-                } else {
-                    // Other objects get coerced to string.
-                    let target = target.coerce_to_string(self)?;
-                    return self.set_target(&target);
-                }
-            }
-            Value::MovieClip(_) => {
-                let o = target.coerce_to_object_or_bare(self)?;
-                if let Some(clip) = o.as_display_object() {
-                    // MovieClips can be targeted directly.
-                    self.set_target_clip(Some(clip));
-                } else {
-                    // Other objects get coerced to string.
-                    let target = target.coerce_to_string(self)?;
-                    return self.set_target(&target);
                 }
             }
             _ => {
@@ -2187,15 +2200,26 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
     fn action_trace(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
         let val = self.context.avm1.pop();
-        // trace always prints "undefined" even though SWF6 and below normally
-        // coerce undefined to "".
+
+        let mut ctrl = Ok(FrameControl::Continue);
         let out = if val == Value::Undefined {
-            WStr::from_units(b"undefined")
+            // trace always prints "undefined" even though SWF6 and below normally
+            // coerce undefined to "".
+            "undefined".into()
         } else {
-            &val.coerce_to_string(self)?
+            match val.coerce_to_string(self) {
+                Ok(s) => s.as_wstr().to_utf8_lossy(),
+                // If the coercion throws, trace both prints a fallback value and
+                // propagates the exception.
+                Err(err) => {
+                    ctrl = Err(err);
+                    "[type Object]".into()
+                }
+            }
         };
-        self.context.avm_trace(&out.to_utf8_lossy());
-        Ok(FrameControl::Continue)
+
+        self.context.avm_trace(&out);
+        ctrl
     }
 
     fn action_try(

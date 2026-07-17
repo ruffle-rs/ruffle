@@ -1,0 +1,15 @@
+test.jpg
+[object Bitmap] image/jpeg
+transparent:
+false
+
+test.png
+[object Bitmap] image/png
+transparent:
+false
+
+test_rgba.png
+[object Bitmap] image/png
+transparent:
+true
+

@@ -19,6 +19,10 @@ impl PlayerEnvironment {
             config.push_str("ErrorReportingEnable=1\n");
         }
 
+        // Automatically dismiss exception dialogs as they require user
+        // interaction.
+        config.push_str("SuppressDebuggerExceptionDialogs=1\n");
+
         fs::write(root.child("mm.cfg"), config).unwrap();
         Self { root, log_file }
     }

@@ -1,0 +1,1 @@
+VerifyError: Error #1011: Method Test() contained illegal opcode 10 at offset 0.

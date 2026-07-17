@@ -21,6 +21,7 @@ import { RUFFLE_ORIGIN } from "../constants";
 import {
     InvalidOptionsError,
     InvalidSwfError,
+    LoadBeginError,
     LoadRuffleWasmError,
     LoadSwfError,
 } from "../errors";
@@ -109,9 +110,7 @@ interface ContextMenuItem {
  */
 function sanitizeParameters(
     parameters:
-        | (URLSearchParams | string | Record<string, string>)
-        | undefined
-        | null,
+        (URLSearchParams | string | Record<string, string>) | undefined | null,
 ): Record<string, string> {
     if (parameters === null || parameters === undefined) {
         return {};
@@ -1024,7 +1023,7 @@ export class InnerPlayer {
             }
         } catch (e) {
             console.error(`Serious error occurred loading SWF file: ${e}`);
-            const err = new Error(e as string);
+            const err = new LoadBeginError(e as string);
             this.panic(err);
             throw err;
         }

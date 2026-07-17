@@ -8,7 +8,7 @@ use crate::avm1::property_decl::{DeclContext, PropertyOrder, StaticDeclarations,
 use crate::avm1::{Object, Value};
 use crate::avm1_stub;
 use crate::display_object::TDisplayObject;
-use crate::string::AvmString;
+use ruffle_common::avm_string::HasStringContext;
 use ruffle_macros::istr;
 
 const PROTO_DECLS: StaticDeclarations = declare_static_properties! {
@@ -325,11 +325,12 @@ pub fn as_set_prop_flags<'gc>(
         }
         Some(v) => {
             let props = v.coerce_to_string(activation)?;
+
             if props.contains(b',') {
-                for prop_name in props.split(b',') {
+                for prop_name in props.split_dependent(activation.strings_ref(), b',') {
                     object.set_attributes(
                         activation.gc(),
-                        Some(AvmString::new(activation.gc(), prop_name)),
+                        Some(prop_name),
                         set_attributes,
                         clear_attributes,
                     )

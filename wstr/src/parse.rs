@@ -86,6 +86,7 @@ mod int_parse {
 
     pub trait IntParse: Sized {
         const SIGNED: bool;
+        const WRAPPING: bool;
 
         fn from_digit(n: u32) -> Self;
         fn checked_add(self, n: u32) -> Option<Self>;
@@ -111,7 +112,7 @@ mod int_parse {
             return None;
         }
 
-        if is_neg && !T::SIGNED {
+        if is_neg && !T::WRAPPING && !T::SIGNED {
             return None;
         }
 
@@ -133,6 +134,7 @@ macro_rules! impl_int_parse {
         impl int_parse::IntParse for $ty {
             #[allow(unused_comparisons)]
             const SIGNED: bool = <$ty>::MIN < 0;
+            const WRAPPING: bool = false;
 
             #[inline]
             fn from_digit(n: u32) -> Self {
@@ -157,13 +159,14 @@ macro_rules! impl_int_parse {
     )* }
 }
 
-impl_int_parse! { u8 u32 i32 usize }
+impl_int_parse! { u8 u16 u32 i32 usize }
 
 macro_rules! impl_wrapping_int_parse {
     ($($ty:ty)*) => { $(
         impl int_parse::IntParse for Wrapping<$ty> {
             #[allow(unused_comparisons)]
             const SIGNED: bool = <$ty>::MIN < 0;
+            const WRAPPING: bool = true;
 
             #[inline]
             fn from_digit(n: u32) -> Self {
@@ -188,7 +191,7 @@ macro_rules! impl_wrapping_int_parse {
     )* }
 }
 
-impl_wrapping_int_parse! { u8 u32 i32 usize }
+impl_wrapping_int_parse! { u8 u16 u32 i32 usize }
 
 macro_rules! impl_from_str_int {
     ($($ty:ty)*) => { $(
@@ -224,4 +227,4 @@ macro_rules! impl_from_str_int {
     )* }
 }
 
-impl_from_str_int! { u8 u32 i32 usize }
+impl_from_str_int! { u8 u16 u32 i32 usize }

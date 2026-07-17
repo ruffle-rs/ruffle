@@ -2023,6 +2023,8 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                     ((n1 as i64 + n2 as i64) as f64).into()
                 }
             }
+            (Value::Integer(n1), Value::Number(n2)) => (n1 as f64 + n2).into(),
+            (Value::Number(n1), Value::Integer(n2)) => (n1 + n2 as f64).into(),
             (Value::Number(n1), Value::Number(n2)) => (n1 + n2).into(),
             (Value::String(s), value2) => Value::String(AvmString::concat(
                 self.gc(),
@@ -2144,8 +2146,9 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
     fn op_decrement(&mut self) -> Result<(), Error<'gc>> {
         let value = self.pop_stack().coerce_to_number(self)?;
+        let result = Value::from(value - 1.0);
 
-        self.push_stack(value - 1.0);
+        self.push_stack(result.try_promote_number());
 
         Ok(())
     }
@@ -2161,8 +2164,9 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     fn op_divide(&mut self) -> Result<(), Error<'gc>> {
         let value2 = self.pop_stack().coerce_to_number(self)?;
         let value1 = self.pop_stack().coerce_to_number(self)?;
+        let result = Value::from(value1 / value2);
 
-        self.push_stack(value1 / value2);
+        self.push_stack(result.try_promote_number());
 
         Ok(())
     }
@@ -2185,8 +2189,9 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
     fn op_increment(&mut self) -> Result<(), Error<'gc>> {
         let value = self.pop_stack().coerce_to_number(self)?;
+        let result = Value::from(value + 1.0);
 
-        self.push_stack(value + 1.0);
+        self.push_stack(result.try_promote_number());
 
         Ok(())
     }
@@ -2284,6 +2289,8 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                     ((n1 as i64 - n2 as i64) as f64).into()
                 }
             }
+            (Value::Integer(n1), Value::Number(n2)) => (n1 as f64 - n2).into(),
+            (Value::Number(n1), Value::Integer(n2)) => (n1 - n2 as f64).into(),
             (Value::Number(n1), Value::Number(n2)) => (n1 - n2).into(),
             _ => {
                 let value2 = value2.coerce_to_number(self)?;
