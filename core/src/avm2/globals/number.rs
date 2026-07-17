@@ -50,16 +50,11 @@ pub fn call_handler<'gc>(
         .into())
 }
 
-/// Implements `Number.toExponential`
-pub fn to_exponential<'gc>(
+fn to_exponential<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Value<'gc>,
-    args: &[Value<'gc>],
+    number: f64,
+    digits: i32,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let number = this.as_f64();
-
-    let digits = args.get_value(0).coerce_to_i32(activation)?;
-
     if digits < 0 || digits > 20 {
         return Err(make_error_1002(activation));
     }
@@ -80,16 +75,11 @@ pub fn to_exponential<'gc>(
     Ok(AvmString::new_utf8(activation.gc(), string).into())
 }
 
-/// Implements `Number.toFixed`
-pub fn to_fixed<'gc>(
+fn to_fixed<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Value<'gc>,
-    args: &[Value<'gc>],
+    number: f64,
+    digits: i32,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let number = this.as_f64();
-
-    let digits = args.get_value(0).coerce_to_i32(activation)?;
-
     if digits < 0 || digits > 20 {
         return Err(make_error_1002(activation));
     }
@@ -97,11 +87,15 @@ pub fn to_fixed<'gc>(
     Ok(AvmString::new_utf8(activation.gc(), format!("{0:.1$}", number, digits as usize)).into())
 }
 
-pub fn print_with_precision<'gc>(
+fn print_with_precision<'gc>(
     activation: &mut Activation<'_, 'gc>,
     number: f64,
     wanted_digits: u32,
 ) -> Result<AvmString<'gc>, Error<'gc>> {
+    if number.is_infinite() || number.is_nan() {
+        return Value::from(number).coerce_to_string(activation);
+    }
+
     let mut available_digits = number.abs().log10().floor();
     if available_digits.is_nan() || available_digits.is_infinite() {
         available_digits = 1.0;
@@ -125,21 +119,34 @@ pub fn print_with_precision<'gc>(
     }
 }
 
-/// Implements `Number.toPrecision`
-pub fn to_precision<'gc>(
+fn to_precision<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Value<'gc>,
-    args: &[Value<'gc>],
+    number: f64,
+    wanted_digits: i32,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let number = this.as_f64();
-
-    let wanted_digits = args.get_value(0).coerce_to_i32(activation)?;
-
     if wanted_digits < 1 || wanted_digits > 21 {
         return Err(make_error_1002(activation));
     }
 
     Ok(print_with_precision(activation, number, wanted_digits as u32)?.into())
+}
+
+/// Implements `Number._convert`
+pub fn _convert<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    _this: Value<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let number = args.get_f64(0);
+    let digits = args.get_i32(1);
+    let mode = args.get_i32(2);
+
+    match mode {
+        0 => to_exponential(activation, number, digits),
+        1 => to_fixed(activation, number, digits),
+        2 => to_precision(activation, number, digits),
+        _ => unreachable!(),
+    }
 }
 
 pub fn print_with_radix<'gc>(
