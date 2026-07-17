@@ -791,10 +791,9 @@ fn stop<'gc>(
 }
 
 fn set_position<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm1_stub!(activation, "Sound", "setPosition");
     Ok(Value::Undefined)
 }
