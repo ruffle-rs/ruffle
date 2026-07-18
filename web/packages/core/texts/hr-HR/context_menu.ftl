@@ -1,4 +1,4 @@
-context-menu-download-swf = Preuzmi .swf datoteku
+context-menu-download-swf = Preuzmi SWF datoteku
 context-menu-copy-debug-info = Kopiraj informacije o otklanjanju pogrešaka
 context-menu-open-save-manager = Otvori Upravitelj spremanja
 context-menu-about-ruffle =

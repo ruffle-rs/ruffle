@@ -211,7 +211,7 @@ impl<'gc> Video<'gc> {
 
         match self.0.source.get() {
             VideoSource::Swf(swf_source) => {
-                let subslice = SwfSlice::from(movie).to_unbounded_subslice(tag.data);
+                let subslice = SwfSlice::from(movie).to_subslice(tag.data);
                 let mut frames = swf_source.frames.borrow_mut();
 
                 if frames.contains_key(&tag.frame_num.into()) {
@@ -475,6 +475,19 @@ impl<'gc> TDisplayObject<'gc> for Video<'gc> {
             y_min: Twips::ZERO,
             y_max: Twips::from_pixels_i32(size_y),
         }
+    }
+
+    // FP-compat: clamp the width/height readback at `unscaled * 32768`
+    fn width(self) -> f64 {
+        let aabb = self.local_bounds(BoundsMode::Script).width().to_pixels();
+        let (size_x, _) = self.0.size.get();
+        aabb.min(size_x as f64 * 32768.0)
+    }
+
+    fn height(self) -> f64 {
+        let aabb = self.local_bounds(BoundsMode::Script).height().to_pixels();
+        let (_, size_y) = self.0.size.get();
+        aabb.min(size_y as f64 * 32768.0)
     }
 
     fn render_with_options(self, context: &mut RenderContext<'_, 'gc>, options: RenderOptions) {

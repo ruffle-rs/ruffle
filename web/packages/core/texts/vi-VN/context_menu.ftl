@@ -1,4 +1,4 @@
-context-menu-download-swf = Tải về file .swf
+context-menu-download-swf = Tải về file SWF
 context-menu-copy-debug-info = Sao chép thông tin gỡ lỗi
 context-menu-open-save-manager = Mở trình quản lý lưu file
 context-menu-about-ruffle =

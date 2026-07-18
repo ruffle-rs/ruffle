@@ -20,8 +20,8 @@ pub fn get_creation_date<'gc>(
 
     let creation_date = match *this.file_reference() {
         FileReference::None => return Err(make_error_2037(activation)),
-        FileReference::FileDialogResult(ref dialog_result) => {
-            if let Some(time) = dialog_result.creation_time() {
+        FileReference::FileDialogSelection(ref selection) => {
+            if let Some(time) = selection.creation_time() {
                 DateObject::from_date_time(activation.context, time).into()
             } else {
                 Value::Null
@@ -42,8 +42,8 @@ pub fn get_data<'gc>(
     let this = this.as_file_reference().unwrap();
 
     let bytearray = match *this.file_reference() {
-        FileReference::FileDialogResult(ref dialog_result) if this.loaded() => {
-            let bytes = dialog_result.contents();
+        FileReference::FileDialogSelection(ref selection) if this.loaded() => {
+            let bytes = selection.contents();
             let storage = ByteArrayStorage::from_vec(activation.context, bytes.to_vec());
             ByteArrayObject::from_storage(activation.context, storage)
         }
@@ -65,8 +65,8 @@ pub fn get_modification_date<'gc>(
 
     let modification_date = match *this.file_reference() {
         FileReference::None => return Err(make_error_2037(activation)),
-        FileReference::FileDialogResult(ref dialog_result) => {
-            if let Some(time) = dialog_result.modification_time() {
+        FileReference::FileDialogSelection(ref selection) => {
+            if let Some(time) = selection.modification_time() {
                 DateObject::from_date_time(activation.context, time).into()
             } else {
                 Value::Null
@@ -88,8 +88,8 @@ pub fn get_name<'gc>(
 
     let name = match *this.file_reference() {
         FileReference::None => return Err(make_error_2037(activation)),
-        FileReference::FileDialogResult(ref dialog_result) => {
-            let name = dialog_result.file_name().unwrap_or_default();
+        FileReference::FileDialogSelection(ref selection) => {
+            let name = selection.file_name();
             AvmString::new_utf8(activation.gc(), name).into()
         }
     };
@@ -108,7 +108,7 @@ pub fn get_size<'gc>(
 
     let size = match *this.file_reference() {
         FileReference::None => return Err(make_error_2037(activation)),
-        FileReference::FileDialogResult(ref dialog_result) => dialog_result.size().unwrap_or(0),
+        FileReference::FileDialogSelection(ref selection) => selection.size().unwrap_or(0),
     };
 
     Ok(Value::Number(size as f64))
@@ -125,8 +125,8 @@ pub fn get_type<'gc>(
 
     let type_ = match *this.file_reference() {
         FileReference::None => return Err(make_error_2037(activation)),
-        FileReference::FileDialogResult(ref dialog_result) => {
-            let type_ = dialog_result.file_type().unwrap_or_default();
+        FileReference::FileDialogSelection(ref selection) => {
+            let type_ = selection.file_type().unwrap_or_default();
             AvmString::new_utf8(activation.gc(), type_).into()
         }
     };
@@ -144,46 +144,46 @@ pub fn browse<'gc>(
     let this = this.as_file_reference().unwrap();
 
     let mut filters = Vec::new();
-    if let Some(obj) = args.try_get_object(0) {
-        if let Some(array_storage) = obj.as_array_storage() {
-            for filter in array_storage.iter() {
-                if let Some(Value::Object(obj)) = filter {
-                    let filefilter = activation
-                        .avm2()
-                        .classes()
-                        .filefilter
-                        .inner_class_definition();
-                    if !obj.is_of_type(filefilter) {
-                        return Err(make_error_2097(activation));
-                    }
-
-                    let description = obj.get_slot(file_filter_slots::_DESCRIPTION);
-                    let extension = obj.get_slot(file_filter_slots::_EXTENSION);
-                    let mac_type = obj.get_slot(file_filter_slots::_MAC_TYPE);
-
-                    // The description and extension must be non-empty strings.
-                    match (description, extension) {
-                        (Value::String(description), Value::String(extension))
-                            if !description.is_empty() && !extension.is_empty() =>
-                        {
-                            let mac_type = match mac_type {
-                                Value::String(mac_type) if !mac_type.is_empty() => {
-                                    Some(mac_type.to_string())
-                                }
-                                _ => None,
-                            };
-
-                            filters.push(FileFilter {
-                                description: description.to_string(),
-                                extensions: extension.to_string(),
-                                mac_type,
-                            });
-                        }
-                        _ => return Err(make_error_2097(activation)),
-                    }
-                } else {
+    if let Some(obj) = args.try_get_object(0)
+        && let Some(array_storage) = obj.as_array_storage()
+    {
+        for filter in array_storage.iter() {
+            if let Some(Value::Object(obj)) = filter {
+                let filefilter = activation
+                    .avm2()
+                    .classes()
+                    .filefilter
+                    .inner_class_definition();
+                if !obj.is_of_type(filefilter) {
                     return Err(make_error_2097(activation));
                 }
+
+                let description = obj.get_slot(file_filter_slots::_DESCRIPTION);
+                let extension = obj.get_slot(file_filter_slots::_EXTENSION);
+                let mac_type = obj.get_slot(file_filter_slots::_MAC_TYPE);
+
+                // The description and extension must be non-empty strings.
+                match (description, extension) {
+                    (Value::String(description), Value::String(extension))
+                        if !description.is_empty() && !extension.is_empty() =>
+                    {
+                        let mac_type = match mac_type {
+                            Value::String(mac_type) if !mac_type.is_empty() => {
+                                Some(mac_type.to_string())
+                            }
+                            _ => None,
+                        };
+
+                        filters.push(FileFilter {
+                            description: description.to_string(),
+                            extensions: extension.to_string(),
+                            mac_type,
+                        });
+                    }
+                    _ => return Err(make_error_2097(activation)),
+                }
+            } else {
+                return Err(make_error_2097(activation));
             }
         }
     }
@@ -216,7 +216,7 @@ pub fn load<'gc>(
 
     let size = match *this.file_reference() {
         FileReference::None => return Err(make_error_2037(activation)),
-        FileReference::FileDialogResult(ref dialog_result) => dialog_result.size().unwrap_or(0),
+        FileReference::FileDialogSelection(ref selection) => selection.size().unwrap_or(0),
     };
 
     let size = size as usize;
@@ -266,7 +266,7 @@ pub fn save_internal<'gc>(
 
     // Create and spawn dialog
     let dialog = activation.context.ui.display_file_save_dialog(
-        file_name.to_owned().to_string(),
+        file_name.to_string(),
         format!("Select location to save the file {file_name}"),
     );
 

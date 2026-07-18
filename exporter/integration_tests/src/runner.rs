@@ -83,14 +83,16 @@ fn main() -> Result<()> {
     let mut runner = FsTestsRunner::new();
 
     runner
+        .with_args_from_libtest_mimic()
         // We're switching directories, so we cannot use relative paths.
         .with_canonicalize_paths(true)
         .with_descriptor_name(Cow::Borrowed(TEST_TOML_NAME))
         .with_test_loader(Box::new(|params, register_trial| {
             register_trial(load_test(params))
-        }));
+        }))
+        .sorted_by_name();
 
-    runner.run()
+    runner.run().exit()
 }
 
 fn load_test(params: TestLoaderParams) -> Trial {

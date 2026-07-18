@@ -2,6 +2,7 @@ import * as utils from "./utils";
 import { buildInfo } from "ruffle-core";
 
 window.addEventListener("DOMContentLoaded", () => {
+    utils.setPageLanguage();
     document.title = utils.i18n.getMessage("onboarding_page");
     {
         const vt = document.getElementById("version-text")!;

@@ -111,8 +111,12 @@ impl<'a> ActivationIdentifier<'a> {
     ) -> Result<Self, Error<'gc>> {
         let (function_count, special_count) = match reason {
             ExecutionReason::FunctionCall | ExecutionReason::ConstructorCall => {
-                if self.function_count >= max_recursion_depth - 1 {
-                    return Err(Error::FunctionRecursionLimit(max_recursion_depth));
+                (self.function_count + 1, self.special_count)
+            }
+            ExecutionReason::PropertyCall { property_id } => {
+                const PROPERTY_RECURSION_LIMIT: u16 = 65;
+                if self.is_over_property_recursion_limit(property_id, PROPERTY_RECURSION_LIMIT) {
+                    return Err(Error::PropertyRecursionLimit);
                 }
                 (self.function_count + 1, self.special_count)
             }
@@ -123,6 +127,11 @@ impl<'a> ActivationIdentifier<'a> {
                 (self.function_count, self.special_count + 1)
             }
         };
+
+        if function_count >= max_recursion_depth {
+            return Err(Error::FunctionRecursionLimit(max_recursion_depth));
+        }
+
         Ok(Self {
             parent: Some(self),
             reason,
@@ -131,6 +140,34 @@ impl<'a> ActivationIdentifier<'a> {
             function_count,
             special_count,
         })
+    }
+
+    fn is_over_property_recursion_limit(&self, property_id: u32, limit: u16) -> bool {
+        if limit == 0 {
+            return true;
+        }
+
+        if self.depth < limit {
+            // The stack is not big enough, the limit couldn't have been hit.
+            // Exit early.
+            return false;
+        }
+
+        let parent_limit = if let ExecutionReason::PropertyCall {
+            property_id: other_id,
+        } = self.reason
+            && other_id == property_id
+        {
+            limit - 1
+        } else {
+            limit
+        };
+
+        if let Some(parent) = self.parent {
+            parent.is_over_property_recursion_limit(property_id, parent_limit)
+        } else {
+            false
+        }
     }
 
     pub fn depth(&self) -> u16 {
@@ -239,6 +276,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         callee: Option<Object<'gc>>,
         local_registers: &'a [Cell<Value<'gc>>],
     ) -> Self {
+        debug_assert!(swf_version > 0, "cannot execute code with SWF version 0");
         avm_debug!(context.avm1, "START {id}");
         Self {
             context,
@@ -291,6 +329,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         avm_debug!(context.avm1, "START {id}");
 
         let swf_version = base_clip.swf_version();
+        debug_assert!(swf_version > 0, "cannot execute code with SWF version 0");
         let scope = context.avm1.global_scope(swf_version);
         Self {
             id,
@@ -728,15 +767,15 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         } else {
             // An optional path to a MovieClip and a frame #/label, such as "/clip:framelabel".
             let frame_path = arg.coerce_to_string(self)?;
-            if let Some((clip, frame)) = self.resolve_variable_path(target, &frame_path)? {
-                if let Some(clip) = clip.as_display_object().and_then(|o| o.as_movie_clip()) {
-                    if let Ok(frame) = frame.parse().map(f64_to_wrapping_u32) {
-                        // First try to parse as a frame number.
-                        call_frame = Some((clip, frame));
-                    } else if let Some(frame) = clip.frame_label_to_number(frame, self.context) {
-                        // Otherwise, it's a frame label.
-                        call_frame = Some((clip, frame.into()));
-                    }
+            if let Some((clip, frame)) = self.resolve_variable_path(target, &frame_path)?
+                && let Some(clip) = clip.as_display_object().and_then(|o| o.as_movie_clip())
+            {
+                if let Ok(frame) = frame.parse().map(f64_to_wrapping_u32) {
+                    // First try to parse as a frame number.
+                    call_frame = Some((clip, frame));
+                } else if let Some(frame) = clip.frame_label_to_number(frame, self.context) {
+                    // Otherwise, it's a frame label.
+                    call_frame = Some((clip, frame.into()));
                 }
             }
         };
@@ -863,8 +902,15 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             action,
             self.scope(),
             constant_pool,
-            // `base_clip` should always be a living `MovieClip` so this can't fail
-            MovieClipReference::try_from_stage_object(self, bc).unwrap(),
+            // `base_clip` should always be a living `MovieClip` so this can't fail during "normal" execution
+            // However, the playerglobal doesn't have any movie clips, so we want to fall back to "something" for that
+            MovieClipReference::try_from_stage_object(self, bc).unwrap_or_else(|| {
+                if self.scope.class() == ScopeClass::Global {
+                    MovieClipReference::from_path(self.gc(), WStr::from_units(b"_root"))
+                } else {
+                    panic!("No base clip for function")
+                }
+            }),
         );
         let name = func.name();
         let prototype = Object::new(&self.context.strings, Some(self.prototypes().object));
@@ -934,9 +980,25 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let name_val = self.context.avm1.pop();
         let name = name_val.coerce_to_string(self)?;
 
+        let success = if let Some((path, var_name)) = name.rsplit_once(b":.".as_ref()) {
+            let path = AvmString::new(self.gc(), path);
+            let var_name = AvmString::new(self.gc(), var_name);
+
+            let var: Value<'gc> = self.get_variable(path)?.into();
+            if let Some(obj) = var.as_object(self) {
+                obj.delete(self, var_name)
+            } else {
+                if !matches!(var, Value::Null | Value::Undefined) {
+                    self.context.avm_trace("Parameters of primitive types are no longer coerced into the required type - Object.");
+                }
+                false
+            }
+        } else {
+            self.scope().delete(self, name)
+        };
+
         // Fun fact: This isn't in the Adobe SWF19 spec, but this opcode returns
         // a boolean based on if the delete actually deleted something.
-        let success = self.scope().delete(self, name);
         self.context.avm1.push(success.into());
 
         Ok(FrameControl::Continue)
@@ -1050,7 +1112,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             Attribute::DONT_ENUM,
         );
 
-        subclass.set(istr!(self, "prototype"), sub_prototype.into(), self)?;
+        subclass.set(istr!(self, "prototype"), sub_prototype, self)?;
 
         Ok(FrameControl::Continue)
     }
@@ -1125,6 +1187,12 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
         let value: Value<'gc> = self.get_variable(path)?.into();
 
+        let value = if self.swf_version() <= 4 {
+            value.as_swf4_variable()
+        } else {
+            value
+        };
+
         self.stack_push(value);
 
         Ok(FrameControl::Continue)
@@ -1171,7 +1239,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         if let Some(fscommand) = fscommand::parse(&url) {
             fscommand::handle(fscommand, &target, self)?;
         } else {
-            self.context.navigator.navigate_to_url(
+            self.context.navigator.navigate_to_url_normalized(
                 &url.to_utf8_lossy(),
                 &target.to_utf8_lossy(),
                 None,
@@ -1317,9 +1385,11 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             None => None,
         };
 
-        self.context
-            .navigator
-            .navigate_to_url(&url.to_utf8_lossy(), &target.to_utf8_lossy(), vars);
+        self.context.navigator.navigate_to_url_normalized(
+            &url.to_utf8_lossy(),
+            &target.to_utf8_lossy(),
+            vars,
+        );
 
         Ok(FrameControl::Continue)
     }
@@ -1469,7 +1539,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             }
 
             if let Some(prototype) = constructor
-                .filter(|_| self.swf_version >= 7)
+                .filter(|_| self.swf_version() >= 7)
                 .and_then(|o| o.prototype(self).as_object(self))
             {
                 prototype.set_interfaces(self.gc(), interfaces);
@@ -1897,36 +1967,12 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         }
 
         match target {
-            Value::String(target) => {
-                return self.set_target(&target);
-            }
             Value::Undefined => {
                 // In SWF6 and below, SetTarget2 on an undefined object resets the target to the base clip
                 if self.swf_version() > 6 {
                     self.set_target_clip(None);
                 } else {
                     self.set_target_clip(Some(base_clip));
-                }
-            }
-            Value::Object(o) => {
-                if let Some(clip) = o.as_display_object() {
-                    // MovieClips can be targeted directly.
-                    self.set_target_clip(Some(clip));
-                } else {
-                    // Other objects get coerced to string.
-                    let target = target.coerce_to_string(self)?;
-                    return self.set_target(&target);
-                }
-            }
-            Value::MovieClip(_) => {
-                let o = target.coerce_to_object_or_bare(self)?;
-                if let Some(clip) = o.as_display_object() {
-                    // MovieClips can be targeted directly.
-                    self.set_target_clip(Some(clip));
-                } else {
-                    // Other objects get coerced to string.
-                    let target = target.coerce_to_string(self)?;
-                    return self.set_target(&target);
                 }
             }
             _ => {
@@ -2066,7 +2112,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         // In SWF6+, this is the same as String.length (returns number of UTF-16 code units).
         // TODO: In SWF5, this returns the byte length, even though the encoding is locale dependent.
         let val = self.context.avm1.pop().coerce_to_string(self)?;
-        self.context.avm1.push(val.len().into());
+        self.context.avm1.push(Value::from_usize_lossy(val.len()));
         Ok(FrameControl::Continue)
     }
 
@@ -2154,15 +2200,26 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
     fn action_trace(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
         let val = self.context.avm1.pop();
-        // trace always prints "undefined" even though SWF6 and below normally
-        // coerce undefined to "".
+
+        let mut ctrl = Ok(FrameControl::Continue);
         let out = if val == Value::Undefined {
-            WStr::from_units(b"undefined")
+            // trace always prints "undefined" even though SWF6 and below normally
+            // coerce undefined to "".
+            "undefined".into()
         } else {
-            &val.coerce_to_string(self)?
+            match val.coerce_to_string(self) {
+                Ok(s) => s.as_wstr().to_utf8_lossy(),
+                // If the coercion throws, trace both prints a fallback value and
+                // propagates the exception.
+                Err(err) => {
+                    ctrl = Err(err);
+                    "[type Object]".into()
+                }
+            }
         };
-        self.context.avm_trace(&out.to_utf8_lossy());
-        Ok(FrameControl::Continue)
+
+        self.context.avm_trace(&out);
+        ctrl
     }
 
     fn action_try(
@@ -2170,45 +2227,43 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         action: &Try,
         parent_data: &SwfSlice,
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
+        let original_stack_size = self.context.avm1.stack_len();
         let mut result = self.run_actions(parent_data.to_unbounded_subslice(action.try_body));
 
-        if let Some((catch_vars, actions)) = &action.catch_body {
-            if let Err(Error::ThrownValue(value)) = &result {
-                let mut activation = Activation::from_action(
-                    self.context,
-                    self.id.child("[Catch]"),
-                    self.swf_version,
-                    self.scope,
-                    self.constant_pool,
-                    self.base_clip,
-                    self.this,
-                    self.callee,
-                    &[],
-                );
+        if let Some((catch_vars, actions)) = &action.catch_body
+            && let Err(Error::ThrownValue(value)) = &result
+        {
+            self.context.avm1.truncate_stack(original_stack_size);
+            let mut activation = Activation::from_action(
+                self.context,
+                self.id.child("[Catch]"),
+                self.swf_version(),
+                self.scope,
+                self.constant_pool,
+                self.base_clip,
+                self.this,
+                self.callee,
+                &[],
+            );
 
-                activation.local_registers = self.local_registers;
+            activation.local_registers = self.local_registers;
 
-                match catch_vars {
-                    CatchVar::Var(name) => {
-                        let name =
-                            AvmString::new(activation.gc(), name.decode(activation.encoding()));
-                        activation.set_variable(name, value.to_owned())?
-                    }
-                    CatchVar::Register(id) => {
-                        activation.set_current_register(*id, value.to_owned())
-                    }
+            match catch_vars {
+                CatchVar::Var(name) => {
+                    let name = AvmString::new(activation.gc(), name.decode(activation.encoding()));
+                    activation.set_variable(name, value.to_owned())?
                 }
-
-                result = activation.run_actions(parent_data.to_unbounded_subslice(actions));
+                CatchVar::Register(id) => activation.set_current_register(*id, value.to_owned()),
             }
+
+            result = activation.run_actions(parent_data.to_unbounded_subslice(actions));
         }
 
-        if let Some(actions) = action.finally_body {
-            if let ReturnType::Explicit(value) =
+        if let Some(actions) = action.finally_body
+            && let ReturnType::Explicit(value) =
                 self.run_actions(parent_data.to_unbounded_subslice(actions))?
-            {
-                return Ok(FrameControl::Return(ReturnType::Explicit(value)));
-            }
+        {
+            return Ok(FrameControl::Return(ReturnType::Explicit(value)));
         }
 
         match result? {
@@ -2302,13 +2357,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let value = self.context.avm1.pop();
         match value {
             // Undefined/null with is ignored.
-            Value::Undefined | Value::Null => {
-                // Mimic Flash's error output.
-                self.context.avm_trace(
-                    "Error: A 'with' action failed because the specified object did not exist.\n",
-                );
-                Ok(FrameControl::Continue)
-            }
+            Value::Undefined | Value::Null => Ok(FrameControl::Continue),
 
             value => {
                 // Note that primitives get boxed at this point.
@@ -2356,10 +2405,10 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     ///
     /// If a given register does not exist, this function does nothing.
     pub fn set_current_register(&mut self, id: u8, value: Value<'gc>) {
-        if !self.set_local_register(id, value) {
-            if let Some(reg) = self.context.avm1.get_register_mut(id as usize) {
-                *reg = value;
-            }
+        if !self.set_local_register(id, value)
+            && let Some(reg) = self.context.avm1.get_register_mut(id as usize)
+        {
+            *reg = value;
         }
     }
 
@@ -2497,7 +2546,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let root = start.avm1_root();
         let start = start.object1_or_bare(self.gc());
         Ok(self
-            .resolve_target_path(root, start, &path, false)?
+            .resolve_target_path(root, start, &path, true, false)?
             .and_then(|o| o.as_display_object()))
     }
 
@@ -2516,16 +2565,22 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         start: Object<'gc>,
         mut path: &WStr,
         mut first_element: bool,
+        handle_this: bool,
     ) -> Result<Option<Object<'gc>>, Error<'gc>> {
         // Empty path resolves immediately to start clip.
         if path.is_empty() {
             return Ok(Some(start));
         }
 
+        // this, _root, and delimiters . and : are supported only in SWF5+.
+        // In general, SWF4 is more restrictive when it comes to paths.
+        let is_swf5 = self.swf_version() >= 5;
+
         // Starting / means an absolute path starting from root.
         // (`/bar` means `_root.bar`)
         let (mut object, mut is_slash_path) = if path.starts_with(b'/') {
             path = &path[1..];
+            first_element = false;
             (root.object1_or_bare(self.gc()), true)
         } else {
             (start, false)
@@ -2535,12 +2590,14 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
         // Iterate through each token in the path.
         while !path.is_empty() {
-            // Skip any number of leading :
-            // `foo`, `:foo`, and `:::foo` are all the same
-            path = path.trim_start_matches(b':');
+            if is_swf5 {
+                // Skip any number of leading :
+                // `foo`, `:foo`, and `:::foo` are all the same
+                path = path.trim_start_matches(b':');
+            }
 
             let prefix = &path[..path.len().min(3)];
-            let val = if prefix == b".." || prefix == b"../" || prefix == b"..:" {
+            let val = if prefix == b".." || prefix == b"../" || (is_swf5 && prefix == b"..:") {
                 // Check for ..
                 // SWF-4 style _parent
                 if path.get(2) == Some(u16::from(b'/')) {
@@ -2558,12 +2615,11 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                 // : . / all act as path delimiters.
                 // The only restriction is that after a / appears,
                 // . is no longer considered a delimiter.
-                // TODO: SWF4 is probably more restrictive.
                 let mut pos = 0;
                 while pos < path.len() {
                     match u8::try_from(path.at(pos)) {
-                        Ok(b':') => break,
-                        Ok(b'.') if !is_slash_path => break,
+                        Ok(b':') if is_swf5 => break,
+                        Ok(b'.') if is_swf5 && !is_slash_path => break,
                         Ok(b'/') => {
                             is_slash_path = true;
                             break;
@@ -2577,10 +2633,17 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                 let name = &path[..pos];
                 path = path.slice(pos + 1..).unwrap_or_default();
 
-                if first_element && name == b"this" {
+                if is_swf5 && handle_this && name == b"this" {
+                    // TODO This doesn't seem to be entirely right, but Ruffle
+                    // does not support the `this` variable/keyword properly.
+                    // We probably shouldn't handle `this` here at all.
                     self.this_cell()
-                } else if first_element && name == b"_root" {
+                } else if is_swf5 && first_element && name == b"_root" {
                     self.base_clip().avm1_root().object1_or_undef()
+                } else if first_element
+                    && let Some(level) = super::object::stage_object::parse_level(name, self)
+                {
+                    level
                 } else {
                     // Get the value from the object.
                     // Resolves display object instances first, then local variables.
@@ -2637,7 +2700,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                 let avm1_root = start.avm1_root();
 
                 if let Some(object) =
-                    self.resolve_target_path(avm1_root, *scope.locals(), path, true)?
+                    self.resolve_target_path(avm1_root, *scope.locals(), path, true, true)?
                 {
                     return Ok(Some((object, var_name)));
                 }
@@ -2676,18 +2739,30 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         // Resolve a variable path for a GetVariable action.
         let start = self.target_clip_or_root();
 
+        let is_swf5 = self.swf_version() >= 5;
+        let variable_separator = if is_swf5 {
+            // The separator . appeared in SWF5.
+            b":.".as_ref()
+        } else {
+            b":".as_ref()
+        };
+
         // Find the right-most : or . in the path.
         // If we have one, we must resolve as a target path.
-        if let Some(separator) = path.rfind(b":.".as_ref()) {
+        if let Some(separator) = path.rfind(variable_separator) {
             // We have a . or :, so this is a path to an object plus a variable name.
             // We resolve it directly on the targeted object.
             let (path, var_name) = (&path[..separator], &path[separator + 1..]);
+
+            if path.is_empty() {
+                return Ok(CallableValue::UnCallable(Value::Undefined));
+            }
 
             for scope in Scope::ancestors(self.scope()) {
                 let avm1_root = start.avm1_root();
 
                 if let Some(object) =
-                    self.resolve_target_path(avm1_root, *scope.locals(), path, true)?
+                    self.resolve_target_path(avm1_root, *scope.locals(), path, true, true)?
                 {
                     let var_name = AvmString::new(self.gc(), var_name);
                     if object.has_property(self, var_name) {
@@ -2700,12 +2775,13 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         }
 
         // If it doesn't have a trailing variable, it can still be a slash path.
-        if path.contains(b'/') {
+        // In SWF4 it has to have a trailing variable.
+        if is_swf5 && path.contains(b'/') {
             for scope in Scope::ancestors(self.scope()) {
                 let avm1_root = start.avm1_root();
 
                 if let Some(object) =
-                    self.resolve_target_path(avm1_root, *scope.locals(), &path, false)?
+                    self.resolve_target_path(avm1_root, *scope.locals(), &path, false, false)?
                 {
                     return Ok(CallableValue::UnCallable(object.into()));
                 }
@@ -2753,7 +2829,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         }
 
         // Special case, mutating `this`
-        if path.as_wstr() == b"this" {
+        if path.as_wstr() == b"this" && self.swf_version() >= 5 {
             self.this = value;
             return Ok(());
         }
@@ -2771,7 +2847,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                 let avm1_root = start.avm1_root();
 
                 if let Some(object) =
-                    self.resolve_target_path(avm1_root, *scope.locals(), path, true)?
+                    self.resolve_target_path(avm1_root, *scope.locals(), path, true, true)?
                 {
                     let var_name = AvmString::new(self.gc(), var_name);
                     object.set(var_name, value, self)?;
@@ -2853,7 +2929,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             self.is_case_sensitive()
         };
 
-        if name.eq_with_case(b"this", this_case_sensitive) {
+        if name.eq_with_case(b"this", this_case_sensitive) && self.swf_version() >= 5 {
             return Ok(CallableValue::UnCallable(self.this_cell()));
         }
 
@@ -2865,7 +2941,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     /// For SWF version 5 and lower, this is locale-dependent,
     /// and we default to WINDOWS-1252.
     pub fn encoding(&self) -> &'static swf::Encoding {
-        swf::SwfStr::encoding_for_version(self.swf_version)
+        swf::SwfStr::encoding_for_version(self.swf_version())
     }
 
     /// Returns the SWF version of the action or function being executed.
@@ -2989,7 +3065,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         if target.is_empty() {
             new_target_clip = Some(base_clip);
         } else if let Some(clip) = self
-            .resolve_target_path(root, start, target, false)?
+            .resolve_target_path(root, start, target, true, false)?
             .and_then(|o| o.as_display_object())
             .filter(|_| !self.base_clip.avm1_removed())
         // All properties invalid if base clip is removed.
@@ -2997,21 +3073,6 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             new_target_clip = Some(clip);
         } else {
             avm_warn!(self, "SetTarget failed: {} not found", target);
-            // TODO: Emulate AVM1 trace error message.
-            let path = if base_clip.avm1_removed() {
-                None
-            } else {
-                Some(base_clip.path())
-            };
-            let message = format!(
-                "Target not found: Target=\"{}\" Base=\"{}\"",
-                target,
-                match &path {
-                    Some(p) => p,
-                    None => WStr::from_units(b"?"),
-                }
-            );
-            self.context.avm_trace(&message);
 
             // When SetTarget has an invalid target, subsequent GetVariables act
             // as if they are targeting root, but subsequent Play/Stop/etc.

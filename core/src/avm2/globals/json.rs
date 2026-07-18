@@ -62,7 +62,7 @@ fn deserialize_json_inner<'gc>(
                 .enumerate()
                 .map(|(key, val)| {
                     let val = deserialize_json_inner(activation, val.clone(), reviver)?;
-                    let args = &[key.into(), val];
+                    let args = &[Value::from_usize_lossy(key), val];
 
                     match reviver {
                         None => Ok(val),
@@ -162,6 +162,14 @@ impl<'gc> AvmSerializer<'gc> {
         activation: &mut Activation<'_, 'gc>,
         obj: Object<'gc>,
     ) -> Result<JsonValue, Error<'gc>> {
+        fn skip_value<'gc>(value: Value<'gc>) -> bool {
+            match value {
+                Value::Undefined => true,
+                Value::Object(obj) => obj.as_function_object().is_some(),
+                _ => false,
+            }
+        }
+
         let mut js_obj = JsonObject::new();
         // If the user supplied a PropList, we use that to find properties on the object.
         if let Some(Replacer::PropList(props)) = self.replacer {
@@ -170,7 +178,7 @@ impl<'gc> AvmSerializer<'gc> {
                 let key = item.coerce_to_string(activation)?;
                 let value = Value::from(obj).get_public_property(key, activation)?;
                 let mapped = self.map_value(activation, || key, value)?;
-                if !matches!(mapped, Value::Undefined) {
+                if !skip_value(mapped) {
                     js_obj.insert(
                         key.to_utf8_lossy().into_owned(),
                         self.serialize_value(activation, mapped)?,
@@ -180,7 +188,7 @@ impl<'gc> AvmSerializer<'gc> {
         } else {
             for (name, val) in obj.public_vtable_properties(activation)? {
                 let mapped = self.map_value(activation, || name, val)?;
-                if !matches!(mapped, Value::Undefined) {
+                if !skip_value(mapped) {
                     js_obj.insert(
                         name.to_utf8_lossy().into_owned(),
                         self.serialize_value(activation, mapped)?,
@@ -194,7 +202,7 @@ impl<'gc> AvmSerializer<'gc> {
                         let name = name_val.coerce_to_string(activation)?;
                         let value = obj.get_enumerant_value(i, activation)?;
                         let mapped = self.map_value(activation, || name, value)?;
-                        if !matches!(mapped, Value::Undefined) {
+                        if !skip_value(mapped) {
                             js_obj.insert(
                                 name.to_utf8_lossy().into_owned(),
                                 self.serialize_value(activation, mapped)?,
@@ -242,7 +250,9 @@ impl<'gc> AvmSerializer<'gc> {
                     return Err(make_error_1129(activation));
                 }
                 self.obj_stack.push(obj);
-                let value = if obj.as_array_object().is_some() || obj.as_vector_object().is_some() {
+                let value = if obj.as_function_object().is_some() {
+                    JsonValue::Null
+                } else if obj.as_array_object().is_some() || obj.as_vector_object().is_some() {
                     self.serialize_iterable(activation, obj)?
                 } else {
                     self.serialize_object(activation, obj)?

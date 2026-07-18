@@ -12,9 +12,7 @@ interface LocaleBundle {
 }
 
 // This is automatically populated by `tools/bundle_texts.ts` via a postbuild script
-const BUNDLED_TEXTS: LocaleBundle = {
-    /* %BUNDLED_TEXTS% */
-};
+const BUNDLED_TEXTS: LocaleBundle = {/* %BUNDLED_TEXTS% */};
 
 const bundles: Record<string, FluentBundle> = {};
 

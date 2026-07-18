@@ -55,11 +55,39 @@ fn eq() {
 
 #[test]
 #[rustfmt::skip]
+fn eq_common_prefix() {
+    let a1 = bstr!(b"hello");
+    let b1 = bstr!(b"hello!");
+    let a2 = wstr!('h''e''l''l''o');
+    let b2 = wstr!('h''e''l''l''o''!');
+
+    assert_eq!(a1, a1); assert_eq!(a2, a1); assert_ne!(b1, a1); assert_ne!(b2, a1);
+    assert_eq!(a1, a2); assert_eq!(a2, a2); assert_ne!(b1, a2); assert_ne!(b2, a2);
+    assert_ne!(a1, b1); assert_ne!(a2, b1); assert_eq!(b1, b1); assert_eq!(b2, b1);
+    assert_ne!(a1, b2); assert_ne!(a2, b2); assert_eq!(b1, b2); assert_eq!(b2, b2);
+}
+
+#[test]
+#[rustfmt::skip]
 fn cmp() {
     let a1 = bstr!(b"hello");
     let b1 = bstr!(b"world");
     let a2 = wstr!('h''e''l''l''o');
     let b2 = wstr!('w''o''r''l''d');
+
+    assert!(a1 == a1); assert!(a2 == a1); assert!(b1 >  a1); assert!(b2 >  a1);
+    assert!(a1 == a2); assert!(a2 == a2); assert!(b1 >  a2); assert!(b2 >  a2);
+    assert!(a1 <  b1); assert!(a2 <  b1); assert!(b1 == b1); assert!(b2 == b1);
+    assert!(a1 <  b2); assert!(a2 <  b2); assert!(b1 == b2); assert!(b2 == b2);
+}
+
+#[test]
+#[rustfmt::skip]
+fn cmp_common_prefix() {
+    let a1 = bstr!(b"hello");
+    let b1 = bstr!(b"hello!");
+    let a2 = wstr!('h''e''l''l''o');
+    let b2 = wstr!('h''e''l''l''o''!');
 
     assert!(a1 == a1); assert!(a2 == a1); assert!(b1 >  a1); assert!(b2 >  a1);
     assert!(a1 == a2); assert!(a2 == a2); assert!(b1 >  a2); assert!(b2 >  a2);
@@ -180,12 +208,16 @@ fn char_patterns() {
 fn multi_char_patterns() {
     let bytes = bstr!(b"abcdabcd");
     let matches = &[(0, 1), (2, 3), (4, 5), (6, 7)];
-    test_pattern(bytes, &[b'a', b'c'][..], matches, None);
+    test_pattern(bytes, &b"ac"[..], matches, None);
     test_pattern(bytes, &['a' as u16, 'c' as u16][..], matches, None);
+    test_pattern(bytes, [b'a', b'c'], matches, None);
+    test_pattern(bytes, ['a' as u16, 'c' as u16], matches, None);
 
     let wide = wstr!('↓''a''b''↓''b''c');
-    test_pattern(wide, &[b'a', b'b'][..], &[(1, 2), (2, 3), (4, 5)], None);
+    test_pattern(wide, &b"ab"[..], &[(1, 2), (2, 3), (4, 5)], None);
     test_pattern(wide, &['↓' as u16, '−' as u16][..], &[(0, 1), (3, 4)], None);
+    test_pattern(wide, [b'a', b'b'], &[(1, 2), (2, 3), (4, 5)], None);
+    test_pattern(wide, ['↓' as u16, '−' as u16], &[(0, 1), (3, 4)], None);
 
     // Don't test `FnMut(u16) -> bool` because it isn't `Debug`
 }

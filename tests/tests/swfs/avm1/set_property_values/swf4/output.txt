@@ -1,0 +1,1571 @@
+// setProperty(_x, 2)
+2
+2
+Warning: Object is not a function
+0
+----------
+// setProperty(_x, -5)
+-5
+-5
+Warning: Object is not a function
+0
+----------
+// setProperty(_x, 1.5)
+1.5
+1.5
+Warning: Object is not a function
+0
+----------
+// setProperty(_x, 0)
+0
+0
+Warning: Object is not a function
+0
+----------
+// setProperty(_x, "10")
+10
+10
+Warning: Object is not a function
+0
+----------
+// setProperty(_x, "10x")
+0
+1
+Warning: Object is not a function
+0
+----------
+// setProperty(_x, "z10")
+0
+1
+Warning: Object is not a function
+0
+----------
+// setProperty(_x, "abc")
+0
+1
+Warning: Object is not a function
+0
+----------
+// setProperty(_x, "")
+0
+1
+Warning: Object is not a function
+0
+----------
+// setProperty(_x, "true")
+0
+1
+Warning: Object is not a function
+0
+----------
+// setProperty(_x, "false")
+0
+1
+Warning: Object is not a function
+0
+----------
+// setProperty(_x, "undefined")
+0
+1
+Warning: Object is not a function
+0
+----------
+// setProperty(_x, "null")
+0
+1
+Warning: Object is not a function
+0
+----------
+// setProperty(_x, true)
+1
+1
+Warning: Object is not a function
+0
+----------
+// setProperty(_x, false)
+0
+0
+Warning: Object is not a function
+0
+----------
+// setProperty(_x, undefined)
+0
+1
+Warning: Object is not a function
+0
+----------
+// setProperty(_x, null)
+0
+1
+Warning: Object is not a function
+0
+----------
+// setProperty(_x, 0.0/0.0)
+0
+1
+Warning: Object is not a function
+0
+----------
+// setProperty(_x, 1.0/0.0)
+0
+1
+Warning: Object is not a function
+0
+----------
+// setProperty(_x, -1.0/0.0)
+0
+1
+Warning: Object is not a function
+0
+----------
+// setProperty(_x, new Object())
+Warning: Object is not a function
+0
+Warning: Object is not a function
+1
+Warning: Object is not a function
+0
+----------
+// setProperty(_y, 2)
+2
+2
+Warning: Object is not a function
+0
+----------
+// setProperty(_y, -5)
+-5
+-5
+Warning: Object is not a function
+0
+----------
+// setProperty(_y, 1.5)
+1.5
+1.5
+Warning: Object is not a function
+0
+----------
+// setProperty(_y, 0)
+0
+0
+Warning: Object is not a function
+0
+----------
+// setProperty(_y, "10")
+10
+10
+Warning: Object is not a function
+0
+----------
+// setProperty(_y, "10x")
+0
+1
+Warning: Object is not a function
+0
+----------
+// setProperty(_y, "z10")
+0
+1
+Warning: Object is not a function
+0
+----------
+// setProperty(_y, "abc")
+0
+1
+Warning: Object is not a function
+0
+----------
+// setProperty(_y, "")
+0
+1
+Warning: Object is not a function
+0
+----------
+// setProperty(_y, "true")
+0
+1
+Warning: Object is not a function
+0
+----------
+// setProperty(_y, "false")
+0
+1
+Warning: Object is not a function
+0
+----------
+// setProperty(_y, "undefined")
+0
+1
+Warning: Object is not a function
+0
+----------
+// setProperty(_y, "null")
+0
+1
+Warning: Object is not a function
+0
+----------
+// setProperty(_y, true)
+1
+1
+Warning: Object is not a function
+0
+----------
+// setProperty(_y, false)
+0
+0
+Warning: Object is not a function
+0
+----------
+// setProperty(_y, undefined)
+0
+1
+Warning: Object is not a function
+0
+----------
+// setProperty(_y, null)
+0
+1
+Warning: Object is not a function
+0
+----------
+// setProperty(_y, 0.0/0.0)
+0
+1
+Warning: Object is not a function
+0
+----------
+// setProperty(_y, 1.0/0.0)
+0
+1
+Warning: Object is not a function
+0
+----------
+// setProperty(_y, -1.0/0.0)
+0
+1
+Warning: Object is not a function
+0
+----------
+// setProperty(_y, new Object())
+Warning: Object is not a function
+0
+Warning: Object is not a function
+1
+Warning: Object is not a function
+0
+----------
+// setProperty(_xscale, 2)
+1.9989013671875
+1.9989013671875
+Warning: Object is not a function
+0
+----------
+// setProperty(_xscale, -5)
+4.998779296875
+4.998779296875
+Warning: Object is not a function
+0
+----------
+// setProperty(_xscale, 1.5)
+1.49993896484375
+1.49993896484375
+Warning: Object is not a function
+0
+----------
+// setProperty(_xscale, 0)
+0
+0
+Warning: Object is not a function
+0
+----------
+// setProperty(_xscale, "10")
+9.99908447265625
+9.99908447265625
+Warning: Object is not a function
+0
+----------
+// setProperty(_xscale, "10x")
+0
+0.99945068359375
+Warning: Object is not a function
+0
+----------
+// setProperty(_xscale, "z10")
+0
+0.99945068359375
+Warning: Object is not a function
+0
+----------
+// setProperty(_xscale, "abc")
+0
+0.99945068359375
+Warning: Object is not a function
+0
+----------
+// setProperty(_xscale, "")
+0
+0.99945068359375
+Warning: Object is not a function
+0
+----------
+// setProperty(_xscale, "true")
+0
+0.99945068359375
+Warning: Object is not a function
+0
+----------
+// setProperty(_xscale, "false")
+0
+0.99945068359375
+Warning: Object is not a function
+0
+----------
+// setProperty(_xscale, "undefined")
+0
+0.99945068359375
+Warning: Object is not a function
+0
+----------
+// setProperty(_xscale, "null")
+0
+0.99945068359375
+Warning: Object is not a function
+0
+----------
+// setProperty(_xscale, true)
+0.99945068359375
+0.99945068359375
+Warning: Object is not a function
+0
+----------
+// setProperty(_xscale, false)
+0
+0
+Warning: Object is not a function
+0
+----------
+// setProperty(_xscale, undefined)
+0
+0.99945068359375
+Warning: Object is not a function
+0
+----------
+// setProperty(_xscale, null)
+0
+0.99945068359375
+Warning: Object is not a function
+0
+----------
+// setProperty(_xscale, 0.0/0.0)
+0
+0.99945068359375
+Warning: Object is not a function
+0
+----------
+// setProperty(_xscale, 1.0/0.0)
+0
+0.99945068359375
+Warning: Object is not a function
+0
+----------
+// setProperty(_xscale, -1.0/0.0)
+0
+0.99945068359375
+Warning: Object is not a function
+0
+----------
+// setProperty(_xscale, new Object())
+Warning: Object is not a function
+0
+Warning: Object is not a function
+0.99945068359375
+Warning: Object is not a function
+0
+----------
+// setProperty(_yscale, 2)
+1.9989013671875
+1.9989013671875
+Warning: Object is not a function
+0
+----------
+// setProperty(_yscale, -5)
+4.998779296875
+4.998779296875
+Warning: Object is not a function
+0
+----------
+// setProperty(_yscale, 1.5)
+1.49993896484375
+1.49993896484375
+Warning: Object is not a function
+0
+----------
+// setProperty(_yscale, 0)
+0
+0
+Warning: Object is not a function
+0
+----------
+// setProperty(_yscale, "10")
+9.99908447265625
+9.99908447265625
+Warning: Object is not a function
+0
+----------
+// setProperty(_yscale, "10x")
+0
+0.99945068359375
+Warning: Object is not a function
+0
+----------
+// setProperty(_yscale, "z10")
+0
+0.99945068359375
+Warning: Object is not a function
+0
+----------
+// setProperty(_yscale, "abc")
+0
+0.99945068359375
+Warning: Object is not a function
+0
+----------
+// setProperty(_yscale, "")
+0
+0.99945068359375
+Warning: Object is not a function
+0
+----------
+// setProperty(_yscale, "true")
+0
+0.99945068359375
+Warning: Object is not a function
+0
+----------
+// setProperty(_yscale, "false")
+0
+0.99945068359375
+Warning: Object is not a function
+0
+----------
+// setProperty(_yscale, "undefined")
+0
+0.99945068359375
+Warning: Object is not a function
+0
+----------
+// setProperty(_yscale, "null")
+0
+0.99945068359375
+Warning: Object is not a function
+0
+----------
+// setProperty(_yscale, true)
+0.99945068359375
+0.99945068359375
+Warning: Object is not a function
+0
+----------
+// setProperty(_yscale, false)
+0
+0
+Warning: Object is not a function
+0
+----------
+// setProperty(_yscale, undefined)
+0
+0.99945068359375
+Warning: Object is not a function
+0
+----------
+// setProperty(_yscale, null)
+0
+0.99945068359375
+Warning: Object is not a function
+0
+----------
+// setProperty(_yscale, 0.0/0.0)
+0
+0.99945068359375
+Warning: Object is not a function
+0
+----------
+// setProperty(_yscale, 1.0/0.0)
+0
+0.99945068359375
+Warning: Object is not a function
+0
+----------
+// setProperty(_yscale, -1.0/0.0)
+0
+0.99945068359375
+Warning: Object is not a function
+0
+----------
+// setProperty(_yscale, new Object())
+Warning: Object is not a function
+0
+Warning: Object is not a function
+0.99945068359375
+Warning: Object is not a function
+0
+----------
+// setProperty(_alpha, 2)
+1.953125
+1.953125
+Warning: Object is not a function
+0
+----------
+// setProperty(_alpha, -5)
+-4.6875
+-4.6875
+Warning: Object is not a function
+0
+----------
+// setProperty(_alpha, 1.5)
+1.171875
+1.171875
+Warning: Object is not a function
+0
+----------
+// setProperty(_alpha, 0)
+0
+0
+Warning: Object is not a function
+0
+----------
+// setProperty(_alpha, "10")
+9.765625
+9.765625
+Warning: Object is not a function
+0
+----------
+// setProperty(_alpha, "10x")
+0
+0.78125
+Warning: Object is not a function
+0
+----------
+// setProperty(_alpha, "z10")
+0
+0.78125
+Warning: Object is not a function
+0
+----------
+// setProperty(_alpha, "abc")
+0
+0.78125
+Warning: Object is not a function
+0
+----------
+// setProperty(_alpha, "")
+0
+0.78125
+Warning: Reached warning limit of 100
+0
+----------
+// setProperty(_alpha, "true")
+0
+0.78125
+0
+----------
+// setProperty(_alpha, "false")
+0
+0.78125
+0
+----------
+// setProperty(_alpha, "undefined")
+0
+0.78125
+0
+----------
+// setProperty(_alpha, "null")
+0
+0.78125
+0
+----------
+// setProperty(_alpha, true)
+0.78125
+0.78125
+0
+----------
+// setProperty(_alpha, false)
+0
+0
+0
+----------
+// setProperty(_alpha, undefined)
+0
+0.78125
+0
+----------
+// setProperty(_alpha, null)
+0
+0.78125
+0
+----------
+// setProperty(_alpha, 0.0/0.0)
+0
+0.78125
+0
+----------
+// setProperty(_alpha, 1.0/0.0)
+0
+0.78125
+0
+----------
+// setProperty(_alpha, -1.0/0.0)
+0
+0.78125
+0
+----------
+// setProperty(_alpha, new Object())
+0
+0.78125
+0
+----------
+// setProperty(_visible, 2)
+1
+1
+0
+----------
+// setProperty(_visible, -5)
+1
+1
+0
+----------
+// setProperty(_visible, 1.5)
+1
+1
+0
+----------
+// setProperty(_visible, 0)
+0
+0
+0
+----------
+// setProperty(_visible, "10")
+1
+1
+0
+----------
+// setProperty(_visible, "10x")
+0
+1
+0
+----------
+// setProperty(_visible, "z10")
+0
+1
+0
+----------
+// setProperty(_visible, "abc")
+0
+1
+0
+----------
+// setProperty(_visible, "")
+0
+1
+0
+----------
+// setProperty(_visible, "true")
+0
+1
+0
+----------
+// setProperty(_visible, "false")
+0
+1
+0
+----------
+// setProperty(_visible, "undefined")
+0
+1
+0
+----------
+// setProperty(_visible, "null")
+0
+1
+0
+----------
+// setProperty(_visible, true)
+1
+1
+0
+----------
+// setProperty(_visible, false)
+0
+0
+0
+----------
+// setProperty(_visible, undefined)
+0
+1
+0
+----------
+// setProperty(_visible, null)
+0
+1
+0
+----------
+// setProperty(_visible, 0.0/0.0)
+0
+1
+0
+----------
+// setProperty(_visible, 1.0/0.0)
+0
+1
+0
+----------
+// setProperty(_visible, -1.0/0.0)
+0
+1
+0
+----------
+// setProperty(_visible, new Object())
+0
+1
+0
+----------
+// setProperty(_width, 2)
+0
+0
+0
+----------
+// setProperty(_width, -5)
+0
+0
+0
+----------
+// setProperty(_width, 1.5)
+0
+0
+0
+----------
+// setProperty(_width, 0)
+0
+0
+0
+----------
+// setProperty(_width, "10")
+0
+0
+0
+----------
+// setProperty(_width, "10x")
+0
+0
+0
+----------
+// setProperty(_width, "z10")
+0
+0
+0
+----------
+// setProperty(_width, "abc")
+0
+0
+0
+----------
+// setProperty(_width, "")
+0
+0
+0
+----------
+// setProperty(_width, "true")
+0
+0
+0
+----------
+// setProperty(_width, "false")
+0
+0
+0
+----------
+// setProperty(_width, "undefined")
+0
+0
+0
+----------
+// setProperty(_width, "null")
+0
+0
+0
+----------
+// setProperty(_width, true)
+0
+0
+0
+----------
+// setProperty(_width, false)
+0
+0
+0
+----------
+// setProperty(_width, undefined)
+0
+0
+0
+----------
+// setProperty(_width, null)
+0
+0
+0
+----------
+// setProperty(_width, 0.0/0.0)
+0
+0
+0
+----------
+// setProperty(_width, 1.0/0.0)
+0
+0
+0
+----------
+// setProperty(_width, -1.0/0.0)
+0
+0
+0
+----------
+// setProperty(_width, new Object())
+0
+0
+0
+----------
+// setProperty(_height, 2)
+0
+0
+0
+----------
+// setProperty(_height, -5)
+0
+0
+0
+----------
+// setProperty(_height, 1.5)
+0
+0
+0
+----------
+// setProperty(_height, 0)
+0
+0
+0
+----------
+// setProperty(_height, "10")
+0
+0
+0
+----------
+// setProperty(_height, "10x")
+0
+0
+0
+----------
+// setProperty(_height, "z10")
+0
+0
+0
+----------
+// setProperty(_height, "abc")
+0
+0
+0
+----------
+// setProperty(_height, "")
+0
+0
+0
+----------
+// setProperty(_height, "true")
+0
+0
+0
+----------
+// setProperty(_height, "false")
+0
+0
+0
+----------
+// setProperty(_height, "undefined")
+0
+0
+0
+----------
+// setProperty(_height, "null")
+0
+0
+0
+----------
+// setProperty(_height, true)
+0
+0
+0
+----------
+// setProperty(_height, false)
+0
+0
+0
+----------
+// setProperty(_height, undefined)
+0
+0
+0
+----------
+// setProperty(_height, null)
+0
+0
+0
+----------
+// setProperty(_height, 0.0/0.0)
+0
+0
+0
+----------
+// setProperty(_height, 1.0/0.0)
+0
+0
+0
+----------
+// setProperty(_height, -1.0/0.0)
+0
+0
+0
+----------
+// setProperty(_height, new Object())
+0
+0
+0
+----------
+// setProperty(_rotation, 2)
+90
+90
+90
+----------
+// setProperty(_rotation, -5)
+90
+90
+90
+----------
+// setProperty(_rotation, 1.5)
+90
+90
+90
+----------
+// setProperty(_rotation, 0)
+90
+90
+90
+----------
+// setProperty(_rotation, "10")
+90
+90
+90
+----------
+// setProperty(_rotation, "10x")
+90
+90
+90
+----------
+// setProperty(_rotation, "z10")
+90
+90
+90
+----------
+// setProperty(_rotation, "abc")
+90
+90
+90
+----------
+// setProperty(_rotation, "")
+90
+90
+90
+----------
+// setProperty(_rotation, "true")
+90
+90
+90
+----------
+// setProperty(_rotation, "false")
+90
+90
+90
+----------
+// setProperty(_rotation, "undefined")
+90
+90
+90
+----------
+// setProperty(_rotation, "null")
+90
+90
+90
+----------
+// setProperty(_rotation, true)
+90
+90
+90
+----------
+// setProperty(_rotation, false)
+90
+90
+90
+----------
+// setProperty(_rotation, undefined)
+90
+90
+90
+----------
+// setProperty(_rotation, null)
+90
+90
+90
+----------
+// setProperty(_rotation, 0.0/0.0)
+90
+90
+90
+----------
+// setProperty(_rotation, 1.0/0.0)
+90
+90
+90
+----------
+// setProperty(_rotation, -1.0/0.0)
+90
+90
+90
+----------
+// setProperty(_rotation, new Object())
+90
+90
+90
+----------
+// setProperty(_name, 2)
+2
+2
+
+----------
+// setProperty(_name, -5)
+-5
+-5
+
+----------
+// setProperty(_name, 1.5)
+1.5
+1.5
+
+----------
+// setProperty(_name, 0)
+0
+0
+
+----------
+// setProperty(_name, "10")
+10
+10
+
+----------
+// setProperty(_name, "10x")
+10x
+10x
+
+----------
+// setProperty(_name, "z10")
+z10
+z10
+
+----------
+// setProperty(_name, "abc")
+abc
+abc
+
+----------
+// setProperty(_name, "")
+
+
+
+----------
+// setProperty(_name, "true")
+true
+true
+
+----------
+// setProperty(_name, "false")
+false
+false
+
+----------
+// setProperty(_name, "undefined")
+undefined
+undefined
+
+----------
+// setProperty(_name, "null")
+null
+null
+
+----------
+// setProperty(_name, true)
+true
+true
+
+----------
+// setProperty(_name, false)
+false
+false
+
+----------
+// setProperty(_name, undefined)
+
+
+
+----------
+// setProperty(_name, null)
+null
+null
+
+----------
+// setProperty(_name, 0.0/0.0)
+#ERROR#
+#ERROR#
+
+----------
+// setProperty(_name, 1.0/0.0)
+#ERROR#
+#ERROR#
+
+----------
+// setProperty(_name, -1.0/0.0)
+#ERROR#
+#ERROR#
+
+----------
+// setProperty(_name, new Object())
+
+
+
+----------
+// setProperty(_highquality, 2)
+2
+2
+0
+----------
+// setProperty(_highquality, -5)
+1
+1
+0
+----------
+// setProperty(_highquality, 1.5)
+1
+1
+0
+----------
+// setProperty(_highquality, 0)
+0
+0
+0
+----------
+// setProperty(_highquality, "10")
+2
+2
+0
+----------
+// setProperty(_highquality, "10x")
+0
+1
+0
+----------
+// setProperty(_highquality, "z10")
+0
+1
+0
+----------
+// setProperty(_highquality, "abc")
+0
+1
+0
+----------
+// setProperty(_highquality, "")
+0
+1
+0
+----------
+// setProperty(_highquality, "true")
+0
+1
+0
+----------
+// setProperty(_highquality, "false")
+0
+1
+0
+----------
+// setProperty(_highquality, "undefined")
+0
+1
+0
+----------
+// setProperty(_highquality, "null")
+0
+1
+0
+----------
+// setProperty(_highquality, true)
+1
+1
+0
+----------
+// setProperty(_highquality, false)
+0
+0
+0
+----------
+// setProperty(_highquality, undefined)
+0
+1
+0
+----------
+// setProperty(_highquality, null)
+0
+1
+0
+----------
+// setProperty(_highquality, 0.0/0.0)
+0
+1
+0
+----------
+// setProperty(_highquality, 1.0/0.0)
+0
+1
+0
+----------
+// setProperty(_highquality, -1.0/0.0)
+0
+1
+0
+----------
+// setProperty(_highquality, new Object())
+0
+1
+0
+----------
+// setProperty(_focusrect, 2)
+1
+1
+0
+----------
+// setProperty(_focusrect, -5)
+1
+1
+0
+----------
+// setProperty(_focusrect, 1.5)
+1
+1
+0
+----------
+// setProperty(_focusrect, 0)
+0
+0
+0
+----------
+// setProperty(_focusrect, "10")
+1
+1
+0
+----------
+// setProperty(_focusrect, "10x")
+0
+1
+0
+----------
+// setProperty(_focusrect, "z10")
+0
+1
+0
+----------
+// setProperty(_focusrect, "abc")
+0
+1
+0
+----------
+// setProperty(_focusrect, "")
+0
+1
+0
+----------
+// setProperty(_focusrect, "true")
+0
+1
+0
+----------
+// setProperty(_focusrect, "false")
+0
+1
+0
+----------
+// setProperty(_focusrect, "undefined")
+0
+1
+0
+----------
+// setProperty(_focusrect, "null")
+0
+1
+0
+----------
+// setProperty(_focusrect, true)
+1
+1
+0
+----------
+// setProperty(_focusrect, false)
+0
+0
+0
+----------
+// setProperty(_focusrect, undefined)
+0
+1
+0
+----------
+// setProperty(_focusrect, null)
+0
+1
+0
+----------
+// setProperty(_focusrect, 0.0/0.0)
+0
+1
+0
+----------
+// setProperty(_focusrect, 1.0/0.0)
+0
+1
+0
+----------
+// setProperty(_focusrect, -1.0/0.0)
+0
+1
+0
+----------
+// setProperty(_focusrect, new Object())
+0
+1
+0
+----------
+// setProperty(_soundbuftime, 2)
+2
+2
+0
+----------
+// setProperty(_soundbuftime, -5)
+-5
+-5
+0
+----------
+// setProperty(_soundbuftime, 1.5)
+1
+1
+0
+----------
+// setProperty(_soundbuftime, 0)
+0
+0
+0
+----------
+// setProperty(_soundbuftime, "10")
+10
+10
+0
+----------
+// setProperty(_soundbuftime, "10x")
+0
+1
+0
+----------
+// setProperty(_soundbuftime, "z10")
+0
+1
+0
+----------
+// setProperty(_soundbuftime, "abc")
+0
+1
+0
+----------
+// setProperty(_soundbuftime, "")
+0
+1
+0
+----------
+// setProperty(_soundbuftime, "true")
+0
+1
+0
+----------
+// setProperty(_soundbuftime, "false")
+0
+1
+0
+----------
+// setProperty(_soundbuftime, "undefined")
+0
+1
+0
+----------
+// setProperty(_soundbuftime, "null")
+0
+1
+0
+----------
+// setProperty(_soundbuftime, true)
+1
+1
+0
+----------
+// setProperty(_soundbuftime, false)
+0
+0
+0
+----------
+// setProperty(_soundbuftime, undefined)
+0
+1
+0
+----------
+// setProperty(_soundbuftime, null)
+0
+1
+0
+----------
+// setProperty(_soundbuftime, 0.0/0.0)
+0
+1
+0
+----------
+// setProperty(_soundbuftime, 1.0/0.0)
+0
+1
+0
+----------
+// setProperty(_soundbuftime, -1.0/0.0)
+0
+1
+0
+----------
+// setProperty(_soundbuftime, new Object())
+0
+1
+0
+----------
+// setProperty(_quality, 2)
+LOW
+LOW
+LOW
+----------
+// setProperty(_quality, -5)
+LOW
+LOW
+LOW
+----------
+// setProperty(_quality, 1.5)
+LOW
+LOW
+LOW
+----------
+// setProperty(_quality, 0)
+LOW
+LOW
+LOW
+----------
+// setProperty(_quality, "10")
+LOW
+LOW
+LOW
+----------
+// setProperty(_quality, "10x")
+LOW
+LOW
+LOW
+----------
+// setProperty(_quality, "z10")
+LOW
+LOW
+LOW
+----------
+// setProperty(_quality, "abc")
+LOW
+LOW
+LOW
+----------
+// setProperty(_quality, "")
+LOW
+LOW
+LOW
+----------
+// setProperty(_quality, "true")
+LOW
+LOW
+LOW
+----------
+// setProperty(_quality, "false")
+LOW
+LOW
+LOW
+----------
+// setProperty(_quality, "undefined")
+LOW
+LOW
+LOW
+----------
+// setProperty(_quality, "null")
+LOW
+LOW
+LOW
+----------
+// setProperty(_quality, true)
+LOW
+LOW
+LOW
+----------
+// setProperty(_quality, false)
+LOW
+LOW
+LOW
+----------
+// setProperty(_quality, undefined)
+LOW
+LOW
+LOW
+----------
+// setProperty(_quality, null)
+LOW
+LOW
+LOW
+----------
+// setProperty(_quality, 0.0/0.0)
+LOW
+LOW
+LOW
+----------
+// setProperty(_quality, 1.0/0.0)
+LOW
+LOW
+LOW
+----------
+// setProperty(_quality, -1.0/0.0)
+LOW
+LOW
+LOW
+----------
+// setProperty(_quality, new Object())
+LOW
+LOW
+LOW
+----------

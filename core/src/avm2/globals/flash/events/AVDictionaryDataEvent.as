@@ -1,6 +1,7 @@
 package flash.events {
     import flash.utils.Dictionary;
 
+    [API("692")]
     public class AVDictionaryDataEvent extends Event {
         public static const AV_DICTIONARY_DATA:String = "avDictionaryData";
 
@@ -8,7 +9,7 @@ package flash.events {
         private var _time:Number;
 
         public function AVDictionaryDataEvent(
-            type:String,
+            type:String = "avDictionaryData",
             bubbles:Boolean = false,
             cancelable:Boolean = false,
             init_dictionary:Dictionary = null,

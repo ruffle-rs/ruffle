@@ -1,0 +1,6 @@
+--- Testing NetConnection Array Serialization ---
+Navigator::fetch:
+  URL: http://localhost:8000/
+  Method: POST
+  Mime-Type: application/x-amf
+  Body: [00, 00, 00, 00, 00, 01, 00, 0B, 74, 65, 73, 74, 2E, 61, 72, 72, 61, 79, 73, 00, 02, 2F, 31, 00, 00, 00, 25, 0A, 00, 00, 00, 01, 08, 00, 00, 00, 02, 00, 01, 30, 02, 00, 06, 72, 65, 61, 6C, 5F, 30, 00, 01, 31, 02, 00, 06, 72, 65, 61, 6C, 5F, 31, 00, 00, 09]

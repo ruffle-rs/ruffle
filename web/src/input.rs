@@ -263,13 +263,30 @@ fn map_key_location(location: u32) -> KeyLocation {
     }
 }
 
-/// Convert a web `KeyboardEvent.key` value to a Ruffle `TextControlCode`,
-/// given the states of the modifier keys. Return `None` if there is no match.
+/// Convert a web keyboard event to a Ruffle `TextControlCode`, given the
+/// states of the modifier keys. Return `None` if there is no match.
+///
+/// `key` is `KeyboardEvent.key` (the produced character — layout-dependent;
+/// e.g. on an Arabic keyboard the physical V key produces `ر`). `code` is
+/// `KeyboardEvent.code` (the physical key — always `"KeyV"` regardless of
+/// layout). For Ctrl-modified clipboard shortcuts we match on `code` first
+/// so paste/copy/cut/select-all work on every keyboard layout, matching
+/// Flash Player's layout-independent shortcut handling.
 pub fn web_to_ruffle_text_control(
     key: &str,
+    code: &str,
     ctrl_key: bool,
     shift_key: bool,
 ) -> Option<TextControlCode> {
+    if ctrl_key {
+        match code {
+            "KeyA" => return Some(TextControlCode::SelectAll),
+            "KeyC" => return Some(TextControlCode::Copy),
+            "KeyV" => return Some(TextControlCode::Paste),
+            "KeyX" => return Some(TextControlCode::Cut),
+            _ => {}
+        }
+    }
     let mut chars = key.chars();
     let (c1, c2) = (chars.next(), chars.next());
     if c2.is_none() {

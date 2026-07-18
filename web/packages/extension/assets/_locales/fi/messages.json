@@ -35,6 +35,15 @@
     "settings_player_version": {
         "message": "Emuloitava Flash-soittimen versio (välillä 1-32)"
     },
+    "settings_background_execution_mode": {
+        "message": "Taustasuoritus"
+    },
+    "settings_background_execution_mode_none": {
+        "message": "Keskeytä"
+    },
+    "settings_background_execution_mode_main_thread": {
+        "message": "Suorita pääsäikeessä"
+    },
     "settings_preferred_renderer": {
         "message": "Ensisijainen renderöijä"
     },

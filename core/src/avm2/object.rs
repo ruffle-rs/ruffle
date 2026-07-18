@@ -31,14 +31,17 @@ mod array_object;
 mod bitmapdata_object;
 mod bytearray_object;
 mod class_object;
+mod content_element_object;
 mod context3d_object;
 mod date_object;
 mod dictionary_object;
 mod dispatch_object;
 mod domain_object;
+mod element_format_object;
 mod error_object;
 mod event_object;
 mod file_reference_object;
+mod font_description_object;
 mod font_object;
 mod function_object;
 mod index_buffer_3d_object;
@@ -64,6 +67,8 @@ mod soundtransform_object;
 mod stage3d_object;
 mod stage_object;
 mod stylesheet_object;
+mod tab_stop_object;
+mod text_block_object;
 mod textformat_object;
 mod texture_object;
 mod vector_object;
@@ -81,6 +86,9 @@ pub use crate::avm2::object::bytearray_object::{
     ByteArrayObject, ByteArrayObjectWeak, byte_array_allocator,
 };
 pub use crate::avm2::object::class_object::{ClassObject, ClassObjectWeak};
+pub use crate::avm2::object::content_element_object::{
+    ContentElementObject, ContentElementObjectWeak, content_element_allocator,
+};
 pub use crate::avm2::object::context3d_object::{Context3DObject, Context3DObjectWeak};
 pub use crate::avm2::object::date_object::{DateObject, DateObjectWeak, date_allocator};
 pub use crate::avm2::object::dictionary_object::{
@@ -90,11 +98,17 @@ pub use crate::avm2::object::dispatch_object::{DispatchObject, DispatchObjectWea
 pub use crate::avm2::object::domain_object::{
     DomainObject, DomainObjectWeak, application_domain_allocator,
 };
+pub use crate::avm2::object::element_format_object::{
+    ElementFormatObject, ElementFormatObjectWeak, element_format_allocator,
+};
 pub use crate::avm2::object::error_object::{ErrorObject, ErrorObjectWeak, error_allocator};
 pub use crate::avm2::object::event_object::{EventObject, EventObjectWeak, event_allocator};
 pub use crate::avm2::object::file_reference_object::{
     FileReference, FileReferenceObject, FileReferenceObjectHandle, FileReferenceObjectWeak,
     file_reference_allocator,
+};
+pub use crate::avm2::object::font_description_object::{
+    FontDescriptionObject, FontDescriptionObjectWeak, font_description_allocator,
 };
 pub use crate::avm2::object::font_object::{FontObject, FontObjectWeak, font_allocator};
 pub use crate::avm2::object::function_object::{FunctionObject, FunctionObjectWeak};
@@ -150,6 +164,12 @@ pub use crate::avm2::object::stage3d_object::{Stage3DObject, Stage3DObjectWeak};
 pub use crate::avm2::object::stylesheet_object::{
     StyleSheetObject, StyleSheetObjectWeak, style_sheet_allocator,
 };
+pub use crate::avm2::object::tab_stop_object::{
+    TabStopObject, TabStopObjectWeak, tab_stop_allocator,
+};
+pub use crate::avm2::object::text_block_object::{
+    TextBlockObject, TextBlockObjectWeak, text_block_allocator,
+};
 pub use crate::avm2::object::textformat_object::{
     TextFormatObject, TextFormatObjectWeak, textformat_allocator,
 };
@@ -163,7 +183,9 @@ pub use crate::avm2::object::worker_object::{WorkerObject, WorkerObjectWeak};
 pub use crate::avm2::object::xml_list_object::{
     E4XOrXml, XmlListObject, XmlListObjectWeak, xml_list_allocator,
 };
-pub use crate::avm2::object::xml_object::{XmlObject, XmlObjectWeak, xml_allocator};
+pub use crate::avm2::object::xml_object::{
+    NotificationCommand, XmlObject, XmlObjectWeak, xml_allocator,
+};
 use crate::font::Font;
 
 /// Represents an object that can be directly interacted with by the AVM2
@@ -209,6 +231,11 @@ use crate::font::Font;
         ShaderDataObject(ShaderDataObject<'gc>),
         SocketObject(SocketObject<'gc>),
         FileReferenceObject(FileReferenceObject<'gc>),
+        ContentElementObject(ContentElementObject<'gc>),
+        ElementFormatObject(ElementFormatObject<'gc>),
+        FontDescriptionObject(FontDescriptionObject<'gc>),
+        TabStopObject(TabStopObject<'gc>),
+        TextBlockObject(TextBlockObject<'gc>),
         FontObject(FontObject<'gc>),
         LocalConnectionObject(LocalConnectionObject<'gc>),
         SharedObjectObject(SharedObjectObject<'gc>),
@@ -744,6 +771,11 @@ impl<'gc> Object<'gc> {
         pub fn as_domain_object for DomainObject;
         pub fn as_event_object for EventObject;
         pub fn as_dispatch_object for DispatchObject;
+        pub fn as_content_element_object for ContentElementObject;
+        pub fn as_element_format_object for ElementFormatObject;
+        pub fn as_font_description_object for FontDescriptionObject;
+        pub fn as_tab_stop_object for TabStopObject;
+        pub fn as_text_block_object for TextBlockObject;
         pub fn as_font_object for FontObject;
         pub fn as_regexp_object for RegExpObject;
         pub fn as_sound_object for SoundObject;
@@ -965,6 +997,11 @@ define_weak_enum! {
         ShaderDataObject(ShaderDataObjectWeak<'gc>),
         SocketObject(SocketObjectWeak<'gc>),
         FileReferenceObject(FileReferenceObjectWeak<'gc>),
+        ContentElementObject(ContentElementObjectWeak<'gc>),
+        ElementFormatObject(ElementFormatObjectWeak<'gc>),
+        FontDescriptionObject(FontDescriptionObjectWeak<'gc>),
+        TabStopObject(TabStopObjectWeak<'gc>),
+        TextBlockObject(TextBlockObjectWeak<'gc>),
         FontObject(FontObjectWeak<'gc>),
         LocalConnectionObject(LocalConnectionObjectWeak<'gc>),
         SharedObjectObject(SharedObjectObjectWeak<'gc>),

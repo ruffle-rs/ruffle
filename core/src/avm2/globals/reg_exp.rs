@@ -5,7 +5,7 @@ use ruffle_macros::istr;
 use crate::avm2::Error;
 use crate::avm2::activation::Activation;
 use crate::avm2::error::make_error_1100;
-use crate::avm2::object::{ArrayObject, Object, TObject as _};
+use crate::avm2::object::{ArrayObject, TObject as _};
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::regexp::RegExpFlags;
 use crate::avm2::value::Value;
@@ -22,15 +22,17 @@ pub fn init<'gc>(
     let this = this.as_object().unwrap();
 
     if let Some(mut regexp) = this.as_regexp_mut(activation.gc()) {
-        let source: AvmString<'gc> = match args.get_value(0) {
+        let source = match args.get_value(0) {
             Value::Undefined => istr!(""),
-            Value::Object(Object::RegExpObject(o)) => {
+            Value::Object(o) if let Some(re) = o.as_regexp_object() => {
                 if !matches!(args.get_value(1), Value::Undefined) {
                     return Err(make_error_1100(activation));
                 }
-                let other = o.regexp();
+
+                let other = re.regexp();
                 regexp.set_source(other.source());
                 regexp.set_flags(other.flags());
+
                 return Ok(Value::Undefined);
             }
             arg => arg.coerce_to_string(activation)?,
@@ -68,10 +70,10 @@ pub fn call_handler<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this_class = activation.avm2().classes().regexp;
 
-    if let Some(arg) = args.get_optional(0).filter(|_| args.len() == 1) {
-        if arg.as_object().and_then(|o| o.as_regexp_object()).is_some() {
-            return Ok(arg);
-        }
+    if let Some(arg) = args.get_optional(0).filter(|_| args.len() == 1)
+        && arg.as_object().and_then(|o| o.as_regexp_object()).is_some()
+    {
+        return Ok(arg);
     }
     this_class.construct(activation, args)
 }
@@ -160,7 +162,7 @@ pub fn get_last_index<'gc>(
     let this = this.as_object().unwrap();
 
     if let Some(re) = this.as_regexp() {
-        return Ok(re.last_index().into());
+        return Ok(Value::from_usize_lossy(re.last_index()));
     }
 
     Ok(Value::Undefined)

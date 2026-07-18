@@ -6,7 +6,9 @@ use crate::avm1::property_map::PropertyMap;
 use crate::avm1::scope::Scope;
 use crate::avm1::{Activation, ActivationIdentifier, Error, Object, Value, scope};
 use crate::context::UpdateContext;
-use crate::display_object::{DisplayObject, MovieClip, TDisplayObject, TDisplayObjectContainer};
+use crate::display_object::{
+    DisplayObject, MovieClip, TDisplayObject, TDisplayObjectContainer, TInteractiveObject,
+};
 use crate::frame_lifecycle::FramePhase;
 use crate::string::{AvmString, StringContext};
 use crate::tag_utils::SwfSlice;
@@ -133,6 +135,10 @@ impl<'gc> Avm1<'gc> {
         }
     }
 
+    pub fn load_player_globals(context: &mut UpdateContext<'gc>) {
+        avm1::globals::load_playerglobal(context);
+    }
+
     /// Add a stack frame that executes code in timeline scope
     ///
     /// This creates a new frame stack.
@@ -169,7 +175,37 @@ impl<'gc> Avm1<'gc> {
             &[],
         );
         if let Err(e) = child_activation.run_actions(code) {
-            root_error_handler(&mut child_activation, e);
+            Self::handle_error(&mut child_activation, e);
+        }
+    }
+
+    /// Add a stack frame that executes code in globals scope
+    ///
+    /// This creates a new frame stack.
+    pub fn run_stack_frame_for_globals(code: SwfSlice, context: &mut UpdateContext<'gc>) {
+        if context.avm1.halted {
+            // We've been told to ignore all future execution.
+            return;
+        }
+
+        let constant_pool = context.avm1.constant_pool;
+        // Let's do this once for swf 6 (case sensitive) and once for swf 7 (case insensitive),
+        // as we keep separate _global objects around for those two cases.
+        for swf_version in [6, 7] {
+            let mut child_activation = Activation::from_action(
+                context,
+                ActivationIdentifier::root("playerglobal"),
+                swf_version,
+                context.avm1.global_scope(swf_version),
+                constant_pool,
+                context.stage.as_displayobject(),
+                Value::Null,
+                None,
+                &[],
+            );
+            if let Err(e) = child_activation.run_actions(code.clone()) {
+                Self::handle_error(&mut child_activation, e);
+            }
         }
     }
 
@@ -246,7 +282,7 @@ impl<'gc> Avm1<'gc> {
             &[],
         );
         if let Err(e) = child_activation.run_actions(code) {
-            root_error_handler(&mut child_activation, e);
+            Self::handle_error(&mut child_activation, e);
         }
     }
 
@@ -323,6 +359,10 @@ impl<'gc> Avm1<'gc> {
 
     pub fn stack_len(&self) -> usize {
         self.stack.len()
+    }
+
+    pub fn truncate_stack(&mut self, len: usize) {
+        self.stack.truncate(len);
     }
 
     /// Resets the operand stack and the global registers.
@@ -449,8 +489,8 @@ impl<'gc> Avm1<'gc> {
         let mut out = Vec::new();
 
         // Find objects to remove
-        if let Some(root_clip) = context.stage.root_clip() {
-            Self::find_display_objects_pending_removal(root_clip, &mut out);
+        for level in context.stage.iter_render_list() {
+            Self::find_display_objects_pending_removal(level, &mut out);
         }
 
         for &child in &out {
@@ -510,6 +550,9 @@ impl<'gc> Avm1<'gc> {
             .movie_clip_on_load(context.action_queue, &context.strings);
 
         *context.frame_phase = FramePhase::Idle;
+
+        // Looks like the stack is cleared between frames.
+        context.avm1.clear();
     }
 
     /// Adds a movie clip to the execution list.
@@ -585,6 +628,36 @@ impl<'gc> Avm1<'gc> {
 
     #[cfg(not(feature = "avm_debug"))]
     pub const fn set_show_debug_output(&self, _visible: bool) {}
+
+    pub fn handle_error(activation: &mut Activation<'_, 'gc>, error: Error<'gc>) {
+        match &error {
+            Error::ThrownValue(value) => {
+                tracing::warn!("Uncaught AVM1 error: {value:?}");
+
+                let string = if let Ok(message) = value.coerce_to_string(activation) {
+                    Cow::Owned(message.to_utf8_lossy().to_string())
+                } else {
+                    // The only Value variant that can throw an error when being stringified
+                    // is Object, so just print "[type Object]".
+                    Cow::Borrowed("[type Object]")
+                };
+
+                activation
+                    .context
+                    .avm_warning(&format!("Uncaught exception, {string}"));
+
+                // Continue execution without halting.
+                return;
+            }
+            Error::InvalidSwf(swf_error) => {
+                tracing::error!("{}: {}", error, swf_error);
+            }
+            _ => {
+                tracing::error!("{}", error);
+            }
+        }
+        activation.context.avm1.halt();
+    }
 }
 
 /// Utility function used by `Avm1::action_wait_for_frame` and
@@ -595,34 +668,4 @@ pub fn skip_actions(reader: &mut Reader<'_>, num_actions_to_skip: u8) {
             tracing::warn!("Couldn't skip action: {}", e);
         }
     }
-}
-
-fn root_error_handler<'gc>(activation: &mut Activation<'_, 'gc>, error: Error<'gc>) {
-    match &error {
-        Error::ThrownValue(value) => {
-            tracing::warn!("Uncaught AVM1 error: {value:?}");
-
-            let string = if let Ok(message) = value.coerce_to_string(activation) {
-                Cow::Owned(message.to_utf8_lossy().to_string())
-            } else {
-                // The only Value variant that can throw an error when being stringified
-                // is Object, so just print "[type Object]".
-                Cow::Borrowed("[type Object]")
-            };
-
-            activation
-                .context
-                .avm_warning(&format!("Uncaught exception, {string}"));
-
-            // Continue execution without halting.
-            return;
-        }
-        Error::InvalidSwf(swf_error) => {
-            tracing::error!("{}: {}", error, swf_error);
-        }
-        _ => {
-            tracing::error!("{}", error);
-        }
-    }
-    activation.context.avm1.halt();
 }

@@ -283,7 +283,7 @@ impl BlurFilter {
                     descriptors,
                     draw_encoder,
                     pipeline,
-                    &mut flop,
+                    &flop,
                     previous_view,
                     previous_vertices,
                 );
@@ -305,7 +305,7 @@ impl BlurFilter {
         descriptors: &Descriptors,
         draw_encoder: &mut CommandEncoder,
         pipeline: &RenderPipeline,
-        destination: &mut CommandTarget,
+        destination: &CommandTarget,
         source: &TextureView,
         vertices: BufferSlice,
     ) {

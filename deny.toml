@@ -89,6 +89,13 @@ github = [
 
 [advisories]
 version = 2
-
-# `paste` crate is no longer maintained https://rustsec.org/advisories/RUSTSEC-2024-0436
-ignore = ["RUSTSEC-2024-0436"]
+ignore = [
+    # `paste` crate is no longer maintained https://rustsec.org/advisories/RUSTSEC-2024-0436
+    "RUSTSEC-2024-0436",
+    # `ttf-parser` crate is no longer maintained https://rustsec.org/advisories/RUSTSEC-2026-0192
+    "RUSTSEC-2026-0192",
+    # Quadratic run time when checking a start tag for duplicate attribute names https://rustsec.org/advisories/RUSTSEC-2026-0194
+    "RUSTSEC-2026-0194",
+    # Unbounded namespace-declaration allocation in NsReader enables memory-exhaustion denial of service https://rustsec.org/advisories/RUSTSEC-2026-0195
+    "RUSTSEC-2026-0195"
+]

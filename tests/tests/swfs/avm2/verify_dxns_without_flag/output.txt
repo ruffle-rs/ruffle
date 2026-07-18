@@ -1,0 +1,3 @@
+Caught error
+VerifyError: Error #1015: Method Test/dxnsMethod() cannot set default xml namespace
+1015

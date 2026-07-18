@@ -49,6 +49,13 @@
                 <label for="log_level">Log level</label>
             </div>
             <div class="option select">
+                <select id="background_execution_mode">
+                    <option value="none" id="background_execution_mode_none">Pause</option>
+                    <option value="mainThread" id="background_execution_mode_main_thread">Run in the main thread</option>
+                </select>
+                <label for="background_execution_mode">Background execution</label>
+            </div>
+            <div class="option select">
                 <select id="preferred_renderer">
                     <option value="" id="preferred_renderer_auto">Automatic</option>
                     <option value="webgpu">WebGPU</option>

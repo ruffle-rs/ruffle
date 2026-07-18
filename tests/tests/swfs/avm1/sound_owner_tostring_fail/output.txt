@@ -1,0 +1,9 @@
+mc frame 1
+100
+// new Sound(o)
+o.toString()
+Warning: Uncaught exception, o.toString() error
+frame 1
+bar
+undefined
+undefined

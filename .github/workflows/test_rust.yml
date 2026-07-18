@@ -16,7 +16,7 @@ env:
   LLVM_COV_OPTS: --branch --profile ci
   LLVM_COV_TEST_OPTS: ${LLVM_COV_OPTS} ${TEST_OPTS} --features ${FEATURES},imgtests
 
-  LINUX_DEPENDENCIES: libasound2-dev mesa-vulkan-drivers libudev-dev
+  LINUX_DEPENDENCIES: libasound2-dev mesa-vulkan-drivers libudev-dev libfontconfig-dev
 
   # This is to counteract the disabling by rust-cache.
   # See: https://github.com/Swatinem/rust-cache/issues/43
@@ -42,7 +42,7 @@ jobs:
     outputs:
       should_run: ${{ steps.filter.outputs.src }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - uses: AurorNZ/paths-filter@v5
         id: filter
@@ -72,7 +72,7 @@ jobs:
             os: ubuntu-24.04
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
@@ -103,6 +103,8 @@ jobs:
 
       - name: Run tests
         shell: bash
+        env:
+          RUFFLE_TEST_OPTS: "--compile-mode=compile-and-verify"
         run: cargo nextest run --profile ci --cargo-profile ci ${TEST_OPTS} --features ${FEATURES}
 
       - name: Run doctests
@@ -130,7 +132,7 @@ jobs:
         rust_version: [stable, beta, nightly]
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
@@ -159,13 +161,19 @@ jobs:
         env:
           RUSTDOCFLAGS: -D warnings
 
+      - name: Check fuzz/ formatting and clippy
+        run: |
+          cd fuzz/
+          cargo fmt --all -- --check
+          cargo clippy --all ${{ (matrix.rust_version != 'nightly' && '-- -D warnings') || '' }}
+
   coverage:
     needs: changes
     if: needs.changes.outputs.should_run == 'true'
     name: Coverage Report
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           # We need history for delta coverage, but we also don't want to fetch
           # the whole repo. 42 commits seem reasonable
@@ -282,7 +290,7 @@ jobs:
     runs-on: ubuntu-24.04
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable

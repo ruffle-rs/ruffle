@@ -5,7 +5,7 @@ use crate::avm1::{ArrayBuilder as Avm1ArrayBuilder, Error as Avm1Error, Object a
 use crate::avm2::activation::Activation as Avm2Activation;
 use crate::avm2::error::Error as Avm2Error;
 use crate::avm2::object::{
-    ArrayObject as Avm2ArrayObject, FunctionObject as Avm2FunctionObject, Object as Avm2Object,
+    ArrayObject as Avm2ArrayObject, FunctionObject as Avm2FunctionObject,
     ScriptObject as Avm2ScriptObject, TObject as _,
 };
 use crate::avm2::{Avm2, FunctionArgs, Value as Avm2Value};
@@ -213,7 +213,7 @@ impl Value {
                         })
                         .collect::<Result<Vec<Value>, Avm2Error>>()?;
                     Value::List(values)
-                } else if matches!(obj, Avm2Object::ScriptObject(_)) {
+                } else if obj.as_script_object().is_some() {
                     let mut values = BTreeMap::new();
 
                     let mut last_index = obj.get_next_enumerant(0, activation)?;

@@ -136,6 +136,8 @@ package flash.events {
             );
         }
 
+        public native function updateAfterEvent():void;
+
         public native function get stageX():Number;
         public native function get stageY():Number;
     }

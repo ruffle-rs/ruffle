@@ -203,12 +203,12 @@ impl<'gc> ArrayStorage<'gc> {
                 storage,
                 occupied_count,
             } => {
-                if let Some(i) = storage.get_mut(item) {
-                    if i.is_some() {
-                        *i = None;
-                        *occupied_count -= 1;
-                        self.maybe_convert_to_sparse();
-                    }
+                if let Some(i) = storage.get_mut(item)
+                    && i.is_some()
+                {
+                    *i = None;
+                    *occupied_count -= 1;
+                    self.maybe_convert_to_sparse();
                 }
             }
             ArrayStorage::Sparse { storage, .. } => {
@@ -333,22 +333,22 @@ impl<'gc> ArrayStorage<'gc> {
             storage,
             occupied_count,
         } = self
+            && Self::should_convert_to_sparse(storage.len(), *occupied_count)
         {
-            if Self::should_convert_to_sparse(storage.len(), *occupied_count) {
-                self.convert_to_sparse();
-            }
+            self.convert_to_sparse();
         }
     }
 
     /// Convert the array to a dense representation if it meets the criteria.
     fn maybe_convert_to_dense(&mut self) {
-        if let ArrayStorage::Sparse { storage, length } = self {
-            if storage.is_empty() && *length == 0 {
-                *self = ArrayStorage::Dense {
-                    storage: Vec::new(),
-                    occupied_count: 0,
-                };
-            }
+        if let ArrayStorage::Sparse { storage, length } = self
+            && storage.is_empty()
+            && *length == 0
+        {
+            *self = ArrayStorage::Dense {
+                storage: Vec::new(),
+                occupied_count: 0,
+            };
         }
     }
 

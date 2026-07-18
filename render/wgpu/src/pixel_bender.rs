@@ -336,7 +336,7 @@ fn image_input_as_texture<'a>(
 
 impl<T: RenderTarget> WgpuRenderBackend<T> {
     pub(super) fn compile_pixelbender_shader_impl(
-        &mut self,
+        &self,
         shader: PixelBenderShader,
     ) -> Result<PixelBenderShaderHandle, BitmapError> {
         let handle = PixelBenderWgpuShader::new(&self.descriptors, shader);

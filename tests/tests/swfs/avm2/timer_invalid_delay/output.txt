@@ -1,0 +1,30 @@
+RangeError: Error #2066: The Timer delay specified is out of range.
+	at Error$/throwError()
+	at flash.utils::Timer()
+	at Test/testDelay()
+	at Test()
+RangeError: Error #2066: The Timer delay specified is out of range.
+	at Error$/throwError()
+	at flash.utils::Timer/set delay()
+	at Test/testDelay()
+	at Test()
+RangeError: Error #2066: The Timer delay specified is out of range.
+	at Error$/throwError()
+	at flash.utils::Timer()
+	at Test/testDelay()
+	at Test()
+RangeError: Error #2066: The Timer delay specified is out of range.
+	at Error$/throwError()
+	at flash.utils::Timer/set delay()
+	at Test/testDelay()
+	at Test()
+RangeError: Error #2066: The Timer delay specified is out of range.
+	at Error$/throwError()
+	at flash.utils::Timer()
+	at Test/testDelay()
+	at Test()
+RangeError: Error #2066: The Timer delay specified is out of range.
+	at Error$/throwError()
+	at flash.utils::Timer/set delay()
+	at Test/testDelay()
+	at Test()

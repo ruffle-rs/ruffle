@@ -5,12 +5,13 @@ use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::function::ExecutionReason;
 use crate::avm1::property::Attribute;
-use crate::avm1::property_decl::{DeclContext, StaticDeclarations, SystemClass};
+use crate::avm1::property_decl::{DeclContext, PropertyOrder, StaticDeclarations, SystemClass};
 use crate::avm1::{Object, Value};
 use crate::avm1_stub;
 use crate::backend::navigator::{NavigationMethod, Request};
 use crate::string::AvmString;
 use ruffle_macros::istr;
+use ruffle_wstr::WString;
 
 const PROTO_DECLS: StaticDeclarations = declare_static_properties! {
     "load" => method(load; DONT_ENUM | DONT_DELETE);
@@ -30,7 +31,7 @@ pub fn create_class<'gc>(
     context: &mut DeclContext<'_, 'gc>,
     super_proto: Object<'gc>,
 ) -> SystemClass<'gc> {
-    let class = context.empty_class(super_proto);
+    let class = context.empty_class(super_proto, PropertyOrder::PrototypeFirst);
     context.define_properties_on(class.proto, PROTO_DECLS(context));
     class
 }
@@ -51,13 +52,16 @@ fn decode<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     // Spec says added in SWF 7, but not version gated.
     // Decode the query string into properties on this object.
-    if let Some(data) = args.get(0) {
-        let data = data.coerce_to_string(activation)?;
-        for (k, v) in url::form_urlencoded::parse(data.to_utf8_lossy().as_bytes()) {
-            let k = AvmString::new_utf8(activation.gc(), k);
-            let v = AvmString::new_utf8(activation.gc(), v);
-            this.set(k, v.into(), activation)?;
-        }
+
+    let Some(data) = args.get(0) else {
+        return Ok(Value::Bool(false));
+    };
+
+    let data = data.coerce_to_string(activation)?;
+    for (k, v) in url::form_urlencoded::parse(data.to_utf8_lossy().as_bytes()) {
+        let k = AvmString::new_utf8(activation.gc(), k);
+        let v = AvmString::new_utf8(activation.gc(), v);
+        this.set(k, v, activation)?;
     }
 
     Ok(Value::Undefined)
@@ -111,7 +115,7 @@ fn on_data<'gc>(
                 activation,
                 ExecutionReason::FunctionCall,
             )?;
-            this.set(istr!("loaded"), true.into(), activation)?;
+            this.set(istr!("loaded"), true, activation)?;
             true
         }
     };
@@ -217,25 +221,31 @@ fn to_string<'gc>(
     let mut form_values = IndexMap::new();
     let keys = this.get_keys(activation, false);
 
-    for k in keys {
-        let v = this.get(k, activation);
-
-        //TODO: What happens if an error occurs inside a virtual property?
+    for key in keys {
         form_values.insert(
-            k.to_string(),
-            v.ok()
-                .unwrap_or(Value::Undefined)
-                .coerce_to_string(activation)
-                .unwrap_or_else(|_| istr!("undefined"))
-                .to_string(),
+            key,
+            this.get(key, activation)?.coerce_to_string(activation)?,
         );
     }
 
-    let query_string = url::form_urlencoded::Serializer::new(String::new())
-        .extend_pairs(form_values.iter())
-        .finish();
+    let mut query_string = WString::new();
+    let mut first = true;
 
-    Ok(AvmString::new_utf8(activation.gc(), query_string).into())
+    for (k, v) in form_values {
+        if first {
+            first = false;
+        } else {
+            query_string.push_byte(b'&');
+        }
+
+        let k = crate::avm1::globals::escape_internal(k.as_wstr());
+        let v = crate::avm1::globals::escape_internal(v.as_wstr());
+        query_string.push_str(&k);
+        query_string.push_byte(b'=');
+        query_string.push_str(&v);
+    }
+
+    Ok(AvmString::new(activation.gc(), query_string).into())
 }
 
 fn spawn_load_var_fetch<'gc>(
@@ -267,7 +277,7 @@ fn spawn_load_var_fetch<'gc>(
             Attribute::DONT_DELETE | Attribute::DONT_ENUM,
         );
     } else {
-        loader_object.set(bytes_loaded_string, 0.into(), activation)?;
+        loader_object.set(bytes_loaded_string, 0, activation)?;
     }
 
     let bytes_total_string = istr!("_bytesTotal");
@@ -293,7 +303,7 @@ fn spawn_load_var_fetch<'gc>(
             Attribute::DONT_DELETE | Attribute::DONT_ENUM,
         );
     } else {
-        loader_object.set(loaded_string, false.into(), activation)?;
+        loader_object.set(loaded_string, false, activation)?;
     }
 
     Ok(true.into())

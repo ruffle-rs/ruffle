@@ -1,0 +1,140 @@
+<type name="flash.errors::DRMManagerError" base="Class" isDynamic="true" isFinal="true" isStatic="true">
+  <accessor name="prototype" access="readonly" type="*" declaredBy="Class"/>
+  <extendsClass type="Class"/>
+  <extendsClass type="Object"/>
+  <factory type="flash.errors::DRMManagerError">
+      <accessor name="errorID" access="readonly" type="int" declaredBy="Error"/>
+      <accessor name="subErrorID" access="readonly" type="int" declaredBy="flash.errors::DRMManagerError"/>
+      <constructor>
+          <parameter index="1" type="String" optional="false"/>
+          <parameter index="2" type="int" optional="false"/>
+          <parameter index="3" type="int" optional="false"/>
+    </constructor>
+      <extendsClass type="Error"/>
+      <extendsClass type="Object"/>
+      <method name="getStackTrace" declaredBy="Error" returnType="String"/>
+      <method name="toString" declaredBy="flash.errors::DRMManagerError" returnType="String"/>
+      <variable name="message" type="*"/>
+      <variable name="name" type="*"/>
+  </factory>
+</type>
+<type name="flash.errors::EOFError" base="Class" isDynamic="true" isFinal="true" isStatic="true">
+  <accessor name="prototype" access="readonly" type="*" declaredBy="Class"/>
+  <extendsClass type="Class"/>
+  <extendsClass type="Object"/>
+  <factory type="flash.errors::EOFError">
+      <accessor name="errorID" access="readonly" type="int" declaredBy="Error"/>
+      <constructor>
+          <parameter index="1" type="String" optional="true"/>
+          <parameter index="2" type="int" optional="true"/>
+    </constructor>
+      <extendsClass type="Error"/>
+      <extendsClass type="Object"/>
+      <extendsClass type="flash.errors::IOError"/>
+      <method name="getStackTrace" declaredBy="Error" returnType="String"/>
+      <variable name="message" type="*"/>
+      <variable name="name" type="*"/>
+  </factory>
+</type>
+<type name="flash.errors::IOError" base="Class" isDynamic="true" isFinal="true" isStatic="true">
+  <accessor name="prototype" access="readonly" type="*" declaredBy="Class"/>
+  <extendsClass type="Class"/>
+  <extendsClass type="Object"/>
+  <factory type="flash.errors::IOError">
+      <accessor name="errorID" access="readonly" type="int" declaredBy="Error"/>
+      <constructor>
+          <parameter index="1" type="String" optional="true"/>
+          <parameter index="2" type="int" optional="true"/>
+    </constructor>
+      <extendsClass type="Error"/>
+      <extendsClass type="Object"/>
+      <method name="getStackTrace" declaredBy="Error" returnType="String"/>
+      <variable name="message" type="*"/>
+      <variable name="name" type="*"/>
+  </factory>
+</type>
+<type name="flash.errors::IllegalOperationError" base="Class" isDynamic="true" isFinal="true" isStatic="true">
+  <accessor name="prototype" access="readonly" type="*" declaredBy="Class"/>
+  <extendsClass type="Class"/>
+  <extendsClass type="Object"/>
+  <factory type="flash.errors::IllegalOperationError">
+      <accessor name="errorID" access="readonly" type="int" declaredBy="Error"/>
+      <constructor>
+          <parameter index="1" type="String" optional="true"/>
+          <parameter index="2" type="int" optional="true"/>
+    </constructor>
+      <extendsClass type="Error"/>
+      <extendsClass type="Object"/>
+      <method name="getStackTrace" declaredBy="Error" returnType="String"/>
+      <variable name="message" type="*"/>
+      <variable name="name" type="*"/>
+  </factory>
+</type>
+<type name="flash.errors::InvalidSWFError" base="Class" isDynamic="true" isFinal="true" isStatic="true">
+  <accessor name="prototype" access="readonly" type="*" declaredBy="Class"/>
+  <extendsClass type="Class"/>
+  <extendsClass type="Object"/>
+  <factory type="flash.errors::InvalidSWFError">
+      <accessor name="errorID" access="readonly" type="int" declaredBy="Error"/>
+      <constructor>
+          <parameter index="1" type="String" optional="true"/>
+          <parameter index="2" type="int" optional="true"/>
+    </constructor>
+      <extendsClass type="Error"/>
+      <extendsClass type="Object"/>
+      <method name="getStackTrace" declaredBy="Error" returnType="String"/>
+      <variable name="message" type="*"/>
+      <variable name="name" type="*"/>
+  </factory>
+</type>
+<type name="flash.errors::MemoryError" base="Class" isDynamic="true" isFinal="true" isStatic="true">
+  <accessor name="prototype" access="readonly" type="*" declaredBy="Class"/>
+  <extendsClass type="Class"/>
+  <extendsClass type="Object"/>
+  <factory type="flash.errors::MemoryError">
+      <accessor name="errorID" access="readonly" type="int" declaredBy="Error"/>
+      <constructor>
+          <parameter index="1" type="String" optional="true"/>
+          <parameter index="2" type="int" optional="true"/>
+    </constructor>
+      <extendsClass type="Error"/>
+      <extendsClass type="Object"/>
+      <method name="getStackTrace" declaredBy="Error" returnType="String"/>
+      <variable name="message" type="*"/>
+      <variable name="name" type="*"/>
+  </factory>
+</type>
+<type name="flash.errors::ScriptTimeoutError" base="Class" isDynamic="true" isFinal="true" isStatic="true">
+  <accessor name="prototype" access="readonly" type="*" declaredBy="Class"/>
+  <extendsClass type="Class"/>
+  <extendsClass type="Object"/>
+  <factory type="flash.errors::ScriptTimeoutError">
+      <accessor name="errorID" access="readonly" type="int" declaredBy="Error"/>
+      <constructor>
+          <parameter index="1" type="String" optional="true"/>
+          <parameter index="2" type="int" optional="true"/>
+    </constructor>
+      <extendsClass type="Error"/>
+      <extendsClass type="Object"/>
+      <method name="getStackTrace" declaredBy="Error" returnType="String"/>
+      <variable name="message" type="*"/>
+      <variable name="name" type="*"/>
+  </factory>
+</type>
+<type name="flash.errors::StackOverflowError" base="Class" isDynamic="true" isFinal="true" isStatic="true">
+  <accessor name="prototype" access="readonly" type="*" declaredBy="Class"/>
+  <extendsClass type="Class"/>
+  <extendsClass type="Object"/>
+  <factory type="flash.errors::StackOverflowError">
+      <accessor name="errorID" access="readonly" type="int" declaredBy="Error"/>
+      <constructor>
+          <parameter index="1" type="String" optional="true"/>
+          <parameter index="2" type="int" optional="true"/>
+    </constructor>
+      <extendsClass type="Error"/>
+      <extendsClass type="Object"/>
+      <method name="getStackTrace" declaredBy="Error" returnType="String"/>
+      <variable name="message" type="*"/>
+      <variable name="name" type="*"/>
+  </factory>
+</type>

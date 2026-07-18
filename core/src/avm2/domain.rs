@@ -205,11 +205,11 @@ impl<'gc> Domain<'gc> {
         self,
         multiname: &Multiname<'gc>,
     ) -> Option<(QName<'gc>, Script<'gc>)> {
-        if let Some(name) = multiname.local_name() {
-            if let Some((ns, script)) = self.cell().defs.get_with_ns_for_multiname(multiname) {
-                let qname = QName::new(ns, name);
-                return Some((qname, *script));
-            }
+        if let Some(name) = multiname.local_name()
+            && let Some((ns, script)) = self.cell().defs.get_with_ns_for_multiname(multiname)
+        {
+            let qname = QName::new(ns, name);
+            return Some((qname, *script));
         }
 
         if let Some(parent) = self.0.parent {
@@ -238,18 +238,19 @@ impl<'gc> Domain<'gc> {
     ) -> Option<Class<'gc>> {
         let class = self.get_class_inner(multiname);
 
-        if let Some(class) = class {
-            if let Some(param) = multiname.param() {
-                if let Some(param) = param {
-                    if let Some(resolved_param) = self.get_class(context, &param) {
-                        return Some(Class::with_type_param(context, class, Some(resolved_param)));
-                    }
-                    return None;
-                } else {
-                    return Some(Class::with_type_param(context, class, None));
+        if let Some(class) = class
+            && let Some(param) = multiname.param()
+        {
+            if let Some(param) = param {
+                if let Some(resolved_param) = self.get_class(context, &param) {
+                    return Some(Class::with_type_param(context, class, Some(resolved_param)));
                 }
+                return None;
+            } else {
+                return Some(Class::with_type_param(context, class, None));
             }
         }
+
         class
     }
 
@@ -334,7 +335,7 @@ impl<'gc> Domain<'gc> {
             return;
         }
 
-        self.cell_mut(mc).defs.insert(name, script);
+        self.cell_mut(mc).defs.insert_at_end(name, script);
     }
 
     /// Export a class into the current application domain.
@@ -344,7 +345,7 @@ impl<'gc> Domain<'gc> {
         if self.has_class(export_name) {
             return;
         }
-        self.cell_mut(mc).classes.insert(export_name, class);
+        self.cell_mut(mc).classes.insert_at_end(export_name, class);
     }
 
     pub fn defs(&self) -> Ref<'_, PropertyMap<'gc, Script<'gc>>> {
@@ -378,6 +379,24 @@ impl<'gc> Domain<'gc> {
             if domain_memory.storage().len() < MIN_DOMAIN_MEMORY_LENGTH {
                 return Err(make_error_1504(activation));
             }
+
+            // We rely on negative indices into domain memory becoming positive
+            // indices greater than i32::MAX due to 2's complement. If the
+            // domain memory bytearray's length is never greater than i32::MAX,
+            // all such negative indices will always be out of bounds, allowing
+            // us to skip extra checks for indices being positive in the
+            // interpreter.
+
+            // However, this requires us to actually guarantee that all byte-
+            // arrays that are used as domain memory never have a length greater
+            // than i32::MAX.
+
+            // TODO: This check should be moved somewhere to bytearray code, and
+            // should throw Error #1000 from there instead of panicking.
+            if domain_memory.storage().len() > i32::MAX as usize {
+                panic!("Domain memory bytearray must not be larger than i32::MAX!");
+            }
+
             domain_memory
         } else {
             let memory = self.0.default_domain_memory.get();

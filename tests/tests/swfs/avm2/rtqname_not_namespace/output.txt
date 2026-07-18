@@ -1,0 +1,12 @@
+Test: RTQName with non-Namespace arg
+Failed (expected)
+    VerifyError
+    1058
+Test: RTQNameL with non-Namespace arg
+Failed (expected)
+    VerifyError
+    1058
+Test: RTQName with non-Namespace-typed arg
+Failed (expected)
+    VerifyError
+    1058

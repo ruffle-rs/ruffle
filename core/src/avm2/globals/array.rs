@@ -40,16 +40,16 @@ pub fn array_initializer<'gc>(
     let this = this.as_object().unwrap();
 
     if let Some(mut array) = this.as_array_storage_mut(activation.gc()) {
-        if args.len() == 1 {
-            if let Some(expected_len) = args.get_optional(0).and_then(|v| v.try_as_f64()) {
-                if expected_len < 0.0 || expected_len.is_nan() || expected_len.fract() != 0.0 {
-                    return Err(make_error_1005(activation, expected_len));
-                }
-
-                array.set_length(expected_len as usize);
-
-                return Ok(Value::Undefined);
+        if args.len() == 1
+            && let Some(expected_len) = args.get_optional(0).and_then(|v| v.try_as_f64())
+        {
+            if expected_len < 0.0 || expected_len.is_nan() || expected_len.fract() != 0.0 {
+                return Err(make_error_1005(activation, expected_len));
             }
+
+            array.set_length(expected_len as usize);
+
+            return Ok(Value::Undefined);
         }
 
         for (i, arg) in args.iter().enumerate() {
@@ -69,7 +69,7 @@ pub fn get_length<'gc>(
     let this = this.as_object().unwrap();
 
     if let Some(array) = this.as_array_storage() {
-        return Ok(array.length().into());
+        return Ok(Value::from_usize_lossy(array.length()));
     }
 
     Ok(Value::Undefined)
@@ -464,7 +464,7 @@ pub fn _index_of<'gc>(
         for (i, val) in array.iter().enumerate() {
             let val = resolve_array_hole(activation, this, i, val)?;
             if i >= from_index && val == search_val {
-                return Ok(i.into());
+                return Ok(Value::from_usize_lossy(i));
             }
         }
 
@@ -495,7 +495,7 @@ pub fn _last_index_of<'gc>(
         for (i, val) in array.iter().enumerate().rev() {
             let val = resolve_array_hole(activation, this, i, val)?;
             if i <= from_index && val == search_val {
-                return Ok(i.into());
+                return Ok(Value::from_usize_lossy(i));
             }
         }
 
@@ -532,7 +532,7 @@ pub fn push<'gc>(
         for arg in args {
             array.push(*arg)
         }
-        return Ok(array.length().into());
+        return Ok(Value::from_usize_lossy(array.length()));
     }
 
     Ok(Value::Undefined)
@@ -601,7 +601,7 @@ pub fn unshift<'gc>(
         for arg in args.iter().rev() {
             array.unshift(*arg)
         }
-        return Ok(array.length().into());
+        return Ok(Value::from_usize_lossy(array.length()));
     }
 
     Ok(Value::Undefined)
@@ -664,18 +664,20 @@ pub fn splice<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
-    let Some(mut array_storage) = this.as_array_storage_mut(activation.gc()) else {
+    let Some(array_object) = this.as_array_object() else {
         return Ok(Value::Undefined);
     };
-    let array_length = array_storage.length();
+
     let Some(start) = args.get_optional(0) else {
         return Ok(Value::Undefined);
     };
 
+    let array_length = array_object.storage().length();
+
     let actual_start = resolve_index(activation, start, array_length)?;
     let delete_count = args
         .get_optional(1)
-        .unwrap_or_else(|| array_length.into())
+        .unwrap_or_else(|| Value::from_usize_lossy(array_length))
         .coerce_to_i32(activation)?
         .max(0);
 
@@ -684,11 +686,17 @@ pub fn splice<'gc>(
     // FIXME Flash does not iterate over those elements like we do, it's too
     //   inefficient. Flash probably iterates through set properties only.
     for i in actual_start..array_length {
-        let item = array_storage.get(i);
-        array_storage.set(i, resolve_array_hole(activation, this, i, item)?);
+        let item = array_object.storage().get(i);
+        let resolved = resolve_array_hole(activation, this, i, item)?;
+        array_object.storage_mut(activation.gc()).set(i, resolved);
     }
 
-    let ret = array_storage.splice(actual_start, delete_count as usize, args_slice);
+    let ret = array_object.storage_mut(activation.gc()).splice(
+        actual_start,
+        delete_count as usize,
+        args_slice,
+    );
+
     Ok(build_array(activation, ret))
 }
 
@@ -969,7 +977,11 @@ fn sort_postprocess<'gc>(
         if options.contains(SortOptions::RETURN_INDEXED_ARRAY) {
             return Ok(build_array(
                 activation,
-                values.iter().map(|&(i, _)| i).collect(),
+                values
+                    .iter()
+                    .map(|&(i, _)| i)
+                    .map(Value::from_usize_lossy)
+                    .collect(),
             ));
         } else {
             if let Some(mut old_array) = this.as_array_storage_mut(activation.gc()) {

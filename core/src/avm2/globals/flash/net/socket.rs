@@ -4,9 +4,9 @@ use crate::avm2::bytearray::{Endian, ObjectEncoding};
 use crate::avm2::error::{make_error_2002, make_error_2003, make_error_2008};
 pub use crate::avm2::object::socket_allocator;
 use crate::avm2::parameters::ParametersExt;
-use crate::avm2::string::AvmString;
 use crate::avm2::{Activation, Error, Value};
 use crate::context::UpdateContext;
+use crate::string::AvmString;
 use encoding_rs::Encoding;
 use encoding_rs::UTF_8;
 use flash_lso::amf0::read::AMF0Decoder;
@@ -111,7 +111,7 @@ pub fn get_bytes_available<'gc>(
     let this = this.as_object().unwrap();
 
     if let Some(socket) = this.as_socket() {
-        return Ok(socket.read_buffer().len().into());
+        return Ok(Value::from_usize_lossy(socket.read_buffer().len()));
     }
 
     Ok(Value::Undefined)
@@ -720,8 +720,7 @@ pub fn write_object<'gc>(
             obj,
             amf_version,
             &mut Default::default(),
-        )
-        .unwrap_or(flash_lso::types::Value::Undefined);
+        );
 
         let element = Element::new("", Rc::new(amf));
         let mut lso = flash_lso::types::Lso::new(vec![element], "", amf_version);

@@ -1,16 +1,25 @@
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
+use crate::avm1::globals::asnative::as_set_native_method;
 use crate::avm1::property_decl::DeclContext;
-use crate::avm1::{Object, Value};
+use crate::avm1::{Avm1, Object, Value};
+use crate::context::UpdateContext;
 use crate::display_object::{DisplayObject, TDisplayObject, TDisplayObjectContainer};
 use crate::string::{AvmString, StringContext, WStr, WString};
+use crate::tag_utils;
+use crate::tag_utils::ControlFlow;
 use gc_arena::Collect;
+use ruffle_common::tag_utils::{SwfMovie, SwfSlice, SwfStream};
 use std::str;
+use std::sync::Arc;
+use swf::TagCode;
 
 mod accessibility;
 pub(super) mod array;
 pub(crate) mod as_broadcaster;
+mod as_setup_error;
 mod asnative;
+mod asset_cache;
 mod automation_action_generator;
 mod automation_configuration;
 mod automation_stage_capture;
@@ -33,7 +42,7 @@ pub(crate) mod drop_shadow_filter;
 pub(crate) mod error;
 mod external_interface;
 pub(crate) mod file_reference;
-mod file_reference_list;
+pub(crate) mod file_reference_list;
 mod function;
 pub(crate) mod glow_filter;
 pub(crate) mod gradient_filter;
@@ -53,9 +62,11 @@ mod object;
 mod point;
 mod print_job;
 mod rectangle;
+mod remote_lso_usage;
 mod selection;
 pub(crate) mod shared_object;
 pub(crate) mod sound;
+mod sound_codec;
 mod stage;
 pub(crate) mod string;
 pub(crate) mod style_sheet;
@@ -73,6 +84,9 @@ mod video;
 pub(crate) mod xml;
 mod xml_node;
 pub(crate) mod xml_socket;
+
+/// This file is built by 'core/build_playerglobal/'
+const PLAYERGLOBAL: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/playerglobal_avm1.swf"));
 
 mod method {
     pub const ESCAPE: u16 = 0;
@@ -387,7 +401,12 @@ pub fn escape<'gc>(
         return Ok(Value::Undefined);
     };
 
+    Ok(AvmString::new(activation.gc(), escape_internal(s.as_wstr())).into())
+}
+
+pub fn escape_internal(s: &WStr) -> WString {
     let mut buffer = Vec::<u8>::new();
+
     // TODO: unpaired surrogates will be lost; this is incorrect:
     // - `\u{DC00}` should become "%ED%B0%80";
     // - `\u{DFFF}` should become "%ED%BF%BF".
@@ -404,7 +423,8 @@ pub fn escape<'gc>(
             }
         };
     }
-    Ok(AvmString::new(activation.gc(), WString::from_buf(buffer)).into())
+
+    WString::from_buf(buffer)
 }
 
 pub fn unescape<'gc>(
@@ -488,6 +508,7 @@ pub struct SystemPrototypes<'gc> {
     pub context_menu_item_constructor: Object<'gc>,
     pub date_constructor: Object<'gc>,
     pub bitmap_data: Object<'gc>,
+    pub file_reference: Object<'gc>,
     pub video: Object<'gc>,
     pub blur_filter: Object<'gc>,
     pub bevel_filter: Object<'gc>,
@@ -500,6 +521,26 @@ pub struct SystemPrototypes<'gc> {
     pub gradient_glow_filter: Object<'gc>,
 }
 
+pub fn load_playerglobal<'gc>(context: &mut UpdateContext<'gc>) {
+    let movie = Arc::new(
+        SwfMovie::from_data(PLAYERGLOBAL, "file:///".into(), None, None)
+            .expect("playerglobal_avm1.swf should be valid"),
+    );
+
+    let slice = SwfSlice::from(movie);
+
+    let mut reader = slice.read_from(0);
+
+    let tag_callback = |reader: &mut SwfStream<'_>, tag_code| {
+        if tag_code == TagCode::DoAction {
+            Avm1::run_stack_frame_for_globals(slice.resize_to_reader(reader), context);
+        }
+        Ok(ControlFlow::Continue)
+    };
+
+    let _ = tag_utils::decode_tags(&mut reader, tag_callback);
+}
+
 /// Initialize default global scope and builtins for an AVM1 instance.
 pub fn create_globals<'gc>(
     context: &mut StringContext<'gc>,
@@ -508,17 +549,9 @@ pub fn create_globals<'gc>(
     Object<'gc>,
     as_broadcaster::BroadcasterFunctions<'gc>,
 ) {
-    let context = {
-        let object_proto = Object::new_without_proto(context.gc());
-        &mut DeclContext {
-            object_proto,
-            fn_proto: Object::new(context, Some(object_proto)),
-            strings: context,
-        }
-    };
+    let (ref mut context, object, function) =
+        DeclContext::new(context, object::create_class, function::create_class);
 
-    let object = object::create_class(context);
-    let function = function::create_class(context);
     let (broadcaster_fns, as_broadcaster) = as_broadcaster::create_class(context, object.proto);
 
     let flash = Object::new(context.strings, Some(object.proto));
@@ -575,7 +608,8 @@ pub fn create_globals<'gc>(
     let bitmap_data = bitmap_data::create_class(context, object.proto);
     let file_reference =
         file_reference::create_class(context, object.proto, broadcaster_fns, array.proto);
-    let file_reference_list = file_reference_list::create_class(context, object.proto);
+    let file_reference_list =
+        file_reference_list::create_class(context, object.proto, broadcaster_fns, array.proto);
     let shared_object = shared_object::create_class(context, object.proto);
     let selection = selection::create(context, broadcaster_fns, array.proto);
     let camera = camera::create_class(context, object.proto);
@@ -590,6 +624,7 @@ pub fn create_globals<'gc>(
     let system_product = system_product::create_class(context, object.proto);
 
     let math = math::create(context);
+    let sound_codec = sound_codec::create(context);
     let mouse = mouse::create(context, broadcaster_fns, array.proto);
     let key = key::create(context, broadcaster_fns, array.proto);
     let stage = stage::create(context, broadcaster_fns, array.proto);
@@ -600,6 +635,10 @@ pub fn create_globals<'gc>(
     let stage_capture = automation_stage_capture::create_class(context, object.proto);
     let action_generator = automation_action_generator::create_class(context, object.proto);
     let automation_configuration = automation_configuration::create_class(context, object.proto);
+
+    let as_setup_error = as_setup_error::create_class(context, object.proto);
+    let asset_cache = asset_cache::create_class(context, object.proto);
+    let remote_lso_usage = remote_lso_usage::create_class(context, object.proto);
 
     // Top-level
     let globals = Object::new_without_proto(context.gc());
@@ -626,20 +665,22 @@ pub fn create_globals<'gc>(
         "ContextMenuItem" => value(context_menu_item.constr; DONT_ENUM);
         "ContextMenu" => value(context_menu.constr; DONT_ENUM);
         "Error" => value(error.constr; DONT_ENUM);
-        // TODO: AsSetupError
-        // TODO: AssetCache
-        // TODO: RemoteLSOUsage
+        "AsSetupError" => value(as_setup_error.constr; DONT_ENUM);
+        "AssetCache" => value(asset_cache.constr; DONT_ENUM);
+        "RemoteLSOUsage" => value(remote_lso_usage.constr; DONT_ENUM);
 
         "ASSetPropFlags" => method(object::as_set_prop_flags; DONT_ENUM); // TODO: (1, 0)
-        // TODO: ASSetNative - (4, 0)
-        // TODO: ASSetAccessor - (4, 1)
+
+        use fn as_set_native_method;
+        "ASSetNative" => method(AS_SET_NATIVE; DONT_ENUM);
+        "ASSetNativeAccessor" => method(AS_SET_NATIVE_ACCESSOR; DONT_ENUM);
 
         use fn method;
         "escape" => method(ESCAPE; DONT_ENUM);
         "unescape" => method(UNESCAPE; DONT_ENUM);
         "parseInt" => method(PARSE_INT; DONT_ENUM);
         "parseFloat" => method(PARSE_FLOAT; DONT_ENUM);
-        "trace" => method(TRACE; DONT_ENUM);
+        "trace" => value(null; DONT_ENUM); // Actually in globals.as, reserve the spot here
 
         use default;
         "updateAfterEvent" => method(update_after_event; DONT_ENUM); // TODO: (9, 0)
@@ -679,6 +720,7 @@ pub fn create_globals<'gc>(
         "Stage" => value(stage; DONT_ENUM);
         "Video" => value(video.constr; DONT_ENUM);
         "Accessibility" => value(accessibility; DONT_ENUM);
+        "SoundCodec" => value(sound_codec; DONT_ENUM);
         "System" => value(system; DONT_ENUM);
         "flash" => value(flash; DONT_ENUM | VERSION_8);
         "textRenderer" => value(text_renderer.constr);
@@ -798,6 +840,7 @@ pub fn create_globals<'gc>(
             context_menu_item_constructor: context_menu_item.constr,
             date_constructor: date.constr,
             bitmap_data: bitmap_data.proto,
+            file_reference: file_reference.proto,
             video: video.proto,
             blur_filter: blur_filter.proto,
             bevel_filter: bevel_filter.proto,

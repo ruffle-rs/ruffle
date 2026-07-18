@@ -1,0 +1,157 @@
+
+--- no args / undefined / null ---
+new Video() -> w=320.00 h=240.00 sx=1.00 sy=1.00 vW=0.00 vH=0.00
+new Video(undefined) -> w=320.00 h=240.00 sx=1.00 sy=1.00 vW=0.00 vH=0.00
+new Video(null) -> w=320.00 h=240.00 sx=1.00 sy=1.00 vW=0.00 vH=0.00
+new Video(undefined, 100) -> w=320.00 h=240.00 sx=1.00 sy=1.00 vW=0.00 vH=0.00
+new Video(null, 100) -> w=320.00 h=240.00 sx=1.00 sy=1.00 vW=0.00 vH=0.00
+new Video(100, undefined) -> w=320.00 h=240.00 sx=1.00 sy=1.00 vW=0.00 vH=0.00
+new Video(100, null) -> w=320.00 h=240.00 sx=1.00 sy=1.00 vW=0.00 vH=0.00
+
+--- single positive arg ---
+new Video(1) -> w=1.00 h=240.00 sx=1.00 sy=1.00 vW=0.00 vH=0.00
+new Video(100) -> w=100.00 h=240.00 sx=1.00 sy=1.00 vW=0.00 vH=0.00
+new Video(320) -> w=320.00 h=240.00 sx=1.00 sy=1.00 vW=0.00 vH=0.00
+
+--- zero anywhere => default both ---
+new Video(0) -> w=320.00 h=240.00 sx=1.00 sy=1.00 vW=0.00 vH=0.00
+new Video(-0) -> w=320.00 h=240.00 sx=1.00 sy=1.00 vW=0.00 vH=0.00
+new Video(0, 0) -> w=320.00 h=240.00 sx=1.00 sy=1.00 vW=0.00 vH=0.00
+new Video(0, 100) -> w=320.00 h=240.00 sx=1.00 sy=1.00 vW=0.00 vH=0.00
+new Video(100, 0) -> w=320.00 h=240.00 sx=1.00 sy=1.00 vW=0.00 vH=0.00
+new Video(0, 240) -> w=320.00 h=240.00 sx=1.00 sy=1.00 vW=0.00 vH=0.00
+new Video(320, 0) -> w=320.00 h=240.00 sx=1.00 sy=1.00 vW=0.00 vH=0.00
+
+--- two positive args ---
+new Video(1, 1) -> w=1.00 h=1.00 sx=1.00 sy=1.00 vW=0.00 vH=0.00
+new Video(100, 100) -> w=100.00 h=100.00 sx=1.00 sy=1.00 vW=0.00 vH=0.00
+new Video(320, 240) -> w=320.00 h=240.00 sx=1.00 sy=1.00 vW=0.00 vH=0.00
+new Video(800, 600) -> w=800.00 h=600.00 sx=1.00 sy=1.00 vW=0.00 vH=0.00
+
+--- negative => RangeError ---
+new Video(-1) -> THROWS #2006
+new Video(-1, 100) -> THROWS #2006
+new Video(100, -1) -> THROWS #2006
+new Video(-1, -1) -> THROWS #2006
+new Video(0, -1) -> THROWS #2006
+new Video(-1, 0) -> THROWS #2006
+new Video(-2147483648) -> THROWS #2006
+
+--- sub-integer floats (truncate toward 0) ---
+new Video(0.5) -> w=320.00 h=240.00 sx=1.00 sy=1.00 vW=0.00 vH=0.00
+new Video(0.999) -> w=320.00 h=240.00 sx=1.00 sy=1.00 vW=0.00 vH=0.00
+new Video(1.5) -> w=1.00 h=240.00 sx=1.00 sy=1.00 vW=0.00 vH=0.00
+new Video(1.9) -> w=1.00 h=240.00 sx=1.00 sy=1.00 vW=0.00 vH=0.00
+new Video(-0.001) -> w=320.00 h=240.00 sx=1.00 sy=1.00 vW=0.00 vH=0.00
+new Video(-0.5) -> w=320.00 h=240.00 sx=1.00 sy=1.00 vW=0.00 vH=0.00
+new Video(-0.999) -> w=320.00 h=240.00 sx=1.00 sy=1.00 vW=0.00 vH=0.00
+new Video(-1.5) -> THROWS #2006
+new Video(-1.001) -> THROWS #2006
+
+--- NaN / +-Infinity (int coerces to 0) ---
+new Video(NaN) -> w=320.00 h=240.00 sx=1.00 sy=1.00 vW=0.00 vH=0.00
+new Video(Infinity) -> w=320.00 h=240.00 sx=1.00 sy=1.00 vW=0.00 vH=0.00
+new Video(-Infinity) -> w=320.00 h=240.00 sx=1.00 sy=1.00 vW=0.00 vH=0.00
+new Video(NaN, 100) -> w=320.00 h=240.00 sx=1.00 sy=1.00 vW=0.00 vH=0.00
+new Video(100, Infinity) -> w=320.00 h=240.00 sx=1.00 sy=1.00 vW=0.00 vH=0.00
+
+--- threshold-finding for large width (binary search) ---
+new Video(0x100000) -> w=1048576.00 h=240.00 sx=1.00 sy=1.00 vW=0.00 vH=0.00
+new Video(0x200000) -> w=2097152.00 h=240.00 sx=1.00 sy=1.00 vW=0.00 vH=0.00
+new Video(0x300000) -> THROWS #2006
+new Video(0x400000) -> THROWS #2006
+new Video(0x500000) -> THROWS #2006
+new Video(0x600000) -> THROWS #2006
+new Video(0x700000) -> THROWS #2006
+new Video(0x780000) -> THROWS #2006
+new Video(0x7C0000) -> THROWS #2006
+new Video(0x7E0000) -> THROWS #2006
+new Video(0x7F0000) -> THROWS #2006
+new Video(0x7F8000) -> THROWS #2006
+new Video(0x7FC000) -> THROWS #2006
+new Video(0x7FE000) -> THROWS #2006
+new Video(0x7FF000) -> THROWS #2006
+new Video(0x7FF800) -> THROWS #2006
+new Video(0x7FFC00) -> THROWS #2006
+new Video(0x7FFE00) -> THROWS #2006
+new Video(0x7FFF00) -> THROWS #2006
+new Video(0x7FFFFF) -> THROWS #2006
+new Video(0x800000) -> THROWS #2006
+new Video(2880, 2880) -> w=2880.00 h=2880.00 sx=1.00 sy=1.00 vW=0.00 vH=0.00
+new Video(8192, 8192) -> w=8192.00 h=8192.00 sx=1.00 sy=1.00 vW=0.00 vH=0.00
+
+--- height has same threshold? ---
+new Video(100, 0x100000) -> w=100.00 h=1048576.00 sx=1.00 sy=1.00 vW=0.00 vH=0.00
+new Video(100, 0x400000) -> w=100.00 h=4194304.00 sx=1.00 sy=1.00 vW=0.00 vH=0.00
+new Video(100, 0x7FFFFF) -> THROWS #2006
+new Video(100, 0x800000) -> THROWS #2006
+new Video(0x7FFFFF, 0x7FFFFF) -> THROWS #2006
+
+--- forced numeric coercion via int()/Number() ---
+new Video(int('100')) -> w=100.00 h=240.00 sx=1.00 sy=1.00 vW=0.00 vH=0.00
+new Video(int('abc')) -> w=320.00 h=240.00 sx=1.00 sy=1.00 vW=0.00 vH=0.00
+new Video(int(true)) -> w=1.00 h=240.00 sx=1.00 sy=1.00 vW=0.00 vH=0.00
+new Video(int(false)) -> w=320.00 h=240.00 sx=1.00 sy=1.00 vW=0.00 vH=0.00
+new Video(int(true), int(false)) -> w=320.00 h=240.00 sx=1.00 sy=1.00 vW=0.00 vH=0.00
+new Video(Number('100.7')) -> w=100.00 h=240.00 sx=1.00 sy=1.00 vW=0.00 vH=0.00
+new Video(Number('-0.5')) -> w=320.00 h=240.00 sx=1.00 sy=1.00 vW=0.00 vH=0.00
+
+--- pre-coerced via Number variable ---
+var n:Number=-0.5; new Video(n) -> w=320.00 h=240.00 sx=1.00 sy=1.00 vW=0.00 vH=0.00
+var n:Number=-1.5; new Video(n) -> THROWS #2006
+var n:Number=0.999; new Video(n) -> w=320.00 h=240.00 sx=1.00 sy=1.00 vW=0.00 vH=0.00
+
+--- subclasses ---
+new SubVid_NoSuper() -> w=320.00 h=240.00 sx=1.00 sy=1.00 vW=0.00 vH=0.00
+new SubVid_DefaultSuper() -> w=320.00 h=240.00 sx=1.00 sy=1.00 vW=0.00 vH=0.00
+new SubVid_Zero() -> w=320.00 h=240.00 sx=1.00 sy=1.00 vW=0.00 vH=0.00
+new SubVid_Pass(0, 100) -> w=320.00 h=240.00 sx=1.00 sy=1.00 vW=0.00 vH=0.00
+new SubVid_Pass(50, 60) -> w=50.00 h=60.00 sx=1.00 sy=1.00 vW=0.00 vH=0.00
+
+--- bounds vs width readback ---
+new Video() -> w=320.00 h=240.00 bounds=(0.00,0.00,320.00,240.00)
+new Video(160,120) -> w=160.00 h=120.00 bounds=(0.00,0.00,160.00,120.00)
+new Video(0,100) -> w=320.00 h=240.00 bounds=(0.00,0.00,320.00,240.00)
+
+--- toString ---
+new Video().toString() -> [object Video]
+Video as Class -> [class Video]
+
+--- narrow product threshold (target 2^29) ---
+new Video(0x200000, 255) -> w=2097152.00 h=255.00 sx=1.00 sy=1.00 vW=0.00 vH=0.00
+new Video(0x200000, 256) -> THROWS #2006
+new Video(0x200000, 257) -> THROWS #2006
+new Video(0x100000, 511) -> w=1048576.00 h=511.00 sx=1.00 sy=1.00 vW=0.00 vH=0.00
+new Video(0x100000, 512) -> THROWS #2006
+new Video(0x100000, 513) -> THROWS #2006
+new Video(0x80000, 1024) -> THROWS #2006
+new Video(0x80000, 1025) -> THROWS #2006
+new Video(1, 0x20000000) -> THROWS #2006
+new Video(0x20000000, 1) -> THROWS #2006
+new Video(0x1FFFFFFF, 1) -> THROWS #2006
+new Video(0x20000001, 1) -> THROWS #2006
+
+--- ctor single-dim cap (h=1, narrow) ---
+new Video(0x800000, 1) -> w=8388608.00 h=1.00 sx=1.00 sy=1.00 vW=0.00 vH=0.00
+new Video(0x1000000, 1) -> w=16777216.00 h=1.00 sx=1.00 sy=1.00 vW=0.00 vH=0.00
+new Video(0x2000000, 1) -> w=33554432.00 h=1.00 sx=1.00 sy=1.00 vW=0.00 vH=0.00
+new Video(0x4000000, 1) -> w=67108864.00 h=1.00 sx=1.00 sy=1.00 vW=0.00 vH=0.00
+new Video(0x8000000, 1) -> THROWS #2006
+new Video(0xFFFFFFF, 1) -> THROWS #2006
+new Video(0x10000000, 1) -> THROWS #2006
+
+--- ctor single-dim cap (w=1, narrow) ---
+new Video(1, 0x800000) -> w=1.00 h=8388608.00 sx=1.00 sy=1.00 vW=0.00 vH=0.00
+new Video(1, 0x1000000) -> w=1.00 h=16777216.00 sx=1.00 sy=1.00 vW=0.00 vH=0.00
+new Video(1, 0x4000000) -> w=1.00 h=67108864.00 sx=1.00 sy=1.00 vW=0.00 vH=0.00
+new Video(1, 0x10000000) -> THROWS #2006
+
+--- attempt to construct with NaN h after huge w ---
+new Video(0x800000, NaN) -> w=320.00 h=240.00 sx=1.00 sy=1.00 vW=0.00 vH=0.00
+
+--- narrow single-dim cap: twips-overflow hypothesis (dim*20<=2^31) ---
+new Video(0x4000000, 1) -> w=67108864.00 h=1.00 sx=1.00 sy=1.00 vW=0.00 vH=0.00
+new Video(0x6666667, 1) -> THROWS #2006
+new Video(0x7FFFFFF, 1) -> THROWS #2006
+new Video(107374183, 1) -> THROWS #2006
+new Video(1, 0x6666667) -> THROWS #2006

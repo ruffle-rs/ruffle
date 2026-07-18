@@ -10,7 +10,7 @@ import chaiHtml from "chai-html";
 
 use(chaiHtml);
 
-async function focusElement(element: ChainablePromiseElement) {
+async function focusElement(element: WebdriverIO.Element) {
     await browser.execute((el) => {
         el.focus();
     }, element);
@@ -30,15 +30,15 @@ describe("Programmatic Events", () => {
     it("load the test", async () => {
         await openTest(browser, "integration_tests/programmatic_events");
         await injectRuffleAndWait(browser);
-        const player = await browser.$("<ruffle-object>");
+        const player = await browser.$("<ruffle-object>").getElement();
         await playAndMonitor(browser, player, ["Loaded!"]);
     });
 
     // See https://github.com/ruffle-rs/ruffle/issues/6952#issuecomment-1133990189
     it("scenario: programmatic pointerdown on the player", async () => {
-        const player = await browser.$("#objectElement");
+        const player = await browser.$("#objectElement").getElement();
 
-        await focusElement(await browser.$("#inputElement"));
+        await focusElement(await browser.$("#inputElement").getElement());
 
         await typeText("should be ignored");
 
@@ -70,13 +70,13 @@ describe("Programmatic Events", () => {
     // That has been possible since https://github.com/ruffle-rs/ruffle/pull/17158,
     // so ideally we want to preserve this behavior.
     it("scenario: programmatic focus on the container", async () => {
-        const player = await browser.$("#objectElement");
+        const player = await browser.$("#objectElement").getElement();
 
-        await focusElement(await browser.$("#inputElement"));
+        await focusElement(await browser.$("#inputElement").getElement());
 
         await typeText("should be ignored");
 
-        await focusElement(await player.shadow$("#container"));
+        await focusElement(await player.shadow$("#container").getElement());
 
         await browser.execute((el) => {
             el.dispatchEvent(
@@ -101,9 +101,9 @@ describe("Programmatic Events", () => {
 
     // That's probably the most sane way of focusing Ruffle.
     it("scenario: programmatic focus on the player", async () => {
-        const player = await browser.$("#objectElement");
+        const player = await browser.$("#objectElement").getElement();
 
-        await focusElement(await browser.$("#inputElement"));
+        await focusElement(await browser.$("#inputElement").getElement());
 
         await typeText("should be ignored");
 
@@ -131,10 +131,10 @@ describe("Programmatic Events", () => {
     });
 
     it("scenario: example input overlay", async () => {
-        const player = await browser.$("#objectElement");
+        const player = await browser.$("#objectElement").getElement();
         const overlay = await browser.$("#overlay");
 
-        await focusElement(await browser.$("#inputElement"));
+        await focusElement(await browser.$("#inputElement").getElement());
 
         await typeText("should be ignored");
 
@@ -151,7 +151,7 @@ describe("Programmatic Events", () => {
     });
 
     it("no more traces", async function () {
-        const player = await browser.$("#objectElement");
+        const player = await browser.$("#objectElement").getElement();
         assertNoMoreTraceOutput(browser, player);
     });
 });

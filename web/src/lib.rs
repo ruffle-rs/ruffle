@@ -125,6 +125,7 @@ struct RuffleInstance {
     timestamp: Option<f64>,
     animation_handler: Option<AnimationHandler>, // requestAnimationFrame callback
     animation_handler_id: Option<NonZeroI32>,    // requestAnimationFrame id
+    background_tick_mode: bool,
     mouse_move_callback: Option<JsCallback<PointerEvent>>,
     mouse_enter_callback: Option<JsCallback<PointerEvent>>,
     mouse_leave_callback: Option<JsCallback<PointerEvent>>,
@@ -285,8 +286,8 @@ impl RuffleHandle {
             segments.push(&swf_name);
         }
 
-        let mut movie =
-            SwfMovie::from_data(&swf_data.to_vec(), url.to_string(), None).map_err(|e| {
+        let mut movie = SwfMovie::from_data(&swf_data.to_vec(), url.to_string(), None, None)
+            .map_err(|e| {
                 let _ = self.with_core_mut(|core| {
                     core.ui_mut()
                         .display_root_movie_download_failed_message(true, e.to_string());
@@ -320,6 +321,38 @@ impl RuffleHandle {
 
     pub fn is_playing(&self) -> bool {
         self.with_core(|core| core.is_playing()).unwrap_or_default()
+    }
+
+    /// Switches to background tick mode, pausing the normal animation loop.
+    /// Use `tick_for_background` to advance the player while the tab is hidden.
+    pub fn enable_background_tick_mode(&self) {
+        let _ = self.with_instance_mut(|instance| {
+            if let Some(id) = instance.animation_handler_id.take() {
+                let _ = instance.window.cancel_animation_frame(id.into());
+            }
+            instance.background_tick_mode = true;
+        });
+    }
+
+    /// Leaves background tick mode and reschedules the normal animation loop.
+    /// Does not tick the core itself.
+    pub fn restart_animation_loop(&self) {
+        let _ = self.with_instance_mut(|instance| {
+            instance.background_tick_mode = false;
+            if let Some(handler) = &instance.animation_handler {
+                let id = instance
+                    .window
+                    .request_animation_frame(handler.as_ref().unchecked_ref())
+                    .unwrap_or_default();
+                instance.animation_handler_id = NonZeroI32::new(id);
+            }
+        });
+    }
+
+    /// Ticks the game core once. Intended to be called from a Web Worker loop
+    /// after calling `enable_background_tick_mode`.
+    pub fn tick_for_background(&self, timestamp: f64) {
+        self.tick(timestamp);
     }
 
     pub fn has_focus(&self) -> bool {
@@ -519,6 +552,7 @@ impl RuffleHandle {
             window: window.clone(),
             animation_handler: None,
             animation_handler_id: None,
+            background_tick_mode: false,
             mouse_move_callback: None,
             mouse_enter_callback: None,
             mouse_leave_callback: None,
@@ -571,8 +605,8 @@ impl RuffleHandle {
                 move |js_event: PointerEvent| {
                     let _ = ruffle.with_instance(move |instance| {
                         let event = PlayerEvent::MouseMove {
-                            x: f64::from(js_event.offset_x()) * instance.device_pixel_ratio,
-                            y: f64::from(js_event.offset_y()) * instance.device_pixel_ratio,
+                            x: js_event.offset_x() * instance.device_pixel_ratio,
+                            y: js_event.offset_y() * instance.device_pixel_ratio,
                         };
                         let _ = instance.with_core_mut(|core| {
                             core.handle_event(event);
@@ -635,8 +669,8 @@ impl RuffleHandle {
                             _ => MouseButton::Unknown,
                         };
                         let event = PlayerEvent::MouseDown {
-                            x: f64::from(js_event.offset_x()) * device_pixel_ratio,
-                            y: f64::from(js_event.offset_y()) * device_pixel_ratio,
+                            x: js_event.offset_x() * device_pixel_ratio,
+                            y: js_event.offset_y() * device_pixel_ratio,
                             button,
                             // TODO The index should be provided by the browser, not calculated.
                             index: None,
@@ -667,8 +701,8 @@ impl RuffleHandle {
                                 .release_pointer_capture(js_event.pointer_id());
                         }
                         let event = PlayerEvent::MouseUp {
-                            x: f64::from(js_event.offset_x()) * instance.device_pixel_ratio,
-                            y: f64::from(js_event.offset_y()) * instance.device_pixel_ratio,
+                            x: js_event.offset_x() * instance.device_pixel_ratio,
+                            y: js_event.offset_y() * instance.device_pixel_ratio,
                             button: match js_event.button() {
                                 0 => MouseButton::Left,
                                 1 => MouseButton::Middle,
@@ -746,6 +780,7 @@ impl RuffleHandle {
 
                                 if let Some(control_code) = web_to_ruffle_text_control(
                                     &js_event.key(),
+                                    &js_event.code(),
                                     is_ctrl_cmd,
                                     js_event.shift_key(),
                                 ) {
@@ -1167,15 +1202,17 @@ impl RuffleHandle {
                 }
             }
 
-            // Request next animation frame.
-            if let Some(handler) = &instance.animation_handler {
-                let id = instance
-                    .window
-                    .request_animation_frame(handler.as_ref().unchecked_ref())
-                    .unwrap_or_default();
-                instance.animation_handler_id = NonZeroI32::new(id);
-            } else {
-                instance.animation_handler_id = None;
+            // Request next animation frame (skipped in background tick mode).
+            if !instance.background_tick_mode {
+                if let Some(handler) = &instance.animation_handler {
+                    let id = instance
+                        .window
+                        .request_animation_frame(handler.as_ref().unchecked_ref())
+                        .unwrap_or_default();
+                    instance.animation_handler_id = NonZeroI32::new(id);
+                } else {
+                    instance.animation_handler_id = None;
+                }
             }
 
             // Calculate the elapsed time since the last tick.

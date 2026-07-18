@@ -6,3 +6,4 @@
 6 PASSED!
 7 PASSED!
 8 PASSED!
+TypeError: Error #2023: Class Test$ must inherit from Sprite to link to the root.

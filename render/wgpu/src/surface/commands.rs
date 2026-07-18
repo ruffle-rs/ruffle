@@ -435,8 +435,16 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
 }
 
 pub enum Chunk {
-    Draw(Vec<DrawCommand>, bool, BufferBuilder),
-    Blend(PoolOrArcTexture, ChunkBlendMode, bool),
+    Draw {
+        chunk: Vec<DrawCommand>,
+        needs_stencil: bool,
+        transforms: BufferBuilder,
+    },
+    Blend {
+        texture: PoolOrArcTexture,
+        blend_mode: ChunkBlendMode,
+        needs_stencil: bool,
+    },
 }
 
 #[derive(Debug)]
@@ -608,7 +616,11 @@ impl<'a> WgpuCommandHandler<'a> {
         );
 
         if !current.is_empty() {
-            result.push(Chunk::Draw(current, needs_stencil, transforms));
+            result.push(Chunk::Draw {
+                chunk: current,
+                needs_stencil,
+                transforms,
+            });
         }
 
         result
@@ -640,14 +652,14 @@ impl<'a> WgpuCommandHandler<'a> {
                 transform_range.start as wgpu::DynamicOffset,
             ));
         } else {
-            self.result.push(Chunk::Draw(
-                mem::take(&mut self.current),
-                self.needs_stencil,
-                mem::replace(
+            self.result.push(Chunk::Draw {
+                chunk: mem::take(&mut self.current),
+                needs_stencil: self.needs_stencil,
+                transforms: mem::replace(
                     &mut self.transforms,
                     BufferBuilder::new_for_uniform(&self.descriptors.limits),
                 ),
-            ));
+            });
             self.transforms
                 .set_buffer_limit(self.dynamic_transforms.buffer.size());
             let transform_range = self
@@ -663,7 +675,7 @@ impl<'a> WgpuCommandHandler<'a> {
 
 impl CommandHandler for WgpuCommandHandler<'_> {
     fn blend(&mut self, commands: CommandList, blend_mode: RenderBlendMode) {
-        let mut surface = Surface::new(
+        let surface = Surface::new(
             self.descriptors,
             self.quality,
             self.width,
@@ -689,6 +701,18 @@ impl CommandHandler for WgpuCommandHandler<'_> {
             self.texture_pool,
         );
         target.ensure_cleared(self.draw_encoder);
+
+        // We currently do not support shader blends in masks. In order not to
+        // break other parts of the scene, we just fall back to a normal blend.
+        //
+        // TODO Add support for shader blends in masks.
+        let is_shader_blend_in_mask =
+            self.num_masks > 0 && matches!(blend_type, BlendType::Shader(_));
+        let blend_type = if is_shader_blend_in_mask {
+            BlendType::Trivial(TrivialBlend::Normal)
+        } else {
+            blend_type
+        };
 
         match blend_type {
             BlendType::Trivial(blend_mode) => {
@@ -738,14 +762,14 @@ impl CommandHandler for WgpuCommandHandler<'_> {
             }
             blend_type => {
                 if !self.current.is_empty() {
-                    self.result.push(Chunk::Draw(
-                        mem::take(&mut self.current),
-                        self.needs_stencil,
-                        mem::replace(
+                    self.result.push(Chunk::Draw {
+                        chunk: mem::take(&mut self.current),
+                        needs_stencil: self.needs_stencil,
+                        transforms: mem::replace(
                             &mut self.transforms,
                             BufferBuilder::new_for_uniform(&self.descriptors.limits),
                         ),
-                    ));
+                    });
                 }
                 self.transforms
                     .set_buffer_limit(self.dynamic_transforms.buffer.size());
@@ -754,11 +778,11 @@ impl CommandHandler for WgpuCommandHandler<'_> {
                     BlendType::Shader(shader) => ChunkBlendMode::Shader(shader),
                     _ => unreachable!(),
                 };
-                self.result.push(Chunk::Blend(
-                    target.take_color_texture(),
-                    chunk_blend_mode,
-                    self.num_masks > 0,
-                ));
+                self.result.push(Chunk::Blend {
+                    texture: target.take_color_texture(),
+                    blend_mode: chunk_blend_mode,
+                    needs_stencil: self.num_masks > 0,
+                });
                 self.needs_stencil = self.num_masks > 0;
             }
         }
@@ -884,7 +908,7 @@ impl CommandHandler for WgpuCommandHandler<'_> {
     }
 
     fn render_alpha_mask(&mut self, maskee_commands: CommandList, mask_commands: CommandList) {
-        let mut surface = Surface::new(
+        let surface = Surface::new(
             self.descriptors,
             self.quality,
             self.width,

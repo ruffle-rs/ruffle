@@ -1,4 +1,12 @@
 num_ticks = 1
+known_failure = true
+
+[[compilers]]
+type = "Asc"
+target = "test.swf"
+class = "Test"
+scripts = ["Test.as"]
+swf_version = 41
 
 # TODO This output differs from FP due to the
 #   winding behavior not being implemented.
@@ -6,4 +14,4 @@ num_ticks = 1
 trigger = 1
 
 [player_options]
-with_renderer = { optional = false, quality = "low" }
+with_renderer = { optional = true, quality = "low" }

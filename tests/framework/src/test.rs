@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::environment::Environment;
+use crate::environment::{CompileMode, Environment};
 use crate::options::TestOptions;
 use crate::options::known_failure::KnownFailure;
 use crate::runner::TestRunner;
@@ -47,7 +47,13 @@ impl Test {
         })
     }
 
+    pub fn name(&self) -> &str {
+        &self.name
+    }
+
     pub fn create_test_runner(&self, environment: &impl Environment) -> Result<TestRunner> {
+        self.compile(environment.compile_mode())?;
+
         let movie = self.movie()?;
         let viewport_dimensions = self.options.player_options.viewport_dimensions(&movie);
         let renderer = self
@@ -70,8 +76,13 @@ impl Test {
 
     pub fn movie(&self) -> Result<SwfMovie> {
         let data = read_bytes(&self.swf_path)?;
-        let movie = SwfMovie::from_data(&data, format!("file://{}", self.swf_path.as_str()), None)
-            .map_err(|e| anyhow!(e.to_string()))?;
+        let movie = SwfMovie::from_data(
+            &data,
+            format!("file://{}", self.swf_path.as_str()),
+            None,
+            None,
+        )
+        .map_err(|e| anyhow!("Error parsing SWF: {e}"))?;
         Ok(movie)
     }
 
@@ -156,5 +167,19 @@ impl Test {
         }
 
         self.options.can_run(check_renderer, environment)
+    }
+
+    pub fn compile(&self, compile_mode: CompileMode) -> Result<()> {
+        let verify_if_changed = match compile_mode {
+            CompileMode::CompileSilently => false,
+            CompileMode::CompileAndVerify => true,
+            CompileMode::UsePrecompiled => return Ok(()), // Pretend all is well!
+        };
+        for options in &self.options.compilers {
+            options
+                .create_compiler()?
+                .compile(&self.root_path, verify_if_changed)?;
+        }
+        Ok(())
     }
 }

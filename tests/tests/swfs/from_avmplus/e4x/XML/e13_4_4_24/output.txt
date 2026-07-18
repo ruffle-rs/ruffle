@@ -19,3 +19,4 @@ Reading one toplevel declaration: PASSED!
 Another declaration up parent chain: PASSED!
 namespaceDeclarations before setNamespace() PASSED!
 namespaceDeclarations after setNamespace() PASSED!
+TypeError: Error #2023: Class Test$ must inherit from Sprite to link to the root.

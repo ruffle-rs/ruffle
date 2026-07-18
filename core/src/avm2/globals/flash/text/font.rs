@@ -152,8 +152,8 @@ pub fn register_font<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let object = args.get_object(activation, 0, "font")?;
 
-    if let Some(class) = object.as_class_object() {
-        if let Some((movie, id)) = activation
+    if let Some(class) = object.as_class_object()
+        && let Some((movie, id)) = activation
             .context
             .library
             .avm2_class_registry()

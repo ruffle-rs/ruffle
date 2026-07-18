@@ -3,7 +3,7 @@
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::globals::point::{construct_new_point, point_to_object, value_to_point};
-use crate::avm1::property_decl::{DeclContext, StaticDeclarations, SystemClass};
+use crate::avm1::property_decl::{DeclContext, PropertyOrder, StaticDeclarations, SystemClass};
 use crate::avm1::{Object, Value};
 use crate::string::AvmString;
 use ruffle_macros::istr;
@@ -37,7 +37,7 @@ pub fn create_class<'gc>(
     context: &mut DeclContext<'_, 'gc>,
     super_proto: Object<'gc>,
 ) -> SystemClass<'gc> {
-    let class = context.class(constructor, super_proto);
+    let class = context.class(constructor, super_proto, PropertyOrder::PrototypeLast);
     context.define_properties_on(class.proto, PROTO_DECLS(context));
     class
 }
@@ -48,10 +48,10 @@ fn constructor<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if args.is_empty() {
-        this.set(istr!("height"), 0.into(), activation)?;
-        this.set(istr!("width"), 0.into(), activation)?;
-        this.set(istr!("y"), 0.into(), activation)?;
-        this.set(istr!("x"), 0.into(), activation)?;
+        this.set(istr!("height"), 0, activation)?;
+        this.set(istr!("width"), 0, activation)?;
+        this.set(istr!("y"), 0, activation)?;
+        this.set(istr!("x"), 0, activation)?;
     } else {
         this.set(
             istr!("x"),
@@ -120,10 +120,10 @@ fn set_empty<'gc>(
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    this.set(istr!("x"), 0.into(), activation)?;
-    this.set(istr!("y"), 0.into(), activation)?;
-    this.set(istr!("width"), 0.into(), activation)?;
-    this.set(istr!("height"), 0.into(), activation)?;
+    this.set(istr!("x"), 0, activation)?;
+    this.set(istr!("y"), 0, activation)?;
+    this.set(istr!("width"), 0, activation)?;
+    this.set(istr!("height"), 0, activation)?;
     Ok(Value::Undefined)
 }
 
@@ -420,18 +420,10 @@ fn inflate<'gc>(
         .to_owned()
         .coerce_to_f64(activation)?;
 
-    this.set(istr!("x"), (x - horizontal).into(), activation)?;
-    this.set(istr!("y"), (y - vertical).into(), activation)?;
-    this.set(
-        istr!("width"),
-        (width + horizontal * 2.0).into(),
-        activation,
-    )?;
-    this.set(
-        istr!("height"),
-        (height + vertical * 2.0).into(),
-        activation,
-    )?;
+    this.set(istr!("x"), x - horizontal, activation)?;
+    this.set(istr!("y"), y - vertical, activation)?;
+    this.set(istr!("width"), width + horizontal * 2.0, activation)?;
+    this.set(istr!("height"), height + vertical * 2.0, activation)?;
 
     Ok(Value::Undefined)
 }
@@ -458,18 +450,10 @@ fn inflate_point<'gc>(
         activation,
     )?;
 
-    this.set(istr!("x"), (x - horizontal).into(), activation)?;
-    this.set(istr!("y"), (y - vertical).into(), activation)?;
-    this.set(
-        istr!("width"),
-        (width + horizontal * 2.0).into(),
-        activation,
-    )?;
-    this.set(
-        istr!("height"),
-        (height + vertical * 2.0).into(),
-        activation,
-    )?;
+    this.set(istr!("x"), x - horizontal, activation)?;
+    this.set(istr!("y"), y - vertical, activation)?;
+    this.set(istr!("width"), width + horizontal * 2.0, activation)?;
+    this.set(istr!("height"), height + vertical * 2.0, activation)?;
 
     Ok(Value::Undefined)
 }
@@ -496,8 +480,8 @@ fn offset<'gc>(
         .to_owned()
         .coerce_to_f64(activation)?;
 
-    this.set(istr!("x"), (x + horizontal).into(), activation)?;
-    this.set(istr!("y"), (y + vertical).into(), activation)?;
+    this.set(istr!("x"), x + horizontal, activation)?;
+    this.set(istr!("y"), y + vertical, activation)?;
 
     Ok(Value::Undefined)
 }
@@ -518,8 +502,8 @@ fn offset_point<'gc>(
         activation,
     )?;
 
-    this.set(istr!("x"), (x + horizontal).into(), activation)?;
-    this.set(istr!("y"), (y + vertical).into(), activation)?;
+    this.set(istr!("x"), x + horizontal, activation)?;
+    this.set(istr!("y"), y + vertical, activation)?;
 
     Ok(Value::Undefined)
 }
@@ -654,7 +638,7 @@ fn set_left<'gc>(
     this.set(istr!("x"), new_left, activation)?;
     this.set(
         istr!("width"),
-        (width + (old_left - new_left.coerce_to_f64(activation)?)).into(),
+        width + (old_left - new_left.coerce_to_f64(activation)?),
         activation,
     )?;
     Ok(Value::Undefined)
@@ -683,7 +667,7 @@ fn set_top<'gc>(
     this.set(istr!("y"), new_top, activation)?;
     this.set(
         istr!("height"),
-        (height + (old_top - new_top.coerce_to_f64(activation)?)).into(),
+        height + (old_top - new_top.coerce_to_f64(activation)?),
         activation,
     )?;
     Ok(Value::Undefined)
@@ -717,7 +701,7 @@ fn set_right<'gc>(
         .get(istr!("x"), activation)?
         .coerce_to_f64(activation)?;
 
-    this.set(istr!("width"), (right - x).into(), activation)?;
+    this.set(istr!("width"), right - x, activation)?;
 
     Ok(Value::Undefined)
 }
@@ -750,7 +734,7 @@ fn set_bottom<'gc>(
         .get(istr!("y"), activation)?
         .coerce_to_f64(activation)?;
 
-    this.set(istr!("height"), (bottom - y).into(), activation)?;
+    this.set(istr!("height"), bottom - y, activation)?;
 
     Ok(Value::Undefined)
 }
@@ -827,12 +811,12 @@ fn set_top_left<'gc>(
     this.set(istr!("y"), new_top, activation)?;
     this.set(
         istr!("width"),
-        (width + (old_left - new_left.coerce_to_f64(activation)?)).into(),
+        width + (old_left - new_left.coerce_to_f64(activation)?),
         activation,
     )?;
     this.set(
         istr!("height"),
-        (height + (old_top - new_top.coerce_to_f64(activation)?)).into(),
+        height + (old_top - new_top.coerce_to_f64(activation)?),
         activation,
     )?;
 
@@ -876,8 +860,8 @@ fn set_bottom_right<'gc>(
         .get(istr!("y"), activation)?
         .coerce_to_f64(activation)?;
 
-    this.set(istr!("width"), (bottom - top).into(), activation)?;
-    this.set(istr!("height"), (right - left).into(), activation)?;
+    this.set(istr!("width"), bottom - top, activation)?;
+    this.set(istr!("height"), right - left, activation)?;
 
     Ok(Value::Undefined)
 }

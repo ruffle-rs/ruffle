@@ -1,0 +1,8 @@
+mc_loadMovie: _level0.mc_loadMovie
+mc_loadMovie: _level0.mc_loadMovie
+mc_mcl: _level0.mc_mcl
+mc_mcl: _level0.mc_mcl
+MovieClipLoader.onLoadStart
+_level0.mc_mcl - this should not trace!
+_level0.mc_loadMovie - this should not trace!
+MovieClipLoader.onLoadInit

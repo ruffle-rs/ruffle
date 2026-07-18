@@ -3,7 +3,6 @@
 use crate::avm1::{
     Activation as Avm1Activation, ActivationIdentifier as Avm1ActivationIdentifier,
     ExecutionReason as Avm1ExecutionReason, FlvValueAvm1Ext, Object as Avm1Object,
-    Value as Avm1Value,
 };
 use crate::avm2::object::NetStreamObject;
 use crate::avm2::{
@@ -355,7 +354,7 @@ impl<'gc> NetStream<'gc> {
     ///
     /// Externally visible AVM state must not be reinitialized here - i.e. the
     /// AS3 `client` doesn't go away because you played a new video file.
-    pub fn reset_buffer(self, context: &mut UpdateContext<'gc>) {
+    fn reset_buffer(self, context: &mut UpdateContext<'gc>) {
         if let Some(instance) = self.source().sound_instance.get() {
             // We stop the sound twice because sounds may have either been
             // played through the audio manager or through the backend directly
@@ -602,6 +601,8 @@ impl<'gc> NetStream<'gc> {
             };
             self.0.url.replace(Some(request.url().to_string()));
             self.source().preload_offset.set(0);
+            self.reset_buffer(context);
+
             let future = crate::loader::load_netstream(context, self, request);
 
             context.navigator.spawn_future(future);
@@ -689,6 +690,8 @@ impl<'gc> NetStream<'gc> {
         slice: &Slice,
         audio_data: FlvAudioData<'_>,
     ) -> Result<(), NetstreamError> {
+        let is_aac_sequence_header =
+            matches!(audio_data.data, FlvAudioDataType::AacSequenceHeader(_));
         let data = match audio_data.data {
             FlvAudioDataType::Raw(data)
             | FlvAudioDataType::AacSequenceHeader(data)
@@ -696,25 +699,8 @@ impl<'gc> NetStream<'gc> {
         };
         let source = self.source();
         let audio_stream = &mut *source.audio_stream.borrow_mut();
-        let substream = match audio_stream {
-            Some((substream, _sound_stream_info)) => {
-                if substream
-                    .last_chunk()
-                    .map(|lc| lc.end() > data.start())
-                    .unwrap_or(false)
-                {
-                    // Reject repeats of existing tags.
-                    // We need to do this because of lookahead - we will
-                    // encounter the same audio tag multiple times as we buffer
-                    // a few ahead for the audio backend.
-                    // This assumes that tags are processed in-order - which
-                    // should always be the case. Seeks should cancel the audio
-                    // stream before processing new tags.
-                    return Ok(());
-                }
-
-                substream
-            }
+        let (substream, sound_stream_info) = match audio_stream {
+            Some(audio_stream) => audio_stream,
             audio_stream => {
                 // None
                 let substream = Substream::new(slice.buffer().clone());
@@ -760,13 +746,42 @@ impl<'gc> NetStream<'gc> {
                     stream_format: swf_format,
                     num_samples_per_block: 0,
                     latency_seek: 0,
+                    extra_data: None,
                 };
 
-                *audio_stream = Some((substream, sound_stream_head));
-
-                &mut audio_stream.as_mut().unwrap().0
+                audio_stream.insert((substream, sound_stream_head))
             }
         };
+
+        // An AAC sequence header carries the decoder configuration
+        // (`AudioSpecificConfig`), not playable audio. We demux it out-of-band
+        // into the stream info instead of appending it to the audio substream,
+        // so the decoder only ever sees raw AAC access units and never has to
+        // deal with FLV's packet framing.
+        //
+        // The decoder reads this config once, when it's constructed. A re-sent
+        // header just refreshes the field (a no-op for the identical configs FLV
+        // actually uses); a genuine mid-stream config *change* is not supported,
+        // but doesn't occur in practice.
+        if is_aac_sequence_header {
+            sound_stream_info.extra_data = Some((*data.data()).into());
+            return Ok(());
+        }
+
+        if substream
+            .last_chunk()
+            .map(|lc| lc.end() > data.start())
+            .unwrap_or(false)
+        {
+            // Reject repeats of existing tags.
+            // We need to do this because of lookahead - we will
+            // encounter the same audio tag multiple times as we buffer
+            // a few ahead for the audio backend.
+            // This assumes that tags are processed in-order - which
+            // should always be the case. Seeks should cancel the audio
+            // stream before processing new tags.
+            return Ok(());
+        }
 
         Ok(substream.append(data)?)
     }
@@ -923,11 +938,11 @@ impl<'gc> NetStream<'gc> {
         let buffer = slice.data();
 
         match (video_handle, codec, video_data.data) {
-            (maybe_video_handle, Some(codec), FlvVideoPacket::Data(mut data))
-            | (
+            (
                 maybe_video_handle,
                 Some(codec),
-                FlvVideoPacket::Vp6Data {
+                FlvVideoPacket::Data(mut data)
+                | FlvVideoPacket::Vp6Data {
                     hadjust: _,
                     vadjust: _,
                     mut data,
@@ -1290,13 +1305,16 @@ impl<'gc> NetStream<'gc> {
                 );
             }
 
-            self.trigger_status_event(
-                context,
-                [("code", "NetStream.Buffer.Empty"), ("level", "status")],
-            );
+            // Check if AVM code in the event handler invoked stream.play() and replaced the source.
+            if Gc::ptr_eq(source, self.source()) {
+                self.trigger_status_event(
+                    context,
+                    [("code", "NetStream.Buffer.Empty"), ("level", "status")],
+                );
 
-            if is_end_of_video {
-                self.pause(context, false);
+                if is_end_of_video {
+                    self.pause(context, false);
+                }
             }
         }
 
@@ -1333,7 +1351,7 @@ impl<'gc> NetStream<'gc> {
                     let value = AvmString::new_utf8(activation.gc(), value);
 
                     info_object
-                        .set(key, Avm1Value::String(value), &mut activation)
+                        .set(key, value, &mut activation)
                         .expect("valid set");
                 }
 

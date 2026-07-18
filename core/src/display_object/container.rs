@@ -218,11 +218,15 @@ pub trait TDisplayObjectContainer<'gc>:
         child.set_place_frame(0);
         child.set_depth(depth);
 
-        if let Some(removed_child) = removed_child {
-            if !self.raw_container().is_action_script_3() {
-                removed_child.avm1_unload(context);
-            }
-            removed_child.set_parent(context, None);
+        if let Some(removed_child) = removed_child
+            && !self.raw_container().is_action_script_3()
+        {
+            // The parent of `removed_child` should NOT be set to `None` here.
+            // It's theoretically impossible for an AVM2 child to end up here(?),
+            // and doing so for AVM1 can e.g. break the logic of the audio
+            // manager's `stop_sounds_on_parent_and_children` method.
+            // (See https://github.com/ruffle-rs/ruffle/issues/21500)
+            removed_child.avm1_unload(context);
         }
 
         let this: DisplayObject<'_> = self.into();
@@ -756,7 +760,7 @@ impl<'gc> ChildContainer<'gc> {
                         Avm2Multiname::new(activation.avm2().find_public_namespace(), name);
                     let current_val = parent_obj.get_property(&multiname, &mut activation);
                     match current_val {
-                        Ok(Avm2Value::Null) | Ok(Avm2Value::Undefined) => {
+                        Ok(Avm2Value::Null | Avm2Value::Undefined) => {
                             // When the `get_property` returns null
                             // or undefined, FP doesn't attempt to
                             // set it to `null`. This is observable:
@@ -844,15 +848,14 @@ impl<'gc> ChildContainer<'gc> {
                     .position(|x| DisplayObject::ptr_eq(*x, above_child))
                 {
                     self.insert_id(position, child);
-                    None
                 } else {
                     self.push_id(child);
-                    None
                 }
             } else {
                 self.push_id(child);
-                None
             }
+
+            None
         }
     }
 

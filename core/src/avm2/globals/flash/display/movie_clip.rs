@@ -23,7 +23,7 @@ pub fn add_frame_script<'gc>(
         .as_display_object()
         .and_then(|dobj| dobj.as_movie_clip())
     {
-        for (frame_id, callable) in args.chunks_exact(2).map(|s| (s[0], s[1])) {
+        for (frame_id, callable) in args.as_chunks::<2>().0.iter().map(|s| (s[0], s[1])) {
             let frame_id = frame_id.coerce_to_u32(activation)? as u16 + 1;
             // This is correct; FP will attempt to call any Object when running
             // frame scripts
@@ -532,15 +532,13 @@ pub fn prev_scene<'gc>(
     if let Some(mc) = this
         .as_display_object()
         .and_then(|dobj| dobj.as_movie_clip())
-    {
-        if let Some(Scene {
+        && let Some(Scene {
             name: _,
             start,
             length: _,
         }) = mc.previous_scene()
-        {
-            mc.goto_frame(activation.context, start, false);
-        }
+    {
+        mc.goto_frame(activation.context, start, false);
     }
 
     Ok(Value::Undefined)
@@ -557,15 +555,13 @@ pub fn next_scene<'gc>(
     if let Some(mc) = this
         .as_display_object()
         .and_then(|dobj| dobj.as_movie_clip())
-    {
-        if let Some(Scene {
+        && let Some(Scene {
             name: _,
             start,
             length: _,
         }) = mc.next_scene()
-        {
-            mc.goto_frame(activation.context, start, false);
-        }
+    {
+        mc.goto_frame(activation.context, start, false);
     }
 
     Ok(Value::Undefined)

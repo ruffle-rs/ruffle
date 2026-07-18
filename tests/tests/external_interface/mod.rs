@@ -1,7 +1,3 @@
-// This lint is helpful, but right now we have too many instances of it.
-// TODO: Remove this once all instances are fixed.
-#![allow(clippy::needless_pass_by_ref_mut)]
-
 use ruffle_core::context::UpdateContext;
 use ruffle_core::external::ExternalInterfaceProvider;
 use ruffle_core::external::{Value as ExternalValue, Value};
@@ -17,12 +13,12 @@ impl ExternalInterfaceTestProvider {
     }
 }
 
-fn do_trace(context: &mut UpdateContext<'_>, args: &[ExternalValue]) -> ExternalValue {
+fn do_trace(context: &UpdateContext<'_>, args: &[ExternalValue]) -> ExternalValue {
     context.avm_trace(&format!("[ExternalInterface] trace: {args:?}"));
     "Traced!".into()
 }
 
-fn do_ping(context: &mut UpdateContext<'_>, _args: &[ExternalValue]) -> ExternalValue {
+fn do_ping(context: &UpdateContext<'_>, _args: &[ExternalValue]) -> ExternalValue {
     context.avm_trace("[ExternalInterface] ping");
     "Pong!".into()
 }

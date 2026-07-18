@@ -5,7 +5,7 @@ use crate::avm1::error::Error;
 use crate::avm1::globals::matrix::gradient_object_to_matrix;
 use crate::avm1::globals::{self, AVM_DEPTH_BIAS, AVM_MAX_DEPTH, bitmap_filter};
 use crate::avm1::object::NativeObject;
-use crate::avm1::property_decl::{DeclContext, StaticDeclarations, SystemClass};
+use crate::avm1::property_decl::{DeclContext, PropertyOrder, StaticDeclarations, SystemClass};
 use crate::avm1::{self, ArrayBuilder, Object, Value};
 use crate::backend::navigator::NavigationMethod;
 use crate::context::UpdateContext;
@@ -127,7 +127,7 @@ pub fn create_class<'gc>(
     context: &mut DeclContext<'_, 'gc>,
     super_proto: Object<'gc>,
 ) -> SystemClass<'gc> {
-    let class = context.empty_class(super_proto);
+    let class = context.empty_class(super_proto, PropertyOrder::PrototypeLast);
     context.define_properties_on(class.proto, PROTO_DECLS(context));
     class
 }
@@ -841,6 +841,8 @@ fn create_empty_movie_clip<'gc>(
     movie_clip.replace_at_depth(activation.context, new_clip.into(), depth);
     new_clip.post_instantiation(activation.context, None, Instantiator::Avm1, true);
 
+    new_clip.call_on_construct_handler(activation.context);
+
     Ok(new_clip.object1_or_undef())
 }
 
@@ -968,6 +970,7 @@ pub fn clone_sprite<'gc>(
     }
 
     let movie = parent.movie();
+    #[allow(clippy::question_mark)]
     let cloned_sprite = if sprite.id() != 0 {
         // Clip from SWF; instantiate a new copy.
         let library = context.library.library_for_movie(movie).unwrap();
@@ -1005,7 +1008,8 @@ pub fn clone_sprite<'gc>(
     if let (Some(cloned_sprite), Some(sprite)) =
         (cloned_sprite.as_movie_clip(), sprite.as_movie_clip())
     {
-        cloned_sprite.init_clip_event_handlers(sprite.clip_actions().into());
+        cloned_sprite
+            .init_clip_event_handlers(sprite.clip_event_flags(), sprite.clip_actions().into());
 
         if let Some(drawing) = sprite.drawing().as_deref().cloned() {
             *cloned_sprite.drawing_mut() = drawing;
@@ -1129,17 +1133,14 @@ pub fn goto_frame<'gc>(
             let frame_path = val.coerce_to_string(activation)?;
             if let Some((clip, frame)) =
                 activation.resolve_variable_path(movie_clip.into(), &frame_path)?
+                && let Some(clip) = clip.as_display_object().and_then(|o| o.as_movie_clip())
             {
-                if let Some(clip) = clip.as_display_object().and_then(|o| o.as_movie_clip()) {
-                    if let Ok(frame) = frame.parse().map(f64_to_wrapping_i32) {
-                        // First try to parse as a frame number.
-                        call_frame = Some((clip, frame));
-                    } else if let Some(frame) =
-                        clip.frame_label_to_number(frame, activation.context)
-                    {
-                        // Otherwise, it's a frame label.
-                        call_frame = Some((clip, frame as i32));
-                    }
+                if let Ok(frame) = frame.parse().map(f64_to_wrapping_i32) {
+                    // First try to parse as a frame number.
+                    call_frame = Some((clip, frame));
+                } else if let Some(frame) = clip.frame_label_to_number(frame, activation.context) {
+                    // Otherwise, it's a frame label.
+                    call_frame = Some((clip, frame as i32));
                 }
             }
         }
@@ -1410,8 +1411,8 @@ fn local_to_global<'gc>(
         ) {
             let local = Point::from_pixels(x, y);
             let global = movie_clip.local_to_global(local);
-            point.set(istr!("x"), global.x.to_pixels().into(), activation)?;
-            point.set(istr!("y"), global.y.to_pixels().into(), activation)?;
+            point.set(istr!("x"), global.x.to_pixels(), activation)?;
+            point.set(istr!("y"), global.y.to_pixels(), activation)?;
         } else {
             avm_warn!(
                 activation,
@@ -1487,26 +1488,10 @@ fn get_bounds<'gc>(
             &activation.context.strings,
             Some(activation.prototypes().object),
         );
-        out.set(
-            istr!("xMin"),
-            out_bounds.x_min.to_pixels().into(),
-            activation,
-        )?;
-        out.set(
-            istr!("xMax"),
-            out_bounds.x_max.to_pixels().into(),
-            activation,
-        )?;
-        out.set(
-            istr!("yMin"),
-            out_bounds.y_min.to_pixels().into(),
-            activation,
-        )?;
-        out.set(
-            istr!("yMax"),
-            out_bounds.y_max.to_pixels().into(),
-            activation,
-        )?;
+        out.set(istr!("xMin"), out_bounds.x_min.to_pixels(), activation)?;
+        out.set(istr!("xMax"), out_bounds.x_max.to_pixels(), activation)?;
+        out.set(istr!("yMin"), out_bounds.y_min.to_pixels(), activation)?;
+        out.set(istr!("yMax"), out_bounds.y_max.to_pixels(), activation)?;
         Ok(out.into())
     } else {
         Ok(Value::Undefined)
@@ -1564,7 +1549,7 @@ pub fn get_url<'gc>(
         };
         let vars_method = method.map(|m| (m, activation.locals_into_form_values()));
 
-        activation.context.navigator.navigate_to_url(
+        activation.context.navigator.navigate_to_url_normalized(
             &url.to_utf8_lossy(),
             &window.to_utf8_lossy(),
             vars_method,
@@ -1592,8 +1577,8 @@ fn global_to_local<'gc>(
         ) {
             let global = Point::from_pixels(x, y);
             let local = movie_clip.global_to_local(global).unwrap_or(global);
-            point.set(istr!("x"), local.x.to_pixels().into(), activation)?;
-            point.set(istr!("y"), local.y.to_pixels().into(), activation)?;
+            point.set(istr!("x"), local.x.to_pixels(), activation)?;
+            point.set(istr!("y"), local.y.to_pixels(), activation)?;
         } else {
             avm_warn!(
                 activation,

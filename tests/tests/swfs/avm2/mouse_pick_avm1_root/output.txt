@@ -1,0 +1,2 @@
+avm1 child clicked
+Clicked on: [object Stage] (null)

@@ -4,7 +4,7 @@ use std::cell::Cell;
 
 use crate::avm_warn;
 use crate::avm1::function::ExecutionReason;
-use crate::avm1::property_decl::{DeclContext, StaticDeclarations, SystemClass};
+use crate::avm1::property_decl::{DeclContext, PropertyOrder, StaticDeclarations, SystemClass};
 use crate::avm1::xml::{ELEMENT_NODE, TEXT_NODE, XmlNode};
 use crate::avm1::{Activation, Attribute, Error, NativeObject, Object, Value};
 use crate::backend::navigator::Request;
@@ -275,7 +275,12 @@ pub fn create_class<'gc>(
     context: &mut DeclContext<'_, 'gc>,
     super_proto: Object<'gc>,
 ) -> SystemClass<'gc> {
-    let class = context.native_class(constructor, None, super_proto);
+    let class = context.native_class(
+        constructor,
+        None,
+        super_proto,
+        PropertyOrder::PrototypeFirst,
+    );
     context.define_properties_on(class.proto, PROTO_DECLS(context));
     class
 }
@@ -443,7 +448,7 @@ fn on_data<'gc>(
             ExecutionReason::Special,
         )?;
 
-        this.set(istr!("loaded"), true.into(), activation)?;
+        this.set(istr!("loaded"), true, activation)?;
 
         this.call_method(
             istr!("onLoad"),
@@ -543,7 +548,7 @@ fn spawn_xml_fetch<'gc>(
             Attribute::DONT_DELETE | Attribute::DONT_ENUM,
         );
     } else {
-        this.set(bytes_loaded_string, 0.into(), activation)?;
+        this.set(bytes_loaded_string, 0, activation)?;
     }
 
     let bytes_total_string = istr!("_bytesTotal");
@@ -569,7 +574,7 @@ fn spawn_xml_fetch<'gc>(
             Attribute::DONT_DELETE | Attribute::DONT_ENUM,
         );
     } else {
-        this.set(loaded_string, false.into(), activation)?;
+        this.set(loaded_string, false, activation)?;
     }
 
     let future =

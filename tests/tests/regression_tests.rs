@@ -7,14 +7,16 @@ use crate::external_interface::tests::{external_interface_avm1, external_interfa
 use crate::shared_object::{shared_object_avm1, shared_object_avm2, shared_object_self_ref_avm1};
 use anyhow::Context;
 use clap::Parser;
-use libtest_mimic::Trial;
+use libtest_mimic::{Arguments, Trial};
 use ruffle_fs_tests_runner::FsTestsRunner;
+use ruffle_test_framework::environment::CompileMode;
 use ruffle_test_framework::options::TestOptions;
 use ruffle_test_framework::runner::TestStatus;
 use ruffle_test_framework::test::Test;
 use ruffle_test_framework::vfs::VfsPath;
 use std::borrow::Cow;
 use std::path::PathBuf;
+use std::sync::Arc;
 use std::thread::sleep;
 
 mod environment;
@@ -29,6 +31,10 @@ struct RuffleTestOpts {
     /// Ignore tests that are known to be failing
     #[clap(long, action)]
     ignore_known_failures: bool,
+
+    /// Ignore tests that are known to be failing
+    #[clap(long, default_value = "compile-silently")]
+    compile_mode: CompileMode,
 }
 
 fn main() {
@@ -57,36 +63,57 @@ fn main() {
             .chain(ruffle_test_opts.split(" ").filter(|s| !s.is_empty())),
     );
 
-    let mut runner = FsTestsRunner::new();
+    let env = Arc::new(NativeEnvironment::new(ruffle_test_opts.compile_mode));
 
+    let mut runner = FsTestsRunner::new();
+    let is_listing_only = Arguments::from_args().list;
+
+    let env_clone = env.clone();
     runner
+        .with_args_from_libtest_mimic()
         .with_descriptor_name(Cow::Borrowed(TEST_TOML_NAME))
         .with_root_dir(PathBuf::from("tests/swfs"))
         .with_test_loader(Box::new(move |params, register_trial| {
             for test in load_test_dir(&params.test_dir, params.test_name) {
-                let trial = trial_for_test(&ruffle_test_opts, test, params.args.list);
+                let trial = trial_for_test(&env_clone, &ruffle_test_opts, test, is_listing_only);
                 register_trial(trial);
             }
-        }));
+        }))
+        .sorted_by_name();
 
     // Manual tests here, since #[test] doesn't work once we use our own test harness
-    runner.with_additional_test(Trial::test("shared_object_avm1", || {
-        shared_object_avm1(&NativeEnvironment)
-    }));
-    runner.with_additional_test(Trial::test("shared_object_self_ref_avm1", || {
-        shared_object_self_ref_avm1(&NativeEnvironment)
-    }));
-    runner.with_additional_test(Trial::test("shared_object_avm2", || {
-        shared_object_avm2(&NativeEnvironment)
-    }));
-    runner.with_additional_test(Trial::test("external_interface_avm1", || {
-        external_interface_avm1(&NativeEnvironment)
-    }));
-    runner.with_additional_test(Trial::test("external_interface_avm2", || {
-        external_interface_avm2(&NativeEnvironment)
+    let env_clone = env.clone();
+    runner.with_additional_test(Trial::test("shared_object_avm1", move || {
+        shared_object_avm1(&*env_clone)
     }));
 
-    runner.run()
+    let env_clone = env.clone();
+    runner.with_additional_test(Trial::test("shared_object_self_ref_avm1", move || {
+        shared_object_self_ref_avm1(&*env_clone)
+    }));
+
+    let env_clone = env.clone();
+    runner.with_additional_test(Trial::test("shared_object_avm2", move || {
+        shared_object_avm2(&*env_clone)
+    }));
+
+    let env_clone = env.clone();
+    runner.with_additional_test(Trial::test("external_interface_avm1", move || {
+        external_interface_avm1(&*env_clone)
+    }));
+
+    let env_clone = env.clone();
+    runner.with_additional_test(Trial::test("external_interface_avm2", move || {
+        external_interface_avm2(&*env_clone)
+    }));
+
+    let conclusion = runner.run();
+
+    // Workaround for shutdown races on slow / software GPU drivers; see
+    // `NativeEnvironment::flush_gpu_with_timeout`.
+    env.flush_gpu_with_timeout(std::time::Duration::from_secs(15));
+
+    conclusion.exit()
 }
 
 fn load_test_dir<'a>(test_dir: &'a VfsPath, name: &'a str) -> impl Iterator<Item = Test> + 'a {
@@ -100,8 +127,13 @@ fn load_test_dir<'a>(test_dir: &'a VfsPath, name: &'a str) -> impl Iterator<Item
     })
 }
 
-fn trial_for_test(opts: &RuffleTestOpts, test: Test, list_only: bool) -> Trial {
-    let ignore = !test.should_run(opts.ignore_known_failures, !list_only, &NativeEnvironment);
+fn trial_for_test(
+    env: &Arc<NativeEnvironment>,
+    opts: &RuffleTestOpts,
+    test: Test,
+    list_only: bool,
+) -> Trial {
+    let ignore = !test.should_run(opts.ignore_known_failures, !list_only, env.as_ref());
 
     // Put extra info into the test 'kind' instead of appending it to the test name,
     // to not break `cargo test some/test -- --exact` and `cargo test -- --list`.
@@ -113,8 +145,10 @@ fn trial_for_test(opts: &RuffleTestOpts, test: Test, list_only: bool) -> Trial {
         test_kind.push_str(name);
     }
 
+    let env = env.clone();
+
     let trial = Trial::test(test.name.clone(), move || {
-        let mut runner = test.create_test_runner(&NativeEnvironment)?;
+        let mut runner = test.create_test_runner(env.as_ref())?;
 
         loop {
             match runner.tick()? {

@@ -44,30 +44,28 @@ pub fn bitmap_allocator<'gc>(
             .library
             .avm2_class_registry()
             .class_symbol(class)
-        {
-            if let Some(Character::Bitmap(bitmap)) = activation
+            && let Some(Character::Bitmap(bitmap)) = activation
                 .context
                 .library
                 .library_for_movie_mut(movie)
                 .character_by_id(symbol)
-            {
-                let new_bitmap_data = fill_bitmap_data_from_symbol(activation, bitmap.compressed());
-                let bitmap_data_obj =
-                    BitmapDataObject::from_bitmap_data(activation.context, new_bitmap_data);
-                new_bitmap_data.init_object2(activation.gc(), bitmap_data_obj);
+        {
+            let new_bitmap_data = fill_bitmap_data_from_symbol(activation, bitmap.compressed());
+            let bitmap_data_obj =
+                BitmapDataObject::from_bitmap_data(activation.context, new_bitmap_data);
+            new_bitmap_data.init_object2(activation.gc(), bitmap_data_obj);
 
-                let child = Bitmap::new_with_bitmap_data(
-                    activation.gc(),
-                    0,
-                    new_bitmap_data,
-                    false,
-                    &activation.caller_movie_or_root(),
-                );
+            let child = Bitmap::new_with_bitmap_data(
+                activation.gc(),
+                0,
+                new_bitmap_data,
+                false,
+                &activation.caller_movie_or_root(),
+            );
 
-                return Ok(
-                    initialize_for_allocator(activation.context, child.into(), orig_class).into(),
-                );
-            }
+            return Ok(
+                initialize_for_allocator(activation.context, child.into(), orig_class).into(),
+            );
         }
         class_def = class.super_class();
     }

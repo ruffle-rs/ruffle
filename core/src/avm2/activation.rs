@@ -13,11 +13,11 @@ use crate::avm2::error::{
 };
 use crate::avm2::function::FunctionArgs;
 use crate::avm2::method::{Method, NativeMethodImpl, ResolvedParamConfig};
+use crate::avm2::object::TObject;
 use crate::avm2::object::{
     ArrayObject, ByteArrayObject, ClassObject, FunctionObject, NamespaceObject, ScriptObject,
     XmlListObject,
 };
-use crate::avm2::object::{Object, TObject};
 use crate::avm2::op::{LookupSwitch, Op};
 use crate::avm2::scope::{Scope, ScopeChain, search_scope_stack};
 use crate::avm2::script::Script;
@@ -189,10 +189,10 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
             let mut proto = Some(global);
             while let Some(current_proto) = proto {
-                if let Some(current_proto) = current_proto.as_object() {
-                    if current_proto.base().has_own_dynamic_property(name) {
-                        return Ok(Some(global));
-                    }
+                if let Some(current_proto) = current_proto.as_object()
+                    && current_proto.base().has_own_dynamic_property(name)
+                {
+                    return Ok(Some(global));
                 }
 
                 proto = current_proto.proto(self).map(|o| o.into());
@@ -663,7 +663,6 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                 Op::PushInt { value } => self.op_push_int(*value),
                 Op::PushNamespace { namespace } => self.op_push_namespace(*namespace),
                 Op::PushNull => self.op_push_null(),
-                Op::PushShort { value } => self.op_push_short(*value),
                 Op::PushString { string } => self.op_push_string(*string),
                 Op::PushTrue => self.op_push_true(),
                 Op::PushUint { value } => self.op_push_uint(*value),
@@ -754,7 +753,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                 Op::CoerceUSwapPop => self.op_coerce_u_swap_pop(),
                 Op::ConvertO => self.op_convert_o(),
                 Op::ConvertS => self.op_convert_s(),
-                Op::Add => self.op_add(),
+                Op::Add { .. } => self.op_add(),
                 Op::AddI => self.op_add_i(),
                 Op::BitAnd => self.op_bitand(),
                 Op::BitNot => self.op_bitnot(),
@@ -776,7 +775,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                 Op::Negate => self.op_negate(),
                 Op::NegateI => self.op_negate_i(),
                 Op::RShift => self.op_rshift(),
-                Op::Subtract => self.op_subtract(),
+                Op::Subtract { .. } => self.op_subtract(),
                 Op::SubtractI => self.op_subtract_i(),
                 Op::Swap => self.op_swap(),
                 Op::URShift => self.op_urshift(),
@@ -925,7 +924,10 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
                 if matches {
                     #[cfg(feature = "avm_debug")]
-                    tracing::info!(target: "avm_caught", "Caught exception: {:?}", original_error);
+                    {
+                        let stringified = original_error.to_string(self);
+                        tracing::warn!("Caught exception: {}", stringified);
+                    }
 
                     self.reset_stack();
                     self.push_stack(error);
@@ -978,11 +980,6 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
     fn op_push_null(&mut self) -> Result<(), Error<'gc>> {
         self.push_stack(Value::Null);
-        Ok(())
-    }
-
-    fn op_push_short(&mut self, value: i16) -> Result<(), Error<'gc>> {
-        self.push_stack(value);
         Ok(())
     }
 
@@ -1261,14 +1258,14 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         if let Value::Object(object) = object_value {
             match name_value {
                 Value::Integer(_) | Value::Number(_) => {
-                    if let Some(index) = name_value.try_as_index() {
-                        if let Some(value) = object.get_index_property(index) {
-                            let _ = self.pop_stack();
-                            let _ = self.pop_stack();
-                            self.push_stack(value);
+                    if let Some(index) = name_value.try_as_index()
+                        && let Some(value) = object.get_index_property(index)
+                    {
+                        let _ = self.pop_stack();
+                        let _ = self.pop_stack();
+                        self.push_stack(value);
 
-                            return Ok(());
-                        }
+                        return Ok(());
                     }
                 }
                 Value::Object(name_object) => {
@@ -1336,14 +1333,14 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         if let Value::Object(object) = object_value {
             match name_value {
                 Value::Integer(_) | Value::Number(_) => {
-                    if let Some(index) = name_value.try_as_index() {
-                        if let Some(result) = object.set_index_property(self, index, value) {
-                            let _ = self.pop_stack();
-                            let _ = self.pop_stack();
-                            let _ = self.pop_stack();
+                    if let Some(index) = name_value.try_as_index()
+                        && let Some(result) = object.set_index_property(self, index, value)
+                    {
+                        let _ = self.pop_stack();
+                        let _ = self.pop_stack();
+                        let _ = self.pop_stack();
 
-                            return result;
-                        }
+                        return result;
                     }
                 }
                 Value::Object(name_object) => {
@@ -1411,28 +1408,33 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
             let name_value = self.stack.peek(0);
             let object = self.stack.peek(1);
-            if let Some(name_object) = name_value.as_object() {
-                if let Some(dictionary) = object.as_object().and_then(|o| o.as_dictionary_object())
-                {
-                    let _ = self.pop_stack();
-                    let _ = self.pop_stack();
-                    dictionary.delete_property_by_object(name_object, self.gc());
+            if let Some(name_object) = name_value.as_object()
+                && let Some(dictionary) = object.as_object().and_then(|o| o.as_dictionary_object())
+            {
+                let _ = self.pop_stack();
+                let _ = self.pop_stack();
+                dictionary.delete_property_by_object(name_object, self.gc());
 
-                    self.push_stack(true);
-                    return Ok(());
-                }
+                self.push_stack(true);
+                return Ok(());
             }
         }
 
         // main path for dynamic names
         if multiname.has_lazy_name() {
             let name_value = self.stack.peek(0);
-            if matches!(name_value, Value::Object(Object::XmlListObject(_))) {
+
+            if name_value
+                .as_object()
+                .and_then(|o| o.as_xml_list_object())
+                .is_some()
+            {
                 // ECMA-357 11.3.1 The delete Operator
                 // If the type of the operand is XMLList, then a TypeError exception is thrown.
                 return Err(make_error_1119(self));
             }
         }
+
         let multiname = multiname.fill_with_runtime_params(self)?;
         let object = self.pop_stack().null_check(self, Some(&multiname))?;
 
@@ -1496,12 +1498,12 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
         let has_prop = match value {
             Value::Object(obj) => {
-                if let Some(dictionary) = obj.as_dictionary_object() {
-                    if let Some(name_object) = name_value.as_object() {
-                        self.push_stack(dictionary.has_property_by_object(name_object));
+                if let Some(dictionary) = obj.as_dictionary_object()
+                    && let Some(name_object) = name_value.as_object()
+                {
+                    self.push_stack(dictionary.has_property_by_object(name_object));
 
-                        return Ok(());
-                    }
+                    return Ok(());
                 }
 
                 let name = name_value.coerce_to_string(self)?;
@@ -1849,7 +1851,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let base_class = base_value.coerce_to_type(self, class_class)?;
 
         let base_class = match base_class {
-            Value::Object(Object::ClassObject(c)) => Some(c),
+            Value::Object(o) if let Some(class_obj) = o.as_class_object() => Some(class_obj),
             Value::Null => None,
             _ => unreachable!("Coercion to Class must return Class or null"),
         };
@@ -2014,8 +2016,15 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let value1 = self.pop_stack();
 
         let sum_value = match (value1, value2) {
-            // note: with not-yet-guaranteed assumption that Integer < 1<<28, this won't overflow.
-            (Value::Integer(n1), Value::Integer(n2)) => (n1 + n2).into(),
+            (Value::Integer(n1), Value::Integer(n2)) => {
+                if let Some(res) = n1.checked_add(n2) {
+                    res.into()
+                } else {
+                    ((n1 as i64 + n2 as i64) as f64).into()
+                }
+            }
+            (Value::Integer(n1), Value::Number(n2)) => (n1 as f64 + n2).into(),
+            (Value::Number(n1), Value::Integer(n2)) => (n1 + n2 as f64).into(),
             (Value::Number(n1), Value::Number(n2)) => (n1 + n2).into(),
             (Value::String(s), value2) => Value::String(AvmString::concat(
                 self.gc(),
@@ -2066,10 +2075,20 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     }
 
     fn op_add_i(&mut self) -> Result<(), Error<'gc>> {
-        let value2 = self.pop_stack().coerce_to_i32(self)?;
-        let value1 = self.pop_stack().coerce_to_i32(self)?;
+        let value2 = self.pop_stack();
+        let value1 = self.pop_stack();
 
-        self.push_stack(value1.wrapping_add(value2));
+        let sum_value = match (value1, value2) {
+            (Value::Integer(n1), Value::Integer(n2)) => n1.wrapping_add(n2),
+            (value1, value2) => {
+                let value1 = value1.coerce_to_i32(self)?;
+                let value2 = value2.coerce_to_i32(self)?;
+
+                value1.wrapping_add(value2)
+            }
+        };
+
+        self.push_stack(sum_value);
 
         Ok(())
     }
@@ -2127,8 +2146,9 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
     fn op_decrement(&mut self) -> Result<(), Error<'gc>> {
         let value = self.pop_stack().coerce_to_number(self)?;
+        let result = Value::from(value - 1.0);
 
-        self.push_stack(value - 1.0);
+        self.push_stack(result.try_promote_number());
 
         Ok(())
     }
@@ -2144,8 +2164,9 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     fn op_divide(&mut self) -> Result<(), Error<'gc>> {
         let value2 = self.pop_stack().coerce_to_number(self)?;
         let value1 = self.pop_stack().coerce_to_number(self)?;
+        let result = Value::from(value1 / value2);
 
-        self.push_stack(value1 / value2);
+        self.push_stack(result.try_promote_number());
 
         Ok(())
     }
@@ -2168,8 +2189,9 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
     fn op_increment(&mut self) -> Result<(), Error<'gc>> {
         let value = self.pop_stack().coerce_to_number(self)?;
+        let result = Value::from(value + 1.0);
 
-        self.push_stack(value + 1.0);
+        self.push_stack(result.try_promote_number());
 
         Ok(())
     }
@@ -2208,11 +2230,11 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         // to help int-indexing.
         // Once we get a generic implicit double->int conversion,
         // we can reevaluate whether this path is needed.
-        if let (Value::Integer(n1), Value::Integer(n2)) = (value1, value2) {
-            if let Some(result) = n1.checked_mul(n2) {
-                self.push_stack(result);
-                return Ok(());
-            }
+        if let (Value::Integer(n1), Value::Integer(n2)) = (value1, value2)
+            && let Some(result) = n1.checked_mul(n2)
+        {
+            self.push_stack(result);
+            return Ok(());
         }
         let value2 = value2.coerce_to_number(self)?;
         let value1 = value1.coerce_to_number(self)?;
@@ -2260,8 +2282,15 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let value1 = self.pop_stack();
 
         let sub_value: Value<'gc> = match (value1, value2) {
-            // note: with not-yet-guaranteed assumption that Integer < 1<<28, this won't underflow.
-            (Value::Integer(n1), Value::Integer(n2)) => (n1 - n2).into(),
+            (Value::Integer(n1), Value::Integer(n2)) => {
+                if let Some(res) = n1.checked_sub(n2) {
+                    res.into()
+                } else {
+                    ((n1 as i64 - n2 as i64) as f64).into()
+                }
+            }
+            (Value::Integer(n1), Value::Number(n2)) => (n1 as f64 - n2).into(),
+            (Value::Number(n1), Value::Integer(n2)) => (n1 - n2 as f64).into(),
             (Value::Number(n1), Value::Number(n2)) => (n1 - n2).into(),
             _ => {
                 let value2 = value2.coerce_to_number(self)?;
@@ -2276,10 +2305,20 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     }
 
     fn op_subtract_i(&mut self) -> Result<(), Error<'gc>> {
-        let value2 = self.pop_stack().coerce_to_i32(self)?;
-        let value1 = self.pop_stack().coerce_to_i32(self)?;
+        let value2 = self.pop_stack();
+        let value1 = self.pop_stack();
 
-        self.push_stack(value1.wrapping_sub(value2));
+        let sum_value = match (value1, value2) {
+            (Value::Integer(n1), Value::Integer(n2)) => n1.wrapping_sub(n2),
+            (value1, value2) => {
+                let value1 = value1.coerce_to_i32(self)?;
+                let value2 = value2.coerce_to_i32(self)?;
+
+                value1.wrapping_sub(value2)
+            }
+        };
+
+        self.push_stack(sum_value);
 
         Ok(())
     }
@@ -2605,26 +2644,22 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             Value::Object(o) => {
                 let classes = self.avm2().class_defs();
 
-                match o {
-                    Object::FunctionObject(_) => {
-                        if o.instance_class() == classes.function {
-                            istr!(self, "function")
-                        } else {
-                            // Subclasses always have a typeof = "object"
-                            istr!(self, "object")
-                        }
+                if o.as_function_object().is_some() {
+                    if o.instance_class() == classes.function {
+                        istr!(self, "function")
+                    } else {
+                        // Subclasses always have a typeof = "object"
+                        istr!(self, "object")
                     }
-                    Object::XmlObject(_) | Object::XmlListObject(_) => {
-                        if o.instance_class() == classes.xml_list
-                            || o.instance_class() == classes.xml
-                        {
-                            istr!(self, "xml")
-                        } else {
-                            // Subclasses always have a typeof = "object"
-                            istr!(self, "object")
-                        }
+                } else if o.as_xml_object().is_some() || o.as_xml_list_object().is_some() {
+                    if o.instance_class() == classes.xml_list || o.instance_class() == classes.xml {
+                        istr!(self, "xml")
+                    } else {
+                        // Subclasses always have a typeof = "object"
+                        istr!(self, "object")
                     }
-                    _ => istr!(self, "object"),
+                } else {
+                    istr!(self, "object")
                 }
             }
             Value::String(_) => istr!(self, "string"),
@@ -2662,10 +2697,10 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
     /// Implements `Op::EscXElem`
     fn op_esc_elem(&mut self) -> Result<(), Error<'gc>> {
+        // We explicitly call toXMLString on Xml/XmlListObject since the toString of these objects have special handling for simple content, which is not used here.
         let r = match self.pop_stack() {
-            // We explicitly call toXMLString on Xml/XmlListObject since the toString of these objects have special handling for simple content, which is not used here.
-            Value::Object(Object::XmlObject(x)) => x.as_xml_string(self),
-            Value::Object(Object::XmlListObject(x)) => x.as_xml_string(self),
+            Value::Object(o) if let Some(x) = o.as_xml_object() => x.as_xml_string(self),
+            Value::Object(o) if let Some(x) = o.as_xml_list_object() => x.as_xml_string(self),
             // contrary to the avmplus documentation, this escapes the value on the top of the stack using EscapeElementValue from ECMA-357 *NOT* EscapeAttributeValue.
             x => AvmString::new(self.gc(), escape_element_value(x.coerce_to_string(self)?)),
         };
@@ -2718,13 +2753,13 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
     /// Implements `Op::Si8`
     fn op_si8(&mut self) -> Result<(), Error<'gc>> {
-        let address = self.pop_stack().coerce_to_i32(self)?;
+        // Negative addresses will be coerced to >i32::MAX, which is guaranteed
+        // to be out-of-bounds of the domain memory by a check in
+        // `Domain::set_domain_memory`.
+        let address = self.pop_stack().coerce_to_i32(self)? as usize;
+
         let val = self.pop_stack().coerce_to_i32(self)? as i8;
         let mut dm = self.domain_memory().storage_mut();
-
-        let Ok(address) = usize::try_from(address) else {
-            return Err(make_error_1506(self));
-        };
 
         if address >= dm.len() {
             return Err(make_error_1506(self));
@@ -2737,13 +2772,14 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
     /// Implements `Op::Si16`
     fn op_si16(&mut self) -> Result<(), Error<'gc>> {
-        let address = self.pop_stack().coerce_to_i32(self)?;
+        // Negative addresses will be coerced to >i32::MAX, which is guaranteed
+        // to be out-of-bounds of the domain memory by a check in
+        // `Domain::set_domain_memory`.
+        let address = self.pop_stack().coerce_to_i32(self)? as usize;
+
         let val = self.pop_stack().coerce_to_i32(self)? as i16;
         let mut dm = self.domain_memory().storage_mut();
 
-        let Ok(address) = usize::try_from(address) else {
-            return Err(make_error_1506(self));
-        };
         if address > dm.len() - 2 {
             return Err(make_error_1506(self));
         }
@@ -2755,13 +2791,14 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
     /// Implements `Op::Si32`
     fn op_si32(&mut self) -> Result<(), Error<'gc>> {
-        let address = self.pop_stack().coerce_to_i32(self)?;
+        // Negative addresses will be coerced to >i32::MAX, which is guaranteed
+        // to be out-of-bounds of the domain memory by a check in
+        // `Domain::set_domain_memory`.
+        let address = self.pop_stack().coerce_to_i32(self)? as usize;
+
         let val = self.pop_stack().coerce_to_i32(self)?;
         let mut dm = self.domain_memory().storage_mut();
 
-        let Ok(address) = usize::try_from(address) else {
-            return Err(make_error_1506(self));
-        };
         if address > dm.len() - 4 {
             return Err(make_error_1506(self));
         }
@@ -2773,13 +2810,14 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
     /// Implements `Op::Sf32`
     fn op_sf32(&mut self) -> Result<(), Error<'gc>> {
-        let address = self.pop_stack().coerce_to_i32(self)?;
+        // Negative addresses will be coerced to >i32::MAX, which is guaranteed
+        // to be out-of-bounds of the domain memory by a check in
+        // `Domain::set_domain_memory`.
+        let address = self.pop_stack().coerce_to_i32(self)? as usize;
+
         let val = self.pop_stack().coerce_to_number(self)? as f32;
         let mut dm = self.domain_memory().storage_mut();
 
-        let Ok(address) = usize::try_from(address) else {
-            return Err(make_error_1506(self));
-        };
         if address > dm.len() - 4 {
             return Err(make_error_1506(self));
         }
@@ -2791,13 +2829,14 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
     /// Implements `Op::Sf64`
     fn op_sf64(&mut self) -> Result<(), Error<'gc>> {
-        let address = self.pop_stack().coerce_to_i32(self)?;
+        // Negative addresses will be coerced to >i32::MAX, which is guaranteed
+        // to be out-of-bounds of the domain memory by a check in
+        // `Domain::set_domain_memory`.
+        let address = self.pop_stack().coerce_to_i32(self)? as usize;
+
         let val = self.pop_stack().coerce_to_number(self)?;
         let mut dm = self.domain_memory().storage_mut();
 
-        let Ok(address) = usize::try_from(address) else {
-            return Err(make_error_1506(self));
-        };
         if address > dm.len() - 8 {
             return Err(make_error_1506(self));
         }
@@ -2809,7 +2848,11 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
     /// Implements `Op::Li8`
     fn op_li8(&mut self) -> Result<(), Error<'gc>> {
-        let address = self.pop_stack().coerce_to_u32(self)? as usize;
+        // Negative addresses will be coerced to >i32::MAX, which is guaranteed
+        // to be out-of-bounds of the domain memory by a check in
+        // `Domain::set_domain_memory`.
+        let address = self.pop_stack().coerce_to_i32(self)? as usize;
+
         let dm = self.domain_memory().storage();
 
         let val = dm.get(address);
@@ -2825,7 +2868,11 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
     /// Implements `Op::Li16`
     fn op_li16(&mut self) -> Result<(), Error<'gc>> {
-        let address = self.pop_stack().coerce_to_u32(self)? as usize;
+        // Negative addresses will be coerced to >i32::MAX, which is guaranteed
+        // to be out-of-bounds of the domain memory by a check in
+        // `Domain::set_domain_memory`.
+        let address = self.pop_stack().coerce_to_i32(self)? as usize;
+
         let dm = self.domain_memory().storage();
 
         if address > dm.len() - 2 {
@@ -2840,7 +2887,11 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
     /// Implements `Op::Li32`
     fn op_li32(&mut self) -> Result<(), Error<'gc>> {
-        let address = self.pop_stack().coerce_to_u32(self)? as usize;
+        // Negative addresses will be coerced to >i32::MAX, which is guaranteed
+        // to be out-of-bounds of the domain memory by a check in
+        // `Domain::set_domain_memory`.
+        let address = self.pop_stack().coerce_to_i32(self)? as usize;
+
         let dm = self.domain_memory().storage();
 
         if address > dm.len() - 4 {
@@ -2854,7 +2905,11 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
     /// Implements `Op::Lf32`
     fn op_lf32(&mut self) -> Result<(), Error<'gc>> {
-        let address = self.pop_stack().coerce_to_u32(self)? as usize;
+        // Negative addresses will be coerced to >i32::MAX, which is guaranteed
+        // to be out-of-bounds of the domain memory by a check in
+        // `Domain::set_domain_memory`.
+        let address = self.pop_stack().coerce_to_i32(self)? as usize;
+
         let dm = self.domain_memory().storage();
 
         if address > dm.len() - 4 {
@@ -2869,7 +2924,11 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
     /// Implements `Op::Lf64`
     fn op_lf64(&mut self) -> Result<(), Error<'gc>> {
-        let address = self.pop_stack().coerce_to_u32(self)? as usize;
+        // Negative addresses will be coerced to >i32::MAX, which is guaranteed
+        // to be out-of-bounds of the domain memory by a check in
+        // `Domain::set_domain_memory`.
+        let address = self.pop_stack().coerce_to_i32(self)? as usize;
+
         let dm = self.domain_memory().storage();
 
         if address > dm.len() - 8 {

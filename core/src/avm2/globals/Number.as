@@ -137,7 +137,7 @@ package {
                 }
 
                 if (!(this is Number)) {
-                    throw new TypeError("Error #1004: Method Number.prototype.toString was invoked on an incompatible object.", 1004);
+                    Error.throwError(TypeError, 1004, "Number.prototype.toString");
                 }
 
                 var self:Number = this;
@@ -152,7 +152,7 @@ package {
                 }
 
                 if (!(this is Number)) {
-                    throw new TypeError("Error #1004: Method Number.prototype.valueOf was invoked on an incompatible object.", 1004);
+                    Error.throwError(TypeError, 1004, "Number.prototype.valueOf");
                 }
 
                 return this;
@@ -171,11 +171,22 @@ package {
             // this AS-defined method does nothing
         }
 
-        AS3 native function toExponential(digits:* = 0):String;
+        // mode 0: toExponential
+        // mode 1: toFixed
+        // mode 2: toPrecision
+        private static native function _convert(n:Number, digits:int, mode:int):String;
 
-        AS3 native function toFixed(digits:* = 0):String;
+        AS3 function toExponential(digits:* = 0):String {
+            return Number._convert(this, int(digits), 0);
+        }
 
-        AS3 native function toPrecision(digits:* = 0):String;
+        AS3 function toFixed(digits:* = 0):String {
+            return Number._convert(this, int(digits), 1);
+        }
+
+        AS3 function toPrecision(digits:* = 0):String {
+            return Number._convert(this, int(digits), 2);
+        }
 
         AS3 native function toString(radix:* = 10):String;
 

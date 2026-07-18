@@ -47,6 +47,9 @@
     "settings_device_font_renderer": {
         "message": "Vykreslování systémových fontů"
     },
+    "device_font_renderer_embedded": {
+        "message": "Vestavěné"
+    },
     "settings_advanced_options": {
         "message": "Pokročilá nastavení"
     },

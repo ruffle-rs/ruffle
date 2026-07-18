@@ -9,6 +9,7 @@ use crate::locale::{get_current_date_time, get_timezone};
 use crate::string::{AvmString, WStr, utils as string_utils};
 use chrono::{DateTime, Datelike, Duration, FixedOffset, LocalResult, TimeZone, Timelike, Utc};
 use num_traits::ToPrimitive;
+use ruffle_macros::istr;
 
 pub use crate::avm2::object::date_allocator;
 
@@ -246,10 +247,10 @@ pub fn init<'gc>(
             } else {
                 timestamp.coerce_to_number(activation)?
             };
-            if timestamp.is_finite() {
-                if let LocalResult::Single(time) = Utc.timestamp_millis_opt(timestamp as i64) {
-                    this.set_date_time(Some(time))
-                }
+            if timestamp.is_finite()
+                && let LocalResult::Single(time) = Utc.timestamp_millis_opt(timestamp as i64)
+            {
+                this.set_date_time(Some(time))
             }
         }
     } else {
@@ -947,7 +948,7 @@ pub fn to_string<'gc>(
         )
         .into())
     } else {
-        Ok(AvmString::new_ascii_static(activation.gc(), b"Invalid Date").into())
+        Ok(istr!("Invalid Date").into())
     }
 }
 
@@ -968,7 +969,7 @@ pub fn to_utc_string<'gc>(
         )
         .into())
     } else {
-        Ok(AvmString::new_ascii_static(activation.gc(), b"Invalid Date").into())
+        Ok(istr!("Invalid Date").into())
     }
 }
 
@@ -992,7 +993,7 @@ pub fn to_locale_string<'gc>(
         )
         .into())
     } else {
-        Ok(AvmString::new_ascii_static(activation.gc(), b"Invalid Date").into())
+        Ok(istr!("Invalid Date").into())
     }
 }
 
@@ -1012,7 +1013,7 @@ pub fn to_time_string<'gc>(
     {
         Ok(AvmString::new_utf8(activation.gc(), date.format("%T GMT%z").to_string()).into())
     } else {
-        Ok(AvmString::new_ascii_static(activation.gc(), b"Invalid Date").into())
+        Ok(istr!("Invalid Date").into())
     }
 }
 
@@ -1032,7 +1033,7 @@ pub fn to_locale_time_string<'gc>(
     {
         Ok(AvmString::new_utf8(activation.gc(), date.format("%T %p").to_string()).into())
     } else {
-        Ok(AvmString::new_ascii_static(activation.gc(), b"Invalid Date").into())
+        Ok(istr!("Invalid Date").into())
     }
 }
 
@@ -1052,7 +1053,7 @@ pub fn to_date_string<'gc>(
     {
         Ok(AvmString::new_utf8(activation.gc(), date.format("%a %b %-d %-Y").to_string()).into())
     } else {
-        Ok(AvmString::new_ascii_static(activation.gc(), b"Invalid Date").into())
+        Ok(istr!("Invalid Date").into())
     }
 }
 

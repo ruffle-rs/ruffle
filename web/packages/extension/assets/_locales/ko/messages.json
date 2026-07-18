@@ -38,6 +38,15 @@
     "settings_player_version": {
         "message": "에뮬레이트 할 플래시 플레이어 버전 번호 (1부터 32까지)"
     },
+    "settings_background_execution_mode": {
+        "message": "백그라운드 실행"
+    },
+    "settings_background_execution_mode_none": {
+        "message": "일시 정지"
+    },
+    "settings_background_execution_mode_main_thread": {
+        "message": "메인 스레드에서 실행"
+    },
     "settings_preferred_renderer": {
         "message": "우선되는 렌더러"
     },

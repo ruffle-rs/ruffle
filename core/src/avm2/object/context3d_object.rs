@@ -2,12 +2,12 @@
 
 use crate::avm2::Error;
 use crate::avm2::activation::Activation;
+use crate::avm2::object::TObject;
 use crate::avm2::object::script_object::ScriptObjectData;
-use crate::avm2::object::{Object, TObject};
 use crate::avm2::value::Value;
 use crate::avm2_stub_method;
 use crate::bitmap::bitmap_data::BitmapRawData;
-use crate::context::RenderContext;
+use crate::context::{RenderContext, UpdateContext};
 use gc_arena::{Collect, Gc, GcWeak};
 use naga_agal::AgalError;
 use ruffle_common::utils::HasPrefixField;
@@ -17,6 +17,7 @@ use ruffle_render::backend::{
     Context3DVertexBufferFormat, ProgramType, Texture,
 };
 use ruffle_render::commands::CommandHandler;
+use ruffle_render::matrix::Matrix;
 use std::cell::Cell;
 use std::rc::Rc;
 use swf::{Rectangle, Twips};
@@ -35,21 +36,20 @@ pub struct Context3DObjectWeak<'gc>(pub GcWeak<'gc, Context3DData<'gc>>);
 
 impl<'gc> Context3DObject<'gc> {
     pub fn from_context(
-        activation: &mut Activation<'_, 'gc>,
-        context: Box<dyn Context3D>,
+        context: &mut UpdateContext<'gc>,
+        context3d: Box<dyn Context3D>,
         stage3d: Stage3DObject<'gc>,
-    ) -> Object<'gc> {
-        let class = activation.avm2().classes().context3d;
+    ) -> Self {
+        let class = context.avm2.classes().context3d;
 
         Context3DObject(Gc::new(
-            activation.gc(),
+            context.gc(),
             Context3DData {
                 base: ScriptObjectData::new(class),
-                render_context: Cell::new(Some(context)),
+                render_context: Cell::new(Some(context3d)),
                 stage3d,
             },
         ))
-        .into()
     }
 
     pub fn stage3d(self) -> Stage3DObject<'gc> {
@@ -241,14 +241,14 @@ impl<'gc> Context3DObject<'gc> {
         });
     }
 
-    pub fn set_program_constants_from_matrix(
+    pub fn set_program_constants(
         self,
         program_type: ProgramType,
         first_register: u32,
-        matrix_raw_data_column_major: Vec<f32>,
+        matrix_raw_data_column_major: &[[u8; 4]],
     ) {
         self.with_context_3d(|ctx| {
-            ctx.process_command(Context3DCommand::SetProgramConstantsFromVector {
+            ctx.process_command(Context3DCommand::SetProgramConstants {
                 program_type,
                 first_register,
                 matrix_raw_data_column_major,
@@ -304,11 +304,15 @@ impl<'gc> Context3DObject<'gc> {
             if context3d.should_render() {
                 let handle = context3d.bitmap_handle();
 
-                context.commands.render_stage3d(
-                    handle,
-                    // FIXME - apply x and y translation from Stage3D
-                    context.transform_stack.transform(),
+                // FIXME - The Stage3D should not be scaled
+                // when resizing the player window.
+                let mut transform = context.transform_stack.transform();
+                transform.matrix *= Matrix::translate(
+                    Twips::from_pixels(self.stage3d().x()),
+                    Twips::from_pixels(self.stage3d().y()),
                 );
+
+                context.commands.render_stage3d(handle, transform);
             }
         });
     }

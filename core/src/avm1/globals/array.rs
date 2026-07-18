@@ -4,7 +4,7 @@ use crate::avm1::activation::Activation;
 use crate::avm1::clamp::Clamp;
 use crate::avm1::error::Error;
 use crate::avm1::parameters::{ParametersExt, UndefinedAs};
-use crate::avm1::property_decl::{DeclContext, StaticDeclarations, SystemClass};
+use crate::avm1::property_decl::{DeclContext, PropertyOrder, StaticDeclarations, SystemClass};
 use crate::avm1::{Attribute, NativeObject, Object, Value};
 use crate::ecma_conversions::f64_to_wrapping_i32;
 use crate::string::{AvmString, StringContext};
@@ -66,9 +66,13 @@ pub fn create_class<'gc>(
     context: &mut DeclContext<'_, 'gc>,
     super_proto: Object<'gc>,
 ) -> SystemClass<'gc> {
-    let proto = ArrayBuilder::new_with_proto(context.strings, super_proto).with([]);
-    let class = context.native_class_with_proto(constructor, Some(array), proto);
-    context.define_properties_on(proto, PROTO_DECLS(context));
+    let class = context.native_class(
+        constructor,
+        Some(array),
+        super_proto,
+        PropertyOrder::PrototypeFirst,
+    );
+    context.define_properties_on(class.proto, PROTO_DECLS(context));
 
     // TODO: These were added in Flash Player 7, but are available even to SWFv6 and lower
     // when run in Flash Player 7. Make these conditional if we add a parameter to control
@@ -76,6 +80,48 @@ pub fn create_class<'gc>(
     context.define_properties_on(class.constr, OBJECT_DECLS(context));
 
     class
+}
+
+pub mod method {
+    pub const ARRAY: u16 = 0;
+    pub const PUSH: u16 = 1;
+    pub const POP: u16 = 2;
+    pub const CONCAT: u16 = 3;
+    pub const SHIFT: u16 = 4;
+    pub const UNSHIFT: u16 = 5;
+    pub const SLICE: u16 = 6;
+    pub const JOIN: u16 = 7;
+    pub const SPLICE: u16 = 8;
+    pub const TO_STRING: u16 = 9;
+    pub const SORT: u16 = 10;
+    pub const REVERSE: u16 = 11;
+    pub const SORT_ON: u16 = 12;
+}
+
+pub fn method<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
+    args: &[Value<'gc>],
+    index: u16,
+) -> Result<Value<'gc>, Error<'gc>> {
+    use method::*;
+
+    match index {
+        ARRAY => array(activation, this, args),
+        PUSH => push(activation, this, args),
+        POP => pop(activation, this, args),
+        CONCAT => concat(activation, this, args),
+        SHIFT => shift(activation, this, args),
+        UNSHIFT => unshift(activation, this, args),
+        SLICE => slice(activation, this, args),
+        JOIN => join(activation, this, args),
+        SPLICE => splice(activation, this, args),
+        TO_STRING => to_string(activation, this, args),
+        SORT => sort(activation, this, args),
+        REVERSE => reverse(activation, this, args),
+        SORT_ON => sort_on(activation, this, args),
+        _ => Ok(Value::Undefined),
+    }
 }
 
 /// Intermediate builder for constructing `ArrayObject`,
@@ -113,6 +159,7 @@ impl<'gc> ArrayBuilder<'gc> {
             this.define_value(self.mc, length_str, value, Attribute::empty());
             length += 1;
         }
+
         this.define_value(
             self.mc,
             self.length_prop,
@@ -196,15 +243,14 @@ pub fn unshift<'gc>(
     for i in 0..old_length {
         let from = old_length - i - 1;
         let to = new_length - i - 1;
-        if this.has_element(activation, from) {
-            let element = this.get_element(activation, from);
-            this.set_element(activation, to, element)?;
-        } else {
-            this.delete_element(activation, to);
-        }
+
+        let element = this.get_element(activation, from);
+        this.delete_element(activation, to);
+        this.set_element(activation, to, element)?;
     }
 
     for (i, &arg) in args.iter().enumerate() {
+        this.delete_element(activation, i as i32);
         this.set_element(activation, i as i32, arg)?;
     }
 
@@ -228,15 +274,10 @@ pub fn shift<'gc>(
     let first = this.get_element(activation, 0);
 
     for i in 1..length {
-        if this.has_element(activation, i) {
-            let element = this.get_element(activation, i);
-            this.set_element(activation, i - 1, element)?;
-        } else {
-            this.delete_element(activation, i - 1);
-        }
+        let element = this.get_element(activation, i);
+        this.delete_element(activation, i - 1);
+        this.set_element(activation, i - 1, element)?;
     }
-
-    this.delete_element(activation, length - 1);
 
     if let NativeObject::Array(_) = this.native() {
         this.set_length(activation, length - 1)?;
@@ -273,39 +314,16 @@ pub fn reverse<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let length = this.length(activation)?;
     for lower_index in 0..length / 2 {
-        let has_lower = this.has_element(activation, lower_index);
-        let lower_value = if has_lower {
-            this.get_element(activation, lower_index)
-        } else {
-            Value::Undefined
-        };
-
         let upper_index = length - lower_index - 1;
-        let has_upper = this.has_element(activation, upper_index);
-        let upper_value = if has_upper {
-            this.get_element(activation, upper_index)
-        } else {
-            Value::Undefined
-        };
 
-        match (has_lower, has_upper) {
-            (true, true) => {
-                this.set_element(activation, lower_index, upper_value)?;
-                this.set_element(activation, upper_index, lower_value)?;
-            }
-            (true, false) => {
-                this.delete_element(activation, lower_index);
-                this.set_element(activation, upper_index, lower_value)?;
-            }
-            (false, true) => {
-                this.set_element(activation, lower_index, upper_value)?;
-                this.delete_element(activation, upper_index);
-            }
-            (false, false) => {
-                this.delete_element(activation, lower_index);
-                this.delete_element(activation, upper_index);
-            }
-        }
+        let lower_value = this.get_element(activation, lower_index);
+        let upper_value = this.get_element(activation, upper_index);
+
+        this.delete_element(activation, lower_index);
+        this.delete_element(activation, upper_index);
+
+        this.set_element(activation, lower_index, upper_value)?;
+        this.set_element(activation, upper_index, lower_value)?;
     }
 
     // Some docs incorrectly say reverse returns Void.

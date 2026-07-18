@@ -36,6 +36,16 @@ pub trait RenderBackend: Any {
         bitmap_source: &dyn BitmapSource,
     ) -> ShapeHandle;
 
+    fn register_shape_with_scale(
+        &mut self,
+        shape: DistilledShape,
+        bitmap_source: &dyn BitmapSource,
+        _scale: f32,
+    ) -> ShapeHandle {
+        // Default implementation ignores scale
+        self.register_shape(shape, bitmap_source)
+    }
+
     fn render_offscreen(
         &mut self,
         handle: BitmapHandle,
@@ -563,10 +573,10 @@ pub enum Context3DCommand<'a> {
     SetShaders {
         module: Option<Rc<dyn ShaderModule>>,
     },
-    SetProgramConstantsFromVector {
+    SetProgramConstants {
         program_type: ProgramType,
         first_register: u32,
-        matrix_raw_data_column_major: Vec<f32>,
+        matrix_raw_data_column_major: &'a [[u8; 4]],
     },
     SetCulling {
         face: Context3DTriangleFace,

@@ -4,7 +4,7 @@ use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::globals::as_broadcaster::BroadcasterFunctions;
 use crate::avm1::property::Attribute;
-use crate::avm1::property_decl::{DeclContext, StaticDeclarations, SystemClass};
+use crate::avm1::property_decl::{DeclContext, PropertyOrder, StaticDeclarations, SystemClass};
 use crate::avm1::{ArrayBuilder, Object, Value};
 use crate::backend::navigator::Request;
 use crate::display_object::TDisplayObject;
@@ -13,8 +13,8 @@ use ruffle_macros::istr;
 
 const PROTO_DECLS: StaticDeclarations = declare_static_properties! {
     "loadClip" => method(load_clip; DONT_ENUM | DONT_DELETE);
-    "unloadClip" => method(unload_clip; DONT_ENUM | DONT_DELETE);
     "getProgress" => method(get_progress; DONT_ENUM | DONT_DELETE);
+    "unloadClip" => method(unload_clip; DONT_ENUM | DONT_DELETE);
 };
 
 pub fn create_class<'gc>(
@@ -23,7 +23,7 @@ pub fn create_class<'gc>(
     broadcaster_fns: BroadcasterFunctions<'gc>,
     array_proto: Object<'gc>,
 ) -> SystemClass<'gc> {
-    let class = context.class(constructor, super_proto);
+    let class = context.class(constructor, super_proto, PropertyOrder::PrototypeFirst);
     context.define_properties_on(class.proto, PROTO_DECLS(context));
     broadcaster_fns.initialize(context.strings, class.proto, array_proto);
     class
@@ -159,13 +159,13 @@ fn get_progress<'gc>(
             result.define_value(
                 activation.gc(),
                 istr!("bytesLoaded"),
-                target.movie().compressed_len().into(),
+                Value::from_usize_lossy(target.movie().compressed_len()),
                 Attribute::empty(),
             );
             result.define_value(
                 activation.gc(),
                 istr!("bytesTotal"),
-                target.movie().compressed_len().into(),
+                Value::from_usize_lossy(target.movie().compressed_len()),
                 Attribute::empty(),
             );
         }

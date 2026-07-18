@@ -153,8 +153,10 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
 
         let params = EvalParameters::from_span(span);
 
-        for text in span_text.split(&[b'\n', b'\r', b'\t'][..]) {
-            let slice_start = text.offset_in(span_text).unwrap();
+        for range in span_text.split_indices([b'\n', b'\r', b'\t']) {
+            let slice_start = range.start;
+            let text = &span_text[range];
+
             let delimiter = if slice_start > 0 {
                 span_text
                     .get(slice_start - 1)
@@ -651,9 +653,9 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
     fn append_text(&mut self, text: &'a WStr, start: usize, end: usize, span: &TextSpan) {
         let empty = start == end;
         if !empty && self.effective_alignment() == swf::TextAlign::Justify {
-            for word in text.split(b' ') {
-                let word_start = word.offset_in(text).unwrap();
-                let word_end = min(word_start + word.len() + 1, text.len());
+            for range in text.split_indices(b' ') {
+                let word_start = range.start;
+                let word_end = min(range.end + 1, text.len());
 
                 if word_start == word_end {
                     // Do not append empty boxes
@@ -682,10 +684,10 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
         let metrics = font_set.metrics();
         let ascent = metrics.ascent(params.height());
         let descent = metrics.descent(params.height());
-        let text_width = font_set.measure(text, params);
         let box_origin = self.cursor - (Twips::ZERO, ascent).into();
 
         let mut new_box = LayoutBox::from_text(text, start, end, font_set, span);
+        let text_width = new_box.text_width();
         new_box.bounds = BoxBounds::from_position_and_size(
             box_origin,
             Size::from((text_width, ascent + descent)),
@@ -1232,14 +1234,9 @@ impl<'gc> LayoutBox<'gc> {
         let params = EvalParameters::from_span(span);
         let mut char_end_pos = Vec::with_capacity(end - start);
 
-        font_set.evaluate(
-            text,
-            Default::default(),
-            params,
-            &mut |_, _, _, advance, x| {
-                char_end_pos.push(x + advance);
-            },
-        );
+        font_set.evaluate(text, Default::default(), params, |_, _, _, advance, x| {
+            char_end_pos.push(x + advance);
+        });
 
         Self {
             bounds: Default::default(),
@@ -1386,6 +1383,15 @@ impl<'gc> LayoutBox<'gc> {
 
     pub fn text_range(&self) -> Range<usize> {
         self.start()..self.end()
+    }
+
+    pub fn text_width(&self) -> Twips {
+        match &self.content {
+            LayoutContent::Text { char_end_pos, .. } => {
+                char_end_pos.last().copied().unwrap_or_default()
+            }
+            _ => Twips::ZERO,
+        }
     }
 
     /// Return x-axis char bounds of the given char relative to the whole layout.

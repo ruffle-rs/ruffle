@@ -13,7 +13,7 @@ describe("Key up and down events work", () => {
     loadJsAPI("/test/integration_tests/keyboard_input/test.swf");
 
     it("'a' key is recognised", async () => {
-        const player = await browser.$("<ruffle-player>");
+        const player = await browser.$("<ruffle-player>").getElement();
         await player.click();
         // Extra safety click in case there's a modal
         await player.click();
@@ -32,7 +32,7 @@ describe("Key up and down events work", () => {
     });
 
     it("enter key is recognised", async () => {
-        const player = await browser.$("<ruffle-player>");
+        const player = await browser.$("<ruffle-player>").getElement();
         await player.click();
 
         await browser.keys([Key.Enter]);
@@ -49,7 +49,7 @@ describe("Key up and down events work", () => {
     });
 
     it("no more traces", async function () {
-        const player = await browser.$("<ruffle-object>");
+        const player = await browser.$("<ruffle-object>").getElement();
         assertNoMoreTraceOutput(browser, player);
     });
 });

@@ -16,37 +16,21 @@ package flash.text.engine {
     [Ruffle(Abstract)]
     [API("662")]
     public final class TextLine extends DisplayObjectContainer {
-        [Ruffle(NativeAccessible)]
-        private var _specifiedWidth:Number = 0.0;
-
-        [Ruffle(NativeAccessible)]
-        internal var _textBlock:TextBlock = null;
-
-        [Ruffle(NativeAccessible)]
-        private var _rawTextLength:int = 0;
-
-        internal var _validity:String = "valid";
-
         public static const MAX_LINE_WIDTH:int = 1000000;
 
         public var userData;
 
-        public function get rawTextLength():int {
-            return this._rawTextLength;
-        }
+        public native function get rawTextLength():int;
 
-        public function get textBlockBeginIndex():int {
-            stub_getter("flash.text.engine.TextLine", "textBlockBeginIndex");
-            return 0;
-        }
+        public native function get textBlockBeginIndex():int;
 
-        public function get specifiedWidth():Number {
-            return this._specifiedWidth;
-        }
+        public native function get specifiedWidth():Number;
 
-        public function get textBlock():TextBlock {
-            return this._textBlock;
-        }
+        public native function get textBlock():TextBlock;
+
+        // TODO: remove this setter once releaseLines() is implemented natively;
+        // it only exists so AS-side releaseLines() can clear textBlock.
+        internal native function setTextBlock(value:TextBlock):void;
 
         public function get ascent():Number {
             stub_getter("flash.text.engine.TextLine", "ascent");
@@ -72,21 +56,14 @@ package flash.text.engine {
 
         public function get unjustifiedTextWidth():Number {
             stub_getter("flash.text.engine.TextLine", "unjustifiedTextWidth");
-            return this._specifiedWidth;
+            return this.specifiedWidth;
         }
 
         public native function get textWidth():Number;
         public native function get textHeight():Number;
 
-        public function get validity():String {
-            stub_getter("flash.text.engine.TextLine", "validity");
-            return this._validity;
-        }
-
-        public function set validity(value:String):void {
-            stub_setter("flash.text.engine.TextLine", "validity");
-            this._validity = value;
-        }
+        public native function get validity():String;
+        public native function set validity(value:String):void;
 
         public function get hasGraphicElement():Boolean {
             stub_getter("flash.text.engine.TextLine", "hasGraphicElement");
@@ -95,16 +72,11 @@ package flash.text.engine {
 
         public function get atomCount():int {
             stub_getter("flash.text.engine.TextLine", "atomCount");
-            return this._rawTextLength;
+            return this.rawTextLength;
         }
 
-        public function get nextLine():TextLine {
-            return null;
-        }
-
-        public function get previousLine():TextLine {
-            return null;
-        }
+        public native function get previousLine():TextLine;
+        public native function get nextLine():TextLine;
 
         public function getBaselinePosition(baseline:String):Number {
             stub_method("flash.text.engine.TextLine", "getBaselinePosition");
@@ -172,23 +144,23 @@ package flash.text.engine {
         // Overrides
 
         override public function set contextMenu(cm:ContextMenu):void {
-            throw new IllegalOperationError("Error #2181: The TextLine class does not implement this property or method.", 2181);
+            Error.throwError(IllegalOperationError, 2181);
         }
 
         override public function set focusRect(value:Object):void {
-            throw new IllegalOperationError("Error #2181: The TextLine class does not implement this property or method.", 2181);
+            Error.throwError(IllegalOperationError, 2181);
         }
 
         override public function set tabChildren(value:Boolean):void {
-            throw new IllegalOperationError("Error #2181: The TextLine class does not implement this property or method.", 2181);
+            Error.throwError(IllegalOperationError, 2181);
         }
 
         override public function set tabEnabled(value:Boolean):void {
-            throw new IllegalOperationError("Error #2181: The TextLine class does not implement this property or method.", 2181);
+            Error.throwError(IllegalOperationError, 2181);
         }
 
         override public function set tabIndex(index:int):void {
-            throw new IllegalOperationError("Error #2181: The TextLine class does not implement this property or method.", 2181);
+            Error.throwError(IllegalOperationError, 2181);
         }
 
         // End of overrides

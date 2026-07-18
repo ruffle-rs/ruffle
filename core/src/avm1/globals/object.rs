@@ -4,11 +4,12 @@ use crate::avm_warn;
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::property::Attribute;
-use crate::avm1::property_decl::{DeclContext, StaticDeclarations, SystemClass};
+use crate::avm1::property_decl::{DeclContext, PropertyOrder, StaticDeclarations, SystemClass};
 use crate::avm1::{Object, Value};
 use crate::avm1_stub;
 use crate::display_object::TDisplayObject;
-use crate::string::AvmString;
+use ruffle_common::avm_string::HasStringContext;
+use ruffle_macros::istr;
 
 const PROTO_DECLS: StaticDeclarations = declare_static_properties! {
     use fn method;
@@ -39,6 +40,7 @@ pub fn create_class<'gc>(context: &mut DeclContext<'_, 'gc>) -> SystemClass<'gc>
         table_constructor!(method),
         Some(function),
         context.object_proto,
+        PropertyOrder::PrototypeFirst,
     );
     context.define_properties_on(class.proto, PROTO_DECLS(context));
     context.define_properties_on(class.constr, OBJECT_DECLS(context));
@@ -170,9 +172,9 @@ fn to_string<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if this.as_function().is_some() {
-        Ok(AvmString::new_ascii_static(activation.gc(), b"[type Function]").into())
+        Ok(istr!("[type Function]").into())
     } else {
-        Ok(AvmString::new_ascii_static(activation.gc(), b"[object Object]").into())
+        Ok(istr!("[object Object]").into())
     }
 }
 
@@ -323,11 +325,12 @@ pub fn as_set_prop_flags<'gc>(
         }
         Some(v) => {
             let props = v.coerce_to_string(activation)?;
+
             if props.contains(b',') {
-                for prop_name in props.split(b',') {
+                for prop_name in props.split_dependent(activation.strings_ref(), b',') {
                     object.set_attributes(
                         activation.gc(),
-                        Some(AvmString::new(activation.gc(), prop_name)),
+                        Some(prop_name),
                         set_attributes,
                         clear_attributes,
                     )

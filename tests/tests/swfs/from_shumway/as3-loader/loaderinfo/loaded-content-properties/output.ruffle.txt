@@ -33,7 +33,7 @@ childSandboxBridge: null
 content: [object Bitmap]
 contentType: image/jpeg
 frameRate: 1
-height: 0
+height: 140
 isURLInaccessible: false
 loader: [object Loader]
 loaderURL: alf.jpg
@@ -45,4 +45,4 @@ sharedEvents: [object EventDispatcher]
 swfVersion: 0
 uncaughtErrorEvents: [object UncaughtErrorEvents]
 url: alf.jpg
-width: 0
+width: 140

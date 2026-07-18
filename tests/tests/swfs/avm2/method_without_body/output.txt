@@ -1,0 +1,3 @@
+Caught error
+VerifyError: Error #1001: The method Testa/abc() is not implemented.
+1001

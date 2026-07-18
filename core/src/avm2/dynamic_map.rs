@@ -1,4 +1,5 @@
-use super::{Object, string::AvmString};
+use crate::avm2::object::Object;
+use crate::string::AvmString;
 use fnv::FnvBuildHasher;
 use gc_arena::Collect;
 use hashbrown::HashTable;
@@ -98,13 +99,13 @@ impl<K: Eq + Hash, V> DynamicMap<K, V> {
         let num_buckets = self.table.num_buckets();
 
         for i in 0..num_buckets {
-            if let Some((_, v)) = self.table.get_bucket(i) {
-                if v.enumerable {
-                    count += 1;
+            if let Some((_, v)) = self.table.get_bucket(i)
+                && v.enumerable
+            {
+                count += 1;
 
-                    if count >= index {
-                        return Some(i);
-                    }
+                if count >= index {
+                    return Some(i);
                 }
             }
         }
@@ -187,12 +188,12 @@ impl<K: Eq + Hash, V> DynamicMap<K, V> {
 
         if !self.table.is_empty() && real < num_buckets {
             for i in real..num_buckets {
-                if let Some((_, v)) = self.table.get_bucket(i) {
-                    if v.enumerable {
-                        self.real_index.set(i);
-                        self.public_index.set(self.public_index.get() + 1);
-                        return Some(self.public_index.get());
-                    }
+                if let Some((_, v)) = self.table.get_bucket(i)
+                    && v.enumerable
+                {
+                    self.real_index.set(i);
+                    self.public_index.set(self.public_index.get() + 1);
+                    return Some(self.public_index.get());
                 }
             }
         }

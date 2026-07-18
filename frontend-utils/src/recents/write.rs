@@ -37,6 +37,7 @@ impl<'a> RecentsWriter<'a> {
                 .iter()
                 .position(|x| x.content_descriptor == recent.content_descriptor);
 
+            #[expect(clippy::branches_sharing_code)]
             if let Some(index) = existing {
                 // Existing entry, just move it to the top.
 

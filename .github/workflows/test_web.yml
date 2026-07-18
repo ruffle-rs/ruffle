@@ -18,7 +18,7 @@ jobs:
     outputs:
       should_run: ${{ steps.filter.outputs.src }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - uses: AurorNZ/paths-filter@v5
         id: filter
@@ -35,11 +35,11 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        node_version: ["24", "25"]
+        node_version: ["24", "26"]
         os: [ubuntu-24.04, windows-2025]
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Setup Node.js ${{ matrix.node_version }}
         uses: actions/setup-node@v6
@@ -60,10 +60,10 @@ jobs:
           save-if: ${{ github.ref == 'refs/heads/master' }}
 
       # wasm-bindgen-cli version must match wasm-bindgen crate version.
-      # Be sure to update in release_nightly.yml, Cargo.toml, web/docker/Dockerfile,
+      # Be sure to update in release.yml, Cargo.toml, web/docker/Dockerfile,
       # and web/README.md as well.
       - name: Install wasm-bindgen
-        run: cargo install wasm-bindgen-cli --version 0.2.108
+        run: cargo install --locked wasm-bindgen-cli --version 0.2.120
 
       # Keep the version number in sync in all workflows,
       # and in the extension builder Dockerfile!
@@ -74,7 +74,7 @@ jobs:
         uses: sigoden/install-binary@v1
         with:
           repo: WebAssembly/binaryen
-          tag: version_126
+          tag: version_129
           name: wasm-opt
 
       - name: Build
@@ -104,7 +104,7 @@ jobs:
     runs-on: ubuntu-24.04
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Setup Node.js
         uses: actions/setup-node@v6
@@ -125,10 +125,10 @@ jobs:
           save-if: false
 
       # wasm-bindgen-cli version must match wasm-bindgen crate version.
-      # Be sure to update in release_nightly.yml, Cargo.toml, web/docker/Dockerfile,
+      # Be sure to update in release.yml, Cargo.toml, web/docker/Dockerfile,
       # and web/README.md as well.
       - name: Install wasm-bindgen
-        run: cargo install wasm-bindgen-cli --version 0.2.108
+        run: cargo install --locked wasm-bindgen-cli --version 0.2.120
 
       # No real need to install wasm-opt here
 
@@ -162,7 +162,7 @@ jobs:
         browser: ["chrome", "firefox", "edge"]
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Setup Node.js 24
         uses: actions/setup-node@v6
@@ -197,7 +197,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        node_version: ["24", "25"]
+        node_version: ["24", "26"]
         os: [ubuntu-24.04, windows-2025]
 
     steps:

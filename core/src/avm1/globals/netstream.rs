@@ -1,4 +1,4 @@
-use crate::avm1::property_decl::{DeclContext, StaticDeclarations, SystemClass};
+use crate::avm1::property_decl::{DeclContext, PropertyOrder, StaticDeclarations, SystemClass};
 use crate::avm1::{Activation, Error, NativeObject, Object, Value};
 use crate::avm1_stub;
 use crate::streams::NetStream;
@@ -45,7 +45,7 @@ pub fn create_class<'gc>(
     context: &mut DeclContext<'_, 'gc>,
     super_proto: Object<'gc>,
 ) -> SystemClass<'gc> {
-    let class = context.class(constructor, super_proto);
+    let class = context.class(constructor, super_proto, PropertyOrder::PrototypeFirst);
     context.define_properties_on(class.proto, PROTO_DECLS(context));
     class
 }
@@ -82,7 +82,7 @@ fn get_bytes_loaded<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let NativeObject::NetStream(ns) = this.native() {
-        return Ok(ns.bytes_loaded().into());
+        return Ok(Value::from_usize_lossy(ns.bytes_loaded()));
     }
 
     Ok(Value::Undefined)
@@ -94,7 +94,7 @@ fn get_bytes_total<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let NativeObject::NetStream(ns) = this.native() {
-        return Ok(ns.bytes_total().into());
+        return Ok(Value::from_usize_lossy(ns.bytes_total()));
     }
 
     Ok(Value::Undefined)
@@ -106,13 +106,12 @@ fn play<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let NativeObject::NetStream(ns) = this.native() {
-        let name = args
-            .get(0)
-            .cloned()
-            .unwrap_or(Value::Undefined)
-            .coerce_to_string(activation)?;
+        let name = match args.get(0) {
+            Some(Value::Undefined | Value::Null) | None => None,
+            Some(v) => Some(v.coerce_to_string(activation)?),
+        };
 
-        ns.play(activation.context, Some(name));
+        ns.play(activation.context, name);
     }
 
     Ok(Value::Undefined)

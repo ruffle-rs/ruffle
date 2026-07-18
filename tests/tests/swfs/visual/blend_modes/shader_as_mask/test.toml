@@ -1,0 +1,10 @@
+num_ticks = 1
+
+[image_comparisons.output]
+tolerance = 1
+
+# TODO Shader masks unimplemented + a bug in color blending.
+known_failure = true
+
+[player_options]
+with_renderer = { quality = "high" }

@@ -1059,10 +1059,6 @@ impl<'gc> EditText<'gc> {
     /// Returns the selection, but takes into account whether the selection should be rendered.
     fn visible_selection(self) -> Option<TextSelection> {
         let selection = self.0.selection.get()?;
-        // TODO: Remove this #[allow] once Rust 1.94 is released.
-        // Clippy 0.1.94+ (PR #16286) no longer fires collapsible_else_if when both
-        // branches contain if-else expressions, recognizing the parallel structure.
-        #[allow(clippy::collapsible_else_if)]
         if selection.is_caret() {
             if self.has_focus() && !self.0.flags.get().contains(EditTextFlag::READ_ONLY) {
                 Some(selection)
@@ -1284,7 +1280,7 @@ impl<'gc> EditText<'gc> {
                 text,
                 self.text_transform(color),
                 params,
-                &mut |pos, transform, glyph, advance, x| {
+                |pos, transform, glyph, advance, x| {
                     if glyph.renderable(context) {
                         // If it's highlighted, override the color.
                         if matches!(visible_selection, Some(visible_selection) if visible_selection.contains(start + pos)) {
@@ -1378,7 +1374,7 @@ impl<'gc> EditText<'gc> {
     }
 
     /// Attempts to bind this text field to a property of a display object.
-    /// If we find a parent display object matching the given path, we register oursevles and a property name with it.
+    /// If we find a parent display object matching the given path, we register ourselves and a property name with it.
     /// `set_text` will be called by the stage object whenever the property changes.
     /// If we don't find a display object, we register ourselves on a list of pending unbound text fields.
     /// Whenever a display object is created, the unbound list is checked to see if the new object should be bound.
@@ -1435,7 +1431,7 @@ impl<'gc> EditText<'gc> {
                             if !text.is_empty() {
                                 let _ = object.set(
                                     property,
-                                    AvmString::new(activation.gc(), self.text()).into(),
+                                    AvmString::new(activation.gc(), self.text()),
                                     activation,
                                 );
                             }
@@ -1483,7 +1479,7 @@ impl<'gc> EditText<'gc> {
                         let property = AvmString::new(activation.gc(), property);
                         let _ = object.set(
                             property,
-                            AvmString::new(activation.gc(), self.html_text()).into(),
+                            AvmString::new(activation.gc(), self.html_text()),
                             activation,
                         );
                     },
@@ -1636,7 +1632,7 @@ impl<'gc> EditText<'gc> {
                     text,
                     self.text_transform(color),
                     params,
-                    &mut |pos, _transform, _glyph, advance, x| {
+                    |pos, _transform, _glyph, advance, x| {
                         if local_position.x >= x {
                             if local_position.x > x + (advance / 2) {
                                 result = string_utils::next_char_boundary(text, pos);
@@ -2711,10 +2707,18 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
             .get()
             .intersects(EditTextFlag::BORDER | EditTextFlag::HAS_BACKGROUND)
         {
-            let background_color = Some(self.0.background_color.get())
-                .filter(|_| self.0.flags.get().contains(EditTextFlag::HAS_BACKGROUND));
-            let border_color = Some(self.0.border_color.get())
-                .filter(|_| self.0.flags.get().contains(EditTextFlag::BORDER));
+            let background_color = self
+                .0
+                .flags
+                .get()
+                .contains(EditTextFlag::HAS_BACKGROUND)
+                .then_some(self.0.background_color.get());
+            let border_color = self
+                .0
+                .flags
+                .get()
+                .contains(EditTextFlag::BORDER)
+                .then_some(self.0.border_color.get());
 
             if self.is_device_font() {
                 self.draw_device_text_box(

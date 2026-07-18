@@ -27,7 +27,10 @@ describe("Object with case-insensitive clsid", () => {
     it("Plays a movie", async () => {
         await playAndMonitor(
             browser,
-            await browser.$("#test-container").$("<ruffle-object />"),
+            await browser
+                .$("#test-container")
+                .$("<ruffle-object />")
+                .getElement(),
         );
     });
 });

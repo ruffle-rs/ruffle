@@ -1068,7 +1068,7 @@ impl Player {
         let changed_mouse_buttons = self
             .input
             .get_mouse_down_buttons()
-            .symmetrical_difference(prev_mouse_buttons);
+            .symmetric_difference(prev_mouse_buttons);
 
         if cfg!(feature = "avm_debug") {
             match event {
@@ -2222,9 +2222,6 @@ impl Player {
                     Avm1::notify_system_listeners(action.clip, listener, method, &args, context);
                 }
             }
-
-            // Do not let garbage values accumulate across multiple executions and/or frames.
-            context.avm1.clear();
         }
     }
 
@@ -2232,7 +2229,7 @@ impl Player {
     /// This takes cares of populating the `UpdateContext` struct, avoiding borrow issues.
     pub fn mutate_with_update_context<F, R>(&mut self, f: F) -> R
     where
-        F: for<'a, 'gc> FnOnce(&mut UpdateContext<'gc>) -> R,
+        F: for<'gc> FnOnce(&mut UpdateContext<'gc>) -> R,
     {
         self.enter_arena_mut(|gc_context, gc_root, this| {
             #[allow(unused_variables)]
@@ -2368,7 +2365,7 @@ impl Player {
     /// hover state up to date, and running garbage collection.
     pub fn update<F, R>(&mut self, func: F) -> R
     where
-        F: for<'a, 'gc> FnOnce(&mut UpdateContext<'gc>) -> R,
+        F: for<'gc> FnOnce(&mut UpdateContext<'gc>) -> R,
     {
         let rval = self.mutate_with_update_context(|context| {
             let rval = func(context);
@@ -3113,6 +3110,7 @@ impl PlayerBuilder {
             context
                 .avm2
                 .set_optimizer_enabled(self.avm2_optimizer_enabled);
+            Avm1::load_player_globals(context);
             Avm2::load_player_globals(context);
 
             let stage = context.stage;

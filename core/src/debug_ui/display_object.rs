@@ -569,7 +569,7 @@ impl DisplayObjectWindow {
                     if ui.button(format!("{:p}", style_sheet.as_ptr())).clicked() {
                         messages.push(Message::TrackAVM2Object(AVM2ObjectHandle::new(
                             context,
-                            crate::avm2::Object::StyleSheetObject(style_sheet),
+                            style_sheet.into(),
                         )));
                     }
                 } else {
@@ -1705,9 +1705,6 @@ fn summary_color_transform(ct: ColorTransform) -> Cow<'static, str> {
         if let Some(entry) = summary_color_transform_entry("C", ct.r_multiply, ct.r_add) {
             lines.push(entry);
         }
-        if let Some(entry) = summary_color_transform_entry("A", ct.a_multiply, ct.a_add) {
-            lines.push(entry);
-        }
     } else {
         if let Some(entry) = summary_color_transform_entry("R", ct.r_multiply, ct.r_add) {
             lines.push(entry);
@@ -1718,9 +1715,10 @@ fn summary_color_transform(ct: ColorTransform) -> Cow<'static, str> {
         if let Some(entry) = summary_color_transform_entry("B", ct.b_multiply, ct.b_add) {
             lines.push(entry);
         }
-        if let Some(entry) = summary_color_transform_entry("A", ct.a_multiply, ct.a_add) {
-            lines.push(entry);
-        }
+    }
+
+    if let Some(entry) = summary_color_transform_entry("A", ct.a_multiply, ct.a_add) {
+        lines.push(entry);
     }
 
     if lines.is_empty() {
@@ -1773,6 +1771,7 @@ fn display_object_type(object: DisplayObject) -> &'static str {
         DisplayObject::MorphShape(_) => "MorphShape",
         DisplayObject::MovieClip(_) => "MovieClip",
         DisplayObject::Text(_) => "Text",
+        DisplayObject::TextLine(_) => "TextLine",
         DisplayObject::Video(_) => "Video",
         DisplayObject::LoaderDisplay(_) => "LoaderDisplay",
     }

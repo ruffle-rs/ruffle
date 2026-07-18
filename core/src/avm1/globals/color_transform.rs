@@ -1,7 +1,7 @@
 //! flash.geom.ColorTransform object
 
 use crate::avm1::object::NativeObject;
-use crate::avm1::property_decl::{DeclContext, StaticDeclarations, SystemClass};
+use crate::avm1::property_decl::{DeclContext, PropertyOrder, StaticDeclarations, SystemClass};
 use crate::avm1::{Activation, Error, Object, Value};
 use crate::string::AvmString;
 use gc_arena::{Collect, Gc};
@@ -97,7 +97,12 @@ pub fn create_class<'gc>(
     context: &mut DeclContext<'_, 'gc>,
     super_proto: Object<'gc>,
 ) -> SystemClass<'gc> {
-    let class = context.native_class(constructor, None, super_proto);
+    let class = context.native_class(
+        constructor,
+        None,
+        super_proto,
+        PropertyOrder::PrototypeFirst,
+    );
     context.define_properties_on(class.proto, PROTO_DECLS(context));
     class
 }
@@ -159,9 +164,12 @@ fn get_rgb<'gc>(
         return Ok(Value::Undefined);
     };
 
-    let rgb = ((color_transform.red_offset.get() as i32) << 16)
-        | ((color_transform.green_offset.get() as i32) << 8)
-        | (color_transform.blue_offset.get() as i32);
+    use crate::ecma_conversions::f64_to_wrapping_u32;
+    let r = f64_to_wrapping_u32(color_transform.red_offset.get());
+    let g = f64_to_wrapping_u32(color_transform.green_offset.get());
+    let b = f64_to_wrapping_u32(color_transform.blue_offset.get());
+
+    let rgb = (r << 16).wrapping_add(g << 8).wrapping_add(b);
     Ok(rgb.into())
 }
 

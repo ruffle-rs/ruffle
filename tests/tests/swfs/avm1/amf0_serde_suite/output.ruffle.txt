@@ -1,0 +1,144 @@
+SO.getSize() pre-flush: 1490
+SO.getSize() post-flush: 1490
+==========================================
+VERIFYING CHANNEL: SharedObject
+==========================================
+SharedObject.p_num: 1337.5
+SharedObject.p_num_neg: -1337.5
+SharedObject.p_int: 1337
+SharedObject.p_int_neg: -1337
+SharedObject.p_num_zero_pos: 0 (1/x: Infinity)
+SharedObject.p_num_zero_neg: 0 (1/x: Infinity)
+SharedObject.p_pos_inf: Infinity
+SharedObject.p_neg_inf: -Infinity
+SharedObject.p_str: The quick brown AMF fox
+SharedObject.p_empty_str: ''
+SharedObject.p_str_nonascii: Jalapeño Mjölnir
+SharedObject.p_str_surrogate_pair: %5CuD83D%5CuDE00
+SharedObject.p_str_unpaired_surrogate: %5CuD83D
+SharedObject.p_str_nonprint: %5Cx01%5Cx02%5Cx08%5Cx09%5Cx0A%5Cx0D
+SharedObject.p_bool_t: true
+SharedObject.p_bool_f: false
+SharedObject.p_null: null
+SharedObject.p_undef_type: undefined
+SharedObject.n_date_getTime: 1672531200000
+SharedObject.n_xml_nodeName: root
+SharedObject.n_xml_attr: avm1
+SharedObject.sp_func_type: function
+SharedObject.sp_mc_var: i_am_a_display_object
+SharedObject.arr_strict[0]: index_0
+SharedObject.arr_strict[2]: index_2
+SharedObject.arr_strict_len: 3
+SharedObject.arr_sparse[0]: undefined
+SharedObject.arr_sparse[4]: undefined
+SharedObject.arr_sparse[2147483647]: i32_max
+SharedObject.arr_sparse[2147483648]: i32_max_plus_1
+SharedObject.arr_sparse[4294967295]: u32_max
+SharedObject.arr_sparse[4294967296]: u32_max_plus_1
+SharedObject.arr_sparse[9223372036854775807]: i64_max_plus_1
+SharedObject.arr_sparse[9223372036854775808]: i64_max_plus_1
+SharedObject.arr_sparse[18446744073709551615]: u64_max_plus_1
+SharedObject.arr_sparse[18446744073709551616]: u64_max_plus_1
+SharedObject.arr_sparse[1]_type: undefined
+SharedObject.arr_mixed[0]: mixed_0
+SharedObject.arr_mixed['string_key']: string_value
+SharedObject.arr_neg[0]: pos_0
+SharedObject.arr_neg[-1]: neg_1
+SharedObject.arr_neg[-1.5]: neg_1_5
+SharedObject.arr_neg[2.5]: pos_2_5
+SharedObject.arr_fake['0']: fake_0
+SharedObject.arr_fake_len: 2
+SharedObject.t_plain_is_Object: true
+SharedObject.t_unreg_is_UnregClass: false
+SharedObject.t_reg_is_RegClass: false (reg)
+SharedObject.t_mismatch_is_MismatchedClass: false
+SharedObject.t_forged_ctor_is_RegClass: false
+SharedObject.t_forged_proto_is_RegClass: false
+SharedObject.t_double_is_DoubleRegClass: false
+SharedObject.cyclic_object_is_Object: true
+SharedObject.nest_deep_is_RegClass: false
+SharedObject.nest_deep.innerArray_len: 3
+SharedObject.nest_deep.innerArray[1]_date: 1000000000000
+SharedObject.nest_deep.innerArray[2]_xml: deep
+SharedObject.nest_deep.innerSparse[2]: found_in_the_deep
+SharedObject.ref_strict_is_exact: true
+SharedObject.ref_mixed_is_exact: true
+SharedObject.ref_typed_is_exact: true
+SharedObject.nested_mc_type: movieclip
+SharedObject.nested_regular_prop: exists
+Navigator::fetch:
+  URL: http://localhost:8000/
+  Method: POST
+  Mime-Type: application/x-amf
+  Body: [00, 00, 00, 00, 00, 01, 00, 09, 74, 65, 73, 74, 2E, 61, 76, 6D, 31, 00, 02, 2F, 31, 00, 00, 05, 75, 0A, 00, 00, 00, 01, 03, 00, 05, 70, 5F, 6E, 75, 6D, 00, 40, 94, E6, 00, 00, 00, 00, 00, 00, 09, 70, 5F, 6E, 75, 6D, 5F, 6E, 65, 67, 00, C0, 94, E6, 00, 00, 00, 00, 00, 00, 05, 70, 5F, 69, 6E, 74, 00, 40, 94, E4, 00, 00, 00, 00, 00, 00, 09, 70, 5F, 69, 6E, 74, 5F, 6E, 65, 67, 00, C0, 94, E4, 00, 00, 00, 00, 00, 00, 0E, 70, 5F, 6E, 75, 6D, 5F, 7A, 65, 72, 6F, 5F, 70, 6F, 73, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 0E, 70, 5F, 6E, 75, 6D, 5F, 7A, 65, 72, 6F, 5F, 6E, 65, 67, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 09, 70, 5F, 70, 6F, 73, 5F, 69, 6E, 66, 00, 7F, F0, 00, 00, 00, 00, 00, 00, 00, 09, 70, 5F, 6E, 65, 67, 5F, 69, 6E, 66, 00, FF, F0, 00, 00, 00, 00, 00, 00, 00, 05, 70, 5F, 73, 74, 72, 02, 00, 17, 54, 68, 65, 20, 71, 75, 69, 63, 6B, 20, 62, 72, 6F, 77, 6E, 20, 41, 4D, 46, 20, 66, 6F, 78, 00, 0B, 70, 5F, 65, 6D, 70, 74, 79, 5F, 73, 74, 72, 02, 00, 00, 00, 0E, 70, 5F, 73, 74, 72, 5F, 6E, 6F, 6E, 61, 73, 63, 69, 69, 02, 00, 12, 4A, 61, 6C, 61, 70, 65, C3, B1, 6F, 20, 4D, 6A, C3, B6, 6C, 6E, 69, 72, 00, 14, 70, 5F, 73, 74, 72, 5F, 73, 75, 72, 72, 6F, 67, 61, 74, 65, 5F, 70, 61, 69, 72, 02, 00, 0C, 5C, 75, 44, 38, 33, 44, 5C, 75, 44, 45, 30, 30, 00, 18, 70, 5F, 73, 74, 72, 5F, 75, 6E, 70, 61, 69, 72, 65, 64, 5F, 73, 75, 72, 72, 6F, 67, 61, 74, 65, 02, 00, 06, 5C, 75, 44, 38, 33, 44, 00, 0E, 70, 5F, 73, 74, 72, 5F, 6E, 6F, 6E, 70, 72, 69, 6E, 74, 02, 00, 18, 5C, 78, 30, 31, 5C, 78, 30, 32, 5C, 78, 30, 38, 5C, 78, 30, 39, 5C, 78, 30, 41, 5C, 78, 30, 44, 00, 08, 70, 5F, 62, 6F, 6F, 6C, 5F, 74, 01, 01, 00, 08, 70, 5F, 62, 6F, 6F, 6C, 5F, 66, 01, 00, 00, 06, 70, 5F, 6E, 75, 6C, 6C, 05, 00, 07, 70, 5F, 75, 6E, 64, 65, 66, 06, 00, 06, 6E, 5F, 64, 61, 74, 65, 0B, 42, 78, 56, AA, 0C, 80, 00, 00, 00, 00, 00, 05, 6E, 5F, 78, 6D, 6C, 0F, 00, 00, 00, 2A, 3C, 72, 6F, 6F, 74, 3E, 3C, 63, 68, 69, 6C, 64, 20, 69, 64, 3D, 22, 61, 76, 6D, 31, 22, 3E, 74, 65, 73, 74, 3C, 2F, 63, 68, 69, 6C, 64, 3E, 3C, 2F, 72, 6F, 6F, 74, 3E, 00, 05, 73, 70, 5F, 6D, 63, 06, 00, 0A, 61, 72, 72, 5F, 73, 74, 72, 69, 63, 74, 08, 00, 00, 00, 03, 00, 01, 30, 02, 00, 07, 69, 6E, 64, 65, 78, 5F, 30, 00, 01, 31, 02, 00, 07, 69, 6E, 64, 65, 78, 5F, 31, 00, 01, 32, 02, 00, 07, 69, 6E, 64, 65, 78, 5F, 32, 00, 00, 09, 00, 0A, 61, 72, 72, 5F, 73, 70, 61, 72, 73, 65, 08, 00, 00, 00, 01, 00, 0A, 32, 31, 34, 37, 34, 38, 33, 36, 34, 37, 02, 00, 07, 69, 33, 32, 5F, 6D, 61, 78, 00, 0A, 32, 31, 34, 37, 34, 38, 33, 36, 34, 38, 02, 00, 0E, 69, 33, 32, 5F, 6D, 61, 78, 5F, 70, 6C, 75, 73, 5F, 31, 00, 0A, 34, 32, 39, 34, 39, 36, 37, 32, 39, 35, 02, 00, 07, 75, 33, 32, 5F, 6D, 61, 78, 00, 0A, 34, 32, 39, 34, 39, 36, 37, 32, 39, 36, 02, 00, 0E, 75, 33, 32, 5F, 6D, 61, 78, 5F, 70, 6C, 75, 73, 5F, 31, 00, 14, 39, 2E, 32, 32, 33, 33, 37, 32, 30, 33, 36, 38, 35, 34, 37, 38, 65, 2B, 31, 38, 02, 00, 0E, 69, 36, 34, 5F, 6D, 61, 78, 5F, 70, 6C, 75, 73, 5F, 31, 00, 14, 31, 2E, 38, 34, 34, 36, 37, 34, 34, 30, 37, 33, 37, 30, 39, 36, 65, 2B, 31, 39, 02, 00, 0E, 75, 36, 34, 5F, 6D, 61, 78, 5F, 70, 6C, 75, 73, 5F, 31, 00, 00, 09, 00, 09, 61, 72, 72, 5F, 6D, 69, 78, 65, 64, 08, 00, 00, 00, 01, 00, 01, 30, 02, 00, 07, 6D, 69, 78, 65, 64, 5F, 30, 00, 0A, 73, 74, 72, 69, 6E, 67, 5F, 6B, 65, 79, 02, 00, 0C, 73, 74, 72, 69, 6E, 67, 5F, 76, 61, 6C, 75, 65, 00, 00, 09, 00, 0C, 61, 72, 72, 5F, 6E, 65, 67, 61, 74, 69, 76, 65, 08, 00, 00, 00, 01, 00, 01, 30, 02, 00, 05, 70, 6F, 73, 5F, 30, 00, 02, 2D, 31, 02, 00, 05, 6E, 65, 67, 5F, 31, 00, 04, 2D, 31, 2E, 35, 02, 00, 07, 6E, 65, 67, 5F, 31, 5F, 35, 00, 03, 32, 2E, 35, 02, 00, 07, 70, 6F, 73, 5F, 32, 5F, 35, 00, 00, 09, 00, 08, 61, 72, 72, 5F, 66, 61, 6B, 65, 03, 00, 01, 30, 02, 00, 06, 66, 61, 6B, 65, 5F, 30, 00, 01, 31, 02, 00, 06, 66, 61, 6B, 65, 5F, 31, 00, 06, 6C, 65, 6E, 67, 74, 68, 00, 40, 00, 00, 00, 00, 00, 00, 00, 00, 00, 09, 00, 07, 74, 5F, 70, 6C, 61, 69, 6E, 03, 00, 01, 61, 00, 3F, F0, 00, 00, 00, 00, 00, 00, 00, 00, 09, 00, 07, 74, 5F, 75, 6E, 72, 65, 67, 03, 00, 04, 74, 79, 70, 65, 02, 00, 05, 75, 6E, 72, 65, 67, 00, 00, 09, 00, 05, 74, 5F, 72, 65, 67, 03, 00, 04, 74, 79, 70, 65, 02, 00, 03, 72, 65, 67, 00, 00, 09, 00, 0A, 74, 5F, 6D, 69, 73, 6D, 61, 74, 63, 68, 03, 00, 04, 74, 79, 70, 65, 02, 00, 0A, 6D, 69, 73, 6D, 61, 74, 63, 68, 65, 64, 00, 00, 09, 00, 0D, 74, 5F, 66, 6F, 72, 67, 65, 64, 5F, 63, 74, 6F, 72, 03, 00, 04, 74, 79, 70, 65, 02, 00, 08, 66, 6F, 72, 67, 65, 64, 5F, 63, 00, 00, 09, 00, 0E, 74, 5F, 66, 6F, 72, 67, 65, 64, 5F, 70, 72, 6F, 74, 6F, 03, 00, 04, 74, 79, 70, 65, 02, 00, 08, 66, 6F, 72, 67, 65, 64, 5F, 70, 00, 00, 09, 00, 08, 74, 5F, 64, 6F, 75, 62, 6C, 65, 03, 00, 04, 74, 79, 70, 65, 02, 00, 09, 64, 6F, 75, 62, 6C, 65, 72, 65, 67, 00, 00, 09, 00, 0D, 63, 79, 63, 6C, 69, 63, 5F, 6F, 62, 6A, 65, 63, 74, 03, 00, 04, 70, 72, 6F, 70, 07, 00, 3A, 00, 00, 09, 00, 09, 6E, 65, 73, 74, 5F, 64, 65, 65, 70, 03, 00, 04, 74, 79, 70, 65, 02, 00, 03, 72, 65, 67, 00, 0A, 69, 6E, 6E, 65, 72, 41, 72, 72, 61, 79, 08, 00, 00, 00, 03, 00, 01, 30, 02, 00, 06, 64, 65, 65, 70, 5F, 30, 00, 01, 31, 0B, 42, 6D, 1A, 94, A2, 00, 00, 00, 00, 00, 00, 01, 32, 0F, 00, 00, 00, 15, 3C, 64, 65, 65, 70, 3E, 3C, 6E, 65, 73, 74, 20, 2F, 3E, 3C, 2F, 64, 65, 65, 70, 3E, 00, 00, 09, 00, 0B, 69, 6E, 6E, 65, 72, 53, 70, 61, 72, 73, 65, 08, 00, 00, 00, 03, 00, 01, 32, 02, 00, 11, 66, 6F, 75, 6E, 64, 5F, 69, 6E, 5F, 74, 68, 65, 5F, 64, 65, 65, 70, 00, 00, 09, 00, 00, 09, 00, 10, 6E, 65, 73, 74, 65, 64, 5F, 63, 6F, 6E, 74, 61, 69, 6E, 65, 72, 03, 00, 0C, 72, 65, 67, 75, 6C, 61, 72, 5F, 70, 72, 6F, 70, 02, 00, 06, 65, 78, 69, 73, 74, 73, 00, 0F, 6D, 6F, 76, 69, 65, 5F, 63, 6C, 69, 70, 5F, 70, 72, 6F, 70, 06, 00, 00, 09, 00, 00, 09]
+==========================================
+VERIFYING CHANNEL: LocalConnection
+==========================================
+LocalConnection.p_num: 1337.5
+LocalConnection.p_num_neg: -1337.5
+LocalConnection.p_int: 1337
+LocalConnection.p_int_neg: -1337
+LocalConnection.p_num_zero_pos: 0 (1/x: Infinity)
+LocalConnection.p_num_zero_neg: 0 (1/x: Infinity)
+LocalConnection.p_pos_inf: Infinity
+LocalConnection.p_neg_inf: -Infinity
+LocalConnection.p_str: The quick brown AMF fox
+LocalConnection.p_empty_str: ''
+LocalConnection.p_str_nonascii: Jalapeño Mjölnir
+LocalConnection.p_str_surrogate_pair: %5CuD83D%5CuDE00
+LocalConnection.p_str_unpaired_surrogate: %5CuD83D
+LocalConnection.p_str_nonprint: %5Cx01%5Cx02%5Cx08%5Cx09%5Cx0A%5Cx0D
+LocalConnection.p_bool_t: true
+LocalConnection.p_bool_f: false
+LocalConnection.p_null: null
+LocalConnection.p_undef_type: undefined
+LocalConnection.n_date_getTime: 1672531200000
+LocalConnection.n_xml_nodeName: root
+LocalConnection.n_xml_attr: avm1
+LocalConnection.sp_func_type: undefined
+LocalConnection.sp_mc_var: undefined
+LocalConnection.arr_strict[0]: index_0
+LocalConnection.arr_strict[2]: index_2
+LocalConnection.arr_strict_len: 3
+LocalConnection.arr_sparse[0]: undefined
+LocalConnection.arr_sparse[4]: undefined
+LocalConnection.arr_sparse[2147483647]: i32_max
+LocalConnection.arr_sparse[2147483648]: i32_max_plus_1
+LocalConnection.arr_sparse[4294967295]: u32_max
+LocalConnection.arr_sparse[4294967296]: u32_max_plus_1
+LocalConnection.arr_sparse[9223372036854775807]: i64_max_plus_1
+LocalConnection.arr_sparse[9223372036854775808]: i64_max_plus_1
+LocalConnection.arr_sparse[18446744073709551615]: u64_max_plus_1
+LocalConnection.arr_sparse[18446744073709551616]: u64_max_plus_1
+LocalConnection.arr_sparse[1]_type: undefined
+LocalConnection.arr_mixed[0]: mixed_0
+LocalConnection.arr_mixed['string_key']: string_value
+LocalConnection.arr_neg[0]: pos_0
+LocalConnection.arr_neg[-1]: neg_1
+LocalConnection.arr_neg[-1.5]: neg_1_5
+LocalConnection.arr_neg[2.5]: pos_2_5
+LocalConnection.arr_fake['0']: fake_0
+LocalConnection.arr_fake_len: 2
+LocalConnection.t_plain_is_Object: true
+LocalConnection.t_unreg_is_UnregClass: false
+LocalConnection.t_reg_is_RegClass: false (reg)
+LocalConnection.t_mismatch_is_MismatchedClass: false
+LocalConnection.t_forged_ctor_is_RegClass: false
+LocalConnection.t_forged_proto_is_RegClass: false
+LocalConnection.t_double_is_DoubleRegClass: false
+LocalConnection.cyclic_object_is_Object: true
+LocalConnection.nest_deep_is_RegClass: false
+LocalConnection.nest_deep.innerArray_len: 3
+LocalConnection.nest_deep.innerArray[1]_date: 1000000000000
+LocalConnection.nest_deep.innerArray[2]_xml: deep
+LocalConnection.nest_deep.innerSparse[2]: found_in_the_deep
+LocalConnection.ref_strict_is_exact: false
+LocalConnection.ref_mixed_is_exact: false
+LocalConnection.ref_typed_is_exact: false
+LocalConnection.nested_mc_type: undefined
+LocalConnection.nested_regular_prop: exists
+==========================================
+VERIFYING CHANNEL: LocalConnection (Top-Level Aborts)
+==========================================
+LocalConnection.top_func_type: object
+LocalConnection.top_mc_type: undefined

@@ -2,12 +2,15 @@ mod automation;
 mod image_test;
 mod trace;
 
-use crate::backends::{TestAudioBackend, TestLogBackend, TestNavigatorBackend, TestUiBackend};
+use crate::backends::{
+    TestAudioBackend, TestLogBackend, TestNavigatorBackend, TestStorageBackend, TestUiBackend,
+};
 use crate::environment::RenderInterface;
 use crate::fs_commands::{FsCommand, TestFsCommandProvider};
 use crate::image_trigger::ImageTrigger;
 use crate::options::image_comparison::ImageComparison;
 use crate::options::known_failure::KnownFailure;
+use crate::options::shared_object::check_shared_objects;
 use crate::options::{AudioAssertion, TestOptions};
 use crate::runner::automation::perform_automated_event;
 use crate::runner::image_test::capture_and_compare_image;
@@ -67,7 +70,7 @@ impl TestRunner {
         if test.options.num_frames.is_none() && test.options.num_ticks.is_none() {
             return Err(anyhow!(
                 "Test {} must specify at least one of num_frames or num_ticks",
-                &test.name
+                test.name
             ));
         }
 
@@ -93,6 +96,7 @@ impl TestRunner {
         let mut builder = PlayerBuilder::new()
             .with_log(log.clone())
             .with_navigator(navigator)
+            .with_storage(Box::new(TestStorageBackend::new()))
             .with_max_execution_duration(Duration::from_secs(300))
             .with_fs_commands(Box::new(fs_command_provider))
             .with_ui(TestUiBackend::new(test.fonts()?, test.font_sorts()))
@@ -293,7 +297,7 @@ impl TestRunner {
         Ok(())
     }
 
-    fn test_audio(&mut self) -> Result<()> {
+    fn test_audio(&self) -> Result<()> {
         if self.audio_assertions.is_empty() {
             return Ok(());
         }
@@ -304,7 +308,7 @@ impl TestRunner {
             return Err(anyhow!("Audio assertions require audio"));
         };
 
-        for assertion in self.audio_assertions.values() {
+        for (assertion_name, assertion) in &self.audio_assertions {
             if !assertion.frames.includes_frame(self.current_iteration) {
                 continue;
             }
@@ -315,27 +319,34 @@ impl TestRunner {
                 .map(|&v| v.abs())
                 .reduce(|a, b| a.max(b))
                 .expect("buffer should not be empty");
+            let frame = self.current_iteration;
 
-            if let Some(max_amplitude) = assertion.max_amplitude
+            let result = if let Some(max_amplitude) = assertion.max_amplitude
                 && current_max > max_amplitude
             {
-                return Err(anyhow!(
-                    "Expected max audio amplitude to be {}, was {} at frame {}",
-                    max_amplitude,
-                    current_max,
-                    self.current_iteration
-                ));
-            }
-
-            if let Some(min_max_amplitude) = assertion.min_max_amplitude
+                Err(anyhow!(
+                    "Audio assertion '{assertion_name}': expected max audio amplitude to be {max_amplitude}, was {current_max} at frame {frame}"
+                ))
+            } else if let Some(min_max_amplitude) = assertion.min_max_amplitude
                 && current_max < min_max_amplitude
             {
-                return Err(anyhow!(
-                    "Expected max audio amplitude to be at least {}, was {} at frame {}",
-                    min_max_amplitude,
-                    current_max,
-                    self.current_iteration
-                ));
+                Err(anyhow!(
+                    "Audio assertion '{assertion_name}': expected max audio amplitude to be at least {min_max_amplitude}, was {current_max} at frame {frame}",
+                ))
+            } else {
+                Ok(())
+            };
+
+            match result {
+                Err(err) if !assertion.known_failure => return Err(err),
+                Ok(()) if assertion.known_failure => {
+                    // TODO: should we allow known_failure assertions to succeed on *some* frames as long as they fail at least once?
+                    return Err(anyhow!(
+                        "Audio assertion '{assertion_name}': check was known to be failing (at frame {frame}) but now passes successfully. \
+                        Please update the test and remove `known_failure = true`",
+                    ));
+                }
+                _ => (),
             }
         }
 
@@ -369,6 +380,9 @@ impl TestRunner {
             ));
         }
 
+        if !self.options.shared_objects.is_empty() {
+            check_shared_objects(&self.player, &self.options.shared_objects, &self.root_path)?;
+        }
         self.executor.run();
 
         compare_trace_output(

@@ -14,6 +14,9 @@ pub enum Error {
         source: Option<Box<dyn error::Error + Send + Sync + 'static>>,
     },
 
+    // An error occurred while parsing ABC.
+    AbcParseError(AbcParseError),
+
     /// Invalid or unknown data was encountered.
     InvalidData(borrow::Cow<'static, str>),
 
@@ -88,6 +91,9 @@ impl fmt::Display for Error {
                 }
                 Ok(())
             }
+            Self::AbcParseError(error) => {
+                write!(f, "Error parsing ABC: {}", error)
+            }
             Self::SwfParseError { tag_code, source } => {
                 write!(
                     f,
@@ -110,6 +116,7 @@ impl error::Error for Error {
                 Some(s) => Some(s.as_ref()),
                 None => None,
             },
+            Self::AbcParseError(e) => e.source(),
             Self::IoError(e) => e.source(),
             Self::InvalidData(_) => None,
             Self::SwfParseError { source, .. } => Some(source.as_ref()),
@@ -121,6 +128,43 @@ impl error::Error for Error {
 impl From<io::Error> for Error {
     fn from(error: io::Error) -> Self {
         Self::IoError(error)
+    }
+}
+
+#[derive(Debug)]
+pub enum AbcParseError {
+    MethodInfoOutOfBounds {
+        method_count: usize,
+        method_index: usize,
+    },
+    IllegalOpcode {
+        opcode: u8,
+    },
+}
+
+impl fmt::Display for AbcParseError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            AbcParseError::MethodInfoOutOfBounds {
+                method_count,
+                method_index,
+            } => write!(
+                f,
+                "Method body refers to index {method_index} but there are only {method_count} method infos"
+            ),
+            AbcParseError::IllegalOpcode { opcode } => {
+                write!(f, "Illegal opcode {opcode:#x}")
+            }
+        }
+    }
+}
+
+impl error::Error for AbcParseError {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        match self {
+            AbcParseError::MethodInfoOutOfBounds { .. } => None,
+            AbcParseError::IllegalOpcode { .. } => None,
+        }
     }
 }
 

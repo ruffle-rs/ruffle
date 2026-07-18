@@ -7,7 +7,7 @@ use crate::avm2::Namespace;
 use crate::avm2::activation::Activation;
 use crate::avm2::e4x::is_xml_name;
 use crate::avm2::error::make_error_1098;
-use crate::avm2::object::{NamespaceObject, Object};
+use crate::avm2::object::NamespaceObject;
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
 
@@ -24,7 +24,7 @@ pub fn namespace_constructor<'gc>(
         1 => {
             // These cases only activate with exactly one argument passed
             match args.get_value(0) {
-                Value::Object(Object::QNameObject(qname)) => {
+                Value::Object(o) if let Some(qname) = o.as_qname_object() => {
                     let uri = qname.uri(activation.strings());
                     let ns = uri.map_or_else(Namespace::any, |uri| {
                         Namespace::package(uri, api_version, activation.strings())
@@ -35,7 +35,9 @@ pub fn namespace_constructor<'gc>(
                     };
                     (prefix, ns)
                 }
-                Value::Object(Object::NamespaceObject(ns)) => (ns.prefix(), ns.namespace()),
+                Value::Object(o) if let Some(ns) = o.as_namespace_object() => {
+                    (ns.prefix(), ns.namespace())
+                }
                 val => {
                     let name = val.coerce_to_string(activation)?;
                     let ns = Namespace::package(name, api_version, activation.strings());
@@ -48,11 +50,12 @@ pub fn namespace_constructor<'gc>(
             let prefix = args.get_value(0);
             let uri = args.get_value(1);
 
-            let namespace_uri = if let Value::Object(Object::QNameObject(qname)) = uri {
-                qname.uri(activation.strings()).unwrap_or_else(|| istr!(""))
-            } else {
-                uri.coerce_to_string(activation)?
-            };
+            let namespace_uri =
+                if let Some(qname) = uri.as_object().and_then(|o| o.as_qname_object()) {
+                    qname.uri(activation.strings()).unwrap_or_else(|| istr!(""))
+                } else {
+                    uri.coerce_to_string(activation)?
+                };
             let namespace = Namespace::package(namespace_uri, api_version, activation.strings());
             let prefix_str = prefix.coerce_to_string(activation)?;
 

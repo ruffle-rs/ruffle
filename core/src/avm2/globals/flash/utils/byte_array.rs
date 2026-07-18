@@ -1,8 +1,9 @@
 use std::rc::Rc;
 
+use crate::avm2::Avm2StrRepresentable;
 use crate::avm2::Error;
 use crate::avm2::activation::Activation;
-use crate::avm2::bytearray::{Endian, ObjectEncoding};
+use crate::avm2::bytearray::{CompressionAlgorithm, Endian, ObjectEncoding};
 use crate::avm2::error::{make_error_2008, make_error_2058};
 use crate::avm2::object::Object;
 use crate::avm2::parameters::ParametersExt;
@@ -209,14 +210,18 @@ pub fn strip_bom<'gc>(activation: &mut Activation<'_, 'gc>, mut bytes: &[u8]) ->
     // Little-endian UTF-16 BOM
     } else if let Some(without_bom) = bytes.strip_prefix(&[0xFF, 0xFE]) {
         let utf16_bytes: Vec<_> = without_bom
-            .chunks_exact(2)
+            .as_chunks::<2>()
+            .0
+            .iter()
             .map(|pair| u16::from_le_bytes([pair[0], pair[1]]))
             .collect();
         return AvmString::new(activation.gc(), WString::from_buf(utf16_bytes));
     // Big-endian UTF-16 BOM
     } else if let Some(without_bom) = bytes.strip_prefix(&[0xFE, 0xFF]) {
         let utf16_bytes: Vec<_> = without_bom
-            .chunks_exact(2)
+            .as_chunks::<2>()
+            .0
+            .iter()
             .map(|pair| u16::from_be_bytes([pair[0], pair[1]]))
             .collect();
         return AvmString::new(activation.gc(), WString::from_buf(utf16_bytes));
@@ -262,7 +267,7 @@ pub fn get_position<'gc>(
     let this = this.as_object().unwrap();
 
     if let Some(bytearray) = this.as_bytearray() {
-        return Ok(bytearray.position().into());
+        return Ok(Value::from_usize_lossy(bytearray.position()));
     }
 
     Ok(Value::Undefined)
@@ -291,7 +296,7 @@ pub fn get_bytes_available<'gc>(
     let this = this.as_object().unwrap();
 
     if let Some(bytearray) = this.as_bytearray() {
-        return Ok(bytearray.bytes_available().into());
+        return Ok(Value::from_usize_lossy(bytearray.bytes_available()));
     }
 
     Ok(Value::Undefined)
@@ -305,7 +310,7 @@ pub fn get_length<'gc>(
     let this = this.as_object().unwrap();
 
     if let Some(bytearray) = this.as_bytearray() {
-        return Ok(bytearray.len().into());
+        return Ok(Value::from_usize_lossy(bytearray.len()));
     }
 
     Ok(Value::Undefined)
@@ -735,9 +740,9 @@ pub fn compress<'gc>(
 
     if let Some(mut bytearray) = this.as_bytearray_mut() {
         let algorithm = args.get_string_non_null(activation, 0, "algorithm")?;
-        let algorithm = match algorithm.parse() {
-            Ok(algorithm) => algorithm,
-            Err(_) => return Err(make_error_2058(activation)),
+        let algorithm = match CompressionAlgorithm::from_avm2_str(&algorithm) {
+            Some(algorithm) => algorithm,
+            None => return Err(make_error_2058(activation)),
         };
         let buffer = bytearray.compress(algorithm);
         bytearray.clear();
@@ -759,9 +764,9 @@ pub fn uncompress<'gc>(
 
     if let Some(mut bytearray) = this.as_bytearray_mut() {
         let algorithm = args.get_string_non_null(activation, 0, "algorithm")?;
-        let algorithm = match algorithm.parse() {
-            Ok(algorithm) => algorithm,
-            Err(_) => return Err(make_error_2058(activation)),
+        let algorithm = match CompressionAlgorithm::from_avm2_str(&algorithm) {
+            Some(algorithm) => algorithm,
+            None => return Err(make_error_2058(activation)),
         };
         let buffer = match bytearray.decompress(algorithm) {
             Some(buffer) => buffer,
@@ -838,8 +843,7 @@ pub fn write_object<'gc>(
             obj,
             amf_version,
             &mut Default::default(),
-        )
-        .unwrap_or(flash_lso::types::Value::Undefined);
+        );
 
         let element = Element::new("", Rc::new(amf));
         let mut lso = flash_lso::types::Lso::new(vec![element], "", amf_version);

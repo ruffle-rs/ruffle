@@ -12,7 +12,6 @@ use serde::Serialize;
 use std::borrow::Cow;
 use std::fs::File;
 use std::path::Path;
-use std::process::exit;
 
 // This function is used in macros and they require such signature with &bool.
 #[allow(clippy::trivially_copy_pass_by_ref)]
@@ -286,10 +285,9 @@ impl Definition {
             .super_class_name()
             .as_ref()
             .and_then(|n| n.local_name())
+            && &super_name != b"Object"
         {
-            if &super_name != b"Object" {
-                definition.classinfo.get_or_insert_default().extends = Some(super_name.to_string());
-            }
+            definition.classinfo.get_or_insert_default().extends = Some(super_name.to_string());
         }
 
         let prototype = class_object.prototype();
@@ -493,5 +491,4 @@ pub fn capture_specification(context: &mut UpdateContext, output: &Path) {
     }
     serde_json::to_writer_pretty(&File::create(output).unwrap(), &definitions).unwrap();
     tracing::info!("Wrote stub report to {output:?}");
-    exit(0);
 }

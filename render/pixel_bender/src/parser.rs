@@ -688,7 +688,7 @@ fn read_op<R: Read>(
 fn validate_op(op: &Operation) -> Result<()> {
     match op {
         Operation::Normal {
-            opcode: Opcode::Ceil,
+            opcode: Opcode::Ceil | Opcode::Sign,
             dst,
             src,
         } if dst.kind != PixelBenderRegKind::Float || src.kind != PixelBenderRegKind::Float => {

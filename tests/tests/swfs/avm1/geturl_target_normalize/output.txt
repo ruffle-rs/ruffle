@@ -1,0 +1,90 @@
+// target: [_blank]
+Navigator::navigate_to_url:
+  URL: https://example.com/0
+  Target: _blank
+
+// target: [blank]
+Navigator::navigate_to_url:
+  URL: https://example.com/1
+  Target: _blank
+
+// target: [BLANK]
+Navigator::navigate_to_url:
+  URL: https://example.com/2
+  Target: _blank
+
+// target: [_Blank]
+Navigator::navigate_to_url:
+  URL: https://example.com/3
+  Target: _blank
+
+// target: [_BLANK]
+Navigator::navigate_to_url:
+  URL: https://example.com/4
+  Target: _blank
+
+// target: [bLaNk]
+Navigator::navigate_to_url:
+  URL: https://example.com/5
+  Target: _blank
+
+// target: [_BlAnK]
+Navigator::navigate_to_url:
+  URL: https://example.com/6
+  Target: _blank
+
+// target: [_self]
+Navigator::navigate_to_url:
+  URL: https://example.com/7
+  Target: _self
+
+// target: [self]
+Navigator::navigate_to_url:
+  URL: https://example.com/8
+  Target: self
+
+// target: [_parent]
+Navigator::navigate_to_url:
+  URL: https://example.com/9
+  Target: _parent
+
+// target: [parent]
+Navigator::navigate_to_url:
+  URL: https://example.com/10
+  Target: parent
+
+// target: [_top]
+Navigator::navigate_to_url:
+  URL: https://example.com/11
+  Target: _top
+
+// target: [top]
+Navigator::navigate_to_url:
+  URL: https://example.com/12
+  Target: top
+
+// target: [myWindow]
+Navigator::navigate_to_url:
+  URL: https://example.com/13
+  Target: myWindow
+
+// target: []
+Navigator::navigate_to_url:
+  URL: https://example.com/14
+  Target: 
+
+// target: [_custom]
+Navigator::navigate_to_url:
+  URL: https://example.com/15
+  Target: _custom
+
+// target: [blanket]
+Navigator::navigate_to_url:
+  URL: https://example.com/16
+  Target: blanket
+
+// target: [_blanker]
+Navigator::navigate_to_url:
+  URL: https://example.com/17
+  Target: _blanker
+

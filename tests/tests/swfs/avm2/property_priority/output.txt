@@ -1,0 +1,22 @@
+///new Child()
+///Child pre-super
+child_public
+child_public
+///Base()
+base_private
+child_public
+///Child post-super
+child_public
+child_public
+child_public
+base_private
+
+///new Sub2()
+///Base2()
+base2_internal
+sub2_public
+///Sub2()
+sub2_public
+sub2_public
+sub2_public
+base2_internal

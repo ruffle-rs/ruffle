@@ -2,8 +2,21 @@
 
 num_frames = 1
 
-[image_comparisons.output]
+[[image_comparisons.output.checks]]
 tolerance = 0
+max_outliers = 3000
+
+[[image_comparisons.output.checks]]
+tolerance = 32
+max_outliers = 1300
+
+[[image_comparisons.output.checks]]
+tolerance = 64
+max_outliers = 300
+
+[[image_comparisons.output.checks]]
+tolerance = 110
+max_outliers = 0
 
 [player_options]
-with_renderer = { optional = false, quality = "low" }
+with_renderer = { quality = "high" }

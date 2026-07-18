@@ -11,6 +11,7 @@ use swf::Color;
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum JpegTagFormat {
     Jpeg,
+    JpegXr,
     Png,
     Gif,
     Unknown,
@@ -21,6 +22,7 @@ pub fn determine_jpeg_tag_format(data: &[u8]) -> JpegTagFormat {
     match data {
         [0xff, 0xd8, ..] => JpegTagFormat::Jpeg,
         [0xff, 0xd9, 0xff, 0xd8, ..] => JpegTagFormat::Jpeg, // erroneous header in SWF
+        [0x49, 0x49, 0xbc, 0x01, ..] => JpegTagFormat::JpegXr, // TODO: JPEG-XR was only supported in FP 10+
         [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, ..] => JpegTagFormat::Png,
         [0x47, 0x49, 0x46, 0x38, 0x37, 0x61, ..] => JpegTagFormat::Gif, // GIF87a
         [0x47, 0x49, 0x46, 0x38, 0x39, 0x61, ..] => JpegTagFormat::Gif, // GIF89a
@@ -41,6 +43,7 @@ pub fn decode_define_bits_jpeg(
     }
     match format {
         JpegTagFormat::Jpeg => decode_jpeg(data, alpha_data),
+        JpegTagFormat::JpegXr => decode_jpegxr(data),
         JpegTagFormat::Png => decode_png(data),
         JpegTagFormat::Gif => decode_gif(data),
         JpegTagFormat::Unknown => Err(Error::UnknownType),
@@ -51,6 +54,7 @@ pub fn decode_define_bits_jpeg_dimensions(data: &[u8]) -> Result<(u32, u32), Err
     let format = determine_jpeg_tag_format(data);
     match format {
         JpegTagFormat::Jpeg => decode_jpeg_dimensions(data).map(|(w, h)| (w.into(), h.into())),
+        JpegTagFormat::JpegXr => decode_jpegxr_dimensions(data).map(|(w, h)| (w.into(), h.into())),
         JpegTagFormat::Png => decode_png_dimensions(data),
         JpegTagFormat::Gif => decode_gif_dimensions(data).map(|(w, h)| (w.into(), h.into())),
         JpegTagFormat::Unknown => Err(Error::UnknownType),
@@ -147,13 +151,12 @@ pub fn remove_invalid_jpeg_data(data: &[u8]) -> Cow<'_, [u8]> {
     // Some JPEGs are missing the final EOI marker (JPEG optimizers truncate it?)
     // Flash and most image decoders will still display these images, but jpeg-decoder errors.
     // Glue on an EOI marker if its not already there and hope for the best.
-    if data.ends_with(&[0xFF, EOI]) {
-        data
-    } else {
+    if !data.ends_with(&[0xFF, EOI]) {
         tracing::warn!("JPEG is missing EOI marker and may not decode properly");
         data.to_mut().extend_from_slice(&[0xFF, EOI]);
-        data
     }
+
+    data
 }
 
 /// Some SWFs report unreasonable bitmap dimensions (#1191).
@@ -196,7 +199,9 @@ fn decode_jpeg(jpeg_data: &[u8], alpha_data: Option<&[u8]>) -> Result<Bitmap<'st
     let decoded_data = match metadata.pixel_format {
         jpeg_decoder::PixelFormat::RGB24 => decoded_data,
         jpeg_decoder::PixelFormat::CMYK32 => decoded_data
-            .chunks_exact(4)
+            .as_chunks::<4>()
+            .0
+            .iter()
             .flat_map(|cmyk| {
                 let c = 255 - u16::from(cmyk[0]);
                 let m = 255 - u16::from(cmyk[1]);
@@ -222,7 +227,9 @@ fn decode_jpeg(jpeg_data: &[u8], alpha_data: Option<&[u8]>) -> Result<Bitmap<'st
 
         if alpha_data.len() == decoded_data.len() / 3 {
             let rgba: Vec<_> = decoded_data
-                .chunks_exact(3)
+                .as_chunks::<3>()
+                .0
+                .iter()
                 .zip(alpha_data)
                 .flat_map(|(rgb, a)| {
                     // The JPEG data should be premultiplied alpha, but it isn't in some incorrect
@@ -296,7 +303,7 @@ pub fn decode_define_bits_lossless(
             out_data
         }
         (1 | 2, swf::BitmapFormat::Rgb32) => {
-            for rgba in decoded_data.chunks_exact_mut(4) {
+            for rgba in decoded_data.as_chunks_mut::<4>().0 {
                 rgba.rotate_left(1);
                 if !has_alpha {
                     rgba[3] = u8::MAX;
@@ -416,7 +423,9 @@ fn decode_png(data: &[u8]) -> Result<Bitmap<'static>, Error> {
         ColorType::GrayscaleAlpha => {
             (
                 BitmapFormat::Rgba,
-                data.chunks_exact(2)
+                data.as_chunks::<2>()
+                    .0
+                    .iter()
                     .flat_map(|pixel| {
                         // Pre-multiply alpha.
                         let a = pixel[1];
@@ -462,9 +471,71 @@ fn decode_gif(data: &[u8]) -> Result<Bitmap<'static>, Error> {
     ))
 }
 
+#[cfg(feature = "jpegxr")]
+fn decode_jpegxr(data: &[u8]) -> Result<Bitmap<'static>, Error> {
+    // TODO: Could this be unified with 'core/src/avm2/globals/flash/display3D/textures/atf_jpegxr'?
+
+    let mut decoder =
+        jpegxr::ImageDecode::with_reader(Cursor::new(data)).map_err(Error::InvalidJpegXr)?;
+
+    let pixel_format = decoder.get_pixel_format().map_err(Error::InvalidJpegXr)?;
+
+    let (jpeg_width, jpeg_height) = decoder.get_size().map_err(Error::InvalidJpegXr)?;
+    let jpeg_width = jpeg_width as u32;
+    let jpeg_height = jpeg_height as u32;
+
+    let info = jpegxr::PixelInfo::from_format(pixel_format);
+    let stride = jpeg_width as usize * info.bits_per_pixel() / 8;
+    let size = stride * jpeg_height as usize;
+
+    // We convert the result to a TIFF - this makes the jpegxr library handle
+    // all of the weird JPEG-XR alpha formats for us. We can then use the normal
+    // `image` crate to decode the TIFF to an rgba array.
+    let mut bmp_buffer = vec![0; size];
+    decoder
+        .convert_to_tiff(&mut Cursor::new(&mut bmp_buffer))
+        .map_err(Error::InvalidJpegXr)?;
+
+    let image_reader =
+        image::ImageReader::with_format(Cursor::new(bmp_buffer), image::ImageFormat::Tiff);
+
+    let data = image_reader
+        .decode()
+        .map_err(Error::MalformedTiffFromJpegXr)?
+        .to_rgba8()
+        .into_vec();
+
+    Ok(Bitmap::new(
+        jpeg_width,
+        jpeg_height,
+        BitmapFormat::Rgba,
+        data,
+    ))
+}
+
+#[cfg(not(feature = "jpegxr"))]
+fn decode_jpegxr(_: &[u8]) -> Result<Bitmap<'static>, Error> {
+    Err(Error::Unimplemented("JPEG-XR decoding not compiled".into()))
+}
+
+#[cfg(feature = "jpegxr")]
+fn decode_jpegxr_dimensions(data: &[u8]) -> Result<(u16, u16), Error> {
+    let (jpeg_width, jpeg_height) = jpegxr::ImageDecode::with_reader(Cursor::new(data))
+        .map_err(Error::InvalidJpegXr)?
+        .get_size()
+        .map_err(Error::InvalidJpegXr)?;
+
+    Ok((jpeg_width as u16, jpeg_height as u16))
+}
+
+#[cfg(not(feature = "jpegxr"))]
+fn decode_jpegxr_dimensions(_: &[u8]) -> Result<(u16, u16), Error> {
+    Err(Error::Unimplemented("JPEG-XR decoding not compiled".into()))
+}
+
 /// Converts standard RBGA to premultiplied alpha.
 fn premultiply_alpha_rgba(rgba: &mut [u8]) {
-    rgba.chunks_exact_mut(4).for_each(|rgba| {
+    rgba.as_chunks_mut::<4>().0.iter_mut().for_each(|rgba| {
         let a = f32::from(rgba[3]) / 255.0;
         rgba[0] = (f32::from(rgba[0]) * a) as u8;
         rgba[1] = (f32::from(rgba[1]) * a) as u8;
@@ -474,7 +545,7 @@ fn premultiply_alpha_rgba(rgba: &mut [u8]) {
 
 /// Converts premultiplied RBGA to unmultipled RGBA.
 pub fn unmultiply_alpha_rgba(rgba: &mut [u8]) {
-    rgba.chunks_exact_mut(4).for_each(|rgba| {
+    rgba.as_chunks_mut::<4>().0.iter_mut().for_each(|rgba| {
         let a = rgba[3];
         if a > 0 {
             let a = f32::from(a) / 255.0;

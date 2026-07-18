@@ -31,3 +31,4 @@ desc = "this is the <i>text</i>"; x = <description>{"<![CDATA[" + desc + "]]>"}<
 desc = "this is the <i>text</i>"; x = <description>{"<![CDATA[" + desc + "]]>"}</description>; PASSED!
 Testing for extra directives PASSED!
 Testing for extra directives PASSED!
+TypeError: Error #2023: Class Test$ must inherit from Sprite to link to the root.

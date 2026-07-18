@@ -2,6 +2,7 @@ use crate::avm2::activation::Activation;
 use crate::avm2::error::{Error, make_error_1032};
 use crate::avm2::script::TranslationUnit;
 use crate::string::{AvmAtom, AvmString, StringContext};
+use enum_map::EnumMap;
 use gc_arena::{Collect, Gc};
 use num_traits::FromPrimitive;
 use ruffle_wstr::WStr;
@@ -331,15 +332,13 @@ impl<'gc> Namespace<'gc> {
 #[derive(Collect)]
 #[collect(no_drop)]
 pub struct CommonNamespaces<'gc> {
-    public_namespaces: [Namespace<'gc>; CommonNamespaces::PUBLIC_LEN],
+    public_namespaces: EnumMap<ApiVersion, Namespace<'gc>>,
 
     pub(super) as3: Namespace<'gc>,
     pub(super) vector_internal: Namespace<'gc>,
 }
 
 impl<'gc> CommonNamespaces<'gc> {
-    const PUBLIC_LEN: usize = ApiVersion::VM_INTERNAL as usize + 1;
-
     pub fn new(context: &mut StringContext<'gc>) -> Self {
         let empty_string = context.empty();
 
@@ -348,8 +347,8 @@ impl<'gc> CommonNamespaces<'gc> {
         let vector_namespace_string = AvmString::new_ascii_static(context.gc(), b"__AS3__.vec");
 
         Self {
-            public_namespaces: std::array::from_fn(|val| {
-                Namespace::package(empty_string, ApiVersion::from_usize(val).unwrap(), context)
+            public_namespaces: EnumMap::from_fn(|version| {
+                Namespace::package(empty_string, version, context)
             }),
             as3: Namespace::package(as3_namespace_string, ApiVersion::AllVersions, context),
             vector_internal: Namespace::internal(vector_namespace_string, context),
@@ -361,16 +360,16 @@ impl<'gc> CommonNamespaces<'gc> {
     /// instead, as it will return the correct version for the current call stack.
     #[inline]
     pub fn public_all(&self) -> Namespace<'gc> {
-        self.public_namespaces[ApiVersion::AllVersions as usize]
+        self.public_namespaces[ApiVersion::AllVersions]
     }
 
     #[inline]
     pub fn public_vm_internal(&self) -> Namespace<'gc> {
-        self.public_namespaces[ApiVersion::VM_INTERNAL as usize]
+        self.public_namespaces[ApiVersion::VM_INTERNAL]
     }
 
     #[inline]
     pub fn public_for(&self, version: ApiVersion) -> Namespace<'gc> {
-        self.public_namespaces[version as usize]
+        self.public_namespaces[version]
     }
 }

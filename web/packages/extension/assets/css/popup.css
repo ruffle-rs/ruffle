@@ -32,7 +32,7 @@ body {
     width: 10px;
     height: 10px;
     border-radius: 50%;
-    margin-right: 5px;
+    margin-inline-end: 5px;
     background: var(--color);
     box-shadow: 0 0 10px var(--color);
 }
@@ -55,7 +55,7 @@ body {
 /* TODO: figure out why this appears smaller on Firefox */
 #options-button {
     width: 24px;
-    margin-left: 4px;
+    margin-inline-end: 4px;
     padding: 0 2px;
     cursor: pointer;
 }

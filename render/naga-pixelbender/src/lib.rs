@@ -1288,6 +1288,39 @@ impl ShaderBuilder<'_> {
                             arg2: None,
                             arg3: None,
                         }),
+                        Opcode::Sign => {
+                            // FP returns 0 for sign(NaN). Avoid relying on the
+                            // backend's sign() semantics (which may propagate NaN)
+                            // by computing it as (x > 0) - (x < 0).
+
+                            let gt_zero = self.evaluate_expr(Expression::Binary {
+                                op: BinaryOperator::Greater,
+                                left: src,
+                                right: self.zerovec4f,
+                            });
+                            let lt_zero = self.evaluate_expr(Expression::Binary {
+                                op: BinaryOperator::Less,
+                                left: src,
+                                right: self.zerovec4f,
+                            });
+
+                            let gt_f = self.evaluate_expr(Expression::As {
+                                expr: gt_zero,
+                                kind: ScalarKind::Float,
+                                convert: Some(4),
+                            });
+                            let lt_f = self.evaluate_expr(Expression::As {
+                                expr: lt_zero,
+                                kind: ScalarKind::Float,
+                                convert: Some(4),
+                            });
+
+                            self.evaluate_expr(Expression::Binary {
+                                op: BinaryOperator::Subtract,
+                                left: gt_f,
+                                right: lt_f,
+                            })
+                        }
                         _ => {
                             panic!("Unimplemented opcode {opcode:?}");
                         }
@@ -1537,9 +1570,9 @@ impl ShaderBuilder<'_> {
     ) -> Handle<Expression> {
         if matches!(
             reg.channels.as_slice(),
-            [PixelBenderRegChannel::M2x2]
-                | [PixelBenderRegChannel::M3x3]
-                | [PixelBenderRegChannel::M4x4]
+            [PixelBenderRegChannel::M2x2
+                | PixelBenderRegChannel::M3x3
+                | PixelBenderRegChannel::M4x4]
         ) {
             assert_eq!(
                 reg.kind,
@@ -1634,9 +1667,9 @@ impl ShaderBuilder<'_> {
     fn emit_dest_store(&mut self, expr: Handle<Expression>, dst: &PixelBenderReg) {
         if matches!(
             dst.channels.as_slice(),
-            [PixelBenderRegChannel::M2x2]
-                | [PixelBenderRegChannel::M3x3]
-                | [PixelBenderRegChannel::M4x4]
+            [PixelBenderRegChannel::M2x2
+                | PixelBenderRegChannel::M3x3
+                | PixelBenderRegChannel::M4x4]
         ) {
             // If we're writing to a 2x2 matrix, load the individual values from the matrix,
             // and construct a vec4f containing all of them (a 2x2 matrix is stored as a single vec4f)

@@ -1,0 +1,6 @@
+Test- url: /test.swf
+Test- loader url: /test.swf
+Loaded #1- url: /load1.swf
+Loaded #1- loader url: /test.swf
+Loaded #2- url: /load2.swf
+Loaded #2- loader url: /load1.swf

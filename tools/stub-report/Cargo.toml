@@ -1,0 +1,18 @@
+[package]
+name = "stub-report"
+authors.workspace = true
+edition.workspace = true
+homepage.workspace = true
+license.workspace = true
+repository.workspace = true
+version.workspace = true
+
+[dependencies]
+clap = { workspace = true }
+anyhow = { workspace = true }
+tempfile = { workspace = true }
+ruffle_core = { path = "../../core", features = ["known_stubs"] }
+ruffle_api_report = { git = "https://github.com/ruffle-rs/api-report", rev = "5d9eab96fa1db90944e51450113c532505e52bd6" }
+
+[lints]
+workspace = true

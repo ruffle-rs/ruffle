@@ -15,6 +15,7 @@ package flash.events {
             this._errorID = id;
         }
 
+        [API("667")]
         public function get errorID():int {
             return this._errorID;
         }

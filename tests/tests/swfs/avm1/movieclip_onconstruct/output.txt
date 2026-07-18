@@ -1,0 +1,20 @@
+onConstruct, throwing
+Warning: Uncaught exception, some error
+Caught: other error
+clip_d.depth = 8
+onConstruct
+  name: clip_a
+  depth: 4
+onConstruct
+  name: clip_b
+  depth: 5
+onConstruct
+  name: clip_b
+  depth: 6
+onConstruct
+  name: clip_c
+  depth: 17
+onConstruct
+  name: child
+  depth: 19
+Child

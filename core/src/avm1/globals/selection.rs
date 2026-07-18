@@ -38,7 +38,7 @@ pub fn get_begin_index<'gc>(
         .get_as_edit_text()
         .and_then(EditText::selection)
     {
-        Ok(selection.start().into())
+        Ok(Value::from_usize_lossy(selection.start()))
     } else {
         Ok((-1).into())
     }
@@ -55,7 +55,7 @@ pub fn get_end_index<'gc>(
         .get_as_edit_text()
         .and_then(EditText::selection)
     {
-        Ok(selection.end().into())
+        Ok(Value::from_usize_lossy(selection.end()))
     } else {
         Ok((-1).into())
     }
@@ -72,7 +72,7 @@ pub fn get_caret_index<'gc>(
         .get_as_edit_text()
         .and_then(EditText::selection)
     {
-        Ok(selection.to().into())
+        Ok(Value::from_usize_lossy(selection.to()))
     } else {
         Ok((-1).into())
     }

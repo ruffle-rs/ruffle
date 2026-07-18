@@ -9,7 +9,7 @@ use crate::filters::FilterSource;
 use crate::mesh::Mesh;
 use crate::pixel_bender::{ShaderMode, run_pixelbender_shader_impl};
 use crate::surface::commands::{Chunk, CommandRenderer, chunk_blends};
-use crate::utils::{remove_srgb, supported_sample_count};
+use crate::utils::supported_sample_count;
 use crate::{Descriptors, MaskState, Pipelines};
 use ruffle_render::commands::CommandList;
 use ruffle_render::pixel_bender_support::{ImageInputTexture, PixelBenderShaderArgument};
@@ -31,7 +31,6 @@ pub struct Surface {
     sample_count: u32,
     pipelines: Arc<Pipelines>,
     format: wgpu::TextureFormat,
-    actual_surface_format: wgpu::TextureFormat,
 }
 
 impl Surface {
@@ -40,14 +39,13 @@ impl Surface {
         quality: StageQuality,
         width: u32,
         height: u32,
-        surface_format: wgpu::TextureFormat,
+        frame_buffer_format: wgpu::TextureFormat,
     ) -> Self {
         let size = wgpu::Extent3d {
             width,
             height,
             depth_or_array_layers: 1,
         };
-        let frame_buffer_format = remove_srgb(surface_format);
 
         let sample_count = supported_sample_count(
             &descriptors.adapter,
@@ -61,14 +59,13 @@ impl Surface {
             sample_count,
             pipelines,
             format: frame_buffer_format,
-            actual_surface_format: surface_format,
         }
     }
 
     #[expect(clippy::too_many_arguments)]
     #[instrument(level = "debug", skip_all)]
     pub fn draw_commands_and_copy_to<'frame, 'global: 'frame>(
-        &mut self,
+        &self,
         frame_view: &wgpu::TextureView,
         render_target_mode: RenderTargetMode,
         descriptors: &'global Descriptors,
@@ -95,7 +92,6 @@ impl Surface {
         run_copy_pipeline(
             descriptors,
             self.format,
-            self.actual_surface_format,
             frame_view,
             target.color_view(),
             target.whole_frame_bind_group(descriptors),
@@ -108,7 +104,7 @@ impl Surface {
     #[expect(clippy::too_many_arguments)]
     #[instrument(level = "debug", skip_all)]
     pub fn draw_commands<'frame, 'global: 'frame>(
-        &mut self,
+        &self,
         render_target_mode: RenderTargetMode,
         descriptors: &'global Descriptors,
         meshes: &'global Vec<Mesh>,
@@ -150,8 +146,12 @@ impl Surface {
 
         for chunk in chunks {
             match chunk {
-                Chunk::Draw(chunk, needs_stencil, transform_buffers) => {
-                    transform_buffers.copy_to(
+                Chunk::Draw {
+                    chunk,
+                    needs_stencil,
+                    transforms,
+                } => {
+                    transforms.copy_to(
                         staging_belt,
                         &descriptors.device,
                         draw_encoder,
@@ -194,11 +194,12 @@ impl Surface {
                     num_masks = renderer.num_masks();
                     mask_state = renderer.mask_state();
                 }
-                Chunk::Blend(texture, ChunkBlendMode::Shader(shader), needs_stencil) => {
-                    assert!(
-                        !needs_stencil,
-                        "Shader blend should not need stencil buffer"
-                    );
+                Chunk::Blend {
+                    texture,
+                    blend_mode: ChunkBlendMode::Shader(shader),
+                    needs_stencil,
+                } => {
+                    assert!(!needs_stencil, "Shader blend mode not implemented in masks");
                     let parent_blend_buffer =
                         target.update_blend_buffer(descriptors, texture_pool, draw_encoder);
                     run_pixelbender_shader_impl(
@@ -229,7 +230,11 @@ impl Surface {
                     )
                     .expect("Failed to run PixelBender blend mode");
                 }
-                Chunk::Blend(texture, ChunkBlendMode::Complex(blend_mode), needs_stencil) => {
+                Chunk::Blend {
+                    texture,
+                    blend_mode: ChunkBlendMode::Complex(blend_mode),
+                    needs_stencil,
+                } => {
                     let parent = match blend_mode {
                         ComplexBlend::Alpha | ComplexBlend::Erase => {
                             match nearest_layer {

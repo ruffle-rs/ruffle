@@ -1,0 +1,14 @@
+1
+_level0.tf
+test name
+true
+2
+onChanged: a,undefined
+// Broadcast
+onChanged: a,b
+onKillFocus: A,B
+onX: X,undefined
+// Remove
+1
+========================
+// Done

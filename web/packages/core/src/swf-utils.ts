@@ -83,6 +83,5 @@ export function isSwf(filename: string, mimeType: string | null): boolean {
  */
 export function swfFileName(swfUrl: URL): string {
     const pathName = swfUrl.pathname;
-    const name = pathName.substring(pathName.lastIndexOf("/") + 1);
-    return name;
+    return pathName.substring(pathName.lastIndexOf("/") + 1);
 }

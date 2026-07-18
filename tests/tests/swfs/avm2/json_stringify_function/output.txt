@@ -1,0 +1,12 @@
+{"length":1,"prototype":{}}
+null
+null
+{"a":{"length":1,"prototype":{}}}
+{}
+{}
+{"b":true,"a":{"length":1,"prototype":{}}}
+{"b":true}
+{"b":true}
+[1,{"length":1,"prototype":{}},3]
+[1,null,3]
+[1,null,3]

@@ -1,0 +1,28 @@
+version 1i
+name "sign_test"
+
+param.out "dst", float4, f0.rgba
+
+ld f2.a, 0.4f
+ld f2.b, 64f
+
+ld f3.r, -2f
+ld f3.g, 0f
+ld f3.b, 7f
+
+sign f4.rgb, f3.rgb
+
+mov f0.r, f4.r
+mov f0.g, f4.g
+mov f0.b, f4.b
+
+div f0.r, f2.b
+add f0.r, f2.a
+
+div f0.g, f2.b
+add f0.g, f2.a
+
+div f0.b, f2.b
+add f0.b, f2.a
+
+ld f0.a, 1f

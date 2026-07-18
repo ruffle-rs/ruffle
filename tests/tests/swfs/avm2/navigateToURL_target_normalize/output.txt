@@ -1,0 +1,108 @@
+// target: [_blank]
+Navigator::navigate_to_url:
+  URL: https://example.com/0
+  Target: _blank
+  Method: GET
+
+// target: [blank]
+Navigator::navigate_to_url:
+  URL: https://example.com/1
+  Target: _blank
+  Method: GET
+
+// target: [BLANK]
+Navigator::navigate_to_url:
+  URL: https://example.com/2
+  Target: _blank
+  Method: GET
+
+// target: [_Blank]
+Navigator::navigate_to_url:
+  URL: https://example.com/3
+  Target: _blank
+  Method: GET
+
+// target: [_BLANK]
+Navigator::navigate_to_url:
+  URL: https://example.com/4
+  Target: _blank
+  Method: GET
+
+// target: [bLaNk]
+Navigator::navigate_to_url:
+  URL: https://example.com/5
+  Target: _blank
+  Method: GET
+
+// target: [_BlAnK]
+Navigator::navigate_to_url:
+  URL: https://example.com/6
+  Target: _blank
+  Method: GET
+
+// target: [_self]
+Navigator::navigate_to_url:
+  URL: https://example.com/7
+  Target: _self
+  Method: GET
+
+// target: [self]
+Navigator::navigate_to_url:
+  URL: https://example.com/8
+  Target: self
+  Method: GET
+
+// target: [_parent]
+Navigator::navigate_to_url:
+  URL: https://example.com/9
+  Target: _parent
+  Method: GET
+
+// target: [parent]
+Navigator::navigate_to_url:
+  URL: https://example.com/10
+  Target: parent
+  Method: GET
+
+// target: [_top]
+Navigator::navigate_to_url:
+  URL: https://example.com/11
+  Target: _top
+  Method: GET
+
+// target: [top]
+Navigator::navigate_to_url:
+  URL: https://example.com/12
+  Target: top
+  Method: GET
+
+// target: [myWindow]
+Navigator::navigate_to_url:
+  URL: https://example.com/13
+  Target: myWindow
+  Method: GET
+
+// target: []
+Navigator::navigate_to_url:
+  URL: https://example.com/14
+  Target: 
+  Method: GET
+
+// target: [_custom]
+Navigator::navigate_to_url:
+  URL: https://example.com/15
+  Target: _custom
+  Method: GET
+
+// target: [blanket]
+Navigator::navigate_to_url:
+  URL: https://example.com/16
+  Target: blanket
+  Method: GET
+
+// target: [_blanker]
+Navigator::navigate_to_url:
+  URL: https://example.com/17
+  Target: _blanker
+  Method: GET
+

@@ -12,7 +12,7 @@ impl OpenUrlDialog {
         Self { url }
     }
 
-    pub fn show(&mut self, locale: &LanguageIdentifier, egui_ctx: &egui::Context) -> bool {
+    pub fn show(&self, locale: &LanguageIdentifier, egui_ctx: &egui::Context) -> bool {
         let mut keep_open = true;
         let mut should_close = false;
 
@@ -30,7 +30,7 @@ impl OpenUrlDialog {
         keep_open && !should_close
     }
 
-    pub fn render_window_contents(&mut self, locale: &LanguageIdentifier, ui: &mut Ui) -> bool {
+    pub fn render_window_contents(&self, locale: &LanguageIdentifier, ui: &mut Ui) -> bool {
         let mut should_close = false;
 
         ui.label(text(locale, "open-url-dialog-message"));

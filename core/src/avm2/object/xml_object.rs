@@ -9,13 +9,14 @@ use crate::avm2::error::make_error_1087;
 use crate::avm2::function::FunctionArgs;
 use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{ClassObject, NamespaceObject, Object, TObject, XmlListObject};
-use crate::avm2::string::AvmString;
 use crate::avm2::value::Value;
 use crate::avm2::{Error, Multiname};
+use crate::string::AvmString;
 use core::fmt;
 use gc_arena::barrier::unlock;
 use gc_arena::{Collect, Gc, GcWeak, Mutation, lock::Lock};
 use ruffle_common::utils::HasPrefixField;
+use ruffle_macros::istr;
 use ruffle_wstr::WString;
 
 use super::xml_list_object::{E4XOrXml, XmlOrXmlListObject};
@@ -61,6 +62,12 @@ pub struct XmlObjectData<'gc> {
     base: ScriptObjectData<'gc>,
 
     node: Lock<E4XNode<'gc>>,
+}
+
+pub enum NotificationCommand {
+    AttributeAdded,
+    AttributeChanged,
+    NameSet,
 }
 
 impl<'gc> XmlObject<'gc> {
@@ -128,27 +135,27 @@ impl<'gc> XmlObject<'gc> {
         activation: &mut Activation<'_, 'gc>,
     ) -> XmlListObject<'gc> {
         // 1. If ToString(ToUint32(propertyName)) == propertyName
-        if let Some(local_name) = name.local_name() {
-            if let Ok(index) = local_name.parse::<usize>() {
-                let result = if let E4XNodeKind::Element { children, .. } = &*self.node().kind() {
-                    if let Some(node) = children.get(index) {
-                        vec![E4XOrXml::E4X(*node)]
-                    } else {
-                        Vec::new()
-                    }
+        if let Some(local_name) = name.local_name()
+            && let Ok(index) = local_name.parse::<usize>()
+        {
+            let result = if let E4XNodeKind::Element { children, .. } = &*self.node().kind() {
+                if let Some(node) = children.get(index) {
+                    vec![E4XOrXml::E4X(*node)]
                 } else {
                     Vec::new()
-                };
-
-                let list = XmlListObject::new_with_children(activation, result, None, None);
-
-                if list.length() > 0 {
-                    // NOTE: Since avmplus uses appendNode here, when the node exists, that implicitly sets the target_dirty flag.
-                    list.set_dirty_flag();
                 }
+            } else {
+                Vec::new()
+            };
 
-                return list;
+            let list = XmlListObject::new_with_children(activation, result, None, None);
+
+            if list.length() > 0 {
+                // NOTE: Since avmplus uses appendNode here, when the node exists, that implicitly sets the target_dirty flag.
+                list.set_dirty_flag();
             }
+
+            return list;
         }
 
         // 2. Let temporary be the result of calling the [[Get]] method of x with argument propertyName
@@ -256,23 +263,23 @@ impl<'gc> XmlObject<'gc> {
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<bool, Error<'gc>> {
         // 3.a. If both x and y are the same type (XML)
-        if let Value::Object(obj) = other {
-            if let Some(xml_obj) = obj.as_xml_object() {
-                // 3.a.i. If ((x.[[Class]] ∈ {"text", "attribute"}) and (y.hasSimpleContent())
-                // or ((y.[[Class]] ∈ {"text", "attribute"}) and (x.hasSimpleContent())
-                if ((self.node().is_text() || self.node().is_attribute())
-                    && xml_obj.node().has_simple_content())
-                    || ((xml_obj.node().is_text() || xml_obj.node().is_attribute())
-                        && self.node().has_simple_content())
-                {
-                    // 3.a.i.1. Return the result of the comparison ToString(x) == ToString(y)
-                    return Ok(self.node().xml_to_string(activation)
-                        == xml_obj.node().xml_to_string(activation));
-                }
-
-                // 3.a.i. Else return the result of calling the [[Equals]] method of x with argument y
-                return self.equals(other, activation);
+        if let Value::Object(obj) = other
+            && let Some(xml_obj) = obj.as_xml_object()
+        {
+            // 3.a.i. If ((x.[[Class]] ∈ {"text", "attribute"}) and (y.hasSimpleContent())
+            // or ((y.[[Class]] ∈ {"text", "attribute"}) and (x.hasSimpleContent())
+            if ((self.node().is_text() || self.node().is_attribute())
+                && xml_obj.node().has_simple_content())
+                || ((xml_obj.node().is_text() || xml_obj.node().is_attribute())
+                    && self.node().has_simple_content())
+            {
+                // 3.a.i.1. Return the result of the comparison ToString(x) == ToString(y)
+                return Ok(self.node().xml_to_string(activation)
+                    == xml_obj.node().xml_to_string(activation));
             }
+
+            // 3.a.i. Else return the result of calling the [[Equals]] method of x with argument y
+            return self.equals(other, activation);
         }
 
         // 4. If (Type(x) is XML and x.hasSimpleContent() == true)
@@ -283,6 +290,36 @@ impl<'gc> XmlObject<'gc> {
 
         // It seems like everything else will just ultimately fall-through to the last step.
         Ok(false)
+    }
+
+    pub fn trigger_notification(
+        self,
+        activation: &mut Activation<'_, 'gc>,
+        command: NotificationCommand,
+        value: Value<'gc>,
+        detail: Value<'gc>,
+    ) {
+        let target = self;
+        let mut current_node = Some(target.node());
+        while let Some(current) = current_node {
+            if let Some(function) = current.notification() {
+                let current_target = XmlObject::new(current, activation);
+                let command = match command {
+                    NotificationCommand::AttributeAdded => istr!("attributeAdded"),
+                    NotificationCommand::AttributeChanged => istr!("attributeChanged"),
+                    NotificationCommand::NameSet => istr!("nameSet"),
+                };
+                let args = [
+                    current_target.into(),
+                    command.into(),
+                    target.into(),
+                    value,
+                    detail,
+                ];
+                let _ = function.call(activation, Value::Null, FunctionArgs::from_slice(&args));
+            }
+            current_node = current.parent();
+        }
     }
 }
 
@@ -318,16 +355,15 @@ impl<'gc> TObject<'gc> for XmlObject<'gc> {
     ) -> Result<Value<'gc>, Error<'gc>> {
         // FIXME - implement everything from E4X spec (XMLObject::getMultinameProperty in avmplus)
 
-        if !name.has_explicit_namespace() {
-            if let Some(local_name) = name.local_name() {
-                // The only supported numerical index is 0
-                if let Ok(index) = local_name.parse::<usize>() {
-                    if index == 0 {
-                        return Ok(self.into());
-                    } else {
-                        return Ok(Value::Undefined);
-                    }
-                }
+        if !name.has_explicit_namespace()
+            && let Some(local_name) = name.local_name()
+            && let Ok(index) = local_name.parse::<usize>()
+        {
+            // The only supported numerical index is 0
+            if index == 0 {
+                return Ok(self.into());
+            } else {
+                return Ok(Value::Undefined);
             }
         }
 
@@ -355,12 +391,13 @@ impl<'gc> TObject<'gc> for XmlObject<'gc> {
             // avmplus has this check, so we do it out of an abundance of caution.
             // Compare to the very similar case in XMLListObject::call_property_local
             let prop = self.get_property_local(multiname, activation)?;
-            if let Some(list) = prop.as_object().and_then(|obj| obj.as_xml_list_object()) {
-                if list.length() == 0 && self.node().has_simple_content() {
-                    let receiver = Value::String(self.node().xml_to_string(activation));
+            if let Some(list) = prop.as_object().and_then(|obj| obj.as_xml_list_object())
+                && list.length() == 0
+                && self.node().has_simple_content()
+            {
+                let receiver = Value::String(self.node().xml_to_string(activation));
 
-                    return receiver.call_property(multiname, arguments, activation);
-                }
+                return receiver.call_property(multiname, arguments, activation);
             }
         }
 
@@ -403,10 +440,10 @@ impl<'gc> TObject<'gc> for XmlObject<'gc> {
         let name = handle_input_multiname(name.clone(), activation);
 
         // 1. If ToString(ToUint32(P)) == P, throw a TypeError exception
-        if let Some(local_name) = name.local_name() {
-            if local_name.parse::<usize>().is_ok() {
-                return Err(make_error_1087(activation));
-            }
+        if let Some(local_name) = name.local_name()
+            && local_name.parse::<usize>().is_ok()
+        {
+            return Err(make_error_1087(activation));
         }
 
         // 2. If x.[[Class]] ∈ {"text", "comment", "processing-instruction", "attribute"}, return
@@ -478,24 +515,75 @@ impl<'gc> TObject<'gc> for XmlObject<'gc> {
                 AvmString::new(activation.gc(), out)
             // 6.c. Else
             } else {
+                // 6.c.i. Let c = ToString(c)
                 value.coerce_to_string(activation)?
             };
 
-            let mc = activation.gc();
-            self.delete_property_local(activation, &name)?;
-            let Some(local_name) = name.local_name() else {
-                return Err(format!("Cannot set attribute {name:?} without a local name").into());
-            };
-            let ns = name.explicit_namespace().map(E4XNamespace::new_uri);
-            let new_attr = E4XNode::attribute(mc, ns, local_name, value, Some(self.node()));
+            let gc = activation.gc();
 
-            let node = self.0.node.get();
-            let mut kind = node.kind_mut(mc);
-            let E4XNodeKind::Element { attributes, .. } = &mut *kind else {
-                return Ok(());
-            };
+            // 6.d. Let a = null
+            // 6.e. For each j in x.[[Attributes]]
+            // 6.e.i. If (n.[[Name]].localName == j.[[Name]].localName)
+            //        and ((n.[[Name]].uri == null) or (n.[[Name]].uri == j.[[Name]].uri))
+            // 6.e.i.1. If (a == null), a = j
+            // 6.e.i.2. Else call the [[Delete]] method of x with argument j.[[Name]]
+            if let Some((index, old_attr)) = self.node().remove_matching_attribute(gc, &name) {
+                // NOTE: In this branch we modify the value of the first matching attribute.
+                let old_value = {
+                    // 6.g. Let a.[[Value]] = c
+                    let E4XNodeKind::Attribute(old_value) = &mut *old_attr.kind_mut(gc) else {
+                        unreachable!("Node should be of Attribute kind");
+                    };
+                    let old_value_copy = *old_value;
+                    *old_value = value;
 
-            attributes.push(new_attr);
+                    let node = self.0.node.get();
+                    let E4XNodeKind::Element { attributes, .. } = &mut *node.kind_mut(gc) else {
+                        return Ok(());
+                    };
+                    old_attr.set_parent(Some(self.node()), gc);
+                    attributes.insert(index, old_attr);
+                    old_value_copy
+                };
+
+                if let Some(name) = old_attr.local_name() {
+                    self.trigger_notification(
+                        activation,
+                        NotificationCommand::AttributeChanged,
+                        name.into(),
+                        old_value.into(),
+                    );
+                }
+            } else {
+                // 6.f. If a == null
+
+                // TODO: Make this closer to the specification.
+                let Some(local_name) = name.local_name() else {
+                    return Err(
+                        format!("Cannot set attribute {name:?} without a local name").into(),
+                    );
+                };
+                let ns = name.explicit_namespace().map(E4XNamespace::new_uri);
+                let attr = E4XNode::attribute(gc, ns, local_name, value, Some(self.node()));
+
+                {
+                    // 6.f.iv. Let x.[[Attributes]] = x.[[Attributes]] ∪ { a }
+                    let node = self.0.node.get();
+                    let E4XNodeKind::Element { attributes, .. } = &mut *node.kind_mut(gc) else {
+                        return Ok(());
+                    };
+                    attributes.push(attr);
+                }
+
+                self.trigger_notification(
+                    activation,
+                    NotificationCommand::AttributeAdded,
+                    local_name.into(),
+                    value.into(),
+                );
+            }
+
+            // 6.h. Return
             return Ok(());
         }
 
@@ -623,10 +711,10 @@ impl<'gc> TObject<'gc> for XmlObject<'gc> {
 
         // 1. If ToString(ToUint32(P)) == P, throw a TypeError exception
         // NOTE: This doesn't actually throw in Flash.
-        if let Some(local_name) = name.local_name() {
-            if local_name.parse::<usize>().is_ok() {
-                return Ok(true);
-            }
+        if let Some(local_name) = name.local_name()
+            && local_name.parse::<usize>().is_ok()
+        {
+            return Ok(true);
         }
 
         let node = self.0.node.get();
@@ -635,25 +723,13 @@ impl<'gc> TObject<'gc> for XmlObject<'gc> {
 
         // 3. If Type(n) is AttributeName
         if name.is_attribute() {
-            let E4XNodeKind::Element { attributes, .. } = &mut *node.kind_mut(activation.gc())
-            else {
-                return Ok(true);
-            };
-
             // 3.a. For each a in x.[[Attributes]]
-            attributes.retain(|attr| {
-                // 3.a.i. If ((n.[[Name]].localName == "*") or
-                //            (n.[[Name]].localName == a.[[Name]].localName))
-                // and ((n.[[Name]].uri == null) or (n.[[Name]].uri == a.[[Name]].uri))
-                if attr.matches_name(&name) {
-                    // 3.a.i.1. Let a.[[Parent]] = null
-                    attr.set_parent(None, activation.gc());
-                    // 3.a.i.2. Remove the attribute a from x.[[Attributes]]
-                    false
-                } else {
-                    true
-                }
-            });
+            // 3.a.i. If ((n.[[Name]].localName == "*") or
+            //            (n.[[Name]].localName == a.[[Name]].localName))
+            //        and ((n.[[Name]].uri == null) or (n.[[Name]].uri == a.[[Name]].uri))
+            // 3.a.i.1. Let a.[[Parent]] = null
+            // 3.a.i.2. Remove the attribute a from x.[[Attributes]]
+            node.remove_matching_attribute(activation.gc(), &name);
 
             // 3.b. Return true
             return Ok(true);

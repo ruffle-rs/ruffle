@@ -126,11 +126,11 @@ impl HeaderExt {
     }
 
     /// Returns the header for a loaded image (JPEG, GIF or PNG).
-    pub fn default_with_uncompressed_len(length: i32) -> Self {
+    pub fn default_with_uncompressed_len(length: i32, stage_size: Rectangle<Twips>) -> Self {
         let header = Header {
             compression: Compression::None,
             version: 0,
-            stage_size: Default::default(),
+            stage_size,
             frame_rate: Fixed8::ONE,
             num_frames: 1,
         };
@@ -324,7 +324,7 @@ pub struct PlaceObject<'a> {
     pub filters: Option<Vec<Filter>>,
     pub background_color: Option<Color>,
     pub blend_mode: Option<BlendMode>,
-    pub clip_actions: Option<Vec<ClipAction<'a>>>,
+    pub clip_actions: Option<ClipActions<'a>>,
     pub has_image: bool,
     pub is_bitmap_cached: Option<bool>,
     pub is_visible: Option<bool>,
@@ -456,6 +456,12 @@ pub struct ClipAction<'a> {
     pub events: ClipEventFlag,
     pub key_code: Option<KeyCode>,
     pub action_data: &'a [u8],
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct ClipActions<'a> {
+    pub all_event_flags: ClipEventFlag,
+    pub records: Vec<ClipAction<'a>>,
 }
 
 bitflags! {

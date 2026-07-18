@@ -123,7 +123,7 @@ pub fn pow<'gc>(
             // Special case: If p is NaN, the result is NaN.
             (_, _) if p.is_nan() => return Ok(f64::NAN.into()),
             // Special case: If p is ±Infinity and n is ±1, the result is NaN.
-            (1.0, _) | (-1.0, _) => {
+            (1.0 | -1.0, _) => {
                 // If (1) n or p is not finite, (2) p is not NaN, (3) n is finite,
                 // p has to be infinite.
                 debug_assert!(p.is_infinite());

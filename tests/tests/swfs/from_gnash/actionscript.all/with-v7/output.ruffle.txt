@@ -21,11 +21,7 @@ PASSED: obj.a == 1 [./with.as:88]
 PASSED: found8 == 1 [./with.as:91]
 PASSED: get_name() == "timeline" [./with.as:115]
 PASSED: get_name() == "obj1" [./with.as:118]
-Error: A 'with' action failed because the specified object did not exist.
-
 PASSED: checkpoint == 1 [./with.as:135]
-Error: A 'with' action failed because the specified object did not exist.
-
 PASSED: checkpoint == 1 [./with.as:138]
 PASSED: checkpoint == 3 [./with.as:141]
 PASSED: Number.prototype.checkpoint == 'three' [./with.as:142]
@@ -69,12 +65,9 @@ PASSED: checkpoint == '/clip1/clip2' [./with.as:340]
 PASSED: checkpoint == '/' [./with.as:350]
 PASSED: _target == "/clip1" [./with.as:355]
 PASSED: _target == "/clip1" [./with.as:359]
-Target not found: Target="../o:t" Base="_level0"
 PASSED: _target == "/" [./with.as:363]
-Target not found: Target="o2.o" Base="_level0"
 PASSED: _target == "/" [./with.as:369]
 PASSED: _target == "/clip1" [./with.as:373]
-Target not found: Target="o2.o.p.t" Base="_level0"
 PASSED: _target == "/" [./with.as:378]
 PASSED: _target == "/clip1" [./with.as:383]
 PASSED: _target == "/clip1" [./with.as:395]

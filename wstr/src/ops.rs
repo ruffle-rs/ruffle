@@ -3,6 +3,7 @@ use alloc::string::String;
 use alloc::vec::Vec;
 use core::fmt::{self, Write};
 use core::hash::Hasher;
+use core::ops::Range;
 use core::slice::Iter as SliceIter;
 
 use super::pattern::{SearchStep, Searcher};
@@ -113,10 +114,7 @@ pub fn str_eq(left: &WStr, right: &WStr) -> bool {
         return false;
     }
 
-    (0..bytes.len()).all(|i| {
-        // SAFETY: Both slices have the same length.
-        unsafe { *bytes.get_unchecked(i) as u16 == *wide.get_unchecked(i) }
-    })
+    core::iter::zip(bytes.iter(), wide.iter()).all(|(&b, &w)| b as u16 == w)
 }
 
 pub fn str_eq_ignore_case(left: &WStr, right: &WStr) -> bool {
@@ -334,9 +332,18 @@ pub fn str_rfind<'a, P: Pattern<'a>>(haystack: &'a WStr, pattern: P) -> Option<u
 #[inline]
 pub fn str_split<'a, P: Pattern<'a>>(string: &'a WStr, pattern: P) -> Split<'a, P> {
     Split {
-        string: Some(string),
+        string,
+        indices: str_split_indices(string, pattern),
+    }
+}
+
+#[inline]
+pub fn str_split_indices<'a, P: Pattern<'a>>(string: &'a WStr, pattern: P) -> SplitIndices<'a, P> {
+    SplitIndices {
         searcher: pattern.into_searcher(string),
         prev_end: 0,
+        string_len: string.len(),
+        done: false,
     }
 }
 
@@ -421,25 +428,41 @@ pub fn str_trim_end_matches<'a, P: Pattern<'a>>(string: &'a WStr, pattern: P) ->
 }
 
 pub struct Split<'a, P: Pattern<'a>> {
-    string: Option<&'a WStr>,
-    searcher: P::Searcher,
-    prev_end: usize,
+    string: &'a WStr,
+    indices: SplitIndices<'a, P>,
 }
 
 impl<'a, P: Pattern<'a>> Iterator for Split<'a, P> {
     type Item = &'a WStr;
 
     fn next(&mut self) -> Option<Self::Item> {
-        let string = self.string?;
+        self.indices.next().map(|r| &self.string[r])
+    }
+}
+
+pub struct SplitIndices<'a, P: Pattern<'a>> {
+    searcher: P::Searcher,
+    prev_end: usize,
+    string_len: usize,
+    done: bool,
+}
+
+impl<'a, P: Pattern<'a>> Iterator for SplitIndices<'a, P> {
+    type Item = Range<usize>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.done {
+            return None;
+        }
 
         match self.searcher.next_match() {
             Some((start, end)) => {
-                let end = core::mem::replace(&mut self.prev_end, end);
-                Some(&string[end..start])
+                let prev = core::mem::replace(&mut self.prev_end, end);
+                Some(prev..start)
             }
             None => {
-                self.string = None;
-                Some(&string[self.prev_end..])
+                self.done = true;
+                Some(self.prev_end..self.string_len)
             }
         }
     }

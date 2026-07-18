@@ -103,7 +103,7 @@ pub fn get_length<'gc>(
     let this = this.as_object().unwrap();
 
     if let Some(vector) = this.as_vector_storage() {
-        return Ok(vector.length().into());
+        return Ok(Value::from_usize_lossy(vector.length()));
     }
 
     Ok(Value::Undefined)
@@ -443,7 +443,7 @@ pub fn push<'gc>(
             vs.push(coerced_arg, activation)?;
         }
 
-        return Ok(vs.length().into());
+        return Ok(Value::from_usize_lossy(vs.length()));
     }
 
     Ok(Value::Undefined)
@@ -490,7 +490,7 @@ pub fn unshift<'gc>(
             vs.unshift(coerced_arg, activation)?;
         }
 
-        return Ok(vs.length().into());
+        return Ok(Value::from_usize_lossy(vs.length()));
     }
 
     Ok(Value::Undefined)

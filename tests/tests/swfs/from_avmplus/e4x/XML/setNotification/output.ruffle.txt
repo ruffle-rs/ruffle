@@ -1,2 +1,10 @@
+attributeAdded-command PASSED!
+attributeAdded-value PASSED!
+attributeAdded-detail PASSED!
+attributeChanged-command PASSED!
+attributeChanged-value PASSED!
+attributeChanged-detail PASSED!
+nameSet-command PASSED!
 Asserting for TypeError PASSED!
 StringNotifier PASSED!
+TypeError: Error #2023: Class Test$ must inherit from Sprite to link to the root.

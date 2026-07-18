@@ -48,7 +48,7 @@ impl MenuBar {
     }
 
     pub fn consume_shortcuts(
-        &mut self,
+        &self,
         egui_ctx: &egui::Context,
         dialogs: &mut Dialogs,
         mut player: Option<&mut Player>,
@@ -252,6 +252,9 @@ impl MenuBar {
 
             let recent_menu_response = ui
                 .menu_button(text(locale, "file-menu-recents"), |ui| {
+                    ui.style_mut().wrap_mode = Some(egui::TextWrapMode::Truncate);
+                    ui.set_min_width(250.0);
+
                     if self
                         .cached_recents
                         .as_ref()
@@ -322,7 +325,7 @@ impl MenuBar {
     }
 
     fn view_menu(
-        &mut self,
+        &self,
         locale: &LanguageIdentifier,
         ui: &mut egui::Ui,
         player: &mut Option<&mut Player>,
@@ -444,7 +447,7 @@ impl MenuBar {
     }
 
     fn controls_menu(
-        &mut self,
+        &self,
         locale: &LanguageIdentifier,
         ui: &mut egui::Ui,
         dialogs: &mut Dialogs,
@@ -492,20 +495,20 @@ impl MenuBar {
         });
     }
 
-    fn browse_and_open(&mut self, open_type: OpenType) {
+    fn browse_and_open(&self, open_type: OpenType) {
         let _ = self.event_loop.send_event(RuffleEvent::BrowseAndOpen(
             Box::new(self.default_launch_options.clone()),
             open_type,
         ));
     }
 
-    fn close_movie(&mut self, ui: &mut egui::Ui) {
+    fn close_movie(&mut self, ui: &egui::Ui) {
         let _ = self.event_loop.send_event(RuffleEvent::CloseFile);
         self.currently_opened = None;
         ui.close();
     }
 
-    fn reload_movie(&mut self, ui: &mut egui::Ui) {
+    fn reload_movie(&mut self, ui: &egui::Ui) {
         let _ = self.event_loop.send_event(RuffleEvent::CloseFile);
         if let Some((movie_url, opts)) = self.currently_opened.take() {
             let _ = self
@@ -515,16 +518,16 @@ impl MenuBar {
         ui.close();
     }
 
-    fn request_exit(&mut self) {
+    fn request_exit(&self) {
         let _ = self.event_loop.send_event(RuffleEvent::ExitRequested);
     }
 
-    fn launch_website(&mut self, ui: &mut egui::Ui, url: &str) {
+    fn launch_website(&self, ui: &egui::Ui, url: &str) {
         let _ = webbrowser::open(url);
         ui.close();
     }
 
-    fn export_bundle(&mut self, ui: &mut egui::Ui) {
+    fn export_bundle(&self, ui: &egui::Ui) {
         let _ = self.event_loop.send_event(RuffleEvent::ExportBundle);
         ui.close();
     }

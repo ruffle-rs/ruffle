@@ -12,6 +12,11 @@ toString property called!
 toString called!
 [obj as string]
 
-// obj3: methods through __resolve
-obj3 as num: NaN
+// obj3: methods as throwing properties
+obj3 as num: caught error from valueOf!
+[type Object]
+obj3 as string: caught error from toString!
+
+// obj4: methods through __resolve
+obj4 as num: NaN
 [type Object]

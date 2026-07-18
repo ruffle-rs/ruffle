@@ -1,4 +1,4 @@
-context-menu-download-swf = Ladda ner .swf
+context-menu-download-swf = Ladda ner SWF
 context-menu-copy-debug-info = Kopiera felsökningsinfo
 context-menu-open-save-manager = Öppna Sparhanteraren
 context-menu-about-ruffle =

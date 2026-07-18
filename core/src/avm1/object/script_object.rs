@@ -35,6 +35,7 @@ impl<'gc> Watcher<'gc> {
     fn call(
         &self,
         activation: &mut Activation<'_, 'gc>,
+        property_id: u32,
         name: AvmString<'gc>,
         old_value: Value<'gc>,
         new_value: Value<'gc>,
@@ -48,7 +49,7 @@ impl<'gc> Watcher<'gc> {
             this.into(),
             0,
             &args,
-            ExecutionReason::Special,
+            ExecutionReason::PropertyCall { property_id },
             self.callback,
         )
     }
@@ -279,41 +280,39 @@ impl<'gc> Object<'gc> {
                     stage_object::notify_property_change(dobj, name, value, activation)?;
                     // 'magic' display object properties (such as _x, _y, etc) take
                     // priority over properties in prototypes.
-                    if !self.has_own_property(activation, name) {
-                        if let Some(property) = activation
+                    if !self.has_own_property(activation, name)
+                        && let Some(property) = activation
                             .context
                             .avm1
                             .display_properties()
                             .get_by_name(name)
-                        {
-                            return property.set(activation, dobj, value);
-                        }
+                    {
+                        return property.set(activation, dobj, value);
                     }
                 }
             }
         }
 
-        let setter = self
+        let (property_id, setter) = self
             .0
             .borrow()
             .properties
             .get(name, activation.is_case_sensitive())
-            .and_then(|v| v.setter());
+            .map_or((0, None), |v| (v.id(), v.setter()));
 
-        if let Some(setter) = setter {
-            if let Some(exec) = setter.as_function() {
-                if let Err(Error::ThrownValue(e)) = exec.exec(
-                    ExecutionName::Static("[Setter]"),
-                    activation,
-                    this.into(),
-                    1,
-                    &[value],
-                    ExecutionReason::Special,
-                    setter,
-                ) {
-                    return Err(Error::ThrownValue(e));
-                }
-            }
+        if let Some(setter) = setter
+            && let Some(exec) = setter.as_function()
+            && let Err(Error::ThrownValue(e)) = exec.exec(
+                ExecutionName::Static("[Setter]"),
+                activation,
+                this.into(),
+                1,
+                &[value],
+                ExecutionReason::PropertyCall { property_id },
+                setter,
+            )
+        {
+            return Err(Error::ThrownValue(e));
         }
 
         match self
@@ -382,42 +381,85 @@ impl<'gc> Object<'gc> {
         }
     }
 
-    /// Retrieve a getter defined on this object.
-    pub(super) fn getter(
+    /// Call a property getter defined on this object.
+    ///
+    /// Returns the value returned by the getter if the getter was present and
+    /// called.
+    pub(super) fn call_getter(
         self,
         name: AvmString<'gc>,
+        this: Value<'gc>,
         activation: &mut Activation<'_, 'gc>,
-    ) -> Option<Object<'gc>> {
+    ) -> Result<Option<Value<'gc>>, Error<'gc>> {
         // TODO(moulins): is this special case necessary?
         if let Some(zuper) = self.as_super_object() {
-            return zuper.this().getter(name, activation);
+            return zuper.this().call_getter(name, this, activation);
         }
 
-        self.0
+        let (property_id, getter) = self
+            .0
             .borrow()
             .properties
             .get(name, activation.is_case_sensitive())
             .filter(|property| property.allow_swf_version(activation.swf_version()))
-            .and_then(|property| property.getter())
+            .map_or((0, None), |v| (v.id(), v.getter()));
+
+        if let Some(getter) = getter
+            && let Some(exec) = getter.as_function()
+        {
+            Ok(Some(exec.exec(
+                ExecutionName::Static("[Getter]"),
+                activation,
+                this,
+                1,
+                &[],
+                ExecutionReason::PropertyCall { property_id },
+                getter,
+            )?))
+        } else {
+            Ok(None)
+        }
     }
 
-    /// Retrieve a setter defined on this object.
-    pub(super) fn setter(
+    /// Call a property setter defined on this object.
+    ///
+    /// Returns the value returned by the setter if the setter was present and
+    /// called.
+    pub(super) fn call_setter(
         self,
         name: AvmString<'gc>,
+        this: Value<'gc>,
+        value: Value<'gc>,
         activation: &mut Activation<'_, 'gc>,
-    ) -> Option<Object<'gc>> {
+    ) -> Result<Option<Value<'gc>>, Error<'gc>> {
         // TODO(moulins): is this special case necessary?
         if let Some(zuper) = self.as_super_object() {
-            return zuper.this().setter(name, activation);
+            return zuper.this().call_setter(name, this, value, activation);
         }
 
-        self.0
+        let (property_id, setter) = self
+            .0
             .borrow()
             .properties
             .get(name, activation.is_case_sensitive())
             .filter(|property| property.allow_swf_version(activation.swf_version()))
-            .and_then(|property| property.setter())
+            .map_or((0, None), |v| (v.id(), v.setter()));
+
+        if let Some(setter) = setter
+            && let Some(exec) = setter.as_function()
+        {
+            Ok(Some(exec.exec(
+                ExecutionName::Static("[Setter]"),
+                activation,
+                this,
+                1,
+                &[value],
+                ExecutionReason::PropertyCall { property_id },
+                setter,
+            )?))
+        } else {
+            Ok(None)
+        }
     }
 
     /// Delete a named property from the object.
@@ -520,21 +562,41 @@ impl<'gc> Object<'gc> {
         }
 
         let mut result = Ok(());
+
+        // We can watch built-in properties (like tabEnabled), so property_id
+        // might be 0 in that case.
+        // TODO How should we handle this situation? Add some tests.
+        let property_id = self
+            .0
+            .borrow()
+            .properties
+            .get(name, activation.is_case_sensitive())
+            .map(|p| p.id())
+            .unwrap_or_default();
+
         let watcher = self
             .0
             .borrow()
             .watchers
             .get(name, activation.is_case_sensitive())
             .cloned();
+
         if let Some(watcher) = watcher {
             let old_value = self.get_stored(name, activation)?;
-            match watcher.call(activation, name, old_value, *value, this) {
+            match watcher.call(activation, property_id, name, old_value, *value, this) {
                 Ok(v) => *value = v,
-                Err(Error::ThrownValue(e)) => {
+                Err(e @ Error::ThrownValue(_)) => {
+                    // The watcher sets undefined when throwing.
                     *value = Value::Undefined;
-                    result = Err(Error::ThrownValue(e));
+                    result = Err(e);
                 }
-                Err(_) => *value = Value::Undefined,
+                Err(Error::PropertyRecursionLimit) => {
+                    // Just ignore the call on property recursion limit.
+                }
+                Err(e) => {
+                    // Propagate any other errors (e.g. stack overflow).
+                    result = Err(e);
+                }
             };
         }
 

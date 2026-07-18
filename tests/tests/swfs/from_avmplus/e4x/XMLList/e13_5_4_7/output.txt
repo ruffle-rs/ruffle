@@ -3,3 +3,4 @@
 4 PASSED!
 MYXML = new XMLList(xmlDoc),MYOBJ = new XML(xmlobj1), MYXML.contains(MYOBJ) PASSED!
 MYXML = new XMLList(xmlDoc), MYOBJ = new XML(xmlobj2), MYXML.contains(MYOBJ) PASSED!
+TypeError: Error #2023: Class Test$ must inherit from Sprite to link to the root.

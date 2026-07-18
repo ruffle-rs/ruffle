@@ -230,7 +230,7 @@ impl NavigatorBackend for WebNavigatorBackend {
 
         if url.scheme() != "javascript" {
             if self.open_url_mode == OpenUrlMode::Confirm {
-                let message = format!("The SWF file wants to open the website {}", &url);
+                let message = format!("The SWF file wants to open the website {}", url);
                 // TODO: Add a checkbox with a GUI toolkit
                 let confirm = window
                     .confirm_with_message(&message)

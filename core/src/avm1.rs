@@ -1,6 +1,4 @@
-// Temporarily allow this to ease migration to Rust 2024 edition.
-// TODO: Remove this once all instances are fixed.
-#![allow(clippy::collapsible_if)]
+//! ActionScript Virtual Machine 1 (AS1 & AS2) support.
 
 #[cfg(test)]
 #[macro_use]
@@ -12,6 +10,7 @@ mod function;
 mod property_decl;
 
 mod activation;
+mod amf;
 mod callable_value;
 mod clamp;
 mod debug;
@@ -40,6 +39,8 @@ pub use globals::sound::start as start_sound;
 pub use object::{NativeObject, Object, ObjectHandle, ObjectPtr};
 pub use property::Attribute;
 pub use property_map::PropertyMap;
+use ruffle_common::avm_string::AvmString;
+use ruffle_wstr::WStr;
 pub use runtime::Avm1;
 pub use value::Value;
 
@@ -99,4 +100,13 @@ macro_rules! avm1_stub {
         };
         $activation.context.stub_tracker.encounter(&STUB);
     }};
+}
+
+pub trait Avm1StrRepresentable: Sized {
+    fn from_avm1_str(s: &WStr) -> Option<Self>;
+
+    fn as_avm1_str<'gc>(
+        &self,
+        context: &impl crate::string::HasStringContext<'gc>,
+    ) -> AvmString<'gc>;
 }

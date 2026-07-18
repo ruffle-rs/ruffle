@@ -1,6 +1,7 @@
 import type { RuffleHandle, ZipWriter } from "../../../dist/ruffle_web";
 import {
     AutoPlay,
+    BackgroundExecutionMode,
     ContextMenu,
     DataLoadOptions,
     DEFAULT_CONFIG,
@@ -20,6 +21,7 @@ import { RUFFLE_ORIGIN } from "../constants";
 import {
     InvalidOptionsError,
     InvalidSwfError,
+    LoadBeginError,
     LoadRuffleWasmError,
     LoadSwfError,
 } from "../errors";
@@ -92,6 +94,12 @@ interface ContextMenuItem {
      * @default true
      */
     enabled?: boolean;
+
+    /**
+     * Whether this item has a checkmark next to it.
+     * When defined, a checkmark column is shown for all items in the context menu.
+     */
+    checked?: boolean;
 }
 
 /**
@@ -102,9 +110,7 @@ interface ContextMenuItem {
  */
 function sanitizeParameters(
     parameters:
-        | (URLSearchParams | string | Record<string, string>)
-        | undefined
-        | null,
+        (URLSearchParams | string | Record<string, string>) | undefined | null,
 ): Record<string, string> {
     if (parameters === null || parameters === undefined) {
         return {};
@@ -194,6 +200,11 @@ export class InnerPlayer {
     private instance: RuffleHandle | null;
     private newZipWriter: (() => ZipWriter) | null;
     private lastActivePlayingState: boolean;
+
+    // Non-null while ticking in the background (BackgroundExecutionMode.MainThread).
+    // Uses a ping-pong ack to avoid message queue build-up if the main thread falls behind.
+    // Set when the tab is hidden, cleared when it becomes visible again or the player is destroyed.
+    private backgroundWorker: Worker | null;
 
     metadata: MovieMetadata | null;
     _readyState: ReadyState;
@@ -338,7 +349,8 @@ export class InnerPlayer {
         this.metadata = null;
 
         this.lastActivePlayingState = false;
-        this.setupPauseOnTabHidden();
+        this.backgroundWorker = null;
+        this.setupTabVisibilityHandling();
     }
 
     addFSCommandHandler(handler: (command: string, args: string) => void) {
@@ -459,34 +471,88 @@ export class InnerPlayer {
     }
 
     /**
-     * Setup event listener to detect when tab is not active to pause instance playback.
-     * this.instance.play() is called when the tab becomes visible only if the
-     * the instance was not paused before tab became hidden.
+     * Sets up an event listener for tab visibility changes, responding
+     * according to the configured {@link BackgroundExecutionMode}.
      *
      * See: https://developer.mozilla.org/en-US/docs/Web/API/Page_Visibility_API
      * @ignore
      * @internal
      */
-    private setupPauseOnTabHidden(): void {
-        document.addEventListener(
-            "visibilitychange",
-            () => {
-                if (!this.instance) {
-                    return;
-                }
-
-                // Tab just changed to be inactive. Record whether instance was playing.
-                if (document.hidden) {
-                    this.lastActivePlayingState = this.instance.is_playing();
+    private setupTabVisibilityHandling(): void {
+        document.addEventListener("visibilitychange", () => {
+            if (!this.instance) {
+                return;
+            }
+            const mode =
+                this.loadedConfig?.backgroundExecutionMode ??
+                BackgroundExecutionMode.None;
+            if (document.hidden) {
+                this.lastActivePlayingState = this.instance.is_playing();
+                if (mode === BackgroundExecutionMode.MainThread) {
+                    this.instance.enable_background_tick_mode();
+                    if (this.lastActivePlayingState) {
+                        this.startBackgroundTick();
+                    }
+                } else {
                     this.instance.pause();
                 }
-                // Play only if instance was playing originally.
-                if (!document.hidden && this.lastActivePlayingState === true) {
+            } else {
+                if (mode === BackgroundExecutionMode.MainThread) {
+                    this.stopBackgroundTick();
+                    this.instance.restart_animation_loop();
+                }
+                if (this.lastActivePlayingState) {
                     this.instance.play();
                 }
-            },
-            false,
-        );
+                // Browsers may auto-suspend AudioContext in background tabs.
+                this.instance.audio_context()?.resume();
+            }
+        });
+    }
+
+    /**
+     * Starts a background tick loop while the tab is hidden.
+     */
+    private startBackgroundTick(): void {
+        const intervalMs = 1000 / (this.metadata?.frameRate || 24);
+
+        // intervalMs is always a number (dividing 1000 by anything yields a number
+        // or NaN), so no code injection via the template literal is possible.
+        const workerCode = `
+            const intervalMs = ${intervalMs};
+            self.onmessage = () => {
+                setTimeout(() => self.postMessage("tick"), intervalMs);
+            };
+            setTimeout(() => self.postMessage("tick"), intervalMs);
+        `;
+
+        try {
+            const blob = new Blob([workerCode], {
+                type: "application/javascript",
+            });
+            const workerUrl = URL.createObjectURL(blob);
+            const worker = new Worker(workerUrl);
+            URL.revokeObjectURL(workerUrl);
+
+            this.backgroundWorker = worker;
+            worker.onmessage = () => {
+                if (this.backgroundWorker === worker) {
+                    this.instance?.tick_for_background(performance.now());
+                    worker.postMessage("ack");
+                }
+            };
+        } catch (e) {
+            console.warn("Unable to create background Worker:", e);
+            this.instance?.pause();
+        }
+    }
+
+    /**
+     * Stops the background tick loop and releases any held resources.
+     */
+    private stopBackgroundTick(): void {
+        this.backgroundWorker?.terminate();
+        this.backgroundWorker = null;
     }
 
     /**
@@ -797,6 +863,7 @@ export class InnerPlayer {
      */
     destroy(): void {
         if (this.instance) {
+            this.stopBackgroundTick();
             this.instance.destroy();
             this.instance = null;
             this.metadata = null;
@@ -956,7 +1023,7 @@ export class InnerPlayer {
             }
         } catch (e) {
             console.error(`Serious error occurred loading SWF file: ${e}`);
-            const err = new Error(e as string);
+            const err = new LoadBeginError(e as string);
             this.panic(err);
             throw err;
         }
@@ -1441,7 +1508,6 @@ export class InnerPlayer {
     }
 
     private contextMenuItems(): Array<ContextMenuItem | null> {
-        const CHECKMARK = String.fromCharCode(0x2713);
         const items: Array<ContextMenuItem | null> = [];
         const addSeparator = () => {
             // Don't start with or duplicate separators.
@@ -1462,12 +1528,11 @@ export class InnerPlayer {
                     addSeparator();
                 }
                 items.push({
-                    // TODO: better checkboxes
-                    text:
-                        item.caption + (item.checked ? ` (${CHECKMARK})` : ``),
+                    text: item.caption,
                     onClick: async () =>
                         this.instance?.run_context_menu_callback(index),
                     enabled: item.enabled,
+                    checked: item.checked,
                 });
             });
 
@@ -1607,6 +1672,14 @@ export class InnerPlayer {
             return;
         }
 
+        // If Shift is held while right-clicking, hide our custom menu and show
+        // the browser's native context menu instead.
+        // Shift+right-click works consistently on Windows, macOS, and Linux.
+        if (event.type === "contextmenu" && event.shiftKey) {
+            this.hideContextMenu();
+            return;
+        }
+
         event.preventDefault();
 
         if (this._suppressContextMenu) {
@@ -1658,8 +1731,17 @@ export class InnerPlayer {
             );
         }
 
+        const items = this.contextMenuItems();
+        const hasCheckmarks = items.some(
+            (item) => item !== null && item.checked !== undefined,
+        );
+        this.contextMenuElement.classList.toggle(
+            "has-checkmarks",
+            hasCheckmarks,
+        );
+
         // Populate context menu items.
-        for (const item of this.contextMenuItems()) {
+        for (const item of items) {
             if (item === null) {
                 this.contextMenuElement.appendChild(
                     <li class="menu-separator">
@@ -1667,13 +1749,14 @@ export class InnerPlayer {
                     </li>,
                 );
             } else {
-                const { text, onClick, enabled } = item;
+                const { text, onClick, enabled, checked } = item;
 
                 const menuItem = (
                     <li
                         class={{
                             "menu-item": true,
                             disabled: enabled === false,
+                            checked: checked === true,
                         }}
                         data-text={text}
                     >
@@ -1724,19 +1807,31 @@ export class InnerPlayer {
         // mode and get the body when it's null.
         const viewportElement = document.scrollingElement || document.body;
 
-        // Keep the entire context menu inside the viewport.
-        const overflowX = Math.max(
-            0,
-            event.clientX + contextMenuRect.width - viewportElement.clientWidth,
-        );
-        const overflowY = Math.max(
-            0,
-            event.clientY +
-                contextMenuRect.height -
-                viewportElement.clientHeight,
-        );
-        const x = event.clientX - playerRect.x - overflowX;
-        const y = event.clientY - playerRect.y - overflowY;
+        const menuWidth = contextMenuRect.width;
+        const menuHeight = contextMenuRect.height;
+        const vw = viewportElement.clientWidth;
+        const vh = viewportElement.clientHeight;
+
+        // Flip the menu above/left of the cursor (like native context menus)
+        // when it would overflow, falling back to clamping if there's no room.
+        let cx = event.clientX;
+        if (cx + menuWidth > vw) {
+            cx =
+                event.clientX - menuWidth >= 0
+                    ? event.clientX - menuWidth
+                    : vw - menuWidth;
+        }
+
+        let cy = event.clientY;
+        if (cy + menuHeight > vh) {
+            cy =
+                event.clientY - menuHeight >= 0
+                    ? event.clientY - menuHeight
+                    : vh - menuHeight;
+        }
+
+        const x = cx - playerRect.x;
+        const y = cy - playerRect.y;
 
         const isRtl =
             getComputedStyle(this.contextMenuElement).direction === "rtl";
@@ -2008,13 +2103,12 @@ export class InnerPlayer {
                         `Error stack:\n\`\`\`\n${error.stack}\n\`\`\`\n`,
                     ) - 1;
                 if (error.avmStack) {
-                    const avmStackIndex =
+                    errorArray.avmStackIndex =
                         errorArray.push(
                             `AVM2 stack:\n\`\`\`\n    ${error.avmStack
                                 .trim()
                                 .replace(/\t/g, "    ")}\n\`\`\`\n`,
                         ) - 1;
-                    errorArray.avmStackIndex = avmStackIndex;
                 }
                 errorArray.stackIndex = stackIndex;
             }
@@ -2339,7 +2433,7 @@ export function isYoutubeFlashSource(filename: string | null): boolean {
         // See https://wiki.mozilla.org/QA/Youtube_Embedded_Rewrite
         if (
             pathname.startsWith("/v/") &&
-            /^(?:(?:www\.|m\.)?youtube(?:-nocookie)?\.com)|(?:youtu\.be)$/i.test(
+            /^(?:www\.|m\.)?youtube(?:-nocookie)?\.com|youtu\.be$/i.test(
                 hostname,
             )
         ) {
@@ -2435,8 +2529,7 @@ function base64ToArray(bytesBase64: string): Uint8Array<ArrayBuffer> {
  */
 function base64ToBlob(bytesBase64: string, mimeString: string): Blob {
     const ab = base64ToArray(bytesBase64);
-    const blob = new Blob([ab], { type: mimeString });
-    return blob;
+    return new Blob([ab], { type: mimeString });
 }
 
 /**

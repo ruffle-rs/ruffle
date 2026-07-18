@@ -46,7 +46,7 @@ ruffle_render_wgpu = { path = "../render/wgpu", optional = true }
 ruffle_video_external = { path = "../video/external", features = ["webcodecs"] }
 url = { workspace = true }
 wasm-bindgen = { workspace = true }
-wasm-bindgen-futures = "0.4.58"
+wasm-bindgen-futures = "0.4.70"
 serde-wasm-bindgen = "0.6.5"
 chrono = { workspace = true, features = ["wasmbind", "clock"] }
 serde = { workspace = true, features = ["derive"] }
@@ -54,11 +54,11 @@ thiserror = { workspace = true }
 base64 = "0.22.1"
 async-channel = { workspace = true }
 futures-util = { version = "0.3.30", features = ["sink"] }
-gloo-net =  { version = "0.6.0", default-features = false, features = ["websocket"] }
+gloo-net =  { version = "0.7.0", default-features = false, features = ["websocket"] }
 rfd = { workspace = true, features = ["file-handle-inner"] }
 wasm-streams = "0.5.0"
 futures = { workspace = true }
-zip = { version = "8.5.0", default-features = false }
+zip = { version = "8.6.0", default-features = false }
 
 [dependencies.ruffle_core]
 path = "../core"
@@ -67,7 +67,7 @@ features = ["audio", "mp3", "aac", "nellymoser", "default_compatibility_rules", 
 [dependencies.web-sys]
 workspace = true
 features = [
-    "AddEventListenerOptions", "AudioBuffer", "AudioBufferSourceNode", "AudioContext",
+    "AddEventListenerOptions", "AudioBuffer", "AudioBufferSourceNode", "AudioContext", "AudioContextOptions",
     "AudioDestinationNode", "AudioNode", "AudioParam", "Blob", "BlobPropertyBag",
     "ChannelMergerNode", "ChannelSplitterNode", "ClipboardEvent", "DataTransfer", "Element",
     "EventTarget", "GainNode", "Headers", "HtmlCanvasElement", "HtmlDocument", "HtmlElement", "HtmlFormElement",

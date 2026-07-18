@@ -427,20 +427,22 @@ pub fn set_rotation_y<'gc>(
 
 pub fn get_rotation_z<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Value<'gc>,
-    _args: &[Value<'gc>],
+    this: Value<'gc>,
+    args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    // TODO This probably interacts with Matrix3D.
     avm2_stub_getter!(activation, "flash.display.DisplayObject", "rotationZ");
-    Ok(0.into())
+    get_rotation(activation, this, args)
 }
 
 pub fn set_rotation_z<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Value<'gc>,
-    _args: &[Value<'gc>],
+    this: Value<'gc>,
+    args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    // TODO This probably interacts with Matrix3D.
     avm2_stub_setter!(activation, "flash.display.DisplayObject", "rotationZ");
-    Ok(Value::Undefined)
+    set_rotation(activation, this, args)
 }
 
 pub fn get_scale_z<'gc>(
@@ -492,7 +494,15 @@ pub fn set_rotation<'gc>(
     let this = this.as_object().unwrap();
 
     if let Some(dobj) = this.as_display_object() {
-        let new_rotation = args.get_f64(0);
+        let mut new_rotation = args.get_f64(0);
+
+        // Normalize into the range of [-180, 180].
+        new_rotation %= 360.0;
+        if new_rotation < -180.0 {
+            new_rotation += 360.0
+        } else if new_rotation > 180.0 {
+            new_rotation -= 360.0
+        }
 
         dobj.set_rotation(Degrees::from(new_rotation));
     }
@@ -751,10 +761,10 @@ pub fn hit_test_object<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
-    if let Some(dobj) = this.as_display_object() {
-        if let Some(rhs_dobj) = args.get_object(activation, 0, "obj")?.as_display_object() {
-            return Ok(dobj.hit_test_object(rhs_dobj).into());
-        }
+    if let Some(dobj) = this.as_display_object()
+        && let Some(rhs_dobj) = args.get_object(activation, 0, "obj")?.as_display_object()
+    {
+        return Ok(dobj.hit_test_object(rhs_dobj).into());
     }
 
     Ok(Value::Undefined)

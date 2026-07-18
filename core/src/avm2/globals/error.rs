@@ -1,20 +1,44 @@
-use crate::avm2::Error;
+use crate::PlayerMode;
 use crate::avm2::activation::Activation;
-pub use crate::avm2::object::error_allocator;
+use crate::avm2::error::Error;
+use crate::avm2::error_messages::raw_error_message;
+use crate::avm2::object::ErrorObject;
 use crate::avm2::parameters::ParametersExt;
-use crate::avm2::string::AvmString;
 use crate::avm2::value::Value;
-use crate::{PlayerMode, avm2_stub_method};
+use crate::string::{AvmString, WString};
+
+pub use crate::avm2::object::error_allocator;
+
+pub fn init_custom_prototype<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Value<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+    let this = this.as_class_object().unwrap();
+
+    let prototype_error_object = ErrorObject::new(activation, this);
+
+    this.link_prototype(activation.context, prototype_error_object.into());
+
+    Ok(Value::Undefined)
+}
 
 pub fn get_error_message<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm2_stub_method!(activation, "Error", "getErrorMessage");
-
     let id = args.get_i32(0);
-    let message = format!("Error #{id}");
+
+    let prefix = format!("Error #{id}");
+
+    let message = u32::try_from(id)
+        .ok()
+        .and_then(|id| raw_error_message(id))
+        .map(|msg| format!("{prefix}: {msg}"))
+        .unwrap_or(prefix);
+
     Ok(AvmString::new_utf8(activation.gc(), message).into())
 }
 
@@ -42,10 +66,13 @@ pub fn get_stack_trace<'gc>(
     }
 
     if let Some(error) = this.as_error_object() {
-        let call_stack = error.call_stack();
-        if !call_stack.is_empty() {
-            return Ok(AvmString::new(activation.gc(), error.display_full()).into());
-        }
+        let stringified = Value::from(error).coerce_to_string(activation)?;
+
+        let mut output = WString::new();
+        output.push_str(&stringified);
+        error.call_stack().display(&mut output);
+
+        return Ok(AvmString::new(activation.gc(), output).into());
     }
     Ok(Value::Null)
 }

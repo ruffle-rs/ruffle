@@ -41,6 +41,8 @@ use crate::timer::Timers;
 use crate::vminterface::Instantiator;
 use async_channel::Sender;
 use core::fmt;
+use enum_map::Enum;
+use enum_map::EnumMap;
 use gc_arena::{Collect, Mutation};
 use ruffle_render::backend::{BitmapCacheEntry, RenderBackend};
 use ruffle_render::commands::{CommandHandler, CommandList};
@@ -231,7 +233,7 @@ pub struct UpdateContext<'gc> {
     pub notification_sender: Option<&'gc Sender<PlayerNotification>>,
 
     // Movie clips whose frame scripts were registered during frame script phase
-    // requires a seperate clean-up pass when running frame-scripts instead of executing them in place
+    // requires a separate clean-up pass when running frame-scripts instead of executing them in place
     pub frame_script_cleanup_queue: VecDeque<MovieClip<'gc>>,
 }
 
@@ -485,22 +487,36 @@ pub struct QueuedAction<'gc> {
     pub is_unload: bool,
 }
 
+/// Priority bucket for queued actions, grouped by which `ActionType`s land in
+/// them. Variants are declared in execution order; [`ActionQueue::pop_action`]
+/// drains the first-declared bucket first.
+#[derive(Copy, Clone, Collect, Enum)]
+#[collect(require_static)]
+pub enum ActionPriority {
+    /// AVM1 `initialize` clip events. Run first.
+    Initialize,
+    /// `MovieClip` construction actions.
+    Construct,
+    /// Normal frame/event actions, method calls and listener notifications. Run last.
+    Default,
+}
+
 /// Action and gotos need to be queued up to execute at the end of the frame.
 #[derive(Collect)]
 #[collect(no_drop)]
 pub struct ActionQueue<'gc> {
     /// Each priority is kept in a separate bucket.
-    action_queue: [VecDeque<QueuedAction<'gc>>; ActionQueue::NUM_PRIORITIES],
+    action_queue: EnumMap<ActionPriority, VecDeque<QueuedAction<'gc>>>,
 }
 
 impl<'gc> ActionQueue<'gc> {
     const DEFAULT_CAPACITY: usize = 32;
-    const NUM_PRIORITIES: usize = 3;
 
     /// Crates a new `ActionQueue` with an empty queue.
     pub fn new() -> Self {
-        let action_queue = std::array::from_fn(|_| VecDeque::with_capacity(Self::DEFAULT_CAPACITY));
-        Self { action_queue }
+        Self {
+            action_queue: EnumMap::from_fn(|_| VecDeque::with_capacity(Self::DEFAULT_CAPACITY)),
+        }
     }
 
     /// Queues an action to run for the given movie clip.
@@ -512,23 +528,21 @@ impl<'gc> ActionQueue<'gc> {
         is_unload: bool,
     ) {
         let priority = action_type.priority();
-        let action = QueuedAction {
+        let queue = &mut self.action_queue[priority];
+
+        queue.push_back(QueuedAction {
             clip,
             action_type,
             is_unload,
-        };
-        debug_assert!(priority < Self::NUM_PRIORITIES);
-        if let Some(queue) = self.action_queue.get_mut(priority) {
-            queue.push_back(action)
-        }
+        });
     }
 
     /// Sorts and drains the actions from the queue.
     pub fn pop_action(&mut self) -> Option<QueuedAction<'gc>> {
+        // The correct order of iteration of `EnumMap::iter_mut` is guaranteed by the comment on the `enum_map::Enum` macro.
         self.action_queue
             .iter_mut()
-            .rev()
-            .find_map(VecDeque::pop_front)
+            .find_map(|(_, v)| v.pop_front())
     }
 }
 
@@ -653,11 +667,11 @@ pub enum ActionType<'gc> {
 }
 
 impl ActionType<'_> {
-    fn priority(&self) -> usize {
+    fn priority(&self) -> ActionPriority {
         match self {
-            ActionType::Initialize { .. } => 2,
-            ActionType::Construct { .. } => 1,
-            _ => 0,
+            ActionType::Initialize { .. } => ActionPriority::Initialize,
+            ActionType::Construct { .. } => ActionPriority::Construct,
+            _ => ActionPriority::Default,
         }
     }
 }

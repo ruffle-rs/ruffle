@@ -54,13 +54,13 @@ pub fn get_parent_domain<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
-    if let Some(appdomain) = this.as_application_domain() {
-        if let Some(parent_domain) = appdomain.parent_domain() {
-            if parent_domain.is_playerglobals_domain(activation.avm2()) {
-                return Ok(Value::Null);
-            }
-            return Ok(DomainObject::from_domain(activation, parent_domain).into());
+    if let Some(appdomain) = this.as_application_domain()
+        && let Some(parent_domain) = appdomain.parent_domain()
+    {
+        if parent_domain.is_playerglobals_domain(activation.avm2()) {
+            return Ok(Value::Null);
         }
+        return Ok(DomainObject::from_domain(activation, parent_domain).into());
     }
 
     Ok(Value::Null)
@@ -115,7 +115,7 @@ pub fn get_qualified_definition_names<'gc>(
     let this = this.as_object().unwrap();
 
     if let Some(appdomain) = this.as_application_domain() {
-        // NOTE: According to the docs of 'getQualifiedDeinitionNames',
+        // NOTE: According to the docs of 'getQualifiedDefinitionNames',
         // it is able to throw a 'SecurityError' if "The definition belongs
         // to a domain to which the calling code does not have access."
         //

@@ -73,10 +73,7 @@ impl MouseWheelDelta {
 impl PartialEq for MouseWheelDelta {
     fn eq(&self, rhs: &Self) -> bool {
         match (self, rhs) {
-            (Self::Lines(s), Self::Lines(r))
-            | (Self::Pixels(s), Self::Pixels(r))
-            | (Self::Pixels(s), Self::Lines(r))
-            | (Self::Lines(s), Self::Pixels(r))
+            (Self::Lines(s) | Self::Pixels(s), Self::Lines(r) | Self::Pixels(r))
                 if s.is_nan() && r.is_nan() =>
             {
                 true

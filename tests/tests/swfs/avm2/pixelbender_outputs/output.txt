@@ -8,3 +8,6 @@ Result: ffff00ff
 Result: ff00ff
 Result: ffff00ff
 =================
+=== Invalid target tests ===
+Sprite: ArgumentError: Error #2004: One of the parameters is invalid.
+Object: ArgumentError: Error #2004: One of the parameters is invalid.

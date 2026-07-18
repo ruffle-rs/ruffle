@@ -29,7 +29,21 @@ def get_current_day_id():
     return f'{now.year - 2000}{day}'
 
 
-def get_tag_name():
+def get_max_day_id():
+    max_year = 2999
+    max_day = 999
+    return f'{max_year - 2000}{max_day}'
+
+
+def get_tag_name(version):
+    if '-nightly.' in version:
+        # TODO Nightly versions use a different tag syntax, unify it.
+        return get_today_nightly_tag_name()
+
+    return f'v{version}'
+
+
+def get_today_nightly_tag_name():
     now = datetime.now()
     current_time_dashes = now.strftime('%Y-%m-%d')
     tag_name = f'nightly-{current_time_dashes}'
@@ -93,9 +107,10 @@ def cargo_set_version(args):
     run_command(['cargo', 'set-version', '--exclude', 'swf', *args])
 
 
-def gh_list_nightly_tags(limit):
+def gh_list_nightly_tags(repo, limit):
     tags_json = run_command([
         'gh', 'release', 'list',
+        '--repo', repo,
         '--order', 'desc',
         '--limit', str(limit),
         '--json=tagName',
@@ -106,36 +121,59 @@ def gh_list_nightly_tags(limit):
         yield tag['tagName']
 
 
-def gh_get_last_nightly_tag():
+def gh_get_last_nightly_tag(repo):
     # Assume that the last nightly tag will be in the last 16 releases.
     # It's very unlikely we'll have 16 releases without a nightly.
-    return next(gh_list_nightly_tags(16), None)
+    return next(gh_list_nightly_tags(repo, 16), None)
 
 
 # ===== Commands ===========================================
 
-def bump():
+def bump(release_type):
     """
-    Bump the current version of Ruffle nightly.
+    Bump the current version of Ruffle.
     """
+
+    # Make sure the workspace is clean first.
+    try:
+        run_command(['git', 'diff', '--quiet'])
+        run_command(['git', 'diff', '--cached', '--quiet'])
+    except:
+        log('git workspace is not clean, refusing to bump')
+        raise
 
     current_version = cargo_get_version()
     log(f'Current version: {current_version}')
 
-    log('Bumping minor version to get the next planned version')
-    cargo_set_version(['--bump', 'minor'])
-    next_planned_version = cargo_get_version()
-    run_command(['git', 'reset', '--hard', 'HEAD'])
+    if release_type in ['major', 'minor', 'patch']:
+        # Those are standard bumps, we can just bump it.
+        cargo_set_version(['--bump', release_type])
 
-    log(f'Next planned version is {next_planned_version}')
+        version = cargo_get_version()
 
-    nightly_version = f'{next_planned_version}-nightly.{get_current_time_version()}'
-    log(f'Nightly version is {nightly_version}')
+        # Even for standard versions we have to add the day ID to version4,
+        # because otherwise a stable version would be older than a pre-release
+        # version (that's because in version4, 1.2.3 < 1.2.3.4).
+        version4 = f'{version}.{get_max_day_id()}'
+    elif release_type == 'nightly':
+        # Nightly is our custom pre-release version. We basically get the next
+        # minor version (by bumping it and resetting) and add suffix manually
+        # (https://semver.org/#spec-item-9).
 
-    cargo_set_version([nightly_version])
+        log('Bumping minor version to get the next planned version')
+        cargo_set_version(['--bump', 'minor'])
+        next_planned_version = cargo_get_version()
+        run_command(['git', 'reset', '--hard', 'HEAD'])
 
-    version = cargo_get_version()
-    version4 = f'{next_planned_version}.{get_current_day_id()}'
+        log(f'Next planned version is {next_planned_version}')
+
+        nightly_version = f'{next_planned_version}-nightly.{get_current_time_version()}'
+        cargo_set_version([nightly_version])
+
+        version = cargo_get_version()
+        version4 = f'{next_planned_version}.{get_current_day_id()}'
+    else:
+        raise Exception(f'Unsupported release type: {release_type}')
 
     npm_dir = f'{REPO_DIR}/web'
     run_command(['npm', 'install', 'workspace-version'], cwd=npm_dir)
@@ -151,52 +189,79 @@ def metainfo():
     metainfo_path1 = f'{REPO_DIR}/desktop/packages/linux/rs.ruffle.Ruffle.metainfo.xml'
     metainfo_path2 = f'{REPO_DIR}/desktop/packages/linux/rs.ruffle.Ruffle.metainfo.xml.in'
     version = cargo_get_version()
-    tag_name = get_tag_name()
+    tag_name = get_tag_name(version)
     add_release_to_metainfo(metainfo_path1, tag_name, version)
     add_release_to_metainfo(metainfo_path2, tag_name, version)
 
 
 def commit():
     commit_message = f'Release {cargo_get_version()}'
-    run_command(['git', 'config', 'user.name', 'RuffleBuild'])
-    run_command(['git', 'config', 'user.email', 'ruffle@ruffle.rs'])
     run_command(['git', 'add', '--update'])
-    run_command(['git', 'commit', '-m', commit_message])
+    run_command([
+        'git',
+        '-c', 'user.name=RuffleBuild',
+        '-c', 'user.email=ruffle@ruffle.rs',
+        'commit',
+        '-m', commit_message,
+    ])
 
 
-def tag_and_push():
-    tag_name = get_tag_name()
+def tag_and_push(remote):
+    version = cargo_get_version()
+    tag_name = get_tag_name(version)
     run_command(['git', 'tag', tag_name])
-    run_command(['git', 'push', 'origin', 'tag', tag_name])
+    run_command(['git', 'push', remote, 'tag', tag_name])
     github_output('tag_name', tag_name)
 
 
-def release():
+def release(repo):
     """
     Create a release of Ruffle on GitHub.
     """
 
-    now = datetime.now()
-    current_time_dashes = now.strftime('%Y-%m-%d')
-    current_time_underscores = now.strftime('%Y_%m_%d')
+    version = cargo_get_version()
+    tag_name = get_tag_name(version)
 
-    tag_name = get_tag_name()
-    last_nightly_tag = gh_get_last_nightly_tag()
-    release_name = f'Nightly {current_time_dashes}'
-    package_prefix = f'ruffle-nightly-{current_time_underscores}'
-    release_options = ['--generate-notes', '--prerelease']
+    # When there's a "-" in version it's a pre-release version.
+    # (Except for versions with a build suffix, but we don't support those.)
+    is_pre_release = '-' in version
 
-    if last_nightly_tag is not None:
-        log(f'Using {last_nightly_tag} as start tag for notes')
-        release_options += ['--notes-start-tag', last_nightly_tag]
-    else:
-        log('No start tag for notes found')
+    notes_start_tag = None
+    release_options = []
+    release_name = f'Release {version}'
+    package_prefix = f'ruffle-{version}'
+
+    if is_pre_release:
+        release_options += ['--prerelease']
+
+        if '-nightly.' in version:
+            # Nightly-specific stuff.
+            now = datetime.now()
+            current_time_dashes = now.strftime('%Y-%m-%d')
+            current_time_underscores = now.strftime('%Y_%m_%d')
+
+            # For nightly, we do detached tags, and we need to specify the start
+            # tag explicitly for generated notes to work.
+            notes_start_tag = gh_get_last_nightly_tag(repo)
+
+            release_name = f'Nightly {current_time_dashes}'
+            package_prefix = f'ruffle-nightly-{current_time_underscores}'
+            release_options += ['--generate-notes']
+    else: # Not a pre release.
+        # For stable release trust GitHub's generation tool.
+        release_options += ['--generate-notes']
+
+    if notes_start_tag is not None:
+        log(f'Using {notes_start_tag} as start tag for notes')
+        release_options += ['--notes-start-tag', notes_start_tag]
 
     run_command([
         'gh', 'release', 'create', tag_name,
+        '--repo', repo,
         '--title', release_name,
         '--verify-tag',
-        *release_options])
+        *release_options,
+    ])
 
     github_output('tag_name', tag_name)
     github_output('package_prefix', package_prefix)
@@ -206,15 +271,18 @@ def main():
     cmd = sys.argv[1]
     log(f'Running command {cmd}')
     if cmd == 'bump':
-        bump()
+        release_type = sys.argv[2]
+        bump(release_type)
     elif cmd == 'metainfo':
         metainfo()
     elif cmd == 'commit':
         commit()
     elif cmd == 'tag-and-push':
-        tag_and_push()
+        remote = sys.argv[2]
+        tag_and_push(remote)
     elif cmd == 'release':
-        release()
+        repo = sys.argv[2]
+        release(repo)
 
 
 if __name__ == '__main__':

@@ -3,7 +3,9 @@
 use crate::avm2::Multiname;
 use crate::avm2::activation::Activation;
 use crate::avm2::class::Class;
-use crate::avm2::error::{Error, Error1014Type, make_error_1014, make_error_1027, make_error_1107};
+use crate::avm2::error::{
+    Error, Error1014Type, make_error_1014, make_error_1027, make_error_1079, make_error_1107,
+};
 use crate::avm2::script::TranslationUnit;
 use crate::avm2::value::{Value, abc_default_value};
 use crate::avm2::verify::VerifiedMethodInfo;
@@ -164,7 +166,7 @@ impl<'gc> Method<'gc> {
         let abc = txunit.abc();
 
         let Some(method) = abc.methods.get(method_index) else {
-            return Err(make_error_1027(activation));
+            return Err(make_error_1027(activation, method_index, abc.methods.len()));
         };
 
         let mut signature = Vec::new();
@@ -184,16 +186,22 @@ impl<'gc> Method<'gc> {
         }
 
         let mut native_info = None;
-        if txunit.domain().is_playerglobals_domain(activation.avm2()) {
-            if let Some(native_method) = activation.avm2().native_method_table[method_index] {
+        if method.flags.contains(AbcMethodFlags::NATIVE) {
+            if txunit.domain().is_playerglobals_domain(activation.avm2()) {
+                let native_method = activation.avm2().native_method_table[method_index]
+                    .expect("Native method table is generated from playerglobals");
+
                 let fast_call = activation
                     .avm2()
                     .native_fast_call_list
                     .contains(&method_index);
 
                 native_info = Some((native_method, fast_call));
+            } else {
+                // Native method in non-playerglobals code throws an error
+                return Err(make_error_1079(activation));
             }
-        };
+        }
 
         let method_kind = if let Some((native_method, fast_call)) = native_info {
             MethodKind::Native {
@@ -325,19 +333,21 @@ impl<'gc> Method<'gc> {
     }
 
     /// Get the name of this method.
-    pub fn method_name(&self) -> Cow<'_, str> {
+    pub fn method_name(&self) -> Option<Cow<'_, str>> {
         let name_index = self.method().name.0 as usize;
         if name_index == 0 {
-            return Cow::Borrowed("");
+            return None;
         }
 
-        self.0
-            .abc
-            .constant_pool
-            .strings
-            .get(name_index - 1)
-            .map(|s| String::from_utf8_lossy(s))
-            .unwrap_or(Cow::Borrowed(""))
+        Some(
+            self.0
+                .abc
+                .constant_pool
+                .strings
+                .get(name_index - 1)
+                .map(|s| String::from_utf8_lossy(s))
+                .unwrap_or(Cow::Borrowed("")),
+        )
     }
 
     /// Determine if a given method is variadic.

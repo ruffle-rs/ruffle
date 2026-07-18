@@ -27,7 +27,7 @@ mod tests;
 
 pub use buf::WString;
 pub use common::{Units, WStr};
-pub use ops::{CharIndices, Chars, Iter, Split, WStrToUtf8};
+pub use ops::{CharIndices, Chars, Iter, Split, SplitIndices, WStrToUtf8};
 pub use parse::{FromWStr, Integer};
 pub use pattern::Pattern;
 pub use ptr::WStrMetadata;

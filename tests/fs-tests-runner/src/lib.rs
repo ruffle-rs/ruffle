@@ -6,9 +6,11 @@
 //! libtest_mimic is used so that the runner is compatible with `cargo test`.
 
 use anyhow::Context;
+pub use libtest_mimic::Conclusion;
 use libtest_mimic::{Arguments, Trial};
 use regex::Regex;
 use std::borrow::Cow;
+use std::cmp::Ordering;
 use std::path::Path;
 use std::path::PathBuf;
 use vfs::PhysicalFS;
@@ -31,19 +33,19 @@ fn filter_to_test_name(filter: &str) -> String {
         .to_string()
 }
 
-fn is_candidate(args: &Arguments, test_name: &str) -> bool {
-    if let Some(filter) = &args.filter {
+fn is_candidate(test_name: &str, filter: Option<&str>, exact: bool, skip: &[String]) -> bool {
+    if let Some(filter) = filter {
         let expected_test_name = filter_to_test_name(filter);
-        match args.exact {
+        match exact {
             true if test_name != expected_test_name => return false,
             false if !test_name.contains(&expected_test_name) => return false,
             _ => {}
         };
     }
 
-    for skip_filter in &args.skip {
+    for skip_filter in skip {
         let skipped_test_name = filter_to_test_name(skip_filter);
-        match args.exact {
+        match exact {
             true if test_name == skipped_test_name => return false,
             false if test_name.contains(&skipped_test_name) => return false,
             _ => {}
@@ -54,29 +56,33 @@ fn is_candidate(args: &Arguments, test_name: &str) -> bool {
 }
 
 pub struct TestLoaderParams<'a> {
-    pub args: &'a Arguments,
     pub test_dir: VfsPath,
     pub test_dir_real: Cow<'a, Path>,
     pub test_name: &'a str,
 }
 
-pub type TestLoader = Box<dyn Fn(TestLoaderParams, &mut dyn FnMut(Trial))>;
+pub type TestLoader<T> = Box<dyn Fn(TestLoaderParams, &mut dyn FnMut(T))>;
+pub type TestSorter<T> = Box<dyn FnMut(&T, &T) -> Ordering>;
 
-pub struct FsTestsRunner {
+pub struct FsTestsRunner<T> {
     root_dir: PathBuf,
     descriptor_name: Cow<'static, str>,
-    additional_tests: Vec<Trial>,
-    test_loader: Option<TestLoader>,
+    additional_tests: Vec<T>,
+    test_loader: Option<TestLoader<T>>,
     canonicalize_paths: bool,
+    sorter: Option<TestSorter<T>>,
+    exact: bool,
+    filter: Option<String>,
+    skip: Vec<String>,
 }
 
-impl Default for FsTestsRunner {
+impl<T> Default for FsTestsRunner<T> {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl FsTestsRunner {
+impl<T> FsTestsRunner<T> {
     pub fn new() -> Self {
         Self {
             root_dir: PathBuf::from("tests"),
@@ -84,7 +90,26 @@ impl FsTestsRunner {
             additional_tests: Vec::new(),
             test_loader: None,
             canonicalize_paths: false,
+            sorter: None,
+            exact: false,
+            filter: None,
+            skip: Vec::new(),
         }
+    }
+
+    pub fn with_exact(&mut self, exact: bool) -> &mut Self {
+        self.exact = exact;
+        self
+    }
+
+    pub fn with_filter(&mut self, filter: Option<String>) -> &mut Self {
+        self.filter = filter;
+        self
+    }
+
+    pub fn with_skip(&mut self, skip: Vec<String>) -> &mut Self {
+        self.skip = skip;
+        self
     }
 
     pub fn with_root_dir(&mut self, root_dir: PathBuf) -> &mut Self {
@@ -97,12 +122,12 @@ impl FsTestsRunner {
         self
     }
 
-    pub fn with_additional_test(&mut self, test: Trial) -> &mut Self {
+    pub fn with_additional_test(&mut self, test: T) -> &mut Self {
         self.additional_tests.push(test);
         self
     }
 
-    pub fn with_test_loader(&mut self, test_loader: TestLoader) -> &mut Self {
+    pub fn with_test_loader(&mut self, test_loader: TestLoader<T>) -> &mut Self {
         self.test_loader = Some(test_loader);
         self
     }
@@ -112,22 +137,25 @@ impl FsTestsRunner {
         self
     }
 
-    pub fn run(mut self) -> ! {
-        self.ensure_root_dir_exists();
+    pub fn with_sorter(&mut self, sorter: TestSorter<T>) -> &mut Self {
+        self.sorter = Some(sorter);
+        self
+    }
 
-        let args = Arguments::from_args();
+    pub fn find_tests(mut self) -> Vec<T> {
+        self.ensure_root_dir_exists();
 
         // When this is true, we are looking for one specific test.
         // This is an important optimization for nextest,
         // as it executes tests one by one.
-        let filter_exact = args.exact && args.filter.is_some();
+        let filter_exact = self.exact && self.filter.is_some();
 
         let root = &self.root_dir;
         let mut tests = Vec::new();
 
         if filter_exact {
             // Ignore "errors" here.
-            let _ = self.look_up_test(&args, &mut tests);
+            let _ = self.look_up_test(&mut tests);
         } else {
             let walk = walkdir::WalkDir::new(root)
                 .into_iter()
@@ -147,17 +175,19 @@ impl FsTestsRunner {
                     .unwrap()
                     .to_string_lossy()
                     .replace('\\', "/");
-                if is_candidate(&args, &name) {
-                    self.load_test(&args, file.path(), &name, &mut tests)
+                if is_candidate(&name, self.filter.as_deref(), self.exact, &self.skip) {
+                    self.load_test(file.path(), &name, &mut tests)
                 }
             }
         };
 
         tests.append(&mut self.additional_tests);
 
-        tests.sort_unstable_by(|a, b| a.name().cmp(b.name()));
+        if let Some(sorter) = &mut self.sorter {
+            tests.sort_unstable_by(sorter);
+        }
 
-        libtest_mimic::run(&args, tests).exit()
+        tests
     }
 
     fn ensure_root_dir_exists(&self) {
@@ -167,10 +197,10 @@ impl FsTestsRunner {
         }
     }
 
-    fn look_up_test(&self, args: &Arguments, out: &mut Vec<Trial>) -> anyhow::Result<()> {
+    fn look_up_test(&self, out: &mut Vec<T>) -> anyhow::Result<()> {
         let root = &self.root_dir;
 
-        let name = filter_to_test_name(args.filter.as_ref().unwrap());
+        let name = filter_to_test_name(self.filter.as_ref().unwrap());
         let absolute_root = std::fs::canonicalize(root).unwrap();
         let path = absolute_root
             .join(&name)
@@ -186,12 +216,12 @@ impl FsTestsRunner {
         }
 
         if path.is_file() {
-            self.load_test(args, &path, &name, out)
+            self.load_test(&path, &name, out)
         }
         Ok(())
     }
 
-    fn load_test(&self, args: &Arguments, file: &Path, name: &str, out: &mut Vec<Trial>) {
+    fn load_test(&self, file: &Path, name: &str, out: &mut Vec<T>) {
         let Some(test_loader) = self.test_loader.as_ref() else {
             return;
         };
@@ -205,11 +235,33 @@ impl FsTestsRunner {
         }
         let test_dir = VfsPath::new(PhysicalFS::new(&test_dir_real));
         let params = TestLoaderParams {
-            args,
             test_dir,
             test_dir_real,
             test_name: name,
         };
         test_loader(params, &mut |trial| out.push(trial));
+    }
+}
+
+impl FsTestsRunner<Trial> {
+    pub fn with_args_from_libtest_mimic(&mut self) -> &mut Self {
+        let arguments = Arguments::from_args();
+        self.exact = arguments.exact;
+        self.filter = arguments.filter;
+        self.skip = arguments.skip;
+        self
+    }
+
+    pub fn sorted_by_name(&mut self) -> &mut Self {
+        self.with_sorter(Box::new(|a, b| a.name().cmp(b.name())))
+    }
+
+    pub fn run(self) -> Conclusion {
+        let mut args = Arguments::from_args();
+        args.exact = self.exact;
+        args.filter = self.filter.clone();
+        args.skip = self.skip.clone();
+        let tests = self.find_tests();
+        libtest_mimic::run(&args, tests)
     }
 }
