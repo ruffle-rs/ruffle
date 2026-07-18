@@ -123,8 +123,8 @@ pub fn enumerate_fonts<'gc>(
         }
     }
 
-    for (font, class) in activation.context.library.global_fonts_with_classes() {
-        fonts.push((font, class));
+    for font in activation.context.library.global_fonts() {
+        fonts.push((font, font.avm2_class().unwrap_or(default_font_class)));
     }
 
     // The output from Flash is sorted by font name (case insensitive).
@@ -158,14 +158,12 @@ pub fn register_font<'gc>(
             .library
             .avm2_class_registry()
             .class_symbol(class.inner_class_definition())
-        {
-            if let Some(lib) = activation.context.library.library_for_movie(movie) {
-                if let Some(Character::Font(font)) = lib.character_by_id(id) {
-                    activation.context.library.register_global_font(font, class);
-                    return Ok(Value::Undefined);
-                }
-            }
-        }
+        && let Some(lib) = activation.context.library.library_for_movie(movie)
+        && let Some(Character::Font(font)) = lib.character_by_id(id)
+    {
+        font.set_avm2_class(activation.gc(), class);
+        activation.context.library.register_global_font(font);
+        return Ok(Value::Undefined);
     }
 
     Err(make_error_1508(activation, "font"))
