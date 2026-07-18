@@ -30,9 +30,9 @@ def get_current_day_id():
 
 
 def get_max_day_id():
-    max_year = 2999
-    max_day = 999
-    return f'{max_year - 2000}{max_day}'
+    # This is the maximum value allowed in the extension's manifest.
+    # It will work till 2065, but then we can just change the format.
+    return '65535'
 
 
 def get_tag_name(version):
