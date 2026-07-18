@@ -647,7 +647,9 @@ pub trait TObject<'gc>: 'gc + Collect<'gc> + Debug + Into<Object<'gc>> + Clone +
     /// Returns all public properties from this object's vtable, together with their values.
     /// This includes normal fields, const fields, and getter methods
     /// This is used for JSON serialization.
-    // FIXME - the order doesn't currently match Flash Player
+    ///
+    /// NOTE: Despite the order being random across executions in Flash Player,
+    /// getters *always* come after all slots/const slots.
     #[no_dynamic]
     fn public_vtable_properties(
         &self,
@@ -656,15 +658,20 @@ pub trait TObject<'gc>: 'gc + Collect<'gc> + Debug + Into<Object<'gc>> + Clone +
         let vtable = self.vtable();
 
         let mut values = Vec::new();
+
+        // First slots...
         for (name, prop) in vtable.public_properties() {
-            match prop {
-                Property::Slot { slot_id } | Property::ConstSlot { slot_id } => {
-                    values.push((name, self.base().get_slot(slot_id)));
-                }
-                Property::Virtual { get: Some(get), .. } => {
-                    values.push((name, Value::from(*self).call_method(get, &[], activation)?))
-                }
-                _ => {}
+            if let Property::Slot { slot_id } | Property::ConstSlot { slot_id } = prop {
+                let value = self.base().get_slot(slot_id);
+                values.push((name, value));
+            }
+        }
+
+        // ...then getters.
+        for (name, prop) in vtable.public_properties() {
+            if let Property::Virtual { get: Some(get), .. } = prop {
+                let value = Value::from(*self).call_method(get, &[], activation)?;
+                values.push((name, value));
             }
         }
 
