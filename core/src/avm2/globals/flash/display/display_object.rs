@@ -494,7 +494,15 @@ pub fn set_rotation<'gc>(
     let this = this.as_object().unwrap();
 
     if let Some(dobj) = this.as_display_object() {
-        let new_rotation = args.get_f64(0);
+        let mut new_rotation = args.get_f64(0);
+
+        // Normalize into the range of [-180, 180].
+        new_rotation %= 360.0;
+        if new_rotation < -180.0 {
+            new_rotation += 360.0
+        } else if new_rotation > 180.0 {
+            new_rotation -= 360.0
+        }
 
         dobj.set_rotation(Degrees::from(new_rotation));
     }
