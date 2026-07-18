@@ -1,5 +1,4 @@
 num_frames = 1
-known_failure = true # different property order for |Object| constructor
 
 [[compilers]]
 type = "Asc"
