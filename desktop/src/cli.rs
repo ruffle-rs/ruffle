@@ -183,6 +183,11 @@ pub struct Opt {
     #[clap(long)]
     pub player_version: Option<u8>,
 
+    /// Override the version string reported by `Capabilities.version`/`$version`, to this custom one.
+    /// SWFs normally expect a string in the format of "1,2,3,4", and by default Ruffle reports `(player_version),0,0,0` (e.g. `32,0,0,0`)
+    #[clap(long)]
+    pub custom_player_version: Option<String>,
+
     /// The runtime to emulate (Flash Player or Adobe AIR)
     #[clap(long)]
     pub player_runtime: Option<PlayerRuntime>,
