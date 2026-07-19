@@ -7,10 +7,10 @@ use crate::dynamic_transforms::DynamicTransforms;
 use crate::mesh::{DrawType, Mesh, as_mesh};
 use crate::surface::Surface;
 use crate::surface::target::CommandTarget;
-use crate::{Descriptors, MaskState, Pipelines, Transforms, as_texture};
+use crate::{BlendTransforms, Descriptors, MaskState, Pipelines, Transforms, as_texture};
 use ruffle_render::backend::ShapeHandle;
 use ruffle_render::bitmap::{BitmapHandle, PixelSnapping};
-use ruffle_render::commands::{CommandHandler, CommandList, RenderBlendMode};
+use ruffle_render::commands::{Command, CommandHandler, CommandList, RenderBlendMode};
 use ruffle_render::lines::{emulate_line, emulate_line_rect};
 use ruffle_render::matrix::Matrix;
 use ruffle_render::pixel_bender::PixelBenderShaderHandle;
@@ -434,6 +434,15 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
     }
 }
 
+/// Region within the viewport that a blend covers.
+#[derive(Debug, Clone, Copy)]
+pub struct BlendRegion {
+    pub x: u32,
+    pub y: u32,
+    pub width: u32,
+    pub height: u32,
+}
+
 pub enum Chunk {
     Draw {
         chunk: Vec<DrawCommand>,
@@ -444,6 +453,12 @@ pub enum Chunk {
         texture: PoolOrArcTexture,
         blend_mode: ChunkBlendMode,
         needs_stencil: bool,
+        /// Region within the viewport that this blend covers.
+        region: Option<BlendRegion>,
+        /// If set, a positioned transform carrying the UV offset/scale used to
+        /// sample the region-sized parent/current textures. Boxed to keep the
+        /// enum small.
+        blend_transform: Option<Box<BlendTransforms>>,
     },
 }
 
@@ -513,6 +528,8 @@ pub fn chunk_blends<'a>(
     quality: StageQuality,
     width: u32,
     height: u32,
+    offset_x: u32,
+    offset_y: u32,
     nearest_layer: LayerRef,
     texture_pool: &mut TexturePool,
 ) -> Vec<Chunk> {
@@ -525,6 +542,8 @@ pub fn chunk_blends<'a>(
         quality,
         width,
         height,
+        offset_x,
+        offset_y,
         nearest_layer,
         texture_pool,
     )
@@ -536,6 +555,8 @@ struct WgpuCommandHandler<'a> {
     quality: StageQuality,
     width: u32,
     height: u32,
+    offset_x: u32,
+    offset_y: u32,
     nearest_layer: LayerRef<'a>,
     meshes: &'a Vec<Mesh>,
     staging_belt: &'a mut wgpu::util::StagingBelt,
@@ -562,14 +583,13 @@ impl<'a> WgpuCommandHandler<'a> {
         quality: StageQuality,
         width: u32,
         height: u32,
+        offset_x: u32,
+        offset_y: u32,
         nearest_layer: LayerRef<'a>,
         texture_pool: &'a mut TexturePool,
     ) -> Self {
         let transforms = Self::new_transforms(descriptors, dynamic_transforms);
 
-        // DirectX does support drawing lines, but it's very inconsistent.
-        // With MSAA, lines have 1.4px thickness, which makes them too thick.
-        // Without MSAA, lines have 1px thickness, but their placement is sometimes off.
         let emulate_lines = descriptors.backend == Backend::Dx12;
 
         Self {
@@ -577,6 +597,8 @@ impl<'a> WgpuCommandHandler<'a> {
             quality,
             width,
             height,
+            offset_x,
+            offset_y,
             nearest_layer,
             meshes,
             staging_belt,
@@ -673,23 +695,184 @@ impl<'a> WgpuCommandHandler<'a> {
     }
 }
 
+/// Compute the AABB of a command in viewport space.
+fn command_aabb(cmd: &Command) -> Option<(f32, f32, f32, f32)> {
+    let corners: [(f32, f32); 4] = match cmd {
+        Command::RenderBitmap {
+            bitmap,
+            transform,
+            pixel_snapping,
+            ..
+        } => {
+            let tex = as_texture(bitmap);
+            let tw = tex.texture.width() as f32;
+            let th = tex.texture.height() as f32;
+            let mut m = transform.matrix;
+            pixel_snapping.apply(&mut m);
+            let tx = m.tx.to_pixels() as f32;
+            let ty = m.ty.to_pixels() as f32;
+            [
+                (tx, ty),
+                (tx + m.a * tw, ty + m.b * tw),
+                (tx + m.c * th, ty + m.d * th),
+                (tx + m.a * tw + m.c * th, ty + m.b * tw + m.d * th),
+            ]
+        }
+        Command::RenderShape { shape, transform } => {
+            let mesh = as_mesh(shape);
+            let (bx0, by0, bx1, by1) = mesh.bounds;
+            let m = &transform.matrix;
+            let tx = m.tx.to_pixels() as f32;
+            let ty = m.ty.to_pixels() as f32;
+            [
+                (tx + m.a * bx0 + m.c * by0, ty + m.b * bx0 + m.d * by0),
+                (tx + m.a * bx1 + m.c * by0, ty + m.b * bx1 + m.d * by0),
+                (tx + m.a * bx0 + m.c * by1, ty + m.b * bx0 + m.d * by1),
+                (tx + m.a * bx1 + m.c * by1, ty + m.b * bx1 + m.d * by1),
+            ]
+        }
+        Command::DrawRect { matrix, .. }
+        | Command::DrawLine { matrix, .. }
+        | Command::DrawLineRect { matrix, .. } => {
+            let tx = matrix.tx.to_pixels() as f32;
+            let ty = matrix.ty.to_pixels() as f32;
+            [
+                (tx, ty),
+                (tx + matrix.a, ty + matrix.b),
+                (tx + matrix.c, ty + matrix.d),
+                (tx + matrix.a + matrix.c, ty + matrix.b + matrix.d),
+            ]
+        }
+        Command::PushMask | Command::ActivateMask | Command::DeactivateMask | Command::PopMask => {
+            return None;
+        }
+        _ => return None,
+    };
+    let min_x = corners.iter().map(|c| c.0).fold(f32::INFINITY, f32::min);
+    let min_y = corners.iter().map(|c| c.1).fold(f32::INFINITY, f32::min);
+    let max_x = corners
+        .iter()
+        .map(|c| c.0)
+        .fold(f32::NEG_INFINITY, f32::max);
+    let max_y = corners
+        .iter()
+        .map(|c| c.1)
+        .fold(f32::NEG_INFINITY, f32::max);
+    Some((min_x, min_y, max_x, max_y))
+}
+
+/// Compute a tight BlendRegion for commands, clipped to viewport.
+/// Returns None if bounds can't be computed, or the region isn't strictly
+/// smaller than the viewport (in which case a full-viewport blend is cheaper).
+fn compute_blend_region(
+    commands: &[Command],
+    offset_x: u32,
+    offset_y: u32,
+    width: u32,
+    height: u32,
+) -> Option<BlendRegion> {
+    let mut r_min_x = f32::INFINITY;
+    let mut r_min_y = f32::INFINITY;
+    let mut r_max_x = f32::NEG_INFINITY;
+    let mut r_max_y = f32::NEG_INFINITY;
+    for cmd in commands {
+        let (x0, y0, x1, y1) = command_aabb(cmd)?;
+        r_min_x = r_min_x.min(x0);
+        r_min_y = r_min_y.min(y0);
+        r_max_x = r_max_x.max(x1);
+        r_max_y = r_max_y.max(y1);
+    }
+    let off_x = offset_x as f32;
+    let off_y = offset_y as f32;
+    let lx0 = (r_min_x - off_x).max(0.0);
+    let ly0 = (r_min_y - off_y).max(0.0);
+    let lx1 = (r_max_x - off_x).min(width as f32);
+    let ly1 = (r_max_y - off_y).min(height as f32);
+    if lx0 >= lx1 || ly0 >= ly1 {
+        return None;
+    }
+    let x = lx0.floor() as u32;
+    let y = ly0.floor() as u32;
+    let w = (lx1.ceil() as u32)
+        .saturating_sub(x)
+        .min(width.saturating_sub(x))
+        .max(1);
+    let h = (ly1.ceil() as u32)
+        .saturating_sub(y)
+        .min(height.saturating_sub(y))
+        .max(1);
+    // Only use a region when it's strictly smaller than the viewport — otherwise
+    // the full-viewport blend is already the cheapest option.
+    if w < width || h < height {
+        Some(BlendRegion {
+            x,
+            y,
+            width: w,
+            height: h,
+        })
+    } else {
+        None
+    }
+}
+
 impl CommandHandler for WgpuCommandHandler<'_> {
     fn blend(&mut self, commands: CommandList, blend_mode: RenderBlendMode) {
-        let surface = Surface::new(
-            self.descriptors,
-            self.quality,
-            self.width,
-            self.height,
-            wgpu::TextureFormat::Rgba8Unorm,
-        );
         let target_layer = if let RenderBlendMode::Builtin(BlendMode::Layer) = &blend_mode {
             LayerRef::Current
         } else {
             self.nearest_layer
         };
         let blend_type = BlendType::from(blend_mode);
+
+        // Compute tight bounds for the blend region.
+        // Shader (PixelBender) blends use their own UV logic — no regional sizing.
+        let blend_region = if matches!(&blend_type, BlendType::Shader(_)) {
+            None
+        } else {
+            compute_blend_region(
+                &commands.commands,
+                self.offset_x,
+                self.offset_y,
+                self.width,
+                self.height,
+            )
+        };
+        let (surface_w, surface_h, surface_offset_x, surface_offset_y) =
+            if let Some(ref r) = blend_region {
+                (r.width, r.height, r.x + self.offset_x, r.y + self.offset_y)
+            } else {
+                (self.width, self.height, self.offset_x, self.offset_y)
+            };
+
+        // Skip MSAA for bitmap-only content that is axis-aligned: the pixels are
+        // pre-rasterized (no internal vector edges to smooth), and an unrotated,
+        // unskewed bitmap's outer quad edges run along the pixel grid. A rotated or
+        // skewed bitmap (matrix.b/c != 0) has diagonal edges that still need MSAA.
+        // The `b == 0 && c == 0` test mirrors the axis-aligned check in
+        // `PixelSnapping::Auto`.
+        let offscreen_quality = if commands.commands.iter().all(|c| match c {
+            Command::RenderBitmap { transform, .. } => {
+                transform.matrix.b == 0.0 && transform.matrix.c == 0.0
+            }
+            Command::PushMask
+            | Command::ActivateMask
+            | Command::DeactivateMask
+            | Command::PopMask => true,
+            _ => false,
+        }) {
+            StageQuality::Low
+        } else {
+            self.quality
+        };
+        let surface = Surface::new(
+            self.descriptors,
+            offscreen_quality,
+            surface_w,
+            surface_h,
+            wgpu::TextureFormat::Rgba8Unorm,
+        );
         let clear_color = blend_type.default_color();
-        let target = surface.draw_commands(
+        let target = surface.draw_commands_with_offset(
             RenderTargetMode::FreshWithColor(clear_color),
             self.descriptors,
             self.meshes,
@@ -699,6 +882,8 @@ impl CommandHandler for WgpuCommandHandler<'_> {
             self.draw_encoder,
             target_layer,
             self.texture_pool,
+            surface_offset_x,
+            surface_offset_y,
         );
         target.ensure_cleared(self.draw_encoder);
 
@@ -717,7 +902,13 @@ impl CommandHandler for WgpuCommandHandler<'_> {
         match blend_type {
             BlendType::Trivial(blend_mode) => {
                 let transform = Transform {
-                    matrix: Matrix::scale(target.width() as f32, target.height() as f32),
+                    matrix: Matrix {
+                        a: target.width() as f32,
+                        d: target.height() as f32,
+                        tx: Twips::from_pixels(surface_offset_x as f64),
+                        ty: Twips::from_pixels(surface_offset_y as f64),
+                        ..Default::default()
+                    },
                     color_transform: Default::default(),
                     perspective_projection: None,
                 };
@@ -778,10 +969,40 @@ impl CommandHandler for WgpuCommandHandler<'_> {
                     BlendType::Shader(shader) => ChunkBlendMode::Shader(shader),
                     _ => unreachable!(),
                 };
+                // UV transform: map viewport UV → region-local UV (0-1).
+                // src_uv = uv * scale + offset, where:
+                //   scale = viewport_size / region_size
+                //   offset = -region_pos / region_size
+                // Both textures are region-sized → same UV transform for both
+                let blend_transform = blend_region.map(|r| {
+                    let uv_scale_x = self.width as f32 / r.width as f32;
+                    let uv_scale_y = self.height as f32 / r.height as f32;
+                    let uv_off_x = -(r.x as f32) / r.width as f32;
+                    let uv_off_y = -(r.y as f32) / r.height as f32;
+                    let uv = [uv_off_x, uv_off_y, uv_scale_x, uv_scale_y];
+                    // The quad is composited into the parent target using that
+                    // target's globals, which expect absolute viewport coordinates,
+                    // so position it at `surface_offset` (= region origin + this
+                    // level's offset), matching the trivial-blend path. The UV
+                    // transform stays in this level's local space (the globals
+                    // subtract the level offset back out).
+                    Box::new(BlendTransforms {
+                        world_matrix: [
+                            [r.width as f32, 0.0, 0.0, 0.0],
+                            [0.0, r.height as f32, 0.0, 0.0],
+                            [0.0, 0.0, 1.0, 0.0],
+                            [surface_offset_x as f32, surface_offset_y as f32, 0.0, 1.0],
+                        ],
+                        dst_uv_transform: uv,
+                        src_uv_transform: uv,
+                    })
+                });
                 self.result.push(Chunk::Blend {
                     texture: target.take_color_texture(),
                     blend_mode: chunk_blend_mode,
                     needs_stencil: self.num_masks > 0,
+                    region: blend_region,
+                    blend_transform,
                 });
                 self.needs_stencil = self.num_masks > 0;
             }
