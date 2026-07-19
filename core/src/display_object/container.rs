@@ -44,14 +44,34 @@ pub fn dispatch_removed_from_stage_event<'gc>(
 
 /// Dispatch the `removed` event on a child and log any errors encountered
 /// whilst doing so.
+///
+/// This function is protected against re-entrant calls: if an AS3 event listener
+/// reacts to `removed`/`removedFromStage` by calling `remove_child` again on the
+/// same object (or one of its ancestors), the recursive invocation will find the
+/// `BEING_REMOVED` flag set and return immediately, matching Flash Player behaviour
+/// and preventing the infinite recursion / "too much recursion" crash.
 pub fn dispatch_removed_event<'gc>(child: DisplayObject<'gc>, context: &mut UpdateContext<'gc>) {
+    // Reentrancy guard: if we are already dispatching the removed event for
+    // this child (e.g. because an event listener called remove_child again),
+    // bail out immediately to avoid infinite recursion.
+    if child.being_removed() {
+        return;
+    }
+
     if let Some(object) = child.object2() {
+        child.set_being_removed(true);
+
         let removed_evt = Avm2EventObject::bare_event(context, "removed", true, false);
         Avm2::dispatch_event(context, removed_evt, object.into());
 
         if child.is_on_stage(context) {
             dispatch_removed_from_stage_event(child, context)
         }
+
+        // Reset the flag so that the object can be correctly removed/re-added
+        // in future operations (e.g. if it is added back to the display list
+        // and then removed again).
+        child.set_being_removed(false);
     }
 }
 
