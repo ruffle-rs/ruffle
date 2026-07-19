@@ -17,7 +17,9 @@ use image::imageops::FilterType;
 use ruffle_render::backend::{
     BitmapCacheEntry, Context3D, Context3DProfile, PixelBenderOutput, PixelBenderTarget,
 };
-use ruffle_render::backend::{RenderBackend, ShapeHandle, ViewportDimensions};
+use ruffle_render::backend::{
+    RenderBackend, RenderOffscreenBatches, ShapeHandle, ViewportDimensions,
+};
 use ruffle_render::bitmap::{
     Bitmap, BitmapFormat, BitmapHandle, BitmapSource, PixelRegion, RgbaBufRead, SyncHandle,
 };
@@ -746,10 +748,14 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
     fn render_offscreen(
         &mut self,
         handle: BitmapHandle,
-        commands: CommandList,
+        batches: RenderOffscreenBatches,
         quality: StageQuality,
         bounds: PixelRegion,
     ) -> Option<Box<dyn SyncHandle>> {
+        if batches.is_empty() {
+            return None;
+        }
+
         let texture = as_texture(&handle);
 
         let extent = wgpu::Extent3d {
@@ -758,16 +764,12 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
             depth_or_array_layers: 1,
         };
 
-        let mut target = TextureTarget {
+        let target = TextureTarget {
             size: extent,
             texture: texture.texture.clone(),
             format: wgpu::TextureFormat::Rgba8Unorm,
             buffer: None,
         };
-
-        let frame_output = target
-            .get_next_texture()
-            .expect("TextureTargetFrame.get_next_texture is infallible");
 
         let surface = Surface::new(
             &self.descriptors,
@@ -776,19 +778,30 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
             texture.texture.height(),
             wgpu::TextureFormat::Rgba8Unorm,
         );
-        surface.draw_commands_and_copy_to(
-            frame_output.view(),
-            RenderTargetMode::FreshWithTexture(target.get_texture()),
-            &self.descriptors,
-            &mut self.active_frame.staging_belt,
-            &self.dynamic_transforms,
-            &mut self.active_frame.command_encoder,
-            &self.meshes,
-            commands,
-            LayerRef::Current,
-            &mut self.offscreen_texture_pool,
-        );
 
+        for commands in batches {
+            // Each batch is rendered as its own pass against the running
+            // target texture - the previous pass's resolve (if any) is
+            // visible as input to this one.
+            let frame_view = target.texture.create_view(&Default::default());
+            surface.draw_commands_and_copy_to(
+                &frame_view,
+                RenderTargetMode::FreshWithTexture(target.get_texture()),
+                &self.descriptors,
+                &mut self.active_frame.staging_belt,
+                &self.dynamic_transforms,
+                &mut self.active_frame.command_encoder,
+                &self.meshes,
+                commands,
+                LayerRef::Current,
+                &mut self.offscreen_texture_pool,
+            );
+        }
+        // One flush per call covers both single- and multi-batch paths with
+        // one encoder reset. The frame-scoped OOM valve (MAX_DRAWS_PER_FLUSH)
+        // still protects us if a single render_offscreen is dwarfed by a
+        // caller that submits many render_offscreens without hitting any
+        // other flush point - each call still increments draws_since_flush.
         self.active_frame.maybe_flush(&self.descriptors);
         Some(self.make_queue_sync_handle(target, None, handle, bounds))
     }
@@ -808,6 +821,85 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
 
     fn is_offscreen_supported(&self) -> bool {
         true
+    }
+
+    fn copy_pixels_to_texture(
+        &mut self,
+        source: BitmapHandle,
+        source_region: PixelRegion,
+        destination: BitmapHandle,
+        dest_point: (u32, u32),
+    ) -> Option<Box<dyn SyncHandle>> {
+        let source_texture = as_texture(&source);
+        let dest_texture = as_texture(&destination);
+
+        let copy_width = source_region
+            .width()
+            .min(dest_texture.texture.width().saturating_sub(dest_point.0))
+            .min(
+                source_texture
+                    .texture
+                    .width()
+                    .saturating_sub(source_region.x_min),
+            );
+        let copy_height = source_region
+            .height()
+            .min(dest_texture.texture.height().saturating_sub(dest_point.1))
+            .min(
+                source_texture
+                    .texture
+                    .height()
+                    .saturating_sub(source_region.y_min),
+            );
+
+        if copy_width == 0 || copy_height == 0 {
+            return None;
+        }
+
+        let dest_region =
+            PixelRegion::for_region(dest_point.0, dest_point.1, copy_width, copy_height);
+
+        let target = TextureTarget {
+            size: wgpu::Extent3d {
+                width: dest_texture.texture.width(),
+                height: dest_texture.texture.height(),
+                depth_or_array_layers: 1,
+            },
+            texture: dest_texture.texture.clone(),
+            format: dest_texture.texture.format(),
+            buffer: None,
+        };
+
+        self.active_frame.command_encoder.copy_texture_to_texture(
+            wgpu::TexelCopyTextureInfo {
+                texture: &source_texture.texture,
+                mip_level: 0,
+                origin: wgpu::Origin3d {
+                    x: source_region.x_min,
+                    y: source_region.y_min,
+                    z: 0,
+                },
+                aspect: Default::default(),
+            },
+            wgpu::TexelCopyTextureInfo {
+                texture: &dest_texture.texture,
+                mip_level: 0,
+                origin: wgpu::Origin3d {
+                    x: dest_point.0,
+                    y: dest_point.1,
+                    z: 0,
+                },
+                aspect: Default::default(),
+            },
+            wgpu::Extent3d {
+                width: copy_width,
+                height: copy_height,
+                depth_or_array_layers: 1,
+            },
+        );
+
+        self.active_frame.maybe_flush(&self.descriptors);
+        Some(self.make_queue_sync_handle(target, None, destination, dest_region))
     }
 
     fn apply_filter(
