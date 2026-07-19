@@ -5,7 +5,7 @@
 use bytemuck::{Pod, Zeroable};
 use ruffle_render::backend::{
     BitmapCacheEntry, Context3D, Context3DProfile, PixelBenderOutput, PixelBenderTarget,
-    RenderBackend, ShapeHandle, ShapeHandleImpl, ViewportDimensions,
+    RenderBackend, RenderOffscreenBatches, ShapeHandle, ShapeHandleImpl, ViewportDimensions,
 };
 use ruffle_render::bitmap::{
     Bitmap, BitmapFormat, BitmapHandle, BitmapHandleImpl, BitmapSource, PixelRegion, PixelSnapping,
@@ -996,7 +996,7 @@ impl RenderBackend for WebGlRenderBackend {
     fn render_offscreen(
         &mut self,
         _handle: BitmapHandle,
-        _commands: CommandList,
+        _batches: RenderOffscreenBatches,
         _quality: StageQuality,
         _bounds: PixelRegion,
     ) -> Option<Box<dyn SyncHandle>> {

@@ -3,7 +3,8 @@ use std::num::NonZeroU32;
 use std::sync::Arc;
 
 use crate::backend::{
-    BitmapCacheEntry, RenderBackend, ShapeHandle, ShapeHandleImpl, ViewportDimensions,
+    BitmapCacheEntry, RenderBackend, RenderOffscreenBatches, ShapeHandle, ShapeHandleImpl,
+    ViewportDimensions,
 };
 use crate::bitmap::{
     Bitmap, BitmapHandle, BitmapHandleImpl, BitmapSize, BitmapSource, PixelRegion, RgbaBufRead,
@@ -66,7 +67,7 @@ impl RenderBackend for NullRenderer {
     fn render_offscreen(
         &mut self,
         _handle: BitmapHandle,
-        _commands: CommandList,
+        _batches: RenderOffscreenBatches,
         _quality: StageQuality,
         _bounds: PixelRegion,
     ) -> Option<Box<dyn SyncHandle>> {
