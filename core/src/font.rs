@@ -125,6 +125,13 @@ pub struct EvalParameters {
     /// pairs of letters, separate from the ordinary width between glyphs. This
     /// parameter allows enabling or disabling that feature.
     pub kerning: bool,
+
+    /// Ratio between device pixels and stage pixels at draw time (viewport
+    /// DPI scale, page zoom, uniform ancestor scaling). Rendering callers may
+    /// set it so size-aware renderers rasterize presentation bitmaps at the
+    /// effective on-screen size; it never affects layout, which always
+    /// measures at `height` with the neutral `1.0`.
+    pub display_scale: f32,
 }
 
 impl EvalParameters {
@@ -135,12 +142,21 @@ impl EvalParameters {
             height: Twips::from_pixels(span.font.size),
             letter_spacing: Twips::from_pixels(span.font.letter_spacing),
             kerning: span.font.kerning,
+            display_scale: 1.0,
         }
     }
 
     /// Get the height that the font would be evaluated at.
     pub fn height(&self) -> Twips {
         self.height
+    }
+
+    /// Returns a copy tuned for rendering under the given display scale
+    /// (device pixels per stage pixel). Layout callers keep the neutral
+    /// default.
+    pub fn with_display_scale(mut self, display_scale: f32) -> Self {
+        self.display_scale = display_scale;
+        self
     }
 }
 
@@ -428,6 +444,25 @@ fn twips_to_px_for_cache(height: Twips) -> u32 {
     }
 }
 
+/// Pick the raster size, in pixels, for the presentation bitmap of a glyph
+/// drawn under a scaling display transform. Returns `None` when the ordinary
+/// path is already right (neutral scale, non-size-aware source, or unknown
+/// size). The raster may round to the logical size at near-1 scales: the
+/// presentation path still applies, drawing it 1:1 to device pixels instead
+/// of resampling it.
+fn presentation_raster_px(params: &EvalParameters, size_aware: bool) -> Option<u32> {
+    let scale = params.display_scale;
+    if !size_aware || !scale.is_finite() || scale <= 0.0 || (scale - 1.0).abs() < 0.01 {
+        return None;
+    }
+    let logical_px = twips_to_px_for_cache(params.height);
+    if logical_px == 0 {
+        return None;
+    }
+    // Cap the raster size so degenerate transforms can't conjure huge rasters.
+    Some(((logical_px as f32 * scale).round() as u32).clamp(1, 1024))
+}
+
 #[derive(Debug)]
 pub enum GlyphSource {
     Memory {
@@ -535,6 +570,15 @@ impl GlyphSource {
             GlyphSource::FontFace { face, .. } => face.has_kerning_info(),
             GlyphSource::ExternalRenderer { font_renderer, .. } => font_renderer.has_kerning_info(),
             GlyphSource::Empty => false,
+        }
+    }
+
+    /// Whether the backing renderer rasterizes each requested pixel size
+    /// separately (see [`FontRenderer::is_size_aware`]).
+    pub fn is_size_aware(&self) -> bool {
+        match self {
+            GlyphSource::ExternalRenderer { font_renderer, .. } => font_renderer.is_size_aware(),
+            _ => false,
         }
     }
 
@@ -949,6 +993,12 @@ impl<'gc> Font<'gc> {
     pub fn has_layout(self) -> bool {
         self.0.has_layout
     }
+
+    /// Whether this font's glyph source rasterizes each requested pixel size
+    /// separately (size-aware external renderer, e.g. GDI).
+    pub fn has_size_aware_renderer(self) -> bool {
+        self.0.glyphs.is_size_aware()
+    }
 }
 
 impl<'gc> FontLike<'gc> for Font<'gc> {
@@ -1058,18 +1108,24 @@ pub trait FontLike<'gc> {
             self.has_kerning_info() && (self.font_type().is_device() || params.kerning);
 
         let mut x = Twips::ZERO;
+        // Accumulated difference between the presentation pen (device-
+        // resolution raster advances, matching Flash Player's spacing under
+        // zoom) and the layout pen. Affects drawn pixels only; the layout
+        // pen below stays strictly logical.
+        let mut presentation_drift = Twips::ZERO;
         while let Some((pos, c)) = char_indices.next() {
             if let Some(resolution) = self.resolve_glyph(c, params.height) {
+                let font = resolution.font;
                 let glyph = resolution.glyph;
                 // Pixel-locked glyphs (e.g. GDI rasterized at the requested
                 // size) carry their own intrinsic em-scale; using it instead
                 // of the font's canonical scale collapses the layout-time
                 // scale to 1.0 so the bitmap is drawn 1:1 to display pixels.
-                let glyph_scale_basis = glyph
-                    .intrinsic_scale()
-                    .unwrap_or_else(|| resolution.font.scale());
+                let glyph_scale_basis = glyph.intrinsic_scale().unwrap_or_else(|| font.scale());
                 let scale = params.height.get() as f32 / glyph_scale_basis;
-                let mut advance = glyph.advance();
+                let pixel_locked = glyph.intrinsic_scale().is_some();
+                let glyph_advance = glyph.advance();
+                let mut advance = glyph_advance;
                 if kerning_enabled {
                     let next_char = char_indices.peek().map(|(_, ch)| *ch);
                     let kerning = next_char
@@ -1099,7 +1155,73 @@ pub trait FontLike<'gc> {
                     Twips::ZERO
                 };
 
-                glyph_func(pos, &transform, glyph, twips_advance, x);
+                // Under a scaling display transform (page zoom, viewport DPI)
+                // a pixel-locked glyph would be GPU-resampled from its
+                // logical-size raster and turn blurry. Swap in a presentation
+                // bitmap rasterized at the effective on-screen size, drawn
+                // with a compensating matrix, so layout geometry (advances,
+                // line breaks, caret) is untouched while the pixels map 1:1
+                // to the device grid.
+                let raster_px =
+                    presentation_raster_px(&params, pixel_locked && font.has_size_aware_renderer());
+
+                if let Some(raster_px) = raster_px {
+                    // Release the logical glyph's cache borrow before
+                    // resolving another size on the same font.
+                    drop(glyph);
+                    let raster_height = Twips::new(raster_px as i32 * 20);
+                    let mut presented = false;
+                    if let Some(raster_resolution) = font.resolve_glyph(c, raster_height) {
+                        let raster_glyph = raster_resolution.glyph;
+                        if raster_glyph.intrinsic_scale().is_some() {
+                            // Map the raster 1:1 to device pixels, exactly
+                            // like Flash Player: at fractional zooms the glyph
+                            // may run a fraction of a pixel larger or smaller
+                            // than the ideal size, but it is never resampled.
+                            // The ~1.0 device scale also re-engages
+                            // PixelSnapping::Auto, so positions land on the
+                            // device grid.
+                            let draw_scale = 1.0 / params.display_scale;
+                            // Per-size integer metrics don't scale exactly
+                            // linearly: align the raster bitmap's baseline
+                            // with the logical baseline layout positioned.
+                            let logical_ascent =
+                                font.metrics_at(params.height).ascent(params.height);
+                            let raster_ascent =
+                                font.metrics_at(raster_height).ascent(raster_height);
+                            // Device-resolution advance of the raster glyph,
+                            // expressed in stage twips.
+                            let raster_advance = Twips::new(
+                                (raster_glyph.advance().get() as f32 * draw_scale) as i32,
+                            );
+                            let mut draw_transform = transform.clone();
+                            draw_transform.matrix.a = draw_scale;
+                            draw_transform.matrix.d = draw_scale;
+                            draw_transform.matrix.tx += presentation_drift;
+                            draw_transform.matrix.ty = logical_ascent
+                                - Twips::new((raster_ascent.get() as f32 * draw_scale) as i32);
+                            glyph_func(pos, &draw_transform, raster_glyph, twips_advance, x);
+                            // Device-resolution advances differ slightly from
+                            // the scaled logical ones (integer hinting at each
+                            // size): track the difference so glyph spacing
+                            // matches Flash Player while the layout pen stays
+                            // logical.
+                            presentation_drift += raster_advance
+                                - round_to_pixel(Twips::new(
+                                    (glyph_advance.get() as f32 * scale) as i32,
+                                ));
+                            presented = true;
+                        }
+                    }
+                    if !presented && let Some(fallback) = self.resolve_glyph(c, params.height) {
+                        // Keep mid-run continuity with the presentation pen.
+                        let mut draw_transform = transform.clone();
+                        draw_transform.matrix.tx += presentation_drift;
+                        glyph_func(pos, &draw_transform, fallback.glyph, twips_advance, x);
+                    }
+                } else {
+                    glyph_func(pos, &transform, glyph, twips_advance, x);
+                }
 
                 // Step horizontally.
                 transform.matrix.tx += twips_advance;

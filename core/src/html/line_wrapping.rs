@@ -208,6 +208,7 @@ mod tests {
             height,
             letter_spacing,
             kerning,
+            display_scale: 1.0,
         }
     }
 

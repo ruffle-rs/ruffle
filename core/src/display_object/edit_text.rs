@@ -1221,6 +1221,18 @@ impl<'gc> EditText<'gc> {
         }
     }
 
+    /// Uniform screen-space scale of a world matrix, used as the presentation
+    /// density hint for size-aware font renderers. Falls back to the neutral
+    /// `1.0` when the transform isn't a plain positive uniform scale.
+    fn display_scale_hint(matrix: Matrix) -> f32 {
+        let uniform = matrix.b.abs() < 1e-4
+            && matrix.c.abs() < 1e-4
+            && matrix.a > 0.0
+            && matrix.d > 0.0
+            && (matrix.a - matrix.d).abs() <= matrix.d * 0.01;
+        if uniform { matrix.d } else { 1.0 }
+    }
+
     /// Render a layout box, plus its children.
     fn render_layout_box(
         self,
@@ -1284,6 +1296,12 @@ impl<'gc> EditText<'gc> {
         if let Some((text, _tf, font, params, color)) =
             lbox.as_renderable_text(self.0.text_spans.borrow().displayed_text())
         {
+            // Rasterize size-aware device-font glyphs at the effective
+            // on-screen density (page zoom / DPI / uniform scaling) instead
+            // of letting the compositor stretch the logical-size raster.
+            let params = params.with_display_scale(Self::display_scale_hint(
+                context.transform_stack.transform().matrix,
+            ));
             let metrics = font.metrics_at(params.height());
             let ascent = metrics.ascent(params.height());
             let descent = metrics.descent(params.height());
