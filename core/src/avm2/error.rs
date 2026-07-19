@@ -221,7 +221,6 @@ pub enum XmlErrorCode {
     /// Error #1091: XML parser failure: Unterminated CDATA section.
     UnterminatedCData = 1091,
     /// Error #1092: XML parser failure: Unterminated XML declaration.
-    #[allow(unused)]
     UnterminatedXmlDecl = 1092,
     /// Error #1093: XML parser failure: Unterminated DOCTYPE declaration.
     UnterminatedDoctype = 1093,
