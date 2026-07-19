@@ -3140,32 +3140,34 @@ impl<'gc> TInteractiveObject<'gc> for MovieClip<'gc> {
                     continue;
                 }
 
-                let mut res = if let Some(child) = child.as_interactive() {
+                let mut res = None;
+
+                if let Some(child) = child.as_interactive() {
                     if child.as_displayobject().movie().is_action_script_3() {
-                        child.mouse_pick_avm2(context, point, require_button_mode)
-                    } else {
-                        let avm1_result =
-                            child.mouse_pick_avm1(context, point, require_button_mode);
-                        if let Some(result) = avm1_result {
-                            Avm2MousePick::Hit(result)
+                        res = Some(child.mouse_pick_avm2(context, point, require_button_mode));
+                    } else if let Some(result) =
+                        child.mouse_pick_avm1(context, point, require_button_mode)
+                    {
+                        res = Some(Avm2MousePick::Hit(result));
+                    }
+                }
+
+                let mut res = res.unwrap_or_else(|| {
+                    if child.hit_test_shape(context, point, options)
+                        && child
+                            .masker()
+                            .map(|mask| mask.hit_test_shape(context, point, options))
+                            .unwrap_or(true)
+                    {
+                        if self.mouse_enabled() {
+                            Avm2MousePick::Hit(this)
                         } else {
-                            Avm2MousePick::Miss
+                            Avm2MousePick::PropagateToParent
                         }
-                    }
-                } else if child.hit_test_shape(context, point, options)
-                    && child
-                        .masker()
-                        .map(|mask| mask.hit_test_shape(context, point, options))
-                        .unwrap_or(true)
-                {
-                    if self.mouse_enabled() {
-                        Avm2MousePick::Hit(this)
                     } else {
-                        Avm2MousePick::PropagateToParent
+                        Avm2MousePick::Miss
                     }
-                } else {
-                    Avm2MousePick::Miss
-                };
+                });
 
                 while let Some((clip, clip_range)) = clip_layers.peek() {
                     // This clip layer no longer applies to the remaining children (which all have lower depth values).
