@@ -2661,7 +2661,9 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
     }
 
     fn self_bounds(self, _mode: BoundsMode) -> Rectangle<Twips> {
-        self.drawing().map(|d| d.self_bounds()).unwrap_or_default()
+        self.drawing()
+            .map(|d| d.self_bounds(true))
+            .unwrap_or_default()
     }
 
     fn hit_test_shape(
