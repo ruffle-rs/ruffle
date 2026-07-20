@@ -2660,9 +2660,14 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
         self.render_children(context);
     }
 
-    fn self_bounds(self, _mode: BoundsMode) -> Rectangle<Twips> {
+    fn self_bounds(self, mode: BoundsMode) -> Rectangle<Twips> {
+        let include_strokes = match mode {
+            BoundsMode::ScriptWithoutStrokes => false,
+            _ => true,
+        };
+
         self.drawing()
-            .map(|d| d.self_bounds(true))
+            .map(|d| d.self_bounds(include_strokes))
             .unwrap_or_default()
     }
 

@@ -186,11 +186,18 @@ impl<'gc> TDisplayObject<'gc> for Graphic<'gc> {
         self.0.shared.get().id
     }
 
-    fn self_bounds(self, _mode: BoundsMode) -> Rectangle<Twips> {
+    fn self_bounds(self, mode: BoundsMode) -> Rectangle<Twips> {
+        let include_strokes = match mode {
+            BoundsMode::ScriptWithoutStrokes => false,
+            _ => true,
+        };
+
         if let Some(drawing) = self.0.drawing.get() {
-            drawing.borrow().self_bounds(true)
-        } else {
+            drawing.borrow().self_bounds(include_strokes)
+        } else if include_strokes {
             self.0.shared.get().shape_bounds
+        } else {
+            self.0.shared.get().edge_bounds
         }
     }
 

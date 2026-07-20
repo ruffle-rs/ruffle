@@ -919,9 +919,13 @@ pub enum BoundsMode {
     /// The bounds returned by ActionScript (e.g. doesn't take MorphShape
     /// ratio into account - always uses ratio 0 AKA start shape).
     /// This is used in AVM1 in MovieClip::getBounds(), getRect(), _width, _height, hitTest (object)
-    /// Used in AVM2 in DO::getBounds(), getRect(), width, height, hitTestObject()
+    /// Used in AVM2 in DO::getBounds(), width, height, hitTestObject()
     /// Used in both AVM1 and AVM2 for Transform.pixelBounds.
     Script,
+
+    /// Like `BoundsMode::Script`, but excludes drawing and shape strokes from
+    /// the final bounds. This is used to implement AVM2 `DisplayObject.getRect`
+    ScriptWithoutStrokes,
 }
 
 struct DrawCacheInfo {

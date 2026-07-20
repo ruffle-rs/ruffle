@@ -999,6 +999,34 @@ pub fn global_to_local<'gc>(
     Ok(Value::Undefined)
 }
 
+/// Helper method for getting the bounds of a `DisplayObject` in the target
+/// space of another `DisplayObject`, using a specific bounds mode. This method
+/// is used to implement `DisplayObject.getRect` and `DisplayObject.getBounds`.
+fn get_dobj_bounds<'gc>(
+    dobj: DisplayObject<'gc>,
+    target: DisplayObject<'gc>,
+    mode: BoundsMode,
+) -> Rectangle<Twips> {
+    let bounds = dobj.bounds(mode);
+    let mut out_bounds = if DisplayObject::ptr_eq(dobj, target) {
+        // Getting the clips bounds in its own coordinate space; no AABB transform needed.
+        bounds
+    } else {
+        // Transform AABB to target space.
+        // Calculate the matrix to transform into the target coordinate space, and transform the above AABB.
+        // Note that this doesn't produce as tight of an AABB as if we had used `bounds_with_transform` with
+        // the final matrix, but this matches Flash's behavior.
+        let to_global_matrix = dobj.local_to_global_matrix();
+        let to_target_matrix = target.global_to_local_matrix().unwrap_or_default();
+        to_target_matrix * to_global_matrix * bounds
+    };
+    if !out_bounds.is_valid() {
+        out_bounds = Rectangle::ZERO;
+    }
+
+    out_bounds
+}
+
 pub fn get_bounds<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
@@ -1011,22 +1039,8 @@ pub fn get_bounds<'gc>(
             .try_get_object(0)
             .and_then(|o| o.as_display_object())
             .unwrap_or(dobj);
-        let bounds = dobj.bounds(BoundsMode::Script);
-        let mut out_bounds = if DisplayObject::ptr_eq(dobj, target) {
-            // Getting the clips bounds in its own coordinate space; no AABB transform needed.
-            bounds
-        } else {
-            // Transform AABB to target space.
-            // Calculate the matrix to transform into the target coordinate space, and transform the above AABB.
-            // Note that this doesn't produce as tight of an AABB as if we had used `bounds_with_transform` with
-            // the final matrix, but this matches Flash's behavior.
-            let to_global_matrix = dobj.local_to_global_matrix();
-            let to_target_matrix = target.global_to_local_matrix().unwrap_or_default();
-            to_target_matrix * to_global_matrix * bounds
-        };
-        if !out_bounds.is_valid() {
-            out_bounds = Rectangle::ZERO;
-        }
+
+        let out_bounds = get_dobj_bounds(dobj, target, BoundsMode::Script);
 
         return new_rectangle(activation, out_bounds);
     }
@@ -1038,9 +1052,19 @@ pub fn get_rect<'gc>(
     this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    // TODO: This should get the bounds ignoring strokes. Always equal to or smaller than getBounds.
-    // Just defer to getBounds for now. Will have to store edge_bounds vs. shape_bounds in Graphic.
-    get_bounds(activation, this, args)
+    let this = this.as_object().unwrap();
+
+    if let Some(dobj) = this.as_display_object() {
+        let target = args
+            .try_get_object(0)
+            .and_then(|o| o.as_display_object())
+            .unwrap_or(dobj);
+
+        let out_bounds = get_dobj_bounds(dobj, target, BoundsMode::ScriptWithoutStrokes);
+
+        return new_rectangle(activation, out_bounds);
+    }
+    Ok(Value::Undefined)
 }
 
 pub fn get_mask<'gc>(
