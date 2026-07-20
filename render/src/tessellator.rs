@@ -56,6 +56,46 @@ impl ShapeTessellator {
         self.lyon_mesh = VertexBuffers::new();
 
         for path in shape.paths {
+            let path = match path {
+                DrawPath::BitmapTriangles {
+                    bitmap_id,
+                    is_smoothed,
+                    is_repeating,
+                    vertices,
+                    indices,
+                } => {
+                    self.flush_draw(DrawType::Color);
+                    self.is_stroke = false;
+
+                    if bitmap_source.bitmap_size(bitmap_id).is_some()
+                        && !vertices.is_empty()
+                        && indices.len() >= 3
+                    {
+                        self.mesh.push(Draw {
+                            draw_type: DrawType::Bitmap(Bitmap {
+                                matrix: [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]],
+                                bitmap_id,
+                                is_smoothed,
+                                is_repeating,
+                            }),
+                            vertices: vertices
+                                .into_iter()
+                                .map(|vertex| Vertex {
+                                    x: vertex.position.x.to_pixels() as f32,
+                                    y: vertex.position.y.to_pixels() as f32,
+                                    color: swf::Color::WHITE,
+                                    texture_coords: vertex.texture_coords,
+                                })
+                                .collect(),
+                            mask_index_count: indices.len() as u32,
+                            indices,
+                        });
+                    }
+                    continue;
+                }
+                path => path,
+            };
+
             let (fill_style, lyon_path, next_is_stroke) = match &path {
                 DrawPath::Fill {
                     style,
@@ -71,6 +111,7 @@ impl ShapeTessellator {
                     ruffle_path_to_lyon_path(commands, *is_closed),
                     true,
                 ),
+                DrawPath::BitmapTriangles { .. } => unreachable!(),
             };
 
             let (draw, color, needs_flush) = match fill_style {
@@ -222,6 +263,7 @@ impl ShapeTessellator {
                         &mut buffers_builder,
                     )
                 }
+                DrawPath::BitmapTriangles { .. } => unreachable!(),
             };
             match result {
                 Ok(_) => {
@@ -318,6 +360,7 @@ pub struct Vertex {
     pub x: f32,
     pub y: f32,
     pub color: swf::Color,
+    pub texture_coords: [f32; 3],
 }
 
 #[derive(Clone, Debug)]
@@ -458,6 +501,7 @@ impl FillVertexConstructor<Vertex> for RuffleVertexCtor {
             x: vertex.position().x,
             y: vertex.position().y,
             color: self.color,
+            texture_coords: [vertex.position().x, vertex.position().y, 1.0],
         }
     }
 }
@@ -468,6 +512,95 @@ impl StrokeVertexConstructor<Vertex> for RuffleVertexCtor {
             x: vertex.position().x,
             y: vertex.position().y,
             color: self.color,
+            texture_coords: [vertex.position().x, vertex.position().y, 1.0],
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{Bitmap, DrawType, ShapeTessellator};
+    use crate::backend::RenderBackend;
+    use crate::bitmap::{BitmapHandle, BitmapSize, BitmapSource};
+    use crate::shape_utils::{BitmapTriangleVertex, DistilledShape, DrawPath};
+    use swf::{Point, Rectangle, Twips};
+
+    struct TestBitmapSource;
+
+    impl BitmapSource for TestBitmapSource {
+        fn bitmap_size(&self, id: u16) -> Option<BitmapSize> {
+            (id == 7).then_some(BitmapSize {
+                width: 64,
+                height: 32,
+            })
+        }
+
+        fn bitmap_handle(
+            &self,
+            _id: u16,
+            _renderer: &mut dyn RenderBackend,
+        ) -> Option<BitmapHandle> {
+            None
+        }
+    }
+
+    #[test]
+    fn preserves_bitmap_triangle_texture_coordinates() {
+        let vertices = vec![
+            BitmapTriangleVertex {
+                position: Point::from_pixels(0.0, 0.0),
+                texture_coords: [0.0, 0.0, 1.0],
+            },
+            BitmapTriangleVertex {
+                position: Point::from_pixels(20.0, 0.0),
+                texture_coords: [0.5, 0.0, 0.5],
+            },
+            BitmapTriangleVertex {
+                position: Point::from_pixels(0.0, 20.0),
+                texture_coords: [0.0, 0.25, 0.25],
+            },
+        ];
+        let shape = DistilledShape {
+            paths: vec![DrawPath::BitmapTriangles {
+                bitmap_id: 7,
+                is_smoothed: true,
+                is_repeating: false,
+                vertices: vertices.clone(),
+                indices: vec![0, 1, 2],
+            }],
+            shape_bounds: Rectangle::<Twips>::default(),
+            edge_bounds: Rectangle::<Twips>::default(),
+            id: 0,
+        };
+
+        let mesh = ShapeTessellator::new().tessellate_shape(shape, &TestBitmapSource);
+        assert_eq!(mesh.draws.len(), 1);
+        let draw = &mesh.draws[0];
+        assert_eq!(draw.indices, [0, 1, 2]);
+        assert_eq!(draw.mask_index_count, 3);
+        assert_eq!(
+            draw.vertices
+                .iter()
+                .map(|vertex| vertex.texture_coords)
+                .collect::<Vec<_>>(),
+            vertices
+                .iter()
+                .map(|vertex| vertex.texture_coords)
+                .collect::<Vec<_>>()
+        );
+        match &draw.draw_type {
+            DrawType::Bitmap(Bitmap {
+                matrix,
+                bitmap_id,
+                is_smoothed,
+                is_repeating,
+            }) => {
+                assert_eq!(*matrix, [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]]);
+                assert_eq!(*bitmap_id, 7);
+                assert!(*is_smoothed);
+                assert!(!*is_repeating);
+            }
+            _ => panic!("Expected a bitmap triangle draw"),
         }
     }
 }

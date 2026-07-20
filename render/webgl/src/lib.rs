@@ -81,7 +81,7 @@ const COLOR_FRAGMENT_GLSL: &str = include_str!("../shaders/color.frag");
 const TEXTURE_VERTEX_GLSL: &str = include_str!("../shaders/texture.vert");
 const GRADIENT_FRAGMENT_GLSL: &str = include_str!("../shaders/gradient.frag");
 const BITMAP_FRAGMENT_GLSL: &str = include_str!("../shaders/bitmap.frag");
-const NUM_VERTEX_ATTRIBUTES: u32 = 2;
+const NUM_VERTEX_ATTRIBUTES: u32 = 3;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum MaskState {
@@ -96,6 +96,7 @@ enum MaskState {
 struct Vertex {
     position: [f32; 2],
     color: u32,
+    texture_coords: [f32; 3],
 }
 
 impl From<TessVertex> for Vertex {
@@ -108,6 +109,7 @@ impl From<TessVertex> for Vertex {
                 vertex.color.b,
                 vertex.color.a,
             ]),
+            texture_coords: vertex.texture_coords,
         }
     }
 }
@@ -346,18 +348,22 @@ impl WebGlRenderBackend {
                 Vertex {
                     position: [0.0, 0.0],
                     color: 0xffff_ffff,
+                    texture_coords: [0.0, 0.0, 1.0],
                 },
                 Vertex {
                     position: [1.0, 0.0],
                     color: 0xffff_ffff,
+                    texture_coords: [1.0, 0.0, 1.0],
                 },
                 Vertex {
                     position: [1.0, 1.0],
                     color: 0xffff_ffff,
+                    texture_coords: [1.0, 1.0, 1.0],
                 },
                 Vertex {
                     position: [0.0, 1.0],
                     color: 0xffff_ffff,
+                    texture_coords: [0.0, 1.0, 1.0],
                 },
             ]),
             Gl::STATIC_DRAW,
@@ -378,7 +384,7 @@ impl WebGlRenderBackend {
                 2,
                 Gl::FLOAT,
                 false,
-                12,
+                24,
                 0,
             );
             self.gl
@@ -391,11 +397,23 @@ impl WebGlRenderBackend {
                 4,
                 Gl::UNSIGNED_BYTE,
                 true,
-                12,
+                24,
                 8,
             );
             self.gl
                 .enable_vertex_attrib_array(program.vertex_color_location);
+        }
+        if program.vertex_texture_coords_location != 0xffff_ffff {
+            self.gl.vertex_attrib_pointer_with_i32(
+                program.vertex_texture_coords_location,
+                3,
+                Gl::FLOAT,
+                false,
+                24,
+                12,
+            );
+            self.gl
+                .enable_vertex_attrib_array(program.vertex_texture_coords_location);
         }
         self.bind_vertex_array(None);
         for i in program.num_vertex_attributes..NUM_VERTEX_ATTRIBUTES {
@@ -616,7 +634,7 @@ impl WebGlRenderBackend {
                     2,
                     Gl::FLOAT,
                     false,
-                    12,
+                    24,
                     0,
                 );
                 self.gl
@@ -629,11 +647,23 @@ impl WebGlRenderBackend {
                     4,
                     Gl::UNSIGNED_BYTE,
                     true,
-                    12,
+                    24,
                     8,
                 );
                 self.gl
                     .enable_vertex_attrib_array(program.vertex_color_location);
+            }
+            if program.vertex_texture_coords_location != 0xffff_ffff {
+                self.gl.vertex_attrib_pointer_with_i32(
+                    program.vertex_texture_coords_location,
+                    3,
+                    Gl::FLOAT,
+                    false,
+                    24,
+                    12,
+                );
+                self.gl
+                    .enable_vertex_attrib_array(program.vertex_texture_coords_location);
             }
 
             let num_vertex_attributes = program.num_vertex_attributes;
@@ -1710,6 +1740,7 @@ struct ShaderProgram {
     uniforms: [Option<WebGlUniformLocation>; NUM_UNIFORMS],
     vertex_position_location: u32,
     vertex_color_location: u32,
+    vertex_texture_coords_location: u32,
     num_vertex_attributes: u32,
 }
 
@@ -1777,11 +1808,17 @@ impl ShaderProgram {
 
         let vertex_position_location = gl.get_attrib_location(&program, "position") as u32;
         let vertex_color_location = gl.get_attrib_location(&program, "color") as u32;
+        let vertex_texture_coords_location =
+            gl.get_attrib_location(&program, "texture_coords") as u32;
         let num_vertex_attributes = if vertex_position_location != 0xffff_ffff {
             1
         } else {
             0
         } + if vertex_color_location != 0xffff_ffff {
+            1
+        } else {
+            0
+        } + if vertex_texture_coords_location != 0xffff_ffff {
             1
         } else {
             0
@@ -1792,6 +1829,7 @@ impl ShaderProgram {
             uniforms,
             vertex_position_location,
             vertex_color_location,
+            vertex_texture_coords_location,
             num_vertex_attributes,
         })
     }

@@ -3,7 +3,8 @@ use ruffle_render::backend::{RenderBackend, ShapeHandle};
 use ruffle_render::bitmap::{BitmapHandle, BitmapInfo, BitmapSize, BitmapSource};
 use ruffle_render::commands::CommandHandler;
 use ruffle_render::shape_utils::{
-    DistilledShape, DrawCommand, DrawPath, FillRule, cubic_curve_bounds, quadratic_curve_bounds,
+    BitmapTriangleVertex, DistilledShape, DrawCommand, DrawPath, FillRule, cubic_curve_bounds,
+    quadratic_curve_bounds,
 };
 use std::cell::OnceCell;
 use swf::{FillStyle, LineStyle, Point, Rectangle, Twips};
@@ -98,6 +99,9 @@ impl Drawing {
 
                     this.set_fill_style(None);
                 }
+                DrawPath::BitmapTriangles { .. } => {
+                    unreachable!("Static SWF shapes do not contain bitmap triangle paths")
+                }
             }
         }
 
@@ -123,7 +127,24 @@ impl Drawing {
     /// Set fill style and rule.
     pub fn new_fill(&mut self, style: Option<FillStyle>, rule: Option<FillRule>) {
         self.close_path();
-        if let Some(existing) = self.current_fill.take() {
+        self.flush_current_path();
+        if let Some(style) = style {
+            self.current_fill = Some(DrawingFill {
+                style,
+                rule: rule.unwrap_or(self.default_winding_rule),
+                commands: vec![DrawCommand::MoveTo(self.cursor)],
+            });
+        }
+        self.fill_start = self.cursor;
+        self.mark_dirty();
+    }
+
+    fn flush_current_path(&mut self) {
+        if let Some(existing) = self.current_fill.take().filter(|fill| {
+            fill.commands
+                .iter()
+                .any(|command| !matches!(command, DrawCommand::MoveTo(_)))
+        }) {
             self.paths.push(DrawingPath::Fill(existing));
         }
         self.paths
@@ -138,15 +159,6 @@ impl Drawing {
                 is_closed: false,
             });
         }
-        if let Some(style) = style {
-            self.current_fill = Some(DrawingFill {
-                style,
-                rule: rule.unwrap_or(self.default_winding_rule),
-                commands: vec![DrawCommand::MoveTo(self.cursor)],
-            });
-        }
-        self.fill_start = self.cursor;
-        self.mark_dirty();
     }
 
     pub fn clear(&mut self) {
@@ -239,6 +251,56 @@ impl Drawing {
         id
     }
 
+    pub fn draw_bitmap_triangles(
+        &mut self,
+        vertices: Vec<BitmapTriangleVertex>,
+        indices: Vec<u32>,
+    ) -> bool {
+        let Some(fill) = &self.current_fill else {
+            return false;
+        };
+        let FillStyle::Bitmap {
+            id,
+            is_smoothed,
+            is_repeating,
+            ..
+        } = &fill.style
+        else {
+            return false;
+        };
+        let id = *id;
+        let is_smoothed = *is_smoothed;
+        let is_repeating = *is_repeating;
+
+        let style = fill.style.clone();
+        let rule = fill.rule;
+
+        self.close_path();
+        self.flush_current_path();
+
+        for vertex in &vertices {
+            self.shape_bounds = self.shape_bounds.encompass(vertex.position);
+            self.edge_bounds = self.edge_bounds.encompass(vertex.position);
+        }
+
+        self.paths.push(DrawingPath::BitmapTriangles {
+            bitmap_id: id,
+            is_smoothed,
+            is_repeating,
+            vertices,
+            indices,
+        });
+
+        self.current_fill = Some(DrawingFill {
+            style,
+            rule,
+            commands: vec![DrawCommand::MoveTo(self.cursor)],
+        });
+        self.fill_start = self.cursor;
+        self.mark_dirty();
+        true
+    }
+
     /// Obtain a `ShapeHandle` that represents this `Drawing`, or `None` if it is empty.
     pub fn register_or_replace(&self, renderer: &mut dyn RenderBackend) -> Option<ShapeHandle> {
         if self.is_empty {
@@ -262,6 +324,21 @@ impl Drawing {
                             style: &line.style,
                             commands: line.commands.to_owned(),
                             is_closed: line.is_closed,
+                        });
+                    }
+                    DrawingPath::BitmapTriangles {
+                        bitmap_id,
+                        is_smoothed,
+                        is_repeating,
+                        vertices,
+                        indices,
+                    } => {
+                        paths.push(DrawPath::BitmapTriangles {
+                            bitmap_id: *bitmap_id,
+                            is_smoothed: *is_smoothed,
+                            is_repeating: *is_repeating,
+                            vertices: vertices.clone(),
+                            indices: indices.clone(),
                         });
                     }
                 }
@@ -350,6 +427,20 @@ impl Drawing {
                         local_matrix,
                     ) {
                         return true;
+                    }
+                }
+                DrawingPath::BitmapTriangles {
+                    vertices, indices, ..
+                } => {
+                    for [i0, i1, i2] in indices.as_chunks::<3>().0 {
+                        if point_in_triangle(
+                            point,
+                            vertices[*i0 as usize].position,
+                            vertices[*i1 as usize].position,
+                            vertices[*i2 as usize].position,
+                        ) {
+                            return true;
+                        }
                     }
                 }
             }
@@ -447,6 +538,53 @@ struct DrawingLine {
 enum DrawingPath {
     Fill(DrawingFill),
     Line(DrawingLine),
+    BitmapTriangles {
+        bitmap_id: u16,
+        is_smoothed: bool,
+        is_repeating: bool,
+        vertices: Vec<BitmapTriangleVertex>,
+        indices: Vec<u32>,
+    },
+}
+
+fn point_in_triangle(
+    point: Point<Twips>,
+    a: Point<Twips>,
+    b: Point<Twips>,
+    c: Point<Twips>,
+) -> bool {
+    fn cross(a: Point<Twips>, b: Point<Twips>, point: Point<Twips>) -> i128 {
+        let ab_x = i128::from(b.x.get()) - i128::from(a.x.get());
+        let ab_y = i128::from(b.y.get()) - i128::from(a.y.get());
+        let ap_x = i128::from(point.x.get()) - i128::from(a.x.get());
+        let ap_y = i128::from(point.y.get()) - i128::from(a.y.get());
+        ab_x * ap_y - ab_y * ap_x
+    }
+
+    let ab = cross(a, b, point);
+    let bc = cross(b, c, point);
+    let ca = cross(c, a, point);
+    let has_negative = ab < 0 || bc < 0 || ca < 0;
+    let has_positive = ab > 0 || bc > 0 || ca > 0;
+    !has_negative || !has_positive
+}
+
+#[cfg(test)]
+mod tests {
+    use super::point_in_triangle;
+    use swf::Point;
+
+    #[test]
+    fn triangle_hit_test_accepts_both_windings_and_edges() {
+        let a = Point::from_pixels(0.0, 0.0);
+        let b = Point::from_pixels(10.0, 0.0);
+        let c = Point::from_pixels(0.0, 10.0);
+
+        assert!(point_in_triangle(Point::from_pixels(2.0, 2.0), a, b, c));
+        assert!(point_in_triangle(Point::from_pixels(2.0, 2.0), c, b, a));
+        assert!(point_in_triangle(Point::from_pixels(5.0, 0.0), a, b, c));
+        assert!(!point_in_triangle(Point::from_pixels(8.0, 8.0), a, b, c));
+    }
 }
 
 fn stretch_bounds(
