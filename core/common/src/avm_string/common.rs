@@ -153,6 +153,7 @@ ruffle_macros::define_common_strings! {
     "greenMultiplier",
     "greenOffset",
     "height",
+    "hitArea",
     "horizontalStem",
     "httpStatus",
     "id3",
