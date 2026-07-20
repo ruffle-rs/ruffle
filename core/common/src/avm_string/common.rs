@@ -171,6 +171,7 @@ ruffle_macros::define_common_strings! {
     "greenOffset",
     "hand",
     "height",
+    "hitArea",
     "horizontalStem",
     "httpStatus",
     "ibeam",

@@ -126,6 +126,15 @@ pub struct MouseData<'gc> {
     /// under the pointer. Any other value overrides that automatic choice.
     #[collect(require_static)]
     pub forced_cursor: Option<MouseCursor>,
+
+    /// Whether `Player::update_drag` is currently inside its drop-target
+    /// mouse pick.
+    ///
+    /// That pick resolves AVM1 `hitArea` properties, which can run a user
+    /// getter that calls `stopDrag()` and thereby re-enter `update_drag`
+    /// while the drag is still active; this flag makes the nested call a
+    /// no-op instead of recursing until stack overflow.
+    pub updating_drop_target: bool,
 }
 
 impl<'gc> MouseData<'gc> {
@@ -1475,6 +1484,10 @@ impl Player {
 
     /// Update dragged object, if any.
     pub fn update_drag(context: &mut UpdateContext<'_>) {
+        if context.mouse_data.updating_drop_target {
+            // Prevent stack overflow.
+            return;
+        }
         let mouse_position = *context.mouse_position;
         if let Some(drag_object) = context.drag_object {
             let display_object = drag_object.display_object;
@@ -1517,7 +1530,9 @@ impl Player {
                 let was_visible = display_object.visible();
                 display_object.set_visible(context, false);
                 // Set `_droptarget` to the object the mouse is hovering over.
+                context.mouse_data.updating_drop_target = true;
                 let drop_target_object = run_mouse_pick(context, false);
+                context.mouse_data.updating_drop_target = false;
                 movie_clip.set_drop_target(
                     context.gc(),
                     drop_target_object.map(|d| d.as_displayobject()),
@@ -2967,6 +2982,7 @@ impl PlayerBuilder {
                 right_pressed: None,
                 middle_pressed: None,
                 forced_cursor: None,
+                updating_drop_target: false,
             },
             avm1_shared_objects: HashMap::new(),
             avm2_shared_objects: HashMap::new(),
