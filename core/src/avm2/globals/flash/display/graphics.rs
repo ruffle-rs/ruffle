@@ -1169,11 +1169,8 @@ impl TriangleData {
                 .ok_or_else(|| make_error_2004(activation, Error2004Type::ArgumentError))?;
 
             let vertices = vertex_pairs.iter().map(make_point).collect::<Box<_>>();
-            let indices = (0..vertices.len() as u32)
-                .collect::<Vec<_>>()
-                .chunks_exact(3)
-                .map(|tri| [tri[0], tri[1], tri[2]])
-                .collect();
+            let indices = (0..vertices.len() as u32).collect::<Vec<_>>();
+            let indices = indices.as_chunks::<3>().0.iter().copied().collect();
 
             Ok(Some(Self { vertices, indices }))
         }
