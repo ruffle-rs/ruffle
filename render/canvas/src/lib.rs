@@ -14,7 +14,9 @@ use ruffle_render::commands::{CommandHandler, CommandList, RenderBlendMode};
 use ruffle_render::error::Error;
 use ruffle_render::matrix::Matrix;
 use ruffle_render::quality::StageQuality;
-use ruffle_render::shape_utils::{DistilledShape, DrawCommand, LineScaleMode, LineScales};
+use ruffle_render::shape_utils::{
+    BitmapTriangleVertex, DistilledShape, DrawCommand, LineScaleMode, LineScales,
+};
 use ruffle_render::transform::Transform;
 use ruffle_web_common::{JsError, JsResult};
 use std::any::Any;
@@ -1079,6 +1081,63 @@ fn swf_shape_to_canvas_commands(
                     },
                 });
             }
+            DrawPath::BitmapTriangles {
+                bitmap_id,
+                is_smoothed,
+                is_repeating,
+                vertices,
+                indices,
+            } => {
+                let Some(bitmap_size) = bitmap_source.bitmap_size(*bitmap_id) else {
+                    continue;
+                };
+
+                for [i0, i1, i2] in indices.as_chunks::<3>().0 {
+                    let triangle = [
+                        vertices[*i0 as usize],
+                        vertices[*i1 as usize],
+                        vertices[*i2 as usize],
+                    ];
+                    let Some(matrix) =
+                        bitmap_triangle_matrix(triangle, bitmap_size.width, bitmap_size.height)
+                    else {
+                        continue;
+                    };
+                    let Some(bitmap) = create_bitmap_pattern(
+                        *bitmap_id,
+                        matrix,
+                        *is_smoothed,
+                        *is_repeating,
+                        bitmap_source,
+                        backend,
+                    ) else {
+                        continue;
+                    };
+
+                    let path = Path2d::new().expect("Path2d constructor must succeed");
+                    path.move_to(
+                        triangle[0].position.x.get().into(),
+                        triangle[0].position.y.get().into(),
+                    );
+                    path.line_to(
+                        triangle[1].position.x.get().into(),
+                        triangle[1].position.y.get().into(),
+                    );
+                    path.line_to(
+                        triangle[2].position.x.get().into(),
+                        triangle[2].position.y.get().into(),
+                    );
+                    path.close_path();
+
+                    let canvas_path = Path2d::new().expect("Path2d constructor must succeed");
+                    canvas_path
+                        .add_path_with_transformation(&path, bounds_viewbox_matrix.unchecked_ref());
+                    canvas_data.push(CanvasDrawCommand::Fill {
+                        path: canvas_path,
+                        fill_style: CanvasFillStyle::Bitmap(bitmap),
+                    });
+                }
+            }
         }
     }
 
@@ -1321,6 +1380,90 @@ fn create_bitmap_pattern(
     } else {
         log::warn!("Couldn't fill shape with unknown bitmap {id}");
         None
+    }
+}
+
+fn bitmap_triangle_matrix(
+    vertices: [BitmapTriangleVertex; 3],
+    bitmap_width: u32,
+    bitmap_height: u32,
+) -> Option<swf::Matrix> {
+    let mut texture_points = [[0.0; 2]; 3];
+    let mut shape_points = [[0.0; 2]; 3];
+
+    for (i, vertex) in vertices.iter().enumerate() {
+        let [u_t, v_t, t] = vertex.texture_coords.map(f64::from);
+        if !t.is_finite() || t == 0.0 {
+            return None;
+        }
+        texture_points[i] = [
+            (u_t / t) * f64::from(bitmap_width),
+            (v_t / t) * f64::from(bitmap_height),
+        ];
+        shape_points[i] = [vertex.position.x.to_pixels(), vertex.position.y.to_pixels()];
+    }
+
+    let [[u0, v0], [u1, v1], [u2, v2]] = texture_points;
+    let determinant = (u1 - u0) * (v2 - v0) - (u2 - u0) * (v1 - v0);
+    if !determinant.is_finite() || determinant.abs() < f64::EPSILON {
+        return None;
+    }
+
+    let [[x0, y0], [x1, y1], [x2, y2]] = shape_points;
+    let a = ((x1 - x0) * (v2 - v0) - (x2 - x0) * (v1 - v0)) / determinant;
+    let c = ((u1 - u0) * (x2 - x0) - (u2 - u0) * (x1 - x0)) / determinant;
+    let b = ((y1 - y0) * (v2 - v0) - (y2 - y0) * (v1 - v0)) / determinant;
+    let d = ((u1 - u0) * (y2 - y0) - (u2 - u0) * (y1 - y0)) / determinant;
+    let tx = x0 - a * u0 - c * v0;
+    let ty = y0 - b * u0 - d * v0;
+
+    [a, b, c, d, tx, ty]
+        .into_iter()
+        .all(f64::is_finite)
+        .then(|| swf::Matrix {
+            a: swf::Fixed16::from_f64(a * 20.0),
+            b: swf::Fixed16::from_f64(b * 20.0),
+            c: swf::Fixed16::from_f64(c * 20.0),
+            d: swf::Fixed16::from_f64(d * 20.0),
+            tx: Twips::from_pixels(tx),
+            ty: Twips::from_pixels(ty),
+        })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::bitmap_triangle_matrix;
+    use ruffle_render::shape_utils::BitmapTriangleVertex;
+    use swf::Point;
+
+    #[test]
+    fn bitmap_triangle_matrix_maps_texture_pixels_to_shape_pixels() {
+        let matrix = bitmap_triangle_matrix(
+            [
+                BitmapTriangleVertex {
+                    position: Point::from_pixels(10.0, 20.0),
+                    texture_coords: [0.0, 0.0, 1.0],
+                },
+                BitmapTriangleVertex {
+                    position: Point::from_pixels(210.0, 20.0),
+                    texture_coords: [1.0, 0.0, 1.0],
+                },
+                BitmapTriangleVertex {
+                    position: Point::from_pixels(10.0, 120.0),
+                    texture_coords: [0.0, 1.0, 1.0],
+                },
+            ],
+            100,
+            50,
+        )
+        .expect("The triangle is non-degenerate");
+
+        assert!((matrix.a.to_f64() / 20.0 - 2.0).abs() < 0.0001);
+        assert!((matrix.b.to_f64() / 20.0).abs() < 0.0001);
+        assert!((matrix.c.to_f64() / 20.0).abs() < 0.0001);
+        assert!((matrix.d.to_f64() / 20.0 - 2.0).abs() < 0.0001);
+        assert!((matrix.tx.to_pixels() - 10.0).abs() < 0.0001);
+        assert!((matrix.ty.to_pixels() - 20.0).abs() < 0.0001);
     }
 }
 

@@ -14,9 +14,10 @@ uniform mat3 u_matrix;
 
 uniform sampler2D u_texture;
 
-varying vec2 frag_uv;
+varying vec3 frag_uvt;
 
 void main() {
+    vec2 frag_uv = frag_uvt.xy / frag_uvt.z;
     vec4 color = texture2D(u_texture, frag_uv);
 
     // Unmultiply alpha before apply color transform.

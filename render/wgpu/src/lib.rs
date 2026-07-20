@@ -86,12 +86,14 @@ struct TextureTransforms {
 #[derive(Copy, Clone, Debug, Pod, Zeroable)]
 struct PosVertex {
     position: [f32; 2],
+    texture_coords: [f32; 3],
 }
 
 impl From<TessVertex> for PosVertex {
     fn from(vertex: TessVertex) -> Self {
         Self {
             position: [vertex.x, vertex.y],
+            texture_coords: vertex.texture_coords,
         }
     }
 }
