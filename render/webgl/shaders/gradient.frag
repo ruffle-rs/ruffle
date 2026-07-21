@@ -19,7 +19,7 @@ uniform int u_repeat_mode;
 uniform float u_focal_point;
 uniform int u_interpolation;
 
-varying vec3 frag_uvt;
+varying vec2 frag_uv;
 
 vec4 interpolate(float t, float ratio1, float ratio2, vec4 color1, vec4 color2) {
     color1 = clamp(mult_color * color1 + add_color, 0.0, 1.0);
@@ -36,7 +36,6 @@ vec3 linear_to_srgb(vec3 linear) {
 }
 
 void main() {
-    vec2 frag_uv = frag_uvt.xy / frag_uvt.z;
     float t;
     if (u_gradient_type == 0) {
         t = frag_uv.x;

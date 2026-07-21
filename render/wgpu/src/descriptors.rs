@@ -168,19 +168,15 @@ impl Quad {
         let vertices_pos = [
             PosVertex {
                 position: [0.0, 0.0],
-                texture_coords: [0.0, 0.0, 1.0],
             },
             PosVertex {
                 position: [1.0, 0.0],
-                texture_coords: [1.0, 0.0, 1.0],
             },
             PosVertex {
                 position: [1.0, 1.0],
-                texture_coords: [1.0, 1.0, 1.0],
             },
             PosVertex {
                 position: [0.0, 1.0],
-                texture_coords: [0.0, 1.0, 1.0],
             },
         ];
         let vertices_pos_color = [

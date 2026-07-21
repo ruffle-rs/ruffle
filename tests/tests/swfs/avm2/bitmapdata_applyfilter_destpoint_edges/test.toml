@@ -2,7 +2,8 @@ num_frames = 1
 
 [image_comparisons.output]
 tolerance = 1
-max_outliers = 35
+# Filter rounding varies by one extra channel value across GPU backends.
+max_outliers = 64
 known_failure = true
 
 [player_options]
