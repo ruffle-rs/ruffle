@@ -57,38 +57,36 @@ impl ShapeTessellator {
 
         for path in shape.paths {
             let path = match path {
-                DrawPath::BitmapTriangles {
-                    bitmap_id,
-                    is_smoothed,
-                    is_repeating,
+                DrawPath::Triangles {
+                    style,
                     vertices,
                     indices,
+                    texture_coords,
                 } => {
                     self.flush_draw(DrawType::Color);
                     self.is_stroke = false;
 
-                    if bitmap_source.bitmap_size(bitmap_id).is_some()
-                        && !vertices.is_empty()
-                        && indices.len() >= 3
+                    if let Some((draw_type, color, _)) =
+                        self.draw_type_for_style(style, bitmap_source, texture_coords.is_some())
                     {
+                        let texture_coords = if matches!(draw_type, DrawType::Bitmap(_)) {
+                            texture_coords
+                        } else {
+                            None
+                        };
                         self.mesh.push(Draw {
-                            draw_type: DrawType::Bitmap(Bitmap {
-                                matrix: [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]],
-                                bitmap_id,
-                                is_smoothed,
-                                is_repeating,
-                            }),
+                            draw_type,
                             vertices: vertices
                                 .into_iter()
-                                .map(|vertex| Vertex {
-                                    x: vertex.position.x.to_pixels() as f32,
-                                    y: vertex.position.y.to_pixels() as f32,
-                                    color: swf::Color::WHITE,
-                                    texture_coords: vertex.texture_coords,
+                                .map(|position| Vertex {
+                                    x: position.x.to_pixels() as f32,
+                                    y: position.y.to_pixels() as f32,
+                                    color,
                                 })
                                 .collect(),
                             mask_index_count: indices.len() as u32,
                             indices,
+                            texture_coords,
                         });
                     }
                     continue;
@@ -111,80 +109,13 @@ impl ShapeTessellator {
                     ruffle_path_to_lyon_path(commands, *is_closed),
                     true,
                 ),
-                DrawPath::BitmapTriangles { .. } => unreachable!(),
+                DrawPath::Triangles { .. } => unreachable!(),
             };
 
-            let (draw, color, needs_flush) = match fill_style {
-                swf::FillStyle::Color(color) => (DrawType::Color, *color, false),
-                swf::FillStyle::LinearGradient(gradient) => {
-                    let uniform =
-                        swf_gradient_to_uniforms(GradientType::Linear, gradient, swf::Fixed8::ZERO);
-                    let (gradient_index, _) = self.gradients.insert_full(uniform);
-
-                    (
-                        DrawType::Gradient {
-                            matrix: swf_to_gl_matrix(gradient.matrix.into()),
-                            gradient: gradient_index,
-                        },
-                        swf::Color::WHITE,
-                        true,
-                    )
-                }
-                swf::FillStyle::RadialGradient(gradient) => {
-                    let uniform =
-                        swf_gradient_to_uniforms(GradientType::Radial, gradient, swf::Fixed8::ZERO);
-                    let (gradient_index, _) = self.gradients.insert_full(uniform);
-                    (
-                        DrawType::Gradient {
-                            matrix: swf_to_gl_matrix(gradient.matrix.into()),
-                            gradient: gradient_index,
-                        },
-                        swf::Color::WHITE,
-                        true,
-                    )
-                }
-                swf::FillStyle::FocalGradient {
-                    gradient,
-                    focal_point,
-                } => {
-                    let uniform =
-                        swf_gradient_to_uniforms(GradientType::Focal, gradient, *focal_point);
-                    let (gradient_index, _) = self.gradients.insert_full(uniform);
-                    (
-                        DrawType::Gradient {
-                            matrix: swf_to_gl_matrix(gradient.matrix.into()),
-                            gradient: gradient_index,
-                        },
-                        swf::Color::WHITE,
-                        true,
-                    )
-                }
-                swf::FillStyle::Bitmap {
-                    id,
-                    matrix,
-                    is_smoothed,
-                    is_repeating,
-                } => {
-                    if let Some(bitmap) = bitmap_source.bitmap_size(*id) {
-                        (
-                            DrawType::Bitmap(Bitmap {
-                                matrix: swf_bitmap_to_gl_matrix(
-                                    (*matrix).into(),
-                                    bitmap.width,
-                                    bitmap.height,
-                                ),
-                                bitmap_id: *id,
-                                is_smoothed: *is_smoothed,
-                                is_repeating: *is_repeating,
-                            }),
-                            swf::Color::WHITE,
-                            true,
-                        )
-                    } else {
-                        // Missing bitmap -- incorrect character ID in SWF?
-                        continue;
-                    }
-                }
+            let Some((draw, color, needs_flush)) =
+                self.draw_type_for_style(fill_style, bitmap_source, false)
+            else {
+                continue;
             };
 
             if needs_flush || (self.is_stroke && !next_is_stroke) {
@@ -263,7 +194,7 @@ impl ShapeTessellator {
                         &mut buffers_builder,
                     )
                 }
-                DrawPath::BitmapTriangles { .. } => unreachable!(),
+                DrawPath::Triangles { .. } => unreachable!(),
             };
             match result {
                 Ok(_) => {
@@ -304,8 +235,84 @@ impl ShapeTessellator {
                 .unwrap_or(draw_mesh.indices.len() as u32),
             vertices: draw_mesh.vertices,
             indices: draw_mesh.indices,
+            texture_coords: None,
         });
         self.mask_index_count = None;
+    }
+
+    fn draw_type_for_style(
+        &mut self,
+        fill_style: &swf::FillStyle,
+        bitmap_source: &dyn BitmapSource,
+        use_texture_coords: bool,
+    ) -> Option<(DrawType, swf::Color, bool)> {
+        Some(match fill_style {
+            swf::FillStyle::Color(color) => (DrawType::Color, *color, false),
+            swf::FillStyle::LinearGradient(gradient) => {
+                let uniform =
+                    swf_gradient_to_uniforms(GradientType::Linear, gradient, swf::Fixed8::ZERO);
+                let (gradient_index, _) = self.gradients.insert_full(uniform);
+                (
+                    DrawType::Gradient {
+                        matrix: swf_to_gl_matrix(gradient.matrix.into()),
+                        gradient: gradient_index,
+                    },
+                    swf::Color::WHITE,
+                    true,
+                )
+            }
+            swf::FillStyle::RadialGradient(gradient) => {
+                let uniform =
+                    swf_gradient_to_uniforms(GradientType::Radial, gradient, swf::Fixed8::ZERO);
+                let (gradient_index, _) = self.gradients.insert_full(uniform);
+                (
+                    DrawType::Gradient {
+                        matrix: swf_to_gl_matrix(gradient.matrix.into()),
+                        gradient: gradient_index,
+                    },
+                    swf::Color::WHITE,
+                    true,
+                )
+            }
+            swf::FillStyle::FocalGradient {
+                gradient,
+                focal_point,
+            } => {
+                let uniform = swf_gradient_to_uniforms(GradientType::Focal, gradient, *focal_point);
+                let (gradient_index, _) = self.gradients.insert_full(uniform);
+                (
+                    DrawType::Gradient {
+                        matrix: swf_to_gl_matrix(gradient.matrix.into()),
+                        gradient: gradient_index,
+                    },
+                    swf::Color::WHITE,
+                    true,
+                )
+            }
+            swf::FillStyle::Bitmap {
+                id,
+                matrix,
+                is_smoothed,
+                is_repeating,
+            } => {
+                let bitmap = bitmap_source.bitmap_size(*id)?;
+                let matrix = if use_texture_coords {
+                    [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]]
+                } else {
+                    swf_bitmap_to_gl_matrix((*matrix).into(), bitmap.width, bitmap.height)
+                };
+                (
+                    DrawType::Bitmap(Bitmap {
+                        matrix,
+                        bitmap_id: *id,
+                        is_smoothed: *is_smoothed,
+                        is_repeating: *is_repeating,
+                    }),
+                    swf::Color::WHITE,
+                    true,
+                )
+            }
+        })
     }
 }
 
@@ -325,6 +332,7 @@ pub struct Draw {
     pub vertices: Vec<Vertex>,
     pub indices: Vec<u32>,
     pub mask_index_count: u32,
+    pub texture_coords: Option<Vec<[f32; 3]>>,
 }
 
 pub enum DrawType {
@@ -360,7 +368,6 @@ pub struct Vertex {
     pub x: f32,
     pub y: f32,
     pub color: swf::Color,
-    pub texture_coords: [f32; 3],
 }
 
 #[derive(Clone, Debug)]
@@ -501,7 +508,6 @@ impl FillVertexConstructor<Vertex> for RuffleVertexCtor {
             x: vertex.position().x,
             y: vertex.position().y,
             color: self.color,
-            texture_coords: [vertex.position().x, vertex.position().y, 1.0],
         }
     }
 }
@@ -512,7 +518,6 @@ impl StrokeVertexConstructor<Vertex> for RuffleVertexCtor {
             x: vertex.position().x,
             y: vertex.position().y,
             color: self.color,
-            texture_coords: [vertex.position().x, vertex.position().y, 1.0],
         }
     }
 }
@@ -522,8 +527,8 @@ mod tests {
     use super::{Bitmap, DrawType, ShapeTessellator};
     use crate::backend::RenderBackend;
     use crate::bitmap::{BitmapHandle, BitmapSize, BitmapSource};
-    use crate::shape_utils::{BitmapTriangleVertex, DistilledShape, DrawPath};
-    use swf::{Point, Rectangle, Twips};
+    use crate::shape_utils::{DistilledShape, DrawPath};
+    use swf::{Color, FillStyle, Matrix, Point, Rectangle, Twips};
 
     struct TestBitmapSource;
 
@@ -547,26 +552,23 @@ mod tests {
     #[test]
     fn preserves_bitmap_triangle_texture_coordinates() {
         let vertices = vec![
-            BitmapTriangleVertex {
-                position: Point::from_pixels(0.0, 0.0),
-                texture_coords: [0.0, 0.0, 1.0],
-            },
-            BitmapTriangleVertex {
-                position: Point::from_pixels(20.0, 0.0),
-                texture_coords: [0.5, 0.0, 0.5],
-            },
-            BitmapTriangleVertex {
-                position: Point::from_pixels(0.0, 20.0),
-                texture_coords: [0.0, 0.25, 0.25],
-            },
+            Point::from_pixels(0.0, 0.0),
+            Point::from_pixels(20.0, 0.0),
+            Point::from_pixels(0.0, 20.0),
         ];
+        let texture_coords = vec![[0.0, 0.0, 1.0], [0.5, 0.0, 0.5], [0.0, 0.25, 0.25]];
+        let style = FillStyle::Bitmap {
+            id: 7,
+            matrix: Matrix::IDENTITY,
+            is_smoothed: true,
+            is_repeating: false,
+        };
         let shape = DistilledShape {
-            paths: vec![DrawPath::BitmapTriangles {
-                bitmap_id: 7,
-                is_smoothed: true,
-                is_repeating: false,
-                vertices: vertices.clone(),
+            paths: vec![DrawPath::Triangles {
+                style: &style,
+                vertices,
                 indices: vec![0, 1, 2],
+                texture_coords: Some(texture_coords.clone()),
             }],
             shape_bounds: Rectangle::<Twips>::default(),
             edge_bounds: Rectangle::<Twips>::default(),
@@ -579,14 +581,15 @@ mod tests {
         assert_eq!(draw.indices, [0, 1, 2]);
         assert_eq!(draw.mask_index_count, 3);
         assert_eq!(
+            draw.texture_coords.as_deref(),
+            Some(texture_coords.as_slice())
+        );
+        assert_eq!(
             draw.vertices
                 .iter()
-                .map(|vertex| vertex.texture_coords)
+                .map(|vertex| (vertex.x, vertex.y))
                 .collect::<Vec<_>>(),
-            vertices
-                .iter()
-                .map(|vertex| vertex.texture_coords)
-                .collect::<Vec<_>>()
+            [(0.0, 0.0), (20.0, 0.0), (0.0, 20.0)]
         );
         match &draw.draw_type {
             DrawType::Bitmap(Bitmap {
@@ -602,5 +605,40 @@ mod tests {
             }
             _ => panic!("Expected a bitmap triangle draw"),
         }
+    }
+
+    #[test]
+    fn injects_color_triangles_without_tessellation() {
+        let style = FillStyle::Color(Color::RED);
+        let shape = DistilledShape {
+            paths: vec![DrawPath::Triangles {
+                style: &style,
+                vertices: vec![
+                    Point::from_pixels(0.0, 0.0),
+                    Point::from_pixels(10.0, 0.0),
+                    Point::from_pixels(0.0, 10.0),
+                    Point::from_pixels(10.0, 10.0),
+                ],
+                indices: vec![0, 1, 2, 1, 3, 2],
+                texture_coords: None,
+            }],
+            shape_bounds: Rectangle::<Twips>::default(),
+            edge_bounds: Rectangle::<Twips>::default(),
+            id: 0,
+        };
+
+        let mesh = ShapeTessellator::new().tessellate_shape(shape, &TestBitmapSource);
+        let [draw] = mesh.draws.as_slice() else {
+            panic!("Expected one direct triangle draw");
+        };
+        assert!(matches!(draw.draw_type, DrawType::Color));
+        assert_eq!(draw.indices, [0, 1, 2, 1, 3, 2]);
+        assert_eq!(draw.vertices.len(), 4);
+        assert!(
+            draw.vertices
+                .iter()
+                .all(|vertex| vertex.color == Color::RED)
+        );
+        assert!(draw.texture_coords.is_none());
     }
 }

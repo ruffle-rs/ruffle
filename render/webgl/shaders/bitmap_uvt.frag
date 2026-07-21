@@ -6,20 +6,19 @@
     precision mediump float;
 #endif
 
-uniform mat4 view_matrix;
-uniform mat4 world_matrix;
 uniform vec4 mult_color;
 uniform vec4 add_color;
-uniform mat3 u_matrix;
-
 uniform sampler2D u_texture;
 
-varying vec2 frag_uv;
+varying vec3 frag_uvt;
 
 void main() {
-    vec4 color = texture2D(u_texture, frag_uv);
+    if (frag_uvt.z == 0.0) {
+        discard;
+    }
+    vec4 color = texture2D(u_texture, frag_uvt.xy / frag_uvt.z);
 
-    // Unmultiply alpha before apply color transform.
+    // Unmultiply alpha before applying the color transform.
     if (color.a > 0.0) {
         color.rgb /= color.a;
         color = clamp(mult_color * color + add_color, 0.0, 1.0);

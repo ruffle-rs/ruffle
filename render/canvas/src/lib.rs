@@ -14,9 +14,7 @@ use ruffle_render::commands::{CommandHandler, CommandList, RenderBlendMode};
 use ruffle_render::error::Error;
 use ruffle_render::matrix::Matrix;
 use ruffle_render::quality::StageQuality;
-use ruffle_render::shape_utils::{
-    BitmapTriangleVertex, DistilledShape, DrawCommand, LineScaleMode, LineScales,
-};
+use ruffle_render::shape_utils::{DistilledShape, DrawCommand, LineScaleMode, LineScales};
 use ruffle_render::transform::Transform;
 use ruffle_web_common::{JsError, JsResult};
 use std::any::Any;
@@ -59,7 +57,7 @@ fn as_shape_data(handle: &ShapeHandle) -> &ShapeData {
     <dyn Any>::downcast_ref(&*handle.0).expect("Shape handle must be a Canvas ShapeData")
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 struct CanvasColor(Color, String);
 
 impl From<Color> for CanvasColor {
@@ -103,17 +101,20 @@ enum CanvasDrawCommand {
         path: Path2d,
         fill_style: CanvasFillStyle,
     },
+    Triangles {
+        fills: Vec<(Path2d, CanvasFillStyle)>,
+    },
 }
 
 /// Fill style for a canvas path.
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 enum CanvasFillStyle {
     Color(CanvasColor),
     Gradient(Gradient),
     Bitmap(CanvasBitmap),
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 struct Gradient {
     gradient: CanvasGradient,
     transform: Option<GradientTransform>,
@@ -124,7 +125,7 @@ struct Gradient {
 /// Canvas does not provide an API for arbitrary gradient transforms, so we cheat by applying the
 /// inverse of the gradient transform to the path, and then drawing the path with the gradient transform.
 /// This results in an non-transformed shape with a transformed gradient.
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 struct GradientTransform {
     matrix: [f64; 6],
     inverse_matrix: DomMatrix,
@@ -140,7 +141,7 @@ enum CanvasStrokeStyle {
     Bitmap(CanvasBitmap),
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 struct CanvasBitmap {
     pattern: CanvasPattern,
     matrix: Matrix,
@@ -597,6 +598,80 @@ impl RenderBackend for WebCanvasRenderBackend {
     }
 }
 
+impl WebCanvasRenderBackend {
+    fn render_fill(
+        &self,
+        path: &Path2d,
+        fill_style: &CanvasFillStyle,
+        transform: &Transform,
+        transform_dirty: &mut bool,
+    ) {
+        if *transform_dirty {
+            let _ = self.context.set_transform(
+                transform.matrix.a.into(),
+                transform.matrix.b.into(),
+                transform.matrix.c.into(),
+                transform.matrix.d.into(),
+                transform.matrix.tx.to_pixels(),
+                transform.matrix.ty.to_pixels(),
+            );
+            *transform_dirty = false;
+        }
+
+        match fill_style {
+            CanvasFillStyle::Color(color) => {
+                let color = color.color_transform(&transform.color_transform);
+                self.context.set_fill_style_str(&color.1);
+                self.context
+                    .fill_with_path_2d_and_winding(path, CanvasWindingRule::Evenodd);
+            }
+            CanvasFillStyle::Gradient(gradient) => {
+                self.render_gradient_fill(path, gradient, transform, transform_dirty);
+            }
+            CanvasFillStyle::Bitmap(bitmap) => {
+                self.set_color_filter(transform);
+                self.context.set_image_smoothing_enabled(bitmap.smoothed);
+                self.context.set_fill_style_canvas_pattern(&bitmap.pattern);
+                self.context
+                    .fill_with_path_2d_and_winding(path, CanvasWindingRule::Evenodd);
+                self.clear_color_filter();
+            }
+        }
+    }
+
+    fn render_gradient_fill(
+        &self,
+        path: &Path2d,
+        gradient: &Gradient,
+        transform: &Transform,
+        transform_dirty: &mut bool,
+    ) {
+        self.set_color_filter(transform);
+        self.context
+            .set_fill_style_canvas_gradient(&gradient.gradient);
+
+        if let Some(gradient_transform) = &gradient.transform {
+            let matrix = &gradient_transform.matrix;
+            let _ = self.context.transform(
+                matrix[0], matrix[1], matrix[2], matrix[3], matrix[4], matrix[5],
+            );
+            *transform_dirty = true;
+            let untransformed_path = Path2d::new().expect("Path2d constructor must succeed");
+            untransformed_path.add_path_with_transformation(
+                path,
+                gradient_transform.inverse_matrix.unchecked_ref(),
+            );
+            self.context
+                .fill_with_path_2d_and_winding(&untransformed_path, CanvasWindingRule::Evenodd);
+        } else {
+            self.context
+                .fill_with_path_2d_and_winding(path, CanvasWindingRule::Evenodd);
+        }
+
+        self.clear_color_filter();
+    }
+}
+
 impl CommandHandler for WebCanvasRenderBackend {
     fn render_bitmap(
         &mut self,
@@ -639,70 +714,16 @@ impl CommandHandler for WebCanvasRenderBackend {
                 for command in shape.0.iter() {
                     match command {
                         CanvasDrawCommand::Fill { path, fill_style } => {
-                            if transform_dirty {
-                                let _ = self.context.set_transform(
-                                    transform.matrix.a.into(),
-                                    transform.matrix.b.into(),
-                                    transform.matrix.c.into(),
-                                    transform.matrix.d.into(),
-                                    transform.matrix.tx.to_pixels(),
-                                    transform.matrix.ty.to_pixels(),
+                            self.render_fill(path, fill_style, &transform, &mut transform_dirty)
+                        }
+                        CanvasDrawCommand::Triangles { fills } => {
+                            for (path, fill_style) in fills {
+                                self.render_fill(
+                                    path,
+                                    fill_style,
+                                    &transform,
+                                    &mut transform_dirty,
                                 );
-                                transform_dirty = false;
-                            }
-                            match fill_style {
-                                CanvasFillStyle::Color(color) => {
-                                    let color = color.color_transform(&transform.color_transform);
-                                    self.context.set_fill_style_str(&color.1);
-                                    self.context.fill_with_path_2d_and_winding(
-                                        path,
-                                        CanvasWindingRule::Evenodd,
-                                    );
-                                }
-                                CanvasFillStyle::Gradient(gradient) => {
-                                    self.set_color_filter(&transform);
-                                    self.context
-                                        .set_fill_style_canvas_gradient(&gradient.gradient);
-
-                                    if let Some(gradient_transform) = &gradient.transform {
-                                        // Canvas has no easy way to draw gradients with an arbitrary transform,
-                                        // but we can fake it by pushing the gradient's transform to the canvas,
-                                        // then transforming the path itself by the inverse.
-                                        let matrix = &gradient_transform.matrix;
-                                        let _ = self.context.transform(
-                                            matrix[0], matrix[1], matrix[2], matrix[3], matrix[4],
-                                            matrix[5],
-                                        );
-                                        transform_dirty = true;
-                                        let untransformed_path =
-                                            Path2d::new().expect("Path2d constructor must succeed");
-                                        untransformed_path.add_path_with_transformation(
-                                            path,
-                                            gradient_transform.inverse_matrix.unchecked_ref(),
-                                        );
-                                        self.context.fill_with_path_2d_and_winding(
-                                            &untransformed_path,
-                                            CanvasWindingRule::Evenodd,
-                                        );
-                                    } else {
-                                        self.context.fill_with_path_2d_and_winding(
-                                            path,
-                                            CanvasWindingRule::Evenodd,
-                                        );
-                                    }
-
-                                    self.clear_color_filter();
-                                }
-                                CanvasFillStyle::Bitmap(bitmap) => {
-                                    self.set_color_filter(&transform);
-                                    self.context.set_image_smoothing_enabled(bitmap.smoothed);
-                                    self.context.set_fill_style_canvas_pattern(&bitmap.pattern);
-                                    self.context.fill_with_path_2d_and_winding(
-                                        path,
-                                        CanvasWindingRule::Evenodd,
-                                    );
-                                    self.clear_color_filter();
-                                }
                             }
                         }
                         CanvasDrawCommand::Stroke {
@@ -793,11 +814,22 @@ impl CommandHandler for WebCanvasRenderBackend {
             // Strokes are ignored.
             MaskState::DrawMask(mask_path) => {
                 for command in shape.0.iter() {
-                    if let CanvasDrawCommand::Fill { path, .. } = command {
-                        mask_path.add_path_with_transformation(
-                            path,
-                            transform.matrix.to_dom_matrix().unchecked_ref(),
-                        );
+                    match command {
+                        CanvasDrawCommand::Fill { path, .. } => {
+                            mask_path.add_path_with_transformation(
+                                path,
+                                transform.matrix.to_dom_matrix().unchecked_ref(),
+                            );
+                        }
+                        CanvasDrawCommand::Triangles { fills } => {
+                            for (path, _) in fills {
+                                mask_path.add_path_with_transformation(
+                                    path,
+                                    transform.matrix.to_dom_matrix().unchecked_ref(),
+                                );
+                            }
+                        }
+                        CanvasDrawCommand::Stroke { .. } => {}
                     }
                 }
             }
@@ -937,6 +969,44 @@ fn draw_commands_to_path2d(commands: &[DrawCommand], is_closed: bool) -> Path2d 
     path
 }
 
+fn create_canvas_fill_style(
+    style: &swf::FillStyle,
+    bitmap_source: &dyn BitmapSource,
+    backend: &mut WebCanvasRenderBackend,
+) -> Option<CanvasFillStyle> {
+    Some(match style {
+        swf::FillStyle::Color(color) => CanvasFillStyle::Color((*color).into()),
+        swf::FillStyle::LinearGradient(gradient) => CanvasFillStyle::Gradient(
+            create_linear_gradient(&backend.context, gradient, true)
+                .expect("Couldn't create linear gradient"),
+        ),
+        swf::FillStyle::RadialGradient(gradient) => CanvasFillStyle::Gradient(
+            create_radial_gradient(&backend.context, gradient, 0.0, true)
+                .expect("Couldn't create radial gradient"),
+        ),
+        swf::FillStyle::FocalGradient {
+            gradient,
+            focal_point,
+        } => CanvasFillStyle::Gradient(
+            create_radial_gradient(&backend.context, gradient, focal_point.to_f64(), true)
+                .expect("Couldn't create radial gradient"),
+        ),
+        swf::FillStyle::Bitmap {
+            id,
+            matrix,
+            is_smoothed,
+            is_repeating,
+        } => CanvasFillStyle::Bitmap(create_bitmap_pattern(
+            *id,
+            *matrix,
+            *is_smoothed,
+            *is_repeating,
+            bitmap_source,
+            backend,
+        )?),
+    })
+}
+
 fn swf_shape_to_canvas_commands(
     shape: &DistilledShape,
     bitmap_source: &dyn BitmapSource,
@@ -966,46 +1036,9 @@ fn swf_shape_to_canvas_commands(
                     bounds_viewbox_matrix.unchecked_ref(),
                 );
 
-                let fill_style = match style {
-                    FillStyle::Color(color) => CanvasFillStyle::Color((*color).into()),
-                    FillStyle::LinearGradient(gradient) => CanvasFillStyle::Gradient(
-                        create_linear_gradient(&backend.context, gradient, true)
-                            .expect("Couldn't create linear gradient"),
-                    ),
-                    FillStyle::RadialGradient(gradient) => CanvasFillStyle::Gradient(
-                        create_radial_gradient(&backend.context, gradient, 0.0, true)
-                            .expect("Couldn't create radial gradient"),
-                    ),
-                    FillStyle::FocalGradient {
-                        gradient,
-                        focal_point,
-                    } => CanvasFillStyle::Gradient(
-                        create_radial_gradient(
-                            &backend.context,
-                            gradient,
-                            focal_point.to_f64(),
-                            true,
-                        )
-                        .expect("Couldn't create radial gradient"),
-                    ),
-                    FillStyle::Bitmap {
-                        id,
-                        matrix,
-                        is_smoothed,
-                        is_repeating,
-                    } => {
-                        let Some(bitmap) = create_bitmap_pattern(
-                            *id,
-                            *matrix,
-                            *is_smoothed,
-                            *is_repeating,
-                            bitmap_source,
-                            backend,
-                        ) else {
-                            continue;
-                        };
-                        CanvasFillStyle::Bitmap(bitmap)
-                    }
+                let Some(fill_style) = create_canvas_fill_style(style, bitmap_source, backend)
+                else {
+                    continue;
                 };
 
                 canvas_data.push(CanvasDrawCommand::Fill {
@@ -1081,61 +1114,86 @@ fn swf_shape_to_canvas_commands(
                     },
                 });
             }
-            DrawPath::BitmapTriangles {
-                bitmap_id,
-                is_smoothed,
-                is_repeating,
+            DrawPath::Triangles {
+                style,
                 vertices,
                 indices,
+                texture_coords,
             } => {
-                let Some(bitmap_size) = bitmap_source.bitmap_size(*bitmap_id) else {
-                    continue;
-                };
+                let shared_fill =
+                    if texture_coords.is_none() || !matches!(style, FillStyle::Bitmap { .. }) {
+                        create_canvas_fill_style(style, bitmap_source, backend)
+                    } else {
+                        None
+                    };
+                let mut fills = Vec::with_capacity(indices.len() / 3);
 
                 for [i0, i1, i2] in indices.as_chunks::<3>().0 {
-                    let triangle = [
+                    let positions = [
                         vertices[*i0 as usize],
                         vertices[*i1 as usize],
                         vertices[*i2 as usize],
                     ];
-                    let Some(matrix) =
-                        bitmap_triangle_matrix(triangle, bitmap_size.width, bitmap_size.height)
-                    else {
-                        continue;
-                    };
-                    let Some(bitmap) = create_bitmap_pattern(
-                        *bitmap_id,
-                        matrix,
-                        *is_smoothed,
-                        *is_repeating,
-                        bitmap_source,
-                        backend,
-                    ) else {
-                        continue;
+                    let fill_style = match (style, texture_coords) {
+                        (
+                            FillStyle::Bitmap {
+                                id,
+                                is_smoothed,
+                                is_repeating,
+                                ..
+                            },
+                            Some(texture_coords),
+                        ) => {
+                            let Some(bitmap_size) = bitmap_source.bitmap_size(*id) else {
+                                continue;
+                            };
+                            let texture_coords = [
+                                texture_coords[*i0 as usize],
+                                texture_coords[*i1 as usize],
+                                texture_coords[*i2 as usize],
+                            ];
+                            let Some(matrix) = bitmap_triangle_matrix(
+                                positions,
+                                texture_coords,
+                                bitmap_size.width,
+                                bitmap_size.height,
+                            ) else {
+                                continue;
+                            };
+                            let Some(bitmap) = create_bitmap_pattern(
+                                *id,
+                                matrix,
+                                *is_smoothed,
+                                *is_repeating,
+                                bitmap_source,
+                                backend,
+                            ) else {
+                                continue;
+                            };
+                            CanvasFillStyle::Bitmap(bitmap)
+                        }
+                        _ => {
+                            let Some(fill_style) = &shared_fill else {
+                                continue;
+                            };
+                            fill_style.clone()
+                        }
                     };
 
                     let path = Path2d::new().expect("Path2d constructor must succeed");
-                    path.move_to(
-                        triangle[0].position.x.get().into(),
-                        triangle[0].position.y.get().into(),
-                    );
-                    path.line_to(
-                        triangle[1].position.x.get().into(),
-                        triangle[1].position.y.get().into(),
-                    );
-                    path.line_to(
-                        triangle[2].position.x.get().into(),
-                        triangle[2].position.y.get().into(),
-                    );
+                    path.move_to(positions[0].x.get().into(), positions[0].y.get().into());
+                    path.line_to(positions[1].x.get().into(), positions[1].y.get().into());
+                    path.line_to(positions[2].x.get().into(), positions[2].y.get().into());
                     path.close_path();
 
                     let canvas_path = Path2d::new().expect("Path2d constructor must succeed");
                     canvas_path
                         .add_path_with_transformation(&path, bounds_viewbox_matrix.unchecked_ref());
-                    canvas_data.push(CanvasDrawCommand::Fill {
-                        path: canvas_path,
-                        fill_style: CanvasFillStyle::Bitmap(bitmap),
-                    });
+                    fills.push((canvas_path, fill_style));
+                }
+
+                if !fills.is_empty() {
+                    canvas_data.push(CanvasDrawCommand::Triangles { fills });
                 }
             }
         }
@@ -1384,15 +1442,16 @@ fn create_bitmap_pattern(
 }
 
 fn bitmap_triangle_matrix(
-    vertices: [BitmapTriangleVertex; 3],
+    positions: [Point<Twips>; 3],
+    texture_coords: [[f32; 3]; 3],
     bitmap_width: u32,
     bitmap_height: u32,
 ) -> Option<swf::Matrix> {
     let mut texture_points = [[0.0; 2]; 3];
     let mut shape_points = [[0.0; 2]; 3];
 
-    for (i, vertex) in vertices.iter().enumerate() {
-        let [u_t, v_t, t] = vertex.texture_coords.map(f64::from);
+    for i in 0..3 {
+        let [u_t, v_t, t] = texture_coords[i].map(f64::from);
         if !t.is_finite() || t == 0.0 {
             return None;
         }
@@ -1400,7 +1459,7 @@ fn bitmap_triangle_matrix(
             (u_t / t) * f64::from(bitmap_width),
             (v_t / t) * f64::from(bitmap_height),
         ];
-        shape_points[i] = [vertex.position.x.to_pixels(), vertex.position.y.to_pixels()];
+        shape_points[i] = [positions[i].x.to_pixels(), positions[i].y.to_pixels()];
     }
 
     let [[u0, v0], [u1, v1], [u2, v2]] = texture_points;
@@ -1433,26 +1492,17 @@ fn bitmap_triangle_matrix(
 #[cfg(test)]
 mod tests {
     use super::bitmap_triangle_matrix;
-    use ruffle_render::shape_utils::BitmapTriangleVertex;
     use swf::Point;
 
     #[test]
     fn bitmap_triangle_matrix_maps_texture_pixels_to_shape_pixels() {
         let matrix = bitmap_triangle_matrix(
             [
-                BitmapTriangleVertex {
-                    position: Point::from_pixels(10.0, 20.0),
-                    texture_coords: [0.0, 0.0, 1.0],
-                },
-                BitmapTriangleVertex {
-                    position: Point::from_pixels(210.0, 20.0),
-                    texture_coords: [1.0, 0.0, 1.0],
-                },
-                BitmapTriangleVertex {
-                    position: Point::from_pixels(10.0, 120.0),
-                    texture_coords: [0.0, 1.0, 1.0],
-                },
+                Point::from_pixels(10.0, 20.0),
+                Point::from_pixels(210.0, 20.0),
+                Point::from_pixels(10.0, 120.0),
             ],
+            [[0.0, 0.0, 1.0], [1.0, 0.0, 1.0], [0.0, 1.0, 1.0]],
             100,
             50,
         )

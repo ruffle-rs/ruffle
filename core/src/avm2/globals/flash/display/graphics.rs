@@ -18,7 +18,7 @@ use crate::avm2_stub_method;
 use crate::display_object::TDisplayObject;
 use crate::drawing::Drawing;
 use crate::string::{AvmString, WStr};
-use ruffle_render::shape_utils::{BitmapTriangleVertex, DrawCommand, FillRule, GradientType};
+use ruffle_render::shape_utils::{DrawCommand, FillRule, GradientType};
 use std::f64::consts::FRAC_1_SQRT_2;
 use swf::{
     Color, FillStyle, Fixed8, Gradient, GradientInterpolation, GradientRecord, GradientSpread,
@@ -1056,15 +1056,6 @@ pub fn draw_triangles<'gc>(
                 .ok_or_else(|| make_error_2004(activation, Error2004Type::ArgumentError))?
         };
 
-        // FIXME Triangles should be drawn using non-zero winding rule.
-        //   When fixed, update output.expected.png of avm2/graphics_draw_triangles.
-        avm2_stub_method!(
-            activation,
-            "flash.display.Graphics",
-            "drawTriangles",
-            "winding behavior"
-        );
-
         draw_triangles_internal(
             activation,
             &mut drawing,
@@ -1258,34 +1249,11 @@ fn draw_triangles_internal<'gc>(
         return Ok(());
     }
 
-    if let Some(texture_coords) = texture_coords {
-        let vertices = data
-            .vertices
-            .iter()
-            .copied()
-            .zip(texture_coords)
-            .map(|(position, texture_coords)| BitmapTriangleVertex {
-                position,
-                texture_coords,
-            })
-            .collect();
-
-        if drawing.draw_bitmap_triangles(vertices, indices.clone()) {
-            return Ok(());
-        }
-    }
-
-    for [i0, i1, i2] in indices.as_chunks::<3>().0 {
-        let [a, b, c] = [
-            data.vertices[*i0 as usize],
-            data.vertices[*i1 as usize],
-            data.vertices[*i2 as usize],
-        ];
-        drawing.draw_command(DrawCommand::MoveTo(a));
-        drawing.draw_command(DrawCommand::LineTo(b));
-        drawing.draw_command(DrawCommand::LineTo(c));
-        drawing.draw_command(DrawCommand::LineTo(a));
-    }
+    drawing.draw_triangles(
+        data.vertices.into_vec(),
+        indices,
+        texture_coords.map(|coords| coords.into_vec()),
+    );
 
     Ok(())
 }
@@ -1329,50 +1297,6 @@ fn texture_coords_from_values(
         )
     } else {
         None
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::texture_coords_from_values;
-    use crate::avm2::Value;
-
-    #[test]
-    fn parses_uv_coordinates() {
-        let values = [
-            Value::Number(0.0),
-            Value::Number(0.25),
-            Value::Number(1.0),
-            Value::Number(0.75),
-        ];
-
-        assert_eq!(
-            texture_coords_from_values(&values, 2).as_deref(),
-            Some(&[[0.0, 0.25, 1.0], [1.0, 0.75, 1.0]][..])
-        );
-    }
-
-    #[test]
-    fn converts_uvt_coordinates_to_homogeneous_values() {
-        let values = [
-            Value::Number(0.5),
-            Value::Number(0.25),
-            Value::Number(0.5),
-            Value::Number(1.0),
-            Value::Number(0.75),
-            Value::Number(0.25),
-        ];
-
-        assert_eq!(
-            texture_coords_from_values(&values, 2).as_deref(),
-            Some(&[[0.25, 0.125, 0.5], [0.25, 0.1875, 0.25]][..])
-        );
-    }
-
-    #[test]
-    fn rejects_mismatched_texture_coordinate_count() {
-        let values = [Value::Number(0.0), Value::Number(0.0), Value::Number(1.0)];
-        assert!(texture_coords_from_values(&values, 2).is_none());
     }
 }
 
@@ -1709,14 +1633,6 @@ fn handle_graphics_triangle_path<'gc>(
         .as_object();
 
     if let Some(vertices) = vertices {
-        // FIXME Triangles should be drawn using non-zero winding rule.
-        avm2_stub_method!(
-            activation,
-            "flash.display.Graphics",
-            "drawGraphicsData",
-            "GraphicsTrianglePath winding behavior"
-        );
-
         draw_triangles_internal(
             activation,
             drawing,
@@ -1912,4 +1828,48 @@ fn handle_bitmap_fill<'gc>(
     };
 
     Ok(style)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::texture_coords_from_values;
+    use crate::avm2::Value;
+
+    #[test]
+    fn parses_uv_coordinates() {
+        let values = [
+            Value::Number(0.0),
+            Value::Number(0.25),
+            Value::Number(1.0),
+            Value::Number(0.75),
+        ];
+
+        assert_eq!(
+            texture_coords_from_values(&values, 2).as_deref(),
+            Some(&[[0.0, 0.25, 1.0], [1.0, 0.75, 1.0]][..])
+        );
+    }
+
+    #[test]
+    fn converts_uvt_coordinates_to_homogeneous_values() {
+        let values = [
+            Value::Number(0.5),
+            Value::Number(0.25),
+            Value::Number(0.5),
+            Value::Number(1.0),
+            Value::Number(0.75),
+            Value::Number(0.25),
+        ];
+
+        assert_eq!(
+            texture_coords_from_values(&values, 2).as_deref(),
+            Some(&[[0.25, 0.125, 0.5], [0.25, 0.1875, 0.25]][..])
+        );
+    }
+
+    #[test]
+    fn rejects_mismatched_texture_coordinate_count() {
+        let values = [Value::Number(0.0), Value::Number(0.0), Value::Number(1.0)];
+        assert!(texture_coords_from_values(&values, 2).is_none());
+    }
 }

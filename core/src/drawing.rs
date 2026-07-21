@@ -3,8 +3,7 @@ use ruffle_render::backend::{RenderBackend, ShapeHandle};
 use ruffle_render::bitmap::{BitmapHandle, BitmapInfo, BitmapSize, BitmapSource};
 use ruffle_render::commands::CommandHandler;
 use ruffle_render::shape_utils::{
-    BitmapTriangleVertex, DistilledShape, DrawCommand, DrawPath, FillRule, cubic_curve_bounds,
-    quadratic_curve_bounds,
+    DistilledShape, DrawCommand, DrawPath, FillRule, cubic_curve_bounds, quadratic_curve_bounds,
 };
 use std::cell::OnceCell;
 use swf::{FillStyle, LineStyle, Point, Rectangle, Twips};
@@ -99,8 +98,8 @@ impl Drawing {
 
                     this.set_fill_style(None);
                 }
-                DrawPath::BitmapTriangles { .. } => {
-                    unreachable!("Static SWF shapes do not contain bitmap triangle paths")
+                DrawPath::Triangles { .. } => {
+                    unreachable!("Static SWF shapes do not contain triangle paths")
                 }
             }
         }
@@ -251,54 +250,59 @@ impl Drawing {
         id
     }
 
-    pub fn draw_bitmap_triangles(
+    pub fn draw_triangles(
         &mut self,
-        vertices: Vec<BitmapTriangleVertex>,
-        indices: Vec<u32>,
-    ) -> bool {
+        vertices: Vec<Point<Twips>>,
+        mut indices: Vec<u32>,
+        texture_coords: Option<Vec<[f32; 3]>>,
+    ) {
         let Some(fill) = &self.current_fill else {
-            return false;
+            return;
         };
-        let FillStyle::Bitmap {
-            id,
-            is_smoothed,
-            is_repeating,
-            ..
-        } = &fill.style
-        else {
-            return false;
-        };
-        let id = *id;
-        let is_smoothed = *is_smoothed;
-        let is_repeating = *is_repeating;
-
         let style = fill.style.clone();
-        let rule = fill.rule;
 
-        self.close_path();
-        self.flush_current_path();
-
-        for vertex in &vertices {
-            self.shape_bounds = self.shape_bounds.encompass(vertex.position);
-            self.edge_bounds = self.edge_bounds.encompass(vertex.position);
+        if matches!(style, FillStyle::Bitmap { .. })
+            && let Some(texture_coords) = &texture_coords
+        {
+            assert_eq!(vertices.len(), texture_coords.len());
+            let valid = |index: u32| {
+                let coords = texture_coords[index as usize];
+                coords.into_iter().all(f32::is_finite) && coords[2] != 0.0
+            };
+            if indices
+                .as_chunks::<3>()
+                .0
+                .iter()
+                .any(|triangle| !triangle.iter().copied().all(valid))
+            {
+                indices = indices
+                    .as_chunks::<3>()
+                    .0
+                    .iter()
+                    .filter(|triangle| triangle.iter().copied().all(valid))
+                    .flatten()
+                    .copied()
+                    .collect();
+            }
+        }
+        if indices.is_empty() {
+            return;
         }
 
-        self.paths.push(DrawingPath::BitmapTriangles {
-            bitmap_id: id,
-            is_smoothed,
-            is_repeating,
+        for &index in &indices {
+            let point = vertices[index as usize];
+            self.shape_bounds = self.shape_bounds.encompass(point);
+            self.edge_bounds = self.edge_bounds.encompass(point);
+        }
+
+        self.paths.push(DrawingPath::Triangles {
+            style,
             vertices,
             indices,
+            texture_coords,
         });
 
-        self.current_fill = Some(DrawingFill {
-            style,
-            rule,
-            commands: vec![DrawCommand::MoveTo(self.cursor)],
-        });
-        self.fill_start = self.cursor;
         self.mark_dirty();
-        true
     }
 
     /// Obtain a `ShapeHandle` that represents this `Drawing`, or `None` if it is empty.
@@ -326,19 +330,17 @@ impl Drawing {
                             is_closed: line.is_closed,
                         });
                     }
-                    DrawingPath::BitmapTriangles {
-                        bitmap_id,
-                        is_smoothed,
-                        is_repeating,
+                    DrawingPath::Triangles {
+                        style,
                         vertices,
                         indices,
+                        texture_coords,
                     } => {
-                        paths.push(DrawPath::BitmapTriangles {
-                            bitmap_id: *bitmap_id,
-                            is_smoothed: *is_smoothed,
-                            is_repeating: *is_repeating,
+                        paths.push(DrawPath::Triangles {
+                            style,
                             vertices: vertices.clone(),
                             indices: indices.clone(),
+                            texture_coords: texture_coords.clone(),
                         });
                     }
                 }
@@ -429,15 +431,15 @@ impl Drawing {
                         return true;
                     }
                 }
-                DrawingPath::BitmapTriangles {
+                DrawingPath::Triangles {
                     vertices, indices, ..
                 } => {
                     for [i0, i1, i2] in indices.as_chunks::<3>().0 {
                         if point_in_triangle(
                             point,
-                            vertices[*i0 as usize].position,
-                            vertices[*i1 as usize].position,
-                            vertices[*i2 as usize].position,
+                            vertices[*i0 as usize],
+                            vertices[*i1 as usize],
+                            vertices[*i2 as usize],
                         ) {
                             return true;
                         }
@@ -538,12 +540,11 @@ struct DrawingLine {
 enum DrawingPath {
     Fill(DrawingFill),
     Line(DrawingLine),
-    BitmapTriangles {
-        bitmap_id: u16,
-        is_smoothed: bool,
-        is_repeating: bool,
-        vertices: Vec<BitmapTriangleVertex>,
+    Triangles {
+        style: FillStyle,
+        vertices: Vec<Point<Twips>>,
         indices: Vec<u32>,
+        texture_coords: Option<Vec<[f32; 3]>>,
     },
 }
 
@@ -570,9 +571,10 @@ fn point_in_triangle(
 }
 
 #[cfg(test)]
+#[expect(clippy::items_after_test_module)]
 mod tests {
-    use super::point_in_triangle;
-    use swf::Point;
+    use super::{DrawCommand, Drawing, DrawingPath, point_in_triangle};
+    use swf::{Color, FillStyle, LineStyle, Matrix, Point, Twips};
 
     #[test]
     fn triangle_hit_test_accepts_both_windings_and_edges() {
@@ -584,6 +586,95 @@ mod tests {
         assert!(point_in_triangle(Point::from_pixels(2.0, 2.0), c, b, a));
         assert!(point_in_triangle(Point::from_pixels(5.0, 0.0), a, b, c));
         assert!(!point_in_triangle(Point::from_pixels(8.0, 8.0), a, b, c));
+    }
+
+    #[test]
+    fn triangles_preserve_in_progress_drawing_state() {
+        let mut drawing = Drawing::new();
+        drawing.set_fill_style(Some(FillStyle::Color(Color::RED)));
+        drawing.set_line_style(Some(LineStyle::new().with_width(Twips::ONE_PX)));
+        drawing.draw_command(DrawCommand::MoveTo(Point::from_pixels(2.0, 3.0)));
+        drawing.draw_command(DrawCommand::LineTo(Point::from_pixels(4.0, 5.0)));
+
+        let cursor = drawing.cursor;
+        let fill_start = drawing.fill_start;
+        let fill_command_count = drawing.current_fill.as_ref().unwrap().commands.len();
+        let line_command_count = drawing.current_line.as_ref().unwrap().commands.len();
+
+        drawing.draw_triangles(
+            vec![
+                Point::from_pixels(0.0, 0.0),
+                Point::from_pixels(10.0, 0.0),
+                Point::from_pixels(0.0, 10.0),
+                Point::from_pixels(1_000.0, 1_000.0),
+            ],
+            vec![0, 1, 2],
+            None,
+        );
+
+        assert_eq!(drawing.cursor, cursor);
+        assert_eq!(drawing.fill_start, fill_start);
+        assert_eq!(
+            drawing.current_fill.as_ref().unwrap().commands.len(),
+            fill_command_count
+        );
+        assert_eq!(
+            drawing.current_line.as_ref().unwrap().commands.len(),
+            line_command_count
+        );
+        assert!(matches!(
+            drawing.paths.last(),
+            Some(DrawingPath::Triangles { indices, .. }) if indices == &[0, 1, 2]
+        ));
+        assert_eq!(drawing.self_bounds().x_max, Twips::from_pixels(10.0));
+        assert_eq!(drawing.self_bounds().y_max, Twips::from_pixels(10.0));
+        assert!(drawing.hit_test(
+            Point::from_pixels(2.0, 2.0),
+            &ruffle_render::matrix::Matrix::default()
+        ));
+        assert!(!drawing.hit_test(
+            Point::from_pixels(8.0, 8.0),
+            &ruffle_render::matrix::Matrix::default()
+        ));
+    }
+
+    #[test]
+    fn triangles_without_a_fill_do_not_draw() {
+        let mut drawing = Drawing::new();
+        drawing.draw_triangles(
+            vec![
+                Point::from_pixels(0.0, 0.0),
+                Point::from_pixels(10.0, 0.0),
+                Point::from_pixels(0.0, 10.0),
+            ],
+            vec![0, 1, 2],
+            None,
+        );
+
+        assert!(drawing.is_empty);
+        assert!(drawing.paths.is_empty());
+    }
+
+    #[test]
+    fn bitmap_triangles_skip_invalid_texture_coordinates() {
+        let mut drawing = Drawing::new();
+        drawing.set_fill_style(Some(FillStyle::Bitmap {
+            id: 0,
+            matrix: Matrix::IDENTITY,
+            is_smoothed: false,
+            is_repeating: false,
+        }));
+        drawing.draw_triangles(
+            vec![
+                Point::from_pixels(0.0, 0.0),
+                Point::from_pixels(10.0, 0.0),
+                Point::from_pixels(0.0, 10.0),
+            ],
+            vec![0, 1, 2],
+            Some(vec![[0.0, 0.0, 1.0], [1.0, 0.0, 0.0], [0.0, 1.0, 1.0]]),
+        );
+
+        assert!(drawing.paths.is_empty());
     }
 }
 
