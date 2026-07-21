@@ -1557,6 +1557,51 @@ impl<'gc> EditText<'gc> {
         self.invalidate_cached_bitmap();
     }
 
+    /// The x position of the caret in layout space.
+    ///
+    /// The caret may sit after the last character, which has no bounds of its
+    /// own, so fall back to the right edge of the character before it.
+    fn caret_layout_x(self, position: usize) -> Option<Twips> {
+        let layout = self.0.layout.borrow();
+        if let Some(bounds) = layout.char_bounds(position) {
+            Some(bounds.x_min)
+        } else {
+            layout
+                .char_bounds(position.checked_sub(1)?)
+                .map(|bounds| bounds.x_max)
+        }
+    }
+
+    /// Scroll horizontally so that the caret stays visible, like FP does while
+    /// the user types or moves through the text. Layout isn't clipped to the
+    /// field, so without this the text keeps being laid out past the right edge
+    /// and simply stops being drawn.
+    fn scroll_caret_into_view(self) {
+        // Wrapped text has nowhere to scroll to.
+        if self.0.flags.get().contains(EditTextFlag::WORD_WRAP) {
+            return;
+        }
+        let Some(selection) = self.selection() else {
+            return;
+        };
+        let Some(caret_x) = self.caret_layout_x(selection.to()) else {
+            return;
+        };
+
+        let caret_x = self.layout_width_to_local_width(caret_x);
+        let window_width = (self.0.bounds.get().width() - Self::GUTTER * 2).max(Twips::ZERO);
+        let hscroll = Twips::from_pixels(self.0.hscroll.get());
+        let new_hscroll = if caret_x < hscroll {
+            caret_x
+        } else if caret_x > hscroll + window_width {
+            caret_x - window_width
+        } else {
+            return;
+        };
+
+        self.set_hscroll(new_hscroll.to_pixels().clamp(0.0, self.maxhscroll()));
+    }
+
     pub fn scroll(self) -> usize {
         self.0.scroll.get()
     }
@@ -1823,6 +1868,9 @@ impl<'gc> EditText<'gc> {
                 }
             }
         }
+        // Also for plain caret movement, which doesn't count as a change.
+        self.scroll_caret_into_view();
+
         if changed {
             let mut activation = Avm1Activation::from_nothing(
                 context,
@@ -2086,6 +2134,7 @@ impl<'gc> EditText<'gc> {
         self.replace_text(selection.start(), selection.end(), text, context);
         let new_pos = selection.start() + text.len();
         self.set_selection(Some(TextSelection::for_position(new_pos)));
+        self.scroll_caret_into_view();
 
         let mut activation = Avm1Activation::from_nothing(
             context,
