@@ -864,7 +864,9 @@ fn translate_op<'gc>(
             Op::SetSuper { multiname }
         }
         AbcOp::In => Op::In,
-        AbcOp::PushScope => Op::PushScope,
+        AbcOp::PushScope => Op::PushScope {
+            input_not_null: false,
+        },
         AbcOp::NewCatch { index } => Op::NewCatch {
             index: index.0 as usize,
         },

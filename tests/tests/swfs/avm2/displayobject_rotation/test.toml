@@ -1,5 +1,12 @@
 num_frames = 1
 
+[[compilers]]
+type = "Asc"
+target = "test.swf"
+class = "Test"
+scripts = ["Test.as"]
+swf_version = 43
+
 [approximations]
 bare_numbers = true
 epsilon = 0.0000000001
