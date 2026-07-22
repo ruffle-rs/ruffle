@@ -621,6 +621,13 @@ impl<'gc> Avm1<'gc> {
             &mut self.env_case_insensitive.constructor_registry
         };
         if let Some(constructor) = constructor {
+            if !is_case_sensitive {
+                // In case-insensitive mode, PropertyMap updates the value but preserves
+                // the original casing of the key. Flash Player overwrites both.
+                // We must remove it first to ensure the new casing is stored.
+                // This is necessary for AMF0 serialization of TypedObjects.
+                registry.remove(symbol, is_case_sensitive);
+            }
             registry.insert(symbol, constructor, is_case_sensitive);
         } else {
             registry.remove(symbol, is_case_sensitive);
