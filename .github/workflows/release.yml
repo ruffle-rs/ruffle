@@ -708,7 +708,7 @@ jobs:
           -e "s/@SHA512SUM_aarch64@/$(sha512sum ${{ needs.create-release.outputs.package_prefix }}-linux-aarch64.tar.gz | cut -d' ' -f1)/"
 
       - name: Publish AUR package
-        uses: KSXGitHub/github-actions-deploy-aur@v4.1.3
+        uses: KSXGitHub/github-actions-deploy-aur@v4.2.0
         with:
           pkgname: ruffle-nightly-bin
           pkgbuild: desktop/packages/linux/aur/ruffle-nightly-bin/PKGBUILD
