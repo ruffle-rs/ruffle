@@ -71,8 +71,8 @@ impl MovieViewRenderer {
         });
         let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
             label: None,
-            bind_group_layouts: &[&bind_group_layout],
-            push_constant_ranges: &[],
+            bind_group_layouts: &[Some(&bind_group_layout)],
+            immediate_size: 0,
         });
         let pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
             label: None,
@@ -119,7 +119,7 @@ impl MovieViewRenderer {
                 })],
                 compilation_options: Default::default(),
             }),
-            multiview: None,
+            multiview_mask: None,
             cache: None,
         });
         let vertices = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
@@ -232,8 +232,8 @@ impl RenderTarget for MovieView {
         self.texture.height()
     }
 
-    fn get_next_texture(&mut self) -> Result<Self::Frame, wgpu::SurfaceError> {
-        Ok(MovieViewFrame(
+    fn get_next_texture(&mut self) -> Option<Self::Frame> {
+        Some(MovieViewFrame(
             self.texture.create_view(&Default::default()),
         ))
     }

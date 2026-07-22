@@ -33,6 +33,7 @@ use super::FilePicker;
 
 pub struct Dialogs {
     event_loop: EventLoopProxy<RuffleEvent>,
+    window: Weak<winit::window::Window>,
 
     picker: FilePicker,
     preferences_dialog: Option<PreferencesDialog>,
@@ -79,8 +80,9 @@ impl Dialogs {
         window: Weak<winit::window::Window>,
         event_loop: EventLoopProxy<RuffleEvent>,
     ) -> Self {
-        let picker = FilePicker::new(window, preferences.clone(), event_loop.clone());
+        let picker = FilePicker::new(window.clone(), preferences.clone(), event_loop.clone());
         Self {
+            window,
             preferences_dialog: None,
             bookmarks_dialog: None,
             bookmark_add_dialog: None,
@@ -142,7 +144,10 @@ impl Dialogs {
     }
 
     pub fn open_preferences(&mut self) {
-        self.preferences_dialog = Some(PreferencesDialog::new(self.preferences.clone()));
+        self.preferences_dialog = Some(PreferencesDialog::new(
+            self.preferences.clone(),
+            self.window.upgrade(),
+        ));
     }
 
     pub fn open_bookmarks(&mut self) {

@@ -33,7 +33,8 @@ pub struct Exporter {
 
 impl Exporter {
     pub fn new(opt: &Opt) -> Result<Self> {
-        let instance = create_wgpu_instance(opt.graphics.into(), wgpu::BackendOptions::default());
+        let instance =
+            create_wgpu_instance(opt.graphics.into(), wgpu::BackendOptions::default(), None);
         let (adapter, device, queue) = futures::executor::block_on(request_adapter_and_device(
             opt.graphics.into(),
             &instance,
