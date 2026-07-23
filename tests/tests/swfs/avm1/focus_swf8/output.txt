@@ -1,0 +1,15 @@
+null _level0.txt1
+_level0.txt1 null
+null _level0.txt1
+_level0.txt1 null
+btn clicked
+null _level0.txt1
+_level0.txt1 null
+null _level0.txt1
+_level0.txt1 _level0.txt2
+_level0.txt2 null
+null _level0.txt2
+_level0.txt2 null
+btn clicked
+null _level0.txt2
+_level0.txt2 null

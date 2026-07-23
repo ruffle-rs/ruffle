@@ -1909,13 +1909,19 @@ impl Player {
                 || int.is_focusable_by_mouse(context)
         });
         if should_focus {
-            tracker.set_by_mouse(pressed_object, context);
+            tracker.set_by_mouse(pressed_object, context, true);
         } else if tracker
             .get()
             .is_some_and(|int| int.is_focusable_by_mouse(context))
         {
-            // Need to clear the focus if an object focusable by mouse was un-focused.
-            tracker.set_by_mouse(None, context);
+            // In SWF version 9 and above, when the pressed object is not
+            // focusable, the focus is not cleared, but only in AVM2 does
+            // clicking the stage (pressed_object.is_none()) clear the focus.
+            // (See the avm1/focus_swf8, avm1/focus_swf9, and avm2/focus_mixed_avm
+            //  tests for examples of this behavior)
+            let should_reset_focus = context.root_swf.version() < 9
+                || (pressed_object.is_none() && context.root_swf.is_action_script_3());
+            tracker.set_by_mouse(None, context, should_reset_focus);
         }
     }
 
