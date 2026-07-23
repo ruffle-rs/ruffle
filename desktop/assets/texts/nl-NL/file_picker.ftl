@@ -1,4 +1,5 @@
 file-picker-title-open-file = Open enkel bestand
+file-picker-title-open-directory = Open een folder
 file-picker-filter-supported = Alle ondersteunde bestanden
 file-picker-filter-swf = SWF (*.swf)
 file-picker-filter-spl = FutureSplash Animator (*.spl)
