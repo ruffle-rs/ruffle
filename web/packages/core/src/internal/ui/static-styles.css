@@ -408,31 +408,44 @@
 
 .modal {
     background-color: #0008;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px;
+    box-sizing: border-box;
+    overflow: auto;
 }
 
 .modal-area {
     position: relative;
-    left: 50%;
-    transform: translateX(-50%);
     background-color: var(--modal-background);
     color: rgb(var(--modal-foreground-rgb));
     width: fit-content;
-    padding: 8px 12px;
+    padding: 40px 16px 16px;
     border-radius: 12px;
+    overflow: hidden;
     box-shadow: 0 2px 6px 0 #0008;
 }
 
 #modal-area {
     width: 450px;
     height: 300px;
+    padding: 0;
 }
 
 .close-modal {
     width: 16px;
     height: 16px;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' height='16px' viewBox='0 -960 960 960' width='16px' fill='black'%3E%3Cpath d='M480-392 300-212q-18 18-44 18t-44-18q-18-18-18-44t18-44l180-180-180-180q-18-18-18-44t18-44q18-18 44-18t44 18l180 180 180-180q18-18 44-18t44 18q18 18 18 44t-18 44L568-480l180 180q18 18 18 44t-18 44q-18 18-44 18t-44-18L480-392Z'/%3E%3C/svg%3E");
+    background-image: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' height='16px' viewBox='0 -960 960 960' width='16px' fill='black'><path d='M480-392 300-212q-18 18-44 18t-44-18q-18-18-18-44t18-44l180-180-180-180q-18-18-18-44t18-44q18-18 44-18t44 18l180 180 180-180q18-18 44-18t44 18q18 18 18 44t-18 44L568-480l180 180q18 18 18 44t-18 44q-18 18-44 18t-44-18L480-392Z'/></svg>");
     cursor: pointer;
     filter: var(--modal-foreground-filter);
+    border-radius: 4px;
+    opacity: 0.6;
+    transition: opacity 0.15s;
+
+    &:hover {
+        opacity: 1;
+    }
 }
 
 .modal-button {
@@ -443,6 +456,11 @@
     padding: 4px 8px;
     border-radius: 6px;
     cursor: pointer;
+    transition: background-color 0.15s;
+
+    &:hover {
+        background-color: rgb(var(--modal-foreground-rgb), 0.3);
+    }
 }
 
 :not(#volume-controls) > .close-modal {
@@ -452,9 +470,12 @@
 }
 
 .general-save-options {
-    text-align: center;
-    padding-bottom: 8px;
-    border-bottom: 2px solid rgb(var(--modal-foreground-rgb), 0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 44px;
+    padding: 0 44px;
+    border-bottom: 1px solid rgb(var(--modal-foreground-rgb), 0.15);
 }
 
 #local-saves {
@@ -462,17 +483,39 @@
     border-collapse: collapse;
     overflow-y: auto;
     display: block;
-    height: calc(100% - 45px);
+    height: calc(100% - 44px);
     min-height: 30px;
 
     td {
-        border-bottom: 2px solid rgb(var(--modal-foreground-rgb), 0.15);
-        height: 30px;
+        border-bottom: 1px solid rgb(var(--modal-foreground-rgb), 0.08);
+        height: 34px;
+        padding: 0 6px;
     }
 
     td:nth-child(1) {
         width: 100%;
         word-break: break-all;
+    }
+
+    td:not(:first-child) {
+        padding: 0 2px;
+    }
+
+    > tr:hover td {
+        background-color: rgb(var(--modal-foreground-rgb), 0.05);
+    }
+
+    &::-webkit-scrollbar {
+        width: 8px;
+    }
+
+    &::-webkit-scrollbar-thumb {
+        background: rgb(var(--modal-foreground-rgb), 0.25);
+        border-radius: 3px;
+    }
+
+    &::-webkit-scrollbar-track {
+        background: transparent;
     }
 }
 
@@ -483,11 +526,16 @@
     cursor: pointer;
     filter: var(--modal-foreground-filter);
     vertical-align: middle;
-    opacity: 0.4;
-}
+    opacity: 0.35;
+    transition: opacity 0.12s;
 
-#local-saves > tr:hover .save-option {
-    opacity: 1;
+    :where(#local-saves tr:hover) & {
+        opacity: 0.65;
+    }
+
+    &:hover {
+        opacity: 1;
+    }
 }
 
 #download-save {
@@ -522,6 +570,10 @@
     width: 100%;
     height: 100%;
     background-color: black;
+}
+
+#volume-controls-modal .modal-area {
+    padding: 12px 16px;
 }
 
 #volume-controls {
@@ -562,6 +614,35 @@ label[for="mute-checkbox"] {
     width: 4.8ch;
     text-align: center;
     user-select: none;
+}
+
+#volume-slider {
+    appearance: none;
+    height: 4px;
+    background: linear-gradient(
+        to right,
+        var(--ruffle-orange) var(--volume-pct, 100%),
+        rgb(var(--modal-foreground-rgb), 0.2) var(--volume-pct, 100%)
+    );
+    border-radius: 2px;
+    cursor: pointer;
+    outline: none;
+    border: none;
+    flex: 1;
+
+    &::-webkit-slider-thumb {
+        appearance: none;
+        width: 14px;
+        height: 14px;
+        border-radius: 50%;
+        background: var(--ruffle-orange);
+        cursor: pointer;
+        transition: transform 0.1s;
+
+        &:hover {
+            transform: scale(1.2);
+        }
+    }
 }
 
 #hardware-acceleration-modal .modal-area {
