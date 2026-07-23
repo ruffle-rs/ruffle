@@ -61,16 +61,21 @@ impl ShapeTessellator {
                     style,
                     commands,
                     winding_rule: _,
-                } => (*style, ruffle_path_to_lyon_path(commands, true), false),
+                } => (
+                    *style,
+                    Some(ruffle_path_to_lyon_path(commands, true)),
+                    false,
+                ),
                 DrawPath::Stroke {
                     style,
                     commands,
                     is_closed,
                 } => (
                     style.fill_style(),
-                    ruffle_path_to_lyon_path(commands, *is_closed),
+                    Some(ruffle_path_to_lyon_path(commands, *is_closed)),
                     true,
                 ),
+                DrawPath::Triangles { style, .. } => (*style, None, false),
             };
 
             let (draw, color, needs_flush) = match fill_style {
@@ -167,7 +172,7 @@ impl ShapeTessellator {
                     // Larger scales require more precise tessellation to avoid artifacts
                     let tolerance = FillOptions::DEFAULT_TOLERANCE / scale;
                     self.fill_tess.tessellate_path(
-                        &lyon_path,
+                        &lyon_path.expect("fill should have a path"),
                         &FillOptions::default()
                             .with_fill_rule(winding_rule.into())
                             .with_tolerance(tolerance),
@@ -217,10 +222,36 @@ impl ShapeTessellator {
                     };
                     stroke_options = stroke_options.with_line_join(line_join);
                     self.stroke_tess.tessellate_path(
-                        &lyon_path,
+                        &lyon_path.expect("stroke should have a path"),
                         &stroke_options,
                         &mut buffers_builder,
                     )
+                }
+                DrawPath::Triangles { triangles, .. } => {
+                    let vertices = triangles.vertices();
+                    let indices = triangles.indices();
+
+                    let offset = self.lyon_mesh.vertices.len() as u32;
+                    self.lyon_mesh.vertices.extend(vertices.iter().map(|v| {
+                        let p = point(*v);
+                        Vertex {
+                            x: p.x,
+                            y: p.y,
+                            color,
+                        }
+                    }));
+                    let length = self.lyon_mesh.vertices.len() as u32;
+
+                    self.lyon_mesh.indices.reserve(indices.len());
+                    self.lyon_mesh.indices.extend(
+                        indices
+                            .iter()
+                            .map(|&[a, b, c]| [a + offset, b + offset, c + offset])
+                            .take_while(|&[a, b, c]| a < length && b < length && c < length)
+                            .flatten(),
+                    );
+
+                    Ok(())
                 }
             };
             match result {
@@ -382,11 +413,11 @@ fn swf_bitmap_to_gl_matrix(
     [[a, d, 0.0], [b, e, 0.0], [c, f, 1.0]]
 }
 
-fn ruffle_path_to_lyon_path(commands: &[DrawCommand], is_closed: bool) -> Path {
-    fn point(point: swf::Point<swf::Twips>) -> lyon::math::Point {
-        lyon::math::Point::new(point.x.to_pixels() as f32, point.y.to_pixels() as f32)
-    }
+fn point(point: swf::Point<swf::Twips>) -> lyon::math::Point {
+    lyon::math::Point::new(point.x.to_pixels() as f32, point.y.to_pixels() as f32)
+}
 
+fn ruffle_path_to_lyon_path(commands: &[DrawCommand], is_closed: bool) -> Path {
     let mut builder = Path::builder();
     let mut cursor = Some(swf::Point::ZERO);
     for command in commands {
