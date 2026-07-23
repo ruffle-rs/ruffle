@@ -38,6 +38,9 @@
     "settings_player_version": {
         "message": "Flashspelarversion att emulera (mellan 1-32)"
     },
+    "settings_background_execution_mode": {
+        "message": "Bakgrundsexekvering"
+    },
     "settings_background_execution_mode_none": {
         "message": "Pausa"
     },
@@ -116,6 +119,9 @@
     "settings_saved": {
         "message": "Inställningar sparade"
     },
+    "onboarding_page": {
+        "message": "Sida för nyanlända"
+    },
     "permissions_grant": {
         "message": "Ge Ruffle tillåtelse att få tillgång till min data på alla sidor"
     },
@@ -129,6 +135,6 @@
         "message": "Ruffletillägget fungerar best med tillgång till data för alla webbplatser. Det tillåter tillägget att köra på alla webbplatser när de först laddas in, vilket låter det lura webbplatser som kollar efter Flash Player att köra Flashinnehållet omedelbart. Det gör det också möjligt för webbplatsen att ladda SWF-filer in i dess interna spelar sida från andra webbplatser och gör det möjligt för den att ladda direkt SWF-länkar in i sidan. Om du inte ger den här behörigheten, måste du manuellt sätta på Ruffle på varje webplats som du vill använda den på genom att klicka på ikonen för tillägget och sätta på det för webbplatsen."
     },
     "swf_player_permissions": {
-        "message": "Du måste ge tillåtelse till denna URL:s startpunkt att ladda SWF:er för den."
+        "message": "Du måste ge tillåtelse till denna URL:s källa att ladda SWF:er för den."
     }
 }
