@@ -4910,14 +4910,11 @@ name = "ruffle_render_webgl"
 version = "0.4.1"
 dependencies = [
  "bytemuck",
- "js-sys",
+ "glow",
  "log",
  "ruffle_render",
- "ruffle_web_common",
  "swf 0.2.2",
  "thiserror 2.0.18",
- "wasm-bindgen",
- "web-sys",
 ]
 
 [[package]]
@@ -5065,7 +5062,9 @@ dependencies = [
  "futures-util",
  "getrandom 0.3.4",
  "gloo-net",
+ "glow",
  "js-sys",
+ "log",
  "rfd",
  "ruffle_core",
  "ruffle_render",
