@@ -191,6 +191,52 @@ pub fn parse_level<'gc>(name: &WStr, activation: &mut Activation<'_, 'gc>) -> Op
     None
 }
 
+/// If `target` is exactly a movie level name (`_levelN`, or its legacy `_flash`
+/// synonym), return the level id; otherwise return `None`.
+///
+/// The suffix after the prefix must be a complete level number: a path such as
+/// `_level0.child` is NOT a level target and returns `None`, so it falls through
+/// to normal target-path resolution.
+///
+/// This is the shared parser for whole target strings, used by `getURL`/`getURL2`
+/// and `MovieClipLoader.loadClip`. (Property resolution operates on already-split
+/// path segments and uses [`parse_level_id`] directly.)
+pub(crate) fn parse_level_target(target: &WStr, case_sensitive: bool) -> Option<i32> {
+    // `_flash` is a synonym of `_level`, a relic from the earliest Flash versions.
+    let prefix = target.slice(..6)?;
+    if !(prefix.eq_with_case(b"_level", case_sensitive)
+        || prefix.eq_with_case(b"_flash", case_sensitive))
+    {
+        return None;
+    }
+
+    let digits = &target[6..];
+    let (is_negative, digits) = match digits.get(0) {
+        Some(45) => (true, &digits[1..]), // leading `-`
+        _ => (false, digits),
+    };
+    if digits.is_empty() {
+        return None;
+    }
+
+    let mut level_id: i32 = 0;
+    for unit in digits.iter() {
+        // Any non-digit means this is a path (e.g. `_level0.child`), not a level.
+        let digit = char::from_u32(unit.into()).and_then(|c| c.to_digit(10))?;
+        level_id = level_id.wrapping_mul(10).wrapping_add(digit as i32);
+    }
+
+    Some(if is_negative {
+        level_id.wrapping_neg()
+    } else {
+        level_id
+    })
+}
+
+/// Parse the numeric id from the digits of a single `_levelN` path segment.
+///
+/// Unlike [`parse_level_target`], this is lenient (it stops at the first
+/// non-digit), because the caller has already isolated the segment.
 fn parse_level_id(digits: &WStr) -> i32 {
     // TODO: Use `split_first`?
     let (is_negative, digits) = match digits.get(0) {
@@ -739,4 +785,45 @@ pub fn action_property_coerce<'gc>(
         // _target, _droptarget, _url, _focusrect.
         _ => value,
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::parse_level_target;
+    use crate::string::WStr;
+
+    fn parse(s: &[u8], case_sensitive: bool) -> Option<i32> {
+        parse_level_target(WStr::from_units(s), case_sensitive)
+    }
+
+    #[test]
+    fn parse_level_target_levels() {
+        assert_eq!(parse(b"_level0", true), Some(0));
+        assert_eq!(parse(b"_level10", true), Some(10));
+        assert_eq!(parse(b"_level-5", true), Some(-5));
+        // `_flash` is a legacy synonym of `_level`.
+        assert_eq!(parse(b"_flash7", true), Some(7));
+    }
+
+    #[test]
+    fn parse_level_target_non_levels() {
+        assert_eq!(parse(b"_root", true), None);
+        assert_eq!(parse(b"foo", true), None);
+        // Too short to carry a `_level`/`_flash` prefix.
+        assert_eq!(parse(b"_lev", true), None);
+        // A bare prefix with no number is not a level.
+        assert_eq!(parse(b"_level", true), None);
+        // A path that merely starts with a level is not itself a level target;
+        // it must fall through to path resolution.
+        assert_eq!(parse(b"_level0.child", true), None);
+        assert_eq!(parse(b"_levelfoo", true), None);
+    }
+
+    #[test]
+    fn parse_level_target_case_sensitivity() {
+        // Case-insensitive (SWF < 7) accepts an upper-case prefix.
+        assert_eq!(parse(b"_LEVEL5", false), Some(5));
+        // Case-sensitive (SWF >= 7) does not.
+        assert_eq!(parse(b"_LEVEL5", true), None);
+    }
 }
