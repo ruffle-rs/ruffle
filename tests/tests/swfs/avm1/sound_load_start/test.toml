@@ -1,4 +1,8 @@
 num_ticks = 100
+# The FP projector loads local MP3s synchronously, which means
+# that any start() calls immediately following loadSound()
+# do succeed. This does not happen in a Flash browser.
+known_failure = true
 
 [player_options]
 with_audio = true
