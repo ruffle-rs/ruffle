@@ -3582,11 +3582,40 @@ impl EditTextRestrict {
     pub fn filter_allowed(&self, text: &WStr) -> WString {
         let mut filtered = WString::with_capacity(text.len(), text.is_wide());
         for c in text.chars() {
-            if let Some(c) = c.ok().and_then(|c| self.to_allowed(c)) {
+            let Some(c) = c.ok() else {
+                continue;
+            };
+
+            if matches!(c, '\r' | '\n') {
+                filtered.push_char(c);
+            } else if let Some(c) = self.to_allowed(c) {
                 filtered.push_char(c);
             }
         }
         filtered
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn filter_allowed(restrict: Option<&str>, text: &str) -> String {
+        let restrict = restrict.map(WString::from_utf8);
+        let restrict = EditTextRestrict::from(restrict.as_deref());
+        let filtered = restrict.filter_allowed(&WString::from_utf8(text));
+        filtered.to_utf8_lossy().into_owned()
+    }
+
+    #[test]
+    fn restrict_preserves_newlines() {
+        assert_eq!(filter_allowed(Some("A-Za-z0-9"), "a\r!\nb"), "a\r\nb");
+        assert_eq!(filter_allowed(Some(""), "\rA\n"), "\r\n");
+    }
+
+    #[test]
+    fn restrict_filters_other_control_characters() {
+        assert_eq!(filter_allowed(Some("A-Za-z0-9"), "a\tb\u{7f}c"), "abc");
     }
 }
 

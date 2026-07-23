@@ -1,0 +1,4 @@
+singleLine.multiline: false
+singleLine.text: ab
+multiLine.multiline: true
+multiLine.text: a\rb
