@@ -1631,7 +1631,23 @@ impl Player {
                 // and fires "drag" events.
                 if context.input.is_mouse_down(MouseButton::Left) {
                     context.mouse_data.hovered = new_over_object;
-                    if let Some(down_object) = context.mouse_data.pressed {
+                    // DragOut/DragOver on the pressed object are AVM1-only:
+                    // in AVM1 they map to `onDragOut`/`onDragOver`, which are
+                    // distinct from `onRollOut`/`onRollOver`. In AVM2 both
+                    // `DragOut` and `RollOut` are translated to the same
+                    // `rollOut`/`mouseOut` events (see `interactive.rs`), so
+                    // emitting `DragOut` here when `pressed == cur_over_object`
+                    // (or `DragOver` when `pressed == new_over_object`) would
+                    // double-dispatch the event to the pressed object. The
+                    // duplicate `rollOut` then drives `mx.controls.Button` from
+                    // `phase=DOWN` to `OVER` and immediately to `UP` (instead
+                    // of staying at `OVER`), and the analogous duplicate
+                    // `rollOver` at re-entry is short-circuited by mx Button's
+                    // `if (event.buttonDown) return;` guard, leaving the
+                    // button visually stuck in the `UP` state.
+                    if let Some(down_object) = context.mouse_data.pressed
+                        && !down_object.as_displayobject().movie().is_action_script_3()
+                    {
                         if InteractiveObject::option_ptr_eq(
                             context.mouse_data.pressed,
                             cur_over_object,
