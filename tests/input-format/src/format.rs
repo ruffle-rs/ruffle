@@ -19,6 +19,15 @@ pub enum MouseButton {
     Right,
 }
 
+/// Which type of mouse cursor is currently being used.
+#[derive(Serialize, Deserialize, PartialEq, Eq, Debug, Copy, Clone)]
+pub enum MouseCursor {
+    Arrow,
+    Hand,
+    IBeam,
+    Grab,
+}
+
 /// Control inputs to a text field
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum TextControlCode {
@@ -112,7 +121,10 @@ pub enum AutomatedEvent {
     Wait,
 
     /// Move the mouse to a new cursor position.
-    MouseMove { pos: MousePosition },
+    MouseMove {
+        pos: MousePosition,
+        assert_cursor: Option<MouseCursor>,
+    },
 
     /// Click a mouse button.
     MouseDown {

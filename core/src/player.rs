@@ -625,6 +625,10 @@ impl Player {
         self.mouse_in_stage = is_in;
     }
 
+    pub fn mouse_cursor(&self) -> MouseCursor {
+        self.mouse_cursor
+    }
+
     /// Returns the master volume of the player. 1.0 is 100% volume.
     ///
     /// The volume is linear and not adapted for logarithmic hearing.
