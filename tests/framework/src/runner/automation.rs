@@ -1,3 +1,4 @@
+use ruffle_core::backend::ui::MouseCursor as RuffleMouseCursor;
 use ruffle_core::events::{
     ImeEvent, KeyDescriptor, KeyLocation, LogicalKey, NamedKey, PhysicalKey,
     TextControlCode as RuffleTextControlCode,
@@ -5,7 +6,7 @@ use ruffle_core::events::{
 use ruffle_core::events::{MouseButton as RuffleMouseButton, MouseWheelDelta};
 use ruffle_core::{Player, PlayerEvent};
 use ruffle_input_format::{
-    AutomatedEvent, AutomatedKey, MouseButton as InputMouseButton,
+    AutomatedEvent, AutomatedKey, MouseButton as InputMouseButton, MouseCursor as InputMouseCursor,
     TextControlCode as InputTextControlCode,
 };
 
@@ -30,7 +31,7 @@ pub fn perform_automated_event(evt: &AutomatedEvent, player: &mut Player) {
             // however we do not want that in tests.
             index: Some(index.unwrap_or_default()),
         },
-        AutomatedEvent::MouseMove { pos } => PlayerEvent::MouseMove { x: pos.0, y: pos.1 },
+        AutomatedEvent::MouseMove { pos, .. } => PlayerEvent::MouseMove { x: pos.0, y: pos.1 },
         AutomatedEvent::MouseUp { pos, btn } => PlayerEvent::MouseUp {
             x: pos.0,
             y: pos.1,
@@ -108,6 +109,25 @@ pub fn perform_automated_event(evt: &AutomatedEvent, player: &mut Player) {
                         \x20   message: {}",
                 assert_handled.value, handled, assert_handled.message
             );
+        }
+        AutomatedEvent::MouseMove {
+            assert_cursor: Some(assert_cursor),
+            pos,
+        } => {
+            let cursor = match player.mouse_cursor() {
+                RuffleMouseCursor::Arrow => InputMouseCursor::Arrow,
+                RuffleMouseCursor::Hand => InputMouseCursor::Hand,
+                RuffleMouseCursor::IBeam => InputMouseCursor::IBeam,
+                RuffleMouseCursor::Grab => InputMouseCursor::Grab,
+            };
+            if cursor != *assert_cursor {
+                panic!(
+                    "Mouse cursor assertion failed at position [{}, {}]: \n\
+                            \x20   expected: {:?}\n\
+                            \x20   actual: {:?}",
+                    pos.0, pos.1, assert_cursor, cursor
+                );
+            }
         }
         _ => {}
     }
