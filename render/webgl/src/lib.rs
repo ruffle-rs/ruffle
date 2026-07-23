@@ -13,6 +13,7 @@ use ruffle_render::bitmap::{
 };
 use ruffle_render::commands::{CommandHandler, CommandList, RenderBlendMode};
 use ruffle_render::error::Error as BitmapError;
+use ruffle_render::lines::{emulate_line, emulate_line_rect};
 use ruffle_render::matrix::Matrix;
 use ruffle_render::quality::StageQuality;
 use ruffle_render::shape_utils::{DistilledShape, GradientType};
@@ -25,7 +26,7 @@ use std::any::Any;
 use std::borrow::Cow;
 use std::num::NonZeroU32;
 use std::sync::Arc;
-use swf::{BlendMode, Color, Twips};
+use swf::{BlendMode, Color};
 use thiserror::Error;
 use wasm_bindgen::{JsCast, JsValue};
 use web_sys::{
@@ -1512,16 +1513,19 @@ impl CommandHandler for WebGlRenderBackend {
         self.draw_quad::<{ Gl::TRIANGLE_FAN }, -1>(color, matrix)
     }
 
-    fn draw_line(&mut self, color: Color, mut matrix: Matrix) {
-        matrix.tx += Twips::HALF_PX;
-        matrix.ty += Twips::HALF_PX;
-        self.draw_quad::<{ Gl::LINE_STRIP }, 2>(color, matrix)
+    fn draw_line(&mut self, color: Color, matrix: Matrix) {
+        // GL line primitives rasterize inconsistently across drivers — on
+        // Windows, ANGLE translates them into antialiased D3D11 lines that
+        // smear across two pixel columns (blurry text carets, underlines and
+        // device text field borders). Emulated lines are quads with exact
+        // whole-pixel edges, which rasterize identically — and crisply —
+        // everywhere.
+        emulate_line(self, color, matrix);
     }
 
-    fn draw_line_rect(&mut self, color: Color, mut matrix: Matrix) {
-        matrix.tx += Twips::HALF_PX;
-        matrix.ty += Twips::HALF_PX;
-        self.draw_quad::<{ Gl::LINE_LOOP }, -1>(color, matrix)
+    fn draw_line_rect(&mut self, color: Color, matrix: Matrix) {
+        // See `draw_line` for why lines are emulated.
+        emulate_line_rect(self, color, matrix);
     }
 
     fn push_mask(&mut self) {

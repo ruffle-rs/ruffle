@@ -18,7 +18,7 @@ use gc_arena::{Collect, Gc, Mutation};
 use ruffle_common::utils::HasPrefixField;
 use ruffle_render::backend::ShapeHandle;
 use ruffle_render::commands::CommandHandler;
-use std::cell::{OnceCell, RefCell, RefMut};
+use std::cell::{OnceCell, Ref, RefCell, RefMut};
 use std::sync::Arc;
 
 #[derive(Clone, Collect, Copy)]
@@ -115,6 +115,18 @@ impl<'gc> Graphic<'gc> {
 
     pub fn drawing_mut(&self) -> RefMut<'_, Drawing> {
         self.0.drawing.get_or_init(Default::default).borrow_mut()
+    }
+
+    /// Returns the dynamic `Drawing` only if it has been previously
+    /// initialized (e.g. by ActionScript calling `Graphic.graphics.lineTo`).
+    /// Unlike [`Self::drawing_mut`], this does NOT initialize the `OnceCell`
+    /// — initializing it with an empty `Drawing` would shadow the SWF
+    /// `shared.shape` in `render_self`, causing a previously rendered
+    /// embedded shape to disappear. Use this accessor whenever you need
+    /// read-only inspection of the dynamic `Drawing` without altering
+    /// rendering behavior.
+    pub fn drawing(&self) -> Option<Ref<'_, Drawing>> {
+        self.0.drawing.get().map(|d| d.borrow())
     }
 
     pub fn set_avm2_class(self, mc: &Mutation<'gc>, class: Avm2ClassObject<'gc>) {
