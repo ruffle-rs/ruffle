@@ -1,0 +1,27 @@
+// a.length
+1
+
+// b.length
+1
+
+// a[0] === b[0]
+false
+// a[0].fontName === b[0].fontName
+true
+
+// a[0] is TestFont
+false
+
+// c.length
+2
+
+// c[0].fontName
+TestFont
+// c[0] is TestFont
+false
+
+// c[1].fontName
+TestFont
+// c[1] is TestFont
+true
+
