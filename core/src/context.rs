@@ -270,6 +270,16 @@ impl<'gc> UpdateContext<'gc> {
             .set_local_sound_transform(instance, sound_transform);
     }
 
+    /// Set the local sound transform for each instance in a handle.
+    pub fn set_sound_transform_with_handle(
+        &mut self,
+        sound: SoundHandle,
+        sound_transform: SoundTransform,
+    ) {
+        self.audio_manager
+            .set_sound_transform_with_handle(sound, sound_transform);
+    }
+
     pub fn start_sound(
         &mut self,
         sound: SoundHandle,

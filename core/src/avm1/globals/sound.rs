@@ -23,32 +23,90 @@ use crate::display_object::{DisplayObject, SoundTransform, TDisplayObject};
 use crate::string::AvmString;
 use crate::{avm_warn, avm1_stub};
 
-#[derive(Debug, Collect)]
+/// Represents information about the Sound when `loadSound()` has been called.
+#[derive(Clone, Copy, Collect)]
 #[collect(no_drop)]
-struct QueuedPlay<'gc> {
-    sound_object: Object<'gc>,
-    start_offset: f64,
-    loops: u16,
+pub struct ExternalSound<'gc>(Gc<'gc, ExternalSoundData>);
+
+#[derive(Collect)]
+#[collect(no_drop)]
+struct ExternalSoundData {
+    /// Whether this sound is set to be streaming.
+    /// This will be true if `Sound.loadSound` was called with `isStreaming` of `true`.
+    /// A streaming sound can only have a single active instance.
+    is_streaming: Cell<bool>,
+
+    /// Whether this sound will autoplay
+    will_autoplay: Cell<bool>,
+
+    /// A dedicated sound transform for this sound.
+    transform: Cell<SoundTransform>,
+
+    /// Whether we are currently loading a sound.
+    is_loading: Cell<bool>,
+
+    /// The load generation associated with this external sound.
+    /// Used to prevent multiple simultaneous loads on one Sound.
+    load_id: Cell<u32>,
 }
 
-#[derive(Debug, Collect)]
-#[collect(no_drop)]
-enum SoundState<'gc> {
-    /// Empty sound object, no sound playback allowed.
-    Empty,
+impl<'gc> ExternalSound<'gc> {
+    pub fn empty(mc: &Mutation<'gc>, is_streaming: bool, load_id: u32) -> ExternalSound<'gc> {
+        ExternalSound(Gc::new(
+            mc,
+            ExternalSoundData {
+                is_streaming: Cell::new(is_streaming),
+                will_autoplay: Cell::new(is_streaming),
+                transform: Cell::new(SoundTransform::default()),
+                is_loading: Cell::new(true),
+                load_id: Cell::new(load_id),
+            },
+        ))
+    }
 
-    /// Sound is loading, plays can be queued.
-    Loading { queued_plays: Vec<QueuedPlay<'gc>> },
+    pub fn is_streaming(self) -> bool {
+        self.0.is_streaming.get()
+    }
 
-    /// Sound is loaded, plays can be started immediately.
-    Loaded {
-        /// The sound that is attached to this object.
-        #[collect(require_static)]
-        sound: SoundHandle,
-    },
+    pub fn will_autoplay(self) -> bool {
+        self.0.will_autoplay.get()
+    }
+
+    pub fn set_will_autoplay(self, will_autoplay: bool) {
+        self.0.will_autoplay.set(will_autoplay);
+    }
+
+    pub fn transform(self) -> SoundTransform {
+        self.0.transform.get()
+    }
+
+    pub fn set_transform(
+        self,
+        context: &mut UpdateContext<'gc>,
+        sound: Option<SoundHandle>,
+        sound_transform: SoundTransform,
+    ) {
+        self.0.transform.set(sound_transform);
+
+        if let Some(sound) = sound {
+            context.set_sound_transform_with_handle(sound, sound_transform);
+        }
+    }
+
+    pub fn is_loading(self) -> bool {
+        self.0.is_loading.get()
+    }
+
+    pub fn set_is_loading(self, is_loading: bool) {
+        self.0.is_loading.set(is_loading)
+    }
+
+    pub fn load_id(self) -> u32 {
+        self.0.load_id.get()
+    }
 }
 
-/// A `Sound` object that is tied to a sound from the `AudioBackend``.
+/// A `Sound` object that is tied to a sound from the `AudioBackend`.
 #[derive(Clone, Copy, Collect)]
 #[collect(no_drop)]
 pub struct Sound<'gc>(Gc<'gc, SoundData<'gc>>);
@@ -56,7 +114,8 @@ pub struct Sound<'gc>(Gc<'gc, SoundData<'gc>>);
 #[derive(Collect)]
 #[collect(no_drop)]
 struct SoundData<'gc> {
-    state: RefLock<SoundState<'gc>>,
+    /// The sound that is attached to this object.
+    sound: Cell<Option<SoundHandle>>,
 
     /// The instance of the last played sound on this object.
     sound_instance: Cell<Option<SoundInstanceHandle>>,
@@ -72,17 +131,20 @@ struct SoundData<'gc> {
     /// Duration of the currently attached sound in milliseconds.
     duration: Cell<Option<u32>>,
 
-    /// Whether this sound is an external streaming MP3.
-    /// This will be true if `Sound.loadSound` was called with `isStreaming` of `true`.
-    /// A streaming sound can only have a single active instance.
-    is_streaming: Cell<bool>,
+    /// Data for playing external sounds on this object.
+    /// This is `Some` when this sound has had `loadSound()` called on it,
+    /// and therefore enters a state of being "separated" from its
+    /// original owner (even if it was controlling global sound initially),
+    /// and can then only ever control externally loaded sounds.
+    // TODO: Can this be a `Lock` instead?
+    external: RefLock<Option<ExternalSound<'gc>>>,
 }
 
 impl fmt::Debug for Sound<'_> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         f.debug_struct("Sound")
             .field("ptr", &Gc::as_ptr(self.0))
-            .field("state", &self.0.state.borrow())
+            .field("sound", &self.0.sound.get())
             .field("sound_instance", &self.0.sound_instance.get())
             .field("target", &self.0.target)
             .finish()
@@ -94,12 +156,12 @@ impl<'gc> Sound<'gc> {
         Sound(Gc::new(
             mc,
             SoundData {
-                state: RefLock::new(SoundState::Empty),
+                sound: Cell::new(None),
                 sound_instance: Cell::new(None),
                 target,
                 position: Cell::new(0),
                 duration: Cell::new(None),
-                is_streaming: Cell::new(false),
+                external: RefLock::new(None),
             },
         ))
     }
@@ -113,142 +175,18 @@ impl<'gc> Sound<'gc> {
     }
 
     pub fn sound(self) -> Option<SoundHandle> {
-        if let SoundState::Loaded { sound } = *self.0.state.borrow() {
-            Some(sound)
-        } else {
-            None
-        }
+        self.0.sound.get()
     }
 
-    pub fn sound_instance(self) -> Option<SoundInstanceHandle> {
-        self.0.sound_instance.get()
-    }
-
-    pub fn set_sound_instance(self, sound_instance: Option<SoundInstanceHandle>) {
-        self.0.sound_instance.set(sound_instance);
-    }
-
-    pub fn owner(self, activation: &mut Activation<'_, 'gc>) -> Option<DisplayObject<'gc>> {
-        if let Some(target) = self.0.target {
-            let start_clip = activation.target_clip_or_root();
-            activation
-                .resolve_target_display_object(start_clip, Value::String(target), false)
-                .ok()?
-        } else {
-            None
-        }
-    }
-
-    pub fn use_global_sound(self) -> bool {
-        self.0.target.is_none()
-    }
-
-    /// Returns `true` if this sound is attached to the global sound
-    /// (initial target was `Null` or `Undefined`), or if the target
-    /// *currently* resolves to a valid display object.
-    pub fn has_valid_owner(self, activation: &mut Activation<'_, 'gc>) -> bool {
-        self.use_global_sound() || self.owner(activation).is_some()
-    }
-
-    /// Gets the sound transform for this sound.
-    /// If this sound is set to use global sound, then the
-    /// global sound transform will be returned. Otherwise,
-    /// it will try to resolve the owner and get its sound
-    /// transform. If it can't, then `None` is returned.
-    pub fn sound_transform(self, activation: &mut Activation<'_, 'gc>) -> Option<SoundTransform> {
-        if self.use_global_sound() {
-            Some(*activation.context.global_sound_transform())
-        } else if let Some(owner) = self.owner(activation) {
-            Some(owner.base().sound_transform())
-        } else {
-            None
-        }
-    }
-
-    pub fn position(self) -> u32 {
-        self.0.position.get()
-    }
-
-    pub fn set_position(self, position: u32) {
-        self.0.position.set(position);
-    }
-
-    pub fn is_streaming(self) -> bool {
-        self.0.is_streaming.get()
-    }
-
-    pub fn set_is_streaming(self, is_streaming: bool) {
-        self.0.is_streaming.set(is_streaming);
-    }
-
-    fn play(self, play: QueuedPlay<'gc>, activation: &mut Activation<'_, 'gc>) {
-        let write = Gc::write(activation.context.gc(), self.0);
-        let sound_handle = match &mut *unlock!(write, SoundData, state).borrow_mut() {
-            SoundState::Empty => {
-                tracing::warn!("Ignoring Sound playback, because it's not loaded.");
-                return;
-            }
-            SoundState::Loading { queued_plays } => {
-                queued_plays.push(play);
-                return;
-            }
-            SoundState::Loaded { sound } => *sound,
-        };
-
-        if self.is_streaming() {
-            // Streaming MP3s can only have a single active instance.
-            if let Some(sound_instance) = self.sound_instance() {
-                activation.context.stop_sound(sound_instance);
-            }
-        }
-
-        let owner = self.owner(activation);
-        let sound_instance = activation.context.start_sound(
-            sound_handle,
-            &swf::SoundInfo {
-                event: swf::SoundEvent::Start,
-                in_sample: if play.start_offset > 0.0 {
-                    Some((play.start_offset * 44100.0) as u32)
-                } else {
-                    None
-                },
-                out_sample: None,
-                num_loops: play.loops,
-                envelope: None,
-            },
-            None,
-            owner,
-            Some(play.sound_object),
-        );
-        if sound_instance.is_some() {
-            self.set_sound_instance(sound_instance);
-        }
-    }
-
-    fn set_is_loading(self, context: &mut UpdateContext<'gc>) {
-        // All queued plays are discarded at this point.
-        let new_data = SoundState::Loading {
-            queued_plays: Vec::new(),
-        };
-        unlock!(Gc::write(context.gc(), self.0), SoundData, state).replace(new_data);
-    }
-
-    pub fn load_sound(
+    pub fn set_sound(
         self,
         activation: &mut Activation<'_, 'gc>,
         sound_object: Object<'gc>,
-        sound: SoundHandle,
+        sound: Option<SoundHandle>,
     ) {
-        let new_data = SoundState::Loaded { sound };
-        let write = Gc::write(activation.gc(), self.0);
-        let old_data = unlock!(write, SoundData, state).replace(new_data);
+        self.0.sound.set(sound);
 
-        if let SoundState::Loading { queued_plays } = old_data {
-            for play in queued_plays {
-                self.play(play, activation);
-            }
-        }
-
+        // `position` and `duration` are only defined when a sound is loaded.
         if !sound_object.has_property(activation, istr!("position"))
             || !sound_object.has_property(activation, istr!("duration"))
         {
@@ -273,6 +211,84 @@ impl<'gc> Sound<'gc> {
                 Attribute::DONT_ENUM | Attribute::DONT_DELETE,
             );
         }
+    }
+
+    pub fn sound_instance(self) -> Option<SoundInstanceHandle> {
+        self.0.sound_instance.get()
+    }
+
+    pub fn set_sound_instance(self, sound_instance: Option<SoundInstanceHandle>) {
+        self.0.sound_instance.set(sound_instance);
+    }
+
+    /// Tries to resolve the display object at the `target` path and returns it.
+    ///
+    /// Note that this will also return `None` if this object is set to
+    /// play external audio, even if the target display object exists.
+    pub fn owner(self, activation: &mut Activation<'_, 'gc>) -> Option<DisplayObject<'gc>> {
+        if let Some(target) = self.0.target
+            && !self.is_external()
+        {
+            let start_clip = activation.target_clip_or_root();
+            activation
+                .resolve_target_display_object(start_clip, Value::String(target), false)
+                .ok()?
+        } else {
+            None
+        }
+    }
+
+    pub fn use_global_sound(self) -> bool {
+        self.0.target.is_none()
+    }
+
+    /// Returns `true` if any one of the following is true:
+    /// - We are controlling global sound.
+    /// - We are playing an external MP3 sound.
+    /// - The `target` *currently* resolves to a valid display object.
+    pub fn has_valid_owner(self, activation: &mut Activation<'_, 'gc>) -> bool {
+        self.use_global_sound() || self.is_external() || self.owner(activation).is_some()
+    }
+
+    /// Gets the sound transform for this sound. It goes through the following in order:
+    /// 1. If we have our own sound transform (from `loadSound()` being called), return that.
+    /// 2. If not, then if we are controlling global sound, return the global sound transform.
+    /// 3. If not, then return the sound transform of our `owner`, if we have one.
+    /// 4. If not, then return `None`.
+    pub fn sound_transform(self, activation: &mut Activation<'_, 'gc>) -> Option<SoundTransform> {
+        // `external` must be checked first since it takes precedence over every other case
+        if let Some(external) = self.external() {
+            Some(external.transform())
+        } else if self.use_global_sound() {
+            Some(*activation.context.global_sound_transform())
+        } else if let Some(owner) = self.owner(activation) {
+            Some(owner.base().sound_transform())
+        } else {
+            None
+        }
+    }
+
+    pub fn position(self) -> u32 {
+        self.0.position.get()
+    }
+
+    pub fn set_position(self, position: u32) {
+        self.0.position.set(position);
+    }
+
+    pub fn external(self) -> Option<ExternalSound<'gc>> {
+        *self.0.external.borrow()
+    }
+
+    pub fn set_external(self, mc: &Mutation<'gc>, external_sound: ExternalSound<'gc>) {
+        let write = Gc::write(mc, self.0);
+        unlock!(write, SoundData, external).replace(Some(external_sound));
+    }
+
+    /// Whether this Sound is set to play external audio
+    /// (`loadSound()` has been called on it).
+    pub fn is_external(self) -> bool {
+        self.external().is_some()
     }
 
     pub fn load_id3(
@@ -361,8 +377,8 @@ impl<'gc> Sound<'gc> {
 
 const PROTO_DECLS: StaticDeclarations = declare_static_properties! {
     // Note: id3 is not a built-in property. See [`Sound::load_id3`].
-    // Note: duration is defined later. See [`Sound::load_sound`].
-    // Note: position is defined later. See [`Sound::load_sound`].
+    // Note: duration is defined later. See [`Sound::set_sound`].
+    // Note: position is defined later. See [`Sound::set_sound`].
     "getPan" => method(get_pan; DONT_ENUM | DONT_DELETE | READ_ONLY);
     "getTransform" => method(get_transform; DONT_ENUM | DONT_DELETE | READ_ONLY);
     "getVolume" => method(get_volume; DONT_ENUM | DONT_DELETE | READ_ONLY);
@@ -431,7 +447,11 @@ fn attach_sound<'gc>(
             .unwrap_or(&Value::Undefined)
             .coerce_to_string(activation)?;
 
-        let movie = if sound.use_global_sound() {
+        // A Sound that has had `loadSound()` called on it
+        // can never again have sound characters attached to it.
+        // This check works because `owner` always returns `None`
+        // when `is_external()` is true.
+        let movie = if sound.use_global_sound() && !sound.is_external() {
             activation.base_clip().avm1_root().movie()
         } else if let Some(owner) = sound.owner(activation) {
             owner.movie()
@@ -445,8 +465,7 @@ fn attach_sound<'gc>(
             .library_for_movie_mut(movie)
             .character_by_export_name(name)
         {
-            sound.load_sound(activation, this, sound_handle);
-            sound.set_is_streaming(false);
+            sound.set_sound(activation, this, Some(sound_handle));
             sound.set_duration(
                 activation
                     .context
@@ -572,20 +591,66 @@ fn load_sound<'gc>(
             .get(1)
             .unwrap_or(&Value::Undefined)
             .as_bool(activation.swf_version());
-        if is_streaming {
-            // Streaming MP3s can only have a single active instance.
+
+        let mut load_id = 0;
+
+        if let Some(external) = sound.external() {
+            // Any external sound instances that are playing
+            // are stopped when `loadSound` is called again, streaming or not.
             // (Previous `attachSound` instances will continue to play.)
-            if let Some(sound_instance) = sound.sound_instance() {
-                activation.context.stop_sound(sound_instance);
+            if let Some(sound) = sound.sound() {
+                activation.context.stop_sounds_with_handle(sound);
+            }
+
+            // If a load on this Sound is already in progress,
+            // onLoad gets called with success as `false`.
+            if external.is_loading() {
+                let _ = this.call_method(
+                    istr!("onLoad"),
+                    &[false.into()],
+                    activation,
+                    ExecutionReason::Special,
+                );
+            }
+
+            // Add 1 to the load counter for this Sound
+            load_id = external.load_id() + 1;
+        }
+
+        sound.set_external(
+            activation.gc(),
+            ExternalSound::empty(activation.gc(), is_streaming, load_id),
+        );
+
+        let request_url = url.to_utf8_lossy().into_owned();
+
+        // Local files are loaded synchronously on the FP desktop projector;
+        // that is, execution is paused until the load has completed.
+        #[cfg(not(target_family = "wasm"))]
+        {
+            let is_blocking = activation
+                .context
+                .navigator
+                .resolve_url(&request_url)
+                .ok()
+                .is_some_and(|resolved| resolved.scheme() == "file");
+
+            if is_blocking {
+                let _ = crate::loader::load_sound_avm1_blocking(
+                    activation.context,
+                    this,
+                    Request::get(request_url),
+                    load_id,
+                );
+                return Ok(Value::Undefined);
             }
         }
-        sound.set_is_streaming(is_streaming);
-        sound.set_is_loading(activation.context);
+
         let future = crate::loader::load_sound_avm1(
             activation.context,
             this,
-            Request::get(url.to_utf8_lossy().into_owned()),
-            is_streaming,
+            Request::get(request_url),
+            load_id,
         );
         activation.context.navigator.spawn_future(future);
     }
@@ -620,7 +685,13 @@ fn set_pan<'gc>(
             .unwrap_or(&0.into())
             .coerce_to_f64(activation)?
             .clamp_to_i32();
-        if let Some(owner) = sound.owner(activation) {
+        if let Some(external) = sound.external() {
+            external.set_transform(
+                activation.context,
+                sound.sound(),
+                external.transform().with_pan(pan),
+            );
+        } else if let Some(owner) = sound.owner(activation) {
             let transform = owner.base().sound_transform();
             owner.set_sound_transform(activation.context, transform.with_pan(pan));
         } else if sound.use_global_sound() {
@@ -647,14 +718,19 @@ fn set_transform<'gc>(
 
         let owner = sound.owner(activation);
 
-        if owner.is_none() && !sound.use_global_sound() {
+        if owner.is_none() && !sound.use_global_sound() && !sound.is_external() {
             return Ok(Value::Undefined);
         }
 
-        let mut transform = owner.map_or_else(
-            || *activation.context.global_sound_transform(),
-            |owner| owner.base().sound_transform(),
-        );
+        // Check first if we have our own sound transform.
+        // If we don't, then see if we currently have a valid owner.
+        // If not, then use the global sound transform.
+        let mut transform = sound.external().map(|e| e.transform()).unwrap_or_else(|| {
+            owner.map_or_else(
+                || *activation.context.global_sound_transform(),
+                |owner| owner.base().sound_transform(),
+            )
+        });
 
         if obj.has_own_property(activation, istr!("ll")) {
             transform.left_to_left = obj
@@ -678,7 +754,9 @@ fn set_transform<'gc>(
                 .coerce_to_i32(activation)?;
         }
 
-        if let Some(owner) = owner {
+        if let Some(external) = sound.external() {
+            external.set_transform(activation.context, sound.sound(), transform);
+        } else if let Some(owner) = owner {
             owner.set_sound_transform(activation.context, transform);
         } else {
             activation.context.set_global_sound_transform(transform);
@@ -698,7 +776,13 @@ fn set_volume<'gc>(
             .unwrap_or(&0.into())
             .coerce_to_f64(activation)?
             .clamp_to_i32();
-        if let Some(owner) = sound.owner(activation) {
+        if let Some(external) = sound.external() {
+            let transform = SoundTransform {
+                volume,
+                ..external.transform()
+            };
+            external.set_transform(activation.context, sound.sound(), transform);
+        } else if let Some(owner) = sound.owner(activation) {
             let transform = SoundTransform {
                 volume,
                 ..owner.base().sound_transform()
@@ -723,17 +807,49 @@ pub fn start<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let NativeObject::Sound(sound) = this.native() {
         if sound.has_valid_owner(activation) {
+            let is_streaming = sound.external().is_some_and(|e| e.is_streaming());
+
             let start_offset = args.get(0).unwrap_or(&0.into()).coerce_to_f64(activation)?;
-            let loops = args.get(1).unwrap_or(&1.into()).coerce_to_f64(activation)?;
+            let loops = args
+                .get(1)
+                // Loops are ignored if the sound is streaming, per the docs.
+                .filter(|_| !is_streaming)
+                .unwrap_or(&1.into())
+                .coerce_to_f64(activation)?;
 
             // TODO: Handle loops > u16::MAX.
             let loops = (loops as u16).max(1);
-            let play = QueuedPlay {
-                sound_object: this,
-                start_offset,
-                loops,
-            };
-            sound.play(play, activation);
+            if let Some(sound_handle) = sound.sound() {
+                if is_streaming {
+                    // Streaming MP3s can only have a single active instance.
+                    if let Some(sound_instance) = sound.sound_instance() {
+                        activation.context.stop_sound(sound_instance);
+                    }
+                }
+                let owner = sound.owner(activation);
+                let sound_instance = activation.context.start_sound(
+                    sound_handle,
+                    &swf::SoundInfo {
+                        event: swf::SoundEvent::Start,
+                        in_sample: if start_offset > 0.0 {
+                            Some((start_offset * 44100.0) as u32)
+                        } else {
+                            None
+                        },
+                        out_sample: None,
+                        num_loops: loops,
+                        envelope: None,
+                    },
+                    sound.external().map(|e| e.transform()),
+                    owner,
+                    Some(this),
+                );
+                if sound_instance.is_some() {
+                    sound.set_sound_instance(sound_instance);
+                }
+            } else {
+                avm_warn!(activation, "Sound.start: No sound is attached");
+            }
         }
     } else {
         avm_warn!(activation, "Sound.start: Invalid sound");
@@ -748,11 +864,15 @@ fn stop<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let NativeObject::Sound(sound) = this.native() {
+        if let Some(external) = sound.external() {
+            external.set_will_autoplay(false);
+        }
         if let Some(name) = args.get(0) {
             // Usage 1: Stop all instances of a particular sound, using the name parameter.
+            // If this parameter is given, but we're playing external sound, then do nothing.
             let name = name.coerce_to_string(activation)?;
 
-            let movie = if sound.use_global_sound() {
+            let movie = if sound.use_global_sound() && !sound.is_external() {
                 activation.base_clip().avm1_root().movie()
             } else if let Some(owner) = sound.owner(activation) {
                 owner.movie()
@@ -773,13 +893,20 @@ fn stop<'gc>(
             } else {
                 avm_warn!(activation, "Sound.stop: Sound '{}' not found", name);
             }
+        } else if sound.is_external() {
+            // Usage 2: If there is no name and we're playing external sound,
+            // then stop any instances of that sound.
+            if let Some(sound) = sound.sound() {
+                activation.context.stop_sounds_with_handle(sound);
+            }
+            sound.set_sound_instance(None);
         } else if let Some(owner) = sound.owner(activation) {
-            // Usage 2: If there is no name and we have an owner,
+            // Usage 3: If there is no name and we have an owner,
             // then stop all sound running within a given clip.
             activation.context.stop_sounds_with_display_object(owner);
             sound.set_sound_instance(None);
         } else if sound.use_global_sound() {
-            // Usage 3: If there is no name and we are linked to global sound,
+            // Usage 4: If there is no name and we are linked to global sound,
             // this call acts like `stopAllSounds()`.
             activation.context.stop_all_sounds();
         }
