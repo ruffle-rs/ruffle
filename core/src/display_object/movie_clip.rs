@@ -2274,6 +2274,29 @@ impl<'gc> MovieClip<'gc> {
         unlock!(Gc::write(mc, self.0), MovieClipData, hit_area).set(hit_area);
     }
 
+    /// Resolve the AVM1 `hitArea` property for mouse picking, if set.
+    ///
+    /// Unlike AVM2's `Sprite.hitArea`, AVM1 keeps no dedicated storage for the
+    /// hit area: Flash Player reads the ordinary script property (running any
+    /// getter) each time it picks. This mirrors how sibling engine-consulted
+    /// properties like `enabled` are read (see `get_avm1_boolean_property`).
+    ///
+    /// Returns the display object the property currently resolves to; values
+    /// that are not display objects resolve to `None`, in which case the
+    /// clip's own shape picks.
+    fn avm1_hit_area(self, context: &mut UpdateContext<'gc>) -> Option<DisplayObject<'gc>> {
+        let object = self.object1()?;
+        let mut activation = Avm1Activation::from_nothing(
+            context,
+            ActivationIdentifier::root("[AVM1 hitArea]"),
+            self.avm1_root(),
+        );
+        let value = object.get(istr!("hitArea"), &mut activation).ok()?;
+        value
+            .as_object(&mut activation)
+            .and_then(|o| o.as_display_object())
+    }
+
     pub fn tag_stream_len(self) -> usize {
         self.0.tag_stream_len()
     }
@@ -2981,9 +3004,17 @@ impl<'gc> TInteractiveObject<'gc> for MovieClip<'gc> {
             return None;
         }
 
+        // A sibling's `hitArea` getter may have removed this clip earlier
+        // in this same pick (the parent iterates a snapshot of its render
+        // list). In captures of such a removal, Flash Player froze
+        // `_droptarget` and stopped delivering release events; Ruffle
+        // emulates none of that and simply excludes the removed clip.
+        if self.avm1_removed() {
+            return None;
+        }
+
         if self.visible() {
             let this: InteractiveObject<'gc> = self.into();
-            let local_matrix = self.global_to_local_matrix()?;
 
             if let Some(masker) = self.masker() {
                 // FIXME - should this really use `SKIP_INVISIBLE`? Avm2 doesn't.
@@ -2997,19 +3028,44 @@ impl<'gc> TInteractiveObject<'gc> for MovieClip<'gc> {
             // true.
             // InteractiveObject.mouseEnabled:
             // "Any children of this instance on the display list are not affected."
-            if self.mouse_enabled() && self.world_bounds(BoundsMode::Engine).contains(point) {
+
+            if self.mouse_enabled() {
                 // This MovieClip operates in "button mode" if it has a mouse handler,
                 // either via on(..) or via property mc.onRelease, etc.
                 let is_button_mode = self.is_button_mode(context);
 
                 if is_button_mode {
-                    let mut options = HitTestOptions::SKIP_INVISIBLE;
-                    options.set(HitTestOptions::SKIP_MASK, self.maskee().is_none());
-                    if self.hit_test_shape(context, point, options) {
+                    // A `hitArea` that currently resolves to a display object
+                    // replaces this clip's own shape for mouse picking, tested
+                    // at its own stage position — even outside this clip's
+                    // bounds or when this clip's transform is degenerate
+                    // (hence before the matrix check below). Non-button-mode
+                    // picks (`require_button_mode == false`: `_droptarget`
+                    // and context-menu selection) resolve the property but
+                    // ignore its value.
+                    // The getter may remove this clip itself; Flash Player
+                    // still returns it from this pick (removal takes effect
+                    // on the next pick).
+                    let hit_area = self.avm1_hit_area(context).filter(|_| require_button_mode);
+                    let hit = match hit_area {
+                        Some(area) if !area.avm1_removed() => {
+                            // NOTE: Not SKIP_INVISIBLE, an invisible hit area still hits
+                            area.hit_test_shape(context, point, HitTestOptions::SKIP_MASK)
+                        }
+                        // Otherwise the clip's own shape picks.
+                        _ => {
+                            let mut options = HitTestOptions::SKIP_INVISIBLE;
+                            options.set(HitTestOptions::SKIP_MASK, self.maskee().is_none());
+                            self.hit_test_shape(context, point, options)
+                        }
+                    };
+                    if hit {
                         return Some(this);
                     }
                 }
             }
+
+            let local_matrix = self.global_to_local_matrix()?;
 
             // Maybe we could skip recursing down at all if !world_bounds.contains(point),
             // but a child button can have an invisible hit area outside the parent's bounds.
