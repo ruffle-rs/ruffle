@@ -1,0 +1,18 @@
+set_initial: ok
+null_clears: ok
+nan_x: Got [object ArgumentError] id 2004
+nan_y: Got [object ArgumentError] id 2004
+nan_w: Got [object ArgumentError] id 2004
+nan_h: Got [object ArgumentError] id 2004
+pos_inf: Got [object ArgumentError] id 2004
+neg_inf: Got [object ArgumentError] id 2004
+out_of_bounds: Got [object ArgumentError] id 2004
+pixel_floor_readback: (x=10, y=79, w=100, h=200)
+pixel_floor: ok
+roundtrip_readback: (x=5, y=5, w=50, h=50)
+roundtrip: ok
+target_is_shape: ok
+direct_graphic_child: ok
+direct_morph_child: ok
+nested_shape_descendant: Got [object ArgumentError] id 2004
+textfield_only_child: Got [object ArgumentError] id 2004

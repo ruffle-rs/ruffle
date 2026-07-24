@@ -1,11 +1,13 @@
 use crate::context::RenderContext;
+use crate::scale9_cache::{Scale9Cache, Scale9Key};
 use ruffle_render::backend::{RenderBackend, ShapeHandle};
 use ruffle_render::bitmap::{BitmapHandle, BitmapInfo, BitmapSize, BitmapSource};
 use ruffle_render::commands::CommandHandler;
 use ruffle_render::shape_utils::{
     DistilledShape, DrawCommand, DrawPath, FillRule, cubic_curve_bounds, quadratic_curve_bounds,
+    transform_for_scale9grid,
 };
-use std::cell::OnceCell;
+use std::cell::{OnceCell, RefCell};
 use swf::{FillStyle, LineStyle, Point, Rectangle, Twips};
 
 #[derive(Clone, Debug)]
@@ -23,6 +25,9 @@ pub struct Drawing {
     default_winding_rule: FillRule,
     /// Cached for fast emptiness check.
     is_empty: bool,
+    /// Cache of 9-slice transformed shape handles, keyed by grid + world scale.
+    /// Cleared whenever the drawing mutates (`mark_dirty` / `clear`).
+    scale9_handles: RefCell<Scale9Cache>,
 }
 
 impl Default for Drawing {
@@ -46,6 +51,7 @@ impl Drawing {
             fill_start: Point::ZERO,
             default_winding_rule: FillRule::EvenOdd,
             is_empty: true,
+            scale9_handles: RefCell::new(Scale9Cache::new()),
         }
     }
 
@@ -67,6 +73,7 @@ impl Drawing {
                 FillRule::EvenOdd
             },
             is_empty: true,
+            scale9_handles: RefCell::new(Scale9Cache::new()),
         };
 
         let shape: DistilledShape = shape.into();
@@ -107,6 +114,14 @@ impl Drawing {
     fn mark_dirty(&mut self) {
         self.is_empty = false;
         self.render_handle.take();
+        self.scale9_handles.borrow_mut().clear();
+    }
+
+    /// Drops cached 9-slice transformed handles. Called when the owning
+    /// DisplayObject's scaling_grid changes — without this, stale handles
+    /// keyed by the previous grid would be reused.
+    pub fn invalidate_scale9_cache(&self) {
+        self.scale9_handles.borrow_mut().clear();
     }
 
     /// Set fill style and reset fill rule to default.
@@ -163,6 +178,7 @@ impl Drawing {
 
         // An empty drawing doesn't need to hold onto a `ShapeHandle`.
         self.render_handle.take();
+        self.scale9_handles.borrow_mut().clear();
     }
 
     pub fn set_line_style(&mut self, style: Option<LineStyle>) {
@@ -239,82 +255,115 @@ impl Drawing {
         id
     }
 
+    /// Build a `DistilledShape` from the drawing's accumulated paths (no GPU
+    /// registration). Both `register_or_replace` and the 9-slice handle helper
+    /// route through this so the source geometry is identical.
+    fn build_distilled_shape(&self) -> DistilledShape<'_> {
+        let mut paths = Vec::with_capacity(self.paths.len());
+
+        for path in &self.paths {
+            match path {
+                DrawingPath::Fill(fill) => {
+                    paths.push(DrawPath::Fill {
+                        style: &fill.style,
+                        commands: fill.commands.to_owned(),
+                        winding_rule: fill.rule,
+                    });
+                }
+                DrawingPath::Line(line) => {
+                    paths.push(DrawPath::Stroke {
+                        style: &line.style,
+                        commands: line.commands.to_owned(),
+                        is_closed: line.is_closed,
+                    });
+                }
+            }
+        }
+
+        if let Some(fill) = &self.current_fill {
+            paths.push(DrawPath::Fill {
+                style: &fill.style,
+                commands: fill.commands.to_owned(),
+                winding_rule: fill.rule,
+            })
+        }
+
+        for line in &self.pending_lines {
+            let mut commands = line.commands.to_owned();
+            let is_closed = if self.current_fill.is_some() {
+                commands.push(DrawCommand::LineTo(self.fill_start));
+                true
+            } else {
+                self.cursor == self.fill_start
+            };
+            paths.push(DrawPath::Stroke {
+                style: &line.style,
+                commands,
+                is_closed,
+            })
+        }
+
+        if let Some(line) = &self.current_line {
+            let mut commands = line.commands.to_owned();
+            let is_closed = if self.current_fill.is_some() {
+                commands.push(DrawCommand::LineTo(self.fill_start));
+                true
+            } else {
+                self.cursor == self.fill_start
+            };
+            paths.push(DrawPath::Stroke {
+                style: &line.style,
+                commands,
+                is_closed,
+            })
+        }
+
+        DistilledShape {
+            paths,
+            shape_bounds: self.shape_bounds,
+            edge_bounds: self.edge_bounds,
+            id: 0,
+        }
+    }
+
     /// Obtain a `ShapeHandle` that represents this `Drawing`, or `None` if it is empty.
     pub fn register_or_replace(&self, renderer: &mut dyn RenderBackend) -> Option<ShapeHandle> {
         if self.is_empty {
             return None;
         }
 
-        let handle = self.render_handle.get_or_init(|| {
-            let mut paths = Vec::with_capacity(self.paths.len());
-
-            for path in &self.paths {
-                match path {
-                    DrawingPath::Fill(fill) => {
-                        paths.push(DrawPath::Fill {
-                            style: &fill.style,
-                            commands: fill.commands.to_owned(),
-                            winding_rule: fill.rule,
-                        });
-                    }
-                    DrawingPath::Line(line) => {
-                        paths.push(DrawPath::Stroke {
-                            style: &line.style,
-                            commands: line.commands.to_owned(),
-                            is_closed: line.is_closed,
-                        });
-                    }
-                }
-            }
-
-            if let Some(fill) = &self.current_fill {
-                paths.push(DrawPath::Fill {
-                    style: &fill.style,
-                    commands: fill.commands.to_owned(),
-                    winding_rule: fill.rule,
-                })
-            }
-
-            for line in &self.pending_lines {
-                let mut commands = line.commands.to_owned();
-                let is_closed = if self.current_fill.is_some() {
-                    commands.push(DrawCommand::LineTo(self.fill_start));
-                    true
-                } else {
-                    self.cursor == self.fill_start
-                };
-                paths.push(DrawPath::Stroke {
-                    style: &line.style,
-                    commands,
-                    is_closed,
-                })
-            }
-
-            if let Some(line) = &self.current_line {
-                let mut commands = line.commands.to_owned();
-                let is_closed = if self.current_fill.is_some() {
-                    commands.push(DrawCommand::LineTo(self.fill_start));
-                    true
-                } else {
-                    self.cursor == self.fill_start
-                };
-                paths.push(DrawPath::Stroke {
-                    style: &line.style,
-                    commands,
-                    is_closed,
-                })
-            }
-
-            let shape = DistilledShape {
-                paths,
-                shape_bounds: self.shape_bounds,
-                edge_bounds: self.edge_bounds,
-                id: 0,
-            };
-            renderer.register_shape(shape, self)
-        });
+        let handle = self
+            .render_handle
+            .get_or_init(|| renderer.register_shape(self.build_distilled_shape(), self));
 
         Some(handle.clone())
+    }
+
+    /// Returns a 9-slice transformed shape handle for the given grid + world scale.
+    /// Builds and caches one on first request. Cache is cleared by `mark_dirty`
+    /// whenever the drawing mutates.
+    pub fn get_or_register_scale9_handle(
+        &self,
+        renderer: &mut dyn RenderBackend,
+        grid: Rectangle<Twips>,
+        bounds: Rectangle<Twips>,
+        world_sx: f32,
+        world_sy: f32,
+    ) -> Option<ShapeHandle> {
+        if self.is_empty {
+            return None;
+        }
+        let key = Scale9Key::new(grid, bounds, world_sx, world_sy);
+        self.scale9_handles.borrow_mut().get_or_try_insert(key, || {
+            let source = self.build_distilled_shape();
+            // Defer to MASK fallback (caller handles None) only for fills that
+            // need original-source UV continuity — non-repeating bitmaps.
+            if ruffle_render::shape_utils::shape_needs_source_uv_sampling(&source) {
+                return None;
+            }
+            let transformed = transform_for_scale9grid(&source, grid, bounds, world_sx, world_sy);
+            Some(renderer.register_shape(transformed, self))
+        })
     }
 
     pub fn render(&self, context: &mut RenderContext) {
@@ -327,6 +376,10 @@ impl Drawing {
 
     pub fn self_bounds(&self) -> Rectangle<Twips> {
         self.shape_bounds
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.is_empty
     }
 
     pub fn hit_test(

@@ -8,6 +8,7 @@ use crate::display_object::{BoundsMode, DisplayObjectBase};
 use crate::drawing::Drawing;
 use crate::library::MovieLibrarySource;
 use crate::prelude::*;
+use crate::scale9_cache::{Scale9Cache, Scale9Key};
 use crate::tag_utils::SwfMovie;
 use crate::tessellation_cache::TessellationCache;
 use crate::vminterface::Instantiator;
@@ -65,6 +66,7 @@ impl<'gc> Graphic<'gc> {
             shape: swf_shape,
             movie,
             scaled_handle: RefCell::new(TessellationCache::new()),
+            scale9_handles: RefCell::new(Scale9Cache::new()),
         };
 
         Graphic(Gc::new(
@@ -99,6 +101,7 @@ impl<'gc> Graphic<'gc> {
             },
             movie: context.root_swf.clone(),
             scaled_handle: RefCell::new(TessellationCache::new()),
+            scale9_handles: RefCell::new(Scale9Cache::new()),
         };
 
         Graphic(Gc::new(
@@ -123,6 +126,68 @@ impl<'gc> Graphic<'gc> {
 
     fn set_shared(self, mc: &Mutation<'gc>, shared: Gc<'gc, GraphicShared>) {
         unlock!(Gc::write(mc, self.0), GraphicData, shared).set(shared);
+    }
+
+    /// Drops cached 9-slice transformed handles for both the SWF-source
+    /// path and any lazy `Drawing` overlay. Called when the owning
+    /// DisplayObject's scaling_grid changes.
+    pub fn invalidate_scale9_cache(self) {
+        self.0.shared.get().scale9_handles.borrow_mut().clear();
+        if let Some(drawing_cell) = self.0.drawing.get() {
+            drawing_cell.borrow().invalidate_scale9_cache();
+        }
+    }
+
+    /// Returns a 9-slice transformed shape handle, building and caching one
+    /// on first request. AS3-created shapes (`new Shape(); shape.graphics.*`)
+    /// store their geometry in the lazy `Drawing` rather than the SWF
+    /// `shape`; route through the Drawing's own scale9 cache in that case.
+    pub fn get_or_register_scale9_handle(
+        self,
+        context: &mut RenderContext<'_, 'gc>,
+        grid: Rectangle<Twips>,
+        bounds: Rectangle<Twips>,
+        world_sx: f32,
+        world_sy: f32,
+    ) -> Option<ShapeHandle> {
+        if let Some(drawing_cell) = self.0.drawing.get() {
+            return drawing_cell.borrow().get_or_register_scale9_handle(
+                context.renderer,
+                grid,
+                bounds,
+                world_sx,
+                world_sy,
+            );
+        }
+
+        let shared = self.0.shared.get();
+        let library = context.library.library_for_movie(shared.movie.clone())?;
+        let key = Scale9Key::new(grid, bounds, world_sx, world_sy);
+        shared
+            .scale9_handles
+            .borrow_mut()
+            .get_or_try_insert(key, || {
+                let source: ruffle_render::shape_utils::DistilledShape = (&shared.shape).into();
+                if source.paths.is_empty() {
+                    return None;
+                }
+                // Defer to MASK fallback (caller handles None) only when fills
+                // carry source-space UV sampling that PH2 geometry compression
+                // would break — non-repeating bitmap fills. Solid-color shapes
+                // stay on PH2 because MASK would discontinuously stretch any
+                // curve crossing a slice boundary.
+                if ruffle_render::shape_utils::shape_needs_source_uv_sampling(&source) {
+                    return None;
+                }
+                let transformed = ruffle_render::shape_utils::transform_for_scale9grid(
+                    &source, grid, bounds, world_sx, world_sy,
+                );
+                Some(
+                    context
+                        .renderer
+                        .register_shape(transformed, &MovieLibrarySource { library }),
+                )
+            })
     }
 
     /// Returns the best shape handle for the current scale, retessellating if necessary.
@@ -337,4 +402,8 @@ struct GraphicShared {
     movie: Arc<SwfMovie>,
     #[collect(require_static)]
     scaled_handle: RefCell<TessellationCache>,
+    /// Cache of 9-slice transformed shape handles, keyed by grid + world scale.
+    /// Populated lazily by `get_or_register_scale9_handle`.
+    #[collect(require_static)]
+    scale9_handles: RefCell<Scale9Cache>,
 }

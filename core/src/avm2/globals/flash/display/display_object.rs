@@ -2,7 +2,10 @@
 
 use crate::avm2::StageObject;
 use crate::avm2::activation::Activation;
-use crate::avm2::error::{make_error_2005, make_error_2007, make_error_2008, make_error_2078};
+use crate::avm2::error::{
+    Error2004Type, make_error_2004, make_error_2005, make_error_2007, make_error_2008,
+    make_error_2078,
+};
 use crate::avm2::filters::FilterAvm2Ext;
 use crate::avm2::globals::flash::geom::transform::color_transform_from_transform_object;
 use crate::avm2::globals::flash::geom::transform::has_matrix3d_from_transform_object;
@@ -126,7 +129,6 @@ pub fn get_scale9grid<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
-    avm2_stub_getter!(activation, "flash.display.DisplayObject", "scale9Grid");
     if let Some(dobj) = this.as_display_object() {
         let rect = dobj.scaling_grid();
         return if rect.is_valid() {
@@ -140,6 +142,15 @@ pub fn get_scale9grid<'gc>(
 }
 
 /// Implements `scale9Grid`'s setter.
+///
+/// Validation modeled after FP 32 trace evidence:
+/// - `null`/`undefined` clears the grid unconditionally (even one set via DefineScalingGrid).
+/// - NaN / Infinity on any component → ArgumentError #2004.
+/// - Coordinates are floored toward -∞ at pixel granularity (D5: 10.5,79.7 → 10,79).
+/// - Resulting rectangle must fit inside the target's `BoundsMode::Script` bounds.
+/// - Target must produce sliceable shape geometry: be a Graphic/MorphShape itself,
+///   have a non-empty own `.graphics` drawing, or have a direct Graphic/MorphShape child.
+///   Nested shape descendants (e.g. Sprite+MovieClip+Shape) do **not** satisfy the rule.
 pub fn set_scale9grid<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
@@ -147,16 +158,86 @@ pub fn set_scale9grid<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
-    avm2_stub_setter!(activation, "flash.display.DisplayObject", "scale9Grid");
-    if let Some(dobj) = this.as_display_object() {
-        let rect = match args.try_get_object(0) {
-            None => Rectangle::default(),
-            Some(rect) => object_to_rectangle(rect),
-        };
-        dobj.set_scaling_grid(rect);
+    let Some(dobj) = this.as_display_object() else {
+        return Ok(Value::Undefined);
+    };
+
+    let Some(rect_obj) = args.try_get_object(0) else {
+        dobj.set_scaling_grid(Rectangle::INVALID);
+        return Ok(Value::Undefined);
+    };
+
+    let x = rect_obj.get_slot(rectangle_slots::X).as_f64();
+    let y = rect_obj.get_slot(rectangle_slots::Y).as_f64();
+    let w = rect_obj.get_slot(rectangle_slots::WIDTH).as_f64();
+    let h = rect_obj.get_slot(rectangle_slots::HEIGHT).as_f64();
+
+    if !(x.is_finite() && y.is_finite() && w.is_finite() && h.is_finite()) {
+        return Err(make_error_2004(activation, Error2004Type::ArgumentError));
     }
 
+    let xi = x.floor() as i32;
+    let yi = y.floor() as i32;
+    let wi = w.floor() as i32;
+    let hi = h.floor() as i32;
+    let candidate = Rectangle {
+        x_min: Twips::from_pixels_i32(xi),
+        y_min: Twips::from_pixels_i32(yi),
+        x_max: Twips::from_pixels_i32(xi.saturating_add(wi)),
+        y_max: Twips::from_pixels_i32(yi.saturating_add(hi)),
+    };
+
+    if candidate.x_min > candidate.x_max || candidate.y_min > candidate.y_max {
+        return Err(make_error_2004(activation, Error2004Type::ArgumentError));
+    }
+
+    let bounds = dobj.bounds(BoundsMode::Script);
+    if !bounds.is_valid()
+        || bounds.x_min > candidate.x_min
+        || bounds.y_min > candidate.y_min
+        || candidate.x_max > bounds.x_max
+        || candidate.y_max > bounds.y_max
+    {
+        return Err(make_error_2004(activation, Error2004Type::ArgumentError));
+    }
+
+    if !is_valid_scale9grid_target(dobj) {
+        return Err(make_error_2004(activation, Error2004Type::ArgumentError));
+    }
+
+    dobj.set_scaling_grid(candidate);
     Ok(Value::Undefined)
+}
+
+/// Validates that `target` produces sliceable shape geometry, per the FP 32
+/// immediate-children rule (Sprite+MC+Shape and Sprite+TextField both fail).
+fn is_valid_scale9grid_target<'gc>(target: DisplayObject<'gc>) -> bool {
+    if matches!(
+        target,
+        DisplayObject::Graphic(_) | DisplayObject::MorphShape(_)
+    ) {
+        return true;
+    }
+
+    if let Some(mc) = target.as_movie_clip()
+        && let Some(drawing) = mc.drawing()
+        && !drawing.is_empty()
+    {
+        return true;
+    }
+
+    if let Some(ctr) = target.as_container() {
+        for child in ctr.iter_render_list() {
+            if matches!(
+                child,
+                DisplayObject::Graphic(_) | DisplayObject::MorphShape(_)
+            ) {
+                return true;
+            }
+        }
+    }
+
+    false
 }
 
 /// Implements `scaleY`'s getter.

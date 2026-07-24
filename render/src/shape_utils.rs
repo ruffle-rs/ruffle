@@ -1357,6 +1357,532 @@ pub fn cubic_curve_bounds(
     }
 }
 
+// =====================================================================
+// 9-slice (DisplayObject.scale9Grid) geometry transformer.
+//
+// Produces a new DistilledShape whose vertex positions are remapped per
+// the 9-slice math, while reusing the source's FillStyle / LineStyle
+// references unchanged. Because Ruffle's vertex format has no UVs (fills
+// are sampled in shape-space via texture_matrix * vertex_position),
+// transforming positions before tessellation makes UVs follow the new
+// geometry — producing FP-consistent fill scale across all 9 regions.
+// =====================================================================
+
+/// Affine transforms for each of the 9 slice regions, in shape-space.
+/// Indexed as `matrices[col][row]` where col/row ∈ {0,1,2} = {left,
+/// middle, right} / {top, middle, bottom}.
+struct Scale9Transforms {
+    matrices: [[crate::matrix::Matrix; 3]; 3],
+    /// Column boundaries on the source x axis: [bounds.x_min, grid.x_min, grid.x_max, bounds.x_max].
+    src_x: [Twips; 4],
+    /// Row boundaries on the source y axis.
+    src_y: [Twips; 4],
+}
+
+/// Source-space and destination-space column/row boundary arrays for a
+/// 9-slice grid. Each array is `[bounds_min, grid_min, grid_max, bounds_max]`
+/// along its axis. Dest boundaries divide the inner stretch by `world_*` so
+/// that, after the world matrix scales the geometry, corners land at native
+/// pixel size and the middle absorbs the remaining stretch.
+struct Scale9Boundaries {
+    src_x: [Twips; 4],
+    src_y: [Twips; 4],
+    dst_x: [Twips; 4],
+    dst_y: [Twips; 4],
+}
+
+fn compute_boundary_arrays(
+    grid: Rectangle<Twips>,
+    bounds: Rectangle<Twips>,
+    world_sx: f32,
+    world_sy: f32,
+) -> Scale9Boundaries {
+    let left = (grid.x_min - bounds.x_min).to_pixels();
+    let right = (bounds.x_max - grid.x_max).to_pixels();
+    let top = (grid.y_min - bounds.y_min).to_pixels();
+    let bottom = (bounds.y_max - grid.y_max).to_pixels();
+    Scale9Boundaries {
+        src_x: [bounds.x_min, grid.x_min, grid.x_max, bounds.x_max],
+        src_y: [bounds.y_min, grid.y_min, grid.y_max, bounds.y_max],
+        dst_x: [
+            bounds.x_min,
+            bounds.x_min + Twips::from_pixels(left / world_sx as f64),
+            bounds.x_max - Twips::from_pixels(right / world_sx as f64),
+            bounds.x_max,
+        ],
+        dst_y: [
+            bounds.y_min,
+            bounds.y_min + Twips::from_pixels(top / world_sy as f64),
+            bounds.y_max - Twips::from_pixels(bottom / world_sy as f64),
+            bounds.y_max,
+        ],
+    }
+}
+
+#[allow(clippy::needless_range_loop)] // Adjacent indices [col]/[col+1] needed.
+fn build_region_matrices(b: &Scale9Boundaries) -> [[crate::matrix::Matrix; 3]; 3] {
+    let mut matrices = [[crate::matrix::Matrix::IDENTITY; 3]; 3];
+    for col in 0..3 {
+        for row in 0..3 {
+            let src_w = (b.src_x[col + 1] - b.src_x[col]).get() as f64;
+            let src_h = (b.src_y[row + 1] - b.src_y[row]).get() as f64;
+            let dst_w = (b.dst_x[col + 1] - b.dst_x[col]).get() as f64;
+            let dst_h = (b.dst_y[row + 1] - b.dst_y[row]).get() as f64;
+            let a = if src_w > 0.0 {
+                (dst_w / src_w) as f32
+            } else {
+                1.0
+            };
+            let d = if src_h > 0.0 {
+                (dst_h / src_h) as f32
+            } else {
+                1.0
+            };
+            matrices[col][row] = crate::matrix::Matrix {
+                a,
+                b: 0.0,
+                c: 0.0,
+                d,
+                tx: Twips::new(b.dst_x[col].get() - (b.src_x[col].get() as f64 * a as f64) as i32),
+                ty: Twips::new(b.dst_y[row].get() - (b.src_y[row].get() as f64 * d as f64) as i32),
+            };
+        }
+    }
+    matrices
+}
+
+impl Scale9Transforms {
+    fn new(grid: Rectangle<Twips>, bounds: Rectangle<Twips>, world_sx: f32, world_sy: f32) -> Self {
+        let boundaries = compute_boundary_arrays(grid, bounds, world_sx, world_sy);
+        let matrices = build_region_matrices(&boundaries);
+        Self {
+            matrices,
+            src_x: boundaries.src_x,
+            src_y: boundaries.src_y,
+        }
+    }
+
+    /// Region (col, row) for a point in shape-space. Boundary points are
+    /// assigned to the lower-index region; the transforms agree on shared
+    /// edges so geometry stays continuous either way.
+    fn region_of(&self, p: swf::Point<Twips>) -> (usize, usize) {
+        let col = if p.x < self.src_x[1] {
+            0
+        } else if p.x < self.src_x[2] {
+            1
+        } else {
+            2
+        };
+        let row = if p.y < self.src_y[1] {
+            0
+        } else if p.y < self.src_y[2] {
+            1
+        } else {
+            2
+        };
+        (col, row)
+    }
+
+    fn apply(&self, col: usize, row: usize, p: swf::Point<Twips>) -> swf::Point<Twips> {
+        let m = &self.matrices[col][row];
+        let x = (m.a as f64 * p.x.get() as f64) as i32 + m.tx.get();
+        let y = (m.d as f64 * p.y.get() as f64) as i32 + m.ty.get();
+        swf::Point::new(Twips::new(x), Twips::new(y))
+    }
+}
+
+/// Find every t ∈ (0, 1) where a quadratic Bezier crosses x = target_x.
+fn quadratic_t_for_x(p0: f64, c: f64, p1: f64, target: f64) -> SmallVec<[f64; 2]> {
+    // B(t) = (1-t)² P0 + 2(1-t)t C + t² P1
+    //      = (P0 - 2C + P1) t² + 2(C - P0) t + P0
+    // Solve B(t) = target → at² + bt + c = 0
+    let a = p0 - 2.0 * c + p1;
+    let b = 2.0 * (c - p0);
+    let cc = p0 - target;
+    let mut out = SmallVec::new();
+    let (t1, t2) = solve_quadratic(a, b, cc);
+    if t1.is_finite() && t1 > 0.0 && t1 < 1.0 {
+        out.push(t1);
+    }
+    if t2.is_finite() && t2 > 0.0 && t2 < 1.0 && (t2 - t1).abs() > f64::EPSILON {
+        out.push(t2);
+    }
+    out
+}
+
+/// Linear interpolation between two points by `t ∈ [0, 1]`.
+fn lerp_point(p0: swf::Point<Twips>, p1: swf::Point<Twips>, t: f64) -> swf::Point<Twips> {
+    let x = p0.x.get() as f64 + (p1.x.get() as f64 - p0.x.get() as f64) * t;
+    let y = p0.y.get() as f64 + (p1.y.get() as f64 - p0.y.get() as f64) * t;
+    swf::Point::new(Twips::new(x.round() as i32), Twips::new(y.round() as i32))
+}
+
+/// Find every t ∈ (0, 1) where the line segment p0 → p1 crosses any
+/// of the four grid lines. Returned t values are unique and sorted.
+fn line_crossings(
+    p0: swf::Point<Twips>,
+    p1: swf::Point<Twips>,
+    grid: Rectangle<Twips>,
+) -> SmallVec<[f64; 4]> {
+    let mut ts: SmallVec<[f64; 4]> = SmallVec::new();
+    let dx = (p1.x - p0.x).get() as f64;
+    let dy = (p1.y - p0.y).get() as f64;
+    if dx.abs() > 0.0 {
+        for &gx in &[grid.x_min, grid.x_max] {
+            let t = (gx.get() as f64 - p0.x.get() as f64) / dx;
+            if t > 0.0 && t < 1.0 {
+                ts.push(t);
+            }
+        }
+    }
+    if dy.abs() > 0.0 {
+        for &gy in &[grid.y_min, grid.y_max] {
+            let t = (gy.get() as f64 - p0.y.get() as f64) / dy;
+            if t > 0.0 && t < 1.0 {
+                ts.push(t);
+            }
+        }
+    }
+    ts.sort_by(|a, b| a.total_cmp(b));
+    ts.dedup_by(|a, b| (*a - *b).abs() < 1e-9);
+    ts
+}
+
+/// All t values where a quadratic Bezier crosses any grid line.
+fn quadratic_crossings(
+    p0: swf::Point<Twips>,
+    control: swf::Point<Twips>,
+    p1: swf::Point<Twips>,
+    grid: Rectangle<Twips>,
+) -> SmallVec<[f64; 4]> {
+    let mut ts: SmallVec<[f64; 4]> = SmallVec::new();
+    for &gx in &[grid.x_min, grid.x_max] {
+        for t in quadratic_t_for_x(
+            p0.x.get() as f64,
+            control.x.get() as f64,
+            p1.x.get() as f64,
+            gx.get() as f64,
+        ) {
+            ts.push(t);
+        }
+    }
+    for &gy in &[grid.y_min, grid.y_max] {
+        for t in quadratic_t_for_x(
+            p0.y.get() as f64,
+            control.y.get() as f64,
+            p1.y.get() as f64,
+            gy.get() as f64,
+        ) {
+            ts.push(t);
+        }
+    }
+    ts.sort_by(|a, b| a.total_cmp(b));
+    ts.dedup_by(|a, b| (*a - *b).abs() < 1e-9);
+    ts
+}
+
+/// All t values where a cubic Bezier crosses any grid line.
+fn cubic_crossings(
+    p0: swf::Point<Twips>,
+    c1: swf::Point<Twips>,
+    c2: swf::Point<Twips>,
+    p1: swf::Point<Twips>,
+    grid: Rectangle<Twips>,
+) -> SmallVec<[f64; 6]> {
+    let mut ts: SmallVec<[f64; 6]> = SmallVec::new();
+    let curve = lyon_geom::CubicBezierSegment {
+        from: lyon_geom::Point::new(p0.x.get() as f32, p0.y.get() as f32),
+        ctrl1: lyon_geom::Point::new(c1.x.get() as f32, c1.y.get() as f32),
+        ctrl2: lyon_geom::Point::new(c2.x.get() as f32, c2.y.get() as f32),
+        to: lyon_geom::Point::new(p1.x.get() as f32, p1.y.get() as f32),
+    };
+    for &gx in &[grid.x_min, grid.x_max] {
+        for t in curve.solve_t_for_x(gx.get() as f32) {
+            let t = t as f64;
+            if t > 0.0 && t < 1.0 {
+                ts.push(t);
+            }
+        }
+    }
+    for &gy in &[grid.y_min, grid.y_max] {
+        for t in curve.solve_t_for_y(gy.get() as f32) {
+            let t = t as f64;
+            if t > 0.0 && t < 1.0 {
+                ts.push(t);
+            }
+        }
+    }
+    ts.sort_by(|a, b| a.total_cmp(b));
+    ts.dedup_by(|a, b| (*a - *b).abs() < 1e-9);
+    ts
+}
+
+/// Evaluate a quadratic Bezier at parameter `t`, returning the point.
+fn quadratic_eval(
+    p0: swf::Point<Twips>,
+    c: swf::Point<Twips>,
+    p1: swf::Point<Twips>,
+    t: f64,
+) -> swf::Point<Twips> {
+    let s = 1.0 - t;
+    let x = s * s * p0.x.get() as f64 + 2.0 * s * t * c.x.get() as f64 + t * t * p1.x.get() as f64;
+    let y = s * s * p0.y.get() as f64 + 2.0 * s * t * c.y.get() as f64 + t * t * p1.y.get() as f64;
+    swf::Point::new(Twips::new(x.round() as i32), Twips::new(y.round() as i32))
+}
+
+/// Append the quadratic sub-segment from t0..t1 of (p0, control, p1) to `out`,
+/// transformed by the slice region containing its midpoint.
+fn emit_quadratic_subsegment(
+    p0: swf::Point<Twips>,
+    control: swf::Point<Twips>,
+    p1: swf::Point<Twips>,
+    t0: f64,
+    t1: f64,
+    transforms: &Scale9Transforms,
+    out: &mut Vec<DrawCommand>,
+) {
+    // De Casteljau split to extract the sub-segment between t0 and t1.
+    // First split at t1 → before. Then split that "before" at t0/t1 → after.
+    let curve = lyon_geom::QuadraticBezierSegment {
+        from: lyon_geom::Point::new(p0.x.get() as f32, p0.y.get() as f32),
+        ctrl: lyon_geom::Point::new(control.x.get() as f32, control.y.get() as f32),
+        to: lyon_geom::Point::new(p1.x.get() as f32, p1.y.get() as f32),
+    };
+    let sub = if t0 <= 0.0 {
+        curve.before_split(t1 as f32)
+    } else if t1 >= 1.0 {
+        curve.after_split(t0 as f32)
+    } else {
+        // Range [t0, t1] inside (0, 1): split at t0 → after, then split after at remapped t.
+        let after = curve.after_split(t0 as f32);
+        let new_t = ((t1 - t0) / (1.0 - t0)) as f32;
+        after.before_split(new_t)
+    };
+    let mid_t = (t0 + t1) / 2.0;
+    let mid_pt = quadratic_eval(p0, control, p1, mid_t);
+    let (col, row) = transforms.region_of(mid_pt);
+    let new_control = transforms.apply(
+        col,
+        row,
+        swf::Point::new(
+            Twips::new(sub.ctrl.x.round() as i32),
+            Twips::new(sub.ctrl.y.round() as i32),
+        ),
+    );
+    let new_anchor = transforms.apply(
+        col,
+        row,
+        swf::Point::new(
+            Twips::new(sub.to.x.round() as i32),
+            Twips::new(sub.to.y.round() as i32),
+        ),
+    );
+    out.push(DrawCommand::QuadraticCurveTo {
+        control: new_control,
+        anchor: new_anchor,
+    });
+}
+
+/// Cubic version of `emit_quadratic_subsegment`.
+#[allow(clippy::too_many_arguments)]
+fn emit_cubic_subsegment(
+    p0: swf::Point<Twips>,
+    c1: swf::Point<Twips>,
+    c2: swf::Point<Twips>,
+    p1: swf::Point<Twips>,
+    t0: f64,
+    t1: f64,
+    transforms: &Scale9Transforms,
+    out: &mut Vec<DrawCommand>,
+) {
+    let curve = lyon_geom::CubicBezierSegment {
+        from: lyon_geom::Point::new(p0.x.get() as f32, p0.y.get() as f32),
+        ctrl1: lyon_geom::Point::new(c1.x.get() as f32, c1.y.get() as f32),
+        ctrl2: lyon_geom::Point::new(c2.x.get() as f32, c2.y.get() as f32),
+        to: lyon_geom::Point::new(p1.x.get() as f32, p1.y.get() as f32),
+    };
+    let sub = if t0 <= 0.0 {
+        curve.before_split(t1 as f32)
+    } else if t1 >= 1.0 {
+        curve.after_split(t0 as f32)
+    } else {
+        let after = curve.after_split(t0 as f32);
+        let new_t = ((t1 - t0) / (1.0 - t0)) as f32;
+        after.before_split(new_t)
+    };
+    let mid_t = (t0 + t1) / 2.0;
+    let mid = curve.sample(mid_t as f32);
+    let mid_pt = swf::Point::new(
+        Twips::new(mid.x.round() as i32),
+        Twips::new(mid.y.round() as i32),
+    );
+    let (col, row) = transforms.region_of(mid_pt);
+    let to_pt = |p: lyon_geom::Point<f32>| {
+        transforms.apply(
+            col,
+            row,
+            swf::Point::new(
+                Twips::new(p.x.round() as i32),
+                Twips::new(p.y.round() as i32),
+            ),
+        )
+    };
+    out.push(DrawCommand::CubicCurveTo {
+        control_a: to_pt(sub.ctrl1),
+        control_b: to_pt(sub.ctrl2),
+        anchor: to_pt(sub.to),
+    });
+}
+
+/// Walk a single command, split at grid crossings, transform each piece,
+/// and append the result to `out`. Returns the new pen position.
+fn transform_command(
+    start: swf::Point<Twips>,
+    cmd: &DrawCommand,
+    transforms: &Scale9Transforms,
+    grid: Rectangle<Twips>,
+    out: &mut Vec<DrawCommand>,
+) -> swf::Point<Twips> {
+    match *cmd {
+        DrawCommand::MoveTo(p) => {
+            let (col, row) = transforms.region_of(p);
+            out.push(DrawCommand::MoveTo(transforms.apply(col, row, p)));
+            p
+        }
+        DrawCommand::LineTo(p1) => {
+            let crossings = line_crossings(start, p1, grid);
+            let mut prev_t = 0.0_f64;
+            for &t in crossings.iter() {
+                let next_pt = lerp_point(start, p1, t);
+                let mid_t = (prev_t + t) / 2.0;
+                let mid_pt = lerp_point(start, p1, mid_t);
+                let (col, row) = transforms.region_of(mid_pt);
+                out.push(DrawCommand::LineTo(transforms.apply(col, row, next_pt)));
+                prev_t = t;
+            }
+            // Final segment from prev_t..1
+            let mid_t = (prev_t + 1.0) / 2.0;
+            let mid_pt = lerp_point(start, p1, mid_t);
+            let (col, row) = transforms.region_of(mid_pt);
+            out.push(DrawCommand::LineTo(transforms.apply(col, row, p1)));
+            p1
+        }
+        DrawCommand::QuadraticCurveTo { control, anchor } => {
+            let crossings = quadratic_crossings(start, control, anchor, grid);
+            let mut prev_t = 0.0_f64;
+            for &t in crossings.iter() {
+                emit_quadratic_subsegment(start, control, anchor, prev_t, t, transforms, out);
+                prev_t = t;
+            }
+            emit_quadratic_subsegment(start, control, anchor, prev_t, 1.0, transforms, out);
+            anchor
+        }
+        DrawCommand::CubicCurveTo {
+            control_a,
+            control_b,
+            anchor,
+        } => {
+            let crossings = cubic_crossings(start, control_a, control_b, anchor, grid);
+            let mut prev_t = 0.0_f64;
+            for &t in crossings.iter() {
+                emit_cubic_subsegment(
+                    start, control_a, control_b, anchor, prev_t, t, transforms, out,
+                );
+                prev_t = t;
+            }
+            emit_cubic_subsegment(
+                start, control_a, control_b, anchor, prev_t, 1.0, transforms, out,
+            );
+            anchor
+        }
+    }
+}
+
+/// True if any fill needs UV sampling to follow the **original source
+/// position** rather than a slice-transformed vertex position — i.e.
+/// non-repeating bitmap fills (each output pixel samples its specific
+/// source pixel; e.g. an ornate frame with a corner ornament at a fixed
+/// source region). Repeating bitmaps and gradients stay on the
+/// geometry-transform path: tile patterns keep a consistent perceived
+/// scale across slices and gradients stay continuous.
+pub fn shape_needs_source_uv_sampling(shape: &DistilledShape<'_>) -> bool {
+    shape.paths.iter().any(|p| match p {
+        DrawPath::Fill { style, .. } => match style {
+            FillStyle::Bitmap { is_repeating, .. } => !is_repeating,
+            _ => false,
+        },
+        DrawPath::Stroke { .. } => false,
+    })
+}
+
+/// Produce a `DistilledShape` whose vertex positions are remapped per the
+/// 9-slice grid: corners stay at native output-pixel size (compressed in
+/// shape-space by `1/world_scale`) and the middle slice stretches to fill
+/// the rest. FillStyle / LineStyle references are unchanged so bitmap and
+/// gradient fills continue to sample in the original shape coord space —
+/// UVs follow the new vertex positions automatically.
+pub fn transform_for_scale9grid<'a>(
+    source: &DistilledShape<'a>,
+    grid: Rectangle<Twips>,
+    bounds: Rectangle<Twips>,
+    world_sx: f32,
+    world_sy: f32,
+) -> DistilledShape<'a> {
+    let transforms = Scale9Transforms::new(grid, bounds, world_sx, world_sy);
+    // KNOWN GAP: FP renders strokes at native pixel thickness when scale9 is
+    // engaged regardless of LineStyle's scaleMode; Ruffle still lets the
+    // world matrix scale the stroke ribbon. Fix belongs in
+    // `tessellator.rs` near the stroke width calculation, where it can
+    // apply LineScaleMode-aware adjustment given the world scale — doing it
+    // here would need Cow<LineStyle> or pre-scaled widths, both at the
+    // wrong layer.
+    let mut out_paths = Vec::with_capacity(source.paths.len());
+    for path in &source.paths {
+        // Transform every path's geometry, fills and strokes alike — a
+        // stroke around a fill must sit at the same perimeter as its fill.
+        match path {
+            DrawPath::Stroke {
+                style,
+                is_closed,
+                commands,
+            } => {
+                let mut new_commands = Vec::with_capacity(commands.len() * 2);
+                let mut pen = swf::Point::ZERO;
+                for cmd in commands {
+                    pen = transform_command(pen, cmd, &transforms, grid, &mut new_commands);
+                }
+                out_paths.push(DrawPath::Stroke {
+                    style,
+                    is_closed: *is_closed,
+                    commands: new_commands,
+                });
+            }
+            DrawPath::Fill {
+                style,
+                commands,
+                winding_rule,
+            } => {
+                let mut new_commands = Vec::with_capacity(commands.len() * 2);
+                let mut pen = swf::Point::ZERO;
+                for cmd in commands {
+                    pen = transform_command(pen, cmd, &transforms, grid, &mut new_commands);
+                }
+                out_paths.push(DrawPath::Fill {
+                    style,
+                    commands: new_commands,
+                    winding_rule: *winding_rule,
+                });
+            }
+        }
+    }
+    DistilledShape {
+        paths: out_paths,
+        shape_bounds: bounds,
+        edge_bounds: bounds,
+        id: source.id,
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

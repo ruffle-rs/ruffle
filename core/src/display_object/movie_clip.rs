@@ -3469,12 +3469,23 @@ impl<'gc, 'a> MovieClipShared<'gc> {
     ) -> Result<(), Error> {
         let id = reader.read_u16()?;
         let rect = reader.read_rectangle()?;
+        // Per FP, DefineScalingGrid bypasses every validation that the AS3 setter
+        // performs: any character type is accepted, oversized grids are stored, and
+        // duplicate tags overwrite (last-wins).
         if let Some(character) = self.library_mut(context).character_by_id(id) {
-            if let Character::MovieClip(clip) = character {
-                clip.set_scaling_grid(rect);
-            } else {
-                tracing::warn!("DefineScalingGrid for invalid ID {}", id);
+            match character {
+                Character::MovieClip(c) => c.set_scaling_grid(rect),
+                Character::Graphic(c) => c.set_scaling_grid(rect),
+                Character::MorphShape(c) => c.set_scaling_grid(rect),
+                Character::Avm1Button(c) => c.set_scaling_grid(rect),
+                Character::Avm2Button(c) => c.set_scaling_grid(rect),
+                Character::EditText(c) => c.set_scaling_grid(rect),
+                _ => tracing::warn!(
+                    "DefineScalingGrid: char_id={id} unsupported character type, grid dropped"
+                ),
             }
+        } else {
+            tracing::warn!("DefineScalingGrid: char_id={id} not found in library, grid dropped");
         }
         Ok(())
     }

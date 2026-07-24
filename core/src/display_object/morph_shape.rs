@@ -4,6 +4,7 @@ use crate::context::{RenderContext, UpdateContext};
 use crate::display_object::{BoundsMode, DisplayObjectBase};
 use crate::library::{Library, MovieLibrarySource};
 use crate::prelude::*;
+use crate::scale9_cache::{Scale9Cache, Scale9Key};
 use crate::tag_utils::SwfMovie;
 use crate::vminterface::Instantiator;
 use core::fmt;
@@ -54,6 +55,32 @@ impl<'gc> MorphShape<'gc> {
                 object: Lock::new(None),
             },
         ))
+    }
+
+    /// Returns a 9-slice transformed shape handle for the morph frame at the
+    /// current ratio, given the parent's grid and world scale. Lazily builds
+    /// the morph frame and the transformed shape on first request.
+    pub fn get_or_register_scale9_handle(
+        self,
+        context: &mut RenderContext<'_, 'gc>,
+        grid: Rectangle<Twips>,
+        bounds: Rectangle<Twips>,
+        world_sx: f32,
+        world_sy: f32,
+    ) -> Option<ShapeHandle> {
+        let ratio = self.ratio();
+        self.0
+            .shared
+            .get()
+            .get_scale9_shape(context, ratio, grid, bounds, world_sx, world_sy)
+    }
+
+    /// Drops every per-ratio cache of 9-slice transformed handles. Called
+    /// when the owning DisplayObject's scaling_grid changes.
+    pub fn invalidate_scale9_cache(self) {
+        for frame in self.0.shared.get().frames.borrow_mut().values_mut() {
+            frame.scale9_handles.clear();
+        }
     }
 }
 
@@ -181,6 +208,9 @@ struct Frame {
     shape_handle: Option<ShapeHandle>,
     shape: swf::Shape,
     bounds: Rectangle<Twips>,
+    /// Per-frame cache of 9-slice transformed shape handles, keyed by
+    /// (grid, world_scale).
+    scale9_handles: Scale9Cache,
 }
 
 /// Data shared between all instances of a morph shape.
@@ -235,6 +265,40 @@ impl MorphShapeShared {
             frame.shape_handle = Some(handle.clone());
             handle
         }
+    }
+
+    /// Retrieves a 9-slice transformed `ShapeHandle` for the given ratio + grid +
+    /// world scale, building and caching one on first request.
+    fn get_scale9_shape<'gc>(
+        &self,
+        context: &mut RenderContext<'_, 'gc>,
+        ratio: u16,
+        grid: Rectangle<Twips>,
+        bounds: Rectangle<Twips>,
+        world_sx: f32,
+        world_sy: f32,
+    ) -> Option<ShapeHandle> {
+        let library = context.library.library_for_movie(self.movie.clone())?;
+        let key = Scale9Key::new(grid, bounds, world_sx, world_sy);
+        let mut frame = self.get_frame(ratio);
+        let Frame {
+            shape,
+            scale9_handles,
+            ..
+        } = &mut *frame;
+        scale9_handles.get_or_try_insert(key, || {
+            let source: ruffle_render::shape_utils::DistilledShape = (&*shape).into();
+            // Empirical probe confirmed FP uses Phase-2 (geometry-transform UV)
+            // for all fill types.
+            let transformed = ruffle_render::shape_utils::transform_for_scale9grid(
+                &source, grid, bounds, world_sx, world_sy,
+            );
+            Some(
+                context
+                    .renderer
+                    .register_shape(transformed, &MovieLibrarySource { library }),
+            )
+        })
     }
 
     fn build_morph_frame(&self, ratio: u16) -> Frame {
@@ -366,6 +430,7 @@ impl MorphShapeShared {
             shape_handle: None,
             shape,
             bounds,
+            scale9_handles: Scale9Cache::new(),
         }
     }
 

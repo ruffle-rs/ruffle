@@ -938,6 +938,8 @@ pub fn render_base<'gc>(
     context: &mut RenderContext<'_, 'gc>,
     options: RenderOptions,
 ) {
+    let scale9_active = this.scaling_grid().is_valid();
+
     if options.skip_masks && this.maskee().is_some() {
         // Skip rendering masks (unless we are rendering one explicitly).
         return;
@@ -955,7 +957,18 @@ pub fn render_base<'gc>(
         None
     };
 
-    let cache_info = if context.use_bitmap_cache && this.is_bitmap_cached() {
+    // FP-verified behavior: when scale9 is set and no filter forces the
+    // bitmap cache, suppress cacheAsBitmap entirely and render via the normal
+    // scale9 path. FP empirically renders A (scale9 only) and B (scale9 + CAB)
+    // pixel-identically. Slicing INTO the cache would round stroke widths to
+    // bitmap pixels and produce visibly different (often thinner) borders.
+    // When a filter IS present we MUST slice into the cache so the filter
+    // applies to the sliced result — column C/D rely on this.
+    let suppress_cache_for_scale9 = scale9_active && this.filters().is_empty();
+    let cache_info = if !suppress_cache_for_scale9
+        && context.use_bitmap_cache
+        && this.is_bitmap_cached()
+    {
         let mut cache_info: Option<DrawCacheInfo> = None;
         let base_transform = context.transform_stack.transform();
         let bounds: Rectangle<Twips> = this.render_bounds_with_transform(
@@ -1071,7 +1084,17 @@ pub fn render_base<'gc>(
                 use_bitmap_cache: true,
                 stage: context.stage,
             };
-            this.render_self(&mut offscreen_context);
+            // Apply scale9 INTO the cache (FP-verified behavior: corners stay
+            // sharp at the world scale, filters render through the cache). The
+            // cache invalidates on world-scale change because the bitmap
+            // dimensions recompute from world bounds, so the slice is rebuilt
+            // at the correct output size each time the scale changes.
+            let offscreen_scale9_scope = compute_scale9_scope(this);
+            if let Some(scope) = offscreen_scale9_scope.as_ref() {
+                render_with_scale9(this, &mut offscreen_context, scope);
+            } else {
+                this.render_self(&mut offscreen_context);
+            }
             offscreen_context.cache_draws.push(BitmapCacheEntry {
                 handle: cache_info.handle.clone(),
                 commands: offscreen_context.commands,
@@ -1115,10 +1138,17 @@ pub fn render_base<'gc>(
                 .commands
                 .draw_rect(background, Matrix::create_box_from_rectangle(&bounds));
         }
+        let scale9_scope = compute_scale9_scope(this);
         apply_standard_mask_and_scroll(
             this,
             context,
-            |context| this.render_self(context),
+            |context| {
+                if let Some(scope) = scale9_scope.as_ref() {
+                    render_with_scale9(this, context, scope);
+                } else {
+                    this.render_self(context);
+                }
+            },
             &options,
         );
     }
@@ -1145,6 +1175,546 @@ pub fn render_base<'gc>(
 
     if options.apply_transform {
         context.transform_stack.pop();
+    }
+}
+
+/// 9-slice scaling scope: the grid plus the grid-owner's full Script bounds,
+/// both in owner-local coords. Bounds (not each shape's `self_bounds`) define
+/// the slice layout, so a Shape descendant whose geometry sits entirely in
+/// one slice still gets that slice's transform via the matrix chain — same
+/// as FP.
+struct Scale9Scope {
+    grid: Rectangle<Twips>,
+    bounds: Rectangle<Twips>,
+}
+
+/// Decide whether to engage 9-slice rendering for `this`. Returns `Some`
+/// only when the grid is set, the object's own matrix is a non-negative
+/// scale (no rotation/skew/mirror), bounds have positive extent, and the
+/// grid fits inside those bounds. The slice layout uses the **full Script
+/// bounds** — including non-sliceable children — to match FP.
+fn compute_scale9_scope<'gc>(this: DisplayObject<'gc>) -> Option<Scale9Scope> {
+    let grid = this.scaling_grid();
+    if !grid.is_valid() || grid.width() <= Twips::ZERO || grid.height() <= Twips::ZERO {
+        return None;
+    }
+
+    let m = this.base().matrix();
+    if m.b != 0.0 || m.c != 0.0 || m.a <= 0.0 || m.d <= 0.0 {
+        return None;
+    }
+
+    // FP gates 9-slice on the OBJECT'S OWN matrix scale, not the parent
+    // chain. Empirical: when sp.scaleX/scaleY == 1 and only the parent is
+    // scaled (e.g. `holder.scaleX = 3`), FP renders the clip with plain
+    // uniform scaling — corners scale with the parent like a normal Sprite,
+    // no slicing applied. When sp's own matrix has scale != 1 (panels
+    // resized via .width/.height), FP engages scale9 and corners stay
+    // native.
+    if m.a == 1.0 && m.d == 1.0 {
+        return None;
+    }
+
+    let bounds = this.bounds(BoundsMode::Script);
+    if !bounds.is_valid() || bounds.width() <= Twips::ZERO || bounds.height() <= Twips::ZERO {
+        return None;
+    }
+
+    if grid.x_min < bounds.x_min
+        || grid.y_min < bounds.y_min
+        || grid.x_max > bounds.x_max
+        || grid.y_max > bounds.y_max
+    {
+        return None;
+    }
+
+    if !has_sliceable_geometry(this) {
+        return None;
+    }
+
+    Some(Scale9Scope { grid, bounds })
+}
+
+/// Drop any per-shape `Scale9Cache` entries that depend on this object's
+/// previous grid. Called from `set_scaling_grid` when the grid changes;
+/// without it, a runtime grid change would reuse stale `(grid, scale)` →
+/// `ShapeHandle` entries built against the old grid.
+fn invalidate_scale9_caches<'gc>(dobj: DisplayObject<'gc>) {
+    match dobj {
+        DisplayObject::Graphic(g) => g.invalidate_scale9_cache(),
+        DisplayObject::MorphShape(ms) => ms.invalidate_scale9_cache(),
+        DisplayObject::MovieClip(mc) => {
+            if let Some(d) = mc.drawing() {
+                d.invalidate_scale9_cache();
+            }
+        }
+        _ => {}
+    }
+}
+
+/// True if `this` contributes any geometry that would be sliced — itself a
+/// Graphic/MorphShape, or a container with own `.graphics` drawing or a direct
+/// shape child. Used to skip 9-slice for objects where the full bounds come
+/// entirely from non-sliceable children (slice layout would be valid but
+/// nothing would render under it).
+fn has_sliceable_geometry<'gc>(this: DisplayObject<'gc>) -> bool {
+    if matches!(
+        this,
+        DisplayObject::Graphic(_) | DisplayObject::MorphShape(_)
+    ) {
+        return true;
+    }
+    if let Some(mc) = this.as_movie_clip()
+        && let Some(d) = mc.drawing()
+        && !d.is_empty()
+    {
+        return true;
+    }
+    if let Some(ctr) = this.as_container() {
+        for child in ctr.iter_render_list() {
+            if matches!(
+                child,
+                DisplayObject::Graphic(_) | DisplayObject::MorphShape(_)
+            ) {
+                return true;
+            }
+        }
+    }
+    false
+}
+
+/// Render `this` with 9-slice scaling applied. Walks descendants in render
+/// order: Shapes get sliced (grid translated through the matrix chain),
+/// containers without their own grid are walked recursively, non-sliceable
+/// leaves render normally — FP's "only Shape geometry slices, everything
+/// else passes through" rule. Each sliced shape is cached per (grid, scale).
+fn render_with_scale9<'gc>(
+    this: DisplayObject<'gc>,
+    context: &mut RenderContext<'_, 'gc>,
+    scope: &Scale9Scope,
+) {
+    let world_matrix = context.transform_stack.transform().matrix;
+    if world_matrix.b != 0.0 || world_matrix.c != 0.0 {
+        this.render_self(context);
+        return;
+    }
+
+    // Slice at own scale; the world matrix on the stack stretches the
+    // result on render. Reading world.a here would pre-shrink corners
+    // against the parent chain too, then double-stretch them.
+    let own_matrix = this.base().matrix();
+    let world_sx = own_matrix.a;
+    let world_sy = own_matrix.d;
+    if world_sx <= 0.0 || world_sy <= 0.0 {
+        this.render_self(context);
+        return;
+    }
+
+    // `this.matrix` is already on the transform stack (render_base pushed it
+    // before calling our closure), so the entry walker call uses
+    // push_self_matrix=false. Bounds and grid both start in grid-owner-local;
+    // the walker translates them through child matrices on recursion.
+    walk_with_slice(
+        this,
+        scope.grid,
+        scope.bounds,
+        world_sx,
+        world_sy,
+        false,
+        context,
+    );
+}
+
+/// Recursive 9-slice walker. Slices any Graphic / MorphShape descendant
+/// anywhere under the grid owner, translating the grid through each level's
+/// matrix. Containers without their own grid are walked transparently;
+/// containers with their own grid defer to the normal pipeline so their
+/// grid takes over (FP "innermost wins"). Non-shape leaves render normally.
+fn walk_with_slice<'gc>(
+    node: DisplayObject<'gc>,
+    grid_in_node_local: Rectangle<Twips>,
+    bounds_in_node_local: Rectangle<Twips>,
+    world_sx: f32,
+    world_sy: f32,
+    push_self_matrix: bool,
+    context: &mut RenderContext<'_, 'gc>,
+) {
+    if push_self_matrix {
+        context.transform_stack.push(&node.base().transform(true));
+    }
+
+    // Slice this node's own drawing (Sprite.graphics API), if any.
+    if let Some(mc) = node.as_movie_clip()
+        && let Some(drawing) = mc.drawing()
+        && !drawing.is_empty()
+    {
+        if let Some(handle) = drawing.get_or_register_scale9_handle(
+            context.renderer,
+            grid_in_node_local,
+            bounds_in_node_local,
+            world_sx,
+            world_sy,
+        ) {
+            let transform = context.transform_stack.transform();
+            context.commands.render_shape(handle, transform);
+        } else {
+            // Drawing has non-solid fills (or otherwise can't be transformed
+            // safely): fall back to mask-based per-slice rendering.
+            render_drawing_masked_9_slice(
+                &drawing,
+                grid_in_node_local,
+                bounds_in_node_local,
+                world_sx,
+                world_sy,
+                context,
+            );
+        }
+    }
+
+    // Slice this node directly if it is itself a Shape.
+    if matches!(
+        node,
+        DisplayObject::Graphic(_) | DisplayObject::MorphShape(_)
+    ) {
+        render_shape_with_scale9(
+            node,
+            grid_in_node_local,
+            bounds_in_node_local,
+            world_sx,
+            world_sy,
+            false,
+            context,
+        );
+        if push_self_matrix {
+            context.transform_stack.pop();
+        }
+        return;
+    }
+
+    if let Some(ctr) = node.as_container() {
+        for child in ctr.iter_render_list() {
+            if !child.visible() {
+                continue;
+            }
+            let cm = child.base().matrix();
+
+            // FP innermost-wins: any non-identity child matrix (scale,
+            // rotation, skew, mirror) forms its own scaling context, so the
+            // parent's grid stops here.
+            if cm.a != 1.0 || cm.d != 1.0 || cm.b != 0.0 || cm.c != 0.0 {
+                child.render(context);
+                continue;
+            }
+
+            let child_grid = inverse_axis_aligned_rect(&cm, grid_in_node_local);
+            let child_bounds = inverse_axis_aligned_rect(&cm, bounds_in_node_local);
+
+            match child {
+                DisplayObject::Graphic(_) | DisplayObject::MorphShape(_) => {
+                    render_shape_with_scale9(
+                        child,
+                        child_grid,
+                        child_bounds,
+                        world_sx,
+                        world_sy,
+                        true,
+                        context,
+                    );
+                }
+                _ => {
+                    // Walk through containers (Sprites/MovieClips/Buttons) to
+                    // find sliceable shapes nested inside. Non-container leaves
+                    // (TextField, Bitmap, Video, LoaderDisplay) render normally.
+                    if child.as_container().is_some() {
+                        walk_with_slice(
+                            child,
+                            child_grid,
+                            child_bounds,
+                            world_sx,
+                            world_sy,
+                            true,
+                            context,
+                        );
+                    } else {
+                        child.render(context);
+                    }
+                }
+            }
+        }
+    }
+
+    if push_self_matrix {
+        context.transform_stack.pop();
+    }
+}
+
+/// Slice a single shape (Graphic or MorphShape) against the grid-owner's
+/// bounds translated into this shape's local coords (not its own
+/// self_bounds). FP behavior: shapes that sit entirely within one slice
+/// still get that slice's transform via the matrix chain, even though the
+/// grid rectangle doesn't overlap the shape's own coords.
+fn render_shape_with_scale9<'gc>(
+    this: DisplayObject<'gc>,
+    local_grid: Rectangle<Twips>,
+    local_bounds: Rectangle<Twips>,
+    sx: f32,
+    sy: f32,
+    push_self_matrix: bool,
+    context: &mut RenderContext<'_, 'gc>,
+) {
+    if !local_bounds.is_valid()
+        || local_bounds.width() <= Twips::ZERO
+        || local_bounds.height() <= Twips::ZERO
+    {
+        if push_self_matrix {
+            context.transform_stack.push(&this.base().transform(true));
+            this.render_self(context);
+            context.transform_stack.pop();
+        } else {
+            this.render_self(context);
+        }
+        return;
+    }
+
+    let left = (local_grid.x_min - local_bounds.x_min).to_pixels();
+    let right = (local_bounds.x_max - local_grid.x_max).to_pixels();
+    let top = (local_grid.y_min - local_bounds.y_min).to_pixels();
+    let bottom = (local_bounds.y_max - local_grid.y_max).to_pixels();
+    let total_out_w = local_bounds.width().to_pixels() * sx as f64;
+    let total_out_h = local_bounds.height().to_pixels() * sy as f64;
+    if total_out_w - left - right <= 0.0 || total_out_h - top - bottom <= 0.0 {
+        if push_self_matrix {
+            context.transform_stack.push(&this.base().transform(true));
+            this.render_self(context);
+            context.transform_stack.pop();
+        } else {
+            this.render_self(context);
+        }
+        return;
+    }
+
+    let handle = match this {
+        DisplayObject::Graphic(g) => {
+            g.get_or_register_scale9_handle(context, local_grid, local_bounds, sx, sy)
+        }
+        DisplayObject::MorphShape(ms) => {
+            ms.get_or_register_scale9_handle(context, local_grid, local_bounds, sx, sy)
+        }
+        _ => None,
+    };
+
+    if let Some(handle) = handle {
+        if push_self_matrix {
+            context.transform_stack.push(&this.base().transform(true));
+        }
+        let transform = context.transform_stack.transform();
+        context.commands.render_shape(handle, transform);
+        if push_self_matrix {
+            context.transform_stack.pop();
+        }
+    } else {
+        // No transformed handle (shape has UV-sampling fills): fall back to
+        // mask-based per-slice rendering — 9 passes preserving original
+        // source UVs, matching FP for bitmap/gradient fills.
+        render_shape_masked_9_slice(
+            this,
+            local_grid,
+            local_bounds,
+            sx,
+            sy,
+            push_self_matrix,
+            context,
+        );
+    }
+}
+
+/// One of the nine 9-slice regions: source extent in shape-local coords +
+/// destination extent in shape-local coords (sized so that, after the world
+/// matrix scales by `sx`/`sy`, corners land at native output-pixel size and
+/// the middle absorbs the remaining stretch).
+struct SliceRegion9 {
+    src: Rectangle<Twips>,
+    dst: Rectangle<Twips>,
+}
+
+fn compute_slice_regions(
+    local_grid: Rectangle<Twips>,
+    local_bounds: Rectangle<Twips>,
+    sx: f32,
+    sy: f32,
+) -> [SliceRegion9; 9] {
+    let left = local_grid.x_min - local_bounds.x_min;
+    let right = local_bounds.x_max - local_grid.x_max;
+    let top = local_grid.y_min - local_bounds.y_min;
+    let bottom = local_bounds.y_max - local_grid.y_max;
+
+    let dx = [
+        local_bounds.x_min,
+        local_bounds.x_min + Twips::from_pixels(left.to_pixels() / sx as f64),
+        local_bounds.x_max - Twips::from_pixels(right.to_pixels() / sx as f64),
+        local_bounds.x_max,
+    ];
+    let dy = [
+        local_bounds.y_min,
+        local_bounds.y_min + Twips::from_pixels(top.to_pixels() / sy as f64),
+        local_bounds.y_max - Twips::from_pixels(bottom.to_pixels() / sy as f64),
+        local_bounds.y_max,
+    ];
+    let sx_ = [
+        local_bounds.x_min,
+        local_grid.x_min,
+        local_grid.x_max,
+        local_bounds.x_max,
+    ];
+    let sy_ = [
+        local_bounds.y_min,
+        local_grid.y_min,
+        local_grid.y_max,
+        local_bounds.y_max,
+    ];
+
+    std::array::from_fn(|i| {
+        let row = i / 3;
+        let col = i % 3;
+        SliceRegion9 {
+            src: Rectangle {
+                x_min: sx_[col],
+                x_max: sx_[col + 1],
+                y_min: sy_[row],
+                y_max: sy_[row + 1],
+            },
+            dst: Rectangle {
+                x_min: dx[col],
+                x_max: dx[col + 1],
+                y_min: dy[row],
+                y_max: dy[row + 1],
+            },
+        }
+    })
+}
+
+/// Render the 9-region masked fallback. Pushes a per-slice transform onto
+/// the stack, masks the dest region in output, invokes `render_region`, and
+/// repeats for each region. Used for shapes whose fills depend on
+/// source-space UV sampling (bitmap/gradient fills) — the per-slice transform
+/// stretches geometry without touching the original source UVs.
+fn render_masked_9_slice<'gc, F>(
+    local_grid: Rectangle<Twips>,
+    local_bounds: Rectangle<Twips>,
+    sx: f32,
+    sy: f32,
+    context: &mut RenderContext<'_, 'gc>,
+    mut render_region: F,
+) where
+    F: FnMut(&mut RenderContext<'_, 'gc>),
+{
+    let world_matrix = context.transform_stack.transform().matrix;
+    for region in compute_slice_regions(local_grid, local_bounds, sx, sy) {
+        let src_w = region.src.width().get();
+        let src_h = region.src.height().get();
+        let dst_w_twips = region.dst.width();
+        let dst_h_twips = region.dst.height();
+        if src_w <= 0 || src_h <= 0 || dst_w_twips.get() <= 0 || dst_h_twips.get() <= 0 {
+            continue;
+        }
+
+        let a = dst_w_twips.get() as f32 / src_w as f32;
+        let d = dst_h_twips.get() as f32 / src_h as f32;
+        let slice_matrix = Matrix {
+            a,
+            b: 0.0,
+            c: 0.0,
+            d,
+            tx: Twips::new(region.dst.x_min.get() - (region.src.x_min.get() as f32 * a) as i32),
+            ty: Twips::new(region.dst.y_min.get() - (region.src.y_min.get() as f32 * d) as i32),
+        };
+
+        // Mask covers the dest region in OUTPUT, drawn via world_matrix
+        // (which already includes the owner's matrix). The unit-quad mask is
+        // scaled to dst extents in pixels and translated by dst origin —
+        // both in shape-local coords; world_matrix maps to output.
+        let mask_matrix = world_matrix
+            * Matrix::translate(region.dst.x_min, region.dst.y_min)
+            * Matrix::scale(
+                dst_w_twips.to_pixels() as f32,
+                dst_h_twips.to_pixels() as f32,
+            );
+
+        context.commands.push_mask();
+        context.commands.draw_rect(Color::WHITE, mask_matrix);
+        context.commands.activate_mask();
+
+        context.transform_stack.push(&Transform {
+            matrix: slice_matrix,
+            ..Default::default()
+        });
+        render_region(context);
+        context.transform_stack.pop();
+
+        context.commands.deactivate_mask();
+        context.commands.draw_rect(Color::WHITE, mask_matrix);
+        context.commands.pop_mask();
+    }
+}
+
+/// 9-mask-pass fallback for shapes whose fills depend on source-space UV
+/// sampling. Renders `this.render_self` once per slice region. The slice
+/// transforms are equivalent to `transform_for_scale9grid`'s region matrices
+/// but applied via the transform stack instead of baked into vertex
+/// positions — which is what keeps UVs at their original source positions.
+fn render_shape_masked_9_slice<'gc>(
+    this: DisplayObject<'gc>,
+    local_grid: Rectangle<Twips>,
+    local_bounds: Rectangle<Twips>,
+    sx: f32,
+    sy: f32,
+    push_self_matrix: bool,
+    context: &mut RenderContext<'_, 'gc>,
+) {
+    if push_self_matrix {
+        context.transform_stack.push(&this.base().transform(true));
+    }
+    render_masked_9_slice(local_grid, local_bounds, sx, sy, context, |ctx| {
+        this.render_self(ctx);
+    });
+    if push_self_matrix {
+        context.transform_stack.pop();
+    }
+}
+
+/// 9-mask-pass fallback for a `Drawing` (a MovieClip's own `.graphics`
+/// content). The caller has already pushed the owning clip's matrix onto
+/// the transform stack — we operate in the clip's local coords.
+fn render_drawing_masked_9_slice<'gc>(
+    drawing: &Drawing,
+    local_grid: Rectangle<Twips>,
+    local_bounds: Rectangle<Twips>,
+    sx: f32,
+    sy: f32,
+    context: &mut RenderContext<'_, 'gc>,
+) {
+    render_masked_9_slice(local_grid, local_bounds, sx, sy, context, |ctx| {
+        drawing.render(ctx);
+    });
+}
+
+/// Apply the inverse of an axis-aligned (no rotation/skew, positive scales)
+/// matrix to a rectangle. Caller must ensure `m.b == 0`, `m.c == 0`, `m.a > 0`,
+/// `m.d > 0`.
+fn inverse_axis_aligned_rect(m: &Matrix, rect: Rectangle<Twips>) -> Rectangle<Twips> {
+    let inv_a = 1.0 / m.a as f64;
+    let inv_d = 1.0 / m.d as f64;
+    let tx = m.tx.get() as f64;
+    let ty = m.ty.get() as f64;
+    let x_min = ((rect.x_min.get() as f64 - tx) * inv_a) as i32;
+    let x_max = ((rect.x_max.get() as f64 - tx) * inv_a) as i32;
+    let y_min = ((rect.y_min.get() as f64 - ty) * inv_d) as i32;
+    let y_max = ((rect.y_max.get() as f64 - ty) * inv_d) as i32;
+    Rectangle {
+        x_min: Twips::new(x_min),
+        x_max: Twips::new(x_max),
+        y_min: Twips::new(y_min),
+        y_max: Twips::new(y_max),
     }
 }
 
@@ -2014,7 +2584,13 @@ pub trait TDisplayObject<'gc>:
     }
 
     #[no_dynamic]
+    #[allow(clippy::useless_conversion)] // Self may be DisplayObject already.
     fn set_scaling_grid(self, rect: Rectangle<Twips>) {
+        let prev = self.base().scaling_grid.get();
+        if prev != rect {
+            let dobj: DisplayObject<'gc> = self.into();
+            invalidate_scale9_caches(dobj);
+        }
         self.base().scaling_grid.set(rect);
     }
 
