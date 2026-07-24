@@ -35,7 +35,7 @@
         "tsx": "^4.23.1",
         "tsx-dom": "^3.1.0",
         "typedoc": "^0.28.20",
-        "typescript": "^5.9.3"
+        "typescript": "^7.0.2"
     },
     "sideEffects": false
 }
