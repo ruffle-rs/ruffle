@@ -1,6 +1,7 @@
 //! flash.display.BitmapData object
 
 use super::matrix::object_to_matrix;
+use crate::avm_error;
 use crate::avm1::globals::bitmap_filter;
 use crate::avm1::globals::color_transform::ColorTransformObject;
 use crate::avm1::globals::movie_clip::object_to_rectangle;
@@ -15,7 +16,6 @@ use crate::bitmap::{is_size_valid, operations};
 use crate::character::Character;
 use crate::display_object::DisplayObject;
 use crate::swf::BlendMode;
-use crate::{avm_error, avm1_stub};
 use ruffle_macros::istr;
 use ruffle_render::transform::Transform;
 
@@ -658,14 +658,51 @@ fn apply_filter<'gc>(
 fn generate_filter_rect<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
-    _args: &[Value<'gc>],
+    args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let BitmapDataResult::Valid(_bitmap_data) = get_bitmap_data(this) else {
         return Ok((-1).into());
     };
 
-    avm1_stub!(activation, "BitmapData", "generateFilterRect");
-    Ok(Value::Undefined)
+    let source_rect = args
+        .get(0)
+        .unwrap_or(&Value::Undefined)
+        .coerce_to_object_or_bare(activation)?;
+
+    let src_min_x = source_rect
+        .get(istr!("x"), activation)?
+        .coerce_to_f64(activation)? as i32;
+    let src_min_y = source_rect
+        .get(istr!("y"), activation)?
+        .coerce_to_f64(activation)? as i32;
+    let src_width = source_rect
+        .get(istr!("width"), activation)?
+        .coerce_to_f64(activation)? as u32;
+    let src_height = source_rect
+        .get(istr!("height"), activation)?
+        .coerce_to_f64(activation)? as u32;
+
+    let filter_object = args
+        .get(1)
+        .unwrap_or(&Value::Undefined)
+        .coerce_to_object_or_bare(activation)?;
+
+    if let Some(filter) = bitmap_filter::avm1_to_filter(filter_object, activation.context) {
+        let margins = filter.calculate_dest_margins();
+        let constructor = activation.prototypes().rectangle_constructor;
+        let rect = constructor.construct(
+            activation,
+            &[
+                (src_min_x - margins.left as i32).into(),
+                (src_min_y - margins.top as i32).into(),
+                (src_width + margins.left + margins.right).into(),
+                (src_height + margins.top + margins.bottom).into(),
+            ],
+        )?;
+        return Ok(rect);
+    }
+
+    Ok((-1).into())
 }
 
 fn color_transform<'gc>(
