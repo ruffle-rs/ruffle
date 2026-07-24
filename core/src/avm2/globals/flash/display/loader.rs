@@ -151,7 +151,16 @@ pub fn request_from_url_request<'gc>(
         .get_slot(url_request_slots::_REQUEST_HEADERS)
         .as_object();
 
+    // Send `X-Flash-Version` by default, matching Flash Player.  Inserted before
+    // the user-headers loop so that a user-supplied entry wins per existing
+    // last-write-wins semantics.  Closes #15276; broader header parity tracked
+    // separately in #9395.
     let mut string_headers = IndexMap::default();
+    string_headers.insert(
+        "X-Flash-Version".into(),
+        format!("{},0,0,0", activation.avm2().player_version),
+    );
+
     if let Some(headers) = headers {
         let headers = headers.as_array_storage().unwrap();
 
