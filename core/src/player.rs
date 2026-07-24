@@ -29,7 +29,7 @@ use crate::context_menu::{
 };
 use crate::display_object::Avm2MousePick;
 use crate::display_object::{
-    EditText, InteractiveObject, Stage, StageAlign, StageDisplayState, StageScaleMode,
+    BoundsMode, EditText, InteractiveObject, Stage, StageAlign, StageDisplayState, StageScaleMode,
     TInteractiveObject, WindowMode,
 };
 use crate::events::GamepadButton;
@@ -55,6 +55,7 @@ use crate::string::{AvmStringInterner, StringContext};
 use crate::stub::StubCollection;
 use crate::system_properties::SystemProperties;
 use crate::tag_utils::SwfMovie;
+use crate::telemetry::TelemetryMetrics;
 use crate::timer::Timers;
 use crate::vminterface::Instantiator;
 use async_channel::Sender;
@@ -391,12 +392,111 @@ pub struct Player {
     /// Sends notifications back from the core player to the frontend.
     notification_sender: Option<Sender<PlayerNotification>>,
 
+    /// Telemetry metrics collector, written as a .flm file when the player is dropped.
+    telemetry: TelemetryMetrics,
+
+    /// Last rendered world-space self-bounds per display object, in pixel coordinates.
+    /// Used to estimate dirty update rectangles for telemetry.
+    render_object_bounds_px: HashMap<usize, (i32, i32, i32, i32)>,
+
     /// Debug UI windows
     #[cfg(feature = "egui")]
     debug_ui: Rc<RefCell<crate::debug_ui::DebugUi>>,
 }
 
 impl Player {
+    fn rect_union(a: (i32, i32, i32, i32), b: (i32, i32, i32, i32)) -> (i32, i32, i32, i32) {
+        (a.0.min(b.0), a.1.min(b.1), a.2.max(b.2), a.3.max(b.3))
+    }
+
+    fn collect_render_object_bounds<'gc>(
+        object: DisplayObject<'gc>,
+        out: &mut HashMap<usize, (i32, i32, i32, i32)>,
+    ) {
+        if !object.visible() {
+            return;
+        }
+
+        let self_bounds = object.self_bounds(BoundsMode::Engine);
+        if self_bounds.width().to_pixels() > 0.0 && self_bounds.height().to_pixels() > 0.0 {
+            let world = object.local_to_global_matrix() * self_bounds;
+            out.insert(
+                object.as_ptr() as usize,
+                (
+                    world.x_min.to_pixels().floor() as i32,
+                    world.y_min.to_pixels().floor() as i32,
+                    world.x_max.to_pixels().ceil() as i32,
+                    world.y_max.to_pixels().ceil() as i32,
+                ),
+            );
+        }
+
+        if let Some(container) = object.as_container() {
+            for child in container.iter_render_list() {
+                Self::collect_render_object_bounds(child, out);
+            }
+        }
+    }
+
+    fn clamp_rect_to_viewport(
+        mut rect: (i32, i32, i32, i32),
+        viewport: ViewportDimensions,
+    ) -> Option<(i32, i32, i32, i32)> {
+        let max_x = viewport.width as i32;
+        let max_y = viewport.height as i32;
+
+        rect.0 = rect.0.clamp(0, max_x);
+        rect.1 = rect.1.clamp(0, max_y);
+        rect.2 = rect.2.clamp(0, max_x);
+        rect.3 = rect.3.clamp(0, max_y);
+
+        (rect.2 > rect.0 && rect.3 > rect.1).then_some(rect)
+    }
+
+    fn estimate_dirty_regions(
+        previous: &HashMap<usize, (i32, i32, i32, i32)>,
+        current: &HashMap<usize, (i32, i32, i32, i32)>,
+        viewport: ViewportDimensions,
+    ) -> Vec<(i32, i32, i32, i32)> {
+        let mut dirty = Vec::new();
+
+        for (key, rect) in current {
+            if let Some(prev_rect) = previous.get(key) {
+                if prev_rect != rect {
+                    let changed = Self::rect_union(*prev_rect, *rect);
+                    if let Some(clamped) = Self::clamp_rect_to_viewport(changed, viewport)
+                        && !dirty.contains(&clamped)
+                    {
+                        dirty.push(clamped);
+                    }
+                }
+            } else {
+                if let Some(clamped) = Self::clamp_rect_to_viewport(*rect, viewport)
+                    && !dirty.contains(&clamped)
+                {
+                    dirty.push(clamped);
+                }
+            }
+        }
+
+        for (key, rect) in previous {
+            if !current.contains_key(key)
+                && let Some(clamped) = Self::clamp_rect_to_viewport(*rect, viewport)
+                && !dirty.contains(&clamped)
+            {
+                dirty.push(clamped);
+            }
+        }
+
+        // First frame or reset: treat the frame as a full-screen update.
+        if previous.is_empty() && !current.is_empty() {
+            dirty.clear();
+            dirty.push((0, 0, viewport.width as i32, viewport.height as i32));
+        }
+
+        dirty
+    }
+
     // This method will panic if called inside an `enter_arena_mut` call.
     fn enter_arena<F, T>(&self, f: F) -> T
     where
@@ -1012,21 +1112,33 @@ impl Player {
     /// Handle an event sent into the player from the external windowing system
     /// or an HTML element.
     pub fn handle_event(&mut self, event: PlayerEvent) -> bool {
-        match event {
+        let t0 = self.telemetry.now();
+        let telemetry_event = match &event {
+            PlayerEvent::MouseMove { .. } => Some(".player.mouse.move"),
+            PlayerEvent::MouseDown { .. } | PlayerEvent::MouseUp { .. } => Some(".buttonpoint"),
+            PlayerEvent::KeyDown { .. } => {
+                let result = self.handle_input_event(event);
+                if let Some(t0) = t0.as_ref() {
+                    let micros = t0.elapsed().as_micros() as i32;
+                    let key_code = self.input.last_key_code().value() as i32;
+                    self.telemetry.add_key_down(micros, key_code);
+                }
+                return result;
+            }
+            PlayerEvent::KeyUp { .. } => Some(".buttonpoint"),
+            _ => None,
+        };
+
+        let result = match event {
             PlayerEvent::FocusGained | PlayerEvent::FocusLost => self.handle_focus_event(event),
-            PlayerEvent::KeyDown { .. }
-            | PlayerEvent::KeyUp { .. }
-            | PlayerEvent::MouseMove { .. }
-            | PlayerEvent::MouseUp { .. }
-            | PlayerEvent::MouseDown { .. }
-            | PlayerEvent::MouseLeave
-            | PlayerEvent::MouseWheel { .. }
-            | PlayerEvent::GamepadButtonDown { .. }
-            | PlayerEvent::GamepadButtonUp { .. }
-            | PlayerEvent::Ime { .. }
-            | PlayerEvent::TextInput { .. }
-            | PlayerEvent::TextControl { .. } => self.handle_input_event(event),
+            _ => self.handle_input_event(event),
+        };
+
+        if let Some(metric_name) = telemetry_event {
+            self.telemetry.add_span_from(metric_name, t0);
         }
+
+        result
     }
 
     fn handle_focus_event(&mut self, event: PlayerEvent) -> bool {
@@ -2020,6 +2132,12 @@ impl Player {
             return;
         }
 
+        // Emit frame boundary markers and time ActionScript execution.
+        self.telemetry.add_frame_enter();
+        self.telemetry
+            .add_frame(self.current_frame.unwrap_or(0) as i32);
+
+        let t0 = self.telemetry.now();
         self.update(|context| {
             // TODO: Is this order correct?
             run_all_phases_avm2(context);
@@ -2033,12 +2151,43 @@ impl Player {
                 (cb.callback)(context, cb.data);
             }
         });
+        self.telemetry.add_span_from(".as.doactions", t0);
+
+        // Emit accumulated image decompression time (lazy-decoded SWF character bitmaps)
+        // using Flash's bitmap-build metric.
+        // Disabled: this metric causes Adobe Scout to fail to load real telemetry sessions.
+        // let decompress_micros = crate::character::drain_decompress_micros();
+        // if decompress_micros > 0 {
+        //     self.telemetry
+        //         .add_span(".rend.buildbits", decompress_micros as i32);
+        // }
+
+        // Report memory metrics after GC has run (collect_debt is called inside update())
+        if self.telemetry.is_enabled() {
+            let arena = self.gc_arena.borrow();
+            let metrics = arena.metrics();
+            let gc_arena_kb = (metrics.total_allocation() / 1024) as i32;
+            let gc_live_kb = (metrics.total_gc_allocation() / 1024) as i32;
+            drop(arena);
+            let process_rss_kb = crate::telemetry::get_process_rss_kb();
+            let bitmap_kb = crate::bitmap::bitmap_data::bitmap_memory_kb();
+            let sound_kb = self.audio.total_sound_memory_kb();
+            self.telemetry.add_memory_metrics(
+                process_rss_kb,
+                gc_live_kb,
+                gc_arena_kb,
+                bitmap_kb,
+                sound_kb,
+            );
+        }
 
         self.needs_render = true;
     }
 
     #[instrument(level = "debug", skip_all)]
     pub fn render(&mut self) {
+        let render_start = self.telemetry.now();
+
         let invalidated = self.enter_arena(|_, gc_root, _| gc_root.stage.invalidated());
 
         if invalidated {
@@ -2050,44 +2199,66 @@ impl Player {
 
         let mut background_color = Color::WHITE;
 
-        let (cache_draws, commands) = self.enter_arena_mut(|gc_context, gc_root, this| {
-            let stage = gc_root.stage;
+        let (cache_draws, commands, dirty_region) =
+            self.enter_arena_mut(|gc_context, gc_root, this| {
+                let stage = gc_root.stage;
 
-            let mut cache_draws = vec![];
-            let mut render_context = RenderContext {
-                renderer: this.renderer.deref_mut(),
-                commands: CommandList::new(),
-                cache_draws: &mut cache_draws,
-                gc_context,
-                library: &gc_root.library,
-                transform_stack: &mut this.transform_stack,
-                is_offscreen: false,
-                use_bitmap_cache: true,
-                stage,
-            };
-
-            stage.render_viewport(&mut render_context);
-
-            #[cfg(feature = "egui")]
-            {
-                this.debug_ui
-                    .borrow_mut()
-                    .draw_debug_rects(&mut render_context, gc_root.dynamic_root);
-            }
-
-            background_color =
-                if stage.window_mode() != WindowMode::Transparent || stage.is_fullscreen() {
-                    stage.background_color().unwrap_or(Color::WHITE)
-                } else {
-                    Color::from_rgba(0)
+                let mut cache_draws = vec![];
+                let mut render_context = RenderContext {
+                    renderer: this.renderer.deref_mut(),
+                    commands: CommandList::new(),
+                    cache_draws: &mut cache_draws,
+                    gc_context,
+                    library: &gc_root.library,
+                    transform_stack: &mut this.transform_stack,
+                    is_offscreen: false,
+                    use_bitmap_cache: true,
+                    stage,
                 };
 
-            let commands = render_context.commands;
-            (cache_draws, commands)
-        });
+                stage.render_viewport(&mut render_context);
 
+                #[cfg(feature = "egui")]
+                {
+                    this.debug_ui
+                        .borrow_mut()
+                        .draw_debug_rects(&mut render_context, gc_root.dynamic_root);
+                }
+
+                background_color =
+                    if stage.window_mode() != WindowMode::Transparent || stage.is_fullscreen() {
+                        stage.background_color().unwrap_or(Color::WHITE)
+                    } else {
+                        Color::from_rgba(0)
+                    };
+
+                let commands = render_context.commands;
+                let mut current_bounds = HashMap::new();
+                for child in stage.iter_render_list() {
+                    Self::collect_render_object_bounds(child, &mut current_bounds);
+                }
+
+                let dirty_regions = Self::estimate_dirty_regions(
+                    &this.render_object_bounds_px,
+                    &current_bounds,
+                    this.renderer.viewport_dimensions(),
+                );
+                this.render_object_bounds_px = current_bounds;
+
+                (cache_draws, commands, dirty_regions)
+            });
+
+        let submit_start = self.telemetry.now();
         self.renderer
             .submit_frame(background_color, commands, cache_draws);
+        for (x_min, y_min, x_max, y_max) in dirty_region {
+            self.telemetry
+                .add_rend_update(1, x_min, x_max, y_min, y_max);
+        }
+        self.telemetry.add_span_from(".rend.screen", submit_start);
+        self.telemetry
+            .add_span_from(".rend.drawframe", render_start);
+        self.telemetry.add_frame_exit();
 
         self.needs_render = false;
     }
@@ -2310,6 +2481,7 @@ impl Player {
                 actions_since_timeout_check: &mut this.actions_since_timeout_check,
                 frame_phase: &mut this.frame_phase,
                 stub_tracker: &mut this.stub_tracker,
+                telemetry: &mut this.telemetry,
                 stream_manager,
                 sockets,
                 net_connections,
@@ -2386,7 +2558,14 @@ impl Player {
         self.update_mouse_state(EnumSet::empty(), false, &mut false);
 
         // GC
+        let gc_start = self.telemetry.now();
         self.gc_arena.borrow_mut().collect_debt();
+        if let Some(gc_start) = gc_start {
+            let gc_micros = gc_start.elapsed().as_micros() as i32;
+            if gc_micros > 0 {
+                self.telemetry.add_span(".gc.Reap", gc_micros);
+            }
+        }
 
         rval
     }
@@ -2563,7 +2742,32 @@ impl Player {
 impl Drop for Player {
     fn drop(&mut self) {
         self.flush_shared_objects();
+        let flm_path = telemetry_flm_path(self.swf.url());
+        if let Err(e) = self.telemetry.write_flm(&flm_path) {
+            tracing::warn!("Failed to write telemetry .flm file '{}': {}", flm_path, e);
+        }
     }
+}
+
+/// Derive a .flm output path from the SWF's URL, e.g.
+/// "file:///path/to/game.swf" → "game.flm"
+fn telemetry_flm_path(url: &str) -> String {
+    let base = url.rsplit('/').next().unwrap_or("ruffle_session");
+    // Strip query string / fragment
+    let base = base.split('?').next().unwrap_or(base);
+    let base = base.split('#').next().unwrap_or(base);
+    // Strip extension
+    let stem = if let Some(dot) = base.rfind('.') {
+        &base[..dot]
+    } else {
+        base
+    };
+    let stem = if stem.is_empty() {
+        "ruffle_session"
+    } else {
+        stem
+    };
+    format!("{stem}.flm")
 }
 
 /// Player factory, which can be used to configure the aspects of a Ruffle player.
@@ -2612,6 +2816,7 @@ pub struct PlayerBuilder {
     avm2_optimizer_enabled: bool,
     #[cfg(feature = "default_font")]
     default_font: bool,
+    telemetry_enabled: bool,
 }
 
 impl PlayerBuilder {
@@ -2668,6 +2873,7 @@ impl PlayerBuilder {
             avm2_optimizer_enabled: true,
             #[cfg(feature = "default_font")]
             default_font: true,
+            telemetry_enabled: false,
         }
     }
 
@@ -2889,6 +3095,11 @@ impl PlayerBuilder {
         self
     }
 
+    pub fn with_telemetry_enabled(mut self, value: bool) -> Self {
+        self.telemetry_enabled = value;
+        self
+    }
+
     #[cfg(feature = "default_font")]
     pub fn with_default_font(mut self, value: bool) -> Self {
         self.default_font = value;
@@ -3050,6 +3261,8 @@ impl PlayerBuilder {
                 compatibility_rules: self.compatibility_rules.clone(),
                 stub_tracker: StubCollection::new(),
                 notification_sender: self.notification_sender,
+                telemetry: TelemetryMetrics::new(self.telemetry_enabled),
+                render_object_bounds_px: HashMap::new(),
                 #[cfg(feature = "egui")]
                 debug_ui: Default::default(),
 

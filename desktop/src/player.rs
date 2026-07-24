@@ -51,6 +51,7 @@ pub struct LaunchOptions {
     pub filesystem_access_mode: FilesystemAccessMode,
     pub gamepad_button_mapping: HashMap<GamepadButton, KeyCode>,
     pub avm2_optimizer_enabled: bool,
+    pub telemetry_enabled: bool,
 }
 
 impl From<&GlobalPreferences> for LaunchOptions {
@@ -101,6 +102,7 @@ impl From<&GlobalPreferences> for LaunchOptions {
             tcp_connections: value.cli.tcp_connections,
             gamepad_button_mapping: HashMap::from_iter(value.cli.gamepad_button.iter().cloned()),
             avm2_optimizer_enabled: !value.cli.no_avm2_optimizer,
+            telemetry_enabled: value.cli.telemetry,
         }
     }
 }
@@ -199,6 +201,7 @@ impl ActivePlayer {
                     filesystem_access_mode: opt.filesystem_access_mode,
                     gamepad_button_mapping: opt.gamepad_button_mapping.clone(),
                     avm2_optimizer_enabled: opt.avm2_optimizer_enabled,
+                    telemetry_enabled: opt.telemetry_enabled,
                 })
             }
         };
@@ -336,7 +339,8 @@ impl ActivePlayer {
             .with_player_version(opt.player.player_version)
             .with_player_runtime(opt.player.player_runtime.unwrap_or_default())
             .with_frame_rate(opt.player.frame_rate)
-            .with_avm2_optimizer_enabled(opt.avm2_optimizer_enabled);
+            .with_avm2_optimizer_enabled(opt.avm2_optimizer_enabled)
+            .with_telemetry_enabled(opt.telemetry_enabled);
         let player = builder.build();
 
         window.set_title(&format!("Ruffle - {readable_name}"));
