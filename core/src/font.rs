@@ -297,7 +297,7 @@ impl FontFace {
                         .is_some()
                     {
                         let advance = face.glyph_hor_advance(glyph_id).map_or_else(
-                            || drawing.self_bounds().width(),
+                            || drawing.self_bounds(true).width(),
                             |a| Twips::new(a as i32),
                         );
                         Some(Glyph {

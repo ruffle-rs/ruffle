@@ -122,10 +122,18 @@ impl<'gc> TDisplayObject<'gc> for MorphShape<'gc> {
 
     fn self_bounds(self, mode: BoundsMode) -> Rectangle<Twips> {
         let ratio = match mode {
-            // For getBounds(), getRect() or hitTestObject(), return start bounds (0)
-            BoundsMode::Script => 0,
             // otherwise, use the actual interpolated ratio
             BoundsMode::Engine => self.ratio(),
+
+            // For getBounds() or hitTestObject(), return start bounds (0)
+            BoundsMode::Script => 0,
+
+            // For getRect(), return start bounds (0).
+            // TODO: Currently, using this mode will return the bounds of the
+            // shape including strokes, but with this mode we explicitly *don't*
+            // want to include strokes. We need some way of calculating the
+            // bounds of a `Frame` without the strokes.
+            BoundsMode::ScriptWithoutStrokes => 0,
         };
 
         let shared = self.0.shared.get();
