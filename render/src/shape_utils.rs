@@ -126,6 +126,16 @@ pub enum DrawPath<'a> {
         commands: Vec<DrawCommand>,
         winding_rule: FillRule,
     },
+    Triangles {
+        style: &'a FillStyle,
+        vertices: Vec<swf::Point<Twips>>,
+        indices: Vec<u32>,
+        /// Homogeneous texture coordinates `(u * t, v * t, t)`.
+        ///
+        /// These are only used by bitmap fills. When absent, the fill's normal
+        /// transform applies.
+        texture_coords: Option<Vec<[f32; 3]>>,
+    },
 }
 
 /// `DistilledShape` represents a ready-to-be-consumed collection of paths (both fills and strokes)

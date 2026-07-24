@@ -98,6 +98,9 @@ impl Drawing {
 
                     this.set_fill_style(None);
                 }
+                DrawPath::Triangles { .. } => {
+                    unreachable!("Static SWF shapes do not contain triangle paths")
+                }
             }
         }
 
@@ -123,7 +126,24 @@ impl Drawing {
     /// Set fill style and rule.
     pub fn new_fill(&mut self, style: Option<FillStyle>, rule: Option<FillRule>) {
         self.close_path();
-        if let Some(existing) = self.current_fill.take() {
+        self.flush_current_path();
+        if let Some(style) = style {
+            self.current_fill = Some(DrawingFill {
+                style,
+                rule: rule.unwrap_or(self.default_winding_rule),
+                commands: vec![DrawCommand::MoveTo(self.cursor)],
+            });
+        }
+        self.fill_start = self.cursor;
+        self.mark_dirty();
+    }
+
+    fn flush_current_path(&mut self) {
+        if let Some(existing) = self.current_fill.take().filter(|fill| {
+            fill.commands
+                .iter()
+                .any(|command| !matches!(command, DrawCommand::MoveTo(_)))
+        }) {
             self.paths.push(DrawingPath::Fill(existing));
         }
         self.paths
@@ -138,15 +158,6 @@ impl Drawing {
                 is_closed: false,
             });
         }
-        if let Some(style) = style {
-            self.current_fill = Some(DrawingFill {
-                style,
-                rule: rule.unwrap_or(self.default_winding_rule),
-                commands: vec![DrawCommand::MoveTo(self.cursor)],
-            });
-        }
-        self.fill_start = self.cursor;
-        self.mark_dirty();
     }
 
     pub fn clear(&mut self) {
@@ -239,6 +250,61 @@ impl Drawing {
         id
     }
 
+    pub fn draw_triangles(
+        &mut self,
+        vertices: Vec<Point<Twips>>,
+        mut indices: Vec<u32>,
+        texture_coords: Option<Vec<[f32; 3]>>,
+    ) {
+        let Some(fill) = &self.current_fill else {
+            return;
+        };
+        let style = fill.style.clone();
+
+        if matches!(style, FillStyle::Bitmap { .. })
+            && let Some(texture_coords) = &texture_coords
+        {
+            assert_eq!(vertices.len(), texture_coords.len());
+            let valid = |index: u32| {
+                let coords = texture_coords[index as usize];
+                coords.into_iter().all(f32::is_finite) && coords[2] != 0.0
+            };
+            if indices
+                .as_chunks::<3>()
+                .0
+                .iter()
+                .any(|triangle| !triangle.iter().copied().all(valid))
+            {
+                indices = indices
+                    .as_chunks::<3>()
+                    .0
+                    .iter()
+                    .filter(|triangle| triangle.iter().copied().all(valid))
+                    .flatten()
+                    .copied()
+                    .collect();
+            }
+        }
+        if indices.is_empty() {
+            return;
+        }
+
+        for &index in &indices {
+            let point = vertices[index as usize];
+            self.shape_bounds = self.shape_bounds.encompass(point);
+            self.edge_bounds = self.edge_bounds.encompass(point);
+        }
+
+        self.paths.push(DrawingPath::Triangles {
+            style,
+            vertices,
+            indices,
+            texture_coords,
+        });
+
+        self.mark_dirty();
+    }
+
     /// Obtain a `ShapeHandle` that represents this `Drawing`, or `None` if it is empty.
     pub fn register_or_replace(&self, renderer: &mut dyn RenderBackend) -> Option<ShapeHandle> {
         if self.is_empty {
@@ -262,6 +328,19 @@ impl Drawing {
                             style: &line.style,
                             commands: line.commands.to_owned(),
                             is_closed: line.is_closed,
+                        });
+                    }
+                    DrawingPath::Triangles {
+                        style,
+                        vertices,
+                        indices,
+                        texture_coords,
+                    } => {
+                        paths.push(DrawPath::Triangles {
+                            style,
+                            vertices: vertices.clone(),
+                            indices: indices.clone(),
+                            texture_coords: texture_coords.clone(),
                         });
                     }
                 }
@@ -350,6 +429,20 @@ impl Drawing {
                         local_matrix,
                     ) {
                         return true;
+                    }
+                }
+                DrawingPath::Triangles {
+                    vertices, indices, ..
+                } => {
+                    for [i0, i1, i2] in indices.as_chunks::<3>().0 {
+                        if point_in_triangle(
+                            point,
+                            vertices[*i0 as usize],
+                            vertices[*i1 as usize],
+                            vertices[*i2 as usize],
+                        ) {
+                            return true;
+                        }
                     }
                 }
             }
@@ -447,6 +540,142 @@ struct DrawingLine {
 enum DrawingPath {
     Fill(DrawingFill),
     Line(DrawingLine),
+    Triangles {
+        style: FillStyle,
+        vertices: Vec<Point<Twips>>,
+        indices: Vec<u32>,
+        texture_coords: Option<Vec<[f32; 3]>>,
+    },
+}
+
+fn point_in_triangle(
+    point: Point<Twips>,
+    a: Point<Twips>,
+    b: Point<Twips>,
+    c: Point<Twips>,
+) -> bool {
+    fn cross(a: Point<Twips>, b: Point<Twips>, point: Point<Twips>) -> i128 {
+        let ab_x = i128::from(b.x.get()) - i128::from(a.x.get());
+        let ab_y = i128::from(b.y.get()) - i128::from(a.y.get());
+        let ap_x = i128::from(point.x.get()) - i128::from(a.x.get());
+        let ap_y = i128::from(point.y.get()) - i128::from(a.y.get());
+        ab_x * ap_y - ab_y * ap_x
+    }
+
+    let ab = cross(a, b, point);
+    let bc = cross(b, c, point);
+    let ca = cross(c, a, point);
+    let has_negative = ab < 0 || bc < 0 || ca < 0;
+    let has_positive = ab > 0 || bc > 0 || ca > 0;
+    !has_negative || !has_positive
+}
+
+#[cfg(test)]
+#[expect(clippy::items_after_test_module)]
+mod tests {
+    use super::{DrawCommand, Drawing, DrawingPath, point_in_triangle};
+    use swf::{Color, FillStyle, LineStyle, Matrix, Point, Twips};
+
+    #[test]
+    fn triangle_hit_test_accepts_both_windings_and_edges() {
+        let a = Point::from_pixels(0.0, 0.0);
+        let b = Point::from_pixels(10.0, 0.0);
+        let c = Point::from_pixels(0.0, 10.0);
+
+        assert!(point_in_triangle(Point::from_pixels(2.0, 2.0), a, b, c));
+        assert!(point_in_triangle(Point::from_pixels(2.0, 2.0), c, b, a));
+        assert!(point_in_triangle(Point::from_pixels(5.0, 0.0), a, b, c));
+        assert!(!point_in_triangle(Point::from_pixels(8.0, 8.0), a, b, c));
+    }
+
+    #[test]
+    fn triangles_preserve_in_progress_drawing_state() {
+        let mut drawing = Drawing::new();
+        drawing.set_fill_style(Some(FillStyle::Color(Color::RED)));
+        drawing.set_line_style(Some(LineStyle::new().with_width(Twips::ONE_PX)));
+        drawing.draw_command(DrawCommand::MoveTo(Point::from_pixels(2.0, 3.0)));
+        drawing.draw_command(DrawCommand::LineTo(Point::from_pixels(4.0, 5.0)));
+
+        let cursor = drawing.cursor;
+        let fill_start = drawing.fill_start;
+        let fill_command_count = drawing.current_fill.as_ref().unwrap().commands.len();
+        let line_command_count = drawing.current_line.as_ref().unwrap().commands.len();
+
+        drawing.draw_triangles(
+            vec![
+                Point::from_pixels(0.0, 0.0),
+                Point::from_pixels(10.0, 0.0),
+                Point::from_pixels(0.0, 10.0),
+                Point::from_pixels(1_000.0, 1_000.0),
+            ],
+            vec![0, 1, 2],
+            None,
+        );
+
+        assert_eq!(drawing.cursor, cursor);
+        assert_eq!(drawing.fill_start, fill_start);
+        assert_eq!(
+            drawing.current_fill.as_ref().unwrap().commands.len(),
+            fill_command_count
+        );
+        assert_eq!(
+            drawing.current_line.as_ref().unwrap().commands.len(),
+            line_command_count
+        );
+        assert!(matches!(
+            drawing.paths.last(),
+            Some(DrawingPath::Triangles { indices, .. }) if indices == &[0, 1, 2]
+        ));
+        assert_eq!(drawing.self_bounds().x_max, Twips::from_pixels(10.0));
+        assert_eq!(drawing.self_bounds().y_max, Twips::from_pixels(10.0));
+        assert!(drawing.hit_test(
+            Point::from_pixels(2.0, 2.0),
+            &ruffle_render::matrix::Matrix::default()
+        ));
+        assert!(!drawing.hit_test(
+            Point::from_pixels(8.0, 8.0),
+            &ruffle_render::matrix::Matrix::default()
+        ));
+    }
+
+    #[test]
+    fn triangles_without_a_fill_do_not_draw() {
+        let mut drawing = Drawing::new();
+        drawing.draw_triangles(
+            vec![
+                Point::from_pixels(0.0, 0.0),
+                Point::from_pixels(10.0, 0.0),
+                Point::from_pixels(0.0, 10.0),
+            ],
+            vec![0, 1, 2],
+            None,
+        );
+
+        assert!(drawing.is_empty);
+        assert!(drawing.paths.is_empty());
+    }
+
+    #[test]
+    fn bitmap_triangles_skip_invalid_texture_coordinates() {
+        let mut drawing = Drawing::new();
+        drawing.set_fill_style(Some(FillStyle::Bitmap {
+            id: 0,
+            matrix: Matrix::IDENTITY,
+            is_smoothed: false,
+            is_repeating: false,
+        }));
+        drawing.draw_triangles(
+            vec![
+                Point::from_pixels(0.0, 0.0),
+                Point::from_pixels(10.0, 0.0),
+                Point::from_pixels(0.0, 10.0),
+            ],
+            vec![0, 1, 2],
+            Some(vec![[0.0, 0.0, 1.0], [1.0, 0.0, 0.0], [0.0, 1.0, 1.0]]),
+        );
+
+        assert!(drawing.paths.is_empty());
+    }
 }
 
 fn stretch_bounds(

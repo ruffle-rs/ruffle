@@ -1,7 +1,8 @@
 use crate::backend::WgpuRenderBackend;
 use crate::target::RenderTarget;
 use crate::{
-    Descriptors, GradientUniforms, PosColorVertex, PosVertex, TextureTransforms, as_texture,
+    Descriptors, GradientUniforms, PosColorVertex, PosUvtVertex, PosVertex, TextureTransforms,
+    as_texture,
 };
 use std::any::Any;
 use std::ops::Range;
@@ -78,42 +79,64 @@ impl PendingDraw {
         vertex_buffer: &mut BufferBuilder,
         index_buffer: &mut BufferBuilder,
     ) -> Option<Self> {
-        let vertices = if matches!(draw.draw_type, TessDrawType::Color) {
-            let vertices: Vec<_> = draw
-                .vertices
+        let LyonDraw {
+            draw_type,
+            vertices,
+            indices: draw_indices,
+            mask_index_count,
+            texture_coords,
+        } = draw;
+        let has_uvt = texture_coords.is_some();
+
+        let vertices = if matches!(&draw_type, TessDrawType::Color) {
+            let vertices: Vec<_> = vertices.into_iter().map(PosColorVertex::from).collect();
+            vertex_buffer
+                .add(&vertices)
+                .expect("Mesh vertex buffer was too large!")
+        } else if let Some(texture_coords) = texture_coords {
+            debug_assert!(matches!(&draw_type, TessDrawType::Bitmap(_)));
+            debug_assert_eq!(vertices.len(), texture_coords.len());
+            let vertices: Vec<_> = vertices
                 .into_iter()
-                .map(PosColorVertex::from)
+                .zip(texture_coords)
+                .map(PosUvtVertex::from)
                 .collect();
             vertex_buffer
                 .add(&vertices)
                 .expect("Mesh vertex buffer was too large!")
         } else {
-            let vertices: Vec<_> = draw.vertices.into_iter().map(PosVertex::from).collect();
+            let vertices: Vec<_> = vertices.into_iter().map(PosVertex::from).collect();
             vertex_buffer
                 .add(&vertices)
                 .expect("Mesh vertex buffer was too large!")
         };
 
         let indices = index_buffer
-            .add(&draw.indices)
+            .add(&draw_indices)
             .expect("Mesh index buffer was too large!");
 
-        let index_count = draw.indices.len() as u32;
-        let draw_type = match draw.draw_type {
+        let index_count = draw_indices.len() as u32;
+        let draw_type = match draw_type {
             TessDrawType::Color => PendingDrawType::color(),
             TessDrawType::Gradient { matrix, gradient } => {
                 PendingDrawType::gradient(gradient, matrix, shape_id, draw_id, uniform_buffer)
             }
-            TessDrawType::Bitmap(bitmap) => {
-                PendingDrawType::bitmap(bitmap, shape_id, draw_id, source, backend, uniform_buffer)?
-            }
+            TessDrawType::Bitmap(bitmap) => PendingDrawType::bitmap(
+                bitmap,
+                has_uvt,
+                shape_id,
+                draw_id,
+                source,
+                backend,
+                uniform_buffer,
+            )?,
         };
         Some(PendingDraw {
             draw_type,
             vertices,
             indices,
             num_indices: index_count,
-            num_mask_indices: draw.mask_index_count,
+            num_mask_indices: mask_index_count,
         })
     }
 }
@@ -131,6 +154,7 @@ pub enum PendingDrawType {
         texture_view: wgpu::TextureView,
         is_repeating: bool,
         is_smoothed: bool,
+        has_uvt: bool,
         bind_group_label: Option<String>,
     },
 }
@@ -173,6 +197,7 @@ impl PendingDrawType {
 
     pub fn bitmap(
         bitmap: Bitmap,
+        has_uvt: bool,
         shape_id: CharacterId,
         draw_id: usize,
         source: &dyn BitmapSource,
@@ -191,6 +216,7 @@ impl PendingDrawType {
             texture_view,
             is_repeating: bitmap.is_repeating,
             is_smoothed: bitmap.is_smoothed,
+            has_uvt,
             bind_group_label,
         })
     }
@@ -254,6 +280,7 @@ impl PendingDrawType {
                 texture_view,
                 is_repeating,
                 is_smoothed,
+                has_uvt,
                 bind_group_label,
             } => {
                 let binds = BitmapBinds::new(
@@ -268,7 +295,7 @@ impl PendingDrawType {
                     bind_group_label,
                 );
 
-                DrawType::Bitmap { binds }
+                DrawType::Bitmap { binds, has_uvt }
             }
         }
     }
@@ -278,7 +305,7 @@ impl PendingDrawType {
 pub enum DrawType {
     Color,
     Gradient { bind_group: wgpu::BindGroup },
-    Bitmap { binds: BitmapBinds },
+    Bitmap { binds: BitmapBinds, has_uvt: bool },
 }
 
 #[derive(Debug)]

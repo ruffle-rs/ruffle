@@ -79,8 +79,10 @@ pub enum Error {
 const COLOR_VERTEX_GLSL: &str = include_str!("../shaders/color.vert");
 const COLOR_FRAGMENT_GLSL: &str = include_str!("../shaders/color.frag");
 const TEXTURE_VERTEX_GLSL: &str = include_str!("../shaders/texture.vert");
+const TEXTURE_UVT_VERTEX_GLSL: &str = include_str!("../shaders/texture_uvt.vert");
 const GRADIENT_FRAGMENT_GLSL: &str = include_str!("../shaders/gradient.frag");
 const BITMAP_FRAGMENT_GLSL: &str = include_str!("../shaders/bitmap.frag");
+const BITMAP_UVT_FRAGMENT_GLSL: &str = include_str!("../shaders/bitmap_uvt.frag");
 const NUM_VERTEX_ATTRIBUTES: u32 = 2;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -112,6 +114,22 @@ impl From<TessVertex> for Vertex {
     }
 }
 
+#[repr(C)]
+#[derive(Copy, Clone, Debug, Pod, Zeroable)]
+struct UvtVertex {
+    position: [f32; 2],
+    texture_coords: [f32; 3],
+}
+
+impl From<(TessVertex, [f32; 3])> for UvtVertex {
+    fn from((vertex, texture_coords): (TessVertex, [f32; 3])) -> Self {
+        Self {
+            position: [vertex.x, vertex.y],
+            texture_coords,
+        }
+    }
+}
+
 pub struct WebGlRenderBackend {
     /// WebGL1 context
     gl: Gl,
@@ -128,6 +146,7 @@ pub struct WebGlRenderBackend {
 
     color_program: ShaderProgram,
     bitmap_program: ShaderProgram,
+    bitmap_uvt_program: ShaderProgram,
     gradient_program: ShaderProgram,
 
     shape_tessellator: ShapeTessellator,
@@ -272,13 +291,19 @@ impl WebGlRenderBackend {
 
         let color_vertex = Self::compile_shader(&gl, Gl::VERTEX_SHADER, COLOR_VERTEX_GLSL)?;
         let texture_vertex = Self::compile_shader(&gl, Gl::VERTEX_SHADER, TEXTURE_VERTEX_GLSL)?;
+        let texture_uvt_vertex =
+            Self::compile_shader(&gl, Gl::VERTEX_SHADER, TEXTURE_UVT_VERTEX_GLSL)?;
         let color_fragment = Self::compile_shader(&gl, Gl::FRAGMENT_SHADER, COLOR_FRAGMENT_GLSL)?;
         let bitmap_fragment = Self::compile_shader(&gl, Gl::FRAGMENT_SHADER, BITMAP_FRAGMENT_GLSL)?;
+        let bitmap_uvt_fragment =
+            Self::compile_shader(&gl, Gl::FRAGMENT_SHADER, BITMAP_UVT_FRAGMENT_GLSL)?;
         let gradient_fragment =
             Self::compile_shader(&gl, Gl::FRAGMENT_SHADER, GRADIENT_FRAGMENT_GLSL)?;
 
         let color_program = ShaderProgram::new(&gl, &color_vertex, &color_fragment)?;
         let bitmap_program = ShaderProgram::new(&gl, &texture_vertex, &bitmap_fragment)?;
+        let bitmap_uvt_program =
+            ShaderProgram::new(&gl, &texture_uvt_vertex, &bitmap_uvt_fragment)?;
         let gradient_program = ShaderProgram::new(&gl, &texture_vertex, &gradient_fragment)?;
 
         gl.enable(Gl::BLEND);
@@ -297,6 +322,7 @@ impl WebGlRenderBackend {
             color_program,
             gradient_program,
             bitmap_program,
+            bitmap_uvt_program,
 
             shape_tessellator: ShapeTessellator::new(),
 
@@ -410,6 +436,7 @@ impl WebGlRenderBackend {
                     handle: None,
                     is_smoothed: true,
                     is_repeating: false,
+                    has_uvt: false,
                 })
             } else {
                 DrawType::Color
@@ -584,12 +611,29 @@ impl WebGlRenderBackend {
             let vertex_buffer = self.gl.create_buffer().ok_or(Error::UnableToCreateBuffer)?;
             self.gl.bind_buffer(Gl::ARRAY_BUFFER, Some(&vertex_buffer));
 
-            let vertices: Vec<_> = draw.vertices.into_iter().map(Vertex::from).collect();
-            self.gl.buffer_data_with_u8_array(
-                Gl::ARRAY_BUFFER,
-                bytemuck::cast_slice(&vertices),
-                Gl::STATIC_DRAW,
-            );
+            let has_uvt = draw.texture_coords.is_some();
+            if let Some(texture_coords) = draw.texture_coords {
+                debug_assert!(matches!(&draw.draw_type, TessDrawType::Bitmap(_)));
+                debug_assert_eq!(draw.vertices.len(), texture_coords.len());
+                let vertices: Vec<_> = draw
+                    .vertices
+                    .into_iter()
+                    .zip(texture_coords)
+                    .map(UvtVertex::from)
+                    .collect();
+                self.gl.buffer_data_with_u8_array(
+                    Gl::ARRAY_BUFFER,
+                    bytemuck::cast_slice(&vertices),
+                    Gl::STATIC_DRAW,
+                );
+            } else {
+                let vertices: Vec<_> = draw.vertices.into_iter().map(Vertex::from).collect();
+                self.gl.buffer_data_with_u8_array(
+                    Gl::ARRAY_BUFFER,
+                    bytemuck::cast_slice(&vertices),
+                    Gl::STATIC_DRAW,
+                );
+            }
 
             let index_buffer = self.gl.create_buffer().ok_or(Error::UnableToCreateBuffer)?;
             self.gl
@@ -600,11 +644,13 @@ impl WebGlRenderBackend {
                 Gl::STATIC_DRAW,
             );
 
-            let program = match draw.draw_type {
-                TessDrawType::Color => &self.color_program,
-                TessDrawType::Gradient { .. } => &self.gradient_program,
-                TessDrawType::Bitmap(_) => &self.bitmap_program,
+            let program = match (&draw.draw_type, has_uvt) {
+                (TessDrawType::Color, _) => &self.color_program,
+                (TessDrawType::Gradient { .. }, _) => &self.gradient_program,
+                (TessDrawType::Bitmap(_), true) => &self.bitmap_uvt_program,
+                (TessDrawType::Bitmap(_), false) => &self.bitmap_program,
             };
+            let vertex_stride = if has_uvt { 20 } else { 12 };
 
             // Unfortunately it doesn't seem to be possible to ensure that vertex attributes will be in
             // a guaranteed position between shaders in WebGL1 (no layout qualifiers in GLSL in OpenGL ES 1.0).
@@ -616,7 +662,7 @@ impl WebGlRenderBackend {
                     2,
                     Gl::FLOAT,
                     false,
-                    12,
+                    vertex_stride,
                     0,
                 );
                 self.gl
@@ -629,11 +675,23 @@ impl WebGlRenderBackend {
                     4,
                     Gl::UNSIGNED_BYTE,
                     true,
-                    12,
+                    vertex_stride,
                     8,
                 );
                 self.gl
                     .enable_vertex_attrib_array(program.vertex_color_location);
+            }
+            if has_uvt && program.vertex_texture_coords_location != 0xffff_ffff {
+                self.gl.vertex_attrib_pointer_with_i32(
+                    program.vertex_texture_coords_location,
+                    3,
+                    Gl::FLOAT,
+                    false,
+                    vertex_stride,
+                    8,
+                );
+                self.gl
+                    .enable_vertex_attrib_array(program.vertex_texture_coords_location);
             }
 
             let num_vertex_attributes = program.num_vertex_attributes;
@@ -676,6 +734,7 @@ impl WebGlRenderBackend {
                         handle: bitmap_source.bitmap_handle(bitmap.bitmap_id, self),
                         is_smoothed: bitmap.is_smoothed,
                         is_repeating: bitmap.is_repeating,
+                        has_uvt,
                     }),
                     vao,
                     vertex_buffer: Buffer {
@@ -1393,7 +1452,8 @@ impl CommandHandler for WebGlRenderBackend {
             let program = match &draw.draw_type {
                 DrawType::Color => &self.color_program,
                 DrawType::Gradient(_) => &self.gradient_program,
-                DrawType::Bitmap { .. } => &self.bitmap_program,
+                DrawType::Bitmap(bitmap) if bitmap.has_uvt => &self.bitmap_uvt_program,
+                DrawType::Bitmap(_) => &self.bitmap_program,
             };
 
             // Set common render state, while minimizing unnecessary state changes.
@@ -1634,6 +1694,7 @@ struct BitmapDraw {
     handle: Option<BitmapHandle>,
     is_repeating: bool,
     is_smoothed: bool,
+    has_uvt: bool,
 }
 
 #[derive(Debug)]
@@ -1710,6 +1771,7 @@ struct ShaderProgram {
     uniforms: [Option<WebGlUniformLocation>; NUM_UNIFORMS],
     vertex_position_location: u32,
     vertex_color_location: u32,
+    vertex_texture_coords_location: u32,
     num_vertex_attributes: u32,
 }
 
@@ -1777,11 +1839,17 @@ impl ShaderProgram {
 
         let vertex_position_location = gl.get_attrib_location(&program, "position") as u32;
         let vertex_color_location = gl.get_attrib_location(&program, "color") as u32;
+        let vertex_texture_coords_location =
+            gl.get_attrib_location(&program, "texture_coords") as u32;
         let num_vertex_attributes = if vertex_position_location != 0xffff_ffff {
             1
         } else {
             0
         } + if vertex_color_location != 0xffff_ffff {
+            1
+        } else {
+            0
+        } + if vertex_texture_coords_location != 0xffff_ffff {
             1
         } else {
             0
@@ -1792,6 +1860,7 @@ impl ShaderProgram {
             uniforms,
             vertex_position_location,
             vertex_color_location,
+            vertex_texture_coords_location,
             num_vertex_attributes,
         })
     }
