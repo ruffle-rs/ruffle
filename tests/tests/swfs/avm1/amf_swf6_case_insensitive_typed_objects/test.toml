@@ -5,5 +5,5 @@ log_fetch = true
 type = "Rascal"
 target = "test.swf"
 scripts = ["test.as"]
-swf_version = 8
+swf_version = 6
 use_network = true

@@ -1,9 +1,10 @@
 num_ticks = 10
-log_fetch = true
 
 [[compilers]]
 type = "Rascal"
 target = "test.swf"
 scripts = ["test.as"]
 swf_version = 8
-use_network = true
+
+[shared_objects."localhost/test.swf/amf_object_payload"]
+expected = "amf_object_payload"
