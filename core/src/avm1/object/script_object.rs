@@ -783,7 +783,7 @@ impl<'gc> Object<'gc> {
 
     /// Checks if the object has a given named property on itself that is
     /// virtual.
-    pub(super) fn has_own_virtual(
+    pub(crate) fn has_own_virtual(
         self,
         activation: &mut Activation<'_, 'gc>,
         name: AvmString<'gc>,
