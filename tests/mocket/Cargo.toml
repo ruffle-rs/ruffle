@@ -16,3 +16,5 @@ clap = { workspace = true }
 tracing = { workspace = true}
 tracing-subscriber = { workspace = true }
 ruffle_socket_format = { path = "../socket-format" }
+rustls = { version = "0.23", default-features = false, features = ["ring", "std", "logging", "tls12"] }
+rustls-pki-types = "1"
