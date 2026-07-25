@@ -4,14 +4,23 @@ package {
 
     public class Test extends MovieClip {
         public function Test() {
+            // First child: Ordinary `Shape`
             var firstChild:DisplayObject = this.getChildAt(0);
+            // Second child: Ordinary `MorphShape`
             var secondChild:DisplayObject = this.getChildAt(1);
+            // Third child: Modified `Shape`; `edgeBounds` and `shapeBounds` do not match where the shape actually is
+            var thirdChild:DisplayObject = this.getChildAt(2);
+
             trace(firstChild);
             trace(secondChild);
+
             trace(firstChild.getBounds(null));
             trace(firstChild.getRect(null));
             trace(secondChild.getBounds(null));
             trace(secondChild.getRect(null));
+            trace(thirdChild.getBounds(null));
+            trace(thirdChild.getRect(null));
+
             trace(this.getBounds(null));
             trace(this.getRect(null));
             
