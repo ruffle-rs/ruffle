@@ -452,6 +452,10 @@ export class InnerPlayer {
         volumeMuteCheckbox.checked = this.volumeSettings.isMuted;
         volumeSlider.disabled = volumeMuteCheckbox.checked;
         volumeSlider.valueAsNumber = this.volumeSettings.volume;
+        volumeSlider.style.setProperty(
+            "--volume-pct",
+            `${this.volumeSettings.volume}%`,
+        );
         volumeSliderText.textContent = volumeSlider.value + "%";
         setVolumeIcon();
 
@@ -464,6 +468,10 @@ export class InnerPlayer {
         });
         volumeSlider.addEventListener("input", () => {
             volumeSliderText.textContent = volumeSlider.value + "%";
+            volumeSlider.style.setProperty(
+                "--volume-pct",
+                `${volumeSlider.value}%`,
+            );
             this.volumeSettings.volume = volumeSlider.valueAsNumber;
             this.instance?.set_volume(this.volumeSettings.get_volume());
             setVolumeIcon();
