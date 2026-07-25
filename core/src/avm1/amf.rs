@@ -165,13 +165,24 @@ fn serialize_value_to_writer<'gc>(
             } else if let NativeObject::Date(date) = o.native() {
                 writer.date(name, date.get().time(), None)
             } else {
-                let (ow, token) = writer.object(CacheKey::from_ptr(o.as_ptr()));
+                let key = CacheKey::from_ptr(o.as_ptr());
 
-                if let Some(mut ow) = ow {
-                    recursive_serialize(activation, o, &mut ow);
-                    ow.commit(name);
+                if let Some(class_name) = object_class_name(activation, o) {
+                    let (ow, token) = writer.typed_object(&class_name, key);
+                    if let Some(mut ow) = ow {
+                        recursive_serialize(activation, o, &mut ow);
+                        ow.commit(name);
+                    } else {
+                        writer.reference(name, token);
+                    }
                 } else {
-                    writer.reference(name, token);
+                    let (ow, token) = writer.object(key);
+                    if let Some(mut ow) = ow {
+                        recursive_serialize(activation, o, &mut ow);
+                        ow.commit(name);
+                    } else {
+                        writer.reference(name, token);
+                    }
                 }
             }
         }
