@@ -1547,7 +1547,9 @@ pub fn get_url<'gc>(
             Some(Value::String(s)) => NavigationMethod::from_method_str(s),
             _ => None,
         };
-        let vars_method = method.map(|m| (m, activation.locals_into_form_values()));
+        let target = _movie_clip.object1_or_bare(activation.gc());
+	    let form_values = activation.object_into_form_values(target);
+        let vars_method = method.map(|m| (m, form_values));
 
         activation.context.navigator.navigate_to_url_normalized(
             &url.to_utf8_lossy(),
