@@ -1,12 +1,13 @@
 use ruffle_common::avm_string::AvmString;
 use ruffle_macros::istr;
 
+use crate::avm2::Avm2;
 use crate::avm2::Avm2StrRepresentable;
 use crate::avm2::activation::Activation;
-use crate::avm2::error::{Error, Error2004Type, make_error_2004, make_error_2008};
+use crate::avm2::error::{Error, Error2004Type, make_error_2004, make_error_2008, make_error_2175};
 use crate::avm2::globals::flash::display::display_object::initialize_for_allocator;
 use crate::avm2::globals::methods::flash_text_engine_content_element as element_methods;
-use crate::avm2::object::{ContentElementObject, Object, VectorObject};
+use crate::avm2::object::{ContentElementObject, ElementFormatObject, VectorObject};
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
 use crate::display_object::{EditText, TDisplayObject, TextLine};
@@ -332,18 +333,25 @@ pub fn do_create_text_line<'gc>(
 
     let width = args.get_f64(1);
 
+    let content = block.content().expect("Guaranteed by AS checks");
+
+    let Some(element_format) = content.element_format() else {
+        // For some reason, FP handles this error as it handles an uncaught
+        // exception, and returns `null` from this method.
+        let error = make_error_2175(activation);
+
+        Avm2::uncaught_error(activation, None, error, "Error creating TextLine");
+
+        return Ok(Value::Null);
+    };
+
     let previous_position = if let Some(previous_text_line) = previous_text_line {
         previous_text_line.end_index() as usize
     } else {
         0
     };
 
-    let content = block.content();
-    let text = if let Some(content) = block.content() {
-        get_text_from_content(content, activation)?
-    } else {
-        None
-    };
+    let text = get_text_from_content(content, activation)?;
     let text = text.unwrap_or_else(|| istr!("")).as_wstr();
 
     if previous_position > text.len() {
@@ -378,13 +386,6 @@ pub fn do_create_text_line<'gc>(
     // of the provided text, and set the width of the EditText to that.
     // Some games depend on this (e.g. Realm Grinder).
 
-    let element_format = if let Some(content) = content {
-        Value::from(content)
-            .call_method(element_methods::GET_ELEMENT_FORMAT, &[], activation)?
-            .as_object()
-    } else {
-        None
-    };
     apply_format(activation, fallback, element_format, line_index);
 
     text_line.set_text_block(Some(block), activation.gc());
@@ -456,42 +457,38 @@ fn next_line_break(text: &WStr, start: usize) -> usize {
 fn apply_format<'gc>(
     activation: &mut Activation<'_, 'gc>,
     edit_text: EditText<'gc>,
-    element_format: Option<Object<'gc>>,
+    ef: ElementFormatObject<'gc>,
     line_index: u32,
 ) {
-    if let Some(ef) = element_format.and_then(|o| o.as_element_format_object()) {
-        // TODO: Support more ElementFormat properties
-        let (font, bold, italic, is_device_font) = if let Some(fd) = ef.font_description() {
-            (
-                Some(fd.font_name().as_wstr().into()),
-                Some(fd.font_weight() == FontWeightValue::Bold),
-                Some(fd.font_posture() == FontPostureValue::Italic),
-                fd.font_lookup() == FontLookupValue::Device,
-            )
-        } else {
-            (None, None, None, true)
-        };
-
-        let format = TextFormat {
-            color: Some(ef.color()),
-            size: Some(ef.font_size()),
-            font,
-            bold,
-            italic,
-            ..TextFormat::default()
-        };
-
-        edit_text.set_is_device_font(activation.context, is_device_font);
-        edit_text.set_text_format(
-            0,
-            edit_text.text_length(),
-            format.clone(),
-            activation.context,
-        );
-        edit_text.set_new_text_format(format);
+    // TODO: Support more ElementFormat properties
+    let (font, bold, italic, is_device_font) = if let Some(fd) = ef.font_description() {
+        (
+            Some(fd.font_name().as_wstr().into()),
+            Some(fd.font_weight() == FontWeightValue::Bold),
+            Some(fd.font_posture() == FontPostureValue::Italic),
+            fd.font_lookup() == FontLookupValue::Device,
+        )
     } else {
-        edit_text.set_is_device_font(activation.context, true);
-    }
+        (None, None, None, true)
+    };
+
+    let format = TextFormat {
+        color: Some(ef.color()),
+        size: Some(ef.font_size()),
+        font,
+        bold,
+        italic,
+        ..TextFormat::default()
+    };
+
+    edit_text.set_is_device_font(activation.context, is_device_font);
+    edit_text.set_text_format(
+        0,
+        edit_text.text_length(),
+        format.clone(),
+        activation.context,
+    );
+    edit_text.set_new_text_format(format);
 
     edit_text.set_word_wrap(true, activation.context);
 
