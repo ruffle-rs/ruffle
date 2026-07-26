@@ -5,9 +5,18 @@ package {
     public class Test extends MovieClip {
         public function Test() {
             var content:ContentElement = new TextElement("Some text here", new ElementFormat());
+
+            // Just a regular block.
             var block:TextBlock = new TextBlock(content);
+
+            // Another regular block.
             var block2:TextBlock = new TextBlock(content);
+
+            // A block with `null` content.
             var blockEmpty:TextBlock = new TextBlock(null);
+
+            // A block with `null` `content.elementFormat`.
+            var blockFormatless:TextBlock = new TextBlock(new TextElement("Some text"));
 
             try {
                 var result:TextLine = blockEmpty.createTextLine(null);
@@ -54,6 +63,13 @@ package {
                 trace("block.createTextLine(line2): " + result);
             } catch(e:Error) {
                 trace("block.createTextLine(line2): error " + e.getStackTrace());
+            }
+
+            try {
+                var result:TextLine = blockFormatless.createTextLine(null);
+                trace("blockFormatless.createTextLine(null): " + result);
+            } catch(e:Error) {
+                trace("blockFormatless.createTextLine(null): error " + e.getStackTrace());
             }
         }
     }
