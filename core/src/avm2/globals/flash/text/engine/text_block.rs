@@ -16,7 +16,7 @@ use crate::fte::{FontLookupValue, TextBaselineValue};
 use crate::fte::{FontPostureValue, TextRotationValue};
 use crate::html::TextFormat;
 use crate::string::WStr;
-use crate::{avm2_stub_getter, avm2_stub_method, avm2_stub_setter};
+use crate::{avm2_stub_getter, avm2_stub_setter};
 
 pub use crate::avm2::object::text_block_allocator;
 
@@ -317,15 +317,13 @@ pub fn get_first_line<'gc>(
     Ok(this.first_line().map(Value::from).unwrap_or(Value::Null))
 }
 
-pub fn create_text_line<'gc>(
+pub fn do_create_text_line<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this_obj = this.as_object().unwrap();
     let block = this_obj.as_text_block_object().unwrap();
-
-    avm2_stub_method!(activation, "flash.text.engine.TextBlock", "createTextLine");
 
     let previous_text_line = args
         .try_get_object(0)
@@ -365,7 +363,9 @@ pub fn create_text_line<'gc>(
     let subtext = &text[previous_position..next_position];
 
     let class = activation.avm2().classes().textline;
-    let movie = activation.caller_movie_or_root();
+
+    // TODO should we use the caller's movie instead? Does it matter?
+    let movie = activation.context.root_swf.clone();
 
     let fallback = EditText::new_fte(activation.context, movie.clone(), 0.0, 0.0, width, 15.0);
     fallback.set_text(subtext, activation.context);

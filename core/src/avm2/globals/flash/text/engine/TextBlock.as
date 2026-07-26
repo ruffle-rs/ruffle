@@ -76,12 +76,33 @@ package flash.text.engine {
         public native function get content():ContentElement;
         public native function set content(value:ContentElement):void;
 
-        public native function createTextLine(
+        public function createTextLine(
             previousLine:TextLine = null,
             width:Number = 1000000,
             lineOffset:Number = 0,
             fitSomething:Boolean = false
-        ):TextLine;
+        ):TextLine {
+            if (this.content === null) {
+                return null;
+            }
+
+            if (previousLine !== null) {
+                if (previousLine.validity !== TextLineValidity.VALID || previousLine.textBlock !== this) {
+                    Error.throwError(ArgumentError, 2004);
+                }
+            }
+
+            if (width < 0 || width > TextLine.MAX_LINE_WIDTH) {
+                Error.throwError(ArgumentError, 2004);
+            }
+
+            stub_method("flash.text.engine.TextBlock", "createTextLine");
+
+            return this.DoCreateTextLine(previousLine, width, lineOffset, fitSomething);
+        }
+
+        // Match the method name in FP, which can be seen in stack traces
+        private native function DoCreateTextLine(previousLine:TextLine, width:Number, lineOffset:Number, fitSomething:Boolean):TextLine;
 
         public function recreateTextLine(
             textLine:TextLine,
