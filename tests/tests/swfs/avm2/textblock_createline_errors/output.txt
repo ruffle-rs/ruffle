@@ -1,0 +1,18 @@
+blockEmpty.createTextLine(null): null
+blockEmpty.createTextLine(null, -1): null
+block.createTextLine(null, -1): error ArgumentError: Error #2004: One of the parameters is invalid.
+	at Error$/throwError()
+	at flash.text.engine::TextBlock/createTextLine()
+	at Test()
+block.createTextLine(null, 1000001): error ArgumentError: Error #2004: One of the parameters is invalid.
+	at Error$/throwError()
+	at flash.text.engine::TextBlock/createTextLine()
+	at Test()
+block.createTextLine(invalidLine): error ArgumentError: Error #2004: One of the parameters is invalid.
+	at Error$/throwError()
+	at flash.text.engine::TextBlock/createTextLine()
+	at Test()
+block.createTextLine(line2): error ArgumentError: Error #2004: One of the parameters is invalid.
+	at Error$/throwError()
+	at flash.text.engine::TextBlock/createTextLine()
+	at Test()
