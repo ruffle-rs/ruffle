@@ -461,27 +461,21 @@ fn apply_format<'gc>(
     line_index: u32,
 ) {
     // TODO: Support more ElementFormat properties
-    let (font, bold, italic, is_device_font) = if let Some(fd) = ef.font_description() {
-        (
-            Some(fd.font_name().as_wstr().into()),
-            Some(fd.font_weight() == FontWeightValue::Bold),
-            Some(fd.font_posture() == FontPostureValue::Italic),
-            fd.font_lookup() == FontLookupValue::Device,
-        )
-    } else {
-        (None, None, None, true)
-    };
+    let fd = ef.font_description();
 
     let format = TextFormat {
         color: Some(ef.color()),
         size: Some(ef.font_size()),
-        font,
-        bold,
-        italic,
+        font: fd.map(|fd| fd.font_name().as_wstr().into()),
+        bold: fd.map(|fd| fd.font_weight() == FontWeightValue::Bold),
+        italic: fd.map(|fd| fd.font_posture() == FontPostureValue::Italic),
         ..TextFormat::default()
     };
 
-    edit_text.set_is_device_font(activation.context, is_device_font);
+    edit_text.set_is_device_font(
+        activation.context,
+        fd.is_none_or(|fd| fd.font_lookup() == FontLookupValue::Device),
+    );
     edit_text.set_text_format(
         0,
         edit_text.text_length(),
