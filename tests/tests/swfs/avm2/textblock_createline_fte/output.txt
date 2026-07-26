@@ -2,3 +2,8 @@ line != null: true
 result: success
 firstLine === line: true
 null content: null
+line3.textBlockBeginIndex: 0
+line3.rawTextLength: 11
+tb3.textLineCreationResult: success
+createTextLine: null
+tb3.textLineCreationResult: complete
