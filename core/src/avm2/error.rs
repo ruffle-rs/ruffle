@@ -1118,6 +1118,7 @@ pub fn make_error_2165<'gc>(activation: &mut Activation<'_, 'gc>, input_name: &s
 }
 
 make_error_fn!(make_error_2174, 2174, error);
+make_error_fn!(make_error_2175, 2175, error);
 
 // Currently we don't use this, see `globals::flash::system::system::set_clipboard`
 make_error_fn!(
