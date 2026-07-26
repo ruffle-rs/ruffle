@@ -1,7 +1,9 @@
 use crate::avm2::Error;
 use crate::avm2::activation::Activation;
 use crate::avm2::object::script_object::ScriptObjectData;
-use crate::avm2::object::{ClassObject, Object, TObject, VectorObject};
+use crate::avm2::object::{
+    ClassObject, ContentElementObject, FontDescriptionObject, Object, TObject, VectorObject,
+};
 use crate::fte::{TextBaselineValue, TextLineCreationResultValue, TextRotationValue};
 use core::fmt;
 use gc_arena::barrier::unlock;
@@ -56,14 +58,14 @@ impl fmt::Debug for TextBlockObject<'_> {
 pub struct TextBlockObjectData<'gc> {
     base: ScriptObjectData<'gc>,
     apply_non_linear_font_scaling: Cell<bool>,
-    baseline_font_description: Lock<Option<Object<'gc>>>,
+    baseline_font_description: Lock<Option<FontDescriptionObject<'gc>>>,
     baseline_font_size: Cell<f64>,
     baseline_zero: Cell<TextBaselineValue>,
     bidi_level: Cell<i32>,
     line_rotation: Cell<TextRotationValue>,
     tab_stops: Lock<Option<VectorObject<'gc>>>,
     text_justifier: Lock<Option<Object<'gc>>>,
-    content: Lock<Option<Object<'gc>>>,
+    content: Lock<Option<ContentElementObject<'gc>>>,
     text_line_creation_result: Cell<Option<TextLineCreationResultValue>>,
     first_line: Lock<Option<Object<'gc>>>,
 }
@@ -77,11 +79,15 @@ impl<'gc> TextBlockObject<'gc> {
         self.0.apply_non_linear_font_scaling.set(value);
     }
 
-    pub fn baseline_font_description(self) -> Option<Object<'gc>> {
+    pub fn baseline_font_description(self) -> Option<FontDescriptionObject<'gc>> {
         self.0.baseline_font_description.get()
     }
 
-    pub fn set_baseline_font_description(self, value: Option<Object<'gc>>, mc: &Mutation<'gc>) {
+    pub fn set_baseline_font_description(
+        self,
+        value: Option<FontDescriptionObject<'gc>>,
+        mc: &Mutation<'gc>,
+    ) {
         unlock!(
             Gc::write(mc, self.0),
             TextBlockObjectData,
@@ -138,11 +144,11 @@ impl<'gc> TextBlockObject<'gc> {
         unlock!(Gc::write(mc, self.0), TextBlockObjectData, text_justifier).set(Some(value));
     }
 
-    pub fn content(self) -> Option<Object<'gc>> {
+    pub fn content(self) -> Option<ContentElementObject<'gc>> {
         self.0.content.get()
     }
 
-    pub fn set_content(self, value: Option<Object<'gc>>, mc: &Mutation<'gc>) {
+    pub fn set_content(self, value: Option<ContentElementObject<'gc>>, mc: &Mutation<'gc>) {
         unlock!(Gc::write(mc, self.0), TextBlockObjectData, content).set(value);
     }
 
