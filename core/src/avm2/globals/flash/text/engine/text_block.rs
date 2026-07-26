@@ -381,7 +381,7 @@ pub fn do_create_text_line<'gc>(
     } else {
         None
     };
-    apply_format(activation, fallback, element_format, line_index)?;
+    apply_format(activation, fallback, element_format, line_index);
 
     let text_line = TextLine::new(activation.context, movie, fallback);
     let instance = initialize_for_allocator(activation.context, text_line.into(), class);
@@ -445,7 +445,7 @@ fn apply_format<'gc>(
     edit_text: EditText<'gc>,
     element_format: Option<Object<'gc>>,
     line_index: u32,
-) -> Result<(), Error<'gc>> {
+) {
     if let Some(ef) = element_format.and_then(|o| o.as_element_format_object()) {
         // TODO: Support more ElementFormat properties
         let (font, bold, italic, is_device_font) = if let Some(fd) = ef.font_description() {
@@ -486,6 +486,4 @@ fn apply_format<'gc>(
 
     edit_text.set_height(activation.context, measured_text.1.to_pixels());
     edit_text.set_y(measured_text.1 * line_index as i32);
-
-    Ok(())
 }
