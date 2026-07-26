@@ -16,3 +16,8 @@ block.createTextLine(line2): error ArgumentError: Error #2004: One of the parame
 	at Error$/throwError()
 	at flash.text.engine::TextBlock/createTextLine()
 	at Test()
+Error: Error #2175: One or more elements of the content of the TextBlock has a null ElementFormat.
+	at flash.text.engine::TextBlock/DoCreateTextLine()
+	at flash.text.engine::TextBlock/createTextLine()
+	at Test()
+blockFormatless.createTextLine(null): null
