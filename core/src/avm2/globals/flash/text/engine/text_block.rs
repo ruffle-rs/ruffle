@@ -346,6 +346,12 @@ pub fn do_create_text_line<'gc>(
     };
     let text = text.unwrap_or_else(|| istr!("")).as_wstr();
 
+    if previous_position > text.len() {
+        // This can happen when the content is changed after creating a TextLine.
+        block.set_text_line_creation_result(Some(TextLineCreationResultValue::Complete));
+        return Ok(Value::Null);
+    }
+
     let next_position = next_line_break(text, previous_position);
 
     if text.is_empty() || next_position == text.len() && previous_position == next_position {
