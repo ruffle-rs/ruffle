@@ -94,6 +94,10 @@ impl<'gc> TextLine<'gc> {
         self.0.fallback.measure_text(context)
     }
 
+    pub fn fallback(self) -> EditText<'gc> {
+        self.0.fallback
+    }
+
     pub fn validity(self) -> AvmString<'gc> {
         self.0.validity.get()
     }

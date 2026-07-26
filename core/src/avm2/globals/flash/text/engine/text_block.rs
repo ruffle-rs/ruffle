@@ -366,14 +366,12 @@ pub fn do_create_text_line<'gc>(
         0
     };
 
+    let text_line = create_text_line(activation, width);
+    let text_line_instance = text_line.object2().expect("Already created the object2");
+    let fallback = text_line.fallback();
+
     let subtext = &text[previous_position..next_position];
 
-    let class = activation.avm2().classes().textline;
-
-    // TODO should we use the caller's movie instead? Does it matter?
-    let movie = activation.context.root_swf.clone();
-
-    let fallback = EditText::new_fte(activation.context, movie.clone(), 0.0, 0.0, width, 15.0);
     fallback.set_text(subtext, activation.context);
 
     // FIXME: This needs to use `intrinsic_bounds` to measure the width
@@ -389,10 +387,6 @@ pub fn do_create_text_line<'gc>(
     };
     apply_format(activation, fallback, element_format, line_index);
 
-    let text_line = TextLine::new(activation.context, movie, fallback);
-    let instance = initialize_for_allocator(activation.context, text_line.into(), class);
-    let instance: Object<'gc> = instance.into();
-
     text_line.set_text_block(Some(block), activation.gc());
     text_line.set_specified_width(width);
     text_line.set_raw_text_length(text.len() as u32);
@@ -406,9 +400,22 @@ pub fn do_create_text_line<'gc>(
     }
 
     block.set_text_line_creation_result(Some(TextLineCreationResultValue::Success));
-    block.set_first_line(Some(instance), activation.gc());
+    block.set_first_line(Some(text_line_instance.into()), activation.gc());
 
-    Ok(instance.into())
+    Ok(text_line_instance.into())
+}
+
+fn create_text_line<'gc>(activation: &mut Activation<'_, 'gc>, width: f64) -> TextLine<'gc> {
+    let class = activation.avm2().classes().textline;
+
+    // TODO should we use the caller's movie instead? Does it matter?
+    let movie = activation.context.root_swf.clone();
+
+    let fallback = EditText::new_fte(activation.context, movie.clone(), 0.0, 0.0, width, 15.0);
+    let text_line = TextLine::new(activation.context, movie, fallback);
+    initialize_for_allocator(activation.context, text_line.into(), class);
+
+    text_line
 }
 
 fn get_text_from_content<'gc>(
