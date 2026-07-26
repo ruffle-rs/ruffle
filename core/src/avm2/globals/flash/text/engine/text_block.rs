@@ -6,10 +6,9 @@ use crate::avm2::activation::Activation;
 use crate::avm2::error::{Error, Error2004Type, make_error_2004, make_error_2008};
 use crate::avm2::globals::flash::display::display_object::initialize_for_allocator;
 use crate::avm2::globals::methods::flash_text_engine_content_element as element_methods;
-use crate::avm2::object::{Object, VectorObject};
+use crate::avm2::object::{ContentElementObject, Object, VectorObject};
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
-use crate::avm2_stub_method;
 use crate::display_object::{EditText, TDisplayObject, TextLine};
 use crate::fte::FontWeightValue;
 use crate::fte::TextLineCreationResultValue;
@@ -17,6 +16,7 @@ use crate::fte::{FontLookupValue, TextBaselineValue};
 use crate::fte::{FontPostureValue, TextRotationValue};
 use crate::html::TextFormat;
 use crate::string::WStr;
+use crate::{avm2_stub_getter, avm2_stub_method, avm2_stub_setter};
 
 pub use crate::avm2::object::text_block_allocator;
 
@@ -30,12 +30,20 @@ pub fn get_apply_non_linear_font_scaling<'gc>(
 }
 
 pub fn set_apply_non_linear_font_scaling<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap().as_text_block_object().unwrap();
+
+    avm2_stub_setter!(
+        activation,
+        "flash.text.engine.TextBlock",
+        "applyNonLinearFontScaling"
+    );
+
     this.set_apply_non_linear_font_scaling(args.get_bool(0));
+
     Ok(Value::Undefined)
 }
 
@@ -57,8 +65,19 @@ pub fn set_baseline_font_description<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap().as_text_block_object().unwrap();
-    let value = args.try_get_object(0);
+
+    avm2_stub_setter!(
+        activation,
+        "flash.text.engine.TextBlock",
+        "baselineFontDescription"
+    );
+
+    let value = args
+        .try_get_object(0)
+        .map(|v| v.as_font_description_object().unwrap());
+
     this.set_baseline_font_description(value, activation.gc());
+
     Ok(Value::Undefined)
 }
 
@@ -81,7 +100,15 @@ pub fn set_baseline_font_size<'gc>(
     if value < 0.0 {
         return Err(make_error_2004(activation, Error2004Type::ArgumentError));
     }
+
+    avm2_stub_setter!(
+        activation,
+        "flash.text.engine.TextBlock",
+        "baselineFontSize"
+    );
+
     this.set_baseline_font_size(value);
+
     Ok(Value::Undefined)
 }
 
@@ -100,11 +127,16 @@ pub fn set_baseline_zero<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap().as_text_block_object().unwrap();
+
     let value = args.get_string_non_null(activation, 0, "baselineZero")?;
     let value = TextBaselineValue::from_avm2_str(&value)
         .filter(|v| !matches!(v, TextBaselineValue::UseDominantBaseline))
         .ok_or_else(|| make_error_2008(activation, "baselineZero"))?;
+
+    avm2_stub_setter!(activation, "flash.text.engine.TextBlock", "baselineZero");
+
     this.set_baseline_zero(value);
+
     Ok(Value::Undefined)
 }
 
@@ -127,7 +159,11 @@ pub fn set_bidi_level<'gc>(
     if value < 0 {
         return Err(make_error_2004(activation, Error2004Type::ArgumentError));
     }
+
+    avm2_stub_setter!(activation, "flash.text.engine.TextBlock", "bidiLevel");
+
     this.set_bidi_level(value);
+
     Ok(Value::Undefined)
 }
 
@@ -146,11 +182,16 @@ pub fn set_line_rotation<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap().as_text_block_object().unwrap();
+
     let value = args.get_string_non_null(activation, 0, "lineRotation")?;
     let value = TextRotationValue::from_avm2_str(&value)
         .filter(|v| !matches!(v, TextRotationValue::Auto))
         .ok_or_else(|| make_error_2008(activation, "lineRotation"))?;
+
+    avm2_stub_setter!(activation, "flash.text.engine.TextBlock", "lineRotation");
+
     this.set_line_rotation(value);
+
     Ok(Value::Undefined)
 }
 
@@ -176,7 +217,11 @@ pub fn set_tab_stops<'gc>(
         .try_get_object(0)
         .and_then(|v| v.as_vector_object())
         .map(|v| VectorObject::from_vector(v.storage().clone(), activation));
+
+    avm2_stub_setter!(activation, "flash.text.engine.TextBlock", "tabStops");
+
     this.set_tab_stops(tab_stops, activation.gc());
+
     Ok(Value::Undefined)
 }
 
@@ -198,10 +243,13 @@ pub fn set_text_justifier<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap().as_text_block_object().unwrap();
-    this.set_text_justifier(
-        args.get_object(activation, 0, "textJustifier")?,
-        activation.gc(),
-    );
+
+    let justifier = args.get_object(activation, 0, "textJustifier")?;
+
+    avm2_stub_setter!(activation, "flash.text.engine.TextBlock", "textJustifier");
+
+    this.set_text_justifier(justifier, activation.gc());
+
     Ok(Value::Undefined)
 }
 
@@ -220,7 +268,17 @@ pub fn set_content<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap().as_text_block_object().unwrap();
-    this.set_content(args.try_get_object(0), activation.gc());
+
+    let content = args
+        .try_get_object(0)
+        .map(|v| v.as_content_element_object().unwrap());
+
+    if this.content().is_some() {
+        avm2_stub_setter!(activation, "flash.text.engine.TextBlock", "content");
+    }
+
+    this.set_content(content, activation.gc());
+
     Ok(Value::Undefined)
 }
 
@@ -237,10 +295,16 @@ pub fn get_text_line_creation_result<'gc>(
 }
 
 pub fn get_first_invalid_line<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     _this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    avm2_stub_getter!(
+        activation,
+        "flash.text.engine.TextBlock",
+        "firstInvalidLine"
+    );
+
     Ok(Value::Null)
 }
 
@@ -261,7 +325,7 @@ pub fn create_text_line<'gc>(
     let this_obj = this.as_object().unwrap();
     let block = this_obj.as_text_block_object().unwrap();
 
-    avm2_stub_method!(activation, "flash.text.TextBlock", "createTextLine");
+    avm2_stub_method!(activation, "flash.text.engine.TextBlock", "createTextLine");
 
     let previous_text_line = args
         .try_get_object(0)
@@ -342,7 +406,7 @@ pub fn create_text_line<'gc>(
 }
 
 fn get_text_from_content<'gc>(
-    content: Object<'gc>,
+    content: ContentElementObject<'gc>,
     activation: &mut Activation<'_, 'gc>,
 ) -> Result<Option<AvmString<'gc>>, Error<'gc>> {
     let text = Value::from(content).call_method(element_methods::GET_TEXT, &[], activation)?;
