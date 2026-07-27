@@ -98,11 +98,11 @@ package flash.text.engine {
 
             stub_method("flash.text.engine.TextBlock", "createTextLine");
 
-            return this.DoCreateTextLine(previousLine, width, lineOffset, fitSomething);
+            return this.DoCreateTextLine(null, previousLine, width, lineOffset, fitSomething);
         }
 
         // Match the method name in FP, which can be seen in stack traces
-        private native function DoCreateTextLine(previousLine:TextLine, width:Number, lineOffset:Number, fitSomething:Boolean):TextLine;
+        private native function DoCreateTextLine(lineToUse:TextLine, previousLine:TextLine, width:Number, lineOffset:Number, fitSomething:Boolean):TextLine;
 
         public function recreateTextLine(
             textLine:TextLine,
@@ -112,19 +112,25 @@ package flash.text.engine {
             fitSomething:Boolean = false
         ):TextLine {
             if (textLine == null) {
-                throw new ArgumentError("Error #2004: One of the parameters is invalid.", 2004);
+                Error.throwError(ArgumentError, 2004);
             }
 
-            if (previousLine) {
-                return null;
+            if (previousLine !== null) {
+                if (previousLine.validity !== TextLineValidity.VALID || previousLine.textBlock !== this || previousLine === textLine) {
+                    Error.throwError(ArgumentError, 2004);
+                }
             }
+
+            if (width < 0 || width > TextLine.MAX_LINE_WIDTH) {
+                Error.throwError(ArgumentError, 2004);
+            }
+
+            // Clear AS-side properties of the text line
+            textLine.userData = null;
 
             stub_method("flash.text.engine.TextBlock", "recreateTextLine");
 
-            // FIXME: Properly recalculate new properties of new TextLine. Text layout
-            // modules often depend on this returning the same textLine, so we can't
-            // call `createTextLine` again.
-            return textLine;
+            return this.DoCreateTextLine(textLine, previousLine, width, lineOffset, fitSomething);
         }
 
         public native function get textLineCreationResult():String;
