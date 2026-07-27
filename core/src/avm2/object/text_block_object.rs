@@ -168,6 +168,10 @@ impl<'gc> TextBlockObject<'gc> {
     pub fn set_first_line(self, value: Option<TextLine<'gc>>, mc: &Mutation<'gc>) {
         unlock!(Gc::write(mc, self.0), TextBlockObjectData, first_line).set(value);
     }
+
+    pub fn lines(self) -> impl Iterator<Item = TextLine<'gc>> {
+        core::iter::successors(self.first_line(), |line| line.next_line())
+    }
 }
 
 impl<'gc> TObject<'gc> for TextBlockObject<'gc> {
