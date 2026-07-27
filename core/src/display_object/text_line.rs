@@ -21,6 +21,7 @@ use gc_arena::{Collect, Gc, Mutation};
 use ruffle_common::utils::HasPrefixField;
 use std::cell::Cell;
 use std::sync::Arc;
+use swf::Twips;
 
 #[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]
@@ -87,6 +88,13 @@ impl<'gc> TextLine<'gc> {
     }
 
     pub fn reset_properties(self, mc: &Mutation<'gc>) {
+        // TODO: Reset more properties
+
+        // Reset display object properties
+        self.set_x(Twips::ZERO);
+        self.set_y(Twips::ZERO);
+
+        // Reset text line properties
         self.set_validity(TextLineValidity::Valid, mc);
         self.set_text_block(None, mc);
 
