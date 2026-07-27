@@ -315,7 +315,13 @@ pub fn get_first_line<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap().as_text_block_object().unwrap();
-    Ok(this.first_line().map(Value::from).unwrap_or(Value::Null))
+
+    let line = this
+        .first_line()
+        .map(|l| l.object2().expect("Already created"))
+        .map(Value::from);
+
+    Ok(line.unwrap_or(Value::Null))
 }
 
 pub fn do_create_text_line<'gc>(
@@ -401,7 +407,7 @@ pub fn do_create_text_line<'gc>(
     }
 
     block.set_text_line_creation_result(Some(TextLineCreationResultValue::Success));
-    block.set_first_line(Some(text_line_instance.into()), activation.gc());
+    block.set_first_line(Some(text_line), activation.gc());
 
     Ok(text_line_instance.into())
 }
