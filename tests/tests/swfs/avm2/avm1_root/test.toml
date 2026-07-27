@@ -1,2 +1,27 @@
-num_ticks = 5
+num_ticks = 6
 known_failure = true
+
+[[compilers]]
+type = "Asc"
+target = "test.swf"
+class = "Test"
+scripts = ["Test.as"]
+swf_version = 17
+
+[[compilers]]
+type = "Rascal"
+target = "avm1_child.swf"
+scripts = ["avm1_child.as"]
+swf_version = 17
+
+[[compilers]]
+type = "Rascal"
+target = "other_child.swf"
+scripts = ["other_child.as"]
+swf_version = 17
+
+[[compilers]]
+type = "Rascal"
+target = "level1_child.swf"
+scripts = ["level1_child.as"]
+swf_version = 17

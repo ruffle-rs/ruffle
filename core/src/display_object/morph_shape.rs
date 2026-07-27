@@ -121,16 +121,24 @@ impl<'gc> TDisplayObject<'gc> for MorphShape<'gc> {
     }
 
     fn self_bounds(self, mode: BoundsMode) -> Rectangle<Twips> {
-        let ratio = match mode {
-            // For getBounds(), getRect() or hitTestObject(), return start bounds (0)
-            BoundsMode::Script => 0,
-            // otherwise, use the actual interpolated ratio
-            BoundsMode::Engine => self.ratio(),
-        };
-
         let shared = self.0.shared.get();
-        let frame = shared.get_frame(ratio);
-        frame.bounds
+
+        match mode {
+            // For engine bounds, use the actual interpolated ratio
+            BoundsMode::Engine => {
+                let ratio = self.ratio();
+                let frame = shared.get_frame(ratio);
+                frame.bounds
+            }
+
+            // For getBounds() or hitTestObject(), use the `shape_bounds` that
+            // were declared to be the bounds of the start shape
+            BoundsMode::Script => shared.start.shape_bounds,
+
+            // For getRect(), use the `edge_bounds` that were declared to be the
+            // bounds of the start shape
+            BoundsMode::ScriptWithoutStrokes => shared.start.edge_bounds,
+        }
     }
 
     fn hit_test_shape(

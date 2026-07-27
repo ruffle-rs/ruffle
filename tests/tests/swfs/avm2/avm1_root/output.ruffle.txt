@@ -1,7 +1,53 @@
-avm1_child this: _level-61440
+=== avm1_child
+this: _level-61440
 _level0: undefined
+_root: _level-61440
+_parent: undefined
 _level-61440: _level-61440
 _level0.foo: undefined
-_level-61440.foo: bar
-emptyMC._target: _level-61440/emptyMC
+child_via_mcl._target: _level-61440/child_via_mcl
+
 level1_child loaded - this shouldn't happen! this: _level1
+=== other_child.swf (child_via_mcl)
+this: _level-61440.child_via_mcl
+this._target: _level-61440/child_via_mcl
+_level0: undefined
+_root: _level-61440
+_parent: _level-61440
+_parent._parent: undefined
+_level0.foo: undefined
+_level0.as3Loader: undefined
+_level0.as3Loader.defined_avm1_name: undefined
+typeof _level0.as3Loader: undefined
+_level0.as3Loader._target: undefined
+_level0.level0Clip: undefined
+_level0.as3Loader.as3LoaderClip: undefined
+typeof _level0.level0Clip: undefined
+typeof _level0.as3Loader.as3LoaderClip: undefined
+_level0.as3Loader.defined_avm1_name._x: undefined
+
+=== other_child.swf (child_via_loadmovie)
+this: _level-61440.child_via_loadmovie
+this._target: _level-61440/child_via_loadmovie
+_level0: undefined
+_root: _level-61440
+_parent: _level-61440
+_parent._parent: undefined
+_level0.foo: undefined
+_level0.as3Loader: undefined
+_level0.as3Loader.defined_avm1_name: undefined
+typeof _level0.as3Loader: undefined
+_level0.as3Loader._target: undefined
+_level0.level0Clip: undefined
+_level0.as3Loader.as3LoaderClip: undefined
+typeof _level0.level0Clip: undefined
+typeof _level0.as3Loader.as3LoaderClip: undefined
+_level0.as3Loader.defined_avm1_name._x: undefined
+
+=== avm2 root
+loader.x: 0
+level0Clip does not exist!
+ctr.getChildAt(0): [object AVM1Movie]
+ctr.getChildAt(1): null
+ctr.numChildren: 2
+ctr.getChildByName("as3LoaderClip"): null
