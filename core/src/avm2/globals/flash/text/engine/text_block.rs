@@ -11,10 +11,10 @@ use crate::avm2::object::{ContentElementObject, ElementFormatObject, VectorObjec
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
 use crate::display_object::{EditText, TDisplayObject, TextLine};
-use crate::fte::FontWeightValue;
-use crate::fte::TextLineCreationResultValue;
-use crate::fte::{FontLookupValue, TextBaselineValue};
-use crate::fte::{FontPostureValue, TextRotationValue};
+use crate::fte::{
+    FontLookupValue, FontPostureValue, FontWeightValue, TextBaselineValue,
+    TextLineCreationResultValue, TextLineValidity, TextRotationValue,
+};
 use crate::html::TextFormat;
 use crate::string::WStr;
 use crate::{avm2_stub_getter, avm2_stub_setter};
@@ -279,6 +279,10 @@ pub fn set_content<'gc>(
     }
 
     this.set_content(content, activation.gc());
+
+    for line in this.lines() {
+        line.set_validity(TextLineValidity::Invalid, activation.gc());
+    }
 
     Ok(Value::Undefined)
 }
