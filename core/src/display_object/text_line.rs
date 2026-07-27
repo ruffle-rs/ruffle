@@ -10,6 +10,7 @@ use crate::display_object::{
     Avm2MousePick, BoundsMode, DisplayObjectBase, EditText, InteractiveObject,
 };
 use crate::events::{ClipEvent, ClipEventResult};
+use crate::fte::TextLineValidity;
 use crate::prelude::*;
 use crate::tag_utils::SwfMovie;
 use crate::vminterface::Instantiator;
@@ -17,9 +18,7 @@ use core::fmt;
 use gc_arena::barrier::unlock;
 use gc_arena::lock::Lock;
 use gc_arena::{Collect, Gc, Mutation};
-use ruffle_common::avm_string::AvmString;
 use ruffle_common::utils::HasPrefixField;
-use ruffle_macros::istr;
 use std::cell::Cell;
 use std::sync::Arc;
 
@@ -45,10 +44,7 @@ pub struct TextLineData<'gc> {
     #[collect(require_static)]
     movie: Arc<SwfMovie>,
 
-    /// Validity can be any user-defined string, we can't use an enum here.
-    ///
-    /// See [`TextLineValidity`] for the known values of validity.
-    validity: Lock<AvmString<'gc>>,
+    validity: Lock<TextLineValidity<'gc>>,
 
     text_block: Lock<Option<TextBlockObject<'gc>>>,
 
@@ -77,7 +73,7 @@ impl<'gc> TextLine<'gc> {
                 avm2_object: Lock::new(None),
                 fallback,
                 movie,
-                validity: Lock::new(istr!(context, "valid")),
+                validity: Lock::new(TextLineValidity::Valid),
                 text_block: Lock::new(None),
                 specified_width: Cell::new(0.0),
                 raw_text_length: Cell::new(0),
@@ -98,12 +94,12 @@ impl<'gc> TextLine<'gc> {
         self.0.fallback
     }
 
-    pub fn validity(self) -> AvmString<'gc> {
+    pub fn validity(self) -> TextLineValidity<'gc> {
         self.0.validity.get()
     }
 
-    pub fn set_validity(self, validity: AvmString<'gc>, context: &mut UpdateContext<'gc>) {
-        unlock!(Gc::write(context.gc(), self.0), TextLineData, validity).set(validity);
+    pub fn set_validity(self, validity: TextLineValidity<'gc>, mc: &Mutation<'gc>) {
+        unlock!(Gc::write(mc, self.0), TextLineData, validity).set(validity);
     }
 
     pub fn text_block(self) -> Option<TextBlockObject<'gc>> {

@@ -4,6 +4,7 @@ use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
 use crate::display_object::TDisplayObject;
 use crate::fte::TextLineValidity;
+use ruffle_macros::istr;
 
 pub fn get_text_width<'gc>(
     activation: &mut Activation<'_, 'gc>,
@@ -21,7 +22,7 @@ pub fn get_text_width<'gc>(
 }
 
 pub fn get_validity<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -31,7 +32,15 @@ pub fn get_validity<'gc>(
         return Ok(Value::Undefined);
     };
 
-    Ok(text_line.validity().into())
+    let validity = match text_line.validity() {
+        TextLineValidity::Valid => istr!("valid"),
+        TextLineValidity::Invalid => istr!("invalid"),
+        TextLineValidity::Static => istr!("static"),
+        TextLineValidity::PossiblyInvalid => istr!("possiblyInvalid"),
+        TextLineValidity::UserInvalid(string) => string,
+    };
+
+    Ok(validity.into())
 }
 
 pub fn set_validity<'gc>(
@@ -47,8 +56,8 @@ pub fn set_validity<'gc>(
 
     let value = args.get_string_non_null(activation, 0, "validity")?;
 
-    let previous_value = TextLineValidity::parse(text_line.validity().as_wstr());
-    let new_value = TextLineValidity::parse(value.as_wstr());
+    let previous_value = text_line.validity();
+    let new_value = TextLineValidity::parse(value);
 
     let transition_allowed = match (previous_value, new_value) {
         (a, b) if a == b => true,
@@ -63,7 +72,7 @@ pub fn set_validity<'gc>(
         return Err(make_error_2008(activation, "validity"));
     }
 
-    text_line.set_validity(value, activation.context);
+    text_line.set_validity(new_value, activation.gc());
     Ok(Value::Undefined)
 }
 
