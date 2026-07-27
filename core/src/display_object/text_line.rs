@@ -99,6 +99,13 @@ impl<'gc> TextLine<'gc> {
     }
 
     pub fn set_validity(self, validity: TextLineValidity<'gc>, mc: &Mutation<'gc>) {
+        if matches!(validity, TextLineValidity::Static) {
+            // NOTE: The text line is *not* disconnected from its sibling lines
+
+            // A static line has no associated text block
+            self.set_text_block(None, mc);
+        }
+
         unlock!(Gc::write(mc, self.0), TextLineData, validity).set(validity);
     }
 
