@@ -86,6 +86,20 @@ impl<'gc> TextLine<'gc> {
         ))
     }
 
+    pub fn reset_properties(self, mc: &Mutation<'gc>) {
+        self.set_validity(TextLineValidity::Valid, mc);
+        self.set_text_block(None, mc);
+
+        self.set_specified_width(0.0);
+        self.set_raw_text_length(0);
+        self.set_begin_index(0);
+        self.set_end_index(0);
+        self.set_line_index(0);
+
+        self.set_previous_line(None, mc);
+        self.set_next_line(None, mc);
+    }
+
     pub fn measure_text(self, context: &mut UpdateContext<'gc>) -> (Twips, Twips) {
         self.0.fallback.measure_text(context)
     }

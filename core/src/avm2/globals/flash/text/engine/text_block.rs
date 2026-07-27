@@ -336,12 +336,17 @@ pub fn do_create_text_line<'gc>(
     let this_obj = this.as_object().unwrap();
     let block = this_obj.as_text_block_object().unwrap();
 
-    let previous_text_line = args
+    let line_to_use = args
         .try_get_object(0)
         .and_then(|o| o.as_display_object())
         .and_then(|o| o.as_text_line());
 
-    let width = args.get_f64(1);
+    let previous_text_line = args
+        .try_get_object(1)
+        .and_then(|o| o.as_display_object())
+        .and_then(|o| o.as_text_line());
+
+    let width = args.get_f64(2);
 
     let content = block.content().expect("Guaranteed by AS checks");
 
@@ -384,7 +389,20 @@ pub fn do_create_text_line<'gc>(
         0
     };
 
-    let text_line = create_text_line(activation, width);
+    // `do_create_text_line` is called from both `TextBlock.recreateTextLine`
+    // and `TextBlock.createTextLine`. The former passes this method an existing
+    // `TextLine` to reuse, while the latter expects this method to create a new
+    // `TextLine`.
+    let text_line = if let Some(line) = line_to_use {
+        // `TextLine.recreateTextLine` is the caller: completely reset the
+        // properties of the passed line and use it.
+        line.reset_properties(activation.gc());
+        line
+    } else {
+        // `TextLine.createTextLine` is the caller: create a new `TextLine`.
+        create_text_line(activation, width)
+    };
+
     let text_line_instance = text_line.object2().expect("Already created the object2");
     let fallback = text_line.fallback();
 
