@@ -4,6 +4,7 @@ use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{
     ClassObject, ContentElementObject, FontDescriptionObject, Object, TObject, VectorObject,
 };
+use crate::display_object::TextLine;
 use crate::fte::{TextBaselineValue, TextLineCreationResultValue, TextRotationValue};
 use core::fmt;
 use gc_arena::barrier::unlock;
@@ -67,7 +68,7 @@ pub struct TextBlockObjectData<'gc> {
     text_justifier: Lock<Option<Object<'gc>>>,
     content: Lock<Option<ContentElementObject<'gc>>>,
     text_line_creation_result: Cell<Option<TextLineCreationResultValue>>,
-    first_line: Lock<Option<Object<'gc>>>,
+    first_line: Lock<Option<TextLine<'gc>>>,
 }
 
 impl<'gc> TextBlockObject<'gc> {
@@ -160,11 +161,11 @@ impl<'gc> TextBlockObject<'gc> {
         self.0.text_line_creation_result.set(value);
     }
 
-    pub fn first_line(self) -> Option<Object<'gc>> {
+    pub fn first_line(self) -> Option<TextLine<'gc>> {
         self.0.first_line.get()
     }
 
-    pub fn set_first_line(self, value: Option<Object<'gc>>, mc: &Mutation<'gc>) {
+    pub fn set_first_line(self, value: Option<TextLine<'gc>>, mc: &Mutation<'gc>) {
         unlock!(Gc::write(mc, self.0), TextBlockObjectData, first_line).set(value);
     }
 }
