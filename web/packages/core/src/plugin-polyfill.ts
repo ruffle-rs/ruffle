@@ -277,10 +277,12 @@ export function installPlugin(plugin: RufflePlugin): void {
     if (!("install" in navigator.plugins) || !navigator.plugins["install"]) {
         Object.defineProperty(window, "PluginArray", {
             value: RufflePluginArray,
+            configurable: true,
         });
         Object.defineProperty(navigator, "plugins", {
             value: new RufflePluginArray(navigator.plugins),
             writable: false,
+            configurable: true,
         });
     }
 
@@ -293,13 +295,16 @@ export function installPlugin(plugin: RufflePlugin): void {
     ) {
         Object.defineProperty(window, "MimeTypeArray", {
             value: RuffleMimeTypeArray,
+            configurable: true,
         });
         Object.defineProperty(window, "MimeType", {
             value: RuffleMimeType,
+            configurable: true,
         });
         Object.defineProperty(navigator, "mimeTypes", {
             value: new RuffleMimeTypeArray(navigator.mimeTypes),
             writable: false,
+            configurable: true,
         });
     }
 
