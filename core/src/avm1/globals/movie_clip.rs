@@ -1548,7 +1548,7 @@ pub fn get_url<'gc>(
             _ => None,
         };
         let target = _movie_clip.object1_or_bare(activation.gc());
-	    let form_values = activation.object_into_form_values(target);
+        let form_values = activation.object_into_form_values(target);
         let vars_method = method.map(|m| (m, form_values));
 
         activation.context.navigator.navigate_to_url_normalized(
