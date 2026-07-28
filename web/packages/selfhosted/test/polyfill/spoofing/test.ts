@@ -78,4 +78,68 @@ describe("Spoofing is not easily detectable", () => {
         });
         expect(json).to.equal('{"0":{},"1":{},"2":{},"3":{},"4":{},"5":{}}');
     });
+
+    it("Spoof of navigator.plugins configurable", async () => {
+        const configurable = await browser.execute(() => {
+            try {
+                Object.defineProperty(navigator, "plugins", { value: "test" });
+                return true;
+            } catch (_) {
+                return false;
+            }
+        });
+        expect(configurable).be.true;
+    });
+
+    it("Spoof of navigator.mimeTypes configurable", async () => {
+        const configurable = await browser.execute(() => {
+            try {
+                Object.defineProperty(navigator, "mimeTypes", {
+                    value: "test",
+                });
+                return true;
+            } catch (_) {
+                return false;
+            }
+        });
+        expect(configurable).be.true;
+    });
+
+    it("Spoof of PluginArray configurable", async () => {
+        const configurable = await browser.execute(() => {
+            try {
+                Object.defineProperty(window, "PluginArray", { value: "test" });
+                return true;
+            } catch (_) {
+                return false;
+            }
+        });
+        expect(configurable).be.true;
+    });
+
+    it("Spoof of MimeTypeArray configurable", async () => {
+        const configurable = await browser.execute(() => {
+            try {
+                Object.defineProperty(window, "MimeTypeArray", {
+                    value: "test",
+                });
+                return true;
+            } catch (_) {
+                return false;
+            }
+        });
+        expect(configurable).be.true;
+    });
+
+    it("Spoof of MimeType configurable", async () => {
+        const configurable = await browser.execute(() => {
+            try {
+                Object.defineProperty(window, "MimeType", { value: "test" });
+                return true;
+            } catch (_) {
+                return false;
+            }
+        });
+        expect(configurable).be.true;
+    });
 });
