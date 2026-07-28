@@ -478,6 +478,7 @@ impl<'gc> E4XNode<'gc> {
         if let E4XNodeKind::Element { children, .. } = &mut *this_kind {
             children.retain(|c| !Gc::ptr_eq(c.0, child.0));
         }
+        child.set_parent(None, gc_context);
     }
 
     pub fn remove_attribute(self, gc_context: &Mutation<'gc>, attribute: Self) {
@@ -485,6 +486,7 @@ impl<'gc> E4XNode<'gc> {
         if let E4XNodeKind::Element { attributes, .. } = &mut *this_kind {
             attributes.retain(|a| !Gc::ptr_eq(a.0, attribute.0));
         }
+        attribute.set_parent(None, gc_context);
     }
 
     /// Append a child to this node, which must be an Element node. This is an
