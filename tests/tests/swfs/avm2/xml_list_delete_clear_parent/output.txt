@@ -1,0 +1,6 @@
+a.toXMLString(): <a/>
+a.parent(): undefined
+a.childIndex(): -1
+attr.toXMLString(): 1
+atrr.parent(): undefined
+atrr.childIndex(): -1
