@@ -1,6 +1,9 @@
 //! Video player display object
 
-use crate::avm1::{NativeObject as Avm1NativeObject, Object as Avm1Object};
+use crate::avm1::{
+    Activation as Avm1Activation, ActivationIdentifier, NativeObject as Avm1NativeObject,
+    Object as Avm1Object,
+};
 use crate::avm2::StageObject as Avm2StageObject;
 use crate::context::{RenderContext, UpdateContext};
 use crate::display_object::{Avm1TextFieldBinding, BoundsMode, DisplayObjectBase, RenderOptions};
@@ -13,6 +16,7 @@ use gc_arena::barrier::unlock;
 use gc_arena::lock::{Lock, RefLock};
 use gc_arena::{Collect, Gc, Mutation};
 use ruffle_common::utils::HasPrefixField;
+use ruffle_macros::istr;
 use ruffle_render::bitmap::{BitmapInfo, PixelSnapping};
 use ruffle_render::commands::CommandHandler;
 use ruffle_render::quality::StageQuality;
@@ -428,12 +432,19 @@ impl<'gc> TDisplayObject<'gc> for Video<'gc> {
         self.0.keyframes.replace(keyframes);
 
         if self.0.object.get().is_none() && !movie.is_action_script_3() {
-            let object = Avm1Object::new_with_native(
-                &context.strings,
-                Some(context.avm1.prototypes(self.swf_version()).video),
-                Avm1NativeObject::Video(self),
-            );
-            self.set_object(context, object.into());
+            let id = ActivationIdentifier::root("[Construct]");
+            let mut activation = Avm1Activation::from_nothing(context, id, self.into());
+            let constr = activation.resolve_class([istr!("Video")]);
+            let proto = constr.and_then(|c| c.prototype(&mut activation));
+            let native = Avm1NativeObject::Video(self);
+            let object = Avm1Object::new_with_native(activation.strings(), proto, native);
+
+            self.set_object(activation.context, object.into());
+
+            // The constructor is called, even though it does nothing by default.
+            if let Some(constr) = constr {
+                let _ = constr.construct_on_existing(&mut activation, object, &[]);
+            }
         }
 
         self.seek(context, starting_seek);

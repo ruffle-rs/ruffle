@@ -489,11 +489,9 @@ pub fn unescape<'gc>(
 #[derive(Collect, Clone)]
 #[collect(no_drop)]
 pub struct SystemPrototypes<'gc> {
-    pub button: Object<'gc>,
     pub object: Object<'gc>,
     pub object_constructor: Object<'gc>,
     pub movie_clip: Object<'gc>,
-    pub text_field: Object<'gc>,
     pub text_format: Object<'gc>,
     pub array: Object<'gc>,
     pub array_constructor: Object<'gc>,
@@ -511,7 +509,6 @@ pub struct SystemPrototypes<'gc> {
     pub date_constructor: Object<'gc>,
     pub bitmap_data: Object<'gc>,
     pub file_reference: Object<'gc>,
-    pub video: Object<'gc>,
 }
 
 pub fn load_playerglobal<'gc>(context: &mut UpdateContext<'gc>) {
@@ -811,11 +808,9 @@ pub fn create_globals<'gc>(
 
     (
         SystemPrototypes {
-            button: button.proto,
             object: object.proto,
             object_constructor: object.constr,
             movie_clip: movie_clip.proto,
-            text_field: text_field.proto,
             text_format: text_format.proto,
             array: array.proto,
             array_constructor: array.constr,
@@ -833,7 +828,6 @@ pub fn create_globals<'gc>(
             date_constructor: date.constr,
             bitmap_data: bitmap_data.proto,
             file_reference: file_reference.proto,
-            video: video.proto,
         },
         globals,
         broadcaster_fns,
