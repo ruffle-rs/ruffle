@@ -171,12 +171,12 @@ impl<'gc> Object<'gc> {
         self,
         name: AvmString<'gc>,
         activation: &mut Activation<'_, 'gc>,
-    ) -> Value<'gc> {
+    ) -> Option<Value<'gc>> {
         self.0
             .borrow()
             .properties
             .get(name, activation.is_case_sensitive())
-            .map_or(Value::Undefined, |property| property.data())
+            .map(|property| property.data())
     }
 
     /// Sets a data property on this object, ignoring attributes.
@@ -263,7 +263,7 @@ impl<'gc> Object<'gc> {
                 if name == istr!("length") {
                     let new_length = value.coerce_to_i32(activation)?;
                     let old_length = self.get_data(istr!("length"), activation);
-                    if let Value::Number(old_length) = old_length {
+                    if let Some(Value::Number(old_length)) = old_length {
                         for i in new_length.max(0)..f64_to_wrapping_i32(old_length) {
                             self.delete_element(activation, i);
                         }
@@ -727,11 +727,12 @@ impl<'gc> Object<'gc> {
         }
 
         self.get_data(istr!("__proto__"), activation)
+            .unwrap_or(Value::Undefined)
     }
 
     /// Retrieve the `prototype` of this object, as if it was a function.
     /// (don't confuse this with `self.proto()`!)
-    pub fn prototype(self, activation: &mut Activation<'_, 'gc>) -> Value<'gc> {
+    pub fn prototype(self, activation: &mut Activation<'_, 'gc>) -> Option<Value<'gc>> {
         // Ignore getters, __proto__, and SWF version attributes.
         self.get_data(istr!("prototype"), activation)
     }
@@ -958,6 +959,7 @@ impl<'gc> Object<'gc> {
         }
 
         self.get_data(istr!("length"), activation)
+            .unwrap_or(Value::Undefined)
             .coerce_to_i32(activation)
     }
 
@@ -974,7 +976,7 @@ impl<'gc> Object<'gc> {
 
         if let NativeObject::Array(_) = self.native() {
             let old_length = self.get_data(istr!("length"), activation);
-            if let Value::Number(old_length) = old_length {
+            if let Some(Value::Number(old_length)) = old_length {
                 for i in new_length.max(0)..f64_to_wrapping_i32(old_length) {
                     self.delete_element(activation, i);
                 }
@@ -1004,6 +1006,7 @@ impl<'gc> Object<'gc> {
 
         let index_str = AvmString::new_utf8(activation.gc(), index.to_string());
         self.get_data(index_str, activation)
+            .unwrap_or(Value::Undefined)
     }
 
     /// Sets a property of this object, as if it were an array.
