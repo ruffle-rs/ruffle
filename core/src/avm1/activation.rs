@@ -258,6 +258,29 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         self.global_scope().locals_cell()
     }
 
+    /// Resolve a class constructor on the global scope. This ignores the prototype chain, getters, and attributes.
+    pub fn resolve_class(
+        &mut self,
+        path: impl IntoIterator<Item = AvmString<'gc>>,
+    ) -> Option<Object<'gc>> {
+        let mut obj = self.global_object();
+        for name in path {
+            match obj.get_data(name, self) {
+                Value::Object(o) => obj = o,
+                _ => return None,
+            }
+        }
+        Some(obj)
+    }
+
+    /// Resolve a class prototype on the global scope. This ignores the prototype chain, getters, and attributes.
+    pub fn resolve_prototype(
+        &mut self,
+        path: impl IntoIterator<Item = AvmString<'gc>>,
+    ) -> Option<Value<'gc>> {
+        self.resolve_class(path).map(|c| c.prototype(self))
+    }
+
     /// Was this activation created by a constructor call? Note that native calls don't
     /// create activations, and so aren't taken into account for this check.
     pub fn in_bytecode_constructor(&self) -> bool {
@@ -1485,7 +1508,8 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             // InitArray pops no args and pushes undefined if num_props is out of range.
             Value::Undefined
         } else {
-            let object = Object::new(&self.context.strings, Some(self.prototypes().object));
+            let proto = self.resolve_prototype([istr!(self, "Object")]);
+            let object = Object::new(&self.context.strings, proto);
             for _ in 0..num_props as usize {
                 let value = self.context.avm1.pop();
                 let name_val = self.context.avm1.pop();
