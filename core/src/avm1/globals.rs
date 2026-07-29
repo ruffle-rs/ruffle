@@ -481,8 +481,11 @@ pub fn unescape<'gc>(
 }
 
 /// This structure represents all system builtins that are used regardless of
-/// whatever the hell happens to `_global`. These are, of course,
-/// user-modifiable.
+/// whatever the hell happens to `_global`. These are, of course, user-modifiable.
+///
+/// Testing (see `avm1/globals_monkeypatch` test) shows that this is actually incorrect:
+/// Flash Player resolves most (probably all?) classes on the global object on each access,
+/// and so this type should probably not exist at all.
 #[derive(Collect, Clone)]
 #[collect(no_drop)]
 pub struct SystemPrototypes<'gc> {
