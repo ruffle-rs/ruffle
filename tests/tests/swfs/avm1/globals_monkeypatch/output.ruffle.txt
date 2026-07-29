@@ -55,15 +55,15 @@ current.className: MovieClip
 new MyTextField() called!
 v.className: MyTextField
 // current.createEmptyMovieClip(...)
-v.className: MovieClip
+v.className: MyMovieClip
 // v.duplicateMovieClip(...)
-v.className: MovieClip
+v.className: MyMovieClip
 // attachMovie('clip', ...)
 new MyButton() called!
 new MyTextField() called!
 new MyVideo() called!
-clip.className: MovieClip
-clip.nested.className: MovieClip
+clip.className: MyMovieClip
+clip.nested.className: MyMovieClip
 clip.button.className: MyButton
 clip.textfield.className: MyTextField
 clip.video.className: MyVideo
