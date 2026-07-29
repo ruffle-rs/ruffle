@@ -167,7 +167,7 @@ impl<'gc> Object<'gc> {
     ///
     /// Doesn't look up the prototype chain and ignores virtual properties, thus cannot cause
     /// any side-effects.
-    pub(super) fn get_data(
+    pub fn get_data(
         self,
         name: AvmString<'gc>,
         activation: &mut Activation<'_, 'gc>,
