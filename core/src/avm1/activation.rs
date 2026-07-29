@@ -266,7 +266,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let mut obj = self.global_object();
         for name in path {
             match obj.get_data(name, self) {
-                Value::Object(o) => obj = o,
+                Some(Value::Object(o)) => obj = o,
                 _ => return None,
             }
         }
@@ -278,7 +278,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         &mut self,
         path: impl IntoIterator<Item = AvmString<'gc>>,
     ) -> Option<Value<'gc>> {
-        self.resolve_class(path).map(|c| c.prototype(self))
+        self.resolve_class(path).and_then(|c| c.prototype(self))
     }
 
     /// Was this activation created by a constructor call? Note that native calls don't
@@ -1554,7 +1554,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                 // now the following is logged:
                 // Parameters of primitive types are no longer coerced into the required type - Object.
                 if let Some(obj) = self.context.avm1.pop().as_object(self) {
-                    if let Value::Object(prototype) = obj.prototype(self) {
+                    if let Some(Value::Object(prototype)) = obj.prototype(self) {
                         interfaces.push(prototype);
                     }
                 } else {
@@ -1564,7 +1564,8 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
             if let Some(prototype) = constructor
                 .filter(|_| self.swf_version() >= 7)
-                .and_then(|o| o.prototype(self).as_object(self))
+                .and_then(|o| o.prototype(self))
+                .and_then(|p| p.as_object(self))
             {
                 prototype.set_interfaces(self.gc(), interfaces);
             }

@@ -1,6 +1,6 @@
 ### Testing weird prototypes...
 // Object = {}
-typeof {}.__proto__: undefined
+{}: object without __proto__
 // Object = { prototype: 5 }
 typeof {}.__proto__: number
 // Object = { prototype: undefined }
