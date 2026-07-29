@@ -1,17 +1,17 @@
 ### Testing weird prototypes...
 // Object = {}
-typeof {}.__proto__: object
+typeof {}.__proto__: undefined
 // Object = { prototype: 5 }
-typeof {}.__proto__: object
+typeof {}.__proto__: number
 // Object = { prototype: undefined }
-typeof {}.__proto__: object
+typeof {}.__proto__: undefined
 // Object = { prototype: <real Object>.prototype }
 typeof {}.__proto__: object
 // Object = 5
-typeof {}.__proto__: object
+{}: object without __proto__
 // delete Object
 "Object" in _global: false
-typeof {}.__proto__: object
+{}: object without __proto__
 
 ### Monkey-patching-globals...
 // hiding flash.filters...
@@ -19,7 +19,7 @@ flash.filters: undefined
 
 ### Testing Object
 // {}
-v.className: Object
+v.className: MyObject
 // new OBJECT()
 v.className: Object
 // OBJECT()
