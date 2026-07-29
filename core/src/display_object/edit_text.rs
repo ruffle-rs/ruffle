@@ -2159,13 +2159,19 @@ impl<'gc> EditText<'gc> {
     /// Construct the text field's AVM1 representation.
     fn construct_as_avm1_object(self, context: &mut UpdateContext<'gc>) {
         if self.0.object.get().is_none() {
-            let object = Avm1Object::new_with_native(
-                &context.strings,
-                Some(context.avm1.prototypes(self.swf_version()).text_field),
-                Avm1NativeObject::EditText(self),
-            );
+            let id = ActivationIdentifier::root("[Construct]");
+            let mut activation = Avm1Activation::from_nothing(context, id, self.into());
+            let constr = activation.resolve_class([istr!("TextField")]);
+            let proto = constr.and_then(|c| c.prototype(&mut activation));
+            let native = Avm1NativeObject::EditText(self);
+            let object = Avm1Object::new_with_native(activation.strings(), proto, native);
 
-            self.set_object(Some(object.into()), context.gc());
+            self.set_object(Some(object.into()), activation.gc());
+
+            // The constructor is called, even though it does nothing by default.
+            if let Some(constr) = constr {
+                let _ = constr.construct_on_existing(&mut activation, object, &[]);
+            }
         }
 
         Avm1::run_with_stack_frame_for_display_object(self.into(), context, |activation| {

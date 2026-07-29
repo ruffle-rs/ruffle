@@ -52,17 +52,21 @@ v.className: Array
 ### Testing display objects
 current.className: MovieClip
 // current.createTextField(...)
-v.className: TextField
+new MyTextField() called!
+v.className: MyTextField
 // current.createEmptyMovieClip(...)
 v.className: MovieClip
 // v.duplicateMovieClip(...)
 v.className: MovieClip
 // attachMovie('clip', ...)
+new MyButton() called!
+new MyTextField() called!
+new MyVideo() called!
 clip.className: MovieClip
 clip.nested.className: MovieClip
-clip.button.className: Button
-clip.textfield.className: TextField
-clip.video.className: Video
+clip.button.className: MyButton
+clip.textfield.className: MyTextField
+clip.video.className: MyVideo
 
 ### Testing BitmapFilters
 // current.filters
