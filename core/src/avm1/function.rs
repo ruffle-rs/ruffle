@@ -478,10 +478,10 @@ impl<'gc> FunctionObject<'gc> {
     pub fn build(
         self,
         context: &StringContext<'gc>,
-        fn_proto: Object<'gc>,
+        fn_proto: Option<Value<'gc>>,
         prototype: Option<Object<'gc>>,
     ) -> Object<'gc> {
-        let obj = Object::new(context, Some(fn_proto));
+        let obj = Object::new(context, fn_proto);
         let native = NativeObject::Function(Gc::new(context.gc(), self));
         obj.set_native(context.gc(), native);
 

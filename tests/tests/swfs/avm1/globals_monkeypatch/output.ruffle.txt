@@ -27,11 +27,11 @@ v: object without __proto__
 
 ### Testing Function
 // function() {}
-v.className: Function
+v.className: MyFunction
 // FUNCTION()
 v: object without __proto__
 // ASnative(...)
-v.className: Function
+v.className: MyFunction
 
 ### Testing Array
 // []

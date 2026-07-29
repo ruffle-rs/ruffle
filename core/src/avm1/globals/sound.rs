@@ -189,7 +189,7 @@ impl<'gc> Sound<'gc> {
         if !sound_object.has_property(activation, istr!("position"))
             || !sound_object.has_property(activation, istr!("duration"))
         {
-            let fn_proto = activation.prototypes().function;
+            let fn_proto = activation.resolve_prototype([istr!("Function")]);
             let getter_position =
                 FunctionObject::native(position).build(activation.strings(), fn_proto, None);
             let getter_duration =
