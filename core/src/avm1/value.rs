@@ -1009,10 +1009,11 @@ mod test {
 
             assert_eq!(vglobal.to_primitive_num(activation).unwrap(), undefined);
 
+            let fn_proto = activation.resolve_prototype([istr!("Function")]);
             let valueof = FunctionObject::native(|_, _, _| Ok(5.into())).build(
                 &activation.context.strings,
-                protos.function,
-                Some(protos.function),
+                fn_proto,
+                None,
             );
 
             let o = Object::new(&activation.context.strings, Some(protos.object));

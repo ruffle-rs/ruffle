@@ -4,6 +4,7 @@ use crate::avm1::function::{FunctionObject, TableNativeFunction};
 use crate::avm1::parameters::ParametersExt;
 use crate::avm1::{Attribute, Object, Value};
 use ruffle_common::avm_string::AvmString;
+use ruffle_macros::istr;
 
 pub fn asnative<'gc>(
     activation: &mut Activation<'_, 'gc>,
@@ -47,12 +48,9 @@ pub fn asnative<'gc>(
         // No native function accepts u16::MAX as index, so this is OK.
         let index = u16::try_from(index).unwrap_or(u16::MAX);
         let function = FunctionObject::table_native(category, index);
+        let fn_proto = activation.resolve_prototype([istr!("Function")]);
         return Ok(function
-            .build(
-                &activation.context.strings,
-                activation.prototypes().function,
-                None,
-            )
+            .build(&activation.context.strings, fn_proto, None)
             .into());
     }
 
