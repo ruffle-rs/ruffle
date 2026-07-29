@@ -1,0 +1,96 @@
+### Testing weird prototypes...
+// Object = {}
+typeof {}.__proto__: object
+// Object = { prototype: 5 }
+typeof {}.__proto__: object
+// Object = { prototype: undefined }
+typeof {}.__proto__: object
+// Object = { prototype: <real Object>.prototype }
+typeof {}.__proto__: object
+// Object = 5
+typeof {}.__proto__: object
+// delete Object
+"Object" in _global: false
+typeof {}.__proto__: object
+
+### Monkey-patching-globals...
+// hiding flash.filters...
+flash.filters: undefined
+
+### Testing Object
+// {}
+v.className: Object
+// new OBJECT()
+v.className: Object
+// OBJECT()
+v: object without __proto__
+
+### Testing Function
+// function() {}
+v.className: Function
+// FUNCTION()
+v: object without __proto__
+// ASnative(...)
+v.className: Function
+
+### Testing Array
+// []
+v.className: Array
+// new ARRAY()
+v.className: Array
+// ARRAY()
+v.className: Array
+// A_STRING.split()
+v.className: Array
+// AN_ARRAY.slice()
+v.className: Array
+// A_COLOR_MATRIX_FILTER.matrix
+v.className: Array
+// A_CONVOLUTION_FILTER.matrix
+v.className: Array
+
+### Testing display objects
+current.className: MovieClip
+// current.createTextField(...)
+v.className: TextField
+// current.createEmptyMovieClip(...)
+v.className: MovieClip
+// v.duplicateMovieClip(...)
+v.className: MovieClip
+// attachMovie('clip', ...)
+clip.className: MovieClip
+clip.nested.className: MovieClip
+clip.button.className: Button
+clip.textfield.className: TextField
+clip.video.className: Video
+
+### Testing BitmapFilters
+// current.filters
+v.className: Array
+BITMAP_FILTERS[0].className: BevelFilter
+BITMAP_FILTERS[0].clone().className: BevelFilter
+current.filters[0].className: BevelFilter
+BITMAP_FILTERS[1].className: BlurFilter
+BITMAP_FILTERS[1].clone().className: BlurFilter
+current.filters[1].className: BlurFilter
+BITMAP_FILTERS[2].className: ColorMatrixFilter
+BITMAP_FILTERS[2].clone().className: ColorMatrixFilter
+current.filters[2].className: ColorMatrixFilter
+BITMAP_FILTERS[3].className: ConvolutionFilter
+BITMAP_FILTERS[3].clone().className: ConvolutionFilter
+current.filters[3].className: ConvolutionFilter
+BITMAP_FILTERS[4].className: DisplacementMapFilter
+BITMAP_FILTERS[4].clone().className: DisplacementMapFilter
+current.filters[4].className: DisplacementMapFilter
+BITMAP_FILTERS[5].className: DropShadowFilter
+BITMAP_FILTERS[5].clone().className: DropShadowFilter
+current.filters[5].className: DropShadowFilter
+BITMAP_FILTERS[6].className: GlowFilter
+BITMAP_FILTERS[6].clone().className: GlowFilter
+current.filters[6].className: GlowFilter
+BITMAP_FILTERS[7].className: GradientBevelFilter
+BITMAP_FILTERS[7].clone().className: GradientBevelFilter
+current.filters[7].className: GradientBevelFilter
+BITMAP_FILTERS[8].className: GradientGlowFilter
+BITMAP_FILTERS[8].clone().className: GradientGlowFilter
+current.filters[8].className: GradientGlowFilter
