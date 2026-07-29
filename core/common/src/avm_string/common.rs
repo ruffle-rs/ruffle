@@ -228,6 +228,7 @@ ruffle_macros::define_common_strings! {
     "mouseUp",
     "mouseWheel",
     "movieclip",
+    "MovieClip",
     "name",
     "nameSet",
     "NaN",

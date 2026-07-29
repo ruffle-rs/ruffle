@@ -1986,79 +1986,52 @@ impl<'gc> MovieClip<'gc> {
         run_frame: bool,
     ) {
         if self.0.object1.get().is_none() {
-            let avm1_constructor = self.0.get_registered_avm1_constructor(context);
+            let mut activation = Avm1Activation::from_nothing(
+                context,
+                ActivationIdentifier::root("[Construct]"),
+                self.into(),
+            );
 
-            // If we are running within the AVM, this must be an immediate action.
-            // If we are not, then this must be queued to be ran first-thing
-            if let Some(constructor) = avm1_constructor.filter(|_| instantiated_by.is_avm()) {
-                let mut activation = Avm1Activation::from_nothing(
-                    context,
-                    ActivationIdentifier::root("[Construct]"),
-                    self.into(),
-                );
-
-                if let Ok(prototype) = constructor
-                    // TODO(moulins): should this use `Object::prototype`?
-                    .get(istr!("prototype"), &mut activation)
-                    .and_then(|v| v.coerce_to_object_or_bare(&mut activation))
-                {
-                    let object = Avm1Object::new_with_native(
-                        &activation.context.strings,
-                        Some(prototype),
-                        Avm1NativeObject::MovieClip(self),
-                    );
-                    let write = Gc::write(activation.gc(), self.0);
-                    unlock!(write, MovieClipData, object1).set(Some(object));
-
-                    if run_frame {
-                        self.run_frame_avm1(activation.context);
-                    }
-
-                    if let Some(init_object) = init_object {
-                        // AVM1 sets keys in reverse order (compared to enumeration order).
-                        // This behavior is visible to setters, and some SWFs depend on it.
-                        for key in init_object
-                            .get_keys(&mut activation, false)
-                            .into_iter()
-                            .rev()
-                        {
-                            if let Ok(value) = init_object.get(key, &mut activation) {
-                                let _ = object.set(key, value, &mut activation);
-                            }
-                        }
-                    }
-                    let _ = constructor.construct_on_existing(&mut activation, object, &[]);
-                }
-
-                return;
-            }
+            let avm1_custom_constr = self.0.get_registered_avm1_constructor(activation.context);
+            let avm1_prototype = avm1_custom_constr
+                .or_else(|| activation.resolve_class([istr!("MovieClip")]))
+                .and_then(|c| c.prototype(&mut activation));
 
             let object = Avm1Object::new_with_native(
-                &context.strings,
-                Some(context.avm1.prototypes(self.swf_version()).movie_clip),
+                activation.strings(),
+                avm1_prototype,
                 Avm1NativeObject::MovieClip(self),
             );
-            let write = Gc::write(context.gc(), self.0);
+            let write = Gc::write(activation.gc(), self.0);
             unlock!(write, MovieClipData, object1).set(Some(object));
 
             if run_frame {
-                self.run_frame_avm1(context);
+                self.run_frame_avm1(activation.context);
             }
 
             if let Some(init_object) = init_object {
-                let mut activation = Avm1Activation::from_nothing(
-                    context,
-                    ActivationIdentifier::root("[Init]"),
-                    self.into(),
-                );
-
-                for key in init_object.get_keys(&mut activation, false) {
+                // AVM1 sets keys in reverse order (compared to enumeration order).
+                // This behavior is visible to setters, and some SWFs depend on it.
+                for key in init_object
+                    .get_keys(&mut activation, false)
+                    .into_iter()
+                    .rev()
+                {
                     if let Ok(value) = init_object.get(key, &mut activation) {
                         let _ = object.set(key, value, &mut activation);
                     }
                 }
             }
 
+            // If we are running within the AVM, this must be an immediate action.
+            // If we are not, then this must be queued to be ran first-thing.
+            // Note that the default `MovieClip` constructor is never run, unlike user-defined classes.
+            if let Some(constructor) = avm1_custom_constr.filter(|_| instantiated_by.is_avm()) {
+                let _ = constructor.construct_on_existing(&mut activation, object, &[]);
+                return;
+            }
+
+            drop(activation);
             let mut events = Vec::new();
 
             for event_handler in self.clip_actions().iter() {
@@ -2085,7 +2058,7 @@ impl<'gc> MovieClip<'gc> {
             context.action_queue.queue_action(
                 self.into(),
                 ActionType::Construct {
-                    constructor: avm1_constructor,
+                    constructor: avm1_custom_constr,
                     events,
                 },
                 false,

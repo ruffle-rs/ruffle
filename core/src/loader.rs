@@ -1792,14 +1792,18 @@ impl<'gc> MovieLoader<'gc> {
                     if !movie.is_action_script_3()
                         && let Some(object) = mc.object1()
                     {
-                        let new_proto = uc.avm1.prototypes(mc.swf_version()).movie_clip;
+                        let id = ActivationIdentifier::root("[Resolve]");
+                        let mut activation = Activation::from_nothing(uc, id, mc.into());
+                        let new_proto = activation.resolve_prototype([istr!("MovieClip")]);
 
-                        object.define_value(
-                            uc.gc(),
-                            istr!(uc, "__proto__"),
-                            new_proto.into(),
-                            Attribute::DONT_ENUM | Attribute::DONT_DELETE,
-                        );
+                        if let Some(new_proto) = new_proto {
+                            object.define_value(
+                                activation.gc(),
+                                istr!("__proto__"),
+                                new_proto,
+                                Attribute::DONT_ENUM | Attribute::DONT_DELETE,
+                            );
+                        }
                     }
 
                     // Loaded movies are considered to be timeline-instantiated
