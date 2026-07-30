@@ -1,6 +1,7 @@
-use crate::error::Result;
+use crate::error::UnexpectedEof;
 use crate::string::SwfStr;
-use std::io;
+
+type Result<T> = std::result::Result<T, UnexpectedEof>;
 
 macro_rules! impl_read_little_endian {
     ( $($name:ident for $ty:ty;)* ) => {$(
@@ -35,11 +36,13 @@ pub trait ReadSwfExt<'a> {
 
     #[inline]
     fn read_array<const N: usize>(&mut self) -> Result<[u8; N]> {
-        use std::io::Read as _;
-
-        let mut buf = [0u8; N];
-        self.as_mut_slice().read_exact(&mut buf)?;
-        Ok(buf)
+        let slice = self.as_mut_slice();
+        if let Some((bytes, rest)) = slice.split_first_chunk::<N>() {
+            *slice = rest;
+            Ok(*bytes)
+        } else {
+            Err(UnexpectedEof(()))
+        }
     }
 
     #[inline]
@@ -49,7 +52,7 @@ pub trait ReadSwfExt<'a> {
             *slice = rest;
             Ok(bytes)
         } else {
-            Err(io::Error::new(io::ErrorKind::UnexpectedEof, "Not enough data for slice").into())
+            Err(UnexpectedEof(()))
         }
     }
 
@@ -88,9 +91,7 @@ pub trait ReadSwfExt<'a> {
     #[inline]
     fn read_str(&mut self) -> Result<&'a SwfStr> {
         let slice = self.as_mut_slice();
-        let s = SwfStr::from_bytes_null_terminated(slice).ok_or_else(|| {
-            io::Error::new(io::ErrorKind::UnexpectedEof, "Not enough data for string")
-        })?;
+        let s = SwfStr::from_bytes_null_terminated(slice).ok_or(UnexpectedEof(()))?;
         *slice = &slice[s.len() + 1..];
         Ok(s)
     }

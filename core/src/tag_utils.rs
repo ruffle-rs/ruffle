@@ -26,6 +26,12 @@ pub enum Error {
     InvalidSwfUrl,
 }
 
+impl From<swf::error::UnexpectedEof> for Error {
+    fn from(_: swf::error::UnexpectedEof) -> Error {
+        Error::IOError(std::io::ErrorKind::UnexpectedEof.into())
+    }
+}
+
 /// Whether or not to end tag decoding.
 pub enum ControlFlow {
     /// Stop decoding after this tag.

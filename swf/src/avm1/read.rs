@@ -1,7 +1,10 @@
-use crate::avm1::{opcode::OpCode, types::*};
-use crate::error::{Error, Result};
+use crate::avm1::opcode::OpCode;
+use crate::avm1::types::*;
+use crate::error::{Avm1ParseError, UnexpectedEof};
 use crate::extensions::ReadSwfExt;
 use std::num::NonZeroU8;
+
+type Result<T, E = UnexpectedEof> = std::result::Result<T, E>;
 
 pub struct Reader<'a> {
     input: &'a [u8],
@@ -50,15 +53,15 @@ impl<'a> Reader<'a> {
     }
 
     #[inline]
-    pub fn read_action(&mut self) -> Result<Action<'a>> {
-        let (opcode, mut length) = self.read_opcode_and_length()?;
+    pub fn read_action(&mut self) -> Result<Action<'a>, Avm1ParseError> {
+        let (opcode, mut length) = self
+            .read_opcode_and_length()
+            .map_err(|source| Avm1ParseError::new(None, source))?;
+
         let start = self.input;
-
-        let action = self.read_op(opcode, &mut length);
-
-        if let Err(e) = action {
-            return Err(Error::avm1_parse_error_with_source(opcode, e));
-        }
+        let action = self
+            .read_op(opcode, &mut length)
+            .map_err(|source| Avm1ParseError::new(Some(opcode), source));
 
         // Verify that we parsed the correct amount of data.
         let end_pos = (start.as_ptr() as usize + length) as *const u8;
@@ -72,7 +75,7 @@ impl<'a> Reader<'a> {
         action
     }
 
-    pub fn read_opcode_and_length(&mut self) -> Result<(u8, usize)> {
+    fn read_opcode_and_length(&mut self) -> Result<(u8, usize)> {
         let opcode = self.read_u8()?;
         let length = if opcode >= 0x80 {
             self.read_u16()?.into()
@@ -443,7 +446,7 @@ pub mod tests {
         let action_bytes = [0xff, 0xff, 0xff, 0x00, 0x00];
         let mut reader = Reader::new(&action_bytes[..], 5);
         match reader.read_action() {
-            Err(crate::error::Error::Avm1ParseError { .. }) => (),
+            Err(_) => (),
             result => {
                 panic!("Expected Avm1ParseError, got {result:?}");
             }

@@ -22,8 +22,8 @@ pub enum Error<'gc> {
     #[error("Property recursion limit has been hit.")]
     PropertyRecursionLimit,
 
-    #[error("Couldn't parse SWF")]
-    InvalidSwf(#[from] swf::error::Error),
+    #[error("Couldn't parse AVM1 bytecode")]
+    InvalidBytecode(#[from] swf::error::Avm1ParseError),
 
     #[error("A script has thrown a custom error.")]
     ThrownValue(Value<'gc>),

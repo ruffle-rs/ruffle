@@ -99,7 +99,7 @@ impl<'a> Reader<'a> {
     }
 
     fn read_u30(&mut self) -> Result<u32> {
-        self.read_encoded_u32()
+        Ok(self.read_encoded_u32()?)
     }
 
     fn read_i24(&mut self) -> Result<i32> {
