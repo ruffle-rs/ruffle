@@ -5602,7 +5602,6 @@ version = "0.2.2"
 dependencies = [
  "bitflags 2.13.1",
  "bitstream-io 4.10.0",
- "byteorder",
  "encoding_rs",
  "enum-map",
  "flate2",
