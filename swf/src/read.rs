@@ -6,7 +6,6 @@ use crate::{
     types::*,
 };
 use bitstream_io::BitRead;
-use byteorder::{LittleEndian, ReadBytesExt};
 use simple_asn1::ASN1Block;
 use std::borrow::Cow;
 use std::io::{self, Read};
@@ -73,8 +72,12 @@ pub fn extract_swz(input: &[u8]) -> Result<Vec<u8>> {
 pub fn decompress_swf<'a, R: Read + 'a>(mut input: R) -> Result<SwfBuf> {
     // Read SWF header.
     let compression = read_compression_type(&mut input)?;
-    let version = input.read_u8()?;
-    let uncompressed_len = input.read_u32::<LittleEndian>()?;
+
+    let mut raw_header = [0u8; 5];
+    input.read_exact(&mut raw_header)?;
+
+    let version = raw_header[0];
+    let uncompressed_len = u32::from_le_bytes(*raw_header.split_last_chunk::<4>().unwrap().1);
 
     // Check whether the SWF version is 0.
     // Note that the behavior should actually vary, depending on the player version:
@@ -220,7 +223,7 @@ fn make_lzma_reader<'a, R: Read + 'a>(
     // To deal with the mangled header, use lzma_rs options to manually provide uncompressed length.
 
     // Read compressed length (ignored)
-    let _ = input.read_u32::<LittleEndian>()?;
+    input.read_exact(&mut [0; 4])?;
 
     // TODO: Switch to lzma-rs streaming API when stable.
     let mut output = Vec::with_capacity(unpacked_size.min(MAX_DATA_CAPACITY) as usize);

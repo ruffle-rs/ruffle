@@ -14,7 +14,6 @@ workspace = true
 [dependencies]
 bitflags = { workspace = true }
 bitstream-io = { workspace = true }
-byteorder = { workspace = true }
 encoding_rs = { workspace = true }
 num-derive = { workspace = true }
 num-traits = { workspace = true }
