@@ -3,16 +3,13 @@ use crate::tag_code::TagCode;
 use std::{borrow, error, fmt, io};
 
 /// A `Result` from reading SWF data.
-pub type Result<T> = std::result::Result<T, Error>;
+pub type Result<T, E = Error> = std::result::Result<T, E>;
 
 #[derive(Debug)]
 pub enum Error {
     /// An error occurred while parsing an AVM1 action.
     /// This can contain sub-errors with further information (`Error::source`)
-    Avm1ParseError {
-        opcode: u8,
-        source: Option<Box<dyn error::Error + Send + Sync + 'static>>,
-    },
+    Avm1ParseError(Avm1ParseError),
 
     // An error occurred while parsing ABC.
     AbcParseError(AbcParseError),
@@ -35,27 +32,6 @@ pub enum Error {
 }
 
 impl Error {
-    /// Helper method to create `Error::Avm1ParseError`.
-    #[inline]
-    pub fn avm1_parse_error(opcode: u8) -> Self {
-        Self::Avm1ParseError {
-            opcode,
-            source: None,
-        }
-    }
-
-    /// Helper method to create `Error::Avm1ParseError`.
-    #[inline]
-    pub fn avm1_parse_error_with_source(
-        opcode: u8,
-        source: impl error::Error + Send + Sync + 'static,
-    ) -> Self {
-        Self::Avm1ParseError {
-            opcode,
-            source: Some(Box::new(source)),
-        }
-    }
-
     /// Helper method to create `Error::InvalidData`.
     #[inline]
     pub fn invalid_data(message: impl Into<borrow::Cow<'static, str>>) -> Self {
@@ -84,12 +60,8 @@ impl Error {
 impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            Self::Avm1ParseError { opcode, source } => {
-                write!(f, "Error parsing AVM1 action {}", OpCode::format(*opcode))?;
-                if let Some(source) = source {
-                    write!(f, ": {source}")?;
-                }
-                Ok(())
+            Self::Avm1ParseError(error) => {
+                write!(f, "Error parsing AVM1 bytecode: {}", error)
             }
             Self::AbcParseError(error) => {
                 write!(f, "Error parsing ABC: {}", error)
@@ -112,10 +84,7 @@ impl fmt::Display for Error {
 impl error::Error for Error {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
         match self {
-            Self::Avm1ParseError { source, .. } => match source {
-                Some(s) => Some(s.as_ref()),
-                None => None,
-            },
+            Self::Avm1ParseError(e) => e.source(),
             Self::AbcParseError(e) => e.source(),
             Self::IoError(e) => e.source(),
             Self::InvalidData(_) => None,
@@ -128,6 +97,41 @@ impl error::Error for Error {
 impl From<io::Error> for Error {
     fn from(error: io::Error) -> Self {
         Self::IoError(error)
+    }
+}
+
+#[derive(Debug)]
+pub struct Avm1ParseError {
+    // opcodes < 0x80 always have zero length, so we use 0 to mean 'incomplete action header'.
+    pub(crate) opcode: u8,
+    pub(crate) source: UnexpectedEof,
+}
+
+impl From<Avm1ParseError> for Error {
+    fn from(e: Avm1ParseError) -> Error {
+        Error::Avm1ParseError(e)
+    }
+}
+
+impl Avm1ParseError {
+    pub(crate) fn new(opcode: Option<u8>, source: UnexpectedEof) -> Self {
+        let opcode = opcode.unwrap_or(0);
+        Self { opcode, source }
+    }
+}
+
+impl fmt::Display for Avm1ParseError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self.opcode {
+            op @ 0x80.. => write!(f, "unterminated action {}", OpCode::format(op)),
+            _ => write!(f, "incomplete action header"),
+        }
+    }
+}
+
+impl std::error::Error for Avm1ParseError {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        Some(&self.source)
     }
 }
 
@@ -167,6 +171,23 @@ impl error::Error for AbcParseError {
         }
     }
 }
+
+#[derive(Copy, Clone, Debug)]
+pub struct UnexpectedEof(pub(crate) ());
+
+impl From<UnexpectedEof> for Error {
+    fn from(_: UnexpectedEof) -> Error {
+        Error::IoError(io::ErrorKind::UnexpectedEof.into())
+    }
+}
+
+impl fmt::Display for UnexpectedEof {
+    fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
+        fmt.write_str("unexpected end of SWF or tag")
+    }
+}
+
+impl error::Error for UnexpectedEof {}
 
 #[cfg(test)]
 #[test]

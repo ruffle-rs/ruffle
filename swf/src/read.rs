@@ -400,11 +400,13 @@ impl<'a> Reader<'a> {
     pub fn read_tag(&mut self) -> Result<Tag<'a>> {
         let (tag_code, length) = self.read_tag_code_and_length()?;
 
-        if let Some(tag_code) = TagCode::from_u16(tag_code) {
-            self.read_tag_with_code(tag_code, length)
+        if let Some(code) = TagCode::from_u16(tag_code) {
+            self.read_tag_with_code(code, length)
         } else {
-            self.read_slice(length)
-                .map(|data| Tag::Unknown { tag_code, data })
+            match self.read_slice(length) {
+                Ok(data) => Ok(Tag::Unknown { tag_code, data }),
+                Err(e) => Err(Error::from(e)),
+            }
         }
         .map_err(|e| Error::swf_parse_error(tag_code, e))
     }
@@ -1024,7 +1026,7 @@ impl<'a> Reader<'a> {
             let offsets_ref = self.get_ref();
 
             // OffsetTable
-            let offsets: Result<Vec<_>> = (0..num_glyphs)
+            let offsets = (0..num_glyphs)
                 .map(|_| {
                     if flags.contains(FontFlag::HAS_WIDE_OFFSETS) {
                         self.read_u32()
@@ -1032,8 +1034,7 @@ impl<'a> Reader<'a> {
                         self.read_u16().map(u32::from)
                     }
                 })
-                .collect();
-            let offsets = offsets?;
+                .collect::<Result<Vec<_>, _>>()?;
 
             // CodeTableOffset
             let code_table_offset = if flags.contains(FontFlag::HAS_WIDE_OFFSETS) {

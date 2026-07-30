@@ -683,7 +683,7 @@ impl<'gc> Avm1<'gc> {
                 // Continue execution without halting.
                 return;
             }
-            Error::InvalidSwf(swf_error) => {
+            Error::InvalidBytecode(swf_error) => {
                 tracing::error!("{}: {}", error, swf_error);
             }
             _ => {
