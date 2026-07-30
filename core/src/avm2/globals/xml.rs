@@ -703,28 +703,17 @@ pub fn child_index<'gc>(
         .unwrap_or(Value::Number(-1.0)))
 }
 
+// // ECMA-357 13.4.4.8 XML.prototype.children ( )
 pub fn children<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
-
     let xml = this.as_xml_object().unwrap();
-    let children = if let E4XNodeKind::Element { children, .. } = &*xml.node().kind() {
-        children.iter().map(|node| E4XOrXml::E4X(*node)).collect()
-    } else {
-        Vec::new()
-    };
 
-    // FIXME: Spec says to just call [[Get]] with * (any multiname).
-    Ok(XmlListObject::new_with_children(
-        activation,
-        children,
-        Some(xml.into()),
-        Some(Multiname::any()),
-    )
-    .into())
+    // 1. Return the results of calling the [[Get]] method of x with argument "*"
+    xml.get_property_local(&Multiname::any(), activation)
 }
 
 pub fn contains<'gc>(
