@@ -1,0 +1,17 @@
+One line per line break
+  line 0: rawTextLength=3 textBlockBeginIndex=0 first=true
+  line 1: rawTextLength=2 textBlockBeginIndex=3 first=false
+
+Line separator
+  line 0: rawTextLength=3 textBlockBeginIndex=0 first=true
+  line 1: rawTextLength=2 textBlockBeginIndex=3 first=false
+
+Paragraph separator
+  line 0: rawTextLength=3 textBlockBeginIndex=0 first=true
+  line 1: rawTextLength=2 textBlockBeginIndex=3 first=false
+
+No line break
+  line 0: rawTextLength=4 textBlockBeginIndex=0 first=true
+
+Trailing line break
+  line 0: rawTextLength=3 textBlockBeginIndex=0 first=true
