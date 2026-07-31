@@ -137,10 +137,31 @@ impl std::error::Error for Avm1ParseError {
 }
 
 #[derive(Debug)]
+#[non_exhaustive]
 pub enum AbcParseError {
     MethodInfoOutOfBounds {
         method_count: u32,
         method_index: avm2::Index<avm2::Method>,
+    },
+    // TODO: this should throw error 1121 in FP.
+    DuplicateMethodBody {
+        method_index: avm2::Index<avm2::Method>,
+    },
+    TooManyOptionalParams {
+        num_params: u32,
+        num_optional_params: u32,
+    },
+    InvalidNamespace {
+        kind: u8,
+    },
+    InvalidMultiname {
+        kind: u8,
+    },
+    InvalidDefaultValue {
+        kind: u8,
+    },
+    InvalidTraitKind {
+        kind: u8,
     },
     IllegalOpcode {
         opcode: u8,
@@ -157,6 +178,26 @@ impl fmt::Display for AbcParseError {
                 f,
                 "Method body refers to index {index} but there are only {method_count} method infos"
             ),
+            AbcParseError::DuplicateMethodBody {
+                method_index: avm2::Index(index, _),
+            } => write!(f, "Duplicate method body for method #{index}"),
+            AbcParseError::TooManyOptionalParams {
+                num_params,
+                num_optional_params,
+            } => write!(
+                f,
+                "Method declares {num_optional_params} optional parameters but only has {num_params} parameters in total"
+            ),
+            AbcParseError::InvalidNamespace { kind } => {
+                write!(f, "Invalid namespace kind {kind:#x}")
+            }
+            AbcParseError::InvalidMultiname { kind } => {
+                write!(f, "Invalid multiname kind {kind:#x}")
+            }
+            AbcParseError::InvalidDefaultValue { kind } => {
+                write!(f, "Invalid default value kind {kind:#x}")
+            }
+            AbcParseError::InvalidTraitKind { kind } => write!(f, "Invalid trait kind {kind:#x}"),
             AbcParseError::IllegalOpcode { opcode } => write!(f, "Illegal opcode {opcode:#x}"),
         }
     }
@@ -164,10 +205,7 @@ impl fmt::Display for AbcParseError {
 
 impl error::Error for AbcParseError {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
-        match self {
-            AbcParseError::MethodInfoOutOfBounds { .. } => None,
-            AbcParseError::IllegalOpcode { .. } => None,
-        }
+        None
     }
 }
 
