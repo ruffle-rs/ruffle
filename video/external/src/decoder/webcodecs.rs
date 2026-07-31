@@ -133,6 +133,8 @@ impl H264Decoder {
                     error!("Unsupported pixel format: {:?}", other_format);
                 }
             };
+
+            output.close();
         };
 
         let log_subscriber_for_error = log_subscriber.clone();
