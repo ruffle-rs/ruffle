@@ -76,8 +76,9 @@ impl<'a> Reader<'a> {
                 }));
             };
             if dst.body.is_some() {
-                // TODO: this should somehow throw error 1121 in FP.
-                return Err(Error::invalid_data("Duplicate method body"));
+                return Err(Error::AbcParseError(AbcParseError::DuplicateMethodBody {
+                    method_index: body.method,
+                }));
             }
             dst.body = Some(Index::new(body_idx));
             method_bodies.push(body);
@@ -137,7 +138,11 @@ impl<'a> Reader<'a> {
             0x18 => Namespace::Protected(name),
             0x19 => Namespace::Explicit(name),
             0x1a => Namespace::StaticProtected(name),
-            _ => return Err(Error::invalid_data("Invalid namespace kind")),
+            _ => {
+                return Err(Error::AbcParseError(AbcParseError::InvalidNamespace {
+                    kind,
+                }));
+            }
         })
     }
 
@@ -197,7 +202,11 @@ impl<'a> Reader<'a> {
                     parameters,
                 }
             }
-            _ => return Err(Error::invalid_data("Invalid multiname kind")),
+            _ => {
+                return Err(Error::AbcParseError(AbcParseError::InvalidMultiname {
+                    kind,
+                }));
+            }
         })
     }
 
@@ -270,13 +279,16 @@ impl<'a> Reader<'a> {
         let flags = MethodFlags::from_bits_truncate(self.read_u8()?);
 
         if flags.contains(MethodFlags::HAS_OPTIONAL) {
-            let num_optional_params = self.read_u30()? as usize;
-            if let Some(start) = params.len().checked_sub(num_optional_params) {
-                for param in &mut params[start..] {
+            let num_optional_params = self.read_u30()?;
+            if let Some(start) = num_params.checked_sub(num_optional_params) {
+                for param in &mut params[(start as usize)..] {
                     param.default_value = Some(self.read_constant_value()?);
                 }
             } else {
-                return Err(Error::invalid_data("Too many optional parameters"));
+                return Err(Error::AbcParseError(AbcParseError::TooManyOptionalParams {
+                    num_params,
+                    num_optional_params,
+                }));
             }
         }
 
@@ -297,7 +309,21 @@ impl<'a> Reader<'a> {
 
     fn read_constant_value(&mut self) -> Result<DefaultValue> {
         let index = self.read_u30()?;
-        Ok(match self.read_u8()? {
+        self.read_default_value_with_index(index)
+    }
+
+    fn read_optional_value(&mut self) -> Result<Option<DefaultValue>> {
+        let index = self.read_u30()?;
+        if index == 0 {
+            Ok(None)
+        } else {
+            self.read_default_value_with_index(index).map(Some)
+        }
+    }
+
+    fn read_default_value_with_index(&mut self, index: u32) -> Result<DefaultValue> {
+        let kind = self.read_u8()?;
+        Ok(match kind {
             0x00 => DefaultValue::Undefined,
             0x01 => DefaultValue::String(Index::new(index)),
             0x03 => DefaultValue::Int(Index::new(index)),
@@ -313,34 +339,12 @@ impl<'a> Reader<'a> {
             0x18 => DefaultValue::Protected(Index::new(index)),
             0x19 => DefaultValue::Explicit(Index::new(index)),
             0x1a => DefaultValue::StaticProtected(Index::new(index)),
-            _ => return Err(Error::invalid_data("Invalid default value")),
+            _ => {
+                return Err(Error::AbcParseError(AbcParseError::InvalidNamespace {
+                    kind,
+                }));
+            }
         })
-    }
-
-    fn read_optional_value(&mut self) -> Result<Option<DefaultValue>> {
-        let index = self.read_u30()?;
-        if index == 0 {
-            Ok(None)
-        } else {
-            Ok(Some(match self.read_u8()? {
-                0x00 => DefaultValue::Undefined,
-                0x01 => DefaultValue::String(Index::new(index)),
-                0x03 => DefaultValue::Int(Index::new(index)),
-                0x04 => DefaultValue::Uint(Index::new(index)),
-                0x05 => DefaultValue::Private(Index::new(index)),
-                0x06 => DefaultValue::Double(Index::new(index)),
-                0x08 => DefaultValue::Namespace(Index::new(index)),
-                0x0a => DefaultValue::False,
-                0x0b => DefaultValue::True,
-                0x0c => DefaultValue::Null,
-                0x16 => DefaultValue::Package(Index::new(index)),
-                0x17 => DefaultValue::PackageInternal(Index::new(index)),
-                0x18 => DefaultValue::Protected(Index::new(index)),
-                0x19 => DefaultValue::Explicit(Index::new(index)),
-                0x1a => DefaultValue::StaticProtected(Index::new(index)),
-                _ => return Err(Error::invalid_data("Invalid default value")),
-            }))
-        }
     }
 
     fn read_metadata(&mut self, len: u32) -> Result<Vec<Metadata>> {
@@ -437,7 +441,8 @@ impl<'a> Reader<'a> {
     fn read_trait(&mut self) -> Result<Trait> {
         let name = self.read_index()?;
         let flags = self.read_u8()?;
-        let kind = match flags & 0b1111 {
+        let raw_kind = flags & 0b1111;
+        let kind = match raw_kind {
             0 => TraitKind::Slot {
                 slot_id: self.read_u30()?,
                 type_name: self.read_index()?,
@@ -468,7 +473,11 @@ impl<'a> Reader<'a> {
                 type_name: self.read_index()?,
                 value: self.read_optional_value()?,
             },
-            _ => return Err(Error::invalid_data("Invalid trait kind")),
+            _ => {
+                return Err(Error::AbcParseError(AbcParseError::InvalidTraitKind {
+                    kind: raw_kind,
+                }));
+            }
         };
 
         let mut metadata = vec![];
