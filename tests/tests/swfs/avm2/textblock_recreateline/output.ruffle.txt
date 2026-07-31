@@ -1,0 +1,99 @@
+First line in block: line-4
+Line #0:
+    line.validity: valid
+    line.textBlock: [object TextBlock]
+    line.previousLine: null
+    line.nextLine: line-1
+Line #1:
+    line.validity: valid
+    line.textBlock: [object TextBlock]
+    line.previousLine: line-0
+    line.nextLine: line-2
+Line #2:
+    line.validity: valid
+    line.textBlock: [object TextBlock]
+    line.previousLine: line-1
+    line.nextLine: line-3
+Line #3:
+    line.validity: valid
+    line.textBlock: [object TextBlock]
+    line.previousLine: line-2
+    line.nextLine: line-4
+Line #4:
+    line.validity: valid
+    line.textBlock: [object TextBlock]
+    line.previousLine: line-3
+    line.nextLine: null
+0
+Event listener called
+0
+61
+1200
+115
+115
+12
+3
+hardlight
+null
+0.5
+[object Test]
+0.5
+0.5
+1
+45
+0
+0
+45
+false
+true
+16711680
+0
+line#2
+[object Test]
+[object Stage]
+0
+0
+Event listener called
+0
+First line in block: line-2
+Line #0:
+    line.validity: valid
+    line.textBlock: [object TextBlock]
+    line.previousLine: null
+    line.nextLine: line-1
+Line #1:
+    line.validity: valid
+    line.textBlock: [object TextBlock]
+    line.previousLine: line-0
+    line.nextLine: line-2
+Line #2:
+    line.validity: valid
+    line.textBlock: [object TextBlock]
+    line.previousLine: line-1
+    line.nextLine: null
+Line #3:
+    line.validity: valid
+    line.textBlock: [object TextBlock]
+    line.previousLine: line-2
+    line.nextLine: line-4
+Line #4:
+    line.validity: valid
+    line.textBlock: [object TextBlock]
+    line.previousLine: line-3
+    line.nextLine: null
+Error: ArgumentError: Error #2004: One of the parameters is invalid.
+	at Error$/throwError()
+	at flash.text.engine::TextBlock/recreateTextLine()
+	at Test()
+Error: ArgumentError: Error #2004: One of the parameters is invalid.
+	at Error$/throwError()
+	at flash.text.engine::TextBlock/recreateTextLine()
+	at Test()
+Error: ArgumentError: Error #2004: One of the parameters is invalid.
+	at Error$/throwError()
+	at flash.text.engine::TextBlock/recreateTextLine()
+	at Test()
+Error: ArgumentError: Error #2004: One of the parameters is invalid.
+	at Error$/throwError()
+	at flash.text.engine::TextBlock/recreateTextLine()
+	at Test()
