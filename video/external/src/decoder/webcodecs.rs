@@ -108,6 +108,27 @@ impl H264Decoder {
                         data,
                     )));
                 }
+                VideoPixelFormat::Nv12 => {
+                    let luma_len = visible_rect.width() as usize * visible_rect.height() as usize;
+                    let chroma_len = (visible_rect.width() as usize).div_ceil(2)
+                        * (visible_rect.height() as usize).div_ceil(2);
+                    let mut data: Vec<u8> = vec![0; luma_len + chroma_len * 2];
+                    let _ = output.copy_to_with_u8_slice(&mut data);
+                    let chroma = data.split_off(luma_len);
+                    let chroma_pairs = chroma.as_chunks::<2>().0;
+                    for uv in chroma_pairs {
+                        data.push(uv[0]);
+                    }
+                    for uv in chroma_pairs {
+                        data.push(uv[1]);
+                    }
+                    last_frame.replace(Some(DecodedFrame::new(
+                        visible_rect.width() as u32,
+                        visible_rect.height() as u32,
+                        BitmapFormat::Yuv420p,
+                        data,
+                    )));
+                }
                 other_format => {
                     error!("Unsupported pixel format: {:?}", other_format);
                 }
