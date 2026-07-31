@@ -7,10 +7,10 @@ use crate::fte::TextRotationValue;
 use crate::string::AvmString;
 use core::fmt;
 use gc_arena::barrier::unlock;
-use gc_arena::lock::Lock;
+use gc_arena::lock::{Lock, RefLock};
 use gc_arena::{Collect, Gc, GcWeak, Mutation};
 use ruffle_common::utils::HasPrefixField;
-use std::cell::Cell;
+use std::cell::{Cell, Ref, RefMut};
 
 pub fn content_element_allocator<'gc>(
     class: ClassObject<'gc>,
@@ -21,9 +21,9 @@ pub fn content_element_allocator<'gc>(
         ContentElementObjectData {
             base: ScriptObjectData::new(class),
             element_format: Lock::new(None),
-            text: Lock::new(None),
             text_rotation: Cell::new(TextRotationValue::Rotate0),
             event_mirror: Lock::new(None),
+            element_data: RefLock::new(ElementData::Invalid),
         },
     ))
     .into())
@@ -50,10 +50,47 @@ impl fmt::Debug for ContentElementObject<'_> {
 #[repr(C, align(8))]
 pub struct ContentElementObjectData<'gc> {
     base: ScriptObjectData<'gc>,
+
+    /// The format applied to this element.
     element_format: Lock<Option<ElementFormatObject<'gc>>>,
-    text: Lock<Option<AvmString<'gc>>>,
+
+    /// Rotation of the text in this element.
     text_rotation: Cell<TextRotationValue>,
+
+    /// The object which should receive copies of events dispatched to any text
+    /// line created from this `ContentElement`. TODO: implement this
     event_mirror: Lock<Option<Object<'gc>>>,
+
+    /// Data held by the class extending `ContentElement` (`TextElement`,
+    /// `GraphicElement`, and `GroupElement`). User-defined classes that extend
+    /// `ContentElement` do not hold any custom data; attempting to set the
+    /// `content` of a `TextBlock` to an instance of such a class throws an
+    /// error.
+    element_data: RefLock<ElementData<'gc>>,
+}
+
+#[derive(Collect)]
+#[collect(no_drop)]
+pub enum ElementData<'gc> {
+    /// Such as for the `TextElement` class.
+    Text {
+        /// Despite the `text` property existing for all classes that extend
+        /// `ContentElement`, it is always `null` with no way to change it.
+        /// Except in `TextElement`. So we only store the actual text for
+        /// `TextElement`.
+        text: Option<AvmString<'gc>>,
+    },
+
+    /// Such as for the `GroupElement` class.
+    Group {
+        elements: Vec<ContentElementObject<'gc>>,
+    },
+
+    /// Such as for the `GraphicElement` class. TODO
+    Graphic,
+
+    /// Such as for a user-defined class extending `ContentElement`.
+    Invalid,
 }
 
 impl<'gc> ContentElementObject<'gc> {
@@ -68,14 +105,6 @@ impl<'gc> ContentElementObject<'gc> {
             element_format
         )
         .set(value);
-    }
-
-    pub fn text(self) -> Option<AvmString<'gc>> {
-        self.0.text.get()
-    }
-
-    pub fn set_text(self, value: Option<AvmString<'gc>>, mc: &Mutation<'gc>) {
-        unlock!(Gc::write(mc, self.0), ContentElementObjectData, text).set(value);
     }
 
     pub fn text_rotation(self) -> TextRotationValue {
@@ -97,6 +126,19 @@ impl<'gc> ContentElementObject<'gc> {
             event_mirror
         )
         .set(value);
+    }
+
+    pub fn element_data(&self) -> Ref<'_, ElementData<'gc>> {
+        self.0.element_data.borrow()
+    }
+
+    pub fn element_data_mut(&self, mc: &Mutation<'gc>) -> RefMut<'_, ElementData<'gc>> {
+        unlock!(
+            Gc::write(mc, self.0),
+            ContentElementObjectData,
+            element_data
+        )
+        .borrow_mut()
     }
 }
 

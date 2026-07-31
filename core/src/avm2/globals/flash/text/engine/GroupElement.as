@@ -12,8 +12,11 @@ package flash.text.engine {
             textRotation:String = "rotate0"
         ) {
             super(elementFormat, eventMirror, textRotation);
+            this.init();
             this.setElements(elements);
         }
+
+        private native function init():void;
 
         public function get elementCount():int {
             return this._elements.length;

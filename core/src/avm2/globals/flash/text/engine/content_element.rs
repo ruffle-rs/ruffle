@@ -2,6 +2,7 @@ use crate::avm2::Avm2StrRepresentable;
 use crate::avm2::Error;
 use crate::avm2::activation::Activation;
 use crate::avm2::error::make_error_2008;
+use crate::avm2::object::ElementData;
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
 use crate::fte::TextRotationValue;
@@ -19,7 +20,13 @@ pub fn get_text<'gc>(
         .unwrap()
         .as_content_element_object()
         .unwrap();
-    Ok(match this.text() {
+
+    let text = match &*this.element_data() {
+        ElementData::Text { text } => *text,
+        _ => None,
+    };
+
+    Ok(match text {
         Some(s) => s.into(),
         None => Value::Null,
     })
