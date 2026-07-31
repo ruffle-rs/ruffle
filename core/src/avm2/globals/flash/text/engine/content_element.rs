@@ -2,7 +2,6 @@ use crate::avm2::Avm2StrRepresentable;
 use crate::avm2::Error;
 use crate::avm2::activation::Activation;
 use crate::avm2::error::make_error_2008;
-use crate::avm2::object::ElementData;
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
 use crate::fte::TextRotationValue;
@@ -11,7 +10,7 @@ use crate::{avm2_stub_getter, avm2_stub_setter};
 pub use crate::avm2::object::content_element_allocator;
 
 pub fn get_text<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -21,10 +20,7 @@ pub fn get_text<'gc>(
         .as_content_element_object()
         .unwrap();
 
-    let text = match &*this.element_data() {
-        ElementData::Text { text } => *text,
-        _ => None,
-    };
+    let text = this.text(activation);
 
     Ok(match text {
         Some(s) => s.into(),

@@ -10,6 +10,7 @@ use gc_arena::barrier::unlock;
 use gc_arena::lock::{Lock, RefLock};
 use gc_arena::{Collect, Gc, GcWeak, Mutation};
 use ruffle_common::utils::HasPrefixField;
+use ruffle_macros::istr;
 use std::cell::{Cell, Ref, RefMut};
 
 pub fn content_element_allocator<'gc>(
@@ -139,6 +140,40 @@ impl<'gc> ContentElementObject<'gc> {
             element_data
         )
         .borrow_mut()
+    }
+
+    pub fn text(self, activation: &mut Activation<'_, 'gc>) -> Option<AvmString<'gc>> {
+        match &*self.element_data() {
+            ElementData::Text { text } => *text,
+            ElementData::Group { elements } => {
+                let mut result = None;
+
+                for element in elements {
+                    // Recursively call `text` to concatenate the descendants
+                    // of the `GroupElement`
+                    let new_text = element.text(activation);
+
+                    if let Some(new_text) = new_text {
+                        if let Some(existing_text) = result {
+                            // If `result` is non-`null`, concatenate to it
+                            result =
+                                Some(AvmString::concat(activation.gc(), existing_text, new_text));
+                        } else {
+                            // If `result` is `null`, override it
+                            result = Some(new_text);
+                        }
+                    } else if result.is_some_and(|r| r.is_empty()) {
+                        // If `result` is an empty string but `new_text` is
+                        // null, set `result` to null
+                        result = None;
+                    }
+                }
+
+                result
+            }
+            ElementData::Graphic => Some(istr!("")),
+            ElementData::Invalid => None,
+        }
     }
 }
 
