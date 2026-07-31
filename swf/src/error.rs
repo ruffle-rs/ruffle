@@ -1,4 +1,5 @@
 use crate::avm1::opcode::OpCode;
+use crate::avm2::types as avm2;
 use crate::tag_code::TagCode;
 use std::{borrow, error, fmt, io};
 
@@ -138,8 +139,8 @@ impl std::error::Error for Avm1ParseError {
 #[derive(Debug)]
 pub enum AbcParseError {
     MethodInfoOutOfBounds {
-        method_count: usize,
-        method_index: usize,
+        method_count: u32,
+        method_index: avm2::Index<avm2::Method>,
     },
     IllegalOpcode {
         opcode: u8,
@@ -151,14 +152,12 @@ impl fmt::Display for AbcParseError {
         match self {
             AbcParseError::MethodInfoOutOfBounds {
                 method_count,
-                method_index,
+                method_index: avm2::Index(index, _),
             } => write!(
                 f,
-                "Method body refers to index {method_index} but there are only {method_count} method infos"
+                "Method body refers to index {index} but there are only {method_count} method infos"
             ),
-            AbcParseError::IllegalOpcode { opcode } => {
-                write!(f, "Illegal opcode {opcode:#x}")
-            }
+            AbcParseError::IllegalOpcode { opcode } => write!(f, "Illegal opcode {opcode:#x}"),
         }
     }
 }

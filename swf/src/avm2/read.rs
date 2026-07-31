@@ -69,18 +69,17 @@ impl<'a> Reader<'a> {
         let mut method_bodies = Vec::with_capacity(len as usize);
         for body_idx in 0..len {
             let body = self.read_method_body()?;
-            let index = body.method.0 as usize;
-            if index >= methods.len() {
+            let Some(dst) = methods.get_mut(body.method.0 as usize) else {
                 return Err(Error::AbcParseError(AbcParseError::MethodInfoOutOfBounds {
-                    method_count: methods.len(),
-                    method_index: index,
+                    method_count: methods.len() as u32,
+                    method_index: body.method,
                 }));
-            }
-            if methods[index].body.is_some() {
+            };
+            if dst.body.is_some() {
                 // TODO: this should somehow throw error 1121 in FP.
                 return Err(Error::invalid_data("Duplicate method body"));
             }
-            methods[index].body = Some(Index::new(body_idx));
+            dst.body = Some(Index::new(body_idx));
             method_bodies.push(body);
         }
 

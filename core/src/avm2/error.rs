@@ -12,6 +12,8 @@ use crate::string::{AvmString, WString};
 
 use naga_agal::AgalError;
 use ruffle_macros::istr;
+use swf::avm2::types::{Index, Method as AbcMethod};
+
 use std::borrow::Cow;
 use std::fmt::{Debug, Display};
 use std::mem::size_of;
@@ -451,12 +453,12 @@ pub fn make_error_1026<'gc>(
 #[cold]
 pub fn make_error_1027<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    method_index: usize,
-    method_count: usize,
+    method_index: Index<AbcMethod>,
+    method_count: u32,
 ) -> Error<'gc> {
     make_error!(verify_error(
         activation,
-        error_message!(1027, method_index, method_count),
+        error_message!(1027, method_index.0, method_count),
         1027
     ))
 }
