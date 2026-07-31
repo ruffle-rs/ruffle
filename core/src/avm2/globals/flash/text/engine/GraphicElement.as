@@ -16,8 +16,14 @@ package flash.text.engine {
             eventMirror:EventDispatcher = null,
             textRotation:String = "rotate0"
         ) {
+            super(elementFormat, eventMirror, textRotation);
+
             stub_constructor("flash.text.engine.GraphicElement");
+
+            this.init();
         }
+
+        private native function init():void;
 
         public function get elementHeight():Number {
             stub_getter("flash.text.engine.GraphicElement", "elementHeight");
