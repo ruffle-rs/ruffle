@@ -1,0 +1,17 @@
+OFF: 0
+METHODS: 1
+METHODS_WITH_ARGS: 2
+METHODS_AND_LINES: 3
+METHODS_AND_LINES_WITH_ARGS: 4
+FILE: 1
+Listener: 2
+getLevel.length: 1
+getListener.length: 0
+setLevel.length: 2
+setListener.length: 1
+getLevel(): 0
+getListener(): null
+getLevel(): 0
+getLevel(1): 0
+getLevel(2): 0
+getListener(): null
