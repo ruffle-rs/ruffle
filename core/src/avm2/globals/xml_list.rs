@@ -217,29 +217,17 @@ pub fn child<'gc>(
     Ok(list.into())
 }
 
+// ECMA-357 13.5.4.5 XMLList.prototype.children ( )
 pub fn children<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
-
     let list = this.as_xml_list_object().unwrap();
-    let children = list.children();
-    let mut sub_children = Vec::new();
-    for child in &*children {
-        if let E4XNodeKind::Element { children, .. } = &*child.node().kind() {
-            sub_children.extend(children.iter().map(|node| E4XOrXml::E4X(*node)));
-        }
-    }
-    // FIXME: This method should just call get_property_local with "*".
-    Ok(XmlListObject::new_with_children(
-        activation,
-        sub_children,
-        Some(list.into()),
-        Some(Multiname::any()),
-    )
-    .into())
+
+    // 1. Return the results of calling the [[Get]] method of list with argument "*"
+    list.get_property_local(&Multiname::any(), activation)
 }
 
 /// 13.5.4.8 XMLList.prototype.contains (value)
