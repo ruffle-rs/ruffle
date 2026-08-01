@@ -426,10 +426,12 @@ pub fn do_create_text_line<'gc>(
     if let Some(previous_line) = previous_text_line {
         text_line.set_previous_line(Some(previous_line), activation.gc());
         previous_line.set_next_line(Some(text_line), activation.gc());
+    } else {
+        // If there's no previous line, then this is the first line.
+        block.set_first_line(Some(text_line), activation.gc());
     }
 
     block.set_text_line_creation_result(Some(TextLineCreationResultValue::Success));
-    block.set_first_line(Some(text_line), activation.gc());
 
     Ok(text_line_instance.into())
 }

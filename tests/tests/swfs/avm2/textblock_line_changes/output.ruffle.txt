@@ -1,4 +1,4 @@
-First line in block: line-4
+First line in block: line-0
 Line #0:
     line.validity: valid
     line.textBlock: [object TextBlock]
@@ -24,7 +24,7 @@ Line #4:
     line.textBlock: [object TextBlock]
     line.previousLine: line-3
     line.nextLine: null
-First line in block: line-4
+First line in block: line-0
 Line #0:
     line.validity: valid
     line.textBlock: [object TextBlock]
@@ -50,7 +50,7 @@ Line #4:
     line.textBlock: [object TextBlock]
     line.previousLine: line-3
     line.nextLine: null
-First line in block: line-4
+First line in block: line-0
 Line #0:
     line.validity: valid
     line.textBlock: [object TextBlock]
@@ -77,7 +77,7 @@ Line #4:
     line.previousLine: line-3
     line.nextLine: null
 Calling recreateTextLine returns the same line: true
-First line in block: line-1
+First line in block: line-0
 Line #0:
     line.validity: valid
     line.textBlock: [object TextBlock]
@@ -103,7 +103,7 @@ Line #4:
     line.textBlock: [object TextBlock]
     line.previousLine: line-3
     line.nextLine: null
-First line in block: line-1
+First line in block: line-0
 Line #0:
     line.validity: valid
     line.textBlock: [object TextBlock]
@@ -130,7 +130,7 @@ Line #4:
     line.previousLine: line-3
     line.nextLine: null
 Calling createTextLine returns the same line: false
-First line in block: line-unknown
+First line in block: line-0
 Line #0:
     line.validity: valid
     line.textBlock: [object TextBlock]
