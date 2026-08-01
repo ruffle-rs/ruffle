@@ -703,7 +703,7 @@ pub fn child_index<'gc>(
         .unwrap_or(Value::Number(-1.0)))
 }
 
-// // ECMA-357 13.4.4.8 XML.prototype.children ( )
+// ECMA-357 13.4.4.8 XML.prototype.children ( )
 pub fn children<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
@@ -772,54 +772,33 @@ pub fn elements<'gc>(
     Ok(list.into())
 }
 
+// ECMA-357 13.4.4.5 XML.prototype.attributes ( )
 pub fn attributes<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
-
     let xml = this.as_xml_object().unwrap();
-    let attributes = if let E4XNodeKind::Element { attributes, .. } = &*xml.node().kind() {
-        attributes.iter().map(|node| E4XOrXml::E4X(*node)).collect()
-    } else {
-        Vec::new()
-    };
 
-    // FIXME: Spec/avmplus says to call [[Get]] with * attribute name (any attribute multiname).
-    Ok(XmlListObject::new_with_children(
-        activation,
-        attributes,
-        Some(xml.into()),
-        Some(Multiname::any_attribute()),
-    )
-    .into())
+    // 1. Return the result of calling the [[Get]] method of x with argument ToAttributeName("*")
+    xml.get_property_local(&Multiname::any_attribute(), activation)
 }
 
+// ECMA-357 13.4.4.4 XML.prototype.attribute ( attributeName )
 pub fn attribute<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
-
     let xml = this.as_xml_object().unwrap();
-    let multiname = name_to_multiname(activation, args.get_value(0), true)?;
-    let attributes = if let E4XNodeKind::Element { attributes, .. } = &*xml.node().kind() {
-        attributes
-            .iter()
-            .filter(|node| node.matches_name(&multiname))
-            .map(|node| E4XOrXml::E4X(*node))
-            .collect()
-    } else {
-        Vec::new()
-    };
 
-    // FIXME: Spec/avmplus call [[Get]] with attribute name.
-    Ok(
-        XmlListObject::new_with_children(activation, attributes, Some(xml.into()), Some(multiname))
-            .into(),
-    )
+    // 1. Let name = ToAttributeName(attributeName)
+    let multiname = name_to_multiname(activation, args.get_value(0), true)?;
+
+    // 2. Return the result of calling the [[Get]] method of x with argument name
+    xml.get_property_local(&multiname, activation)
 }
 
 pub fn call_handler<'gc>(
