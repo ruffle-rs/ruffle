@@ -187,6 +187,23 @@ fn replace_elements_impl<'gc>(
         Vec::new()
     };
 
+    // NOTE: FP can segfault here. The logic for what pattern makes it crash
+    // seems to be as follows:
+
+    // 1. Flatten the children of any descendant `GroupElement`s in the
+    //    `new_elements` array, to create an array of only `TextElement`,
+    //    `GraphicElement`, and empty `GroupElement`s. Iterate over the
+    //    resulting array.
+    // 2. If this iteration encounters an empty `GroupElement` or a `TextElement`
+    //    with `null` text *anytime after* encountering a `TextElement` that has
+    //    non-`null`, non-empty text, FP crashes.
+
+    // I haven't reproduced this crash here, but it might be necessary to bail
+    // out to avoid having to handle cases in other FTE code that FP cannot
+    // encounter.
+
+    // This crash affects at least both `replaceElements` and `setElements`.
+
     let removed_elements = elements
         .splice(begin_index..end_index, new_elements)
         .map(Value::from)
