@@ -8,5 +8,27 @@ package flash.trace {
 
         public static const FILE = 1;
         public static const LISTENER = 2;
+
+        private static var _fileLevel:int = 0;
+        private static var _listenerLevel:int = 0;
+        private static var _listener:Function = null;
+
+        public static function getLevel(target:int = LISTENER):int {
+            if (target <= FILE) {
+                return _fileLevel;
+            }
+            return _listenerLevel;
+        }
+
+        public static function getListener():Function {
+            return _listener;
+        }
+
+        // These next two functions are no-ops in the release version of Flash Player.
+        // TODO: Implement them properly in the future, maybe behind a flag?
+
+        public static function setLevel(level:int, target:int = LISTENER) {}
+
+        public static function setListener(func:Function) {}
     }
 }
