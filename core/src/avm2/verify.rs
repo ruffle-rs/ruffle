@@ -18,7 +18,7 @@ use swf::avm2::read::Reader;
 use swf::avm2::types::{
     Index, MethodFlags as AbcMethodFlags, Multiname as AbcMultiname, Op as AbcOp,
 };
-use swf::error::{AbcParseError, Error as AbcReadError};
+use swf::error::AbcParseError;
 
 #[derive(Collect)]
 #[collect(no_drop)]
@@ -113,7 +113,7 @@ pub fn verify_method<'gc>(
             let op = match reader.read_op() {
                 Ok(op) => op,
 
-                Err(AbcReadError::AbcParseError(AbcParseError::IllegalOpcode { opcode })) => {
+                Err(AbcParseError::IllegalOpcode { opcode }) => {
                     return Err(make_error_1011(
                         activation,
                         method,
@@ -121,7 +121,7 @@ pub fn verify_method<'gc>(
                         previous_position,
                     ));
                 }
-                Err(AbcReadError::IoError(_)) => {
+                Err(AbcParseError::UnexpectedEof(_)) => {
                     // Code flow continued past end of method
                     return Err(make_error_1020(activation));
                 }

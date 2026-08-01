@@ -166,6 +166,13 @@ pub enum AbcParseError {
     IllegalOpcode {
         opcode: u8,
     },
+    UnexpectedEof(UnexpectedEof),
+}
+
+impl From<AbcParseError> for Error {
+    fn from(e: AbcParseError) -> Error {
+        Error::AbcParseError(e)
+    }
 }
 
 impl fmt::Display for AbcParseError {
@@ -199,13 +206,17 @@ impl fmt::Display for AbcParseError {
             }
             AbcParseError::InvalidTraitKind { kind } => write!(f, "Invalid trait kind {kind:#x}"),
             AbcParseError::IllegalOpcode { opcode } => write!(f, "Illegal opcode {opcode:#x}"),
+            AbcParseError::UnexpectedEof(_) => write!(f, "Unexpected end of bytecode"),
         }
     }
 }
 
 impl error::Error for AbcParseError {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
-        None
+        match self {
+            AbcParseError::UnexpectedEof(e) => Some(e),
+            _ => None,
+        }
     }
 }
 
@@ -215,6 +226,12 @@ pub struct UnexpectedEof(pub(crate) ());
 impl From<UnexpectedEof> for Error {
     fn from(_: UnexpectedEof) -> Error {
         Error::IoError(io::ErrorKind::UnexpectedEof.into())
+    }
+}
+
+impl From<UnexpectedEof> for AbcParseError {
+    fn from(e: UnexpectedEof) -> Self {
+        Self::UnexpectedEof(e)
     }
 }
 
