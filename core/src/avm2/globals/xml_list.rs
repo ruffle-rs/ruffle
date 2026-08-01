@@ -270,64 +270,33 @@ pub fn copy<'gc>(
     Ok(list.deep_copy(activation).into())
 }
 
+// ECMA-357 13.5.4.2 XMLList.prototype.attribute ( attributeName )
 pub fn attribute<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
-
     let list = this.as_xml_list_object().unwrap();
 
+    // 1. Let name = ToAttributeName(attributeName)
     let multiname = name_to_multiname(activation, args.get_value(0), true)?;
 
-    let children = list.children();
-    let mut sub_children = Vec::new();
-    for child in &*children {
-        if let E4XNodeKind::Element { attributes, .. } = &*child.node().kind()
-            && let Some(found) = attributes
-                .iter()
-                .find(|node| node.matches_name(&multiname))
-                .copied()
-        {
-            sub_children.push(E4XOrXml::E4X(found));
-        }
-    }
-
-    // FIXME: This should just use get_property_local with an attribute Multiname.
-    Ok(XmlListObject::new_with_children(
-        activation,
-        sub_children,
-        Some(list.into()),
-        Some(multiname),
-    )
-    .into())
+    // 2. Return the result of calling the [[Get]] method of list with argument name
+    list.get_property_local(&multiname, activation)
 }
 
+// ECMA-357 13.5.4.3 XMLList.prototype.attributes ( )
 pub fn attributes<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
-
     let list = this.as_xml_list_object().unwrap();
 
-    let mut child_attrs = Vec::new();
-    for child in list.children().iter() {
-        if let E4XNodeKind::Element { attributes, .. } = &*child.node().kind() {
-            child_attrs.extend(attributes.iter().map(|node| E4XOrXml::E4X(*node)));
-        }
-    }
-
-    // FIXME: This should just use get_property_local with an any attribute Multiname.
-    Ok(XmlListObject::new_with_children(
-        activation,
-        child_attrs,
-        Some(list.into()),
-        Some(Multiname::any_attribute()),
-    )
-    .into())
+    // 1. Return the result of calling the [[Get]] method of list with argument ToAttributeName("*")
+    list.get_property_local(&Multiname::any_attribute(), activation)
 }
 
 pub fn descendants<'gc>(
