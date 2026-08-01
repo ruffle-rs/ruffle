@@ -1,7 +1,8 @@
 use crate::avm2::types::*;
-use crate::error::{AbcParseError, Error, Result};
+use crate::error::AbcParseError;
 use crate::extensions::ReadSwfExt;
-use std::io::Read;
+
+type Result<T, E = AbcParseError> = std::result::Result<T, E>;
 
 pub struct Reader<'a> {
     input: &'a [u8],
@@ -70,15 +71,15 @@ impl<'a> Reader<'a> {
         for body_idx in 0..len {
             let body = self.read_method_body()?;
             let Some(dst) = methods.get_mut(body.method.0 as usize) else {
-                return Err(Error::AbcParseError(AbcParseError::MethodInfoOutOfBounds {
+                return Err(AbcParseError::MethodInfoOutOfBounds {
                     method_count: methods.len() as u32,
                     method_index: body.method,
-                }));
+                });
             };
             if dst.body.is_some() {
-                return Err(Error::AbcParseError(AbcParseError::DuplicateMethodBody {
+                return Err(AbcParseError::DuplicateMethodBody {
                     method_index: body.method,
-                }));
+                });
             }
             dst.body = Some(Index::new(body_idx));
             method_bodies.push(body);
@@ -115,9 +116,8 @@ impl<'a> Reader<'a> {
     fn read_string(&mut self) -> Result<Vec<u8>> {
         let len = self.read_u30()?;
         // TODO: Avoid allocating a String.
-        let mut s = Vec::with_capacity(len as usize);
-        self.read_slice(len as usize)?.read_to_end(&mut s)?;
-        Ok(s)
+        let s = self.read_slice(len as usize)?;
+        Ok(s.to_vec())
     }
 
     fn read_index<T>(&mut self) -> Result<Index<T>> {
@@ -139,9 +139,7 @@ impl<'a> Reader<'a> {
             0x19 => Namespace::Explicit(name),
             0x1a => Namespace::StaticProtected(name),
             _ => {
-                return Err(Error::AbcParseError(AbcParseError::InvalidNamespace {
-                    kind,
-                }));
+                return Err(AbcParseError::InvalidNamespace { kind });
             }
         })
     }
@@ -203,9 +201,7 @@ impl<'a> Reader<'a> {
                 }
             }
             _ => {
-                return Err(Error::AbcParseError(AbcParseError::InvalidMultiname {
-                    kind,
-                }));
+                return Err(AbcParseError::InvalidMultiname { kind });
             }
         })
     }
@@ -285,10 +281,10 @@ impl<'a> Reader<'a> {
                     param.default_value = Some(self.read_constant_value()?);
                 }
             } else {
-                return Err(Error::AbcParseError(AbcParseError::TooManyOptionalParams {
+                return Err(AbcParseError::TooManyOptionalParams {
                     num_params,
                     num_optional_params,
-                }));
+                });
             }
         }
 
@@ -340,9 +336,7 @@ impl<'a> Reader<'a> {
             0x19 => DefaultValue::Explicit(Index::new(index)),
             0x1a => DefaultValue::StaticProtected(Index::new(index)),
             _ => {
-                return Err(Error::AbcParseError(AbcParseError::InvalidNamespace {
-                    kind,
-                }));
+                return Err(AbcParseError::InvalidNamespace { kind });
             }
         })
     }
@@ -474,9 +468,7 @@ impl<'a> Reader<'a> {
                 value: self.read_optional_value()?,
             },
             _ => {
-                return Err(Error::AbcParseError(AbcParseError::InvalidTraitKind {
-                    kind: raw_kind,
-                }));
+                return Err(AbcParseError::InvalidTraitKind { kind: raw_kind });
             }
         };
 
@@ -542,9 +534,7 @@ impl<'a> Reader<'a> {
         let opcode = match OpCode::from_u8(byte) {
             Some(o) => o,
             None => {
-                return Err(Error::AbcParseError(AbcParseError::IllegalOpcode {
-                    opcode: byte,
-                }));
+                return Err(AbcParseError::IllegalOpcode { opcode: byte });
             }
         };
 

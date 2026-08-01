@@ -512,10 +512,10 @@ impl<'gc> Avm2<'gc> {
         let mut reader = Reader::new(data);
         let abc = match reader.read() {
             Ok(abc) => abc,
-            Err(swf::error::Error::AbcParseError(AbcParseError::MethodInfoOutOfBounds {
+            Err(AbcParseError::MethodInfoOutOfBounds {
                 method_count,
                 method_index,
-            })) => {
+            }) => {
                 let mut activation = Activation::from_nothing(context);
                 return Err(make_error_1027(&mut activation, method_index, method_count));
             }
