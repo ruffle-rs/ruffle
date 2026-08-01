@@ -1,4 +1,4 @@
-First line in block: line-4
+First line in block: line-0
 Line #0:
     line.validity: valid
     line.textBlock: [object TextBlock]
@@ -55,7 +55,7 @@ line#2
 0
 Event listener called
 0
-First line in block: line-2
+First line in block: line-0
 Line #0:
     line.validity: valid
     line.textBlock: [object TextBlock]
