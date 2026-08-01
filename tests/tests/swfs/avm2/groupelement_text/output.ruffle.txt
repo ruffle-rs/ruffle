@@ -1,0 +1,156 @@
+Testing replaceElements to null
+    element.text is now null
+    element.elementCount is now 0
+Testing replaceElements to 
+    element.text is now null
+    element.elementCount is now 0
+Testing replaceElements to [object TextElement]
+    element.text is now null
+    element.elementCount is now 1
+Testing replaceElements to [object TextElement]
+    element.text is now "Hello, world!"
+    element.elementCount is now 1
+Testing replaceElements to [object GraphicElement]
+    element.text is now ""
+    element.elementCount is now 1
+Testing replaceElements to [object GroupElement]
+    element.text is now null
+    element.elementCount is now 1
+Testing replaceElements to [object GraphicElement]
+    element.text is now ""
+    element.elementCount is now 1
+Testing replaceElements to [object TextElement],[object TextElement]
+    element.text is now "Hello, world!"
+    element.elementCount is now 2
+Testing replaceElements to [object TextElement],[object GraphicElement],[object TextElement]
+    element.text is now "Hello, world!"
+    element.elementCount is now 3
+Testing replaceElements to [object GroupElement],[object TextElement]
+    element.text is now "Hello"
+    element.elementCount is now 2
+Testing replaceElements to [object GraphicElement],[object GroupElement]
+    element.text is now null
+    element.elementCount is now 2
+Testing replaceElements to [object GroupElement],[object GraphicElement]
+    element.text is now ""
+    element.elementCount is now 2
+Testing replaceElements to [object TextElement],[object GroupElement]
+    element.text is now null
+    element.elementCount is now 2
+Testing replaceElements to [object GroupElement],[object TextElement]
+    element.text is now null
+    element.elementCount is now 2
+Testing replaceElements to [object TextElement],[object GroupElement]
+    element.text is now null
+    element.elementCount is now 2
+Testing replaceElements to [object GroupElement],[object TextElement]
+    element.text is now ""
+    element.elementCount is now 2
+Testing replaceElements to [object TextElement],[object GroupElement],[object GraphicElement]
+    element.text is now ""
+    element.elementCount is now 3
+Testing replaceElements to [object TextElement],[object GraphicElement],[object GroupElement]
+    element.text is now null
+    element.elementCount is now 3
+Testing replaceElements to [object TextElement],[object GroupElement],[object GraphicElement],[object GroupElement]
+    element.text is now null
+    element.elementCount is now 4
+Testing replaceElements to [object TextElement],[object GroupElement]
+    element.text is now null
+    element.elementCount is now 2
+Testing replaceElements to [object TextElement],[object GroupElement]
+    element.text is now null
+    element.elementCount is now 2
+Testing replaceElements to [object TextElement],[object GroupElement]
+    element.text is now null
+    element.elementCount is now 2
+Testing replaceElements to [object TextElement],[object GroupElement],[object GraphicElement]
+    element.text is now ""
+    element.elementCount is now 3
+Testing replaceElements to [object GroupElement]
+    element.text is now "Hello!"
+    element.elementCount is now 1
+Testing replaceElements to [object TextElement],[object GroupElement]
+    element.text is now "Hello!"
+    element.elementCount is now 2
+Testing replaceElements to [object TextElement],[object GroupElement]
+    element.text is now null
+    element.elementCount is now 2
+Testing setElements to null
+    element.text is now null
+    element.elementCount is now 0
+Testing setElements to 
+    element.text is now null
+    element.elementCount is now 0
+Testing setElements to [object TextElement]
+    element.text is now null
+    element.elementCount is now 1
+Testing setElements to [object TextElement]
+    element.text is now "Hello, world!"
+    element.elementCount is now 1
+Testing setElements to [object GraphicElement]
+    element.text is now ""
+    element.elementCount is now 1
+Testing setElements to [object GroupElement]
+    element.text is now null
+    element.elementCount is now 1
+Testing setElements to [object GraphicElement]
+    element.text is now ""
+    element.elementCount is now 1
+Testing setElements to [object TextElement],[object TextElement]
+    element.text is now "Hello, world!"
+    element.elementCount is now 2
+Testing setElements to [object TextElement],[object GraphicElement],[object TextElement]
+    element.text is now "Hello, world!"
+    element.elementCount is now 3
+Testing setElements to [object GroupElement],[object TextElement]
+    element.text is now "Hello"
+    element.elementCount is now 2
+Testing setElements to [object GraphicElement],[object GroupElement]
+    element.text is now null
+    element.elementCount is now 2
+Testing setElements to [object GroupElement],[object GraphicElement]
+    element.text is now ""
+    element.elementCount is now 2
+Testing setElements to [object TextElement],[object GroupElement]
+    element.text is now null
+    element.elementCount is now 2
+Testing setElements to [object GroupElement],[object TextElement]
+    element.text is now null
+    element.elementCount is now 2
+Testing setElements to [object TextElement],[object GroupElement]
+    element.text is now null
+    element.elementCount is now 2
+Testing setElements to [object GroupElement],[object TextElement]
+    element.text is now ""
+    element.elementCount is now 2
+Testing setElements to [object TextElement],[object GroupElement],[object GraphicElement]
+    element.text is now ""
+    element.elementCount is now 3
+Testing setElements to [object TextElement],[object GraphicElement],[object GroupElement]
+    element.text is now null
+    element.elementCount is now 3
+Testing setElements to [object TextElement],[object GroupElement],[object GraphicElement],[object GroupElement]
+    element.text is now null
+    element.elementCount is now 4
+Testing setElements to [object TextElement],[object GroupElement]
+    element.text is now null
+    element.elementCount is now 2
+Testing setElements to [object TextElement],[object GroupElement]
+    element.text is now null
+    element.elementCount is now 2
+Testing setElements to [object TextElement],[object GroupElement]
+    element.text is now null
+    element.elementCount is now 2
+Testing setElements to [object TextElement],[object GroupElement],[object GraphicElement]
+    element.text is now ""
+    element.elementCount is now 3
+Testing setElements to [object GroupElement]
+    element.text is now "Hello!"
+    element.elementCount is now 1
+Testing setElements to [object TextElement],[object GroupElement]
+    element.text is now "Hello!"
+    element.elementCount is now 2
+Testing setElements to [object TextElement],[object GroupElement]
+    element.text is now null
+    element.elementCount is now 2
