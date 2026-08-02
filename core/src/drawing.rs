@@ -5,6 +5,7 @@ use ruffle_render::commands::CommandHandler;
 use ruffle_render::shape_utils::{
     DistilledShape, DrawCommand, DrawPath, FillRule, cubic_curve_bounds, quadratic_curve_bounds,
 };
+use std::borrow::Cow;
 use std::cell::OnceCell;
 use swf::{FillStyle, LineStyle, Point, Rectangle, Twips};
 
@@ -77,7 +78,7 @@ impl Drawing {
                     is_closed: _,
                     commands,
                 } => {
-                    this.set_line_style(Some(style.clone()));
+                    this.set_line_style(Some(style.into_owned()));
 
                     for command in commands {
                         this.draw_command(command);
@@ -90,7 +91,7 @@ impl Drawing {
                     commands,
                     winding_rule,
                 } => {
-                    this.new_fill(Some(style.clone()), Some(winding_rule));
+                    this.new_fill(Some(style.into_owned()), Some(winding_rule));
 
                     for command in commands {
                         this.draw_command(command);
@@ -252,14 +253,14 @@ impl Drawing {
                 match path {
                     DrawingPath::Fill(fill) => {
                         paths.push(DrawPath::Fill {
-                            style: &fill.style,
+                            style: Cow::Borrowed(&fill.style),
                             commands: fill.commands.to_owned(),
                             winding_rule: fill.rule,
                         });
                     }
                     DrawingPath::Line(line) => {
                         paths.push(DrawPath::Stroke {
-                            style: &line.style,
+                            style: Cow::Borrowed(&line.style),
                             commands: line.commands.to_owned(),
                             is_closed: line.is_closed,
                         });
@@ -269,7 +270,7 @@ impl Drawing {
 
             if let Some(fill) = &self.current_fill {
                 paths.push(DrawPath::Fill {
-                    style: &fill.style,
+                    style: Cow::Borrowed(&fill.style),
                     commands: fill.commands.to_owned(),
                     winding_rule: fill.rule,
                 })
@@ -284,7 +285,7 @@ impl Drawing {
                     self.cursor == self.fill_start
                 };
                 paths.push(DrawPath::Stroke {
-                    style: &line.style,
+                    style: Cow::Borrowed(&line.style),
                     commands,
                     is_closed,
                 })
@@ -299,7 +300,7 @@ impl Drawing {
                     self.cursor == self.fill_start
                 };
                 paths.push(DrawPath::Stroke {
-                    style: &line.style,
+                    style: Cow::Borrowed(&line.style),
                     commands,
                     is_closed,
                 })
