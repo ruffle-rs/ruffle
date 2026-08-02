@@ -240,80 +240,84 @@ impl Drawing {
         id
     }
 
+    /// Assemble this drawing's paths into a shape ready for tessellation.
+    fn distill(&self) -> DistilledShape<'_> {
+        let mut paths = Vec::with_capacity(self.paths.len());
+
+        for path in &self.paths {
+            match path {
+                DrawingPath::Fill(fill) => {
+                    paths.push(DrawPath::Fill {
+                        style: Cow::Borrowed(&fill.style),
+                        commands: fill.commands.to_owned(),
+                        winding_rule: fill.rule,
+                    });
+                }
+                DrawingPath::Line(line) => {
+                    paths.push(DrawPath::Stroke {
+                        style: Cow::Borrowed(&line.style),
+                        commands: line.commands.to_owned(),
+                        is_closed: line.is_closed,
+                    });
+                }
+            }
+        }
+
+        if let Some(fill) = &self.current_fill {
+            paths.push(DrawPath::Fill {
+                style: Cow::Borrowed(&fill.style),
+                commands: fill.commands.to_owned(),
+                winding_rule: fill.rule,
+            })
+        }
+
+        for line in &self.pending_lines {
+            let mut commands = line.commands.to_owned();
+            let is_closed = if self.current_fill.is_some() {
+                commands.push(DrawCommand::LineTo(self.fill_start));
+                true
+            } else {
+                self.cursor == self.fill_start
+            };
+            paths.push(DrawPath::Stroke {
+                style: Cow::Borrowed(&line.style),
+                commands,
+                is_closed,
+            })
+        }
+
+        if let Some(line) = &self.current_line {
+            let mut commands = line.commands.to_owned();
+            let is_closed = if self.current_fill.is_some() {
+                commands.push(DrawCommand::LineTo(self.fill_start));
+                true
+            } else {
+                self.cursor == self.fill_start
+            };
+            paths.push(DrawPath::Stroke {
+                style: Cow::Borrowed(&line.style),
+                commands,
+                is_closed,
+            })
+        }
+
+        DistilledShape {
+            paths,
+            shape_bounds: self.shape_bounds,
+            edge_bounds: self.edge_bounds,
+            id: 0,
+        }
+    }
+
     /// Obtain a `ShapeHandle` that represents this `Drawing`, or `None` if it is empty.
     pub fn register_or_replace(&self, renderer: &mut dyn RenderBackend) -> Option<ShapeHandle> {
         if self.is_empty {
             return None;
         }
 
-        let handle = self.render_handle.get_or_init(|| {
-            let mut paths = Vec::with_capacity(self.paths.len());
-
-            for path in &self.paths {
-                match path {
-                    DrawingPath::Fill(fill) => {
-                        paths.push(DrawPath::Fill {
-                            style: Cow::Borrowed(&fill.style),
-                            commands: fill.commands.to_owned(),
-                            winding_rule: fill.rule,
-                        });
-                    }
-                    DrawingPath::Line(line) => {
-                        paths.push(DrawPath::Stroke {
-                            style: Cow::Borrowed(&line.style),
-                            commands: line.commands.to_owned(),
-                            is_closed: line.is_closed,
-                        });
-                    }
-                }
-            }
-
-            if let Some(fill) = &self.current_fill {
-                paths.push(DrawPath::Fill {
-                    style: Cow::Borrowed(&fill.style),
-                    commands: fill.commands.to_owned(),
-                    winding_rule: fill.rule,
-                })
-            }
-
-            for line in &self.pending_lines {
-                let mut commands = line.commands.to_owned();
-                let is_closed = if self.current_fill.is_some() {
-                    commands.push(DrawCommand::LineTo(self.fill_start));
-                    true
-                } else {
-                    self.cursor == self.fill_start
-                };
-                paths.push(DrawPath::Stroke {
-                    style: Cow::Borrowed(&line.style),
-                    commands,
-                    is_closed,
-                })
-            }
-
-            if let Some(line) = &self.current_line {
-                let mut commands = line.commands.to_owned();
-                let is_closed = if self.current_fill.is_some() {
-                    commands.push(DrawCommand::LineTo(self.fill_start));
-                    true
-                } else {
-                    self.cursor == self.fill_start
-                };
-                paths.push(DrawPath::Stroke {
-                    style: Cow::Borrowed(&line.style),
-                    commands,
-                    is_closed,
-                })
-            }
-
-            let shape = DistilledShape {
-                paths,
-                shape_bounds: self.shape_bounds,
-                edge_bounds: self.edge_bounds,
-                id: 0,
-            };
-            renderer.register_shape(shape, self)
-        });
+        let handle = self
+            .render_handle
+            .get_or_init(|| renderer.register_shape(self.distill(), self));
 
         Some(handle.clone())
     }
