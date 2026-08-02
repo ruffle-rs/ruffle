@@ -1,4 +1,5 @@
 First line in block: line-0
+Last line in block: line-0
 Line #0:
     line.validity: valid
     line.textBlock: [object TextBlock]
@@ -25,6 +26,7 @@ Line #4:
     line.previousLine: line-3
     line.nextLine: null
 First line in block: line-0
+Last line in block: line-0
 Line #0:
     line.validity: valid
     line.textBlock: [object TextBlock]
@@ -51,6 +53,7 @@ Line #4:
     line.previousLine: line-3
     line.nextLine: null
 First line in block: line-0
+Last line in block: line-0
 Line #0:
     line.validity: valid
     line.textBlock: [object TextBlock]
@@ -78,6 +81,7 @@ Line #4:
     line.nextLine: null
 Calling recreateTextLine returns the same line: true
 First line in block: line-0
+Last line in block: line-0
 Line #0:
     line.validity: valid
     line.textBlock: [object TextBlock]
@@ -104,6 +108,7 @@ Line #4:
     line.previousLine: line-3
     line.nextLine: null
 First line in block: line-0
+Last line in block: line-0
 Line #0:
     line.validity: valid
     line.textBlock: [object TextBlock]
@@ -130,12 +135,13 @@ Line #4:
     line.previousLine: line-3
     line.nextLine: null
 Calling createTextLine returns the same line: false
-First line in block: line-0
+First line in block: line-unknown
+Last line in block: line-unknown
 Line #0:
     line.validity: valid
     line.textBlock: [object TextBlock]
     line.previousLine: null
-    line.nextLine: line-unknown
+    line.nextLine: line-1
 Line #1:
     line.validity: valid
     line.textBlock: [object TextBlock]
@@ -155,4 +161,122 @@ Line #4:
     line.validity: valid
     line.textBlock: [object TextBlock]
     line.previousLine: line-3
+    line.nextLine: null
+First line in block: line-unknown
+Last line in block: line-unknown
+Line #0:
+    line.validity: valid
+    line.textBlock: [object TextBlock]
+    line.previousLine: null
+    line.nextLine: line-1
+Line #1:
+    line.validity: valid
+    line.textBlock: [object TextBlock]
+    line.previousLine: line-0
+    line.nextLine: null
+Line #2:
+    line.validity: static
+    line.textBlock: null
+    line.previousLine: line-1
+    line.nextLine: line-3
+Line #3:
+    line.validity: static
+    line.textBlock: null
+    line.previousLine: line-2
+    line.nextLine: line-4
+Line #4:
+    line.validity: static
+    line.textBlock: null
+    line.previousLine: line-3
+    line.nextLine: null
+First line in block: line-0
+Last line in block: line-0
+Line #0:
+    line.validity: valid
+    line.textBlock: [object TextBlock]
+    line.previousLine: null
+    line.nextLine: line-1
+Line #1:
+    line.validity: valid
+    line.textBlock: [object TextBlock]
+    line.previousLine: line-0
+    line.nextLine: line-2
+Line #2:
+    line.validity: valid
+    line.textBlock: [object TextBlock]
+    line.previousLine: line-1
+    line.nextLine: line-3
+Line #3:
+    line.validity: valid
+    line.textBlock: [object TextBlock]
+    line.previousLine: line-2
+    line.nextLine: line-4
+Line #4:
+    line.validity: valid
+    line.textBlock: [object TextBlock]
+    line.previousLine: line-3
+    line.nextLine: null
+First line in block: line-0
+Last line in block: line-0
+Line #0:
+    line.validity: valid
+    line.textBlock: [object TextBlock]
+    line.previousLine: null
+    line.nextLine: line-1
+Line #1:
+    line.validity: valid
+    line.textBlock: [object TextBlock]
+    line.previousLine: line-0
+    line.nextLine: line-2
+Line #2:
+    line.validity: valid
+    line.textBlock: [object TextBlock]
+    line.previousLine: line-1
+    line.nextLine: line-3
+Line #3:
+    line.validity: valid
+    line.textBlock: [object TextBlock]
+    line.previousLine: line-2
+    line.nextLine: line-4
+Line #4:
+    line.validity: valid
+    line.textBlock: [object TextBlock]
+    line.previousLine: line-3
+    line.nextLine: line-5
+Line #5:
+    line.validity: valid
+    line.textBlock: [object TextBlock]
+    line.previousLine: line-4
+    line.nextLine: null
+First line in block: line-0
+Last line in block: line-0
+Line #0:
+    line.validity: valid
+    line.textBlock: [object TextBlock]
+    line.previousLine: null
+    line.nextLine: line-1
+Line #1:
+    line.validity: valid
+    line.textBlock: [object TextBlock]
+    line.previousLine: line-0
+    line.nextLine: line-2
+Line #2:
+    line.validity: valid
+    line.textBlock: [object TextBlock]
+    line.previousLine: line-1
+    line.nextLine: line-3
+Line #3:
+    line.validity: valid
+    line.textBlock: [object TextBlock]
+    line.previousLine: line-2
+    line.nextLine: line-4
+Line #4:
+    line.validity: valid
+    line.textBlock: [object TextBlock]
+    line.previousLine: line-3
+    line.nextLine: line-unknown
+Line #5:
+    line.validity: valid
+    line.textBlock: [object TextBlock]
+    line.previousLine: line-4
     line.nextLine: null
