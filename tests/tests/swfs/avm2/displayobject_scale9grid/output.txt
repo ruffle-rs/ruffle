@@ -1,0 +1,39 @@
+initial: null
+inside: (x=20, y=20, w=20, h=20)
+touching left: threw 2004
+touching right: threw 2004
+equal to bounds: threw 2004
+outside: threw 2004
+zero width: threw 2004
+negative width: threw 2004
+infinite x: threw 2004
+nan width: threw 2004
+huge: threw 2004
+quantise up: (x=11, y=11, w=20, h=20)
+quantise down: (x=10, y=10, w=20, h=20)
+half twip: (x=10, y=10, w=20, h=20)
+half pixel: (x=10, y=10, w=39, h=39)
+cleared: null
+grandchild getBounds: (x=0, y=0, w=60, h=60)
+art two levels down: threw 2004
+textfield getBounds: (x=0, y=0, w=60, h=60)
+textfield child: threw 2004
+textfield itself: threw 2004
+stroked getBounds: (x=-8, y=-8, w=76, h=76)
+stroke inflated edge: threw 2004
+button: (x=20, y=20, w=20, h=20)
+empty button: threw 2004
+bitmap: (x=20, y=20, w=20, h=20)
+stage: threw 2071
+ungridded 3x: w=180 h=60 (x=0, y=0, w=180, h=60)
+gridded 3x: w=180 h=60 (x=0, y=0, w=180, h=60)
+gridded 0.25x: w=15 h=60 (x=0, y=0, w=15, h=60)
+hit x=10: shape true, box true
+hit x=30: shape true, box true
+hit x=40: shape true, box true
+hit x=50: shape true, box true
+hit x=70: shape false, box true
+hit x=130: shape false, box true
+hit x=170: shape false, box true
+localToGlobal: (x=60, y=20)
+globalToLocal: (x=20, y=20)

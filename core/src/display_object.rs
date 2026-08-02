@@ -2027,6 +2027,37 @@ pub trait TDisplayObject<'gc>:
     #[no_dynamic]
     fn set_scaling_grid(self, rect: Rectangle<Twips>) {
         self.base().scaling_grid.set(rect);
+        // A cached bitmap is only redrawn when its matrix or size changes, and neither moves
+        // when the grid does, so nothing else would notice.
+        self.invalidate_cached_bitmap();
+    }
+
+    /// Bounds the grid is validated against: this object's and its *direct* children's own
+    /// geometry, no stroke inflation. Art two levels down is excluded despite `getBounds`.
+    fn self_bounds_for_scale9(self) -> Rectangle<Twips> {
+        // Text is excluded wherever it appears, so a text field refuses every rectangle.
+        let this: DisplayObject<'gc> = self.into();
+        if this.as_edit_text().is_some()
+            || this.as_text().is_some()
+            || this.as_text_line().is_some()
+        {
+            return Rectangle::INVALID;
+        }
+
+        let mode = BoundsMode::ScriptWithoutStrokes;
+        let mut bounds = self.self_bounds(mode);
+        if let Some(container) = self.as_container() {
+            for child in container.iter_render_list() {
+                if child.as_edit_text().is_some()
+                    || child.as_text().is_some()
+                    || child.as_text_line().is_some()
+                {
+                    continue;
+                }
+                bounds = bounds.union(&(child.base().matrix() * child.self_bounds(mode)));
+            }
+        }
+        bounds
     }
 
     #[no_dynamic]
