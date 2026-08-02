@@ -156,8 +156,13 @@ impl<'gc> ElementFormatObject<'gc> {
         self.0.dominant_baseline.set(value);
     }
 
-    pub fn font_description(self) -> Option<FontDescriptionObject<'gc>> {
-        self.0.font_description.get()
+    pub fn font_description(self) -> FontDescriptionObject<'gc> {
+        // The `FontDescription` is always set in the constructor and it can't
+        // be set to null, so it must always be `Some`
+        self.0
+            .font_description
+            .get()
+            .expect("Font description should always be set")
     }
 
     pub fn set_font_description(self, value: FontDescriptionObject<'gc>, mc: &Mutation<'gc>) {
@@ -248,23 +253,21 @@ impl<'gc> ElementFormatObject<'gc> {
     }
 
     pub fn as_text_format(self) -> TextFormat {
-        let (font, bold, italic, _is_device_font) = if let Some(fd) = self.font_description() {
-            (
-                Some(fd.font_name().as_wstr().into()),
-                Some(fd.font_weight() == FontWeightValue::Bold),
-                Some(fd.font_posture() == FontPostureValue::Italic),
-                fd.font_lookup() == FontLookupValue::Device,
-            )
-        } else {
-            (None, None, None, true)
-        };
+        let fd = self.font_description();
+
+        let font = fd.font_name().as_wstr().into();
+        let bold = fd.font_weight() == FontWeightValue::Bold;
+        let italic = fd.font_posture() == FontPostureValue::Italic;
+
+        // TODO: Support setting `is_device_font` for individual `TextFormat`s
+        let _is_device_font = fd.font_lookup() == FontLookupValue::Device;
 
         TextFormat {
             color: Some(self.color()),
             size: Some(self.font_size()),
-            font,
-            bold,
-            italic,
+            font: Some(font),
+            bold: Some(bold),
+            italic: Some(italic),
             ..TextFormat::default()
         }
     }
