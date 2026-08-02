@@ -259,10 +259,7 @@ pub fn get_font_description<'gc>(
         .unwrap()
         .as_element_format_object()
         .unwrap();
-    Ok(match this.font_description() {
-        Some(fd) => fd.into(),
-        None => Value::Null,
-    })
+    Ok(this.font_description().into())
 }
 
 pub fn set_font_description<'gc>(
