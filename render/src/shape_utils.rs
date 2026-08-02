@@ -1,3 +1,4 @@
+use crate::backend::ShapeHandle;
 use crate::matrix::Matrix;
 use enum_map::Enum;
 use ruffle_wstr::{FromWStr, WStr};
@@ -734,23 +735,15 @@ pub fn draw_command_fill_hit_test(
                 control_b,
                 anchor,
             } => {
-                lyon_geom::CubicBezierSegment {
-                    from: lyon_geom::Point::new(cursor.x.to_pixels(), cursor.y.to_pixels()),
-                    ctrl1: lyon_geom::Point::new(control_a.x.to_pixels(), control_a.y.to_pixels()),
-                    ctrl2: lyon_geom::Point::new(control_b.x.to_pixels(), control_b.y.to_pixels()),
-                    to: lyon_geom::Point::new(anchor.x.to_pixels(), anchor.y.to_pixels()),
-                }
-                .for_each_quadratic_bezier(
-                    CUBIC_CURVE_TOLERANCE,
-                    &mut |quadratic_curve| {
+                cubic_bezier_segment(cursor, *control_a, *control_b, *anchor)
+                    .for_each_quadratic_bezier(CUBIC_CURVE_TOLERANCE, &mut |quadratic_curve| {
                         winding += winding_number_curve(
                             test_point,
                             swf::Point::from_pixels(quadratic_curve.from.x, quadratic_curve.from.y),
                             swf::Point::from_pixels(quadratic_curve.ctrl.x, quadratic_curve.ctrl.y),
                             swf::Point::from_pixels(quadratic_curve.to.x, quadratic_curve.to.y),
                         );
-                    },
-                );
+                    });
                 cursor = *anchor;
             }
         }
@@ -798,15 +791,8 @@ pub fn draw_command_stroke_hit_test(
                 anchor,
             } => {
                 let mut hit = false;
-                lyon_geom::CubicBezierSegment {
-                    from: lyon_geom::Point::new(cursor.x.to_pixels(), cursor.y.to_pixels()),
-                    ctrl1: lyon_geom::Point::new(control_a.x.to_pixels(), control_a.y.to_pixels()),
-                    ctrl2: lyon_geom::Point::new(control_b.x.to_pixels(), control_b.y.to_pixels()),
-                    to: lyon_geom::Point::new(anchor.x.to_pixels(), anchor.y.to_pixels()),
-                }
-                .for_each_quadratic_bezier(
-                    CUBIC_CURVE_TOLERANCE,
-                    &mut |quadratic_curve| {
+                cubic_bezier_segment(cursor, *control_a, *control_b, *anchor)
+                    .for_each_quadratic_bezier(CUBIC_CURVE_TOLERANCE, &mut |quadratic_curve| {
                         if !hit
                             && hit_test_stroke_curve(
                                 test_point,
@@ -824,8 +810,7 @@ pub fn draw_command_stroke_hit_test(
                         {
                             hit = true;
                         }
-                    },
-                );
+                    });
                 cursor = *anchor;
 
                 if hit {
@@ -1333,6 +1318,22 @@ pub fn quadratic_curve_bounds(
         ))
 }
 
+/// The lyon segment for a cubic from `from` to `anchor`, in pixels.
+fn cubic_bezier_segment(
+    from: swf::Point<Twips>,
+    control_a: swf::Point<Twips>,
+    control_b: swf::Point<Twips>,
+    anchor: swf::Point<Twips>,
+) -> lyon_geom::CubicBezierSegment<f64> {
+    let pt = |p: swf::Point<Twips>| lyon_geom::Point::new(p.x.to_pixels(), p.y.to_pixels());
+    lyon_geom::CubicBezierSegment {
+        from: pt(from),
+        ctrl1: pt(control_a),
+        ctrl2: pt(control_b),
+        to: pt(anchor),
+    }
+}
+
 pub fn cubic_curve_bounds(
     start: swf::Point<Twips>,
     stroke_width: Twips,
@@ -1341,13 +1342,7 @@ pub fn cubic_curve_bounds(
     anchor: swf::Point<Twips>,
 ) -> Rectangle<Twips> {
     // [NA] Should we just move most of our math in this file to lyon_geom?
-    let bounds = lyon_geom::CubicBezierSegment {
-        from: lyon_geom::Point::new(start.x.to_pixels(), start.y.to_pixels()),
-        ctrl1: lyon_geom::Point::new(control_a.x.to_pixels(), control_a.y.to_pixels()),
-        ctrl2: lyon_geom::Point::new(control_b.x.to_pixels(), control_b.y.to_pixels()),
-        to: lyon_geom::Point::new(anchor.x.to_pixels(), anchor.y.to_pixels()),
-    }
-    .bounding_box();
+    let bounds = cubic_bezier_segment(start, control_a, control_b, anchor).bounding_box();
 
     let radius = stroke_width / 2;
     Rectangle {
@@ -1356,6 +1351,490 @@ pub fn cubic_curve_bounds(
         y_min: Twips::from_pixels(bounds.min.y) - radius,
         y_max: Twips::from_pixels(bounds.max.y) + radius,
     }
+}
+
+/// One axis of a 9-slice grid, resolved against the shape bounds and the object's scale.
+#[derive(Copy, Clone, Debug)]
+struct Scale9Axis {
+    b0: f64,
+    b1: f64,
+    g0: f64,
+    g1: f64,
+    scale: f64,
+    corner_lo: f64,
+    corner_hi: f64,
+    span: f64,
+    center: f64,
+}
+
+impl Scale9Axis {
+    /// `None` if the grid is unusable on this axis: `DefineScalingGrid` validates nothing, and
+    /// only a rectangle strictly inside the bounds keeps `map`'s divisors non-zero.
+    fn new(b0: Twips, b1: Twips, g0: Twips, g1: Twips, scale: f32) -> Option<Self> {
+        if g0 <= b0 || g1 >= b1 || g0 >= g1 || scale <= 0.0 {
+            return None;
+        }
+
+        let b0 = b0.get() as f64;
+        let b1 = b1.get() as f64;
+        let g0 = g0.get() as f64;
+        let g1 = g1.get() as f64;
+        let scale = scale as f64;
+
+        let corner_lo = g0 - b0;
+        let corner_hi = b1 - g1;
+        let span = (b1 - b0) * scale;
+
+        Some(Self {
+            b0,
+            b1,
+            g0,
+            g1,
+            scale,
+            corner_lo,
+            corner_hi,
+            span,
+            center: span - corner_lo - corner_hi,
+        })
+    }
+
+    /// Where the map sends a coordinate, in the shape's own space scaled by `scale`.
+    fn map(&self, p: f64) -> f64 {
+        if self.center >= 0.0 {
+            if p <= self.g0 {
+                self.b0 * self.scale + (p - self.b0)
+            } else if p >= self.g1 {
+                self.b1 * self.scale - (self.b1 - p)
+            } else {
+                self.b0 * self.scale
+                    + self.corner_lo
+                    + (p - self.g0) * self.center / (self.g1 - self.g0)
+            }
+        } else {
+            // Squeezed below the corners: the center is dropped entirely and the corners
+            // split what is left in proportion to their authored sizes.
+            let total = self.corner_lo + self.corner_hi;
+            let lo = self.span * self.corner_lo / total;
+            let hi = self.span * self.corner_hi / total;
+            if p <= self.g0 {
+                self.b0 * self.scale + (p - self.b0) * lo / self.corner_lo
+            } else if p >= self.g1 {
+                self.b1 * self.scale - (self.b1 - p) * hi / self.corner_hi
+            } else {
+                self.b0 * self.scale + lo
+            }
+        }
+    }
+
+    fn remap(self, p: Twips) -> Twips {
+        Twips::new(self.map(p.get() as f64).round() as i32)
+    }
+
+    /// The affine taking `[lo, hi]` to where the map sends it, as `(scale, offset)`. Exact
+    /// within one region, a two-point fit across them; a zero-extent range only translates.
+    fn span_affine(&self, lo: f64, hi: f64) -> (f64, f64) {
+        let (out_lo, out_hi) = (self.map(lo), self.map(hi));
+        if hi - lo <= f64::EPSILON {
+            return (1.0, out_lo - lo);
+        }
+        let k = (out_hi - out_lo) / (hi - lo);
+        (k, out_lo - lo * k)
+    }
+}
+
+/// Reposition a fill's texture by `transform`, or `None` if it has no matrix to move.
+fn transformed_fill(style: &FillStyle, transform: Matrix) -> Option<FillStyle> {
+    let moved = |m: swf::Matrix| -> swf::Matrix { (transform * Matrix::from(m)).into() };
+    Some(match style {
+        FillStyle::Color(_) => return None,
+        FillStyle::LinearGradient(gradient) => {
+            let mut gradient = gradient.clone();
+            gradient.matrix = moved(gradient.matrix);
+            FillStyle::LinearGradient(gradient)
+        }
+        FillStyle::RadialGradient(gradient) => {
+            let mut gradient = gradient.clone();
+            gradient.matrix = moved(gradient.matrix);
+            FillStyle::RadialGradient(gradient)
+        }
+        FillStyle::FocalGradient {
+            gradient,
+            focal_point,
+        } => {
+            let mut gradient = gradient.clone();
+            gradient.matrix = moved(gradient.matrix);
+            FillStyle::FocalGradient {
+                gradient,
+                focal_point: *focal_point,
+            }
+        }
+        FillStyle::Bitmap {
+            id,
+            matrix,
+            is_smoothed,
+            is_repeating,
+        } => FillStyle::Bitmap {
+            id: *id,
+            matrix: moved(*matrix),
+            is_smoothed: *is_smoothed,
+            is_repeating: *is_repeating,
+        },
+    })
+}
+
+/// A 9-slice grid resolved against the bounds and scale it applies to. Coordinates are in the
+/// space of the object that owns the grid, which is the container's when slicing a child.
+#[derive(Copy, Clone, Debug)]
+pub struct Scale9 {
+    pub bounds: Rectangle<Twips>,
+    pub grid: Rectangle<Twips>,
+    pub scale_x: f32,
+    pub scale_y: f32,
+}
+
+impl Scale9 {
+    /// Remaps a shape's geometry, returning it unchanged if the grid is unusable. Control
+    /// points go through the map like anchors; Flash Player does not subdivide curves.
+    ///
+    /// Must run before tessellation, since fill texture coordinates come from vertex positions.
+    ///
+    /// `to_grid_space` maps the shape's own coordinates into the grid's, for a child sliced by
+    /// its parent, and is undone afterwards; pass `None` when the shape owns the grid.
+    pub fn apply<'a>(
+        &self,
+        shape: DistilledShape<'a>,
+        to_grid_space: Option<Matrix>,
+    ) -> DistilledShape<'a> {
+        apply_scale9(shape, self, to_grid_space)
+    }
+
+    /// Whether this grid can slice, i.e. whether it is strictly inside the bounds on both axes.
+    ///
+    /// Callers must check this rather than relying on `apply` returning the shape untouched,
+    /// which would leave `unscale` stripping a scale nothing had applied.
+    pub fn is_usable(&self) -> bool {
+        Scale9Axis::new(
+            self.bounds.x_min,
+            self.bounds.x_max,
+            self.grid.x_min,
+            self.grid.x_max,
+            self.scale_x,
+        )
+        .and(Scale9Axis::new(
+            self.bounds.y_min,
+            self.bounds.y_max,
+            self.grid.y_min,
+            self.grid.y_max,
+            self.scale_y,
+        ))
+        .is_some()
+    }
+
+    /// Right-multiply an object's render matrix by this to draw geometry `apply` produced.
+    ///
+    /// The remap consumes the object's own scale, so it has to come back out of the matrix or
+    /// the shape is scaled twice. For a child sliced by its parent it is conjugated by the
+    /// child's matrix.
+    pub fn unscale(&self, to_grid_space: Option<Matrix>) -> Matrix {
+        let unscale = Matrix {
+            a: 1.0 / self.scale_x,
+            d: 1.0 / self.scale_y,
+            ..Default::default()
+        };
+        match to_grid_space {
+            Some(m) => match m.inverse() {
+                Some(inverse) => inverse * unscale * m,
+                None => Matrix::IDENTITY,
+            },
+            None => unscale,
+        }
+    }
+}
+
+/// Identifies a 9-sliced tessellation.
+///
+/// The scale is baked into the vertices and divided back out of the render matrix, so it is
+/// compared by bit pattern: reusing a near-miss renders the object at the wrong size.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Scale9Key {
+    bounds: Rectangle<Twips>,
+    grid: Rectangle<Twips>,
+    scale_x: u32,
+    scale_y: u32,
+    /// The linear part by bit pattern, the translation in twips.
+    to_grid_space: Option<([u32; 4], [i32; 2])>,
+    tessellation_scale: i32,
+    /// Distinguishes the interpolated frames of a morph; zero for anything that does not morph.
+    ratio: u16,
+}
+
+impl Scale9Key {
+    pub fn new(scale9: &Scale9, to_grid_space: Option<Matrix>) -> Self {
+        Self {
+            bounds: scale9.bounds,
+            grid: scale9.grid,
+            scale_x: scale9.scale_x.to_bits(),
+            scale_y: scale9.scale_y.to_bits(),
+            to_grid_space: to_grid_space.map(|m| {
+                (
+                    [m.a.to_bits(), m.b.to_bits(), m.c.to_bits(), m.d.to_bits()],
+                    [m.tx.get(), m.ty.get()],
+                )
+            }),
+            tessellation_scale: 0,
+            ratio: 0,
+        }
+    }
+
+    /// Unlike the rest of the key this is bucketed, since it only sets how finely curves are
+    /// subdivided and not where any vertex lands.
+    pub fn with_tessellation_scale(mut self, scale: f32) -> Self {
+        self.tessellation_scale = (scale * 16.0) as i32;
+        self
+    }
+
+    pub fn with_ratio(mut self, ratio: u16) -> Self {
+        self.ratio = ratio;
+        self
+    }
+}
+
+/// One-slot cache of the most recent 9-sliced tessellation. One slot suffices: an object
+/// renders against a single grid and scale per frame.
+#[derive(Clone, Debug, Default)]
+pub struct Scale9Cache {
+    slot: Option<(Scale9Key, ShapeHandle)>,
+}
+
+impl Scale9Cache {
+    /// The cached handle for `key`, or the one `build` makes, kept for the next lookup.
+    /// `None` from `build` passes through uncached.
+    pub fn get_or_register(
+        &mut self,
+        key: Scale9Key,
+        build: impl FnOnce() -> Option<ShapeHandle>,
+    ) -> Option<ShapeHandle> {
+        if let Some((cached, handle)) = &self.slot
+            && *cached == key
+        {
+            return Some(handle.clone());
+        }
+        let handle = build()?;
+        self.slot = Some((key, handle.clone()));
+        Some(handle)
+    }
+
+    pub fn clear(&mut self) {
+        self.slot = None;
+    }
+}
+
+/// Rewrites every `CubicCurveTo` as the quadratics it flattens to, leaving the rest alone.
+fn split_cubics(commands: &mut Vec<DrawCommand>) {
+    if !commands
+        .iter()
+        .any(|c| matches!(c, DrawCommand::CubicCurveTo { .. }))
+    {
+        return;
+    }
+
+    let mut out = Vec::with_capacity(commands.len());
+    let mut cursor = swf::Point::new(Twips::ZERO, Twips::ZERO);
+    for command in commands.drain(..) {
+        match command {
+            DrawCommand::CubicCurveTo {
+                control_a,
+                control_b,
+                anchor,
+            } => {
+                cubic_bezier_segment(cursor, control_a, control_b, anchor)
+                    .for_each_quadratic_bezier(CUBIC_CURVE_TOLERANCE, &mut |quad| {
+                        let back = |p: lyon_geom::Point<f64>| {
+                            swf::Point::new(Twips::from_pixels(p.x), Twips::from_pixels(p.y))
+                        };
+                        out.push(DrawCommand::QuadraticCurveTo {
+                            control: back(quad.ctrl),
+                            anchor: back(quad.to),
+                        });
+                    });
+                cursor = anchor;
+            }
+            other => {
+                cursor = other.end_point();
+                out.push(other);
+            }
+        }
+    }
+    *commands = out;
+}
+
+fn apply_scale9<'a>(
+    mut shape: DistilledShape<'a>,
+    scale9: &Scale9,
+    to_grid_space: Option<Matrix>,
+) -> DistilledShape<'a> {
+    let Scale9 {
+        bounds,
+        grid,
+        scale_x,
+        scale_y,
+    } = scale9;
+    let (Some(x), Some(y)) = (
+        Scale9Axis::new(bounds.x_min, bounds.x_max, grid.x_min, grid.x_max, *scale_x),
+        Scale9Axis::new(bounds.y_min, bounds.y_max, grid.y_min, grid.y_max, *scale_y),
+    ) else {
+        return shape;
+    };
+
+    // A singular child matrix cannot be undone, so there is nothing sensible to render.
+    let from_grid_space = match to_grid_space {
+        Some(m) => match m.inverse() {
+            Some(inverse) => Some(inverse),
+            None => return shape,
+        },
+        None => None,
+    };
+
+    let map_point = |point: swf::Point<Twips>| {
+        let mut p = match to_grid_space {
+            Some(m) => m * point,
+            None => point,
+        };
+        p.x = x.remap(p.x);
+        p.y = y.remap(p.y);
+        match from_grid_space {
+            Some(m) => m * p,
+            None => p,
+        }
+    };
+    let remap = |point: &mut swf::Point<Twips>| *point = map_point(*point);
+
+    // Sliced geometry runs past the rectangle it was authored in, so these have to grow with
+    // it or downstream clipping cuts the far corners off. Display bounds ignore slicing.
+    let map_bounds = |r: Rectangle<Twips>| {
+        let [a, b, c, d] = [
+            map_point(swf::Point::new(r.x_min, r.y_min)),
+            map_point(swf::Point::new(r.x_max, r.y_min)),
+            map_point(swf::Point::new(r.x_min, r.y_max)),
+            map_point(swf::Point::new(r.x_max, r.y_max)),
+        ];
+        Rectangle {
+            x_min: a.x.min(b.x).min(c.x).min(d.x),
+            y_min: a.y.min(b.y).min(c.y).min(d.y),
+            x_max: a.x.max(b.x).max(c.x).max(d.x),
+            y_max: a.y.max(b.y).max(c.y).max(d.y),
+        }
+    };
+
+    shape.shape_bounds = map_bounds(shape.shape_bounds);
+    shape.edge_bounds = map_bounds(shape.edge_bounds);
+
+    for path in shape.paths.iter_mut() {
+        let commands = match path {
+            DrawPath::Stroke { commands, .. } | DrawPath::Fill { commands, .. } => commands,
+        };
+
+        // Flash Player moves a path's fill by the affine taking the path's own bounds
+        // before the remap to its bounds after, not by the object's scale.
+        let region = grid_space_bbox(commands, to_grid_space);
+        let (kx, ox) = x.span_affine(region[0], region[2]);
+        let (ky, oy) = y.span_affine(region[1], region[3]);
+        let fit = Matrix {
+            a: kx as f32,
+            b: 0.0,
+            c: 0.0,
+            d: ky as f32,
+            tx: Twips::new(ox.round() as i32),
+            ty: Twips::new(oy.round() as i32),
+        };
+        let fill_transform = match (to_grid_space, from_grid_space) {
+            (Some(m), Some(inverse)) => inverse * fit * m,
+            _ => fit,
+        };
+
+        // A cubic has to become quadratics before the map runs, not after. The map is
+        // piecewise linear, so it does not commute with the conversion, and Flash Player has
+        // only quadratics to remap -- SWF has no cubic segment.
+        split_cubics(commands);
+
+        for command in commands.iter_mut() {
+            match command {
+                DrawCommand::MoveTo(point) | DrawCommand::LineTo(point) => remap(point),
+                DrawCommand::QuadraticCurveTo { control, anchor } => {
+                    remap(control);
+                    remap(anchor);
+                }
+                DrawCommand::CubicCurveTo { .. } => unreachable!("cubics are split above"),
+            }
+        }
+
+        match path {
+            DrawPath::Fill { style, .. } => {
+                if let Some(moved) = transformed_fill(style, fill_transform) {
+                    *style = Cow::Owned(moved);
+                }
+            }
+            DrawPath::Stroke { style, .. } => {
+                if let Some(moved) = transformed_fill(style.fill_style(), fill_transform) {
+                    let updated = style.as_ref().clone().with_fill_style(moved);
+                    *style = Cow::Owned(updated);
+                }
+            }
+        }
+    }
+    shape
+}
+
+/// `[x_min, y_min, x_max, y_max]` in the grid's coordinate space, over anchors and control
+/// points alike, so a curve bulging into the next region is not misread as belonging here.
+fn grid_space_bbox(commands: &[DrawCommand], to_grid_space: Option<Matrix>) -> [f64; 4] {
+    let mut bbox = [f64::MAX, f64::MAX, f64::MIN, f64::MIN];
+    let mut include = |p: swf::Point<Twips>| {
+        let p = match to_grid_space {
+            Some(m) => m * p,
+            None => p,
+        };
+        bbox[0] = bbox[0].min(p.x.get() as f64);
+        bbox[1] = bbox[1].min(p.y.get() as f64);
+        bbox[2] = bbox[2].max(p.x.get() as f64);
+        bbox[3] = bbox[3].max(p.y.get() as f64);
+    };
+    // `Drawing` opens each path with a `MoveTo` at the previous path's end and closes an
+    // open stroke with a zero-length `LineTo` back to its start; neither puts ink down, so
+    // neither may stretch the bbox. A `MoveTo` only counts once ink departs from it.
+    let mut pending_move = None;
+    for command in commands {
+        match command {
+            DrawCommand::MoveTo(point) => pending_move = Some(*point),
+            DrawCommand::LineTo(point) if pending_move == Some(*point) => {}
+            DrawCommand::LineTo(point) => {
+                if let Some(start) = pending_move.take() {
+                    include(start);
+                }
+                include(*point);
+            }
+            DrawCommand::QuadraticCurveTo { control, anchor } => {
+                if let Some(start) = pending_move.take() {
+                    include(start);
+                }
+                include(*control);
+                include(*anchor);
+            }
+            DrawCommand::CubicCurveTo {
+                control_a,
+                control_b,
+                anchor,
+            } => {
+                if let Some(start) = pending_move.take() {
+                    include(start);
+                }
+                include(*control_a);
+                include(*control_b);
+                include(*anchor);
+            }
+        }
+    }
+    bbox
 }
 
 #[cfg(test)]
