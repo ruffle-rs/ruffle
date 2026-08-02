@@ -1,0 +1,132 @@
+=== Testing AVABRParameters
+policy: hello string
+Successfully set policy to 123.45, type string
+startBitsPerSecond: 2 number
+Successfully set startBitsPerSecond to 123, type number
+minBitsPerSecond: 3 number
+Successfully set minBitsPerSecond to 123, type number
+maxBitsPerSecond: 4 number
+Successfully set maxBitsPerSecond to 123, type number
+
+=== Testing AVABRProfileInfo
+bitsPerSecond: 1 number
+ReferenceError: Error #1074: Illegal write to read-only property bitsPerSecond on flash.media.AVABRProfileInfo.
+width: 2 number
+ReferenceError: Error #1074: Illegal write to read-only property width on flash.media.AVABRProfileInfo.
+height: 3 number
+ReferenceError: Error #1074: Illegal write to read-only property height on flash.media.AVABRProfileInfo.
+
+=== Testing AVCuePoint
+== with null dictionary
+dictionary: null object
+ReferenceError: Error #1074: Illegal write to read-only property dictionary on flash.media.AVCuePoint.
+== with actual dictionary
+dictionary: [object Dictionary] object
+ReferenceError: Error #1074: Illegal write to read-only property dictionary on flash.media.AVCuePoint.
+localTime: 2.2 number
+ReferenceError: Error #1074: Illegal write to read-only property localTime on flash.media.AVCuePoint.
+
+=== Testing AVInsertionResult
+o is AVResult: true
+result: 1 number
+ReferenceError: Error #1074: Illegal write to read-only property result on flash.media.AVInsertionResult.
+periodIndex: 2 number
+ReferenceError: Error #1074: Illegal write to read-only property periodIndex on flash.media.AVInsertionResult.
+insertedBeforeReadHead: true boolean
+ReferenceError: Error #1074: Illegal write to read-only property insertedBeforeReadHead on flash.media.AVInsertionResult.
+
+=== Testing AVNetworkingParams
+== with default params
+forceNativeNetworking: false boolean
+Successfully set forceNativeNetworking to true, type boolean
+readSetCookieHeader: true boolean
+Successfully set readSetCookieHeader to true, type boolean
+useCookieHeaderForAllRequests: false boolean
+Successfully set useCookieHeaderForAllRequests to true, type boolean
+networkDownVerificationUrl:  string
+Successfully set networkDownVerificationUrl to 123.45, type string
+appendRandomQueryParameter:  string
+Successfully set appendRandomQueryParameter to 123.45, type string
+== with provided params
+forceNativeNetworking: true boolean
+Successfully set forceNativeNetworking to true, type boolean
+readSetCookieHeader: false boolean
+Successfully set readSetCookieHeader to true, type boolean
+useCookieHeaderForAllRequests: true boolean
+Successfully set useCookieHeaderForAllRequests to true, type boolean
+networkDownVerificationUrl: hello string
+Successfully set networkDownVerificationUrl to 123.45, type string
+appendRandomQueryParameter:  string
+Successfully set appendRandomQueryParameter to 123.45, type string
+
+=== Testing AVPeriodInfo
+localStartTime: 1.1 number
+ReferenceError: Error #1074: Illegal write to read-only property localStartTime on flash.media.AVPeriodInfo.
+virtualStartTime: 2.2 number
+ReferenceError: Error #1074: Illegal write to read-only property virtualStartTime on flash.media.AVPeriodInfo.
+duration: 3.3 number
+ReferenceError: Error #1074: Illegal write to read-only property duration on flash.media.AVPeriodInfo.
+firstCuePointIndex: 4 number
+ReferenceError: Error #1074: Illegal write to read-only property firstCuePointIndex on flash.media.AVPeriodInfo.
+lastCuePointIndex: 5 number
+ReferenceError: Error #1074: Illegal write to read-only property lastCuePointIndex on flash.media.AVPeriodInfo.
+firstSubscribedTagIndex: 6 number
+ReferenceError: Error #1074: Illegal write to read-only property firstSubscribedTagIndex on flash.media.AVPeriodInfo.
+lastSubscribedTagIndex: 7 number
+ReferenceError: Error #1074: Illegal write to read-only property lastSubscribedTagIndex on flash.media.AVPeriodInfo.
+userData: 8 number
+ReferenceError: Error #1074: Illegal write to read-only property userData on flash.media.AVPeriodInfo.
+supportsTrickPlay: true boolean
+ReferenceError: Error #1074: Illegal write to read-only property supportsTrickPlay on flash.media.AVPeriodInfo.
+targetDuration: 10.1 number
+ReferenceError: Error #1074: Illegal write to read-only property targetDuration on flash.media.AVPeriodInfo.
+
+=== Testing AVPlayState
+state: 1 number
+ReferenceError: Error #1074: Illegal write to read-only property state on flash.media.AVPlayState.
+
+=== Testing AVResult
+result: 1 number
+ReferenceError: Error #1074: Illegal write to read-only property result on flash.media.AVResult.
+
+=== Testing AVTagData
+data: hello string
+ReferenceError: Error #1074: Illegal write to read-only property data on flash.media.AVTagData.
+localTime: 2.2 number
+ReferenceError: Error #1074: Illegal write to read-only property localTime on flash.media.AVTagData.
+
+=== Testing AVTimeline
+type: hello string
+ReferenceError: Error #1074: Illegal write to read-only property type on flash.media.AVTimeline.
+virtualStartTime: 2.2 number
+ReferenceError: Error #1074: Illegal write to read-only property virtualStartTime on flash.media.AVTimeline.
+virtualDuration: 3.3 number
+ReferenceError: Error #1074: Illegal write to read-only property virtualDuration on flash.media.AVTimeline.
+firstPeriodIndex: 4 number
+ReferenceError: Error #1074: Illegal write to read-only property firstPeriodIndex on flash.media.AVTimeline.
+lastPeriodIndex: 5 number
+ReferenceError: Error #1074: Illegal write to read-only property lastPeriodIndex on flash.media.AVTimeline.
+firstSubscribedTagIndex: 6 number
+ReferenceError: Error #1074: Illegal write to read-only property firstSubscribedTagIndex on flash.media.AVTimeline.
+lastSubscribedTagIndex: 7 number
+ReferenceError: Error #1074: Illegal write to read-only property lastSubscribedTagIndex on flash.media.AVTimeline.
+complete: true boolean
+ReferenceError: Error #1074: Illegal write to read-only property complete on flash.media.AVTimeline.
+
+=== Testing AVTrackInfo
+description: hello string
+ReferenceError: Error #1074: Illegal write to read-only property description on flash.media.AVTrackInfo.
+language: world string
+ReferenceError: Error #1074: Illegal write to read-only property language on flash.media.AVTrackInfo.
+defaultTrack: true boolean
+ReferenceError: Error #1074: Illegal write to read-only property defaultTrack on flash.media.AVTrackInfo.
+autoSelect: true boolean
+ReferenceError: Error #1074: Illegal write to read-only property autoSelect on flash.media.AVTrackInfo.
+forced: true boolean
+ReferenceError: Error #1074: Illegal write to read-only property forced on flash.media.AVTrackInfo.
+activity: true boolean
+ReferenceError: Error #1074: Illegal write to read-only property activity on flash.media.AVTrackInfo.
+dataTrackInfoServiceType: 7.7 string
+ReferenceError: Error #1074: Illegal write to read-only property dataTrackInfoServiceType on flash.media.AVTrackInfo.
+pid: 8 number
+ReferenceError: Error #1074: Illegal write to read-only property pid on flash.media.AVTrackInfo.
