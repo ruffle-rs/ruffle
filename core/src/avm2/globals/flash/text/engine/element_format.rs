@@ -1,5 +1,5 @@
 use crate::avm2::activation::Activation;
-use crate::avm2::error::{Error2004Type, make_error_2004, make_error_2007, make_error_2008};
+use crate::avm2::error::{Error2004Type, make_error_2004, make_error_2008};
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
 use crate::avm2::{Avm2StrRepresentable, Error};
@@ -275,14 +275,14 @@ pub fn set_font_description<'gc>(
         .unwrap()
         .as_element_format_object()
         .unwrap();
+
     let fd = args
-        .get_value(0)
-        .as_object()
-        .and_then(|o| o.as_font_description_object());
-    let Some(fd) = fd else {
-        return Err(make_error_2007(activation, "fontDescription"));
-    };
+        .get_object(activation, 0, "fontDescription")?
+        .as_font_description_object()
+        .unwrap();
+
     this.set_font_description(fd, activation.gc());
+
     Ok(Value::Undefined)
 }
 
