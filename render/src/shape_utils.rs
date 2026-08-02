@@ -2,6 +2,7 @@ use crate::matrix::Matrix;
 use enum_map::Enum;
 use ruffle_wstr::{FromWStr, WStr};
 use smallvec::SmallVec;
+use std::borrow::Cow;
 use swf::{CharacterId, FillStyle, LineStyle, Rectangle, Shape, ShapeRecord, Twips};
 
 /// Controls the accuracy of the approximated quadratic curve, when splitting up a cubic curve
@@ -117,12 +118,12 @@ pub fn calculate_shape_bounds(shape_records: &[swf::ShapeRecord]) -> swf::Rectan
 #[cfg_attr(test, derive(PartialEq))]
 pub enum DrawPath<'a> {
     Stroke {
-        style: &'a LineStyle,
+        style: Cow<'a, LineStyle>,
         is_closed: bool,
         commands: Vec<DrawCommand>,
     },
     Fill {
-        style: &'a FillStyle,
+        style: Cow<'a, FillStyle>,
         commands: Vec<DrawCommand>,
         winding_rule: FillRule,
     },
@@ -547,7 +548,7 @@ impl<'a> ShapeConverter<'a> {
             }
             let style = unsafe { self.fill_styles.get_unchecked(i) };
             self.commands.push(DrawPath::Fill {
-                style,
+                style: Cow::Borrowed(style),
                 commands: path.to_draw_commands().collect(),
                 winding_rule: self.winding_rule,
             });
@@ -565,7 +566,7 @@ impl<'a> ShapeConverter<'a> {
                     continue;
                 }
                 self.commands.push(DrawPath::Stroke {
-                    style,
+                    style: Cow::Borrowed(style),
                     is_closed: segment.is_closed(),
                     commands: segment.to_draw_commands().collect(),
                 });
@@ -1414,7 +1415,7 @@ mod tests {
         ]);
         let commands = ShapeConverter::from_shape(&shape).into_commands();
         let expected = vec![DrawPath::Fill {
-            style: &FILL_STYLES[0],
+            style: Cow::Borrowed(&FILL_STYLES[0]),
             commands: vec![
                 DrawCommand::MoveTo(swf::Point::from_pixels(100.0, 100.0)),
                 DrawCommand::LineTo(swf::Point::from_pixels(200.0, 100.0)),
@@ -1460,7 +1461,7 @@ mod tests {
         ]);
         let commands = ShapeConverter::from_shape(&shape).into_commands();
         let expected = vec![DrawPath::Fill {
-            style: &FILL_STYLES[0],
+            style: Cow::Borrowed(&FILL_STYLES[0]),
             commands: vec![
                 DrawCommand::MoveTo(swf::Point::from_pixels(100.0, 100.0)),
                 DrawCommand::LineTo(swf::Point::from_pixels(200.0, 100.0)),
