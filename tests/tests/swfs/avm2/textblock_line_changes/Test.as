@@ -4,7 +4,7 @@ package {
 
     public class Test extends MovieClip {
         public function Test() {
-            var content:ContentElement = new TextElement("Lorem ipsum dolor\nsit amet, consectetur adipiscing elit, sed\ndo eiusmod tempor\nincididunt ut labore\net dolore magna");
+            var content:ContentElement = new TextElement("Lorem ipsum dolor\nsit amet, consectetur adipiscing elit, sed\ndo eiusmod tempor\nincididunt ut labore\net dolore magna\naliqua. Ut enim ad");
             content.elementFormat = new ElementFormat();
             var block:TextBlock = new TextBlock(content);
 
@@ -50,15 +50,50 @@ package {
 
             dumpInfo(block, linesList);
 
-            var createResult:TextLine = block.createTextLine(line0, null, 1000);
+            var createResult:TextLine = block.createTextLine(null, 1000);
 
             trace("Calling createTextLine returns the same line: " + (line0 === createResult));
+
+            dumpInfo(block, linesList);
+
+            line4.validity = "static";
+
+            dumpInfo(block, linesList);
+
+            // Reset state
+            block.recreateTextLine(line0, null, 1000);
+            line0.y = 20;
+
+            block.recreateTextLine(line1, line0, 1000);
+            line1.y = 40;
+
+            block.recreateTextLine(line2, line1, 1000);
+            line2.y = 60;
+
+            block.recreateTextLine(line3, line2, 1000);
+            line3.y = 80;
+
+            block.recreateTextLine(line4, line3, 1000);
+            line4.y = 100;
+
+            dumpInfo(block, linesList);
+
+            var line5:TextLine = block.createTextLine(line4, 1000);
+            line5.y = 120;
+            addChild(line5);
+
+            linesList.push(line5);
+
+            dumpInfo(block, linesList);
+
+            block.createTextLine(line4, 1000);
 
             dumpInfo(block, linesList);
         }
 
         static function dumpInfo(block:TextBlock, linesList:Array):void {
             trace("First line in block: " + formatTextLine(block.firstLine, linesList));
+            trace("Last line in block: " + formatTextLine(block.lastLine, linesList));
             for (var i:int = 0; i < linesList.length; i ++) {
                 var line:TextLine = linesList[i];
                 trace("Line #" + i + ":");
