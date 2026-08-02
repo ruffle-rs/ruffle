@@ -580,8 +580,14 @@ impl<'gc> TDisplayObject<'gc> for Avm2Button<'gc> {
         Default::default()
     }
 
-    /// A button is measured from the state it is showing, which descends one level further
-    /// than elsewhere: the state sprite holding the art is ours, not the author's.
+    /// Bounds come from the state currently being shown, descending one level further than
+    /// elsewhere: for a multi-record state the child is a wrapper sprite Ruffle creates, not
+    /// something the SWF authored.
+    ///
+    /// Rendering does not pierce that wrapper the same way, so multi-record state art sits
+    /// one level too deep for the grid to reach; Flash Player leaves it unsliced too, which
+    /// the visual/scale9grid_tag test pins. Validation still runs against these bounds, so
+    /// the property round-trips even where it has no visual effect.
     fn self_bounds_for_scale9(self) -> Rectangle<Twips> {
         match self.get_state_child(self.0.state.get().into()) {
             Some(child) => child.base().matrix() * child.self_bounds_for_scale9(),

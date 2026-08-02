@@ -1,0 +1,9 @@
+num_ticks = 1
+
+# Single pixel columns where a hard gradient stop lands between two pixels.
+[image_comparisons.output]
+tolerance = 1
+max_outliers = 2600
+
+[player_options]
+with_renderer = { optional = false }

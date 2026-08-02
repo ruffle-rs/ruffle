@@ -2,16 +2,19 @@ use crate::context::RenderContext;
 use ruffle_render::backend::{RenderBackend, ShapeHandle};
 use ruffle_render::bitmap::{BitmapHandle, BitmapInfo, BitmapSize, BitmapSource};
 use ruffle_render::commands::CommandHandler;
+use ruffle_render::matrix::Matrix;
 use ruffle_render::shape_utils::{
-    DistilledShape, DrawCommand, DrawPath, FillRule, cubic_curve_bounds, quadratic_curve_bounds,
+    DistilledShape, DrawCommand, DrawPath, FillRule, Scale9, Scale9Cache, Scale9Key,
+    cubic_curve_bounds, quadratic_curve_bounds,
 };
 use std::borrow::Cow;
-use std::cell::OnceCell;
+use std::cell::{OnceCell, RefCell};
 use swf::{FillStyle, LineStyle, Point, Rectangle, Twips};
 
 #[derive(Clone, Debug)]
 pub struct Drawing {
     render_handle: OnceCell<ShapeHandle>,
+    scale9_cache: RefCell<Scale9Cache>,
     shape_bounds: Rectangle<Twips>,
     edge_bounds: Rectangle<Twips>,
     paths: Vec<DrawingPath>,
@@ -36,6 +39,7 @@ impl Drawing {
     pub fn new() -> Self {
         Self {
             render_handle: OnceCell::new(),
+            scale9_cache: RefCell::new(Scale9Cache::default()),
             shape_bounds: Default::default(),
             edge_bounds: Default::default(),
             paths: Vec::new(),
@@ -53,6 +57,7 @@ impl Drawing {
     pub fn from_swf_shape(shape: &swf::Shape) -> Self {
         let mut this = Self {
             render_handle: OnceCell::new(),
+            scale9_cache: RefCell::new(Scale9Cache::default()),
             shape_bounds: shape.shape_bounds,
             edge_bounds: shape.edge_bounds,
             paths: Vec::new(),
@@ -108,6 +113,7 @@ impl Drawing {
     fn mark_dirty(&mut self) {
         self.is_empty = false;
         self.render_handle.take();
+        self.scale9_cache.get_mut().clear();
     }
 
     /// Set fill style and reset fill rule to default.
@@ -164,6 +170,7 @@ impl Drawing {
 
         // An empty drawing doesn't need to hold onto a `ShapeHandle`.
         self.render_handle.take();
+        self.scale9_cache.get_mut().clear();
     }
 
     pub fn set_line_style(&mut self, style: Option<LineStyle>) {
@@ -322,11 +329,44 @@ impl Drawing {
         Some(handle.clone())
     }
 
+    /// Obtain a `ShapeHandle` for this drawing 9-sliced against `grid`.
+    pub fn register_scale9(
+        &self,
+        renderer: &mut dyn RenderBackend,
+        scale9: &Scale9,
+        to_grid_space: Option<Matrix>,
+    ) -> Option<ShapeHandle> {
+        if self.is_empty {
+            return None;
+        }
+
+        self.scale9_cache
+            .borrow_mut()
+            .get_or_register(Scale9Key::new(scale9, to_grid_space), || {
+                Some(renderer.register_shape(scale9.apply(self.distill(), to_grid_space), self))
+            })
+    }
+
     pub fn render(&self, context: &mut RenderContext) {
         if let Some(handle) = self.register_or_replace(context.renderer) {
             context
                 .commands
                 .render_shape(handle, context.transform_stack.transform());
+        }
+    }
+
+    /// Render 9-sliced. `to_grid_space` is the child's matrix when a container's grid is
+    /// being applied to it, and `None` when this drawing owns the grid.
+    pub fn render_scale9(
+        &self,
+        context: &mut RenderContext,
+        scale9: &Scale9,
+        to_grid_space: Option<Matrix>,
+    ) {
+        if let Some(handle) = self.register_scale9(context.renderer, scale9, to_grid_space) {
+            let mut transform = context.transform_stack.transform();
+            transform.matrix *= scale9.unscale(to_grid_space);
+            context.commands.render_shape(handle, transform);
         }
     }
 

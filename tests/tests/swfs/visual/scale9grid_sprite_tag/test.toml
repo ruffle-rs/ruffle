@@ -1,0 +1,10 @@
+# A DefineScalingGrid on a sprite slicing the single DefineShape4 placed inside it: a
+# rounded rectangle whose corners must keep their radius. Antialiasing along the outline.
+num_ticks = 1
+
+[image_comparisons.output]
+tolerance = 1
+max_outliers = 2400
+
+[player_options]
+with_renderer = { optional = false }

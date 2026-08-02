@@ -1,0 +1,14 @@
+# One morph at ratios 0 / 32768 / 65535 in three columns: sliced by its own grid, plain,
+# and sliced by a containing sprite's grid. See generate.py.
+#
+# The outlier budget is antialiasing along nine long curved outlines, which the two
+# rasterisers resolve differently; the shapes themselves land on identical pixel spans.
+# A geometry error is far noisier than this (the interpolated-bounds bug measured 29k).
+num_ticks = 1
+
+[image_comparisons.output]
+tolerance = 1
+max_outliers = 21000
+
+[player_options]
+with_renderer = { optional = false }

@@ -1,0 +1,9 @@
+num_ticks = 1
+
+# Fractional geometry puts some band edges mid-pixel.
+[image_comparisons.output]
+tolerance = 1
+max_outliers = 320
+
+[player_options]
+with_renderer = { optional = false }
