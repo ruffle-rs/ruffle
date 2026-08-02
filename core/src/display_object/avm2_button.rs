@@ -580,6 +580,15 @@ impl<'gc> TDisplayObject<'gc> for Avm2Button<'gc> {
         Default::default()
     }
 
+    /// A button is measured from the state it is showing, which descends one level further
+    /// than elsewhere: the state sprite holding the art is ours, not the author's.
+    fn self_bounds_for_scale9(self) -> Rectangle<Twips> {
+        match self.get_state_child(self.0.state.get().into()) {
+            Some(child) => child.base().matrix() * child.self_bounds_for_scale9(),
+            None => Default::default(),
+        }
+    }
+
     fn bounds_with_transform(self, matrix: &Matrix, mode: BoundsMode) -> Rectangle<Twips> {
         // A scroll rect completely overrides an object's bounds,
         // and can even grow the bounding box to be larger than the actual content

@@ -1,0 +1,88 @@
+initial: null
+inside: (x=20, y=20, w=20, h=20)
+touching left: threw ArgumentError: Error #2004: One of the parameters is invalid.
+	at flash.display::DisplayObject/set scale9Grid()
+	at Test/set()
+	at Test()
+touching right: threw ArgumentError: Error #2004: One of the parameters is invalid.
+	at flash.display::DisplayObject/set scale9Grid()
+	at Test/set()
+	at Test()
+equal to bounds: threw ArgumentError: Error #2004: One of the parameters is invalid.
+	at flash.display::DisplayObject/set scale9Grid()
+	at Test/set()
+	at Test()
+outside: threw ArgumentError: Error #2004: One of the parameters is invalid.
+	at flash.display::DisplayObject/set scale9Grid()
+	at Test/set()
+	at Test()
+zero width: threw ArgumentError: Error #2004: One of the parameters is invalid.
+	at flash.display::DisplayObject/set scale9Grid()
+	at Test/set()
+	at Test()
+negative width: threw ArgumentError: Error #2004: One of the parameters is invalid.
+	at flash.display::DisplayObject/set scale9Grid()
+	at Test/set()
+	at Test()
+infinite x: threw ArgumentError: Error #2004: One of the parameters is invalid.
+	at flash.display::DisplayObject/set scale9Grid()
+	at Test/set()
+	at Test()
+nan width: threw ArgumentError: Error #2004: One of the parameters is invalid.
+	at flash.display::DisplayObject/set scale9Grid()
+	at Test/set()
+	at Test()
+huge: threw ArgumentError: Error #2004: One of the parameters is invalid.
+	at flash.display::DisplayObject/set scale9Grid()
+	at Test/set()
+	at Test()
+quantise up: (x=11, y=11, w=20, h=20)
+quantise down: (x=10, y=10, w=20, h=20)
+half twip: (x=10, y=10, w=20, h=20)
+half pixel: (x=10, y=10, w=39, h=39)
+cleared: null
+grandchild getBounds: (x=0, y=0, w=60, h=60)
+art two levels down: threw ArgumentError: Error #2004: One of the parameters is invalid.
+	at flash.display::DisplayObject/set scale9Grid()
+	at Test/set()
+	at Test()
+textfield getBounds: (x=0, y=0, w=60, h=60)
+textfield child: threw ArgumentError: Error #2004: One of the parameters is invalid.
+	at flash.display::DisplayObject/set scale9Grid()
+	at Test/set()
+	at Test()
+textfield itself: threw ArgumentError: Error #2004: One of the parameters is invalid.
+	at flash.display::DisplayObject/set scale9Grid()
+	at Test/set()
+	at Test()
+stroked getBounds: (x=-8, y=-8, w=76, h=76)
+stroke inflated edge: threw ArgumentError: Error #2004: One of the parameters is invalid.
+	at flash.display::DisplayObject/set scale9Grid()
+	at Test/set()
+	at Test()
+button: (x=20, y=20, w=20, h=20)
+empty button: threw ArgumentError: Error #2004: One of the parameters is invalid.
+	at flash.display::DisplayObject/set scale9Grid()
+	at Test/set()
+	at Test()
+bitmap: (x=20, y=20, w=20, h=20)
+stage: threw Error: Error #2071: The Stage class does not implement this property or method.
+	at Error$/throwError()
+	at flash.display::Stage/set scale9Grid()
+	at Test/set()
+	at Test()
+ungridded 3x: w=180 h=60 (x=0, y=0, w=180, h=60)
+gridded 3x: w=180 h=60 (x=0, y=0, w=180, h=60)
+gridded 0.25x: w=15 h=60 (x=0, y=0, w=15, h=60)
+hit x=10: shape true, box true
+hit x=30: shape true, box true
+hit x=40: shape true, box true
+hit x=50: shape true, box true
+hit x=70: shape false, box true
+hit x=130: shape false, box true
+hit x=170: shape false, box true
+localToGlobal: (x=60, y=20)
+globalToLocal: (x=20, y=20)
+button plain: 11011
+button gridded hit: 11011
+button gridded self: 11011
