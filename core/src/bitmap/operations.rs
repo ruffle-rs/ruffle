@@ -1538,6 +1538,10 @@ pub fn draw<'gc>(
         is_offscreen: true,
         use_bitmap_cache: false,
         stage: context.stage,
+        untransformed_source: match &source {
+            IBitmapDrawable::DisplayObject(object) => Some(*object),
+            IBitmapDrawable::BitmapData(_) => None,
+        },
     };
 
     // Make the screen opacity match the opacity of this bitmap

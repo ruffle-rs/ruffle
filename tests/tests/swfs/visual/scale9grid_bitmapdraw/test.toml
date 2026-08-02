@@ -1,0 +1,16 @@
+num_ticks = 1
+
+# Antialiasing along the drawn edges.
+[image_comparisons.output]
+tolerance = 1
+max_outliers = 60
+
+[player_options]
+with_renderer = { optional = false }
+
+[[compilers]]
+type = "Asc"
+target = "test.swf"
+class = "Test"
+scripts = ["Test.as"]
+swf_version = 43

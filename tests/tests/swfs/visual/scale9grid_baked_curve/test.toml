@@ -1,0 +1,18 @@
+num_ticks = 3
+
+# Curve outlines only: the two rasterisers flatten and antialias curves differently.
+# Measured 2049; a curve split at the grid line instead of remapped would shift a 7px
+# band along the silhouette and blow far past this.
+[image_comparisons.output]
+tolerance = 1
+max_outliers = 3000
+
+[player_options]
+with_renderer = { optional = false }
+
+[[compilers]]
+type = "Asc"
+target = "test.swf"
+class = "Test"
+scripts = ["Test.as"]
+swf_version = 43

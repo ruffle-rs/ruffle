@@ -594,6 +594,10 @@ pub struct RenderContext<'a, 'gc> {
 
     /// The current player's stage (including all loaded levels)
     pub stage: Stage<'gc>,
+
+    /// The object `BitmapData.draw` is drawing without its own transform, if any. Its scaling
+    /// grid is left off with the transform: there is no scale left for the grid to stretch.
+    pub untransformed_source: Option<DisplayObject<'gc>>,
 }
 
 impl<'gc> RenderContext<'_, 'gc> {
