@@ -4,9 +4,11 @@ use crate::avm2::object::font_description_object::FontDescriptionObject;
 use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{ClassObject, Object, TObject};
 use crate::fte::{
-    BreakOpportunityValue, DigitCaseValue, DigitWidthValue, KerningValue, LigatureLevelValue,
-    TextBaselineValue, TextRotationValue, TypographicCaseValue,
+    BreakOpportunityValue, DigitCaseValue, DigitWidthValue, FontLookupValue, FontPostureValue,
+    FontWeightValue, KerningValue, LigatureLevelValue, TextBaselineValue, TextRotationValue,
+    TypographicCaseValue,
 };
+use crate::html::TextFormat;
 use crate::string::AvmString;
 use core::fmt;
 use gc_arena::barrier::unlock;
@@ -243,6 +245,28 @@ impl<'gc> ElementFormatObject<'gc> {
 
     pub fn set_locked(self, value: bool) {
         self.0.locked.set(value);
+    }
+
+    pub fn as_text_format(self) -> TextFormat {
+        let (font, bold, italic, _is_device_font) = if let Some(fd) = self.font_description() {
+            (
+                Some(fd.font_name().as_wstr().into()),
+                Some(fd.font_weight() == FontWeightValue::Bold),
+                Some(fd.font_posture() == FontPostureValue::Italic),
+                fd.font_lookup() == FontLookupValue::Device,
+            )
+        } else {
+            (None, None, None, true)
+        };
+
+        TextFormat {
+            color: Some(self.color()),
+            size: Some(self.font_size()),
+            font,
+            bold,
+            italic,
+            ..TextFormat::default()
+        }
     }
 }
 

@@ -1,22 +1,15 @@
-use ruffle_common::avm_string::AvmString;
-use ruffle_macros::istr;
-
 use crate::avm2::Avm2;
 use crate::avm2::Avm2StrRepresentable;
 use crate::avm2::activation::Activation;
 use crate::avm2::error::{Error, Error2004Type, make_error_2004, make_error_2008, make_error_2175};
 use crate::avm2::globals::flash::display::display_object::initialize_for_allocator;
-use crate::avm2::globals::methods::flash_text_engine_content_element as element_methods;
-use crate::avm2::object::{ContentElementObject, ElementFormatObject, VectorObject};
+use crate::avm2::object::{ContentElementObject, ElementData, VectorObject};
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
 use crate::display_object::{EditText, TDisplayObject, TextLine};
-use crate::fte::{
-    FontLookupValue, FontPostureValue, FontWeightValue, TextBaselineValue,
-    TextLineCreationResultValue, TextRotationValue,
-};
-use crate::html::TextFormat;
-use crate::string::WStr;
+use crate::fte::{TextBaselineValue, TextLineCreationResultValue, TextRotationValue};
+use crate::html::{FormatSpans, TextFormat, TextSpan};
+use crate::string::{WStr, WString};
 use crate::{avm2_stub_getter, avm2_stub_setter};
 
 pub use crate::avm2::object::text_block_allocator;
@@ -274,8 +267,14 @@ pub fn set_content<'gc>(
         .try_get_object(0)
         .map(|v| v.as_content_element_object().unwrap());
 
-    if this.content().is_some() {
-        avm2_stub_setter!(activation, "flash.text.engine.TextBlock", "content");
+    // Flash forbids setting a `TextBlock`'s content to a user-defined subclass
+    // of `ContentElement`
+    let is_invalid = content.is_some_and(|c| {
+        let data = c.element_data();
+        matches!(&*data, ElementData::Invalid)
+    });
+    if is_invalid {
+        return Err(make_error_2004(activation, Error2004Type::ArgumentError));
     }
 
     this.set_content(content, activation.gc());
@@ -346,24 +345,27 @@ pub fn do_create_text_line<'gc>(
 
     let content = block.content().expect("Guaranteed by AS checks");
 
-    let Some(element_format) = content.element_format() else {
-        // For some reason, FP handles this error as it handles an uncaught
-        // exception, and returns `null` from this method.
-        let error = make_error_2175(activation);
-
-        Avm2::uncaught_error(activation, None, error, "Error creating TextLine");
-
-        return Ok(Value::Null);
-    };
-
     let previous_position = if let Some(previous_text_line) = previous_text_line {
         previous_text_line.end_index() as usize
     } else {
         0
     };
 
-    let text = get_text_from_content(content, activation)?;
-    let text = text.unwrap_or_else(|| istr!("")).as_wstr();
+    let spans = match get_spans_from_content(content) {
+        Ok(spans) => spans,
+        Err(HandleContentError::NullElementFormat) => {
+            // For some reason, FP handles this error as it handles an uncaught
+            // exception, and returns `null` from this method.
+            let error = make_error_2175(activation);
+
+            Avm2::uncaught_error(activation, None, error, "Error creating TextLine");
+
+            return Ok(Value::Null);
+        }
+    };
+
+    // TODO don't discard the formatting
+    let text = spans.text();
 
     if previous_position > text.len() {
         // This can happen when the content is changed after creating a TextLine.
@@ -406,11 +408,16 @@ pub fn do_create_text_line<'gc>(
 
     fallback.set_text(subtext, activation.context);
 
+    let format = spans
+        .span(0)
+        .expect("Non-empty text should have at least one span")
+        .get_text_format();
+
+    apply_format(activation, fallback, format, line_index);
+
     // FIXME: This needs to use `intrinsic_bounds` to measure the width
     // of the provided text, and set the width of the EditText to that.
     // Some games depend on this (e.g. Realm Grinder).
-
-    apply_format(activation, fallback, element_format, line_index);
 
     text_line.set_text_block(Some(block), activation.gc());
     text_line.set_specified_width(width);
@@ -445,25 +452,62 @@ fn create_text_line<'gc>(activation: &mut Activation<'_, 'gc>, width: f64) -> Te
     text_line
 }
 
-fn get_text_from_content<'gc>(
+enum HandleContentError {
+    NullElementFormat,
+}
+
+fn get_spans_from_content<'gc>(
     content: ContentElementObject<'gc>,
-    activation: &mut Activation<'_, 'gc>,
-) -> Result<Option<AvmString<'gc>>, Error<'gc>> {
-    let text = Value::from(content).call_method(element_methods::GET_TEXT, &[], activation)?;
+) -> Result<FormatSpans, HandleContentError> {
+    let mut all_text = WString::new();
+    let mut all_spans = Vec::new();
 
-    if matches!(text, Value::Null) {
-        return Ok(None);
+    handle_content_element(content, &mut all_text, &mut all_spans)?;
+
+    let mut spans = FormatSpans::from_str_and_spans(&all_text, &all_spans);
+    spans.normalize();
+    Ok(spans)
+}
+
+fn handle_content_element<'gc>(
+    content: ContentElementObject<'gc>,
+    all_text: &mut WString,
+    all_spans: &mut Vec<TextSpan>,
+) -> Result<(), HandleContentError> {
+    let data = content.element_data();
+    let format = content.element_format();
+
+    match &*data {
+        ElementData::Text { text } => {
+            // If `text` is `None`, FP just completely ignores the element. It
+            // doesn't even check its `elementFormat`.
+            if let Some(text) = text {
+                all_text.push_str(text);
+
+                let format = format.ok_or(HandleContentError::NullElementFormat)?;
+                let text_format = format.as_text_format();
+
+                let span = TextSpan::with_length_and_format(text.len(), &text_format);
+                all_spans.push(span);
+            }
+        }
+        ElementData::Group { elements } => {
+            // TODO: The docs say GroupElement's format has some effects?
+            for element in elements {
+                handle_content_element(*element, all_text, all_spans)?;
+            }
+        }
+        ElementData::Graphic => {
+            // TODO
+        }
+        ElementData::Invalid => {
+            unreachable!(
+                "TextBlock and GroupElement prevent holding user subclasses of ContentElement"
+            )
+        }
     }
 
-    let text = text
-        .coerce_to_string(activation)
-        .expect("Guaranteed by AS bindings");
-
-    if text.is_empty() {
-        return Ok(None);
-    }
-
-    Ok(Some(text))
+    Ok(())
 }
 
 fn next_line_break(text: &WStr, start: usize) -> usize {
@@ -483,31 +527,11 @@ fn next_line_break(text: &WStr, start: usize) -> usize {
 fn apply_format<'gc>(
     activation: &mut Activation<'_, 'gc>,
     edit_text: EditText<'gc>,
-    ef: ElementFormatObject<'gc>,
+    format: TextFormat,
     line_index: u32,
 ) {
-    // TODO: Support more ElementFormat properties
-    let (font, bold, italic, is_device_font) = if let Some(fd) = ef.font_description() {
-        (
-            Some(fd.font_name().as_wstr().into()),
-            Some(fd.font_weight() == FontWeightValue::Bold),
-            Some(fd.font_posture() == FontPostureValue::Italic),
-            fd.font_lookup() == FontLookupValue::Device,
-        )
-    } else {
-        (None, None, None, true)
-    };
-
-    let format = TextFormat {
-        color: Some(ef.color()),
-        size: Some(ef.font_size()),
-        font,
-        bold,
-        italic,
-        ..TextFormat::default()
-    };
-
-    edit_text.set_is_device_font(activation.context, is_device_font);
+    // TODO: Handle device font/non-device font properly
+    edit_text.set_is_device_font(activation.context, false);
     edit_text.set_text_format(
         0,
         edit_text.text_length(),
