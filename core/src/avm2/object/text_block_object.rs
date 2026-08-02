@@ -5,7 +5,9 @@ use crate::avm2::object::{
     ClassObject, ContentElementObject, FontDescriptionObject, Object, TObject, VectorObject,
 };
 use crate::display_object::TextLine;
-use crate::fte::{TextBaselineValue, TextLineCreationResultValue, TextRotationValue};
+use crate::fte::{
+    TextBaselineValue, TextLineCreationResultValue, TextLineValidity, TextRotationValue,
+};
 use core::fmt;
 use gc_arena::barrier::unlock;
 use gc_arena::lock::Lock;
@@ -150,6 +152,10 @@ impl<'gc> TextBlockObject<'gc> {
     }
 
     pub fn set_content(self, value: Option<ContentElementObject<'gc>>, mc: &Mutation<'gc>) {
+        for line in self.lines() {
+            line.set_validity(TextLineValidity::Invalid, mc);
+        }
+
         unlock!(Gc::write(mc, self.0), TextBlockObjectData, content).set(value);
     }
 

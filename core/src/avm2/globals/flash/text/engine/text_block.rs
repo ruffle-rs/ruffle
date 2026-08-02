@@ -13,7 +13,7 @@ use crate::avm2::value::Value;
 use crate::display_object::{EditText, TDisplayObject, TextLine};
 use crate::fte::{
     FontLookupValue, FontPostureValue, FontWeightValue, TextBaselineValue,
-    TextLineCreationResultValue, TextLineValidity, TextRotationValue,
+    TextLineCreationResultValue, TextRotationValue,
 };
 use crate::html::TextFormat;
 use crate::string::WStr;
@@ -279,10 +279,6 @@ pub fn set_content<'gc>(
     }
 
     this.set_content(content, activation.gc());
-
-    for line in this.lines() {
-        line.set_validity(TextLineValidity::Invalid, activation.gc());
-    }
 
     Ok(Value::Undefined)
 }
