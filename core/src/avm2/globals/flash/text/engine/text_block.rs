@@ -434,6 +434,9 @@ pub fn do_create_text_line<'gc>(
         block.set_first_line(Some(text_line), activation.gc());
     }
 
+    // TODO correctly set the `validity`, `nextLine`, and `prevLine` properties
+    // of the lines coming after this line
+
     block.set_text_line_creation_result(Some(TextLineCreationResultValue::Success));
 
     Ok(text_line_instance.into())
