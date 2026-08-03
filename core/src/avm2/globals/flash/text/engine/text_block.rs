@@ -323,6 +323,24 @@ pub fn get_first_line<'gc>(
     Ok(line.unwrap_or(Value::Null))
 }
 
+pub fn get_last_line<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Value<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap().as_text_block_object().unwrap();
+
+    avm2_stub_getter!(activation, "flash.text.engine.TextBlock", "lastLine");
+
+    let line = this
+        .lines()
+        .last()
+        .map(|l| l.object2().expect("Already created"))
+        .map(Value::from);
+
+    Ok(line.unwrap_or(Value::Null))
+}
+
 pub fn do_create_text_line<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
@@ -433,6 +451,9 @@ pub fn do_create_text_line<'gc>(
         // If there's no previous line, then this is the first line.
         block.set_first_line(Some(text_line), activation.gc());
     }
+
+    // TODO correctly set the `validity`, `nextLine`, and `prevLine` properties
+    // of the lines coming after this line
 
     block.set_text_line_creation_result(Some(TextLineCreationResultValue::Success));
 

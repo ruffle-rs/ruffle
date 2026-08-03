@@ -139,10 +139,7 @@ package flash.text.engine {
 
         public native function get firstLine():TextLine;
 
-        public function get lastLine():TextLine {
-            stub_getter("flash.text.engine.TextBlock", "lastLine");
-            return this.firstLine;
-        }
+        public native function get lastLine():TextLine;
 
         public function releaseLines(start:TextLine, end:TextLine):void {
             if (start != end || end != this.firstLine) {
