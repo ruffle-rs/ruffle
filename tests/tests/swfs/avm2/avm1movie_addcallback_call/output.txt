@@ -1,0 +1,14 @@
+ArgumentError: Error #1063: Argument count mismatch on flash.display::AVM1Movie/call(). Expected 1, got 0.
+	at Test/onLoaded()
+ArgumentError: Error #1063: Argument count mismatch on flash.display::AVM1Movie/addCallback(). Expected 2, got 0.
+	at Test/onLoaded()
+ArgumentError: Error #1063: Argument count mismatch on flash.display::AVM1Movie/addCallback(). Expected 2, got 1.
+	at Test/onLoaded()
+Error: Error #2014: Feature is not available at this time.
+	at Error$/throwError()
+	at flash.display::AVM1Movie/addCallback()
+	at Test/onLoaded()
+Error: Error #2014: Feature is not available at this time.
+	at Error$/throwError()
+	at flash.display::AVM1Movie/call()
+	at Test/onLoaded()
