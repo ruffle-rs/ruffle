@@ -7,6 +7,10 @@ minBitsPerSecond: 3 number
 Successfully set minBitsPerSecond to 123, type number
 maxBitsPerSecond: 4 number
 Successfully set maxBitsPerSecond to 123, type number
+== Testing constants
+AGGRESSIVE: aggressive string
+CONSERVATIVE: conservative string
+MODERATE: moderate string
 
 === Testing AVABRProfileInfo
 bitsPerSecond: 1 number
@@ -15,6 +19,70 @@ width: 2 number
 ReferenceError: Error #1074: Illegal write to read-only property width on flash.media.AVABRProfileInfo.
 height: 3 number
 ReferenceError: Error #1074: Illegal write to read-only property height on flash.media.AVABRProfileInfo.
+
+=== Testing AVCaptionStyle
+backgroundColor:  string
+Successfully set backgroundColor to 123.45, type string
+backgroundOpacity:  string
+Successfully set backgroundOpacity to 123.45, type string
+bottomInset: 0 string
+Successfully set bottomInset to 123.45, type string
+edgeColor:  string
+Successfully set edgeColor to 123.45, type string
+fillColor:  string
+Successfully set fillColor to 123.45, type string
+fillOpacity:  string
+Successfully set fillOpacity to 123.45, type string
+font:  string
+Successfully set font to 123.45, type string
+fontColor:  string
+Successfully set fontColor to 123.45, type string
+fontEdge:  string
+Successfully set fontEdge to 123.45, type string
+fontOpacity:  string
+Successfully set fontOpacity to 123.45, type string
+size:  string
+Successfully set size to 123.45, type string
+== Testing constants
+DEFAULT: default string
+NONE: none string
+MONOSPACE_WITH_SERIFS: monospaced_with_serifs string
+MONOSPACED_WITHOUT_SERIFS: monospaced_without_serifs string
+PROPORTIONAL_WITH_SERIFS: proportional_with_serifs string
+PROPORTIONAL_WITHOUT_SERIFS: proportional_without_serifs string
+CASUAL: casual string
+CURSIVE: cursive string
+DEPRESSED: depressed string
+RAISED: raised string
+SMALL_CAPITALS: small_capitals string
+UNIFORM: uniform string
+SMALL: small string
+MEDIUM: medium string
+LARGE: large string
+BRIGHT_MAGENTA: bright_magenta string
+MAGENTA: magenta string
+DARK_MAGENTA: dark_magenta string
+BRIGHT_RED: bright_red string
+RED: red string
+DARK_RED: dark_red string
+BRIGHT_YELLOW: bright_yellow string
+YELLOW: yellow string
+DARK_YELLOW: dark_yellow string
+BRIGHT_GREEN: bright_green string
+GREEN: green string
+DARK_GREEN: dark_green string
+BRIGHT_CYAN: bright_cyan string
+CYAN: cyan string
+DARK_CYAN: dark_cyan string
+BRIGHT_BLUE: bright_blue string
+BLUE: blue string
+DARK_BLUE: dark_blue string
+BRIGHT_WHITE: bright_white string
+WHITE: white string
+GRAY: gray string
+BLACK: black string
+LEFT_DROP_SHADOW: drop_shadow_left string
+RIGHT_DROP_SHADOW: drop_shadow_right string
 
 === Testing AVCuePoint
 == with null dictionary
@@ -84,10 +152,146 @@ ReferenceError: Error #1074: Illegal write to read-only property targetDuration 
 === Testing AVPlayState
 state: 1 number
 ReferenceError: Error #1074: Illegal write to read-only property state on flash.media.AVPlayState.
+== Testing constants
+UNINITIALIZED: 0 number
+READY: 1 number
+BUFFERING: 2 number
+PLAYING: 3 number
+PAUSED: 4 number
+EOF: 5 number
+SUSPENDED: 6 number
+TRICK_PLAY: 7 number
+UNRECOVERABLE_ERROR: 8 number
 
 === Testing AVResult
 result: 1 number
 ReferenceError: Error #1074: Illegal write to read-only property result on flash.media.AVResult.
+== Testing constants
+END_OF_PERIOD: -1 number
+SUCCESS: 0 number
+ASYNC_OPERATION_IN_PROGRESS: 1 number
+EOF: 2 number
+DECODER_FAILED: 3 number
+DEVICE_OPEN_ERROR: 4 number
+FILE_NOT_FOUND: 5 number
+GENERIC_ERROR: 6 number
+IRRECOVERABLE_ERROR: 7 number
+LOST_CONNECTION_RECOVERABLE: 8 number
+NO_FIXED_SIZE: 9 number
+NOT_IMPLEMENTED: 10 number
+OUT_OF_MEMORY: 11 number
+PARSE_ERROR: 12 number
+SIZE_UNKNOWN: 13 number
+UNDERFLOW: 14 number
+UNSUPPORTED_CONFIGURATION: 15 number
+UNSUPPORTED_OPERATION: 16 number
+WAITING_FOR_INIT: 17 number
+INVALID_PARAMETER: 18 number
+INVALID_OPERATION: 19 number
+ONLY_ALLOWED_IN_PAUSED_STATE: 20 number
+INVALID_WITH_AUDIO_ONLY_FILE: 21 number
+PREVIOUS_STEP_SEEK_IN_PROGRESS: 22 number
+RESOURCE_NOT_SPECIFIED: 23 number
+RANGE_ERROR: 24 number
+INVALID_SEEK_TIME: 25 number
+FILE_STRUCTURE_INVALID: 26 number
+COMPONENT_CREATION_FAILURE: 27 number
+DRM_INIT_ERROR: 28 number
+CONTAINER_NOT_SUPPORTED: 29 number
+SEEK_FAILED: 30 number
+CODEC_NOT_SUPPORTED: 31 number
+NETWORK_UNAVAILABLE: 32 number
+NETWORK_ERROR: 33 number
+OVERFLOW: 34 number
+VIDEO_PROFILE_NOT_SUPPORTED: 35 number
+PERIOD_NOT_LOADED: 36 number
+INVALID_REPLACE_DURATION: 37 number
+CALLED_FROM_WRONG_THREAD: 38 number
+FRAGMENT_READ_ERROR: 39 number
+OPERATION_ABORTED: 40 number
+UNSUPPORTED_HLS_VERSION: 41 number
+CANNOT_FAIL_OVER: 42 number
+HTTP_TIME_OUT: 43 number
+NETWORK_DOWN: 44 number
+NO_USEABLE_BITRATE_PROFILE: 45 number
+BAD_MANIFEST_SIGNATURE: 46 number
+CANNOT_LOAD_PLAY_LIST: 47 number
+REPLACEMENT_FAILED: 48 number
+SWITCH_TO_ASYMMETRIC_PROFILE: 49 number
+LIVE_WINDOW_MOVED_BACKWARD: 50 number
+CURRENT_PERIOD_EXPIRED: 51 number
+CONTENT_LENGTH_MISMATCH: 52 number
+PERIOD_HOLD: 53 number
+LIVE_HOLD: 54 number
+BAD_MEDIA_INTERLEAVING: 55 number
+DRM_NOT_AVAILABLE: 56 number
+PLAYBACK_NOT_ENABLED: 57 number
+BAD_MEDIASAMPLE_FOUND: 58 number
+RANGE_SPANS_READHEAD: 59 number
+POSTROLL_WITH_LIVE_NOT_ALLOWED: 60 number
+INTERNAL_ERROR: 61 number
+SPS_PPS_FOUND_OUTSIDE_AVCC: 62 number
+PARTIAL_REPLACEMENT: 63 number
+RENDITION_M3U8_ERROR: 64 number
+NULL_OPERATION: 65 number
+SEGMENT_SKIPPED_ON_FAILURE: 66 number
+INCOMPATIBLE_RENDER_MODE: 67 number
+PROTOCOL_NOT_SUPPORTED: 68 number
+INCOMPATIBLE_VERSION: 69 number
+MANIFEST_FILE_UNEXPECTEDLY_CHANGED: 70 number
+CANNOT_SPLIT_TIMELINE: 71 number
+CANNOT_ERASE_TIMELINE: 72 number
+DID_NOT_GET_NEXT_FRAGMENT: 73 number
+NO_TIMELINE: 74 number
+LISTENER_NOT_FOUND: 75 number
+AUDIO_START_ERROR: 76 number
+NO_AUDIO_SINK: 77 number
+FILE_OPEN_ERROR: 78 number
+FILE_WRITE_ERROR: 79 number
+FILE_READ_ERROR: 80 number
+ID3_PARSE_ERROR: 81 number
+SECURITY_ERROR: 82 number
+TIMELINE_TOO_SHORT: 83 number
+AUDIO_ONLY_STREAM_START: 84 number
+AUDIO_ONLY_STREAM_END: 85 number
+CANNOT_HANDLE_MAIN_MANIFEST_UPDATE: 86 number
+KEY_NOT_FOUND: 87 number
+INVALID_KEY: 88 number
+KEY_SERVER_NOT_FOUND: 89 number
+MAIN_MANIFEST_UPDATE_TO_BE_HANDLED: 90 number
+UNREPORTED_TIME_DISCONTINUITY_FOUND: 91 number
+CRYPTO_ALGORITHM_NOT_SUPPORTED: 300 number
+CRYPTO_ERROR_CORRUPTED_DATA: 301 number
+CRYPTO_ERROR_BUFFER_TOO_SMALL: 302 number
+CRYPTO_ERROR_BAD_CERTIFICATE: 303 number
+CRYPTO_ERROR_DIGEST_UPDATE: 304 number
+CRYPTO_ERROR_DIGEST_FINISH: 305 number
+CRYPTO_ERROR_BAD_PARAMETER: 306 number
+CRYPTO_ERROR_UNKNOWN: 307 number
+
+=== Testing AVSegmentedSource
+AVSegmentedSource is AVSource: true
+== Testing constants
+AUDIO: audio string
+AUDIO_DESCRIPTION: audiodescription string
+AUDIO_LANGUAGE: audiolanguage string
+AUDIO_PID: audiopid string
+DASH: DASH string
+DATA: data string
+DATA_DESCRIPTION: datadescription string
+HLS: HLS string
+VIDEO: video string
+VIDEO_DESCRIPTION: videodescription string
+
+=== Testing AVSource
+AVSource is EventDispatcher: true
+
+=== Testing AVStream
+AVStream is EventDispatcher true
+== Testing constants
+HARDWARE: hardware string
+SOFTWARE: sofware string
+UNDEFINED: undefined string
 
 === Testing AVTagData
 data: hello string
@@ -130,3 +334,7 @@ dataTrackInfoServiceType: 7.7 string
 ReferenceError: Error #1074: Illegal write to read-only property dataTrackInfoServiceType on flash.media.AVTrackInfo.
 pid: 8 number
 ReferenceError: Error #1074: Illegal write to read-only property pid on flash.media.AVTrackInfo.
+== Testing constants
+DTI_608_CAPTIONS: DTI608Captions string
+DTI_708_CAPTIONS: DTI708Captions string
+DTI_WEBVTT_CAPTIONS: DTIWebVTTCaptions string
