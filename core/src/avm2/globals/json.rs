@@ -9,7 +9,6 @@ use crate::avm2::globals::array::ArrayIter;
 use crate::avm2::object::{ArrayObject, FunctionObject, Object, ScriptObject, TObject};
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
-use crate::ecma_conversions::f64_to_wrapping_i32;
 use crate::string::{AvmString, Units};
 use ruffle_macros::istr;
 use serde::Serialize;
@@ -28,8 +27,13 @@ fn deserialize_json_inner<'gc>(
         JsonValue::Bool(b) => b.into(),
         JsonValue::Number(number) => {
             let number = number.as_f64().unwrap();
-            if number.fract() == 0.0 {
-                f64_to_wrapping_i32(number).into()
+            // Only use the i32 representation when the value actually fits in i32.
+            // Previously this used f64_to_wrapping_i32, which reduced any whole
+            // number mod 2^32 — corrupting large integers such as 13-digit
+            // millisecond timestamps (e.g. a server clock of 1782219299000 wrapped
+            // to a near-zero/garbage value, leaving the game's clock stuck at ~1970).
+            if number.fract() == 0.0 && (i32::MIN as f64..=i32::MAX as f64).contains(&number) {
+                (number as i32).into()
             } else {
                 number.into()
             }
