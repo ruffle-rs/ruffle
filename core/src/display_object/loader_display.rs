@@ -178,6 +178,14 @@ impl<'gc> TInteractiveObject<'gc> for LoaderDisplay<'gc> {
         options.set(HitTestOptions::SKIP_MASK, self.maskee().is_none());
 
         if self.visible() {
+            // A scrollRect clips mouse events at the visible viewport, just like rendering.
+            if let Some(scroll_rect) = self.scroll_rect()
+                && let Some(local_matrix) = self.global_to_local_matrix()
+                && !scroll_rect.contains(local_matrix * point)
+            {
+                return Avm2MousePick::Miss;
+            }
+
             // A loader has at most one child.
             if let Some(child) = self.iter_render_list().next() {
                 if let Some(int) = child.as_interactive() {
