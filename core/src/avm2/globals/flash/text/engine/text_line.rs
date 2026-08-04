@@ -89,7 +89,14 @@ pub fn get_text_block<'gc>(
         .as_text_line()
         .unwrap();
 
-    Ok(this.text_block().map(Value::from).unwrap_or(Value::Null))
+    if matches!(this.validity(), TextLineValidity::Static) {
+        // "static" lines always return `null` when accessing their `textBlock`
+        Ok(Value::Null)
+    } else if let Some(text_block) = this.text_block() {
+        Ok(text_block.into())
+    } else {
+        Ok(Value::Null)
+    }
 }
 
 pub fn set_text_block<'gc>(
