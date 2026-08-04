@@ -254,7 +254,7 @@ impl BlurFilter {
                 // and the last one with a weight of alpha. Note that the offset is relative
                 // to the center of the next-to-last sampled pixel, in the range of 0 to 0.5.
                 let last_offset = 1.0 / ((1.0 / alpha) + 1.0);
-                let last_weight = alpha + 1.0;
+                let last_weight = full_size - 2.0 * m - alpha;
 
                 let uniform = BlurUniform {
                     direction: if horizontal {
