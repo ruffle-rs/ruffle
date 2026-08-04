@@ -11,6 +11,7 @@ use crate::avm2::object::{
 };
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
+use crate::backend::audio::DecodeError;
 use crate::backend::navigator::Request;
 use crate::character::Character;
 use crate::display_object::SoundTransform;
@@ -174,6 +175,43 @@ pub fn play<'gc>(
             None
         };
 
+        // If no load has been initiated yet, this is a generated (synthesized) sound.
+        // Register it with the audio backend so it can receive SampleDataEvent callbacks.
+        if sound_object.is_empty() {
+            let sound_channel = SoundChannelObject::empty(activation);
+            let handle = activation
+                .context
+                .audio_manager
+                .start_generated_sound(activation.context.audio, sound_object);
+            let handle = match handle {
+                Ok(handle) => handle,
+                Err(DecodeError::TooManySounds) => {
+                    // If we have too many sounds playing, Flash Player returns `null` from `Sound.play()`.
+                    return Ok(Value::Null);
+                }
+                Err(_) => {
+                    unreachable!("start_generated_sound should only return TooManySounds error");
+                }
+            };
+            sound_channel.set_sound_instance(activation.context, handle);
+            activation
+                .context
+                .audio_manager
+                .attach_avm2_sound_channel(handle, sound_channel);
+            sound_object.set_loading_state(SoundLoadingState::Generated);
+            // Transition state from Empty → Generated
+            sound_object.play(
+                QueuedPlay {
+                    position,
+                    sound_info,
+                    sound_transform,
+                    sound_channel,
+                },
+                activation,
+            );
+            return Ok(sound_channel.into());
+        }
+
         let sound_channel = SoundChannelObject::empty(activation);
 
         let queued_play = QueuedPlay {
@@ -261,6 +299,7 @@ pub fn load<'gc>(
         Request::get(url.to_string()),
     );
     activation.context.navigator.spawn_future(future);
+    this.load_called(activation)?;
     this.set_loading_state(SoundLoadingState::Loading);
 
     Ok(Value::Undefined)
