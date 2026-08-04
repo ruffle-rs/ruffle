@@ -1,0 +1,514 @@
+!!!! initialized list of six lines, line0..=line5
+First line in block: line-0
+Last line in block: line-5
+Line #0:
+    line.validity: valid
+    line.textBlock: [object TextBlock]
+    line.previousLine: null
+    line.nextLine: line-1
+Line #1:
+    line.validity: valid
+    line.textBlock: [object TextBlock]
+    line.previousLine: line-0
+    line.nextLine: line-2
+Line #2:
+    line.validity: valid
+    line.textBlock: [object TextBlock]
+    line.previousLine: line-1
+    line.nextLine: line-3
+Line #3:
+    line.validity: valid
+    line.textBlock: [object TextBlock]
+    line.previousLine: line-2
+    line.nextLine: line-4
+Line #4:
+    line.validity: valid
+    line.textBlock: [object TextBlock]
+    line.previousLine: line-3
+    line.nextLine: line-5
+Line #5:
+    line.validity: valid
+    line.textBlock: [object TextBlock]
+    line.previousLine: line-4
+    line.nextLine: null
+!! block.releaseLines(null, null);
+!! block.releaseLines(null, line4);
+!! block.releaseLines(line1, null);
+!! line1.validity = "static";
+!! block.releaseLines(line1, line2);
+First line in block: line-0
+Last line in block: line-5
+Line #0:
+    line.validity: valid
+    line.textBlock: [object TextBlock]
+    line.previousLine: null
+    line.nextLine: line-1
+Line #1:
+    line.validity: static
+    line.textBlock: null
+    line.previousLine: line-0
+    line.nextLine: line-2
+Line #2:
+    line.validity: valid
+    line.textBlock: [object TextBlock]
+    line.previousLine: line-1
+    line.nextLine: line-3
+Line #3:
+    line.validity: valid
+    line.textBlock: [object TextBlock]
+    line.previousLine: line-2
+    line.nextLine: line-4
+Line #4:
+    line.validity: valid
+    line.textBlock: [object TextBlock]
+    line.previousLine: line-3
+    line.nextLine: line-5
+Line #5:
+    line.validity: valid
+    line.textBlock: [object TextBlock]
+    line.previousLine: line-4
+    line.nextLine: null
+!! line3.validity = "invalid";
+!! block.releaseLines(line3, line4);
+First line in block: line-0
+Last line in block: line-5
+Line #0:
+    line.validity: valid
+    line.textBlock: [object TextBlock]
+    line.previousLine: null
+    line.nextLine: line-1
+Line #1:
+    line.validity: static
+    line.textBlock: null
+    line.previousLine: line-0
+    line.nextLine: line-2
+Line #2:
+    line.validity: valid
+    line.textBlock: [object TextBlock]
+    line.previousLine: line-1
+    line.nextLine: line-3
+Line #3:
+    line.validity: invalid
+    line.textBlock: [object TextBlock]
+    line.previousLine: line-2
+    line.nextLine: line-4
+Line #4:
+    line.validity: valid
+    line.textBlock: [object TextBlock]
+    line.previousLine: line-3
+    line.nextLine: line-5
+Line #5:
+    line.validity: valid
+    line.textBlock: [object TextBlock]
+    line.previousLine: line-4
+    line.nextLine: null
+!!!! reset all lines
+!! block.createTextLine(line4, 1000);
+!! block.releaseLines(line3, line5);
+!! block.releaseLines(null, line5);
+!! block.releaseLines(line5, null);
+First line in block: line-0
+Last line in block: line-unknown
+Line #0:
+    line.validity: valid
+    line.textBlock: [object TextBlock]
+    line.previousLine: null
+    line.nextLine: line-1
+Line #1:
+    line.validity: valid
+    line.textBlock: [object TextBlock]
+    line.previousLine: line-0
+    line.nextLine: line-2
+Line #2:
+    line.validity: valid
+    line.textBlock: [object TextBlock]
+    line.previousLine: line-1
+    line.nextLine: line-3
+Line #3:
+    line.validity: valid
+    line.textBlock: [object TextBlock]
+    line.previousLine: line-2
+    line.nextLine: line-4
+Line #4:
+    line.validity: valid
+    line.textBlock: [object TextBlock]
+    line.previousLine: line-3
+    line.nextLine: line-unknown
+Line #5:
+    line.validity: valid
+    line.textBlock: [object TextBlock]
+    line.previousLine: line-4
+    line.nextLine: null
+!!!! reset all lines
+!! block.releaseLines(line5, line4);
+First line in block: line-0
+Last line in block: line-5
+Line #0:
+    line.validity: valid
+    line.textBlock: [object TextBlock]
+    line.previousLine: null
+    line.nextLine: line-1
+Line #1:
+    line.validity: valid
+    line.textBlock: [object TextBlock]
+    line.previousLine: line-0
+    line.nextLine: line-2
+Line #2:
+    line.validity: valid
+    line.textBlock: [object TextBlock]
+    line.previousLine: line-1
+    line.nextLine: line-3
+Line #3:
+    line.validity: valid
+    line.textBlock: [object TextBlock]
+    line.previousLine: line-2
+    line.nextLine: line-4
+Line #4:
+    line.validity: valid
+    line.textBlock: [object TextBlock]
+    line.previousLine: line-3
+    line.nextLine: line-5
+Line #5:
+    line.validity: valid
+    line.textBlock: [object TextBlock]
+    line.previousLine: line-4
+    line.nextLine: null
+!! block.releaseLines(line3, line1);
+!!!! reset all lines
+First line in block: line-0
+Last line in block: line-5
+Line #0:
+    line.validity: valid
+    line.textBlock: [object TextBlock]
+    line.previousLine: null
+    line.nextLine: line-1
+Line #1:
+    line.validity: valid
+    line.textBlock: [object TextBlock]
+    line.previousLine: line-0
+    line.nextLine: line-2
+Line #2:
+    line.validity: valid
+    line.textBlock: [object TextBlock]
+    line.previousLine: line-1
+    line.nextLine: line-3
+Line #3:
+    line.validity: valid
+    line.textBlock: [object TextBlock]
+    line.previousLine: line-2
+    line.nextLine: line-4
+Line #4:
+    line.validity: valid
+    line.textBlock: [object TextBlock]
+    line.previousLine: line-3
+    line.nextLine: line-5
+Line #5:
+    line.validity: valid
+    line.textBlock: [object TextBlock]
+    line.previousLine: line-4
+    line.nextLine: null
+!! block.releaseLines(line2, line5);
+First line in block: line-0
+Last line in block: line-5
+Line #0:
+    line.validity: valid
+    line.textBlock: [object TextBlock]
+    line.previousLine: null
+    line.nextLine: line-1
+Line #1:
+    line.validity: valid
+    line.textBlock: [object TextBlock]
+    line.previousLine: line-0
+    line.nextLine: line-2
+Line #2:
+    line.validity: valid
+    line.textBlock: [object TextBlock]
+    line.previousLine: line-1
+    line.nextLine: line-3
+Line #3:
+    line.validity: valid
+    line.textBlock: [object TextBlock]
+    line.previousLine: line-2
+    line.nextLine: line-4
+Line #4:
+    line.validity: valid
+    line.textBlock: [object TextBlock]
+    line.previousLine: line-3
+    line.nextLine: line-5
+Line #5:
+    line.validity: valid
+    line.textBlock: [object TextBlock]
+    line.previousLine: line-4
+    line.nextLine: null
+!! block.releaseLines(line0, line1);
+First line in block: line-0
+Last line in block: line-5
+Line #0:
+    line.validity: valid
+    line.textBlock: [object TextBlock]
+    line.previousLine: null
+    line.nextLine: line-1
+Line #1:
+    line.validity: valid
+    line.textBlock: [object TextBlock]
+    line.previousLine: line-0
+    line.nextLine: line-2
+Line #2:
+    line.validity: valid
+    line.textBlock: [object TextBlock]
+    line.previousLine: line-1
+    line.nextLine: line-3
+Line #3:
+    line.validity: valid
+    line.textBlock: [object TextBlock]
+    line.previousLine: line-2
+    line.nextLine: line-4
+Line #4:
+    line.validity: valid
+    line.textBlock: [object TextBlock]
+    line.previousLine: line-3
+    line.nextLine: line-5
+Line #5:
+    line.validity: valid
+    line.textBlock: [object TextBlock]
+    line.previousLine: line-4
+    line.nextLine: null
+!! block.releaseLines(line1, line3);
+First line in block: line-0
+Last line in block: line-5
+Line #0:
+    line.validity: valid
+    line.textBlock: [object TextBlock]
+    line.previousLine: null
+    line.nextLine: line-1
+Line #1:
+    line.validity: valid
+    line.textBlock: [object TextBlock]
+    line.previousLine: line-0
+    line.nextLine: line-2
+Line #2:
+    line.validity: valid
+    line.textBlock: [object TextBlock]
+    line.previousLine: line-1
+    line.nextLine: line-3
+Line #3:
+    line.validity: valid
+    line.textBlock: [object TextBlock]
+    line.previousLine: line-2
+    line.nextLine: line-4
+Line #4:
+    line.validity: valid
+    line.textBlock: [object TextBlock]
+    line.previousLine: line-3
+    line.nextLine: line-5
+Line #5:
+    line.validity: valid
+    line.textBlock: [object TextBlock]
+    line.previousLine: line-4
+    line.nextLine: null
+!!!! reset all lines
+!! block.releaseLines(line4, line4);
+First line in block: line-0
+Last line in block: line-5
+Line #0:
+    line.validity: valid
+    line.textBlock: [object TextBlock]
+    line.previousLine: null
+    line.nextLine: line-1
+Line #1:
+    line.validity: valid
+    line.textBlock: [object TextBlock]
+    line.previousLine: line-0
+    line.nextLine: line-2
+Line #2:
+    line.validity: valid
+    line.textBlock: [object TextBlock]
+    line.previousLine: line-1
+    line.nextLine: line-3
+Line #3:
+    line.validity: valid
+    line.textBlock: [object TextBlock]
+    line.previousLine: line-2
+    line.nextLine: line-4
+Line #4:
+    line.validity: valid
+    line.textBlock: [object TextBlock]
+    line.previousLine: line-3
+    line.nextLine: line-5
+Line #5:
+    line.validity: valid
+    line.textBlock: [object TextBlock]
+    line.previousLine: line-4
+    line.nextLine: null
+!! block.releaseLines(line4, line5);
+!! block.releaseLines(line3, line4);
+!! block.releaseLines(line4, line3);
+!! block.releaseLines(line3, line5);
+First line in block: line-0
+Last line in block: line-5
+Line #0:
+    line.validity: valid
+    line.textBlock: [object TextBlock]
+    line.previousLine: null
+    line.nextLine: line-1
+Line #1:
+    line.validity: valid
+    line.textBlock: [object TextBlock]
+    line.previousLine: line-0
+    line.nextLine: line-2
+Line #2:
+    line.validity: valid
+    line.textBlock: [object TextBlock]
+    line.previousLine: line-1
+    line.nextLine: line-3
+Line #3:
+    line.validity: valid
+    line.textBlock: [object TextBlock]
+    line.previousLine: line-2
+    line.nextLine: line-4
+Line #4:
+    line.validity: valid
+    line.textBlock: [object TextBlock]
+    line.previousLine: line-3
+    line.nextLine: line-5
+Line #5:
+    line.validity: valid
+    line.textBlock: [object TextBlock]
+    line.previousLine: line-4
+    line.nextLine: null
+!!!! reset all lines
+!! line1.validity = "static";
+!! line2.validity = "static";
+First line in block: line-0
+Last line in block: line-5
+Line #0:
+    line.validity: valid
+    line.textBlock: [object TextBlock]
+    line.previousLine: null
+    line.nextLine: line-1
+Line #1:
+    line.validity: static
+    line.textBlock: null
+    line.previousLine: line-0
+    line.nextLine: line-2
+Line #2:
+    line.validity: static
+    line.textBlock: null
+    line.previousLine: line-1
+    line.nextLine: line-3
+Line #3:
+    line.validity: valid
+    line.textBlock: [object TextBlock]
+    line.previousLine: line-2
+    line.nextLine: line-4
+Line #4:
+    line.validity: valid
+    line.textBlock: [object TextBlock]
+    line.previousLine: line-3
+    line.nextLine: line-5
+Line #5:
+    line.validity: valid
+    line.textBlock: [object TextBlock]
+    line.previousLine: line-4
+    line.nextLine: null
+!! block.releaseLines(line1, line2);
+First line in block: line-0
+Last line in block: line-5
+Line #0:
+    line.validity: valid
+    line.textBlock: [object TextBlock]
+    line.previousLine: null
+    line.nextLine: line-1
+Line #1:
+    line.validity: static
+    line.textBlock: null
+    line.previousLine: line-0
+    line.nextLine: line-2
+Line #2:
+    line.validity: static
+    line.textBlock: null
+    line.previousLine: line-1
+    line.nextLine: line-3
+Line #3:
+    line.validity: valid
+    line.textBlock: [object TextBlock]
+    line.previousLine: line-2
+    line.nextLine: line-4
+Line #4:
+    line.validity: valid
+    line.textBlock: [object TextBlock]
+    line.previousLine: line-3
+    line.nextLine: line-5
+Line #5:
+    line.validity: valid
+    line.textBlock: [object TextBlock]
+    line.previousLine: line-4
+    line.nextLine: null
+!! block.releaseLines(line0, line4);
+First line in block: line-0
+Last line in block: line-5
+Line #0:
+    line.validity: valid
+    line.textBlock: [object TextBlock]
+    line.previousLine: null
+    line.nextLine: line-1
+Line #1:
+    line.validity: static
+    line.textBlock: null
+    line.previousLine: line-0
+    line.nextLine: line-2
+Line #2:
+    line.validity: static
+    line.textBlock: null
+    line.previousLine: line-1
+    line.nextLine: line-3
+Line #3:
+    line.validity: valid
+    line.textBlock: [object TextBlock]
+    line.previousLine: line-2
+    line.nextLine: line-4
+Line #4:
+    line.validity: valid
+    line.textBlock: [object TextBlock]
+    line.previousLine: line-3
+    line.nextLine: line-5
+Line #5:
+    line.validity: valid
+    line.textBlock: [object TextBlock]
+    line.previousLine: line-4
+    line.nextLine: null
+!!!! reset all lines
+!!!! Created a completely different text block, block2
+!! block2.releaseLines(line1, line4);
+First line in block: line-0
+Last line in block: line-5
+Line #0:
+    line.validity: valid
+    line.textBlock: [object TextBlock]
+    line.previousLine: null
+    line.nextLine: line-1
+Line #1:
+    line.validity: valid
+    line.textBlock: [object TextBlock]
+    line.previousLine: line-0
+    line.nextLine: line-2
+Line #2:
+    line.validity: valid
+    line.textBlock: [object TextBlock]
+    line.previousLine: line-1
+    line.nextLine: line-3
+Line #3:
+    line.validity: valid
+    line.textBlock: [object TextBlock]
+    line.previousLine: line-2
+    line.nextLine: line-4
+Line #4:
+    line.validity: valid
+    line.textBlock: [object TextBlock]
+    line.previousLine: line-3
+    line.nextLine: line-5
+Line #5:
+    line.validity: valid
+    line.textBlock: [object TextBlock]
+    line.previousLine: line-4
+    line.nextLine: null
