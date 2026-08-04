@@ -33,8 +33,11 @@ impl WebFileSelection {
         let contents = handle.read().await;
 
         let (file_name, modification_time) = cfg_select! {
-            target_arch = "wasm32" => (handle.file_name(), DateTime::from_timestamp(handle.inner().last_modified() as i64, 0)),
-            _ => (String::new(), None)
+            target_arch = "wasm32" => (
+                handle.file_name(),
+                DateTime::from_timestamp(handle.inner().last_modified() as i64, 0),
+            ),
+            _ => (String::new(), None),
         };
 
         Self {
