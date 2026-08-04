@@ -31,16 +31,27 @@ pub fn connect<'gc>(
 
     if let Some(url) = url {
         let url_lower = url.to_ascii_lowercase();
+        let is_already_http = url_lower.starts_with(WStr::from_units(b"http://"))
+            || url_lower.starts_with(WStr::from_units(b"https://"));
 
-        if url_lower.starts_with(WStr::from_units(b"http://"))
-            || url_lower.starts_with(WStr::from_units(b"https://"))
-        {
+        // Already-absolute HTTP(S) URLs are passed through unchanged.  Other URLs
+        // are resolved against the SWF's location so that relative HTTP(S) paths
+        // reach Flash Remoting, matching URLLoader.load() behavior. Closes #23201.
+        let http_url = if is_already_http {
+            Some(url.to_string())
+        } else {
+            let url_string = url.to_string();
+            activation
+                .context
+                .navigator
+                .resolve_url(&url_string)
+                .ok()
+                .and_then(|u| matches!(u.scheme(), "http" | "https").then(|| u.to_string()))
+        };
+
+        if let Some(http_url) = http_url {
             // HTTP(S) is for Flash Remoting, which is just POST requests to the URL.
-            NetConnections::connect_to_flash_remoting(
-                activation.context,
-                connection,
-                url.to_string(),
-            );
+            NetConnections::connect_to_flash_remoting(activation.context, connection, http_url);
         } else {
             avm2_stub_method!(
                 activation,
