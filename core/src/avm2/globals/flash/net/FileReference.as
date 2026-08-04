@@ -39,8 +39,17 @@ package flash.net {
         }
 
         public function download(request:URLRequest, defaultFileName:String = null):void {
-            stub_method("flash.net.FileReference", "download");
+            if (defaultFileName == null) {
+                defaultFileName = "";
+            }
+
+            this.downloadInternal(request, defaultFileName);
         }
+
+        // Builds the request, prompts for a save location, then fetches the URL
+        // and writes the response to the chosen file. An empty `defaultFileName`
+        // means "derive the name from the request URL".
+        private native function downloadInternal(request:URLRequest, defaultFileName:String):void;
 
         public native function load():void;
 
