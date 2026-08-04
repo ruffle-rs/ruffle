@@ -4,10 +4,12 @@ use crate::display_object::{BoundsMode, DisplayObject, DisplayObjectWeak, TDispl
 use bitflags::bitflags;
 use gc_arena::lock::GcRefLock;
 use gc_arena::{Collect, Gc, Mutation};
-use ruffle_render::backend::RenderBackend;
+use ruffle_render::backend::{RenderBackend, RenderOffscreenBatches};
 use ruffle_render::bitmap::{
     Bitmap, BitmapFormat, BitmapHandle, PixelRegion, PixelSnapping, SyncHandle,
 };
+use ruffle_render::commands::CommandList;
+use ruffle_render::quality::StageQuality;
 use ruffle_wstr::WStr;
 use std::cell::Ref;
 use std::fmt::Debug;
@@ -344,6 +346,42 @@ impl<'gc> BitmapData<'gc> {
         self.0.render(smoothing, context, pixel_snapping);
     }
 
+    pub fn append_gpu_commands(
+        &self,
+        gc: &Mutation<'gc>,
+        renderer: &mut dyn RenderBackend,
+        commands: CommandList,
+        dirty: PixelRegion,
+        quality: StageQuality,
+    ) {
+        self.0
+            .append_gpu_commands(gc, renderer, commands, dirty, quality);
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    pub fn append_render_bitmap(
+        &self,
+        gc: &Mutation<'gc>,
+        renderer: &mut dyn RenderBackend,
+        bitmap: BitmapHandle,
+        transform: ruffle_render::transform::Transform,
+        smoothing: bool,
+        pixel_snapping: PixelSnapping,
+        dirty: PixelRegion,
+        quality: StageQuality,
+    ) {
+        self.0.append_render_bitmap(
+            gc,
+            renderer,
+            bitmap,
+            transform,
+            smoothing,
+            pixel_snapping,
+            dirty,
+            quality,
+        );
+    }
+
     pub fn can_read(&self, read_area: PixelRegion) -> bool {
         self.0.can_read(read_area)
     }
@@ -361,6 +399,16 @@ impl<'gc> BitmapData<'gc> {
         self.0.ptr_eq(other.0)
     }
 }
+
+/// A sub-batch of queued GPU commands together with the dirty region those
+/// commands cover. Sub-batches within a pending sequence become separate
+/// render passes at flush time.
+type PendingBatch = (CommandList, PixelRegion);
+
+/// The state of `BitmapRawData::pending_gpu_commands`: the list of queued
+/// sub-batches, the union of all their dirty regions, and the stage quality
+/// all sub-batches share.
+type PendingGpuCommands = (Vec<PendingBatch>, PixelRegion, StageQuality);
 
 #[derive(Collect)]
 #[collect(no_drop)]
@@ -397,6 +445,15 @@ pub struct BitmapRawData<'gc> {
     #[collect(require_static)]
     dirty_state: DirtyState,
 
+    /// Accumulated GPU commands awaiting batch execution. Stored as a
+    /// sequence of sub-batches paired with their own dirty regions plus a
+    /// union dirty for the whole sequence and the shared render quality.
+    /// Each sub-batch becomes a separate render pass at flush time, letting
+    /// callers insert resolve boundaries between overlapping draws under
+    /// MSAA while non-overlapping draws merge into one pass.
+    #[collect(require_static)]
+    pending_gpu_commands: Option<PendingGpuCommands>,
+
     /// Holds an egui texture handle, used for rendering this Bitmap in the debug ui.
     /// This is automatically set to `None` when the texture is updated (either from
     /// marking the CPU side dirty, or from performing a GPU -> CPU sync).
@@ -423,9 +480,10 @@ mod wrapper {
     use gc_arena::barrier::Write;
     use gc_arena::lock::GcRefLock;
     use gc_arena::{Collect, Gc, Mutation};
-    use ruffle_render::backend::RenderBackend;
+    use ruffle_render::backend::{RenderBackend, RenderOffscreenBatches};
     use ruffle_render::bitmap::{BitmapHandle, PixelRegion, PixelSnapping};
-    use ruffle_render::commands::CommandHandler;
+    use ruffle_render::commands::{CommandHandler, CommandList};
+    use ruffle_render::quality::StageQuality;
     use std::cell::Ref;
 
     use super::{BitmapRawData, DirtyState, copy_pixels_to_bitmapdata};
@@ -484,6 +542,7 @@ mod wrapper {
                     avm2_object: None,
                     display_objects: vec![],
                     dirty_state: DirtyState::Clean,
+                    pending_gpu_commands: None,
                     #[cfg(feature = "egui")]
                     egui_texture: Default::default(),
                 }
@@ -508,6 +567,7 @@ mod wrapper {
                 display_objects: vec![],
                 // We have no GPU texture, so there's no need to mark as dirty
                 dirty_state: DirtyState::Clean,
+                pending_gpu_commands: None,
                 #[cfg(feature = "egui")]
                 egui_texture: Default::default(),
             }
@@ -523,6 +583,21 @@ mod wrapper {
             let mut write = unsafe { Write::assume(Gc::as_ref(self.0)) }
                 .unlock()
                 .borrow_mut();
+
+            // Flush any pending GPU commands before syncing - the flush
+            // leaves the dirty_state as GpuModified whose sync handle
+            // covers the union of all pending writes.
+            if let Some((batches, dirty, quality)) = write.pending_gpu_commands.take() {
+                let handle = write.bitmap_handle(renderer);
+                let command_lists: RenderOffscreenBatches =
+                    batches.into_iter().map(|(cmds, _)| cmds).collect();
+                if let Some(sync_handle) =
+                    renderer.render_offscreen(handle, command_lists, quality, dirty)
+                {
+                    write.dirty_state = DirtyState::GpuModified(sync_handle, dirty);
+                }
+            }
+
             match std::mem::replace(&mut write.dirty_state, DirtyState::Clean) {
                 DirtyState::GpuModified(sync_handle, bounds) => {
                     renderer
@@ -554,8 +629,119 @@ mod wrapper {
             renderer: &mut dyn RenderBackend,
         ) -> BitmapHandle {
             let mut bitmap_data = self.0.borrow_mut(gc_context);
+            bitmap_data.flush_pending_gpu_commands(renderer, gc_context);
             bitmap_data.update_dirty_texture(renderer);
             bitmap_data.bitmap_handle(renderer)
+        }
+
+        /// Append a `CommandList` to the deferred GPU batch for this bitmap.
+        /// The batch is flushed lazily on the next `bitmap_handle`/`sync` call
+        /// so repeated draws onto the same bitmap submit as one `render_offscreen`
+        /// invocation instead of one per call.
+        pub fn append_gpu_commands(
+            &self,
+            gc: &Mutation<'gc>,
+            renderer: &mut dyn RenderBackend,
+            commands: CommandList,
+            dirty: PixelRegion,
+            quality: StageQuality,
+        ) {
+            let mut data = self.0.borrow_mut(gc);
+            data.update_dirty_texture(renderer);
+
+            // Quality must stay constant inside one pending batch - each
+            // render pass in the sequence shares the same MSAA sample count.
+            if let Some((_, _, existing_quality)) = &data.pending_gpu_commands
+                && *existing_quality != quality
+            {
+                data.flush_pending_gpu_commands(renderer, gc);
+            }
+
+            match &mut data.pending_gpu_commands {
+                Some((batches, union_dirty, _)) => {
+                    // For MSAA, insert a resolve boundary between draws that
+                    // overlap so the next draw samples the already-resolved
+                    // 8-bit pixels. Only check against the last sub-batch's
+                    // dirty: non-adjacent draws can still share a pass even
+                    // when they overlap earlier already-resolved work.
+                    let needs_resolve_boundary = quality.sample_count() > 1
+                        && batches.last().is_some_and(|(_, d)| dirty.intersects(*d));
+                    if needs_resolve_boundary || batches.is_empty() {
+                        batches.push((commands, dirty));
+                    } else {
+                        let last = batches.last_mut().expect("batches is non-empty");
+                        last.0.commands.extend(commands.commands);
+                        last.1.union(dirty);
+                    }
+                    union_dirty.union(dirty);
+                }
+                None => {
+                    let mut merged = dirty;
+                    if let DirtyState::GpuModified(_, old) = &data.dirty_state {
+                        merged.union(*old);
+                    }
+                    data.pending_gpu_commands = Some((vec![(commands, dirty)], merged, quality));
+                }
+            }
+        }
+
+        /// Append one `render_bitmap` command to the deferred batch. When
+        /// the command can merge into the current sub-batch, no new
+        /// `CommandList` is allocated - the command is pushed onto the
+        /// existing list in place.
+        #[allow(clippy::too_many_arguments)]
+        pub fn append_render_bitmap(
+            &self,
+            gc: &Mutation<'gc>,
+            renderer: &mut dyn RenderBackend,
+            bitmap: BitmapHandle,
+            transform: ruffle_render::transform::Transform,
+            smoothing: bool,
+            pixel_snapping: PixelSnapping,
+            dirty: PixelRegion,
+            quality: StageQuality,
+        ) {
+            let mut data = self.0.borrow_mut(gc);
+            data.update_dirty_texture(renderer);
+
+            if let Some((_, _, existing_quality)) = &data.pending_gpu_commands
+                && *existing_quality != quality
+            {
+                data.flush_pending_gpu_commands(renderer, gc);
+            }
+
+            let command = ruffle_render::commands::Command::RenderBitmap {
+                bitmap,
+                transform,
+                smoothing,
+                pixel_snapping,
+            };
+
+            match &mut data.pending_gpu_commands {
+                Some((batches, union_dirty, _)) => {
+                    let needs_resolve_boundary = quality.sample_count() > 1
+                        && batches.last().is_some_and(|(_, d)| dirty.intersects(*d));
+                    if needs_resolve_boundary || batches.is_empty() {
+                        let mut list = CommandList::new();
+                        list.commands.push(command);
+                        batches.push((list, dirty));
+                    } else {
+                        let last = batches.last_mut().expect("batches is non-empty");
+                        last.0.commands.push(command);
+                        last.1.union(dirty);
+                    }
+                    union_dirty.union(dirty);
+                }
+                None => {
+                    let mut merged = dirty;
+                    if let DirtyState::GpuModified(_, old) = &data.dirty_state {
+                        merged.union(*old);
+                    }
+                    let mut list = CommandList::new();
+                    list.commands.push(command);
+                    data.pending_gpu_commands = Some((vec![(list, dirty)], merged, quality));
+                }
+            }
         }
 
         /// Provides access to the underlying `BitmapData`.
@@ -567,6 +753,12 @@ mod wrapper {
             mc: &Mutation<'gc>,
         ) -> (GcRefLock<'gc, BitmapRawData<'gc>>, Option<PixelRegion>) {
             let mut write = self.0.borrow_mut(mc);
+            // Caller is about to fully overwrite the CPU pixels; any pending
+            // GPU work would land on a texture that's about to be replaced
+            // by the upcoming CPU->GPU sync, so drop it now to keep the
+            // invariant that `pending_gpu_commands.is_some()` only holds
+            // when `dirty_state` is Clean or GpuModified, never CpuModified.
+            write.discard_pending_gpu_commands();
             let dirty_rect = match write.dirty_state {
                 DirtyState::GpuModified(_, rect) => {
                     write.dirty_state = DirtyState::Clean;
@@ -587,13 +779,19 @@ mod wrapper {
             read_area: PixelRegion,
             renderer: &mut dyn RenderBackend,
         ) -> Ref<'_, BitmapRawData<'gc>> {
-            let needs_update = if let DirtyState::GpuModified(_, area) = self.0.borrow().dirty_state
-            {
+            let data = self.0.borrow();
+            // Pending GPU commands haven't run yet, so the CPU pixels are
+            // stale even if `dirty_state` reads Clean. Force a sync so the
+            // queued work is rendered and resolved back to the CPU before
+            // the caller observes the pixels.
+            let needs_flush = data.pending_gpu_commands.is_some();
+            let needs_sync = if let DirtyState::GpuModified(_, area) = data.dirty_state {
                 area.intersects(read_area)
             } else {
                 false
             };
-            if needs_update {
+            drop(data);
+            if needs_flush || needs_sync {
                 self.sync(renderer);
             }
             self.0.borrow()
@@ -661,11 +859,13 @@ mod wrapper {
             context: &mut RenderContext<'_, 'gc>,
             pixel_snapping: PixelSnapping,
         ) {
-            let mut inner_bitmap_data = self.0.borrow_mut(context.gc());
+            let gc = context.gc();
+            let mut inner_bitmap_data = self.0.borrow_mut(gc);
             if inner_bitmap_data.disposed() {
                 return;
             }
 
+            inner_bitmap_data.flush_pending_gpu_commands(context.renderer, gc);
             // Note - we do a CPU -> GPU sync, but we do *not* do a GPU -> CPU sync
             // (rendering is done on the GPU, so the CPU pixels don't need to be up-to-date).
             inner_bitmap_data.update_dirty_texture(context.renderer);
@@ -680,7 +880,14 @@ mod wrapper {
         }
 
         pub fn can_read(&self, read_area: PixelRegion) -> bool {
-            if let DirtyState::GpuModified(_, area) = self.0.borrow().dirty_state {
+            let data = self.0.borrow();
+            // Pending GPU commands mean the CPU pixels are stale: even if
+            // `dirty_state` still reads Clean, a flush would update the GPU
+            // texture and mark GpuModified across `read_area`.
+            if data.pending_gpu_commands.is_some() {
+                return false;
+            }
+            if let DirtyState::GpuModified(_, area) = data.dirty_state {
                 !area.intersects(read_area)
             } else {
                 true
@@ -742,6 +949,7 @@ impl<'gc> BitmapRawData<'gc> {
             avm2_object: None,
             display_objects: vec![],
             dirty_state: DirtyState::Clean,
+            pending_gpu_commands: None,
             #[cfg(feature = "egui")]
             egui_texture: Default::default(),
         }
@@ -762,6 +970,7 @@ impl<'gc> BitmapRawData<'gc> {
             avm2_object: None,
             disposed: false,
             dirty_state: DirtyState::Clean,
+            pending_gpu_commands: None,
             display_objects: vec![],
             #[cfg(feature = "egui")]
             egui_texture: Default::default(),
@@ -830,6 +1039,14 @@ impl<'gc> BitmapRawData<'gc> {
     pub fn set_cpu_dirty(&mut self, gc_context: &Mutation<'gc>, region: PixelRegion) {
         debug_assert!(region.x_max <= self.width);
         debug_assert!(region.y_max <= self.height);
+        // Invariant: a CPU-dirty bitmap has no queued GPU commands. Callers
+        // must clear pending first - either by flushing (via sync/read_area)
+        // or by discarding (via overwrite_cpu_pixels_from_gpu for full
+        // overwrites) - before declaring CPU-side modifications.
+        debug_assert!(
+            self.pending_gpu_commands.is_none(),
+            "set_cpu_dirty called while GPU commands are still pending"
+        );
 
         #[cfg(feature = "egui")]
         self.egui_texture.borrow_mut().take();
@@ -923,6 +1140,33 @@ impl<'gc> BitmapRawData<'gc> {
                 self.dirty_state = DirtyState::Clean
             }
             DirtyState::Clean | DirtyState::GpuModified(_, _) => {}
+        }
+    }
+
+    /// Drop any accumulated GPU commands without executing them. Used when
+    /// the caller knows the bitmap is about to be fully overwritten (e.g. a
+    /// full-texture `fillRect`) and the pending draws would be wasted work.
+    pub fn discard_pending_gpu_commands(&mut self) {
+        self.pending_gpu_commands = None;
+    }
+
+    /// Submit accumulated GPU commands as a single `render_offscreen` call,
+    /// leaving `dirty_state` marked `GpuModified` across the union of all
+    /// sub-batch dirty regions so a later CPU-side read will sync back.
+    pub fn flush_pending_gpu_commands(
+        &mut self,
+        renderer: &mut dyn RenderBackend,
+        gc: &Mutation<'gc>,
+    ) {
+        if let Some((batches, dirty, quality)) = self.pending_gpu_commands.take() {
+            let handle = self.bitmap_handle(renderer);
+            let command_lists: RenderOffscreenBatches =
+                batches.into_iter().map(|(cmds, _)| cmds).collect();
+            if let Some(sync_handle) =
+                renderer.render_offscreen(handle, command_lists, quality, dirty)
+            {
+                self.set_gpu_dirty(gc, sync_handle, dirty);
+            }
         }
     }
 
