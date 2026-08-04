@@ -340,6 +340,40 @@ package {
             }
 
             dumpInfo(block, linesList);
+
+            // Reset state
+            block.recreateTextLine(line0, null, 1000);
+            line0.y = 20;
+
+            block.recreateTextLine(line1, line0, 1000);
+            line1.y = 40;
+
+            block.recreateTextLine(line2, line1, 1000);
+            line2.y = 60;
+
+            block.recreateTextLine(line3, line2, 1000);
+            line3.y = 80;
+
+            block.recreateTextLine(line4, line3, 1000);
+            line4.y = 100;
+
+            block.recreateTextLine(line5, line4, 1000);
+            line5.y = 120;
+
+            trace("!!!! reset all lines");
+
+            trace("!! line4.validity = \"static\";");
+            line4.validity = "static";
+
+            trace("!! line5.validity = \"static\";");
+            line5.validity = "static";
+
+            dumpInfo(block, linesList);
+
+            trace("!! block.releaseLines(line2, line4);");
+            block.releaseLines(line2, line4);
+
+            dumpInfo(block, linesList);
         }
 
         static function dumpInfo(block:TextBlock, linesList:Array):void {
