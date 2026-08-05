@@ -141,13 +141,6 @@ package flash.text.engine {
 
         public native function get lastLine():TextLine;
 
-        public function releaseLines(start:TextLine, end:TextLine):void {
-            if (start != end || end != this.firstLine) {
-                stub_method("flash.text.engine.TextBlock", "releaseLines", "with start != end or multiple lines");
-                return;
-            }
-            this.firstLine.validity = "invalid";
-            this.firstLine.setTextBlock(null);
-        }
+        public native function releaseLines(start:TextLine, end:TextLine):void;
     }
 }
