@@ -291,29 +291,29 @@ Line #1:
     line.validity: valid
     line.textBlock: [object TextBlock]
     line.previousLine: line-0
-    line.nextLine: line-2
+    line.nextLine: line-5
 Line #2:
-    line.validity: valid
+    line.validity: invalid
+    line.textBlock: null
+    line.previousLine: null
+    line.nextLine: null
+Line #3:
+    line.validity: invalid
+    line.textBlock: null
+    line.previousLine: null
+    line.nextLine: null
+Line #4:
+    line.validity: invalid
+    line.textBlock: null
+    line.previousLine: null
+    line.nextLine: null
+Line #5:
+    line.validity: invalid
     line.textBlock: [object TextBlock]
     line.previousLine: line-1
-    line.nextLine: line-3
-Line #3:
-    line.validity: valid
-    line.textBlock: [object TextBlock]
-    line.previousLine: line-2
-    line.nextLine: line-4
-Line #4:
-    line.validity: valid
-    line.textBlock: [object TextBlock]
-    line.previousLine: line-3
-    line.nextLine: line-5
-Line #5:
-    line.validity: valid
-    line.textBlock: [object TextBlock]
-    line.previousLine: line-4
     line.nextLine: null
 First line in block: line-0
-Last line in block: line-5
+Last line in block: line-1
 Line #0:
     line.validity: valid
     line.textBlock: [object TextBlock]
@@ -323,26 +323,26 @@ Line #1:
     line.validity: valid
     line.textBlock: [object TextBlock]
     line.previousLine: line-0
-    line.nextLine: line-2
+    line.nextLine: null
 Line #2:
-    line.validity: valid
-    line.textBlock: [object TextBlock]
-    line.previousLine: line-1
-    line.nextLine: line-3
+    line.validity: invalid
+    line.textBlock: null
+    line.previousLine: null
+    line.nextLine: null
 Line #3:
-    line.validity: valid
-    line.textBlock: [object TextBlock]
-    line.previousLine: line-2
-    line.nextLine: line-4
+    line.validity: invalid
+    line.textBlock: null
+    line.previousLine: null
+    line.nextLine: null
 Line #4:
-    line.validity: valid
-    line.textBlock: [object TextBlock]
-    line.previousLine: line-3
-    line.nextLine: line-5
+    line.validity: invalid
+    line.textBlock: null
+    line.previousLine: null
+    line.nextLine: null
 Line #5:
-    line.validity: valid
-    line.textBlock: [object TextBlock]
-    line.previousLine: line-4
+    line.validity: invalid
+    line.textBlock: null
+    line.previousLine: null
     line.nextLine: null
 First line in block: line-0
 Last line in block: line-5
