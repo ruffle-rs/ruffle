@@ -21,6 +21,8 @@ pub struct Mesh {
     pub draws: Vec<Draw>,
     pub vertex_buffer: wgpu::Buffer,
     pub index_buffer: wgpu::Buffer,
+    /// Object-space bounding box: (min_x, min_y, max_x, max_y).
+    pub bounds: (f32, f32, f32, f32),
 }
 
 impl ShapeHandleImpl for Mesh {}

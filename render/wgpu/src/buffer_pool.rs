@@ -66,15 +66,30 @@ impl TexturePool {
         viewport_width: u32,
         viewport_height: u32,
     ) -> Arc<Globals> {
+        self.get_globals_with_offset(descriptors, 0, 0, viewport_width, viewport_height)
+    }
+
+    pub fn get_globals_with_offset(
+        &mut self,
+        descriptors: &Descriptors,
+        offset_x: u32,
+        offset_y: u32,
+        viewport_width: u32,
+        viewport_height: u32,
+    ) -> Arc<Globals> {
         self.globals_cache
             .entry(GlobalsKey {
+                offset_x,
+                offset_y,
                 viewport_width,
                 viewport_height,
             })
             .or_insert_with(|| {
-                Arc::new(Globals::new(
+                Arc::new(Globals::new_with_offset(
                     &descriptors.device,
                     &descriptors.bind_layouts.globals,
+                    offset_x,
+                    offset_y,
                     viewport_width,
                     viewport_height,
                 ))
@@ -93,6 +108,8 @@ struct TextureKey {
 
 #[derive(Copy, Clone, Debug, Hash, Eq, PartialEq)]
 struct GlobalsKey {
+    offset_x: u32,
+    offset_y: u32,
     viewport_width: u32,
     viewport_height: u32,
 }

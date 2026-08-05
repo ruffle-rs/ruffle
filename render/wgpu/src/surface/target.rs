@@ -5,7 +5,7 @@ use crate::descriptors::Descriptors;
 use crate::globals::Globals;
 use crate::utils::create_buffer_with_data;
 use crate::utils::run_copy_pipeline;
-use std::cell::OnceCell;
+use std::cell::{Cell, OnceCell};
 use std::sync::Arc;
 
 #[derive(Debug)]
@@ -37,17 +37,11 @@ impl ResolveBuffer {
     }
 
     pub fn view(&self) -> &wgpu::TextureView {
-        match self.texture {
-            PoolOrArcTexture::Pool(ref texture) => &texture.1,
-            PoolOrArcTexture::Manual(ref texture) => &texture.1,
-        }
+        self.texture.view()
     }
 
     pub fn texture(&self) -> &wgpu::Texture {
-        match self.texture {
-            PoolOrArcTexture::Pool(ref texture) => &texture.0,
-            PoolOrArcTexture::Manual(ref texture) => &texture.0,
-        }
+        self.texture.texture()
     }
 
     pub fn take_texture(self) -> PoolOrArcTexture {
@@ -74,14 +68,14 @@ pub enum PoolOrArcTexture {
 impl PoolOrArcTexture {
     pub fn texture(&self) -> &wgpu::Texture {
         match self {
-            PoolOrArcTexture::Pool(texture) => &texture.0,
-            PoolOrArcTexture::Manual(texture) => &texture.0,
+            PoolOrArcTexture::Pool(t) => &t.0,
+            PoolOrArcTexture::Manual(t) => &t.0,
         }
     }
     pub fn view(&self) -> &wgpu::TextureView {
         match self {
-            PoolOrArcTexture::Pool(texture) => &texture.1,
-            PoolOrArcTexture::Manual(texture) => &texture.1,
+            PoolOrArcTexture::Pool(t) => &t.1,
+            PoolOrArcTexture::Manual(t) => &t.1,
         }
     }
 }
@@ -114,17 +108,11 @@ impl FrameBuffer {
     }
 
     pub fn view(&self) -> &wgpu::TextureView {
-        match self.texture {
-            PoolOrArcTexture::Pool(ref texture) => &texture.1,
-            PoolOrArcTexture::Manual(ref texture) => &texture.1,
-        }
+        self.texture.view()
     }
 
     pub fn texture(&self) -> &wgpu::Texture {
-        match self.texture {
-            PoolOrArcTexture::Pool(ref texture) => &texture.0,
-            PoolOrArcTexture::Manual(ref texture) => &texture.0,
-        }
+        self.texture.texture()
     }
 
     pub fn take_texture(self) -> PoolOrArcTexture {
@@ -136,7 +124,12 @@ impl FrameBuffer {
     }
 }
 
-#[derive(Debug)]
+/// A readable texture+view pair for use as blend shader input.
+pub struct BlendSource<'a> {
+    pub texture: &'a wgpu::Texture,
+    pub view: &'a wgpu::TextureView,
+}
+
 pub struct BlendBuffer {
     texture: PoolEntry<(wgpu::Texture, wgpu::TextureView), AlwaysCompatible>,
 }
@@ -150,8 +143,14 @@ impl BlendBuffer {
         pool: &mut TexturePool,
     ) -> Self {
         let texture = pool.get_texture(descriptors, size, usage, format, 1);
-
         Self { texture }
+    }
+
+    pub fn as_source(&self) -> BlendSource<'_> {
+        BlendSource {
+            texture: self.texture(),
+            view: self.view(),
+        }
     }
 
     pub fn view(&self) -> &wgpu::TextureView {
@@ -203,6 +202,8 @@ pub struct CommandTarget {
     whole_frame_bind_group: OnceCell<(wgpu::Buffer, wgpu::BindGroup)>,
     color_needs_clear: OnceCell<bool>,
     render_target_mode: RenderTargetMode,
+    /// Whether the framebuffer has been modified since the last blend buffer copy.
+    blend_buffer_stale: Cell<bool>,
 }
 
 impl CommandTarget {
@@ -215,7 +216,36 @@ impl CommandTarget {
         render_target_mode: RenderTargetMode,
         encoder: &mut wgpu::CommandEncoder,
     ) -> Self {
-        let globals = pool.get_globals(descriptors, size.width, size.height);
+        Self::new_with_offset(
+            descriptors,
+            pool,
+            size,
+            format,
+            sample_count,
+            render_target_mode,
+            encoder,
+            0,
+            0,
+        )
+    }
+
+    #[expect(clippy::too_many_arguments)]
+    pub fn new_with_offset(
+        descriptors: &Descriptors,
+        pool: &mut TexturePool,
+        size: wgpu::Extent3d,
+        format: wgpu::TextureFormat,
+        sample_count: u32,
+        render_target_mode: RenderTargetMode,
+        encoder: &mut wgpu::CommandEncoder,
+        offset_x: u32,
+        offset_y: u32,
+    ) -> Self {
+        let globals = if offset_x == 0 && offset_y == 0 {
+            pool.get_globals(descriptors, size.width, size.height)
+        } else {
+            pool.get_globals_with_offset(descriptors, offset_x, offset_y, size.width, size.height)
+        };
 
         let mut make_pooled_frame_buffer = || {
             FrameBuffer::new(
@@ -278,10 +308,6 @@ impl CommandTarget {
             }
 
             if sample_count > 1 {
-                // Both our frame buffer and resolve buffer need to start out
-                // in the same state, so copy our existing texture to the freshly
-                // allocated frame buffer. We cannot use `copy_texture_to_texture`,
-                // since the sample counts are different.
                 run_copy_pipeline(
                     descriptors,
                     format,
@@ -313,6 +339,7 @@ impl CommandTarget {
             whole_frame_bind_group,
             color_needs_clear: OnceCell::new(),
             render_target_mode,
+            blend_buffer_stale: Cell::new(true),
         }
     }
 
@@ -328,8 +355,6 @@ impl CommandTarget {
         if self.color_needs_clear.get().is_some() {
             return;
         }
-        // If we aren't clearing with a color (eg a texture instead)
-        // the there's no point in creating a new render pass that does nothing.
         if self.render_target_mode.color().is_some() {
             encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: create_debug_label!("Clearing command target").as_deref(),
@@ -398,12 +423,18 @@ impl CommandTarget {
         })
     }
 
+    /// Mark the framebuffer as modified (needs re-copy before next blend).
+    pub fn mark_blend_buffer_stale(&self) {
+        self.blend_buffer_stale.set(true);
+    }
+
+    /// Get the full-viewport blend source, skipping copy if unchanged since last call.
     pub fn update_blend_buffer(
         &self,
         descriptors: &Descriptors,
         pool: &mut TexturePool,
         encoder: &mut wgpu::CommandEncoder,
-    ) -> &BlendBuffer {
+    ) -> BlendSource<'_> {
         let blend_buffer = self.blend_buffer.get_or_init(|| {
             BlendBuffer::new(
                 descriptors,
@@ -415,6 +446,10 @@ impl CommandTarget {
                 pool,
             )
         });
+        if !self.blend_buffer_stale.get() {
+            return blend_buffer.as_source();
+        }
+        self.blend_buffer_stale.set(false);
         self.ensure_cleared(encoder);
         encoder.copy_texture_to_texture(
             wgpu::TexelCopyTextureInfo {
@@ -434,6 +469,77 @@ impl CommandTarget {
                 aspect: Default::default(),
             },
             self.frame_buffer.size(),
+        );
+        blend_buffer.as_source()
+    }
+
+    /// Copy only a sub-region into a bounds-sized blend buffer.
+    /// When the full blend buffer is up-to-date, copies from it instead.
+    #[expect(clippy::too_many_arguments)]
+    pub fn update_blend_buffer_region(
+        &self,
+        descriptors: &Descriptors,
+        pool: &mut TexturePool,
+        encoder: &mut wgpu::CommandEncoder,
+        x: u32,
+        y: u32,
+        width: u32,
+        height: u32,
+    ) -> BlendBuffer {
+        let alloc_size = wgpu::Extent3d {
+            width,
+            height,
+            depth_or_array_layers: 1,
+        };
+        let blend_buffer = BlendBuffer::new(
+            descriptors,
+            alloc_size,
+            self.format,
+            wgpu::TextureUsages::TEXTURE_BINDING
+                | wgpu::TextureUsages::COPY_DST
+                | wgpu::TextureUsages::COPY_SRC,
+            pool,
+        );
+        // Prefer copying from cached full blend buffer when available
+        if !self.blend_buffer_stale.get()
+            && let Some(full_bb) = self.blend_buffer.get()
+        {
+            encoder.copy_texture_to_texture(
+                wgpu::TexelCopyTextureInfo {
+                    texture: full_bb.texture(),
+                    mip_level: 0,
+                    origin: wgpu::Origin3d { x, y, z: 0 },
+                    aspect: Default::default(),
+                },
+                wgpu::TexelCopyTextureInfo {
+                    texture: blend_buffer.texture(),
+                    mip_level: 0,
+                    origin: Default::default(),
+                    aspect: Default::default(),
+                },
+                alloc_size,
+            );
+            return blend_buffer;
+        }
+        self.ensure_cleared(encoder);
+        encoder.copy_texture_to_texture(
+            wgpu::TexelCopyTextureInfo {
+                texture: self
+                    .resolve_buffer
+                    .as_ref()
+                    .map(|b| b.texture())
+                    .unwrap_or_else(|| self.frame_buffer.texture()),
+                mip_level: 0,
+                origin: wgpu::Origin3d { x, y, z: 0 },
+                aspect: Default::default(),
+            },
+            wgpu::TexelCopyTextureInfo {
+                texture: blend_buffer.texture(),
+                mip_level: 0,
+                origin: Default::default(),
+                aspect: Default::default(),
+            },
+            alloc_size,
         );
         blend_buffer
     }
@@ -460,6 +566,10 @@ fn get_whole_frame_bind_group<'a>(
 ) -> &'a wgpu::BindGroup {
     &once_cell
         .get_or_init(|| {
+            // Shared by the copy pipeline (which only reads `world_matrix`) and the
+            // full-viewport blend path. The copy pipeline ignores the color vectors,
+            // and the blend shaders reinterpret these bytes as `BlendTransforms` — an
+            // all-zero UV transform, i.e. identity (no region remapping).
             let transform = Transforms {
                 world_matrix: [
                     [size.width as f32, 0.0, 0.0, 0.0],
@@ -467,7 +577,7 @@ fn get_whole_frame_bind_group<'a>(
                     [0.0, 0.0, 1.0, 0.0],
                     [0.0, 0.0, 0.0, 1.0],
                 ],
-                mult_color: [1.0, 1.0, 1.0, 1.0],
+                mult_color: [0.0, 0.0, 0.0, 0.0],
                 add_color: [0.0, 0.0, 0.0, 0.0],
             };
             let transforms_buffer = create_buffer_with_data(
