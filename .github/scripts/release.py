@@ -179,6 +179,7 @@ def bump(release_type):
     run_command(['npm', 'install', 'workspace-version'], cwd=npm_dir)
     run_command(['npm', 'version', '--no-git-tag-version', version], cwd=npm_dir)
     run_command(['./node_modules/workspace-version/dist/index.js'], cwd=npm_dir)
+    run_command(['npm', 'install', '--package-lock-only'], cwd=npm_dir)
 
     github_output('current-version', current_version)
     github_output('version', version)
