@@ -108,6 +108,45 @@ impl<'gc> TextLine<'gc> {
         self.set_next_line(None, mc);
     }
 
+    /// Release this line from its siblings and the block it's in.
+    ///
+    /// Doing this will set the validity of the line and all its successors to
+    /// "invalid".
+    pub fn release(self, mc: &Mutation<'gc>) {
+        let block = self.text_block().expect("Line is in a text block");
+
+        let block_first_line = block.first_line().expect("Text block has lines");
+
+        let previous_line = self.previous_line();
+        let next_line = self.next_line();
+
+        // If this line was the text block's first line, set it to the next line
+        if DisplayObject::ptr_eq(self.into(), block_first_line.into()) {
+            block.set_first_line(next_line, mc);
+        }
+
+        // This line is, obviously, invalid now
+        self.set_validity(TextLineValidity::Invalid, mc);
+
+        // Successors of this line also become invalid, as their predecessor is invalid
+        for line in self.next_lines() {
+            line.set_validity(TextLineValidity::Invalid, mc);
+        }
+
+        // Make the doubly-linked list of lines skip over this one
+        if let Some(previous_line) = previous_line {
+            previous_line.set_next_line(next_line, mc);
+        }
+        if let Some(next_line) = next_line {
+            next_line.set_previous_line(previous_line, mc);
+        }
+
+        // Finally, completely disconnect this line from its siblings and the block
+        self.set_text_block(None, mc);
+        self.set_previous_line(None, mc);
+        self.set_next_line(None, mc);
+    }
+
     pub fn measure_text(self, context: &mut UpdateContext<'gc>) -> (Twips, Twips) {
         self.0.fallback.measure_text(context)
     }
@@ -186,6 +225,51 @@ impl<'gc> TextLine<'gc> {
 
     pub fn set_next_line(self, value: Option<TextLine<'gc>>, mc: &Mutation<'gc>) {
         unlock!(Gc::write(mc, self.0), TextLineData, next_line).set(value);
+    }
+
+    pub fn next_lines(self) -> impl Iterator<Item = TextLine<'gc>> {
+        core::iter::successors(self.next_line(), |line| line.next_line())
+    }
+
+    pub fn previous_lines(self) -> impl Iterator<Item = TextLine<'gc>> {
+        core::iter::successors(self.previous_line(), |line| line.previous_line())
+    }
+
+    /// Find the lines between `self` and `line_2`, inclusive of both. This
+    /// method will work regardless of whether `self` comes before or after
+    /// `line_2` in the text block.
+    ///
+    /// This method assumes that both lines are in the same text block. If they
+    /// are not, this method will panic.
+    pub fn find_lines_through(self, other: TextLine<'gc>) -> Vec<TextLine<'gc>> {
+        let mut result = Vec::new();
+        result.push(self);
+
+        if DisplayObject::ptr_eq(self.into(), other.into()) {
+            // There is only one line, `self`
+            return result;
+        }
+
+        // Try going forwards...
+        for line in self.next_lines() {
+            result.push(line);
+            if DisplayObject::ptr_eq(line.into(), other.into()) {
+                return result;
+            }
+        }
+
+        // Try going backwards...
+        result.clear();
+        result.push(self);
+
+        for line in self.previous_lines() {
+            result.push(line);
+            if DisplayObject::ptr_eq(line.into(), other.into()) {
+                return result;
+            }
+        }
+
+        panic!("Both lines should be in the same TextBlock!");
     }
 }
 
