@@ -481,7 +481,7 @@ pub fn do_create_text_line<'gc>(
 
     text_line.set_text_block(Some(block), activation.gc());
     text_line.set_specified_width(width);
-    text_line.set_raw_text_length(text.len() as u32);
+    text_line.set_raw_text_length(subtext.len() as u32);
     text_line.set_begin_index(previous_position as u32);
     text_line.set_end_index(next_position as u32);
     text_line.set_line_index(line_index);
@@ -576,8 +576,8 @@ fn handle_content_element<'gc>(
 fn next_line_break(text: &WStr, start: usize) -> usize {
     let len = text[start..]
         .iter()
-        .position(|ch| ch == b'\n' as u16)
-        // Include the newline.
+        .position(|ch| matches!(ch, 0x0A | 0x2028 | 0x2029))
+        // Include the separator.
         .map(|pos| pos + 1);
 
     if let Some(len) = len {
