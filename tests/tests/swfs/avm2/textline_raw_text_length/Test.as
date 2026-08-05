@@ -8,6 +8,18 @@ public class Test extends Sprite {
         dump("ab\ncd");
         trace("");
 
+        trace("Carriage Return");
+        dump("ab\rcd");
+        trace("");
+
+        trace("Carriage Return + Line Feed");
+        dump("ab\r\ncd");
+        trace("");
+
+        trace("Double Line Feed");
+        dump("ab\n\ncd");
+        trace("");
+
         trace("Line separator");
         dump("ab\u2028cd");
         trace("");
