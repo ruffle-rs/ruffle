@@ -511,11 +511,18 @@ fn handle_content_element<'gc>(
 }
 
 fn next_line_break(text: &WStr, start: usize) -> usize {
-    let len = text[start..]
+    let remaining_text = &text[start..];
+    let len = remaining_text
         .iter()
-        .position(|ch| matches!(ch, 0x0A | 0x2028 | 0x2029))
+        .position(|ch| matches!(ch, 0x0A | 0x0D | 0x2028 | 0x2029))
         // Include the separator.
-        .map(|pos| pos + 1);
+        .map(|pos| {
+            if remaining_text.get(pos) == Some(0x0D) && remaining_text.get(pos + 1) == Some(0x0A) {
+                pos + 2
+            } else {
+                pos + 1
+            }
+        });
 
     if let Some(len) = len {
         start + len

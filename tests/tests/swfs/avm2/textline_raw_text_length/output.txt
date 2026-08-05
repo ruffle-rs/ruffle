@@ -2,6 +2,19 @@ One line per line break
   line 0: rawTextLength=3 textBlockBeginIndex=0 first=true
   line 1: rawTextLength=2 textBlockBeginIndex=3 first=false
 
+Carriage Return
+  line 0: rawTextLength=3 textBlockBeginIndex=0 first=true
+  line 1: rawTextLength=2 textBlockBeginIndex=3 first=false
+
+Carriage Return + Line Feed
+  line 0: rawTextLength=4 textBlockBeginIndex=0 first=true
+  line 1: rawTextLength=2 textBlockBeginIndex=4 first=false
+
+Double Line Feed
+  line 0: rawTextLength=3 textBlockBeginIndex=0 first=true
+  line 1: rawTextLength=1 textBlockBeginIndex=3 first=false
+  line 2: rawTextLength=2 textBlockBeginIndex=4 first=false
+
 Line separator
   line 0: rawTextLength=3 textBlockBeginIndex=0 first=true
   line 1: rawTextLength=2 textBlockBeginIndex=3 first=false
