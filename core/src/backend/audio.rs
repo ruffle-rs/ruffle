@@ -202,6 +202,11 @@ pub trait AudioBackend: Any {
     fn is_sound_playing(&self, instance: SoundInstanceHandle) -> bool {
         self.get_sound_position(instance).is_some()
     }
+
+    /// Returns the total compressed memory used by all registered sounds, in kilobytes.
+    fn total_sound_memory_kb(&self) -> i32 {
+        0
+    }
 }
 
 /// Information about a sound provided to `NullAudioBackend`.
@@ -320,6 +325,10 @@ impl AudioBackend for NullAudioBackend {
 
     fn get_sound_peak(&mut self, _instance: SoundInstanceHandle) -> Option<[f32; 2]> {
         None
+    }
+
+    fn total_sound_memory_kb(&self) -> i32 {
+        (self.sounds.values().map(|s| s.size as usize).sum::<usize>() / 1024) as i32
     }
 
     fn volume(&self) -> f32 {

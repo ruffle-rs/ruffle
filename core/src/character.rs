@@ -1,4 +1,5 @@
 use std::cell::OnceCell;
+use std::sync::atomic::{AtomicU64, AtomicUsize, Ordering};
 
 use crate::backend::audio::SoundHandle;
 use crate::binary_data::BinaryData;
@@ -13,6 +14,23 @@ use ruffle_render::backend::RenderBackend;
 use ruffle_render::bitmap::{Bitmap as RenderBitmap, BitmapHandle, BitmapSize};
 use ruffle_render::error::Error as RenderError;
 use swf::DefineBitsLossless;
+
+static REGISTERED_BITMAP_BYTES: AtomicUsize = AtomicUsize::new(0);
+
+/// Accumulates microseconds spent decompressing image assets (JPEG / lossless).
+/// Drained each frame into a telemetry span.
+static DECOMPRESS_MICROS: AtomicU64 = AtomicU64::new(0);
+
+/// Returns the total GPU-registered bitmap memory (SWF character bitmaps) in kilobytes.
+pub fn registered_bitmap_memory_kb() -> i32 {
+    (REGISTERED_BITMAP_BYTES.load(Ordering::Relaxed) / 1024) as i32
+}
+
+/// Drains and returns the accumulated image-decompression time in microseconds since the last call.
+#[allow(dead_code)] // unused while the `.rend.buildbits` telemetry span is disabled
+pub fn drain_decompress_micros() -> u64 {
+    DECOMPRESS_MICROS.swap(0, Ordering::Relaxed)
+}
 
 #[derive(Copy, Clone, Collect, Debug)]
 #[collect(no_drop)]
@@ -73,9 +91,13 @@ impl<'gc> BitmapCharacter<'gc> {
         if let Some(handle) = self.handle.get() {
             return Ok(handle.clone());
         }
+        let t0 = std::time::Instant::now();
         let decoded = self.compressed.decode()?;
+        DECOMPRESS_MICROS.fetch_add(t0.elapsed().as_micros() as u64, Ordering::Relaxed);
+        let bitmap_bytes = decoded.width() as usize * decoded.height() as usize * 4;
         let new_handle = backend.register_bitmap(decoded)?;
         // FIXME - do we ever want to release this handle, to avoid taking up GPU memory?
+        REGISTERED_BITMAP_BYTES.fetch_add(bitmap_bytes, Ordering::Relaxed);
         self.handle.set(new_handle.clone()).unwrap();
         Ok(new_handle)
     }

@@ -58,6 +58,7 @@ pub mod debug_ui;
 pub mod external;
 pub mod i18n;
 pub mod stub;
+pub mod telemetry;
 
 pub use context_menu::ContextMenuItem;
 pub use events::PlayerEvent;

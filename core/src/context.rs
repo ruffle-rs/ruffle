@@ -37,6 +37,7 @@ use crate::string::{AvmString, StringContext};
 use crate::stub::StubCollection;
 use crate::system_properties::SystemProperties;
 use crate::tag_utils::{SwfMovie, SwfSlice};
+use crate::telemetry::TelemetryMetrics;
 use crate::timer::Timers;
 use crate::vminterface::Instantiator;
 use async_channel::Sender;
@@ -72,6 +73,9 @@ pub struct UpdateContext<'gc> {
 
     /// A collection of stubs encountered during this movie.
     pub stub_tracker: &'gc mut StubCollection,
+
+    /// Telemetry metrics collector for the current SWF session.
+    pub telemetry: &'gc mut TelemetryMetrics,
 
     /// The library containing character definitions for this SWF.
     /// Used to instantiate a `DisplayObject` of a given ID.
@@ -354,6 +358,24 @@ impl<'gc> UpdateContext<'gc> {
             movie.height(),
             self.frame_rate,
         );
+
+        // Initialize telemetry with metadata from the newly-loaded SWF.
+        if self.telemetry.is_enabled() {
+            let fps: f64 = movie.frame_rate().into();
+            let size_kb = ((movie.compressed_len() + 512) / 1024).max(1) as i32;
+            self.telemetry.set_swf_name(movie.url());
+            self.telemetry.set_swf_rate(fps);
+            self.telemetry.set_swf_size(size_kb);
+            self.telemetry.set_swf_dimensions(
+                movie.width().to_pixels() as i32,
+                movie.height().to_pixels() as i32,
+            );
+            self.telemetry
+                .set_swf_vm(if movie.is_action_script_3() { 2 } else { 1 });
+            self.telemetry.add_network_loadmovie(movie.url());
+            self.telemetry.add_network_received(size_kb);
+            self.telemetry.set_swf_start(0);
+        }
 
         *self.root_swf = Arc::new(movie);
         *self.instance_counter = 0;
