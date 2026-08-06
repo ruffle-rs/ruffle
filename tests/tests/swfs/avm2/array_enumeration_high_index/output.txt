@@ -1,0 +1,13 @@
+length=4000000001
+keyCount=5
+1=small
+100=medium
+2500000000=large
+4000000000=huge
+5000000000=beyond_u32
+valueCount=5
+value=beyond_u32
+value=huge
+value=large
+value=medium
+value=small
