@@ -110,6 +110,7 @@ tempfile = "3.27.0"
 tracing-wasm = "0.2.1"
 rascal = "0.3.4"
 jpegxr = { git = "https://github.com/ruffle-rs/jpegxr", rev = "5281b4ae42be742779269a9f1a986101f101f32f" }
+itertools = "0.14.0"
 
 [workspace.lints.rust]
 # Clippy nightly often adds new/buggy lints that we want to ignore.
