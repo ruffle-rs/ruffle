@@ -23,7 +23,10 @@ pub trait RenderTarget: Debug + 'static {
 
     fn height(&self) -> u32;
 
-    fn get_next_texture(&mut self) -> Result<Self::Frame, wgpu::SurfaceError>;
+    /// Returns the frame to render into, or `None` if no frame could be
+    /// acquired - in which case the caller should skip this frame, and
+    /// may attempt to recreate the swap chain via [`RenderTarget::resize`].
+    fn get_next_texture(&mut self) -> Option<Self::Frame>;
 
     fn submit<I: IntoIterator<Item = wgpu::CommandBuffer>>(
         &self,
@@ -126,8 +129,19 @@ impl RenderTarget for SwapChainTarget {
         self.surface_config.height
     }
 
-    fn get_next_texture(&mut self) -> Result<Self::Frame, wgpu::SurfaceError> {
-        let texture = self.window_surface.get_current_texture()?;
+    fn get_next_texture(&mut self) -> Option<Self::Frame> {
+        let texture = match self.window_surface.get_current_texture() {
+            wgpu::CurrentSurfaceTexture::Success(surface_texture) => surface_texture,
+            // The texture is still usable - no reason to waste an already
+            // acquired frame. Ideally the surface should also be reconfigured
+            // before the next acquire; we don't currently do that (matching
+            // pre-wgpu-29 behavior, which never checked the suboptimal flag).
+            wgpu::CurrentSurfaceTexture::Suboptimal(surface_texture) => surface_texture,
+            state => {
+                tracing::warn!("Couldn't acquire surface texture: {:?}", state);
+                return None;
+            }
+        };
         let view_format = remove_srgb(self.surface_config.format);
 
         let view = texture.texture.create_view(&wgpu::TextureViewDescriptor {
@@ -135,7 +149,7 @@ impl RenderTarget for SwapChainTarget {
             ..Default::default()
         });
 
-        Ok(SwapChainTargetFrame { texture, view })
+        Some(SwapChainTargetFrame { texture, view })
     }
 
     #[instrument(level = "debug", skip_all)]
@@ -276,8 +290,8 @@ impl RenderTarget for TextureTarget {
         self.size.height
     }
 
-    fn get_next_texture(&mut self) -> Result<Self::Frame, wgpu::SurfaceError> {
-        Ok(TextureTargetFrame(
+    fn get_next_texture(&mut self) -> Option<Self::Frame> {
+        Some(TextureTargetFrame(
             self.texture.create_view(&Default::default()),
         ))
     }
