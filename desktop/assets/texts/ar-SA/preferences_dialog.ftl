@@ -23,6 +23,8 @@ theme = المظهر
 theme-system = الإعدادات المبدئية
 theme-light = فاتح
 theme-dark = داكن
+# See for context https://github.com/FeralInteractive/gamemode
+gamemode = وضعية اللعب
 gamemode-tooltip =
     يطبِّق GameMode مجموعة من التحسينات على جهاز الكمبيوتر و/أو رفل مؤقتًا.
     يطلب رفل وضع اللعبة فقط عند تشغيل فيلم.

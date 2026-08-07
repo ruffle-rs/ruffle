@@ -38,6 +38,15 @@
     "settings_player_version": {
         "message": "Numero di versione del Flash Player da emulare (intervallo 1-32)"
     },
+    "settings_background_execution_mode": {
+        "message": "Esecuzione in background"
+    },
+    "settings_background_execution_mode_none": {
+        "message": "Pausa"
+    },
+    "settings_background_execution_mode_main_thread": {
+        "message": "Esegui nel processo principale"
+    },
     "settings_preferred_renderer": {
         "message": "Renderer preferito"
     },

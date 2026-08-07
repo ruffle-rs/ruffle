@@ -1,4 +1,5 @@
 file-picker-title-open-file = إفتح ملفًا واحدًا
+file-picker-title-open-directory = افتح ملفا
 file-picker-filter-supported = كل الملفات المدعومة
 file-picker-filter-swf = ملف SWF (*.swf)
 file-picker-filter-spl = ملف FutureSplash (*.spl)
