@@ -1,4 +1,5 @@
 use crate::context::UpdateContext;
+use crate::PlayerRuntime;
 use bitflags::bitflags;
 use core::fmt;
 use fluent_templates::{LanguageIdentifier, langid};
@@ -266,10 +267,29 @@ pub struct SystemProperties {
     pub cpu_architecture: CpuArchitecture,
     /// The highest supported h264 decoder level
     pub idc_level: String,
+    /// A custom version string to report, instead of player version
+    pub custom_version_string: Option<String>,
 }
 
 impl SystemProperties {
-    pub fn new(language: LanguageIdentifier) -> Self {
+    pub fn new(
+        player_runtime: PlayerRuntime,
+        language: LanguageIdentifier,
+        custom_version_string: Option<String>,
+    ) -> Self {
+        let (manufacturer, os) = match player_runtime {
+            PlayerRuntime::FlashPlayer => (Manufacturer::Windows, OperatingSystem::WindowsUnknown),
+            PlayerRuntime::AIR => {
+                if cfg!(windows) {
+                    (Manufacturer::Windows, OperatingSystem::WindowsUnknown)
+                } else if cfg!(target_vendor = "apple") {
+                    (Manufacturer::Macintosh, OperatingSystem::MacOs)
+                } else {
+                    (Manufacturer::Linux, OperatingSystem::Linux)
+                }
+            }
+        };
+
         SystemProperties {
             //TODO: default to true on fp>=7, false <= 6
             exact_settings: true,
@@ -284,19 +304,28 @@ impl SystemProperties {
             pixel_aspect_ratio: 1_f32,
             // source: https://tracker.adobe.com/#/view/FP-3949775
             dpi: 72_f32,
-            manufacturer: Manufacturer::Linux,
-            os: OperatingSystem::Linux,
+            manufacturer,
+            os,
             cpu_architecture: CpuArchitecture::X86,
             idc_level: "5.1".into(),
+            custom_version_string,
         }
     }
 
     pub fn get_version_string(&self, player_version: u8) -> String {
-        format!(
-            "{} {},0,0,0",
-            self.manufacturer.get_platform_name(),
-            player_version
-        )
+        if let Some(custom_version_string) = &self.custom_version_string {
+            format!(
+                "{} {}",
+                self.manufacturer.get_platform_name(),
+                custom_version_string
+            )
+        } else {
+            format!(
+                "{} {},0,0,0",
+                self.manufacturer.get_platform_name(),
+                player_version
+            )
+        }
     }
 
     pub fn has_capability(&self, cap: SystemCapabilities) -> bool {
