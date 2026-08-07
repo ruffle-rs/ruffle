@@ -5,3 +5,6 @@ file-picker-filter-swf = SWF (*.swf)
 file-picker-filter-spl = FutureSplash Animator (*.spl)
 file-picker-filter-ruf = Paquet Ruffle (*.ruf)
 file-picker-filter-all = Tous les fichiers
+file-picker-select-root-movie-title = Sélectionner film racine
+file-picker-select-root-movie-message = Sélectionner le film racine depuis le dossier ouvert.
+file-picker-select-root-movie-select = Sélectionner
