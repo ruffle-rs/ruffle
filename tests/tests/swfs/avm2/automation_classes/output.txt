@@ -1,0 +1,122 @@
+=== Testing AutomationAction
+ArgumentError: Error #1063: Argument count mismatch on flash.automation::AutomationAction(). Expected 0, got 1.
+type:  string
+Successfully set type to 123.45, type string
+Successfully set type to -500, type string
+
+=== Testing KeyboardAutomationAction
+ArgumentError: Error #1063: Argument count mismatch on flash.automation::KeyboardAutomationAction(). Expected 1, got 0.
+KeyboardAutomationAction is AutomationAction: true
+== with default values
+type: hello string
+Successfully set type to 123.45, type string
+Successfully set type to -500, type string
+keyCode: 0 number
+Successfully set keyCode to 123, type number
+Successfully set keyCode to 4294966796, type number
+== with provided values
+type: hello string
+Successfully set type to 123.45, type string
+Successfully set type to -500, type string
+keyCode: 12345 number
+Successfully set keyCode to 123, type number
+Successfully set keyCode to 4294966796, type number
+== Testing constants
+KEY_DOWN: keyDown string
+KEY_UP: keyUp string
+
+=== Testing MouseAutomationAction
+ArgumentError: Error #1063: Argument count mismatch on flash.automation::MouseAutomationAction(). Expected 1, got 0.
+MouseAutomationAction is AutomationAction: true
+== with default values
+type: hello string
+Successfully set type to 123.45, type string
+Successfully set type to -500, type string
+stageX: 0 number
+Successfully set stageX to 123.45, type number
+Successfully set stageX to -500, type number
+stageY: 0 number
+Successfully set stageY to 123.45, type number
+Successfully set stageY to -500, type number
+delta: 0 number
+Successfully set delta to 123, type number
+Successfully set delta to -500, type number
+== with provided values
+type: hello string
+Successfully set type to 123.45, type string
+Successfully set type to -500, type string
+stageX: 4.56 number
+Successfully set stageX to 123.45, type number
+Successfully set stageX to -500, type number
+stageY: 7.89 number
+Successfully set stageY to 123.45, type number
+Successfully set stageY to -500, type number
+delta: 9 number
+Successfully set delta to 123, type number
+Successfully set delta to -500, type number
+== Testing constants
+MIDDLE_MOUSE_DOWN: middleMouseDown string
+MIDDLE_MOUSE_UP: middleMouseUp string
+MOUSE_DOWN: mouseDown string
+MOUSE_MOVE: mouseMove string
+MOUSE_DOWN: mouseDown string
+MOUSE_WHEEL: mouseWheel string
+RIGHT_MOUSE_DOWN: rightMouseDown string
+RIGHT_MOUSE_UP: rightMouseUp string
+
+=== Testing StageCapture
+StageCapture is EventDispatcher: true
+== Testing constants
+CURRENT: current string
+MULTIPLE: multiple string
+NEXT: next string
+RASTER: raster string
+SCREEN: screen string
+STAGE: stage string
+
+=== Testing StageCaptureEvent
+ArgumentError: Error #1063: Argument count mismatch on flash.automation::StageCaptureEvent(). Expected 1, got 0.
+StageCaptureEvent is Event: true
+== with default values
+type: hello string
+ReferenceError: Error #1074: Illegal write to read-only property type on flash.automation.StageCaptureEvent.
+bubbles: false boolean
+ReferenceError: Error #1074: Illegal write to read-only property bubbles on flash.automation.StageCaptureEvent.
+cancelable: false boolean
+ReferenceError: Error #1074: Illegal write to read-only property cancelable on flash.automation.StageCaptureEvent.
+url:  string
+ReferenceError: Error #1074: Illegal write to read-only property url on flash.automation.StageCaptureEvent.
+checksum: 0 number
+ReferenceError: Error #1074: Illegal write to read-only property checksum on flash.automation.StageCaptureEvent.
+pts: 0 number
+ReferenceError: Error #1074: Illegal write to read-only property pts on flash.automation.StageCaptureEvent.
+== with provided values
+type: hello string
+ReferenceError: Error #1074: Illegal write to read-only property type on flash.automation.StageCaptureEvent.
+bubbles: false boolean
+ReferenceError: Error #1074: Illegal write to read-only property bubbles on flash.automation.StageCaptureEvent.
+cancelable: true boolean
+ReferenceError: Error #1074: Illegal write to read-only property cancelable on flash.automation.StageCaptureEvent.
+url: 1.23 string
+ReferenceError: Error #1074: Illegal write to read-only property url on flash.automation.StageCaptureEvent.
+checksum: 4294967292 number
+ReferenceError: Error #1074: Illegal write to read-only property checksum on flash.automation.StageCaptureEvent.
+pts: 7.89 number
+ReferenceError: Error #1074: Illegal write to read-only property pts on flash.automation.StageCaptureEvent.
+== testing toString()
+[StageCaptureEvent type="hello" bubbles=false cancelable=true eventPhase=2 url="1.23" checksum=4294967292]
+== testing clone
+type: hello string
+ReferenceError: Error #1074: Illegal write to read-only property type on flash.automation.StageCaptureEvent.
+bubbles: false boolean
+ReferenceError: Error #1074: Illegal write to read-only property bubbles on flash.automation.StageCaptureEvent.
+cancelable: true boolean
+ReferenceError: Error #1074: Illegal write to read-only property cancelable on flash.automation.StageCaptureEvent.
+url: 1.23 string
+ReferenceError: Error #1074: Illegal write to read-only property url on flash.automation.StageCaptureEvent.
+checksum: 4294967292 number
+ReferenceError: Error #1074: Illegal write to read-only property checksum on flash.automation.StageCaptureEvent.
+pts: 0 number
+ReferenceError: Error #1074: Illegal write to read-only property pts on flash.automation.StageCaptureEvent.
+== Testing constants
+CAPTURE: capture string
