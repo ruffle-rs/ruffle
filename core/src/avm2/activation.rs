@@ -12,13 +12,14 @@ use crate::avm2::error::{
     make_null_or_undefined_error,
 };
 use crate::avm2::function::FunctionArgs;
+use crate::avm2::int_interpreter::IntInterpreter;
 use crate::avm2::method::{Method, NativeMethodImpl, ResolvedParamConfig};
 use crate::avm2::object::TObject;
 use crate::avm2::object::{
     ArrayObject, ByteArrayObject, ClassObject, FunctionObject, NamespaceObject, ScriptObject,
     XmlListObject,
 };
-use crate::avm2::op::{LookupSwitch, Op};
+use crate::avm2::op::{IntInterpreterInfo, LookupSwitch, Op};
 use crate::avm2::scope::{Scope, ScopeChain, search_scope_stack};
 use crate::avm2::script::Script;
 use crate::avm2::stack::StackFrame;
@@ -831,6 +832,20 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                 Op::Sxi8 => self.op_sxi8(),
                 Op::Sxi16 => self.op_sxi16(),
                 Op::Throw => self.op_throw(),
+
+                Op::RunIntInterpreter(info) => {
+                    // NOTE: Int interpreter promotion is never done if this
+                    // method has exception handlers. This means that we don't
+                    // need to worry about this error not making it to an
+                    // exception handler; we can simply throw it from here (as
+                    // there are no exception handlers in this method that could
+                    // handle the error).
+                    self.run_int_interpreter(info)?;
+
+                    ip = info.exit_offset.get();
+
+                    continue;
+                }
 
                 // Branch ops
                 Op::Jump { offset } => {
@@ -2784,7 +2799,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             return Err(make_error_1506(self));
         }
         dm.write_at_nongrowing(&val.to_le_bytes(), address)
-            .map_err(|e| e.to_avm(self))?;
+            .expect("Just checked that the address was valid");
 
         Ok(())
     }
@@ -2803,7 +2818,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             return Err(make_error_1506(self));
         }
         dm.write_at_nongrowing(&val.to_le_bytes(), address)
-            .map_err(|e| e.to_avm(self))?;
+            .expect("Just checked that the address was valid");
 
         Ok(())
     }
@@ -2822,7 +2837,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             return Err(make_error_1506(self));
         }
         dm.write_at_nongrowing(&val.to_le_bytes(), address)
-            .map_err(|e| e.to_avm(self))?;
+            .expect("Just checked that the address was valid");
 
         Ok(())
     }
@@ -2841,7 +2856,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             return Err(make_error_1506(self));
         }
         dm.write_at_nongrowing(&val.to_le_bytes(), address)
-            .map_err(|e| e.to_avm(self))?;
+            .expect("Just checked that the address was valid");
 
         Ok(())
     }
@@ -2879,7 +2894,9 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             return Err(make_error_1506(self));
         }
 
-        let val = dm.read_at(2, address).map_err(|e| e.to_avm(self))?;
+        let val = dm
+            .read_at(2, address)
+            .expect("Just checked that the address was valid");
         self.push_stack(u16::from_le_bytes(val.try_into().unwrap()));
 
         Ok(())
@@ -2898,7 +2915,9 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             return Err(make_error_1506(self));
         }
 
-        let val = dm.read_at(4, address).map_err(|e| e.to_avm(self))?;
+        let val = dm
+            .read_at(4, address)
+            .expect("Just checked that the address was valid");
         self.push_stack(i32::from_le_bytes(val.try_into().unwrap()));
         Ok(())
     }
@@ -2916,7 +2935,9 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             return Err(make_error_1506(self));
         }
 
-        let val = dm.read_at(4, address).map_err(|e| e.to_avm(self))?;
+        let val = dm
+            .read_at(4, address)
+            .expect("Just checked that the address was valid");
         self.push_stack(f32::from_le_bytes(val.try_into().unwrap()));
 
         Ok(())
@@ -2935,7 +2956,9 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             return Err(make_error_1506(self));
         }
 
-        let val = dm.read_at(8, address).map_err(|e| e.to_avm(self))?;
+        let val = dm
+            .read_at(8, address)
+            .expect("Just checked that the address was valid");
         self.push_stack(f64::from_le_bytes(val.try_into().unwrap()));
         Ok(())
     }
@@ -3044,5 +3067,60 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     fn op_throw(&mut self) -> Result<(), Error<'gc>> {
         let error_val = self.pop_stack();
         Err(Error::from_value(self, error_val))
+    }
+
+    fn run_int_interpreter(&mut self, info: &IntInterpreterInfo) -> Result<(), Error<'gc>> {
+        // Code run in the int interpreter does not have the ability to borrow
+        // or swap out the domain memory, so borrow it here. This means that
+        // domain memory ops run in the int interpreter can just access the
+        // stored domain memory bytearray.
+        let domain_memory = self.domain_memory().storage_mut();
+
+        let mut interpreter = IntInterpreter::new(domain_memory);
+
+        // Synchronize all the int locals in this interpreter to the int
+        // interpreter
+        for (i, is_int) in info.input_locals.iter().enumerate() {
+            if is_int {
+                // This local might be read from the code run in the int
+                // interpreter, so pass it to it properly.
+                interpreter.push_stack(self.local_register(i as u32).as_i32());
+            } else {
+                // This local won't be read from by the code run in the int
+                // interpreter, so we can just pass nothing.
+                interpreter.push_stack(0);
+            }
+        }
+
+        // NOTE: Int interpreter promotion is never done if this method has
+        // exception handlers. This means that it's fine to not synchronize
+        // correct state of locals once this throws an error, as there are no
+        // exception handlers to which that state is observable to (this method
+        // will simply immediately return to its caller with the error).
+        let result = interpreter.run(&info.ops);
+        if result.is_err() {
+            // The only exception that can happen from the int interpreter is
+            // an out-of-bounds domain memory read/write.
+            return Err(make_error_1506(self));
+        }
+
+        // Synchronize all the int locals in the int interpreter to this
+        // interpreter
+        for (i, is_int) in info.output_locals.iter().enumerate() {
+            if is_int {
+                // This local might have been written to by the code run in the
+                // int interpreter, so synchronize it back to us.
+                self.set_local_register(i as u32, interpreter.frame_at(i as u32));
+            }
+        }
+
+        // Finally, synchronize the stack from the int interpreter to this
+        // interpreter.
+        let num_locals = info.input_locals.len();
+        for i in num_locals..num_locals + info.final_stack_height {
+            self.push_stack(interpreter.frame_at(i as u32));
+        }
+
+        Ok(())
     }
 }

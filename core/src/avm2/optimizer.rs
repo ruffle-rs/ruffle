@@ -1,13 +1,16 @@
 mod blocks;
 mod dce;
+mod int_interpretation;
 mod nop_remover;
 mod peephole;
 mod type_aware;
+pub(crate) mod utils;
 
 use crate::avm2::activation::Activation;
 use crate::avm2::error::Error;
 use crate::avm2::method::{Method, ResolvedParamConfig};
 use crate::avm2::op::Op;
+use crate::avm2::optimizer::int_interpretation::IntAnalysisInfo;
 use crate::avm2::verify::Exception;
 
 use std::cell::Cell;
@@ -34,6 +37,13 @@ pub fn optimize<'gc>(
     // zero-length jumps, which usually reduces the number of blocks in obfuscated code.
     peephole::preprocess_peephole(code_slice);
 
+    let mut int_analysis_info = IntAnalysisInfo::new(
+        activation,
+        method,
+        !method_exceptions.is_empty(),
+        code_slice,
+    );
+
     type_aware::type_aware_optimize(
         activation,
         method,
@@ -41,12 +51,15 @@ pub fn optimize<'gc>(
         method_exceptions,
         resolved_parameters,
         &mut jump_targets,
+        &mut int_analysis_info,
         sets_local_0,
     )?;
 
-    peephole::postprocess_peephole(code_slice, &jump_targets);
+    peephole::postprocess_peephole(code_slice, &jump_targets, &mut int_analysis_info);
 
     dce::eliminate_dead_code(code_slice, &jump_targets);
+
+    int_interpretation::run_analysis(activation, code_slice, &int_analysis_info);
 
     nop_remover::remove_nops(code, method_exceptions);
 
