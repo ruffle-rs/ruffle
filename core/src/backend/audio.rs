@@ -732,6 +732,25 @@ impl<'gc> AudioManager<'gc> {
         }
     }
 
+    pub fn set_sound_transform_with_handle(
+        &mut self,
+        sound: SoundHandle,
+        sound_transform: display_object::SoundTransform,
+    ) {
+        let mut changed = false;
+
+        for other in &mut self.sounds {
+            if other.sound == Some(sound) {
+                other.transform = sound_transform;
+                changed = true;
+            }
+        }
+
+        if changed {
+            self.transforms_dirty = true;
+        }
+    }
+
     /// Returns the number of seconds that a timeline audio stream should buffer before playing.
     ///
     /// Currently unused by Ruffle.
@@ -839,9 +858,10 @@ pub struct SoundInstance<'gc> {
 
     /// The local sound transform of this sound.
     ///
-    /// Only AVM2 sounds have a local sound transform. In AVM1, sound instances
-    /// instead get the sound transform of the display object they're
-    /// associated with.
+    /// AVM2 sounds only have a local sound transform. In AVM1, sound instances
+    /// have a local transform if they have loaded a sound with `loadSound()`,
+    /// otherwise they get the sound transform of the display object
+    /// they're associated with.
     #[collect(require_static)]
     transform: display_object::SoundTransform,
 
