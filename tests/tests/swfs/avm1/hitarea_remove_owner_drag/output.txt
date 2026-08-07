@@ -1,0 +1,10 @@
+ready
+dt: (none)
+rollover Rm
+armed
+drag start
+removing owner
+dt: /btnRm
+dt: /btnZ
+drag end
+rollover Z

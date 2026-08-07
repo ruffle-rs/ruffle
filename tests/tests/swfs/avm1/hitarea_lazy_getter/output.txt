@@ -1,0 +1,6 @@
+setter consumed _level0.decoy
+readback: _level0.clipA
+ready
+rollover A
+switch
+rollover B
