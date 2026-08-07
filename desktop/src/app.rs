@@ -29,6 +29,12 @@ struct MainWindow {
     player: PlayerController,
     minimized: bool,
     mouse_pos: PhysicalPosition<f64>,
+    /// Whether the cursor moved since the last tick. winit can deliver
+    /// `CursorMoved` at the mouse polling rate (hundreds of Hz), and each move
+    /// runs a full display-list hit-test (`run_mouse_pick`). We coalesce them
+    /// so that at most one hit-test runs per tick, which keeps a burst of OS
+    /// cursor events from stalling frames in a crowded scene.
+    mouse_move_pending: bool,
     modifiers: Modifiers,
     min_window_size: LogicalSize<u32>,
     max_window_size: PhysicalSize<u32>,
@@ -100,10 +106,10 @@ impl MainWindow {
                 }
 
                 self.mouse_pos = position;
-                let (x, y) = self.gui.window_to_movie_position(position);
-                let event = PlayerEvent::MouseMove { x, y };
-                self.player.handle_event(event);
-                self.check_redraw();
+                // Defer the actual hit-test to the next tick via `flush_mouse_move`.
+                // A burst of high-frequency cursor moves collapses into a single
+                // `run_mouse_pick` instead of one per OS event.
+                self.mouse_move_pending = true;
             }
             WindowEvent::DroppedFile(file) => {
                 if let Some(content_descriptor) = ContentDescriptor::new_local(&file, None) {
@@ -124,6 +130,10 @@ impl MainWindow {
                 if self.gui.is_context_menu_visible() {
                     return;
                 }
+
+                // Apply any pending cursor move first so the press/release uses an
+                // up-to-date hover target and preserves MouseMove -> MouseDown order.
+                self.flush_mouse_move();
 
                 use ruffle_core::events::MouseButton as RuffleMouseButton;
                 use winit::event::MouseButton;
@@ -188,6 +198,8 @@ impl MainWindow {
                 }
             }
             WindowEvent::CursorLeft { .. } => {
+                // Drop any coalesced move; the cursor is no longer in the stage.
+                self.mouse_move_pending = false;
                 if let Some(mut player) = self.player.get() {
                     player.set_mouse_in_stage(false);
                 }
@@ -369,6 +381,10 @@ impl MainWindow {
             }
         }
 
+        // Apply at most one coalesced cursor move per tick, before advancing the
+        // movie, so a burst of high-frequency cursor moves runs a single hit-test.
+        self.flush_mouse_move();
+
         // Core loop
         // [NA] This used to be called `MainEventsCleared`, but I think the behaviour is different now.
         // We should look at changing our tick to happen somewhere else if we see any behavioural problems.
@@ -384,6 +400,18 @@ impl MainWindow {
                 self.check_redraw();
             }
         }
+    }
+
+    /// Flush a coalesced cursor move, if any, running a single hit-test for the
+    /// latest cursor position. Called once per tick and before mouse clicks.
+    fn flush_mouse_move(&mut self) {
+        if !self.mouse_move_pending {
+            return;
+        }
+        self.mouse_move_pending = false;
+        let (x, y) = self.gui.window_to_movie_position(self.mouse_pos);
+        self.player.handle_event(PlayerEvent::MouseMove { x, y });
+        self.check_redraw();
     }
 
     fn check_redraw(&self) {
@@ -544,6 +572,7 @@ impl ApplicationHandler<RuffleEvent> for App {
                 loaded,
                 minimized: false,
                 mouse_pos: PhysicalPosition::new(0.0, 0.0),
+                mouse_move_pending: false,
                 modifiers: Modifiers::default(),
                 time: Instant::now(),
                 next_frame_time: None,
