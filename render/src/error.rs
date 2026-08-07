@@ -47,4 +47,7 @@ pub enum Error {
 
     #[error("Not yet implemented: {0}")]
     Unimplemented(Cow<'static, str>),
+
+    #[error("Unable to create texture")]
+    UnableToCreateTexture,
 }

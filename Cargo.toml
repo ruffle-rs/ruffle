@@ -108,6 +108,7 @@ fluent-templates = "0.13.3"
 lzma-rs = "0.3.0"
 tempfile = "3.27.0"
 tracing-wasm = "0.2.1"
+glow = "0.16.0"
 rascal = "0.3.4"
 jpegxr = { git = "https://github.com/ruffle-rs/jpegxr", rev = "5281b4ae42be742779269a9f1a986101f101f32f" }
 
