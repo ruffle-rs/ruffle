@@ -7,6 +7,9 @@ package flash.ui {
         public static native function hide():void;
         public static native function show():void;
 
+        public static native function get cursor():String;
+        public static native function set cursor(value:String):void;
+
         public static function get supportsCursor():Boolean {
             stub_getter("flash.ui.Mouse", "supportsCursor");
             return true;

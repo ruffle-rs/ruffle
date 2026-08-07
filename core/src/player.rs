@@ -119,6 +119,12 @@ pub struct MouseData<'gc> {
     pub pressed: Option<InteractiveObject<'gc>>,
     pub right_pressed: Option<InteractiveObject<'gc>>,
     pub middle_pressed: Option<InteractiveObject<'gc>>,
+
+    /// The cursor forced through `flash.ui.Mouse.cursor`. `None` corresponds to
+    /// `MouseCursor.AUTO`: the cursor is chosen automatically from the object
+    /// under the pointer. Any other value overrides that automatic choice.
+    #[collect(require_static)]
+    pub forced_cursor: Option<MouseCursor>,
 }
 
 impl<'gc> MouseData<'gc> {
@@ -1883,6 +1889,11 @@ impl Player {
                 }
                 refresh
             };
+            // A cursor forced through `flash.ui.Mouse.cursor` (any value other
+            // than `MouseCursor.AUTO`) overrides the automatic cursor.
+            if let Some(forced) = context.mouse_data.forced_cursor {
+                new_cursor = forced;
+            }
             Self::run_actions(context);
             needs_render
         });
@@ -2935,6 +2946,7 @@ impl PlayerBuilder {
                 pressed: None,
                 right_pressed: None,
                 middle_pressed: None,
+                forced_cursor: None,
             },
             avm1_shared_objects: HashMap::new(),
             avm2_shared_objects: HashMap::new(),
