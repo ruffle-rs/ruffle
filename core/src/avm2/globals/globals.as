@@ -16,6 +16,14 @@ include "flash/accessibility/AccessibilityProperties.as"
 include "flash/accessibility/ISearchableText.as"
 include "flash/accessibility/ISimpleTextSelection.as"
 
+include "flash/events/IEventDispatcher.as"
+include "flash/events/EventDispatcher.as"
+
+include "flash/automation/AutomationAction.as"
+include "flash/automation/KeyboardAutomationAction.as"
+include "flash/automation/MouseAutomationAction.as"
+include "flash/automation/StageCapture.as"
+
 include "flash/concurrent/Condition.as"
 include "flash/concurrent/Mutex.as"
 
@@ -28,9 +36,6 @@ include "flash/utils/IDataOutput2.as"
 include "flash/utils/IExternalizable.as"
 include "flash/utils/ByteArray.as"
 include "flash/utils/Dictionary.as"
-
-include "flash/events/IEventDispatcher.as"
-include "flash/events/EventDispatcher.as"
 
 include "flash/desktop/ClipboardFormats.as"
 include "flash/desktop/ClipboardTransferMode.as"
@@ -158,6 +163,7 @@ include "flash/errors/StackOverflowError.as"
 
 // Event needs to come before its subclasses
 include "flash/events/Event.as"
+include "flash/automation/StageCaptureEvent.as"
 include "flash/events/TextEvent.as"
 include "flash/events/ActivityEvent.as"
 include "flash/events/ErrorEvent.as"
