@@ -1,0 +1,10 @@
+# PlaceObject(Replace) inside a gridded sprite: the swapped-in art must be resliced, not
+# served from the previous art's cached tessellation. See generate.rs.
+num_ticks = 2
+
+[image_comparisons.output]
+tolerance = 1
+max_outliers = 0
+
+[player_options]
+with_renderer = { optional = false }

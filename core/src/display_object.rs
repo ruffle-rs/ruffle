@@ -20,6 +20,7 @@ use gc_arena::{Collect, Gc, Mutation};
 use ruffle_macros::{enum_trait_object, istr};
 use ruffle_render::perspective_projection::PerspectiveProjection;
 use ruffle_render::pixel_bender::PixelBenderShaderHandle;
+use ruffle_render::shape_utils::Scale9;
 use ruffle_render::transform::{Transform, TransformStack};
 use std::cell::{Cell, Ref, RefCell, RefMut};
 use std::fmt::Debug;
@@ -2027,6 +2028,80 @@ pub trait TDisplayObject<'gc>:
     #[no_dynamic]
     fn set_scaling_grid(self, rect: Rectangle<Twips>) {
         self.base().scaling_grid.set(rect);
+        // A cached bitmap only redraws on matrix or size changes, and the grid moves
+        // neither. Children need none of this: one without a cached bitmap has nothing
+        // stale to drop, and one with a cached bitmap ignores the grid entirely.
+        self.invalidate_cached_bitmap();
+    }
+
+    /// The grid to 9-slice this object's geometry with, gated on the object's *own* matrix:
+    /// rotation, skew, negative scale and serving as a mask all disable slicing, while an
+    /// ancestor's scale or rotation applies to the sliced result instead of suppressing it.
+    fn active_scaling_grid(self) -> Option<Scale9> {
+        let grid = self.scaling_grid();
+        if !grid.is_valid() || self.maskee().is_some() {
+            return None;
+        }
+
+        let matrix = self.base().matrix();
+        if matrix.b != 0.0 || matrix.c != 0.0 || matrix.a <= 0.0 || matrix.d <= 0.0 {
+            return None;
+        }
+
+        Some(Scale9 {
+            bounds: self.self_bounds_for_scale9(),
+            grid,
+            scale_x: matrix.a,
+            scale_y: matrix.d,
+        })
+        .filter(Scale9::is_usable)
+    }
+
+    /// This object's own geometry as the grid sees it, without descending into children.
+    fn self_geometry_for_scale9(self) -> Rectangle<Twips> {
+        self.self_bounds(BoundsMode::ScriptWithoutStrokes)
+    }
+
+    /// Bounds the grid is validated against: this object's own geometry plus its *direct*
+    /// children's, without stroke inflation. Unlike `getBounds`, grandchildren are excluded.
+    fn self_bounds_for_scale9(self) -> Rectangle<Twips> {
+        // Text is excluded both as the target and as a child, so setting the property on a
+        // text field always throws.
+        let this: DisplayObject<'gc> = self.into();
+        if this.as_edit_text().is_some()
+            || this.as_text().is_some()
+            || this.as_text_line().is_some()
+        {
+            return Rectangle::INVALID;
+        }
+
+        let mut bounds = self.self_geometry_for_scale9();
+        if let Some(container) = self.as_container() {
+            for child in container.iter_render_list() {
+                if child.as_edit_text().is_some()
+                    || child.as_text().is_some()
+                    || child.as_text_line().is_some()
+                {
+                    continue;
+                }
+                bounds = bounds.union(&(child.base().matrix() * child.self_geometry_for_scale9()));
+            }
+        }
+        bounds
+    }
+
+    /// The parent's grid. Flash Player does not propagate past one level, and a child with its
+    /// own grid is excluded rather than inheriting.
+    fn inherited_scaling_grid(self) -> Option<Scale9> {
+        if self.scaling_grid().is_valid() || self.maskee().is_some() {
+            return None;
+        }
+        // A bitmap-cached child is a bitmap as far as the parent's grid is concerned, and
+        // grids leave bitmaps alone, even one cached before the grid was set.
+        if self.is_bitmap_cached() {
+            return None;
+        }
+        self.parent()?.active_scaling_grid()
     }
 
     #[no_dynamic]

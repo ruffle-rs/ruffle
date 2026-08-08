@@ -1,0 +1,9 @@
+num_ticks = 1
+
+# Antialiasing along the curved colour boundaries of the radial bands.
+[image_comparisons.output]
+tolerance = 1
+max_outliers = 3000
+
+[player_options]
+with_renderer = { optional = false }
