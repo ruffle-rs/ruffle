@@ -180,9 +180,7 @@ impl VideoBackend for ExternalVideoBackend {
                 self.software
                     .decode_video_stream_frame(*handle, encoded_frame, renderer)
             }
-            ProxyOrStream::Owned(stream) => {
-                let frame = stream.decoder.decode_frame(encoded_frame)?;
-
+            ProxyOrStream::Owned(stream) => stream.decoder.decode_frame(encoded_frame, |frame| {
                 let width = frame.width();
                 let height = frame.height();
 
@@ -203,7 +201,7 @@ impl VideoBackend for ExternalVideoBackend {
                     width,
                     height,
                 })
-            }
+            }),
         }
     }
 }
