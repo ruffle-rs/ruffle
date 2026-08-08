@@ -172,6 +172,23 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
         self.render_pass.set_bind_group(2, bind_group, &[]);
     }
 
+    pub fn prep_bitmap_triangles(
+        &mut self,
+        bind_group: &'pass wgpu::BindGroup,
+        blend_mode: TrivialBlend,
+    ) {
+        if self.needs_stencil {
+            self.render_pass.set_pipeline(
+                self.pipelines.bitmap_triangles[blend_mode].pipeline_for(self.mask_state),
+            );
+        } else {
+            self.render_pass
+                .set_pipeline(self.pipelines.bitmap_triangles[blend_mode].stencilless_pipeline());
+        }
+
+        self.render_pass.set_bind_group(2, bind_group, &[]);
+    }
+
     pub fn prep_alpha_mask(&mut self, bind_group: &'pass wgpu::BindGroup) {
         if self.needs_stencil {
             self.render_pass
@@ -296,6 +313,9 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
                 }
                 DrawType::Bitmap { binds, .. } => {
                     self.prep_bitmap(&binds.bind_group, TrivialBlend::Normal, false);
+                }
+                DrawType::BitmapTriangles { binds } => {
+                    self.prep_bitmap_triangles(&binds.bind_group, TrivialBlend::Normal);
                 }
             }
             self.render_pass.set_bind_group(

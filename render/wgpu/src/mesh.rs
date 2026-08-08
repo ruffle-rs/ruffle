@@ -1,7 +1,8 @@
 use crate::backend::WgpuRenderBackend;
 use crate::target::RenderTarget;
 use crate::{
-    Descriptors, GradientUniforms, PosColorVertex, PosVertex, TextureTransforms, as_texture,
+    Descriptors, GradientUniforms, PosColorVertex, PosUvtVertex, PosVertex, TextureTransforms,
+    as_texture,
 };
 use std::any::Any;
 use std::ops::Range;
@@ -78,20 +79,29 @@ impl PendingDraw {
         vertex_buffer: &mut BufferBuilder,
         index_buffer: &mut BufferBuilder,
     ) -> Option<Self> {
-        let vertices = if matches!(draw.draw_type, TessDrawType::Color) {
-            let vertices: Vec<_> = draw
-                .vertices
-                .into_iter()
-                .map(PosColorVertex::from)
-                .collect();
-            vertex_buffer
-                .add(&vertices)
-                .expect("Mesh vertex buffer was too large!")
-        } else {
-            let vertices: Vec<_> = draw.vertices.into_iter().map(PosVertex::from).collect();
-            vertex_buffer
-                .add(&vertices)
-                .expect("Mesh vertex buffer was too large!")
+        let vertices = match &draw.draw_type {
+            TessDrawType::Color => {
+                let vertices: Vec<_> = draw
+                    .vertices
+                    .into_iter()
+                    .map(PosColorVertex::from)
+                    .collect();
+                vertex_buffer
+                    .add(&vertices)
+                    .expect("Mesh vertex buffer was too large!")
+            }
+            TessDrawType::BitmapTriangles(_) => {
+                let vertices: Vec<_> = draw.vertices.into_iter().map(PosUvtVertex::from).collect();
+                vertex_buffer
+                    .add(&vertices)
+                    .expect("Mesh vertex buffer was too large!")
+            }
+            _ => {
+                let vertices: Vec<_> = draw.vertices.into_iter().map(PosVertex::from).collect();
+                vertex_buffer
+                    .add(&vertices)
+                    .expect("Mesh vertex buffer was too large!")
+            }
         };
 
         let indices = index_buffer
@@ -107,6 +117,14 @@ impl PendingDraw {
             TessDrawType::Bitmap(bitmap) => {
                 PendingDrawType::bitmap(bitmap, shape_id, draw_id, source, backend, uniform_buffer)?
             }
+            TessDrawType::BitmapTriangles(bitmap) => PendingDrawType::bitmap_triangles(
+                bitmap,
+                shape_id,
+                draw_id,
+                source,
+                backend,
+                uniform_buffer,
+            )?,
         };
         Some(PendingDraw {
             draw_type,
@@ -127,6 +145,13 @@ pub enum PendingDrawType {
         bind_group_label: Option<String>,
     },
     Bitmap {
+        texture_transforms_index: wgpu::BufferAddress,
+        texture_view: wgpu::TextureView,
+        is_repeating: bool,
+        is_smoothed: bool,
+        bind_group_label: Option<String>,
+    },
+    BitmapTriangles {
         texture_transforms_index: wgpu::BufferAddress,
         texture_view: wgpu::TextureView,
         is_repeating: bool,
@@ -187,6 +212,33 @@ impl PendingDrawType {
             create_debug_label!("Shape {} (bitmap) draw {} bindgroup", shape_id, draw_id);
 
         Some(PendingDrawType::Bitmap {
+            texture_transforms_index,
+            texture_view,
+            is_repeating: bitmap.is_repeating,
+            is_smoothed: bitmap.is_smoothed,
+            bind_group_label,
+        })
+    }
+
+    pub fn bitmap_triangles(
+        bitmap: Bitmap,
+        shape_id: CharacterId,
+        draw_id: usize,
+        source: &dyn BitmapSource,
+        backend: &mut dyn RenderBackend,
+        uniform_buffers: &mut BufferBuilder,
+    ) -> Option<Self> {
+        let handle = source.bitmap_handle(bitmap.bitmap_id, backend)?;
+        let texture = as_texture(&handle);
+        let texture_view = texture.texture.create_view(&Default::default());
+        let texture_transforms_index = create_texture_transforms(&bitmap.matrix, uniform_buffers);
+        let bind_group_label = create_debug_label!(
+            "Shape {} (bitmap triangles) draw {} bindgroup",
+            shape_id,
+            draw_id
+        );
+
+        Some(PendingDrawType::BitmapTriangles {
             texture_transforms_index,
             texture_view,
             is_repeating: bitmap.is_repeating,
@@ -270,6 +322,26 @@ impl PendingDrawType {
 
                 DrawType::Bitmap { binds }
             }
+            PendingDrawType::BitmapTriangles {
+                texture_transforms_index,
+                texture_view,
+                is_repeating,
+                is_smoothed,
+                bind_group_label,
+            } => {
+                let binds = BitmapBinds::new(
+                    &descriptors.device,
+                    &descriptors.bind_layouts.bitmap,
+                    descriptors
+                        .bitmap_samplers
+                        .get_sampler(is_repeating, is_smoothed),
+                    uniform_buffer,
+                    texture_transforms_index,
+                    texture_view,
+                    bind_group_label,
+                );
+                DrawType::BitmapTriangles { binds }
+            }
         }
     }
 }
@@ -279,6 +351,7 @@ pub enum DrawType {
     Color,
     Gradient { bind_group: wgpu::BindGroup },
     Bitmap { binds: BitmapBinds },
+    BitmapTriangles { binds: BitmapBinds },
 }
 
 #[derive(Debug)]

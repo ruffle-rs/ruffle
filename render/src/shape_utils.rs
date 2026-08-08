@@ -126,6 +126,23 @@ pub enum DrawPath<'a> {
         commands: Vec<DrawCommand>,
         winding_rule: FillRule,
     },
+    /// A bitmap-filled triangle list with per-vertex texture coordinates
+    /// supplied by `Graphics.drawTriangles`.
+    TexturedTriangles {
+        style: &'a FillStyle,
+        triangles: Vec<TexturedTriangle>,
+    },
+}
+
+/// One textured triangle supplied by `Graphics.drawTriangles`.
+///
+/// `uvt` stores `(u, v, t)`, where `t` is the reciprocal homogeneous
+/// coordinate used for perspective-correct interpolation.
+#[derive(Clone, Debug)]
+#[cfg_attr(test, derive(PartialEq))]
+pub struct TexturedTriangle {
+    pub vertices: [swf::Point<Twips>; 3],
+    pub uvt: [[f32; 3]; 3],
 }
 
 /// `DistilledShape` represents a ready-to-be-consumed collection of paths (both fills and strokes)

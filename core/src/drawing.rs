@@ -3,7 +3,8 @@ use ruffle_render::backend::{RenderBackend, ShapeHandle};
 use ruffle_render::bitmap::{BitmapHandle, BitmapInfo, BitmapSize, BitmapSource};
 use ruffle_render::commands::CommandHandler;
 use ruffle_render::shape_utils::{
-    DistilledShape, DrawCommand, DrawPath, FillRule, cubic_curve_bounds, quadratic_curve_bounds,
+    DistilledShape, DrawCommand, DrawPath, FillRule, TexturedTriangle, cubic_curve_bounds,
+    quadratic_curve_bounds,
 };
 use std::cell::OnceCell;
 use swf::{FillStyle, LineStyle, Point, Rectangle, Twips};
@@ -98,6 +99,9 @@ impl Drawing {
 
                     this.set_fill_style(None);
                 }
+                // This is only emitted by the AVM2 graphics API and cannot
+                // occur in an SWF DefineShape tag.
+                DrawPath::TexturedTriangles { .. } => unreachable!(),
             }
         }
 
@@ -239,6 +243,46 @@ impl Drawing {
         id
     }
 
+    /// Adds a bitmap-filled triangle list without flattening its per-vertex
+    /// texture coordinates into a regular vector path.
+    pub fn draw_textured_triangles(&mut self, triangles: Vec<TexturedTriangle>) -> bool {
+        if triangles.is_empty() {
+            return false;
+        }
+
+        let Some(fill) = self.current_fill.as_ref() else {
+            return false;
+        };
+        let style = fill.style.clone();
+        if !matches!(style, FillStyle::Bitmap { .. }) {
+            return false;
+        }
+
+        for triangle in &triangles {
+            for point in triangle.vertices {
+                self.shape_bounds = self.shape_bounds.encompass(point);
+                self.edge_bounds = self.edge_bounds.encompass(point);
+            }
+        }
+
+        self.close_path();
+        if let Some(existing) = self.current_fill.take() {
+            self.paths.push(DrawingPath::Fill(existing));
+        }
+        self.paths
+            .push(DrawingPath::TexturedTriangles(DrawingTriangles {
+                style: style.clone(),
+                triangles,
+            }));
+        self.current_fill = Some(DrawingFill {
+            style,
+            rule: self.default_winding_rule,
+            commands: vec![DrawCommand::MoveTo(self.cursor)],
+        });
+        self.mark_dirty();
+        true
+    }
+
     /// Obtain a `ShapeHandle` that represents this `Drawing`, or `None` if it is empty.
     pub fn register_or_replace(&self, renderer: &mut dyn RenderBackend) -> Option<ShapeHandle> {
         if self.is_empty {
@@ -262,6 +306,12 @@ impl Drawing {
                             style: &line.style,
                             commands: line.commands.to_owned(),
                             is_closed: line.is_closed,
+                        });
+                    }
+                    DrawingPath::TexturedTriangles(triangles) => {
+                        paths.push(DrawPath::TexturedTriangles {
+                            style: &triangles.style,
+                            triangles: triangles.triangles.to_owned(),
                         });
                     }
                 }
@@ -356,6 +406,10 @@ impl Drawing {
                         return true;
                     }
                 }
+                // Bitmap triangle fills are currently visual-only. They are
+                // used by AVM2 3D renderers, whose geometry is not expected
+                // to participate in 2D mouse hit testing.
+                DrawingPath::TexturedTriangles(_) => {}
             }
         }
 
@@ -451,6 +505,13 @@ struct DrawingLine {
 enum DrawingPath {
     Fill(DrawingFill),
     Line(DrawingLine),
+    TexturedTriangles(DrawingTriangles),
+}
+
+#[derive(Debug, Clone)]
+struct DrawingTriangles {
+    style: FillStyle,
+    triangles: Vec<TexturedTriangle>,
 }
 
 fn stretch_bounds(

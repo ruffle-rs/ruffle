@@ -56,6 +56,54 @@ impl ShapeTessellator {
         self.lyon_mesh = VertexBuffers::new();
 
         for path in shape.paths {
+            if let DrawPath::TexturedTriangles { style, triangles } = &path {
+                self.flush_draw(DrawType::Color);
+                self.is_stroke = false;
+
+                let swf::FillStyle::Bitmap {
+                    id,
+                    matrix,
+                    is_smoothed,
+                    is_repeating,
+                } = style
+                else {
+                    continue;
+                };
+
+                let Some(bitmap) = bitmap_source.bitmap_size(*id) else {
+                    continue;
+                };
+
+                let mut vertices = Vec::with_capacity(triangles.len() * 3);
+                for triangle in triangles {
+                    for (point, uvt) in triangle.vertices.into_iter().zip(triangle.uvt) {
+                        vertices.push(Vertex {
+                            x: point.x.to_pixels() as f32,
+                            y: point.y.to_pixels() as f32,
+                            color: swf::Color::WHITE,
+                            uvt,
+                        });
+                    }
+                }
+
+                self.mesh.push(Draw {
+                    draw_type: DrawType::BitmapTriangles(Bitmap {
+                        matrix: swf_bitmap_to_gl_matrix(
+                            (*matrix).into(),
+                            bitmap.width,
+                            bitmap.height,
+                        ),
+                        bitmap_id: *id,
+                        is_smoothed: *is_smoothed,
+                        is_repeating: *is_repeating,
+                    }),
+                    indices: (0..vertices.len() as u32).collect(),
+                    mask_index_count: vertices.len() as u32,
+                    vertices,
+                });
+                continue;
+            }
+
             let (fill_style, lyon_path, next_is_stroke) = match &path {
                 DrawPath::Fill {
                     style,
@@ -71,6 +119,7 @@ impl ShapeTessellator {
                     ruffle_path_to_lyon_path(commands, *is_closed),
                     true,
                 ),
+                DrawPath::TexturedTriangles { .. } => unreachable!(),
             };
 
             let (draw, color, needs_flush) = match fill_style {
@@ -222,6 +271,8 @@ impl ShapeTessellator {
                         &mut buffers_builder,
                     )
                 }
+                // This variant is handled before constructing a Lyon path.
+                DrawPath::TexturedTriangles { .. } => unreachable!(),
             };
             match result {
                 Ok(_) => {
@@ -292,6 +343,7 @@ pub enum DrawType {
         gradient: usize,
     },
     Bitmap(Bitmap),
+    BitmapTriangles(Bitmap),
 }
 
 impl DrawType {
@@ -300,6 +352,7 @@ impl DrawType {
             Self::Color => "Color",
             Self::Gradient { .. } => "Gradient",
             Self::Bitmap { .. } => "Bitmap",
+            Self::BitmapTriangles(_) => "BitmapTriangles",
         }
     }
 }
@@ -318,6 +371,7 @@ pub struct Vertex {
     pub x: f32,
     pub y: f32,
     pub color: swf::Color,
+    pub uvt: [f32; 3],
 }
 
 #[derive(Clone, Debug)]
@@ -458,6 +512,7 @@ impl FillVertexConstructor<Vertex> for RuffleVertexCtor {
             x: vertex.position().x,
             y: vertex.position().y,
             color: self.color,
+            uvt: [0.0, 0.0, 1.0],
         }
     }
 }
@@ -468,6 +523,7 @@ impl StrokeVertexConstructor<Vertex> for RuffleVertexCtor {
             x: vertex.position().x,
             y: vertex.position().y,
             color: self.color,
+            uvt: [0.0, 0.0, 1.0],
         }
     }
 }

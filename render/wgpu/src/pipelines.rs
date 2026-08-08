@@ -1,7 +1,7 @@
 use crate::blend::{ComplexBlend, TrivialBlend};
 use crate::layouts::BindLayouts;
 use crate::shaders::Shaders;
-use crate::{MaskState, PosColorVertex, PosVertex};
+use crate::{MaskState, PosColorVertex, PosUvtVertex, PosVertex};
 use enum_map::{EnumMap, enum_map};
 use wgpu::{BlendState, PrimitiveTopology, vertex_attr_array};
 
@@ -21,6 +21,16 @@ pub const VERTEX_BUFFERS_DESCRIPTION_COLOR: [wgpu::VertexBufferLayout; 1] =
         attributes: &vertex_attr_array![
             0 => Float32x2,
             1 => Float32x4,
+        ],
+    }];
+
+pub const VERTEX_BUFFERS_DESCRIPTION_UVT: [wgpu::VertexBufferLayout; 1] =
+    [wgpu::VertexBufferLayout {
+        array_stride: std::mem::size_of::<PosUvtVertex>() as u64,
+        step_mode: wgpu::VertexStepMode::Vertex,
+        attributes: &vertex_attr_array![
+            0 => Float32x2,
+            1 => Float32x3,
         ],
     }];
 
@@ -44,6 +54,7 @@ pub struct Pipelines {
     /// or use it in any way.
     pub bitmap_opaque_dummy_stencil: wgpu::RenderPipeline,
     pub bitmap: EnumMap<TrivialBlend, ShapePipeline>,
+    pub bitmap_triangles: EnumMap<TrivialBlend, ShapePipeline>,
     pub gradients: ShapePipeline,
     pub complex_blends: EnumMap<ComplexBlend, ShapePipeline>,
     pub alpha_mask: ShapePipeline,
@@ -169,6 +180,21 @@ impl Pipelines {
             )
         });
 
+        let bitmap_triangle_pipelines = EnumMap::from_fn(|blend: TrivialBlend| {
+            create_shape_pipeline(
+                &format!("Bitmap triangles ({blend:?})"),
+                device,
+                format,
+                &shaders.bitmap_triangle_shader,
+                msaa_sample_count,
+                &VERTEX_BUFFERS_DESCRIPTION_UVT,
+                &bitmap_blend_bindings,
+                blend.blend_state(),
+                &[],
+                PrimitiveTopology::TriangleList,
+            )
+        });
+
         let bitmap_opaque_pipeline_layout_label =
             create_debug_label!("Opaque bitmap pipeline layout");
         let bitmap_opaque_pipeline_layout =
@@ -246,6 +272,7 @@ impl Pipelines {
             color: color_pipelines,
             lines: lines_pipelines,
             bitmap: bitmap_pipelines,
+            bitmap_triangles: bitmap_triangle_pipelines,
             bitmap_opaque,
             bitmap_opaque_dummy_stencil: bitmap_opaque_dummy_depth,
             gradients: gradient_pipeline,

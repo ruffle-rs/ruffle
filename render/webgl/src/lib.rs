@@ -604,6 +604,7 @@ impl WebGlRenderBackend {
                 TessDrawType::Color => &self.color_program,
                 TessDrawType::Gradient { .. } => &self.gradient_program,
                 TessDrawType::Bitmap(_) => &self.bitmap_program,
+                TessDrawType::BitmapTriangles(_) => &self.bitmap_program,
             };
 
             // Unfortunately it doesn't seem to be possible to ensure that vertex attributes will be in
@@ -671,6 +672,28 @@ impl WebGlRenderBackend {
                     num_mask_indices,
                 },
                 TessDrawType::Bitmap(bitmap) => Draw {
+                    draw_type: DrawType::Bitmap(BitmapDraw {
+                        matrix: bitmap.matrix,
+                        handle: bitmap_source.bitmap_handle(bitmap.bitmap_id, self),
+                        is_smoothed: bitmap.is_smoothed,
+                        is_repeating: bitmap.is_repeating,
+                    }),
+                    vao,
+                    vertex_buffer: Buffer {
+                        gl: self.gl.clone(),
+                        buffer: vertex_buffer,
+                    },
+                    index_buffer: Buffer {
+                        gl: self.gl.clone(),
+                        buffer: index_buffer,
+                    },
+                    num_indices,
+                    num_mask_indices,
+                },
+                // The WebGPU backend performs perspective-correct UVT
+                // interpolation. Keep a bitmap fallback for this legacy
+                // WebGL renderer until it gains a matching vertex format.
+                TessDrawType::BitmapTriangles(bitmap) => Draw {
                     draw_type: DrawType::Bitmap(BitmapDraw {
                         matrix: bitmap.matrix,
                         handle: bitmap_source.bitmap_handle(bitmap.bitmap_id, self),

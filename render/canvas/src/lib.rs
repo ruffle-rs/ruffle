@@ -1079,6 +1079,9 @@ fn swf_shape_to_canvas_commands(
                     },
                 });
             }
+            // Canvas 2D has no perspective-correct texture interpolation.
+            // The WebGPU path renders these with their UVT coordinates.
+            DrawPath::TexturedTriangles { .. } => {}
         }
     }
 

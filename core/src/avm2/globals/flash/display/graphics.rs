@@ -19,6 +19,7 @@ use crate::display_object::TDisplayObject;
 use crate::drawing::Drawing;
 use crate::string::{AvmString, WStr};
 use either::Either;
+use ruffle_render::shape_utils::TexturedTriangle;
 use ruffle_render::shape_utils::{DrawCommand, FillRule, GradientType};
 use std::f64::consts::FRAC_1_SQRT_2;
 use swf::{
@@ -1066,15 +1067,6 @@ pub fn draw_triangles<'gc>(
             "winding behavior"
         );
 
-        if uvt_data.is_some() {
-            avm2_stub_method!(
-                activation,
-                "flash.display.Graphics",
-                "drawTriangles",
-                "with uvt data"
-            );
-        }
-
         draw_triangles_internal(
             activation,
             &mut drawing,
@@ -1116,9 +1108,13 @@ enum TriangleData {
     Indexed {
         vertices: Box<[Point<Twips>]>,
         indices: Box<[[u32; 3]]>,
+        uvt: Option<Box<[[f32; 3]]>>,
     },
     /// Triangles described as independent vertex triples.
-    Sequential { triangles: Box<[[Point<Twips>; 3]]> },
+    Sequential {
+        triangles: Box<[[Point<Twips>; 3]]>,
+        uvt: Option<Box<[[f32; 3]]>>,
+    },
 }
 
 impl TriangleData {
@@ -1131,6 +1127,7 @@ impl TriangleData {
         activation: &mut Activation<'_, 'gc>,
         vertices: &Object<'gc>,
         indices: Option<&Object<'gc>>,
+        uvt_data: Option<&Object<'gc>>,
     ) -> Result<Option<Self>, Error<'gc>> {
         let vertex_storage = vertices
             .as_vector_storage()
@@ -1144,6 +1141,8 @@ impl TriangleData {
         if vertex_pairs.is_empty() {
             return Ok(None);
         }
+
+        let uvt = parse_uvt_data(uvt_data, vertex_pairs.len());
 
         if let Some(indices) = indices {
             let indices_storage = indices
@@ -1178,7 +1177,11 @@ impl TriangleData {
                 return Ok(None);
             }
 
-            Ok(Some(Self::Indexed { vertices, indices }))
+            Ok(Some(Self::Indexed {
+                vertices,
+                indices,
+                uvt,
+            }))
         } else {
             let vertex_triples = vertex_pairs
                 .as_chunks_exact::<3>()
@@ -1189,24 +1192,71 @@ impl TriangleData {
                 .map(|[p0, p1, p2]| [make_point(p0), make_point(p1), make_point(p2)])
                 .collect::<Box<_>>();
 
-            Ok(Some(Self::Sequential { triangles }))
+            Ok(Some(Self::Sequential { triangles, uvt }))
         }
     }
 
-    fn iter_triangles(&self) -> impl Iterator<Item = [Point<Twips>; 3]> + '_ {
+    fn iter_triangles(
+        &self,
+    ) -> impl Iterator<Item = ([Point<Twips>; 3], Option<[[f32; 3]; 3]>)> + '_ {
         match self {
-            Self::Indexed { vertices, indices } => {
-                Either::Left(indices.iter().map(|&[i0, i1, i2]| {
-                    [
-                        vertices[i0 as usize],
-                        vertices[i1 as usize],
-                        vertices[i2 as usize],
-                    ]
+            Self::Indexed {
+                vertices,
+                indices,
+                uvt,
+            } => Either::Left(indices.iter().map(move |&[i0, i1, i2]| {
+                let triangle = [
+                    vertices[i0 as usize],
+                    vertices[i1 as usize],
+                    vertices[i2 as usize],
+                ];
+                let uvt = uvt
+                    .as_ref()
+                    .map(|uvt| [uvt[i0 as usize], uvt[i1 as usize], uvt[i2 as usize]]);
+                (triangle, uvt)
+            })),
+            Self::Sequential { triangles, uvt } => {
+                Either::Right(triangles.iter().enumerate().map(move |(index, &triangle)| {
+                    let uvt = uvt.as_ref().map(|uvt| {
+                        let index = index * 3;
+                        [uvt[index], uvt[index + 1], uvt[index + 2]]
+                    });
+                    (triangle, uvt)
                 }))
             }
-            Self::Sequential { triangles } => Either::Right(triangles.iter().copied()),
         }
     }
+}
+
+fn parse_uvt_data<'gc>(
+    uvt_data: Option<&Object<'gc>>,
+    num_vertices: usize,
+) -> Option<Box<[[f32; 3]]>> {
+    let storage = uvt_data?.as_vector_storage()?;
+    let values = storage.storage();
+
+    let components = match values.len() {
+        length if length == num_vertices * 2 => 2,
+        length if length == num_vertices * 3 => 3,
+        _ => return None,
+    };
+
+    Some(
+        (0..num_vertices)
+            .map(|index| {
+                let index = index * components;
+                [
+                    values[index].as_f64() as f32,
+                    values[index + 1].as_f64() as f32,
+                    if components == 3 {
+                        values[index + 2].as_f64() as f32
+                    } else {
+                        1.0
+                    },
+                ]
+            })
+            .collect(),
+    )
 }
 
 fn make_point<'gc>([x, y]: &[Value<'gc>; 2]) -> Point<Twips> {
@@ -1261,14 +1311,31 @@ fn draw_triangles_internal<'gc>(
     drawing: &mut Drawing,
     vertices: &Object<'gc>,
     indices: Option<&Object<'gc>>,
-    _uvt_data: Option<&Object<'gc>>,
+    uvt_data: Option<&Object<'gc>>,
     culling: TriangleCulling,
 ) -> Result<(), Error<'gc>> {
-    let Some(data) = TriangleData::new(activation, vertices, indices)? else {
+    let Some(data) = TriangleData::new(activation, vertices, indices, uvt_data)? else {
         return Ok(());
     };
 
-    for [a, b, c] in data.iter_triangles().filter(|&tri| !culling.cull(tri)) {
+    let mut all_triangles = Vec::new();
+    let mut textured_triangles = Vec::new();
+
+    for (triangle, uvt) in data.iter_triangles().filter(|(tri, _)| !culling.cull(*tri)) {
+        all_triangles.push(triangle);
+        if let Some(uvt) = uvt {
+            textured_triangles.push(TexturedTriangle {
+                vertices: triangle,
+                uvt,
+            });
+        }
+    }
+
+    if !textured_triangles.is_empty() && drawing.draw_textured_triangles(textured_triangles) {
+        return Ok(());
+    }
+
+    for [a, b, c] in all_triangles {
         drawing.draw_command(DrawCommand::MoveTo(a));
         drawing.draw_command(DrawCommand::LineTo(b));
         drawing.draw_command(DrawCommand::LineTo(c));
@@ -1618,15 +1685,6 @@ fn handle_graphics_triangle_path<'gc>(
             "drawGraphicsData",
             "GraphicsTrianglePath winding behavior"
         );
-
-        if uvt_data.is_some() {
-            avm2_stub_method!(
-                activation,
-                "flash.display.Graphics",
-                "drawGraphicsData",
-                "GraphicsTrianglePath with uvt data"
-            );
-        }
 
         draw_triangles_internal(
             activation,

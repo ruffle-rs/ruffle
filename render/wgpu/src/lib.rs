@@ -103,6 +103,22 @@ struct PosColorVertex {
     color: [f32; 4],
 }
 
+#[repr(C)]
+#[derive(Copy, Clone, Debug, Pod, Zeroable)]
+pub struct PosUvtVertex {
+    position: [f32; 2],
+    uvt: [f32; 3],
+}
+
+impl From<TessVertex> for PosUvtVertex {
+    fn from(vertex: TessVertex) -> Self {
+        Self {
+            position: [vertex.x, vertex.y],
+            uvt: vertex.uvt,
+        }
+    }
+}
+
 impl From<TessVertex> for PosColorVertex {
     fn from(vertex: TessVertex) -> Self {
         Self {
