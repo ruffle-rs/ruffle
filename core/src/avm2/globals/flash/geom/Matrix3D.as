@@ -418,7 +418,114 @@ package flash.geom {
         }
 
         public function pointAt(pos:Vector3D, at:Vector3D = null, up:Vector3D = null):void {
-            stub_method("flash.geom.Matrix3D", "pointAt");
+            // `Matrix3D.pointAt` is commonly used by CPU 3D engines to build a
+            // camera transform. Away3D, used by Number 1, calls it whenever the
+            // keeper view is aimed at a new shot. Keeping this as a stub leaves
+            // the camera facing its old direction, so projected objects can
+            // arrive at the goal before they ever appear on screen.
+            var position:Vector3D = this.position;
+            var forward:Vector3D = pos.subtract(position);
+            if (forward.lengthSquared == 0) {
+                return;
+            }
+            forward.normalize();
+
+            // `at` and `up` name axes in the *object's* coordinate system.
+            // First construct an orthonormal version of that local frame. The
+            // default values are the Flash Player defaults (+Y forward, +Z up).
+            var localForward:Vector3D = at == null || at.lengthSquared == 0
+                ? Vector3D.Y_AXIS.clone()
+                : at.clone();
+            localForward.normalize();
+
+            var localUp:Vector3D = up == null || up.lengthSquared == 0
+                ? Vector3D.Z_AXIS.clone()
+                : up.clone();
+            var projectedLength:Number = localUp.dotProduct(localForward);
+            if (projectedLength != 0) {
+                var projectedForward:Vector3D = localForward.clone();
+                projectedForward.scaleBy(projectedLength);
+                localUp.decrementBy(projectedForward);
+            }
+
+            if (localUp.lengthSquared < 0.000000000001) {
+                localUp = Math.abs(localForward.y) < 0.999
+                    ? Vector3D.Y_AXIS.clone()
+                    : Vector3D.X_AXIS.clone();
+                projectedLength = localUp.dotProduct(localForward);
+                projectedForward = localForward.clone();
+                projectedForward.scaleBy(projectedLength);
+                localUp.decrementBy(projectedForward);
+            }
+            localUp.normalize();
+            var localRight:Vector3D = localUp.crossProduct(localForward);
+            localRight.normalize();
+            localUp = localForward.crossProduct(localRight);
+
+            // Preserve the current world direction of the requested local up
+            // axis while aiming the requested local forward axis at `pos`. This
+            // is what keeps a camera upright as it tracks a moving target. In
+            // particular, Away3D passes local +Z and local -Y here.
+            var worldUp:Vector3D = this.deltaTransformVector(
+                up == null || up.lengthSquared == 0 ? Vector3D.Z_AXIS : up
+            );
+            projectedLength = worldUp.dotProduct(forward);
+            if (projectedLength != 0) {
+                projectedForward = forward.clone();
+                projectedForward.scaleBy(projectedLength);
+                worldUp.decrementBy(projectedForward);
+            }
+            if (worldUp.lengthSquared < 0.000000000001) {
+                worldUp = Math.abs(forward.y) < 0.999
+                    ? Vector3D.Y_AXIS.clone()
+                    : Vector3D.X_AXIS.clone();
+                projectedLength = worldUp.dotProduct(forward);
+                projectedForward = forward.clone();
+                projectedForward.scaleBy(projectedLength);
+                worldUp.decrementBy(projectedForward);
+            }
+            worldUp.normalize();
+            var worldRight:Vector3D = worldUp.crossProduct(forward);
+            worldRight.normalize();
+            worldUp = forward.crossProduct(worldRight);
+
+            // pointAt changes orientation but preserves the object's translation
+            // and scale. Matrix3D stores columns in column-major order.
+            var scaleX:Number = Math.sqrt(
+                this._rawData[0] * this._rawData[0] +
+                this._rawData[1] * this._rawData[1] +
+                this._rawData[2] * this._rawData[2]
+            );
+            var scaleY:Number = Math.sqrt(
+                this._rawData[4] * this._rawData[4] +
+                this._rawData[5] * this._rawData[5] +
+                this._rawData[6] * this._rawData[6]
+            );
+            var scaleZ:Number = Math.sqrt(
+                this._rawData[8] * this._rawData[8] +
+                this._rawData[9] * this._rawData[9] +
+                this._rawData[10] * this._rawData[10]
+            );
+            if (scaleX == 0) scaleX = 1;
+            if (scaleY == 0) scaleY = 1;
+            if (scaleZ == 0) scaleZ = 1;
+
+            this._rawData[0] = (worldRight.x * localRight.x + worldUp.x * localUp.x + forward.x * localForward.x) * scaleX;
+            this._rawData[1] = (worldRight.y * localRight.x + worldUp.y * localUp.x + forward.y * localForward.x) * scaleX;
+            this._rawData[2] = (worldRight.z * localRight.x + worldUp.z * localUp.x + forward.z * localForward.x) * scaleX;
+            this._rawData[3] = 0;
+            this._rawData[4] = (worldRight.x * localRight.y + worldUp.x * localUp.y + forward.x * localForward.y) * scaleY;
+            this._rawData[5] = (worldRight.y * localRight.y + worldUp.y * localUp.y + forward.y * localForward.y) * scaleY;
+            this._rawData[6] = (worldRight.z * localRight.y + worldUp.z * localUp.y + forward.z * localForward.y) * scaleY;
+            this._rawData[7] = 0;
+            this._rawData[8] = (worldRight.x * localRight.z + worldUp.x * localUp.z + forward.x * localForward.z) * scaleZ;
+            this._rawData[9] = (worldRight.y * localRight.z + worldUp.y * localUp.z + forward.y * localForward.z) * scaleZ;
+            this._rawData[10] = (worldRight.z * localRight.z + worldUp.z * localUp.z + forward.z * localForward.z) * scaleZ;
+            this._rawData[11] = 0;
+            this._rawData[12] = position.x;
+            this._rawData[13] = position.y;
+            this._rawData[14] = position.z;
+            this._rawData[15] = 1;
         }
 
         // Based on OpenFL: https://github.com/openfl/openfl/blob/971a4c9e43b5472fd84d73920a2b7c1b3d8d9257/src/openfl/geom/Matrix3D.hx#L1437

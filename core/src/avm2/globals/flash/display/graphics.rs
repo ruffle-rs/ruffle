@@ -1321,7 +1321,15 @@ fn draw_triangles_internal<'gc>(
     let mut all_triangles = Vec::new();
     let mut textured_triangles = Vec::new();
 
-    for (triangle, uvt) in data.iter_triangles().filter(|(tri, _)| !culling.cull(*tri)) {
+    for (triangle, uvt) in data.iter_triangles().filter(|(tri, uvt)| {
+        // AVM2 3D engines (including Away3D) pass already-projected screen
+        // coordinates plus UVT perspective data. Applying Flash's flat 2D
+        // winding test after that projection drops faces as the camera turns,
+        // which can make a shooter or ball disappear before the keeper can
+        // react. Preserve UVT triangles and let their authored draw order
+        // determine visibility; retain normal culling for ordinary 2D input.
+        uvt.is_some() || !culling.cull(*tri)
+    }) {
         all_triangles.push(triangle);
         if let Some(uvt) = uvt {
             textured_triangles.push(TexturedTriangle {

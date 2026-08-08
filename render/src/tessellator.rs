@@ -76,6 +76,19 @@ impl ShapeTessellator {
 
                 let mut vertices = Vec::with_capacity(triangles.len() * 3);
                 for triangle in triangles {
+                    // `Utils3D.projectVectors` stores 1 / clip_w in the third
+                    // UVT component. A triangle on or behind the projection
+                    // plane cannot be sampled perspective-correctly; letting it
+                    // reach the fragment shader produces an opaque invalid
+                    // sample that hides the rest of the scene.
+                    if triangle
+                        .uvt
+                        .iter()
+                        .any(|uvt| !uvt.iter().all(|component| component.is_finite()) || uvt[2] <= f32::EPSILON)
+                    {
+                        continue;
+                    }
+
                     for (point, uvt) in triangle.vertices.into_iter().zip(triangle.uvt) {
                         vertices.push(Vertex {
                             x: point.x.to_pixels() as f32,
