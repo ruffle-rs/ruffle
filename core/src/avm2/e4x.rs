@@ -1,6 +1,6 @@
 use crate::avm2::error::{
     XmlErrorCode, make_error_1010, make_error_1085, make_error_1088, make_error_1098,
-    make_error_1118, make_unknown_ns_error, make_xml_error,
+    make_error_1104, make_error_1118, make_unknown_ns_error, make_xml_error,
 };
 use crate::avm2::function::FunctionArgs;
 use crate::avm2::multiname::NamespaceSet;
@@ -884,9 +884,6 @@ impl<'gc> E4XNode<'gc> {
                 {
                     return Err(make_error_1088(activation));
                 }
-                Err(XmlError::InvalidAttr(XmlAttrError::Duplicated(_, _))) => {
-                    return Err(make_xml_error(activation, XmlErrorCode::DuplicateAttribute));
-                }
                 Err(XmlError::Syntax(syntax_error)) => {
                     let code = match syntax_error {
                         XmlSyntaxError::UnclosedPIOrXmlDecl => {
@@ -1040,13 +1037,19 @@ impl<'gc> E4XNode<'gc> {
         let attributes = bs
             .attributes()
             .collect::<Result<Vec<_>, XmlAttrError>>()
-            .map_err(|e| {
-                let code = match e {
-                    XmlAttrError::Duplicated(_, _) => XmlErrorCode::DuplicateAttribute,
-                    _ => XmlErrorCode::ElementMalformed,
-                };
+            .map_err(|e| match e {
+                XmlAttrError::Duplicated(pos, _) => {
+                    // Find end of attribute name, handling both a="" and a = "".
+                    let tail = &bs[pos..];
+                    let name_end = tail
+                        .iter()
+                        .position(|&b| b == b'=' || b.is_ascii_whitespace())
+                        .unwrap();
+                    let attr_name = &tail[..name_end];
 
-                make_xml_error(activation, code)
+                    make_error_1104(activation, attr_name, bs.name().as_ref())
+                }
+                _ => make_xml_error(activation, XmlErrorCode::ElementMalformed),
             })?;
 
         for attribute in attributes {

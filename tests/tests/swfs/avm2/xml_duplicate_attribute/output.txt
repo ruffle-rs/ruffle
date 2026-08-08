@@ -1,0 +1,14 @@
+<root a="" a="" />
+TypeError: Error #1104: Attribute "a" was already specified for element "root".
+<root a = "" a = "" />
+TypeError: Error #1104: Attribute "a" was already specified for element "root".
+<root a="" b="" a="" />
+TypeError: Error #1104: Attribute "a" was already specified for element "root".
+<root a   = "" b="" a  = "" />
+TypeError: Error #1104: Attribute "a" was already specified for element "root".
+<root a   = "" b="" a  =  "" />
+TypeError: Error #1104: Attribute "a" was already specified for element "root".
+<root abc="" abc="">
+TypeError: Error #1104: Attribute "abc" was already specified for element "root".
+<root a="" a=""
+TypeError: Error #1090: XML parser failure: element is malformed.
