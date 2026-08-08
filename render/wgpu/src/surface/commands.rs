@@ -172,6 +172,17 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
         self.render_pass.set_bind_group(2, bind_group, &[]);
     }
 
+    fn prep_bitmap_uvt(&mut self, bind_group: &'pass wgpu::BindGroup, blend_mode: TrivialBlend) {
+        if self.needs_stencil {
+            self.render_pass
+                .set_pipeline(self.pipelines.bitmap_uvt[blend_mode].pipeline_for(self.mask_state));
+        } else {
+            self.render_pass
+                .set_pipeline(self.pipelines.bitmap_uvt[blend_mode].stencilless_pipeline());
+        }
+        self.render_pass.set_bind_group(2, bind_group, &[]);
+    }
+
     pub fn prep_alpha_mask(&mut self, bind_group: &'pass wgpu::BindGroup) {
         if self.needs_stencil {
             self.render_pass
@@ -294,8 +305,12 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
                 DrawType::Gradient { bind_group, .. } => {
                     self.prep_gradient(bind_group);
                 }
-                DrawType::Bitmap { binds, .. } => {
-                    self.prep_bitmap(&binds.bind_group, TrivialBlend::Normal, false);
+                DrawType::Bitmap { binds, has_uvt } => {
+                    if *has_uvt {
+                        self.prep_bitmap_uvt(&binds.bind_group, TrivialBlend::Normal);
+                    } else {
+                        self.prep_bitmap(&binds.bind_group, TrivialBlend::Normal, false);
+                    }
                 }
             }
             self.render_pass.set_bind_group(

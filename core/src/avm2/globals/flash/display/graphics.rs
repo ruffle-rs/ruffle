@@ -18,7 +18,6 @@ use crate::avm2_stub_method;
 use crate::display_object::TDisplayObject;
 use crate::drawing::Drawing;
 use crate::string::{AvmString, WStr};
-use either::Either;
 use ruffle_render::shape_utils::{DrawCommand, FillRule, GradientType};
 use std::f64::consts::FRAC_1_SQRT_2;
 use swf::{
@@ -1057,24 +1056,6 @@ pub fn draw_triangles<'gc>(
                 .ok_or_else(|| make_error_2004(activation, Error2004Type::ArgumentError))?
         };
 
-        // FIXME Triangles should be drawn using non-zero winding rule.
-        //   When fixed, update output.expected.png of avm2/graphics_draw_triangles.
-        avm2_stub_method!(
-            activation,
-            "flash.display.Graphics",
-            "drawTriangles",
-            "winding behavior"
-        );
-
-        if uvt_data.is_some() {
-            avm2_stub_method!(
-                activation,
-                "flash.display.Graphics",
-                "drawTriangles",
-                "with uvt data"
-            );
-        }
-
         draw_triangles_internal(
             activation,
             &mut drawing,
@@ -1106,19 +1087,13 @@ impl<T> AsChunksExact<T> for [T] {
 ///
 /// # Invariants
 ///
-/// * `vertices`, `indices`, and `triangles` are non-empty.
+/// * `vertices` and `indices` are non-empty.
 /// * Every value in `indices` is `< vertices.len()`. Flash stops at the first
 ///   out-of-bounds index, so any trailing triples that would have been out of
 ///   bounds are dropped at construction time.
-enum TriangleData {
-    /// Triangles described by shared `vertices` and triples of indices into
-    /// that array.
-    Indexed {
-        vertices: Box<[Point<Twips>]>,
-        indices: Box<[[u32; 3]]>,
-    },
-    /// Triangles described as independent vertex triples.
-    Sequential { triangles: Box<[[Point<Twips>; 3]]> },
+struct TriangleData {
+    vertices: Box<[Point<Twips>]>,
+    indices: Box<[[u32; 3]]>,
 }
 
 impl TriangleData {
@@ -1178,33 +1153,17 @@ impl TriangleData {
                 return Ok(None);
             }
 
-            Ok(Some(Self::Indexed { vertices, indices }))
+            Ok(Some(Self { vertices, indices }))
         } else {
-            let vertex_triples = vertex_pairs
+            vertex_pairs
                 .as_chunks_exact::<3>()
                 .ok_or_else(|| make_error_2004(activation, Error2004Type::ArgumentError))?;
 
-            let triangles = vertex_triples
-                .iter()
-                .map(|[p0, p1, p2]| [make_point(p0), make_point(p1), make_point(p2)])
-                .collect::<Box<_>>();
+            let vertices = vertex_pairs.iter().map(make_point).collect::<Box<_>>();
+            let indices = (0..vertices.len() as u32).collect::<Vec<_>>();
+            let indices = indices.as_chunks::<3>().0.iter().copied().collect();
 
-            Ok(Some(Self::Sequential { triangles }))
-        }
-    }
-
-    fn iter_triangles(&self) -> impl Iterator<Item = [Point<Twips>; 3]> + '_ {
-        match self {
-            Self::Indexed { vertices, indices } => {
-                Either::Left(indices.iter().map(|&[i0, i1, i2]| {
-                    [
-                        vertices[i0 as usize],
-                        vertices[i1 as usize],
-                        vertices[i2 as usize],
-                    ]
-                }))
-            }
-            Self::Sequential { triangles } => Either::Right(triangles.iter().copied()),
+            Ok(Some(Self { vertices, indices }))
         }
     }
 }
@@ -1261,21 +1220,84 @@ fn draw_triangles_internal<'gc>(
     drawing: &mut Drawing,
     vertices: &Object<'gc>,
     indices: Option<&Object<'gc>>,
-    _uvt_data: Option<&Object<'gc>>,
+    uvt_data: Option<&Object<'gc>>,
     culling: TriangleCulling,
 ) -> Result<(), Error<'gc>> {
     let Some(data) = TriangleData::new(activation, vertices, indices)? else {
         return Ok(());
     };
 
-    for [a, b, c] in data.iter_triangles().filter(|&tri| !culling.cull(tri)) {
-        drawing.draw_command(DrawCommand::MoveTo(a));
-        drawing.draw_command(DrawCommand::LineTo(b));
-        drawing.draw_command(DrawCommand::LineTo(c));
-        drawing.draw_command(DrawCommand::LineTo(a));
+    let texture_coords = uvt_data
+        .map(|uvt_data| parse_texture_coords(activation, uvt_data, data.vertices.len()))
+        .transpose()?;
+
+    let indices = data
+        .indices
+        .iter()
+        .copied()
+        .filter(|&[i0, i1, i2]| {
+            !culling.cull([
+                data.vertices[i0 as usize],
+                data.vertices[i1 as usize],
+                data.vertices[i2 as usize],
+            ])
+        })
+        .flatten()
+        .collect::<Vec<_>>();
+
+    if indices.is_empty() {
+        return Ok(());
     }
 
+    drawing.draw_triangles(
+        data.vertices.into_vec(),
+        indices,
+        texture_coords.map(|coords| coords.into_vec()),
+    );
+
     Ok(())
+}
+
+fn parse_texture_coords<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    uvt_data: &Object<'gc>,
+    num_vertices: usize,
+) -> Result<Box<[[f32; 3]]>, Error<'gc>> {
+    let storage = uvt_data
+        .as_vector_storage()
+        .expect("uvtData is not a Vector");
+    texture_coords_from_values(storage.storage(), num_vertices)
+        .ok_or_else(|| make_error_2004(activation, Error2004Type::ArgumentError))
+}
+
+fn texture_coords_from_values(
+    values: &[Value<'_>],
+    num_vertices: usize,
+) -> Option<Box<[[f32; 3]]>> {
+    if values.len() == num_vertices * 2 {
+        Some(
+            values
+                .as_chunks_exact::<2>()
+                .expect("UV data length was already checked")
+                .iter()
+                .map(|[u, v]| [u.as_f64() as f32, v.as_f64() as f32, 1.0])
+                .collect(),
+        )
+    } else if values.len() == num_vertices * 3 {
+        Some(
+            values
+                .as_chunks_exact::<3>()
+                .expect("UVT data length was already checked")
+                .iter()
+                .map(|[u, v, t]| {
+                    let t = t.as_f64() as f32;
+                    [u.as_f64() as f32 * t, v.as_f64() as f32 * t, t]
+                })
+                .collect(),
+        )
+    } else {
+        None
+    }
 }
 
 /// Implements `Graphics.drawGraphicsData`
@@ -1611,23 +1633,6 @@ fn handle_graphics_triangle_path<'gc>(
         .as_object();
 
     if let Some(vertices) = vertices {
-        // FIXME Triangles should be drawn using non-zero winding rule.
-        avm2_stub_method!(
-            activation,
-            "flash.display.Graphics",
-            "drawGraphicsData",
-            "GraphicsTrianglePath winding behavior"
-        );
-
-        if uvt_data.is_some() {
-            avm2_stub_method!(
-                activation,
-                "flash.display.Graphics",
-                "drawGraphicsData",
-                "GraphicsTrianglePath with uvt data"
-            );
-        }
-
         draw_triangles_internal(
             activation,
             drawing,
@@ -1823,4 +1828,48 @@ fn handle_bitmap_fill<'gc>(
     };
 
     Ok(style)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::texture_coords_from_values;
+    use crate::avm2::Value;
+
+    #[test]
+    fn parses_uv_coordinates() {
+        let values = [
+            Value::Number(0.0),
+            Value::Number(0.25),
+            Value::Number(1.0),
+            Value::Number(0.75),
+        ];
+
+        assert_eq!(
+            texture_coords_from_values(&values, 2).as_deref(),
+            Some(&[[0.0, 0.25, 1.0], [1.0, 0.75, 1.0]][..])
+        );
+    }
+
+    #[test]
+    fn converts_uvt_coordinates_to_homogeneous_values() {
+        let values = [
+            Value::Number(0.5),
+            Value::Number(0.25),
+            Value::Number(0.5),
+            Value::Number(1.0),
+            Value::Number(0.75),
+            Value::Number(0.25),
+        ];
+
+        assert_eq!(
+            texture_coords_from_values(&values, 2).as_deref(),
+            Some(&[[0.25, 0.125, 0.5], [0.25, 0.1875, 0.25]][..])
+        );
+    }
+
+    #[test]
+    fn rejects_mismatched_texture_coordinate_count() {
+        let values = [Value::Number(0.0), Value::Number(0.0), Value::Number(1.0)];
+        assert!(texture_coords_from_values(&values, 2).is_none());
+    }
 }
