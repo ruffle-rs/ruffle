@@ -150,6 +150,10 @@ impl ThemeController {
         Ok(scheme_to_theme(scheme))
     }
 
+    // Nothing to await here, but the Linux variant above does, and the caller
+    // awaits unconditionally -- so this has to stay `async` to keep one call
+    // site working on every platform.
+    #[allow(clippy::unused_async)]
     #[cfg(not(target_os = "linux"))]
     pub async fn get_system_theme(&self) -> Result<Theme, Box<dyn Error>> {
         #[derive(thiserror::Error, Debug)]
