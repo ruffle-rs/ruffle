@@ -1,0 +1,9 @@
+num_frames = 1
+ignore = true
+
+[[compilers]]
+type = "Asc"
+target = "test.swf"
+class = "Test"
+scripts = ["Test.as"]
+swf_version = 40

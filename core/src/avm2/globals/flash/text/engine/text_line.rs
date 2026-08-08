@@ -89,27 +89,14 @@ pub fn get_text_block<'gc>(
         .as_text_line()
         .unwrap();
 
-    Ok(this.text_block().map(Value::from).unwrap_or(Value::Null))
-}
-
-pub fn set_text_block<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    this: Value<'gc>,
-    args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    let this = this
-        .as_object()
-        .unwrap()
-        .as_display_object()
-        .unwrap()
-        .as_text_line()
-        .unwrap();
-
-    let text_block = args
-        .try_get_object(0)
-        .and_then(|o| o.as_text_block_object());
-    this.set_text_block(text_block, activation.gc());
-    Ok(Value::Undefined)
+    if matches!(this.validity(), TextLineValidity::Static) {
+        // "static" lines always return `null` when accessing their `textBlock`
+        Ok(Value::Null)
+    } else if let Some(text_block) = this.text_block() {
+        Ok(text_block.into())
+    } else {
+        Ok(Value::Null)
+    }
 }
 
 pub fn get_specified_width<'gc>(

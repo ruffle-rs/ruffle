@@ -1,0 +1,647 @@
+!!!! initialized list of six lines, line0..=line5
+First line in block: line-0
+Last line in block: line-5
+Line #0:
+    line.validity: valid
+    line.textBlock: [object TextBlock]
+    line.previousLine: null
+    line.nextLine: line-1
+Line #1:
+    line.validity: valid
+    line.textBlock: [object TextBlock]
+    line.previousLine: line-0
+    line.nextLine: line-2
+Line #2:
+    line.validity: valid
+    line.textBlock: [object TextBlock]
+    line.previousLine: line-1
+    line.nextLine: line-3
+Line #3:
+    line.validity: valid
+    line.textBlock: [object TextBlock]
+    line.previousLine: line-2
+    line.nextLine: line-4
+Line #4:
+    line.validity: valid
+    line.textBlock: [object TextBlock]
+    line.previousLine: line-3
+    line.nextLine: line-5
+Line #5:
+    line.validity: valid
+    line.textBlock: [object TextBlock]
+    line.previousLine: line-4
+    line.nextLine: null
+!! block.releaseLines(null, null);
+TypeError: Error #2007: Parameter firstLine must be non-null.
+	at flash.text.engine::TextBlock/releaseLines()
+	at Test()
+!! block.releaseLines(null, line4);
+TypeError: Error #2007: Parameter firstLine must be non-null.
+	at flash.text.engine::TextBlock/releaseLines()
+	at Test()
+!! block.releaseLines(line1, null);
+TypeError: Error #2007: Parameter lastLine must be non-null.
+	at flash.text.engine::TextBlock/releaseLines()
+	at Test()
+!! line1.validity = "static";
+!! block.releaseLines(line1, line2);
+First line in block: line-0
+Last line in block: line-5
+Line #0:
+    line.validity: valid
+    line.textBlock: [object TextBlock]
+    line.previousLine: null
+    line.nextLine: line-3
+Line #1:
+    line.validity: invalid
+    line.textBlock: null
+    line.previousLine: null
+    line.nextLine: null
+Line #2:
+    line.validity: invalid
+    line.textBlock: null
+    line.previousLine: null
+    line.nextLine: null
+Line #3:
+    line.validity: invalid
+    line.textBlock: [object TextBlock]
+    line.previousLine: line-0
+    line.nextLine: line-4
+Line #4:
+    line.validity: invalid
+    line.textBlock: [object TextBlock]
+    line.previousLine: line-3
+    line.nextLine: line-5
+Line #5:
+    line.validity: invalid
+    line.textBlock: [object TextBlock]
+    line.previousLine: line-4
+    line.nextLine: null
+!! line3.validity = "invalid";
+!! block.releaseLines(line3, line4);
+First line in block: line-0
+Last line in block: line-5
+Line #0:
+    line.validity: valid
+    line.textBlock: [object TextBlock]
+    line.previousLine: null
+    line.nextLine: line-5
+Line #1:
+    line.validity: invalid
+    line.textBlock: null
+    line.previousLine: null
+    line.nextLine: null
+Line #2:
+    line.validity: invalid
+    line.textBlock: null
+    line.previousLine: null
+    line.nextLine: null
+Line #3:
+    line.validity: invalid
+    line.textBlock: null
+    line.previousLine: null
+    line.nextLine: null
+Line #4:
+    line.validity: invalid
+    line.textBlock: null
+    line.previousLine: null
+    line.nextLine: null
+Line #5:
+    line.validity: invalid
+    line.textBlock: [object TextBlock]
+    line.previousLine: line-0
+    line.nextLine: null
+!!!! reset all lines
+!! block.createTextLine(line4, 1000);
+First line in block: line-0
+Last line in block: line-unknown
+Line #0:
+    line.validity: valid
+    line.textBlock: [object TextBlock]
+    line.previousLine: null
+    line.nextLine: line-1
+Line #1:
+    line.validity: valid
+    line.textBlock: [object TextBlock]
+    line.previousLine: line-0
+    line.nextLine: line-2
+Line #2:
+    line.validity: valid
+    line.textBlock: [object TextBlock]
+    line.previousLine: line-1
+    line.nextLine: line-3
+Line #3:
+    line.validity: valid
+    line.textBlock: [object TextBlock]
+    line.previousLine: line-2
+    line.nextLine: line-4
+Line #4:
+    line.validity: valid
+    line.textBlock: [object TextBlock]
+    line.previousLine: line-3
+    line.nextLine: line-unknown
+Line #5:
+    line.validity: invalid
+    line.textBlock: [object TextBlock]
+    line.previousLine: null
+    line.nextLine: null
+!! block.releaseLines(line3, line5);
+ArgumentError: Error #2004: One of the parameters is invalid.
+	at flash.text.engine::TextBlock/releaseLines()
+	at Test()
+!! block.releaseLines(null, line5);
+TypeError: Error #2007: Parameter firstLine must be non-null.
+	at flash.text.engine::TextBlock/releaseLines()
+	at Test()
+!! block.releaseLines(line5, null);
+TypeError: Error #2007: Parameter lastLine must be non-null.
+	at flash.text.engine::TextBlock/releaseLines()
+	at Test()
+First line in block: line-0
+Last line in block: line-unknown
+Line #0:
+    line.validity: valid
+    line.textBlock: [object TextBlock]
+    line.previousLine: null
+    line.nextLine: line-1
+Line #1:
+    line.validity: valid
+    line.textBlock: [object TextBlock]
+    line.previousLine: line-0
+    line.nextLine: line-2
+Line #2:
+    line.validity: valid
+    line.textBlock: [object TextBlock]
+    line.previousLine: line-1
+    line.nextLine: line-3
+Line #3:
+    line.validity: valid
+    line.textBlock: [object TextBlock]
+    line.previousLine: line-2
+    line.nextLine: line-4
+Line #4:
+    line.validity: valid
+    line.textBlock: [object TextBlock]
+    line.previousLine: line-3
+    line.nextLine: line-unknown
+Line #5:
+    line.validity: invalid
+    line.textBlock: [object TextBlock]
+    line.previousLine: null
+    line.nextLine: null
+!!!! reset all lines
+!! block.releaseLines(line5, line4);
+First line in block: line-0
+Last line in block: line-3
+Line #0:
+    line.validity: valid
+    line.textBlock: [object TextBlock]
+    line.previousLine: null
+    line.nextLine: line-1
+Line #1:
+    line.validity: valid
+    line.textBlock: [object TextBlock]
+    line.previousLine: line-0
+    line.nextLine: line-2
+Line #2:
+    line.validity: valid
+    line.textBlock: [object TextBlock]
+    line.previousLine: line-1
+    line.nextLine: line-3
+Line #3:
+    line.validity: valid
+    line.textBlock: [object TextBlock]
+    line.previousLine: line-2
+    line.nextLine: null
+Line #4:
+    line.validity: invalid
+    line.textBlock: null
+    line.previousLine: null
+    line.nextLine: null
+Line #5:
+    line.validity: invalid
+    line.textBlock: null
+    line.previousLine: null
+    line.nextLine: null
+!! block.releaseLines(line3, line1);
+!!!! reset all lines
+First line in block: line-0
+Last line in block: line-5
+Line #0:
+    line.validity: valid
+    line.textBlock: [object TextBlock]
+    line.previousLine: null
+    line.nextLine: line-1
+Line #1:
+    line.validity: valid
+    line.textBlock: [object TextBlock]
+    line.previousLine: line-0
+    line.nextLine: line-2
+Line #2:
+    line.validity: valid
+    line.textBlock: [object TextBlock]
+    line.previousLine: line-1
+    line.nextLine: line-3
+Line #3:
+    line.validity: valid
+    line.textBlock: [object TextBlock]
+    line.previousLine: line-2
+    line.nextLine: line-4
+Line #4:
+    line.validity: valid
+    line.textBlock: [object TextBlock]
+    line.previousLine: line-3
+    line.nextLine: line-5
+Line #5:
+    line.validity: valid
+    line.textBlock: [object TextBlock]
+    line.previousLine: line-4
+    line.nextLine: null
+!! block.releaseLines(line2, line5);
+First line in block: line-0
+Last line in block: line-1
+Line #0:
+    line.validity: valid
+    line.textBlock: [object TextBlock]
+    line.previousLine: null
+    line.nextLine: line-1
+Line #1:
+    line.validity: valid
+    line.textBlock: [object TextBlock]
+    line.previousLine: line-0
+    line.nextLine: null
+Line #2:
+    line.validity: invalid
+    line.textBlock: null
+    line.previousLine: null
+    line.nextLine: null
+Line #3:
+    line.validity: invalid
+    line.textBlock: null
+    line.previousLine: null
+    line.nextLine: null
+Line #4:
+    line.validity: invalid
+    line.textBlock: null
+    line.previousLine: null
+    line.nextLine: null
+Line #5:
+    line.validity: invalid
+    line.textBlock: null
+    line.previousLine: null
+    line.nextLine: null
+!! block.releaseLines(line0, line1);
+First line in block: null
+Last line in block: null
+Line #0:
+    line.validity: invalid
+    line.textBlock: null
+    line.previousLine: null
+    line.nextLine: null
+Line #1:
+    line.validity: invalid
+    line.textBlock: null
+    line.previousLine: null
+    line.nextLine: null
+Line #2:
+    line.validity: invalid
+    line.textBlock: null
+    line.previousLine: null
+    line.nextLine: null
+Line #3:
+    line.validity: invalid
+    line.textBlock: null
+    line.previousLine: null
+    line.nextLine: null
+Line #4:
+    line.validity: invalid
+    line.textBlock: null
+    line.previousLine: null
+    line.nextLine: null
+Line #5:
+    line.validity: invalid
+    line.textBlock: null
+    line.previousLine: null
+    line.nextLine: null
+!! block.releaseLines(line1, line3);
+ArgumentError: Error #2004: One of the parameters is invalid.
+	at flash.text.engine::TextBlock/releaseLines()
+	at Test()
+First line in block: null
+Last line in block: null
+Line #0:
+    line.validity: invalid
+    line.textBlock: null
+    line.previousLine: null
+    line.nextLine: null
+Line #1:
+    line.validity: invalid
+    line.textBlock: null
+    line.previousLine: null
+    line.nextLine: null
+Line #2:
+    line.validity: invalid
+    line.textBlock: null
+    line.previousLine: null
+    line.nextLine: null
+Line #3:
+    line.validity: invalid
+    line.textBlock: null
+    line.previousLine: null
+    line.nextLine: null
+Line #4:
+    line.validity: invalid
+    line.textBlock: null
+    line.previousLine: null
+    line.nextLine: null
+Line #5:
+    line.validity: invalid
+    line.textBlock: null
+    line.previousLine: null
+    line.nextLine: null
+!!!! reset all lines
+!! block.releaseLines(line4, line4);
+First line in block: line-0
+Last line in block: line-5
+Line #0:
+    line.validity: valid
+    line.textBlock: [object TextBlock]
+    line.previousLine: null
+    line.nextLine: line-1
+Line #1:
+    line.validity: valid
+    line.textBlock: [object TextBlock]
+    line.previousLine: line-0
+    line.nextLine: line-2
+Line #2:
+    line.validity: valid
+    line.textBlock: [object TextBlock]
+    line.previousLine: line-1
+    line.nextLine: line-3
+Line #3:
+    line.validity: valid
+    line.textBlock: [object TextBlock]
+    line.previousLine: line-2
+    line.nextLine: line-5
+Line #4:
+    line.validity: invalid
+    line.textBlock: null
+    line.previousLine: null
+    line.nextLine: null
+Line #5:
+    line.validity: invalid
+    line.textBlock: [object TextBlock]
+    line.previousLine: line-3
+    line.nextLine: null
+!! block.releaseLines(line4, line5);
+ArgumentError: Error #2004: One of the parameters is invalid.
+	at flash.text.engine::TextBlock/releaseLines()
+	at Test()
+!! block.releaseLines(line3, line4);
+ArgumentError: Error #2004: One of the parameters is invalid.
+	at flash.text.engine::TextBlock/releaseLines()
+	at Test()
+!! block.releaseLines(line4, line3);
+ArgumentError: Error #2004: One of the parameters is invalid.
+	at flash.text.engine::TextBlock/releaseLines()
+	at Test()
+!! block.releaseLines(line3, line5);
+First line in block: line-0
+Last line in block: line-2
+Line #0:
+    line.validity: valid
+    line.textBlock: [object TextBlock]
+    line.previousLine: null
+    line.nextLine: line-1
+Line #1:
+    line.validity: valid
+    line.textBlock: [object TextBlock]
+    line.previousLine: line-0
+    line.nextLine: line-2
+Line #2:
+    line.validity: valid
+    line.textBlock: [object TextBlock]
+    line.previousLine: line-1
+    line.nextLine: null
+Line #3:
+    line.validity: invalid
+    line.textBlock: null
+    line.previousLine: null
+    line.nextLine: null
+Line #4:
+    line.validity: invalid
+    line.textBlock: null
+    line.previousLine: null
+    line.nextLine: null
+Line #5:
+    line.validity: invalid
+    line.textBlock: null
+    line.previousLine: null
+    line.nextLine: null
+!!!! reset all lines
+!! line1.validity = "static";
+!! line2.validity = "static";
+First line in block: line-0
+Last line in block: line-5
+Line #0:
+    line.validity: valid
+    line.textBlock: [object TextBlock]
+    line.previousLine: null
+    line.nextLine: line-1
+Line #1:
+    line.validity: static
+    line.textBlock: null
+    line.previousLine: line-0
+    line.nextLine: line-2
+Line #2:
+    line.validity: static
+    line.textBlock: null
+    line.previousLine: line-1
+    line.nextLine: line-3
+Line #3:
+    line.validity: valid
+    line.textBlock: [object TextBlock]
+    line.previousLine: line-2
+    line.nextLine: line-4
+Line #4:
+    line.validity: valid
+    line.textBlock: [object TextBlock]
+    line.previousLine: line-3
+    line.nextLine: line-5
+Line #5:
+    line.validity: valid
+    line.textBlock: [object TextBlock]
+    line.previousLine: line-4
+    line.nextLine: null
+!! block.releaseLines(line1, line2);
+First line in block: line-0
+Last line in block: line-5
+Line #0:
+    line.validity: valid
+    line.textBlock: [object TextBlock]
+    line.previousLine: null
+    line.nextLine: line-3
+Line #1:
+    line.validity: invalid
+    line.textBlock: null
+    line.previousLine: null
+    line.nextLine: null
+Line #2:
+    line.validity: invalid
+    line.textBlock: null
+    line.previousLine: null
+    line.nextLine: null
+Line #3:
+    line.validity: invalid
+    line.textBlock: [object TextBlock]
+    line.previousLine: line-0
+    line.nextLine: line-4
+Line #4:
+    line.validity: invalid
+    line.textBlock: [object TextBlock]
+    line.previousLine: line-3
+    line.nextLine: line-5
+Line #5:
+    line.validity: invalid
+    line.textBlock: [object TextBlock]
+    line.previousLine: line-4
+    line.nextLine: null
+!! block.releaseLines(line0, line4);
+First line in block: line-5
+Last line in block: line-5
+Line #0:
+    line.validity: invalid
+    line.textBlock: null
+    line.previousLine: null
+    line.nextLine: null
+Line #1:
+    line.validity: invalid
+    line.textBlock: null
+    line.previousLine: null
+    line.nextLine: null
+Line #2:
+    line.validity: invalid
+    line.textBlock: null
+    line.previousLine: null
+    line.nextLine: null
+Line #3:
+    line.validity: invalid
+    line.textBlock: null
+    line.previousLine: null
+    line.nextLine: null
+Line #4:
+    line.validity: invalid
+    line.textBlock: null
+    line.previousLine: null
+    line.nextLine: null
+Line #5:
+    line.validity: invalid
+    line.textBlock: [object TextBlock]
+    line.previousLine: null
+    line.nextLine: null
+!!!! reset all lines
+!!!! Created a completely different text block, block2
+!! block2.releaseLines(line1, line4);
+ArgumentError: Error #2004: One of the parameters is invalid.
+	at flash.text.engine::TextBlock/releaseLines()
+	at Test()
+First line in block: line-0
+Last line in block: line-5
+Line #0:
+    line.validity: valid
+    line.textBlock: [object TextBlock]
+    line.previousLine: null
+    line.nextLine: line-1
+Line #1:
+    line.validity: valid
+    line.textBlock: [object TextBlock]
+    line.previousLine: line-0
+    line.nextLine: line-2
+Line #2:
+    line.validity: valid
+    line.textBlock: [object TextBlock]
+    line.previousLine: line-1
+    line.nextLine: line-3
+Line #3:
+    line.validity: valid
+    line.textBlock: [object TextBlock]
+    line.previousLine: line-2
+    line.nextLine: line-4
+Line #4:
+    line.validity: valid
+    line.textBlock: [object TextBlock]
+    line.previousLine: line-3
+    line.nextLine: line-5
+Line #5:
+    line.validity: valid
+    line.textBlock: [object TextBlock]
+    line.previousLine: line-4
+    line.nextLine: null
+!!!! reset all lines
+!! line4.validity = "static";
+!! line5.validity = "static";
+First line in block: line-0
+Last line in block: line-5
+Line #0:
+    line.validity: valid
+    line.textBlock: [object TextBlock]
+    line.previousLine: null
+    line.nextLine: line-1
+Line #1:
+    line.validity: valid
+    line.textBlock: [object TextBlock]
+    line.previousLine: line-0
+    line.nextLine: line-2
+Line #2:
+    line.validity: valid
+    line.textBlock: [object TextBlock]
+    line.previousLine: line-1
+    line.nextLine: line-3
+Line #3:
+    line.validity: valid
+    line.textBlock: [object TextBlock]
+    line.previousLine: line-2
+    line.nextLine: line-4
+Line #4:
+    line.validity: static
+    line.textBlock: null
+    line.previousLine: line-3
+    line.nextLine: line-5
+Line #5:
+    line.validity: static
+    line.textBlock: null
+    line.previousLine: line-4
+    line.nextLine: null
+!! block.releaseLines(line2, line4);
+First line in block: line-0
+Last line in block: line-5
+Line #0:
+    line.validity: valid
+    line.textBlock: [object TextBlock]
+    line.previousLine: null
+    line.nextLine: line-1
+Line #1:
+    line.validity: valid
+    line.textBlock: [object TextBlock]
+    line.previousLine: line-0
+    line.nextLine: line-5
+Line #2:
+    line.validity: invalid
+    line.textBlock: null
+    line.previousLine: null
+    line.nextLine: null
+Line #3:
+    line.validity: invalid
+    line.textBlock: null
+    line.previousLine: null
+    line.nextLine: null
+Line #4:
+    line.validity: invalid
+    line.textBlock: null
+    line.previousLine: null
+    line.nextLine: null
+Line #5:
+    line.validity: invalid
+    line.textBlock: null
+    line.previousLine: line-1
+    line.nextLine: null

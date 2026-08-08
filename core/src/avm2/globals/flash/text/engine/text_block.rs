@@ -3,10 +3,10 @@ use crate::avm2::Avm2StrRepresentable;
 use crate::avm2::activation::Activation;
 use crate::avm2::error::{Error, Error2004Type, make_error_2004, make_error_2008, make_error_2175};
 use crate::avm2::globals::flash::display::display_object::initialize_for_allocator;
-use crate::avm2::object::{ContentElementObject, ElementData, VectorObject};
+use crate::avm2::object::{ContentElementObject, ElementData, Object, VectorObject};
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
-use crate::display_object::{EditText, TDisplayObject, TextLine};
+use crate::display_object::{DisplayObject, EditText, TDisplayObject, TextLine};
 use crate::fte::{TextBaselineValue, TextLineCreationResultValue, TextRotationValue};
 use crate::html::{FormatSpans, TextFormat, TextSpan};
 use crate::string::{WStr, WString};
@@ -323,6 +323,53 @@ pub fn get_first_line<'gc>(
     Ok(line.unwrap_or(Value::Null))
 }
 
+pub fn release_lines<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Value<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap().as_text_block_object().unwrap();
+
+    let line_1 = args
+        .get_object(activation, 0, "firstLine")?
+        .as_display_object()
+        .and_then(|o| o.as_text_line())
+        .expect("Guaranteed by AS signature");
+
+    let line_2 = args
+        .get_object(activation, 1, "lastLine")?
+        .as_display_object()
+        .and_then(|o| o.as_text_line())
+        .expect("Guaranteed by AS signature");
+
+    // NOTE: `releaseLines` allows for swapping the order of parameters without
+    // affecting the functionality of the method!
+
+    // Both lines must have associated text blocks
+    let (Some(line_1_block), Some(line_2_block)) = (line_1.text_block(), line_2.text_block())
+    else {
+        return Err(make_error_2004(activation, Error2004Type::ArgumentError));
+    };
+
+    // Both lines must belong to this block
+    if !Object::ptr_eq(line_1_block, this) || !Object::ptr_eq(line_2_block, this) {
+        return Err(make_error_2004(activation, Error2004Type::ArgumentError));
+    }
+
+    if DisplayObject::ptr_eq(line_1.into(), line_2.into()) {
+        // Special case: releasing a single line
+        line_1.release(activation.gc());
+    } else {
+        let lines_to_release = line_1.find_lines_between(line_2);
+
+        for line in lines_to_release {
+            line.release(activation.gc());
+        }
+    }
+
+    Ok(Value::Undefined)
+}
+
 pub fn do_create_text_line<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
@@ -433,6 +480,9 @@ pub fn do_create_text_line<'gc>(
         // If there's no previous line, then this is the first line.
         block.set_first_line(Some(text_line), activation.gc());
     }
+
+    // TODO correctly set the `validity`, `nextLine`, and `prevLine` properties
+    // of the lines coming after this line
 
     block.set_text_line_creation_result(Some(TextLineCreationResultValue::Success));
 

@@ -28,10 +28,6 @@ package flash.text.engine {
 
         public native function get textBlock():TextBlock;
 
-        // TODO: remove this setter once releaseLines() is implemented natively;
-        // it only exists so AS-side releaseLines() can clear textBlock.
-        internal native function setTextBlock(value:TextBlock):void;
-
         public function get ascent():Number {
             stub_getter("flash.text.engine.TextLine", "ascent");
             return 12.0;
