@@ -101,6 +101,64 @@ package {
 
             dumpInfo(block, linesList);
 
+            // Reset state
+            block.recreateTextLine(line0, null, 1000);
+            line0.y = 20;
+
+            block.recreateTextLine(line1, line0, 1000);
+            line1.y = 40;
+
+            block.recreateTextLine(line2, line1, 1000);
+            line2.y = 60;
+
+            block.recreateTextLine(line3, line2, 1000);
+            line3.y = 80;
+
+            block.recreateTextLine(line4, line3, 1000);
+            line4.y = 100;
+
+            var content2:ContentElement = new TextElement("Orem\nlay\nipsum");
+            content2.elementFormat = new ElementFormat();
+            var block2:TextBlock = new TextBlock(content2);
+
+            var block2Line0:TextLine = block2.createTextLine(null, 1000);
+            var block2Line1:TextLine = block2.createTextLine(block2Line0, 1000);
+            var block2Line2:TextLine = block2.createTextLine(block2Line1, 1000);
+
+            linesList.push(block2Line0);
+            linesList.push(block2Line1);
+            linesList.push(block2Line2);
+
+            // What happens if the original line belongs to a different block?
+            try {
+                block.recreateTextLine(block2Line1, line1, 1000);
+            } catch(e:Error) {
+                trace("Error: " + e.getStackTrace());
+            }
+
+            dumpInfo(block, linesList);
+
+            // Reset state
+            block.recreateTextLine(line0, null, 1000);
+            line0.y = 20;
+
+            block.recreateTextLine(line1, line0, 1000);
+            line1.y = 40;
+
+            block.recreateTextLine(line2, line1, 1000);
+            line2.y = 60;
+
+            block.recreateTextLine(line3, line2, 1000);
+            line3.y = 80;
+
+            block.recreateTextLine(line4, line3, 1000);
+            line4.y = 100;
+
+            // What happens if the original line is at the start of the current line?
+            block.recreateTextLine(line0, line3, 1000);
+
+            dumpInfo(block, linesList);
+
             // Error cases
             try {
                 block.recreateTextLine(null, line1);

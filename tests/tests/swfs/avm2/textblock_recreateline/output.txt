@@ -80,6 +80,88 @@ Line #4:
     line.textBlock: [object TextBlock]
     line.previousLine: line-3
     line.nextLine: null
+First line in block: line-0
+Line #0:
+    line.validity: valid
+    line.textBlock: [object TextBlock]
+    line.previousLine: null
+    line.nextLine: line-1
+Line #1:
+    line.validity: valid
+    line.textBlock: [object TextBlock]
+    line.previousLine: line-0
+    line.nextLine: line-6
+Line #2:
+    line.validity: invalid
+    line.textBlock: [object TextBlock]
+    line.previousLine: null
+    line.nextLine: null
+Line #3:
+    line.validity: valid
+    line.textBlock: [object TextBlock]
+    line.previousLine: line-6
+    line.nextLine: line-4
+Line #4:
+    line.validity: valid
+    line.textBlock: [object TextBlock]
+    line.previousLine: line-3
+    line.nextLine: null
+Line #5:
+    line.validity: valid
+    line.textBlock: [object TextBlock]
+    line.previousLine: null
+    line.nextLine: line-7
+Line #6:
+    line.validity: valid
+    line.textBlock: [object TextBlock]
+    line.previousLine: line-1
+    line.nextLine: line-3
+Line #7:
+    line.validity: invalid
+    line.textBlock: [object TextBlock]
+    line.previousLine: line-5
+    line.nextLine: null
+First line in block: line-1
+Line #0:
+    line.validity: valid
+    line.textBlock: [object TextBlock]
+    line.previousLine: line-3
+    line.nextLine: null
+Line #1:
+    line.validity: invalid
+    line.textBlock: [object TextBlock]
+    line.previousLine: null
+    line.nextLine: line-2
+Line #2:
+    line.validity: invalid
+    line.textBlock: [object TextBlock]
+    line.previousLine: line-1
+    line.nextLine: line-3
+Line #3:
+    line.validity: invalid
+    line.textBlock: [object TextBlock]
+    line.previousLine: line-2
+    line.nextLine: line-0
+Line #4:
+    line.validity: invalid
+    line.textBlock: [object TextBlock]
+    line.previousLine: null
+    line.nextLine: null
+Line #5:
+    line.validity: valid
+    line.textBlock: [object TextBlock]
+    line.previousLine: null
+    line.nextLine: line-7
+Line #6:
+    line.validity: invalid
+    line.textBlock: [object TextBlock]
+    line.previousLine: null
+    line.nextLine: null
+Line #7:
+    line.validity: invalid
+    line.textBlock: [object TextBlock]
+    line.previousLine: line-5
+    line.nextLine: null
 Error: ArgumentError: Error #2004: One of the parameters is invalid.
 	at Error$/throwError()
 	at flash.text.engine::TextBlock/recreateTextLine()

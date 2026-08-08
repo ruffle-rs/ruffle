@@ -109,6 +109,8 @@ package {
             trace("!! block.createTextLine(line4, 1000);");
             block.createTextLine(line4, 1000);
 
+            dumpInfo(block, linesList);
+
             trace("!! block.releaseLines(line3, line5);");
             try {
                 block.releaseLines(line3, line5);
