@@ -113,6 +113,38 @@ Line #5:
     line.nextLine: null
 !!!! reset all lines
 !! block.createTextLine(line4, 1000);
+First line in block: line-0
+Last line in block: line-unknown
+Line #0:
+    line.validity: valid
+    line.textBlock: [object TextBlock]
+    line.previousLine: null
+    line.nextLine: line-1
+Line #1:
+    line.validity: valid
+    line.textBlock: [object TextBlock]
+    line.previousLine: line-0
+    line.nextLine: line-2
+Line #2:
+    line.validity: valid
+    line.textBlock: [object TextBlock]
+    line.previousLine: line-1
+    line.nextLine: line-3
+Line #3:
+    line.validity: valid
+    line.textBlock: [object TextBlock]
+    line.previousLine: line-2
+    line.nextLine: line-4
+Line #4:
+    line.validity: valid
+    line.textBlock: [object TextBlock]
+    line.previousLine: line-3
+    line.nextLine: line-unknown
+Line #5:
+    line.validity: invalid
+    line.textBlock: [object TextBlock]
+    line.previousLine: null
+    line.nextLine: null
 !! block.releaseLines(line3, line5);
 ArgumentError: Error #2004: One of the parameters is invalid.
 	at flash.text.engine::TextBlock/releaseLines()
