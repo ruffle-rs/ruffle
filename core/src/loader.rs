@@ -1396,7 +1396,7 @@ pub fn load_sound_avm1<'gc>(
                 .map_err(|e| e.error)
                 .and_then(|(body, _, _, _)| {
                     let handle = activation.context.audio.register_mp3(&body)?;
-                    sound.load_sound(&mut activation, sound_object, handle);
+                    sound.set_sound(&mut activation, sound_object, Some(handle));
                     sound.set_duration(Some(0));
                     sound.load_id3(&mut activation, sound_object, &body)?;
                     let duration = activation

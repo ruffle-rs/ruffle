@@ -4,8 +4,7 @@ use std::cell::Cell;
 use std::fmt;
 use std::io::Cursor;
 
-use gc_arena::barrier::unlock;
-use gc_arena::{Collect, Gc, Mutation, RefLock};
+use gc_arena::{Collect, Gc, Mutation};
 use id3::Tag;
 use ruffle_macros::istr;
 
@@ -18,37 +17,11 @@ use crate::avm1::{ArrayBuilder, Attribute, ExecutionReason, NativeObject, Object
 use crate::backend::audio::{SoundHandle, SoundInstanceHandle};
 use crate::backend::navigator::Request;
 use crate::character::Character;
-use crate::context::UpdateContext;
 use crate::display_object::{DisplayObject, SoundTransform, TDisplayObject};
 use crate::string::AvmString;
 use crate::{avm_warn, avm1_stub};
 
-#[derive(Debug, Collect)]
-#[collect(no_drop)]
-struct QueuedPlay<'gc> {
-    sound_object: Object<'gc>,
-    start_offset: f64,
-    loops: u16,
-}
-
-#[derive(Debug, Collect)]
-#[collect(no_drop)]
-enum SoundState<'gc> {
-    /// Empty sound object, no sound playback allowed.
-    Empty,
-
-    /// Sound is loading, plays can be queued.
-    Loading { queued_plays: Vec<QueuedPlay<'gc>> },
-
-    /// Sound is loaded, plays can be started immediately.
-    Loaded {
-        /// The sound that is attached to this object.
-        #[collect(require_static)]
-        sound: SoundHandle,
-    },
-}
-
-/// A `Sound` object that is tied to a sound from the `AudioBackend``.
+/// A `Sound` object that is tied to a sound from the `AudioBackend`.
 #[derive(Clone, Copy, Collect)]
 #[collect(no_drop)]
 pub struct Sound<'gc>(Gc<'gc, SoundData<'gc>>);
@@ -56,7 +29,8 @@ pub struct Sound<'gc>(Gc<'gc, SoundData<'gc>>);
 #[derive(Collect)]
 #[collect(no_drop)]
 struct SoundData<'gc> {
-    state: RefLock<SoundState<'gc>>,
+    /// The sound that is attached to this object.
+    sound: Cell<Option<SoundHandle>>,
 
     /// The instance of the last played sound on this object.
     sound_instance: Cell<Option<SoundInstanceHandle>>,
@@ -82,7 +56,7 @@ impl fmt::Debug for Sound<'_> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         f.debug_struct("Sound")
             .field("ptr", &Gc::as_ptr(self.0))
-            .field("state", &self.0.state.borrow())
+            .field("sound", &self.0.sound.get())
             .field("sound_instance", &self.0.sound_instance.get())
             .field("target", &self.0.target)
             .finish()
@@ -94,7 +68,7 @@ impl<'gc> Sound<'gc> {
         Sound(Gc::new(
             mc,
             SoundData {
-                state: RefLock::new(SoundState::Empty),
+                sound: Cell::new(None),
                 sound_instance: Cell::new(None),
                 target,
                 position: Cell::new(0),
@@ -113,10 +87,41 @@ impl<'gc> Sound<'gc> {
     }
 
     pub fn sound(self) -> Option<SoundHandle> {
-        if let SoundState::Loaded { sound } = *self.0.state.borrow() {
-            Some(sound)
-        } else {
-            None
+        self.0.sound.get()
+    }
+
+    pub fn set_sound(
+        self,
+        activation: &mut Activation<'_, 'gc>,
+        sound_object: Object<'gc>,
+        sound: Option<SoundHandle>,
+    ) {
+        self.0.sound.set(sound);
+
+        // `position` and `duration` are only defined when a sound is loaded.
+        if !sound_object.has_property(activation, istr!("position"))
+            || !sound_object.has_property(activation, istr!("duration"))
+        {
+            let fn_proto = activation.prototypes().function;
+            let getter_position =
+                FunctionObject::native(position).build(activation.strings(), fn_proto, None);
+            let getter_duration =
+                FunctionObject::native(duration).build(activation.strings(), fn_proto, None);
+
+            sound_object.add_property(
+                activation.gc(),
+                istr!("position"),
+                getter_position,
+                None,
+                Attribute::DONT_ENUM | Attribute::DONT_DELETE,
+            );
+            sound_object.add_property(
+                activation.gc(),
+                istr!("duration"),
+                getter_duration,
+                None,
+                Attribute::DONT_ENUM | Attribute::DONT_DELETE,
+            );
         }
     }
 
@@ -179,100 +184,6 @@ impl<'gc> Sound<'gc> {
 
     pub fn set_is_streaming(self, is_streaming: bool) {
         self.0.is_streaming.set(is_streaming);
-    }
-
-    fn play(self, play: QueuedPlay<'gc>, activation: &mut Activation<'_, 'gc>) {
-        let write = Gc::write(activation.context.gc(), self.0);
-        let sound_handle = match &mut *unlock!(write, SoundData, state).borrow_mut() {
-            SoundState::Empty => {
-                tracing::warn!("Ignoring Sound playback, because it's not loaded.");
-                return;
-            }
-            SoundState::Loading { queued_plays } => {
-                queued_plays.push(play);
-                return;
-            }
-            SoundState::Loaded { sound } => *sound,
-        };
-
-        if self.is_streaming() {
-            // Streaming MP3s can only have a single active instance.
-            if let Some(sound_instance) = self.sound_instance() {
-                activation.context.stop_sound(sound_instance);
-            }
-        }
-
-        let owner = self.owner(activation);
-        let sound_instance = activation.context.start_sound(
-            sound_handle,
-            &swf::SoundInfo {
-                event: swf::SoundEvent::Start,
-                in_sample: if play.start_offset > 0.0 {
-                    Some((play.start_offset * 44100.0) as u32)
-                } else {
-                    None
-                },
-                out_sample: None,
-                num_loops: play.loops,
-                envelope: None,
-            },
-            None,
-            owner,
-            Some(play.sound_object),
-        );
-        if sound_instance.is_some() {
-            self.set_sound_instance(sound_instance);
-        }
-    }
-
-    fn set_is_loading(self, context: &mut UpdateContext<'gc>) {
-        // All queued plays are discarded at this point.
-        let new_data = SoundState::Loading {
-            queued_plays: Vec::new(),
-        };
-        unlock!(Gc::write(context.gc(), self.0), SoundData, state).replace(new_data);
-    }
-
-    pub fn load_sound(
-        self,
-        activation: &mut Activation<'_, 'gc>,
-        sound_object: Object<'gc>,
-        sound: SoundHandle,
-    ) {
-        let new_data = SoundState::Loaded { sound };
-        let write = Gc::write(activation.gc(), self.0);
-        let old_data = unlock!(write, SoundData, state).replace(new_data);
-
-        if let SoundState::Loading { queued_plays } = old_data {
-            for play in queued_plays {
-                self.play(play, activation);
-            }
-        }
-
-        if !sound_object.has_property(activation, istr!("position"))
-            || !sound_object.has_property(activation, istr!("duration"))
-        {
-            let fn_proto = activation.prototypes().function;
-            let getter_position =
-                FunctionObject::native(position).build(activation.strings(), fn_proto, None);
-            let getter_duration =
-                FunctionObject::native(duration).build(activation.strings(), fn_proto, None);
-
-            sound_object.add_property(
-                activation.gc(),
-                istr!("position"),
-                getter_position,
-                None,
-                Attribute::DONT_ENUM | Attribute::DONT_DELETE,
-            );
-            sound_object.add_property(
-                activation.gc(),
-                istr!("duration"),
-                getter_duration,
-                None,
-                Attribute::DONT_ENUM | Attribute::DONT_DELETE,
-            );
-        }
     }
 
     pub fn load_id3(
@@ -361,8 +272,8 @@ impl<'gc> Sound<'gc> {
 
 const PROTO_DECLS: StaticDeclarations = declare_static_properties! {
     // Note: id3 is not a built-in property. See [`Sound::load_id3`].
-    // Note: duration is defined later. See [`Sound::load_sound`].
-    // Note: position is defined later. See [`Sound::load_sound`].
+    // Note: duration is defined later. See [`Sound::set_sound`].
+    // Note: position is defined later. See [`Sound::set_sound`].
     "getPan" => method(get_pan; DONT_ENUM | DONT_DELETE | READ_ONLY);
     "getTransform" => method(get_transform; DONT_ENUM | DONT_DELETE | READ_ONLY);
     "getVolume" => method(get_volume; DONT_ENUM | DONT_DELETE | READ_ONLY);
@@ -445,7 +356,7 @@ fn attach_sound<'gc>(
             .library_for_movie_mut(movie)
             .character_by_export_name(name)
         {
-            sound.load_sound(activation, this, sound_handle);
+            sound.set_sound(activation, this, Some(sound_handle));
             sound.set_is_streaming(false);
             sound.set_duration(
                 activation
@@ -580,7 +491,6 @@ fn load_sound<'gc>(
             }
         }
         sound.set_is_streaming(is_streaming);
-        sound.set_is_loading(activation.context);
         let future = crate::loader::load_sound_avm1(
             activation.context,
             this,
@@ -728,12 +638,37 @@ pub fn start<'gc>(
 
             // TODO: Handle loops > u16::MAX.
             let loops = (loops as u16).max(1);
-            let play = QueuedPlay {
-                sound_object: this,
-                start_offset,
-                loops,
-            };
-            sound.play(play, activation);
+            if let Some(sound_handle) = sound.sound() {
+                if sound.is_streaming() {
+                    // Streaming MP3s can only have a single active instance.
+                    if let Some(sound_instance) = sound.sound_instance() {
+                        activation.context.stop_sound(sound_instance);
+                    }
+                }
+                let owner = sound.owner(activation);
+                let sound_instance = activation.context.start_sound(
+                    sound_handle,
+                    &swf::SoundInfo {
+                        event: swf::SoundEvent::Start,
+                        in_sample: if start_offset > 0.0 {
+                            Some((start_offset * 44100.0) as u32)
+                        } else {
+                            None
+                        },
+                        out_sample: None,
+                        num_loops: loops,
+                        envelope: None,
+                    },
+                    None,
+                    owner,
+                    Some(this),
+                );
+                if sound_instance.is_some() {
+                    sound.set_sound_instance(sound_instance);
+                }
+            } else {
+                avm_warn!(activation, "Sound.start: No sound is attached");
+            }
         }
     } else {
         avm_warn!(activation, "Sound.start: Invalid sound");
