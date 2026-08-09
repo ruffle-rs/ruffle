@@ -645,3 +645,61 @@ Line #5:
     line.textBlock: null
     line.previousLine: line-1
     line.nextLine: null
+!!! Created a line from block2, "block2Line" aka "line6"
+First line in block: line-0
+Last line in block: line-5
+Line #0:
+    line.validity: valid
+    line.textBlock: [object TextBlock]
+    line.previousLine: null
+    line.nextLine: line-1
+Line #1:
+    line.validity: valid
+    line.textBlock: [object TextBlock]
+    line.previousLine: line-0
+    line.nextLine: line-5
+Line #2:
+    line.validity: invalid
+    line.textBlock: null
+    line.previousLine: null
+    line.nextLine: null
+Line #3:
+    line.validity: invalid
+    line.textBlock: null
+    line.previousLine: null
+    line.nextLine: null
+Line #4:
+    line.validity: invalid
+    line.textBlock: null
+    line.previousLine: null
+    line.nextLine: null
+Line #5:
+    line.validity: invalid
+    line.textBlock: null
+    line.previousLine: line-1
+    line.nextLine: null
+Line #6:
+    line.validity: valid
+    line.textBlock: [object TextBlock]
+    line.previousLine: null
+    line.nextLine: null
+!! block.releaseLines(block2Line, null);
+TypeError: Error #2007: Parameter lastLine must be non-null.
+	at flash.text.engine::TextBlock/releaseLines()
+	at Test()
+!! block.releaseLines(null, block2Line);
+TypeError: Error #2007: Parameter firstLine must be non-null.
+	at flash.text.engine::TextBlock/releaseLines()
+	at Test()
+!! block.releaseLines(block2Line, block2Line);
+ArgumentError: Error #2004: One of the parameters is invalid.
+	at flash.text.engine::TextBlock/releaseLines()
+	at Test()
+!! block.releaseLines(block2Line, line0);
+ArgumentError: Error #2004: One of the parameters is invalid.
+	at flash.text.engine::TextBlock/releaseLines()
+	at Test()
+!! block.releaseLines(line1, block2Line);
+ArgumentError: Error #2004: One of the parameters is invalid.
+	at flash.text.engine::TextBlock/releaseLines()
+	at Test()

@@ -376,6 +376,49 @@ package {
             block.releaseLines(line2, line4);
 
             dumpInfo(block, linesList);
+
+            var block2Line:TextLine = block2.createTextLine(null, 1000);
+
+            linesList.push(block2Line);
+
+            trace("!!! Created a line from block2, \"block2Line\" aka \"line6\"");
+
+            dumpInfo(block, linesList);
+
+            trace("!! block.releaseLines(block2Line, null);");
+            try {
+                block.releaseLines(block2Line, null);
+            } catch(e:Error) {
+                trace(e.getStackTrace());
+            }
+
+            trace("!! block.releaseLines(null, block2Line);");
+            try {
+                block.releaseLines(null, block2Line);
+            } catch(e:Error) {
+                trace(e.getStackTrace());
+            }
+
+            trace("!! block.releaseLines(block2Line, block2Line);");
+            try {
+                block.releaseLines(block2Line, block2Line);
+            } catch(e:Error) {
+                trace(e.getStackTrace());
+            }
+
+            trace("!! block.releaseLines(block2Line, line0);");
+            try {
+                block.releaseLines(block2Line, line0);
+            } catch(e:Error) {
+                trace(e.getStackTrace());
+            }
+
+            trace("!! block.releaseLines(line1, block2Line);");
+            try {
+                block.releaseLines(line1, block2Line);
+            } catch(e:Error) {
+                trace(e.getStackTrace());
+            }
         }
 
         static function dumpInfo(block:TextBlock, linesList:Array):void {
