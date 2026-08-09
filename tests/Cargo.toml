@@ -19,6 +19,7 @@ imgtests = [
     "ruffle_test_framework/ruffle_video_software",
     "ruffle_test_framework/ruffle_video_external",
 ]
+freetype = ["ruffle_test_framework/freetype"]
 jpegxr = ["ruffle_test_framework/jpegxr"]
 lzma = ["ruffle_test_framework/lzma"]
 
