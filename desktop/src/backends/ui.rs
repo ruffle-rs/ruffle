@@ -183,7 +183,9 @@ impl DesktopUiBackend {
             preferred_cursor: MouseCursor::Arrow,
             font_database,
             file_picker,
-            device_font_renderer: DeviceFontRenderer::Embedded,
+            device_font_renderer: preferences
+                .device_font_renderer()
+                .unwrap_or(DeviceFontRenderer::Embedded),
             preferences,
         })
     }

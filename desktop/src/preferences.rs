@@ -3,6 +3,7 @@ mod write;
 
 pub mod storage;
 
+use crate::backends::DeviceFontRenderer;
 use crate::cli::{GameModePreference, OpenUrlMode, Opt};
 use crate::gui::ThemePreference;
 use crate::log::FilenamePattern;
@@ -229,6 +230,13 @@ impl GlobalPreferences {
             .ime_enabled
     }
 
+    pub fn device_font_renderer(&self) -> Option<DeviceFontRenderer> {
+        self.preferences
+            .lock()
+            .expect("Non-poisoned preferences")
+            .device_font_renderer
+    }
+
     pub fn recents<R>(&self, fun: impl FnOnce(&Recents) -> R) -> R {
         fun(&self.recents.lock().expect("Recents is not reentrant"))
     }
@@ -287,6 +295,7 @@ pub struct SavedGlobalPreferences {
     pub theme_preference: ThemePreference,
     pub open_url_mode: OpenUrlMode,
     pub ime_enabled: Option<bool>,
+    pub device_font_renderer: Option<DeviceFontRenderer>,
 }
 
 impl Default for SavedGlobalPreferences {
@@ -311,6 +320,7 @@ impl Default for SavedGlobalPreferences {
             theme_preference: Default::default(),
             open_url_mode: Default::default(),
             ime_enabled: None,
+            device_font_renderer: None,
         }
     }
 }
