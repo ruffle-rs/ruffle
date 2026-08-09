@@ -1,4 +1,4 @@
-use crate::avm2::error::make_error_2187;
+use crate::avm2::error::{Error2004Type, make_error_2004, make_error_2187};
 use crate::avm2::globals::slots::flash_geom_matrix_3d as matrix3d_slots;
 use crate::avm2::globals::slots::flash_geom_vector_3d as vector3d_slots;
 use crate::avm2::object::VectorObject;
@@ -23,15 +23,19 @@ enum Orientation3D {
 }
 
 /// Reads the `x`, `y`, `z` and `w` components of a `Vector3D`, or `None` if it's null.
-fn read_vector3d(value: Option<Value<'_>>) -> Option<[f64; 4]> {
-    let object = value?.as_object()?;
+fn read_vector3d(vector: Object<'_>) -> [f64; 4] {
+    [
+        vector.get_slot(vector3d_slots::X).as_f64(),
+        vector.get_slot(vector3d_slots::Y).as_f64(),
+        vector.get_slot(vector3d_slots::Z).as_f64(),
+        vector.get_slot(vector3d_slots::W).as_f64(),
+    ]
+}
 
-    Some([
-        object.get_slot(vector3d_slots::X).as_f64(),
-        object.get_slot(vector3d_slots::Y).as_f64(),
-        object.get_slot(vector3d_slots::Z).as_f64(),
-        object.get_slot(vector3d_slots::W).as_f64(),
-    ])
+/// Same as [`read_vector3d`] but accepts a value.
+fn read_vector3d_value(value: Option<Value<'_>>) -> Option<[f64; 4]> {
+    let object = value?.as_object()?;
+    Some(read_vector3d(object))
 }
 
 /// Creates a `Vector3D` with the given components.
@@ -128,6 +132,59 @@ pub fn prepend<'gc>(
     Ok(Value::Undefined)
 }
 
+/// Implements `Matrix3D.copyColumnTo`.
+pub fn copy_column_to<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Value<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+    let column = args.get_u32(0);
+    let vector3d = args.get_object(activation, 1, "vector3D")?;
+
+    if column > 3 {
+        return Err(make_error_2004(activation, Error2004Type::ArgumentError));
+    }
+
+    let raw_data = raw_data_of(this);
+    let base = column as usize * 4;
+
+    vector3d.set_slot(vector3d_slots::X, raw_data[base].into(), activation)?;
+    vector3d.set_slot(vector3d_slots::Y, raw_data[base + 1].into(), activation)?;
+    vector3d.set_slot(vector3d_slots::Z, raw_data[base + 2].into(), activation)?;
+    vector3d.set_slot(vector3d_slots::W, raw_data[base + 3].into(), activation)?;
+
+    Ok(Value::Undefined)
+}
+
+/// Implements `Matrix3D.copyColumnFrom`.
+pub fn copy_column_from<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Value<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+    let column = args.get_u32(0);
+    let vector3d = args.get_object(activation, 1, "vector3D")?;
+
+    if column > 3 {
+        return Err(make_error_2004(activation, Error2004Type::ArgumentError));
+    }
+
+    let [x, y, z, w] = read_vector3d(vector3d);
+
+    let mut raw_data = raw_data_of(this);
+    let base = column as usize * 4;
+    raw_data[base] = x;
+    raw_data[base + 1] = y;
+    raw_data[base + 2] = z;
+    raw_data[base + 3] = w;
+
+    set_raw_data(activation, this, raw_data)?;
+
+    Ok(Value::Undefined)
+}
+
 /// Implements `Matrix3D.recompose`.
 ///
 /// Based on OpenFL: https://github.com/openfl/openfl/blob/971a4c9e43b5472fd84d73920a2b7c1b3d8d9257/src/openfl/geom/Matrix3D.hx#L1437
@@ -159,9 +216,9 @@ pub fn recompose<'gc>(
 
     // A null component makes 'recompose' fail, leaving the matrix untouched.
     let (Some(translation), Some(rotation), Some(scale)) = (
-        read_vector3d(components.get_optional(0)),
-        read_vector3d(components.get_optional(1)),
-        read_vector3d(components.get_optional(2)),
+        read_vector3d_value(components.get_optional(0)),
+        read_vector3d_value(components.get_optional(1)),
+        read_vector3d_value(components.get_optional(2)),
     ) else {
         return Ok(false.into());
     };

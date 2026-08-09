@@ -318,76 +318,10 @@ package flash.geom {
         public native function recompose(components:Vector.<Vector3D>, orientationStyle:String = "eulerAngles"):Boolean;
 
         [API("674")]
-        public function copyColumnTo(column:uint, vector3D:Vector3D):void {
-            if (column > 3) {
-                throw new ArgumentError("Error #2004: One of the parameters is invalid.", 2004);
-            }
-            switch (column) {
-                case 0:
-                    vector3D.x = _rawData[0];
-                    vector3D.y = _rawData[1];
-                    vector3D.z = _rawData[2];
-                    vector3D.w = _rawData[3];
-                    break;
-
-                case 1:
-                    vector3D.x = _rawData[4];
-                    vector3D.y = _rawData[5];
-                    vector3D.z = _rawData[6];
-                    vector3D.w = _rawData[7];
-                    break;
-
-                case 2:
-                    vector3D.x = _rawData[8];
-                    vector3D.y = _rawData[9];
-                    vector3D.z = _rawData[10];
-                    vector3D.w = _rawData[11];
-                    break;
-
-                case 3:
-                    vector3D.x = _rawData[12];
-                    vector3D.y = _rawData[13];
-                    vector3D.z = _rawData[14];
-                    vector3D.w = _rawData[15];
-                    break;
-            }
-        }
+        public native function copyColumnTo(column:uint, vector3D:Vector3D):void;
 
         [API("674")]
-        public function copyColumnFrom(column:uint, vector3D:Vector3D):void {
-            if (column > 3) {
-                throw new ArgumentError("Error #2004: One of the parameters is invalid.", 2004);
-            }
-            switch (column) {
-                case 0:
-                    _rawData[0] = vector3D.x;
-                    _rawData[1] = vector3D.y;
-                    _rawData[2] = vector3D.z;
-                    _rawData[3] = vector3D.w;
-                    break;
-
-                case 1:
-                    _rawData[4] = vector3D.x;
-                    _rawData[5] = vector3D.y;
-                    _rawData[6] = vector3D.z;
-                    _rawData[7] = vector3D.w;
-                    break;
-
-                case 2:
-                    _rawData[8] = vector3D.x;
-                    _rawData[9] = vector3D.y;
-                    _rawData[10] = vector3D.z;
-                    _rawData[11] = vector3D.w;
-                    break;
-
-                case 3:
-                    _rawData[12] = vector3D.x;
-                    _rawData[13] = vector3D.y;
-                    _rawData[14] = vector3D.z;
-                    _rawData[15] = vector3D.w;
-                    break;
-            }
-        }
+        public native function copyColumnFrom(column:uint, vector3D:Vector3D):void;
 
         public native function decompose(orientationStyle:String = "eulerAngles"):Vector.<Vector3D>;
 
