@@ -630,8 +630,8 @@ mod tests {
             drawing.paths.last(),
             Some(DrawingPath::Triangles { indices, .. }) if indices == &[0, 1, 2]
         ));
-        assert_eq!(drawing.self_bounds().x_max, Twips::from_pixels(10.0));
-        assert_eq!(drawing.self_bounds().y_max, Twips::from_pixels(10.0));
+        assert_eq!(drawing.self_bounds(true).x_max, Twips::from_pixels(10.0));
+        assert_eq!(drawing.self_bounds(true).y_max, Twips::from_pixels(10.0));
         assert!(drawing.hit_test(
             Point::from_pixels(2.0, 2.0),
             &ruffle_render::matrix::Matrix::default()
