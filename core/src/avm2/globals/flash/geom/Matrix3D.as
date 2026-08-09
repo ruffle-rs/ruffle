@@ -115,47 +115,11 @@ package flash.geom {
         [API("674")]
         public native function copyRowFrom(row:uint, vector3D:Vector3D):void;
 
-        public function deltaTransformVector(v:Vector3D):Vector3D {
-            var x:Number = this._rawData[0] * v.x + this._rawData[4] * v.y + this._rawData[8] * v.z;
-            var y:Number = this._rawData[1] * v.x + this._rawData[5] * v.y + this._rawData[9] * v.z;
-            var z:Number = this._rawData[2] * v.x + this._rawData[6] * v.y + this._rawData[10] * v.z;
-            var w:Number = this._rawData[3] * v.x + this._rawData[7] * v.y + this._rawData[11] * v.z;
-            return new Vector3D(x, y, z, w);
-        }
+        public native function deltaTransformVector(vector:Vector3D):Vector3D;
 
-        public function transformVector(v:Vector3D):Vector3D {
-            var x:Number = this._rawData[0] * v.x + this._rawData[4] * v.y + this._rawData[8] * v.z + this._rawData[12];
-            var y:Number = this._rawData[1] * v.x + this._rawData[5] * v.y + this._rawData[9] * v.z + this._rawData[13];
-            var z:Number = this._rawData[2] * v.x + this._rawData[6] * v.y + this._rawData[10] * v.z + this._rawData[14];
-            var w:Number = this._rawData[3] * v.x + this._rawData[7] * v.y + this._rawData[11] * v.z + this._rawData[15];
-            return new Vector3D(x, y, z, w);
-        }
+        public native function transformVector(vector:Vector3D):Vector3D;
 
-        public function transformVectors(vin:Vector.<Number>, vout:Vector.<Number>):void {
-            if (vin == null) {
-                throw new TypeError("Error #2007: Parameter vin must be non-null.", 2007);
-            }
-            if (vout == null) {
-                throw new TypeError("Error #2007: Parameter vout must be non-null.", 2007);
-            }
-
-            var resultVecsLength:Number = Math.floor(vin.length / 3) * 3;
-            if (resultVecsLength > vout.length && vout.fixed) {
-                throw new RangeError("Error #1126: Cannot change the length of a fixed Vector.")
-            }
-
-            var result3D:Vector3D;
-            for (var i = 0; i < resultVecsLength; i += 3) {
-                result3D = transformVector(new Vector3D(vin[i], vin[i + 1], vin[i + 2]));
-                if (i <= vout.length) {
-                    vout[i] = result3D.x;
-                    vout[i + 1] = result3D.y;
-                    vout[i + 2] = result3D.z;
-                } else {
-                    vout.push(result3D.x, result3D.y, result3D.z);
-                }
-            }
-        }
+        public native function transformVectors(vin:Vector.<Number>, vout:Vector.<Number>):void;
 
         [Ruffle(NativeCallable)]
         public native function transpose():void;
