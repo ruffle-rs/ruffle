@@ -1,0 +1,19 @@
+get position basic: (13, 14, 15, 0)
+  matrix: 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16
+get position NaN x: (NaN, 2, 3, 0)
+  matrix: 1,0,0,0,0,1,0,0,0,0,1,0,NaN,2,3,1
+get position NaN y: (1, NaN, 3, 0)
+  matrix: 1,0,0,0,0,1,0,0,0,0,1,0,1,NaN,3,1
+get position NaN z: (1, 2, NaN, 0)
+  matrix: 1,0,0,0,0,1,0,0,0,0,1,0,1,2,NaN,1
+get position infinite: (Infinity, -Infinity, NaN, 0)
+  matrix: 1,0,0,0,0,1,0,0,0,0,1,0,Infinity,-Infinity,NaN,1
+get position unusual rawData[15]: (1, 2, 3, 0)
+  matrix: 1,0,0,0,0,1,0,0,0,0,1,0,1,2,3,NaN
+set position basic: 1,2,3,4,5,6,7,8,9,10,11,12,101,102,103,16
+set position w set too: 1,2,3,4,5,6,7,8,9,10,11,12,101,102,103,16
+set position NaN x: 1,2,3,4,5,6,7,8,9,10,11,12,NaN,102,103,16
+set position NaN y: 1,2,3,4,5,6,7,8,9,10,11,12,101,NaN,103,16
+set position NaN z: 1,2,3,4,5,6,7,8,9,10,11,12,101,102,NaN,16
+set position infinite: 1,2,3,4,5,6,7,8,9,10,11,12,Infinity,-Infinity,NaN,16
+set position null: 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16
