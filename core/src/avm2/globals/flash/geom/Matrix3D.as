@@ -495,104 +495,7 @@ package flash.geom {
             }
         }
 
-        public function decompose(orientationStyle:String = "eulerAngles"):Vector.<Vector3D> {
-            checkOrientation(orientationStyle);
-
-            var vec:Vector.<Vector3D> = new Vector.<Vector3D>([]);
-            // This makes a copy of this.rawData
-            var mr:Vector.<Number> = this.rawData;
-
-            var pos:Vector3D = new Vector3D(mr[12], mr[13], mr[14]);
-            mr[12] = 0;
-            mr[13] = 0;
-            mr[14] = 0;
-
-            var scale:Vector3D = new Vector3D();
-
-            scale.x = Math.sqrt(mr[0] * mr[0] + mr[1] * mr[1] + mr[2] * mr[2]);
-            scale.y = Math.sqrt(mr[4] * mr[4] + mr[5] * mr[5] + mr[6] * mr[6]);
-            scale.z = Math.sqrt(mr[8] * mr[8] + mr[9] * mr[9] + mr[10] * mr[10]);
-
-            if (mr[0] * (mr[5] * mr[10] - mr[6] * mr[9]) - mr[1] * (mr[4] * mr[10] - mr[6] * mr[8]) + mr[2] * (mr[4] * mr[9] - mr[5] * mr[8]) < 0) {
-                scale.z = -scale.z;
-            }
-
-            mr[0] /= scale.x;
-            mr[1] /= scale.x;
-            mr[2] /= scale.x;
-            mr[4] /= scale.y;
-            mr[5] /= scale.y;
-            mr[6] /= scale.y;
-            mr[8] /= scale.z;
-            mr[9] /= scale.z;
-            mr[10] /= scale.z;
-
-            var rot:Vector3D = new Vector3D();
-
-            switch (orientationStyle) {
-                case Orientation3D.AXIS_ANGLE:
-                    rot.w = Math.acos((mr[0] + mr[5] + mr[10] - 1) / 2);
-
-                    var len = Math.sqrt((mr[6] - mr[9]) * (mr[6] - mr[9]) + (mr[8] - mr[2]) * (mr[8] - mr[2]) + (mr[1] - mr[4]) * (mr[1] - mr[4]));
-
-                    if (len != 0) {
-                        rot.x = (mr[6] - mr[9]) / len;
-                        rot.y = (mr[8] - mr[2]) / len;
-                        rot.z = (mr[1] - mr[4]) / len;
-                    } else {
-                        rot.x = rot.y = rot.z = 0;
-                    }
-                    break;
-
-                case Orientation3D.QUATERNION:
-                    var tr = mr[0] + mr[5] + mr[10];
-
-                    if (tr > 0) {
-                        rot.w = Math.sqrt(1 + tr) / 2;
-
-                        rot.x = (mr[6] - mr[9]) / (4 * rot.w);
-                        rot.y = (mr[8] - mr[2]) / (4 * rot.w);
-                        rot.z = (mr[1] - mr[4]) / (4 * rot.w);
-                    } else if ((mr[0] > mr[5]) && (mr[0] > mr[10])) {
-                        rot.x = Math.sqrt(1 + mr[0] - mr[5] - mr[10]) / 2;
-
-                        rot.w = (mr[6] - mr[9]) / (4 * rot.x);
-                        rot.y = (mr[1] + mr[4]) / (4 * rot.x);
-                        rot.z = (mr[8] + mr[2]) / (4 * rot.x);
-                    } else if (mr[5] > mr[10]) {
-                        rot.y = Math.sqrt(1 + mr[5] - mr[0] - mr[10]) / 2;
-
-                        rot.x = (mr[1] + mr[4]) / (4 * rot.y);
-                        rot.w = (mr[8] - mr[2]) / (4 * rot.y);
-                        rot.z = (mr[6] + mr[9]) / (4 * rot.y);
-                    } else {
-                        rot.z = Math.sqrt(1 + mr[10] - mr[0] - mr[5]) / 2;
-
-                        rot.x = (mr[8] + mr[2]) / (4 * rot.z);
-                        rot.y = (mr[6] + mr[9]) / (4 * rot.z);
-                        rot.w = (mr[1] - mr[4]) / (4 * rot.z);
-                    }
-                    break;
-
-                case Orientation3D.EULER_ANGLES:
-                    rot.y = Math.asin(-mr[2]);
-
-                    if (mr[2] != 1 && mr[2] != -1) {
-                        rot.x = Math.atan2(mr[6], mr[10]);
-                        rot.z = Math.atan2(mr[1], mr[0]);
-                    } else {
-                        rot.z = 0;
-                        rot.x = Math.atan2(mr[4], mr[5]);
-                    }
-                    break;
-            }
-
-            vec.push(pos);
-            vec.push(rot);
-            vec.push(scale);
-
-            return vec;
-        }
+        public native function decompose(orientationStyle:String = "eulerAngles"):Vector.<Vector3D>;
 
         public function invert():Boolean {
             var d:Number = this.determinant;
@@ -648,13 +551,5 @@ package flash.geom {
                 + (_rawData[8] * _rawData[13] - _rawData[12] * _rawData[9]) * (_rawData[2] * _rawData[7] - _rawData[6] * _rawData[3]));
         }
 
-    }
-}
-
-import flash.geom.Orientation3D;
-
-function checkOrientation(orientationStyle:String) {
-    if (!(orientationStyle == Orientation3D.AXIS_ANGLE || orientationStyle == Orientation3D.EULER_ANGLES || orientationStyle == Orientation3D.QUATERNION)) {
-        throw new Error("Error #2187: Invalid orientation style " + orientationStyle + ".  Value must be one of 'Orientation3D.EULER_ANGLES', 'Orientation3D.AXIS_ANGLE', or 'Orientation3D.QUATERNION'.", 2187);
     }
 }
