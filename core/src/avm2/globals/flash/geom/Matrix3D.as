@@ -109,75 +109,11 @@ package flash.geom {
             }
         }
 
-        // Based on https://github.com/openfl/openfl/blob/develop/src/openfl/geom/Matrix3D.hx#L542C1-L573
         [API("674")]
-        public function copyRowTo(row:uint, vector3D:Vector3D):void {
-            if (row > 3) {
-                throw new ArgumentError("Error #2004: One of the parameters is invalid.", 2004);
-            }
+        public native function copyRowTo(row:uint, vector3D:Vector3D):void;
 
-            switch (row) {
-                case 0:
-                    vector3D.x = _rawData[0];
-                    vector3D.y = _rawData[4];
-                    vector3D.z = _rawData[8];
-                    vector3D.w = _rawData[12];
-                    break;
-                case 1:
-                    vector3D.x = _rawData[1];
-                    vector3D.y = _rawData[5];
-                    vector3D.z = _rawData[9];
-                    vector3D.w = _rawData[13];
-                    break;
-                case 2:
-                    vector3D.x = _rawData[2];
-                    vector3D.y = _rawData[6];
-                    vector3D.z = _rawData[10];
-                    vector3D.w = _rawData[14];
-                    break;
-                case 3:
-                    vector3D.x = _rawData[3];
-                    vector3D.y = _rawData[7];
-                    vector3D.z = _rawData[11];
-                    vector3D.w = _rawData[15];
-                    break;
-            }
-        }
-
-        // Based on https://github.com/openfl/openfl/blob/develop/src/openfl/geom/Matrix3D.hx#L504-L534
         [API("674")]
-        public function copyRowFrom(row:uint, vector3D:Vector3D):void {
-            if (row > 3) {
-                throw new ArgumentError("Error #2004: One of the parameters is invalid.", 2004);
-            }
-
-            switch (row) {
-                case 0:
-                    _rawData[0] = vector3D.x;
-                    _rawData[4] = vector3D.y;
-                    _rawData[8] = vector3D.z;
-                    _rawData[12] = vector3D.w;
-                    break;
-                case 1:
-                    _rawData[1] = vector3D.x;
-                    _rawData[5] = vector3D.y;
-                    _rawData[9] = vector3D.z;
-                    _rawData[13] = vector3D.w;
-                    break;
-                case 2:
-                    _rawData[2] = vector3D.x;
-                    _rawData[6] = vector3D.y;
-                    _rawData[10] = vector3D.z;
-                    _rawData[14] = vector3D.w;
-                    break;
-                case 3:
-                    _rawData[3] = vector3D.x;
-                    _rawData[7] = vector3D.y;
-                    _rawData[11] = vector3D.z;
-                    _rawData[15] = vector3D.w;
-                    break;
-            }
-        }
+        public native function copyRowFrom(row:uint, vector3D:Vector3D):void;
 
         public function deltaTransformVector(v:Vector3D):Vector3D {
             var x:Number = this._rawData[0] * v.x + this._rawData[4] * v.y + this._rawData[8] * v.z;
