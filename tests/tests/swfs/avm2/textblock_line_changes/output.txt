@@ -107,6 +107,14 @@ Line #4:
     line.textBlock: [object TextBlock]
     line.previousLine: line-1
     line.nextLine: null
+Calling releaseLines(line1, line2)
+ArgumentError: Error #2004: One of the parameters is invalid.
+	at flash.text.engine::TextBlock/releaseLines()
+	at Test()
+Calling releaseLines(line2, line3)
+ArgumentError: Error #2004: One of the parameters is invalid.
+	at flash.text.engine::TextBlock/releaseLines()
+	at Test()
 First line in block: line-0
 Last line in block: line-4
 Line #0:
@@ -189,6 +197,69 @@ Line #4:
     line.textBlock: null
     line.previousLine: line-1
     line.nextLine: null
+First line in block: line-0
+Last line in block: line-4
+Line #0:
+    line.validity: valid
+    line.textBlock: [object TextBlock]
+    line.previousLine: null
+    line.nextLine: line-1
+Line #1:
+    line.validity: valid
+    line.textBlock: [object TextBlock]
+    line.previousLine: line-0
+    line.nextLine: line-2
+Line #2:
+    line.validity: valid
+    line.textBlock: [object TextBlock]
+    line.previousLine: line-1
+    line.nextLine: line-3
+Line #3:
+    line.validity: valid
+    line.textBlock: [object TextBlock]
+    line.previousLine: line-2
+    line.nextLine: line-4
+Line #4:
+    line.validity: valid
+    line.textBlock: [object TextBlock]
+    line.previousLine: line-3
+    line.nextLine: null
+Take two!
+First line in block: line-0
+Last line in block: line-4
+Line #0:
+    line.validity: valid
+    line.textBlock: [object TextBlock]
+    line.previousLine: null
+    line.nextLine: line-1
+Line #1:
+    line.validity: valid
+    line.textBlock: [object TextBlock]
+    line.previousLine: line-0
+    line.nextLine: line-4
+Line #2:
+    line.validity: invalid
+    line.textBlock: [object TextBlock]
+    line.previousLine: null
+    line.nextLine: line-3
+Line #3:
+    line.validity: invalid
+    line.textBlock: [object TextBlock]
+    line.previousLine: line-2
+    line.nextLine: null
+Line #4:
+    line.validity: invalid
+    line.textBlock: [object TextBlock]
+    line.previousLine: line-1
+    line.nextLine: null
+Calling releaseLines(line1, line2)
+ArgumentError: Error #2004: One of the parameters is invalid.
+	at flash.text.engine::TextBlock/releaseLines()
+	at Test()
+Calling releaseLines(line2, line3)
+ArgumentError: Error #2004: One of the parameters is invalid.
+	at flash.text.engine::TextBlock/releaseLines()
+	at Test()
 First line in block: line-0
 Last line in block: line-4
 Line #0:
