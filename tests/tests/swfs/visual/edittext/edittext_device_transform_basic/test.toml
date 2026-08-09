@@ -1,13 +1,5 @@
 num_ticks = 1
 
-[[image_comparisons.output.checks]]
-tolerance = 0
-max_outliers = 90
-
-[[image_comparisons.output.checks]]
-tolerance = 128
-max_outliers = 14
-
 [player_options]
 with_renderer = { optional = true, quality = "high" }
 
@@ -16,3 +8,32 @@ family = "TestFont"
 path = "TestFont.ttf"
 bold = false
 italic = false
+
+[subtests.embedded.player_options]
+device_font_renderer = "embedded"
+
+[[subtests.embedded.image_comparisons.output.checks]]
+tolerance = 0
+max_outliers = 90
+
+[[subtests.embedded.image_comparisons.output.checks]]
+tolerance = 128
+max_outliers = 14
+
+[subtests.freetype]
+output_path = "output.freetype.txt"
+
+# TODO It currently fails because glyph scaling is not implemented properly.
+known_failure = true
+
+[subtests.freetype.player_options]
+device_font_renderer = "freetype"
+
+[[subtests.freetype.image_comparisons.output.checks]]
+tolerance = 0
+# TODO This is so high because glyph scaling is not implemented properly.
+max_outliers = 550
+
+[[subtests.freetype.image_comparisons.output.checks]]
+tolerance = 128
+max_outliers = 14
