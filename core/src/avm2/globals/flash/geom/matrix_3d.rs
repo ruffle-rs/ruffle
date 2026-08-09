@@ -132,6 +132,73 @@ pub fn prepend<'gc>(
     Ok(Value::Undefined)
 }
 
+/// Implements `Matrix3D.appendRotation`.
+///
+/// Based on OpenFL: https://github.com/openfl/openfl/blob/971a4c9e43b5472fd84d73920a2b7c1b3d8d9257/src/openfl/geom/Matrix3D.hx
+pub fn append_rotation<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Value<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+    let degrees = args.get_f64(0);
+    let axis = args.get_object(activation, 1, "axis")?;
+    let pivot_point = args.try_get_object(2);
+
+    let [tx, ty, tz, _] = if let Some(pivot_point) = pivot_point {
+        read_vector3d(pivot_point)
+    } else {
+        [0.0, 0.0, 0.0, 0.0]
+    };
+
+    let radian = degrees * std::f64::consts::PI / 180.0;
+    let cos = radian.cos();
+    let sin = radian.sin();
+
+    let [mut x, mut y, mut z, _] = read_vector3d(axis);
+    let mut x2 = x * x;
+    let mut y2 = y * y;
+    let mut z2 = z * z;
+    let ls = x2 + y2 + z2;
+
+    if ls != 0.0 {
+        let l = ls.sqrt();
+        x /= l;
+        y /= l;
+        z /= l;
+        x2 /= ls;
+        y2 /= ls;
+        z2 /= ls;
+    }
+
+    let ccos = 1.0 - cos;
+
+    #[rustfmt::skip]
+    let m: RawData = [
+        x2 + (y2 + z2) * cos,
+        x * y * ccos + z * sin,
+        x * z * ccos - y * sin,
+        0.0,
+        x * y * ccos - z * sin,
+        y2 + (x2 + z2) * cos,
+        y * z * ccos + x * sin,
+        0.0,
+        x * z * ccos + y * sin,
+        y * z * ccos - x * sin,
+        z2 + (x2 + y2) * cos,
+        0.0,
+        (tx * (y2 + z2) - x * (ty * y + tz * z)) * ccos + (ty * z - tz * y) * sin,
+        (ty * (x2 + z2) - y * (tx * x + tz * z)) * ccos + (tz * x - tx * z) * sin,
+        (tz * (x2 + y2) - z * (tx * x + ty * y)) * ccos + (tx * y - ty * x) * sin,
+        1.0,
+    ];
+
+    let result = multiply(&m, &raw_data_of(this));
+    set_raw_data(activation, this, result)?;
+
+    Ok(Value::Undefined)
+}
+
 /// Implements `Matrix3D.copyColumnTo`.
 pub fn copy_column_to<'gc>(
     activation: &mut Activation<'_, 'gc>,
