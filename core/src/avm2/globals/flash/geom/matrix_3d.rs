@@ -185,6 +185,25 @@ pub fn copy_column_from<'gc>(
     Ok(Value::Undefined)
 }
 
+/// Implements `Matrix3D.determinant`'s getter.
+pub fn get_determinant<'gc>(
+    _activation: &mut Activation<'_, 'gc>,
+    this: Value<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+    let mr = raw_data_of(this);
+
+    let determinant = (mr[0] * mr[5] - mr[4] * mr[1]) * (mr[10] * mr[15] - mr[14] * mr[11])
+        - (mr[0] * mr[9] - mr[8] * mr[1]) * (mr[6] * mr[15] - mr[14] * mr[7])
+        + (mr[0] * mr[13] - mr[12] * mr[1]) * (mr[6] * mr[11] - mr[10] * mr[7])
+        + (mr[4] * mr[9] - mr[8] * mr[5]) * (mr[2] * mr[15] - mr[14] * mr[3])
+        - (mr[4] * mr[13] - mr[12] * mr[5]) * (mr[2] * mr[11] - mr[10] * mr[3])
+        + (mr[8] * mr[13] - mr[12] * mr[9]) * (mr[2] * mr[7] - mr[6] * mr[3]);
+
+    Ok(determinant.into())
+}
+
 /// Implements `Matrix3D.recompose`.
 ///
 /// Based on OpenFL: https://github.com/openfl/openfl/blob/971a4c9e43b5472fd84d73920a2b7c1b3d8d9257/src/openfl/geom/Matrix3D.hx#L1437

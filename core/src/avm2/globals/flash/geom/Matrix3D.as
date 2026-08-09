@@ -370,14 +370,7 @@ package flash.geom {
             return invertable;
         }
 
-        public function get determinant():Number {
-            return 1 * ((_rawData[0] * _rawData[5] - _rawData[4] * _rawData[1]) * (_rawData[10] * _rawData[15] - _rawData[14] * _rawData[11])
-                - (_rawData[0] * _rawData[9] - _rawData[8] * _rawData[1]) * (_rawData[6] * _rawData[15] - _rawData[14] * _rawData[7])
-                + (_rawData[0] * _rawData[13] - _rawData[12] * _rawData[1]) * (_rawData[6] * _rawData[11] - _rawData[10] * _rawData[7])
-                + (_rawData[4] * _rawData[9] - _rawData[8] * _rawData[5]) * (_rawData[2] * _rawData[15] - _rawData[14] * _rawData[3])
-                - (_rawData[4] * _rawData[13] - _rawData[12] * _rawData[5]) * (_rawData[2] * _rawData[11] - _rawData[10] * _rawData[3])
-                + (_rawData[8] * _rawData[13] - _rawData[12] * _rawData[9]) * (_rawData[2] * _rawData[7] - _rawData[6] * _rawData[3]));
-        }
+        public native function get determinant():Number;
 
     }
 }
