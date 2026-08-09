@@ -260,15 +260,8 @@ package flash.geom {
             this.prepend(m);
         }
 
-        public function get position():Vector3D {
-            return new Vector3D(_rawData[12], _rawData[13], _rawData[14]);
-        }
-
-        public function set position(val:Vector3D):void {
-            this._rawData[12] = val.x;
-            this._rawData[13] = val.y;
-            this._rawData[14] = val.z;
-        }
+        public native function get position():Vector3D;
+        public native function set position(val:Vector3D):void;
 
         public native function prepend(rhs:Matrix3D):void;
 
