@@ -1,0 +1,52 @@
+deltaTransformVector basic: (38, 44, 50, 56)
+deltaTransformVector w set: (38, 44, 50, 56)
+deltaTransformVector NaN x: (NaN, NaN, NaN, NaN)
+deltaTransformVector NaN y: (NaN, NaN, NaN, NaN)
+deltaTransformVector NaN z: (NaN, NaN, NaN, NaN)
+deltaTransformVector infinite: (NaN, NaN, NaN, NaN)
+deltaTransformVector null threw: TypeError: Error #2007: Parameter vector must be non-null.
+	at flash.geom::Matrix3D/deltaTransformVector()
+	at Test/testDelta()
+	at Test/testDeltaTransformVector()
+	at Test()
+transformVector basic: (51, 58, 65, 72)
+transformVector w set: (51, 58, 65, 72)
+transformVector NaN x: (NaN, NaN, NaN, NaN)
+transformVector NaN y: (NaN, NaN, NaN, NaN)
+transformVector NaN z: (NaN, NaN, NaN, NaN)
+transformVector infinite: (NaN, NaN, NaN, NaN)
+transformVector null threw: TypeError: Error #2007: Parameter vector must be non-null.
+	at flash.geom::Matrix3D/transformVector()
+	at Test/testTransform()
+	at Test/testTransformVector()
+	at Test()
+transformVectors vin length is a multiple of 3: vout = 51,58,65,96,112,128, fixed = false, length = 6
+transformVectors vin length is not a multiple of 3: vout = 51,58,65, fixed = false, length = 3
+transformVectors empty vout: vout = 51,58,65,96,112,128, fixed = false, length = 6
+transformVectors vout longer than vin: vout = 51,58,65,104,105, fixed = false, length = 5
+transformVectors fixed vout, same length as vin: vout = 51,58,65,96,112,128, fixed = true, length = 6
+transformVectors fixed vout, longer than vin: vout = 51,58,65,0,0,0, fixed = true, length = 6
+transformVectors fixed vout, shorter than vin threw: RangeError: Error #1126: Cannot change the length of a fixed Vector.
+	at flash.geom::Matrix3D/transformVectors()
+	at Test/testVectorsWith()
+	at Test/testVectors()
+	at Test/testTransformVectors()
+	at Test()
+transformVectors empty vin: vout = 101,102,103, fixed = false, length = 3
+transformVectors special values: vout = NaN,NaN,NaN, fixed = false, length = 3
+transformVectors vin and vout are the same object: vout = 51,58,65,96,112,128, fixed = false, length = 6
+transformVectors null vin threw: TypeError: Error #2007: Parameter vin must be non-null.
+	at flash.geom::Matrix3D/transformVectors()
+	at Test/testVectorsNull()
+	at Test/testTransformVectors()
+	at Test()
+transformVectors null vout threw: TypeError: Error #2007: Parameter vout must be non-null.
+	at flash.geom::Matrix3D/transformVectors()
+	at Test/testVectorsNull()
+	at Test/testTransformVectors()
+	at Test()
+transformVectors null both threw: TypeError: Error #2007: Parameter vin must be non-null.
+	at flash.geom::Matrix3D/transformVectors()
+	at Test/testVectorsNull()
+	at Test/testTransformVectors()
+	at Test()
