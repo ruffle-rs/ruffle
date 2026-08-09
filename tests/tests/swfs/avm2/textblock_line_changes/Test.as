@@ -46,6 +46,26 @@ package {
 
             dumpInfo(block, linesList);
 
+            // At this point, `block` is actually maintaining *two* double-linked
+            // lists of lines- line0, line1, and line4 are in one linked list,
+            // while line2 and line3 are in another linked list. Let's see what
+            // happens if we try to releaseLines(line1, line2). They're in the
+            // same text block, but not in the same linked list.
+
+            trace("Calling releaseLines(line1, line2)");
+            try {
+                block.releaseLines(line1, line2);
+            } catch(e:Error) {
+                trace(e.getStackTrace());
+            }
+
+            trace("Calling releaseLines(line2, line3)");
+            try {
+                block.releaseLines(line2, line3);
+            } catch(e:Error) {
+                trace(e.getStackTrace());
+            }
+
             line3.validity = "static";
 
             dumpInfo(block, linesList);
@@ -59,6 +79,46 @@ package {
             line4.validity = "static";
 
             dumpInfo(block, linesList);
+
+            // Reset state
+            block.recreateTextLine(line0, null, 1000);
+            line0.y = 20;
+
+            block.recreateTextLine(line1, line0, 1000);
+            line1.y = 40;
+
+            block.recreateTextLine(line2, line1, 1000);
+            line2.y = 60;
+
+            block.recreateTextLine(line3, line2, 1000);
+            line3.y = 80;
+
+            block.recreateTextLine(line4, line3, 1000);
+            line4.y = 100;
+
+            dumpInfo(block, linesList);
+
+            trace("Take two!");
+
+            // Once again, cause the TextBlock to contain two separate
+            // doubly-linked lists.
+            var recreateResult:TextLine = block.recreateTextLine(line1, line0, 1000);
+
+            dumpInfo(block, linesList);
+
+            trace("Calling releaseLines(line1, line2)");
+            try {
+                block.releaseLines(line1, line2);
+            } catch(e:Error) {
+                trace(e.getStackTrace());
+            }
+
+            trace("Calling releaseLines(line2, line3)");
+            try {
+                block.releaseLines(line2, line3);
+            } catch(e:Error) {
+                trace(e.getStackTrace());
+            }
 
             // Reset state
             block.recreateTextLine(line0, null, 1000);
