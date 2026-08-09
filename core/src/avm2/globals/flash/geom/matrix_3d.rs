@@ -223,6 +223,27 @@ pub fn set_position<'gc>(
     Ok(Value::Undefined)
 }
 
+/// Implements `Matrix3D.transpose`.
+pub fn transpose<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Value<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+    let mut mr = raw_data_of(this);
+
+    mr.swap(1, 4);
+    mr.swap(2, 8);
+    mr.swap(3, 12);
+    mr.swap(6, 9);
+    mr.swap(7, 13);
+    mr.swap(11, 14);
+
+    set_raw_data(activation, this, mr)?;
+
+    Ok(Value::Undefined)
+}
+
 /// Computes the determinant of a matrix.
 fn determinant_of(mr: &RawData) -> f64 {
     (mr[0] * mr[5] - mr[4] * mr[1]) * (mr[10] * mr[15] - mr[14] * mr[11])

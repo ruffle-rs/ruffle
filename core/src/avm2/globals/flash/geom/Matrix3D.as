@@ -222,22 +222,7 @@ package flash.geom {
         }
 
         [Ruffle(NativeCallable)]
-        public function transpose():void {
-            // This makes a copy of this.rawData
-            var oRawData:Vector.<Number> = this.rawData;
-            this._rawData[1] = oRawData[4];
-            this._rawData[2] = oRawData[8];
-            this._rawData[3] = oRawData[12];
-            this._rawData[4] = oRawData[1];
-            this._rawData[6] = oRawData[9];
-            this._rawData[7] = oRawData[13];
-            this._rawData[8] = oRawData[2];
-            this._rawData[9] = oRawData[6];
-            this._rawData[11] = oRawData[14];
-            this._rawData[12] = oRawData[3];
-            this._rawData[13] = oRawData[7];
-            this._rawData[14] = oRawData[11];
-        }
+        public native function transpose():void;
 
         public native function append(lhs:Matrix3D):void;
 
