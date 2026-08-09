@@ -34,6 +34,21 @@ fn read_vector3d(value: Option<Value<'_>>) -> Option<[f64; 4]> {
     ])
 }
 
+/// Creates a `Vector3D` with the given components.
+fn vector3d_to_object<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    components: [f64; 4],
+) -> Value<'gc> {
+    let [x, y, z, w] = components;
+
+    activation
+        .avm2()
+        .classes()
+        .vector3d
+        .construct(activation, &[x.into(), y.into(), z.into(), w.into()])
+        .unwrap()
+}
+
 /// Multiplies two matrices.
 fn multiply(lhs: &RawData, rhs: &RawData) -> RawData {
     let mut result = [0.0; 16];
@@ -48,6 +63,22 @@ fn multiply(lhs: &RawData, rhs: &RawData) -> RawData {
     }
 
     result
+}
+
+/// Reads the `_rawData` of `this`.
+fn raw_data_of(this: Object<'_>) -> RawData {
+    let raw_data = this
+        .get_slot(matrix3d_slots::_RAW_DATA)
+        .as_object()
+        .expect("rawData is never null");
+    let raw_data = raw_data.as_vector_storage().expect("rawData is a Vector");
+
+    std::array::from_fn(|i| {
+        raw_data
+            .get_optional(i)
+            .map(|value| value.as_f64())
+            .unwrap_or(f64::NAN)
+    })
 }
 
 /// Stores `raw_data` as the new `_rawData` of `this`.
@@ -179,4 +210,124 @@ pub fn recompose<'gc>(
     set_raw_data(activation, this, raw_data)?;
 
     Ok(true.into())
+}
+
+/// Implements `Matrix3D.decompose`.
+///
+/// Based on OpenFL: https://github.com/openfl/openfl/blob/971a4c9e43b5472fd84d73920a2b7c1b3d8d9257/src/openfl/geom/Matrix3D.hx#L437
+pub fn decompose<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Value<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
+    let orientation = args.get_string_non_null(activation, 0, "orientationStyle")?;
+    let Some(orientation) = Orientation3D::from_avm2_str(&orientation) else {
+        return Err(make_error_2187(activation, orientation));
+    };
+
+    let mut mr = raw_data_of(this);
+
+    let translation = [mr[12], mr[13], mr[14], 0.0];
+
+    let scale_x = (mr[0] * mr[0] + mr[1] * mr[1] + mr[2] * mr[2]).sqrt();
+    let scale_y = (mr[4] * mr[4] + mr[5] * mr[5] + mr[6] * mr[6]).sqrt();
+    let mut scale_z = (mr[8] * mr[8] + mr[9] * mr[9] + mr[10] * mr[10]).sqrt();
+
+    if mr[0] * (mr[5] * mr[10] - mr[6] * mr[9]) - mr[1] * (mr[4] * mr[10] - mr[6] * mr[8])
+        + mr[2] * (mr[4] * mr[9] - mr[5] * mr[8])
+        < 0.0
+    {
+        scale_z = -scale_z;
+    }
+
+    mr[0] /= scale_x;
+    mr[1] /= scale_x;
+    mr[2] /= scale_x;
+    mr[4] /= scale_y;
+    mr[5] /= scale_y;
+    mr[6] /= scale_y;
+    mr[8] /= scale_z;
+    mr[9] /= scale_z;
+    mr[10] /= scale_z;
+
+    let mut rotation = [0.0; 4];
+
+    match orientation {
+        Orientation3D::AxisAngle => {
+            rotation[3] = ((mr[0] + mr[5] + mr[10] - 1.0) / 2.0).acos();
+
+            let length = ((mr[6] - mr[9]) * (mr[6] - mr[9])
+                + (mr[8] - mr[2]) * (mr[8] - mr[2])
+                + (mr[1] - mr[4]) * (mr[1] - mr[4]))
+                .sqrt();
+
+            if length != 0.0 {
+                rotation[0] = (mr[6] - mr[9]) / length;
+                rotation[1] = (mr[8] - mr[2]) / length;
+                rotation[2] = (mr[1] - mr[4]) / length;
+            }
+        }
+
+        Orientation3D::Quaternion => {
+            let trace = mr[0] + mr[5] + mr[10];
+
+            if trace > 0.0 {
+                rotation[3] = (1.0 + trace).sqrt() / 2.0;
+
+                rotation[0] = (mr[6] - mr[9]) / (4.0 * rotation[3]);
+                rotation[1] = (mr[8] - mr[2]) / (4.0 * rotation[3]);
+                rotation[2] = (mr[1] - mr[4]) / (4.0 * rotation[3]);
+            } else if mr[0] > mr[5] && mr[0] > mr[10] {
+                rotation[0] = (1.0 + mr[0] - mr[5] - mr[10]).sqrt() / 2.0;
+
+                rotation[3] = (mr[6] - mr[9]) / (4.0 * rotation[0]);
+                rotation[1] = (mr[1] + mr[4]) / (4.0 * rotation[0]);
+                rotation[2] = (mr[8] + mr[2]) / (4.0 * rotation[0]);
+            } else if mr[5] > mr[10] {
+                rotation[1] = (1.0 + mr[5] - mr[0] - mr[10]).sqrt() / 2.0;
+
+                rotation[0] = (mr[1] + mr[4]) / (4.0 * rotation[1]);
+                rotation[3] = (mr[8] - mr[2]) / (4.0 * rotation[1]);
+                rotation[2] = (mr[6] + mr[9]) / (4.0 * rotation[1]);
+            } else {
+                rotation[2] = (1.0 + mr[10] - mr[0] - mr[5]).sqrt() / 2.0;
+
+                rotation[0] = (mr[8] + mr[2]) / (4.0 * rotation[2]);
+                rotation[1] = (mr[6] + mr[9]) / (4.0 * rotation[2]);
+                rotation[3] = (mr[1] - mr[4]) / (4.0 * rotation[2]);
+            }
+        }
+
+        Orientation3D::EulerAngles => {
+            rotation[1] = (-mr[2]).asin();
+
+            if mr[2] != 1.0 && mr[2] != -1.0 {
+                rotation[0] = mr[6].atan2(mr[10]);
+                rotation[2] = mr[1].atan2(mr[0]);
+            } else {
+                rotation[2] = 0.0;
+                rotation[0] = mr[4].atan2(mr[5]);
+            }
+        }
+    }
+
+    // NOTE: It looks like Flash Player returns uninitialized values here when
+    // it doesn't write to a certain component, e.g. rotation.w in case of
+    // "eulerAngles". Take this into account when testing.
+    let components = [
+        vector3d_to_object(activation, translation),
+        vector3d_to_object(activation, rotation),
+        vector3d_to_object(activation, [scale_x, scale_y, scale_z, 0.0]),
+    ];
+
+    let vector3d = activation
+        .avm2()
+        .classes()
+        .vector3d
+        .inner_class_definition();
+    let storage = VectorStorage::from_values(components.to_vec(), false, Some(vector3d));
+
+    Ok(VectorObject::from_vector(storage, activation).into())
 }
