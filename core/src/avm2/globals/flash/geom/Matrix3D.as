@@ -43,54 +43,7 @@ package flash.geom {
             this._rawData[14] += z;
         }
 
-        public function appendRotation(degrees:Number, axis:Vector3D, pivotPoint:Vector3D = null):void {
-            var tx:Number, ty:Number, tz:Number;
-            tx = ty = tz = 0;
-
-            if (pivotPoint != null) {
-                tx = pivotPoint.x;
-                ty = pivotPoint.y;
-                tz = pivotPoint.z;
-            }
-            var radian:Number = degrees * Math.PI / 180;
-            var cos:Number = Math.cos(radian);
-            var sin:Number = Math.sin(radian);
-            var x:Number = axis.x;
-            var y:Number = axis.y;
-            var z:Number = axis.z;
-            var x2:Number = x * x;
-            var y2:Number = y * y;
-            var z2:Number = z * z;
-            var ls:Number = x2 + y2 + z2;
-            if (ls != 0) {
-                var l:Number = Math.sqrt(ls);
-                x /= l;
-                y /= l;
-                z /= l;
-                x2 /= ls;
-                y2 /= ls;
-                z2 /= ls;
-            }
-            var ccos:Number = 1 - cos;
-            var m:Matrix3D = new Matrix3D();
-
-            // Modify the matrix's data in-place
-            var d:Vector.<Number> = m._rawData;
-            d[0] = x2 + (y2 + z2) * cos;
-            d[1] = x * y * ccos + z * sin;
-            d[2] = x * z * ccos - y * sin;
-            d[4] = x * y * ccos - z * sin;
-            d[5] = y2 + (x2 + z2) * cos;
-            d[6] = y * z * ccos + x * sin;
-            d[8] = x * z * ccos + y * sin;
-            d[9] = y * z * ccos - x * sin;
-            d[10] = z2 + (x2 + y2) * cos;
-            d[12] = (tx * (y2 + z2) - x * (ty * y + tz * z)) * ccos + (ty * z - tz * y) * sin;
-            d[13] = (ty * (x2 + z2) - y * (tx * x + tz * z)) * ccos + (tz * x - tx * z) * sin;
-            d[14] = (tz * (x2 + y2) - z * (tx * x + ty * y)) * ccos + (tx * y - ty * x) * sin;
-
-            this.append(m);
-        }
+        public native function appendRotation(degrees:Number, axis:Vector3D, pivotPoint:Vector3D = null):void;
 
         [API("674")]
         public function copyRawDataFrom(vector:Vector.<Number>, index:uint = 0, transpose:Boolean = false):void {
