@@ -185,6 +185,44 @@ pub fn copy_column_from<'gc>(
     Ok(Value::Undefined)
 }
 
+/// Implements `Matrix3D.position`'s getter.
+pub fn get_position<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Value<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+    let mr = raw_data_of(this);
+
+    Ok(vector3d_to_object(
+        activation,
+        [mr[12], mr[13], mr[14], 0.0],
+    ))
+}
+
+/// Implements `Matrix3D.position`'s setter.
+pub fn set_position<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Value<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+    let Some(val) = args.try_get_object(0) else {
+        return Ok(Value::Undefined);
+    };
+
+    let [x, y, z, _] = read_vector3d(val);
+
+    let mut raw_data = raw_data_of(this);
+    raw_data[12] = x;
+    raw_data[13] = y;
+    raw_data[14] = z;
+
+    set_raw_data(activation, this, raw_data)?;
+
+    Ok(Value::Undefined)
+}
+
 /// Computes the determinant of a matrix.
 fn determinant_of(mr: &RawData) -> f64 {
     (mr[0] * mr[5] - mr[4] * mr[1]) * (mr[10] * mr[15] - mr[14] * mr[11])
