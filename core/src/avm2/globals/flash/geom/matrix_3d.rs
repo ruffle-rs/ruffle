@@ -113,6 +113,21 @@ pub fn append<'gc>(
     Ok(Value::Undefined)
 }
 
+/// Implements `Matrix3D.prepend`.
+pub fn prepend<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Value<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+    let rhs = args.get_object(activation, 0, "rhs")?;
+
+    let result = multiply(&raw_data_of(this), &raw_data_of(rhs));
+    set_raw_data(activation, this, result)?;
+
+    Ok(Value::Undefined)
+}
+
 /// Implements `Matrix3D.recompose`.
 ///
 /// Based on OpenFL: https://github.com/openfl/openfl/blob/971a4c9e43b5472fd84d73920a2b7c1b3d8d9257/src/openfl/geom/Matrix3D.hx#L1437
