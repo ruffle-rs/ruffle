@@ -199,6 +199,27 @@ package {
 
             dumpInfo(block, linesList);
 
+            trace("!! block.releaseLines(line1, line3);");
+            try {
+                block.releaseLines(line1, line3);
+            } catch(e:Error) {
+                trace(e.getStackTrace());
+            }
+
+            trace("!! block.releaseLines(line2, line3);");
+            try {
+                block.releaseLines(line2, line3);
+            } catch(e:Error) {
+                trace(e.getStackTrace());
+            }
+
+            trace("!! block.releaseLines(line4, line0);");
+            try {
+                block.releaseLines(line4, line0);
+            } catch(e:Error) {
+                trace(e.getStackTrace());
+            }
+
             trace("!! block.releaseLines(line0, line1);");
             block.releaseLines(line0, line1);
 
