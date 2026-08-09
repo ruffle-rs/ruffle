@@ -20,9 +20,16 @@ package flash.geom {
             this.w = w;
         }
 
+        [Ruffle(NativeAccessible)]
         public var w:Number;
+
+        [Ruffle(NativeAccessible)]
         public var x:Number;
+
+        [Ruffle(NativeAccessible)]
         public var y:Number;
+
+        [Ruffle(NativeAccessible)]
         public var z:Number;
 
         public function get length():Number {

@@ -1143,6 +1143,19 @@ pub fn make_error_2186<'gc>(activation: &mut Activation<'_, 'gc>, focal_length: 
     ))
 }
 
+#[inline(never)]
+#[cold]
+pub fn make_error_2187<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    orientation_style: AvmString<'gc>,
+) -> Error<'gc> {
+    make_error!(error(
+        activation,
+        error_message!(2187, orientation_style),
+        2187,
+    ))
+}
+
 make_error_fn!(make_error_3669, 3669, error);
 make_error_fn!(make_error_3670, 3670, argument_error);
 make_error_fn!(make_error_3671, 3671, argument_error);
