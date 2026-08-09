@@ -185,6 +185,16 @@ pub fn copy_column_from<'gc>(
     Ok(Value::Undefined)
 }
 
+/// Computes the determinant of a matrix.
+fn determinant_of(mr: &RawData) -> f64 {
+    (mr[0] * mr[5] - mr[4] * mr[1]) * (mr[10] * mr[15] - mr[14] * mr[11])
+        - (mr[0] * mr[9] - mr[8] * mr[1]) * (mr[6] * mr[15] - mr[14] * mr[7])
+        + (mr[0] * mr[13] - mr[12] * mr[1]) * (mr[6] * mr[11] - mr[10] * mr[7])
+        + (mr[4] * mr[9] - mr[8] * mr[5]) * (mr[2] * mr[15] - mr[14] * mr[3])
+        - (mr[4] * mr[13] - mr[12] * mr[5]) * (mr[2] * mr[11] - mr[10] * mr[3])
+        + (mr[8] * mr[13] - mr[12] * mr[9]) * (mr[2] * mr[7] - mr[6] * mr[3])
+}
+
 /// Implements `Matrix3D.determinant`'s getter.
 pub fn get_determinant<'gc>(
     _activation: &mut Activation<'_, 'gc>,
@@ -193,15 +203,67 @@ pub fn get_determinant<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
     let mr = raw_data_of(this);
+    Ok(determinant_of(&mr).into())
+}
 
-    let determinant = (mr[0] * mr[5] - mr[4] * mr[1]) * (mr[10] * mr[15] - mr[14] * mr[11])
-        - (mr[0] * mr[9] - mr[8] * mr[1]) * (mr[6] * mr[15] - mr[14] * mr[7])
-        + (mr[0] * mr[13] - mr[12] * mr[1]) * (mr[6] * mr[11] - mr[10] * mr[7])
-        + (mr[4] * mr[9] - mr[8] * mr[5]) * (mr[2] * mr[15] - mr[14] * mr[3])
-        - (mr[4] * mr[13] - mr[12] * mr[5]) * (mr[2] * mr[11] - mr[10] * mr[3])
-        + (mr[8] * mr[13] - mr[12] * mr[9]) * (mr[2] * mr[7] - mr[6] * mr[3]);
+/// Implements `Matrix3D.invert`.
+pub fn invert<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Value<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+    let mr = raw_data_of(this);
 
-    Ok(determinant.into())
+    let d = determinant_of(&mr);
+    let invertible = d.abs() > 0.00000000001;
+
+    if !invertible {
+        return Ok(false.into());
+    }
+
+    let d = 1.0 / d;
+
+    let m11 = mr[0];
+    let m21 = mr[4];
+    let m31 = mr[8];
+    let m41 = mr[12];
+    let m12 = mr[1];
+    let m22 = mr[5];
+    let m32 = mr[9];
+    let m42 = mr[13];
+    let m13 = mr[2];
+    let m23 = mr[6];
+    let m33 = mr[10];
+    let m43 = mr[14];
+    let m14 = mr[3];
+    let m24 = mr[7];
+    let m34 = mr[11];
+    let m44 = mr[15];
+
+    #[rustfmt::skip]
+    let result: RawData = [
+         d * (m22 * (m33 * m44 - m43 * m34) - m32 * (m23 * m44 - m43 * m24) + m42 * (m23 * m34 - m33 * m24)),
+        -d * (m12 * (m33 * m44 - m43 * m34) - m32 * (m13 * m44 - m43 * m14) + m42 * (m13 * m34 - m33 * m14)),
+         d * (m12 * (m23 * m44 - m43 * m24) - m22 * (m13 * m44 - m43 * m14) + m42 * (m13 * m24 - m23 * m14)),
+        -d * (m12 * (m23 * m34 - m33 * m24) - m22 * (m13 * m34 - m33 * m14) + m32 * (m13 * m24 - m23 * m14)),
+        -d * (m21 * (m33 * m44 - m43 * m34) - m31 * (m23 * m44 - m43 * m24) + m41 * (m23 * m34 - m33 * m24)),
+         d * (m11 * (m33 * m44 - m43 * m34) - m31 * (m13 * m44 - m43 * m14) + m41 * (m13 * m34 - m33 * m14)),
+        -d * (m11 * (m23 * m44 - m43 * m24) - m21 * (m13 * m44 - m43 * m14) + m41 * (m13 * m24 - m23 * m14)),
+         d * (m11 * (m23 * m34 - m33 * m24) - m21 * (m13 * m34 - m33 * m14) + m31 * (m13 * m24 - m23 * m14)),
+         d * (m21 * (m32 * m44 - m42 * m34) - m31 * (m22 * m44 - m42 * m24) + m41 * (m22 * m34 - m32 * m24)),
+        -d * (m11 * (m32 * m44 - m42 * m34) - m31 * (m12 * m44 - m42 * m14) + m41 * (m12 * m34 - m32 * m14)),
+         d * (m11 * (m22 * m44 - m42 * m24) - m21 * (m12 * m44 - m42 * m14) + m41 * (m12 * m24 - m22 * m14)),
+        -d * (m11 * (m22 * m34 - m32 * m24) - m21 * (m12 * m34 - m32 * m14) + m31 * (m12 * m24 - m22 * m14)),
+        -d * (m21 * (m32 * m43 - m42 * m33) - m31 * (m22 * m43 - m42 * m23) + m41 * (m22 * m33 - m32 * m23)),
+         d * (m11 * (m32 * m43 - m42 * m33) - m31 * (m12 * m43 - m42 * m13) + m41 * (m12 * m33 - m32 * m13)),
+        -d * (m11 * (m22 * m43 - m42 * m23) - m21 * (m12 * m43 - m42 * m13) + m41 * (m12 * m23 - m22 * m13)),
+         d * (m11 * (m22 * m33 - m32 * m23) - m21 * (m12 * m33 - m32 * m13) + m31 * (m12 * m23 - m22 * m13)),
+    ];
+
+    set_raw_data(activation, this, result)?;
+
+    Ok(true.into())
 }
 
 /// Implements `Matrix3D.recompose`.
