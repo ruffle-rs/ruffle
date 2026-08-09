@@ -1,0 +1,198 @@
+Caught error: TypeError: Error #2007: Parameter components must be non-null.
+	at flash.geom::Matrix3D/recompose()
+	at Function/<anonymous>()
+	at Test/testException()
+	at Test/testExceptions()
+	at Test()
+Caught error: TypeError: Error #2007: Parameter orientationStyle must be non-null.
+	at flash.geom::Matrix3D/recompose()
+	at Function/<anonymous>()
+	at Test/testException()
+	at Test/testExceptions()
+	at Test()
+Caught error: Error: Error #2187: Invalid orientation style EulerAngles.  Value must be one of 'Orientation3D.EULER_ANGLES', 'Orientation3D.AXIS_ANGLE', or 'Orientation3D.QUATERNION'.
+	at flash.geom::Matrix3D/recompose()
+	at Function/<anonymous>()
+	at Test/testException()
+	at Test/testExceptions()
+	at Test()
+Null component: 0
+Recompose res: false
+Recomposed: 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16
+Null component: 1
+Recompose res: false
+Recomposed: 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16
+Null component: 2
+Recompose res: false
+Recomposed: 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16
+Scale: Vector3D(7, 8, 9)
+Recompose res: true
+Recomposed: 7,0,0,0,0,8,0,0,0,0,9,0,1,2,3,1
+Scale: Vector3D(0, 8, 9)
+Recompose res: true
+Recomposed: 0,0,0,0,0,8,0,0,0,0,9,0,1,2,3,1
+Scale: Vector3D(7, 0, 9)
+Recompose res: true
+Recomposed: 7,0,0,0,0,0,0,0,0,0,9,0,1,2,3,1
+Scale: Vector3D(7, 8, 0)
+Recompose res: true
+Recomposed: 7,0,0,0,0,8,0,0,0,0,0,0,1,2,3,1
+Scale: Vector3D(0, 0, 9)
+Recompose res: true
+Recomposed: 0,0,0,0,0,0,0,0,0,0,9,0,1,2,3,1
+Scale: Vector3D(0, 8, 0)
+Recompose res: true
+Recomposed: 0,0,0,0,0,8,0,0,0,0,0,0,1,2,3,1
+Scale: Vector3D(7, 0, 0)
+Recompose res: true
+Recomposed: 7,0,0,0,0,0,0,0,0,0,0,0,1,2,3,1
+Scale: Vector3D(0, 0, 0)
+Recompose res: true
+Recomposed: 0,0,0,0,0,0,0,0,0,0,0,0,1,2,3,1
+Recompose negative scale with style eulerAngles:
+Recompose res: true
+Recomposed: -7,0,0,0,0,8,0,0,0,0,-9,0,1,2,3,1
+Recompose count 0 with style eulerAngles:
+Recompose res: false
+Recomposed: 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16
+Recompose count 1 with style eulerAngles:
+Recompose res: false
+Recomposed: 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16
+Recompose count 2 with style eulerAngles:
+Recompose res: false
+Recomposed: 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16
+Recompose count 3 with style eulerAngles:
+Recompose res: true
+Recomposed: 7,0,0,0,0,8,0,0,0,0,9,0,1,2,3,1
+Recompose count 4 with style eulerAngles:
+Recompose res: true
+Recomposed: 7,0,0,0,0,8,0,0,0,0,9,0,1,2,3,1
+Recompose style 5 with style 5:
+Caught error: Error: Error #2187: Invalid orientation style 5.  Value must be one of 'Orientation3D.EULER_ANGLES', 'Orientation3D.AXIS_ANGLE', or 'Orientation3D.QUATERNION'.
+	at flash.geom::Matrix3D/recompose()
+	at Test/testRecompose()
+	at Test/testOrientationStyle()
+	at Test()
+Recomposed: 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16
+Recompose style true with style true:
+Caught error: Error: Error #2187: Invalid orientation style true.  Value must be one of 'Orientation3D.EULER_ANGLES', 'Orientation3D.AXIS_ANGLE', or 'Orientation3D.QUATERNION'.
+	at flash.geom::Matrix3D/recompose()
+	at Test/testRecompose()
+	at Test/testOrientationStyle()
+	at Test()
+Recomposed: 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16
+Recompose style  with style :
+Caught error: Error: Error #2187: Invalid orientation style .  Value must be one of 'Orientation3D.EULER_ANGLES', 'Orientation3D.AXIS_ANGLE', or 'Orientation3D.QUATERNION'.
+	at flash.geom::Matrix3D/recompose()
+	at Test/testRecompose()
+	at Test/testOrientationStyle()
+	at Test()
+Recomposed: 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16
+Recompose style undefined with style null:
+Caught error: TypeError: Error #2007: Parameter orientationStyle must be non-null.
+	at flash.geom::Matrix3D/recompose()
+	at Test/testRecompose()
+	at Test/testOrientationStyle()
+	at Test()
+Recomposed: 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16
+Recompose (0, 0, 0, 1) with style quaternion:
+Recompose res: true
+Recomposed: 1,0,0,0,0,1,0,0,0,0,1,0,1,2,3,1
+Recompose (0, 0, 0, -1) with style quaternion:
+Recompose res: true
+Recomposed: 1,0,0,0,0,1,0,0,0,0,1,0,1,2,3,1
+Recompose (1, 0, 0, 0) with style quaternion:
+Recompose res: true
+Recomposed: 1,0,0,0,0,-1,0,0,0,0,-1,0,1,2,3,1
+Recompose (0.5, 0.5, 0.5, 0.5) with style quaternion:
+Recompose res: true
+Recomposed: 0,1,0,0,0,0,1,0,1,0,0,0,1,2,3,1
+Recompose (-0.5, 0.5, -0.5, 0.5) with style quaternion:
+Recompose res: true
+Recomposed: 0,-1,0,0,0,0,-1,0,1,0,0,0,1,2,3,1
+Recompose (0, 0, 0, 0) with style quaternion:
+Caught error: ArgumentError: Error #2004: One of the parameters is invalid.
+	at flash.geom::Matrix3D/recompose()
+	at Test/testRecompose()
+	at Test/testRotation()
+	at Test/testQuaternion()
+	at Test()
+Recomposed: 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16
+Recompose (0.5, 0, 0, 0) with style quaternion:
+Caught error: ArgumentError: Error #2004: One of the parameters is invalid.
+	at flash.geom::Matrix3D/recompose()
+	at Test/testRecompose()
+	at Test/testRotation()
+	at Test/testQuaternion()
+	at Test()
+Recomposed: 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16
+Recompose (2, 0, 0, 0) with style quaternion:
+Caught error: ArgumentError: Error #2004: One of the parameters is invalid.
+	at flash.geom::Matrix3D/recompose()
+	at Test/testRecompose()
+	at Test/testRotation()
+	at Test/testQuaternion()
+	at Test()
+Recomposed: 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16
+Recompose (1, 1, 1, 1) with style quaternion:
+Caught error: ArgumentError: Error #2004: One of the parameters is invalid.
+	at flash.geom::Matrix3D/recompose()
+	at Test/testRecompose()
+	at Test/testRotation()
+	at Test/testQuaternion()
+	at Test()
+Recomposed: 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16
+Recompose (NaN, 0, 0, 1) with style quaternion:
+Caught error: ArgumentError: Error #2004: One of the parameters is invalid.
+	at flash.geom::Matrix3D/recompose()
+	at Test/testRecompose()
+	at Test/testRotation()
+	at Test/testQuaternion()
+	at Test()
+Recomposed: 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16
+Recompose (0, 0, 0, NaN) with style quaternion:
+Caught error: ArgumentError: Error #2004: One of the parameters is invalid.
+	at flash.geom::Matrix3D/recompose()
+	at Test/testRecompose()
+	at Test/testRotation()
+	at Test/testQuaternion()
+	at Test()
+Recomposed: 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16
+Recompose (Infinity, 0, 0, 0) with style quaternion:
+Caught error: ArgumentError: Error #2004: One of the parameters is invalid.
+	at flash.geom::Matrix3D/recompose()
+	at Test/testRecompose()
+	at Test/testRotation()
+	at Test/testQuaternion()
+	at Test()
+Recomposed: 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16
+Recompose (0, 0, 0, 0) with style axisAngle:
+Recompose res: true
+Recomposed: 1,0,0,0,0,1,0,0,0,0,1,0,1,2,3,1
+Recompose (1, 2, 3, 0) with style axisAngle:
+Recompose res: true
+Recomposed: 1,0,0,0,0,1,0,0,0,0,1,0,1,2,3,1
+Recompose (NaN, 0, 0, 0) with style axisAngle:
+Recompose res: true
+Recomposed: NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN
+Recompose (0, 0, 0, NaN) with style axisAngle:
+Recompose res: true
+Recomposed: NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN
+Recompose (0, 0, 0, Infinity) with style axisAngle:
+Recompose res: true
+Recomposed: NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN
+Recompose NaN scale with style eulerAngles:
+Recompose res: true
+Recomposed: NaN,NaN,NaN,NaN,0,1,0,0,0,0,1,0,1,2,3,1
+Recompose infinite scale with style eulerAngles:
+Recompose res: true
+Recomposed: NaN,NaN,NaN,NaN,0,1,0,0,0,0,1,0,1,2,3,1
+Recompose NaN rotation with style eulerAngles:
+Recompose res: true
+Recomposed: NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN
+Recompose infinite rotation with style eulerAngles:
+Recompose res: true
+Recomposed: NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN
+Recompose special translation with style eulerAngles:
+Recompose res: true
+Recomposed: NaN,NaN,NaN,0,NaN,NaN,NaN,0,NaN,NaN,NaN,0,Infinity,-Infinity,NaN,1
