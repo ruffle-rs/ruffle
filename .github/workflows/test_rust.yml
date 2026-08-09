@@ -14,7 +14,7 @@ env:
   FEATURES: lzma,jpegxr
   TEST_OPTS: --workspace --locked --no-fail-fast -j 4
   LLVM_COV_OPTS: --branch --profile ci
-  LLVM_COV_TEST_OPTS: ${LLVM_COV_OPTS} ${TEST_OPTS} --features ${FEATURES},imgtests
+  LLVM_COV_TEST_OPTS: ${LLVM_COV_OPTS} ${TEST_OPTS} --features ${FEATURES},imgtests,freetype
 
   LINUX_DEPENDENCIES: libasound2-dev mesa-vulkan-drivers libudev-dev libfontconfig-dev
 
@@ -89,6 +89,11 @@ jobs:
         if: runner.os != 'macOS'
         shell: bash
         run: echo FEATURES=${FEATURES},imgtests | tee -a $GITHUB_ENV
+
+      - name: Enable freetype tests
+        if: runner.os == 'Linux'
+        shell: bash
+        run: echo FEATURES=${FEATURES},freetype | tee -a $GITHUB_ENV
 
       - name: Cache Cargo output
         uses: Swatinem/rust-cache@v2
