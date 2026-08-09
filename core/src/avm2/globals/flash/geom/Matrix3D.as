@@ -27,21 +27,9 @@ package flash.geom {
             }
         }
 
-        public function identity():void {
-            // Note that every 4 elements is a *column*, not a row
-            this._rawData = new <Number>[
-                1, 0, 0, 0,
-                0, 1, 0, 0,
-                0, 0, 1, 0,
-                0, 0, 0, 1
-            ];
-        }
+        public native function identity():void;
 
-        public function appendTranslation(x:Number, y:Number, z:Number):void {
-            this._rawData[12] += x;
-            this._rawData[13] += y;
-            this._rawData[14] += z;
-        }
+        public native function appendTranslation(x:Number, y:Number, z:Number):void;
 
         public native function appendRotation(degrees:Number, axis:Vector3D, pivotPoint:Vector3D = null):void;
 

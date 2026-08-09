@@ -102,6 +102,48 @@ fn set_raw_data<'gc>(
     this.set_slot(matrix3d_slots::_RAW_DATA, raw_data.into(), activation)
 }
 
+/// Implements `Matrix3D.identity`.
+pub fn identity<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Value<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
+    #[rustfmt::skip]
+    let raw_data: RawData = [
+        1.0, 0.0, 0.0, 0.0,
+        0.0, 1.0, 0.0, 0.0,
+        0.0, 0.0, 1.0, 0.0,
+        0.0, 0.0, 0.0, 1.0,
+    ];
+
+    set_raw_data(activation, this, raw_data)?;
+
+    Ok(Value::Undefined)
+}
+
+/// Implements `Matrix3D.appendTranslation`.
+pub fn append_translation<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Value<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+    let x = args.get_f64(0);
+    let y = args.get_f64(1);
+    let z = args.get_f64(2);
+
+    let mut raw_data = raw_data_of(this);
+    raw_data[12] += x;
+    raw_data[13] += y;
+    raw_data[14] += z;
+
+    set_raw_data(activation, this, raw_data)?;
+
+    Ok(Value::Undefined)
+}
+
 /// Implements `Matrix3D.append`.
 pub fn append<'gc>(
     activation: &mut Activation<'_, 'gc>,
