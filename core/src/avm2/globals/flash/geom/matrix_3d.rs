@@ -297,6 +297,109 @@ pub fn transpose<'gc>(
     Ok(Value::Undefined)
 }
 
+/// Implements `Matrix3D.deltaTransformVector`.
+pub fn delta_transform_vector<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Value<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+    let v = args.get_object(activation, 0, "vector")?;
+
+    let mr = raw_data_of(this);
+    let [x, y, z, _] = read_vector3d(v);
+
+    Ok(vector3d_to_object(
+        activation,
+        [
+            mr[0] * x + mr[4] * y + mr[8] * z,
+            mr[1] * x + mr[5] * y + mr[9] * z,
+            mr[2] * x + mr[6] * y + mr[10] * z,
+            mr[3] * x + mr[7] * y + mr[11] * z,
+        ],
+    ))
+}
+
+/// Implements `Matrix3D.transformVector`.
+pub fn transform_vector<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Value<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+    let v = args.get_object(activation, 0, "vector")?;
+
+    let mr = raw_data_of(this);
+    let [x, y, z, _] = read_vector3d(v);
+
+    Ok(vector3d_to_object(
+        activation,
+        [
+            mr[0] * x + mr[4] * y + mr[8] * z + mr[12],
+            mr[1] * x + mr[5] * y + mr[9] * z + mr[13],
+            mr[2] * x + mr[6] * y + mr[10] * z + mr[14],
+            mr[3] * x + mr[7] * y + mr[11] * z + mr[15],
+        ],
+    ))
+}
+
+/// Implements `Matrix3D.transformVectors`.
+pub fn transform_vectors<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Value<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+    let vin = args
+        .get_object(activation, 0, "vin")?
+        .as_vector_object()
+        .unwrap();
+    let vout = args
+        .get_object(activation, 1, "vout")?
+        .as_vector_object()
+        .unwrap();
+
+    let vin_length = vin.storage().length();
+    let vout_length = vout.storage().length();
+    let result_vecs_length = (vin_length / 3) * 3;
+
+    if result_vecs_length > vout_length {
+        vout.storage_mut(activation.gc())
+            .resize(result_vecs_length, activation)?;
+    }
+
+    let mr = raw_data_of(this);
+
+    // 'vin' and 'vout' may be the same object, so borrows of their storage
+    // are scoped to a single access, never held across a read and a write.
+    let mut i = 0;
+    while i < result_vecs_length {
+        let (x, y, z) = {
+            let storage = vin.storage();
+            (
+                storage.get(i, activation)?.as_f64(),
+                storage.get(i + 1, activation)?.as_f64(),
+                storage.get(i + 2, activation)?.as_f64(),
+            )
+        };
+
+        let result = [
+            mr[0] * x + mr[4] * y + mr[8] * z + mr[12],
+            mr[1] * x + mr[5] * y + mr[9] * z + mr[13],
+            mr[2] * x + mr[6] * y + mr[10] * z + mr[14],
+        ];
+
+        let mut storage = vout.storage_mut(activation.gc());
+        for (offset, value) in result.into_iter().enumerate() {
+            storage.set(i + offset, value.into(), activation)?;
+        }
+
+        i += 3;
+    }
+
+    Ok(Value::Undefined)
+}
+
 /// Computes the determinant of a matrix.
 fn determinant_of(mr: &RawData) -> f64 {
     (mr[0] * mr[5] - mr[4] * mr[1]) * (mr[10] * mr[15] - mr[14] * mr[11])
