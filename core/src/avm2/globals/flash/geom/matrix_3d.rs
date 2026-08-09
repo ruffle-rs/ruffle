@@ -185,6 +185,59 @@ pub fn copy_column_from<'gc>(
     Ok(Value::Undefined)
 }
 
+/// Implements `Matrix3D.copyRowTo`.
+pub fn copy_row_to<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Value<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+    let row = args.get_u32(0);
+    let vector3d = args.get_object(activation, 1, "vector3D")?;
+
+    if row > 3 {
+        return Err(make_error_2004(activation, Error2004Type::ArgumentError));
+    }
+
+    let raw_data = raw_data_of(this);
+    let base = row as usize;
+
+    vector3d.set_slot(vector3d_slots::X, raw_data[base].into(), activation)?;
+    vector3d.set_slot(vector3d_slots::Y, raw_data[base + 4].into(), activation)?;
+    vector3d.set_slot(vector3d_slots::Z, raw_data[base + 8].into(), activation)?;
+    vector3d.set_slot(vector3d_slots::W, raw_data[base + 12].into(), activation)?;
+
+    Ok(Value::Undefined)
+}
+
+/// Implements `Matrix3D.copyRowFrom`.
+pub fn copy_row_from<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Value<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+    let row = args.get_u32(0);
+    let vector3d = args.get_object(activation, 1, "vector3D")?;
+
+    if row > 3 {
+        return Err(make_error_2004(activation, Error2004Type::ArgumentError));
+    }
+
+    let [x, y, z, w] = read_vector3d(vector3d);
+
+    let mut raw_data = raw_data_of(this);
+    let base = row as usize;
+    raw_data[base] = x;
+    raw_data[base + 4] = y;
+    raw_data[base + 8] = z;
+    raw_data[base + 12] = w;
+
+    set_raw_data(activation, this, raw_data)?;
+
+    Ok(Value::Undefined)
+}
+
 /// Implements `Matrix3D.position`'s getter.
 pub fn get_position<'gc>(
     activation: &mut Activation<'_, 'gc>,
