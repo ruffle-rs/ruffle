@@ -2896,7 +2896,7 @@ macro_rules! impl_downcast_methods {
 }
 
 impl<'gc> DisplayObject<'gc> {
-    pub fn ptr_eq(a: DisplayObject<'gc>, b: DisplayObject<'gc>) -> bool {
+    pub fn ptr_eq<T: TDisplayObject<'gc>>(a: T, b: T) -> bool {
         std::ptr::eq(a.as_ptr(), b.as_ptr())
     }
 
@@ -3080,7 +3080,7 @@ impl<'gc> Avm1TextFieldBinding<'gc> {
     /// Caller is responsible for placing the text field on the unbound list, if necessary.
     pub fn clear_binding(dobj: DisplayObject<'gc>, text_field: EditText<'gc>, mc: &Mutation<'gc>) {
         if let Some(mut bindings) = dobj.avm1_text_field_bindings_mut(mc) {
-            bindings.retain(|b| !DisplayObject::ptr_eq(text_field.into(), b.text_field.into()));
+            bindings.retain(|b| !DisplayObject::ptr_eq(text_field, b.text_field));
         }
     }
 

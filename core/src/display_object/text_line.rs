@@ -121,7 +121,7 @@ impl<'gc> TextLine<'gc> {
         let next_line = self.next_line();
 
         // If this line was the text block's first line, set it to the next line
-        if DisplayObject::ptr_eq(self.into(), block_first_line.into()) {
+        if DisplayObject::ptr_eq(self, block_first_line) {
             block.set_first_line(next_line, mc);
         }
 
@@ -245,7 +245,7 @@ impl<'gc> TextLine<'gc> {
         let mut result = Vec::new();
         result.push(self);
 
-        if DisplayObject::ptr_eq(self.into(), other.into()) {
+        if DisplayObject::ptr_eq(self, other) {
             // There is only one line, `self`
             return result;
         }
@@ -253,7 +253,7 @@ impl<'gc> TextLine<'gc> {
         // Try going forwards...
         for line in self.next_lines() {
             result.push(line);
-            if DisplayObject::ptr_eq(line.into(), other.into()) {
+            if DisplayObject::ptr_eq(line, other) {
                 return result;
             }
         }
@@ -264,7 +264,7 @@ impl<'gc> TextLine<'gc> {
 
         for line in self.previous_lines() {
             result.push(line);
-            if DisplayObject::ptr_eq(line.into(), other.into()) {
+            if DisplayObject::ptr_eq(line, other) {
                 return result;
             }
         }

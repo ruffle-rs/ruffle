@@ -856,7 +856,7 @@ impl<'gc> EditText<'gc> {
             activation
                 .context
                 .unbound_text_fields
-                .retain(|&text_field| !DisplayObject::ptr_eq(text_field.into(), self.into()));
+                .retain(|&text_field| !DisplayObject::ptr_eq(text_field, self));
         }
 
         // Setup new binding.
@@ -2795,7 +2795,7 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
         if self.variable().is_some() {
             context
                 .unbound_text_fields
-                .retain(|&text_field| !DisplayObject::ptr_eq(text_field.into(), self.into()));
+                .retain(|&text_field| !DisplayObject::ptr_eq(text_field, self));
         }
 
         self.set_avm1_removed(true);
