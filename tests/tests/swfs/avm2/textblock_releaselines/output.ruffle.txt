@@ -654,7 +654,7 @@ Line #4:
     line.nextLine: null
 Line #5:
     line.validity: invalid
-    line.textBlock: [object TextBlock]
+    line.textBlock: null
     line.previousLine: line-1
     line.nextLine: null
 !!! Created a line from block2, "block2Line" aka "line6"
@@ -687,7 +687,7 @@ Line #4:
     line.nextLine: null
 Line #5:
     line.validity: invalid
-    line.textBlock: [object TextBlock]
+    line.textBlock: null
     line.previousLine: line-1
     line.nextLine: null
 Line #6:
@@ -715,3 +715,38 @@ ArgumentError: Error #2004: One of the parameters is invalid.
 ArgumentError: Error #2004: One of the parameters is invalid.
 	at flash.text.engine::TextBlock/releaseLines()
 	at Test()
+!!!! reset all lines
+!! line0.validity = "static";
+!! block.releaseLines(line0, line1);
+First line in block: line-2
+Last line in block: line-5
+Line #0:
+    line.validity: invalid
+    line.textBlock: null
+    line.previousLine: null
+    line.nextLine: null
+Line #1:
+    line.validity: invalid
+    line.textBlock: null
+    line.previousLine: null
+    line.nextLine: null
+Line #2:
+    line.validity: invalid
+    line.textBlock: [object TextBlock]
+    line.previousLine: null
+    line.nextLine: line-3
+Line #3:
+    line.validity: invalid
+    line.textBlock: [object TextBlock]
+    line.previousLine: line-2
+    line.nextLine: line-4
+Line #4:
+    line.validity: invalid
+    line.textBlock: [object TextBlock]
+    line.previousLine: line-3
+    line.nextLine: line-5
+Line #5:
+    line.validity: invalid
+    line.textBlock: [object TextBlock]
+    line.previousLine: line-4
+    line.nextLine: null
