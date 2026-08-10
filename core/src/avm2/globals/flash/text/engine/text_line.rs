@@ -89,16 +89,9 @@ pub fn get_text_block<'gc>(
         .as_text_line()
         .unwrap();
 
-    if matches!(this.validity(), TextLineValidity::Static) {
-        // "static" lines always return `null` when accessing their `textBlock`.
-        // We still need to store a `TextBlock` for them as users can still
-        // release them using `TextBlock.releaseLines`.
-        Ok(Value::Null)
-    } else if let Some(text_block) = this.text_block() {
-        Ok(text_block.into())
-    } else {
-        Ok(Value::Null)
-    }
+    let block = this.text_block_from_script();
+
+    Ok(block.map(Value::from).unwrap_or(Value::Null))
 }
 
 pub fn get_specified_width<'gc>(

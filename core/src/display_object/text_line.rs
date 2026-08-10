@@ -48,6 +48,7 @@ pub struct TextLineData<'gc> {
     validity: Lock<TextLineValidity<'gc>>,
 
     text_block: Lock<Option<TextBlockObject<'gc>>>,
+    hide_block_from_script: Cell<bool>,
 
     specified_width: Cell<f64>,
 
@@ -76,6 +77,7 @@ impl<'gc> TextLine<'gc> {
                 movie,
                 validity: Lock::new(TextLineValidity::Valid),
                 text_block: Lock::new(None),
+                hide_block_from_script: Cell::new(false),
                 specified_width: Cell::new(0.0),
                 raw_text_length: Cell::new(0),
                 begin_index: Cell::new(0),
@@ -97,6 +99,7 @@ impl<'gc> TextLine<'gc> {
         // Reset text line properties
         self.set_validity(TextLineValidity::Valid, mc);
         self.set_text_block(None, mc);
+        self.set_hide_block_from_script(false);
 
         self.set_specified_width(0.0);
         self.set_raw_text_length(0);
@@ -160,6 +163,15 @@ impl<'gc> TextLine<'gc> {
     }
 
     pub fn set_validity(self, validity: TextLineValidity<'gc>, mc: &Mutation<'gc>) {
+        if matches!(validity, TextLineValidity::Static) {
+            // NOTE: The text line is not disconnected from its sibling lines,
+            // nor is it truly disconnected from its owner block. However,
+            // attempting to access the block using `line.textBlock` in AS
+            // always returns `null`, even if the validity of this line is later
+            // set back to some other value.
+            self.set_hide_block_from_script(true);
+        }
+
         unlock!(Gc::write(mc, self.0), TextLineData, validity).set(validity);
     }
 
@@ -167,8 +179,20 @@ impl<'gc> TextLine<'gc> {
         self.0.text_block.get()
     }
 
+    pub fn text_block_from_script(self) -> Option<TextBlockObject<'gc>> {
+        if self.0.hide_block_from_script.get() {
+            None
+        } else {
+            self.0.text_block.get()
+        }
+    }
+
     pub fn set_text_block(self, text_block: Option<TextBlockObject<'gc>>, mc: &Mutation<'gc>) {
         unlock!(Gc::write(mc, self.0), TextLineData, text_block).set(text_block);
+    }
+
+    pub fn set_hide_block_from_script(self, value: bool) {
+        self.0.hide_block_from_script.set(value);
     }
 
     pub fn specified_width(self) -> f64 {
@@ -252,6 +276,7 @@ impl<'gc> TDisplayObject<'gc> for TextLine<'gc> {
                 movie: self.0.movie.clone(),
                 validity: Lock::new(self.0.validity.get()),
                 text_block: Lock::new(self.0.text_block.get()),
+                hide_block_from_script: Cell::new(self.0.hide_block_from_script.get()),
                 specified_width: Cell::new(self.0.specified_width.get()),
                 raw_text_length: Cell::new(self.0.raw_text_length.get()),
                 begin_index: Cell::new(self.0.begin_index.get()),
