@@ -3,10 +3,10 @@ use crate::avm2::Avm2StrRepresentable;
 use crate::avm2::activation::Activation;
 use crate::avm2::error::{Error, Error2004Type, make_error_2004, make_error_2008, make_error_2175};
 use crate::avm2::globals::flash::display::display_object::initialize_for_allocator;
-use crate::avm2::object::{ContentElementObject, ElementData, Object, VectorObject};
+use crate::avm2::object::{ContentElementObject, ElementData, VectorObject};
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
-use crate::display_object::{EditText, TDisplayObject, TextLine};
+use crate::display_object::{DisplayObject, EditText, TDisplayObject, TextLine};
 use crate::fte::{TextBaselineValue, TextLineCreationResultValue, TextRotationValue};
 use crate::html::{FormatSpans, TextFormat, TextSpan};
 use crate::string::{WStr, WString};
@@ -360,23 +360,67 @@ pub fn release_lines<'gc>(
         .and_then(|o| o.as_text_line())
         .expect("Guaranteed by AS signature");
 
-    // NOTE: `releaseLines` allows for swapping the order of parameters without
-    // affecting the functionality of the method!
+    // Flash has some unexpected behavior for certain edge cases of this method:
 
-    // Both lines must have associated text blocks
-    let (Some(line_1_block), Some(line_2_block)) = (line_1.text_block(), line_2.text_block())
-    else {
+    // 1. Callers can swap the order of parameters to this method without ever
+    //    affecting the functionality of the method.
+    // 2. If two text lines are in the same text block and are siblings to each
+    //    other, this method can still fail with an error if they can't be
+    //    reached by iterating forward on the linked list of lines of this text
+    //    block. It's possible to enter this scenario by rebreaking a line in
+    //    the middle of a block.
+    // 3. This method will always throw an error if either line is from a
+    //    different text block.
+
+    // The simplest way I could reproduce this behavior was with the following
+    // logic:
+
+    // 1. Start iterating over the linked list of lines, starting at
+    //    `this.first_line()`.
+    // 2. When reaching a line that is either `line_1` or `line_2` for the first
+    //    time, record its position in the iterator.
+    // 3. When reaching a line that is either `line_1` or `line_2` for the
+    //    second time, record its position in the iterator and stop iterating.
+    // 4. If either iteration reached the end of the list, return an error, as
+    //    that means that one of the lines was not present in the block.
+    // 5. Use the two positions to release the lines between `line_1` and
+    //    `line_2` in the linked list of lines.
+
+    let matches_either_line =
+        |l| DisplayObject::ptr_eq(l, line_1) || DisplayObject::ptr_eq(l, line_2);
+
+    let Some(first_position) = this.lines().position(matches_either_line) else {
         return Err(make_error_2004(activation, Error2004Type::ArgumentError));
     };
 
-    // Both lines must belong to this block
-    if !Object::ptr_eq(line_1_block, this) || !Object::ptr_eq(line_2_block, this) {
-        return Err(make_error_2004(activation, Error2004Type::ArgumentError));
+    if DisplayObject::ptr_eq(line_1, line_2) {
+        // Special case: the two lines are the same. NOTE: We only do this after
+        // we ensure that the line is actually reachable from `this.first_line`.
+        line_1.release(activation.gc());
+
+        return Ok(Value::Undefined);
     }
 
-    let lines_to_release = line_1.find_lines_through(line_2);
+    let lines_count = this
+        .lines()
+        .skip(first_position + 1)
+        .position(matches_either_line)
+        .map(|p| p + 2);
 
-    for line in lines_to_release {
+    let Some(lines_count) = lines_count else {
+        return Err(make_error_2004(activation, Error2004Type::ArgumentError));
+    };
+
+    let lines_to_remove = this
+        .lines()
+        .skip(first_position)
+        .take(lines_count)
+        .collect::<Vec<_>>();
+
+    // `collect` the iterator, as we're modifying the doubly-linked list at the
+    // same time as we iterate over it
+
+    for line in lines_to_remove {
         line.release(activation.gc());
     }
 
