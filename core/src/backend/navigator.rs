@@ -57,6 +57,27 @@ pub enum SocketMode {
     Ask,
 }
 
+/// Controls whether a socket may use a target-agnostic WebSocket proxy.
+///
+/// Native navigator backends may ignore this value. Browser backends use it to
+/// keep runtime-discovered destinations opt-in: ordinary `Socket` and
+/// `XMLSocket` connections only match explicitly configured proxies, while
+/// protocols such as RTMP may select a fallback proxy after discovering their
+/// endpoint at runtime.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum SocketProxyMode {
+    ExactOnly,
+    AllowFallback,
+}
+
+/// A destination requested by a Flash socket API.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct SocketTarget {
+    pub host: String,
+    pub port: u16,
+    pub proxy_mode: SocketProxyMode,
+}
+
 #[derive(EnumSetType, Debug)]
 pub enum FetchReason {
     LoadSwf,
@@ -342,8 +363,7 @@ pub trait NavigatorBackend: Any {
     /// When the Sender of the Receiver is dropped then this task should end.
     fn connect_socket(
         &mut self,
-        host: String,
-        port: u16,
+        target: SocketTarget,
         timeout: Duration,
         handle: SocketHandle,
         receiver: Receiver<Vec<u8>>,
@@ -481,8 +501,7 @@ impl NavigatorBackend for NullNavigatorBackend {
 
     fn connect_socket(
         &mut self,
-        _host: String,
-        _port: u16,
+        _target: SocketTarget,
         _timeout: Duration,
         handle: SocketHandle,
         _receiver: Receiver<Vec<u8>>,

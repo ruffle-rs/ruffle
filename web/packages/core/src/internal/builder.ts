@@ -47,6 +47,12 @@ export function configureBuilder(
     if (isExplicit(config.base)) {
         builder.setBaseUrl(config.base);
     }
+    if (isExplicit(config.spoofUrl)) {
+        builder.setSpoofedUrl(config.spoofUrl);
+    }
+    if (isExplicit(config.pageUrl)) {
+        builder.setPageUrl(config.pageUrl);
+    }
     if (isExplicit(config.menu)) {
         builder.setShowMenu(config.menu);
     }
@@ -86,7 +92,13 @@ export function configureBuilder(
         );
     }
     if (isExplicit(config.playerVersion)) {
-        builder.setPlayerVersion(config.playerVersion);
+        if (Array.isArray(config.playerVersion)) {
+            const [major, minor, build, revision] = config.playerVersion;
+            builder.setPlayerVersion(major);
+            builder.setPlayerVersionDetails(minor, build, revision);
+        } else {
+            builder.setPlayerVersion(config.playerVersion);
+        }
     }
     if (isExplicit(config.preferredRenderer)) {
         builder.setPreferredRenderer(config.preferredRenderer);
@@ -106,7 +118,11 @@ export function configureBuilder(
 
     if (isExplicit(config.socketProxy)) {
         for (const proxy of config.socketProxy) {
-            builder.addSocketProxy(proxy.host, proxy.port, proxy.proxyUrl);
+            if ("host" in proxy) {
+                builder.addSocketProxy(proxy.host, proxy.port, proxy.proxyUrl);
+            } else {
+                builder.addSocketProxyFallback(proxy.proxyUrl);
+            }
         }
     }
 

@@ -32,23 +32,9 @@ pub fn get_version<'gc>(
     _this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let os = match activation.avm2().player_runtime {
-        PlayerRuntime::FlashPlayer => "WIN",
-        PlayerRuntime::AIR => {
-            if cfg!(windows) {
-                "WIN"
-            } else if cfg!(target_vendor = "apple") {
-                "MAC"
-            } else {
-                "LNX"
-            }
-        }
-    };
-    Ok(AvmString::new_utf8(
-        activation.gc(),
-        format!("{os} {},0,0,0", activation.avm2().player_version),
-    )
-    .into())
+    let player_version = activation.avm2().player_version;
+    let version = activation.context.system.get_version_string(player_version);
+    Ok(AvmString::new_utf8(activation.gc(), version).into())
 }
 
 /// Implements `flash.system.Capabilities.playerType`

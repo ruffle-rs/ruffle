@@ -1297,6 +1297,7 @@ checksum = "9ed9a281f7bc9b7576e61468ba615a66a5c8cfdff42420a70aa82701a3b1e292"
 dependencies = [
  "block-buffer",
  "crypto-common",
+ "subtle",
 ]
 
 [[package]]
@@ -1734,7 +1735,6 @@ checksum = "5baebc0774151f905a1a2cc41989300b1e6fbb29aff0ceffa1064fdd3088d582"
 [[package]]
 name = "flash-lso"
 version = "0.6.0"
-source = "git+https://github.com/ruffle-rs/rust-flash-lso?rev=61b717248aae853a4f5d8a103eba704268d286c8#61b717248aae853a4f5d8a103eba704268d286c8"
 dependencies = [
  "enumset",
  "nom 8.0.0",
@@ -2430,6 +2430,15 @@ name = "hexf-parse"
 version = "0.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "dfa686283ad6dd069f105e5ab091b04c62850d3e4cf5d67debad1933f55023df"
+
+[[package]]
+name = "hmac"
+version = "0.12.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6c49c37c09c17a53d937dfbb742eb3a961d65a994e6bcdcf37e7399d0cc8ab5e"
+dependencies = [
+ "digest",
+]
 
 [[package]]
 name = "http"
@@ -4701,6 +4710,7 @@ dependencies = [
  "futures",
  "gc-arena",
  "hashbrown 0.16.1",
+ "hmac",
  "id3",
  "image",
  "indexmap",
@@ -4727,6 +4737,7 @@ dependencies = [
  "scopeguard",
  "serde",
  "serde_json",
+ "sha2",
  "slotmap",
  "smallvec",
  "swf 0.2.2",

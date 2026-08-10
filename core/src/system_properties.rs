@@ -59,6 +59,15 @@ pub enum Manufacturer {
     Other(String),
 }
 
+/// Host platform exposed by the emulated Flash Player.
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
+pub enum SystemPlatform {
+    Windows,
+    Macintosh,
+    #[default]
+    Linux,
+}
+
 impl Manufacturer {
     pub fn get_manufacturer_string(&self, version: u8) -> String {
         let os_part = match self {
@@ -266,10 +275,21 @@ pub struct SystemProperties {
     pub cpu_architecture: CpuArchitecture,
     /// The highest supported h264 decoder level
     pub idc_level: String,
+    /// Minor, build, and revision components of the emulated player version.
+    player_version_details: [u16; 3],
 }
 
 impl SystemProperties {
-    pub fn new(language: LanguageIdentifier) -> Self {
+    pub fn new(
+        language: LanguageIdentifier,
+        platform: SystemPlatform,
+        player_version_details: [u16; 3],
+    ) -> Self {
+        let (manufacturer, os) = match platform {
+            SystemPlatform::Windows => (Manufacturer::Windows, OperatingSystem::WindowsUnknown),
+            SystemPlatform::Macintosh => (Manufacturer::Macintosh, OperatingSystem::MacOs),
+            SystemPlatform::Linux => (Manufacturer::Linux, OperatingSystem::Linux),
+        };
         SystemProperties {
             //TODO: default to true on fp>=7, false <= 6
             exact_settings: true,
@@ -284,18 +304,19 @@ impl SystemProperties {
             pixel_aspect_ratio: 1_f32,
             // source: https://tracker.adobe.com/#/view/FP-3949775
             dpi: 72_f32,
-            manufacturer: Manufacturer::Linux,
-            os: OperatingSystem::Linux,
+            manufacturer,
+            os,
             cpu_architecture: CpuArchitecture::X86,
             idc_level: "5.1".into(),
+            player_version_details,
         }
     }
 
     pub fn get_version_string(&self, player_version: u8) -> String {
+        let [minor, build, revision] = self.player_version_details;
         format!(
-            "{} {},0,0,0",
+            "{} {player_version},{minor},{build},{revision}",
             self.manufacturer.get_platform_name(),
-            player_version
         )
     }
 
@@ -385,5 +406,17 @@ impl SystemProperties {
             )
             .append_pair("DP", &self.dpi.to_string())
             .finish()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn version_string_includes_the_configured_build_details() {
+        let properties =
+            SystemProperties::new(langid!("en-US"), SystemPlatform::Windows, [0, 0, 162]);
+        assert_eq!(properties.get_version_string(23), "WIN 23,0,0,162");
     }
 }

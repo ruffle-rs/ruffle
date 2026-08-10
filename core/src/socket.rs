@@ -4,8 +4,9 @@ use crate::avm1::{
 };
 use crate::avm2::object::{EventObject, SocketObject};
 use crate::avm2::{Activation as Avm2Activation, Avm2};
-use crate::backend::navigator::NavigatorBackend;
+use crate::backend::navigator::{NavigatorBackend, SocketProxyMode, SocketTarget};
 use crate::context::UpdateContext;
+use crate::net_connection::{NetConnectionHandle, RtmpTransportEvent};
 use crate::string::AvmString;
 
 use async_channel::{Receiver, Sender, unbounded};
@@ -26,6 +27,7 @@ new_key_type! {
 enum SocketKind<'gc> {
     Avm2(SocketObject<'gc>),
     Avm1(Avm1Object<'gc>),
+    Rtmp(#[collect(require_static)] NetConnectionHandle),
 }
 
 #[derive(Collect)]
@@ -97,8 +99,11 @@ impl<'gc> Sockets<'gc> {
 
         // NOTE: This call will send SocketAction::Connect to sender with connection status.
         backend.connect_socket(
-            sanitize_host(&host).to_string(),
-            port,
+            SocketTarget {
+                host: sanitize_host(&host).to_string(),
+                port,
+                proxy_mode: SocketProxyMode::ExactOnly,
+            },
             Duration::from_millis(target.timeout().into()),
             handle,
             receiver,
@@ -131,8 +136,11 @@ impl<'gc> Sockets<'gc> {
 
         // NOTE: This call will send SocketAction::Connect to sender with connection status.
         backend.connect_socket(
-            sanitize_host(&host).to_string(),
-            port,
+            SocketTarget {
+                host: sanitize_host(&host).to_string(),
+                port,
+                proxy_mode: SocketProxyMode::ExactOnly,
+            },
             Duration::from_millis(xml_socket.timeout().into()),
             handle,
             receiver,
@@ -144,6 +152,37 @@ impl<'gc> Sockets<'gc> {
             //       but we will close the existing connection anyway.
             self.close(existing_handle)
         }
+    }
+
+    /// Open the ordered byte stream used by an RTMP `NetConnection`.
+    ///
+    /// The navigator backend decides whether this is a native TCP socket or a
+    /// configured WebSocket proxy. RTMP framing remains entirely above this
+    /// transport boundary.
+    pub fn connect_rtmp(
+        &mut self,
+        backend: &mut dyn NavigatorBackend,
+        target: NetConnectionHandle,
+        host: String,
+        port: u16,
+        timeout: Duration,
+    ) -> SocketHandle {
+        let (sender, receiver) = unbounded();
+        let socket = Socket::new(SocketKind::Rtmp(target), sender);
+        let handle = self.sockets.insert(socket);
+
+        backend.connect_socket(
+            SocketTarget {
+                host: sanitize_host(&host).to_string(),
+                port,
+                proxy_mode: SocketProxyMode::AllowFallback,
+            },
+            timeout,
+            handle,
+            receiver,
+            self.sender.clone(),
+        );
+        handle
     }
 
     pub fn is_connected(&self, handle: SocketHandle) -> bool {
@@ -196,6 +235,7 @@ impl<'gc> Sockets<'gc> {
                 target.read_buffer().clear();
                 target.write_buffer().clear();
             }
+            SocketKind::Rtmp(_) => {}
         }
     }
 
@@ -239,6 +279,12 @@ impl<'gc> Sockets<'gc> {
                                 ExecutionReason::Special,
                             );
                         }
+                        SocketKind::Rtmp(target) => {
+                            context.net_connections.queue_rtmp_transport_event(
+                                target,
+                                RtmpTransportEvent::Connected(handle),
+                            )
+                        }
                     }
                 }
                 SocketAction::Connect(
@@ -277,6 +323,9 @@ impl<'gc> Sockets<'gc> {
                                 ExecutionReason::Special,
                             );
                         }
+                        SocketKind::Rtmp(target) => context
+                            .net_connections
+                            .queue_rtmp_transport_event(target, RtmpTransportEvent::Failed(handle)),
                     }
                 }
                 SocketAction::Data(handle, data) => {
@@ -351,6 +400,9 @@ impl<'gc> Sockets<'gc> {
                                 }
                             }
                         }
+                        SocketKind::Rtmp(target) => context
+                            .net_connections
+                            .queue_rtmp_transport_event(target, RtmpTransportEvent::Data(data)),
                     }
                 }
                 SocketAction::Close(handle) => {
@@ -391,6 +443,9 @@ impl<'gc> Sockets<'gc> {
                                 ExecutionReason::Special,
                             );
                         }
+                        SocketKind::Rtmp(target) => context
+                            .net_connections
+                            .queue_rtmp_transport_event(target, RtmpTransportEvent::Closed),
                     }
                 }
             }

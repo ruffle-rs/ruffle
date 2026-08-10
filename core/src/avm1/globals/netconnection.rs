@@ -6,6 +6,7 @@ use crate::avm1::{
 use crate::avm1_stub;
 use crate::context::UpdateContext;
 use crate::net_connection::{NetConnectionHandle, NetConnections, ResponderCallback};
+use crate::rtmp::Command;
 use crate::string::AvmString;
 use flash_lso::packet::Header;
 use flash_lso::types::ObjectId;
@@ -38,7 +39,7 @@ impl<'gc> NetConnection<'gc> {
 
     pub fn cast(value: Value<'gc>) -> Option<Self> {
         if let Value::Object(object) = value
-            && let NativeObject::NetConnection(net_connection) = object.native()
+            && let NativeObject::NetConnection(net_connection) = object.receiver().native()
         {
             return Some(net_connection);
         }
@@ -132,6 +133,127 @@ impl<'gc> NetConnection<'gc> {
             ExecutionReason::Special,
         )?;
         Ok(())
+    }
+
+    pub fn on_rtmp_status(
+        context: &mut UpdateContext<'gc>,
+        this: Object<'gc>,
+        command: &Command,
+    ) -> Result<(), Error<'gc>> {
+        let Some(info) = command.arguments.first() else {
+            return Self::on_status_event(
+                context,
+                this,
+                if command.name == "_result" {
+                    "NetConnection.Connect.Success"
+                } else {
+                    "NetConnection.Connect.Failed"
+                },
+            );
+        };
+        let Some(root_clip) = context.stage.root_clip() else {
+            tracing::warn!("Ignored NetConnection callback as there's no root movie");
+            return Ok(());
+        };
+        let mut activation = Activation::from_nothing(
+            context,
+            ActivationIdentifier::root("[RTMP NetConnection connect]"),
+            root_clip,
+        );
+        let mut reference_cache = BTreeMap::default();
+        let info = deserialize_value(
+            &mut activation,
+            info,
+            command.decoder(),
+            &mut reference_cache,
+        );
+        let callback = this.get_stored(istr!("onStatus"), &mut activation)?;
+        let callback_is_object = callback.as_object(&mut activation).is_some();
+        tracing::debug!(callback_is_object, "Dispatching RTMP NetConnection status");
+        this.call_method(
+            istr!("onStatus"),
+            &[info],
+            &mut activation,
+            ExecutionReason::Special,
+        )?;
+        tracing::debug!("Dispatched RTMP NetConnection status");
+        Ok(())
+    }
+
+    pub fn send_rtmp_callback(
+        context: &mut UpdateContext<'gc>,
+        responder: Object<'gc>,
+        callback: ResponderCallback,
+        command: &Command,
+    ) -> Result<(), Error<'gc>> {
+        let Some(root_clip) = context.stage.root_clip() else {
+            tracing::warn!("Ignored NetConnection response as there's no root movie");
+            return Ok(());
+        };
+        let mut activation = Activation::from_nothing(
+            context,
+            ActivationIdentifier::root("[RTMP NetConnection response]"),
+            root_clip,
+        );
+        let method_name = match callback {
+            ResponderCallback::Result => istr!("onResult"),
+            ResponderCallback::Status => istr!("onStatus"),
+        };
+        let value = if let Some(value) = command.arguments.first() {
+            let mut reference_cache = BTreeMap::default();
+            deserialize_value(
+                &mut activation,
+                value,
+                command.decoder(),
+                &mut reference_cache,
+            )
+        } else {
+            Value::Undefined
+        };
+        responder.call_method(
+            method_name,
+            &[value],
+            &mut activation,
+            ExecutionReason::Special,
+        )?;
+        Ok(())
+    }
+
+    pub fn invoke_rtmp(
+        context: &mut UpdateContext<'gc>,
+        this: Object<'gc>,
+        command: &Command,
+    ) -> Result<AMFValue, Error<'gc>> {
+        let Some(root_clip) = context.stage.root_clip() else {
+            tracing::warn!("Ignored NetConnection invocation as there's no root movie");
+            return Ok(AMFValue::Undefined);
+        };
+        let mut activation = Activation::from_nothing(
+            context,
+            ActivationIdentifier::root("[RTMP NetConnection invocation]"),
+            root_clip,
+        );
+        let mut reference_cache = BTreeMap::default();
+        let arguments = command
+            .arguments
+            .iter()
+            .map(|argument| {
+                deserialize_value(
+                    &mut activation,
+                    argument,
+                    command.decoder(),
+                    &mut reference_cache,
+                )
+            })
+            .collect::<Vec<_>>();
+        let method_name = AvmString::new_utf8(activation.gc(), &command.name);
+        let result = this.call_method(
+            method_name,
+            &arguments,
+            &mut activation,
+            ExecutionReason::Special,
+        )?;
+        Ok(serialize(&mut activation, result))
     }
 }
 
@@ -279,7 +401,10 @@ fn call<'gc>(
     }
 
     if let Some(handle) = net_connection.handle() {
-        if let Some(responder) = args.get(1) {
+        if let Some(responder) = args
+            .get(1)
+            .filter(|value| !matches!(value, Value::Undefined | Value::Null))
+        {
             let responder = responder.coerce_to_object_or_bare(activation)?;
             NetConnections::send_avm1(
                 activation.context,
@@ -319,6 +444,7 @@ fn connect<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.receiver();
     if matches!(args.get(0), None | Some(Value::Undefined | Value::Null)) {
         NetConnections::connect_to_local(activation.context, this);
         return Ok(Value::Undefined);
@@ -332,6 +458,12 @@ fn connect<'gc>(
     {
         // HTTP(S) is for Flash Remoting, which is just POST requests to the URL.
         NetConnections::connect_to_flash_remoting(activation.context, this, url.to_string());
+    } else if url_lower.starts_with(WStr::from_units(b"rtmp://")) {
+        let extra_arguments = args[1..]
+            .iter()
+            .map(|argument| Rc::new(serialize(activation, *argument)))
+            .collect();
+        NetConnections::connect_to_rtmp(activation.context, this, url.to_string(), extra_arguments);
     } else {
         avm1_stub!(
             activation,
