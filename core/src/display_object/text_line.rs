@@ -234,43 +234,6 @@ impl<'gc> TextLine<'gc> {
     pub fn previous_lines(self) -> impl Iterator<Item = TextLine<'gc>> {
         core::iter::successors(self.previous_line(), |line| line.previous_line())
     }
-
-    /// Find the lines between `self` and `line_2`, inclusive of both. This
-    /// method will work regardless of whether `self` comes before or after
-    /// `line_2` in the text block.
-    ///
-    /// This method assumes that both lines are in the same text block. If they
-    /// are not, this method will panic.
-    pub fn find_lines_through(self, other: TextLine<'gc>) -> Vec<TextLine<'gc>> {
-        let mut result = Vec::new();
-        result.push(self);
-
-        if DisplayObject::ptr_eq(self, other) {
-            // There is only one line, `self`
-            return result;
-        }
-
-        // Try going forwards...
-        for line in self.next_lines() {
-            result.push(line);
-            if DisplayObject::ptr_eq(line, other) {
-                return result;
-            }
-        }
-
-        // Try going backwards...
-        result.clear();
-        result.push(self);
-
-        for line in self.previous_lines() {
-            result.push(line);
-            if DisplayObject::ptr_eq(line, other) {
-                return result;
-            }
-        }
-
-        panic!("Both lines should be in the same TextBlock!");
-    }
 }
 
 impl<'gc> TDisplayObject<'gc> for TextLine<'gc> {
