@@ -325,12 +325,21 @@ impl GuiController {
                 self.reconfigure_surface();
                 return;
             }
-            state @ (wgpu::CurrentSurfaceTexture::Timeout
-            | wgpu::CurrentSurfaceTexture::Occluded) => {
-                // Acquiring the frame took too long, or the window is occluded
-                // (e.g. minimized or fully covered by another window).
+            wgpu::CurrentSurfaceTexture::Timeout => {
+                // Acquiring the frame took too long (a full second, as of wgpu 29).
                 // The best thing we can do is skip a frame and wait.
-                tracing::warn!("Surface became unavailable: {:?}, skipping a frame", state);
+                tracing::warn!("Surface acquisition timed out, skipping a frame");
+                return;
+            }
+            wgpu::CurrentSurfaceTexture::Occluded => {
+                // The window is occluded (e.g. minimized or fully covered by
+                // another window), so there is no point in drawing anything.
+                // We normally don't even get here, as `WindowEvent::Occluded`
+                // makes us skip rendering entirely - but the two can race, and
+                // not every platform reports occlusion through winit.
+                // Unlike `Timeout`, this returns immediately, so it would repeat
+                // at the movie's frame rate: keep it quiet, it's not an error.
+                tracing::trace!("Surface is occluded, skipping a frame");
                 return;
             }
             wgpu::CurrentSurfaceTexture::Validation => {
