@@ -34,21 +34,7 @@ package flash.geom {
         public native function appendRotation(degrees:Number, axis:Vector3D, pivotPoint:Vector3D = null):void;
 
         [API("674")]
-        public function copyRawDataFrom(vector:Vector.<Number>, index:uint = 0, transpose:Boolean = false):void {
-            if (transpose) {
-                this.transpose();
-            }
-
-            var length = vector.length - index;
-
-            for (var i = 0; i < length; i++) {
-                this._rawData[i] = vector[i + index];
-            }
-
-            if (transpose) {
-                this.transpose();
-            }
-        }
+        public native function copyRawDataFrom(source:Vector.<Number>, index:uint = 0, transpose:Boolean = false):void;
 
         [API("674")]
         public native function copyRowTo(row:uint, vector3D:Vector3D):void;
