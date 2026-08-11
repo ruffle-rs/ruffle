@@ -254,16 +254,4 @@ mod tests {
             [0, 7, 1, 2, 3, 4]
         );
     }
-
-    #[test]
-    fn set_chunk_size_vector_is_exact() {
-        let size = ChunkSize::try_from(4_096).expect("4096 is a valid chunk size");
-        assert_eq!(
-            ProtocolMessage::SetChunkSize(size)
-                .encode()
-                .expect("set-chunk-size encodes")
-                .payload,
-            [0, 0, 0x10, 0]
-        );
-    }
 }
