@@ -1,6 +1,7 @@
 use super::{TransactionId, WireTypeError};
-use flash_lso::amf0::{read::AMF0Decoder, write::write_values_to_bytes};
-use flash_lso::types::Value as AmfValue;
+use flash_lso::amf0::read::AMF0Decoder;
+use flash_lso::packet::{Message, Packet};
+use flash_lso::types::{AMFVersion, ObjectId, Value as AmfValue};
 use std::fmt::{Debug, Formatter};
 use std::rc::Rc;
 use thiserror::Error;
@@ -81,8 +82,51 @@ impl Command {
         ))));
         values.push(self.command_object.clone());
         values.extend(self.arguments.iter().cloned());
-        write_values_to_bytes(&values).map_err(CommandError::Encode)
+        encode_amf0_sequence(values)
     }
+}
+
+fn encode_amf0_sequence(values: Vec<Rc<AmfValue>>) -> Result<Vec<u8>, CommandError> {
+    // Ideally rust-flash-lso would expose an unframed AMF0 sequence writer.
+    // This shim can be removed after contributing that API upstream.
+    let value_count = u32::try_from(values.len()).map_err(|_| CommandError::TooManyValues)?;
+    let packet = Packet {
+        version: AMFVersion::AMF0,
+        headers: Vec::new(),
+        messages: vec![Message {
+            target_uri: String::new(),
+            response_uri: String::new(),
+            contents: Rc::new(AmfValue::StrictArray(ObjectId::INVALID, values)),
+        }],
+    };
+    let encoded =
+        flash_lso::packet::write::write_to_bytes(&packet, true).map_err(CommandError::Encode)?;
+
+    const PACKET_PREFIX: [u8; 10] = [0, 0, 0, 0, 0, 1, 0, 0, 0, 0];
+    const CONTENT_OFFSET: usize = 14;
+    const ARRAY_PAYLOAD_OFFSET: usize = CONTENT_OFFSET + 5;
+    let envelope = encoded
+        .get(..ARRAY_PAYLOAD_OFFSET)
+        .ok_or(CommandError::UnexpectedPacketEnvelope)?;
+    let content_length = u32::from_be_bytes(
+        envelope[10..14]
+            .try_into()
+            .map_err(|_| CommandError::UnexpectedPacketEnvelope)?,
+    );
+    let array_length = u32::from_be_bytes(
+        envelope[15..19]
+            .try_into()
+            .map_err(|_| CommandError::UnexpectedPacketEnvelope)?,
+    );
+    if envelope[..10] != PACKET_PREFIX
+        || envelope[14] != 0x0a
+        || content_length as usize != encoded.len() - CONTENT_OFFSET
+        || array_length != value_count
+    {
+        return Err(CommandError::UnexpectedPacketEnvelope);
+    }
+
+    Ok(encoded[ARRAY_PAYLOAD_OFFSET..].to_vec())
 }
 
 impl Debug for Command {
@@ -120,13 +164,16 @@ pub enum CommandError {
     #[error(transparent)]
     WireType(#[from] WireTypeError),
     #[error("AMF0 command encode failed: {0}")]
-    Encode(#[source] std::io::Error),
+    Encode(#[source] flash_lso::errors::Error<'static>),
+    #[error("AMF0 command has too many values")]
+    TooManyValues,
+    #[error("flash-lso returned an unexpected AMF packet envelope")]
+    UnexpectedPacketEnvelope,
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use flash_lso::types::ObjectId;
 
     #[test]
     fn command_arguments_are_consecutive_amf_values() {
@@ -140,9 +187,16 @@ mod tests {
             ],
         );
         let encoded = command.encode().expect("command encodes");
-        assert_eq!(encoded.len(), 34);
-        assert_eq!(encoded[15], 0x05);
-        assert_ne!(encoded[16], 0x0a);
+        assert_eq!(
+            encoded,
+            [
+                0x02, 0x00, 0x03, b's', b'u', b'm', // "sum"
+                0x00, 0x40, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // 2
+                0x05, // null
+                0x00, 0x40, 0x34, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // 20
+                0x00, 0x40, 0x49, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // 50
+            ]
+        );
         assert_eq!(Command::decode(&encoded).expect("command decodes"), command);
     }
 
@@ -162,7 +216,7 @@ mod tests {
     #[test]
     fn transaction_id_must_be_an_unsigned_integer() {
         for value in [-1.0, 1.5, f64::INFINITY, f64::NAN] {
-            let payload = write_values_to_bytes(&[
+            let payload = encode_amf0_sequence(vec![
                 Rc::new(AmfValue::String("call".into())),
                 Rc::new(AmfValue::Number(value)),
                 Rc::new(AmfValue::Null),
@@ -178,7 +232,7 @@ mod tests {
     #[test]
     fn decoder_state_preserves_references_between_command_arguments() {
         let object = Rc::new(AmfValue::Object(ObjectId::INVALID, Vec::new(), None));
-        let mut payload = write_values_to_bytes(&[
+        let mut payload = encode_amf0_sequence(vec![
             Rc::new(AmfValue::String("references".into())),
             Rc::new(AmfValue::Number(0.0)),
             Rc::new(AmfValue::Null),

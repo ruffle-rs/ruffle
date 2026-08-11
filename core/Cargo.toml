@@ -46,9 +46,7 @@ serde_json = { workspace = true, features = ["preserve_order"] }
 sha2 = { workspace = true }
 nellymoser-rs = { git = "https://github.com/ruffle-rs/nellymoser", rev = "073eb48d907201f46dea0c8feb4e8d9a1d92208c", optional = true }
 regress = { workspace = true }
-# Replace this local path with the reviewed rust-flash-lso revision when the
-# companion raw AMF0 sequence API lands upstream.
-flash-lso = { path = "../../rust-flash-lso-pinned/flash-lso" }
+flash-lso = { git = "https://github.com/ruffle-rs/rust-flash-lso", rev = "61b717248aae853a4f5d8a103eba704268d286c8" }
 lzma-rs = { workspace = true, optional = true }
 dasp = { version = "0.11.0", features = ["interpolate", "interpolate-linear", "signal"], optional = true }
 symphonia = { version = "0.5.5", default-features = false, optional = true }
