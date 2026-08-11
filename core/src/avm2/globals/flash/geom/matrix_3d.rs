@@ -11,7 +11,7 @@ use ruffle_render::matrix3d::Matrix3D;
 pub use crate::avm2::object::matrix_3d_allocator;
 
 /// A 4x4 matrix, stored in column-major order, like `Matrix3D.rawData`.
-type RawData = [f64; 16];
+type RawData = [f32; 16];
 
 /// A value of `flash.geom.Orientation3D`, as passed to `recompose`.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Avm2Enum)]
@@ -92,7 +92,7 @@ pub fn set_raw_data<'gc>(
     }
 
     let raw_data: RawData =
-        std::array::from_fn(|i| value.get_optional(i).map(|v| v.as_f64()).unwrap());
+        std::array::from_fn(|i| value.get_optional(i).map(|v| v.as_f64() as f32).unwrap());
 
     this.replace_matrix(Matrix3D { raw_data });
 
@@ -124,9 +124,9 @@ pub fn append_translation<'gc>(
     let z = args.get_f64(2);
 
     let mut matrix = this.matrix_mut();
-    matrix.raw_data[12] += x;
-    matrix.raw_data[13] += y;
-    matrix.raw_data[14] += z;
+    matrix.raw_data[12] += x as f32;
+    matrix.raw_data[13] += y as f32;
+    matrix.raw_data[14] += z as f32;
 
     Ok(Value::Undefined)
 }
@@ -226,7 +226,7 @@ pub fn append_rotation<'gc>(
         (ty * (x2 + z2) - y * (tx * x + tz * z)) * ccos + (tz * x - tx * z) * sin,
         (tz * (x2 + y2) - z * (tx * x + ty * y)) * ccos + (tx * y - ty * x) * sin,
         1.0,
-    ];
+    ].map(|f| f as f32);
 
     let result = Matrix3D { raw_data: m }.multiply(&this.matrix_ref());
     this.replace_matrix(result);
@@ -277,10 +277,10 @@ pub fn copy_column_from<'gc>(
 
     let mut matrix = this.matrix_mut();
     let base = column as usize * 4;
-    matrix.raw_data[base] = x;
-    matrix.raw_data[base + 1] = y;
-    matrix.raw_data[base + 2] = z;
-    matrix.raw_data[base + 3] = w;
+    matrix.raw_data[base] = x as f32;
+    matrix.raw_data[base + 1] = y as f32;
+    matrix.raw_data[base + 2] = z as f32;
+    matrix.raw_data[base + 3] = w as f32;
 
     Ok(Value::Undefined)
 }
@@ -328,10 +328,10 @@ pub fn copy_row_from<'gc>(
 
     let mut matrix = this.matrix_mut();
     let base = row as usize;
-    matrix.raw_data[base] = x;
-    matrix.raw_data[base + 4] = y;
-    matrix.raw_data[base + 8] = z;
-    matrix.raw_data[base + 12] = w;
+    matrix.raw_data[base] = x as f32;
+    matrix.raw_data[base + 4] = y as f32;
+    matrix.raw_data[base + 8] = z as f32;
+    matrix.raw_data[base + 12] = w as f32;
 
     Ok(Value::Undefined)
 }
@@ -353,7 +353,7 @@ pub fn copy_raw_data_from<'gc>(
     }
 
     let raw_data: RawData =
-        std::array::from_fn(|i| source.get_optional(index + i).unwrap().as_f64());
+        std::array::from_fn(|i| source.get_optional(index + i).unwrap().as_f64() as f32);
     let mut matrix = Matrix3D { raw_data };
 
     if do_transpose {
@@ -407,7 +407,7 @@ pub fn get_position<'gc>(
 
     Ok(vector3d_to_object(
         activation,
-        [mr[12], mr[13], mr[14], 0.0],
+        [mr[12] as f64, mr[13] as f64, mr[14] as f64, 0.0],
     ))
 }
 
@@ -425,9 +425,9 @@ pub fn set_position<'gc>(
     let [x, y, z, _] = read_vector3d(val);
 
     let mut matrix = this.matrix_mut();
-    matrix.raw_data[12] = x;
-    matrix.raw_data[13] = y;
-    matrix.raw_data[14] = z;
+    matrix.raw_data[12] = x as f32;
+    matrix.raw_data[13] = y as f32;
+    matrix.raw_data[14] = z as f32;
 
     Ok(Value::Undefined)
 }
@@ -455,6 +455,9 @@ pub fn delta_transform_vector<'gc>(
     let mr = this.matrix_ref().raw_data;
     let [x, y, z, _] = read_vector3d(v);
 
+    // deltaTransformVector() casts the vector to f32 first, losing accuracy.
+    let [x, y, z] = [x as f32, y as f32, z as f32];
+
     Ok(vector3d_to_object(
         activation,
         [
@@ -462,7 +465,8 @@ pub fn delta_transform_vector<'gc>(
             mr[1] * x + mr[5] * y + mr[9] * z,
             mr[2] * x + mr[6] * y + mr[10] * z,
             mr[3] * x + mr[7] * y + mr[11] * z,
-        ],
+        ]
+        .map(|f| f as f64),
     ))
 }
 
@@ -478,6 +482,9 @@ pub fn transform_vector<'gc>(
     let mr = this.matrix_ref().raw_data;
     let [x, y, z, _] = read_vector3d(v);
 
+    // transformVector() casts the vector to f32 first, losing accuracy.
+    let [x, y, z] = [x as f32, y as f32, z as f32];
+
     Ok(vector3d_to_object(
         activation,
         [
@@ -485,7 +492,8 @@ pub fn transform_vector<'gc>(
             mr[1] * x + mr[5] * y + mr[9] * z + mr[13],
             mr[2] * x + mr[6] * y + mr[10] * z + mr[14],
             mr[3] * x + mr[7] * y + mr[11] * z + mr[15],
-        ],
+        ]
+        .map(|f| f as f64),
     ))
 }
 
@@ -514,7 +522,9 @@ pub fn transform_vectors<'gc>(
             .resize(result_vecs_length, activation)?;
     }
 
-    let mr = this.matrix_ref().raw_data;
+    // transformVectors(), in contrast to transformVector() or
+    // deltaTransformVector(), uses 64-bit operations with higher precision.
+    let mr = this.matrix_ref().raw_data.map(|f| f as f64);
 
     // 'vin' and 'vout' may be the same object, so borrows of their storage
     // are scoped to a single access, never held across a read and a write.
@@ -610,9 +620,9 @@ pub fn recompose<'gc>(
         return Ok(false.into());
     };
 
-    let [translation_x, translation_y, translation_z, _] = translation;
+    let [translation_x, translation_y, translation_z, _] = translation.map(|f| f as f32);
     let [rotation_x, rotation_y, rotation_z, rotation_w] = rotation;
-    let [scale_x, scale_y, scale_z, _] = scale;
+    let [scale_x, scale_y, scale_z, _] = scale.map(|f| f as f32);
 
     let mut rotation_matrix = [0.0; 16];
     match orientation {
@@ -660,7 +670,7 @@ pub fn recompose<'gc>(
 
     let translation = Matrix3D::translate(translation_x, translation_y, translation_z);
     let rotation = Matrix3D {
-        raw_data: rotation_matrix,
+        raw_data: rotation_matrix.map(|f| f as f32),
     };
     let scale = Matrix3D::scale(scale_x, scale_y, scale_z);
 
@@ -687,7 +697,7 @@ pub fn decompose<'gc>(
         return Err(make_error_2187(activation, orientation));
     };
 
-    let mut mr = this.matrix_ref().raw_data;
+    let mut mr = this.matrix_ref().raw_data.map(|f| f as f64);
 
     let translation = [mr[12], mr[13], mr[14], 0.0];
 

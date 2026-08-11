@@ -5,7 +5,7 @@ use swf::Twips;
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub struct Matrix3D {
     /// 4x4 matrix elements.
-    pub raw_data: [f64; 16],
+    pub raw_data: [f32; 16],
 }
 
 impl Matrix3D {
@@ -18,7 +18,7 @@ impl Matrix3D {
         ],
     };
 
-    pub fn scale(x: f64, y: f64, z: f64) -> Self {
+    pub fn scale(x: f32, y: f32, z: f32) -> Self {
         Self {
             raw_data: [
                 x, 0.0, 0.0, 0.0, //
@@ -29,7 +29,7 @@ impl Matrix3D {
         }
     }
 
-    pub fn translate(x: f64, y: f64, z: f64) -> Self {
+    pub fn translate(x: f32, y: f32, z: f32) -> Self {
         Self {
             raw_data: [
                 1.0, 0.0, 0.0, 0.0, //
@@ -44,13 +44,13 @@ impl Matrix3D {
         Self {
             raw_data: [
                 // 1st column
-                matrix.a.into(),
-                matrix.b.into(),
+                matrix.a,
+                matrix.b,
                 0.0,
                 0.0,
                 // 2nd column
-                matrix.c.into(),
-                matrix.d.into(),
+                matrix.c,
+                matrix.d,
                 0.0,
                 0.0,
                 // 3rd column
@@ -59,8 +59,8 @@ impl Matrix3D {
                 1.0,
                 0.0,
                 // 4th column
-                matrix.tx.to_pixels(),
-                matrix.ty.to_pixels(),
+                matrix.tx.to_pixels() as f32,
+                matrix.ty.to_pixels() as f32,
                 0.0,
                 1.0,
             ],
@@ -69,12 +69,12 @@ impl Matrix3D {
 
     pub fn to_matrix(self) -> Matrix {
         Matrix {
-            a: self.raw_data[0] as f32,
-            b: self.raw_data[1] as f32,
-            c: self.raw_data[4] as f32,
-            d: self.raw_data[5] as f32,
-            tx: Twips::from_pixels(self.raw_data[12]),
-            ty: Twips::from_pixels(self.raw_data[13]),
+            a: self.raw_data[0],
+            b: self.raw_data[1],
+            c: self.raw_data[4],
+            d: self.raw_data[5],
+            tx: Twips::from_pixels(self.raw_data[12] as f64),
+            ty: Twips::from_pixels(self.raw_data[13] as f64),
         }
     }
 
@@ -87,11 +87,11 @@ impl Matrix3D {
         self.raw_data.swap(11, 14);
     }
 
-    pub fn determinant(&self) -> f64 {
+    pub fn determinant(&self) -> f32 {
         let m = &self.raw_data;
 
         /// The determinant of a 3x3 matrix, stored in column-major order.
-        fn determinant_3x3(m: [f64; 9]) -> f64 {
+        fn determinant_3x3(m: [f32; 9]) -> f32 {
             m[0] * (m[4] * m[8] - m[7] * m[5]) - m[3] * (m[1] * m[8] - m[7] * m[2])
                 + m[6] * (m[1] * m[5] - m[4] * m[2])
         }
