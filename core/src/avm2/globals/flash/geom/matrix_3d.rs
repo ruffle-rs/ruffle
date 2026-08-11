@@ -347,6 +347,34 @@ pub fn copy_row_from<'gc>(
     Ok(Value::Undefined)
 }
 
+/// Implements `Matrix3D.copyRawDataFrom`.
+pub fn copy_raw_data_from<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Value<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+    let source = args.get_object(activation, 0, "source")?;
+    let source = source.as_vector_storage().unwrap();
+    let index = args.get_u32(1) as usize;
+    let do_transpose = args.get_bool(2);
+
+    if index + 16 > source.length() {
+        return Err(make_error_2004(activation, Error2004Type::ArgumentError));
+    }
+
+    let raw_data: RawData =
+        std::array::from_fn(|i| source.get_optional(index + i).unwrap().as_f64());
+
+    set_raw_data(activation, this, raw_data)?;
+
+    if do_transpose {
+        transpose(activation, this.into(), &[])?;
+    }
+
+    Ok(Value::Undefined)
+}
+
 /// Implements `Matrix3D.position`'s getter.
 pub fn get_position<'gc>(
     activation: &mut Activation<'_, 'gc>,
