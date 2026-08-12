@@ -547,16 +547,6 @@ pub fn transform_vectors<'gc>(
     Ok(Value::Undefined)
 }
 
-/// Computes the determinant of a matrix.
-fn determinant_of(mr: &RawData) -> f64 {
-    (mr[0] * mr[5] - mr[4] * mr[1]) * (mr[10] * mr[15] - mr[14] * mr[11])
-        - (mr[0] * mr[9] - mr[8] * mr[1]) * (mr[6] * mr[15] - mr[14] * mr[7])
-        + (mr[0] * mr[13] - mr[12] * mr[1]) * (mr[6] * mr[11] - mr[10] * mr[7])
-        + (mr[4] * mr[9] - mr[8] * mr[5]) * (mr[2] * mr[15] - mr[14] * mr[3])
-        - (mr[4] * mr[13] - mr[12] * mr[5]) * (mr[2] * mr[11] - mr[10] * mr[3])
-        + (mr[8] * mr[13] - mr[12] * mr[9]) * (mr[2] * mr[7] - mr[6] * mr[3])
-}
-
 /// Implements `Matrix3D.determinant`'s getter.
 pub fn get_determinant<'gc>(
     _activation: &mut Activation<'_, 'gc>,
@@ -564,8 +554,7 @@ pub fn get_determinant<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap().as_matrix3d_object().unwrap();
-    let mr = this.matrix_ref().raw_data;
-    Ok(determinant_of(&mr).into())
+    Ok(this.matrix_ref().determinant().into())
 }
 
 /// Implements `Matrix3D.invert`.
@@ -577,7 +566,7 @@ pub fn invert<'gc>(
     let this = this.as_object().unwrap().as_matrix3d_object().unwrap();
     let mr = this.matrix_ref().raw_data;
 
-    let d = determinant_of(&mr);
+    let d = this.matrix_ref().determinant();
     let invertible = d.abs() > 0.00000000001;
 
     if !invertible {

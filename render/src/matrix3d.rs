@@ -65,6 +65,16 @@ impl Matrix3D {
         self.raw_data.swap(11, 14);
     }
 
+    pub fn determinant(&self) -> f64 {
+        let m = &self.raw_data;
+        (m[0] * m[5] - m[4] * m[1]) * (m[10] * m[15] - m[14] * m[11])
+            - (m[0] * m[9] - m[8] * m[1]) * (m[6] * m[15] - m[14] * m[7])
+            + (m[0] * m[13] - m[12] * m[1]) * (m[6] * m[11] - m[10] * m[7])
+            + (m[4] * m[9] - m[8] * m[5]) * (m[2] * m[15] - m[14] * m[3])
+            - (m[4] * m[13] - m[12] * m[5]) * (m[2] * m[11] - m[10] * m[3])
+            + (m[8] * m[13] - m[12] * m[9]) * (m[2] * m[7] - m[6] * m[3])
+    }
+
     pub fn multiply(&self, rhs: &Self) -> Self {
         let lhs = &self.raw_data;
         let rhs = &rhs.raw_data;
