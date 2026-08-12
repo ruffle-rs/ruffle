@@ -9,6 +9,15 @@ pub struct Matrix3D {
 }
 
 impl Matrix3D {
+    pub const IDENTITY: Self = Self {
+        raw_data: [
+            1.0, 0.0, 0.0, 0.0, //
+            0.0, 1.0, 0.0, 0.0, //
+            0.0, 0.0, 1.0, 0.0, //
+            0.0, 0.0, 0.0, 1.0,
+        ],
+    };
+
     pub fn from_matrix(matrix: Matrix) -> Self {
         Self {
             raw_data: [
