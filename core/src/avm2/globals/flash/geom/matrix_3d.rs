@@ -564,55 +564,11 @@ pub fn invert<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap().as_matrix3d_object().unwrap();
-    let mr = this.matrix_ref().raw_data;
-
-    let d = this.matrix_ref().determinant();
-    let invertible = d.abs() > 0.00000000001;
-
-    if !invertible {
+    let Some(result) = this.matrix_ref().invert() else {
         return Ok(false.into());
-    }
+    };
 
-    let d = 1.0 / d;
-
-    let m11 = mr[0];
-    let m21 = mr[4];
-    let m31 = mr[8];
-    let m41 = mr[12];
-    let m12 = mr[1];
-    let m22 = mr[5];
-    let m32 = mr[9];
-    let m42 = mr[13];
-    let m13 = mr[2];
-    let m23 = mr[6];
-    let m33 = mr[10];
-    let m43 = mr[14];
-    let m14 = mr[3];
-    let m24 = mr[7];
-    let m34 = mr[11];
-    let m44 = mr[15];
-
-    #[rustfmt::skip]
-    let result: RawData = [
-         d * (m22 * (m33 * m44 - m43 * m34) - m32 * (m23 * m44 - m43 * m24) + m42 * (m23 * m34 - m33 * m24)),
-        -d * (m12 * (m33 * m44 - m43 * m34) - m32 * (m13 * m44 - m43 * m14) + m42 * (m13 * m34 - m33 * m14)),
-         d * (m12 * (m23 * m44 - m43 * m24) - m22 * (m13 * m44 - m43 * m14) + m42 * (m13 * m24 - m23 * m14)),
-        -d * (m12 * (m23 * m34 - m33 * m24) - m22 * (m13 * m34 - m33 * m14) + m32 * (m13 * m24 - m23 * m14)),
-        -d * (m21 * (m33 * m44 - m43 * m34) - m31 * (m23 * m44 - m43 * m24) + m41 * (m23 * m34 - m33 * m24)),
-         d * (m11 * (m33 * m44 - m43 * m34) - m31 * (m13 * m44 - m43 * m14) + m41 * (m13 * m34 - m33 * m14)),
-        -d * (m11 * (m23 * m44 - m43 * m24) - m21 * (m13 * m44 - m43 * m14) + m41 * (m13 * m24 - m23 * m14)),
-         d * (m11 * (m23 * m34 - m33 * m24) - m21 * (m13 * m34 - m33 * m14) + m31 * (m13 * m24 - m23 * m14)),
-         d * (m21 * (m32 * m44 - m42 * m34) - m31 * (m22 * m44 - m42 * m24) + m41 * (m22 * m34 - m32 * m24)),
-        -d * (m11 * (m32 * m44 - m42 * m34) - m31 * (m12 * m44 - m42 * m14) + m41 * (m12 * m34 - m32 * m14)),
-         d * (m11 * (m22 * m44 - m42 * m24) - m21 * (m12 * m44 - m42 * m14) + m41 * (m12 * m24 - m22 * m14)),
-        -d * (m11 * (m22 * m34 - m32 * m24) - m21 * (m12 * m34 - m32 * m14) + m31 * (m12 * m24 - m22 * m14)),
-        -d * (m21 * (m32 * m43 - m42 * m33) - m31 * (m22 * m43 - m42 * m23) + m41 * (m22 * m33 - m32 * m23)),
-         d * (m11 * (m32 * m43 - m42 * m33) - m31 * (m12 * m43 - m42 * m13) + m41 * (m12 * m33 - m32 * m13)),
-        -d * (m11 * (m22 * m43 - m42 * m23) - m21 * (m12 * m43 - m42 * m13) + m41 * (m12 * m23 - m22 * m13)),
-         d * (m11 * (m22 * m33 - m32 * m23) - m21 * (m12 * m33 - m32 * m13) + m31 * (m12 * m23 - m22 * m13)),
-    ];
-
-    this.replace_matrix(Matrix3D { raw_data: result });
+    this.replace_matrix(result);
 
     Ok(true.into())
 }
