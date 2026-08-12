@@ -1,6 +1,5 @@
 use crate::avm2::globals::slots::flash_geom_color_transform as ct_slots;
 use crate::avm2::globals::slots::flash_geom_matrix as matrix_slots;
-use crate::avm2::globals::slots::flash_geom_matrix_3d as matrix3d_slots;
 use crate::avm2::globals::slots::flash_geom_perspective_projection as pp_slots;
 use crate::avm2::globals::slots::flash_geom_point as point_slots;
 use crate::avm2::globals::slots::flash_geom_transform as transform_slots;
@@ -211,27 +210,6 @@ pub fn matrix3d_to_object<'gc>(
     Ok(object)
 }
 
-fn object_to_matrix3d<'gc>(
-    object: Object<'gc>,
-    activation: &mut Activation<'_, 'gc>,
-) -> Result<Matrix3D, Error<'gc>> {
-    let raw_data = object
-        .get_slot(matrix3d_slots::_RAW_DATA)
-        .as_object()
-        .expect("rawData cannot be null");
-    let raw_data = raw_data
-        .as_vector_storage()
-        .expect("rawData is not a Vector");
-    let raw_data: Vec<f64> = (0..16)
-        .map(|i| -> Result<f64, Error<'gc>> { Ok(raw_data.get(i, activation)?.as_f64()) })
-        .collect::<Result<Vec<f64>, _>>()?;
-    let raw_data = raw_data
-        .as_slice()
-        .try_into()
-        .expect("rawData size must be 16");
-    Ok(Matrix3D { raw_data })
-}
-
 pub fn object_to_perspective_projection<'gc>(
     object: Object<'gc>,
     _activation: &mut Activation<'_, 'gc>,
@@ -353,7 +331,7 @@ pub fn set_matrix_3d<'gc>(
     let (matrix, has_matrix3d) = {
         match args.try_get_object(0) {
             Some(obj) => {
-                let matrix3d = object_to_matrix3d(obj, activation)?;
+                let matrix3d = obj.as_matrix3d_object().unwrap().matrix();
                 let matrix = matrix3d.to_matrix();
                 (matrix, true)
             }

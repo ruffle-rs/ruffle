@@ -7,7 +7,6 @@ use crate::avm2::error::{
     make_error_3772, make_error_3773, make_error_3780, make_error_3781,
 };
 use crate::avm2::globals::methods::flash_geom_matrix_3d as matrix3d_methods;
-use crate::avm2::globals::slots::flash_geom_matrix_3d as matrix3d_slots;
 use crate::avm2::globals::slots::flash_geom_rectangle as rectangle_slots;
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2_stub_method;
@@ -298,15 +297,12 @@ pub fn set_program_constants_from_matrix<'gc>(
         }
 
         let matrix_raw_data = matrix
-            .get_slot(matrix3d_slots::_RAW_DATA)
-            .as_object()
-            .expect("rawData cannot be null");
-
-        let matrix_raw_data = matrix_raw_data
-            .as_vector_storage()
+            .as_matrix3d_object()
             .unwrap()
+            .matrix_ref()
+            .raw_data
             .iter()
-            .map(|val| (val.as_f64() as f32).to_le_bytes())
+            .map(|val| (*val as f32).to_le_bytes())
             .collect::<Vec<[u8; 4]>>();
 
         context.set_program_constants(program_type, first_register, &matrix_raw_data);

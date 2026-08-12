@@ -1,5 +1,4 @@
 use crate::avm2::error::{Error2004Type, make_error_2004, make_error_2187};
-use crate::avm2::globals::slots::flash_geom_matrix_3d as matrix3d_slots;
 use crate::avm2::globals::slots::flash_geom_vector_3d as vector3d_slots;
 use crate::avm2::object::VectorObject;
 use crate::avm2::parameters::ParametersExt;
@@ -7,6 +6,7 @@ use crate::avm2::vector::VectorStorage;
 use crate::avm2::{Activation, Avm2StrRepresentable as _, Error, Object, TObject as _, Value};
 use crate::avm2_stub_method;
 use ruffle_macros::Avm2Enum;
+use ruffle_render::matrix3d::Matrix3D;
 
 pub use crate::avm2::object::matrix_3d_allocator;
 
@@ -71,46 +71,58 @@ fn multiply(lhs: &RawData, rhs: &RawData) -> RawData {
     result
 }
 
-/// Reads the `_rawData` of `this`.
-fn raw_data_of(this: Object<'_>) -> RawData {
-    let raw_data = this
-        .get_slot(matrix3d_slots::_RAW_DATA)
-        .as_object()
-        .expect("rawData is never null");
-    let raw_data = raw_data.as_vector_storage().expect("rawData is a Vector");
-
-    std::array::from_fn(|i| {
-        raw_data
-            .get_optional(i)
-            .map(|value| value.as_f64())
-            .unwrap_or(f64::NAN)
-    })
-}
-
-/// Stores `raw_data` as the new `_rawData` of `this`.
-fn set_raw_data<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
-    raw_data: RawData,
-) -> Result<(), Error<'gc>> {
-    let number = activation.avm2().class_defs().number;
-    let storage = VectorStorage::from_values(
-        raw_data.iter().map(|value| (*value).into()).collect(),
-        false,
-        Some(number),
-    );
-
-    let raw_data = VectorObject::from_vector(storage, activation);
-    this.set_slot(matrix3d_slots::_RAW_DATA, raw_data.into(), activation)
-}
-
-/// Implements `Matrix3D.identity`.
-pub fn identity<'gc>(
+pub fn get_raw_data<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let this = this.as_object().unwrap();
+    let this = this.as_object().unwrap().as_matrix3d_object().unwrap();
+
+    let number = activation.avm2().class_defs().number;
+    let storage = VectorStorage::from_values(
+        this.matrix_ref()
+            .raw_data
+            .iter()
+            .map(|value| (*value).into())
+            .collect(),
+        false,
+        Some(number),
+    );
+
+    Ok(VectorObject::from_vector(storage, activation).into())
+}
+
+/// Implements `Matrix3D.rawData`'s setter.
+pub fn set_raw_data<'gc>(
+    _activation: &mut Activation<'_, 'gc>,
+    this: Value<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap().as_matrix3d_object().unwrap();
+    let Some(value) = args.try_get_object(0) else {
+        return Ok(Value::Undefined);
+    };
+    let value = value.as_vector_storage().unwrap();
+
+    let raw_data: RawData = std::array::from_fn(|i| {
+        value
+            .get_optional(i)
+            .map(|v| v.as_f64())
+            .unwrap_or(f64::NAN)
+    });
+
+    this.replace_matrix(Matrix3D { raw_data });
+
+    Ok(Value::Undefined)
+}
+
+/// Implements `Matrix3D.identity`.
+pub fn identity<'gc>(
+    _activation: &mut Activation<'_, 'gc>,
+    this: Value<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap().as_matrix3d_object().unwrap();
 
     #[rustfmt::skip]
     let raw_data: RawData = [
@@ -120,28 +132,28 @@ pub fn identity<'gc>(
         0.0, 0.0, 0.0, 1.0,
     ];
 
-    set_raw_data(activation, this, raw_data)?;
+    this.replace_matrix(Matrix3D { raw_data });
 
     Ok(Value::Undefined)
 }
 
 /// Implements `Matrix3D.appendTranslation`.
 pub fn append_translation<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let this = this.as_object().unwrap();
+    let this = this.as_object().unwrap().as_matrix3d_object().unwrap();
     let x = args.get_f64(0);
     let y = args.get_f64(1);
     let z = args.get_f64(2);
 
-    let mut raw_data = raw_data_of(this);
+    let mut raw_data = this.matrix_ref().raw_data;
     raw_data[12] += x;
     raw_data[13] += y;
     raw_data[14] += z;
 
-    set_raw_data(activation, this, raw_data)?;
+    this.replace_matrix(Matrix3D { raw_data });
 
     Ok(Value::Undefined)
 }
@@ -152,11 +164,14 @@ pub fn append<'gc>(
     this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let this = this.as_object().unwrap();
-    let lhs = args.get_object(activation, 0, "lhs")?;
+    let this = this.as_object().unwrap().as_matrix3d_object().unwrap();
+    let lhs = args
+        .get_object(activation, 0, "lhs")?
+        .as_matrix3d_object()
+        .unwrap();
 
-    let result = multiply(&raw_data_of(lhs), &raw_data_of(this));
-    set_raw_data(activation, this, result)?;
+    let result = multiply(&lhs.matrix_ref().raw_data, &this.matrix_ref().raw_data);
+    this.replace_matrix(Matrix3D { raw_data: result });
 
     Ok(Value::Undefined)
 }
@@ -167,11 +182,14 @@ pub fn prepend<'gc>(
     this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let this = this.as_object().unwrap();
-    let rhs = args.get_object(activation, 0, "rhs")?;
+    let this = this.as_object().unwrap().as_matrix3d_object().unwrap();
+    let rhs = args
+        .get_object(activation, 0, "rhs")?
+        .as_matrix3d_object()
+        .unwrap();
 
-    let result = multiply(&raw_data_of(this), &raw_data_of(rhs));
-    set_raw_data(activation, this, result)?;
+    let result = multiply(&this.matrix_ref().raw_data, &rhs.matrix_ref().raw_data);
+    this.replace_matrix(Matrix3D { raw_data: result });
 
     Ok(Value::Undefined)
 }
@@ -184,7 +202,7 @@ pub fn append_rotation<'gc>(
     this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let this = this.as_object().unwrap();
+    let this = this.as_object().unwrap().as_matrix3d_object().unwrap();
     let degrees = args.get_f64(0);
     let axis = args.get_object(activation, 1, "axis")?;
     let pivot_point = args.try_get_object(2);
@@ -237,8 +255,8 @@ pub fn append_rotation<'gc>(
         1.0,
     ];
 
-    let result = multiply(&m, &raw_data_of(this));
-    set_raw_data(activation, this, result)?;
+    let result = multiply(&m, &this.matrix_ref().raw_data);
+    this.replace_matrix(Matrix3D { raw_data: result });
 
     Ok(Value::Undefined)
 }
@@ -249,7 +267,7 @@ pub fn copy_column_to<'gc>(
     this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let this = this.as_object().unwrap();
+    let this = this.as_object().unwrap().as_matrix3d_object().unwrap();
     let column = args.get_u32(0);
     let vector3d = args.get_object(activation, 1, "vector3D")?;
 
@@ -257,7 +275,7 @@ pub fn copy_column_to<'gc>(
         return Err(make_error_2004(activation, Error2004Type::ArgumentError));
     }
 
-    let raw_data = raw_data_of(this);
+    let raw_data = this.matrix_ref().raw_data;
     let base = column as usize * 4;
 
     vector3d.set_slot(vector3d_slots::X, raw_data[base].into(), activation)?;
@@ -274,7 +292,7 @@ pub fn copy_column_from<'gc>(
     this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let this = this.as_object().unwrap();
+    let this = this.as_object().unwrap().as_matrix3d_object().unwrap();
     let column = args.get_u32(0);
     let vector3d = args.get_object(activation, 1, "vector3D")?;
 
@@ -284,14 +302,14 @@ pub fn copy_column_from<'gc>(
 
     let [x, y, z, w] = read_vector3d(vector3d);
 
-    let mut raw_data = raw_data_of(this);
+    let mut raw_data = this.matrix_ref().raw_data;
     let base = column as usize * 4;
     raw_data[base] = x;
     raw_data[base + 1] = y;
     raw_data[base + 2] = z;
     raw_data[base + 3] = w;
 
-    set_raw_data(activation, this, raw_data)?;
+    this.replace_matrix(Matrix3D { raw_data });
 
     Ok(Value::Undefined)
 }
@@ -302,7 +320,7 @@ pub fn copy_row_to<'gc>(
     this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let this = this.as_object().unwrap();
+    let this = this.as_object().unwrap().as_matrix3d_object().unwrap();
     let row = args.get_u32(0);
     let vector3d = args.get_object(activation, 1, "vector3D")?;
 
@@ -310,7 +328,7 @@ pub fn copy_row_to<'gc>(
         return Err(make_error_2004(activation, Error2004Type::ArgumentError));
     }
 
-    let raw_data = raw_data_of(this);
+    let raw_data = this.matrix_ref().raw_data;
     let base = row as usize;
 
     vector3d.set_slot(vector3d_slots::X, raw_data[base].into(), activation)?;
@@ -327,7 +345,7 @@ pub fn copy_row_from<'gc>(
     this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let this = this.as_object().unwrap();
+    let this = this.as_object().unwrap().as_matrix3d_object().unwrap();
     let row = args.get_u32(0);
     let vector3d = args.get_object(activation, 1, "vector3D")?;
 
@@ -337,14 +355,14 @@ pub fn copy_row_from<'gc>(
 
     let [x, y, z, w] = read_vector3d(vector3d);
 
-    let mut raw_data = raw_data_of(this);
+    let mut raw_data = this.matrix_ref().raw_data;
     let base = row as usize;
     raw_data[base] = x;
     raw_data[base + 4] = y;
     raw_data[base + 8] = z;
     raw_data[base + 12] = w;
 
-    set_raw_data(activation, this, raw_data)?;
+    this.replace_matrix(Matrix3D { raw_data });
 
     Ok(Value::Undefined)
 }
@@ -355,7 +373,7 @@ pub fn copy_raw_data_from<'gc>(
     this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let this = this.as_object().unwrap();
+    let this = this.as_object().unwrap().as_matrix3d_object().unwrap();
     let source = args.get_object(activation, 0, "source")?;
     let source = source.as_vector_storage().unwrap();
     let index = args.get_u32(1) as usize;
@@ -368,7 +386,7 @@ pub fn copy_raw_data_from<'gc>(
     let raw_data: RawData =
         std::array::from_fn(|i| source.get_optional(index + i).unwrap().as_f64());
 
-    set_raw_data(activation, this, raw_data)?;
+    this.replace_matrix(Matrix3D { raw_data });
 
     if do_transpose {
         transpose(activation, this.into(), &[])?;
@@ -383,7 +401,7 @@ pub fn copy_raw_data_to<'gc>(
     this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let this = this.as_object().unwrap();
+    let this = this.as_object().unwrap().as_matrix3d_object().unwrap();
     let dest = args
         .get_object(activation, 0, "dest")?
         .as_vector_object()
@@ -396,18 +414,18 @@ pub fn copy_raw_data_to<'gc>(
         storage.resize(index + 16, activation)?;
     }
 
-    let mut raw_data = raw_data_of(this);
+    let mut matrix = this.matrix();
     if do_transpose {
         // TODO Unify with transpose().
-        raw_data.swap(1, 4);
-        raw_data.swap(2, 8);
-        raw_data.swap(3, 12);
-        raw_data.swap(6, 9);
-        raw_data.swap(7, 13);
-        raw_data.swap(11, 14);
+        matrix.raw_data.swap(1, 4);
+        matrix.raw_data.swap(2, 8);
+        matrix.raw_data.swap(3, 12);
+        matrix.raw_data.swap(6, 9);
+        matrix.raw_data.swap(7, 13);
+        matrix.raw_data.swap(11, 14);
     }
 
-    for (i, value) in raw_data.into_iter().enumerate() {
+    for (i, value) in matrix.raw_data.into_iter().enumerate() {
         storage.set(index + i, value.into(), activation)?;
     }
 
@@ -420,8 +438,8 @@ pub fn get_position<'gc>(
     this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let this = this.as_object().unwrap();
-    let mr = raw_data_of(this);
+    let this = this.as_object().unwrap().as_matrix3d_object().unwrap();
+    let mr = this.matrix_ref().raw_data;
 
     Ok(vector3d_to_object(
         activation,
@@ -431,35 +449,35 @@ pub fn get_position<'gc>(
 
 /// Implements `Matrix3D.position`'s setter.
 pub fn set_position<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let this = this.as_object().unwrap();
+    let this = this.as_object().unwrap().as_matrix3d_object().unwrap();
     let Some(val) = args.try_get_object(0) else {
         return Ok(Value::Undefined);
     };
 
     let [x, y, z, _] = read_vector3d(val);
 
-    let mut raw_data = raw_data_of(this);
+    let mut raw_data = this.matrix_ref().raw_data;
     raw_data[12] = x;
     raw_data[13] = y;
     raw_data[14] = z;
 
-    set_raw_data(activation, this, raw_data)?;
+    this.replace_matrix(Matrix3D { raw_data });
 
     Ok(Value::Undefined)
 }
 
 /// Implements `Matrix3D.transpose`.
 pub fn transpose<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let this = this.as_object().unwrap();
-    let mut mr = raw_data_of(this);
+    let this = this.as_object().unwrap().as_matrix3d_object().unwrap();
+    let mut mr = this.matrix_ref().raw_data;
 
     mr.swap(1, 4);
     mr.swap(2, 8);
@@ -468,7 +486,7 @@ pub fn transpose<'gc>(
     mr.swap(7, 13);
     mr.swap(11, 14);
 
-    set_raw_data(activation, this, mr)?;
+    this.replace_matrix(Matrix3D { raw_data: mr });
 
     Ok(Value::Undefined)
 }
@@ -479,10 +497,10 @@ pub fn delta_transform_vector<'gc>(
     this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let this = this.as_object().unwrap();
+    let this = this.as_object().unwrap().as_matrix3d_object().unwrap();
     let v = args.get_object(activation, 0, "vector")?;
 
-    let mr = raw_data_of(this);
+    let mr = this.matrix_ref().raw_data;
     let [x, y, z, _] = read_vector3d(v);
 
     Ok(vector3d_to_object(
@@ -502,10 +520,10 @@ pub fn transform_vector<'gc>(
     this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let this = this.as_object().unwrap();
+    let this = this.as_object().unwrap().as_matrix3d_object().unwrap();
     let v = args.get_object(activation, 0, "vector")?;
 
-    let mr = raw_data_of(this);
+    let mr = this.matrix_ref().raw_data;
     let [x, y, z, _] = read_vector3d(v);
 
     Ok(vector3d_to_object(
@@ -525,7 +543,7 @@ pub fn transform_vectors<'gc>(
     this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let this = this.as_object().unwrap();
+    let this = this.as_object().unwrap().as_matrix3d_object().unwrap();
     let vin = args
         .get_object(activation, 0, "vin")?
         .as_vector_object()
@@ -544,7 +562,7 @@ pub fn transform_vectors<'gc>(
             .resize(result_vecs_length, activation)?;
     }
 
-    let mr = raw_data_of(this);
+    let mr = this.matrix_ref().raw_data;
 
     // 'vin' and 'vout' may be the same object, so borrows of their storage
     // are scoped to a single access, never held across a read and a write.
@@ -592,19 +610,19 @@ pub fn get_determinant<'gc>(
     this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let this = this.as_object().unwrap();
-    let mr = raw_data_of(this);
+    let this = this.as_object().unwrap().as_matrix3d_object().unwrap();
+    let mr = this.matrix_ref().raw_data;
     Ok(determinant_of(&mr).into())
 }
 
 /// Implements `Matrix3D.invert`.
 pub fn invert<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let this = this.as_object().unwrap();
-    let mr = raw_data_of(this);
+    let this = this.as_object().unwrap().as_matrix3d_object().unwrap();
+    let mr = this.matrix_ref().raw_data;
 
     let d = determinant_of(&mr);
     let invertible = d.abs() > 0.00000000001;
@@ -652,7 +670,7 @@ pub fn invert<'gc>(
          d * (m11 * (m22 * m33 - m32 * m23) - m21 * (m12 * m33 - m32 * m13) + m31 * (m12 * m23 - m22 * m13)),
     ];
 
-    set_raw_data(activation, this, result)?;
+    this.replace_matrix(Matrix3D { raw_data: result });
 
     Ok(true.into())
 }
@@ -665,7 +683,7 @@ pub fn recompose<'gc>(
     this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let this = this.as_object().unwrap();
+    let this = this.as_object().unwrap().as_matrix3d_object().unwrap();
 
     let components = args.get_object(activation, 0, "components")?;
     let components = components.as_vector_storage().unwrap();
@@ -766,7 +784,7 @@ pub fn recompose<'gc>(
         &multiply(&rotation_matrix, &scale_matrix),
     );
 
-    set_raw_data(activation, this, raw_data)?;
+    this.replace_matrix(Matrix3D { raw_data });
 
     Ok(true.into())
 }
@@ -779,14 +797,14 @@ pub fn decompose<'gc>(
     this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let this = this.as_object().unwrap();
+    let this = this.as_object().unwrap().as_matrix3d_object().unwrap();
 
     let orientation = args.get_string_non_null(activation, 0, "orientationStyle")?;
     let Some(orientation) = Orientation3D::from_avm2_str(&orientation) else {
         return Err(make_error_2187(activation, orientation));
     };
 
-    let mut mr = raw_data_of(this);
+    let mut mr = this.matrix_ref().raw_data;
 
     let translation = [mr[12], mr[13], mr[14], 0.0];
 
