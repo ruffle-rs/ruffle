@@ -276,8 +276,8 @@ pub fn decode_define_bits_lossless(
     let has_alpha = swf_tag.version == 2;
 
     // Swizzle/de-palettize the bitmap.
-    let out_data = match (swf_tag.version, swf_tag.format) {
-        (1, swf::BitmapFormat::Rgb15) => {
+    let out_data = match swf_tag.format {
+        swf::BitmapFormat::Rgb15 => {
             let padded_width = (swf_tag.width + 0b1) & !0b1;
             validate_size(swf_tag.width, swf_tag.height)?;
             let mut out_data =
@@ -302,7 +302,7 @@ pub fn decode_define_bits_lossless(
             }
             out_data
         }
-        (1 | 2, swf::BitmapFormat::Rgb32) => {
+        swf::BitmapFormat::Rgb32 => {
             for rgba in decoded_data.as_chunks_mut::<4>().0 {
                 rgba.rotate_left(1);
                 if !has_alpha {
@@ -311,7 +311,7 @@ pub fn decode_define_bits_lossless(
             }
             decoded_data
         }
-        (1 | 2, swf::BitmapFormat::ColorMap8 { num_colors }) => {
+        swf::BitmapFormat::ColorMap8 { num_colors } => {
             let mut i = 0;
             let padded_width = (swf_tag.width + 0b11) & !0b11;
 
@@ -348,12 +348,6 @@ pub fn decode_define_bits_lossless(
                 i += (padded_width - swf_tag.width) as usize;
             }
             out_data
-        }
-        _ => {
-            return Err(Error::UnsupportedLosslessFormat(
-                swf_tag.version,
-                swf_tag.format,
-            ));
         }
     };
 
