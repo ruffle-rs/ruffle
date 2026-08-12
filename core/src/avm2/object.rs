@@ -47,6 +47,7 @@ mod function_object;
 mod index_buffer_3d_object;
 mod loaderinfo_object;
 mod local_connection_object;
+mod matrix3d_object;
 mod message_channel_object;
 mod namespace_object;
 mod net_connection_object;
@@ -120,6 +121,9 @@ pub use crate::avm2::object::loaderinfo_object::{
 };
 pub use crate::avm2::object::local_connection_object::{
     LocalConnectionObject, LocalConnectionObjectWeak, local_connection_allocator,
+};
+pub use crate::avm2::object::matrix3d_object::{
+    Matrix3DObject, Matrix3DObjectWeak, matrix_3d_allocator,
 };
 pub use crate::avm2::object::message_channel_object::{
     MessageChannelObject, MessageChannelObjectWeak,
@@ -245,6 +249,7 @@ use crate::font::Font;
         WorkerDomainObject(WorkerDomainObject<'gc>),
         MessageChannelObject(MessageChannelObject<'gc>),
         SecurityDomainObject(SecurityDomainObject<'gc>),
+        Matrix3DObject(Matrix3DObject<'gc>),
     }
 )]
 pub trait TObject<'gc>: 'gc + Collect<'gc> + Debug + Into<Object<'gc>> + Clone + Copy {
@@ -810,6 +815,7 @@ impl<'gc> Object<'gc> {
         pub fn as_shared_object for SharedObjectObject;
         pub fn as_sound_transform for SoundTransformObject;
         pub fn as_style_sheet for StyleSheetObject;
+        pub fn as_matrix3d_object for Matrix3DObject;
     }
 
     /// Unwrap this object's `Namespace`, if the object is a boxed namespace.
@@ -1018,6 +1024,7 @@ define_weak_enum! {
         WorkerDomainObject(WorkerDomainObjectWeak<'gc>),
         MessageChannelObject(MessageChannelObjectWeak<'gc>),
         SecurityDomainObject(SecurityDomainObjectWeak<'gc>),
+        Matrix3DObject(Matrix3DObjectWeak<'gc>),
     }
 }
 
