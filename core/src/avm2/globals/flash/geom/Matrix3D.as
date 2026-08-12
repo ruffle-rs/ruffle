@@ -90,20 +90,7 @@ package flash.geom {
         }
 
         [API("674")]
-        public function copyRawDataTo(vector:Vector.<Number>, index:uint = 0, transpose:Boolean = false):void {
-            if (transpose) {
-                this.transpose();
-            }
-
-            var d:Vector.<Number> = this._rawData;
-            for (var i = 0; i < d.length; i++) {
-                vector[i + index] = d[i];
-            }
-
-            if (transpose) {
-                this.transpose();
-            }
-        }
+        public native function copyRawDataTo(dest:Vector.<Number>, index:uint = 0, transpose:Boolean = false):void;
 
         [Ruffle(NativeCallable)]
         public function clone():Matrix3D {
