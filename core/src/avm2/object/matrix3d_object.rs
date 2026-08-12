@@ -5,6 +5,8 @@ use crate::avm2::object::{ClassObject, Object, TObject};
 use core::fmt;
 use gc_arena::{Collect, Gc, GcWeak};
 use ruffle_common::utils::HasPrefixField;
+use ruffle_render::matrix3d::Matrix3D;
+use std::cell::{Ref, RefCell, RefMut};
 
 /// A class instance allocator that allocates Matrix3D objects.
 pub fn matrix_3d_allocator<'gc>(
@@ -13,7 +15,21 @@ pub fn matrix_3d_allocator<'gc>(
 ) -> Result<Object<'gc>, Error<'gc>> {
     let base = ScriptObjectData::new(class);
 
-    Ok(Matrix3DObject(Gc::new(activation.gc(), Matrix3DObjectData { base })).into())
+    Ok(Matrix3DObject(Gc::new(
+        activation.gc(),
+        Matrix3DObjectData {
+            base,
+            matrix: RefCell::new(Matrix3D {
+                raw_data: [
+                    1.0, 0.0, 0.0, 0.0, //
+                    0.0, 1.0, 0.0, 0.0, //
+                    0.0, 0.0, 1.0, 0.0, //
+                    0.0, 0.0, 0.0, 1.0,
+                ],
+            }),
+        },
+    ))
+    .into())
 }
 
 #[derive(Clone, Collect, Copy)]
@@ -38,6 +54,26 @@ impl fmt::Debug for Matrix3DObject<'_> {
 pub struct Matrix3DObjectData<'gc> {
     /// Base script object.
     base: ScriptObjectData<'gc>,
+
+    matrix: RefCell<Matrix3D>,
+}
+
+impl<'gc> Matrix3DObject<'gc> {
+    pub fn matrix_ref(&self) -> Ref<'_, Matrix3D> {
+        self.0.matrix.borrow()
+    }
+
+    pub fn matrix_mut(&self) -> RefMut<'_, Matrix3D> {
+        self.0.matrix.borrow_mut()
+    }
+
+    pub fn matrix(self) -> Matrix3D {
+        *self.matrix_ref()
+    }
+
+    pub fn replace_matrix(self, matrix: Matrix3D) -> Matrix3D {
+        self.0.matrix.replace(matrix)
+    }
 }
 
 impl<'gc> TObject<'gc> for Matrix3DObject<'gc> {

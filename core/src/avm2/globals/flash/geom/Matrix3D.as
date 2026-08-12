@@ -5,28 +5,14 @@ package flash.geom {
 
     [Ruffle(InstanceAllocator)]
     public class Matrix3D {
-        // The 4x4 matrix data, stored in column-major order
-        // This is never null.
-        [Ruffle(NativeAccessible)]
-        private var _rawData:Vector.<Number>;
-
-        public function get rawData():Vector.<Number> {
-            return this._rawData.AS3::concat();
-        }
-
-        public function set rawData(value:Vector.<Number>):void {
-            if (value != null) {
-                this._rawData = value.AS3::concat();
-            }
-        }
-
         public function Matrix3D(v:Vector.<Number> = null) {
             if (v != null && v.length == 16) {
-                this._rawData = v.AS3::concat();
-            } else {
-                this.identity();
+                this.rawData = v;
             }
         }
+
+        public native function get rawData():Vector.<Number>;
+        public native function set rawData(value:Vector.<Number>):void;
 
         public native function identity():void;
 
@@ -86,8 +72,7 @@ package flash.geom {
 
         [API("674")]
         public function copyFrom(other:Matrix3D):void {
-            // This makes a copy of other.rawData
-            this._rawData = other.rawData;
+            this.rawData = other.rawData;
         }
 
         [API("674")]
@@ -95,13 +80,11 @@ package flash.geom {
 
         [Ruffle(NativeCallable)]
         public function clone():Matrix3D {
-            // The constructor will make a copy of this._rawData
-            return new Matrix3D(this._rawData);
+            return new Matrix3D(this.rawData);
         }
 
         public function copyToMatrix3D(other:Matrix3D):void {
-            // This makes a copy of this.rawData
-            other._rawData = this.rawData;
+            other.rawData = this.rawData;
         }
 
         public function pointAt(pos:Vector3D, at:Vector3D = null, up:Vector3D = null):void {
