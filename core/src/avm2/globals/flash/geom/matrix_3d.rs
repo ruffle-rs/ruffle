@@ -124,15 +124,7 @@ pub fn identity<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap().as_matrix3d_object().unwrap();
 
-    #[rustfmt::skip]
-    let raw_data: RawData = [
-        1.0, 0.0, 0.0, 0.0,
-        0.0, 1.0, 0.0, 0.0,
-        0.0, 0.0, 1.0, 0.0,
-        0.0, 0.0, 0.0, 1.0,
-    ];
-
-    this.replace_matrix(Matrix3D { raw_data });
+    this.replace_matrix(Matrix3D::IDENTITY);
 
     Ok(Value::Undefined)
 }

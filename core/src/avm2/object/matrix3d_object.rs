@@ -19,14 +19,7 @@ pub fn matrix_3d_allocator<'gc>(
         activation.gc(),
         Matrix3DObjectData {
             base,
-            matrix: RefCell::new(Matrix3D {
-                raw_data: [
-                    1.0, 0.0, 0.0, 0.0, //
-                    0.0, 1.0, 0.0, 0.0, //
-                    0.0, 0.0, 1.0, 0.0, //
-                    0.0, 0.0, 0.0, 1.0,
-                ],
-            }),
+            matrix: RefCell::new(Matrix3D::IDENTITY),
         },
     ))
     .into())
