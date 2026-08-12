@@ -3,9 +3,7 @@ use crate::avm2::globals::slots::flash_geom_matrix as matrix_slots;
 use crate::avm2::globals::slots::flash_geom_perspective_projection as pp_slots;
 use crate::avm2::globals::slots::flash_geom_point as point_slots;
 use crate::avm2::globals::slots::flash_geom_transform as transform_slots;
-use crate::avm2::object::VectorObject;
 use crate::avm2::parameters::ParametersExt;
-use crate::avm2::vector::VectorStorage;
 use crate::avm2::{Activation, Error, Object, TObject as _, Value};
 use crate::display_object::{BoundsMode, TDisplayObject};
 use crate::prelude::{DisplayObject, Matrix, Twips};
@@ -196,17 +194,17 @@ pub fn matrix3d_to_object<'gc>(
     matrix: Matrix3D,
     activation: &mut Activation<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let number = activation.avm2().class_defs().number;
-    let mut raw_data_storage = VectorStorage::new(16, true, Some(number));
-    for (i, data) in matrix.raw_data.iter().enumerate() {
-        raw_data_storage.set(i, Value::Number(*data), activation)?;
-    }
-    let vector = VectorObject::from_vector(raw_data_storage, activation).into();
     let object = activation
         .avm2()
         .classes()
         .matrix3d
-        .construct(activation, &[vector])?;
+        .construct(activation, &[])?;
+    object
+        .as_object()
+        .unwrap()
+        .as_matrix3d_object()
+        .unwrap()
+        .replace_matrix(matrix);
     Ok(object)
 }
 
