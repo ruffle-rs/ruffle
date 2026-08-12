@@ -1,0 +1,12 @@
+# This test was made by importing image.bmp into JPEXS, then
+# manually changing the bitmap type of the DefineBitsLossless2
+# tag to be 4.
+
+num_ticks = 1
+
+[image_comparisons.output]
+tolerance = 2
+max_outliers = 0
+
+[player_options]
+with_renderer = { quality = "high" }
