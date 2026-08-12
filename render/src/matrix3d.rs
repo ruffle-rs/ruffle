@@ -29,6 +29,17 @@ impl Matrix3D {
         }
     }
 
+    pub fn translate(x: f64, y: f64, z: f64) -> Self {
+        Self {
+            raw_data: [
+                1.0, 0.0, 0.0, 0.0, //
+                0.0, 1.0, 0.0, 0.0, //
+                0.0, 0.0, 1.0, 0.0, //
+                x, y, z, 1.0,
+            ],
+        }
+    }
+
     pub fn from_matrix(matrix: Matrix) -> Self {
         Self {
             raw_data: [

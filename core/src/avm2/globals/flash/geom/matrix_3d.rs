@@ -659,17 +659,7 @@ pub fn recompose<'gc>(
     }
     rotation_matrix[15] = 1.0;
 
-    #[rustfmt::skip]
-    let translation_matrix = [
-        1.0,           0.0,           0.0,           0.0,
-        0.0,           1.0,           0.0,           0.0,
-        0.0,           0.0,           1.0,           0.0,
-        translation_x, translation_y, translation_z, 1.0,
-    ];
-
-    let translation = Matrix3D {
-        raw_data: translation_matrix,
-    };
+    let translation = Matrix3D::translate(translation_x, translation_y, translation_z);
     let rotation = Matrix3D {
         raw_data: rotation_matrix,
     };
