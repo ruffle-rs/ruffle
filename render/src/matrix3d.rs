@@ -64,4 +64,21 @@ impl Matrix3D {
         self.raw_data.swap(7, 13);
         self.raw_data.swap(11, 14);
     }
+
+    pub fn multiply(&self, rhs: &Self) -> Self {
+        let lhs = &self.raw_data;
+        let rhs = &rhs.raw_data;
+        let mut result = [0.0; 16];
+
+        for column in 0..4 {
+            for row in 0..4 {
+                result[column * 4 + row] = lhs[row] * rhs[column * 4]
+                    + lhs[4 + row] * rhs[column * 4 + 1]
+                    + lhs[8 + row] * rhs[column * 4 + 2]
+                    + lhs[12 + row] * rhs[column * 4 + 3];
+            }
+        }
+
+        Self { raw_data: result }
+    }
 }
