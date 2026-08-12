@@ -55,4 +55,13 @@ impl Matrix3D {
             ty: Twips::from_pixels(self.raw_data[13]),
         }
     }
+
+    pub fn transpose_in_place(&mut self) {
+        self.raw_data.swap(1, 4);
+        self.raw_data.swap(2, 8);
+        self.raw_data.swap(3, 12);
+        self.raw_data.swap(6, 9);
+        self.raw_data.swap(7, 13);
+        self.raw_data.swap(11, 14);
+    }
 }
