@@ -660,14 +660,6 @@ pub fn recompose<'gc>(
     rotation_matrix[15] = 1.0;
 
     #[rustfmt::skip]
-    let scale_matrix = [
-        scale_x, 0.0,     0.0,     0.0,
-        0.0,     scale_y, 0.0,     0.0,
-        0.0,     0.0,     scale_z, 0.0,
-        0.0,     0.0,     0.0,     1.0,
-    ];
-
-    #[rustfmt::skip]
     let translation_matrix = [
         1.0,           0.0,           0.0,           0.0,
         0.0,           1.0,           0.0,           0.0,
@@ -681,9 +673,7 @@ pub fn recompose<'gc>(
     let rotation = Matrix3D {
         raw_data: rotation_matrix,
     };
-    let scale = Matrix3D {
-        raw_data: scale_matrix,
-    };
+    let scale = Matrix3D::scale(scale_x, scale_y, scale_z);
 
     // The order of operations is observable when some of the components are not
     // finite.
