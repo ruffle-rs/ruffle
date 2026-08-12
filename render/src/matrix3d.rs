@@ -18,6 +18,17 @@ impl Matrix3D {
         ],
     };
 
+    pub fn scale(x: f64, y: f64, z: f64) -> Self {
+        Self {
+            raw_data: [
+                x, 0.0, 0.0, 0.0, //
+                0.0, y, 0.0, 0.0, //
+                0.0, 0.0, z, 0.0, //
+                0.0, 0.0, 0.0, 1.0,
+            ],
+        }
+    }
+
     pub fn from_matrix(matrix: Matrix) -> Self {
         Self {
             raw_data: [
