@@ -75,6 +75,57 @@ impl Matrix3D {
             + (m[8] * m[13] - m[12] * m[9]) * (m[2] * m[7] - m[6] * m[3])
     }
 
+    pub fn invert(&self) -> Option<Self> {
+        let d = self.determinant();
+        let invertible = d.abs() > 0.00000000001;
+
+        if !invertible {
+            return None;
+        }
+
+        let d = 1.0 / d;
+
+        let m = self.raw_data;
+        let m11 = m[0];
+        let m21 = m[4];
+        let m31 = m[8];
+        let m41 = m[12];
+        let m12 = m[1];
+        let m22 = m[5];
+        let m32 = m[9];
+        let m42 = m[13];
+        let m13 = m[2];
+        let m23 = m[6];
+        let m33 = m[10];
+        let m43 = m[14];
+        let m14 = m[3];
+        let m24 = m[7];
+        let m34 = m[11];
+        let m44 = m[15];
+
+        #[rustfmt::skip]
+        let raw_data = [
+             d * (m22 * (m33 * m44 - m43 * m34) - m32 * (m23 * m44 - m43 * m24) + m42 * (m23 * m34 - m33 * m24)),
+            -d * (m12 * (m33 * m44 - m43 * m34) - m32 * (m13 * m44 - m43 * m14) + m42 * (m13 * m34 - m33 * m14)),
+             d * (m12 * (m23 * m44 - m43 * m24) - m22 * (m13 * m44 - m43 * m14) + m42 * (m13 * m24 - m23 * m14)),
+            -d * (m12 * (m23 * m34 - m33 * m24) - m22 * (m13 * m34 - m33 * m14) + m32 * (m13 * m24 - m23 * m14)),
+            -d * (m21 * (m33 * m44 - m43 * m34) - m31 * (m23 * m44 - m43 * m24) + m41 * (m23 * m34 - m33 * m24)),
+             d * (m11 * (m33 * m44 - m43 * m34) - m31 * (m13 * m44 - m43 * m14) + m41 * (m13 * m34 - m33 * m14)),
+            -d * (m11 * (m23 * m44 - m43 * m24) - m21 * (m13 * m44 - m43 * m14) + m41 * (m13 * m24 - m23 * m14)),
+             d * (m11 * (m23 * m34 - m33 * m24) - m21 * (m13 * m34 - m33 * m14) + m31 * (m13 * m24 - m23 * m14)),
+             d * (m21 * (m32 * m44 - m42 * m34) - m31 * (m22 * m44 - m42 * m24) + m41 * (m22 * m34 - m32 * m24)),
+            -d * (m11 * (m32 * m44 - m42 * m34) - m31 * (m12 * m44 - m42 * m14) + m41 * (m12 * m34 - m32 * m14)),
+             d * (m11 * (m22 * m44 - m42 * m24) - m21 * (m12 * m44 - m42 * m14) + m41 * (m12 * m24 - m22 * m14)),
+            -d * (m11 * (m22 * m34 - m32 * m24) - m21 * (m12 * m34 - m32 * m14) + m31 * (m12 * m24 - m22 * m14)),
+            -d * (m21 * (m32 * m43 - m42 * m33) - m31 * (m22 * m43 - m42 * m23) + m41 * (m22 * m33 - m32 * m23)),
+             d * (m11 * (m32 * m43 - m42 * m33) - m31 * (m12 * m43 - m42 * m13) + m41 * (m12 * m33 - m32 * m13)),
+            -d * (m11 * (m22 * m43 - m42 * m23) - m21 * (m12 * m43 - m42 * m13) + m41 * (m12 * m23 - m22 * m13)),
+             d * (m11 * (m22 * m33 - m32 * m23) - m21 * (m12 * m33 - m32 * m13) + m31 * (m12 * m23 - m22 * m13)),
+        ];
+
+        Some(Self { raw_data })
+    }
+
     pub fn multiply(&self, rhs: &Self) -> Self {
         let lhs = &self.raw_data;
         let rhs = &rhs.raw_data;
