@@ -2521,7 +2521,11 @@ impl<'a> Reader<'a> {
             3 => BitmapFormat::ColorMap8 {
                 num_colors: self.read_u8()?,
             },
-            4 if version == 1 => BitmapFormat::Rgb15,
+            // Despite the SWF19 specs stating otherwise, the Rgb15
+            // format does display correctly in Flash Player
+            // when it is inside of DefineBitsLossless2.
+            // (see https://github.com/ruffle-rs/ruffle/issues/24431)
+            4 => BitmapFormat::Rgb15,
             5 => BitmapFormat::Rgb32,
             _ => return Err(Error::invalid_data("Invalid bitmap format.")),
         };
