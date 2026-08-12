@@ -377,12 +377,13 @@ pub fn copy_raw_data_from<'gc>(
 
     let raw_data: RawData =
         std::array::from_fn(|i| source.get_optional(index + i).unwrap().as_f64());
-
-    this.replace_matrix(Matrix3D { raw_data });
+    let mut matrix = Matrix3D { raw_data };
 
     if do_transpose {
-        transpose(activation, this.into(), &[])?;
+        matrix.transpose_in_place();
     }
+
+    this.replace_matrix(matrix);
 
     Ok(Value::Undefined)
 }
@@ -408,13 +409,7 @@ pub fn copy_raw_data_to<'gc>(
 
     let mut matrix = this.matrix();
     if do_transpose {
-        // TODO Unify with transpose().
-        matrix.raw_data.swap(1, 4);
-        matrix.raw_data.swap(2, 8);
-        matrix.raw_data.swap(3, 12);
-        matrix.raw_data.swap(6, 9);
-        matrix.raw_data.swap(7, 13);
-        matrix.raw_data.swap(11, 14);
+        matrix.transpose_in_place();
     }
 
     for (i, value) in matrix.raw_data.into_iter().enumerate() {
@@ -469,17 +464,7 @@ pub fn transpose<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap().as_matrix3d_object().unwrap();
-    let mut mr = this.matrix_ref().raw_data;
-
-    mr.swap(1, 4);
-    mr.swap(2, 8);
-    mr.swap(3, 12);
-    mr.swap(6, 9);
-    mr.swap(7, 13);
-    mr.swap(11, 14);
-
-    this.replace_matrix(Matrix3D { raw_data: mr });
-
+    this.matrix_mut().transpose_in_place();
     Ok(Value::Undefined)
 }
 
