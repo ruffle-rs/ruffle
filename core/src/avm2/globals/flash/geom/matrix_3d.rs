@@ -140,12 +140,10 @@ pub fn append_translation<'gc>(
     let y = args.get_f64(1);
     let z = args.get_f64(2);
 
-    let mut raw_data = this.matrix_ref().raw_data;
-    raw_data[12] += x;
-    raw_data[13] += y;
-    raw_data[14] += z;
-
-    this.replace_matrix(Matrix3D { raw_data });
+    let mut matrix = this.matrix_mut();
+    matrix.raw_data[12] += x;
+    matrix.raw_data[13] += y;
+    matrix.raw_data[14] += z;
 
     Ok(Value::Undefined)
 }
@@ -294,14 +292,12 @@ pub fn copy_column_from<'gc>(
 
     let [x, y, z, w] = read_vector3d(vector3d);
 
-    let mut raw_data = this.matrix_ref().raw_data;
+    let mut matrix = this.matrix_mut();
     let base = column as usize * 4;
-    raw_data[base] = x;
-    raw_data[base + 1] = y;
-    raw_data[base + 2] = z;
-    raw_data[base + 3] = w;
-
-    this.replace_matrix(Matrix3D { raw_data });
+    matrix.raw_data[base] = x;
+    matrix.raw_data[base + 1] = y;
+    matrix.raw_data[base + 2] = z;
+    matrix.raw_data[base + 3] = w;
 
     Ok(Value::Undefined)
 }
@@ -347,14 +343,12 @@ pub fn copy_row_from<'gc>(
 
     let [x, y, z, w] = read_vector3d(vector3d);
 
-    let mut raw_data = this.matrix_ref().raw_data;
+    let mut matrix = this.matrix_mut();
     let base = row as usize;
-    raw_data[base] = x;
-    raw_data[base + 4] = y;
-    raw_data[base + 8] = z;
-    raw_data[base + 12] = w;
-
-    this.replace_matrix(Matrix3D { raw_data });
+    matrix.raw_data[base] = x;
+    matrix.raw_data[base + 4] = y;
+    matrix.raw_data[base + 8] = z;
+    matrix.raw_data[base + 12] = w;
 
     Ok(Value::Undefined)
 }
@@ -447,12 +441,10 @@ pub fn set_position<'gc>(
 
     let [x, y, z, _] = read_vector3d(val);
 
-    let mut raw_data = this.matrix_ref().raw_data;
-    raw_data[12] = x;
-    raw_data[13] = y;
-    raw_data[14] = z;
-
-    this.replace_matrix(Matrix3D { raw_data });
+    let mut matrix = this.matrix_mut();
+    matrix.raw_data[12] = x;
+    matrix.raw_data[13] = y;
+    matrix.raw_data[14] = z;
 
     Ok(Value::Undefined)
 }
