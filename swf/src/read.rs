@@ -3059,6 +3059,35 @@ pub mod tests {
         }
     }
 
+    /// Regression test for a corrupt/hostile `DefineFont2`/`DefineFont3` glyph
+    /// offset table. Before the offset table was read with `seek_absolute`
+    /// (rather than assumed to already be at the right position), an offset
+    /// that did not match the reader's actual position triggered
+    /// `debug_assert_eq!` and panicked debug builds; on release builds the
+    /// `available_bytes` subtraction wrapped on a decreasing offset. Neither
+    /// is exercised anymore, since `read_define_font_2` no longer computes
+    /// `available_bytes` at all -- it must return an `Err` (from running past
+    /// the end of the malformed data) rather than panic.
+    #[test]
+    fn read_define_font_2_with_out_of_range_glyph_offset_does_not_panic() {
+        let mut data = vec![];
+        data.extend_from_slice(&1u16.to_le_bytes()); // character id
+        data.push(0); // flags: no wide offsets/codes, no layout
+        data.push(0); // language: Unknown
+        data.push(0); // font name length: 0
+        data.extend_from_slice(&1u16.to_le_bytes()); // num_glyphs: 1
+                                                       // OffsetTable[0]: points far past the end of `data`, which a
+                                                       // corrupt or hostile SWF can freely claim.
+        data.extend_from_slice(&0xffffu16.to_le_bytes());
+        data.extend_from_slice(&0u16.to_le_bytes()); // CodeTableOffset
+
+        let result = reader(&data).read_define_font_2(2);
+        assert!(
+            result.is_err(),
+            "expected an error for an out-of-range glyph offset, got {result:?}"
+        );
+    }
+
     #[test]
     fn read_tag_list() {
         {
