@@ -3,6 +3,7 @@
 package flash.geom {
     import __ruffle__.stub_method;
 
+    [Ruffle(InstanceAllocator)]
     public class Matrix3D {
         // The 4x4 matrix data, stored in column-major order
         // This is never null.

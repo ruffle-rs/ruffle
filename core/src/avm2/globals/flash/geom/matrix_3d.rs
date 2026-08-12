@@ -8,6 +8,8 @@ use crate::avm2::{Activation, Avm2StrRepresentable as _, Error, Object, TObject 
 use crate::avm2_stub_method;
 use ruffle_macros::Avm2Enum;
 
+pub use crate::avm2::object::matrix_3d_allocator;
+
 /// A 4x4 matrix, stored in column-major order, like `Matrix3D.rawData`.
 type RawData = [f64; 16];
 
