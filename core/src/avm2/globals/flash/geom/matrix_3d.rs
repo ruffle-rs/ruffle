@@ -55,22 +55,6 @@ fn vector3d_to_object<'gc>(
         .unwrap()
 }
 
-/// Multiplies two matrices.
-fn multiply(lhs: &RawData, rhs: &RawData) -> RawData {
-    let mut result = [0.0; 16];
-
-    for column in 0..4 {
-        for row in 0..4 {
-            result[column * 4 + row] = lhs[row] * rhs[column * 4]
-                + lhs[4 + row] * rhs[column * 4 + 1]
-                + lhs[8 + row] * rhs[column * 4 + 2]
-                + lhs[12 + row] * rhs[column * 4 + 3];
-        }
-    }
-
-    result
-}
-
 pub fn get_raw_data<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
@@ -160,8 +144,8 @@ pub fn append<'gc>(
         .as_matrix3d_object()
         .unwrap();
 
-    let result = multiply(&lhs.matrix_ref().raw_data, &this.matrix_ref().raw_data);
-    this.replace_matrix(Matrix3D { raw_data: result });
+    let result = lhs.matrix_ref().multiply(&this.matrix_ref());
+    this.replace_matrix(result);
 
     Ok(Value::Undefined)
 }
@@ -178,8 +162,8 @@ pub fn prepend<'gc>(
         .as_matrix3d_object()
         .unwrap();
 
-    let result = multiply(&this.matrix_ref().raw_data, &rhs.matrix_ref().raw_data);
-    this.replace_matrix(Matrix3D { raw_data: result });
+    let result = this.matrix_ref().multiply(&rhs.matrix_ref());
+    this.replace_matrix(result);
 
     Ok(Value::Undefined)
 }
@@ -245,8 +229,8 @@ pub fn append_rotation<'gc>(
         1.0,
     ];
 
-    let result = multiply(&m, &this.matrix_ref().raw_data);
-    this.replace_matrix(Matrix3D { raw_data: result });
+    let result = Matrix3D { raw_data: m }.multiply(&this.matrix_ref());
+    this.replace_matrix(result);
 
     Ok(Value::Undefined)
 }
@@ -746,14 +730,20 @@ pub fn recompose<'gc>(
         translation_x, translation_y, translation_z, 1.0,
     ];
 
+    let translation = Matrix3D {
+        raw_data: translation_matrix,
+    };
+    let rotation = Matrix3D {
+        raw_data: rotation_matrix,
+    };
+    let scale = Matrix3D {
+        raw_data: scale_matrix,
+    };
+
     // The order of operations is observable when some of the components are not
     // finite.
-    let raw_data = multiply(
-        &translation_matrix,
-        &multiply(&rotation_matrix, &scale_matrix),
-    );
-
-    this.replace_matrix(Matrix3D { raw_data });
+    let result = translation.multiply(&rotation.multiply(&scale));
+    this.replace_matrix(result);
 
     Ok(true.into())
 }
