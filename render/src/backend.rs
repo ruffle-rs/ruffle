@@ -272,6 +272,10 @@ pub trait Context3D: Any {
     fn profile(&self) -> Context3DProfile;
     // The BitmapHandle for the texture we're rendering to
     fn bitmap_handle(&self) -> BitmapHandle;
+    // The BitmapHandle for the current back buffer texture. Unlike `bitmap_handle`
+    // (which is the front buffer, shown after `present`), this holds the content
+    // rendered since the last `present` - what `Context3D.drawToBitmapData` reads.
+    fn back_buffer_handle(&self) -> BitmapHandle;
     // Whether or not we should actually render the texture
     // as part of stage rendering
     fn should_render(&self) -> bool;

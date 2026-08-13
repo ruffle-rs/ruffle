@@ -13,6 +13,10 @@ use crate::avm2_stub_method;
 use ruffle_macros::istr;
 use ruffle_render::backend::BufferUsage;
 use ruffle_render::backend::{Context3DProfile, Context3DTextureFilter};
+use ruffle_render::bitmap::{PixelRegion, PixelSnapping};
+use ruffle_render::commands::{CommandHandler, CommandList};
+use ruffle_render::quality::StageQuality;
+use ruffle_render::transform::Transform;
 use swf::{Rectangle, Twips};
 
 pub fn create_index_buffer<'gc>(
@@ -217,6 +221,58 @@ pub fn present<'gc>(
 
     if let Some(context) = this.as_context_3d() {
         context.present();
+    }
+    Ok(Value::Undefined)
+}
+
+pub fn draw_to_bitmap_data<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Value<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
+    if let Some(context) = this.as_context_3d() {
+        let destination = args
+            .get_object(activation, 0, "destination")?
+            .as_bitmap_data()
+            .expect("Argument is BitmapData-typed");
+
+        // Read the current back buffer (the content rendered since the last
+        // `present`), matching Flash's `drawToBitmapData`. Blit it into the
+        // destination BitmapData's GPU target, then mark it dirty so the pixels
+        // are read back on next access.
+        let source_handle = context.with_context_3d(|ctx| ctx.back_buffer_handle());
+
+        let mut commands = CommandList::new();
+        commands.render_bitmap(
+            source_handle,
+            Transform::default(),
+            false,
+            PixelSnapping::Never,
+        );
+
+        let handle = destination.bitmap_handle(activation.gc(), activation.context.renderer);
+
+        let (destination, include_dirty_area) =
+            destination.overwrite_cpu_pixels_from_gpu(activation.gc());
+        let mut write = destination.borrow_mut(activation.gc());
+
+        let mut dirty_region = PixelRegion::for_whole_size(write.width(), write.height());
+        if let Some(old) = include_dirty_area {
+            dirty_region.union(old);
+        }
+
+        let image = activation.context.renderer.render_offscreen(
+            handle,
+            commands,
+            StageQuality::High,
+            dirty_region,
+        );
+
+        if let Some(sync_handle) = image {
+            write.set_gpu_dirty(activation.gc(), sync_handle, dirty_region);
+        }
     }
     Ok(Value::Undefined)
 }
