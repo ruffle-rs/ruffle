@@ -85,7 +85,7 @@ package {
                 context.drawToBitmapData(null);
                 trace("null: no error");
             } catch (e:Error) {
-                trace("null: " + e);
+                trace("null: " + e.getStackTrace());
             }
 
             // Second frame: draw a green quad and read it into another
