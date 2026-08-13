@@ -828,14 +828,21 @@ pub fn set_scissor_rectangle<'gc>(
 pub fn dispose<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    _args: &[Value<'gc>],
+    args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
-    avm2_stub_method!(activation, "flash.display3D.Context3D", "dispose");
-    this.as_context_3d()
-        .unwrap()
-        .stage3d()
-        .clear_context3d(activation.gc());
+    // recreate=true (the default) makes Stage3D dispatch a fresh context3DCreate
+    // with a new context, so re-request one; recreate=false leaves it without a
+    // context.
+    let recreate = args.get_bool(0);
+    let context = this.as_context_3d().unwrap();
+    let stage3d = context.stage3d();
+    if recreate {
+        let profile = context.with_context_3d(|ctx| ctx.profile());
+        stage3d.set_requesting_context3d(activation.gc(), profile);
+    } else {
+        stage3d.clear_context3d(activation.gc());
+    }
     Ok(Value::Undefined)
 }
