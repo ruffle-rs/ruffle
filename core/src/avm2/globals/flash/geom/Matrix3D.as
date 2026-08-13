@@ -105,5 +105,61 @@ package flash.geom {
 
         public native function get determinant():Number;
 
+        public function interpolateTo(toMat:Matrix3D, percent:Number):void {
+            this.rawData = Matrix3D.interpolate(this, toMat, percent).rawData;
+        }
+
+        public static function interpolate(thisMat:Matrix3D, toMat:Matrix3D, percent:Number):Matrix3D {
+            var from:Vector.<Vector3D> = thisMat.decompose("quaternion");
+            var to:Vector.<Vector3D> = toMat.decompose("quaternion");
+
+            var t0:Vector3D = from[0], q0:Vector3D = from[1], s0:Vector3D = from[2];
+            var t1:Vector3D = to[0], q1:Vector3D = to[1], s1:Vector3D = to[2];
+
+            var trans:Vector3D = new Vector3D(
+                t0.x + (t1.x - t0.x) * percent,
+                t0.y + (t1.y - t0.y) * percent,
+                t0.z + (t1.z - t0.z) * percent);
+
+            var scale:Vector3D = new Vector3D(
+                s0.x + (s1.x - s0.x) * percent,
+                s0.y + (s1.y - s0.y) * percent,
+                s0.z + (s1.z - s0.z) * percent);
+
+            // Spherical linear interpolation of the rotation quaternions.
+            var dot:Number = q0.x * q1.x + q0.y * q1.y + q0.z * q1.z + q0.w * q1.w;
+            var x1:Number = q1.x, y1:Number = q1.y, z1:Number = q1.z, w1:Number = q1.w;
+            if (dot < 0) {
+                dot = -dot;
+                x1 = -x1; y1 = -y1; z1 = -z1; w1 = -w1;
+            }
+
+            var k0:Number, k1:Number;
+            if (dot > 0.9995) {
+                k0 = 1 - percent;
+                k1 = percent;
+            } else {
+                var theta:Number = Math.acos(dot);
+                var sinTheta:Number = Math.sin(theta);
+                k0 = Math.sin((1 - percent) * theta) / sinTheta;
+                k1 = Math.sin(percent * theta) / sinTheta;
+            }
+
+            var rx:Number = q0.x * k0 + x1 * k1;
+            var ry:Number = q0.y * k0 + y1 * k1;
+            var rz:Number = q0.z * k0 + z1 * k1;
+            var rw:Number = q0.w * k0 + w1 * k1;
+
+            var len:Number = Math.sqrt(rx * rx + ry * ry + rz * rz + rw * rw);
+            if (len == 0) {
+                rx = 0; ry = 0; rz = 0; rw = 1; len = 1;
+            }
+            var rot:Vector3D = new Vector3D(rx / len, ry / len, rz / len, rw / len);
+
+            var result:Matrix3D = new Matrix3D();
+            result.recompose(new <Vector3D>[trans, rot, scale], "quaternion");
+            return result;
+        }
+
     }
 }
