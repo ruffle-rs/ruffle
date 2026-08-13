@@ -1199,6 +1199,15 @@ impl<'gc> NetStream<'gc> {
         }
 
         let is_playing = self.0.playing.get();
+        let can_preload_while_paused =
+            matches!(self.0.avm_object.get(), Some(NetStreamKind::Avm2(_)));
+
+        // AVM1 does not preload stream data while paused. In particular, its
+        // Play.Start event must be dispatched before onMetaData.
+        if !is_playing && !can_preload_while_paused {
+            StreamManager::deactivate(context, self);
+            return;
+        }
 
         // Ensure the container stream type is known before continuing.
         if source.stream_type.borrow().is_none() && !self.sniff_stream_type(context) {
