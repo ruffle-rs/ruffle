@@ -89,12 +89,47 @@ impl Matrix3D {
 
     pub fn determinant(&self) -> f64 {
         let m = &self.raw_data;
-        (m[0] * m[5] - m[4] * m[1]) * (m[10] * m[15] - m[14] * m[11])
-            - (m[0] * m[9] - m[8] * m[1]) * (m[6] * m[15] - m[14] * m[7])
-            + (m[0] * m[13] - m[12] * m[1]) * (m[6] * m[11] - m[10] * m[7])
-            + (m[4] * m[9] - m[8] * m[5]) * (m[2] * m[15] - m[14] * m[3])
-            - (m[4] * m[13] - m[12] * m[5]) * (m[2] * m[11] - m[10] * m[3])
-            + (m[8] * m[13] - m[12] * m[9]) * (m[2] * m[7] - m[6] * m[3])
+
+        /// The determinant of a 3x3 matrix, stored in column-major order.
+        fn determinant_3x3(m: [f64; 9]) -> f64 {
+            m[0] * (m[4] * m[8] - m[7] * m[5]) - m[3] * (m[1] * m[8] - m[7] * m[2])
+                + m[6] * (m[1] * m[5] - m[4] * m[2])
+        }
+
+        // When projection is 0, Flash ignores translation, suggesting there is
+        // a fast path here.
+        if m[3] == 0.0 && m[7] == 0.0 && m[11] == 0.0 {
+            // This is equivalent to doing a Laplace expansion over the last
+            // column, but considering only the last row is non-zero, we can
+            // skip other rows.
+            //
+            // Usually we'd calculate the determinant of the inner 3x3 matrix
+            // and multiply by the last element, but Flash appears to factor the
+            // last element into the formula (observable when it's +-Infinity).
+            determinant_3x3([
+                m[0],
+                m[1],
+                m[2] * m[15],
+                m[4],
+                m[5],
+                m[6] * m[15],
+                m[8],
+                m[9],
+                m[10] * m[15],
+            ])
+        } else {
+            // Based on the condition above, it looks like we should do the
+            // Laplace expansion over the last column, but that's not what
+            // happens. This is observable when using +-Infinity in a dense
+            // matrix; infinities are preserved only in the first row, which
+            // means that no two infinities are subtracted in the expression,
+            // suggesting we should do the Laplace expansion over that row.
+            let det0 = determinant_3x3([m[5], m[6], m[7], m[9], m[10], m[11], m[13], m[14], m[15]]);
+            let det4 = determinant_3x3([m[1], m[2], m[3], m[9], m[10], m[11], m[13], m[14], m[15]]);
+            let det8 = determinant_3x3([m[1], m[2], m[3], m[5], m[6], m[7], m[13], m[14], m[15]]);
+            let det12 = determinant_3x3([m[1], m[2], m[3], m[5], m[6], m[7], m[9], m[10], m[11]]);
+            m[0] * det0 - m[4] * det4 + m[8] * det8 - m[12] * det12
+        }
     }
 
     pub fn invert(&self) -> Option<Self> {
