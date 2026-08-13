@@ -1,3 +1,7 @@
 onMetaData
 paused time: 0
 later paused time: 0
+seeked paused time: 0.5
+later seeked paused time: 0.5
+immediate resumed time: 0.5
+resumed time advanced: true

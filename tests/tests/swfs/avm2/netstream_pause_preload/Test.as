@@ -8,6 +8,7 @@ package {
     public class Test extends Sprite {
         private var stream:NetStream;
         private var framesAfterMetadata:uint;
+        private var resumed:Boolean;
 
         public function Test() {
             var connection:NetConnection = new NetConnection();
@@ -34,6 +35,16 @@ package {
             framesAfterMetadata++;
             if (framesAfterMetadata == 10) {
                 trace("later paused time: " + stream.time);
+                stream.seek(0.5);
+            } else if (framesAfterMetadata == 12) {
+                trace("seeked paused time: " + stream.time);
+            } else if (framesAfterMetadata == 22) {
+                trace("later seeked paused time: " + stream.time);
+                stream.resume();
+                trace("immediate resumed time: " + stream.time);
+                resumed = true;
+            } else if (resumed && framesAfterMetadata == 24) {
+                trace("resumed time advanced: " + (stream.time > 0.5));
                 removeEventListener(Event.ENTER_FRAME, onEnterFrame);
             }
         }

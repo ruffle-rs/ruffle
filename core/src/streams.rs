@@ -239,6 +239,9 @@ pub struct NetStreamSource {
     /// audio is not lost, but these tags must not be sent to the decoder twice.
     paused_preview_offsets: RefCell<Vec<usize>>,
 
+    /// Whether a paused seek needs to decode a new preview frame.
+    paused_preview_requested: Cell<bool>,
+
     /// The next queued seek offset in milliseconds.
     ///
     /// Seeks are only executed on the next stream tick.
@@ -294,6 +297,7 @@ impl Default for NetStreamSource {
             stream_type: RefCell::new(None),
             stream_time: Cell::new(0.0),
             paused_preview_offsets: RefCell::new(Vec::new()),
+            paused_preview_requested: Cell::new(false),
             queued_seek_time: Cell::new(None),
             audio_stream: RefCell::new(None),
             sound_instance: Cell::new(None),
@@ -550,7 +554,6 @@ impl<'gc> NetStream<'gc> {
 
                 let tag = tag.unwrap();
                 let stream_time = tag.timestamp as f64;
-                source.stream_time.set(stream_time);
 
                 if skipping_back && stream_time > offset || !skipping_back && stream_time < offset {
                     continue;
@@ -573,11 +576,15 @@ impl<'gc> NetStream<'gc> {
                 }
             }
 
-            let offset = reader
+            let stream_offset = reader
                 .stream_position()
                 .expect("FLV reader stream position") as usize;
-            source.offset.set(offset);
+            source.offset.set(stream_offset);
         }
+
+        source.stream_time.set(offset);
+        source.paused_preview_offsets.borrow_mut().clear();
+        source.paused_preview_requested.set(!self.0.playing.get());
 
         if let Some(NetStreamKind::Avm2(_)) = self.0.avm_object.get() {
             self.trigger_status_event(
@@ -1273,15 +1280,19 @@ impl<'gc> NetStream<'gc> {
                     && paused_can_commit
                     && tag.timestamp as f64 <= max_time
                     && matches!(&tag.data, FlvTagData::Script(_));
-                let needs_paused_preview =
-                    !is_playing && has_video && self.0.last_decoded_bitmap.borrow().is_none();
+                let needs_paused_preview = !is_playing
+                    && has_video
+                    && (source.paused_preview_requested.get()
+                        || self.0.last_decoded_bitmap.borrow().is_none());
                 let is_paused_video_preview = !is_playing
                     && needs_paused_preview
                     && matches!(&tag.data, FlvTagData::Video(_));
 
-                if !is_playing && !is_paused_script && !is_paused_video_preview {
+                if !is_playing && !is_paused_script {
                     paused_can_commit = false;
-                    if needs_paused_preview {
+                    if is_paused_video_preview {
+                        // Decode the frame without advancing the committed stream offset.
+                    } else if needs_paused_preview {
                         continue;
                     } else {
                         break;
@@ -1322,6 +1333,9 @@ impl<'gc> NetStream<'gc> {
                             if is_paused_video_preview {
                                 source.paused_preview_offsets.borrow_mut().push(tag_offset);
                                 paused_preview_complete = is_video_frame;
+                                if is_video_frame {
+                                    source.paused_preview_requested.set(false);
+                                }
                             }
                         }
                     }
