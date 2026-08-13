@@ -1,0 +1,182 @@
+identity: 1
+scale: 24
+diagonal: 120
+mirrored x: -1
+translation only: 1
+sheared: 4
+degenerate: 0
+zero: 0
+dense: 10
+not affine: -1
+not affine with translation: -27
+zero index 0 = NaN: NaN
+zero index 1 = NaN: NaN
+zero index 2 = NaN: NaN
+zero index 3 = NaN: NaN
+zero index 4 = NaN: NaN
+zero index 5 = NaN: NaN
+zero index 6 = NaN: NaN
+zero index 7 = NaN: NaN
+zero index 8 = NaN: NaN
+zero index 9 = NaN: NaN
+zero index 10 = NaN: NaN
+zero index 11 = NaN: NaN
+zero index 12 = NaN: 0
+zero index 13 = NaN: 0
+zero index 14 = NaN: 0
+zero index 15 = NaN: NaN
+zero index 0 = Infinity: NaN
+zero index 1 = Infinity: NaN
+zero index 2 = Infinity: NaN
+zero index 3 = Infinity: NaN
+zero index 4 = Infinity: NaN
+zero index 5 = Infinity: NaN
+zero index 6 = Infinity: NaN
+zero index 7 = Infinity: NaN
+zero index 8 = Infinity: NaN
+zero index 9 = Infinity: NaN
+zero index 10 = Infinity: NaN
+zero index 11 = Infinity: NaN
+zero index 12 = Infinity: 0
+zero index 13 = Infinity: 0
+zero index 14 = Infinity: 0
+zero index 15 = Infinity: NaN
+zero index 0 = -Infinity: NaN
+zero index 1 = -Infinity: NaN
+zero index 2 = -Infinity: NaN
+zero index 3 = -Infinity: NaN
+zero index 4 = -Infinity: NaN
+zero index 5 = -Infinity: NaN
+zero index 6 = -Infinity: NaN
+zero index 7 = -Infinity: NaN
+zero index 8 = -Infinity: NaN
+zero index 9 = -Infinity: NaN
+zero index 10 = -Infinity: NaN
+zero index 11 = -Infinity: NaN
+zero index 12 = -Infinity: 0
+zero index 13 = -Infinity: 0
+zero index 14 = -Infinity: 0
+zero index 15 = -Infinity: NaN
+identity index 0 = NaN: NaN
+identity index 1 = NaN: NaN
+identity index 2 = NaN: NaN
+identity index 3 = NaN: NaN
+identity index 4 = NaN: NaN
+identity index 5 = NaN: NaN
+identity index 6 = NaN: NaN
+identity index 7 = NaN: NaN
+identity index 8 = NaN: NaN
+identity index 9 = NaN: NaN
+identity index 10 = NaN: NaN
+identity index 11 = NaN: NaN
+identity index 12 = NaN: 1
+identity index 13 = NaN: 1
+identity index 14 = NaN: 1
+identity index 15 = NaN: NaN
+identity index 0 = Infinity: Infinity
+identity index 1 = Infinity: NaN
+identity index 2 = Infinity: NaN
+identity index 3 = Infinity: NaN
+identity index 4 = Infinity: NaN
+identity index 5 = Infinity: NaN
+identity index 6 = Infinity: NaN
+identity index 7 = Infinity: NaN
+identity index 8 = Infinity: NaN
+identity index 9 = Infinity: NaN
+identity index 10 = Infinity: NaN
+identity index 11 = Infinity: NaN
+identity index 12 = Infinity: 1
+identity index 13 = Infinity: 1
+identity index 14 = Infinity: 1
+identity index 15 = Infinity: NaN
+identity index 0 = -Infinity: -Infinity
+identity index 1 = -Infinity: NaN
+identity index 2 = -Infinity: NaN
+identity index 3 = -Infinity: NaN
+identity index 4 = -Infinity: NaN
+identity index 5 = -Infinity: NaN
+identity index 6 = -Infinity: NaN
+identity index 7 = -Infinity: NaN
+identity index 8 = -Infinity: NaN
+identity index 9 = -Infinity: NaN
+identity index 10 = -Infinity: NaN
+identity index 11 = -Infinity: NaN
+identity index 12 = -Infinity: 1
+identity index 13 = -Infinity: 1
+identity index 14 = -Infinity: 1
+identity index 15 = -Infinity: NaN
+dense index 0 = NaN: NaN
+dense index 1 = NaN: NaN
+dense index 2 = NaN: NaN
+dense index 3 = NaN: NaN
+dense index 4 = NaN: NaN
+dense index 5 = NaN: NaN
+dense index 6 = NaN: NaN
+dense index 7 = NaN: NaN
+dense index 8 = NaN: NaN
+dense index 9 = NaN: NaN
+dense index 10 = NaN: NaN
+dense index 11 = NaN: NaN
+dense index 12 = NaN: NaN
+dense index 13 = NaN: NaN
+dense index 14 = NaN: NaN
+dense index 15 = NaN: NaN
+dense index 0 = Infinity: -Infinity
+dense index 1 = Infinity: NaN
+dense index 2 = Infinity: NaN
+dense index 3 = Infinity: NaN
+dense index 4 = Infinity: Infinity
+dense index 5 = Infinity: NaN
+dense index 6 = Infinity: NaN
+dense index 7 = Infinity: NaN
+dense index 8 = Infinity: Infinity
+dense index 9 = Infinity: NaN
+dense index 10 = Infinity: NaN
+dense index 11 = Infinity: NaN
+dense index 12 = Infinity: -Infinity
+dense index 13 = Infinity: NaN
+dense index 14 = Infinity: NaN
+dense index 15 = Infinity: NaN
+dense index 0 = -Infinity: Infinity
+dense index 1 = -Infinity: NaN
+dense index 2 = -Infinity: NaN
+dense index 3 = -Infinity: NaN
+dense index 4 = -Infinity: -Infinity
+dense index 5 = -Infinity: NaN
+dense index 6 = -Infinity: NaN
+dense index 7 = -Infinity: NaN
+dense index 8 = -Infinity: -Infinity
+dense index 9 = -Infinity: NaN
+dense index 10 = -Infinity: NaN
+dense index 11 = -Infinity: NaN
+dense index 12 = -Infinity: Infinity
+dense index 13 = -Infinity: NaN
+dense index 14 = -Infinity: NaN
+dense index 15 = -Infinity: NaN
+laplace 0c: NaN
+laplace 0r: NaN
+laplace 5c: NaN
+laplace 5r: NaN
+laplace 10c: NaN
+laplace 10r: NaN
+laplace 10c: NaN
+laplace 10r: 0
+laplace 10r 2: 0
+laplace 10r 0: 0
+laplace 10r [0]=inf: NaN
+laplace 10r [1]=inf: NaN
+laplace 10r [2]=inf: NaN
+laplace 10r [4]=inf: NaN
+laplace 10r [5]=inf: NaN
+laplace 10r [6]=inf: NaN
+laplace 10r [8]=inf: NaN
+laplace 10r [9]=inf: NaN
+laplace 10r [10]=inf: NaN
+inner laplace 0c: NaN
+inner laplace 0r: NaN
+inner laplace 5c: NaN
+inner laplace 5r: NaN
+inner laplace 10c: NaN
+inner laplace 10r: NaN
+projection, then none: -Infinity, 1
+none, then projection: 1, -Infinity
