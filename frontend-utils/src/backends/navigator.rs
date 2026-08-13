@@ -24,8 +24,11 @@ use std::sync::{Arc, Mutex};
 use std::time::Duration;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::TcpStream;
+use tokio_rustls::TlsConnector;
 use tracing::warn;
 use url::{ParseError, Url};
+
+const SOCKET_BUFFER_SIZE: usize = 4096;
 
 pub trait NavigatorInterface: Clone + Send + 'static {
     fn navigate_to_website(&self, url: Url);
@@ -64,6 +67,9 @@ pub struct ExternalNavigatorBackend<F: FutureSpawner<Error>, I: NavigatorInterfa
     content: Rc<PlayingContent>,
 
     interface: I,
+
+    /// Pre-built TLS client config, shared across all secure socket connections.
+    tls_config: Arc<rustls::ClientConfig>,
 }
 
 impl<F: FutureSpawner<Error>, I: NavigatorInterface> ExternalNavigatorBackend<F, I> {
@@ -121,6 +127,34 @@ impl<F: FutureSpawner<Error>, I: NavigatorInterface> ExternalNavigatorBackend<F,
             base_url.pop().pop_if_empty().push("");
         }
 
+        let tls_config = {
+            let cert_result = rustls_native_certs::load_native_certs();
+            for e in &cert_result.errors {
+                tracing::warn!("Failed to load a native certificate: {}", e);
+            }
+            let mut root_store = rustls::RootCertStore::empty();
+            for cert in cert_result.certs {
+                if let Err(e) = root_store.add(cert) {
+                    tracing::warn!("Failed to add native certificate: {}", e);
+                }
+            }
+            if root_store.is_empty() {
+                tracing::error!(
+                    "No native TLS certificates were loaded. \
+             All SecureSocket connections will fail certificate validation."
+                );
+            }
+            Arc::new(
+                rustls::ClientConfig::builder_with_provider(Arc::new(
+                    rustls::crypto::ring::default_provider(),
+                ))
+                .with_safe_default_protocol_versions()
+                .expect("Safe default protocol versions should be available")
+                .with_root_certificates(root_store)
+                .with_no_client_auth(),
+            )
+        };
+
         Self {
             future_spawner,
             client,
@@ -130,6 +164,7 @@ impl<F: FutureSpawner<Error>, I: NavigatorInterface> ExternalNavigatorBackend<F,
             socket_mode,
             content,
             interface,
+            tls_config,
         }
     }
 }
@@ -352,7 +387,7 @@ impl<F: FutureSpawner<Error> + 'static, I: NavigatorInterface> NavigatorBackend
                 }
             }
 
-            let host2 = host.clone();
+            let host_for_logging = host.clone();
 
             let timeout = async {
                 Timer::after(timeout).await;
@@ -361,7 +396,7 @@ impl<F: FutureSpawner<Error> + 'static, I: NavigatorInterface> NavigatorBackend
 
             let mut stream = match TcpStream::connect((host, port)).or(timeout).await {
                 Err(e) if e.kind() == ErrorKind::TimedOut => {
-                    warn!("Connection to {}:{} timed out", host2, port);
+                    warn!("Connection to {}:{} timed out", host_for_logging, port);
                     let action = SocketAction::Connect(handle, ConnectionState::TimedOut);
                     let _ = send_action(&sender, action).await;
                     return;
@@ -374,7 +409,10 @@ impl<F: FutureSpawner<Error> + 'static, I: NavigatorInterface> NavigatorBackend
                     stream
                 }
                 Err(err) => {
-                    warn!("Failed to connect to {}:{}, error: {}", host2, port, err);
+                    warn!(
+                        "Failed to connect to {}:{}, error: {}",
+                        host_for_logging, port, err
+                    );
                     let action = SocketAction::Connect(handle, ConnectionState::Failed);
                     let _ = send_action(&sender, action).await;
                     return;
@@ -388,7 +426,7 @@ impl<F: FutureSpawner<Error> + 'static, I: NavigatorInterface> NavigatorBackend
 
             let read = async move {
                 loop {
-                    let mut buffer = [0; 4096];
+                    let mut buffer = [0; SOCKET_BUFFER_SIZE];
 
                     match read.read(&mut buffer).await {
                         Err(e) if e.kind() == ErrorKind::TimedOut => {} // try again later.
@@ -448,8 +486,8 @@ impl<F: FutureSpawner<Error> + 'static, I: NavigatorInterface> NavigatorBackend
                                 pending_write.extend(val);
                             }
                             Err(_) => {
-                                // Ignore the error here, it will be
-                                // reported again in try_recv.
+                                // Channel closed: sender was dropped, no more data.
+                                return;
                             }
                         }
                     }
@@ -469,6 +507,235 @@ impl<F: FutureSpawner<Error> + 'static, I: NavigatorInterface> NavigatorBackend
 
         tokio::spawn(future);
     }
+
+    fn connect_secure_socket(
+        &mut self,
+        host: String,
+        port: u16,
+        timeout: Duration,
+        handle: SocketHandle,
+        receiver: Receiver<Vec<u8>>,
+        sender: Sender<SocketAction>,
+    ) {
+        async fn send_action(sender: &Sender<SocketAction>, action: SocketAction) -> bool {
+            sender
+                .send(action)
+                .await
+                .inspect_err(|err| tracing::warn!("Failed to send SocketAction: {}", err))
+                .is_ok()
+        }
+
+        let addr = format!("{host}:{port}");
+        let is_allowed = self.socket_allowed.contains(&addr);
+        let socket_mode = self.socket_mode;
+        let interface = self.interface.clone();
+        let tls_config = Arc::clone(&self.tls_config);
+
+        let future = Box::pin(async move {
+            match (is_allowed, socket_mode) {
+                (false, SocketMode::Allow) | (true, _) => {}
+                (false, SocketMode::Deny) => {
+                    let action = SocketAction::Connect(handle, ConnectionState::Failed);
+                    let _ = send_action(&sender, action).await;
+                    tracing::warn!(
+                        "SWF tried to open a secure socket, but opening a socket is not allowed"
+                    );
+                    return;
+                }
+                (false, SocketMode::Ask) => {
+                    let attempt_sandbox_connect = interface.confirm_socket(&host, port).await;
+                    if !attempt_sandbox_connect {
+                        let action = SocketAction::Connect(handle, ConnectionState::Failed);
+                        let _ = send_action(&sender, action).await;
+                        return;
+                    }
+                }
+            }
+
+            let host_for_logging = host.clone();
+            let host_for_tls = host.clone();
+
+            let timeout_future = async {
+                Timer::after(timeout).await;
+                Result::<TcpStream, io::Error>::Err(io::Error::new(ErrorKind::TimedOut, ""))
+            };
+
+            let tcp_stream = match TcpStream::connect((host.as_str(), port))
+                .or(timeout_future)
+                .await
+            {
+                Err(e) if e.kind() == ErrorKind::TimedOut => {
+                    warn!(
+                        "Secure connection to {}:{} timed out",
+                        host_for_logging, port
+                    );
+                    let action = SocketAction::Connect(handle, ConnectionState::TimedOut);
+                    let _ = send_action(&sender, action).await;
+                    return;
+                }
+                Ok(stream) => stream,
+                Err(err) => {
+                    warn!(
+                        "Failed to connect to {}:{}, error: {}",
+                        host_for_logging, port, err
+                    );
+                    let action = SocketAction::Connect(handle, ConnectionState::Failed);
+                    let _ = send_action(&sender, action).await;
+                    return;
+                }
+            };
+
+            let connector = TlsConnector::from(tls_config);
+            let server_name = match rustls_pki_types::ServerName::try_from(host_for_tls.as_str()) {
+                Ok(name) => name.to_owned(),
+                Err(err) => {
+                    warn!("Invalid server name '{}': {}", host_for_tls, err);
+                    let action = SocketAction::Connect(handle, ConnectionState::Failed);
+                    let _ = send_action(&sender, action).await;
+                    return;
+                }
+            };
+
+            let mut stream = match connector.connect(server_name, tcp_stream).await {
+                Ok(tls_stream) => {
+                    let _ = send_action(
+                        &sender,
+                        SocketAction::CertificateStatus(handle, "trusted".to_string()),
+                    )
+                    .await;
+                    tls_stream
+                }
+                Err(err) => {
+                    let cert_status = map_tls_error_to_cert_status(&err);
+                    let _ = send_action(
+                        &sender,
+                        SocketAction::CertificateStatus(handle, cert_status.to_string()),
+                    )
+                    .await;
+                    warn!(
+                        "TLS handshake failed for {}:{}: {}",
+                        host_for_logging, port, err
+                    );
+                    let action = SocketAction::Connect(handle, ConnectionState::Failed);
+                    let _ = send_action(&sender, action).await;
+                    return;
+                }
+            };
+
+            let action = SocketAction::Connect(handle, ConnectionState::Connected);
+            if !send_action(&sender, action).await {
+                return;
+            }
+
+            let sender2 = sender.clone();
+            let (mut read, mut write) = tokio::io::split(&mut stream);
+
+            let read_task = async move {
+                loop {
+                    let mut buffer = [0; SOCKET_BUFFER_SIZE];
+                    match read.read(&mut buffer).await {
+                        Err(e) if e.kind() == ErrorKind::TimedOut => {}
+                        Err(_) | Ok(0) => {
+                            let _ = send_action(&sender, SocketAction::Close(handle)).await;
+                            break;
+                        }
+                        Ok(read) => {
+                            let buffer = buffer.into_iter().take(read).collect::<Vec<_>>();
+                            let action = SocketAction::Data(handle, buffer);
+                            if !send_action(&sender, action).await {
+                                return;
+                            }
+                        }
+                    };
+                }
+            };
+
+            let write_task = async move {
+                let mut pending_write = vec![];
+
+                loop {
+                    let close_connection = loop {
+                        match receiver.try_recv() {
+                            Ok(val) => {
+                                pending_write.extend(val);
+                            }
+                            Err(TryRecvError::Empty) => break false,
+                            Err(TryRecvError::Closed) => {
+                                break true;
+                            }
+                        }
+                    };
+
+                    if !pending_write.is_empty() {
+                        match write.write(&pending_write).await {
+                            Err(e) if e.kind() == ErrorKind::TimedOut => {}
+                            Err(_) => {
+                                let _ = send_action(&sender2, SocketAction::Close(handle)).await;
+                                return;
+                            }
+                            Ok(written) => {
+                                let _ = pending_write.drain(..written);
+                            }
+                        }
+                    } else if close_connection {
+                        return;
+                    } else {
+                        match receiver.recv().await {
+                            Ok(val) => {
+                                pending_write.extend(val);
+                            }
+                            Err(_) => {
+                                // Channel closed: sender was dropped, no more data.
+                                return;
+                            }
+                        }
+                    }
+                }
+            };
+
+            tokio::select! {
+               _ = read_task => {},
+               _ = write_task => {},
+            };
+
+            if let Err(e) = stream.shutdown().await {
+                tracing::warn!(
+                    "Failed to send TLS close_notify to {}:{}: {}",
+                    host_for_logging,
+                    port,
+                    e
+                );
+            }
+        });
+
+        tokio::spawn(future);
+    }
+}
+
+/// Maps a TLS handshake IO error to the appropriate Flash CertificateStatus string.
+fn map_tls_error_to_cert_status(err: &io::Error) -> &'static str {
+    if let Some(tls_err) = err
+        .get_ref()
+        .and_then(|e| e.downcast_ref::<rustls::Error>())
+    {
+        match tls_err {
+            rustls::Error::InvalidCertificate(rustls::CertificateError::Expired) => "expired",
+            rustls::Error::InvalidCertificate(rustls::CertificateError::NotValidYet) => {
+                "notYetValid"
+            }
+            rustls::Error::InvalidCertificate(rustls::CertificateError::NotValidForName) => {
+                "principalMismatch"
+            }
+            rustls::Error::InvalidCertificate(rustls::CertificateError::Revoked) => "revoked",
+            rustls::Error::InvalidCertificate(rustls::CertificateError::UnknownIssuer) => {
+                "untrustedSigners"
+            }
+            rustls::Error::InvalidCertificate(_) => "invalid",
+            _ => "unknown",
+        }
+    } else {
+        "unknown"
+    }
 }
 
 /// Spawns a new asynchronous task in a tokio runtime, without the current executor needing to belong to tokio
@@ -487,7 +754,7 @@ where
 #[cfg(test)]
 #[expect(clippy::unwrap_used)]
 mod tests {
-    use ruffle_core::socket::SocketAction::{Close, Connect, Data};
+    use ruffle_core::socket::SocketAction::{CertificateStatus, Close, Connect, Data};
     use std::net::SocketAddr;
     use std::str::FromStr;
     use tokio::net::TcpListener;
@@ -623,7 +890,7 @@ mod tests {
     }
 
     async fn read_server(server_socket: &mut TcpStream) -> String {
-        let mut buffer = [0; 4096];
+        let mut buffer = [0; SOCKET_BUFFER_SIZE];
 
         let read = match server_socket.read(&mut buffer).await {
             Err(e) => panic!("server read error: {e}"),
@@ -777,5 +1044,82 @@ mod tests {
         client_write.close();
 
         assert_eq!(read_server(&mut server_socket).await, "Sending some data");
+    }
+
+    fn connect_test_secure_socket(
+        addr: SocketAddr,
+        timeout: Duration,
+        socket_allow: bool,
+    ) -> (Sender<Vec<u8>>, Receiver<SocketAction>) {
+        let mut backend = new_test_backend(socket_allow);
+
+        let (write, receiver) = async_channel::unbounded();
+        let (sender, read) = async_channel::unbounded();
+
+        backend.connect_secure_socket(
+            addr.ip().to_string(),
+            addr.port(),
+            timeout,
+            dummy_handle!(),
+            receiver,
+            sender,
+        );
+
+        (write, read)
+    }
+
+    #[macro_rules_attribute::apply(async_test)]
+    async fn test_secure_socket_deny() {
+        let (_accept_task, addr) = start_test_server().await;
+        let (_client_write, client_read) = connect_test_secure_socket(addr, TIMEOUT, false);
+
+        assert_next_socket_actions!(
+            client_read;
+            Connect(dummy_handle!(), ConnectionState::Failed),
+        );
+    }
+
+    #[macro_rules_attribute::apply(async_test)]
+    async fn test_secure_socket_fail_invalid_host() {
+        // Connect to an address that will fail instantly.
+        let addr = if cfg!(target_os = "linux") {
+            SocketAddr::from_str("127.0.0.42:226")
+        } else {
+            SocketAddr::from_str("[100::]:42")
+        }
+        .expect("test address");
+        let (_client_write, client_read) = connect_test_secure_socket(addr, TIMEOUT, true);
+
+        assert_next_socket_actions!(
+            client_read;
+            Connect(dummy_handle!(), ConnectionState::Failed),
+        );
+    }
+
+    #[macro_rules_attribute::apply(async_test)]
+    async fn test_secure_socket_tls_handshake_fail() {
+        // Connecting to a plain TCP server with TLS should fail at the handshake.
+        let (accept_task, addr) = start_test_server().await;
+        let (_client_write, client_read) = connect_test_secure_socket(addr, TIMEOUT, true);
+
+        // The server accepts the TCP connection then immediately closes it,
+        // causing the TLS handshake to fail with a connection reset.
+        drop(accept_task.await.unwrap());
+
+        assert_next_socket_actions!(
+            client_read;
+            CertificateStatus(dummy_handle!(), "unknown".to_string()),
+            Connect(dummy_handle!(), ConnectionState::Failed),
+        );
+    }
+
+    #[macro_rules_attribute::apply(async_test)]
+    async fn test_secure_socket_timeout() {
+        let (_accept_task, addr) = start_test_server().await;
+        let (_client_write, client_read) = connect_test_secure_socket(addr, TIMEOUT_ZERO, true);
+        assert_next_socket_actions!(
+            client_read;
+            Connect(dummy_handle!(), ConnectionState::TimedOut),
+        );
     }
 }
