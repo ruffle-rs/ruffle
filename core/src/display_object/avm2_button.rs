@@ -157,6 +157,10 @@ impl<'gc> Avm2Button<'gc> {
         Self::from_swf_tag(&button_record, &movie.into(), context, false)
     }
 
+    pub fn instantiate(self, mc: &Mutation<'gc>) -> Self {
+        Self(Gc::new(mc, (*self.0).clone()))
+    }
+
     pub fn set_sounds(self, sounds: swf::ButtonSounds) {
         let mut shared = self.0.shared.cell.borrow_mut();
         shared.up_to_over_sound = sounds.up_to_over_sound;
@@ -413,10 +417,6 @@ impl<'gc> Avm2Button<'gc> {
 impl<'gc> TDisplayObject<'gc> for Avm2Button<'gc> {
     fn base(self) -> Gc<'gc, DisplayObjectBase<'gc>> {
         HasPrefixField::as_prefix_gc(self.raw_interactive())
-    }
-
-    fn instantiate(self, mc: &Mutation<'gc>) -> DisplayObject<'gc> {
-        Self(Gc::new(mc, (*self.0).clone())).into()
     }
 
     fn id(self) -> CharacterId {

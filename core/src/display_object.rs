@@ -2650,8 +2650,6 @@ pub trait TDisplayObject<'gc>:
         None
     }
 
-    fn instantiate(self, gc_context: &Mutation<'gc>) -> DisplayObject<'gc>;
-
     /// Whether this object can be used as a mask.
     /// If this returns false and this object is used as a mask, the mask will not be applied.
     /// This is used by movie clips to disable the mask when there are no children, for example.

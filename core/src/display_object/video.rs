@@ -179,6 +179,10 @@ impl<'gc> Video<'gc> {
         ))
     }
 
+    pub fn instantiate(self, mc: &Mutation<'gc>) -> Self {
+        Self(Gc::new(mc, (*self.0).clone()))
+    }
+
     fn set_object(&self, context: &mut UpdateContext<'gc>, to: AvmObject<'gc>) {
         let mc = context.gc();
         unlock!(Gc::write(mc, self.0), VideoData, object).set(Some(to));
@@ -347,10 +351,6 @@ impl<'gc> Video<'gc> {
 impl<'gc> TDisplayObject<'gc> for Video<'gc> {
     fn base(self) -> Gc<'gc, DisplayObjectBase<'gc>> {
         HasPrefixField::as_prefix_gc(self.0)
-    }
-
-    fn instantiate(self, gc_context: &Mutation<'gc>) -> DisplayObject<'gc> {
-        Self(Gc::new(gc_context, self.0.as_ref().clone())).into()
     }
 
     fn post_instantiation(
