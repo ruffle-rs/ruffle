@@ -884,14 +884,22 @@ pub fn set_scissor_rectangle<'gc>(
 pub fn dispose<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    _args: &[Value<'gc>],
+    args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
-    avm2_stub_method!(activation, "flash.display3D.Context3D", "dispose");
-    this.as_context_3d()
-        .unwrap()
-        .stage3d()
-        .clear_context3d(activation.gc());
+    // Context3D.dispose(recreate:Boolean = true). With recreate=true (the
+    // default), Flash frees the context's resources but keeps the Context3D
+    // usable - the caller reconfigures the back buffer and keeps rendering.
+    // Only recreate=false permanently disposes it. Clearing the context
+    // unconditionally (as before) killed contexts that games dispose-and-reuse
+    // (e.g. on resize/scene reload), leaving that Stage3D layer black.
+    let recreate = args.first().is_none_or(|v| v.coerce_to_boolean());
+    if !recreate {
+        this.as_context_3d()
+            .unwrap()
+            .stage3d()
+            .clear_context3d(activation.gc());
+    }
     Ok(Value::Undefined)
 }
