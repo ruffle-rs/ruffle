@@ -811,10 +811,6 @@ impl<'gc> TDisplayObject<'gc> for Stage<'gc> {
         HasPrefixField::as_prefix_gc(self.raw_interactive())
     }
 
-    fn instantiate(self, gc_context: &Mutation<'gc>) -> DisplayObject<'gc> {
-        Self(Gc::new(gc_context, self.0.as_ref().clone())).into()
-    }
-
     fn local_to_global_matrix(self) -> Matrix {
         // The stage is in Stage coordinates by definition
         Default::default()
