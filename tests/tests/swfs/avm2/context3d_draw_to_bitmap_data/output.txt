@@ -1,0 +1,3 @@
+pixel(0,0):   ffff0000
+pixel(25,25): ffff0000
+pixel(49,49): ffff0000
