@@ -87,13 +87,12 @@ pub fn set_raw_data<'gc>(
         return Ok(Value::Undefined);
     };
     let value = value.as_vector_storage().unwrap();
+    if value.length() != 16 {
+        return Ok(Value::Undefined);
+    }
 
-    let raw_data: RawData = std::array::from_fn(|i| {
-        value
-            .get_optional(i)
-            .map(|v| v.as_f64())
-            .unwrap_or(f64::NAN)
-    });
+    let raw_data: RawData =
+        std::array::from_fn(|i| value.get_optional(i).map(|v| v.as_f64()).unwrap());
 
     this.replace_matrix(Matrix3D { raw_data });
 
