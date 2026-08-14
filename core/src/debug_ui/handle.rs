@@ -189,3 +189,48 @@ impl Hash for DomainHandle {
 }
 
 impl Eq for DomainHandle {}
+
+// AVM2 Class
+
+#[derive(Clone)]
+pub struct ClassHandle {
+    root: DynamicRoot<Rootable![crate::avm2::Class<'_>]>,
+    ptr: *const (),
+}
+
+impl ClassHandle {
+    pub fn new<'gc>(context: &mut UpdateContext<'gc>, class: crate::avm2::Class<'gc>) -> Self {
+        Self {
+            // TODO(moulins): it'd be nice to avoid the double indirection here...
+            root: context
+                .dynamic_root
+                .stash(context.gc(), Gc::new(context.gc(), class)),
+            ptr: class.as_ptr(),
+        }
+    }
+
+    pub fn fetch<'gc>(&self, dynamic_root_set: DynamicRootSet<'gc>) -> crate::avm2::Class<'gc> {
+        *dynamic_root_set.fetch(&self.root)
+    }
+}
+
+impl Debug for ClassHandle {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.debug_tuple("ClassHandle").field(&self.ptr).finish()
+    }
+}
+
+impl PartialEq<ClassHandle> for ClassHandle {
+    #[inline(always)]
+    fn eq(&self, other: &ClassHandle) -> bool {
+        std::ptr::eq(self.ptr, other.ptr)
+    }
+}
+
+impl Hash for ClassHandle {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.ptr.hash(state);
+    }
+}
+
+impl Eq for ClassHandle {}
