@@ -190,6 +190,28 @@ pub fn prepend<'gc>(
     Ok(Value::Undefined)
 }
 
+/// Implements `Matrix3D.prependScale`.
+pub fn prepend_scale<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Value<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap().as_matrix3d_object().unwrap();
+    let x = args.get_f64(0);
+    let y = args.get_f64(1);
+    let z = args.get_f64(2);
+
+    if x.is_zero() || y.is_zero() || z.is_zero() {
+        return Err(make_error_2183(activation));
+    }
+
+    let scale = Matrix3D::scale(x as f32, y as f32, z as f32);
+    let result = this.matrix_ref().multiply(&scale);
+    this.replace_matrix(result);
+
+    Ok(Value::Undefined)
+}
+
 /// Implements `Matrix3D.appendRotation`.
 ///
 /// Based on OpenFL: https://github.com/openfl/openfl/blob/971a4c9e43b5472fd84d73920a2b7c1b3d8d9257/src/openfl/geom/Matrix3D.hx
