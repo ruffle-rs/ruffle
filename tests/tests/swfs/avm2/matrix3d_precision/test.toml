@@ -1,8 +1,5 @@
 num_ticks = 1
 
-# Known failure due to bugs in string representations of floats.
-known_failure = true
-
 [[compilers]]
 type = "Asc"
 target = "test.swf"
