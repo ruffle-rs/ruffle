@@ -258,16 +258,16 @@ impl<'gc> MovieLibrary<'gc> {
                 let bitmap = bitmap.compressed().decode().unwrap();
                 let bitmap = Bitmap::new(mc, id, bitmap, self.swf.clone());
                 bitmap.set_avm2_bitmapdata_class(mc, avm2_class);
-                Some(bitmap.instantiate(mc))
+                Some(bitmap.instantiate(mc).into())
             }
-            Character::EditText(edit_text) => Some(edit_text.instantiate(mc)),
-            Character::Graphic(graphic) => Some(graphic.instantiate(mc)),
-            Character::MorphShape(morph_shape) => Some(morph_shape.instantiate(mc)),
-            Character::MovieClip(movie_clip) => Some(movie_clip.instantiate(mc)),
-            Character::Avm1Button(button) => Some(button.instantiate(mc)),
-            Character::Avm2Button(button) => Some(button.instantiate(mc)),
-            Character::Text(text) => Some(text.instantiate(mc)),
-            Character::Video(video) => Some(video.instantiate(mc)),
+            Character::EditText(edit_text) => Some(edit_text.instantiate(mc).into()),
+            Character::Graphic(graphic) => Some(graphic.instantiate(mc).into()),
+            Character::MorphShape(morph_shape) => Some(morph_shape.instantiate(mc).into()),
+            Character::MovieClip(movie_clip) => Some(movie_clip.instantiate(mc).into()),
+            Character::Avm1Button(button) => Some(button.instantiate(mc).into()),
+            Character::Avm2Button(button) => Some(button.instantiate(mc).into()),
+            Character::Text(text) => Some(text.instantiate(mc).into()),
+            Character::Video(video) => Some(video.instantiate(mc).into()),
             _ => {
                 // Cannot instantiate non-display object
                 None

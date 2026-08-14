@@ -110,6 +110,10 @@ impl<'gc> Avm1Button<'gc> {
         ))
     }
 
+    pub fn instantiate(self, mc: &Mutation<'gc>) -> Self {
+        Self(Gc::new(mc, (*self.0).clone()))
+    }
+
     pub fn set_sounds(self, sounds: swf::ButtonSounds) {
         let mut shared = self.0.shared.cell.borrow_mut();
         shared.up_to_over_sound = sounds.up_to_over_sound;
@@ -247,11 +251,6 @@ impl<'gc> Avm1Button<'gc> {
 impl<'gc> TDisplayObject<'gc> for Avm1Button<'gc> {
     fn base(self) -> Gc<'gc, DisplayObjectBase<'gc>> {
         HasPrefixField::as_prefix_gc(self.raw_interactive())
-    }
-
-    fn instantiate(self, mc: &Mutation<'gc>) -> DisplayObject<'gc> {
-        let data: &Avm1ButtonData = &self.0;
-        Self(Gc::new(mc, data.clone())).into()
     }
 
     fn id(self) -> CharacterId {

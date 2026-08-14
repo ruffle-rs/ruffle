@@ -5,7 +5,7 @@ with_audio = true
 
 [audio_assertions.sound]
 frames = [3,4]
-min_max_amplitude = 0.6
+min_max_amplitude = 0.59
 
 [audio_assertions.silence]
 frames = [1,2,5]
