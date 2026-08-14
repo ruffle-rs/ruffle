@@ -6,9 +6,7 @@ package flash.geom {
     [Ruffle(InstanceAllocator)]
     public class Matrix3D {
         public function Matrix3D(v:Vector.<Number> = null) {
-            if (v != null && v.length == 16) {
-                this.rawData = v;
-            }
+            this.rawData = v;
         }
 
         public native function get rawData():Vector.<Number>;
