@@ -36,7 +36,7 @@ impl PerspectiveProjection {
     }
 
     pub fn to_matrix3d(&self, width: f32) -> Matrix3D {
-        let focal_length = self.focal_length(width) as f64;
+        let focal_length = self.focal_length(width);
 
         Matrix3D {
             raw_data: [

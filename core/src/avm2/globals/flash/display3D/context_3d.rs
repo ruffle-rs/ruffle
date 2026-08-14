@@ -302,7 +302,7 @@ pub fn set_program_constants_from_matrix<'gc>(
             .matrix_ref()
             .raw_data
             .iter()
-            .map(|val| (*val as f32).to_le_bytes())
+            .map(|&val| val.to_le_bytes())
             .collect::<Vec<[u8; 4]>>();
 
         context.set_program_constants(program_type, first_register, &matrix_raw_data);
