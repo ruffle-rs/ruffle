@@ -42,11 +42,7 @@ package flash.geom {
 
         public native function appendScale(xScale:Number, yScale:Number, zScale:Number):void;
 
-        public function prependTranslation(x:Number, y:Number, z:Number):void {
-            var m:Matrix3D = new Matrix3D();
-            m.position = new Vector3D(x, y, z);
-            this.prepend(m);
-        }
+        public native function prependTranslation(x:Number, y:Number, z:Number):void;
 
         public function prependRotation(degrees:Number, axis:Vector3D, pivotPoint:Vector3D = null):void {
             var m:Matrix3D = new Matrix3D();

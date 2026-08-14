@@ -190,6 +190,24 @@ pub fn prepend<'gc>(
     Ok(Value::Undefined)
 }
 
+/// Implements `Matrix3D.prependTranslation`.
+pub fn prepend_translation<'gc>(
+    _activation: &mut Activation<'_, 'gc>,
+    this: Value<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap().as_matrix3d_object().unwrap();
+    let x = args.get_f64(0);
+    let y = args.get_f64(1);
+    let z = args.get_f64(2);
+
+    let translation = Matrix3D::translate(x as f32, y as f32, z as f32);
+    let result = this.matrix_ref().multiply(&translation);
+    this.replace_matrix(result);
+
+    Ok(Value::Undefined)
+}
+
 /// Implements `Matrix3D.prependScale`.
 pub fn prepend_scale<'gc>(
     activation: &mut Activation<'_, 'gc>,
