@@ -3,8 +3,8 @@ use crate::avm2::Error;
 use crate::avm2::TObject as _;
 use crate::avm2::Value;
 use crate::avm2::error::{
-    make_error_2008, make_error_3669, make_error_3670, make_error_3671, make_error_3771,
-    make_error_3772, make_error_3773, make_error_3780, make_error_3781,
+    make_error_2008, make_error_3669, make_error_3670, make_error_3671, make_error_3692,
+    make_error_3771, make_error_3772, make_error_3773, make_error_3780, make_error_3781,
 };
 use crate::avm2::globals::methods::flash_geom_matrix_3d as matrix3d_methods;
 use crate::avm2::globals::slots::flash_geom_rectangle as rectangle_slots;
@@ -237,6 +237,13 @@ pub fn draw_to_bitmap_data<'gc>(
             .get_object(activation, 0, "destination")?
             .as_bitmap_data()
             .unwrap();
+
+        // Flash requires every buffer to be cleared each frame before drawing.
+        // `present` resets that state, so reading the back buffer with no
+        // intervening `clear` throws Error #3692, just like `drawTriangles`.
+        if !context.with_context_3d(|ctx| ctx.buffers_cleared()) {
+            return Err(make_error_3692(activation));
+        }
 
         // Read the current back buffer (the content rendered since the last
         // `present`), matching Flash's `drawToBitmapData`. Blit it into the

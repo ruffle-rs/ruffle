@@ -1159,6 +1159,7 @@ pub fn make_error_2187<'gc>(
 make_error_fn!(make_error_3669, 3669, error);
 make_error_fn!(make_error_3670, 3670, argument_error);
 make_error_fn!(make_error_3671, 3671, argument_error);
+make_error_fn!(make_error_3692, 3692, error);
 
 // This isn't used if the `jpegxr` feature is disabled, see
 // `globals::flash::display3D::textures::atf_jpegxr`
