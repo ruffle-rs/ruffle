@@ -66,9 +66,7 @@ package flash.geom {
         public native function copyRawDataTo(dest:Vector.<Number>, index:uint = 0, transpose:Boolean = false):void;
 
         [Ruffle(NativeCallable)]
-        public function clone():Matrix3D {
-            return new Matrix3D(this.rawData);
-        }
+        public native function clone():Matrix3D;
 
         public function copyToMatrix3D(other:Matrix3D):void {
             other.rawData = this.rawData;

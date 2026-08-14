@@ -1,6 +1,6 @@
 use crate::avm2::error::{Error2004Type, make_error_2004, make_error_2183, make_error_2187};
 use crate::avm2::globals::slots::flash_geom_vector_3d as vector3d_slots;
-use crate::avm2::object::VectorObject;
+use crate::avm2::object::{Matrix3DObject, VectorObject};
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::vector::VectorStorage;
 use crate::avm2::{Activation, Avm2StrRepresentable as _, Error, Object, TObject as _, Value};
@@ -457,6 +457,16 @@ pub fn copy_raw_data_to<'gc>(
     }
 
     Ok(Value::Undefined)
+}
+
+/// Implements `Matrix3D.clone`.
+pub fn clone<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Value<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap().as_matrix3d_object().unwrap();
+    Ok(Matrix3DObject::new(activation.context, this.matrix()).into())
 }
 
 /// Implements `Matrix3D.position`'s getter.
