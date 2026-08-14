@@ -58,28 +58,6 @@ impl DomainListWindow {
                     open_domain_button(ui, context, messages, domain);
                 })
                 .body(|ui| {
-                    let class_props = domain.classes();
-                    let mut classes: Vec<_> = class_props.iter().collect();
-                    classes.sort_by_key(|(name, _, _)| *name);
-
-                    for (class_index, (_, _, class)) in classes.iter().enumerate() {
-                        let name = class_name(context.gc(), **class);
-                        if !name.to_string().to_ascii_lowercase().contains(search) {
-                            continue;
-                        }
-
-                        ui.push_id(format!("class_obj_{class_index}"), |ui| {
-                            let button = ui.button(name);
-                            if button.clicked() {
-                                messages.push(Message::TrackAVM2Class(ClassHandle::new(
-                                    context, **class,
-                                )));
-                            }
-                        });
-                    }
-
-                    drop(class_props);
-
                     for (child_index, child_domain) in
                         domain.children(context.gc()).into_iter().enumerate()
                     {
@@ -92,6 +70,26 @@ impl DomainListWindow {
                                 search,
                                 depth + 1,
                             );
+                        });
+                    }
+
+                    let class_props = domain.classes();
+                    let mut classes: Vec<_> = class_props.iter().collect();
+                    classes.sort_by_key(|(name, _, _)| *name);
+
+                    for (class_index, (_, _, class)) in classes.iter().enumerate() {
+                        let name = class_name(context.gc(), **class);
+                        if !name.to_string().to_ascii_lowercase().contains(search) {
+                            continue;
+                        }
+
+                        ui.push_id(format!("class_{class_index}"), |ui| {
+                            let button = ui.button(format!("Class {name}"));
+                            if button.clicked() {
+                                messages.push(Message::TrackAVM2Class(ClassHandle::new(
+                                    context, **class,
+                                )));
+                            }
                         });
                     }
                 });
