@@ -102,6 +102,18 @@ package {
             var bmd2:BitmapData = new BitmapData(50, 50, true, 0xffff00ff);
             context.drawToBitmapData(bmd2);
 
+            // drawToBitmapData reads the back buffer, which must be cleared each
+            // frame. present() resets that state, so a read with no intervening
+            // clear throws Error #3692.
+            context.present();
+            try {
+                var afterPresent:BitmapData = new BitmapData(50, 50, true, 0xff000000);
+                context.drawToBitmapData(afterPresent);
+                trace("after present: no error");
+            } catch (e:Error) {
+                trace("after present: " + e.getStackTrace());
+            }
+
             // Show both captures next to each other: red on the left, green on
             // the right.
             addChild(new Bitmap(bmd));
