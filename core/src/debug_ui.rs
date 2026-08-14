@@ -1,5 +1,6 @@
 mod avm1;
 mod avm2;
+mod avm2_class;
 mod common;
 mod display_object;
 mod domain;
@@ -9,10 +10,11 @@ mod movie;
 use crate::context::{RenderContext, UpdateContext};
 use crate::debug_ui::avm1::Avm1ObjectWindow;
 use crate::debug_ui::avm2::Avm2ObjectWindow;
+use crate::debug_ui::avm2_class::Avm2ClassWindow;
 use crate::debug_ui::display_object::{DisplayObjectSearchWindow, DisplayObjectWindow};
 use crate::debug_ui::domain::DomainListWindow;
 use crate::debug_ui::handle::{
-    AVM1ObjectHandle, AVM2ObjectHandle, DisplayObjectHandle, DomainHandle,
+    AVM1ObjectHandle, AVM2ObjectHandle, ClassHandle, DisplayObjectHandle, DomainHandle,
 };
 use crate::debug_ui::movie::{MovieListWindow, MovieWindow};
 use crate::display_object::TDisplayObject;
@@ -31,6 +33,7 @@ pub struct DebugUi {
     movies: PtrWeakKeyHashMap<Weak<SwfMovie>, MovieWindow>,
     avm1_objects: HashMap<AVM1ObjectHandle, Avm1ObjectWindow>,
     avm2_objects: HashMap<AVM2ObjectHandle, Avm2ObjectWindow>,
+    avm2_classes: HashMap<ClassHandle, Avm2ClassWindow>,
     domains: HashMap<DomainHandle, DomainListWindow>,
     queued_messages: Vec<Message>,
     items_to_save: Vec<ItemToSave>,
@@ -46,6 +49,7 @@ pub enum Message {
     TrackMovie(Arc<SwfMovie>),
     TrackAVM1Object(AVM1ObjectHandle),
     TrackAVM2Object(AVM2ObjectHandle),
+    TrackAVM2Class(ClassHandle),
     TrackStage,
     TrackTopLevelMovie,
     ShowKnownMovies,
@@ -77,6 +81,11 @@ impl DebugUi {
         self.avm2_objects.retain(|object, window| {
             let object = object.fetch(context.dynamic_root);
             window.show(egui_ctx, context, object, &mut messages)
+        });
+
+        self.avm2_classes.retain(|class, window| {
+            let class = class.fetch(context.dynamic_root);
+            window.show(egui_ctx, context, class, &mut messages)
         });
 
         self.movies
@@ -123,6 +132,9 @@ impl DebugUi {
                 }
                 Message::TrackAVM2Object(object) => {
                     self.avm2_objects.insert(object, Default::default());
+                }
+                Message::TrackAVM2Class(class) => {
+                    self.avm2_classes.insert(class, Default::default());
                 }
                 Message::SaveFile(file) => {
                     self.items_to_save.push(file);
