@@ -59,11 +59,7 @@ package flash.geom {
 
         public native function prepend(rhs:Matrix3D):void;
 
-        public function prependScale(xScale:Number, yScale:Number, zScale:Number):void {
-            var m:Matrix3D = new Matrix3D();
-            m.appendScale(xScale, yScale, zScale);
-            this.prepend(m);
-        }
+        public native function prependScale(xScale:Number, yScale:Number, zScale:Number):void;
 
         [API("674")]
         public function copyFrom(other:Matrix3D):void {
