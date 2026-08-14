@@ -78,6 +78,22 @@ impl Avm2ClassWindow {
                     open_movie_button(ui, &tu.movie(), messages);
                     ui.end_row();
                 }
+
+                ui.label("Sealed?");
+                ui.text_edit_singleline(&mut class.is_sealed().to_string().as_str());
+                ui.end_row();
+
+                ui.label("Final?");
+                ui.text_edit_singleline(&mut class.is_final().to_string().as_str());
+                ui.end_row();
+
+                ui.label("Interface?");
+                ui.text_edit_singleline(&mut class.is_interface().to_string().as_str());
+                ui.end_row();
+
+                ui.label("Generic?");
+                ui.text_edit_singleline(&mut class.is_generic().to_string().as_str());
+                ui.end_row();
             });
     }
 
