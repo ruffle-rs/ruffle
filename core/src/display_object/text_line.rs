@@ -266,29 +266,6 @@ impl<'gc> TDisplayObject<'gc> for TextLine<'gc> {
         HasPrefixField::as_prefix_gc(interactive)
     }
 
-    fn instantiate(self, gc_context: &Mutation<'gc>) -> DisplayObject<'gc> {
-        Self(Gc::new(
-            gc_context,
-            TextLineData {
-                base: Default::default(),
-                avm2_object: Lock::new(None),
-                fallback: self.0.fallback,
-                movie: self.0.movie.clone(),
-                validity: Lock::new(self.0.validity.get()),
-                text_block: Lock::new(self.0.text_block.get()),
-                hide_block_from_script: Cell::new(self.0.hide_block_from_script.get()),
-                specified_width: Cell::new(self.0.specified_width.get()),
-                raw_text_length: Cell::new(self.0.raw_text_length.get()),
-                begin_index: Cell::new(self.0.begin_index.get()),
-                end_index: Cell::new(self.0.end_index.get()),
-                line_index: Cell::new(self.0.line_index.get()),
-                previous_line: Lock::new(self.0.previous_line.get()),
-                next_line: Lock::new(self.0.next_line.get()),
-            },
-        ))
-        .into()
-    }
-
     fn id(self) -> CharacterId {
         0
     }

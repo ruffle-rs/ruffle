@@ -8,8 +8,14 @@ sound.onSoundComplete = function() {
         sound.start();
     }
 };
+sound.onLoad = function() {
+    trace("onLoad");
+};
 
+trace("before");
 sound.loadSound("noise.mp3", false);
+trace("after");
+
 sound.setVolume(50);
 sound.start();
 sound.start();

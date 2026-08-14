@@ -55,15 +55,15 @@ impl<'gc> MorphShape<'gc> {
             },
         ))
     }
+
+    pub fn instantiate(self, gc_context: &Mutation<'gc>) -> Self {
+        Self(Gc::new(gc_context, (*self.0).clone()))
+    }
 }
 
 impl<'gc> TDisplayObject<'gc> for MorphShape<'gc> {
     fn base(self) -> Gc<'gc, DisplayObjectBase<'gc>> {
         HasPrefixField::as_prefix_gc(self.0)
-    }
-
-    fn instantiate(self, gc_context: &Mutation<'gc>) -> DisplayObject<'gc> {
-        Self(Gc::new(gc_context, self.0.as_ref().clone())).into()
     }
 
     fn id(self) -> CharacterId {
