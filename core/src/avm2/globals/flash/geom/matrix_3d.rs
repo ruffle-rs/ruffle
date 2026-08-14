@@ -1,10 +1,11 @@
-use crate::avm2::error::{Error2004Type, make_error_2004, make_error_2187};
+use crate::avm2::error::{Error2004Type, make_error_2004, make_error_2183, make_error_2187};
 use crate::avm2::globals::slots::flash_geom_vector_3d as vector3d_slots;
 use crate::avm2::object::VectorObject;
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::vector::VectorStorage;
 use crate::avm2::{Activation, Avm2StrRepresentable as _, Error, Object, TObject as _, Value};
 use crate::avm2_stub_method;
+use num_traits::Zero;
 use ruffle_macros::Avm2Enum;
 use ruffle_render::matrix3d::Matrix3D;
 
@@ -127,6 +128,28 @@ pub fn append_translation<'gc>(
     matrix.raw_data[12] += x as f32;
     matrix.raw_data[13] += y as f32;
     matrix.raw_data[14] += z as f32;
+
+    Ok(Value::Undefined)
+}
+
+/// Implements `Matrix3D.appendScale`.
+pub fn append_scale<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Value<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap().as_matrix3d_object().unwrap();
+    let x = args.get_f64(0);
+    let y = args.get_f64(1);
+    let z = args.get_f64(2);
+
+    if x.is_zero() || y.is_zero() || z.is_zero() {
+        return Err(make_error_2183(activation));
+    }
+
+    let scale = Matrix3D::scale(x as f32, y as f32, z as f32);
+    let result = scale.multiply(&this.matrix_ref());
+    this.replace_matrix(result);
 
     Ok(Value::Undefined)
 }
