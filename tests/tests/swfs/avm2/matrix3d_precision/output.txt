@@ -1,0 +1,25 @@
+testAppendTranslation: 1.0000001192092896,1.0000001192092896,1.0000001192092896
+copyColumnFrom: Infinity,1
+copyRowFrom: Infinity,1
+copyRawDataFrom: Infinity,1
+position: Infinity,Infinity,Infinity
+position: Vector3D(Infinity, Infinity, Infinity)
+determinant: Infinity
+determinant: Infinity
+determinant: -Infinity
+testTransformVector (1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,Vector3D(1e+50, 1e+50, 1e+50)):
+  transformVector: Vector3D(Infinity, Infinity, Infinity)
+  transformVectors: 3.00000000000000e+50,3.00000000000000e+50,3.00000000000000e+50
+  deltaTransformVector: Vector3D(Infinity, Infinity, Infinity)
+testTransformVector (1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,Vector3D(1.00000001, 1.00000001, 1.00000001)):
+  transformVector: Vector3D(4, 4, 4)
+  transformVectors: 4.00000003,4.00000003,4.00000003
+  deltaTransformVector: Vector3D(3, 3, 3)
+testTransformVector (8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,Vector3D(4e+37, 4e+37, 4e+37)):
+  transformVector: Vector3D(Infinity, Infinity, Infinity)
+  transformVectors: 9.59999999999999e+38,9.59999999999999e+38,9.59999999999999e+38
+  deltaTransformVector: Vector3D(Infinity, Infinity, Infinity)
+testTransformVector (8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,Vector3D(5e+37, 5e+37, 5e+37)):
+  transformVector: Vector3D(Infinity, Infinity, Infinity)
+  transformVectors: 1.2e+39,1.2e+39,1.2e+39
+  deltaTransformVector: Vector3D(Infinity, Infinity, Infinity)
