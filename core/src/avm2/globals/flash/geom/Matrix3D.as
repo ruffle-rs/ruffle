@@ -33,7 +33,6 @@ package flash.geom {
 
         public native function transformVectors(vin:Vector.<Number>, vout:Vector.<Number>):void;
 
-        [Ruffle(NativeCallable)]
         public native function transpose():void;
 
         public native function append(lhs:Matrix3D):void;
@@ -61,7 +60,6 @@ package flash.geom {
         [API("674")]
         public native function copyRawDataTo(dest:Vector.<Number>, index:uint = 0, transpose:Boolean = false):void;
 
-        [Ruffle(NativeCallable)]
         public native function clone():Matrix3D;
 
         public native function copyToMatrix3D(dest:Matrix3D):void;
