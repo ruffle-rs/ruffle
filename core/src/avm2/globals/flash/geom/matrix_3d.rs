@@ -459,6 +459,21 @@ pub fn copy_raw_data_to<'gc>(
     Ok(Value::Undefined)
 }
 
+/// Implements `Matrix3D.copyToMatrix3D`.
+pub fn copy_to_matrix_3d<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Value<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap().as_matrix3d_object().unwrap();
+    let dest = args
+        .get_object(activation, 0, "dest")?
+        .as_matrix3d_object()
+        .unwrap();
+    dest.replace_matrix(this.matrix());
+    Ok(Value::Undefined)
+}
+
 /// Implements `Matrix3D.clone`.
 pub fn clone<'gc>(
     activation: &mut Activation<'_, 'gc>,

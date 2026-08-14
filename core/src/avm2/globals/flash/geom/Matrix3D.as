@@ -66,9 +66,7 @@ package flash.geom {
         [Ruffle(NativeCallable)]
         public native function clone():Matrix3D;
 
-        public function copyToMatrix3D(other:Matrix3D):void {
-            other.rawData = this.rawData;
-        }
+        public native function copyToMatrix3D(dest:Matrix3D):void;
 
         public function pointAt(pos:Vector3D, at:Vector3D = null, up:Vector3D = null):void {
             stub_method("flash.geom.Matrix3D", "pointAt");
