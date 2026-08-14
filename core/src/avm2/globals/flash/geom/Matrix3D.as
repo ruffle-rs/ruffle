@@ -40,12 +40,7 @@ package flash.geom {
 
         public native function append(lhs:Matrix3D):void;
 
-        // Based on https://github.com/openfl/openfl/blob/971a4c9e43b5472fd84d73920a2b7c1b3d8d9257/src/openfl/geom/Matrix3D.hx#L307
-        public function appendScale(xScale:Number, yScale:Number, zScale:Number):void {
-            this.append(new Matrix3D(Vector.<Number>([
-                xScale, 0.0, 0.0, 0.0, 0.0, yScale, 0.0, 0.0, 0.0, 0.0, zScale, 0.0, 0.0, 0.0, 0.0, 1.0
-            ])));
-        }
+        public native function appendScale(xScale:Number, yScale:Number, zScale:Number):void;
 
         public function prependTranslation(x:Number, y:Number, z:Number):void {
             var m:Matrix3D = new Matrix3D();
