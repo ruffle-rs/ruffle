@@ -56,9 +56,7 @@ package flash.geom {
         public native function prependScale(xScale:Number, yScale:Number, zScale:Number):void;
 
         [API("674")]
-        public function copyFrom(other:Matrix3D):void {
-            this.rawData = other.rawData;
-        }
+        public native function copyFrom(source:Matrix3D):void;
 
         [API("674")]
         public native function copyRawDataTo(dest:Vector.<Number>, index:uint = 0, transpose:Boolean = false):void;

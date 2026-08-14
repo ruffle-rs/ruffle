@@ -399,6 +399,21 @@ pub fn copy_row_from<'gc>(
     Ok(Value::Undefined)
 }
 
+/// Implements `Matrix3D.copyFrom`.
+pub fn copy_from<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Value<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap().as_matrix3d_object().unwrap();
+    let source = args
+        .get_object(activation, 0, "source")?
+        .as_matrix3d_object()
+        .unwrap();
+    this.replace_matrix(source.matrix());
+    Ok(Value::Undefined)
+}
+
 /// Implements `Matrix3D.copyRawDataFrom`.
 pub fn copy_raw_data_from<'gc>(
     activation: &mut Activation<'_, 'gc>,
