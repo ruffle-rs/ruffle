@@ -1,10 +1,11 @@
-use crate::avm2::error::{Error2004Type, make_error_2004, make_error_2187};
+use crate::avm2::error::{Error2004Type, make_error_2004, make_error_2183, make_error_2187};
 use crate::avm2::globals::slots::flash_geom_vector_3d as vector3d_slots;
-use crate::avm2::object::VectorObject;
+use crate::avm2::object::{Matrix3DObject, VectorObject};
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::vector::VectorStorage;
 use crate::avm2::{Activation, Avm2StrRepresentable as _, Error, Object, TObject as _, Value};
 use crate::avm2_stub_method;
+use num_traits::Zero;
 use ruffle_macros::Avm2Enum;
 use ruffle_render::matrix3d::Matrix3D;
 
@@ -131,6 +132,28 @@ pub fn append_translation<'gc>(
     Ok(Value::Undefined)
 }
 
+/// Implements `Matrix3D.appendScale`.
+pub fn append_scale<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Value<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap().as_matrix3d_object().unwrap();
+    let x = args.get_f64(0);
+    let y = args.get_f64(1);
+    let z = args.get_f64(2);
+
+    if x.is_zero() || y.is_zero() || z.is_zero() {
+        return Err(make_error_2183(activation));
+    }
+
+    let scale = Matrix3D::scale(x as f32, y as f32, z as f32);
+    let result = scale.multiply(&this.matrix_ref());
+    this.replace_matrix(result);
+
+    Ok(Value::Undefined)
+}
+
 /// Implements `Matrix3D.append`.
 pub fn append<'gc>(
     activation: &mut Activation<'_, 'gc>,
@@ -162,6 +185,46 @@ pub fn prepend<'gc>(
         .unwrap();
 
     let result = this.matrix_ref().multiply(&rhs.matrix_ref());
+    this.replace_matrix(result);
+
+    Ok(Value::Undefined)
+}
+
+/// Implements `Matrix3D.prependTranslation`.
+pub fn prepend_translation<'gc>(
+    _activation: &mut Activation<'_, 'gc>,
+    this: Value<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap().as_matrix3d_object().unwrap();
+    let x = args.get_f64(0);
+    let y = args.get_f64(1);
+    let z = args.get_f64(2);
+
+    let translation = Matrix3D::translate(x as f32, y as f32, z as f32);
+    let result = this.matrix_ref().multiply(&translation);
+    this.replace_matrix(result);
+
+    Ok(Value::Undefined)
+}
+
+/// Implements `Matrix3D.prependScale`.
+pub fn prepend_scale<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Value<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap().as_matrix3d_object().unwrap();
+    let x = args.get_f64(0);
+    let y = args.get_f64(1);
+    let z = args.get_f64(2);
+
+    if x.is_zero() || y.is_zero() || z.is_zero() {
+        return Err(make_error_2183(activation));
+    }
+
+    let scale = Matrix3D::scale(x as f32, y as f32, z as f32);
+    let result = this.matrix_ref().multiply(&scale);
     this.replace_matrix(result);
 
     Ok(Value::Undefined)
@@ -336,6 +399,21 @@ pub fn copy_row_from<'gc>(
     Ok(Value::Undefined)
 }
 
+/// Implements `Matrix3D.copyFrom`.
+pub fn copy_from<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Value<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap().as_matrix3d_object().unwrap();
+    let source = args
+        .get_object(activation, 0, "source")?
+        .as_matrix3d_object()
+        .unwrap();
+    this.replace_matrix(source.matrix());
+    Ok(Value::Undefined)
+}
+
 /// Implements `Matrix3D.copyRawDataFrom`.
 pub fn copy_raw_data_from<'gc>(
     activation: &mut Activation<'_, 'gc>,
@@ -394,6 +472,31 @@ pub fn copy_raw_data_to<'gc>(
     }
 
     Ok(Value::Undefined)
+}
+
+/// Implements `Matrix3D.copyToMatrix3D`.
+pub fn copy_to_matrix_3d<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Value<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap().as_matrix3d_object().unwrap();
+    let dest = args
+        .get_object(activation, 0, "dest")?
+        .as_matrix3d_object()
+        .unwrap();
+    dest.replace_matrix(this.matrix());
+    Ok(Value::Undefined)
+}
+
+/// Implements `Matrix3D.clone`.
+pub fn clone<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Value<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap().as_matrix3d_object().unwrap();
+    Ok(Matrix3DObject::new(activation.context, this.matrix()).into())
 }
 
 /// Implements `Matrix3D.position`'s getter.

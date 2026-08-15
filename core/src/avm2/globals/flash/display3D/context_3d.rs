@@ -6,7 +6,6 @@ use crate::avm2::error::{
     make_error_2008, make_error_3669, make_error_3670, make_error_3671, make_error_3771,
     make_error_3772, make_error_3773, make_error_3780, make_error_3781,
 };
-use crate::avm2::globals::methods::flash_geom_matrix_3d as matrix3d_methods;
 use crate::avm2::globals::slots::flash_geom_rectangle as rectangle_slots;
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2_stub_method;
@@ -276,7 +275,11 @@ pub fn set_program_constants_from_matrix<'gc>(
 
         let first_register = args.get_u32(1);
 
-        let mut matrix = args.get_object(activation, 2, "matrix")?;
+        let mut matrix = args
+            .get_object(activation, 2, "matrix")?
+            .as_matrix3d_object()
+            .unwrap()
+            .matrix();
 
         let user_transposed_matrix = args.get_bool(3);
 
@@ -288,18 +291,10 @@ pub fn set_program_constants_from_matrix<'gc>(
         // in column-major order.
         // See https://github.com/openfl/openfl/blob/971a4c9e43b5472fd84d73920a2b7c1b3d8d9257/src/openfl/display3D/Context3D.hx#L1532-L1550
         if user_transposed_matrix {
-            matrix = Value::from(matrix)
-                .call_method(matrix3d_methods::CLONE, &[], activation)?
-                .as_object()
-                .expect("Matrix3D.clone returns Object");
-
-            Value::from(matrix).call_method(matrix3d_methods::TRANSPOSE, &[], activation)?;
+            matrix.transpose_in_place();
         }
 
         let matrix_raw_data = matrix
-            .as_matrix3d_object()
-            .unwrap()
-            .matrix_ref()
             .raw_data
             .iter()
             .map(|&val| val.to_le_bytes())
