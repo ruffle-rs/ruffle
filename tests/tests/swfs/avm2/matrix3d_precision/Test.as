@@ -8,6 +8,9 @@ package {
     public class Test extends Sprite {
         public function Test() {
             testAppendTranslation();
+            testPrependTranslation();
+            testAppendScale();
+            testPrependScale();
             testCopyFrom();
             testPosition();
             testDeterminant();
@@ -25,6 +28,39 @@ package {
             trace("testAppendTranslation: " + matrix.rawData[12] +
                 "," + matrix.rawData[13] +
                 "," + matrix.rawData[14]);
+        }
+
+        function testPrependTranslation() {
+            // Unlike appendTranslation(), this one is a full matrix multiplication,
+            // so the sum of the four component-wise products has to land somewhere.
+
+            var matrix:Matrix3D = newMatrix(3);
+            var f = 1.0000001;
+            matrix.prependTranslation(f, f, f);
+
+            trace("testPrependTranslation: " + matrix.rawData[12] +
+                "," + matrix.rawData[13] +
+                "," + matrix.rawData[14]);
+        }
+
+        function testAppendScale() {
+            var matrix:Matrix3D = newMatrix(3);
+            var f = 1.0000000596046448;
+            matrix.appendScale(f, f, f);
+
+            trace("testAppendScale: " + matrix.rawData[0] +
+                "," + matrix.rawData[5] +
+                "," + matrix.rawData[10]);
+        }
+
+        function testPrependScale() {
+            var matrix:Matrix3D = newMatrix(3);
+            var f = 1.0000000596046448;
+            matrix.prependScale(f, f, f);
+
+            trace("testPrependScale: " + matrix.rawData[0] +
+                "," + matrix.rawData[5] +
+                "," + matrix.rawData[10]);
         }
 
         function testCopyFrom() {

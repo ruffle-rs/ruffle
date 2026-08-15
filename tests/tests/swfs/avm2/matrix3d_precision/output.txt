@@ -1,4 +1,7 @@
 testAppendTranslation: 1.0000001192092896,1.0000001192092896,1.0000001192092896
+testPrependTranslation: 12.000001907348633,12.000001907348633,12.000001907348633
+testAppendScale: 3,3,3
+testPrependScale: 3,3,3
 copyColumnFrom: Infinity,1
 copyRowFrom: Infinity,1
 copyRawDataFrom: Infinity,1
