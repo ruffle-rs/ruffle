@@ -182,15 +182,6 @@ impl<'builder, 'activation_a, 'gc, T: TimeZone> DateAdjustment<'builder, 'activa
     }
 }
 
-fn get_arguments_array<'gc>(args: &[Value<'gc>]) -> Vec<Value<'gc>> {
-    let object = args.try_get_object(0).expect("Expected an Object");
-    let array_storage = object.as_array_storage().unwrap();
-    array_storage
-        .iter()
-        .map(|v| v.unwrap()) // Arguments should be array with no holes
-        .collect()
-}
-
 pub fn init_custom_prototype<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
@@ -215,11 +206,10 @@ pub fn init<'gc>(
     let this = this.as_object().unwrap();
 
     let this = this.as_date_object().unwrap();
-    let arguments = get_arguments_array(args);
 
-    let timestamp = arguments.get(0).unwrap_or(&Value::Undefined);
-    if timestamp != &Value::Undefined {
-        if arguments.len() > 1 {
+    let timestamp = args.get_optional(0).unwrap_or(Value::Undefined);
+    if timestamp != Value::Undefined {
+        if args.len() > 1 {
             let timezone = get_timezone();
 
             // We need a starting value to adjust from.
@@ -232,18 +222,18 @@ pub fn init<'gc>(
             ));
 
             DateAdjustment::new(activation, &timezone)
-                .year(arguments.get(0).copied())?
-                .month(arguments.get(1).copied())?
-                .day(arguments.get(2).copied())?
-                .hour(arguments.get(3).copied())?
-                .minute(arguments.get(4).copied())?
-                .second(arguments.get(5).copied())?
-                .millisecond(arguments.get(6).copied())?
+                .year(args.get_optional(0))?
+                .month(args.get_optional(1))?
+                .day(args.get_optional(2))?
+                .hour(args.get_optional(3))?
+                .minute(args.get_optional(4))?
+                .second(args.get_optional(5))?
+                .millisecond(args.get_optional(6))?
                 .map_year(|year| if year < 100.0 { year + 1900.0 } else { year })
                 .apply(this);
         } else {
             let timestamp = if let Value::String(date_str) = timestamp {
-                parse_full_date(activation, *date_str).unwrap_or(f64::NAN)
+                parse_full_date(activation, date_str).unwrap_or(f64::NAN)
             } else {
                 timestamp.coerce_to_number(activation)?
             };
