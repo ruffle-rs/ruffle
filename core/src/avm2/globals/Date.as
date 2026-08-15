@@ -1,4 +1,6 @@
 package {
+    // TODO: This class should be `[Ruffle(CustomConstructor)]`, like `RegExp`-
+    // see `RegExp.as` for more information
     [Ruffle(InstanceAllocator)]
     [Ruffle(CallHandler)]
     public dynamic class Date {
@@ -230,9 +232,9 @@ package {
             seconds:* = undefined,
             ms:* = undefined
         ) {
-            this.init(arguments);
+            this.init.apply(this, arguments);
         }
-        private native function init(args:Array);
+        private native function init(...rest);
 
         public static native function parse(date:*):Number;
 
