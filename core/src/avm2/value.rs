@@ -16,7 +16,7 @@ use crate::ecma_conversions::{f64_to_wrapping_i32, f64_to_wrapping_u32};
 use crate::string::{AvmAtom, AvmString, WStr};
 use gc_arena::Collect;
 use num_bigint::BigInt;
-use num_traits::{Signed, ToPrimitive, Zero};
+use num_traits::{ToPrimitive, Zero};
 use ruffle_macros::istr;
 use std::mem::size_of;
 use swf::avm2::types::DefaultValue as AbcDefaultValue;
@@ -465,7 +465,7 @@ fn f64_to_string<'gc>(n: f64, activation: &mut Activation<'_, 'gc>) -> AvmString
     if !n.is_finite() {
         return if n.is_nan() {
             istr!("NaN")
-        } else if n.is_positive() {
+        } else if n.is_sign_positive() {
             istr!("Infinity")
         } else {
             istr!("-Infinity")
@@ -480,7 +480,11 @@ fn f64_to_string<'gc>(n: f64, activation: &mut Activation<'_, 'gc>) -> AvmString
 }
 
 fn f64_to_string_finite_nonzero(n: f64) -> String {
-    let (sign, n) = if n.is_negative() { ("-", -n) } else { ("", n) };
+    let (sign, n) = if n.is_sign_negative() {
+        ("-", -n)
+    } else {
+        ("", n)
+    };
 
     if n >= 0.000001 && n < 1e+21 {
         // No exponent.
