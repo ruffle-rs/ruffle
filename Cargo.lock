@@ -1953,6 +1953,28 @@ dependencies = [
 ]
 
 [[package]]
+name = "freetype-rs"
+version = "0.38.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6d228d6de56c90dd7585341f341849441b3490180c62d27133e525eb726809b4"
+dependencies = [
+ "bitflags 2.13.1",
+ "freetype-sys",
+ "libc",
+]
+
+[[package]]
+name = "freetype-sys"
+version = "0.23.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "eab537ce43cab850c64b4cdc390ce7e4f47f877485ddc323208e268280c308ae"
+dependencies = [
+ "cc",
+ "libz-sys",
+ "pkg-config",
+]
+
+[[package]]
 name = "funty"
 version = "2.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2945,6 +2967,18 @@ checksum = "3c8469b4a23b962c1396b9b451dda50ef5b283e8dd309d69033475fa9b334324"
 dependencies = [
  "libc",
  "pkg-config",
+]
+
+[[package]]
+name = "libz-sys"
+version = "1.1.29"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "85bc9657773828b90eeb625adff10eeac83cc21bbfd8e23a03eaa8a33c9e28d9"
+dependencies = [
+ "cc",
+ "libc",
+ "pkg-config",
+ "vcpkg",
 ]
 
 [[package]]
@@ -4815,6 +4849,7 @@ dependencies = [
  "async-io",
  "bytemuck",
  "cpal",
+ "freetype-rs",
  "futures-lite",
  "macro_rules_attribute",
  "reqwest",
@@ -4999,6 +5034,7 @@ dependencies = [
  "rascal",
  "regex",
  "ruffle_core",
+ "ruffle_frontend_utils",
  "ruffle_input_format",
  "ruffle_render",
  "ruffle_socket_format",

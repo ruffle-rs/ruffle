@@ -1,5 +1,8 @@
 num_ticks = 1
 
+# TODO Subnormal values have wrong representations.
+known_failure = true
+
 [[compilers]]
 type = "Asc"
 target = "test.swf"

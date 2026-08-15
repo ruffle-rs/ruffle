@@ -2,4 +2,4 @@ num_frames = 1
 
 [approximations]
 bare_numbers = true
-max_relative = 0.000000000000006661338147750939
+max_relative = 0.000000000000005

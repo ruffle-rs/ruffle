@@ -985,7 +985,11 @@ impl SwfGlyphOrShape {
 #[derive(Clone, Debug)]
 pub enum GlyphRenderData {
     Shape(ShapeHandle),
-    Bitmap { handle: BitmapHandle, tx: Twips },
+    Bitmap {
+        handle: BitmapHandle,
+        tx: Twips,
+        ty: Twips,
+    },
 }
 
 impl GlyphRenderData {
@@ -993,10 +997,11 @@ impl GlyphRenderData {
         Self::Shape(shape_handle)
     }
 
-    pub fn from_bitmap(bitmap_handle: BitmapHandle, tx: Twips) -> Self {
+    pub fn from_bitmap(bitmap_handle: BitmapHandle, tx: Twips, ty: Twips) -> Self {
         Self::Bitmap {
             handle: bitmap_handle,
             tx,
+            ty,
         }
     }
 }
@@ -1050,7 +1055,7 @@ impl GlyphShape {
                 })
                 .ok()
                 .cloned()
-                .map(|handle| GlyphRenderData::from_bitmap(handle, bitmap.tx)),
+                .map(|handle| GlyphRenderData::from_bitmap(handle, bitmap.tx, bitmap.ty)),
             GlyphShape::None => None,
         }
     }
@@ -1063,6 +1068,9 @@ struct GlyphBitmap<'a> {
 
     /// Translation in x to be applied before rendering the glyph.
     tx: Twips,
+
+    /// Translation in y to be applied before rendering the glyph.
+    ty: Twips,
 }
 
 impl<'a> std::fmt::Debug for GlyphBitmap<'a> {
@@ -1074,11 +1082,12 @@ impl<'a> std::fmt::Debug for GlyphBitmap<'a> {
 }
 
 impl<'a> GlyphBitmap<'a> {
-    pub fn new(bitmap: Bitmap<'a>, tx: Twips) -> Self {
+    pub fn new(bitmap: Bitmap<'a>, tx: Twips, ty: Twips) -> Self {
         Self {
             bitmap: Cell::new(Some(bitmap)),
             handle: OnceCell::new(),
             tx,
+            ty,
         }
     }
 
@@ -1120,9 +1129,10 @@ impl Glyph {
         bitmap: Bitmap<'static>,
         advance: Twips,
         tx: Twips,
+        ty: Twips,
     ) -> Self {
         Self {
-            shape: GlyphShape::Bitmap(Rc::new(GlyphBitmap::new(bitmap, tx))),
+            shape: GlyphShape::Bitmap(Rc::new(GlyphBitmap::new(bitmap, tx, ty))),
             advance,
             character,
         }
@@ -1174,9 +1184,9 @@ impl Glyph {
                     .commands
                     .render_shape(shape_handle, context.transform_stack.transform());
             }
-            GlyphRenderData::Bitmap { handle, tx } => {
+            GlyphRenderData::Bitmap { handle, tx, ty } => {
                 context.transform_stack.push(&Transform {
-                    matrix: Matrix::translate(tx, Twips::ZERO),
+                    matrix: Matrix::translate(tx, ty),
                     ..Default::default()
                 });
 
