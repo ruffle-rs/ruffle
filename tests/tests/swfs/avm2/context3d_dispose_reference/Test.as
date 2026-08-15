@@ -26,7 +26,7 @@ package {
                     oldContext.createVertexBuffer(3, 3);
                     trace("old context still usable (no error)");
                 } catch (err:Error) {
-                    trace("errorID: " + err.errorID);
+                    trace("error: " + err.getStackTrace());
                 }
             }
         }
