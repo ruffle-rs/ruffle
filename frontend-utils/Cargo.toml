@@ -52,6 +52,8 @@ reqwest = { workspace = true, features = [
 tokio = { workspace = true, features = ["net", "macros"], optional = true }
 cpal = { workspace = true, optional = true }
 bytemuck = { workspace = true, optional = true }
+
+[target.'cfg(target_os = "linux")'.dependencies]
 freetype-rs = { version = "0.38.0", optional = true }
 
 [dev-dependencies]
