@@ -51,7 +51,7 @@ impl<'builder, 'activation_a, 'gc, T: TimeZone> DateAdjustment<'builder, 'activa
         self
     }
 
-    fn year(&mut self, value: Option<&Value<'gc>>) -> Result<&mut Self, Error<'gc>> {
+    fn year(&mut self, value: Option<Value<'gc>>) -> Result<&mut Self, Error<'gc>> {
         self.year = match value {
             Some(value) => Some(Some(value.coerce_to_number(self.activation)?)),
             None => None,
@@ -59,7 +59,7 @@ impl<'builder, 'activation_a, 'gc, T: TimeZone> DateAdjustment<'builder, 'activa
         Ok(self)
     }
 
-    fn month(&mut self, value: Option<&Value<'gc>>) -> Result<&mut Self, Error<'gc>> {
+    fn month(&mut self, value: Option<Value<'gc>>) -> Result<&mut Self, Error<'gc>> {
         self.month = match value {
             Some(value) => Some(Some(value.coerce_to_number(self.activation)?)),
             None => None,
@@ -67,7 +67,7 @@ impl<'builder, 'activation_a, 'gc, T: TimeZone> DateAdjustment<'builder, 'activa
         Ok(self)
     }
 
-    fn day(&mut self, value: Option<&Value<'gc>>) -> Result<&mut Self, Error<'gc>> {
+    fn day(&mut self, value: Option<Value<'gc>>) -> Result<&mut Self, Error<'gc>> {
         self.day = match value {
             Some(value) => Some(Some(value.coerce_to_number(self.activation)?)),
             None => None,
@@ -75,7 +75,7 @@ impl<'builder, 'activation_a, 'gc, T: TimeZone> DateAdjustment<'builder, 'activa
         Ok(self)
     }
 
-    fn hour(&mut self, value: Option<&Value<'gc>>) -> Result<&mut Self, Error<'gc>> {
+    fn hour(&mut self, value: Option<Value<'gc>>) -> Result<&mut Self, Error<'gc>> {
         self.hour = match value {
             Some(value) => Some(Some(value.coerce_to_number(self.activation)?)),
             None => None,
@@ -83,7 +83,7 @@ impl<'builder, 'activation_a, 'gc, T: TimeZone> DateAdjustment<'builder, 'activa
         Ok(self)
     }
 
-    fn minute(&mut self, value: Option<&Value<'gc>>) -> Result<&mut Self, Error<'gc>> {
+    fn minute(&mut self, value: Option<Value<'gc>>) -> Result<&mut Self, Error<'gc>> {
         self.minute = match value {
             Some(value) => Some(Some(value.coerce_to_number(self.activation)?)),
             None => None,
@@ -91,7 +91,7 @@ impl<'builder, 'activation_a, 'gc, T: TimeZone> DateAdjustment<'builder, 'activa
         Ok(self)
     }
 
-    fn second(&mut self, value: Option<&Value<'gc>>) -> Result<&mut Self, Error<'gc>> {
+    fn second(&mut self, value: Option<Value<'gc>>) -> Result<&mut Self, Error<'gc>> {
         self.second = match value {
             Some(value) => Some(Some(value.coerce_to_number(self.activation)?)),
             None => None,
@@ -99,7 +99,7 @@ impl<'builder, 'activation_a, 'gc, T: TimeZone> DateAdjustment<'builder, 'activa
         Ok(self)
     }
 
-    fn millisecond(&mut self, value: Option<&Value<'gc>>) -> Result<&mut Self, Error<'gc>> {
+    fn millisecond(&mut self, value: Option<Value<'gc>>) -> Result<&mut Self, Error<'gc>> {
         self.millisecond = match value {
             Some(value) => Some(Some(value.coerce_to_number(self.activation)?)),
             None => None,
@@ -182,15 +182,6 @@ impl<'builder, 'activation_a, 'gc, T: TimeZone> DateAdjustment<'builder, 'activa
     }
 }
 
-fn get_arguments_array<'gc>(args: &[Value<'gc>]) -> Vec<Value<'gc>> {
-    let object = args.try_get_object(0).expect("Expected an Object");
-    let array_storage = object.as_array_storage().unwrap();
-    array_storage
-        .iter()
-        .map(|v| v.unwrap()) // Arguments should be array with no holes
-        .collect()
-}
-
 pub fn init_custom_prototype<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
@@ -215,11 +206,10 @@ pub fn init<'gc>(
     let this = this.as_object().unwrap();
 
     let this = this.as_date_object().unwrap();
-    let arguments = get_arguments_array(args);
 
-    let timestamp = arguments.get(0).unwrap_or(&Value::Undefined);
-    if timestamp != &Value::Undefined {
-        if arguments.len() > 1 {
+    let timestamp = args.get_optional(0).unwrap_or(Value::Undefined);
+    if timestamp != Value::Undefined {
+        if args.len() > 1 {
             let timezone = get_timezone();
 
             // We need a starting value to adjust from.
@@ -232,18 +222,18 @@ pub fn init<'gc>(
             ));
 
             DateAdjustment::new(activation, &timezone)
-                .year(arguments.get(0))?
-                .month(arguments.get(1))?
-                .day(arguments.get(2))?
-                .hour(arguments.get(3))?
-                .minute(arguments.get(4))?
-                .second(arguments.get(5))?
-                .millisecond(arguments.get(6))?
+                .year(args.get_optional(0))?
+                .month(args.get_optional(1))?
+                .day(args.get_optional(2))?
+                .hour(args.get_optional(3))?
+                .minute(args.get_optional(4))?
+                .second(args.get_optional(5))?
+                .millisecond(args.get_optional(6))?
                 .map_year(|year| if year < 100.0 { year + 1900.0 } else { year })
                 .apply(this);
         } else {
             let timestamp = if let Value::String(date_str) = timestamp {
-                parse_full_date(activation, *date_str).unwrap_or(f64::NAN)
+                parse_full_date(activation, date_str).unwrap_or(f64::NAN)
             } else {
                 timestamp.coerce_to_number(activation)?
             };
@@ -338,10 +328,9 @@ pub fn _set_milliseconds<'gc>(
     let this = this.as_object().unwrap();
 
     let this = this.as_date_object().unwrap();
-    let args = get_arguments_array(args);
 
     let timestamp = DateAdjustment::new(activation, &get_timezone())
-        .millisecond(args.get(0))?
+        .millisecond(args.get_optional(0))?
         .apply(this);
     Ok(timestamp.into())
 }
@@ -375,11 +364,10 @@ pub fn _set_seconds<'gc>(
     let this = this.as_object().unwrap();
 
     let this = this.as_date_object().unwrap();
-    let args = get_arguments_array(args);
 
     let timestamp = DateAdjustment::new(activation, &get_timezone())
-        .second(args.get(0))?
-        .millisecond(args.get(1))?
+        .second(args.get_optional(0))?
+        .millisecond(args.get_optional(1))?
         .apply(this);
     Ok(timestamp.into())
 }
@@ -413,12 +401,11 @@ pub fn _set_minutes<'gc>(
     let this = this.as_object().unwrap();
 
     let this = this.as_date_object().unwrap();
-    let args = get_arguments_array(args);
 
     let timestamp = DateAdjustment::new(activation, &get_timezone())
-        .minute(args.get(0))?
-        .second(args.get(1))?
-        .millisecond(args.get(2))?
+        .minute(args.get_optional(0))?
+        .second(args.get_optional(1))?
+        .millisecond(args.get_optional(2))?
         .apply(this);
     Ok(timestamp.into())
 }
@@ -452,13 +439,12 @@ pub fn _set_hours<'gc>(
     let this = this.as_object().unwrap();
 
     let this = this.as_date_object().unwrap();
-    let args = get_arguments_array(args);
 
     let timestamp = DateAdjustment::new(activation, &get_timezone())
-        .hour(args.get(0))?
-        .minute(args.get(1))?
-        .second(args.get(2))?
-        .millisecond(args.get(3))?
+        .hour(args.get_optional(0))?
+        .minute(args.get_optional(1))?
+        .second(args.get_optional(2))?
+        .millisecond(args.get_optional(3))?
         .apply(this);
     Ok(timestamp.into())
 }
@@ -492,10 +478,9 @@ pub fn _set_date<'gc>(
     let this = this.as_object().unwrap();
 
     let this = this.as_date_object().unwrap();
-    let args = get_arguments_array(args);
 
     let timestamp = DateAdjustment::new(activation, &get_timezone())
-        .day(args.get(0))?
+        .day(args.get_optional(0))?
         .apply(this);
     Ok(timestamp.into())
 }
@@ -529,11 +514,10 @@ pub fn _set_month<'gc>(
     let this = this.as_object().unwrap();
 
     let this = this.as_date_object().unwrap();
-    let args = get_arguments_array(args);
 
     let timestamp = DateAdjustment::new(activation, &get_timezone())
-        .month(args.get(0))?
-        .day(args.get(1))?
+        .month(args.get_optional(0))?
+        .day(args.get_optional(1))?
         .apply(this);
     Ok(timestamp.into())
 }
@@ -567,7 +551,6 @@ pub fn _set_full_year<'gc>(
     let this = this.as_object().unwrap();
 
     let this = this.as_date_object().unwrap();
-    let args = get_arguments_array(args);
 
     let timezone = get_timezone();
     if this.date_time().is_none() {
@@ -580,9 +563,9 @@ pub fn _set_full_year<'gc>(
         ));
     }
     let timestamp = DateAdjustment::new(activation, &timezone)
-        .year(args.get(0))?
-        .month(args.get(1))?
-        .day(args.get(2))?
+        .year(args.get_optional(0))?
+        .month(args.get_optional(1))?
+        .day(args.get_optional(2))?
         .apply(this);
     Ok(timestamp.into())
 }
@@ -633,10 +616,9 @@ pub fn _set_utc_milliseconds<'gc>(
     let this = this.as_object().unwrap();
 
     let this = this.as_date_object().unwrap();
-    let args = get_arguments_array(args);
 
     let timestamp = DateAdjustment::new(activation, &Utc)
-        .millisecond(args.get(0))?
+        .millisecond(args.get_optional(0))?
         .apply(this);
     Ok(timestamp.into())
 }
@@ -667,11 +649,10 @@ pub fn _set_utc_seconds<'gc>(
     let this = this.as_object().unwrap();
 
     let this = this.as_date_object().unwrap();
-    let args = get_arguments_array(args);
 
     let timestamp = DateAdjustment::new(activation, &Utc)
-        .second(args.get(0))?
-        .millisecond(args.get(1))?
+        .second(args.get_optional(0))?
+        .millisecond(args.get_optional(1))?
         .apply(this);
     Ok(timestamp.into())
 }
@@ -702,12 +683,11 @@ pub fn _set_utc_minutes<'gc>(
     let this = this.as_object().unwrap();
 
     let this = this.as_date_object().unwrap();
-    let args = get_arguments_array(args);
 
     let timestamp = DateAdjustment::new(activation, &Utc)
-        .minute(args.get(0))?
-        .second(args.get(1))?
-        .millisecond(args.get(2))?
+        .minute(args.get_optional(0))?
+        .second(args.get_optional(1))?
+        .millisecond(args.get_optional(2))?
         .apply(this);
     Ok(timestamp.into())
 }
@@ -738,13 +718,12 @@ pub fn _set_utc_hours<'gc>(
     let this = this.as_object().unwrap();
 
     let this = this.as_date_object().unwrap();
-    let args = get_arguments_array(args);
 
     let timestamp = DateAdjustment::new(activation, &Utc)
-        .hour(args.get(0))?
-        .minute(args.get(1))?
-        .second(args.get(2))?
-        .millisecond(args.get(3))?
+        .hour(args.get_optional(0))?
+        .minute(args.get_optional(1))?
+        .second(args.get_optional(2))?
+        .millisecond(args.get_optional(3))?
         .apply(this);
     Ok(timestamp.into())
 }
@@ -775,10 +754,9 @@ pub fn _set_utc_date<'gc>(
     let this = this.as_object().unwrap();
 
     let this = this.as_date_object().unwrap();
-    let args = get_arguments_array(args);
 
     let timestamp = DateAdjustment::new(activation, &Utc)
-        .day(args.get(0))?
+        .day(args.get_optional(0))?
         .apply(this);
     Ok(timestamp.into())
 }
@@ -809,11 +787,10 @@ pub fn _set_utc_month<'gc>(
     let this = this.as_object().unwrap();
 
     let this = this.as_date_object().unwrap();
-    let args = get_arguments_array(args);
 
     let timestamp = DateAdjustment::new(activation, &Utc)
-        .month(args.get(0))?
-        .day(args.get(1))?
+        .month(args.get_optional(0))?
+        .day(args.get_optional(1))?
         .apply(this);
     Ok(timestamp.into())
 }
@@ -844,7 +821,6 @@ pub fn _set_utc_full_year<'gc>(
     let this = this.as_object().unwrap();
 
     let this = this.as_date_object().unwrap();
-    let args = get_arguments_array(args);
 
     if this.date_time().is_none() {
         this.set_date_time(Some(
@@ -854,9 +830,9 @@ pub fn _set_utc_full_year<'gc>(
         ));
     }
     let timestamp = DateAdjustment::new(activation, &Utc)
-        .year(args.get(0))?
-        .month(args.get(1))?
-        .day(args.get(2))?
+        .year(args.get_optional(0))?
+        .month(args.get_optional(1))?
+        .day(args.get_optional(2))?
         .apply(this);
     Ok(timestamp.into())
 }
@@ -905,14 +881,22 @@ pub fn utc<'gc>(
     _this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let year = args.get_value(0);
+    let month = args.get_value(1);
+    let day = args.get_value(2);
+    let hour = args.get_value(3);
+    let minute = args.get_value(4);
+    let second = args.get_value(5);
+    let millisecond = args.get_value(6);
+
     let date = DateAdjustment::new(activation, &Utc)
-        .year(args.get(0))?
-        .month(args.get(1))?
-        .day(args.get(2))?
-        .hour(args.get(3))?
-        .minute(args.get(4))?
-        .second(args.get(5))?
-        .millisecond(args.get(6))?
+        .year(Some(year))?
+        .month(Some(month))?
+        .day(Some(day))?
+        .hour(Some(hour))?
+        .minute(Some(minute))?
+        .second(Some(second))?
+        .millisecond(Some(millisecond))?
         .map_year(|year| if year < 100.0 { year + 1900.0 } else { year })
         .calculate(
             Utc.with_ymd_and_hms(0, 1, 1, 0, 0, 0)
