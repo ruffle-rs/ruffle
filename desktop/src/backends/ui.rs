@@ -439,7 +439,7 @@ fn load_font_from_file(
     device_font_renderer: DeviceFontRenderer,
 ) -> Result<FontDefinition<'static>> {
     match device_font_renderer {
-        #[cfg(target_os = "linux")]
+        #[cfg(all(target_os = "linux", feature = "freetype"))]
         DeviceFontRenderer::Freetype => {
             use ruffle_frontend_utils::backends::ui::FreetypeFontRenderer;
 
