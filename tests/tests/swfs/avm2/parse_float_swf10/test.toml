@@ -1,5 +1,6 @@
 num_frames = 1
 
+# Inaccurate on Windows.
 [approximations]
 bare_numbers = true
 max_relative = 0.0000000000000011102230246251565

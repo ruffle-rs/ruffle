@@ -125,7 +125,13 @@ impl CanvasFontRenderer {
 
         let bitmap = Bitmap::new(width, height, BitmapFormat::Rgba, pixels);
         let bitmap_tx = Twips::from_pixels(-metrics.actual_bounding_box_left());
-        Ok(Glyph::from_bitmap(character, bitmap, advance, bitmap_tx))
+        Ok(Glyph::from_bitmap(
+            character,
+            bitmap,
+            advance,
+            bitmap_tx,
+            Twips::ZERO,
+        ))
     }
 
     fn calculate_kerning_internal(&self, left: char, right: char) -> Result<Twips, JsValue> {
