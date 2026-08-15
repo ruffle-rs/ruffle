@@ -3,6 +3,7 @@ use crate::avm2::globals::slots::flash_geom_matrix as matrix_slots;
 use crate::avm2::globals::slots::flash_geom_perspective_projection as pp_slots;
 use crate::avm2::globals::slots::flash_geom_point as point_slots;
 use crate::avm2::globals::slots::flash_geom_transform as transform_slots;
+use crate::avm2::object::Matrix3DObject;
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::{Activation, Error, Object, TObject as _, Value};
 use crate::display_object::{BoundsMode, TDisplayObject};
@@ -190,24 +191,6 @@ pub fn color_transform_to_object<'gc>(
     Ok(object)
 }
 
-pub fn matrix3d_to_object<'gc>(
-    matrix: Matrix3D,
-    activation: &mut Activation<'_, 'gc>,
-) -> Result<Value<'gc>, Error<'gc>> {
-    let object = activation
-        .avm2()
-        .classes()
-        .matrix3d
-        .construct(activation, &[])?;
-    object
-        .as_object()
-        .unwrap()
-        .as_matrix3d_object()
-        .unwrap()
-        .replace_matrix(matrix);
-    Ok(object)
-}
-
 pub fn object_to_perspective_projection<'gc>(
     object: Object<'gc>,
     _activation: &mut Activation<'_, 'gc>,
@@ -307,7 +290,7 @@ pub fn get_matrix_3d<'gc>(
     if display_object.base().has_matrix3d_stub() {
         let matrix = get_display_object(this).base().matrix();
         let matrix3d = Matrix3D::from_matrix(matrix);
-        matrix3d_to_object(matrix3d, activation)
+        Ok(Matrix3DObject::new(activation.context, matrix3d).into())
     } else {
         Ok(Value::Null)
     }
@@ -415,5 +398,5 @@ pub fn get_relative_matrix_3d<'gc>(
         return Ok(Value::Null);
     }
 
-    matrix3d_to_object(Matrix3D::from_matrix(Matrix::IDENTITY), activation)
+    Ok(Matrix3DObject::new(activation.context, Matrix3D::IDENTITY).into())
 }
