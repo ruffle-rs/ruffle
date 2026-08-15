@@ -8,4 +8,5 @@ pub use audio::TestAudioBackend;
 pub use log::TestLogBackend;
 pub use navigator::TestNavigatorBackend;
 pub use storage::TestStorageBackend;
+pub use ui::FontRendererKind;
 pub use ui::TestUiBackend;

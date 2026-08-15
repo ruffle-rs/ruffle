@@ -37,6 +37,12 @@ sha2 = { workspace = true }
 clap = { workspace = true, optional = true }
 tempfile = { workspace = true }
 
+[target.'cfg(target_os = "linux")'.dependencies]
+ruffle_frontend_utils = { path = "../../frontend-utils", default-features = false, features = [
+    "freetype",
+], optional = true }
+
 [features]
 jpegxr = ["ruffle_core/jpegxr"]
 lzma = ["ruffle_core/lzma"]
+freetype = ["dep:ruffle_frontend_utils"]
