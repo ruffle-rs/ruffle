@@ -80,7 +80,7 @@ InternalName = "ruffle_desktop"
 OriginalFilename = "ruffle.exe"
 
 [features]
-default = ["software_video", "external_video", "lzma", "fontconfig"]
+default = ["software_video", "external_video", "lzma", "fontconfig", "freetype"]
 jpegxr = ["ruffle_core/jpegxr"]
 
 # core features
@@ -91,6 +91,7 @@ external_video = ["ruffle_video_external"]
 tracy = ["tracing-tracy", "ruffle_render_wgpu/profile-with-tracy"]
 fontconfig = ["dep:fontconfig"]
 fontconfig-dlopen = ["fontconfig", "fontconfig/dlopen"]
+freetype = ["ruffle_frontend_utils/freetype"]
 
 # wgpu features
 render_debug_labels = ["ruffle_render_wgpu/render_debug_labels"]

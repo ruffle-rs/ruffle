@@ -409,6 +409,10 @@ impl<'gc> EditText<'gc> {
         text
     }
 
+    pub fn instantiate(self, mc: &Mutation<'gc>) -> Self {
+        Self(Gc::new(mc, (*self.0).clone()))
+    }
+
     fn contains_flag(self, flag: EditTextFlag) -> bool {
         self.0.flags.get().contains(flag)
     }
@@ -2546,10 +2550,6 @@ impl<'gc> EditText<'gc> {
 impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
     fn base(self) -> Gc<'gc, DisplayObjectBase<'gc>> {
         HasPrefixField::as_prefix_gc(self.raw_interactive())
-    }
-
-    fn instantiate(self, gc_context: &Mutation<'gc>) -> DisplayObject<'gc> {
-        Self(Gc::new(gc_context, self.0.as_ref().clone())).into()
     }
 
     fn id(self) -> CharacterId {

@@ -115,6 +115,10 @@ impl<'gc> Graphic<'gc> {
         ))
     }
 
+    pub fn instantiate(self, mc: &Mutation<'gc>) -> Self {
+        Self(Gc::new(mc, (*self.0).clone()))
+    }
+
     pub fn drawing_mut(&self) -> RefMut<'_, Drawing> {
         self.0.drawing.get_or_init(Default::default).borrow_mut()
     }
@@ -176,10 +180,6 @@ impl<'gc> Graphic<'gc> {
 impl<'gc> TDisplayObject<'gc> for Graphic<'gc> {
     fn base(self) -> Gc<'gc, DisplayObjectBase<'gc>> {
         HasPrefixField::as_prefix_gc(self.0)
-    }
-
-    fn instantiate(self, gc_context: &Mutation<'gc>) -> DisplayObject<'gc> {
-        Self(Gc::new(gc_context, self.0.as_ref().clone())).into()
     }
 
     fn id(self) -> CharacterId {

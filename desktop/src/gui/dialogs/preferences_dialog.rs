@@ -1,3 +1,4 @@
+use crate::backends::DeviceFontRenderer;
 use crate::cli::{GameModePreference, OpenUrlMode};
 use crate::gui::{ThemePreference, available_languages, optional_text, text};
 use crate::log::FilenamePattern;
@@ -55,6 +56,9 @@ pub struct PreferencesDialog {
 
     ime_enabled: Option<bool>,
     ime_enabled_changed: bool,
+
+    device_font_renderer: Option<DeviceFontRenderer>,
+    device_font_renderer_changed: bool,
 }
 
 impl PreferencesDialog {
@@ -116,6 +120,9 @@ impl PreferencesDialog {
             ime_enabled: preferences.ime_enabled(),
             ime_enabled_changed: false,
 
+            device_font_renderer: preferences.device_font_renderer(),
+            device_font_renderer_changed: false,
+
             preferences,
         }
     }
@@ -145,6 +152,10 @@ impl PreferencesDialog {
                             self.show_open_url_mode_preferences(locale, &locked_text, ui);
 
                             self.show_ime_preferences(locale, ui);
+
+                            if cfg!(target_os = "linux") {
+                                self.show_font_renderer_preferences(locale, ui);
+                            }
 
                             self.show_language_preferences(locale, ui);
 
@@ -425,6 +436,32 @@ impl PreferencesDialog {
         ui.end_row();
     }
 
+    fn show_font_renderer_preferences(&mut self, locale: &LanguageIdentifier, ui: &mut Ui) {
+        ui.label(text(locale, "device-font-renderer"))
+            .on_hover_text_at_pointer(text(locale, "device-font-renderer-tooltip"));
+        let previous = self.device_font_renderer;
+        ComboBox::from_id_salt("device-font-renderer")
+            .selected_text(device_font_renderer_name(locale, self.device_font_renderer))
+            .show_ui(ui, |ui| {
+                let values = [
+                    None,
+                    Some(DeviceFontRenderer::Embedded),
+                    Some(DeviceFontRenderer::Freetype),
+                ];
+                for value in values {
+                    ui.selectable_value(
+                        &mut self.device_font_renderer,
+                        value,
+                        device_font_renderer_name(locale, value),
+                    );
+                }
+            });
+        if self.device_font_renderer != previous {
+            self.device_font_renderer_changed = true;
+        }
+        ui.end_row();
+    }
+
     fn show_audio_preferences(&mut self, locale: &LanguageIdentifier, ui: &mut Ui) {
         ui.label(text(locale, "audio-output-device"));
 
@@ -604,6 +641,9 @@ impl PreferencesDialog {
             if self.ime_enabled_changed {
                 preferences.set_ime_enabled(self.ime_enabled);
             }
+            if self.device_font_renderer_changed {
+                preferences.set_device_font_renderer(self.device_font_renderer);
+            }
         }) {
             // [NA] TODO: Better error handling... everywhere in desktop, really
             tracing::error!("Could not save preferences: {e}");
@@ -697,6 +737,17 @@ fn ime_enabled_name(locale: &LanguageIdentifier, ime_enabled: Option<bool>) -> C
         None => text(locale, "ime-enabled-default"),
         Some(true) => text(locale, "enable"),
         Some(false) => text(locale, "disable"),
+    }
+}
+
+fn device_font_renderer_name(
+    locale: &LanguageIdentifier,
+    device_font_renderer: Option<DeviceFontRenderer>,
+) -> Cow<'_, str> {
+    match device_font_renderer {
+        None => text(locale, "device-font-renderer-default"),
+        Some(DeviceFontRenderer::Embedded) => text(locale, "device-font-renderer-embedded"),
+        Some(DeviceFontRenderer::Freetype) => text(locale, "device-font-renderer-freetype"),
     }
 }
 

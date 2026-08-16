@@ -99,7 +99,11 @@ impl TestRunner {
             .with_storage(Box::new(TestStorageBackend::new()))
             .with_max_execution_duration(Duration::from_secs(300))
             .with_fs_commands(Box::new(fs_command_provider))
-            .with_ui(TestUiBackend::new(test.fonts()?, test.font_sorts()))
+            .with_ui(TestUiBackend::new(
+                test.fonts()?,
+                test.font_sorts(),
+                test.options.player_options.device_font_renderer(),
+            ))
             .with_viewport_dimensions(
                 viewport_dimensions.width,
                 viewport_dimensions.height,

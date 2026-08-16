@@ -1,9 +1,8 @@
 use crate::avm2::error::{make_error_2182, make_error_2186};
-use crate::avm2::globals::flash::geom::transform::{
-    matrix3d_to_object, object_to_perspective_projection,
-};
+use crate::avm2::globals::flash::geom::transform::object_to_perspective_projection;
 use crate::avm2::globals::slots::flash_geom_perspective_projection as pp_slots;
 use crate::avm2::globals::slots::flash_geom_point as point_slots;
+use crate::avm2::object::Matrix3DObject;
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::{Activation, Error, Object, TObject as _, Value};
 use crate::avm2_stub_setter;
@@ -160,7 +159,7 @@ pub fn to_matrix_3d<'gc>(
     let width = get_width(activation, this);
     let matrix3d = object_to_perspective_projection(this, activation)?.to_matrix3d(width as f32);
 
-    matrix3d_to_object(matrix3d, activation)
+    Ok(Matrix3DObject::new(activation.context, matrix3d).into())
 }
 
 fn sync_from_display_object<'gc>(

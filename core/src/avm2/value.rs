@@ -461,6 +461,62 @@ pub fn string_to_f64(mut s: &WStr, swf_version: u8, strict: bool) -> Option<f64>
     Some(result)
 }
 
+fn f64_to_string<'gc>(n: f64, activation: &mut Activation<'_, 'gc>) -> AvmString<'gc> {
+    if !n.is_finite() {
+        return if n.is_nan() {
+            istr!("NaN")
+        } else if n.is_sign_positive() {
+            istr!("Infinity")
+        } else {
+            istr!("-Infinity")
+        };
+    }
+
+    if n == 0.0 {
+        istr!("0")
+    } else {
+        AvmString::new_utf8(activation.gc(), f64_to_string_finite_nonzero(n))
+    }
+}
+
+fn f64_to_string_finite_nonzero(n: f64) -> String {
+    let (sign, n) = if n.is_sign_negative() {
+        ("-", -n)
+    } else {
+        ("", n)
+    };
+
+    if n >= 0.000001 && n < 1e+21 {
+        // No exponent.
+        return format!("{sign}{n}");
+    }
+
+    // TODO Subnormal values have wrong representations.
+
+    let sci = format!("{n:e}");
+    let (mantissa, exp) = sci.split_once('e').unwrap();
+
+    let mut mantissa = mantissa.to_string();
+    let exp: i32 = exp.parse().unwrap();
+
+    if exp > 0 {
+        if [0x7fe0000000000000u64, 0x7fd0000000000000u64].contains(&n.to_bits()) {
+            // These two values look like a weird bug in Flash,
+            // values around them are fine.
+            return format!("{sign}1e+308");
+        }
+
+        // Flash shows large numbers with smaller precision for some reason.
+        mantissa.truncate(16);
+    }
+
+    format!(
+        "{sign}{mantissa}e{}{}",
+        if exp < 0 { "-" } else { "+" },
+        exp.abs()
+    )
+}
+
 /// Retrieve a default value as an AVM2 `Value`.
 pub fn abc_default_value<'gc>(
     translation_unit: TranslationUnit<'gc>,
@@ -826,20 +882,6 @@ impl<'gc> Value<'gc> {
         }
     }
 
-    /// Minimum number of digits after which numbers are formatted as
-    /// exponential strings.
-    const MIN_DIGITS: f64 = -6.0;
-
-    /// Maximum number of digits before numbers are formatted as exponential
-    /// strings.
-    const MAX_DIGITS: f64 = 21.0;
-
-    /// Maximum number of significant digits renderable within coerced numbers.
-    ///
-    /// Any precision beyond this point will be discarded and replaced with
-    /// zeroes (for whole parts) or not rendered (for decimal parts).
-    const MAX_PRECISION: f64 = 15.0;
-
     /// Coerce the value to a String.
     ///
     /// This function returns the resulting String directly; or a TypeError if
@@ -864,35 +906,7 @@ impl<'gc> Value<'gc> {
             Value::Null => istr!("null"),
             Value::Bool(true) => istr!("true"),
             Value::Bool(false) => istr!("false"),
-            Value::Number(n) if n.is_nan() => istr!("NaN"),
-            Value::Number(n) if *n == 0.0 => istr!("0"),
-            Value::Number(n) if *n < 0.0 => AvmString::new_utf8(
-                activation.gc(),
-                format!("-{}", Value::Number(-n).coerce_to_string(activation)?),
-            ),
-            Value::Number(n) if n.is_infinite() => istr!("Infinity"),
-            Value::Number(n) => {
-                let digits = n.log10().floor();
-
-                // TODO: This needs to limit precision in the resulting decimal
-                // output, not in binary.
-                let precision = (n * 10.0_f64.powf(Self::MAX_PRECISION - digits)).floor()
-                    / 10.0_f64.powf(Self::MAX_PRECISION - digits);
-
-                if digits < Self::MIN_DIGITS || digits >= Self::MAX_DIGITS {
-                    AvmString::new_utf8(
-                        activation.gc(),
-                        format!(
-                            "{}e{}{}",
-                            precision / 10.0_f64.powf(digits),
-                            if digits < 0.0 { "-" } else { "+" },
-                            digits.abs()
-                        ),
-                    )
-                } else {
-                    AvmString::new_utf8(activation.gc(), n.to_string())
-                }
-            }
+            Value::Number(n) => f64_to_string(*n, activation),
             Value::Integer(i) => {
                 if *i >= 0 && *i < 10 {
                     activation.strings().ascii_char(b'0' + *i as u8)

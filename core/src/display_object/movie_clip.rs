@@ -360,6 +360,10 @@ impl<'gc> MovieClip<'gc> {
         mc
     }
 
+    pub fn instantiate(self, mc: &Mutation<'gc>) -> Self {
+        Self(Gc::new(mc, (*self.0).clone()))
+    }
+
     /// Replace the current MovieClipData with a completely new SwfMovie.
     ///
     /// If no movie is provided, then the movie clip will be replaced with an
@@ -2516,10 +2520,6 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
         HasPrefixField::as_prefix_gc(self.raw_interactive())
     }
 
-    fn instantiate(self, mc: &Mutation<'gc>) -> DisplayObject<'gc> {
-        Self(Gc::new(mc, (*self.0).clone())).into()
-    }
-
     fn id(self) -> CharacterId {
         self.0.id()
     }
@@ -4357,8 +4357,7 @@ impl<'gc, 'a> MovieClip<'gc> {
                                 // instantiations don't reflect changes made to the loaded
                                 // main timeline instance.
 
-                                let instantiated =
-                                    self.instantiate(activation.gc()).as_movie_clip().unwrap();
+                                let instantiated = self.instantiate(activation.gc());
 
                                 let library = activation
                                     .context

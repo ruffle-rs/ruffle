@@ -5,7 +5,7 @@ use swf::Twips;
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub struct Matrix3D {
     /// 4x4 matrix elements.
-    pub raw_data: [f64; 16],
+    pub raw_data: [f32; 16],
 }
 
 impl Matrix3D {
@@ -18,7 +18,7 @@ impl Matrix3D {
         ],
     };
 
-    pub fn scale(x: f64, y: f64, z: f64) -> Self {
+    pub fn scale(x: f32, y: f32, z: f32) -> Self {
         Self {
             raw_data: [
                 x, 0.0, 0.0, 0.0, //
@@ -29,7 +29,7 @@ impl Matrix3D {
         }
     }
 
-    pub fn translate(x: f64, y: f64, z: f64) -> Self {
+    pub fn translate(x: f32, y: f32, z: f32) -> Self {
         Self {
             raw_data: [
                 1.0, 0.0, 0.0, 0.0, //
@@ -44,13 +44,13 @@ impl Matrix3D {
         Self {
             raw_data: [
                 // 1st column
-                matrix.a.into(),
-                matrix.b.into(),
+                matrix.a,
+                matrix.b,
                 0.0,
                 0.0,
                 // 2nd column
-                matrix.c.into(),
-                matrix.d.into(),
+                matrix.c,
+                matrix.d,
                 0.0,
                 0.0,
                 // 3rd column
@@ -59,8 +59,8 @@ impl Matrix3D {
                 1.0,
                 0.0,
                 // 4th column
-                matrix.tx.to_pixels(),
-                matrix.ty.to_pixels(),
+                matrix.tx.to_pixels() as f32,
+                matrix.ty.to_pixels() as f32,
                 0.0,
                 1.0,
             ],
@@ -69,12 +69,12 @@ impl Matrix3D {
 
     pub fn to_matrix(self) -> Matrix {
         Matrix {
-            a: self.raw_data[0] as f32,
-            b: self.raw_data[1] as f32,
-            c: self.raw_data[4] as f32,
-            d: self.raw_data[5] as f32,
-            tx: Twips::from_pixels(self.raw_data[12]),
-            ty: Twips::from_pixels(self.raw_data[13]),
+            a: self.raw_data[0],
+            b: self.raw_data[1],
+            c: self.raw_data[4],
+            d: self.raw_data[5],
+            tx: Twips::from_pixels(self.raw_data[12] as f64),
+            ty: Twips::from_pixels(self.raw_data[13] as f64),
         }
     }
 
@@ -87,14 +87,49 @@ impl Matrix3D {
         self.raw_data.swap(11, 14);
     }
 
-    pub fn determinant(&self) -> f64 {
+    pub fn determinant(&self) -> f32 {
         let m = &self.raw_data;
-        (m[0] * m[5] - m[4] * m[1]) * (m[10] * m[15] - m[14] * m[11])
-            - (m[0] * m[9] - m[8] * m[1]) * (m[6] * m[15] - m[14] * m[7])
-            + (m[0] * m[13] - m[12] * m[1]) * (m[6] * m[11] - m[10] * m[7])
-            + (m[4] * m[9] - m[8] * m[5]) * (m[2] * m[15] - m[14] * m[3])
-            - (m[4] * m[13] - m[12] * m[5]) * (m[2] * m[11] - m[10] * m[3])
-            + (m[8] * m[13] - m[12] * m[9]) * (m[2] * m[7] - m[6] * m[3])
+
+        /// The determinant of a 3x3 matrix, stored in column-major order.
+        fn determinant_3x3(m: [f32; 9]) -> f32 {
+            m[0] * (m[4] * m[8] - m[7] * m[5]) - m[3] * (m[1] * m[8] - m[7] * m[2])
+                + m[6] * (m[1] * m[5] - m[4] * m[2])
+        }
+
+        // When projection is 0, Flash ignores translation, suggesting there is
+        // a fast path here.
+        if m[3] == 0.0 && m[7] == 0.0 && m[11] == 0.0 {
+            // This is equivalent to doing a Laplace expansion over the last
+            // column, but considering only the last row is non-zero, we can
+            // skip other rows.
+            //
+            // Usually we'd calculate the determinant of the inner 3x3 matrix
+            // and multiply by the last element, but Flash appears to factor the
+            // last element into the formula (observable when it's +-Infinity).
+            determinant_3x3([
+                m[0],
+                m[1],
+                m[2] * m[15],
+                m[4],
+                m[5],
+                m[6] * m[15],
+                m[8],
+                m[9],
+                m[10] * m[15],
+            ])
+        } else {
+            // Based on the condition above, it looks like we should do the
+            // Laplace expansion over the last column, but that's not what
+            // happens. This is observable when using +-Infinity in a dense
+            // matrix; infinities are preserved only in the first row, which
+            // means that no two infinities are subtracted in the expression,
+            // suggesting we should do the Laplace expansion over that row.
+            let det0 = determinant_3x3([m[5], m[6], m[7], m[9], m[10], m[11], m[13], m[14], m[15]]);
+            let det4 = determinant_3x3([m[1], m[2], m[3], m[9], m[10], m[11], m[13], m[14], m[15]]);
+            let det8 = determinant_3x3([m[1], m[2], m[3], m[5], m[6], m[7], m[13], m[14], m[15]]);
+            let det12 = determinant_3x3([m[1], m[2], m[3], m[5], m[6], m[7], m[9], m[10], m[11]]);
+            m[0] * det0 - m[4] * det4 + m[8] * det8 - m[12] * det12
+        }
     }
 
     pub fn invert(&self) -> Option<Self> {

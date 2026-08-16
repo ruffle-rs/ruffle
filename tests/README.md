@@ -118,6 +118,9 @@ version = 32
 # in behavior between Ruffle and Flash.
 with_default_font = false
 
+# Which backend should be used for device font rendering.
+device_font_renderer = "freetype"
+
 # A list of image comparisons to perform during the test. This block is repeatable infinitely, as long as each name is unique.
 # The comparison part of a test is optional and only runs when `imgtests` feature is enabled
 # This requires a render to be setup for this test
