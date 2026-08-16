@@ -394,26 +394,13 @@ pub fn parse_url(path: &Path) -> Result<Url, Error> {
 }
 
 #[cfg(not(feature = "tracy"))]
-pub fn plot_stats_in_tracy(_instance: &wgpu::Instance) {}
+pub fn mark_tracy_frame() {}
 
 #[cfg(feature = "tracy")]
-pub fn plot_stats_in_tracy(instance: &wgpu::Instance) {
+pub fn mark_tracy_frame() {
     use tracing_tracy::client::*;
-    const BIND_GROUPS: PlotName = plot_name!("Bind Groups");
-    const BUFFERS: PlotName = plot_name!("Buffers");
-    const TEXTURES: PlotName = plot_name!("Textures");
-    const TEXTURE_VIEWS: PlotName = plot_name!("Texture Views");
 
     let tracy = Client::running().expect("tracy client must be running");
-    let report = instance
-        .generate_report()
-        .expect("reports should be available on desktop");
-
-    tracy.plot(BIND_GROUPS, report.hub.bind_groups.num_allocated as f64);
-    tracy.plot(BUFFERS, report.hub.buffers.num_allocated as f64);
-    tracy.plot(TEXTURES, report.hub.textures.num_allocated as f64);
-    tracy.plot(TEXTURE_VIEWS, report.hub.texture_views.num_allocated as f64);
-
     tracy.frame_mark();
 }
 
