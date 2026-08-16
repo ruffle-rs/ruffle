@@ -281,6 +281,14 @@ pub struct DisplayObjectBase<'gc> {
     scale_y: Cell<Percent>,
     skew: Cell<f64>,
 
+    /// 3D transform components set via `DisplayObject.rotationX`/`rotationY`/`z`.
+    /// These are stored separately from the 2D `matrix`; when any is non-zero the
+    /// object is transformed in 3D and (once rendering supports it) projected
+    /// through a perspective projection. Angles are in degrees, `z` in pixels.
+    rotation_x: Cell<f64>,
+    rotation_y: Cell<f64>,
+    z: Cell<f64>,
+
     /// The sound transform of sounds playing via this display object.
     sound_transform: Cell<SoundTransform>,
 
@@ -352,6 +360,9 @@ impl Default for DisplayObjectBase<'_> {
             scale_x: Cell::new(Percent::from_unit(1.0)),
             scale_y: Cell::new(Percent::from_unit(1.0)),
             skew: Cell::new(0.0),
+            rotation_x: Cell::new(0.0),
+            rotation_y: Cell::new(0.0),
+            z: Cell::new(0.0),
             masker: Lock::new(None),
             maskee: Lock::new(None),
             meta_data: Lock::new(None),
@@ -462,6 +473,39 @@ impl<'gc> DisplayObjectBase<'gc> {
         let changed = matrix.ty != y;
         matrix.ty = y;
         self.matrix.set(matrix);
+        self.set_transformed_by_script(true);
+        changed
+    }
+
+    fn rotation_x(&self) -> f64 {
+        self.rotation_x.get()
+    }
+
+    fn set_rotation_x(&self, degrees: f64) -> bool {
+        let changed = self.rotation_x.get() != degrees;
+        self.rotation_x.set(degrees);
+        self.set_transformed_by_script(true);
+        changed
+    }
+
+    fn rotation_y(&self) -> f64 {
+        self.rotation_y.get()
+    }
+
+    fn set_rotation_y(&self, degrees: f64) -> bool {
+        let changed = self.rotation_y.get() != degrees;
+        self.rotation_y.set(degrees);
+        self.set_transformed_by_script(true);
+        changed
+    }
+
+    fn z(&self) -> f64 {
+        self.z.get()
+    }
+
+    fn set_z(&self, z: f64) -> bool {
+        let changed = self.z.get() != z;
+        self.z.set(z);
         self.set_transformed_by_script(true);
         changed
     }
@@ -1617,6 +1661,59 @@ pub trait TDisplayObject<'gc>:
                 // we only want to inform ancestors to avoid unnecessary invalidations for tx/ty
                 parent.invalidate_cached_bitmap();
             }
+        }
+    }
+
+    /// The rotation around the X axis in degrees (`DisplayObject.rotationX`).
+    #[no_dynamic]
+    fn rotation_x(self) -> f64 {
+        self.base().rotation_x()
+    }
+
+    /// Sets the rotation around the X axis in degrees (`DisplayObject.rotationX`).
+    /// This invalidates any ancestors cacheAsBitmap automatically.
+    #[no_dynamic]
+    fn set_rotation_x(self, degrees: f64) {
+        if self.base().set_rotation_x(degrees)
+            && let Some(parent) = self.parent()
+        {
+            // Self-transform changes are automatically handled,
+            // we only want to inform ancestors to avoid unnecessary invalidations for tx/ty
+            parent.invalidate_cached_bitmap();
+        }
+    }
+
+    /// The rotation around the Y axis in degrees (`DisplayObject.rotationY`).
+    #[no_dynamic]
+    fn rotation_y(self) -> f64 {
+        self.base().rotation_y()
+    }
+
+    /// Sets the rotation around the Y axis in degrees (`DisplayObject.rotationY`).
+    /// This invalidates any ancestors cacheAsBitmap automatically.
+    #[no_dynamic]
+    fn set_rotation_y(self, degrees: f64) {
+        if self.base().set_rotation_y(degrees)
+            && let Some(parent) = self.parent()
+        {
+            parent.invalidate_cached_bitmap();
+        }
+    }
+
+    /// The Z coordinate in pixels (`DisplayObject.z`).
+    #[no_dynamic]
+    fn z(self) -> f64 {
+        self.base().z()
+    }
+
+    /// Sets the Z coordinate in pixels (`DisplayObject.z`).
+    /// This invalidates any ancestors cacheAsBitmap automatically.
+    #[no_dynamic]
+    fn set_z(self, z: f64) {
+        if self.base().set_z(z)
+            && let Some(parent) = self.parent()
+        {
+            parent.invalidate_cached_bitmap();
         }
     }
 
