@@ -1,9 +1,11 @@
 mod font_face;
+mod font_renderer;
 mod font_set;
 mod glyph;
 mod text_render_settings;
 
 pub use font_face::{FontFace, FontFileData};
+pub use font_renderer::FontRenderer;
 pub use font_set::FontSet;
 pub use glyph::Glyph;
 pub use text_render_settings::TextRenderSettings;
@@ -144,18 +146,6 @@ impl EvalParameters {
     pub fn height(&self) -> Twips {
         self.height
     }
-}
-
-pub trait FontRenderer: std::fmt::Debug {
-    fn scale(&self) -> f32;
-
-    fn get_font_metrics(&self) -> FontMetrics;
-
-    fn has_kerning_info(&self) -> bool;
-
-    fn render_glyph(&self, character: char) -> Option<Glyph>;
-
-    fn calculate_kerning(&self, left: char, right: char) -> Twips;
 }
 
 #[derive(Debug)]
