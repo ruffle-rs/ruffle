@@ -300,19 +300,11 @@ impl FontFace {
                             || drawing.self_bounds(true).width(),
                             |a| Twips::new(a as i32),
                         );
-                        Some(Glyph {
-                            shape: GlyphShape::Drawing(Box::new(drawing)),
-                            advance,
-                            character,
-                        })
+                        Some(Glyph::from_drawing(character, advance, drawing))
                     } else {
                         let advance = Twips::new(face.glyph_hor_advance(glyph_id)? as i32);
                         // If we have advance, then this is either an image, SVG or simply missing (ie whitespace)
-                        Some(Glyph {
-                            shape: GlyphShape::None,
-                            advance,
-                            character,
-                        })
+                        Some(Glyph::whitespace(character, advance))
                     }
                 })
                 .as_ref();
@@ -643,13 +635,7 @@ impl<'gc> Font<'gc> {
                 let character = char::from_u32(code as u32).unwrap_or(char::REPLACEMENT_CHARACTER);
                 code_point_to_glyph.insert(code, index);
 
-                let glyph = Glyph {
-                    advance: Twips::new(swf_glyph.advance.into()),
-                    shape: GlyphShape::Swf(Box::new(RefCell::new(SwfGlyphOrShape::Glyph(
-                        swf_glyph,
-                    )))),
-                    character,
-                };
+                let glyph = Glyph::from_swf(character, swf_glyph);
 
                 // Eager-load ASCII characters.
                 if code < 128 {
@@ -1120,6 +1106,30 @@ impl Glyph {
         Self {
             shape: GlyphShape::None,
             advance: Twips::ZERO,
+            character,
+        }
+    }
+
+    pub fn whitespace(character: char, advance: Twips) -> Self {
+        Self {
+            shape: GlyphShape::None,
+            advance,
+            character,
+        }
+    }
+
+    pub fn from_drawing(character: char, advance: Twips, drawing: Drawing) -> Self {
+        Self {
+            shape: GlyphShape::Drawing(Box::new(drawing)),
+            advance,
+            character,
+        }
+    }
+
+    pub fn from_swf(character: char, swf_glyph: swf::Glyph) -> Self {
+        Self {
+            advance: Twips::new(swf_glyph.advance.into()),
+            shape: GlyphShape::Swf(Box::new(RefCell::new(SwfGlyphOrShape::Glyph(swf_glyph)))),
             character,
         }
     }
