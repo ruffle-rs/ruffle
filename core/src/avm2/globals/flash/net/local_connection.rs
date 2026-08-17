@@ -50,7 +50,7 @@ pub fn send<'gc>(
     }
 
     let mut amf_arguments = Vec::with_capacity(args.len() - 2);
-    for arg in &args[2..] {
+    for arg in args.get_slice_from(2..) {
         let value = serialize_value(activation, *arg, AMFVersion::AMF0, &mut Default::default());
         amf_arguments.push(value);
     }

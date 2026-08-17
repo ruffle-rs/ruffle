@@ -281,7 +281,7 @@ pub fn call<'gc>(
     let mut arguments = Vec::new();
 
     let mut object_table = FnvHashMap::default();
-    for arg in &args[2..] {
+    for arg in args.get_slice_from(2..) {
         let value = serialize_value(activation, *arg, AMFVersion::AMF0, &mut object_table);
         arguments.push(Rc::new(value));
     }

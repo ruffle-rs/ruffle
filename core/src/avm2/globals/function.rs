@@ -71,12 +71,8 @@ pub fn call<'gc>(
 
     let this = args.get_value(0);
 
-    if args.len() > 1 {
-        let passed_args = &args[1..];
-        Ok(func.call(activation, this, FunctionArgs::from_slice(passed_args))?)
-    } else {
-        Ok(func.call(activation, this, FunctionArgs::empty())?)
-    }
+    let passed_args = args.get_slice_from(1..);
+    func.call(activation, this, FunctionArgs::from_slice(passed_args))
 }
 
 /// Implements `Function.prototype.apply`

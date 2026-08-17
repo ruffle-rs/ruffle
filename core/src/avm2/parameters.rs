@@ -4,6 +4,7 @@ use crate::avm2::{Activation, Error, Value};
 use crate::string::AvmString;
 
 use ruffle_macros::istr;
+use std::ops::RangeFrom;
 
 /// Extensions over parameters that are passed into AS-defined, Rust-implemented methods.
 ///
@@ -34,6 +35,10 @@ pub trait ParametersExt<'gc> {
 
     /// Gets the value at the given index, if it exists.
     fn get_optional(&self, index: usize) -> Option<Value<'gc>>;
+
+    /// Get a slice of these values using a `RangeFrom`. This method will panic
+    /// if the range is out of bounds.
+    fn get_slice_from(&self, range: RangeFrom<usize>) -> Self;
 
     /// Gets the value at the given index as an Object. It is expected that the
     /// value is either Object or Null.
@@ -156,5 +161,10 @@ impl<'gc> ParametersExt<'gc> for &[Value<'gc>] {
     #[inline]
     fn get_optional(&self, index: usize) -> Option<Value<'gc>> {
         self.get(index).copied()
+    }
+
+    #[inline]
+    fn get_slice_from(&self, range: RangeFrom<usize>) -> Self {
+        &self[range]
     }
 }
