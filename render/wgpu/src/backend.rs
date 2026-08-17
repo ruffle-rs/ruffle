@@ -258,6 +258,12 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
         scale: f32,
     ) -> Mesh {
         let shape_id = shape.id;
+        let bounds = (
+            shape.shape_bounds.x_min.to_pixels() as f32,
+            shape.shape_bounds.y_min.to_pixels() as f32,
+            shape.shape_bounds.x_max.to_pixels() as f32,
+            shape.shape_bounds.y_max.to_pixels() as f32,
+        );
         let lyon_mesh =
             self.shape_tessellator
                 .tessellate_shape_with_scale(shape, bitmap_source, scale);
@@ -317,6 +323,7 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
             draws,
             vertex_buffer,
             index_buffer,
+            bounds,
         }
     }
 
