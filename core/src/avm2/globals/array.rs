@@ -681,7 +681,11 @@ pub fn splice<'gc>(
         .coerce_to_i32(activation)?
         .max(0);
 
-    let args_slice = if args.len() > 2 { &args[2..] } else { &[] };
+    let args_slice = if args.len() > 2 {
+        args.get_slice_from(2..)
+    } else {
+        &[]
+    };
 
     // FIXME Flash does not iterate over those elements like we do, it's too
     //   inefficient. Flash probably iterates through set properties only.
