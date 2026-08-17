@@ -10,6 +10,7 @@ use crate::avm2::api_version::ApiVersion;
 use crate::avm2::{Avm2, LoaderInfoObject, SharedObjectObject, SoundChannelObject};
 use crate::backend::{
     audio::{AudioBackend, AudioManager, SoundHandle, SoundInstanceHandle},
+    locale::LocaleBackend,
     log::LogBackend,
     navigator::NavigatorBackend,
     storage::StorageBackend,
@@ -117,6 +118,9 @@ pub struct UpdateContext<'gc> {
 
     /// The video backend, used for video decoding
     pub video: &'gc mut dyn VideoBackend,
+
+    /// The locale backend.
+    pub locale: &'gc mut dyn LocaleBackend,
 
     /// The RNG, used by the AVM `RandomNumber` opcode, `Math.random(),` and `random()`.
     pub rng: &'gc mut AvmRng,

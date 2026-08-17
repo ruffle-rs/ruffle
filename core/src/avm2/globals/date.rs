@@ -5,7 +5,6 @@ use crate::avm2::activation::Activation;
 use crate::avm2::object::DateObject;
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
-use crate::locale::{get_current_date_time, get_timezone};
 use crate::string::{AvmString, WStr, utils as string_utils};
 use chrono::{DateTime, Datelike, Duration, FixedOffset, LocalResult, TimeZone, Timelike, Utc};
 use num_traits::ToPrimitive;
@@ -210,7 +209,7 @@ pub fn init<'gc>(
     let timestamp = args.get_optional(0).unwrap_or(Value::Undefined);
     if timestamp != Value::Undefined {
         if args.len() > 1 {
-            let timezone = get_timezone();
+            let timezone = activation.context.locale.get_timezone();
 
             // We need a starting value to adjust from.
             this.set_date_time(Some(
@@ -244,7 +243,7 @@ pub fn init<'gc>(
             }
         }
     } else {
-        this.set_date_time(Some(get_current_date_time()))
+        this.set_date_time(Some(activation.context.locale.get_current_date_time()))
     }
 
     Ok(Value::Undefined)
@@ -301,7 +300,7 @@ pub fn _set_time<'gc>(
 
 /// Implements the `getMilliseconds` method.
 pub fn get_milliseconds<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -311,7 +310,7 @@ pub fn get_milliseconds<'gc>(
 
     if let Some(date) = this
         .date_time()
-        .map(|date| date.with_timezone(&get_timezone()))
+        .map(|date| date.with_timezone(&activation.context.locale.get_timezone()))
     {
         Ok((date.timestamp_subsec_millis() as f64).into())
     } else {
@@ -329,7 +328,8 @@ pub fn _set_milliseconds<'gc>(
 
     let this = this.as_date_object().unwrap();
 
-    let timestamp = DateAdjustment::new(activation, &get_timezone())
+    let timezone = activation.context.locale.get_timezone();
+    let timestamp = DateAdjustment::new(activation, &timezone)
         .millisecond(args.get_optional(0))?
         .apply(this);
     Ok(timestamp.into())
@@ -337,7 +337,7 @@ pub fn _set_milliseconds<'gc>(
 
 /// Implements the `getSeconds` method.
 pub fn get_seconds<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -347,7 +347,7 @@ pub fn get_seconds<'gc>(
 
     if let Some(date) = this
         .date_time()
-        .map(|date| date.with_timezone(&get_timezone()))
+        .map(|date| date.with_timezone(&activation.context.locale.get_timezone()))
     {
         Ok((date.second() as f64).into())
     } else {
@@ -365,7 +365,8 @@ pub fn _set_seconds<'gc>(
 
     let this = this.as_date_object().unwrap();
 
-    let timestamp = DateAdjustment::new(activation, &get_timezone())
+    let timezone = activation.context.locale.get_timezone();
+    let timestamp = DateAdjustment::new(activation, &timezone)
         .second(args.get_optional(0))?
         .millisecond(args.get_optional(1))?
         .apply(this);
@@ -374,7 +375,7 @@ pub fn _set_seconds<'gc>(
 
 /// Implements `getMinutes` method.
 pub fn get_minutes<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -384,7 +385,7 @@ pub fn get_minutes<'gc>(
 
     if let Some(date) = this
         .date_time()
-        .map(|date| date.with_timezone(&get_timezone()))
+        .map(|date| date.with_timezone(&activation.context.locale.get_timezone()))
     {
         Ok((date.minute() as f64).into())
     } else {
@@ -402,7 +403,8 @@ pub fn _set_minutes<'gc>(
 
     let this = this.as_date_object().unwrap();
 
-    let timestamp = DateAdjustment::new(activation, &get_timezone())
+    let timezone = activation.context.locale.get_timezone();
+    let timestamp = DateAdjustment::new(activation, &timezone)
         .minute(args.get_optional(0))?
         .second(args.get_optional(1))?
         .millisecond(args.get_optional(2))?
@@ -412,7 +414,7 @@ pub fn _set_minutes<'gc>(
 
 /// Implements the `getHours` method.
 pub fn get_hours<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -422,7 +424,7 @@ pub fn get_hours<'gc>(
 
     if let Some(date) = this
         .date_time()
-        .map(|date| date.with_timezone(&get_timezone()))
+        .map(|date| date.with_timezone(&activation.context.locale.get_timezone()))
     {
         Ok((date.hour() as f64).into())
     } else {
@@ -440,7 +442,8 @@ pub fn _set_hours<'gc>(
 
     let this = this.as_date_object().unwrap();
 
-    let timestamp = DateAdjustment::new(activation, &get_timezone())
+    let timezone = activation.context.locale.get_timezone();
+    let timestamp = DateAdjustment::new(activation, &timezone)
         .hour(args.get_optional(0))?
         .minute(args.get_optional(1))?
         .second(args.get_optional(2))?
@@ -451,7 +454,7 @@ pub fn _set_hours<'gc>(
 
 /// Implements `getDate` method.
 pub fn get_date<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -461,7 +464,7 @@ pub fn get_date<'gc>(
 
     if let Some(date) = this
         .date_time()
-        .map(|date| date.with_timezone(&get_timezone()))
+        .map(|date| date.with_timezone(&activation.context.locale.get_timezone()))
     {
         Ok((date.day() as f64).into())
     } else {
@@ -479,7 +482,8 @@ pub fn _set_date<'gc>(
 
     let this = this.as_date_object().unwrap();
 
-    let timestamp = DateAdjustment::new(activation, &get_timezone())
+    let timezone = activation.context.locale.get_timezone();
+    let timestamp = DateAdjustment::new(activation, &timezone)
         .day(args.get_optional(0))?
         .apply(this);
     Ok(timestamp.into())
@@ -487,7 +491,7 @@ pub fn _set_date<'gc>(
 
 /// Implements the `getMonth` method.
 pub fn get_month<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -497,7 +501,7 @@ pub fn get_month<'gc>(
 
     if let Some(date) = this
         .date_time()
-        .map(|date| date.with_timezone(&get_timezone()))
+        .map(|date| date.with_timezone(&activation.context.locale.get_timezone()))
     {
         Ok((date.month0() as f64).into())
     } else {
@@ -515,7 +519,8 @@ pub fn _set_month<'gc>(
 
     let this = this.as_date_object().unwrap();
 
-    let timestamp = DateAdjustment::new(activation, &get_timezone())
+    let timezone = activation.context.locale.get_timezone();
+    let timestamp = DateAdjustment::new(activation, &timezone)
         .month(args.get_optional(0))?
         .day(args.get_optional(1))?
         .apply(this);
@@ -524,7 +529,7 @@ pub fn _set_month<'gc>(
 
 /// Implements the `getFullYear` method.
 pub fn get_full_year<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -534,7 +539,7 @@ pub fn get_full_year<'gc>(
 
     if let Some(date) = this
         .date_time()
-        .map(|date| date.with_timezone(&get_timezone()))
+        .map(|date| date.with_timezone(&activation.context.locale.get_timezone()))
     {
         Ok((date.year() as f64).into())
     } else {
@@ -552,7 +557,7 @@ pub fn _set_full_year<'gc>(
 
     let this = this.as_date_object().unwrap();
 
-    let timezone = get_timezone();
+    let timezone = activation.context.locale.get_timezone();
     if this.date_time().is_none() {
         this.set_date_time(Some(
             timezone
@@ -572,7 +577,7 @@ pub fn _set_full_year<'gc>(
 
 /// Implements the `getDay` method.
 pub fn get_day<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -582,7 +587,7 @@ pub fn get_day<'gc>(
 
     if let Some(date) = this
         .date_time()
-        .map(|date| date.with_timezone(&get_timezone()))
+        .map(|date| date.with_timezone(&activation.context.locale.get_timezone()))
     {
         Ok((date.weekday().num_days_from_sunday() as f64).into())
     } else {
@@ -856,7 +861,7 @@ pub fn get_utc_day<'gc>(
 
 /// Implements the `getTimezoneOffset` method.
 pub fn get_timezone_offset<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -866,7 +871,7 @@ pub fn get_timezone_offset<'gc>(
 
     if let Some(date) = this
         .date_time()
-        .map(|date| date.with_timezone(&get_timezone()))
+        .map(|date| date.with_timezone(&activation.context.locale.get_timezone()))
     {
         let offset = date.offset().utc_minus_local() as f64;
         Ok((offset / 60.0).into())
@@ -924,7 +929,7 @@ pub fn to_string<'gc>(
 
     if let Some(date) = this
         .date_time()
-        .map(|date| date.with_timezone(&get_timezone()))
+        .map(|date| date.with_timezone(&activation.context.locale.get_timezone()))
     {
         Ok(AvmString::new_utf8(
             activation.gc(),
@@ -969,7 +974,7 @@ pub fn to_locale_string<'gc>(
 
     if let Some(date) = this
         .date_time()
-        .map(|date| date.with_timezone(&get_timezone()))
+        .map(|date| date.with_timezone(&activation.context.locale.get_timezone()))
     {
         Ok(AvmString::new_utf8(
             activation.gc(),
@@ -993,7 +998,7 @@ pub fn to_time_string<'gc>(
 
     if let Some(date) = this
         .date_time()
-        .map(|date| date.with_timezone(&get_timezone()))
+        .map(|date| date.with_timezone(&activation.context.locale.get_timezone()))
     {
         Ok(AvmString::new_utf8(activation.gc(), date.format("%T GMT%z").to_string()).into())
     } else {
@@ -1013,7 +1018,7 @@ pub fn to_locale_time_string<'gc>(
 
     if let Some(date) = this
         .date_time()
-        .map(|date| date.with_timezone(&get_timezone()))
+        .map(|date| date.with_timezone(&activation.context.locale.get_timezone()))
     {
         Ok(AvmString::new_utf8(activation.gc(), date.format("%T %p").to_string()).into())
     } else {
@@ -1033,7 +1038,7 @@ pub fn to_date_string<'gc>(
 
     if let Some(date) = this
         .date_time()
-        .map(|date| date.with_timezone(&get_timezone()))
+        .map(|date| date.with_timezone(&activation.context.locale.get_timezone()))
     {
         Ok(AvmString::new_utf8(activation.gc(), date.format("%a %b %-d %-Y").to_string()).into())
     } else {
@@ -1145,7 +1150,7 @@ pub fn parse_full_date<'gc>(
 ) -> Option<f64> {
     const DAYS: [&[u8]; 7] = [b"Sun", b"Mon", b"Tue", b"Wed", b"Thu", b"Fri", b"Sat"];
 
-    let timezone = get_timezone();
+    let timezone = activation.context.locale.get_timezone();
     let mut final_time = DateAdjustment::new(activation, &timezone);
     let mut new_timezone = None;
     // The Date parser is flash is super flexible, so we need to go through each item individually and parse it to match Flash.
