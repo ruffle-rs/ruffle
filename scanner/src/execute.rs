@@ -5,6 +5,7 @@ use crate::file_results::{AvmType, FileResults, Step};
 use crate::logging::{LOCAL_LOGGER, ScanLogBackend, ThreadLocalScanLogger};
 use ruffle_core::FloatDuration;
 use ruffle_core::PlayerBuilder;
+use ruffle_core::backend::locale::DeterministicLocaleBackend;
 use ruffle_core::backend::navigator::{NullExecutor, NullNavigatorBackend};
 use ruffle_core::limits::ExecutionLimit;
 use ruffle_core::swf::{decompress_swf, parse_swf};
@@ -23,6 +24,7 @@ fn execute_swf(file: &Path) {
     let player = PlayerBuilder::new()
         .with_log(ScanLogBackend::new())
         .with_navigator(NullNavigatorBackend::with_base_path(base_path, &executor).unwrap())
+        .with_locale(DeterministicLocaleBackend::default())
         .with_max_execution_duration(Duration::from_secs(300))
         .with_movie(movie)
         .build();
