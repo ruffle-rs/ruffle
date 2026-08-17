@@ -17,3 +17,13 @@ family = "TestFontGap100"
 path = "TestFontGap100.ttf"
 bold = false
 italic = false
+
+[subtests.embedded.player_options]
+device_font_renderer = "embedded"
+
+[subtests.freetype.player_options]
+device_font_renderer = "freetype"
+
+[subtests.freetype.image_comparisons.output]
+# TODO This could probably be fixed by implementing scaling properly.
+tolerance = 195
