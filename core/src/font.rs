@@ -1,8 +1,11 @@
+use crate::avm2::object::ClassObject;
 use crate::context::RenderContext;
 use crate::drawing::Drawing;
 use crate::html::TextSpan;
 use crate::prelude::*;
 use crate::string::WStr;
+use gc_arena::barrier::unlock;
+use gc_arena::lock::Lock;
 use gc_arena::{Collect, Gc, Mutation};
 use ruffle_render::backend::null::NullBitmapSource;
 use ruffle_render::backend::{RenderBackend, ShapeHandle};
@@ -564,11 +567,12 @@ impl FontMetrics {
 
 #[derive(Debug, Clone, Collect, Copy)]
 #[collect(no_drop)]
-pub struct Font<'gc>(Gc<'gc, FontData>);
+pub struct Font<'gc>(Gc<'gc, FontData<'gc>>);
 
 #[derive(Debug, Collect)]
-#[collect(require_static)]
-struct FontData {
+#[collect(no_drop)]
+struct FontData<'gc> {
+    #[collect(require_static)]
     glyphs: GlyphSource,
 
     scale: f32,
@@ -584,9 +588,21 @@ struct FontData {
     /// Fonts without a layout are used only to describe a font,
     /// not to provide glyphs.
     has_layout: bool,
+
+    /// The class associated with this font via `Font.registerFont`,
+    /// used to instantiate the objects returned by `Font.enumerateFonts`.
+    avm2_class: Lock<Option<ClassObject<'gc>>>,
 }
 
 impl<'gc> Font<'gc> {
+    pub fn avm2_class(self) -> Option<ClassObject<'gc>> {
+        self.0.avm2_class.get()
+    }
+
+    pub fn set_avm2_class(self, mc: &Mutation<'gc>, class: ClassObject<'gc>) {
+        unlock!(Gc::write(mc, self.0), FontData, avm2_class).set(Some(class));
+    }
+
     pub fn from_font_file(
         gc_context: &Mutation<'gc>,
         descriptor: FontDescriptor,
@@ -612,6 +628,7 @@ impl<'gc> Font<'gc> {
                 descriptor,
                 font_type,
                 has_layout: true,
+                avm2_class: Lock::new(None),
             },
         )))
     }
@@ -695,6 +712,7 @@ impl<'gc> Font<'gc> {
                 descriptor,
                 font_type,
                 has_layout: tag.layout.is_some(),
+                avm2_class: Lock::new(None),
             },
         ))
     }
@@ -746,6 +764,7 @@ impl<'gc> Font<'gc> {
                 descriptor,
                 font_type: FontType::Device,
                 has_layout: true,
+                avm2_class: Lock::new(None),
             },
         ))
     }
@@ -767,6 +786,7 @@ impl<'gc> Font<'gc> {
                 descriptor,
                 font_type,
                 has_layout: true,
+                avm2_class: Lock::new(None),
             },
         ))
     }
