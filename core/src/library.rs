@@ -536,7 +536,7 @@ impl<'gc> Library<'gc> {
         // If we have the exact matching font already, use that
         // TODO: We should instead ask each font if it matches a given name. Partial matches are allowed, and fonts may have any amount of names.
         if let Some(font) = self.device_fonts.get(query) {
-            return Some(*font);
+            return Some(font);
         }
 
         // We don't have this font already. Did we ask for it before?
@@ -550,7 +550,7 @@ impl<'gc> Library<'gc> {
             // Check again. A backend may or may not have provided some new fonts,
             // and they may or may not be relevant to the one we're asking for.
             if let Some(font) = self.device_fonts.get(query) {
-                return Some(*font);
+                return Some(font);
             }
 
             let name = &query.name;
@@ -598,7 +598,6 @@ impl<'gc> Library<'gc> {
         let fonts: Vec<Font<'gc>> = fonts
             .iter()
             .filter_map(|font_query| self.device_fonts.get(font_query))
-            .copied()
             .collect();
 
         if !fonts.is_empty() {
@@ -754,8 +753,8 @@ impl<'gc> FontMap<'gc> {
             .or_insert(font);
     }
 
-    pub fn get(&self, font_query: &FontQuery) -> Option<&Font<'gc>> {
-        self.0.get(font_query)
+    pub fn get(&self, font_query: &FontQuery) -> Option<Font<'gc>> {
+        self.0.get(font_query).copied()
     }
 
     pub fn find(&self, font_query: &FontQuery) -> Option<Font<'gc>> {
@@ -763,7 +762,7 @@ impl<'gc> FontMap<'gc> {
 
         // Exact match
         if let Some(font) = self.get(font_query) {
-            return Some(*font);
+            return Some(font);
         }
 
         let is_italic = font_query.is_italic;
@@ -775,21 +774,21 @@ impl<'gc> FontMap<'gc> {
             fallback_query.is_bold = true;
             fallback_query.is_italic = true;
             if let Some(font) = self.get(&fallback_query) {
-                return Some(*font);
+                return Some(font);
             }
 
             // and then downgrading to regular
             fallback_query.is_bold = false;
             fallback_query.is_italic = false;
             if let Some(font) = self.get(&fallback_query) {
-                return Some(*font);
+                return Some(font);
             }
 
             // and then finally whichever one we don't have set
             fallback_query.is_bold = !is_bold;
             fallback_query.is_italic = !is_italic;
             if let Some(font) = self.get(&fallback_query) {
-                return Some(*font);
+                return Some(font);
             }
         } else {
             // We don't have an exact match and we were either looking for regular or bold-italic
@@ -799,7 +798,7 @@ impl<'gc> FontMap<'gc> {
                 fallback_query.is_bold = false;
                 fallback_query.is_italic = false;
                 if let Some(font) = self.get(&fallback_query) {
-                    return Some(*font);
+                    return Some(font);
                 }
             }
 
@@ -807,14 +806,14 @@ impl<'gc> FontMap<'gc> {
             fallback_query.is_bold = true;
             fallback_query.is_italic = false;
             if let Some(font) = self.get(&fallback_query) {
-                return Some(*font);
+                return Some(font);
             }
 
             // Do we have italic?
             fallback_query.is_bold = false;
             fallback_query.is_italic = true;
             if let Some(font) = self.get(&fallback_query) {
-                return Some(*font);
+                return Some(font);
             }
 
             if !is_bold && !is_italic {
@@ -822,7 +821,7 @@ impl<'gc> FontMap<'gc> {
                 fallback_query.is_bold = true;
                 fallback_query.is_italic = true;
                 if let Some(font) = self.get(&fallback_query) {
-                    return Some(*font);
+                    return Some(font);
                 }
             }
         }
