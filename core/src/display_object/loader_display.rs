@@ -174,11 +174,7 @@ impl<'gc> TInteractiveObject<'gc> for LoaderDisplay<'gc> {
         options.set(HitTestOptions::SKIP_MASK, self.maskee().is_none());
 
         if self.visible() {
-            // A scrollRect clips mouse events at the visible viewport, just like rendering.
-            if let Some(scroll_rect) = self.scroll_rect()
-                && let Some(local_matrix) = self.global_to_local_matrix()
-                && !scroll_rect.contains(local_matrix * point)
-            {
+            if !self.global_in_scroll_rect(point) {
                 return Avm2MousePick::Miss;
             }
 

@@ -2996,15 +2996,6 @@ impl<'gc> TInteractiveObject<'gc> for MovieClip<'gc> {
                 }
             }
 
-            // A scrollRect clips mouse events at the container's visible viewport
-            // (in the same way it clips rendering). Children whose position falls
-            // outside the rect must not receive any mouse events.
-            if let Some(scroll_rect) = self.scroll_rect()
-                && !scroll_rect.contains(local_matrix * point)
-            {
-                return None;
-            }
-
             // In AVM2, mouse_enabled should only impact the ability to select the current clip
             // but it should still be possible to select any children where child.mouse_enabled() is
             // true.
@@ -3113,12 +3104,7 @@ impl<'gc> TInteractiveObject<'gc> for MovieClip<'gc> {
                 return Avm2MousePick::Miss;
             }
 
-            // A scrollRect clips mouse events at the container's visible viewport
-            // (in the same way it clips rendering). Children whose position falls
-            // outside the rect must not receive any mouse events.
-            if let Some(scroll_rect) = self.scroll_rect()
-                && !scroll_rect.contains(local_matrix * point)
-            {
+            if !self.global_in_scroll_rect(point) {
                 return Avm2MousePick::Miss;
             }
 

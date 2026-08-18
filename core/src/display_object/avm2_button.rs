@@ -763,10 +763,7 @@ impl<'gc> TInteractiveObject<'gc> for Avm2Button<'gc> {
     ) -> Avm2MousePick<'gc> {
         // The button is hovered if the mouse is over any child nodes.
         if self.visible() && self.mouse_enabled() {
-            if let Some(scroll_rect) = self.scroll_rect()
-                && let Some(local_matrix) = self.global_to_local_matrix()
-                && !scroll_rect.contains(local_matrix * point)
-            {
+            if !self.global_in_scroll_rect(point) {
                 return Avm2MousePick::Miss;
             }
 
