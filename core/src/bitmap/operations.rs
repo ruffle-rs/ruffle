@@ -1187,7 +1187,12 @@ pub fn copy_pixels_with_alpha_source<'gc>(
                 };
 
                 if source_transparency {
-                    ((a as u16 * source_color.alpha() as u16) >> 8) as u8
+                    // A fully opaque alpha pixel leaves the source alpha untouched.
+                    if a == 255 {
+                        source_color.alpha()
+                    } else {
+                        ((a as u16 * source_color.alpha() as u16) >> 8) as u8
+                    }
                 } else {
                     a
                 }
