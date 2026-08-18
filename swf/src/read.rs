@@ -231,12 +231,14 @@ fn make_lzma_reader<'a, R: Read + 'a>(
         &mut io::BufReader::new(input),
         &mut output,
         &Options {
-            unpacked_size: UnpackedSize::UseProvided(Some(unpacked_size.into())),
+            // [KJ] Note: according to my tests Flash doesn't work without
+            // the end-of-payload marker, so we don't have to worry about it.
+            unpacked_size: UnpackedSize::UseProvided(None),
             allow_incomplete: true,
             memlimit: None,
         },
     )
-    .map_err(|_| Error::invalid_data("Unable to decompress LZMA SWF."))?;
+    .map_err(|e| Error::invalid_data(format!("Unable to decompress LZMA SWF: {e}")))?;
 
     Ok(Box::new(io::Cursor::new(output)))
 }
@@ -2682,7 +2684,12 @@ pub mod tests {
                 Compression::Lzma
             );
             assert!(try_read_from_file("tests/swfs/lzma-malformed-length.swf").is_err());
-            assert!(try_read_from_file("tests/swfs/lzma-length-too-large.swf").is_err());
+            assert_eq!(
+                read_from_file("tests/swfs/lzma-length-too-large.swf")
+                    .header
+                    .compression(),
+                Compression::Lzma
+            );
         }
     }
 
