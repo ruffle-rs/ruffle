@@ -255,6 +255,17 @@ pub enum Command {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::pixel_bender::{PixelBenderShader, PixelBenderShaderHandle, PixelBenderShaderImpl};
+    use std::sync::Arc;
+
+    #[derive(Debug)]
+    struct TestShader(PixelBenderShader);
+
+    impl PixelBenderShaderImpl for TestShader {
+        fn parsed_shader(&self) -> &PixelBenderShader {
+            &self.0
+        }
+    }
 
     #[test]
     fn layer_isolation_is_only_required_for_exposed_blends() {
@@ -268,6 +279,21 @@ mod tests {
         assert!(!commands_with_blend(BlendMode::Layer).requires_layer_isolation());
         assert!(!commands_with_blend(BlendMode::Normal).requires_layer_isolation());
         assert!(commands_with_blend(BlendMode::Multiply).requires_layer_isolation());
+
+        let mut shader_commands = CommandList::new();
+        shader_commands.blend(
+            CommandList::new(),
+            RenderBlendMode::Shader(PixelBenderShaderHandle(Arc::new(TestShader(
+                PixelBenderShader {
+                    name: String::new(),
+                    version: 0,
+                    params: Vec::new(),
+                    metadata: Vec::new(),
+                    operations: Vec::new(),
+                },
+            )))),
+        );
+        assert!(shader_commands.requires_layer_isolation());
 
         let mut nested_layer = CommandList::new();
         nested_layer.blend(
