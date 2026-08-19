@@ -790,7 +790,7 @@ fn attach_movie<'gc>(
         .context
         .library
         .library_for_movie(movie_clip.movie())
-        .and_then(|l| l.instantiate_by_export_name(export_name, activation.gc()))
+        .and_then(|l| l.instantiate_by_export_name(&export_name, activation.gc()))
     {
         new_clip.set_placed_by_avm1_script(true);
         // Set name and attach to parent.

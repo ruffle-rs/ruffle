@@ -13,6 +13,7 @@ use gc_arena::{Collect, Mutation};
 use ruffle_render::backend::RenderBackend;
 use ruffle_render::bitmap::BitmapHandle;
 use ruffle_render::utils::remove_invalid_jpeg_data;
+use ruffle_wstr::WStr;
 
 use crate::backend::ui::{FontDefinition, UiBackend};
 use crate::font::DefaultFont;
@@ -191,10 +192,7 @@ impl<'gc> MovieLibrary<'gc> {
         self.characters.get(&id).copied()
     }
 
-    pub fn character_by_export_name(
-        &self,
-        name: AvmString<'gc>,
-    ) -> Option<(CharacterId, Character<'gc>)> {
+    pub fn character_by_export_name(&self, name: &WStr) -> Option<(CharacterId, Character<'gc>)> {
         if let Some(id) = self.export_characters.get(name, false)
             && let Some(character) = self.characters.get(id)
         {
@@ -203,8 +201,8 @@ impl<'gc> MovieLibrary<'gc> {
         None
     }
 
-    pub fn character_id_by_import_name(&self, name: AvmString<'gc>) -> Option<CharacterId> {
-        self.imported_assets.get(&name).copied()
+    pub fn character_id_by_import_name(&self, name: &WStr) -> Option<CharacterId> {
+        self.imported_assets.get(name).copied()
     }
 
     pub fn register_import(&mut self, name: AvmString<'gc>, id: CharacterId) {
@@ -221,7 +219,7 @@ impl<'gc> MovieLibrary<'gc> {
         if let Some(&character) = self.characters.get(&id) {
             self.instantiate_display_object(id, character, mc)
         } else {
-            tracing::error!("Tried to instantiate non-registered character ID {}", id);
+            tracing::error!("Tried to instantiate a non-registered character ID {id}");
             None
         }
     }
@@ -230,16 +228,13 @@ impl<'gc> MovieLibrary<'gc> {
     /// The object must then be post-instantiated before being used.
     pub fn instantiate_by_export_name(
         &self,
-        export_name: AvmString<'gc>,
+        export_name: &WStr,
         mc: &Mutation<'gc>,
     ) -> Option<DisplayObject<'gc>> {
         if let Some((id, character)) = self.character_by_export_name(export_name) {
             self.instantiate_display_object(id, character, mc)
         } else {
-            tracing::error!(
-                "Tried to instantiate non-registered character {}",
-                export_name
-            );
+            tracing::error!("Tried to instantiate a non-registered character {export_name}");
             None
         }
     }
