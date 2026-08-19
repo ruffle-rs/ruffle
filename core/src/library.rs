@@ -13,7 +13,7 @@ use gc_arena::{Collect, Mutation};
 use ruffle_render::backend::RenderBackend;
 use ruffle_render::bitmap::BitmapHandle;
 use ruffle_render::utils::remove_invalid_jpeg_data;
-use ruffle_wstr::WStr;
+use ruffle_wstr::{WStr, WString};
 
 use crate::backend::ui::{FontDefinition, UiBackend};
 use crate::font::DefaultFont;
@@ -695,7 +695,7 @@ impl<'gc> Library<'gc> {
         self.default_font_cache.clear();
     }
 
-    /// Find a font by it's name and parameters.
+    /// Find a font by its name and parameters.
     pub fn get_embedded_font_by_name(
         &self,
         name: &str,
@@ -710,9 +710,18 @@ impl<'gc> Library<'gc> {
         }
         if let Some(movie) = movie
             && let Some(library) = self.library_for_movie(movie)
-            && let Some(font) = library.fonts.find(&query)
         {
-            return Some(font);
+            if let Some((_, font)) = library.character_by_export_name(&WString::from_utf8(name)) {
+                // Exporting a font seems to override font lookup completely.
+                return if let Character::Font(font) = font {
+                    Some(font)
+                } else {
+                    None
+                };
+            }
+            if let Some(font) = library.fonts.find(&query) {
+                return Some(font);
+            }
         }
         None
     }
