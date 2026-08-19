@@ -1,5 +1,6 @@
 use crate::avm2::Error;
 use crate::avm2::activation::Activation;
+use crate::avm2::function::FunctionArgs;
 use crate::avm2::globals::slots::flash_events_mouse_event as slots;
 use crate::avm2::object::{Object, TObject as _};
 use crate::avm2::value::Value;
@@ -10,7 +11,7 @@ use swf::Point;
 pub fn get_stage_x<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
@@ -21,7 +22,7 @@ pub fn get_stage_x<'gc>(
 pub fn get_stage_y<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
@@ -31,7 +32,7 @@ pub fn get_stage_y<'gc>(
 pub fn update_after_event<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     *activation.context.needs_render = true;
     Ok(Value::Undefined)

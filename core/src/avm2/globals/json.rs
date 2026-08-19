@@ -281,7 +281,7 @@ impl<'gc> AvmSerializer<'gc> {
 pub fn parse<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let Some(input) = args.try_get_string(0) else {
         return Err(make_error_1132(activation));
@@ -302,7 +302,7 @@ pub fn parse<'gc>(
 pub fn stringify<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let val = args.get_value(0);
     let replacer = args.get_value(1).as_object();

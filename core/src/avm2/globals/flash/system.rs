@@ -1,6 +1,7 @@
 //! `flash.system` namespace
 #![allow(clippy::module_inception)]
 
+use crate::avm2::function::FunctionArgs;
 pub mod application_domain;
 pub mod capabilities;
 pub mod security;
@@ -18,7 +19,7 @@ use crate::avm2::value::Value;
 pub fn fscommand<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let command = args.get_string(activation, 0);
     let args = args.get_string(activation, 1);

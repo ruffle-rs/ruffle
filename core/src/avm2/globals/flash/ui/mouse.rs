@@ -2,12 +2,13 @@
 
 use crate::avm2::Error;
 use crate::avm2::activation::Activation;
+use crate::avm2::function::FunctionArgs;
 use crate::avm2::value::Value;
 
 pub fn hide<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     activation.context.ui.set_mouse_visible(false);
     Ok(Value::Undefined)
@@ -16,7 +17,7 @@ pub fn hide<'gc>(
 pub fn show<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     activation.context.ui.set_mouse_visible(true);
     Ok(Value::Undefined)

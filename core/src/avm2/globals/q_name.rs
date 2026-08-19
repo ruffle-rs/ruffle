@@ -1,5 +1,6 @@
 //! `QName` impl
 
+use crate::avm2::function::FunctionArgs;
 use ruffle_macros::istr;
 
 use crate::avm2::activation::Activation;
@@ -12,7 +13,7 @@ use crate::avm2::{Error, Multiname, Namespace};
 pub fn call_handler<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(arg0) = args.get_optional(0).filter(|_| args.len() == 1) {
         // 1. If Namespace is not specified and Type(Name) is Object and Name.[[Class]] == “QName”
@@ -28,13 +29,13 @@ pub fn call_handler<'gc>(
         .avm2()
         .classes()
         .qname
-        .construct(activation, args)
+        .construct_with_args(activation, args)
 }
 
 /// Implements a custom constructor for `QName`.
 pub fn q_name_constructor<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let (namespace, local_name) = if args.len() >= 2 {
         let ns_arg = args.get_value(0);
@@ -109,7 +110,7 @@ pub fn q_name_constructor<'gc>(
 pub fn get_local_name<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
@@ -124,7 +125,7 @@ pub fn get_local_name<'gc>(
 pub fn get_uri<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
@@ -141,7 +142,7 @@ pub fn get_uri<'gc>(
 pub fn to_string<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 

@@ -1,5 +1,6 @@
 //! `flash.display.Capabilities` native methods
 
+use crate::avm2::function::FunctionArgs;
 use crate::avm2::{Activation, AvmString, Error, Value};
 use crate::player::PlayerRuntime;
 
@@ -7,7 +8,7 @@ use crate::player::PlayerRuntime;
 pub fn get_os<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let os = match activation.avm2().player_runtime {
         // For most normal Flash Player usage, the OS should not matter,
@@ -30,7 +31,7 @@ pub fn get_os<'gc>(
 pub fn get_version<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let os = match activation.avm2().player_runtime {
         PlayerRuntime::FlashPlayer => "WIN",
@@ -55,7 +56,7 @@ pub fn get_version<'gc>(
 pub fn get_player_type<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     // TODO: When should "External" be returned?
     let player_type = if cfg!(target_family = "wasm") {
@@ -74,7 +75,7 @@ pub fn get_player_type<'gc>(
 pub fn get_screen_resolution_x<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let viewport_dimensions = activation.context.renderer.viewport_dimensions();
     // Viewport size is adjusted for HiDPI.
@@ -86,7 +87,7 @@ pub fn get_screen_resolution_x<'gc>(
 pub fn get_screen_resolution_y<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let viewport_dimensions = activation.context.renderer.viewport_dimensions();
     // Viewport size is adjusted for HiDPI.
@@ -98,7 +99,7 @@ pub fn get_screen_resolution_y<'gc>(
 pub fn get_pixel_aspect_ratio<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     _this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     // source: https://web.archive.org/web/20230611050355/https://flylib.com/books/en/4.13.1.272/1/
     Ok(1.into())
@@ -108,7 +109,7 @@ pub fn get_pixel_aspect_ratio<'gc>(
 pub fn get_screen_dpi<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     _this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     // source: https://tracker.adobe.com/#/view/FP-3949775
     Ok(72.into())
@@ -118,7 +119,7 @@ pub fn get_screen_dpi<'gc>(
 pub fn get_language<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let language = activation
         .context

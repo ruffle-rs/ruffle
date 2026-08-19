@@ -2,6 +2,7 @@ use crate::avm2::Avm2StrRepresentable;
 use crate::avm2::Error;
 use crate::avm2::activation::Activation;
 use crate::avm2::error::make_error_2008;
+use crate::avm2::function::FunctionArgs;
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
 use crate::fte::TextRotationValue;
@@ -12,7 +13,7 @@ pub use crate::avm2::object::content_element_allocator;
 pub fn get_text<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this
         .as_object()
@@ -31,7 +32,7 @@ pub fn get_text<'gc>(
 pub fn get_element_format<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this
         .as_object()
@@ -47,7 +48,7 @@ pub fn get_element_format<'gc>(
 pub fn set_element_format<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this
         .as_object()
@@ -64,7 +65,7 @@ pub fn set_element_format<'gc>(
 pub fn get_text_block<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     avm2_stub_getter!(activation, "flash.text.engine.ContentElement", "textBlock");
     Ok(Value::Null)
@@ -73,7 +74,7 @@ pub fn get_text_block<'gc>(
 pub fn get_text_block_begin_index<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     avm2_stub_getter!(
         activation,
@@ -86,7 +87,7 @@ pub fn get_text_block_begin_index<'gc>(
 pub fn get_group_element<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     avm2_stub_getter!(
         activation,
@@ -99,7 +100,7 @@ pub fn get_group_element<'gc>(
 pub fn get_event_mirror<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     avm2_stub_getter!(
         activation,
@@ -117,7 +118,7 @@ pub fn get_event_mirror<'gc>(
 pub fn set_event_mirror<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     avm2_stub_setter!(
         activation,
@@ -136,7 +137,7 @@ pub fn set_event_mirror<'gc>(
 pub fn get_text_rotation<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     avm2_stub_getter!(
         activation,
@@ -154,7 +155,7 @@ pub fn get_text_rotation<'gc>(
 pub fn set_text_rotation<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     avm2_stub_setter!(
         activation,
@@ -178,7 +179,7 @@ pub fn set_text_rotation<'gc>(
 pub fn get_raw_text<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     avm2_stub_getter!(activation, "flash.text.engine.ContentElement", "rawText");
     get_text(activation, this, args)

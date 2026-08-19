@@ -2,6 +2,7 @@
 
 use crate::avm2::activation::Activation;
 use crate::avm2::error::{make_error_1075, make_error_1076};
+use crate::avm2::function::FunctionArgs;
 use crate::avm2::object::Object;
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
@@ -13,7 +14,7 @@ macro_rules! wrap_std {
         pub fn $name<'gc>(
             _activation: &mut Activation<'_, 'gc>,
             _this: Value<'gc>,
-            args: &[Value<'gc>],
+            args: FunctionArgs<'_, 'gc>,
         ) -> Result<Value<'gc>, Error<'gc>> {
             let input = args.get_f64(0);
             Ok($std(input).into())
@@ -37,7 +38,7 @@ wrap_std!(tan, f64::tan);
 pub fn call_handler<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     Err(make_error_1075(activation))
 }
@@ -52,7 +53,7 @@ pub fn math_allocator<'gc>(
 pub fn round<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     _this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let x = args.get_f64(0);
 
@@ -65,7 +66,7 @@ pub fn round<'gc>(
 pub fn atan2<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     _this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let y = args.get_f64(0);
     let x = args.get_f64(1);
@@ -76,7 +77,7 @@ pub fn atan2<'gc>(
 pub fn max<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let mut cur_max = f64::NEG_INFINITY;
     for arg in args {
@@ -93,7 +94,7 @@ pub fn max<'gc>(
 pub fn min<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let mut cur_min = f64::INFINITY;
     for arg in args {
@@ -110,7 +111,7 @@ pub fn min<'gc>(
 pub fn pow<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     _this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let n = args.get_f64(0);
     let p = args.get_f64(1);
@@ -145,7 +146,7 @@ pub fn pow<'gc>(
 pub fn random<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     // See https://github.com/adobe/avmplus/blob/858d034a3bd3a54d9b70909386435cf4aec81d21/core/MathUtils.cpp#L1731C24-L1731C44
     // This generated a restricted set of 'f64' values, which some SWFs implicitly rely on.
