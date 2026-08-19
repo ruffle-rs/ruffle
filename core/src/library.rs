@@ -176,6 +176,19 @@ impl<'gc> MovieLibrary<'gc> {
         self.export_characters.insert(export_name, id, false);
     }
 
+    pub fn register_font_name(&mut self, character_id: u16, font_name: &str) {
+        let Some(Character::Font(font)) = self.character_by_id(character_id) else {
+            return;
+        };
+
+        let descriptor = FontDescriptor::from_parts(
+            font_name,
+            font.descriptor().bold(),
+            font.descriptor().italic(),
+        );
+        self.fonts.register_with_descriptor(font, &descriptor);
+    }
+
     pub fn characters(&self) -> &HashMap<CharacterId, Character<'gc>> {
         &self.characters
     }
@@ -751,7 +764,10 @@ struct FontMap<'gc>(FnvHashMap<FontQuery, Font<'gc>>);
 
 impl<'gc> FontMap<'gc> {
     pub fn register(&mut self, font: Font<'gc>) {
-        let descriptor = font.descriptor();
+        self.register_with_descriptor(font, font.descriptor());
+    }
+
+    pub fn register_with_descriptor(&mut self, font: Font<'gc>, descriptor: &FontDescriptor) {
         self.0
             .entry(FontQuery::from_descriptor(font.font_type(), descriptor))
             .or_insert(font);

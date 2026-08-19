@@ -543,6 +543,8 @@ impl<'gc> MovieClip<'gc> {
                 TagCode::DefineFont2 => shared.define_font_2(context, reader),
                 TagCode::DefineFont3 => shared.define_font_3(context, reader),
                 TagCode::DefineFont4 => shared.define_font_4(context, reader),
+                TagCode::DefineFontInfo => shared.define_font_info(context, reader, 1),
+                TagCode::DefineFontInfo2 => shared.define_font_info(context, reader, 2),
                 TagCode::DefineMorphShape => shared.define_morph_shape(context, reader, 1),
                 TagCode::DefineMorphShape2 => shared.define_morph_shape(context, reader, 2),
                 TagCode::DefineScalingGrid => shared.define_scaling_grid(context, reader),
@@ -3846,6 +3848,26 @@ impl<'gc, 'a> MovieClipShared<'gc> {
         let font_object = Font::from_font4_tag(context.gc(), font, reader.encoding())?;
         self.library_mut(context)
             .register_character(font_id, Character::Font(font_object));
+        Ok(())
+    }
+
+    fn define_font_info(
+        &self,
+        context: &mut UpdateContext<'gc>,
+        reader: &mut SwfStream<'a>,
+        version: u8,
+    ) -> Result<(), Error> {
+        let font_info = reader.read_define_font_info(version)?;
+
+        // For some reason Flash doesn't seem to use font_info's flags
+        // (bold, italic) here.
+        //
+        // TODO Maybe there are some cases where it is used?
+        let character_id = font_info.id;
+        let font_name = &font_info.name.to_str_lossy(reader.encoding());
+
+        self.library_mut(context)
+            .register_font_name(character_id, font_name);
         Ok(())
     }
 
