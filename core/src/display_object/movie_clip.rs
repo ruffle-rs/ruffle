@@ -4037,7 +4037,7 @@ impl<'gc, 'a> MovieClipShared<'gc> {
                 if let Some(parent) = &importer_movie {
                     let parent_library = context.library.library_for_movie_mut(parent.clone());
 
-                    if let Some(id) = parent_library.character_id_by_import_name(name) {
+                    if let Some(id) = parent_library.character_id_by_import_name(&name) {
                         parent_library.register_character(id, character);
 
                         Self::register_export(context, id, name, parent.clone());
