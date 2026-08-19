@@ -596,7 +596,11 @@ pub fn namespace_internal_impl<'gc>(
     let mut children = list.children_mut(activation.gc());
 
     let has_prefix = args.get_bool(0);
-    let args = if has_prefix { &args[1..] } else { &[] };
+    let args: &[Value<'gc>] = if has_prefix {
+        &[args.get_value(1)]
+    } else {
+        &[]
+    };
 
     match &mut children[..] {
         [child] => Value::from(child.get_or_create_xml(activation)).call_method(

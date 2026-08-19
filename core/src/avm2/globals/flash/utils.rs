@@ -34,7 +34,7 @@ pub fn set_interval<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let closure = args.try_get_function(0);
     let interval = args.get_f64(1);
-    let params = &args[2..];
+    let params = args.get_slice_from(2..);
 
     let callback = crate::timer::TimerCallback::Avm2Callback {
         closure,
@@ -67,7 +67,7 @@ pub fn set_timeout<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let closure = args.try_get_function(0);
     let interval = args.get_f64(1);
-    let params = &args[2..];
+    let params = args.get_slice_from(2..);
 
     let callback = crate::timer::TimerCallback::Avm2Callback {
         closure,

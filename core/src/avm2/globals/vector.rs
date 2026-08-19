@@ -701,7 +701,7 @@ pub fn splice<'gc>(
     // Make sure vector is not borrowed while coercing which can have side-effects.
 
     let mut coerced_args = Vec::new();
-    for value in args[2..].iter() {
+    for value in args.get_slice_from(2..).iter() {
         coerced_args.push(value.coerce_to_type(activation, value_type_for_coercion)?);
     }
 

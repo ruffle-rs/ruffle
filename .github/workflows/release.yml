@@ -19,6 +19,7 @@ on:
 
 env:
   RELEASE_SCRIPT: ./.github/scripts/release.py
+  LINUX_DEPENDENCIES: libasound2-dev libudev-dev libfontconfig-dev libfreetype6-dev
 
 jobs:
   create-release:
@@ -179,7 +180,7 @@ jobs:
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update
-          sudo apt install -y libasound2-dev libudev-dev
+          sudo apt install -y ${{ env.LINUX_DEPENDENCIES }}
 
       - name: Install WiX
         if: runner.os == 'Windows'
