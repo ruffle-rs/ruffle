@@ -1785,7 +1785,7 @@ impl<'gc> MovieClip<'gc> {
         }
 
         // Run the list of goto commands to actually create and update the display objects.
-        let run_goto_command = |clip: MovieClip<'gc>,
+        let run_goto_command = |mut clip: MovieClip<'gc>,
                                 context: &mut UpdateContext<'gc>,
                                 params: &GotoPlaceObject<'_>| {
             use swf::PlaceObjectAction;
@@ -1819,6 +1819,21 @@ impl<'gc> MovieClip<'gc> {
                 // If the ID is 0, we are modifying a previous child. Otherwise, we're replacing it.
                 // If it's a rewind, we removed any dead children above, so we always
                 // modify the previous child.
+                //
+                // A `Place` can still replace an object when the destination
+                // frame uses a different character at the same depth. Reusing
+                // the old child here leaves the previous scene visible after
+                // a label-based rewind.
+                (PlaceObjectAction::Place(id), Some(prev_child), true)
+                    if prev_child.id() != id =>
+                {
+                    clip.remove_child(context, prev_child);
+                    if let Some(child) =
+                        clip.instantiate_child(context, id, params.depth(), &params.place_object)
+                    {
+                        child.set_place_frame(params.frame);
+                    }
+                }
                 (_, Some(prev_child), true) | (PlaceObjectAction::Modify, Some(prev_child), _) => {
                     prev_child.apply_place_object(context, &params.place_object);
                 }
