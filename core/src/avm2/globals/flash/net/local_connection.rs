@@ -2,6 +2,7 @@ use crate::avm2::amf::serialize_value;
 use crate::avm2::error::{
     Error2004Type, make_error_2004, make_error_2082, make_error_2083, make_error_2085,
 };
+use crate::avm2::function::FunctionArgs;
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::{Activation, Error, Value};
 use crate::string::AvmString;
@@ -14,7 +15,7 @@ use crate::local_connection::LocalConnections;
 pub fn get_domain<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let movie = &activation.context.root_swf;
     let domain = LocalConnections::get_domain(movie.url());
@@ -26,7 +27,7 @@ pub fn get_domain<'gc>(
 pub fn send<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
@@ -51,7 +52,7 @@ pub fn send<'gc>(
 
     let mut amf_arguments = Vec::with_capacity(args.len() - 2);
     for arg in args.get_slice_from(2..) {
-        let value = serialize_value(activation, *arg, AMFVersion::AMF0, &mut Default::default());
+        let value = serialize_value(activation, arg, AMFVersion::AMF0, &mut Default::default());
         amf_arguments.push(value);
     }
 
@@ -72,7 +73,7 @@ pub fn send<'gc>(
 pub fn connect<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
@@ -99,7 +100,7 @@ pub fn connect<'gc>(
 pub fn close<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
@@ -117,7 +118,7 @@ pub fn close<'gc>(
 pub fn get_client<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
@@ -131,7 +132,7 @@ pub fn get_client<'gc>(
 pub fn set_client<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 

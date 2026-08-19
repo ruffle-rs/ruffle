@@ -687,7 +687,6 @@ impl<'gc> ClassObject<'gc> {
         arguments: FunctionArgs<'_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
         if let Some(call_handler) = self.call_handler() {
-            let arguments = &arguments.to_slice();
             call_handler(activation, self.into(), arguments)
         } else if arguments.len() == 1 {
             arguments
@@ -712,7 +711,6 @@ impl<'gc> ClassObject<'gc> {
         arguments: FunctionArgs<'_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
         if let Some(custom_constructor) = self.custom_constructor() {
-            let arguments = &arguments.to_slice();
             custom_constructor(activation, arguments)
         } else {
             let instance_allocator = self.instance_allocator();

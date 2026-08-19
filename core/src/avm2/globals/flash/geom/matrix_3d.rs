@@ -1,4 +1,5 @@
 use crate::avm2::error::{Error2004Type, make_error_2004, make_error_2183, make_error_2187};
+use crate::avm2::function::FunctionArgs;
 use crate::avm2::globals::slots::flash_geom_vector_3d as vector3d_slots;
 use crate::avm2::object::{Matrix3DObject, VectorObject};
 use crate::avm2::parameters::ParametersExt;
@@ -59,7 +60,7 @@ fn vector3d_to_object<'gc>(
 pub fn get_raw_data<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap().as_matrix3d_object().unwrap();
 
@@ -81,7 +82,7 @@ pub fn get_raw_data<'gc>(
 pub fn set_raw_data<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap().as_matrix3d_object().unwrap();
     let Some(value) = args.try_get_object(0) else {
@@ -104,7 +105,7 @@ pub fn set_raw_data<'gc>(
 pub fn identity<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap().as_matrix3d_object().unwrap();
 
@@ -117,7 +118,7 @@ pub fn identity<'gc>(
 pub fn append_translation<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap().as_matrix3d_object().unwrap();
     let x = args.get_f64(0);
@@ -136,7 +137,7 @@ pub fn append_translation<'gc>(
 pub fn append_scale<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap().as_matrix3d_object().unwrap();
     let x = args.get_f64(0);
@@ -158,7 +159,7 @@ pub fn append_scale<'gc>(
 pub fn append<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap().as_matrix3d_object().unwrap();
     let lhs = args
@@ -176,7 +177,7 @@ pub fn append<'gc>(
 pub fn prepend<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap().as_matrix3d_object().unwrap();
     let rhs = args
@@ -194,7 +195,7 @@ pub fn prepend<'gc>(
 pub fn prepend_translation<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap().as_matrix3d_object().unwrap();
     let x = args.get_f64(0);
@@ -212,7 +213,7 @@ pub fn prepend_translation<'gc>(
 pub fn prepend_scale<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap().as_matrix3d_object().unwrap();
     let x = args.get_f64(0);
@@ -236,7 +237,7 @@ pub fn prepend_scale<'gc>(
 pub fn append_rotation<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap().as_matrix3d_object().unwrap();
     let degrees = args.get_f64(0);
@@ -301,7 +302,7 @@ pub fn append_rotation<'gc>(
 pub fn copy_column_to<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap().as_matrix3d_object().unwrap();
     let column = args.get_u32(0);
@@ -326,7 +327,7 @@ pub fn copy_column_to<'gc>(
 pub fn copy_column_from<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap().as_matrix3d_object().unwrap();
     let column = args.get_u32(0);
@@ -352,7 +353,7 @@ pub fn copy_column_from<'gc>(
 pub fn copy_row_to<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap().as_matrix3d_object().unwrap();
     let row = args.get_u32(0);
@@ -377,7 +378,7 @@ pub fn copy_row_to<'gc>(
 pub fn copy_row_from<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap().as_matrix3d_object().unwrap();
     let row = args.get_u32(0);
@@ -403,7 +404,7 @@ pub fn copy_row_from<'gc>(
 pub fn copy_from<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap().as_matrix3d_object().unwrap();
     let source = args
@@ -418,7 +419,7 @@ pub fn copy_from<'gc>(
 pub fn copy_raw_data_from<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap().as_matrix3d_object().unwrap();
     let source = args.get_object(activation, 0, "source")?;
@@ -447,7 +448,7 @@ pub fn copy_raw_data_from<'gc>(
 pub fn copy_raw_data_to<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap().as_matrix3d_object().unwrap();
     let dest = args
@@ -478,7 +479,7 @@ pub fn copy_raw_data_to<'gc>(
 pub fn copy_to_matrix_3d<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap().as_matrix3d_object().unwrap();
     let dest = args
@@ -493,7 +494,7 @@ pub fn copy_to_matrix_3d<'gc>(
 pub fn clone<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap().as_matrix3d_object().unwrap();
     Ok(Matrix3DObject::new(activation.context, this.matrix()).into())
@@ -503,7 +504,7 @@ pub fn clone<'gc>(
 pub fn get_position<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap().as_matrix3d_object().unwrap();
     let mr = this.matrix_ref().raw_data;
@@ -518,7 +519,7 @@ pub fn get_position<'gc>(
 pub fn set_position<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap().as_matrix3d_object().unwrap();
     let Some(val) = args.try_get_object(0) else {
@@ -539,7 +540,7 @@ pub fn set_position<'gc>(
 pub fn transpose<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap().as_matrix3d_object().unwrap();
     this.matrix_mut().transpose_in_place();
@@ -550,7 +551,7 @@ pub fn transpose<'gc>(
 pub fn delta_transform_vector<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap().as_matrix3d_object().unwrap();
     let v = args.get_object(activation, 0, "vector")?;
@@ -577,7 +578,7 @@ pub fn delta_transform_vector<'gc>(
 pub fn transform_vector<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap().as_matrix3d_object().unwrap();
     let v = args.get_object(activation, 0, "vector")?;
@@ -604,7 +605,7 @@ pub fn transform_vector<'gc>(
 pub fn transform_vectors<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap().as_matrix3d_object().unwrap();
     let vin = args
@@ -663,7 +664,7 @@ pub fn transform_vectors<'gc>(
 pub fn get_determinant<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap().as_matrix3d_object().unwrap();
     Ok(this.matrix_ref().determinant().into())
@@ -673,7 +674,7 @@ pub fn get_determinant<'gc>(
 pub fn invert<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap().as_matrix3d_object().unwrap();
     let Some(result) = this.matrix_ref().invert() else {
@@ -691,7 +692,7 @@ pub fn invert<'gc>(
 pub fn recompose<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap().as_matrix3d_object().unwrap();
 
@@ -791,7 +792,7 @@ pub fn recompose<'gc>(
 pub fn decompose<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap().as_matrix3d_object().unwrap();
 

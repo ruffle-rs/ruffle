@@ -2,6 +2,7 @@
 
 use crate::avm2::activation::Activation;
 use crate::avm2::error::{make_error_1002, make_error_1003};
+use crate::avm2::function::FunctionArgs;
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
 use crate::avm2::{AvmString, Error};
@@ -9,7 +10,7 @@ use ruffle_macros::istr;
 
 pub fn number_constructor<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let number_value = args
         .get_optional(0)
@@ -25,7 +26,7 @@ macro_rules! define_math_functions {
             pub fn $name<'gc>(
                 activation: &mut Activation<'_, 'gc>,
                 this: Value<'gc>,
-                args: &[Value<'gc>],
+                args: FunctionArgs<'_, 'gc>,
             ) -> Result<Value<'gc>, Error<'gc>> {
                 crate::avm2::globals::math::$name(activation, this, args)
             }
@@ -41,7 +42,7 @@ define_math_functions!(
 pub fn call_handler<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     Ok(args
         .get_optional(0)
@@ -90,7 +91,7 @@ fn to_precision(number: f64, wanted_digits: usize) -> String {
 pub fn _convert<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let number = args.get_f64(0);
     let digits = args.get_i32(1);
@@ -174,7 +175,7 @@ pub fn print_with_radix<'gc>(
 pub fn to_string<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let number = this.as_f64();
 
@@ -191,7 +192,7 @@ pub fn to_string<'gc>(
 pub fn value_of<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     Ok(this)
 }

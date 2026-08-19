@@ -2,6 +2,7 @@
 
 use crate::avm2::Error;
 use crate::avm2::activation::Activation;
+use crate::avm2::function::FunctionArgs;
 use crate::avm2::object::{MessageChannelObject, WorkerObject};
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
@@ -11,7 +12,7 @@ use crate::avm2_stub_method;
 pub fn create_message_channel<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     avm2_stub_method!(activation, "flash.system.Worker", "createMessageChannel");
 
@@ -25,7 +26,7 @@ pub fn create_message_channel<'gc>(
 pub fn instantiate_internal<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let worker = WorkerObject::new(activation);
 

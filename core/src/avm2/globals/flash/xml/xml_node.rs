@@ -1,5 +1,6 @@
 use crate::avm2::Error;
 use crate::avm2::activation::Activation;
+use crate::avm2::function::FunctionArgs;
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
 use crate::string::AvmString;
@@ -8,7 +9,7 @@ use ruffle_wstr::from_utf8;
 pub fn _escape_xml<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let and = from_utf8("&");
     let lt = from_utf8("<");

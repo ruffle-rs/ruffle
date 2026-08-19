@@ -34,7 +34,7 @@ fn create_dummy_function<'gc>(activation: &mut Activation<'_, 'gc>) -> FunctionO
 /// when called.
 pub fn function_constructor<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     if !args.is_empty() {
         return Err(make_error_1066(activation));
@@ -47,7 +47,7 @@ pub fn function_constructor<'gc>(
 pub fn _init_function_class<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     // Set Function's prototype and register it in SystemClasses. This method is
     // called from AS during builtins initialization.
@@ -65,21 +65,21 @@ pub fn _init_function_class<'gc>(
 pub fn call<'gc>(
     activation: &mut Activation<'_, 'gc>,
     func: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let func = func.as_object().unwrap().as_function_object().unwrap();
 
     let this = args.get_value(0);
 
     let passed_args = args.get_slice_from(1..);
-    func.call(activation, this, FunctionArgs::from_slice(passed_args))
+    func.call(activation, this, passed_args)
 }
 
 /// Implements `Function.prototype.apply`
 pub fn apply<'gc>(
     activation: &mut Activation<'_, 'gc>,
     func: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let func = func.as_object().unwrap().as_function_object().unwrap();
 
@@ -110,7 +110,7 @@ pub fn apply<'gc>(
 pub fn get_length<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
@@ -124,7 +124,7 @@ pub fn get_length<'gc>(
 pub fn get_prototype<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
@@ -142,7 +142,7 @@ pub fn get_prototype<'gc>(
 pub fn set_prototype<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 

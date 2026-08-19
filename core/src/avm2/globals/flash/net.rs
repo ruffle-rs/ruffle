@@ -1,6 +1,7 @@
 //! `flash.net` namespace
 
 use crate::avm2::error::{Error1014Type, make_error_1014, make_error_2007};
+use crate::avm2::function::FunctionArgs;
 use crate::avm2::globals::slots::flash_net_url_request as url_request_slots;
 use crate::avm2::object::TObject;
 use crate::avm2::parameters::ParametersExt;
@@ -75,7 +76,7 @@ fn parse_data<'gc>(
 pub fn navigate_to_url<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let request = args.get_object(activation, 0, "request")?;
 
@@ -106,7 +107,7 @@ pub fn navigate_to_url<'gc>(
 pub fn register_class_alias<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let name = args.get_string_non_null(activation, 0, "aliasName")?;
     let class_object = args
@@ -121,7 +122,7 @@ pub fn register_class_alias<'gc>(
 pub fn get_class_by_alias<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let name = args.get_string_non_null(activation, 0, "aliasName")?;
 

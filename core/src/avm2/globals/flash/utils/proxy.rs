@@ -1,5 +1,6 @@
 use crate::avm2::Error;
 use crate::avm2::activation::Activation;
+use crate::avm2::function::FunctionArgs;
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
 
@@ -8,7 +9,7 @@ pub use crate::avm2::object::proxy_allocator;
 pub fn is_attribute<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     _this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Value::Object(o) = args.get_value(0)
         && let Some(qname_object) = o.as_qname_object()
