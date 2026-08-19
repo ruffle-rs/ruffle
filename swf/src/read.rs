@@ -1188,7 +1188,7 @@ impl<'a> Reader<'a> {
         Ok(zone)
     }
 
-    fn read_define_font_info(&mut self, version: u8) -> Result<FontInfo<'a>> {
+    pub fn read_define_font_info(&mut self, version: u8) -> Result<FontInfo<'a>> {
         let id = self.read_u16()?;
         let name = self.read_str_with_len()?;
         let flags = FontInfoFlag::from_bits_truncate(self.read_u8()?);
