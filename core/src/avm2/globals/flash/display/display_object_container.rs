@@ -16,7 +16,9 @@ use crate::avm2::{ArrayObject, ArrayStorage, Error};
 use crate::avm2_stub_method;
 use crate::context::UpdateContext;
 use crate::display_object::HitTestOptions;
-use crate::display_object::{DisplayObject, TDisplayObject, TDisplayObjectContainer};
+use crate::display_object::{
+    DisplayObject, DisplayObjectContainer, TDisplayObject, TDisplayObjectContainer,
+};
 use std::cmp::min;
 
 /// Validate if we can add a child to a parent at a given index.
@@ -475,20 +477,30 @@ pub fn stop_all_movie_clips<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
-    if let Some(parent) = this.as_display_object() {
-        if let Some(mc) = parent.as_movie_clip() {
-            mc.stop(activation.context);
-        }
+    if let Some(parent) = this.as_display_object()
+        && let Some(container) = parent.as_container()
+    {
+        fn stop_recursive<'gc>(
+            context: &mut UpdateContext<'gc>,
+            container: DisplayObjectContainer<'gc>,
+        ) {
+            if let Some(mc) = DisplayObject::from(container).as_movie_clip() {
+                mc.stop(context);
+            }
 
-        if let Some(ctr) = parent.as_container() {
-            for child in ctr.iter_render_list() {
-                if child.as_container().is_some()
-                    && let Some(child_this) = child.object2()
-                {
-                    stop_all_movie_clips(activation, child_this.into(), &[])?;
+            for child in container.iter_render_list() {
+                // NOTE: FP segfaults here if `child.object2().is_none()` (i.e.
+                // a descendant of the object that `stopAllMovieClips` was
+                // initially called on does not yet have its AVM2 object
+                // constructed)
+
+                if let Some(child_container) = child.as_container() {
+                    stop_recursive(context, child_container);
                 }
             }
         }
+
+        stop_recursive(activation.context, container);
     }
 
     Ok(Value::Undefined)
