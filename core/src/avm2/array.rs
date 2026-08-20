@@ -147,15 +147,15 @@ impl<'gc> ArrayStorage<'gc> {
                     }
                     last_index += 1;
                 }
-                None
             }
             ArrayStorage::Sparse { storage, .. } => {
                 if let Some((&key, _)) = storage.range(last_index..).next() {
                     return Some(key + 1);
                 }
-                None
             }
         }
+
+        None
     }
 
     /// Set an array storage slot to a particular value.
