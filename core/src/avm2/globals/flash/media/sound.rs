@@ -4,7 +4,6 @@ use crate::avm2::Avm2;
 use crate::avm2::Error;
 use crate::avm2::activation::Activation;
 use crate::avm2::error::{make_error_2037, make_error_2084};
-use crate::avm2::globals::methods::flash_media_sound as sound_methods;
 use crate::avm2::globals::slots::flash_net_url_request as url_request_slots;
 use crate::avm2::object::{
     EventObject, QueuedPlay, SoundChannelObject, SoundLoadingState, TObject as _,
@@ -23,7 +22,7 @@ pub use crate::avm2::object::sound_allocator;
 pub fn init<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    args: &[Value<'gc>],
+    _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(sound_object) = this.as_object().and_then(|o| o.as_sound_object()) {
         let class_def = this.instance_class(activation);
@@ -49,10 +48,6 @@ pub fn init<'gc>(
                 );
             }
         }
-    }
-
-    if args.try_get_object(0).is_some() {
-        this.call_method(sound_methods::LOAD, args, activation)?;
     }
 
     Ok(Value::Undefined)
