@@ -1,8 +1,10 @@
 use crate::font::{Font, FontLike};
-use egui::{CollapsingHeader, Grid, Ui, Window};
+use egui::{CollapsingHeader, Grid, TextEdit, Ui, Window};
 
 #[derive(Debug, Default)]
-pub struct FontWindow {}
+pub struct FontWindow {
+    glyph_info_text: String,
+}
 
 impl FontWindow {
     pub fn show<'gc>(&mut self, egui_ctx: &egui::Context, font: Font<'gc>) -> bool {
@@ -14,6 +16,7 @@ impl FontWindow {
             .show(egui_ctx, |ui| {
                 self.show_font_info(ui, font);
                 self.show_font_metrics(ui, font);
+                self.show_glyph_info(ui, font);
             });
 
         keep_open
@@ -81,6 +84,54 @@ impl FontWindow {
                         ui.label("Leading");
                         ui.label(format!("{}", metrics.leading));
                         ui.end_row();
+                    });
+            });
+    }
+
+    fn show_glyph_info(&mut self, ui: &mut Ui, font: Font<'_>) {
+        CollapsingHeader::new("Glyph Info")
+            .id_salt(ui.id().with("glyph-info"))
+            .show(ui, |ui| {
+                ui.add(
+                    TextEdit::singleline(&mut self.glyph_info_text)
+                        .hint_text("Type characters to inspect..."),
+                );
+
+                let chars: Vec<char> = self.glyph_info_text.chars().collect();
+                if chars.is_empty() {
+                    return;
+                }
+
+                Grid::new(ui.id().with("glyph-info-table"))
+                    .num_columns(4)
+                    .striped(true)
+                    .show(ui, |ui| {
+                        ui.label("Char");
+                        ui.label("Has Glyph");
+                        ui.label("Advance");
+                        ui.label("Kerning to Next");
+                        ui.end_row();
+
+                        for (i, &ch) in chars.iter().enumerate() {
+                            ui.label(format!("{ch}"));
+
+                            let resolution = font.resolve_glyph(ch);
+                            ui.label(if resolution.is_some() { "Yes" } else { "No" });
+
+                            if let Some(resolution) = &resolution {
+                                ui.label(format!("{}", resolution.glyph.advance()));
+                            } else {
+                                ui.weak("-");
+                            }
+
+                            if let Some(&next) = chars.get(i + 1) {
+                                ui.label(format!("{}", font.get_kerning_offset(ch, next)));
+                            } else {
+                                ui.weak("-");
+                            }
+
+                            ui.end_row();
+                        }
                     });
             });
     }
