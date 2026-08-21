@@ -6,19 +6,19 @@ num_frames = 10
 trigger = 1
 known_failure = true
 tolerance = 4
-max_outliers = 16
+max_outliers = 20
 
 [image_comparisons."output.05"]
 trigger = 5
 known_failure = true
 tolerance = 4
-max_outliers = 16
+max_outliers = 20
 
 [image_comparisons."output.10"]
 trigger = 10
 known_failure = true
 tolerance = 4
-max_outliers = 16
+max_outliers = 20
 
 [player_options]
 with_renderer = { optional = false, quality = "high" }

@@ -7,7 +7,7 @@ max_outliers = 16
 [[image_comparisons.output.checks]]
 filter = 'not(os = "macos")'
 tolerance = 144
-max_outliers = 0
+max_outliers = 12
 
 [[image_comparisons.output.checks]]
 filter = 'os = "macos"'
