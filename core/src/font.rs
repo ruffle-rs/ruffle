@@ -508,6 +508,10 @@ impl<'gc> Font<'gc> {
         ))
     }
 
+    pub fn as_ptr(self) -> *const () {
+        Gc::as_ptr(self.0).cast()
+    }
+
     /// Returns whether this font contains glyph shapes.
     /// If not, this font should be rendered as a device font.
     pub fn has_glyphs(self) -> bool {
