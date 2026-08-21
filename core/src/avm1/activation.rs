@@ -217,6 +217,9 @@ pub struct Activation<'a, 'gc: 'a> {
     /// This is often the name of a function (if known), or some static name to indicate where
     /// in the code it is (for example, a with{} block).
     pub id: ActivationIdentifier<'a>,
+
+    #[cfg(feature = "tracy_avm")]
+    _tracy_span: tracy_client::Span,
 }
 
 impl Drop for Activation<'_, '_> {
@@ -301,7 +304,17 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     ) -> Self {
         debug_assert!(swf_version > 0, "cannot execute code with SWF version 0");
         avm_debug!(context.avm1, "START {id}");
+        #[cfg(feature = "tracy_avm")]
+        let tracy_span = {
+            let span = tracy_client::Client::running()
+                .expect("tracy_client should be running")
+                .span_alloc(None, id.name, base_clip.movie().url(), 0, 0);
+            span.emit_color(0x49802c);
+            span
+        };
         Self {
+            #[cfg(feature = "tracy_avm")]
+            _tracy_span: tracy_span,
             context,
             id,
             swf_version,
@@ -323,7 +336,17 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     ) -> Activation<'b, 'gc> {
         let id = self.id.child(name);
         avm_debug!(self.context.avm1, "START {id}");
+        #[cfg(feature = "tracy_avm")]
+        let tracy_span = {
+            let span = tracy_client::Client::running()
+                .expect("tracy_client should be running")
+                .span_alloc(None, name, self.base_clip.movie().url(), 0, 0);
+            span.emit_color(0x49802c);
+            span
+        };
         Activation {
+            #[cfg(feature = "tracy_avm")]
+            _tracy_span: tracy_span,
             id,
             context: self.context,
             swf_version: self.swf_version,
@@ -354,7 +377,17 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let swf_version = base_clip.swf_version();
         debug_assert!(swf_version > 0, "cannot execute code with SWF version 0");
         let scope = context.avm1.global_scope(swf_version);
+        #[cfg(feature = "tracy_avm")]
+        let tracy_span = {
+            let span = tracy_client::Client::running()
+                .expect("tracy_client should be running")
+                .span_alloc(None, id.name, "rust", 0, 0);
+            span.emit_color(0x49802c);
+            span
+        };
         Self {
+            #[cfg(feature = "tracy_avm")]
+            _tracy_span: tracy_span,
             id,
             swf_version,
             scope,
