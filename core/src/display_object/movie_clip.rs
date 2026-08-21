@@ -2043,6 +2043,7 @@ impl<'gc> MovieClip<'gc> {
                         self.into(),
                         ActionType::Initialize {
                             bytecode: event_handler.action_data.clone(),
+                            name: "[MovieClip initialize]",
                         },
                         false,
                     );
@@ -2923,6 +2924,7 @@ impl<'gc> TInteractiveObject<'gc> for MovieClip<'gc> {
                         self.into(),
                         ActionType::Normal {
                             bytecode: event_handler.action_data.clone(),
+                            name: "[MovieClip event]",
                         },
                         event == ClipEvent::Unload,
                     );
@@ -4235,7 +4237,10 @@ impl<'gc, 'a> MovieClip<'gc> {
         if !slice.is_empty() {
             context.action_queue.queue_action(
                 self.into(),
-                ActionType::Normal { bytecode: slice },
+                ActionType::Normal {
+                    bytecode: slice,
+                    name: "[MovieClip action]",
+                },
                 false,
             );
         }
