@@ -1,8 +1,11 @@
+pub mod atlas;
+
 use h263_rs_yuv::bt601::yuv420_to_rgba;
 use ruffle_wstr::{FromWStr, WStr};
 use std::any::Any;
 use std::borrow::Cow;
 use std::fmt::Debug;
+use std::num::{NonZero, NonZeroUsize};
 use std::sync::Arc;
 
 use swf::{Rectangle, Twips};
@@ -308,6 +311,53 @@ impl<'a> Bitmap<'a> {
         &self.data
     }
 
+    /// Copies the pixel data from `source` into this bitmap, placing its
+    /// top-left corner at `(x, y)`. Both bitmaps must share the same format.
+    pub fn set_region(&mut self, source: &Bitmap<'_>, x: u32, y: u32) {
+        assert_eq!(
+            self.format, source.format,
+            "Can't copy a region between bitmaps of different formats"
+        );
+        let bytes_per_pixel = self
+            .format
+            .bytes_per_pixel()
+            .expect("Unsupported bitmap for region operations")
+            .get();
+        assert!(x + source.width <= self.width);
+        assert!(y + source.height <= self.height);
+
+        let dest_stride = self.width as usize * bytes_per_pixel;
+        let src_stride = source.width as usize * bytes_per_pixel;
+        let dest_data = self.data.to_mut();
+
+        for row in 0..source.height as usize {
+            let dest_offset = (y as usize + row) * dest_stride + x as usize * bytes_per_pixel;
+            let src_offset = row * src_stride;
+            dest_data[dest_offset..dest_offset + src_stride]
+                .copy_from_slice(&source.data[src_offset..src_offset + src_stride]);
+        }
+    }
+
+    /// Zeroes out the pixel data within the given region.
+    pub fn clear_region(&mut self, x: u32, y: u32, width: u32, height: u32) {
+        let bytes_per_pixel = self
+            .format
+            .bytes_per_pixel()
+            .expect("Unsupported bitmap for region operations")
+            .get();
+        assert!(x + width <= self.width);
+        assert!(y + height <= self.height);
+
+        let dest_stride = self.width as usize * bytes_per_pixel;
+        let row_len = width as usize * bytes_per_pixel;
+        let dest_data = self.data.to_mut();
+
+        for row in 0..height as usize {
+            let dest_offset = (y as usize + row) * dest_stride + x as usize * bytes_per_pixel;
+            dest_data[dest_offset..dest_offset + row_len].fill(0);
+        }
+    }
+
     pub fn as_colors(&self) -> impl Iterator<Item = u32> + '_ {
         let chunks = match self.format {
             BitmapFormat::Rgb => self.data.chunks_exact(3),
@@ -361,6 +411,17 @@ impl BitmapFormat {
             BitmapFormat::Rgba => true,
             BitmapFormat::Yuv420p => false,
             BitmapFormat::Yuva420p => true,
+        }
+    }
+
+    pub fn bytes_per_pixel(self) -> Option<NonZeroUsize> {
+        match self {
+            #[allow(clippy::unwrap_used)]
+            BitmapFormat::Rgb => Some(NonZero::new(3).unwrap()),
+            #[allow(clippy::unwrap_used)]
+            BitmapFormat::Rgba => Some(NonZero::new(4).unwrap()),
+            BitmapFormat::Yuv420p => None,
+            BitmapFormat::Yuva420p => None,
         }
     }
 }
@@ -620,7 +681,155 @@ impl From<Rectangle<Twips>> for PixelRegion {
 
 #[cfg(test)]
 mod test {
-    use super::PixelRegion;
+    use super::{Bitmap, BitmapFormat, PixelRegion};
+
+    fn filled_bitmap(width: u32, height: u32, fill: u8) -> Bitmap<'static> {
+        let len = BitmapFormat::Rgba.length_for_size(width as usize, height as usize);
+        Bitmap::new(width, height, BitmapFormat::Rgba, vec![fill; len])
+    }
+
+    #[test]
+    fn set_region() {
+        let mut dest = filled_bitmap(4, 4, 0x11);
+        let source = filled_bitmap(2, 3, 0x22);
+
+        dest.set_region(&source, 1, 1);
+
+        let expected: Vec<u8> = [
+            [0x11; 4], [0x11; 4], [0x11; 4], [0x11; 4], //
+            [0x11; 4], [0x22; 4], [0x22; 4], [0x11; 4], //
+            [0x11; 4], [0x22; 4], [0x22; 4], [0x11; 4], //
+            [0x11; 4], [0x22; 4], [0x22; 4], [0x11; 4],
+        ]
+        .concat();
+
+        assert_eq!(expected, dest.data());
+    }
+
+    #[test]
+    fn clear_region() {
+        let mut bitmap = filled_bitmap(4, 4, 0xFF);
+
+        bitmap.clear_region(1, 1, 2, 2);
+
+        let expected: Vec<u8> = [
+            [0xFF; 4], [0xFF; 4], [0xFF; 4], [0xFF; 4], //
+            [0xFF; 4], [0x00; 4], [0x00; 4], [0xFF; 4], //
+            [0xFF; 4], [0x00; 4], [0x00; 4], [0xFF; 4], //
+            [0xFF; 4], [0xFF; 4], [0xFF; 4], [0xFF; 4],
+        ]
+        .concat();
+
+        assert_eq!(expected, bitmap.data());
+    }
+
+    #[test]
+    fn set_region_full_size() {
+        let mut dest = filled_bitmap(3, 2, 0x11);
+        let source = filled_bitmap(3, 2, 0x22);
+
+        dest.set_region(&source, 0, 0);
+
+        assert_eq!(vec![0x22; 3 * 2 * 4], dest.data());
+    }
+
+    #[test]
+    fn set_region_zero_sized_source() {
+        let mut dest = filled_bitmap(3, 2, 0x11);
+        let source = filled_bitmap(0, 0, 0x22);
+
+        dest.set_region(&source, 1, 1);
+
+        assert_eq!(vec![0x11; 3 * 2 * 4], dest.data());
+    }
+
+    #[test]
+    fn set_region_flush_with_bottom_right_edge() {
+        let mut dest = filled_bitmap(4, 4, 0x11);
+        let source = filled_bitmap(2, 2, 0x22);
+
+        // Bottom-right corner of the source lands exactly on the dest's edge.
+        dest.set_region(&source, 2, 2);
+
+        let expected: Vec<u8> = [
+            [0x11; 4], [0x11; 4], [0x11; 4], [0x11; 4], //
+            [0x11; 4], [0x11; 4], [0x11; 4], [0x11; 4], //
+            [0x11; 4], [0x11; 4], [0x22; 4], [0x22; 4], //
+            [0x11; 4], [0x11; 4], [0x22; 4], [0x22; 4],
+        ]
+        .concat();
+
+        assert_eq!(expected, dest.data());
+    }
+
+    #[test]
+    #[should_panic]
+    fn set_region_out_of_bounds_x() {
+        let mut dest = filled_bitmap(4, 4, 0x11);
+        let source = filled_bitmap(2, 2, 0x22);
+        dest.set_region(&source, 3, 0);
+    }
+
+    #[test]
+    #[should_panic]
+    fn set_region_out_of_bounds_y() {
+        let mut dest = filled_bitmap(4, 4, 0x11);
+        let source = filled_bitmap(2, 2, 0x22);
+        dest.set_region(&source, 0, 3);
+    }
+
+    #[test]
+    #[should_panic]
+    fn set_region_different_formats() {
+        let mut dest = filled_bitmap(4, 4, 0x11);
+        let source = Bitmap::new(2, 2, BitmapFormat::Rgb, vec![0x22; 2 * 2 * 3]);
+        dest.set_region(&source, 0, 0);
+    }
+
+    #[test]
+    fn clear_region_zero_sized() {
+        let mut bitmap = filled_bitmap(3, 2, 0xFF);
+        bitmap.clear_region(1, 1, 0, 0);
+        assert_eq!(vec![0xFF; 3 * 2 * 4], bitmap.data());
+    }
+
+    #[test]
+    fn clear_region_full_size() {
+        let mut bitmap = filled_bitmap(3, 2, 0xFF);
+        bitmap.clear_region(0, 0, 3, 2);
+        assert_eq!(vec![0x00; 3 * 2 * 4], bitmap.data());
+    }
+
+    #[test]
+    fn clear_region_flush_with_bottom_right_edge() {
+        let mut bitmap = filled_bitmap(4, 4, 0xFF);
+
+        bitmap.clear_region(2, 2, 2, 2);
+
+        let expected: Vec<u8> = [
+            [0xFF; 4], [0xFF; 4], [0xFF; 4], [0xFF; 4], //
+            [0xFF; 4], [0xFF; 4], [0xFF; 4], [0xFF; 4], //
+            [0xFF; 4], [0xFF; 4], [0x00; 4], [0x00; 4], //
+            [0xFF; 4], [0xFF; 4], [0x00; 4], [0x00; 4],
+        ]
+        .concat();
+
+        assert_eq!(expected, bitmap.data());
+    }
+
+    #[test]
+    #[should_panic]
+    fn clear_region_out_of_bounds_x() {
+        let mut bitmap = filled_bitmap(4, 4, 0xFF);
+        bitmap.clear_region(3, 0, 2, 2);
+    }
+
+    #[test]
+    #[should_panic]
+    fn clear_region_out_of_bounds_y() {
+        let mut bitmap = filled_bitmap(4, 4, 0xFF);
+        bitmap.clear_region(0, 3, 2, 2);
+    }
 
     #[test]
     fn intersects() {
