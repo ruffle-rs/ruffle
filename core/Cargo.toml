@@ -69,7 +69,7 @@ unicode-segmentation = "1.13.3"
 id3 = "1.17.0"
 either = "1.16.0"
 chardetng = "0.1.17"
-tracy-client = { version = "0.18.2", optional = true, default-features = false }
+tracy-client = { version = "0.18.4", optional = true, default-features = false }
 itertools = "0.14.0"
 
 [target.'cfg(not(target_family = "wasm"))'.dependencies.futures]
