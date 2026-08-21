@@ -9,7 +9,7 @@
         "message": "أظهر تحميل SWF في قائمة السياق"
     },
     "settings_autostart": {
-        "message": "شغّل محتوى الفلاش تلقائيًا (إنقر لإلغاء الكتم)"
+        "message": "شغّل محتوى الفلاش تلقائيًا (انقر لإلغاء الكتم)"
     },
     "settings_swf_takeover": {
         "message": "شغّل ملفات SWF في المتصفح بدلًا من تنزيلها"
@@ -37,6 +37,12 @@
     },
     "settings_player_version": {
         "message": "إصدار فلاش للمحاكاة (من 1-32)"
+    },
+    "settings_background_execution_mode": {
+        "message": "التشغيل في الخلفية"
+    },
+    "settings_background_execution_mode_main_thread": {
+        "message": "تشغيل في الخيط الرئيسي"
     },
     "settings_preferred_renderer": {
         "message": "العارض المفضل"

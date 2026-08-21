@@ -1,5 +1,5 @@
 message-cant-embed =
-    Ruffle kunde inte köra det inbäddade Flashinnehållet på denna sida.
+    Ruffle kunde inte köra det inbäddade Flash-innehållet på denna sida.
     Du kan försöka öppna filen i en separat flik för att kringgå problemet.
 message-restored-from-bfcache =
     Din webbläsare återställde detta Flash-innehåll från en tidigare session.
@@ -14,22 +14,22 @@ ruffle-demo = Webbdemo
 ruffle-desktop = Skrivbordsprogram
 ruffle-wiki = Se Ruffle-wiki
 enable-hardware-acceleration = Det ser ut som att hårdvaruacceleration är avstängt. På grund av det kan Ruffle fungera långsamt. Du kan ta reda på hur man sätter på hårdvaruacceleration genom länken nedan:
-enable-hardware-acceleration-link = FAQ - Chrome hårdvaruacceleration
+enable-hardware-acceleration-link = FAQ – hårdvaruacceleration i Chrome
 view-error-details = Visa felinformation
 open-in-new-tab = Öppna i en ny flik
 click-to-unmute = Klicka för ljud
 clipboard-message-title = Kopierar och klistrar in i Ruffle
 clipboard-message-description =
     { $variant ->
-       *[unsupported] Din webbläsare har inte fullständig åtkomst till urklipp,
+       *[unsupported] Din webbläsare har inte fullständig åtkomst till urklippet,
         [access-denied] Urklippsåtkomst har nekats,
-    } men du kan använda dom här kortkommandon istället:
+    } men du kan använda dessa kortkommandon istället:
 clipboard-message-copy = { " " } för att kopiera
 clipboard-message-cut = { " " } för att klippa
 clipboard-message-paste = { " " } för att klistra in
-error-canvas-reload = Kan inte ladda om med canvas render:aren när den redan används.
+error-canvas-reload = Kan inte ladda om med canvas-renderaren när den redan används.
 error-file-protocol =
-    Det verkar som att du kör Ruffle på "fil:"-protokollet.
+    Det verkar som att du kör Ruffle på ”fil:”-protokollet.
     Detta fungerar inte eftersom webbläsare blockerar många funktioner från att fungera av säkerhetsskäl.
     Istället bjuder vi in dig att sätta upp en lokal server eller antingen använda webbdemon eller skrivbordsprogrammet.
 error-javascript-config =
@@ -37,12 +37,12 @@ error-javascript-config =
     Om du är serveradministratören bjuder vi in dig att kontrollera feldetaljerna för att ta reda på vilken parameter som är felaktig.
     Du kan också konsultera Ruffle-wikin för hjälp.
 error-wasm-not-found =
-    Ruffle misslyckades ladda ".wasm"-filkomponenten.
+    Ruffle misslyckades ladda ”.wasm”-filkomponenten.
     Om du är serveradministratören se till att filen har laddats upp korrekt.
-    Om problemet kvarstår kan du behöva använda inställningen "publicPath": konsultera vänligen Ruffle-wikin för hjälp.
+    Om problemet kvarstår kan du behöva använda ”publicPath”-inställningen: konsultera vänligen Ruffle-wikin för hjälp.
 error-wasm-mime-type =
-    Ruffle har stött på ett stort fel under initialiseringen.
-    Denna webbserver serverar inte ".wasm"-filer med korrekt MIME-typ.
+    Ruffle har stött på ett stort fel under initieringen.
+    Denna webbserver serverar inte ”.wasm”-filer med korrekt MIME-typ.
     Om du är serveradministratören konsultera vänligen Ruffle-wikin för hjälp.
 error-invalid-swf =
     Ruffle kan inte läsa den begärda filen.
@@ -56,37 +56,40 @@ error-swf-cors =
     Åtkomst att hämta har sannolikt blockerats av CORS-policy.
     Om du är serveradministratören konsultera vänligen Ruffle-wikin för hjälp.
 error-wasm-cors =
-    Ruffle misslyckades ladda ".wasm"-filkomponenten.
+    Ruffle misslyckades ladda ”.wasm”-filkomponenten.
     Åtkomst att hämta har sannolikt blockerats av CORS-policy.
     Om du är serveradministratören konsultera vänligen Ruffle-wikin för hjälp.
 error-wasm-invalid =
-    Ruffle har stött på ett stort fel under initialiseringen.
+    Ruffle har stött på ett stort fel under initieringen.
     Det verkar som att den här sidan har saknade eller ogiltiga filer för att köra Ruffle.
     Om du är serveradministratören konsultera vänligen Ruffle-wikin för hjälp.
 error-wasm-download =
-    Ruffle har stött på ett stort fel under initialiseringen.
+    Ruffle har stött på ett stort fel under initieringen.
     Detta kan ofta lösas av sig själv så du kan prova att ladda om sidan.
     Kontakta annars vänligen webbplatsens administratör.
 error-wasm-disabled-on-edge =
-    Ruffle misslyckades ladda ".wasm"-filkomponenten.
-    För att åtgärda detta försök att öppna webbläsarens inställningar, klicka på "Sekretess, sökning och tjänster", bläddra ner och stäng av "Förbättra säkerheten på webben".
-    Detta tillåter din webbläsare att ladda ".wasm"-filerna.
+    Ruffle misslyckades ladda ”.wasm”-filkomponenten.
+    För att åtgärda detta försök att öppna webbläsarens inställningar, klicka på ”Sekretess, sökning och tjänster”, bläddra ner och stäng av ”Förbättra säkerheten på webben”.
+    Detta tillåter din webbläsare att ladda ”.wasm”-filerna.
     Om problemet kvarstår kan du behöva använda en annan webbläsare.
 error-wasm-unsupported-browser =
     Webbläsaren du använder stöder inte de WebAssembly tilläggen som Ruffle behöver för att köra.
     Vänligen byt till en webbläsare som stöds.
     Du kan hitta en lista över webbläsare som stöds på Wikin.
 error-javascript-conflict =
-    Ruffle har stött på ett stort fel under initialiseringen.
+    Ruffle har stött på ett stort fel under initieringen.
     Det verkar som att den här sidan använder JavaScript-kod som stör Ruffle.
     Om du är serveradministratören bjuder vi in dig att försöka köra filen på en blank sida.
 error-javascript-conflict-outdated = Du kan också försöka ladda upp en nyare version av Ruffle, vilket kan kringgå problemet (nuvarande version är utdaterad: { $buildDate }).
 error-csp-conflict =
-    Ruffle har stött på ett stort fel under initialiseringen.
-    Webbserverns Content Security Policy tillåter inte ".wasm"-komponenten att köra.
+    Ruffle har stött på ett stort fel under initieringen.
+    Webbserverns Content Security Policy tillåter inte ”.wasm”-komponenten att köra.
     Om du är serveradministratören konsultera vänligen Ruffle-wikin för hjälp.
+error-url-invalid =
+    Ruffle misslyckades att ladda Flash SWF-filen.
+    Den troligaste anledningen är att en inkorrekt URL för en SWF-fil skickades till Ruffle.
 error-unknown =
-    Ruffle har stött på ett stort fel medan den försökte visa Flashinnehållet.
+    Ruffle har stött på ett stort fel medan den försökte visa Flash-innehållet.
     { $outdated ->
         [true] Om du är serveradministratören försök att ladda upp en nyare version av Ruffle (nuvarande version är utdaterad: { $buildDate }).
        *[false] Detta är inte tänkt att hända så vi skulle verkligen uppskatta om du kunde rapportera in en bugg!
