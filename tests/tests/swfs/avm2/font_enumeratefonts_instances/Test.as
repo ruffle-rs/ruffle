@@ -37,13 +37,12 @@ package {
             trace(c.length);
             trace("");
 
+            var count:int = 0;
             for (var i:int = 0; i < c.length; i++) {
-                trace("// c[" + i + "].fontName");
-                trace(c[i].fontName);
-                trace("// c[" + i + "] is TestFont");
-                trace(c[i] is TestFont);
-                trace("");
+                if (c[i] is TestFont) count++;
             }
+            trace("// TestFont instances");
+            trace(count);
         }
     }
 }

@@ -15,13 +15,5 @@ false
 // c.length
 2
 
-// c[0].fontName
-TestFont
-// c[0] is TestFont
-false
-
-// c[1].fontName
-TestFont
-// c[1] is TestFont
-true
-
+// TestFont instances
+1
