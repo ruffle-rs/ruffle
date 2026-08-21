@@ -90,6 +90,7 @@ Desktop has a few optional features which you can specify via `--features`, comm
 
 * `tracy`: Enables profiling to [Tracy](https://github.com/wolfpld/tracy). You may need to expand the log filter to see everything, e.g. `RUST_LOG="warn,ruffle=debug"`
 * `tracy_images`: Enables Tracy frame captures. Implies `tracy`.
+* `tracy_avm`: Enables profiling AVM execution with Tracy. Implies `tracy`.
 * `render_debug_labels`: Enables debug labels during rendering, useful for debugging graphics with [renderdoc](https://renderdoc.org/) or similar.
 
 #### macOS
