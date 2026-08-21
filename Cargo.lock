@@ -2344,6 +2344,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "guillotiere"
+version = "0.7.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6b17e70c989c36bad147b27a58d148c0741c51448aa5653436547323e524d0ab"
+dependencies = [
+ "euclid",
+]
+
+[[package]]
 name = "h2"
 version = "0.4.16"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4964,6 +4973,7 @@ dependencies = [
  "enum-map",
  "flate2",
  "gif",
+ "guillotiere",
  "h263-rs-yuv",
  "image",
  "indexmap",
