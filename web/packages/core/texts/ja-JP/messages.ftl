@@ -84,6 +84,9 @@ error-csp-conflict =
     Ruffleの初期化時に重大な問題が発生しました。
     このWebサーバーのコンテンツセキュリティポリシーが実行に必要となる「.wasm」コンポーネントの実行を許可していません。
     サーバーの管理者は、Ruffleのwikiを参照してください。
+error-url-invalid =
+    RuffleはSWFファイルの読み込みに失敗しました。
+    Ruffleに渡されたURLが無効であることが原因かもしれません。
 error-unknown =
     Flashコンテンツを表示する際にRuffleで問題が発生しました。
     { $outdated ->
