@@ -650,10 +650,16 @@ impl<'gc> RenderContext<'_, 'gc> {
 #[collect(no_drop)]
 pub enum ActionType<'gc> {
     /// Normal frame or event actions.
-    Normal { bytecode: SwfSlice },
+    Normal {
+        bytecode: SwfSlice,
+        name: &'static str,
+    },
 
     /// AVM1 initialize clip event.
-    Initialize { bytecode: SwfSlice },
+    Initialize {
+        bytecode: SwfSlice,
+        name: &'static str,
+    },
 
     /// Construct a movie with a custom class or on(construct) events.
     Construct {
@@ -689,13 +695,15 @@ impl ActionType<'_> {
 impl fmt::Debug for ActionType<'_> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            ActionType::Normal { bytecode } => f
+            ActionType::Normal { bytecode, name } => f
                 .debug_struct("ActionType::Normal")
                 .field("bytecode", bytecode)
+                .field("name", name)
                 .finish(),
-            ActionType::Initialize { bytecode } => f
+            ActionType::Initialize { bytecode, name } => f
                 .debug_struct("ActionType::Initialize")
                 .field("bytecode", bytecode)
+                .field("name", name)
                 .finish(),
             ActionType::Construct {
                 constructor,

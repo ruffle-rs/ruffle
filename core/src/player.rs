@@ -2162,8 +2162,9 @@ impl Player {
 
             match action.action_type {
                 // DoAction/clip event code.
-                ActionType::Normal { bytecode } | ActionType::Initialize { bytecode } => {
-                    Avm1::run_stack_frame_for_action(action.clip, "[Frame]", bytecode, context);
+                ActionType::Normal { bytecode, name }
+                | ActionType::Initialize { bytecode, name } => {
+                    Avm1::run_stack_frame_for_action(action.clip, name, bytecode, context);
                 }
                 // Change the prototype of a MovieClip and run constructor events.
                 ActionType::Construct {

@@ -612,6 +612,7 @@ impl<'gc> Avm1ButtonData<'gc> {
                         parent,
                         ActionType::Normal {
                             bytecode: action.action_data.clone(),
+                            name: "[Button event]",
                         },
                         false,
                     );
