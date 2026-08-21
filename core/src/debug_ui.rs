@@ -97,7 +97,7 @@ impl DebugUi {
 
         self.fonts.retain(|font, window| {
             let font = font.fetch(context.dynamic_root);
-            window.show(egui_ctx, font)
+            window.show(egui_ctx, font, &mut messages)
         });
 
         if let Some(mut movie_list) = self.movie_list.take()

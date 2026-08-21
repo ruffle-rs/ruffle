@@ -135,6 +135,14 @@ impl FontFace {
         })
     }
 
+    pub fn font_index(&self) -> u32 {
+        self.font_index
+    }
+
+    pub fn data(&self) -> &[u8] {
+        &self.data
+    }
+
     pub fn metrics(&self) -> FontMetrics {
         FontMetrics {
             scale: self.scale,
