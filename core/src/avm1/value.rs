@@ -1034,7 +1034,6 @@ mod test {
     }
 
     #[test]
-    #[expect(clippy::float_cmp)]
     fn to_number_swf7() {
         with_avm(7, |activation, _this| -> Result<(), Error> {
             let t = Value::Bool(true);
@@ -1056,7 +1055,6 @@ mod test {
     }
 
     #[test]
-    #[expect(clippy::float_cmp)]
     fn to_number_swf6() {
         with_avm(6, |activation, _this| -> Result<(), Error> {
             let t = Value::Bool(true);
