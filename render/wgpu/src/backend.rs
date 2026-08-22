@@ -51,14 +51,19 @@ use wgpu::SubmissionIndex;
 pub fn create_wgpu_instance(
     backends: wgpu::Backends,
     backend_options: wgpu::BackendOptions,
+    display: Option<Box<dyn wgpu::wgt::WgpuHasDisplayHandle>>,
 ) -> wgpu::Instance {
-    wgpu::Instance::new(&wgpu::InstanceDescriptor {
+    let descriptor = match display {
+        Some(display) => wgpu::InstanceDescriptor::new_with_display_handle(display),
+        None => wgpu::InstanceDescriptor::new_without_display_handle(),
+    };
+    wgpu::Instance::new(wgpu::InstanceDescriptor {
         backends,
         flags: wgpu::InstanceFlags::default()
             .difference(wgpu::InstanceFlags::VALIDATION_INDIRECT_CALL)
             .with_env(),
         backend_options,
-        ..Default::default()
+        ..descriptor
     })
 }
 
@@ -99,6 +104,7 @@ impl WgpuRenderBackend<SwapChainTarget> {
                 },
                 ..Default::default()
             },
+            None,
         );
         let surface = instance.create_surface(wgpu::SurfaceTarget::Canvas(canvas))?;
         let (adapter, device, queue) = request_adapter_and_device(
@@ -116,12 +122,20 @@ impl WgpuRenderBackend<SwapChainTarget> {
 
     /// # Safety
     ///  See [`wgpu::SurfaceTargetUnsafe`] variants for safety requirements.
+    ///
+    /// Since wgpu 29, a display handle is needed at instance creation time:
+    /// pass one via `display`, or make sure the `window` target carries a raw
+    /// display handle (note that `SurfaceTargetUnsafe::from_window` does not
+    /// provide one). Prefer passing `display` - some backends (e.g. GL via
+    /// EGL) select their platform when the instance is created, before the
+    /// target's display handle is seen.
     #[cfg(not(target_family = "wasm"))]
     pub unsafe fn for_window_unsafe(
         window: wgpu::SurfaceTargetUnsafe,
         size: (u32, u32),
         backend: wgpu::Backends,
         power_preference: wgpu::PowerPreference,
+        display: Option<Box<dyn wgpu::wgt::WgpuHasDisplayHandle>>,
     ) -> Result<Self, Error> {
         if wgpu::Backends::SECONDARY.contains(backend) {
             tracing::warn!(
@@ -129,7 +143,7 @@ impl WgpuRenderBackend<SwapChainTarget> {
                 format_list(&get_backend_names(backend), "and")
             );
         }
-        let instance = create_wgpu_instance(backend, wgpu::BackendOptions::default());
+        let instance = create_wgpu_instance(backend, wgpu::BackendOptions::default(), display);
         let surface = unsafe { instance.create_surface_unsafe(window)? };
         let (adapter, device, queue) = futures::executor::block_on(request_adapter_and_device(
             backend,
@@ -171,7 +185,7 @@ impl WgpuRenderBackend<crate::target::TextureTarget> {
                 format_list(&get_backend_names(backend), "and")
             );
         }
-        let instance = create_wgpu_instance(backend, wgpu::BackendOptions::default());
+        let instance = create_wgpu_instance(backend, wgpu::BackendOptions::default(), None);
         let (adapter, device, queue) = futures::executor::block_on(request_adapter_and_device(
             backend,
             &instance,
@@ -515,18 +529,14 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
         commands: CommandList,
         cache_entries: Vec<BitmapCacheEntry>,
     ) {
-        let frame_output = match self.target.get_next_texture() {
-            Ok(frame) => frame,
-            Err(e) => {
-                tracing::warn!("Couldn't begin new render frame: {}", e);
-                // Attempt to recreate the swap chain in this case.
-                self.target.resize(
-                    &self.descriptors.device,
-                    self.target.width(),
-                    self.target.height(),
-                );
-                return;
-            }
+        let Some(frame_output) = self.target.get_next_texture() else {
+            // Attempt to recreate the swap chain in this case.
+            self.target.resize(
+                &self.descriptors.device,
+                self.target.width(),
+                self.target.height(),
+            );
+            return;
         };
 
         for entry in cache_entries {
@@ -1140,6 +1150,7 @@ pub async fn request_adapter_and_device(
         power_preference,
         compatible_surface: surface,
         force_fallback_adapter: false,
+        apply_limit_buckets: false,
     }).await
         .map_err(|_e| {
             let names = get_backend_names(backend);
@@ -1167,7 +1178,7 @@ async fn request_device(
     limits = limits.using_resolution(adapter.limits());
     limits = limits.using_alignment(adapter.limits());
     limits.max_uniform_buffer_binding_size = adapter.limits().max_uniform_buffer_binding_size;
-    limits.max_inter_stage_shader_components = adapter.limits().max_inter_stage_shader_components;
+    limits.max_inter_stage_shader_variables = adapter.limits().max_inter_stage_shader_variables;
     // This will be a default limit in a future wgpu version (down from 8).
     // It's required for some WebGL devices to be supported.
     limits.max_color_attachments = 4;
@@ -1239,7 +1250,7 @@ impl ActiveFrame {
             command_encoder: descriptors
                 .device
                 .create_command_encoder(&Default::default()),
-            staging_belt: wgpu::util::StagingBelt::new(65536),
+            staging_belt: wgpu::util::StagingBelt::new(descriptors.device.clone(), 65536),
             draws_since_flush: 0,
         }
     }
