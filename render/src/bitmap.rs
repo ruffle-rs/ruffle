@@ -511,10 +511,20 @@ impl PixelRegion {
     }
 
     pub fn intersects(&self, other: PixelRegion) -> bool {
-        self.x_min <= other.x_max
-            && self.x_max >= other.x_min
-            && self.y_min <= other.y_max
-            && self.y_max >= other.y_min
+        // An empty region contains no pixels, and so never intersects anything,
+        // even another region it's positioned inside of.
+        if self.is_empty() || other.is_empty() {
+            return false;
+        }
+
+        self.x_min < other.x_max
+            && self.x_max > other.x_min
+            && self.y_min < other.y_max
+            && self.y_max > other.y_min
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.x_min >= self.x_max || self.y_min >= self.y_max
     }
 
     pub fn width(&self) -> u32 {
@@ -611,6 +621,83 @@ impl From<Rectangle<Twips>> for PixelRegion {
 #[cfg(test)]
 mod test {
     use super::PixelRegion;
+
+    #[test]
+    fn intersects() {
+        fn region(x: u32, y: u32, width: u32, height: u32) -> PixelRegion {
+            PixelRegion::for_region(x, y, width, height)
+        }
+
+        fn test(a: PixelRegion, b: PixelRegion, expected: bool) {
+            assert_eq!(
+                expected,
+                a.intersects(b),
+                "a.intersects(b) should be {expected} for a={a:?}, b={b:?}"
+            );
+            assert_eq!(
+                expected,
+                b.intersects(a),
+                "intersects should be symmetric for a={a:?}, b={b:?}"
+            );
+        }
+
+        // Identical regions overlap.
+        test(region(0, 0, 10, 10), region(0, 0, 10, 10), true);
+
+        // A region always intersects itself.
+        test(region(3, 4, 5, 6), region(3, 4, 5, 6), true);
+
+        // Partial overlap on both axes.
+        test(region(0, 0, 10, 10), region(5, 5, 10, 10), true);
+
+        // One region fully contains the other.
+        test(region(0, 0, 10, 10), region(2, 2, 2, 2), true);
+
+        // Overlapping on the x axis, but not the y axis.
+        test(region(0, 0, 10, 10), region(5, 20, 10, 10), false);
+
+        // Overlapping on the y axis, but not the x axis.
+        test(region(0, 0, 10, 10), region(20, 5, 10, 10), false);
+
+        // Completely separate on both axes.
+        test(region(0, 0, 10, 10), region(20, 20, 10, 10), false);
+
+        // Touching edges (exclusive max bound) do not count as intersecting.
+        test(region(0, 0, 10, 10), region(10, 0, 10, 10), false);
+        test(region(0, 0, 10, 10), region(0, 10, 10, 10), false);
+        test(region(0, 0, 10, 10), region(10, 10, 10, 10), false);
+
+        // A single pixel gap between regions.
+        test(region(0, 0, 10, 10), region(11, 0, 10, 10), false);
+
+        // A single row/column of overlap counts as intersecting.
+        test(region(0, 0, 10, 10), region(9, 0, 10, 10), true);
+        test(region(0, 0, 10, 10), region(0, 9, 10, 10), true);
+
+        // Single-pixel regions.
+        test(
+            PixelRegion::for_pixel(5, 5),
+            PixelRegion::for_pixel(5, 5),
+            true,
+        );
+        test(
+            PixelRegion::for_pixel(5, 5),
+            PixelRegion::for_pixel(6, 5),
+            false,
+        );
+        test(
+            PixelRegion::for_pixel(5, 5),
+            PixelRegion::for_pixel(4, 5),
+            false,
+        );
+
+        // Zero-sized (empty) regions never intersect anything, even themselves
+        // or regions they're placed inside of.
+        test(region(0, 0, 0, 0), region(0, 0, 0, 0), false);
+        test(region(5, 5, 0, 0), region(0, 0, 10, 10), false);
+        test(region(0, 0, 10, 0), region(0, 0, 10, 10), false);
+        test(region(0, 0, 0, 10), region(0, 0, 10, 10), false);
+    }
 
     #[test]
     fn clamp_with_intersection() {
