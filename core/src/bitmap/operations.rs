@@ -1383,7 +1383,7 @@ fn copy_on_cpu<'gc>(
                     // above, so the dest is opaque here.
                     debug_assert!(opaque);
                     for (dest, src) in dest_row.iter_mut().zip(src_row) {
-                        *dest = src.with_alpha(255);
+                        *dest = src.to_un_multiplied_alpha().with_alpha(255);
                     }
                 }
             }
