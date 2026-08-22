@@ -17,7 +17,7 @@ egui = { workspace = true }
 egui_extras = { workspace = true, default-features = false, features = ["image"] }
 egui-wgpu = { workspace = true, features = ["winit"] }
 image = { workspace = true, features = ["png"] }
-egui-winit = "0.36.1"
+egui-winit = { workspace = true }
 fontdb = "0.23"
 ruffle_core = { path = "../core", features = ["audio", "clap", "mp3", "aac", "nellymoser", "default_compatibility_rules", "egui"] }
 ruffle_render = { path = "../render", features = ["clap"] }
