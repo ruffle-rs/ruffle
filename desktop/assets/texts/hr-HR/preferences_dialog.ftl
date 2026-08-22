@@ -35,3 +35,4 @@ ime-enabled = Način unosa
 ime-enabled-experimental = (eksperimentalno)
 ime-enabled-tooltip = Metoda unosa omogućuje unos znakova koji nisu dostupni na tipkovnici, na primjer kineskih, japanskih ili korejskih znakova.
 ime-enabled-default = Zadano
+device-font-renderer-default = Zadano

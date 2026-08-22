@@ -73,9 +73,9 @@ error-wasm-disabled-on-edge =
     Detta tillåter din webbläsare att ladda ”.wasm”-filerna.
     Om problemet kvarstår kan du behöva använda en annan webbläsare.
 error-wasm-unsupported-browser =
-    Webbläsaren du använder stöder inte de WebAssembly tilläggen som Ruffle behöver för att köra.
+    Webbläsaren du använder stöder inte de WebAssembly tilläggen som Ruffle behöver för att köras.
     Vänligen byt till en webbläsare som stöds.
-    Du kan hitta en lista över webbläsare som stöds på Wikin.
+    Du kan hitta en lista över webbläsare som stöds på wikin.
 error-javascript-conflict =
     Ruffle har stött på ett stort fel under initieringen.
     Det verkar som att den här sidan använder JavaScript-kod som stör Ruffle.
