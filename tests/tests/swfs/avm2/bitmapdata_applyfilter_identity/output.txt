@@ -1,0 +1,4 @@
+src: ffff0000 8000ff00 400000ff 0
+to opaque: ffff0000 ff00ff00 ff0000ff ff000000
+to transparent: ffff0000 8000ff00 400000ff 0
+done
