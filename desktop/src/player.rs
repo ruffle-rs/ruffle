@@ -358,33 +358,42 @@ impl ActivePlayer {
                 Box::new(on_metadata),
             );
 
-            player_lock.set_default_font(
-                DefaultFont::Serif,
-                vec![
-                    "Times New Roman".into(),
-                    "Tinos".into(),
-                    "Liberation Serif".into(),
-                    "DejaVu Serif".into(),
-                ],
-            );
-            player_lock.set_default_font(
-                DefaultFont::Sans,
-                vec![
-                    "Arial".into(),
-                    "Arimo".into(),
-                    "Liberation Sans".into(),
-                    "DejaVu Sans".into(),
-                ],
-            );
-            player_lock.set_default_font(
-                DefaultFont::Typewriter,
-                vec![
-                    "Courier New".into(),
-                    "Cousine".into(),
-                    "Liberation Mono".into(),
-                    "DejaVu Sans Mono".into(),
-                ],
-            );
+            // On Windows, put CJK-capable system fonts first so that text rendered
+            // with the `_sans`/`_serif`/`_typewriter` device font aliases can
+            // display CJK glyphs. This mirrors native Flash Player behavior on
+            // a Chinese Windows installation (SimSun / Microsoft YaHei), and is
+            // a no-op on other platforms. The core resolves a default font to
+            // the *first* name found in the system, so appending CJK fonts at
+            // the end would have no effect.
+            let mut serif = vec![
+                "Times New Roman".into(),
+                "Tinos".into(),
+                "Liberation Serif".into(),
+                "DejaVu Serif".into(),
+            ];
+            #[cfg(target_os = "windows")]
+            serif.insert(0, "SimSun".into());
+            player_lock.set_default_font(DefaultFont::Serif, serif);
+
+            let mut sans = vec![
+                "Arial".into(),
+                "Arimo".into(),
+                "Liberation Sans".into(),
+                "DejaVu Sans".into(),
+            ];
+            #[cfg(target_os = "windows")]
+            sans.insert(0, "Microsoft YaHei".into());
+            player_lock.set_default_font(DefaultFont::Sans, sans);
+
+            let mut typewriter = vec![
+                "Courier New".into(),
+                "Cousine".into(),
+                "Liberation Mono".into(),
+                "DejaVu Sans Mono".into(),
+            ];
+            #[cfg(target_os = "windows")]
+            typewriter.insert(0, "NSimSun".into());
+            player_lock.set_default_font(DefaultFont::Typewriter, typewriter);
             player_lock.set_default_font(
                 DefaultFont::JapaneseGothic,
                 vec![
