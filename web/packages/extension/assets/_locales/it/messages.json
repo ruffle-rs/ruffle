@@ -44,6 +44,9 @@
     "settings_background_execution_mode_none": {
         "message": "Pausa"
     },
+    "settings_background_execution_mode_main_thread": {
+        "message": "Esegui nel processo principale"
+    },
     "settings_preferred_renderer": {
         "message": "Renderer preferito"
     },

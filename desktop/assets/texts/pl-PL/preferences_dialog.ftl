@@ -38,5 +38,5 @@ ime-enabled-default = Domyślna
 device-font-renderer = Renderer czcionek urządzenia
 device-font-renderer-tooltip = Wybiera backend używany do renderowania czcionek urządzenia.
 device-font-renderer-default = Domyślny
-device-font-renderer-embedded = Osadzony
+device-font-renderer-embedded = Wbudowany
 device-font-renderer-freetype = FreeType

@@ -39,3 +39,4 @@ device-font-renderer = 장치 글꼴 렌더러
 device-font-renderer-tooltip = 장치 글꼴을 렌더링하는 데 사용되는 백엔드를 선택합니다.
 device-font-renderer-default = 기본값
 device-font-renderer-embedded = 임베디드
+device-font-renderer-freetype = 프리타입
