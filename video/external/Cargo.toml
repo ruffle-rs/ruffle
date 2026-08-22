@@ -35,8 +35,9 @@ workspace = true
 optional = true
 features = [
     "CodecState", "DomException", "DomRectReadOnly", "EncodedVideoChunk",
-    "EncodedVideoChunkInit", "EncodedVideoChunkType", "PlaneLayout", "VideoDecoder",
-    "VideoDecoderConfig", "VideoDecoderInit", "VideoFrame", "VideoPixelFormat",
+    "EncodedVideoChunkInit", "EncodedVideoChunkType", "HardwareAcceleration",
+    "PlaneLayout", "VideoDecoder", "VideoDecoderConfig", "VideoDecoderInit",
+    "VideoFrame", "VideoPixelFormat",
 ]
 
 [features]
