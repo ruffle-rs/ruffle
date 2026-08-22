@@ -14,7 +14,7 @@ workspace = true
 clap = { workspace = true }
 cpal = { workspace = true }
 egui = { workspace = true }
-egui_extras = { version = "0.36.1", default-features = false, features = ["image"] }
+egui_extras = { workspace = true, default-features = false, features = ["image"] }
 egui-wgpu = { version = "0.36.1", features = ["winit"] }
 image = { workspace = true, features = ["png"] }
 egui-winit = "0.36.1"
