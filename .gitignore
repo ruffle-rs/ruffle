@@ -14,6 +14,9 @@ RECOVER_*.fla
 # Jetbrains tools (CLion, IntelliJ, etc)
 /.idea
 
+# VS Code settings
+/.vscode
+
 # Mac junk
 .DS_Store
 
