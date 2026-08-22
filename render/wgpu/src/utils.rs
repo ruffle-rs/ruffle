@@ -147,7 +147,9 @@ pub fn capture_image<R, F: FnOnce(&[u8], u32) -> R>(
         })
         .expect("Device must not fail to poll");
     let _ = receiver.recv().expect("MPSC channel must not fail");
-    let map = buffer_slice.get_mapped_range();
+    let map = buffer_slice
+        .get_mapped_range()
+        .expect("Buffer slice must be mappable");
     let result = with_rgba(&map, dimensions.padded_bytes_per_row);
     drop(map);
     buffer.unmap();
