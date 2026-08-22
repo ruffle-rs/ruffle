@@ -11,34 +11,22 @@ pub fn stub_method<'gc>(
     _this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    match args {
-        [class, method] => {
-            let class = class.coerce_to_string(activation)?;
-            let method = method.coerce_to_string(activation)?;
-            activation
-                .context
-                .stub_tracker
-                .encounter(&Stub::Avm2Method {
-                    class: Cow::Owned(class.to_utf8_lossy().to_string()),
-                    method: Cow::Owned(method.to_utf8_lossy().to_string()),
-                    specifics: None,
-                });
-        }
-        [class, method, specifics] => {
-            let class = class.coerce_to_string(activation)?;
-            let method = method.coerce_to_string(activation)?;
-            let specifics = specifics.coerce_to_string(activation)?;
-            activation
-                .context
-                .stub_tracker
-                .encounter(&Stub::Avm2Method {
-                    class: Cow::Owned(class.to_utf8_lossy().to_string()),
-                    method: Cow::Owned(method.to_utf8_lossy().to_string()),
-                    specifics: Some(Cow::Owned(specifics.to_utf8_lossy().to_string())),
-                });
-        }
-        _ => tracing::warn!("(__ruffle__.stub_method called with wrong args)"),
-    }
+    let class = args.get_string(activation, 0);
+    let method = args.get_string(activation, 1);
+    let specifics = args.try_get_string(2);
+
+    let class = Cow::Owned(class.to_utf8_lossy().to_string());
+    let method = Cow::Owned(method.to_utf8_lossy().to_string());
+    let specifics = specifics.map(|s| Cow::Owned(s.to_utf8_lossy().to_string()));
+
+    activation
+        .context
+        .stub_tracker
+        .encounter(&Stub::Avm2Method {
+            class,
+            method,
+            specifics,
+        });
 
     Ok(Value::Undefined)
 }
@@ -48,20 +36,16 @@ pub fn stub_getter<'gc>(
     _this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    match args {
-        [class, property] => {
-            let class = class.coerce_to_string(activation)?;
-            let property = property.coerce_to_string(activation)?;
-            activation
-                .context
-                .stub_tracker
-                .encounter(&Stub::Avm2Getter {
-                    class: Cow::Owned(class.to_utf8_lossy().to_string()),
-                    property: Cow::Owned(property.to_utf8_lossy().to_string()),
-                });
-        }
-        _ => tracing::warn!("(__ruffle__.stub_getter called with wrong args)"),
-    }
+    let class = args.get_string(activation, 0);
+    let property = args.get_string(activation, 1);
+
+    let class = Cow::Owned(class.to_utf8_lossy().to_string());
+    let property = Cow::Owned(property.to_utf8_lossy().to_string());
+
+    activation
+        .context
+        .stub_tracker
+        .encounter(&Stub::Avm2Getter { class, property });
 
     Ok(Value::Undefined)
 }
@@ -71,20 +55,16 @@ pub fn stub_setter<'gc>(
     _this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    match args {
-        [class, property] => {
-            let class = class.coerce_to_string(activation)?;
-            let property = property.coerce_to_string(activation)?;
-            activation
-                .context
-                .stub_tracker
-                .encounter(&Stub::Avm2Setter {
-                    class: Cow::Owned(class.to_utf8_lossy().to_string()),
-                    property: Cow::Owned(property.to_utf8_lossy().to_string()),
-                });
-        }
-        _ => tracing::warn!("(__ruffle__.stub_setter called with wrong args)"),
-    }
+    let class = args.get_string(activation, 0);
+    let property = args.get_string(activation, 1);
+
+    let class = Cow::Owned(class.to_utf8_lossy().to_string());
+    let property = Cow::Owned(property.to_utf8_lossy().to_string());
+
+    activation
+        .context
+        .stub_tracker
+        .encounter(&Stub::Avm2Setter { class, property });
 
     Ok(Value::Undefined)
 }
@@ -94,30 +74,16 @@ pub fn stub_constructor<'gc>(
     _this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    match args {
-        [class] => {
-            let class = class.coerce_to_string(activation)?;
-            activation
-                .context
-                .stub_tracker
-                .encounter(&Stub::Avm2Constructor {
-                    class: Cow::Owned(class.to_utf8_lossy().to_string()),
-                    specifics: None,
-                });
-        }
-        [class, specifics] => {
-            let class = class.coerce_to_string(activation)?;
-            let specifics = specifics.coerce_to_string(activation)?;
-            activation
-                .context
-                .stub_tracker
-                .encounter(&Stub::Avm2Constructor {
-                    class: Cow::Owned(class.to_utf8_lossy().to_string()),
-                    specifics: Some(Cow::Owned(specifics.to_utf8_lossy().to_string())),
-                });
-        }
-        _ => tracing::warn!("(__ruffle__.stub_constructor called with wrong args)"),
-    }
+    let class = args.get_string(activation, 0);
+    let specifics = args.try_get_string(1);
+
+    let class = Cow::Owned(class.to_utf8_lossy().to_string());
+    let specifics = specifics.map(|s| Cow::Owned(s.to_utf8_lossy().to_string()));
+
+    activation
+        .context
+        .stub_tracker
+        .encounter(&Stub::Avm2Constructor { class, specifics });
 
     Ok(Value::Undefined)
 }
@@ -127,23 +93,13 @@ pub fn log_warn<'gc>(
     _this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    match args {
-        [] => tracing::warn!("(__ruffle__.log_warn called with no arg)"),
-        [arg] => {
-            let msg = arg.coerce_to_string(activation)?;
-            let msg = msg.to_utf8_lossy();
-            tracing::warn!("{}", &msg);
-        }
-        args => {
-            let strings = args
-                .iter()
-                .map(|a| a.coerce_to_string(activation))
-                .collect::<Result<Vec<_>, _>>()?;
-            let msg = crate::string::join(&strings, &WStr::from_units(b" "));
-            let msg = msg.to_utf8_lossy();
-            tracing::warn!("{}", &msg);
-        }
-    }
+    let strings = args
+        .iter()
+        .map(|a| a.coerce_to_string(activation))
+        .collect::<Result<Vec<_>, _>>()?;
+    let msg = crate::string::join(&strings, &WStr::from_units(b" "));
+    let msg = msg.to_utf8_lossy();
+    tracing::warn!("{}", &msg);
 
     Ok(Value::Undefined)
 }
