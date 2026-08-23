@@ -1,5 +1,5 @@
 use crate::avm2::bytearray::ByteArrayStorage;
-use crate::avm2::error::{make_error_2037, make_error_2097, make_error_2174};
+use crate::avm2::error::{make_error_2007, make_error_2037, make_error_2097, make_error_2174};
 use crate::avm2::globals::slots::flash_net_file_filter as file_filter_slots;
 use crate::avm2::object::{ByteArrayObject, DateObject, FileReference};
 use crate::avm2::parameters::ParametersExt;
@@ -280,4 +280,56 @@ pub fn save_internal<'gc>(
     }
 
     Ok(Value::Undefined)
+}
+
+pub fn download_internal<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Value<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
+    let this = this.as_file_reference().unwrap();
+
+    let url_request = args
+        .try_get_object(0)
+        .ok_or_else(|| make_error_2007(activation, "request"))?;
+
+    // Build the platform request, honoring the URLRequest's method, headers and
+    // data exactly like `Loader.load`/`URLLoader.load` do.
+    let request = crate::avm2::globals::flash::display::loader::request_from_url_request(
+        activation,
+        url_request,
+    )?;
+
+    // An empty default file name means "derive it from the request URL".
+    let file_name = match args.try_get_string(1) {
+        Some(name) if !name.is_empty() => name.to_string(),
+        _ => default_download_file_name(request.url()),
+    };
+
+    // Create and spawn dialog
+    let dialog = activation.context.ui.display_file_save_dialog(
+        file_name.clone(),
+        format!("Select location for download of {file_name}"),
+    );
+
+    match dialog {
+        Some(dialog) => {
+            let process =
+                crate::loader::download_file_dialog_avm2(activation.context, this, dialog, request);
+
+            activation.context.navigator.spawn_future(process);
+        }
+        None => return Err(make_error_2174(activation)),
+    }
+
+    Ok(Value::Undefined)
+}
+
+/// Derive a default download file name from a URL: the final path segment,
+/// excluding any query string or fragment.
+fn default_download_file_name(url: &str) -> String {
+    let path = url.split(['?', '#']).next().unwrap_or(url);
+    path.rsplit('/').next().unwrap_or_default().to_string()
 }
