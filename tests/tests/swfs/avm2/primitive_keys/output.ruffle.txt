@@ -1,0 +1,54 @@
+Using dictionary
+key = -3 (typeof key = string) val = int: Negative 3
+key = 1 (typeof key = number) val = 1-int
+key = 2 (typeof key = number) val = 2-int
+key = 2.5 (typeof key = string) val = 2.5-float
+key = 2147483646 (typeof key = number) val = intmax-1-number
+key = 2147483647 (typeof key = number) val = intmax-number
+key = 268435455 (typeof key = number) val = 2^28-1-number
+key = 268435456 (typeof key = number) val = 2^28-number
+key = 4294967294 (typeof key = number) val = uintmax-1-number
+key = 4294967295 (typeof key = number) val = uintmax-number
+key = false (typeof key = string) val = false-bool
+key = true (typeof key = string) val = true-bool
+After update:
+key = -3 (typeof key = string) val = String: Negative 3
+key = 1 (typeof key = number) val = 1-string
+key = 2 (typeof key = number) val = 2-int
+key = 2.5 (typeof key = string) val = 2.5-string
+key = 2147483646 (typeof key = number) val = intmax-1-number
+key = 2147483647 (typeof key = number) val = intmax-1-string
+key = 2147483648 (typeof key = number) val = intmax-string
+key = 268435455 (typeof key = number) val = 2^28-1-string
+key = 268435456 (typeof key = number) val = 2^28-string
+key = 4294967294 (typeof key = number) val = uintmax-1-string
+key = 4294967295 (typeof key = number) val = uintmax-string
+key = false (typeof key = string) val = false-bool
+key = true (typeof key = string) val = true-string
+
+Using Object
+key = -3 (typeof key = string) val = int: Negative 3
+key = 1 (typeof key = number) val = 1-int
+key = 2 (typeof key = number) val = 2-int
+key = 2.5 (typeof key = string) val = 2.5-float
+key = 2147483646 (typeof key = number) val = intmax-1-number
+key = 2147483647 (typeof key = number) val = intmax-number
+key = 268435455 (typeof key = number) val = 2^28-1-number
+key = 268435456 (typeof key = number) val = 2^28-number
+key = 4294967294 (typeof key = number) val = uintmax-1-number
+key = 4294967295 (typeof key = number) val = uintmax-number
+key = false (typeof key = string) val = false-bool
+key = true (typeof key = string) val = true-bool
+After update:
+key = -3 (typeof key = string) val = String: Negative 3
+key = 1 (typeof key = number) val = 1-string
+key = 2 (typeof key = number) val = 2-int
+key = 2.5 (typeof key = string) val = 2.5-string
+key = 2147483646 (typeof key = number) val = intmax-1-string
+key = 2147483647 (typeof key = number) val = intmax-string
+key = 268435455 (typeof key = number) val = 2^28-1-string
+key = 268435456 (typeof key = number) val = 2^28-string
+key = 4294967294 (typeof key = number) val = uintmax-1-string
+key = 4294967295 (typeof key = number) val = uintmax-string
+key = false (typeof key = string) val = false-bool
+key = true (typeof key = string) val = true-string
