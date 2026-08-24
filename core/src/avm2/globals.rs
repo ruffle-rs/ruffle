@@ -180,6 +180,15 @@ pub struct SystemClasses<'gc> {
     pub workerdomain: ClassObject<'gc>,
     pub messagechannel: ClassObject<'gc>,
     pub securitydomain: ClassObject<'gc>,
+    pub graphicsbitmapfill: ClassObject<'gc>,
+    pub graphicsendfill: ClassObject<'gc>,
+    pub graphicsgradientfill: ClassObject<'gc>,
+    pub graphicspath: ClassObject<'gc>,
+    pub graphicstrianglepath: ClassObject<'gc>,
+    pub graphicssolidfill: ClassObject<'gc>,
+    pub graphicsshaderfill: ClassObject<'gc>,
+    pub graphicsstroke: ClassObject<'gc>,
+
 }
 
 #[derive(Clone, Collect)]
@@ -360,6 +369,14 @@ impl<'gc> SystemClasses<'gc> {
             workerdomain: object,
             messagechannel: object,
             securitydomain: object,
+            graphicsbitmapfill: object,
+            graphicsendfill: object,
+            graphicsgradientfill: object,
+            graphicspath: object,
+            graphicstrianglepath: object,
+            graphicssolidfill: object,
+            graphicsshaderfill: object,
+            graphicsstroke: object,
         }
     }
 }
@@ -689,6 +706,21 @@ pub fn init_native_system_classes(activation: &mut Activation<'_, '_>) {
             ("flash.display", "Scene", scene),
             ("flash.display", "FrameLabel", framelabel),
             ("flash.display", "Graphics", graphics),
+            ("flash.display", "GraphicsBitmapFill", graphicsbitmapfill),
+            ("flash.display", "GraphicsEndFill", graphicsendfill),
+            (
+                "flash.display",
+                "GraphicsGradientFill",
+                graphicsgradientfill
+            ),
+            ("flash.display", "GraphicsPath", graphicspath),
+            (
+                "flash.display",
+                "GraphicsTrianglePath",
+                graphicstrianglepath
+            ),
+            ("flash.display", "GraphicsSolidFill", graphicssolidfill),
+            ("flash.display", "GraphicsStroke", graphicsstroke),
             ("flash.display", "Loader", loader),
             ("flash.display", "LoaderInfo", loaderinfo),
             ("flash.display", "MorphShape", morphshape),
