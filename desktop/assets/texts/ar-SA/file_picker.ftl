@@ -1,7 +1,10 @@
 file-picker-title-open-file = إفتح ملفًا واحدًا
+file-picker-title-open-directory = إفتح مجلدًا
 file-picker-filter-supported = كل الملفات المدعومة
 file-picker-filter-swf = ملف SWF (*.swf)
 file-picker-filter-spl = ملف FutureSplash (*.spl)
 file-picker-filter-ruf = حزم رفل (*.ruf)
 file-picker-filter-all = كل الملفات
+file-picker-select-root-movie-title = تحديد الفيلم الرئيسي
+file-picker-select-root-movie-message = تحديد الفيلم الرئيسي من الدليل المفتوح.
 file-picker-select-root-movie-select = تحديد
