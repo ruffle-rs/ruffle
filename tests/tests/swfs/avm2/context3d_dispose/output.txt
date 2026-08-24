@@ -1,0 +1,3 @@
+context3DCreate #1
+context3DCreate #2
+context3D after dispose(false): null

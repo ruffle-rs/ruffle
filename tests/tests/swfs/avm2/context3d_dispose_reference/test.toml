@@ -1,0 +1,12 @@
+num_ticks = 5
+known_failure = true
+
+[player_options]
+with_renderer = { optional = false, quality = "high" }
+
+[[compilers]]
+type = "Asc"
+target = "test.swf"
+class = "Test"
+scripts = ["Test.as"]
+swf_version = 43
