@@ -1,4 +1,9 @@
+export-bundle-dialog-bundle-name = اسم حُزْمَة الملفات:
+export-bundle-dialog-files-description = اختيار ملفات للإضافة إلى الحُزْمَة:
+export-bundle-dialog-files-select-all = اختيار الكل
 export-bundle-dialog-export = تصدير
 export-bundle-dialog-exporting = جاري التصدير...
 export-bundle-dialog-exporting-failed = فشل التصدير.
 export-bundle-dialog-error-user-canceled = تم الإلغاء من قبل المستخدم.
+export-bundle-dialog-error-failed-to-show-picker = فشل في عرض ملتقط الملفات
+export-bundle-dialog-error-io-error = فشل في كتابة حزمة الملفات

@@ -38,4 +38,5 @@ ime-enabled-default = 預設
 device-font-renderer = 裝置字型渲染器
 device-font-renderer-tooltip = 選取用於渲染裝置字型的後端。
 device-font-renderer-default = 預設
+device-font-renderer-embedded = 內嵌的
 device-font-renderer-freetype = FreeType
