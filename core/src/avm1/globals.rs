@@ -9,7 +9,7 @@ use crate::string::{AvmString, StringContext, WStr, WString};
 use gc_arena::Collect;
 use ruffle_common::tag_utils::{SwfMovie, SwfSlice};
 use std::str;
-use std::sync::Arc;
+use std::sync::{Arc, LazyLock};
 use swf::TagCode;
 
 mod accessibility;
@@ -82,9 +82,6 @@ mod video;
 pub(crate) mod xml;
 mod xml_node;
 pub(crate) mod xml_socket;
-
-/// This file is built by 'core/build_playerglobal/'
-const PLAYERGLOBAL: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/playerglobal_avm1.swf"));
 
 mod method {
     pub const ESCAPE: u16 = 0;
@@ -509,17 +506,23 @@ pub struct SystemPrototypes<'gc> {
     pub file_reference: Object<'gc>,
 }
 
-pub fn load_playerglobal<'gc>(context: &mut UpdateContext<'gc>) {
+static PLAYERGLOBAL_ACTIONS: LazyLock<SwfSlice> = LazyLock::new(|| {
     use crate::tag_utils::extract_unique_tag;
 
-    let actions = SwfMovie::from_static_data(PLAYERGLOBAL)
+    /// This file is built by 'core/build_playerglobal/'
+    const SWF: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/playerglobal_avm1.swf"));
+
+    SwfMovie::from_static_data(SWF)
         .and_then(|movie| {
             let movie = SwfSlice::from(Arc::new(movie));
             let do_action = extract_unique_tag(movie.read_from(0), TagCode::DoAction)?;
             Ok(movie.resize_to_reader(&do_action))
         })
-        .expect("playerglobal_avm1.swf should be valid");
-    Avm1::run_stack_frame_for_globals(actions, context);
+        .expect("playerglobal_avm1.swf should be valid")
+});
+
+pub fn load_playerglobal<'gc>(context: &mut UpdateContext<'gc>) {
+    Avm1::run_stack_frame_for_globals(PLAYERGLOBAL_ACTIONS.clone(), context);
 }
 
 /// Initialize default global scope and builtins for an AVM1 instance.
