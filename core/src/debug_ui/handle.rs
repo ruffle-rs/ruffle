@@ -234,3 +234,47 @@ impl Hash for ClassHandle {
 }
 
 impl Eq for ClassHandle {}
+
+// Font
+
+#[derive(Clone)]
+pub struct FontHandle {
+    root: DynamicRoot<Rootable![crate::font::Font<'_>]>,
+    ptr: *const (),
+}
+
+impl FontHandle {
+    pub fn new<'gc>(context: &mut UpdateContext<'gc>, font: crate::font::Font<'gc>) -> Self {
+        Self {
+            root: context
+                .dynamic_root
+                .stash(context.gc(), Gc::new(context.gc(), font)),
+            ptr: font.as_ptr(),
+        }
+    }
+
+    pub fn fetch<'gc>(&self, dynamic_root_set: DynamicRootSet<'gc>) -> crate::font::Font<'gc> {
+        *dynamic_root_set.fetch(&self.root)
+    }
+}
+
+impl Debug for FontHandle {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.debug_tuple("FontHandle").field(&self.ptr).finish()
+    }
+}
+
+impl PartialEq<FontHandle> for FontHandle {
+    #[inline(always)]
+    fn eq(&self, other: &FontHandle) -> bool {
+        std::ptr::eq(self.ptr, other.ptr)
+    }
+}
+
+impl Hash for FontHandle {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.ptr.hash(state);
+    }
+}
+
+impl Eq for FontHandle {}

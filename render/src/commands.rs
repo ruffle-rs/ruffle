@@ -58,6 +58,22 @@ impl CommandList {
         self.commands.is_empty()
     }
 
+    /// Whether rendering this list inside a `Layer` blend can affect its output.
+    ///
+    /// A layer containing only normal drawing (including nested groups that
+    /// composite normally) can be drawn directly into its parent because
+    /// source-over compositing is associative. Other blend modes must use the
+    /// layer as their backdrop, so those lists still need an intermediate surface.
+    pub fn requires_layer_isolation(&self) -> bool {
+        self.commands.iter().any(|command| match command {
+            Command::Blend(_, RenderBlendMode::Builtin(blend_mode)) => {
+                !matches!(blend_mode, BlendMode::Normal | BlendMode::Layer)
+            }
+            Command::Blend(_, RenderBlendMode::Shader(_)) => true,
+            _ => false,
+        })
+    }
+
     pub fn execute(self, handler: &mut impl CommandHandler) {
         for command in self.commands {
             match command {
@@ -234,4 +250,56 @@ pub enum Command {
     DeactivateMask,
     PopMask,
     Blend(CommandList, RenderBlendMode),
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::pixel_bender::{PixelBenderShader, PixelBenderShaderHandle, PixelBenderShaderImpl};
+    use std::sync::Arc;
+
+    #[derive(Debug)]
+    struct TestShader(PixelBenderShader);
+
+    impl PixelBenderShaderImpl for TestShader {
+        fn parsed_shader(&self) -> &PixelBenderShader {
+            &self.0
+        }
+    }
+
+    #[test]
+    fn layer_isolation_is_only_required_for_exposed_blends() {
+        fn commands_with_blend(blend_mode: BlendMode) -> CommandList {
+            let mut commands = CommandList::new();
+            commands.blend(CommandList::new(), RenderBlendMode::Builtin(blend_mode));
+            commands
+        }
+
+        assert!(!CommandList::new().requires_layer_isolation());
+        assert!(!commands_with_blend(BlendMode::Layer).requires_layer_isolation());
+        assert!(!commands_with_blend(BlendMode::Normal).requires_layer_isolation());
+        assert!(commands_with_blend(BlendMode::Multiply).requires_layer_isolation());
+
+        let mut shader_commands = CommandList::new();
+        shader_commands.blend(
+            CommandList::new(),
+            RenderBlendMode::Shader(PixelBenderShaderHandle(Arc::new(TestShader(
+                PixelBenderShader {
+                    name: String::new(),
+                    version: 0,
+                    params: Vec::new(),
+                    metadata: Vec::new(),
+                    operations: Vec::new(),
+                },
+            )))),
+        );
+        assert!(shader_commands.requires_layer_isolation());
+
+        let mut nested_layer = CommandList::new();
+        nested_layer.blend(
+            commands_with_blend(BlendMode::Multiply),
+            RenderBlendMode::Builtin(BlendMode::Layer),
+        );
+        assert!(!nested_layer.requires_layer_isolation());
+    }
 }

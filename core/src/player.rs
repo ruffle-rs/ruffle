@@ -15,6 +15,7 @@ use crate::backend::navigator::SuccessResponse;
 use crate::backend::ui::FontDefinition;
 use crate::backend::{
     audio::{AudioBackend, AudioManager},
+    locale::LocaleBackend,
     log::LogBackend,
     navigator::{NavigatorBackend, Request},
     storage::StorageBackend,
@@ -316,6 +317,7 @@ pub struct Player {
     log: Box<dyn LogBackend>,
     ui: Box<dyn UiBackend>,
     video: Box<dyn VideoBackend>,
+    locale: Box<dyn LocaleBackend>,
 
     transform_stack: TransformStack,
 
@@ -2162,8 +2164,9 @@ impl Player {
 
             match action.action_type {
                 // DoAction/clip event code.
-                ActionType::Normal { bytecode } | ActionType::Initialize { bytecode } => {
-                    Avm1::run_stack_frame_for_action(action.clip, "[Frame]", bytecode, context);
+                ActionType::Normal { bytecode, name }
+                | ActionType::Initialize { bytecode, name } => {
+                    Avm1::run_stack_frame_for_action(action.clip, name, bytecode, context);
                 }
                 // Change the prototype of a MovieClip and run constructor events.
                 ActionType::Construct {
@@ -2289,6 +2292,7 @@ impl Player {
                 storage: this.storage.deref_mut(),
                 log: this.log.deref_mut(),
                 video: this.video.deref_mut(),
+                locale: this.locale.deref_mut(),
                 avm1_shared_objects,
                 avm2_shared_objects,
                 unbound_text_fields,
@@ -2326,7 +2330,6 @@ impl Player {
             let ret = f(&mut update_context);
 
             // If we changed the framerate, let the audio handler now.
-            #[expect(clippy::float_cmp)]
             if *update_context.frame_rate != prev_frame_rate {
                 update_context
                     .audio
@@ -2578,6 +2581,7 @@ pub struct PlayerBuilder {
     storage: Option<Box<dyn StorageBackend>>,
     ui: Option<Box<dyn UiBackend>>,
     video: Option<Box<dyn VideoBackend>>,
+    locale: Option<Box<dyn LocaleBackend>>,
 
     // Notifications
     notification_sender: Option<Sender<PlayerNotification>>,
@@ -2631,6 +2635,7 @@ impl PlayerBuilder {
             storage: None,
             ui: None,
             video: None,
+            locale: None,
 
             notification_sender: None,
 
@@ -2738,6 +2743,13 @@ impl PlayerBuilder {
     #[inline]
     pub fn with_video(mut self, video: impl 'static + VideoBackend) -> Self {
         self.video = Some(Box::new(video));
+        self
+    }
+
+    /// Sets the locale backend of the player.
+    #[inline]
+    pub fn with_locale(mut self, locale: impl 'static + LocaleBackend) -> Self {
+        self.locale = Some(Box::new(locale));
         self
     }
 
@@ -2985,6 +2997,9 @@ impl PlayerBuilder {
         let video = self
             .video
             .unwrap_or_else(|| Box::new(null::NullVideoBackend::new()));
+        let locale = self
+            .locale
+            .unwrap_or_else(|| Box::new(locale::DefaultLocaleBackend::new()));
 
         let player_version = self.player_version.unwrap_or(DEFAULT_PLAYER_VERSION);
         let language = ui.language();
@@ -3003,6 +3018,7 @@ impl PlayerBuilder {
                 storage,
                 ui,
                 video,
+                locale,
 
                 // SWF info
                 swf: fake_movie.clone(),

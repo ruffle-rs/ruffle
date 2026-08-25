@@ -254,8 +254,8 @@ FAILED: f.p === "hi" [./Function.as:1079]
 FAILED: f instanceOf _global.Function [./Function.as:1080]
 FAILED: f.constructor === _global.Function [./Function.as:1081]
 PASSED: f.constructor !== _global.Function.prototype.constructor [./Function.as:1082]
-FAILED: uf.p === "hi" [./Function.as:1088]
-FAILED: uf.__proto__ === _global.Function.prototype [./Function.as:1089]
+PASSED: uf.p === "hi" [./Function.as:1088]
+PASSED: uf.__proto__ === _global.Function.prototype [./Function.as:1089]
 PASSED: uf.prototype.constructor === uf [./Function.as:1092]
 FAILED: expected: "function" obtained: undefined [./Function.as:1098]
 PASSED: !f.hasOwnProperty("__proto__") [./Function.as:1100]
@@ -267,6 +267,6 @@ FAILED: expected: "function" obtained: undefined [./Function.as:1118]
 FAILED: f.hasOwnProperty("__proto__") [./Function.as:1120]
 FAILED: f.hasOwnProperty("constructor") [./Function.as:1121]
 PASSED: called == 0 [./Function.as:1123]
-#passed: 236
-#failed: 28
+#passed: 238
+#failed: 26
 #total tests run: 264

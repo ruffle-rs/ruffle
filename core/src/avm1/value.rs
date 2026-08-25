@@ -580,7 +580,8 @@ impl<'gc> Value<'gc> {
         if !self.is_primitive() {
             // These coercions happen even if `obj` is a dead `MovieClipReference`.
             if let Some(class) = class.coerce_to_object(activation)?
-                && let Some(p) = class.prototype(activation).coerce_to_object(activation)?
+                && let Some(p) = class.prototype(activation)
+                && let Some(p) = p.coerce_to_object(activation)?
                 && let Some(obj) = self.as_object(activation)
             {
                 return obj.is_instance_of(activation, p);
@@ -1008,10 +1009,11 @@ mod test {
 
             assert_eq!(vglobal.to_primitive_num(activation).unwrap(), undefined);
 
+            let fn_proto = activation.resolve_prototype([istr!("Function")]);
             let valueof = FunctionObject::native(|_, _, _| Ok(5.into())).build(
                 &activation.context.strings,
-                protos.function,
-                Some(protos.function),
+                fn_proto,
+                None,
             );
 
             let o = Object::new(&activation.context.strings, Some(protos.object));
@@ -1032,7 +1034,6 @@ mod test {
     }
 
     #[test]
-    #[expect(clippy::float_cmp)]
     fn to_number_swf7() {
         with_avm(7, |activation, _this| -> Result<(), Error> {
             let t = Value::Bool(true);
@@ -1054,7 +1055,6 @@ mod test {
     }
 
     #[test]
-    #[expect(clippy::float_cmp)]
     fn to_number_swf6() {
         with_avm(6, |activation, _this| -> Result<(), Error> {
             let t = Value::Bool(true);

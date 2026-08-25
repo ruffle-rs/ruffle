@@ -543,6 +543,8 @@ impl<'gc> MovieClip<'gc> {
                 TagCode::DefineFont2 => shared.define_font_2(context, reader),
                 TagCode::DefineFont3 => shared.define_font_3(context, reader),
                 TagCode::DefineFont4 => shared.define_font_4(context, reader),
+                TagCode::DefineFontInfo => shared.define_font_info(context, reader, 1),
+                TagCode::DefineFontInfo2 => shared.define_font_info(context, reader, 2),
                 TagCode::DefineMorphShape => shared.define_morph_shape(context, reader, 1),
                 TagCode::DefineMorphShape2 => shared.define_morph_shape(context, reader, 2),
                 TagCode::DefineScalingGrid => shared.define_scaling_grid(context, reader),
@@ -1984,79 +1986,52 @@ impl<'gc> MovieClip<'gc> {
         run_frame: bool,
     ) {
         if self.0.object1.get().is_none() {
-            let avm1_constructor = self.0.get_registered_avm1_constructor(context);
+            let mut activation = Avm1Activation::from_nothing(
+                context,
+                ActivationIdentifier::root("[Construct]"),
+                self.into(),
+            );
 
-            // If we are running within the AVM, this must be an immediate action.
-            // If we are not, then this must be queued to be ran first-thing
-            if let Some(constructor) = avm1_constructor.filter(|_| instantiated_by.is_avm()) {
-                let mut activation = Avm1Activation::from_nothing(
-                    context,
-                    ActivationIdentifier::root("[Construct]"),
-                    self.into(),
-                );
-
-                if let Ok(prototype) = constructor
-                    // TODO(moulins): should this use `Object::prototype`?
-                    .get(istr!("prototype"), &mut activation)
-                    .and_then(|v| v.coerce_to_object_or_bare(&mut activation))
-                {
-                    let object = Avm1Object::new_with_native(
-                        &activation.context.strings,
-                        Some(prototype),
-                        Avm1NativeObject::MovieClip(self),
-                    );
-                    let write = Gc::write(activation.gc(), self.0);
-                    unlock!(write, MovieClipData, object1).set(Some(object));
-
-                    if run_frame {
-                        self.run_frame_avm1(activation.context);
-                    }
-
-                    if let Some(init_object) = init_object {
-                        // AVM1 sets keys in reverse order (compared to enumeration order).
-                        // This behavior is visible to setters, and some SWFs depend on it.
-                        for key in init_object
-                            .get_keys(&mut activation, false)
-                            .into_iter()
-                            .rev()
-                        {
-                            if let Ok(value) = init_object.get(key, &mut activation) {
-                                let _ = object.set(key, value, &mut activation);
-                            }
-                        }
-                    }
-                    let _ = constructor.construct_on_existing(&mut activation, object, &[]);
-                }
-
-                return;
-            }
+            let avm1_custom_constr = self.0.get_registered_avm1_constructor(activation.context);
+            let avm1_prototype = avm1_custom_constr
+                .or_else(|| activation.resolve_class([istr!("MovieClip")]))
+                .and_then(|c| c.prototype(&mut activation));
 
             let object = Avm1Object::new_with_native(
-                &context.strings,
-                Some(context.avm1.prototypes(self.swf_version()).movie_clip),
+                activation.strings(),
+                avm1_prototype,
                 Avm1NativeObject::MovieClip(self),
             );
-            let write = Gc::write(context.gc(), self.0);
+            let write = Gc::write(activation.gc(), self.0);
             unlock!(write, MovieClipData, object1).set(Some(object));
 
             if run_frame {
-                self.run_frame_avm1(context);
+                self.run_frame_avm1(activation.context);
             }
 
             if let Some(init_object) = init_object {
-                let mut activation = Avm1Activation::from_nothing(
-                    context,
-                    ActivationIdentifier::root("[Init]"),
-                    self.into(),
-                );
-
-                for key in init_object.get_keys(&mut activation, false) {
+                // AVM1 sets keys in reverse order (compared to enumeration order).
+                // This behavior is visible to setters, and some SWFs depend on it.
+                for key in init_object
+                    .get_keys(&mut activation, false)
+                    .into_iter()
+                    .rev()
+                {
                     if let Ok(value) = init_object.get(key, &mut activation) {
                         let _ = object.set(key, value, &mut activation);
                     }
                 }
             }
 
+            // If we are running within the AVM, this must be an immediate action.
+            // If we are not, then this must be queued to be ran first-thing.
+            // Note that the default `MovieClip` constructor is never run, unlike user-defined classes.
+            if let Some(constructor) = avm1_custom_constr.filter(|_| instantiated_by.is_avm()) {
+                let _ = constructor.construct_on_existing(&mut activation, object, &[]);
+                return;
+            }
+
+            drop(activation);
             let mut events = Vec::new();
 
             for event_handler in self.clip_actions().iter() {
@@ -2068,6 +2043,7 @@ impl<'gc> MovieClip<'gc> {
                         self.into(),
                         ActionType::Initialize {
                             bytecode: event_handler.action_data.clone(),
+                            name: "[MovieClip initialize]",
                         },
                         false,
                     );
@@ -2083,7 +2059,7 @@ impl<'gc> MovieClip<'gc> {
             context.action_queue.queue_action(
                 self.into(),
                 ActionType::Construct {
-                    constructor: avm1_constructor,
+                    constructor: avm1_custom_constr,
                     events,
                 },
                 false,
@@ -2948,6 +2924,7 @@ impl<'gc> TInteractiveObject<'gc> for MovieClip<'gc> {
                         self.into(),
                         ActionType::Normal {
                             bytecode: event_handler.action_data.clone(),
+                            name: "[MovieClip event]",
                         },
                         event == ClipEvent::Unload,
                     );
@@ -3853,6 +3830,26 @@ impl<'gc, 'a> MovieClipShared<'gc> {
         Ok(())
     }
 
+    fn define_font_info(
+        &self,
+        context: &mut UpdateContext<'gc>,
+        reader: &mut SwfStream<'a>,
+        version: u8,
+    ) -> Result<(), Error> {
+        let font_info = reader.read_define_font_info(version)?;
+
+        // For some reason Flash doesn't seem to use font_info's flags
+        // (bold, italic) here.
+        //
+        // TODO Maybe there are some cases where it is used?
+        let character_id = font_info.id;
+        let font_name = &font_info.name.to_str_lossy(reader.encoding());
+
+        self.library_mut(context)
+            .register_font_name(character_id, font_name);
+        Ok(())
+    }
+
     #[inline]
     fn define_sound(
         &self,
@@ -4041,7 +4038,7 @@ impl<'gc, 'a> MovieClipShared<'gc> {
                 if let Some(parent) = &importer_movie {
                     let parent_library = context.library.library_for_movie_mut(parent.clone());
 
-                    if let Some(id) = parent_library.character_id_by_import_name(name) {
+                    if let Some(id) = parent_library.character_id_by_import_name(&name) {
                         parent_library.register_character(id, character);
 
                         Self::register_export(context, id, name, parent.clone());
@@ -4244,7 +4241,10 @@ impl<'gc, 'a> MovieClip<'gc> {
         if !slice.is_empty() {
             context.action_queue.queue_action(
                 self.into(),
-                ActionType::Normal { bytecode: slice },
+                ActionType::Normal {
+                    bytecode: slice,
+                    name: "[MovieClip action]",
+                },
                 false,
             );
         }

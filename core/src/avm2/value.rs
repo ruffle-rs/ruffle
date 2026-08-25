@@ -1630,7 +1630,6 @@ impl<'gc> Value<'gc> {
 
     /// Determine if this value is a number representable as a u32 without loss
     /// of precision.
-    #[expect(clippy::float_cmp)]
     pub fn is_u32(&self) -> bool {
         match self {
             Value::Number(n) => *n == (*n as u32 as f64),
@@ -1641,7 +1640,6 @@ impl<'gc> Value<'gc> {
 
     /// Determine if this value is a number representable as an i32 without
     /// loss of precision.
-    #[expect(clippy::float_cmp)]
     pub fn is_i32(&self) -> bool {
         match self {
             Value::Number(n) => *n == (*n as i32 as f64),

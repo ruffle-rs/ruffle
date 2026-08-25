@@ -1,0 +1,100 @@
+### Testing weird prototypes...
+// Object = {}
+{}: object without __proto__
+// Object = { prototype: 5 }
+typeof {}.__proto__: number
+// Object = { prototype: undefined }
+typeof {}.__proto__: undefined
+// Object = { prototype: <real Object>.prototype }
+typeof {}.__proto__: object
+// Object = 5
+{}: object without __proto__
+// delete Object
+"Object" in _global: false
+{}: object without __proto__
+
+### Monkey-patching-globals...
+// hiding flash.filters...
+flash.filters: undefined
+
+### Testing Object
+// {}
+v.className: MyObject
+// new OBJECT()
+v.className: Object
+// OBJECT()
+v: object without __proto__
+
+### Testing Function
+// function() {}
+v.className: MyFunction
+// FUNCTION()
+v: object without __proto__
+// ASnative(...)
+v.className: MyFunction
+
+### Testing Array
+// []
+v.className: MyArray
+// new ARRAY()
+v.className: Array
+// ARRAY()
+v.className: MyArray
+// A_STRING.split()
+v.className: MyArray
+// AN_ARRAY.slice()
+v.className: MyArray
+// A_COLOR_MATRIX_FILTER.matrix
+v.className: MyArray
+// A_CONVOLUTION_FILTER.matrix
+v.className: MyArray
+
+### Testing display objects
+current.className: MovieClip
+// current.createTextField(...)
+new MyTextField() called!
+v.className: MyTextField
+// current.createEmptyMovieClip(...)
+v.className: MyMovieClip
+// v.duplicateMovieClip(...)
+v.className: MyMovieClip
+// attachMovie('clip', ...)
+new MyButton() called!
+new MyTextField() called!
+new MyVideo() called!
+clip.className: MyMovieClip
+clip.nested.className: MyMovieClip
+clip.button.className: MyButton
+clip.textfield.className: MyTextField
+clip.video.className: MyVideo
+
+### Testing BitmapFilters
+// current.filters
+v.className: MyArray
+BITMAP_FILTERS[0].className: BevelFilter
+BITMAP_FILTERS[0].clone().className: BevelFilter
+current.filters[0].className: MyBevelFilter
+BITMAP_FILTERS[1].className: BlurFilter
+BITMAP_FILTERS[1].clone().className: BlurFilter
+current.filters[1].className: MyBlurFilter
+BITMAP_FILTERS[2].className: ColorMatrixFilter
+BITMAP_FILTERS[2].clone().className: ColorMatrixFilter
+current.filters[2].className: MyColorMatrixFilter
+BITMAP_FILTERS[3].className: ConvolutionFilter
+BITMAP_FILTERS[3].clone().className: ConvolutionFilter
+current.filters[3].className: MyConvolutionFilter
+BITMAP_FILTERS[4].className: DisplacementMapFilter
+BITMAP_FILTERS[4].clone().className: DisplacementMapFilter
+current.filters[4].className: MyDisplacementMapFilter
+BITMAP_FILTERS[5].className: DropShadowFilter
+BITMAP_FILTERS[5].clone().className: DropShadowFilter
+current.filters[5].className: MyDropShadowFilter
+BITMAP_FILTERS[6].className: GlowFilter
+BITMAP_FILTERS[6].clone().className: GlowFilter
+current.filters[6].className: MyGlowFilter
+BITMAP_FILTERS[7].className: GradientBevelFilter
+BITMAP_FILTERS[7].clone().className: GradientBevelFilter
+current.filters[7].className: MyGradientBevelFilter
+BITMAP_FILTERS[8].className: GradientGlowFilter
+BITMAP_FILTERS[8].clone().className: GradientGlowFilter
+current.filters[8].className: MyGradientGlowFilter

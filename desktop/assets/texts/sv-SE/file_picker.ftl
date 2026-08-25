@@ -6,5 +6,5 @@ file-picker-filter-spl = FutureSplash Animator (*.spl)
 file-picker-filter-ruf = Ruffle Bundle (*.ruf)
 file-picker-filter-all = Alla filer
 file-picker-select-root-movie-title = Välj rot-film
-file-picker-select-root-movie-message = Välj rot-film för den öppna filkatalogen.
+file-picker-select-root-movie-message = Välj rotfilmen från den öppnade mappen.
 file-picker-select-root-movie-select = Välj

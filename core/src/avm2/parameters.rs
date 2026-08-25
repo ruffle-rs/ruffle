@@ -1,4 +1,5 @@
 use crate::avm2::error::make_error_2007;
+use crate::avm2::function::FunctionArgs;
 use crate::avm2::object::{FunctionObject, Object};
 use crate::avm2::{Activation, Error, Value};
 use crate::string::AvmString;
@@ -152,19 +153,26 @@ pub trait ParametersExt<'gc> {
     }
 }
 
-impl<'gc> ParametersExt<'gc> for &[Value<'gc>] {
+impl<'gc> ParametersExt<'gc> for FunctionArgs<'_, 'gc> {
     #[inline]
     fn get_value(&self, index: usize) -> Value<'gc> {
-        self[index]
+        self.get_at(index)
     }
 
     #[inline]
     fn get_optional(&self, index: usize) -> Option<Value<'gc>> {
-        self.get(index).copied()
+        if index < self.len() {
+            Some(self.get_at(index))
+        } else {
+            None
+        }
     }
 
     #[inline]
     fn get_slice_from(&self, range: RangeFrom<usize>) -> Self {
-        &self[range]
+        match self {
+            FunctionArgs::AsCellArgs(arguments) => FunctionArgs::AsCellArgs(&arguments[range]),
+            FunctionArgs::AsArgs(arguments) => FunctionArgs::AsArgs(&arguments[range]),
+        }
     }
 }

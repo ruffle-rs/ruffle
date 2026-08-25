@@ -6,6 +6,7 @@ use crate::avm2::class::Class;
 use crate::avm2::error::{
     Error, Error1014Type, make_error_1014, make_error_1027, make_error_1079, make_error_1107,
 };
+use crate::avm2::function::FunctionArgs;
 use crate::avm2::script::TranslationUnit;
 use crate::avm2::value::{Value, abc_default_value};
 use crate::avm2::verify::VerifiedMethodInfo;
@@ -34,7 +35,7 @@ use swf::avm2::types::{
 pub type NativeMethodImpl = for<'gc> fn(
     &mut Activation<'_, 'gc>,
     Value<'gc>,
-    &[Value<'gc>],
+    FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>>;
 
 /// Configuration of a single parameter of a method,

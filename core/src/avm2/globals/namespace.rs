@@ -1,5 +1,6 @@
 //! `Namespace` impl
 
+use crate::avm2::function::FunctionArgs;
 use ruffle_macros::istr;
 
 use crate::avm2::Error;
@@ -14,7 +15,7 @@ use crate::avm2::value::Value;
 /// Implements a custom constructor for `Namespace`.
 pub fn namespace_constructor<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let api_version = activation.avm2().root_api_version;
     let namespaces = activation.avm2().namespaces;
@@ -83,7 +84,7 @@ pub fn namespace_constructor<'gc>(
 pub fn get_prefix<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
@@ -100,7 +101,7 @@ pub fn get_prefix<'gc>(
 pub fn get_uri<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 

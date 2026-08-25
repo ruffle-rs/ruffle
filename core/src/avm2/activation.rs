@@ -1096,7 +1096,8 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
         let receiver = self.pop_stack().null_check(self, None)?;
 
-        let value = method(self, receiver, args).expect("FastCall methods should not return Err");
+        let value = method(self, receiver, FunctionArgs::from_slice(args))
+            .expect("FastCall methods should not return Err");
 
         if push_return_value {
             self.push_stack(value);

@@ -38,6 +38,12 @@
     "settings_player_version": {
         "message": "Broj verzije Flash playera za emulaciju (raspon 1-32)"
     },
+    "settings_background_execution_mode": {
+        "message": "Pozadinsko izvršavanje"
+    },
+    "settings_background_execution_mode_none": {
+        "message": "Pauza"
+    },
     "settings_preferred_renderer": {
         "message": "Preferirani renderer"
     },
@@ -106,6 +112,9 @@
     },
     "save_settings": {
         "message": "Spremi postavke"
+    },
+    "settings_saved": {
+        "message": "Postavke spremljene"
     },
     "permissions_grant": {
         "message": "Dozvoli Ruffleu pristup mojim podacima na svim web-lokacijama"

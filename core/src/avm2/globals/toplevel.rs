@@ -1,5 +1,6 @@
 //! Global scope built-ins
 
+use crate::avm2::function::FunctionArgs;
 use ruffle_wstr::Units;
 
 use crate::avm2::activation::Activation;
@@ -13,15 +14,18 @@ use std::fmt::Write;
 pub fn trace<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    match args {
-        [] => activation.context.avm_trace(""),
-        [arg] => {
+    match args.len() {
+        0 => {
+            activation.context.avm_trace("");
+        }
+        1 => {
+            let arg = args.get_value(0);
             let msg = arg.coerce_to_string(activation)?;
             activation.context.avm_trace(&msg.to_utf8_lossy());
         }
-        args => {
+        _ => {
             let strings = args
                 .iter()
                 .map(|a| a.coerce_to_string(activation))
@@ -37,7 +41,7 @@ pub fn trace<'gc>(
 pub fn is_finite<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     _this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let val = args.get_f64(0);
 
@@ -47,7 +51,7 @@ pub fn is_finite<'gc>(
 pub fn is_na_n<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     _this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let val = args.get_f64(0);
 
@@ -57,7 +61,7 @@ pub fn is_na_n<'gc>(
 pub fn parse_int<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let string = args.get_string(activation, 0);
     let radix = args.get_i32(1);
@@ -69,7 +73,7 @@ pub fn parse_int<'gc>(
 pub fn parse_float<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let string = args.get_string(activation, 0);
     let swf_version = activation.context.root_swf.version();
@@ -84,7 +88,7 @@ pub fn parse_float<'gc>(
 pub fn is_xml_name<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let name = args.get_value(0);
     if matches!(name, Value::Undefined | Value::Null) {
@@ -99,7 +103,7 @@ pub fn is_xml_name<'gc>(
 pub fn escape<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let value = args.get_string(activation, 0);
 
@@ -128,7 +132,7 @@ pub fn escape<'gc>(
 pub fn unescape<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let value = args.get_string(activation, 0);
 
@@ -171,7 +175,7 @@ pub fn unescape<'gc>(
 pub fn encode_uri<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     encode_utf8_with_exclusions(
         activation,
@@ -185,7 +189,7 @@ pub fn encode_uri<'gc>(
 pub fn encode_uri_component<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     encode_utf8_with_exclusions(
         activation,
@@ -198,7 +202,7 @@ pub fn encode_uri_component<'gc>(
 
 fn encode_utf8_with_exclusions<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
     not_converted: &str,
     func_name: &str,
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -233,7 +237,7 @@ fn encode_utf8_with_exclusions<'gc>(
 pub fn decode_uri<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     decode(
         activation,
@@ -247,7 +251,7 @@ pub fn decode_uri<'gc>(
 pub fn decode_uri_component<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     decode(activation, args, "", "decodeURIComponent")
 }
@@ -264,7 +268,7 @@ where
 // code derived from flash.utils.unescapeMultiByte
 fn decode<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
     reserved_set: &str,
     func_name: &str,
 ) -> Result<Value<'gc>, Error<'gc>> {

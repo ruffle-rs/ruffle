@@ -2,6 +2,7 @@
 
 use crate::avm2::Error;
 use crate::avm2::activation::Activation;
+use crate::avm2::function::FunctionArgs;
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
 use crate::avm2_stub_getter;
@@ -18,7 +19,7 @@ use std::{
 pub fn get_sound_transform<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let dobj_st = activation.context.global_sound_transform();
 
@@ -32,7 +33,7 @@ pub fn get_sound_transform<'gc>(
 pub fn set_sound_transform<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let as3_st = args.get_object(activation, 0, "sndTransform")?;
     let dobj_st = SoundTransform::from_avm2_object(as3_st);
@@ -46,7 +47,7 @@ pub fn set_sound_transform<'gc>(
 pub fn stop_all<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     activation.context.stop_all_sounds();
 
@@ -57,7 +58,7 @@ pub fn stop_all<'gc>(
 pub fn get_buffer_time<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     Ok(activation.context.audio_manager.stream_buffer_time().into())
 }
@@ -66,7 +67,7 @@ pub fn get_buffer_time<'gc>(
 pub fn set_buffer_time<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let buffer_time = args.get_i32(0);
 
@@ -82,7 +83,7 @@ pub fn set_buffer_time<'gc>(
 pub fn are_sounds_inaccessible<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     avm2_stub_getter!(
         activation,
@@ -96,7 +97,7 @@ pub fn are_sounds_inaccessible<'gc>(
 pub fn compute_spectrum<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let arg0 = args.get_object(activation, 0, "sound")?;
     let mut bytearray = arg0.as_bytearray_mut().unwrap();

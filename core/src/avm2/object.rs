@@ -1043,11 +1043,11 @@ pub fn abstract_class_allocator<'gc>(
 pub fn construct_call_handler<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     this.as_object()
         .unwrap()
         .as_class_object()
         .unwrap()
-        .construct(activation, args)
+        .construct_with_args(activation, args)
 }

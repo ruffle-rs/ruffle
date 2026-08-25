@@ -1,0 +1,242 @@
+Default names and DefineFontName
+DefineFontInfo vs DefineFontName
+DefineFontInfo vs DefineFontInfo2
+ExportAssets
+Reverse order
+Conflicting names
+Export non-font
+Font matching
+AA: 0
+aa: 0
+AA (bold): 0
+AB: 40
+ab: 40
+AB (bold): 40
+AC: 40
+ac: 40
+AC (bold): 40
+AD: 0
+ad: 0
+AD (bold): 0
+AE: 40
+ae: 40
+AE (bold): 40
+AF: 40
+af: 40
+AF (bold): 40
+AG: 0
+ag: 0
+AG (bold): 0
+AH: 0
+ah: 0
+AH (bold): 0
+AI: 0
+ai: 0
+AI (bold): 0
+AJ: 0
+aj: 0
+AJ (bold): 0
+AK: 0
+ak: 0
+AK (bold): 0
+AL: 0
+al: 0
+AL (bold): 0
+AM: 40
+am: 40
+AM (bold): 40
+AN: 40
+an: 40
+AN (bold): 40
+AO: 40
+ao: 40
+AO (bold): 40
+AP: 40
+ap: 40
+AP (bold): 40
+AQ: 0
+aq: 0
+AQ (bold): 0
+AR: 40
+ar: 40
+AR (bold): 40
+AS: 0
+as: 0
+AS (bold): 0
+AT: 40
+at: 40
+AT (bold): 40
+AU: 40
+au: 40
+AU (bold): 40
+AV: 40
+av: 40
+AV (bold): 40
+AW: 40
+aw: 40
+AW (bold): 40
+AX: 40
+ax: 40
+AX (bold): 40
+AY: 40
+ay: 40
+AY (bold): 40
+AZ: 0
+az: 0
+AZ (bold): 0
+BA: 40
+ba: 40
+BA (bold): 40
+BB: 0
+bb: 0
+BB (bold): 0
+BC: 0
+bc: 0
+BC (bold): 0
+BD: 40
+bd: 40
+BD (bold): 40
+BE: 40
+be: 40
+BE (bold): 40
+BF: 40
+bf: 40
+BF (bold): 40
+BG: 40
+bg: 40
+BG (bold): 40
+BH: 40
+bh: 40
+BH (bold): 40
+BI: 40
+bi: 40
+BI (bold): 40
+BJ: 40
+bj: 40
+BJ (bold): 40
+BK: 40
+bk: 40
+BK (bold): 40
+BL: 40
+bl: 40
+BL (bold): 40
+BM: 40
+bm: 40
+BM (bold): 40
+BN: 40
+bn: 40
+BN (bold): 40
+BO: 40
+bo: 40
+BO (bold): 40
+BP: 0
+bp: 0
+BP (bold): 0
+BQ: 40
+bq: 40
+BQ (bold): 40
+BR: 40
+br: 40
+BR (bold): 40
+BS: 0
+bs: 0
+BS (bold): 0
+BT: 0
+bt: 0
+BT (bold): 0
+BU: 0
+bu: 0
+BU (bold): 0
+BV: 0
+bv: 0
+BV (bold): 0
+BW: 0
+bw: 0
+BW (bold): 0
+BX: 0
+bx: 0
+BX (bold): 0
+BY: 40
+by: 40
+BY (bold): 40
+BZ: 40
+bz: 40
+BZ (bold): 40
+CA: 40
+ca: 40
+CA (bold): 40
+CB: 17
+cb: 17
+CB (bold): 17
+CC: 40
+cc: 40
+CC (bold): 40
+CD: 17
+cd: 17
+CD (bold): 17
+CE: 40
+ce: 40
+CE (bold): 40
+CF: 17
+cf: 17
+CF (bold): 17
+CG: 40
+cg: 40
+CG (bold): 40
+CH: 17
+ch: 17
+CH (bold): 17
+CI: 17
+ci: 17
+CI (bold): 17
+CJ: 17
+cj: 17
+CJ (bold): 17
+CK: 17
+ck: 17
+CK (bold): 17
+CL: 17
+cl: 17
+CL (bold): 17
+CM: 40
+cm: 40
+CM (bold): 40
+CN: 17
+cn: 17
+CN (bold): 17
+CO: 40
+co: 40
+CO (bold): 40
+CP: 17
+cp: 17
+CP (bold): 17
+CQ: 17
+cq: 17
+CQ (bold): 17
+CR: 17
+cr: 17
+CR (bold): 17
+CS: 40
+cs: 40
+CS (bold): 40
+CT: 17
+ct: 17
+CT (bold): 17
+CU: 0
+cu: 0
+CU (bold): 0
+CV: 17
+cv: 17
+CV (bold): 17
+CW: 17
+cw: 17
+CW (bold): 17
+CX: 17
+cx: 17
+CX (bold): 40
+CY: 17
+cy: 17
+CY (bold): 40
+CZ: 0
+cz: 0
+CZ (bold): 0

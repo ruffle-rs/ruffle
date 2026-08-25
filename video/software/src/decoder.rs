@@ -40,7 +40,34 @@ pub trait VideoDecoder {
     /// Frames may be decoded in any order that does not violate the frame
     /// dependencies declared by the output of `preload_video_stream_frame`.
     ///
-    /// The decoded frame should be returned. An `Error` can be returned if
-    /// a drawable bitmap can not be produced.
-    fn decode_frame(&mut self, encoded_frame: EncodedFrame<'_>) -> Result<DecodedFrame, Error>;
+    /// Either calls the provided `callback` *once* with the decoded frame and
+    /// returns `Ok(())`, or returns an error if the frame could not be decoded.
+    ///
+    /// Note: this uses a callback instead of a simple return value to give
+    /// decoders full control over the lifetime of the decoded frame data.
+    fn decode_frame_dyn(
+        &mut self,
+        encoded_frame: EncodedFrame<'_>,
+        callback: &mut dyn FnMut(DecodedFrame<'_>),
+    ) -> Result<(), Error>;
+}
+
+impl dyn VideoDecoder {
+    /// Helper method to wrangle the dyn-compatible `decode_frame_dyn` API into
+    /// something friendlier.
+    pub fn decode_frame<R>(
+        &mut self,
+        encoded_frame: EncodedFrame<'_>,
+        callback: impl FnOnce(DecodedFrame<'_>) -> Result<R, Error>,
+    ) -> Result<R, Error> {
+        let mut cb = Some(callback);
+        let mut r = Err(Error::DecoderNoOutputFrame);
+        self.decode_frame_dyn(encoded_frame, &mut |decoded| {
+            r = match cb.take() {
+                Some(cb) => cb(decoded),
+                None => Err(Error::DecoderMultipleOutputFrames),
+            };
+        })?;
+        r
+    }
 }

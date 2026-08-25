@@ -35,7 +35,7 @@ temp-dir = "0.2.0"
 ruffle_core = { path = "../core" }
 
 [dev-dependencies]
-ruffle_core = { path = "../core", features = ["deterministic", "timeline_debug", "avm_debug", "audio", "mp3", "aac", "default_font"] }
+ruffle_core = { path = "../core", features = ["timeline_debug", "avm_debug", "audio", "mp3", "aac", "default_font"] }
 libtest-mimic = { workspace = true }
 image = { workspace = true, features = ["png"] }
 futures = { workspace = true }

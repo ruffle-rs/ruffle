@@ -112,7 +112,7 @@ impl DefaultFont {
 }
 
 #[derive(Debug)]
-enum GlyphSource {
+pub(crate) enum GlyphSource {
     Memory {
         /// The list of glyphs defined in the font.
         /// Used directly by `DefineText` tags.
@@ -506,6 +506,15 @@ impl<'gc> Font<'gc> {
                 has_layout: true,
             },
         ))
+    }
+
+    pub fn as_ptr(self) -> *const () {
+        Gc::as_ptr(self.0).cast()
+    }
+
+    #[cfg(feature = "egui")]
+    pub(crate) fn glyph_source(&self) -> &GlyphSource {
+        &self.0.glyphs
     }
 
     /// Returns whether this font contains glyph shapes.
