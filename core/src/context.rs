@@ -585,7 +585,10 @@ pub struct RenderContext<'a, 'gc> {
     pub gc_context: &'gc Mutation<'gc>,
 
     /// The library, which provides access to fonts and other definitions when rendering.
-    pub library: &'a Library<'gc>,
+    pub library: &'a mut Library<'gc>,
+
+    /// The UI backend, used to detect user interactions and load device fonts.
+    pub ui: &'a dyn UiBackend,
 
     /// The transform stack controls the matrix and color transform as we traverse the display hierarchy.
     pub transform_stack: &'a mut TransformStack,
