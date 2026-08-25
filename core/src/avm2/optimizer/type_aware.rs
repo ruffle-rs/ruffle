@@ -2352,27 +2352,42 @@ fn optimize_call_property<'gc>(
                     if let Some(slot_class) = resolved_value_class
                         && let Some(called_class) = slot_class.i_class()
                     {
-                        // Calling a c_class will perform a simple coercion to the class
-                        let result = if called_class.call_handler().is_none() {
-                            Some((
-                                Op::CoerceSwapPop {
-                                    class: called_class,
-                                },
-                                called_class,
-                            ))
-                        } else if called_class == types.int {
-                            Some((Op::CoerceISwapPop, types.int))
-                        } else if called_class == types.uint {
-                            Some((Op::CoerceUSwapPop, types.uint))
-                        } else if called_class == types.number {
-                            Some((Op::CoerceDSwapPop, types.number))
-                        } else {
-                            None
-                        };
+                        let (new_op, return_type) =
+                            if let Some(call_handler) = called_class.call_handler() {
+                                // For `int(x)`, `uint(x)` and `Number(x)`, we emit
+                                // custom ops, as they can be very hot. For other
+                                // call handlers, we fall back to directly calling
+                                // the native method.
+                                if called_class == types.int {
+                                    (Op::CoerceISwapPop, Some(types.int))
+                                } else if called_class == types.uint {
+                                    (Op::CoerceUSwapPop, Some(types.uint))
+                                } else if called_class == types.number {
+                                    (Op::CoerceDSwapPop, Some(types.number))
+                                } else {
+                                    // We aren't sure what value the call handler
+                                    // will produce, but we do know exactly which
+                                    // native method is going to be called, so we
+                                    // can emit a `CallNative`.
 
-                        if let Some((new_op, return_type)) = result {
-                            return Ok(Some((new_op, Some(return_type))));
-                        }
+                                    let call_native_op = Op::CallNative {
+                                        method: call_handler,
+                                        num_args: 1,
+                                        push_return_value: true,
+                                    };
+                                    (call_native_op, None)
+                                }
+                            } else {
+                                // Calling a c_class will perform a simple coercion
+                                // to the class
+
+                                let coerce_op = Op::CoerceSwapPop {
+                                    class: called_class,
+                                };
+                                (coerce_op, Some(called_class))
+                            };
+
+                        return Ok(Some((new_op, return_type)));
                     }
                 }
             }
