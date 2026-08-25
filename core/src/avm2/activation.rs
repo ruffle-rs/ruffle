@@ -30,7 +30,7 @@ use crate::tag_utils::SwfMovie;
 use gc_arena::Gc;
 use ruffle_macros::istr;
 use std::cell::Cell;
-use std::cmp::{Ordering, min};
+use std::cmp::min;
 use std::sync::Arc;
 use swf::avm2::types::MethodFlags as AbcMethodFlags;
 
@@ -202,71 +202,65 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         }
     }
 
-    /// Statically resolve all of the parameters for a native method.
-    ///
-    /// This function makes no attempt to enforce a given method's parameter
-    /// count limits or to package variadic arguments.
-    ///
-    /// The returned list of parameters will be coerced to the stated types in
-    /// the signature, with missing parameters filled in with defaults.
-    pub fn resolve_parameters(
+    fn coerce_and_setup_arguments(
         &mut self,
         method: Method<'gc>,
-        user_arguments: FunctionArgs<'_, 'gc>,
         signature: &[ResolvedParamConfig<'gc>],
-    ) -> Result<Vec<Value<'gc>>, Error<'gc>> {
-        let mut arguments_list = Vec::new();
-        for (arg, param_config) in user_arguments.iter().zip(signature.iter()) {
+        user_arguments: FunctionArgs<'_, 'gc>,
+    ) -> Result<(), Error<'gc>> {
+        if user_arguments.len() > signature.len() && !method.is_variadic() && !method.is_unchecked()
+        {
+            return Err(make_error_1063(self, method, user_arguments.len()));
+        }
+
+        // Statically verify all non-variadic, provided parameters.
+        let static_arg_count = min(user_arguments.len(), signature.len());
+        for (i, param_config) in signature.iter().enumerate().take(static_arg_count) {
+            let arg = user_arguments.get_at(i);
+
             let coerced_arg = if let Some(param_class) = param_config.param_type {
                 arg.coerce_to_type(self, param_class)?
             } else {
                 arg
             };
 
-            arguments_list.push(coerced_arg);
+            self.push_stack(coerced_arg);
         }
 
-        match user_arguments.len().cmp(&signature.len()) {
-            Ordering::Greater => {
-                let user_arguments = &user_arguments.to_slice();
-                // Variadic parameters exist, just push them into the list
-                arguments_list.extend_from_slice(&user_arguments[signature.len()..])
-            }
-            Ordering::Less => {
-                // Apply remaining default parameters
-                for param_config in signature[user_arguments.len()..].iter() {
-                    let arg = if let Some(default_value) = &param_config.default_value {
-                        *default_value
-                    } else {
-                        return Err(make_error_1063(self, method, user_arguments.len()));
-                    };
+        // Now add missing arguments
+        if user_arguments.len() < signature.len() {
+            // Apply remaining default parameters
+            for param_config in signature[user_arguments.len()..].iter() {
+                let arg = if let Some(default_value) = &param_config.default_value {
+                    *default_value
+                } else if method.is_unchecked() {
+                    Value::Undefined
+                } else {
+                    return Err(make_error_1063(self, method, user_arguments.len()));
+                };
 
-                    let coerced_arg = if let Some(param_class) = param_config.param_type {
-                        arg.coerce_to_type(self, param_class)?
-                    } else {
-                        arg
-                    };
+                let coerced_arg = if let Some(param_class) = param_config.param_type {
+                    arg.coerce_to_type(self, param_class)?
+                } else {
+                    arg
+                };
 
-                    arguments_list.push(coerced_arg);
-                }
+                self.push_stack(coerced_arg);
             }
-            _ => {}
         }
 
-        Ok(arguments_list)
+        Ok(())
     }
 
-    /// Create an `arguments` or `rest` object for a given method. This function
-    /// expects the rest of the arguments to already be on the AVM stack.
-    #[inline(never)]
-    fn create_varargs_object(
+    /// Collects all arguments passed to this `Activation` into a `Vec`. This
+    /// function expects the rest of the arguments to already be on the AVM
+    /// stack.
+    pub fn collect_all_arguments(
         &mut self,
-        method: Method<'gc>,
         signature: &[ResolvedParamConfig<'gc>],
         user_arguments: FunctionArgs<'_, 'gc>,
-        callee: Option<FunctionObject<'gc>>,
-    ) -> ArrayObject<'gc> {
-        let mut all_arguments = Vec::new();
+    ) -> Vec<Value<'gc>> {
+        let mut all_arguments = Vec::with_capacity(user_arguments.len());
 
         // Unfortunately we need to allocate now: we need to put all the
         // arguments we just processed into a Vec, so `arguments` or `rest`
@@ -284,6 +278,21 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             let arg = user_arguments.get_at(i);
             all_arguments.push(arg);
         }
+
+        all_arguments
+    }
+
+    /// Create an `arguments` or `rest` object for a given method. This function
+    /// expects the rest of the arguments to already be on the AVM stack.
+    #[inline(never)]
+    fn create_varargs_object(
+        &mut self,
+        method: Method<'gc>,
+        signature: &[ResolvedParamConfig<'gc>],
+        user_arguments: FunctionArgs<'_, 'gc>,
+        callee: Option<FunctionObject<'gc>>,
+    ) -> ArrayObject<'gc> {
+        let all_arguments = self.collect_all_arguments(signature, user_arguments);
 
         let args_array = if method.method().flags.contains(AbcMethodFlags::NEED_REST) {
             if let Some(rest_args) = all_arguments.get(signature.len()..) {
@@ -341,7 +350,6 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             .expect("Cannot execute non-native method without body");
 
         let num_locals = body.num_locals as usize;
-        let has_rest_or_args = method.is_variadic();
 
         if let Some(bound_class) = method.bound_class() {
             assert!(this.is_of_type(bound_class));
@@ -364,51 +372,12 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
         let signature = method.resolved_param_config();
 
-        if user_arguments.len() > signature.len() && !has_rest_or_args && !method.is_unchecked() {
-            return Err(make_error_1063(self, method, user_arguments.len()));
-        }
-
-        // Create locals
+        // Set up the local registers with the receiver and arguments
         self.push_stack(this);
+        self.coerce_and_setup_arguments(method, signature, user_arguments)?;
 
-        // Statically verify all non-variadic, provided parameters.
-        let static_arg_count = min(user_arguments.len(), signature.len());
-        for (i, param_config) in signature.iter().enumerate().take(static_arg_count) {
-            let arg = user_arguments.get_at(i);
-
-            let coerced_arg = if let Some(param_class) = param_config.param_type {
-                arg.coerce_to_type(self, param_class)?
-            } else {
-                arg
-            };
-
-            self.push_stack(coerced_arg);
-        }
-
-        // Now add missing arguments
-        if user_arguments.len() < signature.len() {
-            // Apply remaining default parameters
-            for param_config in signature[user_arguments.len()..].iter() {
-                let arg = if let Some(default_value) = &param_config.default_value {
-                    *default_value
-                } else if method.is_unchecked() {
-                    Value::Undefined
-                } else {
-                    return Err(make_error_1063(self, method, user_arguments.len()));
-                };
-
-                let coerced_arg = if let Some(param_class) = param_config.param_type {
-                    arg.coerce_to_type(self, param_class)?
-                } else {
-                    arg
-                };
-
-                self.push_stack(coerced_arg);
-            }
-        }
-
-        // Finally, handle variadic arguments
-        if has_rest_or_args {
+        // Handle variadic arguments
+        if method.is_variadic() {
             let args_object = self.create_varargs_object(method, signature, user_arguments, callee);
 
             self.push_stack(args_object);
@@ -433,26 +402,32 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     /// activation as the method or script that called them. You must use this
     /// function to construct a new activation for the builtin so that it can
     /// properly supercall.
-    pub fn from_builtin(
-        context: &'a mut UpdateContext<'gc>,
-        bound_superclass_object: Option<ClassObject<'gc>>,
+    pub fn init_from_builtin(
+        &mut self,
+        method: Method<'gc>,
         outer: ScopeChain<'gc>,
+        user_arguments: FunctionArgs<'_, 'gc>,
+        stack_frame: StackFrame<'a, 'gc>,
+        bound_superclass_object: Option<ClassObject<'gc>>,
         caller_domain: Option<Domain<'gc>>,
         caller_movie: Option<Arc<SwfMovie>>,
         caller_dxns: Option<AvmString<'gc>>,
-    ) -> Self {
-        Self {
-            num_locals: 0,
-            outer,
-            caller_domain,
-            caller_movie,
-            bound_superclass_object,
-            stack: StackFrame::empty(),
-            scope_depth: context.avm2.scope_stack.len(),
-            is_interpreter: false,
-            default_xml_namespace: caller_dxns,
-            context,
-        }
+    ) -> Result<(), Error<'gc>> {
+        self.outer = outer;
+        self.caller_domain = caller_domain;
+        self.caller_movie = caller_movie;
+        self.bound_superclass_object = bound_superclass_object;
+        self.stack = stack_frame;
+        self.scope_depth = self.context.avm2.scope_stack.len();
+        self.default_xml_namespace = caller_dxns;
+
+        method.resolve_info(self)?;
+
+        let signature = method.resolved_param_config();
+
+        self.coerce_and_setup_arguments(method, signature, user_arguments)?;
+
+        Ok(())
     }
 
     /// Call the superclass's instance initializer.

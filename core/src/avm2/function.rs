@@ -1,6 +1,6 @@
 use crate::avm2::Multiname;
 use crate::avm2::activation::Activation;
-use crate::avm2::error::{Error, make_error_1001, make_error_1063};
+use crate::avm2::error::{Error, make_error_1001};
 use crate::avm2::method::{Method, MethodKind, ParamConfig};
 use crate::avm2::object::{ClassObject, FunctionObject};
 use crate::avm2::scope::ScopeChain;
@@ -236,7 +236,7 @@ pub fn exec<'gc>(
     scope: ScopeChain<'gc>,
     receiver: Value<'gc>,
     bound_superclass: Option<ClassObject<'gc>>,
-    arguments: FunctionArgs<'_, 'gc>,
+    user_arguments: FunctionArgs<'_, 'gc>,
     activation: &mut Activation<'_, 'gc>,
     callee: Option<FunctionObject<'gc>>,
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -246,28 +246,49 @@ pub fn exec<'gc>(
 
     let ret = match method.method_kind() {
         MethodKind::Native { native_method, .. } => {
+            let declared_arg_count = method.signature().len();
+
+            // We must initialize the stack frame here so the lifetime works out
+            let stack = activation.context.avm2.stack;
+            let stack_frame = stack.get_frame(declared_arg_count);
+
             let caller_domain = activation.caller_domain();
             let caller_movie = activation.caller_movie();
-            let mut activation = Activation::from_builtin(
-                activation.context,
-                bound_superclass,
+            let mut activation = Activation::from_nothing(activation.context);
+            if let Err(e) = activation.init_from_builtin(
+                method,
                 scope,
+                user_arguments,
+                stack_frame,
+                bound_superclass,
                 caller_domain,
                 caller_movie,
                 caller_dxns,
-            );
-
-            method.resolve_info(&mut activation)?;
-
-            let signature = method.resolved_param_config();
-
-            // Check for too many arguments
-            if arguments.len() > signature.len() && !method.is_variadic() && !method.is_unchecked()
-            {
-                return Err(make_error_1063(&mut activation, method, arguments.len()));
+            ) {
+                // If an error is thrown during verification or argument coercion,
+                // we still need to call cleanup to dispose of the stack frame
+                activation.cleanup();
+                return Err(e);
             }
 
-            let arguments = activation.resolve_parameters(method, arguments, signature)?;
+            let args_vec: Vec<_>;
+            let args = if method.is_variadic() {
+                let signature = method.resolved_param_config();
+
+                // We need to allocate a buffer, then put the coerced args into
+                // it, then put the rest of the variadic args into it. We can't
+                // just put them all on the AVM stack because ActionScript can
+                // use `Function.apply` to call a method with a massive number
+                // of arguments, which would overflow the AVM stack.
+                args_vec = activation.collect_all_arguments(signature, user_arguments);
+
+                FunctionArgs::from_slice(&args_vec)
+            } else {
+                // Non-variadic methods have exactly the number of declared
+                // arguments as arguments.
+
+                activation.get_args(declared_arg_count as u32)
+            };
 
             #[cfg(feature = "tracy_avm")]
             let _span = {
@@ -282,9 +303,11 @@ pub fn exec<'gc>(
 
             activation.context.avm2.push_call(mc, method);
 
-            let arguments = FunctionArgs::from_slice(&arguments);
+            let result = native_method(&mut activation, receiver, args);
 
-            native_method(&mut activation, receiver, arguments)
+            activation.cleanup();
+
+            result
         }
         MethodKind::Bytecode { .. } => {
             if method.body().is_none() {
@@ -293,7 +316,7 @@ pub fn exec<'gc>(
 
             // We must initialize the stack frame here so the lifetime works out
             let stack = activation.context.avm2.stack;
-            let stack_frame = stack.get_stack_frame(method);
+            let stack_frame = stack.get_frame_for_method(method);
 
             // This used to be a one step called Activation::from_method,
             // but avoiding moving an Activation around helps perf
@@ -302,7 +325,7 @@ pub fn exec<'gc>(
                 method,
                 scope,
                 receiver,
-                arguments,
+                user_arguments,
                 stack_frame,
                 bound_superclass,
                 callee,
