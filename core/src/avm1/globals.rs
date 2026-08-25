@@ -6,10 +6,8 @@ use crate::avm1::{Avm1, Object, Value};
 use crate::context::UpdateContext;
 use crate::display_object::{DisplayObject, TDisplayObject, TDisplayObjectContainer};
 use crate::string::{AvmString, StringContext, WStr, WString};
-use crate::tag_utils;
-use crate::tag_utils::ControlFlow;
 use gc_arena::Collect;
-use ruffle_common::tag_utils::{SwfMovie, SwfSlice, SwfStream};
+use ruffle_common::tag_utils::{SwfMovie, SwfSlice};
 use std::str;
 use std::sync::Arc;
 use swf::TagCode;
@@ -512,22 +510,16 @@ pub struct SystemPrototypes<'gc> {
 }
 
 pub fn load_playerglobal<'gc>(context: &mut UpdateContext<'gc>) {
-    let movie = Arc::new(
-        SwfMovie::from_static_data(PLAYERGLOBAL).expect("playerglobal_avm1.swf should be valid"),
-    );
+    use crate::tag_utils::extract_unique_tag;
 
-    let slice = SwfSlice::from(movie);
-
-    let mut reader = slice.read_from(0);
-
-    let tag_callback = |reader: &mut SwfStream<'_>, tag_code| {
-        if tag_code == TagCode::DoAction {
-            Avm1::run_stack_frame_for_globals(slice.resize_to_reader(reader), context);
-        }
-        Ok(ControlFlow::Continue)
-    };
-
-    let _ = tag_utils::decode_tags(&mut reader, tag_callback);
+    let actions = SwfMovie::from_static_data(PLAYERGLOBAL)
+        .and_then(|movie| {
+            let movie = SwfSlice::from(Arc::new(movie));
+            let do_action = extract_unique_tag(movie.read_from(0), TagCode::DoAction)?;
+            Ok(movie.resize_to_reader(&do_action))
+        })
+        .expect("playerglobal_avm1.swf should be valid");
+    Avm1::run_stack_frame_for_globals(actions, context);
 }
 
 /// Initialize default global scope and builtins for an AVM1 instance.
