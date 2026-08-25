@@ -1,5 +1,6 @@
 //! SWF decoding support
 
+use swf::error::Error as SwfError;
 use swf::{CharacterId, TagCode};
 use thiserror::Error;
 
@@ -8,7 +9,7 @@ pub use ruffle_common::tag_utils::{SwfMovie, SwfSlice, SwfStream};
 #[derive(Error, Debug)]
 pub enum Error {
     #[error("Couldn't read SWF: {0}")]
-    InvalidSwf(#[from] swf::error::Error),
+    InvalidSwf(#[from] SwfError),
 
     #[error("Couldn't register bitmap: {0}")]
     InvalidBitmap(#[from] ruffle_render::error::Error),
@@ -96,6 +97,37 @@ where
     }
 
     Ok(true)
+}
+
+/// Extract a given tag from a SWF datastream.
+/// Errors if the tag is missing or is present multiple times.
+pub fn extract_unique_tag<'a>(
+    mut reader: SwfStream<'a>,
+    tag: TagCode,
+) -> Result<SwfStream<'a>, SwfError> {
+    use swf::extensions::ReadSwfExt as _;
+
+    let mut found = None;
+    loop {
+        let (raw_tag, tag_len) = reader.read_tag_code_and_length()?;
+        let slice = reader.read_slice(tag_len)?;
+
+        let err = match (TagCode::from_u16(raw_tag), found) {
+            (Some(code), None) if code == tag => {
+                found = Some(slice);
+                continue;
+            }
+            (Some(code), Some(_)) if code == tag => "duplicate tag",
+            (Some(TagCode::End), None) => "tag not found",
+            (Some(TagCode::End), Some(data)) => {
+                let tag_reader = swf::read::Reader::new(data, reader.version());
+                return Ok(tag_reader);
+            }
+            _ => continue,
+        };
+
+        return Err(SwfError::InvalidData(err.into()));
+    }
 }
 
 /// Utility method to construct a movie from a file on disk.
