@@ -17,8 +17,8 @@ use std::slice::Iter;
 use std::sync::Arc;
 use swf::{Rectangle, Twips};
 
-/// Contains information relating to the current layout operation.
-pub struct LayoutContext<'a, 'gc> {
+/// Accumulates state while incrementally laying out a run of text.
+pub struct LayoutBuilder<'a, 'gc> {
     /// The movie this layout context is pulling fonts from.
     movie: Arc<SwfMovie>,
 
@@ -101,7 +101,7 @@ pub struct LayoutContext<'a, 'gc> {
     max_bounds: Twips,
 }
 
-impl<'a, 'gc> LayoutContext<'a, 'gc> {
+impl<'a, 'gc> LayoutBuilder<'a, 'gc> {
     fn new(
         movie: Arc<SwfMovie>,
         max_bounds: Twips,
@@ -852,7 +852,7 @@ fn lower_from_text_spans_known_width<'gc>(
     is_word_wrap: bool,
     font_type: FontType,
 ) -> Layout<'gc> {
-    let mut layout_context = LayoutContext::new(
+    let mut builder = LayoutBuilder::new(
         movie,
         bounds,
         fs.displayed_text(),
@@ -861,9 +861,9 @@ fn lower_from_text_spans_known_width<'gc>(
         font_type,
     );
 
-    layout_context.lay_out_spans(context, fs);
+    builder.lay_out_spans(context, fs);
 
-    layout_context.end_layout(context, fs)
+    builder.end_layout(context, fs)
 }
 
 /// A `Layout` represents a fully laid-out text field.
