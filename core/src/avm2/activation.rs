@@ -1088,16 +1088,11 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         num_args: u32,
         push_return_value: bool,
     ) -> Result<(), Error<'gc>> {
-        let mut args_buf = [Value::Undefined; 2];
-        let args = &mut args_buf[..num_args as usize];
-        for arg in args.iter_mut().rev() {
-            *arg = self.pop_stack();
-        }
+        let args = self.get_args(num_args);
 
         let receiver = self.pop_stack().null_check(self, None)?;
 
-        let value = method(self, receiver, FunctionArgs::from_slice(args))
-            .expect("FastCall methods should not return Err");
+        let value = method(self, receiver, args).expect("FastCall methods should not return Err");
 
         if push_return_value {
             self.push_stack(value);
