@@ -10,7 +10,7 @@ use crate::context::UpdateContext;
 use crate::string::WStr;
 use crate::tag_utils::{SwfMovie, SwfSlice};
 use gc_arena::Collect;
-use std::sync::Arc;
+use std::sync::{Arc, LazyLock};
 use swf::TagCode;
 
 mod __ruffle__;
@@ -543,10 +543,6 @@ pub fn init_early_classes<'gc>(
     Ok(())
 }
 
-/// This file is built by 'core/build_playerglobal/'
-/// See that tool, and 'core/src/avm2/globals/README.md', for more details
-const PLAYERGLOBAL: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/playerglobal_avm2.swf"));
-
 mod native {
     // Some native methods have names starting with '_'.
     #![allow(clippy::used_underscore_items)]
@@ -823,26 +819,33 @@ pub fn init_native_system_classes(activation: &mut Activation<'_, '_>) {
         ]
     );
 }
-
-/// Loads classes from our custom 'playerglobal' (which are written in ActionScript)
-/// into the environment. See 'core/src/avm2/globals/README.md' for more information
-pub fn load_playerglobal<'gc>(context: &mut UpdateContext<'gc>, domain: Domain<'gc>) {
+static PLAYERGLOBAL_ABC: LazyLock<SwfSlice> = LazyLock::new(|| {
     use crate::tag_utils::extract_unique_tag;
 
-    context.avm2.native_method_table = native::NATIVE_METHOD_TABLE;
-    context.avm2.native_instance_allocator_table = native::NATIVE_INSTANCE_ALLOCATOR_TABLE;
-    context.avm2.native_call_handler_table = native::NATIVE_CALL_HANDLER_TABLE;
-    context.avm2.native_custom_constructor_table = native::NATIVE_CUSTOM_CONSTRUCTOR_TABLE;
-    context.avm2.native_fast_call_list = native::NATIVE_FAST_CALL_LIST;
+    /// This file is built by 'core/build_playerglobal/'
+    /// See that tool, and 'core/src/avm2/globals/README.md', for more details
+    const SWF: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/playerglobal_avm2.swf"));
 
-    let abc = SwfMovie::from_static_data(PLAYERGLOBAL)
+    SwfMovie::from_static_data(SWF)
         .and_then(|movie| {
             let movie = SwfSlice::from(Arc::new(movie));
             let mut reader = extract_unique_tag(movie.read_from(0), TagCode::DoAbc2)?;
             let abc = &reader.read_do_abc_2()?.data;
             Ok(movie.to_subslice(abc))
         })
-        .expect("playerglobal_avm2.swf should be valid");
+        .expect("playerglobal_avm2.swf should be valid")
+});
+
+/// Loads classes from our custom 'playerglobal' (which are written in ActionScript)
+/// into the environment. See 'core/src/avm2/globals/README.md' for more information
+pub fn load_playerglobal<'gc>(context: &mut UpdateContext<'gc>, domain: Domain<'gc>) {
+    context.avm2.native_method_table = native::NATIVE_METHOD_TABLE;
+    context.avm2.native_instance_allocator_table = native::NATIVE_INSTANCE_ALLOCATOR_TABLE;
+    context.avm2.native_call_handler_table = native::NATIVE_CALL_HANDLER_TABLE;
+    context.avm2.native_custom_constructor_table = native::NATIVE_CUSTOM_CONSTRUCTOR_TABLE;
+    context.avm2.native_fast_call_list = native::NATIVE_FAST_CALL_LIST;
+
+    let abc = LazyLock::force(&PLAYERGLOBAL_ABC);
     Avm2::load_builtin_abc(context, abc.data(), domain, abc.movie.clone());
 
     // Domain memory must be initialized after playerglobals is loaded because it relies on ByteArray.
