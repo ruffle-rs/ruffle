@@ -143,20 +143,27 @@ pub fn decompress_swf<'a, R: Read + 'a>(mut input: R) -> Result<SwfBuf> {
         frame_rate,
         num_frames,
     };
-    let offset = reader.as_slice().as_ptr() as usize - data.as_ptr() as usize;
+
     // Remove the header.
     // As an alternative we could return the entire original buffer with header length,
     // but that's a nontrivial API change, probably not worth the effort.
+    let offset = reader.as_slice().as_ptr() as usize - data.as_ptr() as usize;
     data.drain(..offset);
-    let mut reader = Reader::new(&data, version);
 
     // Parse the first two tags, searching for the FileAttributes and SetBackgroundColor tags.
     // This metadata is useful, so we want to return it along with the header.
+    // Note that we don't use `read_tag`, as it would parse tags we may not care about, leading
+    // to wasted work.
+    let mut reader = Reader::new(&data, version);
+
     // In SWF8+, FileAttributes should be the first tag in the SWF.
     // FileAttributes anywhere else in the SWF are ignored.
-    let mut tag = reader.read_tag();
-    let file_attributes = if let Ok(Tag::FileAttributes(attributes)) = tag {
-        tag = reader.read_tag();
+    let mut tag = reader.read_raw_tag();
+    let file_attributes = if let Ok((tag_code, tag_reader)) = &mut tag
+        && *tag_code == TagCode::FileAttributes as u16
+        && let Ok(attributes) = tag_reader.read_file_attributes()
+    {
+        tag = reader.read_raw_tag();
         attributes
     } else {
         FileAttributes::default()
@@ -167,11 +174,14 @@ pub fn decompress_swf<'a, R: Read + 'a>(mut input: R) -> Result<SwfBuf> {
     // return `None` in this case.
     let mut background_color = None;
     for _ in 0..2 {
-        if let Ok(Tag::SetBackgroundColor(color)) = tag {
+        if let Ok((tag_code, tag_reader)) = &mut tag
+            && *tag_code == TagCode::SetBackgroundColor as u16
+            && let Ok(color) = tag_reader.read_rgb()
+        {
             background_color = Some(color);
             break;
         };
-        tag = reader.read_tag();
+        tag = reader.read_raw_tag();
     }
 
     Ok(SwfBuf {
@@ -400,21 +410,24 @@ impl<'a> Reader<'a> {
     /// }
     /// ```
     pub fn read_tag(&mut self) -> Result<Tag<'a>> {
-        let (tag_code, length) = self.read_tag_code_and_length()?;
+        let (tag_code, tag_reader) = self.read_raw_tag()?;
 
         if let Some(code) = TagCode::from_u16(tag_code) {
-            self.read_tag_with_code(code, length)
+            Self::read_tag_with_code(code, tag_reader)
+                .map_err(|e| Error::swf_parse_error(tag_code, e))
         } else {
-            match self.read_slice(length) {
-                Ok(data) => Ok(Tag::Unknown { tag_code, data }),
-                Err(e) => Err(Error::from(e)),
-            }
+            let data = tag_reader.get_ref();
+            Ok(Tag::Unknown { tag_code, data })
         }
-        .map_err(|e| Error::swf_parse_error(tag_code, e))
     }
 
-    fn read_tag_with_code(&mut self, tag_code: TagCode, length: usize) -> Result<Tag<'a>> {
-        let mut tag_reader = Reader::new(self.read_slice(length)?, self.version);
+    fn read_raw_tag(&mut self) -> Result<(u16, Reader<'a>)> {
+        let (tag_code, length) = self.read_tag_code_and_length()?;
+        let tag_reader = Reader::new(self.read_slice(length)?, self.version);
+        Ok((tag_code, tag_reader))
+    }
+
+    fn read_tag_with_code(tag_code: TagCode, mut tag_reader: Self) -> Result<Tag<'a>> {
         let tag = match tag_code {
             TagCode::End => Tag::End,
             TagCode::ShowFrame => Tag::ShowFrame,
@@ -481,7 +494,7 @@ impl<'a> Reader<'a> {
             }
             TagCode::EnableTelemetry => {
                 tag_reader.read_u16()?; // Reserved
-                let password_hash = if length > 2 {
+                let password_hash = if tag_reader.as_slice().len() > 2 {
                     tag_reader.read_slice(32)?
                 } else {
                     &[]
@@ -597,11 +610,11 @@ impl<'a> Reader<'a> {
             TagCode::FileAttributes => Tag::FileAttributes(tag_reader.read_file_attributes()?),
 
             TagCode::Protect => {
-                Tag::Protect(if length > 0 {
+                Tag::Protect(if tag_reader.as_slice().is_empty() {
+                    None
+                } else {
                     tag_reader.read_u16()?; // TODO(Herschel): Two null bytes? Not specified in SWF19.
                     Some(tag_reader.read_str()?)
-                } else {
-                    None
                 })
             }
 
@@ -3090,12 +3103,7 @@ pub mod tests {
     fn read_invalid_tag() {
         let tag_bytes = [0xff, 0xff, 0xff, 0xff, 0xff, 0xff];
         let mut reader = Reader::new(&tag_bytes[..], 5);
-        match reader.read_tag() {
-            Err(crate::error::Error::SwfParseError { .. }) => (),
-            result => {
-                panic!("Expected SwfParseError, got {result:?}");
-            }
-        }
+        let _ = reader.read_tag().unwrap_err();
     }
 
     /// Ensure that we can read a PlaceObject3 tag that
