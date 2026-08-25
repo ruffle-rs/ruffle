@@ -1,0 +1,9 @@
+num_ticks = 5
+
+[image_comparisons.output]
+# Native triangle edges have backend-dependent antialiasing.
+tolerance = 2
+max_outliers = 3500
+
+[player_options]
+with_renderer = { optional = false }
