@@ -898,6 +898,16 @@ impl<'gc> Object<'gc> {
         }
     }
 
+    /// Returns the actual method receiver represented by this object.
+    ///
+    /// AVM1 may pass a transient `super` object as `this` when a method is
+    /// invoked through `super.method.apply(super, arguments)`. Long-lived
+    /// native state must retain the underlying receiver, not the super view of
+    /// its prototype chain.
+    pub(crate) fn receiver(self) -> Self {
+        self.as_super_object().map_or(self, |zuper| zuper.this())
+    }
+
     pub fn set_native(self, mc: &Mutation<'gc>, native: NativeObject<'gc>) {
         assert!(!matches!(native, NativeObject::None));
 

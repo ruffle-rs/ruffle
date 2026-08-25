@@ -54,7 +54,7 @@ use crate::socket::Sockets;
 use crate::streams::StreamManager;
 use crate::string::{AvmStringInterner, StringContext};
 use crate::stub::StubCollection;
-use crate::system_properties::SystemProperties;
+use crate::system_properties::{SystemPlatform, SystemProperties};
 use crate::tag_utils::SwfMovie;
 use crate::timer::Timers;
 use crate::vminterface::Instantiator;
@@ -2604,6 +2604,8 @@ pub struct PlayerBuilder {
     compatibility_rules: CompatibilityRules,
     gamepad_button_mapping: HashMap<GamepadButton, KeyCode>,
     player_version: Option<u8>,
+    player_version_details: [u16; 3],
+    system_platform: SystemPlatform,
     player_runtime: PlayerRuntime,
     player_mode: PlayerMode,
     quality: StageQuality,
@@ -2661,6 +2663,8 @@ impl PlayerBuilder {
             compatibility_rules: CompatibilityRules::default(),
             gamepad_button_mapping: HashMap::new(),
             player_version: None,
+            player_version_details: [0; 3],
+            system_platform: SystemPlatform::default(),
             player_runtime: PlayerRuntime::default(),
             player_mode: PlayerMode::default(),
             quality: StageQuality::High,
@@ -2844,6 +2848,18 @@ impl PlayerBuilder {
     /// Configures the target player version.
     pub fn with_player_version(mut self, version: Option<u8>) -> Self {
         self.player_version = version;
+        self
+    }
+
+    /// Configures the minor, build, and revision components of the emulated player version.
+    pub fn with_player_version_details(mut self, details: [u16; 3]) -> Self {
+        self.player_version_details = details;
+        self
+    }
+
+    /// Configures the host platform reported by the emulated player.
+    pub fn with_system_platform(mut self, platform: SystemPlatform) -> Self {
+        self.system_platform = platform;
         self
     }
 
@@ -3047,7 +3063,11 @@ impl PlayerBuilder {
                 // TODO: AVM1 and AVM2 use separate RNGs (though algorithm is same), so this is technically incorrect.
                 // See: https://github.com/ruffle-rs/ruffle/issues/20244
                 rng: AvmRng::default(),
-                system: SystemProperties::new(language),
+                system: SystemProperties::new(
+                    language,
+                    self.system_platform,
+                    self.player_version_details,
+                ),
                 page_url: self.page_url.clone(),
                 transform_stack: TransformStack::new(),
                 instance_counter: 0,

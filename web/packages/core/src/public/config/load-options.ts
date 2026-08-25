@@ -343,6 +343,18 @@ export interface SocketProxy {
 }
 
 /**
+ * A fallback WebSocket proxy for socket targets that do not have an exact
+ * {@link SocketProxy} entry. Ruffle appends the requested `host` and `port` as
+ * query parameters to `proxyUrl`.
+ */
+export interface SocketProxyFallback {
+    /**
+     * The proxy URL to use. It may already contain query parameters.
+     */
+    proxyUrl: string;
+}
+
+/**
  * Defines the names of the fonts to use for each "default" Flash device font.
  *
  * The name of each font provided will be used, in priority order.
@@ -557,6 +569,23 @@ export interface BaseLoadOptions {
     base?: string | null;
 
     /**
+     * Overrides the URL exposed to the movie as its own SWF URL while keeping
+     * the actual fetch URL unchanged. This is useful when a trusted embedder
+     * serves an archived or reverse-proxied copy of a movie.
+     *
+     * @default null
+     */
+    spoofUrl?: string | null;
+
+    /**
+     * Overrides the embedding page URL exposed to Flash APIs. If unset, the
+     * current browser page URL is used.
+     *
+     * @default null
+     */
+    pageUrl?: string | null;
+
+    /**
      * If set to true, the built-in context menu items are visible
      *
      * This is equivalent to Stage.showMenu.
@@ -635,12 +664,13 @@ export interface BaseLoadOptions {
     /**
      * The emulated version of the player.
      *
-     * This controls the version that is reported to the movie.
+     * This controls the version that is reported to the movie. A number sets
+     * the major version; a tuple sets the major, minor, build, and revision.
      * null means latest version.
      *
      * @default null
      */
-    playerVersion?: number | null;
+    playerVersion?: number | [number, number, number, number] | null;
 
     /**
      * The preferred render backend of the Ruffle player.
@@ -705,12 +735,13 @@ export interface BaseLoadOptions {
      * a matching SocketProxy object in this array and use it to establish a WebSocket connection,
      * through which all communication is tunneled through.
      *
-     * When none are found, Ruffle will fail the connection gracefully.
+     * When no exact match is found, Ruffle uses the first SocketProxyFallback,
+     * if present. Otherwise, the connection fails gracefully.
      * When multiple matching SocketProxy objects exist, the first one is used.
      *
      * @default []
      */
-    socketProxy?: Array<SocketProxy>;
+    socketProxy?: Array<SocketProxy | SocketProxyFallback>;
 
     /**
      * An array of font URLs to eagerly load and provide to Ruffle.

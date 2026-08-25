@@ -8,7 +8,7 @@ use futures_lite::FutureExt;
 use reqwest::{Proxy, cookie, header};
 use ruffle_core::backend::navigator::{
     ErrorResponse, NavigationMethod, NavigatorBackend, OwnedFuture, Request, SocketMode,
-    SuccessResponse, async_return, create_fetch_error, get_encoding,
+    SocketProxyMode, SocketTarget, SuccessResponse, async_return, create_fetch_error, get_encoding,
 };
 use ruffle_core::indexmap::IndexMap;
 use ruffle_core::loader::Error;
@@ -302,8 +302,7 @@ impl<F: FutureSpawner<Error> + 'static, I: NavigatorInterface> NavigatorBackend
 
     fn connect_socket(
         &mut self,
-        host: String,
-        port: u16,
+        target: SocketTarget,
         timeout: Duration,
         handle: SocketHandle,
         receiver: Receiver<Vec<u8>>,
@@ -321,6 +320,7 @@ impl<F: FutureSpawner<Error> + 'static, I: NavigatorInterface> NavigatorBackend
                 .is_ok()
         }
 
+        let SocketTarget { host, port, .. } = target;
         let addr = format!("{host}:{port}");
         let is_allowed = self.socket_allowed.contains(&addr);
         let socket_mode = self.socket_mode;
@@ -603,8 +603,11 @@ mod tests {
         let (sender, read) = async_channel::unbounded();
 
         backend.connect_socket(
-            addr.ip().to_string(),
-            addr.port(),
+            SocketTarget {
+                host: addr.ip().to_string(),
+                port: addr.port(),
+                proxy_mode: SocketProxyMode::ExactOnly,
+            },
             timeout,
             dummy_handle!(),
             receiver,

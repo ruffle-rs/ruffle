@@ -211,8 +211,8 @@ unsafe extern "C" {
 
 #[derive(Debug, Clone)]
 pub struct SocketProxy {
-    host: String,
-    port: u16,
+    host: Option<String>,
+    port: Option<u16>,
 
     proxy_url: String,
 }

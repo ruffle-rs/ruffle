@@ -97,35 +97,19 @@ fn serialize_array<'gc>(activation: &mut Activation<'_, 'gc>, array: Object<'gc>
         }
     }
 
-    let mut has_custom_properties = false;
     let mut associative = Vec::new();
 
     // Flash expects insertion order for these properties
     for key in keys.into_iter().rev() {
-        // A property is "custom" if it is entirely non-numeric
-        if key.to_utf8_lossy().parse::<usize>().is_err() {
-            has_custom_properties = true;
-        }
-
         let prop_value = array.get(key, activation).unwrap_or(Value::Undefined);
         let value = serialize(activation, prop_value);
         associative.push(Element::new(key.to_string(), Rc::new(value)));
     }
-    if has_custom_properties {
-        // Mixed Array: Has true non-numeric keys
-        AmfValue::ECMAArray(ObjectId::INVALID, Vec::new(), associative, length as u32)
-    } else {
-        // Pure Dense Array: Pad holes with Undefined to maintain contiguous indices
-        let mut dense = Vec::with_capacity(length);
-        for i in 0..length {
-            let elem_name = AvmString::new_utf8(activation.gc(), i.to_string());
-            let prop_value = array.get(elem_name, activation).unwrap_or(Value::Undefined);
-            let value = serialize(activation, prop_value);
-            dense.push(Rc::new(value));
-        }
-        // Output as a StrictArray.
-        AmfValue::StrictArray(ObjectId::INVALID, dense)
-    }
+
+    // AVM1 Flash Player emits ActionScript Array values as AMF0 ECMA arrays,
+    // including dense arrays without custom properties. The length field
+    // preserves trailing holes; only enumerable entries are serialized.
+    AmfValue::ECMAArray(ObjectId::INVALID, Vec::new(), associative, length as u32)
 }
 
 /// Helper to serialize a specific value into the ObjWriter cache architecture.

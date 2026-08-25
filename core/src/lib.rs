@@ -39,6 +39,7 @@ mod orphan_manager;
 pub mod pixel_bender;
 mod player;
 mod prelude;
+mod rtmp;
 pub mod socket;
 mod streams;
 pub mod string;
@@ -67,6 +68,7 @@ pub use ruffle_common::duration::FloatDuration;
 pub use ruffle_render::backend::ViewportDimensions;
 pub use swf;
 pub use swf::Color;
+pub use system_properties::SystemPlatform;
 pub use ttf_parser;
 
 /// The newest Flash Player version known to Ruffle.

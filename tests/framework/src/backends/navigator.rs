@@ -5,7 +5,7 @@ use percent_encoding::percent_decode_str;
 use ruffle_core::backend::log::LogBackend;
 use ruffle_core::backend::navigator::{
     ErrorResponse, NavigationMethod, NavigatorBackend, NullExecutor, NullSpawner, OwnedFuture,
-    Request, SuccessResponse, async_return, create_fetch_error,
+    Request, SocketTarget, SuccessResponse, async_return, create_fetch_error,
 };
 use ruffle_core::indexmap::IndexMap;
 use ruffle_core::loader::Error;
@@ -275,13 +275,13 @@ impl NavigatorBackend for TestNavigatorBackend {
 
     fn connect_socket(
         &mut self,
-        host: String,
-        port: u16,
+        target: SocketTarget,
         _timeout: Duration,
         handle: SocketHandle,
         receiver: Receiver<Vec<u8>>,
         sender: Sender<SocketAction>,
     ) {
+        let SocketTarget { host, port, .. } = target;
         if let Some(log) = &self.log {
             log.avm_trace("Navigator::connect_socket");
             log.avm_trace(&format!("    Host: {host}; Port: {port}"));

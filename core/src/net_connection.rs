@@ -1,3 +1,7 @@
+mod rtmp;
+
+pub(crate) use self::rtmp::RtmpTransportEvent;
+use self::rtmp::{ConnectProperties, RtmpConnection, RtmpConnectionAction};
 use crate::Player;
 use crate::avm1::Object as Avm1Object;
 use crate::avm1::globals::netconnection::NetConnection as Avm1NetConnectionObject;
@@ -14,9 +18,12 @@ use flash_lso::packet::{Header, Message, Packet};
 use flash_lso::types::{AMFVersion, Value as AmfValue};
 use gc_arena::{Collect, DynamicRoot, Gc, Rootable};
 use slotmap::{SlotMap, new_key_type};
+use std::collections::VecDeque;
 use std::fmt::{Debug, Formatter};
 use std::rc::Rc;
 use std::sync::{Arc, Mutex};
+use std::time::Duration;
+use web_time::Instant;
 
 new_key_type! {
     pub struct NetConnectionHandle;
@@ -74,6 +81,32 @@ impl ResponderHandle {
             }
         }
     }
+
+    fn call_rtmp(
+        &self,
+        context: &mut UpdateContext<'_>,
+        callback: ResponderCallback,
+        command: &crate::rtmp::Command,
+    ) {
+        match self {
+            ResponderHandle::Avm1(handle) => {
+                let object = context.dynamic_root.fetch(handle);
+                if let Err(error) =
+                    Avm1NetConnectionObject::send_rtmp_callback(context, *object, callback, command)
+                {
+                    tracing::error!(%error, "Unhandled AVM1 RTMP responder callback");
+                }
+            }
+            ResponderHandle::Avm2(_) => {
+                let value = command
+                    .arguments
+                    .first()
+                    .cloned()
+                    .unwrap_or_else(|| Rc::new(AmfValue::Undefined));
+                self.call(context, callback, value);
+            }
+        }
+    }
 }
 
 #[derive(Copy, Clone, Collect)]
@@ -115,12 +148,16 @@ impl<'gc> From<Avm1Object<'gc>> for NetConnectionObject<'gc> {
 #[collect(no_drop)]
 pub struct NetConnections<'gc> {
     connections: SlotMap<NetConnectionHandle, NetConnection<'gc>>,
+
+    #[collect(require_static)]
+    rtmp_transport_events: VecDeque<(NetConnectionHandle, RtmpTransportEvent)>,
 }
 
 impl Default for NetConnections<'_> {
     fn default() -> Self {
         Self {
             connections: SlotMap::with_key(),
+            rtmp_transport_events: VecDeque::new(),
         }
     }
 }
@@ -188,10 +225,79 @@ impl<'gc> NetConnections<'gc> {
         // No open event here
     }
 
+    pub fn connect_to_rtmp(
+        context: &mut UpdateContext<'gc>,
+        target: Avm1Object<'gc>,
+        uri: String,
+        extra_arguments: Vec<Rc<AmfValue>>,
+    ) {
+        let properties = ConnectProperties {
+            flash_version: context.system.get_version_string(context.player_version),
+            swf_url: context.root_swf.url().to_string(),
+            page_url: context.page_url.clone().unwrap_or_default(),
+        };
+        let time = Instant::now()
+            .duration_since(context.start_time)
+            .as_millis() as u32;
+        let mut c1_random = [0_u8; 1_528];
+        for bytes in c1_random.chunks_exact_mut(4) {
+            bytes.copy_from_slice(&context.rng.generate_random_number().to_be_bytes());
+        }
+        let mut c2_random = [0_u8; 1_504];
+        for bytes in c2_random.chunks_exact_mut(4) {
+            bytes.copy_from_slice(&context.rng.generate_random_number().to_be_bytes());
+        }
+        let Ok(rtmp) =
+            RtmpConnection::new(uri, extra_arguments, properties, time, c1_random, c2_random)
+        else {
+            if let Err(error) = Avm1NetConnectionObject::on_status_event(
+                context,
+                target,
+                "NetConnection.Connect.Failed",
+            ) {
+                tracing::error!(%error, "Unhandled RTMP connection callback");
+            }
+            return;
+        };
+        let host = rtmp.host().to_string();
+        let port = rtmp.port();
+        let connection = NetConnection {
+            object: NetConnectionObject::Avm1(target),
+            protocol: NetConnectionProtocol::Rtmp(Box::new(rtmp)),
+        };
+        let handle = context.net_connections.connections.insert(connection);
+
+        if let Some(existing_handle) = NetConnectionObject::Avm1(target).set_handle(Some(handle)) {
+            NetConnections::close(context, existing_handle, false);
+        }
+
+        context.sockets.connect_rtmp(
+            context.navigator,
+            handle,
+            host,
+            port,
+            Duration::from_secs(20),
+        );
+    }
+
+    pub(crate) fn queue_rtmp_transport_event(
+        &mut self,
+        handle: NetConnectionHandle,
+        event: RtmpTransportEvent,
+    ) {
+        self.rtmp_transport_events.push_back((handle, event));
+    }
+
     pub fn close(context: &mut UpdateContext<'gc>, handle: NetConnectionHandle, is_explicit: bool) {
         let Some(connection) = context.net_connections.connections.remove(handle) else {
             return;
         };
+
+        if let NetConnectionProtocol::Rtmp(rtmp) = &connection.protocol
+            && let Some(socket) = rtmp.socket()
+        {
+            context.sockets.close(socket);
+        }
 
         match connection.object {
             NetConnectionObject::Avm2(object) => {
@@ -244,6 +350,27 @@ impl<'gc> NetConnections<'gc> {
         for (handle, connection) in context.net_connections.connections.iter_mut() {
             connection.update(handle, context.navigator, &player);
         }
+
+        let receive_time = Instant::now()
+            .duration_since(context.start_time)
+            .as_millis() as u32;
+        let events = std::mem::take(&mut context.net_connections.rtmp_transport_events);
+        let mut actions = Vec::new();
+        for (handle, event) in events {
+            let Some(connection) = context.net_connections.connections.get_mut(handle) else {
+                continue;
+            };
+            if let NetConnectionProtocol::Rtmp(rtmp) = &mut connection.protocol {
+                actions.extend(
+                    rtmp.handle_transport_event(event, receive_time)
+                        .into_iter()
+                        .map(|action| (handle, action)),
+                );
+            }
+        }
+        for (handle, action) in actions {
+            Self::apply_rtmp_action(context, handle, action);
+        }
     }
 
     pub fn send_without_response(
@@ -252,8 +379,17 @@ impl<'gc> NetConnections<'gc> {
         command: String,
         message: AmfValue,
     ) {
-        if let Some(connection) = context.net_connections.connections.get_mut(handle) {
-            connection.send(command, None, message);
+        let current_time = Instant::now()
+            .duration_since(context.start_time)
+            .as_millis() as u32;
+        let actions = context
+            .net_connections
+            .connections
+            .get_mut(handle)
+            .map(|connection| connection.send(command, None, message, current_time))
+            .unwrap_or_default();
+        for action in actions {
+            Self::apply_rtmp_action(context, handle, action);
         }
     }
 
@@ -265,11 +401,20 @@ impl<'gc> NetConnections<'gc> {
         responder: Avm2ResponderObject<'gc>,
     ) {
         let mc = context.gc();
-        if let Some(connection) = context.net_connections.connections.get_mut(handle) {
+        let current_time = Instant::now()
+            .duration_since(context.start_time)
+            .as_millis() as u32;
+        let actions = if let Some(connection) = context.net_connections.connections.get_mut(handle)
+        {
             // TODO(moulins): it'd be nice to avoid the double indirection here...
             let responder_handle =
                 ResponderHandle::Avm2(context.dynamic_root.stash(mc, Gc::new(mc, responder)));
-            connection.send(command, Some(responder_handle), message);
+            connection.send(command, Some(responder_handle), message, current_time)
+        } else {
+            Vec::new()
+        };
+        for action in actions {
+            Self::apply_rtmp_action(context, handle, action);
         }
     }
 
@@ -281,11 +426,45 @@ impl<'gc> NetConnections<'gc> {
         responder: Avm1Object<'gc>,
     ) {
         let mc = context.gc();
-        if let Some(connection) = context.net_connections.connections.get_mut(handle) {
+        let current_time = Instant::now()
+            .duration_since(context.start_time)
+            .as_millis() as u32;
+        let actions = if let Some(connection) = context.net_connections.connections.get_mut(handle)
+        {
             // TODO(moulins): it'd be nice to avoid the double indirection here...
             let responder_handle =
                 ResponderHandle::Avm1(context.dynamic_root.stash(mc, Gc::new(mc, responder)));
-            connection.send(command, Some(responder_handle), message);
+            connection.send(command, Some(responder_handle), message, current_time)
+        } else {
+            Vec::new()
+        };
+        for action in actions {
+            Self::apply_rtmp_action(context, handle, action);
+        }
+    }
+
+    fn send_rtmp_result(
+        context: &mut UpdateContext<'gc>,
+        handle: NetConnectionHandle,
+        transaction_id: crate::rtmp::TransactionId,
+        value: AmfValue,
+    ) {
+        let current_time = Instant::now()
+            .duration_since(context.start_time)
+            .as_millis() as u32;
+        let actions = context
+            .net_connections
+            .connections
+            .get_mut(handle)
+            .and_then(|connection| match &mut connection.protocol {
+                NetConnectionProtocol::Rtmp(rtmp) => {
+                    Some(rtmp.send_result(transaction_id, value, current_time))
+                }
+                _ => None,
+            })
+            .unwrap_or_default();
+        for action in actions {
+            Self::apply_rtmp_action(context, handle, action);
         }
     }
 
@@ -335,11 +514,97 @@ impl<'gc> NetConnections<'gc> {
     pub fn is_using_tls(&self, handle: NetConnectionHandle) -> Option<bool> {
         self.connections.get(handle).and_then(|c| c.using_tls())
     }
+
+    fn apply_rtmp_action(
+        context: &mut UpdateContext<'gc>,
+        handle: NetConnectionHandle,
+        action: RtmpConnectionAction,
+    ) {
+        match action {
+            RtmpConnectionAction::Send(socket, bytes) => context.sockets.send(socket, bytes),
+            RtmpConnectionAction::CloseSocket(socket) => context.sockets.close(socket),
+            RtmpConnectionAction::Connected(command) => {
+                if let Some(NetConnectionObject::Avm1(object)) = context
+                    .net_connections
+                    .connections
+                    .get(handle)
+                    .map(|connection| connection.object)
+                    && let Err(error) =
+                        Avm1NetConnectionObject::on_rtmp_status(context, object, &command)
+                {
+                    tracing::error!(%error, "Unhandled RTMP connection callback");
+                }
+            }
+            RtmpConnectionAction::ConnectFailed(command) => {
+                if let Some(NetConnectionObject::Avm1(object)) = context
+                    .net_connections
+                    .connections
+                    .get(handle)
+                    .map(|connection| connection.object)
+                {
+                    let result = if let Some(command) = command {
+                        Avm1NetConnectionObject::on_rtmp_status(context, object, &command)
+                    } else {
+                        Avm1NetConnectionObject::on_status_event(
+                            context,
+                            object,
+                            "NetConnection.Connect.Failed",
+                        )
+                    };
+                    if let Err(error) = result {
+                        tracing::error!(%error, "Unhandled RTMP connection callback");
+                    }
+                }
+            }
+            RtmpConnectionAction::Closed => {
+                if let Some(NetConnectionObject::Avm1(object)) = context
+                    .net_connections
+                    .connections
+                    .get(handle)
+                    .map(|connection| connection.object)
+                    && let Err(error) = Avm1NetConnectionObject::on_status_event(
+                        context,
+                        object,
+                        "NetConnection.Connect.Closed",
+                    )
+                {
+                    tracing::error!(%error, "Unhandled RTMP connection callback");
+                }
+            }
+            RtmpConnectionAction::Responder {
+                responder,
+                callback,
+                command,
+            } => responder.call_rtmp(context, callback, &command),
+            RtmpConnectionAction::Invoke(command) => {
+                let transaction_id = command.transaction_id;
+                if let Some(NetConnectionObject::Avm1(object)) = context
+                    .net_connections
+                    .connections
+                    .get(handle)
+                    .map(|connection| connection.object)
+                {
+                    match Avm1NetConnectionObject::invoke_rtmp(context, object, &command) {
+                        Ok(result) => {
+                            Self::send_rtmp_result(context, handle, transaction_id, result);
+                        }
+                        Err(error) => {
+                            tracing::error!(
+                                method = %command.name,
+                                %error,
+                                "Unhandled RTMP client method"
+                            );
+                        }
+                    }
+                }
+            }
+        }
+    }
 }
 
 #[derive(Collect)]
 #[collect(no_drop)]
-pub struct NetConnection<'gc> {
+struct NetConnection<'gc> {
     object: NetConnectionObject<'gc>,
 
     #[collect(require_static)]
@@ -348,9 +613,10 @@ pub struct NetConnection<'gc> {
 
 impl NetConnection<'_> {
     pub fn is_connected(&self) -> bool {
-        match self.protocol {
+        match &self.protocol {
             NetConnectionProtocol::Local => true,
             NetConnectionProtocol::FlashRemoting(_) => false,
+            NetConnectionProtocol::Rtmp(rtmp) => rtmp.is_connected(),
         }
     }
 
@@ -358,6 +624,7 @@ impl NetConnection<'_> {
         match self.protocol {
             NetConnectionProtocol::Local => Some("none"),
             NetConnectionProtocol::FlashRemoting(_) => None,
+            NetConnectionProtocol::Rtmp(_) => Some("none"),
         }
     }
 
@@ -365,6 +632,7 @@ impl NetConnection<'_> {
         match self.protocol {
             NetConnectionProtocol::Local => Some(""),
             NetConnectionProtocol::FlashRemoting(_) => None,
+            NetConnectionProtocol::Rtmp(_) => Some(""),
         }
     }
 
@@ -374,6 +642,7 @@ impl NetConnection<'_> {
                 Some("0000000000000000000000000000000000000000000000000000000000000000")
             }
             NetConnectionProtocol::FlashRemoting(_) => None,
+            NetConnectionProtocol::Rtmp(_) => None,
         }
     }
 
@@ -381,6 +650,7 @@ impl NetConnection<'_> {
         match self.protocol {
             NetConnectionProtocol::Local => Some(""),
             NetConnectionProtocol::FlashRemoting(_) => None,
+            NetConnectionProtocol::Rtmp(_) => Some(""),
         }
     }
 
@@ -390,6 +660,7 @@ impl NetConnection<'_> {
                 Some("0000000000000000000000000000000000000000000000000000000000000000")
             }
             NetConnectionProtocol::FlashRemoting(_) => None,
+            NetConnectionProtocol::Rtmp(_) => None,
         }
     }
 
@@ -397,6 +668,7 @@ impl NetConnection<'_> {
         match self.protocol {
             NetConnectionProtocol::Local => Some("rtmp"),
             NetConnectionProtocol::FlashRemoting(_) => None,
+            NetConnectionProtocol::Rtmp(_) => Some("rtmp"),
         }
     }
 
@@ -404,6 +676,7 @@ impl NetConnection<'_> {
         match &self.protocol {
             NetConnectionProtocol::Local => Some("null".to_string()), // Yes, it's a string "null", not a real null.
             NetConnectionProtocol::FlashRemoting(remoting) => Some(remoting.url.to_string()),
+            NetConnectionProtocol::Rtmp(rtmp) => Some(rtmp.uri().to_string()),
         }
     }
 
@@ -411,19 +684,29 @@ impl NetConnection<'_> {
         match &self.protocol {
             NetConnectionProtocol::Local => Some(false),
             NetConnectionProtocol::FlashRemoting(_) => None,
+            NetConnectionProtocol::Rtmp(_) => Some(false),
         }
     }
 
-    pub fn send(
+    fn send(
         &mut self,
         command: String,
         responder_handle: Option<ResponderHandle>,
         message: AmfValue,
-    ) {
+        current_time: u32,
+    ) -> Vec<RtmpConnectionAction> {
         match &mut self.protocol {
-            NetConnectionProtocol::Local => {}
+            NetConnectionProtocol::Local => Vec::new(),
             NetConnectionProtocol::FlashRemoting(remoting) => {
-                remoting.send(command, responder_handle, message)
+                remoting.send(command, responder_handle, message);
+                Vec::new()
+            }
+            NetConnectionProtocol::Rtmp(rtmp) => {
+                let arguments = match message {
+                    AmfValue::StrictArray(_, arguments) => arguments,
+                    message => vec![Rc::new(message)],
+                };
+                rtmp.send(command, responder_handle, arguments, current_time)
             }
         }
     }
@@ -441,6 +724,7 @@ impl NetConnection<'_> {
                     navigator.spawn_future(remoting.flush_queue(self_handle, player.clone()));
                 }
             }
+            NetConnectionProtocol::Rtmp(_) => {}
         }
     }
 
@@ -450,17 +734,21 @@ impl NetConnection<'_> {
             NetConnectionProtocol::FlashRemoting(remoting) => {
                 remoting.set_header(header);
             }
+            NetConnectionProtocol::Rtmp(_) => {}
         }
     }
 }
 
 #[derive(Debug)]
-pub enum NetConnectionProtocol {
+enum NetConnectionProtocol {
     /// A "local" connection, caused by connecting to null
     Local,
 
     /// Flash Remoting protocol, caused by connecting to a `http://` address.
     FlashRemoting(FlashRemoting),
+
+    /// RTMP command transport used by Flash `NetConnection`.
+    Rtmp(Box<RtmpConnection>),
 }
 
 #[derive(Debug)]

@@ -7,8 +7,9 @@ use gloo_net::websocket::{Message, futures::WebSocket};
 use js_sys::{Array, Promise, RegExp, Uint8Array};
 use ruffle_core::Player;
 use ruffle_core::backend::navigator::{
-    ErrorResponse, NavigationMethod, NavigatorBackend, OwnedFuture, Request, SuccessResponse,
-    async_return, create_fetch_error, create_specific_fetch_error, get_encoding,
+    ErrorResponse, NavigationMethod, NavigatorBackend, OwnedFuture, Request, SocketProxyMode,
+    SocketTarget, SuccessResponse, async_return, create_fetch_error, create_specific_fetch_error,
+    get_encoding,
 };
 use ruffle_core::config::NetworkingAccessMode;
 use ruffle_core::indexmap::IndexMap;
@@ -493,19 +494,19 @@ impl NavigatorBackend for WebNavigatorBackend {
 
     fn connect_socket(
         &mut self,
-        host: String,
-        port: u16,
+        target: SocketTarget,
         // NOTE: WebSocket does not allow specifying a timeout, so this goes unused.
         _timeout: Duration,
         handle: SocketHandle,
         receiver: Receiver<Vec<u8>>,
         sender: Sender<SocketAction>,
     ) {
-        let Some(proxy) = self
-            .socket_proxies
-            .iter()
-            .find(|x| x.host == host && x.port == port)
-        else {
+        let SocketTarget {
+            host,
+            port,
+            proxy_mode,
+        } = target;
+        let Some(proxy) = find_socket_proxy(&self.socket_proxies, &host, port, proxy_mode) else {
             tracing::warn!("Missing WebSocket proxy for host {}, port {}", host, port);
             sender
                 .try_send(SocketAction::Connect(handle, ConnectionState::Failed))
@@ -513,9 +514,19 @@ impl NavigatorBackend for WebNavigatorBackend {
             return;
         };
 
-        tracing::info!("Connecting to {}", proxy.proxy_url);
+        let proxy_url = match socket_proxy_url(proxy, &host, port) {
+            Ok(url) => url,
+            Err(error) => {
+                tracing::warn!(%error, "Invalid WebSocket socket proxy URL");
+                sender
+                    .try_send(SocketAction::Connect(handle, ConnectionState::Failed))
+                    .expect("working channel send");
+                return;
+            }
+        };
+        tracing::info!("Connecting to {}", proxy_url);
 
-        let ws = match WebSocket::open(&proxy.proxy_url) {
+        let ws = match WebSocket::open(&proxy_url) {
             Ok(x) => x,
             Err(e) => {
                 tracing::error!("Failed to create WebSocket, reason {:?}", e);
@@ -569,6 +580,37 @@ impl NavigatorBackend for WebNavigatorBackend {
             Ok(())
         }));
     }
+}
+
+fn find_socket_proxy<'a>(
+    proxies: &'a [SocketProxy],
+    host: &str,
+    port: u16,
+    mode: SocketProxyMode,
+) -> Option<&'a SocketProxy> {
+    proxies
+        .iter()
+        .find(|proxy| proxy.host.as_deref() == Some(host) && proxy.port == Some(port))
+        .or_else(|| {
+            (mode == SocketProxyMode::AllowFallback)
+                .then(|| {
+                    proxies
+                        .iter()
+                        .find(|proxy| proxy.host.is_none() && proxy.port.is_none())
+                })
+                .flatten()
+        })
+}
+
+fn socket_proxy_url(proxy: &SocketProxy, host: &str, port: u16) -> Result<String, ParseError> {
+    if proxy.host.is_some() {
+        return Ok(proxy.proxy_url.clone());
+    }
+    let mut url = Url::parse(&proxy.proxy_url)?;
+    url.query_pairs_mut()
+        .append_pair("host", host)
+        .append_pair("port", &port.to_string());
+    Ok(url.to_string())
 }
 
 struct WebResponseWrapper {
@@ -678,5 +720,67 @@ impl SuccessResponse for WebResponseWrapper {
         } else {
             Ok(None)
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{find_socket_proxy, socket_proxy_url};
+    use crate::SocketProxy;
+    use ruffle_core::backend::navigator::SocketProxyMode;
+
+    fn fallback_proxy() -> SocketProxy {
+        SocketProxy {
+            host: None,
+            port: None,
+            proxy_url: "ws://127.0.0.1/proxy?cap=opaque".into(),
+        }
+    }
+
+    #[test]
+    fn fallback_socket_proxy_is_opt_in() {
+        let proxies = [fallback_proxy()];
+        assert!(
+            find_socket_proxy(
+                &proxies,
+                "game.example.test",
+                1935,
+                SocketProxyMode::ExactOnly,
+            )
+            .is_none()
+        );
+        assert!(
+            find_socket_proxy(
+                &proxies,
+                "game.example.test",
+                1935,
+                SocketProxyMode::AllowFallback,
+            )
+            .is_some()
+        );
+    }
+
+    #[test]
+    fn fallback_socket_proxy_appends_the_requested_target() {
+        let proxy = fallback_proxy();
+        assert_eq!(
+            socket_proxy_url(&proxy, "game.example.test", 1935)
+                .expect("test proxy URL should parse"),
+            "ws://127.0.0.1/proxy?cap=opaque&host=game.example.test&port=1935"
+        );
+    }
+
+    #[test]
+    fn exact_socket_proxy_url_is_unchanged() {
+        let proxy = SocketProxy {
+            host: Some("game.example.test".into()),
+            port: Some(1935),
+            proxy_url: "wss://proxy.example.test/tunnel".into(),
+        };
+        assert_eq!(
+            socket_proxy_url(&proxy, "game.example.test", 1935)
+                .expect("test proxy URL should remain valid"),
+            proxy.proxy_url
+        );
     }
 }

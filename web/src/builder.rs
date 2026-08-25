@@ -13,7 +13,9 @@ use ruffle_core::config::{Letterbox, NetworkingAccessMode};
 use ruffle_core::events::{GamepadButton, KeyCode};
 use ruffle_core::font::{DefaultFont, FontFileData};
 use ruffle_core::ttf_parser;
-use ruffle_core::{Color, Player, PlayerBuilder, PlayerRuntime, StageAlign, StageScaleMode, swf};
+use ruffle_core::{
+    Color, Player, PlayerBuilder, PlayerRuntime, StageAlign, StageScaleMode, SystemPlatform, swf,
+};
 use ruffle_render::backend::RenderBackend;
 use ruffle_render::quality::StageQuality;
 use ruffle_video_external::backend::ExternalVideoBackend;
@@ -41,6 +43,8 @@ pub struct RuffleInstanceBuilder {
     pub(crate) upgrade_to_https: bool,
     pub(crate) compatibility_rules: CompatibilityRules,
     pub(crate) base_url: Option<String>,
+    pub(crate) spoofed_url: Option<String>,
+    pub(crate) page_url: Option<String>,
     pub(crate) show_menu: bool,
     pub(crate) allow_fullscreen: bool,
     pub(crate) stage_align: StageAlign,
@@ -53,6 +57,7 @@ pub struct RuffleInstanceBuilder {
     pub(crate) log_level: tracing::Level,
     pub(crate) max_execution_duration: Duration,
     pub(crate) player_version: Option<u8>,
+    pub(crate) player_version_details: [u16; 3],
     pub(crate) preferred_renderer: Option<String>, // TODO: Enumify?
     pub(crate) open_url_mode: OpenUrlMode,
     pub(crate) allow_networking: NetworkingAccessMode,
@@ -81,6 +86,8 @@ impl Default for RuffleInstanceBuilder {
             upgrade_to_https: true,
             compatibility_rules: CompatibilityRules::default(),
             base_url: None,
+            spoofed_url: None,
+            page_url: None,
             show_menu: true,
             allow_fullscreen: false,
             stage_align: StageAlign::empty(),
@@ -93,6 +100,7 @@ impl Default for RuffleInstanceBuilder {
             log_level: tracing::Level::ERROR,
             max_execution_duration: Duration::from_secs_f64(15.0),
             player_version: None,
+            player_version_details: [0; 3],
             preferred_renderer: None,
             open_url_mode: OpenUrlMode::Allow,
             allow_networking: NetworkingAccessMode::All,
@@ -154,6 +162,16 @@ impl RuffleInstanceBuilder {
     #[wasm_bindgen(js_name = "setBaseUrl")]
     pub fn set_base_url(&mut self, value: Option<String>) {
         self.base_url = value;
+    }
+
+    #[wasm_bindgen(js_name = "setSpoofedUrl")]
+    pub fn set_spoofed_url(&mut self, value: Option<String>) {
+        self.spoofed_url = value;
+    }
+
+    #[wasm_bindgen(js_name = "setPageUrl")]
+    pub fn set_page_url(&mut self, value: Option<String>) {
+        self.page_url = value;
     }
 
     #[wasm_bindgen(js_name = "setShowMenu")]
@@ -248,6 +266,11 @@ impl RuffleInstanceBuilder {
         self.player_version = value;
     }
 
+    #[wasm_bindgen(js_name = "setPlayerVersionDetails")]
+    pub fn set_player_version_details(&mut self, minor: u16, build: u16, revision: u16) {
+        self.player_version_details = [minor, build, revision];
+    }
+
     #[wasm_bindgen(js_name = "setPreferredRenderer")]
     pub fn set_preferred_renderer(&mut self, value: Option<String>) {
         self.preferred_renderer = value;
@@ -276,8 +299,20 @@ impl RuffleInstanceBuilder {
     #[wasm_bindgen(js_name = "addSocketProxy")]
     pub fn add_socket_proxy(&mut self, host: String, port: u16, proxy_url: String) {
         self.socket_proxy.push(SocketProxy {
-            host,
-            port,
+            host: Some(host),
+            port: Some(port),
+            proxy_url,
+        })
+    }
+
+    /// Add a fallback WebSocket proxy for socket targets without an exact
+    /// proxy entry. The requested host and port are appended to the proxy URL
+    /// as query parameters.
+    #[wasm_bindgen(js_name = "addSocketProxyFallback")]
+    pub fn add_socket_proxy_fallback(&mut self, proxy_url: String) {
+        self.socket_proxy.push(SocketProxy {
+            host: None,
+            port: None,
             proxy_url,
         })
     }
@@ -705,13 +740,20 @@ impl RuffleInstanceBuilder {
             .with_letterbox(self.letterbox)
             .with_max_execution_duration(self.max_execution_duration)
             .with_player_version(self.player_version)
+            .with_player_version_details(self.player_version_details)
+            .with_system_platform(browser_system_platform(&window))
             .with_player_runtime(self.player_runtime)
             .with_compatibility_rules(self.compatibility_rules.clone())
             .with_quality(self.quality)
             .with_align(self.stage_align, self.force_align)
             .with_scale_mode(self.scale, self.force_scale)
             .with_frame_rate(self.frame_rate)
-            .with_page_url(window.location().href().ok())
+            .with_spoofed_url(self.spoofed_url.clone())
+            .with_page_url(
+                self.page_url
+                    .clone()
+                    .or_else(|| window.location().href().ok()),
+            )
             .with_gamepad_button_mapping(self.gamepad_button_mapping.clone())
             .build();
 
@@ -741,6 +783,17 @@ impl RuffleInstanceBuilder {
             canvas,
             trace_observer,
         })
+    }
+}
+
+fn browser_system_platform(window: &web_sys::Window) -> SystemPlatform {
+    let platform = window.navigator().platform().unwrap_or_default();
+    if platform.contains("Win") {
+        SystemPlatform::Windows
+    } else if platform.contains("Mac") {
+        SystemPlatform::Macintosh
+    } else {
+        SystemPlatform::Linux
     }
 }
 
