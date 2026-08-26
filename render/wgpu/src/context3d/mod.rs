@@ -256,12 +256,12 @@ impl WgpuContext3D {
             depth_stencil_attachment,
             ..Default::default()
         });
-        pass.set_bind_group(0, self.bind_group.as_ref().unwrap(), &[]);
-        pass.set_pipeline(
-            self.compiled_pipeline
-                .as_ref()
-                .expect("Missing compiled pipeline"),
-        );
+        if let Some(bind_group) = self.bind_group.as_ref() {
+            pass.set_bind_group(0, bind_group, &[]);
+        }
+        if let Some(compiled_pipeline) = self.compiled_pipeline.as_ref() {
+            pass.set_pipeline(compiled_pipeline);
+        }
         if let Some(rect) = &self.scissor_rectangle {
             let current_size = self.current_texture_size.unwrap();
             if rect.x_min.to_pixels() < 0.0
@@ -859,9 +859,15 @@ impl Context3D for WgpuContext3D {
                 let indices =
                     (first_index as u32)..((first_index as u32) + (num_triangles as u32 * 3));
 
-                let new_pipeline = self
-                    .current_pipeline
-                    .rebuild_pipeline(&self.descriptors, &self.vertex_attributes);
+                let unbound_required_textures =
+                    self.current_pipeline.has_unbound_required_textures();
+
+                let new_pipeline = if unbound_required_textures {
+                    None
+                } else {
+                    self.current_pipeline
+                        .rebuild_pipeline(&self.descriptors, &self.vertex_attributes)
+                };
 
                 if !self.seen_clear_command {
                     tracing::warn!(
@@ -896,7 +902,10 @@ impl Context3D for WgpuContext3D {
 
                 render_pass
                     .set_index_buffer(index_buffer.buffer.slice(..), wgpu::IndexFormat::Uint16);
-                render_pass.draw_indexed(indices, 0, 0..1);
+
+                if !unbound_required_textures {
+                    render_pass.draw_indexed(indices, 0, 0..1);
+                }
 
                 // A `RenderPass` needs to hold references to several fields in `self`, so we can't
                 // easily re-use it across multiple `DrawTriangles` calls.

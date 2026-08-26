@@ -203,6 +203,17 @@ impl CurrentPipeline {
         }
     }
 
+    pub fn has_unbound_required_textures(&self) -> bool {
+        if let Some(shaders) = &self.shaders {
+            for (i, sampler_config) in shaders.fragment_sampler_configs().iter().enumerate() {
+                if sampler_config.is_some() && self.bound_textures[i].is_none() {
+                    return true;
+                }
+            }
+        }
+        false
+    }
+
     pub fn update_texture_at(&mut self, index: usize, texture: Option<BoundTextureData>) {
         // FIXME - determine if the texture actually changed
         self.dirty.set(true);
