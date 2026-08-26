@@ -4587,9 +4587,9 @@ impl<'gc, 'a> MovieClip<'gc> {
             let read = self.0.shared_cell();
             if let (Some(stream_info), None) = (&read.audio_stream_info, self.0.audio_stream.get())
             {
-                let mut slice = self.0.shared.get().swf_data.clone();
-                slice.end = slice.start + self.0.tag_stream_len();
-                slice.start += self.0.tag_stream_pos.get() as usize;
+                let start = self.0.tag_stream_pos.get() as usize;
+                let swf = &self.0.shared.get().swf_data;
+                let slice = swf.to_subslice(&swf.data()[start..]);
                 Some(context.start_stream(self, self.0.current_frame(), slice, stream_info))
             } else {
                 None
