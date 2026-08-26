@@ -360,14 +360,23 @@ impl<'gc> LoadManager<'gc> {
 
                             let clip = MovieClip::new_import_assets(uc, movie, importer_movie);
 
-                            clip.set_cur_preload_frame(0);
+                            let parent_domain = uc
+                                .library
+                                .library_for_movie_mut(importer_movie.movie())
+                                .try_avm2_domain()
+                                .unwrap_or_else(|| uc.avm2.stage_domain());
+                            let imported_lib = uc.library.library_for_movie_mut(clip.movie());
+                            imported_lib.set_avm2_domain(parent_domain);
                             let mut execution_limit = ExecutionLimit::none();
-
-                            tracing::debug!("Preloading swf to run exports {:?}", url);
-
-                            // Create library for exports before preloading
-                            uc.library.library_for_movie_mut(clip.movie());
-                            let res = clip.preload(uc, &mut execution_limit);
+                            let mut iterations = 0;
+                            let mut res = false;
+                            while !res && !clip.is_awaiting_import() && iterations < 4096 {
+                                iterations += 1;
+                                res = clip.preload(uc, &mut execution_limit);
+                            }
+                            if !clip.is_awaiting_import() {
+                                clip.run_first_frame_scripts(uc);
+                            }
                             tracing::debug!(
                                 "Preloaded swf to run exports result {:?} {}",
                                 url,
@@ -380,7 +389,7 @@ impl<'gc> LoadManager<'gc> {
                             );
                         }
 
-                        importer_movie.finish_importing();
+                        importer_movie.finish_importing(uc);
                     });
                     Ok(())
                 }

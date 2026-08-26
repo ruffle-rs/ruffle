@@ -635,13 +635,40 @@ impl<'gc> MovieClip<'gc> {
         is_finished
     }
 
-    pub fn finish_importing(self) {
+    pub fn is_awaiting_import(self) -> bool {
+        self.0.shared.get().preload_progress.awaiting_import.get()
+    }
+
+    pub fn run_first_frame_scripts(self, context: &mut UpdateContext<'gc>) {
+        let mut frame_keys = self.eager_frame_keys();
+        frame_keys.sort_unstable();
+        for frame in frame_keys {
+            if let Err(e) = self.run_abc_and_symbol_tags(context, frame) {
+                tracing::error!("Error running abc/symbol tags in frame {frame}: {e:?}");
+            }
+        }
+    }
+
+    pub fn finish_importing(self, context: &mut UpdateContext<'gc>) {
         self.0
             .shared
             .get()
             .preload_progress
             .awaiting_import
             .set(false);
+        if self.0.shared.get().importer_movie.is_some() {
+            let mut limit = ExecutionLimit::none();
+            let mut iterations = 0;
+            while !self.preload(context, &mut limit)
+                && !self.is_awaiting_import()
+                && iterations < 4096
+            {
+                iterations += 1;
+            }
+            if !self.is_awaiting_import() {
+                self.run_first_frame_scripts(context);
+            }
+        }
     }
 
     #[inline]
