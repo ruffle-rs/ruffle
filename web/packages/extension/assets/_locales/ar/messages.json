@@ -53,6 +53,9 @@
     "settings_device_font_renderer": {
         "message": "عارض خط الجهاز"
     },
+    "device_font_renderer_embedded": {
+        "message": "مضمّن"
+    },
     "settings_advanced_options": {
         "message": "الخيارات المتقدمة"
     },

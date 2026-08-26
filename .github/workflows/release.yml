@@ -258,7 +258,7 @@ jobs:
 
   build-mac-universal-binary:
     name: Build macOS universal binary
-    needs: [create-release, build, build-web]
+    needs: [ create-release, build, build-web ]
     runs-on: macos-15
     env:
       PACKAGE_FILE: ${{ needs.create-release.outputs.package_prefix }}-macos-universal.tar.gz
@@ -438,7 +438,7 @@ jobs:
       # Be sure to update in test_web.yml, Cargo.toml, web/docker/Dockerfile,
       # and web/README.md as well.
       - name: Install wasm-bindgen
-        run: cargo install --locked wasm-bindgen-cli --version 0.2.120
+        run: cargo install --locked wasm-bindgen-cli --version 0.2.127
 
       # Keep the version number in sync in all workflows,
       # and in the extension builder Dockerfile!
@@ -674,7 +674,7 @@ jobs:
 
   publish-aur-package:
     name: Publish AUR package
-    needs: [create-release, build]
+    needs: [ create-release, build ]
     runs-on: ubuntu-24.04
     if: github.repository == 'ruffle-rs/ruffle' && needs.create-release.outputs.release_channel == 'nightly'
     steps:

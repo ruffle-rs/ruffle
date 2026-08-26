@@ -8,3 +8,5 @@ export-bundle-dialog-exporting-failed = Экспортлау уңышсыз бу
 export-bundle-dialog-error-user-canceled = Кулланучы тарафыннан гамәлдән чыгарылды.
 export-bundle-dialog-error-failed-to-show-picker = Файл сайлау тәрәзәсен ачып булмады.
 export-bundle-dialog-error-io-error = Пакетны язу хатасы.
+export-bundle-dialog-info-title = Ruffle пакет нәрсә ул?
+export-bundle-dialog-info-description = Ruffle пакет ул SWF файлын эшләтеп җибәрү өчен кирәк булган барлык әйберләрне үз эченә алган универсаль пакет: барлык кирәкле ресурслар һәм көйләүләр. Пакет ярдәмендә SWF шунда ук эшли — югалган файллар юк, кул белән көйләү кирәкми, бары тик ач та эшләт.
