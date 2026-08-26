@@ -17,7 +17,6 @@ use gc_arena::barrier::{Write, unlock};
 use gc_arena::lock::OnceLock;
 use gc_arena::{Collect, Gc};
 use std::borrow::Cow;
-use std::rc::Rc;
 use std::sync::Arc;
 use swf::avm2::types::{
     AbcFile, Index, Method as AbcMethod, MethodBody as AbcMethodBody,
@@ -106,7 +105,7 @@ struct MethodData<'gc> {
 
     /// The underlying ABC file of the above translation unit.
     #[collect(require_static)]
-    abc: Rc<AbcFile>,
+    abc: Arc<AbcFile>,
 
     /// The ABC method this function uses.
     abc_method: u32,
@@ -224,7 +223,7 @@ impl<'gc> Method<'gc> {
             activation.gc(),
             MethodData {
                 txunit,
-                abc: txunit.abc(),
+                abc: txunit.abc().clone(),
                 abc_method: abc_method.0,
                 abc_method_body,
                 method_kind,
@@ -236,11 +235,6 @@ impl<'gc> Method<'gc> {
                 is_unchecked: is_function && all_params_unchecked,
             },
         )))
-    }
-
-    /// Get the underlying ABC file.
-    pub fn abc(self) -> Rc<AbcFile> {
-        self.0.txunit.abc()
     }
 
     /// Get the underlying translation unit this method was defined in.
