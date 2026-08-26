@@ -370,19 +370,17 @@ impl Debug for SwfMovie {
 #[derive(Debug, Clone, Collect)]
 #[collect(no_drop)]
 pub struct SwfSlice {
-    pub movie: Arc<SwfMovie>,
-    pub start: usize,
-    pub end: usize,
+    movie: Arc<SwfMovie>,
+    start: usize,
+    end: usize,
 }
 
 impl From<Arc<SwfMovie>> for SwfSlice {
     fn from(movie: Arc<SwfMovie>) -> Self {
-        let end = movie.data().len();
-
         Self {
-            movie,
             start: 0,
-            end,
+            end: movie.data.len(),
+            movie,
         }
     }
 }
@@ -413,8 +411,9 @@ impl SwfSlice {
 
     /// Construct a new SwfSlice from a regular slice.
     ///
-    /// This function returns None if the given slice is not a subslice of the
-    /// current slice.
+    /// The parameter `slice` must be derived from the same buffer this slice
+    /// was, and must also be within bounds of this slice. If not, then the
+    /// returned slice will be empty.
     pub fn to_subslice(&self, slice: &[u8]) -> Self {
         let self_pval = self.movie.data().as_ptr() as usize;
         let slice_pval = slice.as_ptr() as usize;
@@ -462,9 +461,33 @@ impl SwfSlice {
         self.to_subslice(reader.get_ref())
     }
 
+    pub fn with_mut(&mut self, f: impl FnOnce(&mut &[u8])) {
+        let data = self.data();
+        let mut changed = data;
+        f(&mut changed);
+
+        if let Some(range) = data.subslice_range(changed) {
+            self.end = self.start + range.end;
+            self.start += range.start;
+        } else {
+            self.start = 0;
+            self.end = 0;
+        }
+    }
+
     /// Convert the SwfSlice into a standard data slice.
     pub fn data(&self) -> &[u8] {
         &self.movie.data()[self.start..self.end]
+    }
+
+    /// Returns the data from the start of this slice up to the end of the whole movie.
+    pub fn data_until_end(&self) -> &[u8] {
+        &self.movie.data()[self.start..]
+    }
+
+    /// Get the SwfMovie this data comes from.
+    pub fn movie(&self) -> &Arc<SwfMovie> {
+        &self.movie
     }
 
     /// Get the version of the SWF this data comes from.

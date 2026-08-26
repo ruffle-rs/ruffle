@@ -170,9 +170,9 @@ pub struct AdpcmStreamDecoder {
 
 impl AdpcmStreamDecoder {
     fn new(stream_info: &swf::SoundStreamHead, swf_data: SwfSlice) -> Result<Self, Error> {
-        let movie = swf_data.movie.clone();
+        let empty = swf_data.copy_empty();
         let mut tag_reader = StreamTagReader::new(stream_info, swf_data);
-        let audio_data = tag_reader.next().unwrap_or_else(|| SwfSlice::empty(movie));
+        let audio_data = tag_reader.next().unwrap_or(empty);
         let decoder = AdpcmDecoder::new(
             Cursor::new(audio_data),
             stream_info.stream_format.is_stereo,
@@ -285,7 +285,7 @@ impl StreamTagReader {
     /// Builds a new `StreamTagReader` from the given SWF data.
     /// `swf_data` should be the tag data of a MovieClip.
     fn new(stream_info: &swf::SoundStreamHead, swf_data: SwfSlice) -> Self {
-        let current_audio_data = SwfSlice::empty(swf_data.movie.clone());
+        let current_audio_data = swf_data.copy_empty();
         Self {
             swf_data,
             pos: 0,
@@ -370,9 +370,10 @@ impl Read for StreamTagReader {
             }
         }
 
-        let len = std::cmp::min(buf.len(), self.current_audio_data.as_ref().len());
-        buf[..len].copy_from_slice(&self.current_audio_data.as_ref()[..len]);
-        self.current_audio_data.start += len;
+        let mut data = self.current_audio_data.as_ref();
+        let len = data.read(buf)?;
+        self.current_audio_data
+            .with_mut(move |data| *data = &data[len..]);
         Ok(len)
     }
 }

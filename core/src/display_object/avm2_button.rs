@@ -113,7 +113,7 @@ impl<'gc> Avm2Button<'gc> {
                 shared: Gc::new(
                     context.gc(),
                     ButtonShared {
-                        swf: source_movie.movie.clone(),
+                        swf: source_movie.movie().clone(),
                         id: button.id,
                         cell: RefCell::new(ButtonSharedMut {
                             records: button.records.clone(),

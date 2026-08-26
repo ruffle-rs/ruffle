@@ -78,7 +78,7 @@ impl<'gc> Avm1Button<'gc> {
             Avm1ButtonData {
                 base: Default::default(),
                 cell: RefLock::new(Avm1ButtonDataMut {
-                    container: ChildContainer::new(&source_movie.movie),
+                    container: ChildContainer::new(source_movie.movie()),
                     hit_area: BTreeMap::new(),
                     hit_bounds: Default::default(),
                     text_field_bindings: Vec::new(),
@@ -86,7 +86,7 @@ impl<'gc> Avm1Button<'gc> {
                 shared: Gc::new(
                     mc,
                     ButtonShared {
-                        swf: source_movie.movie.clone(),
+                        swf: source_movie.movie().clone(),
                         id: button.id,
                         actions,
                         cell: RefCell::new(ButtonSharedMut {
