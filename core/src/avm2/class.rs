@@ -975,8 +975,13 @@ impl<'gc> Class<'gc> {
     pub fn has_class_in_chain(self, test_class: Class<'gc>) -> bool {
         let mut my_class = Some(self);
 
+        let test_name = test_class.name();
+
         while let Some(class) = my_class {
             if class == test_class {
+                return true;
+            }
+            if class.name() == test_name {
                 return true;
             }
 
@@ -988,6 +993,9 @@ impl<'gc> Class<'gc> {
         if test_class.is_interface() {
             for interface in self.all_interfaces() {
                 if *interface == test_class {
+                    return true;
+                }
+                if interface.name() == test_name {
                     return true;
                 }
             }
