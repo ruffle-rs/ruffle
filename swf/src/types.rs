@@ -358,6 +358,7 @@ pub enum PlaceObjectAction {
     Place(CharacterId),
     Modify,
     Replace(CharacterId),
+    PlaceByClass,
 }
 
 #[derive(Clone, Debug, PartialEq)]
