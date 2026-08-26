@@ -31,6 +31,7 @@ use ruffle_wstr::WStr;
 use std::sync::Arc;
 use swf::DoAbc2Flag;
 use swf::avm2::read::Reader;
+use swf::avm2::types::AbcFile;
 use swf::error::AbcParseError;
 
 #[macro_export]
@@ -511,7 +512,7 @@ impl<'gc> Avm2<'gc> {
     ) -> Result<Option<Script<'gc>>, Error<'gc>> {
         let mut reader = Reader::new(data);
         let abc = match reader.read() {
-            Ok(abc) => abc,
+            Ok(abc) => Arc::new(abc),
             Err(AbcParseError::MethodInfoOutOfBounds {
                 method_count,
                 method_index,
@@ -550,16 +551,10 @@ impl<'gc> Avm2<'gc> {
     /// Load the playerglobal ABC file.
     pub fn load_builtin_abc(
         context: &mut UpdateContext<'gc>,
-        data: &[u8],
+        abc: Arc<AbcFile>,
         domain: Domain<'gc>,
         movie: Arc<SwfMovie>,
     ) {
-        let mut reader = Reader::new(data);
-        let abc = match reader.read() {
-            Ok(abc) => abc,
-            Err(_) => panic!("Builtin ABC should be valid"),
-        };
-
         let mut activation = Activation::from_domain(context, domain);
         // Make sure we have the correct domain for code that tries to access its
         // domain using `activation.domain()`
