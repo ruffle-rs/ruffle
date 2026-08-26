@@ -370,9 +370,10 @@ impl Read for StreamTagReader {
             }
         }
 
-        let len = std::cmp::min(buf.len(), self.current_audio_data.as_ref().len());
-        buf[..len].copy_from_slice(&self.current_audio_data.as_ref()[..len]);
-        self.current_audio_data.start += len;
+        let mut data = self.current_audio_data.as_ref();
+        let len = data.read(buf)?;
+        self.current_audio_data
+            .with_mut(move |data| *data = &data[len..]);
         Ok(len)
     }
 }
