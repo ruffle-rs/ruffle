@@ -8,10 +8,11 @@ use crate::avm2::script::TranslationUnit;
 use crate::avm2::{Avm2, Error, Multiname, Namespace, QName};
 use crate::context::UpdateContext;
 use crate::string::WStr;
-use crate::tag_utils::{SwfMovie, SwfSlice};
+use crate::tag_utils::SwfMovie;
 use gc_arena::Collect;
 use std::sync::{Arc, LazyLock};
 use swf::TagCode;
+use swf::avm2::types::AbcFile;
 
 mod __ruffle__;
 mod array;
@@ -819,7 +820,7 @@ pub fn init_native_system_classes(activation: &mut Activation<'_, '_>) {
         ]
     );
 }
-static PLAYERGLOBAL_ABC: LazyLock<SwfSlice> = LazyLock::new(|| {
+static PLAYERGLOBAL_ABC: LazyLock<(Arc<SwfMovie>, Arc<AbcFile>)> = LazyLock::new(|| {
     use crate::tag_utils::extract_unique_tag;
 
     /// This file is built by 'core/build_playerglobal/'
@@ -828,10 +829,11 @@ static PLAYERGLOBAL_ABC: LazyLock<SwfSlice> = LazyLock::new(|| {
 
     SwfMovie::from_static_data(SWF)
         .and_then(|movie| {
-            let movie = SwfSlice::from(Arc::new(movie));
-            let mut reader = extract_unique_tag(movie.read_from(0), TagCode::DoAbc2)?;
-            let abc = &reader.read_do_abc_2()?.data;
-            Ok(movie.to_subslice(abc))
+            let mut reader = swf::read::Reader::new(movie.data(), movie.version());
+            reader = extract_unique_tag(reader, TagCode::DoAbc2)?;
+            let raw_abc = &reader.read_do_abc_2()?.data;
+            let abc = swf::avm2::read::Reader::new(raw_abc).read()?;
+            Ok((Arc::new(movie), Arc::new(abc)))
         })
         .expect("playerglobal_avm2.swf should be valid")
 });
@@ -845,8 +847,8 @@ pub fn load_playerglobal<'gc>(context: &mut UpdateContext<'gc>, domain: Domain<'
     context.avm2.native_custom_constructor_table = native::NATIVE_CUSTOM_CONSTRUCTOR_TABLE;
     context.avm2.native_fast_call_list = native::NATIVE_FAST_CALL_LIST;
 
-    let abc = LazyLock::force(&PLAYERGLOBAL_ABC);
-    Avm2::load_builtin_abc(context, abc.data(), domain, abc.movie.clone());
+    let (movie, abc) = &*PLAYERGLOBAL_ABC;
+    Avm2::load_builtin_abc(context, abc.clone(), domain, movie.clone());
 
     // Domain memory must be initialized after playerglobals is loaded because it relies on ByteArray.
     domain.init_default_domain_memory(context);
