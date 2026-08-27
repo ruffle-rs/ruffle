@@ -483,8 +483,10 @@ pub(super) fn run_pixelbender_shader_impl(
 
                         BitmapHandle(Arc::new(Texture {
                             texture: fresh_texture,
-                            bind_linear: Default::default(),
-                            bind_nearest: Default::default(),
+                            repeating_linear: Default::default(),
+                            repeating_nearest: Default::default(),
+                            clamped_linear: Default::default(),
+                            clamped_nearest: Default::default(),
                             copy_count: Cell::new(0),
                         }))
                     });

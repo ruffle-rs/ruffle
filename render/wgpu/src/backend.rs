@@ -723,8 +723,10 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
 
         let handle = BitmapHandle(Arc::new(Texture {
             texture,
-            bind_linear: Default::default(),
-            bind_nearest: Default::default(),
+            repeating_linear: Default::default(),
+            repeating_nearest: Default::default(),
+            clamped_linear: Default::default(),
+            clamped_nearest: Default::default(),
             copy_count: Cell::new(0),
         }));
 
@@ -999,8 +1001,10 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
                     });
                 BitmapHandle(Arc::new(Texture {
                     texture,
-                    bind_linear: Default::default(),
-                    bind_nearest: Default::default(),
+                    repeating_linear: Default::default(),
+                    repeating_nearest: Default::default(),
+                    clamped_linear: Default::default(),
+                    clamped_nearest: Default::default(),
                     copy_count: Cell::new(0),
                 }))
             }
@@ -1157,8 +1161,10 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
             });
         Ok(BitmapHandle(Arc::new(Texture {
             texture,
-            bind_linear: Default::default(),
-            bind_nearest: Default::default(),
+            repeating_linear: Default::default(),
+            repeating_nearest: Default::default(),
+            clamped_linear: Default::default(),
+            clamped_nearest: Default::default(),
             copy_count: Cell::new(0),
         })))
     }

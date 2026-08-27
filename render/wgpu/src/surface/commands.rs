@@ -206,6 +206,7 @@ impl<'encoder> CommandRenderer<'encoder> {
 
         let descriptors = self.descriptors;
         let bind = texture.bind_group(
+            false,
             smoothing,
             &descriptors.device,
             &descriptors.bind_layouts.bitmap,

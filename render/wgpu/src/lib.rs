@@ -264,29 +264,34 @@ impl QueueSyncHandle {
 #[derive(Debug)]
 pub struct Texture {
     pub(crate) texture: wgpu::Texture,
-    bind_linear: OnceCell<BitmapBinds>,
-    bind_nearest: OnceCell<BitmapBinds>,
+    repeating_linear: OnceCell<BitmapBinds>,
+    repeating_nearest: OnceCell<BitmapBinds>,
+    clamped_linear: OnceCell<BitmapBinds>,
+    clamped_nearest: OnceCell<BitmapBinds>,
     copy_count: Cell<u8>,
 }
 
 impl Texture {
     pub fn bind_group(
         &self,
+        repeating: bool,
         smoothed: bool,
         device: &wgpu::Device,
         layout: &wgpu::BindGroupLayout,
         handle: BitmapHandle,
         samplers: &BitmapSamplers,
     ) -> &BitmapBinds {
-        let bind = match smoothed {
-            true => &self.bind_linear,
-            false => &self.bind_nearest,
+        let bind = match (repeating, smoothed) {
+            (true, true) => &self.repeating_linear,
+            (true, false) => &self.repeating_nearest,
+            (false, true) => &self.clamped_linear,
+            (false, false) => &self.clamped_nearest,
         };
         bind.get_or_init(|| {
             BitmapBinds::new(
                 device,
                 layout,
-                samplers.get_sampler(false, smoothed),
+                samplers.get_sampler(repeating, smoothed),
                 self.texture.create_view(&Default::default()),
                 create_debug_label!("Bitmap {:?} bind group (smoothed: {})", handle.0, smoothed),
             )
