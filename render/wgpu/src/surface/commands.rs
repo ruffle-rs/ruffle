@@ -218,7 +218,7 @@ impl<'encoder> CommandRenderer<'encoder> {
 
         self.draw(
             render_pass,
-            self.descriptors.quad.vertices_pos.slice(..),
+            self.descriptors.quad.vertices_pos_uv.slice(..),
             self.descriptors.quad.indices.slice(..),
             6,
         );
@@ -237,7 +237,7 @@ impl<'encoder> CommandRenderer<'encoder> {
 
         self.draw(
             render_pass,
-            self.descriptors.quad.vertices_pos.slice(..),
+            self.descriptors.quad.vertices_pos_uv.slice(..),
             self.descriptors.quad.indices.slice(..),
             6,
         );

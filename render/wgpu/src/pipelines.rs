@@ -1,7 +1,7 @@
 use crate::blend::{ComplexBlend, TrivialBlend};
 use crate::layouts::BindLayouts;
 use crate::shaders::Shaders;
-use crate::{MaskState, PosColorVertex, PosVertex};
+use crate::{MaskState, PosColorVertex, PosUvVertex, PosVertex};
 use enum_map::{EnumMap, enum_map};
 use wgpu::{BlendState, PrimitiveTopology, vertex_attr_array};
 
@@ -11,6 +11,16 @@ pub const VERTEX_BUFFERS_DESCRIPTION_POS: [Option<wgpu::VertexBufferLayout>; 1] 
         step_mode: wgpu::VertexStepMode::Vertex,
         attributes: &vertex_attr_array![
             0 => Float32x2,
+        ],
+    })];
+
+pub const VERTEX_BUFFERS_DESCRIPTION_POS_UV: [Option<wgpu::VertexBufferLayout>; 1] =
+    [Some(wgpu::VertexBufferLayout {
+        array_stride: std::mem::size_of::<PosUvVertex>() as u64,
+        step_mode: wgpu::VertexStepMode::Vertex,
+        attributes: &vertex_attr_array![
+            0 => Float32x2,
+            1 => Float32x3,
         ],
     })];
 
@@ -161,7 +171,7 @@ impl Pipelines {
                 format,
                 &shaders.bitmap_shader,
                 msaa_sample_count,
-                &VERTEX_BUFFERS_DESCRIPTION_POS,
+                &VERTEX_BUFFERS_DESCRIPTION_POS_UV,
                 &bitmap_blend_bindings,
                 blend.blend_state(),
                 0,
@@ -189,7 +199,7 @@ impl Pipelines {
                 blend: Some(BlendState::REPLACE),
                 write_mask: wgpu::ColorWrites::COLOR,
             })],
-            &VERTEX_BUFFERS_DESCRIPTION_POS,
+            &VERTEX_BUFFERS_DESCRIPTION_POS_UV,
             msaa_sample_count,
             &[("late_saturate", 1.0)],
             PrimitiveTopology::TriangleList,
@@ -217,7 +227,7 @@ impl Pipelines {
                 blend: Some(BlendState::REPLACE),
                 write_mask: wgpu::ColorWrites::COLOR,
             })],
-            &VERTEX_BUFFERS_DESCRIPTION_POS,
+            &VERTEX_BUFFERS_DESCRIPTION_POS_UV,
             msaa_sample_count,
             &[],
             PrimitiveTopology::TriangleList,

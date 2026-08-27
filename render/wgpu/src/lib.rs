@@ -99,6 +99,29 @@ impl From<TessVertex> for PosVertex {
 
 #[repr(C)]
 #[derive(Copy, Clone, Debug, Pod, Zeroable)]
+struct PosUvVertex {
+    position: [f32; 2],
+    uv: [f32; 3],
+}
+
+impl PosUvVertex {
+    pub fn from_tessellator(vertex: TessVertex, texture_matrix: &[[f32; 3]; 3]) -> Self {
+        let position = [vertex.x, vertex.y];
+        let uv = Self::transform_uv(texture_matrix, vertex.x, vertex.y);
+        Self { position, uv }
+    }
+
+    fn transform_uv(matrix: &[[f32; 3]; 3], x: f32, y: f32) -> [f32; 3] {
+        [
+            matrix[0][0] * x + matrix[1][0] * y + matrix[2][0],
+            matrix[0][1] * x + matrix[1][1] * y + matrix[2][1],
+            1.0,
+        ]
+    }
+}
+
+#[repr(C)]
+#[derive(Copy, Clone, Debug, Pod, Zeroable)]
 struct PosColorVertex {
     position: [f32; 2],
     color: [f32; 4],
