@@ -324,7 +324,6 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
                 draw,
                 shape_id,
                 draw_id,
-                &mut uniform_buffer,
                 &mut vertex_buffer,
                 &mut index_buffer,
             ) {

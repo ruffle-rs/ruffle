@@ -281,19 +281,12 @@ impl Surface {
                                         entries: &[
                                             wgpu::BindGroupEntry {
                                                 binding: 0,
-                                                resource: descriptors
-                                                    .quad
-                                                    .texture_transforms
-                                                    .as_entire_binding(),
-                                            },
-                                            wgpu::BindGroupEntry {
-                                                binding: 1,
                                                 resource: wgpu::BindingResource::TextureView(
                                                     child_texture.view(),
                                                 ),
                                             },
                                             wgpu::BindGroupEntry {
-                                                binding: 2,
+                                                binding: 1,
                                                 resource: wgpu::BindingResource::Sampler(
                                                     descriptors
                                                         .bitmap_samplers

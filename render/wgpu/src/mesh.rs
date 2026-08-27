@@ -1,8 +1,6 @@
 use crate::backend::WgpuRenderBackend;
 use crate::target::RenderTarget;
-use crate::{
-    Descriptors, GradientUniforms, PosColorVertex, PosUvVertex, TextureTransforms, as_texture,
-};
+use crate::{Descriptors, GradientUniforms, PosColorVertex, PosUvVertex, as_texture};
 use std::any::Any;
 use std::ops::Range;
 use wgpu::util::DeviceExt;
@@ -67,14 +65,12 @@ pub struct Draw {
 }
 
 impl PendingDraw {
-    #[expect(clippy::too_many_arguments)]
     pub fn new<T: RenderTarget>(
         backend: &mut WgpuRenderBackend<T>,
         source: &dyn BitmapSource,
         draw: LyonDraw,
         shape_id: CharacterId,
         draw_id: usize,
-        uniform_buffer: &mut BufferBuilder,
         vertex_buffer: &mut BufferBuilder,
         index_buffer: &mut BufferBuilder,
     ) -> Option<Self> {
@@ -118,11 +114,12 @@ impl PendingDraw {
         let index_count = draw.indices.len() as u32;
         let draw_type = match draw.draw_type {
             TessDrawType::Color => PendingDrawType::color(),
-            TessDrawType::Gradient { matrix, gradient } => {
-                PendingDrawType::gradient(gradient, matrix, shape_id, draw_id, uniform_buffer)
-            }
+            TessDrawType::Gradient {
+                matrix: _,
+                gradient,
+            } => PendingDrawType::gradient(gradient, shape_id, draw_id),
             TessDrawType::Bitmap(bitmap) => {
-                PendingDrawType::bitmap(bitmap, shape_id, draw_id, source, backend, uniform_buffer)?
+                PendingDrawType::bitmap(bitmap, shape_id, draw_id, source, backend)?
             }
         };
         Some(PendingDraw {
@@ -139,12 +136,10 @@ impl PendingDraw {
 pub enum PendingDrawType {
     Color,
     Gradient {
-        texture_transforms_index: wgpu::BufferAddress,
         gradient_index: usize,
         bind_group_label: Option<String>,
     },
     Bitmap {
-        texture_transforms_index: wgpu::BufferAddress,
         texture_view: wgpu::TextureView,
         is_repeating: bool,
         is_smoothed: bool,
@@ -170,19 +165,10 @@ impl PendingDrawType {
         PendingDrawType::Color
     }
 
-    pub fn gradient(
-        gradient_index: usize,
-        matrix: [[f32; 3]; 3],
-        shape_id: CharacterId,
-        draw_id: usize,
-        uniform_buffers: &mut BufferBuilder,
-    ) -> Self {
-        let tex_transforms_index = create_texture_transforms(&matrix, uniform_buffers);
-
+    pub fn gradient(gradient_index: usize, shape_id: CharacterId, draw_id: usize) -> Self {
         let bind_group_label =
             create_debug_label!("Shape {} (gradient) draw {} bindgroup", shape_id, draw_id);
         PendingDrawType::Gradient {
-            texture_transforms_index: tex_transforms_index,
             gradient_index,
             bind_group_label,
         }
@@ -194,17 +180,14 @@ impl PendingDrawType {
         draw_id: usize,
         source: &dyn BitmapSource,
         backend: &mut dyn RenderBackend,
-        uniform_buffers: &mut BufferBuilder,
     ) -> Option<Self> {
         let handle = source.bitmap_handle(bitmap.bitmap_id, backend)?;
         let texture = as_texture(&handle);
         let texture_view = texture.texture.create_view(&Default::default());
-        let texture_transforms_index = create_texture_transforms(&bitmap.matrix, uniform_buffers);
         let bind_group_label =
             create_debug_label!("Shape {} (bitmap) draw {} bindgroup", shape_id, draw_id);
 
         Some(PendingDrawType::Bitmap {
-            texture_transforms_index,
             texture_view,
             is_repeating: bitmap.is_repeating,
             is_smoothed: bitmap.is_smoothed,
@@ -221,7 +204,6 @@ impl PendingDrawType {
         match self {
             PendingDrawType::Color => DrawType::Color,
             PendingDrawType::Gradient {
-                texture_transforms_index,
                 gradient_index,
                 bind_group_label,
             } => {
@@ -235,16 +217,6 @@ impl PendingDrawType {
                                 binding: 0,
                                 resource: wgpu::BindingResource::Buffer(wgpu::BufferBinding {
                                     buffer: uniform_buffer,
-                                    offset: texture_transforms_index,
-                                    size: wgpu::BufferSize::new(
-                                        std::mem::size_of::<TextureTransforms>() as u64,
-                                    ),
-                                }),
-                            },
-                            wgpu::BindGroupEntry {
-                                binding: 1,
-                                resource: wgpu::BindingResource::Buffer(wgpu::BufferBinding {
-                                    buffer: uniform_buffer,
                                     offset: common.buffer_offset,
                                     size: wgpu::BufferSize::new(
                                         std::mem::size_of::<GradientUniforms>() as u64,
@@ -252,11 +224,11 @@ impl PendingDrawType {
                                 }),
                             },
                             wgpu::BindGroupEntry {
-                                binding: 2,
+                                binding: 1,
                                 resource: wgpu::BindingResource::TextureView(&common.texture_view),
                             },
                             wgpu::BindGroupEntry {
-                                binding: 3,
+                                binding: 2,
                                 resource: wgpu::BindingResource::Sampler(
                                     descriptors.bitmap_samplers.get_sampler(false, true),
                                 ),
@@ -267,7 +239,6 @@ impl PendingDrawType {
                 DrawType::Gradient { bind_group }
             }
             PendingDrawType::Bitmap {
-                texture_transforms_index,
                 texture_view,
                 is_repeating,
                 is_smoothed,
@@ -279,8 +250,6 @@ impl PendingDrawType {
                     descriptors
                         .bitmap_samplers
                         .get_sampler(is_repeating, is_smoothed),
-                    uniform_buffer,
-                    texture_transforms_index,
                     texture_view,
                     bind_group_label,
                 );
@@ -414,50 +383,23 @@ impl BitmapBinds {
         device: &wgpu::Device,
         layout: &wgpu::BindGroupLayout,
         sampler: &wgpu::Sampler,
-        uniform_buffer: &wgpu::Buffer,
-        texture_transforms: wgpu::BufferAddress,
         texture_view: wgpu::TextureView,
         label: Option<String>,
     ) -> Self {
-        let bind_group =
-            device.create_bind_group(&wgpu::BindGroupDescriptor {
-                layout,
-                entries: &[
-                    wgpu::BindGroupEntry {
-                        binding: 0,
-                        resource: wgpu::BindingResource::Buffer(wgpu::BufferBinding {
-                            buffer: uniform_buffer,
-                            offset: texture_transforms,
-                            size: wgpu::BufferSize::new(
-                                std::mem::size_of::<TextureTransforms>() as u64
-                            ),
-                        }),
-                    },
-                    wgpu::BindGroupEntry {
-                        binding: 1,
-                        resource: wgpu::BindingResource::TextureView(&texture_view),
-                    },
-                    wgpu::BindGroupEntry {
-                        binding: 2,
-                        resource: wgpu::BindingResource::Sampler(sampler),
-                    },
-                ],
-                label: label.as_deref(),
-            });
+        let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
+            layout,
+            entries: &[
+                wgpu::BindGroupEntry {
+                    binding: 0,
+                    resource: wgpu::BindingResource::TextureView(&texture_view),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 1,
+                    resource: wgpu::BindingResource::Sampler(sampler),
+                },
+            ],
+            label: label.as_deref(),
+        });
         Self { bind_group }
     }
-}
-
-fn create_texture_transforms(
-    matrix: &[[f32; 3]; 3],
-    buffer: &mut BufferBuilder,
-) -> wgpu::BufferAddress {
-    let mut texture_transform = [[0.0; 4]; 4];
-    texture_transform[0][..3].copy_from_slice(&matrix[0]);
-    texture_transform[1][..3].copy_from_slice(&matrix[1]);
-    texture_transform[2][..3].copy_from_slice(&matrix[2]);
-    buffer
-        .add(&[texture_transform])
-        .expect("Mesh uniform buffer was too large!")
-        .start
 }
