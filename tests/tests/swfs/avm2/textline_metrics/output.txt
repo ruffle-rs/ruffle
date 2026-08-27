@@ -1,0 +1,20 @@
+a size=10 ascent=8 descent=2 totalAscent=8 totalDescent=2
+space size=10 ascent=8 descent=2 totalAscent=8 totalDescent=2
+a size=20 ascent=16 descent=4 totalAscent=16 totalDescent=4
+space size=20 ascent=16 descent=4 totalAscent=16 totalDescent=4
+a size=40 ascent=32 descent=8 totalAscent=32 totalDescent=8
+space size=40 ascent=32 descent=8 totalAscent=32 totalDescent=8
+recreated a ascent=16 descent=4 totalAscent=16 totalDescent=4
+tab ascent=16 descent=4 totalAscent=16 totalDescent=4
+line feed ascent=16 descent=4 totalAscent=16 totalDescent=4
+carriage return ascent=16 descent=4 totalAscent=16 totalDescent=4
+line separator ascent=16 descent=4 totalAscent=16 totalDescent=4
+paragraph separator ascent=16 descent=4 totalAscent=16 totalDescent=4
+carriage return + line feed ascent=16 descent=4 totalAscent=16 totalDescent=4
+space + tab ascent=16 descent=4 totalAscent=16 totalDescent=4
+b ascent=16 descent=4 totalAscent=16 totalDescent=4
+c ascent=16 descent=4 totalAscent=16 totalDescent=4
+d ascent=16 descent=4 totalAscent=16 totalDescent=4
+ab ascent=16 descent=4 totalAscent=16 totalDescent=4
+abcd ascent=16 descent=4 totalAscent=16 totalDescent=4
+a space d ascent=16 descent=4 totalAscent=16 totalDescent=4
