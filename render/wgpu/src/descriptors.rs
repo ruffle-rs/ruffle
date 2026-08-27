@@ -1,6 +1,6 @@
 use crate::filters::{FilterVertex, Filters};
 use crate::layouts::BindLayouts;
-use crate::pipelines::VERTEX_BUFFERS_DESCRIPTION_POS;
+use crate::pipelines::VERTEX_BUFFERS_DESCRIPTION_POS_UV;
 use crate::shaders::Shaders;
 use crate::{
     BitmapSamplers, Pipelines, PosColorVertex, PosUvVertex, PosVertex, TextureTransforms,
@@ -96,7 +96,7 @@ impl Descriptors {
                         vertex: wgpu::VertexState {
                             module: &self.shaders.copy_shader,
                             entry_point: Some("main_vertex"),
-                            buffers: &VERTEX_BUFFERS_DESCRIPTION_POS,
+                            buffers: &VERTEX_BUFFERS_DESCRIPTION_POS_UV,
                             compilation_options: Default::default(),
                         },
                         fragment: Some(wgpu::FragmentState {
