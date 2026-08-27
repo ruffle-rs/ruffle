@@ -34,6 +34,18 @@ pub fn get_ascent<'gc>(
     Ok(text_line.metrics().0.into())
 }
 
+pub fn get_descent<'gc>(
+    _activation: &mut Activation<'_, 'gc>,
+    this: Value<'gc>,
+    _args: FunctionArgs<'_, 'gc>,
+) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+    let display_object = this.as_display_object().unwrap();
+    let text_line = display_object.as_text_line().unwrap();
+
+    Ok(text_line.metrics().1.into())
+}
+
 pub fn get_validity<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
