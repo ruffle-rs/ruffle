@@ -19,17 +19,10 @@ struct Gradient {
 @group(2) @binding(2) var texture: texture_2d<f32>;
 @group(2) @binding(3) var texture_sampler: sampler;
 
-struct GradientVertexInput {
-    /// The position of the vertex in object space.
-    @location(0) position: vec2<f32>,
-};
-
 @vertex
-fn main_vertex(in: GradientVertexInput) -> VertexOutput {
-    let matrix_ = textureTransforms.texture_matrix;
-    let uv = (mat3x3<f32>(matrix_[0].xyz, matrix_[1].xyz, matrix_[2].xyz) * vec3<f32>(in.position, 1.0)).xy;
+fn main_vertex(in: common__VertexInputUv) -> VertexOutput {
     let pos = common__globals.view_matrix * transforms.world_matrix * vec4<f32>(in.position.x, in.position.y, 0.0, 1.0);
-    return VertexOutput(pos, uv);
+    return VertexOutput(pos, in.uv.xy / in.uv.z);
 }
 
 fn find_t(uv: vec2<f32>) -> f32 {

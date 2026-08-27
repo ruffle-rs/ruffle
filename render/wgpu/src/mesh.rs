@@ -1,8 +1,7 @@
 use crate::backend::WgpuRenderBackend;
 use crate::target::RenderTarget;
 use crate::{
-    Descriptors, GradientUniforms, PosColorVertex, PosUvVertex, PosVertex, TextureTransforms,
-    as_texture,
+    Descriptors, GradientUniforms, PosColorVertex, PosUvVertex, TextureTransforms, as_texture,
 };
 use std::any::Any;
 use std::ops::Range;
@@ -90,8 +89,12 @@ impl PendingDraw {
                     .add(&vertices)
                     .expect("Mesh vertex buffer was too large!")
             }
-            TessDrawType::Gradient { .. } => {
-                let vertices: Vec<_> = draw.vertices.into_iter().map(PosVertex::from).collect();
+            TessDrawType::Gradient { matrix, .. } => {
+                let vertices: Vec<_> = draw
+                    .vertices
+                    .into_iter()
+                    .map(|v| PosUvVertex::from_tessellator(v, matrix))
+                    .collect();
                 vertex_buffer
                     .add(&vertices)
                     .expect("Mesh vertex buffer was too large!")

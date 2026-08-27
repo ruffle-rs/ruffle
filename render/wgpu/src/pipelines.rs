@@ -130,7 +130,7 @@ impl Pipelines {
             format,
             &shaders.gradient_shader,
             msaa_sample_count,
-            &VERTEX_BUFFERS_DESCRIPTION_POS,
+            &VERTEX_BUFFERS_DESCRIPTION_POS_UV,
             &gradient_bindings,
             BlendState::PREMULTIPLIED_ALPHA_BLENDING,
             0,
