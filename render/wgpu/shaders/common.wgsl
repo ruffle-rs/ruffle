@@ -33,6 +33,11 @@ struct common__VertexInput {
     @location(0) position: vec2<f32>,
 };
 
+struct common__VertexInputUv {
+    @location(0) position: vec2<f32>,
+    @location(1) uv: vec3<f32>,
+};
+
 /// Common uniform layout shared by all shaders.
 @group(0) @binding(0) var<uniform> common__globals: common__Globals;
 

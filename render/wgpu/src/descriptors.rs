@@ -3,7 +3,7 @@ use crate::layouts::BindLayouts;
 use crate::pipelines::VERTEX_BUFFERS_DESCRIPTION_POS;
 use crate::shaders::Shaders;
 use crate::{
-    BitmapSamplers, Pipelines, PosColorVertex, PosVertex, TextureTransforms,
+    BitmapSamplers, Pipelines, PosColorVertex, PosUvVertex, PosVertex, TextureTransforms,
     create_buffer_with_data,
 };
 use fnv::FnvHashMap;
@@ -155,6 +155,7 @@ impl Descriptors {
 
 pub struct Quad {
     pub vertices_pos: wgpu::Buffer,
+    pub vertices_pos_uv: wgpu::Buffer,
     pub vertices_pos_color: wgpu::Buffer,
     pub filter_vertices: wgpu::Buffer,
     pub indices: wgpu::Buffer,
@@ -177,6 +178,24 @@ impl Quad {
             },
             PosVertex {
                 position: [0.0, 1.0],
+            },
+        ];
+        let vertices_pos_uv = [
+            PosUvVertex {
+                position: [0.0, 0.0],
+                uv: [0.0, 0.0, 1.0],
+            },
+            PosUvVertex {
+                position: [1.0, 0.0],
+                uv: [1.0, 0.0, 1.0],
+            },
+            PosUvVertex {
+                position: [1.0, 1.0],
+                uv: [1.0, 1.0, 1.0],
+            },
+            PosUvVertex {
+                position: [0.0, 1.0],
+                uv: [0.0, 1.0, 1.0],
             },
         ];
         let vertices_pos_color = [
@@ -224,6 +243,13 @@ impl Quad {
             bytemuck::cast_slice(&vertices_pos),
             wgpu::BufferUsages::VERTEX,
             create_debug_label!("Quad vbo (pos)"),
+        );
+
+        let vbo_pos_uv = create_buffer_with_data(
+            device,
+            bytemuck::cast_slice(&vertices_pos_uv),
+            wgpu::BufferUsages::VERTEX,
+            create_debug_label!("Quad vbo (pos & uv)"),
         );
 
         let vbo_pos_color = create_buffer_with_data(
@@ -275,6 +301,7 @@ impl Quad {
 
         Self {
             vertices_pos: vbo_pos,
+            vertices_pos_uv: vbo_pos_uv,
             vertices_pos_color: vbo_pos_color,
             filter_vertices: vbo_filter,
             indices: ibo,

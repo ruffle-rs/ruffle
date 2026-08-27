@@ -1,7 +1,8 @@
 use crate::backend::WgpuRenderBackend;
 use crate::target::RenderTarget;
 use crate::{
-    Descriptors, GradientUniforms, PosColorVertex, PosVertex, TextureTransforms, as_texture,
+    Descriptors, GradientUniforms, PosColorVertex, PosUvVertex, PosVertex, TextureTransforms,
+    as_texture,
 };
 use std::any::Any;
 use std::ops::Range;
@@ -78,20 +79,33 @@ impl PendingDraw {
         vertex_buffer: &mut BufferBuilder,
         index_buffer: &mut BufferBuilder,
     ) -> Option<Self> {
-        let vertices = if matches!(draw.draw_type, TessDrawType::Color) {
-            let vertices: Vec<_> = draw
-                .vertices
-                .into_iter()
-                .map(PosColorVertex::from)
-                .collect();
-            vertex_buffer
-                .add(&vertices)
-                .expect("Mesh vertex buffer was too large!")
-        } else {
-            let vertices: Vec<_> = draw.vertices.into_iter().map(PosVertex::from).collect();
-            vertex_buffer
-                .add(&vertices)
-                .expect("Mesh vertex buffer was too large!")
+        let vertices = match &draw.draw_type {
+            TessDrawType::Color => {
+                let vertices: Vec<_> = draw
+                    .vertices
+                    .into_iter()
+                    .map(PosColorVertex::from)
+                    .collect();
+                vertex_buffer
+                    .add(&vertices)
+                    .expect("Mesh vertex buffer was too large!")
+            }
+            TessDrawType::Gradient { .. } => {
+                let vertices: Vec<_> = draw.vertices.into_iter().map(PosVertex::from).collect();
+                vertex_buffer
+                    .add(&vertices)
+                    .expect("Mesh vertex buffer was too large!")
+            }
+            TessDrawType::Bitmap(bitmap) => {
+                let vertices: Vec<_> = draw
+                    .vertices
+                    .into_iter()
+                    .map(|v| PosUvVertex::from_tessellator(v, &bitmap.matrix))
+                    .collect();
+                vertex_buffer
+                    .add(&vertices)
+                    .expect("Mesh vertex buffer was too large!")
+            }
         };
 
         let indices = index_buffer
