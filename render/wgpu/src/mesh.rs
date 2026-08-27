@@ -6,7 +6,7 @@ use std::ops::Range;
 use wgpu::util::DeviceExt;
 
 use crate::buffer_builder::BufferBuilder;
-use ruffle_render::backend::{RenderBackend, ShapeHandle, ShapeHandleImpl};
+use ruffle_render::backend::{ShapeHandle, ShapeHandleImpl};
 use ruffle_render::bitmap::BitmapSource;
 use ruffle_render::tessellator::{Bitmap, Draw as LyonDraw, DrawType as TessDrawType, Gradient};
 use swf::{CharacterId, GradientInterpolation};
@@ -118,9 +118,7 @@ impl PendingDraw {
                 matrix: _,
                 gradient,
             } => PendingDrawType::gradient(gradient, shape_id, draw_id),
-            TessDrawType::Bitmap(bitmap) => {
-                PendingDrawType::bitmap(bitmap, shape_id, draw_id, source, backend)?
-            }
+            TessDrawType::Bitmap(bitmap) => PendingDrawType::bitmap(bitmap, source, backend)?,
         };
         Some(PendingDraw {
             draw_type,
@@ -140,10 +138,7 @@ pub enum PendingDrawType {
         bind_group_label: Option<String>,
     },
     Bitmap {
-        texture_view: wgpu::TextureView,
-        is_repeating: bool,
-        is_smoothed: bool,
-        bind_group_label: Option<String>,
+        binds: BitmapBinds,
     },
 }
 
@@ -174,24 +169,24 @@ impl PendingDrawType {
         }
     }
 
-    pub fn bitmap(
+    pub fn bitmap<T: RenderTarget>(
         bitmap: Bitmap,
-        shape_id: CharacterId,
-        draw_id: usize,
         source: &dyn BitmapSource,
-        backend: &mut dyn RenderBackend,
+        backend: &mut WgpuRenderBackend<T>,
     ) -> Option<Self> {
         let handle = source.bitmap_handle(bitmap.bitmap_id, backend)?;
         let texture = as_texture(&handle);
-        let texture_view = texture.texture.create_view(&Default::default());
-        let bind_group_label =
-            create_debug_label!("Shape {} (bitmap) draw {} bindgroup", shape_id, draw_id);
+        let binds = texture.bind_group(
+            bitmap.is_repeating,
+            bitmap.is_smoothed,
+            &backend.descriptors.device,
+            &backend.descriptors.bind_layouts.bitmap,
+            handle.clone(),
+            &backend.descriptors.bitmap_samplers,
+        );
 
         Some(PendingDrawType::Bitmap {
-            texture_view,
-            is_repeating: bitmap.is_repeating,
-            is_smoothed: bitmap.is_smoothed,
-            bind_group_label,
+            binds: binds.clone(),
         })
     }
 
@@ -238,24 +233,7 @@ impl PendingDrawType {
                     });
                 DrawType::Gradient { bind_group }
             }
-            PendingDrawType::Bitmap {
-                texture_view,
-                is_repeating,
-                is_smoothed,
-                bind_group_label,
-            } => {
-                let binds = BitmapBinds::new(
-                    &descriptors.device,
-                    &descriptors.bind_layouts.bitmap,
-                    descriptors
-                        .bitmap_samplers
-                        .get_sampler(is_repeating, is_smoothed),
-                    texture_view,
-                    bind_group_label,
-                );
-
-                DrawType::Bitmap { binds }
-            }
+            PendingDrawType::Bitmap { binds } => DrawType::Bitmap { binds },
         }
     }
 }
@@ -373,7 +351,7 @@ impl CommonGradient {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct BitmapBinds {
     pub bind_group: wgpu::BindGroup,
 }
