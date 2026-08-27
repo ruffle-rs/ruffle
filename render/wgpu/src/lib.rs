@@ -4,7 +4,6 @@
 use crate::backend::ActiveFrame;
 use crate::bitmaps::BitmapSamplers;
 use crate::buffer_pool::{BufferPool, PoolEntry};
-use crate::descriptors::Quad;
 use crate::mesh::BitmapBinds;
 use crate::pipelines::Pipelines;
 use crate::target::{RenderTarget, SwapChainTarget};
@@ -75,12 +74,6 @@ pub struct Transforms {
     world_matrix: [[f32; 4]; 4],
     mult_color: [f32; 4],
     add_color: [f32; 4],
-}
-
-#[repr(C)]
-#[derive(Copy, Clone, Debug, Pod, Zeroable)]
-struct TextureTransforms {
-    u_matrix: [[f32; 4]; 4],
 }
 
 #[repr(C)]
@@ -282,7 +275,6 @@ impl Texture {
         smoothed: bool,
         device: &wgpu::Device,
         layout: &wgpu::BindGroupLayout,
-        quad: &Quad,
         handle: BitmapHandle,
         samplers: &BitmapSamplers,
     ) -> &BitmapBinds {
@@ -295,8 +287,6 @@ impl Texture {
                 device,
                 layout,
                 samplers.get_sampler(false, smoothed),
-                &quad.texture_transforms,
-                0 as wgpu::BufferAddress,
                 self.texture.create_view(&Default::default()),
                 create_debug_label!("Bitmap {:?} bind group (smoothed: {})", handle.0, smoothed),
             )

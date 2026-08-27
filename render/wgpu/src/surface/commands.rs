@@ -209,7 +209,6 @@ impl<'encoder> CommandRenderer<'encoder> {
             smoothing,
             &descriptors.device,
             &descriptors.bind_layouts.bitmap,
-            &descriptors.quad,
             bitmap.clone(),
             &descriptors.bitmap_samplers,
         );

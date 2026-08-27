@@ -7,9 +7,8 @@ struct VertexOutput {
 };
 
 @group(1) @binding(0) var<uniform> transforms: common__Transforms;
-@group(2) @binding(0) var<uniform> textureTransforms: common__TextureTransforms;
-@group(2) @binding(1) var texture: texture_2d<f32>;
-@group(2) @binding(2) var texture_sampler: sampler;
+@group(2) @binding(0) var texture: texture_2d<f32>;
+@group(2) @binding(1) var texture_sampler: sampler;
 override late_saturate: bool = false;
 
 @vertex

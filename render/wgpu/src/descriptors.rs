@@ -3,8 +3,7 @@ use crate::layouts::BindLayouts;
 use crate::pipelines::VERTEX_BUFFERS_DESCRIPTION_POS_UV;
 use crate::shaders::Shaders;
 use crate::{
-    BitmapSamplers, Pipelines, PosColorVertex, PosUvVertex, PosVertex, TextureTransforms,
-    create_buffer_with_data,
+    BitmapSamplers, Pipelines, PosColorVertex, PosUvVertex, PosVertex, create_buffer_with_data,
 };
 use fnv::FnvHashMap;
 use std::fmt::Debug;
@@ -161,7 +160,6 @@ pub struct Quad {
     pub indices: wgpu::Buffer,
     pub indices_line: wgpu::Buffer,
     pub indices_line_rect: wgpu::Buffer,
-    pub texture_transforms: wgpu::Buffer,
 }
 
 impl Quad {
@@ -285,20 +283,6 @@ impl Quad {
             create_debug_label!("Line rect ibo"),
         );
 
-        let tex_transforms = create_buffer_with_data(
-            device,
-            bytemuck::cast_slice(&[TextureTransforms {
-                u_matrix: [
-                    [1.0, 0.0, 0.0, 0.0],
-                    [0.0, 1.0, 0.0, 0.0],
-                    [0.0, 0.0, 1.0, 0.0],
-                    [0.0, 0.0, 0.0, 1.0],
-                ],
-            }]),
-            wgpu::BufferUsages::UNIFORM,
-            create_debug_label!("Quad tex transforms"),
-        );
-
         Self {
             vertices_pos: vbo_pos,
             vertices_pos_uv: vbo_pos_uv,
@@ -307,7 +291,6 @@ impl Quad {
             indices: ibo,
             indices_line: ibo_line,
             indices_line_rect: ibo_line_rect,
-            texture_transforms: tex_transforms,
         }
     }
 }
