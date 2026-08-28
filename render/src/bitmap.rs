@@ -32,6 +32,12 @@ pub struct BitmapInfo {
     pub height: u32,
 }
 
+impl BitmapInfo {
+    pub fn full_region(&self) -> PixelRegion {
+        PixelRegion::for_whole_size(self.width, self.height)
+    }
+}
+
 #[derive(Copy, Clone, Debug)]
 pub struct BitmapSize {
     pub width: u32,

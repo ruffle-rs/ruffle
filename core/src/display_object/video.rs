@@ -554,11 +554,13 @@ impl<'gc> TDisplayObject<'gc> for Video<'gc> {
                 bounds.height().to_pixels() as f32 / bitmap.height as f32,
             );
 
+            let region = bitmap.full_region();
             context.commands.render_bitmap(
                 bitmap.handle,
                 transform,
                 smoothing,
                 PixelSnapping::Never,
+                region,
             );
         } else if codec != Some(VideoCodec::None) {
             tracing::warn!("Video has no decoded frame to render.");
