@@ -477,10 +477,6 @@ impl GuiController {
             }
         }
 
-        for id in full_output.textures_delta.free.drain() {
-            self.egui_renderer.free_texture(&id);
-        }
-
         if let Some(player) = player.as_deref_mut() {
             let renderer =
                 <dyn Any>::downcast_mut::<WgpuRenderBackend<MovieView>>(player.renderer_mut())
@@ -489,6 +485,14 @@ impl GuiController {
         }
         command_buffers.push(encoder.finish());
         self.descriptors.queue.submit(command_buffers);
+
+        // Free textures only after submitting the command buffer that may still
+        // reference them.  Destroying a texture before its usage is submitted
+        // causes a wgpu validation panic.
+        for id in full_output.textures_delta.free.drain() {
+            self.egui_renderer.free_texture(&id);
+        }
+
         self.window.pre_present_notify();
         self.descriptors.queue.present(surface_texture);
         #[cfg(feature = "tracy")]
