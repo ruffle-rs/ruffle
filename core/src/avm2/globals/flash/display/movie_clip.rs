@@ -3,7 +3,7 @@
 use crate::avm2::Error;
 use crate::avm2::activation::Activation;
 use crate::avm2::array::ArrayStorage;
-use crate::avm2::error::make_error_2109;
+use crate::avm2::error::{make_error_2001, make_error_2109};
 use crate::avm2::function::FunctionArgs;
 use crate::avm2::object::ArrayObject;
 use crate::avm2::parameters::ParametersExt;
@@ -19,6 +19,10 @@ pub fn add_frame_script<'gc>(
     args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
+
+    if args.is_empty() || !args.len().is_multiple_of(2) {
+        return Err(make_error_2001(activation, args.len()));
+    }
 
     if let Some(mc) = this
         .as_display_object()
