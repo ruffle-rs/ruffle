@@ -943,6 +943,19 @@ pub fn make_error_1508<'gc>(activation: &mut Activation<'_, 'gc>, param_name: &s
     ))
 }
 
+#[inline(never)]
+#[cold]
+pub fn make_error_2001<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    passed_arg_count: usize,
+) -> Error<'gc> {
+    make_error!(argument_error(
+        activation,
+        error_message!(2001, passed_arg_count, passed_arg_count + 1),
+        2001,
+    ))
+}
+
 make_error_fn!(make_error_2002, 2002, io_error);
 make_error_fn!(make_error_2003, 2003, security_error);
 

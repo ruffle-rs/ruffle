@@ -1,0 +1,9 @@
+ArgumentError: Error #2001: Too few arguments were specified; got 0, 1 expected.
+	at flash.display::MovieClip/addFrameScript()
+	at Test()
+ArgumentError: Error #2001: Too few arguments were specified; got 1, 2 expected.
+	at flash.display::MovieClip/addFrameScript()
+	at Test()
+ArgumentError: Error #2001: Too few arguments were specified; got 11, 12 expected.
+	at flash.display::MovieClip/addFrameScript()
+	at Test()
