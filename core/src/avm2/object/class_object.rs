@@ -302,21 +302,39 @@ impl<'gc> ClassObject<'gc> {
             .c_class()
             .expect("ClassObject should have an i_class");
 
-        // Bind all the methods that are declared on the i_class and c_class
-        i_class.bind_methods(activation, MethodAssociation::classbound(i_class, false))?;
-        c_class.bind_methods(activation, MethodAssociation::classbound(c_class, false))?;
-
-        i_class
+        let instance_init = i_class
             .instance_init()
-            .expect("Cannot create ClassObject for Class without init")
-            .associate(activation, MethodAssociation::classbound(i_class, false))?;
+            .expect("Cannot create ClassObject for Class without init");
+
+        let class_init = c_class
+            .instance_init()
+            .expect("c_class always has initializer");
+
+        let class_class = activation.avm2().classes().class;
+        let superclass_object = self.superclass_object();
+
+        // Bind all the methods that are declared on the i_class and c_class
+        i_class.bind_methods(
+            activation,
+            MethodAssociation::classbound(i_class, superclass_object, false),
+        )?;
+        c_class.bind_methods(
+            activation,
+            MethodAssociation::classbound(c_class, Some(class_class), false),
+        )?;
+
+        // Bind the instance initializer
+        instance_init.associate(
+            activation,
+            MethodAssociation::classbound(i_class, superclass_object, false),
+        )?;
 
         // The class initializer (but not the instance initializer) is always
         // in "interpreter mode"
-        c_class
-            .instance_init()
-            .expect("c_class always has initializer")
-            .associate(activation, MethodAssociation::classbound(c_class, true))?;
+        class_init.associate(
+            activation,
+            MethodAssociation::classbound(c_class, Some(class_class), true),
+        )?;
 
         Ok(())
     }
