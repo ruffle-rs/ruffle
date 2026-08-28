@@ -1077,6 +1077,7 @@ pub fn render_base<'gc>(
                 cache_draws: context.cache_draws,
                 gc_context: context.gc_context,
                 library: context.library,
+                ui: context.ui,
                 transform_stack: &mut transform_stack,
                 is_offscreen: true,
                 use_bitmap_cache: true,

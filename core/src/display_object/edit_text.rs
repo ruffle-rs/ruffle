@@ -23,7 +23,8 @@ use crate::font::{FontLike, FontType, TextRenderSettings};
 use crate::html;
 use crate::html::StyleSheet;
 use crate::html::{
-    FormatSpans, Layout, LayoutBox, LayoutContent, LayoutLine, LayoutMetrics, Position, TextFormat,
+    FormatSpans, Layout, LayoutBox, LayoutContent, LayoutContext, LayoutLine, LayoutMetrics,
+    Position, TextFormat,
 };
 use crate::prelude::*;
 use crate::string::{AvmString, SwfStrExt as _, WStr, WString, utils as string_utils};
@@ -877,7 +878,7 @@ impl<'gc> EditText<'gc> {
     /// the text, and no higher-level representation. Specifically, CSS should
     /// have already been calculated and applied to HTML trees lowered into the
     /// text-span representation.
-    pub fn relayout(self, context: &mut UpdateContext<'gc>) {
+    pub fn relayout(self, context: &mut dyn LayoutContext<'gc>) {
         let autosize = self.0.autosize.get();
         let is_word_wrap = self.0.flags.get().contains(EditTextFlag::WORD_WRAP);
         let movie = self.0.shared.swf.clone();

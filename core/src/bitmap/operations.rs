@@ -1553,6 +1553,7 @@ pub fn draw<'gc>(
         cache_draws: &mut cache_draws,
         gc_context: context.gc_context,
         library: context.library,
+        ui: context.ui,
         transform_stack: &mut transform_stack,
         is_offscreen: true,
         use_bitmap_cache: false,

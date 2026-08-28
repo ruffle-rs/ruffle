@@ -37,6 +37,7 @@ use std::sync::Arc;
 use swf::Color;
 use tracing::instrument;
 use wgpu::SubmissionIndex;
+use wgpu_profiler::{GpuProfiler, GpuProfilerSettings};
 
 /// Creates a wgpu instance with Ruffle's required configuration.
 ///
@@ -81,6 +82,7 @@ pub struct WgpuRenderBackend<T: RenderTarget> {
     pub(crate) offscreen_buffer_pool: Arc<BufferPool<wgpu::Buffer, BufferDimensions>>,
     dynamic_transforms: DynamicTransforms,
     active_frame: ActiveFrame,
+    profiler: GpuProfiler,
 }
 
 impl WgpuRenderBackend<SwapChainTarget> {
@@ -250,6 +252,21 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
         let transforms = DynamicTransforms::new(&descriptors);
         let active_frame = ActiveFrame::new(&descriptors);
 
+        let profiler_settings = GpuProfilerSettings {
+            enable_timer_queries: cfg!(feature = "profile-with-tracy"),
+            enable_debug_groups: cfg!(feature = "render_debug_labels"),
+            ..Default::default()
+        };
+        #[cfg(feature = "profile-with-tracy")]
+        let profiler = GpuProfiler::new_with_tracy_client(
+            profiler_settings,
+            descriptors.backend,
+            &descriptors.device,
+            &descriptors.queue,
+        )?;
+        #[cfg(not(feature = "profile-with-tracy"))]
+        let profiler = GpuProfiler::new(&descriptors.device, profiler_settings)?;
+
         Ok(Self {
             descriptors,
             target,
@@ -262,7 +279,16 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
             offscreen_buffer_pool: Arc::new(offscreen_buffer_pool),
             dynamic_transforms: transforms,
             active_frame,
+            profiler,
         })
+    }
+
+    pub fn profiler(&self) -> &GpuProfiler {
+        &self.profiler
+    }
+
+    pub fn profiler_mut(&mut self) -> &mut GpuProfiler {
+        &mut self.profiler
     }
 
     fn register_shape_internal(
@@ -564,11 +590,16 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
                     entry.commands,
                     &mut self.active_frame.staging_belt,
                     &self.dynamic_transforms,
-                    &mut self.active_frame.command_encoder,
+                    &mut self
+                        .profiler
+                        .scope("Draw to CAB", &mut self.active_frame.command_encoder),
                     LayerRef::None,
                     &mut self.offscreen_texture_pool,
                 );
             } else {
+                let mut scope = self
+                    .profiler
+                    .scope("Filters", &mut self.active_frame.command_encoder);
                 // We're relying on there being no impotent filters here,
                 // so that we can safely start by using the actual CAB texture.
                 // It's guaranteed that at least one filter would have used it and moved the target to something else,
@@ -588,14 +619,14 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
                     entry.commands,
                     &mut self.active_frame.staging_belt,
                     &self.dynamic_transforms,
-                    &mut self.active_frame.command_encoder,
+                    &mut scope.scope("Draw to CAB"),
                     LayerRef::None,
                     &mut self.offscreen_texture_pool,
                 );
                 for filter in entry.filters {
                     target = self.descriptors.filters.apply(
                         &self.descriptors,
-                        &mut self.active_frame.command_encoder,
+                        &mut scope.scope(filter.name()),
                         &mut self.offscreen_texture_pool,
                         &mut self.active_frame.staging_belt,
                         FilterSource::for_entire_texture(target.color_texture()),
@@ -610,7 +641,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
                     target.whole_frame_bind_group(&self.descriptors),
                     target.globals(),
                     target.color_texture().sample_count(),
-                    &mut self.active_frame.command_encoder,
+                    &mut scope.scope("Copy filtered to CAB"),
                 );
             }
             // Periodically flush GPU work to prevent OOM when many cache entries
@@ -630,7 +661,9 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
             &self.descriptors,
             &mut self.active_frame.staging_belt,
             &self.dynamic_transforms,
-            &mut self.active_frame.command_encoder,
+            &mut self
+                .profiler
+                .scope("Frame commands", &mut self.active_frame.command_encoder),
             &self.meshes,
             commands,
             LayerRef::None,
@@ -792,7 +825,9 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
             &self.descriptors,
             &mut self.active_frame.staging_belt,
             &self.dynamic_transforms,
-            &mut self.active_frame.command_encoder,
+            &mut self
+                .profiler
+                .scope("Offscreen commands", &mut self.active_frame.command_encoder),
             &self.meshes,
             commands,
             LayerRef::Current,
@@ -1185,17 +1220,12 @@ async fn request_device(
 
     let mut features = Default::default();
 
-    let try_features = [
-        wgpu::Features::TEXTURE_ADAPTER_SPECIFIC_FORMAT_FEATURES,
-        wgpu::Features::TEXTURE_COMPRESSION_BC,
-        wgpu::Features::FLOAT32_FILTERABLE,
-    ];
+    let optional_features = wgpu::Features::TEXTURE_ADAPTER_SPECIFIC_FORMAT_FEATURES
+        | wgpu::Features::TEXTURE_COMPRESSION_BC
+        | wgpu::Features::FLOAT32_FILTERABLE
+        | GpuProfiler::ALL_WGPU_TIMER_FEATURES;
 
-    for feature in try_features {
-        if adapter.features().contains(feature) {
-            features |= feature;
-        }
-    }
+    features |= optional_features & adapter.features();
 
     adapter
         .request_device(&wgpu::DeviceDescriptor {

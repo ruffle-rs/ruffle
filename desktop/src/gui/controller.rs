@@ -1,3 +1,5 @@
+use super::dialogs::export_bundle_dialog::ExportBundleDialogConfiguration;
+use super::{DialogDescriptor, FilePicker};
 use crate::backends::DesktopUiBackend;
 use crate::custom_event::RuffleEvent;
 use crate::gui::movie::{MovieView, MovieViewRenderer};
@@ -28,9 +30,6 @@ use winit::event_loop::EventLoopProxy;
 use winit::keyboard::{Key, NamedKey};
 use winit::window::{ImePurpose as WinitImePurpose, Theme, Window};
 
-use super::dialogs::export_bundle_dialog::ExportBundleDialogConfiguration;
-use super::{DialogDescriptor, FilePicker};
-
 /// Integration layer connecting wgpu+winit to egui.
 pub struct GuiController {
     descriptors: Arc<Descriptors>,
@@ -49,6 +48,8 @@ pub struct GuiController {
     /// If this is set, we should not render the main menu.
     no_gui: bool,
     theme_controller: ThemeController,
+    #[cfg(feature = "tracy_images")]
+    tracy_frame_captures: crate::tracy::FrameCapturesHolder,
 }
 
 impl GuiController {
@@ -160,6 +161,9 @@ impl GuiController {
 
         egui_extras::install_image_loaders(egui_winit.egui_ctx());
 
+        #[cfg(feature = "tracy_images")]
+        let tracy_frame_captures = crate::tracy::FrameCapturesHolder::new(&descriptors.device);
+
         Ok(Self {
             descriptors,
             egui_winit,
@@ -174,6 +178,8 @@ impl GuiController {
             size,
             no_gui,
             theme_controller,
+            #[cfg(feature = "tracy_images")]
+            tracy_frame_captures,
         })
     }
 
@@ -273,6 +279,8 @@ impl GuiController {
             &self.descriptors.device,
             self.size.width,
             self.size.height,
+            #[cfg(feature = "tracy_images")]
+            self.tracy_frame_captures.clone(),
         );
         player.create(&opt, &content_descriptor, movie_view);
         self.gui.on_player_created(
@@ -349,6 +357,12 @@ impl GuiController {
                 panic!("wgpu: Acquiring a texture failed with a validation error");
             }
         };
+
+        #[cfg(feature = "tracy_images")]
+        if player.is_none() {
+            self.tracy_frame_captures
+                .set_target(&self.descriptors.device, None);
+        }
 
         let raw_input = self.egui_winit.take_egui_input(&self.window);
         let show_menu = self.window.fullscreen().is_none() && !self.no_gui;
@@ -452,16 +466,46 @@ impl GuiController {
 
             self.egui_renderer
                 .render(&mut render_pass, &clipped_primitives, &screen_descriptor);
+
+            #[cfg(feature = "tracy_images")]
+            {
+                drop(render_pass);
+                self.tracy_frame_captures
+                    .capture_frame(&self.descriptors.device, &mut encoder);
+            }
         }
 
         for id in &full_output.textures_delta.free {
             self.egui_renderer.free_texture(id);
         }
 
+        if let Some(player) = player.as_deref_mut() {
+            let renderer =
+                <dyn Any>::downcast_mut::<WgpuRenderBackend<MovieView>>(player.renderer_mut())
+                    .expect("Renderer must be correct type");
+            renderer.profiler_mut().resolve_queries(&mut encoder);
+        }
         command_buffers.push(encoder.finish());
         self.descriptors.queue.submit(command_buffers);
         self.window.pre_present_notify();
         self.descriptors.queue.present(surface_texture);
+        #[cfg(feature = "tracy")]
+        tracing_tracy::client::frame_mark();
+        #[cfg(feature = "tracy_images")]
+        self.tracy_frame_captures.finish_frame();
+        if let Some(player) = player.as_deref_mut() {
+            let renderer =
+                <dyn Any>::downcast_mut::<WgpuRenderBackend<MovieView>>(player.renderer_mut())
+                    .expect("Renderer must be correct type");
+            renderer
+                .profiler_mut()
+                .end_frame()
+                .expect("Frame should end successfully");
+            let timestamp_period = renderer.descriptors().queue.get_timestamp_period();
+            renderer
+                .profiler_mut()
+                .process_finished_frame(timestamp_period);
+        }
     }
 
     pub fn show_context_menu(
