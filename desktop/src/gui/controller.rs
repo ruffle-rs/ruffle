@@ -415,13 +415,15 @@ impl GuiController {
                     label: Some("egui encoder"),
                 });
 
-        for (id, image_delta) in &full_output.textures_delta.set {
-            self.egui_renderer.update_texture(
-                &self.descriptors.device,
-                &self.descriptors.queue,
-                *id,
-                &image_delta[0],
-            );
+        for (id, image_deltas) in full_output.textures_delta.set.drain() {
+            for image_delta in &image_deltas {
+                self.egui_renderer.update_texture(
+                    &self.descriptors.device,
+                    &self.descriptors.queue,
+                    id,
+                    image_delta,
+                );
+            }
         }
 
         let mut command_buffers = self.egui_renderer.update_buffers(
@@ -475,8 +477,8 @@ impl GuiController {
             }
         }
 
-        for id in &full_output.textures_delta.free {
-            self.egui_renderer.free_texture(id);
+        for id in full_output.textures_delta.free.drain() {
+            self.egui_renderer.free_texture(&id);
         }
 
         if let Some(player) = player.as_deref_mut() {
