@@ -8,7 +8,7 @@ use crate::dynamic_transforms::DynamicTransforms;
 use crate::mesh::{DrawType, Mesh, as_mesh};
 use crate::surface::Surface;
 use crate::surface::target::CommandTarget;
-use crate::{Descriptors, MaskState, Pipelines, Transforms, as_texture};
+use crate::{Descriptors, MaskState, Pipelines, PosUvVertex, Transforms, as_texture};
 use ruffle_render::backend::ShapeHandle;
 use ruffle_render::bitmap::{BitmapHandle, PixelRegion, PixelSnapping};
 use ruffle_render::commands::{CommandHandler, CommandList, RenderBlendMode};
@@ -75,6 +75,7 @@ impl<'encoder> CommandRenderer<'encoder> {
             DrawCommand::RenderBitmap {
                 bitmap,
                 transform_buffer,
+                vertex_offset,
                 smoothing,
                 blend_mode,
                 render_stage3d,
@@ -85,6 +86,7 @@ impl<'encoder> CommandRenderer<'encoder> {
                 *smoothing,
                 *blend_mode,
                 *render_stage3d,
+                *vertex_offset,
             ),
             DrawCommand::RenderTexture {
                 _texture,
@@ -201,6 +203,7 @@ impl<'encoder> CommandRenderer<'encoder> {
         render_pass.draw_indexed(0..num_indices, 0, 0..1);
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub fn render_bitmap(
         &self,
         render_pass: &mut wgpu::RenderPass<'encoder>,
@@ -209,6 +212,7 @@ impl<'encoder> CommandRenderer<'encoder> {
         smoothing: bool,
         blend_mode: TrivialBlend,
         render_stage3d: bool,
+        vertex_offset: Option<wgpu::BufferAddress>,
     ) {
         let texture = as_texture(bitmap);
 
@@ -224,9 +228,15 @@ impl<'encoder> CommandRenderer<'encoder> {
         self.prep_bitmap(render_pass, &bind.bind_group, blend_mode, render_stage3d);
         render_pass.set_bind_group(1, &self.dynamic_transforms.bind_group, &[transform_buffer]);
 
+        let vertex_slice = if let Some(vertex_offset) = vertex_offset {
+            self.dynamic_transforms.vertex_buffer.slice(vertex_offset..)
+        } else {
+            self.descriptors.quad.vertices_pos_uv.slice(..)
+        };
+
         self.draw(
             render_pass,
-            self.descriptors.quad.vertices_pos_uv.slice(..),
+            vertex_slice,
             self.descriptors.quad.indices.slice(..),
             6,
         );
@@ -405,6 +415,7 @@ pub enum Chunk {
         chunk: Vec<DrawCommand>,
         needs_stencil: bool,
         transforms: BufferBuilder,
+        vertices: BufferBuilder,
     },
     Blend {
         texture: PoolOrArcTexture,
@@ -424,6 +435,7 @@ pub enum DrawCommand {
     RenderBitmap {
         bitmap: BitmapHandle,
         transform_buffer: wgpu::DynamicOffset,
+        vertex_offset: Option<wgpu::BufferAddress>,
         smoothing: bool,
         blend_mode: TrivialBlend,
         render_stage3d: bool,
@@ -531,6 +543,7 @@ struct WgpuCommandHandler<'encoder, 'global: 'encoder> {
     result: Vec<Chunk>,
     current: Vec<DrawCommand>,
     transforms: BufferBuilder,
+    vertices: BufferBuilder,
     needs_stencil: bool,
     num_masks: i32,
 }
@@ -550,6 +563,7 @@ impl<'encoder, 'global: 'encoder> WgpuCommandHandler<'encoder, 'global> {
         texture_pool: &'encoder mut TexturePool,
     ) -> Self {
         let transforms = Self::new_transforms(descriptors, dynamic_transforms);
+        let vertices = Self::new_vertices(descriptors, dynamic_transforms);
 
         // DirectX does support drawing lines, but it's very inconsistent.
         // With MSAA, lines have 1.4px thickness, which makes them too thick.
@@ -572,6 +586,7 @@ impl<'encoder, 'global: 'encoder> WgpuCommandHandler<'encoder, 'global> {
             result: vec![],
             current: vec![],
             transforms,
+            vertices,
             needs_stencil: false,
             num_masks: 0,
         }
@@ -586,6 +601,15 @@ impl<'encoder, 'global: 'encoder> WgpuCommandHandler<'encoder, 'global> {
         transforms
     }
 
+    fn new_vertices(
+        descriptors: &'encoder Descriptors,
+        dynamic_transforms: &'encoder DynamicTransforms,
+    ) -> BufferBuilder {
+        let mut vertices = BufferBuilder::new_for_vertices(&descriptors.limits);
+        vertices.set_buffer_limit(dynamic_transforms.vertex_buffer.size());
+        vertices
+    }
+
     /// Replaces every blend with a RenderBitmap, with the subcommands rendered out to a temporary texture
     /// Every complex blend will be its own item, but every other draw will be chunked together
     fn chunk_blends(&mut self, commands: CommandList) -> Vec<Chunk> {
@@ -598,12 +622,17 @@ impl<'encoder, 'global: 'encoder> WgpuCommandHandler<'encoder, 'global> {
             &mut self.transforms,
             Self::new_transforms(self.descriptors, self.dynamic_transforms),
         );
+        let vertices = mem::replace(
+            &mut self.vertices,
+            Self::new_vertices(self.descriptors, self.dynamic_transforms),
+        );
 
         if !current.is_empty() {
             result.push(Chunk::Draw {
                 chunk: current,
                 needs_stencil,
                 transforms,
+                vertices,
             });
         }
 
@@ -615,6 +644,18 @@ impl<'encoder, 'global: 'encoder> WgpuCommandHandler<'encoder, 'global> {
         matrix: Matrix,
         color_transform: ColorTransform,
         command_builder: impl FnOnce(wgpu::DynamicOffset) -> DrawCommand,
+    ) {
+        self.add_to_current_with_vertices(matrix, color_transform, None, |transform_buffer, _| {
+            command_builder(transform_buffer)
+        })
+    }
+
+    fn add_to_current_with_vertices(
+        &mut self,
+        matrix: Matrix,
+        color_transform: ColorTransform,
+        vertices: Option<&[PosUvVertex]>,
+        command_builder: impl FnOnce(wgpu::DynamicOffset, Option<wgpu::BufferAddress>) -> DrawCommand,
     ) {
         let transform = Transforms {
             world_matrix: [
@@ -631,9 +672,13 @@ impl<'encoder, 'global: 'encoder> WgpuCommandHandler<'encoder, 'global> {
             mult_color: color_transform.mult_rgba_normalized(),
             add_color: color_transform.add_rgba_normalized(),
         };
-        if let Ok(transform_range) = self.transforms.add(&[transform]) {
+        if let (Ok(transform_range), Ok(vertices_range)) = (
+            self.transforms.add(&[transform]),
+            vertices.map(|v| self.vertices.add(v)).transpose(),
+        ) {
             self.current.push(command_builder(
                 transform_range.start as wgpu::DynamicOffset,
+                vertices_range.map(|v| v.start),
             ));
         } else {
             self.result.push(Chunk::Draw {
@@ -641,17 +686,25 @@ impl<'encoder, 'global: 'encoder> WgpuCommandHandler<'encoder, 'global> {
                 needs_stencil: self.needs_stencil,
                 transforms: mem::replace(
                     &mut self.transforms,
-                    BufferBuilder::new_for_uniform(&self.descriptors.limits),
+                    Self::new_transforms(self.descriptors, self.dynamic_transforms),
+                ),
+                vertices: mem::replace(
+                    &mut self.vertices,
+                    Self::new_vertices(self.descriptors, self.dynamic_transforms),
                 ),
             });
-            self.transforms
-                .set_buffer_limit(self.dynamic_transforms.buffer.size());
             let transform_range = self
                 .transforms
                 .add(&[transform])
                 .expect("Buffer must be able to fit a new thing, it was just emptied");
+            let vertices_range = vertices.map(|v| {
+                self.vertices
+                    .add(v)
+                    .expect("Buffer must be able to fit a new thing, it was just emptied")
+            });
             self.current.push(command_builder(
                 transform_range.start as wgpu::DynamicOffset,
+                vertices_range.map(|v| v.start),
             ));
         }
     }
@@ -743,12 +796,14 @@ impl CommandHandler for WgpuCommandHandler<'_, '_> {
                         needs_stencil: self.needs_stencil,
                         transforms: mem::replace(
                             &mut self.transforms,
-                            BufferBuilder::new_for_uniform(&self.descriptors.limits),
+                            Self::new_transforms(self.descriptors, self.dynamic_transforms),
+                        ),
+                        vertices: mem::replace(
+                            &mut self.vertices,
+                            Self::new_vertices(self.descriptors, self.dynamic_transforms),
                         ),
                     });
                 }
-                self.transforms
-                    .set_buffer_limit(self.dynamic_transforms.buffer.size());
                 let chunk_blend_mode = match blend_type {
                     BlendType::Complex(complex) => ChunkBlendMode::Complex(complex),
                     BlendType::Shader(shader) => ChunkBlendMode::Shader(shader),
@@ -770,27 +825,44 @@ impl CommandHandler for WgpuCommandHandler<'_, '_> {
         transform: Transform,
         smoothing: bool,
         pixel_snapping: PixelSnapping,
-        _region: PixelRegion,
+        region: PixelRegion,
     ) {
+        let texture = as_texture(&bitmap);
+
         let mut matrix = transform.matrix;
-        {
-            let texture = as_texture(&bitmap);
-            pixel_snapping.apply(&mut matrix);
-            matrix *= Matrix::scale(
-                texture.texture.width() as f32,
-                texture.texture.height() as f32,
+        pixel_snapping.apply(&mut matrix);
+        matrix *= Matrix::scale(region.width() as f32, region.height() as f32);
+
+        let vertices: &[PosUvVertex] = {
+            let (u0, u1, v0, v1) = (
+                region.x_min as f32 / texture.texture.width() as f32,
+                region.x_max as f32 / texture.texture.width() as f32,
+                region.y_min as f32 / texture.texture.height() as f32,
+                region.y_max as f32 / texture.texture.height() as f32,
             );
-        }
-        self.add_to_current(matrix, transform.color_transform, |transform_buffer| {
-            DrawCommand::RenderBitmap {
+            &[
+                PosUvVertex::new(0.0, 0.0, u0, v0, 1.0),
+                PosUvVertex::new(1.0, 0.0, u1, v0, 1.0),
+                PosUvVertex::new(1.0, 1.0, u1, v1, 1.0),
+                PosUvVertex::new(0.0, 1.0, u0, v1, 1.0),
+            ]
+        };
+
+        self.add_to_current_with_vertices(
+            matrix,
+            transform.color_transform,
+            Some(vertices),
+            |transform_buffer, vertex_offset| DrawCommand::RenderBitmap {
                 bitmap,
                 transform_buffer,
+                vertex_offset,
                 smoothing,
                 blend_mode: TrivialBlend::Normal,
                 render_stage3d: false,
-            }
-        });
+            },
+        );
     }
+
     fn render_stage3d(&mut self, bitmap: BitmapHandle, transform: Transform) {
         let mut matrix = transform.matrix;
         {
@@ -804,6 +876,7 @@ impl CommandHandler for WgpuCommandHandler<'_, '_> {
             DrawCommand::RenderBitmap {
                 bitmap,
                 transform_buffer,
+                vertex_offset: None,
                 smoothing: false,
                 blend_mode: TrivialBlend::Normal,
                 render_stage3d: true,
