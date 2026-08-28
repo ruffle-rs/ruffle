@@ -150,8 +150,14 @@ impl Surface {
                     chunk,
                     needs_stencil,
                     transforms,
+                    vertices,
                 } => {
                     transforms.copy_to(staging_belt, draw_encoder, &dynamic_transforms.buffer);
+                    vertices.copy_to(
+                        staging_belt,
+                        draw_encoder,
+                        &dynamic_transforms.vertex_buffer,
+                    );
                     let mut render_pass = draw_encoder.scoped_render_pass(
                         format!(
                             "Chunked draw calls {}",

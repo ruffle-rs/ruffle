@@ -98,6 +98,12 @@ struct PosUvVertex {
 }
 
 impl PosUvVertex {
+    pub fn new(x: f32, y: f32, u: f32, v: f32, t: f32) -> Self {
+        let position = [x, y];
+        let uv = [u, v, t];
+        Self { position, uv }
+    }
+
     pub fn from_tessellator(vertex: TessVertex, texture_matrix: &[[f32; 3]; 3]) -> Self {
         let position = [vertex.x, vertex.y];
         let uv = Self::transform_uv(texture_matrix, vertex.x, vertex.y);
