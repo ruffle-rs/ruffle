@@ -1097,6 +1097,7 @@ pub fn render_base<'gc>(
             this,
             context,
             |context| {
+                let region = cache_info.bitmap.full_region();
                 context.commands.render_bitmap(
                     cache_info.bitmap.handle,
                     Transform {
@@ -1110,6 +1111,7 @@ pub fn render_base<'gc>(
                     },
                     true,
                     PixelSnapping::Always, // cacheAsBitmap forces pixel snapping
+                    region,
                 )
             },
             &options,

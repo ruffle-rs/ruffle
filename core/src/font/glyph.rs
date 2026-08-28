@@ -278,11 +278,13 @@ impl Glyph {
                     ..Default::default()
                 });
 
+                let region = info.full_region();
                 context.commands.render_bitmap(
                     info.handle,
                     context.transform_stack.transform(),
                     true,
                     ruffle_render::bitmap::PixelSnapping::Auto,
+                    region,
                 );
 
                 context.transform_stack.pop();

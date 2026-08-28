@@ -676,6 +676,7 @@ mod wrapper {
                 context.transform_stack.transform(),
                 smoothing,
                 pixel_snapping,
+                inner_bitmap_data.full_region(),
             );
         }
 
@@ -865,6 +866,10 @@ impl<'gc> BitmapRawData<'gc> {
     }
     pub fn height(&self) -> u32 {
         self.height
+    }
+
+    pub fn full_region(&self) -> PixelRegion {
+        PixelRegion::for_whole_size(self.width(), self.height())
     }
 
     pub fn is_point_in_bounds(&self, x: i32, y: i32) -> bool {

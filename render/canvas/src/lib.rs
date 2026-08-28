@@ -602,6 +602,7 @@ impl CommandHandler for WebCanvasRenderBackend {
         transform: Transform,
         smoothing: bool,
         _pixel_snapping: PixelSnapping,
+        _region: PixelRegion,
     ) {
         if self.mask_state == MaskState::ClearMask {
             return;

@@ -1268,6 +1268,7 @@ impl CommandHandler for WebGlRenderBackend {
         transform: Transform,
         smoothing: bool,
         pixel_snapping: PixelSnapping,
+        _region: PixelRegion,
     ) {
         self.set_stencil_state();
         let entry = as_registry_data(&bitmap);

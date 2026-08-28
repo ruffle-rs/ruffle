@@ -10,7 +10,7 @@ use crate::surface::Surface;
 use crate::surface::target::CommandTarget;
 use crate::{Descriptors, MaskState, Pipelines, Transforms, as_texture};
 use ruffle_render::backend::ShapeHandle;
-use ruffle_render::bitmap::{BitmapHandle, PixelSnapping};
+use ruffle_render::bitmap::{BitmapHandle, PixelRegion, PixelSnapping};
 use ruffle_render::commands::{CommandHandler, CommandList, RenderBlendMode};
 use ruffle_render::lines::{emulate_line, emulate_line_rect};
 use ruffle_render::matrix::Matrix;
@@ -770,6 +770,7 @@ impl CommandHandler for WgpuCommandHandler<'_, '_> {
         transform: Transform,
         smoothing: bool,
         pixel_snapping: PixelSnapping,
+        _region: PixelRegion,
     ) {
         let mut matrix = transform.matrix;
         {
