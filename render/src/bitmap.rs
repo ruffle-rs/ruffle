@@ -163,7 +163,7 @@ impl<'a> Bitmap<'a> {
     #[cold]
     fn resize_data(data: &mut Cow<'_, [u8]>, expected_len: usize) {
         let len = data.len();
-        assert!(len != expected_len);
+        assert_ne!(len, expected_len);
         tracing::warn!("Incorrect bitmap data size, expected {expected_len} bytes, got {len}");
 
         match (&mut *data, expected_len.checked_sub(len)) {

@@ -123,8 +123,8 @@ pub fn wrap_line<'gc, T: FontLike<'gc>>(
             if is_start_of_line {
                 //Failsafe: we get a word wider than the field, break anywhere.
 
-                assert!(i == 0);
-                assert!(word_start == 0);
+                assert_eq!(i, 0);
+                assert_eq!(word_start, 0);
 
                 let mut last_fitting_end = 0;
                 for (frag_end, _) in trimmed_word.char_indices() {
