@@ -59,6 +59,8 @@ rfd = { workspace = true, features = ["file-handle-inner"] }
 wasm-streams = "0.5.0"
 futures = { workspace = true }
 zip = { version = "8.6.0", default-features = false }
+glow = { workspace = true }
+log = { workspace = true }
 
 [dependencies.ruffle_core]
 path = "../core"
