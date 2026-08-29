@@ -1760,7 +1760,7 @@ impl ShaderProgram {
             gl.attach_shader(program, fragment_shader);
 
             gl.link_program(program);
-            if !gl.get_program_parameter_i32(program, glow::LINK_STATUS) != 0 {
+            if gl.get_program_parameter_i32(program, glow::LINK_STATUS) != 0 {
                 let msg = format!(
                     "Error linking shader program: {:?}",
                     gl.get_program_info_log(program)
