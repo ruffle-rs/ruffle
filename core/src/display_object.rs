@@ -61,7 +61,7 @@ pub use loader_display::LoaderDisplay;
 pub use morph_shape::MorphShape;
 pub use movie_clip::{MovieClip, MovieClipHandle, MovieClipWeak, Scene};
 use ruffle_render::backend::{BitmapCacheEntry, RenderBackend};
-use ruffle_render::bitmap::{BitmapHandle, BitmapInfo, PixelSnapping};
+use ruffle_render::bitmap::{BitmapInfo, PixelSnapping};
 use ruffle_render::blend::ExtendedBlendMode;
 use ruffle_render::commands::{CommandHandler, CommandList, RenderBlendMode};
 use ruffle_render::filters::Filter;
@@ -190,8 +190,8 @@ impl BitmapCache {
         self.bitmap = None;
     }
 
-    fn handle(&self) -> Option<BitmapHandle> {
-        self.bitmap.as_ref().map(|b| b.handle.clone())
+    fn bitmap(&self) -> Option<BitmapInfo> {
+        self.bitmap.clone()
     }
 }
 
@@ -936,7 +936,7 @@ impl BoundsMode {
 }
 
 struct DrawCacheInfo {
-    handle: BitmapHandle,
+    bitmap: BitmapInfo,
     dirty: bool,
     base_transform: Transform,
     bounds: Rectangle<Twips>,
@@ -1015,8 +1015,8 @@ pub fn render_base<'gc>(
                         draw_offset,
                         swf_version,
                     );
-                    cache_info = cache.handle().map(|handle| DrawCacheInfo {
-                        handle,
+                    cache_info = cache.bitmap().map(|bitmap| DrawCacheInfo {
+                        bitmap,
                         dirty: true,
                         base_transform,
                         bounds,
@@ -1024,8 +1024,8 @@ pub fn render_base<'gc>(
                         filters,
                     });
                 } else {
-                    cache_info = cache.handle().map(|handle| DrawCacheInfo {
-                        handle,
+                    cache_info = cache.bitmap().map(|bitmap| DrawCacheInfo {
+                        bitmap,
                         dirty: false,
                         base_transform,
                         bounds,
@@ -1085,7 +1085,7 @@ pub fn render_base<'gc>(
             };
             this.render_self(&mut offscreen_context);
             offscreen_context.cache_draws.push(BitmapCacheEntry {
-                handle: cache_info.handle.clone(),
+                handle: cache_info.bitmap.handle.clone(),
                 commands: offscreen_context.commands,
                 clear: this.opaque_background().unwrap_or_default(),
                 filters: cache_info.filters,
@@ -1098,7 +1098,7 @@ pub fn render_base<'gc>(
             context,
             |context| {
                 context.commands.render_bitmap(
-                    cache_info.handle,
+                    cache_info.bitmap.handle,
                     Transform {
                         matrix: Matrix {
                             tx: context.transform_stack.transform().matrix.tx + offset_x,
