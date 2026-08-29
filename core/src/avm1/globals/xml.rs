@@ -50,7 +50,6 @@ pub enum XmlStatus {
     AttributeNotTerminated = -8,
 
     /// A start-tag was not matched with an end-tag.
-    #[expect(dead_code)]
     MismatchedStart = -9,
 
     /// An end-tag was encountered without a matching start-tag.
@@ -153,10 +152,15 @@ impl<'gc> Xml<'gc> {
                     | quick_xml::Error::InvalidAttr(AttrError::Duplicated(_, _)) => {
                         XmlStatus::ElementMalformed
                     }
-                    quick_xml::Error::IllFormed(
-                        IllFormedError::MismatchedEndTag { .. }
-                        | IllFormedError::UnmatchedEndTag { .. },
-                    ) => XmlStatus::MismatchedEnd,
+                    // An end-tag closing the wrong element leaves the one it was
+                    // nested in unclosed, so it is the start-tag that went
+                    // unmatched, as in `<a><b>foo</a>`.
+                    quick_xml::Error::IllFormed(IllFormedError::MismatchedEndTag { .. }) => {
+                        XmlStatus::MismatchedStart
+                    }
+                    quick_xml::Error::IllFormed(IllFormedError::UnmatchedEndTag { .. }) => {
+                        XmlStatus::MismatchedEnd
+                    }
                     quick_xml::Error::IllFormed(IllFormedError::MissingDeclVersion(_)) => {
                         XmlStatus::DeclNotTerminated
                     }
