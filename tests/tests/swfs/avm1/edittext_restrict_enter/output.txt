@@ -1,0 +1,4 @@
+Length: 3
+Char 0: 97
+Char 1: 13
+Char 2: 98

@@ -1722,7 +1722,7 @@ impl<'gc> EditText<'gc> {
         let is_selectable = self.is_selectable();
         match control_code {
             TextControlCode::Enter => {
-                self.text_input(Self::INPUT_NEWLINE.to_string(), context);
+                self.newline_input(context);
             }
             TextControlCode::MoveLeft
             | TextControlCode::MoveLeftWord
@@ -2034,6 +2034,24 @@ impl<'gc> EditText<'gc> {
     }
 
     pub fn text_input(self, text: String, context: &mut UpdateContext<'gc>) {
+        self.text_input_internal(text, context, true);
+    }
+
+    /// Inserts the newline produced by the Enter key.
+    ///
+    /// Unlike typed, pasted, and IME-committed text, this bypasses `restrict`.
+    /// `restrict` governs which characters the user may type; it does not stop
+    /// Enter from starting a new line in a multiline field.
+    fn newline_input(self, context: &mut UpdateContext<'gc>) {
+        self.text_input_internal(Self::INPUT_NEWLINE.to_string(), context, false);
+    }
+
+    fn text_input_internal(
+        self,
+        text: String,
+        context: &mut UpdateContext<'gc>,
+        apply_restrict: bool,
+    ) {
         if !self.is_editable() || self.available_chars() == 0 {
             return;
         }
@@ -2062,7 +2080,11 @@ impl<'gc> EditText<'gc> {
             return;
         };
 
-        let filtered_text = self.0.restrict.borrow().filter_allowed(&text);
+        let filtered_text = if apply_restrict {
+            self.0.restrict.borrow().filter_allowed(&text)
+        } else {
+            text.clone()
+        };
 
         if let Some(target) = self.object2() {
             let character_string =
