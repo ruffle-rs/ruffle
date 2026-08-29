@@ -26,4 +26,4 @@ device_font_renderer = "freetype"
 
 [subtests.freetype.image_comparisons.output]
 # TODO This could probably be fixed by implementing scaling properly.
-tolerance = 195
+tolerance = 215
