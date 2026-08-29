@@ -1,3 +1,4 @@
+mod atlas;
 mod font_descriptor;
 mod font_face;
 mod font_like;
@@ -6,6 +7,7 @@ mod font_set;
 mod glyph;
 mod text_render_settings;
 
+pub use atlas::{FontAtlas, FontAtlasGlyph, FontAtlases};
 pub use font_descriptor::FontDescriptor;
 pub use font_face::{FontFace, FontFileData};
 pub use font_like::{EvalParameters, FontLike, GlyphResolution};
