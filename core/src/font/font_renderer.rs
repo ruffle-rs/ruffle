@@ -1,6 +1,6 @@
 use swf::Twips;
 
-use crate::font::{FontMetrics, Glyph};
+use crate::font::{FontAtlases, FontMetrics, Glyph};
 
 pub trait FontRenderer: std::fmt::Debug {
     fn scale(&self) -> f32;
@@ -12,4 +12,8 @@ pub trait FontRenderer: std::fmt::Debug {
     fn render_glyph(&self, character: char) -> Option<Glyph>;
 
     fn calculate_kerning(&self, left: char, right: char) -> Twips;
+
+    fn atlases(&self) -> Option<&FontAtlases> {
+        None
+    }
 }

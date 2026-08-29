@@ -148,6 +148,10 @@ impl FontRenderer for FreetypeFontRenderer {
             .map_err(|err| tracing::error!("Failed to calculate kerning: {err:?}"))
             .unwrap_or(Twips::ZERO)
     }
+
+    fn atlases(&self) -> Option<&FontAtlases> {
+        Some(&self.atlases)
+    }
 }
 
 /// Converts a FreeType 26.6 fixed-point value (1/64th of a pixel) to Twips
