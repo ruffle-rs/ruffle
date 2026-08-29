@@ -84,7 +84,7 @@ unsafe impl<'gc> Collect<'gc> for StackData<'gc> {
     // StackFrames from before a collection can't be accessed after the collection.
     fn trace<C: Trace<'gc>>(&self, _cc: &mut C) {
         // There should be no values on the value stack when collection is triggered
-        assert!(self.stack_pointer.get() == 0);
+        assert_eq!(self.stack_pointer.get(), 0);
     }
 }
 

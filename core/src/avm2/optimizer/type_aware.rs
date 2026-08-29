@@ -524,7 +524,7 @@ impl<'gc> AbstractState<'gc> {
         let mut changed = false;
 
         // Merge locals
-        assert!(self.locals.len() == other.locals.len());
+        assert_eq!(self.locals.len(), other.locals.len());
 
         for i in 0..self.locals.len() {
             let our_local = self.locals.at(i);
