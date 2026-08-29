@@ -1006,7 +1006,9 @@ impl Context3D for WgpuContext3D {
                     } else {
                         src_bytes_per_row
                     };
-                let dest_size = dest_bytes_per_row as u64 * rows_per_image as u64;
+                // The source slice can contain more data than the calculated upload layout.
+                // Keep the staging buffer large enough for either size.
+                let dest_size = staging_buffer_size(dest_bytes_per_row, rows_per_image, source);
                 assert!(
                     dest_bytes_per_row >= src_bytes_per_row && dest_size >= source.len() as u64
                 );
@@ -1283,4 +1285,8 @@ fn convert_texture_format(input: Context3DTextureFormat) -> wgpu::TextureFormat 
 fn align_copy_buffer_size(len: usize) -> usize {
     let align = COPY_BUFFER_ALIGNMENT as usize;
     (len + align - 1) & !(align - 1)
+}
+
+fn staging_buffer_size(destination_bytes_per_row: u32, rows_per_image: u32, source: &[u8]) -> u64 {
+    (destination_bytes_per_row * rows_per_image).max(source.len() as u32) as u64
 }
