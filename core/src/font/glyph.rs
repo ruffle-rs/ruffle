@@ -3,7 +3,7 @@ use crate::drawing::Drawing;
 use crate::prelude::*;
 use ruffle_render::backend::null::NullBitmapSource;
 use ruffle_render::backend::{RenderBackend, ShapeHandle};
-use ruffle_render::bitmap::{Bitmap, BitmapHandle};
+use ruffle_render::bitmap::{Bitmap, BitmapInfo};
 use ruffle_render::error::Error;
 use ruffle_render::transform::Transform;
 
@@ -43,7 +43,7 @@ impl SwfGlyphOrShape {
 pub enum GlyphRenderData {
     Shape(ShapeHandle),
     Bitmap {
-        handle: BitmapHandle,
+        info: BitmapInfo,
         tx: Twips,
         ty: Twips,
     },
@@ -54,9 +54,9 @@ impl GlyphRenderData {
         Self::Shape(shape_handle)
     }
 
-    pub fn from_bitmap(bitmap_handle: BitmapHandle, tx: Twips, ty: Twips) -> Self {
+    pub fn from_bitmap(bitmap_info: BitmapInfo, tx: Twips, ty: Twips) -> Self {
         Self::Bitmap {
-            handle: bitmap_handle,
+            info: bitmap_info,
             tx,
             ty,
         }
@@ -103,7 +103,7 @@ impl GlyphShape {
                 .register_or_replace(renderer)
                 .map(GlyphRenderData::from_shape),
             GlyphShape::Bitmap(bitmap) => bitmap
-                .get_handle_or_register(renderer)
+                .get_bitmap_info_or_register(renderer)
                 .as_ref()
                 .inspect_err(|err| {
                     tracing::error!(
@@ -112,7 +112,7 @@ impl GlyphShape {
                 })
                 .ok()
                 .cloned()
-                .map(|handle| GlyphRenderData::from_bitmap(handle, bitmap.tx, bitmap.ty)),
+                .map(|info| GlyphRenderData::from_bitmap(info, bitmap.tx, bitmap.ty)),
             GlyphShape::None => None,
         }
     }
@@ -121,7 +121,7 @@ impl GlyphShape {
 /// A Bitmap that can be registered to a RenderBackend.
 struct GlyphBitmap<'a> {
     bitmap: Cell<Option<Bitmap<'a>>>,
-    handle: OnceCell<Result<BitmapHandle, Error>>,
+    handle: OnceCell<Result<BitmapInfo, Error>>,
 
     /// Translation in x to be applied before rendering the glyph.
     tx: Twips,
@@ -148,16 +148,23 @@ impl<'a> GlyphBitmap<'a> {
         }
     }
 
-    pub fn get_handle_or_register(
+    pub fn get_bitmap_info_or_register(
         &self,
         renderer: &mut dyn RenderBackend,
-    ) -> &Result<BitmapHandle, Error> {
+    ) -> &Result<BitmapInfo, Error> {
         self.handle.get_or_init(|| {
-            renderer.register_bitmap(
-                self.bitmap
-                    .take()
-                    .expect("Bitmap should be available before registering"),
-            )
+            let bitmap = self
+                .bitmap
+                .take()
+                .expect("Bitmap should be available before registering");
+            let width = bitmap.width();
+            let height = bitmap.height();
+            let handle = renderer.register_bitmap(bitmap)?;
+            Ok(BitmapInfo {
+                handle,
+                width,
+                height,
+            })
         })
     }
 }
@@ -265,14 +272,14 @@ impl Glyph {
                     .commands
                     .render_shape(shape_handle, context.transform_stack.transform());
             }
-            GlyphRenderData::Bitmap { handle, tx, ty } => {
+            GlyphRenderData::Bitmap { info, tx, ty } => {
                 context.transform_stack.push(&Transform {
                     matrix: Matrix::translate(tx, ty),
                     ..Default::default()
                 });
 
                 context.commands.render_bitmap(
-                    handle,
+                    info.handle,
                     context.transform_stack.transform(),
                     true,
                     ruffle_render::bitmap::PixelSnapping::Auto,
