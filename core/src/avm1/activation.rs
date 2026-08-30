@@ -1535,6 +1535,22 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         Ok(FrameControl::Continue)
     }
 
+    /// Gives an object literal its own `constructor` property.
+    ///
+    /// An object built with `new Object()`, or from any other constructor,
+    /// inherits `constructor` from its prototype instead of owning one. The
+    /// property is hidden from `for..in` and cannot be deleted, so it is only
+    /// observable through `hasOwnProperty`, or after `ASSetPropFlags` clears
+    /// `DontEnum`.
+    fn define_literal_constructor(&mut self, object: Object<'gc>, constructor: Object<'gc>) {
+        object.define_value(
+            self.gc(),
+            istr!(self, "constructor"),
+            constructor.into(),
+            Attribute::DONT_ENUM | Attribute::DONT_DELETE,
+        );
+    }
+
     fn action_init_object(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
         let num_props = self.context.avm1.pop().coerce_to_f64(self)?;
         let result = if num_props < 0.0 || num_props > i32::MAX.into() {
@@ -1542,7 +1558,21 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             Value::Undefined
         } else {
             let proto = self.resolve_prototype([istr!(self, "Object")]);
-            let object = Object::new(&self.context.strings, proto);
+            // Flash defines `constructor` before `__proto__` on a literal (the
+            // `constructor, __proto__` order of `PropertyOrder::PrototypeLast`),
+            // and `for..in` walks own properties newest first, so the two have
+            // to be defined in that order to enumerate the way Flash does.
+            let object = Object::new_without_proto(self.gc());
+            let constructor = self.prototypes().object_constructor;
+            self.define_literal_constructor(object, constructor);
+            if let Some(proto) = proto {
+                object.define_value(
+                    self.gc(),
+                    istr!(self, "__proto__"),
+                    proto,
+                    Attribute::DONT_ENUM | Attribute::DONT_DELETE,
+                );
+            }
             for _ in 0..num_props as usize {
                 let value = self.context.avm1.pop();
                 let name_val = self.context.avm1.pop();
