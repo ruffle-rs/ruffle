@@ -264,14 +264,6 @@ impl<'gc> LoaderInfoObject<'gc> {
     }
 
     pub fn unload(self, context: &mut UpdateContext<'gc>) {
-        // Reset properties
-        let movie = &context.root_swf;
-        let empty_swf = Arc::new(SwfMovie::empty(movie.version(), Some(movie.url().into())));
-        let loader_stream = LoaderStream::NotYetLoaded(empty_swf, None, false);
-        self.set_loader_stream(loader_stream, context.gc());
-        self.set_errored(false);
-        self.reset_init_and_complete_events();
-
         let mut loader = self
             .0
             .loader
@@ -280,8 +272,23 @@ impl<'gc> LoaderInfoObject<'gc> {
             .as_container()
             .unwrap();
 
+        let content = loader.child_by_index(0);
+
+        if content.is_some() {
+            let unload_evt = EventObject::bare_default_event(context, "unload");
+            Avm2::dispatch_event(context, unload_evt, self.into());
+        }
+
+        // Reset properties
+        let movie = &context.root_swf;
+        let empty_swf = Arc::new(SwfMovie::empty(movie.version(), Some(movie.url().into())));
+        let loader_stream = LoaderStream::NotYetLoaded(empty_swf, None, false);
+        self.set_loader_stream(loader_stream, context.gc());
+        self.set_errored(false);
+        self.reset_init_and_complete_events();
+
         // Remove the Loader's content element if it exists.
-        if let Some(child) = loader.child_by_index(0) {
+        if let Some(child) = content {
             loader.remove_child(context, child);
         }
     }
