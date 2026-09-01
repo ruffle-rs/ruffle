@@ -16,7 +16,7 @@ use ruffle_render::matrix::Matrix;
 use ruffle_render::quality::StageQuality;
 use ruffle_render::transform::Transform;
 use std::mem;
-use swf::{Color, ColorTransform, Twips};
+use swf::{BlendMode, Color, ColorTransform, Twips};
 use wgpu::Backend;
 use wgpu_profiler::Scope;
 
@@ -690,6 +690,16 @@ impl<'encoder, 'global: 'encoder> WgpuCommandHandler<'encoder, 'global> {
 
 impl CommandHandler for WgpuCommandHandler<'_, '_> {
     fn blend(&mut self, commands: CommandList, blend_mode: RenderBlendMode) {
+        // A Layer only changes rendering when one of its children blends with
+        // the layer's contents. Avoid allocating a full-frame intermediate
+        // texture for the common case where it contains only normal draws.
+        if matches!(blend_mode, RenderBlendMode::Builtin(BlendMode::Layer))
+            && !commands.requires_layer_isolation()
+        {
+            commands.execute(self);
+            return;
+        }
+
         if !self.current.is_empty() {
             self.result.push(Chunk::Draw {
                 chunk: mem::take(&mut self.current),
