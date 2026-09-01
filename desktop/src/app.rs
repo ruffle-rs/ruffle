@@ -1,5 +1,6 @@
 use crate::custom_event::{OpenType, RuffleEvent};
 use crate::gui::{GuiController, MENU_HEIGHT};
+use crate::memory_reporter::MemoryReporter;
 use crate::player::{LaunchOptions, PlayerController};
 use crate::preferences::GlobalPreferences;
 use crate::util::{
@@ -15,7 +16,7 @@ use ruffle_core::swf::HeaderExt;
 use ruffle_frontend_utils::content::ContentDescriptor;
 use ruffle_render::backend::ViewportDimensions;
 use std::sync::Arc;
-use std::time::Instant;
+use std::time::{Duration, Instant};
 use winit::application::ApplicationHandler;
 use winit::dpi::{LogicalSize, PhysicalPosition, PhysicalSize, Size};
 use winit::event::{ElementState, Ime, KeyEvent, Modifiers, StartCause, WindowEvent};
@@ -43,6 +44,8 @@ struct MainWindow {
     time: Instant,
     next_frame_time: Option<Instant>,
     event_loop_proxy: EventLoopProxy<RuffleEvent>,
+    /// Set by `--memory-report`; samples retained memory as the movie runs.
+    memory_reporter: Option<MemoryReporter>,
 }
 
 impl MainWindow {
@@ -392,8 +395,12 @@ impl MainWindow {
             let dt = FloatDuration::from_std(new_time.duration_since(self.time));
             if dt.as_millis() > 0.0 {
                 self.time = new_time;
+                let memory_reporter = self.memory_reporter.as_mut();
                 self.next_frame_time = self.player.get().map(|mut player| {
                     player.tick(dt);
+                    if let Some(reporter) = memory_reporter {
+                        reporter.maybe_sample(&mut player);
+                    }
                     new_time + player.time_til_next_frame()
                 });
                 self.check_redraw();
@@ -546,6 +553,21 @@ impl ApplicationHandler<RuffleEvent> for App {
                 loaded = LoadingState::Loaded;
             }
 
+            let memory_reporter = preferences.cli.memory_report.as_ref().and_then(|path| {
+                let interval =
+                    Duration::from_secs_f64(preferences.cli.memory_report_interval.max(0.1));
+                match MemoryReporter::new(path, interval) {
+                    Ok(reporter) => {
+                        tracing::info!("Writing memory report to {}", path.display());
+                        Some(reporter)
+                    }
+                    Err(e) => {
+                        tracing::error!("Could not open memory report {}: {e}", path.display());
+                        None
+                    }
+                }
+            });
+
             self.main_window = Some(MainWindow {
                 preferences,
                 gui,
@@ -564,6 +586,7 @@ impl ApplicationHandler<RuffleEvent> for App {
                 time: Instant::now(),
                 next_frame_time: None,
                 event_loop_proxy,
+                memory_reporter,
             });
         }
     }

@@ -2,6 +2,7 @@ use crate::avm1::{PropertyMap as Avm1PropertyMap, PropertyMap};
 use crate::avm2::{Class as Avm2Class, Domain as Avm2Domain};
 use crate::backend::audio::SoundHandle;
 use crate::character::Character;
+use crate::memory_report::LibraryMemoryUsage;
 
 use crate::display_object::{Bitmap, Graphic, MorphShape, Text};
 use crate::font::{Font, FontDescriptor, FontLike, FontQuery, FontType};
@@ -140,6 +141,61 @@ impl<'gc> MovieLibrary<'gc> {
             fonts: Default::default(),
             avm2_domain: None,
         }
+    }
+
+    /// Totals up everything this library is currently keeping resident.
+    ///
+    /// Used by [`crate::memory_report`] to attribute retained memory to the
+    /// movie that owns it.
+    pub fn memory_usage(&self) -> LibraryMemoryUsage {
+        let mut usage = LibraryMemoryUsage {
+            characters: self.characters.len(),
+            has_domain: self.avm2_domain.is_some(),
+            ..Default::default()
+        };
+
+        for character in self.characters.values() {
+            // Does this character hold a strong `Arc` back to the very movie
+            // this library is weakly keyed on? Counting these is what
+            // distinguishes "somebody still needs this movie" from "this
+            // library is the only thing keeping its own key alive".
+            let character_movie = match character {
+                Character::EditText(o) => Some(o.movie()),
+                Character::Graphic(o) => Some(o.movie()),
+                Character::MovieClip(o) => Some(o.movie()),
+                Character::Avm1Button(o) => Some(o.movie()),
+                Character::Avm2Button(o) => Some(o.movie()),
+                Character::MorphShape(o) => Some(o.movie()),
+                Character::Text(o) => Some(o.movie()),
+                Character::Video(o) => Some(o.movie()),
+                _ => None,
+            };
+            if let Some(m) = character_movie
+                && Arc::ptr_eq(&m, &self.swf)
+            {
+                usage.self_refs += 1;
+            }
+
+            match character {
+                Character::Bitmap(bitmap) => {
+                    let compressed = bitmap.compressed();
+                    let size = compressed.size();
+                    usage.bitmaps += 1;
+                    if bitmap.is_uploaded() {
+                        usage.uploaded_bitmaps += 1;
+                    }
+                    usage.bitmap_source_bytes += compressed.source_bytes();
+                    // Four bytes per pixel once decoded to RGBA, which is what
+                    // both the decoded copy and the GPU texture cost.
+                    usage.bitmap_decoded_bytes += size.width as usize * size.height as usize * 4;
+                }
+                Character::Sound(_) => usage.sounds += 1,
+                Character::Font(_) => usage.fonts += 1,
+                _ => {}
+            }
+        }
+
+        usage
     }
 
     /// Registers a character; returns `true` if successful, or `false` if a character with

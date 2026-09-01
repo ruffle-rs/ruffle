@@ -249,6 +249,14 @@ impl<'gc> Avm2<'gc> {
         globals::load_playerglobal(context, globals);
     }
 
+    /// Number of `registerClassAlias` registrations currently held.
+    ///
+    /// These maps are strong and are never evicted, so every entry pins a
+    /// class, its translation unit, and the movie that defined it.
+    pub fn class_alias_count(&self) -> usize {
+        self.alias_to_class_map.len()
+    }
+
     pub fn playerglobals_domain(&self) -> Domain<'gc> {
         self.playerglobals_domain
     }

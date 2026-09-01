@@ -57,6 +57,14 @@ impl<'gc> BitmapCharacter<'gc> {
         &self.compressed
     }
 
+    /// Whether this bitmap has already been uploaded to the render backend.
+    ///
+    /// An uploaded bitmap also costs GPU memory, which is only reclaimed when
+    /// the character itself is dropped.
+    pub fn is_uploaded(&self) -> bool {
+        self.handle.get().is_some()
+    }
+
     pub fn avm2_class(&self) -> BitmapClass<'gc> {
         self.avm2_class.get()
     }
@@ -109,6 +117,16 @@ impl CompressedBitmap {
             },
         }
     }
+    /// Bytes of still-compressed image data held in memory for this bitmap.
+    pub fn source_bytes(&self) -> usize {
+        match self {
+            CompressedBitmap::Jpeg { data, alpha, .. } => {
+                data.len() + alpha.as_ref().map_or(0, |alpha| alpha.len())
+            }
+            CompressedBitmap::Lossless(define_bits_lossless) => define_bits_lossless.data.len(),
+        }
+    }
+
     pub fn decode(&self) -> Result<RenderBitmap<'static>, RenderError> {
         match self {
             CompressedBitmap::Jpeg {

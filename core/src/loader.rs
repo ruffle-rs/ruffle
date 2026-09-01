@@ -243,6 +243,18 @@ impl<'gc> LoadManager<'gc> {
         handle
     }
 
+    /// How many loaders are currently registered.
+    ///
+    /// Loaders are meant to be removed once their load settles, so a count
+    /// that only grows means load state is being retained.
+    pub fn len(&self) -> usize {
+        self.0.len()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.0.is_empty()
+    }
+
     /// Remove a completed loader.
     /// This is used to remove a loader after the loading or unloading process has completed.
     pub fn remove_loader(&mut self, handle: LoaderHandle) {

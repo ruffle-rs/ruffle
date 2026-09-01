@@ -43,6 +43,18 @@ pub struct Opt {
     #[clap(name = "FILE", value_parser(parse_movie_file_or_url))]
     pub movie_url: Option<Url>,
 
+    /// Write a periodic memory report to the given CSV file.
+    ///
+    /// Each row pairs the process' resident set size with Ruffle's own
+    /// accounting of every movie still held in memory, which is what makes a
+    /// failure to release unloaded content measurable.
+    #[clap(long, value_name = "FILE")]
+    pub memory_report: Option<std::path::PathBuf>,
+
+    /// How often to sample when `--memory-report` is set, in seconds.
+    #[clap(long, value_name = "SECONDS", default_value = "5")]
+    pub memory_report_interval: f64,
+
     /// A "flashvars" parameter to provide to the movie.
     /// This can be repeated multiple times, for example -Pkey=value -Pfoo=bar.
     #[clap(short = 'P', action = clap::ArgAction::Append)]
