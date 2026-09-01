@@ -49,28 +49,28 @@ scale-mode = وضع المقياس
 scale-mode-noscale = غير مكبرة (100%)
 scale-mode-noscale-tooltip =
     يعرض الفيلم بحجمه الأصلي، دون أي تكبير/تصغير.
-    
+
     يتوافق مع StageScaleMode.NO_SCALE
 scale-mode-showall = كبر/صغر للإحتواء
 scale-mode-showall-tooltip =
     يكبر الفيلم ليملأ النافذة قدر الإمكان دون إقتصاص، مع الحفاظ على نسبة طول والعرض.
-    
+
     يتوافق مع StageScaleMode.SHOW_ALL
 scale-mode-exactfit = إمتد للإحتواء
 scale-mode-exactfit-tooltip =
     يضمن أن الفيلم يملأ النافذة بأكملها، بغض النظر عن نسبة الطول والعرض.
-    
+
     يتوافق مع StageScaleMode.EXACT_FIT
 scale-mode-noborder = إقتص للإحتواء
 scale-mode-noborder-tooltip =
     يملأ النافذة بأكملها مع الحفاظ على نسبة الطول والعرض، مع اقتصاص الفيلم إذا لزم الأمر.
-    
+
     يتوافق مع StageScaleMode.NO_BORDER
 scale-mode-force = إجبر
 scale-mode-force-tooltip = يمنع الفيلم من تغيير وضع المقياس، ويثبته على الإعداد المحدد.
 player-version = إصدار المشغل
 player-runtime = مدة التشغيل
-player-runtime-flash = مشغل الفلاش
+player-runtime-flash = مشغل فلاش
 player-runtime-air = Adobe AIR
 custom-framerate = معدل إطار مخصص
 custom-framerate-suffix = { " " } إطار/ث

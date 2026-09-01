@@ -33,3 +33,7 @@ ime-enabled = Girdi yöntemi
 ime-enabled-experimental = (deneysel)
 ime-enabled-tooltip = Bir girdi yöntemi Çince, Japonca veya Korece gibi klavyede erişilebilir olmayan karakterlerin girdisinin yapılabilmesini sağlar.
 ime-enabled-default = Varsayılan
+device-font-renderer-tooltip = Cihaz yazı tiplerini oluşturmak için kullanılacak arka uç hizmetini seçer.
+device-font-renderer-default = Varsayılan
+device-font-renderer-embedded = Gömülü
+device-font-renderer-freetype = FreeType

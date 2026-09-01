@@ -8,7 +8,7 @@ panic-title = Algo deu errado :(
 more-info = Mais informação
 run-anyway = Executar mesmo assim
 continue = Continuar
-report-bug = Reportar bug
+report-bug = Reportar erro
 update-ruffle = Atualizar Ruffle
 ruffle-demo = Demo Web
 ruffle-desktop = Aplicativo de desktop
@@ -85,6 +85,9 @@ error-csp-conflict =
     O Ruffle encontrou um problema grave ao tentar iniciar.
     A Política de Segurança de Conteúdo deste servidor não permite a execução do componente “.wasm” necessário.
     Se você for o administrador do servidor, consulte o guia oficial do Ruffle para obter ajuda.
+error-url-invalid =
+    O Ruffle não conseguiu carregar o arquivo SWF do Flash.
+    O motivo mais provável é que uma URL inválida para o arquivo SWF foi fornecida ao Ruffle.
 error-unknown =
     O Ruffle encontrou um grande problema enquanto tentava exibir este conteúdo em Flash.
     { $outdated ->
