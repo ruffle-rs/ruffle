@@ -48,6 +48,10 @@ pub struct MovieMemory {
     pub fonts: usize,
     /// Whether the movie's library still points at an AVM2 `ApplicationDomain`.
     pub has_domain: bool,
+    /// Whether the display object this movie was loaded into is still
+    /// reachable. Content that is gone but still listed here has not been
+    /// swept yet.
+    pub content_alive: bool,
 }
 
 /// A whole-player snapshot, cheap enough to take every frame.
@@ -84,6 +88,7 @@ impl MemoryReport {
                 continue;
             };
             let usage = library.memory_usage();
+            let content_alive = library.has_live_content(context.gc());
 
             report.swf_bytes += movie.uncompressed_len().max(0) as usize;
             report.bitmap_source_bytes += usage.bitmap_source_bytes;
@@ -105,6 +110,7 @@ impl MemoryReport {
                 sounds: usage.sounds,
                 fonts: usage.fonts,
                 has_domain: usage.has_domain,
+                content_alive,
             });
         }
 
@@ -141,9 +147,14 @@ impl MemoryReport {
         for movie in self.movies.iter().take(count) {
             let _ = write!(
                 out,
-                "\n    {:>4} refs ({:>4} internal)  {:>9} KiB decoded  {:>5} chars  {}",
+                "\n    {:>4} refs ({:>4} internal){}  {:>9} KiB decoded  {:>5} chars  {}",
                 movie.strong_refs,
                 movie.self_refs,
+                if movie.content_alive {
+                    "  live"
+                } else {
+                    "  dead"
+                },
                 movie.bitmap_decoded_bytes / 1024,
                 movie.characters,
                 movie.url,

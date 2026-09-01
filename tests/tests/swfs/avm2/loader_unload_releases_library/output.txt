@@ -1,0 +1,11 @@
+loaded child 0
+loaded child 1
+loaded child 2
+loaded child 3
+loaded child 4
+loaded child 5
+loaded child 6
+loaded child 7
+loaded child 8
+loaded child 9
+done

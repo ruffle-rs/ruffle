@@ -18,8 +18,11 @@ use crate::avm2::value::Value;
 use crate::avm2::{Error, Object};
 use crate::avm2_stub_method;
 use crate::backend::navigator::{NavigationMethod, Request};
-use crate::display_object::LoaderDisplay;
+use crate::context::UpdateContext;
 use crate::display_object::MovieClip;
+use crate::display_object::{
+    DisplayObject, LoaderDisplay, TDisplayObject as _, TDisplayObjectContainer as _,
+};
 use crate::loader::LoadManager;
 use crate::loader::MovieLoaderVMData;
 use crate::tag_utils::SwfMovie;
@@ -300,6 +303,71 @@ pub fn load_bytes<'gc>(
     }
 
     Ok(Value::Undefined)
+}
+
+/// `Loader.unloadAndStop`
+///
+/// Unloads like `unload`, and additionally stops the content on its way out:
+/// Flash guarantees that sounds and timelines belonging to unloaded content
+/// stop running, so that a movie which is done with an asset does not keep
+/// paying for it. The `gc` argument asks the player to reclaim the memory now
+/// rather than whenever the collector next gets round to it, which is what
+/// makes repeated load/unload cycles reach a steady state instead of drifting
+/// upwards for as long as the collector stays idle.
+pub fn unload_and_stop<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Value<'gc>,
+    args: FunctionArgs<'_, 'gc>,
+) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+    let run_gc = args.get_bool(0);
+
+    let loader_info = this
+        .get_slot(loader_slots::_CONTENT_LOADER_INFO)
+        .as_object()
+        .unwrap();
+
+    let loader_info = loader_info.as_loader_info_object().unwrap();
+
+    // Take a handle on the content before `unload` resets the stream.
+    let content = match &*loader_info.loader_stream() {
+        LoaderStream::Swf(_, root) => Some(*root),
+        LoaderStream::NotYetLoaded(_, root, _) => *root,
+    };
+
+    if let Some(content) = content {
+        activation
+            .context
+            .stop_sounds_on_parent_and_children(content);
+        stop_timelines(activation.context, content);
+    }
+
+    loader_info.unload(activation.context);
+
+    if run_gc {
+        // Ruffle's collector is incremental and paced by how much has been
+        // allocated since it last ran, so on its own it would not react to a
+        // movie that has just dropped several megabytes. Charging it the
+        // memory currently in play makes the next collection step run the
+        // cycle to completion, which is the behaviour Flash documents here.
+        let metrics = activation.gc().metrics();
+        metrics.add_debt(metrics.total_allocation());
+    }
+
+    Ok(Value::Undefined)
+}
+
+/// Stops every timeline in `content` and below it.
+fn stop_timelines<'gc>(context: &mut UpdateContext<'gc>, content: DisplayObject<'gc>) {
+    if let Some(clip) = content.as_movie_clip() {
+        clip.stop(context);
+    }
+
+    if let Some(container) = content.as_container() {
+        for child in container.iter_render_list() {
+            stop_timelines(context, child);
+        }
+    }
 }
 
 pub fn unload<'gc>(

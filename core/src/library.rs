@@ -1,10 +1,10 @@
 use crate::avm1::{PropertyMap as Avm1PropertyMap, PropertyMap};
-use crate::avm2::{Class as Avm2Class, Domain as Avm2Domain};
+use crate::avm2::{Class as Avm2Class, ClassWeak as Avm2ClassWeak, Domain as Avm2Domain};
 use crate::backend::audio::SoundHandle;
 use crate::character::Character;
 use crate::memory_report::LibraryMemoryUsage;
 
-use crate::display_object::{Bitmap, Graphic, MorphShape, Text};
+use crate::display_object::{Bitmap, DisplayObjectWeak, Graphic, MorphShape, Text};
 use crate::font::{Font, FontDescriptor, FontLike, FontQuery, FontType};
 use crate::prelude::*;
 use crate::string::AvmString;
@@ -21,57 +21,52 @@ use crate::font::DefaultFont;
 use fnv::{FnvHashMap, FnvHashSet};
 use std::collections::HashMap;
 use std::sync::{Arc, Weak};
-use weak_table::{PtrWeakKeyHashMap, WeakValueHashMap, traits::WeakElement};
+use weak_table::PtrWeakKeyHashMap;
 
-#[derive(Clone)]
-struct MovieSymbol(Arc<SwfMovie>, CharacterId);
+/// Identity key for an AVM2 class.
+///
+/// A [`Avm2ClassWeak`] keeps its own allocation alive even after the class it
+/// points at is collected, so while an entry exists its address cannot be
+/// reused by a different class and pointer identity stays sound.
+fn class_key(class: Avm2Class<'_>) -> usize {
+    class.as_ptr() as usize
+}
 
-#[derive(Clone)]
-struct WeakMovieSymbol(Weak<SwfMovie>, CharacterId);
+/// One `SymbolClass` mapping: which character of which movie a class builds.
+///
+/// Both halves are weak. The class must not be held strongly, because a class
+/// owns its translation unit, which owns a strong `Arc<SwfMovie>` of the movie
+/// it was loaded from - a strong class here would pin the entire SWF, and with
+/// it this entry's own weak movie reference, so the entry could never expire.
+#[derive(Collect)]
+#[collect(no_drop)]
+struct ClassSymbol<'gc> {
+    class: Avm2ClassWeak<'gc>,
 
-impl WeakElement for WeakMovieSymbol {
-    type Strong = MovieSymbol;
+    #[collect(require_static)]
+    movie: Weak<SwfMovie>,
 
-    fn new(view: &Self::Strong) -> Self {
-        Self(Arc::downgrade(&view.0), view.1)
-    }
-
-    fn view(&self) -> Option<Self::Strong> {
-        if let Some(strong) = self.0.upgrade() {
-            Some(MovieSymbol(strong, self.1))
-        } else {
-            None
-        }
-    }
+    #[collect(require_static)]
+    symbol: CharacterId,
 }
 
 /// The mappings between class objects and library characters defined by
 /// `SymbolClass`.
+#[derive(Collect, Default)]
+#[collect(no_drop)]
 pub struct Avm2ClassRegistry<'gc> {
-    /// A list of AVM2 class objects and the character IDs they are expected to
-    /// instantiate.
-    class_map: WeakValueHashMap<Avm2Class<'gc>, WeakMovieSymbol>,
-}
-
-unsafe impl<'gc> Collect<'gc> for Avm2ClassRegistry<'gc> {
-    fn trace<C: Trace<'gc>>(&self, cc: &mut C) {
-        for (k, _) in self.class_map.iter() {
-            cc.trace(k);
-        }
-    }
-}
-
-impl Default for Avm2ClassRegistry<'_> {
-    fn default() -> Self {
-        Self::new()
-    }
+    /// The character each AVM2 class is expected to instantiate, keyed by class
+    /// identity.
+    ///
+    /// Dead entries are cleared out by [`Self::remove_dead_classes`]; until
+    /// then their weak references keep the addresses they were keyed on unique,
+    /// so a stale entry can never be mistaken for a newer class.
+    class_map: FnvHashMap<usize, ClassSymbol<'gc>>,
 }
 
 impl<'gc> Avm2ClassRegistry<'gc> {
     pub fn new() -> Self {
-        Self {
-            class_map: WeakValueHashMap::new(),
-        }
+        Self::default()
     }
 
     /// Retrieve the library symbol for a given AVM2 class object.
@@ -79,10 +74,17 @@ impl<'gc> Avm2ClassRegistry<'gc> {
     /// A value of `None` indicates that this AVM2 class is not associated with
     /// a library symbol.
     pub fn class_symbol(&self, class_def: Avm2Class<'gc>) -> Option<(Arc<SwfMovie>, CharacterId)> {
-        match self.class_map.get(&class_def) {
-            Some(MovieSymbol(movie, symbol)) => Some((movie, symbol)),
-            None => None,
-        }
+        let entry = self.class_map.get(&class_key(class_def))?;
+        Some((entry.movie.upgrade()?, entry.symbol))
+    }
+
+    /// Forgets the entries of classes that have been collected.
+    ///
+    /// Uses `is_dropped` rather than upgrading, so that asking the question
+    /// never keeps a class alive for another collection cycle.
+    fn remove_dead_classes(&mut self) {
+        self.class_map
+            .retain(|_, entry| !entry.class.is_dropped() && entry.movie.strong_count() > 0);
     }
 
     /// Associate an AVM2 class definition with a given library symbol.
@@ -92,7 +94,12 @@ impl<'gc> Avm2ClassRegistry<'gc> {
         movie: Arc<SwfMovie>,
         symbol: CharacterId,
     ) {
-        if let Some(old) = self.class_map.get(&class_def) {
+        let key = class_key(class_def);
+        if let Some(old) = self
+            .class_map
+            .get(&key)
+            .and_then(|entry| Some((entry.movie.upgrade()?, entry.symbol)))
+        {
             if Arc::ptr_eq(&movie, &old.0) && symbol != old.1 {
                 // Flash player actually allows using the same class in multiple SymbolClass
                 // entries in the same swf, with *different* symbol ids. Whichever one
@@ -113,7 +120,14 @@ impl<'gc> Avm2ClassRegistry<'gc> {
             // instantiates the clip on the timeline.
             return;
         }
-        self.class_map.insert(class_def, MovieSymbol(movie, symbol));
+        self.class_map.insert(
+            key,
+            ClassSymbol {
+                class: class_def.downgrade(),
+                movie: Arc::downgrade(&movie),
+                symbol,
+            },
+        );
     }
 }
 
@@ -128,11 +142,39 @@ pub struct MovieLibrary<'gc> {
     jpeg_tables: Option<Vec<u8>>,
     fonts: FontMap<'gc>,
     avm2_domain: Option<Avm2Domain<'gc>>,
+
+    /// The display object this movie was loaded into, for movies that were
+    /// loaded by a `Loader` or `loadMovie` rather than being the root movie.
+    ///
+    /// Held weakly on purpose. A library's characters keep strong
+    /// `Arc<SwfMovie>` clones of the very movie this library is keyed on, so
+    /// the weak key can never expire on its own and the entry would live
+    /// forever (see [`MovieLibraries`]). This handle is what lets the entry be
+    /// dropped instead: once the loaded content is gone from both the display
+    /// list and ActionScript, nothing can ask this library for a character any
+    /// more, so the whole library is dead weight.
+    ///
+    /// `None` means "never sweep me" - that is the case for the root movie and
+    /// for libraries created on demand for movies with no content of their own.
+    content_root: Option<DisplayObjectWeak<'gc>>,
+
+    /// Bytes of non-garbage-collected memory this library keeps alive: the
+    /// movie's own SWF data plus the still-compressed source of every bitmap it
+    /// has registered.
+    ///
+    /// The collector paces itself against the memory it can see, and it can
+    /// only see the size of the `Gc` allocations themselves. A movie's
+    /// characters are small objects pointing at very large buffers, so without
+    /// telling the collector about those buffers a session can hold hundreds of
+    /// megabytes of dead content while the collector believes it has almost
+    /// nothing to do. See [`Library::release_unreachable_movies`].
+    external_bytes: usize,
 }
 
 impl<'gc> MovieLibrary<'gc> {
     pub fn new(swf: Arc<SwfMovie>) -> Self {
         Self {
+            external_bytes: swf.uncompressed_len().max(0) as usize,
             swf,
             characters: HashMap::new(),
             imported_assets: HashMap::new(),
@@ -140,7 +182,40 @@ impl<'gc> MovieLibrary<'gc> {
             jpeg_tables: None,
             fonts: Default::default(),
             avm2_domain: None,
+            content_root: None,
         }
+    }
+
+    /// Non-GC bytes this library is keeping resident.
+    fn external_bytes(&self) -> usize {
+        self.external_bytes
+    }
+
+    /// Records the display object a loaded movie was placed into.
+    ///
+    /// Only call this for movies loaded by `Loader`/`loadMovie`; the root movie
+    /// deliberately has no content root, so that its library is never swept.
+    pub fn set_content_root(&mut self, root: DisplayObjectWeak<'gc>) {
+        self.content_root = Some(root);
+    }
+
+    /// Whether the content this library was loaded for is still reachable.
+    ///
+    /// A library with no recorded content root is always considered in use.
+    fn is_content_alive(&self, mc: &Mutation<'gc>) -> bool {
+        match self.content_root {
+            Some(root) => root.upgrade(mc).is_some(),
+            None => true,
+        }
+    }
+
+    /// Whether this library was loaded for content that is still reachable.
+    ///
+    /// Reported by [`crate::memory_report`]: a library whose content is gone
+    /// but which is still listed has not been swept yet.
+    pub fn has_live_content(&self, mc: &Mutation<'gc>) -> bool {
+        self.content_root
+            .is_some_and(|root| root.upgrade(mc).is_some())
     }
 
     /// Totals up everything this library is currently keeping resident.
@@ -206,6 +281,9 @@ impl<'gc> MovieLibrary<'gc> {
             Entry::Vacant(e) => {
                 if let Character::Font(font) = character {
                     self.fonts.register(font);
+                }
+                if let Character::Bitmap(bitmap) = character {
+                    self.external_bytes += bitmap.compressed().source_bytes();
                 }
                 e.insert(character);
                 true
@@ -485,6 +563,22 @@ impl<'gc> MovieLibraries<'gc> {
     fn known_movies(&self) -> impl Iterator<Item = Arc<SwfMovie>> {
         self.0.keys()
     }
+
+    /// Drops every library whose loaded content has been collected.
+    ///
+    /// Returns the number of libraries dropped.
+    fn release_unreachable(&mut self, mc: &Mutation<'gc>, root_swf: &Arc<SwfMovie>) -> usize {
+        let mut released = 0;
+        self.0.retain(|movie, library| {
+            // Never touch the movie the player was started with.
+            if Arc::ptr_eq(&movie, root_swf) || library.is_content_alive(mc) {
+                return true;
+            }
+            released += 1;
+            false
+        });
+        released
+    }
 }
 
 /// Symbol library for multiple movies.
@@ -518,6 +612,11 @@ pub struct Library<'gc> {
     /// A list of the symbols associated with specific AVM2 constructor
     /// prototypes.
     avm2_class_registry: Avm2ClassRegistry<'gc>,
+
+    /// The non-GC memory currently reported to the collector, so that only the
+    /// change since the last sweep has to be reported.
+    #[collect(require_static)]
+    reported_external_bytes: usize,
 }
 
 impl<'gc> Library<'gc> {
@@ -531,6 +630,7 @@ impl<'gc> Library<'gc> {
             default_font_names: Default::default(),
             default_font_cache: Default::default(),
             avm2_class_registry: Default::default(),
+            reported_external_bytes: 0,
         }
     }
 
@@ -544,6 +644,53 @@ impl<'gc> Library<'gc> {
 
     pub fn known_movies(&self) -> impl Iterator<Item = Arc<SwfMovie>> {
         self.movie_libraries.known_movies()
+    }
+
+    /// Drops the libraries of loaded movies whose content is no longer
+    /// reachable, releasing their characters, decoded bitmaps and SWF data.
+    ///
+    /// This has to be done explicitly. Libraries are stored in a map that is
+    /// weakly keyed on the movie, but a library's own characters hold strong
+    /// `Arc<SwfMovie>` clones of that same movie, so the key's strong count
+    /// never reaches zero and the entry would otherwise be immortal. A library
+    /// is only dropped once the display object its movie was loaded into has
+    /// been garbage collected, which means no timeline and no ActionScript
+    /// object can reach into it any more.
+    ///
+    /// Returns the number of libraries dropped.
+    pub fn release_unreachable_movies(
+        &mut self,
+        mc: &Mutation<'gc>,
+        root_swf: &Arc<SwfMovie>,
+    ) -> usize {
+        self.avm2_class_registry.remove_dead_classes();
+        let released = self.movie_libraries.release_unreachable(mc, root_swf);
+        self.report_external_allocation(mc);
+        released
+    }
+
+    /// Keeps the collector's idea of how much memory is in play in step with
+    /// the SWF data and bitmap sources the movie libraries actually hold.
+    ///
+    /// Without this the collector only counts its own allocations, which for a
+    /// movie library is a rounding error next to the buffers those allocations
+    /// point at, and it ends up pacing itself far too slowly to keep up with
+    /// content that loads and drops megabytes of assets at a time.
+    fn report_external_allocation(&mut self, mc: &Mutation<'gc>) {
+        let total: usize = self
+            .movie_libraries
+            .0
+            .iter()
+            .map(|(_, library)| library.external_bytes())
+            .sum();
+
+        let metrics = mc.metrics();
+        if total > self.reported_external_bytes {
+            metrics.mark_external_allocation(total - self.reported_external_bytes);
+        } else {
+            metrics.mark_external_deallocation(self.reported_external_bytes - total);
+        }
+        self.reported_external_bytes = total;
     }
 
     /// Returns the default Font implementations behind the built in names (ie `_sans`)

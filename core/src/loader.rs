@@ -2207,6 +2207,17 @@ impl<'gc> MovieLoader<'gc> {
             // in `MovieClip.on_exit_frame`
             MovieLoaderVMData::Avm2 { loader_info, .. } => {
                 let current_movie = { loader_info.loader_stream().movie().clone() };
+
+                // Tie the loaded movie's library to the object it was loaded
+                // into, so it can be released once that object is gone. SWF
+                // content is already registered by `replace_with_movie`; this
+                // also covers loaded images, whose root is a `Bitmap`.
+                if let Some(root) = dobj.and_then(|dobj| dobj.try_downgrade()) {
+                    uc.library
+                        .library_for_movie_mut(current_movie.clone())
+                        .set_content_root(root);
+                }
+
                 loader_info
                     .set_loader_stream(LoaderStream::Swf(current_movie, dobj.unwrap()), uc.gc());
 

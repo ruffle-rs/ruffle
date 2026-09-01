@@ -22,7 +22,7 @@ use bitflags::bitflags;
 use fnv::FnvHashMap;
 use gc_arena::barrier::unlock;
 use gc_arena::lock::{OnceLock, RefLock};
-use gc_arena::{Collect, Gc, Lock, Mutation};
+use gc_arena::{Collect, Gc, GcWeak, Lock, Mutation};
 use swf::avm2::types::Trait as AbcTrait;
 
 use std::cell::{Cell, Ref};
@@ -241,7 +241,31 @@ impl<'gc> ClassData<'gc> {
     }
 }
 
+/// A weak reference to a [`Class`].
+///
+/// Used where a class should be remembered but not kept alive: a class owns its
+/// translation unit, which owns the `SwfMovie` it was loaded from, so holding a
+/// class strongly pins the whole SWF it came from.
+#[derive(Copy, Clone, Collect)]
+#[collect(no_drop)]
+pub struct ClassWeak<'gc>(GcWeak<'gc, ClassData<'gc>>);
+
+impl<'gc> ClassWeak<'gc> {
+    pub fn upgrade(self, mc: &Mutation<'gc>) -> Option<Class<'gc>> {
+        GcWeak::upgrade(self.0, mc).map(Class)
+    }
+
+    /// Whether the class this points at has already been collected.
+    pub fn is_dropped(self) -> bool {
+        GcWeak::is_dropped(self.0)
+    }
+}
+
 impl<'gc> Class<'gc> {
+    pub fn downgrade(self) -> ClassWeak<'gc> {
+        ClassWeak(Gc::downgrade(self.0))
+    }
+
     pub fn as_ptr(self) -> *const () {
         Gc::as_ptr(self.0).cast()
     }

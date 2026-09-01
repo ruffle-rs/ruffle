@@ -86,7 +86,7 @@ mod vtable;
 pub use crate::avm2::activation::Activation;
 pub use crate::avm2::array::ArrayStorage;
 pub use crate::avm2::call_stack::CallStack;
-pub use crate::avm2::class::Class;
+pub use crate::avm2::class::{Class, ClassWeak};
 #[allow(unused)] // For debug_ui
 pub use crate::avm2::domain::{Domain, DomainPtr};
 pub use crate::avm2::error::Error;

@@ -2932,11 +2932,20 @@ impl<'gc> DisplayObject<'gc> {
     }
 
     pub fn downgrade(self) -> DisplayObjectWeak<'gc> {
+        self.try_downgrade()
+            .unwrap_or_else(|| panic!("Downgrade not yet implemented for {self:?}"))
+    }
+
+    /// Like [`Self::downgrade`], but returns `None` instead of panicking for
+    /// the display object types that have no weak variant yet.
+    pub fn try_downgrade(self) -> Option<DisplayObjectWeak<'gc>> {
         match self {
-            DisplayObject::MovieClip(mc) => DisplayObjectWeak::MovieClip(mc.downgrade()),
-            DisplayObject::LoaderDisplay(l) => DisplayObjectWeak::LoaderDisplay(l.downgrade()),
-            DisplayObject::Bitmap(b) => DisplayObjectWeak::Bitmap(b.downgrade()),
-            _ => panic!("Downgrade not yet implemented for {self:?}"),
+            DisplayObject::MovieClip(mc) => Some(DisplayObjectWeak::MovieClip(mc.downgrade())),
+            DisplayObject::LoaderDisplay(l) => {
+                Some(DisplayObjectWeak::LoaderDisplay(l.downgrade()))
+            }
+            DisplayObject::Bitmap(b) => Some(DisplayObjectWeak::Bitmap(b.downgrade())),
+            _ => None,
         }
     }
 }

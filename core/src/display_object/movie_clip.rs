@@ -395,12 +395,23 @@ impl<'gc> MovieClip<'gc> {
 
         unlock!(write, MovieClipData, shared).set(Gc::new(
             context.gc(),
-            MovieClipShared::with_data(0, movie.into(), total_frames, loader_info, None),
+            MovieClipShared::with_data(0, movie.clone().into(), total_frames, loader_info, None),
         ));
         write.tag_stream_pos.set(0);
         write.flags.set(MovieClipFlags::PLAYING);
         write.current_frame.set(0);
         write.audio_stream.take();
+
+        // Remember that this clip is what the movie was loaded into, so that
+        // the movie's library can be released once the clip is gone. Without
+        // this the library would outlive the content forever, because its own
+        // characters keep the movie alive.
+        if let Some(root) = self.as_displayobject().try_downgrade() {
+            context
+                .library
+                .library_for_movie_mut(movie)
+                .set_content_root(root);
+        }
     }
 
     pub fn set_initialized(self) {

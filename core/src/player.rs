@@ -2392,6 +2392,20 @@ impl Player {
         // GC
         self.gc_arena.borrow_mut().collect_debt();
 
+        // Loaded content that did not survive collection can no longer be
+        // reached by any timeline or script, so its library is dropped here.
+        // This cannot happen on its own: a movie library holds strong
+        // `Arc<SwfMovie>` clones of the movie it is weakly keyed on.
+        self.mutate_with_update_context(|context| {
+            let root_swf = context.root_swf.clone();
+            let released = context
+                .library
+                .release_unreachable_movies(context.gc(), &root_swf);
+            if released > 0 {
+                tracing::debug!("Released {released} unreachable movie librar(y/ies)");
+            }
+        });
+
         rval
     }
 
