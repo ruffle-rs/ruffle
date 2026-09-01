@@ -4,7 +4,7 @@ save-reload-prompt =
         [delete] radera
        *[replace] ersätta
     } denna sparfil utan potentiell konflikt är att ladda om innehållet. Vill du fortsätta ändå?
-save-download = Ladda ner
+save-download = Ladda ned
 save-replace = Ersätt
-save-delete = Radera
-save-backup-all = Ladda ner alla sparfiler
+save-delete = Ta bort
+save-backup-all = Ladda ned alla sparfiler

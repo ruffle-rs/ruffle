@@ -87,7 +87,7 @@ error-csp-conflict =
     Se sei l'amministratore del server, consulta la Ruffle di wiki per aiuto.
 error-url-invalid =
     Ruffle non è riuscito a caricare il file Flash SWF.
-    La ragione più probabile è che un URL invalido per il file SWF è stato passato a Ruffle.
+    La ragione più probabile è che un URL non valido per il file SWF è stato passato a Ruffle.
 error-unknown =
     Ruffle ha incontrato un problema importante durante il tentativo di visualizzare questo contenuto Flash.
     { $outdated ->

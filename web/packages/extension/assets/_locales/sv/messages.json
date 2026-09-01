@@ -9,10 +9,10 @@
         "message": "Visa SWF-nedladdning i snabbmenyn"
     },
     "settings_autostart": {
-        "message": "Kör Flash-innehåll automatiskt (klicka sedan för ljud)"
+        "message": "Spela upp Flash-innehåll automatiskt (klicka för att slå på ljudet)"
     },
     "settings_swf_takeover": {
-        "message": "Spela SWF-filer i webbläsaren istället för att ladda ner"
+        "message": "Spela upp SWF-filer i webbläsaren i stället för att ladda ned dem"
     },
     "settings_log_level": {
         "message": "Loggnivå"
@@ -24,19 +24,19 @@
         "message": "Varningar"
     },
     "settings_log_level_info": {
-        "message": "Info"
+        "message": "Information"
     },
     "settings_log_level_debug": {
-        "message": "Felsök"
+        "message": "Felsökning"
     },
     "settings_log_level_trace": {
-        "message": "Spår"
+        "message": "Spårning"
     },
     "settings_max_execution_duration": {
         "message": "Maximal tillåten exekveringstid för ActionScript (i sekunder)"
     },
     "settings_player_version": {
-        "message": "Flashspelarversion att emulera (mellan 1–32)"
+        "message": "Version av Flash-spelaren som ska emuleras (intervallet 1–32)"
     },
     "settings_background_execution_mode": {
         "message": "Bakgrundsexekvering"
@@ -45,7 +45,7 @@
         "message": "Pausa"
     },
     "settings_background_execution_mode_main_thread": {
-        "message": "Kör på huvudtråden"
+        "message": "Kör i huvudtråden"
     },
     "settings_preferred_renderer": {
         "message": "Föredragen renderare"
@@ -54,64 +54,64 @@
         "message": "Automatisk"
     },
     "settings_device_font_renderer": {
-        "message": "Renderare för enhetens typsnitt"
+        "message": "Renderare för enhetsteckensnitt"
     },
     "device_font_renderer_embedded": {
         "message": "Inbäddad"
     },
     "settings_advanced_options": {
-        "message": "Avancerade inställningar"
+        "message": "Avancerade alternativ"
     },
     "settings_reset": {
-        "message": "Nollställ inställningar"
+        "message": "Återställ inställningar"
     },
     "settings_reset_confirm": {
         "message": "Är du säker på att du vill återställa Ruffle-inställningarna till sina ursprungliga värden?"
     },
     "status_init": {
-        "message": "Avläser aktuell flik…"
+        "message": "Läser den aktuella fliken …"
     },
     "status_no_tabs": {
         "message": "Det finns ingen aktiv flik."
     },
     "status_tabs_error": {
-        "message": "Ett fel uppstod när den aktuella fliken slogs upp."
+        "message": "Ett fel uppstod när den aktuella fliken hämtades."
     },
     "status_message_init": {
-        "message": "Kontrollerar Ruffle-status på aktuell flik…"
+        "message": "Kontrollerar Ruffles status på den aktuella fliken …"
     },
     "status_result_running": {
-        "message": "Ruffle är redo att köra Flash-innehåll i fliken."
+        "message": "Ruffle är redo att köra Flash-innehåll på den aktuella fliken."
     },
     "status_result_running_protected": {
-        "message": "Ruffle är redo att köra Flash-innehållet du begär."
+        "message": "Ruffle är redo att köra Flash-innehållet som du begär."
     },
     "status_result_optout": {
-        "message": "Ruffle kan ej köras för att den nuvarande hemsidan har markerat sig själv som inkompatibel."
+        "message": "Ruffle kan inte läsas in eftersom den aktuella webbplatsen har markerat sig som inkompatibel."
     },
     "status_result_disabled": {
         "message": "Ruffle är inaktiverad."
     },
     "status_result_error": {
-        "message": "Ett fel inträffade medan sidans Ruffle-instans efterfrågades."
+        "message": "Ett fel uppstod när sidans Ruffle-instans kontrollerades."
     },
     "status_result_protected": {
-        "message": "Ruffle kan ej köras i skyddade webbläsarsidor."
+        "message": "Ruffle kan inte läsas in på skyddade webbläsarsidor."
     },
     "action_reload": {
         "message": "Ladda om fliken för att applicera ändringar"
     },
     "open_player_page": {
-        "message": "Öppna SWF-spelare"
+        "message": "Öppna SWF-spelaren"
     },
     "open_settings_page": {
-        "message": "Öppna inställningar"
+        "message": "Öppna inställningssidan"
     },
     "settings_page": {
-        "message": "Inställningar"
+        "message": "Inställningssida"
     },
     "description": {
-        "message": "Återställer Flash på webben där det hör hemma."
+        "message": "Ger Flash sin rättmätiga plats på webben igen."
     },
     "save_settings": {
         "message": "Spara inställningar"
@@ -119,19 +119,22 @@
     "settings_saved": {
         "message": "Inställningar sparade"
     },
+    "onboarding_page": {
+        "message": "Introduktionssida"
+    },
     "permissions_grant": {
-        "message": "Ge Ruffle tillåtelse att få tillgång till min data på alla sidor"
+        "message": "Ge Ruffle behörighet att komma åt mina uppgifter på alla webbplatser"
     },
     "permissions_not_granted": {
-        "message": "Du behöver trycka på Ruffle ikonen på varje sida du vill använda Ruffle på"
+        "message": "Du måste klicka på Ruffle-ikonen på varje webbplats där du vill använda Ruffle"
     },
     "grant_single_site_permission": {
-        "message": "Sätt på permanent på denna sida"
+        "message": "Aktivera permanent för den här webbplatsen"
     },
     "permissions_explanation": {
-        "message": "Ruffle-tillägget fungerar bäst med tillgång till data för alla webbplatser. Det tillåter tillägget att köra på alla webbplatser när de först laddas in, vilket låter det lura webbplatser som kollar efter Flash Player att köra Flash-innehållet omedelbart. Det gör det också möjligt för webbplatsen att ladda SWF-filer in i dess interna spelarsida från andra webbplatser och gör det möjligt för den att ladda direkta SWF-länkar in i sidan. Om du inte ger den här behörigheten, måste du manuellt sätta på Ruffle på varje webplats som du vill använda den på genom att klicka på ikonen för tillägget och sätta på det för webbplatsen."
+        "message": "Ruffle-tillägget fungerar bäst när det får komma åt uppgifter på alla webbplatser. Då kan det starta när en webbplats läses in och få webbplatser som genast söker efter Flash Player att tillåta Flash-innehållet. Behörigheten gör också att Ruffle kan läsa in SWF-filer från andra platser på webben i sin interna spelarsida och automatiskt öppna direkta SWF-länkar där. Om du inte beviljar behörigheten måste du aktivera Ruffle manuellt på varje webbplats där du vill använda det genom att klicka på tilläggsikonen och aktivera Ruffle för webbplatsen."
     },
     "swf_player_permissions": {
-        "message": "Du måste ge tillåtelse till den här URL:ens källa för att ladda SWF:er från den."
+        "message": "Du måste ge det här URL-ursprunget behörighet för att läsa in SWF-filer därifrån."
     }
 }
