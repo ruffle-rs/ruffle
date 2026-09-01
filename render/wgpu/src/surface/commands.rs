@@ -1,7 +1,6 @@
 use super::target::PoolOrArcTexture;
 use crate::backend::RenderTargetMode;
 use crate::blend::TrivialBlend;
-use crate::blend::{BlendType, ComplexBlend};
 use crate::buffer_builder::BufferBuilder;
 use crate::buffer_pool::TexturePool;
 use crate::dynamic_transforms::DynamicTransforms;
@@ -14,11 +13,10 @@ use ruffle_render::bitmap::{BitmapHandle, PixelRegion, PixelSnapping};
 use ruffle_render::commands::{CommandHandler, CommandList, RenderBlendMode};
 use ruffle_render::lines::{emulate_line, emulate_line_rect};
 use ruffle_render::matrix::Matrix;
-use ruffle_render::pixel_bender::PixelBenderShaderHandle;
 use ruffle_render::quality::StageQuality;
 use ruffle_render::transform::Transform;
 use std::mem;
-use swf::{BlendMode, Color, ColorTransform, Twips};
+use swf::{Color, ColorTransform, Twips};
 use wgpu::Backend;
 use wgpu_profiler::Scope;
 
@@ -56,20 +54,7 @@ impl<'encoder> CommandRenderer<'encoder> {
         render_pass: &mut wgpu::RenderPass<'encoder>,
         command: &'encoder DrawCommand,
     ) {
-        if self.needs_stencil {
-            match self.mask_state {
-                MaskState::NoMask => {}
-                MaskState::DrawMaskStencil => {
-                    render_pass.set_stencil_reference(self.num_masks - 1);
-                }
-                MaskState::DrawMaskedContent => {
-                    render_pass.set_stencil_reference(self.num_masks);
-                }
-                MaskState::ClearMaskStencil => {
-                    render_pass.set_stencil_reference(self.num_masks);
-                }
-            }
-        }
+        self.apply_stencil_reference(render_pass);
 
         match command {
             DrawCommand::RenderBitmap {
@@ -88,12 +73,6 @@ impl<'encoder> CommandRenderer<'encoder> {
                 *render_stage3d,
                 *vertex_offset,
             ),
-            DrawCommand::RenderTexture {
-                _texture,
-                binds,
-                transform_buffer,
-                blend_mode,
-            } => self.render_texture(render_pass, *transform_buffer, binds, *blend_mode),
             DrawCommand::RenderShape {
                 shape,
                 transform_buffer,
@@ -117,6 +96,23 @@ impl<'encoder> CommandRenderer<'encoder> {
                 binds,
                 transform_buffer,
             } => self.render_alpha_mask(render_pass, maskee, mask, binds, *transform_buffer),
+        }
+    }
+
+    pub(super) fn apply_stencil_reference(&self, render_pass: &mut wgpu::RenderPass<'encoder>) {
+        if self.needs_stencil {
+            match self.mask_state {
+                MaskState::NoMask => {}
+                MaskState::DrawMaskStencil => {
+                    render_pass.set_stencil_reference(self.num_masks - 1);
+                }
+                MaskState::DrawMaskedContent => {
+                    render_pass.set_stencil_reference(self.num_masks);
+                }
+                MaskState::ClearMaskStencil => {
+                    render_pass.set_stencil_reference(self.num_masks);
+                }
+            }
         }
     }
 
@@ -418,16 +414,10 @@ pub enum Chunk {
         vertices: BufferBuilder,
     },
     Blend {
-        texture: PoolOrArcTexture,
-        blend_mode: ChunkBlendMode,
+        commands: CommandList,
+        blend_mode: RenderBlendMode,
         needs_stencil: bool,
     },
-}
-
-#[derive(Debug)]
-pub enum ChunkBlendMode {
-    Complex(ComplexBlend),
-    Shader(PixelBenderShaderHandle),
 }
 
 #[derive(Debug)]
@@ -440,15 +430,9 @@ pub enum DrawCommand {
         blend_mode: TrivialBlend,
         render_stage3d: bool,
     },
-    RenderTexture {
-        _texture: PoolOrArcTexture,
-        binds: wgpu::BindGroup,
-        transform_buffer: wgpu::DynamicOffset,
-        blend_mode: TrivialBlend,
-    },
     RenderAlphaMask {
-        maskee: PoolOrArcTexture,
-        mask: PoolOrArcTexture,
+        maskee: Box<PoolOrArcTexture>,
+        mask: Box<PoolOrArcTexture>,
         binds: wgpu::BindGroup,
         transform_buffer: wgpu::DynamicOffset,
     },
@@ -476,7 +460,6 @@ impl DrawCommand {
         match self {
             DrawCommand::RenderBitmap { .. } => "render bitmap",
             DrawCommand::RenderShape { .. } => "render shape",
-            DrawCommand::RenderTexture { .. } => "render texture",
             DrawCommand::DrawRect { .. } => "draw rect",
             DrawCommand::DrawLine { .. } => "draw line",
             DrawCommand::DrawLineRect { .. } => "draw line rect",
@@ -496,8 +479,8 @@ pub enum LayerRef<'a> {
     Parent(&'a CommandTarget),
 }
 
-/// Replaces every blend with a RenderBitmap, with the subcommands rendered out to a temporary texture
-/// Every complex blend will be its own item, but every other draw will be chunked together
+/// Splits the command list at blend boundaries while leaving blend subcommands lazy.
+/// Every blend will be its own item, but adjacent ordinary draws are chunked together.
 #[expect(clippy::too_many_arguments)]
 pub fn chunk_blends<'encoder, 'global: 'encoder>(
     commands: CommandList,
@@ -509,7 +492,6 @@ pub fn chunk_blends<'encoder, 'global: 'encoder>(
     quality: StageQuality,
     width: u32,
     height: u32,
-    nearest_layer: LayerRef,
     texture_pool: &'encoder mut TexturePool,
 ) -> Vec<Chunk> {
     WgpuCommandHandler::new(
@@ -521,7 +503,6 @@ pub fn chunk_blends<'encoder, 'global: 'encoder>(
         quality,
         width,
         height,
-        nearest_layer,
         texture_pool,
     )
     .chunk_blends(commands)
@@ -532,7 +513,6 @@ struct WgpuCommandHandler<'encoder, 'global: 'encoder> {
     quality: StageQuality,
     width: u32,
     height: u32,
-    nearest_layer: LayerRef<'encoder>,
     meshes: &'encoder Vec<Mesh>,
     staging_belt: &'encoder mut wgpu::util::StagingBelt,
     dynamic_transforms: &'encoder DynamicTransforms,
@@ -559,7 +539,6 @@ impl<'encoder, 'global: 'encoder> WgpuCommandHandler<'encoder, 'global> {
         quality: StageQuality,
         width: u32,
         height: u32,
-        nearest_layer: LayerRef<'encoder>,
         texture_pool: &'encoder mut TexturePool,
     ) -> Self {
         let transforms = Self::new_transforms(descriptors, dynamic_transforms);
@@ -575,7 +554,6 @@ impl<'encoder, 'global: 'encoder> WgpuCommandHandler<'encoder, 'global> {
             quality,
             width,
             height,
-            nearest_layer,
             meshes,
             staging_belt,
             dynamic_transforms,
@@ -610,8 +588,8 @@ impl<'encoder, 'global: 'encoder> WgpuCommandHandler<'encoder, 'global> {
         vertices
     }
 
-    /// Replaces every blend with a RenderBitmap, with the subcommands rendered out to a temporary texture
-    /// Every complex blend will be its own item, but every other draw will be chunked together
+    /// Splits the command list at blend boundaries while leaving blend subcommands lazy.
+    /// Every blend will be its own item, but adjacent ordinary draws are chunked together.
     fn chunk_blends(&mut self, commands: CommandList) -> Vec<Chunk> {
         commands.execute(self);
 
@@ -712,111 +690,26 @@ impl<'encoder, 'global: 'encoder> WgpuCommandHandler<'encoder, 'global> {
 
 impl CommandHandler for WgpuCommandHandler<'_, '_> {
     fn blend(&mut self, commands: CommandList, blend_mode: RenderBlendMode) {
-        let surface = Surface::new(
-            self.descriptors,
-            self.quality,
-            self.width,
-            self.height,
-            wgpu::TextureFormat::Rgba8Unorm,
-        );
-        let target_layer = if let RenderBlendMode::Builtin(BlendMode::Layer) = &blend_mode {
-            LayerRef::Current
-        } else {
-            self.nearest_layer
-        };
-        let blend_type = BlendType::from(blend_mode);
-        let clear_color = blend_type.default_color();
-        let target = surface.draw_commands(
-            RenderTargetMode::FreshWithColor(clear_color),
-            self.descriptors,
-            self.meshes,
-            commands,
-            self.staging_belt,
-            self.dynamic_transforms,
-            self.draw_encoder,
-            target_layer,
-            self.texture_pool,
-        );
-        target.ensure_cleared(self.draw_encoder);
-
-        // We currently do not support shader blends in masks. In order not to
-        // break other parts of the scene, we just fall back to a normal blend.
-        //
-        // TODO Add support for shader blends in masks.
-        let is_shader_blend_in_mask =
-            self.num_masks > 0 && matches!(blend_type, BlendType::Shader(_));
-        let blend_type = if is_shader_blend_in_mask {
-            BlendType::Trivial(TrivialBlend::Normal)
-        } else {
-            blend_type
-        };
-
-        match blend_type {
-            BlendType::Trivial(blend_mode) => {
-                let transform = Transform {
-                    matrix: Matrix::scale(target.width() as f32, target.height() as f32),
-                    color_transform: Default::default(),
-                    perspective_projection: None,
-                };
-                let texture = target.take_color_texture();
-                let bind_group =
-                    self.descriptors
-                        .device
-                        .create_bind_group(&wgpu::BindGroupDescriptor {
-                            layout: &self.descriptors.bind_layouts.bitmap,
-                            entries: &[
-                                wgpu::BindGroupEntry {
-                                    binding: 0,
-                                    resource: wgpu::BindingResource::TextureView(texture.view()),
-                                },
-                                wgpu::BindGroupEntry {
-                                    binding: 1,
-                                    resource: wgpu::BindingResource::Sampler(
-                                        self.descriptors.bitmap_samplers.get_sampler(false, false),
-                                    ),
-                                },
-                            ],
-                            label: None,
-                        });
-                self.add_to_current(
-                    transform.matrix,
-                    transform.color_transform,
-                    |transform_buffer| DrawCommand::RenderTexture {
-                        _texture: texture,
-                        binds: bind_group,
-                        transform_buffer,
-                        blend_mode,
-                    },
-                );
-            }
-            blend_type => {
-                if !self.current.is_empty() {
-                    self.result.push(Chunk::Draw {
-                        chunk: mem::take(&mut self.current),
-                        needs_stencil: self.needs_stencil,
-                        transforms: mem::replace(
-                            &mut self.transforms,
-                            Self::new_transforms(self.descriptors, self.dynamic_transforms),
-                        ),
-                        vertices: mem::replace(
-                            &mut self.vertices,
-                            Self::new_vertices(self.descriptors, self.dynamic_transforms),
-                        ),
-                    });
-                }
-                let chunk_blend_mode = match blend_type {
-                    BlendType::Complex(complex) => ChunkBlendMode::Complex(complex),
-                    BlendType::Shader(shader) => ChunkBlendMode::Shader(shader),
-                    _ => unreachable!(),
-                };
-                self.result.push(Chunk::Blend {
-                    texture: target.take_color_texture(),
-                    blend_mode: chunk_blend_mode,
-                    needs_stencil: self.num_masks > 0,
-                });
-                self.needs_stencil = self.num_masks > 0;
-            }
+        if !self.current.is_empty() {
+            self.result.push(Chunk::Draw {
+                chunk: mem::take(&mut self.current),
+                needs_stencil: self.needs_stencil,
+                transforms: mem::replace(
+                    &mut self.transforms,
+                    Self::new_transforms(self.descriptors, self.dynamic_transforms),
+                ),
+                vertices: mem::replace(
+                    &mut self.vertices,
+                    Self::new_vertices(self.descriptors, self.dynamic_transforms),
+                ),
+            });
         }
+        self.result.push(Chunk::Blend {
+            commands,
+            blend_mode,
+            needs_stencil: self.num_masks > 0,
+        });
+        self.needs_stencil = self.num_masks > 0;
     }
 
     fn render_bitmap(
@@ -1021,8 +914,8 @@ impl CommandHandler for WgpuCommandHandler<'_, '_> {
 
         self.add_to_current(matrix, Default::default(), |transform_buffer| {
             DrawCommand::RenderAlphaMask {
-                maskee,
-                mask,
+                maskee: Box::new(maskee),
+                mask: Box::new(mask),
                 binds,
                 transform_buffer,
             }
