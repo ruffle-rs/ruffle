@@ -18,7 +18,7 @@
         "checkTypes": "tsc --noemit && tsc --noemit -p tools"
     },
     "dependencies": {
-        "wasm-feature-detect": "^1.8.0"
+        "wasm-feature-detect": "^1.9.0"
     },
     "devDependencies": {
         "@fluent/bundle": "^0.19.1",
@@ -29,10 +29,10 @@
         "cssnano": "^8.0.2",
         "cssnano-preset-advanced": "^8.0.2",
         "mocha": "^12.0.0",
-        "postcss": "^8.5.25",
+        "postcss": "^8.5.26",
         "postcss-nesting": "^14.0.1",
         "replace-in-file": "^9.0.0",
-        "tsx": "^4.23.1",
+        "tsx": "^4.23.13",
         "tsx-dom": "^3.1.0",
         "typedoc": "^0.28.20",
         "typescript": "^5.9.3"
