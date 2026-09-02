@@ -60,6 +60,7 @@ use crate::timer::Timers;
 use crate::vminterface::Instantiator;
 use async_channel::Sender;
 use enumset::EnumSet;
+use gc_arena::arena::CollectionPhase;
 use gc_arena::lock::GcRefLock;
 use gc_arena::{Collect, DynamicRootSet, Mutation, Rootable};
 use ruffle_common::duration::FloatDuration;
@@ -2389,24 +2390,89 @@ impl Player {
         });
         self.update_mouse_state(EnumSet::empty(), false, &mut false);
 
-        // GC
-        self.gc_arena.borrow_mut().collect_debt();
-
-        // Loaded content that did not survive collection can no longer be
-        // reached by any timeline or script, so its library is dropped here.
-        // This cannot happen on its own: a movie library holds strong
-        // `Arc<SwfMovie>` clones of the movie it is weakly keyed on.
+        // Keep the collector's pacing in step with the SWF data and bitmaps
+        // the movie libraries hold, which dwarf the `Gc` objects pointing at
+        // them.
         self.mutate_with_update_context(|context| {
-            let root_swf = context.root_swf.clone();
-            let released = context
-                .library
-                .release_unreachable_movies(context.gc(), &root_swf);
-            if released > 0 {
-                tracing::debug!("Released {released} unreachable movie librar(y/ies)");
-            }
+            context.library.report_external_allocation(context.gc());
         });
 
+        // GC
+        self.collect_garbage(false);
+
         rval
+    }
+
+    /// Runs the garbage collector.
+    ///
+    /// Ruffle's collector is incremental: normally each call does a slice of
+    /// marking or sweeping work paid for by the allocation debt built up since
+    /// the last one. `full` instead runs a whole cycle to completion, which is
+    /// what tests use to make collection deterministic.
+    ///
+    /// This is not a plain `collect_debt` because the libraries of loaded
+    /// movies are not ordinary roots. The collector is only told about the
+    /// things outside a library that would need it, so at the point where
+    /// marking has finished - and before anything is swept - the libraries
+    /// have to be asked which of them are still needed. Those are resurrected
+    /// and marking resumes from them; the rest are dropped. See
+    /// [`crate::library::MovieLibrary`] for the ownership model, and
+    /// [`Library::resolve_releasable_libraries`] for the pass itself.
+    fn collect_garbage(&mut self, full: bool) {
+        let mut arena = self.gc_arena.borrow_mut();
+
+        if full && arena.collection_phase() == CollectionPhase::Sweeping {
+            // Finish the cycle in progress first, so that the one run below
+            // starts from a clean slate and sees everything dropped so far.
+            arena.finish_cycle();
+        }
+
+        let marked = if full {
+            arena.finish_marking()
+        } else {
+            arena.mark_debt()
+        };
+        let Some(mut marked) = marked else {
+            // Marking is either still under way with the debt paid off, or the
+            // collector is sweeping or asleep. Neither needs the libraries
+            // consulted; carry on with whatever the cycle has left to do.
+            arena.cycle_debt();
+            return;
+        };
+
+        // Marking has finished. Ask the libraries whether they are needed,
+        // resuming marking after every round of resurrections until there is
+        // nothing more to resurrect. Only then is it safe to sweep.
+        loop {
+            let resume_marking = marked.finalize(|fc, root| {
+                let mut data = root
+                    .data
+                    .try_borrow_mut(fc)
+                    .expect("Arena root borrowed during garbage collection");
+                data.library.resolve_releasable_libraries(fc)
+            });
+            marked = arena
+                .finish_marking()
+                .expect("Collector cannot be sweeping while its libraries are being resolved");
+            if !resume_marking {
+                break;
+            }
+        }
+
+        marked.start_sweeping();
+        if full {
+            arena.finish_cycle();
+        } else {
+            arena.cycle_debt();
+        }
+    }
+
+    /// Runs a complete garbage collection cycle now, marking and sweeping
+    /// everything, instead of the incremental slice a frame normally does.
+    ///
+    /// Used by tests that need to know that anything unreachable is gone.
+    pub fn collect_all_garbage(&mut self) {
+        self.collect_garbage(true);
     }
 
     pub fn flush_shared_objects(&mut self) {

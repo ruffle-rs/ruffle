@@ -377,8 +377,13 @@ impl<'gc> LoadManager<'gc> {
 
                             tracing::debug!("Preloading swf to run exports {:?}", url);
 
-                            // Create library for exports before preloading
-                            uc.library.library_for_movie_mut(clip.movie());
+                            // Create library for exports before preloading.
+                            // Nothing of the importing movie ever points at
+                            // this library, only at the characters it copies
+                            // out of it, so it has to be kept explicitly.
+                            uc.library
+                                .library_for_movie_mut(clip.movie())
+                                .pin_for_imported_assets();
                             let res = clip.preload(uc, &mut execution_limit);
                             tracing::debug!(
                                 "Preloaded swf to run exports result {:?} {}",

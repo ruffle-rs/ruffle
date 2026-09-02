@@ -1,5 +1,8 @@
 use crate::avm1::{PropertyMap as Avm1PropertyMap, PropertyMap};
-use crate::avm2::{Class as Avm2Class, ClassWeak as Avm2ClassWeak, Domain as Avm2Domain};
+use crate::avm2::{
+    Class as Avm2Class, ClassWeak as Avm2ClassWeak, Domain as Avm2Domain,
+    TranslationUnitWeak as Avm2TranslationUnitWeak,
+};
 use crate::backend::audio::SoundHandle;
 use crate::character::Character;
 use crate::memory_report::LibraryMemoryUsage;
@@ -10,7 +13,7 @@ use crate::prelude::*;
 use crate::string::AvmString;
 use crate::tag_utils::SwfMovie;
 use gc_arena::collect::Trace;
-use gc_arena::{Collect, Mutation};
+use gc_arena::{Collect, Finalization, Gc, GcWeak, Mutation};
 use ruffle_render::backend::RenderBackend;
 use ruffle_render::bitmap::BitmapHandle;
 use ruffle_render::utils::remove_invalid_jpeg_data;
@@ -78,13 +81,15 @@ impl<'gc> Avm2ClassRegistry<'gc> {
         Some((entry.movie.upgrade()?, entry.symbol))
     }
 
-    /// Forgets the entries of classes that have been collected.
+    /// Forgets the entries of classes that are dead: already collected, or
+    /// not reached by the marking phase this finalization concludes.
     ///
-    /// Uses `is_dropped` rather than upgrading, so that asking the question
-    /// never keeps a class alive for another collection cycle.
-    fn remove_dead_classes(&mut self) {
-        self.class_map
-            .retain(|_, entry| !entry.class.is_dropped() && entry.movie.strong_count() > 0);
+    /// Neither check upgrades the class, so asking the question never keeps
+    /// a class alive for another collection cycle.
+    fn remove_dead_classes(&mut self, fc: &Finalization<'gc>) {
+        self.class_map.retain(|_, entry| {
+            !entry.class.is_dropped() && !entry.class.is_dead(fc) && entry.movie.strong_count() > 0
+        });
     }
 
     /// Associate an AVM2 class definition with a given library symbol.
@@ -131,9 +136,54 @@ impl<'gc> Avm2ClassRegistry<'gc> {
     }
 }
 
+/// Why a movie's library is exempt from being released.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum Pin {
+    /// Released like any other library once nothing needs it any more.
+    None,
+
+    /// The movie the player was started with. Everything else is loaded from
+    /// it, directly or indirectly, and it can never be unloaded.
+    Root,
+
+    /// A movie fetched by an `ImportAssets` tag. Its characters are copied
+    /// into the importing movie's library, which then asks for their
+    /// definitions by movie rather than through any object of its own, so
+    /// nothing traceable would keep this library alive.
+    ImportedAssets,
+}
+
 /// Symbol library for a single given SWF.
-#[derive(Collect)]
-#[collect(no_drop)]
+///
+/// # Lifetime
+///
+/// A library is not an ordinary garbage-collected value, and it is not an
+/// ordinary root either. It is stored by the [`Library`] root, but the
+/// collector is only told about its *anchors* - the things outside the
+/// library that would need it - and not about its *contents*:
+///
+/// * the display object the movie was loaded into (`content_root`);
+/// * the translation units of the movie's ABC code (`translation_units`),
+///   which every class, method and script from the movie keeps alive;
+/// * the definition data each character shares with its instances, which
+///   is checked directly at the end of marking.
+///
+/// When marking has finished, [`Library::resolve_releasable_libraries`] asks
+/// whether any anchor was reached from the root. If one was, the contents are
+/// resurrected and marking resumes from them; if none was, the library is
+/// dropped and its contents are swept with everything else.
+///
+/// This is what lets a loaded SWF go away once it is genuinely finished
+/// with, while still keeping it for exactly as long as Flash would: a class
+/// taken out of its `ApplicationDomain` keeps its symbols instantiable, a
+/// clip moved out of the loaded content keeps its timeline working, a domain
+/// that is still referenced keeps its definitions. The library's own strong
+/// references to its movie and its characters - which are what made it
+/// immortal before, since the map it lives in is weakly keyed on that very
+/// movie - no longer count for anything, because they are never traced.
+///
+/// Libraries that nothing traceable could ever anchor are pinned instead;
+/// see [`Pin`].
 pub struct MovieLibrary<'gc> {
     swf: Arc<SwfMovie>,
     characters: HashMap<CharacterId, Character<'gc>>,
@@ -144,19 +194,27 @@ pub struct MovieLibrary<'gc> {
     avm2_domain: Option<Avm2Domain<'gc>>,
 
     /// The display object this movie was loaded into, for movies that were
-    /// loaded by a `Loader` or `loadMovie` rather than being the root movie.
-    ///
-    /// Held weakly on purpose. A library's characters keep strong
-    /// `Arc<SwfMovie>` clones of the very movie this library is keyed on, so
-    /// the weak key can never expire on its own and the entry would live
-    /// forever (see [`MovieLibraries`]). This handle is what lets the entry be
-    /// dropped instead: once the loaded content is gone from both the display
-    /// list and ActionScript, nothing can ask this library for a character any
-    /// more, so the whole library is dead weight.
-    ///
-    /// `None` means "never sweep me" - that is the case for the root movie and
-    /// for libraries created on demand for movies with no content of their own.
+    /// loaded by a `Loader` or `loadMovie`. An anchor; held weakly so that
+    /// the library itself never keeps its content alive.
     content_root: Option<DisplayObjectWeak<'gc>>,
+
+    /// The translation units loaded from this movie's `DoAbc` tags. Anchors;
+    /// held weakly so that the library never keeps the movie's code alive.
+    ///
+    /// Every class, method and script from the movie holds its translation
+    /// unit strongly, so if any of them is reachable - from an
+    /// `ApplicationDomain` that still lists its definitions, from an instance,
+    /// from a closure or a timer - the unit is marked, and the library has to
+    /// stay because that code can still ask for the movie's characters.
+    translation_units: Vec<Avm2TranslationUnitWeak<'gc>>,
+
+    /// Whether this library is exempt from being released. See [`Pin`].
+    pin: Pin,
+
+    /// Set by the finalization pass of the current collection cycle once it
+    /// has decided to keep this library; cleared again when the cycle's dead
+    /// libraries are dropped.
+    kept: bool,
 
     /// Bytes of non-garbage-collected memory this library keeps alive: the
     /// movie's own SWF data plus the still-compressed source of every bitmap it
@@ -171,6 +229,31 @@ pub struct MovieLibrary<'gc> {
     external_bytes: usize,
 }
 
+unsafe impl<'gc> Collect<'gc> for MovieLibrary<'gc> {
+    /// Traces the whole library. Only used for pinned libraries, and by the
+    /// resurrection pass; see [`MovieLibraries`].
+    fn trace<C: Trace<'gc>>(&self, cc: &mut C) {
+        self.trace_anchors(cc);
+        self.trace_contents(cc);
+    }
+}
+
+/// A tracer that resurrects instead of marks: every strong pointer it is
+/// handed is brought back for the current collection cycle, along with -
+/// once marking resumes - everything reachable from it.
+struct Resurrector<'a, 'gc>(&'a Finalization<'gc>);
+
+impl<'gc> Trace<'gc> for Resurrector<'_, 'gc> {
+    fn trace_gc(&mut self, gc: Gc<'gc, ()>) {
+        Gc::resurrect(self.0, gc);
+    }
+
+    fn trace_gc_weak(&mut self, _weak: GcWeak<'gc, ()>) {
+        // Weak pointers were already traced from the root, and resurrecting
+        // through them would defeat their purpose.
+    }
+}
+
 impl<'gc> MovieLibrary<'gc> {
     pub fn new(swf: Arc<SwfMovie>) -> Self {
         Self {
@@ -183,7 +266,67 @@ impl<'gc> MovieLibrary<'gc> {
             fonts: Default::default(),
             avm2_domain: None,
             content_root: None,
+            translation_units: Vec::new(),
+            pin: Pin::None,
+            kept: false,
         }
+    }
+
+    /// Traces the weak handles on the things outside this library that would
+    /// need it. These are traced from the root for every library, pinned or
+    /// not: a weak pointer that is not traced cannot tell that its target is
+    /// about to be collected.
+    fn trace_anchors<C: Trace<'gc>>(&self, cc: &mut C) {
+        cc.trace(&self.content_root);
+        cc.trace(&self.translation_units);
+    }
+
+    /// Traces everything this library owns: its characters, fonts, export
+    /// names and domain. Only traced from the root for pinned libraries; for
+    /// every other library this is what the finalization pass resurrects
+    /// once it knows the library is still needed.
+    fn trace_contents<C: Trace<'gc>>(&self, cc: &mut C) {
+        cc.trace(&self.characters);
+        cc.trace(&self.export_characters);
+        cc.trace(&self.imported_assets);
+        cc.trace(&self.fonts);
+        cc.trace(&self.avm2_domain);
+    }
+
+    /// Whether anything outside this library still reaches something that
+    /// needs it. Only meaningful during finalization, once marking has
+    /// finished and before anything is swept.
+    fn is_needed(&self, fc: &Finalization<'gc>) -> bool {
+        if self.content_root.is_some_and(|root| !root.is_dead(fc)) {
+            return true;
+        }
+        if self.translation_units.iter().any(|unit| !unit.is_dead(fc)) {
+            return true;
+        }
+        self.characters
+            .values()
+            .any(|character| character.has_reachable_instances(fc))
+    }
+
+    fn is_pinned(&self) -> bool {
+        self.pin != Pin::None
+    }
+
+    /// Marks this library as fetched by `ImportAssets`, which keeps it for
+    /// the rest of the session. See [`Pin::ImportedAssets`].
+    pub fn pin_for_imported_assets(&mut self) {
+        self.pin = Pin::ImportedAssets;
+    }
+
+    /// Records a translation unit loaded from this movie's ABC code. See
+    /// [`Self::translation_units`].
+    pub fn register_translation_unit(&mut self, unit: Avm2TranslationUnitWeak<'gc>) {
+        self.translation_units.push(unit);
+    }
+
+    /// Forgets translation units that have been collected.
+    fn remove_dead_translation_units(&mut self, fc: &Finalization<'gc>) {
+        self.translation_units.retain(|unit| !unit.is_dead(fc));
     }
 
     /// Non-GC bytes this library is keeping resident.
@@ -199,20 +342,12 @@ impl<'gc> MovieLibrary<'gc> {
         self.content_root = Some(root);
     }
 
-    /// Whether the content this library was loaded for is still reachable.
-    ///
-    /// A library with no recorded content root is always considered in use.
-    fn is_content_alive(&self, mc: &Mutation<'gc>) -> bool {
-        match self.content_root {
-            Some(root) => root.upgrade(mc).is_some(),
-            None => true,
-        }
-    }
-
     /// Whether this library was loaded for content that is still reachable.
     ///
-    /// Reported by [`crate::memory_report`]: a library whose content is gone
-    /// but which is still listed has not been swept yet.
+    /// Reported by [`crate::memory_report`]. A library whose content is gone
+    /// but which is still listed is either still needed by something else -
+    /// a class held out of its `ApplicationDomain`, say - or has not been
+    /// through a collection yet.
     pub fn has_live_content(&self, mc: &Mutation<'gc>) -> bool {
         self.content_root
             .is_some_and(|root| root.upgrade(mc).is_some())
@@ -534,13 +669,27 @@ impl ruffle_render::bitmap::BitmapSource for MovieLibrarySource<'_, '_> {
     }
 }
 
+/// One library per movie.
+///
+/// Weakly keyed on the movie, but note that this on its own never releases
+/// anything: a library and nearly every character in it hold strong
+/// `Arc<SwfMovie>` clones of the very movie they are filed under, so the key
+/// cannot expire while the entry exists. Entries are released by the
+/// finalization pass instead; see [`MovieLibrary`].
 struct MovieLibraries<'gc>(PtrWeakKeyHashMap<Weak<SwfMovie>, MovieLibrary<'gc>>);
 
 unsafe impl<'gc> Collect<'gc> for MovieLibraries<'gc> {
     #[inline]
     fn trace<C: Trace<'gc>>(&self, cc: &mut C) {
-        for (_, val) in self.0.iter() {
-            cc.trace(val);
+        for (_, library) in self.0.iter() {
+            if library.is_pinned() {
+                cc.trace(library);
+            } else {
+                // The contents are deliberately left untraced. They are
+                // resurrected at the end of marking if the library turns
+                // out to be needed, and dropped with the library otherwise.
+                library.trace_anchors(cc);
+            }
         }
     }
 }
@@ -564,20 +713,59 @@ impl<'gc> MovieLibraries<'gc> {
         self.0.keys()
     }
 
-    /// Drops every library whose loaded content has been collected.
+    /// Keeps every releasable library that something outside it still
+    /// reaches, by resurrecting its contents.
+    ///
+    /// Returns whether anything was resurrected. If so, marking has to be
+    /// resumed - the resurrected contents may reach the anchors of other
+    /// libraries - and this asked again once it has finished.
+    fn resurrect_needed(&mut self, fc: &Finalization<'gc>) -> bool {
+        let mut resurrected = false;
+        for (_, library) in self.0.iter_mut() {
+            if library.is_pinned() || library.kept {
+                continue;
+            }
+            if library.is_needed(fc) {
+                library.kept = true;
+                library.trace_contents(&mut Resurrector(fc));
+                resurrected = true;
+            }
+        }
+        resurrected
+    }
+
+    /// Drops every releasable library that the finalization pass did not
+    /// keep, and clears the marks of the ones it did for the next cycle.
     ///
     /// Returns the number of libraries dropped.
-    fn release_unreachable(&mut self, mc: &Mutation<'gc>, root_swf: &Arc<SwfMovie>) -> usize {
-        let mut released = 0;
-        self.0.retain(|movie, library| {
-            // Never touch the movie the player was started with.
-            if Arc::ptr_eq(&movie, root_swf) || library.is_content_alive(mc) {
-                return true;
+    fn drop_unneeded(&mut self, fc: &Finalization<'gc>) -> usize {
+        // Not `retain`: `weak_table`'s implementation walks bucket indices
+        // and, after removing an entry, shifts the following entries back
+        // into the slot it has already passed, so it can skip entries. A
+        // skipped library here would survive the sweep with its contents
+        // untraced. Decide first, then remove by key.
+        let mut dead = Vec::new();
+        for (movie, library) in self.0.iter_mut() {
+            if library.is_pinned() || std::mem::take(&mut library.kept) {
+                library.remove_dead_translation_units(fc);
+            } else {
+                dead.push(movie);
             }
-            released += 1;
-            false
-        });
-        released
+        }
+        let dropped = dead.len();
+        for movie in dead {
+            self.0.remove(&movie);
+        }
+        dropped
+    }
+
+    fn set_root(&mut self, movie: Arc<SwfMovie>) {
+        for (_, library) in self.0.iter_mut() {
+            if library.pin == Pin::Root {
+                library.pin = Pin::None;
+            }
+        }
+        self.get_or_insert_mut(movie).pin = Pin::Root;
     }
 }
 
@@ -646,27 +834,39 @@ impl<'gc> Library<'gc> {
         self.movie_libraries.known_movies()
     }
 
-    /// Drops the libraries of loaded movies whose content is no longer
-    /// reachable, releasing their characters, decoded bitmaps and SWF data.
+    /// Marks `movie` as the movie the player was started with, whose library
+    /// is never released. See [`Pin::Root`].
+    pub fn set_root_movie(&mut self, movie: Arc<SwfMovie>) {
+        self.movie_libraries.set_root(movie);
+    }
+
+    /// The finalization step of a collection cycle: decides which loaded
+    /// movies' libraries live and which die, now that marking has finished.
     ///
-    /// This has to be done explicitly. Libraries are stored in a map that is
-    /// weakly keyed on the movie, but a library's own characters hold strong
-    /// `Arc<SwfMovie>` clones of that same movie, so the key's strong count
-    /// never reaches zero and the entry would otherwise be immortal. A library
-    /// is only dropped once the display object its movie was loaded into has
-    /// been garbage collected, which means no timeline and no ActionScript
-    /// object can reach into it any more.
+    /// The collector was only told about each library's anchors, not its
+    /// contents (see [`MovieLibrary`]). Any library with a live anchor has
+    /// its contents resurrected; in that case this returns `true`, and the
+    /// caller has to resume marking and call this again, because the
+    /// resurrected contents may reach the anchors of other libraries. Once
+    /// nothing more is resurrected, every remaining unpinned library is
+    /// dropped, its objects are left for the sweep, and this returns
+    /// `false`.
     ///
-    /// Returns the number of libraries dropped.
-    pub fn release_unreachable_movies(
-        &mut self,
-        mc: &Mutation<'gc>,
-        root_swf: &Arc<SwfMovie>,
-    ) -> usize {
-        self.avm2_class_registry.remove_dead_classes();
-        let released = self.movie_libraries.release_unreachable(mc, root_swf);
-        self.report_external_allocation(mc);
-        released
+    /// Must be called between the end of marking and the start of sweeping,
+    /// every cycle: an untraced library whose contents were neither
+    /// resurrected nor dropped would be left pointing at swept objects.
+    pub fn resolve_releasable_libraries(&mut self, fc: &Finalization<'gc>) -> bool {
+        if self.movie_libraries.resurrect_needed(fc) {
+            return true;
+        }
+
+        let dropped = self.movie_libraries.drop_unneeded(fc);
+        if dropped > 0 {
+            tracing::debug!("Released {dropped} unreachable movie librar(y/ies)");
+        }
+        self.avm2_class_registry.remove_dead_classes(fc);
+        self.report_external_allocation(fc);
+        false
     }
 
     /// Keeps the collector's idea of how much memory is in play in step with
@@ -676,7 +876,7 @@ impl<'gc> Library<'gc> {
     /// movie library is a rounding error next to the buffers those allocations
     /// point at, and it ends up pacing itself far too slowly to keep up with
     /// content that loads and drops megabytes of assets at a time.
-    fn report_external_allocation(&mut self, mc: &Mutation<'gc>) {
+    pub fn report_external_allocation(&mut self, mc: &Mutation<'gc>) {
         let total: usize = self
             .movie_libraries
             .0

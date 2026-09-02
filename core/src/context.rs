@@ -386,10 +386,12 @@ impl<'gc> UpdateContext<'gc> {
         let stage_domain = self.avm2.stage_domain();
         let mut activation = Avm2Activation::from_domain(self, stage_domain);
 
+        let root_swf = activation.context.root_swf.clone();
+        activation.context.library.set_root_movie(root_swf.clone());
         activation
             .context
             .library
-            .library_for_movie_mut(activation.context.root_swf.clone())
+            .library_for_movie_mut(root_swf)
             .set_avm2_domain(stage_domain);
         activation.context.ui.set_mouse_visible(true);
 

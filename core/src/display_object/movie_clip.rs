@@ -43,7 +43,7 @@ use bitflags::bitflags;
 use core::fmt;
 use gc_arena::barrier::unlock;
 use gc_arena::lock::{Lock, RefLock};
-use gc_arena::{Collect, DynamicRoot, Gc, GcWeak, Mutation, Rootable};
+use gc_arena::{Collect, DynamicRoot, Finalization, Gc, GcWeak, Mutation, Rootable};
 use ruffle_common::utils::HasPrefixField;
 use ruffle_macros::istr;
 use ruffle_render::perspective_projection::PerspectiveProjection;
@@ -142,6 +142,11 @@ pub struct MovieClipWeak<'gc>(GcWeak<'gc, MovieClipData<'gc>>);
 impl<'gc> MovieClipWeak<'gc> {
     pub fn upgrade(self, mc: &Mutation<'gc>) -> Option<MovieClip<'gc>> {
         self.0.upgrade(mc).map(MovieClip)
+    }
+
+    /// See [`crate::display_object::DisplayObjectWeak::is_dead`].
+    pub fn is_dead(self, fc: &Finalization<'gc>) -> bool {
+        self.0.is_dropped() || self.0.is_dead(fc)
     }
 
     pub fn as_ptr(self) -> *const DisplayObjectPtr {
@@ -362,6 +367,18 @@ impl<'gc> MovieClip<'gc> {
 
     pub fn instantiate(self, mc: &Mutation<'gc>) -> Self {
         Self(Gc::new(mc, (*self.0).clone()))
+    }
+
+    /// Whether the definition data this clip shares with every other instance
+    /// of the same character was reached from the root by the marking phase
+    /// that this finalization concludes.
+    ///
+    /// Asked of the character templates in a movie's library, which are not
+    /// themselves traced from the library, so a marked answer means an
+    /// instance of the character is still in use somewhere. See
+    /// [`crate::library::MovieLibrary`].
+    pub fn shared_data_is_reachable(self, fc: &Finalization<'gc>) -> bool {
+        !Gc::is_dead(fc, self.0.shared.get())
     }
 
     /// Replace the current MovieClipData with a completely new SwfMovie.

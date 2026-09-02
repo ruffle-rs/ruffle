@@ -22,7 +22,7 @@ use bitflags::bitflags;
 use fnv::FnvHashMap;
 use gc_arena::barrier::unlock;
 use gc_arena::lock::{OnceLock, RefLock};
-use gc_arena::{Collect, Gc, GcWeak, Lock, Mutation};
+use gc_arena::{Collect, Finalization, Gc, GcWeak, Lock, Mutation};
 use swf::avm2::types::Trait as AbcTrait;
 
 use std::cell::{Cell, Ref};
@@ -258,6 +258,12 @@ impl<'gc> ClassWeak<'gc> {
     /// Whether the class this points at has already been collected.
     pub fn is_dropped(self) -> bool {
         GcWeak::is_dropped(self.0)
+    }
+
+    /// Whether the class this points at was not reached from the root by the
+    /// marking phase that this finalization concludes.
+    pub fn is_dead(self, fc: &Finalization<'gc>) -> bool {
+        GcWeak::is_dead(self.0, fc)
     }
 }
 

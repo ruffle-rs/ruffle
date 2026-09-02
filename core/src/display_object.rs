@@ -16,7 +16,7 @@ use crate::vminterface::Instantiator;
 use bitflags::bitflags;
 use gc_arena::barrier::{Write, unlock};
 use gc_arena::lock::Lock;
-use gc_arena::{Collect, Gc, Mutation};
+use gc_arena::{Collect, Finalization, Gc, Mutation};
 use ruffle_macros::{enum_trait_object, istr};
 use ruffle_render::perspective_projection::PerspectiveProjection;
 use ruffle_render::pixel_bender::PixelBenderShaderHandle;
@@ -3260,6 +3260,20 @@ impl<'gc> DisplayObjectWeak<'gc> {
             DisplayObjectWeak::MovieClip(movie) => movie.upgrade(mc).map(|m| m.into()),
             DisplayObjectWeak::LoaderDisplay(ld) => ld.upgrade(mc).map(|ld| ld.into()),
             DisplayObjectWeak::Bitmap(b) => b.upgrade(mc).map(|ld| ld.into()),
+        }
+    }
+
+    /// Whether the object this points at has been dropped, or was not reached
+    /// from the root by the marking phase that this finalization concludes.
+    ///
+    /// This is a different question from whether [`Self::upgrade`] succeeds:
+    /// during marking an upgrade succeeds for any object that has not been
+    /// dropped *yet*, whereas this answers whether the object is about to be.
+    pub fn is_dead(&self, fc: &Finalization<'gc>) -> bool {
+        match self {
+            DisplayObjectWeak::MovieClip(mc) => mc.is_dead(fc),
+            DisplayObjectWeak::LoaderDisplay(ld) => ld.is_dead(fc),
+            DisplayObjectWeak::Bitmap(b) => b.is_dead(fc),
         }
     }
 }

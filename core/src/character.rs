@@ -8,7 +8,7 @@ use crate::display_object::{
 use crate::font::Font;
 use gc_arena::barrier::unlock;
 use gc_arena::lock::Lock;
-use gc_arena::{Collect, Gc, Mutation};
+use gc_arena::{Collect, Finalization, Gc, Mutation};
 use ruffle_render::backend::RenderBackend;
 use ruffle_render::bitmap::{Bitmap as RenderBitmap, BitmapHandle, BitmapSize};
 use ruffle_render::error::Error as RenderError;
@@ -29,6 +29,38 @@ pub enum Character<'gc> {
     Sound(#[collect(require_static)] SoundHandle),
     Video(Video<'gc>),
     BinaryData(Gc<'gc, BinaryData>),
+}
+
+impl<'gc> Character<'gc> {
+    /// Whether an instance of this character - or anything else outside the
+    /// library that defines it - still reaches the definition data the
+    /// character shares with its instances.
+    ///
+    /// Only meaningful during finalization, once marking has completed. The
+    /// character templates in a movie's library are deliberately not traced
+    /// from the library (see [`crate::library::MovieLibrary`]), so if their
+    /// shared data has been marked, it was marked through an instance that is
+    /// on the display list or held by ActionScript.
+    ///
+    /// Bitmaps, fonts, sounds and binary data do not count: their instances
+    /// copy or own what they need at creation and never look back at the
+    /// library, so they do not need it kept alive.
+    pub fn has_reachable_instances(&self, fc: &Finalization<'gc>) -> bool {
+        match self {
+            Character::EditText(o) => o.shared_data_is_reachable(fc),
+            Character::Graphic(o) => o.shared_data_is_reachable(fc),
+            Character::MovieClip(o) => o.shared_data_is_reachable(fc),
+            Character::Avm1Button(o) => o.shared_data_is_reachable(fc),
+            Character::Avm2Button(o) => o.shared_data_is_reachable(fc),
+            Character::MorphShape(o) => o.shared_data_is_reachable(fc),
+            Character::Text(o) => o.shared_data_is_reachable(fc),
+            Character::Video(o) => o.shared_data_is_reachable(fc),
+            Character::Bitmap(_)
+            | Character::Font(_)
+            | Character::Sound(_)
+            | Character::BinaryData(_) => false,
+        }
+    }
 }
 
 #[derive(Collect, Debug)]

@@ -14,7 +14,7 @@ use crate::vminterface::{AvmObject, Instantiator};
 use core::fmt;
 use gc_arena::barrier::unlock;
 use gc_arena::lock::{Lock, RefLock};
-use gc_arena::{Collect, Gc, Mutation};
+use gc_arena::{Collect, Finalization, Gc, Mutation};
 use ruffle_common::utils::HasPrefixField;
 use ruffle_macros::istr;
 use ruffle_render::bitmap::{BitmapInfo, PixelSnapping};
@@ -129,6 +129,20 @@ pub struct SwfVideoSource {
 }
 
 impl<'gc> Video<'gc> {
+    /// Whether the embedded video data this object shares with every other
+    /// instance of the same character was reached from the root by the
+    /// marking phase that this finalization concludes.
+    /// See [`crate::display_object::MovieClip::shared_data_is_reachable`].
+    ///
+    /// A video that has been attached to a `NetStream` no longer needs its
+    /// character's data, and so does not count.
+    pub fn shared_data_is_reachable(self, fc: &Finalization<'gc>) -> bool {
+        match self.0.source.get() {
+            VideoSource::Swf(source) => !Gc::is_dead(fc, source),
+            _ => false,
+        }
+    }
+
     /// Construct a Video object that is tied to a SWF file's video stream.
     pub fn from_swf_tag(
         movie: Arc<SwfMovie>,

@@ -35,7 +35,7 @@ use chrono::Utc;
 use core::fmt;
 use gc_arena::barrier::unlock;
 use gc_arena::lock::{Lock, RefLock};
-use gc_arena::{Collect, Gc, Mutation};
+use gc_arena::{Collect, Finalization, Gc, Mutation};
 use ruffle_common::utils::HasPrefixField;
 use ruffle_macros::istr;
 use ruffle_render::commands::Command as RenderCommand;
@@ -245,6 +245,14 @@ impl EditTextData<'_> {
 }
 
 impl<'gc> EditText<'gc> {
+    /// Whether the definition data this object shares with every other
+    /// instance of the same character was reached from the root by the
+    /// marking phase that this finalization concludes.
+    /// See [`crate::display_object::MovieClip::shared_data_is_reachable`].
+    pub fn shared_data_is_reachable(self, fc: &Finalization<'gc>) -> bool {
+        !Gc::is_dead(fc, self.0.shared)
+    }
+
     const ANY_NEWLINE: [char; 2] = ['\n', '\r'];
 
     // This seems to be OS-independent

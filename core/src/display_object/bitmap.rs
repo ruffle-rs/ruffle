@@ -15,7 +15,7 @@ use crate::vminterface::Instantiator;
 use core::fmt;
 use gc_arena::barrier::unlock;
 use gc_arena::lock::Lock;
-use gc_arena::{Collect, Gc, GcWeak, Mutation};
+use gc_arena::{Collect, Finalization, Gc, GcWeak, Mutation};
 use ruffle_common::utils::HasPrefixField;
 use ruffle_render::bitmap::{BitmapFormat, PixelSnapping};
 use std::cell::Cell;
@@ -28,6 +28,11 @@ pub struct BitmapWeak<'gc>(GcWeak<'gc, BitmapGraphicData<'gc>>);
 impl<'gc> BitmapWeak<'gc> {
     pub fn upgrade(self, mc: &Mutation<'gc>) -> Option<Bitmap<'gc>> {
         self.0.upgrade(mc).map(Bitmap)
+    }
+
+    /// See [`crate::display_object::DisplayObjectWeak::is_dead`].
+    pub fn is_dead(self, fc: &Finalization<'gc>) -> bool {
+        self.0.is_dropped() || self.0.is_dead(fc)
     }
 
     pub fn as_ptr(self) -> *const DisplayObjectPtr {

@@ -9,7 +9,7 @@ use crate::vminterface::Instantiator;
 use core::fmt;
 use gc_arena::Lock;
 use gc_arena::barrier::unlock;
-use gc_arena::{Collect, Gc, Mutation};
+use gc_arena::{Collect, Finalization, Gc, Mutation};
 use ruffle_common::utils::HasPrefixField;
 use ruffle_render::transform::Transform;
 use ruffle_wstr::{WStr, WString};
@@ -40,6 +40,14 @@ pub struct TextData<'gc> {
 }
 
 impl<'gc> Text<'gc> {
+    /// Whether the definition data this object shares with every other
+    /// instance of the same character was reached from the root by the
+    /// marking phase that this finalization concludes.
+    /// See [`crate::display_object::MovieClip::shared_data_is_reachable`].
+    pub fn shared_data_is_reachable(self, fc: &Finalization<'gc>) -> bool {
+        !Gc::is_dead(fc, self.0.shared.get())
+    }
+
     pub fn from_swf_tag(
         context: &mut UpdateContext<'gc>,
         swf: Arc<SwfMovie>,

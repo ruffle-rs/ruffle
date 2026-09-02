@@ -18,7 +18,7 @@ use crate::string::{AvmAtom, AvmString};
 use crate::tag_utils::SwfMovie;
 use gc_arena::barrier::field;
 use gc_arena::lock::OnceLock;
-use gc_arena::{Collect, Gc, Mutation};
+use gc_arena::{Collect, Finalization, Gc, GcWeak, Mutation};
 use std::cell::Cell;
 use std::fmt::Debug;
 use std::rc::Rc;
@@ -31,6 +31,24 @@ use swf::avm2::types::{
 #[derive(Copy, Clone, Collect)]
 #[collect(no_drop)]
 pub struct TranslationUnit<'gc>(Gc<'gc, TranslationUnitData<'gc>>);
+
+/// A weak reference to a [`TranslationUnit`].
+///
+/// A movie's library remembers the translation units loaded from that movie
+/// this way, so that it can tell whether any of the movie's code - a class, a
+/// method, a script - is still reachable, without keeping that code alive
+/// itself. See `MovieLibrary` in `library.rs`.
+#[derive(Copy, Clone, Collect)]
+#[collect(no_drop)]
+pub struct TranslationUnitWeak<'gc>(GcWeak<'gc, TranslationUnitData<'gc>>);
+
+impl<'gc> TranslationUnitWeak<'gc> {
+    /// Whether the translation unit has been dropped, or was not reached from
+    /// the root by the marking phase that this finalization concludes.
+    pub fn is_dead(self, fc: &Finalization<'gc>) -> bool {
+        self.0.is_dropped() || self.0.is_dead(fc)
+    }
+}
 
 /// A loaded ABC file, with any loaded ABC items alongside it.
 ///
@@ -83,6 +101,10 @@ struct TranslationUnitData<'gc> {
 }
 
 impl<'gc> TranslationUnit<'gc> {
+    pub fn downgrade(self) -> TranslationUnitWeak<'gc> {
+        TranslationUnitWeak(Gc::downgrade(self.0))
+    }
+
     /// Construct a new `TranslationUnit` for a given ABC file intended to
     /// execute within a particular domain.
     pub fn from_abc(

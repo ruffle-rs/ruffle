@@ -1,0 +1,5 @@
+loaded, class held: true
+unloaded
+instantiated children=1 width=100
+released
+done

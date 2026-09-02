@@ -15,6 +15,7 @@ use crate::avm2::globals::{
 use crate::avm2::method::{Method, NativeMethodImpl};
 use crate::avm2::object::FunctionObject;
 use crate::avm2::scope::ScopeChain;
+pub use crate::avm2::script::TranslationUnitWeak;
 use crate::avm2::script::{Script, TranslationUnit};
 use crate::avm2::stack::Stack;
 use crate::character::Character;
@@ -543,7 +544,19 @@ impl<'gc> Avm2<'gc> {
         }
 
         let num_scripts = abc.scripts.len();
-        let tunit = TranslationUnit::from_abc(abc, domain, name, movie, activation.gc());
+        let tunit = TranslationUnit::from_abc(abc, domain, name, movie.clone(), activation.gc());
+
+        // Let the movie's library know about this code. Once the movie's
+        // content is gone, this is how the library tells whether anything
+        // still needs it: a class, method or script that is still reachable
+        // keeps its translation unit alive, and the library holds the unit
+        // weakly so that the question can be asked without pinning it.
+        activation
+            .context
+            .library
+            .library_for_movie_mut(movie)
+            .register_translation_unit(tunit.downgrade());
+
         tunit.load_classes(&mut activation)?;
         for i in 0..num_scripts {
             tunit.load_script(i as u32, &mut activation)?;

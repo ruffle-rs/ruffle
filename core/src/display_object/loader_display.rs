@@ -16,7 +16,7 @@ use crate::vminterface::Instantiator;
 use core::fmt;
 use gc_arena::barrier::unlock;
 use gc_arena::lock::{Lock, RefLock};
-use gc_arena::{Collect, Gc, GcWeak, Mutation};
+use gc_arena::{Collect, Finalization, Gc, GcWeak, Mutation};
 use ruffle_common::utils::HasPrefixField;
 use std::cell::{Ref, RefMut};
 use std::sync::Arc;
@@ -222,6 +222,11 @@ pub struct LoaderDisplayWeak<'gc>(GcWeak<'gc, LoaderDisplayData<'gc>>);
 impl<'gc> LoaderDisplayWeak<'gc> {
     pub fn upgrade(self, mc: &Mutation<'gc>) -> Option<LoaderDisplay<'gc>> {
         self.0.upgrade(mc).map(LoaderDisplay)
+    }
+
+    /// See [`crate::display_object::DisplayObjectWeak::is_dead`].
+    pub fn is_dead(self, fc: &Finalization<'gc>) -> bool {
+        self.0.is_dropped() || self.0.is_dead(fc)
     }
 
     pub fn as_ptr(self) -> *const DisplayObjectPtr {
