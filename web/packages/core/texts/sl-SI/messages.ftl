@@ -85,6 +85,9 @@ error-csp-conflict =
     Ruffle je med poskusom inicializacije naletel na večjo težavo.
     Varnostna politika vsebine tega spletnega strežnika ne dovoljuje izvajanja potrebne komponente ".wasm".
     Če ste skrbnik strežnika, poiščite pomoč v Ruffle wiki.
+error-url-invalid =
+    Ruffle ni uspel naložiti datoteke Flash SWF.
+    Najverjetnejši razlog je, da je bil Ruffleju posredovan neveljaven URL za datoteko SWF.
 error-unknown =
     Ruffle je naletel na večjo težavo pri prikazovanju te vsebine Flash.
     { $outdated ->
