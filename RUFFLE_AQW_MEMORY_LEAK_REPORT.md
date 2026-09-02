@@ -690,7 +690,17 @@ target/release/ruffle_desktop --memory-report report.csv --memory-report-interva
 | Corrected fix report | `effafe4a1` |
 | Follow-up: collection storm and per-asset cost (section 17) | `3ebf72670` |
 | Follow-up report | the commit that adds section 17 |
-| Branch | `fix/aqw-memory-leak` (local only; nothing was pushed) |
+| Branch | `fix/aqw-memory-leak`, published at https://github.com/Farhan1232/ruffle (fork of upstream; the branch is the deliverable) |
+
+To obtain or update the fix:
+
+```
+git clone -b fix/aqw-memory-leak https://github.com/Farhan1232/ruffle
+cd ruffle
+cargo build --release --package ruffle_desktop
+# later, to pick up further changes:
+git pull
+```
 
 The instrumentation is a separate first commit specifically so the baseline
 binary used for every "before" number in this report could be built from it and
