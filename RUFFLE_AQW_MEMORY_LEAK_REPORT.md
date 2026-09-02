@@ -22,18 +22,36 @@ movie; and the garbage collector paced itself only against the size of its own
 allocations, which for a movie library is a rounding error next to the buffers
 those allocations point at.
 
-**What changed.** Four source-level changes in `ruffle_core`, described in
-section 6: a weakly-held content-root handle that lets a loaded movie's library
-be dropped once its content is unreachable; weak keys in the AVM2 class
-registry; external-memory accounting so the collector paces itself against the
-memory actually in play; and a real implementation of `Loader.unloadAndStop`,
-which AQW calls on every zone change and which was previously a stub.
+**What changed — first attempt (`463b742fe`, rejected).** Four source-level
+changes in `ruffle_core`, described in section 6: a weakly-held content-root
+handle that let a loaded movie's library be dropped once its content was
+unreachable; weak keys in the AVM2 class registry; external-memory accounting so
+the collector paces itself against the memory actually in play; and a real
+implementation of `Loader.unloadAndStop`. It fixed the leak under the agreed
+reproduction (sections 8 and 9), but **authenticated live AQW testing found a
+correctness defect in it** (section 15): it released a movie's library while
+ActionScript still held a class from that movie, which is exactly AQW's
+equipment pattern, and equipment then failed with `Error #2136`.
 
-**Is it fixed.** The unbounded retention is fixed under the agreed reproduction
-(sections 8 and 9). **However, authenticated live AQW testing subsequently found
-a correctness defect in the fix** — it releases a movie's library while
-ActionScript still holds a class from that movie, which is exactly AQW's
-equipment pattern. **This fix must not ship in its current form.** See section 15.
+**What changed — corrected fix (section 16).** The release condition was
+replaced by a garbage-collection model. A loaded movie's library is no longer a
+root that keeps everything in it alive, nor is it dropped on a single handle;
+it is treated as an *ephemeron*: the collector traces only the things outside
+the library that could still need it (the loaded content, the movie's
+ActionScript code, and live instances of its characters), and at the end of
+every marking phase a finalization pass keeps the libraries something reached
+and drops the rest. That is Flash's rule — a definition lives as long as its
+`ApplicationDomain` or anything else that reaches it — and it is what AQW's own
+loader design (per-map domains, a replaceable shared domain, an LRU of per-slot
+domains) relies on. The class registry, external-memory accounting and
+`unloadAndStop` changes from the first attempt were re-evaluated and kept.
+
+**Is it fixed.** Yes, in both directions, and both are tests. A class held out
+of an unloaded SWF's domain still instantiates with all its characters (the
+exact failure `463b742fe` introduced, reproduced with a real AQW asset and with
+a synthetic one, both passing); and once nothing references a loaded SWF it is
+released, so repeated loads no longer grow. Section 16 has the measurements,
+the full test-suite results and the repeated live AQW session.
 
 
 ## 2. Environment
@@ -312,7 +330,13 @@ None of the three mechanisms above distinguishes between asset categories.
 Section 8 measures each category separately and they behave identically, before
 and after.
 
-## 6. The fix
+## 6. The fix (first attempt, `463b742fe` — superseded)
+
+> **This section describes the first attempt, which section 15 shows to be
+> incorrect and which section 16 replaces.** It is kept as written because
+> three of its four changes survive into the corrected fix, and because the
+> reason its release condition was wrong is the most useful thing in this
+> report.
 
 Four changes, all in `ruffle_core`, on commit `463b742fe`.
 
@@ -556,7 +580,11 @@ after this fix. The Ruffle-side accounting — 3 movies and 2.9 MiB after 360
 loads — is the proof that the content itself is genuinely released, exactly as
 the acceptance criteria ask for when RSS does not fall on its own.
 
-## 10. Regression verification
+## 10. Regression verification (first attempt)
+
+> Performed against `463b742fe`. The corrected fix repeats the relevant
+> checks in sections 16.5–16.9; the second "intentional behavioural change"
+> below is precisely the one section 15 shows to be wrong.
 
 | Checked | How | Result |
 |---|---|---|
@@ -591,8 +619,10 @@ cargo build --release --package ruffle_desktop
 
 # Tests
 cargo test --release --package tests
-cargo test --package tests --test tests -- loader_unload_releases_library
+cargo test --package tests --test tests -- loader_unload         # both lifetime SWFs + the collection test
+cargo test --package tests --test tests -- _class_               # retained_class_keeps_library, released_class_frees_library
 cargo fmt --all -- --check
+cargo check --package ruffle_core --package ruffle_desktop --package tests --all-targets
 ```
 
 Requires a stable Rust toolchain (built and tested with 1.96.1) and, for the
@@ -644,14 +674,21 @@ target/release/ruffle_desktop --memory-report report.csv --memory-report-interva
 |---|---|
 | Baseline (upstream `master`) | `89f16f4cccf4a8c58e5c5d6902edf66999440c55` |
 | Instrumentation commit | `43b0c0b5e6996885802987a35c8631eeb1d6df4f` |
-| Fix commit | `463b742fe2e1945f013313d98344843e707c3c4e` |
+| First fix (rejected, kept for the record) | `463b742fe2e1945f013313d98344843e707c3c4e` |
+| Report and authenticated-session findings | `b7ef3b2a5`, `3145f91f3` |
+| Corrected fix | `8648d3b02` (section 16.11) |
 | Branch | `fix/aqw-memory-leak` (local only; nothing was pushed) |
 
 The instrumentation is a separate first commit specifically so the baseline
 binary used for every "before" number in this report could be built from it and
-differs from the patched binary in nothing but the fix.
+differs from the patched binary in nothing but the fix. The rejected fix is
+deliberately left in the history: it is the evidence for why the release
+condition in section 16 has to be what it is.
 
-## 14. Limitations
+## 14. Limitations (as of the first attempt)
+
+> Written against `463b742fe`. Section 16.10 restates what still applies to the
+> corrected fix; items 1–3 below are resolved or superseded there.
 
 These are real and demonstrated; none of them is normal allocator caching being
 mistaken for a leak.
@@ -806,3 +843,474 @@ memory measurements in sections 4, 8 and 9 remain valid as measurements — the
 leak really is fixed — but the change is **not fit to ship** until the release
 gate accounts for classes held by content. Nothing was pushed.
 
+## 16. The corrected lifetime model
+
+Section 15 established that `463b742fe` cannot ship: it releases a movie's
+library on the wrong condition. This section records the redesign that
+replaces it, the evidence that it satisfies both halves of the requirement —
+memory is released *and* nothing that Flash would keep alive is lost — and the
+measurements repeated against it.
+
+### 16.1 What the lifetime of a library actually has to be
+
+The first attempt asked "has the display object this movie was loaded into
+been collected?". AQW showed that to be the wrong question, but it is worth
+being precise about what the right one is, because the fix has to be right for
+Flash content in general and not just for AQW.
+
+A loaded SWF's library must stay for as long as **anything outside it can still
+ask it for a definition**. Concretely:
+
+* a **class** taken out of the movie's `ApplicationDomain` — instantiating it
+  has to find the `SymbolClass`-linked character, and that character's shapes,
+  bitmaps and fonts;
+* an **`ApplicationDomain`** that still lists the movie's definitions — a
+  `getDefinition` on it can hand out such a class at any time;
+* any **method, closure or script** from the movie that can still run — a
+  timer callback, an event listener, a static — because that code can
+  instantiate the movie's symbols by name;
+* an **instance** of one of the movie's characters, wherever it has been
+  moved to — its timeline instantiates more of the movie's characters, its
+  shapes fill with the movie's bitmaps, its text uses the movie's fonts;
+* the **loaded content itself**, while it is on the display list or referenced.
+
+And it must *not* stay merely because the library's own characters point at
+their own classes, the library points at its own movie, or the library is
+stored in a root-owned map. Section 5.1 measured that 1111 of 1112 references
+to an unloaded AQW map were of exactly that self-referential kind.
+
+That is the distinction between **external reachability** and **internal
+self-reference**, and it is a garbage-collection question: it can only be
+answered soundly by tracing from the roots and seeing what is reached without
+going through the library. Reference counts cannot answer it (the counts are
+dominated by the self-references), and neither can any single "content root"
+handle.
+
+### 16.2 How AQW actually manages its loaded assets
+
+Before designing the model, the AQW client's own loader code was disassembled
+(from `Game3098r25.swf`, with a small ABC dumper written against Ruffle's `swf`
+crate) to establish what Flash semantics it depends on. It relies on the
+domain-based lifetimes above in three distinct ways:
+
+| AQW code | What it does | What it relies on |
+|---|---|---|
+| `World.loadMap` / `cleanupMap` | Every map gets a **new** `Loader` and a **new** `LoaderContext(false, new ApplicationDomain(currentDomain))`; `cleanupMap` calls `close()`, `unloadAndStop(true)` and `System.gc()` | The previous map's domain, classes and characters become garbage once the old `Loader` and map clip are dropped |
+| `World.loaderD` / `loaderC` | One **shared child domain** for general asset loads; `clearLoaders(true)` replaces it with a fresh one, clears `playerDomainsCache` and `classMissCache`, and calls `System.gc()` twice if `System.totalMemory` exceeds 200 MiB | Assets loaded into `loaderD` stay resolvable — and resident — until the domain is replaced |
+| `types.PlayerDomainCache` (size 20, LRU) via `mapPlayerAssetClass` | The local player's own equipment goes into per-slot child domains, evicted least-recently-used | Equipment stays instantiable while its slot's domain is cached, and becomes collectable on eviction |
+| `World.getClass` | Resolves a class **by name, on demand**, trying `getDefinitionByName`, `assetsDomain`, `loaderD`, every cached player domain, then every `playerDomains` entry | Classes are re-resolved from live domains rather than held; a domain that is alive must still be able to hand them out |
+| `types.LoaderSlot.dispose` | `close()`, `unloadAndStop(true)`, `ldr = null` | The content goes away; whatever its domain still holds does not |
+
+So AQW is not holding classes forever; it holds **domains** with deliberate
+lifetimes, and asks them for classes when it needs them. A player that honours
+Flash's rule — definitions live exactly as long as their domain (or anything
+that reaches them) — will release what AQW releases and keep what AQW keeps.
+`463b742fe` broke the `loaderD`/`PlayerDomainCache` cases: the domain was alive,
+`getDefinition` returned a class, and the characters behind it were gone.
+
+### 16.3 The reference graph
+
+The objects involved and the edges between them, as they exist in Ruffle
+(`core/src/library.rs`, `character.rs`, `avm2/script.rs`, `avm2/domain.rs`,
+`avm2/class.rs`, `avm2/method.rs`, `display_object/*.rs`):
+
+```
+GcRootData.library ── Library ── MovieLibraries (weak-keyed on Arc<SwfMovie>)
+                                    │
+                                    ▼
+                              MovieLibrary ── swf: Arc<SwfMovie>            (strong, self)
+                                    ├── characters[id] = Character          (Gc templates)
+                                    │       MovieClip ─ Gc<MovieClipShared> ─ swf, avm2_class: ClassObject
+                                    │       Graphic   ─ Gc<GraphicShared>   ─ movie
+                                    │       EditText  ─ Gc<EditTextShared>  ─ swf
+                                    │       Bitmap    ─ Gc<BitmapCharacter> ─ avm2_class
+                                    │       ...
+                                    ├── fonts, export names, imported names
+                                    └── avm2_domain: Domain ─ defs: Script ─ TranslationUnit ─ movie: Arc<SwfMovie>
+                                                                                   ▲
+Class ── instance_init: Method ── txunit ───────────────────────────────────────────┘
+ClassObject ── Class;  ScopeChain ── Domain;  Script ── globals, domain, translation_unit
+
+Instance (on display list / held by AS) ── Gc<MovieClipShared>  (the SAME Gc as the template's)
+Class held by AS ── Method ── TranslationUnit ── Domain ── defs ── Scripts ── ...
+Loader.contentLoaderInfo ── LoaderStream::Swf(movie, content root)   (until unload)
+```
+
+Two facts about this graph decide the design:
+
+1. **Instances share their definition data with the library's template.**
+   `instantiate()` clones the per-instance data but copies the pointer to the
+   `Gc<…Shared>` block. A live instance therefore *marks the template's shared
+   block* even though it never points at the library. That is a ready-made
+   anchor: if the shared block of a character was reached from the roots, an
+   instance of it is alive.
+2. **Every piece of the movie's code holds its `TranslationUnit`.** A `Class`
+   holds its initialiser `Method`, a `Method` holds its unit, a `Script` holds
+   its unit. Whether a class is held directly, or reachable through a domain's
+   definitions, a closure, a listener or a timer, the unit is marked. And the
+   library's own path to that code (`avm2_domain → defs → Script → unit`, or
+   `character → avm2_class → Class → unit`) only exists if the library's
+   contents are traced.
+
+So the answer to "is this library needed?" is: *was the content root, any of
+the movie's translation units, or the shared block of any of its characters
+reached by marking — **without** tracing the library's contents?*
+
+### 16.4 The design: libraries as ephemerons
+
+`MovieLibrary` stays a Rust-owned value in the root's map, but it is no longer
+traced like an ordinary root. The root traces only its **anchors**, which are
+all weak:
+
+* `content_root: Option<DisplayObjectWeak>` — set in `replace_with_movie`
+  and for loaded images, as before;
+* `translation_units: Vec<TranslationUnitWeak>` — new; `Avm2::do_abc`
+  registers every unit it creates with the library of the movie it came from
+  (`TranslationUnitWeak` is a new `GcWeak` wrapper in `avm2/script.rs`);
+* the characters' shared blocks — not stored separately; checked directly on
+  the templates.
+
+Its **contents** — characters, fonts, export and import names, the AVM2
+domain — are deliberately left untraced during marking.
+
+The decision is made at the one point in a collection cycle where it can be
+made soundly: after marking has finished and before anything is swept.
+gc-arena exposes exactly this point (`Arena::mark_debt` / `finish_marking`
+return a `MarkedArena`, whose `finalize` provides a `Finalization` context in
+which `Gc::is_dead` reports whether an object was reached, and `Gc::resurrect`
+brings one back). `Player::collect_garbage` (`player.rs`) drives the cycle:
+
+```
+mark until fully marked                      (incremental, paid by allocation debt)
+loop {
+    finalize: for every unpinned library not yet kept this cycle,
+        if any anchor is alive  →  resurrect its contents, mark it kept
+    if nothing was resurrected → break
+    finish marking                           (the resurrected contents may reach other libraries' anchors)
+}
+drop every unpinned library that was not kept; sweep
+```
+
+Resurrection is done with a small `Trace` adapter (`Resurrector` in
+`library.rs`) that hands every strong pointer the library's own trace would
+have produced to `Gc::resurrect`, so the set of objects kept is by construction
+the same set the library would have traced. Marking then continues from them,
+which is what makes the scheme transitive: a kept library's class can reach
+another library's unit (a map holding an equipped armour, say), and that
+library is caught on the next pass. The loop runs to a fixpoint before the
+sweep, so no library is ever left holding a pointer to a swept object.
+
+This is the textbook *ephemeron* treatment — the library is kept alive by the
+liveness of its keys, not by its own references — implemented with the
+primitives gc-arena provides rather than by making the collector itself
+ephemeron-aware.
+
+**What is pinned.** Two kinds of library have no anchors by nature and are
+traced fully instead: the root movie's (set by `UpdateContext::set_root_movie`),
+and libraries fetched by `ImportAssets` tags, whose characters are copied into
+the importing movie's library and looked up by movie rather than through any
+object of their own. Nothing else is special-cased — there is no AQW-specific
+logic anywhere.
+
+**What was kept from `463b742fe`, and why.**
+
+| Change | Kept? | Reason |
+|---|---|---|
+| Weak `Avm2ClassRegistry` (`ClassWeak`) | Yes | Still necessary: tracing the registry's keys would make every `SymbolClass` class a root, which would mark its unit and keep every such library alive forever. Dead entries are now removed at finalization using `is_dead`, so they never outlive their class. |
+| External-allocation accounting | Yes, reported every frame | Independent of the lifetime model; without it the collector does not start cycles often enough to notice megabytes of dropped content. |
+| `Loader.unloadAndStop` implementation | Yes | Independent; it is what AQW calls, and `gc = true` is what makes the next cycle run promptly. |
+| `content_root` handle | Yes, demoted | It is one anchor among several rather than the release condition. |
+| `release_unreachable_movies` per frame | Replaced | The finalization pass above. |
+
+**A bug found on the way.** The first implementation dropped dead libraries
+with `PtrWeakKeyHashMap::retain`, and a debug assertion in gc-arena
+(`resurrect` of an already-dropped object) caught a library surviving a sweep
+with its contents untraced. Tracing showed `retain` skipping an entry: the
+`weak_table` implementation walks bucket indices and, after removing one entry,
+its Robin-Hood backward-shift deletion moves the *next* entry into the slot the
+loop has already passed. Libraries are now removed by key after the decision is
+made (`MovieLibraries::drop_unneeded`). The same `retain` was used by
+`463b742fe`'s sweep, where skipping an entry only delayed its release by a
+cycle; here it would have been memory-unsafe, and the assertion is exactly the
+kind of check the design relies on.
+
+### 16.5 The deterministic tests
+
+Both directions of the requirement are now tests, in
+`tests/tests/swfs/avm2/loader_unload_retains_linked_class/` (sources, `build.py`
+and the built SWFs) and `tests/tests/movie_library/mod.rs`.
+
+`test.swf` does what AQW does for equipment: loads `child/child.swf` into a
+child `ApplicationDomain`, takes the `Child` class out of that domain, calls
+`unloadAndStop(true)`, removes and drops the `Loader`, waits, then at frame 90
+does `new Child()`. `Child` is linked by `SymbolClass` to a sprite containing a
+100×100 shape, so instantiating it has to resolve two characters in the child
+movie's library. At frame 150 it releases the class and the domain.
+
+| Test | What it proves | Result on the fix | Result on `463b742fe` |
+|---|---|---|---|
+| `avm2/loader_unload_retains_linked_class` (trace) | A. A held class survives unload and collection, and still instantiates with its characters (`instantiated children=1 width=100`) | **pass** | **fails** — `Tried to instantiate a non-registered character ID 2`, `Error #2136` |
+| `retained_class_keeps_library` (Rust) | A. After two forced full collections at frame 60 — content gone, class held — the child movie's library is still resident | **pass** | **fails** — library already dropped |
+| `released_class_frees_library` (Rust) | B. After two forced full collections at frame 200 — class and domain released — the child movie's library is gone | **pass** | **fails** — the library dropped at frame 60 is re-created empty by the failed instantiation, and an on-demand library has no content root, so that commit never sweeps it |
+| `loader_unload_releases_library` (Rust, existing) | B. Ten load/unload cycles with nothing retained leave at most two of the ten children resident | **pass** | pass |
+| `avm2/loader_unload_releases_library` (trace, existing) | The ten cycles ran | **pass** | pass |
+
+The forced collections use a new `Player::collect_all_garbage`, which runs the
+same cycle as a frame does — marking, the library finalization pass, sweeping —
+to completion, so the assertions do not depend on collector pacing. The
+`463b742fe` column was produced by running the built SWFs on that commit's
+desktop binary, and by running the three tests in a worktree checked out at
+that commit with only a `collect_all_garbage` test helper back-ported (two
+`finish_cycle` calls followed by that commit's own sweep); the fix under test
+was left exactly as committed. That the *collection* test also fails there is
+worth noting: the content-root design cannot even release a library that has
+been re-created on demand, because such a library has no content root at all.
+
+The real-asset reproduction from section 15.3 (`ChaosSlayerMChest` out of
+`classes_M_ChaosSlayer.swf`) was repeated on the corrected build:
+
+| Build | Result |
+|---|---|
+| Baseline `43b0c0b5e` | `RESULT instantiated children=1 width=122` |
+| `463b742fe` | `non-registered character ID 132` → `RESULT threw Error #2136` |
+| **Corrected fix** | **`RESULT instantiated children=1 width=122`** |
+
+### 16.6 Memory: the stress matrix repeated on the corrected fix
+
+Every scenario from section 8 was re-run on the corrected build, as separate
+processes, same harness, same genuine AQW assets, OpenGL backend
+(`-g gl`, see section 9.3), memory report every 2 s. The baseline was re-run
+for the two map scenarios on the same day to confirm the reference numbers;
+the remaining baseline and `463b742fe` columns are the section 8 runs.
+"Movies resident" counts `SwfMovie`s that still have a library; one of them is
+always the harness itself.
+
+| Scenario | Loads | Baseline movies | `463b742fe` movies | **Corrected fix** movies | Baseline retained | **Corrected** retained | Result |
+|---|---|---|---|---|---|---|---|
+| Map transitions | 20 | 21 | 3 | **3** | 74.7 MiB | **2.9 MiB** | PASS |
+| Armour | 52 | 53 | 1 | **1** | 1.9 MiB | **0.0 MiB** | PASS |
+| Items | 56 | 57 | 1 | **1** | 3.4 MiB | **0.0 MiB** | PASS |
+| Map transitions, long | 60 | 61 | 3 | **3** | 224.0 MiB | **2.9 MiB** | PASS |
+| Maps with players (6 concurrent) | 120 | 121 | 3 | **3** | 153.4 MiB | **2.9 MiB** | PASS |
+| Extended mixed session | 170 | 171 | 3 | **3** | 192.6 MiB | **2.9 MiB** | PASS |
+| Maps with players, long | 360 | not run | 3 | **3** | — | **2.9 MiB** | PASS |
+
+Characters resident at the end: baseline 10,897 / 6,488 / 5,969 / 32,689 /
+30,847 / 40,829 for the six baseline rows; corrected fix **549** in every map
+scenario and **1** in the armour and items scenarios — exactly what
+`463b742fe` left, and constant from 20 loads to 360.
+
+The count is not flat *during* a run, and should not be: in the 60-map run it
+moves 1 → 3 → 5 → 7 → 3 → 5 … while content is being shown and torn down,
+peaking at 7; in the six-slot runs it sits at 15–17 while six SWFs are on
+screen and drops to 3 when they are unloaded; the peak retained content is
+18–22 MiB against a final 2.9 MiB. That is the shape of a working collector:
+memory proportional to what is on screen, returned when it leaves.
+
+Process RSS, same runs, OpenGL backend:
+
+| Scenario | Loads | Baseline RSS end | **Corrected** RSS end | Corrected RSS peak |
+|---|---|---|---|---|
+| Map transitions | 20 | 392 MiB | **272 MiB** | 272 MiB |
+| Map transitions, long | 60 | 772 MiB | **405 MiB** | 405 MiB |
+| Maps with players | 120 | 1526 MiB (section 8, Vulkan) | **420 MiB** | 420 MiB |
+| Extended mixed session | 170 | 1863 MiB (section 8, Vulkan) | **472 MiB** | 472 MiB |
+| Maps with players, long | 360 | — | **519 MiB** | 663 MiB |
+
+The 60-map figures are directly comparable with section 9.2's `463b742fe`
+numbers (774 → 411 MiB): the corrected fix lands at 405 MiB. The residual
+per-transition RSS growth discussed in section 9.3 — renderer and driver
+working set, identical on all builds — is unchanged and is not Ruffle content:
+the Ruffle-side accounting is 2.9 MiB at the end of every one of these runs.
+
+No `Tried to instantiate a non-registered character`, no `Error #2136`, no
+panic and no new warning appeared in any of the seven runs. (The harness's own
+two known messages — a map asset trying to load a relative `mapIcons_r14.swf`
+that is not present locally, and a type-coercion error from a map script that
+expects the AQW `World` as its parent — appear identically on every build and
+are artefacts of running map SWFs outside the game.)
+
+
+### 16.7 Test suite, static checks and build
+
+| Command | Result |
+|---|---|
+| `cargo test --package tests --test tests -- loader_unload` (both lifetime SWFs, the collection test) | **3 passed, 0 failed** |
+| `cargo test --package tests --test tests -- _class_` (`retained_class_keeps_library`, `released_class_frees_library`, plus 11 pre-existing tests matching the filter) | **13 passed, 0 failed** |
+| `cargo test --package tests --test tests -- avm2/loader` (the 32 existing loader tests) | **31 passed, 0 failed, 2 ignored** (pre-existing ignores) |
+| `cargo test --release --package tests` (full suite) | **4216 passed, 0 failed, 349 ignored** in 128.7 s — the 4213 of section 7.2 plus the three new tests; the 349 ignores are unchanged |
+| `cargo fmt --all -- --check` | clean |
+| `cargo check --package ruffle_core --package ruffle_desktop --package tests --all-targets` | clean, no warnings |
+| `cargo build --release --package ruffle_desktop` | `target/release/ruffle_desktop`, 10 m 08 s from a cold cache, 2–3 min incremental |
+
+The one assertion that fired during development was gc-arena's own
+`debug_assert!(header.is_live())` inside `resurrect`, which is what exposed the
+`retain` problem in 16.4; the test suite is built with debug assertions on for
+the non-release runs above, so that check stays active in them.
+
+
+### 16.8 Baseline behaviour and performance
+
+The brief is explicit that the memory result must not be bought with a
+regression elsewhere, so this was checked rather than assumed.
+
+**Nothing functional was traded away.** The diff (16.11) touches garbage
+collection and object lifetime only. It does not change rendering, asset
+decoding or quality, caching, character loading, timeline or frame behaviour,
+event dispatch or networking, and it contains no game-specific logic. The
+evidence that behaviour is unchanged:
+
+* the full regression suite — 4,216 SWF behaviour tests, a large share of
+  them with rendered-image comparisons — passes with the same result set as
+  the baseline plus the three new tests (16.7);
+* every harness scenario completes the same number of loads on both builds
+  within the same time limits (20 / 52 / 56 / 60 / 120 / 170 / 360), so no
+  transition became slow enough to be lost;
+* the real-asset instantiation produces the same geometry on the baseline
+  and the corrected build (`children=1 width=122`, 16.5);
+* the authenticated session reaches the same stages as the baseline with the
+  same AQW-side messages in the same proportions and nothing new (16.9).
+
+**Timing**, baseline `43b0c0b5e` against the corrected build, same machine,
+OpenGL backend, quiet CPU, harness `maps` scenario (20 genuine AQW map loads,
+110 s wall-clock, identical flags):
+
+| Measure | Baseline | Corrected fix |
+|---|---|---|
+| Backend ready → first harness frame | 0.223 s | 0.225 s |
+| Backend ready → first AQW map fully loaded and constructed | 0.592 s | 0.593 s |
+| CPU time for the whole 110 s run (user + system) | 3.88 + 2.88 = 6.76 s | 4.24 + 2.63 = 6.87 s |
+| Peak RSS of that run | 386 MiB | 259 MiB |
+| Loads completed / movies resident at end | 20 / 21 | 20 / 3 |
+
+Startup and load latency are equal to within a few milliseconds. Total CPU
+over the run differs by 0.1 s in 110 s, which is inside the variation between
+runs; the slightly higher user time on the corrected build is the collector
+actually sweeping the content the baseline never freed, and the lower system
+time is the memory it no longer has to map. Per-frame cost of the new
+finalization pass is bounded by the number of resident libraries and their
+characters — a few hundred pointer-colour reads once per collection cycle,
+not per frame — and did not register in these measurements.
+
+These are single runs of each configuration; they are sufficient to say **no
+detected baseline regression**, not to claim exact equivalence.
+
+
+### 16.9 The authenticated AQW session, repeated on the corrected fix
+
+Same setup as section 15.1: official `Loader3.swf` entry point,
+`--base https://game.aq.com/game/`, `--tcp-connections allow`, OpenGL backend,
+low quality, on an Xvfb display driven with `xdotool`, the client's test
+account. Account name and session token are scrubbed from every log quoted
+here and nothing from the session is committed.
+
+| Step | Result |
+|---|---|
+| Client boot, login screen | **PASS** — `Loader3` → `Game3098r25.swf`, full login artwork |
+| Authenticated login, server list | **PASS** — `LoginComplete`; 3,780 players online; Alteon selected |
+| SmartFox session, character load | **PASS** — `loginResponse … true … Welcome!`, `loadExternalAssets` → `external assets loaded` |
+| Populated room | **PASS** — joined `battleon-1` with 10 players; 53 `equipItem` commands from the server; `markEquipmentLoaded`, `checkLoadComplete`, `Creating mcImages`, `sAct isNewClass` all reached |
+| Real class armour, weapons, capes, helms | **PASS** — 23 avatars initialised, `loadArmorPieces` for other players' sets; the resident-movie detail lists `items/swords/…` weapon SWFs and `classes/…` armour |
+| Real zone change | **PASS** — `/join yulgar` from the chat box: `tfer` sent, `moveToArea` received, `loadMap: …/maps/battleon/town-yulgar-2july26.swf`, `Character load complete`, `You joined "yulgar-1"`, 15 players rendered with their equipment (screenshot on file) |
+| `Tried to instantiate a non-registered character` | **0** (baseline 0; `463b742fe` 3) |
+| `Error #2136` | **0** (baseline 0; `463b742fe` 2) |
+| Panics | **0** (`463b742fe` 1) |
+| Other AQW-side messages | `[Load] ERR getClass: could not find` (fixed 122 / baseline 536), `Error #1007` on some cape loads (4 / 22) and `linkage miss` on some weapons (4 / 32), `Error #1009 … (accessing field: Events)` on room messages (80 / 23): all present on the baseline in the same proportions, none new |
+
+Further `/join` commands after the first transition were sent by the client
+(`%xt%zm%cmd%1%tfer%…%battleon%`) but the server returned no `moveToArea` for
+them, so only one real zone change could be exercised in this session; the
+harness in 16.6 covers the repeated-transition case with genuine map SWFs.
+
+**Memory over the session.** Resident movies and characters from the player's
+own accounting, sampled every 5 s:
+
+| Point in session | Movies | Characters | RSS |
+|---|---|---|---|
+| Login screen | 6 | 4,325 | 439 MiB |
+| Character loaded, entering Battleon | 10 | 15,175 | 802 MiB |
+| Battleon populated, equipment loading (peak, 37–40 loads in flight) | 155 | 22,610 | 1,824 MiB |
+| One minute after the Yulgar transition | 116 | 22,654 | 1,827 MiB |
+| Same, 15 minutes later | **116** | **22,654** | 1,877 MiB |
+
+The count *falls* from its loading peak once the loads settle and then does not
+move for the rest of the session; the 5 MiB/min of RSS drift with an unchanged
+Ruffle-side count is the software renderer's working set on this display
+(section 9.3). Neither map is in the resident-movie detail after the
+transition — the 5–20 MiB map SWFs would head the list, which is instead topped
+by the interface assets, the game itself, the title background and two swords.
+
+What remains resident is AQW's own working set, and it is worth being explicit
+that this is correct rather than a shortfall: the equipment of every distinct
+player seen is loaded into AQW's shared `World.loaderD` domain, which AQW keeps
+for the session (section 16.2), so those SWFs are reachable from live
+definitions and Flash would hold them too. The baseline, by contrast, held
+*everything ever loaded*: the section 15 baseline session in the same room
+climbed from 4 to **1,169** resident movies and 81,970 characters over two
+hours with no zone change at all, and never gave any of it back.
+
+
+### 16.10 What still applies from section 14, and what is new
+
+| Section 14 item | Status |
+|---|---|
+| 1. No weapon SWF tested | **Resolved.** The live session in 16.9 loads real weapons (`items/swords/…`), and they appear in the resident-movie detail. |
+| 2. AQW gameplay only partly exercised | **Partly resolved.** 16.9 covers login, server select, a populated room, a real zone change and equipment/weapon/cape loads. Combat and long play remain impractical under software rendering on this machine (see below). |
+| 3. Two movies can remain resident briefly | Unchanged in nature: the residue is now whatever the last collection cycle has not yet swept, still a constant (3 movies in every long run). |
+| 4. `unloadAndStop` does not stop timers | Unchanged. Not observed to matter in any run. |
+| 5. Residual RSS growth is renderer/driver working set | Unchanged; measured again in 16.6. |
+| 6. `unloadAndStop(gc)` charges a full collection | Unchanged and deliberate. |
+
+New, specific to the corrected model:
+
+* **Definitions loaded into a long-lived `ApplicationDomain` stay for as long
+  as that domain does.** This is Flash's rule and AQW depends on it, but it
+  means AQW's shared `World.loaderD` domain keeps every distinct asset seen in
+  a session (other players' equipment above all) until AQW itself replaces the
+  domain. That working set is bounded by the number of *distinct* assets, not
+  by the number of loads — each file is loaded once and re-resolved by name
+  afterwards — and it is exactly what Flash Player holds for the same session.
+  A player that released those would be the `463b742fe` defect again.
+* **Sound data in the audio backend is not released with a library.** The
+  backend has no unregister operation; a released library's decoded sounds
+  remain registered, as they did on the baseline. Sounds were not a measurable
+  part of any run here (the harness assets carry almost none), but a
+  sound-heavy SWF that is loaded and unloaded repeatedly would still grow by
+  its sound data.
+* **A `TextField` created by a movie's code, using that movie's embedded font,
+  and then outliving every other trace of the movie** would fall back to a
+  device font if its text were changed after the movie's library had been
+  released. This requires the movie's code, classes and content to all be
+  gone while a text field it made is still edited by someone else; it was not
+  observed and is noted for completeness.
+* **`ImportAssets` libraries are pinned for the session.** Their characters
+  are copied into the importing movie and looked up by movie rather than
+  through any object, so nothing traceable could anchor them. This is the
+  pre-existing behaviour for that (AVM1-era) mechanism, made explicit.
+
+### 16.11 Changed files and commits
+
+Corrected fix, on top of `3145f91f3`:
+
+| File | Change |
+|---|---|
+| `core/src/library.rs` | The lifetime model: `Pin`, weak anchors (`translation_units`), split `trace_anchors` / `trace_contents`, the `Resurrector`, `resurrect_needed` / `drop_unneeded`, `Library::resolve_releasable_libraries`, `set_root_movie`; class-registry cleanup by finalization colour |
+| `core/src/player.rs` | `collect_garbage`: mark → finalize (libraries) → resume marking to a fixpoint → sweep; `collect_all_garbage` for tests; external allocation reported every frame |
+| `core/src/avm2/script.rs`, `core/src/avm2.rs` | `TranslationUnitWeak`; `do_abc` registers each unit with its movie's library |
+| `core/src/avm2/class.rs` | `ClassWeak::is_dead` |
+| `core/src/character.rs` | `Character::has_reachable_instances` |
+| `core/src/display_object.rs`, `display_object/{movie_clip,graphic,edit_text,text,morph_shape,avm1_button,avm2_button,video,bitmap,loader_display}.rs` | `DisplayObjectWeak::is_dead` and per-type `is_dead` / `shared_data_is_reachable` |
+| `core/src/context.rs` | pin the root movie's library |
+| `core/src/loader.rs` | pin `ImportAssets` libraries |
+| `tests/tests/movie_library/mod.rs`, `tests/tests/regression_tests.rs` | the two new lifetime tests |
+| `tests/tests/swfs/avm2/loader_unload_retains_linked_class/` | new: `Test.as`, `child/Child.as`, `build.py`, built SWFs, expected output |
+
+Untouched from `463b742fe`: `core/src/avm2/globals/flash/display/Loader.as` and
+`loader.rs` (`unloadAndStop`), `core/src/memory_report.rs`, the
+`loader_unload_releases_library` test.
+
+| | |
+|---|---|
+| Corrected fix commit | `8648d3b02d1826b748fcf1df039606146522084a` |
+| Report commit | the commit that adds this section |
+| Branch | `fix/aqw-memory-leak`, local only; nothing pushed |
