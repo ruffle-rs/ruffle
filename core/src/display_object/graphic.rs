@@ -8,7 +8,7 @@ use crate::display_object::{BoundsMode, DisplayObjectBase};
 use crate::drawing::Drawing;
 use crate::library::MovieLibrarySource;
 use crate::prelude::*;
-use crate::tag_utils::SwfMovie;
+use crate::tag_utils::{SwfMovie, SwfSlice};
 use crate::tessellation_cache::TessellationCache;
 use crate::vminterface::Instantiator;
 use core::fmt;
@@ -17,9 +17,11 @@ use gc_arena::lock::Lock;
 use gc_arena::{Collect, Finalization, Gc, Mutation};
 use ruffle_common::utils::HasPrefixField;
 use ruffle_render::backend::ShapeHandle;
+use ruffle_render::backend::null::NullBitmapSource;
 use ruffle_render::commands::CommandHandler;
-use std::cell::{OnceCell, RefCell, RefMut};
+use std::cell::{Cell, OnceCell, RefCell, RefMut};
 use std::sync::Arc;
+use web_time::Instant;
 
 #[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]
@@ -56,24 +58,26 @@ impl<'gc> Graphic<'gc> {
     }
 
     /// Construct a `Graphic` from it's associated `Shape` tag.
+    ///
+    /// `source` is the `DefineShape` tag body the shape was read from, with
+    /// the tag version. When given, the parsed shape can be dropped while
+    /// the graphic is not in use and read again from the movie's data when
+    /// it is; see [`Self::evict_stale_tessellation`].
     pub fn from_swf_tag(
         context: &mut UpdateContext<'gc>,
         swf_shape: swf::Shape,
+        source: Option<(SwfSlice, u8)>,
         movie: Arc<SwfMovie>,
     ) -> Self {
-        let library = context.library.library_for_movie(movie.clone()).unwrap();
         let shared = GraphicShared {
             id: swf_shape.id,
             shape_bounds: swf_shape.shape_bounds,
             edge_bounds: swf_shape.edge_bounds,
-            render_handle: Some(
-                context
-                    .renderer
-                    .register_shape((&swf_shape).into(), &MovieLibrarySource { library }),
-            ),
-            shape: swf_shape,
+            shape: RefCell::new(Some(Box::new(swf_shape))),
+            shape_source: source,
             movie,
             scaled_handle: RefCell::new(TessellationCache::new()),
+            last_drawn: Cell::new(None),
         };
 
         Graphic(Gc::new(
@@ -94,8 +98,7 @@ impl<'gc> Graphic<'gc> {
             id: 0,
             shape_bounds: Default::default(),
             edge_bounds: Default::default(),
-            render_handle: None,
-            shape: swf::Shape {
+            shape: RefCell::new(Some(Box::new(swf::Shape {
                 version: 32,
                 id: 0,
                 shape_bounds: Default::default(),
@@ -106,9 +109,11 @@ impl<'gc> Graphic<'gc> {
                     line_styles: Vec::new(),
                 },
                 shape: Vec::new(),
-            },
+            }))),
+            shape_source: None,
             movie: context.root_swf.clone(),
             scaled_handle: RefCell::new(TessellationCache::new()),
+            last_drawn: Cell::new(None),
         };
 
         Graphic(Gc::new(
@@ -139,16 +144,24 @@ impl<'gc> Graphic<'gc> {
         unlock!(Gc::write(mc, self.0), GraphicData, shared).set(shared);
     }
 
-    /// Returns the best shape handle for the current scale, retessellating if necessary.
+    /// Returns the best shape handle for the current scale, tessellating if necessary.
+    ///
+    /// Shapes are tessellated on first draw rather than when their movie is
+    /// loaded. A loaded SWF's shapes stay resident for as long as anything can
+    /// still reach the SWF (see `MovieLibrary`), and a game that keeps assets
+    /// resolvable in an `ApplicationDomain` keeps hundreds of them; their
+    /// meshes are by far the largest thing per shape, and most of them are
+    /// never on screen at once. Meshes of shapes that have not been drawn for
+    /// a while are dropped again by [`Self::evict_stale_tessellation`].
     fn get_or_retessellate_handle(
         self,
         context: &mut RenderContext,
-        base_handle: &ShapeHandle,
         current_scale: f32,
     ) -> ShapeHandle {
         // Since graphics are created from a shared shape, we may be able to reuse a
         // cached tessellation from another instance at a similar scale.
         let shared = self.0.shared.get();
+        shared.touch();
 
         {
             let mut cache = shared.scaled_handle.borrow_mut();
@@ -158,30 +171,104 @@ impl<'gc> Graphic<'gc> {
             }
         }
 
-        // Retessellate at the new scale
+        // Tessellate at the current scale. Bitmap fills come from the movie's
+        // library; a shape whose library is gone can only draw its solid fills.
         let library = context.library.library_for_movie(shared.movie.clone());
-        if let Some(library) = library {
-            let new_handle = context.renderer.register_shape_with_scale(
-                (&shared.shape).into(),
+        let new_handle = shared.with_shape(|shape| match library {
+            Some(library) => context.renderer.register_shape_with_scale(
+                shape.into(),
                 &MovieLibrarySource { library },
                 current_scale,
+            ),
+            None => context.renderer.register_shape_with_scale(
+                shape.into(),
+                &NullBitmapSource,
+                current_scale,
+            ),
+        });
+
+        {
+            let mut cache = shared.scaled_handle.borrow_mut();
+            tracing::debug!(
+                "Graphic id={} tessellated: scale={:.2}, cache_size={}",
+                shared.id,
+                current_scale,
+                cache.len()
             );
-
-            {
-                let mut cache = shared.scaled_handle.borrow_mut();
-                tracing::debug!(
-                    "Graphic id={} retessellated: new_scale={:.2}, cache_size={}",
-                    shared.id,
-                    current_scale,
-                    cache.len()
-                );
-                cache.insert(current_scale, new_handle.clone());
-            }
-
-            new_handle
-        } else {
-            base_handle.clone()
+            cache.insert(current_scale, new_handle.clone());
         }
+
+        new_handle
+    }
+
+    /// Drops this shape's tessellations, and its parsed shape records if
+    /// they can be read back from the movie, if it has not been drawn or
+    /// hit-tested since `before`. Both are rebuilt on the next use.
+    pub fn evict_stale_tessellation(self, before: Instant) -> bool {
+        let shared = self.0.shared.get();
+        let stale = match shared.last_drawn.get() {
+            Some(last) => last < before,
+            None => true,
+        };
+        if !stale {
+            return false;
+        }
+        let mut evicted = false;
+        let mut cache = shared.scaled_handle.borrow_mut();
+        if cache.len() > 0 {
+            cache.clear();
+            evicted = true;
+        }
+        if shared.shape_source.is_some() && shared.shape.borrow_mut().take().is_some() {
+            evicted = true;
+        }
+        evicted
+    }
+}
+
+impl GraphicShared {
+    fn touch(&self) {
+        self.last_drawn.set(Some(Instant::now()));
+    }
+
+    /// Whether this graphic has any shape to draw or hit-test at all.
+    fn has_shape(&self) -> bool {
+        self.shape_source.is_some()
+            || self
+                .shape
+                .borrow()
+                .as_ref()
+                .is_some_and(|shape| !shape.shape.is_empty())
+    }
+
+    /// Runs `f` on the parsed shape, reading it back from the movie's data
+    /// first if it has been dropped.
+    fn with_shape<R>(&self, f: impl FnOnce(&swf::Shape) -> R) -> R {
+        let mut slot = self.shape.borrow_mut();
+        if slot.is_none() {
+            let parsed = self.shape_source.as_ref().and_then(|(source, version)| {
+                match source.read_from(0).read_define_shape(*version) {
+                    Ok(shape) => Some(shape),
+                    Err(e) => {
+                        tracing::error!("Could not re-read shape {}: {e}", self.id);
+                        None
+                    }
+                }
+            });
+            *slot = Some(Box::new(parsed.unwrap_or_else(|| swf::Shape {
+                version: 32,
+                id: self.id,
+                shape_bounds: self.shape_bounds,
+                edge_bounds: self.edge_bounds,
+                flags: swf::ShapeFlag::empty(),
+                styles: swf::ShapeStyles {
+                    fill_styles: Vec::new(),
+                    line_styles: Vec::new(),
+                },
+                shape: Vec::new(),
+            })));
+        }
+        f(slot.as_ref().expect("shape was just parsed"))
     }
 }
 
@@ -263,7 +350,7 @@ impl<'gc> TDisplayObject<'gc> for Graphic<'gc> {
 
         if let Some(drawing) = self.0.drawing.get() {
             drawing.borrow().render(context);
-        } else if let Some(base_handle) = self.0.shared.get().render_handle.clone() {
+        } else if self.0.shared.get().has_shape() {
             let transform = context.transform_stack.transform();
 
             // Calculate the current scale from the transform, to determine if
@@ -273,7 +360,7 @@ impl<'gc> TDisplayObject<'gc> for Graphic<'gc> {
             let scale_y = f32::abs(matrix.b + matrix.d);
             let current_scale = ((scale_x * scale_x + scale_y * scale_y) / 2.0).sqrt();
 
-            let handle = self.get_or_retessellate_handle(context, &base_handle, current_scale);
+            let handle = self.get_or_retessellate_handle(context, current_scale);
 
             context.commands.render_shape(handle, transform)
         }
@@ -298,8 +385,11 @@ impl<'gc> TDisplayObject<'gc> for Graphic<'gc> {
                     return true;
                 }
             } else {
-                let shape = &self.0.shared.get().shape;
-                return ruffle_render::shape_utils::shape_hit_test(shape, point, &local_matrix);
+                let shared = self.0.shared.get();
+                shared.touch();
+                return shared.with_shape(|shape| {
+                    ruffle_render::shape_utils::shape_hit_test(shape, point, &local_matrix)
+                });
             }
         }
 
@@ -345,11 +435,23 @@ impl<'gc> TDisplayObject<'gc> for Graphic<'gc> {
 #[collect(require_static)]
 struct GraphicShared {
     id: CharacterId,
-    shape: swf::Shape,
-    render_handle: Option<ShapeHandle>,
+    /// The parsed shape. `None` while it has been dropped to save memory;
+    /// see `with_shape`. Never `None` for a graphic without `shape_source`.
+    #[collect(require_static)]
+    shape: RefCell<Option<Box<swf::Shape>>>,
+    /// The `DefineShape` tag this shape was read from, and its version, so
+    /// that the parsed shape can be dropped and read again on demand.
+    #[collect(require_static)]
+    shape_source: Option<(SwfSlice, u8)>,
     shape_bounds: Rectangle<Twips>,
     edge_bounds: Rectangle<Twips>,
     movie: Arc<SwfMovie>,
+    /// Tessellations of `shape` at the scales it has been drawn at. Built on
+    /// first draw and dropped again when the shape goes undrawn for a while;
+    /// see `Graphic::get_or_retessellate_handle`.
     #[collect(require_static)]
     scaled_handle: RefCell<TessellationCache>,
+    /// When any instance of this shape was last drawn or hit-tested.
+    #[collect(require_static)]
+    last_drawn: Cell<Option<Instant>>,
 }

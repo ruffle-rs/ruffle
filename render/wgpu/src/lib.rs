@@ -277,7 +277,63 @@ pub struct Texture {
     copy_count: Cell<u8>,
 }
 
+/// Bytes of texture memory Ruffle itself has asked for and not yet released
+/// - bitmap textures, cached display objects, pooled render targets - and
+/// how many such textures there are. Not every backend can report texture
+/// memory, so this is counted here for the memory report.
+static TEXTURE_BYTES: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
+static TEXTURE_COUNT: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
+
+/// Approximate memory of a texture: its pixels at the format's block size.
+pub(crate) fn texture_bytes(texture: &wgpu::Texture) -> usize {
+    let size = texture.size();
+    let bytes_per_block = texture.format().block_copy_size(None).unwrap_or(4) as usize;
+    size.width as usize
+        * size.height as usize
+        * size.depth_or_array_layers as usize
+        * bytes_per_block
+}
+
+pub(crate) fn track_texture_created(texture: &wgpu::Texture) {
+    use std::sync::atomic::Ordering;
+    TEXTURE_BYTES.fetch_add(texture_bytes(texture), Ordering::Relaxed);
+    TEXTURE_COUNT.fetch_add(1, Ordering::Relaxed);
+}
+
+pub(crate) fn track_texture_dropped(texture: &wgpu::Texture) {
+    use std::sync::atomic::Ordering;
+    TEXTURE_BYTES.fetch_sub(texture_bytes(texture), Ordering::Relaxed);
+    TEXTURE_COUNT.fetch_sub(1, Ordering::Relaxed);
+}
+
+/// `(textures alive, their bytes)` as tracked by Ruffle.
+pub fn tracked_texture_totals() -> (usize, usize) {
+    use std::sync::atomic::Ordering;
+    (
+        TEXTURE_COUNT.load(Ordering::Relaxed),
+        TEXTURE_BYTES.load(Ordering::Relaxed),
+    )
+}
+
+impl Drop for Texture {
+    fn drop(&mut self) {
+        track_texture_dropped(&self.texture);
+    }
+}
+
 impl Texture {
+    pub(crate) fn new(texture: wgpu::Texture) -> Self {
+        track_texture_created(&texture);
+        Self {
+            texture,
+            repeating_linear: Default::default(),
+            repeating_nearest: Default::default(),
+            clamped_linear: Default::default(),
+            clamped_nearest: Default::default(),
+            copy_count: Cell::new(0),
+        }
+    }
+
     pub fn bind_group(
         &self,
         repeating: bool,

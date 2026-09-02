@@ -49,6 +49,10 @@ thread_local! {
 static GLOBAL: tracing_tracy::client::ProfiledAllocator<std::alloc::System> =
     tracing_tracy::client::ProfiledAllocator::new(std::alloc::System, 0);
 
+#[cfg(not(feature = "tracy"))]
+#[global_allocator]
+static GLOBAL: memory_reporter::CountingAllocator = memory_reporter::CountingAllocator;
+
 static RUFFLE_VERSION: &str = concat!(
     env!("CARGO_PKG_VERSION"),
     "-",

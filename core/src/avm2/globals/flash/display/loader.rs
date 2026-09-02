@@ -345,13 +345,11 @@ pub fn unload_and_stop<'gc>(
     loader_info.unload(activation.context);
 
     if run_gc {
-        // Ruffle's collector is incremental and paced by how much has been
-        // allocated since it last ran, so on its own it would not react to a
-        // movie that has just dropped several megabytes. Charging it the
-        // memory currently in play makes the next collection step run the
-        // cycle to completion, which is the behaviour Flash documents here.
-        let metrics = activation.gc().metrics();
-        metrics.add_debt(metrics.total_allocation());
+        // Flash collects immediately here. Ask the player for a full cycle at
+        // the end of this update rather than charging the collector directly:
+        // content commonly calls this once per loader it owns when it tears a
+        // scene down, and each of those must not cost a collection of its own.
+        *activation.context.full_gc_requested = true;
     }
 
     Ok(Value::Undefined)

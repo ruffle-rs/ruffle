@@ -840,6 +840,27 @@ impl<'gc> Library<'gc> {
         self.movie_libraries.set_root(movie);
     }
 
+    /// Drops the tessellated meshes of every shape that has not been drawn
+    /// since `before`. Returns how many shapes were affected.
+    ///
+    /// A library keeps its shapes for as long as anything can reach the
+    /// movie, which for content that keeps assets in a long-lived
+    /// `ApplicationDomain` is a long time; their meshes are the largest thing
+    /// about them and are cheap to rebuild on the next draw.
+    pub fn evict_stale_tessellations(&self, before: web_time::Instant) -> usize {
+        let mut evicted = 0;
+        for (_, library) in self.movie_libraries.0.iter() {
+            for character in library.characters.values() {
+                if let Character::Graphic(graphic) = character
+                    && graphic.evict_stale_tessellation(before)
+                {
+                    evicted += 1;
+                }
+            }
+        }
+        evicted
+    }
+
     /// The finalization step of a collection cycle: decides which loaded
     /// movies' libraries live and which die, now that marking has finished.
     ///

@@ -11,7 +11,7 @@ version.workspace = true
 workspace = true
 
 [dependencies]
-wgpu = { workspace = true, features = ["naga-ir"] }
+wgpu = { workspace = true, features = ["naga-ir", "counters"] }
 tracing = { workspace = true }
 ruffle_render = { path = "..", features = ["tessellator", "wgpu"] }
 bytemuck = { workspace = true, features = ["derive"] }

@@ -7,10 +7,48 @@
 
 use ruffle_core::Player;
 use ruffle_core::memory_report::MemoryReport;
+use std::alloc::{GlobalAlloc, Layout, System};
 use std::fs::File;
 use std::io::{BufWriter, Write};
 use std::path::Path;
+use std::sync::atomic::{AtomicUsize, Ordering};
 use std::time::{Duration, Instant};
+
+/// The system allocator with a running total of live bytes, so that the
+/// memory report can say how much of the process is Rust heap as opposed to
+/// graphics driver and other native memory.
+pub struct CountingAllocator;
+
+static LIVE_BYTES: AtomicUsize = AtomicUsize::new(0);
+
+unsafe impl GlobalAlloc for CountingAllocator {
+    unsafe fn alloc(&self, layout: Layout) -> *mut u8 {
+        let ptr = unsafe { System.alloc(layout) };
+        if !ptr.is_null() {
+            LIVE_BYTES.fetch_add(layout.size(), Ordering::Relaxed);
+        }
+        ptr
+    }
+
+    unsafe fn dealloc(&self, ptr: *mut u8, layout: Layout) {
+        LIVE_BYTES.fetch_sub(layout.size(), Ordering::Relaxed);
+        unsafe { System.dealloc(ptr, layout) }
+    }
+
+    unsafe fn realloc(&self, ptr: *mut u8, layout: Layout, new_size: usize) -> *mut u8 {
+        let new_ptr = unsafe { System.realloc(ptr, layout, new_size) };
+        if !new_ptr.is_null() {
+            LIVE_BYTES.fetch_sub(layout.size(), Ordering::Relaxed);
+            LIVE_BYTES.fetch_add(new_size, Ordering::Relaxed);
+        }
+        new_ptr
+    }
+}
+
+/// Bytes currently allocated through the Rust allocator.
+pub fn rust_heap_bytes() -> usize {
+    LIVE_BYTES.load(Ordering::Relaxed)
+}
 
 pub struct MemoryReporter {
     output: BufWriter<File>,
@@ -24,7 +62,11 @@ pub struct MemoryReporter {
 impl MemoryReporter {
     pub fn new(path: &Path, interval: Duration) -> Result<Self, std::io::Error> {
         let mut output = BufWriter::new(File::create(path)?);
-        writeln!(output, "rss_bytes,{}", MemoryReport::csv_header())?;
+        writeln!(
+            output,
+            "rss_bytes,{},rust_heap_bytes",
+            MemoryReport::csv_header()
+        )?;
         output.flush()?;
 
         Ok(Self {
@@ -50,8 +92,15 @@ impl MemoryReporter {
         let elapsed = now.duration_since(self.started).as_secs_f64();
         let rss = resident_set_size().unwrap_or(0);
 
-        if let Err(e) = writeln!(self.output, "{},{}", rss, report.to_csv_row(elapsed))
-            .and_then(|_| self.output.flush())
+        let rust_heap = rust_heap_bytes();
+        if let Err(e) = writeln!(
+            self.output,
+            "{},{},{}",
+            rss,
+            report.to_csv_row(elapsed),
+            rust_heap
+        )
+        .and_then(|_| self.output.flush())
         {
             tracing::error!("Could not write memory report: {e}");
         }
@@ -60,14 +109,27 @@ impl MemoryReporter {
         let baseline = *self.baseline_retained.get_or_insert(retained);
 
         tracing::info!(
-            "memory @{elapsed:.0}s: rss {} MiB, {} movies retaining {} MiB \
-             (+{} MiB since first sample), {} pending loaders, {} class aliases{}",
+            "memory @{elapsed:.0}s: rss {} MiB (rust heap {} MiB), {} movies retaining {} MiB \
+             (+{} MiB since first sample), {} pending loaders, {} class aliases, \
+             gc {} MiB / {} objects (+{} MiB external), gpu {} textures {} MiB + buffers {} MiB, \
+             {} meshes {} MiB, {} tracked textures {} MiB{}",
             rss / (1024 * 1024),
+            rust_heap / (1024 * 1024),
             report.movies.len(),
             retained / (1024 * 1024),
             retained.saturating_sub(baseline) / (1024 * 1024),
             report.pending_loaders,
             report.class_aliases,
+            report.gc_allocation / (1024 * 1024),
+            report.gc_objects,
+            report.gc_external_bytes / (1024 * 1024),
+            report.gpu_textures,
+            report.gpu_texture_bytes / (1024 * 1024),
+            report.gpu_buffer_bytes / (1024 * 1024),
+            report.meshes,
+            report.mesh_bytes / (1024 * 1024),
+            report.tracked_textures,
+            report.tracked_texture_bytes / (1024 * 1024),
             report.top_movies(5),
         );
     }

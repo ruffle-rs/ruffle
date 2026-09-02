@@ -3510,9 +3510,13 @@ impl<'gc, 'a> MovieClipShared<'gc> {
         reader: &mut SwfStream<'a>,
         version: u8,
     ) -> Result<(), Error> {
+        // Keep hold of the tag itself, so that the parsed shape can be
+        // dropped and read back while the graphic is not in use.
+        let source = self.swf.resize_to_reader(reader);
         let swf_shape = reader.read_define_shape(version)?;
         let id = swf_shape.id;
-        let graphic = Graphic::from_swf_tag(context, swf_shape, self.movie());
+        let graphic =
+            Graphic::from_swf_tag(context, swf_shape, Some((source, version)), self.movie());
         self.library_mut(context)
             .register_character(id, Character::Graphic(graphic));
         Ok(())

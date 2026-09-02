@@ -68,8 +68,27 @@ pub struct MemoryReport {
     /// `registerClassAlias` entries. These are strong roots with no eviction,
     /// so each one pins a class, its translation unit and its movie forever.
     pub class_aliases: usize,
+    /// Bytes of live `Gc` objects.
     pub gc_allocation: usize,
     pub gc_objects: usize,
+    /// Bytes reported to the collector as external allocations owned by
+    /// `Gc` objects: movie libraries' SWF data and bitmap sources,
+    /// `BitmapData` pixels, `cacheAsBitmap` textures.
+    pub gc_external_bytes: usize,
+    /// GPU memory the render backend reports holding, if it can tell: this
+    /// is where decoded bitmaps, cached display objects and filter targets
+    /// end up, and it is not part of any movie library's accounting.
+    pub gpu_textures: usize,
+    pub gpu_texture_bytes: usize,
+    pub gpu_buffer_bytes: usize,
+    /// Tessellated shape meshes alive in the renderer and their vertex and
+    /// index bytes. Counted by Ruffle itself, so available on every backend.
+    pub meshes: usize,
+    pub mesh_bytes: usize,
+    /// Textures Ruffle created and still holds, and their approximate pixel
+    /// bytes; counted by Ruffle, so available on every backend.
+    pub tracked_textures: usize,
+    pub tracked_texture_bytes: usize,
 }
 
 impl MemoryReport {
@@ -77,10 +96,21 @@ impl MemoryReport {
         let mut report = MemoryReport {
             pending_loaders: context.load_manager.len(),
             class_aliases: context.avm2.class_alias_count(),
-            gc_allocation: context.gc_context.metrics().total_allocation(),
+            gc_allocation: context.gc_context.metrics().total_gc_allocation(),
             gc_objects: context.gc_context.metrics().total_gc_count(),
+            gc_external_bytes: context.gc_context.metrics().total_external_allocation(),
             ..Default::default()
         };
+
+        if let Some(gpu) = context.renderer.memory_usage() {
+            report.gpu_textures = gpu.textures;
+            report.gpu_texture_bytes = gpu.texture_bytes;
+            report.gpu_buffer_bytes = gpu.buffer_bytes;
+            report.meshes = gpu.meshes;
+            report.mesh_bytes = gpu.mesh_bytes;
+            report.tracked_textures = gpu.tracked_textures;
+            report.tracked_texture_bytes = gpu.tracked_texture_bytes;
+        }
 
         let movies: Vec<_> = context.library.known_movies().collect();
         for movie in movies {
@@ -122,12 +152,12 @@ impl MemoryReport {
 
     /// One CSV row, for logging a time series across a zone-change run.
     pub fn csv_header() -> &'static str {
-        "elapsed_s,movies,characters,swf_bytes,bitmap_source_bytes,bitmap_decoded_bytes,pending_loaders,class_aliases,gc_allocation,gc_objects"
+        "elapsed_s,movies,characters,swf_bytes,bitmap_source_bytes,bitmap_decoded_bytes,pending_loaders,class_aliases,gc_allocation,gc_objects,gc_external_bytes,gpu_textures,gpu_texture_bytes,gpu_buffer_bytes,meshes,mesh_bytes,tracked_textures,tracked_texture_bytes"
     }
 
     pub fn to_csv_row(&self, elapsed_s: f64) -> String {
         format!(
-            "{:.1},{},{},{},{},{},{},{},{},{}",
+            "{:.1},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{}",
             elapsed_s,
             self.movies.len(),
             self.characters,
@@ -138,6 +168,14 @@ impl MemoryReport {
             self.class_aliases,
             self.gc_allocation,
             self.gc_objects,
+            self.gc_external_bytes,
+            self.gpu_textures,
+            self.gpu_texture_bytes,
+            self.gpu_buffer_bytes,
+            self.meshes,
+            self.mesh_bytes,
+            self.tracked_textures,
+            self.tracked_texture_bytes,
         )
     }
 

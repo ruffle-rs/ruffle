@@ -16,6 +16,7 @@ use crate::vminterface::Instantiator;
 use bitflags::bitflags;
 use gc_arena::barrier::{Write, unlock};
 use gc_arena::lock::Lock;
+use gc_arena::metrics::Metrics;
 use gc_arena::{Collect, Finalization, Gc, Mutation};
 use ruffle_macros::{enum_trait_object, istr};
 use ruffle_render::perspective_projection::PerspectiveProjection;
@@ -109,7 +110,7 @@ pub struct BitmapCache {
     draw_offset: Point<i32>,
 
     /// The current contents of the cache, if any. Values are post-filters.
-    bitmap: Option<BitmapInfo>,
+    bitmap: Option<std::rc::Rc<TrackedCacheBitmap>>,
 
     /// Whether we warned that this bitmap was too large to be cached
     warned_for_oversize: bool,
@@ -139,6 +140,7 @@ impl BitmapCache {
     fn update(
         &mut self,
         renderer: &mut dyn RenderBackend,
+        metrics: &Metrics,
         matrix: Matrix,
         source_width: u32,
         source_height: u32,
@@ -155,8 +157,8 @@ impl BitmapCache {
         self.source_height = source_height;
         self.draw_offset = draw_offset;
         if let Some(current) = &mut self.bitmap
-            && current.width == actual_width
-            && current.height == actual_height
+            && current.info.width == actual_width
+            && current.info.height == actual_height
         {
             return; // No need to resize it
         }
@@ -173,10 +175,15 @@ impl BitmapCache {
             && acceptable_size
         {
             let handle = renderer.create_empty_texture(actual_width, actual_height);
-            self.bitmap = handle.ok().map(|handle| BitmapInfo {
-                width: actual_width.get(),
-                height: actual_height.get(),
-                handle,
+            self.bitmap = handle.ok().map(|handle| {
+                std::rc::Rc::new(TrackedCacheBitmap::new(
+                    BitmapInfo {
+                        width: actual_width.get(),
+                        height: actual_height.get(),
+                        handle,
+                    },
+                    metrics.clone(),
+                ))
             });
         } else {
             self.bitmap = None;
@@ -191,7 +198,45 @@ impl BitmapCache {
     }
 
     fn bitmap(&self) -> Option<BitmapInfo> {
-        self.bitmap.clone()
+        self.bitmap.as_ref().map(|bitmap| bitmap.info.clone())
+    }
+}
+
+/// A `cacheAsBitmap` texture whose size is reported to the collector's
+/// pacing, like `BitmapData` pixels: the display object it belongs to is a
+/// small `Gc` box, but the texture behind it can be the size of the screen,
+/// and a room full of filtered display objects being removed would
+/// otherwise leave their textures alive until the collector happened to run.
+struct TrackedCacheBitmap {
+    info: BitmapInfo,
+    bytes: usize,
+    metrics: Metrics,
+}
+
+impl std::fmt::Debug for TrackedCacheBitmap {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("TrackedCacheBitmap")
+            .field("width", &self.info.width)
+            .field("height", &self.info.height)
+            .finish()
+    }
+}
+
+impl TrackedCacheBitmap {
+    fn new(info: BitmapInfo, metrics: Metrics) -> Self {
+        let bytes = info.width as usize * info.height as usize * 4;
+        metrics.mark_external_allocation(bytes);
+        Self {
+            info,
+            bytes,
+            metrics,
+        }
+    }
+}
+
+impl Drop for TrackedCacheBitmap {
+    fn drop(&mut self) {
+        self.metrics.mark_external_deallocation(self.bytes);
     }
 }
 
@@ -1007,6 +1052,7 @@ pub fn render_base<'gc>(
                 if cache.is_dirty(&base_transform.matrix, width, height) {
                     cache.update(
                         context.renderer,
+                        context.gc_context.metrics(),
                         base_transform.matrix,
                         width,
                         height,

@@ -3,6 +3,7 @@ use crate::target::RenderTarget;
 use crate::{Descriptors, GradientUniforms, PosColorVertex, PosUvVertex, as_texture};
 use std::any::Any;
 use std::ops::Range;
+use std::sync::atomic::{AtomicUsize, Ordering};
 use wgpu::util::DeviceExt;
 
 use crate::buffer_builder::BufferBuilder;
@@ -19,6 +20,46 @@ pub struct Mesh {
     pub draws: Vec<Draw>,
     pub vertex_buffer: wgpu::Buffer,
     pub index_buffer: wgpu::Buffer,
+}
+
+/// Bytes of vertex and index buffers held by live meshes, and how many
+/// meshes there are. Kept for memory diagnostics: not every backend reports
+/// buffer memory, and tessellated shapes are the largest thing a resident
+/// movie owns.
+static MESH_BYTES: AtomicUsize = AtomicUsize::new(0);
+static MESH_COUNT: AtomicUsize = AtomicUsize::new(0);
+
+impl Mesh {
+    pub fn new(draws: Vec<Draw>, vertex_buffer: wgpu::Buffer, index_buffer: wgpu::Buffer) -> Self {
+        MESH_BYTES.fetch_add(
+            (vertex_buffer.size() + index_buffer.size()) as usize,
+            Ordering::Relaxed,
+        );
+        MESH_COUNT.fetch_add(1, Ordering::Relaxed);
+        Self {
+            draws,
+            vertex_buffer,
+            index_buffer,
+        }
+    }
+
+    /// `(meshes alive, bytes of their vertex and index buffers)`.
+    pub fn live_totals() -> (usize, usize) {
+        (
+            MESH_COUNT.load(Ordering::Relaxed),
+            MESH_BYTES.load(Ordering::Relaxed),
+        )
+    }
+}
+
+impl Drop for Mesh {
+    fn drop(&mut self) {
+        MESH_BYTES.fetch_sub(
+            (self.vertex_buffer.size() + self.index_buffer.size()) as usize,
+            Ordering::Relaxed,
+        );
+        MESH_COUNT.fetch_sub(1, Ordering::Relaxed);
+    }
 }
 
 impl ShapeHandleImpl for Mesh {}

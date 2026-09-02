@@ -3,6 +3,7 @@ use crate::context::RenderContext;
 use crate::display_object::{BoundsMode, DisplayObject, DisplayObjectWeak, TDisplayObject};
 use bitflags::bitflags;
 use gc_arena::lock::GcRefLock;
+use gc_arena::metrics::Metrics;
 use gc_arena::{Collect, Gc, Mutation};
 use ruffle_render::backend::RenderBackend;
 use ruffle_render::bitmap::{
@@ -232,7 +233,7 @@ impl<'gc> BitmapData<'gc> {
         transparency: bool,
         fill_color: u32,
     ) -> Self {
-        let data = BitmapRawData::new(width, height, transparency, fill_color);
+        let data = BitmapRawData::new(mc, width, height, transparency, fill_color);
         let data = BitmapRawDataWrapper::new(Gc::new(mc, data.into()));
 
         Self(data)
@@ -245,7 +246,7 @@ impl<'gc> BitmapData<'gc> {
         transparency: bool,
         pixels: Vec<Color>,
     ) -> Self {
-        let data = BitmapRawData::new_with_pixels(width, height, transparency, pixels);
+        let data = BitmapRawData::new_with_pixels(mc, width, height, transparency, pixels);
         let data = BitmapRawDataWrapper::new(Gc::new(mc, data.into()));
 
         Self(data)
@@ -367,7 +368,7 @@ impl<'gc> BitmapData<'gc> {
 pub struct BitmapRawData<'gc> {
     /// The pixels in the bitmap, stored as a array of pre-multiplied ARGB colour values
     #[collect(require_static)]
-    pixels: Vec<Color>,
+    pixels: TrackedPixels,
 
     width: u32,
     height: u32,
@@ -475,7 +476,7 @@ mod wrapper {
             BitmapRawDataWrapper(Gc::new(
                 mc,
                 BitmapRawData {
-                    pixels: Vec::new(),
+                    pixels: super::TrackedPixels::untracked(Vec::new()),
                     width: 0,
                     height: 0,
                     transparency: false,
@@ -729,12 +730,21 @@ impl std::fmt::Debug for BitmapRawData<'_> {
 }
 
 impl<'gc> BitmapRawData<'gc> {
-    pub fn new(width: u32, height: u32, transparency: bool, fill_color: u32) -> Self {
+    pub fn new(
+        mc: &Mutation<'gc>,
+        width: u32,
+        height: u32,
+        transparency: bool,
+        fill_color: u32,
+    ) -> Self {
         Self {
-            pixels: vec![
-                Color::bgra_u32(fill_color).to_premultiplied_alpha(transparency);
-                width as usize * height as usize
-            ],
+            pixels: TrackedPixels::new(
+                vec![
+                    Color::bgra_u32(fill_color).to_premultiplied_alpha(transparency);
+                    width as usize * height as usize
+                ],
+                Some(mc.metrics().clone()),
+            ),
             width,
             height,
             transparency,
@@ -749,13 +759,14 @@ impl<'gc> BitmapRawData<'gc> {
     }
 
     pub fn new_with_pixels(
+        mc: &Mutation<'gc>,
         width: u32,
         height: u32,
         transparency: bool,
         pixels: Vec<Color>,
     ) -> Self {
         Self {
-            pixels,
+            pixels: TrackedPixels::new(pixels, Some(mc.metrics().clone())),
             width,
             height,
             transparency,
@@ -776,7 +787,7 @@ impl<'gc> BitmapRawData<'gc> {
     pub fn dispose(&mut self) {
         self.width = 0;
         self.height = 0;
-        self.pixels = Vec::new(); // free the CPU pixel buffer
+        self.pixels.clear_and_free(); // free the CPU pixel buffer
         self.bitmap_handle = None;
         // There's no longer a handle to update
         self.dirty_state = DirtyState::Clean;
@@ -1038,5 +1049,83 @@ impl ThresholdOperation {
             ThresholdOperation::GreaterThan => value > masked_threshold,
             ThresholdOperation::GreaterThanOrEquals => value >= masked_threshold,
         }
+    }
+}
+
+/// A `BitmapData`'s pixel buffer, with its size reported to the garbage
+/// collector's pacing.
+///
+/// The collector only counts the `Gc` box a `BitmapData` lives in; the pixel
+/// buffer behind it is often thousands of times larger. Content that draws
+/// bitmaps by the dozen - a game rendering every avatar in a room to a bitmap
+/// - would otherwise pile up megabytes of unreachable pixels between the
+/// collector's cycles, and the GPU textures that go with them.
+pub struct TrackedPixels {
+    pixels: Vec<Color>,
+    metrics: Option<Metrics>,
+}
+
+impl std::fmt::Debug for TrackedPixels {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("TrackedPixels")
+            .field("len", &self.pixels.len())
+            .field("tracked", &self.metrics.is_some())
+            .finish()
+    }
+}
+
+impl TrackedPixels {
+    fn bytes(pixels: &[Color]) -> usize {
+        std::mem::size_of_val(pixels)
+    }
+
+    pub fn new(pixels: Vec<Color>, metrics: Option<Metrics>) -> Self {
+        if let Some(metrics) = &metrics {
+            metrics.mark_external_allocation(Self::bytes(&pixels));
+        }
+        Self { pixels, metrics }
+    }
+
+    pub fn untracked(pixels: Vec<Color>) -> Self {
+        Self {
+            pixels,
+            metrics: None,
+        }
+    }
+
+    /// Drops the buffer, reporting it freed.
+    pub fn clear_and_free(&mut self) {
+        let old = std::mem::take(&mut self.pixels);
+        if let Some(metrics) = &self.metrics {
+            metrics.mark_external_deallocation(Self::bytes(&old));
+        }
+    }
+}
+
+impl Clone for TrackedPixels {
+    fn clone(&self) -> Self {
+        Self::new(self.pixels.clone(), self.metrics.clone())
+    }
+}
+
+impl Drop for TrackedPixels {
+    fn drop(&mut self) {
+        if let Some(metrics) = &self.metrics {
+            metrics.mark_external_deallocation(Self::bytes(&self.pixels));
+        }
+    }
+}
+
+impl std::ops::Deref for TrackedPixels {
+    type Target = Vec<Color>;
+
+    fn deref(&self) -> &Vec<Color> {
+        &self.pixels
+    }
+}
+
+impl std::ops::DerefMut for TrackedPixels {
+    fn deref_mut(&mut self) -> &mut Vec<Color> {
+        &mut self.pixels
     }
 }

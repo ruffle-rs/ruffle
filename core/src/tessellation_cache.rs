@@ -88,6 +88,14 @@ impl TessellationCache {
         self.len
     }
 
+    /// Drops every cached tessellation.
+    pub(crate) fn clear(&mut self) {
+        for entry in &mut self.entries {
+            *entry = None;
+        }
+        self.len = 0;
+    }
+
     /// Moves the entry at the given index to the most recently used position and returns its shape handle.
     fn touch_entry(&mut self, index: usize) -> ShapeHandle {
         if index == self.len - 1 {

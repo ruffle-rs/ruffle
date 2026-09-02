@@ -311,6 +311,20 @@ pub struct Player {
     run_state: RunState,
     needs_render: bool,
 
+    /// Set by content asking for an immediate collection (`unloadAndStop(true)`);
+    /// consumed by the next `update`.
+    full_gc_requested: bool,
+
+    /// When shapes that have gone undrawn last had their meshes dropped.
+    last_tessellation_eviction: Instant,
+
+    /// Frames since the last collection requested by content was granted, so
+    /// that a burst of requests - a game disposing dozens of loaders as a
+    /// zone changes - costs one full cycle every few frames, not one per
+    /// request. Counted in frames rather than time so that tests behave the
+    /// same however fast they run.
+    frames_since_requested_gc: u32,
+
     renderer: Box<dyn RenderBackend>,
     audio: Box<dyn AudioBackend>,
     navigator: Box<dyn NavigatorBackend>,
@@ -2301,6 +2315,7 @@ impl Player {
                 timers,
                 current_context_menu,
                 needs_render: &mut this.needs_render,
+                full_gc_requested: &mut this.full_gc_requested,
                 avm1,
                 avm2,
                 external_interface,
@@ -2397,8 +2412,45 @@ impl Player {
             context.library.report_external_allocation(context.gc());
         });
 
-        // GC
-        self.collect_garbage(false);
+        // Drop the meshes of shapes that have not been on screen for a while.
+        // They are rebuilt on the next draw; keeping them for every shape of
+        // every resident movie is what makes a long session's memory grow
+        // with the assets it has *seen* rather than the ones it is showing.
+        const TESSELLATION_EVICTION_INTERVAL: Duration = Duration::from_secs(2);
+        const TESSELLATION_MAX_IDLE: Duration = Duration::from_secs(20);
+        if self.last_tessellation_eviction.elapsed() >= TESSELLATION_EVICTION_INTERVAL {
+            self.last_tessellation_eviction = Instant::now();
+            if let Some(before) = Instant::now().checked_sub(TESSELLATION_MAX_IDLE) {
+                self.mutate_with_update_context(|context| {
+                    let evicted = context.library.evict_stale_tessellations(before);
+                    if evicted > 0 {
+                        tracing::debug!(
+                            "Dropped the meshes of {evicted} shapes not drawn recently"
+                        );
+                    }
+                });
+            }
+        }
+
+        // GC. Content can ask for a full collection (`unloadAndStop(true)`),
+        // which Flash honours by collecting immediately. Any number of
+        // requests in one update cost one cycle, and a request is only
+        // granted once every `REQUESTED_GC_MIN_FRAMES` frames: a game tears a
+        // zone down by disposing every loader it owns, one `unloadAndStop`
+        // each, spread over the frames in which their loads finish, and
+        // honouring each of those with a full cycle of its own would keep
+        // the collector running flat out for the whole transition. Requests
+        // that fall inside the window are not lost - the collector is paced
+        // by the memory the libraries report, and its next cycle picks the
+        // content up - they are just not granted immediately.
+        const REQUESTED_GC_MIN_FRAMES: u32 = 10;
+        self.frames_since_requested_gc = self.frames_since_requested_gc.saturating_add(1);
+        let full = std::mem::take(&mut self.full_gc_requested)
+            && self.frames_since_requested_gc >= REQUESTED_GC_MIN_FRAMES;
+        if full {
+            self.frames_since_requested_gc = 0;
+        }
+        self.collect_garbage(full);
 
         rval
     }
@@ -3141,6 +3193,9 @@ impl PlayerBuilder {
                     RunState::Suspended
                 },
                 needs_render: true,
+                full_gc_requested: false,
+                frames_since_requested_gc: u32::MAX,
+                last_tessellation_eviction: Instant::now(),
                 self_reference: self_ref.clone(),
                 load_behavior: self.load_behavior,
                 spoofed_url: self.spoofed_url.clone(),

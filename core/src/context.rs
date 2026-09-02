@@ -90,6 +90,11 @@ pub struct UpdateContext<'gc> {
     /// Requests that the player re-renders after this execution (e.g. due to `updateAfterEvent`).
     pub needs_render: &'gc mut bool,
 
+    /// Requests a full garbage collection once this update has finished
+    /// (`Loader.unloadAndStop(true)`). Any number of requests in one update
+    /// cost one collection; see `Player::collect_garbage`.
+    pub full_gc_requested: &'gc mut bool,
+
     /// The root SWF file.
     pub root_swf: &'gc mut Arc<SwfMovie>,
 

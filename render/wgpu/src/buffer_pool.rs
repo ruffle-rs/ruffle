@@ -8,9 +8,27 @@ use std::sync::{Arc, Mutex, Weak};
 type PoolInner<T> = Mutex<Vec<T>>;
 type Constructor<Type, Description> = Box<dyn Fn(&Descriptors, &Description) -> Type>;
 
+/// A pooled render target. Accounted for in the memory report like any other
+/// texture Ruffle creates; see `tracked_texture_totals`.
+#[derive(Debug)]
+pub struct PooledTexture(pub wgpu::Texture, pub wgpu::TextureView);
+
+impl PooledTexture {
+    fn new(texture: wgpu::Texture, view: wgpu::TextureView) -> Self {
+        crate::track_texture_created(&texture);
+        Self(texture, view)
+    }
+}
+
+impl Drop for PooledTexture {
+    fn drop(&mut self) {
+        crate::track_texture_dropped(&self.0);
+    }
+}
+
 #[derive(Debug, Default)]
 pub struct TexturePool {
-    pools: FnvHashMap<TextureKey, BufferPool<(wgpu::Texture, wgpu::TextureView), AlwaysCompatible>>,
+    pools: FnvHashMap<TextureKey, BufferPool<PooledTexture, AlwaysCompatible>>,
     globals_cache: FnvHashMap<GlobalsKey, Arc<Globals>>,
 }
 
@@ -26,7 +44,7 @@ impl TexturePool {
         usage: wgpu::TextureUsages,
         format: wgpu::TextureFormat,
         sample_count: u32,
-    ) -> PoolEntry<(wgpu::Texture, wgpu::TextureView), AlwaysCompatible> {
+    ) -> PoolEntry<PooledTexture, AlwaysCompatible> {
         let key = TextureKey {
             size,
             usage,
@@ -54,7 +72,7 @@ impl TexturePool {
                     usage,
                 });
                 let view = texture.create_view(&Default::default());
-                (texture, view)
+                PooledTexture::new(texture, view)
             }))
         });
         pool.take(descriptors, AlwaysCompatible)

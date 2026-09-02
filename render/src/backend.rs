@@ -25,6 +25,29 @@ pub struct BitmapCacheEntry {
     pub filters: Vec<Filter>,
 }
 
+/// GPU memory held by a render backend at one moment.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub struct RenderMemoryUsage {
+    /// Number of textures alive in the backend.
+    pub textures: usize,
+    /// Bytes of texture memory those textures occupy.
+    pub texture_bytes: usize,
+    /// Number of buffers alive in the backend.
+    pub buffers: usize,
+    /// Bytes of buffer memory those buffers occupy.
+    pub buffer_bytes: usize,
+    /// Number of tessellated shape meshes alive.
+    pub meshes: usize,
+    /// Bytes of vertex and index data those meshes hold.
+    pub mesh_bytes: usize,
+    /// Textures Ruffle itself created and still holds (bitmaps, cached
+    /// display objects, pooled render targets), counted by Ruffle so that the
+    /// figure exists on every backend.
+    pub tracked_textures: usize,
+    /// Approximate bytes of those textures' pixels.
+    pub tracked_texture_bytes: usize,
+}
+
 pub trait RenderBackend: Any {
     fn viewport_dimensions(&self) -> ViewportDimensions;
     // Do not call this method directly - use `player.set_viewport_dimensions`,
@@ -104,6 +127,13 @@ pub trait RenderBackend: Any {
     fn create_context3d(&mut self, profile: Context3DProfile) -> Result<Box<dyn Context3D>, Error>;
 
     fn debug_info(&self) -> Cow<'static, str>;
+
+    /// How much memory this backend currently holds in GPU resources, if it
+    /// can tell. Used by memory diagnostics; `None` means "not available".
+    fn memory_usage(&self) -> Option<RenderMemoryUsage> {
+        None
+    }
+
     /// An internal name that is used to identify the render-backend.
     fn name(&self) -> &'static str;
 

@@ -17,7 +17,7 @@ use image::imageops::FilterType;
 use ruffle_render::backend::{
     BitmapCacheEntry, Context3D, Context3DProfile, PixelBenderOutput, PixelBenderTarget,
 };
-use ruffle_render::backend::{RenderBackend, ShapeHandle, ViewportDimensions};
+use ruffle_render::backend::{RenderBackend, RenderMemoryUsage, ShapeHandle, ViewportDimensions};
 use ruffle_render::bitmap::{
     Bitmap, BitmapFormat, BitmapHandle, BitmapSource, PixelRegion, RgbaBufRead, SyncHandle,
 };
@@ -31,7 +31,6 @@ use ruffle_render::shape_utils::DistilledShape;
 use ruffle_render::tessellator::ShapeTessellator;
 use std::any::Any;
 use std::borrow::Cow;
-use std::cell::Cell;
 use std::num::NonZeroU32;
 use std::sync::Arc;
 use swf::Color;
@@ -352,11 +351,7 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
             .map(|d| d.finish(&self.descriptors, &uniform_buffer, &gradients))
             .collect();
 
-        Mesh {
-            draws,
-            vertex_buffer,
-            index_buffer,
-        }
+        Mesh::new(draws, vertex_buffer, index_buffer)
     }
 
     fn clamp_bitmap(&self, bitmap: &mut Bitmap) -> bool {
@@ -468,6 +463,23 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
             self.descriptors.clone(),
             profile,
         )))
+    }
+
+    fn memory_usage(&self) -> Option<RenderMemoryUsage> {
+        let counters = self.descriptors.device.get_internal_counters().hal;
+        let read = |value: isize| value.max(0) as usize;
+        let (meshes, mesh_bytes) = Mesh::live_totals();
+        let (tracked_textures, tracked_texture_bytes) = crate::tracked_texture_totals();
+        Some(RenderMemoryUsage {
+            textures: read(counters.textures.read()),
+            texture_bytes: read(counters.texture_memory.read()),
+            buffers: read(counters.buffers.read()),
+            buffer_bytes: read(counters.buffer_memory.read()),
+            meshes,
+            mesh_bytes,
+            tracked_textures,
+            tracked_texture_bytes,
+        })
     }
 
     fn debug_info(&self) -> Cow<'static, str> {
@@ -721,14 +733,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
             extent,
         );
 
-        let handle = BitmapHandle(Arc::new(Texture {
-            texture,
-            repeating_linear: Default::default(),
-            repeating_nearest: Default::default(),
-            clamped_linear: Default::default(),
-            clamped_nearest: Default::default(),
-            copy_count: Cell::new(0),
-        }));
+        let handle = BitmapHandle(Arc::new(Texture::new(texture)));
 
         Ok(handle)
     }
@@ -999,14 +1004,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
                             | wgpu::TextureUsages::RENDER_ATTACHMENT
                             | wgpu::TextureUsages::COPY_SRC,
                     });
-                BitmapHandle(Arc::new(Texture {
-                    texture,
-                    repeating_linear: Default::default(),
-                    repeating_nearest: Default::default(),
-                    clamped_linear: Default::default(),
-                    clamped_nearest: Default::default(),
-                    copy_count: Cell::new(0),
-                }))
+                BitmapHandle(Arc::new(Texture::new(texture)))
             }
         };
 
@@ -1159,14 +1157,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
                     | wgpu::TextureUsages::RENDER_ATTACHMENT
                     | wgpu::TextureUsages::COPY_SRC,
             });
-        Ok(BitmapHandle(Arc::new(Texture {
-            texture,
-            repeating_linear: Default::default(),
-            repeating_nearest: Default::default(),
-            clamped_linear: Default::default(),
-            clamped_nearest: Default::default(),
-            copy_count: Cell::new(0),
-        })))
+        Ok(BitmapHandle(Arc::new(Texture::new(texture))))
     }
 
     fn resolve_sync_handle(
