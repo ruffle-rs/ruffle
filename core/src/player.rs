@@ -52,7 +52,7 @@ use crate::orphan_manager::OrphanManager;
 use crate::prelude::*;
 use crate::socket::Sockets;
 use crate::streams::StreamManager;
-use crate::string::{AvmStringInterner, StringContext};
+use crate::string::{AvmString, AvmStringInterner, StringContext};
 use crate::stub::StubCollection;
 use crate::system_properties::SystemProperties;
 use crate::tag_utils::SwfMovie;
@@ -60,6 +60,7 @@ use crate::timer::Timers;
 use crate::vminterface::Instantiator;
 use async_channel::Sender;
 use enumset::EnumSet;
+use fnv::FnvHashSet;
 use gc_arena::lock::GcRefLock;
 use gc_arena::{Collect, DynamicRootSet, Mutation, Rootable};
 use ruffle_common::duration::FloatDuration;
@@ -113,6 +114,14 @@ impl StaticCallstack {
 #[derive(Collect)]
 #[collect(no_drop)]
 pub struct MouseData<'gc> {
+    /// A set of custom cursors registered via `flash.ui.Mouse.registerCursor()`.
+    pub custom_cursors: FnvHashSet<AvmString<'gc>>,
+
+    /// When setting `flash.ui.Mouse.cursor`, if the value exists
+    /// in `custom_cursors`, then it will be stored here for the
+    /// getter to return, but `forced_cursor` will still be `None`.
+    pub current_custom_cursor: Option<AvmString<'gc>>,
+
     /// The object that the mouse is currently hovering over.
     pub hovered: Option<InteractiveObject<'gc>>,
 
@@ -2977,6 +2986,8 @@ impl PlayerBuilder {
             library: Library::empty(),
             load_manager: LoadManager::new(),
             mouse_data: MouseData {
+                custom_cursors: FnvHashSet::default(),
+                current_custom_cursor: None,
                 hovered: None,
                 pressed: None,
                 right_pressed: None,
