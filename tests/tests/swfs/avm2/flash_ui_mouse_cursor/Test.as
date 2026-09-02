@@ -4,6 +4,8 @@ import flash.display.Sprite;
 import flash.text.TextField;
 import flash.ui.Mouse;
 import flash.ui.MouseCursor;
+import flash.ui.MouseCursorData;
+import flash.display.BitmapData;
 import flash.events.KeyboardEvent;
 import flash.ui.Keyboard;
 
@@ -12,7 +14,43 @@ public class Test extends Sprite {
 		trace(Mouse.cursor);
 		stage.addEventListener("keyDown", onKeyPress);
 
-		var items = [null, "invalid", "AUTO", "ARROW", "BUTTON", "IBEAM", "HAND"];
+        var bd = new BitmapData(32, 32);
+        cursorFrames = new Vector.<BitmapData>();
+        cursorFrames.push(bd);
+        cursorData = new MouseCursorData();
+        cursorData.data = cursorFrames;
+        cursorData.frameRate = 1;
+        Mouse.registerCursor("foo", cursorData);
+
+		try {
+			Mouse.registerCursor(null, cursorData);
+		} catch (e) {
+			trace(e.getStackTrace());
+		}
+
+		Mouse.cursor = "foo";
+
+		trace(Mouse.cursor);
+
+		try {
+			Mouse.unregisterCursor(null);
+		} catch (e) {
+			trace(e.getStackTrace());
+		}
+
+		Mouse.unregisterCursor("foo");
+
+		trace(Mouse.cursor);
+
+		Mouse.cursor = "button";
+		Mouse.registerCursor("bar", cursorData);
+		trace(Mouse.cursor);
+		Mouse.unregisterCursor("bar");
+		trace(Mouse.cursor);
+
+		Mouse.cursor = "auto";
+
+		var items = [null, "invalid", "foo", "AUTO", "ARROW", "BUTTON", "IBEAM", "HAND"];
 
 		for each (var cursor:* in items) {
 			try {
