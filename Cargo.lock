@@ -2104,12 +2104,13 @@ dependencies = [
 
 [[package]]
 name = "gc-arena"
-version = "0.5.3"
-source = "git+https://github.com/kyren/gc-arena.git?rev=75671ae03f53718357b741ed4027560f14e90836#75671ae03f53718357b741ed4027560f14e90836"
+version = "0.7.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "160a11f93020eea95cb4c59e2eda2e4c6353f75aa4fbb01f2bf8729b2e4d6dd2"
 dependencies = [
  "enum-map",
  "gc-arena-derive",
- "hashbrown 0.16.1",
+ "hashbrown 0.17.1",
  "indexmap",
  "slotmap",
  "smallvec",
@@ -2117,8 +2118,9 @@ dependencies = [
 
 [[package]]
 name = "gc-arena-derive"
-version = "0.5.3"
-source = "git+https://github.com/kyren/gc-arena.git?rev=75671ae03f53718357b741ed4027560f14e90836#75671ae03f53718357b741ed4027560f14e90836"
+version = "0.7.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cd3d24b051bd5a5f44e66bac510393d3d484ef776bb560f6504668239f35959a"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -4844,7 +4846,7 @@ version = "0.5.0"
 dependencies = [
  "fnv",
  "gc-arena",
- "hashbrown 0.16.1",
+ "hashbrown 0.17.1",
  "quick-xml",
  "regress",
  "ruffle_macros",
@@ -4882,7 +4884,7 @@ dependencies = [
  "fnv",
  "futures",
  "gc-arena",
- "hashbrown 0.16.1",
+ "hashbrown 0.17.1",
  "id3",
  "image",
  "indexmap",
