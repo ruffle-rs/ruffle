@@ -29,7 +29,12 @@ registry; external-memory accounting so the collector paces itself against the
 memory actually in play; and a real implementation of `Loader.unloadAndStop`,
 which AQW calls on every zone change and which was previously a stub.
 
-**Is it fixed.** Yes, under the agreed reproduction. See sections 8 and 9.
+**Is it fixed.** The unbounded retention is fixed under the agreed reproduction
+(sections 8 and 9). **However, authenticated live AQW testing subsequently found
+a correctness defect in the fix** — it releases a movie's library while
+ActionScript still holds a class from that movie, which is exactly AQW's
+equipment pattern. **This fix must not ship in its current form.** See section 15.
+
 
 ## 2. Environment
 
@@ -652,17 +657,19 @@ These are real and demonstrated; none of them is normal allocator caching being
 mistaken for a leak.
 
 1. **No weapon SWF was tested.** AQW returns item filenames only to a logged-in
-   session, and signing in was ruled out (section 2). Armour, items, maps,
+   session. The live session in section 15 did reach an authenticated state and
+   loaded real equipment, but it did not get as far as deliberate weapon swaps
+   before the defect in section 15.2 stopped the run. Armour, items, maps,
    cosmetics and interface panels were all tested with genuine assets and behave
    identically, and weapons go through the same `Loader` path in the client, but
    the category itself is untested and should be confirmed in a real session.
 
-2. **AQW was not played.** The client's startup path was verified against the
-   real `Game3098r25.swf` and is unchanged, but nothing past the login screen —
-   combat, SmartFox traffic, actual zone changes — was exercised. The harness
-   reproduces the load/unload mechanism, not the game. A logged-in run is the
-   one piece of validation that is still worth doing, and it needs a decision
-   about the ban risk first.
+2. **AQW gameplay was only partly exercised.** Section 15 establishes
+   authenticated login, a working SmartFox session, character load, world
+   render and a populated room. It does not cover deliberate zone changes,
+   weapon/armour/item swaps or combat: the run stopped at the defect in
+   section 15.2, and on this machine the client also stalls under software
+   rendering once the full world is up.
 
 3. **Two movies can remain resident briefly.** The sweep only releases a library
    once the collector has actually collected its content, so the most recent
@@ -687,4 +694,115 @@ mistaken for a leak.
    Flash documents, and it is what makes the memory come back promptly, but a
    SWF that called `unloadAndStop` every frame would pay for a collection every
    frame. AQW calls it on zone and equipment changes, where it is not a concern.
+
+## 15. Authenticated live AQW validation — and a proven defect
+
+Everything in sections 4 and 8-9 is a synthetic harness driving genuine AQW
+asset SWFs. This section is different: it is a **real, authenticated AQW session**
+on the client's test account, and it changes the delivery verdict.
+
+### 15.1 What the live session established
+
+Bootstrapping through AQW's official entry point — `Loader3.swf` with
+`--base https://game.aq.com/game/` and `--tcp-connections allow` — the patched
+build reached a fully playable state:
+
+| Step | Result |
+|---|---|
+| Client boot | **PASS** — `Loader3` fetches `api/data/gameversion`, loads `Game3098r25.swf` |
+| Login screen render | **PASS** — full artwork, username/password fields, buttons |
+| Authenticated login | **PASS** — `api/login/now` → `LoginComplete`; server list shows 3,890 players online |
+| SmartFox authenticated session | **PASS** — full handshake: `verChk` → `apiOK` → `login` → `loginResponse ... true ... Welcome!` |
+| Character/game state | **PASS** — character, level, HP/MP, inventory and class skills loaded from the server |
+| World render | **PASS** — Battleon rendered with NPCs, quest markers, chat, action bar, HUD |
+| Populated room | **PASS** — joined `battleon-3` with another player present and visible |
+
+Loading the game SWF *directly* instead hits Artix's "Get the new Artix Games
+Launcher" gate; the official loader path does not. That is worth knowing
+independently of this fix.
+
+Note that the game's own trace output echoes the account name and a per-session
+token. The stored logs were scrubbed of both, and no credential appears in this
+report, in the repository, or in any commit.
+
+### 15.2 The defect
+
+During avatar and equipment load the patched build produced errors the baseline
+does not:
+
+```
+ERROR ruffle_core::library: Tried to instantiate a non-registered character ID 9600
+ERROR ruffle_core::avm2: Error dispatching event "onExtensionResponse":
+      Error: Error #2136: The SWF file contains invalid data.
+```
+
+Both builds were driven through the identical flow and reached the identical
+stages (`loadExternalAssets`, `sAct isNewClass`, `equipItem`,
+`markEquipmentLoaded`, `checkLoadComplete`, `Creating mcImages`, room join):
+
+| | Baseline | Patched |
+|---|---|---|
+| `Tried to instantiate a non-registered character` | **0** | **3** |
+| `Error #2136` | **0** | **2** |
+| AQW's own `getClass: could not find` | 74 | 68 |
+
+The `getClass` failures occur on both and are a pre-existing Ruffle/AQW gap, not
+caused by this work. The other two are new.
+
+### 15.3 Proven mechanism
+
+Reduced to a deterministic test (`harness/Repro.as`), which does exactly what
+AQW does for equipment: load an asset SWF, take a linked class out of its
+`ApplicationDomain`, discard the loaded content, then instantiate the class.
+
+```actionscript
+heldClass = domain.getDefinition("ChaosSlayerMChest") as Class;  // real AQW asset
+loader.unloadAndStop(true);
+loader.parent.removeChild(loader);
+loader = null;
+// ... 120 frames later ...
+var inst:Object = new heldClass();
+```
+
+| Build | Result |
+|---|---|
+| Baseline | `class held: true` → `RESULT instantiated children=1 width=122` |
+| Patched | `class held: true` → `non-registered character ID 132` → `RESULT threw Error #2136` |
+
+**Why.** The release gate in section 6.1 asks "has the display object this movie
+was loaded into been collected?". That is the wrong question when the thing
+still holding the movie is a *class* rather than a display object. AQW keeps the
+class and throws the content away, so the gate opens, the library is dropped,
+and the character the class needs is gone. `Avm2ClassRegistry::class_symbol`
+still resolves the class to `(movie, character_id)` — but the library that owned
+that character no longer exists.
+
+### 15.4 Why the obvious narrower fixes do not work
+
+* **Refuse to release while a live class maps to the movie.** Unsound as a
+  signal: a library's own `Character`s hold their `avm2_class` strongly
+  (`BitmapCharacter::avm2_class`, `MovieClipShared`), so a class is always
+  reachable *from its own library*. The check would never let anything go and
+  the leak returns in full.
+* **Hold `MovieLibrary::avm2_domain` weakly** to break the cycle. Does not help
+  for the same reason — characters reach their classes directly, without going
+  through the domain.
+* **Drop the content-root sweep and keep only the other three changes.**
+  Measured: 20 map changes then leaves **49 movies and 10,897 characters** —
+  character count identical to the baseline leak. The sweep is the component
+  that actually fixes the leak, so it cannot simply be removed.
+
+Distinguishing "reachable only from its own library" from "reachable from
+ActionScript" is a garbage-collector question, and answering it properly means
+making the movie library participate in collection rather than being an
+unconditionally-traced root — the redesign section 5.1 describes and which this
+change deliberately avoided. That is the real fix, and it is larger than what has
+been done here.
+
+### 15.5 Status of the change
+
+`463b742fe` is left exactly as committed, and the working tree is clean. The
+memory measurements in sections 4, 8 and 9 remain valid as measurements — the
+leak really is fixed — but the change is **not fit to ship** until the release
+gate accounts for classes held by content. Nothing was pushed.
 
