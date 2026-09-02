@@ -815,7 +815,9 @@ impl DisplayObjectWindow {
                                             .text_style(egui::TextStyle::Monospace),
                                     );
                                     ui.label(format!("{ch}"));
-                                    if let Some(resolution) = font_set.resolve_glyph(ch) {
+                                    if let Some(resolution) =
+                                        font_set.resolve_glyph(ch, Twips::ZERO)
+                                    {
                                         show_font(ui, context, messages, resolution.font);
                                     } else {
                                         ui.weak("None");

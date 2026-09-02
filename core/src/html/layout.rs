@@ -458,7 +458,7 @@ impl<'a, 'gc> LayoutBuilder<'a, 'gc> {
         self.has_line_break = true;
 
         let font_size = Twips::from_pixels(self.current_line_span.font.size);
-        let metrics = self.font_set.unwrap().metrics();
+        let metrics = self.font_set.unwrap().metrics_at(font_size);
         self.max_font_size = font_size;
         self.max_ascent = metrics.ascent(font_size);
         self.max_descent = metrics.descent(font_size);
@@ -493,7 +493,7 @@ impl<'a, 'gc> LayoutBuilder<'a, 'gc> {
     /// Enter a new span.
     fn newspan(&mut self, first_span: &TextSpan) {
         let font_size = Twips::from_pixels(first_span.font.size);
-        let metrics = self.font_set.unwrap().metrics();
+        let metrics = self.font_set.unwrap().metrics_at(font_size);
         let ascent = metrics.ascent(font_size);
         let descent = metrics.descent(font_size);
         let leading = Twips::from_pixels(first_span.leading);
@@ -665,7 +665,7 @@ impl<'a, 'gc> LayoutBuilder<'a, 'gc> {
     fn append_text_fragment(&mut self, text: &'a WStr, start: usize, end: usize, span: &TextSpan) {
         let font_set = self.font_set.expect("text fragment requires a font");
         let params = EvalParameters::from_span(span);
-        let metrics = font_set.metrics();
+        let metrics = font_set.metrics_at(params.height());
         let ascent = metrics.ascent(params.height());
         let descent = metrics.descent(params.height());
         let box_origin = self.cursor - (Twips::ZERO, ascent).into();
@@ -696,7 +696,7 @@ impl<'a, 'gc> LayoutBuilder<'a, 'gc> {
         );
 
         let params = EvalParameters::from_span(span);
-        let metrics = bullet_font.metrics();
+        let metrics = bullet_font.metrics_at(params.height());
         let ascent = metrics.ascent(params.height());
         let descent = metrics.descent(params.height());
         let bullet = WStr::from_units(&[0x2022u16]);

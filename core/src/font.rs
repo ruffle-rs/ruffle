@@ -135,15 +135,37 @@ pub(crate) enum GlyphSource {
         metrics: FontMetrics,
     },
     ExternalRenderer {
-        /// Maps Unicode code points to glyphs rendered by the renderer.
-        glyph_cache: RefCell<fnv::FnvHashMap<u16, Option<Glyph>>>,
+        /// Maps `(code point, height_px)` to glyphs rendered by the renderer.
+        /// Size-unaware renderers share the `0` slot; size-aware ones (e.g.
+        /// GDI) cache a distinct raster per requested pixel size.
+        glyph_cache: RefCell<fnv::FnvHashMap<(u16, u32), Option<Glyph>>>,
 
-        /// Maps Unicode pairs to kerning provided by the renderer.
-        kerning_cache: RefCell<fnv::FnvHashMap<(u16, u16), Twips>>,
+        /// Maps `(left, right, height_px)` to kerning provided by the
+        /// renderer. `height_px` follows the same convention as for glyphs.
+        kerning_cache: RefCell<fnv::FnvHashMap<(u16, u16, u32), Twips>>,
+
+        /// Maps `height_px` to per-size font metrics for size-aware
+        /// renderers. Only populated when the renderer answers
+        /// `get_font_metrics_at_size`; the canonical fallback is cached
+        /// here too so the renderer is asked at most once per size.
+        metrics_cache: RefCell<fnv::FnvHashMap<u32, FontMetrics>>,
 
         font_renderer: Box<dyn FontRenderer>,
     },
     Empty,
+}
+
+/// Convert a glyph height in twips into the pixel-size key used by
+/// `ExternalRenderer` caches. Returns `0` when the caller doesn't know or
+/// care about the size (meaning: just resolve existence at the renderer's
+/// canonical size). Twenty twips per pixel, half-pixel rounding.
+pub(crate) fn twips_to_px_for_cache(height: Twips) -> u32 {
+    let raw = height.get();
+    if raw <= 0 {
+        0
+    } else {
+        ((raw as u32 + 10) / 20).max(1)
+    }
 }
 
 impl GlyphSource {
@@ -156,7 +178,8 @@ impl GlyphSource {
         }
     }
 
-    pub fn get_by_code_point(&self, code_point: char) -> Option<GlyphRef<'_>> {
+    pub fn get_by_code_point(&self, code_point: char, height_twips: Twips) -> Option<GlyphRef<'_>> {
+        let height_px = twips_to_px_for_cache(height_twips);
         match self {
             GlyphSource::Memory {
                 glyphs,
@@ -179,14 +202,21 @@ impl GlyphSource {
             } => {
                 let character = code_point;
                 let code_point = code_point as u16;
+                // Size-unaware renderers all share the `0` cache slot so we
+                // don't waste memory rendering the same glyph at every size.
+                let cache_size = if font_renderer.is_size_aware() {
+                    height_px
+                } else {
+                    0
+                };
 
                 glyph_cache
                     .borrow_mut()
-                    .entry(code_point)
-                    .or_insert_with(|| font_renderer.render_glyph(character));
+                    .entry((code_point, cache_size))
+                    .or_insert_with(|| font_renderer.render_glyph_at_size(character, cache_size));
 
                 let glyph = Ref::filter_map(glyph_cache.borrow(), |v| {
-                    v.get(&code_point).unwrap_or(&None).as_ref()
+                    v.get(&(code_point, cache_size)).unwrap_or(&None).as_ref()
                 })
                 .ok();
 
@@ -205,7 +235,17 @@ impl GlyphSource {
         }
     }
 
-    pub fn get_kerning_offset(&self, left: char, right: char) -> Twips {
+    /// Whether the backing renderer rasterizes each requested pixel size
+    /// separately (see [`FontRenderer::is_size_aware`]).
+    pub fn is_size_aware(&self) -> bool {
+        match self {
+            GlyphSource::ExternalRenderer { font_renderer, .. } => font_renderer.is_size_aware(),
+            _ => false,
+        }
+    }
+
+    pub fn get_kerning_offset(&self, left: char, right: char, height_twips: Twips) -> Twips {
+        let height_px = twips_to_px_for_cache(height_twips);
         match self {
             GlyphSource::Memory { kerning_pairs, .. } => {
                 // TODO: Properly handle UTF-16/out-of-bounds code points.
@@ -225,10 +265,17 @@ impl GlyphSource {
                 let (Ok(left_cp), Ok(right_cp)) = (left.try_into(), right.try_into()) else {
                     return Twips::ZERO;
                 };
+                let cache_size = if font_renderer.is_size_aware() {
+                    height_px
+                } else {
+                    0
+                };
                 *kerning_cache
                     .borrow_mut()
-                    .entry((left_cp, right_cp))
-                    .or_insert_with(|| font_renderer.calculate_kerning(left, right))
+                    .entry((left_cp, right_cp, cache_size))
+                    .or_insert_with(|| {
+                        font_renderer.calculate_kerning_at_size(left, right, cache_size)
+                    })
             }
             GlyphSource::Empty => Twips::ZERO,
         }
@@ -241,6 +288,47 @@ impl GlyphSource {
             GlyphSource::ExternalRenderer { font_renderer, .. } => font_renderer.get_font_metrics(),
             GlyphSource::Empty => FontMetrics::ZERO,
         }
+    }
+
+    /// Like `metrics`, but tuned to a specific requested glyph height.
+    ///
+    /// For size-aware external renderers this returns metrics measured at the
+    /// matching raster size (see [`FontRenderer::get_font_metrics_at_size`]);
+    /// everywhere else it falls back to the size-agnostic `metrics`.
+    pub fn metrics_at(&self, height: Twips) -> FontMetrics {
+        if let GlyphSource::ExternalRenderer {
+            metrics_cache,
+            font_renderer,
+            ..
+        } = self
+        {
+            let height_px = twips_to_px_for_cache(height);
+            if height_px > 0 && font_renderer.is_size_aware() {
+                return *metrics_cache
+                    .borrow_mut()
+                    .entry(height_px)
+                    .or_insert_with(|| {
+                        font_renderer
+                            .get_font_metrics_at_size(height_px)
+                            .unwrap_or_else(|| font_renderer.get_font_metrics())
+                    });
+            }
+        }
+        self.metrics()
+    }
+
+    /// Typographic metrics (OS/2 `sTypo*`) at a requested height, if the
+    /// renderer provides them. Used only by the Flash Text Engine, which
+    /// sizes text with the typographic metrics; classic text fields keep the
+    /// cell metrics from `metrics_at`. `None` means none are available.
+    pub fn typo_metrics_at(&self, height: Twips) -> Option<FontMetrics> {
+        if let GlyphSource::ExternalRenderer { font_renderer, .. } = self {
+            let height_px = twips_to_px_for_cache(height);
+            if height_px > 0 {
+                return font_renderer.get_typo_font_metrics(height_px);
+            }
+        }
+        None
     }
 }
 
@@ -479,6 +567,7 @@ impl<'gc> Font<'gc> {
                 glyphs: GlyphSource::ExternalRenderer {
                     glyph_cache: RefCell::new(fnv::FnvHashMap::default()),
                     kerning_cache: RefCell::new(fnv::FnvHashMap::default()),
+                    metrics_cache: RefCell::new(fnv::FnvHashMap::default()),
                     font_renderer,
                 },
                 scale,
@@ -531,17 +620,19 @@ impl<'gc> Font<'gc> {
         self.0.glyphs.get_by_index(i)
     }
 
-    /// Returns a glyph entry by character.
-    /// Used by `EditText` display objects.
-    pub fn get_glyph_for_char(&self, c: char) -> Option<GlyphRef<'_>> {
-        self.0.glyphs.get_by_code_point(c)
+    /// Returns a glyph entry by character at a requested height in twips.
+    /// Used by `EditText` display objects. `height` lets size-aware renderers
+    /// (e.g. GDI) rasterize at the matching pixel size; pass `Twips::ZERO`
+    /// when the size is unknown or irrelevant.
+    pub fn get_glyph_for_char(&self, c: char, height: Twips) -> Option<GlyphRef<'_>> {
+        self.0.glyphs.get_by_code_point(c, height)
     }
 
     /// Determine if this font contains all the glyphs within a given string.
     pub fn has_glyphs_for_str(self, target_str: &WStr) -> bool {
         for character in target_str.chars() {
             let c = character.unwrap_or(char::REPLACEMENT_CHARACTER);
-            if self.get_glyph_for_char(c).is_none() {
+            if self.get_glyph_for_char(c, Twips::ZERO).is_none() {
                 return false;
             }
         }
@@ -556,11 +647,17 @@ impl<'gc> Font<'gc> {
     pub fn has_layout(self) -> bool {
         self.0.has_layout
     }
+
+    /// Whether this font's glyph source rasterizes each requested pixel size
+    /// separately (size-aware external renderer, e.g. GDI).
+    pub fn has_size_aware_renderer(self) -> bool {
+        self.0.glyphs.is_size_aware()
+    }
 }
 
 impl<'gc> FontLike<'gc> for Font<'gc> {
-    fn resolve_glyph(&self, c: char) -> Option<GlyphResolution<'_, 'gc>> {
-        self.get_glyph_for_char(c)
+    fn resolve_glyph(&self, c: char, height: Twips) -> Option<GlyphResolution<'_, 'gc>> {
+        self.get_glyph_for_char(c, height)
             .map(|glyph| GlyphResolution::new(glyph, *self))
     }
 
@@ -568,12 +665,20 @@ impl<'gc> FontLike<'gc> for Font<'gc> {
         self.0.glyphs.has_kerning_info()
     }
 
-    fn get_kerning_offset(&self, left: char, right: char) -> Twips {
-        self.0.glyphs.get_kerning_offset(left, right)
+    fn get_kerning_offset(&self, left: char, right: char, height: Twips) -> Twips {
+        self.0.glyphs.get_kerning_offset(left, right, height)
     }
 
     fn metrics(&self) -> FontMetrics {
         self.0.glyphs.metrics()
+    }
+
+    fn metrics_at(&self, height: Twips) -> FontMetrics {
+        self.0.glyphs.metrics_at(height)
+    }
+
+    fn typo_metrics_at(&self, height: Twips) -> Option<FontMetrics> {
+        self.0.glyphs.typo_metrics_at(height)
     }
 
     fn scale(&self) -> f32 {
