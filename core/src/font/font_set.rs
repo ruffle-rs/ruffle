@@ -60,13 +60,13 @@ impl<'gc> FontSet<'gc> {
 }
 
 impl<'gc> FontLike<'gc> for FontSet<'gc> {
-    fn resolve_glyph(&self, c: char) -> Option<GlyphResolution<'_, 'gc>> {
-        if let Some(glyph) = self.0.main_font.get_glyph_for_char(c) {
+    fn resolve_glyph(&self, c: char, height: Twips) -> Option<GlyphResolution<'_, 'gc>> {
+        if let Some(glyph) = self.0.main_font.get_glyph_for_char(c, height) {
             return Some(GlyphResolution::new(glyph, self.0.main_font));
         }
 
         for fallback_font in &self.0.fallback_fonts {
-            if let Some(glyph) = fallback_font.get_glyph_for_char(c) {
+            if let Some(glyph) = fallback_font.get_glyph_for_char(c, height) {
                 return Some(GlyphResolution::new(glyph, *fallback_font));
             }
         }
@@ -78,12 +78,16 @@ impl<'gc> FontLike<'gc> for FontSet<'gc> {
         self.0.main_font.has_kerning_info()
     }
 
-    fn get_kerning_offset(&self, left: char, right: char) -> Twips {
-        self.0.main_font.get_kerning_offset(left, right)
+    fn get_kerning_offset(&self, left: char, right: char, height: Twips) -> Twips {
+        self.0.main_font.get_kerning_offset(left, right, height)
     }
 
     fn metrics(&self) -> FontMetrics {
         self.0.main_font.metrics()
+    }
+
+    fn metrics_at(&self, height: Twips) -> FontMetrics {
+        self.0.main_font.metrics_at(height)
     }
 
     fn typo_metrics_at(&self, height: Twips) -> Option<FontMetrics> {
