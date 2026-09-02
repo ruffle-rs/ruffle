@@ -228,7 +228,7 @@ pub fn present<'gc>(
 pub fn draw_to_bitmap_data<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
@@ -249,7 +249,9 @@ pub fn draw_to_bitmap_data<'gc>(
         // `present`), matching Flash's `drawToBitmapData`. Blit it into the
         // destination BitmapData's GPU target, then mark it dirty so the pixels
         // are read back on next access.
-        let source_handle = context.with_context_3d(|ctx| ctx.back_buffer_handle());
+        let (source_handle, source_size) =
+            context.with_context_3d(|ctx| (ctx.back_buffer_handle(), ctx.back_buffer_size()));
+        let (source_width, source_height) = source_size.unwrap_or_default();
 
         let mut commands = CommandList::new();
         commands.render_bitmap(
@@ -257,6 +259,7 @@ pub fn draw_to_bitmap_data<'gc>(
             Transform::default(),
             false,
             PixelSnapping::Never,
+            PixelRegion::for_whole_size(source_width, source_height),
         );
 
         let handle = destination.bitmap_handle(activation.gc(), activation.context.renderer);

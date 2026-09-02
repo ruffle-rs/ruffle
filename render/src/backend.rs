@@ -276,6 +276,8 @@ pub trait Context3D: Any {
     // (which is the front buffer, shown after `present`), this holds the content
     // rendered since the last `present` - what `Context3D.drawToBitmapData` reads.
     fn back_buffer_handle(&self) -> BitmapHandle;
+    // The (width, height) of the back buffer, or `None` before it is configured.
+    fn back_buffer_size(&self) -> Option<(u32, u32)>;
     // Whether every buffer has been cleared since the last `present` (or since
     // the context was created). Flash requires a clear each frame before
     // drawing, so `Context3D.drawToBitmapData` throws Error #3692 when false.

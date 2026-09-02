@@ -356,6 +356,9 @@ impl Context3D for WgpuContext3D {
     fn back_buffer_handle(&self) -> BitmapHandle {
         self.back_buffer_raw_texture_handle.clone()
     }
+    fn back_buffer_size(&self) -> Option<(u32, u32)> {
+        self.back_buffer_size.map(|size| (size.width, size.height))
+    }
     fn buffers_cleared(&self) -> bool {
         self.seen_clear_command
     }
