@@ -53,6 +53,16 @@ a synthetic one, both passing); and once nothing references a loaded SWF it is
 released, so repeated loads no longer grow. Section 16 has the measurements,
 the full test-suite results and the repeated live AQW session.
 
+**Follow-up (section 17).** The client's first run of the corrected fix on
+Windows reported lag and 3.5 GB after ten map switches. The lag was a
+collection storm in the new `unloadAndStop` and is fixed; the memory was
+what each of the several hundred assets AQW keeps resolvable cost in Ruffle
+- eager, permanent tessellation and parsed shape records, and bitmap memory
+the collector could not see - and those costs were cut by making them
+on-demand and reporting them. Section 17 has the measurements, and the
+memory report now says where every megabyte is so that the client's own run
+can be read.
+
 
 ## 2. Environment
 
@@ -677,6 +687,9 @@ target/release/ruffle_desktop --memory-report report.csv --memory-report-interva
 | First fix (rejected, kept for the record) | `463b742fe2e1945f013313d98344843e707c3c4e` |
 | Report and authenticated-session findings | `b7ef3b2a5`, `3145f91f3` |
 | Corrected fix | `8648d3b02` (section 16.11) |
+| Corrected fix report | `effafe4a1` |
+| Follow-up: collection storm and per-asset cost (section 17) | `3ebf72670` |
+| Follow-up report | the commit that adds section 17 |
 | Branch | `fix/aqw-memory-leak` (local only; nothing was pushed) |
 
 The instrumentation is a separate first commit specifically so the baseline
@@ -1305,6 +1318,17 @@ Corrected fix, on top of `3145f91f3`:
 | `tests/tests/movie_library/mod.rs`, `tests/tests/regression_tests.rs` | the two new lifetime tests |
 | `tests/tests/swfs/avm2/loader_unload_retains_linked_class/` | new: `Test.as`, `child/Child.as`, `build.py`, built SWFs, expected output |
 
+Follow-up commit (section 17):
+
+| File | Change |
+|---|---|
+| `core/src/avm2/globals/flash/display/loader.rs`, `core/src/context.rs`, `core/src/player.rs` | `unloadAndStop(true)` requests a collection; granted once per ten frames; tessellation eviction pass |
+| `core/src/display_object/graphic.rs`, `core/src/tessellation_cache.rs`, `core/src/display_object/movie_clip.rs`, `core/src/library.rs` | tessellation on first draw; parsed shape records read back from the tag on demand; eviction of both after 20 s unused |
+| `core/src/bitmap/bitmap_data.rs` | `TrackedPixels`: pixel buffers reported to the collector |
+| `core/src/display_object.rs` | `TrackedCacheBitmap`: `cacheAsBitmap`/filter textures reported to the collector |
+| `core/src/memory_report.rs`, `desktop/src/memory_reporter.rs`, `desktop/src/main.rs` | GPU counters, mesh and texture accounting, Rust-heap bytes (counting allocator), external bytes, in the CSV and the log line |
+| `render/src/backend.rs`, `render/wgpu/Cargo.toml`, `render/wgpu/src/{backend,lib,mesh,buffer_pool}.rs`, `render/wgpu/src/surface/target.rs` | `RenderBackend::memory_usage`; wgpu `counters`; live mesh and texture byte accounting |
+
 Untouched from `463b742fe`: `core/src/avm2/globals/flash/display/Loader.as` and
 `loader.rs` (`unloadAndStop`), `core/src/memory_report.rs`, the
 `loader_unload_releases_library` test.
@@ -1314,3 +1338,221 @@ Untouched from `463b742fe`: `core/src/avm2/globals/flash/display/Loader.as` and
 | Corrected fix commit | `8648d3b02d1826b748fcf1df039606146522084a` |
 | Report commit | the commit that adds this section |
 | Branch | `fix/aqw-memory-leak`, local only; nothing pushed |
+
+## 17. Field report: lag and 3.5 GB after ten map switches
+
+### 17.1 What was reported
+
+After the corrected fix was delivered, the client ran it on Windows and
+reported that after ten map switches the process was at **3,569 MB**
+(Task Manager) and that the game "starts lagging hard". No memory report was
+recorded on that run, and the screenshot does not say which build it was, so
+both symptoms were reproduced and diagnosed here.
+
+### 17.2 The lag: a collection storm from `unloadAndStop(true)`
+
+Section 6.4's `unloadAndStop(gc = true)` charged the collector a whole
+collection's worth of debt on **every call**. gc-arena carries artificial
+debt across cycles and pays *all* outstanding debt in a single
+`collect_debt` call, so *n* calls in one frame meant roughly *n* complete
+mark-and-sweep cycles inside that frame. AQW calls `unloadAndStop(true)`
+once per loader slot it disposes (`LoaderSlot.dispose`, `World.closeLoader`,
+`clearLoaders`, `cleanupMap`) — dozens per zone change in a populated room —
+and the cost of each cycle grows with the heap. That is a stall that gets
+worse the longer the session runs, which is what "after 10 map switches it
+starts lagging hard" describes.
+
+Reproduced deterministically (`GcStorm.as`, scratch harness): a 100,000-object
+live heap, 40 loaded SWFs, all 40 disposed with `unloadAndStop(true)` in one
+frame, frame times measured with `getTimer()`:
+
+| Build | Frame after the dispose | Next 60 frames (should be 2,000 ms at 30 fps) | Worst frame |
+|---|---|---|---|
+| Unmodified (`unloadAndStop` a stub, no collection) | 33 ms | 2,000 ms | 34 ms |
+| Corrected fix as delivered (`8648d3b02`) | 170 ms | **4,391 ms** | **224 ms** |
+| With the change below (re-measured on the final build) | 43 ms | **2,000 ms** | 43 ms |
+
+**Change.** `unloadAndStop(true)` now sets a request flag on the update
+context instead of charging debt. `Player::update` grants the request with
+one full cycle at the end of that update, at most once every 10 frames; any
+number of requests in that window cost one cycle, and requests inside the
+window are simply left to the normally paced collector, which the libraries'
+external-memory accounting already keeps in step with what was dropped. The
+limit is counted in frames rather than time so that the test suite behaves
+the same however fast it runs. With AQW's heap (about 100 MB, 350,000
+objects) a full cycle costs about 50 ms, so the worst case is now one such
+cycle every ten frames during a transition, instead of one per disposed
+loader per frame.
+
+### 17.3 The memory: what a real ten-switch session holds
+
+The corrected build was run through the same test here — authenticated
+session, populated rooms, `/join` between Battleon, Yulgar and the farm ten
+times, 30 s apart — with the memory report extended to include the render
+backend's own counters (`gpu_textures`, `gpu_texture_bytes`,
+`gpu_buffer_bytes`; the byte counters are populated on Vulkan, DX12 and Metal,
+and read zero on OpenGL, which is what this machine's Xvfb display provides).
+
+| Point | Movies resident | Characters | Library content (SWF + decoded bitmaps) | GC heap | RSS |
+|---|---|---|---|---|---|
+| After the 3rd switch (peak RSS) | 225 | 26,153 | 46 MiB | — | **1,489 MiB** |
+| After the 10th switch | 319 | 28,648 | 46 MiB | — | 1,279 MiB |
+| 3 minutes later, loads settled | 462–484 | 36,678 | 46 MiB | 108–115 MiB | 1,394 MiB |
+
+No `non-registered character`, no `Error #2136`, no panic, and no stall in
+any of the ten transitions. The maps themselves are released: none of the
+three appears among the largest resident movies afterwards. What stays is
+the equipment of every distinct player seen — the server issued 804
+`equipItem` commands naming **439 distinct files** in this session, and
+AQW's shared `World.loaderD` domain keeps each of them resolvable (section
+16.2), so one library per distinct asset is the correct, Flash-faithful
+working set.
+
+But the libraries themselves account for only about 50 MiB of the 1.4 GiB,
+and the GC heap for about 110 MiB. A memory-map breakdown of the running
+process put **1,270 MiB in the Rust heap** and almost nothing in driver or
+shared mappings, so the rest is heap memory that scales with the number of
+resident assets and is not part of the library accounting.
+
+### 17.4 The rest: what a resident asset costs, and making it cost less
+
+The memory report was extended so that the remaining memory could be
+attributed instead of guessed at: the render backend's own counters
+(`gpu_textures`, `gpu_texture_bytes`, `gpu_buffer_bytes`; bytes are only
+populated on Vulkan, DX12 and Metal), Ruffle's own count of tessellated
+meshes and their bytes (`meshes`, `mesh_bytes`), Ruffle's own count of the
+textures it has created and not yet released (`tracked_textures`,
+`tracked_texture_bytes`, which works on every backend), and the bytes live in
+the Rust allocator (`rust_heap_bytes`, from a counting global allocator in
+the desktop player). Repeating the ten-switch session with those counters
+gave, after the tenth switch:
+
+| Bucket | Corrected fix as delivered | Notes |
+|---|---|---|
+| Process RSS | ~1,900 MiB | of which ~1,050 MiB is the software GL driver on this machine (textures live in system RAM here) |
+| Rust heap | ~790 MiB | everything Ruffle itself allocates |
+| – of which GC heap (`gc_allocation`) | ~130 MiB | ActionScript objects |
+| – of which library content (SWF data + decoded bitmaps) | ~50 MiB | the movie libraries proper |
+| – of which tessellated meshes | ~20 MiB | vertex and index data of the shapes actually drawn |
+| – remainder | ~500 MiB | grows with resident movies |
+| Tracked textures | ~500–650 MiB | bitmaps, cached display objects, render targets |
+
+Two things account for the "remainder" and for most of the textures, and
+both were changed.
+
+**Parsed shape records.** Every `DefineShape` in a resident SWF kept its
+parsed form (`swf::Shape`: style tables and a vector of edge records) for as
+long as the library lived. A detailed AQW shape is tens of kilobytes parsed
+against a few hundred bytes in the SWF, and a resident asset has dozens of
+them, so the ~470 assets AQW's shared domain keeps resolvable cost roughly a
+megabyte each — an order of magnitude more than the SWF bytes, which are
+retained anyway. Tessellated meshes were the same story one level up: every
+shape was tessellated into a GPU mesh **at load time** and kept, with up to
+four scaled variants, whether or not it was ever drawn.
+
+*Change.* A shape is now tessellated on first draw, at the scale it is drawn
+at (the code path that already existed for other scales), and `Player::update`
+drops both the meshes and the parsed records of any shape that has not been
+drawn or hit-tested for 20 seconds (checked every 2 seconds). The records
+are read back from the retained SWF bytes on the next use; the bounds, which
+are what layout and culling need, are kept. Nothing about what is drawn
+changes — the full regression suite, most of it image comparisons, passes
+unchanged — only *when* the expensive representation exists.
+
+**`BitmapData` pixel buffers.** AQW renders every avatar in a room to a
+`BitmapData` (its `mcImages`), and disposes them when the avatar leaves. The
+collector counts only the small `Gc` box such an object lives in, not the
+pixel buffer behind it, so a room's worth of discarded bitmaps — and the GPU
+textures that go with them — could sit unreachable for a whole collection
+cycle. *Change.* Pixel buffers now report their size to the collector's
+pacing (`TrackedPixels` in `bitmap_data.rs`), so allocating them brings the
+next cycle forward and freeing them is credited, exactly as the movie
+libraries' bytes already were.
+
+**`cacheAsBitmap` and filter textures.** The same blind spot, one level up:
+a display object with filters or `cacheAsBitmap` owns a texture the size of
+its bounds, held in a small `Gc` box. A room full of avatars and name labels
+with filters is several hundred such textures, and when the room is left
+they stay until the collector next reaches their display objects. *Change.*
+Those textures now report their size to the collector too
+(`TrackedCacheBitmap` in `display_object.rs`).
+
+### 17.4.1 Results
+
+The ten-zone-change session was repeated after each change, same rooms,
+same account, same `/join` sequence. The rooms got busier as the evening went
+on (the server named 447 distinct equipment files in the first run and 488
+in the last), so the honest comparison is the shape of each run and the
+per-asset cost, not one number.
+
+| Build | RSS after the 10th switch | Rust heap | Resident movies | RSS at end of settle | Meshes | Tracked textures |
+|---|---|---|---|---|---|---|
+| Corrected fix as delivered (`8648d3b02`) + lag fix | 1,279 MiB | not counted | 319 | 1,394 MiB (462 movies) | — | — |
+| + counters (same code) | 1,860 MiB | 788 MiB | 448 | 2,039 MiB (596) | 4,554 / 16 MiB | — |
+| + lazy tessellation | 1,575 MiB | — | 357 | 1,570 MiB (354) | — | — |
+| + on-demand shape records | 1,306 MiB | 524 MiB | 398 | 1,442 MiB (511) | 4,933 / 19 MiB | 657 / 507 MiB |
+| + `BitmapData` pixels reported | 744 MiB | 341 MiB | 210 | 1,278 MiB (588, busiest run) | 3,956 / 14 MiB | 273 / 216 MiB |
+| **+ cache textures reported (final)** | **1,041 MiB** | **484 MiB** | 388 | 1,323 MiB (588) | 4,568 / 16 MiB | 596 / 386 MiB |
+
+The two final rows are the busiest rooms of the evening (130 resident
+movies before the first switch, against 64–99 earlier); read per resident
+asset, process memory went from about 3.4 MiB per asset on the build the
+client tested to about 2.2 MiB on the final one, and the Rust heap from
+about 1.7 MiB per asset to about 1.25 MiB, on this machine where all
+textures live in the software renderer's system memory. On the final build
+RSS stopped growing from the fifth switch on (1,100 → 1,080 → 1,081 →
+1,081 → 1,081 → 1,041 MiB) while resident movies kept rising, which is the
+new representation doing its job: what is on screen costs memory, what the
+game merely keeps resolvable costs a fraction of what it did.
+
+The tracked-texture figure on the final build is flat at ~390 MiB across all
+ten switches; before the two accounting changes it climbed from 240 to
+660 MiB over the same sequence, which was discarded avatar bitmaps waiting
+for a collection that the collector saw no reason to run.
+
+No `non-registered character`, no `Error #2136` and no panic in any of the
+runs, and the full regression suite passes unchanged (4,216 / 0 / 349) after
+each of the changes, so nothing rendered has changed.
+
+**Baseline behaviour, re-checked on the final build** (section 16.8's
+method, quiet machine, harness `maps` scenario, 20 genuine map loads):
+
+| Measure | Baseline | Final build |
+|---|---|---|
+| Backend ready → first harness frame | 0.225 s | 0.256 s |
+| Backend ready → first AQW map fully loaded | 0.622 s | 0.526 s |
+| CPU time for the 110 s run (user + system) | 12.19 + 3.69 = 15.9 s | 9.45 + 2.26 = 11.7 s |
+| Peak RSS of that run | 375 MiB | 197 MiB |
+| Loads completed / movies resident at end | 20 / 21 | 20 / 3 |
+
+Tessellating on first draw rather than at load moves work from loading to
+the first frame a shape appears in, and this run's numbers do not show it:
+the first map is on screen sooner and the run as a whole costs less CPU
+than the baseline, which spends its time keeping everything it ever loaded.
+Single runs, so "no detected regression" is the claim, not equivalence.
+
+What remains per resident asset — roughly a megabyte on the Rust heap —
+is the asset's other parsed definitions (sprite timelines, text, fonts,
+buttons, the ActionScript of its `SymbolClass` links) and its share of the
+ActionScript heap. Making those on-demand as well is the same idea applied
+to every character type, and is the next step if the client's own numbers
+(17.5) say the working set is still too large for their machine.
+
+
+### 17.5 What the client should send
+
+The Windows figure of 3,569 MB could not be reproduced here because the
+machines differ in renderer (DX12 versus software OpenGL), and the
+screenshot does not identify the build. The memory report now records
+enough to settle it remotely: run with
+
+```
+ruffle_desktop --tcp-connections allow --base "https://game.aq.com/game/" \
+  --memory-report aqw.csv --memory-report-interval 5 \
+  "https://game.aq.com/game/gamefiles/Loader3.swf"
+```
+
+and send `aqw.csv` together with the console output. The `movies`,
+`characters`, `gc_allocation` and `gpu_*` columns say, sample by sample,
+whether the growth is in libraries, in the ActionScript heap, or in the
+renderer, and the console shows which build is running.
