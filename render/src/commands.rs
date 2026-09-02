@@ -281,9 +281,25 @@ mod tests {
         }
 
         assert!(!CommandList::new().requires_layer_isolation());
-        assert!(!commands_with_blend(BlendMode::Layer).requires_layer_isolation());
-        assert!(!commands_with_blend(BlendMode::Normal).requires_layer_isolation());
-        assert!(commands_with_blend(BlendMode::Multiply).requires_layer_isolation());
+        for blend_mode in [BlendMode::Normal, BlendMode::Layer] {
+            assert!(!commands_with_blend(blend_mode).requires_layer_isolation());
+        }
+        for blend_mode in [
+            BlendMode::Multiply,
+            BlendMode::Screen,
+            BlendMode::Lighten,
+            BlendMode::Darken,
+            BlendMode::Difference,
+            BlendMode::Add,
+            BlendMode::Subtract,
+            BlendMode::Invert,
+            BlendMode::Alpha,
+            BlendMode::Erase,
+            BlendMode::Overlay,
+            BlendMode::HardLight,
+        ] {
+            assert!(commands_with_blend(blend_mode).requires_layer_isolation());
+        }
 
         let mut shader_commands = CommandList::new();
         shader_commands.blend(
