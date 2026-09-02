@@ -1,6 +1,6 @@
 file-picker-title-open-file = Abrir un archivo soltero
 file-picker-title-open-directory = Abrir una carpeta
-file-picker-filter-supported = Todos archivos apoyados
+file-picker-filter-supported = Todos los archivos soportados
 file-picker-filter-swf = SWF (*.swf)
 file-picker-filter-spl = FutureSplash Animator (*.spl)
 file-picker-filter-ruf = Paquete de Ruffle (*.ruf)
