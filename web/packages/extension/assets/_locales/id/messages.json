@@ -11,6 +11,9 @@
     "settings_autostart": {
         "message": "Putar secara otomatis tanpa layar pembuka (lalu klik untuk membunyikan)"
     },
+    "settings_swf_takeover": {
+        "message": "Mainkan file SWF di browser daripada mengunduh."
+    },
     "settings_log_level": {
         "message": "Tingkat log"
     },
@@ -23,17 +26,38 @@
     "settings_log_level_info": {
         "message": "Info"
     },
+    "settings_log_level_debug": {
+        "message": "Debug"
+    },
+    "settings_log_level_trace": {
+        "message": "Trace"
+    },
     "settings_max_execution_duration": {
         "message": "Batas waktu eksekusi ActionScript (dalam detik)"
     },
     "settings_player_version": {
         "message": "Versi Flash Player yang di emulasikan (jangka 1-32)"
     },
+    "settings_background_execution_mode": {
+        "message": "Eksekusi di Latar Belakang"
+    },
+    "settings_background_execution_mode_none": {
+        "message": "Jeda"
+    },
+    "settings_background_execution_mode_main_thread": {
+        "message": "Jalankan di thread utama"
+    },
     "settings_preferred_renderer": {
         "message": "Renderer yang diutamakan"
     },
     "settings_preferred_renderer_auto": {
         "message": "Otomatis"
+    },
+    "settings_device_font_renderer": {
+        "message": "Renderer font perangkat"
+    },
+    "device_font_renderer_embedded": {
+        "message": "Tersemat"
     },
     "settings_advanced_options": {
         "message": "Pilihan Lanjutan"
@@ -78,7 +102,7 @@
         "message": "Muat ulang untuk menerapkan perubahan"
     },
     "open_player_page": {
-        "message": "Buka Player SWF"
+        "message": "Buka Pemutar SWF"
     },
     "open_settings_page": {
         "message": "Buka Halaman Pengaturan"
@@ -94,5 +118,17 @@
     },
     "settings_saved": {
         "message": "Pengaturan telah disimpan"
+    },
+    "permissions_grant": {
+        "message": "Berikan izin kepada Ruffle untuk mengakses semua data saya untuk semua situs web"
+    },
+    "permissions_not_granted": {
+        "message": "Anda akan perlu mengeklik ikon Ruffle untuk setiap situs web yang ingin Anda gunakan Ruffle"
+    },
+    "grant_single_site_permission": {
+        "message": "Aktifkan secara permanen untuk situs web ini"
+    },
+    "swf_player_permissions": {
+        "message": "Anda harus memberikan izin kepada origin URL untuk memuat SWF dari URL tersebut."
     }
 }

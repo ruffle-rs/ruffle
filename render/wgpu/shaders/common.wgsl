@@ -20,17 +20,15 @@ struct common__Transforms {
     add_color: vec4<f32>,
 };
 
-/// Uniforms used by texture draws (bitmaps and gradients).
-struct common__TextureTransforms {
-    /// The transform matrix of the gradient or texture.
-    /// Transforms from object space to UV space.
-    texture_matrix: mat4x4<f32>,
-};
-
 /// The vertex format shared among most shaders.
 struct common__VertexInput {
     /// The position of the vertex in object space.
     @location(0) position: vec2<f32>,
+};
+
+struct common__VertexInputUv {
+    @location(0) position: vec2<f32>,
+    @location(1) uv: vec3<f32>,
 };
 
 /// Common uniform layout shared by all shaders.

@@ -1268,22 +1268,32 @@ impl CommandHandler for WebGlRenderBackend {
         transform: Transform,
         smoothing: bool,
         pixel_snapping: PixelSnapping,
+        region: PixelRegion,
     ) {
         self.set_stencil_state();
         let entry = as_registry_data(&bitmap);
         // Adjust the quad draw to use the target bitmap.
         let quad = &self.bitmap_quad_draws;
         let draw = &quad[0];
-        let bitmap_matrix = if let DrawType::Bitmap(BitmapDraw { matrix, .. }) = &draw.draw_type {
-            matrix
-        } else {
-            unreachable!()
+
+        let bitmap_matrix = {
+            let width = entry.width as f32;
+            let height = entry.height as f32;
+            &[
+                [region.width() as f32 / width, 0.0, 0.0],
+                [0.0, region.height() as f32 / height, 0.0],
+                [
+                    region.x_min as f32 / width,
+                    region.y_min as f32 / height,
+                    1.0,
+                ],
+            ]
         };
 
-        // Scale the quad to the bitmap's dimensions.
         let mut matrix = transform.matrix;
         pixel_snapping.apply(&mut matrix);
-        matrix *= Matrix::scale(entry.width as f32, entry.height as f32);
+        // Scale the quad to the region's dimensions.
+        matrix *= Matrix::scale(region.width() as f32, region.height() as f32);
 
         let world_matrix = [
             [matrix.a, matrix.b, 0.0, 0.0],

@@ -13,6 +13,7 @@ use gc_arena::{Collect, Mutation};
 use ruffle_render::backend::RenderBackend;
 use ruffle_render::bitmap::BitmapHandle;
 use ruffle_render::utils::remove_invalid_jpeg_data;
+use ruffle_wstr::{WStr, WString};
 
 use crate::backend::ui::{FontDefinition, UiBackend};
 use crate::font::DefaultFont;
@@ -175,6 +176,19 @@ impl<'gc> MovieLibrary<'gc> {
         self.export_characters.insert(export_name, id, false);
     }
 
+    pub fn register_font_name(&mut self, character_id: u16, font_name: &str) {
+        let Some(Character::Font(font)) = self.character_by_id(character_id) else {
+            return;
+        };
+
+        let descriptor = FontDescriptor::from_parts(
+            font_name,
+            font.descriptor().bold(),
+            font.descriptor().italic(),
+        );
+        self.fonts.register_with_descriptor(font, &descriptor);
+    }
+
     pub fn characters(&self) -> &HashMap<CharacterId, Character<'gc>> {
         &self.characters
     }
@@ -191,10 +205,7 @@ impl<'gc> MovieLibrary<'gc> {
         self.characters.get(&id).copied()
     }
 
-    pub fn character_by_export_name(
-        &self,
-        name: AvmString<'gc>,
-    ) -> Option<(CharacterId, Character<'gc>)> {
+    pub fn character_by_export_name(&self, name: &WStr) -> Option<(CharacterId, Character<'gc>)> {
         if let Some(id) = self.export_characters.get(name, false)
             && let Some(character) = self.characters.get(id)
         {
@@ -203,8 +214,8 @@ impl<'gc> MovieLibrary<'gc> {
         None
     }
 
-    pub fn character_id_by_import_name(&self, name: AvmString<'gc>) -> Option<CharacterId> {
-        self.imported_assets.get(&name).copied()
+    pub fn character_id_by_import_name(&self, name: &WStr) -> Option<CharacterId> {
+        self.imported_assets.get(name).copied()
     }
 
     pub fn register_import(&mut self, name: AvmString<'gc>, id: CharacterId) {
@@ -221,7 +232,7 @@ impl<'gc> MovieLibrary<'gc> {
         if let Some(&character) = self.characters.get(&id) {
             self.instantiate_display_object(id, character, mc)
         } else {
-            tracing::error!("Tried to instantiate non-registered character ID {}", id);
+            tracing::error!("Tried to instantiate a non-registered character ID {id}");
             None
         }
     }
@@ -230,16 +241,13 @@ impl<'gc> MovieLibrary<'gc> {
     /// The object must then be post-instantiated before being used.
     pub fn instantiate_by_export_name(
         &self,
-        export_name: AvmString<'gc>,
+        export_name: &WStr,
         mc: &Mutation<'gc>,
     ) -> Option<DisplayObject<'gc>> {
         if let Some((id, character)) = self.character_by_export_name(export_name) {
             self.instantiate_display_object(id, character, mc)
         } else {
-            tracing::error!(
-                "Tried to instantiate non-registered character {}",
-                export_name
-            );
+            tracing::error!("Tried to instantiate a non-registered character {export_name}");
             None
         }
     }
@@ -536,7 +544,7 @@ impl<'gc> Library<'gc> {
         // If we have the exact matching font already, use that
         // TODO: We should instead ask each font if it matches a given name. Partial matches are allowed, and fonts may have any amount of names.
         if let Some(font) = self.device_fonts.get(query) {
-            return Some(*font);
+            return Some(font);
         }
 
         // We don't have this font already. Did we ask for it before?
@@ -550,7 +558,7 @@ impl<'gc> Library<'gc> {
             // Check again. A backend may or may not have provided some new fonts,
             // and they may or may not be relevant to the one we're asking for.
             if let Some(font) = self.device_fonts.get(query) {
-                return Some(*font);
+                return Some(font);
             }
 
             let name = &query.name;
@@ -598,7 +606,6 @@ impl<'gc> Library<'gc> {
         let fonts: Vec<Font<'gc>> = fonts
             .iter()
             .filter_map(|font_query| self.device_fonts.get(font_query))
-            .copied()
             .collect();
 
         if !fonts.is_empty() {
@@ -701,7 +708,7 @@ impl<'gc> Library<'gc> {
         self.default_font_cache.clear();
     }
 
-    /// Find a font by it's name and parameters.
+    /// Find a font by its name and parameters.
     pub fn get_embedded_font_by_name(
         &self,
         name: &str,
@@ -716,9 +723,18 @@ impl<'gc> Library<'gc> {
         }
         if let Some(movie) = movie
             && let Some(library) = self.library_for_movie(movie)
-            && let Some(font) = library.fonts.find(&query)
         {
-            return Some(font);
+            if let Some((_, font)) = library.character_by_export_name(&WString::from_utf8(name)) {
+                // Exporting a font seems to override font lookup completely.
+                return if let Character::Font(font) = font {
+                    Some(font)
+                } else {
+                    None
+                };
+            }
+            if let Some(font) = library.fonts.find(&query) {
+                return Some(font);
+            }
         }
         None
     }
@@ -748,14 +764,17 @@ struct FontMap<'gc>(FnvHashMap<FontQuery, Font<'gc>>);
 
 impl<'gc> FontMap<'gc> {
     pub fn register(&mut self, font: Font<'gc>) {
-        let descriptor = font.descriptor();
+        self.register_with_descriptor(font, font.descriptor());
+    }
+
+    pub fn register_with_descriptor(&mut self, font: Font<'gc>, descriptor: &FontDescriptor) {
         self.0
             .entry(FontQuery::from_descriptor(font.font_type(), descriptor))
             .or_insert(font);
     }
 
-    pub fn get(&self, font_query: &FontQuery) -> Option<&Font<'gc>> {
-        self.0.get(font_query)
+    pub fn get(&self, font_query: &FontQuery) -> Option<Font<'gc>> {
+        self.0.get(font_query).copied()
     }
 
     pub fn find(&self, font_query: &FontQuery) -> Option<Font<'gc>> {
@@ -763,7 +782,7 @@ impl<'gc> FontMap<'gc> {
 
         // Exact match
         if let Some(font) = self.get(font_query) {
-            return Some(*font);
+            return Some(font);
         }
 
         let is_italic = font_query.is_italic;
@@ -775,21 +794,21 @@ impl<'gc> FontMap<'gc> {
             fallback_query.is_bold = true;
             fallback_query.is_italic = true;
             if let Some(font) = self.get(&fallback_query) {
-                return Some(*font);
+                return Some(font);
             }
 
             // and then downgrading to regular
             fallback_query.is_bold = false;
             fallback_query.is_italic = false;
             if let Some(font) = self.get(&fallback_query) {
-                return Some(*font);
+                return Some(font);
             }
 
             // and then finally whichever one we don't have set
             fallback_query.is_bold = !is_bold;
             fallback_query.is_italic = !is_italic;
             if let Some(font) = self.get(&fallback_query) {
-                return Some(*font);
+                return Some(font);
             }
         } else {
             // We don't have an exact match and we were either looking for regular or bold-italic
@@ -799,7 +818,7 @@ impl<'gc> FontMap<'gc> {
                 fallback_query.is_bold = false;
                 fallback_query.is_italic = false;
                 if let Some(font) = self.get(&fallback_query) {
-                    return Some(*font);
+                    return Some(font);
                 }
             }
 
@@ -807,14 +826,14 @@ impl<'gc> FontMap<'gc> {
             fallback_query.is_bold = true;
             fallback_query.is_italic = false;
             if let Some(font) = self.get(&fallback_query) {
-                return Some(*font);
+                return Some(font);
             }
 
             // Do we have italic?
             fallback_query.is_bold = false;
             fallback_query.is_italic = true;
             if let Some(font) = self.get(&fallback_query) {
-                return Some(*font);
+                return Some(font);
             }
 
             if !is_bold && !is_italic {
@@ -822,7 +841,7 @@ impl<'gc> FontMap<'gc> {
                 fallback_query.is_bold = true;
                 fallback_query.is_italic = true;
                 if let Some(font) = self.get(&fallback_query) {
-                    return Some(*font);
+                    return Some(font);
                 }
             }
         }

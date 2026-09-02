@@ -7,7 +7,9 @@ use crate::avm2::object::TObject as _;
 use crate::bitmap::bitmap_data::DirtyState;
 use crate::context::UpdateContext;
 use crate::debug_ui::Message;
-use crate::debug_ui::handle::{AVM1ObjectHandle, AVM2ObjectHandle, DisplayObjectHandle};
+use crate::debug_ui::handle::{
+    AVM1ObjectHandle, AVM2ObjectHandle, DisplayObjectHandle, FontHandle,
+};
 use crate::debug_ui::movie::open_movie_button;
 use crate::display_object::{
     AutoSizeMode, Avm2Button, Bitmap, BoundsMode, ButtonState, DisplayObject, EditText,
@@ -15,7 +17,7 @@ use crate::display_object::{
     TDisplayObjectContainer, TInteractiveObject,
 };
 use crate::focus_tracker::Highlight;
-use crate::font::{FontDescriptor, FontLike};
+use crate::font::{Font, FontDescriptor, FontLike};
 use crate::html::{LayoutBox, LayoutContent, LayoutLine, TextFormat};
 use egui::collapsing_header::CollapsingState;
 use egui::{
@@ -664,7 +666,7 @@ impl DisplayObjectWindow {
                     });
 
                 for line in layout.lines() {
-                    self.show_edit_text_layout_line(ui, &text, line);
+                    self.show_edit_text_layout_line(ui, context, &text, line, messages);
                 }
             });
 
@@ -692,8 +694,10 @@ impl DisplayObjectWindow {
     fn show_edit_text_layout_line<'gc>(
         &mut self,
         ui: &mut Ui,
+        context: &mut UpdateContext<'gc>,
         text: &WStr,
         line: &LayoutLine<'gc>,
+        messages: &mut Vec<Message>,
     ) {
         let line_index = line.index();
         let line_text = serde_json::to_string(
@@ -733,10 +737,10 @@ impl DisplayObjectWindow {
                         ui.end_row();
                     });
 
-                self.show_edit_text_layout_characters(ui, text, line);
+                self.show_edit_text_layout_characters(ui, context, text, line, messages);
 
                 for (index, lbox) in line.boxes_iter().enumerate() {
-                    self.show_edit_text_layout_box(ui, text, index, lbox);
+                    self.show_edit_text_layout_box(ui, context, text, index, lbox, messages);
                 }
             });
     }
@@ -744,8 +748,10 @@ impl DisplayObjectWindow {
     fn show_edit_text_layout_characters<'gc>(
         &mut self,
         ui: &mut Ui,
+        context: &mut UpdateContext<'gc>,
         text: &WStr,
         line: &LayoutLine<'gc>,
+        messages: &mut Vec<Message>,
     ) {
         CollapsingHeader::new("Characters")
             .id_salt(ui.id().with("chars"))
@@ -775,9 +781,7 @@ impl DisplayObjectWindow {
                                     );
                                     ui.label(format!("{ch}"));
                                     if let Some(resolution) = font_set.resolve_glyph(ch) {
-                                        ui.label(format_font_descriptor(
-                                            resolution.font.descriptor(),
-                                        ));
+                                        show_font(ui, context, messages, resolution.font);
                                     } else {
                                         ui.weak("None");
                                     }
@@ -795,9 +799,11 @@ impl DisplayObjectWindow {
     fn show_edit_text_layout_box<'gc>(
         &mut self,
         ui: &mut Ui,
+        context: &mut UpdateContext<'gc>,
         text: &WStr,
         index: usize,
         lbox: &LayoutBox<'gc>,
+        messages: &mut Vec<Message>,
     ) {
         let box_type = match lbox.content() {
             LayoutContent::Text { .. } => "Text box",
@@ -832,12 +838,12 @@ impl DisplayObjectWindow {
 
                         if let Some((_, _, font_set, _, _)) = lbox.as_renderable_text(text) {
                             ui.label("Main Font");
-                            ui.label(format_font_descriptor(font_set.main_font().descriptor()));
+                            show_font(ui, context, messages, font_set.main_font());
                             ui.end_row();
 
                             for (i, fallback_font) in font_set.fallback_fonts().iter().enumerate() {
                                 ui.label(format!("Fallback Font {i}"));
-                                ui.label(format_font_descriptor(fallback_font.descriptor()));
+                                show_font(ui, context, messages, *fallback_font);
                                 ui.end_row();
                             }
 
@@ -1856,6 +1862,20 @@ pub fn open_display_object_button<'gc>(
         messages.push(Message::TrackDisplayObject(DisplayObjectHandle::new(
             context, object,
         )));
+    }
+}
+
+fn show_font<'gc>(
+    ui: &mut Ui,
+    context: &mut UpdateContext<'gc>,
+    messages: &mut Vec<Message>,
+    font: Font<'gc>,
+) {
+    if ui
+        .button(format_font_descriptor(font.descriptor()))
+        .clicked()
+    {
+        messages.push(Message::TrackFont(FontHandle::new(context, font)));
     }
 }
 

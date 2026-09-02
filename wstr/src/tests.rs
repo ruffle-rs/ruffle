@@ -75,10 +75,10 @@ fn cmp() {
     let a2 = wstr!('h''e''l''l''o');
     let b2 = wstr!('w''o''r''l''d');
 
-    assert!(a1 == a1); assert!(a2 == a1); assert!(b1 >  a1); assert!(b2 >  a1);
-    assert!(a1 == a2); assert!(a2 == a2); assert!(b1 >  a2); assert!(b2 >  a2);
-    assert!(a1 <  b1); assert!(a2 <  b1); assert!(b1 == b1); assert!(b2 == b1);
-    assert!(a1 <  b2); assert!(a2 <  b2); assert!(b1 == b2); assert!(b2 == b2);
+    assert_eq!(a1, a1); assert_eq!(a2, a1); assert!(b1 >  a1); assert!(b2 >  a1);
+    assert_eq!(a1, a2); assert_eq!(a2, a2); assert!(b1 >  a2); assert!(b2 >  a2);
+    assert!(a1 <  b1); assert!(a2 <  b1); assert_eq!(b1, b1); assert_eq!(b2, b1);
+    assert!(a1 <  b2); assert!(a2 <  b2); assert_eq!(b1, b2); assert_eq!(b2, b2);
 }
 
 #[test]
@@ -89,10 +89,10 @@ fn cmp_common_prefix() {
     let a2 = wstr!('h''e''l''l''o');
     let b2 = wstr!('h''e''l''l''o''!');
 
-    assert!(a1 == a1); assert!(a2 == a1); assert!(b1 >  a1); assert!(b2 >  a1);
-    assert!(a1 == a2); assert!(a2 == a2); assert!(b1 >  a2); assert!(b2 >  a2);
-    assert!(a1 <  b1); assert!(a2 <  b1); assert!(b1 == b1); assert!(b2 == b1);
-    assert!(a1 <  b2); assert!(a2 <  b2); assert!(b1 == b2); assert!(b2 == b2);
+    assert_eq!(a1, a1); assert_eq!(a2, a1); assert!(b1 >  a1); assert!(b2 >  a1);
+    assert_eq!(a1, a2); assert_eq!(a2, a2); assert!(b1 >  a2); assert!(b2 >  a2);
+    assert!(a1 <  b1); assert!(a2 <  b1); assert_eq!(b1, b1); assert_eq!(b2, b1);
+    assert!(a1 <  b2); assert!(a2 <  b2); assert_eq!(b1, b2); assert_eq!(b2, b2);
 }
 
 #[test]

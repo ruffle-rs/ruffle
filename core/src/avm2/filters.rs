@@ -688,21 +688,51 @@ fn avm2_to_gradient_filter<'gc>(
     activation: &mut Activation<'_, 'gc>,
     object: Object<'gc>,
 ) -> Result<GradientFilter, Error<'gc>> {
-    #[expect(clippy::assertions_on_constants)]
-    {
-        assert!(gradient_bevel_filter_slots::_ANGLE == gradient_glow_filter_slots::_ANGLE);
-        assert!(gradient_bevel_filter_slots::_BLUR_X == gradient_glow_filter_slots::_BLUR_X);
-        assert!(gradient_bevel_filter_slots::_BLUR_Y == gradient_glow_filter_slots::_BLUR_Y);
-        assert!(gradient_bevel_filter_slots::_DISTANCE == gradient_glow_filter_slots::_DISTANCE);
-        assert!(gradient_bevel_filter_slots::_KNOCKOUT == gradient_glow_filter_slots::_KNOCKOUT);
-        assert!(gradient_bevel_filter_slots::_QUALITY == gradient_glow_filter_slots::_QUALITY);
-        assert!(gradient_bevel_filter_slots::_STRENGTH == gradient_glow_filter_slots::_STRENGTH);
-        assert!(gradient_bevel_filter_slots::_TYPE == gradient_glow_filter_slots::_TYPE);
+    assert_eq!(
+        gradient_bevel_filter_slots::_ANGLE,
+        gradient_glow_filter_slots::_ANGLE
+    );
+    assert_eq!(
+        gradient_bevel_filter_slots::_BLUR_X,
+        gradient_glow_filter_slots::_BLUR_X
+    );
+    assert_eq!(
+        gradient_bevel_filter_slots::_BLUR_Y,
+        gradient_glow_filter_slots::_BLUR_Y
+    );
+    assert_eq!(
+        gradient_bevel_filter_slots::_DISTANCE,
+        gradient_glow_filter_slots::_DISTANCE
+    );
+    assert_eq!(
+        gradient_bevel_filter_slots::_KNOCKOUT,
+        gradient_glow_filter_slots::_KNOCKOUT
+    );
+    assert_eq!(
+        gradient_bevel_filter_slots::_QUALITY,
+        gradient_glow_filter_slots::_QUALITY
+    );
+    assert_eq!(
+        gradient_bevel_filter_slots::_STRENGTH,
+        gradient_glow_filter_slots::_STRENGTH
+    );
+    assert_eq!(
+        gradient_bevel_filter_slots::_TYPE,
+        gradient_glow_filter_slots::_TYPE
+    );
 
-        assert!(gradient_bevel_filter_slots::_COLORS == gradient_glow_filter_slots::_COLORS);
-        assert!(gradient_bevel_filter_slots::_ALPHAS == gradient_glow_filter_slots::_ALPHAS);
-        assert!(gradient_bevel_filter_slots::_RATIOS == gradient_glow_filter_slots::_RATIOS);
-    }
+    assert_eq!(
+        gradient_bevel_filter_slots::_COLORS,
+        gradient_glow_filter_slots::_COLORS
+    );
+    assert_eq!(
+        gradient_bevel_filter_slots::_ALPHAS,
+        gradient_glow_filter_slots::_ALPHAS
+    );
+    assert_eq!(
+        gradient_bevel_filter_slots::_RATIOS,
+        gradient_glow_filter_slots::_RATIOS
+    );
 
     let angle = object
         .get_slot(gradient_bevel_filter_slots::_ANGLE)

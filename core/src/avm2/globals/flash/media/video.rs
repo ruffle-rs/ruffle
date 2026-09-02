@@ -1,4 +1,5 @@
 use crate::avm2::error::{Error, Error2006Type, make_error_2006, make_error_2136};
+use crate::avm2::function::FunctionArgs;
 use crate::avm2::globals::flash::display::display_object::initialize_for_allocator;
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::{Activation, ClassObject, Object, Value};
@@ -49,7 +50,7 @@ pub fn video_allocator<'gc>(
 pub fn init<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
@@ -81,7 +82,7 @@ pub fn init<'gc>(
 pub fn attach_net_stream<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 

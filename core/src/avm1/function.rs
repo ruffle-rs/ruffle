@@ -342,7 +342,7 @@ impl<'gc> Avm1Function<'gc> {
         // The caller is the previous callee.
         let arguments_caller = activation.callee;
 
-        let name = if cfg!(feature = "avm_debug") {
+        let name = if cfg!(any(feature = "avm_debug", feature = "tracy_avm")) {
             Cow::Owned(self.debug_string_for_call(activation, name, args))
         } else {
             Cow::Borrowed("[Anonymous]")
@@ -478,10 +478,10 @@ impl<'gc> FunctionObject<'gc> {
     pub fn build(
         self,
         context: &StringContext<'gc>,
-        fn_proto: Object<'gc>,
+        fn_proto: Option<Value<'gc>>,
         prototype: Option<Object<'gc>>,
     ) -> Object<'gc> {
-        let obj = Object::new(context, Some(fn_proto));
+        let obj = Object::new(context, fn_proto);
         let native = NativeObject::Function(Gc::new(context.gc(), self));
         obj.set_native(context.gc(), native);
 

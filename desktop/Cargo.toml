@@ -14,10 +14,10 @@ workspace = true
 clap = { workspace = true }
 cpal = { workspace = true }
 egui = { workspace = true }
-egui_extras = { version = "0.33.3", default-features = false, features = ["image"] }
-egui-wgpu = { version = "0.33.3", features = ["winit"] }
+egui_extras = { workspace = true, default-features = false, features = ["image"] }
+egui-wgpu = { workspace = true, features = ["winit"] }
 image = { workspace = true, features = ["png"] }
-egui-winit = "0.33.3"
+egui-winit = { workspace = true }
 fontdb = "0.23"
 ruffle_core = { path = "../core", features = ["audio", "clap", "mp3", "aac", "nellymoser", "default_compatibility_rules", "egui"] }
 ruffle_render = { path = "../render", features = ["clap"] }
@@ -29,7 +29,7 @@ tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
 tracing-appender = "0.2.5"
 winit = "0.30.13"
-webbrowser = "1.1.0"
+webbrowser = "1.2.4"
 url = { workspace = true }
 dirs = "6.0"
 rfd = { workspace = true }
@@ -89,6 +89,8 @@ lzma = ["ruffle_core/lzma"]
 software_video = ["ruffle_video_software"]
 external_video = ["ruffle_video_external"]
 tracy = ["tracing-tracy", "ruffle_render_wgpu/profile-with-tracy"]
+tracy_images = ["tracy", "ruffle_render_wgpu/tracy_images"]
+tracy_avm = ["tracy", "ruffle_core/tracy_avm"]
 fontconfig = ["dep:fontconfig"]
 fontconfig-dlopen = ["fontconfig", "fontconfig/dlopen"]
 freetype = ["ruffle_frontend_utils/freetype"]

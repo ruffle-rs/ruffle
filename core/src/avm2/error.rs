@@ -237,8 +237,6 @@ pub enum XmlErrorCode {
     UnterminatedElement = 1096,
     /// Error #1097: XML parser failure: Unterminated processing instruction.
     UnterminatedProcessingInstruction = 1097,
-    /// Error #1104: Attribute was already specified for element.
-    DuplicateAttribute = 1104,
 }
 
 #[inline(never)]
@@ -253,8 +251,6 @@ pub fn make_xml_error<'gc>(activation: &mut Activation<'_, 'gc>, code: XmlErrorC
         XmlErrorCode::UnterminatedAttribute => error_message!(1095),
         XmlErrorCode::UnterminatedElement => error_message!(1096),
         XmlErrorCode::UnterminatedProcessingInstruction => error_message!(1097),
-        // TODO: Add proper arguments.
-        XmlErrorCode::DuplicateAttribute => error_message!(1104, "", ""),
     };
     make_error!(type_error(activation, msg, code as u32))
 }
@@ -774,6 +770,24 @@ pub fn make_error_1103<'gc>(activation: &mut Activation<'_, 'gc>, class: Class<'
     ))
 }
 
+#[inline(never)]
+#[cold]
+pub fn make_error_1104<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    attr_name: &[u8],
+    element_name: &[u8],
+) -> Error<'gc> {
+    make_error!(type_error(
+        activation,
+        error_message!(
+            1104,
+            String::from_utf8_lossy(attr_name),
+            String::from_utf8_lossy(element_name)
+        ),
+        1104
+    ))
+}
+
 make_error_fn!(make_error_1107, 1107, verify_error);
 make_error_fn!(make_error_1108, 1108, verify_error);
 
@@ -926,6 +940,19 @@ pub fn make_error_1508<'gc>(activation: &mut Activation<'_, 'gc>, param_name: &s
         activation,
         error_message!(1508, param_name),
         1508,
+    ))
+}
+
+#[inline(never)]
+#[cold]
+pub fn make_error_2001<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    passed_arg_count: usize,
+) -> Error<'gc> {
+    make_error!(argument_error(
+        activation,
+        error_message!(2001, passed_arg_count, passed_arg_count + 1),
+        2001,
     ))
 }
 

@@ -6,6 +6,7 @@ use crate::{
 use chrono::{DateTime, Utc};
 pub use fluent_templates::LanguageIdentifier;
 use fluent_templates::loader::langid;
+use ruffle_macros::Avm2Enum;
 use std::{any::Any, borrow::Cow};
 use url::Url;
 
@@ -186,22 +187,26 @@ pub trait UiBackend: Any {
 
 /// A mouse cursor icon displayed by the Flash Player.
 /// Communicated from the core to the UI backend via `UiBackend::set_mouse_cursor`.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Avm2Enum)]
 pub enum MouseCursor {
     /// The default arrow icon.
     /// Equivalent to AS3 `MouseCursor.ARROW`.
+    #[avm2_variant("arrow")]
     Arrow,
 
     /// The hand icon indicating a button or link.
     /// Equivalent to AS3 `MouseCursor.BUTTON`.
+    #[avm2_variant("button")]
     Hand,
 
     /// The text I-beam.
     /// Equivalent to AS3 `MouseCursor.IBEAM`.
+    #[avm2_variant("ibeam")]
     IBeam,
 
     /// The grabby-dragging hand icon.
     /// Equivalent to AS3 `MouseCursor.HAND`.
+    #[avm2_variant("hand")]
     Grab,
 }
 

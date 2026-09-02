@@ -97,51 +97,51 @@ pub fn avm1_to_filter<'gc>(
 }
 
 pub fn filter_to_avm1<'gc>(activation: &mut Activation<'_, 'gc>, filter: Filter) -> Value<'gc> {
-    let (native, proto) = match filter {
+    let (native, class_name) = match filter {
         Filter::BevelFilter(filter) => (
             NativeObject::BevelFilter(BevelFilter::from_filter(activation.gc(), filter)),
-            activation.prototypes().bevel_filter,
+            istr!("BevelFilter"),
         ),
         Filter::BlurFilter(filter) => (
             NativeObject::BlurFilter(BlurFilter::from_filter(activation.gc(), filter)),
-            activation.prototypes().blur_filter,
+            istr!("BlurFilter"),
         ),
         Filter::ColorMatrixFilter(filter) => (
             NativeObject::ColorMatrixFilter(ColorMatrixFilter::from_filter(
                 activation.gc(),
                 filter,
             )),
-            activation.prototypes().color_matrix_filter,
+            istr!("ColorMatrixFilter"),
         ),
         Filter::ConvolutionFilter(filter) => (
             NativeObject::ConvolutionFilter(ConvolutionFilter::from_filter(
                 activation.gc(),
                 filter,
             )),
-            activation.prototypes().convolution_filter,
+            istr!("ConvolutionFilter"),
         ),
         Filter::GlowFilter(filter) => (
             NativeObject::GlowFilter(GlowFilter::from_filter(activation.gc(), filter)),
-            activation.prototypes().glow_filter,
+            istr!("GlowFilter"),
         ),
         Filter::DropShadowFilter(filter) => (
             NativeObject::DropShadowFilter(DropShadowFilter::from_filter(activation.gc(), filter)),
-            activation.prototypes().drop_shadow_filter,
+            istr!("DropShadowFilter"),
         ),
         Filter::DisplacementMapFilter(filter) => (
             NativeObject::DisplacementMapFilter(DisplacementMapFilter::from_filter(
                 activation.gc(),
                 filter,
             )),
-            activation.prototypes().displacement_map_filter,
+            istr!("DisplacementMapFilter"),
         ),
         Filter::GradientBevelFilter(filter) => (
             NativeObject::GradientBevelFilter(GradientFilter::from_filter(activation.gc(), filter)),
-            activation.prototypes().gradient_bevel_filter,
+            istr!("GradientBevelFilter"),
         ),
         Filter::GradientGlowFilter(filter) => (
             NativeObject::GradientGlowFilter(GradientFilter::from_filter(activation.gc(), filter)),
-            activation.prototypes().gradient_glow_filter,
+            istr!("GradientGlowFilter"),
         ),
         Filter::ShaderFilter(_) => {
             unreachable!(
@@ -149,5 +149,7 @@ pub fn filter_to_avm1<'gc>(activation: &mut Activation<'_, 'gc>, filter: Filter)
             )
         }
     };
-    Object::new_with_native(activation.strings(), Some(proto), native).into()
+
+    let proto = activation.resolve_prototype([istr!("flash"), istr!("filters"), class_name]);
+    Object::new_with_native(activation.strings(), proto, native).into()
 }

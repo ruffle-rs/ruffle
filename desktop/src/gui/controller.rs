@@ -1,3 +1,5 @@
+use super::dialogs::export_bundle_dialog::ExportBundleDialogConfiguration;
+use super::{DialogDescriptor, FilePicker};
 use crate::backends::DesktopUiBackend;
 use crate::custom_event::RuffleEvent;
 use crate::gui::movie::{MovieView, MovieViewRenderer};
@@ -22,15 +24,11 @@ use std::path::Path;
 use std::sync::{Arc, MutexGuard};
 use std::time::{Duration, Instant};
 use url::Url;
-use wgpu::SurfaceError;
 use winit::dpi::{PhysicalPosition, PhysicalSize};
 use winit::event::WindowEvent;
 use winit::event_loop::EventLoopProxy;
 use winit::keyboard::{Key, NamedKey};
 use winit::window::{ImePurpose as WinitImePurpose, Theme, Window};
-
-use super::dialogs::export_bundle_dialog::ExportBundleDialogConfiguration;
-use super::{DialogDescriptor, FilePicker};
 
 /// Integration layer connecting wgpu+winit to egui.
 pub struct GuiController {
@@ -50,6 +48,8 @@ pub struct GuiController {
     /// If this is set, we should not render the main menu.
     no_gui: bool,
     theme_controller: ThemeController,
+    #[cfg(feature = "tracy_images")]
+    tracy_frame_captures: crate::tracy::FrameCapturesHolder,
 }
 
 impl GuiController {
@@ -61,10 +61,9 @@ impl GuiController {
         initial_movie_url: Option<Url>,
         no_gui: bool,
     ) -> anyhow::Result<Self> {
-        let (instance, backend) = select_wgpu_backend(preferences.graphics_backends().into())?;
-        let surface = unsafe {
-            instance.create_surface_unsafe(wgpu::SurfaceTargetUnsafe::from_window(window.as_ref())?)
-        }?;
+        let (instance, backend) =
+            select_wgpu_backend(preferences.graphics_backends().into(), &window)?;
+        let surface = instance.create_surface(window.clone())?;
         let (adapter, device, queue) = futures::executor::block_on(request_adapter_and_device(
             backend,
             &instance,
@@ -102,6 +101,7 @@ impl GuiController {
             &wgpu::SurfaceConfiguration {
                 usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
                 format: surface_format,
+                color_space: wgpu::SurfaceColorSpace::Auto,
                 width: size.width,
                 height: size.height,
                 present_mode: Default::default(),
@@ -161,6 +161,9 @@ impl GuiController {
 
         egui_extras::install_image_loaders(egui_winit.egui_ctx());
 
+        #[cfg(feature = "tracy_images")]
+        let tracy_frame_captures = crate::tracy::FrameCapturesHolder::new(&descriptors.device);
+
         Ok(Self {
             descriptors,
             egui_winit,
@@ -175,6 +178,8 @@ impl GuiController {
             size,
             no_gui,
             theme_controller,
+            #[cfg(feature = "tracy_images")]
+            tracy_frame_captures,
         })
     }
 
@@ -207,6 +212,7 @@ impl GuiController {
             &wgpu::SurfaceConfiguration {
                 usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
                 format: self.surface_format,
+                color_space: wgpu::SurfaceColorSpace::Auto,
                 width: self.size.width,
                 height: self.size.height,
                 present_mode: Default::default(),
@@ -273,6 +279,8 @@ impl GuiController {
             &self.descriptors.device,
             self.size.width,
             self.size.height,
+            #[cfg(feature = "tracy_images")]
+            self.tracy_frame_captures.clone(),
         );
         player.create(&opt, &content_descriptor, movie_view);
         self.gui.on_player_created(
@@ -305,8 +313,16 @@ impl GuiController {
 
     pub fn render(&mut self, mut player: Option<MutexGuard<Player>>) {
         let surface_texture = match self.surface.get_current_texture() {
-            Ok(surface_texture) => surface_texture,
-            Err(e @ (SurfaceError::Lost | SurfaceError::Outdated)) => {
+            wgpu::CurrentSurfaceTexture::Success(surface_texture) => surface_texture,
+            wgpu::CurrentSurfaceTexture::Suboptimal(surface_texture) => {
+                // The acquired texture is still usable - no reason to waste
+                // this frame. The surface should ideally be reconfigured
+                // before the next acquire; usually a resize event arrives and
+                // does that, but not always (e.g. on a display transform
+                // change) - we accept staying suboptimal in that case for now.
+                surface_texture
+            }
+            state @ (wgpu::CurrentSurfaceTexture::Lost | wgpu::CurrentSurfaceTexture::Outdated) => {
                 // Reconfigure the surface if lost or outdated.
                 // Some sources suggest ignoring `Outdated` and waiting for the next frame,
                 // but I suspect this advice is related explicitly to resizing,
@@ -315,32 +331,45 @@ impl GuiController {
                 // to become outdated (resolution / refresh rate change, some internal
                 // platform-specific reasons, wgpu bugs?).
                 // Testing on Vulkan shows that reconfiguring the surface works in that case.
-                tracing::warn!("Surface became unavailable: {:?}, reconfiguring", e);
+                tracing::warn!("Surface became unavailable: {:?}, reconfiguring", state);
                 self.reconfigure_surface();
                 return;
             }
-            Err(e @ SurfaceError::Timeout) => {
-                // An operation related to the surface took too long to complete.
-                // This error may happen due to many reasons (GPU overload, GPU driver bugs, etc.),
-                // the best thing we can do is skip a frame and wait.
-                tracing::warn!("Surface became unavailable: {:?}, skipping a frame", e);
+            wgpu::CurrentSurfaceTexture::Timeout => {
+                // Acquiring the frame took too long (a full second, as of wgpu 29).
+                // The best thing we can do is skip a frame and wait.
+                tracing::warn!("Surface acquisition timed out, skipping a frame");
                 return;
             }
-            Err(SurfaceError::OutOfMemory) => {
-                // Cannot help with that :(
-                panic!("wgpu: Out of memory: no more memory left to allocate a new frame");
+            wgpu::CurrentSurfaceTexture::Occluded => {
+                // The window is occluded (e.g. minimized or fully covered by
+                // another window), so there is no point in drawing anything.
+                // We normally don't even get here, as `WindowEvent::Occluded`
+                // makes us skip rendering entirely - but the two can race, and
+                // not every platform reports occlusion through winit.
+                // Unlike `Timeout`, this returns immediately, so it would repeat
+                // at the movie's frame rate: keep it quiet, it's not an error.
+                tracing::trace!("Surface is occluded, skipping a frame");
+                return;
             }
-            Err(SurfaceError::Other) => {
+            wgpu::CurrentSurfaceTexture::Validation => {
                 // Generic error, not much we can do.
-                panic!("wgpu: Acquiring a texture failed with a generic error");
+                panic!("wgpu: Acquiring a texture failed with a validation error");
             }
         };
 
+        #[cfg(feature = "tracy_images")]
+        if player.is_none() {
+            self.tracy_frame_captures
+                .set_target(&self.descriptors.device, None);
+        }
+
         let raw_input = self.egui_winit.take_egui_input(&self.window);
         let show_menu = self.window.fullscreen().is_none() && !self.no_gui;
-        let mut full_output = self.egui_winit.egui_ctx().run(raw_input, |context| {
+        let mut full_output = self.egui_winit.egui_ctx().run_ui(raw_input, |ui| {
             self.gui.update(
-                context,
+                self.egui_winit.egui_ctx(),
+                ui,
                 show_menu,
                 player.as_deref_mut(),
                 if show_menu {
@@ -357,7 +386,7 @@ impl GuiController {
             .repaint_delay;
 
         // If we're not in a UI, tell egui which cursor we prefer to use instead
-        if !self.egui_winit.egui_ctx().wants_pointer_input()
+        if !self.egui_winit.egui_ctx().egui_wants_pointer_input()
             && let Some(player) = player.as_deref()
         {
             full_output.platform_output.cursor_icon =
@@ -386,13 +415,15 @@ impl GuiController {
                     label: Some("egui encoder"),
                 });
 
-        for (id, image_delta) in &full_output.textures_delta.set {
-            self.egui_renderer.update_texture(
-                &self.descriptors.device,
-                &self.descriptors.queue,
-                *id,
-                image_delta,
-            );
+        for (id, image_deltas) in full_output.textures_delta.set.drain() {
+            for image_delta in &image_deltas {
+                self.egui_renderer.update_texture(
+                    &self.descriptors.device,
+                    &self.descriptors.queue,
+                    id,
+                    image_delta,
+                );
+            }
         }
 
         let mut command_buffers = self.egui_renderer.update_buffers(
@@ -437,16 +468,50 @@ impl GuiController {
 
             self.egui_renderer
                 .render(&mut render_pass, &clipped_primitives, &screen_descriptor);
+
+            #[cfg(feature = "tracy_images")]
+            {
+                drop(render_pass);
+                self.tracy_frame_captures
+                    .capture_frame(&self.descriptors.device, &mut encoder);
+            }
         }
 
-        for id in &full_output.textures_delta.free {
-            self.egui_renderer.free_texture(id);
+        if let Some(player) = player.as_deref_mut() {
+            let renderer =
+                <dyn Any>::downcast_mut::<WgpuRenderBackend<MovieView>>(player.renderer_mut())
+                    .expect("Renderer must be correct type");
+            renderer.profiler_mut().resolve_queries(&mut encoder);
         }
-
         command_buffers.push(encoder.finish());
         self.descriptors.queue.submit(command_buffers);
+
+        // Free textures only after submitting the command buffer that may still
+        // reference them.  Destroying a texture before its usage is submitted
+        // causes a wgpu validation panic.
+        for id in full_output.textures_delta.free.drain() {
+            self.egui_renderer.free_texture(&id);
+        }
+
         self.window.pre_present_notify();
-        surface_texture.present();
+        self.descriptors.queue.present(surface_texture);
+        #[cfg(feature = "tracy")]
+        tracing_tracy::client::frame_mark();
+        #[cfg(feature = "tracy_images")]
+        self.tracy_frame_captures.finish_frame();
+        if let Some(player) = player.as_deref_mut() {
+            let renderer =
+                <dyn Any>::downcast_mut::<WgpuRenderBackend<MovieView>>(player.renderer_mut())
+                    .expect("Renderer must be correct type");
+            renderer
+                .profiler_mut()
+                .end_frame()
+                .expect("Frame should end successfully");
+            let timestamp_period = renderer.descriptors().queue.get_timestamp_period();
+            renderer
+                .profiler_mut()
+                .process_finished_frame(timestamp_period);
+        }
     }
 
     pub fn show_context_menu(
@@ -509,9 +574,10 @@ impl GuiController {
 
 fn select_wgpu_backend(
     preferred_backends: wgpu::Backends,
+    window: &Arc<Window>,
 ) -> anyhow::Result<(wgpu::Instance, wgpu::Backends)> {
     for backend in preferred_backends.iter() {
-        if let Some(instance) = try_wgpu_backend(backend) {
+        if let Some(instance) = try_wgpu_backend(backend, window.clone()) {
             tracing::info!(
                 "Using preferred backend {}",
                 format_list(&get_backend_names(backend), "and")
@@ -526,7 +592,7 @@ fn select_wgpu_backend(
     );
 
     for backend in wgpu::Backends::all() - preferred_backends {
-        if let Some(instance) = try_wgpu_backend(backend) {
+        if let Some(instance) = try_wgpu_backend(backend, window.clone()) {
             tracing::info!(
                 "Using fallback backend {}",
                 format_list(&get_backend_names(backend), "and")
@@ -540,9 +606,13 @@ fn select_wgpu_backend(
     ))
 }
 
-fn try_wgpu_backend(backend: wgpu::Backends) -> Option<wgpu::Instance> {
-    let instance = create_wgpu_instance(backend, wgpu::BackendOptions::default());
-    if instance.enumerate_adapters(backend).is_empty() {
+fn try_wgpu_backend(backend: wgpu::Backends, window: Arc<Window>) -> Option<wgpu::Instance> {
+    let instance = create_wgpu_instance(
+        backend,
+        wgpu::BackendOptions::default(),
+        Some(Box::new(window)),
+    );
+    if futures::executor::block_on(instance.enumerate_adapters(backend)).is_empty() {
         None
     } else {
         Some(instance)

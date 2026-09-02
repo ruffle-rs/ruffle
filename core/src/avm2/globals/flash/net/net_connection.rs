@@ -1,5 +1,6 @@
 use crate::avm2::amf::serialize_value;
 use crate::avm2::error::make_error_2126;
+use crate::avm2::function::FunctionArgs;
 pub use crate::avm2::object::net_connection_allocator;
 use crate::avm2::parameters::ParametersExt;
 use crate::net_connection::NetConnections;
@@ -19,7 +20,7 @@ use std::rc::Rc;
 pub fn connect<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
@@ -59,7 +60,7 @@ pub fn connect<'gc>(
 pub fn close<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
@@ -76,7 +77,7 @@ pub fn close<'gc>(
 pub fn get_connected<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
@@ -98,7 +99,7 @@ pub fn get_connected<'gc>(
 pub fn get_connected_proxy_type<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
@@ -121,7 +122,7 @@ pub fn get_connected_proxy_type<'gc>(
 pub fn get_far_id<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
@@ -142,7 +143,7 @@ pub fn get_far_id<'gc>(
 pub fn get_far_nonce<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
@@ -163,7 +164,7 @@ pub fn get_far_nonce<'gc>(
 pub fn get_near_id<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
@@ -184,7 +185,7 @@ pub fn get_near_id<'gc>(
 pub fn get_near_nonce<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
@@ -205,7 +206,7 @@ pub fn get_near_nonce<'gc>(
 pub fn get_protocol<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
@@ -226,7 +227,7 @@ pub fn get_protocol<'gc>(
 pub fn get_uri<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
@@ -247,7 +248,7 @@ pub fn get_uri<'gc>(
 pub fn get_using_tls<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
@@ -268,7 +269,7 @@ pub fn get_using_tls<'gc>(
 pub fn call<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
@@ -281,8 +282,8 @@ pub fn call<'gc>(
     let mut arguments = Vec::new();
 
     let mut object_table = FnvHashMap::default();
-    for arg in &args[2..] {
-        let value = serialize_value(activation, *arg, AMFVersion::AMF0, &mut object_table);
+    for arg in args.get_slice_from(2..) {
+        let value = serialize_value(activation, arg, AMFVersion::AMF0, &mut object_table);
         arguments.push(Rc::new(value));
     }
 
@@ -313,7 +314,7 @@ pub fn call<'gc>(
 pub fn add_header<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 

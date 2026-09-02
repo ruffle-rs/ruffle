@@ -35,9 +35,8 @@ These should be set for the current mesh being rendered.
 ## Group 2: Texture transforms
 | Index | Type       | Description                          | Availability |
 |:-----:|------------|:-------------------------------------|--------------|
-|   0   | uniform    | Transformation matrix of the texture | Vertex       |
-|   1   | texture_2d | Texture to be drawn                  | Fragment     |
-|   2   | sampler    | Sampler used for the texture         | Fragment     |
+|   0   | texture_2d | Texture to be drawn                  | Fragment     |
+|   1   | sampler    | Sampler used for the texture         | Fragment     |
 
 # Gradient
 ## Group 2: Texture transforms
@@ -46,5 +45,4 @@ Storage buffers are more efficient and waste less memory, but are not as widely 
 
 | Index | Type               | Description                           | Availability |
 |:-----:|--------------------|:--------------------------------------|--------------|
-|   0   | uniform            | Transformation matrix of the gradient | Vertex       |
-|   1   | uniform or storage | Gradient information, colors etc      | Fragment     |
+|   0   | uniform or storage | Gradient information, colors etc      | Fragment     |

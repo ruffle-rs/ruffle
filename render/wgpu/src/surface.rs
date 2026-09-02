@@ -9,6 +9,7 @@ use crate::filters::FilterSource;
 use crate::mesh::Mesh;
 use crate::pixel_bender::{ShaderMode, run_pixelbender_shader_impl};
 use crate::surface::commands::{Chunk, CommandRenderer, chunk_blends};
+use crate::utils::run_copy_pipeline;
 use crate::utils::supported_sample_count;
 use crate::{Descriptors, MaskState, Pipelines};
 use ruffle_render::commands::CommandList;
@@ -17,8 +18,7 @@ use ruffle_render::quality::StageQuality;
 use std::sync::Arc;
 use target::CommandTarget;
 use tracing::instrument;
-
-use crate::utils::run_copy_pipeline;
+use wgpu_profiler::Scope;
 
 pub use crate::surface::commands::LayerRef;
 
@@ -64,18 +64,18 @@ impl Surface {
 
     #[expect(clippy::too_many_arguments)]
     #[instrument(level = "debug", skip_all)]
-    pub fn draw_commands_and_copy_to<'frame, 'global: 'frame>(
+    pub fn draw_commands_and_copy_to<'encoder, 'global: 'encoder>(
         &self,
         frame_view: &wgpu::TextureView,
         render_target_mode: RenderTargetMode,
         descriptors: &'global Descriptors,
-        staging_belt: &'frame mut wgpu::util::StagingBelt,
+        staging_belt: &'global mut wgpu::util::StagingBelt,
         dynamic_transforms: &'global DynamicTransforms,
-        draw_encoder: &'frame mut wgpu::CommandEncoder,
+        draw_encoder: &'encoder mut Scope<'global, wgpu::CommandEncoder>,
         meshes: &'global Vec<Mesh>,
         commands: CommandList,
-        layer: LayerRef,
-        texture_pool: &mut TexturePool,
+        layer: LayerRef<'encoder>,
+        texture_pool: &'global mut TexturePool,
     ) {
         let target = self.draw_commands(
             render_target_mode,
@@ -103,17 +103,17 @@ impl Surface {
 
     #[expect(clippy::too_many_arguments)]
     #[instrument(level = "debug", skip_all)]
-    pub fn draw_commands<'frame, 'global: 'frame>(
+    pub fn draw_commands<'encoder, 'global: 'encoder>(
         &self,
         render_target_mode: RenderTargetMode,
-        descriptors: &'global Descriptors,
-        meshes: &'global Vec<Mesh>,
+        descriptors: &'encoder Descriptors,
+        meshes: &'encoder Vec<Mesh>,
         commands: CommandList,
-        staging_belt: &'global mut wgpu::util::StagingBelt,
-        dynamic_transforms: &'global DynamicTransforms,
-        draw_encoder: &'frame mut wgpu::CommandEncoder,
-        nearest_layer: LayerRef<'frame>,
-        texture_pool: &mut TexturePool,
+        staging_belt: &'encoder mut wgpu::util::StagingBelt,
+        dynamic_transforms: &'encoder DynamicTransforms,
+        draw_encoder: &'encoder mut Scope<'global, wgpu::CommandEncoder>,
+        nearest_layer: LayerRef<'encoder>,
+        texture_pool: &'encoder mut TexturePool,
     ) -> CommandTarget {
         let target = CommandTarget::new(
             descriptors,
@@ -150,24 +150,24 @@ impl Surface {
                     chunk,
                     needs_stencil,
                     transforms,
+                    vertices,
                 } => {
-                    transforms.copy_to(
+                    transforms.copy_to(staging_belt, draw_encoder, &dynamic_transforms.buffer);
+                    vertices.copy_to(
                         staging_belt,
-                        &descriptors.device,
                         draw_encoder,
-                        &dynamic_transforms.buffer,
+                        &dynamic_transforms.vertex_buffer,
                     );
-                    let mut render_pass =
-                        draw_encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-                            label: create_debug_label!(
-                                "Chunked draw calls {}",
-                                if needs_stencil {
-                                    "(with stencil)"
-                                } else {
-                                    "(Stencilless)"
-                                }
-                            )
-                            .as_deref(),
+                    let mut render_pass = draw_encoder.scoped_render_pass(
+                        format!(
+                            "Chunked draw calls {}",
+                            if needs_stencil {
+                                "(with stencil)"
+                            } else {
+                                "(Stencilless)"
+                            }
+                        ),
+                        wgpu::RenderPassDescriptor {
                             color_attachments: &[target.color_attachments()],
                             depth_stencil_attachment: if needs_stencil {
                                 target.stencil_attachment(descriptors, texture_pool)
@@ -175,20 +175,20 @@ impl Surface {
                                 None
                             },
                             ..Default::default()
-                        });
+                        },
+                    );
                     render_pass.set_bind_group(0, target.globals().bind_group(), &[]);
                     let mut renderer = CommandRenderer::new(
                         &self.pipelines,
                         descriptors,
                         dynamic_transforms,
-                        render_pass,
                         num_masks,
                         mask_state,
                         needs_stencil,
                     );
 
                     for command in &chunk {
-                        renderer.execute(command);
+                        renderer.execute(&mut render_pass.scope(command.name()), command);
                     }
 
                     num_masks = renderer.num_masks();

@@ -627,14 +627,14 @@ impl<'gc> Script<'gc> {
         let global_obj_vtable = global_obj_vtable.expect("Global object vtable should be valid");
 
         // Script initializers are always run in "interpreter mode"
-        let script_init_assoc = MethodAssociation::classbound(global_class, true);
+        let script_init_assoc =
+            MethodAssociation::classbound(global_class, Some(object_class), true);
         init_method.associate(activation, script_init_assoc)?;
 
         // Associate all the methods on the script
-        global_class.bind_methods(
-            activation,
-            MethodAssociation::classbound(global_class, false),
-        )?;
+        let script_method_assoc =
+            MethodAssociation::classbound(global_class, Some(object_class), false);
+        global_class.bind_methods(activation, script_method_assoc)?;
 
         Ok(ScriptObject::custom_object(
             mc,

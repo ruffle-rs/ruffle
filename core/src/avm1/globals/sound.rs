@@ -189,7 +189,7 @@ impl<'gc> Sound<'gc> {
         if !sound_object.has_property(activation, istr!("position"))
             || !sound_object.has_property(activation, istr!("duration"))
         {
-            let fn_proto = activation.prototypes().function;
+            let fn_proto = activation.resolve_prototype([istr!("Function")]);
             let getter_position =
                 FunctionObject::native(position).build(activation.strings(), fn_proto, None);
             let getter_duration =
@@ -462,7 +462,7 @@ fn attach_sound<'gc>(
             .context
             .library
             .library_for_movie_mut(movie)
-            .character_by_export_name(name)
+            .character_by_export_name(&name)
         {
             sound.set_sound(activation, this, Some(sound_handle));
             sound.set_duration(
@@ -884,7 +884,7 @@ fn stop<'gc>(
                 .context
                 .library
                 .library_for_movie_mut(movie)
-                .character_by_export_name(name)
+                .character_by_export_name(&name)
             {
                 // FIXME: This isn't entirely correct. We should only
                 // stop sounds with this name on this particular sound object;

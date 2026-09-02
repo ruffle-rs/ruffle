@@ -543,6 +543,8 @@ impl<'gc> MovieClip<'gc> {
                 TagCode::DefineFont2 => shared.define_font_2(context, reader),
                 TagCode::DefineFont3 => shared.define_font_3(context, reader),
                 TagCode::DefineFont4 => shared.define_font_4(context, reader),
+                TagCode::DefineFontInfo => shared.define_font_info(context, reader, 1),
+                TagCode::DefineFontInfo2 => shared.define_font_info(context, reader, 2),
                 TagCode::DefineMorphShape => shared.define_morph_shape(context, reader, 1),
                 TagCode::DefineMorphShape2 => shared.define_morph_shape(context, reader, 2),
                 TagCode::DefineScalingGrid => shared.define_scaling_grid(context, reader),
@@ -1984,79 +1986,52 @@ impl<'gc> MovieClip<'gc> {
         run_frame: bool,
     ) {
         if self.0.object1.get().is_none() {
-            let avm1_constructor = self.0.get_registered_avm1_constructor(context);
+            let mut activation = Avm1Activation::from_nothing(
+                context,
+                ActivationIdentifier::root("[Construct]"),
+                self.into(),
+            );
 
-            // If we are running within the AVM, this must be an immediate action.
-            // If we are not, then this must be queued to be ran first-thing
-            if let Some(constructor) = avm1_constructor.filter(|_| instantiated_by.is_avm()) {
-                let mut activation = Avm1Activation::from_nothing(
-                    context,
-                    ActivationIdentifier::root("[Construct]"),
-                    self.into(),
-                );
-
-                if let Ok(prototype) = constructor
-                    // TODO(moulins): should this use `Object::prototype`?
-                    .get(istr!("prototype"), &mut activation)
-                    .and_then(|v| v.coerce_to_object_or_bare(&mut activation))
-                {
-                    let object = Avm1Object::new_with_native(
-                        &activation.context.strings,
-                        Some(prototype),
-                        Avm1NativeObject::MovieClip(self),
-                    );
-                    let write = Gc::write(activation.gc(), self.0);
-                    unlock!(write, MovieClipData, object1).set(Some(object));
-
-                    if run_frame {
-                        self.run_frame_avm1(activation.context);
-                    }
-
-                    if let Some(init_object) = init_object {
-                        // AVM1 sets keys in reverse order (compared to enumeration order).
-                        // This behavior is visible to setters, and some SWFs depend on it.
-                        for key in init_object
-                            .get_keys(&mut activation, false)
-                            .into_iter()
-                            .rev()
-                        {
-                            if let Ok(value) = init_object.get(key, &mut activation) {
-                                let _ = object.set(key, value, &mut activation);
-                            }
-                        }
-                    }
-                    let _ = constructor.construct_on_existing(&mut activation, object, &[]);
-                }
-
-                return;
-            }
+            let avm1_custom_constr = self.0.get_registered_avm1_constructor(activation.context);
+            let avm1_prototype = avm1_custom_constr
+                .or_else(|| activation.resolve_class([istr!("MovieClip")]))
+                .and_then(|c| c.prototype(&mut activation));
 
             let object = Avm1Object::new_with_native(
-                &context.strings,
-                Some(context.avm1.prototypes(self.swf_version()).movie_clip),
+                activation.strings(),
+                avm1_prototype,
                 Avm1NativeObject::MovieClip(self),
             );
-            let write = Gc::write(context.gc(), self.0);
+            let write = Gc::write(activation.gc(), self.0);
             unlock!(write, MovieClipData, object1).set(Some(object));
 
             if run_frame {
-                self.run_frame_avm1(context);
+                self.run_frame_avm1(activation.context);
             }
 
             if let Some(init_object) = init_object {
-                let mut activation = Avm1Activation::from_nothing(
-                    context,
-                    ActivationIdentifier::root("[Init]"),
-                    self.into(),
-                );
-
-                for key in init_object.get_keys(&mut activation, false) {
+                // AVM1 sets keys in reverse order (compared to enumeration order).
+                // This behavior is visible to setters, and some SWFs depend on it.
+                for key in init_object
+                    .get_keys(&mut activation, false)
+                    .into_iter()
+                    .rev()
+                {
                     if let Ok(value) = init_object.get(key, &mut activation) {
                         let _ = object.set(key, value, &mut activation);
                     }
                 }
             }
 
+            // If we are running within the AVM, this must be an immediate action.
+            // If we are not, then this must be queued to be ran first-thing.
+            // Note that the default `MovieClip` constructor is never run, unlike user-defined classes.
+            if let Some(constructor) = avm1_custom_constr.filter(|_| instantiated_by.is_avm()) {
+                let _ = constructor.construct_on_existing(&mut activation, object, &[]);
+                return;
+            }
+
+            drop(activation);
             let mut events = Vec::new();
 
             for event_handler in self.clip_actions().iter() {
@@ -2068,6 +2043,7 @@ impl<'gc> MovieClip<'gc> {
                         self.into(),
                         ActionType::Initialize {
                             bytecode: event_handler.action_data.clone(),
+                            name: "[MovieClip initialize]",
                         },
                         false,
                     );
@@ -2083,7 +2059,7 @@ impl<'gc> MovieClip<'gc> {
             context.action_queue.queue_action(
                 self.into(),
                 ActionType::Construct {
-                    constructor: avm1_constructor,
+                    constructor: avm1_custom_constr,
                     events,
                 },
                 false,
@@ -2276,6 +2252,29 @@ impl<'gc> MovieClip<'gc> {
 
     pub fn set_hit_area(self, mc: &Mutation<'gc>, hit_area: Option<DisplayObject<'gc>>) {
         unlock!(Gc::write(mc, self.0), MovieClipData, hit_area).set(hit_area);
+    }
+
+    /// Resolve the AVM1 `hitArea` property for mouse picking, if set.
+    ///
+    /// Unlike AVM2's `Sprite.hitArea`, AVM1 keeps no dedicated storage for the
+    /// hit area: Flash Player reads the ordinary script property (running any
+    /// getter) each time it picks. This mirrors how sibling engine-consulted
+    /// properties like `enabled` are read (see `get_avm1_boolean_property`).
+    ///
+    /// Returns the display object the property currently resolves to; values
+    /// that are not display objects resolve to `None`, in which case the
+    /// clip's own shape picks.
+    fn avm1_hit_area(self, context: &mut UpdateContext<'gc>) -> Option<DisplayObject<'gc>> {
+        let object = self.object1()?;
+        let mut activation = Avm1Activation::from_nothing(
+            context,
+            ActivationIdentifier::root("[AVM1 hitArea]"),
+            self.avm1_root(),
+        );
+        let value = object.get(istr!("hitArea"), &mut activation).ok()?;
+        value
+            .as_object(&mut activation)
+            .and_then(|o| o.as_display_object())
     }
 
     pub fn tag_stream_len(self) -> usize {
@@ -2948,6 +2947,7 @@ impl<'gc> TInteractiveObject<'gc> for MovieClip<'gc> {
                         self.into(),
                         ActionType::Normal {
                             bytecode: event_handler.action_data.clone(),
+                            name: "[MovieClip event]",
                         },
                         event == ClipEvent::Unload,
                     );
@@ -2985,9 +2985,17 @@ impl<'gc> TInteractiveObject<'gc> for MovieClip<'gc> {
             return None;
         }
 
+        // A sibling's `hitArea` getter may have removed this clip earlier
+        // in this same pick (the parent iterates a snapshot of its render
+        // list). In captures of such a removal, Flash Player froze
+        // `_droptarget` and stopped delivering release events; Ruffle
+        // emulates none of that and simply excludes the removed clip.
+        if self.avm1_removed() {
+            return None;
+        }
+
         if self.visible() {
             let this: InteractiveObject<'gc> = self.into();
-            let local_matrix = self.global_to_local_matrix()?;
 
             if let Some(masker) = self.masker() {
                 // FIXME - should this really use `SKIP_INVISIBLE`? Avm2 doesn't.
@@ -3001,19 +3009,44 @@ impl<'gc> TInteractiveObject<'gc> for MovieClip<'gc> {
             // true.
             // InteractiveObject.mouseEnabled:
             // "Any children of this instance on the display list are not affected."
-            if self.mouse_enabled() && self.world_bounds(BoundsMode::Engine).contains(point) {
+
+            if self.mouse_enabled() {
                 // This MovieClip operates in "button mode" if it has a mouse handler,
                 // either via on(..) or via property mc.onRelease, etc.
                 let is_button_mode = self.is_button_mode(context);
 
                 if is_button_mode {
-                    let mut options = HitTestOptions::SKIP_INVISIBLE;
-                    options.set(HitTestOptions::SKIP_MASK, self.maskee().is_none());
-                    if self.hit_test_shape(context, point, options) {
+                    // A `hitArea` that currently resolves to a display object
+                    // replaces this clip's own shape for mouse picking, tested
+                    // at its own stage position — even outside this clip's
+                    // bounds or when this clip's transform is degenerate
+                    // (hence before the matrix check below). Non-button-mode
+                    // picks (`require_button_mode == false`: `_droptarget`
+                    // and context-menu selection) resolve the property but
+                    // ignore its value.
+                    // The getter may remove this clip itself; Flash Player
+                    // still returns it from this pick (removal takes effect
+                    // on the next pick).
+                    let hit_area = self.avm1_hit_area(context).filter(|_| require_button_mode);
+                    let hit = match hit_area {
+                        Some(area) if !area.avm1_removed() => {
+                            // NOTE: Not SKIP_INVISIBLE, an invisible hit area still hits
+                            area.hit_test_shape(context, point, HitTestOptions::SKIP_MASK)
+                        }
+                        // Otherwise the clip's own shape picks.
+                        _ => {
+                            let mut options = HitTestOptions::SKIP_INVISIBLE;
+                            options.set(HitTestOptions::SKIP_MASK, self.maskee().is_none());
+                            self.hit_test_shape(context, point, options)
+                        }
+                    };
+                    if hit {
                         return Some(this);
                     }
                 }
             }
+
+            let local_matrix = self.global_to_local_matrix()?;
 
             // Maybe we could skip recursing down at all if !world_bounds.contains(point),
             // but a child button can have an invisible hit area outside the parent's bounds.
@@ -3849,6 +3882,26 @@ impl<'gc, 'a> MovieClipShared<'gc> {
         Ok(())
     }
 
+    fn define_font_info(
+        &self,
+        context: &mut UpdateContext<'gc>,
+        reader: &mut SwfStream<'a>,
+        version: u8,
+    ) -> Result<(), Error> {
+        let font_info = reader.read_define_font_info(version)?;
+
+        // For some reason Flash doesn't seem to use font_info's flags
+        // (bold, italic) here.
+        //
+        // TODO Maybe there are some cases where it is used?
+        let character_id = font_info.id;
+        let font_name = &font_info.name.to_str_lossy(reader.encoding());
+
+        self.library_mut(context)
+            .register_font_name(character_id, font_name);
+        Ok(())
+    }
+
     #[inline]
     fn define_sound(
         &self,
@@ -4037,7 +4090,7 @@ impl<'gc, 'a> MovieClipShared<'gc> {
                 if let Some(parent) = &importer_movie {
                     let parent_library = context.library.library_for_movie_mut(parent.clone());
 
-                    if let Some(id) = parent_library.character_id_by_import_name(name) {
+                    if let Some(id) = parent_library.character_id_by_import_name(&name) {
                         parent_library.register_character(id, character);
 
                         Self::register_export(context, id, name, parent.clone());
@@ -4240,7 +4293,10 @@ impl<'gc, 'a> MovieClip<'gc> {
         if !slice.is_empty() {
             context.action_queue.queue_action(
                 self.into(),
-                ActionType::Normal { bytecode: slice },
+                ActionType::Normal {
+                    bytecode: slice,
+                    name: "[MovieClip action]",
+                },
                 false,
             );
         }

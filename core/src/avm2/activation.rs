@@ -1096,7 +1096,8 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
         let receiver = self.pop_stack().null_check(self, None)?;
 
-        let value = method(self, receiver, args).expect("FastCall methods should not return Err");
+        let value = method(self, receiver, FunctionArgs::from_slice(args))
+            .expect("FastCall methods should not return Err");
 
         if push_return_value {
             self.push_stack(value);
@@ -1159,12 +1160,16 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let bound_class = method
             .bound_class()
             .expect("Verifier ensures callstatic methods are classbound");
+
         let receiver = receiver.coerce_to_type(self, bound_class)?;
 
-        // TODO: What scope should the function be executed with?
+        let superclass_object = method.default_superclass_object();
+
+        // TODO: Use the correct scope
         let scope = self.create_scopechain();
 
-        let function = FunctionObject::from_method(self.context, method, scope, None, None);
+        let function =
+            FunctionObject::from_method(self.context, method, scope, None, superclass_object);
         let value = function.call(self, receiver, args)?;
 
         self.push_stack(value);

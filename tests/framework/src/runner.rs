@@ -18,6 +18,7 @@ use crate::runner::trace::compare_trace_output;
 use crate::test::Test;
 use anyhow::{Result, anyhow};
 use ruffle_core::FloatDuration;
+use ruffle_core::backend::locale::DeterministicLocaleBackend;
 use ruffle_core::backend::navigator::NullExecutor;
 use ruffle_core::limits::ExecutionLimit;
 use ruffle_core::tag_utils::SwfMovie;
@@ -96,6 +97,7 @@ impl TestRunner {
         let mut builder = PlayerBuilder::new()
             .with_log(log.clone())
             .with_navigator(navigator)
+            .with_locale(DeterministicLocaleBackend::default())
             .with_storage(Box::new(TestStorageBackend::new()))
             .with_max_execution_duration(Duration::from_secs(300))
             .with_fs_commands(Box::new(fs_command_provider))

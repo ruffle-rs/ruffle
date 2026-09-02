@@ -16,7 +16,7 @@ env:
   LLVM_COV_OPTS: --branch --profile ci
   LLVM_COV_TEST_OPTS: ${LLVM_COV_OPTS} ${TEST_OPTS} --features ${FEATURES},imgtests,freetype
 
-  LINUX_DEPENDENCIES: libasound2-dev mesa-vulkan-drivers libudev-dev libfontconfig-dev
+  LINUX_DEPENDENCIES: mesa-vulkan-drivers libasound2-dev libudev-dev libfontconfig-dev libfreetype6-dev
 
   # This is to counteract the disabling by rust-cache.
   # See: https://github.com/Swatinem/rust-cache/issues/43
@@ -59,7 +59,7 @@ jobs:
     if: needs.changes.outputs.should_run == 'true'
     name: Test Rust ${{ matrix.rust_version }} / ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
-    continue-on-error: ${{ matrix.rust_version == 'nightly' || matrix.rust_version == 'beta' }}
+    continue-on-error: ${{ matrix.rust_version != 'stable' }}
     strategy:
       fail-fast: false
       matrix:
@@ -130,11 +130,12 @@ jobs:
     if: needs.changes.outputs.should_run == 'true'
     name: Lints with Rust ${{ matrix.rust_version }}
     runs-on: ubuntu-24.04
-    continue-on-error: ${{ matrix.rust_version == 'nightly' || matrix.rust_version == 'beta' }}
+    continue-on-error: ${{ matrix.rust_version != 'stable' }}
     strategy:
       fail-fast: false
       matrix:
-        rust_version: [stable, beta, nightly]
+        # nightly lints are too unstable for us
+        rust_version: [stable, beta]
 
     steps:
       - uses: actions/checkout@v7
@@ -154,12 +155,10 @@ jobs:
         run: cargo fmt --all -- --check
 
       - name: Check clippy (with tests)
-        # Don't fail the build for clippy on nightly, since we get a lot of false-positives
-        run: cargo clippy --all --all-features --tests ${{ (matrix.rust_version != 'nightly' && '-- -D warnings') || '' }}
+        run: cargo clippy --all --all-features --tests -- -D warnings
 
       - name: Check clippy (without tests)
-        # Don't fail the build for clippy on nightly, since we get a lot of false-positives
-        run: cargo clippy --all --all-features ${{ (matrix.rust_version != 'nightly' && '-- -D warnings') || '' }}
+        run: cargo clippy --all --all-features -- -D warnings
 
       - name: Check documentation
         run: cargo doc --no-deps --all-features
@@ -170,7 +169,7 @@ jobs:
         run: |
           cd fuzz/
           cargo fmt --all -- --check
-          cargo clippy --all ${{ (matrix.rust_version != 'nightly' && '-- -D warnings') || '' }}
+          cargo clippy --all -- -D warnings
 
   coverage:
     needs: changes
@@ -340,7 +339,7 @@ jobs:
     runs-on: ubuntu-24.04
     strategy:
       matrix:
-        rust_version: [stable, beta, nightly]
+        rust_version: [stable, beta]
 
     steps:
       - name: No-op

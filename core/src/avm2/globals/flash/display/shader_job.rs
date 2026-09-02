@@ -1,5 +1,6 @@
 use crate::avm2::bytearray::Endian;
 use crate::avm2::error::{Error2004Type, make_error_2004, make_error_2162, make_error_2165};
+use crate::avm2::function::FunctionArgs;
 use crate::avm2::globals::slots::{
     flash_display_shader as shader_slots, flash_display_shader_input as shader_input_slots,
     flash_display_shader_job as shader_job_slots,
@@ -270,7 +271,7 @@ fn make_float_texture<'gc, S: PixelSource>(
 pub fn start<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 

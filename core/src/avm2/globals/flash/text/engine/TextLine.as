@@ -91,7 +91,11 @@ package flash.text.engine {
 
         public function getAtomIndexAtCharIndex(charIndex:int):int {
             stub_method("flash.text.engine.TextLine", "getAtomIndexAtCharIndex");
-            return -1;
+            var index:int = charIndex - this.textBlockBeginIndex;
+            if (index < 0 || index >= this.rawTextLength) {
+                return -1;
+            }
+            return index;
         }
 
         public function getAtomBidiLevel(index:int):int {

@@ -1,11 +1,12 @@
-use crate::Transforms;
 use crate::descriptors::Descriptors;
+use crate::{PosUvVertex, Transforms};
 use std::mem;
 
 const ESTIMATED_OBJECTS_PER_CHUNK: u64 = 200;
 
 pub struct DynamicTransforms {
     pub buffer: wgpu::Buffer,
+    pub vertex_buffer: wgpu::Buffer,
     pub bind_group: wgpu::BindGroup,
 }
 
@@ -14,9 +15,16 @@ impl DynamicTransforms {
         let buffer = descriptors.device.create_buffer(&wgpu::BufferDescriptor {
             label: None,
             size: (mem::size_of::<Transforms>() as u64 * ESTIMATED_OBJECTS_PER_CHUNK)
-                .min(descriptors.limits.max_uniform_buffer_binding_size as u64)
+                .min(descriptors.limits.max_uniform_buffer_binding_size)
                 .min(descriptors.limits.max_buffer_size),
             usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+            mapped_at_creation: false,
+        });
+        let vertex_buffer = descriptors.device.create_buffer(&wgpu::BufferDescriptor {
+            label: None,
+            size: (mem::size_of::<PosUvVertex>() as u64 * ESTIMATED_OBJECTS_PER_CHUNK)
+                .min(descriptors.limits.max_buffer_size),
+            usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
             mapped_at_creation: false,
         });
         let bind_group = descriptors
@@ -33,6 +41,10 @@ impl DynamicTransforms {
                     }),
                 }],
             });
-        Self { buffer, bind_group }
+        Self {
+            buffer,
+            bind_group,
+            vertex_buffer,
+        }
     }
 }

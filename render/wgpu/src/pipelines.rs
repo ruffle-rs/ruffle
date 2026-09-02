@@ -1,28 +1,38 @@
 use crate::blend::{ComplexBlend, TrivialBlend};
 use crate::layouts::BindLayouts;
 use crate::shaders::Shaders;
-use crate::{MaskState, PosColorVertex, PosVertex};
+use crate::{MaskState, PosColorVertex, PosUvVertex, PosVertex};
 use enum_map::{EnumMap, enum_map};
 use wgpu::{BlendState, PrimitiveTopology, vertex_attr_array};
 
-pub const VERTEX_BUFFERS_DESCRIPTION_POS: [wgpu::VertexBufferLayout; 1] =
-    [wgpu::VertexBufferLayout {
+pub const VERTEX_BUFFERS_DESCRIPTION_POS: [Option<wgpu::VertexBufferLayout>; 1] =
+    [Some(wgpu::VertexBufferLayout {
         array_stride: std::mem::size_of::<PosVertex>() as u64,
         step_mode: wgpu::VertexStepMode::Vertex,
         attributes: &vertex_attr_array![
             0 => Float32x2,
         ],
-    }];
+    })];
 
-pub const VERTEX_BUFFERS_DESCRIPTION_COLOR: [wgpu::VertexBufferLayout; 1] =
-    [wgpu::VertexBufferLayout {
+pub const VERTEX_BUFFERS_DESCRIPTION_POS_UV: [Option<wgpu::VertexBufferLayout>; 1] =
+    [Some(wgpu::VertexBufferLayout {
+        array_stride: std::mem::size_of::<PosUvVertex>() as u64,
+        step_mode: wgpu::VertexStepMode::Vertex,
+        attributes: &vertex_attr_array![
+            0 => Float32x2,
+            1 => Float32x3,
+        ],
+    })];
+
+pub const VERTEX_BUFFERS_DESCRIPTION_COLOR: [Option<wgpu::VertexBufferLayout>; 1] =
+    [Some(wgpu::VertexBufferLayout {
         array_stride: std::mem::size_of::<PosColorVertex>() as u64,
         step_mode: wgpu::VertexStepMode::Vertex,
         attributes: &vertex_attr_array![
             0 => Float32x2,
             1 => Float32x4,
         ],
-    }];
+    })];
 
 #[derive(Debug)]
 pub struct ShapePipeline {
@@ -80,7 +90,7 @@ impl Pipelines {
         msaa_sample_count: u32,
         bind_layouts: &BindLayouts,
     ) -> Self {
-        let colort_bindings = vec![&bind_layouts.globals, &bind_layouts.transforms];
+        let colort_bindings = vec![Some(&bind_layouts.globals), Some(&bind_layouts.transforms)];
 
         let color_pipelines = create_shape_pipeline(
             "Color",
@@ -91,7 +101,7 @@ impl Pipelines {
             &VERTEX_BUFFERS_DESCRIPTION_COLOR,
             &colort_bindings,
             BlendState::PREMULTIPLIED_ALPHA_BLENDING,
-            &[],
+            0,
             PrimitiveTopology::TriangleList,
         );
 
@@ -104,14 +114,14 @@ impl Pipelines {
             &VERTEX_BUFFERS_DESCRIPTION_COLOR,
             &colort_bindings,
             BlendState::PREMULTIPLIED_ALPHA_BLENDING,
-            &[],
+            0,
             PrimitiveTopology::LineStrip,
         );
 
         let gradient_bindings = vec![
-            &bind_layouts.globals,
-            &bind_layouts.transforms,
-            &bind_layouts.gradient,
+            Some(&bind_layouts.globals),
+            Some(&bind_layouts.transforms),
+            Some(&bind_layouts.gradient),
         ];
 
         let gradient_pipeline = create_shape_pipeline(
@@ -120,17 +130,17 @@ impl Pipelines {
             format,
             &shaders.gradient_shader,
             msaa_sample_count,
-            &VERTEX_BUFFERS_DESCRIPTION_POS,
+            &VERTEX_BUFFERS_DESCRIPTION_POS_UV,
             &gradient_bindings,
             BlendState::PREMULTIPLIED_ALPHA_BLENDING,
-            &[],
+            0,
             PrimitiveTopology::TriangleList,
         );
 
         let complex_blend_bindings = vec![
-            &bind_layouts.globals,
-            &bind_layouts.transforms,
-            &bind_layouts.blend,
+            Some(&bind_layouts.globals),
+            Some(&bind_layouts.transforms),
+            Some(&bind_layouts.blend),
         ];
 
         let complex_blend_pipelines = enum_map! {
@@ -143,15 +153,15 @@ impl Pipelines {
                 &VERTEX_BUFFERS_DESCRIPTION_POS,
                 &complex_blend_bindings,
                 BlendState::REPLACE,
-                &[],
+                0,
                 PrimitiveTopology::TriangleList,
             )
         };
 
         let bitmap_blend_bindings = vec![
-            &bind_layouts.globals,
-            &bind_layouts.transforms,
-            &bind_layouts.bitmap,
+            Some(&bind_layouts.globals),
+            Some(&bind_layouts.transforms),
+            Some(&bind_layouts.bitmap),
         ];
 
         let bitmap_pipelines = EnumMap::from_fn(|blend: TrivialBlend| {
@@ -161,10 +171,10 @@ impl Pipelines {
                 format,
                 &shaders.bitmap_shader,
                 msaa_sample_count,
-                &VERTEX_BUFFERS_DESCRIPTION_POS,
+                &VERTEX_BUFFERS_DESCRIPTION_POS_UV,
                 &bitmap_blend_bindings,
                 blend.blend_state(),
-                &[],
+                0,
                 PrimitiveTopology::TriangleList,
             )
         });
@@ -175,7 +185,7 @@ impl Pipelines {
             device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
                 label: bitmap_opaque_pipeline_layout_label.as_deref(),
                 bind_group_layouts: &bitmap_blend_bindings,
-                push_constant_ranges: &[],
+                immediate_size: 0,
             });
 
         let bitmap_opaque = device.create_render_pipeline(&create_pipeline_descriptor(
@@ -189,7 +199,7 @@ impl Pipelines {
                 blend: Some(BlendState::REPLACE),
                 write_mask: wgpu::ColorWrites::COLOR,
             })],
-            &VERTEX_BUFFERS_DESCRIPTION_POS,
+            &VERTEX_BUFFERS_DESCRIPTION_POS_UV,
             msaa_sample_count,
             &[("late_saturate", 1.0)],
             PrimitiveTopology::TriangleList,
@@ -202,8 +212,8 @@ impl Pipelines {
             &bitmap_opaque_pipeline_layout,
             Some(wgpu::DepthStencilState {
                 format: wgpu::TextureFormat::Stencil8,
-                depth_write_enabled: false,
-                depth_compare: wgpu::CompareFunction::Always,
+                depth_write_enabled: Some(false),
+                depth_compare: Some(wgpu::CompareFunction::Always),
                 stencil: wgpu::StencilState {
                     front: wgpu::StencilFaceState::IGNORE,
                     back: wgpu::StencilFaceState::IGNORE,
@@ -217,16 +227,16 @@ impl Pipelines {
                 blend: Some(BlendState::REPLACE),
                 write_mask: wgpu::ColorWrites::COLOR,
             })],
-            &VERTEX_BUFFERS_DESCRIPTION_POS,
+            &VERTEX_BUFFERS_DESCRIPTION_POS_UV,
             msaa_sample_count,
             &[],
             PrimitiveTopology::TriangleList,
         ));
 
         let alpha_mask_bindings = vec![
-            &bind_layouts.globals,
-            &bind_layouts.transforms,
-            &bind_layouts.alpha_mask,
+            Some(&bind_layouts.globals),
+            Some(&bind_layouts.transforms),
+            Some(&bind_layouts.alpha_mask),
         ];
 
         let alpha_mask_pipeline = create_shape_pipeline(
@@ -238,7 +248,7 @@ impl Pipelines {
             &VERTEX_BUFFERS_DESCRIPTION_POS,
             &alpha_mask_bindings,
             BlendState::PREMULTIPLIED_ALPHA_BLENDING,
-            &[],
+            0,
             PrimitiveTopology::TriangleList,
         );
 
@@ -263,7 +273,7 @@ fn create_pipeline_descriptor<'a>(
     pipeline_layout: &'a wgpu::PipelineLayout,
     depth_stencil_state: Option<wgpu::DepthStencilState>,
     color_target_state: &'a [Option<wgpu::ColorTargetState>],
-    vertex_buffer_layout: &'a [wgpu::VertexBufferLayout<'a>],
+    vertex_buffer_layout: &'a [Option<wgpu::VertexBufferLayout<'a>>],
     msaa_sample_count: u32,
     fragment_constants: &'a [(&str, f64)],
     primitive_topology: PrimitiveTopology,
@@ -288,7 +298,13 @@ fn create_pipeline_descriptor<'a>(
         }),
         primitive: wgpu::PrimitiveState {
             topology: primitive_topology,
-            strip_index_format: None,
+            // All indexed draws in this backend use `Uint32` indices, and wgpu
+            // requires this to be set for indexed drawing with strip topologies.
+            strip_index_format: matches!(
+                primitive_topology,
+                PrimitiveTopology::LineStrip | PrimitiveTopology::TriangleStrip
+            )
+            .then_some(wgpu::IndexFormat::Uint32),
             front_face: wgpu::FrontFace::Ccw,
             cull_mode: None,
             polygon_mode: wgpu::PolygonMode::default(),
@@ -301,7 +317,7 @@ fn create_pipeline_descriptor<'a>(
             mask: !0,
             alpha_to_coverage_enabled: false,
         },
-        multiview: None,
+        multiview_mask: None,
         cache: None,
     }
 }
@@ -313,17 +329,17 @@ fn create_shape_pipeline(
     format: wgpu::TextureFormat,
     shader: &wgpu::ShaderModule,
     msaa_sample_count: u32,
-    vertex_buffers_layout: &[wgpu::VertexBufferLayout<'_>],
-    bind_group_layouts: &[&wgpu::BindGroupLayout],
+    vertex_buffers_layout: &[Option<wgpu::VertexBufferLayout<'_>>],
+    bind_group_layouts: &[Option<&wgpu::BindGroupLayout>],
     blend: BlendState,
-    push_constant_ranges: &[wgpu::PushConstantRange],
+    immediate_size: u32,
     primitive_topology: PrimitiveTopology,
 ) -> ShapePipeline {
     let pipeline_layout_label = create_debug_label!("{} shape pipeline layout", name);
     let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
         label: pipeline_layout_label.as_deref(),
         bind_group_layouts,
-        push_constant_ranges,
+        immediate_size,
     });
 
     let mask_render_state = |mask_name, stencil_state, write_mask| {
@@ -334,8 +350,8 @@ fn create_shape_pipeline(
             &pipeline_layout,
             Some(wgpu::DepthStencilState {
                 format: wgpu::TextureFormat::Stencil8,
-                depth_write_enabled: false,
-                depth_compare: wgpu::CompareFunction::Always,
+                depth_write_enabled: Some(false),
+                depth_compare: Some(wgpu::CompareFunction::Always),
                 stencil: wgpu::StencilState {
                     front: stencil_state,
                     back: stencil_state,

@@ -1,4 +1,5 @@
 use crate::avm2::error::{make_error_2182, make_error_2186};
+use crate::avm2::function::FunctionArgs;
 use crate::avm2::globals::flash::geom::transform::object_to_perspective_projection;
 use crate::avm2::globals::slots::flash_geom_perspective_projection as pp_slots;
 use crate::avm2::globals::slots::flash_geom_point as point_slots;
@@ -28,7 +29,7 @@ fn get_width<'gc>(activation: &mut Activation<'_, 'gc>, this: Object<'gc>) -> f6
 pub fn get_focal_length<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
@@ -42,7 +43,7 @@ pub fn get_focal_length<'gc>(
 pub fn set_focal_length<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     // FIXME: Render with the given PerspectiveProjection.
     avm2_stub_setter!(
@@ -71,7 +72,7 @@ pub fn set_focal_length<'gc>(
 pub fn get_field_of_view<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
@@ -83,7 +84,7 @@ pub fn get_field_of_view<'gc>(
 pub fn set_field_of_view<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     // FIXME: Render with the given PerspectiveProjection.
     avm2_stub_setter!(
@@ -111,7 +112,7 @@ pub fn set_field_of_view<'gc>(
 pub fn get_projection_center<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
@@ -128,7 +129,7 @@ pub fn get_projection_center<'gc>(
 pub fn set_projection_center<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     // FIXME: Render with the given PerspectiveProjection.
     avm2_stub_setter!(
@@ -152,7 +153,7 @@ pub fn set_projection_center<'gc>(
 pub fn to_matrix_3d<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 

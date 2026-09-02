@@ -111,8 +111,10 @@ impl WgpuContext3D {
             });
 
             BitmapHandle(Arc::new(Texture {
-                bind_linear: Default::default(),
-                bind_nearest: Default::default(),
+                repeating_linear: Default::default(),
+                repeating_nearest: Default::default(),
+                clamped_linear: Default::default(),
+                clamped_nearest: Default::default(),
                 texture: dummy_texture,
                 copy_count: Cell::new(0),
             }))
@@ -122,7 +124,7 @@ impl WgpuContext3D {
         let front_buffer_raw_texture_handle = make_dummy_handle();
 
         // FIXME - determine the best chunk size for this
-        let buffer_staging_belt = StagingBelt::new(1024);
+        let buffer_staging_belt = StagingBelt::new(descriptors.device.clone(), 1024);
         let current_pipeline = CurrentPipeline::new(&descriptors);
 
         let buffer_command_encoder =
@@ -651,14 +653,18 @@ impl Context3D for WgpuContext3D {
                     // this is our resolve texture.
                     self.back_buffer_raw_texture_handle = BitmapHandle(Arc::new(Texture {
                         texture: back_buffer_resolve_texture.unwrap(),
-                        bind_linear: Default::default(),
-                        bind_nearest: Default::default(),
+                        repeating_linear: Default::default(),
+                        repeating_nearest: Default::default(),
+                        clamped_linear: Default::default(),
+                        clamped_nearest: Default::default(),
                         copy_count: Cell::new(0),
                     }));
                     self.front_buffer_raw_texture_handle = BitmapHandle(Arc::new(Texture {
                         texture: front_buffer_resolve_texture.unwrap(),
-                        bind_linear: Default::default(),
-                        bind_nearest: Default::default(),
+                        repeating_linear: Default::default(),
+                        repeating_nearest: Default::default(),
+                        clamped_linear: Default::default(),
+                        clamped_nearest: Default::default(),
                         copy_count: Cell::new(0),
                     }));
                 } else {
@@ -667,14 +673,18 @@ impl Context3D for WgpuContext3D {
 
                     self.back_buffer_raw_texture_handle = BitmapHandle(Arc::new(Texture {
                         texture: back_buffer_texture,
-                        bind_linear: Default::default(),
-                        bind_nearest: Default::default(),
+                        repeating_linear: Default::default(),
+                        repeating_nearest: Default::default(),
+                        clamped_linear: Default::default(),
+                        clamped_nearest: Default::default(),
                         copy_count: Cell::new(0),
                     }));
                     self.front_buffer_raw_texture_handle = BitmapHandle(Arc::new(Texture {
                         texture: front_buffer_texture,
-                        bind_linear: Default::default(),
-                        bind_nearest: Default::default(),
+                        repeating_linear: Default::default(),
+                        repeating_nearest: Default::default(),
+                        clamped_linear: Default::default(),
+                        clamped_nearest: Default::default(),
                         copy_count: Cell::new(0),
                     }));
                     self.current_texture_resolve_view = None;
@@ -714,7 +724,6 @@ impl Context3D for WgpuContext3D {
                         &buffer.buffer,
                         rounded_down_offset as u64,
                         NonZeroU64::new(rounded_up_length as u64).unwrap(),
-                        &self.descriptors.device,
                     )
                     .copy_from_slice(
                         &buffer.data
@@ -737,14 +746,15 @@ impl Context3D for WgpuContext3D {
 
                 // ActionScript can only work with 32-bit chunks of data, so our `write_buffer`
                 // offset and size will always be a multiple of `COPY_BUFFER_ALIGNMENT` (4 bytes)
-                self.buffer_staging_belt.write_buffer(
-                    &mut self.buffer_command_encoder,
-                    &buffer.buffer,
-                    (start_vertex * (data32_per_vertex as usize) * std::mem::size_of::<f32>())
-                        as u64,
-                    NonZeroU64::new(data.len() as u64).unwrap(),
-                    &self.descriptors.device,
-                )[..data.len()]
+                self.buffer_staging_belt
+                    .write_buffer(
+                        &mut self.buffer_command_encoder,
+                        &buffer.buffer,
+                        (start_vertex * (data32_per_vertex as usize) * std::mem::size_of::<f32>())
+                            as u64,
+                        NonZeroU64::new(data.len() as u64).unwrap(),
+                    )
+                    .slice(..data.len())
                     .copy_from_slice(data);
             }
 
@@ -956,7 +966,6 @@ impl Context3D for WgpuContext3D {
                     offset,
                     NonZeroU64::new(std::mem::size_of_val(matrix_raw_data_column_major) as u64)
                         .unwrap(),
-                    &self.descriptors.device,
                 );
                 // Despite what the docs claim, we copy in *column* major order, rather than *row* major order.
                 // See this code in OpenFL: https://github.com/openfl/openfl/blob/971a4c9e43b5472fd84d73920a2b7c1b3d8d9257/src/openfl/display3D/Context3D.hx#L1532-L1550
@@ -1006,17 +1015,20 @@ impl Context3D for WgpuContext3D {
                     mapped_at_creation: true,
                 });
 
-                let mut texture_buffer_view = texture_buffer.slice(..).get_mapped_range_mut();
+                let mut texture_buffer_view = texture_buffer
+                    .slice(..)
+                    .get_mapped_range_mut()
+                    .expect("Texture buffer must be mappable");
                 if dest_bytes_per_row == src_bytes_per_row {
                     // No padding, we can copy everything in one go.
                     texture_buffer_view.copy_from_slice(source);
                 } else {
                     // Copy row by row.
-                    for (dest, src) in texture_buffer_view
-                        .chunks_exact_mut(dest_bytes_per_row as usize)
-                        .zip(source.chunks_exact(src_bytes_per_row as usize))
-                    {
-                        let (dest, padding) = dest.split_at_mut(src_bytes_per_row as usize);
+                    for (row, src) in source.chunks_exact(src_bytes_per_row as usize).enumerate() {
+                        let row_start = row * dest_bytes_per_row as usize;
+                        let (mut dest, mut padding) = texture_buffer_view
+                            .slice(row_start..row_start + dest_bytes_per_row as usize)
+                            .split_at(src_bytes_per_row as usize);
                         dest.copy_from_slice(src);
                         padding.fill(0);
                     }

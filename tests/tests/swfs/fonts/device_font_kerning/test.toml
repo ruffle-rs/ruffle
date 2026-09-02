@@ -9,3 +9,9 @@ with_renderer = { optional = false, quality = "high" }
 [fonts.a]
 family = "TestFont"
 path = "TestFont.ttf"
+
+[subtests.embedded.player_options]
+device_font_renderer = "embedded"
+
+[subtests.freetype.player_options]
+device_font_renderer = "freetype"

@@ -271,13 +271,20 @@ impl<'gc> TDisplayObject<'gc> for Avm1Button<'gc> {
         self.set_default_instance_name(context);
 
         if self.0.object.get().is_none() {
-            let object = Object::new_with_native(
-                &context.strings,
-                Some(context.avm1.prototypes(self.swf_version()).button),
-                NativeObject::Button(self),
-            );
-            let obj = unlock!(Gc::write(context.gc(), self.0), Avm1ButtonData, object);
+            let id = ActivationIdentifier::root("[Construct]");
+            let mut activation = Activation::from_nothing(context, id, self.into());
+            let constr = activation.resolve_class([istr!("Button")]);
+            let proto = constr.and_then(|c| c.prototype(&mut activation));
+            let native = NativeObject::Button(self);
+            let object = Object::new_with_native(activation.strings(), proto, native);
+
+            let obj = unlock!(Gc::write(activation.gc(), self.0), Avm1ButtonData, object);
             obj.set(Some(object));
+
+            // The constructor is called, even though it does nothing by default.
+            if let Some(constr) = constr {
+                let _ = constr.construct_on_existing(&mut activation, object, &[]);
+            }
         }
 
         if !self.0.initialized.get() {
@@ -605,6 +612,7 @@ impl<'gc> Avm1ButtonData<'gc> {
                         parent,
                         ActionType::Normal {
                             bytecode: action.action_data.clone(),
+                            name: "[Button event]",
                         },
                         false,
                     );

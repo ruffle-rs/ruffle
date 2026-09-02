@@ -87,7 +87,7 @@ impl PixelBenderWgpuShader {
                             mask: !0,
                             alpha_to_coverage_enabled: false,
                         },
-                        multiview: Default::default(),
+                        multiview_mask: None,
                         cache: None,
                     })
             })
@@ -194,8 +194,8 @@ impl PixelBenderWgpuShader {
                 .device
                 .create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
                     label: pipeline_layout_label.as_deref(),
-                    bind_group_layouts: &[&bind_group_layout],
-                    push_constant_ranges: &[],
+                    bind_group_layouts: &[Some(&bind_group_layout)],
+                    immediate_size: 0,
                 });
 
         let shaders =
@@ -256,7 +256,7 @@ impl PixelBenderWgpuShader {
             int_parameters_buffer_size: shaders.int_parameters_buffer_size,
             zeroed_out_of_range_mode,
             // FIXME - come up with a good chunk size
-            staging_belt: RefCell::new(StagingBelt::new(8)),
+            staging_belt: RefCell::new(StagingBelt::new(descriptors.device.clone(), 8)),
         }
     }
 }
@@ -412,7 +412,6 @@ pub(super) fn run_pixelbender_shader_impl(
         &compiled_shader.zeroed_out_of_range_mode,
         0,
         NonZeroU64::new(std::mem::size_of::<f32>() as u64 * 4).unwrap(),
-        &descriptors.device,
     );
 
     // This would ideally be a single f32, but web requires at least 16 bytes
@@ -484,8 +483,10 @@ pub(super) fn run_pixelbender_shader_impl(
 
                         BitmapHandle(Arc::new(Texture {
                             texture: fresh_texture,
-                            bind_linear: Default::default(),
-                            bind_nearest: Default::default(),
+                            repeating_linear: Default::default(),
+                            repeating_nearest: Default::default(),
+                            clamped_linear: Default::default(),
+                            clamped_nearest: Default::default(),
                             copy_count: Cell::new(0),
                         }))
                     });
@@ -591,7 +592,6 @@ pub(super) fn run_pixelbender_shader_impl(
                     buffer,
                     vec4_count as u64 * 4 * component_size_bytes,
                     NonZeroU64::new(num_vec4s as u64 * 4 * component_size_bytes).unwrap(),
-                    &descriptors.device,
                 );
                 match value_vec {
                     FloatOrInt::Float(v) => {

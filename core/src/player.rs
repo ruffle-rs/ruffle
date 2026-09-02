@@ -15,6 +15,7 @@ use crate::backend::navigator::SuccessResponse;
 use crate::backend::ui::FontDefinition;
 use crate::backend::{
     audio::{AudioBackend, AudioManager},
+    locale::LocaleBackend,
     log::LogBackend,
     navigator::{NavigatorBackend, Request},
     storage::StorageBackend,
@@ -119,6 +120,21 @@ pub struct MouseData<'gc> {
     pub pressed: Option<InteractiveObject<'gc>>,
     pub right_pressed: Option<InteractiveObject<'gc>>,
     pub middle_pressed: Option<InteractiveObject<'gc>>,
+
+    /// The cursor forced through `flash.ui.Mouse.cursor`. `None` corresponds to
+    /// `MouseCursor.AUTO`: the cursor is chosen automatically from the object
+    /// under the pointer. Any other value overrides that automatic choice.
+    #[collect(require_static)]
+    pub forced_cursor: Option<MouseCursor>,
+
+    /// Whether `Player::update_drag` is currently inside its drop-target
+    /// mouse pick.
+    ///
+    /// That pick resolves AVM1 `hitArea` properties, which can run a user
+    /// getter that calls `stopDrag()` and thereby re-enter `update_drag`
+    /// while the drag is still active; this flag makes the nested call a
+    /// no-op instead of recursing until stack overflow.
+    pub updating_drop_target: bool,
 }
 
 impl<'gc> MouseData<'gc> {
@@ -316,6 +332,7 @@ pub struct Player {
     log: Box<dyn LogBackend>,
     ui: Box<dyn UiBackend>,
     video: Box<dyn VideoBackend>,
+    locale: Box<dyn LocaleBackend>,
 
     transform_stack: TransformStack,
 
@@ -1467,6 +1484,10 @@ impl Player {
 
     /// Update dragged object, if any.
     pub fn update_drag(context: &mut UpdateContext<'_>) {
+        if context.mouse_data.updating_drop_target {
+            // Prevent stack overflow.
+            return;
+        }
         let mouse_position = *context.mouse_position;
         if let Some(drag_object) = context.drag_object {
             let display_object = drag_object.display_object;
@@ -1509,7 +1530,9 @@ impl Player {
                 let was_visible = display_object.visible();
                 display_object.set_visible(context, false);
                 // Set `_droptarget` to the object the mouse is hovering over.
+                context.mouse_data.updating_drop_target = true;
                 let drop_target_object = run_mouse_pick(context, false);
+                context.mouse_data.updating_drop_target = false;
                 movie_clip.set_drop_target(
                     context.gc(),
                     drop_target_object.map(|d| d.as_displayobject()),
@@ -1734,21 +1757,26 @@ impl Player {
                     }
                     // Rolled over the new object.
                     if let Some(new_over_object) = new_over_object {
-                        new_cursor = new_over_object.mouse_cursor(context);
                         events.push((
                             new_over_object,
                             ClipEvent::RollOver {
                                 from: cur_over_object,
                             },
                         ));
-                    } else {
-                        new_cursor = MouseCursor::Arrow;
                     }
                 }
             }
             if !skip_mouse_hover && !new_over_object_updated {
                 context.mouse_data.hovered = new_over_object;
             }
+
+            // This needs set even when the new_over_object hasn't changed,
+            // so that the forced cursor, if previously set, can reset properly.
+            if is_mouse_moved && context.mouse_data.forced_cursor.is_none() {
+                new_cursor =
+                    new_over_object.map_or(MouseCursor::Arrow, |o| o.mouse_cursor(context));
+            }
+
             // Handle presses and releases.
             for button in [MouseButton::Left, MouseButton::Middle, MouseButton::Right] {
                 if !changed_mouse_buttons.contains(button) {
@@ -1883,6 +1911,13 @@ impl Player {
                 }
                 refresh
             };
+
+            // A cursor forced through `flash.ui.Mouse.cursor`
+            // overrides the automatic cursor.
+            if let Some(forced) = context.mouse_data.forced_cursor {
+                new_cursor = forced;
+            }
+
             Self::run_actions(context);
             needs_render
         });
@@ -2059,7 +2094,8 @@ impl Player {
                 commands: CommandList::new(),
                 cache_draws: &mut cache_draws,
                 gc_context,
-                library: &gc_root.library,
+                library: &mut gc_root.library,
+                ui: this.ui.deref(),
                 transform_stack: &mut this.transform_stack,
                 is_offscreen: false,
                 use_bitmap_cache: true,
@@ -2162,8 +2198,9 @@ impl Player {
 
             match action.action_type {
                 // DoAction/clip event code.
-                ActionType::Normal { bytecode } | ActionType::Initialize { bytecode } => {
-                    Avm1::run_stack_frame_for_action(action.clip, "[Frame]", bytecode, context);
+                ActionType::Normal { bytecode, name }
+                | ActionType::Initialize { bytecode, name } => {
+                    Avm1::run_stack_frame_for_action(action.clip, name, bytecode, context);
                 }
                 // Change the prototype of a MovieClip and run constructor events.
                 ActionType::Construct {
@@ -2289,6 +2326,7 @@ impl Player {
                 storage: this.storage.deref_mut(),
                 log: this.log.deref_mut(),
                 video: this.video.deref_mut(),
+                locale: this.locale.deref_mut(),
                 avm1_shared_objects,
                 avm2_shared_objects,
                 unbound_text_fields,
@@ -2326,7 +2364,6 @@ impl Player {
             let ret = f(&mut update_context);
 
             // If we changed the framerate, let the audio handler now.
-            #[expect(clippy::float_cmp)]
             if *update_context.frame_rate != prev_frame_rate {
                 update_context
                     .audio
@@ -2578,6 +2615,7 @@ pub struct PlayerBuilder {
     storage: Option<Box<dyn StorageBackend>>,
     ui: Option<Box<dyn UiBackend>>,
     video: Option<Box<dyn VideoBackend>>,
+    locale: Option<Box<dyn LocaleBackend>>,
 
     // Notifications
     notification_sender: Option<Sender<PlayerNotification>>,
@@ -2631,6 +2669,7 @@ impl PlayerBuilder {
             storage: None,
             ui: None,
             video: None,
+            locale: None,
 
             notification_sender: None,
 
@@ -2738,6 +2777,13 @@ impl PlayerBuilder {
     #[inline]
     pub fn with_video(mut self, video: impl 'static + VideoBackend) -> Self {
         self.video = Some(Box::new(video));
+        self
+    }
+
+    /// Sets the locale backend of the player.
+    #[inline]
+    pub fn with_locale(mut self, locale: impl 'static + LocaleBackend) -> Self {
+        self.locale = Some(Box::new(locale));
         self
     }
 
@@ -2935,6 +2981,8 @@ impl PlayerBuilder {
                 pressed: None,
                 right_pressed: None,
                 middle_pressed: None,
+                forced_cursor: None,
+                updating_drop_target: false,
             },
             avm1_shared_objects: HashMap::new(),
             avm2_shared_objects: HashMap::new(),
@@ -2985,6 +3033,9 @@ impl PlayerBuilder {
         let video = self
             .video
             .unwrap_or_else(|| Box::new(null::NullVideoBackend::new()));
+        let locale = self
+            .locale
+            .unwrap_or_else(|| Box::new(locale::DefaultLocaleBackend::new()));
 
         let player_version = self.player_version.unwrap_or(DEFAULT_PLAYER_VERSION);
         let language = ui.language();
@@ -3003,6 +3054,7 @@ impl PlayerBuilder {
                 storage,
                 ui,
                 video,
+                locale,
 
                 // SWF info
                 swf: fake_movie.clone(),

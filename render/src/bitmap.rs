@@ -1,8 +1,11 @@
+pub mod atlas;
+
 use h263_rs_yuv::bt601::yuv420_to_rgba;
 use ruffle_wstr::{FromWStr, WStr};
 use std::any::Any;
 use std::borrow::Cow;
 use std::fmt::Debug;
+use std::num::{NonZero, NonZeroUsize};
 use std::sync::Arc;
 
 use swf::{Rectangle, Twips};
@@ -27,6 +30,12 @@ pub struct BitmapInfo {
     pub handle: BitmapHandle,
     pub width: u32,
     pub height: u32,
+}
+
+impl BitmapInfo {
+    pub fn full_region(&self) -> PixelRegion {
+        PixelRegion::for_whole_size(self.width, self.height)
+    }
 }
 
 #[derive(Copy, Clone, Debug)]
@@ -117,37 +126,29 @@ pub struct Bitmap<'a> {
 }
 
 impl<'a> Bitmap<'a> {
+    // Produces an zero-sized image with the given format.
+    #[inline]
+    pub fn empty(format: BitmapFormat) -> Self {
+        Self {
+            width: 0,
+            height: 0,
+            format,
+            data: Cow::Borrowed(&[]),
+        }
+    }
+
     /// Ensures that `data` is the correct size for the given `width` and `height`.
     #[inline]
     pub fn new<D>(width: u32, height: u32, format: BitmapFormat, data: D) -> Self
     where
         D: Into<Cow<'a, [u8]>>,
     {
-        Self::new_impl(width, height, format, data.into())
-    }
+        let mut data = data.into();
 
-    fn new_impl(width: u32, height: u32, format: BitmapFormat, mut data: Cow<'a, [u8]>) -> Self {
         // If the size is incorrect, either we screwed up or the decoder screwed up.
         let expected_len = format.length_for_size(width as usize, height as usize);
         if data.len() != expected_len {
-            tracing::warn!(
-                "Incorrect bitmap data size, expected {} bytes, got {}",
-                expected_len,
-                data.len(),
-            );
-
-            // Truncate or zero-pad to the expected size.
-            if let Cow::Borrowed(slice) = &data {
-                // Allocate the owned buffer ourselves instead of using `Cow::to_mut`, to avoid
-                // a reallocation if the buffer needs to be padded.
-                let mut vec = Vec::with_capacity(expected_len);
-                vec.extend_from_slice(&slice[..expected_len]);
-                data = Cow::Owned(vec);
-            }
-            match &mut data {
-                Cow::Owned(data) => data.resize(expected_len, 0),
-                Cow::Borrowed(_) => unreachable!(),
-            }
+            Self::resize_data(&mut data, expected_len);
         }
 
         Self {
@@ -156,6 +157,52 @@ impl<'a> Bitmap<'a> {
             format,
             data,
         }
+    }
+
+    #[inline(never)]
+    #[cold]
+    fn resize_data(data: &mut Cow<'_, [u8]>, expected_len: usize) {
+        let len = data.len();
+        assert_ne!(len, expected_len);
+        tracing::warn!("Incorrect bitmap data size, expected {expected_len} bytes, got {len}");
+
+        match (&mut *data, expected_len.checked_sub(len)) {
+            // Not enough data: ensure we have an owned buffer with enough space to hold
+            // the extra padding.
+            (Cow::Borrowed(slice), Some(_)) => {
+                // Allocate the owned buffer ourselves instead of using `Cow::to_mut`, to avoid
+                // a reallocation if the buffer needs to be padded.
+                let mut vec = Vec::with_capacity(expected_len);
+                vec.extend_from_slice(slice);
+                *data = Cow::Owned(vec);
+            }
+            (Cow::Owned(buf), Some(extra)) => buf.reserve_exact(extra),
+
+            // Too much data: truncate the excess.
+            (Cow::Borrowed(slice), None) => *slice = &slice[..expected_len],
+            // The `resize` call just after this will take care of the truncation.
+            (Cow::Owned(_), None) => (),
+        }
+
+        // Thanks to the previous `match`, this will never have to reallocate.
+        if let Cow::Owned(buf) = data {
+            buf.resize(expected_len, 0);
+        }
+    }
+
+    #[inline]
+    pub fn reborrow(&self) -> Bitmap<'_> {
+        Bitmap {
+            width: self.width,
+            height: self.height,
+            format: self.format,
+            data: Cow::Borrowed(&self.data),
+        }
+    }
+
+    #[inline]
+    pub fn into_buf(self) -> Cow<'a, [u8]> {
+        self.data
     }
 
     pub fn to_rgb(mut self) -> Self {
@@ -270,6 +317,53 @@ impl<'a> Bitmap<'a> {
         &self.data
     }
 
+    /// Copies the pixel data from `source` into this bitmap, placing its
+    /// top-left corner at `(x, y)`. Both bitmaps must share the same format.
+    pub fn set_region(&mut self, source: &Bitmap<'_>, x: u32, y: u32) {
+        assert_eq!(
+            self.format, source.format,
+            "Can't copy a region between bitmaps of different formats"
+        );
+        let bytes_per_pixel = self
+            .format
+            .bytes_per_pixel()
+            .expect("Unsupported bitmap for region operations")
+            .get();
+        assert!(x + source.width <= self.width);
+        assert!(y + source.height <= self.height);
+
+        let dest_stride = self.width as usize * bytes_per_pixel;
+        let src_stride = source.width as usize * bytes_per_pixel;
+        let dest_data = self.data.to_mut();
+
+        for row in 0..source.height as usize {
+            let dest_offset = (y as usize + row) * dest_stride + x as usize * bytes_per_pixel;
+            let src_offset = row * src_stride;
+            dest_data[dest_offset..dest_offset + src_stride]
+                .copy_from_slice(&source.data[src_offset..src_offset + src_stride]);
+        }
+    }
+
+    /// Zeroes out the pixel data within the given region.
+    pub fn clear_region(&mut self, x: u32, y: u32, width: u32, height: u32) {
+        let bytes_per_pixel = self
+            .format
+            .bytes_per_pixel()
+            .expect("Unsupported bitmap for region operations")
+            .get();
+        assert!(x + width <= self.width);
+        assert!(y + height <= self.height);
+
+        let dest_stride = self.width as usize * bytes_per_pixel;
+        let row_len = width as usize * bytes_per_pixel;
+        let dest_data = self.data.to_mut();
+
+        for row in 0..height as usize {
+            let dest_offset = (y as usize + row) * dest_stride + x as usize * bytes_per_pixel;
+            dest_data[dest_offset..dest_offset + row_len].fill(0);
+        }
+    }
+
     pub fn as_colors(&self) -> impl Iterator<Item = u32> + '_ {
         let chunks = match self.format {
             BitmapFormat::Rgb => self.data.chunks_exact(3),
@@ -323,6 +417,17 @@ impl BitmapFormat {
             BitmapFormat::Rgba => true,
             BitmapFormat::Yuv420p => false,
             BitmapFormat::Yuva420p => true,
+        }
+    }
+
+    pub fn bytes_per_pixel(self) -> Option<NonZeroUsize> {
+        match self {
+            #[allow(clippy::unwrap_used)]
+            BitmapFormat::Rgb => Some(NonZero::new(3).unwrap()),
+            #[allow(clippy::unwrap_used)]
+            BitmapFormat::Rgba => Some(NonZero::new(4).unwrap()),
+            BitmapFormat::Yuv420p => None,
+            BitmapFormat::Yuva420p => None,
         }
     }
 }
@@ -473,10 +578,20 @@ impl PixelRegion {
     }
 
     pub fn intersects(&self, other: PixelRegion) -> bool {
-        self.x_min <= other.x_max
-            && self.x_max >= other.x_min
-            && self.y_min <= other.y_max
-            && self.y_max >= other.y_min
+        // An empty region contains no pixels, and so never intersects anything,
+        // even another region it's positioned inside of.
+        if self.is_empty() || other.is_empty() {
+            return false;
+        }
+
+        self.x_min < other.x_max
+            && self.x_max > other.x_min
+            && self.y_min < other.y_max
+            && self.y_max > other.y_min
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.x_min >= self.x_max || self.y_min >= self.y_max
     }
 
     pub fn width(&self) -> u32 {
@@ -572,7 +687,232 @@ impl From<Rectangle<Twips>> for PixelRegion {
 
 #[cfg(test)]
 mod test {
-    use super::PixelRegion;
+    use super::{Bitmap, BitmapFormat, PixelRegion};
+
+    fn filled_bitmap(width: u32, height: u32, fill: u8) -> Bitmap<'static> {
+        let len = BitmapFormat::Rgba.length_for_size(width as usize, height as usize);
+        Bitmap::new(width, height, BitmapFormat::Rgba, vec![fill; len])
+    }
+
+    #[test]
+    fn set_region() {
+        let mut dest = filled_bitmap(4, 4, 0x11);
+        let source = filled_bitmap(2, 3, 0x22);
+
+        dest.set_region(&source, 1, 1);
+
+        let expected: Vec<u8> = [
+            [0x11; 4], [0x11; 4], [0x11; 4], [0x11; 4], //
+            [0x11; 4], [0x22; 4], [0x22; 4], [0x11; 4], //
+            [0x11; 4], [0x22; 4], [0x22; 4], [0x11; 4], //
+            [0x11; 4], [0x22; 4], [0x22; 4], [0x11; 4],
+        ]
+        .concat();
+
+        assert_eq!(expected, dest.data());
+    }
+
+    #[test]
+    fn clear_region() {
+        let mut bitmap = filled_bitmap(4, 4, 0xFF);
+
+        bitmap.clear_region(1, 1, 2, 2);
+
+        let expected: Vec<u8> = [
+            [0xFF; 4], [0xFF; 4], [0xFF; 4], [0xFF; 4], //
+            [0xFF; 4], [0x00; 4], [0x00; 4], [0xFF; 4], //
+            [0xFF; 4], [0x00; 4], [0x00; 4], [0xFF; 4], //
+            [0xFF; 4], [0xFF; 4], [0xFF; 4], [0xFF; 4],
+        ]
+        .concat();
+
+        assert_eq!(expected, bitmap.data());
+    }
+
+    #[test]
+    fn set_region_full_size() {
+        let mut dest = filled_bitmap(3, 2, 0x11);
+        let source = filled_bitmap(3, 2, 0x22);
+
+        dest.set_region(&source, 0, 0);
+
+        assert_eq!(vec![0x22; 3 * 2 * 4], dest.data());
+    }
+
+    #[test]
+    fn set_region_zero_sized_source() {
+        let mut dest = filled_bitmap(3, 2, 0x11);
+        let source = filled_bitmap(0, 0, 0x22);
+
+        dest.set_region(&source, 1, 1);
+
+        assert_eq!(vec![0x11; 3 * 2 * 4], dest.data());
+    }
+
+    #[test]
+    fn set_region_flush_with_bottom_right_edge() {
+        let mut dest = filled_bitmap(4, 4, 0x11);
+        let source = filled_bitmap(2, 2, 0x22);
+
+        // Bottom-right corner of the source lands exactly on the dest's edge.
+        dest.set_region(&source, 2, 2);
+
+        let expected: Vec<u8> = [
+            [0x11; 4], [0x11; 4], [0x11; 4], [0x11; 4], //
+            [0x11; 4], [0x11; 4], [0x11; 4], [0x11; 4], //
+            [0x11; 4], [0x11; 4], [0x22; 4], [0x22; 4], //
+            [0x11; 4], [0x11; 4], [0x22; 4], [0x22; 4],
+        ]
+        .concat();
+
+        assert_eq!(expected, dest.data());
+    }
+
+    #[test]
+    #[should_panic]
+    fn set_region_out_of_bounds_x() {
+        let mut dest = filled_bitmap(4, 4, 0x11);
+        let source = filled_bitmap(2, 2, 0x22);
+        dest.set_region(&source, 3, 0);
+    }
+
+    #[test]
+    #[should_panic]
+    fn set_region_out_of_bounds_y() {
+        let mut dest = filled_bitmap(4, 4, 0x11);
+        let source = filled_bitmap(2, 2, 0x22);
+        dest.set_region(&source, 0, 3);
+    }
+
+    #[test]
+    #[should_panic]
+    fn set_region_different_formats() {
+        let mut dest = filled_bitmap(4, 4, 0x11);
+        let source = Bitmap::new(2, 2, BitmapFormat::Rgb, vec![0x22; 2 * 2 * 3]);
+        dest.set_region(&source, 0, 0);
+    }
+
+    #[test]
+    fn clear_region_zero_sized() {
+        let mut bitmap = filled_bitmap(3, 2, 0xFF);
+        bitmap.clear_region(1, 1, 0, 0);
+        assert_eq!(vec![0xFF; 3 * 2 * 4], bitmap.data());
+    }
+
+    #[test]
+    fn clear_region_full_size() {
+        let mut bitmap = filled_bitmap(3, 2, 0xFF);
+        bitmap.clear_region(0, 0, 3, 2);
+        assert_eq!(vec![0x00; 3 * 2 * 4], bitmap.data());
+    }
+
+    #[test]
+    fn clear_region_flush_with_bottom_right_edge() {
+        let mut bitmap = filled_bitmap(4, 4, 0xFF);
+
+        bitmap.clear_region(2, 2, 2, 2);
+
+        let expected: Vec<u8> = [
+            [0xFF; 4], [0xFF; 4], [0xFF; 4], [0xFF; 4], //
+            [0xFF; 4], [0xFF; 4], [0xFF; 4], [0xFF; 4], //
+            [0xFF; 4], [0xFF; 4], [0x00; 4], [0x00; 4], //
+            [0xFF; 4], [0xFF; 4], [0x00; 4], [0x00; 4],
+        ]
+        .concat();
+
+        assert_eq!(expected, bitmap.data());
+    }
+
+    #[test]
+    #[should_panic]
+    fn clear_region_out_of_bounds_x() {
+        let mut bitmap = filled_bitmap(4, 4, 0xFF);
+        bitmap.clear_region(3, 0, 2, 2);
+    }
+
+    #[test]
+    #[should_panic]
+    fn clear_region_out_of_bounds_y() {
+        let mut bitmap = filled_bitmap(4, 4, 0xFF);
+        bitmap.clear_region(0, 3, 2, 2);
+    }
+
+    #[test]
+    fn intersects() {
+        fn region(x: u32, y: u32, width: u32, height: u32) -> PixelRegion {
+            PixelRegion::for_region(x, y, width, height)
+        }
+
+        fn test(a: PixelRegion, b: PixelRegion, expected: bool) {
+            assert_eq!(
+                expected,
+                a.intersects(b),
+                "a.intersects(b) should be {expected} for a={a:?}, b={b:?}"
+            );
+            assert_eq!(
+                expected,
+                b.intersects(a),
+                "intersects should be symmetric for a={a:?}, b={b:?}"
+            );
+        }
+
+        // Identical regions overlap.
+        test(region(0, 0, 10, 10), region(0, 0, 10, 10), true);
+
+        // A region always intersects itself.
+        test(region(3, 4, 5, 6), region(3, 4, 5, 6), true);
+
+        // Partial overlap on both axes.
+        test(region(0, 0, 10, 10), region(5, 5, 10, 10), true);
+
+        // One region fully contains the other.
+        test(region(0, 0, 10, 10), region(2, 2, 2, 2), true);
+
+        // Overlapping on the x axis, but not the y axis.
+        test(region(0, 0, 10, 10), region(5, 20, 10, 10), false);
+
+        // Overlapping on the y axis, but not the x axis.
+        test(region(0, 0, 10, 10), region(20, 5, 10, 10), false);
+
+        // Completely separate on both axes.
+        test(region(0, 0, 10, 10), region(20, 20, 10, 10), false);
+
+        // Touching edges (exclusive max bound) do not count as intersecting.
+        test(region(0, 0, 10, 10), region(10, 0, 10, 10), false);
+        test(region(0, 0, 10, 10), region(0, 10, 10, 10), false);
+        test(region(0, 0, 10, 10), region(10, 10, 10, 10), false);
+
+        // A single pixel gap between regions.
+        test(region(0, 0, 10, 10), region(11, 0, 10, 10), false);
+
+        // A single row/column of overlap counts as intersecting.
+        test(region(0, 0, 10, 10), region(9, 0, 10, 10), true);
+        test(region(0, 0, 10, 10), region(0, 9, 10, 10), true);
+
+        // Single-pixel regions.
+        test(
+            PixelRegion::for_pixel(5, 5),
+            PixelRegion::for_pixel(5, 5),
+            true,
+        );
+        test(
+            PixelRegion::for_pixel(5, 5),
+            PixelRegion::for_pixel(6, 5),
+            false,
+        );
+        test(
+            PixelRegion::for_pixel(5, 5),
+            PixelRegion::for_pixel(4, 5),
+            false,
+        );
+
+        // Zero-sized (empty) regions never intersect anything, even themselves
+        // or regions they're placed inside of.
+        test(region(0, 0, 0, 0), region(0, 0, 0, 0), false);
+        test(region(5, 5, 0, 0), region(0, 0, 10, 10), false);
+        test(region(0, 0, 10, 0), region(0, 0, 10, 10), false);
+        test(region(0, 0, 0, 10), region(0, 0, 10, 10), false);
+    }
 
     #[test]
     fn clamp_with_intersection() {

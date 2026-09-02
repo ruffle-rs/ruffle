@@ -2,12 +2,13 @@
 
 use crate::avm2::Error;
 use crate::avm2::activation::Activation;
+use crate::avm2::function::FunctionArgs;
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
 
 pub fn int_constructor<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let int_value = args
         .get_optional(0)
@@ -20,7 +21,7 @@ pub fn int_constructor<'gc>(
 pub fn call_handler<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     Ok(args
         .get_optional(0)
@@ -34,7 +35,7 @@ pub fn call_handler<'gc>(
 pub fn to_exponential<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     _this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     unreachable!()
 }
@@ -42,7 +43,7 @@ pub fn to_exponential<'gc>(
 pub fn to_fixed<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     _this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     unreachable!()
 }
@@ -50,7 +51,7 @@ pub fn to_fixed<'gc>(
 pub fn to_precision<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     _this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     unreachable!()
 }
@@ -58,7 +59,7 @@ pub fn to_precision<'gc>(
 pub fn to_string<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     _this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     unreachable!()
 }
@@ -66,7 +67,7 @@ pub fn to_string<'gc>(
 pub fn value_of<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     _this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     unreachable!()
 }

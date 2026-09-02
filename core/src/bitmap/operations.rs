@@ -1187,7 +1187,12 @@ pub fn copy_pixels_with_alpha_source<'gc>(
                 };
 
                 if source_transparency {
-                    ((a as u16 * source_color.alpha() as u16) >> 8) as u8
+                    // A fully opaque alpha pixel leaves the source alpha untouched.
+                    if a == 255 {
+                        source_color.alpha()
+                    } else {
+                        ((a as u16 * source_color.alpha() as u16) >> 8) as u8
+                    }
                 } else {
                     a
                 }
@@ -1344,12 +1349,14 @@ fn copy_on_cpu<'gc>(
                 // Copying an entire texture that's the same size and type? Just replace the whole thing
                 dest.raw_pixels_mut().copy_from_slice(source.raw_pixels());
             } else {
+                let width = dest_region.width() as usize;
                 for y in 0..dest_region.height() {
-                    for x in 0..dest_region.width() {
-                        let color = source
-                            .get_pixel32_raw(source_region.x_min + x, source_region.y_min + y);
-                        dest.set_pixel32_raw(dest_region.x_min + x, dest_region.y_min + y, color);
-                    }
+                    let src_start =
+                        (source_region.x_min + (source_region.y_min + y) * source.width()) as usize;
+                    let dest_start =
+                        (dest_region.x_min + (dest_region.y_min + y) * dest.width()) as usize;
+                    dest.raw_pixels_mut()[dest_start..dest_start + width]
+                        .copy_from_slice(&source.raw_pixels()[src_start..src_start + width]);
                 }
             }
         } else {
@@ -1358,19 +1365,31 @@ fn copy_on_cpu<'gc>(
 
             let opaque = !dest.transparency();
 
+            let width = dest_region.width() as usize;
             for y in 0..dest_region.height() {
-                for x in 0..dest_region.width() {
-                    let mut color =
-                        source.get_pixel32_raw(source_region.x_min + x, source_region.y_min + y);
-                    if blend {
-                        color = dest
-                            .get_pixel32_raw(dest_region.x_min + x, dest_region.y_min + y)
-                            .blend_over(&color);
+                let src_start =
+                    (source_region.x_min + (source_region.y_min + y) * source.width()) as usize;
+                let dest_start =
+                    (dest_region.x_min + (dest_region.y_min + y) * dest.width()) as usize;
+                let dest_row = &mut dest.raw_pixels_mut()[dest_start..dest_start + width];
+                let src_row = &source.raw_pixels()[src_start..src_start + width];
+                if blend {
+                    // Keep the `opaque` check inside the loop: LLVM if-converts it and
+                    // vectorizes the whole body, measurably better than two split loops.
+                    for (dest, src) in dest_row.iter_mut().zip(src_row) {
+                        let mut color = dest.blend_over(src);
+                        if opaque {
+                            color = color.with_alpha(255);
+                        }
+                        *dest = color;
                     }
-                    if opaque {
-                        color = color.with_alpha(255);
+                } else {
+                    // `!blend` with a transparent dest always takes the copy branch
+                    // above, so the dest is opaque here.
+                    debug_assert!(opaque);
+                    for (dest, src) in dest_row.iter_mut().zip(src_row) {
+                        *dest = src.to_un_multiplied_alpha().with_alpha(255);
                     }
-                    dest.set_pixel32_raw(dest_region.x_min + x, dest_region.y_min + y, color);
                 }
             }
         }
@@ -1534,6 +1553,7 @@ pub fn draw<'gc>(
         cache_draws: &mut cache_draws,
         gc_context: context.gc_context,
         library: context.library,
+        ui: context.ui,
         transform_stack: &mut transform_stack,
         is_offscreen: true,
         use_bitmap_cache: false,

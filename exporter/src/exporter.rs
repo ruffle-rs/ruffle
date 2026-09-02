@@ -6,6 +6,7 @@ use std::sync::Mutex;
 use image::RgbaImage;
 use ruffle_core::Player;
 use ruffle_core::PlayerBuilder;
+use ruffle_core::backend::locale::DeterministicLocaleBackend;
 use ruffle_core::limits::ExecutionLimit;
 use ruffle_core::tag_utils::movie_from_path;
 use ruffle_render_wgpu::backend::{
@@ -33,7 +34,8 @@ pub struct Exporter {
 
 impl Exporter {
     pub fn new(opt: &Opt) -> Result<Self> {
-        let instance = create_wgpu_instance(opt.graphics.into(), wgpu::BackendOptions::default());
+        let instance =
+            create_wgpu_instance(opt.graphics.into(), wgpu::BackendOptions::default(), None);
         let (adapter, device, queue) = futures::executor::block_on(request_adapter_and_device(
             opt.graphics.into(),
             &instance,
@@ -77,6 +79,7 @@ impl Exporter {
                 WgpuRenderBackend::new(self.descriptors.clone(), target)
                     .map_err(|e| anyhow!(e.to_string()))?,
             )
+            .with_locale(DeterministicLocaleBackend::default())
             .with_movie(movie)
             .with_viewport_dimensions(width, height, self.size.scale)
             .build();

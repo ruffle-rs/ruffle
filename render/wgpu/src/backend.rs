@@ -37,6 +37,7 @@ use std::sync::Arc;
 use swf::Color;
 use tracing::instrument;
 use wgpu::SubmissionIndex;
+use wgpu_profiler::{GpuProfiler, GpuProfilerSettings};
 
 /// Creates a wgpu instance with Ruffle's required configuration.
 ///
@@ -51,14 +52,19 @@ use wgpu::SubmissionIndex;
 pub fn create_wgpu_instance(
     backends: wgpu::Backends,
     backend_options: wgpu::BackendOptions,
+    display: Option<Box<dyn wgpu::wgt::WgpuHasDisplayHandle>>,
 ) -> wgpu::Instance {
-    wgpu::Instance::new(&wgpu::InstanceDescriptor {
+    let descriptor = match display {
+        Some(display) => wgpu::InstanceDescriptor::new_with_display_handle(display),
+        None => wgpu::InstanceDescriptor::new_without_display_handle(),
+    };
+    wgpu::Instance::new(wgpu::InstanceDescriptor {
         backends,
         flags: wgpu::InstanceFlags::default()
             .difference(wgpu::InstanceFlags::VALIDATION_INDIRECT_CALL)
             .with_env(),
         backend_options,
-        ..Default::default()
+        ..descriptor
     })
 }
 
@@ -76,6 +82,7 @@ pub struct WgpuRenderBackend<T: RenderTarget> {
     pub(crate) offscreen_buffer_pool: Arc<BufferPool<wgpu::Buffer, BufferDimensions>>,
     dynamic_transforms: DynamicTransforms,
     active_frame: ActiveFrame,
+    profiler: GpuProfiler,
 }
 
 impl WgpuRenderBackend<SwapChainTarget> {
@@ -99,6 +106,7 @@ impl WgpuRenderBackend<SwapChainTarget> {
                 },
                 ..Default::default()
             },
+            None,
         );
         let surface = instance.create_surface(wgpu::SurfaceTarget::Canvas(canvas))?;
         let (adapter, device, queue) = request_adapter_and_device(
@@ -116,12 +124,20 @@ impl WgpuRenderBackend<SwapChainTarget> {
 
     /// # Safety
     ///  See [`wgpu::SurfaceTargetUnsafe`] variants for safety requirements.
+    ///
+    /// Since wgpu 29, a display handle is needed at instance creation time:
+    /// pass one via `display`, or make sure the `window` target carries a raw
+    /// display handle (note that `SurfaceTargetUnsafe::from_window` does not
+    /// provide one). Prefer passing `display` - some backends (e.g. GL via
+    /// EGL) select their platform when the instance is created, before the
+    /// target's display handle is seen.
     #[cfg(not(target_family = "wasm"))]
     pub unsafe fn for_window_unsafe(
         window: wgpu::SurfaceTargetUnsafe,
         size: (u32, u32),
         backend: wgpu::Backends,
         power_preference: wgpu::PowerPreference,
+        display: Option<Box<dyn wgpu::wgt::WgpuHasDisplayHandle>>,
     ) -> Result<Self, Error> {
         if wgpu::Backends::SECONDARY.contains(backend) {
             tracing::warn!(
@@ -129,7 +145,7 @@ impl WgpuRenderBackend<SwapChainTarget> {
                 format_list(&get_backend_names(backend), "and")
             );
         }
-        let instance = create_wgpu_instance(backend, wgpu::BackendOptions::default());
+        let instance = create_wgpu_instance(backend, wgpu::BackendOptions::default(), display);
         let surface = unsafe { instance.create_surface_unsafe(window)? };
         let (adapter, device, queue) = futures::executor::block_on(request_adapter_and_device(
             backend,
@@ -171,7 +187,7 @@ impl WgpuRenderBackend<crate::target::TextureTarget> {
                 format_list(&get_backend_names(backend), "and")
             );
         }
-        let instance = create_wgpu_instance(backend, wgpu::BackendOptions::default());
+        let instance = create_wgpu_instance(backend, wgpu::BackendOptions::default(), None);
         let (adapter, device, queue) = futures::executor::block_on(request_adapter_and_device(
             backend,
             &instance,
@@ -236,6 +252,21 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
         let transforms = DynamicTransforms::new(&descriptors);
         let active_frame = ActiveFrame::new(&descriptors);
 
+        let profiler_settings = GpuProfilerSettings {
+            enable_timer_queries: cfg!(feature = "profile-with-tracy"),
+            enable_debug_groups: cfg!(feature = "render_debug_labels"),
+            ..Default::default()
+        };
+        #[cfg(feature = "profile-with-tracy")]
+        let profiler = GpuProfiler::new_with_tracy_client(
+            profiler_settings,
+            descriptors.backend,
+            &descriptors.device,
+            &descriptors.queue,
+        )?;
+        #[cfg(not(feature = "profile-with-tracy"))]
+        let profiler = GpuProfiler::new(&descriptors.device, profiler_settings)?;
+
         Ok(Self {
             descriptors,
             target,
@@ -248,7 +279,16 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
             offscreen_buffer_pool: Arc::new(offscreen_buffer_pool),
             dynamic_transforms: transforms,
             active_frame,
+            profiler,
         })
+    }
+
+    pub fn profiler(&self) -> &GpuProfiler {
+        &self.profiler
+    }
+
+    pub fn profiler_mut(&mut self) -> &mut GpuProfiler {
+        &mut self.profiler
     }
 
     fn register_shape_internal(
@@ -284,7 +324,6 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
                 draw,
                 shape_id,
                 draw_id,
-                &mut uniform_buffer,
                 &mut vertex_buffer,
                 &mut index_buffer,
             ) {
@@ -515,18 +554,14 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
         commands: CommandList,
         cache_entries: Vec<BitmapCacheEntry>,
     ) {
-        let frame_output = match self.target.get_next_texture() {
-            Ok(frame) => frame,
-            Err(e) => {
-                tracing::warn!("Couldn't begin new render frame: {}", e);
-                // Attempt to recreate the swap chain in this case.
-                self.target.resize(
-                    &self.descriptors.device,
-                    self.target.width(),
-                    self.target.height(),
-                );
-                return;
-            }
+        let Some(frame_output) = self.target.get_next_texture() else {
+            // Attempt to recreate the swap chain in this case.
+            self.target.resize(
+                &self.descriptors.device,
+                self.target.width(),
+                self.target.height(),
+            );
+            return;
         };
 
         for entry in cache_entries {
@@ -554,11 +589,16 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
                     entry.commands,
                     &mut self.active_frame.staging_belt,
                     &self.dynamic_transforms,
-                    &mut self.active_frame.command_encoder,
+                    &mut self
+                        .profiler
+                        .scope("Draw to CAB", &mut self.active_frame.command_encoder),
                     LayerRef::None,
                     &mut self.offscreen_texture_pool,
                 );
             } else {
+                let mut scope = self
+                    .profiler
+                    .scope("Filters", &mut self.active_frame.command_encoder);
                 // We're relying on there being no impotent filters here,
                 // so that we can safely start by using the actual CAB texture.
                 // It's guaranteed that at least one filter would have used it and moved the target to something else,
@@ -578,14 +618,14 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
                     entry.commands,
                     &mut self.active_frame.staging_belt,
                     &self.dynamic_transforms,
-                    &mut self.active_frame.command_encoder,
+                    &mut scope.scope("Draw to CAB"),
                     LayerRef::None,
                     &mut self.offscreen_texture_pool,
                 );
                 for filter in entry.filters {
                     target = self.descriptors.filters.apply(
                         &self.descriptors,
-                        &mut self.active_frame.command_encoder,
+                        &mut scope.scope(filter.name()),
                         &mut self.offscreen_texture_pool,
                         &mut self.active_frame.staging_belt,
                         FilterSource::for_entire_texture(target.color_texture()),
@@ -600,7 +640,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
                     target.whole_frame_bind_group(&self.descriptors),
                     target.globals(),
                     target.color_texture().sample_count(),
-                    &mut self.active_frame.command_encoder,
+                    &mut scope.scope("Copy filtered to CAB"),
                 );
             }
             // Periodically flush GPU work to prevent OOM when many cache entries
@@ -620,7 +660,9 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
             &self.descriptors,
             &mut self.active_frame.staging_belt,
             &self.dynamic_transforms,
-            &mut self.active_frame.command_encoder,
+            &mut self
+                .profiler
+                .scope("Frame commands", &mut self.active_frame.command_encoder),
             &self.meshes,
             commands,
             LayerRef::None,
@@ -681,8 +723,10 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
 
         let handle = BitmapHandle(Arc::new(Texture {
             texture,
-            bind_linear: Default::default(),
-            bind_nearest: Default::default(),
+            repeating_linear: Default::default(),
+            repeating_nearest: Default::default(),
+            clamped_linear: Default::default(),
+            clamped_nearest: Default::default(),
             copy_count: Cell::new(0),
         }));
 
@@ -782,7 +826,9 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
             &self.descriptors,
             &mut self.active_frame.staging_belt,
             &self.dynamic_transforms,
-            &mut self.active_frame.command_encoder,
+            &mut self
+                .profiler
+                .scope("Offscreen commands", &mut self.active_frame.command_encoder),
             &self.meshes,
             commands,
             LayerRef::Current,
@@ -955,8 +1001,10 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
                     });
                 BitmapHandle(Arc::new(Texture {
                     texture,
-                    bind_linear: Default::default(),
-                    bind_nearest: Default::default(),
+                    repeating_linear: Default::default(),
+                    repeating_nearest: Default::default(),
+                    clamped_linear: Default::default(),
+                    clamped_nearest: Default::default(),
                     copy_count: Cell::new(0),
                 }))
             }
@@ -1113,8 +1161,10 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
             });
         Ok(BitmapHandle(Arc::new(Texture {
             texture,
-            bind_linear: Default::default(),
-            bind_nearest: Default::default(),
+            repeating_linear: Default::default(),
+            repeating_nearest: Default::default(),
+            clamped_linear: Default::default(),
+            clamped_nearest: Default::default(),
             copy_count: Cell::new(0),
         })))
     }
@@ -1140,6 +1190,7 @@ pub async fn request_adapter_and_device(
         power_preference,
         compatible_surface: surface,
         force_fallback_adapter: false,
+        apply_limit_buckets: false,
     }).await
         .map_err(|_e| {
             let names = get_backend_names(backend);
@@ -1167,24 +1218,19 @@ async fn request_device(
     limits = limits.using_resolution(adapter.limits());
     limits = limits.using_alignment(adapter.limits());
     limits.max_uniform_buffer_binding_size = adapter.limits().max_uniform_buffer_binding_size;
-    limits.max_inter_stage_shader_components = adapter.limits().max_inter_stage_shader_components;
+    limits.max_inter_stage_shader_variables = adapter.limits().max_inter_stage_shader_variables;
     // This will be a default limit in a future wgpu version (down from 8).
     // It's required for some WebGL devices to be supported.
     limits.max_color_attachments = 4;
 
     let mut features = Default::default();
 
-    let try_features = [
-        wgpu::Features::TEXTURE_ADAPTER_SPECIFIC_FORMAT_FEATURES,
-        wgpu::Features::TEXTURE_COMPRESSION_BC,
-        wgpu::Features::FLOAT32_FILTERABLE,
-    ];
+    let optional_features = wgpu::Features::TEXTURE_ADAPTER_SPECIFIC_FORMAT_FEATURES
+        | wgpu::Features::TEXTURE_COMPRESSION_BC
+        | wgpu::Features::FLOAT32_FILTERABLE
+        | GpuProfiler::ALL_WGPU_TIMER_FEATURES;
 
-    for feature in try_features {
-        if adapter.features().contains(feature) {
-            features |= feature;
-        }
-    }
+    features |= optional_features & adapter.features();
 
     adapter
         .request_device(&wgpu::DeviceDescriptor {
@@ -1239,7 +1285,7 @@ impl ActiveFrame {
             command_encoder: descriptors
                 .device
                 .create_command_encoder(&Default::default()),
-            staging_belt: wgpu::util::StagingBelt::new(65536),
+            staging_belt: wgpu::util::StagingBelt::new(descriptors.device.clone(), 65536),
             draws_since_flush: 0,
         }
     }

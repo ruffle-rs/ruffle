@@ -106,7 +106,7 @@ impl<'gc> BoundMethod<'gc> {
 }
 
 #[derive(Clone, Copy)]
-pub enum FunctionArgs<'a, 'gc> {
+pub enum FunctionArgs<'a, 'gc: 'a> {
     AsCellArgs(&'a [Cell<Value<'gc>>]),
     AsArgs(&'a [Value<'gc>]),
 }
@@ -133,42 +133,86 @@ impl<'a, 'gc> FunctionArgs<'a, 'gc> {
         }
     }
 
-    pub fn get_at(&self, index: usize) -> Value<'gc> {
+    pub fn to_vec(self) -> Vec<Value<'gc>> {
+        match self {
+            FunctionArgs::AsCellArgs(arguments) => {
+                arguments.iter().map(|o| o.get()).collect::<Vec<_>>()
+            }
+            FunctionArgs::AsArgs(arguments) => arguments.to_vec(),
+        }
+    }
+
+    pub fn get_at(self, index: usize) -> Value<'gc> {
         match self {
             FunctionArgs::AsCellArgs(arguments) => arguments[index].get(),
             FunctionArgs::AsArgs(arguments) => arguments[index],
         }
     }
 
-    pub fn iter(&'a self) -> FunctionArgsIter<'a, 'gc> {
+    pub fn iter(self) -> FunctionArgsIter<'a, 'gc> {
         FunctionArgsIter {
             args: self,
             next: 0,
+            back: self.len(),
         }
     }
 
-    pub fn len(&self) -> usize {
+    pub fn len(self) -> usize {
         match self {
             FunctionArgs::AsCellArgs(arguments) => arguments.len(),
             FunctionArgs::AsArgs(arguments) => arguments.len(),
         }
     }
+
+    pub fn is_empty(self) -> bool {
+        self.len() == 0
+    }
+}
+
+impl<'a, 'gc> IntoIterator for FunctionArgs<'a, 'gc> {
+    type Item = Value<'gc>;
+    type IntoIter = FunctionArgsIter<'a, 'gc>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        FunctionArgsIter {
+            args: self,
+            next: 0,
+            back: self.len(),
+        }
+    }
 }
 
 pub struct FunctionArgsIter<'a, 'gc> {
-    args: &'a FunctionArgs<'a, 'gc>,
+    args: FunctionArgs<'a, 'gc>,
     next: usize,
+    back: usize,
 }
 
 impl<'a, 'gc> Iterator for FunctionArgsIter<'a, 'gc> {
     type Item = Value<'gc>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        if self.next == self.args.len() {
+        if self.next >= self.back {
             None
         } else {
             self.next += 1;
             Some(self.args.get_at(self.next - 1))
+        }
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        let size = self.back - self.next;
+        (size, Some(size))
+    }
+}
+
+impl<'a, 'gc> DoubleEndedIterator for FunctionArgsIter<'a, 'gc> {
+    fn next_back(&mut self) -> Option<Self::Item> {
+        if self.next >= self.back {
+            None
+        } else {
+            self.back -= 1;
+            Some(self.args.get_at(self.back))
         }
     }
 }
@@ -238,7 +282,9 @@ pub fn exec<'gc>(
 
             activation.context.avm2.push_call(mc, method);
 
-            native_method(&mut activation, receiver, &arguments)
+            let arguments = FunctionArgs::from_slice(&arguments);
+
+            native_method(&mut activation, receiver, arguments)
         }
         MethodKind::Bytecode { .. } => {
             if method.body().is_none() {

@@ -18,6 +18,12 @@ pub enum Error {
     #[error("Video decoding isn't supported")]
     DecodingNotSupported,
 
+    #[error("Video decoder didn't produce an output frame")]
+    DecoderNoOutputFrame,
+
+    #[error("Video decoder produced multiple output frames")]
+    DecoderMultipleOutputFrames,
+
     #[error(transparent)]
     DecoderError(Box<dyn std::error::Error + Send + Sync>),
 }

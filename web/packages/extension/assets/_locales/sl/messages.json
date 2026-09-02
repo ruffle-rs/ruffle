@@ -38,6 +38,9 @@
     "settings_player_version": {
         "message": "Številka različice Flash Playerja, ki jo želite emulirati (razpon 1-32)"
     },
+    "settings_background_execution_mode": {
+        "message": "Izvajanje v ozadju"
+    },
     "settings_preferred_renderer": {
         "message": "Prednostni izrisovalnik"
     },

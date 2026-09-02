@@ -602,6 +602,7 @@ impl CommandHandler for WebCanvasRenderBackend {
         transform: Transform,
         smoothing: bool,
         _pixel_snapping: PixelSnapping,
+        region: PixelRegion,
     ) {
         if self.mask_state == MaskState::ClearMask {
             return;
@@ -617,7 +618,17 @@ impl CommandHandler for WebCanvasRenderBackend {
         if bitmap_canvas.width() > 0 && bitmap_canvas.height() > 0 {
             let _ = self
                 .context
-                .draw_image_with_html_canvas_element(bitmap_canvas, 0.0, 0.0);
+                .draw_image_with_html_canvas_element_and_sw_and_sh_and_dx_and_dy_and_dw_and_dh(
+                    bitmap_canvas,
+                    region.x_min as f64,
+                    region.y_min as f64,
+                    region.width() as f64,
+                    region.height() as f64,
+                    0.0,
+                    0.0,
+                    region.width() as f64,
+                    region.height() as f64,
+                );
         }
 
         self.clear_color_filter();
