@@ -375,9 +375,6 @@ pub fn unload<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
-    // TODO: Broadcast an "unload" event on the LoaderInfo
-    avm2_stub_method!(activation, "flash.display.Loader", "unload");
-
     let loader_info = this
         .get_slot(loader_slots::_CONTENT_LOADER_INFO)
         .as_object()

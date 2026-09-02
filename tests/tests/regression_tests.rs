@@ -42,15 +42,20 @@ struct RuffleTestOpts {
 }
 
 fn main() {
+    let default_log_filter = default_log_filter();
+
     let _ = env_logger::Builder::from_env(
-        env_logger::Env::default().default_filter_or("info,wgpu_core=warn,wgpu_hal=warn"),
+        env_logger::Env::default().default_filter_or(&default_log_filter),
     )
     .format_timestamp(None)
     .is_test(true)
     .try_init();
 
     let subscriber = tracing_subscriber::fmt::Subscriber::builder()
-        .with_env_filter(tracing_subscriber::EnvFilter::from_default_env())
+        .with_env_filter(
+            tracing_subscriber::EnvFilter::try_from_default_env()
+                .unwrap_or_else(|_| tracing_subscriber::EnvFilter::new(default_log_filter)),
+        )
         .finish();
     // Ignore error if it's already been set
     let _ = tracing::subscriber::set_global_default(subscriber);
@@ -133,6 +138,17 @@ fn main() {
     env.flush_gpu_with_timeout(std::time::Duration::from_secs(15));
 
     conclusion.exit()
+}
+
+/// The default filter used when `RUST_LOG` isn't set.
+fn default_log_filter() -> String {
+    // Silence non-errors.
+    let mut filter = "error".to_owned();
+
+    // We don't have access to device fonts in tests, so font errors are expected.
+    filter.push_str(",ruffle_core::html::layout=off");
+
+    filter
 }
 
 fn load_test_dir<'a>(test_dir: &'a VfsPath, name: &'a str) -> impl Iterator<Item = Test> + 'a {

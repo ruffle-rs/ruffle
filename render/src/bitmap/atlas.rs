@@ -382,8 +382,8 @@ mod test {
             .expect("allocation should succeed");
 
         let r = region.region();
-        assert!(r.width() == 4);
-        assert!(r.height() == 4);
+        assert_eq!(r.width(), 4);
+        assert_eq!(r.height(), 4);
         assert!(r.x_max <= 16);
         assert!(r.y_max <= 16);
     }

@@ -121,6 +121,21 @@ pub struct MouseData<'gc> {
     pub pressed: Option<InteractiveObject<'gc>>,
     pub right_pressed: Option<InteractiveObject<'gc>>,
     pub middle_pressed: Option<InteractiveObject<'gc>>,
+
+    /// The cursor forced through `flash.ui.Mouse.cursor`. `None` corresponds to
+    /// `MouseCursor.AUTO`: the cursor is chosen automatically from the object
+    /// under the pointer. Any other value overrides that automatic choice.
+    #[collect(require_static)]
+    pub forced_cursor: Option<MouseCursor>,
+
+    /// Whether `Player::update_drag` is currently inside its drop-target
+    /// mouse pick.
+    ///
+    /// That pick resolves AVM1 `hitArea` properties, which can run a user
+    /// getter that calls `stopDrag()` and thereby re-enter `update_drag`
+    /// while the drag is still active; this flag makes the nested call a
+    /// no-op instead of recursing until stack overflow.
+    pub updating_drop_target: bool,
 }
 
 impl<'gc> MouseData<'gc> {
@@ -1484,6 +1499,10 @@ impl Player {
 
     /// Update dragged object, if any.
     pub fn update_drag(context: &mut UpdateContext<'_>) {
+        if context.mouse_data.updating_drop_target {
+            // Prevent stack overflow.
+            return;
+        }
         let mouse_position = *context.mouse_position;
         if let Some(drag_object) = context.drag_object {
             let display_object = drag_object.display_object;
@@ -1526,7 +1545,9 @@ impl Player {
                 let was_visible = display_object.visible();
                 display_object.set_visible(context, false);
                 // Set `_droptarget` to the object the mouse is hovering over.
+                context.mouse_data.updating_drop_target = true;
                 let drop_target_object = run_mouse_pick(context, false);
+                context.mouse_data.updating_drop_target = false;
                 movie_clip.set_drop_target(
                     context.gc(),
                     drop_target_object.map(|d| d.as_displayobject()),
@@ -1751,21 +1772,26 @@ impl Player {
                     }
                     // Rolled over the new object.
                     if let Some(new_over_object) = new_over_object {
-                        new_cursor = new_over_object.mouse_cursor(context);
                         events.push((
                             new_over_object,
                             ClipEvent::RollOver {
                                 from: cur_over_object,
                             },
                         ));
-                    } else {
-                        new_cursor = MouseCursor::Arrow;
                     }
                 }
             }
             if !skip_mouse_hover && !new_over_object_updated {
                 context.mouse_data.hovered = new_over_object;
             }
+
+            // This needs set even when the new_over_object hasn't changed,
+            // so that the forced cursor, if previously set, can reset properly.
+            if is_mouse_moved && context.mouse_data.forced_cursor.is_none() {
+                new_cursor =
+                    new_over_object.map_or(MouseCursor::Arrow, |o| o.mouse_cursor(context));
+            }
+
             // Handle presses and releases.
             for button in [MouseButton::Left, MouseButton::Middle, MouseButton::Right] {
                 if !changed_mouse_buttons.contains(button) {
@@ -1900,6 +1926,13 @@ impl Player {
                 }
                 refresh
             };
+
+            // A cursor forced through `flash.ui.Mouse.cursor`
+            // overrides the automatic cursor.
+            if let Some(forced) = context.mouse_data.forced_cursor {
+                new_cursor = forced;
+            }
+
             Self::run_actions(context);
             needs_render
         });
@@ -3080,6 +3113,8 @@ impl PlayerBuilder {
                 pressed: None,
                 right_pressed: None,
                 middle_pressed: None,
+                forced_cursor: None,
+                updating_drop_target: false,
             },
             avm1_shared_objects: HashMap::new(),
             avm2_shared_objects: HashMap::new(),
