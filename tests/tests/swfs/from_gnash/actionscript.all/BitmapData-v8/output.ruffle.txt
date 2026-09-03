@@ -129,10 +129,10 @@ PASSED: bmp.rectangle == -1 [./BitmapData.as:305]
 PASSED: bmp.rectangle.toString() == "-1" [./BitmapData.as:306]
 PASSED: bmp instanceOf Bitmap [./BitmapData.as:308]
 PASSED: bmp.height == -1 [./BitmapData.as:310]
-FAILED: expected: -1 obtained: (x=0, y=0, w=20, h=10) [./BitmapData.as:315]
-FAILED: expected: "[object Object]" obtained: (x=0, y=0, w=20, h=10) [./BitmapData.as:324]
-FAILED: expected: "[object Object]" obtained: (x=0, y=0, w=20, h=10) [./BitmapData.as:329]
-FAILED: expected: "[object Object]" obtained: (x=0, y=0, w=20, h=10) [./BitmapData.as:334]
+PASSED: bmp.rectangle == -1 [./BitmapData.as:315]
+PASSED: bmp.rectangle.toString() == "[object Object]" [./BitmapData.as:324]
+PASSED: bmp.rectangle.toString() == "[object Object]" [./BitmapData.as:329]
+PASSED: bmp.rectangle.toString() == "[object Object]" [./BitmapData.as:334]
 PASSED: bmp.rectangle.toString() == "(x=0, y=0, w=20, h=10)" [./BitmapData.as:337]
 PASSED: b.getPixel(1, 1) == 0xffffff [./BitmapData.as:368]
 PASSED: b.getPixel(21, 21) == 0x00ff00 [./BitmapData.as:369]
@@ -412,6 +412,6 @@ PASSED: typeof(cl.__proto__) == "object" [./BitmapData.as:1139]
 PASSED: typeof(cl.constructor) == "function" [./BitmapData.as:1140]
 PASSED: typeof(cl.__proto__) == "object" [./BitmapData.as:1146]
 PASSED: cl.constructor == 98 [./BitmapData.as:1147]
-#passed: 399
-#failed: 11
+#passed: 403
+#failed: 7
 #total tests run: 410
