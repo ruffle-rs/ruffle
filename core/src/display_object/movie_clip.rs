@@ -1774,7 +1774,9 @@ impl<'gc> MovieClip<'gc> {
 
             let children: SmallVec<[_; 16]> = self
                 .iter_render_list()
-                .filter(|child| !self.survives_rewind(*child, &final_placements, frame))
+                .filter(|child| {
+                    !self.survives_rewind(*child, &final_placements, frame, is_implicit)
+                })
                 .collect();
 
             for child in children {
@@ -1905,24 +1907,21 @@ impl<'gc> MovieClip<'gc> {
         old_object: DisplayObject<'_>,
         final_placements: &HashMap<Depth, &GotoPlaceObject<'_>>,
         frame: FrameNumber,
+        is_implicit: bool,
     ) -> bool {
-        // TODO [KJ] This logic is not 100% tested. It's possible it's a bit
-        //    different in reality, but the spirit is there :)
-
-        let is_candidate_for_removal = if self.movie().is_action_script_3() {
-            old_object.place_frame() > frame || old_object.placed_by_avm2_script()
-        } else {
-            old_object.depth() < AVM_DEPTH_BIAS
-        };
-
-        if !is_candidate_for_removal && old_object.as_morph_shape().is_none() {
+        if self.movie().is_action_script_3()
+            && old_object.place_frame() <= frame
+            && !old_object.placed_by_avm2_script()
+            && old_object.as_morph_shape().is_none()
+        {
             return true;
         }
-        let Some(final_placement) = final_placements.get(&old_object.depth()) else {
-            return false;
-        };
 
-        let new_params = &final_placement.place_object;
+        let Some(final_placement) = final_placements.get(&old_object.depth()) else {
+            return !old_object.movie().is_action_script_3()
+                && old_object.depth() >= AVM_DEPTH_BIAS
+                && old_object.as_morph_shape().is_none();
+        };
 
         if !old_object.movie().is_action_script_3()
             && old_object.placed_by_avm1_script()
@@ -1930,6 +1929,8 @@ impl<'gc> MovieClip<'gc> {
         {
             return false;
         }
+
+        let new_params = &final_placement.place_object;
 
         let id_equals = match new_params.action {
             swf::PlaceObjectAction::Place(id) | swf::PlaceObjectAction::Replace(id) => {
@@ -1971,8 +1972,14 @@ impl<'gc> MovieClip<'gc> {
             | DisplayObject::EditText(_)
             | DisplayObject::Bitmap(_)
             | DisplayObject::Video(_) => ratio_equals && id_equals && clip_depth_equals,
-            DisplayObject::MovieClip(_)
-            | DisplayObject::Stage(_)
+            DisplayObject::MovieClip(_) => {
+                ratio_equals
+                    && (id_equals
+                        || is_implicit
+                        || old_object.transformed_by_script()
+                        || final_placement.frame != frame)
+            }
+            DisplayObject::Stage(_)
             | DisplayObject::LoaderDisplay(_)
             | DisplayObject::TextLine(_) => ratio_equals,
         }

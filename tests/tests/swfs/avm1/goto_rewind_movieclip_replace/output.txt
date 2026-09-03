@@ -1,0 +1,8 @@
+Frame 1: Placing Child A at depth 32177
+Child A frame 1
+Frame 2: Replacing with Child B at depth 32177
+Child B frame 1
+Frame 3: Rewinding to Frame 1
+Frame 3: After gotoAndStop(1)
+Frame 1: Placing Child A at depth 32177
+Child A frame 1
