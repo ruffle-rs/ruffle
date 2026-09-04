@@ -2128,6 +2128,9 @@ impl Player {
                 };
 
             let commands = render_context.commands;
+
+            gc_root.library.sweep_font_caches();
+
             (cache_draws, commands)
         });
 

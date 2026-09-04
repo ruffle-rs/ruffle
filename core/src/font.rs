@@ -210,6 +210,12 @@ impl GlyphSource {
             GlyphSource::Empty => FontMetrics::ZERO,
         }
     }
+
+    pub fn sweep_caches(&self) {
+        if let GlyphSource::ExternalRenderer(glyph_source) = self {
+            glyph_source.sweep_caches(false);
+        }
+    }
 }
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Collect, Hash)]
@@ -519,6 +525,10 @@ impl<'gc> Font<'gc> {
 
     pub fn has_layout(self) -> bool {
         self.0.has_layout
+    }
+
+    pub fn sweep_caches(&self) {
+        self.0.glyphs.sweep_caches();
     }
 }
 

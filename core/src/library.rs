@@ -756,6 +756,14 @@ impl<'gc> Library<'gc> {
     pub fn avm2_class_registry_mut(&mut self) -> &mut Avm2ClassRegistry<'gc> {
         &mut self.avm2_class_registry
     }
+
+    /// Evicts cached font resources that haven't been used, across all device
+    /// fonts. Meant to be called once per rendered frame.
+    pub fn sweep_font_caches(&self) {
+        for font in self.device_fonts.iter_all() {
+            font.sweep_caches();
+        }
+    }
 }
 
 #[derive(Collect, Default)]
@@ -851,5 +859,9 @@ impl<'gc> FontMap<'gc> {
 
     pub fn all(&self) -> Vec<Font<'gc>> {
         self.0.values().copied().collect()
+    }
+
+    pub fn iter_all(&self) -> impl Iterator<Item = Font<'gc>> {
+        self.0.values().copied()
     }
 }

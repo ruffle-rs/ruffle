@@ -249,6 +249,22 @@ impl FontWindow {
                     ui.label(format!("{}", glyph_source.kerning_cache_size()));
                 });
                 ui.end_row();
+
+                ui.label("Sweep Count");
+                ui.label(format!("{}", glyph_source.sweep_count()));
+                ui.end_row();
+
+                ui.label("Swept Glyphs");
+                ui.label(format!("{}", glyph_source.swept_glyphs_count()));
+                ui.end_row();
+
+                ui.label("Swept Kerning Pairs");
+                ui.label(format!("{}", glyph_source.swept_kerning_count()));
+                ui.end_row();
+
+                if ui.button("Sweep Caches").clicked() {
+                    glyph_source.sweep_caches(true);
+                }
             });
 
         if let Some(atlases) = glyph_source.font_renderer().atlases() {
