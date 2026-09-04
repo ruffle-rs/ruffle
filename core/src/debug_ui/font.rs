@@ -1,6 +1,6 @@
 use crate::debug_ui::{ItemToSave, Message};
 use crate::font::{
-    Font, FontAtlas, FontAtlases, FontFace, FontLike, FontRenderer, Glyph, GlyphSource,
+    Font, FontAtlas, FontAtlases, FontFace, FontLike, FontRendererGlyphSource, Glyph, GlyphSource,
 };
 use egui::{CollapsingHeader, Grid, TextEdit, Ui, Window};
 use fnv::FnvHashMap;
@@ -172,16 +172,9 @@ impl FontWindow {
                 GlyphSource::FontFace { face, .. } => {
                     self.show_glyph_source_font_face(ui, font, face, messages)
                 }
-                GlyphSource::ExternalRenderer {
-                    glyph_cache,
-                    kerning_cache,
-                    font_renderer,
-                } => self.show_glyph_source_external_renderer(
-                    ui,
-                    glyph_cache,
-                    kerning_cache,
-                    font_renderer.as_ref(),
-                ),
+                GlyphSource::ExternalRenderer(glyph_source) => {
+                    self.show_glyph_source_external_renderer(ui, glyph_source)
+                }
                 GlyphSource::Empty => {
                     ui.weak("This font has no glyphs.");
                 }
@@ -235,38 +228,30 @@ impl FontWindow {
     fn show_glyph_source_external_renderer(
         &self,
         ui: &mut Ui,
-        glyph_cache: &RefCell<FnvHashMap<u16, Option<Glyph>>>,
-        kerning_cache: &RefCell<FnvHashMap<(u16, u16), Twips>>,
-        font_renderer: &dyn FontRenderer,
+        glyph_source: &FontRendererGlyphSource,
     ) {
         Grid::new(ui.id().with("glyph-source-table"))
             .num_columns(2)
             .striped(true)
             .show(ui, |ui| {
                 ui.label("Renderer");
-                ui.label(format!("{font_renderer:?}"));
+                ui.label(format!("{:?}", glyph_source.font_renderer()));
                 ui.end_row();
 
                 ui.label("Glyph Cache Size");
                 ui.horizontal(|ui| {
-                    ui.label(format!("{}", glyph_cache.borrow().len()));
-                    if ui.button("Clear").clicked() {
-                        glyph_cache.borrow_mut().clear();
-                    }
+                    ui.label(format!("{}", glyph_source.glyph_cache_size()));
                 });
                 ui.end_row();
 
                 ui.label("Kerning Cache Size");
                 ui.horizontal(|ui| {
-                    ui.label(format!("{}", kerning_cache.borrow().len()));
-                    if ui.button("Clear").clicked() {
-                        kerning_cache.borrow_mut().clear();
-                    }
+                    ui.label(format!("{}", glyph_source.kerning_cache_size()));
                 });
                 ui.end_row();
             });
 
-        if let Some(atlases) = font_renderer.atlases() {
+        if let Some(atlases) = glyph_source.font_renderer().atlases() {
             self.show_glyph_atlases(ui, atlases);
         }
     }
