@@ -2517,6 +2517,251 @@ impl Player {
         })
     }
 
+    /// Invoke `name(args)` on the root display object's AS3 class. Bypasses
+    /// `ExternalInterface.addCallback` -- looks up the method directly via
+    /// AVM2 reflection on the root. Returns `ExternalValue::Null` on any
+    /// failure (no root, AS3 method missing, runtime error).
+    pub fn call_root_method_avm2(&mut self, name: &str, args: Vec<ExternalValue>) -> ExternalValue {
+        self.mutate_with_update_context(|context| {
+            use crate::avm2::Multiname;
+            use crate::string::AvmString;
+            let domain = match context
+                .library
+                .library_for_movie(context.root_swf.clone())
+                .map(|l| l.avm2_domain())
+            {
+                Some(d) => d,
+                None => return ExternalValue::Null,
+            };
+            let mut activation = Avm2Activation::from_domain(context, domain);
+            let root = match activation.context.stage.root_clip() {
+                Some(r) => r,
+                None => return ExternalValue::Null,
+            };
+            let root_obj = match root.object2() {
+                Some(o) => crate::avm2::Value::from(o),
+                None => return ExternalValue::Null,
+            };
+            let avm2_args: Vec<crate::avm2::Value> = args
+                .into_iter()
+                .map(|v| v.into_avm2(activation.context))
+                .collect();
+            let public_ns = activation.avm2().find_public_namespace();
+            let name_str = AvmString::new_utf8(activation.gc(), name);
+            let multiname = Multiname::new(public_ns, name_str);
+            match root_obj.call_property(
+                &multiname,
+                crate::avm2::FunctionArgs::from_slice(&avm2_args),
+                &mut activation,
+            ) {
+                Ok(value) => match ExternalValue::from_avm2(&mut activation, value) {
+                    Ok(v) => v,
+                    Err(_) => ExternalValue::Null,
+                },
+                Err(e) => {
+                    tracing::warn!(
+                        "call_root_method_avm2 '{}' nargs={} err={}",
+                        name,
+                        avm2_args.len(),
+                        e.to_string(&mut activation)
+                    );
+                    ExternalValue::Null
+                }
+            }
+        })
+    }
+
+    /// Like `call_root_method_avm2` but navigates `path` (a "."-joined
+    /// chain of public AS3 property names) from the root before invoking
+    /// `name`. Empty path = root.
+    pub fn call_method_at_path_avm2(
+        &mut self,
+        path: &str,
+        name: &str,
+        args: Vec<ExternalValue>,
+    ) -> ExternalValue {
+        self.mutate_with_update_context(|context| {
+            use crate::avm2::Multiname;
+            use crate::string::AvmString;
+            let domain = match context
+                .library
+                .library_for_movie(context.root_swf.clone())
+                .map(|l| l.avm2_domain())
+            {
+                Some(d) => d,
+                None => return ExternalValue::Null,
+            };
+            let mut activation = Avm2Activation::from_domain(context, domain);
+            let root = match activation.context.stage.root_clip() {
+                Some(r) => r,
+                None => return ExternalValue::Null,
+            };
+            let mut target = match root.object2() {
+                Some(o) => crate::avm2::Value::from(o),
+                None => return ExternalValue::Null,
+            };
+            let public_ns = activation.avm2().find_public_namespace();
+            if !path.is_empty() {
+                for seg in path.split('.') {
+                    let seg_str = AvmString::new_utf8(activation.gc(), seg);
+                    let mn = Multiname::new(public_ns, seg_str);
+                    target = match target.get_property(&mn, &mut activation) {
+                        Ok(v) => v,
+                        Err(e) => {
+                            tracing::warn!(
+                                "call_method_at_path_avm2 path '{}' seg '{}' err={}",
+                                path,
+                                seg,
+                                e.to_string(&mut activation)
+                            );
+                            return ExternalValue::Null;
+                        }
+                    };
+                }
+            }
+            if target.as_object().is_none() {
+                tracing::warn!(
+                    "call_method_at_path_avm2 path='{}' '{}': target resolved to {:?} (not Object)",
+                    path,
+                    name,
+                    target
+                );
+                return ExternalValue::Null;
+            }
+            let avm2_args: Vec<crate::avm2::Value> = args
+                .into_iter()
+                .map(|v| v.into_avm2(activation.context))
+                .collect();
+            let name_str = AvmString::new_utf8(activation.gc(), name);
+            let multiname = Multiname::new(public_ns, name_str);
+            match target.call_property(
+                &multiname,
+                crate::avm2::FunctionArgs::from_slice(&avm2_args),
+                &mut activation,
+            ) {
+                Ok(value) => match ExternalValue::from_avm2(&mut activation, value) {
+                    Ok(v) => v,
+                    Err(_) => ExternalValue::Null,
+                },
+                Err(e) => {
+                    tracing::warn!(
+                        "call_method_at_path_avm2 path='{}' '{}' nargs={} err={}",
+                        path,
+                        name,
+                        avm2_args.len(),
+                        e.to_string(&mut activation)
+                    );
+                    ExternalValue::Null
+                }
+            }
+        })
+    }
+
+    /// Inject the AS3 class definitions from a secondary SWF into THIS
+    /// player's ROOT ApplicationDomain.
+    pub fn inject_secondary_swf_abc(&mut self, lib_movie: Arc<SwfMovie>) -> u32 {
+        self.mutate_with_update_context(|context| {
+            let root_movie = context.root_swf.clone();
+            if Arc::ptr_eq(&lib_movie, &root_movie) {
+                return 0;
+            }
+            let root_domain = context
+                .library
+                .library_for_movie_mut(root_movie)
+                .avm2_domain();
+            let mut count: u32 = 0;
+            let slice = crate::tag_utils::SwfSlice::from(lib_movie.clone());
+            let mut reader = slice.read_from(0);
+            let _ = crate::tag_utils::decode_tags(&mut reader, |reader, tag_code| {
+                use crate::string::{AvmString, SwfStrExt};
+                use crate::tag_utils::ControlFlow;
+                use swf::extensions::ReadSwfExt;
+                use swf::{DoAbc2Flag, TagCode};
+                match tag_code {
+                    TagCode::DoAbc => {
+                        let data = reader.read_slice_to_end();
+                        if !data.is_empty()
+                            && Avm2::do_abc(
+                                context,
+                                data,
+                                None,
+                                DoAbc2Flag::empty(),
+                                root_domain,
+                                lib_movie.clone(),
+                            )
+                            .is_ok()
+                        {
+                            count += 1;
+                        }
+                    }
+                    TagCode::DoAbc2 => {
+                        if let Ok(do_abc) = reader.read_do_abc_2()
+                            && !do_abc.data.is_empty()
+                        {
+                            let name =
+                                AvmString::new(context.gc(), do_abc.name.decode(reader.encoding()));
+                            if Avm2::do_abc(
+                                context,
+                                do_abc.data,
+                                Some(name),
+                                do_abc.flags,
+                                root_domain,
+                                lib_movie.clone(),
+                            )
+                            .is_ok()
+                            {
+                                count += 1;
+                            }
+                        }
+                    }
+                    TagCode::End => return Ok(ControlFlow::Exit),
+                    _ => {}
+                }
+                Ok(ControlFlow::Continue)
+            });
+            count
+        })
+    }
+
+    /// Full cross-library injection: characters + DoABC + SymbolClass.
+    pub fn inject_secondary_swf_full(&mut self, lib_movie: Arc<SwfMovie>) -> u32 {
+        self.mutate_with_update_context(|context| {
+            let root_movie = context.root_swf.clone();
+            if Arc::ptr_eq(&lib_movie, &root_movie) {
+                return 0;
+            }
+            let root_domain = context
+                .library
+                .library_for_movie_mut(root_movie)
+                .avm2_domain();
+
+            {
+                let lib_library = context.library.library_for_movie_mut(lib_movie.clone());
+                lib_library.set_avm2_domain(root_domain);
+            }
+
+            let temp_clip = crate::display_object::MovieClip::new_for_lce_inject(
+                lib_movie.clone(),
+                context.gc(),
+            );
+            let mut limit = crate::limits::ExecutionLimit::none();
+            let mut iterations = 0u32;
+            while !temp_clip.preload(context, &mut limit) && iterations < 4096 {
+                iterations += 1;
+            }
+
+            let mut frame_keys = temp_clip.eager_frame_keys();
+            frame_keys.sort_unstable();
+            let mut processed_frames: u32 = 0;
+            for frame in frame_keys {
+                if temp_clip.run_abc_and_symbol_tags(context, frame).is_ok() {
+                    processed_frames += 1;
+                }
+            }
+            processed_frames
+        })
+    }
+
     pub fn spoofed_url(&self) -> Option<&str> {
         self.spoofed_url.as_deref()
     }
