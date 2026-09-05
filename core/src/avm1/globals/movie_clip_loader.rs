@@ -52,9 +52,20 @@ fn load_clip<'gc>(
     if let [url, target, ..] = args {
         if let Value::String(url) = url {
             let target = match target {
-                Value::String(_) => {
-                    let start_clip = activation.target_clip_or_root();
-                    activation.resolve_target_display_object(start_clip, *target, true)?
+                Value::String(target_str) => {
+                    // A `_levelN`/`_flashN` string target loads into that level,
+                    // creating it if necessary (like the numeric-target branch below);
+                    // any other string resolves as a normal target path.
+                    let case_sensitive = activation.is_case_sensitive();
+                    if let Some(level_id) = crate::avm1::object::stage_object::parse_level_target(
+                        target_str,
+                        case_sensitive,
+                    ) {
+                        Some(activation.get_or_create_level(level_id))
+                    } else {
+                        let start_clip = activation.target_clip_or_root();
+                        activation.resolve_target_display_object(start_clip, *target, true)?
+                    }
                 }
                 Value::Number(level_id) => {
                     // Levels are rounded down.
