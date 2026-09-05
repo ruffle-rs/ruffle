@@ -170,7 +170,7 @@ impl<'gc> Stage<'gc> {
                 scale_mode: Default::default(),
                 forced_scale_mode: Cell::new(false),
                 display_state: Cell::new(if fullscreen {
-                    StageDisplayState::FullScreen
+                    StageDisplayState::FullScreenInteractive
                 } else {
                     StageDisplayState::Normal
                 }),
@@ -374,7 +374,7 @@ impl<'gc> Stage<'gc> {
         if self.is_fullscreen() {
             self.set_display_state(context, StageDisplayState::Normal);
         } else {
-            self.set_display_state(context, StageDisplayState::FullScreen);
+            self.set_display_state(context, StageDisplayState::FullScreenInteractive);
         }
     }
 
