@@ -1,4 +1,4 @@
-mod font_renderer;
+mod canvas_font_renderer;
 
 use super::JavascriptPlayer;
 use rfd::{AsyncFileDialog, FileHandle};
@@ -334,8 +334,11 @@ impl UiBackend for WebUiBackend {
             return;
         }
 
-        let renderer =
-            font_renderer::CanvasFontRenderer::new(query.is_italic, query.is_bold, &query.name);
+        let renderer = canvas_font_renderer::CanvasFontRenderer::new(
+            query.is_italic,
+            query.is_bold,
+            &query.name,
+        );
 
         match renderer {
             Ok(renderer) => {
