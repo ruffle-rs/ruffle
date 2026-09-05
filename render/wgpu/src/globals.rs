@@ -65,16 +65,7 @@ impl Globals {
 
         let global_matrix = projection_matrix.multiply(&view_matrix);
 
-        let global_matrix = {
-            let mut matrix = [[0.0; 4]; 4];
-            #[allow(clippy::needless_range_loop)]
-            for i in 0..4 {
-                for j in 0..4 {
-                    matrix[j][i] = global_matrix.raw_data[i + 4 * j];
-                }
-            }
-            matrix
-        };
+        let global_matrix: [[f32; 4]; 4] = bytemuck::cast(global_matrix.raw_data);
 
         let temp_label = create_debug_label!("Globals buffer");
         let buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
