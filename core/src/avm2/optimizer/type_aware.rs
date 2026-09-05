@@ -2224,7 +2224,17 @@ fn maybe_optimize_static_call<'gc>(
 
     let declared_params = speculated_method.resolved_param_config();
 
-    if receiver.class.is_some_and(|c| c.is_final())
+    let is_static_call = receiver.class.is_some_and(|c| {
+        // The speculated method is known to be the right method if either
+        //  - the class of the receiver is final, as final classes cannot have
+        //    subclasses with different methods
+        //  - the class is a parametrized vector class, as parametrized vector
+        //    classes do not have subclasses with different methods
+
+        c.is_final() || c.param().is_some()
+    });
+
+    if is_static_call
         && let MethodKind::Native {
             native_method,
             fast_call: true,
