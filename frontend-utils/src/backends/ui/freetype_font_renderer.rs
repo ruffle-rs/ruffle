@@ -21,10 +21,18 @@ pub enum Error {
     FreetypeError(#[from] freetype::Error),
 }
 
-#[derive(Debug)]
 pub struct FreetypeFontRenderer {
     face: freetype::Face,
     atlases: FontAtlases,
+}
+
+impl std::fmt::Debug for FreetypeFontRenderer {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("FreetypeFontRenderer")
+            .field("family_name", &self.face.family_name())
+            .field("style_name", &self.face.style_name())
+            .finish()
+    }
 }
 
 impl FreetypeFontRenderer {
