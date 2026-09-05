@@ -885,14 +885,17 @@ impl CommandHandler for WgpuCommandHandler<'_, '_> {
     }
 
     fn render_shape(&mut self, shape: ShapeHandle, transform: Transform) {
-        self.add_to_current(
-            transform.matrix,
-            transform.color_transform,
-            |transform_buffer| DrawCommand::RenderShape {
+        let mut matrix = transform.matrix;
+        if let Some(hairline) = as_mesh(&shape).one_dimensional_hairline {
+            hairline.adjust_matrix(&mut matrix);
+        }
+
+        self.add_to_current(matrix, transform.color_transform, |transform_buffer| {
+            DrawCommand::RenderShape {
                 shape,
                 transform_buffer,
-            },
-        );
+            }
+        });
     }
 
     fn draw_rect(&mut self, color: Color, matrix: Matrix) {

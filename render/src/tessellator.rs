@@ -1,4 +1,5 @@
 use crate::bitmap::BitmapSource;
+use crate::matrix::Matrix;
 use crate::shape_utils::{DistilledShape, DrawCommand, DrawPath, GradientType};
 use indexmap::IndexSet;
 use lyon::path::Path;
@@ -21,6 +22,116 @@ pub struct ShapeTessellator {
 }
 
 const TESSELLATION_EPSILON: f32 = 0.0000001;
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum OneDimensionalAxis {
+    Horizontal,
+    Vertical,
+}
+
+/// Metadata for a tessellated one-dimensional stroke whose width was promoted
+/// to Ruffle's minimum one-device-pixel width.
+///
+/// WGPU/WebGL expand strokes into triangles before applying the display-object
+/// transform. If that transform completely collapses the local axis
+/// perpendicular to this line, the expanded stroke becomes zero-area geometry.
+#[derive(Clone, Copy, Debug)]
+pub struct OneDimensionalHairline {
+    axis: OneDimensionalAxis,
+    anchor: swf::Point<swf::Twips>,
+    tessellation_scale: f32,
+}
+
+impl OneDimensionalHairline {
+    fn from_shape(shape: &DistilledShape<'_>, tessellation_scale: f32) -> Option<Self> {
+        let tessellation_scale = tessellation_scale.abs();
+        if !tessellation_scale.is_finite() || tessellation_scale <= TESSELLATION_EPSILON {
+            return None;
+        }
+
+        let axis = if shape.edge_bounds.y_min == shape.edge_bounds.y_max
+            && shape.edge_bounds.x_min != shape.edge_bounds.x_max
+        {
+            OneDimensionalAxis::Horizontal
+        } else if shape.edge_bounds.x_min == shape.edge_bounds.x_max
+            && shape.edge_bounds.y_min != shape.edge_bounds.y_max
+        {
+            OneDimensionalAxis::Vertical
+        } else {
+            return None;
+        };
+
+        let minimum_local_width = 1.0 / tessellation_scale;
+
+        // Keep this path deliberately narrow: the whole shape must consist of
+        // strokes that are using ShapeTessellator's minimum-width rule.
+        if shape.paths.is_empty()
+            || !shape.paths.iter().all(|path| match path {
+                DrawPath::Stroke { style, .. } => {
+                    (style.width().to_pixels() as f32) <= minimum_local_width
+                }
+                DrawPath::Fill { .. } => false,
+            })
+        {
+            return None;
+        }
+
+        Some(Self {
+            axis,
+            anchor: swf::Point::new(shape.edge_bounds.x_min, shape.edge_bounds.y_min),
+            tessellation_scale,
+        })
+    }
+
+    pub fn adjust_matrix(self, matrix: &mut Matrix) {
+        let anchor_before = *matrix * self.anchor;
+
+        match self.axis {
+            OneDimensionalAxis::Horizontal => {
+                if matrix.c != 0.0 || matrix.d != 0.0 {
+                    return;
+                }
+
+                let surviving_length = matrix.a.hypot(matrix.b);
+                if surviving_length <= TESSELLATION_EPSILON {
+                    return;
+                }
+
+                matrix.c = -matrix.b / surviving_length * self.tessellation_scale;
+                matrix.d = matrix.a / surviving_length * self.tessellation_scale;
+            }
+            OneDimensionalAxis::Vertical => {
+                if matrix.a != 0.0 || matrix.b != 0.0 {
+                    return;
+                }
+
+                let surviving_length = matrix.c.hypot(matrix.d);
+                if surviving_length <= TESSELLATION_EPSILON {
+                    return;
+                }
+
+                matrix.a = matrix.d / surviving_length * self.tessellation_scale;
+                matrix.b = -matrix.c / surviving_length * self.tessellation_scale;
+            }
+        }
+
+        // Changing the unused basis shifts an offset line by a constant amount.
+        // Compensate so the transformed centerline remains unchanged.
+        let anchor_after = *matrix * self.anchor;
+        matrix.tx = swf::Twips::new(
+            matrix
+                .tx
+                .get()
+                .wrapping_add(anchor_before.x.get().wrapping_sub(anchor_after.x.get())),
+        );
+        matrix.ty = swf::Twips::new(
+            matrix
+                .ty
+                .get()
+                .wrapping_add(anchor_before.y.get().wrapping_sub(anchor_after.y.get())),
+        );
+    }
+}
 
 impl ShapeTessellator {
     pub fn new() -> Self {
@@ -55,6 +166,7 @@ impl ShapeTessellator {
         self.gradients = IndexSet::new();
         self.lyon_mesh = VertexBuffers::new();
 
+        let one_dimensional_hairline = OneDimensionalHairline::from_shape(&shape, scale);
         for path in shape.paths {
             let (fill_style, lyon_path, next_is_stroke) = match &path {
                 DrawPath::Fill {
@@ -244,6 +356,7 @@ impl ShapeTessellator {
         Mesh {
             draws: std::mem::take(&mut self.mesh),
             gradients: std::mem::take(&mut self.gradients).into_iter().collect(),
+            one_dimensional_hairline,
         }
     }
 
@@ -276,6 +389,7 @@ impl Default for ShapeTessellator {
 pub struct Mesh {
     pub draws: Vec<Draw>,
     pub gradients: Vec<Gradient>,
+    pub one_dimensional_hairline: Option<OneDimensionalHairline>,
 }
 
 pub struct Draw {
@@ -469,5 +583,133 @@ impl StrokeVertexConstructor<Vertex> for RuffleVertexCtor {
             y: vertex.position().y,
             color: self.color,
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn one_dimensional_stroke_shape<'a>(
+        style: &'a swf::LineStyle,
+        bounds: swf::Rectangle<swf::Twips>,
+    ) -> DistilledShape<'a> {
+        DistilledShape {
+            paths: vec![DrawPath::Stroke {
+                style,
+                is_closed: false,
+                commands: vec![
+                    DrawCommand::MoveTo(swf::Point::new(bounds.x_min, bounds.y_min)),
+                    DrawCommand::LineTo(swf::Point::new(bounds.x_max, bounds.y_max)),
+                ],
+            }],
+            shape_bounds: bounds,
+            edge_bounds: bounds,
+            id: 0,
+        }
+    }
+
+    fn assert_points_near(left: swf::Point<swf::Twips>, right: swf::Point<swf::Twips>) {
+        assert!((left.x.get() - right.x.get()).abs() <= 1);
+        assert!((left.y.get() - right.y.get()).abs() <= 1);
+    }
+
+    #[test]
+    fn one_dimensional_hairline_horizontal_like_n() {
+        let style = swf::LineStyle::new().with_width(swf::Twips::new(1));
+        let bounds = swf::Rectangle {
+            x_min: swf::Twips::new(-2560),
+            x_max: swf::Twips::new(2560),
+            y_min: swf::Twips::ZERO,
+            y_max: swf::Twips::ZERO,
+        };
+        let start = swf::Point::new(bounds.x_min, bounds.y_min);
+        let end = swf::Point::new(bounds.x_max, bounds.y_max);
+        let shape = one_dimensional_stroke_shape(&style, bounds);
+        let metadata = OneDimensionalHairline::from_shape(&shape, 0.08).unwrap();
+
+        let mut matrix = Matrix::scale(0.1171875, 0.0);
+        let start_before = matrix * start;
+        let end_before = matrix * end;
+
+        metadata.adjust_matrix(&mut matrix);
+
+        assert_points_near(matrix * start, start_before);
+        assert_points_near(matrix * end, end_before);
+        assert!((matrix.c.hypot(matrix.d) - 0.08).abs() <= f32::EPSILON);
+    }
+
+    #[test]
+    fn one_dimensional_hairline_preserves_offset_rotated_line() {
+        let style = swf::LineStyle::new().with_width(swf::Twips::new(1));
+        let bounds = swf::Rectangle {
+            x_min: swf::Twips::new(-100),
+            x_max: swf::Twips::new(300),
+            y_min: swf::Twips::new(40),
+            y_max: swf::Twips::new(40),
+        };
+        let start = swf::Point::new(bounds.x_min, bounds.y_min);
+        let end = swf::Point::new(bounds.x_max, bounds.y_max);
+        let shape = one_dimensional_stroke_shape(&style, bounds);
+        let metadata = OneDimensionalHairline::from_shape(&shape, 0.15).unwrap();
+
+        let mut matrix = Matrix {
+            a: 0.1,
+            b: 0.2,
+            c: 0.0,
+            d: 0.0,
+            tx: swf::Twips::new(25),
+            ty: swf::Twips::new(50),
+        };
+        let start_before = matrix * start;
+        let end_before = matrix * end;
+
+        metadata.adjust_matrix(&mut matrix);
+
+        assert_points_near(matrix * start, start_before);
+        assert_points_near(matrix * end, end_before);
+        assert!((matrix.c.hypot(matrix.d) - 0.15).abs() <= f32::EPSILON);
+        assert!((matrix.a * matrix.c + matrix.b * matrix.d).abs() <= f32::EPSILON);
+    }
+
+    #[test]
+    fn one_dimensional_hairline_vertical() {
+        let style = swf::LineStyle::new().with_width(swf::Twips::new(1));
+        let bounds = swf::Rectangle {
+            x_min: swf::Twips::new(40),
+            x_max: swf::Twips::new(40),
+            y_min: swf::Twips::new(-100),
+            y_max: swf::Twips::new(300),
+        };
+        let shape = one_dimensional_stroke_shape(&style, bounds);
+        let metadata = OneDimensionalHairline::from_shape(&shape, 0.2).unwrap();
+
+        let mut matrix = Matrix::scale(0.0, 0.25);
+        metadata.adjust_matrix(&mut matrix);
+
+        assert!((matrix.a.hypot(matrix.b) - 0.2).abs() <= f32::EPSILON);
+    }
+
+    #[test]
+    fn one_dimensional_hairline_rejects_thick_or_two_dimensional_shapes() {
+        let thick_style = swf::LineStyle::new().with_width(swf::Twips::new(400));
+        let horizontal = swf::Rectangle {
+            x_min: swf::Twips::new(-100),
+            x_max: swf::Twips::new(100),
+            y_min: swf::Twips::ZERO,
+            y_max: swf::Twips::ZERO,
+        };
+        let thick_shape = one_dimensional_stroke_shape(&thick_style, horizontal);
+        assert!(OneDimensionalHairline::from_shape(&thick_shape, 1.0).is_none());
+
+        let thin_style = swf::LineStyle::new().with_width(swf::Twips::new(1));
+        let area = swf::Rectangle {
+            x_min: swf::Twips::new(-100),
+            x_max: swf::Twips::new(100),
+            y_min: swf::Twips::new(-100),
+            y_max: swf::Twips::new(100),
+        };
+        let area_shape = one_dimensional_stroke_shape(&thin_style, area);
+        assert!(OneDimensionalHairline::from_shape(&area_shape, 1.0).is_none());
     }
 }
