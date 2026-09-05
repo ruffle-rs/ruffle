@@ -1238,15 +1238,20 @@ pub fn sort_on<'gc>(
         first_option,
         constrain(|activation, a, b| {
             for (field_name, options) in field_names.iter().zip(options.iter()) {
-                // note: these are incorrect: pretty sure
-                // if the object is null/undefined or does not have the field,
-                // it's treated as if the field's value was undefined.
-                // TODO: verify this and fix it
-                let a_object = a.null_check(activation, None)?;
-                let a_field = a_object.get_public_property(*field_name, activation)?;
+                // Flash Player treats elements that are null/undefined, non-objects
+                // (e.g. numbers or strings), or objects lacking the field as if
+                // the field's value was undefined, without throwing an error.
+                let a_field = if a.has_public_property(*field_name, activation) {
+                    a.get_public_property(*field_name, activation)?
+                } else {
+                    Value::Undefined
+                };
 
-                let b_object = b.null_check(activation, None)?;
-                let b_field = b_object.get_public_property(*field_name, activation)?;
+                let b_field = if b.has_public_property(*field_name, activation) {
+                    b.get_public_property(*field_name, activation)?
+                } else {
+                    Value::Undefined
+                };
 
                 let ord = if options.contains(SortOptions::NUMERIC) {
                     compare_numeric_slow(activation, a_field, b_field)?
