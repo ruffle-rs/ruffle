@@ -9,6 +9,10 @@ pub struct Matrix3D {
 }
 
 impl Matrix3D {
+    pub const ZERO: Self = Self {
+        raw_data: [0.0; 16],
+    };
+
     pub const IDENTITY: Self = Self {
         raw_data: [
             1.0, 0.0, 0.0, 0.0, //
@@ -198,5 +202,12 @@ impl Matrix3D {
         }
 
         Self { raw_data: result }
+    }
+
+    pub fn tz(&self) -> f32 {
+        self.raw_data[14]
+    }
+    pub fn set_tz(&mut self, tz: f32) {
+        self.raw_data[14] = tz;
     }
 }
