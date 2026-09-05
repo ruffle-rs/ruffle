@@ -1,4 +1,5 @@
 use js_sys::JSON;
+use ruffle_core::font::FontAtlases;
 use ruffle_core::font::FontMetrics;
 use ruffle_core::font::FontRenderer;
 use ruffle_core::font::Glyph;
@@ -17,6 +18,7 @@ pub struct CanvasFontRenderer {
     font_str: String,
     ascent: f64,
     descent: f64,
+    atlases: FontAtlases,
 }
 
 impl CanvasFontRenderer {
@@ -26,7 +28,12 @@ impl CanvasFontRenderer {
     /// Divide each pixel into 20 (use twips precision). It affects metrics.
     const SCALE: f64 = 20.0;
 
-    pub fn new(italic: bool, bold: bool, font_family: &str) -> Result<Self, JsValue> {
+    pub fn new(
+        italic: bool,
+        bold: bool,
+        font_family: &str,
+        atlases: &FontAtlases,
+    ) -> Result<Self, JsValue> {
         if !Self::is_offscreen_canvas_supported() {
             return Err(JsValue::from_str("OffscreenCanvas unsupported"));
         }
@@ -52,6 +59,7 @@ impl CanvasFontRenderer {
             font_str,
             ascent,
             descent,
+            atlases: atlases.clone(),
         })
     }
 
@@ -125,13 +133,11 @@ impl CanvasFontRenderer {
 
         let bitmap = Bitmap::new(width, height, BitmapFormat::Rgba, pixels);
         let bitmap_tx = Twips::from_pixels(-metrics.actual_bounding_box_left());
-        Ok(Glyph::from_bitmap(
-            character,
-            bitmap,
-            advance,
-            bitmap_tx,
-            Twips::ZERO,
-        ))
+        let atlas_glyph = self
+            .atlases
+            .rgba()
+            .new_glyph(bitmap, bitmap_tx, Twips::ZERO);
+        Ok(Glyph::from_atlas(character, atlas_glyph, advance))
     }
 
     fn calculate_kerning_internal(&self, left: char, right: char) -> Result<Twips, JsValue> {
@@ -172,5 +178,9 @@ impl FontRenderer for CanvasFontRenderer {
         self.calculate_kerning_internal(left, right)
             .map_err(|err| tracing::error!("Failed to calculate kerning: {err:?}"))
             .unwrap_or(Twips::ZERO)
+    }
+
+    fn atlases(&self) -> Option<&FontAtlases> {
+        Some(&self.atlases)
     }
 }
