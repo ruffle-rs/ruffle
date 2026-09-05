@@ -16,7 +16,7 @@ struct VertexOutput {
 
 @vertex
 fn main_vertex(in: VertexInput) -> VertexOutput {
-    let pos = common__globals.view_matrix * transforms.world_matrix * vec4<f32>(in.position.x, in.position.y, 0.0, 1.0);
+    let pos = common__globals.global_matrix * transforms.world_matrix * vec4<f32>(in.position.x, in.position.y, 0.0, 1.0);
     let color = saturate(in.color * transforms.mult_color + transforms.add_color);
     return VertexOutput(pos, vec4<f32>(color.rgb * color.a, color.a));
 }
