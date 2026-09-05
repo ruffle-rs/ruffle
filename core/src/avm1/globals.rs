@@ -6,12 +6,10 @@ use crate::avm1::{Avm1, Object, Value};
 use crate::context::UpdateContext;
 use crate::display_object::{DisplayObject, TDisplayObject, TDisplayObjectContainer};
 use crate::string::{AvmString, StringContext, WStr, WString};
-use crate::tag_utils;
-use crate::tag_utils::ControlFlow;
 use gc_arena::Collect;
-use ruffle_common::tag_utils::{SwfMovie, SwfSlice, SwfStream};
+use ruffle_common::tag_utils::{SwfMovie, SwfSlice};
 use std::str;
-use std::sync::Arc;
+use std::sync::{Arc, LazyLock};
 use swf::TagCode;
 
 mod accessibility;
@@ -84,9 +82,6 @@ mod video;
 pub(crate) mod xml;
 mod xml_node;
 pub(crate) mod xml_socket;
-
-/// This file is built by 'core/build_playerglobal/'
-const PLAYERGLOBAL: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/playerglobal_avm1.swf"));
 
 mod method {
     pub const ESCAPE: u16 = 0;
@@ -511,24 +506,23 @@ pub struct SystemPrototypes<'gc> {
     pub file_reference: Object<'gc>,
 }
 
+static PLAYERGLOBAL_ACTIONS: LazyLock<SwfSlice> = LazyLock::new(|| {
+    use crate::tag_utils::extract_unique_tag;
+
+    /// This file is built by 'core/build_playerglobal/'
+    const SWF: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/playerglobal_avm1.swf"));
+
+    SwfMovie::from_static_data(SWF)
+        .and_then(|movie| {
+            let movie = SwfSlice::from(Arc::new(movie));
+            let do_action = extract_unique_tag(movie.read_from(0), TagCode::DoAction)?;
+            Ok(movie.resize_to_reader(&do_action))
+        })
+        .expect("playerglobal_avm1.swf should be valid")
+});
+
 pub fn load_playerglobal<'gc>(context: &mut UpdateContext<'gc>) {
-    let movie = Arc::new(
-        SwfMovie::from_data(PLAYERGLOBAL, "file:///".into(), None, None)
-            .expect("playerglobal_avm1.swf should be valid"),
-    );
-
-    let slice = SwfSlice::from(movie);
-
-    let mut reader = slice.read_from(0);
-
-    let tag_callback = |reader: &mut SwfStream<'_>, tag_code| {
-        if tag_code == TagCode::DoAction {
-            Avm1::run_stack_frame_for_globals(slice.resize_to_reader(reader), context);
-        }
-        Ok(ControlFlow::Continue)
-    };
-
-    let _ = tag_utils::decode_tags(&mut reader, tag_callback);
+    Avm1::run_stack_frame_for_globals(PLAYERGLOBAL_ACTIONS.clone(), context);
 }
 
 /// Initialize default global scope and builtins for an AVM1 instance.
