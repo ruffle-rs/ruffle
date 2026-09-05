@@ -388,14 +388,6 @@
     stroke-dasharray: 180;
     stroke-dashoffset: 135;
     stroke: var(--ruffle-orange);
-    transform-origin: 50% 50%;
-    animation: rotate 1.5s linear infinite;
-}
-
-@keyframes rotate {
-    to {
-        transform: rotate(360deg);
-    }
 }
 
 #virtual-keyboard {

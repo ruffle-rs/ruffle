@@ -50,9 +50,20 @@ if (firefox) {
     if (headless) {
         args.push("-headless");
     }
+    // The opt-in memory tests use Firefox's privileged GC API.
+    // Classic WebDriver avoids BiDi's shadow-root instrumentation retaining DOM nodes.
+    // geckodriver supports this flag, but its npm types do not list it yet.
+    const driverOptions: WebdriverIO.GeckodriverOptions & {
+        allowSystemAccess?: boolean;
+    } = {};
+    if (process.env["RUFFLE_TEST_GC"] === "1") {
+        driverOptions.allowSystemAccess = true;
+    }
     capabilities.push({
         "wdio:maxInstances": maxInstances,
         browserName: "firefox",
+        "wdio:geckodriverOptions": driverOptions,
+        "wdio:enforceWebDriverClassic": process.env["RUFFLE_TEST_GC"] === "1",
         "moz:firefoxOptions": {
             args,
         },
@@ -239,7 +250,7 @@ export const config: WebdriverIO.Config = {
     },
 
     async beforeSuite() {
-        if (!browserstack) {
+        if (!browserstack && browser.isBidi) {
             await browser.sessionSubscribe({ events: ["log.entryAdded"] });
             browser.on("log.entryAdded", (entryAdded) => {
                 console.log(

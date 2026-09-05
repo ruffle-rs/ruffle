@@ -37,7 +37,23 @@ export function SplashScreen() {
                     cx="33"
                     cy="33"
                     r="30"
-                ></circle>
+                >
+                    {/* Firefox can retain detached CSS animation targets in its
+                        restyle queue. SVG animation avoids retaining the player.
+                        tsx-dom does not yet type the SMIL attributes. */}
+                    <animateTransform
+                        xmlns="http://www.w3.org/2000/svg"
+                        {...{
+                            attributeName: "transform",
+                            type: "rotate",
+                            from: "0 33 33",
+                            to: "360 33 33",
+                            dur: "1.5s",
+                            repeatCount: "indefinite",
+                            begin: "indefinite",
+                        }}
+                    />
+                </circle>
             </svg>
             <div class="loadbar">
                 <div class="loadbar-inner"></div>

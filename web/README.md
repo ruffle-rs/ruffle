@@ -143,6 +143,15 @@ Pass `--headless` to hide the browser windows. This is useful and recommended in
 Pass `--spec <name>` to filter a test based on name. For example, `--spec external_interface` to tests with `external_interface` in the path.
 
 
+### Player garbage collection
+The `garbage_collection` tests are opt-in and require local Firefox with geckodriver's `--allow-system-access` support:
+
+```sh
+RUFFLE_TEST_GC=1 npm run wdio --workspace=ruffle-selfhosted -- --firefox --headless --spec garbage_collection
+```
+
+This enables privileged garbage collection in the disposable test profile and uses classic WebDriver. BiDi shadow-root instrumentation can itself retain the elements being measured. The tests are skipped in other browsers and on BrowserStack.
+
 ### Testing tips!
 If debugging a failing test, use `await browser.pause(100000);` in the test file to pause it, and don't start the test with `--headless`.
 That way you can actually see what's happening, and manually get involved to debug it.

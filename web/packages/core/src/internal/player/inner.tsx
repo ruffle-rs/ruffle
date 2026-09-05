@@ -30,6 +30,25 @@ import { createRuffleBuilder } from "../../load-ruffle";
 import { lookupElement } from "../register-element";
 import { configureBuilder } from "../builder";
 
+type DownloadProgress = {
+    callback: ((bytesLoaded: number, bytesTotal: number) => void) | null;
+};
+
+/**
+ * Forward progress without closing over a player or its load activation.
+ *
+ * @param progress The callback holder, cleared on completion or cancellation.
+ * @param bytesLoaded The number of bytes downloaded.
+ * @param bytesTotal The total download size.
+ */
+function reportDownloadProgress(
+    progress: DownloadProgress,
+    bytesLoaded: number,
+    bytesTotal: number,
+): void {
+    progress.callback?.(bytesLoaded, bytesTotal);
+}
+
 const DIMENSION_REGEX = /^\s*(\d+(\.\d+)?(%)?)/;
 
 let isAudioContextUnmuted = false;
@@ -742,15 +761,23 @@ export class InnerPlayer {
             );
         }
 
+        const progress: DownloadProgress = {
+            callback: this.onRuffleDownloadProgress.bind(this),
+        };
+        const clearProgress = () => {
+            progress.callback = null;
+        };
+        signal.addEventListener("abort", clearProgress, { once: true });
         const [builder, zipWriterClass] = await createRuffleBuilder(
-            (loaded, total) => {
-                if (!signal.aborted) {
-                    this.onRuffleDownloadProgress(loaded, total);
-                }
-            },
-        ).catch((e) => {
-            throw new LoadRuffleWasmError(e);
-        });
+            reportDownloadProgress.bind(null, progress),
+        )
+            .catch((e) => {
+                throw new LoadRuffleWasmError(e);
+            })
+            .finally(() => {
+                clearProgress();
+                signal.removeEventListener("abort", clearProgress);
+            });
         let instance: RuffleHandle;
         try {
             if (signal.aborted) {
@@ -914,6 +941,7 @@ export class InnerPlayer {
      * Destroys the currently running instance of Ruffle.
      */
     destroy(): void {
+        this.stopSplashAnimation();
         this.loadController?.abort();
         this.loadController = null;
         this.stopBackgroundTick();
@@ -2358,7 +2386,14 @@ export class InnerPlayer {
         }
     }
 
+    private stopSplashAnimation(): void {
+        this.splashScreen
+            .querySelector<SVGAnimationElement>("animateTransform")
+            ?.endElement();
+    }
+
     private hideSplashScreen(): void {
+        this.stopSplashAnimation();
         this.splashScreen.classList.add("hidden");
         this.container.classList.remove("hidden");
     }
@@ -2366,6 +2401,9 @@ export class InnerPlayer {
     private showSplashScreen(): void {
         this.splashScreen.classList.remove("hidden");
         this.container.classList.add("hidden");
+        this.splashScreen
+            .querySelector<SVGAnimationElement>("animateTransform")
+            ?.beginElement();
     }
 
     protected setMetadata(metadata: MovieMetadata) {

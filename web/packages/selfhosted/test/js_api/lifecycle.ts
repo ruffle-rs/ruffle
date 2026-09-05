@@ -280,6 +280,38 @@ describe("Player lifecycle", () => {
         expect(result).to.deep.equal({ error: "", canvases: 0, readyState: 0 });
     });
 
+    it("animates the splash screen again after cancelling and reconnecting", async () => {
+        for (let attempt = 0; attempt < 2; attempt++) {
+            await browser.execute(() => {
+                document
+                    .getElementById("test-container")!
+                    .appendChild(window.lifecycleTest.player);
+            });
+            await deferLoad("font");
+            await browser.waitUntil(
+                async () =>
+                    await browser.execute(() => {
+                        const circle =
+                            window.lifecycleTest.player.shadowRoot!.querySelector<SVGCircleElement>(
+                                ".spinner",
+                            )!;
+                        const matrix = circle.getCTM();
+                        return matrix !== null && Math.abs(matrix.b) > 0.1;
+                    }),
+                { timeoutMsg: "Expected the loading spinner to rotate" },
+            );
+            await browser.execute(async () => {
+                const state = window.lifecycleTest;
+                state.player.remove();
+                state.release();
+                const error = await state.pending;
+                if (error) {
+                    throw new Error(error);
+                }
+            });
+        }
+    });
+
     it("still reloads and plays after reconnection", async () => {
         await browser.execute(async () => {
             const player = window.lifecycleTest.player;
