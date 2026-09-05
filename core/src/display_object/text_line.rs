@@ -154,6 +154,44 @@ impl<'gc> TextLine<'gc> {
         self.0.fallback.measure_text(context)
     }
 
+    /// Returns the laid-out line's `(ascent, descent)`.
+    pub fn metrics(self) -> (f64, f64) {
+        // In the Flash Player cases tested here, whitespace-only lines used these
+        // baseline proportions instead of normal ascent and descent.
+        const BLANK_ASCENT_RATIO: f64 = 1420.0 / 2048.0;
+        const BLANK_DESCENT_RATIO: f64 = 442.0 / 2048.0;
+
+        let text = self.0.fallback.text();
+        let layout = self.0.fallback.layout();
+        let Some(line) = layout.lines().first() else {
+            debug_assert!(false, "Should not be reachable");
+            return Default::default();
+        };
+
+        let blank_line = !text.is_empty()
+            && text
+                .iter()
+                .all(|unit| matches!(unit, 0x0009 | 0x000A | 0x000D | 0x0020 | 0x2028 | 0x2029));
+
+        if blank_line {
+            let font_size = line
+                .boxes_iter()
+                .filter_map(|layout_box| {
+                    layout_box
+                        .as_renderable_text(&text)
+                        .map(|(_, _, _, params, _)| params.height().to_pixels())
+                })
+                .fold(0.0_f64, f64::max);
+
+            return (
+                font_size * BLANK_ASCENT_RATIO,
+                font_size * BLANK_DESCENT_RATIO,
+            );
+        }
+
+        (line.ascent().to_pixels(), line.descent().to_pixels())
+    }
+
     pub fn fallback(self) -> EditText<'gc> {
         self.0.fallback
     }

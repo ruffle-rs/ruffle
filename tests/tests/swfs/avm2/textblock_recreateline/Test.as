@@ -70,8 +70,6 @@ package {
             trace(line2.specifiedWidth);
             trace(line2.atomCount);
             trace(line2.rawTextLength);
-            trace(line2.ascent);
-            trace(line2.descent);
 
             trace(line2.blendMode);
             trace(line2.userData);
