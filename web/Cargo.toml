@@ -69,7 +69,7 @@ workspace = true
 features = [
     "AddEventListenerOptions", "AudioBuffer", "AudioBufferSourceNode", "AudioContext", "AudioContextOptions",
     "AudioDestinationNode", "AudioNode", "AudioParam", "Blob", "BlobPropertyBag",
-    "ChannelMergerNode", "ChannelSplitterNode", "ClipboardEvent", "DataTransfer", "Element",
+    "ChannelMergerNode", "ChannelSplitterNode", "ClipboardEvent", "DataTransfer", "DomRect", "Element",
     "EventTarget", "GainNode", "Headers", "HtmlCanvasElement", "HtmlDocument", "HtmlElement", "HtmlFormElement",
     "HtmlInputElement", "HtmlTextAreaElement", "KeyboardEvent", "Location", "PageTransitionEvent", "PointerEvent",
     "Request", "RequestInit", "Response", "Storage", "WheelEvent", "Window", "ReadableStream", "RequestCredentials",
