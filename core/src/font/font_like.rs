@@ -21,16 +21,21 @@ pub struct EvalParameters {
     /// pairs of letters, separate from the ordinary width between glyphs. This
     /// parameter allows enabling or disabling that feature.
     pub kerning: bool,
+
+    /// The color to render the font with.
+    pub color: swf::Color,
 }
 
 impl EvalParameters {
     /// Convert the formatting on a text span over to font evaluation
     /// parameters.
     pub fn from_span(span: &TextSpan) -> Self {
+        let color = swf::Color::from_rgb(span.font.color.to_rgb(), 0xFF);
         Self {
             height: Twips::from_pixels(span.font.size),
             letter_spacing: Twips::from_pixels(span.font.letter_spacing),
             kerning: span.font.kerning,
+            color,
         }
     }
 
@@ -86,10 +91,12 @@ pub trait FontLike<'gc> {
     fn evaluate(
         &self,
         text: &WStr, // TODO: take an `IntoIterator<Item=char>`, to not depend on string representation?
-        mut transform: Transform,
         params: EvalParameters,
         mut glyph_func: impl FnMut(usize, &Transform, GlyphRef, Twips, Twips),
     ) {
+        let mut transform: Transform = Default::default();
+        transform.color_transform.set_mult_color(params.color);
+
         let baseline = self.metrics().ascent(params.height);
 
         // TODO [KJ] I'm not sure whether we should iterate over characters here or over code units.
@@ -154,14 +161,9 @@ pub trait FontLike<'gc> {
     fn measure(&self, text: &WStr, params: EvalParameters) -> Twips {
         let mut width = Twips::ZERO;
 
-        self.evaluate(
-            text,
-            Default::default(),
-            params,
-            |_pos, _transform, _glyph, advance, x| {
-                width = width.max(x + advance);
-            },
-        );
+        self.evaluate(text, params, |_pos, _transform, _glyph, advance, x| {
+            width = width.max(x + advance);
+        });
 
         width
     }

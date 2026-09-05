@@ -302,7 +302,7 @@ impl<'a, 'gc> LayoutBuilder<'a, 'gc> {
         let mut line_size_bounds = None;
         let mut box_count: i32 = 0;
         for linebox in self.boxes.iter_mut() {
-            let (text, _tf, font_set, params, _color) =
+            let (text, _tf, font_set, params) =
                 linebox.as_renderable_text(self.text).expect("text");
 
             // Flash ignores trailing spaces when aligning lines, so should we
@@ -1128,10 +1128,6 @@ pub enum LayoutContent<'gc> {
         #[collect(require_static)]
         params: EvalParameters,
 
-        /// The color to render the font with.
-        #[collect(require_static)]
-        color: swf::Color,
-
         /// List of end positions (relative to this box) for each character.
         ///
         /// By having this here, we do not have to reevaluate the font
@@ -1170,10 +1166,6 @@ pub enum LayoutContent<'gc> {
         /// this text.
         #[collect(require_static)]
         params: EvalParameters,
-
-        /// The color to render the font with.
-        #[collect(require_static)]
-        color: swf::Color,
     },
 
     /// A layout box containing a drawing.
@@ -1222,7 +1214,7 @@ impl<'gc> LayoutBox<'gc> {
         let params = EvalParameters::from_span(span);
         let mut char_end_pos = Vec::with_capacity(end - start);
 
-        font_set.evaluate(text, Default::default(), params, |_, _, _, advance, x| {
+        font_set.evaluate(text, params, |_, _, _, advance, x| {
             char_end_pos.push(x + advance);
         });
 
@@ -1234,7 +1226,6 @@ impl<'gc> LayoutBox<'gc> {
                 text_format: span.get_text_format(),
                 font_set,
                 params,
-                color: span.font.color,
                 char_end_pos,
                 underline: span.style.underline,
             },
@@ -1252,7 +1243,6 @@ impl<'gc> LayoutBox<'gc> {
                 text_format: span.get_text_format(),
                 font_set,
                 params,
-                color: span.font.color,
             },
         }
     }
@@ -1296,13 +1286,7 @@ impl<'gc> LayoutBox<'gc> {
     pub fn as_renderable_text<'a>(
         &self,
         text: &'a WStr,
-    ) -> Option<(
-        &'a WStr,
-        &TextFormat,
-        FontSet<'gc>,
-        EvalParameters,
-        swf::Color,
-    )> {
+    ) -> Option<(&'a WStr, &TextFormat, FontSet<'gc>, EvalParameters)> {
         match &self.content {
             LayoutContent::Text {
                 start,
@@ -1310,27 +1294,18 @@ impl<'gc> LayoutBox<'gc> {
                 text_format,
                 font_set,
                 params,
-                color,
                 ..
-            } => Some((
-                text.slice(*start..*end)?,
-                text_format,
-                *font_set,
-                *params,
-                swf::Color::from_rgb(color.to_rgb(), 0xFF),
-            )),
+            } => Some((text.slice(*start..*end)?, text_format, *font_set, *params)),
             LayoutContent::Bullet {
                 text_format,
                 font_set,
                 params,
-                color,
                 ..
             } => Some((
                 WStr::from_units(&[0x2022u16]),
                 text_format,
                 *font_set,
                 *params,
-                swf::Color::from_rgb(color.to_rgb(), 0xFF),
             )),
             LayoutContent::Drawing { .. } => None,
         }

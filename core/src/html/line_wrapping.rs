@@ -208,6 +208,7 @@ mod tests {
             height,
             letter_spacing,
             kerning,
+            color: swf::Color::BLACK,
         }
     }
 

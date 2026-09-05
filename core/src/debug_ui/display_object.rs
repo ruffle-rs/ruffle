@@ -803,8 +803,7 @@ impl DisplayObjectWindow {
                         ui.end_row();
 
                         for lbox in line.boxes_iter() {
-                            if let Some((text, format, font_set, _, _)) =
-                                lbox.as_renderable_text(text)
+                            if let Some((text, format, font_set, _)) = lbox.as_renderable_text(text)
                             {
                                 for i in 0..text.len() {
                                     let code = text.at(i);
@@ -871,7 +870,7 @@ impl DisplayObjectWindow {
                         ui.label(format!("{}–{}", lbox.start(), lbox.end()));
                         ui.end_row();
 
-                        if let Some((_, _, font_set, _, _)) = lbox.as_renderable_text(text) {
+                        if let Some((_, _, font_set, _)) = lbox.as_renderable_text(text) {
                             ui.label("Main Font");
                             show_font(ui, context, messages, font_set.main_font());
                             ui.end_row();
