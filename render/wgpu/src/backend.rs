@@ -283,14 +283,6 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
         })
     }
 
-    pub fn profiler(&self) -> &GpuProfiler {
-        &self.profiler
-    }
-
-    pub fn profiler_mut(&mut self) -> &mut GpuProfiler {
-        &mut self.profiler
-    }
-
     fn register_shape_internal(
         &mut self,
         shape: DistilledShape,
@@ -668,11 +660,18 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
             LayerRef::None,
             &mut self.texture_pool,
         );
+        self.profiler
+            .resolve_queries(&mut self.active_frame.command_encoder);
         self.active_frame.staging_belt.finish();
 
         self.active_frame
             .submit_for_target(&self.descriptors, &self.target, frame_output);
         self.offscreen_texture_pool = TexturePool::new();
+        self.profiler
+            .end_frame()
+            .expect("Frame should end successfully");
+        let timestamp_period = self.descriptors.queue.get_timestamp_period();
+        self.profiler.process_finished_frame(timestamp_period);
     }
 
     #[instrument(level = "debug", skip_all)]
