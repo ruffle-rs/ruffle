@@ -52,6 +52,7 @@ pub trait RenderBackend: Any {
         commands: CommandList,
         quality: StageQuality,
         bounds: PixelRegion,
+        cache_entries: Vec<BitmapCacheEntry>,
     ) -> Option<Box<dyn SyncHandle>>;
 
     /// Applies the given filter with a `BitmapHandle` source onto a destination `BitmapHandle`.
