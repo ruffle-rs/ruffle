@@ -1,6 +1,5 @@
 num_ticks = 10
 log_fetch = true
-known_failure = true
 
 [[compilers]]
 type = "Rascal"

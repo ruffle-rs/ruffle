@@ -1,4 +1,4 @@
-use crate::avm1::amf::{deserialize_value, recursive_serialize};
+use crate::avm1::amf::{AmfConfig, deserialize_value, recursive_serialize};
 use crate::avm1::property_decl::{DeclContext, PropertyOrder, StaticDeclarations, SystemClass};
 use crate::avm1::{Activation, Attribute, Error, NativeObject, Object, Value};
 use crate::avm1_stub;
@@ -106,7 +106,11 @@ fn deserialize_lso<'gc>(
 
 fn new_lso<'gc>(activation: &mut Activation<'_, 'gc>, name: &str, data: Object<'gc>) -> Lso {
     let mut w = Amf0Writer::default();
-    recursive_serialize(activation, data, &mut w);
+    // Hardcoded because LSOs always use ECMA arrays
+    let config = AmfConfig {
+        supports_strict_arrays: false,
+    };
+    recursive_serialize(activation, data, &mut w, config);
     w.commit_lso(
         &name
             .split('/')
