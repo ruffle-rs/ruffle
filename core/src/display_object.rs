@@ -1534,6 +1534,19 @@ pub trait TDisplayObject<'gc>:
         self.global_to_local_matrix().map(|matrix| matrix * global)
     }
 
+    /// Whether `global` falls inside this object's `scrollRect` viewport.
+    ///
+    /// No `scrollRect` means the object does not clip, so this returns `true`.
+    /// A singular transform (`global_to_local` is `None`) is treated as outside.
+    #[no_dynamic]
+    fn global_in_scroll_rect(self, global: Point<Twips>) -> bool {
+        let Some(scroll_rect) = self.scroll_rect() else {
+            return true;
+        };
+        self.global_to_local(global)
+            .is_some_and(|local| scroll_rect.contains(local))
+    }
+
     /// Converts the mouse position on the stage to a local position on this display object.
     /// If the object has zero scale, then the stage `TWIPS_TO_PIXELS` matrix will be used.
     /// This matches Flash's behavior for `mouseX`/`mouseY` on an object with zero scale.
