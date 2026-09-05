@@ -1,0 +1,16 @@
+num_ticks = 1
+
+[image_comparisons.output]
+tolerance = 4
+max_outliers = 24
+
+[player_options]
+with_renderer = { optional = false, quality = "high" }
+viewport_dimensions = { width = 100, height = 50, scale_factor = 1 }
+
+[[compilers]]
+type = "Asc"
+target = "test.swf"
+class = "Test"
+scripts = ["Test.as", "AGALMiniAssembler.as"]
+swf_version = 43

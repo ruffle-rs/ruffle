@@ -1,0 +1,9 @@
+pixel(0,0):   ffff0000
+pixel(25,25): ffff0000
+pixel(49,49): ffff0000
+null: TypeError: Error #2007: Parameter destination must be non-null.
+	at flash.display3D::Context3D/drawToBitmapData()
+	at Test/onContext()
+after present: Error: Error #3692: All buffers need to be cleared every frame before drawing.
+	at flash.display3D::Context3D/drawToBitmapData()
+	at Test/onContext()
