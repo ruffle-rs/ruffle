@@ -21,7 +21,7 @@ use std::cell::{Ref, RefMut};
 use std::cmp::Ordering;
 use std::collections::BTreeMap;
 use std::fmt::Debug;
-use std::ops::{Bound, RangeBounds};
+use std::ops::RangeBounds;
 use std::rc::Rc;
 
 /// Dispatch the `removedFromStage` event on a child and all of it's
@@ -835,22 +835,10 @@ impl<'gc> ChildContainer<'gc> {
                 None
             }
         } else {
-            let above = self
-                .depth_list
-                .range((Bound::Excluded(depth), Bound::Unbounded))
-                .map(|(_, v)| *v)
-                .next();
-
-            if let Some(above_child) = above {
-                if let Some(position) = self
-                    .render_list
-                    .iter()
-                    .position(|x| DisplayObject::ptr_eq(*x, above_child))
-                {
-                    self.insert_id(position, child);
-                } else {
-                    self.push_id(child);
-                }
+            if let Some(position) = self.render_list.iter().position(|existing| {
+                existing.depth() > depth && self.has_depth(existing.depth())
+            }) {
+                self.insert_id(position, child);
             } else {
                 self.push_id(child);
             }

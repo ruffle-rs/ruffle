@@ -1,0 +1,16 @@
+[object MovieClip] (green)
+[object MovieClip] (red)
+[object MovieClip] (blue)
+
+[object MovieClip] (green)
+[object MovieClip] (blue)
+
+[object MovieClip] (blue)
+[object MovieClip] (green)
+[object MovieClip] (blue)
+[object MovieClip] (red)
+
+[object MovieClip] (blue)
+[object MovieClip] (green)
+[object MovieClip] (blue)
+
