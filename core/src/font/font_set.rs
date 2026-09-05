@@ -54,6 +54,12 @@ impl<'gc> FontSet<'gc> {
         self.0.main_font
     }
 
+    /// Typographic metrics (OS/2 `sTypo*`) of the main font, if provided.
+    /// Used by the Flash Text Engine; `None` falls back to the cell metrics.
+    pub fn typo_metrics(self) -> Option<FontMetrics> {
+        self.0.main_font.typo_metrics()
+    }
+
     pub fn fallback_fonts(&self) -> &[Font<'gc>] {
         &self.0.fallback_fonts
     }

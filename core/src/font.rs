@@ -216,6 +216,21 @@ impl GlyphSource {
             glyph_source.sweep_caches(false);
         }
     }
+
+    /// Typographic metrics (OS/2 `sTypo*`), if available. For fonts Ruffle
+    /// parses itself they are read straight from the font data, so no font
+    /// renderer is involved; a font supplied by an external renderer is asked
+    /// for them through the renderer. `None` (e.g. a SWF glyph font, or a
+    /// renderer that can't provide them) falls back to the hhea/cell metrics.
+    pub fn typo_metrics(&self) -> Option<FontMetrics> {
+        match self {
+            GlyphSource::FontFace { face, .. } => face.typo_metrics(),
+            GlyphSource::ExternalRenderer(glyph_source) => {
+                glyph_source.font_renderer().get_typo_font_metrics()
+            }
+            GlyphSource::Memory { .. } | GlyphSource::Empty => None,
+        }
+    }
 }
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Collect, Hash)]
@@ -493,6 +508,13 @@ impl<'gc> Font<'gc> {
     /// If not, this font should be rendered as a device font.
     pub fn has_glyphs(self) -> bool {
         !matches!(self.0.glyphs, GlyphSource::Empty)
+    }
+
+    /// Typographic metrics (OS/2 `sTypo*`) for this font, if it provides them.
+    /// The Flash Text Engine reports these (like Flash Player), while glyph
+    /// placement keeps using the hhea/cell [`Font::metrics`].
+    pub fn typo_metrics(self) -> Option<FontMetrics> {
+        self.0.glyphs.typo_metrics()
     }
 
     /// Returns a glyph entry by index.
