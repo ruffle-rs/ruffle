@@ -9,7 +9,7 @@ use ruffle_core::backend::ui::{
 use ruffle_core::backend::ui::{
     FontDefinition, FullscreenError, LanguageIdentifier, MouseCursor, US_ENGLISH, UiBackend,
 };
-use ruffle_core::font::FontQuery;
+use ruffle_core::font::{FontAtlases, FontQuery};
 use ruffle_web_common::JsResult;
 use std::borrow::Cow;
 use url::Url;
@@ -140,6 +140,8 @@ pub struct WebUiBackend {
     dialog_open: bool,
 
     use_canvas_font_renderer: bool,
+
+    font_atlases: FontAtlases,
 }
 
 impl WebUiBackend {
@@ -162,6 +164,7 @@ impl WebUiBackend {
             clipboard_content: "".into(),
             dialog_open: false,
             use_canvas_font_renderer,
+            font_atlases: FontAtlases::new(),
         }
     }
 
@@ -338,6 +341,7 @@ impl UiBackend for WebUiBackend {
             query.is_italic,
             query.is_bold,
             &query.name,
+            &self.font_atlases,
         );
 
         match renderer {
