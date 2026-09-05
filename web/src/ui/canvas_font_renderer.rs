@@ -110,11 +110,17 @@ impl CanvasFontRenderer {
         let metrics = self.ctx.measure_text(text)?;
 
         let bitmap_width = metrics.actual_bounding_box_left() + metrics.actual_bounding_box_right();
-        let bitmap_width = bitmap_width.max(1.0).ceil() as i32; // TODO Support empty bitmaps.
+        let bitmap_width = bitmap_width.ceil() as i32;
         let bitmap_height =
             metrics.actual_bounding_box_ascent() + metrics.actual_bounding_box_descent();
-        let bitmap_height = bitmap_height.max(1.0).ceil() as i32; // TODO Support empty bitmaps.
+        let bitmap_height = bitmap_height.ceil() as i32;
         let advance = Twips::from_pixels(metrics.width());
+
+        // Glyphs with no ink will produce empty bitmaps.
+        if bitmap_width <= 0 || bitmap_height <= 0 {
+            return Ok(Glyph::whitespace(character, advance));
+        }
+
         let bitmap_tx = -metrics.actual_bounding_box_left();
         let bitmap_ty = -metrics.actual_bounding_box_ascent();
 
