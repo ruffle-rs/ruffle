@@ -20,7 +20,7 @@ struct Gradient {
 
 @vertex
 fn main_vertex(in: common__VertexInputUv) -> VertexOutput {
-    let pos = common__globals.view_matrix * transforms.world_matrix * vec4<f32>(in.position.x, in.position.y, 0.0, 1.0);
+    let pos = common__globals.global_matrix * transforms.world_matrix * vec4<f32>(in.position.x, in.position.y, 0.0, 1.0);
     return VertexOutput(pos, in.uv.xy / in.uv.z);
 }
 

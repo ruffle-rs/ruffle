@@ -5,7 +5,7 @@
 /// Global uniforms that are constant throughout a frame.
 struct common__Globals {
     // The view matrix determined by the viewport and stage.
-    view_matrix: mat4x4<f32>,
+    global_matrix: mat4x4<f32>,
 };
 
 /// Transform uniforms that are changed per object.
