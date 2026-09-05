@@ -1,5 +1,6 @@
 mod font_renderer;
 
+use super::DeviceFontRenderer;
 use super::JavascriptPlayer;
 use rfd::{AsyncFileDialog, FileHandle};
 use ruffle_core::backend::ui::{
@@ -21,6 +22,56 @@ use web_sys::{
 
 use chrono::{DateTime, Utc};
 use js_sys::{Array, Uint8Array};
+
+/// Well-known global slot where the embedding host installs the custom
+/// font bridge. Must match `CUSTOM_FONT_RENDERER_GLOBAL` on the TS side
+/// (`web/packages/core/src/internal/custom-font-bridge.ts`).
+const CUSTOM_FONT_RENDERER_GLOBAL: &str = "__ruffleCustomFontRenderer";
+
+/// Fetch the bridge object from `globalThis.__ruffleCustomFontRenderer`,
+/// validating that it structurally exposes a `createRenderer` function.
+/// Re-read on every request so a bridge installed after player creation
+/// (e.g. an async ES module) is picked up as soon as it is available.
+fn lookup_custom_font_bridge() -> Option<JsValue> {
+    let global = js_sys::global();
+    let bridge =
+        js_sys::Reflect::get(&global, &JsValue::from_str(CUSTOM_FONT_RENDERER_GLOBAL)).ok()?;
+    if bridge.is_undefined() || bridge.is_null() {
+        return None;
+    }
+    let create = js_sys::Reflect::get(&bridge, &JsValue::from_str("createRenderer")).ok()?;
+    if !create.is_function() {
+        return None;
+    }
+    Some(bridge)
+}
+
+/// Build a `CanvasFontRenderer` for `query` and register it. Shared by the
+/// `Canvas` path and the `Custom` fallback.
+fn register_canvas_font_renderer(query: &FontQuery, register: &mut dyn FnMut(FontDefinition)) {
+    match font_renderer::CanvasFontRenderer::new(query.is_italic, query.is_bold, &query.name) {
+        Ok(renderer) => {
+            tracing::info!(
+                "Loaded a new canvas font renderer for font \"{}\", italic: {}, bold: {}",
+                query.name,
+                query.is_italic,
+                query.is_bold
+            );
+            register(FontDefinition::ExternalRenderer {
+                name: query.name.clone(),
+                is_bold: query.is_bold,
+                is_italic: query.is_italic,
+                font_renderer: Box::new(renderer),
+            });
+        }
+        Err(e) => {
+            tracing::error!(
+                "Failed to set up canvas font renderer for font \"{}\": {e:?}",
+                query.name
+            )
+        }
+    }
+}
 
 pub struct WebFileSelection {
     file_name: String,
@@ -139,14 +190,14 @@ pub struct WebUiBackend {
     /// Is a dialog currently open
     dialog_open: bool,
 
-    use_canvas_font_renderer: bool,
+    device_font_renderer: DeviceFontRenderer,
 }
 
 impl WebUiBackend {
     pub fn new(
         js_player: JavascriptPlayer,
         canvas: &HtmlCanvasElement,
-        use_canvas_font_renderer: bool,
+        device_font_renderer: DeviceFontRenderer,
     ) -> Self {
         let window = web_sys::window().expect("window()");
         let preferred_language = window.navigator().language();
@@ -161,7 +212,7 @@ impl WebUiBackend {
             language,
             clipboard_content: "".into(),
             dialog_open: false,
-            use_canvas_font_renderer,
+            device_font_renderer,
         }
     }
 
@@ -327,36 +378,51 @@ impl UiBackend for WebUiBackend {
     }
 
     fn load_device_font(&self, query: &FontQuery, register: &mut dyn FnMut(FontDefinition)) {
-        if !self.use_canvas_font_renderer {
-            // In case we don't use the canvas font renderer,
-            // because fonts must be loaded instantly (no async),
-            // we actually just provide them all upfront at time of Player creation.
-            return;
-        }
-
-        let renderer =
-            font_renderer::CanvasFontRenderer::new(query.is_italic, query.is_bold, &query.name);
-
-        match renderer {
-            Ok(renderer) => {
-                tracing::info!(
-                    "Loaded a new canvas font renderer for font \"{}\", italic: {}, bold: {}",
-                    query.name,
-                    query.is_italic,
-                    query.is_bold
-                );
-                register(FontDefinition::ExternalRenderer {
-                    name: query.name.clone(),
-                    is_bold: query.is_bold,
-                    is_italic: query.is_italic,
-                    font_renderer: Box::new(renderer),
-                });
+        match self.device_font_renderer {
+            DeviceFontRenderer::Embedded => {
+                // Embedded fonts must be registered synchronously (no async),
+                // so they're all provided up-front at Player creation time.
             }
-            Err(e) => {
-                tracing::error!(
-                    "Failed to set up canvas font renderer for font \"{}\": {e:?}",
-                    query.name
-                )
+            DeviceFontRenderer::Canvas => {
+                register_canvas_font_renderer(query, register);
+            }
+            DeviceFontRenderer::Custom => {
+                let Some(bridge) = lookup_custom_font_bridge() else {
+                    tracing::warn!(
+                        "deviceFontRenderer is \"custom\" but globalThis.{CUSTOM_FONT_RENDERER_GLOBAL} is missing or invalid for font \"{}\"; falling back to canvas",
+                        query.name,
+                    );
+                    register_canvas_font_renderer(query, register);
+                    return;
+                };
+                match font_renderer::CustomFontRenderer::new(
+                    query.is_italic,
+                    query.is_bold,
+                    &query.name,
+                    &bridge,
+                ) {
+                    Ok(renderer) => {
+                        tracing::info!(
+                            "Loaded custom font renderer for font \"{}\", italic: {}, bold: {}",
+                            query.name,
+                            query.is_italic,
+                            query.is_bold,
+                        );
+                        register(FontDefinition::ExternalRenderer {
+                            name: query.name.clone(),
+                            is_bold: query.is_bold,
+                            is_italic: query.is_italic,
+                            font_renderer: Box::new(renderer),
+                        });
+                    }
+                    Err(e) => {
+                        tracing::warn!(
+                            "Failed to set up custom font renderer for font \"{}\" ({e:?}); falling back to canvas",
+                            query.name,
+                        );
+                        register_canvas_font_renderer(query, register);
+                    }
+                }
             }
         }
     }

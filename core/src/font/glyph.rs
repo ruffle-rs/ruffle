@@ -191,6 +191,14 @@ pub struct Glyph {
 
     // The character this glyph represents.
     character: char,
+
+    /// The em-scale (in twips) at which this glyph was rasterized, when it
+    /// comes from a size-aware renderer. `Some(scale)` makes `evaluate()` see
+    /// `scale = requested_height / intrinsic_scale`, which is 1.0 when the
+    /// glyph was rasterized at the requested size — so a size-aware renderer's
+    /// native pixels land 1:1 on the screen instead of being resampled.
+    /// `None` for ordinary glyphs, which scale by the font's canonical scale.
+    intrinsic_scale: Option<f32>,
 }
 
 impl Glyph {
@@ -200,6 +208,7 @@ impl Glyph {
             shape: GlyphShape::None,
             advance: Twips::ZERO,
             character,
+            intrinsic_scale: None,
         }
     }
 
@@ -208,6 +217,7 @@ impl Glyph {
             shape: GlyphShape::None,
             advance,
             character,
+            intrinsic_scale: None,
         }
     }
 
@@ -216,6 +226,7 @@ impl Glyph {
             shape: GlyphShape::Drawing(Box::new(drawing)),
             advance,
             character,
+            intrinsic_scale: None,
         }
     }
 
@@ -224,6 +235,7 @@ impl Glyph {
             advance: Twips::new(swf_glyph.advance.into()),
             shape: GlyphShape::Swf(Box::new(RefCell::new(SwfGlyphOrShape::Glyph(swf_glyph)))),
             character,
+            intrinsic_scale: None,
         }
     }
 
@@ -238,6 +250,27 @@ impl Glyph {
             shape: GlyphShape::Bitmap(Rc::new(GlyphBitmap::new(bitmap, tx, ty))),
             advance,
             character,
+            intrinsic_scale: None,
+        }
+    }
+
+    /// Build a bitmap glyph rasterized by a size-aware renderer at a specific
+    /// size, recording the `intrinsic_scale` (em-scale in twips) the bitmap
+    /// was produced at so `evaluate()` presents it 1:1 at that size. `ty` is
+    /// zero: the bridge positions glyphs from the pen/baseline, supplying only
+    /// the horizontal `tx` overhang.
+    pub fn from_bitmap_at_scale(
+        character: char,
+        bitmap: Bitmap<'static>,
+        advance: Twips,
+        tx: Twips,
+        intrinsic_scale: f32,
+    ) -> Self {
+        Self {
+            shape: GlyphShape::Bitmap(Rc::new(GlyphBitmap::new(bitmap, tx, Twips::ZERO))),
+            advance,
+            character,
+            intrinsic_scale: Some(intrinsic_scale),
         }
     }
 
@@ -246,6 +279,7 @@ impl Glyph {
             shape: GlyphShape::AtlasGlyph(atlas_glyph),
             advance,
             character,
+            intrinsic_scale: None,
         }
     }
 
@@ -263,6 +297,12 @@ impl Glyph {
 
     pub fn character(&self) -> char {
         self.character
+    }
+
+    /// The em-scale (twips) this glyph was rasterized at by a size-aware
+    /// renderer, or `None` for ordinary glyphs. See the field docs.
+    pub fn intrinsic_scale(&self) -> Option<f32> {
+        self.intrinsic_scale
     }
 
     pub fn as_ref(&self) -> GlyphRef<'_> {
