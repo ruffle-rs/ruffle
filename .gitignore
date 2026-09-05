@@ -19,3 +19,4 @@ RECOVER_*.fla
 
 # A developers local Flash Player harness config
 .flash_players.toml
+ruffle.log
