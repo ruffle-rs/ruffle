@@ -20,6 +20,7 @@ use gc_arena::{Collect, Gc, Mutation};
 use ruffle_macros::{enum_trait_object, istr};
 use ruffle_render::perspective_projection::PerspectiveProjection;
 use ruffle_render::pixel_bender::PixelBenderShaderHandle;
+use ruffle_render::shape_utils::Scale9;
 use ruffle_render::transform::{Transform, TransformStack};
 use std::cell::{Cell, Ref, RefCell, RefMut};
 use std::fmt::Debug;
@@ -812,9 +813,11 @@ impl<'gc> DisplayObjectBase<'gc> {
         self.contains_flag(DisplayObjectFlags::CACHE_AS_BITMAP)
     }
 
-    fn set_bitmap_cached_preference(&self, value: bool) {
+    fn set_bitmap_cached_preference(&self, value: bool) -> bool {
+        let changed = self.is_bitmap_cached_preference() != value;
         self.set_flag(DisplayObjectFlags::CACHE_AS_BITMAP, value);
         self.recheck_cache_as_bitmap();
+        changed
     }
 
     fn bitmap_cache_mut(&self) -> RefMut<'_, Option<BitmapCache>> {
@@ -942,6 +945,22 @@ struct DrawCacheInfo {
     bounds: Rectangle<Twips>,
     draw_offset: Point<i32>,
     filters: Vec<Filter>,
+}
+
+/// Whether `object` is the one `BitmapData.draw` is drawing without its transform.
+fn is_untransformed_source<'gc>(
+    context: &RenderContext<'_, 'gc>,
+    object: DisplayObject<'gc>,
+) -> bool {
+    matches!(context.untransformed_source, Some(source) if DisplayObject::ptr_eq(source, object))
+}
+
+/// Whether `object` is being rendered as a mask. Every masker scales plainly -- timeline,
+/// scripted, and the alpha kind alike -- but the pipelines expose it differently: timeline
+/// and stencil masks draw with the mask flag up, while an alpha masker renders into its
+/// own command list and only its `maskee` link gives it away.
+fn is_masking<'gc>(context: &RenderContext<'_, 'gc>, object: DisplayObject<'gc>) -> bool {
+    context.commands.drawing_mask() || object.maskee().is_some()
 }
 
 pub fn render_base<'gc>(
@@ -1082,6 +1101,7 @@ pub fn render_base<'gc>(
                 is_offscreen: true,
                 use_bitmap_cache: true,
                 stage: context.stage,
+                untransformed_source: context.untransformed_source,
             };
             this.render_self(&mut offscreen_context);
             offscreen_context.cache_draws.push(BitmapCacheEntry {
@@ -2030,6 +2050,108 @@ pub trait TDisplayObject<'gc>:
     #[no_dynamic]
     fn set_scaling_grid(self, rect: Rectangle<Twips>) {
         self.base().scaling_grid.set(rect);
+        // A cached bitmap only redraws on matrix or size changes, and the grid moves
+        // neither. Children need none of this: one without a cached bitmap has nothing
+        // stale to drop, and one with a cached bitmap ignores the grid entirely.
+        self.invalidate_cached_bitmap();
+    }
+
+    /// The grid to 9-slice this object's geometry with, gated on the object's *own* matrix:
+    /// rotation, skew and negative scale disable slicing, while an ancestor's scale or
+    /// rotation applies to the sliced result instead of suppressing it. The sign half of
+    /// the rule needs no test here: the axis solver refuses a non-positive scale.
+    #[no_dynamic]
+    fn active_scaling_grid(self) -> Option<Scale9> {
+        let grid = self.scaling_grid();
+        if !grid.is_valid() {
+            return None;
+        }
+
+        // Authoring rounds a nominally axis-aligned matrix to the nearest 1/65536, so real
+        // content arrives carrying a skew of a few units. Flash Player still slices at
+        // 1/4096 and no longer at 1/2048, and the cutoff does not move with the scale.
+        const SKEW_EPSILON: f32 = 1.0 / 4096.0;
+        let matrix = self.base().matrix();
+        if matrix.b.abs() > SKEW_EPSILON || matrix.c.abs() > SKEW_EPSILON {
+            return None;
+        }
+
+        Some(Scale9 {
+            bounds: self.self_bounds_for_scale9(),
+            grid,
+            scale_x: matrix.a,
+            scale_y: matrix.d,
+        })
+        .filter(Scale9::is_usable)
+    }
+
+    /// This object's own geometry as a grid sees it. Morph shapes override this to re-anchor
+    /// on the frame being shown, and text has none: a grid neither applies to it nor sees it.
+    fn self_geometry_for_scale9(self) -> Rectangle<Twips> {
+        if self.is_text() {
+            return Rectangle::INVALID;
+        }
+        self.self_bounds(BoundsMode::ScriptWithoutStrokes)
+    }
+
+    /// Whether this is one of the text types.
+    #[no_dynamic]
+    fn is_text(self) -> bool {
+        self.as_edit_text().is_some() || self.as_text().is_some() || self.as_text_line().is_some()
+    }
+
+    /// Bounds the grid is validated against: this object's own geometry plus its *direct*
+    /// children's, without stroke inflation. Unlike `getBounds`, grandchildren are excluded.
+    fn self_bounds_for_scale9(self) -> Rectangle<Twips> {
+        let mut bounds = self.self_geometry_for_scale9();
+        if let Some(container) = self.as_container() {
+            for child in container.iter_render_list() {
+                bounds = bounds.union(&(child.base().matrix() * child.self_geometry_for_scale9()));
+            }
+        }
+        bounds
+    }
+
+    /// The parent's grid. Flash Player does not propagate past one level. A child whose own
+    /// grid can slice never gets here -- render tries the child's own grid first -- and one
+    /// whose grid cannot slice still inherits, with its matrix discarded rather than folded
+    /// (`Scale9Space::Detached`).
+    #[no_dynamic]
+    fn inherited_scaling_grid(self) -> Option<Scale9> {
+        // A bitmap-cached child is a bitmap as far as the parent's grid is concerned, and
+        // grids leave bitmaps alone, even one cached before the grid was set.
+        if self.is_bitmap_cached() {
+            return None;
+        }
+        self.parent()?.active_scaling_grid()
+    }
+
+    /// The grid to slice with while rendering, which is `active_scaling_grid` except for a
+    /// masker -- Flash Player scales every kind plainly -- and for the object
+    /// `BitmapData.draw` is drawing: that one keeps neither its transform nor its grid, so
+    /// Flash Player draws it whole and the clip rects a caller carves it with stay in the
+    /// coordinates it was authored in.
+    #[no_dynamic]
+    fn scaling_grid_for_render(self, context: &RenderContext<'_, 'gc>) -> Option<Scale9> {
+        if is_masking(context, self) || is_untransformed_source(context, self) {
+            return None;
+        }
+        self.active_scaling_grid()
+    }
+
+    /// `inherited_scaling_grid`, likewise blank while masking and when the child or its
+    /// parent is the object being drawn -- the source's grid does not reach its children
+    /// any more than the source itself, though a child's own grid still applies.
+    #[no_dynamic]
+    fn inherited_scaling_grid_for_render(self, context: &RenderContext<'_, 'gc>) -> Option<Scale9> {
+        let parent = self.parent()?;
+        if is_masking(context, self)
+            || is_untransformed_source(context, self)
+            || is_untransformed_source(context, parent)
+        {
+            return None;
+        }
+        self.inherited_scaling_grid()
     }
 
     #[no_dynamic]
@@ -2210,7 +2332,11 @@ pub trait TDisplayObject<'gc>:
     /// Note that the object will still be bitmap cached if a filter is active.
     #[no_dynamic]
     fn set_bitmap_cached_preference(self, value: bool) {
-        self.base().set_bitmap_cached_preference(value)
+        // The flag also decides whether a parent's scale9Grid slices this child, so a
+        // cached ancestor has to redraw when it flips.
+        if self.base().set_bitmap_cached_preference(value) {
+            self.invalidate_cached_bitmap();
+        }
     }
 
     /// Whether this display object has a scroll rectangle applied.

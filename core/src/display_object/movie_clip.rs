@@ -47,6 +47,7 @@ use gc_arena::{Collect, DynamicRoot, Gc, GcWeak, Mutation, Rootable};
 use ruffle_common::utils::HasPrefixField;
 use ruffle_macros::istr;
 use ruffle_render::perspective_projection::PerspectiveProjection;
+use ruffle_render::shape_utils::Scale9Space;
 use smallvec::SmallVec;
 use std::borrow::Cow;
 use std::cell::{Cell, OnceCell, Ref, RefCell, RefMut};
@@ -2654,7 +2655,10 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
 
     fn render_self(self, context: &mut RenderContext<'_, 'gc>) {
         if let Some(drawing) = self.drawing() {
-            drawing.render(context);
+            match self.scaling_grid_for_render(context) {
+                Some(scale9) => drawing.render_scale9(context, &scale9, Scale9Space::Own),
+                None => drawing.render(context),
+            }
         }
         self.render_children(context);
     }
@@ -3507,10 +3511,15 @@ impl<'gc, 'a> MovieClipShared<'gc> {
         let id = reader.read_u16()?;
         let rect = reader.read_rectangle()?;
         if let Some(character) = self.library_mut(context).character_by_id(id) {
-            if let Character::MovieClip(clip) = character {
-                clip.set_scaling_grid(rect);
-            } else {
-                tracing::warn!("DefineScalingGrid for invalid ID {}", id);
+            // Flash Player honors the tag on shapes, buttons and morph shapes as well as
+            // sprites. Text refuses a grid outright, so it is not listed here.
+            match character {
+                Character::MovieClip(clip) => clip.set_scaling_grid(rect),
+                Character::Graphic(graphic) => graphic.set_scaling_grid(rect),
+                Character::Avm1Button(button) => button.set_scaling_grid(rect),
+                Character::Avm2Button(button) => button.set_scaling_grid(rect),
+                Character::MorphShape(shape) => shape.set_scaling_grid(rect),
+                _ => tracing::warn!("DefineScalingGrid for invalid ID {}", id),
             }
         }
         Ok(())

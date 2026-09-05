@@ -1,0 +1,16 @@
+num_ticks = 1
+
+# Curve outlines only: the two rasterisers flatten and antialias curves differently.
+[image_comparisons.output]
+tolerance = 1
+max_outliers = 6500
+
+[player_options]
+with_renderer = { optional = false }
+
+[[compilers]]
+type = "Asc"
+target = "test.swf"
+class = "Test"
+scripts = ["Test.as"]
+swf_version = 43

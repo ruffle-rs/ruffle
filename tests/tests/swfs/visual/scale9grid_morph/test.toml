@@ -1,0 +1,15 @@
+# One morph at ratios 0 / 32768 / 65535 in three columns: sliced by its own grid, plain,
+# and sliced by a containing sprite's grid. See generate.py.
+#
+# The two rasterisers antialias the nine long curved outlines differently: 18285 pixels
+# at tolerance 1, but none further than 40/255 apart, so the tolerance clears the whole
+# band and the outlier budget guards structure. Anchoring the grid to the authored start
+# bounds instead of the shown frame measures 18780 outliers at this tolerance.
+num_ticks = 1
+
+[image_comparisons.output]
+tolerance = 40
+max_outliers = 2000
+
+[player_options]
+with_renderer = { optional = false }
