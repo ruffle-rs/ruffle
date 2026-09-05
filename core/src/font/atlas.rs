@@ -39,6 +39,11 @@ impl FontAtlas {
     /// Allocates space for `bitmap` in the atlas and copies it in, starting a
     /// fresh atlas page if none of the existing ones have room left.
     pub fn new_glyph(&self, bitmap: Bitmap<'_>, tx: Twips, ty: Twips) -> FontAtlasGlyph {
+        debug_assert!(
+            bitmap.width() != 0 && bitmap.height() != 0,
+            "Do not allocate space in font atlases for empty bitmaps, use empty glyphs instead"
+        );
+
         let mut data = self.0.borrow_mut();
 
         let atlas_region = match data.pages.iter().find_map(|page| allocate(page, &bitmap)) {
