@@ -201,6 +201,13 @@ export class InnerPlayer {
     private newZipWriter: (() => ZipWriter) | null;
     private lastActivePlayingState: boolean;
 
+    private connectedDocument: Document | null = null;
+    private loadController: AbortController | null = null;
+    private readonly onPointerDown = this.checkIfTouch.bind(this);
+    private readonly onHideContextMenu = this.hideContextMenu.bind(this);
+    private readonly onUnmuteOverlayClicked =
+        this.unmuteOverlayClicked.bind(this);
+
     // Non-null while ticking in the background (BackgroundExecutionMode.MainThread).
     // Uses a ping-pong ack to avoid message queue build-up if the main thread falls behind.
     // Set when the tab is hidden, cleared when it becomes visible again or the player is destroyed.
@@ -308,10 +315,6 @@ export class InnerPlayer {
 
         this.contextMenuElement.dir = detectBrowserDirection();
 
-        document.documentElement.addEventListener(
-            "pointerdown",
-            this.checkIfTouch.bind(this),
-        );
         this.element.addEventListener(
             "contextmenu",
             this.showContextMenu.bind(this),
@@ -350,7 +353,47 @@ export class InnerPlayer {
 
         this.lastActivePlayingState = false;
         this.backgroundWorker = null;
-        this.setupTabVisibilityHandling();
+    }
+
+    /** Attach document listeners only while the player is connected. */
+    connect(): void {
+        if (this.connectedDocument) {
+            return;
+        }
+        const document = this.element.ownerDocument;
+        this.connectedDocument = document;
+        document.documentElement.addEventListener(
+            "pointerdown",
+            this.onPointerDown,
+        );
+        document.addEventListener("visibilitychange", this.onVisibilityChange);
+    }
+
+    /** Release document references and cancel work for a removed player. */
+    disconnect(): void {
+        const document = this.connectedDocument;
+        if (document) {
+            document.documentElement.removeEventListener(
+                "pointerdown",
+                this.onPointerDown,
+            );
+            document.removeEventListener(
+                "visibilitychange",
+                this.onVisibilityChange,
+            );
+            document.documentElement.removeEventListener(
+                "click",
+                this.onHideContextMenu,
+            );
+            document.documentElement.removeEventListener(
+                "pointerup",
+                this.onHideContextMenu,
+            );
+            this.connectedDocument = null;
+        }
+        this.hideContextMenu();
+        this.clearLongPressTimer();
+        this.destroy();
     }
 
     addFSCommandHandler(handler: (command: string, args: string) => void) {
@@ -471,44 +514,43 @@ export class InnerPlayer {
     }
 
     /**
-     * Sets up an event listener for tab visibility changes, responding
+     * Responds to tab visibility changes
      * according to the configured {@link BackgroundExecutionMode}.
      *
      * See: https://developer.mozilla.org/en-US/docs/Web/API/Page_Visibility_API
      * @ignore
      * @internal
      */
-    private setupTabVisibilityHandling(): void {
-        document.addEventListener("visibilitychange", () => {
-            if (!this.instance) {
-                return;
-            }
-            const mode =
-                this.loadedConfig?.backgroundExecutionMode ??
-                BackgroundExecutionMode.None;
-            if (document.hidden) {
-                this.lastActivePlayingState = this.instance.is_playing();
-                if (mode === BackgroundExecutionMode.MainThread) {
-                    this.instance.enable_background_tick_mode();
-                    if (this.lastActivePlayingState) {
-                        this.startBackgroundTick();
-                    }
-                } else {
-                    this.instance.pause();
+    private readonly onVisibilityChange = (): void => {
+        const document = this.connectedDocument;
+        if (!document || !this.instance) {
+            return;
+        }
+        const mode =
+            this.loadedConfig?.backgroundExecutionMode ??
+            BackgroundExecutionMode.None;
+        if (document.hidden) {
+            this.lastActivePlayingState = this.instance.is_playing();
+            if (mode === BackgroundExecutionMode.MainThread) {
+                this.instance.enable_background_tick_mode();
+                if (this.lastActivePlayingState) {
+                    this.startBackgroundTick();
                 }
             } else {
-                if (mode === BackgroundExecutionMode.MainThread) {
-                    this.stopBackgroundTick();
-                    this.instance.restart_animation_loop();
-                }
-                if (this.lastActivePlayingState) {
-                    this.instance.play();
-                }
-                // Browsers may auto-suspend AudioContext in background tabs.
-                this.instance.audio_context()?.resume();
+                this.instance.pause();
             }
-        });
-    }
+        } else {
+            if (mode === BackgroundExecutionMode.MainThread) {
+                this.stopBackgroundTick();
+                this.instance.restart_animation_loop();
+            }
+            if (this.lastActivePlayingState) {
+                this.instance.play();
+            }
+            // Browsers may auto-suspend AudioContext in background tabs.
+            this.instance.audio_context()?.resume();
+        }
+    };
 
     /**
      * Starts a background tick loop while the tab is hidden.
@@ -672,25 +714,21 @@ export class InnerPlayer {
      *
      * @private
      */
-    private async ensureFreshInstance(): Promise<void> {
-        this.destroy();
-
-        if (
-            this.loadedConfig &&
-            this.loadedConfig.splashScreen !== false &&
-            this.loadedConfig.preloader !== false
-        ) {
+    private async ensureFreshInstance(
+        config: URLLoadOptions | DataLoadOptions,
+        signal: AbortSignal,
+    ): Promise<boolean> {
+        if (config.splashScreen !== false && config.preloader !== false) {
             this.showSplashScreen();
         }
-        if (this.loadedConfig && this.loadedConfig.preloader === false) {
+        if (config.preloader === false) {
             console.warn(
                 "The configuration option preloader has been replaced with splashScreen. If you own this website, please update the configuration.",
             );
         }
         if (
-            this.loadedConfig &&
-            this.loadedConfig.maxExecutionDuration &&
-            typeof this.loadedConfig.maxExecutionDuration !== "number"
+            config.maxExecutionDuration &&
+            typeof config.maxExecutionDuration !== "number"
         ) {
             console.warn(
                 "Configuration: An obsolete format for duration for 'maxExecutionDuration' was used, " +
@@ -698,60 +736,74 @@ export class InnerPlayer {
                     "'{secs: 15, nanos: 0}'.",
             );
         }
-        if (
-            this.loadedConfig &&
-            typeof this.loadedConfig.contextMenu === "boolean"
-        ) {
+        if (typeof config.contextMenu === "boolean") {
             console.warn(
                 'The configuration option contextMenu no longer takes a boolean. Use "on", "off", or "rightClickOnly".',
             );
         }
 
         const [builder, zipWriterClass] = await createRuffleBuilder(
-            this.onRuffleDownloadProgress.bind(this),
+            (loaded, total) => {
+                if (!signal.aborted) {
+                    this.onRuffleDownloadProgress(loaded, total);
+                }
+            },
         ).catch((e) => {
-            console.error(`Serious error loading Ruffle: ${e}`);
-            const error = new LoadRuffleWasmError(e);
-            this.panic(error);
-            throw error;
+            throw new LoadRuffleWasmError(e);
         });
-        this.newZipWriter = zipWriterClass;
-        configureBuilder(builder, this.loadedConfig || {});
-        builder.setVolume(this.volumeSettings.get_volume());
+        let instance: RuffleHandle;
+        try {
+            if (signal.aborted) {
+                return false;
+            }
+            this.newZipWriter = zipWriterClass;
+            configureBuilder(builder, config);
+            builder.setVolume(this.volumeSettings.get_volume());
 
-        if (this.loadedConfig?.fontSources) {
-            for (const url of this.loadedConfig.fontSources) {
+            for (const url of config.fontSources ?? []) {
                 try {
-                    const response = await fetch(url);
-                    builder.addFont(
-                        url,
-                        new Uint8Array(await response.arrayBuffer()),
-                    );
+                    const response = await fetch(url, { signal });
+                    if (signal.aborted) {
+                        return false;
+                    }
+                    const data = await response.arrayBuffer();
+                    if (signal.aborted) {
+                        return false;
+                    }
+                    builder.addFont(url, new Uint8Array(data));
                 } catch (error) {
+                    if (signal.aborted) {
+                        return false;
+                    }
                     console.warn(
                         `Couldn't download font source from ${url}`,
                         error,
                     );
                 }
             }
-        }
 
-        for (const key in this.loadedConfig?.defaultFonts) {
-            const names = (
-                this.loadedConfig.defaultFonts as {
-                    [key: string]: Array<string>;
+            for (const key in config.defaultFonts) {
+                const names = (
+                    config.defaultFonts as {
+                        [key: string]: Array<string>;
+                    }
+                )[key];
+                if (names) {
+                    builder.setDefaultFont(key, names);
                 }
-            )[key];
-            if (names) {
-                builder.setDefaultFont(key, names);
             }
-        }
 
-        this.instance = await builder.build(this.container, this).catch((e) => {
-            console.error(`Serious error loading Ruffle: ${e}`);
-            this.panic(e);
-            throw e;
-        });
+            instance = await builder.build(this.container, this);
+        } finally {
+            // build() clones the Rust builder, so its JS wrapper can be freed
+            // on success, cancellation, or failure.
+            builder.free();
+        }
+        if (signal.aborted) {
+            instance.destroy();
+            return false;
+        }
+        this.instance = instance;
 
         this.rendererDebugInfo = this.instance!.renderer_debug_info();
 
@@ -790,6 +842,9 @@ export class InnerPlayer {
                     resolve();
                 }, 200);
             });
+            if (signal.aborted) {
+                return false;
+            }
             this.container.style.visibility = "";
         }
 
@@ -797,25 +852,21 @@ export class InnerPlayer {
 
         // Treat invalid values as `AutoPlay.Auto`.
         if (
-            !this.loadedConfig ||
-            this.loadedConfig.autoplay === AutoPlay.On ||
-            (this.loadedConfig.autoplay !== AutoPlay.Off &&
+            config.autoplay === AutoPlay.On ||
+            (config.autoplay !== AutoPlay.Off &&
                 this.audioState() === "running")
         ) {
             this.play();
 
             if (this.audioState() !== "running") {
                 // Treat invalid values as `UnmuteOverlay.Visible`.
-                if (
-                    !this.loadedConfig ||
-                    this.loadedConfig.unmuteOverlay !== UnmuteOverlay.Hidden
-                ) {
+                if (config.unmuteOverlay !== UnmuteOverlay.Hidden) {
                     this.unmuteOverlay.style.display = "block";
                 }
 
                 this.container.addEventListener(
                     "click",
-                    this.unmuteOverlayClicked.bind(this),
+                    this.onUnmuteOverlayClicked,
                     {
                         once: true,
                     },
@@ -834,6 +885,7 @@ export class InnerPlayer {
         } else {
             this.playButton.style.display = "block";
         }
+        return true;
     }
 
     /**
@@ -862,8 +914,19 @@ export class InnerPlayer {
      * Destroys the currently running instance of Ruffle.
      */
     destroy(): void {
+        this.loadController?.abort();
+        this.loadController = null;
+        this.stopBackgroundTick();
+        this.container.style.visibility = "";
+        this.container.removeEventListener(
+            "click",
+            this.onUnmuteOverlayClicked,
+        );
         if (this.instance) {
-            this.stopBackgroundTick();
+            const audioContext = this.instance.audio_context();
+            if (audioContext) {
+                audioContext.onstatechange = null;
+            }
             this.instance.destroy();
             this.instance = null;
             this.metadata = null;
@@ -976,6 +1039,10 @@ export class InnerPlayer {
             return;
         }
 
+        this.destroy();
+        const controller = new AbortController();
+        this.loadController = controller;
+
         try {
             this.loadedConfig = {
                 ...DEFAULT_CONFIG,
@@ -1002,7 +1069,13 @@ export class InnerPlayer {
                     this.loadedConfig.backgroundColor;
             }
 
-            await this.ensureFreshInstance();
+            const ready = await this.ensureFreshInstance(
+                this.loadedConfig,
+                controller.signal,
+            );
+            if (!ready || controller.signal.aborted) {
+                return;
+            }
 
             if ("url" in options) {
                 console.log(`Loading SWF file ${options.url}`);
@@ -1022,6 +1095,9 @@ export class InnerPlayer {
                 );
             }
         } catch (e) {
+            if (controller.signal.aborted) {
+                return;
+            }
             console.error(`Serious error occurred loading SWF file: ${e}`);
             const err = new LoadBeginError(e as string);
             this.panic(err);
@@ -1668,7 +1744,8 @@ export class InnerPlayer {
     }
 
     private showContextMenu(event: MouseEvent | PointerEvent): void {
-        if (this.panicked) {
+        const document = this.connectedDocument;
+        if (this.panicked || !document) {
             return;
         }
 
@@ -1698,7 +1775,7 @@ export class InnerPlayer {
             this.contextMenuSupported = true;
             document.documentElement.addEventListener(
                 "click",
-                this.hideContextMenu.bind(this),
+                this.onHideContextMenu,
                 {
                     once: true,
                 },
@@ -1706,7 +1783,7 @@ export class InnerPlayer {
         } else {
             document.documentElement.addEventListener(
                 "pointerup",
-                this.hideContextMenu.bind(this),
+                this.onHideContextMenu,
                 { once: true },
             );
             event.stopPropagation();

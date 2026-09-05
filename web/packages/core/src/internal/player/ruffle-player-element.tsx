@@ -72,6 +72,7 @@ export class RufflePlayerElement extends HTMLElement implements PlayerElement {
     }
 
     connectedCallback(): void {
+        this.#inner.connect();
         this.#inner.updateStyles();
     }
 
@@ -90,7 +91,7 @@ export class RufflePlayerElement extends HTMLElement implements PlayerElement {
     }
 
     disconnectedCallback(): void {
-        this.#inner.destroy();
+        this.#inner.disconnect();
     }
 
     async reload(): Promise<void> {
