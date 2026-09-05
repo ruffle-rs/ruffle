@@ -108,13 +108,15 @@ impl CanvasFontRenderer {
     fn render_glyph_internal(&self, character: char) -> Result<Glyph, JsValue> {
         let text = &character.to_string();
         let metrics = self.ctx.measure_text(text)?;
-        let height = self.ascent + self.descent;
 
         let bitmap_width = metrics.actual_bounding_box_left() + metrics.actual_bounding_box_right();
         let bitmap_width = bitmap_width.max(1.0).ceil() as i32; // TODO Support empty bitmaps.
-        let bitmap_height = height.max(1.0).ceil() as i32; // TODO Support empty bitmaps.
+        let bitmap_height =
+            metrics.actual_bounding_box_ascent() + metrics.actual_bounding_box_descent();
+        let bitmap_height = bitmap_height.max(1.0).ceil() as i32; // TODO Support empty bitmaps.
         let advance = Twips::from_pixels(metrics.width());
         let bitmap_tx = -metrics.actual_bounding_box_left();
+        let bitmap_ty = -metrics.actual_bounding_box_ascent();
 
         self.ensure_canvas_large_enough(bitmap_width as u32, bitmap_height as u32);
 
@@ -124,7 +126,7 @@ impl CanvasFontRenderer {
             self.canvas.width() as f64,
             self.canvas.height() as f64,
         );
-        self.ctx.fill_text(text, -bitmap_tx, self.ascent)?;
+        self.ctx.fill_text(text, -bitmap_tx, -bitmap_ty)?;
 
         let image_data = self.ctx.get_image_data(0, 0, bitmap_width, bitmap_height)?;
         let width = image_data.width();
@@ -132,11 +134,9 @@ impl CanvasFontRenderer {
         let pixels = image_data.data().0;
 
         let bitmap = Bitmap::new(width, height, BitmapFormat::Rgba, pixels);
-        let bitmap_tx = Twips::from_pixels(-metrics.actual_bounding_box_left());
-        let atlas_glyph = self
-            .atlases
-            .rgba()
-            .new_glyph(bitmap, bitmap_tx, Twips::ZERO);
+        let bitmap_tx = Twips::from_pixels(bitmap_tx);
+        let bitmap_ty = Twips::from_pixels(self.ascent + bitmap_ty);
+        let atlas_glyph = self.atlases.rgba().new_glyph(bitmap, bitmap_tx, bitmap_ty);
         Ok(Glyph::from_atlas(character, atlas_glyph, advance))
     }
 
