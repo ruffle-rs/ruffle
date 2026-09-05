@@ -1,0 +1,5 @@
+# Verifies that a user-supplied `X-Flash-Version` URLRequestHeader overrides
+# the default Ruffle inserts in `request_from_url_request` (#15276).
+
+num_frames = 10
+log_fetch = true
