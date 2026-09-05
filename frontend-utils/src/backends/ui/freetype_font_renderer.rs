@@ -83,6 +83,13 @@ impl FreetypeFontRenderer {
         let glyph = self.face.glyph();
         let bitmap = glyph.bitmap();
         let advance = convert_26_6_to_twips(glyph.advance().x);
+
+        // Glyphs with no ink (e.g. space) have an empty bitmap. Skip the
+        // atlas entirely for these.
+        if bitmap.width() == 0 || bitmap.rows() == 0 {
+            return Ok(Glyph::whitespace(character, advance));
+        }
+
         let tx = Twips::from_pixels(glyph.bitmap_left() as f64);
 
         // `bitmap_top` is the distance from the baseline up to the top of
@@ -92,11 +99,9 @@ impl FreetypeFontRenderer {
         let bitmap_top = Twips::from_pixels(glyph.bitmap_top() as f64);
         let ty = self.ascent() - bitmap_top;
 
-        // Glyphs with no ink (e.g. space) have an empty bitmap, but a
-        // zero-sized texture isn't allowed, so clamp to at least 1x1.
         let bitmap = Bitmap::new(
-            (bitmap.width() as u32).max(1),
-            (bitmap.rows() as u32).max(1),
+            bitmap.width() as u32,
+            bitmap.rows() as u32,
             BitmapFormat::Rgba,
             convert_bitmap(&bitmap)?,
         );
