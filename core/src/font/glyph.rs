@@ -1,5 +1,6 @@
 use crate::context::RenderContext;
 use crate::drawing::Drawing;
+use crate::font::FontAtlasGlyph;
 use crate::prelude::*;
 use ruffle_render::backend::null::NullBitmapSource;
 use ruffle_render::backend::{RenderBackend, ShapeHandle};
@@ -47,6 +48,7 @@ pub enum GlyphRenderData {
         tx: Twips,
         ty: Twips,
     },
+    AtlasGlyph(FontAtlasGlyph),
 }
 
 impl GlyphRenderData {
@@ -61,6 +63,10 @@ impl GlyphRenderData {
             ty,
         }
     }
+
+    pub fn from_atlas(atlas_glyph: FontAtlasGlyph) -> Self {
+        Self::AtlasGlyph(atlas_glyph)
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -68,6 +74,7 @@ enum GlyphShape {
     Swf(Box<RefCell<SwfGlyphOrShape>>),
     Drawing(Box<Drawing>),
     Bitmap(Rc<GlyphBitmap<'static>>),
+    AtlasGlyph(FontAtlasGlyph),
     None,
 }
 
@@ -82,6 +89,10 @@ impl GlyphShape {
             }
             GlyphShape::Drawing(drawing) => drawing.hit_test(point, local_matrix),
             GlyphShape::Bitmap(_) => {
+                // TODO Implement this.
+                true
+            }
+            GlyphShape::AtlasGlyph(_) => {
                 // TODO Implement this.
                 true
             }
@@ -113,6 +124,10 @@ impl GlyphShape {
                 .ok()
                 .cloned()
                 .map(|info| GlyphRenderData::from_bitmap(info, bitmap.tx, bitmap.ty)),
+            GlyphShape::AtlasGlyph(atlas_glyph) => atlas_glyph
+                .atlas_handle(renderer)
+                .as_ref()
+                .map(|_| GlyphRenderData::from_atlas(atlas_glyph.clone())),
             GlyphShape::None => None,
         }
     }
@@ -226,6 +241,14 @@ impl Glyph {
         }
     }
 
+    pub fn from_atlas(character: char, atlas_glyph: FontAtlasGlyph, advance: Twips) -> Self {
+        Self {
+            shape: GlyphShape::AtlasGlyph(atlas_glyph),
+            advance,
+            character,
+        }
+    }
+
     pub fn glyph_render_data(&self, renderer: &mut dyn RenderBackend) -> Option<GlyphRenderData> {
         self.shape.register(renderer)
     }
@@ -251,6 +274,7 @@ impl Glyph {
             GlyphShape::Swf(_) => true,
             GlyphShape::Drawing(_) => true,
             GlyphShape::Bitmap(_) => false,
+            GlyphShape::AtlasGlyph(_) => false,
             GlyphShape::None => false,
         }
     }
@@ -285,6 +309,27 @@ impl Glyph {
                     true,
                     ruffle_render::bitmap::PixelSnapping::Auto,
                     region,
+                );
+
+                context.transform_stack.pop();
+            }
+            GlyphRenderData::AtlasGlyph(atlas_glyph) => {
+                let handle = atlas_glyph.atlas_handle(context.renderer);
+                let Some(handle) = handle else {
+                    return;
+                };
+
+                context.transform_stack.push(&Transform {
+                    matrix: Matrix::translate(atlas_glyph.tx(), atlas_glyph.ty()),
+                    ..Default::default()
+                });
+
+                context.commands.render_bitmap(
+                    handle,
+                    context.transform_stack.transform(),
+                    true,
+                    ruffle_render::bitmap::PixelSnapping::Auto,
+                    atlas_glyph.atlas_region(),
                 );
 
                 context.transform_stack.pop();

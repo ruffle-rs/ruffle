@@ -1,5 +1,18 @@
 auto
+TypeError: Error #2007: Parameter name must be non-null.
+	at flash.ui::Mouse$/registerCursor()
+	at Test()
+foo
+TypeError: Error #2007: Parameter name must be non-null.
+	at flash.ui::Mouse$/unregisterCursor()
+	at Test()
+auto
+button
+button
 TypeError: Error #2007: Parameter cursor must be non-null.
+	at flash.ui::Mouse$/set cursor()
+	at Test()
+ArgumentError: Error #2008: Parameter cursor must be one of the accepted values.
 	at flash.ui::Mouse$/set cursor()
 	at Test()
 ArgumentError: Error #2008: Parameter cursor must be one of the accepted values.

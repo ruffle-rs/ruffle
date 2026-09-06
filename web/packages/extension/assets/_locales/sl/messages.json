@@ -41,6 +41,9 @@
     "settings_background_execution_mode": {
         "message": "Izvajanje v ozadju"
     },
+    "settings_background_execution_mode_none": {
+        "message": "Premor"
+    },
     "settings_preferred_renderer": {
         "message": "Prednostni izrisovalnik"
     },

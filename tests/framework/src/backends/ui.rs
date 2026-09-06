@@ -7,6 +7,8 @@ use ruffle_core::backend::ui::{
     FullscreenError, LanguageIdentifier, MouseCursor, MultiDialogResultFuture,
     MultiFileDialogResult, US_ENGLISH, UiBackend,
 };
+#[cfg(feature = "freetype")]
+use ruffle_core::font::FontAtlases;
 use ruffle_core::font::{FontFileData, FontQuery};
 use serde::Deserialize;
 use url::Url;
@@ -82,6 +84,8 @@ pub struct TestUiBackend {
     fonts: HashMap<FontQuery, Font>,
     font_sorts: HashMap<FontQuery, Vec<FontQuery>>,
     device_font_renderer: FontRendererKind,
+    #[cfg(feature = "freetype")]
+    font_atlases: FontAtlases,
     clipboard: String,
 }
 
@@ -95,6 +99,8 @@ impl TestUiBackend {
             fonts,
             font_sorts,
             device_font_renderer,
+            #[cfg(feature = "freetype")]
+            font_atlases: FontAtlases::new(),
             clipboard: "".to_string(),
         }
     }
@@ -153,9 +159,10 @@ impl UiBackend for TestUiBackend {
             }
             #[cfg(feature = "freetype")]
             FontRendererKind::Freetype => {
-                let font_renderer = freetype_renderer(font).unwrap_or_else(|e| {
-                    panic!("Couldn't create FreeType renderer for {}: {e}", font.family)
-                });
+                let font_renderer =
+                    freetype_renderer(font, &self.font_atlases).unwrap_or_else(|e| {
+                        panic!("Couldn't create FreeType renderer for {}: {e}", font.family)
+                    });
                 register(FontDefinition::ExternalRenderer {
                     name: font.family.to_owned(),
                     is_bold: font.bold,
@@ -246,10 +253,11 @@ impl UiBackend for TestUiBackend {
 #[cfg(feature = "freetype")]
 fn freetype_renderer(
     font: &Font,
+    atlases: &FontAtlases,
 ) -> anyhow::Result<ruffle_frontend_utils::backends::ui::FreetypeFontRenderer> {
     use std::io::Write;
 
     let mut file = tempfile::NamedTempFile::new()?;
     file.write_all(&font.bytes)?;
-    Ok(ruffle_frontend_utils::backends::ui::FreetypeFontRenderer::new(file.path(), 0)?)
+    Ok(ruffle_frontend_utils::backends::ui::FreetypeFontRenderer::new(file.path(), 0, atlases)?)
 }

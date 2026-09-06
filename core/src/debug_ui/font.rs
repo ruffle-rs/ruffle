@@ -1,13 +1,19 @@
 use crate::debug_ui::{ItemToSave, Message};
-use crate::font::{Font, FontFace, FontLike, FontRenderer, Glyph, GlyphSource};
+use crate::font::{
+    Font, FontAtlas, FontAtlases, FontFace, FontLike, FontRendererGlyphSource, Glyph, GlyphSource,
+};
 use egui::{CollapsingHeader, Grid, TextEdit, Ui, Window};
 use fnv::FnvHashMap;
 use std::cell::RefCell;
 use swf::Twips;
 
-#[derive(Debug, Default)]
+#[derive(Default)]
 pub struct FontWindow {
     glyph_info_text: String,
+
+    /// Cached egui preview textures for atlas pages shown by this window,
+    /// keyed by atlas name and page index.
+    atlas_page_textures: RefCell<FnvHashMap<(String, usize), egui::TextureHandle>>,
 }
 
 impl FontWindow {
@@ -166,16 +172,9 @@ impl FontWindow {
                 GlyphSource::FontFace { face, .. } => {
                     self.show_glyph_source_font_face(ui, font, face, messages)
                 }
-                GlyphSource::ExternalRenderer {
-                    glyph_cache,
-                    kerning_cache,
-                    font_renderer,
-                } => self.show_glyph_source_external_renderer(
-                    ui,
-                    glyph_cache,
-                    kerning_cache,
-                    font_renderer.as_ref(),
-                ),
+                GlyphSource::ExternalRenderer(glyph_source) => {
+                    self.show_glyph_source_external_renderer(ui, glyph_source)
+                }
                 GlyphSource::Empty => {
                     ui.weak("This font has no glyphs.");
                 }
@@ -229,35 +228,99 @@ impl FontWindow {
     fn show_glyph_source_external_renderer(
         &self,
         ui: &mut Ui,
-        glyph_cache: &RefCell<FnvHashMap<u16, Option<Glyph>>>,
-        kerning_cache: &RefCell<FnvHashMap<(u16, u16), Twips>>,
-        font_renderer: &dyn FontRenderer,
+        glyph_source: &FontRendererGlyphSource,
     ) {
         Grid::new(ui.id().with("glyph-source-table"))
             .num_columns(2)
             .striped(true)
             .show(ui, |ui| {
                 ui.label("Renderer");
-                ui.label(format!("{font_renderer:?}"));
+                ui.label(format!("{:?}", glyph_source.font_renderer()));
                 ui.end_row();
 
                 ui.label("Glyph Cache Size");
                 ui.horizontal(|ui| {
-                    ui.label(format!("{}", glyph_cache.borrow().len()));
-                    if ui.button("Clear").clicked() {
-                        glyph_cache.borrow_mut().clear();
-                    }
+                    ui.label(format!("{}", glyph_source.glyph_cache_size()));
                 });
                 ui.end_row();
 
                 ui.label("Kerning Cache Size");
                 ui.horizontal(|ui| {
-                    ui.label(format!("{}", kerning_cache.borrow().len()));
-                    if ui.button("Clear").clicked() {
-                        kerning_cache.borrow_mut().clear();
-                    }
+                    ui.label(format!("{}", glyph_source.kerning_cache_size()));
                 });
                 ui.end_row();
+
+                ui.label("Sweep Count");
+                ui.label(format!("{}", glyph_source.sweep_count()));
+                ui.end_row();
+
+                ui.label("Swept Glyphs");
+                ui.label(format!("{}", glyph_source.swept_glyphs_count()));
+                ui.end_row();
+
+                ui.label("Swept Kerning Pairs");
+                ui.label(format!("{}", glyph_source.swept_kerning_count()));
+                ui.end_row();
+
+                if ui.button("Sweep Caches").clicked() {
+                    glyph_source.sweep_caches(true);
+                }
+            });
+
+        if let Some(atlases) = glyph_source.font_renderer().atlases() {
+            self.show_glyph_atlases(ui, atlases);
+        }
+    }
+
+    fn show_glyph_atlases(&self, ui: &mut Ui, atlases: &FontAtlases) {
+        self.show_glyph_atlas(ui, &atlases.rgba(), "RGBA");
+    }
+
+    fn show_glyph_atlas(&self, ui: &mut Ui, atlas: &FontAtlas, name: &str) {
+        CollapsingHeader::new(format!("Glyph Atlas ({name})"))
+            .id_salt(ui.id().with(format!("atlas-{name}")))
+            .show(ui, |ui| {
+                ui.label(format!("Atlas: {:p}", atlas.as_ptr()));
+
+                let pages = atlas.pages();
+                let refresh = ui.button("Refresh").clicked();
+
+                if pages.is_empty() {
+                    ui.weak("(no pages allocated yet)");
+                }
+
+                for (i, page) in pages.iter().enumerate() {
+                    let key = (name.to_string(), i);
+
+                    if refresh {
+                        self.atlas_page_textures.borrow_mut().remove(&key);
+                    }
+
+                    CollapsingHeader::new(format!("Page {i}"))
+                        .id_salt(ui.id().with("page").with(i))
+                        .show(ui, |ui| {
+                            let texture = self
+                                .atlas_page_textures
+                                .borrow_mut()
+                                .entry(key)
+                                .or_insert_with(|| {
+                                    let bitmap = page.to_rgba();
+                                    let image = egui::ColorImage::from_rgba_premultiplied(
+                                        [bitmap.width() as usize, bitmap.height() as usize],
+                                        bitmap.data(),
+                                    );
+                                    ui.ctx().load_texture(
+                                        format!("font-atlas-{name}-page-{i}"),
+                                        image,
+                                        Default::default(),
+                                    )
+                                })
+                                .clone();
+                            let size = texture.size_vec2();
+                            ui.label(format!("{}x{}", size.x as u32, size.y as u32));
+                            ui.image((texture.id(), size));
+                        });
+                }
             });
     }
 }

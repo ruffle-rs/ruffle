@@ -1,6 +1,7 @@
 use freetype::bitmap::PixelMode;
 use freetype::face::KerningMode;
 use freetype::face::LoadFlag;
+use ruffle_core::font::FontAtlases;
 use std::ffi::OsStr;
 use thiserror::Error;
 
@@ -20,9 +21,18 @@ pub enum Error {
     FreetypeError(#[from] freetype::Error),
 }
 
-#[derive(Debug)]
 pub struct FreetypeFontRenderer {
     face: freetype::Face,
+    atlases: FontAtlases,
+}
+
+impl std::fmt::Debug for FreetypeFontRenderer {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("FreetypeFontRenderer")
+            .field("family_name", &self.face.family_name())
+            .field("style_name", &self.face.style_name())
+            .finish()
+    }
 }
 
 impl FreetypeFontRenderer {
@@ -32,14 +42,17 @@ impl FreetypeFontRenderer {
     /// Divide each pixel into 20 (use twips precision). It affects metrics.
     const SCALE: f64 = 20.0;
 
-    pub fn new<P>(path: P, face_index: u32) -> Result<Self, Error>
+    pub fn new<P>(path: P, face_index: u32, atlases: &FontAtlases) -> Result<Self, Error>
     where
         P: AsRef<OsStr>,
     {
         let ft = freetype::Library::init()?;
         let face = ft.new_face(path, face_index as isize)?;
         face.set_char_size((Self::SIZE_PX * 64.0) as isize, 0, 0, 0)?;
-        Ok(Self { face })
+        Ok(Self {
+            face,
+            atlases: atlases.clone(),
+        })
     }
 
     fn size_metrics(&self) -> freetype::ffi::FT_Size_Metrics {
@@ -87,8 +100,9 @@ impl FreetypeFontRenderer {
             BitmapFormat::Rgba,
             convert_bitmap(&bitmap)?,
         );
+        let atlas_glyph = self.atlases.rgba().new_glyph(bitmap, tx, ty);
 
-        Ok(Glyph::from_bitmap(character, bitmap, advance, tx, ty))
+        Ok(Glyph::from_atlas(character, atlas_glyph, advance))
     }
 
     fn calculate_kerning_internal(&self, left: char, right: char) -> Result<Twips, Error> {
@@ -141,6 +155,10 @@ impl FontRenderer for FreetypeFontRenderer {
         self.calculate_kerning_internal(left, right)
             .map_err(|err| tracing::error!("Failed to calculate kerning: {err:?}"))
             .unwrap_or(Twips::ZERO)
+    }
+
+    fn atlases(&self) -> Option<&FontAtlases> {
+        Some(&self.atlases)
     }
 }
 

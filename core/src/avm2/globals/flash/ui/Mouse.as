@@ -19,12 +19,7 @@ package flash.ui {
             return true;
         }
 
-        public static function registerCursor(name:String, cursor:MouseCursorData):void {
-            stub_method("flash.ui.Mouse", "registerCursor");
-        }
-
-        public static function unregisterCursor(name:String):void {
-            stub_method("flash.ui.Mouse", "unregisterCursor");
-        }
+        public static native function registerCursor(name:String, cursor:MouseCursorData):void;
+        public static native function unregisterCursor(name:String):void;
     }
 }

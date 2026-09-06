@@ -37,5 +37,6 @@ ime-enabled-tooltip = Un método de entrada permite ingresar caracteres que no e
 ime-enabled-default = Predeterminado
 device-font-renderer = Renderizado de fuente del dispositivo
 device-font-renderer-tooltip = Selecciona el motor utilizado para renderizar las fuentes del dispositivo.
+device-font-renderer-default = Predeterminado
 device-font-renderer-embedded = Incrustado
 device-font-renderer-freetype = FreeType

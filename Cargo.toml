@@ -48,7 +48,7 @@ edition = "2024"
 homepage = "https://ruffle.rs"
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/ruffle-rs/ruffle"
-version = "0.5.0"
+version = "0.6.0"
 
 [workspace.dependencies]
 tracing = "0.1.43"
@@ -63,7 +63,7 @@ egui-winit = "0.36.1"
 clap = { version = "4.6.1", features = ["derive"] }
 cpal = "0.16.0"
 anyhow = "1.0"
-gc-arena = { git = "https://github.com/kyren/gc-arena.git", rev = "75671ae03f53718357b741ed4027560f14e90836", features = ["enum-map", "hashbrown", "indexmap", "slotmap", "smallvec"] }
+gc-arena = { version = "0.7.0", features = ["enum-map", "hashbrown", "indexmap", "slotmap", "smallvec"] }
 slotmap = "1.1.1"
 async-channel = "2.5.0"
 bitflags = "2.12.1"
@@ -107,12 +107,12 @@ rayon = "1.12.0"
 sha2 = "0.10.9"
 indexmap = "2.13.0"
 fnv = "1.0.7"
-hashbrown = "0.16.1"
+hashbrown = "0.17.1"
 fluent-templates = "0.13.3"
 lzma-rs = "0.3.0"
 tempfile = "3.27.0"
 tracing-wasm = "0.2.1"
-rascal = "0.3.4"
+rascal = "0.3.5"
 jpegxr = { git = "https://github.com/ruffle-rs/jpegxr", rev = "5281b4ae42be742779269a9f1a986101f101f32f" }
 
 [workspace.lints.rust]

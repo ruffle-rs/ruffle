@@ -1,3 +1,4 @@
+mod atlas;
 mod font_descriptor;
 mod font_face;
 mod font_like;
@@ -6,10 +7,12 @@ mod font_set;
 mod glyph;
 mod text_render_settings;
 
+pub use atlas::{FontAtlas, FontAtlasGlyph, FontAtlases};
 pub use font_descriptor::FontDescriptor;
 pub use font_face::{FontFace, FontFileData};
 pub use font_like::{EvalParameters, FontLike, GlyphResolution};
 pub use font_renderer::FontRenderer;
+pub use font_renderer::FontRendererGlyphSource;
 pub use font_set::FontSet;
 pub use glyph::Glyph;
 pub use text_render_settings::TextRenderSettings;
@@ -19,8 +22,6 @@ use crate::prelude::*;
 use crate::string::WStr;
 use gc_arena::{Collect, Gc, Mutation};
 use ruffle_render::backend::RenderBackend;
-
-use std::cell::{Ref, RefCell};
 use std::hash::{Hash, Hasher};
 
 pub use swf::TextGridFit;
@@ -132,15 +133,7 @@ pub(crate) enum GlyphSource {
         face: FontFace,
         metrics: FontMetrics,
     },
-    ExternalRenderer {
-        /// Maps Unicode code points to glyphs rendered by the renderer.
-        glyph_cache: RefCell<fnv::FnvHashMap<u16, Option<Glyph>>>,
-
-        /// Maps Unicode pairs to kerning provided by the renderer.
-        kerning_cache: RefCell<fnv::FnvHashMap<(u16, u16), Twips>>,
-
-        font_renderer: Box<dyn FontRenderer>,
-    },
+    ExternalRenderer(FontRendererGlyphSource),
     Empty,
 }
 
@@ -149,7 +142,7 @@ impl GlyphSource {
         match self {
             GlyphSource::Memory { glyphs, .. } => glyphs.get(index).map(GlyphRef::Direct),
             GlyphSource::FontFace { .. } => None, // Unsupported.
-            GlyphSource::ExternalRenderer { .. } => None, // Unsupported.
+            GlyphSource::ExternalRenderer(_) => None, // Unsupported.
             GlyphSource::Empty => None,
         }
     }
@@ -170,25 +163,8 @@ impl GlyphSource {
                 }
             }
             GlyphSource::FontFace { face, .. } => face.get_glyph(code_point).map(GlyphRef::Direct),
-            GlyphSource::ExternalRenderer {
-                glyph_cache,
-                font_renderer,
-                ..
-            } => {
-                let character = code_point;
-                let code_point = code_point as u16;
-
-                glyph_cache
-                    .borrow_mut()
-                    .entry(code_point)
-                    .or_insert_with(|| font_renderer.render_glyph(character));
-
-                let glyph = Ref::filter_map(glyph_cache.borrow(), |v| {
-                    v.get(&code_point).unwrap_or(&None).as_ref()
-                })
-                .ok();
-
-                glyph.map(GlyphRef::Ref)
+            GlyphSource::ExternalRenderer(glyph_source) => {
+                glyph_source.get_by_code_point(code_point)
             }
             GlyphSource::Empty => None,
         }
@@ -198,7 +174,9 @@ impl GlyphSource {
         match self {
             GlyphSource::Memory { kerning_pairs, .. } => !kerning_pairs.is_empty(),
             GlyphSource::FontFace { face, .. } => face.has_kerning_info(),
-            GlyphSource::ExternalRenderer { font_renderer, .. } => font_renderer.has_kerning_info(),
+            GlyphSource::ExternalRenderer(glyph_source) => {
+                glyph_source.font_renderer().has_kerning_info()
+            }
             GlyphSource::Empty => false,
         }
     }
@@ -215,18 +193,8 @@ impl GlyphSource {
                     .unwrap_or_default()
             }
             GlyphSource::FontFace { face, .. } => face.get_kerning_offset(left, right),
-            GlyphSource::ExternalRenderer {
-                kerning_cache,
-                font_renderer,
-                ..
-            } => {
-                let (Ok(left_cp), Ok(right_cp)) = (left.try_into(), right.try_into()) else {
-                    return Twips::ZERO;
-                };
-                *kerning_cache
-                    .borrow_mut()
-                    .entry((left_cp, right_cp))
-                    .or_insert_with(|| font_renderer.calculate_kerning(left, right))
+            GlyphSource::ExternalRenderer(glyph_source) => {
+                glyph_source.get_kerning_offset(left, right)
             }
             GlyphSource::Empty => Twips::ZERO,
         }
@@ -236,8 +204,16 @@ impl GlyphSource {
         match self {
             GlyphSource::Memory { metrics, .. } => *metrics,
             GlyphSource::FontFace { metrics, .. } => *metrics,
-            GlyphSource::ExternalRenderer { font_renderer, .. } => font_renderer.get_font_metrics(),
+            GlyphSource::ExternalRenderer(glyph_source) => {
+                glyph_source.font_renderer().get_font_metrics()
+            }
             GlyphSource::Empty => FontMetrics::ZERO,
+        }
+    }
+
+    pub fn sweep_caches(&self) {
+        if let GlyphSource::ExternalRenderer(glyph_source) = self {
+            glyph_source.sweep_caches(false);
         }
     }
 }
@@ -474,11 +450,7 @@ impl<'gc> Font<'gc> {
         Font(Gc::new(
             gc_context,
             FontData {
-                glyphs: GlyphSource::ExternalRenderer {
-                    glyph_cache: RefCell::new(fnv::FnvHashMap::default()),
-                    kerning_cache: RefCell::new(fnv::FnvHashMap::default()),
-                    font_renderer,
-                },
+                glyphs: GlyphSource::ExternalRenderer(FontRendererGlyphSource::new(font_renderer)),
                 scale,
                 descriptor,
                 font_type: FontType::Device,
@@ -553,6 +525,10 @@ impl<'gc> Font<'gc> {
 
     pub fn has_layout(self) -> bool {
         self.0.has_layout
+    }
+
+    pub fn sweep_caches(&self) {
+        self.0.glyphs.sweep_caches();
     }
 }
 

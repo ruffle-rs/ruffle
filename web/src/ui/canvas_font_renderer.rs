@@ -1,4 +1,5 @@
 use js_sys::JSON;
+use ruffle_core::font::FontAtlases;
 use ruffle_core::font::FontMetrics;
 use ruffle_core::font::FontRenderer;
 use ruffle_core::font::Glyph;
@@ -17,6 +18,7 @@ pub struct CanvasFontRenderer {
     font_str: String,
     ascent: f64,
     descent: f64,
+    atlases: FontAtlases,
 }
 
 impl CanvasFontRenderer {
@@ -26,7 +28,12 @@ impl CanvasFontRenderer {
     /// Divide each pixel into 20 (use twips precision). It affects metrics.
     const SCALE: f64 = 20.0;
 
-    pub fn new(italic: bool, bold: bool, font_family: &str) -> Result<Self, JsValue> {
+    pub fn new(
+        italic: bool,
+        bold: bool,
+        font_family: &str,
+        atlases: &FontAtlases,
+    ) -> Result<Self, JsValue> {
         if !Self::is_offscreen_canvas_supported() {
             return Err(JsValue::from_str("OffscreenCanvas unsupported"));
         }
@@ -52,6 +59,7 @@ impl CanvasFontRenderer {
             font_str,
             ascent,
             descent,
+            atlases: atlases.clone(),
         })
     }
 
@@ -100,13 +108,15 @@ impl CanvasFontRenderer {
     fn render_glyph_internal(&self, character: char) -> Result<Glyph, JsValue> {
         let text = &character.to_string();
         let metrics = self.ctx.measure_text(text)?;
-        let height = self.ascent + self.descent;
 
         let bitmap_width = metrics.actual_bounding_box_left() + metrics.actual_bounding_box_right();
         let bitmap_width = bitmap_width.max(1.0).ceil() as i32; // TODO Support empty bitmaps.
-        let bitmap_height = height.max(1.0).ceil() as i32; // TODO Support empty bitmaps.
+        let bitmap_height =
+            metrics.actual_bounding_box_ascent() + metrics.actual_bounding_box_descent();
+        let bitmap_height = bitmap_height.max(1.0).ceil() as i32; // TODO Support empty bitmaps.
         let advance = Twips::from_pixels(metrics.width());
         let bitmap_tx = -metrics.actual_bounding_box_left();
+        let bitmap_ty = -metrics.actual_bounding_box_ascent();
 
         self.ensure_canvas_large_enough(bitmap_width as u32, bitmap_height as u32);
 
@@ -116,7 +126,7 @@ impl CanvasFontRenderer {
             self.canvas.width() as f64,
             self.canvas.height() as f64,
         );
-        self.ctx.fill_text(text, -bitmap_tx, self.ascent)?;
+        self.ctx.fill_text(text, -bitmap_tx, -bitmap_ty)?;
 
         let image_data = self.ctx.get_image_data(0, 0, bitmap_width, bitmap_height)?;
         let width = image_data.width();
@@ -124,14 +134,10 @@ impl CanvasFontRenderer {
         let pixels = image_data.data().0;
 
         let bitmap = Bitmap::new(width, height, BitmapFormat::Rgba, pixels);
-        let bitmap_tx = Twips::from_pixels(-metrics.actual_bounding_box_left());
-        Ok(Glyph::from_bitmap(
-            character,
-            bitmap,
-            advance,
-            bitmap_tx,
-            Twips::ZERO,
-        ))
+        let bitmap_tx = Twips::from_pixels(bitmap_tx);
+        let bitmap_ty = Twips::from_pixels(self.ascent + bitmap_ty);
+        let atlas_glyph = self.atlases.rgba().new_glyph(bitmap, bitmap_tx, bitmap_ty);
+        Ok(Glyph::from_atlas(character, atlas_glyph, advance))
     }
 
     fn calculate_kerning_internal(&self, left: char, right: char) -> Result<Twips, JsValue> {
@@ -172,5 +178,9 @@ impl FontRenderer for CanvasFontRenderer {
         self.calculate_kerning_internal(left, right)
             .map_err(|err| tracing::error!("Failed to calculate kerning: {err:?}"))
             .unwrap_or(Twips::ZERO)
+    }
+
+    fn atlases(&self) -> Option<&FontAtlases> {
+        Some(&self.atlases)
     }
 }

@@ -477,12 +477,6 @@ impl GuiController {
             }
         }
 
-        if let Some(player) = player.as_deref_mut() {
-            let renderer =
-                <dyn Any>::downcast_mut::<WgpuRenderBackend<MovieView>>(player.renderer_mut())
-                    .expect("Renderer must be correct type");
-            renderer.profiler_mut().resolve_queries(&mut encoder);
-        }
         command_buffers.push(encoder.finish());
         self.descriptors.queue.submit(command_buffers);
 
@@ -499,19 +493,6 @@ impl GuiController {
         tracing_tracy::client::frame_mark();
         #[cfg(feature = "tracy_images")]
         self.tracy_frame_captures.finish_frame();
-        if let Some(player) = player.as_deref_mut() {
-            let renderer =
-                <dyn Any>::downcast_mut::<WgpuRenderBackend<MovieView>>(player.renderer_mut())
-                    .expect("Renderer must be correct type");
-            renderer
-                .profiler_mut()
-                .end_frame()
-                .expect("Frame should end successfully");
-            let timestamp_period = renderer.descriptors().queue.get_timestamp_period();
-            renderer
-                .profiler_mut()
-                .process_finished_frame(timestamp_period);
-        }
     }
 
     pub fn show_context_menu(

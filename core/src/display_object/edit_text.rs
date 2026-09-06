@@ -833,17 +833,6 @@ impl<'gc> EditText<'gc> {
         self.relayout(context);
     }
 
-    /// Construct a base text transform for a particular `EditText` span.
-    ///
-    /// This `text_transform` is separate from and relative to the base
-    /// transform that this `EditText` automatically gets by virtue of being a
-    /// `DisplayObject`.
-    pub fn text_transform(self, color: Color) -> Transform {
-        let mut transform: Transform = Default::default();
-        transform.color_transform.set_mult_color(color);
-        transform
-    }
-
     /// Returns the variable that this text field is bound to.
     pub fn variable(self) -> Option<AvmString<'gc>> {
         self.0.variable.get()
@@ -1273,7 +1262,7 @@ impl<'gc> EditText<'gc> {
         // We're cheating a bit and not actually rendering text using the OS/web.
         // Instead, we embed an SWF version of Noto Sans to use as the "device font", and render
         // it the same as any other SWF outline text.
-        if let Some((text, _tf, font, params, color)) =
+        if let Some((text, _tf, font, params)) =
             lbox.as_renderable_text(self.0.text_spans.borrow().displayed_text())
         {
             let metrics = font.metrics();
@@ -1283,7 +1272,6 @@ impl<'gc> EditText<'gc> {
             let mut caret_x = Twips::ZERO;
             font.evaluate(
                 text,
-                self.text_transform(color),
                 params,
                 |pos, transform, glyph, advance, x| {
                     if glyph.renderable(context) {
@@ -1315,7 +1303,7 @@ impl<'gc> EditText<'gc> {
             );
 
             if caret.is_some() {
-                self.render_caret(context, caret_x, caret_height, color, render_state);
+                self.render_caret(context, caret_x, caret_height, params.color, render_state);
             }
 
             if let LayoutContent::Text {
@@ -1325,7 +1313,7 @@ impl<'gc> EditText<'gc> {
                 // Draw underline
                 let underline_y = ascent + (max_descent / 2);
                 let underline_width = lbox.bounds().width();
-                self.render_underline(context, underline_width, underline_y, color);
+                self.render_underline(context, underline_width, underline_y, params.color);
             }
         }
 
@@ -1629,24 +1617,19 @@ impl<'gc> EditText<'gc> {
             matrix = matrix.inverse().expect("Invertible layout matrix");
             let local_position = matrix * position;
 
-            if let Some((text, _tf, font, params, color)) =
+            if let Some((text, _tf, font, params)) =
                 layout_box.as_renderable_text(self.0.text_spans.borrow().text())
             {
                 let mut result = 0;
-                font.evaluate(
-                    text,
-                    self.text_transform(color),
-                    params,
-                    |pos, _transform, _glyph, advance, x| {
-                        if local_position.x >= x {
-                            if local_position.x > x + (advance / 2) {
-                                result = string_utils::next_char_boundary(text, pos);
-                            } else {
-                                result = pos;
-                            }
+                font.evaluate(text, params, |pos, _transform, _glyph, advance, x| {
+                    if local_position.x >= x {
+                        if local_position.x > x + (advance / 2) {
+                            result = string_utils::next_char_boundary(text, pos);
+                        } else {
+                            result = pos;
                         }
-                    },
-                );
+                    }
+                });
                 if let LayoutContent::Text { start, .. } = layout_box.content() {
                     return Some(result + start);
                 }
