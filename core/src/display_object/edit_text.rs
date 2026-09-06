@@ -1559,7 +1559,12 @@ impl<'gc> EditText<'gc> {
     }
 
     /// Returns `true` when scroll has been modified.
-    pub fn set_scroll(self, scroll: f64) -> bool {
+    pub fn set_scroll(
+        self,
+        scroll: f64,
+        programmatic: bool,
+        context: &mut UpdateContext<'gc>,
+    ) -> bool {
         // derived experimentally. Not exact: overflows somewhere above 767100486418432.9
         // Checked in SWF 6, AVM1. Same in AVM2.
         const SCROLL_OVERFLOW_LIMIT: f64 = 767100486418433.0;
@@ -1572,6 +1577,7 @@ impl<'gc> EditText<'gc> {
         if self.0.scroll.replace(clamped) == clamped {
             false
         } else {
+            self.on_scroller(programmatic, context);
             self.invalidate_cached_bitmap();
             true
         }
@@ -2132,16 +2138,25 @@ impl<'gc> EditText<'gc> {
         }
     }
 
-    fn on_scroller(self, activation: &mut Avm1Activation<'_, 'gc>) {
-        if let Some(object) = self.object1() {
+    fn on_scroller(self, programmatic: bool, context: &mut UpdateContext<'gc>) {
+        if let Some(object) = self.object1()
+            && !programmatic
+        {
+            let mut activation = Avm1Activation::from_nothing(
+                context,
+                ActivationIdentifier::root("[On Scroller]"),
+                self.into(),
+            );
             let _ = object.call_method(
                 istr!("broadcastMessage"),
                 &[istr!("onScroller").into(), object.into()],
-                activation,
+                &mut activation,
                 ExecutionReason::Special,
             );
+        } else if let Some(object) = self.object2() {
+            let scroll_evt = Avm2EventObject::bare_event(context, "scroll", false, false);
+            Avm2::dispatch_event(context, scroll_evt, object.into());
         }
-        //TODO: Implement this for Avm2
     }
 
     /// Construct the text field's AVM1 representation.
@@ -2993,15 +3008,7 @@ impl<'gc> TInteractiveObject<'gc> for EditText<'gc> {
         if let ClipEvent::MouseWheel { delta } = event {
             let scrolled = if self.is_mouse_wheel_enabled() {
                 let new_scroll = self.scroll() as f64 - delta.lines();
-                let scrolled = self.set_scroll(new_scroll);
-
-                let mut activation = Avm1Activation::from_nothing(
-                    context,
-                    ActivationIdentifier::root("[On Scroller]"),
-                    self.into(),
-                );
-                self.on_scroller(&mut activation);
-                scrolled
+                self.set_scroll(new_scroll, false, context)
             } else {
                 false
             };

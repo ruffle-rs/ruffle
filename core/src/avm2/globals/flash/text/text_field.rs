@@ -1354,7 +1354,7 @@ pub fn get_scroll_v<'gc>(
 }
 
 pub fn set_scroll_v<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -1365,7 +1365,7 @@ pub fn set_scroll_v<'gc>(
         .and_then(|this| this.as_edit_text())
     {
         let input = args.get_i32(0);
-        this.set_scroll(input as f64);
+        this.set_scroll(input as f64, true, activation.context);
     }
 
     Ok(Value::Undefined)

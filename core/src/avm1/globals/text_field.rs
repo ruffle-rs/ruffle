@@ -684,7 +684,7 @@ pub fn set_scroll<'gc>(
     value: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
     let input = value.coerce_to_f64(activation)?;
-    this.set_scroll(input);
+    this.set_scroll(input, true, activation.context);
     Ok(())
 }
 
