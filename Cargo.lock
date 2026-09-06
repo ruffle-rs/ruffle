@@ -403,12 +403,6 @@ checksum = "b588b76d00fde79687d7646a9b5bdf3cc0f655e0bbd080335a95d7e96f3587da"
 
 [[package]]
 name = "bitstream-io"
-version = "2.6.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6099cdc01846bc367c4e7dd630dc5966dccf36b652fae7a74e17b640411a91b2"
-
-[[package]]
-name = "bitstream-io"
 version = "4.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7eff00be299a18769011411c9def0d827e8f2d7bf0c3dbf53633147a8867fd1f"
@@ -3411,7 +3405,7 @@ name = "nellymoser-rs"
 version = "0.1.2"
 source = "git+https://github.com/ruffle-rs/nellymoser?rev=073eb48d907201f46dea0c8feb4e8d9a1d92208c#073eb48d907201f46dea0c8feb4e8d9a1d92208c"
 dependencies = [
- "bitstream-io 4.10.0",
+ "bitstream-io",
  "once_cell",
  "rustdct",
 ]
@@ -4540,16 +4534,14 @@ checksum = "ca45419789ae5a7899559e9512e58ca889e41f04f1f2445e9f4b290ceccd1d08"
 
 [[package]]
 name = "rascal"
-version = "0.3.5"
+version = "0.3.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "126759e1b358dd7c999f3d6b83a839b99cb383bf6bbd1f9e4e8f6b810df85485"
+checksum = "ba78442f12cbfa28edad7c0f1e02c370cb2d985fb7de98962e2c6893e6bd4d85"
 dependencies = [
  "annotate-snippets",
- "byteorder",
  "indexmap",
- "log",
  "serde",
- "swf 0.2.2",
+ "swf 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "winnow",
 ]
 
@@ -4838,7 +4830,7 @@ version = "0.5.0"
 dependencies = [
  "async-channel",
  "bitflags 2.13.1",
- "bitstream-io 4.10.0",
+ "bitstream-io",
  "build_playerglobal",
  "bytemuck",
  "byteorder",
@@ -5796,13 +5788,10 @@ checksum = "13c2bddecc57b384dee18652358fb23172facb8a2c51ccc10d74c157bdea3292"
 
 [[package]]
 name = "swf"
-version = "0.2.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "802bff556571f7e5c6e347d5f147f91d1e5976bb43fb312437f04676707bbe4f"
+version = "0.3.0"
 dependencies = [
  "bitflags 2.13.1",
- "bitstream-io 2.6.0",
- "byteorder",
+ "bitstream-io",
  "encoding_rs",
  "enum-map",
  "flate2",
@@ -5816,9 +5805,11 @@ dependencies = [
 [[package]]
 name = "swf"
 version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b1840721af70281567fdcbbf16e81b297db77d695c7b4a64860b18da15bb401a"
 dependencies = [
  "bitflags 2.13.1",
- "bitstream-io 4.10.0",
+ "bitstream-io",
  "encoding_rs",
  "enum-map",
  "flate2",
