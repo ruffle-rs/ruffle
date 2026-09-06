@@ -464,7 +464,7 @@ dependencies = [
  "quote",
  "rascal",
  "regex",
- "swf 0.2.2",
+ "swf 0.3.0",
  "walkdir",
 ]
 
@@ -4549,7 +4549,7 @@ dependencies = [
  "indexmap",
  "log",
  "serde",
- "swf 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "swf 0.2.2",
  "winnow",
 ]
 
@@ -4826,7 +4826,7 @@ dependencies = [
  "regress",
  "ruffle_macros",
  "ruffle_wstr",
- "swf 0.2.2",
+ "swf 0.3.0",
  "thiserror 2.0.18",
  "tracing",
  "url",
@@ -4888,7 +4888,7 @@ dependencies = [
  "serde_json",
  "slotmap",
  "smallvec",
- "swf 0.2.2",
+ "swf 0.3.0",
  "symphonia",
  "thiserror 2.0.18",
  "tracing",
@@ -5046,7 +5046,7 @@ dependencies = [
  "ruffle_wstr",
  "serde",
  "smallvec",
- "swf 0.2.2",
+ "swf 0.3.0",
  "thiserror 2.0.18",
  "tracing",
  "wasm-bindgen",
@@ -5061,7 +5061,7 @@ dependencies = [
  "log",
  "ruffle_render",
  "ruffle_web_common",
- "swf 0.2.2",
+ "swf 0.3.0",
  "wasm-bindgen",
  "web-sys",
 ]
@@ -5075,7 +5075,7 @@ dependencies = [
  "log",
  "ruffle_render",
  "ruffle_web_common",
- "swf 0.2.2",
+ "swf 0.3.0",
  "thiserror 2.0.18",
  "wasm-bindgen",
  "web-sys",
@@ -5099,7 +5099,7 @@ dependencies = [
  "profiling",
  "ruffle_render",
  "smallvec",
- "swf 0.2.2",
+ "swf 0.3.0",
  "tracing",
  "web-sys",
  "wgpu",
@@ -5120,7 +5120,7 @@ dependencies = [
  "ruffle_core",
  "serde",
  "sha2",
- "swf 0.2.2",
+ "swf 0.3.0",
  "walkdir",
 ]
 
@@ -5170,7 +5170,7 @@ version = "0.5.0"
 dependencies = [
  "ruffle_render",
  "slotmap",
- "swf 0.2.2",
+ "swf 0.3.0",
  "thiserror 2.0.18",
 ]
 
@@ -5188,7 +5188,7 @@ dependencies = [
  "ruffle_video_software",
  "sha2",
  "slotmap",
- "swf 0.2.2",
+ "swf 0.3.0",
  "tempfile",
  "thiserror 2.0.18",
  "tracing",
@@ -5212,7 +5212,7 @@ dependencies = [
  "ruffle_render",
  "ruffle_video",
  "slotmap",
- "swf 0.2.2",
+ "swf 0.3.0",
  "thiserror 2.0.18",
 ]
 
@@ -5797,9 +5797,12 @@ checksum = "13c2bddecc57b384dee18652358fb23172facb8a2c51ccc10d74c157bdea3292"
 [[package]]
 name = "swf"
 version = "0.2.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "802bff556571f7e5c6e347d5f147f91d1e5976bb43fb312437f04676707bbe4f"
 dependencies = [
  "bitflags 2.13.1",
- "bitstream-io 4.10.0",
+ "bitstream-io 2.6.0",
+ "byteorder",
  "encoding_rs",
  "enum-map",
  "flate2",
@@ -5812,13 +5815,10 @@ dependencies = [
 
 [[package]]
 name = "swf"
-version = "0.2.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "802bff556571f7e5c6e347d5f147f91d1e5976bb43fb312437f04676707bbe4f"
+version = "0.3.0"
 dependencies = [
  "bitflags 2.13.1",
- "bitstream-io 2.6.0",
- "byteorder",
+ "bitstream-io 4.10.0",
  "encoding_rs",
  "enum-map",
  "flate2",
