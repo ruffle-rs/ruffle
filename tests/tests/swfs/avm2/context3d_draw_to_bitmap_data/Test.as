@@ -16,9 +16,8 @@ package {
     import flash.display3D.VertexBuffer3D;
     import flash.events.Event;
 
-    // Context3D.drawToBitmapData copies the back buffer into a BitmapData. Two
-    // frames are read and shown side by side: a red quad (left) and a green
-    // quad (right). Traces also check the red readback and the null #2007 error.
+    // drawToBitmapData copies the back buffer into a BitmapData 1:1 from the
+    // top-left, read here into a same-size, larger and smaller destination.
     [SWF(width="100", height="50", backgroundColor="#000000")]
     public class Test extends Sprite {
         private const VERTEX_SHADER:String =
@@ -47,17 +46,16 @@ package {
             var context:Context3D = Stage3D(e.target).context3D;
             context.configureBackBuffer(50, 50, 0, false);
 
-            // Two triangles covering the whole clip-space viewport.
             var indices:Vector.<uint> = Vector.<uint>([0, 1, 2, 2, 1, 3]);
             var indexBuffer:IndexBuffer3D = context.createIndexBuffer(indices.length);
             indexBuffer.uploadFromVector(indices, 0, indices.length);
 
-            // x, y, z, r, g, b, a - all vertices opaque red.
+            // Red quad, left half of clip space.
             var vertexData:Vector.<Number> = Vector.<Number>([
                 -1, -1, 0,  1, 0, 0, 1,
-                 1, -1, 0,  1, 0, 0, 1,
+                 0, -1, 0,  1, 0, 0, 1,
                 -1,  1, 0,  1, 0, 0, 1,
-                 1,  1, 0,  1, 0, 0, 1
+                 0,  1, 0,  1, 0, 0, 1
             ]);
             var vertexBuffer:VertexBuffer3D = context.createVertexBuffer(4, 7);
             vertexBuffer.uploadFromVector(vertexData, 0, 4);
@@ -68,19 +66,32 @@ package {
             program.upload(vertexAssembly.agalcode, fragmentAssembly.agalcode);
             context.setProgram(program);
 
-            // Clear to blue, then draw the red quad on top.
+            // Back buffer: red left, blue right.
             context.clear(0, 0, 1, 1);
             context.drawTriangles(indexBuffer, 0, 2);
 
-            // Read the back buffer into a green-filled BitmapData.
-            var bmd:BitmapData = new BitmapData(50, 50, true, 0xff00ff00);
-            context.drawToBitmapData(bmd);
+            // Same size.
+            var same:BitmapData = new BitmapData(50, 50, true, 0xff00ff00);
+            context.drawToBitmapData(same);
+            trace("same(5,5):   " + hex(same.getPixel32(5, 5)));
+            trace("same(45,5):  " + hex(same.getPixel32(45, 5)));
 
-            trace("pixel(0,0):   " + hex(bmd.getPixel32(0, 0)));
-            trace("pixel(25,25): " + hex(bmd.getPixel32(25, 25)));
-            trace("pixel(49,49): " + hex(bmd.getPixel32(49, 49)));
+            // Larger: extra pixels keep their fill.
+            var big:BitmapData = new BitmapData(80, 60, true, 0xff808080);
+            context.drawToBitmapData(big);
+            trace("big(5,5):    " + hex(big.getPixel32(5, 5)));
+            trace("big(40,5):   " + hex(big.getPixel32(40, 5)));
+            trace("big(60,5):   " + hex(big.getPixel32(60, 5)));
+            trace("big(5,55):   " + hex(big.getPixel32(5, 55)));
 
-            // A null destination throws TypeError #2007.
+            // Smaller: clipped, not scaled.
+            var small:BitmapData = new BitmapData(30, 30, true, 0xff808080);
+            context.drawToBitmapData(small);
+            trace("small(5,5):  " + hex(small.getPixel32(5, 5)));
+            trace("small(20,5): " + hex(small.getPixel32(20, 5)));
+            trace("small(29,5): " + hex(small.getPixel32(29, 5)));
+
+            // Null destination throws #2007.
             try {
                 context.drawToBitmapData(null);
                 trace("null: no error");
@@ -88,38 +99,17 @@ package {
                 trace("null: " + e.getStackTrace());
             }
 
-            // Second frame: draw a green quad and read it into another
-            // BitmapData.
-            var greenData:Vector.<Number> = Vector.<Number>([
-                -1, -1, 0,  0, 1, 0, 1,
-                 1, -1, 0,  0, 1, 0, 1,
-                -1,  1, 0,  0, 1, 0, 1,
-                 1,  1, 0,  0, 1, 0, 1
-            ]);
-            vertexBuffer.uploadFromVector(greenData, 0, 4);
-            context.clear(0, 0, 0, 1);
-            context.drawTriangles(indexBuffer, 0, 2);
-            var bmd2:BitmapData = new BitmapData(50, 50, true, 0xffff00ff);
-            context.drawToBitmapData(bmd2);
-
-            // drawToBitmapData reads the back buffer, which must be cleared each
-            // frame. present() resets that state, so a read with no intervening
-            // clear throws Error #3692.
+            // After present(), a read with no clear throws #3692.
             context.present();
             try {
-                var afterPresent:BitmapData = new BitmapData(50, 50, true, 0xff000000);
-                context.drawToBitmapData(afterPresent);
+                context.drawToBitmapData(new BitmapData(50, 50, true, 0xff000000));
                 trace("after present: no error");
             } catch (e:Error) {
                 trace("after present: " + e.getStackTrace());
             }
 
-            // Show both captures next to each other: red on the left, green on
-            // the right.
-            addChild(new Bitmap(bmd));
-            var right:Bitmap = new Bitmap(bmd2);
-            right.x = 50;
-            addChild(right);
+            // Show the larger capture: red|blue back buffer, then grey fill.
+            addChild(new Bitmap(big));
         }
 
         private function hex(color:uint):String {

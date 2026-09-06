@@ -1,6 +1,12 @@
-pixel(0,0):   ffff0000
-pixel(25,25): ffff0000
-pixel(49,49): ffff0000
+same(5,5):   ffff0000
+same(45,5):  ff0000ff
+big(5,5):    ffff0000
+big(40,5):   ff0000ff
+big(60,5):   ff808080
+big(5,55):   ff808080
+small(5,5):  ffff0000
+small(20,5): ffff0000
+small(29,5): ff0000ff
 null: TypeError: Error #2007: Parameter destination must be non-null.
 	at flash.display3D::Context3D/drawToBitmapData()
 	at Test/onContext()

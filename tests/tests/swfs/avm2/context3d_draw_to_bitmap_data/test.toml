@@ -6,7 +6,6 @@ max_outliers = 24
 
 [player_options]
 with_renderer = { optional = false, quality = "high" }
-viewport_dimensions = { width = 100, height = 50, scale_factor = 1 }
 
 [[compilers]]
 type = "Asc"
