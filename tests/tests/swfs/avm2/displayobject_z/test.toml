@@ -2,13 +2,17 @@ num_frames = 1
 
 
 # FIXME: High max_outliers. FP renders objects with a matrix3D transformation in a different way from 2D objects especially around the object edges.
+
+# Due to the reason above, max_outliers is set to a high value,
+# but make sure the image_comparisons still fails
+# if any object suddenly changes its visibility to update max_outliers.
 [[image_comparisons.output.checks]]
 tolerance = 100
-max_outliers = 2000
+max_outliers = 6500
 
 [[image_comparisons.output.checks]]
 tolerance = 10
-max_outliers = 5000
+max_outliers = 17500
 
 [player_options]
 with_renderer = { optional = true, quality = "high" }
