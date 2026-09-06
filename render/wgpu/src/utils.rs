@@ -1,9 +1,10 @@
+use crate::backend::DrawFrame;
 use crate::buffer_pool::BufferDescription;
 use crate::descriptors::Descriptors;
 use crate::globals::Globals;
 use std::borrow::Cow;
+use wgpu::TextureFormat;
 use wgpu::util::DeviceExt;
-use wgpu::{CommandEncoder, TextureFormat};
 
 macro_rules! create_debug_label {
     ($($arg:tt)*) => (
@@ -205,7 +206,7 @@ pub fn run_copy_pipeline(
     whole_frame_bind_group: &wgpu::BindGroup,
     globals: &Globals,
     sample_count: u32,
-    encoder: &mut CommandEncoder,
+    frame: &mut DrawFrame<'_>,
 ) {
     let copy_bind_group = descriptors
         .device
@@ -232,19 +233,22 @@ pub fn run_copy_pipeline(
     // so this doesn't matter.
     let load = wgpu::LoadOp::Clear(wgpu::Color::TRANSPARENT);
 
-    let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-        label: create_debug_label!("Copy back to render target").as_deref(),
-        color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-            view: frame_view,
-            ops: wgpu::Operations {
-                load,
-                store: wgpu::StoreOp::Store,
-            },
-            resolve_target: None,
-            depth_slice: None,
-        })],
-        ..Default::default()
-    });
+    let mut render_pass = frame.raw_render_pass(
+        descriptors,
+        &wgpu::RenderPassDescriptor {
+            label: create_debug_label!("Copy back to render target").as_deref(),
+            color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                view: frame_view,
+                ops: wgpu::Operations {
+                    load,
+                    store: wgpu::StoreOp::Store,
+                },
+                resolve_target: None,
+                depth_slice: None,
+            })],
+            ..Default::default()
+        },
+    );
 
     render_pass.set_pipeline(&pipeline);
     render_pass.set_bind_group(0, globals.bind_group(), &[]);

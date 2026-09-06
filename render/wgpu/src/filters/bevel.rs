@@ -1,4 +1,4 @@
-use crate::backend::RenderTargetMode;
+use crate::backend::{DrawFrame, RenderTargetMode};
 use crate::buffer_pool::TexturePool;
 use crate::descriptors::Descriptors;
 use crate::filters::blur::BlurFilter;
@@ -10,7 +10,6 @@ use crate::utils::SampleCountMap;
 use bytemuck::{Pod, Zeroable};
 use std::sync::OnceLock;
 use swf::BevelFilter as BevelFilterArgs;
-use wgpu::util::StagingBelt;
 
 #[repr(C)]
 #[derive(Copy, Clone, Debug, Pod, Zeroable, PartialEq)]
@@ -151,13 +150,11 @@ impl BevelFilter {
         })
     }
 
-    #[expect(clippy::too_many_arguments)]
     pub fn apply(
         &self,
         descriptors: &Descriptors,
         texture_pool: &mut TexturePool,
-        draw_encoder: &mut wgpu::CommandEncoder,
-        staging_belt: &mut StagingBelt,
+        frame: &mut DrawFrame<'_>,
         source: &FilterSource,
         filter: &BevelFilterArgs,
         blur_filter: &BlurFilter,
@@ -168,13 +165,12 @@ impl BevelFilter {
         let blurred = blur_filter.apply(
             descriptors,
             texture_pool,
-            draw_encoder,
-            staging_belt,
+            frame,
             source,
             &filter.inner_blur_filter(),
         );
         let blurred_texture = if let Some(blurred) = &blurred {
-            blurred.ensure_cleared(draw_encoder);
+            blurred.ensure_cleared(descriptors, frame);
             blurred.color_texture()
         } else {
             source.texture
@@ -196,7 +192,7 @@ impl BevelFilter {
             format,
             sample_count,
             RenderTargetMode::FreshWithColor(wgpu::Color::TRANSPARENT),
-            draw_encoder,
+            frame,
         );
         let mut highlight_color = [
             f32::from(filter.highlight_color.r) / 255.0,
@@ -216,27 +212,30 @@ impl BevelFilter {
         shadow_color[0] *= shadow_color[3];
         shadow_color[1] *= shadow_color[3];
         shadow_color[2] *= shadow_color[3];
-        staging_belt
-            .write_buffer(draw_encoder, &self.uniform_buffer, 0, self.uniform_size)
-            .copy_from_slice(bytemuck::cast_slice(&[BevelUniform {
-                highlight_color,
-                shadow_color,
-                strength: filter.strength.to_f32(),
-                bevel_type: if filter.is_on_top() {
-                    2
-                } else if filter.is_inner() {
-                    1
-                } else {
-                    0
-                },
-                knockout: if filter.is_knockout() { 1 } else { 0 },
-                composite_source: 1,
-            }]));
-        staging_belt
-            .write_buffer(draw_encoder, &self.vertex_buffer, 0, self.vertices_size)
-            .copy_from_slice(bytemuck::cast_slice(&[
-                source.vertices_with_highlight_and_shadow(blur_offset)
-            ]));
+        {
+            let (draw_encoder, staging_belt) = frame.encoder_and_belt();
+            staging_belt
+                .write_buffer(draw_encoder, &self.uniform_buffer, 0, self.uniform_size)
+                .copy_from_slice(bytemuck::cast_slice(&[BevelUniform {
+                    highlight_color,
+                    shadow_color,
+                    strength: filter.strength.to_f32(),
+                    bevel_type: if filter.is_on_top() {
+                        2
+                    } else if filter.is_inner() {
+                        1
+                    } else {
+                        0
+                    },
+                    knockout: if filter.is_knockout() { 1 } else { 0 },
+                    composite_source: 1,
+                }]));
+            staging_belt
+                .write_buffer(draw_encoder, &self.vertex_buffer, 0, self.vertices_size)
+                .copy_from_slice(bytemuck::cast_slice(&[
+                    source.vertices_with_highlight_and_shadow(blur_offset)
+                ]));
+        }
         let filter_group = descriptors
             .device
             .create_bind_group(&wgpu::BindGroupDescriptor {
@@ -263,11 +262,14 @@ impl BevelFilter {
                     },
                 ],
             });
-        let mut render_pass = draw_encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-            label: create_debug_label!("Bevel filter").as_deref(),
-            color_attachments: &[target.color_attachments()],
-            ..Default::default()
-        });
+        let mut render_pass = frame.raw_render_pass(
+            descriptors,
+            &wgpu::RenderPassDescriptor {
+                label: create_debug_label!("Bevel filter").as_deref(),
+                color_attachments: &[target.color_attachments()],
+                ..Default::default()
+            },
+        );
         render_pass.set_pipeline(pipeline);
 
         render_pass.set_bind_group(0, &filter_group, &[]);

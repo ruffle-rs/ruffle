@@ -16,15 +16,18 @@ use smallvec::{SmallVec, smallvec_inline};
 use wgpu::util::{DeviceExt, StagingBelt};
 use wgpu::{
     BindGroupEntry, BindingResource, BlendComponent, BufferDescriptor, BufferUsages,
-    ColorTargetState, ColorWrites, CommandEncoder, PipelineLayout, RenderPipeline,
-    RenderPipelineDescriptor, SamplerBindingType, ShaderModuleDescriptor, TexelCopyTextureInfo,
-    TextureDescriptor, TextureFormat, TextureView, VertexState,
+    ColorTargetState, ColorWrites, PipelineLayout, RenderPipeline, RenderPipelineDescriptor,
+    SamplerBindingType, ShaderModuleDescriptor, TexelCopyTextureInfo, TextureDescriptor,
+    TextureFormat, TextureView, VertexState,
 };
 
 use crate::filters::{FilterSource, VERTEX_BUFFERS_DESCRIPTION_FILTERS};
 use crate::raw_texture_as_texture;
 use crate::{
-    Texture, as_texture, backend::WgpuRenderBackend, descriptors::Descriptors, target::RenderTarget,
+    Texture, as_texture,
+    backend::{DrawFrame, WgpuRenderBackend},
+    descriptors::Descriptors,
+    target::RenderTarget,
 };
 
 #[derive(Debug)]
@@ -356,7 +359,7 @@ pub(super) fn run_pixelbender_shader_impl(
     mode: ShaderMode,
     arguments: &[PixelBenderShaderArgument],
     target: &wgpu::Texture,
-    render_command_encoder: &mut CommandEncoder,
+    frame: &mut DrawFrame<'_>,
     color_attachment: Option<wgpu::RenderPassColorAttachment>,
     sample_count: u32,
     // FIXME - do we cover the whole source or the whole dest?
@@ -408,7 +411,7 @@ pub(super) fn run_pixelbender_shader_impl(
     ];
 
     let mut zeroed_out_of_range_mode_slice = staging_belt.write_buffer(
-        render_command_encoder,
+        frame.copy_encoder(),
         &compiled_shader.zeroed_out_of_range_mode,
         0,
         NonZeroU64::new(std::mem::size_of::<f32>() as u64 * 4).unwrap(),
@@ -465,7 +468,7 @@ pub(super) fn run_pixelbender_shader_impl(
                                 | wgpu::TextureUsages::TEXTURE_BINDING,
                             view_formats: &[wgpu::TextureFormat::Rgba8Unorm],
                         });
-                        render_command_encoder.copy_texture_to_texture(
+                        frame.copy_encoder().copy_texture_to_texture(
                             TexelCopyTextureInfo {
                                 texture: target,
                                 mip_level: 0,
@@ -588,7 +591,7 @@ pub(super) fn run_pixelbender_shader_impl(
                 };
 
                 let mut buffer_slice = staging_belt.write_buffer(
-                    render_command_encoder,
+                    frame.copy_encoder(),
                     buffer,
                     vec4_count as u64 * 4 * component_size_bytes,
                     NonZeroU64::new(num_vec4s as u64 * 4 * component_size_bytes).unwrap(),
@@ -645,12 +648,15 @@ pub(super) fn run_pixelbender_shader_impl(
 
     let pipeline = compiled_shader.get_pipeline(descriptors, sample_count, target.format());
 
-    let mut render_pass = render_command_encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-        label: Some("PixelBender render pass"),
-        color_attachments: &[color_attachment],
-        depth_stencil_attachment: None,
-        ..Default::default()
-    });
+    let mut render_pass = frame.raw_render_pass(
+        descriptors,
+        &wgpu::RenderPassDescriptor {
+            label: Some("PixelBender render pass"),
+            color_attachments: &[color_attachment],
+            depth_stencil_attachment: None,
+            ..Default::default()
+        },
+    );
     render_pass.set_bind_group(0, &bind_group, &[]);
     render_pass.set_pipeline(&pipeline);
 

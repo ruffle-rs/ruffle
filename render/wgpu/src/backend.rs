@@ -37,7 +37,7 @@ use std::sync::Arc;
 use swf::Color;
 use tracing::instrument;
 use wgpu::SubmissionIndex;
-use wgpu_profiler::{GpuProfiler, GpuProfilerSettings};
+use wgpu_profiler::{GpuProfiler, GpuProfilerSettings, Scope};
 
 /// Creates a wgpu instance with Ruffle's required configuration.
 ///
@@ -556,6 +556,11 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
             return;
         };
 
+        // All passes recorded below share one command encoder. `frame`
+        // counts them and submits before the Metal command-buffer budget
+        // can be exhausted, no matter how deeply nested the scene is.
+        let mut frame = DrawFrame::begin(&mut self.active_frame, &self.descriptors, &self.profiler);
+
         for entry in cache_entries {
             let texture = as_texture(&entry.handle);
             let surface = Surface::new(
@@ -579,18 +584,12 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
                     &self.descriptors,
                     &self.meshes,
                     entry.commands,
-                    &mut self.active_frame.staging_belt,
+                    &mut frame,
                     &self.dynamic_transforms,
-                    &mut self
-                        .profiler
-                        .scope("Draw to CAB", &mut self.active_frame.command_encoder),
                     LayerRef::None,
                     &mut self.offscreen_texture_pool,
                 );
             } else {
-                let mut scope = self
-                    .profiler
-                    .scope("Filters", &mut self.active_frame.command_encoder);
                 // We're relying on there being no impotent filters here,
                 // so that we can safely start by using the actual CAB texture.
                 // It's guaranteed that at least one filter would have used it and moved the target to something else,
@@ -608,18 +607,16 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
                     &self.descriptors,
                     &self.meshes,
                     entry.commands,
-                    &mut self.active_frame.staging_belt,
+                    &mut frame,
                     &self.dynamic_transforms,
-                    &mut scope.scope("Draw to CAB"),
                     LayerRef::None,
                     &mut self.offscreen_texture_pool,
                 );
                 for filter in entry.filters {
                     target = self.descriptors.filters.apply(
                         &self.descriptors,
-                        &mut scope.scope(filter.name()),
+                        &mut frame,
                         &mut self.offscreen_texture_pool,
-                        &mut self.active_frame.staging_belt,
                         FilterSource::for_entire_texture(target.color_texture()),
                         filter,
                     );
@@ -632,13 +629,9 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
                     target.whole_frame_bind_group(&self.descriptors),
                     target.globals(),
                     target.color_texture().sample_count(),
-                    &mut scope.scope("Copy filtered to CAB"),
+                    &mut frame,
                 );
             }
-            // Periodically flush GPU work to prevent OOM when many cache entries
-            // accumulate (e.g. when a large container's cacheAsBitmap is skipped
-            // but its hundreds of children each have their own bitmap caches).
-            self.active_frame.maybe_flush(&self.descriptors);
         }
 
         self.surface.draw_commands_and_copy_to(
@@ -650,16 +643,14 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
                 a: f64::from(clear.a) / 255.0,
             }),
             &self.descriptors,
-            &mut self.active_frame.staging_belt,
+            &mut frame,
             &self.dynamic_transforms,
-            &mut self
-                .profiler
-                .scope("Frame commands", &mut self.active_frame.command_encoder),
             &self.meshes,
             commands,
             LayerRef::None,
             &mut self.texture_pool,
         );
+        self.active_frame.command_encoder = frame.finish();
         self.profiler
             .resolve_queries(&mut self.active_frame.command_encoder);
         self.active_frame.staging_belt.finish();
@@ -819,22 +810,20 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
             texture.texture.height(),
             wgpu::TextureFormat::Rgba8Unorm,
         );
+        let mut frame = DrawFrame::begin(&mut self.active_frame, &self.descriptors, &self.profiler);
         surface.draw_commands_and_copy_to(
             frame_output.view(),
             RenderTargetMode::FreshWithTexture(target.get_texture()),
             &self.descriptors,
-            &mut self.active_frame.staging_belt,
+            &mut frame,
             &self.dynamic_transforms,
-            &mut self
-                .profiler
-                .scope("Offscreen commands", &mut self.active_frame.command_encoder),
             &self.meshes,
             commands,
             LayerRef::Current,
             &mut self.offscreen_texture_pool,
         );
+        self.active_frame.command_encoder = frame.finish();
 
-        self.active_frame.maybe_flush(&self.descriptors);
         Some(self.make_queue_sync_handle(target, None, handle, bounds))
     }
 
@@ -883,11 +872,11 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
             buffer: None,
         };
 
+        let mut frame = DrawFrame::begin(&mut self.active_frame, &self.descriptors, &self.profiler);
         let applied_filter = self.descriptors.filters.apply(
             &self.descriptors,
-            &mut self.active_frame.command_encoder,
+            &mut frame,
             &mut self.offscreen_texture_pool,
-            &mut self.active_frame.staging_belt,
             FilterSource {
                 texture: &source_texture.texture,
                 point: source_point,
@@ -916,7 +905,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
             return None;
         }
 
-        self.active_frame.command_encoder.copy_texture_to_texture(
+        frame.copy_encoder().copy_texture_to_texture(
             wgpu::TexelCopyTextureInfo {
                 texture: applied_filter.color_texture(),
                 mip_level: 0,
@@ -943,8 +932,8 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
                 depth_or_array_layers: 1,
             },
         );
+        self.active_frame.command_encoder = frame.finish();
 
-        self.active_frame.maybe_flush(&self.descriptors);
         Some(self.make_queue_sync_handle(target, None, destination, copy_area))
     }
 
@@ -1045,13 +1034,14 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
             .get_next_texture()
             .expect("TextureTargetFrame.get_next_texture is infallible");
 
+        let mut frame = DrawFrame::begin(&mut self.active_frame, &self.descriptors, &self.profiler);
         run_pixelbender_shader_impl(
             &self.descriptors,
             shader,
             ShaderMode::ShaderJob,
             arguments,
             &target_texture.texture,
-            &mut self.active_frame.command_encoder,
+            &mut frame,
             Some(wgpu::RenderPassColorAttachment {
                 view: frame_output.view(),
                 resolve_target: None,
@@ -1065,6 +1055,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
             // When running a standalone shader, we always process the entire image
             &FilterSource::for_entire_texture(&target_texture.texture),
         )?;
+        self.active_frame.command_encoder = frame.finish();
 
         let index = Some(self.active_frame.submit_for_target(
             &self.descriptors,
@@ -1273,19 +1264,132 @@ impl RenderTargetMode {
 pub struct ActiveFrame {
     pub staging_belt: wgpu::util::StagingBelt,
     pub command_encoder: wgpu::CommandEncoder,
-    draws_since_flush: u32,
+    pub passes_since_flush: u32,
+}
+
+/// Maximum number of render/compute passes that may be recorded into a
+/// single command encoder before it is submitted.
+///
+/// Metal caps a command queue at 4096 outstanding command buffers
+/// (`wgpu_hal::metal::MAX_COMMAND_BUFFERS`); exceeding it permanently loses
+/// the device. A single complex frame (hundreds of masked, blended or
+/// filtered objects) can otherwise record thousands of passes into one
+/// submission, so flush well below the limit. Splitting a frame across
+/// ordered submissions of the same queue is invisible to the final image.
+pub const MAX_PASSES_PER_FLUSH: u32 = 1024;
+
+/// Bundles the per-frame recording state threaded through the draw path.
+///
+/// The command encoder is owned outright so that nested blends, masks and
+/// filters can submit it mid-frame without borrowing the [`ActiveFrame`]
+/// that the surrounding [`WgpuRenderBackend`] also needs. Every
+/// render/compute pass recorded for the active frame goes through this
+/// bundle, which counts passes and submits the encoder before the Metal
+/// command-buffer budget can be exhausted. This also bounds passes opened
+/// by deeply nested scenes, which the previous draw-count-based flushing
+/// could not see.
+pub struct DrawFrame<'a> {
+    encoder: wgpu::CommandEncoder,
+    staging_belt: &'a mut wgpu::util::StagingBelt,
+    passes_used: &'a mut u32,
+    profiler: &'a GpuProfiler,
+}
+
+impl<'a> DrawFrame<'a> {
+    /// Take over recording from the active frame, leaving a fresh encoder
+    /// behind. The owned encoder is handed back via [`DrawFrame::finish`].
+    pub fn begin(
+        active: &'a mut ActiveFrame,
+        descriptors: &Descriptors,
+        profiler: &'a GpuProfiler,
+    ) -> Self {
+        let fresh = descriptors
+            .device
+            .create_command_encoder(&Default::default());
+        let encoder = std::mem::replace(&mut active.command_encoder, fresh);
+        Self {
+            encoder,
+            staging_belt: &mut active.staging_belt,
+            passes_used: &mut active.passes_since_flush,
+            profiler,
+        }
+    }
+
+    /// Hand the encoder back; the caller is responsible for submitting it
+    /// (e.g. via [`ActiveFrame::submit_for_target`]).
+    pub fn finish(self) -> wgpu::CommandEncoder {
+        self.encoder
+    }
+
+    /// Submit the recorded work if the pass budget is exhausted.
+    ///
+    /// Must only be called between passes, never while a render/compute
+    /// pass (or a staging-belt write into the encoder) is open.
+    pub fn flush_if_needed(&mut self, descriptors: &Descriptors) {
+        if *self.passes_used >= MAX_PASSES_PER_FLUSH {
+            self.staging_belt.finish();
+            let fresh = descriptors
+                .device
+                .create_command_encoder(&Default::default());
+            let finished = std::mem::replace(&mut self.encoder, fresh);
+            descriptors.queue.submit(Some(finished.finish()));
+            self.staging_belt.recall();
+            *self.passes_used = 0;
+        }
+    }
+
+    fn note_pass(&mut self) {
+        *self.passes_used += 1;
+    }
+
+    /// Begin a profiled scope for recording a render pass, flushing first
+    /// when the pass budget is exhausted.
+    pub fn render_pass_scope(
+        &mut self,
+        descriptors: &Descriptors,
+        label: String,
+    ) -> Scope<'_, wgpu::CommandEncoder> {
+        self.flush_if_needed(descriptors);
+        self.note_pass();
+        self.profiler.scope(label, &mut self.encoder)
+    }
+
+    /// Begin an unprofiled render pass, flushing first when the pass
+    /// budget is exhausted.
+    pub fn raw_render_pass(
+        &mut self,
+        descriptors: &Descriptors,
+        desc: &wgpu::RenderPassDescriptor<'_>,
+    ) -> wgpu::RenderPass<'_> {
+        self.flush_if_needed(descriptors);
+        self.note_pass();
+        self.encoder.begin_render_pass(desc)
+    }
+
+    /// Joint access to the encoder and staging belt (e.g. for
+    /// [`wgpu::util::StagingBelt::write_buffer`]). Recording copies does
+    /// not open a render pass and needs no budget accounting.
+    pub fn encoder_and_belt(
+        &mut self,
+    ) -> (&mut wgpu::CommandEncoder, &mut wgpu::util::StagingBelt) {
+        (&mut self.encoder, &mut self.staging_belt)
+    }
+
+    /// Direct access to the encoder for copy-only commands, which open no
+    /// render pass and need no budget accounting.
+    pub fn copy_encoder(&mut self) -> &mut wgpu::CommandEncoder {
+        &mut self.encoder
+    }
 }
 
 impl ActiveFrame {
-    const MAX_DRAWS_PER_FLUSH: u32 = 100;
-
     pub fn new(descriptors: &Descriptors) -> Self {
         Self {
             command_encoder: descriptors
                 .device
                 .create_command_encoder(&Default::default()),
             staging_belt: wgpu::util::StagingBelt::new(descriptors.device.clone(), 65536),
-            draws_since_flush: 0,
+            passes_since_flush: 0,
         }
     }
 
@@ -1295,7 +1399,7 @@ impl ActiveFrame {
         target: &T,
         frame: T::Frame,
     ) -> SubmissionIndex {
-        self.draws_since_flush = 0;
+        self.passes_since_flush = 0;
         self.staging_belt.finish();
         let draw_encoder = std::mem::replace(
             &mut self.command_encoder,
@@ -1314,7 +1418,7 @@ impl ActiveFrame {
     }
 
     pub fn submit_direct(&mut self, descriptors: &Descriptors) -> SubmissionIndex {
-        self.draws_since_flush = 0;
+        self.passes_since_flush = 0;
         self.staging_belt.finish();
         let draw_encoder = std::mem::replace(
             &mut self.command_encoder,
@@ -1325,17 +1429,5 @@ impl ActiveFrame {
         let index = descriptors.queue.submit(Some(draw_encoder.finish()));
         self.staging_belt.recall();
         index
-    }
-
-    pub fn maybe_flush(&mut self, descriptors: &Descriptors) {
-        // [NA] This is kind of a hack.
-        // If we do "too much" during one frame, the submission ends up being way too large and goes OutOfMemory.
-        // What it is that we're OOMing on is likely buffers and temporary textures and such from render_offscreen
-        // Hard to track that though... so let's just flush it out if we do more than X draws per frame
-        self.draws_since_flush += 1;
-
-        if self.draws_since_flush > Self::MAX_DRAWS_PER_FLUSH {
-            self.submit_direct(descriptors);
-        }
     }
 }

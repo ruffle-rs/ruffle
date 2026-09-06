@@ -1,4 +1,5 @@
 use super::target::PoolOrArcTexture;
+use crate::backend::DrawFrame;
 use crate::backend::RenderTargetMode;
 use crate::blend::TrivialBlend;
 use crate::blend::{BlendType, ComplexBlend};
@@ -20,7 +21,6 @@ use ruffle_render::transform::Transform;
 use std::mem;
 use swf::{BlendMode, Color, ColorTransform, Twips};
 use wgpu::Backend;
-use wgpu_profiler::Scope;
 
 pub struct CommandRenderer<'encoder> {
     pipelines: &'encoder Pipelines,
@@ -499,24 +499,22 @@ pub enum LayerRef<'a> {
 /// Replaces every blend with a RenderBitmap, with the subcommands rendered out to a temporary texture
 /// Every complex blend will be its own item, but every other draw will be chunked together
 #[expect(clippy::too_many_arguments)]
-pub fn chunk_blends<'encoder, 'global: 'encoder>(
+pub fn chunk_blends<'a, 'f, 'c>(
     commands: CommandList,
-    descriptors: &'encoder Descriptors,
-    staging_belt: &'encoder mut wgpu::util::StagingBelt,
-    dynamic_transforms: &'encoder DynamicTransforms,
-    draw_encoder: &'encoder mut Scope<'global, wgpu::CommandEncoder>,
-    meshes: &'encoder Vec<Mesh>,
+    descriptors: &'a Descriptors,
+    frame: &'f mut DrawFrame<'c>,
+    dynamic_transforms: &'a DynamicTransforms,
+    meshes: &'a Vec<Mesh>,
     quality: StageQuality,
     width: u32,
     height: u32,
-    nearest_layer: LayerRef,
-    texture_pool: &'encoder mut TexturePool,
+    nearest_layer: LayerRef<'a>,
+    texture_pool: &'a mut TexturePool,
 ) -> Vec<Chunk> {
     WgpuCommandHandler::new(
         descriptors,
-        staging_belt,
+        frame,
         dynamic_transforms,
-        draw_encoder,
         meshes,
         quality,
         width,
@@ -527,17 +525,16 @@ pub fn chunk_blends<'encoder, 'global: 'encoder>(
     .chunk_blends(commands)
 }
 
-struct WgpuCommandHandler<'encoder, 'global: 'encoder> {
-    descriptors: &'encoder Descriptors,
+struct WgpuCommandHandler<'a, 'f, 'c> {
+    descriptors: &'a Descriptors,
     quality: StageQuality,
     width: u32,
     height: u32,
-    nearest_layer: LayerRef<'encoder>,
-    meshes: &'encoder Vec<Mesh>,
-    staging_belt: &'encoder mut wgpu::util::StagingBelt,
-    dynamic_transforms: &'encoder DynamicTransforms,
-    draw_encoder: &'encoder mut Scope<'global, wgpu::CommandEncoder>,
-    texture_pool: &'encoder mut TexturePool,
+    nearest_layer: LayerRef<'a>,
+    meshes: &'a Vec<Mesh>,
+    frame: &'f mut DrawFrame<'c>,
+    dynamic_transforms: &'a DynamicTransforms,
+    texture_pool: &'a mut TexturePool,
     emulate_lines: bool,
 
     result: Vec<Chunk>,
@@ -548,19 +545,18 @@ struct WgpuCommandHandler<'encoder, 'global: 'encoder> {
     num_masks: i32,
 }
 
-impl<'encoder, 'global: 'encoder> WgpuCommandHandler<'encoder, 'global> {
+impl<'a, 'f, 'c> WgpuCommandHandler<'a, 'f, 'c> {
     #[expect(clippy::too_many_arguments)]
     fn new(
-        descriptors: &'encoder Descriptors,
-        staging_belt: &'encoder mut wgpu::util::StagingBelt,
-        dynamic_transforms: &'encoder DynamicTransforms,
-        draw_encoder: &'encoder mut Scope<'global, wgpu::CommandEncoder>,
-        meshes: &'encoder Vec<Mesh>,
+        descriptors: &'a Descriptors,
+        frame: &'f mut DrawFrame<'c>,
+        dynamic_transforms: &'a DynamicTransforms,
+        meshes: &'a Vec<Mesh>,
         quality: StageQuality,
         width: u32,
         height: u32,
-        nearest_layer: LayerRef<'encoder>,
-        texture_pool: &'encoder mut TexturePool,
+        nearest_layer: LayerRef<'a>,
+        texture_pool: &'a mut TexturePool,
     ) -> Self {
         let transforms = Self::new_transforms(descriptors, dynamic_transforms);
         let vertices = Self::new_vertices(descriptors, dynamic_transforms);
@@ -577,9 +573,8 @@ impl<'encoder, 'global: 'encoder> WgpuCommandHandler<'encoder, 'global> {
             height,
             nearest_layer,
             meshes,
-            staging_belt,
+            frame,
             dynamic_transforms,
-            draw_encoder,
             texture_pool,
             emulate_lines,
 
@@ -593,8 +588,8 @@ impl<'encoder, 'global: 'encoder> WgpuCommandHandler<'encoder, 'global> {
     }
 
     fn new_transforms(
-        descriptors: &'encoder Descriptors,
-        dynamic_transforms: &'encoder DynamicTransforms,
+        descriptors: &'a Descriptors,
+        dynamic_transforms: &'a DynamicTransforms,
     ) -> BufferBuilder {
         let mut transforms = BufferBuilder::new_for_uniform(&descriptors.limits);
         transforms.set_buffer_limit(dynamic_transforms.buffer.size());
@@ -602,8 +597,8 @@ impl<'encoder, 'global: 'encoder> WgpuCommandHandler<'encoder, 'global> {
     }
 
     fn new_vertices(
-        descriptors: &'encoder Descriptors,
-        dynamic_transforms: &'encoder DynamicTransforms,
+        descriptors: &'a Descriptors,
+        dynamic_transforms: &'a DynamicTransforms,
     ) -> BufferBuilder {
         let mut vertices = BufferBuilder::new_for_vertices(&descriptors.limits);
         vertices.set_buffer_limit(dynamic_transforms.vertex_buffer.size());
@@ -710,7 +705,7 @@ impl<'encoder, 'global: 'encoder> WgpuCommandHandler<'encoder, 'global> {
     }
 }
 
-impl CommandHandler for WgpuCommandHandler<'_, '_> {
+impl<'a, 'f, 'c> CommandHandler for WgpuCommandHandler<'a, 'f, 'c> {
     fn blend(&mut self, commands: CommandList, blend_mode: RenderBlendMode) {
         let surface = Surface::new(
             self.descriptors,
@@ -731,13 +726,12 @@ impl CommandHandler for WgpuCommandHandler<'_, '_> {
             self.descriptors,
             self.meshes,
             commands,
-            self.staging_belt,
+            self.frame,
             self.dynamic_transforms,
-            self.draw_encoder,
             target_layer,
             self.texture_pool,
         );
-        target.ensure_cleared(self.draw_encoder);
+        target.ensure_cleared(self.descriptors, self.frame);
 
         // We currently do not support shader blends in masks. In order not to
         // break other parts of the scene, we just fall back to a normal blend.
@@ -971,13 +965,12 @@ impl CommandHandler for WgpuCommandHandler<'_, '_> {
             self.descriptors,
             self.meshes,
             maskee_commands,
-            self.staging_belt,
+            self.frame,
             self.dynamic_transforms,
-            self.draw_encoder,
             LayerRef::None,
             self.texture_pool,
         );
-        maskee.ensure_cleared(self.draw_encoder);
+        maskee.ensure_cleared(self.descriptors, self.frame);
         let matrix = Matrix::scale(maskee.width() as f32, maskee.height() as f32);
         let maskee = maskee.take_color_texture();
 
@@ -986,13 +979,12 @@ impl CommandHandler for WgpuCommandHandler<'_, '_> {
             self.descriptors,
             self.meshes,
             mask_commands,
-            self.staging_belt,
+            self.frame,
             self.dynamic_transforms,
-            self.draw_encoder,
             LayerRef::None,
             self.texture_pool,
         );
-        mask.ensure_cleared(self.draw_encoder);
+        mask.ensure_cleared(self.descriptors, self.frame);
         let mask = mask.take_color_texture();
 
         let binds = self

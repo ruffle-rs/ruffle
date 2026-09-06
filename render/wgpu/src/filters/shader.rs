@@ -4,7 +4,7 @@ use ruffle_render::{
 };
 
 use crate::{
-    backend::RenderTargetMode,
+    backend::{DrawFrame, RenderTargetMode},
     buffer_pool::TexturePool,
     descriptors::Descriptors,
     pixel_bender::{ShaderMode, run_pixelbender_shader_impl},
@@ -26,7 +26,7 @@ impl ShaderFilter {
         &self,
         descriptors: &Descriptors,
         texture_pool: &mut TexturePool,
-        draw_encoder: &mut wgpu::CommandEncoder,
+        frame: &mut DrawFrame<'_>,
         source: &FilterSource<'a>,
         mut filter: ShaderFilterArgs<'a>,
     ) -> CommandTarget {
@@ -44,7 +44,7 @@ impl ShaderFilter {
             format,
             sample_count,
             RenderTargetMode::FreshWithColor(wgpu::Color::TRANSPARENT),
-            draw_encoder,
+            frame,
         );
 
         for arg in &mut filter.shader_args {
@@ -61,7 +61,7 @@ impl ShaderFilter {
             ShaderMode::Filter,
             &filter.shader_args,
             target.color_texture(),
-            draw_encoder,
+            frame,
             target.color_attachments(),
             target.sample_count(),
             source,

@@ -1,4 +1,4 @@
-use crate::backend::RenderTargetMode;
+use crate::backend::{DrawFrame, RenderTargetMode};
 use crate::buffer_pool::TexturePool;
 use crate::descriptors::Descriptors;
 use crate::filters::blur::BlurFilter;
@@ -10,7 +10,6 @@ use crate::utils::SampleCountMap;
 use bytemuck::{Pod, Zeroable};
 use std::sync::OnceLock;
 use swf::GlowFilter as GlowFilterArgs;
-use wgpu::util::StagingBelt;
 
 #[repr(C)]
 #[derive(Copy, Clone, Debug, Pod, Zeroable, PartialEq)]
@@ -155,8 +154,7 @@ impl GlowFilter {
         &self,
         descriptors: &Descriptors,
         texture_pool: &mut TexturePool,
-        draw_encoder: &mut wgpu::CommandEncoder,
-        staging_belt: &mut StagingBelt,
+        frame: &mut DrawFrame<'_>,
         source: &FilterSource,
         filter: &GlowFilterArgs,
         blur_filter: &BlurFilter,
@@ -168,13 +166,12 @@ impl GlowFilter {
         let blurred = blur_filter.apply(
             descriptors,
             texture_pool,
-            draw_encoder,
-            staging_belt,
+            frame,
             source,
             &filter.inner_blur_filter(),
         );
         let blurred_texture = if let Some(blurred) = &blurred {
-            blurred.ensure_cleared(draw_encoder);
+            blurred.ensure_cleared(descriptors, frame);
             blurred.color_texture()
         } else {
             source.texture
@@ -193,27 +190,30 @@ impl GlowFilter {
             format,
             sample_count,
             RenderTargetMode::FreshWithColor(wgpu::Color::TRANSPARENT),
-            draw_encoder,
+            frame,
         );
-        staging_belt
-            .write_buffer(draw_encoder, &self.uniform_buffer, 0, self.uniform_size)
-            .copy_from_slice(bytemuck::cast_slice(&[GlowUniform {
-                color: [
-                    f32::from(filter.color.r) / 255.0,
-                    f32::from(filter.color.g) / 255.0,
-                    f32::from(filter.color.b) / 255.0,
-                    f32::from(filter.color.a) / 255.0,
-                ],
-                strength: filter.strength.to_f32(),
-                inner: if filter.is_inner() { 1 } else { 0 },
-                knockout: if filter.is_knockout() { 1 } else { 0 },
-                composite_source: if filter.composite_source() { 1 } else { 0 },
-            }]));
-        staging_belt
-            .write_buffer(draw_encoder, &self.vertex_buffer, 0, self.vertices_size)
-            .copy_from_slice(bytemuck::cast_slice(&[
-                source.vertices_with_blur_offset(blur_offset)
-            ]));
+        {
+            let (draw_encoder, staging_belt) = frame.encoder_and_belt();
+            staging_belt
+                .write_buffer(draw_encoder, &self.uniform_buffer, 0, self.uniform_size)
+                .copy_from_slice(bytemuck::cast_slice(&[GlowUniform {
+                    color: [
+                        f32::from(filter.color.r) / 255.0,
+                        f32::from(filter.color.g) / 255.0,
+                        f32::from(filter.color.b) / 255.0,
+                        f32::from(filter.color.a) / 255.0,
+                    ],
+                    strength: filter.strength.to_f32(),
+                    inner: if filter.is_inner() { 1 } else { 0 },
+                    knockout: if filter.is_knockout() { 1 } else { 0 },
+                    composite_source: if filter.composite_source() { 1 } else { 0 },
+                }]));
+            staging_belt
+                .write_buffer(draw_encoder, &self.vertex_buffer, 0, self.vertices_size)
+                .copy_from_slice(bytemuck::cast_slice(&[
+                    source.vertices_with_blur_offset(blur_offset)
+                ]));
+        }
         let filter_group = descriptors
             .device
             .create_bind_group(&wgpu::BindGroupDescriptor {
@@ -240,11 +240,14 @@ impl GlowFilter {
                     },
                 ],
             });
-        let mut render_pass = draw_encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-            label: create_debug_label!("Glow filter").as_deref(),
-            color_attachments: &[target.color_attachments()],
-            ..Default::default()
-        });
+        let mut render_pass = frame.raw_render_pass(
+            descriptors,
+            &wgpu::RenderPassDescriptor {
+                label: create_debug_label!("Glow filter").as_deref(),
+                color_attachments: &[target.color_attachments()],
+                ..Default::default()
+            },
+        );
         render_pass.set_pipeline(pipeline);
 
         render_pass.set_bind_group(0, &filter_group, &[]);

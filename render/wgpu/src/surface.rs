@@ -1,7 +1,7 @@
 mod commands;
 pub mod target;
 
-use crate::backend::RenderTargetMode;
+use crate::backend::{DrawFrame, RenderTargetMode};
 use crate::blend::ComplexBlend;
 use crate::buffer_pool::TexturePool;
 use crate::dynamic_transforms::DynamicTransforms;
@@ -18,7 +18,6 @@ use ruffle_render::quality::StageQuality;
 use std::sync::Arc;
 use target::CommandTarget;
 use tracing::instrument;
-use wgpu_profiler::Scope;
 
 pub use crate::surface::commands::LayerRef;
 
@@ -64,27 +63,25 @@ impl Surface {
 
     #[expect(clippy::too_many_arguments)]
     #[instrument(level = "debug", skip_all)]
-    pub fn draw_commands_and_copy_to<'encoder, 'global: 'encoder>(
+    pub fn draw_commands_and_copy_to<'a>(
         &self,
         frame_view: &wgpu::TextureView,
         render_target_mode: RenderTargetMode,
-        descriptors: &'global Descriptors,
-        staging_belt: &'global mut wgpu::util::StagingBelt,
-        dynamic_transforms: &'global DynamicTransforms,
-        draw_encoder: &'encoder mut Scope<'global, wgpu::CommandEncoder>,
-        meshes: &'global Vec<Mesh>,
+        descriptors: &'a Descriptors,
+        frame: &mut DrawFrame<'_>,
+        dynamic_transforms: &'a DynamicTransforms,
+        meshes: &'a Vec<Mesh>,
         commands: CommandList,
-        layer: LayerRef<'encoder>,
-        texture_pool: &'global mut TexturePool,
+        layer: LayerRef<'a>,
+        texture_pool: &'a mut TexturePool,
     ) {
         let target = self.draw_commands(
             render_target_mode,
             descriptors,
             meshes,
             commands,
-            staging_belt,
+            frame,
             dynamic_transforms,
-            draw_encoder,
             layer,
             texture_pool,
         );
@@ -97,23 +94,22 @@ impl Surface {
             target.whole_frame_bind_group(descriptors),
             target.globals(),
             1,
-            draw_encoder,
+            frame,
         );
     }
 
     #[expect(clippy::too_many_arguments)]
     #[instrument(level = "debug", skip_all)]
-    pub fn draw_commands<'encoder, 'global: 'encoder>(
+    pub fn draw_commands<'a>(
         &self,
         render_target_mode: RenderTargetMode,
-        descriptors: &'encoder Descriptors,
-        meshes: &'encoder Vec<Mesh>,
+        descriptors: &'a Descriptors,
+        meshes: &'a Vec<Mesh>,
         commands: CommandList,
-        staging_belt: &'encoder mut wgpu::util::StagingBelt,
-        dynamic_transforms: &'encoder DynamicTransforms,
-        draw_encoder: &'encoder mut Scope<'global, wgpu::CommandEncoder>,
-        nearest_layer: LayerRef<'encoder>,
-        texture_pool: &'encoder mut TexturePool,
+        frame: &mut DrawFrame<'_>,
+        dynamic_transforms: &'a DynamicTransforms,
+        nearest_layer: LayerRef<'a>,
+        texture_pool: &'a mut TexturePool,
     ) -> CommandTarget {
         let target = CommandTarget::new(
             descriptors,
@@ -122,7 +118,7 @@ impl Surface {
             self.format,
             self.sample_count,
             render_target_mode,
-            draw_encoder,
+            frame,
         );
 
         let mut num_masks = 0;
@@ -130,9 +126,8 @@ impl Surface {
         let chunks = chunk_blends(
             commands,
             descriptors,
-            staging_belt,
+            frame,
             dynamic_transforms,
-            draw_encoder,
             meshes,
             self.quality,
             target.width(),
@@ -152,13 +147,16 @@ impl Surface {
                     transforms,
                     vertices,
                 } => {
+                    let (draw_encoder, staging_belt) = frame.encoder_and_belt();
                     transforms.copy_to(staging_belt, draw_encoder, &dynamic_transforms.buffer);
                     vertices.copy_to(
                         staging_belt,
                         draw_encoder,
                         &dynamic_transforms.vertex_buffer,
                     );
-                    let mut render_pass = draw_encoder.scoped_render_pass(
+                    let mut scope =
+                        frame.render_pass_scope(descriptors, "Chunked draw calls".to_string());
+                    let mut render_pass = scope.scoped_render_pass(
                         format!(
                             "Chunked draw calls {}",
                             if needs_stencil {
@@ -201,7 +199,7 @@ impl Surface {
                 } => {
                     assert!(!needs_stencil, "Shader blend mode not implemented in masks");
                     let parent_blend_buffer =
-                        target.update_blend_buffer(descriptors, texture_pool, draw_encoder);
+                        target.update_blend_buffer(descriptors, texture_pool, frame);
                     run_pixelbender_shader_impl(
                         descriptors,
                         shader,
@@ -223,7 +221,7 @@ impl Surface {
                             },
                         ],
                         parent_blend_buffer.texture(),
-                        draw_encoder,
+                        frame,
                         target.color_attachments(),
                         target.sample_count(),
                         &FilterSource::for_entire_texture(texture.texture()),
@@ -250,7 +248,7 @@ impl Surface {
                     };
 
                     let parent_blend_buffer =
-                        parent.update_blend_buffer(descriptors, texture_pool, draw_encoder);
+                        parent.update_blend_buffer(descriptors, texture_pool, frame);
 
                     let blend_bind_group =
                         descriptors
@@ -289,8 +287,9 @@ impl Surface {
                                 ],
                             });
 
-                    let mut render_pass =
-                        draw_encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                    let mut render_pass = frame.raw_render_pass(
+                        descriptors,
+                        &wgpu::RenderPassDescriptor {
                             label: create_debug_label!(
                                 "Complex blend {:?} {}",
                                 blend_mode,
@@ -308,7 +307,8 @@ impl Surface {
                                 None
                             },
                             ..Default::default()
-                        });
+                        },
+                    );
                     render_pass.set_bind_group(0, target.globals().bind_group(), &[]);
 
                     if needs_stencil {
@@ -348,7 +348,7 @@ impl Surface {
         }
 
         // If nothing happened, ensure it's cleared so we don't operate on garbage data
-        target.ensure_cleared(draw_encoder);
+        target.ensure_cleared(descriptors, frame);
 
         target
     }

@@ -1,5 +1,5 @@
 use crate::Transforms;
-use crate::backend::RenderTargetMode;
+use crate::backend::{DrawFrame, RenderTargetMode};
 use crate::buffer_pool::{AlwaysCompatible, PoolEntry, TexturePool};
 use crate::descriptors::Descriptors;
 use crate::globals::Globals;
@@ -213,7 +213,7 @@ impl CommandTarget {
         format: wgpu::TextureFormat,
         sample_count: u32,
         render_target_mode: RenderTargetMode,
-        encoder: &mut wgpu::CommandEncoder,
+        frame: &mut DrawFrame<'_>,
     ) -> Self {
         let globals = pool.get_globals(descriptors, size.width, size.height);
 
@@ -270,7 +270,7 @@ impl CommandTarget {
 
         if let RenderTargetMode::FreshWithTexture(texture) = &render_target_mode {
             if let Some(resolve_buffer) = &resolve_buffer {
-                encoder.copy_texture_to_texture(
+                frame.copy_encoder().copy_texture_to_texture(
                     texture.as_image_copy(),
                     resolve_buffer.texture().as_image_copy(),
                     size,
@@ -290,10 +290,10 @@ impl CommandTarget {
                     get_whole_frame_bind_group(&whole_frame_bind_group, descriptors, size),
                     &globals,
                     sample_count,
-                    encoder,
+                    frame,
                 );
             } else {
-                encoder.copy_texture_to_texture(
+                frame.copy_encoder().copy_texture_to_texture(
                     texture.as_image_copy(),
                     frame_buffer.texture().as_image_copy(),
                     size,
@@ -324,18 +324,21 @@ impl CommandTarget {
         self.size.height
     }
 
-    pub fn ensure_cleared(&self, encoder: &mut wgpu::CommandEncoder) {
+    pub fn ensure_cleared(&self, descriptors: &Descriptors, frame: &mut DrawFrame<'_>) {
         if self.color_needs_clear.get().is_some() {
             return;
         }
         // If we aren't clearing with a color (eg a texture instead)
         // the there's no point in creating a new render pass that does nothing.
         if self.render_target_mode.color().is_some() {
-            encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-                label: create_debug_label!("Clearing command target").as_deref(),
-                color_attachments: &[self.color_attachments()],
-                ..Default::default()
-            });
+            frame.raw_render_pass(
+                descriptors,
+                &wgpu::RenderPassDescriptor {
+                    label: create_debug_label!("Clearing command target").as_deref(),
+                    color_attachments: &[self.color_attachments()],
+                    ..Default::default()
+                },
+            );
         }
     }
 
@@ -402,7 +405,7 @@ impl CommandTarget {
         &self,
         descriptors: &Descriptors,
         pool: &mut TexturePool,
-        encoder: &mut wgpu::CommandEncoder,
+        frame: &mut DrawFrame<'_>,
     ) -> &BlendBuffer {
         let blend_buffer = self.blend_buffer.get_or_init(|| {
             BlendBuffer::new(
@@ -415,8 +418,8 @@ impl CommandTarget {
                 pool,
             )
         });
-        self.ensure_cleared(encoder);
-        encoder.copy_texture_to_texture(
+        self.ensure_cleared(descriptors, frame);
+        frame.copy_encoder().copy_texture_to_texture(
             wgpu::TexelCopyTextureInfo {
                 texture: self
                     .resolve_buffer

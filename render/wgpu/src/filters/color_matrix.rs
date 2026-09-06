@@ -1,4 +1,4 @@
-use crate::backend::RenderTargetMode;
+use crate::backend::{DrawFrame, RenderTargetMode};
 use crate::buffer_pool::TexturePool;
 use crate::descriptors::Descriptors;
 use crate::filters::{FilterSource, FilterVertex, VERTEX_BUFFERS_DESCRIPTION_FILTERS};
@@ -6,7 +6,6 @@ use crate::surface::target::CommandTarget;
 use crate::utils::SampleCountMap;
 use std::sync::OnceLock;
 use swf::ColorMatrixFilter as ColorMatrixFilterArgs;
-use wgpu::util::StagingBelt;
 
 pub struct ColorMatrixFilter {
     bind_group_layout: wgpu::BindGroupLayout,
@@ -131,8 +130,7 @@ impl ColorMatrixFilter {
         &self,
         descriptors: &Descriptors,
         texture_pool: &mut TexturePool,
-        draw_encoder: &mut wgpu::CommandEncoder,
-        staging_belt: &mut StagingBelt,
+        frame: &mut DrawFrame<'_>,
         source: &FilterSource,
         filter: &ColorMatrixFilterArgs,
     ) -> CommandTarget {
@@ -151,15 +149,18 @@ impl ColorMatrixFilter {
             format,
             sample_count,
             RenderTargetMode::FreshWithColor(wgpu::Color::TRANSPARENT),
-            draw_encoder,
+            frame,
         );
         let source_view = source.texture.create_view(&Default::default());
-        staging_belt
-            .write_buffer(draw_encoder, &self.uniform_buffer, 0, self.uniform_size)
-            .copy_from_slice(bytemuck::cast_slice(&filter.matrix));
-        staging_belt
-            .write_buffer(draw_encoder, &self.vertex_buffer, 0, self.vertices_size)
-            .copy_from_slice(bytemuck::cast_slice(&[source.vertices()]));
+        {
+            let (draw_encoder, staging_belt) = frame.encoder_and_belt();
+            staging_belt
+                .write_buffer(draw_encoder, &self.uniform_buffer, 0, self.uniform_size)
+                .copy_from_slice(bytemuck::cast_slice(&filter.matrix));
+            staging_belt
+                .write_buffer(draw_encoder, &self.vertex_buffer, 0, self.vertices_size)
+                .copy_from_slice(bytemuck::cast_slice(&[source.vertices()]));
+        }
         let filter_group = descriptors
             .device
             .create_bind_group(&wgpu::BindGroupDescriptor {
@@ -182,11 +183,14 @@ impl ColorMatrixFilter {
                     },
                 ],
             });
-        let mut render_pass = draw_encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-            label: create_debug_label!("Color matrix filter").as_deref(),
-            color_attachments: &[target.color_attachments()],
-            ..Default::default()
-        });
+        let mut render_pass = frame.raw_render_pass(
+            descriptors,
+            &wgpu::RenderPassDescriptor {
+                label: create_debug_label!("Color matrix filter").as_deref(),
+                color_attachments: &[target.color_attachments()],
+                ..Default::default()
+            },
+        );
         render_pass.set_pipeline(pipeline);
 
         render_pass.set_bind_group(0, &filter_group, &[]);

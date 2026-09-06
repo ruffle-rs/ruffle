@@ -1,4 +1,4 @@
-use crate::backend::RenderTargetMode;
+use crate::backend::{DrawFrame, RenderTargetMode};
 use crate::buffer_pool::TexturePool;
 use crate::descriptors::Descriptors;
 use crate::filters::{FilterSource, FilterVertex, VERTEX_BUFFERS_DESCRIPTION_FILTERS};
@@ -7,8 +7,7 @@ use crate::utils::SampleCountMap;
 use bytemuck::{Pod, Zeroable};
 use std::sync::OnceLock;
 use swf::BlurFilter as BlurFilterArgs;
-use wgpu::util::StagingBelt;
-use wgpu::{BufferSlice, CommandEncoder, RenderPipeline, TextureView};
+use wgpu::{BufferSlice, RenderPipeline, TextureView};
 
 /// This is a 1:1 match of `struct Filter` in `blur.wgsl`. See that, and the usage below, for more info.
 /// Since WebGL requires 16 byte struct size (alignment), some of these fields (namely m2 and last_weight)
@@ -150,8 +149,7 @@ impl BlurFilter {
         &self,
         descriptors: &Descriptors,
         texture_pool: &mut TexturePool,
-        draw_encoder: &mut wgpu::CommandEncoder,
-        staging_belt: &mut StagingBelt,
+        frame: &mut DrawFrame<'_>,
         source: &FilterSource,
         filter: &BlurFilterArgs,
     ) -> Option<CommandTarget> {
@@ -170,7 +168,7 @@ impl BlurFilter {
             format,
             sample_count,
             RenderTargetMode::FreshWithColor(wgpu::Color::TRANSPARENT),
-            draw_encoder,
+            frame,
         );
         let mut flop = CommandTarget::new(
             descriptors,
@@ -183,12 +181,15 @@ impl BlurFilter {
             format,
             sample_count,
             RenderTargetMode::FreshWithColor(wgpu::Color::TRANSPARENT),
-            draw_encoder,
+            frame,
         );
 
-        staging_belt
-            .write_buffer(draw_encoder, &self.vertex_buffer, 0, self.vertices_size)
-            .copy_from_slice(bytemuck::cast_slice(&[source.vertices()]));
+        {
+            let (draw_encoder, staging_belt) = frame.encoder_and_belt();
+            staging_belt
+                .write_buffer(draw_encoder, &self.vertex_buffer, 0, self.vertices_size)
+                .copy_from_slice(bytemuck::cast_slice(&[source.vertices()]));
+        }
 
         let source_view = source.texture.create_view(&Default::default());
         let mut first = true;
@@ -263,13 +264,16 @@ impl BlurFilter {
                     last_offset,
                     last_weight,
                 };
-                staging_belt
-                    .write_buffer(draw_encoder, &self.uniform_buffer, 0, self.uniform_size)
-                    .copy_from_slice(bytemuck::cast_slice(&[uniform]));
+                {
+                    let (draw_encoder, staging_belt) = frame.encoder_and_belt();
+                    staging_belt
+                        .write_buffer(draw_encoder, &self.uniform_buffer, 0, self.uniform_size)
+                        .copy_from_slice(bytemuck::cast_slice(&[uniform]));
+                }
 
                 self.render_with_uniform_buffers(
                     descriptors,
-                    draw_encoder,
+                    frame,
                     pipeline,
                     &flop,
                     previous_view,
@@ -291,7 +295,7 @@ impl BlurFilter {
     fn render_with_uniform_buffers(
         &self,
         descriptors: &Descriptors,
-        draw_encoder: &mut CommandEncoder,
+        frame: &mut DrawFrame<'_>,
         pipeline: &RenderPipeline,
         destination: &CommandTarget,
         source: &TextureView,
@@ -320,11 +324,14 @@ impl BlurFilter {
                 ],
             });
 
-        let mut render_pass = draw_encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-            label: create_debug_label!("Blur filter").as_deref(),
-            color_attachments: &[destination.color_attachments()],
-            ..Default::default()
-        });
+        let mut render_pass = frame.raw_render_pass(
+            descriptors,
+            &wgpu::RenderPassDescriptor {
+                label: create_debug_label!("Blur filter").as_deref(),
+                color_attachments: &[destination.color_attachments()],
+                ..Default::default()
+            },
+        );
         render_pass.set_pipeline(pipeline);
 
         render_pass.set_bind_group(0, &filter_group, &[]);

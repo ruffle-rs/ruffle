@@ -9,6 +9,7 @@ mod shader;
 use std::collections::HashSet;
 use std::sync::{LazyLock, Mutex};
 
+use crate::backend::DrawFrame;
 use crate::buffer_pool::TexturePool;
 use crate::descriptors::Descriptors;
 use crate::filters::bevel::BevelFilter;
@@ -21,7 +22,6 @@ use crate::filters::shader::ShaderFilter;
 use crate::surface::target::CommandTarget;
 use bytemuck::{Pod, Zeroable};
 use ruffle_render::filters::Filter;
-use wgpu::util::StagingBelt;
 use wgpu::vertex_attr_array;
 
 #[derive(Debug)]
@@ -209,96 +209,87 @@ impl Filters {
     pub fn apply(
         &self,
         descriptors: &Descriptors,
-        draw_encoder: &mut wgpu::CommandEncoder,
+        frame: &mut DrawFrame<'_>,
         texture_pool: &mut TexturePool,
-        staging_belt: &mut StagingBelt,
         source: FilterSource,
         filter: Filter,
     ) -> CommandTarget {
-        let target = match filter {
-            Filter::ColorMatrixFilter(filter) => Some(descriptors.filters.color_matrix.apply(
-                descriptors,
-                texture_pool,
-                draw_encoder,
-                staging_belt,
-                &source,
-                &filter,
-            )),
-            Filter::BlurFilter(filter) => descriptors.filters.blur.apply(
-                descriptors,
-                texture_pool,
-                draw_encoder,
-                staging_belt,
-                &source,
-                &filter,
-            ),
-            Filter::ShaderFilter(shader) => Some(descriptors.filters.shader.apply(
-                descriptors,
-                texture_pool,
-                draw_encoder,
-                &source,
-                shader,
-            )),
-            Filter::GlowFilter(filter) => Some(descriptors.filters.glow.apply(
-                descriptors,
-                texture_pool,
-                draw_encoder,
-                staging_belt,
-                &source,
-                &filter,
-                &self.blur,
-                (0.0, 0.0),
-            )),
-            Filter::DropShadowFilter(filter) => Some(DropShadowFilter::apply(
-                descriptors,
-                texture_pool,
-                draw_encoder,
-                staging_belt,
-                &source,
-                &filter,
-                &self.blur,
-                &self.glow,
-            )),
-            Filter::BevelFilter(filter) => Some(descriptors.filters.bevel.apply(
-                descriptors,
-                texture_pool,
-                draw_encoder,
-                staging_belt,
-                &source,
-                &filter,
-                &self.blur,
-            )),
-            Filter::DisplacementMapFilter(filter) => descriptors.filters.displacement_map.apply(
-                descriptors,
-                texture_pool,
-                draw_encoder,
-                staging_belt,
-                &source,
-                &filter,
-            ),
-            filter => {
-                static WARNED_FILTERS: LazyLock<Mutex<HashSet<&'static str>>> =
-                    LazyLock::new(Default::default);
+        let target =
+            match filter {
+                Filter::ColorMatrixFilter(filter) => Some(descriptors.filters.color_matrix.apply(
+                    descriptors,
+                    texture_pool,
+                    frame,
+                    &source,
+                    &filter,
+                )),
+                Filter::BlurFilter(filter) => descriptors.filters.blur.apply(
+                    descriptors,
+                    texture_pool,
+                    frame,
+                    &source,
+                    &filter,
+                ),
+                Filter::ShaderFilter(shader) => Some(descriptors.filters.shader.apply(
+                    descriptors,
+                    texture_pool,
+                    frame,
+                    &source,
+                    shader,
+                )),
+                Filter::GlowFilter(filter) => Some(descriptors.filters.glow.apply(
+                    descriptors,
+                    texture_pool,
+                    frame,
+                    &source,
+                    &filter,
+                    &self.blur,
+                    (0.0, 0.0),
+                )),
+                Filter::DropShadowFilter(filter) => Some(DropShadowFilter::apply(
+                    descriptors,
+                    texture_pool,
+                    frame,
+                    &source,
+                    &filter,
+                    &self.blur,
+                    &self.glow,
+                )),
+                Filter::BevelFilter(filter) => Some(descriptors.filters.bevel.apply(
+                    descriptors,
+                    texture_pool,
+                    frame,
+                    &source,
+                    &filter,
+                    &self.blur,
+                )),
+                Filter::DisplacementMapFilter(filter) => descriptors
+                    .filters
+                    .displacement_map
+                    .apply(descriptors, texture_pool, frame, &source, &filter),
+                filter => {
+                    static WARNED_FILTERS: LazyLock<Mutex<HashSet<&'static str>>> =
+                        LazyLock::new(Default::default);
 
-                let name = match filter {
-                    Filter::GradientGlowFilter(_) => "GradientGlowFilter",
-                    Filter::GradientBevelFilter(_) => "GradientBevelFilter",
-                    Filter::ConvolutionFilter(_) => "ConvolutionFilter",
-                    Filter::ColorMatrixFilter(_)
-                    | Filter::BlurFilter(_)
-                    | Filter::GlowFilter(_)
-                    | Filter::DropShadowFilter(_)
-                    | Filter::BevelFilter(_)
-                    | Filter::DisplacementMapFilter(_)
-                    | Filter::ShaderFilter(_) => unreachable!(),
-                };
-                // Only warn once per filter type
-                if WARNED_FILTERS.lock().unwrap().insert(name) {
-                    tracing::warn!("Unsupported filter {filter:?}");
+                    let name = match filter {
+                        Filter::GradientGlowFilter(_) => "GradientGlowFilter",
+                        Filter::GradientBevelFilter(_) => "GradientBevelFilter",
+                        Filter::ConvolutionFilter(_) => "ConvolutionFilter",
+                        Filter::ColorMatrixFilter(_)
+                        | Filter::BlurFilter(_)
+                        | Filter::GlowFilter(_)
+                        | Filter::DropShadowFilter(_)
+                        | Filter::BevelFilter(_)
+                        | Filter::DisplacementMapFilter(_)
+                        | Filter::ShaderFilter(_) => unreachable!(),
+                    };
+                    // Only warn once per filter type
+                    if WARNED_FILTERS.lock().unwrap().insert(name) {
+                        tracing::warn!("Unsupported filter {filter:?}");
+                    }
+                    None
                 }
-                None
-            }
-        };
+            };
 
         let target = target.unwrap_or_else(|| {
             // Apply a default color matrix - it's essentially a blit
@@ -306,8 +297,7 @@ impl Filters {
             descriptors.filters.color_matrix.apply(
                 descriptors,
                 texture_pool,
-                draw_encoder,
-                staging_belt,
+                frame,
                 &source,
                 &Default::default(),
             )
@@ -316,7 +306,7 @@ impl Filters {
         // We're about to perform a copy, so make sure that we've applied
         // a clear (in case no other draw commands were issued, we still need
         // the background clear color applied)
-        target.ensure_cleared(draw_encoder);
+        target.ensure_cleared(descriptors, frame);
         target
     }
 }
