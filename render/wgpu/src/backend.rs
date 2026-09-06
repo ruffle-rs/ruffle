@@ -902,6 +902,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
         let copy_height = available_height.min(dest_available_height);
 
         if copy_width == 0 || copy_height == 0 {
+            self.active_frame.command_encoder = frame.finish();
             return None;
         }
 
