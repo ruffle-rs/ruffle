@@ -1257,7 +1257,7 @@ fn abstract_interpret_ops<'gc>(
                 if matches!(value.constant_value, Some(ConstantValue::Receiver)) && !sets_local_0 {
                     // If the value on the scope stack was the receiver, and
                     // local #0's value hasn't changed (i.e. local #0 is still
-                    // set to the reciever), we can optimize this op to a
+                    // set to the receiver), we can optimize this op to a
                     // `getlocal0`.
 
                     // NOTE: We also perform this optimization in the handling

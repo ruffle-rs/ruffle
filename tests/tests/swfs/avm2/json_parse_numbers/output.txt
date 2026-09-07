@@ -1,0 +1,131 @@
+{"t": 1782219299000} -> 1782219299000
+{"t": 2147483647} -> 2147483647
+{"t": 2147483648} -> 2147483648
+{"t": -2147483648} -> -2147483648
+{"t": -2147483649} -> -2147483649
+{"t": 0} -> 0
+{"t": -0} -> 0
+{"t": 4294967295} -> 4294967295
+{"t": 4294967296} -> 4294967296
+{"t": -1} -> -1
+{"t": 9007199254740991} -> 9007199254740991
+{"t": 9007199254740992} -> 9007199254740992
+{"t": 9007199254740993} -> 9007199254740992
+{"t": -9007199254740991} -> -9007199254740991
+{"t": -9007199254740992} -> -9007199254740992
+{"t": -9007199254740993} -> -9007199254740992
+{"t": 1.7976931348623157e308} -> Infinity
+{"t": 1.7976931348623159e308} -> Infinity
+{"t": 5e-324} -> 4.9406564584124654e-324
+{"t": 1e-400} -> 0
+{"t": 9223372036854775807} -> 9223372036854776000
+{"t": 9223372036854775808} -> 9223372036854776000
+{"t": 18446744073709551615} -> 18446744073709552000
+{"t": 18446744073709551616} -> 18446744073709552000
+{"t": -9223372036854775808} -> -9223372036854776000
+{"t": -9223372036854775809} -> -9223372036854776000
+{"t": 1.0} -> 1
+{"t": 2147483647.0} -> 2147483647
+{"t": 100.00} -> 100
+{"t": 1e21} -> 1e+21
+{"t": 1e2} -> 100
+{"t": 0.1} -> 0.1
+{"t": 1.5} -> 1.5
+{"t": 16777216} -> 16777216
+{"t": 16777217} -> 16777217
+{"t": 3.4028235e38} -> 3.4028235e+38
+{"t": 3.4028236e38} -> 3.4028236e+38
+{"t": 1.1754944e-38} -> 1.1754943999999998e-38
+{"t": 1.401298464324817e-45} -> 1.401298464324817e-45
+{"t": 123456789.123456789} -> 123456789.12345679
+{"t": 1E5} -> 100000
+{"t": 1e+5} -> 100000
+{"t": 1e-5} -> 0.00001
+{"t": 1e05} -> 100000
+{"t": 1.5E+2} -> 150
+{"t": 2e0} -> 2
+{"t": 0e10} -> 0
+{"t": -1e5} -> -100000
+{"t": -0e0} -> 0
+{"t": -5000000000} -> -5000000000
+{"t": 01} -> 1
+{"t": 007} -> 7
+{"t": 010} -> 10
+{"t": +5} -> threw SyntaxError: Error #1132: Invalid JSON parse input.
+	at JSON$/parseCore()
+	at JSON$/parse()
+	at Test()
+{"t": +5.5} -> threw SyntaxError: Error #1132: Invalid JSON parse input.
+	at JSON$/parseCore()
+	at JSON$/parse()
+	at Test()
+{"t": .5} -> threw SyntaxError: Error #1132: Invalid JSON parse input.
+	at JSON$/parseCore()
+	at JSON$/parse()
+	at Test()
+{"t": -.5} -> threw SyntaxError: Error #1132: Invalid JSON parse input.
+	at JSON$/parseCore()
+	at JSON$/parse()
+	at Test()
+{"t": 5.} -> threw SyntaxError: Error #1132: Invalid JSON parse input.
+	at JSON$/parseCore()
+	at JSON$/parse()
+	at Test()
+{"t": -5.} -> threw SyntaxError: Error #1132: Invalid JSON parse input.
+	at JSON$/parseCore()
+	at JSON$/parse()
+	at Test()
+{"t": 5e} -> threw SyntaxError: Error #1132: Invalid JSON parse input.
+	at JSON$/parseCore()
+	at JSON$/parse()
+	at Test()
+{"t": 5e+} -> threw SyntaxError: Error #1132: Invalid JSON parse input.
+	at JSON$/parseCore()
+	at JSON$/parse()
+	at Test()
+{"t": 5e-} -> threw SyntaxError: Error #1132: Invalid JSON parse input.
+	at JSON$/parseCore()
+	at JSON$/parse()
+	at Test()
+{"t": 0x1F} -> threw SyntaxError: Error #1132: Invalid JSON parse input.
+	at JSON$/parseCore()
+	at JSON$/parse()
+	at Test()
+{"t": 0o17} -> threw SyntaxError: Error #1132: Invalid JSON parse input.
+	at JSON$/parseCore()
+	at JSON$/parse()
+	at Test()
+{"t": 0b101} -> threw SyntaxError: Error #1132: Invalid JSON parse input.
+	at JSON$/parseCore()
+	at JSON$/parse()
+	at Test()
+{"t": 1_000_000} -> threw SyntaxError: Error #1132: Invalid JSON parse input.
+	at JSON$/parseCore()
+	at JSON$/parse()
+	at Test()
+{"t": Infinity} -> threw SyntaxError: Error #1132: Invalid JSON parse input.
+	at JSON$/parseCore()
+	at JSON$/parse()
+	at Test()
+{"t": -Infinity} -> threw SyntaxError: Error #1132: Invalid JSON parse input.
+	at JSON$/parseCore()
+	at JSON$/parse()
+	at Test()
+{"t": NaN} -> threw SyntaxError: Error #1132: Invalid JSON parse input.
+	at JSON$/parseCore()
+	at JSON$/parse()
+	at Test()
+{"t": 111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111} -> 1.11111111111111e+275
+{"t": 1.111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111} -> 1.1111111111111105
+{"t": ５} -> threw SyntaxError: Error #1132: Invalid JSON parse input.
+	at JSON$/parseCore()
+	at JSON$/parse()
+	at Test()
+{"t": 1 . 5} -> threw SyntaxError: Error #1132: Invalid JSON parse input.
+	at JSON$/parseCore()
+	at JSON$/parse()
+	at Test()
+{"t": 1e 5} -> threw SyntaxError: Error #1132: Invalid JSON parse input.
+	at JSON$/parseCore()
+	at JSON$/parse()
+	at Test()

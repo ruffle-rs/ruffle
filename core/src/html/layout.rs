@@ -383,7 +383,7 @@ impl<'a, 'gc> LayoutBuilder<'a, 'gc> {
             return;
         }
 
-        let boxes = mem::take(&mut self.boxes);
+        let mut boxes = mem::take(&mut self.boxes);
         let first_box = boxes.first().unwrap();
         let start = first_box.start();
         let bounds = boxes
@@ -396,6 +396,10 @@ impl<'a, 'gc> LayoutBuilder<'a, 'gc> {
         // will not be needed, and the end position will be calculated correctly.
         if let Some(last_line) = self.lines.last_mut() {
             last_line.end = start;
+        }
+
+        if let Some(last_box) = boxes.last_mut() {
+            last_box.last_in_line = true;
         }
 
         self.lines.push(LayoutLine {
@@ -1085,6 +1089,8 @@ pub struct LayoutBox<'gc> {
 
     /// What content is contained by the content box.
     content: LayoutContent<'gc>,
+
+    last_in_line: bool,
 }
 
 /// Represents different content modes of a given `LayoutBox`.
@@ -1217,6 +1223,7 @@ impl<'gc> LayoutBox<'gc> {
                 char_end_pos,
                 underline: span.style.underline,
             },
+            last_in_line: false,
         }
     }
 
@@ -1232,6 +1239,7 @@ impl<'gc> LayoutBox<'gc> {
                 font_set,
                 params,
             },
+            last_in_line: false,
         }
     }
 
@@ -1244,6 +1252,7 @@ impl<'gc> LayoutBox<'gc> {
         Self {
             bounds: Default::default(),
             content: LayoutContent::Drawing { position, drawing },
+            last_in_line: false,
         }
     }
 
@@ -1314,6 +1323,10 @@ impl<'gc> LayoutBox<'gc> {
 
     pub fn is_bullet(&self) -> bool {
         matches!(&self.content, LayoutContent::Bullet { .. })
+    }
+
+    pub fn is_last_in_line(&self) -> bool {
+        self.last_in_line
     }
 
     pub fn start(&self) -> usize {

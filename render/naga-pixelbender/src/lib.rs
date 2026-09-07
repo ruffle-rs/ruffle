@@ -69,7 +69,7 @@ pub struct ShaderBuilder<'a> {
     // update the components specified in the destination write mask
     float_registers: Vec<Option<Handle<Expression>>>,
 
-    /// Like float_registesr but with vec4i
+    /// Like float_registers but with vec4i
     int_registers: Vec<Option<Handle<Expression>>>,
 
     // A stack of if/else blocks, using to push statements
