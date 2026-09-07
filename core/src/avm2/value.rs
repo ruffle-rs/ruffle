@@ -151,23 +151,6 @@ impl From<u32> for Value<'_> {
     }
 }
 
-impl PartialEq for Value<'_> {
-    fn eq(&self, other: &Self) -> bool {
-        match (self, other) {
-            (Value::Undefined, Value::Undefined) => true,
-            (Value::Null, Value::Null) => true,
-            (Value::Bool(a), Value::Bool(b)) => a == b,
-            (Value::Number(a), Value::Number(b)) => a == b,
-            (Value::Number(a), Value::Integer(b)) => *a == *b as f64,
-            (Value::Integer(a), Value::Number(b)) => *a as f64 == *b,
-            (Value::Integer(a), Value::Integer(b)) => a == b,
-            (Value::String(a), Value::String(b)) => a == b,
-            (Value::Object(a), Value::Object(b)) => Object::ptr_eq(*a, *b),
-            _ => false,
-        }
-    }
-}
-
 fn fits_in_value_integer_i32(value: i32) -> bool {
     value < (1 << 28) && value >= -(1 << 28)
 }
@@ -1792,16 +1775,28 @@ impl<'gc> Value<'gc> {
 
     /// Implements the strict-equality `===` check for AVM2.
     pub fn strict_eq(&self, other: &Value<'gc>) -> bool {
-        if self == other {
-            true
-        } else {
-            // TODO - this should apply to (Array/Vector).indexOf, and possibility more places as well
-            if let Some(xml1) = self.as_object().and_then(|obj| obj.as_xml_object())
-                && let Some(xml2) = other.as_object().and_then(|obj| obj.as_xml_object())
-            {
-                return E4XNode::ptr_eq(xml1.node(), xml2.node());
+        match (self, other) {
+            (Value::Undefined, Value::Undefined) => true,
+            (Value::Null, Value::Null) => true,
+            (Value::Bool(a), Value::Bool(b)) => a == b,
+            (Value::Number(a), Value::Number(b)) => a == b,
+            (Value::Number(a), Value::Integer(b)) => *a == *b as f64,
+            (Value::Integer(a), Value::Number(b)) => *a as f64 == *b,
+            (Value::Integer(a), Value::Integer(b)) => a == b,
+            (Value::String(a), Value::String(b)) => a == b,
+            (Value::Object(a), Value::Object(b)) => {
+                let self_xml = self.as_object().and_then(|obj| obj.as_xml_object());
+                let other_xml = other.as_object().and_then(|obj| obj.as_xml_object());
+
+                // Two `XML` objects are considered equal if they point to the
+                // same node.
+                if let (Some(self_xml), Some(other_xml)) = (self_xml, other_xml) {
+                    E4XNode::ptr_eq(self_xml.node(), other_xml.node())
+                } else {
+                    Object::ptr_eq(*a, *b)
+                }
             }
-            false
+            _ => false,
         }
     }
 

@@ -208,7 +208,7 @@ pub fn init<'gc>(
     let this = this.as_date_object().unwrap();
 
     let timestamp = args.get_optional(0).unwrap_or(Value::Undefined);
-    if timestamp != Value::Undefined {
+    if !matches!(timestamp, Value::Undefined) {
         if args.len() > 1 {
             let timezone = activation.context.locale.get_timezone();
 
