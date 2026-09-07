@@ -272,8 +272,8 @@ impl<'gc> AvmSerializer<'gc> {
     }
 }
 
-/// Implements `JSON.parse`.
-pub fn parse<'gc>(
+/// Implements `JSON.parseCore`.
+pub fn parse_core<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Value<'gc>,
     args: FunctionArgs<'_, 'gc>,
