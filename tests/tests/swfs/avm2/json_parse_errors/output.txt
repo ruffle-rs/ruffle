@@ -1,0 +1,84 @@
+null -> threw SyntaxError: Error #1132: Invalid JSON parse input.
+	at Error$/throwError()
+	at JSON$/parse()
+	at Test()
+undefined -> threw SyntaxError: Error #1132: Invalid JSON parse input.
+	at Error$/throwError()
+	at JSON$/parse()
+	at Test()
+ -> threw SyntaxError: Error #1132: Invalid JSON parse input.
+	at JSON$/parseCore()
+	at JSON$/parse()
+	at Test()
+  -> threw SyntaxError: Error #1132: Invalid JSON parse input.
+	at JSON$/parseCore()
+	at JSON$/parse()
+	at Test()
+? -> threw SyntaxError: Error #1132: Invalid JSON parse input.
+	at JSON$/parseCore()
+	at JSON$/parse()
+	at Test()
+- -> threw SyntaxError: Error #1132: Invalid JSON parse input.
+	at JSON$/parseCore()
+	at JSON$/parse()
+	at Test()
+= -> threw SyntaxError: Error #1132: Invalid JSON parse input.
+	at JSON$/parseCore()
+	at JSON$/parse()
+	at Test()
++ -> threw SyntaxError: Error #1132: Invalid JSON parse input.
+	at JSON$/parseCore()
+	at JSON$/parse()
+	at Test()
+x -> threw SyntaxError: Error #1132: Invalid JSON parse input.
+	at JSON$/parseCore()
+	at JSON$/parse()
+	at Test()
+{} -> [object Object]
+{ -> threw SyntaxError: Error #1132: Invalid JSON parse input.
+	at JSON$/parseCore()
+	at JSON$/parse()
+	at Test()
+} -> threw SyntaxError: Error #1132: Invalid JSON parse input.
+	at JSON$/parseCore()
+	at JSON$/parse()
+	at Test()
+{}} -> threw SyntaxError: Error #1132: Invalid JSON parse input.
+	at JSON$/parseCore()
+	at JSON$/parse()
+	at Test()
+{}{} -> threw SyntaxError: Error #1132: Invalid JSON parse input.
+	at JSON$/parseCore()
+	at JSON$/parse()
+	at Test()
+null -> null
+{null} -> threw SyntaxError: Error #1132: Invalid JSON parse input.
+	at JSON$/parseCore()
+	at JSON$/parse()
+	at Test()
+[] -> 
+[ -> threw SyntaxError: Error #1132: Invalid JSON parse input.
+	at JSON$/parseCore()
+	at JSON$/parse()
+	at Test()
+] -> threw SyntaxError: Error #1132: Invalid JSON parse input.
+	at JSON$/parseCore()
+	at JSON$/parse()
+	at Test()
+[]] -> threw SyntaxError: Error #1132: Invalid JSON parse input.
+	at JSON$/parseCore()
+	at JSON$/parse()
+	at Test()
+[null] -> 
+undefined -> threw SyntaxError: Error #1132: Invalid JSON parse input.
+	at JSON$/parseCore()
+	at JSON$/parse()
+	at Test()
+Null -> threw SyntaxError: Error #1132: Invalid JSON parse input.
+	at JSON$/parseCore()
+	at JSON$/parse()
+	at Test()
+NULL -> threw SyntaxError: Error #1132: Invalid JSON parse input.
+	at JSON$/parseCore()
+	at JSON$/parse()
+	at Test()
