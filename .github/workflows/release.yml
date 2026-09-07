@@ -128,6 +128,11 @@ jobs:
             os: ubuntu-24.04
             DESKTOP_FEATURES: jpegxr,fontconfig-dlopen
 
+          - build_name: linux-x86_32
+            os: ubuntu-24.04
+            target: i686-unknown-linux-gnu
+            DESKTOP_FEATURES: jpegxr,fontconfig-dlopen
+
           - build_name: linux-aarch64
             os: ubuntu-24.04-arm
             DESKTOP_FEATURES: jpegxr,fontconfig-dlopen
@@ -176,11 +181,20 @@ jobs:
           toolchain: stable
           targets: ${{ matrix.target }}
 
-      - name: Install Linux dependencies
-        if: runner.os == 'Linux'
+      - name: Install Linux x64 dependencies
+        if: runner.os == 'Linux' && matrix.target == ''
         run: |
           sudo apt-get update
           sudo apt install -y ${{ env.LINUX_DEPENDENCIES }}
+
+      - name: Install Linux i386 dependencies
+        if: matrix.target == 'i686-unknown-linux-gnu'
+        run: |
+          sudo dpkg --add-architecture i386
+          sudo apt-get update
+          sudo apt install -y gcc-multilib $(for p in ${{ env.LINUX_DEPENDENCIES }}; do echo "$p:i386"; done)
+          echo "PKG_CONFIG_ALLOW_CROSS=1" | tee -a $GITHUB_ENV
+          echo "PKG_CONFIG_LIBDIR=/usr/lib/i386-linux-gnu/pkgconfig" | tee -a $GITHUB_ENV
 
       - name: Install WiX
         if: runner.os == 'Windows'
