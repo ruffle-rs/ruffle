@@ -720,11 +720,6 @@ fn get_color_bounds_rect<'gc>(
     let BitmapDataResult::Valid(bitmap_data) = get_bitmap_data(this) else {
         return Ok((-1).into());
     };
-    let Some(rectangle_class) =
-        activation.resolve_class([istr!("flash"), istr!("geom"), istr!("Rectangle")])
-    else {
-        return Ok((-1).into());
-    };
 
     let mask = args.get_u32(activation, 0)?;
     let color = args.get_u32(activation, 1)?;
@@ -739,6 +734,12 @@ fn get_color_bounds_rect<'gc>(
         mask,
         color,
     );
+
+    let Some(rectangle_class) =
+        activation.resolve_class([istr!("flash"), istr!("geom"), istr!("Rectangle")])
+    else {
+        return Ok((-1).into());
+    };
 
     rectangle_class.construct(activation, &[x.into(), y.into(), w.into(), h.into()])
 }
