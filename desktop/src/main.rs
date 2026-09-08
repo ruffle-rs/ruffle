@@ -24,8 +24,8 @@ mod windows;
 use crate::preferences::GlobalPreferences;
 use anyhow::{Context, Error};
 use app::App;
-use clap::Parser;
-use cli::Opt;
+use clap::{CommandFactory, Parser};
+use cli::{Commands, Opt};
 use rfd::MessageDialogResult;
 use ruffle_core::StaticCallstack;
 use std::cell::RefCell;
@@ -150,6 +150,13 @@ fn main() -> Result<(), Error> {
     let _console = windows::Console::attach();
 
     let opt = Opt::parse();
+
+    if let Some(Commands::Completions { shell }) = opt.command {
+        let mut cmd = Opt::command();
+        clap_complete::generate(shell, &mut cmd, "ruffle", &mut std::io::stdout());
+        return Ok(());
+    }
+
     let preferences = GlobalPreferences::load(opt)?;
 
     let logs_path = &preferences.cli.cache_directory.join("log");

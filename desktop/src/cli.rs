@@ -1,7 +1,8 @@
 use crate::RUFFLE_VERSION;
 use crate::preferences::storage::StorageBackend;
 use anyhow::{Error, anyhow};
-use clap::{Parser, ValueEnum};
+use clap::{Parser, Subcommand, ValueEnum};
+use clap_complete::Shell;
 use ruffle_core::backend::navigator::SocketMode;
 use ruffle_core::config::Letterbox;
 use ruffle_core::events::{GamepadButton, KeyCode};
@@ -37,8 +38,12 @@ fn get_default_cache_directory() -> std::path::PathBuf {
     name = "Ruffle",
     author,
     version = RUFFLE_VERSION,
+    subcommand_negates_reqs = true
 )]
 pub struct Opt {
+    #[clap(subcommand)]
+    pub command: Option<Commands>,
+
     /// Path or URL of a Flash movie (SWF) to play.
     #[clap(name = "FILE", value_parser(parse_movie_file_or_url))]
     pub movie_url: Option<Url>,
@@ -500,4 +505,14 @@ pub enum FilesystemAccessMode {
 
     /// Ask the user before accessing the filesystem non-interactively.
     Ask,
+}
+
+#[derive(Debug, Clone, Subcommand)]
+pub enum Commands {
+    /// Generate shell completions for the specified shell
+    Completions {
+        /// Shell to generate completions for
+        #[arg(value_enum)]
+        shell: Shell,
+    },
 }

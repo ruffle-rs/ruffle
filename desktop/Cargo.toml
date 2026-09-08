@@ -12,6 +12,7 @@ workspace = true
 
 [dependencies]
 clap = { workspace = true }
+clap_complete = { workspace = true }
 cpal = { workspace = true }
 egui = { workspace = true }
 egui_extras = { workspace = true, default-features = false, features = ["image"] }
