@@ -235,7 +235,7 @@ checksum = "175571dd1d178ced59193a6fc02dde1b972eb0bc56c892cde9beeceac5bf0f6b"
 
 [[package]]
 name = "asc"
-version = "0.6.0"
+version = "0.7.0-nightly.2026.9.8"
 dependencies = [
  "anyhow",
 ]
@@ -449,7 +449,7 @@ dependencies = [
 
 [[package]]
 name = "build_playerglobal"
-version = "0.6.0"
+version = "0.7.0-nightly.2026.9.8"
 dependencies = [
  "asc",
  "clap",
@@ -1660,7 +1660,7 @@ dependencies = [
 
 [[package]]
 name = "exporter"
-version = "0.6.0"
+version = "0.7.0-nightly.2026.9.8"
 dependencies = [
  "anyhow",
  "clap",
@@ -1675,7 +1675,7 @@ dependencies = [
 
 [[package]]
 name = "exporter_integration_tests"
-version = "0.6.0"
+version = "0.7.0-nightly.2026.9.8"
 dependencies = [
  "anyhow",
  "clap",
@@ -1845,7 +1845,7 @@ dependencies = [
 
 [[package]]
 name = "flv-rs"
-version = "0.6.0"
+version = "0.7.0-nightly.2026.9.8"
 dependencies = [
  "bitflags 2.13.1",
  "thiserror 2.0.18",
@@ -3276,7 +3276,7 @@ dependencies = [
 
 [[package]]
 name = "mocket"
-version = "0.6.0"
+version = "0.7.0-nightly.2026.9.8"
 dependencies = [
  "anyhow",
  "clap",
@@ -3323,7 +3323,7 @@ dependencies = [
 
 [[package]]
 name = "naga-agal"
-version = "0.6.0"
+version = "0.7.0-nightly.2026.9.8"
 dependencies = [
  "bitflags 2.13.1",
  "insta",
@@ -3334,7 +3334,7 @@ dependencies = [
 
 [[package]]
 name = "naga-pixelbender"
-version = "0.6.0"
+version = "0.7.0-nightly.2026.9.8"
 dependencies = [
  "anyhow",
  "naga",
@@ -4195,7 +4195,7 @@ checksum = "a89322df9ebe1c1578d689c92318e070967d1042b512afbe49518723f4e6d5cd"
 
 [[package]]
 name = "pixel_bender"
-version = "0.6.0"
+version = "0.7.0-nightly.2026.9.8"
 dependencies = [
  "byteorder",
  "num-derive",
@@ -4208,7 +4208,7 @@ dependencies = [
 
 [[package]]
 name = "pixel_bender_assembly_tests"
-version = "0.6.0"
+version = "0.7.0-nightly.2026.9.8"
 dependencies = [
  "anyhow",
  "clap",
@@ -4809,7 +4809,7 @@ dependencies = [
 
 [[package]]
 name = "ruffle_common"
-version = "0.6.0"
+version = "0.7.0-nightly.2026.9.8"
 dependencies = [
  "fnv",
  "gc-arena",
@@ -4826,7 +4826,7 @@ dependencies = [
 
 [[package]]
 name = "ruffle_core"
-version = "0.6.0"
+version = "0.7.0-nightly.2026.9.8"
 dependencies = [
  "async-channel",
  "bitflags 2.13.1",
@@ -4895,7 +4895,7 @@ dependencies = [
 
 [[package]]
 name = "ruffle_desktop"
-version = "0.6.0"
+version = "0.7.0-nightly.2026.9.8"
 dependencies = [
  "anyhow",
  "ashpd",
@@ -4949,7 +4949,7 @@ dependencies = [
 
 [[package]]
 name = "ruffle_frontend_utils"
-version = "0.6.0"
+version = "0.7.0-nightly.2026.9.8"
 dependencies = [
  "async-channel",
  "async-io",
@@ -4973,7 +4973,7 @@ dependencies = [
 
 [[package]]
 name = "ruffle_fs_tests_runner"
-version = "0.6.0"
+version = "0.7.0-nightly.2026.9.8"
 dependencies = [
  "anyhow",
  "libtest-mimic",
@@ -4984,7 +4984,7 @@ dependencies = [
 
 [[package]]
 name = "ruffle_fuzzer"
-version = "0.6.0"
+version = "0.7.0-nightly.2026.9.8"
 dependencies = [
  "anyhow",
  "clap",
@@ -4995,7 +4995,7 @@ dependencies = [
 
 [[package]]
 name = "ruffle_input_format"
-version = "0.6.0"
+version = "0.7.0-nightly.2026.9.8"
 dependencies = [
  "bitflags 2.13.1",
  "serde",
@@ -5004,7 +5004,7 @@ dependencies = [
 
 [[package]]
 name = "ruffle_macros"
-version = "0.6.0"
+version = "0.7.0-nightly.2026.9.8"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -5013,7 +5013,7 @@ dependencies = [
 
 [[package]]
 name = "ruffle_render"
-version = "0.6.0"
+version = "0.7.0-nightly.2026.9.8"
 dependencies = [
  "approx",
  "byteorder",
@@ -5047,7 +5047,7 @@ dependencies = [
 
 [[package]]
 name = "ruffle_render_canvas"
-version = "0.6.0"
+version = "0.7.0-nightly.2026.9.8"
 dependencies = [
  "js-sys",
  "log",
@@ -5060,7 +5060,7 @@ dependencies = [
 
 [[package]]
 name = "ruffle_render_webgl"
-version = "0.6.0"
+version = "0.7.0-nightly.2026.9.8"
 dependencies = [
  "bytemuck",
  "js-sys",
@@ -5075,7 +5075,7 @@ dependencies = [
 
 [[package]]
 name = "ruffle_render_wgpu"
-version = "0.6.0"
+version = "0.7.0-nightly.2026.9.8"
 dependencies = [
  "bytemuck",
  "clap",
@@ -5100,7 +5100,7 @@ dependencies = [
 
 [[package]]
 name = "ruffle_scanner"
-version = "0.6.0"
+version = "0.7.0-nightly.2026.9.8"
 dependencies = [
  "clap",
  "crossbeam-channel",
@@ -5118,7 +5118,7 @@ dependencies = [
 
 [[package]]
 name = "ruffle_socket_format"
-version = "0.6.0"
+version = "0.7.0-nightly.2026.9.8"
 dependencies = [
  "serde",
  "serde_json",
@@ -5126,7 +5126,7 @@ dependencies = [
 
 [[package]]
 name = "ruffle_test_framework"
-version = "0.6.0"
+version = "0.7.0-nightly.2026.9.8"
 dependencies = [
  "anyhow",
  "approx",
@@ -5158,7 +5158,7 @@ dependencies = [
 
 [[package]]
 name = "ruffle_video"
-version = "0.6.0"
+version = "0.7.0-nightly.2026.9.8"
 dependencies = [
  "ruffle_render",
  "slotmap",
@@ -5168,7 +5168,7 @@ dependencies = [
 
 [[package]]
 name = "ruffle_video_external"
-version = "0.6.0"
+version = "0.7.0-nightly.2026.9.8"
 dependencies = [
  "bzip2",
  "hex",
@@ -5192,7 +5192,7 @@ dependencies = [
 
 [[package]]
 name = "ruffle_video_software"
-version = "0.6.0"
+version = "0.7.0-nightly.2026.9.8"
 dependencies = [
  "flate2",
  "h263-rs",
@@ -5210,7 +5210,7 @@ dependencies = [
 
 [[package]]
 name = "ruffle_web"
-version = "0.6.0"
+version = "0.7.0-nightly.2026.9.8"
 dependencies = [
  "async-channel",
  "base64",
@@ -5247,7 +5247,7 @@ dependencies = [
 
 [[package]]
 name = "ruffle_web_common"
-version = "0.6.0"
+version = "0.7.0-nightly.2026.9.8"
 dependencies = [
  "tracing",
  "wasm-bindgen",
@@ -5255,14 +5255,14 @@ dependencies = [
 
 [[package]]
 name = "ruffle_web_safari"
-version = "0.6.0"
+version = "0.7.0-nightly.2026.9.8"
 dependencies = [
  "objc2 0.6.4",
 ]
 
 [[package]]
 name = "ruffle_wstr"
-version = "0.6.0"
+version = "0.7.0-nightly.2026.9.8"
 
 [[package]]
 name = "rustc-demangle"
@@ -5771,7 +5771,7 @@ checksum = "7da8b5736845d9f2fcb837ea5d9e2628564b3b043a70948a3f0b778838c5fb4f"
 
 [[package]]
 name = "stub-report"
-version = "0.6.0"
+version = "0.7.0-nightly.2026.9.8"
 dependencies = [
  "anyhow",
  "clap",
@@ -5999,7 +5999,7 @@ dependencies = [
 
 [[package]]
 name = "tests"
-version = "0.6.0"
+version = "0.7.0-nightly.2026.9.8"
 dependencies = [
  "anyhow",
  "clap",
