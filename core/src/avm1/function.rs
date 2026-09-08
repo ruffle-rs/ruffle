@@ -702,8 +702,8 @@ impl<'gc> FunctionObject<'gc> {
         callee: Object<'gc>,
         args: &[Value<'gc>],
     ) -> Result<Value<'gc>, Error<'gc>> {
-        let prototype = callee.get(istr!("prototype"), activation)?;
-        let this = Object::new(activation.strings(), Some(prototype));
+        let prototype = callee.prototype(activation);
+        let this = Object::new(activation.strings(), prototype);
 
         Self::define_constructor_props(activation, this, callee.into());
 
