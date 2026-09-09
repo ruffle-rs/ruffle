@@ -14,6 +14,7 @@ class Test {
   static var A_POINT = new flash.geom.Point(5, -5);
   static var A_RECTANGLE = new flash.geom.Rectangle(-10, -20, 20, 40);
   static var ANOTHER_RECTANGLE = new flash.geom.Rectangle(5, 10, 50, 50);
+  static var A_MATRIX = new flash.geom.Matrix(1, 2, 3, 4, 5, 6);
 
   static var A_BLUR_FILTER = new flash.filters.BevelFilter(5, 45);
   static var A_BEVEL_FILTER = new flash.filters.BlurFilter(10, 10, 2);
@@ -31,6 +32,8 @@ class Test {
 
 
   static function main(current) {
+    var A_TRANSFORM = new flash.geom.Transform(current);
+
     var v;
 
     trace("### Testing weird prototypes...");
@@ -84,6 +87,7 @@ class Test {
     monkeyPatchClass(_global.flash.filters, "GradientGlowFilter");
     monkeyPatch(_global.flash, "filters", _global.flash.filters);
 
+    monkeyPatchClass(_global.flash.geom, "Matrix");
     monkeyPatchClass(_global.flash.geom, "Rectangle");
     monkeyPatch(_global.flash, "geom", _global.flash.geom);
 
@@ -220,6 +224,15 @@ class Test {
     clip.scale9Grid = A_RECTANGLE;
     traceName(clip.scale9Grid, "clip.scale9Grid");
 
+    trace("");
+    trace("### Testing Matrix");
+
+    trace("// A_MATRIX.clone()");
+    traceName(A_MATRIX.clone());
+
+    trace("// A_TRANSFORM.matrix");
+    traceName(A_TRANSFORM.matrix);
+
     // TODO: test other classes that can be instantiated by AVM1 builtins;
     // see the list in ruffle's `SystemPrototypes`.
 
@@ -246,6 +259,8 @@ class Test {
         case 2: return zuper(a[0], a[1]);
         case 3: return zuper(a[0], a[1], a[2]);
         case 4: return zuper(a[0], a[1], a[2], a[3]);
+        case 5: return zuper(a[0], a[1], a[2], a[3], a[4]);
+        case 6: return zuper(a[0], a[1], a[2], a[3], a[4], a[5]);
         // Add more if needed.
         default:
           trace("ERROR: too many arguments for constructor: " + a.length);
