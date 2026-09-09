@@ -177,10 +177,11 @@ impl Surface {
                         },
                     );
                     render_pass.set_bind_group(0, target.globals().bind_group(), &[]);
+                    render_pass.set_bind_group(1, &dynamic_transforms.bind_group, &[]);
                     let mut renderer = CommandRenderer::new(
                         &self.pipelines,
                         descriptors,
-                        dynamic_transforms,
+                        &dynamic_transforms.vertex_buffer,
                         num_masks,
                         mask_state,
                         needs_stencil,

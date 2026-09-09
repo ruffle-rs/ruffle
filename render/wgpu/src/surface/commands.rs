@@ -28,7 +28,7 @@ pub struct CommandRenderer<'encoder> {
     num_masks: u32,
     mask_state: MaskState,
     needs_stencil: bool,
-    dynamic_transforms: &'encoder DynamicTransforms,
+    dynamic_vertex_buffer: &'encoder wgpu::Buffer,
 }
 
 impl<'encoder> CommandRenderer<'encoder> {
@@ -36,7 +36,7 @@ impl<'encoder> CommandRenderer<'encoder> {
     pub fn new(
         pipelines: &'encoder Pipelines,
         descriptors: &'encoder Descriptors,
-        dynamic_transforms: &'encoder DynamicTransforms,
+        dynamic_vertex_buffer: &'encoder wgpu::Buffer,
         num_masks: u32,
         mask_state: MaskState,
         needs_stencil: bool,
@@ -47,7 +47,7 @@ impl<'encoder> CommandRenderer<'encoder> {
             mask_state,
             descriptors,
             needs_stencil,
-            dynamic_transforms,
+            dynamic_vertex_buffer,
         }
     }
 
@@ -227,10 +227,9 @@ impl<'encoder> CommandRenderer<'encoder> {
             &descriptors.bitmap_samplers,
         );
         self.prep_bitmap(render_pass, &bind.bind_group, blend_mode, render_stage3d);
-        render_pass.set_bind_group(1, &self.dynamic_transforms.bind_group, &[]);
 
         let vertex_slice = if let Some(vertex_offset) = vertex_offset {
-            self.dynamic_transforms.vertex_buffer.slice(vertex_offset..)
+            self.dynamic_vertex_buffer.slice(vertex_offset..)
         } else {
             self.descriptors.quad.vertices_pos_uv.slice(..)
         };
@@ -252,8 +251,6 @@ impl<'encoder> CommandRenderer<'encoder> {
         blend_mode: TrivialBlend,
     ) {
         self.prep_bitmap(render_pass, bind_group, blend_mode, false);
-
-        render_pass.set_bind_group(1, &self.dynamic_transforms.bind_group, &[]);
 
         self.draw(
             render_pass,
@@ -295,7 +292,6 @@ impl<'encoder> CommandRenderer<'encoder> {
                     self.prep_bitmap(render_pass, &binds.bind_group, TrivialBlend::Normal, false);
                 }
             }
-            render_pass.set_bind_group(1, &self.dynamic_transforms.bind_group, &[]);
 
             self.draw(
                 render_pass,
@@ -321,8 +317,6 @@ impl<'encoder> CommandRenderer<'encoder> {
 
         self.prep_alpha_mask(render_pass, bind_group);
 
-        render_pass.set_bind_group(1, &self.dynamic_transforms.bind_group, &[]);
-
         self.draw(
             render_pass,
             self.descriptors.quad.vertices_pos.slice(..),
@@ -339,8 +333,6 @@ impl<'encoder> CommandRenderer<'encoder> {
     pub fn draw_rect(&self, render_pass: &mut wgpu::RenderPass<'encoder>, instance_index: u32) {
         self.prep_color(render_pass);
 
-        render_pass.set_bind_group(1, &self.dynamic_transforms.bind_group, &[]);
-
         self.draw(
             render_pass,
             self.descriptors.quad.vertices_pos_color.slice(..),
@@ -356,8 +348,6 @@ impl<'encoder> CommandRenderer<'encoder> {
         instance_index: u32,
     ) {
         self.prep_lines(render_pass);
-
-        render_pass.set_bind_group(1, &self.dynamic_transforms.bind_group, &[]);
 
         self.draw(
             render_pass,
