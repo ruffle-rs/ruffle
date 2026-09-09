@@ -23,11 +23,18 @@ fn take_screenshot(
     frames: FrameSelection, // TODO Figure out a way to get framecount before calling take_screenshot, so that we can have accurate progress bars when using --frames all
     skipframes: u32,
     progress: &ExporterProgress,
-) -> Result<Vec<RgbaImage>> {
+    mut on_frame: impl FnMut(usize, RgbaImage, usize) -> Result<()>,
+) -> Result<usize> {
     let movie_export = exporter.start_exporting_movie(swf_path)?;
 
-    let mut result = Vec::new();
     let totalframes = movie_export.total_frames();
+    let capture_count = if totalframes > skipframes {
+        (totalframes - skipframes) as usize
+    } else {
+        0
+    };
+
+    let mut captured = 0;
 
     for i in 0..totalframes {
         progress.set_message(format!(
@@ -40,7 +47,10 @@ fn take_screenshot(
 
         if i >= skipframes {
             match movie_export.capture_frame() {
-                Ok(image) => result.push(image),
+                Ok(image) => {
+                    on_frame(captured, image, capture_count)?;
+                    captured += 1;
+                }
                 Err(e) => {
                     return Err(anyhow!(
                         "Unable to capture frame {} of {:?}: {:?}",
@@ -56,7 +66,7 @@ fn take_screenshot(
             progress.inc(1);
         }
     }
-    Ok(result)
+    Ok(captured)
 }
 
 fn find_files(root: &Path, with_progress: bool) -> Vec<DirEntry> {
@@ -101,38 +111,43 @@ fn capture_single_swf(exporter: &Exporter, opt: &Opt) -> Result<()> {
     });
 
     if !is_single_frame {
-        let _ = create_dir_all(&output);
+        let _ = create_dir_all(&output)?;
     }
 
     let progress = ExporterProgress::new(opt, 1);
 
-    let frames = take_screenshot(exporter, &opt.swf, opt.frames, opt.skipframes, &progress)?;
+    let captured_count = take_screenshot(
+        exporter,
+        &opt.swf,
+        opt.frames,
+        opt.skipframes,
+        &progress,
+        |frame_idx, image, total_count| {
+            if is_single_frame {
+                if opt.output_path == Some(PathBuf::from("-")) {
+                    let mut bytes: Vec<u8> = Vec::new();
+                    image
+                        .write_to(&mut io::Cursor::new(&mut bytes), image::ImageFormat::Png)
+                        .expect("Encoding failed");
+                    io::stdout()
+                        .write_all(bytes.as_slice())
+                        .expect("Writing to stdout failed");
+                } else {
+                    image.save(&output)?;
+                }
+            } else {
+                let digits = total_count.to_string().len();
+                let mut path: PathBuf = (&output).into();
+                path.push(format!("{frame_idx:0digits$}.png"));
+                image.save(&path)?;
+            }
+            Ok(())
+        },
+    )?;
 
     progress.set_message(opt.swf.file_stem().unwrap().to_string_lossy().into_owned());
 
-    if is_single_frame {
-        let image = frames.first().unwrap();
-        if opt.output_path == Some(PathBuf::from("-")) {
-            let mut bytes: Vec<u8> = Vec::new();
-            image
-                .write_to(&mut io::Cursor::new(&mut bytes), image::ImageFormat::Png)
-                .expect("Encoding failed");
-            io::stdout()
-                .write_all(bytes.as_slice())
-                .expect("Writing to stdout failed");
-        } else {
-            image.save(&output)?;
-        }
-    } else {
-        let digits = frames.len().to_string().len();
-        for (frame, image) in frames.iter().enumerate() {
-            let mut path: PathBuf = (&output).into();
-            path.push(format!("{frame:0digits$}.png"));
-            image.save(&path)?;
-        }
-    }
-
-    let message = if frames.len() == 1 {
+    let message = if captured_count == 1 {
         if !opt.silent {
             Some(format!(
                 "Saved first frame of {} to {}",
@@ -145,7 +160,7 @@ fn capture_single_swf(exporter: &Exporter, opt: &Opt) -> Result<()> {
     } else {
         Some(format!(
             "Saved first {} frames of {} to {}",
-            frames.len(),
+            captured_count,
             opt.swf.to_string_lossy(),
             output.to_string_lossy()
         ))
@@ -172,36 +187,41 @@ fn capture_multiple_swfs(exporter: &Exporter, opt: &Opt) -> Result<()> {
                 .to_string_lossy()
                 .into_owned(),
         );
-        if let Ok(frames) =
-            take_screenshot(exporter, file.path(), opt.frames, opt.skipframes, &progress)
-        {
-            let mut relative_path = file
-                .path()
-                .strip_prefix(&opt.swf)
-                .unwrap_or_else(|_| file.path())
-                .to_path_buf();
 
-            if frames.len() == 1 {
-                let mut destination: PathBuf = (&output).into();
-                relative_path.set_extension("png");
-                destination.push(relative_path);
-                if let Some(parent) = destination.parent() {
-                    let _ = create_dir_all(parent);
-                }
-                frames.first().unwrap().save(&destination)?;
-            } else {
-                let mut parent: PathBuf = (&output).into();
-                relative_path.set_extension("");
-                parent.push(&relative_path);
-                let _ = create_dir_all(&parent);
-                let digits = frames.len().to_string().len();
-                for (frame, image) in frames.iter().enumerate() {
+        let mut relative_path = file
+            .path()
+            .strip_prefix(&opt.swf)
+            .unwrap_or_else(|_| file.path())
+            .to_path_buf();
+
+        take_screenshot(
+            exporter,
+            file.path(),
+            opt.frames,
+            opt.skipframes,
+            &progress,
+            |frame_idx, image, total_count| {
+                if total_count == 1 {
+                    let mut destination: PathBuf = (&output).into();
+                    relative_path.set_extension("png");
+                    destination.push(&relative_path);
+                    if let Some(parent) = destination.parent() {
+                        let _ = create_dir_all(parent)?;
+                    }
+                    image.save(&destination)?;
+                } else {
+                    let mut parent: PathBuf = (&output).into();
+                    relative_path.set_extension("");
+                    parent.push(&relative_path);
+                    let _ = create_dir_all(&parent)?;
+                    let digits = total_count.to_string().len();
                     let mut destination = parent.clone();
-                    destination.push(format!("{frame:0digits$}.png"));
+                    destination.push(format!("{frame_idx:0digits$}.png"));
                     image.save(&destination)?;
                 }
-            }
-        }
+                Ok(())
+            },
+        )?;
 
         Ok(())
     })?;
