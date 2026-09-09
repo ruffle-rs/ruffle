@@ -12,6 +12,8 @@ class Test {
 
   static var A_BITMAP = new flash.display.BitmapData(10, 10);
   static var A_POINT = new flash.geom.Point(5, -5);
+  static var A_RECTANGLE = new flash.geom.Rectangle(-10, -20, 20, 40);
+  static var ANOTHER_RECTANGLE = new flash.geom.Rectangle(5, 10, 50, 50);
 
   static var A_BLUR_FILTER = new flash.filters.BevelFilter(5, 45);
   static var A_BEVEL_FILTER = new flash.filters.BlurFilter(10, 10, 2);
@@ -81,6 +83,9 @@ class Test {
     monkeyPatchClass(_global.flash.filters, "GradientBevelFilter");
     monkeyPatchClass(_global.flash.filters, "GradientGlowFilter");
     monkeyPatch(_global.flash, "filters", _global.flash.filters);
+
+    monkeyPatchClass(_global.flash.geom, "Rectangle");
+    monkeyPatch(_global.flash, "geom", _global.flash.geom);
 
     trace("// hiding flash.filters..."); 
     _global.ASSetPropFlags(_global.flash, "filters", 0x2000 /* version 9 */);
@@ -193,6 +198,28 @@ class Test {
     current.filters = [];
 
 
+    trace("");
+    trace("### Testing Rectangle");
+
+    // Rectangle-producing BitmapData methods tested in `avm1/bitmapdata_custom_rectangle`.
+
+    trace("// A_RECTANGLE.clone()");
+    traceName(A_RECTANGLE.clone());
+
+    trace("// A_RECTANGLE.union(ANOTHER_RECTANGLE)");
+    traceName(A_RECTANGLE.union(ANOTHER_RECTANGLE));
+
+    trace("// A_RECTANGLE.intersection(ANOTHER_RECTANGLE)");
+    traceName(A_RECTANGLE.intersection(ANOTHER_RECTANGLE));
+
+    trace("// clip.scrollRect");
+    clip.scrollRect = A_RECTANGLE;
+    traceName(clip.scrollRect, "clip.scrollRect");
+
+    trace("// clip.scale9Grid");
+    clip.scale9Grid = A_RECTANGLE;
+    traceName(clip.scale9Grid, "clip.scale9Grid");
+
     // TODO: test other classes that can be instantiated by AVM1 builtins;
     // see the list in ruffle's `SystemPrototypes`.
 
@@ -218,6 +245,7 @@ class Test {
         case 1: return zuper(a[0]);
         case 2: return zuper(a[0], a[1]);
         case 3: return zuper(a[0], a[1], a[2]);
+        case 4: return zuper(a[0], a[1], a[2], a[3]);
         // Add more if needed.
         default:
           trace("ERROR: too many arguments for constructor: " + a.length);

@@ -140,9 +140,11 @@ pub fn new_rectangle<'gc>(
     let y = rectangle.y_min.to_pixels();
     let width = rectangle.width().to_pixels();
     let height = rectangle.height().to_pixels();
-    let args = &[x.into(), y.into(), width.into(), height.into()];
-    let proto = activation.prototypes().rectangle_constructor;
-    proto.construct(activation, args)
+
+    activation.instantiate_class_as_script(
+        [istr!("flash"), istr!("geom"), istr!("Rectangle")],
+        &[x.into(), y.into(), width.into(), height.into()],
+    )
 }
 
 pub fn object_to_rectangle<'gc>(

@@ -8,6 +8,7 @@ use crate::avm1::{Object, Value};
 use crate::string::AvmString;
 use ruffle_macros::istr;
 
+// TODO: In Flash Player, the Rectangle class is implemented in pure ActionScript.
 const PROTO_DECLS: StaticDeclarations = declare_static_properties! {
     "clone" => method(clone);
     "setEmpty" => method(set_empty);
@@ -132,15 +133,14 @@ fn clone<'gc>(
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let class = [istr!("flash"), istr!("geom"), istr!("Rectangle")];
     let args = [
         this.get(istr!("x"), activation)?,
         this.get(istr!("y"), activation)?,
         this.get(istr!("width"), activation)?,
         this.get(istr!("height"), activation)?,
     ];
-    let constructor = activation.prototypes().rectangle_constructor;
-    let cloned = constructor.construct(activation, &args)?;
-    Ok(cloned)
+    activation.instantiate_class_as_script(class, &args)
 }
 
 fn contains<'gc>(
@@ -318,6 +318,9 @@ fn union<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let rect = activation
+        .instantiate_class_as_script([istr!("flash"), istr!("geom"), istr!("Rectangle")], &[])?;
+
     let this_left = this
         .get(istr!("x"), activation)?
         .coerce_to_f64(activation)?;
@@ -384,12 +387,12 @@ fn union<'gc>(
         this_bottom.max(other_bottom)
     } - top;
 
-    let constructor = activation.prototypes().rectangle_constructor;
-    let result = constructor.construct(
-        activation,
-        &[left.into(), top.into(), width.into(), height.into()],
-    )?;
-    Ok(result)
+    let rect_obj = rect.coerce_to_object_or_bare(activation)?;
+    rect_obj.set(istr!("x"), left, activation)?;
+    rect_obj.set(istr!("y"), top, activation)?;
+    rect_obj.set(istr!("width"), width, activation)?;
+    rect_obj.set(istr!("height"), height, activation)?;
+    Ok(rect)
 }
 
 fn inflate<'gc>(
@@ -513,6 +516,9 @@ fn intersection<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let rect = activation
+        .instantiate_class_as_script([istr!("flash"), istr!("geom"), istr!("Rectangle")], &[])?;
+
     let this_left = this
         .get(istr!("x"), activation)?
         .coerce_to_f64(activation)?;
@@ -576,17 +582,12 @@ fn intersection<'gc>(
         top = 0.0;
     }
 
-    let constructor = activation.prototypes().rectangle_constructor;
-    let result = constructor.construct(
-        activation,
-        &[
-            left.into(),
-            top.into(),
-            (right - left).into(),
-            (bottom - top).into(),
-        ],
-    )?;
-    Ok(result)
+    let rect_obj = rect.coerce_to_object_or_bare(activation)?;
+    rect_obj.set(istr!("x"), left, activation)?;
+    rect_obj.set(istr!("y"), top, activation)?;
+    rect_obj.set(istr!("width"), right - left, activation)?;
+    rect_obj.set(istr!("height"), bottom - top, activation)?;
+    Ok(rect)
 }
 
 fn equals<'gc>(
@@ -603,13 +604,15 @@ fn equals<'gc>(
         let other_y = other.get(istr!("y"), activation)?;
         let other_width = other.get(istr!("width"), activation)?;
         let other_height = other.get(istr!("height"), activation)?;
-        let proto = activation.prototypes().rectangle;
-        return Ok((this_x == other_x
+        let class = activation
+            .resolve_class([istr!("flash"), istr!("geom"), istr!("Rectangle")])
+            .map_or(Value::Undefined, Value::from);
+        let equals = this_x == other_x
             && this_y == other_y
             && this_width == other_width
             && this_height == other_height
-            && other.is_instance_of(activation, proto)?)
-        .into());
+            && Value::from(*other).instance_of(class, activation)?;
+        return Ok(equals.into());
     }
 
     Ok(false.into())

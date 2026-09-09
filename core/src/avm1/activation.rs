@@ -284,6 +284,20 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         self.resolve_class(path).and_then(|c| c.prototype(self))
     }
 
+    /// Instiantiate the given class as if by AVM1 bytecode, taking into account the prototype chain, getters,
+    /// and attributes.
+    pub fn instantiate_class_as_script(
+        &mut self,
+        path: impl IntoIterator<Item = AvmString<'gc>>,
+        args: &[Value<'gc>],
+    ) -> Result<Value<'gc>, Error<'gc>> {
+        let mut obj = self.global_object();
+        for name in path {
+            obj = obj.get(name, self)?.coerce_to_object_or_bare(self)?;
+        }
+        obj.construct(self, args)
+    }
+
     /// Was this activation created by a constructor call? Note that native calls don't
     /// create activations, and so aren't taken into account for this check.
     pub fn in_bytecode_constructor(&self) -> bool {

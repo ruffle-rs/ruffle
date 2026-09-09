@@ -98,3 +98,35 @@ current.filters[7].className: MyGradientBevelFilter
 BITMAP_FILTERS[8].className: GradientGlowFilter
 BITMAP_FILTERS[8].clone().className: GradientGlowFilter
 current.filters[8].className: MyGradientGlowFilter
+
+### Testing Rectangle
+// A_RECTANGLE.clone()
+flash getter called!
+geom getter called!
+Rectangle getter called!
+new MyRectangle(-10, -20, 20, 40) called!
+v.className: MyRectangle
+// A_RECTANGLE.union(ANOTHER_RECTANGLE)
+flash getter called!
+geom getter called!
+Rectangle getter called!
+new MyRectangle() called!
+v.className: MyRectangle
+// A_RECTANGLE.intersection(ANOTHER_RECTANGLE)
+flash getter called!
+geom getter called!
+Rectangle getter called!
+new MyRectangle() called!
+v.className: MyRectangle
+// clip.scrollRect
+flash getter called!
+geom getter called!
+Rectangle getter called!
+new MyRectangle(-10, -20, 20, 40) called!
+clip.scrollRect.className: MyRectangle
+// clip.scale9Grid
+flash getter called!
+geom getter called!
+Rectangle getter called!
+new MyRectangle(-10, -20, 20, 40) called!
+clip.scale9Grid.className: MyRectangle
