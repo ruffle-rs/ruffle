@@ -1,9 +1,7 @@
-use crate::Transforms;
 use crate::backend::RenderTargetMode;
 use crate::buffer_pool::{AlwaysCompatible, PoolEntry, TexturePool};
 use crate::descriptors::Descriptors;
 use crate::globals::Globals;
-use crate::utils::create_buffer_with_data;
 use crate::utils::run_copy_pipeline;
 use std::cell::OnceCell;
 use std::sync::Arc;
@@ -200,7 +198,6 @@ pub struct CommandTarget {
     size: wgpu::Extent3d,
     format: wgpu::TextureFormat,
     sample_count: u32,
-    whole_frame_bind_group: OnceCell<(wgpu::Buffer, wgpu::BindGroup)>,
     color_needs_clear: OnceCell<bool>,
     render_target_mode: RenderTargetMode,
 }
@@ -234,8 +231,6 @@ impl CommandTarget {
                 pool,
             )
         };
-
-        let whole_frame_bind_group = OnceCell::new();
 
         let (frame_buffer, resolve_buffer) =
             if let RenderTargetMode::ExistingWithColor(texture, _) = &render_target_mode {
@@ -309,7 +304,6 @@ impl CommandTarget {
             size,
             format,
             sample_count,
-            whole_frame_bind_group,
             color_needs_clear: OnceCell::new(),
             render_target_mode,
         }
@@ -346,10 +340,6 @@ impl CommandTarget {
 
     pub fn globals(&self) -> &Globals {
         &self.globals
-    }
-
-    pub fn whole_frame_bind_group(&self, descriptors: &Descriptors) -> &wgpu::BindGroup {
-        get_whole_frame_bind_group(&self.whole_frame_bind_group, descriptors, self.size)
     }
 
     pub fn color_attachments(&self) -> Option<wgpu::RenderPassColorAttachment<'_>> {
@@ -450,43 +440,4 @@ impl CommandTarget {
             .map(|b| b.texture())
             .unwrap_or_else(|| self.frame_buffer.texture())
     }
-}
-
-fn get_whole_frame_bind_group<'a>(
-    once_cell: &'a OnceCell<(wgpu::Buffer, wgpu::BindGroup)>,
-    descriptors: &Descriptors,
-    size: wgpu::Extent3d,
-) -> &'a wgpu::BindGroup {
-    &once_cell
-        .get_or_init(|| {
-            let transform = Transforms {
-                world_matrix: [
-                    [size.width as f32, 0.0, 0.0, 0.0],
-                    [0.0, size.height as f32, 0.0, 0.0],
-                    [0.0, 0.0, 1.0, 0.0],
-                    [0.0, 0.0, 0.0, 1.0],
-                ],
-                mult_color: [1.0, 1.0, 1.0, 1.0],
-                add_color: [0.0, 0.0, 0.0, 0.0],
-            };
-            let transforms_buffer = create_buffer_with_data(
-                &descriptors.device,
-                bytemuck::cast_slice(&[transform]),
-                wgpu::BufferUsages::UNIFORM,
-                create_debug_label!("Whole-frame transforms buffer"),
-            );
-            let whole_frame_bind_group =
-                descriptors
-                    .device
-                    .create_bind_group(&wgpu::BindGroupDescriptor {
-                        layout: &descriptors.bind_layouts.transforms,
-                        entries: &[wgpu::BindGroupEntry {
-                            binding: 0,
-                            resource: transforms_buffer.as_entire_binding(),
-                        }],
-                        label: create_debug_label!("Whole-frame transforms bind group").as_deref(),
-                    });
-            (transforms_buffer, whole_frame_bind_group)
-        })
-        .1
 }
