@@ -1654,9 +1654,8 @@ fn transform<'gc>(
     this: MovieClip<'gc>,
     activation: &mut Activation<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let constructor = activation.prototypes().transform_constructor;
-    let cloned = constructor.construct(activation, &[this.object1_or_undef()])?;
-    Ok(cloned)
+    let path = [istr!("flash"), istr!("geom"), istr!("Transform")];
+    activation.instantiate_class_as_script(path, &[this.object1_or_undef()])
 }
 
 fn set_transform<'gc>(

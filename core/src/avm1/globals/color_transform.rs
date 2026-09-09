@@ -40,6 +40,7 @@ impl<'gc> ColorTransformObject {
         activation: &mut Activation<'_, 'gc>,
         color_transform: &ColorTransform,
     ) -> Result<Value<'gc>, Error<'gc>> {
+        let path = [istr!("flash"), istr!("geom"), istr!("ColorTransform")];
         let args = [
             color_transform.r_multiply.to_f64().into(),
             color_transform.g_multiply.to_f64().into(),
@@ -50,8 +51,7 @@ impl<'gc> ColorTransformObject {
             color_transform.b_add.into(),
             color_transform.a_add.into(),
         ];
-        let constructor = activation.prototypes().color_transform_constructor;
-        constructor.construct(activation, &args)
+        activation.instantiate_class_as_script(path, &args)
     }
 
     pub fn cast(value: Value<'gc>) -> Option<Gc<'gc, Self>> {
