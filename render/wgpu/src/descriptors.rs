@@ -83,7 +83,7 @@ impl Descriptors {
                             label: create_debug_label!("Copy pipeline layout").as_deref(),
                             bind_group_layouts: &[
                                 Some(&self.bind_layouts.globals),
-                                Some(&self.bind_layouts.transforms),
+                                None,
                                 Some(&self.bind_layouts.bitmap),
                             ],
                             immediate_size: 0,

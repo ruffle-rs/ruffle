@@ -94,7 +94,6 @@ impl Surface {
             self.format,
             frame_view,
             target.color_view(),
-            target.whole_frame_bind_group(descriptors),
             target.globals(),
             1,
             draw_encoder,
