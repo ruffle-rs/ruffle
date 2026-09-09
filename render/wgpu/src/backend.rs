@@ -295,9 +295,12 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
                 .tessellate_shape_with_scale(shape, bitmap_source, scale);
 
         let mut draws = Vec::with_capacity(lyon_mesh.draws.len());
-        let mut uniform_buffer = BufferBuilder::new_for_uniform(&self.descriptors.limits);
-        let mut vertex_buffer = BufferBuilder::new_for_vertices(&self.descriptors.limits);
-        let mut index_buffer = BufferBuilder::new_for_vertices(&self.descriptors.limits);
+        let mut uniform_buffer = BufferBuilder::new(
+            &self.descriptors.limits,
+            self.descriptors.limits.min_uniform_buffer_offset_alignment,
+        );
+        let mut vertex_buffer = BufferBuilder::new(&self.descriptors.limits, 0);
+        let mut index_buffer = BufferBuilder::new(&self.descriptors.limits, 0);
         let mut gradients = Vec::with_capacity(lyon_mesh.gradients.len());
 
         for gradient in lyon_mesh.gradients {
