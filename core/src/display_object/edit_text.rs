@@ -255,7 +255,7 @@ impl<'gc> EditText<'gc> {
     ///
     /// See <https://open-flash.github.io/mirrors/as2-language-reference/TextFormat.html#getTextExtent()>.
     /// See <https://help.adobe.com/en_US/FlashPlatform/reference/actionscript/3/flash/text/TextLineMetrics.html>.
-    const GUTTER: Twips = Twips::new(40);
+    pub(crate) const GUTTER: Twips = Twips::new(40);
 
     /// Creates a new `EditText` from an SWF `DefineEditText` tag.
     pub fn from_swf_tag(
@@ -592,6 +592,14 @@ impl<'gc> EditText<'gc> {
         self.relayout(context);
     }
 
+    /// Force the final (and, for the FTE fallback, only) line of this field to
+    /// be justified when its alignment is `Justify`. Used by the Flash Text
+    /// Engine so a wrapped `TextLine` spreads to the full requested width.
+    pub fn set_always_justify(self, always_justify: bool, context: &mut UpdateContext<'gc>) {
+        self.set_flag(EditTextFlag::ALWAYS_JUSTIFY, always_justify);
+        self.relayout(context);
+    }
+
     pub fn autosize(self) -> AutoSizeMode {
         self.0.autosize.get()
     }
@@ -897,6 +905,7 @@ impl<'gc> EditText<'gc> {
             !self.0.flags.get().contains(EditTextFlag::READ_ONLY),
             is_word_wrap,
             self.0.font_type(),
+            self.0.flags.get().contains(EditTextFlag::ALWAYS_JUSTIFY),
         );
         drop(text_spans);
 
@@ -1205,6 +1214,18 @@ impl<'gc> EditText<'gc> {
         }
     }
 
+    /// Uniform screen-space scale of a world matrix, used as the presentation
+    /// density hint for size-aware font renderers. Falls back to the neutral
+    /// `1.0` when the transform isn't a plain positive uniform scale.
+    fn display_scale_hint(matrix: Matrix) -> f32 {
+        let uniform = matrix.b.abs() < 1e-4
+            && matrix.c.abs() < 1e-4
+            && matrix.a > 0.0
+            && matrix.d > 0.0
+            && (matrix.a - matrix.d).abs() <= matrix.d * 0.01;
+        if uniform { matrix.d } else { 1.0 }
+    }
+
     /// Render a layout box, plus its children.
     fn render_layout_box(
         self,
@@ -1268,7 +1289,13 @@ impl<'gc> EditText<'gc> {
         if let Some((text, _tf, font, params)) =
             lbox.as_renderable_text(self.0.text_spans.borrow().displayed_text())
         {
-            let metrics = font.metrics();
+            // Rasterize size-aware device-font glyphs at the effective
+            // on-screen density (page zoom / DPI / uniform scaling) instead
+            // of letting the compositor stretch the logical-size raster.
+            let params = params.with_display_scale(Self::display_scale_hint(
+                context.transform_stack.transform().matrix,
+            ));
+            let metrics = font.metrics_at(params.height());
             let ascent = metrics.ascent(params.height());
             let descent = metrics.descent(params.height());
             let caret_height = ascent + descent;
@@ -2263,7 +2290,7 @@ impl<'gc> EditText<'gc> {
         let text_format = first_format?;
         let size = Twips::from_pixels(text_format.size?);
 
-        let metrics = font_set.metrics();
+        let metrics = font_set.metrics_at(size);
         let ascent = metrics.ascent(size);
         let descent = metrics.descent(size);
         let leading = Twips::from_pixels(text_format.leading?);
@@ -3191,6 +3218,10 @@ bitflags::bitflags! {
     struct EditTextFlag: u16 {
         const FIRING_VARIABLE_BINDING = 1 << 0;
         const HAS_BACKGROUND = 1 << 1;
+        /// Set by the Flash Text Engine on the single-line fallback backing a
+        /// `TextLine`, so a justified line is spread to the full width even
+        /// though it is the fallback layout's only (and thus final) line.
+        const ALWAYS_JUSTIFY = 1 << 2;
         const CONDENSE_WHITE = 1 << 13;
         const ALWAYS_SHOW_SELECTION = 1 << 14;
 

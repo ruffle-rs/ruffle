@@ -1,0 +1,26 @@
+{
+    "name": "@ruffle-rs/gdi-font-renderer",
+    "version": "0.1.0",
+    "description": "Windows GDI-based font renderer native addon for Ruffle",
+    "main": "index.js",
+    "types": "index.d.ts",
+    "private": true,
+    "files": [
+        "index.js",
+        "index.d.ts",
+        "*.node"
+    ],
+    "napi": {
+        "name": "gdi-font-renderer"
+    },
+    "scripts": {
+        "build": "napi build --release",
+        "build:debug": "napi build"
+    },
+    "devDependencies": {
+        "@napi-rs/cli": "^2.18.4"
+    },
+    "engines": {
+        "node": ">= 16"
+    }
+}
