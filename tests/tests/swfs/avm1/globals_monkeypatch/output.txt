@@ -144,3 +144,17 @@ geom getter called!
 Matrix getter called!
 new MyMatrix(1, 0, 0, 1, 0, 0) called!
 v.className: MyMatrix
+
+### Testing (Color)Transform
+// clip.transform
+flash getter called!
+geom getter called!
+Transform getter called!
+new MyTransform(_level0.clip) called!
+v.className: MyTransform
+// A_TRANSFORM.colorTransform
+flash getter called!
+geom getter called!
+ColorTransform getter called!
+new MyColorTransform(1, 1, 1, 1, 0, 0, 0, 0) called!
+v.className: MyColorTransform

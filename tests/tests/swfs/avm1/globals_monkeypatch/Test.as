@@ -87,8 +87,10 @@ class Test {
     monkeyPatchClass(_global.flash.filters, "GradientGlowFilter");
     monkeyPatch(_global.flash, "filters", _global.flash.filters);
 
+    monkeyPatchClass(_global.flash.geom, "ColorTransform");
     monkeyPatchClass(_global.flash.geom, "Matrix");
     monkeyPatchClass(_global.flash.geom, "Rectangle");
+    monkeyPatchClass(_global.flash.geom, "Transform");
     monkeyPatch(_global.flash, "geom", _global.flash.geom);
 
     trace("// hiding flash.filters..."); 
@@ -233,6 +235,15 @@ class Test {
     trace("// A_TRANSFORM.matrix");
     traceName(A_TRANSFORM.matrix);
 
+    trace("");
+    trace("### Testing (Color)Transform");
+
+    trace("// clip.transform");
+    traceName(clip.transform);
+
+    trace("// A_TRANSFORM.colorTransform");
+    traceName(A_TRANSFORM.colorTransform);
+
     // TODO: test other classes that can be instantiated by AVM1 builtins;
     // see the list in ruffle's `SystemPrototypes`.
 
@@ -261,6 +272,8 @@ class Test {
         case 4: return zuper(a[0], a[1], a[2], a[3]);
         case 5: return zuper(a[0], a[1], a[2], a[3], a[4]);
         case 6: return zuper(a[0], a[1], a[2], a[3], a[4], a[5]);
+        case 7: return zuper(a[0], a[1], a[2], a[3], a[4], a[5], a[6]);
+        case 8: return zuper(a[0], a[1], a[2], a[3], a[4], a[5], a[6], a[7]);
         // Add more if needed.
         default:
           trace("ERROR: too many arguments for constructor: " + a.length);

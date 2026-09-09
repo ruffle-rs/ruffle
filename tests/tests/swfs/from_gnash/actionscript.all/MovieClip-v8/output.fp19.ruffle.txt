@@ -844,8 +844,8 @@ PASSED: _root.transform.matrix.toString() == "(a=1, b=0, c=0, d=-2, tx=0, ty=0)"
 FAILED: expected: "(x=-2, y=-1691, w=799, h=1684)" obtained: (x=-2, y=-1704, w=804, h=1694) [./MovieClip.as:1893]
 PASSED: _root.transform.matrix.toString() == "(a=1, b=0, c=0, d=1, tx=0, ty=0)" [./MovieClip.as:1897]
 FAILED: expected: "(x=-2, y=7, w=799, h=842)" obtained: (x=-2, y=5, w=804, h=847) [./MovieClip.as:1898]
-FAILED: expected: undefined obtained: [object Object] [./MovieClip.as:1903]
-FAILED: expected: undefined obtained: (a=1, b=0, c=0, d=1, tx=0, ty=0) [./MovieClip.as:1904]
+PASSED: _root.transform.toString() == undefined [./MovieClip.as:1903]
+PASSED: _root.transform.matrix.toString() == undefined [./MovieClip.as:1904]
 PASSED: _root.transform.matrix.toString() == "(a=1, b=0, c=0, d=1, tx=0, ty=0)" [./MovieClip.as:1908]
 PASSED: _root.transform.toString() == "[object Object]" [./MovieClip.as:1911]
 PASSED: o.x == 0 [./MovieClip.as:1925]
@@ -1082,6 +1082,6 @@ PASSED: arguments.length == 0 [./MovieClip.as:2207]
 FAILED: expected: 'val1' obtained: undefined [./MovieClip.as:2209]
 PASSED: _root.var2 == 'val2' [./MovieClip.as:2214]
 PASSED: _root.var3 == 'val3\n' [./MovieClip.as:2215]
-#passed: 997
-#failed: 80
+#passed: 999
+#failed: 78
 #total tests run: 1077
