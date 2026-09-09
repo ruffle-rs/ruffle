@@ -596,7 +596,10 @@ impl<'encoder, 'global: 'encoder> WgpuCommandHandler<'encoder, 'global> {
         descriptors: &'encoder Descriptors,
         dynamic_transforms: &'encoder DynamicTransforms,
     ) -> BufferBuilder {
-        let mut transforms = BufferBuilder::new_for_uniform(&descriptors.limits);
+        let mut transforms = BufferBuilder::new(
+            &descriptors.limits,
+            descriptors.limits.min_uniform_buffer_offset_alignment,
+        );
         transforms.set_buffer_limit(dynamic_transforms.buffer.size());
         transforms
     }
@@ -605,7 +608,7 @@ impl<'encoder, 'global: 'encoder> WgpuCommandHandler<'encoder, 'global> {
         descriptors: &'encoder Descriptors,
         dynamic_transforms: &'encoder DynamicTransforms,
     ) -> BufferBuilder {
-        let mut vertices = BufferBuilder::new_for_vertices(&descriptors.limits);
+        let mut vertices = BufferBuilder::new(&descriptors.limits, 0);
         vertices.set_buffer_limit(dynamic_transforms.vertex_buffer.size());
         vertices
     }

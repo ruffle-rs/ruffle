@@ -13,19 +13,11 @@ pub struct BufferBuilder {
 pub struct BufferFull;
 
 impl BufferBuilder {
-    pub fn new_for_vertices(limits: &wgpu::Limits) -> Self {
+    pub fn new(limits: &wgpu::Limits, alignment: u32) -> Self {
         Self {
             inner: Vec::new(),
-            align_mask: 0,
-            limit: limits.max_buffer_size,
-        }
-    }
-
-    pub fn new_for_uniform(limits: &wgpu::Limits) -> Self {
-        Self {
-            inner: Vec::new(),
-            align_mask: if limits.min_uniform_buffer_offset_alignment > 0 {
-                (limits.min_uniform_buffer_offset_alignment - 1) as usize
+            align_mask: if alignment > 0 {
+                (alignment - 1) as usize
             } else {
                 0
             },
