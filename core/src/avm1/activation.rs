@@ -284,6 +284,17 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         self.resolve_class(path).and_then(|c| c.prototype(self))
     }
 
+    /// Instiantiate the given class. This ignores the prototype chain, getters, and attributes.
+    pub fn instantiate_class_fast(
+        &mut self,
+        path: impl IntoIterator<Item = AvmString<'gc>>,
+        args: &[Value<'gc>],
+    ) -> Result<Option<Value<'gc>>, Error<'gc>> {
+        self.resolve_class(path)
+            .map(|c| c.construct(self, args))
+            .transpose()
+    }
+
     /// Instiantiate the given class as if by AVM1 bytecode, taking into account the prototype chain, getters,
     /// and attributes.
     pub fn instantiate_class_as_script(
