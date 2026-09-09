@@ -137,11 +137,8 @@ impl Pipelines {
             PrimitiveTopology::TriangleList,
         );
 
-        let complex_blend_bindings = vec![
-            Some(&bind_layouts.globals),
-            Some(&bind_layouts.transforms),
-            Some(&bind_layouts.blend),
-        ];
+        let complex_blend_bindings =
+            vec![Some(&bind_layouts.globals), None, Some(&bind_layouts.blend)];
 
         let complex_blend_pipelines = enum_map! {
             blend => create_shape_pipeline(
