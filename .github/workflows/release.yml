@@ -128,7 +128,7 @@ jobs:
             os: ubuntu-24.04
             DESKTOP_FEATURES: jpegxr,fontconfig-dlopen
 
-          - build_name: linux-x86_32
+          - build_name: linux-i686
             os: ubuntu-24.04
             target: i686-unknown-linux-gnu
             DESKTOP_FEATURES: jpegxr,fontconfig-dlopen
