@@ -4,6 +4,8 @@ import {
     isFallbackElement,
     isYoutubeFlashSource,
     workaroundYoutubeMixedContent,
+    clearDocumentNamedAccessor,
+    defineDocumentNamedAccessor,
 } from "./inner";
 import { registerElement } from "../register-element";
 import { isSwf } from "../../swf-utils";
@@ -17,6 +19,7 @@ import { isSwf } from "../../swf-utils";
  * @internal
  */
 export class RuffleEmbedElement extends RufflePlayerElement {
+    private _name: string = "";
     /**
      * @ignore
      * @internal
@@ -31,8 +34,21 @@ export class RuffleEmbedElement extends RufflePlayerElement {
             const options = getPolyfillOptions(src.value, getOptionString);
 
             // Kick off the SWF download.
-            this.load(options, true);
+            this.load(options, true).then(() => {
+                const name = this.attributes.getNamedItem("name")?.value;
+                defineDocumentNamedAccessor(this, name);
+            });
         }
+    }
+
+    /**
+     * @ignore
+     * @internal
+     */
+    override disconnectedCallback(): void {
+        const name = this.attributes.getNamedItem("name")?.value;
+        clearDocumentNamedAccessor(this, name);
+        super.disconnectedCallback();
     }
 
     /**
@@ -76,7 +92,7 @@ export class RuffleEmbedElement extends RufflePlayerElement {
      * @internal
      */
     static override get observedAttributes(): string[] {
-        return [...RufflePlayerElement.observedAttributes, "src"];
+        return [...RufflePlayerElement.observedAttributes, "src", "name"];
     }
 
     /**
@@ -89,6 +105,10 @@ export class RuffleEmbedElement extends RufflePlayerElement {
         newValue: string | undefined,
     ): void {
         super.attributeChangedCallback(name, oldValue, newValue);
+        if (name === "name" && oldValue !== newValue) {
+            this.name = newValue ?? "";
+            return;
+        }
         if (this.isConnected && name === "src") {
             const src = this.attributes.getNamedItem("src");
             if (src) {
@@ -207,5 +227,31 @@ export class RuffleEmbedElement extends RufflePlayerElement {
      */
     set type(typeVal: string) {
         this.setAttribute("type", typeVal);
+    }
+
+    /**
+     * Polyfill of name getter
+     *
+     * @ignore
+     * @internal
+     */
+    get name(): string {
+        return this._name ?? "";
+    }
+
+    /**
+     * Polyfill of name setter
+     *
+     * @ignore
+     * @internal
+     */
+    set name(name: string) {
+        const oldName = this._name;
+        this._name = name;
+        if (oldName !== name) {
+            clearDocumentNamedAccessor(this, oldName);
+            defineDocumentNamedAccessor(this, name);
+        }
+        this.setAttribute("name", name);
     }
 }
