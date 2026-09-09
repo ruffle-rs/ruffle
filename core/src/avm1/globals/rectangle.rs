@@ -2,7 +2,7 @@
 
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
-use crate::avm1::globals::point::{construct_new_point, point_to_object, value_to_point};
+use crate::avm1::globals::point::{point_to_object, value_to_point};
 use crate::avm1::property_decl::{DeclContext, PropertyOrder, StaticDeclarations, SystemClass};
 use crate::avm1::{Object, Value};
 use crate::string::AvmString;
@@ -749,7 +749,7 @@ fn get_size<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let width = this.get(istr!("width"), activation)?;
     let height = this.get(istr!("height"), activation)?;
-    let point = construct_new_point(&[width, height], activation)?;
+    let point = point_to_object((width, height), activation)?;
     Ok(point)
 }
 
@@ -780,7 +780,7 @@ fn get_top_left<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let x = this.get(istr!("x"), activation)?;
     let y = this.get(istr!("y"), activation)?;
-    let point = construct_new_point(&[x, y], activation)?;
+    let point = point_to_object((x, y), activation)?;
     Ok(point)
 }
 

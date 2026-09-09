@@ -302,6 +302,7 @@ ruffle_macros::define_common_strings! {
     "parseXML",
     "pixel",
     "play",
+    "Point",
     "position",
     "possiblyInvalid",
     "prefix",

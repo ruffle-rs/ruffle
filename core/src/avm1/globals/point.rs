@@ -9,6 +9,7 @@ use crate::string::AvmString;
 
 use ruffle_macros::istr;
 
+// TODO: In Flash Player, the Point class is implemented in pure ActionScript.
 const PROTO_DECLS: StaticDeclarations = declare_static_properties! {
     "length" => property(length; READ_ONLY);
     "clone" => method(clone);
@@ -36,21 +37,13 @@ pub fn create_class<'gc>(
     class
 }
 
-pub fn point_to_object<'gc>(
-    point: (f64, f64),
+pub fn point_to_object<'gc, T: Into<Value<'gc>>>(
+    point: (T, T),
     activation: &mut Activation<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let path = [istr!("flash"), istr!("geom"), istr!("Point")];
     let args = [point.0.into(), point.1.into()];
-    construct_new_point(&args, activation)
-}
-
-pub fn construct_new_point<'gc>(
-    args: &[Value<'gc>],
-    activation: &mut Activation<'_, 'gc>,
-) -> Result<Value<'gc>, Error<'gc>> {
-    let constructor = activation.prototypes().point_constructor;
-    let object = constructor.construct(activation, args)?;
-    Ok(object)
+    activation.instantiate_class_as_script(path, &args)
 }
 
 pub fn value_to_point<'gc>(
@@ -110,14 +103,11 @@ fn clone<'gc>(
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let args = [
+    let args = (
         this.get(istr!("x"), activation)?,
         this.get(istr!("y"), activation)?,
-    ];
-    let constructor = activation.prototypes().point_constructor;
-    let cloned = constructor.construct(activation, &args)?;
-
-    Ok(cloned)
+    );
+    point_to_object(args, activation)
 }
 
 fn equals<'gc>(
