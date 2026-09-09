@@ -19,7 +19,7 @@ on:
 
 env:
   RELEASE_SCRIPT: ./.github/scripts/release.py
-  LINUX_DEPENDENCIES: libasound2-dev libudev-dev libfontconfig-dev libfreetype6-dev
+  LINUX_DEPENDENCIES: libasound2-dev libudev-dev libfontconfig-dev libfreetype6-dev libssl-dev
 
 jobs:
   create-release:
