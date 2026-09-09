@@ -293,6 +293,7 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
         let lyon_mesh =
             self.shape_tessellator
                 .tessellate_shape_with_scale(shape, bitmap_source, scale);
+        let one_dimensional_hairline = lyon_mesh.one_dimensional_hairline;
 
         let mut draws = Vec::with_capacity(lyon_mesh.draws.len());
         let mut uniform_buffer = BufferBuilder::new_for_uniform(&self.descriptors.limits);
@@ -348,6 +349,7 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
             draws,
             vertex_buffer,
             index_buffer,
+            one_dimensional_hairline,
         }
     }
 

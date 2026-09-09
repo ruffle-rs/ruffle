@@ -17,7 +17,7 @@ use ruffle_render::matrix::Matrix;
 use ruffle_render::quality::StageQuality;
 use ruffle_render::shape_utils::{DistilledShape, GradientType};
 use ruffle_render::tessellator::{
-    Gradient as TessGradient, ShapeTessellator, Vertex as TessVertex,
+    Gradient as TessGradient, OneDimensionalHairline, ShapeTessellator, Vertex as TessVertex,
 };
 use ruffle_render::transform::Transform;
 use ruffle_web_common::{JsError, JsResult};
@@ -568,12 +568,13 @@ impl WebGlRenderBackend {
         shape: DistilledShape,
         bitmap_source: &dyn BitmapSource,
         scale: f32,
-    ) -> Result<Vec<Draw>, Error> {
+    ) -> Result<(Vec<Draw>, Option<OneDimensionalHairline>), Error> {
         use ruffle_render::tessellator::DrawType as TessDrawType;
 
         let lyon_mesh =
             self.shape_tessellator
                 .tessellate_shape_with_scale(shape, bitmap_source, scale);
+        let one_dimensional_hairline = lyon_mesh.one_dimensional_hairline;
 
         let mut draws = Vec::with_capacity(lyon_mesh.draws.len());
         for draw in lyon_mesh.draws {
@@ -699,7 +700,7 @@ impl WebGlRenderBackend {
             }
         }
 
-        Ok(draws)
+        Ok((draws, one_dimensional_hairline))
     }
 
     /// Creates and binds a new VAO.
@@ -1051,8 +1052,9 @@ impl RenderBackend for WebGlRenderBackend {
         scale: f32,
     ) -> ShapeHandle {
         let mesh = match self.register_shape_internal(shape, bitmap_source, scale) {
-            Ok(draws) => Mesh {
+            Ok((draws, one_dimensional_hairline)) => Mesh {
                 draws,
+                one_dimensional_hairline,
                 gl2: self.gl2.clone(),
                 vao_ext: self.vao_ext.clone(),
             },
@@ -1060,6 +1062,7 @@ impl RenderBackend for WebGlRenderBackend {
                 log::error!("Couldn't register shape: {e:?}");
                 Mesh {
                     draws: vec![],
+                    one_dimensional_hairline: None,
                     gl2: self.gl2.clone(),
                     vao_ext: self.vao_ext.clone(),
                 }
@@ -1367,13 +1370,19 @@ impl CommandHandler for WebGlRenderBackend {
     }
 
     fn render_shape(&mut self, shape: ShapeHandle, transform: Transform) {
+        let mesh = as_mesh(&shape);
+        let mut matrix = transform.matrix;
+        if let Some(hairline) = mesh.one_dimensional_hairline {
+            hairline.adjust_matrix(&mut matrix);
+        }
+
         let world_matrix = [
-            [transform.matrix.a, transform.matrix.b, 0.0, 0.0],
-            [transform.matrix.c, transform.matrix.d, 0.0, 0.0],
+            [matrix.a, matrix.b, 0.0, 0.0],
+            [matrix.c, matrix.d, 0.0, 0.0],
             [0.0, 0.0, 1.0, 0.0],
             [
-                transform.matrix.tx.to_pixels() as f32,
-                transform.matrix.ty.to_pixels() as f32,
+                matrix.tx.to_pixels() as f32,
+                matrix.ty.to_pixels() as f32,
                 0.0,
                 1.0,
             ],
@@ -1384,7 +1393,6 @@ impl CommandHandler for WebGlRenderBackend {
 
         self.set_stencil_state();
 
-        let mesh = as_mesh(&shape);
         for draw in &mesh.draws {
             // Ignore strokes when drawing a mask stencil.
             let num_indices = if self.mask_state != MaskState::DrawMaskStencil
@@ -1651,6 +1659,7 @@ struct Mesh {
     gl2: Option<Gl2>,
     vao_ext: OesVertexArrayObject,
     draws: Vec<Draw>,
+    one_dimensional_hairline: Option<OneDimensionalHairline>,
 }
 
 impl Drop for Mesh {

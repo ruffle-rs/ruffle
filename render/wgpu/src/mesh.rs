@@ -8,7 +8,9 @@ use wgpu::util::DeviceExt;
 use crate::buffer_builder::BufferBuilder;
 use ruffle_render::backend::{ShapeHandle, ShapeHandleImpl};
 use ruffle_render::bitmap::BitmapSource;
-use ruffle_render::tessellator::{Bitmap, Draw as LyonDraw, DrawType as TessDrawType, Gradient};
+use ruffle_render::tessellator::{
+    Bitmap, Draw as LyonDraw, DrawType as TessDrawType, Gradient, OneDimensionalHairline,
+};
 use swf::{CharacterId, GradientInterpolation};
 
 /// How big to make gradient textures. Larger will keep more detail, but be slower and use more memory.
@@ -19,6 +21,7 @@ pub struct Mesh {
     pub draws: Vec<Draw>,
     pub vertex_buffer: wgpu::Buffer,
     pub index_buffer: wgpu::Buffer,
+    pub one_dimensional_hairline: Option<OneDimensionalHairline>,
 }
 
 impl ShapeHandleImpl for Mesh {}
