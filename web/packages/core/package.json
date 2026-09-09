@@ -1,5 +1,6 @@
 {
     "name": "ruffle-core",
+    "type": "module",
     "version": "0.6.0",
     "description": "Core bindings for Ruffle",
     "license": "(MIT OR Apache-2.0)",
