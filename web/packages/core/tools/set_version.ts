@@ -2,6 +2,7 @@ import { replaceInFileSync } from "replace-in-file";
 import childProcess from "child_process";
 import fs from "fs";
 import path from "path";
+import { fileURLToPath } from "url";
 
 let buildDate = new Date().toISOString();
 let versionNumber = process.env["npm_package_version"] ?? "";
@@ -37,6 +38,8 @@ interface VersionInformation {
 let versionSeal: VersionInformation;
 
 if (process.env["ENABLE_VERSION_SEAL"] === "true") {
+    const __filename = fileURLToPath(import.meta.url);
+    const __dirname = path.dirname(__filename);
     const sealFile = path.resolve(__dirname, "../../../version_seal.json");
     if (fs.existsSync(sealFile)) {
         console.log("Using version seal");
