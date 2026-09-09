@@ -25,7 +25,7 @@ impl DynamicTransforms {
         });
         let vertex_buffer = descriptors.device.create_buffer(&wgpu::BufferDescriptor {
             label: None,
-            size: (mem::size_of::<PosUvVertex>() as u64 * ESTIMATED_OBJECTS_PER_CHUNK)
+            size: (mem::size_of::<PosUvVertex>() as u64 * 4 * ESTIMATED_OBJECTS_PER_CHUNK)
                 .min(descriptors.limits.max_buffer_size),
             usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
             mapped_at_creation: false,
