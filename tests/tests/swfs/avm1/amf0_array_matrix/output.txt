@@ -1,0 +1,50 @@
+--- START COMPREHENSIVE AMF0 MATRIX SUITE ---
+
+Executing SharedObject Test...
+[SharedObject Dense Read] isArray: true | length: 2
+  Keys found via for..in: 0, 1
+    -> [0] = dense_0
+    -> [1] = dense_1
+[SharedObject Sparse Read] isArray: true | length: 4
+  Hole Verification via hasOwnProperty:
+    -> Has explicit index 1 property? false
+    -> Has explicit index 2 property? false
+  Keys found via for..in: 0, 3
+    -> [0] = sparse_0
+    -> [3] = sparse_3
+[SharedObject Mixed Read] isArray: true | length: 2
+  Keys found via for..in: 0, 1, a_prop, z_prop
+    -> [0] = mixed_0
+    -> [1] = mixed_1
+    -> [a_prop] = value_a
+    -> [z_prop] = value_z
+
+Executing LocalConnection Test...
+>> Bytes successfully serialized and committed to IPC stream.
+
+Executing NetConnection Test...
+Navigator::fetch:
+  URL: http://localhost:8000/
+  Method: POST
+  Mime-Type: application/x-amf
+  Body: [00, 00, 00, 00, 00, 01, 00, 13, 76, 65, 72, 69, 66, 79, 4E, 65, 74, 77, 6F, 72, 6B, 41, 72, 72, 61, 79, 73, 00, 02, 2F, 31, 00, 00, 00, 81, 0A, 00, 00, 00, 03, 0A, 00, 00, 00, 02, 02, 00, 07, 64, 65, 6E, 73, 65, 5F, 30, 02, 00, 07, 64, 65, 6E, 73, 65, 5F, 31, 0A, 00, 00, 00, 04, 02, 00, 08, 73, 70, 61, 72, 73, 65, 5F, 30, 06, 06, 02, 00, 08, 73, 70, 61, 72, 73, 65, 5F, 33, 08, 00, 00, 00, 02, 00, 06, 61, 5F, 70, 72, 6F, 70, 02, 00, 07, 76, 61, 6C, 75, 65, 5F, 61, 00, 01, 30, 02, 00, 07, 6D, 69, 78, 65, 64, 5F, 30, 00, 01, 31, 02, 00, 07, 6D, 69, 78, 65, 64, 5F, 31, 00, 06, 7A, 5F, 70, 72, 6F, 70, 02, 00, 07, 76, 61, 6C, 75, 65, 5F, 7A, 00, 00, 09]
+
+--- LocalConnection Async Callback Received ---
+[LocalConnection Dense Unpacked] isArray: true | length: 2
+  Keys found via for..in: 0, 1
+    -> [0] = dense_0
+    -> [1] = dense_1
+[LocalConnection Sparse Unpacked] isArray: true | length: 4
+  Hole Verification via hasOwnProperty:
+    -> Has explicit index 1 property? false
+    -> Has explicit index 2 property? false
+  Keys found via for..in: 0, 3
+    -> [0] = sparse_0
+    -> [3] = sparse_3
+[LocalConnection Mixed Unpacked] isArray: true | length: 2
+  Keys found via for..in: 0, 1, a_prop, z_prop
+    -> [0] = mixed_0
+    -> [1] = mixed_1
+    -> [a_prop] = value_a
+    -> [z_prop] = value_z
+--- END COMPREHENSIVE AMF0 MATRIX SUITE ---

@@ -4,5 +4,6 @@ log_fetch = true
 [[compilers]]
 type = "Rascal"
 target = "test.swf"
-scripts = ["test.as"]
+scripts = ["main.as", "utils.as"]
+use_network = true
 swf_version = 8
