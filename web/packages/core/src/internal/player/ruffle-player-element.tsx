@@ -213,3 +213,23 @@ export function copyElement(element: Element, destination: Element): void {
         }
     }
 }
+
+/**
+ * Checks whether a given element is inside an "opt-out" zone for Ruffle.
+ *
+ * @param element The element to check.
+ * @returns true if the element or its ancestor has data-ruffle-optout and not set to ignore opt-out, else false.
+ */
+export function hasOptOut(element: Element): boolean {
+    // We could try to pass the config specific to this element all the way
+    // but only the extension can set ignoreOptout and when it does
+    // it gets added to the global RufflePlayer config, so this is simpler.
+    const globalConfig = window.RufflePlayer?.config ?? {};
+    if ("ignoreOptout" in globalConfig && globalConfig["ignoreOptout"]) {
+        return false;
+    }
+    if (element.closest("[data-ruffle-optout]")) {
+        return true;
+    }
+    return false;
+}
