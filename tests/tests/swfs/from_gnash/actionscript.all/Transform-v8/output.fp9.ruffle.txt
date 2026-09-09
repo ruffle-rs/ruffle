@@ -28,7 +28,7 @@ FAILED: expected: "(redMultiplier=1, greenMultiplier=1, blueMultiplier=1, alphaM
 PASSED: mcx.transform.colorTransform.toString() == "(redMultiplier=2, greenMultiplier=3, blueMultiplier=4, alphaMultiplier=5, redOffset=5, greenOffset=-5, blueOffset=5, alphaOffset=-5)" [./Transform.as:97]
 PASSED: mcx.transform.colorTransform.toString() == "(redMultiplier=0, greenMultiplier=1, blueMultiplier=1, alphaMultiplier=1, redOffset=0, greenOffset=0, blueOffset=255, alphaOffset=0)" [./Transform.as:101]
 FAILED: expected: "(redMultiplier=0, greenMultiplier=-128, blueMultiplier=-128, alphaMultiplier=-128, redOffset=-32768, greenOffset=-32768, blueOffset=255, alphaOffset=-32768)" obtained: (redMultiplier=0, greenMultiplier=127.99609375, blueMultiplier=127.99609375, alphaMultiplier=-128, redOffset=32767, greenOffset=32767, blueOffset=255, alphaOffset=32767) [./Transform.as:105]
-FAILED: expected: undefined obtained: (a=1, b=0, c=0, d=1, tx=0, ty=0) [./Transform.as:110]
+PASSED: t.matrix == undefined [./Transform.as:110]
 PASSED: t.colorTransform.toString() == "(redMultiplier=1, greenMultiplier=1, blueMultiplier=1, alphaMultiplier=1, redOffset=0, greenOffset=0, blueOffset=0, alphaOffset=0)" [./Transform.as:111]
 FAILED: expected: undefined obtained: (redMultiplier=1, greenMultiplier=1, blueMultiplier=1, alphaMultiplier=1, redOffset=0, greenOffset=0, blueOffset=0, alphaOffset=0) [./Transform.as:113]
 PASSED: t.pixelBounds instanceOf Rectangle [./Transform.as:114]
@@ -96,6 +96,6 @@ PASSED: btx.gb == 127 [./Transform.as:293]
 PASSED: btx.bb == 0 [./Transform.as:294]
 PASSED: btx.ab == 0 [./Transform.as:295]
 PASSED: ct11.toString() == "(redMultiplier=0, greenMultiplier=0, blueMultiplier=0, alphaMultiplier=1, redOffset=0, greenOffset=127, blueOffset=0, alphaOffset=0)" [./Transform.as:313]
-#passed: 83
-#failed: 12
+#passed: 84
+#failed: 11
 #total tests run: 95

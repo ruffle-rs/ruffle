@@ -215,6 +215,7 @@ ruffle_macros::define_common_strings! {
     "lr",
     "lzma",
     "macType",
+    "Matrix",
     "matrixType",
     "menu",
     "menuItemSelect",
