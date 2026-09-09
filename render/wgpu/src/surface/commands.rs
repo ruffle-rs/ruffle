@@ -74,7 +74,7 @@ impl<'encoder> CommandRenderer<'encoder> {
         match command {
             DrawCommand::RenderBitmap {
                 bitmap,
-                transform_buffer,
+                instance_index,
                 vertex_offset,
                 smoothing,
                 blend_mode,
@@ -82,7 +82,7 @@ impl<'encoder> CommandRenderer<'encoder> {
             } => self.render_bitmap(
                 render_pass,
                 bitmap,
-                *transform_buffer,
+                *instance_index,
                 *smoothing,
                 *blend_mode,
                 *render_stage3d,
@@ -91,21 +91,21 @@ impl<'encoder> CommandRenderer<'encoder> {
             DrawCommand::RenderTexture {
                 _texture,
                 binds,
-                transform_buffer,
+                instance_index,
                 blend_mode,
-            } => self.render_texture(render_pass, *transform_buffer, binds, *blend_mode),
+            } => self.render_texture(render_pass, *instance_index, binds, *blend_mode),
             DrawCommand::RenderShape {
                 shape,
-                transform_buffer,
-            } => self.render_shape(render_pass, shape, *transform_buffer),
-            DrawCommand::DrawRect { transform_buffer } => {
-                self.draw_rect(render_pass, *transform_buffer)
+                instance_index,
+            } => self.render_shape(render_pass, shape, *instance_index),
+            DrawCommand::DrawRect { instance_index } => {
+                self.draw_rect(render_pass, *instance_index)
             }
-            DrawCommand::DrawLine { transform_buffer } => {
-                self.draw_lines::<false>(render_pass, *transform_buffer)
+            DrawCommand::DrawLine { instance_index } => {
+                self.draw_lines::<false>(render_pass, *instance_index)
             }
-            DrawCommand::DrawLineRect { transform_buffer } => {
-                self.draw_lines::<true>(render_pass, *transform_buffer)
+            DrawCommand::DrawLineRect { instance_index } => {
+                self.draw_lines::<true>(render_pass, *instance_index)
             }
             DrawCommand::PushMask => self.push_mask(render_pass),
             DrawCommand::ActivateMask => self.activate_mask(render_pass),
@@ -115,8 +115,8 @@ impl<'encoder> CommandRenderer<'encoder> {
                 maskee,
                 mask,
                 binds,
-                transform_buffer,
-            } => self.render_alpha_mask(render_pass, maskee, mask, binds, *transform_buffer),
+                instance_index,
+            } => self.render_alpha_mask(render_pass, maskee, mask, binds, *instance_index),
         }
     }
 
@@ -196,11 +196,12 @@ impl<'encoder> CommandRenderer<'encoder> {
         vertices: wgpu::BufferSlice<'encoder>,
         indices: wgpu::BufferSlice<'encoder>,
         num_indices: u32,
+        instance_index: u32,
     ) {
         render_pass.set_vertex_buffer(0, vertices);
         render_pass.set_index_buffer(indices, wgpu::IndexFormat::Uint32);
 
-        render_pass.draw_indexed(0..num_indices, 0, 0..1);
+        render_pass.draw_indexed(0..num_indices, 0, instance_index..(instance_index + 1));
     }
 
     #[allow(clippy::too_many_arguments)]
@@ -208,7 +209,7 @@ impl<'encoder> CommandRenderer<'encoder> {
         &self,
         render_pass: &mut wgpu::RenderPass<'encoder>,
         bitmap: &'encoder BitmapHandle,
-        transform_buffer: wgpu::DynamicOffset,
+        instance_index: u32,
         smoothing: bool,
         blend_mode: TrivialBlend,
         render_stage3d: bool,
@@ -226,7 +227,7 @@ impl<'encoder> CommandRenderer<'encoder> {
             &descriptors.bitmap_samplers,
         );
         self.prep_bitmap(render_pass, &bind.bind_group, blend_mode, render_stage3d);
-        render_pass.set_bind_group(1, &self.dynamic_transforms.bind_group, &[transform_buffer]);
+        render_pass.set_bind_group(1, &self.dynamic_transforms.bind_group, &[]);
 
         let vertex_slice = if let Some(vertex_offset) = vertex_offset {
             self.dynamic_transforms.vertex_buffer.slice(vertex_offset..)
@@ -239,25 +240,27 @@ impl<'encoder> CommandRenderer<'encoder> {
             vertex_slice,
             self.descriptors.quad.indices.slice(..),
             6,
+            instance_index,
         );
     }
 
     pub fn render_texture(
         &self,
         render_pass: &mut wgpu::RenderPass<'encoder>,
-        transform_buffer: wgpu::DynamicOffset,
+        instance_index: u32,
         bind_group: &'encoder wgpu::BindGroup,
         blend_mode: TrivialBlend,
     ) {
         self.prep_bitmap(render_pass, bind_group, blend_mode, false);
 
-        render_pass.set_bind_group(1, &self.dynamic_transforms.bind_group, &[transform_buffer]);
+        render_pass.set_bind_group(1, &self.dynamic_transforms.bind_group, &[]);
 
         self.draw(
             render_pass,
             self.descriptors.quad.vertices_pos_uv.slice(..),
             self.descriptors.quad.indices.slice(..),
             6,
+            instance_index,
         );
     }
 
@@ -265,7 +268,7 @@ impl<'encoder> CommandRenderer<'encoder> {
         &self,
         render_pass: &mut wgpu::RenderPass<'encoder>,
         shape: &'encoder ShapeHandle,
-        transform_buffer: wgpu::DynamicOffset,
+        instance_index: u32,
     ) {
         let mesh = as_mesh(shape);
         for draw in &mesh.draws {
@@ -292,13 +295,14 @@ impl<'encoder> CommandRenderer<'encoder> {
                     self.prep_bitmap(render_pass, &binds.bind_group, TrivialBlend::Normal, false);
                 }
             }
-            render_pass.set_bind_group(1, &self.dynamic_transforms.bind_group, &[transform_buffer]);
+            render_pass.set_bind_group(1, &self.dynamic_transforms.bind_group, &[]);
 
             self.draw(
                 render_pass,
                 mesh.vertex_buffer.slice(draw.vertices.clone()),
                 mesh.index_buffer.slice(draw.indices.clone()),
                 num_indices,
+                instance_index,
             );
         }
     }
@@ -309,7 +313,7 @@ impl<'encoder> CommandRenderer<'encoder> {
         _maskee: &PoolOrArcTexture,
         _mask: &PoolOrArcTexture,
         bind_group: &'encoder wgpu::BindGroup,
-        transform_buffer: wgpu::DynamicOffset,
+        instance_index: u32,
     ) {
         if cfg!(feature = "render_debug_labels") {
             render_pass.push_debug_group("render_alpha_mask");
@@ -317,13 +321,14 @@ impl<'encoder> CommandRenderer<'encoder> {
 
         self.prep_alpha_mask(render_pass, bind_group);
 
-        render_pass.set_bind_group(1, &self.dynamic_transforms.bind_group, &[transform_buffer]);
+        render_pass.set_bind_group(1, &self.dynamic_transforms.bind_group, &[]);
 
         self.draw(
             render_pass,
             self.descriptors.quad.vertices_pos.slice(..),
             self.descriptors.quad.indices.slice(..),
             6,
+            instance_index,
         );
 
         if cfg!(feature = "render_debug_labels") {
@@ -331,31 +336,28 @@ impl<'encoder> CommandRenderer<'encoder> {
         }
     }
 
-    pub fn draw_rect(
-        &self,
-        render_pass: &mut wgpu::RenderPass<'encoder>,
-        transform_buffer: wgpu::DynamicOffset,
-    ) {
+    pub fn draw_rect(&self, render_pass: &mut wgpu::RenderPass<'encoder>, instance_index: u32) {
         self.prep_color(render_pass);
 
-        render_pass.set_bind_group(1, &self.dynamic_transforms.bind_group, &[transform_buffer]);
+        render_pass.set_bind_group(1, &self.dynamic_transforms.bind_group, &[]);
 
         self.draw(
             render_pass,
             self.descriptors.quad.vertices_pos_color.slice(..),
             self.descriptors.quad.indices.slice(..),
             6,
+            instance_index,
         );
     }
 
     pub fn draw_lines<const RECT: bool>(
         &self,
         render_pass: &mut wgpu::RenderPass<'encoder>,
-        transform_buffer: wgpu::DynamicOffset,
+        instance_index: u32,
     ) {
         self.prep_lines(render_pass);
 
-        render_pass.set_bind_group(1, &self.dynamic_transforms.bind_group, &[transform_buffer]);
+        render_pass.set_bind_group(1, &self.dynamic_transforms.bind_group, &[]);
 
         self.draw(
             render_pass,
@@ -366,6 +368,7 @@ impl<'encoder> CommandRenderer<'encoder> {
                 self.descriptors.quad.indices_line.slice(..)
             },
             if RECT { 5 } else { 2 },
+            instance_index,
         );
     }
 
@@ -434,7 +437,7 @@ pub enum ChunkBlendMode {
 pub enum DrawCommand {
     RenderBitmap {
         bitmap: BitmapHandle,
-        transform_buffer: wgpu::DynamicOffset,
+        instance_index: u32,
         vertex_offset: Option<wgpu::BufferAddress>,
         smoothing: bool,
         blend_mode: TrivialBlend,
@@ -443,27 +446,27 @@ pub enum DrawCommand {
     RenderTexture {
         _texture: PoolOrArcTexture,
         binds: wgpu::BindGroup,
-        transform_buffer: wgpu::DynamicOffset,
+        instance_index: u32,
         blend_mode: TrivialBlend,
     },
     RenderAlphaMask {
         maskee: PoolOrArcTexture,
         mask: PoolOrArcTexture,
         binds: wgpu::BindGroup,
-        transform_buffer: wgpu::DynamicOffset,
+        instance_index: u32,
     },
     RenderShape {
         shape: ShapeHandle,
-        transform_buffer: wgpu::DynamicOffset,
+        instance_index: u32,
     },
     DrawRect {
-        transform_buffer: wgpu::DynamicOffset,
+        instance_index: u32,
     },
     DrawLine {
-        transform_buffer: wgpu::DynamicOffset,
+        instance_index: u32,
     },
     DrawLineRect {
-        transform_buffer: wgpu::DynamicOffset,
+        instance_index: u32,
     },
     PushMask,
     ActivateMask,
@@ -596,10 +599,7 @@ impl<'encoder, 'global: 'encoder> WgpuCommandHandler<'encoder, 'global> {
         descriptors: &'encoder Descriptors,
         dynamic_transforms: &'encoder DynamicTransforms,
     ) -> BufferBuilder {
-        let mut transforms = BufferBuilder::new(
-            &descriptors.limits,
-            descriptors.limits.min_uniform_buffer_offset_alignment,
-        );
+        let mut transforms = BufferBuilder::new(&descriptors.limits, 0);
         transforms.set_buffer_limit(dynamic_transforms.buffer.size());
         transforms
     }
@@ -647,15 +647,11 @@ impl<'encoder, 'global: 'encoder> WgpuCommandHandler<'encoder, 'global> {
         matrix: Matrix,
         tz: f64,
         color_transform: ColorTransform,
-        command_builder: impl FnOnce(wgpu::DynamicOffset) -> DrawCommand,
+        command_builder: impl FnOnce(u32) -> DrawCommand,
     ) {
-        self.add_to_current_with_vertices(
-            matrix,
-            tz,
-            color_transform,
-            None,
-            |transform_buffer, _| command_builder(transform_buffer),
-        )
+        self.add_to_current_with_vertices(matrix, tz, color_transform, None, |instance_index, _| {
+            command_builder(instance_index)
+        })
     }
 
     fn add_to_current_with_vertices(
@@ -664,7 +660,7 @@ impl<'encoder, 'global: 'encoder> WgpuCommandHandler<'encoder, 'global> {
         tz: f64,
         color_transform: ColorTransform,
         vertices: Option<&[PosUvVertex]>,
-        command_builder: impl FnOnce(wgpu::DynamicOffset, Option<wgpu::BufferAddress>) -> DrawCommand,
+        command_builder: impl FnOnce(u32, Option<wgpu::BufferAddress>) -> DrawCommand,
     ) {
         let transform = Transforms {
             world_matrix: [
@@ -686,7 +682,7 @@ impl<'encoder, 'global: 'encoder> WgpuCommandHandler<'encoder, 'global> {
             vertices.map(|v| self.vertices.add(v)).transpose(),
         ) {
             self.current.push(command_builder(
-                transform_range.start as wgpu::DynamicOffset,
+                (transform_range.start as usize / size_of::<Transforms>()) as u32,
                 vertices_range.map(|v| v.start),
             ));
         } else {
@@ -712,7 +708,7 @@ impl<'encoder, 'global: 'encoder> WgpuCommandHandler<'encoder, 'global> {
                     .expect("Buffer must be able to fit a new thing, it was just emptied")
             });
             self.current.push(command_builder(
-                transform_range.start as wgpu::DynamicOffset,
+                (transform_range.start as usize / size_of::<Transforms>()) as u32,
                 vertices_range.map(|v| v.start),
             ));
         }
@@ -792,10 +788,10 @@ impl CommandHandler for WgpuCommandHandler<'_, '_> {
                     transform.matrix,
                     transform.tz,
                     transform.color_transform,
-                    |transform_buffer| DrawCommand::RenderTexture {
+                    |instance_index| DrawCommand::RenderTexture {
                         _texture: texture,
                         binds: bind_group,
-                        transform_buffer,
+                        instance_index,
                         blend_mode,
                     },
                 );
@@ -864,9 +860,9 @@ impl CommandHandler for WgpuCommandHandler<'_, '_> {
             transform.tz,
             transform.color_transform,
             Some(vertices),
-            |transform_buffer, vertex_offset| DrawCommand::RenderBitmap {
+            |instance_index, vertex_offset| DrawCommand::RenderBitmap {
                 bitmap,
-                transform_buffer,
+                instance_index,
                 vertex_offset,
                 smoothing,
                 blend_mode: TrivialBlend::Normal,
@@ -888,9 +884,9 @@ impl CommandHandler for WgpuCommandHandler<'_, '_> {
             matrix,
             transform.tz,
             transform.color_transform,
-            |transform_buffer| DrawCommand::RenderBitmap {
+            |instance_index| DrawCommand::RenderBitmap {
                 bitmap,
-                transform_buffer,
+                instance_index,
                 vertex_offset: None,
                 smoothing: false,
                 blend_mode: TrivialBlend::Normal,
@@ -904,9 +900,9 @@ impl CommandHandler for WgpuCommandHandler<'_, '_> {
             transform.matrix,
             transform.tz,
             transform.color_transform,
-            |transform_buffer| DrawCommand::RenderShape {
+            |instance_index| DrawCommand::RenderShape {
                 shape,
-                transform_buffer,
+                instance_index,
             },
         );
     }
@@ -916,7 +912,7 @@ impl CommandHandler for WgpuCommandHandler<'_, '_> {
             matrix,
             0.0,
             ColorTransform::multiply_from(color),
-            |transform_buffer| DrawCommand::DrawRect { transform_buffer },
+            |instance_index| DrawCommand::DrawRect { instance_index },
         );
     }
 
@@ -932,7 +928,7 @@ impl CommandHandler for WgpuCommandHandler<'_, '_> {
                 matrix,
                 0.0,
                 ColorTransform::multiply_from(color),
-                |transform_buffer| DrawCommand::DrawLine { transform_buffer },
+                |instance_index| DrawCommand::DrawLine { instance_index },
             );
         }
     }
@@ -949,7 +945,7 @@ impl CommandHandler for WgpuCommandHandler<'_, '_> {
                 matrix,
                 0.0,
                 ColorTransform::multiply_from(color),
-                |transform_buffer| DrawCommand::DrawLineRect { transform_buffer },
+                |instance_index| DrawCommand::DrawLineRect { instance_index },
             );
         }
     }
@@ -1038,12 +1034,12 @@ impl CommandHandler for WgpuCommandHandler<'_, '_> {
                 label: None,
             });
 
-        self.add_to_current(matrix, 0.0, Default::default(), |transform_buffer| {
+        self.add_to_current(matrix, 0.0, Default::default(), |instance_index| {
             DrawCommand::RenderAlphaMask {
                 maskee,
                 mask,
                 binds,
-                transform_buffer,
+                instance_index,
             }
         });
     }

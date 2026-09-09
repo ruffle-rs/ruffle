@@ -5,14 +5,14 @@ struct VertexOutput {
     @location(0) uv: vec2<f32>,
 };
 
-@group(1) @binding(0) var<uniform> transforms: common__Transforms;
+@group(1) @binding(0) var<uniform> transforms: array<common__Transforms, max_transforms>;
 @group(2) @binding(0) var maskee_texture: texture_2d<f32>;
 @group(2) @binding(1) var mask_texture: texture_2d<f32>;
 @group(2) @binding(2) var texture_sampler: sampler;
 
 @vertex
-fn main_vertex(in: common__VertexInput) -> VertexOutput {
-    let pos = common__globals.global_matrix * transforms.world_matrix * vec4<f32>(in.position.x, in.position.y, 0.0, 1.0);
+fn main_vertex(in: common__VertexInput, @builtin(instance_index) instanceIndex: u32) -> VertexOutput {
+    let pos = common__globals.global_matrix * transforms[instanceIndex].world_matrix * vec4<f32>(in.position.x, in.position.y, 0.0, 1.0);
     let uv = vec2<f32>(in.position.xy);
     return VertexOutput(pos, uv);
 }
