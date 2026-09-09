@@ -1,0 +1,7 @@
+Navigator::fetch:
+  URL: http://localhost:8000
+  Method: GET
+  Headers:
+X-Flash-Version: 99,0,1,2
+MyBefore: before-val
+MyAfter: after-val
