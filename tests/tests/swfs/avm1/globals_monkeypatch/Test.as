@@ -30,6 +30,7 @@ class Test {
     A_DROP_SHADOW_FILTER, A_GLOW_FILTER, A_GRADIENT_BEVEL_FILTER, A_GRADIENT_GLOW_FILTER
   ];
 
+  static var POINT_CLASS = flash.geom.Point;
 
   static function main(current) {
     var A_TRANSFORM = new flash.geom.Transform(current);
@@ -89,6 +90,7 @@ class Test {
 
     monkeyPatchClass(_global.flash.geom, "ColorTransform");
     monkeyPatchClass(_global.flash.geom, "Matrix");
+    monkeyPatchClass(_global.flash.geom, "Point");
     monkeyPatchClass(_global.flash.geom, "Rectangle");
     monkeyPatchClass(_global.flash.geom, "Transform");
     monkeyPatch(_global.flash, "geom", _global.flash.geom);
@@ -243,6 +245,42 @@ class Test {
 
     trace("// A_TRANSFORM.colorTransform");
     traceName(A_TRANSFORM.colorTransform);
+
+    trace("");
+    trace("### Testing Point");
+
+    trace("// A_DISPLACEMENT_MAP_FILTER.mapPoint");
+    traceName(A_DISPLACEMENT_MAP_FILTER.mapPoint);
+
+    trace("// A_MATRIX.transformPoint(A_POINT)");
+    traceName(A_MATRIX.transformPoint(A_POINT));
+
+    trace("// A_MATRIX.deltaTransformPoint(A_POINT)");
+    traceName(A_MATRIX.deltaTransformPoint(A_POINT));
+
+    trace("// A_POINT.clone()");
+    traceName(A_POINT.clone());
+
+    trace("// A_POINT.add(A_POINT)");
+    traceName(A_POINT.add(A_POINT));
+
+    trace("// A_POINT.subtract(A_POINT)");
+    traceName(A_POINT.subtract(A_POINT));
+
+    trace("// POINT_CLASS.polar(0, 0)");
+    traceName(POINT_CLASS.polar(0, 0));
+
+    trace("// POINT_CLASS.interpolate(A_POINT, A_POINT, 0)");
+    traceName(POINT_CLASS.interpolate(A_POINT, A_POINT, 0));
+
+    trace("// A_RECTANGLE.size");
+    traceName(A_RECTANGLE.size);
+
+    trace("// A_RECTANGLE.topLeft");
+    traceName(A_RECTANGLE.topLeft);
+
+    trace("// A_RECTANGLE.bottomRight");
+    traceName(A_RECTANGLE.bottomRight);
 
     // TODO: test other classes that can be instantiated by AVM1 builtins;
     // see the list in ruffle's `SystemPrototypes`.
