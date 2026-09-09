@@ -3,6 +3,8 @@
 struct VertexOutput {
     @builtin(position) position: vec4<f32>,
     @location(0) uv: vec2<f32>,
+    @location(1) mult_color: vec4<f32>,
+    @location(2) add_color: vec4<f32>,
 };
 
 @group(1) @binding(0) var<uniform> transforms: common__Transforms;
@@ -21,7 +23,7 @@ struct Gradient {
 @vertex
 fn main_vertex(in: common__VertexInputUv) -> VertexOutput {
     let pos = common__globals.global_matrix * transforms.world_matrix * vec4<f32>(in.position.x, in.position.y, 0.0, 1.0);
-    return VertexOutput(pos, in.uv.xy / in.uv.z);
+    return VertexOutput(pos, in.uv.xy / in.uv.z, transforms.mult_color, transforms.add_color);
 }
 
 fn find_t(uv: vec2<f32>) -> f32 {
@@ -68,7 +70,7 @@ fn main_fragment(in: VertexOutput) -> @location(0) vec4<f32> {
     if (gradient.interpolation != 0) {
         color = common__linear_to_srgb(color);
     }
-    let out = saturate(color * transforms.mult_color + transforms.add_color);
+    let out = saturate(color * in.mult_color + in.add_color);
     let alpha = saturate(out.a);
     return vec4<f32>(out.rgb * alpha, alpha);
 }
