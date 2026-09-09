@@ -226,6 +226,18 @@ pub trait ReadExt<'a> {
         result
     }
 
+    fn get_string(&'a self, cx: &mut ParseContext, key: &'static str) -> Option<String> {
+        let mut result = None;
+
+        cx.push_key(key);
+        if let Some(str) = self.get_impl(key).and_then(|item| item.as_str_or_warn(cx)) {
+            result = Some(str.to_owned())
+        }
+        cx.pop_key();
+
+        result
+    }
+
     fn get_bool(&'a self, cx: &mut ParseContext, key: &'static str) -> Option<bool> {
         cx.push_key(key);
         let result = self.get_impl(key).and_then(|x| x.as_bool_or_warn(cx));

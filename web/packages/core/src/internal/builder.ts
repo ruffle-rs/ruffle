@@ -88,6 +88,9 @@ export function configureBuilder(
     if (isExplicit(config.playerVersion)) {
         builder.setPlayerVersion(config.playerVersion);
     }
+    if (isExplicit(config.customPlayerVersionString)) {
+        builder.setCustomPlayerVersionString(config.customPlayerVersionString);
+    }
     if (isExplicit(config.preferredRenderer)) {
         builder.setPreferredRenderer(config.preferredRenderer);
     }

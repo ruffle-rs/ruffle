@@ -179,6 +179,18 @@ impl<'a> PlayerOptionsWriter<'a> {
         })
     }
 
+    pub fn set_custom_player_version_string(&mut self, version: Option<String>) {
+        self.0.edit(|options, toml_document| {
+            if let Some(version) = &version {
+                toml_document["custom_version_string"] = value(version.to_owned());
+            } else {
+                toml_document.remove("custom_version_string");
+            }
+
+            options.custom_player_version_string = version;
+        })
+    }
+
     pub fn set_player_runtime(&mut self, player_runtime: Option<PlayerRuntime>) {
         self.0.edit(|options, toml_document| {
             if let Some(player_runtime) = player_runtime {
@@ -234,6 +246,7 @@ pub fn write_player_options(writer: &mut PlayerOptionsWriter, options: &PlayerOp
     writer.set_letterbox(options.letterbox);
     writer.set_spoof_url(options.spoof_url.clone());
     writer.set_player_version(options.player_version);
+    writer.set_custom_player_version_string(options.custom_player_version_string.clone());
     writer.set_player_runtime(options.player_runtime);
     writer.set_frame_rate(options.frame_rate);
     writer.set_dummy_external_interface(options.dummy_external_interface);
@@ -595,6 +608,24 @@ mod tests {
         test(
             "version = \"unknown\"\n",
             |writer| writer.set_player_version(None),
+            "",
+        );
+    }
+
+    #[test]
+    fn custom_player_version() {
+        test(
+            "",
+            |writer| writer.set_custom_player_version_string(Some("1,2,3,4".to_string())),
+            "custom_version_string = \"1,2,3,4\"\n",
+        );
+    }
+
+    #[test]
+    fn custom_player_version_remove() {
+        test(
+            "custom_version_string = \"1,2,3,4\"\n",
+            |writer| writer.set_custom_player_version_string(None),
             "",
         );
     }
