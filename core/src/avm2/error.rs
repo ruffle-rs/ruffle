@@ -1129,8 +1129,9 @@ make_error_fn!(make_error_2130, 2130, error);
 #[inline(never)]
 #[cold]
 pub fn make_error_2136<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
-    // TODO: Add proper argument.
-    make_error!(error(activation, error_message!(2136, ""), 2136))
+    let movie = activation.caller_movie_or_root();
+    let url = movie.url();
+    make_error!(error(activation, error_message!(2136, url), 2136))
 }
 
 make_error_fn!(make_error_2150, 2150, argument_error);
