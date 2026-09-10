@@ -660,6 +660,9 @@ impl<'gc> NetStream<'gc> {
             source.stream_time.set(seek_time_ms);
         }
 
+        StreamManager::activate(context, self);
+        self.0.playing.set(true);
+
         if let Some(NetStreamKind::Avm2(_)) = self.0.avm_object.get() {
             self.trigger_status_event(
                 context,
