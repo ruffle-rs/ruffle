@@ -1,6 +1,0 @@
-frame: 1, isPlaying: false
-frame: 1, isPlaying: false
-frame: 2, isPlaying: true
-frame: 3, isPlaying: true
-frame: 3, isPlaying: true
-frame: 4, isPlaying: true
