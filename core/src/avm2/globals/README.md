@@ -81,8 +81,7 @@ As an optimization, native methods defined in playerglobals can be annotated wit
 the following conditions must all be met before declaring a method `FastCall`:
 
 - the method is declared as `static`, or the class the method is declared in is `final`;
-- the method has zero, one, or two arguments;
-- the method does not use default values for any of these arguments;
+- the method does not use default values for any of its arguments;
 - the method does not use `...rest` arguments;
 - the Rust function that defines the method does not throw exceptions (does not ever return `Err`);
 - and the method's Rust function does not access any fields on the provided `activation` except for the `activation.context` field.

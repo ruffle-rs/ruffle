@@ -39,6 +39,9 @@ impl FontAtlas {
     /// Allocates space for `bitmap` in the atlas and copies it in, starting a
     /// fresh atlas page if none of the existing ones have room left.
     pub fn new_glyph(&self, bitmap: Bitmap<'_>, tx: Twips, ty: Twips) -> FontAtlasGlyph {
+        // Do not allocate space in font atlases for empty bitmaps, use empty glyphs instead.
+        assert!(bitmap.width() != 0 && bitmap.height() != 0);
+
         let mut data = self.0.borrow_mut();
 
         let atlas_region = match data.pages.iter().find_map(|page| allocate(page, &bitmap)) {
@@ -478,12 +481,10 @@ mod test {
     }
 
     #[test]
+    #[should_panic]
     fn zero_sized_glyph() {
         let atlas = font_atlas(8, 8);
-        let glyph = atlas.new_glyph(Bitmap::empty(BitmapFormat::Rgba), Twips::ZERO, Twips::ZERO);
-
-        assert!(glyph.atlas_region().is_empty());
-        assert_eq!(atlas.pages().len(), 1);
+        atlas.new_glyph(Bitmap::empty(BitmapFormat::Rgba), Twips::ZERO, Twips::ZERO);
     }
 
     #[test]

@@ -16,6 +16,7 @@
 {"t": -9007199254740993} -> -9007199254740992
 {"t": 1.7976931348623157e308} -> 1.79769313486231e+308
 {"t": 1.7976931348623159e308} -> threw SyntaxError: Error #1132: Invalid JSON parse input.
+	at JSON$/parseCore()
 	at JSON$/parse()
 	at Test()
 {"t": 5e-324} -> 5e-324
@@ -51,70 +52,92 @@
 {"t": -0e0} -> 0
 {"t": -5000000000} -> -5000000000
 {"t": 01} -> threw SyntaxError: Error #1132: Invalid JSON parse input.
+	at JSON$/parseCore()
 	at JSON$/parse()
 	at Test()
 {"t": 007} -> threw SyntaxError: Error #1132: Invalid JSON parse input.
+	at JSON$/parseCore()
 	at JSON$/parse()
 	at Test()
 {"t": 010} -> threw SyntaxError: Error #1132: Invalid JSON parse input.
+	at JSON$/parseCore()
 	at JSON$/parse()
 	at Test()
 {"t": +5} -> threw SyntaxError: Error #1132: Invalid JSON parse input.
+	at JSON$/parseCore()
 	at JSON$/parse()
 	at Test()
 {"t": +5.5} -> threw SyntaxError: Error #1132: Invalid JSON parse input.
+	at JSON$/parseCore()
 	at JSON$/parse()
 	at Test()
 {"t": .5} -> threw SyntaxError: Error #1132: Invalid JSON parse input.
+	at JSON$/parseCore()
 	at JSON$/parse()
 	at Test()
 {"t": -.5} -> threw SyntaxError: Error #1132: Invalid JSON parse input.
+	at JSON$/parseCore()
 	at JSON$/parse()
 	at Test()
 {"t": 5.} -> threw SyntaxError: Error #1132: Invalid JSON parse input.
+	at JSON$/parseCore()
 	at JSON$/parse()
 	at Test()
 {"t": -5.} -> threw SyntaxError: Error #1132: Invalid JSON parse input.
+	at JSON$/parseCore()
 	at JSON$/parse()
 	at Test()
 {"t": 5e} -> threw SyntaxError: Error #1132: Invalid JSON parse input.
+	at JSON$/parseCore()
 	at JSON$/parse()
 	at Test()
 {"t": 5e+} -> threw SyntaxError: Error #1132: Invalid JSON parse input.
+	at JSON$/parseCore()
 	at JSON$/parse()
 	at Test()
 {"t": 5e-} -> threw SyntaxError: Error #1132: Invalid JSON parse input.
+	at JSON$/parseCore()
 	at JSON$/parse()
 	at Test()
 {"t": 0x1F} -> threw SyntaxError: Error #1132: Invalid JSON parse input.
+	at JSON$/parseCore()
 	at JSON$/parse()
 	at Test()
 {"t": 0o17} -> threw SyntaxError: Error #1132: Invalid JSON parse input.
+	at JSON$/parseCore()
 	at JSON$/parse()
 	at Test()
 {"t": 0b101} -> threw SyntaxError: Error #1132: Invalid JSON parse input.
+	at JSON$/parseCore()
 	at JSON$/parse()
 	at Test()
 {"t": 1_000_000} -> threw SyntaxError: Error #1132: Invalid JSON parse input.
+	at JSON$/parseCore()
 	at JSON$/parse()
 	at Test()
 {"t": Infinity} -> threw SyntaxError: Error #1132: Invalid JSON parse input.
+	at JSON$/parseCore()
 	at JSON$/parse()
 	at Test()
 {"t": -Infinity} -> threw SyntaxError: Error #1132: Invalid JSON parse input.
+	at JSON$/parseCore()
 	at JSON$/parse()
 	at Test()
 {"t": NaN} -> threw SyntaxError: Error #1132: Invalid JSON parse input.
+	at JSON$/parseCore()
 	at JSON$/parse()
 	at Test()
 {"t": 111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111} -> 1.11111111111111e+275
 {"t": 1.111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111} -> 1.1111111111111112
 {"t": ５} -> threw SyntaxError: Error #1132: Invalid JSON parse input.
+	at JSON$/parseCore()
 	at JSON$/parse()
 	at Test()
 {"t": 1 . 5} -> threw SyntaxError: Error #1132: Invalid JSON parse input.
+	at JSON$/parseCore()
 	at JSON$/parse()
 	at Test()
 {"t": 1e 5} -> threw SyntaxError: Error #1132: Invalid JSON parse input.
+	at JSON$/parseCore()
 	at JSON$/parse()
 	at Test()

@@ -221,14 +221,8 @@ fn get_rectangle<'gc>(
         return Ok((-1).into());
     };
 
-    let Some(rectangle_class) =
-        activation.resolve_class([istr!("flash"), istr!("geom"), istr!("Rectangle")])
-    else {
-        return Ok((-1).into());
-    };
-
-    let rect = rectangle_class.construct(
-        activation,
+    let rect = activation.instantiate_class_fast(
+        [istr!("flash"), istr!("geom"), istr!("Rectangle")],
         &[
             0.into(),
             0.into(),
@@ -236,8 +230,7 @@ fn get_rectangle<'gc>(
             bitmap_data.height().into(),
         ],
     )?;
-
-    Ok(rect)
+    Ok(rect.unwrap_or_else(|| (-1).into()))
 }
 
 fn get_pixel<'gc>(
@@ -575,6 +568,7 @@ fn draw<'gc>(
             matrix,
             color_transform,
             perspective_projection: None,
+            tz: 0.0,
         },
         smoothing,
         blend_mode,
@@ -720,11 +714,6 @@ fn get_color_bounds_rect<'gc>(
     let BitmapDataResult::Valid(bitmap_data) = get_bitmap_data(this) else {
         return Ok((-1).into());
     };
-    let Some(rectangle_class) =
-        activation.resolve_class([istr!("flash"), istr!("geom"), istr!("Rectangle")])
-    else {
-        return Ok((-1).into());
-    };
 
     let mask = args.get_u32(activation, 0)?;
     let color = args.get_u32(activation, 1)?;
@@ -740,7 +729,11 @@ fn get_color_bounds_rect<'gc>(
         color,
     );
 
-    rectangle_class.construct(activation, &[x.into(), y.into(), w.into(), h.into()])
+    let rect = activation.instantiate_class_fast(
+        [istr!("flash"), istr!("geom"), istr!("Rectangle")],
+        &[x.into(), y.into(), w.into(), h.into()],
+    )?;
+    Ok(rect.unwrap_or_else(|| (-1).into()))
 }
 
 fn perlin_noise<'gc>(

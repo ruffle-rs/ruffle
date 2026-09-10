@@ -12,6 +12,9 @@ class Test {
 
   static var A_BITMAP = new flash.display.BitmapData(10, 10);
   static var A_POINT = new flash.geom.Point(5, -5);
+  static var A_RECTANGLE = new flash.geom.Rectangle(-10, -20, 20, 40);
+  static var ANOTHER_RECTANGLE = new flash.geom.Rectangle(5, 10, 50, 50);
+  static var A_MATRIX = new flash.geom.Matrix(1, 2, 3, 4, 5, 6);
 
   static var A_BLUR_FILTER = new flash.filters.BevelFilter(5, 45);
   static var A_BEVEL_FILTER = new flash.filters.BlurFilter(10, 10, 2);
@@ -27,8 +30,11 @@ class Test {
     A_DROP_SHADOW_FILTER, A_GLOW_FILTER, A_GRADIENT_BEVEL_FILTER, A_GRADIENT_GLOW_FILTER
   ];
 
+  static var POINT_CLASS = flash.geom.Point;
 
   static function main(current) {
+    var A_TRANSFORM = new flash.geom.Transform(current);
+
     var v;
 
     trace("### Testing weird prototypes...");
@@ -81,6 +87,13 @@ class Test {
     monkeyPatchClass(_global.flash.filters, "GradientBevelFilter");
     monkeyPatchClass(_global.flash.filters, "GradientGlowFilter");
     monkeyPatch(_global.flash, "filters", _global.flash.filters);
+
+    monkeyPatchClass(_global.flash.geom, "ColorTransform");
+    monkeyPatchClass(_global.flash.geom, "Matrix");
+    monkeyPatchClass(_global.flash.geom, "Point");
+    monkeyPatchClass(_global.flash.geom, "Rectangle");
+    monkeyPatchClass(_global.flash.geom, "Transform");
+    monkeyPatch(_global.flash, "geom", _global.flash.geom);
 
     trace("// hiding flash.filters..."); 
     _global.ASSetPropFlags(_global.flash, "filters", 0x2000 /* version 9 */);
@@ -193,6 +206,82 @@ class Test {
     current.filters = [];
 
 
+    trace("");
+    trace("### Testing Rectangle");
+
+    // Rectangle-producing BitmapData methods tested in `avm1/bitmapdata_custom_rectangle`.
+
+    trace("// A_RECTANGLE.clone()");
+    traceName(A_RECTANGLE.clone());
+
+    trace("// A_RECTANGLE.union(ANOTHER_RECTANGLE)");
+    traceName(A_RECTANGLE.union(ANOTHER_RECTANGLE));
+
+    trace("// A_RECTANGLE.intersection(ANOTHER_RECTANGLE)");
+    traceName(A_RECTANGLE.intersection(ANOTHER_RECTANGLE));
+
+    trace("// clip.scrollRect");
+    clip.scrollRect = A_RECTANGLE;
+    traceName(clip.scrollRect, "clip.scrollRect");
+
+    trace("// clip.scale9Grid");
+    clip.scale9Grid = A_RECTANGLE;
+    traceName(clip.scale9Grid, "clip.scale9Grid");
+
+    trace("");
+    trace("### Testing Matrix");
+
+    trace("// A_MATRIX.clone()");
+    traceName(A_MATRIX.clone());
+
+    trace("// A_TRANSFORM.matrix");
+    traceName(A_TRANSFORM.matrix);
+
+    trace("");
+    trace("### Testing (Color)Transform");
+
+    trace("// clip.transform");
+    traceName(clip.transform);
+
+    trace("// A_TRANSFORM.colorTransform");
+    traceName(A_TRANSFORM.colorTransform);
+
+    trace("");
+    trace("### Testing Point");
+
+    trace("// A_DISPLACEMENT_MAP_FILTER.mapPoint");
+    traceName(A_DISPLACEMENT_MAP_FILTER.mapPoint);
+
+    trace("// A_MATRIX.transformPoint(A_POINT)");
+    traceName(A_MATRIX.transformPoint(A_POINT));
+
+    trace("// A_MATRIX.deltaTransformPoint(A_POINT)");
+    traceName(A_MATRIX.deltaTransformPoint(A_POINT));
+
+    trace("// A_POINT.clone()");
+    traceName(A_POINT.clone());
+
+    trace("// A_POINT.add(A_POINT)");
+    traceName(A_POINT.add(A_POINT));
+
+    trace("// A_POINT.subtract(A_POINT)");
+    traceName(A_POINT.subtract(A_POINT));
+
+    trace("// POINT_CLASS.polar(0, 0)");
+    traceName(POINT_CLASS.polar(0, 0));
+
+    trace("// POINT_CLASS.interpolate(A_POINT, A_POINT, 0)");
+    traceName(POINT_CLASS.interpolate(A_POINT, A_POINT, 0));
+
+    trace("// A_RECTANGLE.size");
+    traceName(A_RECTANGLE.size);
+
+    trace("// A_RECTANGLE.topLeft");
+    traceName(A_RECTANGLE.topLeft);
+
+    trace("// A_RECTANGLE.bottomRight");
+    traceName(A_RECTANGLE.bottomRight);
+
     // TODO: test other classes that can be instantiated by AVM1 builtins;
     // see the list in ruffle's `SystemPrototypes`.
 
@@ -218,6 +307,11 @@ class Test {
         case 1: return zuper(a[0]);
         case 2: return zuper(a[0], a[1]);
         case 3: return zuper(a[0], a[1], a[2]);
+        case 4: return zuper(a[0], a[1], a[2], a[3]);
+        case 5: return zuper(a[0], a[1], a[2], a[3], a[4]);
+        case 6: return zuper(a[0], a[1], a[2], a[3], a[4], a[5]);
+        case 7: return zuper(a[0], a[1], a[2], a[3], a[4], a[5], a[6]);
+        case 8: return zuper(a[0], a[1], a[2], a[3], a[4], a[5], a[6], a[7]);
         // Add more if needed.
         default:
           trace("ERROR: too many arguments for constructor: " + a.length);

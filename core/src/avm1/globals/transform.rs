@@ -172,9 +172,8 @@ pub fn method<'gc>(
             };
 
             // Return Rectangle object.
-            let constructor = activation.prototypes().rectangle_constructor;
-            constructor.construct(
-                activation,
+            activation.instantiate_class_as_script(
+                [istr!("flash"), istr!("geom"), istr!("Rectangle")],
                 &[
                     bounds.x_min.to_pixels().into(),
                     bounds.y_min.to_pixels().into(),

@@ -98,3 +98,131 @@ current.filters[7].className: MyGradientBevelFilter
 BITMAP_FILTERS[8].className: GradientGlowFilter
 BITMAP_FILTERS[8].clone().className: GradientGlowFilter
 current.filters[8].className: MyGradientGlowFilter
+
+### Testing Rectangle
+// A_RECTANGLE.clone()
+flash getter called!
+geom getter called!
+Rectangle getter called!
+new MyRectangle(-10, -20, 20, 40) called!
+v.className: MyRectangle
+// A_RECTANGLE.union(ANOTHER_RECTANGLE)
+flash getter called!
+geom getter called!
+Rectangle getter called!
+new MyRectangle() called!
+v.className: MyRectangle
+// A_RECTANGLE.intersection(ANOTHER_RECTANGLE)
+flash getter called!
+geom getter called!
+Rectangle getter called!
+new MyRectangle() called!
+v.className: MyRectangle
+// clip.scrollRect
+flash getter called!
+geom getter called!
+Rectangle getter called!
+new MyRectangle(-10, -20, 20, 40) called!
+clip.scrollRect.className: MyRectangle
+// clip.scale9Grid
+flash getter called!
+geom getter called!
+Rectangle getter called!
+new MyRectangle(-10, -20, 20, 40) called!
+clip.scale9Grid.className: MyRectangle
+
+### Testing Matrix
+// A_MATRIX.clone()
+flash getter called!
+geom getter called!
+Matrix getter called!
+new MyMatrix(1, 2, 3, 4, 5, 6) called!
+v.className: MyMatrix
+// A_TRANSFORM.matrix
+flash getter called!
+geom getter called!
+Matrix getter called!
+new MyMatrix(1, 0, 0, 1, 0, 0) called!
+v.className: MyMatrix
+
+### Testing (Color)Transform
+// clip.transform
+flash getter called!
+geom getter called!
+Transform getter called!
+new MyTransform(_level0.clip) called!
+v.className: MyTransform
+// A_TRANSFORM.colorTransform
+flash getter called!
+geom getter called!
+ColorTransform getter called!
+new MyColorTransform(1, 1, 1, 1, 0, 0, 0, 0) called!
+v.className: MyColorTransform
+
+### Testing Point
+// A_DISPLACEMENT_MAP_FILTER.mapPoint
+flash getter called!
+geom getter called!
+Point getter called!
+new MyPoint(5, -5) called!
+v.className: MyPoint
+// A_MATRIX.transformPoint(A_POINT)
+flash getter called!
+geom getter called!
+Point getter called!
+new MyPoint(-5, -4) called!
+v.className: MyPoint
+// A_MATRIX.deltaTransformPoint(A_POINT)
+flash getter called!
+geom getter called!
+Point getter called!
+new MyPoint(-10, -10) called!
+v.className: MyPoint
+// A_POINT.clone()
+flash getter called!
+geom getter called!
+Point getter called!
+new MyPoint(5, -5) called!
+v.className: MyPoint
+// A_POINT.add(A_POINT)
+flash getter called!
+geom getter called!
+Point getter called!
+new MyPoint(10, -10) called!
+v.className: MyPoint
+// A_POINT.subtract(A_POINT)
+flash getter called!
+geom getter called!
+Point getter called!
+new MyPoint(0, 0) called!
+v.className: MyPoint
+// POINT_CLASS.polar(0, 0)
+flash getter called!
+geom getter called!
+Point getter called!
+new MyPoint(0, 0) called!
+v.className: MyPoint
+// POINT_CLASS.interpolate(A_POINT, A_POINT, 0)
+flash getter called!
+geom getter called!
+Point getter called!
+new MyPoint(5, -5) called!
+v.className: MyPoint
+// A_RECTANGLE.size
+flash getter called!
+geom getter called!
+Point getter called!
+new MyPoint(20, 40) called!
+v.className: MyPoint
+// A_RECTANGLE.topLeft
+flash getter called!
+geom getter called!
+Point getter called!
+new MyPoint(-10, -20) called!
+v.className: MyPoint
+// A_RECTANGLE.bottomRight
+flash getter called!
+geom getter called!
+Point getter called!
+new MyPoint(10, 20) called!
+v.className: MyPoint

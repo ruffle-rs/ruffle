@@ -314,7 +314,7 @@ impl<'gc> XmlListObject<'gc> {
         other: &Value<'gc>,
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<bool, Error<'gc>> {
-        if *other == Value::Undefined && self.length() == 0 {
+        if matches!(other, Value::Undefined) && self.length() == 0 {
             return Ok(true);
         }
 

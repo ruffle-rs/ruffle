@@ -79,7 +79,7 @@ pub fn q_name_constructor<'gc>(
             return Ok(new_qname.into());
         }
 
-        let local = if qname_arg == Value::Undefined {
+        let local = if matches!(qname_arg, Value::Undefined) {
             istr!("")
         } else {
             qname_arg.coerce_to_string(activation)?

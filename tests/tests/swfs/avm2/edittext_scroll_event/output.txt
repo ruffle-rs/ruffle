@@ -1,0 +1,37 @@
+Set to 2
+scroll: [Event type="scroll" bubbles=false cancelable=false eventPhase=2]
+  tf.scrollH=0
+  tf.scrollV=2
+Set to 2
+Set to 0
+scroll: [Event type="scroll" bubbles=false cancelable=false eventPhase=2]
+  tf.scrollH=0
+  tf.scrollV=1
+Set to -1
+Set to 2
+scroll: [Event type="scroll" bubbles=false cancelable=false eventPhase=2]
+  tf.scrollH=0
+  tf.scrollV=2
+Set to -1
+scroll: [Event type="scroll" bubbles=false cancelable=false eventPhase=2]
+  tf.scrollH=0
+  tf.scrollV=1
+Set to 1
+scroll: [Event type="scroll" bubbles=false cancelable=false eventPhase=2]
+  tf.scrollH=0
+  tf.scrollV=4
+scroll: [Event type="scroll" bubbles=false cancelable=false eventPhase=2]
+  tf.scrollH=0
+  tf.scrollV=7
+scroll: [Event type="scroll" bubbles=false cancelable=false eventPhase=2]
+  tf.scrollH=0
+  tf.scrollV=10
+scroll: [Event type="scroll" bubbles=false cancelable=false eventPhase=2]
+  tf.scrollH=0
+  tf.scrollV=7
+scroll: [Event type="scroll" bubbles=false cancelable=false eventPhase=2]
+  tf.scrollH=0
+  tf.scrollV=4
+scroll: [Event type="scroll" bubbles=false cancelable=false eventPhase=2]
+  tf.scrollH=0
+  tf.scrollV=1

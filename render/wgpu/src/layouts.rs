@@ -1,3 +1,4 @@
+use crate::dynamic_transforms::transforms_per_draw;
 use crate::globals::GlobalsUniform;
 use crate::{GradientUniforms, Transforms};
 
@@ -17,12 +18,12 @@ impl BindLayouts {
         let transforms = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
             entries: &[wgpu::BindGroupLayoutEntry {
                 binding: 0,
-                visibility: wgpu::ShaderStages::VERTEX | wgpu::ShaderStages::FRAGMENT,
+                visibility: wgpu::ShaderStages::VERTEX,
                 ty: wgpu::BindingType::Buffer {
                     ty: wgpu::BufferBindingType::Uniform,
-                    has_dynamic_offset: true,
+                    has_dynamic_offset: false,
                     min_binding_size: wgpu::BufferSize::new(
-                        std::mem::size_of::<Transforms>() as u64
+                        transforms_per_draw(&device.limits()) * size_of::<Transforms>() as u64,
                     ),
                 },
                 count: None,

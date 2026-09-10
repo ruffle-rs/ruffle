@@ -94,7 +94,6 @@ impl Surface {
             self.format,
             frame_view,
             target.color_view(),
-            target.whole_frame_bind_group(descriptors),
             target.globals(),
             1,
             draw_encoder,
@@ -178,10 +177,11 @@ impl Surface {
                         },
                     );
                     render_pass.set_bind_group(0, target.globals().bind_group(), &[]);
+                    render_pass.set_bind_group(1, &dynamic_transforms.bind_group, &[]);
                     let mut renderer = CommandRenderer::new(
                         &self.pipelines,
                         descriptors,
-                        dynamic_transforms,
+                        &dynamic_transforms.vertex_buffer,
                         num_masks,
                         mask_state,
                         needs_stencil,
@@ -333,7 +333,6 @@ impl Surface {
                         );
                     }
 
-                    render_pass.set_bind_group(1, target.whole_frame_bind_group(descriptors), &[0]);
                     render_pass.set_bind_group(2, &blend_bind_group, &[]);
 
                     render_pass.set_vertex_buffer(0, descriptors.quad.vertices_pos.slice(..));

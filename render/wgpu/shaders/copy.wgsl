@@ -7,13 +7,12 @@ struct VertexOutput {
     @location(0) uv: vec2<f32>,
 };
 
-@group(1) @binding(0) var<uniform> transforms: common__Transforms;
 @group(2) @binding(0) var texture: texture_2d<f32>;
 @group(2) @binding(1) var texture_sampler: sampler;
 
 @vertex
 fn main_vertex(in: common__VertexInputUv) -> VertexOutput {
-    let pos = common__globals.view_matrix * transforms.world_matrix * vec4<f32>(in.position.x, in.position.y, 0.0, 1.0);
+    let pos = vec4<f32>((in.position.x * 2.0) - 1.0, -(in.position.y * 2.0) + 1.0, 0.0, 1.0);
     return VertexOutput(pos, in.uv.xy / in.uv.z);
 }
 

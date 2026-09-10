@@ -463,7 +463,7 @@ pub fn _index_of<'gc>(
 
         for (i, val) in array.iter().enumerate() {
             let val = resolve_array_hole(activation, this, i, val)?;
-            if i >= from_index && val == search_val {
+            if i >= from_index && val.strict_eq(&search_val) {
                 return Ok(Value::from_usize_lossy(i));
             }
         }
@@ -494,7 +494,7 @@ pub fn _last_index_of<'gc>(
 
         for (i, val) in array.iter().enumerate().rev() {
             let val = resolve_array_hole(activation, this, i, val)?;
-            if i <= from_index && val == search_val {
+            if i <= from_index && val.strict_eq(&search_val) {
                 return Ok(Value::from_usize_lossy(i));
             }
         }

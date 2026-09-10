@@ -511,7 +511,7 @@ impl DisplayObjectWindow {
                     ui.weak(format!("(max {max})"));
 
                     if scroll != object.scroll() {
-                        object.set_scroll(scroll as f64);
+                        object.set_scroll(scroll as f64, true, context);
                     }
                 });
                 ui.end_row();

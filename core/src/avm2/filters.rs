@@ -168,7 +168,7 @@ impl FilterAvm2Ext for Filter {
             )?));
         }
 
-        unreachable!("{object:?} must be of type BitmapFilter")
+        panic!("Unexpected BitmapFilter type {object:?}")
     }
 
     fn as_avm2_object<'gc>(

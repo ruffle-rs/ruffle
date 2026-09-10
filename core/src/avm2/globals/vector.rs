@@ -315,7 +315,7 @@ pub fn index_of<'gc>(
     let mut iter = ArrayIter::with_bounds(activation, this, from_index, u32::MAX)?;
 
     while let Some((i, item)) = iter.next(activation)? {
-        if item == search_for {
+        if item.strict_eq(&search_for) {
             return Ok(i.into());
         }
     }
@@ -345,7 +345,7 @@ pub fn last_index_of<'gc>(
     let mut iter = ArrayIter::with_bounds(activation, this, 0, from_index)?;
 
     while let Some((i, item)) = iter.next_back(activation)? {
-        if item == search_for {
+        if item.strict_eq(&search_for) {
             return Ok(i.into());
         }
     }

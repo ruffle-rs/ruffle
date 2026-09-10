@@ -37,7 +37,7 @@ jobs:
           mkdir -p locale/rs.ruffle.Ruffle.metainfo.xml
 
       - name: Crowdin download
-        uses: crowdin/github-action@v2
+        uses: crowdin/github-action@v3
         with:
           config: 'crowdin.yml'
           upload_sources: false

@@ -61,7 +61,7 @@ fn parse_data<'gc>(
             .as_object()
             .expect("URLVariables object should be Value::Object");
         vars = object_to_index_map(activation, &obj).unwrap_or_default();
-    } else if *data != Value::Null {
+    } else if !matches!(data, Value::Null) {
         let str_data = data.coerce_to_string(activation)?.to_string();
         if !url.contains('?') {
             url.push('?');

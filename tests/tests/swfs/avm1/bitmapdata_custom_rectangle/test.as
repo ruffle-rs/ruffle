@@ -4,10 +4,25 @@ trace("===== before");
 
 var bd = new BitmapData(3, 3, true, 0xAABBCCDD);
 var sourceRect = bd.rectangle;
+
+var noisyMask = {
+    valueOf: function() {
+        trace("mask.valueOf called!");
+        return 0xFF000000;
+    }
+};
+
+var noisyColor = {
+    valueOf: function() {
+        trace("color.valueOf called!");
+        return 0xAA000000;
+    }
+};
+
 var filter = new flash.filters.BevelFilter();
 trace("rectangle: " + bd.rectangle);
 trace("generateFilterRect: " + bd.generateFilterRect(sourceRect, filter));
-trace("getColorBoundsRect: " + bd.getColorBoundsRect(0xFF000000, 0xAA000000));
+trace("getColorBoundsRect: " + bd.getColorBoundsRect(noisyMask, noisyColor));
 
 trace("===== noisy function");
 flash.geom.Rectangle = function(a,b,c,d,e) {
@@ -21,7 +36,7 @@ flash.geom.Rectangle = function(a,b,c,d,e) {
 
 trace("rectangle: " + bd.rectangle);
 trace("generateFilterRect: " + bd.generateFilterRect(sourceRect, filter));
-trace("getColorBoundsRect: " + bd.getColorBoundsRect(0xFF000000, 0xAA000000));
+trace("getColorBoundsRect: " + bd.getColorBoundsRect(noisyMask, noisyColor));
 
 trace("===== throwing function");
 flash.geom.Rectangle = function() {
@@ -41,7 +56,7 @@ try {
 }
 
 try {
-    trace("getColorBoundsRect: " + bd.getColorBoundsRect(0xFF000000, 0xAA000000));
+    trace("getColorBoundsRect: " + bd.getColorBoundsRect(noisyMask, noisyColor));
 } catch (e) {
     trace("Caught: " + e);
 }
@@ -51,4 +66,4 @@ flash.geom = 4;
 
 trace("rectangle: " + bd.rectangle);
 trace("generateFilterRect: " + bd.generateFilterRect(sourceRect, filter));
-trace("getColorBoundsRect: " + bd.getColorBoundsRect(0xFF000000, 0xAA000000));
+trace("getColorBoundsRect: " + bd.getColorBoundsRect(noisyMask, noisyColor));

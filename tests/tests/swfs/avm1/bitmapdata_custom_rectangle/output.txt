@@ -1,6 +1,8 @@
 ===== before
 rectangle: (x=0, y=0, w=3, h=3)
 generateFilterRect: (x=0, y=0, w=3, h=3)
+mask.valueOf called!
+color.valueOf called!
 getColorBoundsRect: (x=0, y=0, w=3, h=3)
 ===== noisy function
 Rectangle:
@@ -17,6 +19,8 @@ Rectangle:
   d=3
   e=undefined
 generateFilterRect: [object Object]
+mask.valueOf called!
+color.valueOf called!
 Rectangle:
   a=0
   b=0
@@ -27,8 +31,12 @@ getColorBoundsRect: [object Object]
 ===== throwing function
 Caught: test
 Caught: test
+mask.valueOf called!
+color.valueOf called!
 Caught: test
 ===== not an object
 rectangle: -1
 generateFilterRect: -1
+mask.valueOf called!
+color.valueOf called!
 getColorBoundsRect: -1
