@@ -1,0 +1,59 @@
+! frameConstructed
+frame: 1, isPlaying: false
+// gotoAndPlay(2)
+frame: 1, isPlaying: false
+// stop()
+frame: 1, isPlaying: false
+! frameConstructed
+frame: 2, isPlaying: true
+! exitFrame
+! exitFrame
+! frameConstructed
+frame: 3, isPlaying: true
+// gotoAndStop(4)
+frame: 3, isPlaying: true
+! frameConstructed
+frame: 4, isPlaying: true
+// play()
+frame: 4, isPlaying: true
+! exitFrame
+! exitFrame
+! frameConstructed
+frame: 5, isPlaying: true
+// play()
+frame: 5, isPlaying: true
+// stop()
+frame: 5, isPlaying: false
+// gotoAndPlay(6)
+frame: 5, isPlaying: false
+! frameConstructed
+frame: 6, isPlaying: true
+// gotoAndStop(7)
+frame: 6, isPlaying: true
+// play()
+frame: 6, isPlaying: true
+// stop()
+frame: 6, isPlaying: false
+! frameConstructed
+frame: 7, isPlaying: false
+// gotoAndStop(8)
+frame: 7, isPlaying: false
+! frameConstructed
+frame: 8, isPlaying: false
+// gotoAndPlay(9)
+frame: 8, isPlaying: false
+! frameConstructed
+frame: 9, isPlaying: true
+! exitFrame
+! exitFrame
+! exitFrame
+! exitFrame
+! exitFrame
+! frameConstructed
+frame: 10, isPlaying: true
+// play()
+frame: 10, isPlaying: true
+// gotoAndStop(11)
+frame: 10, isPlaying: true
+! frameConstructed
+frame: 11, isPlaying: true

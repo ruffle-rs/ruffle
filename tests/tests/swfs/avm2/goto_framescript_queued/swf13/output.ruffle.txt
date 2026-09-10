@@ -1,0 +1,48 @@
+! frameConstructed
+frame: 1, isPlaying: false
+// gotoAndPlay(2)
+frame: 1, isPlaying: true
+// stop()
+frame: 1, isPlaying: false
+! frameConstructed
+frame: 2, isPlaying: false
+! exitFrame
+! exitFrame
+! frameConstructed
+! exitFrame
+! frameConstructed
+! exitFrame
+! frameConstructed
+! exitFrame
+! frameConstructed
+! exitFrame
+! frameConstructed
+! exitFrame
+! frameConstructed
+! exitFrame
+! frameConstructed
+! exitFrame
+! frameConstructed
+! exitFrame
+! frameConstructed
+! exitFrame
+! frameConstructed
+! exitFrame
+! frameConstructed
+! exitFrame
+! frameConstructed
+! exitFrame
+! frameConstructed
+! exitFrame
+! frameConstructed
+! exitFrame
+! frameConstructed
+! exitFrame
+! frameConstructed
+! exitFrame
+! frameConstructed
+! exitFrame
+! frameConstructed
+! exitFrame
+! frameConstructed
+! exitFrame
