@@ -17,6 +17,7 @@ impl BufferBuilder {
         Self {
             inner: Vec::new(),
             align_mask: if alignment > 0 {
+                assert!(alignment.is_power_of_two());
                 (alignment - 1) as usize
             } else {
                 0
