@@ -18,6 +18,7 @@ use ruffle_render::pixel_bender::PixelBenderShaderHandle;
 use ruffle_render::quality::StageQuality;
 use ruffle_render::transform::Transform;
 use std::mem;
+use std::ops::Range;
 use swf::{BlendMode, Color, ColorTransform, Twips};
 use wgpu::Backend;
 use wgpu_profiler::Scope;
@@ -74,7 +75,7 @@ impl<'encoder> CommandRenderer<'encoder> {
         match command {
             DrawCommand::RenderBitmap {
                 bitmap,
-                instance_index,
+                instance_range,
                 vertex_offset,
                 smoothing,
                 blend_mode,
@@ -82,7 +83,7 @@ impl<'encoder> CommandRenderer<'encoder> {
             } => self.render_bitmap(
                 render_pass,
                 bitmap,
-                *instance_index,
+                instance_range.clone(),
                 *smoothing,
                 *blend_mode,
                 *render_stage3d,
@@ -91,21 +92,21 @@ impl<'encoder> CommandRenderer<'encoder> {
             DrawCommand::RenderTexture {
                 _texture,
                 binds,
-                instance_index,
+                instance_range,
                 blend_mode,
-            } => self.render_texture(render_pass, *instance_index, binds, *blend_mode),
+            } => self.render_texture(render_pass, instance_range.clone(), binds, *blend_mode),
             DrawCommand::RenderShape {
                 shape,
-                instance_index,
-            } => self.render_shape(render_pass, shape, *instance_index),
-            DrawCommand::DrawRect { instance_index } => {
-                self.draw_rect(render_pass, *instance_index)
+                instance_range,
+            } => self.render_shape(render_pass, shape, instance_range.clone()),
+            DrawCommand::DrawRect { instance_range } => {
+                self.draw_rect(render_pass, instance_range.clone())
             }
-            DrawCommand::DrawLine { instance_index } => {
-                self.draw_lines::<false>(render_pass, *instance_index)
+            DrawCommand::DrawLine { instance_range } => {
+                self.draw_lines::<false>(render_pass, instance_range.clone())
             }
-            DrawCommand::DrawLineRect { instance_index } => {
-                self.draw_lines::<true>(render_pass, *instance_index)
+            DrawCommand::DrawLineRect { instance_range } => {
+                self.draw_lines::<true>(render_pass, instance_range.clone())
             }
             DrawCommand::PushMask => self.push_mask(render_pass),
             DrawCommand::ActivateMask => self.activate_mask(render_pass),
@@ -115,8 +116,8 @@ impl<'encoder> CommandRenderer<'encoder> {
                 maskee,
                 mask,
                 binds,
-                instance_index,
-            } => self.render_alpha_mask(render_pass, maskee, mask, binds, *instance_index),
+                instance_range,
+            } => self.render_alpha_mask(render_pass, maskee, mask, binds, instance_range.clone()),
         }
     }
 
@@ -196,12 +197,12 @@ impl<'encoder> CommandRenderer<'encoder> {
         vertices: wgpu::BufferSlice<'encoder>,
         indices: wgpu::BufferSlice<'encoder>,
         num_indices: u32,
-        instance_index: u32,
+        instance_range: Range<u32>,
     ) {
         render_pass.set_vertex_buffer(0, vertices);
         render_pass.set_index_buffer(indices, wgpu::IndexFormat::Uint32);
 
-        render_pass.draw_indexed(0..num_indices, 0, instance_index..(instance_index + 1));
+        render_pass.draw_indexed(0..num_indices, 0, instance_range);
     }
 
     #[allow(clippy::too_many_arguments)]
@@ -209,7 +210,7 @@ impl<'encoder> CommandRenderer<'encoder> {
         &self,
         render_pass: &mut wgpu::RenderPass<'encoder>,
         bitmap: &'encoder BitmapHandle,
-        instance_index: u32,
+        instance_range: Range<u32>,
         smoothing: bool,
         blend_mode: TrivialBlend,
         render_stage3d: bool,
@@ -239,14 +240,14 @@ impl<'encoder> CommandRenderer<'encoder> {
             vertex_slice,
             self.descriptors.quad.indices.slice(..),
             6,
-            instance_index,
+            instance_range,
         );
     }
 
     pub fn render_texture(
         &self,
         render_pass: &mut wgpu::RenderPass<'encoder>,
-        instance_index: u32,
+        instance_range: Range<u32>,
         bind_group: &'encoder wgpu::BindGroup,
         blend_mode: TrivialBlend,
     ) {
@@ -257,7 +258,7 @@ impl<'encoder> CommandRenderer<'encoder> {
             self.descriptors.quad.vertices_pos_uv.slice(..),
             self.descriptors.quad.indices.slice(..),
             6,
-            instance_index,
+            instance_range,
         );
     }
 
@@ -265,7 +266,7 @@ impl<'encoder> CommandRenderer<'encoder> {
         &self,
         render_pass: &mut wgpu::RenderPass<'encoder>,
         shape: &'encoder ShapeHandle,
-        instance_index: u32,
+        instance_range: Range<u32>,
     ) {
         let mesh = as_mesh(shape);
         for draw in &mesh.draws {
@@ -298,7 +299,7 @@ impl<'encoder> CommandRenderer<'encoder> {
                 mesh.vertex_buffer.slice(draw.vertices.clone()),
                 mesh.index_buffer.slice(draw.indices.clone()),
                 num_indices,
-                instance_index,
+                instance_range.clone(),
             );
         }
     }
@@ -309,7 +310,7 @@ impl<'encoder> CommandRenderer<'encoder> {
         _maskee: &PoolOrArcTexture,
         _mask: &PoolOrArcTexture,
         bind_group: &'encoder wgpu::BindGroup,
-        instance_index: u32,
+        instance_range: Range<u32>,
     ) {
         if cfg!(feature = "render_debug_labels") {
             render_pass.push_debug_group("render_alpha_mask");
@@ -322,7 +323,7 @@ impl<'encoder> CommandRenderer<'encoder> {
             self.descriptors.quad.vertices_pos.slice(..),
             self.descriptors.quad.indices.slice(..),
             6,
-            instance_index,
+            instance_range,
         );
 
         if cfg!(feature = "render_debug_labels") {
@@ -330,7 +331,11 @@ impl<'encoder> CommandRenderer<'encoder> {
         }
     }
 
-    pub fn draw_rect(&self, render_pass: &mut wgpu::RenderPass<'encoder>, instance_index: u32) {
+    pub fn draw_rect(
+        &self,
+        render_pass: &mut wgpu::RenderPass<'encoder>,
+        instance_range: Range<u32>,
+    ) {
         self.prep_color(render_pass);
 
         self.draw(
@@ -338,14 +343,14 @@ impl<'encoder> CommandRenderer<'encoder> {
             self.descriptors.quad.vertices_pos_color.slice(..),
             self.descriptors.quad.indices.slice(..),
             6,
-            instance_index,
+            instance_range,
         );
     }
 
     pub fn draw_lines<const RECT: bool>(
         &self,
         render_pass: &mut wgpu::RenderPass<'encoder>,
-        instance_index: u32,
+        instance_range: Range<u32>,
     ) {
         self.prep_lines(render_pass);
 
@@ -358,7 +363,7 @@ impl<'encoder> CommandRenderer<'encoder> {
                 self.descriptors.quad.indices_line.slice(..)
             },
             if RECT { 5 } else { 2 },
-            instance_index,
+            instance_range,
         );
     }
 
@@ -427,7 +432,7 @@ pub enum ChunkBlendMode {
 pub enum DrawCommand {
     RenderBitmap {
         bitmap: BitmapHandle,
-        instance_index: u32,
+        instance_range: Range<u32>,
         vertex_offset: Option<wgpu::BufferAddress>,
         smoothing: bool,
         blend_mode: TrivialBlend,
@@ -436,27 +441,27 @@ pub enum DrawCommand {
     RenderTexture {
         _texture: PoolOrArcTexture,
         binds: wgpu::BindGroup,
-        instance_index: u32,
+        instance_range: Range<u32>,
         blend_mode: TrivialBlend,
     },
     RenderAlphaMask {
         maskee: PoolOrArcTexture,
         mask: PoolOrArcTexture,
         binds: wgpu::BindGroup,
-        instance_index: u32,
+        instance_range: Range<u32>,
     },
     RenderShape {
         shape: ShapeHandle,
-        instance_index: u32,
+        instance_range: Range<u32>,
     },
     DrawRect {
-        instance_index: u32,
+        instance_range: Range<u32>,
     },
     DrawLine {
-        instance_index: u32,
+        instance_range: Range<u32>,
     },
     DrawLineRect {
-        instance_index: u32,
+        instance_range: Range<u32>,
     },
     PushMask,
     ActivateMask,
@@ -639,8 +644,8 @@ impl<'encoder, 'global: 'encoder> WgpuCommandHandler<'encoder, 'global> {
         color_transform: ColorTransform,
         command_builder: impl FnOnce(u32) -> DrawCommand,
     ) {
-        self.add_to_current_with_vertices(matrix, tz, color_transform, None, |instance_index, _| {
-            command_builder(instance_index)
+        self.add_to_current_with_vertices(matrix, tz, color_transform, None, |instance_range, _| {
+            command_builder(instance_range)
         })
     }
 
@@ -781,7 +786,7 @@ impl CommandHandler for WgpuCommandHandler<'_, '_> {
                     |instance_index| DrawCommand::RenderTexture {
                         _texture: texture,
                         binds: bind_group,
-                        instance_index,
+                        instance_range: instance_index..instance_index + 1,
                         blend_mode,
                     },
                 );
@@ -852,7 +857,7 @@ impl CommandHandler for WgpuCommandHandler<'_, '_> {
             Some(vertices),
             |instance_index, vertex_offset| DrawCommand::RenderBitmap {
                 bitmap,
-                instance_index,
+                instance_range: instance_index..instance_index + 1,
                 vertex_offset,
                 smoothing,
                 blend_mode: TrivialBlend::Normal,
@@ -876,7 +881,7 @@ impl CommandHandler for WgpuCommandHandler<'_, '_> {
             transform.color_transform,
             |instance_index| DrawCommand::RenderBitmap {
                 bitmap,
-                instance_index,
+                instance_range: instance_index..instance_index + 1,
                 vertex_offset: None,
                 smoothing: false,
                 blend_mode: TrivialBlend::Normal,
@@ -892,7 +897,7 @@ impl CommandHandler for WgpuCommandHandler<'_, '_> {
             transform.color_transform,
             |instance_index| DrawCommand::RenderShape {
                 shape,
-                instance_index,
+                instance_range: instance_index..instance_index + 1,
             },
         );
     }
@@ -902,7 +907,9 @@ impl CommandHandler for WgpuCommandHandler<'_, '_> {
             matrix,
             0.0,
             ColorTransform::multiply_from(color),
-            |instance_index| DrawCommand::DrawRect { instance_index },
+            |instance_index| DrawCommand::DrawRect {
+                instance_range: instance_index..instance_index + 1,
+            },
         );
     }
 
@@ -918,7 +925,9 @@ impl CommandHandler for WgpuCommandHandler<'_, '_> {
                 matrix,
                 0.0,
                 ColorTransform::multiply_from(color),
-                |instance_index| DrawCommand::DrawLine { instance_index },
+                |instance_index| DrawCommand::DrawLine {
+                    instance_range: instance_index..instance_index + 1,
+                },
             );
         }
     }
@@ -935,7 +944,9 @@ impl CommandHandler for WgpuCommandHandler<'_, '_> {
                 matrix,
                 0.0,
                 ColorTransform::multiply_from(color),
-                |instance_index| DrawCommand::DrawLineRect { instance_index },
+                |instance_index| DrawCommand::DrawLineRect {
+                    instance_range: instance_index..instance_index + 1,
+                },
             );
         }
     }
@@ -1029,7 +1040,7 @@ impl CommandHandler for WgpuCommandHandler<'_, '_> {
                 maskee,
                 mask,
                 binds,
-                instance_index,
+                instance_range: instance_index..instance_index + 1,
             }
         });
     }
