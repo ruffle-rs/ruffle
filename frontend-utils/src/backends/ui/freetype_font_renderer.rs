@@ -169,7 +169,11 @@ impl FontRenderer for FreetypeFontRenderer {
 
 /// Converts a FreeType 26.6 fixed-point value (1/64th of a pixel) to Twips
 /// (1/20th of a pixel), rounding to the nearest twip.
-fn convert_26_6_to_twips(value_26_6: i64) -> Twips {
+///
+/// Note: the FreeType type differs between 64-bit and 32-bit architectures,
+/// hence the `Into<i64>`.
+fn convert_26_6_to_twips(value_26_6: impl Into<i64>) -> Twips {
+    let value_26_6 = value_26_6.into();
     let whole_pixels = (value_26_6 / 64) as i32;
 
     let fractional_twips = (value_26_6 % 64) as f64 / 64.0 * 20.0;
