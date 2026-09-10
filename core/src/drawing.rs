@@ -1,16 +1,20 @@
 use crate::context::RenderContext;
+use crate::scale9_cache::{Scale9Cache, Scale9Key};
 use ruffle_render::backend::{RenderBackend, ShapeHandle};
 use ruffle_render::bitmap::{BitmapHandle, BitmapInfo, BitmapSize, BitmapSource};
 use ruffle_render::commands::CommandHandler;
 use ruffle_render::shape_utils::{
-    DistilledShape, DrawCommand, DrawPath, FillRule, cubic_curve_bounds, quadratic_curve_bounds,
+    DistilledShape, DrawCommand, DrawPath, FillRule, Scale9, Scale9Space, cubic_curve_bounds,
+    quadratic_curve_bounds,
 };
+use std::borrow::Cow;
 use std::cell::OnceCell;
 use swf::{FillStyle, LineStyle, Point, Rectangle, Twips};
 
 #[derive(Clone, Debug)]
 pub struct Drawing {
     render_handle: OnceCell<ShapeHandle>,
+    scale9_cache: Scale9Cache,
     shape_bounds: Rectangle<Twips>,
     edge_bounds: Rectangle<Twips>,
     paths: Vec<DrawingPath>,
@@ -35,6 +39,7 @@ impl Drawing {
     pub fn new() -> Self {
         Self {
             render_handle: OnceCell::new(),
+            scale9_cache: Scale9Cache::default(),
             shape_bounds: Default::default(),
             edge_bounds: Default::default(),
             paths: Vec::new(),
@@ -52,6 +57,7 @@ impl Drawing {
     pub fn from_swf_shape(shape: &swf::Shape) -> Self {
         let mut this = Self {
             render_handle: OnceCell::new(),
+            scale9_cache: Scale9Cache::default(),
             shape_bounds: shape.shape_bounds,
             edge_bounds: shape.edge_bounds,
             paths: Vec::new(),
@@ -77,7 +83,7 @@ impl Drawing {
                     is_closed: _,
                     commands,
                 } => {
-                    this.set_line_style(Some(style.clone()));
+                    this.set_line_style(Some(style.into_owned()));
 
                     for command in commands {
                         this.draw_command(command);
@@ -90,7 +96,7 @@ impl Drawing {
                     commands,
                     winding_rule,
                 } => {
-                    this.new_fill(Some(style.clone()), Some(winding_rule));
+                    this.new_fill(Some(style.into_owned()), Some(winding_rule));
 
                     for command in commands {
                         this.draw_command(command);
@@ -107,6 +113,7 @@ impl Drawing {
     fn mark_dirty(&mut self) {
         self.is_empty = false;
         self.render_handle.take();
+        self.scale9_cache.clear();
     }
 
     /// Set fill style and reset fill rule to default.
@@ -163,6 +170,7 @@ impl Drawing {
 
         // An empty drawing doesn't need to hold onto a `ShapeHandle`.
         self.render_handle.take();
+        self.scale9_cache.clear();
     }
 
     pub fn set_line_style(&mut self, style: Option<LineStyle>) {
@@ -239,82 +247,103 @@ impl Drawing {
         id
     }
 
+    /// Assemble this drawing's paths into a shape ready for tessellation.
+    fn distill(&self) -> DistilledShape<'_> {
+        let mut paths = Vec::with_capacity(self.paths.len());
+
+        for path in &self.paths {
+            match path {
+                DrawingPath::Fill(fill) => {
+                    paths.push(DrawPath::Fill {
+                        style: Cow::Borrowed(&fill.style),
+                        commands: fill.commands.to_owned(),
+                        winding_rule: fill.rule,
+                    });
+                }
+                DrawingPath::Line(line) => {
+                    paths.push(DrawPath::Stroke {
+                        style: Cow::Borrowed(&line.style),
+                        commands: line.commands.to_owned(),
+                        is_closed: line.is_closed,
+                    });
+                }
+            }
+        }
+
+        if let Some(fill) = &self.current_fill {
+            paths.push(DrawPath::Fill {
+                style: Cow::Borrowed(&fill.style),
+                commands: fill.commands.to_owned(),
+                winding_rule: fill.rule,
+            })
+        }
+
+        for line in &self.pending_lines {
+            let mut commands = line.commands.to_owned();
+            let is_closed = if self.current_fill.is_some() {
+                commands.push(DrawCommand::LineTo(self.fill_start));
+                true
+            } else {
+                self.cursor == self.fill_start
+            };
+            paths.push(DrawPath::Stroke {
+                style: Cow::Borrowed(&line.style),
+                commands,
+                is_closed,
+            })
+        }
+
+        if let Some(line) = &self.current_line {
+            let mut commands = line.commands.to_owned();
+            let is_closed = if self.current_fill.is_some() {
+                commands.push(DrawCommand::LineTo(self.fill_start));
+                true
+            } else {
+                self.cursor == self.fill_start
+            };
+            paths.push(DrawPath::Stroke {
+                style: Cow::Borrowed(&line.style),
+                commands,
+                is_closed,
+            })
+        }
+
+        DistilledShape {
+            paths,
+            shape_bounds: self.shape_bounds,
+            edge_bounds: self.edge_bounds,
+            id: 0,
+        }
+    }
+
     /// Obtain a `ShapeHandle` that represents this `Drawing`, or `None` if it is empty.
     pub fn register_or_replace(&self, renderer: &mut dyn RenderBackend) -> Option<ShapeHandle> {
         if self.is_empty {
             return None;
         }
 
-        let handle = self.render_handle.get_or_init(|| {
-            let mut paths = Vec::with_capacity(self.paths.len());
-
-            for path in &self.paths {
-                match path {
-                    DrawingPath::Fill(fill) => {
-                        paths.push(DrawPath::Fill {
-                            style: &fill.style,
-                            commands: fill.commands.to_owned(),
-                            winding_rule: fill.rule,
-                        });
-                    }
-                    DrawingPath::Line(line) => {
-                        paths.push(DrawPath::Stroke {
-                            style: &line.style,
-                            commands: line.commands.to_owned(),
-                            is_closed: line.is_closed,
-                        });
-                    }
-                }
-            }
-
-            if let Some(fill) = &self.current_fill {
-                paths.push(DrawPath::Fill {
-                    style: &fill.style,
-                    commands: fill.commands.to_owned(),
-                    winding_rule: fill.rule,
-                })
-            }
-
-            for line in &self.pending_lines {
-                let mut commands = line.commands.to_owned();
-                let is_closed = if self.current_fill.is_some() {
-                    commands.push(DrawCommand::LineTo(self.fill_start));
-                    true
-                } else {
-                    self.cursor == self.fill_start
-                };
-                paths.push(DrawPath::Stroke {
-                    style: &line.style,
-                    commands,
-                    is_closed,
-                })
-            }
-
-            if let Some(line) = &self.current_line {
-                let mut commands = line.commands.to_owned();
-                let is_closed = if self.current_fill.is_some() {
-                    commands.push(DrawCommand::LineTo(self.fill_start));
-                    true
-                } else {
-                    self.cursor == self.fill_start
-                };
-                paths.push(DrawPath::Stroke {
-                    style: &line.style,
-                    commands,
-                    is_closed,
-                })
-            }
-
-            let shape = DistilledShape {
-                paths,
-                shape_bounds: self.shape_bounds,
-                edge_bounds: self.edge_bounds,
-                id: 0,
-            };
-            renderer.register_shape(shape, self)
-        });
+        let handle = self
+            .render_handle
+            .get_or_init(|| renderer.register_shape(self.distill(), self));
 
         Some(handle.clone())
+    }
+
+    /// Obtain a `ShapeHandle` for this drawing 9-sliced against `grid`.
+    fn register_scale9(
+        &self,
+        renderer: &mut dyn RenderBackend,
+        scale9: &Scale9,
+        space: Scale9Space,
+    ) -> Option<ShapeHandle> {
+        if self.is_empty {
+            return None;
+        }
+
+        self.scale9_cache
+            .get_or_register(Scale9Key::new(scale9, space), || {
+                Some(renderer.register_shape(scale9.apply(self.distill(), space), self))
+            })
     }
 
     pub fn render(&self, context: &mut RenderContext) {
@@ -322,6 +351,16 @@ impl Drawing {
             context
                 .commands
                 .render_shape(handle, context.transform_stack.transform());
+        }
+    }
+
+    /// Render 9-sliced. `space` carries the child's matrix when a container's grid is being
+    /// applied to it, and is `Own` when this drawing owns the grid.
+    pub fn render_scale9(&self, context: &mut RenderContext, scale9: &Scale9, space: Scale9Space) {
+        if let Some(handle) = self.register_scale9(context.renderer, scale9, space) {
+            let mut transform = context.transform_stack.transform();
+            transform.matrix *= scale9.unscale(space);
+            context.commands.render_shape(handle, transform);
         }
     }
 

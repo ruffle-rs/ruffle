@@ -1,0 +1,17 @@
+# Renders once, changes scale / grid / cacheAsBitmap state on the first frame event, and
+# captures the second tick: a slice or bitmap served from a stale cache shows up here.
+num_ticks = 2
+
+[image_comparisons.output]
+tolerance = 1
+max_outliers = 0
+
+[player_options]
+with_renderer = { optional = false }
+
+[[compilers]]
+type = "Asc"
+target = "test.swf"
+class = "Test"
+scripts = ["Test.as"]
+swf_version = 43
