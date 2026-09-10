@@ -31,8 +31,6 @@ Event listener called
 1200
 18
 18
-8.3203125
-2.58984375
 normal
 null
 1

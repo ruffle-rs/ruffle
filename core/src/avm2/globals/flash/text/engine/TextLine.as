@@ -28,26 +28,20 @@ package flash.text.engine {
 
         public native function get textBlock():TextBlock;
 
-        public function get ascent():Number {
-            stub_getter("flash.text.engine.TextLine", "ascent");
-            return 12.0;
-        }
+        public native function get ascent():Number;
 
         [API("670")]
         public function get totalAscent():Number {
             stub_getter("flash.text.engine.TextLine", "totalAscent");
-            return 12.0;
+            return this.ascent;
         }
 
-        public function get descent():Number {
-            stub_getter("flash.text.engine.TextLine", "descent");
-            return 3.0;
-        }
+        public native function get descent():Number;
 
         [API("670")]
         public function get totalDescent():Number {
             stub_getter("flash.text.engine.TextLine", "totalDescent");
-            return 3.0;
+            return this.descent;
         }
 
         public function get unjustifiedTextWidth():Number {
