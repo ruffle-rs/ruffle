@@ -649,6 +649,10 @@ impl<'encoder, 'global: 'encoder> WgpuCommandHandler<'encoder, 'global> {
         })
     }
 
+    fn push_command(&mut self, command: DrawCommand) {
+        self.current.push(command);
+    }
+
     fn add_to_current_with_vertices(
         &mut self,
         matrix: Matrix,
@@ -676,7 +680,7 @@ impl<'encoder, 'global: 'encoder> WgpuCommandHandler<'encoder, 'global> {
             self.transforms.add(&[transform]),
             vertices.map(|v| self.vertices.add(v)).transpose(),
         ) {
-            self.current.push(command_builder(
+            self.push_command(command_builder(
                 (transform_range.start as usize / size_of::<Transforms>()) as u32,
                 vertices_range.map(|v| v.start),
             ));
@@ -702,7 +706,7 @@ impl<'encoder, 'global: 'encoder> WgpuCommandHandler<'encoder, 'global> {
                     .add(v)
                     .expect("Buffer must be able to fit a new thing, it was just emptied")
             });
-            self.current.push(command_builder(
+            self.push_command(command_builder(
                 (transform_range.start as usize / size_of::<Transforms>()) as u32,
                 vertices_range.map(|v| v.start),
             ));
@@ -954,23 +958,23 @@ impl CommandHandler for WgpuCommandHandler<'_, '_> {
     fn push_mask(&mut self) {
         self.needs_stencil = true;
         self.num_masks += 1;
-        self.current.push(DrawCommand::PushMask);
+        self.push_command(DrawCommand::PushMask);
     }
 
     fn activate_mask(&mut self) {
         self.needs_stencil = true;
-        self.current.push(DrawCommand::ActivateMask);
+        self.push_command(DrawCommand::ActivateMask);
     }
 
     fn deactivate_mask(&mut self) {
         self.needs_stencil = true;
-        self.current.push(DrawCommand::DeactivateMask);
+        self.push_command(DrawCommand::DeactivateMask);
     }
 
     fn pop_mask(&mut self) {
         self.needs_stencil = true;
         self.num_masks -= 1;
-        self.current.push(DrawCommand::PopMask);
+        self.push_command(DrawCommand::PopMask);
     }
 
     fn render_alpha_mask(&mut self, maskee_commands: CommandList, mask_commands: CommandList) {
