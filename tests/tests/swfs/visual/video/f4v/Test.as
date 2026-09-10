@@ -4,6 +4,7 @@
     import flash.net.NetStream;
     import flash.media.Video;
     import flash.events.NetStatusEvent;
+    import flash.utils.setTimeout;
 
      [SWF(width="80", height="80", frameRate="10")]
     public class Test extends Sprite {
@@ -19,6 +20,14 @@
             addChild(vid);
             vid.attachNetStream(ns);
             ns.play("test.mp4");
+
+            setTimeout(function():void {
+                ns.seek(1);
+            }, 5000);
+
+            setTimeout(function():void {
+                ns.seek(3);
+            }, 6000);
         }
     }
 }
