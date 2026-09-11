@@ -1,7 +1,8 @@
 use crate::blend::{ComplexBlend, TrivialBlend};
 use crate::layouts::BindLayouts;
 use crate::shaders::Shaders;
-use crate::{MaskMode, PosColorVertex, PosUvVertex, PosVertex};
+use crate::surface::mask::MaskMode;
+use crate::{PosColorVertex, PosUvVertex, PosVertex};
 use enum_map::{EnumMap, enum_map};
 use wgpu::{BlendState, PrimitiveTopology, vertex_attr_array};
 
