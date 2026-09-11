@@ -842,7 +842,12 @@ impl<'gc> MovieClip<'gc> {
 
     pub fn next_frame(self, context: &mut UpdateContext<'gc>) {
         if self.current_frame() < self.header_frames() {
-            self.goto_frame(context, self.current_frame() + 1, true);
+            let goto_info = GotoInfo {
+                frame: self.current_frame() + 1,
+                stop_or_play: StopOrPlay::Stop,
+            };
+
+            self.goto_frame(context, goto_info);
         }
     }
 
@@ -852,7 +857,12 @@ impl<'gc> MovieClip<'gc> {
 
     pub fn prev_frame(self, context: &mut UpdateContext<'gc>) {
         if self.current_frame() > 1 {
-            self.goto_frame(context, self.current_frame() - 1, true);
+            let goto_info = GotoInfo {
+                frame: self.current_frame() - 1,
+                stop_or_play: StopOrPlay::Stop,
+            };
+
+            self.goto_frame(context, goto_info);
         }
     }
 
@@ -884,16 +894,15 @@ impl<'gc> MovieClip<'gc> {
     ///
     /// This is treated as an 'explicit' goto: frame scripts and other frame
     /// lifecycle events will be retriggered.
-    pub fn goto_frame(self, context: &mut UpdateContext<'gc>, frame: FrameNumber, stop: bool) {
+    pub fn goto_frame(self, context: &mut UpdateContext<'gc>, goto_info: GotoInfo) {
         // Stop first, in case we need to kill and restart the stream sound.
-        if stop {
-            self.stop(context);
-        } else {
-            self.play();
+        match goto_info.stop_or_play {
+            StopOrPlay::Stop => self.stop(context),
+            StopOrPlay::Play => self.play(),
         }
 
         // Clamp frame number in bounds.
-        let frame = frame.max(1);
+        let frame = goto_info.frame.max(1);
 
         // AVM2 does not allow a clip to goto while it is executing a frame script.
         // The goto is instead queued and run once the frame script is completed.
@@ -2920,7 +2929,12 @@ impl<'gc> TInteractiveObject<'gc> for MovieClip<'gc> {
             && let Some(frame_number) = self.frame_label_to_number(frame_name, context)
             && self.is_button_mode(context)
         {
-            self.goto_frame(context, frame_number, true);
+            let goto_info = GotoInfo {
+                frame: frame_number,
+                stop_or_play: StopOrPlay::Stop,
+            };
+
+            self.goto_frame(context, goto_info);
         }
 
         let mut handled = ClipEventResult::NotHandled;
@@ -4680,6 +4694,19 @@ impl Default for PreloadProgress {
             has_end_tag: Cell::new(false),
         }
     }
+}
+
+/// Information about a goto
+#[derive(Clone, Copy)]
+pub struct GotoInfo {
+    pub frame: FrameNumber,
+    pub stop_or_play: StopOrPlay,
+}
+
+#[derive(Clone, Copy)]
+pub enum StopOrPlay {
+    Stop,
+    Play,
 }
 
 /// Data shared between all instances of a movie clip.

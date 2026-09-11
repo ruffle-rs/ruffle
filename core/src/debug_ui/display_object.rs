@@ -15,9 +15,9 @@ use crate::debug_ui::handle::{
 };
 use crate::debug_ui::movie::open_movie_button;
 use crate::display_object::{
-    AutoSizeMode, Avm2Button, Bitmap, BoundsMode, ButtonState, DisplayObject, EditText,
-    InteractiveObject, LayoutDebugBoxesFlag, MovieClip, RenderMask, Stage, TDisplayObject,
-    TDisplayObjectContainer, TInteractiveObject,
+    AutoSizeMode, Avm2Button, Bitmap, BoundsMode, ButtonState, DisplayObject, EditText, GotoInfo,
+    InteractiveObject, LayoutDebugBoxesFlag, MovieClip, RenderMask, Stage, StopOrPlay,
+    TDisplayObject, TDisplayObjectContainer, TInteractiveObject,
 };
 use crate::focus_tracker::Highlight;
 use crate::font::{Font, FontDescriptor, FontLike};
@@ -1205,10 +1205,20 @@ impl DisplayObjectWindow {
                             if object.current_frame() != frame {
                                 ui.horizontal(|ui| {
                                     if ui.button("Stop").clicked() {
-                                        object.goto_frame(context, frame, true);
+                                        let goto_info = GotoInfo {
+                                            frame,
+                                            stop_or_play: StopOrPlay::Stop,
+                                        };
+
+                                        object.goto_frame(context, goto_info);
                                     }
                                     if ui.button("Play").clicked() {
-                                        object.goto_frame(context, frame, false);
+                                        let goto_info = GotoInfo {
+                                            frame,
+                                            stop_or_play: StopOrPlay::Play,
+                                        };
+
+                                        object.goto_frame(context, goto_info);
                                     }
                                 });
                             } else {
