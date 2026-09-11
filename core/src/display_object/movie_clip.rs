@@ -3137,6 +3137,10 @@ impl<'gc> TInteractiveObject<'gc> for MovieClip<'gc> {
                 return Avm2MousePick::Miss;
             }
 
+            if !self.global_in_scroll_rect(point) {
+                return Avm2MousePick::Miss;
+            }
+
             // Maybe we could skip recursing down at all if !world_bounds.contains(point),
             // but a child button can have an invisible hit area outside the parent's bounds.
             let mut options = HitTestOptions::SKIP_INVISIBLE;

@@ -1,0 +1,32 @@
+[
+  { "type": "Wait" },
+  {
+    "type": "MouseMove",
+    "pos": [150, 100]
+  },
+  {
+    "type": "MouseDown",
+    "pos": [150, 100],
+    "btn": "Left"
+  },
+  {
+    "type": "MouseUp",
+    "pos": [150, 100],
+    "btn": "Left"
+  },
+  { "type": "Wait" },
+  {
+    "type": "MouseMove",
+    "pos": [350, 100]
+  },
+  {
+    "type": "MouseDown",
+    "pos": [350, 100],
+    "btn": "Left"
+  },
+  {
+    "type": "MouseUp",
+    "pos": [350, 100],
+    "btn": "Left"
+  }
+]

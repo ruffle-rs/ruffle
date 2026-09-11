@@ -174,6 +174,10 @@ impl<'gc> TInteractiveObject<'gc> for LoaderDisplay<'gc> {
         options.set(HitTestOptions::SKIP_MASK, self.maskee().is_none());
 
         if self.visible() {
+            if !self.global_in_scroll_rect(point) {
+                return Avm2MousePick::Miss;
+            }
+
             // A loader has at most one child.
             if let Some(child) = self.iter_render_list().next() {
                 if let Some(int) = child.as_interactive() {
