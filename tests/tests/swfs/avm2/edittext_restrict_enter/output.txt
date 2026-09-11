@@ -1,0 +1,16 @@
+singleLine textInput: a
+singleLine change: a
+singleLine textInput: b
+singleLine change: ab
+singleLine textInput: c!@#d
+singleLine change: abcd
+singleLine result: abcd
+multiLine textInput: a
+multiLine change: a
+multiLine textInput: \n
+multiLine change: a\r
+multiLine textInput: b
+multiLine change: a\rb
+multiLine textInput: c!@#\nd
+multiLine change: a\rbc\nd
+multiLine result: a\rbc\nd
