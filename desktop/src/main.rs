@@ -24,8 +24,12 @@ mod windows;
 use crate::preferences::GlobalPreferences;
 use anyhow::{Context, Error};
 use app::App;
-use clap::{CommandFactory, Parser};
-use cli::{Commands, Opt};
+#[cfg(feature = "shell-completions")]
+use clap::CommandFactory;
+use clap::Parser;
+#[cfg(feature = "shell-completions")]
+use cli::Commands;
+use cli::Opt;
 use rfd::MessageDialogResult;
 use ruffle_core::StaticCallstack;
 use std::cell::RefCell;
@@ -151,6 +155,7 @@ fn main() -> Result<(), Error> {
 
     let opt = Opt::parse();
 
+    #[cfg(feature = "shell-completions")]
     if let Some(Commands::Completions { shell }) = opt.command {
         let mut cmd = Opt::command();
         clap_complete::generate(shell, &mut cmd, "ruffle", &mut std::io::stdout());

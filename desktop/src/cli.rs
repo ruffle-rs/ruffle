@@ -1,7 +1,11 @@
 use crate::RUFFLE_VERSION;
 use crate::preferences::storage::StorageBackend;
 use anyhow::{Error, anyhow};
-use clap::{Parser, Subcommand, ValueEnum};
+use clap::Parser;
+#[cfg(feature = "shell-completions")]
+use clap::Subcommand;
+use clap::ValueEnum;
+#[cfg(feature = "shell-completions")]
 use clap_complete::Shell;
 use ruffle_core::backend::navigator::SocketMode;
 use ruffle_core::config::Letterbox;
@@ -41,6 +45,7 @@ fn get_default_cache_directory() -> std::path::PathBuf {
     subcommand_negates_reqs = true
 )]
 pub struct Opt {
+    #[cfg(feature = "shell-completions")]
     #[clap(subcommand)]
     pub command: Option<Commands>,
 
@@ -507,6 +512,7 @@ pub enum FilesystemAccessMode {
     Ask,
 }
 
+#[cfg(feature = "shell-completions")]
 #[derive(Debug, Clone, Subcommand)]
 pub enum Commands {
     /// Generate shell completions for the specified shell
