@@ -36,4 +36,30 @@ impl MaskState {
             }
         }
     }
+
+    pub fn push_mask(&mut self) {
+        debug_assert!(self.mode == MaskMode::NoMask || self.mode == MaskMode::DrawMaskedContent);
+        self.count += 1;
+        self.mode = MaskMode::DrawMaskStencil;
+    }
+
+    pub fn activate_mask(&mut self) {
+        debug_assert!(self.count > 0 && self.mode == MaskMode::DrawMaskStencil);
+        self.mode = MaskMode::DrawMaskedContent;
+    }
+
+    pub fn deactivate_mask(&mut self) {
+        debug_assert!(self.count > 0 && self.mode == MaskMode::DrawMaskedContent);
+        self.mode = MaskMode::ClearMaskStencil;
+    }
+
+    pub fn pop_mask(&mut self) {
+        debug_assert!(self.count > 0 && self.mode == MaskMode::ClearMaskStencil);
+        self.count -= 1;
+        if self.count == 0 {
+            self.mode = MaskMode::NoMask;
+        } else {
+            self.mode = MaskMode::DrawMaskedContent;
+        };
+    }
 }

@@ -422,37 +422,18 @@ impl<'encoder> CommandRenderer<'encoder> {
     }
 
     pub fn push_mask(&mut self) {
-        debug_assert!(
-            self.mask_state.mode == MaskMode::NoMask
-                || self.mask_state.mode == MaskMode::DrawMaskedContent
-        );
-        self.mask_state.count += 1;
-        self.mask_state.mode = MaskMode::DrawMaskStencil;
+        self.mask_state.push_mask();
     }
 
     pub fn activate_mask(&mut self) {
-        debug_assert!(
-            self.mask_state.count > 0 && self.mask_state.mode == MaskMode::DrawMaskStencil
-        );
-        self.mask_state.mode = MaskMode::DrawMaskedContent;
+        self.mask_state.activate_mask();
     }
 
     pub fn deactivate_mask(&mut self) {
-        debug_assert!(
-            self.mask_state.count > 0 && self.mask_state.mode == MaskMode::DrawMaskedContent
-        );
-        self.mask_state.mode = MaskMode::ClearMaskStencil;
+        self.mask_state.deactivate_mask();
     }
 
     pub fn pop_mask(&mut self) {
-        debug_assert!(
-            self.mask_state.count > 0 && self.mask_state.mode == MaskMode::ClearMaskStencil
-        );
-        self.mask_state.count -= 1;
-        if self.mask_state.count == 0 {
-            self.mask_state.mode = MaskMode::NoMask;
-        } else {
-            self.mask_state.mode = MaskMode::DrawMaskedContent;
-        };
+        self.mask_state.pop_mask();
     }
 }
