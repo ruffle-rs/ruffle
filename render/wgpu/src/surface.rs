@@ -13,7 +13,7 @@ pub use crate::surface::commands::LayerRef;
 use crate::surface::commands::chunk_blends;
 use crate::utils::run_copy_pipeline;
 use crate::utils::supported_sample_count;
-use crate::{Descriptors, MaskState, Pipelines};
+use crate::{Descriptors, MaskMode, Pipelines};
 use chunk::{Chunk, CommandRenderer};
 use ruffle_render::commands::CommandList;
 use ruffle_render::pixel_bender_support::{ImageInputTexture, PixelBenderShaderArgument};
@@ -126,7 +126,7 @@ impl Surface {
         );
 
         let mut num_masks = 0;
-        let mut mask_state = MaskState::NoMask;
+        let mut mask_mode = MaskMode::NoMask;
         let chunks = chunk_blends(
             commands,
             descriptors,
@@ -184,7 +184,7 @@ impl Surface {
                         descriptors,
                         &dynamic_transforms.vertex_buffer,
                         num_masks,
-                        mask_state,
+                        mask_mode,
                         needs_stencil,
                     );
 
@@ -193,7 +193,7 @@ impl Surface {
                     }
 
                     num_masks = renderer.num_masks();
-                    mask_state = renderer.mask_state();
+                    mask_mode = renderer.mask_mode();
                 }
                 Chunk::Blend {
                     texture,
@@ -313,20 +313,20 @@ impl Surface {
                     render_pass.set_bind_group(0, target.globals().bind_group(), &[]);
 
                     if needs_stencil {
-                        match mask_state {
-                            MaskState::NoMask => {}
-                            MaskState::DrawMaskStencil => {
+                        match mask_mode {
+                            MaskMode::NoMask => {}
+                            MaskMode::DrawMaskStencil => {
                                 render_pass.set_stencil_reference(num_masks - 1);
                             }
-                            MaskState::DrawMaskedContent => {
+                            MaskMode::DrawMaskedContent => {
                                 render_pass.set_stencil_reference(num_masks);
                             }
-                            MaskState::ClearMaskStencil => {
+                            MaskMode::ClearMaskStencil => {
                                 render_pass.set_stencil_reference(num_masks);
                             }
                         }
                         render_pass.set_pipeline(
-                            self.pipelines.complex_blends[blend_mode].pipeline_for(mask_state),
+                            self.pipelines.complex_blends[blend_mode].pipeline_for(mask_mode),
                         );
                     } else {
                         render_pass.set_pipeline(
