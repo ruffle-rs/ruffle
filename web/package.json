@@ -40,7 +40,6 @@
         "stylelint-prettier": "^5.0.3",
         "terser-webpack-plugin": "^5.6.1",
         "ts-loader": "^9.6.2",
-        "tsx": "^4.23.13",
         "typedoc-plugin-mdn-links": "^5.1.1",
         "typescript": "^6.0.3",
         "typescript-eslint": "^8.69.0",
@@ -61,6 +60,6 @@
         "docs": "npm run docs --workspaces --if-present",
         "lint": "npm run checkTypes --workspaces --if-present && eslint . && stylelint **.css",
         "format": "eslint . --fix && stylelint --fix **.css",
-        "version-seal": "cross-env ENABLE_VERSION_SEAL=true tsx packages/core/tools/set_version.ts"
+        "version-seal": "cross-env ENABLE_VERSION_SEAL=true node packages/core/tools/set_version.ts"
     }
 }

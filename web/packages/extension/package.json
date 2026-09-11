@@ -7,9 +7,9 @@
     "type": "module",
     "scripts": {
         "build": "tsc -p jsconfig.json && npm run build:generic && npm run build:firefox",
-        "build:generic": "webpack --env generic && tsx tools/inject_plugin_polyfill.ts && tsx tools/zip.ts dist/ruffle_extension.zip",
-        "build:firefox": "webpack --env firefox && tsx tools/inject_plugin_polyfill.ts && tsx tools/zip.ts dist/firefox_unsigned.xpi && npm run sign-firefox",
-        "sign-firefox": "tsx tools/submit_xpi.ts dist/firefox_unsigned.xpi ../../../reproducible-source.zip",
+        "build:generic": "webpack --env generic && node tools/inject_plugin_polyfill.ts && node tools/zip.ts dist/ruffle_extension.zip",
+        "build:firefox": "webpack --env firefox && node tools/inject_plugin_polyfill.ts && node tools/zip.ts dist/firefox_unsigned.xpi && npm run sign-firefox",
+        "sign-firefox": "node tools/submit_xpi.ts dist/firefox_unsigned.xpi ../../../reproducible-source.zip",
         "checkTypes": "tsc --noemit && tsc --noemit -p tools"
     },
     "dependencies": {
@@ -29,7 +29,6 @@
         "webpack-cli": "^7.2.3",
         "axios": "^1.20.0",
         "form-data": "^4.0.6",
-        "jsonwebtoken": "^9.0.3",
-        "tsx": "^4.23.13"
+        "jsonwebtoken": "^9.0.3"
     }
 }
