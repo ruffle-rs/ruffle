@@ -1,7 +1,7 @@
 use crate::blend::{ComplexBlend, TrivialBlend};
 use crate::layouts::BindLayouts;
 use crate::shaders::Shaders;
-use crate::{MaskState, PosColorVertex, PosUvVertex, PosVertex};
+use crate::{MaskMode, PosColorVertex, PosUvVertex, PosVertex};
 use enum_map::{EnumMap, enum_map};
 use wgpu::{BlendState, PrimitiveTopology, vertex_attr_array};
 
@@ -36,7 +36,7 @@ pub const VERTEX_BUFFERS_DESCRIPTION_COLOR: [Option<wgpu::VertexBufferLayout>; 1
 
 #[derive(Debug)]
 pub struct ShapePipeline {
-    pub pipelines: EnumMap<MaskState, wgpu::RenderPipeline>,
+    pub pipelines: EnumMap<MaskMode, wgpu::RenderPipeline>,
     stencilless: wgpu::RenderPipeline,
 }
 
@@ -60,8 +60,8 @@ pub struct Pipelines {
 }
 
 impl ShapePipeline {
-    pub fn pipeline_for(&self, mask_state: MaskState) -> &wgpu::RenderPipeline {
-        &self.pipelines[mask_state]
+    pub fn pipeline_for(&self, mask_mode: MaskMode) -> &wgpu::RenderPipeline {
+        &self.pipelines[mask_mode]
     }
 
     pub fn stencilless_pipeline(&self) -> &wgpu::RenderPipeline {
@@ -73,7 +73,7 @@ impl ShapePipeline {
     /// for each possible `MaskState`.
     fn build(
         stencilless: wgpu::RenderPipeline,
-        f: impl FnMut(MaskState) -> wgpu::RenderPipeline,
+        f: impl FnMut(MaskMode) -> wgpu::RenderPipeline,
     ) -> Self {
         ShapePipeline {
             pipelines: EnumMap::from_fn(f),
@@ -386,8 +386,8 @@ fn create_shape_pipeline(
             &[],
             primitive_topology,
         )),
-        |mask_state| match mask_state {
-            MaskState::NoMask => mask_render_state(
+        |mask_mode| match mask_mode {
+            MaskMode::NoMask => mask_render_state(
                 "no mask",
                 wgpu::StencilFaceState {
                     compare: wgpu::CompareFunction::Always,
@@ -397,7 +397,7 @@ fn create_shape_pipeline(
                 },
                 wgpu::ColorWrites::ALL,
             ),
-            MaskState::DrawMaskStencil => mask_render_state(
+            MaskMode::DrawMaskStencil => mask_render_state(
                 "draw mask stencil",
                 wgpu::StencilFaceState {
                     compare: wgpu::CompareFunction::Equal,
@@ -407,7 +407,7 @@ fn create_shape_pipeline(
                 },
                 wgpu::ColorWrites::empty(),
             ),
-            MaskState::DrawMaskedContent => mask_render_state(
+            MaskMode::DrawMaskedContent => mask_render_state(
                 "draw masked content",
                 wgpu::StencilFaceState {
                     compare: wgpu::CompareFunction::Equal,
@@ -417,7 +417,7 @@ fn create_shape_pipeline(
                 },
                 wgpu::ColorWrites::ALL,
             ),
-            MaskState::ClearMaskStencil => mask_render_state(
+            MaskMode::ClearMaskStencil => mask_render_state(
                 "clear mask stencil",
                 wgpu::StencilFaceState {
                     compare: wgpu::CompareFunction::Equal,
