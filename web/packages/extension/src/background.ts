@@ -30,7 +30,7 @@ async function getPluginPolyfillRegistration(
 
 // Copied from https://github.com/w3c/webextensions/issues/638#issuecomment-2181124486
 async function isHeaderConditionSupported() {
-    let needCleanup = false;
+    let needCleanup: boolean;
     const ruleId = 4;
     try {
         // Throws synchronously if not supported.

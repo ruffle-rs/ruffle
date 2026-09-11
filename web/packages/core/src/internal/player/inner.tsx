@@ -2626,7 +2626,7 @@ function parseAllowScriptAccess(
 function detectBrowserDirection(): string {
     const browserLocale = new Intl.Locale(navigator.language);
 
-    let textInfo = null;
+    let textInfo;
     if (
         "getTextInfo" in browserLocale &&
         typeof browserLocale.getTextInfo === "function"
