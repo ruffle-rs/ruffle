@@ -41,7 +41,7 @@
         "terser-webpack-plugin": "^5.6.1",
         "ts-loader": "^9.6.2",
         "typedoc-plugin-mdn-links": "^5.1.1",
-        "typescript": "^5.9.3",
+        "typescript": "^6.0.3",
         "typescript-eslint": "^8.69.0",
         "webdriverio": "^9.31.7",
         "webpack": "^5.110.3",

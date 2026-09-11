@@ -6,6 +6,7 @@
         "moduleResolution": "NodeNext",
         "target": "ES2021",
         "rootDir": ".",
+		"types": ["node"],
     },
     "include": ["."],
 }
