@@ -1,10 +1,11 @@
 {
     "extends": "@tsconfig/strictest/tsconfig.json",
     "compilerOptions": {
-        "module": "es2020",
-        "moduleResolution": "node",
+        "module": "ESNext",
+        "moduleResolution": "bundler",
         "target": "es2021",
         "rootDir": "src",
+		"types": ["chrome", "firefox-webext-browser"],
     },
     "include": ["src/**/*"],
     "references": [{ "path": "../core" }],
