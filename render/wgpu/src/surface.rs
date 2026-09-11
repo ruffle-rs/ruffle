@@ -1,3 +1,4 @@
+mod chunk;
 mod commands;
 pub mod target;
 
@@ -8,10 +9,12 @@ use crate::dynamic_transforms::DynamicTransforms;
 use crate::filters::FilterSource;
 use crate::mesh::Mesh;
 use crate::pixel_bender::{ShaderMode, run_pixelbender_shader_impl};
-use crate::surface::commands::{Chunk, CommandRenderer, chunk_blends};
+pub use crate::surface::commands::LayerRef;
+use crate::surface::commands::chunk_blends;
 use crate::utils::run_copy_pipeline;
 use crate::utils::supported_sample_count;
 use crate::{Descriptors, MaskState, Pipelines};
+use chunk::{Chunk, CommandRenderer};
 use ruffle_render::commands::CommandList;
 use ruffle_render::pixel_bender_support::{ImageInputTexture, PixelBenderShaderArgument};
 use ruffle_render::quality::StageQuality;
@@ -20,9 +23,7 @@ use target::CommandTarget;
 use tracing::instrument;
 use wgpu_profiler::Scope;
 
-pub use crate::surface::commands::LayerRef;
-
-use self::commands::ChunkBlendMode;
+use chunk::ChunkBlendMode;
 
 #[derive(Debug)]
 pub struct Surface {
