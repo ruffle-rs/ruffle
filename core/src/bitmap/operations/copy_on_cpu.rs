@@ -1,4 +1,4 @@
-use crate::bitmap::bitmap_data::BitmapData;
+use crate::bitmap::bitmap_data::{BitmapData, BitmapRawData};
 use gc_arena::Mutation;
 use ruffle_render::backend::RenderBackend;
 use ruffle_render::bitmap::PixelRegion;
@@ -25,18 +25,7 @@ pub fn copy_on_cpu<'gc>(
     let mut dest = dest.sync(renderer).borrow_mut(context);
 
     if dest_is_source {
-        for y in 0..dest_region.height() {
-            for x in 0..dest_region.width() {
-                let mut color =
-                    dest.get_pixel32_raw(source_region.x_min + x, source_region.y_min + y);
-                if blend {
-                    color = dest
-                        .get_pixel32_raw(dest_region.x_min + x, dest_region.y_min + y)
-                        .blend_over(&color);
-                }
-                dest.set_pixel32_raw(dest_region.x_min + x, dest_region.y_min + y, color);
-            }
-        }
+        copy_on_cpu_self(&mut dest, source_region, dest_region, blend);
     } else {
         let source = source.read_area(source_region, renderer);
 
@@ -101,4 +90,105 @@ pub fn copy_on_cpu<'gc>(
     }
 
     dest.set_cpu_dirty(context, dest_region);
+}
+
+/// Copies `source_region` to `dest_region` within the same bitmap.
+fn copy_on_cpu_self(
+    data: &mut BitmapRawData<'_>,
+    source_region: PixelRegion,
+    dest_region: PixelRegion,
+    blend: bool,
+) {
+    // Source and dest regions may overlap so blindly copying the region can
+    // overwrite data that hasn't been read yet. That's why the order of
+    // iteration actually depends on which direction we're copying the
+    // pixels (we have to do the reverse). This applies to both columns and
+    // rows separately. However, of course Flash Player has to have a bug
+    // here and in certain situations can overwrite the data being copied...
+    // When directions match between axes, the order is properly reversed,
+    // but when they differ, Flash Player will read overwritten data.
+    let dx = dest_region.x_min as i64 - source_region.x_min as i64;
+    let dy = dest_region.y_min as i64 - source_region.y_min as i64;
+    let reverse = dy >= 0 && dx >= 0;
+
+    if blend {
+        copy_on_cpu_self_blend(data, source_region, dest_region, reverse);
+    } else {
+        copy_on_cpu_self_no_blend(data, source_region, dest_region, reverse);
+    }
+}
+
+/// Blends `source_region` over `dest_region` within the same bitmap.
+///
+/// Every pixel is a read-compute-write step, so we can't memmove rows.
+fn copy_on_cpu_self_blend(
+    data: &mut BitmapRawData<'_>,
+    source_region: PixelRegion,
+    dest_region: PixelRegion,
+    reverse: bool,
+) {
+    let mut blend_pixel = |x: u32, y: u32| {
+        let src_x = source_region.x_min + x;
+        let src_y = source_region.y_min + y;
+        let dest_x = dest_region.x_min + x;
+        let dest_y = dest_region.y_min + y;
+        let color = data
+            .get_pixel32_raw(dest_x, dest_y)
+            .blend_over(&data.get_pixel32_raw(src_x, src_y));
+        data.set_pixel32_raw(dest_x, dest_y, color);
+    };
+
+    let height = dest_region.height();
+    let width = dest_region.width();
+
+    if reverse {
+        for y in (0..height).rev() {
+            for x in (0..width).rev() {
+                blend_pixel(x, y);
+            }
+        }
+    } else {
+        for y in 0..height {
+            for x in 0..width {
+                blend_pixel(x, y);
+            }
+        }
+    }
+}
+
+/// Copies `source_region` to `dest_region` within the same bitmap without
+/// blending.
+///
+/// Since we don't need to blend we can memmove rows.
+fn copy_on_cpu_self_no_blend(
+    data: &mut BitmapRawData<'_>,
+    source_region: PixelRegion,
+    dest_region: PixelRegion,
+    reverse: bool,
+) {
+    let width = dest_region.width() as usize;
+    let bitmap_width = data.width();
+
+    let mut copy_row = |y: u32| {
+        let src_start = (source_region.x_min + (source_region.y_min + y) * bitmap_width) as usize;
+        let dest_start = (dest_region.x_min + (dest_region.y_min + y) * bitmap_width) as usize;
+        data.raw_pixels_mut()
+            .copy_within(src_start..src_start + width, dest_start);
+    };
+
+    let height = dest_region.height();
+    if reverse {
+        for y in (0..height).rev() {
+            // We don't need to pick the x direction here, copy_within does that
+            // for us. Additionally we don't have to care about the FP
+            // overwriting behavior here, because it's not observable; row
+            // overwriting is observable only when dy=0, but then the direction
+            // is always correct.
+            copy_row(y);
+        }
+    } else {
+        for y in 0..height {
+            copy_row(y);
+        }
+    }
 }

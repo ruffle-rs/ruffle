@@ -267,7 +267,7 @@ PASSED: source.getPixel(55, 45) == 0xffffff [./BitmapData.as:681]
 PASSED: source.getPixel(60, 60) == 0xffffff [./BitmapData.as:682]
 PASSED: source.getPixel(45, 55) == 0xffffff [./BitmapData.as:683]
 PASSED: source.getPixel(45, 45) == 0x00ff00 [./BitmapData.as:684]
-FAILED: expected: 0xffffff obtained: 65280 [./BitmapData.as:688]
+PASSED: source.getPixel(90, 90) == 0xffffff [./BitmapData.as:688]
 PASSED: source.getPixel(55, 42) == 0xffffff [./BitmapData.as:689]
 PASSED: source.getPixel(42, 55) == 0xffffff [./BitmapData.as:690]
 PASSED: source.getPixel(55, 55) == 0x00ff00 [./BitmapData.as:691]
@@ -412,6 +412,6 @@ PASSED: typeof(cl.__proto__) == "object" [./BitmapData.as:1139]
 PASSED: typeof(cl.constructor) == "function" [./BitmapData.as:1140]
 PASSED: typeof(cl.__proto__) == "object" [./BitmapData.as:1146]
 PASSED: cl.constructor == 98 [./BitmapData.as:1147]
-#passed: 403
-#failed: 7
+#passed: 404
+#failed: 6
 #total tests run: 410
