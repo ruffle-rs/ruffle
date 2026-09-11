@@ -203,9 +203,7 @@ package flash.display3D {
             actionOnDepthPassStencilFail:String = "keep"
         ):void;
 
-        public function drawToBitmapData(destination:BitmapData):void {
-            stub_method("flash.display3D.Context3D", "drawToBitmapData");
-        }
+        public native function drawToBitmapData(destination:BitmapData):void;
 
         public native function dispose(recreate:Boolean = true):void;
     }
