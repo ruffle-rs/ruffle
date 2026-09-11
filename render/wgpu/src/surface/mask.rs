@@ -21,4 +21,19 @@ impl MaskState {
             count: 0,
         }
     }
+
+    pub fn apply_stencil_reference(&self, render_pass: &mut wgpu::RenderPass) {
+        match self.mode {
+            MaskMode::NoMask => {}
+            MaskMode::DrawMaskStencil => {
+                render_pass.set_stencil_reference(self.count - 1);
+            }
+            MaskMode::DrawMaskedContent => {
+                render_pass.set_stencil_reference(self.count);
+            }
+            MaskMode::ClearMaskStencil => {
+                render_pass.set_stencil_reference(self.count);
+            }
+        }
+    }
 }
