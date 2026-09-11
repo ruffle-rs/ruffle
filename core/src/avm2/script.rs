@@ -21,7 +21,6 @@ use gc_arena::lock::OnceLock;
 use gc_arena::{Collect, Gc, Mutation};
 use std::cell::Cell;
 use std::fmt::Debug;
-use std::rc::Rc;
 use std::sync::Arc;
 use swf::avm2::types::{
     AbcFile, Index, Method as AbcMethod, Multiname as AbcMultiname, Namespace as AbcNamespace,
@@ -55,7 +54,7 @@ struct TranslationUnitData<'gc> {
 
     /// The ABC file that all of the following loaded data comes from.
     #[collect(require_static)]
-    abc: Rc<AbcFile>,
+    abc: Arc<AbcFile>,
 
     /// All classes loaded from the ABC's class list.
     classes: Box<[OnceLock<Class<'gc>>]>,
@@ -86,7 +85,7 @@ impl<'gc> TranslationUnit<'gc> {
     /// Construct a new `TranslationUnit` for a given ABC file intended to
     /// execute within a particular domain.
     pub fn from_abc(
-        abc: AbcFile,
+        abc: Arc<AbcFile>,
         domain: Domain<'gc>,
         name: Option<AvmString<'gc>>,
         movie: Arc<SwfMovie>,
@@ -103,7 +102,7 @@ impl<'gc> TranslationUnit<'gc> {
             namespaces: repeat_n(OnceLock::new(), abc.constant_pool.namespaces.len() + 1).collect(),
             multinames: repeat_n(OnceLock::new(), abc.constant_pool.multinames.len() + 1).collect(),
             movie,
-            abc: Rc::new(abc),
+            abc,
         };
 
         Self(Gc::new(mc, this))
@@ -144,14 +143,14 @@ impl<'gc> TranslationUnit<'gc> {
     }
 
     /// Retrieve the underlying `AbcFile` for this translation unit.
-    pub fn abc(self) -> Rc<AbcFile> {
-        self.0.abc.clone()
+    pub fn abc(self) -> &'gc Arc<AbcFile> {
+        &Gc::as_ref(self.0).abc
     }
 
     /// Determines whether this `TranslationUnit` and the provided
     /// `TranslationUnit` come from the same `AbcFile`.
     pub fn same_abc(self, other: TranslationUnit<'gc>) -> bool {
-        Rc::ptr_eq(&self.0.abc, &other.0.abc)
+        Arc::ptr_eq(&self.0.abc, &other.0.abc)
     }
 
     pub fn movie(self) -> Arc<SwfMovie> {
