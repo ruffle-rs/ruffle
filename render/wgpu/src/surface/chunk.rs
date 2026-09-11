@@ -174,10 +174,10 @@ impl<'encoder> CommandRenderer<'encoder> {
             DrawCommand::DrawLineRect { instance_range } => {
                 self.draw_lines::<true>(render_pass, instance_range.clone())
             }
-            DrawCommand::PushMask => self.push_mask(render_pass),
-            DrawCommand::ActivateMask => self.activate_mask(render_pass),
-            DrawCommand::DeactivateMask => self.deactivate_mask(render_pass),
-            DrawCommand::PopMask => self.pop_mask(render_pass),
+            DrawCommand::PushMask => self.push_mask(),
+            DrawCommand::ActivateMask => self.activate_mask(),
+            DrawCommand::DeactivateMask => self.deactivate_mask(),
+            DrawCommand::PopMask => self.pop_mask(),
             DrawCommand::RenderAlphaMask {
                 maskee,
                 mask,
@@ -433,31 +433,27 @@ impl<'encoder> CommandRenderer<'encoder> {
         );
     }
 
-    pub fn push_mask(&mut self, render_pass: &mut wgpu::RenderPass<'encoder>) {
+    pub fn push_mask(&mut self) {
         debug_assert!(
             self.mask_state == MaskState::NoMask || self.mask_state == MaskState::DrawMaskedContent
         );
         self.num_masks += 1;
         self.mask_state = MaskState::DrawMaskStencil;
-        render_pass.set_stencil_reference(self.num_masks - 1);
     }
 
-    pub fn activate_mask(&mut self, render_pass: &mut wgpu::RenderPass<'encoder>) {
+    pub fn activate_mask(&mut self) {
         debug_assert!(self.num_masks > 0 && self.mask_state == MaskState::DrawMaskStencil);
         self.mask_state = MaskState::DrawMaskedContent;
-        render_pass.set_stencil_reference(self.num_masks);
     }
 
-    pub fn deactivate_mask(&mut self, render_pass: &mut wgpu::RenderPass<'encoder>) {
+    pub fn deactivate_mask(&mut self) {
         debug_assert!(self.num_masks > 0 && self.mask_state == MaskState::DrawMaskedContent);
         self.mask_state = MaskState::ClearMaskStencil;
-        render_pass.set_stencil_reference(self.num_masks);
     }
 
-    pub fn pop_mask(&mut self, render_pass: &mut wgpu::RenderPass<'encoder>) {
+    pub fn pop_mask(&mut self) {
         debug_assert!(self.num_masks > 0 && self.mask_state == MaskState::ClearMaskStencil);
         self.num_masks -= 1;
-        render_pass.set_stencil_reference(self.num_masks);
         if self.num_masks == 0 {
             self.mask_state = MaskState::NoMask;
         } else {
