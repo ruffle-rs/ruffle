@@ -7,3 +7,18 @@ pub enum MaskMode {
     DrawMaskedContent,
     ClearMaskStencil,
 }
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct MaskState {
+    pub mode: MaskMode,
+    pub count: u32,
+}
+
+impl MaskState {
+    pub fn empty() -> Self {
+        MaskState {
+            mode: MaskMode::NoMask,
+            count: 0,
+        }
+    }
+}
