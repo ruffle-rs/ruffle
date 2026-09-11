@@ -24,6 +24,7 @@ use target::CommandTarget;
 use tracing::instrument;
 use wgpu_profiler::Scope;
 
+use crate::surface::mask::MaskState;
 use chunk::ChunkBlendMode;
 use mask::MaskMode;
 
@@ -127,8 +128,7 @@ impl Surface {
             draw_encoder,
         );
 
-        let mut num_masks = 0;
-        let mut mask_mode = MaskMode::NoMask;
+        let mut mask_state = MaskState::empty();
         let chunks = chunk_blends(
             commands,
             descriptors,
@@ -185,17 +185,13 @@ impl Surface {
                         &self.pipelines,
                         descriptors,
                         &dynamic_transforms.vertex_buffer,
-                        num_masks,
-                        mask_mode,
+                        &mut mask_state,
                         needs_stencil,
                     );
 
                     for command in &chunk {
                         renderer.execute(&mut render_pass.scope(command.name()), command);
                     }
-
-                    num_masks = renderer.num_masks();
-                    mask_mode = renderer.mask_mode();
                 }
                 Chunk::Blend {
                     texture,
@@ -315,20 +311,20 @@ impl Surface {
                     render_pass.set_bind_group(0, target.globals().bind_group(), &[]);
 
                     if needs_stencil {
-                        match mask_mode {
+                        match mask_state.mode {
                             MaskMode::NoMask => {}
                             MaskMode::DrawMaskStencil => {
-                                render_pass.set_stencil_reference(num_masks - 1);
+                                render_pass.set_stencil_reference(mask_state.count - 1);
                             }
                             MaskMode::DrawMaskedContent => {
-                                render_pass.set_stencil_reference(num_masks);
+                                render_pass.set_stencil_reference(mask_state.count);
                             }
                             MaskMode::ClearMaskStencil => {
-                                render_pass.set_stencil_reference(num_masks);
+                                render_pass.set_stencil_reference(mask_state.count);
                             }
                         }
                         render_pass.set_pipeline(
-                            self.pipelines.complex_blends[blend_mode].pipeline_for(mask_mode),
+                            self.pipelines.complex_blends[blend_mode].pipeline_for(mask_state.mode),
                         );
                     } else {
                         render_pass.set_pipeline(

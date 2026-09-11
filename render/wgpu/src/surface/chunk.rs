@@ -4,7 +4,7 @@ use crate::buffer_builder::BufferBuilder;
 use crate::descriptors::Descriptors;
 use crate::mesh::{DrawType, as_mesh};
 use crate::pipelines::Pipelines;
-use crate::surface::mask::MaskMode;
+use crate::surface::mask::{MaskMode, MaskState};
 use crate::surface::target::PoolOrArcTexture;
 use ruffle_render::backend::ShapeHandle;
 use ruffle_render::bitmap::BitmapHandle;
@@ -93,8 +93,7 @@ impl DrawCommand {
 pub struct CommandRenderer<'encoder> {
     pipelines: &'encoder Pipelines,
     descriptors: &'encoder Descriptors,
-    num_masks: u32,
-    mask_mode: MaskMode,
+    mask_state: &'encoder mut MaskState,
     needs_stencil: bool,
     dynamic_vertex_buffer: &'encoder wgpu::Buffer,
 }
@@ -105,14 +104,12 @@ impl<'encoder> CommandRenderer<'encoder> {
         pipelines: &'encoder Pipelines,
         descriptors: &'encoder Descriptors,
         dynamic_vertex_buffer: &'encoder wgpu::Buffer,
-        num_masks: u32,
-        mask_mode: MaskMode,
+        mask_state: &'encoder mut MaskState,
         needs_stencil: bool,
     ) -> Self {
         Self {
             pipelines,
-            num_masks,
-            mask_mode,
+            mask_state,
             descriptors,
             needs_stencil,
             dynamic_vertex_buffer,
@@ -125,16 +122,16 @@ impl<'encoder> CommandRenderer<'encoder> {
         command: &'encoder DrawCommand,
     ) {
         if self.needs_stencil {
-            match self.mask_mode {
+            match self.mask_state.mode {
                 MaskMode::NoMask => {}
                 MaskMode::DrawMaskStencil => {
-                    render_pass.set_stencil_reference(self.num_masks - 1);
+                    render_pass.set_stencil_reference(self.mask_state.count - 1);
                 }
                 MaskMode::DrawMaskedContent => {
-                    render_pass.set_stencil_reference(self.num_masks);
+                    render_pass.set_stencil_reference(self.mask_state.count);
                 }
                 MaskMode::ClearMaskStencil => {
-                    render_pass.set_stencil_reference(self.num_masks);
+                    render_pass.set_stencil_reference(self.mask_state.count);
                 }
             }
         }
@@ -190,7 +187,7 @@ impl<'encoder> CommandRenderer<'encoder> {
 
     pub fn prep_color(&self, render_pass: &mut wgpu::RenderPass<'encoder>) {
         if self.needs_stencil {
-            render_pass.set_pipeline(self.pipelines.color.pipeline_for(self.mask_mode));
+            render_pass.set_pipeline(self.pipelines.color.pipeline_for(self.mask_state.mode));
         } else {
             render_pass.set_pipeline(self.pipelines.color.stencilless_pipeline());
         }
@@ -198,7 +195,7 @@ impl<'encoder> CommandRenderer<'encoder> {
 
     pub fn prep_lines(&self, render_pass: &mut wgpu::RenderPass<'encoder>) {
         if self.needs_stencil {
-            render_pass.set_pipeline(self.pipelines.lines.pipeline_for(self.mask_mode));
+            render_pass.set_pipeline(self.pipelines.lines.pipeline_for(self.mask_state.mode));
         } else {
             render_pass.set_pipeline(self.pipelines.lines.stencilless_pipeline());
         }
@@ -210,7 +207,7 @@ impl<'encoder> CommandRenderer<'encoder> {
         bind_group: &'encoder wgpu::BindGroup,
     ) {
         if self.needs_stencil {
-            render_pass.set_pipeline(self.pipelines.gradients.pipeline_for(self.mask_mode));
+            render_pass.set_pipeline(self.pipelines.gradients.pipeline_for(self.mask_state.mode));
         } else {
             render_pass.set_pipeline(self.pipelines.gradients.stencilless_pipeline());
         }
@@ -230,8 +227,9 @@ impl<'encoder> CommandRenderer<'encoder> {
                 render_pass.set_pipeline(&self.pipelines.bitmap_opaque_dummy_stencil);
             }
             (true, false) => {
-                render_pass
-                    .set_pipeline(self.pipelines.bitmap[blend_mode].pipeline_for(self.mask_mode));
+                render_pass.set_pipeline(
+                    self.pipelines.bitmap[blend_mode].pipeline_for(self.mask_state.mode),
+                );
             }
             (false, true) => {
                 render_pass.set_pipeline(&self.pipelines.bitmap_opaque);
@@ -250,7 +248,7 @@ impl<'encoder> CommandRenderer<'encoder> {
         bind_group: &'encoder wgpu::BindGroup,
     ) {
         if self.needs_stencil {
-            render_pass.set_pipeline(self.pipelines.alpha_mask.pipeline_for(self.mask_mode));
+            render_pass.set_pipeline(self.pipelines.alpha_mask.pipeline_for(self.mask_state.mode));
         } else {
             render_pass.set_pipeline(self.pipelines.alpha_mask.stencilless_pipeline());
         }
@@ -337,8 +335,8 @@ impl<'encoder> CommandRenderer<'encoder> {
     ) {
         let mesh = as_mesh(shape);
         for draw in &mesh.draws {
-            let num_indices = if self.mask_mode != MaskMode::DrawMaskStencil
-                && self.mask_mode != MaskMode::ClearMaskStencil
+            let num_indices = if self.mask_state.mode != MaskMode::DrawMaskStencil
+                && self.mask_state.mode != MaskMode::ClearMaskStencil
             {
                 draw.num_indices
             } else {
@@ -436,37 +434,36 @@ impl<'encoder> CommandRenderer<'encoder> {
 
     pub fn push_mask(&mut self) {
         debug_assert!(
-            self.mask_mode == MaskMode::NoMask || self.mask_mode == MaskMode::DrawMaskedContent
+            self.mask_state.mode == MaskMode::NoMask
+                || self.mask_state.mode == MaskMode::DrawMaskedContent
         );
-        self.num_masks += 1;
-        self.mask_mode = MaskMode::DrawMaskStencil;
+        self.mask_state.count += 1;
+        self.mask_state.mode = MaskMode::DrawMaskStencil;
     }
 
     pub fn activate_mask(&mut self) {
-        debug_assert!(self.num_masks > 0 && self.mask_mode == MaskMode::DrawMaskStencil);
-        self.mask_mode = MaskMode::DrawMaskedContent;
+        debug_assert!(
+            self.mask_state.count > 0 && self.mask_state.mode == MaskMode::DrawMaskStencil
+        );
+        self.mask_state.mode = MaskMode::DrawMaskedContent;
     }
 
     pub fn deactivate_mask(&mut self) {
-        debug_assert!(self.num_masks > 0 && self.mask_mode == MaskMode::DrawMaskedContent);
-        self.mask_mode = MaskMode::ClearMaskStencil;
+        debug_assert!(
+            self.mask_state.count > 0 && self.mask_state.mode == MaskMode::DrawMaskedContent
+        );
+        self.mask_state.mode = MaskMode::ClearMaskStencil;
     }
 
     pub fn pop_mask(&mut self) {
-        debug_assert!(self.num_masks > 0 && self.mask_mode == MaskMode::ClearMaskStencil);
-        self.num_masks -= 1;
-        if self.num_masks == 0 {
-            self.mask_mode = MaskMode::NoMask;
+        debug_assert!(
+            self.mask_state.count > 0 && self.mask_state.mode == MaskMode::ClearMaskStencil
+        );
+        self.mask_state.count -= 1;
+        if self.mask_state.count == 0 {
+            self.mask_state.mode = MaskMode::NoMask;
         } else {
-            self.mask_mode = MaskMode::DrawMaskedContent;
+            self.mask_state.mode = MaskMode::DrawMaskedContent;
         };
-    }
-
-    pub fn num_masks(&self) -> u32 {
-        self.num_masks
-    }
-
-    pub fn mask_mode(&self) -> MaskMode {
-        self.mask_mode
     }
 }
