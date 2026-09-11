@@ -12,7 +12,6 @@ use crate::utils::{
 };
 use bytemuck::{Pod, Zeroable};
 use descriptors::Descriptors;
-use enum_map::Enum;
 use ruffle_render::backend::RawTexture;
 use ruffle_render::bitmap::{BitmapHandle, BitmapHandleImpl, PixelRegion, SyncHandle};
 use ruffle_render::shape_utils::GradientType;
@@ -58,14 +57,6 @@ pub fn as_texture(handle: &BitmapHandle) -> &Texture {
 
 pub fn raw_texture_as_texture(handle: &dyn RawTexture) -> &wgpu::Texture {
     <dyn Any>::downcast_ref(handle).unwrap()
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Enum)]
-pub enum MaskMode {
-    NoMask,
-    DrawMaskStencil,
-    DrawMaskedContent,
-    ClearMaskStencil,
 }
 
 #[repr(C)]

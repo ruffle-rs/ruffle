@@ -1,10 +1,11 @@
+use crate::as_texture;
 use crate::blend::{ComplexBlend, TrivialBlend};
 use crate::buffer_builder::BufferBuilder;
 use crate::descriptors::Descriptors;
 use crate::mesh::{DrawType, as_mesh};
 use crate::pipelines::Pipelines;
+use crate::surface::mask::MaskMode;
 use crate::surface::target::PoolOrArcTexture;
-use crate::{MaskMode, as_texture};
 use ruffle_render::backend::ShapeHandle;
 use ruffle_render::bitmap::BitmapHandle;
 use ruffle_render::pixel_bender::PixelBenderShaderHandle;
