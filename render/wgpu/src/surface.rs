@@ -1,5 +1,6 @@
 mod chunk;
 mod commands;
+pub mod mask;
 pub mod target;
 
 use crate::backend::RenderTargetMode;
@@ -13,7 +14,7 @@ pub use crate::surface::commands::LayerRef;
 use crate::surface::commands::chunk_blends;
 use crate::utils::run_copy_pipeline;
 use crate::utils::supported_sample_count;
-use crate::{Descriptors, MaskMode, Pipelines};
+use crate::{Descriptors, Pipelines};
 use chunk::{Chunk, CommandRenderer};
 use ruffle_render::commands::CommandList;
 use ruffle_render::pixel_bender_support::{ImageInputTexture, PixelBenderShaderArgument};
@@ -24,6 +25,7 @@ use tracing::instrument;
 use wgpu_profiler::Scope;
 
 use chunk::ChunkBlendMode;
+use mask::MaskMode;
 
 #[derive(Debug)]
 pub struct Surface {
