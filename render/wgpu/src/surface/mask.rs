@@ -8,7 +8,7 @@ pub enum MaskMode {
     ClearMaskStencil,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct MaskState {
     pub mode: MaskMode,
     pub count: u32,
@@ -22,7 +22,7 @@ impl MaskState {
         }
     }
 
-    pub fn apply_stencil_reference(&self, render_pass: &mut wgpu::RenderPass) {
+    pub fn apply_stencil_reference(self, render_pass: &mut wgpu::RenderPass) {
         match self.mode {
             MaskMode::NoMask => {}
             MaskMode::DrawMaskStencil => {

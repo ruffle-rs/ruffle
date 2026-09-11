@@ -7,6 +7,7 @@ use crate::dynamic_transforms::DynamicTransforms;
 use crate::mesh::Mesh;
 use crate::surface::Surface;
 use crate::surface::chunk::{Chunk, ChunkBlendMode, DrawCommand};
+use crate::surface::mask::MaskState;
 use crate::surface::target::CommandTarget;
 use crate::{Descriptors, PosUvVertex, Transforms, as_texture};
 use ruffle_render::backend::ShapeHandle;
@@ -77,7 +78,7 @@ struct WgpuCommandHandler<'encoder, 'global: 'encoder> {
     transforms: BufferBuilder,
     vertices: BufferBuilder,
     needs_stencil: bool,
-    num_masks: i32,
+    mask_state: MaskState,
 }
 
 impl<'encoder, 'global: 'encoder> WgpuCommandHandler<'encoder, 'global> {
@@ -120,7 +121,7 @@ impl<'encoder, 'global: 'encoder> WgpuCommandHandler<'encoder, 'global> {
             transforms,
             vertices,
             needs_stencil: false,
-            num_masks: 0,
+            mask_state: MaskState::empty(),
         }
     }
 
@@ -282,7 +283,7 @@ impl CommandHandler for WgpuCommandHandler<'_, '_> {
         //
         // TODO Add support for shader blends in masks.
         let is_shader_blend_in_mask =
-            self.num_masks > 0 && matches!(blend_type, BlendType::Shader(_));
+            self.mask_state.count > 0 && matches!(blend_type, BlendType::Shader(_));
         let blend_type = if is_shader_blend_in_mask {
             BlendType::Trivial(TrivialBlend::Normal)
         } else {
@@ -352,9 +353,9 @@ impl CommandHandler for WgpuCommandHandler<'_, '_> {
                 self.result.push(Chunk::Blend {
                     texture: target.take_color_texture(),
                     blend_mode: chunk_blend_mode,
-                    needs_stencil: self.num_masks > 0,
+                    needs_stencil: self.mask_state.count > 0,
                 });
-                self.needs_stencil = self.num_masks > 0;
+                self.needs_stencil = self.mask_state.count > 0;
             }
         }
     }
@@ -491,24 +492,26 @@ impl CommandHandler for WgpuCommandHandler<'_, '_> {
 
     fn push_mask(&mut self) {
         self.needs_stencil = true;
-        self.num_masks += 1;
-        self.push_command(DrawCommand::PushMask);
+        self.mask_state.push_mask();
+        self.push_command(DrawCommand::SetMask(self.mask_state));
     }
 
     fn activate_mask(&mut self) {
         self.needs_stencil = true;
-        self.push_command(DrawCommand::ActivateMask);
+        self.mask_state.activate_mask();
+        self.push_command(DrawCommand::SetMask(self.mask_state));
     }
 
     fn deactivate_mask(&mut self) {
         self.needs_stencil = true;
-        self.push_command(DrawCommand::DeactivateMask);
+        self.mask_state.deactivate_mask();
+        self.push_command(DrawCommand::SetMask(self.mask_state));
     }
 
     fn pop_mask(&mut self) {
         self.needs_stencil = true;
-        self.num_masks -= 1;
-        self.push_command(DrawCommand::PopMask);
+        self.mask_state.pop_mask();
+        self.push_command(DrawCommand::SetMask(self.mask_state));
     }
 
     fn render_alpha_mask(&mut self, maskee_commands: CommandList, mask_commands: CommandList) {

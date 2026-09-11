@@ -66,10 +66,7 @@ pub enum DrawCommand {
     DrawLineRect {
         instance_range: Range<u32>,
     },
-    PushMask,
-    ActivateMask,
-    DeactivateMask,
-    PopMask,
+    SetMask(MaskState),
 }
 
 impl DrawCommand {
@@ -81,10 +78,7 @@ impl DrawCommand {
             DrawCommand::DrawRect { .. } => "draw rect",
             DrawCommand::DrawLine { .. } => "draw line",
             DrawCommand::DrawLineRect { .. } => "draw line rect",
-            DrawCommand::PushMask => "push mask",
-            DrawCommand::ActivateMask => "activate mask",
-            DrawCommand::DeactivateMask => "deactivate mask",
-            DrawCommand::PopMask => "pop mask",
+            DrawCommand::SetMask(_) => "set mask state",
             DrawCommand::RenderAlphaMask { .. } => "render alpha mask",
         }
     }
@@ -161,10 +155,7 @@ impl<'encoder> CommandRenderer<'encoder> {
             DrawCommand::DrawLineRect { instance_range } => {
                 self.draw_lines::<true>(render_pass, instance_range.clone())
             }
-            DrawCommand::PushMask => self.push_mask(),
-            DrawCommand::ActivateMask => self.activate_mask(),
-            DrawCommand::DeactivateMask => self.deactivate_mask(),
-            DrawCommand::PopMask => self.pop_mask(),
+            DrawCommand::SetMask(mask_state) => self.set_mask_state(*mask_state),
             DrawCommand::RenderAlphaMask {
                 maskee,
                 mask,
@@ -421,19 +412,7 @@ impl<'encoder> CommandRenderer<'encoder> {
         );
     }
 
-    pub fn push_mask(&mut self) {
-        self.mask_state.push_mask();
-    }
-
-    pub fn activate_mask(&mut self) {
-        self.mask_state.activate_mask();
-    }
-
-    pub fn deactivate_mask(&mut self) {
-        self.mask_state.deactivate_mask();
-    }
-
-    pub fn pop_mask(&mut self) {
-        self.mask_state.pop_mask();
+    pub fn set_mask_state(&mut self, mask_state: MaskState) {
+        *self.mask_state = mask_state;
     }
 }
