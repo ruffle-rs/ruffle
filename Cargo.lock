@@ -5237,6 +5237,7 @@ dependencies = [
  "console_error_panic_hook",
  "futures",
  "futures-util",
+ "getrandom 0.3.4",
  "getrandom 0.4.3",
  "gloo-net",
  "js-sys",
