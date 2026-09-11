@@ -122,18 +122,7 @@ impl<'encoder> CommandRenderer<'encoder> {
         command: &'encoder DrawCommand,
     ) {
         if self.needs_stencil {
-            match self.mask_state.mode {
-                MaskMode::NoMask => {}
-                MaskMode::DrawMaskStencil => {
-                    render_pass.set_stencil_reference(self.mask_state.count - 1);
-                }
-                MaskMode::DrawMaskedContent => {
-                    render_pass.set_stencil_reference(self.mask_state.count);
-                }
-                MaskMode::ClearMaskStencil => {
-                    render_pass.set_stencil_reference(self.mask_state.count);
-                }
-            }
+            self.mask_state.apply_stencil_reference(render_pass);
         }
 
         match command {

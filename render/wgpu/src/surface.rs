@@ -26,7 +26,6 @@ use wgpu_profiler::Scope;
 
 use crate::surface::mask::MaskState;
 use chunk::ChunkBlendMode;
-use mask::MaskMode;
 
 #[derive(Debug)]
 pub struct Surface {
@@ -311,18 +310,7 @@ impl Surface {
                     render_pass.set_bind_group(0, target.globals().bind_group(), &[]);
 
                     if needs_stencil {
-                        match mask_state.mode {
-                            MaskMode::NoMask => {}
-                            MaskMode::DrawMaskStencil => {
-                                render_pass.set_stencil_reference(mask_state.count - 1);
-                            }
-                            MaskMode::DrawMaskedContent => {
-                                render_pass.set_stencil_reference(mask_state.count);
-                            }
-                            MaskMode::ClearMaskStencil => {
-                                render_pass.set_stencil_reference(mask_state.count);
-                            }
-                        }
+                        mask_state.apply_stencil_reference(&mut render_pass);
                         render_pass.set_pipeline(
                             self.pipelines.complex_blends[blend_mode].pipeline_for(mask_state.mode),
                         );
