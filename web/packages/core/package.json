@@ -11,7 +11,7 @@
         "dist/"
     ],
     "scripts": {
-        "prebuild": "tsx tools/build_wasm.ts",
+        "prebuild": "node tools/build_wasm.ts",
         "build": "tsc --build --force",
         "postbuild": "node tools/set_version.ts && node tools/bundle_texts.ts && node tools/bundle_css.ts",
         "docs": "typedoc",
@@ -33,7 +33,6 @@
         "postcss": "^8.5.28",
         "postcss-nesting": "^14.0.1",
         "replace-in-file": "^9.0.0",
-        "tsx": "^4.23.13",
         "tsx-dom": "^3.1.0",
         "typedoc": "^0.28.20",
         "typescript": "^5.9.3"
