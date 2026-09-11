@@ -61,7 +61,7 @@ pub fn raw_texture_as_texture(handle: &dyn RawTexture) -> &wgpu::Texture {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Enum)]
-pub enum MaskState {
+pub enum MaskMode {
     NoMask,
     DrawMaskStencil,
     DrawMaskedContent,
