@@ -1,12 +1,12 @@
 import fs from "fs/promises";
 import path from "path";
 import url from "url";
-import archiver from "archiver";
+import { ZipArchive } from "archiver";
 
 async function zip(source: string, destination: string) {
     await fs.mkdir(path.dirname(destination), { recursive: true });
     const output = (await fs.open(destination, "w")).createWriteStream();
-    const archive = archiver("zip");
+    const archive = new ZipArchive();
 
     output.on("close", () => {
         console.log(
