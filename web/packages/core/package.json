@@ -1,7 +1,7 @@
 {
     "name": "ruffle-core",
     "type": "module",
-    "version": "0.6.0",
+    "version": "0.7.0-nightly.2026.9.12",
     "description": "Core bindings for Ruffle",
     "license": "(MIT OR Apache-2.0)",
     "private": true,
