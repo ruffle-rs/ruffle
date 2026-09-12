@@ -8,7 +8,8 @@ use crate::avm1::{ArrayBuilder, Object, Value, fscommand, globals, scope};
 use crate::backend::navigator::{NavigationMethod, Request};
 use crate::context::UpdateContext;
 use crate::display_object::{
-    DisplayObject, DisplayObjectContainer, MovieClip, TDisplayObject, TDisplayObjectContainer,
+    DisplayObject, DisplayObjectContainer, GotoInfo, MovieClip, StopOrPlay, TDisplayObject,
+    TDisplayObjectContainer,
 };
 use crate::ecma_conversions::{f64_to_wrapping_i32, f64_to_wrapping_u32};
 use crate::loader::MovieLoaderVMData;
@@ -1479,7 +1480,12 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         if let Some(clip) = self.target_clip() {
             if let Some(clip) = clip.as_movie_clip() {
                 // The frame on the stack is 0-based, not 1-based.
-                clip.goto_frame(self.context, action.frame + 1, true);
+                let goto_info = GotoInfo {
+                    frame: action.frame + 1,
+                    stop_or_play: StopOrPlay::Stop,
+                };
+
+                clip.goto_frame(self.context, goto_info);
             } else {
                 avm_error!(self, "GotoFrame failed: Target is not a MovieClip");
             }
@@ -1494,11 +1500,18 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         // Param can either be a frame number or a frame label.
         if let Some(clip) = self.target_clip_or_root().as_movie_clip() {
             let frame = self.context.avm1.pop();
+
+            let stop_or_play = if action.set_playing {
+                StopOrPlay::Play
+            } else {
+                StopOrPlay::Stop
+            };
+
             let _ = globals::movie_clip::goto_frame(
                 clip,
                 self,
                 &[frame],
-                !action.set_playing,
+                stop_or_play,
                 action.scene_offset,
             );
         } else {
@@ -1512,7 +1525,12 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             if let Some(clip) = clip.as_movie_clip() {
                 let label = action.label.decode(self.encoding());
                 if let Some(frame) = clip.frame_label_to_number(&label, self.context) {
-                    clip.goto_frame(self.context, frame, true);
+                    let goto_info = GotoInfo {
+                        frame,
+                        stop_or_play: StopOrPlay::Stop,
+                    };
+
+                    clip.goto_frame(self.context, goto_info);
                 } else {
                     avm_warn!(self, "GoToLabel: Frame label '{:?}' not found", label);
                 }

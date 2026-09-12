@@ -30,8 +30,8 @@ use crate::context_menu::{
 };
 use crate::display_object::Avm2MousePick;
 use crate::display_object::{
-    EditText, InteractiveObject, Stage, StageAlign, StageDisplayState, StageScaleMode,
-    TInteractiveObject, WindowMode,
+    EditText, GotoInfo, InteractiveObject, Stage, StageAlign, StageDisplayState, StageScaleMode,
+    StopOrPlay, TInteractiveObject, WindowMode,
 };
 use crate::events::GamepadButton;
 use crate::events::PlayerNotification;
@@ -889,7 +889,12 @@ impl Player {
             .root_clip()
             .and_then(|root| root.as_movie_clip())
         {
-            mc.goto_frame(context, 1, true)
+            let goto_info = GotoInfo {
+                frame: 1,
+                stop_or_play: StopOrPlay::Stop,
+            };
+
+            mc.goto_frame(context, goto_info);
         }
     }
     fn forward_root_movie(context: &mut UpdateContext<'_>) {
