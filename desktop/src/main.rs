@@ -27,8 +27,6 @@ use app::App;
 #[cfg(feature = "shell-completions")]
 use clap::CommandFactory;
 use clap::Parser;
-#[cfg(feature = "shell-completions")]
-use cli::Commands;
 use cli::Opt;
 use rfd::MessageDialogResult;
 use ruffle_core::StaticCallstack;
@@ -156,7 +154,7 @@ fn main() -> Result<(), Error> {
     let opt = Opt::parse();
 
     #[cfg(feature = "shell-completions")]
-    if let Some(Commands::Completions { shell }) = opt.command {
+    if let Some(shell) = opt.completions {
         let mut cmd = Opt::command();
         clap_complete::generate(shell, &mut cmd, "ruffle", &mut std::io::stdout());
         return Ok(());
