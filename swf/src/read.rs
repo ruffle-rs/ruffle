@@ -1936,6 +1936,7 @@ impl<'a> Reader<'a> {
                 let id = self.read_u16()?;
                 PlaceObjectAction::Replace(id)
             }
+            (false, false) if has_class_name => PlaceObjectAction::PlaceByClass,
             _ => return Err(Error::invalid_data("Invalid PlaceObject type")),
         };
         let matrix = if flags.contains(PlaceFlag::HAS_MATRIX) {

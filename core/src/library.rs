@@ -50,6 +50,7 @@ pub struct Avm2ClassRegistry<'gc> {
     /// A list of AVM2 class objects and the character IDs they are expected to
     /// instantiate.
     class_map: WeakValueHashMap<Avm2Class<'gc>, WeakMovieSymbol>,
+    name_map: std::collections::HashMap<String, MovieSymbol>,
 }
 
 unsafe impl<'gc> Collect<'gc> for Avm2ClassRegistry<'gc> {
@@ -70,7 +71,15 @@ impl<'gc> Avm2ClassRegistry<'gc> {
     pub fn new() -> Self {
         Self {
             class_map: WeakValueHashMap::new(),
+            name_map: std::collections::HashMap::new(),
         }
+    }
+
+    /// Retrieve the library symbol for a given AVM2 class name.
+    pub fn class_symbol_by_name(&self, name: &str) -> Option<(Arc<SwfMovie>, CharacterId)> {
+        self.name_map
+            .get(name)
+            .map(|MovieSymbol(movie, sym)| (movie.clone(), *sym))
     }
 
     /// Retrieve the library symbol for a given AVM2 class object.
@@ -112,6 +121,14 @@ impl<'gc> Avm2ClassRegistry<'gc> {
             // instantiates the clip on the timeline.
             return;
         }
+        use either::Either;
+        let qname_either = class_def.name().to_qualified_name_no_mc();
+        let qname = match qname_either {
+            Either::Left(av) => av.to_string(),
+            Either::Right(ws) => ws.to_string(),
+        };
+        self.name_map
+            .insert(qname, MovieSymbol(movie.clone(), symbol));
         self.class_map.insert(class_def, MovieSymbol(movie, symbol));
     }
 }
