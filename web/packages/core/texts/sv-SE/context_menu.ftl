@@ -8,5 +8,5 @@ context-menu-about-ruffle =
     }
 context-menu-hide = Dölj den här menyn
 context-menu-exit-fullscreen = Avsluta helskärm
-context-menu-enter-fullscreen = Helskärm
+context-menu-enter-fullscreen = Aktivera helskärmsläge
 context-menu-volume-controls = Ljudkontroller

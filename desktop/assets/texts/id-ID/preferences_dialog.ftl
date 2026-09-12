@@ -6,6 +6,7 @@ graphics-power = Pengaturan Power
 graphics-power-low = Rendah (menggunakan iGPU)
 graphics-power-high = Tinggi (menggunakan GPU)
 language = Bahasa
+audio-output-device = Perangkat Pengeluar Suara
 audio-output-device-default = Bawaan Sistem
 enable-openh264 = Aktifkan OpenH264
 show-license = Tunjukkan Lisensi
@@ -16,6 +17,7 @@ log-filename-pattern-with-timestamp = Dengan Timestamp
 storage-backend = Lokasi Penyimpanan
 storage-backend-disk = Disk
 storage-backend-memory = Memori
+recent-limit = Batas Terbaru
 recent-clear = Bersihkan
 theme = Tema
 theme-system = Bawaan Sistem
@@ -27,7 +29,11 @@ gamemode-tooltip =
     GameMode menambahkan optimisasi secara sementara pada komputer Anda dan/atau Ruffle.
     Ruffle hanya meminta GameMode apabila sebuah SWF sedang dimainkan.
 gamemode-default = Default
+gamemode-default-tooltip = GameMode akan diaktifkan pada pengaturan power tinggi.
+# See for context https://wiki.archlinux.org/title/Input_method
+ime-enabled = Metode input
 ime-enabled-experimental = (eksperimental)
+ime-enabled-tooltip = Metode masukan memungkinkan pengetikan karakter yang tidak tersedia pada keyboard, misalnya karakter Cina, Jepang, atau Korea.
 ime-enabled-default = Default
 device-font-renderer = Renderer Font Perangkat
 device-font-renderer-tooltip = Memilih backend yang digunakan untuk merender font perangkat.

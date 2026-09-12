@@ -34,6 +34,7 @@ ime-enabled-experimental = (экспериментальный)
 ime-enabled-tooltip = Метод ввода позволяет вводить символы, которые не доступны на клавиатуре, например, китайские, японские или корейские иероглифы.
 ime-enabled-default = По умолчанию
 device-font-renderer = Рендеринг шрифтов устройства
+device-font-renderer-tooltip = Выбрать способ рендеринга шрифтов устройства.
 device-font-renderer-default = По умолчанию
 device-font-renderer-embedded = Встроенный
 device-font-renderer-freetype = FreeType
