@@ -12,6 +12,7 @@ workspace = true
 
 [dependencies]
 clap = { workspace = true }
+clap_complete = { workspace = true, optional = true }
 cpal = { workspace = true }
 egui = { workspace = true }
 egui_extras = { workspace = true, default-features = false, features = ["image"] }
@@ -81,6 +82,7 @@ OriginalFilename = "ruffle.exe"
 
 [features]
 default = ["software_video", "external_video", "lzma", "fontconfig", "freetype"]
+shell-completions = ["dep:clap_complete"]
 jpegxr = ["ruffle_core/jpegxr"]
 
 # core features
