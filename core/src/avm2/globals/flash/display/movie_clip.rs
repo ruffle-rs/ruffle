@@ -8,7 +8,7 @@ use crate::avm2::function::FunctionArgs;
 use crate::avm2::object::ArrayObject;
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
-use crate::display_object::{MovieClip, Scene};
+use crate::display_object::{GotoInfo, MovieClip, Scene, StopOrPlay};
 use crate::string::{AvmString, WString};
 
 /// Implements `addFrameScript`, an undocumented method of `MovieClip` used to
@@ -362,7 +362,7 @@ pub fn goto_and_play<'gc>(
         let frame_or_label = args.get_value(0);
         let scene = args.try_get_string(1);
 
-        goto_frame(activation, mc, frame_or_label, scene, false)?;
+        goto_frame(activation, mc, frame_or_label, scene, StopOrPlay::Play)?;
     }
 
     Ok(Value::Undefined)
@@ -383,7 +383,7 @@ pub fn goto_and_stop<'gc>(
         let frame_or_label = args.get_value(0);
         let scene = args.try_get_string(1);
 
-        goto_frame(activation, mc, frame_or_label, scene, true)?;
+        goto_frame(activation, mc, frame_or_label, scene, StopOrPlay::Stop)?;
     }
 
     Ok(Value::Undefined)
@@ -394,7 +394,7 @@ pub fn goto_frame<'gc>(
     mc: MovieClip<'gc>,
     frame_or_label: Value<'gc>,
     scene_str: Option<AvmString<'gc>>,
-    stop: bool,
+    stop_or_play: StopOrPlay,
 ) -> Result<(), Error<'gc>> {
     let scene = match scene_str {
         None => mc
@@ -451,7 +451,12 @@ pub fn goto_frame<'gc>(
         }
     };
 
-    mc.goto_frame(activation.context, frame.max(1) as u16, stop);
+    let goto_info = GotoInfo {
+        frame: frame.max(1) as u16,
+        stop_or_play,
+    };
+
+    mc.goto_frame(activation.context, goto_info);
 
     Ok(())
 }
@@ -546,7 +551,12 @@ pub fn prev_scene<'gc>(
             length: _,
         }) = mc.previous_scene()
     {
-        mc.goto_frame(activation.context, start, false);
+        let goto_info = GotoInfo {
+            frame: start,
+            stop_or_play: StopOrPlay::Play,
+        };
+
+        mc.goto_frame(activation.context, goto_info);
     }
 
     Ok(Value::Undefined)
@@ -569,7 +579,12 @@ pub fn next_scene<'gc>(
             length: _,
         }) = mc.next_scene()
     {
-        mc.goto_frame(activation.context, start, false);
+        let goto_info = GotoInfo {
+            frame: start,
+            stop_or_play: StopOrPlay::Play,
+        };
+
+        mc.goto_frame(activation.context, goto_info);
     }
 
     Ok(Value::Undefined)

@@ -11,9 +11,9 @@
         "dist/"
     ],
     "scripts": {
-        "prebuild": "tsx tools/build_wasm.ts",
+        "prebuild": "node tools/build_wasm.ts",
         "build": "tsc --build --force",
-        "postbuild": "tsx tools/set_version.ts && tsx tools/bundle_texts.ts && tsx tools/bundle_css.ts",
+        "postbuild": "node tools/set_version.ts && node tools/bundle_texts.ts && node tools/bundle_css.ts",
         "docs": "typedoc",
         "test": "mocha",
         "checkTypes": "tsc --noemit && tsc --noemit -p tools"
@@ -27,16 +27,15 @@
         "@tsconfig/strictest": "^2.0.8",
         "@types/mocha": "^10.0.10",
         "autoprefixer": "^10.5.5",
-        "cssnano": "^8.0.2",
-        "cssnano-preset-advanced": "^8.0.2",
+        "cssnano": "^9.0.4",
+        "cssnano-preset-advanced": "^9.0.4",
         "mocha": "^12.0.0",
         "postcss": "^8.5.28",
         "postcss-nesting": "^14.0.1",
         "replace-in-file": "^9.0.0",
-        "tsx": "^4.23.13",
         "tsx-dom": "^3.1.0",
         "typedoc": "^0.28.20",
-        "typescript": "^5.9.3"
+        "typescript": "^6.0.3"
     },
     "sideEffects": false
 }

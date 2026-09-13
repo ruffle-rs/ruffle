@@ -306,6 +306,33 @@ impl Definition {
             }
         }
 
+        // Some builtin classes (e.g. `Error`) construct their prototype as a typed
+        // instance of their own class, so that assignments like `prototype.name =
+        // "Error"` in the static initializer resolve through the VTable to a slot
+        // rather than the dynamic property map walked above. Walk those slots too,
+        // so such properties aren't misreported as unimplemented.
+        if prototype.instance_class() == i_class {
+            for class_trait in i_class.traits() {
+                if !class_trait.name().namespace().is_public() {
+                    continue;
+                }
+                if let TraitKind::Slot { default_value, .. } = class_trait.kind() {
+                    let trait_name = class_trait.name().local_name();
+                    if let Ok(current_value) =
+                        Value::from(prototype).get_public_property(trait_name, activation)
+                        && !current_value.strict_eq(default_value)
+                    {
+                        Self::add_prototype_value(
+                            trait_name,
+                            current_value,
+                            &mut definition.prototype,
+                            activation,
+                        );
+                    }
+                }
+            }
+        }
+
         Self::fill_traits(
             activation.avm2(),
             c_class.traits(),
