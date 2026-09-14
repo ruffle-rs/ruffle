@@ -1,0 +1,8 @@
+ffmpeg   -loop 1 -framerate 10 -t 1 -i frame1.png   -loop 1 -framerate 10 -t 1 -i frame2.png   -loop 1 -framerate 10 -t 1 -i frame3.png   -loop 1 -framerate 10 -t 1 -i frame4.png     -filter_complex "
+    [0:v][1:v][2:v][3:v]concat=n=4:v=1:a=0,fps=10[v];
+    sine=frequency=440:sample_rate=44100:duration=4[s];
+    [s]volume=10,volume=enable='between(t,0,1)':volume=0.0,
+       volume=enable='between(t,1,2)':volume=0.25,
+       volume=enable='between(t,2,3)':volume=0.5,
+       volume=enable='between(t,3,4)':volume=0.75[a]
+  "   -map "[v]" -map "[a]"   -c:v libx264 -pix_fmt yuv420p   -c:a aac -b:a 128k   -shortest test.mp4
