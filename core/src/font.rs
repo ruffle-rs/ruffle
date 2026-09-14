@@ -216,6 +216,28 @@ impl GlyphSource {
             glyph_source.sweep_caches(false);
         }
     }
+
+    /// Typographic metrics (OS/2 `sTypo*`) at a requested height, if available.
+    /// For fonts Ruffle parses itself they are read straight from the font data
+    /// (no renderer involved, height ignored); a font supplied by an external
+    /// renderer is asked for them at that height. `None` (e.g. a SWF glyph font,
+    /// or a renderer that can't provide them) falls back to the hhea/cell
+    /// metrics.
+    pub fn typo_metrics_at(&self, height: Twips) -> Option<FontMetrics> {
+        match self {
+            GlyphSource::FontFace { face, .. } => face.typo_metrics(),
+            GlyphSource::ExternalRenderer(glyph_source) => {
+                let height_px = height.to_pixels().round() as u32;
+                if height_px == 0 {
+                    return None;
+                }
+                glyph_source
+                    .font_renderer()
+                    .get_typo_font_metrics(height_px)
+            }
+            GlyphSource::Memory { .. } | GlyphSource::Empty => None,
+        }
+    }
 }
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Collect, Hash)]
@@ -548,6 +570,10 @@ impl<'gc> FontLike<'gc> for Font<'gc> {
 
     fn metrics(&self) -> FontMetrics {
         self.0.glyphs.metrics()
+    }
+
+    fn typo_metrics_at(&self, height: Twips) -> Option<FontMetrics> {
+        self.0.glyphs.typo_metrics_at(height)
     }
 
     fn scale(&self) -> f32 {
