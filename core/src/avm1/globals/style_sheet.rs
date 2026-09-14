@@ -6,7 +6,7 @@ use crate::avm1::{ArrayBuilder, ExecutionReason, NativeObject};
 use crate::backend::navigator::Request;
 use crate::html::{CssStream, StyleSheet, TextFormat, transform_dashes_to_camel_case};
 use crate::string::AvmString;
-use gc_arena::{Collect, Gc, Mutation};
+use gc_arena::{Collect, Mutation};
 use ruffle_macros::istr;
 use ruffle_wstr::{WStr, WString};
 
@@ -37,6 +37,7 @@ impl<'gc> StyleSheetObject<'gc> {
     }
 }
 
+// TODO: in FP, these methods appear to be implemented mostly in ActionScript.
 const PROTO_DECLS: StaticDeclarations = declare_static_properties! {
     "setStyle" => method(set_style; DONT_ENUM | DONT_DELETE | READ_ONLY | VERSION_7);
     "clear" => method(clear; DONT_ENUM | DONT_DELETE | READ_ONLY | VERSION_7);
@@ -196,6 +197,8 @@ fn transform<'gc>(
     _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let object = activation.instantiate_class_as_script([istr!("TextFormat")], &[])?;
+
     let mut text_format = TextFormat {
         kerning: Some(false),
         ..Default::default()
@@ -372,13 +375,13 @@ fn transform<'gc>(
         }
     }
 
-    let proto = activation.prototypes().text_format;
-    let object = Object::new(activation.strings(), Some(proto));
-    object.set_native(
-        activation.gc(),
-        NativeObject::TextFormat(Gc::new(activation.gc(), text_format.into())),
-    );
-    Ok(object.into())
+    if let Value::Object(o) = object
+        && let NativeObject::TextFormat(tf) = o.native()
+    {
+        tf.replace(text_format);
+    }
+
+    Ok(object)
 }
 
 fn parse_css<'gc>(

@@ -226,3 +226,21 @@ geom getter called!
 Point getter called!
 new MyPoint(10, 20) called!
 v.className: MyPoint
+
+### Testing TextFormat
+TextFormat getter called!
+new MyTextFormat() called!
+// A_STYLE_SHEET.transform({})
+TextFormat getter called!
+new MyTextFormat() called!
+v.className: MyTextFormat
+textfieldCustom.className: MyTextField
+// textfieldCustom.getNewTextFormat()
+v isn't an object: undefined (type: undefined)
+// clip.textfield.getTextFormat()
+v isn't an object: undefined (type: undefined)
+textfieldOrig.className: TextField
+// textfieldOrig.getTextFormat()
+v.className: MyTextFormat
+// textfieldOrig.getNewTextFormat()
+v.className: MyTextFormat
