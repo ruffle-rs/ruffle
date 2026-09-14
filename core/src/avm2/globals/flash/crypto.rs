@@ -4,7 +4,7 @@ use crate::avm2::error::{Error2004Type, make_error_2004};
 use crate::avm2::function::FunctionArgs;
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::{Activation, Error, Value};
-use rand::{TryRngCore, rngs::OsRng};
+use rand::{TryRng, rngs::SysRng};
 
 /// Implements `flash.crypto.generateRandomBytes`
 pub fn generate_random_bytes<'gc>(
@@ -28,7 +28,7 @@ pub fn generate_random_bytes<'gc>(
     let mut ba_write = ba.as_bytearray_mut().unwrap();
     ba_write.set_length(length as usize);
 
-    let mut rng = OsRng {};
+    let mut rng = SysRng {};
 
     rng.try_fill_bytes(ba_write.bytes_mut()).unwrap();
 
