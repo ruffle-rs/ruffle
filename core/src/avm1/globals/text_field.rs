@@ -129,8 +129,12 @@ fn new_text_format<'gc>(
     activation: &mut Activation<'_, 'gc>,
     text_format: TextFormat,
 ) -> Object<'gc> {
-    let proto = activation.prototypes().text_format;
-    let object = Object::new(&activation.context.strings, Some(proto));
+    // FIXME: this should return `undefined` when called on a `TextField` instantiated
+    // with a custom class; see the `avm1/globals_monkeypatch` test.
+    // Why? (and how exactly?)
+
+    let proto = activation.resolve_prototype([istr!("TextFormat")]);
+    let object = Object::new(&activation.context.strings, proto);
     object.set_native(
         activation.gc(),
         NativeObject::TextFormat(Gc::new(activation.gc(), text_format.into())),
