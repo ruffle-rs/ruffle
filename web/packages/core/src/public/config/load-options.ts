@@ -305,6 +305,19 @@ export enum DeviceFontRenderer {
      * This is an experimental method and some features might not work properly.
      */
     Canvas = "canvas",
+
+    /**
+     * Delegate glyph rasterization to the pluggable bridge installed on
+     * `globalThis.__ruffleCustomFontRenderer`. Falls back to
+     * {@link DeviceFontRenderer.Canvas} (per font) when no valid bridge
+     * is found at font-request time.
+     *
+     * The bridge is agnostic about the backing technology — a napi-rs
+     * native addon, a separate WebAssembly module, or a pure-JavaScript
+     * implementation all work, as long as the object satisfies the
+     * `FontBridge` contract.
+     */
+    Custom = "custom",
 }
 
 /**

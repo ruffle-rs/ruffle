@@ -209,6 +209,7 @@ mod tests {
             letter_spacing,
             kerning,
             color: swf::Color::BLACK,
+            display_scale: 1.0,
         }
     }
 

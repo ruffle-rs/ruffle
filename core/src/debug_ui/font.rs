@@ -131,7 +131,7 @@ impl FontWindow {
                         for (i, &ch) in chars.iter().enumerate() {
                             ui.label(format!("{ch}"));
 
-                            let resolution = font.resolve_glyph(ch);
+                            let resolution = font.resolve_glyph(ch, Twips::ZERO);
                             ui.label(if resolution.is_some() { "Yes" } else { "No" });
 
                             if let Some(resolution) = &resolution {
@@ -141,7 +141,10 @@ impl FontWindow {
                             }
 
                             if let Some(&next) = chars.get(i + 1) {
-                                ui.label(format!("{}", font.get_kerning_offset(ch, next)));
+                                ui.label(format!(
+                                    "{}",
+                                    font.get_kerning_offset(ch, next, Twips::ZERO)
+                                ));
                             } else {
                                 ui.weak("-");
                             }
