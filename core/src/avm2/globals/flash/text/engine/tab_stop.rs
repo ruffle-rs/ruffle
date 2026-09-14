@@ -1,5 +1,6 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::error::{Error2004Type, make_error_2004, make_error_2008};
+use crate::avm2::function::FunctionArgs;
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
 use crate::avm2::{Avm2StrRepresentable, Error};
@@ -10,7 +11,7 @@ pub use crate::avm2::object::tab_stop_allocator;
 pub fn get_alignment<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap().as_tab_stop_object().unwrap();
     Ok(this.alignment().as_avm2_str(activation).into())
@@ -19,7 +20,7 @@ pub fn get_alignment<'gc>(
 pub fn set_alignment<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap().as_tab_stop_object().unwrap();
     let s = args.get_string_non_null(activation, 0, "alignment")?;
@@ -33,7 +34,7 @@ pub fn set_alignment<'gc>(
 pub fn get_position<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap().as_tab_stop_object().unwrap();
     Ok(this.position().into())
@@ -42,7 +43,7 @@ pub fn get_position<'gc>(
 pub fn set_position<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap().as_tab_stop_object().unwrap();
     let value = args.get_f64(0);
@@ -56,7 +57,7 @@ pub fn set_position<'gc>(
 pub fn get_decimal_alignment_token<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap().as_tab_stop_object().unwrap();
     Ok(this.decimal_alignment_token().into())
@@ -65,7 +66,7 @@ pub fn get_decimal_alignment_token<'gc>(
 pub fn set_decimal_alignment_token<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap().as_tab_stop_object().unwrap();
     let value = args.get_string_non_null(activation, 0, "decimalAlignmentToken")?;

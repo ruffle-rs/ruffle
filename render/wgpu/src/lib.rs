@@ -4,7 +4,6 @@
 use crate::backend::ActiveFrame;
 use crate::bitmaps::BitmapSamplers;
 use crate::buffer_pool::{BufferPool, PoolEntry};
-use crate::descriptors::Quad;
 use crate::mesh::BitmapBinds;
 use crate::pipelines::Pipelines;
 use crate::target::{RenderTarget, SwapChainTarget};
@@ -23,6 +22,7 @@ use std::cell::{Cell, OnceCell};
 use std::sync::Arc;
 use swf::GradientSpread;
 pub use wgpu;
+pub use wgpu_profiler;
 
 type Error = Box<dyn std::error::Error>;
 
@@ -78,12 +78,6 @@ pub struct Transforms {
 
 #[repr(C)]
 #[derive(Copy, Clone, Debug, Pod, Zeroable)]
-struct TextureTransforms {
-    u_matrix: [[f32; 4]; 4],
-}
-
-#[repr(C)]
-#[derive(Copy, Clone, Debug, Pod, Zeroable)]
 struct PosVertex {
     position: [f32; 2],
 }
@@ -93,6 +87,35 @@ impl From<TessVertex> for PosVertex {
         Self {
             position: [vertex.x, vertex.y],
         }
+    }
+}
+
+#[repr(C)]
+#[derive(Copy, Clone, Debug, Pod, Zeroable)]
+struct PosUvVertex {
+    position: [f32; 2],
+    uv: [f32; 3],
+}
+
+impl PosUvVertex {
+    pub fn new(x: f32, y: f32, u: f32, v: f32, t: f32) -> Self {
+        let position = [x, y];
+        let uv = [u, v, t];
+        Self { position, uv }
+    }
+
+    pub fn from_tessellator(vertex: TessVertex, texture_matrix: &[[f32; 3]; 3]) -> Self {
+        let position = [vertex.x, vertex.y];
+        let uv = Self::transform_uv(texture_matrix, vertex.x, vertex.y);
+        Self { position, uv }
+    }
+
+    fn transform_uv(matrix: &[[f32; 3]; 3], x: f32, y: f32) -> [f32; 3] {
+        [
+            matrix[0][0] * x + matrix[1][0] * y + matrix[2][0],
+            matrix[0][1] * x + matrix[1][1] * y + matrix[2][1],
+            1.0,
+        ]
     }
 }
 
@@ -247,32 +270,34 @@ impl QueueSyncHandle {
 #[derive(Debug)]
 pub struct Texture {
     pub(crate) texture: wgpu::Texture,
-    bind_linear: OnceCell<BitmapBinds>,
-    bind_nearest: OnceCell<BitmapBinds>,
+    repeating_linear: OnceCell<BitmapBinds>,
+    repeating_nearest: OnceCell<BitmapBinds>,
+    clamped_linear: OnceCell<BitmapBinds>,
+    clamped_nearest: OnceCell<BitmapBinds>,
     copy_count: Cell<u8>,
 }
 
 impl Texture {
     pub fn bind_group(
         &self,
+        repeating: bool,
         smoothed: bool,
         device: &wgpu::Device,
         layout: &wgpu::BindGroupLayout,
-        quad: &Quad,
         handle: BitmapHandle,
         samplers: &BitmapSamplers,
     ) -> &BitmapBinds {
-        let bind = match smoothed {
-            true => &self.bind_linear,
-            false => &self.bind_nearest,
+        let bind = match (repeating, smoothed) {
+            (true, true) => &self.repeating_linear,
+            (true, false) => &self.repeating_nearest,
+            (false, true) => &self.clamped_linear,
+            (false, false) => &self.clamped_nearest,
         };
         bind.get_or_init(|| {
             BitmapBinds::new(
                 device,
                 layout,
-                samplers.get_sampler(false, smoothed),
-                &quad.texture_transforms,
-                0 as wgpu::BufferAddress,
+                samplers.get_sampler(repeating, smoothed),
                 self.texture.create_view(&Default::default()),
                 create_debug_label!("Bitmap {:?} bind group (smoothed: {})", handle.0, smoothed),
             )

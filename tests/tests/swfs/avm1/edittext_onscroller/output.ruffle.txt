@@ -1,0 +1,12 @@
+onScroller2: _level0.tf
+  tf.scroll=4
+onScroller2: _level0.tf
+  tf.scroll=7
+onScroller2: _level0.tf
+  tf.scroll=10
+onScroller2: _level0.tf
+  tf.scroll=7
+onScroller2: _level0.tf
+  tf.scroll=4
+onScroller2: _level0.tf
+  tf.scroll=1

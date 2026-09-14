@@ -2,6 +2,7 @@ use crate::avm2::Error;
 use crate::avm2::Multiname;
 use crate::avm2::activation::Activation;
 use crate::avm2::bytearray::ByteArrayStorage;
+use crate::avm2::error::make_error_2136;
 use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{ArrayObject, ClassObject, Object, TObject};
 use crate::avm2::value::Value;
@@ -39,9 +40,9 @@ pub fn byte_array_allocator<'gc>(
         Some(ByteArrayStorage::new(activation.context))
     };
 
-    let storage = storage.unwrap_or_else(|| {
-        unreachable!("A ByteArray subclass should have ByteArray in superclass chain")
-    });
+    let Some(storage) = storage else {
+        return Err(make_error_2136(activation));
+    };
 
     let base = ScriptObjectData::new(class);
 

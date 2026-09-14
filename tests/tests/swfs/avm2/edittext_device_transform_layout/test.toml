@@ -6,3 +6,13 @@ family = "TestFont"
 path = "TestFont.ttf"
 bold = false
 italic = false
+
+[subtests.embedded.player_options]
+device_font_renderer = "embedded"
+
+[subtests.freetype]
+output_path = "output.freetype.txt"
+known_failure = true
+
+[subtests.freetype.player_options]
+device_font_renderer = "freetype"

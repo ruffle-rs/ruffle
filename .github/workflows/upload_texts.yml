@@ -33,7 +33,7 @@ jobs:
           path: desktop/packages/linux/locale
 
       - name: Crowdin push
-        uses: crowdin/github-action@v2
+        uses: crowdin/github-action@v3
         with:
           config: 'crowdin.yml'
           upload_sources: true

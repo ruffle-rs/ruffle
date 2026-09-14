@@ -1,5 +1,6 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::error::{Error2004Type, make_error_2004, make_error_2008};
+use crate::avm2::function::FunctionArgs;
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
 use crate::avm2::{Avm2StrRepresentable, Error};
@@ -13,7 +14,7 @@ pub use crate::avm2::object::element_format_allocator;
 pub fn get_alignment_baseline<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this
         .as_object()
@@ -26,7 +27,7 @@ pub fn get_alignment_baseline<'gc>(
 pub fn set_alignment_baseline<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this
         .as_object()
@@ -44,7 +45,7 @@ pub fn set_alignment_baseline<'gc>(
 pub fn get_alpha<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this
         .as_object()
@@ -57,7 +58,7 @@ pub fn get_alpha<'gc>(
 pub fn set_alpha<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this
         .as_object()
@@ -71,7 +72,7 @@ pub fn set_alpha<'gc>(
 pub fn get_baseline_shift<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this
         .as_object()
@@ -84,7 +85,7 @@ pub fn get_baseline_shift<'gc>(
 pub fn set_baseline_shift<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this
         .as_object()
@@ -98,7 +99,7 @@ pub fn set_baseline_shift<'gc>(
 pub fn get_break_opportunity<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this
         .as_object()
@@ -111,7 +112,7 @@ pub fn get_break_opportunity<'gc>(
 pub fn set_break_opportunity<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this
         .as_object()
@@ -129,7 +130,7 @@ pub fn set_break_opportunity<'gc>(
 pub fn get_color<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this
         .as_object()
@@ -142,7 +143,7 @@ pub fn get_color<'gc>(
 pub fn set_color<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this
         .as_object()
@@ -156,7 +157,7 @@ pub fn set_color<'gc>(
 pub fn get_digit_case<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this
         .as_object()
@@ -169,7 +170,7 @@ pub fn get_digit_case<'gc>(
 pub fn set_digit_case<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this
         .as_object()
@@ -187,7 +188,7 @@ pub fn set_digit_case<'gc>(
 pub fn get_digit_width<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this
         .as_object()
@@ -200,7 +201,7 @@ pub fn get_digit_width<'gc>(
 pub fn set_digit_width<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this
         .as_object()
@@ -218,7 +219,7 @@ pub fn set_digit_width<'gc>(
 pub fn get_dominant_baseline<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this
         .as_object()
@@ -231,7 +232,7 @@ pub fn get_dominant_baseline<'gc>(
 pub fn set_dominant_baseline<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this
         .as_object()
@@ -252,7 +253,7 @@ pub fn set_dominant_baseline<'gc>(
 pub fn get_font_description<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this
         .as_object()
@@ -265,7 +266,7 @@ pub fn get_font_description<'gc>(
 pub fn set_font_description<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this
         .as_object()
@@ -286,7 +287,7 @@ pub fn set_font_description<'gc>(
 pub fn get_font_size<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this
         .as_object()
@@ -299,7 +300,7 @@ pub fn get_font_size<'gc>(
 pub fn set_font_size<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this
         .as_object()
@@ -317,7 +318,7 @@ pub fn set_font_size<'gc>(
 pub fn get_kerning<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this
         .as_object()
@@ -330,7 +331,7 @@ pub fn get_kerning<'gc>(
 pub fn set_kerning<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this
         .as_object()
@@ -348,7 +349,7 @@ pub fn set_kerning<'gc>(
 pub fn get_ligature_level<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this
         .as_object()
@@ -361,7 +362,7 @@ pub fn get_ligature_level<'gc>(
 pub fn set_ligature_level<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this
         .as_object()
@@ -379,7 +380,7 @@ pub fn set_ligature_level<'gc>(
 pub fn get_locale<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this
         .as_object()
@@ -392,7 +393,7 @@ pub fn get_locale<'gc>(
 pub fn set_locale<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this
         .as_object()
@@ -407,7 +408,7 @@ pub fn set_locale<'gc>(
 pub fn get_text_rotation<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this
         .as_object()
@@ -420,7 +421,7 @@ pub fn get_text_rotation<'gc>(
 pub fn set_text_rotation<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this
         .as_object()
@@ -438,7 +439,7 @@ pub fn set_text_rotation<'gc>(
 pub fn get_tracking_left<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this
         .as_object()
@@ -451,7 +452,7 @@ pub fn get_tracking_left<'gc>(
 pub fn set_tracking_left<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this
         .as_object()
@@ -465,7 +466,7 @@ pub fn set_tracking_left<'gc>(
 pub fn get_tracking_right<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this
         .as_object()
@@ -478,7 +479,7 @@ pub fn get_tracking_right<'gc>(
 pub fn set_tracking_right<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this
         .as_object()
@@ -492,7 +493,7 @@ pub fn set_tracking_right<'gc>(
 pub fn get_typographic_case<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this
         .as_object()
@@ -505,7 +506,7 @@ pub fn get_typographic_case<'gc>(
 pub fn set_typographic_case<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this
         .as_object()
@@ -523,7 +524,7 @@ pub fn set_typographic_case<'gc>(
 pub fn get_locked<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this
         .as_object()
@@ -536,7 +537,7 @@ pub fn get_locked<'gc>(
 pub fn set_locked<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this
         .as_object()

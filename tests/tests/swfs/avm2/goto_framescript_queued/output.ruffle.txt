@@ -1,3 +1,0 @@
-frame: 1, isPlaying: false
-frame: 1, isPlaying: true
-frame: 2, isPlaying: false

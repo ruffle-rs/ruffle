@@ -1,0 +1,18 @@
+LM width: 56
+width: 56
+bounds 0: (x=2, y=2, w=10, h=8)
+bounds 1: (x=12, y=2, w=5, h=8)
+bounds 2: (x=17, y=2, w=10, h=8)
+bounds 3: (x=27, y=2, w=10, h=8)
+bounds 4: (x=37, y=2, w=10, h=8)
+bounds 5: (x=47, y=2, w=1, h=8)
+bounds 6: (x=48, y=2, w=10, h=8)
+LM width: 112
+width: 112
+bounds 0: (x=2, y=2, w=20, h=16)
+bounds 1: (x=22, y=2, w=10, h=16)
+bounds 2: (x=32, y=2, w=20, h=16)
+bounds 3: (x=52, y=2, w=20, h=16)
+bounds 4: (x=72, y=2, w=20, h=16)
+bounds 5: (x=92, y=2, w=2, h=16)
+bounds 6: (x=94, y=2, w=20, h=16)

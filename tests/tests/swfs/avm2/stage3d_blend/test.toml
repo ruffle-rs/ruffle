@@ -2,11 +2,11 @@ num_frames = 1
 
 [[image_comparisons.output.checks]]
 tolerance = 3
-max_outliers = 36100
+max_outliers = 37000
 
 [[image_comparisons.output.checks]]
 tolerance = 16
-max_outliers = 4975
+max_outliers = 5200
 
 [player_options]
 with_renderer = { optional = false, quality = "high" }

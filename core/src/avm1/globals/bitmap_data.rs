@@ -221,9 +221,8 @@ fn get_rectangle<'gc>(
         return Ok((-1).into());
     };
 
-    let proto = activation.prototypes().rectangle_constructor;
-    let rect = proto.construct(
-        activation,
+    let rect = activation.instantiate_class_fast(
+        [istr!("flash"), istr!("geom"), istr!("Rectangle")],
         &[
             0.into(),
             0.into(),
@@ -231,8 +230,7 @@ fn get_rectangle<'gc>(
             bitmap_data.height().into(),
         ],
     )?;
-
-    Ok(rect)
+    Ok(rect.unwrap_or_else(|| (-1).into()))
 }
 
 fn get_pixel<'gc>(
@@ -570,6 +568,7 @@ fn draw<'gc>(
             matrix,
             color_transform,
             perspective_projection: None,
+            tz: 0.0,
         },
         smoothing,
         blend_mode,
@@ -730,9 +729,11 @@ fn get_color_bounds_rect<'gc>(
         color,
     );
 
-    let proto = activation.prototypes().rectangle_constructor;
-    let rect = proto.construct(activation, &[x.into(), y.into(), w.into(), h.into()])?;
-    Ok(rect)
+    let rect = activation.instantiate_class_fast(
+        [istr!("flash"), istr!("geom"), istr!("Rectangle")],
+        &[x.into(), y.into(), w.into(), h.into()],
+    )?;
+    Ok(rect.unwrap_or_else(|| (-1).into()))
 }
 
 fn perlin_noise<'gc>(
@@ -1313,7 +1314,7 @@ fn load_bitmap<'gc>(
 
     let character = library
         .library_for_movie(movie)
-        .and_then(|l| l.character_by_export_name(name));
+        .and_then(|l| l.character_by_export_name(&name));
 
     let Some((_id, Character::Bitmap(bitmap))) = character else {
         return Ok(Value::Undefined);

@@ -1,4 +1,4 @@
-use crate::backends::TestAudioBackend;
+use crate::backends::{FontRendererKind, TestAudioBackend};
 use crate::environment::{Environment, RenderInterface};
 use crate::options::RenderOptions;
 use ruffle_core::tag_utils::SwfMovie;
@@ -19,6 +19,7 @@ pub struct PlayerOptions {
     version: Option<u8>,
     mode: Option<PlayerMode>,
     with_default_font: bool,
+    device_font_renderer: FontRendererKind,
 }
 
 impl PlayerOptions {
@@ -79,7 +80,11 @@ impl PlayerOptions {
                 return false;
             }
         }
-        true
+        self.device_font_renderer.can_run()
+    }
+
+    pub fn device_font_renderer(&self) -> FontRendererKind {
+        self.device_font_renderer
     }
 
     pub fn viewport_dimensions(&self, movie: &SwfMovie) -> ViewportDimensions {

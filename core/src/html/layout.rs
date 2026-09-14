@@ -1,9 +1,10 @@
 //! Layout box structure
+pub mod context;
 
-use crate::context::UpdateContext;
 use crate::drawing::Drawing;
 use crate::font::{DefaultFont, EvalParameters, Font, FontLike, FontSet, FontType};
 use crate::html::dimensions::{BoxBounds, Position, Size};
+use crate::html::layout::context::LayoutContext;
 use crate::html::text_format::{FormatSpans, TextFormat, TextSpan};
 use crate::html::wrap_line;
 use crate::string::WStr;
@@ -17,8 +18,10 @@ use std::slice::Iter;
 use std::sync::Arc;
 use swf::{Rectangle, Twips};
 
-/// Contains information relating to the current layout operation.
-pub struct LayoutContext<'a, 'gc> {
+/// Accumulates state while incrementally laying out a run of text.
+pub struct LayoutBuilder<'a, 'gc> {
+    context: &'a mut dyn LayoutContext<'gc>,
+
     /// The movie this layout context is pulling fonts from.
     movie: Arc<SwfMovie>,
 
@@ -101,8 +104,9 @@ pub struct LayoutContext<'a, 'gc> {
     max_bounds: Twips,
 }
 
-impl<'a, 'gc> LayoutContext<'a, 'gc> {
+impl<'a, 'gc> LayoutBuilder<'a, 'gc> {
     fn new(
+        context: &'a mut dyn LayoutContext<'gc>,
         movie: Arc<SwfMovie>,
         max_bounds: Twips,
         text: &'a WStr,
@@ -111,6 +115,7 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
         font_type: FontType,
     ) -> Self {
         Self {
+            context,
             movie,
             cursor: Default::default(),
             font_set: None,
@@ -134,20 +139,14 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
         }
     }
 
-    fn lay_out_spans(&mut self, context: &mut UpdateContext<'gc>, fs: &'a FormatSpans) {
+    fn lay_out_spans(&mut self, fs: &'a FormatSpans) {
         for (span_start, _end, span_text, span) in fs.iter_spans() {
-            self.lay_out_span(context, span_start, span_text, span);
+            self.lay_out_span(span_start, span_text, span);
         }
     }
 
-    fn lay_out_span(
-        &mut self,
-        context: &mut UpdateContext<'gc>,
-        span_start: usize,
-        span_text: &'a WStr,
-        span: &TextSpan,
-    ) {
-        let font_set = self.resolve_font(context, span);
+    fn lay_out_span(&mut self, span_start: usize, span_text: &'a WStr, span: &TextSpan) {
+        let font_set = self.resolve_font(span);
         self.font_set = Some(font_set);
         self.newspan(span);
 
@@ -166,9 +165,7 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
             };
 
             match delimiter {
-                Some(b'\n' | b'\r') => {
-                    self.newline(context, span_start + slice_start - 1, span, true)
-                }
+                Some(b'\n' | b'\r') => self.newline(span_start + slice_start - 1, span, true),
                 Some(b'\t') => self.tab(),
                 _ => {}
             }
@@ -202,7 +199,7 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
                                 "wrap_line is supposed to return nonzero if is_start_of_line"
                             );
                         }
-                        self.newline(context, start + next_breakpoint, span, false);
+                        self.newline(start + next_breakpoint, span, false);
 
                         let next_dim = self.wrap_dimensions(span);
 
@@ -228,7 +225,7 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
                         break;
                     }
 
-                    self.newline(context, start + next_breakpoint, span, false);
+                    self.newline(start + next_breakpoint, span, false);
                     let next_dim = self.wrap_dimensions(span);
 
                     width = next_dim.0;
@@ -283,7 +280,6 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
     /// parameter will result in no empty lines being added.
     fn fixup_line(
         &mut self,
-        context: &mut UpdateContext<'gc>,
         last_line: bool,
         final_line_of_para: bool,
         end: usize,
@@ -301,7 +297,7 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
         let mut line_size_bounds = None;
         let mut box_count: i32 = 0;
         for linebox in self.boxes.iter_mut() {
-            let (text, _tf, font_set, params, _color) =
+            let (text, _tf, font_set, params) =
                 linebox.as_renderable_text(self.text).expect("text");
 
             // Flash ignores trailing spaces when aligning lines, so should we
@@ -342,7 +338,7 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
         );
 
         if self.current_line_span.bullet && self.is_first_line && box_count > 0 {
-            self.append_bullet(context, &self.current_line_span.clone());
+            self.append_bullet(&self.current_line_span.clone());
         }
 
         let baseline_adjustment = self.max_ascent;
@@ -387,7 +383,7 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
             return;
         }
 
-        let boxes = mem::take(&mut self.boxes);
+        let mut boxes = mem::take(&mut self.boxes);
         let first_box = boxes.first().unwrap();
         let start = first_box.start();
         let bounds = boxes
@@ -400,6 +396,10 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
         // will not be needed, and the end position will be calculated correctly.
         if let Some(last_line) = self.lines.last_mut() {
             last_line.end = start;
+        }
+
+        if let Some(last_box) = boxes.last_mut() {
+            last_box.last_in_line = true;
         }
 
         self.lines.push(LayoutLine {
@@ -437,14 +437,8 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
     ///
     /// The parameter `end_of_para` specifies whether the line was the last line
     /// of the current paragraph (i.e. it contained an explicit newline).
-    fn newline(
-        &mut self,
-        context: &mut UpdateContext<'gc>,
-        end: usize,
-        span: &TextSpan,
-        end_of_para: bool,
-    ) {
-        self.fixup_line(context, false, end_of_para, end, span);
+    fn newline(&mut self, end: usize, span: &TextSpan, end_of_para: bool) {
+        self.fixup_line(false, end_of_para, end, span);
 
         self.cursor.set_x(Twips::ZERO);
         self.cursor += (
@@ -510,9 +504,9 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
         }
     }
 
-    fn resolve_font(&mut self, context: &mut UpdateContext<'gc>, span: &TextSpan) -> FontSet<'gc> {
+    fn resolve_font(&mut self, span: &TextSpan) -> FontSet<'gc> {
         fn new_empty_font<'gc>(
-            context: &mut UpdateContext<'gc>,
+            context: &mut dyn LayoutContext<'gc>,
             span: &TextSpan,
             font_type: FontType,
         ) -> FontSet<'gc> {
@@ -542,8 +536,8 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
         // Note that the SWF can still contain a DefineFont tag with no glyphs/layout info in this case (see #451).
         // In an ideal world, device fonts would search for a matching font on the system and render it in some way.
         if self.font_type.is_embedded()
-            && let Some(font) = context
-                .library
+            && let Some(font) = self
+                .context
                 .get_embedded_font_by_name(
                     &font_name,
                     self.font_type,
@@ -553,12 +547,12 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
                 )
                 .filter(|f| f.has_glyphs())
         {
-            return FontSet::from_one_font(context.gc(), font);
+            return FontSet::from_one_font(self.context.gc(), font);
         }
         // TODO: If set to use embedded fonts and we couldn't find any matching font, show nothing
         // However - at time of writing, we don't support DefineFont4. If we matched this behaviour,
         // then a bunch of SWFs would just show no text suddenly.
-        // return new_empty_font(context, span, self.font_type);
+        // return new_empty_font(self.context, span, self.font_type);
 
         // Specifying multiple font names is supported only for device fonts.
         let font_names: Vec<&str> = font_name.split(",").collect();
@@ -567,34 +561,26 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
 
             // Check if the font name is one of the known default fonts.
             if let Some(default_font) = DefaultFont::from_name(font_name) {
-                let fonts = context.library.default_font(
-                    default_font,
-                    span.style.bold,
-                    span.style.italic,
-                    context.ui,
-                    context.renderer,
-                    context.gc_context,
-                );
-                if let Some(font_sort) = FontSet::from_fonts(context.gc(), &fonts) {
+                let fonts =
+                    self.context
+                        .default_font(default_font, span.style.bold, span.style.italic);
+                if let Some(font_sort) = FontSet::from_fonts(self.context.gc(), &fonts) {
                     return font_sort;
                 } else {
                     let font_desc = describe_font(span);
                     tracing::error!(
                         "Known default device font not found: {font_desc}, text will be missing"
                     );
-                    return new_empty_font(context, span, self.font_type);
+                    return new_empty_font(self.context, span, self.font_type);
                 }
             }
 
-            let fonts = context.library.get_or_sort_device_fonts(
+            let fonts = self.context.get_or_sort_device_fonts(
                 font_name,
                 span.style.bold,
                 span.style.italic,
-                context.ui,
-                context.renderer,
-                context.gc_context,
             );
-            if let Some(font_sort) = FontSet::from_fonts(context.gc(), &fonts) {
+            if let Some(font_sort) = FontSet::from_fonts(self.context.gc(), &fonts) {
                 return font_sort;
             }
         }
@@ -627,22 +613,17 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
             }
         };
 
-        let fonts = context.library.default_font(
-            default_font,
-            span.style.bold,
-            span.style.italic,
-            context.ui,
-            context.renderer,
-            context.gc_context,
-        );
-        if let Some(font_sort) = FontSet::from_fonts(context.gc(), &fonts) {
+        let fonts = self
+            .context
+            .default_font(default_font, span.style.bold, span.style.italic);
+        if let Some(font_sort) = FontSet::from_fonts(self.context.gc(), &fonts) {
             font_sort
         } else {
             let font_desc = describe_font(span);
             tracing::error!(
                 "Fallback font not found ({default_font:?}) for: {font_desc}, text will be missing"
             );
-            new_empty_font(context, span, self.font_type)
+            new_empty_font(self.context, span, self.font_type)
         }
     }
 
@@ -702,8 +683,8 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
     /// The bullet will always be placed at the start of the current line. It
     /// should be appended after line fixup has completed, but before the text
     /// cursor is moved down.
-    fn append_bullet(&mut self, context: &mut UpdateContext<'gc>, span: &TextSpan) {
-        let bullet_font = self.resolve_font(context, span);
+    fn append_bullet(&mut self, span: &TextSpan) {
+        let bullet_font = self.resolve_font(span);
         let mut bullet_cursor = self.cursor;
 
         bullet_cursor.set_x(
@@ -785,9 +766,9 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
     }
 
     /// Destroy the layout context, returning the newly constructed layout list.
-    fn end_layout(mut self, context: &mut UpdateContext<'gc>, fs: &'a FormatSpans) -> Layout<'gc> {
+    fn end_layout(mut self, fs: &'a FormatSpans) -> Layout<'gc> {
         let last_span = fs.last_span().expect("At least one span should be present");
-        self.fixup_line(context, true, true, fs.displayed_text().len(), last_span);
+        self.fixup_line(true, true, fs.displayed_text().len(), last_span);
 
         let text_size = self.text_size_bounds.unwrap_or_default();
         Layout {
@@ -805,7 +786,7 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
 /// Construct a new layout from text spans.
 pub fn lower_from_text_spans<'gc>(
     fs: &FormatSpans,
-    context: &mut UpdateContext<'gc>,
+    context: &mut dyn LayoutContext<'gc>,
     movie: Arc<SwfMovie>,
     requested_width: Option<Twips>,
     is_input: bool,
@@ -845,14 +826,15 @@ pub fn lower_from_text_spans<'gc>(
 
 fn lower_from_text_spans_known_width<'gc>(
     fs: &FormatSpans,
-    context: &mut UpdateContext<'gc>,
+    context: &mut dyn LayoutContext<'gc>,
     movie: Arc<SwfMovie>,
     bounds: Twips,
     is_input: bool,
     is_word_wrap: bool,
     font_type: FontType,
 ) -> Layout<'gc> {
-    let mut layout_context = LayoutContext::new(
+    let mut builder = LayoutBuilder::new(
+        context,
         movie,
         bounds,
         fs.displayed_text(),
@@ -860,10 +842,8 @@ fn lower_from_text_spans_known_width<'gc>(
         is_word_wrap,
         font_type,
     );
-
-    layout_context.lay_out_spans(context, fs);
-
-    layout_context.end_layout(context, fs)
+    builder.lay_out_spans(fs);
+    builder.end_layout(fs)
 }
 
 /// A `Layout` represents a fully laid-out text field.
@@ -1109,6 +1089,8 @@ pub struct LayoutBox<'gc> {
 
     /// What content is contained by the content box.
     content: LayoutContent<'gc>,
+
+    last_in_line: bool,
 }
 
 /// Represents different content modes of a given `LayoutBox`.
@@ -1139,10 +1121,6 @@ pub enum LayoutContent<'gc> {
         /// this text.
         #[collect(require_static)]
         params: EvalParameters,
-
-        /// The color to render the font with.
-        #[collect(require_static)]
-        color: swf::Color,
 
         /// List of end positions (relative to this box) for each character.
         ///
@@ -1182,10 +1160,6 @@ pub enum LayoutContent<'gc> {
         /// this text.
         #[collect(require_static)]
         params: EvalParameters,
-
-        /// The color to render the font with.
-        #[collect(require_static)]
-        color: swf::Color,
     },
 
     /// A layout box containing a drawing.
@@ -1234,7 +1208,7 @@ impl<'gc> LayoutBox<'gc> {
         let params = EvalParameters::from_span(span);
         let mut char_end_pos = Vec::with_capacity(end - start);
 
-        font_set.evaluate(text, Default::default(), params, |_, _, _, advance, x| {
+        font_set.evaluate(text, params, |_, _, _, advance, x| {
             char_end_pos.push(x + advance);
         });
 
@@ -1246,10 +1220,10 @@ impl<'gc> LayoutBox<'gc> {
                 text_format: span.get_text_format(),
                 font_set,
                 params,
-                color: span.font.color,
                 char_end_pos,
                 underline: span.style.underline,
             },
+            last_in_line: false,
         }
     }
 
@@ -1264,8 +1238,8 @@ impl<'gc> LayoutBox<'gc> {
                 text_format: span.get_text_format(),
                 font_set,
                 params,
-                color: span.font.color,
             },
+            last_in_line: false,
         }
     }
 
@@ -1278,6 +1252,7 @@ impl<'gc> LayoutBox<'gc> {
         Self {
             bounds: Default::default(),
             content: LayoutContent::Drawing { position, drawing },
+            last_in_line: false,
         }
     }
 
@@ -1308,13 +1283,7 @@ impl<'gc> LayoutBox<'gc> {
     pub fn as_renderable_text<'a>(
         &self,
         text: &'a WStr,
-    ) -> Option<(
-        &'a WStr,
-        &TextFormat,
-        FontSet<'gc>,
-        EvalParameters,
-        swf::Color,
-    )> {
+    ) -> Option<(&'a WStr, &TextFormat, FontSet<'gc>, EvalParameters)> {
         match &self.content {
             LayoutContent::Text {
                 start,
@@ -1322,27 +1291,18 @@ impl<'gc> LayoutBox<'gc> {
                 text_format,
                 font_set,
                 params,
-                color,
                 ..
-            } => Some((
-                text.slice(*start..*end)?,
-                text_format,
-                *font_set,
-                *params,
-                swf::Color::from_rgb(color.to_rgb(), 0xFF),
-            )),
+            } => Some((text.slice(*start..*end)?, text_format, *font_set, *params)),
             LayoutContent::Bullet {
                 text_format,
                 font_set,
                 params,
-                color,
                 ..
             } => Some((
                 WStr::from_units(&[0x2022u16]),
                 text_format,
                 *font_set,
                 *params,
-                swf::Color::from_rgb(color.to_rgb(), 0xFF),
             )),
             LayoutContent::Drawing { .. } => None,
         }
@@ -1363,6 +1323,10 @@ impl<'gc> LayoutBox<'gc> {
 
     pub fn is_bullet(&self) -> bool {
         matches!(&self.content, LayoutContent::Bullet { .. })
+    }
+
+    pub fn is_last_in_line(&self) -> bool {
+        self.last_in_line
     }
 
     pub fn start(&self) -> usize {

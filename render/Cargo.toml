@@ -35,6 +35,7 @@ wgpu = { workspace = true, optional = true }
 indexmap = { workspace = true }
 naga-agal = { path = "naga-agal" }
 jpegxr = { workspace = true, optional = true }
+guillotiere = "0.7.0"
 
 # This crate has a `compile_error!` on apple platforms
 [target.'cfg(not(target_vendor = "apple"))'.dependencies.renderdoc]

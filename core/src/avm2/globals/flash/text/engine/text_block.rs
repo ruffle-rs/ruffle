@@ -2,6 +2,7 @@ use crate::avm2::Avm2;
 use crate::avm2::Avm2StrRepresentable;
 use crate::avm2::activation::Activation;
 use crate::avm2::error::{Error, Error2004Type, make_error_2004, make_error_2008, make_error_2175};
+use crate::avm2::function::FunctionArgs;
 use crate::avm2::globals::flash::display::display_object::initialize_for_allocator;
 use crate::avm2::object::{ContentElementObject, ElementData, VectorObject};
 use crate::avm2::parameters::ParametersExt;
@@ -17,7 +18,7 @@ pub use crate::avm2::object::text_block_allocator;
 pub fn get_apply_non_linear_font_scaling<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap().as_text_block_object().unwrap();
     Ok(this.apply_non_linear_font_scaling().into())
@@ -26,7 +27,7 @@ pub fn get_apply_non_linear_font_scaling<'gc>(
 pub fn set_apply_non_linear_font_scaling<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap().as_text_block_object().unwrap();
 
@@ -44,7 +45,7 @@ pub fn set_apply_non_linear_font_scaling<'gc>(
 pub fn get_baseline_font_description<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap().as_text_block_object().unwrap();
     Ok(this
@@ -56,7 +57,7 @@ pub fn get_baseline_font_description<'gc>(
 pub fn set_baseline_font_description<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap().as_text_block_object().unwrap();
 
@@ -78,7 +79,7 @@ pub fn set_baseline_font_description<'gc>(
 pub fn get_baseline_font_size<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap().as_text_block_object().unwrap();
     Ok(this.baseline_font_size().into())
@@ -87,7 +88,7 @@ pub fn get_baseline_font_size<'gc>(
 pub fn set_baseline_font_size<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap().as_text_block_object().unwrap();
     let value = args.get_f64(0);
@@ -109,7 +110,7 @@ pub fn set_baseline_font_size<'gc>(
 pub fn get_baseline_zero<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap().as_text_block_object().unwrap();
     Ok(this.baseline_zero().as_avm2_str(activation).into())
@@ -118,7 +119,7 @@ pub fn get_baseline_zero<'gc>(
 pub fn set_baseline_zero<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap().as_text_block_object().unwrap();
 
@@ -137,7 +138,7 @@ pub fn set_baseline_zero<'gc>(
 pub fn get_bidi_level<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap().as_text_block_object().unwrap();
     Ok(this.bidi_level().into())
@@ -146,7 +147,7 @@ pub fn get_bidi_level<'gc>(
 pub fn set_bidi_level<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap().as_text_block_object().unwrap();
     let value = args.get_i32(0);
@@ -164,7 +165,7 @@ pub fn set_bidi_level<'gc>(
 pub fn get_line_rotation<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap().as_text_block_object().unwrap();
     Ok(this.line_rotation().as_avm2_str(activation).into())
@@ -173,7 +174,7 @@ pub fn get_line_rotation<'gc>(
 pub fn set_line_rotation<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap().as_text_block_object().unwrap();
 
@@ -192,7 +193,7 @@ pub fn set_line_rotation<'gc>(
 pub fn get_tab_stops<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap().as_text_block_object().unwrap();
     Ok(this
@@ -204,7 +205,7 @@ pub fn get_tab_stops<'gc>(
 pub fn set_tab_stops<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap().as_text_block_object().unwrap();
     let tab_stops = args
@@ -222,7 +223,7 @@ pub fn set_tab_stops<'gc>(
 pub fn get_text_justifier<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap().as_text_block_object().unwrap();
     Ok(this
@@ -234,7 +235,7 @@ pub fn get_text_justifier<'gc>(
 pub fn set_text_justifier<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap().as_text_block_object().unwrap();
 
@@ -250,7 +251,7 @@ pub fn set_text_justifier<'gc>(
 pub fn get_content<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap().as_text_block_object().unwrap();
     Ok(this.content().map(Value::from).unwrap_or(Value::Null))
@@ -259,7 +260,7 @@ pub fn get_content<'gc>(
 pub fn set_content<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap().as_text_block_object().unwrap();
 
@@ -285,7 +286,7 @@ pub fn set_content<'gc>(
 pub fn get_text_line_creation_result<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap().as_text_block_object().unwrap();
     Ok(this
@@ -297,7 +298,7 @@ pub fn get_text_line_creation_result<'gc>(
 pub fn get_first_invalid_line<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     avm2_stub_getter!(
         activation,
@@ -311,7 +312,7 @@ pub fn get_first_invalid_line<'gc>(
 pub fn get_first_line<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap().as_text_block_object().unwrap();
 
@@ -326,7 +327,7 @@ pub fn get_first_line<'gc>(
 pub fn get_last_line<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap().as_text_block_object().unwrap();
 
@@ -344,7 +345,7 @@ pub fn get_last_line<'gc>(
 pub fn release_lines<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap().as_text_block_object().unwrap();
 
@@ -430,7 +431,7 @@ pub fn release_lines<'gc>(
 pub fn do_create_text_line<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this_obj = this.as_object().unwrap();
     let block = this_obj.as_text_block_object().unwrap();

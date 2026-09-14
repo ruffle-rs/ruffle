@@ -4,6 +4,7 @@ use crate::avm2::{
     Activation, ArrayStorage, ClassObject, Error, Namespace, Object, TObject as _, Value,
 };
 use crate::context::UpdateContext;
+use crate::debug_ui::avm2_class::{class_name, show_avm2_class};
 use crate::debug_ui::display_object::open_display_object_button;
 use crate::debug_ui::handle::{AVM2ObjectHandle, DisplayObjectHandle};
 use crate::debug_ui::{ItemToSave, Message};
@@ -14,7 +15,6 @@ use gc_arena::Mutation;
 use std::borrow::Cow;
 
 use super::common::show_style_sheet;
-use super::movie::open_movie_button;
 
 #[derive(Debug, Eq, PartialEq, Hash, Default, Copy, Clone)]
 enum Panel {
@@ -85,7 +85,7 @@ impl Avm2ObjectWindow {
                     }
                     Panel::Class => {
                         if let Some(class) = object.as_class_object() {
-                            self.show_class(class, messages, &mut activation, ui)
+                            self.show_class(class, messages, activation.context, ui)
                         }
                     }
                     Panel::StyleSheet => {
@@ -109,11 +109,9 @@ impl Avm2ObjectWindow {
             .num_columns(2)
             .striped(true)
             .show(ui, |ui| {
-                if let Some(class) = object.instance_class().class_object() {
-                    ui.label("Instance Of");
-                    show_avm2_value(ui, activation.context, class.into(), messages);
-                    ui.end_row();
-                }
+                ui.label("Instance Of");
+                show_avm2_class(ui, activation.context, object.instance_class(), messages);
+                ui.end_row();
 
                 if let Some(object) = object.as_display_object() {
                     ui.label("Display Object");
@@ -241,7 +239,7 @@ impl Avm2ObjectWindow {
         &mut self,
         class: ClassObject<'gc>,
         messages: &mut Vec<Message>,
-        activation: &mut Activation<'_, 'gc>,
+        context: &mut UpdateContext<'gc>,
         ui: &mut Ui,
     ) {
         Grid::new(ui.id().with("class"))
@@ -249,45 +247,8 @@ impl Avm2ObjectWindow {
             .striped(true)
             .spacing([8.0, 8.0])
             .show(ui, |ui| {
-                let definition = class.inner_class_definition();
-                let name = definition.name();
-
-                ui.label("Namespace");
-                let namespace = name.namespace().as_uri(activation.strings());
-                ui.text_edit_singleline(&mut namespace.to_string().as_str());
-                ui.end_row();
-
-                ui.label("Name");
-                ui.text_edit_singleline(&mut name.local_name().to_string().as_str());
-                ui.end_row();
-
-                ui.label("Movie");
-                open_movie_button(ui, &class.translation_unit().movie(), messages);
-                ui.end_row();
-
-                ui.label("Super Chain");
-                ui.vertical(|ui| {
-                    let mut superclass = Some(class);
-                    while let Some(class) = superclass {
-                        show_avm2_value(ui, activation.context, class.into(), messages);
-                        superclass = class.superclass_object();
-                    }
-                });
-                ui.end_row();
-
-                ui.label("Interfaces");
-                ui.vertical(|ui| {
-                    for interface in class.inner_class_definition().all_interfaces() {
-                        ui.text_edit_singleline(
-                            &mut interface
-                                .name()
-                                .to_qualified_name_err_message(activation.gc())
-                                .to_string()
-                                .as_str(),
-                        );
-                    }
-                });
-                ui.end_row();
+                ui.label("Represents Class");
+                show_avm2_class(ui, context, class.inner_class_definition(), messages);
             });
     }
 
@@ -503,11 +464,7 @@ pub fn show_avm2_value<'gc>(
 
 fn object_name<'gc>(mc: &Mutation<'gc>, object: Object<'gc>) -> String {
     if let Some(class) = object.as_class_object() {
-        class
-            .inner_class_definition()
-            .name()
-            .to_qualified_name_err_message(mc)
-            .to_string()
+        class_name(mc, class.inner_class_definition())
     } else {
         let name = object.instance_class().name().local_name().to_string();
         format!("{} {:p}", name, object.as_ptr())

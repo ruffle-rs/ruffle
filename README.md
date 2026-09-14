@@ -64,12 +64,12 @@ The following are typical dependencies for Linux:
 
 * Ubuntu/Debian:
   ```shell
-  sudo apt install pkg-config libasound2-dev libudev-dev libfontconfig-dev libssl-dev default-jre-headless g++
+  sudo apt install pkg-config libasound2-dev libudev-dev libfontconfig-dev libfreetype6-dev libssl-dev default-jre-headless g++
   ```
 
 * Fedora/RHEL:
   ```shell
-  sudo dnf install pkgconf-pkg-config alsa-lib-devel systemd-devel fontconfig-devel openssl-devel java-latest-openjdk-headless gcc-c++
+  sudo dnf install pkgconf-pkg-config alsa-lib-devel systemd-devel fontconfig-devel freetype-devel openssl-devel java-latest-openjdk-headless gcc-c++
   ```
 
 ### Desktop
@@ -85,6 +85,13 @@ To run a specific SWF file, pass the SWF path as an argument:
 `cargo run --release --package=ruffle_desktop -- test.swf`
 
 To build in debug mode, simply omit `--release` from the command.
+
+Desktop has a few optional features which you can specify via `--features`, comma separated:
+
+* `tracy`: Enables profiling to [Tracy](https://github.com/wolfpld/tracy). You may need to expand the log filter to see everything, e.g. `RUST_LOG="warn,ruffle=debug"`
+* `tracy_images`: Enables Tracy frame captures. Implies `tracy`.
+* `tracy_avm`: Enables profiling AVM execution with Tracy. Implies `tracy`.
+* `render_debug_labels`: Enables debug labels during rendering, useful for debugging graphics with [renderdoc](https://renderdoc.org/) or similar.
 
 #### macOS
 

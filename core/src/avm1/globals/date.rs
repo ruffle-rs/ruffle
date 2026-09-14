@@ -1,11 +1,10 @@
 use crate::avm1::clamp::Clamp;
 use crate::avm1::property_decl::{DeclContext, PropertyOrder, StaticDeclarations, SystemClass};
 use crate::avm1::{Activation, Error, NativeObject, Object, Value};
-use crate::locale::{get_current_date_time, get_timezone};
+use crate::backend::locale::LocaleBackend;
 use crate::string::AvmString;
 use gc_arena::Gc;
 use std::cell::Cell;
-use std::fmt;
 
 #[inline]
 fn rem_euclid_i32(lhs: f64, rhs: i32) -> i32 {
@@ -55,8 +54,8 @@ impl Date {
     }
 
     /// Create from current date and time.
-    fn now() -> Self {
-        Self(get_current_date_time().timestamp_millis() as f64)
+    fn now(locale: &dyn LocaleBackend) -> Self {
+        Self(locale.get_current_date_time().timestamp_millis() as f64)
     }
 
     /// Get milliseconds since epoch.
@@ -157,24 +156,24 @@ impl Date {
     }
 
     /// ECMA-262 LocalTZA - Get local timezone adjustment in milliseconds.
-    fn local_tza(self, _is_utc: bool) -> i32 {
+    fn local_tza(self, _is_utc: bool, locale: &dyn LocaleBackend) -> i32 {
         // TODO: Honor `is_utc` flag.
-        get_timezone().local_minus_utc() * Self::MS_PER_SECOND
+        locale.get_timezone().local_minus_utc() * Self::MS_PER_SECOND
     }
 
     /// ECMA-262 LocalTime - Convert from UTC to local timezone.
-    fn local(self) -> Self {
-        Self(self.0 + f64::from(self.local_tza(true)))
+    fn local(self, locale: &dyn LocaleBackend) -> Self {
+        Self(self.0 + f64::from(self.local_tza(true, locale)))
     }
 
     /// ECMA-262 UTC - Convert from local timezone to UTC.
-    fn utc(self) -> Self {
-        Self(self.0 - f64::from(self.local_tza(false)))
+    fn utc(self, locale: &dyn LocaleBackend) -> Self {
+        Self(self.0 - f64::from(self.local_tza(false, locale)))
     }
 
     /// Get timezone offset in minutes.
-    fn timezone_offset(self) -> f64 {
-        (self.0 - self.local().0) / f64::from(Self::MS_PER_MINUTE)
+    fn timezone_offset(self, locale: &dyn LocaleBackend) -> f64 {
+        (self.0 - self.local(locale).0) / f64::from(Self::MS_PER_MINUTE)
     }
 
     /// ECMA-262 HourFromTime - Get hours (0-23).
@@ -256,12 +255,12 @@ impl Date {
 
         Self(self.0.floor())
     }
-}
 
-impl fmt::Display for Date {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    /// Format this date as its ECMA-262 string representation, e.g.
+    /// `"Sat Feb 3 04:05:06 GMT+0545 2001"`.
+    fn to_string(self, locale: &dyn LocaleBackend) -> String {
         if !self.is_valid() {
-            return write!(f, "Invalid Date");
+            return "Invalid Date".to_string();
         }
 
         const DAYS_OF_WEEK: [&str; 7] = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -269,9 +268,8 @@ impl fmt::Display for Date {
             "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
         ];
 
-        let timezone_offset = (-self.timezone_offset()).clamp_to_i32();
-        write!(
-            f,
+        let timezone_offset = (-self.timezone_offset(locale)).clamp_to_i32();
+        format!(
             "{} {} {} {:02}:{:02}:{:02} GMT{}{:02}{:02} {}",
             DAYS_OF_WEEK[self.week_day() as usize],
             MONTHS[self.month() as usize],
@@ -358,7 +356,7 @@ fn constructor<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let date = match args[..] {
         [] => {
-            let date = Date::now();
+            let date = Date::now(activation.context.locale);
             if activation.swf_version() > 7 {
                 Date(date.time().round())
             } else {
@@ -372,7 +370,8 @@ fn constructor<'gc>(
             let minute = args.get(4).copied().unwrap_or(0.0);
             let second = args.get(5).copied().unwrap_or(0.0);
             let millisecond = args.get(6).copied().unwrap_or(0.0);
-            Date::new(year, month, date, hour, minute, second, millisecond).utc()
+            Date::new(year, month, date, hour, minute, second, millisecond)
+                .utc(activation.context.locale)
         }
     };
     this.set_native(
@@ -388,7 +387,13 @@ fn function<'gc>(
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    Ok(AvmString::new_utf8(activation.gc(), Date::now().local().to_string()).into())
+    Ok(AvmString::new_utf8(
+        activation.gc(),
+        Date::now(activation.context.locale)
+            .local(activation.context.locale)
+            .to_string(activation.context.locale),
+    )
+    .into())
 }
 
 /// ECMA-262 Date.UTC
@@ -486,7 +491,9 @@ pub fn method<'gc>(
             date_ref.set(new_date);
             return Ok(new_date.time().into());
         }
-        GET_TIMEZONE_OFFSET => return Ok(date.timezone_offset().into()),
+        GET_TIMEZONE_OFFSET => {
+            return Ok(date.timezone_offset(activation.context.locale).into());
+        }
         _ => {}
     }
 
@@ -518,12 +525,16 @@ pub fn method<'gc>(
             .or_else(|| (i == index).then_some(f64::NAN))
     };
 
-    let date = if is_utc { date } else { date.local() };
+    let date = if is_utc {
+        date
+    } else {
+        date.local(activation.context.locale)
+    };
 
-    let set_date = |day: f64, time: f64| {
+    let set_date = |day: f64, time: f64, locale: &dyn LocaleBackend| {
         let mut date = Date::make_date(day, time);
         if !is_utc {
-            date = date.utc();
+            date = date.utc(locale);
         }
         date = date.clip();
         date_ref.set(date);
@@ -565,6 +576,7 @@ pub fn method<'gc>(
             set_date(
                 Date::make_day(year, month, new_date),
                 date.time_within_day(activation.swf_version()),
+                activation.context.locale,
             )
             .into()
         }
@@ -583,10 +595,13 @@ pub fn method<'gc>(
             set_date(
                 date.day(),
                 Date::make_time(hours, minutes, seconds, milliseconds),
+                activation.context.locale,
             )
             .into()
         }
-        TO_STRING => AvmString::new_utf8(activation.gc(), date.to_string()).into(),
+        TO_STRING => {
+            AvmString::new_utf8(activation.gc(), date.to_string(activation.context.locale)).into()
+        }
         GET_TIME..=GET_TIMEZONE_OFFSET | SET_YEAR.. => unreachable!(), // Handled above.
     })
 }

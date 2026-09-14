@@ -2,7 +2,7 @@ use crate::avm1::Object as Avm1Object;
 use crate::avm2::StageObject as Avm2StageObject;
 use crate::context::{RenderContext, UpdateContext};
 use crate::display_object::{BoundsMode, DisplayObjectBase};
-use crate::library::{Library, MovieLibrarySource};
+use crate::library::MovieLibrarySource;
 use crate::prelude::*;
 use crate::tag_utils::SwfMovie;
 use crate::vminterface::Instantiator;
@@ -114,7 +114,7 @@ impl<'gc> TDisplayObject<'gc> for MorphShape<'gc> {
     fn render_self(self, context: &mut RenderContext) {
         let ratio = self.ratio();
         let shared = self.0.shared.get();
-        let shape_handle = shared.get_shape(context, context.library, ratio);
+        let shape_handle = shared.get_shape(context, ratio);
         context
             .commands
             .render_shape(shape_handle, context.transform_stack.transform());
@@ -226,17 +226,15 @@ impl MorphShapeShared {
 
     /// Retrieves the `ShapeHandle` for the given ratio.
     /// Lazily initializes and tessellates the shape if it does not yet exist.
-    fn get_shape<'gc>(
-        &self,
-        context: &mut RenderContext<'_, 'gc>,
-        library: &Library<'gc>,
-        ratio: u16,
-    ) -> ShapeHandle {
+    fn get_shape<'gc>(&self, context: &mut RenderContext<'_, 'gc>, ratio: u16) -> ShapeHandle {
         let mut frame = self.get_frame(ratio);
         if let Some(handle) = frame.shape_handle.clone() {
             handle
         } else {
-            let library = library.library_for_movie(self.movie.clone()).unwrap();
+            let library = context
+                .library
+                .library_for_movie(self.movie.clone())
+                .unwrap();
             let handle = context
                 .renderer
                 .register_shape((&frame.shape).into(), &MovieLibrarySource { library });

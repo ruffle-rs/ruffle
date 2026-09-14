@@ -1,0 +1,35 @@
+Own frame: 1
+Constructing frame, self.numChildren: 0
+
+Own frame: 2
+Entering frame, self.numChildren: 0
+
+Own frame: 2
+Constructing frame, self.numChildren: 0
+
+Own frame: 3
+Entering frame, self.numChildren: 0
+
+Own frame: 3
+Constructing frame, self.numChildren: 0
+
+Own frame: 4
+Entering frame, self.numChildren: 1
+    null
+Stopping all MCs
+
+Own frame: 4
+Constructing frame, self.numChildren: 1
+    [object MovieClip]
+        frame: 1
+
+Own frame: 4
+Entering frame, self.numChildren: 1
+    [object MovieClip]
+        frame: 1
+
+Own frame: 4
+Constructing frame, self.numChildren: 1
+    [object MovieClip]
+        frame: 1
+

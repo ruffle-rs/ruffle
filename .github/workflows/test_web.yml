@@ -2,9 +2,9 @@ name: Test Web
 
 on:
   push:
-    branches: [master]
+    branches: [ master ]
   pull_request:
-    branches: [master]
+    branches: [ master ]
   workflow_dispatch:
 
 concurrency:
@@ -35,8 +35,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        node_version: ["24", "26"]
-        os: [ubuntu-24.04, windows-2025]
+        node_version: [ "24", "26" ]
+        os: [ ubuntu-24.04, windows-2025 ]
 
     steps:
       - uses: actions/checkout@v7
@@ -63,7 +63,7 @@ jobs:
       # Be sure to update in release.yml, Cargo.toml, web/docker/Dockerfile,
       # and web/README.md as well.
       - name: Install wasm-bindgen
-        run: cargo install --locked wasm-bindgen-cli --version 0.2.120
+        run: cargo install --locked wasm-bindgen-cli --version 0.2.127
 
       # Keep the version number in sync in all workflows,
       # and in the extension builder Dockerfile!
@@ -128,7 +128,7 @@ jobs:
       # Be sure to update in release.yml, Cargo.toml, web/docker/Dockerfile,
       # and web/README.md as well.
       - name: Install wasm-bindgen
-        run: cargo install --locked wasm-bindgen-cli --version 0.2.120
+        run: cargo install --locked wasm-bindgen-cli --version 0.2.127
 
       # No real need to install wasm-opt here
 
@@ -159,7 +159,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        browser: ["chrome", "firefox", "edge"]
+        browser: [ "chrome", "firefox", "edge" ]
 
     steps:
       - uses: actions/checkout@v7
@@ -197,8 +197,8 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        node_version: ["24", "26"]
-        os: [ubuntu-24.04, windows-2025]
+        node_version: [ "24", "26" ]
+        os: [ ubuntu-24.04, windows-2025 ]
 
     steps:
       - name: No-op
@@ -211,7 +211,7 @@ jobs:
     runs-on: ubuntu-24.04
     strategy:
       matrix:
-        browser: ["chrome", "firefox", "edge"]
+        browser: [ "chrome", "firefox", "edge" ]
 
     steps:
       - name: No-op

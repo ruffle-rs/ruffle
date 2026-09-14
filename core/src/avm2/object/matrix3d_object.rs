@@ -2,6 +2,7 @@ use crate::avm2::Error;
 use crate::avm2::activation::Activation;
 use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{ClassObject, Object, TObject};
+use crate::context::UpdateContext;
 use core::fmt;
 use gc_arena::{Collect, Gc, GcWeak};
 use ruffle_common::utils::HasPrefixField;
@@ -52,6 +53,18 @@ pub struct Matrix3DObjectData<'gc> {
 }
 
 impl<'gc> Matrix3DObject<'gc> {
+    pub fn new(context: &mut UpdateContext<'gc>, matrix: Matrix3D) -> Matrix3DObject<'gc> {
+        let class = context.avm2.classes().matrix3d;
+        let base = ScriptObjectData::new(class);
+        Matrix3DObject(Gc::new(
+            context.gc(),
+            Matrix3DObjectData {
+                base,
+                matrix: RefCell::new(matrix),
+            },
+        ))
+    }
+
     pub fn matrix_ref(&self) -> Ref<'_, Matrix3D> {
         self.0.matrix.borrow()
     }

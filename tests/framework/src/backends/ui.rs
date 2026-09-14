@@ -7,8 +7,25 @@ use ruffle_core::backend::ui::{
     FullscreenError, LanguageIdentifier, MouseCursor, MultiDialogResultFuture,
     MultiFileDialogResult, US_ENGLISH, UiBackend,
 };
+#[cfg(feature = "freetype")]
+use ruffle_core::font::FontAtlases;
 use ruffle_core::font::{FontFileData, FontQuery};
+use serde::Deserialize;
 use url::Url;
+
+#[derive(Deserialize, Default, Clone, Copy, Debug, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum FontRendererKind {
+    #[default]
+    Embedded,
+    Freetype,
+}
+
+impl FontRendererKind {
+    pub fn can_run(self) -> bool {
+        !matches!(self, Self::Freetype) || cfg!(feature = "freetype")
+    }
+}
 
 /// A simulated file selection, for use in tests.
 pub struct TestFileSelection {
@@ -66,6 +83,9 @@ impl FileDialogSelection for TestFileSelection {
 pub struct TestUiBackend {
     fonts: HashMap<FontQuery, Font>,
     font_sorts: HashMap<FontQuery, Vec<FontQuery>>,
+    device_font_renderer: FontRendererKind,
+    #[cfg(feature = "freetype")]
+    font_atlases: FontAtlases,
     clipboard: String,
 }
 
@@ -73,10 +93,14 @@ impl TestUiBackend {
     pub fn new(
         fonts: HashMap<FontQuery, Font>,
         font_sorts: HashMap<FontQuery, Vec<FontQuery>>,
+        device_font_renderer: FontRendererKind,
     ) -> Self {
         Self {
             fonts,
             font_sorts,
+            device_font_renderer,
+            #[cfg(feature = "freetype")]
+            font_atlases: FontAtlases::new(),
             clipboard: "".to_string(),
         }
     }
@@ -123,13 +147,34 @@ impl UiBackend for TestUiBackend {
             return;
         };
 
-        register(FontDefinition::FontFile {
-            name: font.family.to_owned(),
-            is_bold: font.bold,
-            is_italic: font.italic,
-            data: FontFileData::new(font.bytes.clone()),
-            index: 0,
-        });
+        match self.device_font_renderer {
+            FontRendererKind::Embedded => {
+                register(FontDefinition::FontFile {
+                    name: font.family.to_owned(),
+                    is_bold: font.bold,
+                    is_italic: font.italic,
+                    data: FontFileData::new(font.bytes.clone()),
+                    index: 0,
+                });
+            }
+            #[cfg(feature = "freetype")]
+            FontRendererKind::Freetype => {
+                let font_renderer =
+                    freetype_renderer(font, &self.font_atlases).unwrap_or_else(|e| {
+                        panic!("Couldn't create FreeType renderer for {}: {e}", font.family)
+                    });
+                register(FontDefinition::ExternalRenderer {
+                    name: font.family.to_owned(),
+                    is_bold: font.bold,
+                    is_italic: font.italic,
+                    font_renderer: Box::new(font_renderer),
+                });
+            }
+            #[cfg(not(feature = "freetype"))]
+            FontRendererKind::Freetype => {
+                unreachable!("tests requiring freetype should be skipped when it's unavailable");
+            }
+        }
     }
 
     fn sort_device_fonts(
@@ -203,4 +248,16 @@ impl UiBackend for TestUiBackend {
     }
 
     fn close_file_dialog(&mut self) {}
+}
+
+#[cfg(feature = "freetype")]
+fn freetype_renderer(
+    font: &Font,
+    atlases: &FontAtlases,
+) -> anyhow::Result<ruffle_frontend_utils::backends::ui::FreetypeFontRenderer> {
+    use std::io::Write;
+
+    let mut file = tempfile::NamedTempFile::new()?;
+    file.write_all(&font.bytes)?;
+    Ok(ruffle_frontend_utils::backends::ui::FreetypeFontRenderer::new(file.path(), 0, atlases)?)
 }

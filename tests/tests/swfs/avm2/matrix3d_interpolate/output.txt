@@ -1,0 +1,21 @@
+translate p=0:   1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1
+translate p=0.5: 1,0,0,0,0,1,0,0,0,0,1,0,5,10,15,1
+translate p=1:   1,0,0,0,0,1,0,0,0,0,1,0,10,20,30,1
+scale p=0.5:     1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1
+rotate p=0.5:    0.707107,0.707107,0,0,-0.707107,0.707107,0,0,0,0,1,0,0,0,0,1
+rotate p=1:      0,1,0,0,-1,0,0,0,0,0,1,0,0,0,0,1
+rot+scale p=0.5: 0.529999,0.847998,0,0,-0.847998,0.529999,0,0,0,0,1,0,0,0,0,1
+self p=0.5:      1,0,0,0,0,1,0,0,0,0,1,0,10,20,30,1
+interpolateTo:   1,0,0,0,0,1,0,0,0,0,1,0,2,2,2,1
+interp(null,m):
+TypeError: Error #2007: Parameter fromMat must be non-null.
+	at flash.geom::Matrix3D$/interpolate()
+	at Test()
+interp(m,null):
+TypeError: Error #2007: Parameter toMat must be non-null.
+	at flash.geom::Matrix3D$/interpolate()
+	at Test()
+interpTo(null):
+TypeError: Error #2007: Parameter toMat must be non-null.
+	at flash.geom::Matrix3D/interpolateTo()
+	at Test()

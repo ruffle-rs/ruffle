@@ -3,6 +3,7 @@
 use crate::avm2::Error;
 use crate::avm2::activation::Activation;
 use crate::avm2::error::{make_error_2017, make_error_2018};
+use crate::avm2::function::FunctionArgs;
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
 use crate::avm2_stub_method;
@@ -12,7 +13,7 @@ use ruffle_common::sandbox::SandboxType;
 pub fn set_clipboard<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     // The following restrictions only apply to the plugin.
     // TODO: Check the type of event that triggered the function call.
@@ -33,7 +34,7 @@ pub fn set_clipboard<'gc>(
 pub fn exit<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     avm2_stub_method!(activation, "flash.system.System", "exit");
 

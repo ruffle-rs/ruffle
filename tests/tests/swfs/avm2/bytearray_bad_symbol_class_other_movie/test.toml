@@ -1,0 +1,8 @@
+num_ticks = 10
+
+[[compilers]]
+type = "Asc"
+target = "test.swf"
+class = "Main"
+scripts = ["Main.as"]
+swf_version = 43

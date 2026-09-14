@@ -1,0 +1,9 @@
+[
+  { "type": "MouseMove", "pos": [50, 50] },
+  { "type": "MouseWheel", "lines": -3 },
+  { "type": "MouseWheel", "lines": -3 },
+  { "type": "MouseWheel", "lines": -3 },
+  { "type": "MouseWheel", "lines": 3 },
+  { "type": "MouseWheel", "lines": 3 },
+  { "type": "MouseWheel", "lines": 3 }
+]

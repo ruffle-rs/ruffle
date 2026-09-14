@@ -1,0 +1,40 @@
+plain text
+  line 0
+    getAtomIndexAtCharIndex(-1)=-1
+    getAtomIndexAtCharIndex(0)=0
+    getAtomIndexAtCharIndex(1)=1
+    getAtomIndexAtCharIndex(2)=2
+    getAtomIndexAtCharIndex(3)=-1
+    getAtomIndexAtCharIndex(4)=-1
+    getAtomIndexAtCharIndex(5)=-1
+  line 1
+    getAtomIndexAtCharIndex(-1)=-1
+    getAtomIndexAtCharIndex(0)=-1
+    getAtomIndexAtCharIndex(1)=-1
+    getAtomIndexAtCharIndex(2)=-1
+    getAtomIndexAtCharIndex(3)=0
+    getAtomIndexAtCharIndex(4)=1
+    getAtomIndexAtCharIndex(5)=-1
+surrogate pair
+  line 0
+    getAtomIndexAtCharIndex(-1)=-1
+    getAtomIndexAtCharIndex(0)=0
+    getAtomIndexAtCharIndex(1)=1
+    getAtomIndexAtCharIndex(2)=1
+    getAtomIndexAtCharIndex(3)=2
+    getAtomIndexAtCharIndex(4)=-1
+ligature
+  line 0
+    getAtomIndexAtCharIndex(-1)=-1
+    getAtomIndexAtCharIndex(0)=0
+    getAtomIndexAtCharIndex(1)=1
+    getAtomIndexAtCharIndex(2)=-1
+graphic element
+  line 0
+    getAtomIndexAtCharIndex(-1)=-1
+    getAtomIndexAtCharIndex(0)=0
+    getAtomIndexAtCharIndex(1)=1
+    getAtomIndexAtCharIndex(2)=2
+    getAtomIndexAtCharIndex(3)=3
+    getAtomIndexAtCharIndex(4)=4
+    getAtomIndexAtCharIndex(5)=-1

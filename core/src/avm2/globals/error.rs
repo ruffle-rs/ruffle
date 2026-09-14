@@ -2,6 +2,7 @@ use crate::PlayerMode;
 use crate::avm2::activation::Activation;
 use crate::avm2::error::Error;
 use crate::avm2::error_messages::raw_error_message;
+use crate::avm2::function::FunctionArgs;
 use crate::avm2::object::ErrorObject;
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
@@ -12,7 +13,7 @@ pub use crate::avm2::object::error_allocator;
 pub fn init_custom_prototype<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
     let this = this.as_class_object().unwrap();
@@ -27,7 +28,7 @@ pub fn init_custom_prototype<'gc>(
 pub fn get_error_message<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let id = args.get_i32(0);
 
@@ -45,7 +46,7 @@ pub fn get_error_message<'gc>(
 pub fn get_stack_trace<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 

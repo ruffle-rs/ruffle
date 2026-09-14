@@ -515,6 +515,13 @@ impl<R: RangeBounds<usize>> IndexMut<R> for WStr {
     }
 }
 
+impl AsRef<WStr> for WStr {
+    #[inline]
+    fn as_ref(&self) -> &WStr {
+        self
+    }
+}
+
 impl core::cmp::PartialEq for WStr {
     #[inline]
     fn eq(&self, other: &WStr) -> bool {

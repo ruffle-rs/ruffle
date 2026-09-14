@@ -1,0 +1,20 @@
+[
+    { "type": "MouseMove", "pos": [0.0, 0.0] },
+    { "type": "Wait" },
+    { "type": "MouseMove", "pos": [250.0, 100.0] },
+    { "type": "Wait" },
+    { "type": "MouseMove", "pos": [450.0, 100.0] },
+    { "type": "Wait" },
+    { "type": "MouseMove", "pos": [450.0, 300.0] },
+    { "type": "Wait" },
+    { "type": "MouseMove", "pos": [100.0, 100.0] },
+    { "type": "Wait" },
+    { "type": "MouseMove", "pos": [0.0, 0.0] },
+    { "type": "Wait" },
+    { "type": "MouseMove", "pos": [100.0, 100.0] },
+    { "type": "Wait" },
+    { "type": "MouseMove", "pos": [0.0, 0.0] },
+    { "type": "Wait" },
+    { "type": "MouseMove", "pos": [250.0, 100.0] },
+    { "type": "Wait" }
+]

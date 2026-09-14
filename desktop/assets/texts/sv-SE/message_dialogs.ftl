@@ -1,2 +1,2 @@
-message-dialog-root-movie-load-error-title = Filmen laddades inte
-message-dialog-root-movie-load-error-description = Misslyckades att öppna eller ladda ner denna film.
+message-dialog-root-movie-load-error-title = Filmen kunde inte läsas in
+message-dialog-root-movie-load-error-description = Det gick inte att öppna eller ladda ned filmen.

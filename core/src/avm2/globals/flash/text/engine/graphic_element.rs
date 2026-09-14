@@ -1,12 +1,13 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::error::Error;
+use crate::avm2::function::FunctionArgs;
 use crate::avm2::object::ElementData;
 use crate::avm2::value::Value;
 
 pub fn init<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this
         .as_object()

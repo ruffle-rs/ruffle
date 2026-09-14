@@ -9,7 +9,9 @@ use crate::avm1::property_decl::{DeclContext, PropertyOrder, StaticDeclarations,
 use crate::avm1::{self, ArrayBuilder, Object, Value};
 use crate::backend::navigator::NavigationMethod;
 use crate::context::UpdateContext;
-use crate::display_object::{Bitmap, BoundsMode, EditText, MovieClip, TInteractiveObject};
+use crate::display_object::{
+    Bitmap, BoundsMode, EditText, GotoInfo, MovieClip, StopOrPlay, TInteractiveObject,
+};
 use crate::ecma_conversions::f64_to_wrapping_i32;
 use crate::prelude::*;
 use crate::string::AvmString;
@@ -140,9 +142,11 @@ pub fn new_rectangle<'gc>(
     let y = rectangle.y_min.to_pixels();
     let width = rectangle.width().to_pixels();
     let height = rectangle.height().to_pixels();
-    let args = &[x.into(), y.into(), width.into(), height.into()];
-    let proto = activation.prototypes().rectangle_constructor;
-    proto.construct(activation, args)
+
+    activation.instantiate_class_as_script(
+        [istr!("flash"), istr!("geom"), istr!("Rectangle")],
+        &[x.into(), y.into(), width.into(), height.into()],
+    )
 }
 
 pub fn object_to_rectangle<'gc>(
@@ -790,7 +794,7 @@ fn attach_movie<'gc>(
         .context
         .library
         .library_for_movie(movie_clip.movie())
-        .and_then(|l| l.instantiate_by_export_name(export_name, activation.gc()))
+        .and_then(|l| l.instantiate_by_export_name(&export_name, activation.gc()))
     {
         new_clip.set_placed_by_avm1_script(true);
         // Set name and attach to parent.
@@ -1095,7 +1099,7 @@ fn goto_and_play<'gc>(
     activation: &mut Activation<'_, 'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    goto_frame(movie_clip, activation, args, false, 0)
+    goto_frame(movie_clip, activation, args, StopOrPlay::Play, 0)
 }
 
 fn goto_and_stop<'gc>(
@@ -1103,14 +1107,14 @@ fn goto_and_stop<'gc>(
     activation: &mut Activation<'_, 'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    goto_frame(movie_clip, activation, args, true, 0)
+    goto_frame(movie_clip, activation, args, StopOrPlay::Stop, 0)
 }
 
 pub fn goto_frame<'gc>(
     movie_clip: MovieClip<'gc>,
     activation: &mut Activation<'_, 'gc>,
     args: &[Value<'gc>],
-    stop: bool,
+    stop_or_play: StopOrPlay,
     scene_offset: u16,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let mut call_frame = None;
@@ -1151,7 +1155,12 @@ pub fn goto_frame<'gc>(
         let frame = frame.wrapping_add(i32::from(scene_offset));
         let frame = frame.saturating_add(1);
         if frame > 0 {
-            clip.goto_frame(activation.context, frame as u16, stop);
+            let goto_info = GotoInfo {
+                frame: frame as u16,
+                stop_or_play,
+            };
+
+            clip.goto_frame(activation.context, goto_info);
         }
     }
     Ok(Value::Undefined)
@@ -1652,9 +1661,8 @@ fn transform<'gc>(
     this: MovieClip<'gc>,
     activation: &mut Activation<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let constructor = activation.prototypes().transform_constructor;
-    let cloned = constructor.construct(activation, &[this.object1_or_undef()])?;
-    Ok(cloned)
+    let path = [istr!("flash"), istr!("geom"), istr!("Transform")];
+    activation.instantiate_class_as_script(path, &[this.object1_or_undef()])
 }
 
 fn set_transform<'gc>(

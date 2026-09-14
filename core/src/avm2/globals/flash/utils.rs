@@ -1,6 +1,7 @@
 //! `flash.utils` namespace
 
 use crate::avm2::error::make_error_1507;
+use crate::avm2::function::FunctionArgs;
 use crate::avm2::globals::avmplus::instance_class_describe_type;
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::{Activation, Error, Value};
@@ -18,7 +19,7 @@ pub mod timer;
 pub fn get_timer<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     Ok((Instant::now()
         .duration_since(activation.context.start_time)
@@ -30,11 +31,11 @@ pub fn get_timer<'gc>(
 pub fn set_interval<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let closure = args.try_get_function(0);
     let interval = args.get_f64(1);
-    let params = &args[2..];
+    let params = args.get_slice_from(2..);
 
     let callback = crate::timer::TimerCallback::Avm2Callback {
         closure,
@@ -52,7 +53,7 @@ pub fn set_interval<'gc>(
 pub fn clear_interval<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let id = args.get_u32(0);
     activation.context.timers.remove(id as i32);
@@ -63,11 +64,11 @@ pub fn clear_interval<'gc>(
 pub fn set_timeout<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let closure = args.try_get_function(0);
     let interval = args.get_f64(1);
-    let params = &args[2..];
+    let params = args.get_slice_from(2..);
 
     let callback = crate::timer::TimerCallback::Avm2Callback {
         closure,
@@ -85,7 +86,7 @@ pub fn set_timeout<'gc>(
 pub fn clear_timeout<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let id = args.get_u32(0);
     activation.context.timers.remove(id as i32);
@@ -96,7 +97,7 @@ pub fn clear_timeout<'gc>(
 pub fn escape_multi_byte<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let s = args.get_string(activation, 0);
 
@@ -128,7 +129,7 @@ where
 pub fn unescape_multi_byte<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let s = args.get_string(activation, 0);
 
@@ -165,7 +166,7 @@ pub fn unescape_multi_byte<'gc>(
 pub fn get_qualified_class_name<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let value = args.get_value(0);
     let class = instance_class_describe_type(activation, value);
@@ -178,7 +179,7 @@ pub fn get_qualified_class_name<'gc>(
 pub fn get_qualified_superclass_name<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let value = args.get_value(0);
 
@@ -198,7 +199,7 @@ pub fn get_qualified_superclass_name<'gc>(
 pub fn get_definition_by_name<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let appdomain = activation
         .caller_domain()

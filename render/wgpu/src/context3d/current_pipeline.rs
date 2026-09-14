@@ -203,6 +203,17 @@ impl CurrentPipeline {
         }
     }
 
+    pub fn has_unbound_required_textures(&self) -> bool {
+        if let Some(shaders) = &self.shaders {
+            for (i, sampler_config) in shaders.fragment_sampler_configs().iter().enumerate() {
+                if sampler_config.is_some() && self.bound_textures[i].is_none() {
+                    return true;
+                }
+            }
+        }
+        false
+    }
+
     pub fn update_texture_at(&mut self, index: usize, texture: Option<BoundTextureData>) {
         // FIXME - determine if the texture actually changed
         self.dirty.set(true);
@@ -402,8 +413,8 @@ impl CurrentPipeline {
                 .device
                 .create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
                     label: pipeline_layout_label.as_deref(),
-                    bind_group_layouts: &[&compiled_shaders.bind_group_layout],
-                    push_constant_ranges: &[],
+                    bind_group_layouts: &[Some(&compiled_shaders.bind_group_layout)],
+                    immediate_size: 0,
                 });
 
         let bind_group = descriptors
@@ -502,8 +513,8 @@ impl CurrentPipeline {
         let depth_stencil = if self.has_depth_texture {
             Some(DepthStencilState {
                 format: TextureFormat::Depth24PlusStencil8,
-                depth_write_enabled: self.depth_mask,
-                depth_compare: self.pass_compare_mode,
+                depth_write_enabled: Some(self.depth_mask),
+                depth_compare: Some(self.pass_compare_mode),
                 stencil: self.stencil.clone(),
                 bias: Default::default(),
             })
@@ -527,11 +538,11 @@ impl CurrentPipeline {
                 }
 
                 let attrs = &data.attrs;
-                wgpu::VertexBufferLayout {
+                Some(wgpu::VertexBufferLayout {
                     array_stride: data_bytes_per_vertex,
                     step_mode: wgpu::VertexStepMode::Vertex,
                     attributes: attrs,
-                }
+                })
             })
             .collect::<Vec<_>>();
 
@@ -572,7 +583,7 @@ impl CurrentPipeline {
                     mask: !0,
                     alpha_to_coverage_enabled: false,
                 },
-                multiview: Default::default(),
+                multiview_mask: None,
                 cache: None,
             });
         Some((compiled, bind_group))

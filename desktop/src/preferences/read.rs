@@ -71,6 +71,10 @@ pub fn read_preferences(input: &str) -> ParseDetails<SavedGlobalPreferences> {
         result.open_url_mode = value;
     }
 
+    if let Some(value) = document.parse_from_str(&mut cx, "device_font_renderer") {
+        result.device_font_renderer = Some(value);
+    }
+
     document.get_table_like(&mut cx, "log", |cx, log| {
         if let Some(value) = log.parse_from_str(cx, "filename_pattern") {
             result.log.filename_pattern = value;
@@ -96,6 +100,7 @@ pub fn read_preferences(input: &str) -> ParseDetails<SavedGlobalPreferences> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::backends::DeviceFontRenderer;
     use crate::cli::{GameModePreference, OpenUrlMode};
     use crate::gui::ThemePreference;
     use crate::log::FilenamePattern;
@@ -710,6 +715,62 @@ mod tests {
                 expected: "string",
                 actual: "integer",
                 path: "open_url_mode".to_string(),
+            }],
+            result.warnings
+        );
+    }
+
+    #[test]
+    fn device_font_renderer() {
+        let result = read_preferences("device_font_renderer = \"embedded\"");
+        assert_eq!(
+            &SavedGlobalPreferences {
+                device_font_renderer: Some(DeviceFontRenderer::Embedded),
+                ..Default::default()
+            },
+            result.values()
+        );
+        assert_eq!(Vec::<ParseWarning>::new(), result.warnings);
+
+        let result = read_preferences("device_font_renderer = \"freetype\"");
+        assert_eq!(
+            &SavedGlobalPreferences {
+                device_font_renderer: Some(DeviceFontRenderer::Freetype),
+                ..Default::default()
+            },
+            result.values()
+        );
+        assert_eq!(Vec::<ParseWarning>::new(), result.warnings);
+
+        let result = read_preferences("device_font_renderer = \"nonsense\"");
+        assert_eq!(
+            &SavedGlobalPreferences {
+                device_font_renderer: None,
+                ..Default::default()
+            },
+            result.values()
+        );
+        assert_eq!(
+            vec![ParseWarning::UnsupportedValue {
+                value: "nonsense".to_string(),
+                path: "device_font_renderer".to_string(),
+            }],
+            result.warnings
+        );
+
+        let result = read_preferences("device_font_renderer = 1");
+        assert_eq!(
+            &SavedGlobalPreferences {
+                device_font_renderer: None,
+                ..Default::default()
+            },
+            result.values()
+        );
+        assert_eq!(
+            vec![ParseWarning::UnexpectedType {
+                expected: "string",
+                actual: "integer",
+                path: "device_font_renderer".to_string(),
             }],
             result.warnings
         );

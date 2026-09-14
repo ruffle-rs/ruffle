@@ -9,7 +9,6 @@ use crate::avm2::globals::array::ArrayIter;
 use crate::avm2::object::{ArrayObject, FunctionObject, Object, ScriptObject, TObject};
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
-use crate::ecma_conversions::f64_to_wrapping_i32;
 use crate::string::{AvmString, Units};
 use ruffle_macros::istr;
 use serde::Serialize;
@@ -27,12 +26,8 @@ fn deserialize_json_inner<'gc>(
         JsonValue::String(s) => AvmString::new_utf8(activation.gc(), s).into(),
         JsonValue::Bool(b) => b.into(),
         JsonValue::Number(number) => {
-            let number = number.as_f64().unwrap();
-            if number.fract() == 0.0 {
-                f64_to_wrapping_i32(number).into()
-            } else {
-                number.into()
-            }
+            let value: Value<'gc> = number.as_f64().unwrap().into();
+            value.normalize()
         }
         JsonValue::Object(js_obj) => {
             let obj = ScriptObject::new_object(activation.context);
@@ -277,11 +272,11 @@ impl<'gc> AvmSerializer<'gc> {
     }
 }
 
-/// Implements `JSON.parse`.
-pub fn parse<'gc>(
+/// Implements `JSON.parseCore`.
+pub fn parse_core<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let Some(input) = args.try_get_string(0) else {
         return Err(make_error_1132(activation));
@@ -302,7 +297,7 @@ pub fn parse<'gc>(
 pub fn stringify<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let val = args.get_value(0);
     let replacer = args.get_value(1).as_object();

@@ -11,6 +11,7 @@ use ruffle_macros::istr;
 use ruffle_render::matrix::Matrix;
 use swf::Twips;
 
+// TODO: In Flash Player, the Matrix class is implemented in pure ActionScript.
 const PROTO_DECLS: StaticDeclarations = declare_static_properties! {
     "concat" => method(concat);
     "invert" => method(invert);
@@ -171,6 +172,7 @@ pub fn matrix_to_value<'gc>(
     matrix: &Matrix,
     activation: &mut Activation<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let path = [istr!("flash"), istr!("geom"), istr!("Matrix")];
     let args = [
         matrix.a.into(),
         matrix.b.into(),
@@ -179,9 +181,7 @@ pub fn matrix_to_value<'gc>(
         matrix.tx.to_pixels().into(),
         matrix.ty.to_pixels().into(),
     ];
-    let constructor = activation.prototypes().matrix_constructor;
-    let object = constructor.construct(activation, &args)?;
-    Ok(object)
+    activation.instantiate_class_as_script(path, &args)
 }
 
 pub fn apply_matrix_to_object<'gc>(
@@ -248,6 +248,7 @@ fn clone<'gc>(
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let path = [istr!("flash"), istr!("geom"), istr!("Matrix")];
     let args = [
         this.get(istr!("a"), activation)?,
         this.get(istr!("b"), activation)?,
@@ -256,9 +257,7 @@ fn clone<'gc>(
         this.get(istr!("tx"), activation)?,
         this.get(istr!("ty"), activation)?,
     ];
-    let constructor = activation.prototypes().matrix_constructor;
-    let cloned = constructor.construct(activation, &args)?;
-    Ok(cloned)
+    activation.instantiate_class_as_script(path, &args)
 }
 
 fn scale<'gc>(

@@ -87,11 +87,13 @@ package flash.geom {
         public function nearEquals(toCompare:Vector3D, tolerance:Number, allFour:Boolean = false):Boolean {
             // Looks like there is a Flash Player bug here:
             // With allFour=true, this.w is ignored, only toCompare.w is compared
-            // with tolerance ... I think they forgot to do the subtraction there.
+            // with tolerance. Moreover, when all previous conditions pass,
+            // this.w is updated to toCompare.w, suggesting that assignment was
+            // used instead of subtraction.
             return (Math.abs(this.x - toCompare.x) < tolerance)
                 && (Math.abs(this.y - toCompare.y) < tolerance)
                 && (Math.abs(this.z - toCompare.z) < tolerance)
-                && (!allFour || Math.abs(toCompare.w) < tolerance); // FP BUG
+                && (!allFour || Math.abs(this.w = toCompare.w) < tolerance); // FP BUG
         }
 
         [API("674")]

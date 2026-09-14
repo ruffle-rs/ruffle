@@ -1,4 +1,4 @@
-use crate::locale::get_current_date_time;
+use crate::backend::locale::LocaleBackend;
 
 // https://github.com/adobe/avmplus/blob/858d034a3bd3a54d9b70909386435cf4aec81d21/core/MathUtils.cpp#L1546
 const C1: i32 = 1376312589;
@@ -45,10 +45,10 @@ impl AvmRng {
         i_result
     }
 
-    pub fn generate_random_number(&mut self) -> i32 {
+    pub fn generate_random_number(&mut self, locale: &dyn LocaleBackend) -> i32 {
         // In avmplus, RNG is initialized on first use.
         if self.u_value == 0 {
-            let seed = get_seed();
+            let seed = get_seed(locale);
             self.init_with_seed(seed);
         }
 
@@ -61,6 +61,6 @@ impl AvmRng {
 }
 
 // https://github.com/adobe-flash/avmplus/blob/65a05927767f3735db37823eebf7d743531f5d37/VMPI/PosixSpecificUtils.cpp#L18
-fn get_seed() -> u32 {
-    get_current_date_time().timestamp_micros() as u32
+fn get_seed(locale: &dyn LocaleBackend) -> u32 {
+    locale.get_current_date_time().timestamp_micros() as u32
 }

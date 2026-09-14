@@ -1,3 +1,4 @@
+use crate::backends::DeviceFontRenderer;
 use crate::cli::{GameModePreference, OpenUrlMode};
 use crate::gui::{ThemePreference, available_languages, optional_text, text};
 use crate::log::FilenamePattern;
@@ -7,6 +8,7 @@ use egui::{Align2, Button, Checkbox, ComboBox, DragValue, Grid, Ui, Widget, Wind
 use ruffle_render_wgpu::backend::create_wgpu_instance;
 use ruffle_render_wgpu::clap::{GraphicsBackend, PowerPreference};
 use std::borrow::Cow;
+use std::sync::Arc;
 use unic_langid::LanguageIdentifier;
 
 pub struct PreferencesDialog {
@@ -55,11 +57,14 @@ pub struct PreferencesDialog {
 
     ime_enabled: Option<bool>,
     ime_enabled_changed: bool,
+
+    device_font_renderer: Option<DeviceFontRenderer>,
+    device_font_renderer_changed: bool,
 }
 
 impl PreferencesDialog {
-    pub fn new(preferences: GlobalPreferences) -> Self {
-        let available_backends = find_available_graphics_backends();
+    pub fn new(preferences: GlobalPreferences, window: Option<Arc<winit::window::Window>>) -> Self {
+        let available_backends = find_available_graphics_backends(window);
 
         let audio_host = cpal::default_host();
         let mut available_output_devices = Vec::new();
@@ -116,6 +121,9 @@ impl PreferencesDialog {
             ime_enabled: preferences.ime_enabled(),
             ime_enabled_changed: false,
 
+            device_font_renderer: preferences.device_font_renderer(),
+            device_font_renderer_changed: false,
+
             preferences,
         }
     }
@@ -145,6 +153,10 @@ impl PreferencesDialog {
                             self.show_open_url_mode_preferences(locale, &locked_text, ui);
 
                             self.show_ime_preferences(locale, ui);
+
+                            if cfg!(target_os = "linux") {
+                                self.show_font_renderer_preferences(locale, ui);
+                            }
 
                             self.show_language_preferences(locale, ui);
 
@@ -425,6 +437,32 @@ impl PreferencesDialog {
         ui.end_row();
     }
 
+    fn show_font_renderer_preferences(&mut self, locale: &LanguageIdentifier, ui: &mut Ui) {
+        ui.label(text(locale, "device-font-renderer"))
+            .on_hover_text_at_pointer(text(locale, "device-font-renderer-tooltip"));
+        let previous = self.device_font_renderer;
+        ComboBox::from_id_salt("device-font-renderer")
+            .selected_text(device_font_renderer_name(locale, self.device_font_renderer))
+            .show_ui(ui, |ui| {
+                let values = [
+                    None,
+                    Some(DeviceFontRenderer::Embedded),
+                    Some(DeviceFontRenderer::Freetype),
+                ];
+                for value in values {
+                    ui.selectable_value(
+                        &mut self.device_font_renderer,
+                        value,
+                        device_font_renderer_name(locale, value),
+                    );
+                }
+            });
+        if self.device_font_renderer != previous {
+            self.device_font_renderer_changed = true;
+        }
+        ui.end_row();
+    }
+
     fn show_audio_preferences(&mut self, locale: &LanguageIdentifier, ui: &mut Ui) {
         ui.label(text(locale, "audio-output-device"));
 
@@ -465,7 +503,7 @@ impl PreferencesDialog {
             if ui.small_button(text(locale, "show-license")).clicked() {
                 self.openh264_license_visible = true;
             };
-            let available_size = egui_ctx.available_rect().size();
+            let available_size = egui_ctx.content_rect().size();
             egui::Window::new(text(locale, "openh264-license"))
                 .collapsible(false)
                 .resizable(false)
@@ -604,6 +642,9 @@ impl PreferencesDialog {
             if self.ime_enabled_changed {
                 preferences.set_ime_enabled(self.ime_enabled);
             }
+            if self.device_font_renderer_changed {
+                preferences.set_device_font_renderer(self.device_font_renderer);
+            }
         }) {
             // [NA] TODO: Better error handling... everywhere in desktop, really
             tracing::error!("Could not save preferences: {e}");
@@ -700,20 +741,37 @@ fn ime_enabled_name(locale: &LanguageIdentifier, ime_enabled: Option<bool>) -> C
     }
 }
 
+fn device_font_renderer_name(
+    locale: &LanguageIdentifier,
+    device_font_renderer: Option<DeviceFontRenderer>,
+) -> Cow<'_, str> {
+    match device_font_renderer {
+        None => text(locale, "device-font-renderer-default"),
+        Some(DeviceFontRenderer::Embedded) => text(locale, "device-font-renderer-embedded"),
+        Some(DeviceFontRenderer::Freetype) => text(locale, "device-font-renderer-freetype"),
+    }
+}
+
 fn backend_availability(instance: &wgpu::Instance, backend: wgpu::Backends) -> wgpu::Backends {
-    if instance.enumerate_adapters(backend).is_empty() {
+    if futures::executor::block_on(instance.enumerate_adapters(backend)).is_empty() {
         wgpu::Backends::empty()
     } else {
         backend
     }
 }
 
-fn find_available_graphics_backends() -> wgpu::Backends {
+fn find_available_graphics_backends(window: Option<Arc<winit::window::Window>>) -> wgpu::Backends {
     let mut available_backends = wgpu::Backends::empty();
 
     // We have to make a new instance here, as the one created for the entire application may not have
-    // all backends enabled
-    let instance = create_wgpu_instance(wgpu::Backends::all(), wgpu::BackendOptions::default());
+    // all backends enabled. Probe with the same display handle the runtime
+    // backend selection uses, so the two paths can't disagree about which
+    // backends are usable (the EGL platform is chosen from it, for example).
+    let instance = create_wgpu_instance(
+        wgpu::Backends::all(),
+        wgpu::BackendOptions::default(),
+        window.map(|window| Box::new(window) as Box<dyn wgpu::wgt::WgpuHasDisplayHandle>),
+    );
 
     available_backends |= backend_availability(&instance, wgpu::Backends::VULKAN);
     available_backends |= backend_availability(&instance, wgpu::Backends::GL);

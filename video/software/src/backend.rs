@@ -86,23 +86,27 @@ impl VideoBackend for SoftwareVideoBackend {
             .get_mut(stream)
             .ok_or(Error::VideoStreamIsNotRegistered)?;
 
-        let frame = stream.decoder.decode_frame(encoded_frame)?;
+        stream.decoder.decode_frame(encoded_frame, |frame| {
+            let width = frame.width();
+            let height = frame.height();
 
-        let width = frame.width();
-        let height = frame.height();
+            let handle = if let Some(bitmap) = stream.bitmap.clone() {
+                renderer.update_texture(
+                    &bitmap,
+                    frame,
+                    PixelRegion::for_whole_size(width, height),
+                )?;
+                bitmap
+            } else {
+                renderer.register_bitmap(frame)?
+            };
+            stream.bitmap = Some(handle.clone());
 
-        let handle = if let Some(bitmap) = stream.bitmap.clone() {
-            renderer.update_texture(&bitmap, frame, PixelRegion::for_whole_size(width, height))?;
-            bitmap
-        } else {
-            renderer.register_bitmap(frame)?
-        };
-        stream.bitmap = Some(handle.clone());
-
-        Ok(BitmapInfo {
-            handle,
-            width,
-            height,
+            Ok(BitmapInfo {
+                handle,
+                width,
+                height,
+            })
         })
     }
 }

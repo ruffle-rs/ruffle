@@ -6,10 +6,14 @@ package flash.media {
     [Ruffle(InstanceAllocator)]
     public class Sound extends EventDispatcher {
         public function Sound(stream:URLRequest = null, context:SoundLoaderContext = null) {
-            this.init(stream, context)
+            this.init();
+
+            if (stream != null) {
+                this.load(stream, context);
+            }
         }
 
-        private native function init(stream:URLRequest, context:SoundLoaderContext);
+        private native function init();
 
         public native function get bytesLoaded():uint;
         public native function get bytesTotal():int;
@@ -22,7 +26,6 @@ package flash.media {
         public native function extract(target:ByteArray, length:Number, startPosition:Number = -1):Number;
         public native function close():void;
 
-        [Ruffle(NativeCallable)]
         public native function load(stream:URLRequest, context:SoundLoaderContext = null):void;
 
         [API("674")]

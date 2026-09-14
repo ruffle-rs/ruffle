@@ -1,15 +1,15 @@
 {
     "settings_ruffle_enable": {
-        "message": "شغّل محتوى الفلاش في رفل"
+        "message": "شغّل محتوى فلاش في رفل"
     },
     "settings_ignore_optout": {
-        "message": "شغّل محتوى الفلاش حتى في المواقع التي لا تسمح برفل"
+        "message": "شغّل محتوى فلاش حتى في المواقع التي لا تسمح برفل"
     },
     "settings_show_swf_download": {
         "message": "أظهر تحميل SWF في قائمة السياق"
     },
     "settings_autostart": {
-        "message": "شغّل محتوى الفلاش تلقائيًا (إنقر لإلغاء الكتم)"
+        "message": "شغّل محتوى فلاش تلقائيًا (انقر لإلغاء الكتم)"
     },
     "settings_swf_takeover": {
         "message": "شغّل ملفات SWF في المتصفح بدلًا من تنزيلها"
@@ -38,6 +38,12 @@
     "settings_player_version": {
         "message": "إصدار فلاش للمحاكاة (من 1-32)"
     },
+    "settings_background_execution_mode": {
+        "message": "التشغيل في الخلفية"
+    },
+    "settings_background_execution_mode_main_thread": {
+        "message": "تشغيل في الخيط الرئيسي"
+    },
     "settings_preferred_renderer": {
         "message": "العارض المفضل"
     },
@@ -47,6 +53,9 @@
     "settings_device_font_renderer": {
         "message": "عارض خط الجهاز"
     },
+    "device_font_renderer_embedded": {
+        "message": "مضمّن"
+    },
     "settings_advanced_options": {
         "message": "الخيارات المتقدمة"
     },
@@ -54,7 +63,7 @@
         "message": "إعادة ضبط الإعدادات"
     },
     "settings_reset_confirm": {
-        "message": "هل أنت متأكد من إستعادة إعدادات رفل إلى الإعدادات الإفتراضية؟"
+        "message": "هل أنت متأكد من إستعادة إعدادات رفل إلى الإعدادات الافتراضية؟"
     },
     "status_init": {
         "message": "قراءة علامة التبويب الحالية جارٍ…"
@@ -69,10 +78,10 @@
         "message": "التحقق من حالة رفل على التبويب الحالي جارٍ…"
     },
     "status_result_running": {
-        "message": "رفل جاهز لتشغيل محتوى الفلاش في التبويب الحالي."
+        "message": "رفل جاهز لتشغيل محتوى فلاش في التبويب الحالي."
     },
     "status_result_running_protected": {
-        "message": "رفل جاهز لتشغيل محتوى الفلاش الذي طلبته."
+        "message": "رفل جاهز لتشغيل محتوى فلاش الذي طلبته."
     },
     "status_result_optout": {
         "message": "تعذر تحميل رفل لأن علامة التبويب الحالية تصف نفسها على أنها غير متوافقة."

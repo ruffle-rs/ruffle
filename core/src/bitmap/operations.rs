@@ -20,6 +20,8 @@ use ruffle_render::transform::Transform;
 use std::cell::{Ref, RefMut};
 use swf::{BlendMode, ColorTransform, Fixed8, Rectangle, Twips};
 
+mod copy_on_cpu;
+
 /// AVM1 and AVM2 have a shared set of operations they can perform on BitmapDatas.
 /// Instead of directly manipulating the BitmapData in each place, they should call
 /// a shared method here which will do it.
@@ -1187,7 +1189,12 @@ pub fn copy_pixels_with_alpha_source<'gc>(
                 };
 
                 if source_transparency {
-                    ((a as u16 * source_color.alpha() as u16) >> 8) as u8
+                    // A fully opaque alpha pixel leaves the source alpha untouched.
+                    if a == 255 {
+                        source_color.alpha()
+                    } else {
+                        ((a as u16 * source_color.alpha() as u16) >> 8) as u8
+                    }
                 } else {
                     a
                 }
@@ -1300,83 +1307,17 @@ fn copy_on_cpu<'gc>(
     dest: BitmapData<'gc>,
     source_region: PixelRegion,
     dest_region: PixelRegion,
-    mut blend: bool,
+    blend: bool,
 ) {
-    if !source.transparency() {
-        // We don't need to blend if we're copying an opaque texture, the alpha would be 255 anyway
-        blend = false;
-    }
-    if !blend && source.ptr_eq(dest) && source_region == dest_region {
-        // Copying the same area of self to self, noop
-        return;
-    }
-
-    let dest_is_source = source.ptr_eq(dest);
-    let mut dest = dest.sync(renderer).borrow_mut(context);
-
-    if dest_is_source {
-        for y in 0..dest_region.height() {
-            for x in 0..dest_region.width() {
-                let mut color =
-                    dest.get_pixel32_raw(source_region.x_min + x, source_region.y_min + y);
-                if blend {
-                    color = dest
-                        .get_pixel32_raw(dest_region.x_min + x, dest_region.y_min + y)
-                        .blend_over(&color);
-                }
-                dest.set_pixel32_raw(dest_region.x_min + x, dest_region.y_min + y, color);
-            }
-        }
-    } else {
-        let source = source.read_area(source_region, renderer);
-
-        if !blend && (dest.transparency() || !source.transparency()) {
-            // Copying (not blending) anything to a transparent texture,
-            // or copying an opaque texture to an opaque texture,
-            // means we can skip alpha premultiplication
-
-            if dest_region == source_region
-                && dest_region.width() == dest.width()
-                && dest_region.height() == dest.height()
-                && dest_region.width() == source.width()
-                && dest_region.height() == source.height()
-            {
-                // Copying an entire texture that's the same size and type? Just replace the whole thing
-                dest.raw_pixels_mut().copy_from_slice(source.raw_pixels());
-            } else {
-                for y in 0..dest_region.height() {
-                    for x in 0..dest_region.width() {
-                        let color = source
-                            .get_pixel32_raw(source_region.x_min + x, source_region.y_min + y);
-                        dest.set_pixel32_raw(dest_region.x_min + x, dest_region.y_min + y, color);
-                    }
-                }
-            }
-        } else {
-            // Copying (not blending) a transparent texture to an opaque texture,
-            // or blending anything to anything
-
-            let opaque = !dest.transparency();
-
-            for y in 0..dest_region.height() {
-                for x in 0..dest_region.width() {
-                    let mut color =
-                        source.get_pixel32_raw(source_region.x_min + x, source_region.y_min + y);
-                    if blend {
-                        color = dest
-                            .get_pixel32_raw(dest_region.x_min + x, dest_region.y_min + y)
-                            .blend_over(&color);
-                    }
-                    if opaque {
-                        color = color.with_alpha(255);
-                    }
-                    dest.set_pixel32_raw(dest_region.x_min + x, dest_region.y_min + y, color);
-                }
-            }
-        }
-    }
-
-    dest.set_cpu_dirty(context, dest_region);
+    copy_on_cpu::copy_on_cpu(
+        context,
+        renderer,
+        source,
+        dest,
+        source_region,
+        dest_region,
+        blend,
+    );
 }
 
 fn blend_and_transform<'gc>(
@@ -1534,6 +1475,7 @@ pub fn draw<'gc>(
         cache_draws: &mut cache_draws,
         gc_context: context.gc_context,
         library: context.library,
+        ui: context.ui,
         transform_stack: &mut transform_stack,
         is_offscreen: true,
         use_bitmap_cache: false,

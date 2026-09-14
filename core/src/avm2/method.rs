@@ -6,6 +6,8 @@ use crate::avm2::class::Class;
 use crate::avm2::error::{
     Error, Error1014Type, make_error_1014, make_error_1027, make_error_1079, make_error_1107,
 };
+use crate::avm2::function::FunctionArgs;
+use crate::avm2::object::ClassObject;
 use crate::avm2::script::TranslationUnit;
 use crate::avm2::value::{Value, abc_default_value};
 use crate::avm2::verify::VerifiedMethodInfo;
@@ -34,7 +36,7 @@ use swf::avm2::types::{
 pub type NativeMethodImpl = for<'gc> fn(
     &mut Activation<'_, 'gc>,
     Value<'gc>,
-    &[Value<'gc>],
+    FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>>;
 
 /// Configuration of a single parameter of a method,
@@ -391,6 +393,14 @@ impl<'gc> Method<'gc> {
             .bound_class()
     }
 
+    /// Get the superclass object used when this method is invoked using the
+    /// `callstatic` op.
+    pub fn default_superclass_object(self) -> Option<ClassObject<'gc>> {
+        self.method_association()
+            .expect("Association should be initialized")
+            .default_superclass_object()
+    }
+
     /// Returns true if this method should be run in "interpreter mode". This
     /// method will panic if the method has not been associated yet.
     pub fn is_interpreted(self) -> bool {
@@ -480,8 +490,7 @@ pub enum MethodKind<'gc> {
 /// whether the method should be run in interpreter mode. The association is
 /// used to ensure that, for example, a SWF cannot use `newfunction` to create
 /// a freestanding function for a method that is also class-bound, as this would
-/// break the verifier/optimizer. TODO: Add the default super-ClassObject and
-/// ScopeChain to this struct
+/// break the verifier/optimizer. TODO: Add the ScopeChain to this struct
 #[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]
 pub struct MethodAssociation<'gc> {
@@ -489,6 +498,17 @@ pub struct MethodAssociation<'gc> {
     /// The method may only be called with a receiver that is an instance of
     /// this class.
     bound_class: Option<Class<'gc>>,
+
+    /// The superclass of the first ClassObject that this method was used in.
+    /// One method can be used in multiple ClassObjects, as long as they are all
+    /// derived from the same Class. Using the `callstatic` op on such a method
+    /// will call the method using the superclass object of the first
+    /// ClassObject that this method was used in.
+    ///
+    /// NOTE: This field is specifically for supporting the `callstatic` op. All
+    /// other ways to call this method will use the "correct" superclass object,
+    /// rather than this "default" one.
+    default_superclass_object: Option<ClassObject<'gc>>,
 
     /// Whether this method should be run in "interpreter mode" (as opposed to
     /// "JIT mode"). Most methods run in "JIT mode", except for class
@@ -501,19 +521,30 @@ impl<'gc> MethodAssociation<'gc> {
     pub fn freestanding() -> Self {
         Self {
             bound_class: None,
+            // TODO seems like this should be `Object`?
+            default_superclass_object: None,
             is_interpreted: false,
         }
     }
 
-    pub fn classbound(bound_class: Class<'gc>, is_interpreted: bool) -> Self {
+    pub fn classbound(
+        bound_class: Class<'gc>,
+        default_superclass_object: Option<ClassObject<'gc>>,
+        is_interpreted: bool,
+    ) -> Self {
         Self {
             bound_class: Some(bound_class),
+            default_superclass_object,
             is_interpreted,
         }
     }
 
     pub fn bound_class(self) -> Option<Class<'gc>> {
         self.bound_class
+    }
+
+    pub fn default_superclass_object(self) -> Option<ClassObject<'gc>> {
+        self.default_superclass_object
     }
 
     pub fn is_interpreted(self) -> bool {

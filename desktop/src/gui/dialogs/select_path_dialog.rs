@@ -103,13 +103,13 @@ impl SelectPathDialog {
     pub fn render_window_contents(&mut self, locale: &LanguageIdentifier, ui: &mut Ui) -> bool {
         let mut should_close = false;
 
-        egui::TopBottomPanel::top("top").show_inside(ui, |ui| {
+        egui::Panel::top("top").show(ui, |ui| {
             if let Some(ref message) = self.config.message {
                 ui.label(message.localize(locale));
             }
         });
 
-        egui::TopBottomPanel::bottom("bottom").show_inside(ui, |ui| {
+        egui::Panel::bottom("bottom").show(ui, |ui| {
             ui.horizontal(|ui| {
                 if self.config.extension.is_some() {
                     ui.checkbox(
@@ -133,7 +133,7 @@ impl SelectPathDialog {
             });
         });
 
-        egui::CentralPanel::default().show_inside(ui, |ui| {
+        egui::CentralPanel::default().show(ui, |ui| {
             egui::ScrollArea::vertical().show(ui, |ui| {
                 ui.with_layout(ui.layout().with_cross_justify(true), |ui| {
                     for (path, label) in &self.files {

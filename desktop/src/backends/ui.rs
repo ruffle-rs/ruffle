@@ -15,16 +15,44 @@ use ruffle_core::backend::ui::{
     FullscreenError, LanguageIdentifier, MouseCursor, MultiDialogResultFuture,
     MultiFileDialogResult, UiBackend,
 };
-use ruffle_core::font::{FontFileData, FontQuery};
+use ruffle_core::font::{FontAtlases, FontFileData, FontQuery};
 use std::fs::File;
 use std::path::Path;
 use std::rc::Rc;
+use std::str::FromStr;
 use std::sync::Arc;
 use tokio::io::AsyncReadExt;
 use url::Url;
 use winit::event_loop::EventLoopProxy;
 use winit::raw_window_handle::HasDisplayHandle;
 use winit::window::{Fullscreen, Window};
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum DeviceFontRenderer {
+    Embedded,
+    Freetype,
+}
+
+impl DeviceFontRenderer {
+    pub fn as_str(self) -> &'static str {
+        match self {
+            DeviceFontRenderer::Embedded => "embedded",
+            DeviceFontRenderer::Freetype => "freetype",
+        }
+    }
+}
+
+impl FromStr for DeviceFontRenderer {
+    type Err = ();
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "embedded" => Ok(DeviceFontRenderer::Embedded),
+            "freetype" => Ok(DeviceFontRenderer::Freetype),
+            _ => Err(()),
+        }
+    }
+}
 
 pub struct DesktopFileSelection {
     handle: FileHandle,
@@ -130,6 +158,14 @@ pub struct DesktopUiBackend {
     preferred_cursor: MouseCursor,
     font_database: Rc<fontdb::Database>,
     file_picker: FilePicker,
+
+    // It's non-trivial to invalidate all fonts and change the renderer, so
+    // do not allow changing it in runtime.
+    device_font_renderer: DeviceFontRenderer,
+
+    // Shared atlas pages that every device font loaded by this backend packs
+    // its glyphs into, instead of each font getting its own.
+    font_atlases: FontAtlases,
 }
 
 impl DesktopUiBackend {
@@ -148,10 +184,14 @@ impl DesktopUiBackend {
             event_loop,
             cursor_visible: true,
             clipboard,
-            preferences,
             preferred_cursor: MouseCursor::Arrow,
             font_database,
             file_picker,
+            device_font_renderer: preferences
+                .device_font_renderer()
+                .unwrap_or(DeviceFontRenderer::Embedded),
+            preferences,
+            font_atlases: FontAtlases::new(),
         })
     }
 
@@ -307,7 +347,12 @@ impl UiBackend for DesktopUiBackend {
                 face.post_script_name
             );
 
-            match load_fontdb_font(name.to_string(), face) {
+            match load_fontdb_font(
+                name.to_string(),
+                face,
+                self.device_font_renderer,
+                &self.font_atlases,
+            ) {
                 Ok(font_definition) => register(font_definition),
                 Err(error) => tracing::error!("Error loading font from fontdb: {error}"),
             }
@@ -321,9 +366,11 @@ impl UiBackend for DesktopUiBackend {
         register: &mut dyn FnMut(FontDefinition),
     ) -> Vec<FontQuery> {
         cfg_select! {
-            all(unix, feature = "fontconfig") => fontconfig::sort_device_fonts(query, register)
-                .inspect_err(|err| tracing::error!("Cannot sort device fonts: {err}"))
-                .unwrap_or_default(),
+            all(unix, feature = "fontconfig") => {
+                fontconfig::sort_device_fonts(query, register, self.device_font_renderer, &self.font_atlases)
+                    .inspect_err(|err| tracing::error!("Cannot sort device fonts: {err}"))
+                    .unwrap_or_default()
+            }
             _ => Vec::new(),
         }
     }
@@ -399,36 +446,65 @@ fn load_font_from_file(
     index: u32,
     is_bold: bool,
     is_italic: bool,
+    device_font_renderer: DeviceFontRenderer,
+    #[allow(unused_variables)] atlases: &FontAtlases,
 ) -> Result<FontDefinition<'static>> {
-    let file = File::open(path).map_err(|e| anyhow!("Couldn't open font file at {path:?}: {e}"))?;
+    match device_font_renderer {
+        #[cfg(all(target_os = "linux", feature = "freetype"))]
+        DeviceFontRenderer::Freetype => {
+            use ruffle_frontend_utils::backends::ui::FreetypeFontRenderer;
 
-    // SAFETY: We have to assume that the font file won't change.
-    // This assumption is realistic, as we're using system fonts only.
-    // However, we never store other references to this data, and we reparse
-    // the whole file each time we're accessing any font data.
-    // Realistically, when the underlying file or memory region changes,
-    // we can expect Ruffle to crash due to SIGBUS or errors when parsing.
-    let mmap = unsafe { memmap2::Mmap::map(&file) };
+            Ok(FontDefinition::ExternalRenderer {
+                name,
+                is_bold,
+                is_italic,
+                font_renderer: Box::new(FreetypeFontRenderer::new(path, index, atlases)?),
+            })
+        }
+        _ => {
+            let file = File::open(path)
+                .map_err(|e| anyhow!("Couldn't open font file at {path:?}: {e}"))?;
 
-    let mmap = mmap.map_err(|e| anyhow!("Failed to mmap font file at {path:?}: {e}"))?;
-    let data = FontFileData::new(mmap);
-    Ok(FontDefinition::FontFile {
-        name,
-        is_bold,
-        is_italic,
-        data,
-        index,
-    })
+            // SAFETY: We have to assume that the font file won't change.
+            // This assumption is realistic, as we're using system fonts only.
+            // However, we never store other references to this data, and we reparse
+            // the whole file each time we're accessing any font data.
+            // Realistically, when the underlying file or memory region changes,
+            // we can expect Ruffle to crash due to SIGBUS or errors when parsing.
+            let mmap = unsafe { memmap2::Mmap::map(&file) };
+
+            let mmap = mmap.map_err(|e| anyhow!("Failed to mmap font file at {path:?}: {e}"))?;
+            let data = FontFileData::new(mmap);
+            Ok(FontDefinition::FontFile {
+                name,
+                is_bold,
+                is_italic,
+                data,
+                index,
+            })
+        }
+    }
 }
 
-fn load_fontdb_font(name: String, face: &FaceInfo) -> Result<FontDefinition<'static>> {
+fn load_fontdb_font(
+    name: String,
+    face: &FaceInfo,
+    device_font_renderer: DeviceFontRenderer,
+    atlases: &FontAtlases,
+) -> Result<FontDefinition<'static>> {
     let is_bold = face.weight > fontdb::Weight::NORMAL;
     let is_italic = face.style != fontdb::Style::Normal;
 
     match &face.source {
-        fontdb::Source::File(path) => {
-            load_font_from_file(path, name, face.index, is_bold, is_italic)
-        }
+        fontdb::Source::File(path) => load_font_from_file(
+            path,
+            name,
+            face.index,
+            is_bold,
+            is_italic,
+            device_font_renderer,
+            atlases,
+        ),
 
         fontdb::Source::Binary(bin) | fontdb::Source::SharedFile(_, bin) => {
             Ok(FontDefinition::FontFile {
@@ -444,9 +520,9 @@ fn load_fontdb_font(name: String, face: &FaceInfo) -> Result<FontDefinition<'sta
 
 #[cfg(all(unix, feature = "fontconfig"))]
 mod fontconfig {
-    use crate::backends::ui::load_font_from_file;
+    use crate::backends::ui::{DeviceFontRenderer, load_font_from_file};
     use ruffle_core::backend::ui::FontDefinition;
-    use ruffle_core::font::FontQuery;
+    use ruffle_core::font::{FontAtlases, FontQuery};
     use std::path::Path;
 
     #[derive(Debug, thiserror::Error)]
@@ -460,6 +536,8 @@ mod fontconfig {
     pub fn sort_device_fonts(
         query: &FontQuery,
         register: &mut dyn FnMut(FontDefinition),
+        device_font_renderer: DeviceFontRenderer,
+        atlases: &FontAtlases,
     ) -> Result<Vec<FontQuery>, FontconfigError> {
         use fontconfig::{FontFormat, Pattern};
         use std::sync::LazyLock;
@@ -532,6 +610,8 @@ mod fontconfig {
                 index,
                 is_bold,
                 is_italic,
+                device_font_renderer,
+                atlases,
             ) {
                 Ok(definition) => register(definition),
                 Err(err) => {

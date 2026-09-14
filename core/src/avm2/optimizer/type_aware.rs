@@ -524,7 +524,7 @@ impl<'gc> AbstractState<'gc> {
         let mut changed = false;
 
         // Merge locals
-        assert!(self.locals.len() == other.locals.len());
+        assert_eq!(self.locals.len(), other.locals.len());
 
         for i in 0..self.locals.len() {
             let our_local = self.locals.at(i);
@@ -1257,7 +1257,7 @@ fn abstract_interpret_ops<'gc>(
                 if matches!(value.constant_value, Some(ConstantValue::Receiver)) && !sets_local_0 {
                     // If the value on the scope stack was the receiver, and
                     // local #0's value hasn't changed (i.e. local #0 is still
-                    // set to the reciever), we can optimize this op to a
+                    // set to the receiver), we can optimize this op to a
                     // `getlocal0`.
 
                     // NOTE: We also perform this optimization in the handling
@@ -2224,7 +2224,17 @@ fn maybe_optimize_static_call<'gc>(
 
     let declared_params = speculated_method.resolved_param_config();
 
-    if receiver.class.is_some_and(|c| c.is_final())
+    let is_static_call = receiver.class.is_some_and(|c| {
+        // The speculated method is known to be the right method if either
+        //  - the class of the receiver is final, as final classes cannot have
+        //    subclasses with different methods
+        //  - the class is a parametrized vector class, as parametrized vector
+        //    classes do not have subclasses with different methods
+
+        c.is_final() || c.param().is_some()
+    });
+
+    if is_static_call
         && let MethodKind::Native {
             native_method,
             fast_call: true,

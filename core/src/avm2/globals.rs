@@ -548,6 +548,9 @@ pub fn init_early_classes<'gc>(
 const PLAYERGLOBAL: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/playerglobal_avm2.swf"));
 
 mod native {
+    // Some native methods have names starting with '_'.
+    #![allow(clippy::used_underscore_items)]
+
     include!(concat!(env!("OUT_DIR"), "/native_table.rs"));
 }
 

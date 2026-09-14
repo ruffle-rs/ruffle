@@ -43,17 +43,22 @@ impl<'gc> Stack<'gc> {
         ))
     }
 
-    /// Returns a slice of stack data for the specified method, starting at the
-    /// current stack pointer. Stack frames obtained from this method must be
-    /// properly disposed of by using the `dispose_stack_frame` method.
-    pub fn get_stack_frame(&self, method: Method<'gc>) -> StackFrame<'_, 'gc> {
-        // First calculate the frame size
+    /// Returns a slice of stack data for the specified method
+    pub fn get_frame_for_method(&self, method: Method<'gc>) -> StackFrame<'_, 'gc> {
+        // Calculate the frame size
         let body = method
             .body()
             .expect("Cannot execute non-native method without body");
         let frame_size = body.max_stack as usize + body.num_locals as usize;
 
-        // Then actually create the stack frame
+        self.get_frame(frame_size)
+    }
+
+    /// Returns a slice of stack data with the specified size, starting at the
+    /// current stack pointer. Stack frames obtained from this method must be
+    /// properly disposed of by using the `dispose_stack_frame` method.
+    pub fn get_frame(&self, frame_size: usize) -> StackFrame<'_, 'gc> {
+        // Create the stack frame
         let stack_data = &self.0.stack;
         let stack_pointer = &self.0.stack_pointer;
 
@@ -84,7 +89,7 @@ unsafe impl<'gc> Collect<'gc> for StackData<'gc> {
     // StackFrames from before a collection can't be accessed after the collection.
     fn trace<C: Trace<'gc>>(&self, _cc: &mut C) {
         // There should be no values on the value stack when collection is triggered
-        assert!(self.stack_pointer.get() == 0);
+        assert_eq!(self.stack_pointer.get(), 0);
     }
 }
 

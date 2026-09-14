@@ -84,6 +84,9 @@ error-csp-conflict =
     Ruffle je naišao na ozbiljan problem prilikom pokušaja inicijalizacije.
     Pravila sigurnosti sadržaja ovog web poslužitelja ne dopuštaju pokretanje potrebne komponente ".wasm".
     Ako ste administrator poslužitelja, za pomoć se obratite Ruffle wikiju.
+error-url-invalid =
+    Ruffle nije uspio učitati Flash SWF datoteku.
+    Najvjerojatniji razlog je taj što je Ruffleu proslijeđen nevažeći URL za SWF datoteku.
 error-unknown =
     Ruffle je naišao na ozbiljan problem prilikom pokušaja prikaza ovog Flash sadržaja.
     { $outdated ->

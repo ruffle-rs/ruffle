@@ -9,6 +9,8 @@
 # This is because some languages may use different wording for one or the other, especially with things like capitalisation.
 
 file-menu = Файл
+file-menu-open-file = Відкрити файл...
+file-menu-open-directory = Відкрити теку...
 file-menu-open-advanced = Відкрити додаткові...
 file-menu-close = Закрити
 file-menu-reload = Перезавантажити
@@ -16,6 +18,7 @@ file-menu-recents = Останні
 file-menu-recents-empty = Немає останніх записів
 file-menu-preferences = Уподобання...
 file-menu-exit = Вихід
+file-menu-export = Експорт...
 controls-menu = Елементи керування
 controls-menu-suspend = Призупинити
 controls-menu-resume = Продовжити
