@@ -1,8 +1,6 @@
 use crate::avm1::opcode::OpCode;
 use crate::avm1::types::*;
-use crate::string::SwfStr;
 use crate::write::SwfWriteExt;
-use byteorder::{LittleEndian, WriteBytesExt};
 use std::io::{Result, Write};
 
 pub struct Writer<W: Write> {
@@ -13,54 +11,8 @@ pub struct Writer<W: Write> {
 
 impl<W: Write> SwfWriteExt for Writer<W> {
     #[inline]
-    fn write_u8(&mut self, n: u8) -> Result<()> {
-        self.output.write_u8(n)
-    }
-
-    #[inline]
-    fn write_u16(&mut self, n: u16) -> Result<()> {
-        self.output.write_u16::<LittleEndian>(n)
-    }
-
-    #[inline]
-    fn write_u32(&mut self, n: u32) -> Result<()> {
-        self.output.write_u32::<LittleEndian>(n)
-    }
-
-    #[inline]
-    fn write_u64(&mut self, n: u64) -> Result<()> {
-        self.output.write_u64::<LittleEndian>(n)
-    }
-
-    #[inline]
-    fn write_i8(&mut self, n: i8) -> Result<()> {
-        self.output.write_i8(n)
-    }
-
-    #[inline]
-    fn write_i16(&mut self, n: i16) -> Result<()> {
-        self.output.write_i16::<LittleEndian>(n)
-    }
-
-    #[inline]
-    fn write_i32(&mut self, n: i32) -> Result<()> {
-        self.output.write_i32::<LittleEndian>(n)
-    }
-
-    #[inline]
-    fn write_f32(&mut self, n: f32) -> Result<()> {
-        self.output.write_f32::<LittleEndian>(n)
-    }
-
-    #[inline]
-    fn write_f64(&mut self, n: f64) -> Result<()> {
-        self.output.write_f64::<LittleEndian>(n)
-    }
-
-    #[inline]
-    fn write_string(&mut self, s: &'_ SwfStr) -> Result<()> {
-        self.output.write_all(s.as_bytes())?;
-        self.write_u8(0)
+    fn as_writer(&mut self) -> &mut impl Write {
+        &mut self.output
     }
 }
 

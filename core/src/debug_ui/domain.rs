@@ -1,11 +1,10 @@
-use egui::{CollapsingHeader, TextEdit, Ui, Window, collapsing_header::CollapsingState};
+use crate::avm2::Domain;
+use crate::context::UpdateContext;
+use crate::debug_ui::Message;
+use crate::debug_ui::avm2_class::class_name;
+use crate::debug_ui::handle::{ClassHandle, DomainHandle};
 
-use crate::{avm2::Domain, context::UpdateContext};
-
-use super::{
-    Message,
-    handle::{AVM2ObjectHandle, DomainHandle},
-};
+use egui::{TextEdit, Ui, Window, collapsing_header::CollapsingState};
 
 #[derive(Debug, Default)]
 pub struct DomainListWindow {
@@ -59,45 +58,6 @@ impl DomainListWindow {
                     open_domain_button(ui, context, messages, domain);
                 })
                 .body(|ui| {
-                    let class_props = domain.classes();
-                    let mut classes: Vec<_> = class_props.iter().collect();
-                    classes.sort_by_key(|(name, _, _)| *name);
-
-                    for (class_index, (_, _, class)) in classes.iter().enumerate() {
-                        let class_name = class.name().to_qualified_name(context.gc());
-                        if !class_name.to_string().to_ascii_lowercase().contains(search) {
-                            continue;
-                        }
-
-                        let class_id =
-                            format!("class_{}_{}_{:p}", depth, class_index, class.as_ptr());
-
-                        ui.push_id(class_id, |ui| {
-                            CollapsingHeader::new(format!("Class {class_name}")).show(ui, |ui| {
-                                for (obj_index, class_obj) in
-                                    class.class_objects().iter().enumerate()
-                                {
-                                    ui.push_id(
-                                        format!("class_obj_{}_{}", class_index, obj_index),
-                                        |ui| {
-                                            let button = ui.button(format!("{class_obj:?}"));
-                                            if button.clicked() {
-                                                messages.push(Message::TrackAVM2Object(
-                                                    AVM2ObjectHandle::new(
-                                                        context,
-                                                        (*class_obj).into(),
-                                                    ),
-                                                ));
-                                            }
-                                        },
-                                    );
-                                }
-                            });
-                        });
-                    }
-
-                    drop(class_props);
-
                     for (child_index, child_domain) in
                         domain.children(context.gc()).into_iter().enumerate()
                     {
@@ -110,6 +70,26 @@ impl DomainListWindow {
                                 search,
                                 depth + 1,
                             );
+                        });
+                    }
+
+                    let class_props = domain.classes();
+                    let mut classes: Vec<_> = class_props.iter().collect();
+                    classes.sort_by_key(|(name, _, _)| *name);
+
+                    for (class_index, (_, _, class)) in classes.iter().enumerate() {
+                        let name = class_name(context.gc(), **class);
+                        if !name.to_string().to_ascii_lowercase().contains(search) {
+                            continue;
+                        }
+
+                        ui.push_id(format!("class_{class_index}"), |ui| {
+                            let button = ui.button(format!("Class {name}"));
+                            if button.clicked() {
+                                messages.push(Message::TrackAVM2Class(ClassHandle::new(
+                                    context, **class,
+                                )));
+                            }
                         });
                     }
                 });

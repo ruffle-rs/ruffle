@@ -2,6 +2,7 @@
 
 use crate::avm2::activation::Activation;
 use crate::avm2::error::make_error_2012;
+use crate::avm2::function::FunctionArgs;
 use crate::avm2::object::SecurityDomainObject;
 use crate::avm2::{ClassObject, Error, Object, Value};
 
@@ -15,7 +16,7 @@ pub fn security_domain_allocator<'gc>(
 pub fn instantiate_internal<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     Ok(SecurityDomainObject::new(activation).into())
 }

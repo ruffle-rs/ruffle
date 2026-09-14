@@ -1,11 +1,12 @@
 use crate::avm2::Error;
 use crate::avm2::activation::Activation;
+use crate::avm2::function::FunctionArgs;
 use crate::avm2::value::Value;
 
 pub fn update_after_event<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     *activation.context.needs_render = true;
     Ok(Value::Undefined)

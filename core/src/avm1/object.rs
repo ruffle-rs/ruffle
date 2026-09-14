@@ -380,6 +380,48 @@ impl<'gc> Object<'gc> {
     pub fn ptr_eq(a: Object<'gc>, b: Object<'gc>) -> bool {
         std::ptr::eq(a.as_ptr(), b.as_ptr())
     }
+
+    pub fn get_stored_property(
+        self,
+        activation: &mut Activation<'_, 'gc>,
+        name: AvmString<'gc>,
+    ) -> Option<Value<'gc>> {
+        let mut current_obj = Some(self);
+        while let Some(obj) = current_obj {
+            if obj.has_own_property(activation, name) {
+                if obj.has_own_virtual(activation, name) {
+                    // Ignore getters/setters
+                    return None;
+                }
+                return obj.get_local_stored(name, activation);
+            }
+            current_obj = match obj.proto(activation) {
+                Value::Object(o) => Some(o),
+                _ => None,
+            };
+        }
+        None
+    }
+
+    /// Checks if a property is virtual (a getter/setter) at the level where
+    /// it is defined in the prototype chain.
+    pub fn is_property_virtual(
+        self,
+        activation: &mut Activation<'_, 'gc>,
+        name: AvmString<'gc>,
+    ) -> bool {
+        let mut current_obj = Some(self);
+        while let Some(obj) = current_obj {
+            if obj.has_own_property(activation, name) {
+                return obj.has_own_virtual(activation, name);
+            }
+            current_obj = match obj.proto(activation) {
+                Value::Object(o) => Some(o),
+                _ => None,
+            };
+        }
+        false
+    }
 }
 
 pub enum ObjectPtr {}

@@ -2,6 +2,7 @@
 
 use crate::avm2::Error;
 use crate::avm2::activation::Activation;
+use crate::avm2::function::FunctionArgs;
 use crate::avm2::globals::flash::display::bitmap_data::fill_bitmap_data_from_symbol;
 use crate::avm2::globals::flash::display::display_object::initialize_for_allocator;
 use crate::avm2::object::{BitmapDataObject, ClassObject, Object};
@@ -76,7 +77,7 @@ pub fn bitmap_allocator<'gc>(
 pub fn init<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
@@ -106,7 +107,7 @@ pub fn init<'gc>(
 pub fn get_bitmap_data<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
@@ -127,7 +128,7 @@ pub fn get_bitmap_data<'gc>(
 pub fn set_bitmap_data<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
@@ -151,7 +152,7 @@ pub fn set_bitmap_data<'gc>(
 pub fn get_pixel_snapping<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
@@ -171,7 +172,7 @@ pub fn get_pixel_snapping<'gc>(
 pub fn set_pixel_snapping<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
@@ -190,7 +191,7 @@ pub fn set_pixel_snapping<'gc>(
 pub fn get_smoothing<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
@@ -205,7 +206,7 @@ pub fn get_smoothing<'gc>(
 pub fn set_smoothing<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 

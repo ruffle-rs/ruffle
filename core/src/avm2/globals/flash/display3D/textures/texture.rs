@@ -3,6 +3,7 @@ use ruffle_render::backend::Context3DTextureFormat;
 use super::atf_jpegxr::do_compressed_upload;
 use crate::avm2::Activation;
 use crate::avm2::Value;
+use crate::avm2::function::FunctionArgs;
 use crate::avm2::object::TextureObject;
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::{Error, Object};
@@ -70,7 +71,7 @@ pub fn do_copy<'gc>(
 pub fn upload_compressed_texture_from_byte_array_internal<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
@@ -99,7 +100,7 @@ pub fn upload_compressed_texture_from_byte_array_internal<'gc>(
 pub fn upload_from_byte_array<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
@@ -115,7 +116,7 @@ pub fn upload_from_byte_array<'gc>(
 pub fn upload_from_bitmap_data<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 

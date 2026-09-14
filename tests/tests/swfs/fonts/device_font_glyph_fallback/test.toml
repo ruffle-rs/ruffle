@@ -11,3 +11,9 @@ path = "TestFontB.ttf"
 [font_sorts.a]
 family = "TestFontA"
 sort = ["a", "b"]
+
+[subtests.embedded.player_options]
+device_font_renderer = "embedded"
+
+[subtests.freetype.player_options]
+device_font_renderer = "freetype"

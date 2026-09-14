@@ -1,3 +1,4 @@
+use crate::backends::DeviceFontRenderer;
 use crate::cli::{GameModePreference, OpenUrlMode};
 use crate::gui::ThemePreference;
 use crate::log::FilenamePattern;
@@ -140,6 +141,17 @@ impl<'a> PreferencesWriter<'a> {
                 toml_document["ime"]["enabled"] = toml_edit::Item::None;
             }
             values.ime_enabled = ime_enabled;
+        });
+    }
+
+    pub fn set_device_font_renderer(&mut self, device_font_renderer: Option<DeviceFontRenderer>) {
+        self.0.edit(|values, toml_document| {
+            if let Some(device_font_renderer) = device_font_renderer {
+                toml_document["device_font_renderer"] = value(device_font_renderer.as_str());
+            } else {
+                toml_document.remove("device_font_renderer");
+            }
+            values.device_font_renderer = device_font_renderer;
         });
     }
 }
@@ -354,6 +366,25 @@ mod tests {
         test(
             "ime.enabled = false",
             |writer| writer.set_ime_enabled(None),
+            "",
+        );
+    }
+
+    #[test]
+    fn set_device_font_renderer() {
+        test(
+            "",
+            |writer| writer.set_device_font_renderer(Some(DeviceFontRenderer::Embedded)),
+            "device_font_renderer = \"embedded\"\n",
+        );
+        test(
+            "device_font_renderer = \"embedded\"",
+            |writer| writer.set_device_font_renderer(Some(DeviceFontRenderer::Freetype)),
+            "device_font_renderer = \"freetype\"\n",
+        );
+        test(
+            "device_font_renderer = \"freetype\"",
+            |writer| writer.set_device_font_renderer(None),
             "",
         );
     }

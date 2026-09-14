@@ -4,9 +4,11 @@ use crate::avm2::object::font_description_object::FontDescriptionObject;
 use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{ClassObject, Object, TObject};
 use crate::fte::{
-    BreakOpportunityValue, DigitCaseValue, DigitWidthValue, KerningValue, LigatureLevelValue,
-    TextBaselineValue, TextRotationValue, TypographicCaseValue,
+    BreakOpportunityValue, DigitCaseValue, DigitWidthValue, FontLookupValue, FontPostureValue,
+    FontWeightValue, KerningValue, LigatureLevelValue, TextBaselineValue, TextRotationValue,
+    TypographicCaseValue,
 };
+use crate::html::TextFormat;
 use crate::string::AvmString;
 use core::fmt;
 use gc_arena::barrier::unlock;
@@ -154,8 +156,13 @@ impl<'gc> ElementFormatObject<'gc> {
         self.0.dominant_baseline.set(value);
     }
 
-    pub fn font_description(self) -> Option<FontDescriptionObject<'gc>> {
-        self.0.font_description.get()
+    pub fn font_description(self) -> FontDescriptionObject<'gc> {
+        // The `FontDescription` is always set in the constructor and it can't
+        // be set to null, so it must always be `Some`
+        self.0
+            .font_description
+            .get()
+            .expect("Font description should always be set")
     }
 
     pub fn set_font_description(self, value: FontDescriptionObject<'gc>, mc: &Mutation<'gc>) {
@@ -243,6 +250,26 @@ impl<'gc> ElementFormatObject<'gc> {
 
     pub fn set_locked(self, value: bool) {
         self.0.locked.set(value);
+    }
+
+    pub fn as_text_format(self) -> TextFormat {
+        let fd = self.font_description();
+
+        let font = fd.font_name().as_wstr().into();
+        let bold = fd.font_weight() == FontWeightValue::Bold;
+        let italic = fd.font_posture() == FontPostureValue::Italic;
+
+        // TODO: Support setting `is_device_font` for individual `TextFormat`s
+        let _is_device_font = fd.font_lookup() == FontLookupValue::Device;
+
+        TextFormat {
+            color: Some(self.color()),
+            size: Some(self.font_size()),
+            font: Some(font),
+            bold: Some(bold),
+            italic: Some(italic),
+            ..TextFormat::default()
+        }
     }
 }
 

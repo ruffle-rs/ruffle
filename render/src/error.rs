@@ -35,9 +35,6 @@ pub enum Error {
     #[error("Empty GIF")]
     EmptyGif,
 
-    #[error("Unsupported DefineBitsLossless{0} format {1:?}")]
-    UnsupportedLosslessFormat(u8, swf::BitmapFormat),
-
     #[cfg(feature = "web")]
     #[error("Javascript error")]
     JavascriptError(wasm_bindgen::JsValue),

@@ -1,0 +1,32 @@
+Case #1
+3
+ReferenceError: Error #1069: Property field not found on Number and there is no default value.
+
+Case #2
+3
+ReferenceError: Error #1069: Property field not found on Number and there is no default value.
+
+Case #3
+3
+ReferenceError: Error #1069: Property field not found on Number and there is no default value.
+
+Case #4
+3
+ReferenceError: Error #1069: Property field not found on Number and there is no default value.
+
+Case #5
+3
+ReferenceError: Error #1069: Property field not found on Number and there is no default value.
+
+Case #6
+3
+ReferenceError: Error #1069: Property field not found on Number and there is no default value.
+
+Case #7
+3
+ReferenceError: Error #1069: Property field not found on Number and there is no default value.
+
+Case #8
+3
+ReferenceError: Error #1069: Property field not found on Number and there is no default value.
+

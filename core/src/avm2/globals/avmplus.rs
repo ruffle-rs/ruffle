@@ -1,4 +1,5 @@
 use crate::avm2::class::Class;
+use crate::avm2::function::FunctionArgs;
 pub use crate::avm2::globals::flash::utils::get_qualified_class_name;
 pub use crate::avm2::globals::flash::utils::get_qualified_superclass_name;
 use crate::avm2::metadata::Metadata;
@@ -19,7 +20,7 @@ use ruffle_macros::istr;
 pub fn describe_type_json<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let flags = DescribeTypeFlags::from_bits(args.get_u32(1)).expect("Invalid flags!");
 

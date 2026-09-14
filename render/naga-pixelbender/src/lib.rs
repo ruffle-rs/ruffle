@@ -69,7 +69,7 @@ pub struct ShaderBuilder<'a> {
     // update the components specified in the destination write mask
     float_registers: Vec<Option<Handle<Expression>>>,
 
-    /// Like float_registesr but with vec4i
+    /// Like float_registers but with vec4i
     int_registers: Vec<Option<Handle<Expression>>>,
 
     // A stack of if/else blocks, using to push statements
@@ -272,6 +272,7 @@ impl ShaderBuilder<'_> {
                         Span::UNDEFINED,
                     ),
                     init: None,
+                    memory_decorations: naga::MemoryDecorations::empty(),
                 },
                 Span::UNDEFINED,
             );
@@ -356,6 +357,7 @@ impl ShaderBuilder<'_> {
                 }),
                 ty: vec4f,
                 init: None,
+                memory_decorations: naga::MemoryDecorations::empty(),
             },
             Span::UNDEFINED,
         );
@@ -445,6 +447,7 @@ impl ShaderBuilder<'_> {
             function: builder.func,
             mesh_info: None,
             task_payload: None,
+            incoming_ray_payload: None,
         });
 
         Ok(NagaModules {
@@ -544,6 +547,7 @@ impl ShaderBuilder<'_> {
                             }),
                             ty: self.image2d,
                             init: None,
+                            memory_decorations: naga::MemoryDecorations::empty(),
                         },
                         Span::UNDEFINED,
                     );
@@ -584,6 +588,7 @@ impl ShaderBuilder<'_> {
                     Span::UNDEFINED,
                 ),
                 init: None,
+                memory_decorations: naga::MemoryDecorations::empty(),
             },
             Span::UNDEFINED,
         );
@@ -608,6 +613,7 @@ impl ShaderBuilder<'_> {
                     Span::UNDEFINED,
                 ),
                 init: None,
+                memory_decorations: naga::MemoryDecorations::empty(),
             },
             Span::UNDEFINED,
         );

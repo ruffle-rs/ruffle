@@ -85,6 +85,9 @@ error-csp-conflict =
     Ruffle 在嘗試初始化時遇到重大問題。
     此網頁伺服器的內容安全政策不允許執行所需的 「.wasm 」元件。
     如果您是伺服器管理員，請參閱 Ruffle wiki 以取得協助。
+error-url-invalid =
+    Ruffle 無法載入 Flash SWF 檔案。
+    最可能的原因是傳遞給 Ruffle 的 SWF 檔案網址無效。
 error-unknown =
     Ruffle 在嘗試顯示此 Flash 內容時遇到了重大問題。
     { $outdated ->

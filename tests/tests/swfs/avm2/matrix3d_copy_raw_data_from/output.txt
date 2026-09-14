@@ -1,0 +1,55 @@
+Caught error: TypeError: Error #2007: Parameter source must be non-null.
+	at flash.geom::Matrix3D/copyRawDataFrom()
+	at Function/<anonymous>()
+	at Test/testException()
+	at Test/testExceptions()
+	at Test()
+copyRawDataFrom 0 entries threw: ArgumentError: Error #2004: One of the parameters is invalid.
+	at flash.geom::Matrix3D/copyRawDataFrom()
+	at Test/testCopy()
+	at Test/testBasic()
+	at Test()
+copyRawDataFrom 3 entries threw: ArgumentError: Error #2004: One of the parameters is invalid.
+	at flash.geom::Matrix3D/copyRawDataFrom()
+	at Test/testCopy()
+	at Test/testBasic()
+	at Test()
+copyRawDataFrom 15 entries threw: ArgumentError: Error #2004: One of the parameters is invalid.
+	at flash.geom::Matrix3D/copyRawDataFrom()
+	at Test/testCopy()
+	at Test/testBasic()
+	at Test()
+copyRawDataFrom 16 entries: 101,102,103,104,105,106,107,108,109,110,111,112,113,114,115,116
+copyRawDataFrom 20 entries: 501,502,503,504,505,506,507,508,509,510,511,512,513,514,515,516
+copyRawDataFrom 3 entries offset 1 threw: ArgumentError: Error #2004: One of the parameters is invalid.
+	at flash.geom::Matrix3D/copyRawDataFrom()
+	at Test/testCopy()
+	at Test/testBasic()
+	at Test()
+copyRawDataFrom 3 entries offset 13 threw: ArgumentError: Error #2004: One of the parameters is invalid.
+	at flash.geom::Matrix3D/copyRawDataFrom()
+	at Test/testCopy()
+	at Test/testBasic()
+	at Test()
+copyRawDataFrom 0 entries offset 16 threw: ArgumentError: Error #2004: One of the parameters is invalid.
+	at flash.geom::Matrix3D/copyRawDataFrom()
+	at Test/testCopy()
+	at Test/testBasic()
+	at Test()
+copyRawDataFrom 16 entries offset 1 threw: ArgumentError: Error #2004: One of the parameters is invalid.
+	at flash.geom::Matrix3D/copyRawDataFrom()
+	at Test/testCopy()
+	at Test/testBasic()
+	at Test()
+copyRawDataFrom 17 entries offset 1: 102,103,104,105,106,107,108,109,110,111,112,113,114,115,116,117
+copyRawDataFrom 20 entries offset 4: 505,506,507,508,509,510,511,512,513,514,515,516,517,518,519,520
+copyRawDataFrom 20 entries offset 5 threw: ArgumentError: Error #2004: One of the parameters is invalid.
+	at flash.geom::Matrix3D/copyRawDataFrom()
+	at Test/testCopy()
+	at Test/testBasic()
+	at Test()
+copyRawDataFrom 16 entries, transposed: 701,705,709,713,702,706,710,714,703,707,711,715,704,708,712,716
+copyRawDataFrom 20 entries with offset, transposed: 701,705,709,713,702,706,710,714,703,707,711,715,704,708,712,716
+copyRawDataFrom NaN: NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN
+copyRawDataFrom Infinity: Infinity,Infinity,Infinity,Infinity,Infinity,Infinity,Infinity,Infinity,Infinity,Infinity,Infinity,Infinity,Infinity,Infinity,Infinity,Infinity
+copyRawDataFrom defaults: 101,102,103,104,105,106,107,108,109,110,111,112,113,114,115,116

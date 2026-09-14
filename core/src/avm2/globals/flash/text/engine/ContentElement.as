@@ -21,14 +21,12 @@ package flash.text.engine {
             this.elementFormat = elementFormat;
         }
 
-        [Ruffle(NativeCallable)]
         public native function get text():String;
         public native function get rawText():String;
         public native function get textBlock():TextBlock;
         public native function get textBlockBeginIndex():int;
         public native function get groupElement():GroupElement;
 
-        [Ruffle(NativeCallable)]
         public native function get elementFormat():ElementFormat;
         public native function set elementFormat(value:ElementFormat):void;
 

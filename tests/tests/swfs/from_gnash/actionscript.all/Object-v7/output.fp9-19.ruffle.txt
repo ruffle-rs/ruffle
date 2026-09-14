@@ -305,8 +305,8 @@ PASSED: g.cips == "passed" [./Object.as:935]
 PASSED: result == "cips" [./Object.as:936]
 PASSED: resolveCalled == 5 [./Object.as:937]
 PASSED: TestO.prototype == undefined [./Object.as:947]
-FAILED: expected: "object" obtained: undefined [./Object.as:952]
-FAILED: expected: "hello there" obtained: undefined [./Object.as:953]
+PASSED: typeof(o.__proto__) == "object" [./Object.as:952]
+PASSED: o.toString() == "hello there" [./Object.as:953]
 PASSED: TestO.prototype == undefined [./Object.as:956]
 PASSED: !nonk._width [./Object.as:968]
 PASSED: !nonk.bobo [./Object.as:969]
@@ -328,6 +328,6 @@ FAILED: expected: "undefined" obtained: object [./Object.as:1019]
 PASSED: typeof(o) == "object" [./Object.as:1021]
 PASSED: o.toString() == "true" [./Object.as:1022]
 FAILED: expected: "undefined" obtained: object [./Object.as:1026]
-#passed: 311
-#failed: 16
+#passed: 313
+#failed: 14
 #total tests run: 327

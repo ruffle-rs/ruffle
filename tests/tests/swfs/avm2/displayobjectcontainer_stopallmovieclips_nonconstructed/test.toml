@@ -1,0 +1,6 @@
+# NOTE: The SWF file for this test will crash FP. Our output for this test
+# intentionally diverges from FP because we don't want to crash. This test
+# should stay a known failure.
+
+num_frames = 5
+known_failure = true

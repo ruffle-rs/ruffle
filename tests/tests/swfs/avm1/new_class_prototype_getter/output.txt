@@ -1,0 +1,6 @@
+// Test.prototype.name
+prototype getter called!
+name by getter
+// (new Test()).name
+constructor called!
+stored name

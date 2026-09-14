@@ -236,9 +236,10 @@ impl<'gc> Declaration<'gc> {
         &self,
         context: &mut StringContext<'gc>,
         this: Object<'gc>,
-        fn_proto: Object<'gc>,
+        fn_proto_obj: Object<'gc>,
     ) -> Value<'gc> {
         let mc = context.gc();
+        let fn_proto = Some(Value::from(fn_proto_obj));
 
         let name = context.intern_static(WStr::from_units(self.name));
         let value = match self.kind {
@@ -265,11 +266,11 @@ impl<'gc> Declaration<'gc> {
                 return Value::Undefined;
             }
             DeclKind::Method(f) | DeclKind::Function(f) => {
-                let p = matches!(self.kind, DeclKind::Function(_)).then_some(fn_proto);
+                let p = matches!(self.kind, DeclKind::Function(_)).then_some(fn_proto_obj);
                 FunctionObject::native(f).build(context, fn_proto, p).into()
             }
             DeclKind::TableMethod(f, index) | DeclKind::TableFunction(f, index) => {
-                let p = matches!(self.kind, DeclKind::Function(_)).then_some(fn_proto);
+                let p = matches!(self.kind, DeclKind::Function(_)).then_some(fn_proto_obj);
                 FunctionObject::table_native(f, index)
                     .build(context, fn_proto, p)
                     .into()

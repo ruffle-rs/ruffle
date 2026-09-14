@@ -56,8 +56,7 @@ impl ShaderPairAgal {
     ) -> RefMut<'_, CompiledShaderProgram> {
         let compiled = self.compiled.borrow_mut();
         RefMut::map(compiled, |compiled| {
-            // TODO: Figure out a way to avoid the clone when we have a cache hit
-            compiled.get_or_insert_mut(data.clone(), || {
+            compiled.get_or_insert_mut_with_key(data, |data| {
                 let vertex_naga_module =
                     naga_agal::agal_to_naga(&self.vertex_shader, &data.vertex_attributes).unwrap();
                 let vertex_module =

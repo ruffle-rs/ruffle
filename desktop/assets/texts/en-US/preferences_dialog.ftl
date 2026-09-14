@@ -47,3 +47,9 @@ ime-enabled = Input Method
 ime-enabled-experimental = (experimental)
 ime-enabled-tooltip = An input method allows inputting characters that are not available on the keyboard, for instance Chinese, Japanese, or Korean characters.
 ime-enabled-default = Default
+
+device-font-renderer = Device Font Renderer
+device-font-renderer-tooltip = Selects the backend used to render device fonts.
+device-font-renderer-default = Default
+device-font-renderer-embedded = Embedded
+device-font-renderer-freetype = FreeType

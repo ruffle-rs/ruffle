@@ -10,8 +10,12 @@ package flash.text.engine {
             textRotation:String = "rotate0"
         ) {
             super(elementFormat, eventMirror, textRotation);
+
+            this.init();
             this.text = text;
         }
+
+        private native function init():void;
 
         // Contrary to the documentation, TextElement does not implement a getter here. It inherits the getter from ContentElement.
         public native function set text(value:String):void;

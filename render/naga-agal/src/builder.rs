@@ -697,6 +697,7 @@ impl<'a> NagaBuilder<'a> {
                     Span::UNDEFINED,
                 ),
                 init: None,
+                memory_decorations: naga::MemoryDecorations::empty(),
             },
             Span::UNDEFINED,
         );
@@ -856,6 +857,7 @@ impl<'a> NagaBuilder<'a> {
                         Dimension::Cube => self.imagecube,
                     },
                     init: None,
+                    memory_decorations: naga::MemoryDecorations::empty(),
                 },
                 Span::UNDEFINED,
             );
@@ -876,6 +878,7 @@ impl<'a> NagaBuilder<'a> {
                         Span::UNDEFINED,
                     ),
                     init: None,
+                    memory_decorations: naga::MemoryDecorations::empty(),
                 },
                 Span::UNDEFINED,
             );
@@ -1794,6 +1797,7 @@ impl<'a> NagaBuilder<'a> {
             function: self.func,
             mesh_info: None,
             task_payload: None,
+            incoming_ray_payload: None,
         };
 
         self.module.entry_points.push(entry_point);

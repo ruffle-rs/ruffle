@@ -1,5 +1,6 @@
 //! `flash.display.Loader` builtin/prototype
 
+use crate::avm2::function::FunctionArgs;
 use indexmap::IndexMap;
 
 use crate::avm2::ClassObject;
@@ -63,7 +64,7 @@ pub fn loader_allocator<'gc>(
 pub fn load<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
@@ -235,7 +236,7 @@ pub fn request_from_url_request<'gc>(
 pub fn load_bytes<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
@@ -304,12 +305,9 @@ pub fn load_bytes<'gc>(
 pub fn unload<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
-
-    // TODO: Broadcast an "unload" event on the LoaderInfo
-    avm2_stub_method!(activation, "flash.display.Loader", "unload");
 
     let loader_info = this
         .get_slot(loader_slots::_CONTENT_LOADER_INFO)

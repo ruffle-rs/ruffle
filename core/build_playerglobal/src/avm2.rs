@@ -3,7 +3,7 @@ use proc_macro2::TokenStream;
 use quote::quote;
 use regex::RegexBuilder;
 use std::borrow::Cow;
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 use std::ffi::OsStr;
 use std::fs;
 use std::fs::File;
@@ -462,8 +462,8 @@ fn write_native_table(data: &[u8], out_dir: &Path) -> Result<Vec<u8>, Box<dyn st
     let mut rust_custom_constructors = vec![none_tokens; abc.classes.len()];
     let mut rust_fast_calls = vec![];
 
-    let mut rust_accessible_slots: HashMap<String, Vec<_>> = HashMap::new();
-    let mut rust_accessible_methods: HashMap<String, Vec<_>> = HashMap::new();
+    let mut rust_accessible_slots: BTreeMap<String, Vec<_>> = BTreeMap::new();
+    let mut rust_accessible_methods: BTreeMap<String, Vec<_>> = BTreeMap::new();
 
     let mut check_trait = |trait_: &Trait, parent: Option<Index<Multiname>>, is_class: bool| {
         match trait_.kind {

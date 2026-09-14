@@ -1,4 +1,4 @@
-mod font_renderer;
+mod canvas_font_renderer;
 
 use super::JavascriptPlayer;
 use rfd::{AsyncFileDialog, FileHandle};
@@ -9,7 +9,7 @@ use ruffle_core::backend::ui::{
 use ruffle_core::backend::ui::{
     FontDefinition, FullscreenError, LanguageIdentifier, MouseCursor, US_ENGLISH, UiBackend,
 };
-use ruffle_core::font::FontQuery;
+use ruffle_core::font::{FontAtlases, FontQuery};
 use ruffle_web_common::JsResult;
 use std::borrow::Cow;
 use url::Url;
@@ -33,8 +33,11 @@ impl WebFileSelection {
         let contents = handle.read().await;
 
         let (file_name, modification_time) = cfg_select! {
-            target_arch = "wasm32" => (handle.file_name(), DateTime::from_timestamp(handle.inner().last_modified() as i64, 0)),
-            _ => (String::new(), None)
+            target_arch = "wasm32" => (
+                handle.file_name(),
+                DateTime::from_timestamp(handle.inner().last_modified() as i64, 0),
+            ),
+            _ => (String::new(), None),
         };
 
         Self {
@@ -137,6 +140,8 @@ pub struct WebUiBackend {
     dialog_open: bool,
 
     use_canvas_font_renderer: bool,
+
+    font_atlases: FontAtlases,
 }
 
 impl WebUiBackend {
@@ -159,6 +164,7 @@ impl WebUiBackend {
             clipboard_content: "".into(),
             dialog_open: false,
             use_canvas_font_renderer,
+            font_atlases: FontAtlases::new(),
         }
     }
 
@@ -331,8 +337,12 @@ impl UiBackend for WebUiBackend {
             return;
         }
 
-        let renderer =
-            font_renderer::CanvasFontRenderer::new(query.is_italic, query.is_bold, &query.name);
+        let renderer = canvas_font_renderer::CanvasFontRenderer::new(
+            query.is_italic,
+            query.is_bold,
+            &query.name,
+            &self.font_atlases,
+        );
 
         match renderer {
             Ok(renderer) => {

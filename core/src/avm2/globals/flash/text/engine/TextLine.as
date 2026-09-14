@@ -28,10 +28,6 @@ package flash.text.engine {
 
         public native function get textBlock():TextBlock;
 
-        // TODO: remove this setter once releaseLines() is implemented natively;
-        // it only exists so AS-side releaseLines() can clear textBlock.
-        internal native function setTextBlock(value:TextBlock):void;
-
         public function get ascent():Number {
             stub_getter("flash.text.engine.TextLine", "ascent");
             return 12.0;
@@ -95,7 +91,11 @@ package flash.text.engine {
 
         public function getAtomIndexAtCharIndex(charIndex:int):int {
             stub_method("flash.text.engine.TextLine", "getAtomIndexAtCharIndex");
-            return -1;
+            var index:int = charIndex - this.textBlockBeginIndex;
+            if (index < 0 || index >= this.rawTextLength) {
+                return -1;
+            }
+            return index;
         }
 
         public function getAtomBidiLevel(index:int):int {

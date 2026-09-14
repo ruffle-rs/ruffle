@@ -35,10 +35,9 @@ fn create_sampler(
         address_mode_w: wgpu::AddressMode::Repeat,
         mag_filter: filter,
         min_filter: filter,
-        mipmap_filter: if filter == wgpu::FilterMode::Linear {
-            wgpu::MipmapFilterMode::Linear
-        } else {
-            wgpu::MipmapFilterMode::Nearest
+        mipmap_filter: match filter {
+            wgpu::FilterMode::Linear => wgpu::MipmapFilterMode::Linear,
+            wgpu::FilterMode::Nearest => wgpu::MipmapFilterMode::Nearest,
         },
         lod_min_clamp: 0.0,
         lod_max_clamp: 100.0,

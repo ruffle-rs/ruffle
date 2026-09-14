@@ -1,4 +1,5 @@
 use crate::blend::ComplexBlend;
+use crate::dynamic_transforms::transforms_per_draw;
 use enum_map::{EnumMap, enum_map};
 use ruffle_render::shader_source::SHADER_FILTER_COMMON;
 
@@ -25,13 +26,25 @@ pub struct Shaders {
 
 impl Shaders {
     pub fn new(device: &wgpu::Device) -> Self {
-        let color_shader = make_shader(device, "color.wgsl", include_str!("../shaders/color.wgsl"));
+        let max_transforms = transforms_per_draw(&device.limits());
+        let color_shader = make_shader(
+            device,
+            "color.wgsl",
+            include_str!("../shaders/color.wgsl"),
+            max_transforms,
+        );
         let bitmap_shader = make_shader(
             device,
             "bitmap.wgsl",
             include_str!("../shaders/bitmap.wgsl"),
+            max_transforms,
         );
-        let copy_shader = make_shader(device, "copy.wgsl", include_str!("../shaders/copy.wgsl"));
+        let copy_shader = make_shader(
+            device,
+            "copy.wgsl",
+            include_str!("../shaders/copy.wgsl"),
+            max_transforms,
+        );
         let color_matrix_filter = make_filter_shader(
             device,
             "filter/color_matrix.wgsl",
@@ -61,23 +74,25 @@ impl Shaders {
             device,
             "gradient.wgsl",
             include_str!("../shaders/gradient.wgsl"),
+            max_transforms,
         );
         let alpha_mask_shader = make_shader(
             device,
             "alpha_mask.wgsl",
             include_str!("../shaders/alpha_mask.wgsl"),
+            max_transforms,
         );
 
         let blend_shaders = enum_map! {
-            ComplexBlend::Multiply => make_shader(device, "blend/multiply.wgsl", include_str!("../shaders/blend/multiply.wgsl")),
-            ComplexBlend::Lighten => make_shader(device, "blend/lighten.wgsl", include_str!("../shaders/blend/lighten.wgsl")),
-            ComplexBlend::Darken => make_shader(device, "blend/darken.wgsl", include_str!("../shaders/blend/darken.wgsl")),
-            ComplexBlend::Difference => make_shader(device, "blend/difference.wgsl", include_str!("../shaders/blend/difference.wgsl")),
-            ComplexBlend::Invert => make_shader(device, "blend/invert.wgsl", include_str!("../shaders/blend/invert.wgsl")),
-            ComplexBlend::Alpha => make_shader(device, "blend/alpha.wgsl", include_str!("../shaders/blend/alpha.wgsl")),
-            ComplexBlend::Erase => make_shader(device, "blend/erase.wgsl", include_str!("../shaders/blend/erase.wgsl")),
-            ComplexBlend::Overlay => make_shader(device, "blend/overlay.wgsl", include_str!("../shaders/blend/overlay.wgsl")),
-            ComplexBlend::HardLight => make_shader(device, "blend/hardlight.wgsl", include_str!("../shaders/blend/hardlight.wgsl")),
+            ComplexBlend::Multiply => make_shader(device, "blend/multiply.wgsl", include_str!("../shaders/blend/multiply.wgsl"), max_transforms),
+            ComplexBlend::Lighten => make_shader(device, "blend/lighten.wgsl", include_str!("../shaders/blend/lighten.wgsl"), max_transforms),
+            ComplexBlend::Darken => make_shader(device, "blend/darken.wgsl", include_str!("../shaders/blend/darken.wgsl"), max_transforms),
+            ComplexBlend::Difference => make_shader(device, "blend/difference.wgsl", include_str!("../shaders/blend/difference.wgsl"), max_transforms),
+            ComplexBlend::Invert => make_shader(device, "blend/invert.wgsl", include_str!("../shaders/blend/invert.wgsl"), max_transforms),
+            ComplexBlend::Alpha => make_shader(device, "blend/alpha.wgsl", include_str!("../shaders/blend/alpha.wgsl"), max_transforms),
+            ComplexBlend::Erase => make_shader(device, "blend/erase.wgsl", include_str!("../shaders/blend/erase.wgsl"), max_transforms),
+            ComplexBlend::Overlay => make_shader(device, "blend/overlay.wgsl", include_str!("../shaders/blend/overlay.wgsl"), max_transforms),
+            ComplexBlend::HardLight => make_shader(device, "blend/hardlight.wgsl", include_str!("../shaders/blend/hardlight.wgsl"), max_transforms),
         };
 
         Self {
@@ -96,11 +111,18 @@ impl Shaders {
     }
 }
 
-fn make_shader(device: &wgpu::Device, name: &str, source: &str) -> wgpu::ShaderModule {
+fn make_shader(
+    device: &wgpu::Device,
+    name: &str,
+    source: &str,
+    max_transforms: u64,
+) -> wgpu::ShaderModule {
     let common = include_str!("../shaders/common.wgsl");
     device.create_shader_module(wgpu::ShaderModuleDescriptor {
         label: create_debug_label!("Shader {name}").as_deref(),
-        source: wgpu::ShaderSource::Wgsl(format!("{common}\n{source}").into()),
+        source: wgpu::ShaderSource::Wgsl(
+            format!("{common}\nconst max_transforms = {max_transforms};\n{source}").into(),
+        ),
     })
 }
 fn make_filter_shader(device: &wgpu::Device, name: &str, source: &str) -> wgpu::ShaderModule {

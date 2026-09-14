@@ -9,6 +9,7 @@ use crate::avm2::error::{
     Error1014Type, make_error_1014, make_error_1053, make_error_1059, make_error_1060,
     make_error_1103, make_error_1107, make_error_1110, make_error_1111,
 };
+use crate::avm2::function::FunctionArgs;
 use crate::avm2::method::{Method, MethodAssociation, NativeMethodImpl};
 use crate::avm2::object::{ClassObject, Object, scriptobject_allocator};
 use crate::avm2::script::TranslationUnit;
@@ -75,7 +76,7 @@ pub struct Allocator(pub AllocatorFn);
 /// This function should be passed an Activation, and the arguments passed to the
 /// constructor, and will return an Object.
 pub type CustomConstructorFn =
-    for<'gc> fn(&mut Activation<'_, 'gc>, &[Value<'gc>]) -> Result<Value<'gc>, Error<'gc>>;
+    for<'gc> fn(&mut Activation<'_, 'gc>, FunctionArgs<'_, 'gc>) -> Result<Value<'gc>, Error<'gc>>;
 
 #[derive(Clone, Copy)]
 pub struct CustomConstructor(pub CustomConstructorFn);

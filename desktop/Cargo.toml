@@ -14,10 +14,10 @@ workspace = true
 clap = { workspace = true }
 cpal = { workspace = true }
 egui = { workspace = true }
-egui_extras = { git = "https://github.com/emilk/egui.git", rev = "b077cf910297884a4f1b431e8da99806ae925168", default-features = false, features = ["image"] }
-egui-wgpu = { git = "https://github.com/emilk/egui.git", rev = "b077cf910297884a4f1b431e8da99806ae925168", features = ["winit"] }
+egui_extras = { workspace = true, default-features = false, features = ["image"] }
+egui-wgpu = { workspace = true, features = ["winit"] }
 image = { workspace = true, features = ["png"] }
-egui-winit = { git = "https://github.com/emilk/egui.git", rev = "b077cf910297884a4f1b431e8da99806ae925168" }
+egui-winit = { workspace = true }
 fontdb = "0.23"
 ruffle_core = { path = "../core", features = ["audio", "clap", "mp3", "aac", "nellymoser", "default_compatibility_rules", "egui"] }
 ruffle_render = { path = "../render", features = ["clap"] }
@@ -29,7 +29,7 @@ tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
 tracing-appender = "0.2.5"
 winit = "0.30.13"
-webbrowser = "1.1.0"
+webbrowser = "1.2.4"
 url = { workspace = true }
 dirs = "6.0"
 rfd = { workspace = true }
@@ -80,7 +80,7 @@ InternalName = "ruffle_desktop"
 OriginalFilename = "ruffle.exe"
 
 [features]
-default = ["software_video", "external_video", "lzma", "fontconfig"]
+default = ["software_video", "external_video", "lzma", "fontconfig", "freetype"]
 jpegxr = ["ruffle_core/jpegxr"]
 
 # core features
@@ -89,8 +89,11 @@ lzma = ["ruffle_core/lzma"]
 software_video = ["ruffle_video_software"]
 external_video = ["ruffle_video_external"]
 tracy = ["tracing-tracy", "ruffle_render_wgpu/profile-with-tracy"]
+tracy_images = ["tracy", "ruffle_render_wgpu/tracy_images"]
+tracy_avm = ["tracy", "ruffle_core/tracy_avm"]
 fontconfig = ["dep:fontconfig"]
 fontconfig-dlopen = ["fontconfig", "fontconfig/dlopen"]
+freetype = ["ruffle_frontend_utils/freetype"]
 
 # wgpu features
 render_debug_labels = ["ruffle_render_wgpu/render_debug_labels"]

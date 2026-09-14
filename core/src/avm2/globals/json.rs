@@ -9,7 +9,6 @@ use crate::avm2::globals::array::ArrayIter;
 use crate::avm2::object::{ArrayObject, FunctionObject, Object, ScriptObject, TObject};
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
-use crate::ecma_conversions::f64_to_wrapping_i32;
 use crate::string::{AvmString, Units};
 use ruffle_macros::istr;
 use serde::Serialize;
@@ -27,12 +26,8 @@ fn deserialize_json_inner<'gc>(
         JsonValue::String(s) => AvmString::new_utf8(activation.gc(), s).into(),
         JsonValue::Bool(b) => b.into(),
         JsonValue::Number(number) => {
-            let number = number.as_f64().unwrap();
-            if number.fract() == 0.0 {
-                f64_to_wrapping_i32(number).into()
-            } else {
-                number.into()
-            }
+            let value: Value<'gc> = number.as_f64().unwrap().into();
+            value.normalize()
         }
         JsonValue::Object(js_obj) => {
             let obj = ScriptObject::new_object(activation.context);
@@ -162,6 +157,14 @@ impl<'gc> AvmSerializer<'gc> {
         activation: &mut Activation<'_, 'gc>,
         obj: Object<'gc>,
     ) -> Result<JsonValue, Error<'gc>> {
+        fn skip_value<'gc>(value: Value<'gc>) -> bool {
+            match value {
+                Value::Undefined => true,
+                Value::Object(obj) => obj.as_function_object().is_some(),
+                _ => false,
+            }
+        }
+
         let mut js_obj = JsonObject::new();
         // If the user supplied a PropList, we use that to find properties on the object.
         if let Some(Replacer::PropList(props)) = self.replacer {
@@ -170,7 +173,7 @@ impl<'gc> AvmSerializer<'gc> {
                 let key = item.coerce_to_string(activation)?;
                 let value = Value::from(obj).get_public_property(key, activation)?;
                 let mapped = self.map_value(activation, || key, value)?;
-                if !matches!(mapped, Value::Undefined) {
+                if !skip_value(mapped) {
                     js_obj.insert(
                         key.to_utf8_lossy().into_owned(),
                         self.serialize_value(activation, mapped)?,
@@ -180,7 +183,7 @@ impl<'gc> AvmSerializer<'gc> {
         } else {
             for (name, val) in obj.public_vtable_properties(activation)? {
                 let mapped = self.map_value(activation, || name, val)?;
-                if !matches!(mapped, Value::Undefined) {
+                if !skip_value(mapped) {
                     js_obj.insert(
                         name.to_utf8_lossy().into_owned(),
                         self.serialize_value(activation, mapped)?,
@@ -194,7 +197,7 @@ impl<'gc> AvmSerializer<'gc> {
                         let name = name_val.coerce_to_string(activation)?;
                         let value = obj.get_enumerant_value(i, activation)?;
                         let mapped = self.map_value(activation, || name, value)?;
-                        if !matches!(mapped, Value::Undefined) {
+                        if !skip_value(mapped) {
                             js_obj.insert(
                                 name.to_utf8_lossy().into_owned(),
                                 self.serialize_value(activation, mapped)?,
@@ -242,7 +245,9 @@ impl<'gc> AvmSerializer<'gc> {
                     return Err(make_error_1129(activation));
                 }
                 self.obj_stack.push(obj);
-                let value = if obj.as_array_object().is_some() || obj.as_vector_object().is_some() {
+                let value = if obj.as_function_object().is_some() {
+                    JsonValue::Null
+                } else if obj.as_array_object().is_some() || obj.as_vector_object().is_some() {
                     self.serialize_iterable(activation, obj)?
                 } else {
                     self.serialize_object(activation, obj)?
@@ -267,11 +272,11 @@ impl<'gc> AvmSerializer<'gc> {
     }
 }
 
-/// Implements `JSON.parse`.
-pub fn parse<'gc>(
+/// Implements `JSON.parseCore`.
+pub fn parse_core<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let Some(input) = args.try_get_string(0) else {
         return Err(make_error_1132(activation));
@@ -292,7 +297,7 @@ pub fn parse<'gc>(
 pub fn stringify<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let val = args.get_value(0);
     let replacer = args.get_value(1).as_object();

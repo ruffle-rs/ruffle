@@ -746,22 +746,43 @@ macro_rules! error_message {
     };
 }
 
+/// Asserts, at compile time, that error code `CODE` is known and takes exactly
+/// `N` arguments. Fails to compile if either does not hold, e.g.:
+///
+/// ```ignore
+/// const { assert_error_message_arg_count::<1009, 0>() };
+/// const { assert_error_message_arg_count::<3756, 3>() };
+/// ```
+pub const fn assert_error_message_arg_count<const CODE: u32, const N: usize>() {
+    let message = raw_error_message(CODE);
+    assert!(message.is_some(), "unknown error code");
+
+    let message = message.unwrap();
+    assert!(
+        N == count_error_message_args(message),
+        "wrong number of args for error code"
+    );
+}
+
+/// Get error message for the given code and args. The code and number of
+/// arguments are verified at compile time, but the interpolation happens at
+/// runtime.
 pub fn error_message<const CODE: u32, const N: usize>(args: [&dyn Display; N]) -> String {
-    let raw_message = const {
-        let message = raw_error_message(CODE);
-        assert!(message.is_some(), "unknown error code");
-
-        let message = message.unwrap();
-
-        assert!(
-            N == count_error_message_args(message),
-            "wrong number of args for error code"
-        );
-
-        message
-    };
-
+    const { assert_error_message_arg_count::<CODE, N>() };
+    let raw_message = const { raw_error_message(CODE).unwrap() };
     format_error_message_internal(CODE, raw_message, &args).unwrap()
+}
+
+/// Like [`error_message`], but for when `code` is not known at compile time.
+///
+/// Unlike `error_message`, this does *not* validate at compile time that `code`
+/// is a known error code or that `args` has the right length for it.
+///
+/// Returns `None` when the error code is not found, and doesn't interpolate
+/// missing arguments.
+pub fn try_error_message(code: u32, args: &[&dyn Display]) -> Option<String> {
+    let raw_message = raw_error_message(code)?;
+    format_error_message_internal(code, raw_message, args)
 }
 
 fn format_error_message_internal(

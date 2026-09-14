@@ -1,0 +1,16 @@
+num_ticks = 8
+
+[image_comparisons.output]
+tolerance = 2
+trigger = 8
+
+[player_options]
+with_renderer = { optional = false, quality = "low" }
+with_video = true
+
+[[compilers]]
+type = "Asc"
+target = "test.swf"
+class = "Test"
+scripts = ["Test.as"]
+swf_version = 12

@@ -1,0 +1,23 @@
+Caught error: TypeError: Error #2007: Parameter axis must be non-null.
+	at flash.geom::Matrix3D/appendRotation()
+	at Function/<anonymous>()
+	at Test/testException()
+	at Test/testExceptions()
+	at Test()
+appendRotation 0 degrees, x axis: 1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1
+appendRotation 0 degrees, y axis: 1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1
+appendRotation 0 degrees, z axis: 1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1
+appendRotation 0 degrees, non-unit axis: 1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1
+appendRotation 0 degrees, NaN axis: NaN,NaN,NaN,0,NaN,NaN,NaN,0,NaN,NaN,NaN,0,NaN,NaN,NaN,1
+appendRotation 0 degrees, infinite axis: NaN,NaN,NaN,0,NaN,NaN,NaN,0,NaN,NaN,NaN,0,NaN,NaN,NaN,1
+appendRotation -0 degrees, x axis: 1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1
+appendRotation zero axis, 0 degrees: 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1
+appendRotation zero axis, 180 degrees: 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1
+appendRotation NaN degrees, unit axis: NaN,NaN,NaN,0,NaN,NaN,NaN,0,NaN,NaN,NaN,0,NaN,NaN,NaN,1
+appendRotation NaN degrees, zero axis: NaN,NaN,NaN,0,NaN,NaN,NaN,0,NaN,NaN,NaN,0,NaN,NaN,NaN,1
+appendRotation infinite degrees, unit axis: NaN,NaN,NaN,0,NaN,NaN,NaN,0,NaN,NaN,NaN,0,NaN,NaN,NaN,1
+appendRotation infinite degrees, zero axis: NaN,NaN,NaN,0,NaN,NaN,NaN,0,NaN,NaN,NaN,0,NaN,NaN,NaN,1
+appendRotation 0 degrees, pivot set: 1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1
+appendRotation 0 degrees, pivot explicitly null: 1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1
+appendRotation zero axis, NaN pivot: NaN,NaN,NaN,0,NaN,NaN,NaN,0,NaN,NaN,NaN,0,NaN,NaN,NaN,1
+integration, 0 degrees: 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16

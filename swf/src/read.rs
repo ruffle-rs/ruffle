@@ -6,7 +6,6 @@ use crate::{
     types::*,
 };
 use bitstream_io::BitRead;
-use byteorder::{LittleEndian, ReadBytesExt};
 use simple_asn1::ASN1Block;
 use std::borrow::Cow;
 use std::io::{self, Read};
@@ -73,8 +72,12 @@ pub fn extract_swz(input: &[u8]) -> Result<Vec<u8>> {
 pub fn decompress_swf<'a, R: Read + 'a>(mut input: R) -> Result<SwfBuf> {
     // Read SWF header.
     let compression = read_compression_type(&mut input)?;
-    let version = input.read_u8()?;
-    let uncompressed_len = input.read_u32::<LittleEndian>()?;
+
+    let mut raw_header = [0u8; 5];
+    input.read_exact(&mut raw_header)?;
+
+    let version = raw_header[0];
+    let uncompressed_len = u32::from_le_bytes(*raw_header.split_last_chunk::<4>().unwrap().1);
 
     // Check whether the SWF version is 0.
     // Note that the behavior should actually vary, depending on the player version:
@@ -220,7 +223,7 @@ fn make_lzma_reader<'a, R: Read + 'a>(
     // To deal with the mangled header, use lzma_rs options to manually provide uncompressed length.
 
     // Read compressed length (ignored)
-    let _ = input.read_u32::<LittleEndian>()?;
+    input.read_exact(&mut [0; 4])?;
 
     // TODO: Switch to lzma-rs streaming API when stable.
     let mut output = Vec::with_capacity(unpacked_size.min(MAX_DATA_CAPACITY) as usize);
@@ -228,12 +231,14 @@ fn make_lzma_reader<'a, R: Read + 'a>(
         &mut io::BufReader::new(input),
         &mut output,
         &Options {
-            unpacked_size: UnpackedSize::UseProvided(Some(unpacked_size.into())),
+            // [KJ] Note: according to my tests Flash doesn't work without
+            // the end-of-payload marker, so we don't have to worry about it.
+            unpacked_size: UnpackedSize::UseProvided(None),
             allow_incomplete: true,
             memlimit: None,
         },
     )
-    .map_err(|_| Error::invalid_data("Unable to decompress LZMA SWF."))?;
+    .map_err(|e| Error::invalid_data(format!("Unable to decompress LZMA SWF: {e}")))?;
 
     Ok(Box::new(io::Cursor::new(output)))
 }
@@ -397,11 +402,13 @@ impl<'a> Reader<'a> {
     pub fn read_tag(&mut self) -> Result<Tag<'a>> {
         let (tag_code, length) = self.read_tag_code_and_length()?;
 
-        if let Some(tag_code) = TagCode::from_u16(tag_code) {
-            self.read_tag_with_code(tag_code, length)
+        if let Some(code) = TagCode::from_u16(tag_code) {
+            self.read_tag_with_code(code, length)
         } else {
-            self.read_slice(length)
-                .map(|data| Tag::Unknown { tag_code, data })
+            match self.read_slice(length) {
+                Ok(data) => Ok(Tag::Unknown { tag_code, data }),
+                Err(e) => Err(Error::from(e)),
+            }
         }
         .map_err(|e| Error::swf_parse_error(tag_code, e))
     }
@@ -1021,7 +1028,7 @@ impl<'a> Reader<'a> {
             let offsets_ref = self.get_ref();
 
             // OffsetTable
-            let offsets: Result<Vec<_>> = (0..num_glyphs)
+            let offsets = (0..num_glyphs)
                 .map(|_| {
                     if flags.contains(FontFlag::HAS_WIDE_OFFSETS) {
                         self.read_u32()
@@ -1029,8 +1036,7 @@ impl<'a> Reader<'a> {
                         self.read_u16().map(u32::from)
                     }
                 })
-                .collect();
-            let offsets = offsets?;
+                .collect::<Result<Vec<_>, _>>()?;
 
             // CodeTableOffset
             let code_table_offset = if flags.contains(FontFlag::HAS_WIDE_OFFSETS) {
@@ -1182,7 +1188,7 @@ impl<'a> Reader<'a> {
         Ok(zone)
     }
 
-    fn read_define_font_info(&mut self, version: u8) -> Result<FontInfo<'a>> {
+    pub fn read_define_font_info(&mut self, version: u8) -> Result<FontInfo<'a>> {
         let id = self.read_u16()?;
         let name = self.read_str_with_len()?;
         let flags = FontInfoFlag::from_bits_truncate(self.read_u8()?);
@@ -2517,7 +2523,11 @@ impl<'a> Reader<'a> {
             3 => BitmapFormat::ColorMap8 {
                 num_colors: self.read_u8()?,
             },
-            4 if version == 1 => BitmapFormat::Rgb15,
+            // Despite the SWF19 specs stating otherwise, the Rgb15
+            // format does display correctly in Flash Player
+            // when it is inside of DefineBitsLossless2.
+            // (see https://github.com/ruffle-rs/ruffle/issues/24431)
+            4 => BitmapFormat::Rgb15,
             5 => BitmapFormat::Rgb32,
             _ => return Err(Error::invalid_data("Invalid bitmap format.")),
         };
@@ -2674,7 +2684,12 @@ pub mod tests {
                 Compression::Lzma
             );
             assert!(try_read_from_file("tests/swfs/lzma-malformed-length.swf").is_err());
-            assert!(try_read_from_file("tests/swfs/lzma-length-too-large.swf").is_err());
+            assert_eq!(
+                read_from_file("tests/swfs/lzma-length-too-large.swf")
+                    .header
+                    .compression(),
+                Compression::Lzma
+            );
         }
     }
 

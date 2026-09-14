@@ -104,9 +104,10 @@ pub fn enum_trait_object(args: TokenStream, item: TokenStream) -> TokenStream {
         fn adjust_method(&self, method: &mut syn::TraitItemFn) {
             let Self { mod_name, lt, .. } = self;
             let generics = &mut method.sig.generics;
-            generics
-                .params
-                .insert(0, syn::LifetimeParam::new(lt.clone()).into());
+            generics.params.insert(
+                0,
+                syn::GenericParam::Lifetime(syn::LifetimeParam::new(lt.clone())),
+            );
             generics
                 .make_where_clause()
                 .predicates
@@ -154,15 +155,10 @@ pub fn enum_trait_object(args: TokenStream, item: TokenStream) -> TokenStream {
                         .adjust_method(method);
 
                     let method_name = &method.sig.ident;
-                    let deref = if let Some(syn::Receiver {
-                        colon_token: None,
-                        reference,
-                        ..
-                    }) = method.sig.receiver()
-                    {
-                        reference.is_some().then(|| quote!(*))
-                    } else {
-                        panic!("#[no_dynamic] method `{method_name}` must take `self`, `&self`, or `&mut self`")
+                    let deref = match method.sig.receiver().map(|r| &r.kind) {
+                        Some(syn::ReceiverKind::Value) => None,
+                        Some(syn::ReceiverKind::Reference(..)) => Some(quote!(*)),
+                        _ => panic!("#[no_dynamic] method `{method_name}` must take `self`, `&self`, or `&mut self`"),
                     };
 
                     // Moves the provided default body to the enum's generated trait impl,
@@ -197,7 +193,7 @@ pub fn enum_trait_object(args: TokenStream, item: TokenStream) -> TokenStream {
                 ImplItem::Fn(ImplItemFn {
                     attrs: method.attrs.clone(),
                     vis: Visibility::Inherited,
-                    defaultness: None,
+                    modifiers: syn::FnModifiers::default(),
                     sig: method.sig.clone(),
                     block: method_block,
                 })

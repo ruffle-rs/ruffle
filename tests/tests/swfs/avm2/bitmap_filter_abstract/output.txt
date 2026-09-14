@@ -1,0 +1,6 @@
+Caught: ArgumentError: Error #2012: BitmapFilter$ class cannot be instantiated.
+	at Test()
+Caught: ArgumentError: Error #2012: CustomFilter$ class cannot be instantiated.
+	at Test()
+Constructed
+CustomConvolutionFilter set

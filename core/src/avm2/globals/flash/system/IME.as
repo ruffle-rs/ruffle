@@ -9,7 +9,6 @@ package flash.system {
     public final class IME extends EventDispatcher {
         private static var _conversionMode:String = "ALPHANUMERIC_HALF";
         private static var _enabled:Boolean;
-        private static var _isSupported:Boolean;
 
         public static function compositionAbandoned():void {
             stub_method("flash.system.IME", "compositionAbandoned");
@@ -27,8 +26,8 @@ package flash.system {
             stub_method("flash.system.IME", "setCompositionString");
         }
 
-        public function get isSupported():Boolean {
-            return _isSupported;
+        public static function get isSupported():Boolean {
+            return false;
         }
 
         public static function get enabled():Boolean {

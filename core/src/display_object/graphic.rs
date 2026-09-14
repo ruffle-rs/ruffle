@@ -56,7 +56,8 @@ impl<'gc> Graphic<'gc> {
         let library = context.library.library_for_movie(movie.clone()).unwrap();
         let shared = GraphicShared {
             id: swf_shape.id,
-            bounds: swf_shape.shape_bounds,
+            shape_bounds: swf_shape.shape_bounds,
+            edge_bounds: swf_shape.edge_bounds,
             render_handle: Some(
                 context
                     .renderer
@@ -83,7 +84,8 @@ impl<'gc> Graphic<'gc> {
     pub fn empty(context: &mut UpdateContext<'gc>) -> Self {
         let shared = GraphicShared {
             id: 0,
-            bounds: Default::default(),
+            shape_bounds: Default::default(),
+            edge_bounds: Default::default(),
             render_handle: None,
             shape: swf::Shape {
                 version: 32,
@@ -111,6 +113,10 @@ impl<'gc> Graphic<'gc> {
                 drawing: OnceCell::new(),
             },
         ))
+    }
+
+    pub fn instantiate(self, mc: &Mutation<'gc>) -> Self {
+        Self(Gc::new(mc, (*self.0).clone()))
     }
 
     pub fn drawing_mut(&self) -> RefMut<'_, Drawing> {
@@ -176,19 +182,19 @@ impl<'gc> TDisplayObject<'gc> for Graphic<'gc> {
         HasPrefixField::as_prefix_gc(self.0)
     }
 
-    fn instantiate(self, gc_context: &Mutation<'gc>) -> DisplayObject<'gc> {
-        Self(Gc::new(gc_context, self.0.as_ref().clone())).into()
-    }
-
     fn id(self) -> CharacterId {
         self.0.shared.get().id
     }
 
-    fn self_bounds(self, _mode: BoundsMode) -> Rectangle<Twips> {
+    fn self_bounds(self, mode: BoundsMode) -> Rectangle<Twips> {
+        let include_strokes = mode.includes_strokes();
+
         if let Some(drawing) = self.0.drawing.get() {
-            drawing.borrow().self_bounds()
+            drawing.borrow().self_bounds(include_strokes)
+        } else if include_strokes {
+            self.0.shared.get().shape_bounds
         } else {
-            self.0.shared.get().bounds
+            self.0.shared.get().edge_bounds
         }
     }
 
@@ -333,7 +339,8 @@ struct GraphicShared {
     id: CharacterId,
     shape: swf::Shape,
     render_handle: Option<ShapeHandle>,
-    bounds: Rectangle<Twips>,
+    shape_bounds: Rectangle<Twips>,
+    edge_bounds: Rectangle<Twips>,
     movie: Arc<SwfMovie>,
     #[collect(require_static)]
     scaled_handle: RefCell<TessellationCache>,

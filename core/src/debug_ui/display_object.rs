@@ -1,21 +1,26 @@
+mod preview;
 mod search;
 
+use preview::RenderedPreview;
 use ruffle_render::blend::ExtendedBlendMode;
+use ruffle_render::quality::StageQuality;
 pub use search::DisplayObjectSearchWindow;
 
 use crate::avm2::object::TObject as _;
 use crate::bitmap::bitmap_data::DirtyState;
 use crate::context::UpdateContext;
 use crate::debug_ui::Message;
-use crate::debug_ui::handle::{AVM1ObjectHandle, AVM2ObjectHandle, DisplayObjectHandle};
+use crate::debug_ui::handle::{
+    AVM1ObjectHandle, AVM2ObjectHandle, DisplayObjectHandle, FontHandle,
+};
 use crate::debug_ui::movie::open_movie_button;
 use crate::display_object::{
-    AutoSizeMode, Avm2Button, Bitmap, BoundsMode, ButtonState, DisplayObject, EditText,
-    InteractiveObject, LayoutDebugBoxesFlag, MovieClip, RenderMask, Stage, TDisplayObject,
-    TDisplayObjectContainer, TInteractiveObject,
+    AutoSizeMode, Avm2Button, Bitmap, BoundsMode, ButtonState, DisplayObject, EditText, GotoInfo,
+    InteractiveObject, LayoutDebugBoxesFlag, MovieClip, RenderMask, Stage, StopOrPlay,
+    TDisplayObject, TDisplayObjectContainer, TInteractiveObject,
 };
 use crate::focus_tracker::Highlight;
-use crate::font::{FontDescriptor, FontLike};
+use crate::font::{Font, FontDescriptor, FontLike};
 use crate::html::{LayoutBox, LayoutContent, LayoutLine, TextFormat};
 use egui::collapsing_header::CollapsingState;
 use egui::{
@@ -60,6 +65,17 @@ const ALL_BLEND_MODES: [ExtendedBlendMode; 15] = [
     ExtendedBlendMode::Shader,
 ];
 
+const ALL_STAGE_QUALITIES: [StageQuality; 8] = [
+    StageQuality::Low,
+    StageQuality::Medium,
+    StageQuality::High,
+    StageQuality::Best,
+    StageQuality::High8x8,
+    StageQuality::High8x8Linear,
+    StageQuality::High16x16,
+    StageQuality::High16x16Linear,
+];
+
 #[derive(Debug, Eq, PartialEq, Hash, Default, Copy, Clone)]
 pub enum Panel {
     #[default]
@@ -68,6 +84,7 @@ pub enum Panel {
     Children,
     Interactive,
     TypeSpecific,
+    Preview,
 }
 
 #[derive(Debug)]
@@ -84,6 +101,20 @@ pub struct DisplayObjectWindow {
 
     /// A buffer for editing EditText
     html_text: String,
+
+    /// A rendered preview of the display object, if one has been requested.
+    preview: Option<RenderedPreview>,
+
+    /// The scale factor to render the next preview at.
+    preview_scale: f32,
+
+    /// The quality to render the next preview at, or `None` to use the
+    /// stage's current quality.
+    preview_quality: Option<StageQuality>,
+
+    /// The largest width or height, in pixels, that the next preview's
+    /// texture may have, regardless of `preview_scale`.
+    preview_max_dimension: u32,
 }
 
 impl Default for DisplayObjectWindow {
@@ -103,6 +134,10 @@ impl Default for DisplayObjectWindow {
             track_current_frame: false,
             scroll_to_frame: None,
             html_text: Default::default(),
+            preview: None,
+            preview_scale: 1.0,
+            preview_quality: None,
+            preview_max_dimension: 4 * 1024,
         }
     }
 }
@@ -176,6 +211,7 @@ impl DisplayObjectWindow {
                             format!("Children ({})", ctr.num_children()),
                         );
                     }
+                    ui.selectable_value(&mut self.open_panel, Panel::Preview, "Preview");
                 });
                 ui.separator();
 
@@ -201,6 +237,7 @@ impl DisplayObjectWindow {
                             self.show_interactive(ui, context, int)
                         }
                     }
+                    Panel::Preview => self.show_preview(ui, context, object, messages),
                 }
             });
         keep_open
@@ -474,7 +511,7 @@ impl DisplayObjectWindow {
                     ui.weak(format!("(max {max})"));
 
                     if scroll != object.scroll() {
-                        object.set_scroll(scroll as f64);
+                        object.set_scroll(scroll as f64, true, context);
                     }
                 });
                 ui.end_row();
@@ -664,7 +701,7 @@ impl DisplayObjectWindow {
                     });
 
                 for line in layout.lines() {
-                    self.show_edit_text_layout_line(ui, &text, line);
+                    self.show_edit_text_layout_line(ui, context, &text, line, messages);
                 }
             });
 
@@ -692,8 +729,10 @@ impl DisplayObjectWindow {
     fn show_edit_text_layout_line<'gc>(
         &mut self,
         ui: &mut Ui,
+        context: &mut UpdateContext<'gc>,
         text: &WStr,
         line: &LayoutLine<'gc>,
+        messages: &mut Vec<Message>,
     ) {
         let line_index = line.index();
         let line_text = serde_json::to_string(
@@ -733,10 +772,10 @@ impl DisplayObjectWindow {
                         ui.end_row();
                     });
 
-                self.show_edit_text_layout_characters(ui, text, line);
+                self.show_edit_text_layout_characters(ui, context, text, line, messages);
 
                 for (index, lbox) in line.boxes_iter().enumerate() {
-                    self.show_edit_text_layout_box(ui, text, index, lbox);
+                    self.show_edit_text_layout_box(ui, context, text, index, lbox, messages);
                 }
             });
     }
@@ -744,8 +783,10 @@ impl DisplayObjectWindow {
     fn show_edit_text_layout_characters<'gc>(
         &mut self,
         ui: &mut Ui,
+        context: &mut UpdateContext<'gc>,
         text: &WStr,
         line: &LayoutLine<'gc>,
+        messages: &mut Vec<Message>,
     ) {
         CollapsingHeader::new("Characters")
             .id_salt(ui.id().with("chars"))
@@ -762,8 +803,7 @@ impl DisplayObjectWindow {
                         ui.end_row();
 
                         for lbox in line.boxes_iter() {
-                            if let Some((text, format, font_set, _, _)) =
-                                lbox.as_renderable_text(text)
+                            if let Some((text, format, font_set, _)) = lbox.as_renderable_text(text)
                             {
                                 for i in 0..text.len() {
                                     let code = text.at(i);
@@ -775,9 +815,7 @@ impl DisplayObjectWindow {
                                     );
                                     ui.label(format!("{ch}"));
                                     if let Some(resolution) = font_set.resolve_glyph(ch) {
-                                        ui.label(format_font_descriptor(
-                                            resolution.font.descriptor(),
-                                        ));
+                                        show_font(ui, context, messages, resolution.font);
                                     } else {
                                         ui.weak("None");
                                     }
@@ -795,9 +833,11 @@ impl DisplayObjectWindow {
     fn show_edit_text_layout_box<'gc>(
         &mut self,
         ui: &mut Ui,
+        context: &mut UpdateContext<'gc>,
         text: &WStr,
         index: usize,
         lbox: &LayoutBox<'gc>,
+        messages: &mut Vec<Message>,
     ) {
         let box_type = match lbox.content() {
             LayoutContent::Text { .. } => "Text box",
@@ -830,14 +870,14 @@ impl DisplayObjectWindow {
                         ui.label(format!("{}–{}", lbox.start(), lbox.end()));
                         ui.end_row();
 
-                        if let Some((_, _, font_set, _, _)) = lbox.as_renderable_text(text) {
+                        if let Some((_, _, font_set, _)) = lbox.as_renderable_text(text) {
                             ui.label("Main Font");
-                            ui.label(format_font_descriptor(font_set.main_font().descriptor()));
+                            show_font(ui, context, messages, font_set.main_font());
                             ui.end_row();
 
                             for (i, fallback_font) in font_set.fallback_fonts().iter().enumerate() {
                                 ui.label(format!("Fallback Font {i}"));
-                                ui.label(format_font_descriptor(fallback_font.descriptor()));
+                                show_font(ui, context, messages, *fallback_font);
                                 ui.end_row();
                             }
 
@@ -1165,10 +1205,20 @@ impl DisplayObjectWindow {
                             if object.current_frame() != frame {
                                 ui.horizontal(|ui| {
                                     if ui.button("Stop").clicked() {
-                                        object.goto_frame(context, frame, true);
+                                        let goto_info = GotoInfo {
+                                            frame,
+                                            stop_or_play: StopOrPlay::Stop,
+                                        };
+
+                                        object.goto_frame(context, goto_info);
                                     }
                                     if ui.button("Play").clicked() {
-                                        object.goto_frame(context, frame, false);
+                                        let goto_info = GotoInfo {
+                                            frame,
+                                            stop_or_play: StopOrPlay::Play,
+                                        };
+
+                                        object.goto_frame(context, goto_info);
                                     }
                                 });
                             } else {
@@ -1469,6 +1519,105 @@ impl DisplayObjectWindow {
                         ui.label(format!("{filter:?}"));
                     }
                 });
+        }
+    }
+
+    fn show_preview<'gc>(
+        &mut self,
+        ui: &mut Ui,
+        context: &mut UpdateContext<'gc>,
+        object: DisplayObject<'gc>,
+        messages: &mut Vec<Message>,
+    ) {
+        Grid::new(ui.id().with("preview-settings"))
+            .num_columns(2)
+            .show(ui, |ui| {
+                ui.label("Scale");
+                ui.add(
+                    DragValue::new(&mut self.preview_scale)
+                        .speed(0.01)
+                        .range(0.01..=8.0)
+                        .suffix("x"),
+                );
+                ui.end_row();
+
+                ui.label("Quality");
+                ComboBox::from_id_salt(ui.id().with("preview-quality"))
+                    .selected_text(match self.preview_quality {
+                        Some(quality) => quality.to_string(),
+                        None => "Stage Quality".to_string(),
+                    })
+                    .show_ui(ui, |ui| {
+                        ui.selectable_value(&mut self.preview_quality, None, "Stage");
+                        for quality in ALL_STAGE_QUALITIES {
+                            ui.selectable_value(
+                                &mut self.preview_quality,
+                                Some(quality),
+                                quality.to_string(),
+                            );
+                        }
+                    });
+                ui.end_row();
+
+                ui.label("Max Size");
+                ui.add(
+                    DragValue::new(&mut self.preview_max_dimension)
+                        .speed(16)
+                        .range(1..=16384)
+                        .suffix("px"),
+                );
+                ui.end_row();
+            });
+
+        match RenderedPreview::size_and_scale_for(
+            object,
+            self.preview_scale,
+            self.preview_max_dimension,
+        ) {
+            Some((width, height, _)) => {
+                ui.label(format!("Resulting size: {width} x {height} px"));
+            }
+            None => {
+                ui.weak("Resulting size: (object has no bounds)");
+            }
+        }
+
+        let mut clear = false;
+        ui.horizontal(|ui| {
+            if ui.button("Render").clicked() {
+                let quality = self
+                    .preview_quality
+                    .unwrap_or_else(|| context.stage.quality());
+                self.preview = RenderedPreview::render(
+                    context,
+                    object,
+                    ui.ctx(),
+                    self.preview_scale,
+                    quality,
+                    self.preview_max_dimension,
+                );
+            }
+            if let Some(preview) = &self.preview {
+                if ui.button("Save as PNG...").clicked() {
+                    preview.save_as_png(object, messages);
+                }
+                if ui.button("Clear").clicked() {
+                    clear = true;
+                }
+            }
+        });
+        if clear {
+            self.preview = None;
+        }
+
+        match &self.preview {
+            Some(preview) => {
+                let texture = preview.texture();
+                ui.image((texture.id(), texture.size_vec2()));
+            }
+            None => {
+                ui.weak("(not rendered - click \"Render\" to capture a snapshot)");
+            }
         }
     }
 
@@ -1856,6 +2005,20 @@ pub fn open_display_object_button<'gc>(
         messages.push(Message::TrackDisplayObject(DisplayObjectHandle::new(
             context, object,
         )));
+    }
+}
+
+fn show_font<'gc>(
+    ui: &mut Ui,
+    context: &mut UpdateContext<'gc>,
+    messages: &mut Vec<Message>,
+    font: Font<'gc>,
+) {
+    if ui
+        .button(format_font_descriptor(font.descriptor()))
+        .clicked()
+    {
+        messages.push(Message::TrackFont(FontHandle::new(context, font)));
     }
 }
 

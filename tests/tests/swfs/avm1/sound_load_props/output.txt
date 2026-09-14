@@ -1,0 +1,112 @@
+// s_mc.getVolume()
+undefined
+// s_mc.getPan()
+undefined
+// s_mc.getTransform()
+undefined
+
+// s_mc.getVolume()
+50
+// s_mc.getPan()
+90
+// s_mc.getTransform()
+[object Object]
+  rl: 40
+  rr: 30
+  lr: 20
+  ll: 10
+
+// s_mc.loadSound()
+
+// s_mc.getVolume()
+50
+// s_mc.getPan()
+90
+// s_mc.getTransform()
+[object Object]
+  rl: 40
+  rr: 30
+  lr: 20
+  ll: 10
+
+// s_mc.loadSound("")
+
+// s_mc.getVolume()
+200
+// s_mc.getPan()
+50
+// s_mc.getTransform()
+[object Object]
+  rl: 0
+  rr: 100
+  lr: 0
+  ll: 50
+
+// s_mc.loadSound("invalid.mp3")
+
+// s_mc.getVolume()
+100
+// s_mc.getPan()
+0
+// s_mc.getTransform()
+[object Object]
+  rl: 0
+  rr: 100
+  lr: 0
+  ll: 100
+
+// s_mc.getVolume()
+1
+// s_mc.getPan()
+97
+// s_mc.getTransform()
+[object Object]
+  rl: 6
+  rr: 5
+  lr: 4
+  ll: 3
+
+// s_mc2.getVolume()
+50
+// s_mc2.getPan()
+90
+// s_mc2.getTransform()
+[object Object]
+  rl: 40
+  rr: 30
+  lr: 20
+  ll: 10
+
+// s_glob.getVolume()
+100
+// s_glob.getPan()
+0
+// s_glob.getTransform()
+[object Object]
+  rl: 0
+  rr: 100
+  lr: 0
+  ll: 100
+
+// s_mc2.getVolume()
+10
+// s_mc2.getPan()
+87
+// s_mc2.getTransform()
+[object Object]
+  rl: 16
+  rr: 15
+  lr: 14
+  ll: 13
+
+// s_mc.getVolume()
+1
+// s_mc.getPan()
+97
+// s_mc.getTransform()
+[object Object]
+  rl: 6
+  rr: 5
+  lr: 4
+  ll: 3
+

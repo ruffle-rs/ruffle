@@ -1,14 +1,16 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::error::{Error, make_error_2008};
+use crate::avm2::function::FunctionArgs;
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
 use crate::display_object::TDisplayObject;
 use crate::fte::TextLineValidity;
+use ruffle_macros::istr;
 
 pub fn get_text_width<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
     let display_object = this.as_display_object().unwrap();
@@ -21,9 +23,9 @@ pub fn get_text_width<'gc>(
 }
 
 pub fn get_validity<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
     let display_object = this.as_display_object().unwrap();
@@ -31,13 +33,21 @@ pub fn get_validity<'gc>(
         return Ok(Value::Undefined);
     };
 
-    Ok(text_line.validity().into())
+    let validity = match text_line.validity() {
+        TextLineValidity::Valid => istr!("valid"),
+        TextLineValidity::Invalid => istr!("invalid"),
+        TextLineValidity::Static => istr!("static"),
+        TextLineValidity::PossiblyInvalid => istr!("possiblyInvalid"),
+        TextLineValidity::UserInvalid(string) => string,
+    };
+
+    Ok(validity.into())
 }
 
 pub fn set_validity<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
     let display_object = this.as_display_object().unwrap();
@@ -47,8 +57,8 @@ pub fn set_validity<'gc>(
 
     let value = args.get_string_non_null(activation, 0, "validity")?;
 
-    let previous_value = TextLineValidity::parse(text_line.validity().as_wstr());
-    let new_value = TextLineValidity::parse(value.as_wstr());
+    let previous_value = text_line.validity();
+    let new_value = TextLineValidity::parse(value);
 
     let transition_allowed = match (previous_value, new_value) {
         (a, b) if a == b => true,
@@ -63,14 +73,14 @@ pub fn set_validity<'gc>(
         return Err(make_error_2008(activation, "validity"));
     }
 
-    text_line.set_validity(value, activation.context);
+    text_line.set_validity(new_value, activation.gc());
     Ok(Value::Undefined)
 }
 
 pub fn get_text_block<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this
         .as_object()
@@ -80,33 +90,15 @@ pub fn get_text_block<'gc>(
         .as_text_line()
         .unwrap();
 
-    Ok(this.text_block().map(Value::from).unwrap_or(Value::Null))
-}
+    let block = this.text_block_from_script();
 
-pub fn set_text_block<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    this: Value<'gc>,
-    args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    let this = this
-        .as_object()
-        .unwrap()
-        .as_display_object()
-        .unwrap()
-        .as_text_line()
-        .unwrap();
-
-    let text_block = args
-        .try_get_object(0)
-        .and_then(|o| o.as_text_block_object());
-    this.set_text_block(text_block, activation.gc());
-    Ok(Value::Undefined)
+    Ok(block.map(Value::from).unwrap_or(Value::Null))
 }
 
 pub fn get_specified_width<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this
         .as_object()
@@ -122,7 +114,7 @@ pub fn get_specified_width<'gc>(
 pub fn get_raw_text_length<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this
         .as_object()
@@ -138,7 +130,7 @@ pub fn get_raw_text_length<'gc>(
 pub fn get_text_block_begin_index<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this
         .as_object()
@@ -154,7 +146,7 @@ pub fn get_text_block_begin_index<'gc>(
 pub fn get_previous_line<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this
         .as_object()
@@ -174,7 +166,7 @@ pub fn get_previous_line<'gc>(
 pub fn get_next_line<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this
         .as_object()
@@ -194,7 +186,7 @@ pub fn get_next_line<'gc>(
 pub fn get_text_height<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
     let display_object = this.as_display_object().unwrap();

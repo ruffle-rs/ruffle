@@ -1,0 +1,180 @@
+NaN (toPrecision,   undefined) -> RangeError: Error #1002: Number.toPrecision has a range of 1 to 21. Number.toFixed and Number.toExponential have a range of 0 to 20. Specified value is not within expected range.
+NaN (toFixed,       undefined) -> NaN
+NaN (toExponential, undefined) -> NaN
+NaN (toPrecision,   null) -> RangeError: Error #1002: Number.toPrecision has a range of 1 to 21. Number.toFixed and Number.toExponential have a range of 0 to 20. Specified value is not within expected range.
+NaN (toFixed,       null) -> NaN
+NaN (toExponential, null) -> NaN
+NaN (toPrecision,   0) -> RangeError: Error #1002: Number.toPrecision has a range of 1 to 21. Number.toFixed and Number.toExponential have a range of 0 to 20. Specified value is not within expected range.
+NaN (toFixed,       0) -> NaN
+NaN (toExponential, 0) -> NaN
+NaN (toPrecision,   1) -> NaN
+NaN (toFixed,       1) -> NaN
+NaN (toExponential, 1) -> NaN
+NaN (toPrecision,   2) -> NaN
+NaN (toFixed,       2) -> NaN
+NaN (toExponential, 2) -> NaN
+NaN (toPrecision,   3) -> NaN
+NaN (toFixed,       3) -> NaN
+NaN (toExponential, 3) -> NaN
+NaN (toPrecision,   19) -> NaN
+NaN (toFixed,       19) -> NaN
+NaN (toExponential, 19) -> NaN
+NaN (toPrecision,   20) -> NaN
+NaN (toFixed,       20) -> NaN
+NaN (toExponential, 20) -> NaN
+NaN (toPrecision,   21) -> NaN
+NaN (toFixed,       21) -> RangeError: Error #1002: Number.toPrecision has a range of 1 to 21. Number.toFixed and Number.toExponential have a range of 0 to 20. Specified value is not within expected range.
+NaN (toExponential, 21) -> RangeError: Error #1002: Number.toPrecision has a range of 1 to 21. Number.toFixed and Number.toExponential have a range of 0 to 20. Specified value is not within expected range.
+NaN (toPrecision,   22) -> RangeError: Error #1002: Number.toPrecision has a range of 1 to 21. Number.toFixed and Number.toExponential have a range of 0 to 20. Specified value is not within expected range.
+NaN (toFixed,       22) -> RangeError: Error #1002: Number.toPrecision has a range of 1 to 21. Number.toFixed and Number.toExponential have a range of 0 to 20. Specified value is not within expected range.
+NaN (toExponential, 22) -> RangeError: Error #1002: Number.toPrecision has a range of 1 to 21. Number.toFixed and Number.toExponential have a range of 0 to 20. Specified value is not within expected range.
+Infinity (toPrecision,   undefined) -> RangeError: Error #1002: Number.toPrecision has a range of 1 to 21. Number.toFixed and Number.toExponential have a range of 0 to 20. Specified value is not within expected range.
+Infinity (toFixed,       undefined) -> Infinity
+Infinity (toExponential, undefined) -> Infinity
+Infinity (toPrecision,   null) -> RangeError: Error #1002: Number.toPrecision has a range of 1 to 21. Number.toFixed and Number.toExponential have a range of 0 to 20. Specified value is not within expected range.
+Infinity (toFixed,       null) -> Infinity
+Infinity (toExponential, null) -> Infinity
+Infinity (toPrecision,   0) -> RangeError: Error #1002: Number.toPrecision has a range of 1 to 21. Number.toFixed and Number.toExponential have a range of 0 to 20. Specified value is not within expected range.
+Infinity (toFixed,       0) -> Infinity
+Infinity (toExponential, 0) -> Infinity
+Infinity (toPrecision,   1) -> Infinity
+Infinity (toFixed,       1) -> Infinity
+Infinity (toExponential, 1) -> Infinity
+Infinity (toPrecision,   2) -> Infinity
+Infinity (toFixed,       2) -> Infinity
+Infinity (toExponential, 2) -> Infinity
+Infinity (toPrecision,   3) -> Infinity
+Infinity (toFixed,       3) -> Infinity
+Infinity (toExponential, 3) -> Infinity
+Infinity (toPrecision,   19) -> Infinity
+Infinity (toFixed,       19) -> Infinity
+Infinity (toExponential, 19) -> Infinity
+Infinity (toPrecision,   20) -> Infinity
+Infinity (toFixed,       20) -> Infinity
+Infinity (toExponential, 20) -> Infinity
+Infinity (toPrecision,   21) -> Infinity
+Infinity (toFixed,       21) -> RangeError: Error #1002: Number.toPrecision has a range of 1 to 21. Number.toFixed and Number.toExponential have a range of 0 to 20. Specified value is not within expected range.
+Infinity (toExponential, 21) -> RangeError: Error #1002: Number.toPrecision has a range of 1 to 21. Number.toFixed and Number.toExponential have a range of 0 to 20. Specified value is not within expected range.
+Infinity (toPrecision,   22) -> RangeError: Error #1002: Number.toPrecision has a range of 1 to 21. Number.toFixed and Number.toExponential have a range of 0 to 20. Specified value is not within expected range.
+Infinity (toFixed,       22) -> RangeError: Error #1002: Number.toPrecision has a range of 1 to 21. Number.toFixed and Number.toExponential have a range of 0 to 20. Specified value is not within expected range.
+Infinity (toExponential, 22) -> RangeError: Error #1002: Number.toPrecision has a range of 1 to 21. Number.toFixed and Number.toExponential have a range of 0 to 20. Specified value is not within expected range.
+-Infinity (toPrecision,   undefined) -> RangeError: Error #1002: Number.toPrecision has a range of 1 to 21. Number.toFixed and Number.toExponential have a range of 0 to 20. Specified value is not within expected range.
+-Infinity (toFixed,       undefined) -> -Infinity
+-Infinity (toExponential, undefined) -> -Infinity
+-Infinity (toPrecision,   null) -> RangeError: Error #1002: Number.toPrecision has a range of 1 to 21. Number.toFixed and Number.toExponential have a range of 0 to 20. Specified value is not within expected range.
+-Infinity (toFixed,       null) -> -Infinity
+-Infinity (toExponential, null) -> -Infinity
+-Infinity (toPrecision,   0) -> RangeError: Error #1002: Number.toPrecision has a range of 1 to 21. Number.toFixed and Number.toExponential have a range of 0 to 20. Specified value is not within expected range.
+-Infinity (toFixed,       0) -> -Infinity
+-Infinity (toExponential, 0) -> -Infinity
+-Infinity (toPrecision,   1) -> -Infinity
+-Infinity (toFixed,       1) -> -Infinity
+-Infinity (toExponential, 1) -> -Infinity
+-Infinity (toPrecision,   2) -> -Infinity
+-Infinity (toFixed,       2) -> -Infinity
+-Infinity (toExponential, 2) -> -Infinity
+-Infinity (toPrecision,   3) -> -Infinity
+-Infinity (toFixed,       3) -> -Infinity
+-Infinity (toExponential, 3) -> -Infinity
+-Infinity (toPrecision,   19) -> -Infinity
+-Infinity (toFixed,       19) -> -Infinity
+-Infinity (toExponential, 19) -> -Infinity
+-Infinity (toPrecision,   20) -> -Infinity
+-Infinity (toFixed,       20) -> -Infinity
+-Infinity (toExponential, 20) -> -Infinity
+-Infinity (toPrecision,   21) -> -Infinity
+-Infinity (toFixed,       21) -> RangeError: Error #1002: Number.toPrecision has a range of 1 to 21. Number.toFixed and Number.toExponential have a range of 0 to 20. Specified value is not within expected range.
+-Infinity (toExponential, 21) -> RangeError: Error #1002: Number.toPrecision has a range of 1 to 21. Number.toFixed and Number.toExponential have a range of 0 to 20. Specified value is not within expected range.
+-Infinity (toPrecision,   22) -> RangeError: Error #1002: Number.toPrecision has a range of 1 to 21. Number.toFixed and Number.toExponential have a range of 0 to 20. Specified value is not within expected range.
+-Infinity (toFixed,       22) -> RangeError: Error #1002: Number.toPrecision has a range of 1 to 21. Number.toFixed and Number.toExponential have a range of 0 to 20. Specified value is not within expected range.
+-Infinity (toExponential, 22) -> RangeError: Error #1002: Number.toPrecision has a range of 1 to 21. Number.toFixed and Number.toExponential have a range of 0 to 20. Specified value is not within expected range.
+0 (toPrecision,   undefined) -> RangeError: Error #1002: Number.toPrecision has a range of 1 to 21. Number.toFixed and Number.toExponential have a range of 0 to 20. Specified value is not within expected range.
+0 (toFixed,       undefined) -> 0
+0 (toExponential, undefined) -> 1e-15
+0 (toPrecision,   null) -> RangeError: Error #1002: Number.toPrecision has a range of 1 to 21. Number.toFixed and Number.toExponential have a range of 0 to 20. Specified value is not within expected range.
+0 (toFixed,       null) -> 0
+0 (toExponential, null) -> 1e-15
+0 (toPrecision,   0) -> RangeError: Error #1002: Number.toPrecision has a range of 1 to 21. Number.toFixed and Number.toExponential have a range of 0 to 20. Specified value is not within expected range.
+0 (toFixed,       0) -> 0
+0 (toExponential, 0) -> 1e-15
+0 (toPrecision,   1) -> 0e+1
+0 (toFixed,       1) -> 0.0
+0 (toExponential, 1) -> 0.0e-16
+0 (toPrecision,   2) -> 0
+0 (toFixed,       2) -> 0.00
+0 (toExponential, 2) -> 0.00e-16
+0 (toPrecision,   3) -> 0
+0 (toFixed,       3) -> 0.000
+0 (toExponential, 3) -> 0.000e-16
+0 (toPrecision,   19) -> 0
+0 (toFixed,       19) -> 0.0000000000000000000
+0 (toExponential, 19) -> 0.0000000000000000000e-16
+0 (toPrecision,   20) -> 0
+0 (toFixed,       20) -> 0.00000000000000000000
+0 (toExponential, 20) -> 0.00000000000000000000e-16
+0 (toPrecision,   21) -> 0
+0 (toFixed,       21) -> RangeError: Error #1002: Number.toPrecision has a range of 1 to 21. Number.toFixed and Number.toExponential have a range of 0 to 20. Specified value is not within expected range.
+0 (toExponential, 21) -> RangeError: Error #1002: Number.toPrecision has a range of 1 to 21. Number.toFixed and Number.toExponential have a range of 0 to 20. Specified value is not within expected range.
+0 (toPrecision,   22) -> RangeError: Error #1002: Number.toPrecision has a range of 1 to 21. Number.toFixed and Number.toExponential have a range of 0 to 20. Specified value is not within expected range.
+0 (toFixed,       22) -> RangeError: Error #1002: Number.toPrecision has a range of 1 to 21. Number.toFixed and Number.toExponential have a range of 0 to 20. Specified value is not within expected range.
+0 (toExponential, 22) -> RangeError: Error #1002: Number.toPrecision has a range of 1 to 21. Number.toFixed and Number.toExponential have a range of 0 to 20. Specified value is not within expected range.
+0 (toPrecision,   undefined) -> RangeError: Error #1002: Number.toPrecision has a range of 1 to 21. Number.toFixed and Number.toExponential have a range of 0 to 20. Specified value is not within expected range.
+0 (toFixed,       undefined) -> 0
+0 (toExponential, undefined) -> 1e-15
+0 (toPrecision,   null) -> RangeError: Error #1002: Number.toPrecision has a range of 1 to 21. Number.toFixed and Number.toExponential have a range of 0 to 20. Specified value is not within expected range.
+0 (toFixed,       null) -> 0
+0 (toExponential, null) -> 1e-15
+0 (toPrecision,   0) -> RangeError: Error #1002: Number.toPrecision has a range of 1 to 21. Number.toFixed and Number.toExponential have a range of 0 to 20. Specified value is not within expected range.
+0 (toFixed,       0) -> 0
+0 (toExponential, 0) -> 1e-15
+0 (toPrecision,   1) -> -0e+1
+0 (toFixed,       1) -> 0.0
+0 (toExponential, 1) -> 0.0e-16
+0 (toPrecision,   2) -> -0
+0 (toFixed,       2) -> 0.00
+0 (toExponential, 2) -> 0.00e-16
+0 (toPrecision,   3) -> -0
+0 (toFixed,       3) -> 0.000
+0 (toExponential, 3) -> 0.000e-16
+0 (toPrecision,   19) -> -0
+0 (toFixed,       19) -> 0.0000000000000000000
+0 (toExponential, 19) -> 0.0000000000000000000e-16
+0 (toPrecision,   20) -> -0
+0 (toFixed,       20) -> 0.00000000000000000000
+0 (toExponential, 20) -> 0.00000000000000000000e-16
+0 (toPrecision,   21) -> -0
+0 (toFixed,       21) -> RangeError: Error #1002: Number.toPrecision has a range of 1 to 21. Number.toFixed and Number.toExponential have a range of 0 to 20. Specified value is not within expected range.
+0 (toExponential, 21) -> RangeError: Error #1002: Number.toPrecision has a range of 1 to 21. Number.toFixed and Number.toExponential have a range of 0 to 20. Specified value is not within expected range.
+0 (toPrecision,   22) -> RangeError: Error #1002: Number.toPrecision has a range of 1 to 21. Number.toFixed and Number.toExponential have a range of 0 to 20. Specified value is not within expected range.
+0 (toFixed,       22) -> RangeError: Error #1002: Number.toPrecision has a range of 1 to 21. Number.toFixed and Number.toExponential have a range of 0 to 20. Specified value is not within expected range.
+0 (toExponential, 22) -> RangeError: Error #1002: Number.toPrecision has a range of 1 to 21. Number.toFixed and Number.toExponential have a range of 0 to 20. Specified value is not within expected range.
+123 (toPrecision,   undefined) -> RangeError: Error #1002: Number.toPrecision has a range of 1 to 21. Number.toFixed and Number.toExponential have a range of 0 to 20. Specified value is not within expected range.
+123 (toFixed,       undefined) -> 123
+123 (toExponential, undefined) -> 1e+2
+123 (toPrecision,   null) -> RangeError: Error #1002: Number.toPrecision has a range of 1 to 21. Number.toFixed and Number.toExponential have a range of 0 to 20. Specified value is not within expected range.
+123 (toFixed,       null) -> 123
+123 (toExponential, null) -> 1e+2
+123 (toPrecision,   0) -> RangeError: Error #1002: Number.toPrecision has a range of 1 to 21. Number.toFixed and Number.toExponential have a range of 0 to 20. Specified value is not within expected range.
+123 (toFixed,       0) -> 123
+123 (toExponential, 0) -> 1e+2
+123 (toPrecision,   1) -> 1e+2
+123 (toFixed,       1) -> 123.0
+123 (toExponential, 1) -> 1.2e+2
+123 (toPrecision,   2) -> 1.2e+2
+123 (toFixed,       2) -> 123.00
+123 (toExponential, 2) -> 1.23e+2
+123 (toPrecision,   3) -> 123
+123 (toFixed,       3) -> 123.000
+123 (toExponential, 3) -> 1.230e+2
+123 (toPrecision,   19) -> 123
+123 (toFixed,       19) -> 123.0000000000000000000
+123 (toExponential, 19) -> 1.2300000000000000000e+2
+123 (toPrecision,   20) -> 123
+123 (toFixed,       20) -> 123.00000000000000000000
+123 (toExponential, 20) -> 1.23000000000000000000e+2
+123 (toPrecision,   21) -> 123
+123 (toFixed,       21) -> RangeError: Error #1002: Number.toPrecision has a range of 1 to 21. Number.toFixed and Number.toExponential have a range of 0 to 20. Specified value is not within expected range.
+123 (toExponential, 21) -> RangeError: Error #1002: Number.toPrecision has a range of 1 to 21. Number.toFixed and Number.toExponential have a range of 0 to 20. Specified value is not within expected range.
+123 (toPrecision,   22) -> RangeError: Error #1002: Number.toPrecision has a range of 1 to 21. Number.toFixed and Number.toExponential have a range of 0 to 20. Specified value is not within expected range.
+123 (toFixed,       22) -> RangeError: Error #1002: Number.toPrecision has a range of 1 to 21. Number.toFixed and Number.toExponential have a range of 0 to 20. Specified value is not within expected range.
+123 (toExponential, 22) -> RangeError: Error #1002: Number.toPrecision has a range of 1 to 21. Number.toFixed and Number.toExponential have a range of 0 to 20. Specified value is not within expected range.

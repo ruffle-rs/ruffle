@@ -85,6 +85,9 @@ error-csp-conflict =
     Ruffle, başlatmaya çalışırken önemli bir sorunla karşılaştı.
     Bu web sunucusunun İçerik Güvenliği Politikası, gerekli ".wasm" bileşeninin çalışmasına izin vermiyor.
     Sunucu yöneticisiyseniz, yardım için lütfen Ruffle wiki'sine bakın.
+error-url-invalid =
+    Ruffle, Flash SWF dosyasını yükleyemedi.
+    Bunun en olası nedeni, SWF dosyası için Ruffle'a geçersiz bir URL iletilmiş olmasıdır.
 error-unknown =
     Ruffle, bu Flash içeriğini görüntülemeye çalışırken önemli bir sorunla karşılaştı.
     { $outdated ->

@@ -83,6 +83,9 @@ error-csp-conflict =
     Ruffle đã gặp phải một vấn đề lớn khi cố gắng khởi tạo.
     Chính sách bảo mật nội dung của máy chủ web này không cho phép chạy thành phần tệp ".wasm" bắt buộc phải có để hoạt động.
     Nếu bạn là quản trị viên máy chủ, vui lòng tham khảo Ruffle Wiki để được trợ giúp.
+error-url-invalid =
+    Ruffle không tải được tệp Flash SWF.
+    Nhiều khả năng là do URL của tệp SWF truyền cho Ruffle không hợp lệ.
 error-unknown =
     Ruffle đã gặp phải một vấn đề lớn khi cố gắng hiển thị nội dung Flash này.
     { $outdated ->

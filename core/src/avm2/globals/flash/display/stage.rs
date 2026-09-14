@@ -3,6 +3,7 @@
 use crate::avm2::Error;
 use crate::avm2::activation::Activation;
 use crate::avm2::error::make_error_2008;
+use crate::avm2::function::FunctionArgs;
 use crate::avm2::object::VectorObject;
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
@@ -18,7 +19,7 @@ use swf::Color;
 pub fn get_align<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let align = activation.context.stage.align();
     let mut s = WString::with_capacity(4, false);
@@ -47,7 +48,7 @@ pub fn get_align<'gc>(
 pub fn set_align<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let align = args.get_string(activation, 0).parse().unwrap_or_default();
     activation
@@ -61,7 +62,7 @@ pub fn set_align<'gc>(
 pub fn get_browser_zoom_factor<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
@@ -85,7 +86,7 @@ pub fn get_browser_zoom_factor<'gc>(
 pub fn get_color<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
@@ -101,7 +102,7 @@ pub fn get_color<'gc>(
 pub fn set_color<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
@@ -117,7 +118,7 @@ pub fn set_color<'gc>(
 pub fn get_contents_scale_factor<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
@@ -141,7 +142,7 @@ pub fn get_contents_scale_factor<'gc>(
 pub fn get_display_state<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let display_state = AvmString::new_utf8(
         activation.gc(),
@@ -154,7 +155,7 @@ pub fn get_display_state<'gc>(
 pub fn set_display_state<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Ok(mut display_state) = args.get_string(activation, 0).parse() {
         // It's not entirely clear why when setting to FullScreen, desktop flash player at least will
@@ -176,7 +177,7 @@ pub fn set_display_state<'gc>(
 pub fn get_focus<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     Ok(activation
         .context
@@ -191,7 +192,7 @@ pub fn get_focus<'gc>(
 pub fn set_focus<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let focus = activation.context.focus_tracker;
     match args.try_get_object(0) {
@@ -213,7 +214,7 @@ pub fn set_focus<'gc>(
 pub fn get_frame_rate<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let mut frame_rate = *activation.context.frame_rate;
     if frame_rate < 0.0 {
@@ -227,7 +228,7 @@ pub fn get_frame_rate<'gc>(
 pub fn set_frame_rate<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     if !activation.context.forced_frame_rate {
         let new_frame_rate = args.get_f64(0).clamp(0.01, 1000.0);
@@ -240,7 +241,7 @@ pub fn set_frame_rate<'gc>(
 pub fn get_show_default_context_menu<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     Ok(activation.context.stage.show_menu().into())
 }
@@ -248,7 +249,7 @@ pub fn get_show_default_context_menu<'gc>(
 pub fn set_show_default_context_menu<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let show_default_context_menu = args.get_bool(0);
     activation
@@ -262,7 +263,7 @@ pub fn set_show_default_context_menu<'gc>(
 pub fn get_scale_mode<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let scale_mode = AvmString::new_utf8(
         activation.gc(),
@@ -275,7 +276,7 @@ pub fn get_scale_mode<'gc>(
 pub fn set_scale_mode<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Ok(scale_mode) = args.get_string(activation, 0).parse() {
         activation
@@ -292,7 +293,7 @@ pub fn set_scale_mode<'gc>(
 pub fn get_stage_focus_rect<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
@@ -307,7 +308,7 @@ pub fn get_stage_focus_rect<'gc>(
 pub fn set_stage_focus_rect<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
@@ -323,7 +324,7 @@ pub fn set_stage_focus_rect<'gc>(
 pub fn get_stage_width<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
@@ -338,7 +339,7 @@ pub fn get_stage_width<'gc>(
 pub fn set_stage_width<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     _this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     // For some reason this value is settable but it does nothing.
     Ok(Value::Undefined)
@@ -348,7 +349,7 @@ pub fn set_stage_width<'gc>(
 pub fn get_stage_height<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
@@ -363,7 +364,7 @@ pub fn get_stage_height<'gc>(
 pub fn set_stage_height<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     _this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     // For some reason this value is settable but it does nothing.
     Ok(Value::Undefined)
@@ -373,7 +374,7 @@ pub fn set_stage_height<'gc>(
 pub fn get_allows_full_screen<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     avm2_stub_getter!(activation, "flash.display.Stage", "allowsFullScreen");
     Ok(true.into())
@@ -383,7 +384,7 @@ pub fn get_allows_full_screen<'gc>(
 pub fn get_allows_full_screen_interactive<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     avm2_stub_getter!(
         activation,
@@ -397,7 +398,7 @@ pub fn get_allows_full_screen_interactive<'gc>(
 pub fn get_quality<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let quality = activation.context.stage.quality().into_avm_str();
     Ok(AvmString::new_utf8(activation.gc(), quality).into())
@@ -407,7 +408,7 @@ pub fn get_quality<'gc>(
 pub fn set_quality<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     // Invalid values result in no change.
     if let Ok(quality) = args.get_string(activation, 0).parse() {
@@ -423,7 +424,7 @@ pub fn set_quality<'gc>(
 pub fn get_stage3ds<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
@@ -443,7 +444,7 @@ pub fn get_stage3ds<'gc>(
 pub fn invalidate<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
@@ -457,7 +458,7 @@ pub fn invalidate<'gc>(
 pub fn get_full_screen_height<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     avm2_stub_getter!(activation, "flash.display.Stage", "fullScreenHeight");
     Ok(768.into())
@@ -467,7 +468,7 @@ pub fn get_full_screen_height<'gc>(
 pub fn get_full_screen_width<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     avm2_stub_getter!(activation, "flash.display.Stage", "fullScreenWidth");
     Ok(1024.into())
@@ -476,7 +477,7 @@ pub fn get_full_screen_width<'gc>(
 pub fn set_tab_children<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 

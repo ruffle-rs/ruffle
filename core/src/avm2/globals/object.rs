@@ -2,6 +2,7 @@
 
 use crate::avm2::activation::Activation;
 use crate::avm2::error;
+use crate::avm2::function::FunctionArgs;
 use crate::avm2::object::{Object, ScriptObject, TObject};
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
@@ -12,7 +13,7 @@ use crate::string::AvmString;
 /// `new Object(...)` directly.
 pub fn object_constructor<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(arg) = args.get_optional(0)
         && !matches!(arg, Value::Undefined | Value::Null)
@@ -28,7 +29,7 @@ pub fn object_constructor<'gc>(
 pub fn _to_string<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = args.get_value(0);
 
@@ -45,7 +46,7 @@ pub fn _to_string<'gc>(
 pub fn has_own_property<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let name = args.get_value(0).coerce_to_string(activation)?;
 
@@ -62,7 +63,7 @@ pub fn has_own_property<'gc>(
 pub fn is_prototype_of<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this.as_object() {
         let target_proto = args.get_value(0);
@@ -91,7 +92,7 @@ pub fn is_prototype_of<'gc>(
 pub fn property_is_enumerable<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this.as_object() {
         let name = args.get_value(0).coerce_to_string(activation)?;
@@ -106,7 +107,7 @@ pub fn property_is_enumerable<'gc>(
 pub fn _set_property_is_enumerable<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = args.get_value(0);
 

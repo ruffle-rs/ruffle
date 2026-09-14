@@ -1,0 +1,5 @@
+transpose distinct entries: 1,5,9,13,2,6,10,14,3,7,11,15,4,8,12,16
+transpose symmetric: 1,2,3,4,2,5,6,7,3,6,8,9,4,7,9,10
+transpose special off diagonal: 1,2,3,-Infinity,NaN,5,NaN,7,3,-Infinity,8,9,Infinity,7,9,10
+transpose special on diagonal: NaN,2,3,4,2,Infinity,6,7,3,6,-Infinity,9,4,7,9,NaN
+double transpose: 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16

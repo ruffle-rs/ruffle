@@ -9,6 +9,15 @@
 //this.rotation = -360;
 //this.rotation;
 0
+//this.rotation = 240;
+//this.rotation;
+-120
+//this.rotation = -240;
+//this.rotation;
+120
+//this.rotation = -500;
+//this.rotation;
+-140
 //this.rotation = 180;
 //this.rotation;
 180

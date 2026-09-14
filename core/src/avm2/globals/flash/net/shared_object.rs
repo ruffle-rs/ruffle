@@ -1,6 +1,7 @@
 //! `flash.net.SharedObject` builtin/prototype
 
 use crate::avm2::error::make_error_2130;
+use crate::avm2::function::FunctionArgs;
 use crate::avm2::object::{ScriptObject, SharedObjectObject};
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::{Activation, Error, Object, Value};
@@ -37,7 +38,7 @@ fn new_lso<'gc>(
 pub fn get_local<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     // TODO: It appears that Flash does some kind of escaping here:
     // the name "foo\uD800" correspond to a file named "fooE#FB#FB#D.sol".
@@ -176,7 +177,7 @@ pub fn get_local<'gc>(
 pub fn get_data<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
@@ -188,7 +189,7 @@ pub fn get_data<'gc>(
 pub fn flush<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
@@ -225,7 +226,7 @@ pub fn flush_impl<'gc>(
 pub fn get_size<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
@@ -247,7 +248,7 @@ pub fn get_size<'gc>(
 pub fn close<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     avm2_stub_method!(activation, "flash.net.SharedObject", "close");
     Ok(Value::Undefined)
@@ -256,7 +257,7 @@ pub fn close<'gc>(
 pub fn clear<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
@@ -275,7 +276,7 @@ pub fn clear<'gc>(
 pub fn get_object_encoding<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     avm2_stub_getter!(activation, "flash.net.SharedObject", "objectEncoding");
     Ok(0.into())
@@ -284,7 +285,7 @@ pub fn get_object_encoding<'gc>(
 pub fn set_object_encoding<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     avm2_stub_setter!(activation, "flash.net.SharedObject", "objectEncoding");
     Ok(Value::Undefined)

@@ -1,0 +1,28 @@
+num_ticks = 7
+
+[image_comparisons."output.01"]
+trigger = 1
+tolerance = 64
+
+[image_comparisons."output.02"]
+trigger = 2
+tolerance = 64
+
+[image_comparisons."output.03"]
+trigger = 3
+tolerance = 64
+
+[image_comparisons."output.04"]
+trigger = 4
+tolerance = 64
+
+[image_comparisons."output.05"]
+trigger = 5
+tolerance = 64
+
+[image_comparisons."output.06"]
+trigger = 6
+tolerance = 64
+
+[player_options]
+with_renderer = { optional = false, quality = "high" }

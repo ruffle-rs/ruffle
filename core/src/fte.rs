@@ -1,8 +1,9 @@
 //! Various structs related to FTE used across the whole codebase.
 
+use crate::string::AvmString;
+
 use gc_arena::Collect;
 use ruffle_macros::Avm2Enum;
-use ruffle_wstr::WStr;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Collect, Avm2Enum)]
 #[collect(require_static)]
@@ -164,27 +165,27 @@ pub enum TypographicCaseValue {
 }
 
 #[derive(Clone, Copy, Collect, PartialEq)]
-#[collect(require_static)]
-pub enum TextLineValidity {
+#[collect(no_drop)]
+pub enum TextLineValidity<'gc> {
     Valid,
     Invalid,
     Static,
     PossiblyInvalid,
-    UserInvalid,
+    UserInvalid(AvmString<'gc>),
 }
 
-impl TextLineValidity {
-    pub fn parse(string: &WStr) -> Self {
-        if string == b"valid" {
+impl<'gc> TextLineValidity<'gc> {
+    pub fn parse(string: AvmString<'gc>) -> Self {
+        if &string == b"valid" {
             Self::Valid
-        } else if string == b"invalid" {
+        } else if &string == b"invalid" {
             Self::Invalid
-        } else if string == b"static" {
+        } else if &string == b"static" {
             Self::Static
-        } else if string == b"possiblyInvalid" {
+        } else if &string == b"possiblyInvalid" {
             Self::PossiblyInvalid
         } else {
-            Self::UserInvalid
+            Self::UserInvalid(string)
         }
     }
 }

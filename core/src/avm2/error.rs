@@ -1,6 +1,7 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::call_stack::CallStack;
 use crate::avm2::class::Class;
+use crate::avm2::error_messages::{assert_error_message_arg_count, try_error_message};
 use crate::avm2::function::display_function;
 use crate::avm2::method::Method;
 use crate::avm2::multiname::Multiname;
@@ -11,6 +12,8 @@ use crate::string::{AvmString, WString};
 
 use naga_agal::AgalError;
 use ruffle_macros::istr;
+use swf::avm2::types::{Index, Method as AbcMethod};
+
 use std::borrow::Cow;
 use std::fmt::{Debug, Display};
 use std::mem::size_of;
@@ -121,6 +124,41 @@ macro_rules! make_error {
     };
 }
 
+type ErrorTypeConstructor<'gc> = fn(&mut Activation<'_, 'gc>, String, u32) -> ErrorObject<'gc>;
+
+// Always inline because it's a trivial call to a cold function.
+#[inline(always)]
+fn make_error_no_args<'gc, const CODE: u32>(
+    activation: &mut Activation<'_, 'gc>,
+    f: ErrorTypeConstructor<'gc>,
+) -> Error<'gc> {
+    #[inline(never)]
+    #[cold]
+    fn make_error_no_args_runtime<'gc>(
+        activation: &mut Activation<'_, 'gc>,
+        code: u32,
+        f: ErrorTypeConstructor<'gc>,
+    ) -> Error<'gc> {
+        let error_message = try_error_message(code, &[]).unwrap();
+        make_error!(f(activation, error_message, code))
+    }
+
+    const { assert_error_message_arg_count::<CODE, 0>() };
+    make_error_no_args_runtime(activation, CODE, f)
+}
+
+/// Generate a "make_error" function definition for simple arguments.
+macro_rules! make_error_fn {
+    ($(#[$attr:meta])* $name:ident, $code:literal, $kind:ident) => {
+        $(#[$attr])*
+        // Always inline because it's a trivial call to a cold function.
+        #[inline(always)]
+        pub fn $name<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
+            make_error_no_args::<$code>(activation, $kind)
+        }
+    };
+}
+
 #[inline(never)]
 #[cold]
 pub fn make_null_or_undefined_error<'gc>(
@@ -199,8 +237,6 @@ pub enum XmlErrorCode {
     UnterminatedElement = 1096,
     /// Error #1097: XML parser failure: Unterminated processing instruction.
     UnterminatedProcessingInstruction = 1097,
-    /// Error #1104: Attribute was already specified for element.
-    DuplicateAttribute = 1104,
 }
 
 #[inline(never)]
@@ -215,8 +251,6 @@ pub fn make_xml_error<'gc>(activation: &mut Activation<'_, 'gc>, code: XmlErrorC
         XmlErrorCode::UnterminatedAttribute => error_message!(1095),
         XmlErrorCode::UnterminatedElement => error_message!(1096),
         XmlErrorCode::UnterminatedProcessingInstruction => error_message!(1097),
-        // TODO: Add proper arguments.
-        XmlErrorCode::DuplicateAttribute => error_message!(1104, "", ""),
     };
     make_error!(type_error(activation, msg, code as u32))
 }
@@ -257,11 +291,7 @@ pub fn make_error_1001<'gc>(
     ))
 }
 
-#[inline(never)]
-#[cold]
-pub fn make_error_1002<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
-    make_error!(range_error(activation, error_message!(1002), 1002))
-}
+make_error_fn!(make_error_1002, 1002, range_error);
 
 #[inline(never)]
 #[cold]
@@ -281,11 +311,7 @@ pub fn make_error_1006<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> 
     make_error!(type_error(activation, error_message!(1006, "value"), 1006))
 }
 
-#[inline(never)]
-#[cold]
-pub fn make_error_1007<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
-    make_error!(type_error(activation, error_message!(1007), 1007))
-}
+make_error_fn!(make_error_1007, 1007, type_error);
 
 #[inline(never)]
 #[cold]
@@ -325,11 +351,7 @@ pub fn make_error_1011<'gc>(
     ))
 }
 
-#[inline(never)]
-#[cold]
-pub fn make_error_1013<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
-    make_error!(verify_error(activation, error_message!(1013), 1013))
-}
+make_error_fn!(make_error_1013, 1013, verify_error);
 
 #[inline(never)]
 #[cold]
@@ -373,17 +395,8 @@ pub fn make_error_1016<'gc>(activation: &mut Activation<'_, 'gc>, class: Class<'
     ))
 }
 
-#[inline(never)]
-#[cold]
-pub fn make_error_1017<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
-    make_error!(verify_error(activation, error_message!(1017), 1017))
-}
-
-#[inline(never)]
-#[cold]
-pub fn make_error_1018<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
-    make_error!(verify_error(activation, error_message!(1018), 1018))
-}
+make_error_fn!(make_error_1017, 1017, verify_error);
+make_error_fn!(make_error_1018, 1018, verify_error);
 
 #[inline(never)]
 #[cold]
@@ -396,29 +409,10 @@ pub fn make_error_1019<'gc>(
     make_error!(verify_error(activation, error_message!(1019, index), 1019))
 }
 
-#[inline(never)]
-#[cold]
-pub fn make_error_1020<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
-    make_error!(verify_error(activation, error_message!(1020), 1020))
-}
-
-#[inline(never)]
-#[cold]
-pub fn make_error_1021<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
-    make_error!(verify_error(activation, error_message!(1021), 1021))
-}
-
-#[inline(never)]
-#[cold]
-pub fn make_error_1023<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
-    make_error!(verify_error(activation, error_message!(1023), 1023))
-}
-
-#[inline(never)]
-#[cold]
-pub fn make_error_1024<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
-    make_error!(verify_error(activation, error_message!(1024), 1024))
-}
+make_error_fn!(make_error_1020, 1020, verify_error);
+make_error_fn!(make_error_1021, 1021, verify_error);
+make_error_fn!(make_error_1023, 1023, verify_error);
+make_error_fn!(make_error_1024, 1024, verify_error);
 
 #[inline(never)]
 #[cold]
@@ -455,12 +449,12 @@ pub fn make_error_1026<'gc>(
 #[cold]
 pub fn make_error_1027<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    method_index: usize,
-    method_count: usize,
+    method_index: Index<AbcMethod>,
+    method_count: u32,
 ) -> Error<'gc> {
     make_error!(verify_error(
         activation,
-        error_message!(1027, method_index, method_count),
+        error_message!(1027, method_index.0, method_count),
         1027
     ))
 }
@@ -548,17 +542,8 @@ pub fn make_error_1035<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> 
     make_error!(verify_error(activation, error_message!(1035, ""), 1035))
 }
 
-#[inline(never)]
-#[cold]
-pub fn make_error_1040<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
-    make_error!(type_error(activation, error_message!(1040), 1040))
-}
-
-#[inline(never)]
-#[cold]
-pub fn make_error_1041<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
-    make_error!(type_error(activation, error_message!(1041), 1041))
-}
+make_error_fn!(make_error_1040, 1040, type_error);
+make_error_fn!(make_error_1041, 1041, type_error);
 
 #[inline(never)]
 #[cold]
@@ -566,11 +551,7 @@ pub fn make_error_1043<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> 
     make_error!(verify_error(activation, error_message!(1043, "0"), 1043))
 }
 
-#[inline(never)]
-#[cold]
-pub fn make_error_1047<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
-    make_error!(verify_error(activation, error_message!(1047), 1047))
-}
+make_error_fn!(make_error_1047, 1047, verify_error);
 
 #[inline(never)]
 #[cold]
@@ -611,11 +592,7 @@ pub fn make_error_1053<'gc>(
     ))
 }
 
-#[inline(never)]
-#[cold]
-pub fn make_error_1054<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
-    make_error!(verify_error(activation, error_message!(1054), 1054))
-}
+make_error_fn!(make_error_1054, 1054, verify_error);
 
 #[inline(never)]
 #[cold]
@@ -710,11 +687,7 @@ pub fn make_error_1065<'gc>(
     ))
 }
 
-#[inline(never)]
-#[cold]
-pub fn make_error_1066<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
-    make_error!(eval_error(activation, error_message!(1066), 1066))
-}
+make_error_fn!(make_error_1066, 1066, eval_error);
 
 #[inline(never)]
 #[cold]
@@ -740,23 +713,9 @@ pub fn make_error_1070<'gc>(
     ))
 }
 
-#[inline(never)]
-#[cold]
-pub fn make_error_1072<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
-    make_error!(verify_error(activation, error_message!(1072), 1072))
-}
-
-#[inline(never)]
-#[cold]
-pub fn make_error_1075<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
-    make_error!(type_error(activation, error_message!(1075), 1075))
-}
-
-#[inline(never)]
-#[cold]
-pub fn make_error_1076<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
-    make_error!(type_error(activation, error_message!(1076), 1076))
-}
+make_error_fn!(make_error_1072, 1072, verify_error);
+make_error_fn!(make_error_1075, 1075, type_error);
+make_error_fn!(make_error_1076, 1076, type_error);
 
 #[inline(never)]
 #[cold]
@@ -765,17 +724,8 @@ pub fn make_error_1078<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> 
     make_error!(verify_error(activation, error_message!(1078, "", ""), 1078))
 }
 
-#[inline(never)]
-#[cold]
-pub fn make_error_1079<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
-    make_error!(verify_error(activation, error_message!(1079), 1079))
-}
-
-#[inline(never)]
-#[cold]
-pub fn make_error_1080<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
-    make_error!(type_error(activation, error_message!(1080), 1080))
-}
+make_error_fn!(make_error_1079, 1079, verify_error);
+make_error_fn!(make_error_1080, 1080, type_error);
 
 #[inline(never)]
 #[cold]
@@ -793,23 +743,9 @@ pub fn make_error_1086<'gc>(activation: &mut Activation<'_, 'gc>, method_name: &
     ))
 }
 
-#[inline(never)]
-#[cold]
-pub fn make_error_1087<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
-    make_error!(type_error(activation, error_message!(1087), 1087))
-}
-
-#[inline(never)]
-#[cold]
-pub fn make_error_1088<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
-    make_error!(type_error(activation, error_message!(1088), 1088))
-}
-
-#[inline(never)]
-#[cold]
-pub fn make_error_1089<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
-    make_error!(type_error(activation, error_message!(1089), 1089))
-}
+make_error_fn!(make_error_1087, 1087, type_error);
+make_error_fn!(make_error_1088, 1088, type_error);
+make_error_fn!(make_error_1089, 1089, type_error);
 
 #[inline(never)]
 #[cold]
@@ -820,11 +756,7 @@ pub fn make_error_1098<'gc>(
     make_error!(type_error(activation, error_message!(1098, prefix), 1098,))
 }
 
-#[inline(never)]
-#[cold]
-pub fn make_error_1100<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
-    make_error!(type_error(activation, error_message!(1100), 1100))
-}
+make_error_fn!(make_error_1100, 1100, type_error);
 
 #[inline(never)]
 #[cold]
@@ -840,15 +772,24 @@ pub fn make_error_1103<'gc>(activation: &mut Activation<'_, 'gc>, class: Class<'
 
 #[inline(never)]
 #[cold]
-pub fn make_error_1107<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
-    make_error!(verify_error(activation, error_message!(1107), 1107))
+pub fn make_error_1104<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    attr_name: &[u8],
+    element_name: &[u8],
+) -> Error<'gc> {
+    make_error!(type_error(
+        activation,
+        error_message!(
+            1104,
+            String::from_utf8_lossy(attr_name),
+            String::from_utf8_lossy(element_name)
+        ),
+        1104
+    ))
 }
 
-#[inline(never)]
-#[cold]
-pub fn make_error_1108<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
-    make_error!(verify_error(activation, error_message!(1108), 1108))
-}
+make_error_fn!(make_error_1107, 1107, verify_error);
+make_error_fn!(make_error_1108, 1108, verify_error);
 
 #[inline(never)]
 #[cold]
@@ -898,11 +839,7 @@ pub fn make_error_1112<'gc>(activation: &mut Activation<'_, 'gc>, arg_count: usi
     ))
 }
 
-#[inline(never)]
-#[cold]
-pub fn make_error_1113<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
-    make_error!(verify_error(activation, error_message!(1113), 1113))
-}
+make_error_fn!(make_error_1113, 1113, verify_error);
 
 #[inline(never)]
 #[cold]
@@ -910,11 +847,7 @@ pub fn make_error_1115<'gc>(activation: &mut Activation<'_, 'gc>, name: &str) ->
     make_error!(type_error(activation, error_message!(1115, name), 1115))
 }
 
-#[inline(never)]
-#[cold]
-pub fn make_error_1116<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
-    make_error!(type_error(activation, error_message!(1116), 1116,))
-}
+make_error_fn!(make_error_1116, 1116, type_error);
 
 #[inline(never)]
 #[cold]
@@ -925,11 +858,7 @@ pub fn make_error_1117<'gc>(
     make_error!(type_error(activation, error_message!(1117, name), 1117))
 }
 
-#[inline(never)]
-#[cold]
-pub fn make_error_1118<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
-    make_error!(type_error(activation, error_message!(1118), 1118,))
-}
+make_error_fn!(make_error_1118, 1118, type_error);
 
 #[inline(never)]
 #[cold]
@@ -953,11 +882,7 @@ pub fn make_error_1123<'gc>(activation: &mut Activation<'_, 'gc>, class: Class<'
     ))
 }
 
-#[inline(never)]
-#[cold]
-pub fn make_error_1124<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
-    make_error!(verify_error(activation, error_message!(1124), 1124))
-}
+make_error_fn!(make_error_1124, 1124, verify_error);
 
 #[inline(never)]
 #[cold]
@@ -973,17 +898,8 @@ pub fn make_error_1125<'gc>(
     ))
 }
 
-#[inline(never)]
-#[cold]
-pub fn make_error_1126<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
-    make_error!(range_error(activation, error_message!(1126), 1126))
-}
-
-#[inline(never)]
-#[cold]
-pub fn make_error_1127<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
-    make_error!(type_error(activation, error_message!(1127), 1127))
-}
+make_error_fn!(make_error_1126, 1126, range_error);
+make_error_fn!(make_error_1127, 1127, type_error);
 
 #[inline(never)]
 #[cold]
@@ -1001,35 +917,11 @@ pub fn make_error_1128<'gc>(
     ))
 }
 
-#[inline(never)]
-#[cold]
-pub fn make_error_1129<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
-    make_error!(type_error(activation, error_message!(1129), 1129))
-}
-
-#[inline(never)]
-#[cold]
-pub fn make_error_1131<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
-    make_error!(type_error(activation, error_message!(1131), 1131))
-}
-
-#[inline(never)]
-#[cold]
-pub fn make_error_1132<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
-    make_error!(syntax_error(activation, error_message!(1132), 1132))
-}
-
-#[inline(never)]
-#[cold]
-pub fn make_error_1504<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
-    make_error!(error(activation, error_message!(1504), 1504))
-}
-
-#[inline(never)]
-#[cold]
-pub fn make_error_1506<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
-    make_error!(range_error(activation, error_message!(1506), 1506))
-}
+make_error_fn!(make_error_1129, 1129, type_error);
+make_error_fn!(make_error_1131, 1131, type_error);
+make_error_fn!(make_error_1132, 1132, syntax_error);
+make_error_fn!(make_error_1504, 1504, error);
+make_error_fn!(make_error_1506, 1506, range_error);
 
 #[inline(never)]
 #[cold]
@@ -1053,15 +945,19 @@ pub fn make_error_1508<'gc>(activation: &mut Activation<'_, 'gc>, param_name: &s
 
 #[inline(never)]
 #[cold]
-pub fn make_error_2002<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
-    make_error!(io_error(activation, error_message!(2002), 2002))
+pub fn make_error_2001<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    passed_arg_count: usize,
+) -> Error<'gc> {
+    make_error!(argument_error(
+        activation,
+        error_message!(2001, passed_arg_count, passed_arg_count + 1),
+        2001,
+    ))
 }
 
-#[inline(never)]
-#[cold]
-pub fn make_error_2003<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
-    make_error!(security_error(activation, error_message!(2003), 2003))
-}
+make_error_fn!(make_error_2002, 2002, io_error);
+make_error_fn!(make_error_2003, 2003, security_error);
 
 pub enum Error2004Type {
     Error,
@@ -1148,11 +1044,9 @@ pub fn make_error_2012<'gc>(
     ))
 }
 
-#[inline(never)]
-#[cold]
-pub fn make_error_2015<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
-    make_error!(argument_error(activation, error_message!(2015), 2015))
-}
+make_error_fn!(make_error_2015, 2015, argument_error);
+make_error_fn!(make_error_2017, 2017, security_error);
+make_error_fn!(make_error_2018, 2018, security_error);
 
 #[inline(never)]
 #[cold]
@@ -1176,17 +1070,8 @@ pub fn make_error_2023<'gc>(activation: &mut Activation<'_, 'gc>, class: Class<'
     ))
 }
 
-#[inline(never)]
-#[cold]
-pub fn make_error_2024<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
-    make_error!(argument_error(activation, error_message!(2024), 2024))
-}
-
-#[inline(never)]
-#[cold]
-pub fn make_error_2025<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
-    make_error!(argument_error(activation, error_message!(2025), 2025))
-}
+make_error_fn!(make_error_2024, 2024, argument_error);
+make_error_fn!(make_error_2025, 2025, argument_error);
 
 #[inline(never)]
 #[cold]
@@ -1202,57 +1087,14 @@ pub fn make_error_2027<'gc>(
     ))
 }
 
-#[inline(never)]
-#[cold]
-pub fn make_error_2030<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
-    make_error!(eof_error(activation, error_message!(2030), 2030))
-}
-
-#[inline(never)]
-#[cold]
-pub fn make_error_2037<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
-    make_error!(error(activation, error_message!(2037), 2037))
-}
-
-#[inline(never)]
-#[cold]
-pub fn make_error_2058<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
-    make_error!(io_error(activation, error_message!(2058), 2058))
-}
-
-#[inline(never)]
-#[cold]
-pub fn make_error_2067<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
-    make_error!(error(activation, error_message!(2067), 2067))
-}
-
-#[inline(never)]
-#[cold]
-pub fn make_error_2078<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
-    make_error!(illegal_operation_error(
-        activation,
-        error_message!(2078),
-        2078,
-    ))
-}
-
-#[inline(never)]
-#[cold]
-pub fn make_error_2082<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
-    make_error!(argument_error(activation, error_message!(2082), 2082))
-}
-
-#[inline(never)]
-#[cold]
-pub fn make_error_2083<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
-    make_error!(argument_error(activation, error_message!(2083), 2083))
-}
-
-#[inline(never)]
-#[cold]
-pub fn make_error_2084<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
-    make_error!(argument_error(activation, error_message!(2084), 2084))
-}
+make_error_fn!(make_error_2030, 2030, eof_error);
+make_error_fn!(make_error_2037, 2037, error);
+make_error_fn!(make_error_2058, 2058, io_error);
+make_error_fn!(make_error_2067, 2067, error);
+make_error_fn!(make_error_2078, 2078, illegal_operation_error);
+make_error_fn!(make_error_2082, 2082, argument_error);
+make_error_fn!(make_error_2083, 2083, argument_error);
+make_error_fn!(make_error_2084, 2084, argument_error);
 
 #[inline(never)]
 #[cold]
@@ -1264,17 +1106,8 @@ pub fn make_error_2085<'gc>(activation: &mut Activation<'_, 'gc>, param_name: &s
     ))
 }
 
-#[inline(never)]
-#[cold]
-pub fn make_error_2097<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
-    make_error!(argument_error(activation, error_message!(2097), 2097))
-}
-
-#[inline(never)]
-#[cold]
-pub fn make_error_2099<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
-    make_error!(error(activation, error_message!(2099), 2099))
-}
+make_error_fn!(make_error_2097, 2097, argument_error);
+make_error_fn!(make_error_2099, 2099, error);
 
 #[inline(never)]
 #[cold]
@@ -1290,36 +1123,19 @@ pub fn make_error_2109<'gc>(
     ))
 }
 
-#[inline(never)]
-#[cold]
-pub fn make_error_2126<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
-    make_error!(argument_error(activation, error_message!(2126), 2126))
-}
-
-#[inline(never)]
-#[cold]
-pub fn make_error_2130<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
-    make_error!(error(activation, error_message!(2130), 2130))
-}
+make_error_fn!(make_error_2126, 2126, argument_error);
+make_error_fn!(make_error_2130, 2130, error);
 
 #[inline(never)]
 #[cold]
 pub fn make_error_2136<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
-    // TODO: Add proper argument.
-    make_error!(error(activation, error_message!(2136, ""), 2136))
+    let movie = activation.caller_movie_or_root();
+    let url = movie.url();
+    make_error!(error(activation, error_message!(2136, url), 2136))
 }
 
-#[inline(never)]
-#[cold]
-pub fn make_error_2150<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
-    make_error!(argument_error(activation, error_message!(2150), 2150))
-}
-
-#[inline(never)]
-#[cold]
-pub fn make_error_2162<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
-    make_error!(argument_error(activation, error_message!(2162), 2162))
-}
+make_error_fn!(make_error_2150, 2150, argument_error);
+make_error_fn!(make_error_2162, 2162, argument_error);
 
 #[inline(never)]
 #[cold]
@@ -1331,31 +1147,20 @@ pub fn make_error_2165<'gc>(activation: &mut Activation<'_, 'gc>, input_name: &s
     ))
 }
 
-#[inline(never)]
-#[cold]
-pub fn make_error_2174<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
-    make_error!(error(activation, error_message!(2174), 2174))
-}
+make_error_fn!(make_error_2174, 2174, error);
+make_error_fn!(make_error_2175, 2175, error);
 
 // Currently we don't use this, see `globals::flash::system::system::set_clipboard`
-#[allow(dead_code)]
-#[inline(never)]
-#[cold]
-pub fn make_error_2176<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
-    make_error!(error(activation, error_message!(2176), 2176))
-}
+make_error_fn!(
+    #[allow(dead_code)]
+    make_error_2176,
+    2176,
+    error
+);
 
-#[inline(never)]
-#[cold]
-pub fn make_error_2180<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
-    make_error!(argument_error(activation, error_message!(2180), 2180))
-}
-
-#[inline(never)]
-#[cold]
-pub fn make_error_2182<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
-    make_error!(argument_error(activation, error_message!(2182), 2182))
-}
+make_error_fn!(make_error_2180, 2180, argument_error);
+make_error_fn!(make_error_2182, 2182, argument_error);
+make_error_fn!(make_error_2183, 2183, argument_error);
 
 #[inline(never)]
 #[cold]
@@ -1369,57 +1174,42 @@ pub fn make_error_2186<'gc>(activation: &mut Activation<'_, 'gc>, focal_length: 
 
 #[inline(never)]
 #[cold]
-pub fn make_error_3669<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
-    make_error!(error(activation, error_message!(3669), 3669))
+pub fn make_error_2187<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    orientation_style: AvmString<'gc>,
+) -> Error<'gc> {
+    make_error!(error(
+        activation,
+        error_message!(2187, orientation_style),
+        2187,
+    ))
 }
 
-#[inline(never)]
-#[cold]
-pub fn make_error_3670<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
-    make_error!(argument_error(activation, error_message!(3670), 3670))
-}
-
-#[inline(never)]
-#[cold]
-pub fn make_error_3671<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
-    make_error!(argument_error(activation, error_message!(3671), 3671))
-}
-
-// This isn't used if the `jpegxr` feature is disabled, see
-// `globals::flash::display3D::textures::atf_jpegxr`
-#[allow(dead_code)]
-#[inline(never)]
-#[cold]
-pub fn make_error_3675<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
-    make_error!(argument_error(activation, error_message!(3675), 3675))
-}
+make_error_fn!(make_error_3669, 3669, error);
+make_error_fn!(make_error_3670, 3670, argument_error);
+make_error_fn!(make_error_3671, 3671, argument_error);
 
 // This isn't used if the `jpegxr` feature is disabled, see
 // `globals::flash::display3D::textures::atf_jpegxr`
-#[allow(dead_code)]
-#[inline(never)]
-#[cold]
-pub fn make_error_3679<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
-    make_error!(argument_error(activation, error_message!(3679), 3679))
-}
+make_error_fn!(
+    #[allow(dead_code)]
+    make_error_3675,
+    3675,
+    argument_error
+);
 
-#[inline(never)]
-#[cold]
-pub fn make_error_3771<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
-    make_error!(argument_error(activation, error_message!(3771), 3771))
-}
+// This isn't used if the `jpegxr` feature is disabled, see
+// `globals::flash::display3D::textures::atf_jpegxr`
+make_error_fn!(
+    #[allow(dead_code)]
+    make_error_3679,
+    3679,
+    argument_error
+);
 
-#[inline(never)]
-#[cold]
-pub fn make_error_3772<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
-    make_error!(argument_error(activation, error_message!(3772), 3772))
-}
-
-#[inline(never)]
-#[cold]
-pub fn make_error_3773<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
-    make_error!(argument_error(activation, error_message!(3773), 3773))
-}
+make_error_fn!(make_error_3771, 3771, argument_error);
+make_error_fn!(make_error_3772, 3772, argument_error);
+make_error_fn!(make_error_3773, 3773, argument_error);
 
 #[inline(never)]
 #[cold]
@@ -1433,11 +1223,7 @@ pub fn make_error_3781<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> 
     make_error!(error(activation, error_message!(3781, "32", "16384"), 3681,))
 }
 
-#[inline(never)]
-#[cold]
-pub fn make_error_3783<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
-    make_error!(argument_error(activation, error_message!(3783), 3783,))
-}
+make_error_fn!(make_error_3783, 3783, argument_error);
 
 pub fn make_agal_upload_error<'gc>(
     activation: &mut Activation<'_, 'gc>,

@@ -1,0 +1,86 @@
+Caught error: ArgumentError: Error #2183: Scale values must not be zero.
+	at flash.geom::Matrix3D/appendScale()
+	at Function/<anonymous>()
+	at Test/testException()
+	at Test/testExceptions()
+	at Test()
+Caught error: ArgumentError: Error #2183: Scale values must not be zero.
+	at flash.geom::Matrix3D/appendScale()
+	at Function/<anonymous>()
+	at Test/testException()
+	at Test/testExceptions()
+	at Test()
+Caught error: ArgumentError: Error #2183: Scale values must not be zero.
+	at flash.geom::Matrix3D/appendScale()
+	at Function/<anonymous>()
+	at Test/testException()
+	at Test/testExceptions()
+	at Test()
+Caught error: ArgumentError: Error #2183: Scale values must not be zero.
+	at flash.geom::Matrix3D/appendScale()
+	at Function/<anonymous>()
+	at Test/testException()
+	at Test/testExceptions()
+	at Test()
+Caught error: ArgumentError: Error #2183: Scale values must not be zero.
+	at flash.geom::Matrix3D/prependScale()
+	at Function/<anonymous>()
+	at Test/testException()
+	at Test/testExceptions()
+	at Test()
+Caught error: ArgumentError: Error #2183: Scale values must not be zero.
+	at flash.geom::Matrix3D/prependScale()
+	at Function/<anonymous>()
+	at Test/testException()
+	at Test/testExceptions()
+	at Test()
+Caught error: ArgumentError: Error #2183: Scale values must not be zero.
+	at flash.geom::Matrix3D/prependScale()
+	at Function/<anonymous>()
+	at Test/testException()
+	at Test/testExceptions()
+	at Test()
+Caught error: ArgumentError: Error #2183: Scale values must not be zero.
+	at flash.geom::Matrix3D/prependScale()
+	at Function/<anonymous>()
+	at Test/testException()
+	at Test/testExceptions()
+	at Test()
+1,1,1 (append): 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16
+1,1,1 (prepend): 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16
+-1,-1,-1 (append): -1,-2,-3,4,-5,-6,-7,8,-9,-10,-11,12,-13,-14,-15,16
+-1,-1,-1 (prepend): 1,2,3,-4,5,6,7,-8,9,10,11,-12,-13,-14,-15,16
+-1,1,-1 (append): -1,2,-3,4,-5,6,-7,8,-9,10,-11,12,-13,14,-15,16
+-1,1,-1 (prepend): 1,-2,3,-4,-5,6,-7,8,9,-10,11,-12,-13,14,-15,16
+1,1,-1 (append): 1,2,-3,4,5,6,-7,8,9,10,-11,12,13,14,-15,16
+1,1,-1 (prepend): 1,2,-3,4,5,6,-7,8,-9,-10,11,-12,13,14,-15,16
+-1,1,1 (append): -1,2,3,4,-5,6,7,8,-9,10,11,12,-13,14,15,16
+-1,1,1 (prepend): 1,-2,-3,-4,-5,6,7,8,-9,10,11,12,-13,14,15,16
+2,3,4 (append): 2,6,12,4,10,18,28,8,18,30,44,12,26,42,60,16
+2,3,4 (prepend): 4,12,24,8,30,54,84,24,72,120,176,48,26,42,60,16
+-3,7,-1 (append): -3,14,-3,4,-15,42,-7,8,-27,70,-11,12,-39,98,-15,16
+-3,7,-1 (prepend): 9,-42,9,-12,-105,294,-49,56,27,-70,11,-12,-39,98,-15,16
+NaN,1,1 (append): NaN,2,3,4,NaN,6,7,8,NaN,10,11,12,NaN,14,15,16
+NaN,1,1 (prepend): NaN,NaN,NaN,NaN,NaN,6,7,8,NaN,10,11,12,NaN,14,15,16
+1,NaN,1,1 (append): 1,NaN,3,4,5,NaN,7,8,9,NaN,11,12,13,NaN,15,16
+1,NaN,1,1 (prepend): 1,NaN,3,4,NaN,NaN,NaN,NaN,9,NaN,11,12,13,NaN,15,16
+1,1,NaN,1,1 (append): 1,2,NaN,4,5,6,NaN,8,9,10,NaN,12,13,14,NaN,16
+1,1,NaN,1,1 (prepend): 1,2,NaN,4,5,6,NaN,8,NaN,NaN,NaN,NaN,13,14,NaN,16
+Infinity,1,1 (append): Infinity,2,3,4,Infinity,6,7,8,Infinity,10,11,12,Infinity,14,15,16
+Infinity,1,1 (prepend): NaN,Infinity,Infinity,Infinity,NaN,6,7,8,NaN,10,11,12,NaN,14,15,16
+1,Infinity,1,1 (append): 1,Infinity,3,4,5,Infinity,7,8,9,Infinity,11,12,13,Infinity,15,16
+1,Infinity,1,1 (prepend): 1,NaN,3,4,Infinity,NaN,Infinity,Infinity,9,NaN,11,12,13,NaN,15,16
+1,1,Infinity,1,1 (append): 1,2,Infinity,4,5,6,Infinity,8,9,10,Infinity,12,13,14,Infinity,16
+1,1,Infinity,1,1 (prepend): 1,2,NaN,4,5,6,NaN,8,Infinity,Infinity,NaN,Infinity,13,14,NaN,16
+NaN,1,1 (append): NaN,0,0,0,NaN,0,0,0,NaN,0,0,0,NaN,0,0,0
+NaN,1,1 (prepend): NaN,NaN,NaN,NaN,NaN,0,0,0,NaN,0,0,0,NaN,0,0,0
+1,NaN,1,1 (append): 0,NaN,0,0,0,NaN,0,0,0,NaN,0,0,0,NaN,0,0
+1,NaN,1,1 (prepend): 0,NaN,0,0,NaN,NaN,NaN,NaN,0,NaN,0,0,0,NaN,0,0
+1,1,NaN,1,1 (append): 0,0,NaN,0,0,0,NaN,0,0,0,NaN,0,0,0,NaN,0
+1,1,NaN,1,1 (prepend): 0,0,NaN,0,0,0,NaN,0,NaN,NaN,NaN,NaN,0,0,NaN,0
+Infinity,1,1 (append): NaN,0,0,0,NaN,0,0,0,NaN,0,0,0,NaN,0,0,0
+Infinity,1,1 (prepend): NaN,NaN,NaN,NaN,NaN,0,0,0,NaN,0,0,0,NaN,0,0,0
+1,Infinity,1,1 (append): 0,NaN,0,0,0,NaN,0,0,0,NaN,0,0,0,NaN,0,0
+1,Infinity,1,1 (prepend): 0,NaN,0,0,NaN,NaN,NaN,NaN,0,NaN,0,0,0,NaN,0,0
+1,1,Infinity,1,1 (append): 0,0,NaN,0,0,0,NaN,0,0,0,NaN,0,0,0,NaN,0
+1,1,Infinity,1,1 (prepend): 0,0,NaN,0,0,0,NaN,0,NaN,NaN,NaN,NaN,0,0,NaN,0

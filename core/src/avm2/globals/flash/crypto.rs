@@ -1,6 +1,7 @@
 //! `flash.crypto` namespace
 
 use crate::avm2::error::{Error2004Type, make_error_2004};
+use crate::avm2::function::FunctionArgs;
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::{Activation, Error, Value};
 use rand::{TryRngCore, rngs::OsRng};
@@ -9,7 +10,7 @@ use rand::{TryRngCore, rngs::OsRng};
 pub fn generate_random_bytes<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let length = args.get_u32(0);
     if !(1..1025).contains(&length) {

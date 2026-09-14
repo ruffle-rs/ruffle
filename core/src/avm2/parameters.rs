@@ -1,9 +1,11 @@
 use crate::avm2::error::make_error_2007;
+use crate::avm2::function::FunctionArgs;
 use crate::avm2::object::{FunctionObject, Object};
 use crate::avm2::{Activation, Error, Value};
 use crate::string::AvmString;
 
 use ruffle_macros::istr;
+use std::ops::RangeFrom;
 
 /// Extensions over parameters that are passed into AS-defined, Rust-implemented methods.
 ///
@@ -34,6 +36,10 @@ pub trait ParametersExt<'gc> {
 
     /// Gets the value at the given index, if it exists.
     fn get_optional(&self, index: usize) -> Option<Value<'gc>>;
+
+    /// Get a slice of these values using a `RangeFrom`. This method will panic
+    /// if the range is out of bounds.
+    fn get_slice_from(&self, range: RangeFrom<usize>) -> Self;
 
     /// Gets the value at the given index as an Object. It is expected that the
     /// value is either Object or Null.
@@ -147,14 +153,26 @@ pub trait ParametersExt<'gc> {
     }
 }
 
-impl<'gc> ParametersExt<'gc> for &[Value<'gc>] {
+impl<'gc> ParametersExt<'gc> for FunctionArgs<'_, 'gc> {
     #[inline]
     fn get_value(&self, index: usize) -> Value<'gc> {
-        self[index]
+        self.get_at(index)
     }
 
     #[inline]
     fn get_optional(&self, index: usize) -> Option<Value<'gc>> {
-        self.get(index).copied()
+        if index < self.len() {
+            Some(self.get_at(index))
+        } else {
+            None
+        }
+    }
+
+    #[inline]
+    fn get_slice_from(&self, range: RangeFrom<usize>) -> Self {
+        match self {
+            FunctionArgs::AsCellArgs(arguments) => FunctionArgs::AsCellArgs(&arguments[range]),
+            FunctionArgs::AsArgs(arguments) => FunctionArgs::AsArgs(&arguments[range]),
+        }
     }
 }

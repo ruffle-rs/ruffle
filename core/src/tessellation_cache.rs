@@ -40,8 +40,8 @@ impl TessellationCache {
         let mut best_index = None;
         let mut best_deviation = f32::INFINITY;
 
-        for index in 0..self.len {
-            if let Some((cached_scale, _)) = &self.entries[index] {
+        for (index, entry) in self.entries[..self.len].iter().enumerate() {
+            if let Some((cached_scale, _)) = entry {
                 let ratio = f32::abs(target_scale / cached_scale);
 
                 // Check if the cached scale is within the retessellation threshold of the target scale.

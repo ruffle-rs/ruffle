@@ -113,6 +113,7 @@ pub struct SystemClasses<'gc> {
     pub colortransform: ClassObject<'gc>,
     pub matrix: ClassObject<'gc>,
     pub matrix3d: ClassObject<'gc>,
+    pub vector3d: ClassObject<'gc>,
     pub perspectiveprojection: ClassObject<'gc>,
     pub illegaloperationerror: ClassObject<'gc>,
     pub eventdispatcher: ClassObject<'gc>,
@@ -226,6 +227,7 @@ pub struct SystemClassDefs<'gc> {
     pub display_object: Class<'gc>,
     pub sprite: Class<'gc>,
     pub urlrequestheader: Class<'gc>,
+    pub contentelement: Class<'gc>,
     pub contextmenuitem: Class<'gc>,
 }
 
@@ -291,6 +293,7 @@ impl<'gc> SystemClasses<'gc> {
             colortransform: object,
             matrix: object,
             matrix3d: object,
+            vector3d: object,
             perspectiveprojection: object,
             illegaloperationerror: object,
             eventdispatcher: object,
@@ -403,6 +406,7 @@ impl<'gc> SystemClassDefs<'gc> {
             display_object: object,
             sprite: object,
             urlrequestheader: object,
+            contentelement: object,
             contextmenuitem: object,
         }
     }
@@ -544,6 +548,9 @@ pub fn init_early_classes<'gc>(
 const PLAYERGLOBAL: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/playerglobal_avm2.swf"));
 
 mod native {
+    // Some native methods have names starting with '_'.
+    #![allow(clippy::used_underscore_items)]
+
     include!(concat!(env!("OUT_DIR"), "/native_table.rs"));
 }
 
@@ -733,6 +740,7 @@ pub fn init_native_system_classes(activation: &mut Activation<'_, '_>) {
             ("flash.events", "FocusEvent", focusevent),
             ("flash.geom", "Matrix", matrix),
             ("flash.geom", "Matrix3D", matrix3d),
+            ("flash.geom", "Vector3D", vector3d),
             ("flash.geom", "PerspectiveProjection", perspectiveprojection),
             ("flash.geom", "Point", point),
             ("flash.geom", "Rectangle", rectangle),
@@ -810,6 +818,7 @@ pub fn init_native_system_classes(activation: &mut Activation<'_, '_>) {
                 rectangletexture
             ),
             ("flash.net", "URLRequestHeader", urlrequestheader),
+            ("flash.text.engine", "ContentElement", contentelement),
             ("flash.ui", "ContextMenuItem", contextmenuitem),
         ]
     );

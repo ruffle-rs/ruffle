@@ -58,6 +58,21 @@ impl Clone for Box<dyn ShaderObject> {
 }
 
 impl Filter {
+    pub fn name(&self) -> &'static str {
+        match self {
+            Filter::BevelFilter(_) => "Bevel",
+            Filter::BlurFilter(_) => "Blur",
+            Filter::ColorMatrixFilter(_) => "Color Matrix",
+            Filter::ConvolutionFilter(_) => "Convolution",
+            Filter::DisplacementMapFilter(_) => "Displacement Map",
+            Filter::DropShadowFilter(_) => "Drop Shadow",
+            Filter::GlowFilter(_) => "Glow",
+            Filter::GradientBevelFilter(_) => "Gradient Bevel",
+            Filter::GradientGlowFilter(_) => "Gradient Glow",
+            Filter::ShaderFilter(_) => "Shader",
+        }
+    }
+
     pub fn scale(&mut self, x: f32, y: f32) {
         match self {
             Filter::BevelFilter(filter) => filter.scale(x, y),

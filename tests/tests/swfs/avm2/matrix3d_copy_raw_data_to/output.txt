@@ -1,0 +1,38 @@
+Caught error: TypeError: Error #2007: Parameter dest must be non-null.
+	at flash.geom::Matrix3D/copyRawDataTo()
+	at Function/<anonymous>()
+	at Test/testException()
+	at Test/testExceptions()
+	at Test()
+copyRawDataTo 0 length, growable: 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16
+copyRawDataTo 16 length, growable: 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16
+copyRawDataTo 20 length, growable: 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,-1,-1,-1,-1
+copyRawDataTo 16 length offset 1, growable: -1,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16
+copyRawDataTo 17 length offset 1, growable: -1,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16
+copyRawDataTo 20 length offset 4, growable: -1,-1,-1,-1,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16
+copyRawDataTo 0 length, fixed threw: RangeError: Error #1126: Cannot change the length of a fixed Vector.
+	at flash.geom::Matrix3D/copyRawDataTo()
+	at Test/testCopy()
+	at Test/testFixed()
+	at Test()
+copyRawDataTo 0 length, fixed vector after throw: ;
+copyRawDataTo 16 length, fixed: 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16
+copyRawDataTo 15 length, fixed threw: RangeError: Error #1126: Cannot change the length of a fixed Vector.
+	at flash.geom::Matrix3D/copyRawDataTo()
+	at Test/testCopy()
+	at Test/testFixed()
+	at Test()
+copyRawDataTo 15 length, fixed vector after throw: -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1;
+copyRawDataTo 20 length, fixed: 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,-1,-1,-1,-1
+copyRawDataTo 16 length offset 1, fixed threw: RangeError: Error #1126: Cannot change the length of a fixed Vector.
+	at flash.geom::Matrix3D/copyRawDataTo()
+	at Test/testCopy()
+	at Test/testFixed()
+	at Test()
+copyRawDataTo 16 length offset 1, fixed vector after throw: -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1;
+copyRawDataTo 17 length offset 1, fixed: -1,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16
+copyRawDataTo 16 length, transposed: 701,705,709,713,702,706,710,714,703,707,711,715,704,708,712,716
+copyRawDataTo 20 length offset 2, transposed: -1,-1,701,705,709,713,702,706,710,714,703,707,711,715,704,708,712,716,-1,-1
+copyRawDataTo NaN: NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN
+copyRawDataTo Infinity: Infinity,Infinity,Infinity,Infinity,Infinity,Infinity,Infinity,Infinity,Infinity,Infinity,Infinity,Infinity,Infinity,Infinity,Infinity,Infinity
+copyRawDataTo defaults: 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16

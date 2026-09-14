@@ -35,3 +35,5 @@ ime-enabled = Метод вводу
 ime-enabled-experimental = (експеримент)
 ime-enabled-tooltip = Метод вводу дозволяє вводити символи, яких немає на клавіатурі, наприклад Китайські, Японські або Корейські символи.
 ime-enabled-default = За замовчуванням
+device-font-renderer-default = За замовчуванням
+device-font-renderer-freetype = FreeType

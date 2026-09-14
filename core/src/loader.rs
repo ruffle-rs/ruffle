@@ -921,7 +921,6 @@ impl<'gc> MovieLoader<'gc> {
 /// state, such as the size of the stage and the current frame rate. Ergo,
 /// this method should only be called once, by the player that is trying to
 /// kick off its root movie load.
-#[must_use]
 pub fn load_root_movie<'gc>(
     uc: &UpdateContext<'gc>,
     request: Request,
@@ -977,7 +976,6 @@ pub fn load_root_movie<'gc>(
 /// Kick off a form data load into an AVM1 object.
 ///
 /// Returns the loader's async process, which you will need to spawn.
-#[must_use]
 pub fn load_form_into_object<'gc>(
     uc: &UpdateContext<'gc>,
     target_object: Object<'gc>,
@@ -1051,7 +1049,6 @@ pub fn load_form_into_object<'gc>(
 /// Kick off a form data load into an `LoadVars` AVM1 object.
 ///
 /// Returns the loader's async process, which you will need to spawn.
-#[must_use]
 pub fn load_form_into_load_vars<'gc>(
     uc: &UpdateContext<'gc>,
     target_object: Object<'gc>,
@@ -1210,7 +1207,6 @@ pub fn load_stylesheet<'gc>(
 /// its `data` property when the load completes.
 ///
 /// Returns the loader's async process, which you will need to spawn.
-#[must_use]
 pub fn load_data_into_url_loader<'gc>(
     uc: &UpdateContext<'gc>,
     target: Avm2ScriptObject<'gc>,
@@ -1368,12 +1364,11 @@ pub fn load_data_into_url_loader<'gc>(
 /// Kick off an AVM1 audio load.
 ///
 /// Returns the loader's async process, which you will need to spawn.
-#[must_use]
 pub fn load_sound_avm1<'gc>(
     uc: &UpdateContext<'gc>,
     sound_object: Object<'gc>,
     request: Request,
-    is_streaming: bool,
+    load_id: u32,
 ) -> OwnedFuture<(), Error> {
     let player = uc.player_handle();
     let sound_object = ObjectHandle::stash(uc, sound_object);
@@ -1383,53 +1378,92 @@ pub fn load_sound_avm1<'gc>(
         let response = wait_for_full_response(fetch).await;
 
         // Fire the load handler.
-        player.lock().unwrap().update(|uc| {
-            let sound_object = sound_object.fetch(uc);
+        player
+            .lock()
+            .unwrap()
+            .update(|uc| load_sound_avm1_data(uc, sound_object, response, load_id))
+    })
+}
 
-            let NativeObject::Sound(sound) = sound_object.native() else {
-                panic!("NativeObject must be Sound");
-            };
+/// Kick off a synchronous AVM1 audio load.
+/// This will block execution until the sound has been loaded.
+#[cfg(not(target_family = "wasm"))]
+pub fn load_sound_avm1_blocking<'gc>(
+    uc: &mut UpdateContext<'gc>,
+    sound_object: Object<'gc>,
+    request: Request,
+    load_id: u32,
+) -> Result<(), Error> {
+    let sound_object = ObjectHandle::stash(uc, sound_object);
 
-            let mut activation = Activation::from_stub(uc, ActivationIdentifier::root("[Loader]"));
+    let fetch = uc.navigator.fetch(request);
+    let response = futures::executor::block_on(wait_for_full_response(fetch));
 
-            let success = response
-                .map_err(|e| e.error)
-                .and_then(|(body, _, _, _)| {
-                    let handle = activation.context.audio.register_mp3(&body)?;
-                    sound.load_sound(&mut activation, sound_object, handle);
-                    sound.set_duration(Some(0));
-                    sound.load_id3(&mut activation, sound_object, &body)?;
-                    let duration = activation
-                        .context
-                        .audio
-                        .get_sound_duration(handle)
-                        .map(|d| d.as_millis().round() as u32);
-                    sound.set_duration(duration);
-                    Ok(())
-                })
-                .is_ok();
+    load_sound_avm1_data(uc, sound_object, response, load_id)
+}
 
-            let _ = sound_object.call_method(
-                istr!("onLoad"),
-                &[success.into()],
-                &mut activation,
-                ExecutionReason::Special,
-            );
+fn load_sound_avm1_data<'gc>(
+    uc: &mut UpdateContext<'gc>,
+    sound_object: ObjectHandle,
+    response: Result<(Vec<u8>, String, u16, bool), ErrorResponse>,
+    load_id: u32,
+) -> Result<(), Error> {
+    let sound_object = sound_object.fetch(uc);
 
-            // Streaming sounds should auto-play.
-            if is_streaming {
-                crate::avm1::start_sound(&mut activation, sound_object, &[])?;
-            }
+    let NativeObject::Sound(sound) = sound_object.native() else {
+        panic!("NativeObject must be Sound");
+    };
 
+    let mut activation = Activation::from_stub(uc, ActivationIdentifier::root("[Loader]"));
+
+    let external = sound
+        .external()
+        .expect("Loaded sound should have external sound data");
+
+    // If the load_id has changed, then it means loadSound() was called again
+    // before this load completed, so we need to stop here.
+    if external.load_id() != load_id {
+        return Ok(());
+    }
+
+    let success = response
+        .map_err(|e| e.error)
+        .and_then(|(body, _, _, _)| {
+            let handle = activation.context.audio.register_mp3(&body)?;
+            sound.set_sound(&mut activation, sound_object, Some(handle));
+            sound.set_duration(Some(0));
+            sound.load_id3(&mut activation, sound_object, &body)?;
+            let duration = activation
+                .context
+                .audio
+                .get_sound_duration(handle)
+                .map(|d| d.as_millis().round() as u32);
+            sound.set_duration(duration);
             Ok(())
         })
-    })
+        .is_ok();
+
+    external.set_is_loading(false);
+
+    let _ = sound_object.call_method(
+        istr!("onLoad"),
+        &[success.into()],
+        &mut activation,
+        ExecutionReason::Special,
+    );
+
+    // Streaming sounds should auto-play,
+    // unless stop() has been called before it finished loading.
+    if external.will_autoplay() {
+        crate::avm1::start_sound(&mut activation, sound_object, &[])?;
+    }
+
+    Ok(())
 }
 
 /// Kick off an AVM2 audio load.
 ///
 /// Returns the loader's async process, which you will need to spawn.
-#[must_use]
 pub fn load_sound_avm2<'gc>(
     uc: &UpdateContext<'gc>,
     sound: SoundObject<'gc>,
@@ -1506,7 +1540,6 @@ pub fn load_sound_avm2<'gc>(
 }
 
 /// Buffer video or audio into a NetStream.
-#[must_use]
 pub fn load_netstream<'gc>(
     uc: &UpdateContext<'gc>,
     stream: NetStream<'gc>,
@@ -1759,14 +1792,18 @@ impl<'gc> MovieLoader<'gc> {
                     if !movie.is_action_script_3()
                         && let Some(object) = mc.object1()
                     {
-                        let new_proto = uc.avm1.prototypes(mc.swf_version()).movie_clip;
+                        let id = ActivationIdentifier::root("[Resolve]");
+                        let mut activation = Activation::from_nothing(uc, id, mc.into());
+                        let new_proto = activation.resolve_prototype([istr!("MovieClip")]);
 
-                        object.define_value(
-                            uc.gc(),
-                            istr!(uc, "__proto__"),
-                            new_proto.into(),
-                            Attribute::DONT_ENUM | Attribute::DONT_DELETE,
-                        );
+                        if let Some(new_proto) = new_proto {
+                            object.define_value(
+                                activation.gc(),
+                                istr!("__proto__"),
+                                new_proto,
+                                Attribute::DONT_ENUM | Attribute::DONT_DELETE,
+                            );
+                        }
                     }
 
                     // Loaded movies are considered to be timeline-instantiated
@@ -2387,7 +2424,6 @@ fn broadcast_avm1_file_event<'gc>(
 /// Display a dialog allowing a user to select a file from an AVM1 scope.
 ///
 /// Returns a future that will be resolved when a file is selected.
-#[must_use]
 pub fn select_file_dialog_avm1<'gc>(
     uc: &UpdateContext<'gc>,
     target_object: Object<'gc>,
@@ -2425,7 +2461,6 @@ pub fn select_file_dialog_avm1<'gc>(
 /// Display a multi-file selection dialog from an AVM1 scope (`FileReferenceList.browse`).
 ///
 /// Returns a future that will be resolved when files are selected or the dialog is canceled.
-#[must_use]
 pub fn select_multi_file_dialog_avm1<'gc>(
     uc: &UpdateContext<'gc>,
     target_object: Object<'gc>,
@@ -2468,7 +2503,6 @@ pub fn select_multi_file_dialog_avm1<'gc>(
 /// Display a dialog allowing a user to select a file from an AVM2 scope.
 ///
 /// Returns a future that will be resolved when a file is selected.
-#[must_use]
 pub fn select_file_dialog_avm2<'gc>(
     uc: &UpdateContext<'gc>,
     target_object: FileReferenceObject<'gc>,
@@ -2500,7 +2534,6 @@ pub fn select_file_dialog_avm2<'gc>(
 }
 
 /// Display a dialog allowing a user to save a file to disk from an AVM2 scope.
-#[must_use]
 pub fn save_file_dialog<'gc>(
     uc: &UpdateContext<'gc>,
     target_object: FileReferenceObject<'gc>,
@@ -2557,7 +2590,6 @@ pub fn save_file_dialog<'gc>(
 /// by calling methods on the provided AVM1 `FileReference` object.
 ///
 /// Returns a future that will be resolved when a file is selected and the download has completed.
-#[must_use]
 pub fn download_file_dialog<'gc>(
     uc: &UpdateContext<'gc>,
     target_object: Object<'gc>,
@@ -2745,7 +2777,6 @@ pub fn download_file_dialog<'gc>(
 /// `target_object` is the AVM1 `FileReference` object which initialized the upload.
 ///
 /// Returns a future that will be resolved when the file upload has completed.
-#[must_use]
 pub fn upload_file<'gc>(
     uc: &UpdateContext<'gc>,
     target_object: Object<'gc>,

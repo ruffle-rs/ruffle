@@ -10,6 +10,7 @@ use crate::avm2::api_version::ApiVersion;
 use crate::avm2::{Avm2, LoaderInfoObject, SharedObjectObject, SoundChannelObject};
 use crate::backend::{
     audio::{AudioBackend, AudioManager, SoundHandle, SoundInstanceHandle},
+    locale::LocaleBackend,
     log::LogBackend,
     navigator::NavigatorBackend,
     storage::StorageBackend,
@@ -117,6 +118,9 @@ pub struct UpdateContext<'gc> {
 
     /// The video backend, used for video decoding
     pub video: &'gc mut dyn VideoBackend,
+
+    /// The locale backend.
+    pub locale: &'gc mut dyn LocaleBackend,
 
     /// The RNG, used by the AVM `RandomNumber` opcode, `Math.random(),` and `random()`.
     pub rng: &'gc mut AvmRng,
@@ -268,6 +272,16 @@ impl<'gc> UpdateContext<'gc> {
     ) {
         self.audio_manager
             .set_local_sound_transform(instance, sound_transform);
+    }
+
+    /// Set the local sound transform for each instance in a handle.
+    pub fn set_sound_transform_with_handle(
+        &mut self,
+        sound: SoundHandle,
+        sound_transform: SoundTransform,
+    ) {
+        self.audio_manager
+            .set_sound_transform_with_handle(sound, sound_transform);
     }
 
     pub fn start_sound(
@@ -571,7 +585,10 @@ pub struct RenderContext<'a, 'gc> {
     pub gc_context: &'gc Mutation<'gc>,
 
     /// The library, which provides access to fonts and other definitions when rendering.
-    pub library: &'a Library<'gc>,
+    pub library: &'a mut Library<'gc>,
+
+    /// The UI backend, used to detect user interactions and load device fonts.
+    pub ui: &'a dyn UiBackend,
 
     /// The transform stack controls the matrix and color transform as we traverse the display hierarchy.
     pub transform_stack: &'a mut TransformStack,
@@ -640,10 +657,16 @@ impl<'gc> RenderContext<'_, 'gc> {
 #[collect(no_drop)]
 pub enum ActionType<'gc> {
     /// Normal frame or event actions.
-    Normal { bytecode: SwfSlice },
+    Normal {
+        bytecode: SwfSlice,
+        name: &'static str,
+    },
 
     /// AVM1 initialize clip event.
-    Initialize { bytecode: SwfSlice },
+    Initialize {
+        bytecode: SwfSlice,
+        name: &'static str,
+    },
 
     /// Construct a movie with a custom class or on(construct) events.
     Construct {
@@ -679,13 +702,15 @@ impl ActionType<'_> {
 impl fmt::Debug for ActionType<'_> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            ActionType::Normal { bytecode } => f
+            ActionType::Normal { bytecode, name } => f
                 .debug_struct("ActionType::Normal")
                 .field("bytecode", bytecode)
+                .field("name", name)
                 .finish(),
-            ActionType::Initialize { bytecode } => f
+            ActionType::Initialize { bytecode, name } => f
                 .debug_struct("ActionType::Initialize")
                 .field("bytecode", bytecode)
+                .field("name", name)
                 .finish(),
             ActionType::Construct {
                 constructor,

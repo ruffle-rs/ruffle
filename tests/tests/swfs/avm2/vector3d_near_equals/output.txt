@@ -1,0 +1,80 @@
+v(1).nearEquals(v(2),1) = false
+v(1).nearEquals(v(2),1,true) = false
+v(1).nearEquals(v(2),1.1) = true
+v(1).nearEquals(v(2),1.1,true) = false
+v(1).nearEquals(v(0),1) = false
+v(1).nearEquals(v(0),1,true) = false
+v(1).nearEquals(v(0),1.1) = true
+v(1).nearEquals(v(0),1.1,true) = true
+false
+  v1 = 1,1,1,1
+  v2 = 2,2,2,2
+true
+  v1 = 1,1,1,1
+  v2 = 2,2,2,2
+false
+  v1 = 1,1,1,1
+  v2 = 2,2,2,2
+false
+  v1 = 1,1,1,2
+  v2 = 2,2,2,2
+false
+  v1 = 2,1,2,1
+  v2 = 2,2,2,2
+false
+  v1 = 1,2,2,1
+  v2 = 2,2,2,2
+false
+  v1 = 2,2,1,1
+  v2 = 2,2,2,2
+false
+  v1 = 2,2,2,2
+  v2 = 2,2,2,2
+false
+  v1 = 2,2,2,2
+  v2 = 2,2,2,2
+false
+  v1 = 2,2,2,2
+  v2 = 2,2,2,2
+false
+  v1 = 2,2,2,2
+  v2 = 2,2,2,2
+false
+  v1 = 2,2,2,2
+  v2 = 2,2,2,2
+true
+  v1 = 2,2,2,2
+  v2 = 2,2,2,2
+false
+  v1 = 2,2,2,3
+  v2 = 2,2,2,2
+false
+  v1 = 2,2,2,3
+  v2 = 2,2,2,2
+false
+  v1 = 2,2,2,3
+  v2 = 2,2,2,2
+true
+  v1 = 2,2,2,3
+  v2 = 2,2,2,2
+true
+  v1 = 2,2,2,1.234
+  v2 = 2,2,2,2
+true
+  v1 = 2,2,2,-1
+  v2 = 2,2,2,2
+false
+  v1 = -1,-1,-1,-1
+  v2 = 2,2,2,2
+false
+  v1 = -1,-1,-1,-1
+  v2 = 2,2,2,2
+false
+  v1 = -1,-1,-1,-1
+  v2 = 2,2,2,2
+false
+  v1 = -1,-1,-1,-1
+  v2 = 2,2,2,2
+true
+  v1 = -1,-1,-1,-2
+  v2 = 2,2,2,2

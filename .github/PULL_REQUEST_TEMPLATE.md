@@ -1,17 +1,33 @@
 ## Description
 
-_Please explain the changes made within this PR.
-Why did you make this change; does it add a feature, or fix a bug?
-Be sure to link to any content or issues that it affects!
-Please also remember that each commit message should describe its own changes too._
+<!--
+Please explain the changes made within this PR and the context around them.
+Why did you make this change; does it add a feature, or fix a bug? Be sure to
+link to any content or issues that it affects!
+
+Please also remember that each commit message should describe its own changes
+too.
+-->
 
 ## Testing
 
-_How can we test this PR?_
+<!-- How can we test this PR? -->
 
-_If you're able to, please follow our [test guidelines](https://github.com/ruffle-rs/ruffle/blob/master/CONTRIBUTING.md#test-guidelines) to make a regression test which should fail before this PR, and pass after it. This helps us protect against breaking your changes in the future. These are highly encouraged and will speed up reviewing of your pull request. Some examples of these are SWF regression tests, unit tests, or web integration tests. Describe what you added!_
+<!--
+If possible, please follow our [test guidelines](https://github.com/ruffle-rs/ruffle/blob/master/CONTRIBUTING.md#test-guidelines)
+to make a SWF test which should fail before this PR, and pass after it. This
+helps us protect against breaking your changes in the future.
 
-_If you need help with making tests, or do not believe this change is easily automatically testable, please describe how we can verify the changes ourselves. If there is real world content that we can test on, that helps a lot!_
+If applicable, add unit tests or web integration tests, but don't test SWF
+behavior with unit tests. Describe what you added!
+
+Note that in most cases, it's obligatory to add a SWF test for every
+observable change you make!
+
+If you need help with making tests, or do not believe this change is easily
+automatically testable, please describe how we can verify the changes ourselves.
+If there is real world content that we can test on, that helps a lot!
+-->
 
 ## Checklist
 

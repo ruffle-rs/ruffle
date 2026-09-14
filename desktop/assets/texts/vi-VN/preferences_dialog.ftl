@@ -35,3 +35,6 @@ ime-enabled = Phương thức nhập liệu
 ime-enabled-experimental = (thử nghiệm)
 ime-enabled-tooltip = Phương thức nhập liệu cho phép nhập các kí tự không có sẵn trên bàn phím, ví dụ tiếng Trung, Nhật, Hàn.
 ime-enabled-default = Mặc định
+device-font-renderer-default = Mặc định
+device-font-renderer-embedded = Tích hợp sẵn
+device-font-renderer-freetype = FreeType

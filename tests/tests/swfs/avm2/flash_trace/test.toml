@@ -1,0 +1,13 @@
+# Note that this test can't be run with the Flash Player Debugger,
+# as this tests the behavior of `flash.trace.Trace` in the release version.
+# To get FP's output, open the SWF in the non-debugger projector, and
+# copy the text that appears.
+
+num_frames = 1
+
+[[compilers]]
+type = "Asc"
+target = "test.swf"
+class = "Test"
+scripts = ["Test.as"]
+swf_version = 9

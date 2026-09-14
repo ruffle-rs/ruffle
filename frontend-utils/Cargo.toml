@@ -15,16 +15,18 @@ default = ["native-tls"]
 cpal = ["dep:cpal", "dep:bytemuck", "ruffle_core/audio"]
 fs = []
 navigator = ["fs", "dep:async-io", "dep:tokio"]
+ui = []
+freetype = ["ui", "dep:freetype-rs"]
 
 # TLS backend for reqwest. `native-tls` is enabled by default; it uses the
 # system TLS component (OpenSSL/SChannel/SecureTransport) and keeps the binary
 # smaller, which suits desktop targets. Platforms where native-tls is
 # unavailable or impractical (e.g. Android) should set `default-features = false`
-# and enable `rustls-tls`, which bundles a pure-Rust TLS stack (with the OS root
+# and enable `rustls-tls`, which bundles a pure-Rust TLS stack (including root
 # certificates). reqwest picks the backend automatically at runtime from
 # whichever is compiled in, so no code change is needed to switch.
 native-tls = ["reqwest/native-tls"]
-rustls-tls = ["reqwest/rustls-tls-native-roots"]
+rustls-tls = ["reqwest/rustls-tls"]
 
 [dependencies]
 toml_edit = { workspace = true, features = ["parse"] }
@@ -50,6 +52,9 @@ reqwest = { workspace = true, features = [
 tokio = { workspace = true, features = ["net", "macros"], optional = true }
 cpal = { workspace = true, optional = true }
 bytemuck = { workspace = true, optional = true }
+
+[target.'cfg(target_os = "linux")'.dependencies]
+freetype-rs = { version = "0.38.0", optional = true }
 
 [dev-dependencies]
 tempfile = { workspace = true }

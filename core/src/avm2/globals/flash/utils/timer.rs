@@ -2,6 +2,7 @@
 
 use crate::avm2::Error;
 use crate::avm2::activation::Activation;
+use crate::avm2::function::FunctionArgs;
 use crate::avm2::globals::slots::flash_utils_timer as slots;
 use crate::avm2::object::TObject;
 use crate::avm2::value::Value;
@@ -11,7 +12,7 @@ use crate::timer::TimerCallback;
 pub fn stop<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
@@ -29,7 +30,7 @@ pub fn stop<'gc>(
 pub fn start<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
@@ -64,7 +65,7 @@ pub fn start<'gc>(
 pub fn update_delay<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 

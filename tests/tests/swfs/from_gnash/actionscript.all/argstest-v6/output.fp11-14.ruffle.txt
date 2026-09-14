@@ -74,43 +74,36 @@ Trying to construct _global.System.IME.onIMEComposition
 Object was constructed
 Testing constructor()
 Testing __constructor__()
-Testing __proto__()
 testing _global.System.IME.doConversion(function)
 Trying to construct _global.System.IME.doConversion
 Object was constructed
 Testing constructor()
 Testing __constructor__()
-Testing __proto__()
 testing _global.System.IME.setCompositionString(function)
 Trying to construct _global.System.IME.setCompositionString
 Object was constructed
 Testing constructor()
 Testing __constructor__()
-Testing __proto__()
 testing _global.System.IME.setConversionMode(function)
 Trying to construct _global.System.IME.setConversionMode
 Object was constructed
 Testing constructor()
 Testing __constructor__()
-Testing __proto__()
 testing _global.System.IME.getConversionMode(function)
 Trying to construct _global.System.IME.getConversionMode
 Object was constructed
 Testing constructor()
 Testing __constructor__()
-Testing __proto__()
 testing _global.System.IME.setEnabled(function)
 Trying to construct _global.System.IME.setEnabled
 Object was constructed
 Testing constructor()
 Testing __constructor__()
-Testing __proto__()
 testing _global.System.IME.getEnabled(function)
 Trying to construct _global.System.IME.getEnabled
 Object was constructed
 Testing constructor()
 Testing __constructor__()
-Testing __proto__()
 testing _global.System.IME.ALPHANUMERIC_FULL(string)
 testing _global.System.IME.ALPHANUMERIC_HALF(string)
 testing _global.System.IME.CHINESE(string)
@@ -154,33 +147,28 @@ Trying to construct _global.System.security.PolicyFileResolver
 Object was constructed
 Testing constructor()
 Testing __constructor__()
-Testing __proto__()
 testing _global.System.security.sandboxType(string)
 testing _global.System.security.escapeDomain(function)
 Trying to construct _global.System.security.escapeDomain
 Object was constructed
 Testing constructor()
 Testing __constructor__()
-Testing __proto__()
 testing _global.System.security.chooseLocalSwfPath(undefined)
 testing _global.System.security.loadPolicyFile(function)
 Trying to construct _global.System.security.loadPolicyFile
 Object was constructed
 Testing constructor()
 Testing __constructor__()
-Testing __proto__()
 testing _global.System.security.allowInsecureDomain(function)
 Trying to construct _global.System.security.allowInsecureDomain
 Object was constructed
 Testing constructor()
 Testing __constructor__()
-Testing __proto__()
 testing _global.System.security.allowDomain(function)
 Trying to construct _global.System.security.allowDomain
 Object was constructed
 Testing constructor()
 Testing __constructor__()
-Testing __proto__()
 testing _global.System.Product(function)
 Trying to construct 1
 Object was constructed
@@ -235,19 +223,16 @@ Trying to construct _global.System.onStatus
 Object was constructed
 Testing constructor()
 Testing __constructor__()
-Testing __proto__()
 testing _global.System.showSettings(function)
 Trying to construct _global.System.showSettings
 Object was constructed
 Testing constructor()
 Testing __constructor__()
-Testing __proto__()
 testing _global.System.setClipboard(function)
 Trying to construct _global.System.setClipboard
 Object was constructed
 Testing constructor()
 Testing __constructor__()
-Testing __proto__()
 testing _global.System.useCodepage(boolean)
 testing _global.System.exactSettings(boolean)
 testing _global.SoundCodec(object)
@@ -259,19 +244,16 @@ Trying to construct _global.Accessibility.updateProperties
 Object was constructed
 Testing constructor()
 Testing __constructor__()
-Testing __proto__()
 testing _global.Accessibility.sendEvent(function)
 Trying to construct _global.Accessibility.sendEvent
 Object was constructed
 Testing constructor()
 Testing __constructor__()
-Testing __proto__()
 testing _global.Accessibility.isActive(function)
 Trying to construct _global.Accessibility.isActive
 Object was constructed
 Testing constructor()
 Testing __constructor__()
-Testing __proto__()
 testing _global.Video(function)
 Trying to construct _global.Video
 Object was constructed
@@ -414,25 +396,21 @@ Trying to construct _global.Key.isToggled
 Object was constructed
 Testing constructor()
 Testing __constructor__()
-Testing __proto__()
 testing _global.Key.isDown(function)
 Trying to construct _global.Key.isDown
 Object was constructed
 Testing constructor()
 Testing __constructor__()
-Testing __proto__()
 testing _global.Key.getCode(function)
 Trying to construct _global.Key.getCode
 Object was constructed
 Testing constructor()
 Testing __constructor__()
-Testing __proto__()
 testing _global.Key.getAscii(function)
 Trying to construct _global.Key.getAscii
 Object was constructed
 Testing constructor()
 Testing __constructor__()
-Testing __proto__()
 testing _global.Key.ALT(number)
 testing _global.Key.ENTER(number)
 testing _global.Key.SPACE(number)
@@ -487,31 +465,26 @@ Trying to construct _global.Mouse.setTrailerMode
 Object was constructed
 Testing constructor()
 Testing __constructor__()
-Testing __proto__()
 testing _global.Mouse.setTrailerPosition(function)
 Trying to construct _global.Mouse.setTrailerPosition
 Object was constructed
 Testing constructor()
 Testing __constructor__()
-Testing __proto__()
 testing _global.Mouse.setTrailer(function)
 Trying to construct _global.Mouse.setTrailer
 Object was constructed
 Testing constructor()
 Testing __constructor__()
-Testing __proto__()
 testing _global.Mouse.hide(function)
 Trying to construct _global.Mouse.hide
 Object was constructed
 Testing constructor()
 Testing __constructor__()
-Testing __proto__()
 testing _global.Mouse.show(function)
 Trying to construct _global.Mouse.show
 Object was constructed
 Testing constructor()
 Testing __constructor__()
-Testing __proto__()
 testing _global.Mouse._listeners(object)
 testing _global.Mouse._listeners.length(number)
 testing _global.Mouse.removeListener(function)
@@ -547,37 +520,31 @@ Trying to construct _global.Selection.setSelection
 Object was constructed
 Testing constructor()
 Testing __constructor__()
-Testing __proto__()
 testing _global.Selection.setFocus(function)
 Trying to construct _global.Selection.setFocus
 Object was constructed
 Testing constructor()
 Testing __constructor__()
-Testing __proto__()
 testing _global.Selection.getFocus(function)
 Trying to construct _global.Selection.getFocus
 Object was constructed
 Testing constructor()
 Testing __constructor__()
-Testing __proto__()
 testing _global.Selection.getCaretIndex(function)
 Trying to construct _global.Selection.getCaretIndex
 Object was constructed
 Testing constructor()
 Testing __constructor__()
-Testing __proto__()
 testing _global.Selection.getEndIndex(function)
 Trying to construct _global.Selection.getEndIndex
 Object was constructed
 Testing constructor()
 Testing __constructor__()
-Testing __proto__()
 testing _global.Selection.getBeginIndex(function)
 Trying to construct _global.Selection.getBeginIndex
 Object was constructed
 Testing constructor()
 Testing __constructor__()
-Testing __proto__()
 testing _global.Selection._listeners(object)
 testing _global.Selection._listeners.length(number)
 testing _global.Selection.removeListener(function)
@@ -724,109 +691,91 @@ Trying to construct _global.Math.pow
 Object was constructed
 Testing constructor()
 Testing __constructor__()
-Testing __proto__()
 testing _global.Math.acos(function)
 Trying to construct _global.Math.acos
 Object was constructed
 Testing constructor()
 Testing __constructor__()
-Testing __proto__()
 testing _global.Math.asin(function)
 Trying to construct _global.Math.asin
 Object was constructed
 Testing constructor()
 Testing __constructor__()
-Testing __proto__()
 testing _global.Math.atan(function)
 Trying to construct _global.Math.atan
 Object was constructed
 Testing constructor()
 Testing __constructor__()
-Testing __proto__()
 testing _global.Math.ceil(function)
 Trying to construct _global.Math.ceil
 Object was constructed
 Testing constructor()
 Testing __constructor__()
-Testing __proto__()
 testing _global.Math.floor(function)
 Trying to construct _global.Math.floor
 Object was constructed
 Testing constructor()
 Testing __constructor__()
-Testing __proto__()
 testing _global.Math.random(function)
 Trying to construct _global.Math.random
 Object was constructed
 Testing constructor()
 Testing __constructor__()
-Testing __proto__()
 testing _global.Math.round(function)
 Trying to construct _global.Math.round
 Object was constructed
 Testing constructor()
 Testing __constructor__()
-Testing __proto__()
 testing _global.Math.sqrt(function)
 Trying to construct _global.Math.sqrt
 Object was constructed
 Testing constructor()
 Testing __constructor__()
-Testing __proto__()
 testing _global.Math.log(function)
 Trying to construct _global.Math.log
 Object was constructed
 Testing constructor()
 Testing __constructor__()
-Testing __proto__()
 testing _global.Math.exp(function)
 Trying to construct _global.Math.exp
 Object was constructed
 Testing constructor()
 Testing __constructor__()
-Testing __proto__()
 testing _global.Math.tan(function)
 Trying to construct _global.Math.tan
 Object was constructed
 Testing constructor()
 Testing __constructor__()
-Testing __proto__()
 testing _global.Math.atan2(function)
 Trying to construct _global.Math.atan2
 Object was constructed
 Testing constructor()
 Testing __constructor__()
-Testing __proto__()
 testing _global.Math.cos(function)
 Trying to construct _global.Math.cos
 Object was constructed
 Testing constructor()
 Testing __constructor__()
-Testing __proto__()
 testing _global.Math.sin(function)
 Trying to construct _global.Math.sin
 Object was constructed
 Testing constructor()
 Testing __constructor__()
-Testing __proto__()
 testing _global.Math.max(function)
 Trying to construct _global.Math.max
 Object was constructed
 Testing constructor()
 Testing __constructor__()
-Testing __proto__()
 testing _global.Math.min(function)
 Trying to construct _global.Math.min
 Object was constructed
 Testing constructor()
 Testing __constructor__()
-Testing __proto__()
 testing _global.Math.abs(function)
 Trying to construct _global.Math.abs
 Object was constructed
 Testing constructor()
 Testing __constructor__()
-Testing __proto__()
 testing _global.Math.E(number)
 testing _global.Math.LN10(number)
 testing _global.Math.LN2(number)
@@ -947,43 +896,36 @@ Trying to construct _global.setTimeout
 Object was constructed
 Testing constructor()
 Testing __constructor__()
-Testing __proto__()
 testing _global.clearInterval(function)
 Trying to construct _global.clearInterval
 Object was constructed
 Testing constructor()
 Testing __constructor__()
-Testing __proto__()
 testing _global.clearTimeout(function)
 Trying to construct _global.clearTimeout
 Object was constructed
 Testing constructor()
 Testing __constructor__()
-Testing __proto__()
 testing _global.setInterval(function)
 Trying to construct _global.setInterval
 Object was constructed
 Testing constructor()
 Testing __constructor__()
-Testing __proto__()
 testing _global.isFinite(function)
 Trying to construct _global.isFinite
 Object was constructed
 Testing constructor()
 Testing __constructor__()
-Testing __proto__()
 testing _global.isNaN(function)
 Trying to construct _global.isNaN
 Object was constructed
 Testing constructor()
 Testing __constructor__()
-Testing __proto__()
 testing _global.updateAfterEvent(function)
 Trying to construct _global.updateAfterEvent
 Object was constructed
 Testing constructor()
 Testing __constructor__()
-Testing __proto__()
 testing _global.trace(function)
 
 1
@@ -1017,49 +959,41 @@ Testing __constructor__()
 1
 1
 1
-Testing __proto__()
 testing _global.parseFloat(function)
 Trying to construct _global.parseFloat
 Object was constructed
 Testing constructor()
 Testing __constructor__()
-Testing __proto__()
 testing _global.parseInt(function)
 Trying to construct _global.parseInt
 Object was constructed
 Testing constructor()
 Testing __constructor__()
-Testing __proto__()
 testing _global.unescape(function)
 Trying to construct _global.unescape
 Object was constructed
 Testing constructor()
 Testing __constructor__()
-Testing __proto__()
 testing _global.escape(function)
 Trying to construct _global.escape
 Object was constructed
 Testing constructor()
 Testing __constructor__()
-Testing __proto__()
 testing _global.ASSetNativeAccessor(function)
 Trying to construct _global.ASSetNativeAccessor
 Object was constructed
 Testing constructor()
 Testing __constructor__()
-Testing __proto__()
 testing _global.ASSetNative(function)
 Trying to construct _global.ASSetNative
 Object was constructed
 Testing constructor()
 Testing __constructor__()
-Testing __proto__()
 testing _global.ASSetPropFlags(function)
 Trying to construct _global.ASSetPropFlags
 Object was constructed
 Testing constructor()
 Testing __constructor__()
-Testing __proto__()
 testing _global.RemoteLSOUsage(function)
 Trying to construct _global.RemoteLSOUsage
 Object was constructed
@@ -1336,5 +1270,4 @@ Trying to construct _global.ASnative
 Object was constructed
 Testing constructor()
 Testing __constructor__()
-Testing __proto__()
 PASSED: Nothing crashed gnash

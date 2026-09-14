@@ -7,6 +7,7 @@ mod line_wrapping;
 mod text_format;
 
 pub use dimensions::Position;
+pub use layout::context::LayoutContext;
 pub use layout::{
     Layout, LayoutBox, LayoutContent, LayoutLine, LayoutMetrics, lower_from_text_spans,
 };

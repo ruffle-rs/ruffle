@@ -1,0 +1,3 @@
+///new MyBytes()
+Error: Error #2136: The SWF file file:///test.swf contains invalid data.
+	at Test()

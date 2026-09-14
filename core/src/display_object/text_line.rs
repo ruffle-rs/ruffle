@@ -10,6 +10,7 @@ use crate::display_object::{
     Avm2MousePick, BoundsMode, DisplayObjectBase, EditText, InteractiveObject,
 };
 use crate::events::{ClipEvent, ClipEventResult};
+use crate::fte::TextLineValidity;
 use crate::prelude::*;
 use crate::tag_utils::SwfMovie;
 use crate::vminterface::Instantiator;
@@ -17,11 +18,10 @@ use core::fmt;
 use gc_arena::barrier::unlock;
 use gc_arena::lock::Lock;
 use gc_arena::{Collect, Gc, Mutation};
-use ruffle_common::avm_string::AvmString;
 use ruffle_common::utils::HasPrefixField;
-use ruffle_macros::istr;
 use std::cell::Cell;
 use std::sync::Arc;
+use swf::Twips;
 
 #[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]
@@ -45,12 +45,10 @@ pub struct TextLineData<'gc> {
     #[collect(require_static)]
     movie: Arc<SwfMovie>,
 
-    /// Validity can be any user-defined string, we can't use an enum here.
-    ///
-    /// See [`TextLineValidity`] for the known values of validity.
-    validity: Lock<AvmString<'gc>>,
+    validity: Lock<TextLineValidity<'gc>>,
 
     text_block: Lock<Option<TextBlockObject<'gc>>>,
+    hide_block_from_script: Cell<bool>,
 
     specified_width: Cell<f64>,
 
@@ -77,8 +75,9 @@ impl<'gc> TextLine<'gc> {
                 avm2_object: Lock::new(None),
                 fallback,
                 movie,
-                validity: Lock::new(istr!(context, "valid")),
+                validity: Lock::new(TextLineValidity::Valid),
                 text_block: Lock::new(None),
+                hide_block_from_script: Cell::new(false),
                 specified_width: Cell::new(0.0),
                 raw_text_length: Cell::new(0),
                 begin_index: Cell::new(0),
@@ -90,24 +89,110 @@ impl<'gc> TextLine<'gc> {
         ))
     }
 
+    pub fn reset_properties(self, mc: &Mutation<'gc>) {
+        // TODO: Reset more properties
+
+        // Reset display object properties
+        self.set_x(Twips::ZERO);
+        self.set_y(Twips::ZERO);
+
+        // Reset text line properties
+        self.set_validity(TextLineValidity::Valid, mc);
+        self.set_text_block(None, mc);
+        self.set_hide_block_from_script(false);
+
+        self.set_specified_width(0.0);
+        self.set_raw_text_length(0);
+        self.set_begin_index(0);
+        self.set_end_index(0);
+        self.set_line_index(0);
+
+        self.set_previous_line(None, mc);
+        self.set_next_line(None, mc);
+    }
+
+    /// Release this line from its siblings and the block it's in.
+    ///
+    /// Doing this will set the validity of the line and all its successors to
+    /// "invalid".
+    pub fn release(self, mc: &Mutation<'gc>) {
+        let block = self.text_block().expect("Line is in a text block");
+
+        let block_first_line = block.first_line().expect("Text block has lines");
+
+        let previous_line = self.previous_line();
+        let next_line = self.next_line();
+
+        // If this line was the text block's first line, set it to the next line
+        if DisplayObject::ptr_eq(self, block_first_line) {
+            block.set_first_line(next_line, mc);
+        }
+
+        // This line is, obviously, invalid now
+        self.set_validity(TextLineValidity::Invalid, mc);
+
+        // Successors of this line also become invalid, as their predecessor is invalid
+        for line in self.next_lines() {
+            line.set_validity(TextLineValidity::Invalid, mc);
+        }
+
+        // Make the doubly-linked list of lines skip over this one
+        if let Some(previous_line) = previous_line {
+            previous_line.set_next_line(next_line, mc);
+        }
+        if let Some(next_line) = next_line {
+            next_line.set_previous_line(previous_line, mc);
+        }
+
+        // Finally, completely disconnect this line from its siblings and the block
+        self.set_text_block(None, mc);
+        self.set_previous_line(None, mc);
+        self.set_next_line(None, mc);
+    }
+
     pub fn measure_text(self, context: &mut UpdateContext<'gc>) -> (Twips, Twips) {
         self.0.fallback.measure_text(context)
     }
 
-    pub fn validity(self) -> AvmString<'gc> {
+    pub fn fallback(self) -> EditText<'gc> {
+        self.0.fallback
+    }
+
+    pub fn validity(self) -> TextLineValidity<'gc> {
         self.0.validity.get()
     }
 
-    pub fn set_validity(self, validity: AvmString<'gc>, context: &mut UpdateContext<'gc>) {
-        unlock!(Gc::write(context.gc(), self.0), TextLineData, validity).set(validity);
+    pub fn set_validity(self, validity: TextLineValidity<'gc>, mc: &Mutation<'gc>) {
+        if matches!(validity, TextLineValidity::Static) {
+            // NOTE: The text line is not disconnected from its sibling lines,
+            // nor is it truly disconnected from its owner block. However,
+            // attempting to access the block using `line.textBlock` in AS
+            // always returns `null`, even if the validity of this line is later
+            // set back to some other value.
+            self.set_hide_block_from_script(true);
+        }
+
+        unlock!(Gc::write(mc, self.0), TextLineData, validity).set(validity);
     }
 
     pub fn text_block(self) -> Option<TextBlockObject<'gc>> {
         self.0.text_block.get()
     }
 
+    pub fn text_block_from_script(self) -> Option<TextBlockObject<'gc>> {
+        if self.0.hide_block_from_script.get() {
+            None
+        } else {
+            self.0.text_block.get()
+        }
+    }
+
     pub fn set_text_block(self, text_block: Option<TextBlockObject<'gc>>, mc: &Mutation<'gc>) {
         unlock!(Gc::write(mc, self.0), TextLineData, text_block).set(text_block);
+    }
+
+    pub fn set_hide_block_from_script(self, value: bool) {
+        self.0.hide_block_from_script.set(value);
     }
 
     pub fn specified_width(self) -> f64 {
@@ -165,34 +250,20 @@ impl<'gc> TextLine<'gc> {
     pub fn set_next_line(self, value: Option<TextLine<'gc>>, mc: &Mutation<'gc>) {
         unlock!(Gc::write(mc, self.0), TextLineData, next_line).set(value);
     }
+
+    pub fn next_lines(self) -> impl Iterator<Item = TextLine<'gc>> {
+        core::iter::successors(self.next_line(), |line| line.next_line())
+    }
+
+    pub fn previous_lines(self) -> impl Iterator<Item = TextLine<'gc>> {
+        core::iter::successors(self.previous_line(), |line| line.previous_line())
+    }
 }
 
 impl<'gc> TDisplayObject<'gc> for TextLine<'gc> {
     fn base(self) -> Gc<'gc, DisplayObjectBase<'gc>> {
         let interactive: Gc<'gc, InteractiveObjectBase<'gc>> = HasPrefixField::as_prefix_gc(self.0);
         HasPrefixField::as_prefix_gc(interactive)
-    }
-
-    fn instantiate(self, gc_context: &Mutation<'gc>) -> DisplayObject<'gc> {
-        Self(Gc::new(
-            gc_context,
-            TextLineData {
-                base: Default::default(),
-                avm2_object: Lock::new(None),
-                fallback: self.0.fallback,
-                movie: self.0.movie.clone(),
-                validity: Lock::new(self.0.validity.get()),
-                text_block: Lock::new(self.0.text_block.get()),
-                specified_width: Cell::new(self.0.specified_width.get()),
-                raw_text_length: Cell::new(self.0.raw_text_length.get()),
-                begin_index: Cell::new(self.0.begin_index.get()),
-                end_index: Cell::new(self.0.end_index.get()),
-                line_index: Cell::new(self.0.line_index.get()),
-                previous_line: Lock::new(self.0.previous_line.get()),
-                next_line: Lock::new(self.0.next_line.get()),
-            },
-        ))
-        .into()
     }
 
     fn id(self) -> CharacterId {

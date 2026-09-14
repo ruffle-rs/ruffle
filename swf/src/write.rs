@@ -5,7 +5,6 @@ use crate::{
     types::*,
 };
 use bitstream_io::BitWrite;
-use byteorder::{LittleEndian, WriteBytesExt};
 use std::cmp::max;
 use std::io::{self, Write};
 
@@ -47,13 +46,12 @@ pub fn write_swf<W: Write>(header: &Header, tags: &[Tag<'_>], output: W) -> Resu
 /// Writes a SWF to the output stream, where the tag list has already been serialized to bytes.
 /// This still appends other header information such as stage size.
 pub fn write_swf_raw_tags<W: Write>(header: &Header, tags: &[u8], mut output: W) -> Result<()> {
-    let signature = match header.compression {
+    output.write_all(match header.compression {
         Compression::None => b"FWS",
         Compression::Zlib => b"CWS",
         Compression::Lzma => b"ZWS",
-    };
-    output.write_all(&signature[..])?;
-    output.write_u8(header.version)?;
+    })?;
+    output.write_all(&[header.version])?;
 
     // Write SWF body.
     let mut swf_body = Vec::new();
@@ -68,7 +66,8 @@ pub fn write_swf_raw_tags<W: Write>(header: &Header, tags: &[u8], mut output: W)
 
     // Write SWF header.
     // Uncompressed SWF length.
-    output.write_u32::<LittleEndian>(swf_body.len() as u32 + 8)?;
+    let swf_len = swf_body.len() as u32 + 8;
+    output.write_all(&u32::to_le_bytes(swf_len))?;
 
     // Compress SWF body.
     match header.compression {
@@ -111,7 +110,8 @@ fn write_lzma_swf<W: Write>(mut output: W, mut swf_body: &[u8]) -> Result<()> {
 
     // Flash uses a mangled LZMA header, so we have to massage it into the SWF format.
     // https://helpx.adobe.com/flash-player/kb/exception-thrown-you-decompress-lzma-compressed.html
-    output.write_u32::<LittleEndian>(data.len() as u32 - 13)?; // Compressed length (- 13 to not include lzma header)
+    let adjusted_len = data.len() as u32 - 13; // Compressed length (- 13 to not include lzma header)
+    output.write_all(&u32::to_le_bytes(adjusted_len))?;
     output.write_all(&data[0..5])?; // LZMA properties
     output.write_all(&data[13..])?; // Data
     Ok(())
@@ -124,17 +124,36 @@ fn write_lzma_swf<W: Write>(_output: W, _swf_body: &[u8]) -> Result<()> {
     ))
 }
 
+macro_rules! impl_write_little_endian {
+    ( $($name:ident for $ty:ty;)* ) => {$(
+        #[inline]
+        fn $name(&mut self, n: $ty) -> io::Result<()> {
+            self.as_writer().write_all(&n.to_le_bytes())
+        }
+    )*}
+}
+
 pub trait SwfWriteExt {
-    fn write_u8(&mut self, n: u8) -> io::Result<()>;
-    fn write_u16(&mut self, n: u16) -> io::Result<()>;
-    fn write_u32(&mut self, n: u32) -> io::Result<()>;
-    fn write_u64(&mut self, n: u64) -> io::Result<()>;
-    fn write_i8(&mut self, n: i8) -> io::Result<()>;
-    fn write_i16(&mut self, n: i16) -> io::Result<()>;
-    fn write_i32(&mut self, n: i32) -> io::Result<()>;
-    fn write_f32(&mut self, n: f32) -> io::Result<()>;
-    fn write_f64(&mut self, n: f64) -> io::Result<()>;
-    fn write_string(&mut self, s: &'_ SwfStr) -> io::Result<()>;
+    fn as_writer(&mut self) -> &mut impl Write;
+
+    impl_write_little_endian! {
+        write_u8 for u8;
+        write_u16 for u16;
+        write_u32 for u32;
+        write_u64 for u64;
+        write_i8 for i8;
+        write_i16 for i16;
+        write_i32 for i32;
+        write_i64 for i64;
+        write_f32 for f32;
+        write_f64 for f64;
+    }
+
+    #[inline]
+    fn write_string(&mut self, s: &'_ SwfStr) -> io::Result<()> {
+        self.as_writer().write_all(s.as_bytes())?;
+        self.write_u8(0)
+    }
 }
 
 pub struct BitWriter<W: Write> {
@@ -219,54 +238,8 @@ struct Writer<W: Write> {
 
 impl<W: Write> SwfWriteExt for Writer<W> {
     #[inline]
-    fn write_u8(&mut self, n: u8) -> io::Result<()> {
-        self.output.write_u8(n)
-    }
-
-    #[inline]
-    fn write_u16(&mut self, n: u16) -> io::Result<()> {
-        self.output.write_u16::<LittleEndian>(n)
-    }
-
-    #[inline]
-    fn write_u32(&mut self, n: u32) -> io::Result<()> {
-        self.output.write_u32::<LittleEndian>(n)
-    }
-
-    #[inline]
-    fn write_u64(&mut self, n: u64) -> io::Result<()> {
-        self.output.write_u64::<LittleEndian>(n)
-    }
-
-    #[inline]
-    fn write_i8(&mut self, n: i8) -> io::Result<()> {
-        self.output.write_i8(n)
-    }
-
-    #[inline]
-    fn write_i16(&mut self, n: i16) -> io::Result<()> {
-        self.output.write_i16::<LittleEndian>(n)
-    }
-
-    #[inline]
-    fn write_i32(&mut self, n: i32) -> io::Result<()> {
-        self.output.write_i32::<LittleEndian>(n)
-    }
-
-    #[inline]
-    fn write_f32(&mut self, n: f32) -> io::Result<()> {
-        self.output.write_f32::<LittleEndian>(n)
-    }
-
-    #[inline]
-    fn write_f64(&mut self, n: f64) -> io::Result<()> {
-        self.output.write_f64::<LittleEndian>(n)
-    }
-
-    #[inline]
-    fn write_string(&mut self, s: &'_ SwfStr) -> io::Result<()> {
-        self.output.write_all(s.as_bytes())?;
-        self.write_u8(0)
+    fn as_writer(&mut self) -> &mut impl Write {
+        &mut self.output
     }
 }
 
