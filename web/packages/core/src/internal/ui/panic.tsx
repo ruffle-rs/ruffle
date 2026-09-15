@@ -1,14 +1,14 @@
-import { text, textAsParagraphs } from "../i18n";
+import { text, textAsParagraphs } from "../i18n.js";
 import { createRef } from "tsx-dom";
-import { buildInfo } from "../../build-info";
-import { RUFFLE_ORIGIN } from "../constants";
+import { buildInfo } from "../../build-info.js";
+import { RUFFLE_ORIGIN } from "../constants.js";
 import {
     InvalidOptionsError,
     InvalidSwfError,
     LoadBeginError,
     LoadRuffleWasmError,
     LoadSwfError,
-} from "../errors";
+} from "../errors.js";
 
 interface PanicLink {
     type: "open_link";

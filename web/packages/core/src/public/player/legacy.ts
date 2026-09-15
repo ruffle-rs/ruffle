@@ -1,7 +1,7 @@
-import { DataLoadOptions, URLLoadOptions } from "../config";
-import { MovieMetadata } from "./movie-metadata";
+import { DataLoadOptions, URLLoadOptions } from "../config/index.js";
+import { MovieMetadata } from "./movie-metadata.js";
 
-import { ReadyState } from "./index";
+import { ReadyState } from "./index.js";
 
 /**
  * Legacy interface to the Ruffle API.
