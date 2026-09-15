@@ -1,0 +1,4 @@
+b0: (x=20, y=20, w=20, h=20)
+b1: undefined
+b2: undefined
+b3: undefined

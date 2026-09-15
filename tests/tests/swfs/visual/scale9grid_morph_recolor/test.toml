@@ -1,0 +1,13 @@
+num_ticks = 2
+
+# A morph recolouring in place: start and end share their bounds exactly, so a ratio
+# change moves nothing a sliced tessellation's cache key can see except the ratio
+# itself. Column one is moved to ratio 32768 on frame 2, column two sits there from
+# the start; a tessellation served across ratios renders frame one's colour and
+# measures 21600 against this budget.
+[image_comparisons.output]
+tolerance = 1
+max_outliers = 0
+
+[player_options]
+with_renderer = { optional = false }

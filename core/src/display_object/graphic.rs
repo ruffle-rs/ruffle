@@ -8,6 +8,7 @@ use crate::display_object::{BoundsMode, DisplayObjectBase};
 use crate::drawing::Drawing;
 use crate::library::MovieLibrarySource;
 use crate::prelude::*;
+use crate::scale9_cache::{Scale9Cache, Scale9Key};
 use crate::tag_utils::SwfMovie;
 use crate::tessellation_cache::TessellationCache;
 use crate::vminterface::Instantiator;
@@ -18,6 +19,7 @@ use gc_arena::{Collect, Gc, Mutation};
 use ruffle_common::utils::HasPrefixField;
 use ruffle_render::backend::ShapeHandle;
 use ruffle_render::commands::CommandHandler;
+use ruffle_render::shape_utils::{DistilledShape, Scale9, Scale9Space};
 use std::cell::{OnceCell, RefCell, RefMut};
 use std::sync::Arc;
 
@@ -44,6 +46,10 @@ pub struct GraphicData<'gc> {
     /// This is lazily allocated on demand, to make `GraphicData` smaller in the common case.
     #[collect(require_static)]
     drawing: OnceCell<Box<RefCell<Drawing>>>,
+
+    /// Sliced tessellation of the library shape.
+    #[collect(require_static)]
+    scale9_cache: Scale9Cache,
 }
 
 impl<'gc> Graphic<'gc> {
@@ -76,6 +82,7 @@ impl<'gc> Graphic<'gc> {
                 class: Lock::new(None),
                 avm2_object: Lock::new(None),
                 drawing: OnceCell::new(),
+                scale9_cache: Scale9Cache::default(),
             },
         ))
     }
@@ -111,6 +118,7 @@ impl<'gc> Graphic<'gc> {
                 class: Lock::new(None),
                 avm2_object: Lock::new(None),
                 drawing: OnceCell::new(),
+                scale9_cache: Scale9Cache::default(),
             },
         ))
     }
@@ -129,6 +137,28 @@ impl<'gc> Graphic<'gc> {
 
     fn set_shared(self, mc: &Mutation<'gc>, shared: Gc<'gc, GraphicShared>) {
         unlock!(Gc::write(mc, self.0), GraphicData, shared).set(shared);
+    }
+
+    /// Tessellation of the library shape 9-sliced against `scale9`, cached per instance
+    /// since `GraphicShared::scaled_handle` is per character.
+    fn sliced_handle(
+        self,
+        context: &mut RenderContext,
+        scale9: &Scale9,
+        space: Scale9Space,
+        world_scale: f32,
+    ) -> Option<ShapeHandle> {
+        let key = Scale9Key::new(scale9, space).with_tessellation_scale(world_scale);
+        self.0.scale9_cache.get_or_register(key, || {
+            let shared = self.0.shared.get();
+            let library = context.library.library_for_movie(shared.movie.clone())?;
+            let distilled: DistilledShape = (&shared.shape).into();
+            Some(context.renderer.register_shape_with_scale(
+                scale9.apply(distilled, space),
+                &MovieLibrarySource { library },
+                world_scale,
+            ))
+        })
     }
 
     /// Returns the best shape handle for the current scale, retessellating if necessary.
@@ -237,14 +267,38 @@ impl<'gc> TDisplayObject<'gc> for Graphic<'gc> {
             .get_graphic(id)
         {
             self.set_shared(context.gc(), new_graphic.0.shared.get());
+            // The cache key holds no character id, so entries built for the old shape would
+            // still match.
+            self.0.scale9_cache.clear();
         } else {
             tracing::warn!("PlaceObject: expected Graphic at character ID {}", id);
         }
         self.invalidate_cached_bitmap();
     }
 
-    fn render_self(self, context: &mut RenderContext) {
-        if !context.is_offscreen
+    fn render_self(self, context: &mut RenderContext<'_, 'gc>) {
+        // The parent's grid is in the parent's space, so a child's matrix folds in -- unless
+        // the child carries a grid of its own that cannot slice, where Flash Player throws
+        // the matrix away and remaps the raw coordinates.
+        let scale9 = self
+            .scaling_grid_for_render(context)
+            .map(|scale9| (scale9, Scale9Space::Own))
+            .or_else(|| {
+                self.inherited_scaling_grid_for_render(context)
+                    .map(|scale9| {
+                        let matrix = self.base().matrix();
+                        if self.scaling_grid().is_valid() {
+                            (scale9, Scale9Space::Detached(matrix))
+                        } else {
+                            (scale9, Scale9Space::Child(matrix))
+                        }
+                    })
+            });
+
+        // Sliced geometry is not contained in the plainly scaled bounds -- an inherited
+        // grid can move a child far outside them -- so a sliced shape skips the cull.
+        if scale9.is_none()
+            && !context.is_offscreen
             && !self
                 .world_bounds(BoundsMode::Engine)
                 .intersects(&context.stage.view_bounds())
@@ -254,7 +308,11 @@ impl<'gc> TDisplayObject<'gc> for Graphic<'gc> {
         }
 
         if let Some(drawing) = self.0.drawing.get() {
-            drawing.borrow().render(context);
+            let drawing = drawing.borrow();
+            match scale9 {
+                Some((scale9, space)) => drawing.render_scale9(context, &scale9, space),
+                None => drawing.render(context),
+            }
         } else if let Some(base_handle) = self.0.shared.get().render_handle.clone() {
             let transform = context.transform_stack.transform();
 
@@ -264,6 +322,22 @@ impl<'gc> TDisplayObject<'gc> for Graphic<'gc> {
             let scale_x = f32::abs(matrix.a + matrix.c);
             let scale_y = f32::abs(matrix.b + matrix.d);
             let current_scale = ((scale_x * scale_x + scale_y * scale_y) / 2.0).sqrt();
+
+            if let Some((scale9, space)) = scale9 {
+                // Sliced geometry is already at final size, so only the scale on top counts.
+                // `max` guards against `own` underflowing to zero at tiny script scales.
+                let own = ((scale9.scale_x * scale9.scale_x + scale9.scale_y * scale9.scale_y)
+                    / 2.0)
+                    .sqrt();
+                let world_scale = current_scale / own.max(f32::EPSILON);
+
+                if let Some(handle) = self.sliced_handle(context, &scale9, space, world_scale) {
+                    let mut sliced = transform.clone();
+                    sliced.matrix *= scale9.unscale(space);
+                    context.commands.render_shape(handle, sliced);
+                    return;
+                }
+            }
 
             let handle = self.get_or_retessellate_handle(context, &base_handle, current_scale);
 

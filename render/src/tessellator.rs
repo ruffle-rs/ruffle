@@ -61,7 +61,11 @@ impl ShapeTessellator {
                     style,
                     commands,
                     winding_rule: _,
-                } => (*style, ruffle_path_to_lyon_path(commands, true), false),
+                } => (
+                    style.as_ref(),
+                    ruffle_path_to_lyon_path(commands, true),
+                    false,
+                ),
                 DrawPath::Stroke {
                     style,
                     commands,

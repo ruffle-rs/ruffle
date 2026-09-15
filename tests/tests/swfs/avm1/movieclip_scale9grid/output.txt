@@ -1,0 +1,10 @@
+initial: undefined
+inside: 20,20,20,20
+equal to bounds: 0,0,60,60
+outside: 10,10,100,100
+zero size: 20,20,0,0
+negative width: undefined
+negative height: undefined
+fractional: 10,10,20,20
+cleared with null: undefined
+cleared with undefined: undefined
