@@ -1,9 +1,9 @@
-import { buildInfo } from "../build-info";
-import { pluginPolyfill, polyfill } from "../polyfills";
-import { PlayerElement } from "../public/player";
-import { registerElement } from "./register-element";
-import { RufflePlayerElement } from "./player/ruffle-player-element";
-import { InstallationOptions } from "../public/setup";
+import { buildInfo } from "../build-info.js";
+import { pluginPolyfill, polyfill } from "../polyfills.js";
+import { PlayerElement } from "../public/player/index.js";
+import { registerElement } from "./register-element.js";
+import { RufflePlayerElement } from "./player/ruffle-player-element.js";
+import { InstallationOptions } from "../public/setup/index.js";
 
 /**
  * The actual source API that describes this installation.

@@ -1,5 +1,9 @@
-import type { RuffleInstanceBuilder } from "../../dist/ruffle_web";
-import { BaseLoadOptions, Duration, SecsDuration } from "../public/config";
+import type { RuffleInstanceBuilder } from "../../dist/ruffle_web.js";
+import {
+    BaseLoadOptions,
+    Duration,
+    SecsDuration,
+} from "../public/config/index.js";
 
 /**
  * Checks if the given value is explicitly `T` (not null, not undefined)
