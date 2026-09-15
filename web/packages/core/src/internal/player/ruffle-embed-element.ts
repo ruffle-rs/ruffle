@@ -1,12 +1,12 @@
-import { copyElement, RufflePlayerElement } from "./ruffle-player-element";
+import { copyElement, RufflePlayerElement } from "./ruffle-player-element.js";
 import {
     getPolyfillOptions,
     isFallbackElement,
     isYoutubeFlashSource,
     workaroundYoutubeMixedContent,
-} from "./inner";
-import { registerElement } from "../register-element";
-import { isSwf } from "../../swf-utils";
+} from "./inner.js";
+import { registerElement } from "../register-element.js";
+import { isSwf } from "../../swf-utils.js";
 
 /**
  * A polyfill html element.

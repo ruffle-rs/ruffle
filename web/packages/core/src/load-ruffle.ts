@@ -9,10 +9,10 @@ import {
     signExtensions,
     referenceTypes,
 } from "wasm-feature-detect";
-import type { RuffleInstanceBuilder, ZipWriter } from "../dist/ruffle_web";
-import { setPolyfillsOnLoad } from "./js-polyfills";
+import type { RuffleInstanceBuilder, ZipWriter } from "../dist/ruffle_web.js";
+import { setPolyfillsOnLoad } from "./js-polyfills.js";
 
-import { internalSourceApi } from "./internal/internal-source-api";
+import { internalSourceApi } from "./internal/internal-source-api.js";
 
 type ProgressCallback = (bytesLoaded: number, bytesTotal: number) => void;
 
@@ -65,9 +65,9 @@ async function fetchRuffle(
         RuffleInstanceBuilder,
         ZipWriter,
     } = await (extensionsSupported
-        ? import("../dist/ruffle_web")
+        ? import("../dist/ruffle_web.js")
         : // @ts-expect-error TS2307 TypeScript compiler is trying to do the import.
-          import("../dist/%FALLBACK_WASM%"));
+          import("../dist/%FALLBACK_WASM%.js"));
     let response;
     const wasmUrl = extensionsSupported
         ? new URL("../dist/ruffle_web_bg.wasm", import.meta.url)

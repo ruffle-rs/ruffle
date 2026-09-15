@@ -1,4 +1,4 @@
-import { text } from "../i18n";
+import { text } from "../i18n.js";
 
 const shortcutModifier = navigator.userAgent.includes("Mac OS X")
     ? "Command"

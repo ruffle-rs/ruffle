@@ -8,7 +8,7 @@ use std::collections::BTreeMap;
 use wasm_bindgen::prelude::wasm_bindgen;
 use wasm_bindgen::{JsCast, JsValue};
 
-#[wasm_bindgen(raw_module = "./ruffle-imports")]
+#[wasm_bindgen(raw_module = "./ruffle-imports.js")]
 extern "C" {
     #[wasm_bindgen(catch, js_name = "callExternalInterface")]
     pub fn call_external_interface(

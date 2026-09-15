@@ -1,7 +1,7 @@
-import { Version } from "../../version";
-import { VersionRange } from "../../version-range";
-import { SourceAPI } from "./source-api";
-import type { DataLoadOptions, URLLoadOptions } from "../config";
+import { Version } from "../../version.js";
+import { VersionRange } from "../../version-range.js";
+import { SourceAPI } from "./source-api.js";
+import type { DataLoadOptions, URLLoadOptions } from "../config/index.js";
 
 declare global {
     interface Window {

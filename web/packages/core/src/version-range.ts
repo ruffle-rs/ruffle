@@ -1,4 +1,4 @@
-import { Version } from "./version";
+import { Version } from "./version.js";
 
 /**
  * A requirement is a comparator (such as ">" or "=" or "")
