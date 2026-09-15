@@ -1,4 +1,4 @@
-import { polyfillDocumentEmbeds } from "./polyfill-document-embeds";
+import { polyfillDocumentEmbeds } from "./polyfill-document-embeds.js";
 
 /**
  * Number of times to try defining a custom element.

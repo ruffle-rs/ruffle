@@ -26,16 +26,6 @@ export default function (_env, _argv) {
             chunkFilename: "core.ruffle.[contenthash].js",
             clean: true,
         },
-        module: {
-            rules: [
-                {
-                    test: /\.m?js$/,
-                    resolve: {
-                        fullySpecified: false,
-                    },
-                },
-            ],
-        },
         performance: {
             assetFilter: (assetFilename) =>
                 !/\.(map|wasm)$/i.test(assetFilename),

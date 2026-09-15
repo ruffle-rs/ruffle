@@ -116,12 +116,6 @@ export default function (/** @type {Record<string, any>} */ env, _argv) {
                     test: /\.ts$/i,
                     use: "ts-loader",
                 },
-                {
-                    test: /\.m?js$/,
-                    resolve: {
-                        fullySpecified: false,
-                    },
-                },
             ],
         },
         resolve: {

@@ -1,4 +1,4 @@
-import type { RuffleHandle, ZipWriter } from "../../../dist/ruffle_web";
+import type { RuffleHandle, ZipWriter } from "../../../dist/ruffle_web.js";
 import {
     AutoPlay,
     BackgroundExecutionMode,
@@ -10,25 +10,25 @@ import {
     UnmuteOverlay,
     URLLoadOptions,
     WindowMode,
-} from "../../public/config";
-import { MovieMetadata, ReadyState } from "../../public/player";
-import { ruffleShadowTemplate } from "../ui/shadow-template";
-import { text, textAsParagraphs } from "../i18n";
-import { swfFileName } from "../../swf-utils";
-import { isExtension } from "../../current-script";
-import { buildInfo } from "../../build-info";
-import { RUFFLE_ORIGIN } from "../constants";
+} from "../../public/config/index.js";
+import { MovieMetadata, ReadyState } from "../../public/player/index.js";
+import { ruffleShadowTemplate } from "../ui/shadow-template.js";
+import { text, textAsParagraphs } from "../i18n.js";
+import { swfFileName } from "../../swf-utils.js";
+import { isExtension } from "../../current-script.js";
+import { buildInfo } from "../../build-info.js";
+import { RUFFLE_ORIGIN } from "../constants.js";
 import {
     InvalidOptionsError,
     InvalidSwfError,
     LoadBeginError,
     LoadRuffleWasmError,
     LoadSwfError,
-} from "../errors";
-import { showPanicScreen } from "../ui/panic";
-import { createRuffleBuilder } from "../../load-ruffle";
-import { lookupElement } from "../register-element";
-import { configureBuilder } from "../builder";
+} from "../errors.js";
+import { showPanicScreen } from "../ui/panic.js";
+import { createRuffleBuilder } from "../../load-ruffle.js";
+import { lookupElement } from "../register-element.js";
+import { configureBuilder } from "../builder.js";
 
 const DIMENSION_REGEX = /^\s*(\d+(\.\d+)?(%)?)/;
 

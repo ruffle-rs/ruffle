@@ -1,5 +1,5 @@
-import { BaseLoadOptions } from "./public/config";
-import { currentScriptURL, isExtension } from "./current-script";
+import { BaseLoadOptions } from "./public/config/index.js";
+import { currentScriptURL, isExtension } from "./current-script.js";
 
 /**
  * Attempt to discover the public path of the current Ruffle source. This can

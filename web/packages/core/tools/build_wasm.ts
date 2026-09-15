@@ -1,5 +1,13 @@
 import { execFileSync } from "child_process";
-import { copyFileSync, mkdirSync, rmSync } from "fs";
+import {
+    copyFileSync,
+    existsSync,
+    mkdirSync,
+    readFileSync,
+    rmSync,
+    writeFileSync,
+} from "fs";
+import * as path from "path";
 import * as process from "process";
 
 function runWasmOpt({ path, flags }: { path: string; flags?: string[] }) {
@@ -150,6 +158,18 @@ function buildWasm(
         dir: "dist",
         flags: wasmBindgenFlags,
     });
+
+    // Fix extensionless imports emitted by wasm-bindgen for strict ESM compliance
+    const jsPath = path.resolve("dist", `${filename}.js`);
+    if (existsSync(jsPath)) {
+        let content = readFileSync(jsPath, "utf8");
+        content = content.replace(
+            /(from\s+['"]\.\/ruffle-imports)(['"])/g,
+            "$1.js$2",
+        );
+        writeFileSync(jsPath, content);
+    }
+
     if (optimise) {
         console.log(`Running wasm-opt on ${flavor}...`);
         runWasmOpt({

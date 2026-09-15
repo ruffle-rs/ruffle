@@ -1,13 +1,13 @@
-import { StaticStyles } from "./static-styles";
-import { DynamicStyles } from "./dynamic-styles";
-import { MainContainer } from "./container";
-import { SplashScreen } from "./splash-screen";
-import { SaveManager } from "./save-manager";
-import { VolumeControls } from "./volume-controls";
-import { UnsupportedVideo } from "./unsupported-video";
-import { HardwareAcceleration } from "./hardware-acceleration";
-import { ClipboardPermission } from "./clipboard-permission";
-import { ContextMenuOverlay } from "./context-menu-overlay";
+import { StaticStyles } from "./static-styles.js";
+import { DynamicStyles } from "./dynamic-styles.js";
+import { MainContainer } from "./container.js";
+import { SplashScreen } from "./splash-screen.js";
+import { SaveManager } from "./save-manager.js";
+import { VolumeControls } from "./volume-controls.js";
+import { UnsupportedVideo } from "./unsupported-video.js";
+import { HardwareAcceleration } from "./hardware-acceleration.js";
+import { ClipboardPermission } from "./clipboard-permission.js";
+import { ContextMenuOverlay } from "./context-menu-overlay.js";
 
 /*
  *

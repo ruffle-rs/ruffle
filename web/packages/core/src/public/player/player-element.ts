@@ -1,6 +1,6 @@
-import { LegacyRuffleAPI } from "./legacy";
-import { FlashAPI } from "./flash";
-import { PlayerV1 } from "./v1";
+import { LegacyRuffleAPI } from "./legacy.js";
+import { FlashAPI } from "./flash.js";
+import { PlayerV1 } from "./v1.js";
 
 /**
  * A map of API version number, to API interface.
