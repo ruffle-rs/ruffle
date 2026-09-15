@@ -83,7 +83,13 @@ package flash.globalization {
 
         public function compare(string1:String, string2:String):int {
             stub_method("flash.globalization.Collator", "compare");
-            return string1.localeCompare(string2);
+            // Flash Player normalizes the result to exactly -1, 0, or 1.
+            // Some callers rely on this: mx/spark collections' Sort.findItem
+            // does `switch (compareResult) { case -1: ...; case 1: ... }`, so a
+            // raw comparison delta (e.g. a character-code difference) would
+            // match no case and spin the binary search forever.
+            var result:int = string1.localeCompare(string2);
+            return (result < 0) ? -1 : ((result > 0) ? 1 : 0);
         }
 
         public function equals(string1:String, string2:String):Boolean {
