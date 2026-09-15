@@ -7,7 +7,9 @@ use crate::tag_utils::SwfSlice;
 use ruffle_common::buffer::Substream;
 use ruffle_common::duration::FloatDuration;
 use slotmap::SlotMap;
+use std::collections::VecDeque;
 use std::io::Cursor;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex, RwLock};
 use swf::AudioCompression;
 
@@ -575,6 +577,23 @@ impl AudioMixer {
         Ok(handle)
     }
 
+    /// Starts a generated (synthesized) sound stream.
+    ///
+    /// Audio samples are provided externally via the shared `deque`,
+    /// which is filled each frame by dispatching `SampleDataEvent`.
+    pub fn start_generated_sound(
+        &mut self,
+        deque: Arc<RwLock<VecDeque<f32>>>,
+        ended: Arc<AtomicBool>,
+    ) -> SoundInstanceHandle {
+        let stream = GeneratedSoundStream::new(deque, ended);
+        let mut sound_instances = self
+            .sound_instances
+            .lock()
+            .expect("Cannot be called reentrant");
+        sound_instances.insert(SoundInstance::new_stream(Box::new(stream)))
+    }
+
     /// Starts a sound.
     ///
     /// The sound must have been registered using `AudioMixer::register_sound`.
@@ -879,6 +898,80 @@ impl Stream for EventSoundStream {
     }
 }
 
+/// A stream for sounds synthesized in ActionScript via `SampleDataEvent`.
+struct GeneratedSoundStream {
+    /// Position counter (in output sample frames).
+    position: u32,
+    /// Local buffer drained from `next_samples` to reduce lock contention.
+    playout_buffer: VecDeque<f32>,
+    /// Shared sample queue filled by the main thread each frame.
+    next_samples: Arc<RwLock<VecDeque<f32>>>,
+    /// Set by the main thread once ActionScript stops supplying samples. The
+    /// stream is exhausted once this is set and all buffered audio has drained.
+    ended: Arc<AtomicBool>,
+}
+
+impl GeneratedSoundStream {
+    /// Minimum local playout buffer size before pulling more samples from the shared queue.
+    /// 1024 channel-samples ≈ 11.6 ms at 44100 Hz, roughly one or two typical OS audio
+    /// callback sizes, keeping lock acquisitions to at most one or two per callback.
+    const REFILL_THRESHOLD: usize = 1024;
+
+    fn new(stream: Arc<RwLock<VecDeque<f32>>>, ended: Arc<AtomicBool>) -> Self {
+        Self {
+            position: 0,
+            playout_buffer: VecDeque::new(),
+            next_samples: stream,
+            ended,
+        }
+    }
+}
+
+impl dasp::signal::Signal for GeneratedSoundStream {
+    type Frame = [i16; 2];
+
+    #[inline]
+    fn next(&mut self) -> Self::Frame {
+        use dasp::Sample;
+
+        // Refill local buffer in bulk to reduce RwLock contention.
+        if self.playout_buffer.len() < Self::REFILL_THRESHOLD {
+            let mut w = self.next_samples.write().unwrap();
+            self.playout_buffer.append(&mut w);
+        }
+
+        self.position += 1;
+
+        if let Some(left) = self.playout_buffer.pop_front()
+            && let Some(right) = self.playout_buffer.pop_front()
+        {
+            return [left.to_sample(), right.to_sample()];
+        }
+
+        Default::default()
+    }
+
+    #[inline]
+    fn is_exhausted(&self) -> bool {
+        // Cheap `ended` check first so ongoing streams never touch the lock.
+        self.ended.load(Ordering::Relaxed)
+            && self.playout_buffer.is_empty()
+            && self.next_samples.read().unwrap().is_empty()
+    }
+}
+
+impl Stream for GeneratedSoundStream {
+    #[inline]
+    fn source_position(&self) -> u32 {
+        self.position
+    }
+
+    #[inline]
+    fn source_sample_rate(&self) -> u16 {
+        44100
+    }
+}
+
 /// A stream that converts a source stream to a different sample rate.
 struct ConverterStream<S, I>(dasp::signal::interpolate::Converter<S, I>)
 where
@@ -1108,6 +1201,15 @@ macro_rules! impl_audio_mixer_backend {
             stream_info: &SoundStreamInfo,
         ) -> Result<SoundInstanceHandle, DecodeError> {
             self.$mixer.start_substream(stream_data, stream_info)
+        }
+
+        #[inline]
+        fn start_generated_sound(
+            &mut self,
+            deque: std::sync::Arc<std::sync::RwLock<std::collections::VecDeque<f32>>>,
+            ended: std::sync::Arc<std::sync::atomic::AtomicBool>,
+        ) -> SoundInstanceHandle {
+            self.$mixer.start_generated_sound(deque, ended)
         }
 
         #[inline]
