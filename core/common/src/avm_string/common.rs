@@ -363,6 +363,7 @@ ruffle_macros::define_common_strings! {
     "TextField",
     "textFieldHeight",
     "textFieldWidth",
+    "TextFormat",
     "TextSnapshot",
     "title",
     "toJSON",
