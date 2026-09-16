@@ -102,9 +102,17 @@ pub struct LayoutBuilder<'a, 'gc> {
 
     /// The total width of the text field being laid out.
     max_bounds: Twips,
+
+    /// When set, the final line of the layout is justified too, not only the
+    /// interior lines. The Flash Text Engine sets this on the single-line
+    /// fallback backing each `TextLine`, so a wrapped FTE line is spread to the
+    /// full width even though, on its own, it is the layout's only (and thus
+    /// "final") line.
+    justify_final_line: bool,
 }
 
 impl<'a, 'gc> LayoutBuilder<'a, 'gc> {
+    #[allow(clippy::too_many_arguments)]
     fn new(
         context: &'a mut dyn LayoutContext<'gc>,
         movie: Arc<SwfMovie>,
@@ -113,6 +121,7 @@ impl<'a, 'gc> LayoutBuilder<'a, 'gc> {
         is_input: bool,
         is_word_wrap: bool,
         font_type: FontType,
+        justify_final_line: bool,
     ) -> Self {
         Self {
             context,
@@ -136,6 +145,7 @@ impl<'a, 'gc> LayoutBuilder<'a, 'gc> {
             is_input,
             is_word_wrap,
             font_type,
+            justify_final_line,
         }
     }
 
@@ -329,7 +339,9 @@ impl<'a, 'gc> LayoutBuilder<'a, 'gc> {
             Twips::ZERO,
         );
         let interim_adjustment = max(
-            if !final_line_of_para && self.effective_alignment() == swf::TextAlign::Justify {
+            if (!final_line_of_para || self.justify_final_line)
+                && self.effective_alignment() == swf::TextAlign::Justify
+            {
                 misalignment / max(box_count.saturating_sub(1), 1)
             } else {
                 Twips::ZERO
@@ -784,6 +796,7 @@ impl<'a, 'gc> LayoutBuilder<'a, 'gc> {
 }
 
 /// Construct a new layout from text spans.
+#[allow(clippy::too_many_arguments)]
 pub fn lower_from_text_spans<'gc>(
     fs: &FormatSpans,
     context: &mut dyn LayoutContext<'gc>,
@@ -792,6 +805,7 @@ pub fn lower_from_text_spans<'gc>(
     is_input: bool,
     is_word_wrap: bool,
     font_type: FontType,
+    justify_final_line: bool,
 ) -> Layout<'gc> {
     let requested_width = requested_width.unwrap_or_else(|| {
         // When we don't know the width of the text field, we have to lay out
@@ -805,6 +819,7 @@ pub fn lower_from_text_spans<'gc>(
             is_input,
             false,
             font_type,
+            false,
         );
         let max_width = layout
             .lines()
@@ -821,9 +836,11 @@ pub fn lower_from_text_spans<'gc>(
         is_input,
         is_word_wrap,
         font_type,
+        justify_final_line,
     )
 }
 
+#[allow(clippy::too_many_arguments)]
 fn lower_from_text_spans_known_width<'gc>(
     fs: &FormatSpans,
     context: &mut dyn LayoutContext<'gc>,
@@ -832,6 +849,7 @@ fn lower_from_text_spans_known_width<'gc>(
     is_input: bool,
     is_word_wrap: bool,
     font_type: FontType,
+    justify_final_line: bool,
 ) -> Layout<'gc> {
     let mut builder = LayoutBuilder::new(
         context,
@@ -841,6 +859,7 @@ fn lower_from_text_spans_known_width<'gc>(
         is_input,
         is_word_wrap,
         font_type,
+        justify_final_line,
     );
     builder.lay_out_spans(fs);
     builder.end_layout(fs)
@@ -1003,6 +1022,33 @@ impl<'gc> LayoutLine<'gc> {
 
     pub fn leading(&self) -> Twips {
         self.leading
+    }
+
+    /// Typographic ascent/descent (OS/2 `sTypo*`) of this line, if the fonts
+    /// backing it provide them. The Flash Text Engine reports these (matching
+    /// Flash Player), while glyph placement keeps using the cell [`ascent`] /
+    /// [`descent`]. Walks the line's boxes lazily — only the Flash Text Engine
+    /// queries it, so it stays off the layout hot path.
+    ///
+    /// [`ascent`]: Self::ascent
+    /// [`descent`]: Self::descent
+    pub fn typo_ascent_descent(&self) -> Option<(Twips, Twips)> {
+        let mut result: Option<(Twips, Twips)> = None;
+        for layout_box in self.boxes.iter() {
+            if let LayoutContent::Text {
+                font_set, params, ..
+            } = &layout_box.content
+                && let Some(metrics) = font_set.typo_metrics_at(params.height())
+            {
+                let ascent = metrics.ascent(params.height());
+                let descent = metrics.descent(params.height());
+                result = Some(match result {
+                    Some((a, d)) => (a.max(ascent), d.max(descent)),
+                    None => (ascent, descent),
+                });
+            }
+        }
+        result
     }
 
     pub fn len(&self) -> usize {
