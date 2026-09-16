@@ -3,7 +3,7 @@ use crate::blend::BlendType;
 use crate::blend::TrivialBlend;
 use crate::buffer_builder::BufferBuilder;
 use crate::buffer_pool::TexturePool;
-use crate::dynamic_transforms::DynamicTransforms;
+use crate::dynamic_transforms::ChunkBuffers;
 use crate::mesh::Mesh;
 use crate::surface::Surface;
 use crate::surface::chunk::{Chunk, ChunkBlendMode, DrawCommand};
@@ -36,7 +36,7 @@ pub fn chunk_blends<'encoder, 'global: 'encoder>(
     commands: CommandList,
     descriptors: &'encoder Descriptors,
     staging_belt: &'encoder mut wgpu::util::StagingBelt,
-    dynamic_transforms: &'encoder DynamicTransforms,
+    chunk_buffers: &'encoder ChunkBuffers,
     draw_encoder: &'encoder mut Scope<'global, wgpu::CommandEncoder>,
     meshes: &'encoder Vec<Mesh>,
     quality: StageQuality,
@@ -48,7 +48,7 @@ pub fn chunk_blends<'encoder, 'global: 'encoder>(
     WgpuCommandHandler::new(
         descriptors,
         staging_belt,
-        dynamic_transforms,
+        chunk_buffers,
         draw_encoder,
         meshes,
         quality,
@@ -68,7 +68,7 @@ struct WgpuCommandHandler<'encoder, 'global: 'encoder> {
     nearest_layer: LayerRef<'encoder>,
     meshes: &'encoder Vec<Mesh>,
     staging_belt: &'encoder mut wgpu::util::StagingBelt,
-    dynamic_transforms: &'encoder DynamicTransforms,
+    chunk_buffers: &'encoder ChunkBuffers,
     draw_encoder: &'encoder mut Scope<'global, wgpu::CommandEncoder>,
     texture_pool: &'encoder mut TexturePool,
     emulate_lines: bool,
@@ -86,7 +86,7 @@ impl<'encoder, 'global: 'encoder> WgpuCommandHandler<'encoder, 'global> {
     fn new(
         descriptors: &'encoder Descriptors,
         staging_belt: &'encoder mut wgpu::util::StagingBelt,
-        dynamic_transforms: &'encoder DynamicTransforms,
+        chunk_buffers: &'encoder ChunkBuffers,
         draw_encoder: &'encoder mut Scope<'global, wgpu::CommandEncoder>,
         meshes: &'encoder Vec<Mesh>,
         quality: StageQuality,
@@ -95,8 +95,8 @@ impl<'encoder, 'global: 'encoder> WgpuCommandHandler<'encoder, 'global> {
         nearest_layer: LayerRef<'encoder>,
         texture_pool: &'encoder mut TexturePool,
     ) -> Self {
-        let transforms = Self::new_transforms(descriptors, dynamic_transforms);
-        let vertices = Self::new_vertices(descriptors, dynamic_transforms);
+        let transforms = Self::new_transforms(descriptors, chunk_buffers);
+        let vertices = Self::new_vertices(descriptors, chunk_buffers);
 
         // DirectX does support drawing lines, but it's very inconsistent.
         // With MSAA, lines have 1.4px thickness, which makes them too thick.
@@ -111,7 +111,7 @@ impl<'encoder, 'global: 'encoder> WgpuCommandHandler<'encoder, 'global> {
             nearest_layer,
             meshes,
             staging_belt,
-            dynamic_transforms,
+            chunk_buffers,
             draw_encoder,
             texture_pool,
             emulate_lines,
@@ -127,19 +127,19 @@ impl<'encoder, 'global: 'encoder> WgpuCommandHandler<'encoder, 'global> {
 
     fn new_transforms(
         descriptors: &'encoder Descriptors,
-        dynamic_transforms: &'encoder DynamicTransforms,
+        chunk_buffers: &'encoder ChunkBuffers,
     ) -> BufferBuilder {
         let mut transforms = BufferBuilder::new(&descriptors.limits, 0);
-        transforms.set_buffer_limit(dynamic_transforms.buffer.size());
+        transforms.set_buffer_limit(chunk_buffers.buffer.size());
         transforms
     }
 
     fn new_vertices(
         descriptors: &'encoder Descriptors,
-        dynamic_transforms: &'encoder DynamicTransforms,
+        chunk_buffers: &'encoder ChunkBuffers,
     ) -> BufferBuilder {
         let mut vertices = BufferBuilder::new(&descriptors.limits, 0);
-        vertices.set_buffer_limit(dynamic_transforms.vertex_buffer.size());
+        vertices.set_buffer_limit(chunk_buffers.vertex_buffer.size());
         vertices
     }
 
@@ -153,11 +153,11 @@ impl<'encoder, 'global: 'encoder> WgpuCommandHandler<'encoder, 'global> {
         let needs_stencil = mem::take(&mut self.needs_stencil);
         let transforms = mem::replace(
             &mut self.transforms,
-            Self::new_transforms(self.descriptors, self.dynamic_transforms),
+            Self::new_transforms(self.descriptors, self.chunk_buffers),
         );
         let vertices = mem::replace(
             &mut self.vertices,
-            Self::new_vertices(self.descriptors, self.dynamic_transforms),
+            Self::new_vertices(self.descriptors, self.chunk_buffers),
         );
 
         if !current.is_empty() {
@@ -225,11 +225,11 @@ impl<'encoder, 'global: 'encoder> WgpuCommandHandler<'encoder, 'global> {
                 needs_stencil: self.needs_stencil,
                 transforms: mem::replace(
                     &mut self.transforms,
-                    Self::new_transforms(self.descriptors, self.dynamic_transforms),
+                    Self::new_transforms(self.descriptors, self.chunk_buffers),
                 ),
                 vertices: mem::replace(
                     &mut self.vertices,
-                    Self::new_vertices(self.descriptors, self.dynamic_transforms),
+                    Self::new_vertices(self.descriptors, self.chunk_buffers),
                 ),
             });
             let transform_range = self
@@ -271,7 +271,7 @@ impl CommandHandler for WgpuCommandHandler<'_, '_> {
             self.meshes,
             commands,
             self.staging_belt,
-            self.dynamic_transforms,
+            self.chunk_buffers,
             self.draw_encoder,
             target_layer,
             self.texture_pool,
@@ -339,11 +339,11 @@ impl CommandHandler for WgpuCommandHandler<'_, '_> {
                         needs_stencil: self.needs_stencil,
                         transforms: mem::replace(
                             &mut self.transforms,
-                            Self::new_transforms(self.descriptors, self.dynamic_transforms),
+                            Self::new_transforms(self.descriptors, self.chunk_buffers),
                         ),
                         vertices: mem::replace(
                             &mut self.vertices,
-                            Self::new_vertices(self.descriptors, self.dynamic_transforms),
+                            Self::new_vertices(self.descriptors, self.chunk_buffers),
                         ),
                     });
                 }
@@ -550,7 +550,7 @@ impl CommandHandler for WgpuCommandHandler<'_, '_> {
             self.meshes,
             maskee_commands,
             self.staging_belt,
-            self.dynamic_transforms,
+            self.chunk_buffers,
             self.draw_encoder,
             LayerRef::None,
             self.texture_pool,
@@ -565,7 +565,7 @@ impl CommandHandler for WgpuCommandHandler<'_, '_> {
             self.meshes,
             mask_commands,
             self.staging_belt,
-            self.dynamic_transforms,
+            self.chunk_buffers,
             self.draw_encoder,
             LayerRef::None,
             self.texture_pool,

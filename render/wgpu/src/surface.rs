@@ -6,7 +6,7 @@ pub mod target;
 use crate::backend::RenderTargetMode;
 use crate::blend::ComplexBlend;
 use crate::buffer_pool::TexturePool;
-use crate::dynamic_transforms::DynamicTransforms;
+use crate::dynamic_transforms::ChunkBuffers;
 use crate::filters::FilterSource;
 use crate::mesh::Mesh;
 use crate::pixel_bender::{ShaderMode, run_pixelbender_shader_impl};
@@ -73,7 +73,7 @@ impl Surface {
         render_target_mode: RenderTargetMode,
         descriptors: &'global Descriptors,
         staging_belt: &'global mut wgpu::util::StagingBelt,
-        dynamic_transforms: &'global DynamicTransforms,
+        chunk_buffers: &'global ChunkBuffers,
         draw_encoder: &'encoder mut Scope<'global, wgpu::CommandEncoder>,
         meshes: &'global Vec<Mesh>,
         commands: CommandList,
@@ -86,7 +86,7 @@ impl Surface {
             meshes,
             commands,
             staging_belt,
-            dynamic_transforms,
+            chunk_buffers,
             draw_encoder,
             layer,
             texture_pool,
@@ -112,7 +112,7 @@ impl Surface {
         meshes: &'encoder Vec<Mesh>,
         commands: CommandList,
         staging_belt: &'encoder mut wgpu::util::StagingBelt,
-        dynamic_transforms: &'encoder DynamicTransforms,
+        chunk_buffers: &'encoder ChunkBuffers,
         draw_encoder: &'encoder mut Scope<'global, wgpu::CommandEncoder>,
         nearest_layer: LayerRef<'encoder>,
         texture_pool: &'encoder mut TexturePool,
@@ -132,7 +132,7 @@ impl Surface {
             commands,
             descriptors,
             staging_belt,
-            dynamic_transforms,
+            chunk_buffers,
             draw_encoder,
             meshes,
             self.quality,
@@ -153,12 +153,8 @@ impl Surface {
                     transforms,
                     vertices,
                 } => {
-                    transforms.copy_to(staging_belt, draw_encoder, &dynamic_transforms.buffer);
-                    vertices.copy_to(
-                        staging_belt,
-                        draw_encoder,
-                        &dynamic_transforms.vertex_buffer,
-                    );
+                    transforms.copy_to(staging_belt, draw_encoder, &chunk_buffers.buffer);
+                    vertices.copy_to(staging_belt, draw_encoder, &chunk_buffers.vertex_buffer);
                     let mut render_pass = draw_encoder.scoped_render_pass(
                         format!(
                             "Chunked draw calls {}",
@@ -179,11 +175,11 @@ impl Surface {
                         },
                     );
                     render_pass.set_bind_group(0, target.globals().bind_group(), &[]);
-                    render_pass.set_bind_group(1, &dynamic_transforms.bind_group, &[]);
+                    render_pass.set_bind_group(1, &chunk_buffers.bind_group, &[]);
                     let mut renderer = CommandRenderer::new(
                         &self.pipelines,
                         descriptors,
-                        &dynamic_transforms.vertex_buffer,
+                        &chunk_buffers.vertex_buffer,
                         &mut mask_state,
                         needs_stencil,
                     );
