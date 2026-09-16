@@ -4,7 +4,7 @@ use std::mem;
 
 const ESTIMATED_OBJECTS_PER_CHUNK: u64 = 200;
 
-pub struct DynamicTransforms {
+pub struct ChunkBuffers {
     pub buffer: wgpu::Buffer,
     pub vertex_buffer: wgpu::Buffer,
     pub bind_group: wgpu::BindGroup,
@@ -15,7 +15,7 @@ pub fn transforms_per_draw(limits: &wgpu::Limits) -> u64 {
     maximum.min(ESTIMATED_OBJECTS_PER_CHUNK)
 }
 
-impl DynamicTransforms {
+impl ChunkBuffers {
     pub fn new(descriptors: &Descriptors) -> Self {
         let buffer = descriptors.device.create_buffer(&wgpu::BufferDescriptor {
             label: None,
