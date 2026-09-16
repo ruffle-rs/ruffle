@@ -32,6 +32,8 @@ pub enum ChunkBlendMode {
 #[derive(Debug)]
 pub enum DrawCommand {
     RenderTexture {
+        // If this is from a texture pool, we need to keep a copy to make sure it isn't freed before we use it.
+        // We don't actually _need_ that texture though, thus the _
         _texture: PoolOrArcTexture,
         binds: wgpu::BindGroup,
         instance_range: Range<u32>,
