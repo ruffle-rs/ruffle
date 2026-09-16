@@ -8,7 +8,7 @@ use crate::mesh::Mesh;
 use crate::surface::Surface;
 use crate::surface::chunk::{Chunk, ChunkBlendMode, DrawCommand};
 use crate::surface::mask::MaskState;
-use crate::surface::target::CommandTarget;
+use crate::surface::target::{CommandTarget, PoolOrArcTexture};
 use crate::{Descriptors, PosUvVertex, Transforms, as_texture};
 use ruffle_render::backend::ShapeHandle;
 use ruffle_render::bitmap::{BitmapHandle, PixelRegion, PixelSnapping};
@@ -327,6 +327,8 @@ impl CommandHandler for WgpuCommandHandler<'_, '_> {
                         binds: bind_group,
                         instance_range: instance_index..instance_index + 1,
                         blend_mode,
+                        render_stage3d: false,
+                        vertex_offset: None,
                     },
                 );
             }
@@ -389,16 +391,25 @@ impl CommandHandler for WgpuCommandHandler<'_, '_> {
             ]
         };
 
+        let binds = texture.bind_group(
+            false,
+            smoothing,
+            &self.descriptors.device,
+            &self.descriptors.bind_layouts.bitmap,
+            bitmap.clone(),
+            &self.descriptors.bitmap_samplers,
+        );
+
         self.add_to_current_with_vertices(
             matrix,
             transform.tz,
             transform.color_transform,
             Some(vertices),
-            |instance_index, vertex_offset| DrawCommand::RenderBitmap {
-                bitmap,
+            |instance_index, vertex_offset| DrawCommand::RenderTexture {
+                _texture: PoolOrArcTexture::Manual((texture.texture.clone(), texture.view.clone())),
+                binds: binds.bind_group.clone(),
                 instance_range: instance_index..instance_index + 1,
                 vertex_offset,
-                smoothing,
                 blend_mode: TrivialBlend::Normal,
                 render_stage3d: false,
             },
@@ -414,17 +425,27 @@ impl CommandHandler for WgpuCommandHandler<'_, '_> {
                 texture.texture.height() as f32,
             );
         }
+        let texture = as_texture(&bitmap);
+
+        let binds = texture.bind_group(
+            false,
+            false,
+            &self.descriptors.device,
+            &self.descriptors.bind_layouts.bitmap,
+            bitmap.clone(),
+            &self.descriptors.bitmap_samplers,
+        );
         self.add_to_current(
             matrix,
             transform.tz,
             transform.color_transform,
-            |instance_index| DrawCommand::RenderBitmap {
-                bitmap,
+            |instance_index| DrawCommand::RenderTexture {
+                _texture: PoolOrArcTexture::Manual((texture.texture.clone(), texture.view.clone())),
                 instance_range: instance_index..instance_index + 1,
                 vertex_offset: None,
-                smoothing: false,
                 blend_mode: TrivialBlend::Normal,
                 render_stage3d: true,
+                binds: binds.bind_group.clone(),
             },
         );
     }
