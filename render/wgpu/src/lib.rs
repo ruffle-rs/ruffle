@@ -42,7 +42,6 @@ mod buffer_pool;
 #[cfg(feature = "clap")]
 pub mod clap;
 pub mod descriptors;
-mod dynamic_transforms;
 mod filters;
 mod layouts;
 mod mesh;

@@ -1,3 +1,4 @@
+pub mod buffers;
 mod chunk;
 mod commands;
 pub mod mask;
@@ -6,10 +7,10 @@ pub mod target;
 use crate::backend::RenderTargetMode;
 use crate::blend::ComplexBlend;
 use crate::buffer_pool::TexturePool;
-use crate::dynamic_transforms::ChunkBuffers;
 use crate::filters::FilterSource;
 use crate::mesh::Mesh;
 use crate::pixel_bender::{ShaderMode, run_pixelbender_shader_impl};
+use crate::surface::buffers::ChunkBuffers;
 pub use crate::surface::commands::LayerRef;
 use crate::surface::commands::chunk_blends;
 use crate::utils::run_copy_pipeline;

@@ -1,5 +1,5 @@
 use crate::blend::ComplexBlend;
-use crate::dynamic_transforms::transforms_per_draw;
+use crate::surface::buffers::transforms_per_draw;
 use enum_map::{EnumMap, enum_map};
 use ruffle_render::shader_source::SHADER_FILTER_COMMON;
 
