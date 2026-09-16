@@ -1,5 +1,5 @@
-use crate::dynamic_transforms::transforms_per_draw;
 use crate::globals::GlobalsUniform;
+use crate::surface::buffers::transforms_per_draw;
 use crate::{GradientUniforms, Transforms};
 
 #[derive(Debug)]
