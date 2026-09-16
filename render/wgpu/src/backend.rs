@@ -723,6 +723,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
         );
 
         let handle = BitmapHandle(Arc::new(Texture {
+            view: texture.create_view(&Default::default()),
             texture,
             repeating_linear: Default::default(),
             repeating_nearest: Default::default(),
@@ -1001,6 +1002,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
                             | wgpu::TextureUsages::COPY_SRC,
                     });
                 BitmapHandle(Arc::new(Texture {
+                    view: texture.create_view(&Default::default()),
                     texture,
                     repeating_linear: Default::default(),
                     repeating_nearest: Default::default(),
@@ -1161,6 +1163,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
                     | wgpu::TextureUsages::COPY_SRC,
             });
         Ok(BitmapHandle(Arc::new(Texture {
+            view: texture.create_view(&Default::default()),
             texture,
             repeating_linear: Default::default(),
             repeating_nearest: Default::default(),

@@ -1,4 +1,3 @@
-use crate::as_texture;
 use crate::blend::{ComplexBlend, TrivialBlend};
 use crate::buffer_builder::BufferBuilder;
 use crate::descriptors::Descriptors;
@@ -7,7 +6,6 @@ use crate::pipelines::Pipelines;
 use crate::surface::mask::{MaskMode, MaskState};
 use crate::surface::target::PoolOrArcTexture;
 use ruffle_render::backend::ShapeHandle;
-use ruffle_render::bitmap::BitmapHandle;
 use ruffle_render::pixel_bender::PixelBenderShaderHandle;
 use std::ops::Range;
 
@@ -33,19 +31,13 @@ pub enum ChunkBlendMode {
 
 #[derive(Debug)]
 pub enum DrawCommand {
-    RenderBitmap {
-        bitmap: BitmapHandle,
-        instance_range: Range<u32>,
-        vertex_offset: Option<wgpu::BufferAddress>,
-        smoothing: bool,
-        blend_mode: TrivialBlend,
-        render_stage3d: bool,
-    },
     RenderTexture {
         _texture: PoolOrArcTexture,
         binds: wgpu::BindGroup,
         instance_range: Range<u32>,
         blend_mode: TrivialBlend,
+        render_stage3d: bool,
+        vertex_offset: Option<wgpu::BufferAddress>,
     },
     RenderAlphaMask {
         maskee: PoolOrArcTexture,
@@ -72,7 +64,6 @@ pub enum DrawCommand {
 impl DrawCommand {
     pub fn name(&self) -> &'static str {
         match self {
-            DrawCommand::RenderBitmap { .. } => "render bitmap",
             DrawCommand::RenderShape { .. } => "render shape",
             DrawCommand::RenderTexture { .. } => "render texture",
             DrawCommand::DrawRect { .. } => "draw rect",
@@ -120,28 +111,21 @@ impl<'encoder> CommandRenderer<'encoder> {
         }
 
         match command {
-            DrawCommand::RenderBitmap {
-                bitmap,
-                instance_range,
-                vertex_offset,
-                smoothing,
-                blend_mode,
-                render_stage3d,
-            } => self.render_bitmap(
-                render_pass,
-                bitmap,
-                instance_range.clone(),
-                *smoothing,
-                *blend_mode,
-                *render_stage3d,
-                *vertex_offset,
-            ),
             DrawCommand::RenderTexture {
                 _texture,
                 binds,
                 instance_range,
                 blend_mode,
-            } => self.render_texture(render_pass, instance_range.clone(), binds, *blend_mode),
+                vertex_offset,
+                render_stage3d,
+            } => self.render_texture(
+                render_pass,
+                instance_range.clone(),
+                binds,
+                *blend_mode,
+                *render_stage3d,
+                *vertex_offset,
+            ),
             DrawCommand::RenderShape {
                 shape,
                 instance_range,
@@ -250,29 +234,16 @@ impl<'encoder> CommandRenderer<'encoder> {
         render_pass.draw_indexed(0..num_indices, 0, instance_range);
     }
 
-    #[allow(clippy::too_many_arguments)]
-    pub fn render_bitmap(
+    pub fn render_texture(
         &self,
         render_pass: &mut wgpu::RenderPass<'encoder>,
-        bitmap: &'encoder BitmapHandle,
         instance_range: Range<u32>,
-        smoothing: bool,
+        bind_group: &'encoder wgpu::BindGroup,
         blend_mode: TrivialBlend,
         render_stage3d: bool,
         vertex_offset: Option<wgpu::BufferAddress>,
     ) {
-        let texture = as_texture(bitmap);
-
-        let descriptors = self.descriptors;
-        let bind = texture.bind_group(
-            false,
-            smoothing,
-            &descriptors.device,
-            &descriptors.bind_layouts.bitmap,
-            bitmap.clone(),
-            &descriptors.bitmap_samplers,
-        );
-        self.prep_bitmap(render_pass, &bind.bind_group, blend_mode, render_stage3d);
+        self.prep_bitmap(render_pass, bind_group, blend_mode, render_stage3d);
 
         let vertex_slice = if let Some(vertex_offset) = vertex_offset {
             self.dynamic_vertex_buffer.slice(vertex_offset..)
@@ -283,24 +254,6 @@ impl<'encoder> CommandRenderer<'encoder> {
         self.draw(
             render_pass,
             vertex_slice,
-            self.descriptors.quad.indices.slice(..),
-            6,
-            instance_range,
-        );
-    }
-
-    pub fn render_texture(
-        &self,
-        render_pass: &mut wgpu::RenderPass<'encoder>,
-        instance_range: Range<u32>,
-        bind_group: &'encoder wgpu::BindGroup,
-        blend_mode: TrivialBlend,
-    ) {
-        self.prep_bitmap(render_pass, bind_group, blend_mode, false);
-
-        self.draw(
-            render_pass,
-            self.descriptors.quad.vertices_pos_uv.slice(..),
             self.descriptors.quad.indices.slice(..),
             6,
             instance_range,
