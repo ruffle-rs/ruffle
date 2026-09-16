@@ -31,3 +31,18 @@ jobs:
       - name: Run editorconfig-checker
         run: |
           /tmp/bin/ec-$OS-$ARCH
+
+  commits:
+    name: Commit Review
+    runs-on: ubuntu-24.04
+    if: github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Review commits
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: ./.github/scripts/review.py commits "$BASE_SHA" "$HEAD_SHA"
