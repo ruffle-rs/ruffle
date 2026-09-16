@@ -211,6 +211,16 @@ impl GlyphSource {
         }
     }
 
+    pub fn scale(&self) -> f32 {
+        match self {
+            GlyphSource::ExternalRenderer(glyph_source) => glyph_source.font_renderer().scale(),
+            GlyphSource::Memory { metrics, .. } | GlyphSource::FontFace { metrics, .. } => {
+                metrics.scale
+            }
+            GlyphSource::Empty => 1.0,
+        }
+    }
+
     pub fn sweep_caches(&self) {
         if let GlyphSource::ExternalRenderer(glyph_source) = self {
             glyph_source.sweep_caches(false);
@@ -297,8 +307,6 @@ pub struct Font<'gc>(Gc<'gc, FontData>);
 struct FontData {
     glyphs: GlyphSource,
 
-    scale: f32,
-
     /// The identity of the font.
     #[collect(require_static)]
     descriptor: FontDescriptor,
@@ -326,7 +334,6 @@ impl<'gc> Font<'gc> {
         Ok(Font(Gc::new(
             gc_context,
             FontData {
-                scale: metrics.scale,
                 glyphs: GlyphSource::FontFace { metrics, face },
                 descriptor,
                 font_type,
@@ -404,7 +411,6 @@ impl<'gc> Font<'gc> {
                         },
                     }
                 },
-                scale,
                 descriptor,
                 font_type,
                 has_layout: tag.layout.is_some(),
@@ -446,12 +452,10 @@ impl<'gc> Font<'gc> {
         descriptor: FontDescriptor,
         font_renderer: Box<dyn FontRenderer>,
     ) -> Self {
-        let scale = font_renderer.scale();
         Font(Gc::new(
             gc_context,
             FontData {
                 glyphs: GlyphSource::ExternalRenderer(FontRendererGlyphSource::new(font_renderer)),
-                scale,
                 descriptor,
                 font_type: FontType::Device,
                 has_layout: true,
@@ -472,7 +476,6 @@ impl<'gc> Font<'gc> {
             gc_context,
             FontData {
                 glyphs: GlyphSource::Empty,
-                scale: 1.0,
                 descriptor,
                 font_type,
                 has_layout: true,
@@ -551,7 +554,7 @@ impl<'gc> FontLike<'gc> for Font<'gc> {
     }
 
     fn scale(&self) -> f32 {
-        self.0.scale
+        self.0.glyphs.scale()
     }
 
     fn font_type(&self) -> FontType {
