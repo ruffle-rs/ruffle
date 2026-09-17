@@ -102,7 +102,7 @@ In this project, you may run the following commands to build all packages:
 -   `npm run build`
     -   This will build the wasm binary and every node package (notably selfhosted and extension).
     -   Output will be available in the `dist/` folder of each package (for example, `./packages/selfhosted/dist`).
-    -   You may also use `npm run build:debug` to disable Webpack optimizations and activate the (extremely verbose) ActionScript debugging output.
+    -   You may also use `npm run build:debug` to disable minification and activate the (extremely verbose) ActionScript debugging output.
     -   There is `npm run build:dual-wasm` as well, to build a second WebAssembly module that disables all supported WebAssembly extensions,
         potentially resulting in support for more browsers, at the expense of longer build time.
     -   `npm run build:repro` enables reproducible builds with the default WASM module. Note that this also requires a `version_seal.json`, which is not provided in the normal Git repository - only specially-marked reproducible source archives. Running this without a version seal will generate one based on the current state of your environment.

@@ -111,7 +111,7 @@ function buildWasm(
         '--cfg=getrandom_backend="wasm_js"',
         "-Aunknown_lints",
     ];
-    const wasmBindgenFlags = [];
+    const wasmBindgenFlags = ["--omit-default-module-path"];
     const wasmOptFlags = [];
     const flavor = extensions ? "extensions" : "vanilla";
     if (extensions) {
