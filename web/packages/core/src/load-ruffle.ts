@@ -15,6 +15,8 @@ import { setPolyfillsOnLoad } from "./js-polyfills.js";
 import { internalSourceApi } from "./internal/internal-source-api.js";
 
 type ProgressCallback = (bytesLoaded: number, bytesTotal: number) => void;
+declare const __WASM_EXT_PATH__: string;
+declare const __WASM_MVP_PATH__: string;
 
 /**
  * Load ruffle from an automatically-detected location.
@@ -48,7 +50,9 @@ async function fetchRuffle(
     // @ts-expect-error TS2367 %FALLBACK_WASM% gets replaced in set_version.ts.
     // %FALLBACK_WASM% is "ruffle_web-wasm_mvp" if this is a dual-wasm build.
     // We don't say we're falling back if we have only an extension build.
-    if (!extensionsSupported && "%FALLBACK_WASM%" === "ruffle_web-wasm_mvp") {
+    const isDualWasm = "%FALLBACK_WASM%" === "ruffle_web-wasm_mvp";
+
+    if (!extensionsSupported && isDualWasm) {
         console.log(
             "Some WebAssembly extensions are NOT available, falling back to the vanilla WebAssembly module",
         );
@@ -70,9 +74,19 @@ async function fetchRuffle(
         : // @ts-expect-error TS2307 TypeScript compiler is trying to do the import.
           import("./%FALLBACK_WASM%.js"));
     let response;
+
+    const wasmExtPath =
+        typeof __WASM_EXT_PATH__ !== "undefined"
+            ? __WASM_EXT_PATH__
+            : "./ruffle_web_bg.wasm";
+    const wasmMvpPath =
+        isDualWasm && typeof __WASM_MVP_PATH__ !== "undefined"
+            ? __WASM_MVP_PATH__
+            : wasmExtPath;
+
     const wasmUrl = extensionsSupported
-        ? new URL("./ruffle_web_bg.wasm", import.meta.url)
-        : new URL("./%FALLBACK_WASM%_bg.wasm", import.meta.url);
+        ? new URL(wasmExtPath, import.meta.url)
+        : new URL(wasmMvpPath, import.meta.url);
     const wasmResponse = await fetch(wasmUrl);
     // The Pale Moon browser lacks full support for ReadableStream.
     // However, ReadableStream itself is defined.
