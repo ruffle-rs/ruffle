@@ -41,6 +41,9 @@ pub fn remove_nops<'gc>(code: &mut Vec<Op<'gc>>, exceptions: &mut [Exception<'gc
                     target.set(offset_vec[target.get()]);
                 }
             }
+            Op::RunIntInterpreter(info) => {
+                info.exit_offset.set(offset_vec[info.exit_offset.get()]);
+            }
             _ => {}
         }
     }
