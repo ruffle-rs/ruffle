@@ -544,6 +544,7 @@ jobs:
           client-id: ${{ secrets.CHROME_CLIENT_ID }}
           client-secret: ${{ secrets.CHROME_CLIENT_SECRET }}
           refresh-token: ${{ secrets.CHROME_REFRESH_TOKEN }}
+          publisher-id: ${{ secrets.CHROME_PUBLISHER_ID }}
           file-path: ./web/packages/extension/dist/ruffle_extension.zip
 
       - name: Publish Edge extension
