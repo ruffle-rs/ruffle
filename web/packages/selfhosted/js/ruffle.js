@@ -1,6 +1,3 @@
-// eslint-disable-next-line no-unused-vars
-/* global __webpack_public_path__:writable */
-
 import { Setup } from "ruffle-core";
 
 let currentScriptURL = null;
@@ -40,11 +37,21 @@ function publicPath(config) {
         path += "/";
     }
 
-    return path;
+    // Resolve relative/root paths into fully qualified absolute URLs
+    try {
+        return new URL(path, window.location.href).href;
+    } catch (e) {
+        console.warn("Unable to resolve publicPath URL", e);
+        return path;
+    }
 }
 
 Setup.installRuffle("local", {
     onFirstLoad: () => {
-        __webpack_public_path__ = publicPath(window.RufflePlayer?.config);
+        if (typeof window !== "undefined") {
+            window.__ruffle_public_path__ = publicPath(
+                window.RufflePlayer?.config,
+            );
+        }
     },
 });
