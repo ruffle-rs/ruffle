@@ -154,6 +154,17 @@ impl<'gc> TextLine<'gc> {
         self.0.fallback.measure_text(context)
     }
 
+    /// Returns the laid-out line's `(ascent, descent)`.
+    pub fn metrics(self) -> (f64, f64) {
+        let layout = self.0.fallback.layout();
+        let Some(line) = layout.lines().first() else {
+            debug_assert!(false, "Should not be reachable");
+            return Default::default();
+        };
+
+        (line.ascent().to_pixels(), line.descent().to_pixels())
+    }
+
     pub fn fallback(self) -> EditText<'gc> {
         self.0.fallback
     }
