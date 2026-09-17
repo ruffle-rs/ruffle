@@ -154,7 +154,7 @@ impl Surface {
                     transforms,
                     vertices,
                 } => {
-                    transforms.copy_to(staging_belt, draw_encoder, &chunk_buffers.buffer);
+                    transforms.copy_to(staging_belt, draw_encoder, &chunk_buffers.transforms);
                     vertices.copy_to(staging_belt, draw_encoder, &chunk_buffers.vertex_buffer);
                     let mut render_pass = draw_encoder.scoped_render_pass(
                         format!(

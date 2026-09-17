@@ -5,7 +5,7 @@ use std::mem;
 const ESTIMATED_OBJECTS_PER_CHUNK: u64 = 200;
 
 pub struct ChunkBuffers {
-    pub buffer: wgpu::Buffer,
+    pub transforms: wgpu::Buffer,
     pub vertex_buffer: wgpu::Buffer,
     pub bind_group: wgpu::BindGroup,
 }
@@ -17,7 +17,7 @@ pub fn transforms_per_draw(limits: &wgpu::Limits) -> u64 {
 
 impl ChunkBuffers {
     pub fn new(descriptors: &Descriptors) -> Self {
-        let buffer = descriptors.device.create_buffer(&wgpu::BufferDescriptor {
+        let transforms = descriptors.device.create_buffer(&wgpu::BufferDescriptor {
             label: None,
             size: transforms_per_draw(&descriptors.limits) * size_of::<Transforms>() as u64,
             usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
@@ -37,11 +37,11 @@ impl ChunkBuffers {
                 layout: &descriptors.bind_layouts.transforms,
                 entries: &[wgpu::BindGroupEntry {
                     binding: 0,
-                    resource: buffer.as_entire_binding(),
+                    resource: transforms.as_entire_binding(),
                 }],
             });
         Self {
-            buffer,
+            transforms,
             bind_group,
             vertex_buffer,
         }
