@@ -130,7 +130,7 @@ impl<'encoder, 'global: 'encoder> WgpuCommandHandler<'encoder, 'global> {
         chunk_buffers: &'encoder ChunkBuffers,
     ) -> BufferBuilder {
         let mut transforms = BufferBuilder::new(&descriptors.limits, 0);
-        transforms.set_buffer_limit(chunk_buffers.buffer.size());
+        transforms.set_buffer_limit(chunk_buffers.transforms.size());
         transforms
     }
 
