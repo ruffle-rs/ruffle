@@ -23,6 +23,10 @@ pub struct UrlRewriteRule {
     pub fetch_reasons: EnumSet<FetchReason>,
     pub host: String,
     pub replacement: String,
+
+    /// Scheme the URL should be rewritten to, if any.
+    /// When `None`, the original scheme is preserved.
+    pub replacement_scheme: Option<String>,
 }
 
 impl UrlRewriteRule {
@@ -37,7 +41,14 @@ impl UrlRewriteRule {
             fetch_reasons,
             host: host.to_string(),
             replacement: replacement.to_string(),
+            replacement_scheme: None,
         }
+    }
+
+    /// Also rewrite the scheme of the URL to the given one.
+    pub fn with_replacement_scheme(mut self, scheme: impl ToString) -> Self {
+        self.replacement_scheme = Some(scheme.to_string());
+        self
     }
 }
 
@@ -108,12 +119,15 @@ impl CompatibilityRules {
                 // questionable).
                 RuleSet {
                     name: "fpdownload".to_string(),
-                    domain_rewrite_rules: vec![UrlRewriteRule::new(
-                        UrlRewriteStage::BeforeRequest,
-                        EnumSet::only(FetchReason::UrlLoader),
-                        "fpdownload.adobe.com",
-                        "cdn.ruffle.rs",
-                    )],
+                    domain_rewrite_rules: vec![
+                        UrlRewriteRule::new(
+                            UrlRewriteStage::BeforeRequest,
+                            EnumSet::only(FetchReason::UrlLoader),
+                            "fpdownload.adobe.com",
+                            "cdn.ruffle.rs",
+                        )
+                        .with_replacement_scheme("https"),
+                    ],
                     domain_block_rules: vec![],
                 },
                 // Mochiads currently don't work and the moachiads.com domain is up for sale.
@@ -165,6 +179,16 @@ impl CompatibilityRules {
                         tracing::warn!("Couldn't rewrite swf host to {}: {e}", rule.replacement);
                     } else {
                         rewritten = true;
+                    }
+
+                    if let Some(scheme) = &rule.replacement_scheme
+                        && url.scheme() != scheme
+                    {
+                        if url.set_scheme(scheme).is_err() {
+                            tracing::warn!("Couldn't rewrite swf scheme to {scheme}");
+                        } else {
+                            rewritten = true;
+                        }
                     }
                 }
             }
@@ -229,7 +253,26 @@ pub fn domain_matches(expected: &str, actual: &str) -> bool {
 
 #[cfg(test)]
 mod tests {
-    use crate::compatibility_rules::domain_matches;
+    use crate::backend::navigator::FetchReason;
+    use crate::compatibility_rules::{CompatibilityRules, UrlRewriteStage, domain_matches};
+    use std::borrow::Cow;
+
+    #[test]
+    fn test_fpdownload_rewrite_upgrades_to_https() {
+        let rules = CompatibilityRules::builtin_rules();
+        let rewritten = rules
+            .block_or_rewrite_swf_url(
+                Cow::Borrowed("http://fpdownload.adobe.com/pub/swz/crossdomain.xml"),
+                UrlRewriteStage::BeforeRequest,
+                FetchReason::UrlLoader,
+            )
+            .unwrap_or_else(|_| panic!("url should not be blocked"));
+
+        assert_eq!(
+            rewritten.as_deref(),
+            Some("https://cdn.ruffle.rs/pub/swz/crossdomain.xml")
+        );
+    }
 
     #[test]
     fn test_domain_matches() {
