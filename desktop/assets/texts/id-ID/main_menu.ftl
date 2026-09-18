@@ -35,6 +35,7 @@ bookmarks-menu-add = Tambah...
 bookmarks-menu-manage = Atur Penanda...
 debug-menu = Alat debug
 debug-menu-open-stage = Lihat info halaman
+debug-menu-open-root-movie-clip = Tunjukkan MovieClip Utama
 debug-menu-open-movie = Lihat Movie
 debug-menu-open-movie-list = Lihat Movie yang diketahui
 debug-menu-open-domain-list = Tunjukkan Domain
