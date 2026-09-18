@@ -44,6 +44,9 @@
     "settings_background_execution_mode_none": {
         "message": "Premor"
     },
+    "settings_background_execution_mode_main_thread": {
+        "message": "Zaženi v glavni niti"
+    },
     "settings_preferred_renderer": {
         "message": "Prednostni izrisovalnik"
     },

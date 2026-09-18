@@ -4,3 +4,4 @@ save = Simpan
 cancel = Batalkan
 remove = Hapus
 enable = Aktifkan
+disable = Matikan
