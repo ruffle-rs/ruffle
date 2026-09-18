@@ -186,6 +186,13 @@ fn flash_to_rust_string(path: &str, uppercase: bool, separator: &str) -> String 
         return "".to_string();
     }
 
+    // For the specific case of avm2.intrinsics.memory, we pretend that the
+    // namespace is "concurrent", so that we can put definitions in "concurrent.rs"
+    // rather than in the folder `avm2/globals/avm2/intrinsics/`.
+    if path == "avm2.intrinsics.memory" {
+        return "concurrent".to_string();
+    }
+
     let new_case = if uppercase {
         Case::UpperSnake
     } else {
