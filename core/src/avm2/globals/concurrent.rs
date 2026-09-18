@@ -56,7 +56,7 @@ pub fn casi32<'gc>(
 
     if original_val == expected_val {
         dm.write_at_nongrowing(&new_val.to_le_bytes(), address)
-            .map_err(|e| e.to_avm(activation))?;
+            .expect("Already performed bounds check");
     }
 
     Ok(original_val.into())
