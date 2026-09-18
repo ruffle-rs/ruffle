@@ -10,6 +10,8 @@ include "RegExp.as"
 
 include "avmplus.as"
 
+include "concurrent.as"
+
 include "flash/accessibility/Accessibility.as"
 include "flash/accessibility/AccessibilityImplementation.as"
 include "flash/accessibility/AccessibilityProperties.as"
