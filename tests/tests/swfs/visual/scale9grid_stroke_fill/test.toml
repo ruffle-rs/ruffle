@@ -1,0 +1,18 @@
+num_ticks = 1
+
+# Hard stops: a boundary pixel rounding to the other side flips whole channels, so the
+# outliers are few but full-range. Measured 557. A wrong widening constant shifts every
+# boundary by pixels and lands in the thousands.
+[image_comparisons.output]
+tolerance = 1
+max_outliers = 800
+
+[player_options]
+with_renderer = { optional = false }
+
+[[compilers]]
+type = "Asc"
+target = "test.swf"
+class = "Test"
+scripts = ["Test.as"]
+swf_version = 43
