@@ -113,7 +113,7 @@ impl<'gc> Scope<'gc> {
 
     /// Produces first the scope itself, then its ancestors
     pub fn ancestors(scope: Gc<'gc, Scope<'gc>>) -> impl Iterator<Item = Gc<'gc, Scope<'gc>>> {
-        core::iter::successors(Some(scope), |scope| scope.parent())
+        core::iter::successors(Some(scope), |scope| scope.parent)
     }
 
     /// Returns the class.
@@ -131,43 +131,32 @@ impl<'gc> Scope<'gc> {
         name: AvmString<'gc>,
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<CallableValue<'gc>, Error<'gc>> {
-        self.resolve_recursive(name, activation, true)
-    }
-
-    /// Recursively resolve a value on the scope chain
-    /// See [`Scope::resolve`] for details
-    fn resolve_recursive(
-        &self,
-        name: AvmString<'gc>,
-        activation: &mut Activation<'_, 'gc>,
-        top_level: bool,
-    ) -> Result<CallableValue<'gc>, Error<'gc>> {
-        if self.locals().has_property(activation, name) {
-            return self
-                .locals()
-                .get(name, activation)
-                .map(|v| CallableValue::Callable(self.locals_cell(), v));
-        }
-        if let Some(scope) = self.parent() {
-            let res = scope.resolve(name, activation)?;
-
-            // If we failed to find the value in the scope chain, but it *would* resolve on `self.locals()` if it wasn't
-            // a removed clip, then try resolving on root instead
-            if top_level
-                && matches!(res, CallableValue::UnCallable(Value::Undefined))
-                && self.locals().has_own_property(activation, name)
-            {
-                return activation
-                    .base_clip()
-                    .avm1_root()
+        let mut scope = self;
+        loop {
+            // A removed clip no longer takes part in variable resolution: the current target
+            // (i.e. `this` if it's a clip, otherwise the caller's target) stands in for it.
+            let removed = scope
+                .values
+                .as_display_object()
+                .is_some_and(|o| o.avm1_removed());
+            let values = if removed {
+                activation
+                    .target_clip_or_root()
                     .object1_or_bare(activation.gc())
+            } else {
+                scope.values
+            };
+
+            if values.has_property(activation, name) {
+                return values
                     .get(name, activation)
-                    .map(|v| CallableValue::Callable(self.locals_cell(), v));
+                    .map(|v| CallableValue::Callable(values, v));
             }
 
-            Ok(res)
-        } else {
-            Ok(CallableValue::UnCallable(Value::Undefined))
+            match scope.parent {
+                Some(parent) => scope = Gc::as_ref(parent),
+                None => return Ok(CallableValue::UnCallable(Value::Undefined)),
+            }
         }
     }
 
@@ -186,8 +175,7 @@ impl<'gc> Scope<'gc> {
         let removed = self
             .values
             .as_display_object()
-            .map(|o| o.avm1_removed())
-            .unwrap_or_default();
+            .is_some_and(|o| o.avm1_removed());
 
         if !removed
             && (self.class == ScopeClass::Target || self.locals().has_property(activation, name))
@@ -195,9 +183,9 @@ impl<'gc> Scope<'gc> {
             // Value found on this object, so overwrite it.
             // Or we've hit the executing movie clip, so create it here.
             self.locals().set(name, value, activation)
-        } else if let Some(scope) = self.parent() {
+        } else if let Some(parent) = self.parent {
             // Traverse the scope chain in search of the value.
-            scope.set(name, value, activation)
+            parent.set(name, value, activation)
         } else {
             debug_assert!(
                 self.class == ScopeClass::Global,
@@ -250,8 +238,8 @@ impl<'gc> Scope<'gc> {
             return self.locals().delete(activation, name);
         }
 
-        if let Some(scope) = self.parent() {
-            return scope.delete(activation, name);
+        if let Some(parent) = self.parent {
+            return parent.delete(activation, name);
         }
 
         false

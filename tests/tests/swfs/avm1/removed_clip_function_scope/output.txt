@@ -1,0 +1,12 @@
+// From root, before removal
+child child undefined undefined global
+// From root, after removal
+root global root undefined global
+// From root, after removal, this = caller
+caller global undefined caller global
+// From root, after removal, this = plain object
+root global root undefined global
+// From root, after removal, this = undefined (via call)
+root global root undefined global
+// From caller's timeline, after removal
+root global root undefined global
