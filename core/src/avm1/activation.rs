@@ -181,8 +181,7 @@ pub struct Activation<'a, 'gc: 'a> {
     /// Represents the SWF version of a given function.
     ///
     /// Certain AVM1 operations change behavior based on the version of the SWF
-    /// file they were defined in. For example, case sensitivity changes based
-    /// on the SWF version.
+    /// file they were defined in.
     swf_version: u8,
 
     /// All defined local variables in this stack frame.
@@ -250,12 +249,12 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     }
 
     pub fn prototypes(&self) -> &crate::avm1::globals::SystemPrototypes<'gc> {
-        self.context.avm1.prototypes(self.swf_version())
+        self.context.avm1.prototypes(self.is_case_sensitive())
     }
 
     /// Obtain a reference to the global scope.
     pub fn global_scope(&self) -> Gc<'gc, Scope<'gc>> {
-        self.context.avm1.global_scope(self.swf_version())
+        self.context.avm1.global_scope(self.is_case_sensitive())
     }
     /// Obtain a reference to `_global`.
     pub fn global_object(&self) -> Object<'gc> {
@@ -402,7 +401,9 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
         let swf_version = base_clip.swf_version();
         debug_assert!(swf_version > 0, "cannot execute code with SWF version 0");
-        let scope = context.avm1.global_scope(swf_version);
+        let scope = context
+            .avm1
+            .global_scope(crate::avm1::runtime::Avm1::is_case_sensitive(swf_version));
         #[cfg(feature = "tracy_avm")]
         let tracy_span = {
             let span = tracy_client::Client::running()
@@ -468,7 +469,11 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let child_scope = Gc::new(
             self.gc(),
             Scope::new(
-                self.context.avm1.global_scope(active_clip.swf_version()),
+                self.context
+                    .avm1
+                    .global_scope(crate::avm1::runtime::Avm1::is_case_sensitive(
+                        active_clip.swf_version(),
+                    )),
                 scope::ScopeClass::Target,
                 clip_obj,
             ),
@@ -506,7 +511,9 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let child_scope = Gc::new(
             self.gc(),
             Scope::new(
-                self.context.avm1.global_scope(swf_version),
+                self.context
+                    .avm1
+                    .global_scope(crate::avm1::runtime::Avm1::is_case_sensitive(swf_version)),
                 scope::ScopeClass::Target,
                 clip_obj,
             ),
@@ -3014,9 +3021,13 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         self.target_clip().unwrap_or_else(|| self.base_clip())
     }
 
-    /// Returns whether property keys should be case sensitive based on the current SWF version.
+    /// Returns whether property keys are case sensitive in this activation.
+    ///
+    /// This is a property of the global environment the scope chain belongs to, and is normally
+    /// implied by the SWF version. Playerglobal code is the exception: it runs as the newest
+    /// SWF version in both environments.
     pub fn is_case_sensitive(&self) -> bool {
-        crate::avm1::runtime::Avm1::is_case_sensitive(self.swf_version())
+        self.scope.is_case_sensitive()
     }
 
     /// Resolve a particular named local variable within this activation.

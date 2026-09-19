@@ -326,7 +326,10 @@ impl<'gc> Avm1Function<'gc> {
             let scope = Gc::new(
                 activation.gc(),
                 Scope::new(
-                    activation.global_scope(),
+                    activation
+                        .context
+                        .avm1
+                        .global_scope(crate::avm1::Avm1::is_case_sensitive(swf_version)),
                     super::scope::ScopeClass::Target,
                     base_clip_obj,
                 ),
