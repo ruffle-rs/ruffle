@@ -79,10 +79,7 @@ package flash.text.engine {
             return 0.0;
         }
 
-        public function get hasTabs():Boolean {
-            stub_getter("flash.text.engine.TextLine", "hasTabs");
-            return false;
-        }
+        public native function get hasTabs():Boolean;
 
         public function getAtomIndexAtPoint(stageX:Number, stageY:Number):int {
             stub_method("flash.text.engine.TextLine", "getAtomIndexAtPoint");

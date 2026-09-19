@@ -1,0 +1,6 @@
+plain text: hasTabs=false
+text with tab: hasTabs=true
+tab only: hasTabs=true
+multiple lines
+  line 0: hasTabs=false
+  line 1: hasTabs=true
