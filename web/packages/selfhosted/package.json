@@ -16,8 +16,7 @@
         "url": "git+https://github.com/ruffle-rs/ruffle.git"
     },
     "scripts": {
-        "build": "webpack",
-        "serve": "webpack-dev-server",
+        "build": "node build.js",
         "wdio": "wdio run wdio.conf.ts",
         "checkTypes": "tsc --noemit"
     },
@@ -27,10 +26,8 @@
     "devDependencies": {
         "@types/chai": "^5.2.3",
         "@types/chai-html": "^3.0.0",
+        "esbuild": "^0.28.2",
         "json5": "^2.2.3",
-        "ts-node": "^10.9.2",
-        "webpack": "^5.110.3",
-        "webpack-cli": "^7.2.3",
-        "webpack-dev-server": "^6.0.0"
+        "ts-node": "^10.9.2"
     }
 }

@@ -15,6 +15,8 @@ import { setPolyfillsOnLoad } from "./js-polyfills.js";
 import { internalSourceApi } from "./internal/internal-source-api.js";
 
 type ProgressCallback = (bytesLoaded: number, bytesTotal: number) => void;
+declare const __WASM_EXT_PATH__: string;
+declare const __WASM_MVP_PATH__: string;
 
 /**
  * Load ruffle from an automatically-detected location.
@@ -65,13 +67,24 @@ async function fetchRuffle(
         RuffleInstanceBuilder,
         ZipWriter,
     } = await (extensionsSupported
-        ? import("../dist/ruffle_web.js")
+        ? // @ts-expect-error TS2307 TypeScript compiler is trying to do the import.
+          import("./ruffle_web.js")
         : // @ts-expect-error TS2307 TypeScript compiler is trying to do the import.
-          import("../dist/%FALLBACK_WASM%.js"));
+          import("./%FALLBACK_WASM%.js"));
     let response;
+
+    const wasmExtPath =
+        typeof __WASM_EXT_PATH__ !== "undefined"
+            ? __WASM_EXT_PATH__
+            : "./ruffle_web_bg.wasm";
+    const wasmMvpPath =
+        typeof __WASM_MVP_PATH__ !== "undefined"
+            ? __WASM_MVP_PATH__
+            : "./%FALLBACK_WASM%_bg.wasm";
+
     const wasmUrl = extensionsSupported
-        ? new URL("../dist/ruffle_web_bg.wasm", import.meta.url)
-        : new URL("../dist/%FALLBACK_WASM%_bg.wasm", import.meta.url);
+        ? new URL(wasmExtPath, import.meta.url)
+        : new URL(wasmMvpPath, import.meta.url);
     const wasmResponse = await fetch(wasmUrl);
     // The Pale Moon browser lacks full support for ReadableStream.
     // However, ReadableStream itself is defined.
