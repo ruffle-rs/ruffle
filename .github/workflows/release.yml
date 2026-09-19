@@ -538,12 +538,13 @@ jobs:
         continue-on-error: true
         env:
           CHROME_EXTENSION_ID: ${{ secrets.CHROME_EXTENSION_ID }}
-        uses: mnao305/chrome-extension-upload@v6.0.0
+        uses: mnao305/chrome-extension-upload@v7.0.0
         with:
           extension-id: ${{ secrets.CHROME_EXTENSION_ID }}
           client-id: ${{ secrets.CHROME_CLIENT_ID }}
           client-secret: ${{ secrets.CHROME_CLIENT_SECRET }}
           refresh-token: ${{ secrets.CHROME_REFRESH_TOKEN }}
+          publisher-id: ${{ secrets.CHROME_PUBLISHER_ID }}
           file-path: ./web/packages/extension/dist/ruffle_extension.zip
 
       - name: Publish Edge extension
