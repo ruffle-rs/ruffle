@@ -506,25 +506,31 @@ impl<'gc> Library<'gc> {
             return cache.clone();
         }
 
+        // Collect every font in the configured chain so a glyph miss on the
+        // first font can fall through to later fonts.
         let mut result = vec![];
-        // First try to find any exactly matching fonts.
+
+        // First pass: prefer fonts that exactly match the requested style.
         for name in self.default_font_names.entry(name).or_default().clone() {
             let query = FontQuery::new(FontType::Device, name, is_bold, is_italic);
+
             if let Some(font) = self.get_or_load_exact_device_font(&query, ui, renderer, gc_context)
             {
                 result.push(font);
-                break; // TODO: Return multiple fonts when it's needed.
             }
         }
 
-        // Nothing found, try a compatible font.
-        if result.is_empty() {
-            for name in self.default_font_names.entry(name).or_default().clone() {
-                let query = FontQuery::new(FontType::Device, name, is_bold, is_italic);
-                if let Some(font) = self.device_fonts.find(&query) {
-                    result.push(font);
-                    break; // TODO: Return multiple fonts when it's needed.
-                }
+        // Second pass: add compatible fonts that weren't already found during
+        // the exact-match pass.
+        for name in self.default_font_names.entry(name).or_default().clone() {
+            let query = FontQuery::new(FontType::Device, name, is_bold, is_italic);
+
+            if let Some(font) = self.device_fonts.find(&query)
+                && !result
+                    .iter()
+                    .any(|existing| existing.descriptor() == font.descriptor())
+            {
+                result.push(font);
             }
         }
 
