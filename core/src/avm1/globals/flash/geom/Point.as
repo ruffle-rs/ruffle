@@ -4,11 +4,12 @@ flash.geom.Point = function(x, y) {
         // y is assigned before x, which affects property enumeration order.
         this.y = 0;
         this.x = 0;
-    } else {
-        // x is assigned before y, which affects property enumeration order.
-        this.x = x;
-        this.y = y;
+        return;
     }
+
+    // x is assigned before y, which affects property enumeration order.
+    this.x = x;
+    this.y = y;
 };
 
 var o = flash.geom.Point;
