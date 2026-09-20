@@ -171,10 +171,8 @@ Testing _global.flash.geom.Point.prototype
 Testing _global.flash.geom.Rectangle
   prototype, DONT_DELETE
   __proto__, DONT_DELETE
-  constructor, DONT_DELETE
 Testing _global.flash.geom.Rectangle.prototype
   __proto__, DONT_DELETE
-  constructor, DONT_DELETE
 Testing _global.flash.geom
   __proto__, DONT_DELETE
 Testing _global.flash.filters.DisplacementMapFilter

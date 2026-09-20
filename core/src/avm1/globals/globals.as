@@ -4,6 +4,7 @@
 
 trace = ASnative(100, 4);
 
+#include "flash/geom/Rectangle.as"
 #include "flash/geom/Point.as"
 
 // The `flash` package is only visible to SWF 8 and later.
