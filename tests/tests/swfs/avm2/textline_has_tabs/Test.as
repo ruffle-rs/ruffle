@@ -10,20 +10,17 @@ package {
             testSingleLine("plain text", "abc");
             testSingleLine("text with tab", "a\tb");
             testSingleLine("tab only", "\t");
+            testSingleLine("empty text", "");
 
-            trace("multiple lines");
-            var block:TextBlock = new TextBlock(
-                new TextElement("ab\nc\td", new ElementFormat())
+            testLines(
+                "tab in second line / first line ends before tab",
+                "abc\n\tdef"
             );
 
-            var line:TextLine = block.createTextLine(null, 10000);
-            var index:int = 0;
-
-            while (line) {
-                trace("  line " + index + ": hasTabs=" + line.hasTabs);
-                line = block.createTextLine(line, 10000);
-                index++;
-            }
+            testLines(
+                "tab in first line only",
+                "abc\t\nDEF"
+            );
         }
 
         private function testSingleLine(name:String, text:String):void {
@@ -33,7 +30,34 @@ package {
 
             var line:TextLine = block.createTextLine(null, 10000);
 
-            trace(name + ": hasTabs=" + line.hasTabs);
+            if (line) {
+                trace(name + ": hasTabs=" + line.hasTabs);
+            } else {
+                trace(name + ": no line");
+            }
+        }
+
+        private function testLines(name:String, text:String):void {
+            trace(name);
+
+            var block:TextBlock = new TextBlock(
+                new TextElement(text, new ElementFormat())
+            );
+
+            var line:TextLine = block.createTextLine(null, 10000);
+            var index:int = 0;
+
+            while (line) {
+                trace(
+                    "  line " + index +
+                    ": begin=" + line.textBlockBeginIndex +
+                    ", length=" + line.rawTextLength +
+                    ", hasTabs=" + line.hasTabs
+                );
+
+                line = block.createTextLine(line, 10000);
+                index++;
+            }
         }
     }
 }

@@ -1,6 +1,10 @@
 plain text: hasTabs=false
 text with tab: hasTabs=true
 tab only: hasTabs=true
-multiple lines
-  line 0: hasTabs=false
-  line 1: hasTabs=true
+empty text: no line
+tab in second line / first line ends before tab
+  line 0: begin=0, length=4, hasTabs=false
+  line 1: begin=4, length=4, hasTabs=true
+tab in first line only
+  line 0: begin=0, length=5, hasTabs=true
+  line 1: begin=5, length=3, hasTabs=false
