@@ -1,8 +1,15 @@
-// This is compiled as part of the build step for ruffle_core via `build_playerglobal`.
-// The globals are loaded after the "built in" globals (read: things that haven't been moved here yet, and `ASnative`)
+// This file is executed in the global scope, after native globals are initialized
 // but before any user content.
 // You should not reference any display objects here; this is not going to be loaded as a "real" movie.
 
-// For convenience, the use of `#include "foo.as"` is supported.
-
 trace = ASnative(100, 4);
+
+// The `flash` package is only visible to SWF 8 and later.
+ASSetPropFlags(_global, "flash", 4096);
+
+#include "flash/geom/Point.as"
+
+// The variable `o` is being used to make referring to symbols more concise.
+// However, in Flash it's not being deleted, but instead set to `null`,
+// which means that in every SWF, the variable `o` is `null` and not `undefined`.
+var o = null;
