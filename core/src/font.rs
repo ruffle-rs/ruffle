@@ -36,6 +36,12 @@ pub struct FontQuery {
     pub is_italic: bool,
 }
 
+#[derive(Clone, Debug, Eq, PartialEq, Hash)]
+pub enum FontFamilyFilter {
+    Name(String),
+    Default(DefaultFont),
+}
+
 impl FontQuery {
     pub fn new(font_type: FontType, name: String, is_bold: bool, is_italic: bool) -> Self {
         Self {

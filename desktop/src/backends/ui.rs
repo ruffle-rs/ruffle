@@ -15,7 +15,7 @@ use ruffle_core::backend::ui::{
     FullscreenError, LanguageIdentifier, MouseCursor, MultiDialogResultFuture,
     MultiFileDialogResult, UiBackend,
 };
-use ruffle_core::font::{FontAtlases, FontFileData, FontQuery};
+use ruffle_core::font::{FontAtlases, FontFamilyFilter, FontFileData, FontQuery};
 use std::fs::File;
 use std::path::Path;
 use std::rc::Rc;
@@ -362,14 +362,23 @@ impl UiBackend for DesktopUiBackend {
     #[allow(unused_variables)]
     fn sort_device_fonts(
         &self,
-        query: &FontQuery,
+        filter: &FontFamilyFilter,
+        is_bold: bool,
+        is_italic: bool,
         register: &mut dyn FnMut(FontDefinition),
     ) -> Vec<FontQuery> {
         cfg_select! {
             all(unix, feature = "fontconfig") => {
-                fontconfig::sort_device_fonts(query, register, self.device_font_renderer, &self.font_atlases)
-                    .inspect_err(|err| tracing::error!("Cannot sort device fonts: {err}"))
-                    .unwrap_or_default()
+                fontconfig::sort_device_fonts(
+                    filter,
+                    is_bold,
+                    is_italic,
+                    register,
+                    self.device_font_renderer,
+                    &self.font_atlases,
+                )
+                .inspect_err(|err| tracing::error!("Cannot sort device fonts: {err}"))
+                .unwrap_or_default()
             }
             _ => Vec::new(),
         }
@@ -522,7 +531,7 @@ fn load_fontdb_font(
 mod fontconfig {
     use crate::backends::ui::{DeviceFontRenderer, load_font_from_file};
     use ruffle_core::backend::ui::FontDefinition;
-    use ruffle_core::font::{FontAtlases, FontQuery};
+    use ruffle_core::font::{DefaultFont, FontAtlases, FontFamilyFilter, FontQuery, FontType};
     use std::path::Path;
 
     #[derive(Debug, thiserror::Error)]
@@ -534,7 +543,9 @@ mod fontconfig {
     }
 
     pub fn sort_device_fonts(
-        query: &FontQuery,
+        filter: &FontFamilyFilter,
+        is_bold: bool,
+        is_italic: bool,
         register: &mut dyn FnMut(FontDefinition),
         device_font_renderer: DeviceFontRenderer,
         atlases: &FontAtlases,
@@ -549,18 +560,39 @@ mod fontconfig {
             return Ok(Vec::new());
         };
 
-        let Ok(family) = std::ffi::CString::new(query.name.as_str()) else {
-            return Err(FontconfigError::MalformedFontFamily);
-        };
-
         let mut pattern: Pattern<'static> = Pattern::new(fc)?;
 
-        pattern.add_string(fontconfig::FC_FAMILY, family.as_c_str())?;
+        match filter {
+            FontFamilyFilter::Name(name) => {
+                let Ok(family) = std::ffi::CString::new(name.as_str()) else {
+                    return Err(FontconfigError::MalformedFontFamily);
+                };
 
-        if query.is_bold {
+                pattern.add_string(fontconfig::FC_FAMILY, family.as_c_str())?;
+            }
+
+            FontFamilyFilter::Default(default_font) => {
+                let family = match default_font {
+                    DefaultFont::Sans => "sans-serif",
+                    DefaultFont::Serif => "serif",
+                    DefaultFont::Typewriter => "monospace",
+                    DefaultFont::JapaneseGothic => "sans-serif",
+                    DefaultFont::JapaneseGothicMono => "monospace",
+                    DefaultFont::JapaneseMincho => "serif",
+                };
+
+                let Ok(family) = std::ffi::CString::new(family) else {
+                    return Err(FontconfigError::MalformedFontFamily);
+                };
+
+                pattern.add_string(fontconfig::FC_FAMILY, family.as_c_str())?;
+            }
+        }
+
+        if is_bold {
             pattern.add_integer(fontconfig::FC_WEIGHT, fontconfig::FC_WEIGHT_BOLD)?;
         }
-        if query.is_italic {
+        if is_italic {
             pattern.add_integer(fontconfig::FC_SLANT, fontconfig::FC_SLANT_ITALIC)?;
         }
 
@@ -620,7 +652,7 @@ mod fontconfig {
                 }
             }
 
-            let query = FontQuery::new(query.font_type, name.to_string(), is_bold, is_italic);
+            let query = FontQuery::new(FontType::Device, name.to_string(), is_bold, is_italic);
             font_queries.push(query);
         }
 
