@@ -286,11 +286,10 @@ pub fn _set_time<'gc>(
     let this = this.as_date_object().unwrap();
 
     let new_time = args.get_f64(0);
-    if new_time.is_finite() {
-        let time = Utc
-            .timestamp_millis_opt(new_time as i64)
-            .single()
-            .expect("Found ambiguous timestamp for current time zone");
+
+    if new_time.is_finite()
+        && let LocalResult::Single(time) = Utc.timestamp_millis_opt(new_time as i64)
+    {
         this.set_date_time(Some(time));
         Ok((time.timestamp_millis() as f64).into())
     } else {
