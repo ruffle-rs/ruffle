@@ -41,13 +41,10 @@ struct GlobalEnv<'gc> {
 }
 
 impl<'gc> GlobalEnv<'gc> {
-    fn create(context: &mut StringContext<'gc>, case_sensitive: bool) -> Self {
+    fn create(context: &mut StringContext<'gc>) -> Self {
         let (prototypes, globals, broadcaster_functions) = create_globals(context);
         Self {
-            global_scope: Gc::new(
-                context.gc(),
-                Scope::from_global_object(globals, case_sensitive),
-            ),
+            global_scope: Gc::new(context.gc(), Scope::from_global_object(globals)),
             prototypes,
             broadcaster_functions,
             constructor_registry: PropertyMap::new(),
@@ -122,8 +119,8 @@ impl<'gc> Avm1<'gc> {
         Self {
             player_version,
             constant_pool: Gc::new(gc_context, vec![]),
-            env_case_insensitive: GlobalEnv::create(context, false),
-            env_case_sensitive: GlobalEnv::create(context, true),
+            env_case_insensitive: GlobalEnv::create(context),
+            env_case_sensitive: GlobalEnv::create(context),
             display_properties: stage_object::DisplayPropertyMap::new(context),
             stack: vec![],
             registers: [Value::Undefined; 4],
@@ -157,12 +154,12 @@ impl<'gc> Avm1<'gc> {
         }
 
         let clip_obj = active_clip.object1_or_bare(context.gc());
+        let swf_version = active_clip.swf_version();
+        let case_sensitive = Self::is_case_sensitive(swf_version);
         let child_scope = Gc::new(
             context.gc(),
             Scope::new(
-                context
-                    .avm1
-                    .global_scope(Self::is_case_sensitive(active_clip.swf_version())),
+                context.avm1.global_scope(case_sensitive),
                 scope::ScopeClass::Target,
                 clip_obj,
             ),
@@ -171,7 +168,8 @@ impl<'gc> Avm1<'gc> {
         let mut child_activation = Activation::from_action(
             context,
             ActivationIdentifier::root(name),
-            active_clip.swf_version(),
+            swf_version,
+            case_sensitive,
             child_scope,
             constant_pool,
             active_clip,
@@ -201,6 +199,7 @@ impl<'gc> Avm1<'gc> {
                 context,
                 ActivationIdentifier::root("playerglobal"),
                 swf_version,
+                case_sensitive,
                 context.avm1.global_scope(case_sensitive),
                 constant_pool,
                 context.stage.as_displayobject(),
@@ -228,12 +227,12 @@ impl<'gc> Avm1<'gc> {
         let clip_obj = active_clip
             .object1()
             .expect("No script object for display object");
+        let swf_version = active_clip.swf_version();
+        let case_sensitive = Self::is_case_sensitive(swf_version);
         let child_scope = Gc::new(
             action_context.gc(),
             Scope::new(
-                action_context
-                    .avm1
-                    .global_scope(Self::is_case_sensitive(active_clip.swf_version())),
+                action_context.avm1.global_scope(case_sensitive),
                 scope::ScopeClass::Target,
                 clip_obj,
             ),
@@ -242,7 +241,8 @@ impl<'gc> Avm1<'gc> {
         let mut activation = Activation::from_action(
             action_context,
             ActivationIdentifier::root("[Display Object]"),
-            active_clip.swf_version(),
+            swf_version,
+            case_sensitive,
             child_scope,
             constant_pool,
             active_clip,
@@ -267,12 +267,12 @@ impl<'gc> Avm1<'gc> {
         }
 
         let clip_obj = active_clip.object1_or_bare(context.gc());
+        let swf_version = active_clip.swf_version();
+        let case_sensitive = Self::is_case_sensitive(swf_version);
         let child_scope = Gc::new(
             context.gc(),
             Scope::new(
-                context
-                    .avm1
-                    .global_scope(Self::is_case_sensitive(active_clip.swf_version())),
+                context.avm1.global_scope(case_sensitive),
                 scope::ScopeClass::Target,
                 clip_obj,
             ),
@@ -282,7 +282,8 @@ impl<'gc> Avm1<'gc> {
         let mut child_activation = Activation::from_action(
             context,
             ActivationIdentifier::root("[Init]"),
-            active_clip.swf_version(),
+            swf_version,
+            case_sensitive,
             child_scope,
             constant_pool,
             active_clip,
