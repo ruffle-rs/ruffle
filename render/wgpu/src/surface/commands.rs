@@ -4,7 +4,7 @@ use crate::blend::TrivialBlend;
 use crate::buffer_pool::TexturePool;
 use crate::mesh::Mesh;
 use crate::surface::Surface;
-use crate::surface::buffers::{ChunkBufferBuilder, ChunkBuffers};
+use crate::surface::buffers::{ChunkBufferBuilder, ChunkBuffers, DrawVertices};
 use crate::surface::chunk::{Chunk, ChunkBlendMode, DrawCommand};
 use crate::surface::mask::MaskState;
 use crate::surface::target::{CommandTarget, PoolOrArcTexture};
@@ -152,9 +152,13 @@ impl<'encoder, 'global: 'encoder> WgpuCommandHandler<'encoder, 'global> {
         color_transform: ColorTransform,
         command_builder: impl FnOnce(u32) -> DrawCommand,
     ) {
-        self.add_to_current_with_vertices(matrix, tz, color_transform, None, |instance_range, _| {
-            command_builder(instance_range)
-        })
+        self.add_to_current_with_vertices(
+            matrix,
+            tz,
+            color_transform,
+            DrawVertices::None,
+            |instance_range, _| command_builder(instance_range),
+        )
     }
 
     fn push_command(&mut self, command: DrawCommand) {
@@ -166,7 +170,7 @@ impl<'encoder, 'global: 'encoder> WgpuCommandHandler<'encoder, 'global> {
         matrix: Matrix,
         tz: f64,
         color_transform: ColorTransform,
-        vertices: Option<&[PosUvVertex]>,
+        vertices: DrawVertices,
         command_builder: impl FnOnce(u32, Option<wgpu::BufferAddress>) -> DrawCommand,
     ) {
         let transform = Transforms {
@@ -357,7 +361,7 @@ impl CommandHandler for WgpuCommandHandler<'_, '_> {
             matrix,
             transform.tz,
             transform.color_transform,
-            Some(vertices),
+            DrawVertices::CustomPosUvQuad(bytemuck::cast_slice(vertices)),
             |instance_index, vertex_offset| DrawCommand::RenderTexture {
                 _texture: PoolOrArcTexture::Manual((texture.texture.clone(), texture.view.clone())),
                 binds: binds.bind_group.clone(),
