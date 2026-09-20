@@ -1,25 +1,25 @@
 MovieClip object
-map object: result=success, pixel=-10000
+map object: result=0, pixel=-10000
 String targets
-"map": result=success, pixel=-10000
-"/map": result=success, pixel=-10000
-"_root.map": result=success, pixel=-10000
-"_root/map": result=success, pixel=-10000
-"_root:map": result=success, pixel=-10000
-"_level0.map": result=success, pixel=-10000
-"_level0/map": result=success, pixel=-10000
-"_level0:map": result=success, pixel=-10000
-":map": result=success, pixel=-10000
-"/:map": result=success, pixel=-10000
+"map": result=0, pixel=-10000
+"/map": result=0, pixel=-10000
+"_root.map": result=0, pixel=-10000
+"_root/map": result=0, pixel=-10000
+"_root:map": result=0, pixel=-10000
+"_level0.map": result=0, pixel=-10000
+"_level0/map": result=0, pixel=-10000
+"_level0:map": result=0, pixel=-10000
+":map": result=0, pixel=-10000
+"/:map": result=0, pixel=-10000
 ".map": result=-2, pixel=0
 "/.map": result=-2, pixel=0
-"map/": result=success, pixel=-10000
-"/map/": result=success, pixel=-10000
-"map/..": result=success, pixel=-10000
-"map/../map": result=success, pixel=-10000
-"map/..:map": result=success, pixel=-10000
+"map/": result=0, pixel=-10000
+"/map/": result=0, pixel=-10000
+"map/..": result=0, pixel=-10000
+"map/../map": result=0, pixel=-10000
+"map/..:map": result=0, pixel=-10000
 "": result=-2, pixel=0
-"/": result=success, pixel=-10000
+"/": result=0, pixel=-10000
 "//": result=-2, pixel=0
 ".": result=-2, pixel=0
 "..": result=-2, pixel=0

@@ -22,7 +22,7 @@ function testDraw(label, source)
 
     trace(
             label +
-            ": result=" + (pixel != 0 ? "success" : result) +
+            ": result=" + result +
             ", pixel=" + pixel.toString(16)
         );
 }
