@@ -50,6 +50,12 @@ impl ChunkBuffers {
     }
 }
 
+#[derive(Copy, Clone)]
+pub enum DrawVertices<'a> {
+    CustomPosUvQuad(&'a [u8]),
+    None,
+}
+
 pub struct ChunkBufferBuilder {
     transforms: BufferBuilder,
     vertices: BufferBuilder,
@@ -70,12 +76,12 @@ impl ChunkBufferBuilder {
     pub fn add(
         &mut self,
         transform: Transforms,
-        vertices: Option<&[PosUvVertex]>,
+        vertices: DrawVertices,
     ) -> Result<(u32, Option<wgpu::BufferAddress>), BufferFull> {
         let transform_address = self.transforms.add(&[transform])?;
         let vertex_address = match vertices {
-            Some(vertices) => Some(self.vertices.add(vertices)?.start),
-            None => None,
+            DrawVertices::CustomPosUvQuad(vertices) => Some(self.vertices.add(vertices)?.start),
+            DrawVertices::None => None,
         };
         Ok((
             (transform_address.start as usize / size_of::<Transforms>()) as u32,
