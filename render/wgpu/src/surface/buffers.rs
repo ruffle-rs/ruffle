@@ -1,6 +1,8 @@
+use crate::buffer_builder::{BufferBuilder, BufferFull};
 use crate::descriptors::Descriptors;
 use crate::{PosUvVertex, Transforms};
 use std::mem;
+use wgpu::util::StagingBelt;
 
 const ESTIMATED_OBJECTS_PER_CHUNK: u64 = 200;
 
@@ -45,5 +47,51 @@ impl ChunkBuffers {
             bind_group,
             vertex_buffer,
         }
+    }
+}
+
+pub struct ChunkBufferBuilder {
+    transforms: BufferBuilder,
+    vertices: BufferBuilder,
+}
+
+impl ChunkBufferBuilder {
+    pub fn new(chunk_buffers: &ChunkBuffers, limits: &wgpu::Limits) -> Self {
+        let mut transforms = BufferBuilder::new(limits, 0);
+        transforms.set_buffer_limit(chunk_buffers.transforms.size());
+        let mut vertices = BufferBuilder::new(limits, 0);
+        vertices.set_buffer_limit(chunk_buffers.vertex_buffer.size());
+        Self {
+            transforms,
+            vertices,
+        }
+    }
+
+    pub fn add(
+        &mut self,
+        transform: Transforms,
+        vertices: Option<&[PosUvVertex]>,
+    ) -> Result<(u32, Option<wgpu::BufferAddress>), BufferFull> {
+        let transform_address = self.transforms.add(&[transform])?;
+        let vertex_address = match vertices {
+            Some(vertices) => Some(self.vertices.add(vertices)?.start),
+            None => None,
+        };
+        Ok((
+            (transform_address.start as usize / size_of::<Transforms>()) as u32,
+            vertex_address,
+        ))
+    }
+
+    pub fn copy_to(
+        self,
+        staging_belt: &mut StagingBelt,
+        draw_encoder: &mut wgpu::CommandEncoder,
+        chunk_buffers: &ChunkBuffers,
+    ) {
+        self.transforms
+            .copy_to(staging_belt, draw_encoder, &chunk_buffers.transforms);
+        self.vertices
+            .copy_to(staging_belt, draw_encoder, &chunk_buffers.vertex_buffer);
     }
 }

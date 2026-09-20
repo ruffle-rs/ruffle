@@ -1,8 +1,8 @@
 use crate::blend::{ComplexBlend, TrivialBlend};
-use crate::buffer_builder::BufferBuilder;
 use crate::descriptors::Descriptors;
 use crate::mesh::{DrawType, as_mesh};
 use crate::pipelines::Pipelines;
+use crate::surface::buffers::ChunkBufferBuilder;
 use crate::surface::mask::{MaskMode, MaskState};
 use crate::surface::target::PoolOrArcTexture;
 use ruffle_render::backend::ShapeHandle;
@@ -13,8 +13,7 @@ pub enum Chunk {
     Draw {
         chunk: Vec<DrawCommand>,
         needs_stencil: bool,
-        transforms: BufferBuilder,
-        vertices: BufferBuilder,
+        chunk_buffer_builder: ChunkBufferBuilder,
     },
     Blend {
         texture: PoolOrArcTexture,
