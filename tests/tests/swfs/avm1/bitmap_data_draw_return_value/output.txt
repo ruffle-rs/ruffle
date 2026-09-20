@@ -1,0 +1,9 @@
+valid BitmapData: 0
+valid BitmapData pixel: -10000
+valid MovieClip: 0
+valid MovieClip pixel: -10000
+disposed BitmapData: -3
+plain object: -2
+number: -2
+null: -2
+undefined: -2
