@@ -151,11 +151,9 @@ impl Surface {
                 Chunk::Draw {
                     chunk,
                     needs_stencil,
-                    transforms,
-                    vertices,
+                    chunk_buffer_builder,
                 } => {
-                    transforms.copy_to(staging_belt, draw_encoder, &chunk_buffers.transforms);
-                    vertices.copy_to(staging_belt, draw_encoder, &chunk_buffers.vertex_buffer);
+                    chunk_buffer_builder.copy_to(staging_belt, draw_encoder, chunk_buffers);
                     let mut render_pass = draw_encoder.scoped_render_pass(
                         format!(
                             "Chunked draw calls {}",

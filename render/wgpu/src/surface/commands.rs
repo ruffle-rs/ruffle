@@ -1,11 +1,10 @@
 use crate::backend::RenderTargetMode;
 use crate::blend::BlendType;
 use crate::blend::TrivialBlend;
-use crate::buffer_builder::BufferBuilder;
 use crate::buffer_pool::TexturePool;
 use crate::mesh::Mesh;
 use crate::surface::Surface;
-use crate::surface::buffers::ChunkBuffers;
+use crate::surface::buffers::{ChunkBufferBuilder, ChunkBuffers};
 use crate::surface::chunk::{Chunk, ChunkBlendMode, DrawCommand};
 use crate::surface::mask::MaskState;
 use crate::surface::target::{CommandTarget, PoolOrArcTexture};
@@ -75,8 +74,7 @@ struct WgpuCommandHandler<'encoder, 'global: 'encoder> {
 
     result: Vec<Chunk>,
     current: Vec<DrawCommand>,
-    transforms: BufferBuilder,
-    vertices: BufferBuilder,
+    chunk_buffer_builder: ChunkBufferBuilder,
     needs_stencil: bool,
     mask_state: MaskState,
 }
@@ -95,8 +93,7 @@ impl<'encoder, 'global: 'encoder> WgpuCommandHandler<'encoder, 'global> {
         nearest_layer: LayerRef<'encoder>,
         texture_pool: &'encoder mut TexturePool,
     ) -> Self {
-        let transforms = Self::new_transforms(descriptors, chunk_buffers);
-        let vertices = Self::new_vertices(descriptors, chunk_buffers);
+        let chunk_buffer_builder = ChunkBufferBuilder::new(chunk_buffers, &descriptors.limits);
 
         // DirectX does support drawing lines, but it's very inconsistent.
         // With MSAA, lines have 1.4px thickness, which makes them too thick.
@@ -118,29 +115,10 @@ impl<'encoder, 'global: 'encoder> WgpuCommandHandler<'encoder, 'global> {
 
             result: vec![],
             current: vec![],
-            transforms,
-            vertices,
+            chunk_buffer_builder,
             needs_stencil: false,
             mask_state: MaskState::empty(),
         }
-    }
-
-    fn new_transforms(
-        descriptors: &'encoder Descriptors,
-        chunk_buffers: &'encoder ChunkBuffers,
-    ) -> BufferBuilder {
-        let mut transforms = BufferBuilder::new(&descriptors.limits, 0);
-        transforms.set_buffer_limit(chunk_buffers.transforms.size());
-        transforms
-    }
-
-    fn new_vertices(
-        descriptors: &'encoder Descriptors,
-        chunk_buffers: &'encoder ChunkBuffers,
-    ) -> BufferBuilder {
-        let mut vertices = BufferBuilder::new(&descriptors.limits, 0);
-        vertices.set_buffer_limit(chunk_buffers.vertex_buffer.size());
-        vertices
     }
 
     /// Replaces every blend with a RenderBitmap, with the subcommands rendered out to a temporary texture
@@ -151,21 +129,16 @@ impl<'encoder, 'global: 'encoder> WgpuCommandHandler<'encoder, 'global> {
         let current = mem::take(&mut self.current);
         let mut result = mem::take(&mut self.result);
         let needs_stencil = mem::take(&mut self.needs_stencil);
-        let transforms = mem::replace(
-            &mut self.transforms,
-            Self::new_transforms(self.descriptors, self.chunk_buffers),
-        );
-        let vertices = mem::replace(
-            &mut self.vertices,
-            Self::new_vertices(self.descriptors, self.chunk_buffers),
+        let chunk_buffer_builder = mem::replace(
+            &mut self.chunk_buffer_builder,
+            ChunkBufferBuilder::new(self.chunk_buffers, &self.descriptors.limits),
         );
 
         if !current.is_empty() {
             result.push(Chunk::Draw {
                 chunk: current,
                 needs_stencil,
-                transforms,
-                vertices,
+                chunk_buffer_builder,
             });
         }
 
@@ -211,40 +184,24 @@ impl<'encoder, 'global: 'encoder> WgpuCommandHandler<'encoder, 'global> {
             mult_color: color_transform.mult_rgba_normalized(),
             add_color: color_transform.add_rgba_normalized(),
         };
-        if let (Ok(transform_range), Ok(vertices_range)) = (
-            self.transforms.add(&[transform]),
-            vertices.map(|v| self.vertices.add(v)).transpose(),
-        ) {
-            self.push_command(command_builder(
-                (transform_range.start as usize / size_of::<Transforms>()) as u32,
-                vertices_range.map(|v| v.start),
-            ));
+        if let Ok((transform_index, vertex_offset)) =
+            self.chunk_buffer_builder.add(transform, vertices)
+        {
+            self.push_command(command_builder(transform_index, vertex_offset));
         } else {
             self.result.push(Chunk::Draw {
                 chunk: mem::take(&mut self.current),
                 needs_stencil: self.needs_stencil,
-                transforms: mem::replace(
-                    &mut self.transforms,
-                    Self::new_transforms(self.descriptors, self.chunk_buffers),
-                ),
-                vertices: mem::replace(
-                    &mut self.vertices,
-                    Self::new_vertices(self.descriptors, self.chunk_buffers),
+                chunk_buffer_builder: mem::replace(
+                    &mut self.chunk_buffer_builder,
+                    ChunkBufferBuilder::new(self.chunk_buffers, &self.descriptors.limits),
                 ),
             });
-            let transform_range = self
-                .transforms
-                .add(&[transform])
+            let (transform_index, vertex_offset) = self
+                .chunk_buffer_builder
+                .add(transform, vertices)
                 .expect("Buffer must be able to fit a new thing, it was just emptied");
-            let vertices_range = vertices.map(|v| {
-                self.vertices
-                    .add(v)
-                    .expect("Buffer must be able to fit a new thing, it was just emptied")
-            });
-            self.push_command(command_builder(
-                (transform_range.start as usize / size_of::<Transforms>()) as u32,
-                vertices_range.map(|v| v.start),
-            ));
+            self.push_command(command_builder(transform_index, vertex_offset));
         }
     }
 }
@@ -337,13 +294,9 @@ impl CommandHandler for WgpuCommandHandler<'_, '_> {
                     self.result.push(Chunk::Draw {
                         chunk: mem::take(&mut self.current),
                         needs_stencil: self.needs_stencil,
-                        transforms: mem::replace(
-                            &mut self.transforms,
-                            Self::new_transforms(self.descriptors, self.chunk_buffers),
-                        ),
-                        vertices: mem::replace(
-                            &mut self.vertices,
-                            Self::new_vertices(self.descriptors, self.chunk_buffers),
+                        chunk_buffer_builder: mem::replace(
+                            &mut self.chunk_buffer_builder,
+                            ChunkBufferBuilder::new(self.chunk_buffers, &self.descriptors.limits),
                         ),
                     });
                 }
