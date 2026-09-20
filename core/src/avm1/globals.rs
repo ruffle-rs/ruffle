@@ -61,7 +61,6 @@ pub(crate) mod number;
 mod object;
 mod point;
 mod print_job;
-mod rectangle;
 mod remote_lso_usage;
 mod selection;
 pub(crate) mod shared_object;
@@ -561,7 +560,6 @@ pub fn create_globals<'gc>(
     let load_vars = load_vars::create_class(context, object.proto);
     let local_connection = local_connection::create_class(context, object.proto);
     let matrix = matrix::create_class(context, object.proto);
-    let rectangle = rectangle::create_class(context, object.proto);
     let color_transform = color_transform::create_class(context, object.proto);
     let external_interface = external_interface::create_class(context, object.proto);
     let movie_clip_loader =
@@ -762,7 +760,7 @@ pub fn create_globals<'gc>(
 
     // flash.geom
     let decls = declare_properties! {
-        "Rectangle" => value(rectangle.constr);
+        "Rectangle" => value(null); // Actually in globals.as, reserve the spot here
         "Point" => value(null); // Actually in globals.as, reserve the spot here
         "Matrix" => value(matrix.constr);
         "ColorTransform" => value(color_transform.constr);
