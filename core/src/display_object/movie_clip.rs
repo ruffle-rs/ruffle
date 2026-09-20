@@ -864,6 +864,11 @@ impl<'gc> MovieClip<'gc> {
         self.0.initialized()
     }
 
+    pub fn is_executing_avm2_frame_script(self) -> bool {
+        self.0
+            .contains_flag(MovieClipFlags::EXECUTING_AVM2_FRAME_SCRIPT)
+    }
+
     pub fn stop(self, context: &mut UpdateContext<'gc>) {
         self.0.stop(context)
     }
@@ -897,10 +902,7 @@ impl<'gc> MovieClip<'gc> {
 
         // AVM2 does not allow a clip to goto while it is executing a frame script.
         // The goto is instead queued and run once the frame script is completed.
-        if self
-            .0
-            .contains_flag(MovieClipFlags::EXECUTING_AVM2_FRAME_SCRIPT)
-        {
+        if self.is_executing_avm2_frame_script() {
             if self.swf_version() <= 9 && goto_info.frame == self.current_frame() {
                 // When in SWFv9 and a "queued" goto is triggered to the current
                 // frame, the goto will be run immediately. This will result in
@@ -2454,10 +2456,7 @@ impl<'gc> MovieClip<'gc> {
             // whole movie again. If a goto is attempting to queue frame
             // scripts on us AGAIN, we should allow the current stack to
             // wind down before handling that.
-            if !self
-                .0
-                .contains_flag(MovieClipFlags::EXECUTING_AVM2_FRAME_SCRIPT)
-            {
+            if !self.is_executing_avm2_frame_script() {
                 let is_fresh_frame = self.last_queued_script_frame() != Some(frame_id);
 
                 if is_fresh_frame && let Some(callable) = self.frame_script(frame_id) {
