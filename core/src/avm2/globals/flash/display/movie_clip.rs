@@ -451,6 +451,12 @@ pub fn goto_frame<'gc>(
         }
     };
 
+    if frame < 1 && mc.is_executing_avm2_frame_script() {
+        // Flash ignores gotos to invalid frames from inside a frame script
+        // instead of jumping to frame 1.
+        return Ok(());
+    }
+
     let goto_info = GotoInfo {
         frame: frame.max(1) as u16,
         stop_or_play,
