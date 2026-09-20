@@ -25,6 +25,13 @@
 // point
 (x=0, y=0)
 
+// point.add(other)
+  get point.y
+  get other.y
+  get point.x
+  get other.x
+(x=4, y=6)
+
 
 /// Subtract
 // point.subtract(new Point(1, 2))
@@ -38,6 +45,13 @@
 
 // point
 (x=0, y=0)
+
+// point.subtract(other)
+  get point.y
+  get other.y
+  get point.x
+  get other.x
+(x=-2, y=-2)
 
 
 /// Distance
@@ -56,19 +70,58 @@ NaN
 // Point.distance({x: -100, y: 200}, new Point(100, 200))
 undefined
 
+// Point.distance(point, other)
+  get point.y
+  get other.y
+  get point.x
+  get other.x
+200
+
 
 /// Equals
 // point.equals(new Point(1, 2))
 false
 
+// point.equals(point)
+true
+
 // point.equals({x: 3, y: 4})
 false
 
-// point.equals(point)
+// point.equals({x: 0, y: 0})
+false
+
+// point.equals({x: 0, y: 0, __proto__: Point.prototype})
+true
+
+// point.equals(null)
+false
+
+// new Point('1', '2').equals(new Point(1, 2))
+true
+
+// new Point(NaN, NaN).equals(new Point(NaN, NaN))
+true
+
+// Point.prototype.equals.call({x: 0, y: 0}, new Point())
 true
 
 // point
 (x=0, y=0)
+
+
+/// Equals: property access order
+// point.equals(other), all equal
+  get other.x
+  get point.x
+  get other.y
+  get point.y
+true
+
+// point.equals(other), x differs
+  get other.x
+  get point.x
+false
 
 
 /// Clone
@@ -83,6 +136,11 @@ false
 
 // point.equals(clone)
 true
+
+// point.clone()
+  get point.y
+  get point.x
+(x=1, y=2)
 
 
 /// Interpolate
@@ -107,47 +165,113 @@ true
 // Point.interpolate()
 (x=NaN, y=NaN)
 
-/// length
-new Point().length
+
+/// Interpolate: property access order
+// Point.interpolate(point, other, tracingFactor)
+  get other.y
+  get point.y
+  get other.y
+  valueOf
+  get other.x
+  get point.x
+  get other.x
+  valueOf
+(x=0, y=0)
+
+
+/// Length
+// new Point().length
 0
 
-new Point(100, 0).length
+// new Point(100, 0).length
 100
 
-new Point(0, -200).length
+// new Point(0, -200).length
 200
+
+// point.length
+  get point.x
+  get point.x
+  get point.y
+  get point.y
+5
 
 
 /// Normalize
-// new Point() normalize(10)
+// new Point().normalize(10)
 (x=0, y=0)
 
-// new Point() normalize(-5)
+// new Point().normalize(-5)
 (x=0, y=0)
 
-// new Point(100, 200) normalize(10)
+// new Point(100, 200).normalize(10)
 (x=4.47213595499958, y=8.94427190999916)
 
-// new Point(100, 200) normalize(-5)
+// new Point(100, 200).normalize(-5)
 (x=-2.23606797749979, y=-4.47213595499958)
 
-// new Point(-200, 100) normalize(10)
+// new Point(-200, 100).normalize(10)
 (x=-8.94427190999916, y=4.47213595499958)
 
-// new Point(-200, 100) normalize(-5)
+// new Point(-200, 100).normalize(-5)
 (x=4.47213595499958, y=-2.23606797749979)
 
-// new Point(-200, 100) normalize()
+// new Point(-200, 100).normalize()
 (x=NaN, y=NaN)
 
-// new Point(NaN, 100) normalize()
+// new Point(NaN, 100).normalize()
 (x=NaN, y=100)
 
-// new Point(undefined, 100) normalize(3)
+// new Point(undefined, 100).normalize(3)
 (x=undefined, y=100)
 
-// new Point(100, null) normalize(1)
+// new Point(100, null).normalize(1)
 (x=100, y=null)
+
+// new Point(1e308, 1e308).normalize(1)
+(x=0, y=0)
+
+// new Point(1, 3).normalize(3.3)
+(x=1.04355162785556, y=3.1306548835667)
+
+// Point.prototype.normalize.call({x: 3, y: 4}, 10)
+(x=3, y=4)
+
+
+/// Normalize: side effects
+// new Point(3, 4).normalize(tracingLength)
+  valueOf
+(x=6, y=8)
+
+// new Point().normalize(tracingLength)
+(x=0, y=0)
+
+// new Point(Infinity, 1).normalize(tracingLength)
+  valueOf
+(x=NaN, y=0)
+
+// point.normalize(10), point has tracing x and y
+  get point.x
+  get point.x
+  get point.y
+  get point.y
+  get point.x
+  set point.x = 6
+  get point.y
+  set point.y = 8
+  get point.x
+  get point.y
+(x=6, y=8)
+
+// point.normalize(10), point has tracing x, y and length
+  get point.length
+  get point.x
+  set point.x = 6
+  get point.y
+  set point.y = 8
+  get point.x
+  get point.y
+(x=6, y=8)
 
 
 /// Offset
@@ -163,8 +287,14 @@ new Point(0, -200).length
 // point.offset(500)
 (x=-400, y=NaN)
 
+// point.offset(1, 2)
+  get point.x
+  set point.x = 4
+  get point.y
+  set point.y = 6
 
-/// polar
+
+/// Polar
 // Point.polar(5, Math.atan(3/4))
 (x=4, y=3)
 
@@ -173,4 +303,20 @@ new Point(0, -200).length
 
 // Point.polar(0, Math.atan(3/4))
 (x=0, y=0)
+
+
+/// Polar: evaluation order
+// Point.polar(tracingLength, Math.atan(3/4))
+  sin
+  valueOf
+  cos
+  valueOf
+(x=4, y=3)
+
+
+/// ToString
+// point.toString()
+  get point.x
+  get point.y
+(x=1, y=2)
 
