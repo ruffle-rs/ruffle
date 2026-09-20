@@ -166,10 +166,8 @@ Testing _global.flash.geom.Matrix.prototype
 Testing _global.flash.geom.Point
   prototype, DONT_DELETE
   __proto__, DONT_DELETE
-  constructor, DONT_DELETE
 Testing _global.flash.geom.Point.prototype
   __proto__, DONT_DELETE
-  constructor, DONT_DELETE
 Testing _global.flash.geom.Rectangle
   prototype, DONT_DELETE
   __proto__, DONT_DELETE
