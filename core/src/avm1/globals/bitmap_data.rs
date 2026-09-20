@@ -545,11 +545,23 @@ fn draw<'gc>(
         .unwrap_or(&false.into())
         .as_bool(activation.swf_version());
 
-    let source = match get_bitmap_data(args.get_object(activation, 0)?) {
+    let source_value = args.get(0).copied().unwrap_or(Value::Undefined);
+    let source_object = source_value.coerce_to_object_or_bare(activation)?;
+
+    let source = match get_bitmap_data(source_object) {
         BitmapDataResult::Valid(s) => IBitmapDrawable::BitmapData(s),
         BitmapDataResult::Disposed => return Ok((-3).into()),
         BitmapDataResult::NotBitmapData(source) => {
             if let Some(source_object) = source.as_display_object() {
+                IBitmapDrawable::DisplayObject(source_object)
+            } else if matches!(source_value, Value::String(_)) {
+                let start_clip = activation.target_clip_or_root();
+                let Some(source_object) =
+                    activation.resolve_target_display_object(start_clip, source_value, false)?
+                else {
+                    return Ok((-2).into());
+                };
+
                 IBitmapDrawable::DisplayObject(source_object)
             } else {
                 return Ok((-2).into());

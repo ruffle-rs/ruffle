@@ -1,0 +1,10 @@
+num_frames = 1
+
+[player_options]
+with_renderer = { optional = false, quality = "low" }
+
+[[compilers]]
+type = "Rascal"
+target = "test.swf"
+scripts = ["test.as"]
+swf_version = 8
