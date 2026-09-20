@@ -37,18 +37,15 @@ pub struct Scope<'gc> {
     #[collect(require_static)]
     class: ScopeClass,
     values: Object<'gc>,
-    #[collect(require_static)]
-    case_sensitive: bool,
 }
 
 impl<'gc> Scope<'gc> {
     /// Construct a global scope (one without a parent).
-    pub fn from_global_object(globals: Object<'gc>, case_sensitive: bool) -> Self {
+    pub fn from_global_object(globals: Object<'gc>) -> Self {
         Scope {
             parent: None,
             class: ScopeClass::Global,
             values: globals,
-            case_sensitive,
         }
     }
 
@@ -58,7 +55,6 @@ impl<'gc> Scope<'gc> {
             parent: Some(parent),
             class: ScopeClass::Local,
             values: Object::new_without_proto(mc),
-            case_sensitive: parent.case_sensitive,
         }
     }
 
@@ -89,7 +85,6 @@ impl<'gc> Scope<'gc> {
             parent: Some(parent_scope),
             class: ScopeClass::With,
             values: with_object,
-            case_sensitive: parent_scope.case_sensitive,
         }
     }
 
@@ -99,7 +94,6 @@ impl<'gc> Scope<'gc> {
             parent: Some(parent),
             class,
             values: with_object,
-            case_sensitive: parent.case_sensitive,
         }
     }
 
@@ -126,11 +120,6 @@ impl<'gc> Scope<'gc> {
     /// Returns the class.
     pub fn class(&self) -> ScopeClass {
         self.class
-    }
-
-    /// Returns whether the global environment this scope chain belongs to is case-sensitive.
-    pub fn is_case_sensitive(&self) -> bool {
-        self.case_sensitive
     }
 
     /// Resolve a particular value in the scope chain and the object which this value would expect as its `this` parameter if called.

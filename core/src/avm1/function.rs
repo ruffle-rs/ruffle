@@ -9,7 +9,7 @@ use crate::avm1::property::Attribute;
 use crate::avm1::property_decl::PropertyOrder;
 use crate::avm1::scope::Scope;
 use crate::avm1::value::Value;
-use crate::avm1::{ArrayBuilder, Object};
+use crate::avm1::{ArrayBuilder, Avm1, Object};
 use crate::display_object::TDisplayObject;
 use crate::string::{AvmString, StringContext, SwfStrExt as _};
 use crate::tag_utils::SwfSlice;
@@ -59,6 +59,9 @@ pub struct Avm1Function<'gc> {
     /// The file format version of the SWF that generated this function.
     swf_version: u8,
 
+    /// Whether the global environment this function was defined in is case-sensitive.
+    case_sensitive: bool,
+
     /// A reference to the underlying SWF data.
     data: SwfSlice,
 
@@ -89,9 +92,11 @@ pub struct Avm1Function<'gc> {
 
 impl<'gc> Avm1Function<'gc> {
     /// Construct a function from a DefineFunction2 action.
+    #[expect(clippy::too_many_arguments)]
     pub fn from_swf_function(
         gc_context: &Mutation<'gc>,
         swf_version: u8,
+        case_sensitive: bool,
         actions: SwfSlice,
         swf_function: swf::avm1::types::DefineFunction2,
         scope: Gc<'gc, Scope<'gc>>,
@@ -119,6 +124,7 @@ impl<'gc> Avm1Function<'gc> {
 
         Avm1Function {
             swf_version,
+            case_sensitive,
             data: actions,
             name,
             register_count: swf_function.register_count,
@@ -308,33 +314,31 @@ impl<'gc> Avm1Function<'gc> {
         } else {
             this_do
         };
-        let (swf_version, parent_scope) = if is_closure {
+        let (swf_version, case_sensitive, parent_scope) = if is_closure {
             // Function calls in a v6+ SWF are proper closures, and "close" over the scope that defined the function:
-            // * Use the SWF version from the SWF that defined the function.
+            // * Use the SWF version and global environment of the SWF that defined the function.
             // * Use the base clip from when the function was defined.
             // * Close over the scope from when the function was defined.
-            (self.swf_version(), self.scope())
+            (self.swf_version, self.case_sensitive, self.scope)
         } else {
             // Function calls in a v5 SWF are *not* closures, and will use the settings of
             // `this`, regardless of the function's origin:
-            // * Use the SWF version of `this`.
+            // * Use the SWF version of `this`, and the global environment it implies.
             // * Use the base clip of `this`.
             // * Allocate a new scope using the given base clip. No previous scope is closed over.
             let swf_version = base_clip.swf_version().max(5);
+            let case_sensitive = Avm1::is_case_sensitive(swf_version);
             let base_clip_obj = base_clip.object1().unwrap();
             // TODO: It would be nice to avoid these extra Scope allocs.
             let scope = Gc::new(
                 activation.gc(),
                 Scope::new(
-                    activation
-                        .context
-                        .avm1
-                        .global_scope(crate::avm1::Avm1::is_case_sensitive(swf_version)),
+                    activation.context.avm1.global_scope(case_sensitive),
                     super::scope::ScopeClass::Target,
                     base_clip_obj,
                 ),
             );
-            (swf_version, scope)
+            (swf_version, case_sensitive, scope)
         };
 
         let child_scope = Gc::new(
@@ -369,6 +373,7 @@ impl<'gc> Avm1Function<'gc> {
             activation.context,
             activation.id.function(&name, reason, max_recursion_depth)?,
             swf_version,
+            case_sensitive,
             child_scope,
             self.constant_pool,
             base_clip,
