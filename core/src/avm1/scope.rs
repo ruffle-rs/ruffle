@@ -131,17 +131,18 @@ impl<'gc> Scope<'gc> {
         name: AvmString<'gc>,
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<CallableValue<'gc>, Error<'gc>> {
-        let target = activation.target_clip_or_root();
         let mut scope = self;
         loop {
             // The current target (`this` if it's a clip, otherwise the caller's target) stands in
             // for a removed clip that no longer takes part in variable resolution.
             let values = match scope.values.as_display_object() {
-                Some(clip) if clip.avm1_removed() => target.object1_or_bare(activation.gc()),
-                _ => scope.values,
+                Some(clip) if clip.avm1_removed() => activation.target_clip_or_root().object1(),
+                _ => Some(scope.values),
             };
 
-            if values.has_property(activation, name) {
+            if let Some(values) = values
+                && values.has_property(activation, name)
+            {
                 return values
                     .get(name, activation)
                     .map(|v| CallableValue::Callable(values, v));
