@@ -249,7 +249,6 @@ Testing _global.flash.geom.Point
   distance, own, type=[function]
   prototype, own, DONT_ENUM, type=[object]
   __proto__, own, type=[object]
-  constructor, own, type=[function]
 Testing _global.flash.geom.Point.prototype
   toString, own, type=[function]
   normalize, own, type=[function]
@@ -259,8 +258,8 @@ Testing _global.flash.geom.Point.prototype
   offset, own, type=[function]
   clone, own, type=[function]
   length, own, READ_ONLY, type=[number]
-  __proto__, own, type=[object]
   constructor, own, type=[function]
+  __proto__, own, type=[object]
 Testing _global.flash.geom.Rectangle
   prototype, own, DONT_ENUM, type=[object]
   __proto__, own, type=[object]
