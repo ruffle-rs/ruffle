@@ -3,6 +3,7 @@
 use crate::avm1::activation::Activation;
 use crate::avm1::callable_value::CallableValue;
 use crate::avm1::error::Error;
+use crate::avm1::object::stage_object::resolve_path_property;
 use crate::avm1::property::Attribute;
 use crate::avm1::{Object, Value};
 use crate::display_object::TDisplayObject;
@@ -152,7 +153,11 @@ impl<'gc> Scope<'gc> {
             scope = Gc::as_ref(parent);
         }
 
-        Ok(CallableValue::UnCallable(Value::Undefined))
+        debug_assert_eq!(scope.class, ScopeClass::Global);
+        // Resolve path properties (`_global`, `_root`, `_levelN`, etc.) when the scope chain has no clip at all (playerglobal).
+        let value = resolve_path_property(activation.target_clip_or_root(), name, activation)
+            .unwrap_or(Value::Undefined);
+        Ok(CallableValue::UnCallable(value))
     }
 
     /// Update a particular value in the scope chain.
@@ -182,10 +187,7 @@ impl<'gc> Scope<'gc> {
             // Traverse the scope chain in search of the value.
             parent.set(name, value, activation)
         } else {
-            debug_assert!(
-                self.class == ScopeClass::Global,
-                "Scope::set: No top-level movie clip scope"
-            );
+            debug_assert_eq!(self.class, ScopeClass::Global);
             // This should only happen for playerglobals; define it on the top level scope.
             self.locals().set(name, value, activation)
         }

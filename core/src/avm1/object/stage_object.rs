@@ -139,7 +139,7 @@ pub fn enumerate_keys<'gc>(dobj: DisplayObject<'gc>, keys: &mut Vec<AvmString<'g
     }
 }
 
-fn resolve_path_property<'gc>(
+pub fn resolve_path_property<'gc>(
     dobj: DisplayObject<'gc>,
     name: AvmString<'gc>,
     activation: &mut Activation<'_, 'gc>,
