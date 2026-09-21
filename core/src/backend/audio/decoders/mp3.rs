@@ -150,11 +150,9 @@ impl SeekableDecoder for Mp3Decoder {
         // Symphonia timestamps start at `-delay`, so that the encoder delay is skipped in gapless
         // playback. We don't do gapless playback, so `frame` counts from the very first decoded
         // sample, and has to be shifted into Symphonia's timeline.
-        let delay = self
-            .reader
-            .tracks()
-            .first()
-            .and_then(|track| track.delay)
+        let delay = default_track(&self.reader)
+            .ok()
+            .and_then(|(track, _)| track.delay)
             .unwrap_or(0);
         // Seek to the desired position,
         let seek_result = self.reader.seek(
