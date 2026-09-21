@@ -263,7 +263,6 @@ Testing _global.flash.geom.Point.prototype
 Testing _global.flash.geom.Rectangle
   prototype, own, DONT_ENUM, type=[object]
   __proto__, own, type=[object]
-  constructor, own, type=[function]
 Testing _global.flash.geom.Rectangle.prototype
   toString, own, type=[function]
   equals, own, type=[function]
@@ -287,8 +286,8 @@ Testing _global.flash.geom.Rectangle.prototype
   isEmpty, own, type=[function]
   setEmpty, own, type=[function]
   clone, own, type=[function]
-  __proto__, own, type=[object]
   constructor, own, type=[function]
+  __proto__, own, type=[object]
 Testing _global.flash.filters
   DisplacementMapFilter, own, type=[function]
   ColorMatrixFilter, own, type=[function]
