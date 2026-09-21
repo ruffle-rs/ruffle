@@ -1,3 +1,4 @@
+/// <reference types="firefox-webext-browser" />
 import * as utils from "./utils";
 import type { Options } from "./common";
 import { bindOptions } from "./common";
