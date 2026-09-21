@@ -9,14 +9,15 @@ use futures::Stream;
 
 type Result<T> = std::result::Result<T, Box<dyn std::error::Error>>;
 
+#[derive(Clone)]
 pub struct FreedesktopSettings {
-    proxy: Settings<'static>,
+    proxy: Arc<Settings>,
 }
 
 impl FreedesktopSettings {
     pub async fn new() -> Result<Self> {
         Ok(Self {
-            proxy: Settings::new().await?,
+            proxy: Arc::new(Settings::new().await?),
         })
     }
 
@@ -24,7 +25,7 @@ impl FreedesktopSettings {
         Ok(self.proxy.color_scheme().await?)
     }
 
-    pub async fn watch_color_scheme(&self) -> Result<impl Stream<Item = ColorScheme> + use<>> {
+    pub async fn watch_color_scheme(&self) -> Result<impl Stream<Item = ColorScheme> + use<'_>> {
         Ok(self.proxy.receive_color_scheme_changed().await?)
     }
 }
@@ -46,7 +47,7 @@ impl GameModeSession {
 }
 
 struct GameModeGuard {
-    gamemode: Option<ashpd::desktop::game_mode::GameMode<'static>>,
+    gamemode: Option<ashpd::desktop::game_mode::GameMode>,
 }
 
 impl GameModeGuard {

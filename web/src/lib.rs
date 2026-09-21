@@ -147,7 +147,7 @@ struct RuffleInstance {
     pressed_buttons: Vec<GamepadButton>,
 }
 
-#[wasm_bindgen(raw_module = "./internal/player/inner")]
+#[wasm_bindgen(raw_module = "./internal/player/inner.js")]
 unsafe extern "C" {
     #[derive(Clone)]
     pub type JavascriptPlayer;

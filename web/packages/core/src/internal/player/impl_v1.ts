@@ -1,7 +1,10 @@
-import { PlayerV1, ReadyState } from "../../public/player";
-import { InnerPlayer } from "./inner";
-import type { DataLoadOptions, URLLoadOptions } from "../../public/config";
-import type { MovieMetadata } from "../../public/player";
+import { PlayerV1, ReadyState } from "../../public/player/index.js";
+import { InnerPlayer } from "./inner.js";
+import type {
+    DataLoadOptions,
+    URLLoadOptions,
+} from "../../public/config/index.js";
+import type { MovieMetadata } from "../../public/player/index.js";
 
 export class PlayerV1Impl implements PlayerV1 {
     #inner: InnerPlayer;

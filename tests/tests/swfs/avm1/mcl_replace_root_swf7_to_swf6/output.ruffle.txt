@@ -49,7 +49,7 @@ onLoadInit
   d=closure var
   rest=undefined
   _target=/
-  _name=
+  _name=root movie 6
   _url=file:///child.swf
   mc=_level0
   mc._target=/

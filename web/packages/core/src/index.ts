@@ -1,9 +1,9 @@
-export * as Setup from "./public/setup";
+export * as Setup from "./public/setup/index.js";
 
-export * as Config from "./public/config";
+export * as Config from "./public/config/index.js";
 
-export * as Player from "./public/player";
+export * as Player from "./public/player/index.js";
 
-export * from "./build-info";
+export * from "./build-info.js";
 
-export * from "./current-script";
+export * from "./current-script.js";

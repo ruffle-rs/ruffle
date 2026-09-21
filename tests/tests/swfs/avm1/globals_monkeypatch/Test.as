@@ -30,10 +30,13 @@ class Test {
     A_DROP_SHADOW_FILTER, A_GLOW_FILTER, A_GRADIENT_BEVEL_FILTER, A_GRADIENT_GLOW_FILTER
   ];
 
+  static var A_STYLE_SHEET = new TextField.StyleSheet();
+
   static var POINT_CLASS = flash.geom.Point;
 
   static function main(current) {
     var A_TRANSFORM = new flash.geom.Transform(current);
+    var textfieldOrig = current.createTextField("textfieldOrig", 100, 0, 0, 100, 50);
 
     var v;
 
@@ -75,6 +78,7 @@ class Test {
     monkeyPatchClass(_global, "MovieClip");
     monkeyPatchClass(_global, "Button");
     monkeyPatchClass(_global, "TextField");
+    monkeyPatchClass(_global, "TextFormat");
     monkeyPatchClass(_global, "Video");
 
     monkeyPatchClass(_global.flash.filters, "BevelFilter");
@@ -170,7 +174,8 @@ class Test {
     traceName(current, "current");
 
     trace("// current.createTextField(...)");
-    traceName(current.createTextField("tf", 0, 0, 0, 100, 50));
+    var textfieldCustom = current.createTextField("textfieldCustom", 101, 0, 0, 100, 50);
+    traceName(textfieldCustom);
 
     trace("// current.createEmptyMovieClip(...)");
     v = current.createEmptyMovieClip("mc1", 1);
@@ -281,6 +286,29 @@ class Test {
 
     trace("// A_RECTANGLE.bottomRight");
     traceName(A_RECTANGLE.bottomRight);
+
+
+    trace("");
+    trace("### Testing TextFormat");
+    clip.textfield.setTextFormat(new TextFormat());
+
+    trace("// A_STYLE_SHEET.transform({})");
+    traceName(A_STYLE_SHEET.transform({}));
+
+    traceName(textfieldCustom, "textfieldCustom");
+    trace("// textfieldCustom.getNewTextFormat()");
+    traceName(textfieldCustom.getNewTextFormat());
+
+    trace("// clip.textfield.getTextFormat()");
+    traceName(clip.textfield.getTextFormat());
+
+    traceName(textfieldOrig, "textfieldOrig");
+    trace("// textfieldOrig.getTextFormat()");
+    traceName(textfieldOrig.getTextFormat());
+
+    trace("// textfieldOrig.getNewTextFormat()");
+    traceName(textfieldOrig.getNewTextFormat());
+
 
     // TODO: test other classes that can be instantiated by AVM1 builtins;
     // see the list in ruffle's `SystemPrototypes`.

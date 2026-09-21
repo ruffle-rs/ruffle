@@ -1,4 +1,4 @@
-import { text } from "../i18n";
+import { text } from "../i18n.js";
 
 /**
  * @returns The HTMLElement containing the hardware acceleration modal

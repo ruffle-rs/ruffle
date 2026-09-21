@@ -7,5 +7,5 @@
  * @module
  */
 
-export * from "./default";
-export * from "./load-options";
+export * from "./default.js";
+export * from "./load-options.js";

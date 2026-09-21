@@ -15,6 +15,6 @@
  * @module
  */
 
-export * from "./public-api";
-export * from "./source-api";
-export * from "./install";
+export * from "./public-api.js";
+export * from "./source-api.js";
+export * from "./install.js";

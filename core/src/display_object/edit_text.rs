@@ -889,15 +889,14 @@ impl<'gc> EditText<'gc> {
             None
         };
 
-        let new_layout = html::lower_from_text_spans(
-            &text_spans,
-            context,
+        let layout_params = html::LayoutParams {
             movie,
-            content_width,
-            !self.0.flags.get().contains(EditTextFlag::READ_ONLY),
+            is_input: !self.0.flags.get().contains(EditTextFlag::READ_ONLY),
             is_word_wrap,
-            self.0.font_type(),
-        );
+            font_type: self.0.font_type(),
+        };
+        let new_layout =
+            html::lower_from_text_spans(&text_spans, context, layout_params, content_width);
         drop(text_spans);
 
         unlock!(Gc::write(context.gc(), self.0), EditTextData, layout).replace(new_layout);

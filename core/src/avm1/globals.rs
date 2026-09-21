@@ -491,8 +491,6 @@ pub fn unescape<'gc>(
 pub struct SystemPrototypes<'gc> {
     pub object: Object<'gc>,
     pub object_constructor: Object<'gc>,
-    pub movie_clip: Object<'gc>,
-    pub text_format: Object<'gc>,
     pub array: Object<'gc>,
     pub array_constructor: Object<'gc>,
     pub xml_node_constructor: Object<'gc>,
@@ -804,8 +802,6 @@ pub fn create_globals<'gc>(
         SystemPrototypes {
             object: object.proto,
             object_constructor: object.constr,
-            movie_clip: movie_clip.proto,
-            text_format: text_format.proto,
             array: array.proto,
             array_constructor: array.constr,
             xml_node_constructor: xmlnode.constr,

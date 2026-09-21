@@ -1,9 +1,9 @@
-import { RuffleObjectElement } from "./internal/player/ruffle-object-element";
-import { RuffleEmbedElement } from "./internal/player/ruffle-embed-element";
-import { installPlugin, FLASH_PLUGIN } from "./plugin-polyfill";
-import { publicPath } from "./public-path";
-import type { DataLoadOptions, URLLoadOptions } from "./public/config";
-import { isExtension } from "./current-script";
+import { RuffleObjectElement } from "./internal/player/ruffle-object-element.js";
+import { RuffleEmbedElement } from "./internal/player/ruffle-embed-element.js";
+import { installPlugin, FLASH_PLUGIN } from "./plugin-polyfill.js";
+import { publicPath } from "./public-path.js";
+import type { DataLoadOptions, URLLoadOptions } from "./public/config/index.js";
+import { isExtension } from "./current-script.js";
 
 const globalConfig: DataLoadOptions | URLLoadOptions | object =
     window.RufflePlayer?.config ?? {};

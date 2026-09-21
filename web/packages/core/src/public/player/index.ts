@@ -4,11 +4,11 @@
  * @module
  */
 
-export * from "./flash";
-export * from "./player-element";
-export * from "./movie-metadata";
-export * from "./legacy";
-export * from "./v1";
+export * from "./flash.js";
+export * from "./player-element.js";
+export * from "./movie-metadata.js";
+export * from "./legacy.js";
+export * from "./v1.js";
 
 /**
  * Describes the loading state of an SWF movie.

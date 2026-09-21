@@ -3,7 +3,7 @@ import {
     FUTURESPLASH_MIMETYPE,
     FLASH7_AND_8_MIMETYPE,
     FLASH_MOVIE_MIMETYPE,
-} from "./flash-identifiers";
+} from "./flash-identifiers.js";
 
 /**
  * Returns whether the given filename ends in a known Flash extension.

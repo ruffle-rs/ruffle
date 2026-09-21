@@ -1,7 +1,7 @@
 import { FluentBundle, FluentResource } from "@fluent/bundle";
 import { negotiateLanguages } from "@fluent/langneg";
 import type { FluentVariable } from "@fluent/bundle";
-import { resetCustomMap, restoreCustomMap } from "../js-polyfills";
+import { resetCustomMap, restoreCustomMap } from "../js-polyfills.js";
 
 interface FileBundle {
     [filename: string]: string;

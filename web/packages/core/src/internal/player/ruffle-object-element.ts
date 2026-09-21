@@ -1,14 +1,14 @@
-import { copyElement, RufflePlayerElement } from "./ruffle-player-element";
+import { copyElement, RufflePlayerElement } from "./ruffle-player-element.js";
 import {
     getPolyfillOptions,
     isFallbackElement,
     isYoutubeFlashSource,
     workaroundYoutubeMixedContent,
-} from "./inner";
-import { FLASH_ACTIVEX_CLASSID } from "../../flash-identifiers";
-import { registerElement } from "../register-element";
-import { RuffleEmbedElement } from "./ruffle-embed-element";
-import { isSwf } from "../../swf-utils";
+} from "./inner.js";
+import { FLASH_ACTIVEX_CLASSID } from "../../flash-identifiers.js";
+import { registerElement } from "../register-element.js";
+import { RuffleEmbedElement } from "./ruffle-embed-element.js";
+import { isSwf } from "../../swf-utils.js";
 
 /**
  * Find and return the first value in obj with the given key.
