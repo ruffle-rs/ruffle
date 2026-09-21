@@ -2099,7 +2099,7 @@ impl<'gc> EditText<'gc> {
             activation
                 .context
                 .avm1
-                .broadcaster_functions(activation.is_case_sensitive())
+                .broadcaster_functions(activation.swf_version())
                 .initialize(
                     &activation.context.strings,
                     object,

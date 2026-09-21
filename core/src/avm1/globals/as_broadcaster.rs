@@ -183,7 +183,7 @@ fn initialize<'gc>(
         activation
             .context
             .avm1
-            .broadcaster_functions(activation.is_case_sensitive()),
+            .broadcaster_functions(activation.swf_version()),
         activation.prototypes().array,
     );
     Ok(Value::Undefined)

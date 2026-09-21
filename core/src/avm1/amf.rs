@@ -37,7 +37,7 @@ fn object_class_name<'gc>(
         Some(Value::Object(ctor_obj)) => activation
             .context
             .avm1
-            .get_class_name_by_constructor(activation.is_case_sensitive(), ctor_obj)
+            .get_class_name_by_constructor(activation.swf_version(), ctor_obj)
             .map(|class_name| class_name.to_utf8_lossy().into_owned()),
         _ => None,
     }

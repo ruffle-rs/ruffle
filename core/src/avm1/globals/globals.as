@@ -4,10 +4,10 @@
 
 trace = ASnative(100, 4);
 
+#include "flash/geom/Point.as"
+
 // The `flash` package is only visible to SWF 8 and later.
 ASSetPropFlags(_global, "flash", 4096);
-
-#include "flash/geom/Point.as"
 
 // The variable `o` is being used to make referring to symbols more concise.
 // However, in Flash it's not being deleted, but instead set to `null`,

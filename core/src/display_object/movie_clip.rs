@@ -3479,10 +3479,9 @@ impl<'gc> MovieClipData<'gc> {
     ) -> Option<Avm1Object<'gc>> {
         let symbol_name = self.shared.get().exported_name.get();
         let symbol_name = symbol_name.as_ref()?;
-        context.avm1.get_registered_constructor(
-            crate::avm1::Avm1::is_case_sensitive(self.movie().version()),
-            *symbol_name,
-        )
+        context
+            .avm1
+            .get_registered_constructor(self.movie().version(), *symbol_name)
     }
 
     pub fn movie(&self) -> Arc<SwfMovie> {
