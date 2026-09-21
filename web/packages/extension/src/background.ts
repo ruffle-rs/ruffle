@@ -1,3 +1,4 @@
+/// <reference types="firefox-webext-browser" />
 import * as utils from "./utils";
 import { isMessage } from "./messages";
 
