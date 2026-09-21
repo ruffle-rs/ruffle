@@ -5,7 +5,7 @@ use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::property::Attribute;
 use crate::avm1::property_decl::{DeclContext, PropertyOrder, StaticDeclarations, SystemClass};
-use crate::avm1::{Avm1, Object, Value};
+use crate::avm1::{Object, Value};
 use crate::avm1_stub;
 use crate::display_object::TDisplayObject;
 use ruffle_common::avm_string::HasStringContext;
@@ -237,7 +237,7 @@ pub fn register_class<'gc>(
     let class_name = class_name.coerce_to_string(activation)?;
 
     activation.context.avm1.register_constructor(
-        Avm1::is_case_sensitive(activation.base_clip().movie().version()),
+        activation.base_clip().movie().version(),
         class_name,
         constructor,
     );

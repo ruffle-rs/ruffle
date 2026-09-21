@@ -154,12 +154,10 @@ impl<'gc> Avm1<'gc> {
         }
 
         let clip_obj = active_clip.object1_or_bare(context.gc());
-        let swf_version = active_clip.swf_version();
-        let case_sensitive = Self::is_case_sensitive(swf_version);
         let child_scope = Gc::new(
             context.gc(),
             Scope::new(
-                context.avm1.global_scope(case_sensitive),
+                context.avm1.global_scope(active_clip.swf_version()),
                 scope::ScopeClass::Target,
                 clip_obj,
             ),
@@ -168,8 +166,7 @@ impl<'gc> Avm1<'gc> {
         let mut child_activation = Activation::from_action(
             context,
             ActivationIdentifier::root(name),
-            swf_version,
-            case_sensitive,
+            active_clip.swf_version(),
             child_scope,
             constant_pool,
             active_clip,
@@ -193,14 +190,12 @@ impl<'gc> Avm1<'gc> {
 
         let constant_pool = context.avm1.constant_pool;
         // Initialize the playerglobal SWF in both case-sensitive and case-insensitive environments.
-        let swf_version = code.movie.version();
-        for case_sensitive in [false, true] {
+        for swf_version in [6, 8] {
             let mut child_activation = Activation::from_action(
                 context,
                 ActivationIdentifier::root("playerglobal"),
                 swf_version,
-                case_sensitive,
-                context.avm1.global_scope(case_sensitive),
+                context.avm1.global_scope(swf_version),
                 constant_pool,
                 context.stage.as_displayobject(),
                 Value::Null,
@@ -227,12 +222,10 @@ impl<'gc> Avm1<'gc> {
         let clip_obj = active_clip
             .object1()
             .expect("No script object for display object");
-        let swf_version = active_clip.swf_version();
-        let case_sensitive = Self::is_case_sensitive(swf_version);
         let child_scope = Gc::new(
             action_context.gc(),
             Scope::new(
-                action_context.avm1.global_scope(case_sensitive),
+                action_context.avm1.global_scope(active_clip.swf_version()),
                 scope::ScopeClass::Target,
                 clip_obj,
             ),
@@ -241,8 +234,7 @@ impl<'gc> Avm1<'gc> {
         let mut activation = Activation::from_action(
             action_context,
             ActivationIdentifier::root("[Display Object]"),
-            swf_version,
-            case_sensitive,
+            active_clip.swf_version(),
             child_scope,
             constant_pool,
             active_clip,
@@ -267,12 +259,10 @@ impl<'gc> Avm1<'gc> {
         }
 
         let clip_obj = active_clip.object1_or_bare(context.gc());
-        let swf_version = active_clip.swf_version();
-        let case_sensitive = Self::is_case_sensitive(swf_version);
         let child_scope = Gc::new(
             context.gc(),
             Scope::new(
-                context.avm1.global_scope(case_sensitive),
+                context.avm1.global_scope(active_clip.swf_version()),
                 scope::ScopeClass::Target,
                 clip_obj,
             ),
@@ -282,8 +272,7 @@ impl<'gc> Avm1<'gc> {
         let mut child_activation = Activation::from_action(
             context,
             ActivationIdentifier::root("[Init]"),
-            swf_version,
-            case_sensitive,
+            active_clip.swf_version(),
             child_scope,
             constant_pool,
             active_clip,
@@ -406,18 +395,18 @@ impl<'gc> Avm1<'gc> {
         swf_version >= 7
     }
 
-    /// Obtain a reference to the global scope of the given environment.
-    pub fn global_scope(&self, case_sensitive: bool) -> Gc<'gc, Scope<'gc>> {
-        if case_sensitive {
+    /// Obtain a reference to the global scope.
+    pub fn global_scope(&self, swf_version: u8) -> Gc<'gc, Scope<'gc>> {
+        if Self::is_case_sensitive(swf_version) {
             self.env_case_sensitive.global_scope
         } else {
             self.env_case_insensitive.global_scope
         }
     }
 
-    /// Obtain system built-in prototypes of the given environment.
-    pub fn prototypes(&self, case_sensitive: bool) -> &avm1::globals::SystemPrototypes<'gc> {
-        if case_sensitive {
+    /// Obtain system built-in prototypes for this instance.
+    pub fn prototypes(&self, swf_version: u8) -> &avm1::globals::SystemPrototypes<'gc> {
+        if Self::is_case_sensitive(swf_version) {
             &self.env_case_sensitive.prototypes
         } else {
             &self.env_case_insensitive.prototypes
@@ -449,8 +438,8 @@ impl<'gc> Avm1<'gc> {
         self.max_recursion_depth = max_recursion_depth
     }
 
-    pub fn broadcaster_functions(&self, case_sensitive: bool) -> BroadcasterFunctions<'gc> {
-        if case_sensitive {
+    pub fn broadcaster_functions(&self, swf_version: u8) -> BroadcasterFunctions<'gc> {
+        if Self::is_case_sensitive(swf_version) {
             self.env_case_sensitive.broadcaster_functions
         } else {
             self.env_case_insensitive.broadcaster_functions
@@ -579,9 +568,10 @@ impl<'gc> Avm1<'gc> {
 
     pub fn get_registered_constructor(
         &self,
-        is_case_sensitive: bool,
+        swf_version: u8,
         symbol: AvmString<'gc>,
     ) -> Option<Object<'gc>> {
+        let is_case_sensitive = Self::is_case_sensitive(swf_version);
         let registry = if is_case_sensitive {
             &self.env_case_sensitive.constructor_registry
         } else {
@@ -594,9 +584,10 @@ impl<'gc> Avm1<'gc> {
     /// This is specifically required for AMF0 TypedObject serialization.
     pub fn get_class_name_by_constructor(
         &self,
-        is_case_sensitive: bool,
+        swf_version: u8,
         constructor: Object<'gc>,
     ) -> Option<AvmString<'gc>> {
+        let is_case_sensitive = Self::is_case_sensitive(swf_version);
         let registry = if is_case_sensitive {
             &self.env_case_sensitive.constructor_registry
         } else {
@@ -618,10 +609,11 @@ impl<'gc> Avm1<'gc> {
 
     pub fn register_constructor(
         &mut self,
-        is_case_sensitive: bool,
+        swf_version: u8,
         symbol: AvmString<'gc>,
         constructor: Option<Object<'gc>>,
     ) {
+        let is_case_sensitive = Self::is_case_sensitive(swf_version);
         let registry = if is_case_sensitive {
             &mut self.env_case_sensitive.constructor_registry
         } else {
