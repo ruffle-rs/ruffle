@@ -70,8 +70,8 @@ impl PreferencesDialog {
         let mut available_output_devices = Vec::new();
         if let Ok(devices) = audio_host.output_devices() {
             for device in devices {
-                if let Ok(name) = device.name() {
-                    available_output_devices.push(name);
+                if let Ok(description) = device.description() {
+                    available_output_devices.push(description.name().to_owned());
                 }
             }
         }

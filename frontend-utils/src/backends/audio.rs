@@ -12,16 +12,16 @@ pub enum CpalError {
     NoDevices,
 
     #[error("Failed to get default output config")]
-    DefaultStream(#[from] cpal::DefaultStreamConfigError),
+    DefaultStream(#[source] cpal::Error),
 
     #[error("Unsupported sample format {0:?}")]
     UnsupportedSampleFormat(SampleFormat),
 
     #[error("Couldn't play the audio stream")]
-    Play(#[from] cpal::PlayStreamError),
+    Play(#[source] cpal::Error),
 
     #[error("Failed to construct audio stream")]
-    Build(#[from] cpal::BuildStreamError),
+    Build(#[source] cpal::Error),
 }
 
 pub struct CpalAudioBackend {
@@ -46,7 +46,7 @@ impl CpalAudioBackend {
             .map_err(CpalError::DefaultStream)?;
         let sample_format = config.sample_format();
         let config = cpal::StreamConfig::from(config);
-        let mixer = AudioMixer::new(config.channels as u8, config.sample_rate.0);
+        let mixer = AudioMixer::new(config.channels as u8, config.sample_rate);
 
         // Start the audio stream.
         let stream = {
@@ -55,19 +55,37 @@ impl CpalAudioBackend {
 
             match sample_format {
                 cpal::SampleFormat::F32 => device.build_output_stream(
-                    &config,
+                    config,
                     move |buffer, _| mixer.mix::<f32>(buffer),
                     error_handler,
                     None,
                 ),
+                cpal::SampleFormat::F64 => device.build_output_stream(
+                    config,
+                    move |buffer, _| mixer.mix::<f64>(buffer),
+                    error_handler,
+                    None,
+                ),
+                cpal::SampleFormat::I32 => device.build_output_stream(
+                    config,
+                    move |buffer, _| mixer.mix::<i32>(buffer),
+                    error_handler,
+                    None,
+                ),
+                cpal::SampleFormat::I24 => device.build_output_stream(
+                    config,
+                    move |buffer, _| mixer.mix::<cpal::I24>(buffer),
+                    error_handler,
+                    None,
+                ),
                 cpal::SampleFormat::I16 => device.build_output_stream(
-                    &config,
+                    config,
                     move |buffer, _| mixer.mix::<i16>(buffer),
                     error_handler,
                     None,
                 ),
                 cpal::SampleFormat::U16 => device.build_output_stream(
-                    &config,
+                    config,
                     move |buffer: &mut [u16], _| {
                         // Since I couldn't easily make `mixer` work with `u16` samples,
                         // we fill the buffer as if it was `&[i16]`, and then rotate
@@ -81,7 +99,8 @@ impl CpalAudioBackend {
                     None,
                 ),
                 _ => return Err(CpalError::UnsupportedSampleFormat(sample_format)),
-            }?
+            }
+            .map_err(CpalError::Build)?
         };
 
         stream.play().map_err(CpalError::Play)?;
@@ -114,8 +133,11 @@ fn get_suitable_output_device(
     // First let's check for any user preference...
     if let Some(preferred_device_name) = preferred_device_name
         && let Ok(mut devices) = host.output_devices()
-        && let Some(device) =
-            devices.find(|device| device.name().ok().as_deref() == Some(preferred_device_name))
+        && let Some(device) = devices.find(|device| {
+            device
+                .description()
+                .is_ok_and(|description| description.name() == preferred_device_name)
+        })
     {
         return Some(device);
     }
