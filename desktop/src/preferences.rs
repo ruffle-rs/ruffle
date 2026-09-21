@@ -137,7 +137,7 @@ impl GlobalPreferences {
             .clone()
     }
 
-    pub fn output_device_name(&self) -> Option<String> {
+    pub fn output_device_id(&self) -> Option<String> {
         self.preferences
             .lock()
             .expect("Preferences is not reentrant")

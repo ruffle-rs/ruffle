@@ -1,5 +1,5 @@
-use cpal::SampleFormat;
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
+use cpal::{DeviceId, SampleFormat};
 use ruffle_core::backend::audio::{
     AudioBackend, AudioMixer, DecodeError, RegisterError, SoundHandle, SoundInstanceHandle,
     SoundStreamInfo, SoundTransform, swf,
@@ -34,11 +34,11 @@ pub struct CpalAudioBackend {
 }
 
 impl CpalAudioBackend {
-    pub fn new(preferred_device_name: Option<&str>) -> Result<Self, CpalError> {
+    pub fn new(preferred_device_id: Option<&str>) -> Result<Self, CpalError> {
         // Create CPAL audio device.
         let host = cpal::default_host();
         let device =
-            get_suitable_output_device(preferred_device_name, &host).ok_or(CpalError::NoDevices)?;
+            get_suitable_output_device(preferred_device_id, &host).ok_or(CpalError::NoDevices)?;
 
         // Create audio stream for device.
         let config = device
@@ -127,17 +127,13 @@ impl AudioBackend for CpalAudioBackend {
 }
 
 fn get_suitable_output_device(
-    preferred_device_name: Option<&str>,
+    preferred_device_id: Option<&str>,
     host: &cpal::Host,
 ) -> Option<cpal::Device> {
     // First let's check for any user preference...
-    if let Some(preferred_device_name) = preferred_device_name
-        && let Ok(mut devices) = host.output_devices()
-        && let Some(device) = devices.find(|device| {
-            device
-                .description()
-                .is_ok_and(|description| description.name() == preferred_device_name)
-        })
+    if let Some(preferred_device_id) = preferred_device_id
+        && let Ok(preferred_device_id) = preferred_device_id.parse::<DeviceId>()
+        && let Some(device) = host.device_by_id(&preferred_device_id)
     {
         return Some(device);
     }

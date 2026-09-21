@@ -31,7 +31,7 @@ pub struct PreferencesDialog {
     language_changed: bool,
 
     output_device: Option<String>,
-    available_output_devices: Vec<String>,
+    available_output_devices: Vec<(String, String)>,
     output_device_changed: bool,
 
     enable_openh264: bool,
@@ -70,8 +70,8 @@ impl PreferencesDialog {
         let mut available_output_devices = Vec::new();
         if let Ok(devices) = audio_host.output_devices() {
             for device in devices {
-                if let Ok(description) = device.description() {
-                    available_output_devices.push(description.name().to_owned());
+                if let (Ok(id), Ok(description)) = (device.id(), device.description()) {
+                    available_output_devices.push((id.to_string(), description.name().to_owned()));
                 }
             }
         }
@@ -93,7 +93,7 @@ impl PreferencesDialog {
             language: preferences.language(),
             language_changed: false,
 
-            output_device: preferences.output_device_name(),
+            output_device: preferences.output_device_id(),
             available_output_devices,
             output_device_changed: false,
 
@@ -197,7 +197,7 @@ impl PreferencesDialog {
     fn restart_required(&self) -> bool {
         self.graphics_backend != self.preferences.graphics_backends()
             || self.power_preference != self.preferences.graphics_power_preference()
-            || self.output_device != self.preferences.output_device_name()
+            || self.output_device != self.preferences.output_device_id()
             || self.enable_openh264 != self.preferences.openh264_enabled()
             || self.log_filename_pattern != self.preferences.log_filename_pattern()
             || self.storage_backend != self.preferences.storage_backend()
@@ -469,11 +469,21 @@ impl PreferencesDialog {
         let previous = self.output_device.clone();
         let default = text(locale, "audio-output-device-default");
         ComboBox::from_id_salt("audio-output-device")
-            .selected_text(self.output_device.as_deref().unwrap_or(default.as_ref()))
+            .selected_text(
+                self.output_device
+                    .as_ref()
+                    .and_then(|id| {
+                        self.available_output_devices
+                            .iter()
+                            .find(|(device_id, _)| device_id == id)
+                            .map(|(_, description)| description)
+                    })
+                    .map_or(default.as_ref(), String::as_str),
+            )
             .show_ui(ui, |ui| {
                 ui.selectable_value(&mut self.output_device, None, default);
-                for device in &self.available_output_devices {
-                    ui.selectable_value(&mut self.output_device, Some(device.to_string()), device);
+                for (id, description) in &self.available_output_devices {
+                    ui.selectable_value(&mut self.output_device, Some(id.to_string()), description);
                 }
             });
         if self.output_device != previous {

@@ -44,14 +44,14 @@ impl<'a> PreferencesWriter<'a> {
         })
     }
 
-    pub fn set_output_device(&mut self, name: Option<String>) {
+    pub fn set_output_device(&mut self, id: Option<String>) {
         self.0.edit(|values, toml_document| {
-            if let Some(name) = &name {
-                toml_document["output_device"] = value(name);
+            if let Some(id) = &id {
+                toml_document["output_device"] = value(id);
             } else {
                 toml_document.remove("output_device");
             }
-            values.output_device = name;
+            values.output_device = id;
         })
     }
 
