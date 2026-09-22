@@ -3,7 +3,7 @@ use super::decoders::{
 };
 use super::{SoundHandle, SoundInstanceHandle, SoundStreamInfo, SoundTransform};
 use crate::backend::audio::{DecodeError, RegisterError};
-use crate::tag_utils::SwfSlice;
+use crate::tag_utils::ShareableSlice;
 use ruffle_common::buffer::Substream;
 use ruffle_common::duration::FloatDuration;
 use slotmap::SlotMap;
@@ -404,7 +404,7 @@ impl AudioMixer {
     fn make_stream_from_swf_slice(
         &self,
         stream_info: &swf::SoundStreamHead,
-        data_stream: SwfSlice,
+        data_stream: ShareableSlice,
     ) -> Result<Box<dyn Stream>, DecodeError> {
         // Instantiate a decoder for the compression that the sound data uses.
         let clip_stream_decoder = decoders::make_stream_decoder(stream_info, data_stream)?;
@@ -559,7 +559,7 @@ impl AudioMixer {
     /// Starts a timeline audio stream.
     pub fn start_stream(
         &mut self,
-        clip_data: SwfSlice,
+        clip_data: ShareableSlice,
         stream_info: &swf::SoundStreamHead,
     ) -> Result<SoundInstanceHandle, DecodeError> {
         // The audio data for stream sounds is distributed among the frames of a
@@ -1086,7 +1086,7 @@ macro_rules! impl_audio_mixer_backend {
         #[inline]
         fn start_stream(
             &mut self,
-            clip_data: $crate::tag_utils::SwfSlice,
+            clip_data: $crate::tag_utils::ShareableSlice,
             stream_info: &swf::SoundStreamHead,
         ) -> Result<SoundInstanceHandle, DecodeError> {
             self.$mixer.start_stream(clip_data, stream_info)

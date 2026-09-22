@@ -37,7 +37,7 @@ use crate::string::HasStringContext;
 use crate::string::{AvmString, StringContext};
 use crate::stub::StubCollection;
 use crate::system_properties::SystemProperties;
-use crate::tag_utils::{SwfMovie, SwfSlice};
+use crate::tag_utils::{ShareableSlice, SwfMovie, SwfSlice};
 use crate::timer::Timers;
 use crate::vminterface::Instantiator;
 use async_channel::Sender;
@@ -340,7 +340,7 @@ impl<'gc> UpdateContext<'gc> {
         &mut self,
         movie_clip: MovieClip<'gc>,
         frame: u16,
-        data: SwfSlice,
+        data: ShareableSlice,
         stream_info: &swf::SoundStreamHead,
     ) -> Option<SoundInstanceHandle> {
         self.audio_manager
