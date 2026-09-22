@@ -1,4 +1,4 @@
-import * as utils from "./utils";
+import { getOptions } from "./utils";
 import type { Config } from "ruffle-core";
 
 export interface Options extends Config.BaseLoadOptions {
@@ -82,7 +82,9 @@ class SelectOption implements OptionElement<string | null> {
         // Localize each `option`, if relevant.
         Array.prototype.forEach.call(select.options, (option) => {
             if (option.hasAttribute("id")) {
-                const message = utils.i18n.getMessage(`settings_${option.id}`);
+                const message = browser.i18n.getMessage(
+                    `settings_${option.id}`,
+                );
                 if (message) {
                     option.textContent = message;
                 }
@@ -150,7 +152,7 @@ export async function bindOptions(
     onChange?: (options: Options) => void,
 ): Promise<void> {
     const elements = findOptionElements();
-    const options = await utils.getOptions();
+    const options = await getOptions();
 
     for (const [key, element] of elements.entries()) {
         // Bind initial value.
@@ -164,7 +166,7 @@ export async function bindOptions(
         element.label.classList.remove("notransition");
 
         // Localize label.
-        const message = utils.i18n.getMessage(`settings_${element.input.id}`);
+        const message = browser.i18n.getMessage(`settings_${element.input.id}`);
         if (message) {
             element.label.textContent = message;
         }
@@ -173,12 +175,12 @@ export async function bindOptions(
         element.input.addEventListener("change", () => {
             const value = element.value;
             options[key] = value as never;
-            utils.storage.sync.set({ [key]: value });
+            browser.storage.sync.set({ [key]: value });
         });
     }
 
     // Listen for future changes.
-    utils.storage.onChanged.addListener((changes, namespace) => {
+    browser.storage.onChanged.addListener((changes, namespace) => {
         if (namespace !== "sync") {
             return;
         }
@@ -204,11 +206,11 @@ export async function bindOptions(
 
 export async function resetOptions(): Promise<void> {
     // This setting is consistent for the browser in use and should not change
-    const data = await utils.storage.sync.get({
+    const data = await browser.storage.sync.get({
         responseHeadersUnsupported: false,
     });
-    await utils.storage.sync.clear();
+    await browser.storage.sync.clear();
     if (data["responseHeadersUnsupported"]) {
-        utils.storage.sync.set({ responseHeadersUnsupported: true });
+        browser.storage.sync.set({ responseHeadersUnsupported: true });
     }
 }
