@@ -154,6 +154,10 @@ impl<'gc> TextLine<'gc> {
         self.0.fallback.measure_text(context)
     }
 
+    pub fn has_tabs(self) -> bool {
+        self.0.fallback.text().contains(b'\t')
+    }
+
     pub fn fallback(self) -> EditText<'gc> {
         self.0.fallback
     }
