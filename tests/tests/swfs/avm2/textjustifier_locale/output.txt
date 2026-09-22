@@ -1,3 +1,5 @@
+before super locale=null
+after super locale=ja
 en | input="en" | length=2 | locale="en" | localeLength=2
 ja | input="ja" | length=2 | locale="ja" | localeLength=2
 fr-FR | input="fr-FR" | length=5 | locale="fr-FR" | localeLength=5

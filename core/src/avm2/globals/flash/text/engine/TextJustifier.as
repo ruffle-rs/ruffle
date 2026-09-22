@@ -6,7 +6,7 @@ package flash.text.engine {
     [API("662")]
     public class TextJustifier {
         private var _lineJustification:String = null;
-        private var _locale:String = "en";
+        private var _locale:String = null;
 
         public function TextJustifier(locale:String, lineJustification:String) {
             // TODO: Is there a better way to do this?

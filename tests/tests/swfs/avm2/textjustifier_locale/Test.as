@@ -2,11 +2,31 @@ package
 {
     import flash.display.MovieClip;
     import flash.text.engine.SpaceJustifier;
+    import flash.text.engine.TextJustifier;
+
+    class TestJustifier extends TextJustifier
+    {
+        public function TestJustifier(locale:String)
+        {
+            trace("before super locale=" + String(this.locale));
+
+            super(locale, "unjustified");
+
+            trace("after super locale=" + String(this.locale));
+        }
+
+        override public function clone():TextJustifier
+        {
+            return null;
+        }
+    }
 
     public class Test extends MovieClip
     {
         public function Test()
         {
+            testSubclassInitialization();
+
             // Normal / locale-looking values
             testLocale("en", "en");
             testLocale("ja", "ja");
@@ -56,22 +76,16 @@ package
             testLocale("Japanese two chars", "\u65E5\u672C");
             testLocale("Arabic two chars", "\u0639\u0631");
 
-            // Combining sequence: 2 UTF-16 code units, visually ~1 character
+            // Combining sequence: 2 UTF-16 code units
             testLocale("e + combining acute", "e\u0301");
 
-            // Surrogate pair: one Unicode code point, but String.length == 2 in UTF-16
-            testLocale(
-                    "surrogate pair",
-                    "\uD83D\uDE00"
-                );
+            // Surrogate pair: one code point, two UTF-16 code units
+            testLocale("surrogate pair", "\uD83D\uDE00");
 
             // Individual surrogate code units
             testLocale("high surrogate", "\uD83D");
             testLocale("low surrogate", "\uDE00");
-            testLocale(
-                    "two high surrogates",
-                    "\uD83D\uD83D"
-                );
+            testLocale("two high surrogates", "\uD83D\uD83D");
 
             // Embedded NUL/control characters
             testLocale("NUL", "\u0000");
@@ -84,15 +98,22 @@ package
             // Longer values
             testLocale("length 10", repeatChar("a", 10));
             testLocale("length 15", repeatChar("a", 15));
-
-            // Long locale-like garbage
-            testLocale(
-                    "long hyphenated",
-                    "this-is-a-test-locale"
-                );
+            testLocale("long hyphenated", "this-is-a-test-locale");
 
             // null separately
             testNullLocale();
+        }
+
+        private function testSubclassInitialization():void
+        {
+            try
+            {
+                new TestJustifier("ja");
+            }
+            catch (e:*)
+            {
+                trace("subclass ERROR=" + e.getStackTrace());
+            }
         }
 
         private function testLocale(label:String, value:String):void
@@ -102,21 +123,21 @@ package
                 var sj:SpaceJustifier = new SpaceJustifier(value);
 
                 trace(
-                        label +
-                        " | input=" + escapeString(value) +
-                        " | length=" + value.length +
-                        " | locale=" + escapeString(sj.locale) +
-                        " | localeLength=" + sj.locale.length
-                    );
+                    label +
+                    " | input=" + escapeString(value) +
+                    " | length=" + value.length +
+                    " | locale=" + escapeString(sj.locale) +
+                    " | localeLength=" + sj.locale.length
+                );
             }
             catch (e:*)
             {
                 trace(
-                        label +
-                        " | input=" + escapeString(value) +
-                        " | length=" + value.length +
-                        " | ERROR=" + e.getStackTrace()
-                    );
+                    label +
+                    " | input=" + escapeString(value) +
+                    " | length=" + value.length +
+                    " | ERROR=" + e.getStackTrace()
+                );
             }
         }
 
@@ -125,25 +146,23 @@ package
             try
             {
                 var sj:SpaceJustifier = new SpaceJustifier(null);
-                trace(
-                        "null | locale=" + String(sj.locale)
-                    );
+                trace("null | locale=" + String(sj.locale));
             }
             catch (e:*)
             {
-                trace(
-                        "null | ERROR=" + e.getStackTrace()
-                    );
+                trace("null | ERROR=" + e.getStackTrace());
             }
         }
 
         private function repeatChar(c:String, count:int):String
         {
             var result:String = "";
+
             for (var i:int = 0; i < count; i++)
             {
                 result += c;
             }
+
             return result;
         }
 
