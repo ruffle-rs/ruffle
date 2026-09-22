@@ -115,7 +115,7 @@ package
                         label +
                         " | input=" + escapeString(value) +
                         " | length=" + value.length +
-                        " | ERROR=" + e
+                        " | ERROR=" + e.getStackTrace()
                     );
             }
         }
@@ -132,7 +132,7 @@ package
             catch (e:*)
             {
                 trace(
-                        "null | ERROR=" + e
+                        "null | ERROR=" + e.getStackTrace()
                     );
             }
         }
