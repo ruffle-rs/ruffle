@@ -1,4 +1,8 @@
-import * as utils from "./utils";
+import {
+    enableBrowserOnOutdatedChromium,
+    getExplicitOptions,
+    hasHostPermissionForSpecifiedTab,
+} from "./utils";
 import { Setup } from "ruffle-core";
 
 import type { Config, Player } from "ruffle-core";
@@ -118,11 +122,11 @@ async function load(
         // Ignore
     }
     const hostPermissionsForSpecifiedTab =
-        await utils.hasHostPermissionForSpecifiedTab(origin);
+        await hasHostPermissionForSpecifiedTab(origin);
     if (origin && !hostPermissionsForSpecifiedTab) {
         const result = await showModal(origin);
         if (result === "") {
-            const swfPlayerPermissions = utils.i18n.getMessage(
+            const swfPlayerPermissions = browser.i18n.getMessage(
                 "swf_player_permissions",
             );
             alert(swfPlayerPermissions);
@@ -169,7 +173,7 @@ async function loadFile(file: File | undefined) {
         localFileName.textContent = file.name;
     }
     const data = await new Response(file).arrayBuffer();
-    const options = await utils.getExplicitOptions();
+    const options = await getExplicitOptions();
     load({
         ...options,
         data: data,
@@ -254,7 +258,7 @@ function showModal(origin: string) {
         grant.textContent = "Grant permissions on " + origin;
         function grantClicked() {
             modal.close();
-            utils.permissions
+            browser.permissions
                 .request({
                     origins: [origin],
                 })
@@ -305,7 +309,7 @@ async function loadSwf(swfUrl: string) {
         // Ignore URL parsing errors.
     }
 
-    const options = await utils.getExplicitOptions();
+    const options = await getExplicitOptions();
     localFileName.textContent = document.title;
     localFileInput.value = "";
     load({
@@ -331,6 +335,7 @@ window.addEventListener("pageshow", loadSwfFromHash);
 window.addEventListener("hashchange", loadSwfFromHash);
 
 window.addEventListener("DOMContentLoaded", () => {
+    enableBrowserOnOutdatedChromium();
     document
         .getElementById("local-file-label")!
         .addEventListener("click", () => {

@@ -1,10 +1,15 @@
-/// <reference types="firefox-webext-browser" />
-import * as utils from "./utils";
+import {
+    enableBrowserOnOutdatedChromium,
+    hasHostPermissionForActiveTab,
+    openOptionsPage,
+    openPlayerPage,
+    setPageLanguage,
+} from "./utils";
 import type { Options } from "./common";
 import { bindOptions } from "./common";
 import { buildInfo } from "ruffle-core";
 
-let activeTab: chrome.tabs.Tab | browser.tabs.Tab;
+let activeTab: chrome.tabs.Tab;
 let savedOptions: Options;
 let tabOptions: Options;
 
@@ -31,9 +36,9 @@ async function queryTabStatus(
 ) {
     listener("status_init");
 
-    let tabs: chrome.tabs.Tab[] | browser.tabs.Tab[];
+    let tabs;
     try {
-        tabs = await utils.tabs.query({
+        tabs = await browser.tabs.query({
             currentWindow: true,
             active: true,
         });
@@ -70,7 +75,7 @@ async function queryTabStatus(
 
     let response;
     try {
-        response = await utils.tabs.sendMessage(activeTab.id!, {
+        response = await browser.tabs.sendMessage(activeTab.id!, {
             type: "ping",
         });
     } catch (_e) {
@@ -78,7 +83,7 @@ async function queryTabStatus(
         // host permissions when the <all_urls> permission has not been granted.
         await new Promise((resolve) => setTimeout(resolve, 200));
         try {
-            response = await utils.tabs.sendMessage(activeTab.id!, {
+            response = await browser.tabs.sendMessage(activeTab.id!, {
                 type: "ping",
             });
         } catch (_e) {
@@ -151,13 +156,14 @@ function optionsChanged() {
 async function displayTabStatus() {
     await queryTabStatus((status) => {
         statusIndicator.style.setProperty("--color", STATUS_COLORS[status]);
-        statusText.textContent = utils.i18n.getMessage(status);
+        statusText.textContent = browser.i18n.getMessage(status);
     });
 }
 
 window.addEventListener("DOMContentLoaded", async () => {
-    utils.setPageLanguage();
-    const data = await utils.storage.sync.get({
+    enableBrowserOnOutdatedChromium();
+    setPageLanguage();
+    const data = await browser.storage.sync.get({
         responseHeadersUnsupported: false,
     });
     if (data["responseHeadersUnsupported"]) {
@@ -184,25 +190,25 @@ window.addEventListener("DOMContentLoaded", async () => {
         "options-button",
     ) as HTMLButtonElement;
     optionsButton.addEventListener("click", async () => {
-        await utils.openOptionsPage();
+        await openOptionsPage();
         window.close();
     });
 
     const playerButton = document.getElementById(
         "player-button",
     ) as HTMLButtonElement;
-    playerButton.textContent = utils.i18n.getMessage("open_player_page");
+    playerButton.textContent = browser.i18n.getMessage("open_player_page");
     playerButton.addEventListener("click", async () => {
-        await utils.openPlayerPage();
+        await openPlayerPage();
         window.close();
     });
 
     reloadButton = document.getElementById(
         "reload-button",
     ) as HTMLButtonElement;
-    reloadButton.textContent = utils.i18n.getMessage("action_reload");
+    reloadButton.textContent = browser.i18n.getMessage("action_reload");
     reloadButton.addEventListener("click", async () => {
-        await utils.tabs.reload(activeTab.id!);
+        await browser.tabs.reload(activeTab.id!);
         window.close();
     });
 
@@ -210,18 +216,18 @@ window.addEventListener("DOMContentLoaded", async () => {
     const permissionsButton = document.getElementById(
         "permissions-button",
     ) as HTMLButtonElement;
-    permissionsButton.textContent = utils.i18n.getMessage(
+    permissionsButton.textContent = browser.i18n.getMessage(
         "grant_single_site_permission",
     );
     const url = activeTab?.url ? new URL(activeTab.url) : null;
     if (
         url &&
         ["https:", "http:"].includes(url.protocol) &&
-        !(await utils.hasHostPermissionForActiveTab())
+        !(await hasHostPermissionForActiveTab())
     ) {
         permissionsButton.classList.remove("hidden");
         permissionsButton.addEventListener("click", () => {
-            utils.permissions.request({
+            browser.permissions.request({
                 origins: [url.toString()],
             });
             window.close();

@@ -5,7 +5,7 @@
         "moduleResolution": "bundler",
         "target": "es2021",
         "rootDir": "src",
-        "types": ["chrome", "firefox-webext-browser"]
+        "types": ["chrome"]
     },
     "include": ["src/**/*"],
     "references": [{ "path": "../core" }]
