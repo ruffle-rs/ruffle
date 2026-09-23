@@ -7,6 +7,7 @@ use crate::avm1::Avm1;
 use crate::avm1::{Object as Avm1Object, Value as Avm1Value};
 use crate::avm2::Activation as Avm2Activation;
 use crate::avm2::api_version::ApiVersion;
+use crate::avm2::object::{ByteArrayObject, SoundObject};
 use crate::avm2::{Avm2, LoaderInfoObject, SharedObjectObject, SoundChannelObject};
 use crate::backend::{
     audio::{AudioBackend, AudioManager, SoundHandle, SoundInstanceHandle},
@@ -294,6 +295,36 @@ impl<'gc> UpdateContext<'gc> {
     ) -> Option<SoundInstanceHandle> {
         self.audio_manager
             .start_sound(self.audio, sound, settings, transform, owner, avm1_object)
+    }
+
+    pub fn start_dynamic_sound(
+        &mut self,
+        avm2_object: SoundChannelObject<'gc>,
+        dynamic_sound: SoundObject<'gc>,
+        dynamic_data: ByteArrayObject<'gc>,
+        dynamic_position: u32,
+        dynamic_start_offset: u32,
+    ) -> Option<SoundInstanceHandle> {
+        self.audio_manager.start_dynamic_sound(
+            self.audio,
+            avm2_object,
+            dynamic_sound,
+            dynamic_data,
+            dynamic_position,
+            dynamic_start_offset,
+        )
+    }
+
+    pub fn append_dynamic_sound(
+        &mut self,
+        instance: SoundInstanceHandle,
+        samples: &[[i16; 2]],
+    ) -> bool {
+        self.audio.append_dynamic_sound(instance, samples)
+    }
+
+    pub fn finish_dynamic_sound(&mut self, instance: SoundInstanceHandle) -> bool {
+        self.audio.finish_dynamic_sound(instance)
     }
 
     pub fn attach_avm2_sound_channel(

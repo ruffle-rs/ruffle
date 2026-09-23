@@ -1,5 +1,6 @@
 use std::any::Any;
 
+use crate::avm2::object::{ByteArrayObject, SoundObject};
 use crate::{
     avm1::{NativeObject, Object as Avm1Object},
     avm2::{Avm2, EventObject as Avm2EventObject, SoundChannelObject},
@@ -140,6 +141,15 @@ pub trait AudioBackend: Any {
         stream_data: Substream,
         stream_info: &SoundStreamInfo,
     ) -> Result<SoundInstanceHandle, DecodeError>;
+
+    fn start_dynamic_sound(&mut self) -> SoundInstanceHandle;
+
+    fn append_dynamic_sound(&mut self, instance: SoundInstanceHandle, samples: &[[i16; 2]])
+    -> bool;
+
+    fn dynamic_sound_buffered_samples(&self, instance: SoundInstanceHandle) -> Option<usize>;
+
+    fn finish_dynamic_sound(&mut self, instance: SoundInstanceHandle) -> bool;
 
     /// Stops a playing sound instance.
     /// No-op if the sound is not playing.
@@ -291,6 +301,22 @@ impl AudioBackend for NullAudioBackend {
         Ok(SoundInstanceHandle::null())
     }
 
+    fn start_dynamic_sound(&mut self) -> SoundInstanceHandle {
+        SoundInstanceHandle::null()
+    }
+
+    fn append_dynamic_sound(
+        &mut self,
+        _instance: SoundInstanceHandle,
+        _samples: &[[i16; 2]],
+    ) -> bool {
+        true
+    }
+
+    fn dynamic_sound_buffered_samples(&self, _instance: SoundInstanceHandle) -> Option<usize> {
+        Some(0)
+    }
+
     fn stop_sound(&mut self, _sound: SoundInstanceHandle) {}
 
     fn stop_all_sounds(&mut self) {}
@@ -333,6 +359,10 @@ impl AudioBackend for NullAudioBackend {
     fn get_sample_history(&self) -> [[f32; 2]; 1024] {
         [[0.0f32; 2]; 1024]
     }
+
+    fn finish_dynamic_sound(&mut self, _instance: SoundInstanceHandle) -> bool {
+        true
+    }
 }
 
 impl Default for NullAudioBackend {
@@ -362,9 +392,43 @@ pub struct AudioManager<'gc> {
     transforms_dirty: bool,
 }
 
+/// A SampleData callback producing fewer samples than this ends the dynamic stream.
+pub(crate) const DYNAMIC_SOUND_MIN_SAMPLES: u32 = 2048;
+
+pub(crate) fn dynamic_sound_samples_from_bytearray(
+    data: ByteArrayObject<'_>,
+    written: usize,
+) -> Vec<[i16; 2]> {
+    let storage = data.storage();
+
+    let written = written.min(storage.bytes().len());
+    let written = written - (written % 8);
+
+    let mut samples = Vec::with_capacity(written / 8);
+
+    let mut offset = 0;
+    while offset + 8 <= written {
+        let left = storage.read_float_at(offset).unwrap_or(0.0);
+        let right = storage.read_float_at(offset + 4).unwrap_or(0.0);
+
+        let left = (left.clamp(-1.0, 1.0) * i16::MAX as f32) as i16;
+        let right = (right.clamp(-1.0, 1.0) * i16::MAX as f32) as i16;
+
+        samples.push([left, right]);
+        offset += 8;
+    }
+
+    samples
+}
+
 impl<'gc> AudioManager<'gc> {
     /// The maximum number of sound instances that can play at once.
     pub const MAX_SOUNDS: usize = 32;
+
+    /// Refill dynamic audio when fewer than this many sample frames remain buffered.
+    ///
+    /// This is a Ruffle buffering policy, not a fixed Flash Player callback size.
+    const DYNAMIC_SOUND_REFILL_THRESHOLD: usize = 8192;
 
     /// The default timeline stream buffer time in seconds.
     pub const DEFAULT_STREAM_BUFFER_TIME: i32 = 5;
@@ -394,6 +458,99 @@ impl<'gc> AudioManager<'gc> {
         // 'retain()' closure, so we queue the events up here, and fire
         // them after running 'retain()'
         let mut event_targets = Vec::new();
+
+        // Collect dynamic sounds that need more SampleDataEvent data.
+        //
+        // This is done separately from event dispatch so that AVM2 execution
+        // does not happen while `audio_manager.sounds` is borrowed.
+        let mut dynamic_refills = Vec::new();
+
+        for sound in &context.audio_manager.sounds {
+            if sound.dynamic_finished {
+                continue;
+            }
+
+            let Some(dynamic_sound) = sound.dynamic_sound else {
+                continue;
+            };
+
+            let Some(dynamic_data) = sound.dynamic_data else {
+                continue;
+            };
+
+            let buffered = context
+                .audio
+                .dynamic_sound_buffered_samples(sound.instance)
+                .unwrap_or(0);
+
+            if buffered < Self::DYNAMIC_SOUND_REFILL_THRESHOLD {
+                dynamic_refills.push((
+                    sound.instance,
+                    dynamic_sound,
+                    dynamic_data,
+                    sound
+                        .dynamic_position
+                        .saturating_add(if sound.dynamic_play_started {
+                            sound.dynamic_start_offset
+                        } else {
+                            0
+                        }),
+                ));
+            }
+        }
+
+        for (instance, dynamic_sound, dynamic_data, position) in dynamic_refills {
+            // Flash reuses the ByteArray and resets its write position.
+            dynamic_data.storage_mut().set_position(0);
+
+            let mut activation = crate::avm2::activation::Activation::from_nothing(context);
+
+            let event_type = AvmString::new_utf8(activation.gc(), "sampleData");
+            let sample_data_event_class = activation.avm2().classes().sampledataevent;
+
+            let event = Avm2EventObject::from_class_and_args(
+                &mut activation,
+                sample_data_event_class,
+                &[
+                    event_type.into(),
+                    false.into(),
+                    false.into(),
+                    f64::from(position).into(),
+                    dynamic_data.into(),
+                ],
+            );
+
+            Avm2::dispatch_event(activation.context, event, dynamic_sound.into());
+
+            // The ByteArray write position tells us how many bytes the listener
+            // actually wrote. Its length may still contain bytes from the previous
+            // SampleDataEvent dispatch.
+            let written = dynamic_data.storage().position();
+            let samples = dynamic_sound_samples_from_bytearray(dynamic_data, written);
+
+            let sample_count = samples.len() as u32;
+
+            activation.context.append_dynamic_sound(instance, &samples);
+
+            if sample_count < DYNAMIC_SOUND_MIN_SAMPLES {
+                activation.context.finish_dynamic_sound(instance);
+
+                activation
+                    .context
+                    .audio_manager
+                    .mark_dynamic_sound_finished(instance);
+            }
+
+            if let Some(sound) = activation
+                .context
+                .audio_manager
+                .sounds
+                .iter_mut()
+                .find(|sound| sound.instance == instance)
+            {
+                sound.dynamic_position = sound.dynamic_position.saturating_add(sample_count);
+            }
+        }
 
         // Update the position of sounds, and remove any completed sounds.
         context.audio_manager.sounds.retain(|sound| {
@@ -474,7 +631,13 @@ impl<'gc> AudioManager<'gc> {
                 transform: display_object::SoundTransform::default(),
                 avm1_object,
                 avm2_object: None,
+                dynamic_sound: None,
+                dynamic_data: None,
+                dynamic_position: 0,
+                dynamic_start_offset: 0,
+                dynamic_play_started: false,
                 stream_start_frame: None,
+                dynamic_finished: false,
             };
 
             if let Some(transform) = transform {
@@ -604,7 +767,13 @@ impl<'gc> AudioManager<'gc> {
                 transform: display_object::SoundTransform::default(),
                 avm1_object: None,
                 avm2_object: None,
+                dynamic_sound: None,
+                dynamic_data: None,
+                dynamic_position: 0,
+                dynamic_start_offset: 0,
+                dynamic_play_started: false,
                 stream_start_frame: Some(clip_frame),
+                dynamic_finished: false,
             };
             audio.set_sound_transform(handle, self.transform_for_sound(&instance));
             self.sounds.push(instance);
@@ -630,7 +799,13 @@ impl<'gc> AudioManager<'gc> {
                 transform: display_object::SoundTransform::default(),
                 avm1_object: None,
                 avm2_object: None,
+                dynamic_sound: None,
+                dynamic_data: None,
+                dynamic_position: 0,
+                dynamic_start_offset: 0,
+                dynamic_play_started: false,
                 stream_start_frame: None,
+                dynamic_finished: false,
             };
             audio.set_sound_transform(handle, self.transform_for_sound(&instance));
             self.sounds.push(instance);
@@ -640,7 +815,63 @@ impl<'gc> AudioManager<'gc> {
         }
     }
 
-    /// Returns the difference in seconds between the primary audio stream's time and the player's time.
+    pub fn mark_dynamic_sound_play_started(&mut self, instance: SoundInstanceHandle) {
+        if let Some(sound) = self
+            .sounds
+            .iter_mut()
+            .find(|sound| sound.instance == instance)
+        {
+            sound.dynamic_play_started = true;
+        }
+    }
+
+    pub fn mark_dynamic_sound_finished(&mut self, instance: SoundInstanceHandle) {
+        if let Some(sound) = self
+            .sounds
+            .iter_mut()
+            .find(|sound| sound.instance == instance)
+        {
+            sound.dynamic_finished = true;
+        }
+    }
+
+    pub fn start_dynamic_sound(
+        &mut self,
+        audio: &mut dyn AudioBackend,
+        avm2_object: SoundChannelObject<'gc>,
+        dynamic_sound: SoundObject<'gc>,
+        dynamic_data: ByteArrayObject<'gc>,
+        dynamic_position: u32,
+        dynamic_start_offset: u32,
+    ) -> Option<SoundInstanceHandle> {
+        if self.sounds.len() < Self::MAX_SOUNDS {
+            let handle = audio.start_dynamic_sound();
+
+            let instance = SoundInstance {
+                sound: None,
+                instance: handle,
+                display_object: None,
+                transform: display_object::SoundTransform::default(),
+                avm1_object: None,
+                avm2_object: Some(avm2_object),
+                dynamic_sound: Some(dynamic_sound),
+                dynamic_data: Some(dynamic_data),
+                dynamic_position,
+                dynamic_start_offset,
+                dynamic_play_started: false,
+                stream_start_frame: None,
+                dynamic_finished: false,
+            };
+
+            audio.set_sound_transform(handle, self.transform_for_sound(&instance));
+            self.sounds.push(instance);
+
+            Some(handle)
+        } else {
+            None
+        }
+    }
+
     pub fn audio_skew_time(&mut self, audio: &mut dyn AudioBackend, offset_ms: f64) -> f64 {
         // Consider the first playing "stream" sound to be the primary audio track.
         // Needs research: It's not clear how Flash handles the case of multiple stream sounds.
@@ -870,6 +1101,13 @@ pub struct SoundInstance<'gc> {
 
     /// The AVM2 `SoundChannel` object associated with this sound, if any.
     avm2_object: Option<SoundChannelObject<'gc>>,
+
+    dynamic_sound: Option<SoundObject<'gc>>,
+    dynamic_data: Option<ByteArrayObject<'gc>>,
+    dynamic_position: u32,
+    dynamic_start_offset: u32,
+    dynamic_play_started: bool,
+    dynamic_finished: bool,
 
     stream_start_frame: Option<u16>,
 }

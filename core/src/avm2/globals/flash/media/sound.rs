@@ -3,17 +3,20 @@
 use crate::avm2::Avm2;
 use crate::avm2::Error;
 use crate::avm2::activation::Activation;
+use crate::avm2::bytearray::ByteArrayStorage;
 use crate::avm2::error::{make_error_2037, make_error_2084};
 use crate::avm2::function::FunctionArgs;
 use crate::avm2::globals::slots::flash_net_url_request as url_request_slots;
 use crate::avm2::object::{
-    EventObject, QueuedPlay, SoundChannelObject, SoundLoadingState, TObject as _,
+    ByteArrayObject, EventObject, QueuedPlay, SoundChannelObject, SoundLoadingState, TObject as _,
 };
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
+use crate::backend::audio::{DYNAMIC_SOUND_MIN_SAMPLES, dynamic_sound_samples_from_bytearray};
 use crate::backend::navigator::Request;
 use crate::character::Character;
 use crate::display_object::SoundTransform;
+use crate::string::AvmString;
 use crate::{avm2_stub_getter, avm2_stub_method};
 use swf::{SoundEvent, SoundInfo};
 
@@ -150,6 +153,88 @@ pub fn play<'gc>(
         let num_loops = args.get_i32(1);
         let sound_transform = args.try_get_object(2);
 
+        let sound_transform = if let Some(sound_transform) = sound_transform {
+            Some(SoundTransform::from_avm2_object(sound_transform))
+        } else {
+            None
+        };
+
+        let sound_channel = SoundChannelObject::empty(activation);
+
+        // A new Sound without loaded audio uses SampleDataEvent
+        // to provide dynamically generated audio.
+        if sound_object.sound_handle().is_none()
+            && sound_object.loading_state() == SoundLoadingState::New
+        {
+            let storage = ByteArrayStorage::new(activation.context);
+            let data = ByteArrayObject::from_storage(activation.context, storage);
+
+            let event_type = AvmString::new_utf8(activation.gc(), "sampleData");
+            let sample_data_event_class = activation.avm2().classes().sampledataevent;
+
+            let event = EventObject::from_class_and_args(
+                activation,
+                sample_data_event_class,
+                &[
+                    event_type.into(),
+                    false.into(),
+                    false.into(),
+                    0.0.into(),
+                    data.into(),
+                ],
+            );
+
+            Avm2::dispatch_event(activation.context, event, this);
+
+            let written = data.storage().position();
+            let samples = dynamic_sound_samples_from_bytearray(data, written);
+
+            let initial_position = samples.len() as u32;
+
+            let dynamic_start_offset = if position > 0.0 {
+                (position / 1000.0 * 44100.0) as u32
+            } else {
+                0
+            };
+
+            if let Some(instance) = activation.context.start_dynamic_sound(
+                sound_channel,
+                sound_object,
+                data,
+                initial_position,
+                dynamic_start_offset,
+            ) {
+                activation.context.append_dynamic_sound(instance, &samples);
+
+                if initial_position < DYNAMIC_SOUND_MIN_SAMPLES {
+                    activation.context.finish_dynamic_sound(instance);
+
+                    activation
+                        .context
+                        .audio_manager
+                        .mark_dynamic_sound_finished(instance);
+                }
+
+                sound_channel.set_sound_instance(activation.context, instance);
+
+                if let Some(sound_transform) = sound_transform {
+                    activation
+                        .context
+                        .set_local_sound_transform(instance, sound_transform);
+                }
+
+                activation
+                    .context
+                    .audio_manager
+                    .mark_dynamic_sound_play_started(instance);
+
+                sound_object.set_loading_state(SoundLoadingState::Generated);
+                return Ok(sound_channel.into());
+            }
+
+            return Ok(Value::Null);
+        }
+
         let in_sample = if position > 0.0 {
             Some((position / 1000.0 * 44100.0) as u32)
         } else {
@@ -164,25 +249,19 @@ pub fn play<'gc>(
             envelope: None,
         };
 
-        let sound_transform = if let Some(sound_transform) = sound_transform {
-            Some(SoundTransform::from_avm2_object(sound_transform))
-        } else {
-            None
-        };
-
-        let sound_channel = SoundChannelObject::empty(activation);
-
         let queued_play = QueuedPlay {
             position,
             sound_info,
             sound_transform,
             sound_channel,
         };
+
         if sound_object.play(queued_play, activation) {
             return Ok(sound_channel.into());
         }
+
         // If we start playing a loaded sound with an invalid position,
-        // this method returns `null`
+        // this method returns `null`.
         return Ok(Value::Null);
     }
 

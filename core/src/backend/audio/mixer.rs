@@ -7,6 +7,7 @@ use crate::tag_utils::SwfSlice;
 use ruffle_common::buffer::Substream;
 use ruffle_common::duration::FloatDuration;
 use slotmap::SlotMap;
+use std::collections::VecDeque;
 use std::io::Cursor;
 use std::sync::{Arc, Mutex, RwLock};
 use swf::AudioCompression;
@@ -88,6 +89,57 @@ trait Stream: dasp::signal::Signal<Frame = [i16; 2]> + Send + Sync {
     /// The sample rate of the underlying audio source of this stream. For example, this will return
     /// 22050 when playing a 22KHz audio file, even if the output rate is 44KHz.
     fn source_sample_rate(&self) -> u16;
+}
+
+struct DynamicSoundStream {
+    samples: Arc<Mutex<VecDeque<[i16; 2]>>>,
+    position: u32,
+    finished: Arc<Mutex<bool>>,
+}
+
+impl DynamicSoundStream {
+    fn new(samples: Arc<Mutex<VecDeque<[i16; 2]>>>, finished: Arc<Mutex<bool>>) -> Self {
+        Self {
+            samples,
+            finished,
+            position: 0,
+        }
+    }
+}
+
+impl Stream for DynamicSoundStream {
+    fn source_position(&self) -> u32 {
+        self.position
+    }
+
+    fn source_sample_rate(&self) -> u16 {
+        44100
+    }
+}
+
+impl dasp::signal::Signal for DynamicSoundStream {
+    type Frame = [i16; 2];
+
+    fn next(&mut self) -> Self::Frame {
+        self.position = self.position.wrapping_add(1);
+        self.samples
+            .lock()
+            .expect("Cannot be called reentrant")
+            .pop_front()
+            .unwrap_or_default()
+    }
+
+    fn is_exhausted(&self) -> bool {
+        *self
+            .finished
+            .lock()
+            .expect("Dynamic sound finished mutex poisoned")
+            && self
+                .samples
+                .lock()
+                .expect("Dynamic sound samples mutex poisoned")
+                .is_empty()
+    }
 }
 
 /// A stream that wraps a `Decoder`.
@@ -178,6 +230,9 @@ struct SoundInstance {
     /// The audio stream. Call `next()` to yield sample frames.
     stream: Box<dyn Stream>,
 
+    dynamic_samples: Option<Arc<Mutex<VecDeque<[i16; 2]>>>>,
+    dynamic_finished: Option<Arc<Mutex<bool>>>,
+
     /// Flag indicating whether this sound is still playing.
     /// If this flag is false, the sound will be cleaned up during the
     /// next loop of the sound thread.
@@ -211,6 +266,8 @@ impl SoundInstance {
             right_transform: [0.0, 1.0],
             peak: [0.0, 0.0],
             range: ([f32::INFINITY; 2], [f32::NEG_INFINITY; 2]),
+            dynamic_samples: None,
+            dynamic_finished: None,
         }
     }
 
@@ -221,6 +278,26 @@ impl SoundInstance {
         SoundInstance {
             handle: None,
             stream,
+            active: true,
+            left_transform: [1.0, 0.0],
+            right_transform: [0.0, 1.0],
+            peak: [0.0, 0.0],
+            range: ([f32::INFINITY; 2], [f32::NEG_INFINITY; 2]),
+            dynamic_samples: None,
+            dynamic_finished: None,
+        }
+    }
+
+    fn new_dynamic(
+        stream: Box<dyn Stream>,
+        samples: Arc<Mutex<VecDeque<[i16; 2]>>>,
+        finished: Arc<Mutex<bool>>,
+    ) -> Self {
+        SoundInstance {
+            handle: None,
+            stream,
+            dynamic_samples: Some(samples),
+            dynamic_finished: Some(finished),
             active: true,
             left_transform: [1.0, 0.0],
             right_transform: [0.0, 1.0],
@@ -554,6 +631,75 @@ impl AudioMixer {
     #[cfg(not(feature = "mp3"))]
     pub fn register_mp3(&mut self, _data: &[u8]) -> Result<SoundHandle, DecodeError> {
         Err(decoders::Error::UnhandledCompression(AudioCompression::Mp3))
+    }
+
+    pub fn start_dynamic_sound(&mut self) -> SoundInstanceHandle {
+        let samples = Arc::new(Mutex::new(VecDeque::new()));
+        let finished = Arc::new(Mutex::new(false));
+
+        let stream = Box::new(DynamicSoundStream::new(samples.clone(), finished.clone()));
+
+        self.sound_instances
+            .lock()
+            .expect("Cannot be called reentrant")
+            .insert(SoundInstance::new_dynamic(stream, samples, finished))
+    }
+
+    pub fn append_dynamic_sound(
+        &mut self,
+        instance: SoundInstanceHandle,
+        samples: &[[i16; 2]],
+    ) -> bool {
+        let mut sound_instances = self
+            .sound_instances
+            .lock()
+            .expect("Cannot be called reentrant");
+
+        let Some(instance) = sound_instances.get_mut(instance) else {
+            return false;
+        };
+
+        let Some(dynamic_samples) = &instance.dynamic_samples else {
+            return false;
+        };
+
+        dynamic_samples
+            .lock()
+            .expect("Cannot be called reentrant")
+            .extend(samples.iter().copied());
+
+        true
+    }
+
+    pub fn dynamic_sound_buffered_samples(&self, instance: SoundInstanceHandle) -> Option<usize> {
+        let sound_instances = self
+            .sound_instances
+            .lock()
+            .expect("Cannot be called reentrant");
+
+        let instance = sound_instances.get(instance)?;
+        let samples = instance.dynamic_samples.as_ref()?;
+
+        Some(samples.lock().expect("Cannot be called reentrant").len())
+    }
+
+    pub fn finish_dynamic_sound(&mut self, instance: SoundInstanceHandle) -> bool {
+        let sound_instances = self
+            .sound_instances
+            .lock()
+            .expect("Cannot be called reentrant");
+
+        let Some(instance) = sound_instances.get(instance) else {
+            return false;
+        };
+
+        let Some(dynamic_finished) = &instance.dynamic_finished else {
+            return false;
+        };
+
+        *dynamic_finished.lock().expect("Cannot be called reentrant") = true;
+
+        true
     }
 
     /// Starts a timeline audio stream.
@@ -1108,6 +1254,30 @@ macro_rules! impl_audio_mixer_backend {
             stream_info: &SoundStreamInfo,
         ) -> Result<SoundInstanceHandle, DecodeError> {
             self.$mixer.start_substream(stream_data, stream_info)
+        }
+
+        #[inline]
+        fn start_dynamic_sound(&mut self) -> SoundInstanceHandle {
+            self.$mixer.start_dynamic_sound()
+        }
+
+        #[inline]
+        fn append_dynamic_sound(
+            &mut self,
+            instance: SoundInstanceHandle,
+            samples: &[[i16; 2]],
+        ) -> bool {
+            self.$mixer.append_dynamic_sound(instance, samples)
+        }
+
+        #[inline]
+        fn dynamic_sound_buffered_samples(&self, instance: SoundInstanceHandle) -> Option<usize> {
+            self.$mixer.dynamic_sound_buffered_samples(instance)
+        }
+
+        #[inline]
+        fn finish_dynamic_sound(&mut self, instance: SoundInstanceHandle) -> bool {
+            self.$mixer.finish_dynamic_sound(instance)
         }
 
         #[inline]

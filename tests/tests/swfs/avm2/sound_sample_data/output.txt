@@ -1,0 +1,42 @@
+SampleDataEvent
+case 1: normal blocks
+normal event=1 position=0 samples=4096 beforePosition=0 beforeLength=0 afterPosition=32768 afterLength=32768
+normal event=2 position=4096 samples=4096 beforePosition=0 beforeLength=32768 afterPosition=32768 afterLength=32768
+normal event=3 position=8192 samples=4096 beforePosition=0 beforeLength=32768 afterPosition=32768 afterLength=32768
+normal event=4 position=12288 samples=4096 beforePosition=0 beforeLength=32768 afterPosition=32768 afterLength=32768
+normal event=5 position=16384 samples=4096 beforePosition=0 beforeLength=32768 afterPosition=32768 afterLength=32768
+normal stopped events=5
+case 2: varying block sizes
+varying event=1 position=0 samples=2048 beforePosition=0 beforeLength=0 afterPosition=16384 afterLength=16384
+varying event=2 position=2048 samples=4096 beforePosition=0 beforeLength=16384 afterPosition=32768 afterLength=32768
+varying event=3 position=6144 samples=8192 beforePosition=0 beforeLength=32768 afterPosition=65536 afterLength=65536
+varying event=4 position=14336 samples=4096 beforePosition=0 beforeLength=65536 afterPosition=32768 afterLength=65536
+varying stopped events=4
+case 3: short final block
+short-final event=1 position=0 samples=4096 beforePosition=0 beforeLength=0 afterPosition=32768 afterLength=32768
+short-final event=2 position=4096 samples=4096 beforePosition=0 beforeLength=32768 afterPosition=32768 afterLength=32768
+short-final event=3 position=8192 samples=4096 beforePosition=0 beforeLength=32768 afterPosition=32768 afterLength=32768
+short-final event=4 position=12288 samples=1024 beforePosition=0 beforeLength=32768 afterPosition=8192 afterLength=32768
+short-final complete events=4
+case 4: zero samples
+zero event=1 position=0 samples=0 beforePosition=0 beforeLength=0 afterPosition=0 afterLength=0
+zero complete events=1 completes=1
+zero final events=1 completes=1
+case 5: SoundChannel.stop
+stop no-more-events=true
+case 6: stereo
+stereo final position=10240 samples=1024
+stereo complete events=6
+case 7: multiple sounds
+multiple complete A.events=4 B.events=4
+case 8: play arguments
+play-arguments final position=34338 samples=1024
+play-arguments complete events=4
+case 9: SoundMixer.stopAll
+stopAll no-more-events=true
+case 10: generated sound lifecycle
+generated-lifecycle same-channel=false
+generated-lifecycle load error=2037
+case 11: generated sound limit
+generated-limit channels=32 nulls=68
+done

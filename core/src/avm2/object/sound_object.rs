@@ -120,6 +120,7 @@ pub enum SoundLoadingState {
     New,
     Loading,
     Loaded,
+    Generated,
 }
 
 impl<'gc> SoundObject<'gc> {
