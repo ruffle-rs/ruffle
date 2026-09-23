@@ -3,11 +3,12 @@
 use crate::avm2::Avm2;
 use crate::avm2::Error;
 use crate::avm2::activation::Activation;
+use crate::avm2::bytearray::ByteArrayStorage;
 use crate::avm2::error::{make_error_2037, make_error_2084};
 use crate::avm2::function::FunctionArgs;
 use crate::avm2::globals::slots::flash_net_url_request as url_request_slots;
 use crate::avm2::object::{
-    EventObject, QueuedPlay, SoundChannelObject, SoundLoadingState, TObject as _,
+    ByteArrayObject, EventObject, QueuedPlay, SoundChannelObject, SoundLoadingState, TObject as _,
 };
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
@@ -170,6 +171,36 @@ pub fn play<'gc>(
             None
         };
 
+        // If no load has been initiated yet, this is a generated (synthesized) sound.
+        // Register it with the audio backend so it can receive SampleDataEvent callbacks.
+        // Every call starts a new, independent stream, with its own events.
+        if sound_object.is_empty() || sound_object.is_generated() {
+            let sound_channel = SoundChannelObject::empty(activation);
+            let storage = ByteArrayStorage::new(activation.context);
+            let data = ByteArrayObject::from_storage(activation.context, storage);
+            // `startTime` offsets the `SampleDataEvent.position` of the stream.
+            // TODO: `loops` is ignored for generated sounds.
+            let handle = activation.context.audio_manager.start_generated_sound(
+                activation.context.audio,
+                sound_object,
+                data,
+                in_sample.unwrap_or(0),
+                sound_transform,
+            );
+            // `start_generated_sound` only fails if we have too many sounds
+            // playing, in which case Flash Player returns `null` from `Sound.play()`.
+            let Ok(handle) = handle else {
+                return Ok(Value::Null);
+            };
+            sound_channel.set_sound_instance(activation.context, handle);
+            activation
+                .context
+                .audio_manager
+                .attach_avm2_sound_channel(handle, sound_channel);
+            sound_object.set_generated(activation.gc());
+            return Ok(sound_channel.into());
+        }
+
         let sound_channel = SoundChannelObject::empty(activation);
 
         let queued_play = QueuedPlay {
@@ -257,6 +288,7 @@ pub fn load<'gc>(
         Request::get(url.to_string()),
     );
     activation.context.navigator.spawn_future(future);
+    this.load_called(activation)?;
     this.set_loading_state(SoundLoadingState::Loading);
 
     Ok(Value::Undefined)
