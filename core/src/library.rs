@@ -509,7 +509,9 @@ impl<'gc> Library<'gc> {
 
         let filter = FontFamilyFilter::Default(name);
 
-        let result = self.sort_device_fonts(&filter, is_bold, is_italic, ui, renderer, gc_context);
+        let mut result =
+            self.sort_device_fonts(&filter, is_bold, is_italic, ui, renderer, gc_context);
+        result.truncate(1);
 
         self.default_font_cache
             .insert((name, is_bold, is_italic), result.clone());

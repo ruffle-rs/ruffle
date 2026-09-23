@@ -19,13 +19,7 @@ function measureText(text, fontName) {
     return width;
 }
 
-var primaryA = measureText("a", "TestFontA");
-var secondaryB = measureText("b", "TestFontB");
-
-var sansA = measureText("a", "_sans");
-var sansB = measureText("b", "_sans");
-
-trace("primary font works: " + (primaryA > 0));
-trace("secondary font works: " + (secondaryB > 0));
-trace("sans uses primary font: " + (sansA == primaryA));
-trace("sans uses secondary fallback: " + (sansB == secondaryB));
+trace("primaryA: " + measureText("a", "TestFontA"));
+trace("secondaryB: " + measureText("b", "TestFontB"));
+trace("sansA: " + measureText("a", "_sans"));
+trace("sansB: " + measureText("b", "_sans"));

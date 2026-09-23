@@ -516,6 +516,13 @@ impl<'gc> Font<'gc> {
         self.0.glyphs.get_by_code_point(c)
     }
 
+    pub fn get_missing_glyph(&self, c: char) -> Option<GlyphRef<'_>> {
+        match &self.0.glyphs {
+            GlyphSource::FontFace { face, .. } => face.get_missing_glyph(c).map(GlyphRef::Direct),
+            _ => None,
+        }
+    }
+
     /// Determine if this font contains all the glyphs within a given string.
     pub fn has_glyphs_for_str(self, target_str: &WStr) -> bool {
         for character in target_str.chars() {
