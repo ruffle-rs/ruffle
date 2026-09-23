@@ -28,10 +28,9 @@ o.polar = function(len, angle) {
 
 o.interpolate = function(pt1, pt2, f) {
     // y is computed before x, which is observable via property accesses.
-    var dy = pt2.y - pt1.y;
-    var y = pt2.y - dy * f;
-    var dx = pt2.x - pt1.x;
-    var x = pt2.x - dx * f;
+    // The `+` operator concatenates when `pt2`'s coordinates are strings.
+    var y = pt2.y + (pt1.y - pt2.y) * f;
+    var x = pt2.x + (pt1.x - pt2.x) * f;
     return new flash.geom.Point(x, y);
 };
 

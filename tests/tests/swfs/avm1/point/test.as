@@ -117,6 +117,17 @@ point = tracingPoint("point", -100, 200);
 other = tracingPoint("other", 100, 200);
 trace(Point.distance(point, other));
 trace("");
+
+trace("// Point.distance(point, other), point has overridden subtract");
+point = new Point(-100, 200);
+point.subtract = function(v) {
+    trace("  subtract " + v);
+    var result = {};
+    addTracingProperty("result", result, "length", 42);
+    return result;
+};
+trace(Point.distance(point, new Point(100, 200)));
+trace("");
 trace("");
 
 trace("/// Equals");
@@ -234,6 +245,10 @@ trace("");
 
 trace("// Point.interpolate()");
 trace(Point.interpolate());
+trace("");
+
+trace("// Point.interpolate(new Point('10', '0'), new Point('20', '0'), 0.5)");
+trace(Point.interpolate(new Point("10", "0"), new Point("20", "0"), 0.5));
 trace("");
 trace("");
 
@@ -440,11 +455,11 @@ ASSetPropFlags(Math, "cos,sin", 0, 7);
 var originalCos = Math.cos;
 var originalSin = Math.sin;
 Math.cos = function(angle) {
-    trace("  cos");
+    trace("  Math.cos(" + angle + ")");
     return originalCos(angle);
 };
 Math.sin = function(angle) {
-    trace("  sin");
+    trace("  Math.sin(" + angle + ")");
     return originalSin(angle);
 };
 tracingLength = {valueOf: function() {

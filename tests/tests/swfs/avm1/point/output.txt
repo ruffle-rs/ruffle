@@ -77,6 +77,11 @@ undefined
   get other.x
 200
 
+// Point.distance(point, other), point has overridden subtract
+  subtract (x=100, y=200)
+  get result.length
+42
+
 
 /// Equals
 // point.equals(new Point(1, 2))
@@ -164,6 +169,9 @@ true
 
 // Point.interpolate()
 (x=NaN, y=NaN)
+
+// Point.interpolate(new Point('10', '0'), new Point('20', '0'), 0.5)
+(x=20-5, y=00)
 
 
 /// Interpolate: property access order
@@ -307,9 +315,9 @@ true
 
 /// Polar: evaluation order
 // Point.polar(tracingLength, Math.atan(3/4))
-  sin
+  Math.sin(0.643501108793284)
   valueOf
-  cos
+  Math.cos(0.643501108793284)
   valueOf
 (x=4, y=3)
 
