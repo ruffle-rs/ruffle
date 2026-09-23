@@ -409,10 +409,15 @@ impl<'gc> AudioManager<'gc> {
                 true
             } else {
                 // Sound ended.
-                let duration = sound
-                    .sound
-                    .and_then(|sound| context.audio.get_sound_duration(sound))
-                    .unwrap_or_default();
+                let duration =
+                    if let SoundInstanceSourceData::Event(sound_handle) = &sound.source_data {
+                        context
+                            .audio
+                            .get_sound_duration(*sound_handle)
+                            .unwrap_or_default()
+                    } else {
+                        Default::default()
+                    };
                 if let Some(object) = sound.avm1_object {
                     if let NativeObject::Sound(sound) = object.native() {
                         sound.set_position(duration.as_millis().round() as u32);
@@ -468,7 +473,7 @@ impl<'gc> AudioManager<'gc> {
                 .map_err(|e| tracing::warn!("Cannot start sound: {e}"))
                 .ok()?;
             let mut instance = SoundInstance {
-                sound: Some(sound),
+                source_data: SoundInstanceSourceData::Event(sound),
                 instance: handle,
                 display_object,
                 transform: display_object::SoundTransform::default(),
@@ -518,12 +523,13 @@ impl<'gc> AudioManager<'gc> {
 
     pub fn stop_sounds_with_handle(&mut self, audio: &mut dyn AudioBackend, sound: SoundHandle) {
         self.sounds.retain(move |other| {
-            if other.sound == Some(sound) {
+            if let SoundInstanceSourceData::Event(other_sound) = other.source_data
+                && other_sound == sound
+            {
                 audio.stop_sound(other.instance);
-                false
-            } else {
-                true
+                return false;
             }
+            true
         });
     }
 
@@ -584,7 +590,9 @@ impl<'gc> AudioManager<'gc> {
     }
 
     pub fn is_sound_playing_with_handle(&self, sound: SoundHandle) -> bool {
-        self.sounds.iter().any(|other| other.sound == Some(sound))
+        self.sounds.iter().any(
+            |other| matches!(other.source_data, SoundInstanceSourceData::Event(s) if s == sound),
+        )
     }
 
     pub fn start_stream(
@@ -598,7 +606,7 @@ impl<'gc> AudioManager<'gc> {
         if self.sounds.len() < Self::MAX_SOUNDS {
             let handle = audio.start_stream(data, stream_info).ok()?;
             let instance = SoundInstance {
-                sound: None,
+                source_data: SoundInstanceSourceData::Stream,
                 instance: handle,
                 display_object: Some(movie_clip.into()),
                 transform: display_object::SoundTransform::default(),
@@ -624,7 +632,7 @@ impl<'gc> AudioManager<'gc> {
         if self.sounds.len() < Self::MAX_SOUNDS {
             let handle = audio.start_substream(stream_data, stream_info)?;
             let instance = SoundInstance {
-                sound: None,
+                source_data: SoundInstanceSourceData::Stream,
                 instance: handle,
                 display_object: Some(movie_clip.into()),
                 transform: display_object::SoundTransform::default(),
@@ -740,7 +748,7 @@ impl<'gc> AudioManager<'gc> {
         let mut changed = false;
 
         for other in &mut self.sounds {
-            if other.sound == Some(sound) {
+            if matches!(other.source_data, SoundInstanceSourceData::Event(s) if s == sound) {
                 other.transform = sound_transform;
                 changed = true;
             }
@@ -840,6 +848,16 @@ impl Default for AudioManager<'_> {
     }
 }
 
+/// Describes the source of a `SoundInstance`.
+#[derive(Clone, Collect)]
+#[collect(require_static)]
+pub enum SoundInstanceSourceData {
+    /// A regular event sound loaded from a SWF or URL.
+    Event(SoundHandle),
+    /// A stream sound embedded in a SWF MovieClip or video container.
+    Stream,
+}
+
 #[derive(Clone, Collect)]
 #[collect(no_drop)]
 pub struct SoundInstance<'gc> {
@@ -847,10 +865,8 @@ pub struct SoundInstance<'gc> {
     #[collect(require_static)]
     instance: SoundInstanceHandle,
 
-    /// The handle to the sound definition in the audio backend.
-    /// This will be `None` for stream sounds.
-    #[collect(require_static)]
-    sound: Option<SoundHandle>,
+    /// Source of audio data for this sound.
+    source_data: SoundInstanceSourceData,
 
     /// The display object that this sound is playing in, if any.
     /// Used for volume mixing and `Sound.stop()`.
