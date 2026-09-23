@@ -141,6 +141,24 @@ pub trait AudioBackend: Any {
         stream_info: &SoundStreamInfo,
     ) -> Result<SoundInstanceHandle, DecodeError>;
 
+    /// Starts a generated (synthesized) sound stream.
+    ///
+    /// Audio data is provided with `append_generated_sound`, which is fed by
+    /// dispatching `SampleDataEvent` to the associated ActionScript object.
+    fn start_generated_sound(&mut self) -> SoundInstanceHandle;
+
+    /// Appends 44100 Hz stereo sample frames to a generated sound.
+    /// No-op if the sound is not playing.
+    fn append_generated_sound(&mut self, instance: SoundInstanceHandle, samples: &[[f32; 2]]);
+
+    /// Returns the number of sample frames appended to a generated sound
+    /// that have not been played yet, or `None` if the sound is not playing.
+    fn generated_sound_buffered_samples(&self, instance: SoundInstanceHandle) -> Option<usize>;
+
+    /// Signals that no more samples will be appended to a generated sound.
+    /// The sound ends once its already buffered samples have been played.
+    fn finish_generated_sound(&mut self, instance: SoundInstanceHandle);
+
     /// Stops a playing sound instance.
     /// No-op if the sound is not playing.
     fn stop_sound(&mut self, sound: SoundInstanceHandle);
@@ -290,6 +308,18 @@ impl AudioBackend for NullAudioBackend {
     ) -> Result<SoundInstanceHandle, DecodeError> {
         Ok(SoundInstanceHandle::null())
     }
+
+    fn start_generated_sound(&mut self) -> SoundInstanceHandle {
+        SoundInstanceHandle::null()
+    }
+
+    fn append_generated_sound(&mut self, _instance: SoundInstanceHandle, _samples: &[[f32; 2]]) {}
+
+    fn generated_sound_buffered_samples(&self, _instance: SoundInstanceHandle) -> Option<usize> {
+        None
+    }
+
+    fn finish_generated_sound(&mut self, _instance: SoundInstanceHandle) {}
 
     fn stop_sound(&mut self, _sound: SoundInstanceHandle) {}
 
