@@ -6,6 +6,8 @@ package flash.events {
         public static const SAMPLE_DATA:String = "sampleData";
 
         private var _position:Number;
+
+        [Ruffle(NativeAccessible)]
         private var _data:ByteArray;
 
         public function SampleDataEvent(
