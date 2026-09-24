@@ -19,11 +19,12 @@ pub use nellymoser::NellymoserDecoder;
 pub use pcm::PcmDecoder;
 
 use crate::backend::audio::{SoundStreamInfo, SoundStreamWrapping};
-use crate::tag_utils::{ControlFlow, SwfSlice};
+use crate::tag_utils::{ControlFlow, SwfSlice, YokeArc};
 use ruffle_common::buffer::{Slice, Substream, SubstreamChunksIter};
 use std::io::{Cursor, Read};
 use swf::{AudioCompression, SoundFormat, TagCode};
 use thiserror::Error;
+use yoke::Yokeable;
 
 #[derive(Debug, Error)]
 pub enum Error {
@@ -165,16 +166,25 @@ impl Iterator for StandardStreamDecoder {
 pub struct AdpcmStreamDecoder {
     format: SoundFormat,
     tag_reader: StreamTagReader,
-    decoder: AdpcmDecoder<Cursor<SwfSlice>>,
+    decoder: AdpcmDecoder<Cursor<YokeArcAsRef>>,
+}
+
+// `Yoke<&T, _>` doesn't implement `AsRef<T>` :(
+struct YokeArcAsRef(YokeArc<&'static [u8]>);
+
+impl AsRef<[u8]> for YokeArcAsRef {
+    fn as_ref(&self) -> &[u8] {
+        self.0.get()
+    }
 }
 
 impl AdpcmStreamDecoder {
     fn new(stream_info: &swf::SoundStreamHead, swf_data: SwfSlice) -> Result<Self, Error> {
-        let empty = swf_data.copy_empty();
+        let empty = swf_data.copy_empty().into_erased_yoke();
         let mut tag_reader = StreamTagReader::new(stream_info, swf_data);
         let audio_data = tag_reader.next().unwrap_or(empty);
         let decoder = AdpcmDecoder::new(
-            Cursor::new(audio_data),
+            Cursor::new(YokeArcAsRef(audio_data)),
             stream_info.stream_format.is_stereo,
             stream_info.stream_format.sample_rate,
         )?;
@@ -209,7 +219,7 @@ impl Iterator for AdpcmStreamDecoder {
             // read the next one and recreate the decoder.
             // `AdpcmDecoder` read the ADPCM header when it is created.
             self.decoder = AdpcmDecoder::new(
-                Cursor::new(audio_data),
+                Cursor::new(YokeArcAsRef(audio_data)),
                 self.format.is_stereo,
                 self.format.sample_rate,
             )
@@ -257,18 +267,18 @@ pub trait SeekableDecoder: Decoder {
 /// `StreamTagReader` reads through the SWF tag data of a `MovieClip`, extracting
 /// audio data from the `SoundStreamBlock` tags. It can be used as an `Iterator` that
 /// will return consecutive slices of the underlying audio data.
-struct StreamTagReader {
-    /// The tag data of the `MovieClip` that contains the streaming audio track.
-    swf_data: SwfSlice,
+struct StreamTagReader(YokeArc<StreamTagReaderData<'static>>);
 
-    /// The audio playback position inside `swf_data`.
-    pos: usize,
-
-    /// The compressed audio data in the most recent `SoundStreamBlock` we've seen, returned by `Iterator::next`.
-    current_audio_data: SwfSlice,
+#[derive(Yokeable)]
+struct StreamTagReaderData<'swf> {
+    /// The remaining tag data of the `MovieClip` that contains the streaming audio track.
+    reader: swf::read::Reader<'swf>,
 
     /// The compression used by the audio data.
     compression: AudioCompression,
+
+    /// The compressed audio data in the most recent `SoundStreamBlock` we've seen, returned by `Iterator::next`.
+    current_audio_data: &'swf [u8],
 
     /// The number of audio samples for use in future animation frames.
     ///
@@ -285,29 +295,26 @@ impl StreamTagReader {
     /// Builds a new `StreamTagReader` from the given SWF data.
     /// `swf_data` should be the tag data of a MovieClip.
     fn new(stream_info: &swf::SoundStreamHead, swf_data: SwfSlice) -> Self {
-        let current_audio_data = swf_data.copy_empty();
-        Self {
-            swf_data,
-            pos: 0,
+        let swf_version = swf_data.version();
+        let erased = swf_data.into_erased_yoke();
+        Self(erased.map_project(|data, _| StreamTagReaderData {
+            reader: swf::read::Reader::new(data, swf_version),
             compression: stream_info.stream_format.compression,
-            current_audio_data,
+            current_audio_data: &[],
             mp3_samples_buffered: 0,
             mp3_samples_per_block: stream_info.num_samples_per_block,
-        }
+        }))
     }
 }
 
-impl Iterator for StreamTagReader {
-    type Item = SwfSlice;
-
-    fn next(&mut self) -> Option<Self::Item> {
+impl<'swf> StreamTagReaderData<'swf> {
+    fn advance(&mut self) -> bool {
         let compression = self.compression;
         let mut found = false;
 
-        let swf_data = &self.swf_data;
         loop {
-            let mut reader = self.swf_data.read_from(self.pos as u64);
-            let _ = crate::tag_utils::decode_tags(&mut reader, |reader, tag_code| match tag_code {
+            let reader = &mut self.reader;
+            let _ = crate::tag_utils::decode_tags(reader, |reader, tag_code| match tag_code {
                 TagCode::SoundStreamBlock if !found => {
                     found = true;
                     let mut audio_block = reader.get_ref();
@@ -328,7 +335,7 @@ impl Iterator for StreamTagReader {
                         self.mp3_samples_buffered += i32::from(num_samples);
                         audio_block = block_data;
                     }
-                    self.current_audio_data = swf_data.to_subslice(audio_block);
+                    self.current_audio_data = audio_block;
                     Ok(ControlFlow::Continue)
                 }
                 TagCode::ShowFrame if compression == AudioCompression::Mp3 => {
@@ -338,23 +345,33 @@ impl Iterator for StreamTagReader {
                 TagCode::ShowFrame => Ok(ControlFlow::Exit),
                 _ => Ok(ControlFlow::Continue),
             });
-            self.pos = reader.get_ref().as_ptr() as usize - swf_data.as_ref().as_ptr() as usize;
 
             // If we hit a SoundStreamBlock within this frame, return it. Otherwise, the stream should end.
             // The exception is MP3 streaming sounds, which will continue to play even when a few frames
             // are missing SoundStreamBlock tags (see above).
-            if found {
-                break Some(self.current_audio_data.clone());
-            } else if compression != AudioCompression::Mp3
+            if found
+                || compression != AudioCompression::Mp3
                 // FIXME: The next condition should logically end with `<= 0`.
                 // It was changed as a quick HACK to fix #7524 by not detecting an
                 // underrun too soon. We are still not yet sure what exactly to do here.
                 || self.mp3_samples_buffered <= -(self.mp3_samples_per_block as i32)
-                || reader.get_ref().is_empty()
+                || self.reader.get_ref().is_empty()
             {
-                break None;
+                break;
             }
         }
+
+        found
+    }
+}
+
+impl Iterator for StreamTagReader {
+    type Item = YokeArc<&'static [u8]>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.0
+            .with_mut_return(|this| this.advance())
+            .then(|| self.0.map_project_cloned(|this, _| this.current_audio_data))
     }
 }
 
@@ -362,18 +379,16 @@ impl Iterator for StreamTagReader {
 /// audio stream data for `SoundStreamBlock` tags.
 impl Read for StreamTagReader {
     fn read(&mut self, buf: &mut [u8]) -> std::io::Result<usize> {
-        while self.current_audio_data.as_ref().is_empty() {
-            self.current_audio_data = if let Some(audio_data) = self.next() {
-                audio_data
-            } else {
+        while self.0.get().current_audio_data.is_empty() {
+            if !self.0.with_mut_return(|this| this.advance()) {
                 return Ok(0);
             }
         }
 
-        let mut data = self.current_audio_data.as_ref();
+        let mut data = self.0.get().current_audio_data;
         let len = data.read(buf)?;
-        self.current_audio_data
-            .with_mut(move |data| *data = &data[len..]);
+        self.0
+            .with_mut(move |this| this.current_audio_data = &this.current_audio_data[len..]);
         Ok(len)
     }
 }

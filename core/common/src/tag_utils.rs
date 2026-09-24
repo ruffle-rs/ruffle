@@ -367,6 +367,8 @@ impl Debug for SwfMovie {
     }
 }
 
+pub type YokeArc<Y, C = dyn yoke::erased::ErasedDestructor + Send + Sync> = Yoke<Y, Arc<C>>;
+
 /// A shared-ownership reference to some portion of an SWF datastream.
 #[derive(Debug, Clone, Collect)]
 #[collect(require_static)]
@@ -477,6 +479,11 @@ impl SwfSlice {
     /// Get the length of the SwfSlice.
     pub fn len(&self) -> usize {
         self.data().len()
+    }
+
+    /// Convert the SwfSlice into an erased `Arc` slice.
+    pub fn into_erased_yoke(self) -> YokeArc<&'static [u8]> {
+        self.0.erase_arc_cart()
     }
 }
 
