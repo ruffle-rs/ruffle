@@ -18,8 +18,9 @@ function handleMessage(message: Message) {
     switch (message.type) {
         case "load": {
             const publicPath = new URL(".", message.publicPath);
-            if (publicPath.protocol.includes("extension")) {
-                __webpack_public_path__ = publicPath.href;
+            if (!publicPath.protocol.includes("extension")) {
+                // Ignore messages from a non-extension URL.
+                return null;
             }
             if (window.RufflePlayer === undefined) {
                 window.RufflePlayer = {};
