@@ -98,6 +98,21 @@ pub enum CompressedBitmap {
 }
 
 impl CompressedBitmap {
+    pub fn from_jpeg(
+        jpeg_data: &[u8],
+        alpha: Option<&[u8]>,
+        jpeg_tables: Option<&[u8]>,
+    ) -> Result<Self, RenderError> {
+        let data = ruffle_render::utils::glue_tables_to_jpeg(jpeg_data, jpeg_tables);
+        let (width, height) = ruffle_render::utils::decode_define_bits_jpeg_dimensions(&data)?;
+        Ok(CompressedBitmap::Jpeg {
+            data: data.into_owned(),
+            alpha: alpha.map(|a| a.to_owned()),
+            width,
+            height,
+        })
+    }
+
     pub fn size(&self) -> BitmapSize {
         match self {
             CompressedBitmap::Jpeg { width, height, .. } => BitmapSize {
@@ -110,6 +125,7 @@ impl CompressedBitmap {
             },
         }
     }
+
     pub fn decode(&self) -> Result<RenderBitmap<'static>, RenderError> {
         match self {
             CompressedBitmap::Jpeg {
