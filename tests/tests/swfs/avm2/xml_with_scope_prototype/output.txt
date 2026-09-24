@@ -1,0 +1,8 @@
+name() via with-scope: root
+localName() via with-scope: root
+nodeKind() via with-scope: element
+toString() via with-scope: <root>
+  <item>hello</item>
+  <item>world</item>
+</root>
+children().length() via with-scope: 2
