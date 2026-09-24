@@ -73,24 +73,13 @@ async function fetchRuffle(
           import("./%FALLBACK_WASM%.js"));
     let response;
 
-    let wasmUrl: URL;
-
-    if (typeof import.meta.url === "string") {
-        // Webpack case (extension): URL assets
-        wasmUrl = extensionsSupported
-            ? new URL("./ruffle_web_bg.wasm", import.meta.url)
-            : new URL("./%FALLBACK_WASM%_bg.wasm", import.meta.url);
-    } else {
-        // ESBuild case (selfhosted): import.meta is empty
-        const baseUrl = new URL(
-            publicPath((window.RufflePlayer?.config ?? {}) as BaseLoadOptions),
-            document.baseURI,
-        );
-
-        wasmUrl = extensionsSupported
-            ? new URL("./ruffle_web_bg.wasm", baseUrl)
-            : new URL("./%FALLBACK_WASM%_bg.wasm", baseUrl);
-    }
+    const baseUrl = new URL(
+        publicPath((window.RufflePlayer?.config ?? {}) as BaseLoadOptions),
+        document.baseURI,
+    );
+    const wasmUrl = extensionsSupported
+        ? new URL("./ruffle_web_bg.wasm", baseUrl)
+        : new URL("./%FALLBACK_WASM%_bg.wasm", baseUrl);
     const wasmResponse = await fetch(wasmUrl);
     // The Pale Moon browser lacks full support for ReadableStream.
     // However, ReadableStream itself is defined.

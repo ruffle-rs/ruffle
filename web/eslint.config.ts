@@ -21,10 +21,7 @@ export default tseslint.config(
             ecmaVersion: 2021,
         },
         rules: {
-            camelcase: [
-                "error",
-                { properties: "never", allow: ["__webpack_public_path__"] },
-            ],
+            camelcase: ["error", { properties: "never" }],
             curly: "error",
             eqeqeq: "error",
             "no-constructor-return": "error",
@@ -96,7 +93,7 @@ export default tseslint.config(
         },
     },
     {
-        files: ["packages/**/webpack.config.js", "packages/**/wdio.config.ts"],
+        files: ["packages/**/wdio.config.ts"],
         languageOptions: {
             globals: globals.node,
         },

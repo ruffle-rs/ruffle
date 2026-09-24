@@ -26,7 +26,6 @@
         "@wdio/static-server-service": "^9.32.0",
         "chai": "^6.3.0",
         "chai-html": "^3.2.0",
-        "copy-webpack-plugin": "^14.0.0",
         "cross-env": "^10.1.0",
         "eslint": "^10.12.0",
         "eslint-config-prettier": "^10.1.8",
@@ -41,13 +40,10 @@
         "stylelint": "^17.16.0",
         "stylelint-config-standard": "^40.0.0",
         "stylelint-prettier": "^5.0.3",
-        "ts-loader": "^9.6.2",
         "typedoc-plugin-mdn-links": "^5.1.1",
         "typescript": "^6.0.3",
         "typescript-eslint": "^8.71.0",
         "webdriverio": "^9.32.0",
-        "webpack": "^5.111.1",
-        "webpack-cli": "^7.2.3",
         "workspace-version": "^0.1.4"
     },
     "scripts": {
