@@ -573,19 +573,15 @@ mod fontconfig {
 
             FontFamilyFilter::Default(default_font) => {
                 let family = match default_font {
-                    DefaultFont::Sans => "sans-serif",
-                    DefaultFont::Serif => "serif",
-                    DefaultFont::Typewriter => "monospace",
-                    DefaultFont::JapaneseGothic => "sans-serif",
-                    DefaultFont::JapaneseGothicMono => "monospace",
-                    DefaultFont::JapaneseMincho => "serif",
+                    DefaultFont::Sans => c"sans-serif",
+                    DefaultFont::Serif => c"serif",
+                    DefaultFont::Typewriter => c"monospace",
+                    DefaultFont::JapaneseGothic => c"sans-serif",
+                    DefaultFont::JapaneseGothicMono => c"monospace",
+                    DefaultFont::JapaneseMincho => c"serif",
                 };
 
-                let Ok(family) = std::ffi::CString::new(family) else {
-                    return Err(FontconfigError::MalformedFontFamily);
-                };
-
-                pattern.add_string(fontconfig::FC_FAMILY, family.as_c_str())?;
+                pattern.add_string(fontconfig::FC_FAMILY, family)?;
             }
         }
 
