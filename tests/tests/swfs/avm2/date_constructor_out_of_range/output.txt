@@ -1,0 +1,110 @@
+=== multi-argument constructor around upper bound ===
+new Date(275760,8,12,23,59,59,999)
+result
+time: 8639999979299999
+timezoneOffset: -345
+local: 275760,8,12,0,59,59,999
+utc: 275760,8,12,18,14,59,999
+---
+new Date(275760,8,13,0,0,0,0)
+result
+time: 8639999979300000
+timezoneOffset: -345
+local: 275760,8,13,0,0,0,0
+utc: 275760,8,12,18,15,0,0
+---
+new Date(275760,8,13,0,0,0,1)
+result
+time: 8639999979300001
+timezoneOffset: -345
+local: 275760,8,13,0,0,0,1
+utc: 275760,8,12,18,15,0,1
+---
+new Date(275760,8,13,1,0,0,0)
+result
+time: 8639999982900000
+timezoneOffset: -345
+local: 275760,8,13,1,0,0,0
+utc: 275760,8,12,19,15,0,0
+---
+new Date(275760,8,14,0,0,0,0)
+result
+time: 8640000065700000
+timezoneOffset: -345
+local: 275760,8,14,0,0,0,0
+utc: 275760,8,13,18,15,0,0
+---
+new Date(275761,0,1,0,0,0,0)
+result
+time: 8640009483300000
+timezoneOffset: -345
+local: 275761,0,1,0,0,0,0
+utc: 275760,11,31,18,15,0,0
+---
+new Date(300000,0,1,0,0,0,0)
+result
+time: 9404918360100000
+timezoneOffset: -345
+local: 300000,0,1,0,0,0,0
+utc: 299999,11,31,18,15,0,0
+---
+new Date(1000000,0,1,0,0,0,0)
+result
+time: 31494784760100000
+timezoneOffset: -345
+local: 1000000,0,1,0,0,0,0
+utc: 999999,11,31,18,15,0,0
+---
+=== operations on out-of-range constructed date ===
+initial
+time: 8639999982900000
+timezoneOffset: -345
+local: 275760,8,13,1,0,0,0
+utc: 275760,8,12,19,15,0,0
+---
+valueOf: 8639999982900000
+toString: Sat Sep 13 01:00:00 GMT+0545 275760
+toUTCString: Fri Sep 12 19:15:00 275760 UTC
+setUTCMilliseconds(0): 8639999982900000
+after setUTCMilliseconds
+time: 8639999982900000
+timezoneOffset: -345
+local: 275760,8,13,1,0,0,0
+utc: 275760,8,12,19,15,0,0
+---
+setTime(getTime()): 8639999982900000
+after setTime
+time: 8639999982900000
+timezoneOffset: -345
+local: 275760,8,13,1,0,0,0
+utc: 275760,8,12,19,15,0,0
+---
+=== timestamp constructor with same values ===
+new Date(timestamp 8640000000000000)
+result
+time: 8640000000000000
+timezoneOffset: -345
+local: 275760,8,13,5,45,0,0
+utc: 275760,8,13,0,0,0,0
+---
+new Date(timestamp 8640000000000001)
+result
+time: NaN
+timezoneOffset: NaN
+local: NaN,NaN,NaN,NaN,NaN,NaN,NaN
+utc: NaN,NaN,NaN,NaN,NaN,NaN,NaN
+---
+new Date(timestamp 8640000003600000)
+result
+time: NaN
+timezoneOffset: NaN
+local: NaN,NaN,NaN,NaN,NaN,NaN,NaN
+utc: NaN,NaN,NaN,NaN,NaN,NaN,NaN
+---
+new Date(timestamp 8640000057600000)
+result
+time: NaN
+timezoneOffset: NaN
+local: NaN,NaN,NaN,NaN,NaN,NaN,NaN
+utc: NaN,NaN,NaN,NaN,NaN,NaN,NaN
+---

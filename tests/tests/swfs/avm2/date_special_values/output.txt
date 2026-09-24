@@ -1,0 +1,74 @@
+=== Timestamp clipping ===
+new Date(5.9): 5
+new Date(-5.9): -5
+new Date(0.9): 0
+new Date(-0.9): 0
+new Date(NaN): NaN
+new Date(Infinity): NaN
+new Date(-Infinity): NaN
+new Date(8640000000000000): 8640000000000000
+new Date(8640000000000001): NaN
+=== setTime ===
+setTime(5.9): 5
+stored: 5
+setTime(-5.9): -5
+stored: -5
+setTime(0.9): 0
+stored: 0
+setTime(-0.9): 0
+stored: 0
+setTime(NaN): NaN
+stored: NaN
+setTime(Infinity): NaN
+stored: NaN
+setTime(-Infinity): NaN
+stored: NaN
+=== Date.UTC fractional fields ===
+UTC(2000.9,0,1,0,0,0,0): 946684800000
+fields: 2000,0,1,0,0,0,0
+UTC(2000,1.9,1,0,0,0,0): 949363200000
+fields: 2000,1,1,0,0,0,0
+UTC(2000,-1.9,1,0,0,0,0): 944006400000
+fields: 1999,11,1,0,0,0,0
+UTC(2000,0,1.9,0,0,0,0): 946684800000
+fields: 2000,0,1,0,0,0,0
+UTC(2000,0,-1.9,0,0,0,0): 946512000000
+fields: 1999,11,30,0,0,0,0
+UTC(2000,0,1,1.9,2.9,3.9,4.9): 946688523004
+fields: 2000,0,1,1,2,3,4
+UTC(2000,0,1,-1.9,-2.9,-3.9,-4.9): 946681076996
+fields: 1999,11,31,22,57,56,996
+=== Date.UTC invalid fields ===
+UTC(NaN,0,1,0,0,0,0): NaN
+fields: NaN,NaN,NaN,NaN,NaN,NaN,NaN
+UTC(2000,NaN,1,0,0,0,0): NaN
+fields: NaN,NaN,NaN,NaN,NaN,NaN,NaN
+UTC(2000,0,NaN,0,0,0,0): NaN
+fields: NaN,NaN,NaN,NaN,NaN,NaN,NaN
+UTC(Infinity,0,1,0,0,0,0): NaN
+fields: NaN,NaN,NaN,NaN,NaN,NaN,NaN
+UTC(2000,-Infinity,1,0,0,0,0): NaN
+fields: NaN,NaN,NaN,NaN,NaN,NaN,NaN
+=== Invalid Date setters ===
+setUTCFullYear(2000): 946684800000
+stored: 946684800000
+setUTCFullYear(-271821,3,20): -8640000000000000
+stored: -8640000000000000
+setUTCMonth(0): NaN
+stored: NaN
+setUTCDate(1): NaN
+stored: NaN
+setUTCHours(0): NaN
+stored: NaN
+setUTCMinutes(0): NaN
+stored: NaN
+setUTCSeconds(0): NaN
+stored: NaN
+setUTCMilliseconds(0): NaN
+stored: NaN
+=== Invalid Date setFullYear ===
+result: 946664100000
+time: 946664100000
+fullYear: 2000
+month: 0
+date: 1
