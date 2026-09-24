@@ -425,6 +425,8 @@ impl Debug for SwfMovieData {
     }
 }
 
+pub type YokeArc<Y, C = dyn yoke::erased::ErasedDestructor + Send + Sync> = Yoke<Y, Arc<C>>;
+
 /// A shared-ownership reference to some portion of an SWF datastream.
 #[derive(Debug, Clone, Collect)]
 #[collect(require_static)]
@@ -528,6 +530,11 @@ impl SwfSlice {
         self.raw.backing_cart()
     }
 
+    /// Get the version of the SWF this data comes from.
+    pub fn version(&self) -> u8 {
+        self.swf_version
+    }
+
     /// Returns the data from the start of this slice up to the end of the whole movie.
     pub fn data_until_end(&self) -> &[u8] {
         let entire_data = self.entire_data();
@@ -550,6 +557,11 @@ impl SwfSlice {
     /// Get the length of the SwfSlice.
     pub fn len(&self) -> usize {
         self.data().len()
+    }
+
+    /// Convert the SwfSlice into an erased `Arc` slice.
+    pub fn into_erased_yoke(self) -> YokeArc<&'static [u8]> {
+        self.raw.erase_arc_cart()
     }
 }
 
