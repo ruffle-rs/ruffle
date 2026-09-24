@@ -1,6 +1,10 @@
 import { Setup, setCurrentScriptURL } from "ruffle-core";
 import { Message } from "./messages";
 
+declare global {
+    var __rufflePublicPath__: string | undefined;
+}
+
 /**
  *
  * This script runs in the MAIN ExecutionWorld for the following reasons:
@@ -19,7 +23,7 @@ function handleMessage(message: Message) {
         case "load": {
             const publicPath = new URL(".", message.publicPath);
             if (publicPath.protocol.includes("extension")) {
-                __webpack_public_path__ = publicPath.href;
+                globalThis.__rufflePublicPath__ = publicPath.href;
             }
             if (window.RufflePlayer === undefined) {
                 window.RufflePlayer = {};
