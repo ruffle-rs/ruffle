@@ -25,6 +25,7 @@ export interface PublicAPILike {
     config?: DataLoadOptions | URLLoadOptions | object;
     sources?: Record<string, SourceAPI>;
     invoked?: boolean;
+    initialized?: boolean;
     newestName?: string | null;
 
     superseded?(): void;
@@ -48,6 +49,7 @@ export class PublicAPI implements PublicAPILike {
     config: DataLoadOptions | URLLoadOptions | object;
     sources: Record<string, SourceAPI>;
     invoked: boolean;
+    initialized: boolean;
     newestName: string | null;
 
     /**
@@ -69,6 +71,7 @@ export class PublicAPI implements PublicAPILike {
         this.sources = prev?.sources || {};
         this.config = prev?.config || {};
         this.invoked = prev?.invoked || false;
+        this.initialized = prev?.initialized || false;
         this.newestName = prev?.newestName || null;
 
         prev?.superseded?.();
@@ -143,6 +146,7 @@ export class PublicAPI implements PublicAPILike {
             if (polyfills !== false) {
                 this.sources[this.newestName]!.polyfill();
             }
+            this.initialized = true;
         }
     }
 
