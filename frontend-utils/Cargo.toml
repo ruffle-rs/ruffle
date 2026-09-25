@@ -47,7 +47,7 @@ reqwest = { workspace = true, features = [
     "cookies",
     "charset",
     "http2",
-    "macos-system-configuration",
+    "system-proxy",
 ] }
 tokio = { workspace = true, features = ["net", "macros"], optional = true }
 cpal = { workspace = true, optional = true }
