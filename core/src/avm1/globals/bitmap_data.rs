@@ -596,7 +596,7 @@ fn draw<'gc>(
         }
     }
 
-    Ok(Value::Undefined)
+    Ok(0.into())
 }
 
 fn apply_filter<'gc>(
