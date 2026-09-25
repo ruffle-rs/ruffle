@@ -66,6 +66,7 @@ impl<'gc> Graphic<'gc> {
             shape: swf_shape,
             movie,
             scaled_handle: RefCell::new(TessellationCache::new()),
+            smoothed: OnceCell::new(),
         };
 
         Graphic(Gc::new(
@@ -101,6 +102,7 @@ impl<'gc> Graphic<'gc> {
             },
             movie: context.root_swf.clone(),
             scaled_handle: RefCell::new(TessellationCache::new()),
+            smoothed: OnceCell::new(),
         };
 
         Graphic(Gc::new(
@@ -133,15 +135,13 @@ impl<'gc> Graphic<'gc> {
 
     /// Returns the best shape handle for the current scale, retessellating if necessary.
     fn get_or_retessellate_handle(
-        self,
+        shared: &GraphicShared,
         context: &mut RenderContext,
         base_handle: &ShapeHandle,
         current_scale: f32,
     ) -> ShapeHandle {
         // Since graphics are created from a shared shape, we may be able to reuse a
         // cached tessellation from another instance at a similar scale.
-        let shared = self.0.shared.get();
-
         {
             let mut cache = shared.scaled_handle.borrow_mut();
             if let Some(handle) = cache.find_near_and_touch(current_scale) {
@@ -255,7 +255,18 @@ impl<'gc> TDisplayObject<'gc> for Graphic<'gc> {
 
         if let Some(drawing) = self.0.drawing.get() {
             drawing.borrow().render(context);
-        } else if let Some(base_handle) = self.0.shared.get().render_handle.clone() {
+            return;
+        }
+
+        // `MovieClip.forceSmoothing` only applies to the shapes placed in that very clip.
+        let shared = self.0.shared.get();
+        let shared = if self.parent().is_some_and(|parent| parent.force_smoothing()) {
+            shared.smoothed(context)
+        } else {
+            &*shared
+        };
+
+        if let Some(base_handle) = shared.render_handle.clone() {
             let transform = context.transform_stack.transform();
 
             // Calculate the current scale from the transform, to determine if
@@ -265,7 +276,8 @@ impl<'gc> TDisplayObject<'gc> for Graphic<'gc> {
             let scale_y = f32::abs(matrix.b + matrix.d);
             let current_scale = ((scale_x * scale_x + scale_y * scale_y) / 2.0).sqrt();
 
-            let handle = self.get_or_retessellate_handle(context, &base_handle, current_scale);
+            let handle =
+                Self::get_or_retessellate_handle(shared, context, &base_handle, current_scale);
 
             context.commands.render_shape(handle, transform)
         }
@@ -344,4 +356,49 @@ struct GraphicShared {
     movie: Arc<SwfMovie>,
     #[collect(require_static)]
     scaled_handle: RefCell<TessellationCache>,
+    /// This shape with all of its bitmap fill styles smoothed, if that makes it any different.
+    #[collect(require_static)]
+    smoothed: OnceCell<Option<Box<GraphicShared>>>,
+}
+
+impl GraphicShared {
+    /// Returns what `MovieClip.forceSmoothing` renders in place of this shape.
+    fn smoothed(&self, context: &mut RenderContext) -> &GraphicShared {
+        let smoothed = self.smoothed.get_or_init(|| {
+            let mut shape = self.shape.clone();
+            let mut changed = false;
+            let new_styles = shape.shape.iter_mut().filter_map(|record| match record {
+                swf::ShapeRecord::StyleChange(change) => change.new_styles.as_mut(),
+                _ => None,
+            });
+            // TODO: Check what Flash Player does with bitmap line fills and morph shapes.
+            for styles in std::iter::once(&mut shape.styles).chain(new_styles) {
+                for fill_style in &mut styles.fill_styles {
+                    if let swf::FillStyle::Bitmap { is_smoothed, .. } = fill_style {
+                        changed |= !*is_smoothed;
+                        *is_smoothed = true;
+                    }
+                }
+            }
+            if !changed {
+                return None;
+            }
+
+            let library = context.library.library_for_movie(self.movie.clone())?;
+            let render_handle = context
+                .renderer
+                .register_shape((&shape).into(), &MovieLibrarySource { library });
+            Some(Box::new(GraphicShared {
+                id: self.id,
+                shape,
+                render_handle: Some(render_handle),
+                shape_bounds: self.shape_bounds,
+                edge_bounds: self.edge_bounds,
+                movie: self.movie.clone(),
+                scaled_handle: RefCell::new(TessellationCache::new()),
+                smoothed: OnceCell::new(),
+            }))
+        });
+        smoothed.as_deref().unwrap_or(self)
+    }
 }

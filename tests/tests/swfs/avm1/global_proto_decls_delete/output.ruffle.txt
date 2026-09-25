@@ -1378,6 +1378,7 @@ Testing _global.MovieClip.prototype
   unloadMovie, DONT_DELETE
   getURL, DONT_DELETE
   scale9Grid, DONT_DELETE
+  forceSmoothing, DONT_DELETE
   blendMode, DONT_DELETE
   filters, DONT_DELETE
   scrollRect, DONT_DELETE

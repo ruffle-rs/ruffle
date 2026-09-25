@@ -1887,6 +1887,7 @@ Testing _global.MovieClip.prototype
   unloadMovie, own, DONT_ENUM, type=[function]
   getURL, own, DONT_ENUM, type=[function]
   scale9Grid, own, DONT_ENUM, READ_ONLY, type=[undefined]
+  forceSmoothing, own, DONT_ENUM, READ_ONLY, type=[undefined]
   blendMode, own, DONT_ENUM, READ_ONLY, type=[undefined]
   transform, own, DONT_ENUM, READ_ONLY, type=[undefined]
   filters, own, DONT_ENUM, READ_ONLY, type=[undefined]
