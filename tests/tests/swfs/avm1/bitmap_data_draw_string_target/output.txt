@@ -1,0 +1,35 @@
+MovieClip object
+map object: result=0, pixel=-10000
+String targets
+"map": result=0, pixel=-10000
+"/map": result=0, pixel=-10000
+"_root.map": result=0, pixel=-10000
+"_root/map": result=0, pixel=-10000
+"_root:map": result=0, pixel=-10000
+"_level0.map": result=0, pixel=-10000
+"_level0/map": result=0, pixel=-10000
+"_level0:map": result=0, pixel=-10000
+":map": result=0, pixel=-10000
+"/:map": result=0, pixel=-10000
+".map": result=-2, pixel=0
+"/.map": result=-2, pixel=0
+"map/": result=0, pixel=-10000
+"/map/": result=0, pixel=-10000
+"map/..": result=0, pixel=-10000
+"map/../map": result=0, pixel=-10000
+"map/..:map": result=0, pixel=-10000
+"": result=-2, pixel=0
+"/": result=0, pixel=-10000
+"//": result=-2, pixel=0
+".": result=-2, pixel=0
+"..": result=-2, pixel=0
+"missing": result=-2, pixel=0
+"/missing": result=-2, pixel=0
+"_root.missing": result=-2, pixel=0
+"_root/missing": result=-2, pixel=0
+"_root:missing": result=-2, pixel=0
+"_level0.missing": result=-2, pixel=0
+"_level0/missing": result=-2, pixel=0
+"_level0:missing": result=-2, pixel=0
+":missing": result=-2, pixel=0
+"/:missing": result=-2, pixel=0
