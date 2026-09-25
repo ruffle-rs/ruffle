@@ -63,12 +63,17 @@ struct Avm1ButtonDataMut<'gc> {
 }
 
 impl<'gc> Avm1Button<'gc> {
-    pub fn from_swf_tag(button: &swf::Button, source_movie: &SwfSlice, mc: &Mutation<'gc>) -> Self {
+    pub fn from_swf_tag(
+        button: &swf::Button,
+        movie: Arc<SwfMovie>,
+        swf_data: &SwfSlice,
+        mc: &Mutation<'gc>,
+    ) -> Self {
         let actions = button
             .actions
             .iter()
             .map(|action| ButtonAction {
-                action_data: source_movie.to_subslice(action.action_data),
+                action_data: swf_data.to_subslice(action.action_data),
                 conditions: action.conditions,
             })
             .collect();
@@ -78,7 +83,7 @@ impl<'gc> Avm1Button<'gc> {
             Avm1ButtonData {
                 base: Default::default(),
                 cell: RefLock::new(Avm1ButtonDataMut {
-                    container: ChildContainer::new(&source_movie.movie),
+                    container: ChildContainer::new(&movie),
                     hit_area: BTreeMap::new(),
                     hit_bounds: Default::default(),
                     text_field_bindings: Vec::new(),
@@ -86,7 +91,7 @@ impl<'gc> Avm1Button<'gc> {
                 shared: Gc::new(
                     mc,
                     ButtonShared {
-                        swf: source_movie.movie.clone(),
+                        swf: movie,
                         id: button.id,
                         actions,
                         cell: RefCell::new(ButtonSharedMut {

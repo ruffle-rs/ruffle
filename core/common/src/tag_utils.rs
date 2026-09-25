@@ -370,7 +370,7 @@ impl Debug for SwfMovie {
 #[derive(Debug, Clone, Collect)]
 #[collect(no_drop)]
 pub struct SwfSlice {
-    pub movie: Arc<SwfMovie>,
+    movie: Arc<SwfMovie>,
     pub start: usize,
     pub end: usize,
 }
@@ -467,9 +467,9 @@ impl SwfSlice {
         &self.movie.data()[self.start..self.end]
     }
 
-    /// Get the version of the SWF this data comes from.
-    pub fn version(&self) -> u8 {
-        self.movie.header().version()
+    /// Access the entire data of the movie backing this SwfSlice.
+    pub fn entire_data(&self) -> &[u8] {
+        &self.movie.data()
     }
 
     /// Checks if this slice is empty
