@@ -18,7 +18,7 @@ use crate::frame_lifecycle::{
     broadcast_frame_constructed, broadcast_frame_exited, catchup_display_object_to_frame,
 };
 use crate::prelude::*;
-use crate::tag_utils::{SwfMovie, SwfSlice};
+use crate::tag_utils::SwfMovie;
 use crate::vminterface::Instantiator;
 use core::fmt;
 use either::Either;
@@ -102,7 +102,7 @@ pub struct Avm2ButtonData<'gc> {
 impl<'gc> Avm2Button<'gc> {
     pub fn from_swf_tag(
         button: &swf::Button,
-        source_movie: &SwfSlice,
+        movie: Arc<SwfMovie>,
         context: &mut UpdateContext<'gc>,
         construct_blank_states: bool,
     ) -> Self {
@@ -113,7 +113,7 @@ impl<'gc> Avm2Button<'gc> {
                 shared: Gc::new(
                     context.gc(),
                     ButtonShared {
-                        swf: source_movie.movie.clone(),
+                        swf: movie,
                         id: button.id,
                         cell: RefCell::new(ButtonSharedMut {
                             records: button.records.clone(),
@@ -154,7 +154,7 @@ impl<'gc> Avm2Button<'gc> {
             actions: Vec::new(),
         };
 
-        Self::from_swf_tag(&button_record, &movie.into(), context, false)
+        Self::from_swf_tag(&button_record, movie, context, false)
     }
 
     pub fn instantiate(self, mc: &Mutation<'gc>) -> Self {
