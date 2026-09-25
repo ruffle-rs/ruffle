@@ -17,7 +17,7 @@ pub struct SwfMovie {
     header: HeaderExt,
 
     /// Uncompressed SWF data.
-    data: Vec<u8>,
+    data: Arc<Vec<u8>>,
 
     /// The URL the SWF was downloaded from.
     url: String,
@@ -67,7 +67,7 @@ impl SwfMovie {
         let sandbox_type = SandboxType::infer(url.as_str(), &header);
         Self {
             header,
-            data: vec![],
+            data: Arc::new(Vec::new()),
             url,
             loader_url,
             parameters: Vec::new(),
@@ -97,7 +97,7 @@ impl SwfMovie {
         Self {
             header,
             compressed_len,
-            data: Vec::new(),
+            data: Arc::new(Vec::new()),
             url,
             loader_url,
             parameters: Vec::new(),
@@ -124,7 +124,7 @@ impl SwfMovie {
         Self {
             header,
             compressed_len: compressed_data.len(),
-            data: compressed_data,
+            data: Arc::new(compressed_data),
             url,
             loader_url,
             parameters: Vec::new(),
@@ -148,7 +148,7 @@ impl SwfMovie {
         let sandbox_type = SandboxType::infer(movie_url.as_str(), &header);
         Self {
             header,
-            data: vec![],
+            data: Arc::new(Vec::new()),
             url: movie_url,
             loader_url: None,
             parameters: Vec::new(),
@@ -185,7 +185,7 @@ impl SwfMovie {
 
         let mut movie = Self {
             header: swf_buf.header,
-            data: swf_buf.data,
+            data: Arc::new(swf_buf.data),
             url,
             loader_url,
             parameters: Vec::new(),
@@ -215,7 +215,7 @@ impl SwfMovie {
         let sandbox_type = SandboxType::infer(url.as_str(), &header);
         let mut movie = Self {
             header,
-            data: vec![],
+            data: Arc::new(Vec::new()),
             url,
             loader_url: None,
             parameters: Vec::new(),
@@ -370,7 +370,9 @@ impl Debug for SwfMovie {
 #[derive(Debug, Clone, Collect)]
 #[collect(no_drop)]
 pub struct SwfSlice {
-    movie: Arc<SwfMovie>,
+    entire_data: Arc<Vec<u8>>,
+    swf_version: u8,
+
     pub start: usize,
     pub end: usize,
 }
@@ -380,7 +382,8 @@ impl From<Arc<SwfMovie>> for SwfSlice {
         let end = movie.data().len();
 
         Self {
-            movie,
+            entire_data: movie.data.clone(),
+            swf_version: movie.version(),
             start: 0,
             end,
         }
@@ -399,7 +402,8 @@ impl SwfSlice {
     #[inline]
     pub fn empty(movie: Arc<SwfMovie>) -> Self {
         Self {
-            movie,
+            entire_data: movie.data.clone(),
+            swf_version: movie.version(),
             start: 0,
             end: 0,
         }
@@ -408,20 +412,26 @@ impl SwfSlice {
     /// Creates an empty SwfSlice of the same movie.
     #[inline]
     pub fn copy_empty(&self) -> Self {
-        Self::empty(self.movie.clone())
+        Self {
+            entire_data: self.entire_data.clone(),
+            swf_version: self.swf_version,
+            start: 0,
+            end: 0,
+        }
     }
 
     /// Construct a new SwfSlice from a regular slice.
     ///
-    /// This function returns None if the given slice is not a subslice of the
-    /// current slice.
+    /// This function panics if the given slice is not a subslice of the current
+    /// slice.
     pub fn to_subslice(&self, slice: &[u8]) -> Self {
-        let self_pval = self.movie.data().as_ptr() as usize;
+        let self_pval = self.entire_data.as_ptr() as usize;
         let slice_pval = slice.as_ptr() as usize;
 
         if (self_pval + self.start) <= slice_pval && slice_pval < (self_pval + self.end) {
             Self {
-                movie: self.movie.clone(),
+                entire_data: self.entire_data.clone(),
+                swf_version: self.swf_version,
                 start: slice_pval - self_pval,
                 end: (slice_pval - self_pval) + slice.len(),
             }
@@ -435,13 +445,14 @@ impl SwfSlice {
     /// This function allows subslices outside the current slice to be formed,
     /// as long as they are valid subslices of the movie itself.
     pub fn to_unbounded_subslice(&self, slice: &[u8]) -> Self {
-        let self_pval = self.movie.data().as_ptr() as usize;
-        let self_len = self.movie.data().len();
+        let self_pval = self.entire_data.as_ptr() as usize;
+        let self_len = self.entire_data.len();
         let slice_pval = slice.as_ptr() as usize;
 
         if self_pval <= slice_pval && slice_pval < (self_pval + self_len) {
             Self {
-                movie: self.movie.clone(),
+                entire_data: self.entire_data.clone(),
+                swf_version: self.swf_version,
                 start: slice_pval - self_pval,
                 end: (slice_pval - self_pval) + slice.len(),
             }
@@ -464,12 +475,12 @@ impl SwfSlice {
 
     /// Convert the SwfSlice into a standard data slice.
     pub fn data(&self) -> &[u8] {
-        &self.movie.data()[self.start..self.end]
+        &self.entire_data[self.start..self.end]
     }
 
     /// Access the entire data of the movie backing this SwfSlice.
     pub fn entire_data(&self) -> &[u8] {
-        &self.movie.data()
+        &self.entire_data
     }
 
     /// Checks if this slice is empty
@@ -481,7 +492,7 @@ impl SwfSlice {
     ///
     /// The `from` parameter is the offset to start reading the slice from.
     pub fn read_from(&self, from: u64) -> swf::read::Reader<'_> {
-        swf::read::Reader::new(&self.data()[from as usize..], self.movie.version())
+        swf::read::Reader::new(&self.data()[from as usize..], self.swf_version)
     }
 
     /// Get the length of the SwfSlice.
