@@ -915,12 +915,12 @@ fn get_gradient_colors<'gc>(
                 .map(|v| v.coerce_to_u32(activation))
                 .transpose()?
                 .unwrap_or_default();
-            let alpha = colors_array
+            let alpha = alphas_array
                 .get(i)
                 .map(|v| v.coerce_to_number(activation))
                 .transpose()?
                 .unwrap_or_default() as f32;
-            let ratio = colors_array
+            let ratio = ratios_array
                 .get(i)
                 .map(|v| v.coerce_to_u32(activation))
                 .transpose()?
