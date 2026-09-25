@@ -399,11 +399,16 @@ impl<'gc> TDisplayObject<'gc> for Bitmap<'gc> {
             return;
         }
 
-        self.0.bitmap_data.get().render(
-            self.0.smoothing.get(),
-            context,
-            self.0.pixel_snapping.get(),
-        );
+        // `MovieClip.forceSmoothing` smooths the image loaded into that clip, but not the bitmaps
+        // attached to it with `attachBitmap`.
+        let smoothing = self.0.smoothing.get()
+            || (!self.placed_by_avm1_script()
+                && self.parent().is_some_and(|parent| parent.force_smoothing()));
+
+        self.0
+            .bitmap_data
+            .get()
+            .render(smoothing, context, self.0.pixel_snapping.get());
     }
 
     fn object1(self) -> Option<crate::avm1::Object<'gc>> {
