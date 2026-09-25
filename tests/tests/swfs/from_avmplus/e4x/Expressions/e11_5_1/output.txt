@@ -63,3 +63,4 @@ Namespace('pre2','uri2'), Namespace('pre2','uri2') : PASSED!
 Namespace('pre2','uri2'), Namespace('pre2','uriC') : PASSED!
 Namespace('pre2','uri2'), Namespace('preC','uri2') : PASSED!
 Namespace('pre2','uri2'), Namespace('preC','uriC') : PASSED!
+TypeError: Error #2023: Class Test$ must inherit from Sprite to link to the root.

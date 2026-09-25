@@ -1,6 +1,6 @@
-import { PublicAPI } from "./public-api";
+import { PublicAPI } from "./public-api.js";
 
-import { internalSourceApi } from "../../internal/internal-source-api";
+import { internalSourceApi } from "../../internal/internal-source-api.js";
 
 /**
  * Options to use with this specific installation of Ruffle.

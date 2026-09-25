@@ -1,0 +1,36 @@
+// empty array
+false
+// non-object element in array
+false
+// filter missing description
+false
+// filter missing extension
+false
+// empty description
+false
+// empty extension
+false
+// string arg
+false
+// number arg
+false
+// null arg
+false
+// undefined arg (single explicit undefined)
+false
+// filter inherits description+extension from prototype
+false
+// filter description+extension via addProperty getter
+true
+// description toString throws
+caught: oops-desc
+// extension toString throws
+caught: oops-ext
+// description getter throws
+false
+// extension getter throws
+false
+// description getter returns empty string
+false
+// macType toString throws
+caught: oops-mac

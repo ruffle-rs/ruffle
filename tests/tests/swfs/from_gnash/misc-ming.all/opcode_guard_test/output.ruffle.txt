@@ -7,7 +7,6 @@ PASSED: testvar1  ==  'executed' [opcode_guard_test.c:122]
 FAILED: expected: 'executed' obtained: undefined [opcode_guard_test.c:123] 
 PASSED: testvar3  ==  'executed' [opcode_guard_test.c:124]
 mc2 EnterFrame called
-Target not found: Target="non-exist-target" Base="_level0"
 PASSED: undefined == undefined
 PASSED: / == /
 PASSED: 9 == 9

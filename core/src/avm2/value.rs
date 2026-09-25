@@ -151,23 +151,6 @@ impl From<u32> for Value<'_> {
     }
 }
 
-impl PartialEq for Value<'_> {
-    fn eq(&self, other: &Self) -> bool {
-        match (self, other) {
-            (Value::Undefined, Value::Undefined) => true,
-            (Value::Null, Value::Null) => true,
-            (Value::Bool(a), Value::Bool(b)) => a == b,
-            (Value::Number(a), Value::Number(b)) => a == b,
-            (Value::Number(a), Value::Integer(b)) => *a == *b as f64,
-            (Value::Integer(a), Value::Number(b)) => *a as f64 == *b,
-            (Value::Integer(a), Value::Integer(b)) => a == b,
-            (Value::String(a), Value::String(b)) => a == b,
-            (Value::Object(a), Value::Object(b)) => Object::ptr_eq(*a, *b),
-            _ => false,
-        }
-    }
-}
-
 fn fits_in_value_integer_i32(value: i32) -> bool {
     value < (1 << 28) && value >= -(1 << 28)
 }
@@ -461,6 +444,62 @@ pub fn string_to_f64(mut s: &WStr, swf_version: u8, strict: bool) -> Option<f64>
     Some(result)
 }
 
+fn f64_to_string<'gc>(n: f64, activation: &mut Activation<'_, 'gc>) -> AvmString<'gc> {
+    if !n.is_finite() {
+        return if n.is_nan() {
+            istr!("NaN")
+        } else if n.is_sign_positive() {
+            istr!("Infinity")
+        } else {
+            istr!("-Infinity")
+        };
+    }
+
+    if n == 0.0 {
+        istr!("0")
+    } else {
+        AvmString::new_utf8(activation.gc(), f64_to_string_finite_nonzero(n))
+    }
+}
+
+fn f64_to_string_finite_nonzero(n: f64) -> String {
+    let (sign, n) = if n.is_sign_negative() {
+        ("-", -n)
+    } else {
+        ("", n)
+    };
+
+    if n >= 0.000001 && n < 1e+21 {
+        // No exponent.
+        return format!("{sign}{n}");
+    }
+
+    // TODO Subnormal values have wrong representations.
+
+    let sci = format!("{n:e}");
+    let (mantissa, exp) = sci.split_once('e').unwrap();
+
+    let mut mantissa = mantissa.to_string();
+    let exp: i32 = exp.parse().unwrap();
+
+    if exp > 0 {
+        if [0x7fe0000000000000u64, 0x7fd0000000000000u64].contains(&n.to_bits()) {
+            // These two values look like a weird bug in Flash,
+            // values around them are fine.
+            return format!("{sign}1e+308");
+        }
+
+        // Flash shows large numbers with smaller precision for some reason.
+        mantissa.truncate(16);
+    }
+
+    format!(
+        "{sign}{mantissa}e{}{}",
+        if exp < 0 { "-" } else { "+" },
+        exp.abs()
+    )
+}
+
 /// Retrieve a default value as an AVM2 `Value`.
 pub fn abc_default_value<'gc>(
     translation_unit: TranslationUnit<'gc>,
@@ -490,6 +529,17 @@ pub fn abc_default_value<'gc>(
             let ns = translation_unit.pool_namespace(activation, ns)?;
             Ok(NamespaceObject::from_namespace(activation, ns).into())
         }
+    }
+}
+
+/// Given an `f64`, return an `i32` value that losslessly represents it, or
+/// `None` if there is no such `i32` value.
+fn try_promote_f64(value: f64) -> Option<i32> {
+    let i = value as i32;
+    if value.to_bits() == (i as f64).to_bits() {
+        Some(i)
+    } else {
+        None
     }
 }
 
@@ -524,8 +574,7 @@ impl<'gc> Value<'gc> {
     pub fn normalize(self) -> Self {
         match self {
             Value::Number(n) => {
-                let i = n as i32;
-                if n.to_bits() == (i as f64).to_bits() && fits_in_value_integer_i32(i) {
+                if let Some(i) = try_promote_f64(n).filter(|i| fits_in_value_integer_i32(*i)) {
                     Value::Integer(i)
                 } else {
                     self
@@ -538,6 +587,16 @@ impl<'gc> Value<'gc> {
                     self
                 }
             }
+            _ => self,
+        }
+    }
+
+    /// If this `Value` is a `Value::Number` that can be losslessly represented
+    /// as a `Value::Integer`, return that `Value::Integer`. Otherwise return
+    /// the original value.
+    pub fn try_promote_number(self) -> Self {
+        match self {
+            Value::Number(n) if let Some(i) = try_promote_f64(n) => Value::Integer(i),
             _ => self,
         }
     }
@@ -737,8 +796,9 @@ impl<'gc> Value<'gc> {
     /// ToUint32 algorithm which appears to match AVM2.
     ///
     /// This function can be very hot, so we inline a fast-path for
-    /// `Value::Number` and `Value::Integer`, and fall back to a non-inlined
-    /// slow-path handling the rest of the cases if necessary.
+    /// `Value::Integer` and fall back to a non-inlined slow path handling the
+    /// rest of the cases if necessary.
+    #[inline]
     pub fn coerce_to_u32(&self, activation: &mut Activation<'_, 'gc>) -> Result<u32, Error<'gc>> {
         // Full coerce-to-u32 implementation. This is the slow-path.
         #[inline(never)]
@@ -747,7 +807,8 @@ impl<'gc> Value<'gc> {
             activation: &mut Activation<'_, 'gc>,
         ) -> Result<u32, Error<'gc>> {
             Ok(match value {
-                Value::Integer(_) | Value::Number(_) => unreachable!("Handled by fast path"),
+                Value::Integer(_) => unreachable!("Handled by fast path"),
+                Value::Number(n) => f64_to_wrapping_u32(*n),
                 Value::Bool(b) => *b as u32,
                 Value::Undefined | Value::Null => 0,
                 Value::String(_) | Value::Object(_) => {
@@ -757,7 +818,6 @@ impl<'gc> Value<'gc> {
         }
 
         match self {
-            Value::Number(n) => Ok(f64_to_wrapping_u32(*n)),
             Value::Integer(i) => Ok(*i as u32),
             _ => {
                 // Fall back to slow path
@@ -775,8 +835,9 @@ impl<'gc> Value<'gc> {
     /// ToInt32 algorithm which appears to match AVM2.
     ///
     /// This function can be very hot, so we inline a fast-path for
-    /// `Value::Number` and `Value::Integer`, and fall back to a non-inlined
-    /// slow-path handling the rest of the cases if necessary.
+    /// `Value::Integer` and fall back to a non-inlined slow path handling the
+    /// rest of the cases if necessary.
+    #[inline]
     pub fn coerce_to_i32(&self, activation: &mut Activation<'_, 'gc>) -> Result<i32, Error<'gc>> {
         // Full coerce-to-i32 implementation. This is the slow-path.
         #[inline(never)]
@@ -785,7 +846,8 @@ impl<'gc> Value<'gc> {
             activation: &mut Activation<'_, 'gc>,
         ) -> Result<i32, Error<'gc>> {
             Ok(match value {
-                Value::Integer(_) | Value::Number(_) => unreachable!("Handled by fast path"),
+                Value::Integer(_) => unreachable!("Handled by fast path"),
+                Value::Number(n) => f64_to_wrapping_i32(*n),
                 Value::Bool(b) => *b as i32,
                 Value::Undefined | Value::Null => 0,
                 Value::String(_) | Value::Object(_) => {
@@ -795,7 +857,6 @@ impl<'gc> Value<'gc> {
         }
 
         match self {
-            Value::Number(n) => Ok(f64_to_wrapping_i32(*n)),
             Value::Integer(i) => Ok(*i),
             _ => {
                 // Fall back to slow path
@@ -803,20 +864,6 @@ impl<'gc> Value<'gc> {
             }
         }
     }
-
-    /// Minimum number of digits after which numbers are formatted as
-    /// exponential strings.
-    const MIN_DIGITS: f64 = -6.0;
-
-    /// Maximum number of digits before numbers are formatted as exponential
-    /// strings.
-    const MAX_DIGITS: f64 = 21.0;
-
-    /// Maximum number of significant digits renderable within coerced numbers.
-    ///
-    /// Any precision beyond this point will be discarded and replaced with
-    /// zeroes (for whole parts) or not rendered (for decimal parts).
-    const MAX_PRECISION: f64 = 15.0;
 
     /// Coerce the value to a String.
     ///
@@ -842,35 +889,7 @@ impl<'gc> Value<'gc> {
             Value::Null => istr!("null"),
             Value::Bool(true) => istr!("true"),
             Value::Bool(false) => istr!("false"),
-            Value::Number(n) if n.is_nan() => istr!("NaN"),
-            Value::Number(n) if *n == 0.0 => istr!("0"),
-            Value::Number(n) if *n < 0.0 => AvmString::new_utf8(
-                activation.gc(),
-                format!("-{}", Value::Number(-n).coerce_to_string(activation)?),
-            ),
-            Value::Number(n) if n.is_infinite() => istr!("Infinity"),
-            Value::Number(n) => {
-                let digits = n.log10().floor();
-
-                // TODO: This needs to limit precision in the resulting decimal
-                // output, not in binary.
-                let precision = (n * 10.0_f64.powf(Self::MAX_PRECISION - digits)).floor()
-                    / 10.0_f64.powf(Self::MAX_PRECISION - digits);
-
-                if digits < Self::MIN_DIGITS || digits >= Self::MAX_DIGITS {
-                    AvmString::new_utf8(
-                        activation.gc(),
-                        format!(
-                            "{}e{}{}",
-                            precision / 10.0_f64.powf(digits),
-                            if digits < 0.0 { "-" } else { "+" },
-                            digits.abs()
-                        ),
-                    )
-                } else {
-                    AvmString::new_utf8(activation.gc(), n.to_string())
-                }
-            }
+            Value::Number(n) => f64_to_string(*n, activation),
             Value::Integer(i) => {
                 if *i >= 0 && *i < 10 {
                     activation.strings().ascii_char(b'0' + *i as u8)
@@ -1594,7 +1613,6 @@ impl<'gc> Value<'gc> {
 
     /// Determine if this value is a number representable as a u32 without loss
     /// of precision.
-    #[expect(clippy::float_cmp)]
     pub fn is_u32(&self) -> bool {
         match self {
             Value::Number(n) => *n == (*n as u32 as f64),
@@ -1605,7 +1623,6 @@ impl<'gc> Value<'gc> {
 
     /// Determine if this value is a number representable as an i32 without
     /// loss of precision.
-    #[expect(clippy::float_cmp)]
     pub fn is_i32(&self) -> bool {
         match self {
             Value::Number(n) => *n == (*n as i32 as f64),
@@ -1758,16 +1775,28 @@ impl<'gc> Value<'gc> {
 
     /// Implements the strict-equality `===` check for AVM2.
     pub fn strict_eq(&self, other: &Value<'gc>) -> bool {
-        if self == other {
-            true
-        } else {
-            // TODO - this should apply to (Array/Vector).indexOf, and possibility more places as well
-            if let Some(xml1) = self.as_object().and_then(|obj| obj.as_xml_object())
-                && let Some(xml2) = other.as_object().and_then(|obj| obj.as_xml_object())
-            {
-                return E4XNode::ptr_eq(xml1.node(), xml2.node());
+        match (self, other) {
+            (Value::Undefined, Value::Undefined) => true,
+            (Value::Null, Value::Null) => true,
+            (Value::Bool(a), Value::Bool(b)) => a == b,
+            (Value::Number(a), Value::Number(b)) => a == b,
+            (Value::Number(a), Value::Integer(b)) => *a == *b as f64,
+            (Value::Integer(a), Value::Number(b)) => *a as f64 == *b,
+            (Value::Integer(a), Value::Integer(b)) => a == b,
+            (Value::String(a), Value::String(b)) => a == b,
+            (Value::Object(a), Value::Object(b)) => {
+                let self_xml = self.as_object().and_then(|obj| obj.as_xml_object());
+                let other_xml = other.as_object().and_then(|obj| obj.as_xml_object());
+
+                // Two `XML` objects are considered equal if they point to the
+                // same node.
+                if let (Some(self_xml), Some(other_xml)) = (self_xml, other_xml) {
+                    E4XNode::ptr_eq(self_xml.node(), other_xml.node())
+                } else {
+                    Object::ptr_eq(*a, *b)
+                }
             }
-            false
+            _ => false,
         }
     }
 
@@ -1878,30 +1907,62 @@ impl<'gc> Value<'gc> {
     /// This abstract relational comparison algorithm is intended to match
     /// ECMA-262 3rd edition, section 11.8.5. It returns `true`, `false`, *or*
     /// `undefined` (to signal NaN), the latter of which we represent as `None`.
+    ///
+    /// This function can be very hot, so we try to inline this fast-path and
+    /// fall back to a non-inlined slow-path if necessary.
     pub fn abstract_lt(
         &self,
         other: &Value<'gc>,
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<Option<bool>, Error<'gc>> {
+        // Full abstract-lt implementation. This is the slow-path.
+        #[inline(never)]
+        fn abstract_lt_slow<'gc>(
+            self_value: &Value<'gc>,
+            other_value: &Value<'gc>,
+            activation: &mut Activation<'_, 'gc>,
+        ) -> Result<Option<bool>, Error<'gc>> {
+            let prim_self = self_value.coerce_to_primitive(Some(Hint::Number), activation)?;
+            let prim_other = other_value.coerce_to_primitive(Some(Hint::Number), activation)?;
+
+            if let (Value::String(s), Value::String(o)) = (&prim_self, &prim_other) {
+                return Ok(Some(s.as_wstr() < o.as_wstr()));
+            }
+
+            let num_self = prim_self.coerce_to_number(activation)?;
+            let num_other = prim_other.coerce_to_number(activation)?;
+
+            if num_self.is_nan() || num_other.is_nan() {
+                return Ok(None);
+            }
+
+            Ok(Some(num_self < num_other))
+        }
+
         match (self, other) {
             (Value::Integer(a), Value::Integer(b)) => Ok(Some(a < b)),
-            _ => {
-                let prim_self = self.coerce_to_primitive(Some(Hint::Number), activation)?;
-                let prim_other = other.coerce_to_primitive(Some(Hint::Number), activation)?;
-
-                if let (Value::String(s), Value::String(o)) = (&prim_self, &prim_other) {
-                    return Ok(Some(s.as_wstr() < o.as_wstr()));
-                }
-
-                let num_self = prim_self.coerce_to_number(activation)?;
-                let num_other = prim_other.coerce_to_number(activation)?;
-
-                if num_self.is_nan() || num_other.is_nan() {
+            (Value::Integer(a), Value::Number(b)) => {
+                if b.is_nan() {
                     return Ok(None);
                 }
 
-                Ok(Some(num_self < num_other))
+                Ok(Some((*a as f64) < *b))
             }
+            (Value::Number(a), Value::Integer(b)) => {
+                if a.is_nan() {
+                    return Ok(None);
+                }
+
+                Ok(Some(*a < *b as f64))
+            }
+            (Value::Number(a), Value::Number(b)) => {
+                if a.is_nan() || b.is_nan() {
+                    return Ok(None);
+                }
+
+                Ok(Some(a < b))
+            }
+            _ => abstract_lt_slow(self, other, activation),
         }
     }
 }

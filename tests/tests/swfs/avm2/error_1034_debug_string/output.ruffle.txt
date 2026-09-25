@@ -1,0 +1,30 @@
+Date || TypeError: Error #1034: Type Coercion failed: cannot convert Date@ADDRESS to flash.geom.Point.
+invalid Date || TypeError: Error #1034: Type Coercion failed: cannot convert Date@ADDRESS to flash.geom.Point.
+Date class || TypeError: Error #1034: Type Coercion failed: cannot convert Date$@ADDRESS to flash.geom.Point.
+Point class || TypeError: Error #1034: Type Coercion failed: cannot convert flash.geom::Point$@ADDRESS to flash.geom.Point.
+int class || TypeError: Error #1034: Type Coercion failed: cannot convert int$@ADDRESS to flash.geom.Point.
+Object class || TypeError: Error #1034: Type Coercion failed: cannot convert Object$@ADDRESS to flash.geom.Point.
+interface || TypeError: Error #1034: Type Coercion failed: cannot convert flash.events::IEventDispatcher$@ADDRESS to flash.geom.Point.
+plain Object || TypeError: Error #1034: Type Coercion failed: cannot convert Object@ADDRESS to flash.geom.Point.
+empty Array || TypeError: Error #1034: Type Coercion failed: cannot convert Array@ADDRESS to flash.geom.Point.
+Array w/ elems || TypeError: Error #1034: Type Coercion failed: cannot convert Array@ADDRESS to flash.geom.Point.
+Array subclass || TypeError: Error #1034: Type Coercion failed: cannot convert Test.as$1::MyArray@ADDRESS to flash.geom.Point.
+Array class || TypeError: Error #1034: Type Coercion failed: cannot convert Array$@ADDRESS to flash.geom.Point.
+custom toString || TypeError: Error #1034: Type Coercion failed: cannot convert Test.as$1::HasToString@ADDRESS to flash.geom.Point.
+function literal || TypeError: Error #1034: Type Coercion failed: cannot convert Function@ADDRESS to flash.geom.Point.
+new Function() || TypeError: Error #1034: Type Coercion failed: cannot convert Function@ADDRESS to flash.geom.Point.
+Function class || TypeError: Error #1034: Type Coercion failed: cannot convert Function$@ADDRESS to flash.geom.Point.
+instance method || TypeError: Error #1034: Type Coercion failed: cannot convert Function@ADDRESS to flash.geom.Point.
+static method || TypeError: Error #1034: Type Coercion failed: cannot convert Function@ADDRESS to flash.geom.Point.
+Namespace || TypeError: Error #1034: Type Coercion failed: cannot convert Namespace@ADDRESS to flash.geom.Point.
+empty Namespace || TypeError: Error #1034: Type Coercion failed: cannot convert Namespace@ADDRESS to flash.geom.Point.
+QName || TypeError: Error #1034: Type Coercion failed: cannot convert QName@ADDRESS to flash.geom.Point.
+XML || TypeError: Error #1034: Type Coercion failed: cannot convert XML@ADDRESS to flash.geom.Point.
+XMLList || TypeError: Error #1034: Type Coercion failed: cannot convert XMLList@ADDRESS to flash.geom.Point.
+RegExp || TypeError: Error #1034: Type Coercion failed: cannot convert RegExp@ADDRESS to flash.geom.Point.
+Error object || TypeError: Error #1034: Type Coercion failed: cannot convert TypeError@ADDRESS to flash.geom.Point.
+Boolean object || TypeError: Error #1034: Type Coercion failed: cannot convert true to flash.geom.Point.
+String object || TypeError: Error #1034: Type Coercion failed: cannot convert "hi" to flash.geom.Point.
+Dictionary || TypeError: Error #1034: Type Coercion failed: cannot convert flash.utils::Dictionary@ADDRESS to flash.geom.Point.
+ByteArray || TypeError: Error #1034: Type Coercion failed: cannot convert flash.utils::ByteArray@ADDRESS to flash.geom.Point.
+Sprite (this) || TypeError: Error #1034: Type Coercion failed: cannot convert Test@ADDRESS to flash.geom.Point.

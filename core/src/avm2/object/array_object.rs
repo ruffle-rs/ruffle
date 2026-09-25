@@ -107,14 +107,8 @@ impl<'gc> ArrayObject<'gc> {
     }
 
     pub fn as_array_index(local_name: &WStr) -> Option<usize> {
-        // TODO: this should use a custom implementation instead of `parse()`,
-        // see `script_object::maybe_int_property`
-
-        local_name
-            .parse::<u32>()
-            .ok()
-            .filter(|i| *i != u32::MAX)
-            .map(|i| i as usize)
+        // Allow all `u32`s except u32::MAX.
+        parse_u32_index(local_name, u32::MAX - 1).map(|i| i as usize)
     }
 
     pub fn set_element(self, mc: &Mutation<'gc>, index: usize, value: Value<'gc>) {
@@ -273,5 +267,38 @@ impl<'gc> TObject<'gc> for ArrayObject<'gc> {
             .map(|index| index < self.0.array.borrow().length())
             .unwrap_or(false)
             || self.base().property_is_enumerable(name)
+    }
+}
+
+/// Parse a string as a number, using the same logic avmplus uses for parsing
+/// array indices.
+///
+/// This method forbids numbers with leading zeroes and sign. See
+/// String::getIntAtom` and `String::parseIndex` in avmplus.
+pub fn parse_u32_index(name: &WStr, highest_permitted: u32) -> Option<u32> {
+    if name.is_empty() {
+        return None;
+    }
+
+    // Leading zeroes aren't allowed
+    if name.at(0) == (b'0' as u16) && name.len() > 1 {
+        return None;
+    }
+
+    let mut result: u32 = 0;
+
+    for unit in name.iter() {
+        let unit = u8::try_from(unit)
+            .ok()
+            .filter(|u| *u >= b'0' && *u <= b'9')?;
+
+        result = result.checked_mul(10)?;
+        result = result.checked_add((unit - b'0') as u32)?;
+    }
+
+    if result > highest_permitted {
+        None
+    } else {
+        Some(result)
     }
 }

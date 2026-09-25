@@ -35,6 +35,7 @@ impl<'gc> Watcher<'gc> {
     fn call(
         &self,
         activation: &mut Activation<'_, 'gc>,
+        property_id: u32,
         name: AvmString<'gc>,
         old_value: Value<'gc>,
         new_value: Value<'gc>,
@@ -48,7 +49,7 @@ impl<'gc> Watcher<'gc> {
             this.into(),
             0,
             &args,
-            ExecutionReason::Special,
+            ExecutionReason::PropertyCall { property_id },
             self.callback,
         )
     }
@@ -166,16 +167,16 @@ impl<'gc> Object<'gc> {
     ///
     /// Doesn't look up the prototype chain and ignores virtual properties, thus cannot cause
     /// any side-effects.
-    pub(super) fn get_data(
+    pub fn get_data(
         self,
         name: AvmString<'gc>,
         activation: &mut Activation<'_, 'gc>,
-    ) -> Value<'gc> {
+    ) -> Option<Value<'gc>> {
         self.0
             .borrow()
             .properties
             .get(name, activation.is_case_sensitive())
-            .map_or(Value::Undefined, |property| property.data())
+            .map(|property| property.data())
     }
 
     /// Sets a data property on this object, ignoring attributes.
@@ -262,7 +263,7 @@ impl<'gc> Object<'gc> {
                 if name == istr!("length") {
                     let new_length = value.coerce_to_i32(activation)?;
                     let old_length = self.get_data(istr!("length"), activation);
-                    if let Value::Number(old_length) = old_length {
+                    if let Some(Value::Number(old_length)) = old_length {
                         for i in new_length.max(0)..f64_to_wrapping_i32(old_length) {
                             self.delete_element(activation, i);
                         }
@@ -292,12 +293,12 @@ impl<'gc> Object<'gc> {
             }
         }
 
-        let setter = self
+        let (property_id, setter) = self
             .0
             .borrow()
             .properties
             .get(name, activation.is_case_sensitive())
-            .and_then(|v| v.setter());
+            .map_or((0, None), |v| (v.id(), v.setter()));
 
         if let Some(setter) = setter
             && let Some(exec) = setter.as_function()
@@ -307,7 +308,7 @@ impl<'gc> Object<'gc> {
                 this.into(),
                 1,
                 &[value],
-                ExecutionReason::Special,
+                ExecutionReason::PropertyCall { property_id },
                 setter,
             )
         {
@@ -380,42 +381,85 @@ impl<'gc> Object<'gc> {
         }
     }
 
-    /// Retrieve a getter defined on this object.
-    pub(super) fn getter(
+    /// Call a property getter defined on this object.
+    ///
+    /// Returns the value returned by the getter if the getter was present and
+    /// called.
+    pub(super) fn call_getter(
         self,
         name: AvmString<'gc>,
+        this: Value<'gc>,
         activation: &mut Activation<'_, 'gc>,
-    ) -> Option<Object<'gc>> {
+    ) -> Result<Option<Value<'gc>>, Error<'gc>> {
         // TODO(moulins): is this special case necessary?
         if let Some(zuper) = self.as_super_object() {
-            return zuper.this().getter(name, activation);
+            return zuper.this().call_getter(name, this, activation);
         }
 
-        self.0
+        let (property_id, getter) = self
+            .0
             .borrow()
             .properties
             .get(name, activation.is_case_sensitive())
             .filter(|property| property.allow_swf_version(activation.swf_version()))
-            .and_then(|property| property.getter())
+            .map_or((0, None), |v| (v.id(), v.getter()));
+
+        if let Some(getter) = getter
+            && let Some(exec) = getter.as_function()
+        {
+            Ok(Some(exec.exec(
+                ExecutionName::Static("[Getter]"),
+                activation,
+                this,
+                1,
+                &[],
+                ExecutionReason::PropertyCall { property_id },
+                getter,
+            )?))
+        } else {
+            Ok(None)
+        }
     }
 
-    /// Retrieve a setter defined on this object.
-    pub(super) fn setter(
+    /// Call a property setter defined on this object.
+    ///
+    /// Returns the value returned by the setter if the setter was present and
+    /// called.
+    pub(super) fn call_setter(
         self,
         name: AvmString<'gc>,
+        this: Value<'gc>,
+        value: Value<'gc>,
         activation: &mut Activation<'_, 'gc>,
-    ) -> Option<Object<'gc>> {
+    ) -> Result<Option<Value<'gc>>, Error<'gc>> {
         // TODO(moulins): is this special case necessary?
         if let Some(zuper) = self.as_super_object() {
-            return zuper.this().setter(name, activation);
+            return zuper.this().call_setter(name, this, value, activation);
         }
 
-        self.0
+        let (property_id, setter) = self
+            .0
             .borrow()
             .properties
             .get(name, activation.is_case_sensitive())
             .filter(|property| property.allow_swf_version(activation.swf_version()))
-            .and_then(|property| property.setter())
+            .map_or((0, None), |v| (v.id(), v.setter()));
+
+        if let Some(setter) = setter
+            && let Some(exec) = setter.as_function()
+        {
+            Ok(Some(exec.exec(
+                ExecutionName::Static("[Setter]"),
+                activation,
+                this,
+                1,
+                &[value],
+                ExecutionReason::PropertyCall { property_id },
+                setter,
+            )?))
+        } else {
+            Ok(None)
+        }
     }
 
     /// Delete a named property from the object.
@@ -518,21 +562,41 @@ impl<'gc> Object<'gc> {
         }
 
         let mut result = Ok(());
+
+        // We can watch built-in properties (like tabEnabled), so property_id
+        // might be 0 in that case.
+        // TODO How should we handle this situation? Add some tests.
+        let property_id = self
+            .0
+            .borrow()
+            .properties
+            .get(name, activation.is_case_sensitive())
+            .map(|p| p.id())
+            .unwrap_or_default();
+
         let watcher = self
             .0
             .borrow()
             .watchers
             .get(name, activation.is_case_sensitive())
             .cloned();
+
         if let Some(watcher) = watcher {
             let old_value = self.get_stored(name, activation)?;
-            match watcher.call(activation, name, old_value, *value, this) {
+            match watcher.call(activation, property_id, name, old_value, *value, this) {
                 Ok(v) => *value = v,
-                Err(Error::ThrownValue(e)) => {
+                Err(e @ Error::ThrownValue(_)) => {
+                    // The watcher sets undefined when throwing.
                     *value = Value::Undefined;
-                    result = Err(Error::ThrownValue(e));
+                    result = Err(e);
                 }
-                Err(_) => *value = Value::Undefined,
+                Err(Error::PropertyRecursionLimit) => {
+                    // Just ignore the call on property recursion limit.
+                }
+                Err(e) => {
+                    // Propagate any other errors (e.g. stack overflow).
+                    result = Err(e);
+                }
             };
         }
 
@@ -663,11 +727,12 @@ impl<'gc> Object<'gc> {
         }
 
         self.get_data(istr!("__proto__"), activation)
+            .unwrap_or(Value::Undefined)
     }
 
     /// Retrieve the `prototype` of this object, as if it was a function.
     /// (don't confuse this with `self.proto()`!)
-    pub fn prototype(self, activation: &mut Activation<'_, 'gc>) -> Value<'gc> {
+    pub fn prototype(self, activation: &mut Activation<'_, 'gc>) -> Option<Value<'gc>> {
         // Ignore getters, __proto__, and SWF version attributes.
         self.get_data(istr!("prototype"), activation)
     }
@@ -719,7 +784,7 @@ impl<'gc> Object<'gc> {
 
     /// Checks if the object has a given named property on itself that is
     /// virtual.
-    pub(super) fn has_own_virtual(
+    pub(crate) fn has_own_virtual(
         self,
         activation: &mut Activation<'_, 'gc>,
         name: AvmString<'gc>,
@@ -894,6 +959,7 @@ impl<'gc> Object<'gc> {
         }
 
         self.get_data(istr!("length"), activation)
+            .unwrap_or(Value::Undefined)
             .coerce_to_i32(activation)
     }
 
@@ -910,7 +976,7 @@ impl<'gc> Object<'gc> {
 
         if let NativeObject::Array(_) = self.native() {
             let old_length = self.get_data(istr!("length"), activation);
-            if let Value::Number(old_length) = old_length {
+            if let Some(Value::Number(old_length)) = old_length {
                 for i in new_length.max(0)..f64_to_wrapping_i32(old_length) {
                     self.delete_element(activation, i);
                 }
@@ -940,6 +1006,7 @@ impl<'gc> Object<'gc> {
 
         let index_str = AvmString::new_utf8(activation.gc(), index.to_string());
         self.get_data(index_str, activation)
+            .unwrap_or(Value::Undefined)
     }
 
     /// Sets a property of this object, as if it were an array.

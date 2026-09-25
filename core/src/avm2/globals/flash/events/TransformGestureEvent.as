@@ -1,4 +1,5 @@
 package flash.events {
+    [API("667")]
     public class TransformGestureEvent extends GestureEvent {
         public static const GESTURE_PAN:String = "gesturePan";
         public static const GESTURE_ROTATE:String = "gestureRotate";

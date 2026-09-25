@@ -38,11 +38,23 @@
     "settings_player_version": {
         "message": "Versión de Flash Player a emular (rango 1-32)"
     },
+    "settings_background_execution_mode": {
+        "message": "Ejecución en segundo plano"
+    },
+    "settings_background_execution_mode_none": {
+        "message": "Pausar"
+    },
+    "settings_background_execution_mode_main_thread": {
+        "message": "Correr en el hilo principal"
+    },
     "settings_preferred_renderer": {
         "message": "Renderizador preferido"
     },
     "settings_preferred_renderer_auto": {
         "message": "Automático"
+    },
+    "settings_device_font_renderer": {
+        "message": "Renderizado de fuente del dispositivo"
     },
     "device_font_renderer_embedded": {
         "message": "Embebido"

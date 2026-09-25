@@ -118,6 +118,9 @@ version = 32
 # in behavior between Ruffle and Flash.
 with_default_font = false
 
+# Which backend should be used for device font rendering.
+device_font_renderer = "freetype"
+
 # A list of image comparisons to perform during the test. This block is repeatable infinitely, as long as each name is unique.
 # The comparison part of a test is optional and only runs when `imgtests` feature is enabled
 # This requires a render to be setup for this test
@@ -180,6 +183,10 @@ max_amplitude = 0.5
 # The lowest acceptable maximum amplitude.
 # The max is calculated per frame.
 min_max_amplitude = 0.4
+
+# If true, this audio assertion is known to fail and the test runner will expect it to fail.
+# When the assertion passes in the future, it'll fail and alert that it now passes.
+known_failure = false
 
 # A single device font provided for this test.
 [fonts.FONT_NAME] # FONT_NAME is a name of this particular font
@@ -299,8 +306,19 @@ use_network = false
 optimize = true
 
 # Whether to include debug info in the bytecode.
-debug = true
+debug = false
 
+# SharedObject assertions to perform, with the exact SharedObject path (e.g. localhost/test.swf/localName). This block is repeatable.
+[shared_objects."name used in SWF"]
+
+# Extension-less path to the expected sol file.
+# Usually a `.sol` file matching what Flash Player would generate.
+# The test runner will compare against expected + ".sol".
+expected = "foo"
+
+# If true, this shared object is known to fail.
+# The test runner will compare against expected + ".ruffle.sol" instead.
+known_failure = false
 ```
 
 ## Multiple tests

@@ -16,3 +16,4 @@ Namespace(nsObj).toString() PASSED!
 Namespace('pfx','ns') == new Namespace('pfx', 'ns') PASSED!
 typeof Namespace('pfx','http://www.w3.org/TR/html4/') PASSED!
 Namespace(nsObj).toString() PASSED!
+TypeError: Error #2023: Class Test$ must inherit from Sprite to link to the root.

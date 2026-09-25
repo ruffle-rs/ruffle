@@ -21,3 +21,4 @@ x1 = new XMLList(xDoc), x1.employee.name1[1].parent() == x1.employee[0] PASSED!
 x1 = new XMLList(xDoc), x1.employee[1].attribute('id').parent() === x1.employee[1] PASSED!
 x1 = new XMLList(xDoc), x1.children()[0].parent() == x1[0] PASSED!
 x1 = new XMLList(xDoc), x1.children()[1].parent() == x1[0] PASSED!
+TypeError: Error #2023: Class Test$ must inherit from Sprite to link to the root.

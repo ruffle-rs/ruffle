@@ -19,6 +19,7 @@ on:
 
 env:
   RELEASE_SCRIPT: ./.github/scripts/release.py
+  LINUX_DEPENDENCIES: libasound2-dev libudev-dev libfontconfig-dev libfreetype6-dev libssl-dev
 
 jobs:
   create-release:
@@ -30,6 +31,7 @@ jobs:
       upload_url: ${{ steps.create_release.outputs.upload_url }}
       package_prefix: ${{ steps.create_release.outputs.package_prefix }}
       tag_name: ${{ steps.commit.outputs.tag_name }}
+      version: ${{ steps.version.outputs.version }}
       version4: ${{ steps.version.outputs.version4 }}
       release_channel: ${{ steps.configure.outputs.release_channel }}
 
@@ -37,7 +39,7 @@ jobs:
     if: github.repository == 'ruffle-rs/ruffle' || github.event_name == 'repository_dispatch' || github.event_name == 'workflow_dispatch'
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           token: ${{ secrets.RUFFLE_BUILD_TOKEN }}
 
@@ -126,19 +128,24 @@ jobs:
             os: ubuntu-24.04
             DESKTOP_FEATURES: jpegxr,fontconfig-dlopen
 
+          - build_name: linux-i686
+            os: ubuntu-24.04
+            target: i686-unknown-linux-gnu
+            DESKTOP_FEATURES: jpegxr,fontconfig-dlopen
+
           - build_name: linux-aarch64
             os: ubuntu-24.04-arm
             DESKTOP_FEATURES: jpegxr,fontconfig-dlopen
 
           # Mac does two Rust builds to make a universal binary
           - build_name: macos-x86_64
-            os: macos-15
+            os: macos-26
             target: x86_64-apple-darwin
             MACOSX_DEPLOYMENT_TARGET: 10.7
             DESKTOP_FEATURES: sandbox,jpegxr,fontconfig-dlopen
 
           - build_name: macos-aarch64
-            os: macos-15
+            os: macos-26
             target: aarch64-apple-darwin
             MACOSX_DEPLOYMENT_TARGET: 11.0
             DESKTOP_FEATURES: sandbox,jpegxr,fontconfig-dlopen
@@ -159,12 +166,12 @@ jobs:
 
     env:
       PACKAGE_FILE: ${{ needs.create-release.outputs.package_prefix }}-${{ matrix.build_name }}.${{ startsWith(matrix.build_name, 'win') && 'zip' || 'tar.gz' }}
-      CARGO_BUILD_DIR: target/${{ matrix.target }}/release
+      CARGO_BUILD_DIR: target/${{ matrix.target }}/dist
 
     runs-on: ${{ matrix.os }}
     steps:
       - name: Clone Ruffle repo
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           ref: ${{ needs.create-release.outputs.tag_name }}
 
@@ -174,11 +181,20 @@ jobs:
           toolchain: stable
           targets: ${{ matrix.target }}
 
-      - name: Install Linux dependencies
-        if: runner.os == 'Linux'
+      - name: Install Linux x64 dependencies
+        if: runner.os == 'Linux' && matrix.target == ''
         run: |
           sudo apt-get update
-          sudo apt install -y libasound2-dev libudev-dev
+          sudo apt install -y ${{ env.LINUX_DEPENDENCIES }}
+
+      - name: Install Linux i386 dependencies
+        if: matrix.target == 'i686-unknown-linux-gnu'
+        run: |
+          sudo dpkg --add-architecture i386
+          sudo apt-get update
+          sudo apt install -y gcc-multilib $(for p in ${{ env.LINUX_DEPENDENCIES }}; do echo "$p:i386"; done)
+          echo "PKG_CONFIG_ALLOW_CROSS=1" | tee -a $GITHUB_ENV
+          echo "PKG_CONFIG_LIBDIR=/usr/lib/i386-linux-gnu/pkgconfig" | tee -a $GITHUB_ENV
 
       - name: Install WiX
         if: runner.os == 'Windows'
@@ -188,7 +204,7 @@ jobs:
           wix extension add -g WixToolset.Util.wixext/5.0.2
 
       - name: Cargo build
-        run: cargo build --locked --package ruffle_desktop --release ${{matrix.DESKTOP_FEATURES && '--features' }} ${{matrix.DESKTOP_FEATURES}} ${{ matrix.target && '--target' }} ${{ matrix.target }}
+        run: cargo build --locked --package ruffle_desktop --profile dist ${{matrix.DESKTOP_FEATURES && '--features' }} ${{matrix.DESKTOP_FEATURES}} ${{ matrix.target && '--target' }} ${{ matrix.target }}
         env:
           CFG_RELEASE_CHANNEL: ${{ needs.create-release.outputs.release_channel }}
           RUSTFLAGS: ${{ matrix.RUSTFLAGS }}
@@ -206,7 +222,7 @@ jobs:
           wix build ruffle.wxs -ext WixToolset.UI.wixext -ext WixToolset.Util.wixext -arch ${{ matrix.MSI_ARCH }} -o ../../../../package/setup.msi -pdbtype none
         env:
           RUFFLE_VERSION: ${{ needs.create-release.outputs.version4 }}
-          CARGO_BUILD_DIR: ../../../../target/${{ matrix.target }}/release
+          CARGO_BUILD_DIR: ../../../../target/${{ matrix.target }}/dist
         if: runner.os == 'Windows'
 
       - name: Package Windows
@@ -238,7 +254,7 @@ jobs:
 
       - name: Build Safari Web Extension stub binary
         if: runner.os == 'macOS'
-        run: cargo build --locked --package ruffle_web_safari --release ${{ matrix.target && '--target' }} ${{ matrix.target }}
+        run: cargo build --locked --package ruffle_web_safari --profile dist ${{ matrix.target && '--target' }} ${{ matrix.target }}
         env:
           CFG_RELEASE_CHANNEL: ${{ needs.create-release.outputs.release_channel }}
           RUSTFLAGS: ${{ matrix.RUSTFLAGS }}
@@ -256,13 +272,13 @@ jobs:
 
   build-mac-universal-binary:
     name: Build macOS universal binary
-    needs: [create-release, build, build-web]
-    runs-on: macos-15
+    needs: [ create-release, build, build-web ]
+    runs-on: macos-26
     env:
       PACKAGE_FILE: ${{ needs.create-release.outputs.package_prefix }}-macos-universal.tar.gz
     steps:
       - name: Clone Ruffle repo
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           ref: ${{ needs.create-release.outputs.tag_name }}
 
@@ -283,13 +299,13 @@ jobs:
 
       - name: Make universal desktop binary
         run: |
-          lipo -create -output package/ruffle target/x86_64-apple-darwin/release/ruffle_desktop target/aarch64-apple-darwin/release/ruffle_desktop
+          lipo -create -output package/ruffle target/x86_64-apple-darwin/dist/ruffle_desktop target/aarch64-apple-darwin/dist/ruffle_desktop
           chmod +x package/ruffle
 
       - name: Make universal Safari stub binary
         continue-on-error: true
         run: |
-          lipo -create -output package/ruffle_web_safari target/x86_64-apple-darwin/release/ruffle_web_safari target/aarch64-apple-darwin/release/ruffle_web_safari
+          lipo -create -output package/ruffle_web_safari target/x86_64-apple-darwin/dist/ruffle_web_safari target/aarch64-apple-darwin/dist/ruffle_web_safari
           chmod +x package/ruffle_web_safari
 
       - name: Create app bundle
@@ -297,6 +313,13 @@ jobs:
           cp -r desktop/packages/macOS package/Ruffle.app
           mkdir package/Ruffle.app/Contents/MacOS
           mv package/ruffle package/Ruffle.app/Contents/MacOS/ruffle
+
+      - name: Set app version in plist
+        # This needs to be stable only because Apple doesn't support semver
+        if: needs.create-release.outputs.release_channel == 'stable'
+        run: |
+          plutil -replace CFBundleShortVersionString -string "${{ needs.create-release.outputs.version }}" package/Ruffle.app/Contents/Info.plist
+          plutil -replace CFBundleVersion -string "${{ needs.create-release.outputs.version }}" package/Ruffle.app/Contents/Info.plist
 
       - name: Compile asset catalog
         run: |
@@ -333,6 +356,7 @@ jobs:
           codesign --verify -vvvv package/Ruffle.app
 
       - name: Notarize bundle
+        id: notarize-bundle
         continue-on-error: true
         run: |
           xcrun notarytool store-credentials "Ruffle" --apple-id ${{ secrets.APPLE_ID }} --team-id ${{ secrets.APPLE_TEAM }} --password ${{ secrets.APPLE_APP_PASSWORD }}
@@ -342,6 +366,19 @@ jobs:
           cd ..
           xcrun notarytool submit Ruffle.zip --keychain-profile Ruffle --wait
           xcrun stapler staple package/Ruffle.app
+
+      - name: Report notarization failure on Discord
+        uses: stegzilla/discord-notify@v5
+        if: ${{ steps.notarize-bundle.outcome == 'failure' && github.repository == 'ruffle-rs/ruffle' }}
+        continue-on-error: true
+        with:
+          webhook_url: ${{ secrets.DISCORD_WEBHOOK_UPDATES }}
+          title: "macOS notarization failed"
+          message: |
+            Notarize macOS universal binary bundle step failed
+            [View workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+          username: "GitHub Actions"
+          colour: "#fc2929"
 
       - name: Package macOS
         run: |
@@ -361,7 +398,7 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - name: Clone Ruffle repo
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           ref: ${{ needs.create-release.outputs.tag_name }}
 
@@ -371,7 +408,7 @@ jobs:
           toolchain: stable
 
       - name: Generate report
-        run: ./stub-report/generate-report.sh
+        run: cargo run --locked --package stub-report -- --avm2-report avm2_report.json
 
       - name: Upload report
         run: gh release upload "${{ needs.create-release.outputs.tag_name }}" avm2_report.json
@@ -394,7 +431,7 @@ jobs:
       statuses: write
     steps:
       - name: Clone Ruffle repo
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           ref: ${{ needs.create-release.outputs.tag_name }}
 
@@ -406,7 +443,7 @@ jobs:
           components: rust-src
 
       - name: Setup Node.js
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@v7
         with:
           node-version: "24"
           registry-url: https://registry.npmjs.org
@@ -415,7 +452,7 @@ jobs:
       # Be sure to update in test_web.yml, Cargo.toml, web/docker/Dockerfile,
       # and web/README.md as well.
       - name: Install wasm-bindgen
-        run: cargo install wasm-bindgen-cli --version 0.2.120
+        run: cargo install --locked wasm-bindgen-cli --version 0.2.127
 
       # Keep the version number in sync in all workflows,
       # and in the extension builder Dockerfile!
@@ -496,21 +533,22 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Publish Chrome extension
-        if: env.CHROME_EXTENSION_ID != '' && needs.create-release.outputs.release_channel == 'nightly'
+        if: env.CHROME_EXTENSION_ID != '' && needs.create-release.outputs.release_channel == 'stable'
         id: publish-chrome-extension
         continue-on-error: true
         env:
           CHROME_EXTENSION_ID: ${{ secrets.CHROME_EXTENSION_ID }}
-        uses: mnao305/chrome-extension-upload@v6.0.0
+        uses: mnao305/chrome-extension-upload@v7.0.0
         with:
           extension-id: ${{ secrets.CHROME_EXTENSION_ID }}
           client-id: ${{ secrets.CHROME_CLIENT_ID }}
           client-secret: ${{ secrets.CHROME_CLIENT_SECRET }}
           refresh-token: ${{ secrets.CHROME_REFRESH_TOKEN }}
+          publisher-id: ${{ secrets.CHROME_PUBLISHER_ID }}
           file-path: ./web/packages/extension/dist/ruffle_extension.zip
 
       - name: Publish Edge extension
-        if: env.EDGE_PRODUCT_ID != '' && needs.create-release.outputs.release_channel == 'nightly'
+        if: env.EDGE_PRODUCT_ID != '' && needs.create-release.outputs.release_channel == 'stable'
         id: publish-edge-extension
         continue-on-error: true
         env:
@@ -523,7 +561,7 @@ jobs:
           api-key: ${{ secrets.EDGE_API_KEY }}
 
       - name: Publish Firefox extension
-        if: env.FIREFOX_EXTENSION_ID != '' && needs.create-release.outputs.release_channel == 'nightly'
+        if: env.FIREFOX_EXTENSION_ID != '' && needs.create-release.outputs.release_channel == 'stable'
         id: publish-firefox-extension
         continue-on-error: true
         env:
@@ -577,7 +615,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Clone JS docs
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         if: needs.create-release.outputs.release_channel == 'nightly'
         with:
           repository: ruffle-rs/js-docs
@@ -612,7 +650,7 @@ jobs:
           force: true
 
       - name: Clone web demo
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         if: needs.create-release.outputs.release_channel == 'nightly'
         with:
           repository: ruffle-rs/demo
@@ -651,11 +689,11 @@ jobs:
 
   publish-aur-package:
     name: Publish AUR package
-    needs: [create-release, build]
+    needs: [ create-release, build ]
     runs-on: ubuntu-24.04
     if: github.repository == 'ruffle-rs/ruffle' && needs.create-release.outputs.release_channel == 'nightly'
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           ref: ${{ needs.create-release.outputs.tag_name }}
 
@@ -686,7 +724,7 @@ jobs:
           -e "s/@SHA512SUM_aarch64@/$(sha512sum ${{ needs.create-release.outputs.package_prefix }}-linux-aarch64.tar.gz | cut -d' ' -f1)/"
 
       - name: Publish AUR package
-        uses: KSXGitHub/github-actions-deploy-aur@v4.1.3
+        uses: KSXGitHub/github-actions-deploy-aur@v4.2.0
         with:
           pkgname: ruffle-nightly-bin
           pkgbuild: desktop/packages/linux/aur/ruffle-nightly-bin/PKGBUILD

@@ -370,7 +370,7 @@ public class Test extends MovieClip {
             f();
             trace("  No error thrown");
         } catch (e:*) {
-            trace("  Error thrown: " + e);
+            trace("  Error thrown: " + e.getStackTrace());
         }
     }
 

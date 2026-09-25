@@ -3,7 +3,7 @@
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::globals::point::{point_to_object, value_to_point};
-use crate::avm1::property_decl::{DeclContext, StaticDeclarations, SystemClass};
+use crate::avm1::property_decl::{DeclContext, PropertyOrder, StaticDeclarations, SystemClass};
 use crate::avm1::{Object, Value};
 use crate::string::AvmString;
 
@@ -11,6 +11,7 @@ use ruffle_macros::istr;
 use ruffle_render::matrix::Matrix;
 use swf::Twips;
 
+// TODO: In Flash Player, the Matrix class is implemented in pure ActionScript.
 const PROTO_DECLS: StaticDeclarations = declare_static_properties! {
     "concat" => method(concat);
     "invert" => method(invert);
@@ -30,7 +31,7 @@ pub fn create_class<'gc>(
     context: &mut DeclContext<'_, 'gc>,
     super_proto: Object<'gc>,
 ) -> SystemClass<'gc> {
-    let class = context.class(constructor, super_proto);
+    let class = context.class(constructor, super_proto, PropertyOrder::PrototypeLast);
     context.define_properties_on(class.proto, PROTO_DECLS(context));
     class
 }
@@ -171,6 +172,7 @@ pub fn matrix_to_value<'gc>(
     matrix: &Matrix,
     activation: &mut Activation<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let path = [istr!("flash"), istr!("geom"), istr!("Matrix")];
     let args = [
         matrix.a.into(),
         matrix.b.into(),
@@ -179,9 +181,7 @@ pub fn matrix_to_value<'gc>(
         matrix.tx.to_pixels().into(),
         matrix.ty.to_pixels().into(),
     ];
-    let constructor = activation.prototypes().matrix_constructor;
-    let object = constructor.construct(activation, &args)?;
-    Ok(object)
+    activation.instantiate_class_as_script(path, &args)
 }
 
 pub fn apply_matrix_to_object<'gc>(
@@ -189,12 +189,12 @@ pub fn apply_matrix_to_object<'gc>(
     object: Object<'gc>,
     activation: &mut Activation<'_, 'gc>,
 ) -> Result<(), Error<'gc>> {
-    object.set(istr!("a"), matrix.a.into(), activation)?;
-    object.set(istr!("b"), matrix.b.into(), activation)?;
-    object.set(istr!("c"), matrix.c.into(), activation)?;
-    object.set(istr!("d"), matrix.d.into(), activation)?;
-    object.set(istr!("tx"), matrix.tx.to_pixels().into(), activation)?;
-    object.set(istr!("ty"), matrix.ty.to_pixels().into(), activation)?;
+    object.set(istr!("a"), matrix.a, activation)?;
+    object.set(istr!("b"), matrix.b, activation)?;
+    object.set(istr!("c"), matrix.c, activation)?;
+    object.set(istr!("d"), matrix.d, activation)?;
+    object.set(istr!("tx"), matrix.tx.to_pixels(), activation)?;
+    object.set(istr!("ty"), matrix.ty.to_pixels(), activation)?;
     Ok(())
 }
 
@@ -234,12 +234,12 @@ fn identity<'gc>(
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    this.set(istr!("d"), 1.0.into(), activation)?;
-    this.set(istr!("a"), 1.0.into(), activation)?;
-    this.set(istr!("c"), 0.0.into(), activation)?;
-    this.set(istr!("b"), 0.0.into(), activation)?;
-    this.set(istr!("ty"), 0.0.into(), activation)?;
-    this.set(istr!("tx"), 0.0.into(), activation)?;
+    this.set(istr!("d"), 1.0, activation)?;
+    this.set(istr!("a"), 1.0, activation)?;
+    this.set(istr!("c"), 0.0, activation)?;
+    this.set(istr!("b"), 0.0, activation)?;
+    this.set(istr!("ty"), 0.0, activation)?;
+    this.set(istr!("tx"), 0.0, activation)?;
     Ok(Value::Undefined)
 }
 
@@ -248,6 +248,7 @@ fn clone<'gc>(
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let path = [istr!("flash"), istr!("geom"), istr!("Matrix")];
     let args = [
         this.get(istr!("a"), activation)?,
         this.get(istr!("b"), activation)?,
@@ -256,9 +257,7 @@ fn clone<'gc>(
         this.get(istr!("tx"), activation)?,
         this.get(istr!("ty"), activation)?,
     ];
-    let constructor = activation.prototypes().matrix_constructor;
-    let cloned = constructor.construct(activation, &args)?;
-    Ok(cloned)
+    activation.instantiate_class_as_script(path, &args)
 }
 
 fn scale<'gc>(

@@ -2,6 +2,7 @@
 
 use crate::avm2::Error;
 use crate::avm2::activation::Activation;
+use crate::avm2::function::FunctionArgs;
 use crate::avm2::globals::flash::display::display_object::initialize_for_allocator;
 use crate::avm2::globals::slots::flash_display_shape as slots;
 use crate::avm2::object::{ClassObject, Object, StageObject, TObject as _};
@@ -21,7 +22,7 @@ pub fn shape_allocator<'gc>(
 pub fn get_graphics<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 

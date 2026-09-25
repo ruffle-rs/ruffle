@@ -6,6 +6,7 @@ use crate::avm1::error::Error;
 use crate::avm1::object::super_object::SuperObject;
 use crate::avm1::object_reference::MovieClipReference;
 use crate::avm1::property::Attribute;
+use crate::avm1::property_decl::PropertyOrder;
 use crate::avm1::scope::Scope;
 use crate::avm1::value::Value;
 use crate::avm1::{ArrayBuilder, Object};
@@ -41,8 +42,12 @@ pub enum ExecutionReason {
     /// This execution is a "normal" constructor call from ActionScript bytecode.
     ConstructorCall,
 
+    /// This execution is a property call, such as a getter, a setter, or
+    /// a watcher call.
+    PropertyCall { property_id: u32 },
+
     /// This execution is a "special" internal function call from the player,
-    /// such as getters, setters, `toString`, or event handlers.
+    /// such as `toString` or event handlers.
     Special,
 }
 
@@ -337,7 +342,7 @@ impl<'gc> Avm1Function<'gc> {
         // The caller is the previous callee.
         let arguments_caller = activation.callee;
 
-        let name = if cfg!(feature = "avm_debug") {
+        let name = if cfg!(any(feature = "avm_debug", feature = "tracy_avm")) {
             Cow::Owned(self.debug_string_for_call(activation, name, args))
         } else {
             Cow::Borrowed("[Anonymous]")
@@ -473,10 +478,10 @@ impl<'gc> FunctionObject<'gc> {
     pub fn build(
         self,
         context: &StringContext<'gc>,
-        fn_proto: Object<'gc>,
+        fn_proto: Option<Value<'gc>>,
         prototype: Option<Object<'gc>>,
     ) -> Object<'gc> {
-        let obj = Object::new(context, Some(fn_proto));
+        let obj = Object::new(context, fn_proto);
         let native = NativeObject::Function(Gc::new(context.gc(), self));
         obj.set_native(context.gc(), native);
 
@@ -493,6 +498,46 @@ impl<'gc> FunctionObject<'gc> {
                 prototype.into(),
                 Attribute::DONT_ENUM | Attribute::DONT_DELETE,
             );
+        }
+
+        obj
+    }
+
+    /// Builds a system class object with own properties inserted in the
+    /// `order` selected by [`PropertyOrder`].
+    pub fn build_class_object(
+        self,
+        context: &StringContext<'gc>,
+        fn_proto: Object<'gc>,
+        prototype: Object<'gc>,
+        function_class: Object<'gc>,
+        order: PropertyOrder,
+    ) -> Object<'gc> {
+        let obj = Object::new_without_proto(context.gc());
+        let native = NativeObject::Function(Gc::new(context.gc(), self));
+        obj.set_native(context.gc(), native);
+
+        let attr = Attribute::DONT_ENUM | Attribute::DONT_DELETE;
+        let define = |name: AvmString<'gc>, value: Value<'gc>| {
+            obj.define_value(context.gc(), name, value, attr);
+        };
+        let constructor_name = istr!(context, "constructor");
+        let proto_name = istr!(context, "__proto__");
+        let prototype_name = istr!(context, "prototype");
+
+        match order {
+            PropertyOrder::PrototypeFirst => {
+                define(prototype_name, prototype.into());
+                define(constructor_name, function_class.into());
+                define(proto_name, fn_proto.into());
+                prototype.define_value(context.gc(), constructor_name, Value::Object(obj), attr);
+            }
+            PropertyOrder::PrototypeLast => {
+                define(constructor_name, function_class.into());
+                define(proto_name, fn_proto.into());
+                prototype.define_value(context.gc(), constructor_name, Value::Object(obj), attr);
+                define(prototype_name, prototype.into());
+            }
         }
 
         obj
@@ -657,8 +702,8 @@ impl<'gc> FunctionObject<'gc> {
         callee: Object<'gc>,
         args: &[Value<'gc>],
     ) -> Result<Value<'gc>, Error<'gc>> {
-        let prototype = callee.get(istr!("prototype"), activation)?;
-        let this = Object::new(activation.strings(), Some(prototype));
+        let prototype = callee.prototype(activation);
+        let this = Object::new(activation.strings(), prototype);
 
         Self::define_constructor_props(activation, this, callee.into());
 

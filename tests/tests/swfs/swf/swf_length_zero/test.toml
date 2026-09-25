@@ -1,0 +1,12 @@
+num_ticks = 16
+
+# FIXME Reading the SWF file currently errors out, and we do not have a way of
+# asserting on that. Maybe move this test to swf crate's tests? Add a way of
+# asserting on error?
+ignore = true
+
+[[compilers]]
+type = "Rascal"
+target = "original.swf"
+scripts = ["test.as"]
+swf_version = 8

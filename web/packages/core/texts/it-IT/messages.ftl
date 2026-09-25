@@ -1,7 +1,9 @@
 message-cant-embed =
     Ruffle non è stato in grado di eseguire il Flash incorporato in questa pagina.
     Puoi provare ad aprire il file in una scheda separata, per evitare questo problema.
-message-restored-from-bfcache = Il tuo browser ha ripristinato il contenuto del Flash da una sessione precedente. Per iniziare da capo, ricarica la pagina.
+message-restored-from-bfcache =
+    Il tuo browser ha ripristinato il contenuto del Flash da una sessione precedente.
+    Per iniziare da capo, ricarica la pagina.
 panic-title = Qualcosa è andato storto :(
 more-info = Maggiori informazioni
 run-anyway = Esegui comunque
@@ -83,6 +85,9 @@ error-csp-conflict =
     Ruffle ha incontrato un problema importante durante il tentativo di inizializzare.
     La Politica di Sicurezza dei Contenuti di questo server web non consente l'impostazione richiesta". asm" componente da eseguire.
     Se sei l'amministratore del server, consulta la Ruffle di wiki per aiuto.
+error-url-invalid =
+    Ruffle non è riuscito a caricare il file Flash SWF.
+    La ragione più probabile è che un URL non valido per il file SWF è stato passato a Ruffle.
 error-unknown =
     Ruffle ha incontrato un problema importante durante il tentativo di visualizzare questo contenuto Flash.
     { $outdated ->

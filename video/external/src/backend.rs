@@ -48,7 +48,7 @@ impl Default for ExternalVideoBackend {
 }
 
 impl ExternalVideoBackend {
-    fn make_decoder(&mut self) -> Result<Box<dyn VideoDecoder>, Error> {
+    fn make_decoder(&self) -> Result<Box<dyn VideoDecoder>, Error> {
         #[cfg(feature = "openh264")]
         if let Some(h264_codec) = self.openh264_codec.as_ref() {
             let decoder = Box::new(crate::decoder::openh264::H264Decoder::new(h264_codec));
@@ -180,9 +180,7 @@ impl VideoBackend for ExternalVideoBackend {
                 self.software
                     .decode_video_stream_frame(*handle, encoded_frame, renderer)
             }
-            ProxyOrStream::Owned(stream) => {
-                let frame = stream.decoder.decode_frame(encoded_frame)?;
-
+            ProxyOrStream::Owned(stream) => stream.decoder.decode_frame(encoded_frame, |frame| {
                 let width = frame.width();
                 let height = frame.height();
 
@@ -203,7 +201,7 @@ impl VideoBackend for ExternalVideoBackend {
                     width,
                     height,
                 })
-            }
+            }),
         }
     }
 }

@@ -2,7 +2,7 @@ use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::globals::bitmap_filter;
 use crate::avm1::object::NativeObject;
-use crate::avm1::property_decl::{DeclContext, StaticDeclarations, SystemClass};
+use crate::avm1::property_decl::{DeclContext, PropertyOrder, StaticDeclarations, SystemClass};
 use crate::avm1::{ArrayBuilder, Object, Value, globals};
 use crate::display_object::{
     AutoSizeMode, EditText, TDisplayObject, TInteractiveObject, TextSelection,
@@ -104,7 +104,7 @@ pub fn create_class<'gc>(
     context: &mut DeclContext<'_, 'gc>,
     super_proto: Object<'gc>,
 ) -> SystemClass<'gc> {
-    let class = context.empty_class(super_proto);
+    let class = context.empty_class(super_proto, PropertyOrder::PrototypeFirst);
     context.define_properties_on(class.proto, PROTO_DECLS(context));
     class
 }
@@ -129,8 +129,12 @@ fn new_text_format<'gc>(
     activation: &mut Activation<'_, 'gc>,
     text_format: TextFormat,
 ) -> Object<'gc> {
-    let proto = activation.prototypes().text_format;
-    let object = Object::new(&activation.context.strings, Some(proto));
+    // FIXME: this should return `undefined` when called on a `TextField` instantiated
+    // with a custom class; see the `avm1/globals_monkeypatch` test.
+    // Why? (and how exactly?)
+
+    let proto = activation.resolve_prototype([istr!("TextFormat")]);
+    let object = Object::new(&activation.context.strings, proto);
     object.set_native(
         activation.gc(),
         NativeObject::TextFormat(Gc::new(activation.gc(), text_format.into())),
@@ -684,7 +688,7 @@ pub fn set_scroll<'gc>(
     value: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
     let input = value.coerce_to_f64(activation)?;
-    this.set_scroll(input);
+    this.set_scroll(input, true, activation.context);
     Ok(())
 }
 

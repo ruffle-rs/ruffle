@@ -72,10 +72,6 @@ impl<'gc> TDisplayObject<'gc> for LoaderDisplay<'gc> {
         HasPrefixField::as_prefix_gc(self.raw_interactive())
     }
 
-    fn instantiate(self, gc_context: &Mutation<'gc>) -> DisplayObject<'gc> {
-        Self(Gc::new(gc_context, self.0.as_ref().clone())).into()
-    }
-
     fn id(self) -> CharacterId {
         u16::MAX
     }

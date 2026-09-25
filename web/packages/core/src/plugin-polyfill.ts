@@ -3,7 +3,7 @@ import {
     FUTURESPLASH_MIMETYPE,
     FLASH7_AND_8_MIMETYPE,
     FLASH_MOVIE_MIMETYPE,
-} from "./flash-identifiers";
+} from "./flash-identifiers.js";
 
 /**
  * Replacement object for `MimeTypeArray` that lets us install new fake mime
@@ -277,10 +277,12 @@ export function installPlugin(plugin: RufflePlugin): void {
     if (!("install" in navigator.plugins) || !navigator.plugins["install"]) {
         Object.defineProperty(window, "PluginArray", {
             value: RufflePluginArray,
+            configurable: true,
         });
         Object.defineProperty(navigator, "plugins", {
             value: new RufflePluginArray(navigator.plugins),
             writable: false,
+            configurable: true,
         });
     }
 
@@ -293,13 +295,16 @@ export function installPlugin(plugin: RufflePlugin): void {
     ) {
         Object.defineProperty(window, "MimeTypeArray", {
             value: RuffleMimeTypeArray,
+            configurable: true,
         });
         Object.defineProperty(window, "MimeType", {
             value: RuffleMimeType,
+            configurable: true,
         });
         Object.defineProperty(navigator, "mimeTypes", {
             value: new RuffleMimeTypeArray(navigator.mimeTypes),
             writable: false,
+            configurable: true,
         });
     }
 

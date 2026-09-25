@@ -15,3 +15,4 @@ XML().valueOf().toString() PASSED!
 typeof XML() PASSED!
 XML(thisXML).valueOf().toString() PASSED!
 typeof XML(thisXML) PASSED!
+TypeError: Error #2023: Class Test$ must inherit from Sprite to link to the root.

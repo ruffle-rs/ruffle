@@ -1,3 +1,18 @@
 1 - err.toString called
+undefined
+	at Function/<anonymous>()
+	at Function/http://adobe.com/AS3/2006/builtin::apply()
+	at SetIntervalTimer/onTimer()
+	at flash.utils::Timer/_timerDispatch()
+	at flash.utils::Timer/tick()
+1 - err.toString called
 2 - prototype toString called
+undefined
+	at Function/<anonymous>()
+	at Function/http://adobe.com/AS3/2006/builtin::apply()
+	at SetIntervalTimer/onTimer()
+	at flash.utils::Timer/_timerDispatch()
+	at flash.utils::Timer/tick()
+2 - prototype toString called
+3 - throwing an error
 3 - throwing an error

@@ -13,6 +13,10 @@ ruffle-wiki = Kunjungi Wiki Ruffle
 view-error-details = Tunjukan Detail Error
 open-in-new-tab = Buka di Tab Baru
 click-to-unmute = Tekan untuk menyalakan suara
+clipboard-message-title = Menyalin dan Menempel di Ruffle
+clipboard-message-copy = { " " } untuk menyalin
+clipboard-message-cut = { " " } untuk memotong
+clipboard-message-paste = { " " } untuk menempel
 error-file-protocol =
     Sepertinya anda menjalankan Ruffle di protokol "file:".
     Ini tidak berfungsi karena browser memblokir fitur ini dengan alasan keamanan.
@@ -29,6 +33,9 @@ error-wasm-mime-type =
     Ruffle mengalami masalah ketika mencoba melakukan inisialisasi.
     Server web ini tidak melayani file ".wasm" dengan tipe MIME yang benar.
     Jika Anda adalah administrator server ini, silakan baca wiki Ruffle untuk mendapatkan bantuan.
+error-invalid-swf =
+    Ruffle tidak dapat membaca berkas yang diminta.
+    Kemungkinan terbesar berkas yang diminta bukan berkas SWF valid.
 error-swf-fetch =
     Ruffle gagal memuat file SWF Flash.
     Kemungkinan file tersebut sudah tidak ada, sehingga tidak dapat dimuat oleh Ruffle.

@@ -5,11 +5,13 @@ use crate::avm1::error::Error;
 use crate::avm1::globals::matrix::gradient_object_to_matrix;
 use crate::avm1::globals::{self, AVM_DEPTH_BIAS, AVM_MAX_DEPTH, bitmap_filter};
 use crate::avm1::object::NativeObject;
-use crate::avm1::property_decl::{DeclContext, StaticDeclarations, SystemClass};
+use crate::avm1::property_decl::{DeclContext, PropertyOrder, StaticDeclarations, SystemClass};
 use crate::avm1::{self, ArrayBuilder, Object, Value};
 use crate::backend::navigator::NavigationMethod;
 use crate::context::UpdateContext;
-use crate::display_object::{Bitmap, BoundsMode, EditText, MovieClip, TInteractiveObject};
+use crate::display_object::{
+    Bitmap, BoundsMode, EditText, GotoInfo, MovieClip, StopOrPlay, TInteractiveObject,
+};
 use crate::ecma_conversions::f64_to_wrapping_i32;
 use crate::prelude::*;
 use crate::string::AvmString;
@@ -127,7 +129,7 @@ pub fn create_class<'gc>(
     context: &mut DeclContext<'_, 'gc>,
     super_proto: Object<'gc>,
 ) -> SystemClass<'gc> {
-    let class = context.empty_class(super_proto);
+    let class = context.empty_class(super_proto, PropertyOrder::PrototypeLast);
     context.define_properties_on(class.proto, PROTO_DECLS(context));
     class
 }
@@ -140,9 +142,11 @@ pub fn new_rectangle<'gc>(
     let y = rectangle.y_min.to_pixels();
     let width = rectangle.width().to_pixels();
     let height = rectangle.height().to_pixels();
-    let args = &[x.into(), y.into(), width.into(), height.into()];
-    let proto = activation.prototypes().rectangle_constructor;
-    proto.construct(activation, args)
+
+    activation.instantiate_class_as_script(
+        [istr!("flash"), istr!("geom"), istr!("Rectangle")],
+        &[x.into(), y.into(), width.into(), height.into()],
+    )
 }
 
 pub fn object_to_rectangle<'gc>(
@@ -790,7 +794,7 @@ fn attach_movie<'gc>(
         .context
         .library
         .library_for_movie(movie_clip.movie())
-        .and_then(|l| l.instantiate_by_export_name(export_name, activation.gc()))
+        .and_then(|l| l.instantiate_by_export_name(&export_name, activation.gc()))
     {
         new_clip.set_placed_by_avm1_script(true);
         // Set name and attach to parent.
@@ -1008,7 +1012,8 @@ pub fn clone_sprite<'gc>(
     if let (Some(cloned_sprite), Some(sprite)) =
         (cloned_sprite.as_movie_clip(), sprite.as_movie_clip())
     {
-        cloned_sprite.init_clip_event_handlers(sprite.clip_actions().into());
+        cloned_sprite
+            .init_clip_event_handlers(sprite.clip_event_flags(), sprite.clip_actions().into());
 
         if let Some(drawing) = sprite.drawing().as_deref().cloned() {
             *cloned_sprite.drawing_mut() = drawing;
@@ -1094,7 +1099,7 @@ fn goto_and_play<'gc>(
     activation: &mut Activation<'_, 'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    goto_frame(movie_clip, activation, args, false, 0)
+    goto_frame(movie_clip, activation, args, StopOrPlay::Play, 0)
 }
 
 fn goto_and_stop<'gc>(
@@ -1102,14 +1107,14 @@ fn goto_and_stop<'gc>(
     activation: &mut Activation<'_, 'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    goto_frame(movie_clip, activation, args, true, 0)
+    goto_frame(movie_clip, activation, args, StopOrPlay::Stop, 0)
 }
 
 pub fn goto_frame<'gc>(
     movie_clip: MovieClip<'gc>,
     activation: &mut Activation<'_, 'gc>,
     args: &[Value<'gc>],
-    stop: bool,
+    stop_or_play: StopOrPlay,
     scene_offset: u16,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let mut call_frame = None;
@@ -1150,7 +1155,12 @@ pub fn goto_frame<'gc>(
         let frame = frame.wrapping_add(i32::from(scene_offset));
         let frame = frame.saturating_add(1);
         if frame > 0 {
-            clip.goto_frame(activation.context, frame as u16, stop);
+            let goto_info = GotoInfo {
+                frame: frame as u16,
+                stop_or_play,
+            };
+
+            clip.goto_frame(activation.context, goto_info);
         }
     }
     Ok(Value::Undefined)
@@ -1410,8 +1420,8 @@ fn local_to_global<'gc>(
         ) {
             let local = Point::from_pixels(x, y);
             let global = movie_clip.local_to_global(local);
-            point.set(istr!("x"), global.x.to_pixels().into(), activation)?;
-            point.set(istr!("y"), global.y.to_pixels().into(), activation)?;
+            point.set(istr!("x"), global.x.to_pixels(), activation)?;
+            point.set(istr!("y"), global.y.to_pixels(), activation)?;
         } else {
             avm_warn!(
                 activation,
@@ -1487,26 +1497,10 @@ fn get_bounds<'gc>(
             &activation.context.strings,
             Some(activation.prototypes().object),
         );
-        out.set(
-            istr!("xMin"),
-            out_bounds.x_min.to_pixels().into(),
-            activation,
-        )?;
-        out.set(
-            istr!("xMax"),
-            out_bounds.x_max.to_pixels().into(),
-            activation,
-        )?;
-        out.set(
-            istr!("yMin"),
-            out_bounds.y_min.to_pixels().into(),
-            activation,
-        )?;
-        out.set(
-            istr!("yMax"),
-            out_bounds.y_max.to_pixels().into(),
-            activation,
-        )?;
+        out.set(istr!("xMin"), out_bounds.x_min.to_pixels(), activation)?;
+        out.set(istr!("xMax"), out_bounds.x_max.to_pixels(), activation)?;
+        out.set(istr!("yMin"), out_bounds.y_min.to_pixels(), activation)?;
+        out.set(istr!("yMax"), out_bounds.y_max.to_pixels(), activation)?;
         Ok(out.into())
     } else {
         Ok(Value::Undefined)
@@ -1592,8 +1586,8 @@ fn global_to_local<'gc>(
         ) {
             let global = Point::from_pixels(x, y);
             let local = movie_clip.global_to_local(global).unwrap_or(global);
-            point.set(istr!("x"), local.x.to_pixels().into(), activation)?;
-            point.set(istr!("y"), local.y.to_pixels().into(), activation)?;
+            point.set(istr!("x"), local.x.to_pixels(), activation)?;
+            point.set(istr!("y"), local.y.to_pixels(), activation)?;
         } else {
             avm_warn!(
                 activation,
@@ -1667,9 +1661,8 @@ fn transform<'gc>(
     this: MovieClip<'gc>,
     activation: &mut Activation<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let constructor = activation.prototypes().transform_constructor;
-    let cloned = constructor.construct(activation, &[this.object1_or_undef()])?;
-    Ok(cloned)
+    let path = [istr!("flash"), istr!("geom"), istr!("Transform")];
+    activation.instantiate_class_as_script(path, &[this.object1_or_undef()])
 }
 
 fn set_transform<'gc>(

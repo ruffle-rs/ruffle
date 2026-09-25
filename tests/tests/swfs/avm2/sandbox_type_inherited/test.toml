@@ -1,0 +1,16 @@
+num_frames = 4
+
+[[compilers]]
+type = "Asc"
+target = "test.swf"
+class = "Test"
+scripts = ["Test.as"]
+swf_version = 20
+
+[[compilers]]
+type = "Asc"
+target = "loaded.swf"
+class = "Loaded"
+scripts = ["Loaded.as"]
+swf_version = 20
+use_network = true

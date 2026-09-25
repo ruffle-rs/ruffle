@@ -7,6 +7,9 @@ package flash.ui {
         public static native function hide():void;
         public static native function show():void;
 
+        public static native function get cursor():String;
+        public static native function set cursor(value:String):void;
+
         public static function get supportsCursor():Boolean {
             stub_getter("flash.ui.Mouse", "supportsCursor");
             return true;
@@ -16,12 +19,7 @@ package flash.ui {
             return true;
         }
 
-        public static function registerCursor(name:String, cursor:MouseCursorData):void {
-            stub_method("flash.ui.Mouse", "registerCursor");
-        }
-
-        public static function unregisterCursor(name:String):void {
-            stub_method("flash.ui.Mouse", "unregisterCursor");
-        }
+        public static native function registerCursor(name:String, cursor:MouseCursorData):void;
+        public static native function unregisterCursor(name:String):void;
     }
 }

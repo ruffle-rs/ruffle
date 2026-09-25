@@ -197,7 +197,7 @@ impl ImageDiff {
     fn difference_color(&self) -> anyhow::Result<image::RgbImage> {
         let mut difference_color =
             Vec::with_capacity(self.width as usize * self.height as usize * 3);
-        for p in self.difference_data.chunks_exact(4) {
+        for p in self.difference_data.as_chunks::<4>().0 {
             difference_color.extend_from_slice(&p[..3]);
         }
 
@@ -209,7 +209,7 @@ impl ImageDiff {
         if self.is_alpha_different {
             let mut difference_alpha =
                 Vec::with_capacity(self.width as usize * self.height as usize);
-            for p in self.difference_data.chunks_exact(4) {
+            for p in self.difference_data.as_chunks::<4>().0 {
                 difference_alpha.push(p[3])
             }
 
@@ -229,8 +229,10 @@ fn calculate_difference_data(
 ) -> Vec<u8> {
     expected_image
         .as_raw()
-        .chunks_exact(4)
-        .zip(actual_image.as_raw().chunks_exact(4))
+        .as_chunks::<4>()
+        .0
+        .iter()
+        .zip(actual_image.as_raw().as_chunks::<4>().0)
         .flat_map(|(cmp_chunk, data_chunk)| {
             if cmp_chunk[3] != data_chunk[3] {
                 *is_alpha_different = true;
@@ -248,7 +250,9 @@ fn calculate_difference_data(
 
 fn calculate_outliers(difference_data: &[u8], tolerance: u8) -> usize {
     difference_data
-        .chunks_exact(4)
+        .as_chunks::<4>()
+        .0
+        .iter()
         .map(|colors| {
             (colors[0] > tolerance) as usize
                 + (colors[1] > tolerance) as usize
@@ -260,7 +264,9 @@ fn calculate_outliers(difference_data: &[u8], tolerance: u8) -> usize {
 
 fn calculate_max_difference(difference_data: &[u8]) -> u8 {
     difference_data
-        .chunks_exact(4)
+        .as_chunks::<4>()
+        .0
+        .iter()
         .map(|colors| colors[0].max(colors[1]).max(colors[2]).max(colors[3]))
         .max()
         .unwrap()

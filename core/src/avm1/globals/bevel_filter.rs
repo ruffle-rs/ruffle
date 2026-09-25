@@ -1,18 +1,21 @@
 //! flash.filters.BevelFilter object
 
 use crate::avm1::object::NativeObject;
-use crate::avm1::property_decl::{DeclContext, StaticDeclarations, SystemClass};
-use crate::avm1::{Activation, Error, Object, Value};
+use crate::avm1::property_decl::{DeclContext, PropertyOrder, StaticDeclarations, SystemClass};
+use crate::avm1::{Activation, Avm1StrRepresentable, Error, Object, Value};
 use gc_arena::{Collect, Gc, Mutation};
-use ruffle_macros::istr;
+use ruffle_macros::Avm1Enum;
 use std::cell::Cell;
 use swf::{BevelFilterFlags, Color, Fixed8, Fixed16, GradientFilterFlags};
 
-#[derive(Copy, Clone, Debug, Collect)]
+#[derive(Copy, Clone, Debug, Collect, Avm1Enum)]
 #[collect(no_drop)]
 pub enum BevelFilterType {
+    #[avm1_variant("inner")]
     Inner,
+    #[avm1_variant("outer")]
     Outer,
+    #[avm1_variant("full")]
     Full,
 }
 
@@ -364,13 +367,7 @@ impl<'gc> BevelFilter<'gc> {
         if let Some(value) = value {
             let type_ = value.coerce_to_string(activation)?;
 
-            let type_ = if &type_ == b"inner" {
-                BevelFilterType::Inner
-            } else if &type_ == b"outer" {
-                BevelFilterType::Outer
-            } else {
-                BevelFilterType::Full
-            };
+            let type_ = BevelFilterType::from_avm1_str(&type_).unwrap_or(BevelFilterType::Full);
 
             self.0.type_.set(type_);
         }
@@ -402,7 +399,12 @@ pub fn create_class<'gc>(
     context: &mut DeclContext<'_, 'gc>,
     super_proto: Object<'gc>,
 ) -> SystemClass<'gc> {
-    let class = context.native_class(table_constructor!(method), None, super_proto);
+    let class = context.native_class(
+        table_constructor!(method),
+        None,
+        super_proto,
+        PropertyOrder::PrototypeFirst,
+    );
     context.define_properties_on(class.proto, PROTO_DECLS(context));
     class
 }
@@ -509,15 +511,7 @@ pub fn method<'gc>(
             this.set_blur_y(activation, args.get(0))?;
             Value::Undefined
         }
-        GET_TYPE => {
-            let type_ = match this.type_() {
-                BevelFilterType::Inner => istr!("inner"),
-                BevelFilterType::Outer => istr!("outer"),
-                BevelFilterType::Full => istr!("full"),
-            };
-
-            type_.into()
-        }
+        GET_TYPE => this.type_().as_avm1_str(activation).into(),
         SET_TYPE => {
             this.set_type(activation, args.get(0))?;
             Value::Undefined

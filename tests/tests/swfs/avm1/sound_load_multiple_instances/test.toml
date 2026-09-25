@@ -1,0 +1,23 @@
+num_frames = 19
+
+[player_options]
+with_audio = true
+
+[audio_assertions.non_streaming_vol_50]
+frames = [2]
+min_max_amplitude = 0.29
+max_amplitude = 0.31
+
+[audio_assertions.non_streaming_multiple]
+frames = [4]
+min_max_amplitude = 1.76
+max_amplitude = 1.78
+
+[audio_assertions.single_vol_full]
+frames = [8,10,12,16]
+min_max_amplitude = 0.59
+max_amplitude = 0.61
+
+[audio_assertions.silence]
+frames = [6,14,19]
+max_amplitude = 0.0

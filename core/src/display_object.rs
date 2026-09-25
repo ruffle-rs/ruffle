@@ -59,9 +59,9 @@ pub use graphic::Graphic;
 pub use interactive::{Avm2MousePick, InteractiveObject, TInteractiveObject};
 pub use loader_display::LoaderDisplay;
 pub use morph_shape::MorphShape;
-pub use movie_clip::{MovieClip, MovieClipHandle, MovieClipWeak, Scene};
+pub use movie_clip::{GotoInfo, MovieClip, MovieClipHandle, MovieClipWeak, Scene, StopOrPlay};
 use ruffle_render::backend::{BitmapCacheEntry, RenderBackend};
-use ruffle_render::bitmap::{BitmapHandle, BitmapInfo, PixelSnapping};
+use ruffle_render::bitmap::{BitmapInfo, PixelSnapping};
 use ruffle_render::blend::ExtendedBlendMode;
 use ruffle_render::commands::{CommandHandler, CommandList, RenderBlendMode};
 use ruffle_render::filters::Filter;
@@ -190,8 +190,8 @@ impl BitmapCache {
         self.bitmap = None;
     }
 
-    fn handle(&self) -> Option<BitmapHandle> {
-        self.bitmap.as_ref().map(|b| b.handle.clone())
+    fn bitmap(&self) -> Option<BitmapInfo> {
+        self.bitmap.clone()
     }
 }
 
@@ -272,6 +272,7 @@ pub struct DisplayObjectBase<'gc> {
     matrix: Cell<Matrix>,
     color_transform: Cell<ColorTransform>,
     perspective_projection: Cell<Option<PerspectiveProjection>>,
+    tz: Cell<f64>,
 
     // Cached transform properties `_xscale`, `_yscale`, `_rotation`.
     // These are expensive to calculate, so they will be calculated and cached
@@ -348,6 +349,7 @@ impl Default for DisplayObjectBase<'_> {
             matrix: Default::default(),
             color_transform: Default::default(),
             perspective_projection: Default::default(),
+            tz: Cell::new(0.0),
             rotation: Cell::new(Degrees::from_radians(0.0)),
             scale_x: Cell::new(Percent::from_unit(1.0)),
             scale_y: Cell::new(Percent::from_unit(1.0)),
@@ -408,6 +410,7 @@ impl<'gc> DisplayObjectBase<'gc> {
             },
             color_transform: self.color_transform.get(),
             perspective_projection: self.perspective_projection.get(),
+            tz: self.tz.get(),
         }
     }
 
@@ -463,6 +466,17 @@ impl<'gc> DisplayObjectBase<'gc> {
         matrix.ty = y;
         self.matrix.set(matrix);
         self.set_transformed_by_script(true);
+        changed
+    }
+
+    fn z(&self) -> f64 {
+        self.tz.get()
+    }
+
+    fn set_z(&self, tz: f64) -> bool {
+        let changed = self.tz.get() != tz;
+        self.set_transformed_by_script(true);
+        self.tz.set(tz);
         changed
     }
 
@@ -919,13 +933,24 @@ pub enum BoundsMode {
     /// The bounds returned by ActionScript (e.g. doesn't take MorphShape
     /// ratio into account - always uses ratio 0 AKA start shape).
     /// This is used in AVM1 in MovieClip::getBounds(), getRect(), _width, _height, hitTest (object)
-    /// Used in AVM2 in DO::getBounds(), getRect(), width, height, hitTestObject()
+    /// Used in AVM2 in DO::getBounds(), width, height, hitTestObject()
     /// Used in both AVM1 and AVM2 for Transform.pixelBounds.
     Script,
+
+    /// Like `BoundsMode::Script`, but excludes drawing and shape strokes from
+    /// the final bounds. This is used to implement AVM2 `DisplayObject.getRect`
+    ScriptWithoutStrokes,
+}
+
+impl BoundsMode {
+    pub fn includes_strokes(self) -> bool {
+        // All bounds modes except `ScriptWithoutStrokes` include strokes.
+        !matches!(self, BoundsMode::ScriptWithoutStrokes)
+    }
 }
 
 struct DrawCacheInfo {
-    handle: BitmapHandle,
+    bitmap: BitmapInfo,
     dirty: bool,
     base_transform: Transform,
     bounds: Rectangle<Twips>,
@@ -1004,8 +1029,8 @@ pub fn render_base<'gc>(
                         draw_offset,
                         swf_version,
                     );
-                    cache_info = cache.handle().map(|handle| DrawCacheInfo {
-                        handle,
+                    cache_info = cache.bitmap().map(|bitmap| DrawCacheInfo {
+                        bitmap,
                         dirty: true,
                         base_transform,
                         bounds,
@@ -1013,8 +1038,8 @@ pub fn render_base<'gc>(
                         filters,
                     });
                 } else {
-                    cache_info = cache.handle().map(|handle| DrawCacheInfo {
-                        handle,
+                    cache_info = cache.bitmap().map(|bitmap| DrawCacheInfo {
+                        bitmap,
                         dirty: false,
                         base_transform,
                         bounds,
@@ -1059,6 +1084,7 @@ pub fn render_base<'gc>(
                     ..cache_info.base_transform.matrix
                 },
                 perspective_projection: cache_info.base_transform.perspective_projection,
+                tz: Default::default(),
             });
             let mut offscreen_context = RenderContext {
                 renderer: context.renderer,
@@ -1066,6 +1092,7 @@ pub fn render_base<'gc>(
                 cache_draws: context.cache_draws,
                 gc_context: context.gc_context,
                 library: context.library,
+                ui: context.ui,
                 transform_stack: &mut transform_stack,
                 is_offscreen: true,
                 use_bitmap_cache: true,
@@ -1073,7 +1100,7 @@ pub fn render_base<'gc>(
             };
             this.render_self(&mut offscreen_context);
             offscreen_context.cache_draws.push(BitmapCacheEntry {
-                handle: cache_info.handle.clone(),
+                handle: cache_info.bitmap.handle.clone(),
                 commands: offscreen_context.commands,
                 clear: this.opaque_background().unwrap_or_default(),
                 filters: cache_info.filters,
@@ -1085,8 +1112,9 @@ pub fn render_base<'gc>(
             this,
             context,
             |context| {
+                let region = cache_info.bitmap.full_region();
                 context.commands.render_bitmap(
-                    cache_info.handle,
+                    cache_info.bitmap.handle,
                     Transform {
                         matrix: Matrix {
                             tx: context.transform_stack.transform().matrix.tx + offset_x,
@@ -1095,9 +1123,11 @@ pub fn render_base<'gc>(
                         },
                         color_transform: cache_info.base_transform.color_transform,
                         perspective_projection: cache_info.base_transform.perspective_projection,
+                        tz: cache_info.base_transform.tz,
                     },
                     true,
                     PixelSnapping::Always, // cacheAsBitmap forces pixel snapping
+                    region,
                 )
             },
             &options,
@@ -1181,6 +1211,7 @@ pub fn apply_standard_mask_and_scroll<'gc, F>(
             matrix: Matrix::translate(-rect.x_min, -rect.y_min),
             color_transform: Default::default(),
             perspective_projection: None,
+            tz: 0.0,
         });
     }
 
@@ -1295,9 +1326,14 @@ pub trait TDisplayObject<'gc>:
 
     /// The `SCALE_ROTATION_CACHED` flag should only be set in SWFv5+.
     /// So scaling/rotation values always have to get recalculated from the matrix in SWFv4.
+    /// SWF version 0 means non-SWF content (a loaded image); since loading images requires
+    /// `loadMovie` (SWFv5+) or `MovieClipLoader` (SWFv6+), this can't occur in a SWFv4 context.
+    /// Therefore, loaded images are supposed to work the way SWF >= 5 movies do in this regard,
+    /// but the SWF version of the MovieClips created for loaded images can't inherit their
+    /// version from the loading movie - they have to be reported as -1 to ActionScript.
     #[no_dynamic]
     fn set_scale_rotation_cached(self) {
-        if self.swf_version() >= 5 {
+        if self.swf_version() == 0 || self.swf_version() >= 5 {
             self.base().set_scale_rotation_cached(true);
         }
     }
@@ -1572,6 +1608,25 @@ pub trait TDisplayObject<'gc>:
     /// This invalidates any ancestors cacheAsBitmap automatically.
     fn set_y(self, y: Twips) {
         if self.base().set_y(y)
+            && let Some(parent) = self.parent()
+        {
+            // Self-transform changes are automatically handled,
+            // we only want to inform ancestors to avoid unnecessary invalidations for tx/ty
+            parent.invalidate_cached_bitmap();
+        }
+    }
+
+    /// The `z` position in local space.
+    /// Returned by the `z` ActionScript properties.
+    fn z(self) -> f64 {
+        self.base().z()
+    }
+
+    /// Sets the `z` position of this display object in local space.
+    /// Set by the `z` ActionScript properties.
+    /// This invalidates any ancestors cacheAsBitmap automatically.
+    fn set_z(self, z: f64) {
+        if self.base().set_z(z)
             && let Some(parent) = self.parent()
         {
             // Self-transform changes are automatically handled,
@@ -2634,8 +2689,6 @@ pub trait TDisplayObject<'gc>:
         None
     }
 
-    fn instantiate(self, gc_context: &Mutation<'gc>) -> DisplayObject<'gc>;
-
     /// Whether this object can be used as a mask.
     /// If this returns false and this object is used as a mask, the mask will not be applied.
     /// This is used by movie clips to disable the mask when there are no children, for example.
@@ -2880,7 +2933,7 @@ macro_rules! impl_downcast_methods {
 }
 
 impl<'gc> DisplayObject<'gc> {
-    pub fn ptr_eq(a: DisplayObject<'gc>, b: DisplayObject<'gc>) -> bool {
+    pub fn ptr_eq<T: TDisplayObject<'gc>>(a: T, b: T) -> bool {
         std::ptr::eq(a.as_ptr(), b.as_ptr())
     }
 
@@ -3064,7 +3117,7 @@ impl<'gc> Avm1TextFieldBinding<'gc> {
     /// Caller is responsible for placing the text field on the unbound list, if necessary.
     pub fn clear_binding(dobj: DisplayObject<'gc>, text_field: EditText<'gc>, mc: &Mutation<'gc>) {
         if let Some(mut bindings) = dobj.avm1_text_field_bindings_mut(mc) {
-            bindings.retain(|b| !DisplayObject::ptr_eq(text_field.into(), b.text_field.into()));
+            bindings.retain(|b| !DisplayObject::ptr_eq(text_field, b.text_field));
         }
     }
 

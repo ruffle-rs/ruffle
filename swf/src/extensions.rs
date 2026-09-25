@@ -1,7 +1,16 @@
-use crate::error::Result;
+use crate::error::UnexpectedEof;
 use crate::string::SwfStr;
-use byteorder::{LittleEndian, ReadBytesExt};
-use std::io;
+
+type Result<T> = std::result::Result<T, UnexpectedEof>;
+
+macro_rules! impl_read_little_endian {
+    ( $($name:ident for $ty:ty;)* ) => {$(
+        #[inline]
+        fn $name(&mut self) -> Result<$ty> {
+            self.read_array().map(<$ty>::from_le_bytes)
+        }
+    )*}
+}
 
 pub trait ReadSwfExt<'a> {
     fn as_mut_slice(&mut self) -> &mut &'a [u8];
@@ -26,48 +35,37 @@ pub trait ReadSwfExt<'a> {
     }
 
     #[inline]
-    fn read_u8(&mut self) -> Result<u8> {
-        Ok(ReadBytesExt::read_u8(self.as_mut_slice())?)
+    fn read_array<const N: usize>(&mut self) -> Result<[u8; N]> {
+        let slice = self.as_mut_slice();
+        if let Some((bytes, rest)) = slice.split_first_chunk::<N>() {
+            *slice = rest;
+            Ok(*bytes)
+        } else {
+            Err(UnexpectedEof(()))
+        }
     }
 
     #[inline]
-    fn read_u16(&mut self) -> Result<u16> {
-        Ok(ReadBytesExt::read_u16::<LittleEndian>(self.as_mut_slice())?)
+    fn read_slice(&mut self, len: usize) -> Result<&'a [u8]> {
+        let slice = self.as_mut_slice();
+        if let Some((bytes, rest)) = slice.split_at_checked(len) {
+            *slice = rest;
+            Ok(bytes)
+        } else {
+            Err(UnexpectedEof(()))
+        }
     }
 
-    #[inline]
-    fn read_u32(&mut self) -> Result<u32> {
-        Ok(ReadBytesExt::read_u32::<LittleEndian>(self.as_mut_slice())?)
-    }
-
-    #[inline]
-    fn read_u64(&mut self) -> Result<u64> {
-        Ok(ReadBytesExt::read_u64::<LittleEndian>(self.as_mut_slice())?)
-    }
-
-    #[inline]
-    fn read_i8(&mut self) -> Result<i8> {
-        Ok(ReadBytesExt::read_i8(self.as_mut_slice())?)
-    }
-
-    #[inline]
-    fn read_i16(&mut self) -> Result<i16> {
-        Ok(ReadBytesExt::read_i16::<LittleEndian>(self.as_mut_slice())?)
-    }
-
-    #[inline]
-    fn read_i32(&mut self) -> Result<i32> {
-        Ok(ReadBytesExt::read_i32::<LittleEndian>(self.as_mut_slice())?)
-    }
-
-    #[inline]
-    fn read_f32(&mut self) -> Result<f32> {
-        Ok(ReadBytesExt::read_f32::<LittleEndian>(self.as_mut_slice())?)
-    }
-
-    #[inline]
-    fn read_f64(&mut self) -> Result<f64> {
-        Ok(ReadBytesExt::read_f64::<LittleEndian>(self.as_mut_slice())?)
+    impl_read_little_endian! {
+        read_u8 for u8;
+        read_u16 for u16;
+        read_u32 for u32;
+        read_u64 for u64;
+        read_i8 for i8;
+        read_i16 for i16;
+        read_i32 for i32;
+        read_f32 for f32;
+        read_f64 for f64;
     }
 
     #[inline]
@@ -83,17 +81,6 @@ pub trait ReadSwfExt<'a> {
         Ok(val)
     }
 
-    fn read_slice(&mut self, len: usize) -> Result<&'a [u8]> {
-        let slice = self.as_mut_slice();
-        if slice.len() >= len {
-            let new_slice = &slice[..len];
-            *slice = &slice[len..];
-            Ok(new_slice)
-        } else {
-            Err(io::Error::new(io::ErrorKind::UnexpectedEof, "Not enough data for slice").into())
-        }
-    }
-
     fn read_slice_to_end(&mut self) -> &'a [u8] {
         let slice = self.as_mut_slice();
         let res = &slice[..];
@@ -104,9 +91,7 @@ pub trait ReadSwfExt<'a> {
     #[inline]
     fn read_str(&mut self) -> Result<&'a SwfStr> {
         let slice = self.as_mut_slice();
-        let s = SwfStr::from_bytes_null_terminated(slice).ok_or_else(|| {
-            io::Error::new(io::ErrorKind::UnexpectedEof, "Not enough data for string")
-        })?;
+        let s = SwfStr::from_bytes_null_terminated(slice).ok_or(UnexpectedEof(()))?;
         *slice = &slice[s.len() + 1..];
         Ok(s)
     }

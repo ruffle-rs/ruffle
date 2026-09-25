@@ -4,6 +4,7 @@ use crate::avm1::{Object, Value};
 use bitflags::bitflags;
 use core::fmt;
 use gc_arena::Collect;
+use std::sync::atomic::{AtomicU32, Ordering};
 
 bitflags! {
     /// Attributes of properties in the AVM runtime.
@@ -42,9 +43,12 @@ const VERSION_MASKS: [u16; 10] = [
     0b0100_0000_0000_0000, // v9
 ];
 
+static NEXT_PROPERTY_ID: AtomicU32 = AtomicU32::new(1);
+
 #[derive(Clone, Collect)]
 #[collect(no_drop)]
 pub struct Property<'gc> {
+    id: u32,
     data: Value<'gc>,
     getter: Option<Object<'gc>>,
     setter: Option<Object<'gc>>,
@@ -55,6 +59,7 @@ pub struct Property<'gc> {
 impl<'gc> Property<'gc> {
     pub fn new_stored(data: Value<'gc>, attributes: Attribute) -> Self {
         Self {
+            id: NEXT_PROPERTY_ID.fetch_add(1, Ordering::Relaxed),
             data,
             getter: None,
             setter: None,
@@ -68,11 +73,17 @@ impl<'gc> Property<'gc> {
         attributes: Attribute,
     ) -> Self {
         Self {
+            id: NEXT_PROPERTY_ID.fetch_add(1, Ordering::Relaxed),
             data: Value::Undefined,
             getter: Some(getter),
             setter,
             attributes,
         }
+    }
+
+    /// A number uniquely identifying the property.
+    pub fn id(&self) -> u32 {
+        self.id
     }
 
     pub fn data(&self) -> Value<'gc> {

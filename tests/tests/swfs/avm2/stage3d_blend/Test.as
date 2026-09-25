@@ -15,12 +15,13 @@
     import flash.events.Event;
     import flash.events.KeyboardEvent;
     import flash.ui.Keyboard;
-    import flash.display.Stage;
     import flash.geom.Matrix3D;
+
+    [SWF(width="1300", height="810")]
 
     // Based on the example from https://help.adobe.com/en_US/FlashPlatform/reference/actionscript/3/flash/display3D/Context3D.html#setBlendFactors()
 
-    public class Test {
+    public class Test extends Sprite {
         public const viewWidth:Number = 1280;
         public const viewHeight:Number = 800;
 
@@ -58,13 +59,11 @@
                 Context3DBlendFactor.SOURCE_COLOR,
                 Context3DBlendFactor.ZERO];
 
-        public function Test(stage:Stage) {
+        public function Test() {
             stage.addEventListener(KeyboardEvent.KEY_DOWN, keyHandler);
             // stage.addEventListener("enterFrame", function() { render() });
 
             stage3D = stage.stage3Ds[0];
-            stage3D.x = 10;
-            stage3D.y = 10;
 
             // Add event listener before requesting the context
             stage3D.addEventListener(Event.CONTEXT3D_CREATE, contextCreated);

@@ -8,5 +8,5 @@ context-menu-about-ruffle =
     }
 context-menu-hide = Ukryj to menu
 context-menu-exit-fullscreen = Opuść tryb pełnoekranowy
-context-menu-enter-fullscreen = Tryb pełnoekranowy
+context-menu-enter-fullscreen = Włącz tryb pełnoekranowy
 context-menu-volume-controls = Sterowanie głośnością

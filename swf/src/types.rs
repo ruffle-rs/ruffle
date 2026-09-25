@@ -324,7 +324,7 @@ pub struct PlaceObject<'a> {
     pub filters: Option<Vec<Filter>>,
     pub background_color: Option<Color>,
     pub blend_mode: Option<BlendMode>,
-    pub clip_actions: Option<Vec<ClipAction<'a>>>,
+    pub clip_actions: Option<ClipActions<'a>>,
     pub has_image: bool,
     pub is_bitmap_cached: Option<bool>,
     pub is_visible: Option<bool>,
@@ -456,6 +456,12 @@ pub struct ClipAction<'a> {
     pub events: ClipEventFlag,
     pub key_code: Option<KeyCode>,
     pub action_data: &'a [u8],
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct ClipActions<'a> {
+    pub all_event_flags: ClipEventFlag,
+    pub records: Vec<ClipAction<'a>>,
 }
 
 bitflags! {

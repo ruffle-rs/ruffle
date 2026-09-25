@@ -114,7 +114,10 @@ pub fn method<'gc>(
         // This generated a restricted set of 'f64' values, which some SWFs implicitly rely on.
         RANDOM => {
             const MAX_VAL: u32 = 0x7FFFFFFF;
-            let rand = activation.context.rng.generate_random_number();
+            let rand = activation
+                .context
+                .rng
+                .generate_random_number(activation.context.locale);
             (rand as f64) / (MAX_VAL as f64 + 1f64)
         }
         FLOOR => x.floor(),

@@ -1,13 +1,14 @@
-import { text, textAsParagraphs } from "../i18n";
+import { text, textAsParagraphs } from "../i18n.js";
 import { createRef } from "tsx-dom";
-import { buildInfo } from "../../build-info";
-import { RUFFLE_ORIGIN } from "../constants";
+import { buildInfo } from "../../build-info.js";
+import { RUFFLE_ORIGIN } from "../constants.js";
 import {
     InvalidOptionsError,
     InvalidSwfError,
+    LoadBeginError,
     LoadRuffleWasmError,
     LoadSwfError,
-} from "../errors";
+} from "../errors.js";
 
 interface PanicLink {
     type: "open_link";
@@ -366,6 +367,39 @@ function createPanicError(error: Error | null): {
                 CommonActions.ShowDetails,
             ],
         };
+    }
+
+    if (error instanceof LoadBeginError) {
+        const message = String(error.message).toLowerCase();
+
+        if (
+            message.includes("is not a valid url") ||
+            message.includes("invalid url") ||
+            message.includes("invalid base url")
+        ) {
+            // TODO: Switch to `URL.canParse` when support improves
+            let baseURIValid;
+            try {
+                new URL(document.baseURI);
+                baseURIValid = true;
+            } catch {
+                baseURIValid = false;
+            }
+
+            if (!baseURIValid) {
+                // Self hosted: document.baseURI is overridden and returns an invalid result
+                return {
+                    body: textAsParagraphs("error-javascript-conflict"),
+                    actions: [CommonActions.ShowDetails],
+                };
+            } else {
+                // General error: Invalid URL passed to Ruffle
+                return {
+                    body: textAsParagraphs("error-url-invalid"),
+                    actions: [CommonActions.ShowDetails],
+                };
+            }
+        }
     }
 
     return {

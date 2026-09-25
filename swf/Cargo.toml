@@ -1,6 +1,6 @@
 [package]
 name = "swf"
-version = "0.2.2"
+version = "0.3.0"
 description = "Read and write the Adobe Flash SWF file format."
 authors.workspace = true
 edition.workspace = true
@@ -14,7 +14,6 @@ workspace = true
 [dependencies]
 bitflags = { workspace = true }
 bitstream-io = { workspace = true }
-byteorder = { workspace = true }
 encoding_rs = { workspace = true }
 num-derive = { workspace = true }
 num-traits = { workspace = true }

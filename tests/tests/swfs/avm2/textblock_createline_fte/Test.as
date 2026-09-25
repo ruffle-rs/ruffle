@@ -21,6 +21,20 @@ public class Test extends Sprite {
 
         var tb2:TextBlock = new TextBlock();
         trace("null content: " + tb2.createTextLine(null, 500));
+
+        var elements:Vector.<ContentElement> = new Vector.<ContentElement>();
+        elements.push(new TextElement("Hello ", fmt));
+        elements.push(new TextElement("World", fmt));
+        var group:GroupElement = new GroupElement(elements, fmt);
+        var tb3:TextBlock = new TextBlock(group);
+        var line3:TextLine = tb3.createTextLine(null, 500);
+        trace("line3.textBlockBeginIndex: " + line3.textBlockBeginIndex)
+        trace("line3.rawTextLength: " + line3.rawTextLength)
+        trace("tb3.textLineCreationResult: " + tb3.textLineCreationResult);
+        // Now shrink the contents, so that current index + length > new length.
+        group.replaceElements(1, 2, null);
+        trace("createTextLine: " + tb3.createTextLine(line3, 500));
+        trace("tb3.textLineCreationResult: " + tb3.textLineCreationResult);
     }
 }
 }

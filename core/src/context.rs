@@ -10,6 +10,7 @@ use crate::avm2::api_version::ApiVersion;
 use crate::avm2::{Avm2, LoaderInfoObject, SharedObjectObject, SoundChannelObject};
 use crate::backend::{
     audio::{AudioBackend, AudioManager, SoundHandle, SoundInstanceHandle},
+    locale::LocaleBackend,
     log::LogBackend,
     navigator::NavigatorBackend,
     storage::StorageBackend,
@@ -41,6 +42,8 @@ use crate::timer::Timers;
 use crate::vminterface::Instantiator;
 use async_channel::Sender;
 use core::fmt;
+use enum_map::Enum;
+use enum_map::EnumMap;
 use gc_arena::{Collect, Mutation};
 use ruffle_render::backend::{BitmapCacheEntry, RenderBackend};
 use ruffle_render::commands::{CommandHandler, CommandList};
@@ -115,6 +118,9 @@ pub struct UpdateContext<'gc> {
 
     /// The video backend, used for video decoding
     pub video: &'gc mut dyn VideoBackend,
+
+    /// The locale backend.
+    pub locale: &'gc mut dyn LocaleBackend,
 
     /// The RNG, used by the AVM `RandomNumber` opcode, `Math.random(),` and `random()`.
     pub rng: &'gc mut AvmRng,
@@ -266,6 +272,16 @@ impl<'gc> UpdateContext<'gc> {
     ) {
         self.audio_manager
             .set_local_sound_transform(instance, sound_transform);
+    }
+
+    /// Set the local sound transform for each instance in a handle.
+    pub fn set_sound_transform_with_handle(
+        &mut self,
+        sound: SoundHandle,
+        sound_transform: SoundTransform,
+    ) {
+        self.audio_manager
+            .set_sound_transform_with_handle(sound, sound_transform);
     }
 
     pub fn start_sound(
@@ -485,22 +501,36 @@ pub struct QueuedAction<'gc> {
     pub is_unload: bool,
 }
 
+/// Priority bucket for queued actions, grouped by which `ActionType`s land in
+/// them. Variants are declared in execution order; [`ActionQueue::pop_action`]
+/// drains the first-declared bucket first.
+#[derive(Copy, Clone, Collect, Enum)]
+#[collect(require_static)]
+pub enum ActionPriority {
+    /// AVM1 `initialize` clip events. Run first.
+    Initialize,
+    /// `MovieClip` construction actions.
+    Construct,
+    /// Normal frame/event actions, method calls and listener notifications. Run last.
+    Default,
+}
+
 /// Action and gotos need to be queued up to execute at the end of the frame.
 #[derive(Collect)]
 #[collect(no_drop)]
 pub struct ActionQueue<'gc> {
     /// Each priority is kept in a separate bucket.
-    action_queue: [VecDeque<QueuedAction<'gc>>; ActionQueue::NUM_PRIORITIES],
+    action_queue: EnumMap<ActionPriority, VecDeque<QueuedAction<'gc>>>,
 }
 
 impl<'gc> ActionQueue<'gc> {
     const DEFAULT_CAPACITY: usize = 32;
-    const NUM_PRIORITIES: usize = 3;
 
     /// Crates a new `ActionQueue` with an empty queue.
     pub fn new() -> Self {
-        let action_queue = std::array::from_fn(|_| VecDeque::with_capacity(Self::DEFAULT_CAPACITY));
-        Self { action_queue }
+        Self {
+            action_queue: EnumMap::from_fn(|_| VecDeque::with_capacity(Self::DEFAULT_CAPACITY)),
+        }
     }
 
     /// Queues an action to run for the given movie clip.
@@ -512,23 +542,21 @@ impl<'gc> ActionQueue<'gc> {
         is_unload: bool,
     ) {
         let priority = action_type.priority();
-        let action = QueuedAction {
+        let queue = &mut self.action_queue[priority];
+
+        queue.push_back(QueuedAction {
             clip,
             action_type,
             is_unload,
-        };
-        debug_assert!(priority < Self::NUM_PRIORITIES);
-        if let Some(queue) = self.action_queue.get_mut(priority) {
-            queue.push_back(action)
-        }
+        });
     }
 
     /// Sorts and drains the actions from the queue.
     pub fn pop_action(&mut self) -> Option<QueuedAction<'gc>> {
+        // The correct order of iteration of `EnumMap::iter_mut` is guaranteed by the comment on the `enum_map::Enum` macro.
         self.action_queue
             .iter_mut()
-            .rev()
-            .find_map(VecDeque::pop_front)
+            .find_map(|(_, v)| v.pop_front())
     }
 }
 
@@ -557,7 +585,10 @@ pub struct RenderContext<'a, 'gc> {
     pub gc_context: &'gc Mutation<'gc>,
 
     /// The library, which provides access to fonts and other definitions when rendering.
-    pub library: &'a Library<'gc>,
+    pub library: &'a mut Library<'gc>,
+
+    /// The UI backend, used to detect user interactions and load device fonts.
+    pub ui: &'a dyn UiBackend,
 
     /// The transform stack controls the matrix and color transform as we traverse the display hierarchy.
     pub transform_stack: &'a mut TransformStack,
@@ -626,10 +657,16 @@ impl<'gc> RenderContext<'_, 'gc> {
 #[collect(no_drop)]
 pub enum ActionType<'gc> {
     /// Normal frame or event actions.
-    Normal { bytecode: SwfSlice },
+    Normal {
+        bytecode: SwfSlice,
+        name: &'static str,
+    },
 
     /// AVM1 initialize clip event.
-    Initialize { bytecode: SwfSlice },
+    Initialize {
+        bytecode: SwfSlice,
+        name: &'static str,
+    },
 
     /// Construct a movie with a custom class or on(construct) events.
     Construct {
@@ -653,11 +690,11 @@ pub enum ActionType<'gc> {
 }
 
 impl ActionType<'_> {
-    fn priority(&self) -> usize {
+    fn priority(&self) -> ActionPriority {
         match self {
-            ActionType::Initialize { .. } => 2,
-            ActionType::Construct { .. } => 1,
-            _ => 0,
+            ActionType::Initialize { .. } => ActionPriority::Initialize,
+            ActionType::Construct { .. } => ActionPriority::Construct,
+            _ => ActionPriority::Default,
         }
     }
 }
@@ -665,13 +702,15 @@ impl ActionType<'_> {
 impl fmt::Debug for ActionType<'_> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            ActionType::Normal { bytecode } => f
+            ActionType::Normal { bytecode, name } => f
                 .debug_struct("ActionType::Normal")
                 .field("bytecode", bytecode)
+                .field("name", name)
                 .finish(),
-            ActionType::Initialize { bytecode } => f
+            ActionType::Initialize { bytecode, name } => f
                 .debug_struct("ActionType::Initialize")
                 .field("bytecode", bytecode)
+                .field("name", name)
                 .finish(),
             ActionType::Construct {
                 constructor,

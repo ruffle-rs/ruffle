@@ -8,3 +8,4 @@ XML.setSettings(tempSettings), XML.setSettings(XML.defaultSettings()), XML.ignor
 XML.setSettings(tempSettings), XML.setSettings(XML.defaultSettings()), XML.ignoreWhitespace PASSED!
 XML.setSettings(tempSettings), XML.setSettings(XML.defaultSettings()), XML.prettyPrinting PASSED!
 XML.setSettings(tempSettings), XML.setSettings(XML.defaultSettings()), XML.prettyIndent PASSED!
+TypeError: Error #2023: Class Test$ must inherit from Sprite to link to the root.

@@ -18,7 +18,6 @@ use crate::display_object::{
     BoundsMode, DisplayObject, DisplayObjectBase, TDisplayObject, TDisplayObjectContainer,
 };
 use crate::events::{ClipEvent, ClipEventResult, MouseButton};
-use crate::string::AvmString;
 use bitflags::bitflags;
 use either::Either;
 use gc_arena::barrier::unlock;
@@ -651,9 +650,9 @@ pub trait TInteractiveObject<'gc>:
                 .unwrap_or(Avm1Value::Null);
 
             let method_name = if focused {
-                AvmString::new_ascii_static(context.gc(), b"onSetFocus")
+                istr!(context, "onSetFocus")
             } else {
-                AvmString::new_ascii_static(context.gc(), b"onKillFocus")
+                istr!(context, "onKillFocus")
             };
 
             Avm1::run_stack_frame_for_method(self_do, object, method_name, &[other], context);

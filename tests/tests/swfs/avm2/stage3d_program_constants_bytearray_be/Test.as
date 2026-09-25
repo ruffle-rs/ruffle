@@ -18,6 +18,7 @@ package
     import flash.geom.Matrix3D;
     import flash.geom.Vector3D;
     import flash.display.Stage;
+    import flash.display.StageQuality;
     import flash.utils.ByteArray;
     import flash.utils.Endian;
 
@@ -64,13 +65,12 @@ package
         {
             stage.scaleMode = StageScaleMode.NO_SCALE;
             stage.align = StageAlign.TOP_LEFT;
+            stage.quality = StageQuality.BEST;
 
             // Set up ByteArray endianness (big-endian)
             constantsBA.endian = Endian.BIG_ENDIAN;
 
             stage3D = stage.stage3Ds[0];
-            stage3D.x = 10;
-            stage3D.y = 10;
 
             //Compile shaders
             vertexAssembly.assemble( Context3DProgramType.VERTEX, VERTEX_SHADER, 1, false );
@@ -176,14 +176,25 @@ package
             projection.perspectiveFieldOfViewRH( fov, viewWidth/viewHeight, zNear, zFar );
             view.appendTranslation( 0, 0, -2 );    //Move view back
             model.appendTranslation( -.5, -.5, -.5 ); //center cube on origin
+            //Apply 40 incremental rotations up front so the rendered frame is deterministic
+            for (var i:int = 0; i < 40; i++) {
+                model.appendRotation( 1.0, Vector3D.Z_AXIS, pivot );
+                model.appendRotation( 1.0, Vector3D.Y_AXIS, pivot );
+                model.appendRotation( 0.5, Vector3D.X_AXIS, pivot );
+            }
             stage.addEventListener( Event.ENTER_FRAME, render );
         }
 
-        // Helper function to write matrix raw data to ByteArray
+        // Helper function to write matrix raw data to ByteArray.
+        // Stage3D's setProgramConstantsFromByteArray reads raw little-endian floats
+        // regardless of ByteArray.endian, so we temporarily switch to LITTLE_ENDIAN
+        // for the writes to produce bytes the GPU will interpret correctly.
         private function matrixToByteArray(matrix:Matrix3D, ba:ByteArray, transpose:Boolean = false):void
         {
             ba.position = 0;
             var rawData:Vector.<Number> = matrix.rawData;
+            var savedEndian:String = ba.endian;
+            ba.endian = Endian.LITTLE_ENDIAN;
 
             if (transpose) {
                 // Write transposed: rows become columns
@@ -198,14 +209,12 @@ package
                     ba.writeFloat(rawData[i]);
                 }
             }
+
+            ba.endian = savedEndian;
         }
 
         private function render( event:Event ):void
         {
-            //Rotate model on each frame
-            model.appendRotation( 1.0, Vector3D.Z_AXIS, pivot );
-            model.appendRotation( 1.0, Vector3D.Y_AXIS, pivot );
-            model.appendRotation( 0.5, Vector3D.X_AXIS, pivot );
 
             //Combine transforms
             finalTransform.identity();

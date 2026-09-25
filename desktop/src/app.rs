@@ -3,8 +3,8 @@ use crate::gui::{GuiController, MENU_HEIGHT};
 use crate::player::{LaunchOptions, PlayerController};
 use crate::preferences::GlobalPreferences;
 use crate::util::{
-    get_screen_size, gilrs_button_to_gamepad_button, plot_stats_in_tracy,
-    winit_input_to_ruffle_key_descriptor, winit_to_ruffle_text_control,
+    get_screen_size, gilrs_button_to_gamepad_button, winit_input_to_ruffle_key_descriptor,
+    winit_to_ruffle_text_control,
 };
 use anyhow::Error;
 use gilrs::{Event, EventType, Gilrs};
@@ -28,6 +28,9 @@ struct MainWindow {
     gui: GuiController,
     player: PlayerController,
     minimized: bool,
+    /// Set from `WindowEvent::Occluded`, which winit only reports on macOS and X11
+    /// (and on X11 only without a compositor). Always false elsewhere.
+    occluded: bool,
     mouse_pos: PhysicalPosition<f64>,
     modifiers: Modifiers,
     min_window_size: LogicalSize<u32>,
@@ -45,8 +48,10 @@ struct MainWindow {
 impl MainWindow {
     pub fn window_event(&mut self, event_loop: &ActiveEventLoop, event: WindowEvent) {
         if matches!(event, WindowEvent::RedrawRequested) {
-            // Don't render when minimized to avoid potential swap chain errors in `wgpu`.
-            if !self.minimized {
+            // Don't render when nobody can see the result: while minimized, the
+            // surface also keeps the size it had before, as `GuiController::resize`
+            // refuses to reconfigure it to a zero size.
+            if !self.minimized && !self.occluded {
                 let mut player = self.player.get();
                 if let Some(ref mut player) = player {
                     // Even if the movie is paused, user interaction with debug tools can change the render output
@@ -54,7 +59,6 @@ impl MainWindow {
                 }
 
                 self.gui.render(player);
-                plot_stats_in_tracy(&self.gui.descriptors().wgpu_instance);
             }
 
             // Important that we return here, or we'll get a feedback loop with egui
@@ -71,7 +75,11 @@ impl MainWindow {
                 event_loop.exit();
             }
             WindowEvent::Resized(size) => {
-                // TODO: Change this when winit adds a `Window::minimized` or `WindowEvent::Minimize`.
+                // How minimizing shows up on Windows; winit still has no
+                // `WindowEvent::Minimize`. (`Window::is_minimized` does exist by
+                // now, but it has to be polled, and it wouldn't tell us anything
+                // new: macOS reports minimized windows as occluded instead, and
+                // on Wayland it always returns `None`.)
                 self.minimized = size.width == 0 && size.height == 0;
 
                 if let Some(mut player) = self.player.get() {
@@ -85,6 +93,13 @@ impl MainWindow {
                 self.gui.window().request_redraw();
                 if matches!(self.loaded, LoadingState::WaitingForResize) {
                     self.loaded = LoadingState::Loaded;
+                }
+            }
+            WindowEvent::Occluded(occluded) => {
+                self.occluded = occluded;
+                if !occluded {
+                    // Nothing repaints us on its own if the movie is paused.
+                    self.gui.window().request_redraw();
                 }
             }
             WindowEvent::CursorMoved { position, .. } => {
@@ -543,6 +558,7 @@ impl ApplicationHandler<RuffleEvent> for App {
                 start_fullscreen,
                 loaded,
                 minimized: false,
+                occluded: false,
                 mouse_pos: PhysicalPosition::new(0.0, 0.0),
                 modifiers: Modifiers::default(),
                 time: Instant::now(),

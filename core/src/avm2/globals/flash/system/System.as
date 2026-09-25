@@ -16,6 +16,8 @@ package flash.system {
             stub_method("flash.system.System", "disposeXML");
         }
 
+        public static native function exit(code:uint):void;
+
         public static function get freeMemory():Number {
             stub_getter("flash.system.System", "freeMemory");
             return 1024*1024*10; // 10MB

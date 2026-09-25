@@ -1,6 +1,7 @@
 use crate::avm2::Error;
 use crate::avm2::activation::Activation;
 use crate::avm2::error::{Error2004Type, make_error_2004, make_error_2030};
+use crate::avm2::function::FunctionArgs;
 use crate::avm2::object::TObject as _;
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
@@ -21,7 +22,7 @@ pub use crate::avm2::object::shader_data_allocator;
 pub fn _set_byte_code<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 

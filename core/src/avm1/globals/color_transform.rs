@@ -1,7 +1,7 @@
 //! flash.geom.ColorTransform object
 
 use crate::avm1::object::NativeObject;
-use crate::avm1::property_decl::{DeclContext, StaticDeclarations, SystemClass};
+use crate::avm1::property_decl::{DeclContext, PropertyOrder, StaticDeclarations, SystemClass};
 use crate::avm1::{Activation, Error, Object, Value};
 use crate::string::AvmString;
 use gc_arena::{Collect, Gc};
@@ -40,6 +40,7 @@ impl<'gc> ColorTransformObject {
         activation: &mut Activation<'_, 'gc>,
         color_transform: &ColorTransform,
     ) -> Result<Value<'gc>, Error<'gc>> {
+        let path = [istr!("flash"), istr!("geom"), istr!("ColorTransform")];
         let args = [
             color_transform.r_multiply.to_f64().into(),
             color_transform.g_multiply.to_f64().into(),
@@ -50,8 +51,7 @@ impl<'gc> ColorTransformObject {
             color_transform.b_add.into(),
             color_transform.a_add.into(),
         ];
-        let constructor = activation.prototypes().color_transform_constructor;
-        constructor.construct(activation, &args)
+        activation.instantiate_class_as_script(path, &args)
     }
 
     pub fn cast(value: Value<'gc>) -> Option<Gc<'gc, Self>> {
@@ -97,7 +97,12 @@ pub fn create_class<'gc>(
     context: &mut DeclContext<'_, 'gc>,
     super_proto: Object<'gc>,
 ) -> SystemClass<'gc> {
-    let class = context.native_class(constructor, None, super_proto);
+    let class = context.native_class(
+        constructor,
+        None,
+        super_proto,
+        PropertyOrder::PrototypeFirst,
+    );
     context.define_properties_on(class.proto, PROTO_DECLS(context));
     class
 }

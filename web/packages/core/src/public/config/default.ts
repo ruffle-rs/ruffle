@@ -1,4 +1,4 @@
-import type { BaseLoadOptions } from "./load-options";
+import type { BaseLoadOptions } from "./load-options.js";
 import {
     AutoPlay,
     BackgroundExecutionMode,
@@ -12,7 +12,7 @@ import {
     WindowMode,
     ScrollingBehavior,
     DeviceFontRenderer,
-} from "./load-options";
+} from "./load-options.js";
 
 export const DEFAULT_CONFIG: Required<BaseLoadOptions> = {
     allowScriptAccess: false,

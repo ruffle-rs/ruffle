@@ -27,6 +27,18 @@
   Error thrown: ArgumentError: Error #2004: One of the parameters is invalid.
 6 coordinates with indices
   No error thrown
+Empty indices
+  No error thrown
+1 index
+  Error thrown: ArgumentError: Error #2004: One of the parameters is invalid.
+2 indices
+  Error thrown: ArgumentError: Error #2004: One of the parameters is invalid.
+4 indices
+  Error thrown: ArgumentError: Error #2004: One of the parameters is invalid.
+5 indices
+  Error thrown: ArgumentError: Error #2004: One of the parameters is invalid.
+7 indices
+  Error thrown: ArgumentError: Error #2004: One of the parameters is invalid.
 Unknown culling
   Error thrown: ArgumentError: Error #2004: One of the parameters is invalid.
 Null culling
@@ -64,6 +76,18 @@ Non-integer coords
   Error thrown: ArgumentError: Error #2004: One of the parameters is invalid.
 6 coordinates with indices
   No error thrown
+Empty indices
+  No error thrown
+1 index
+  Error thrown: ArgumentError: Error #2004: One of the parameters is invalid.
+2 indices
+  Error thrown: ArgumentError: Error #2004: One of the parameters is invalid.
+4 indices
+  Error thrown: ArgumentError: Error #2004: One of the parameters is invalid.
+5 indices
+  Error thrown: ArgumentError: Error #2004: One of the parameters is invalid.
+7 indices
+  Error thrown: ArgumentError: Error #2004: One of the parameters is invalid.
 Unknown culling
   Error thrown: ArgumentError: Error #2008: Parameter culling must be one of the accepted values.
 Null culling

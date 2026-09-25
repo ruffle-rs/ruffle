@@ -1,0 +1,26 @@
+added: target=[object Loader], currentTarget=[object Loader], eventPhase=2, bubbles=true
+addedToStage: target=[object Loader], currentTarget=[object Loader], eventPhase=2, bubbles=false
+open: target=[object LoaderInfo], currentTarget=[object LoaderInfo], eventPhase=2, bubbles=false
+progress: bytesLoaded=0, bytesTotal=57
+progress: bytesLoaded=57, bytesTotal=57
+added: target=[object AVM1Movie], currentTarget=[object Loader], eventPhase=3, bubbles=true
+frame 1
+child
+frame 2
+init: target=[object LoaderInfo], currentTarget=[object LoaderInfo], eventPhase=2, bubbles=false
+httpStatus: status=0
+complete: target=[object LoaderInfo], currentTarget=[object LoaderInfo], eventPhase=2, bubbles=false
+unload: target=[object LoaderInfo], currentTarget=[object LoaderInfo], eventPhase=2, bubbles=false
+removed: target=[object AVM1Movie], currentTarget=[object Loader], eventPhase=3, bubbles=true
+open: target=[object LoaderInfo], currentTarget=[object LoaderInfo], eventPhase=2, bubbles=false
+progress: bytesLoaded=0, bytesTotal=57
+progress: bytesLoaded=57, bytesTotal=57
+added: target=[object AVM1Movie], currentTarget=[object Loader], eventPhase=3, bubbles=true
+frame 3
+child
+frame 4
+init: target=[object LoaderInfo], currentTarget=[object LoaderInfo], eventPhase=2, bubbles=false
+httpStatus: status=0
+complete: target=[object LoaderInfo], currentTarget=[object LoaderInfo], eventPhase=2, bubbles=false
+frame 5
+frame 6

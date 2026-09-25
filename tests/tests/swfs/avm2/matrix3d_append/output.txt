@@ -1,0 +1,16 @@
+Caught error: TypeError: Error #2007: Parameter lhs must be non-null.
+	at flash.geom::Matrix3D/append()
+	at Function/<anonymous>()
+	at Test/testException()
+	at Test/testExceptions()
+	at Test()
+values.append(identity): 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16
+identity.append(values): 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16
+a.append(b): 80,70,60,50,240,214,188,162,400,358,316,274,560,502,444,386
+b.append(a): 386,444,502,560,274,316,358,400,162,188,214,240,50,60,70,80
+a.append(a): 90,100,110,120,202,228,254,280,314,356,398,440,426,484,542,600
+NaN lhs: NaN,0,0,0,NaN,1,0,0,NaN,0,1,0,NaN,2,3,1
+NaN this: NaN,NaN,NaN,NaN,0,1,0,0,0,0,1,0,1,2,3,1
+infinite lhs: Infinity,0,0,0,NaN,1,0,0,NaN,0,1,0,Infinity,2,3,1
+infinite translation: 1,0,0,0,0,1,0,0,0,0,1,0,NaN,NaN,NaN,NaN
+infinity times zero: NaN,Infinity,NaN,NaN,1,0,0,0,0,0,1,0,0,0,0,1

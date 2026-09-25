@@ -1,34 +1,101 @@
 ===== drawPath
 Odd number of data coordinates
   Error thrown: ArgumentError: Error #2004: One of the parameters is invalid.
+	at flash.display::Graphics/drawPath()
+	at Function/<anonymous>()
+	at Function/<anonymous>()
+	at Test/logError()
+	at Test/testErrors()
+	at Test()
 Even number of data coordinates
   No error thrown
 Odd number of data coordinates with no commands
   No error thrown
 Odd number of superfluous data coordinates
   Error thrown: ArgumentError: Error #2004: One of the parameters is invalid.
+	at flash.display::Graphics/drawPath()
+	at Function/<anonymous>()
+	at Function/<anonymous>()
+	at Test/logError()
+	at Test/testErrors()
+	at Test()
 Unknown commands
   No error thrown
 Unknown winding rule
   Error thrown: ArgumentError: Error #2008: Parameter winding must be one of the accepted values.
+	at flash.display::Graphics/drawPath()
+	at Function/<anonymous>()
+	at Function/<anonymous>()
+	at Test/logError()
+	at Test/testErrors()
+	at Test()
 Uppercase winding rule
   Error thrown: ArgumentError: Error #2008: Parameter winding must be one of the accepted values.
+	at flash.display::Graphics/drawPath()
+	at Function/<anonymous>()
+	at Function/<anonymous>()
+	at Test/logError()
+	at Test/testErrors()
+	at Test()
 Lowercase winding rule
   Error thrown: ArgumentError: Error #2008: Parameter winding must be one of the accepted values.
+	at flash.display::Graphics/drawPath()
+	at Function/<anonymous>()
+	at Function/<anonymous>()
+	at Test/logError()
+	at Test/testErrors()
+	at Test()
 ===== GraphicsPath
 Odd number of data coordinates
   Error thrown: ArgumentError: Error #2004: One of the parameters is invalid.
+	at flash.display::Graphics/drawPath()
+	at flash.display::Graphics/drawPathObject()
+	at flash.display::Graphics/drawGraphicsData()
+	at Function/<anonymous>()
+	at Function/<anonymous>()
+	at Test/logError()
+	at Test/testErrors()
+	at Test()
 Even number of data coordinates
   No error thrown
 Odd number of data coordinates with no commands
   No error thrown
 Odd number of superfluous data coordinates
   Error thrown: ArgumentError: Error #2004: One of the parameters is invalid.
+	at flash.display::Graphics/drawPath()
+	at flash.display::Graphics/drawPathObject()
+	at flash.display::Graphics/drawGraphicsData()
+	at Function/<anonymous>()
+	at Function/<anonymous>()
+	at Test/logError()
+	at Test/testErrors()
+	at Test()
 Unknown commands
   No error thrown
 Unknown winding rule
   Error thrown: ArgumentError: Error #2008: Parameter winding must be one of the accepted values.
+	at Error$/throwError()
+	at flash.display::GraphicsPath()
+	at Function/<anonymous>()
+	at Function/<anonymous>()
+	at Test/logError()
+	at Test/testErrors()
+	at Test()
 Uppercase winding rule
   Error thrown: ArgumentError: Error #2008: Parameter winding must be one of the accepted values.
+	at Error$/throwError()
+	at flash.display::GraphicsPath()
+	at Function/<anonymous>()
+	at Function/<anonymous>()
+	at Test/logError()
+	at Test/testErrors()
+	at Test()
 Lowercase winding rule
   Error thrown: ArgumentError: Error #2008: Parameter winding must be one of the accepted values.
+	at Error$/throwError()
+	at flash.display::GraphicsPath()
+	at Function/<anonymous>()
+	at Function/<anonymous>()
+	at Test/logError()
+	at Test/testErrors()
+	at Test()

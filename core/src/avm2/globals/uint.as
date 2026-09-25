@@ -33,7 +33,7 @@ package {
                 }
 
                 if (!(this is Number)) {
-                    throw new TypeError("Error #1004: Method uint.prototype.toString was invoked on an incompatible object.", 1004);
+                    Error.throwError(TypeError, 1004, "uint.prototype.toString");
                 }
 
                 var self:Number = this;
@@ -48,7 +48,7 @@ package {
                 }
 
                 if (!(this is uint)) {
-                    throw new TypeError("Error #1004: Method uint.prototype.valueOf was invoked on an incompatible object.", 1004);
+                    Error.throwError(TypeError, 1004, "uint.prototype.valueOf");
                 }
 
                 return this;

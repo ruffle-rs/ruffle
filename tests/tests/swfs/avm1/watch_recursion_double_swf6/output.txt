@@ -1,0 +1,46 @@
+o1.prop1 changed
+  o1.prop1: a
+  o1.prop2: t
+  p: prop1,a,b,
+o1.prop2 changed
+  o1.prop1: a
+  o1.prop2: t
+  p: prop2,t,c,
+Set to k, returning l
+  o1.prop1: k
+  o1.prop2: t
+Set to c, returning d
+  o1.prop1: k
+  o1.prop2: l
+Done
+  o1.prop1: d
+  o1.prop2: l
+o2.prop1 changed
+  o2.prop1:
+o2.prop2 getter
+  p: ,
+  o2.prop2: g
+  p: prop1,,b,
+o2.prop2 changed
+  o2.prop1:
+  o2.prop2:
+  p: prop2,,c,
+Set to k, returning l
+  o2.prop1: k
+  o2.prop2:
+o2.prop2 setter
+  p: l,
+Set to c, returning d
+  o2.prop1: k
+o2.prop2 getter
+  p: ,
+  o2.prop2: g
+o2.prop1 setter
+  p: d,
+Done
+o2.prop1 getter
+  p: ,
+  o2.prop1: e
+o2.prop2 getter
+  p: ,
+  o2.prop2: g

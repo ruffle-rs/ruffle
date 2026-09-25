@@ -4,11 +4,14 @@
 <p align="center">
   <a href="https://github.com/ruffle-rs/ruffle/actions"><img alt="Rust Build Status" src="https://img.shields.io/github/actions/workflow/status/ruffle-rs/ruffle/test_rust.yml?label=Rust%20Build&logo=github&branch=master" /></a>
   <a href="https://github.com/ruffle-rs/ruffle/actions/workflows/test_web.yml"><img alt="Web Build Status" src="https://img.shields.io/github/actions/workflow/status/ruffle-rs/ruffle/test_web.yml?label=Web%20Build&logo=github&branch=master" /></a>
+  <a href="https://discord.gg/ruffle"><img alt="Ruffle Discord" src="https://img.shields.io/discord/610531541889581066?label=&color=7389d8&labelColor=6a7ec2&logoColor=ffffff&logo=discord" /></a>
+  <a href="https://crowdin.com/project/ruffle"><img alt="Ruffle translations" src="https://badges.crowdin.net/ruffle/localized.svg" /></a>
+  <br />
+  <a href="https://addons.mozilla.org/en-US/firefox/addon/ruffle_rs/"><img alt="Firefox Extension" src="https://img.shields.io/amo/v/ruffle_rs?logo=firefoxbrowser&logoColor=white&label=firefox" /></a>
+  <a href="https://chromewebstore.google.com/detail/ruffle-flash-emulator/donbcfbmhbcapadipfkeojnmajbakjdc"><img alt="Chrome Extension" src="https://img.shields.io/chrome-web-store/v/donbcfbmhbcapadipfkeojnmajbakjdc?logo=googlechrome&logoColor=white&label=chrome" /></a>
   <a href="https://flathub.org/apps/rs.ruffle.Ruffle"><img alt="Ruffle Flathub" src="https://img.shields.io/flathub/v/rs.ruffle.Ruffle?color=007acc&logo=flathub" /></a>
   <a href="https://www.npmjs.com/package/@ruffle-rs/ruffle"><img alt="Ruffle npm" src="https://img.shields.io/npm/v/@ruffle-rs/ruffle?color=007acc&logo=npm" /></a>
   <a href="https://aur.archlinux.org/packages/ruffle-nightly-bin"><img alt="Ruffle AUR" src="https://img.shields.io/aur/version/ruffle-nightly-bin?logo=archlinux" /></a>
-  <a href="https://discord.gg/ruffle"><img alt="Ruffle Discord" src="https://img.shields.io/discord/610531541889581066?label=&color=7389d8&labelColor=6a7ec2&logoColor=ffffff&logo=discord" /></a>
-  <a href="https://crowdin.com/project/ruffle"><img alt="Ruffle translations" src="https://badges.crowdin.net/ruffle/localized.svg" /></a>
   <br />
   <strong><a href="https://ruffle.rs">website</a> | <a href="https://ruffle.rs/demo">demo</a> | <a href="https://github.com/ruffle-rs/ruffle/releases">nightly builds</a> | <a href="https://github.com/ruffle-rs/ruffle/wiki">wiki</a></strong>
 </p>
@@ -61,12 +64,12 @@ The following are typical dependencies for Linux:
 
 * Ubuntu/Debian:
   ```shell
-  sudo apt install pkg-config libasound2-dev libudev-dev libfontconfig-dev default-jre-headless g++
+  sudo apt install pkg-config libasound2-dev libudev-dev libfontconfig-dev libfreetype6-dev libssl-dev default-jre-headless g++
   ```
 
 * Fedora/RHEL:
   ```shell
-  sudo dnf install pkgconf-pkg-config alsa-lib-devel systemd-devel fontconfig-devel java-latest-openjdk-headless gcc-c++
+  sudo dnf install pkgconf-pkg-config alsa-lib-devel systemd-devel fontconfig-devel freetype-devel openssl-devel java-latest-openjdk-headless gcc-c++
   ```
 
 ### Desktop
@@ -82,6 +85,13 @@ To run a specific SWF file, pass the SWF path as an argument:
 `cargo run --release --package=ruffle_desktop -- test.swf`
 
 To build in debug mode, simply omit `--release` from the command.
+
+Desktop has a few optional features which you can specify via `--features`, comma separated:
+
+* `tracy`: Enables profiling to [Tracy](https://github.com/wolfpld/tracy). You may need to expand the log filter to see everything, e.g. `RUST_LOG="warn,ruffle=debug"`
+* `tracy_images`: Enables Tracy frame captures. Implies `tracy`.
+* `tracy_avm`: Enables profiling AVM execution with Tracy. Implies `tracy`.
+* `render_debug_labels`: Enables debug labels during rendering, useful for debugging graphics with [renderdoc](https://renderdoc.org/) or similar.
 
 #### macOS
 

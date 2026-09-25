@@ -480,7 +480,8 @@ impl RuffleInstanceBuilder {
         player.register_device_font(FontDefinition::FontFile {
             name,
             is_bold: face.is_bold(),
-            is_italic: face.is_italic(),
+            // Note: do not use is_italic() here, as we don't care about italic_angle
+            is_italic: face.style() != ttf_parser::Style::Normal,
             data: FontFileData::new(bytes),
             index,
         });

@@ -1,0 +1,16 @@
+num_ticks = 8
+known_failure = true
+
+[[compilers]]
+type = "Asc"
+target = "test.swf"
+class = "Test"
+scripts = ["Test.as"]
+swf_version = 41
+
+[[compilers]]
+type = "Asc"
+target = "child.swf"
+class = "Child"
+scripts = ["Child.as"]
+swf_version = 41

@@ -4,7 +4,7 @@ use crate::avm1::error::Error;
 use crate::avm1::function::ExecutionReason;
 use crate::avm1::parameters::{ParametersExt, UndefinedAs};
 use crate::avm1::property::Attribute;
-use crate::avm1::property_decl::{DeclContext, StaticDeclarations, SystemClass};
+use crate::avm1::property_decl::{DeclContext, PropertyOrder, StaticDeclarations, SystemClass};
 use crate::avm1::{Activation, ArrayBuilder, Object, Value};
 use crate::string::{AvmString, StringContext};
 use gc_arena::Collect;
@@ -24,7 +24,7 @@ pub fn create_class<'gc>(
     // Despite the documentation says that there is no constructor function for the `AsBroadcaster`
     // class, Flash accepts expressions like `new AsBroadcaster()`, and a newly-created object is
     // returned in such cases.
-    let class = context.empty_class(super_proto);
+    let class = context.empty_class(super_proto, PropertyOrder::PrototypeLast);
 
     let decls = OBJECT_DECLS(context);
     let mut define_as_object = |index: usize| -> Object<'gc> {
@@ -197,11 +197,9 @@ fn initialize_internal<'gc>(
 ) {
     broadcaster.define_value(
         context.gc(),
-        istr!(context, "_listeners"),
-        ArrayBuilder::new_with_proto(context, array_proto)
-            .with([])
-            .into(),
-        Attribute::DONT_ENUM,
+        istr!(context, "broadcastMessage"),
+        functions.broadcast_message.into(),
+        Attribute::DONT_DELETE | Attribute::DONT_ENUM,
     );
     broadcaster.define_value(
         context.gc(),
@@ -217,8 +215,10 @@ fn initialize_internal<'gc>(
     );
     broadcaster.define_value(
         context.gc(),
-        istr!(context, "broadcastMessage"),
-        functions.broadcast_message.into(),
+        istr!(context, "_listeners"),
+        ArrayBuilder::new_with_proto(context, array_proto)
+            .with([])
+            .into(),
         Attribute::DONT_DELETE | Attribute::DONT_ENUM,
     );
 }

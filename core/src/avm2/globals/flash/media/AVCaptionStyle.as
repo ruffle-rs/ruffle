@@ -51,5 +51,119 @@ package flash.media {
 
         public static const LEFT_DROP_SHADOW:String = "drop_shadow_left";
         public static const RIGHT_DROP_SHADOW:String = "drop_shadow_right";
+
+        private var _backgroundColor:String;
+        private var _backgroundOpacity:String;
+        private var _bottomInset:String;
+        private var _edgeColor:String;
+        private var _fillColor:String;
+        private var _fillOpacity:String;
+        private var _font:String;
+        private var _fontColor:String;
+        private var _fontEdge:String;
+        private var _fontOpacity:String;
+        private var _size:String;
+
+        public function AVCaptionStyle() {
+            this._backgroundColor = "";
+            this._backgroundOpacity = "";
+            this._bottomInset = "0";
+            this._edgeColor = "";
+            this._fillColor = "";
+            this._fillOpacity = "";
+            this._font = "";
+            this._fontColor = "";
+            this._fontEdge = "";
+            this._fontOpacity = "";
+            this._size = "";
+        }
+
+        public function get backgroundColor():String {
+            return this._backgroundColor;
+        }
+
+        public function set backgroundColor(value:String):void {
+            this._backgroundColor = value;
+        }
+
+        public function get backgroundOpacity():String {
+            return this._backgroundOpacity;
+        }
+
+        public function set backgroundOpacity(value:String):void {
+            this._backgroundOpacity = value;
+        }
+
+        public function get bottomInset():String {
+            return this._bottomInset;
+        }
+
+        public function set bottomInset(value:String):void {
+            this._bottomInset = value;
+        }
+
+        public function get edgeColor():String {
+            return this._edgeColor;
+        }
+
+        public function set edgeColor(value:String):void {
+            this._edgeColor = value;
+        }
+
+        public function get fillColor():String {
+            return this._fillColor;
+        }
+
+        public function set fillColor(value:String):void {
+            this._fillColor = value;
+        }
+
+        public function get fillOpacity():String {
+            return this._fillOpacity;
+        }
+
+        public function set fillOpacity(value:String):void {
+            this._fillOpacity = value;
+        }
+
+        public function get font():String {
+            return this._font;
+        }
+
+        public function set font(value:String):void {
+            this._font = value;
+        }
+
+        public function get fontColor():String {
+            return this._fontColor;
+        }
+
+        public function set fontColor(value:String):void {
+            this._fontColor = value;
+        }
+
+        public function get fontEdge():String {
+            return this._fontEdge;
+        }
+
+        public function set fontEdge(value:String):void {
+            this._fontEdge = value;
+        }
+
+        public function get fontOpacity():String {
+            return this._fontOpacity;
+        }
+
+        public function set fontOpacity(value:String):void {
+            this._fontOpacity = value;
+        }
+
+        public function get size():String {
+            return this._size;
+        }
+
+        public function set size(value:String):void {
+            this._size = value;
+        }
     }
 }

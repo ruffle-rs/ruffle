@@ -3,3 +3,6 @@ created
 0
 0
 disposed
+ArgumentError: Error #2015: Invalid BitmapData.
+	at flash.display::BitmapData/get width()
+	at bitmap_fla::MainTimeline/frame1()

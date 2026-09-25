@@ -4,6 +4,7 @@
     import flash.display.Sprite;
     import flash.display.Stage3D;
     import flash.display.StageAlign;
+    import flash.display.StageQuality;
     import flash.display.StageScaleMode;
     import flash.display3D.Context3D;
     import flash.display3D.Context3DProgramType;
@@ -17,12 +18,9 @@
     import flash.events.Event;
     import flash.geom.Matrix3D;
     import flash.geom.Vector3D;
-	import flash.display.Stage;
 	import flash.utils.ByteArray;
     
-    public class Test {
-		private var stage;
-		
+    public class Test extends Sprite {
         //public const viewWidth:Number = 320;
         //public const viewHeight:Number = 200;
 
@@ -58,23 +56,23 @@
         private var fragmentAssembly:AGALMiniAssembler = new AGALMiniAssembler();
         private var programPair:Program3D;
 		
-				private function dumpBytes(data: ByteArray) {
-                        var out = new Array();
-                        data.position = 0;
-    
-                        for (var i = 0; i < data.length; i++) {
-                                out.push(data.readUnsignedByte())
-                        };
-    
-                        trace(out);
-                }
+        private function dumpBytes(data: ByteArray) {
+                var out = new Array();
+                data.position = 0;
+
+                for (var i = 0; i < data.length; i++) {
+                        out.push(data.readUnsignedByte())
+                };
+
+                trace(out);
+        }
 
         
-        public function Test(stage: Stage)
+        public function Test()
         {
-			this.stage = stage;
             stage.scaleMode = StageScaleMode.NO_SCALE;
             stage.align = StageAlign.TOP_LEFT;
+            stage.quality = StageQuality.BEST;
             //stage.nativeWindow.activate(); //AIR only
                          
             stage3D = stage.stage3Ds[0];
@@ -186,16 +184,19 @@
             projection.perspectiveFieldOfViewRH( fov, viewWidth/viewHeight, zNear, zFar );            
             view.appendTranslation( 0, 0, -2 );    //Move view back
             model.appendTranslation( -.5, -.5, -.5 ); //center cube on origin
+
+            //Apply 40 incremental rotations up front so the rendered frame is deterministic
+            for (var i:int = 0; i < 40; i++) {
+                model.appendRotation( 1.0, Vector3D.Z_AXIS, pivot );
+                model.appendRotation( 1.0, Vector3D.Y_AXIS, pivot );
+                model.appendRotation( 0.5, Vector3D.X_AXIS, pivot );
+            }
+
             stage.addEventListener( Event.ENTER_FRAME, render );
         }
         
         private function render( event:Event ):void
         {
-            //Rotate model on each frame
-            model.appendRotation( 1.0, Vector3D.Z_AXIS, pivot );
-			model.appendRotation( 1.0, Vector3D.Y_AXIS, pivot );
-            model.appendRotation( 0.5, Vector3D.X_AXIS, pivot );
-            
             //Combine transforms
             finalTransform.identity();
             finalTransform.append( model );

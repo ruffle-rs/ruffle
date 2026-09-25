@@ -1,0 +1,4 @@
+fileList = undefined
+browse returned true
+onCancel
+target.fileList = undefined

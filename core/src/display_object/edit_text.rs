@@ -23,7 +23,8 @@ use crate::font::{FontLike, FontType, TextRenderSettings};
 use crate::html;
 use crate::html::StyleSheet;
 use crate::html::{
-    FormatSpans, Layout, LayoutBox, LayoutContent, LayoutLine, LayoutMetrics, Position, TextFormat,
+    FormatSpans, Layout, LayoutBox, LayoutContent, LayoutContext, LayoutLine, LayoutMetrics,
+    Position, TextFormat,
 };
 use crate::prelude::*;
 use crate::string::{AvmString, SwfStrExt as _, WStr, WString, utils as string_utils};
@@ -407,6 +408,10 @@ impl<'gc> EditText<'gc> {
         text.set_selectable(false);
 
         text
+    }
+
+    pub fn instantiate(self, mc: &Mutation<'gc>) -> Self {
+        Self(Gc::new(mc, (*self.0).clone()))
     }
 
     fn contains_flag(self, flag: EditTextFlag) -> bool {
@@ -828,17 +833,6 @@ impl<'gc> EditText<'gc> {
         self.relayout(context);
     }
 
-    /// Construct a base text transform for a particular `EditText` span.
-    ///
-    /// This `text_transform` is separate from and relative to the base
-    /// transform that this `EditText` automatically gets by virtue of being a
-    /// `DisplayObject`.
-    pub fn text_transform(self, color: Color) -> Transform {
-        let mut transform: Transform = Default::default();
-        transform.color_transform.set_mult_color(color);
-        transform
-    }
-
     /// Returns the variable that this text field is bound to.
     pub fn variable(self) -> Option<AvmString<'gc>> {
         self.0.variable.get()
@@ -856,7 +850,7 @@ impl<'gc> EditText<'gc> {
             activation
                 .context
                 .unbound_text_fields
-                .retain(|&text_field| !DisplayObject::ptr_eq(text_field.into(), self.into()));
+                .retain(|&text_field| !DisplayObject::ptr_eq(text_field, self));
         }
 
         // Setup new binding.
@@ -873,7 +867,7 @@ impl<'gc> EditText<'gc> {
     /// the text, and no higher-level representation. Specifically, CSS should
     /// have already been calculated and applied to HTML trees lowered into the
     /// text-span representation.
-    pub fn relayout(self, context: &mut UpdateContext<'gc>) {
+    pub fn relayout(self, context: &mut dyn LayoutContext<'gc>) {
         let autosize = self.0.autosize.get();
         let is_word_wrap = self.0.flags.get().contains(EditTextFlag::WORD_WRAP);
         let movie = self.0.shared.swf.clone();
@@ -895,15 +889,14 @@ impl<'gc> EditText<'gc> {
             None
         };
 
-        let new_layout = html::lower_from_text_spans(
-            &text_spans,
-            context,
+        let layout_params = html::LayoutParams {
             movie,
-            content_width,
-            !self.0.flags.get().contains(EditTextFlag::READ_ONLY),
+            is_input: !self.0.flags.get().contains(EditTextFlag::READ_ONLY),
             is_word_wrap,
-            self.0.font_type(),
-        );
+            font_type: self.0.font_type(),
+        };
+        let new_layout =
+            html::lower_from_text_spans(&text_spans, context, layout_params, content_width);
         drop(text_spans);
 
         unlock!(Gc::write(context.gc(), self.0), EditTextData, layout).replace(new_layout);
@@ -1059,12 +1052,11 @@ impl<'gc> EditText<'gc> {
     /// Returns the selection, but takes into account whether the selection should be rendered.
     fn visible_selection(self) -> Option<TextSelection> {
         let selection = self.0.selection.get()?;
-        // TODO: Remove this #[allow] once Rust 1.94 is released.
-        // Clippy 0.1.94+ (PR #16286) no longer fires collapsible_else_if when both
-        // branches contain if-else expressions, recognizing the parallel structure.
-        #[allow(clippy::collapsible_else_if)]
         if selection.is_caret() {
-            if self.has_focus() && !self.0.flags.get().contains(EditTextFlag::READ_ONLY) {
+            if self.has_focus()
+                && !self.0.flags.get().contains(EditTextFlag::READ_ONLY)
+                && !selection.blinks_now()
+            {
                 Some(selection)
             } else {
                 None
@@ -1242,19 +1234,19 @@ impl<'gc> EditText<'gc> {
 
         let visible_selection = self.visible_selection();
 
-        let caret = if let LayoutContent::Text { start, end, .. } = &lbox.content() {
-            if let Some(visible_selection) = visible_selection {
-                let text_len = self.0.text_spans.borrow().text().len();
-                if visible_selection.is_caret()
-                    && !self.0.flags.get().contains(EditTextFlag::READ_ONLY)
-                    && visible_selection.start() >= *start
-                    && (visible_selection.end() < *end || *end == text_len)
-                    && !visible_selection.blinks_now()
-                {
-                    Some(visible_selection.start() - start)
-                } else {
-                    None
-                }
+        let caret = if let LayoutContent::Text { start, end, .. } = &lbox.content()
+            && let Some(visible_selection) = visible_selection
+            && visible_selection.is_caret()
+        {
+            let end = if lbox.is_last_in_line() {
+                // Show the caret at the end of the line where a newline or
+                // the very last position are missing a box.
+                *end + 1
+            } else {
+                *end
+            };
+            if visible_selection.start() >= *start && visible_selection.end() < end {
+                Some(visible_selection.start() - start)
             } else {
                 None
             }
@@ -1272,7 +1264,7 @@ impl<'gc> EditText<'gc> {
         // We're cheating a bit and not actually rendering text using the OS/web.
         // Instead, we embed an SWF version of Noto Sans to use as the "device font", and render
         // it the same as any other SWF outline text.
-        if let Some((text, _tf, font, params, color)) =
+        if let Some((text, _tf, font, params)) =
             lbox.as_renderable_text(self.0.text_spans.borrow().displayed_text())
         {
             let metrics = font.metrics();
@@ -1282,9 +1274,8 @@ impl<'gc> EditText<'gc> {
             let mut caret_x = Twips::ZERO;
             font.evaluate(
                 text,
-                self.text_transform(color),
                 params,
-                &mut |pos, transform, glyph, advance, x| {
+                |pos, transform, glyph, advance, x| {
                     if glyph.renderable(context) {
                         // If it's highlighted, override the color.
                         if matches!(visible_selection, Some(visible_selection) if visible_selection.contains(start + pos)) {
@@ -1293,6 +1284,7 @@ impl<'gc> EditText<'gc> {
                                 matrix: transform.matrix,
                                 color_transform: ColorTransform::IDENTITY,
                                 perspective_projection: transform.perspective_projection,
+                                tz: transform.tz,
                             });
                         } else {
                             context.transform_stack.push(transform);
@@ -1314,7 +1306,7 @@ impl<'gc> EditText<'gc> {
             );
 
             if caret.is_some() {
-                self.render_caret(context, caret_x, caret_height, color, render_state);
+                self.render_caret(context, caret_x, caret_height, params.color, render_state);
             }
 
             if let LayoutContent::Text {
@@ -1324,7 +1316,7 @@ impl<'gc> EditText<'gc> {
                 // Draw underline
                 let underline_y = ascent + (max_descent / 2);
                 let underline_width = lbox.bounds().width();
-                self.render_underline(context, underline_width, underline_y, color);
+                self.render_underline(context, underline_width, underline_y, params.color);
             }
         }
 
@@ -1353,6 +1345,7 @@ impl<'gc> EditText<'gc> {
             );
         let pixel_snapping = EditTextPixelSnapping::new(context.stage.quality());
         pixel_snapping.apply(&mut caret);
+        caret.ty -= Twips::HALF_PX;
 
         // We have to draw the caret outside of the text mask.
         render_state.draw_caret_command = Some(RenderCommand::DrawLine {
@@ -1435,7 +1428,7 @@ impl<'gc> EditText<'gc> {
                             if !text.is_empty() {
                                 let _ = object.set(
                                     property,
-                                    AvmString::new(activation.gc(), self.text()).into(),
+                                    AvmString::new(activation.gc(), self.text()),
                                     activation,
                                 );
                             }
@@ -1483,7 +1476,7 @@ impl<'gc> EditText<'gc> {
                         let property = AvmString::new(activation.gc(), property);
                         let _ = object.set(
                             property,
-                            AvmString::new(activation.gc(), self.html_text()).into(),
+                            AvmString::new(activation.gc(), self.html_text()),
                             activation,
                         );
                     },
@@ -1566,7 +1559,12 @@ impl<'gc> EditText<'gc> {
     }
 
     /// Returns `true` when scroll has been modified.
-    pub fn set_scroll(self, scroll: f64) -> bool {
+    pub fn set_scroll(
+        self,
+        scroll: f64,
+        programmatic: bool,
+        context: &mut UpdateContext<'gc>,
+    ) -> bool {
         // derived experimentally. Not exact: overflows somewhere above 767100486418432.9
         // Checked in SWF 6, AVM1. Same in AVM2.
         const SCROLL_OVERFLOW_LIMIT: f64 = 767100486418433.0;
@@ -1579,6 +1577,7 @@ impl<'gc> EditText<'gc> {
         if self.0.scroll.replace(clamped) == clamped {
             false
         } else {
+            self.on_scroller(programmatic, context);
             self.invalidate_cached_bitmap();
             true
         }
@@ -1628,24 +1627,19 @@ impl<'gc> EditText<'gc> {
             matrix = matrix.inverse().expect("Invertible layout matrix");
             let local_position = matrix * position;
 
-            if let Some((text, _tf, font, params, color)) =
+            if let Some((text, _tf, font, params)) =
                 layout_box.as_renderable_text(self.0.text_spans.borrow().text())
             {
                 let mut result = 0;
-                font.evaluate(
-                    text,
-                    self.text_transform(color),
-                    params,
-                    &mut |pos, _transform, _glyph, advance, x| {
-                        if local_position.x >= x {
-                            if local_position.x > x + (advance / 2) {
-                                result = string_utils::next_char_boundary(text, pos);
-                            } else {
-                                result = pos;
-                            }
+                font.evaluate(text, params, |pos, _transform, _glyph, advance, x| {
+                    if local_position.x >= x {
+                        if local_position.x > x + (advance / 2) {
+                            result = string_utils::next_char_boundary(text, pos);
+                        } else {
+                            result = pos;
                         }
-                    },
-                );
+                    }
+                });
                 if let LayoutContent::Text { start, .. } = layout_box.content() {
                     return Some(result + start);
                 }
@@ -2144,28 +2138,43 @@ impl<'gc> EditText<'gc> {
         }
     }
 
-    fn on_scroller(self, activation: &mut Avm1Activation<'_, 'gc>) {
-        if let Some(object) = self.object1() {
+    fn on_scroller(self, programmatic: bool, context: &mut UpdateContext<'gc>) {
+        if let Some(object) = self.object1()
+            && !programmatic
+        {
+            let mut activation = Avm1Activation::from_nothing(
+                context,
+                ActivationIdentifier::root("[On Scroller]"),
+                self.into(),
+            );
             let _ = object.call_method(
                 istr!("broadcastMessage"),
                 &[istr!("onScroller").into(), object.into()],
-                activation,
+                &mut activation,
                 ExecutionReason::Special,
             );
+        } else if let Some(object) = self.object2() {
+            let scroll_evt = Avm2EventObject::bare_event(context, "scroll", false, false);
+            Avm2::dispatch_event(context, scroll_evt, object.into());
         }
-        //TODO: Implement this for Avm2
     }
 
     /// Construct the text field's AVM1 representation.
     fn construct_as_avm1_object(self, context: &mut UpdateContext<'gc>) {
         if self.0.object.get().is_none() {
-            let object = Avm1Object::new_with_native(
-                &context.strings,
-                Some(context.avm1.prototypes(self.swf_version()).text_field),
-                Avm1NativeObject::EditText(self),
-            );
+            let id = ActivationIdentifier::root("[Construct]");
+            let mut activation = Avm1Activation::from_nothing(context, id, self.into());
+            let constr = activation.resolve_class([istr!("TextField")]);
+            let proto = constr.and_then(|c| c.prototype(&mut activation));
+            let native = Avm1NativeObject::EditText(self);
+            let object = Avm1Object::new_with_native(activation.strings(), proto, native);
 
-            self.set_object(Some(object.into()), context.gc());
+            self.set_object(Some(object.into()), activation.gc());
+
+            // The constructor is called, even though it does nothing by default.
+            if let Some(constr) = constr {
+                let _ = constr.construct_on_existing(&mut activation, object, &[]);
+            }
         }
 
         Avm1::run_with_stack_frame_for_display_object(self.into(), context, |activation| {
@@ -2552,10 +2561,6 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
         HasPrefixField::as_prefix_gc(self.raw_interactive())
     }
 
-    fn instantiate(self, gc_context: &Mutation<'gc>) -> DisplayObject<'gc> {
-        Self(Gc::new(gc_context, self.0.as_ref().clone())).into()
-    }
-
     fn id(self) -> CharacterId {
         self.0.shared.id
     }
@@ -2799,7 +2804,7 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
         if self.variable().is_some() {
             context
                 .unbound_text_fields
-                .retain(|&text_field| !DisplayObject::ptr_eq(text_field.into(), self.into()));
+                .retain(|&text_field| !DisplayObject::ptr_eq(text_field, self));
         }
 
         self.set_avm1_removed(true);
@@ -3003,15 +3008,7 @@ impl<'gc> TInteractiveObject<'gc> for EditText<'gc> {
         if let ClipEvent::MouseWheel { delta } = event {
             let scrolled = if self.is_mouse_wheel_enabled() {
                 let new_scroll = self.scroll() as f64 - delta.lines();
-                let scrolled = self.set_scroll(new_scroll);
-
-                let mut activation = Avm1Activation::from_nothing(
-                    context,
-                    ActivationIdentifier::root("[On Scroller]"),
-                    self.into(),
-                );
-                self.on_scroller(&mut activation);
-                scrolled
+                self.set_scroll(new_scroll, false, context)
             } else {
                 false
             };

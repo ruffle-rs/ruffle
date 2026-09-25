@@ -1,6 +1,6 @@
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
-use crate::avm1::property_decl::{DeclContext, StaticDeclarations, SystemClass};
+use crate::avm1::property_decl::{DeclContext, PropertyOrder, StaticDeclarations, SystemClass};
 use crate::avm1::{Object, Value};
 use crate::context_menu;
 use crate::display_object::DisplayObject;
@@ -15,7 +15,7 @@ pub fn create_class<'gc>(
     context: &mut DeclContext<'_, 'gc>,
     super_proto: Object<'gc>,
 ) -> SystemClass<'gc> {
-    let class = context.class(constructor, super_proto);
+    let class = context.class(constructor, super_proto, PropertyOrder::PrototypeLast);
     context.define_properties_on(class.proto, PROTO_DECLS(context));
     class
 }
@@ -30,23 +30,23 @@ fn constructor<'gc>(
         .unwrap_or(&Value::Undefined)
         .coerce_to_object_or_bare(activation)?;
 
-    this.set(istr!("onSelect"), callback.into(), activation)?;
+    this.set(istr!("onSelect"), callback, activation)?;
 
     let built_in_items = Object::new(
         &activation.context.strings,
         Some(activation.prototypes().object),
     );
 
-    built_in_items.set(istr!("print"), true.into(), activation)?;
-    built_in_items.set(istr!("forward_back"), true.into(), activation)?;
-    built_in_items.set(istr!("rewind"), true.into(), activation)?;
-    built_in_items.set(istr!("loop"), true.into(), activation)?;
-    built_in_items.set(istr!("play"), true.into(), activation)?;
-    built_in_items.set(istr!("quality"), true.into(), activation)?;
-    built_in_items.set(istr!("zoom"), true.into(), activation)?;
-    built_in_items.set(istr!("save"), true.into(), activation)?;
+    built_in_items.set(istr!("print"), true, activation)?;
+    built_in_items.set(istr!("forward_back"), true, activation)?;
+    built_in_items.set(istr!("rewind"), true, activation)?;
+    built_in_items.set(istr!("loop"), true, activation)?;
+    built_in_items.set(istr!("play"), true, activation)?;
+    built_in_items.set(istr!("quality"), true, activation)?;
+    built_in_items.set(istr!("zoom"), true, activation)?;
+    built_in_items.set(istr!("save"), true, activation)?;
 
-    this.set(istr!("builtInItems"), built_in_items.into(), activation)?;
+    this.set(istr!("builtInItems"), built_in_items, activation)?;
 
     let constructor = activation.prototypes().array_constructor;
     let custom_items = constructor.construct(activation, &[])?;
@@ -102,14 +102,14 @@ pub fn copy<'gc>(
         .get(istr!("print"), activation)?
         .as_bool(activation.swf_version());
 
-    copy_built_in.set(istr!("save"), save.into(), activation)?;
-    copy_built_in.set(istr!("zoom"), zoom.into(), activation)?;
-    copy_built_in.set(istr!("quality"), quality.into(), activation)?;
-    copy_built_in.set(istr!("play"), play.into(), activation)?;
-    copy_built_in.set(istr!("loop"), loop_.into(), activation)?;
-    copy_built_in.set(istr!("rewind"), rewind.into(), activation)?;
-    copy_built_in.set(istr!("forward_back"), forward_back.into(), activation)?;
-    copy_built_in.set(istr!("print"), print.into(), activation)?;
+    copy_built_in.set(istr!("save"), save, activation)?;
+    copy_built_in.set(istr!("zoom"), zoom, activation)?;
+    copy_built_in.set(istr!("quality"), quality, activation)?;
+    copy_built_in.set(istr!("play"), play, activation)?;
+    copy_built_in.set(istr!("loop"), loop_, activation)?;
+    copy_built_in.set(istr!("rewind"), rewind, activation)?;
+    copy_built_in.set(istr!("forward_back"), forward_back, activation)?;
+    copy_built_in.set(istr!("print"), print, activation)?;
 
     let custom_items = this
         .get(istr!("customItems"), activation)?
@@ -134,13 +134,13 @@ pub fn hide_builtin_items<'gc>(
     let built_in_items = this
         .get(istr!("builtInItems"), activation)?
         .coerce_to_object_or_bare(activation)?;
-    built_in_items.set(istr!("zoom"), false.into(), activation)?;
-    built_in_items.set(istr!("quality"), false.into(), activation)?;
-    built_in_items.set(istr!("play"), false.into(), activation)?;
-    built_in_items.set(istr!("loop"), false.into(), activation)?;
-    built_in_items.set(istr!("rewind"), false.into(), activation)?;
-    built_in_items.set(istr!("forward_back"), false.into(), activation)?;
-    built_in_items.set(istr!("print"), false.into(), activation)?;
+    built_in_items.set(istr!("zoom"), false, activation)?;
+    built_in_items.set(istr!("quality"), false, activation)?;
+    built_in_items.set(istr!("play"), false, activation)?;
+    built_in_items.set(istr!("loop"), false, activation)?;
+    built_in_items.set(istr!("rewind"), false, activation)?;
+    built_in_items.set(istr!("forward_back"), false, activation)?;
+    built_in_items.set(istr!("print"), false, activation)?;
     Ok(Value::Undefined)
 }
 

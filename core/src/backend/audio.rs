@@ -67,6 +67,13 @@ pub struct SoundStreamInfo {
     pub stream_format: swf::SoundFormat,
     pub num_samples_per_block: u16,
     pub latency_seek: i16,
+
+    /// Codec-specific configuration data ("decoder specific info"), demuxed out
+    /// of the container ahead of the audio data itself, if any.
+    ///
+    /// For AAC this holds the `AudioSpecificConfig` (from an FLV AAC sequence
+    /// header, or an MP4 `esds` box). Codecs that don't need it leave it `None`.
+    pub extra_data: Option<Box<[u8]>>,
 }
 
 impl From<swf::SoundStreamHead> for SoundStreamInfo {
@@ -76,6 +83,7 @@ impl From<swf::SoundStreamHead> for SoundStreamInfo {
             stream_format: swfhead.stream_format,
             num_samples_per_block: swfhead.num_samples_per_block,
             latency_seek: swfhead.latency_seek,
+            extra_data: None,
         }
     }
 }
@@ -724,6 +732,25 @@ impl<'gc> AudioManager<'gc> {
         }
     }
 
+    pub fn set_sound_transform_with_handle(
+        &mut self,
+        sound: SoundHandle,
+        sound_transform: display_object::SoundTransform,
+    ) {
+        let mut changed = false;
+
+        for other in &mut self.sounds {
+            if other.sound == Some(sound) {
+                other.transform = sound_transform;
+                changed = true;
+            }
+        }
+
+        if changed {
+            self.transforms_dirty = true;
+        }
+    }
+
     /// Returns the number of seconds that a timeline audio stream should buffer before playing.
     ///
     /// Currently unused by Ruffle.
@@ -831,9 +858,10 @@ pub struct SoundInstance<'gc> {
 
     /// The local sound transform of this sound.
     ///
-    /// Only AVM2 sounds have a local sound transform. In AVM1, sound instances
-    /// instead get the sound transform of the display object they're
-    /// associated with.
+    /// AVM2 sounds only have a local sound transform. In AVM1, sound instances
+    /// have a local transform if they have loaded a sound with `loadSound()`,
+    /// otherwise they get the sound transform of the display object
+    /// they're associated with.
     #[collect(require_static)]
     transform: display_object::SoundTransform,
 

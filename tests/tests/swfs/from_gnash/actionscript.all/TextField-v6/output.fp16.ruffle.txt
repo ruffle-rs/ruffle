@@ -521,13 +521,13 @@ PASSED: tf._yscale == 201 [./TextField.as:1206]
 PASSED: tf._target == '/fake_name' [./TextField.as:1207]
 FAILED: expected: _level0 obtained: fake_parent [./TextField.as:1208]
 PASSED: tf._name == 'fake_name' [./TextField.as:1209]
-FAILED: expected: 1 obtained: 0 [./TextField.as:1238]
+PASSED: count == 1 [./TextField.as:1238]
 PASSED: args == 0 [./TextField.as:1239]
 PASSED: _root.tfmo._x == 2 [./TextField.as:1240]
-FAILED: expected: storedthis obtained: _level0.tfmo [./TextField.as:1244]
-FAILED: _root.tfmo === storedthis [./TextField.as:1245]
-FAILED: expected: "stringo" obtained:  [./TextField.as:1247]
-FAILED: _root.tfmo.hasOwnProperty("bo") [./TextField.as:1248]
+PASSED: _root.tfmo == storedthis [./TextField.as:1244]
+PASSED: _root.tfmo === storedthis [./TextField.as:1245]
+PASSED: _root.tfmo.bo == "stringo" [./TextField.as:1247]
+PASSED: _root.tfmo.hasOwnProperty("bo") [./TextField.as:1248]
 PASSED: r.toString() == undefined [./TextField.as:1254]
 PASSED: fun() == true [./TextField.as:1271]
 PASSED: this.length == 0 [./TextField.as:1276]
@@ -540,6 +540,6 @@ FAILED: expected: 0 obtained: 3 [./TextField.as:1289]
 PASSED: this[2] == 3 [./TextField.as:1290]
 FAILED: expected: "number" obtained: undefined [./TextField.as:1295]
 PASSED: typeof(this.getTime()) == "undefined" [./TextField.as:1299]
-#passed: 459
-#failed: 72
+#passed: 464
+#failed: 67
 #total tests run: 531

@@ -15,7 +15,6 @@ setProperty('clip3', _Y, 456)
 456
 undefined
 
-Target not found: Target="/mc2" Base="_level0"
 // tellTarget(mc1) { mc2.removeMovieClip() }
 
 getProperty('_root.mc3', _X)

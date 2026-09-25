@@ -14,3 +14,4 @@ MYXML = new XML(xmlDoc), MYXML.getNamespace('xsl') PASSED!
 MYXML = new XML(xmlDoc), MYXML.getNamespace('foo') PASSED!
 MYXML = new XML(xmlDoc), MYXML.b.c.getNamespace('foo') PASSED!
 Calling namespace on list with two items PASSED!
+TypeError: Error #2023: Class Test$ must inherit from Sprite to link to the root.

@@ -1,2 +1,4 @@
 null
 Hello from loaded SWF!
+Error: Uncaught error in constructor
+	at Child()

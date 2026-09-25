@@ -81,3 +81,5 @@ Navigator::fetch:
   Method: GET
 
 Test 5
+TypeError: Error #1034: Type Coercion failed: cannot convert Object@00000000000 to flash.net.URLRequest.
+	at Test/onFrame()

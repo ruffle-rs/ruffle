@@ -619,6 +619,7 @@ impl<'gc> Stage<'gc> {
             color_transform: Default::default(),
             // TODO: Verify perspective_projection when its rendering is implemented.
             perspective_projection: self.as_displayobject().base().perspective_projection(),
+            tz: 0.0,
         });
 
         // All of our Stage3D instances get rendered *underneath* the main stage.
@@ -809,10 +810,6 @@ impl<'gc> Stage<'gc> {
 impl<'gc> TDisplayObject<'gc> for Stage<'gc> {
     fn base(self) -> Gc<'gc, DisplayObjectBase<'gc>> {
         HasPrefixField::as_prefix_gc(self.raw_interactive())
-    }
-
-    fn instantiate(self, gc_context: &Mutation<'gc>) -> DisplayObject<'gc> {
-        Self(Gc::new(gc_context, self.0.as_ref().clone())).into()
     }
 
     fn local_to_global_matrix(self) -> Matrix {

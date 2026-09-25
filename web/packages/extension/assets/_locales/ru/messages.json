@@ -38,6 +38,15 @@
     "settings_player_version": {
         "message": "Номер версии Flash Player'а для эмуляции (от 1 до 32)"
     },
+    "settings_background_execution_mode": {
+        "message": "Выполнение в фоновом режиме"
+    },
+    "settings_background_execution_mode_none": {
+        "message": "Пауза"
+    },
+    "settings_background_execution_mode_main_thread": {
+        "message": "Запустить в основном потоке"
+    },
     "settings_preferred_renderer": {
         "message": "Предпочтительный рендерер"
     },

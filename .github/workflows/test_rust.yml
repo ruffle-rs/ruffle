@@ -14,9 +14,9 @@ env:
   FEATURES: lzma,jpegxr
   TEST_OPTS: --workspace --locked --no-fail-fast -j 4
   LLVM_COV_OPTS: --branch --profile ci
-  LLVM_COV_TEST_OPTS: ${LLVM_COV_OPTS} ${TEST_OPTS} --features ${FEATURES},imgtests
+  LLVM_COV_TEST_OPTS: ${LLVM_COV_OPTS} ${TEST_OPTS} --features ${FEATURES},imgtests,freetype
 
-  LINUX_DEPENDENCIES: libasound2-dev mesa-vulkan-drivers libudev-dev libfontconfig-dev
+  LINUX_DEPENDENCIES: mesa-vulkan-drivers libasound2-dev libudev-dev libfontconfig-dev libfreetype6-dev
 
   # This is to counteract the disabling by rust-cache.
   # See: https://github.com/Swatinem/rust-cache/issues/43
@@ -42,7 +42,7 @@ jobs:
     outputs:
       should_run: ${{ steps.filter.outputs.src }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - uses: AurorNZ/paths-filter@v5
         id: filter
@@ -59,12 +59,12 @@ jobs:
     if: needs.changes.outputs.should_run == 'true'
     name: Test Rust ${{ matrix.rust_version }} / ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
-    continue-on-error: ${{ matrix.rust_version == 'nightly' || matrix.rust_version == 'beta' }}
+    continue-on-error: ${{ matrix.rust_version != 'stable' }}
     strategy:
       fail-fast: false
       matrix:
         rust_version: [stable]
-        os: [ubuntu-24.04, ubuntu-24.04-arm, windows-2025, macos-15]
+        os: [ubuntu-24.04, ubuntu-24.04-arm, windows-2025, macos-26]
         include:
           - rust_version: nightly
             os: ubuntu-24.04
@@ -72,7 +72,7 @@ jobs:
             os: ubuntu-24.04
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
@@ -89,6 +89,11 @@ jobs:
         if: runner.os != 'macOS'
         shell: bash
         run: echo FEATURES=${FEATURES},imgtests | tee -a $GITHUB_ENV
+
+      - name: Enable freetype tests
+        if: runner.os == 'Linux'
+        shell: bash
+        run: echo FEATURES=${FEATURES},freetype | tee -a $GITHUB_ENV
 
       - name: Cache Cargo output
         uses: Swatinem/rust-cache@v2
@@ -125,14 +130,15 @@ jobs:
     if: needs.changes.outputs.should_run == 'true'
     name: Lints with Rust ${{ matrix.rust_version }}
     runs-on: ubuntu-24.04
-    continue-on-error: ${{ matrix.rust_version == 'nightly' || matrix.rust_version == 'beta' }}
+    continue-on-error: ${{ matrix.rust_version != 'stable' }}
     strategy:
       fail-fast: false
       matrix:
-        rust_version: [stable, beta, nightly]
+        # nightly lints are too unstable for us
+        rust_version: [stable, beta]
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
@@ -149,17 +155,21 @@ jobs:
         run: cargo fmt --all -- --check
 
       - name: Check clippy (with tests)
-        # Don't fail the build for clippy on nightly, since we get a lot of false-positives
-        run: cargo clippy --all --all-features --tests ${{ (matrix.rust_version != 'nightly' && '-- -D warnings') || '' }}
+        run: cargo clippy --all --all-features --tests -- -D warnings
 
       - name: Check clippy (without tests)
-        # Don't fail the build for clippy on nightly, since we get a lot of false-positives
-        run: cargo clippy --all --all-features ${{ (matrix.rust_version != 'nightly' && '-- -D warnings') || '' }}
+        run: cargo clippy --all --all-features -- -D warnings
 
       - name: Check documentation
         run: cargo doc --no-deps --all-features
         env:
           RUSTDOCFLAGS: -D warnings
+
+      - name: Check fuzz/ formatting and clippy
+        run: |
+          cd fuzz/
+          cargo fmt --all -- --check
+          cargo clippy --all -- -D warnings
 
   coverage:
     needs: changes
@@ -167,14 +177,14 @@ jobs:
     name: Coverage Report
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           # We need history for delta coverage, but we also don't want to fetch
           # the whole repo. 42 commits seem reasonable
           fetch-depth: 42
 
       - name: Set up Python
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@v7
         with:
           python-version: "3.13"
 
@@ -284,7 +294,7 @@ jobs:
     runs-on: ubuntu-24.04
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
@@ -311,7 +321,7 @@ jobs:
     strategy:
       matrix:
         rust_version: [stable]
-        os: [ubuntu-24.04, ubuntu-24.04-arm, windows-2025, macos-15]
+        os: [ubuntu-24.04, ubuntu-24.04-arm, windows-2025, macos-26]
         include:
           - rust_version: nightly
             os: ubuntu-24.04
@@ -329,7 +339,7 @@ jobs:
     runs-on: ubuntu-24.04
     strategy:
       matrix:
-        rust_version: [stable, beta, nightly]
+        rust_version: [stable, beta]
 
     steps:
       - name: No-op

@@ -7,3 +7,4 @@ MYOB = new XML(xmlDoc); XML.prettyIndent = 1; MYOB.toString() PASSED!
 MYOB = new XML(xmlDoc); XML.prettyIndent = -5; MYOB.toString() PASSED!
 MYOB = new XML(xmlDoc); XML.prettyPrinting = true; MYOB.toString() PASSED!
 MYOB = new XML(xmlDoc); XML.prettyPrinting = true; MYOB.toString() PASSED!
+TypeError: Error #2023: Class Test$ must inherit from Sprite to link to the root.

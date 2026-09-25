@@ -1,17 +1,19 @@
+use crate::PlayerMode;
 use crate::avm2::activation::Activation;
 use crate::avm2::error::Error;
+use crate::avm2::error_messages::raw_error_message;
+use crate::avm2::function::FunctionArgs;
 use crate::avm2::object::ErrorObject;
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
 use crate::string::{AvmString, WString};
-use crate::{PlayerMode, avm2_stub_method};
 
 pub use crate::avm2::object::error_allocator;
 
 pub fn init_custom_prototype<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
     let this = this.as_class_object().unwrap();
@@ -26,19 +28,25 @@ pub fn init_custom_prototype<'gc>(
 pub fn get_error_message<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm2_stub_method!(activation, "Error", "getErrorMessage");
-
     let id = args.get_i32(0);
-    let message = format!("Error #{id}");
+
+    let prefix = format!("Error #{id}");
+
+    let message = u32::try_from(id)
+        .ok()
+        .and_then(|id| raw_error_message(id))
+        .map(|msg| format!("{prefix}: {msg}"))
+        .unwrap_or(prefix);
+
     Ok(AvmString::new_utf8(activation.gc(), message).into())
 }
 
 pub fn get_stack_trace<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 

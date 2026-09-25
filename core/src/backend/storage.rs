@@ -1,6 +1,7 @@
+use std::any::Any;
 use std::collections::HashMap;
 
-pub trait StorageBackend {
+pub trait StorageBackend: Any {
     fn get(&self, name: &str) -> Option<Vec<u8>>;
 
     fn put(&mut self, name: &str, value: &[u8]) -> bool;

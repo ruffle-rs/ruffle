@@ -1,4 +1,4 @@
-import type { RuffleHandle, ZipWriter } from "../../../dist/ruffle_web";
+import type { RuffleHandle, ZipWriter } from "../../../dist/ruffle_web.js";
 import {
     AutoPlay,
     BackgroundExecutionMode,
@@ -10,24 +10,25 @@ import {
     UnmuteOverlay,
     URLLoadOptions,
     WindowMode,
-} from "../../public/config";
-import { MovieMetadata, ReadyState } from "../../public/player";
-import { ruffleShadowTemplate } from "../ui/shadow-template";
-import { text, textAsParagraphs } from "../i18n";
-import { swfFileName } from "../../swf-utils";
-import { isExtension } from "../../current-script";
-import { buildInfo } from "../../build-info";
-import { RUFFLE_ORIGIN } from "../constants";
+} from "../../public/config/index.js";
+import { MovieMetadata, ReadyState } from "../../public/player/index.js";
+import { ruffleShadowTemplate } from "../ui/shadow-template.js";
+import { text, textAsParagraphs } from "../i18n.js";
+import { swfFileName } from "../../swf-utils.js";
+import { isExtension } from "../../current-script.js";
+import { buildInfo } from "../../build-info.js";
+import { RUFFLE_ORIGIN } from "../constants.js";
 import {
     InvalidOptionsError,
     InvalidSwfError,
+    LoadBeginError,
     LoadRuffleWasmError,
     LoadSwfError,
-} from "../errors";
-import { showPanicScreen } from "../ui/panic";
-import { createRuffleBuilder } from "../../load-ruffle";
-import { lookupElement } from "../register-element";
-import { configureBuilder } from "../builder";
+} from "../errors.js";
+import { showPanicScreen } from "../ui/panic.js";
+import { createRuffleBuilder } from "../../load-ruffle.js";
+import { lookupElement } from "../register-element.js";
+import { configureBuilder } from "../builder.js";
 
 const DIMENSION_REGEX = /^\s*(\d+(\.\d+)?(%)?)/;
 
@@ -55,19 +56,6 @@ declare global {
     }
     interface AudioSession {
         type?: string;
-    }
-    // See https://github.com/microsoft/TypeScript-DOM-lib-generator/issues/1615
-    type OrientationLockType =
-        | "any"
-        | "landscape"
-        | "landscape-primary"
-        | "landscape-secondary"
-        | "natural"
-        | "portrait"
-        | "portrait-primary"
-        | "portrait-secondary";
-    interface ScreenOrientation extends EventTarget {
-        lock(orientation: OrientationLockType): Promise<void>;
     }
 }
 
@@ -109,9 +97,7 @@ interface ContextMenuItem {
  */
 function sanitizeParameters(
     parameters:
-        | (URLSearchParams | string | Record<string, string>)
-        | undefined
-        | null,
+        (URLSearchParams | string | Record<string, string>) | undefined | null,
 ): Record<string, string> {
     if (parameters === null || parameters === undefined) {
         return {};
@@ -1024,7 +1010,7 @@ export class InnerPlayer {
             }
         } catch (e) {
             console.error(`Serious error occurred loading SWF file: ${e}`);
-            const err = new Error(e as string);
+            const err = new LoadBeginError(e as string);
             this.panic(err);
             throw err;
         }
@@ -2627,7 +2613,7 @@ function parseAllowScriptAccess(
 function detectBrowserDirection(): string {
     const browserLocale = new Intl.Locale(navigator.language);
 
-    let textInfo = null;
+    let textInfo;
     if (
         "getTextInfo" in browserLocale &&
         typeof browserLocale.getTextInfo === "function"

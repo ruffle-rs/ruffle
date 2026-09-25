@@ -325,8 +325,12 @@ impl Drawing {
         }
     }
 
-    pub fn self_bounds(&self) -> Rectangle<Twips> {
-        self.shape_bounds
+    pub fn self_bounds(&self, include_strokes: bool) -> Rectangle<Twips> {
+        if include_strokes {
+            self.shape_bounds
+        } else {
+            self.edge_bounds
+        }
     }
 
     pub fn hit_test(

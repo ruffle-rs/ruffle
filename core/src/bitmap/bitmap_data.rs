@@ -162,12 +162,13 @@ impl Color {
     /// * `source` - Must be in premultiplied form.
     #[must_use]
     pub fn blend_over(&self, source: &Self) -> Self {
-        let sa = source.alpha();
-
-        let r = source.red() + ((self.red() as u16 * (255 - sa as u16)) / 255) as u8;
-        let g = source.green() + ((self.green() as u16 * (255 - sa as u16)) / 255) as u8;
-        let b = source.blue() + ((self.blue() as u16 * (255 - sa as u16)) / 255) as u8;
-        let a = source.alpha() + ((self.alpha() as u16 * (255 - sa as u16)) / 255) as u8;
+        // The following formula was verified against Flash Player output across
+        // the full 0..255 alpha range.
+        let inv_sa = 256 - source.alpha() as u16;
+        let r = source.red() + ((self.red() as u16 * inv_sa) >> 8) as u8;
+        let g = source.green() + ((self.green() as u16 * inv_sa) >> 8) as u8;
+        let b = source.blue() + ((self.blue() as u16 * inv_sa) >> 8) as u8;
+        let a = source.alpha() + ((self.alpha() as u16 * inv_sa) >> 8) as u8;
         Self::rgba(r, g, b, a)
     }
 
@@ -676,6 +677,7 @@ mod wrapper {
                 context.transform_stack.transform(),
                 smoothing,
                 pixel_snapping,
+                inner_bitmap_data.full_region(),
             );
         }
 
@@ -865,6 +867,10 @@ impl<'gc> BitmapRawData<'gc> {
     }
     pub fn height(&self) -> u32 {
         self.height
+    }
+
+    pub fn full_region(&self) -> PixelRegion {
+        PixelRegion::for_whole_size(self.width(), self.height())
     }
 
     pub fn is_point_in_bounds(&self, x: i32, y: i32) -> bool {

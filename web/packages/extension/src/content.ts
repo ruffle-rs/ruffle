@@ -7,7 +7,11 @@
  *
  */
 
-import * as utils from "./utils";
+import {
+    enableBrowserOnOutdatedChromium,
+    getOptions,
+    getExplicitOptions,
+} from "./utils";
 import { isMessage } from "./messages";
 
 declare global {
@@ -109,11 +113,12 @@ function isXMLDocument(): boolean {
 }
 
 (async () => {
-    await utils.storage.sync.set({
+    enableBrowserOnOutdatedChromium();
+    await browser.storage.sync.set({
         ["showReloadButton"]: false,
     });
-    const options = await utils.getOptions();
-    const explicitOptions = await utils.getExplicitOptions();
+    const options = await getOptions();
+    const explicitOptions = await getExplicitOptions();
 
     const pageOptout = checkPageOptout();
     const shouldLoad =
@@ -121,7 +126,7 @@ function isXMLDocument(): boolean {
         options.ruffleEnable &&
         (options.ignoreOptout || !pageOptout);
 
-    utils.runtime.onMessage.addListener((message, _sender, sendResponse) => {
+    browser.runtime.onMessage.addListener((message, _sender, sendResponse) => {
         if (shouldLoad) {
             sendMessageToPage(message).then((response) => {
                 sendResponse({
@@ -158,7 +163,7 @@ function isXMLDocument(): boolean {
             ?.filename !== "ruffle.js"
     ) {
         injectScriptRaw("%PLUGIN_POLYFILL_SOURCE%");
-        await injectScriptURL(utils.runtime.getURL("dist/ruffle.js"));
+        await injectScriptURL(browser.runtime.getURL("dist/ruffle.js"));
     }
 
     window.addEventListener("message", (event) => {
@@ -176,7 +181,7 @@ function isXMLDocument(): boolean {
             } else if (isMessage(data)) {
                 switch (data.type) {
                     case "open_url_in_player":
-                        chrome.runtime.sendMessage({
+                        browser.runtime.sendMessage({
                             type: "open_url_in_player",
                             url: data.url,
                         });
@@ -196,6 +201,6 @@ function isXMLDocument(): boolean {
             unmuteOverlay: options.autostart ? "hidden" : "visible",
             splashScreen: !options.autostart,
         },
-        publicPath: utils.runtime.getURL("/dist/"),
+        publicPath: browser.runtime.getURL("/dist/"),
     });
 })();

@@ -11,13 +11,15 @@ use rfd::{
     AsyncFileDialog, FileHandle, MessageButtons, MessageDialog, MessageDialogResult, MessageLevel,
 };
 use ruffle_core::backend::ui::{
-    DialogLoaderError, DialogResultFuture, FileDialogResult, FileFilter, FontDefinition,
-    FullscreenError, LanguageIdentifier, MouseCursor, UiBackend,
+    DialogResultFuture, FileDialogResult, FileDialogSelection, FileFilter, FontDefinition,
+    FullscreenError, LanguageIdentifier, MouseCursor, MultiDialogResultFuture,
+    MultiFileDialogResult, UiBackend,
 };
-use ruffle_core::font::{FontFileData, FontQuery};
+use ruffle_core::font::{FontAtlases, FontFileData, FontQuery};
 use std::fs::File;
 use std::path::Path;
 use std::rc::Rc;
+use std::str::FromStr;
 use std::sync::Arc;
 use tokio::io::AsyncReadExt;
 use url::Url;
@@ -25,15 +27,42 @@ use winit::event_loop::EventLoopProxy;
 use winit::raw_window_handle::HasDisplayHandle;
 use winit::window::{Fullscreen, Window};
 
-pub struct DesktopFileDialogResult {
-    handle: Option<FileHandle>,
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum DeviceFontRenderer {
+    Embedded,
+    Freetype,
+}
+
+impl DeviceFontRenderer {
+    pub fn as_str(self) -> &'static str {
+        match self {
+            DeviceFontRenderer::Embedded => "embedded",
+            DeviceFontRenderer::Freetype => "freetype",
+        }
+    }
+}
+
+impl FromStr for DeviceFontRenderer {
+    type Err = ();
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "embedded" => Ok(DeviceFontRenderer::Embedded),
+            "freetype" => Ok(DeviceFontRenderer::Freetype),
+            _ => Err(()),
+        }
+    }
+}
+
+pub struct DesktopFileSelection {
+    handle: FileHandle,
     md: Option<std::fs::Metadata>,
     contents: Vec<u8>,
 }
 
-impl DesktopFileDialogResult {
-    /// Create a new [`DesktopFileDialogResult`] from a given file handle
-    pub async fn new(handle: Option<FileHandle>) -> Self {
+impl DesktopFileSelection {
+    /// Create a new [`DesktopFileSelection`] from a given file handle.
+    pub async fn new(handle: FileHandle) -> Self {
         async fn read_file(path: &Path) -> (Option<std::fs::Metadata>, Vec<u8>) {
             let file = match tokio::fs::File::open(path).await {
                 Ok(file) => file,
@@ -62,11 +91,7 @@ impl DesktopFileDialogResult {
             (metadata, contents)
         }
 
-        let (md, contents) = if let Some(ref handle) = handle {
-            read_file(handle.path()).await
-        } else {
-            (None, Vec::new())
-        };
+        let (md, contents) = read_file(handle.path()).await;
 
         Self {
             handle,
@@ -76,29 +101,23 @@ impl DesktopFileDialogResult {
     }
 }
 
-impl FileDialogResult for DesktopFileDialogResult {
-    fn is_cancelled(&self) -> bool {
-        self.handle.is_none()
-    }
-
+impl FileDialogSelection for DesktopFileSelection {
     fn creation_time(&self) -> Option<DateTime<Utc>> {
-        if let Some(md) = &self.md {
-            md.created().ok().map(DateTime::<Utc>::from)
-        } else {
-            None
-        }
+        self.md
+            .as_ref()
+            .and_then(|md| md.created().ok())
+            .map(DateTime::<Utc>::from)
     }
 
     fn modification_time(&self) -> Option<DateTime<Utc>> {
-        if let Some(md) = &self.md {
-            md.modified().ok().map(DateTime::<Utc>::from)
-        } else {
-            None
-        }
+        self.md
+            .as_ref()
+            .and_then(|md| md.modified().ok())
+            .map(DateTime::<Utc>::from)
     }
 
-    fn file_name(&self) -> Option<String> {
-        self.handle.as_ref().map(|handle| handle.file_name())
+    fn file_name(&self) -> String {
+        self.handle.file_name()
     }
 
     fn size(&self) -> Option<u64> {
@@ -106,15 +125,11 @@ impl FileDialogResult for DesktopFileDialogResult {
     }
 
     fn file_type(&self) -> Option<String> {
-        if let Some(handle) = &self.handle {
-            handle
-                .path()
-                .extension()
-                .and_then(|x| x.to_str())
-                .map(|x| ".".to_owned() + x)
-        } else {
-            None
-        }
+        self.handle
+            .path()
+            .extension()
+            .and_then(|x| x.to_str())
+            .map(|x| ".".to_owned() + x)
     }
 
     fn contents(&self) -> &[u8] {
@@ -122,25 +137,9 @@ impl FileDialogResult for DesktopFileDialogResult {
     }
 
     fn write_and_refresh(&mut self, data: &[u8]) {
-        // write
-        if let Some(handle) = &self.handle {
-            let _ = std::fs::write(handle.path(), data);
-        }
-
-        // refresh
-        let md = self
-            .handle
-            .as_ref()
-            .and_then(|x| std::fs::metadata(x.path()).ok());
-
-        let contents = if let Some(handle) = &self.handle {
-            std::fs::read(handle.path()).unwrap_or_default()
-        } else {
-            Vec::new()
-        };
-
-        self.md = md;
-        self.contents = contents;
+        let _ = std::fs::write(self.handle.path(), data);
+        self.md = std::fs::metadata(self.handle.path()).ok();
+        self.contents = std::fs::read(self.handle.path()).unwrap_or_default();
     }
 }
 
@@ -159,6 +158,14 @@ pub struct DesktopUiBackend {
     preferred_cursor: MouseCursor,
     font_database: Rc<fontdb::Database>,
     file_picker: FilePicker,
+
+    // It's non-trivial to invalidate all fonts and change the renderer, so
+    // do not allow changing it in runtime.
+    device_font_renderer: DeviceFontRenderer,
+
+    // Shared atlas pages that every device font loaded by this backend packs
+    // its glyphs into, instead of each font getting its own.
+    font_atlases: FontAtlases,
 }
 
 impl DesktopUiBackend {
@@ -177,11 +184,29 @@ impl DesktopUiBackend {
             event_loop,
             cursor_visible: true,
             clipboard,
-            preferences,
             preferred_cursor: MouseCursor::Arrow,
             font_database,
             file_picker,
+            device_font_renderer: preferences
+                .device_font_renderer()
+                .unwrap_or(DeviceFontRenderer::Embedded),
+            preferences,
+            font_atlases: FontAtlases::new(),
         })
+    }
+
+    fn show_open_dialog<F, O>(&self, filters: &[FileFilter], f: F) -> Option<O>
+    where
+        F: FnOnce(AsyncFileDialog) -> O,
+    {
+        let mut dialog = AsyncFileDialog::new();
+
+        for filter in filters {
+            let extensions = filter.extensions_for_dialog(cfg!(target_os = "macos"));
+            dialog = dialog.add_filter(&filter.description, &extensions);
+        }
+
+        self.file_picker.show_dialog(dialog, f)
     }
 
     pub fn cursor(&self) -> egui::CursorIcon {
@@ -322,7 +347,12 @@ impl UiBackend for DesktopUiBackend {
                 face.post_script_name
             );
 
-            match load_fontdb_font(name.to_string(), face) {
+            match load_fontdb_font(
+                name.to_string(),
+                face,
+                self.device_font_renderer,
+                &self.font_atlases,
+            ) {
                 Ok(font_definition) => register(font_definition),
                 Err(error) => tracing::error!("Error loading font from fontdb: {error}"),
             }
@@ -337,11 +367,11 @@ impl UiBackend for DesktopUiBackend {
     ) -> Vec<FontQuery> {
         cfg_select! {
             all(unix, feature = "fontconfig") => {
-                fontconfig_sort_device_fonts(query, register)
+                fontconfig::sort_device_fonts(query, register, self.device_font_renderer, &self.font_atlases)
+                    .inspect_err(|err| tracing::error!("Cannot sort device fonts: {err}"))
+                    .unwrap_or_default()
             }
-            _ => {
-                Vec::new()
-            }
+            _ => Vec::new(),
         }
     }
 
@@ -355,20 +385,34 @@ impl UiBackend for DesktopUiBackend {
     }
 
     fn display_file_open_dialog(&mut self, filters: Vec<FileFilter>) -> Option<DialogResultFuture> {
-        let mut dialog = AsyncFileDialog::new();
-
-        for filter in &filters {
-            let extensions = filter.extensions_for_dialog(cfg!(target_os = "macos"));
-
-            dialog = dialog.add_filter(&filter.description, &extensions);
-        }
-
-        let result = self.file_picker.show_dialog(dialog, |d| d.pick_file())?;
+        let result = self.show_open_dialog(&filters, |d| d.pick_file())?;
 
         Some(Box::pin(async move {
-            let result: Result<Box<dyn FileDialogResult>, DialogLoaderError> =
-                Ok(Box::new(DesktopFileDialogResult::new(result.await).await));
-            result
+            Ok(if let Some(handle) = result.await {
+                FileDialogResult::Selection(Box::new(DesktopFileSelection::new(handle).await))
+            } else {
+                FileDialogResult::Canceled
+            })
+        }))
+    }
+
+    fn display_file_open_dialog_multiple(
+        &mut self,
+        filters: Vec<FileFilter>,
+    ) -> Option<MultiDialogResultFuture> {
+        let result = self.show_open_dialog(&filters, |d| d.pick_files())?;
+
+        Some(Box::pin(async move {
+            Ok(if let Some(handles) = result.await {
+                let selections = futures::future::join_all(handles.into_iter().map(|h| async {
+                    Box::new(DesktopFileSelection::new(h).await) as Box<dyn FileDialogSelection>
+                }))
+                .await;
+
+                MultiFileDialogResult::Selection(selections)
+            } else {
+                MultiFileDialogResult::Canceled
+            })
         }))
     }
 
@@ -385,9 +429,11 @@ impl UiBackend for DesktopUiBackend {
         let result = self.file_picker.show_dialog(dialog, |d| d.save_file())?;
 
         Some(Box::pin(async move {
-            let result: Result<Box<dyn FileDialogResult>, DialogLoaderError> =
-                Ok(Box::new(DesktopFileDialogResult::new(result.await).await));
-            result
+            Ok(if let Some(handle) = result.await {
+                FileDialogResult::Selection(Box::new(DesktopFileSelection::new(handle).await))
+            } else {
+                FileDialogResult::Canceled
+            })
         }))
     }
 
@@ -400,36 +446,65 @@ fn load_font_from_file(
     index: u32,
     is_bold: bool,
     is_italic: bool,
+    device_font_renderer: DeviceFontRenderer,
+    #[allow(unused_variables)] atlases: &FontAtlases,
 ) -> Result<FontDefinition<'static>> {
-    let file = File::open(path).map_err(|e| anyhow!("Couldn't open font file at {path:?}: {e}"))?;
+    match device_font_renderer {
+        #[cfg(all(target_os = "linux", feature = "freetype"))]
+        DeviceFontRenderer::Freetype => {
+            use ruffle_frontend_utils::backends::ui::FreetypeFontRenderer;
 
-    // SAFETY: We have to assume that the font file won't change.
-    // This assumption is realistic, as we're using system fonts only.
-    // However, we never store other references to this data, and we reparse
-    // the whole file each time we're accessing any font data.
-    // Realistically, when the underlying file or memory region changes,
-    // we can expect Ruffle to crash due to SIGBUS or errors when parsing.
-    let mmap = unsafe { memmap2::Mmap::map(&file) };
+            Ok(FontDefinition::ExternalRenderer {
+                name,
+                is_bold,
+                is_italic,
+                font_renderer: Box::new(FreetypeFontRenderer::new(path, index, atlases)?),
+            })
+        }
+        _ => {
+            let file = File::open(path)
+                .map_err(|e| anyhow!("Couldn't open font file at {path:?}: {e}"))?;
 
-    let mmap = mmap.map_err(|e| anyhow!("Failed to mmap font file at {path:?}: {e}"))?;
-    let data = FontFileData::new(mmap);
-    Ok(FontDefinition::FontFile {
-        name,
-        is_bold,
-        is_italic,
-        data,
-        index,
-    })
+            // SAFETY: We have to assume that the font file won't change.
+            // This assumption is realistic, as we're using system fonts only.
+            // However, we never store other references to this data, and we reparse
+            // the whole file each time we're accessing any font data.
+            // Realistically, when the underlying file or memory region changes,
+            // we can expect Ruffle to crash due to SIGBUS or errors when parsing.
+            let mmap = unsafe { memmap2::Mmap::map(&file) };
+
+            let mmap = mmap.map_err(|e| anyhow!("Failed to mmap font file at {path:?}: {e}"))?;
+            let data = FontFileData::new(mmap);
+            Ok(FontDefinition::FontFile {
+                name,
+                is_bold,
+                is_italic,
+                data,
+                index,
+            })
+        }
+    }
 }
 
-fn load_fontdb_font(name: String, face: &FaceInfo) -> Result<FontDefinition<'static>> {
+fn load_fontdb_font(
+    name: String,
+    face: &FaceInfo,
+    device_font_renderer: DeviceFontRenderer,
+    atlases: &FontAtlases,
+) -> Result<FontDefinition<'static>> {
     let is_bold = face.weight > fontdb::Weight::NORMAL;
     let is_italic = face.style != fontdb::Style::Normal;
 
     match &face.source {
-        fontdb::Source::File(path) => {
-            load_font_from_file(path, name, face.index, is_bold, is_italic)
-        }
+        fontdb::Source::File(path) => load_font_from_file(
+            path,
+            name,
+            face.index,
+            is_bold,
+            is_italic,
+            device_font_renderer,
+            atlases,
+        ),
 
         fontdb::Source::Binary(bin) | fontdb::Source::SharedFile(_, bin) => {
             Ok(FontDefinition::FontFile {
@@ -444,88 +519,111 @@ fn load_fontdb_font(name: String, face: &FaceInfo) -> Result<FontDefinition<'sta
 }
 
 #[cfg(all(unix, feature = "fontconfig"))]
-fn fontconfig_sort_device_fonts(
-    query: &FontQuery,
-    register: &mut dyn FnMut(FontDefinition),
-) -> Vec<FontQuery> {
-    use fontconfig::{FontFormat, Pattern};
-    use std::sync::LazyLock;
+mod fontconfig {
+    use crate::backends::ui::{DeviceFontRenderer, load_font_from_file};
+    use ruffle_core::backend::ui::FontDefinition;
+    use ruffle_core::font::{FontAtlases, FontQuery};
+    use std::path::Path;
 
-    static FONTCONFIG: LazyLock<Option<fontconfig::Fontconfig>> =
-        LazyLock::new(fontconfig::Fontconfig::new);
-
-    let Some(fc) = FONTCONFIG.as_ref() else {
-        return Vec::new();
-    };
-
-    let Ok(family) = std::ffi::CString::new(query.name.as_str()) else {
-        tracing::error!("Cannot sort device fonts, null in font family");
-        return Vec::new();
-    };
-
-    let mut pattern: Pattern<'static> = Pattern::new(fc);
-    pattern.add_string(fontconfig::FC_FAMILY, family.as_c_str());
-
-    if query.is_bold {
-        pattern.add_integer(fontconfig::FC_WEIGHT, fontconfig::FC_WEIGHT_BOLD);
-    }
-    if query.is_italic {
-        pattern.add_integer(fontconfig::FC_SLANT, fontconfig::FC_SLANT_ITALIC);
+    #[derive(Debug, thiserror::Error)]
+    pub enum FontconfigError {
+        #[error("Malformed font family")]
+        MalformedFontFamily,
+        #[error("Internal fontconfig error: {0}")]
+        Internal(#[from] fontconfig::FontconfigError),
     }
 
-    let font_set = pattern.sort_fonts(true);
-    let mut font_queries = Vec::new();
-    for font in font_set.iter() {
-        let is_ttf = font
-            .format()
-            .is_ok_and(|f| matches!(f, FontFormat::TrueType));
-        if !is_ttf {
-            if let Some(name) = font.name() {
-                tracing::info!("Skipping font '{name}' because it's not a TTF");
-            }
-            continue;
+    pub fn sort_device_fonts(
+        query: &FontQuery,
+        register: &mut dyn FnMut(FontDefinition),
+        device_font_renderer: DeviceFontRenderer,
+        atlases: &FontAtlases,
+    ) -> Result<Vec<FontQuery>, FontconfigError> {
+        use fontconfig::{FontFormat, Pattern};
+        use std::sync::LazyLock;
+
+        static FONTCONFIG: LazyLock<Option<fontconfig::Fontconfig>> =
+            LazyLock::new(fontconfig::Fontconfig::new);
+
+        let Some(fc) = FONTCONFIG.as_ref() else {
+            return Ok(Vec::new());
+        };
+
+        let Ok(family) = std::ffi::CString::new(query.name.as_str()) else {
+            return Err(FontconfigError::MalformedFontFamily);
+        };
+
+        let mut pattern: Pattern<'static> = Pattern::new(fc)?;
+
+        pattern.add_string(fontconfig::FC_FAMILY, family.as_c_str())?;
+
+        if query.is_bold {
+            pattern.add_integer(fontconfig::FC_WEIGHT, fontconfig::FC_WEIGHT_BOLD)?;
+        }
+        if query.is_italic {
+            pattern.add_integer(fontconfig::FC_SLANT, fontconfig::FC_SLANT_ITALIC)?;
         }
 
-        let (
-            Some(name), //
-            Some(filename),
-            Some(index),
-            Some(weight),
-            Some(slant),
-        ) = (
-            font.name(),
-            font.filename(),
-            font.face_index(),
-            font.weight(),
-            font.slant(),
-        )
-        else {
-            continue;
-        };
+        let font_set = pattern.sort_fonts(fontconfig::UnicodeCoverage::Trim)?;
 
-        let Ok(index) = index.try_into() else {
-            continue;
-        };
-
-        let is_bold = weight >= fontconfig::FC_WEIGHT_BOLD;
-        let is_italic = slant >= fontconfig::FC_SLANT_ITALIC;
-
-        match load_font_from_file(
-            Path::new(filename),
-            name.to_string(),
-            index,
-            is_bold,
-            is_italic,
-        ) {
-            Ok(definition) => register(definition),
-            Err(err) => {
-                tracing::error!("Error loading font from fontconfig: {err}");
+        let mut font_queries = Vec::new();
+        for font in font_set.iter() {
+            let is_ttf = font
+                .format()
+                .is_ok_and(|f| matches!(f, FontFormat::TrueType));
+            if !is_ttf {
+                if let Ok(name) = font.name() {
+                    tracing::info!(
+                        "Skipping font '{name}' because it's not a TTF (it doesn't have a name)"
+                    );
+                }
                 continue;
             }
+
+            let (
+                Ok(name), //
+                Ok(filename),
+                Ok(index),
+                Ok(weight),
+                Ok(slant),
+            ) = (
+                font.name(),
+                font.filename(),
+                font.face_index(),
+                font.weight(),
+                font.slant(),
+            )
+            else {
+                continue;
+            };
+
+            let Ok(index) = index.try_into() else {
+                continue;
+            };
+
+            let is_bold = weight >= fontconfig::FC_WEIGHT_BOLD;
+            let is_italic = slant >= fontconfig::FC_SLANT_ITALIC;
+
+            match load_font_from_file(
+                Path::new(filename),
+                name.to_string(),
+                index,
+                is_bold,
+                is_italic,
+                device_font_renderer,
+                atlases,
+            ) {
+                Ok(definition) => register(definition),
+                Err(err) => {
+                    tracing::error!("Error loading font from fontconfig: {err}");
+                    continue;
+                }
+            }
+
+            let query = FontQuery::new(query.font_type, name.to_string(), is_bold, is_italic);
+            font_queries.push(query);
         }
 
-        let query = FontQuery::new(query.font_type, name.to_string(), is_bold, is_italic);
-        font_queries.push(query);
+        Ok(font_queries)
     }
-    font_queries
 }

@@ -1,1 +1,7 @@
 num_ticks = 1
+
+[[compilers]]
+type = "Rascal"
+target = "test.swf"
+classes = ["Test"]
+swf_version = 15

@@ -4,3 +4,5 @@ pub mod audio;
 pub mod navigator;
 #[cfg(feature = "fs")]
 pub mod storage;
+#[cfg(feature = "ui")]
+pub mod ui;

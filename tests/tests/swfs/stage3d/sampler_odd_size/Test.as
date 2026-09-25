@@ -55,8 +55,6 @@
 
         public function Test() {
             stage3D = this.stage.stage3Ds[0];
-            stage3D.x = 10;
-            stage3D.y = 10;
 
             // Add event listener before requesting the context
             stage3D.addEventListener(Event.CONTEXT3D_CREATE, contextCreated);

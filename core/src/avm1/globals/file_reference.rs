@@ -5,10 +5,10 @@ use std::cell::{Cell, RefCell};
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::globals::as_broadcaster::BroadcasterFunctions;
-use crate::avm1::property_decl::{DeclContext, StaticDeclarations, SystemClass};
+use crate::avm1::property_decl::{DeclContext, PropertyOrder, StaticDeclarations, SystemClass};
 use crate::avm1::{NativeObject, Object, Value};
 use crate::avm1_stub;
-use crate::backend::ui::{FileDialogResult, FileFilter};
+use crate::backend::ui::{FileDialogSelection, FileFilter};
 use crate::string::AvmString;
 use gc_arena::barrier::unlock;
 use gc_arena::lock::Lock;
@@ -21,10 +21,14 @@ use url::Url;
 pub struct FileReferenceObject<'gc>(Gc<'gc, FileReferenceData<'gc>>);
 
 impl<'gc> FileReferenceObject<'gc> {
-    pub fn init_from_dialog_result(
+    pub fn new(mc: &gc_arena::Mutation<'gc>) -> Self {
+        Self(Gc::new(mc, Default::default()))
+    }
+
+    pub fn init_from_file_selection(
         self,
         activation: &mut Activation<'_, 'gc>,
-        result: &dyn FileDialogResult,
+        result: &dyn FileDialogSelection,
     ) {
         let mc = activation.gc();
         let write = Gc::write(mc, self.0);
@@ -53,7 +57,7 @@ impl<'gc> FileReferenceObject<'gc> {
         let file_type = result.file_type().map(|s| AvmString::new_utf8(mc, s));
         unlock!(write, FileReferenceData, file_type).set(file_type);
 
-        let file_name = result.file_name().map(|s| AvmString::new_utf8(mc, s));
+        let file_name = Some(AvmString::new_utf8(mc, result.file_name()));
         unlock!(write, FileReferenceData, name).set(file_name);
 
         let creator = result.creator().map(|s| AvmString::new_utf8(mc, s));
@@ -105,7 +109,7 @@ pub fn create_class<'gc>(
     broadcaster_fns: BroadcasterFunctions<'gc>,
     array_proto: Object<'gc>,
 ) -> SystemClass<'gc> {
-    let class = context.class(constructor, super_proto);
+    let class = context.class(constructor, super_proto, PropertyOrder::PrototypeLast);
     context.define_properties_on(class.proto, PROTO_DECLS(context));
     broadcaster_fns.initialize(context.strings, class.proto, array_proto);
     context.define_properties_on(class.constr, OBJECT_DECLS(context));
@@ -220,6 +224,88 @@ pub fn file_type<'gc>(
     Ok(Value::Undefined)
 }
 
+/// Read a filter field. Only honors own properties (not those inherited from
+/// the prototype) and invokes virtual getters defined via `Object.addProperty`.
+/// Per Flash, exceptions thrown from such a getter are silently swallowed and
+/// the field is treated as missing.
+fn get_own_filter_field<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    object: Object<'gc>,
+    name: AvmString<'gc>,
+) -> Option<Value<'gc>> {
+    if !object.has_own_property(activation, name) {
+        return None;
+    }
+
+    object.get(name, activation).ok()
+}
+
+fn parse_file_filter_array<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    array: Object<'gc>,
+) -> Result<Option<Vec<FileFilter>>, Error<'gc>> {
+    let length = array.length(activation)?;
+
+    // Empty array is not allowed
+    if length == 0 {
+        return Ok(None);
+    }
+
+    let mut filters = Vec::with_capacity(length as usize);
+
+    for i in 0..length {
+        let Value::Object(element) = array.get_element(activation, i) else {
+            // Method will abort if any non-Object elements are in the list
+            return Ok(None);
+        };
+
+        let (Some(description), Some(extension), mac_type) = (
+            get_own_filter_field(activation, element, istr!("description")),
+            get_own_filter_field(activation, element, istr!("extension")),
+            get_own_filter_field(activation, element, istr!("macType")),
+        ) else {
+            return Ok(None);
+        };
+
+        let description = description.coerce_to_string(activation)?.to_string();
+        let extensions = extension.coerce_to_string(activation)?.to_string();
+        let mac_type = match mac_type {
+            Some(v) => Some(v.coerce_to_string(activation)?.to_string()),
+            None => None,
+        };
+
+        // Empty strings are not allowed for desc / extension
+        if description.is_empty() || extensions.is_empty() {
+            return Ok(None);
+        }
+
+        filters.push(FileFilter {
+            description,
+            extensions,
+            mac_type,
+        });
+    }
+
+    Ok(Some(filters))
+}
+
+/// Parse the file filter argument used by `FileReference.browse` and
+/// `FileReferenceList.browse`.
+///
+/// Returns `Ok(Some(filters))` on success, or `Ok(None)` if `browse()` should
+/// bail out and return `false` without opening a dialog. Exceptions raised
+/// during property coercion are propagated.
+pub fn parse_file_filters<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    value: Option<Value<'gc>>,
+) -> Result<Option<Vec<FileFilter>>, Error<'gc>> {
+    match value {
+        Some(Value::Object(array)) => parse_file_filter_array(activation, array),
+        Some(_) => Ok(None),
+        None => Ok(Some(Vec::new())),
+    }
+}
+
 pub fn browse<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
@@ -229,58 +315,9 @@ pub fn browse<'gc>(
         return Ok(Value::Undefined);
     }
 
-    let file_filters = match args.get(0) {
-        Some(Value::Object(array)) => {
-            // Array of filter objects.
-            let length = array.length(activation)?;
-
-            // Empty array is not allowed
-            if length == 0 {
-                return Ok(false.into());
-            }
-
-            let mut results = Vec::with_capacity(length as usize);
-
-            for i in 0..length {
-                if let Value::Object(element) = array.get_element(activation, i) {
-                    let mac_type =
-                        if let Some(val) = element.get_local_stored(istr!("macType"), activation) {
-                            Some(val.coerce_to_string(activation)?.to_string())
-                        } else {
-                            None
-                        };
-
-                    let description = element.get_local_stored(istr!("description"), activation);
-                    let extension = element.get_local_stored(istr!("extension"), activation);
-
-                    if let (Some(description), Some(extension)) = (description, extension) {
-                        let description = description.coerce_to_string(activation)?.to_string();
-
-                        let extensions = extension.coerce_to_string(activation)?.to_string();
-
-                        // Empty strings are not allowed for desc / extension
-                        if description.is_empty() || extensions.is_empty() {
-                            return Ok(false.into());
-                        }
-
-                        results.push(FileFilter {
-                            description,
-                            extensions,
-                            mac_type,
-                        });
-                    } else {
-                        return Ok(false.into());
-                    }
-                } else {
-                    // Method will abort if any non-Object elements are in the list
-                    return Ok(false.into());
-                }
-            }
-
-            results
-        }
-        None => Vec::new(),
-        _ => return Ok(Value::Undefined),
+    let file_filters = match parse_file_filters(activation, args.first().copied())? {
+        Some(filters) => filters,
+        None => return Ok(false.into()),
     };
 
     let dialog = activation.context.ui.display_file_open_dialog(file_filters);
@@ -417,10 +454,7 @@ fn constructor<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     this.set_native(
         activation.gc(),
-        NativeObject::FileReference(FileReferenceObject(Gc::new(
-            activation.gc(),
-            Default::default(),
-        ))),
+        NativeObject::FileReference(FileReferenceObject::new(activation.gc())),
     );
     Ok(Value::Undefined)
 }

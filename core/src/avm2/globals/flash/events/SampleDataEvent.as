@@ -1,6 +1,7 @@
 package flash.events {
     import flash.utils.ByteArray;
 
+    [API("662")]
     public class SampleDataEvent extends Event {
         public static const SAMPLE_DATA:String = "sampleData";
 

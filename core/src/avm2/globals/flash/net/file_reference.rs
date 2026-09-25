@@ -1,5 +1,6 @@
 use crate::avm2::bytearray::ByteArrayStorage;
 use crate::avm2::error::{make_error_2037, make_error_2097, make_error_2174};
+use crate::avm2::function::FunctionArgs;
 use crate::avm2::globals::slots::flash_net_file_filter as file_filter_slots;
 use crate::avm2::object::{ByteArrayObject, DateObject, FileReference};
 use crate::avm2::parameters::ParametersExt;
@@ -12,7 +13,7 @@ pub use crate::avm2::object::file_reference_allocator;
 pub fn get_creation_date<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
@@ -20,8 +21,8 @@ pub fn get_creation_date<'gc>(
 
     let creation_date = match *this.file_reference() {
         FileReference::None => return Err(make_error_2037(activation)),
-        FileReference::FileDialogResult(ref dialog_result) => {
-            if let Some(time) = dialog_result.creation_time() {
+        FileReference::FileDialogSelection(ref selection) => {
+            if let Some(time) = selection.creation_time() {
                 DateObject::from_date_time(activation.context, time).into()
             } else {
                 Value::Null
@@ -35,15 +36,15 @@ pub fn get_creation_date<'gc>(
 pub fn get_data<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
     let this = this.as_file_reference().unwrap();
 
     let bytearray = match *this.file_reference() {
-        FileReference::FileDialogResult(ref dialog_result) if this.loaded() => {
-            let bytes = dialog_result.contents();
+        FileReference::FileDialogSelection(ref selection) if this.loaded() => {
+            let bytes = selection.contents();
             let storage = ByteArrayStorage::from_vec(activation.context, bytes.to_vec());
             ByteArrayObject::from_storage(activation.context, storage)
         }
@@ -57,7 +58,7 @@ pub fn get_data<'gc>(
 pub fn get_modification_date<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
@@ -65,8 +66,8 @@ pub fn get_modification_date<'gc>(
 
     let modification_date = match *this.file_reference() {
         FileReference::None => return Err(make_error_2037(activation)),
-        FileReference::FileDialogResult(ref dialog_result) => {
-            if let Some(time) = dialog_result.modification_time() {
+        FileReference::FileDialogSelection(ref selection) => {
+            if let Some(time) = selection.modification_time() {
                 DateObject::from_date_time(activation.context, time).into()
             } else {
                 Value::Null
@@ -80,7 +81,7 @@ pub fn get_modification_date<'gc>(
 pub fn get_name<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
@@ -88,8 +89,8 @@ pub fn get_name<'gc>(
 
     let name = match *this.file_reference() {
         FileReference::None => return Err(make_error_2037(activation)),
-        FileReference::FileDialogResult(ref dialog_result) => {
-            let name = dialog_result.file_name().unwrap_or_default();
+        FileReference::FileDialogSelection(ref selection) => {
+            let name = selection.file_name();
             AvmString::new_utf8(activation.gc(), name).into()
         }
     };
@@ -100,7 +101,7 @@ pub fn get_name<'gc>(
 pub fn get_size<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
@@ -108,7 +109,7 @@ pub fn get_size<'gc>(
 
     let size = match *this.file_reference() {
         FileReference::None => return Err(make_error_2037(activation)),
-        FileReference::FileDialogResult(ref dialog_result) => dialog_result.size().unwrap_or(0),
+        FileReference::FileDialogSelection(ref selection) => selection.size().unwrap_or(0),
     };
 
     Ok(Value::Number(size as f64))
@@ -117,7 +118,7 @@ pub fn get_size<'gc>(
 pub fn get_type<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
@@ -125,8 +126,8 @@ pub fn get_type<'gc>(
 
     let type_ = match *this.file_reference() {
         FileReference::None => return Err(make_error_2037(activation)),
-        FileReference::FileDialogResult(ref dialog_result) => {
-            let type_ = dialog_result.file_type().unwrap_or_default();
+        FileReference::FileDialogSelection(ref selection) => {
+            let type_ = selection.file_type().unwrap_or_default();
             AvmString::new_utf8(activation.gc(), type_).into()
         }
     };
@@ -137,7 +138,7 @@ pub fn get_type<'gc>(
 pub fn browse<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
@@ -205,7 +206,7 @@ pub fn browse<'gc>(
 pub fn load<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
@@ -216,7 +217,7 @@ pub fn load<'gc>(
 
     let size = match *this.file_reference() {
         FileReference::None => return Err(make_error_2037(activation)),
-        FileReference::FileDialogResult(ref dialog_result) => dialog_result.size().unwrap_or(0),
+        FileReference::FileDialogSelection(ref selection) => selection.size().unwrap_or(0),
     };
 
     let size = size as usize;
@@ -244,7 +245,7 @@ pub fn load<'gc>(
 pub fn save_internal<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 

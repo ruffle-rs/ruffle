@@ -491,6 +491,48 @@ public class Test extends MovieClip {
             ]));
         });
 
+        trace("Empty indices")
+        logError(function ():void {
+            draw(Vector.<Number>([
+                0, 0, 0, 10, 10, 0, 10, 10
+            ]), Vector.<int>([]));
+        });
+
+        trace("1 index")
+        logError(function ():void {
+            draw(Vector.<Number>([
+                0, 0, 0, 10, 10, 0, 10, 10
+            ]), Vector.<int>([0]));
+        });
+
+        trace("2 indices")
+        logError(function ():void {
+            draw(Vector.<Number>([
+                0, 0, 0, 10, 10, 0, 10, 10
+            ]), Vector.<int>([0, 1]));
+        });
+
+        trace("4 indices")
+        logError(function ():void {
+            draw(Vector.<Number>([
+                0, 0, 0, 10, 10, 0, 10, 10
+            ]), Vector.<int>([0, 1, 2, 3]));
+        });
+
+        trace("5 indices")
+        logError(function ():void {
+            draw(Vector.<Number>([
+                0, 0, 0, 10, 10, 0, 10, 10
+            ]), Vector.<int>([0, 1, 2, 3, 0]));
+        });
+
+        trace("7 indices")
+        logError(function ():void {
+            draw(Vector.<Number>([
+                0, 0, 0, 10, 10, 0, 10, 10
+            ]), Vector.<int>([0, 1, 2, 3, 0, 1, 2]));
+        });
+
         trace("Unknown culling")
         logError(function ():void {
             draw(Vector.<Number>([

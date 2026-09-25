@@ -2,6 +2,7 @@ use crate::compiler::SwfCompiler;
 use crate::util::read_bytes;
 use crate::util::write_bytes_and_verify_if_changed;
 use anyhow::anyhow;
+use ruffle_core::Color;
 use ruffle_core::swf::{
     Compression, DoAbc2, DoAbc2Flag, FileAttributes, Fixed8, Header, Rectangle, SwfStr,
     SymbolClassLink, Tag, Twips,
@@ -59,7 +60,7 @@ impl AscOptions {
             stage_transform: self.stage_transform,
             use_network: self.use_network.unwrap_or(false),
             optimize: self.optimize.unwrap_or(true),
-            debug: self.debug.unwrap_or(true),
+            debug: self.debug.unwrap_or(false),
         }))
     }
 }
@@ -77,6 +78,13 @@ impl Default for AscOptions {
             debug: None,
         }
     }
+}
+
+struct SwfMetadata {
+    width: f64,
+    height: f64,
+    frame_rate: f32,
+    background_color: Option<Color>,
 }
 
 #[derive(Debug)]
@@ -129,8 +137,17 @@ impl SwfCompiler for AscCompiler {
         asc::run_asc(asc_config)?;
 
         let abc_bytes = std::fs::read(tmp_dir.join(format!("{}.abc", self.class)))?;
+        let swf_bytes = self.build_swf(&abc_bytes)?;
 
-        let (width, height, fps) = read_swf_metadata(&abc_bytes, &self.class)?;
+        let output_path = root_dir.join(&self.target)?;
+
+        write_bytes_and_verify_if_changed(&output_path, &swf_bytes, verify_if_changed)
+    }
+}
+
+impl AscCompiler {
+    fn build_swf(&self, abc_bytes: &[u8]) -> anyhow::Result<Vec<u8>> {
+        let metadata = read_swf_metadata(abc_bytes, &self.class)?;
         let StageTransform { x, y } = self.stage_transform;
 
         let header = Header {
@@ -138,11 +155,11 @@ impl SwfCompiler for AscCompiler {
             version: self.swf_version,
             stage_size: Rectangle {
                 x_min: Twips::from_pixels(x),
-                x_max: Twips::from_pixels(x + width),
+                x_max: Twips::from_pixels(x + metadata.width),
                 y_min: Twips::from_pixels(y),
-                y_max: Twips::from_pixels(y + height),
+                y_max: Twips::from_pixels(y + metadata.height),
             },
-            frame_rate: Fixed8::from_f32(fps),
+            frame_rate: Fixed8::from_f32(metadata.frame_rate),
             num_frames: 1,
         };
 
@@ -151,39 +168,42 @@ impl SwfCompiler for AscCompiler {
             attributes.set(FileAttributes::USE_NETWORK_SANDBOX, true);
         }
 
-        let tags = [
-            Tag::FileAttributes(attributes),
-            Tag::DoAbc2(DoAbc2 {
-                flags: DoAbc2Flag::LAZY_INITIALIZE,
-                name: SwfStr::from_utf8_str(""),
-                data: &abc_bytes,
-            }),
-            Tag::SymbolClass(vec![SymbolClassLink {
-                id: 0,
-                class_name: SwfStr::from_utf8_str(&self.class),
-            }]),
-            Tag::ShowFrame,
-        ];
+        let mut tags = Vec::new();
+        tags.push(Tag::FileAttributes(attributes));
+        if let Some(color) = metadata.background_color {
+            tags.push(Tag::SetBackgroundColor(color));
+        }
+        tags.push(Tag::DoAbc2(DoAbc2 {
+            flags: DoAbc2Flag::LAZY_INITIALIZE,
+            name: SwfStr::from_utf8_str(""),
+            data: abc_bytes,
+        }));
+        tags.push(Tag::SymbolClass(vec![SymbolClassLink {
+            id: 0,
+            class_name: SwfStr::from_utf8_str(&self.class),
+        }]));
+        tags.push(Tag::ShowFrame);
 
         let mut swf_bytes = Vec::new();
         ruffle_core::swf::write_swf(&header, &tags, &mut swf_bytes)?;
 
-        let output_path = root_dir.join(&self.target)?;
-
-        write_bytes_and_verify_if_changed(&output_path, &swf_bytes, verify_if_changed)
+        Ok(swf_bytes)
     }
 }
 
-fn read_swf_metadata(abc_bytes: &[u8], class: &str) -> anyhow::Result<(f64, f64, f32)> {
+fn read_swf_metadata(abc_bytes: &[u8], class: &str) -> anyhow::Result<SwfMetadata> {
     use ruffle_core::swf::avm2::read::Reader;
     use ruffle_core::swf::avm2::types::Multiname;
 
     let abc = Reader::new(abc_bytes).read().unwrap();
     let strings = &abc.constant_pool.strings;
 
-    let mut width: f64 = 550.0;
-    let mut height: f64 = 400.0;
-    let mut fps: f32 = 24.0;
+    let mut ret = SwfMetadata {
+        width: 550.0,
+        height: 400.0,
+        frame_rate: 24.0,
+        background_color: None,
+    };
 
     let Some(class_trait) = abc
         .scripts
@@ -198,7 +218,7 @@ fn read_swf_metadata(abc_bytes: &[u8], class: &str) -> anyhow::Result<(f64, f64,
             )
         })
     else {
-        return Ok((width, height, fps));
+        return Ok(ret);
     };
 
     let Some(metadata) = class_trait
@@ -207,7 +227,7 @@ fn read_swf_metadata(abc_bytes: &[u8], class: &str) -> anyhow::Result<(f64, f64,
         .map(|&idx| &abc.metadata[idx.0 as usize])
         .find(|m| m.name.0 != 0 && strings[m.name.0 as usize - 1] == b"SWF")
     else {
-        return Ok((width, height, fps));
+        return Ok(ret);
     };
 
     for item in &metadata.items {
@@ -218,9 +238,10 @@ fn read_swf_metadata(abc_bytes: &[u8], class: &str) -> anyhow::Result<(f64, f64,
         let value = std::str::from_utf8(&strings[item.value.0 as usize - 1]).unwrap();
 
         match key.as_slice() {
-            b"width" => width = value.parse()?,
-            b"height" => height = value.parse()?,
-            b"frameRate" => fps = value.parse()?,
+            b"width" => ret.width = value.parse()?,
+            b"height" => ret.height = value.parse()?,
+            b"frameRate" => ret.frame_rate = value.parse()?,
+            b"backgroundColor" => ret.background_color = Some(parse_metadata_color(value)?),
             key => {
                 return Err(anyhow!(
                     "Unknown SWF annotation key: {}",
@@ -230,5 +251,13 @@ fn read_swf_metadata(abc_bytes: &[u8], class: &str) -> anyhow::Result<(f64, f64,
         }
     }
 
-    Ok((width, height, fps))
+    Ok(ret)
+}
+
+fn parse_metadata_color(str: &str) -> anyhow::Result<Color> {
+    let hex = str
+        .strip_prefix('#')
+        .ok_or_else(|| anyhow!("Color must start with '#': {}", str))?;
+    let rgb = u32::from_str_radix(hex, 16).map_err(|_| anyhow!("Invalid color value: {}", str))?;
+    Ok(Color::from_rgb(rgb, 255))
 }

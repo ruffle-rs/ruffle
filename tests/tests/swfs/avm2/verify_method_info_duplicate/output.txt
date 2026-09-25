@@ -1,0 +1,2 @@
+VerifyError: Error #1121: Method Test/hello() has a duplicate method body.
+ReferenceError: Error #1065: Variable Test is not defined.

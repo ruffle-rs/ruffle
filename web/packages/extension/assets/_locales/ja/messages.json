@@ -38,6 +38,15 @@
     "settings_player_version": {
         "message": "エミュレートするFlashプレーヤーのバージョン(1~32)"
     },
+    "settings_background_execution_mode": {
+        "message": "バックグラウンドで実行"
+    },
+    "settings_background_execution_mode_none": {
+        "message": "一時停止"
+    },
+    "settings_background_execution_mode_main_thread": {
+        "message": "メインスレッドで実行"
+    },
     "settings_preferred_renderer": {
         "message": "優先するレンダラー"
     },

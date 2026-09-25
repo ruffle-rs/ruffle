@@ -1,0 +1,36 @@
+///var self_ref:SelfRef = new SelfRef();
+/// self_ref
+[object SelfRef]
+///SelfRef.field
+[object SelfRef]
+///SelfRef.self_ref_const
+[object SelfRef]
+///self_ref.self_ref_method(self_ref)
+[object SelfRef]
+///SelfRefSubClass.self_ref_base
+[object SelfRef]
+///SelfRefSubClass.self_ref_sub_iface
+[object SelfRefSubClass]
+///any_var
+undefined
+///object_var
+null
+///var integer_var:int = 1.5
+///integer_var
+1
+///integer_var = 6.7;
+6
+///first.prop1
+null
+///second.prop2
+null
+///first.prop1 = second;
+///second.prop2 = first
+///first.prop1
+[object Second]
+///second.prop2
+[object First]
+//first.prop1 = new Object();
+TypeError: Error #1034: Type Coercion failed: cannot convert Object@00000000000 to Test.as$38.Second.
+	at global$init()
+	at test_fla::MainTimeline/frame1()

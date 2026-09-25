@@ -1,0 +1,20 @@
+# This SWF is 90 frames long, and contains a streamed sound lasting 72 frames
+
+num_ticks = 120
+
+[player_options]
+with_audio = true
+
+[audio_assertions.start]
+frames = { from = 1, to = 70 }
+min_max_amplitude = 0.75
+
+[audio_assertions.gap]
+frames = { from = 75, to = 85 }
+max_amplitude = 0
+
+[audio_assertions.loop]
+frames = { from = 95, to = 115 }
+min_max_amplitude = 0.75
+# In Ruffle, the sound doesn't loop, making this assertion fail.
+known_failure = true

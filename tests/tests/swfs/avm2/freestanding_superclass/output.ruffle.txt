@@ -1,0 +1,2 @@
+VerifyError: Error #1035: Illegal super expression found in method .
+	at Test()

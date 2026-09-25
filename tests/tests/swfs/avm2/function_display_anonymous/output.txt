@@ -1,0 +1,7 @@
+Error
+	at Function/<anonymous>()
+	at Test()
+ArgumentError: Error #1063: Argument count mismatch on Function/<anonymous>(). Expected 1, got 0.
+	at Test()
+ArgumentError: Error #1063: Argument count mismatch on Function/<anonymous>(). Expected 2, got 3.
+	at Test()

@@ -1,0 +1,13 @@
+frame 1 - attaching sound
+frame 2
+frame 3 - loading noise then stopping
+frame 4
+frame 5 - starting 3 instances
+frame 6
+frame 7 - muting volume
+frame 8
+frame 9 - loading again, as streaming this time
+frame 10
+frame 11 - trying to start multiple
+frame 12
+frame 14 - only the original attached should be playing

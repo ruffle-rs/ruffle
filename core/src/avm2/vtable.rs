@@ -152,16 +152,6 @@ impl<'gc> VTable<'gc> {
         self.resolved_traits().get_for_multiname(name).cloned()
     }
 
-    pub fn get_trait_with_ns(self, name: &Multiname<'gc>) -> Option<(Namespace<'gc>, Property)> {
-        if name.is_attribute() {
-            return None;
-        }
-
-        self.resolved_traits()
-            .get_with_ns_for_multiname(name)
-            .map(|(ns, p)| (ns, *p))
-    }
-
     /// Coerces `value` to the type of the slot with id `slot_id`
     pub fn coerce_trait_value(
         self,

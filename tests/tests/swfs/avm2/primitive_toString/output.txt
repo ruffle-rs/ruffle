@@ -13,8 +13,28 @@ abc
 abc
 // Boolean.prototype.toString.call(value)
 TypeError: Error #1004: Method Boolean.prototype.toString was invoked on an incompatible object.
+	at Error$/throwError()
+	at Function/<anonymous>()
+	at Function/http://adobe.com/AS3/2006/builtin::call()
+	at global$init()
 // Number.prototype.toString.call(value)
 TypeError: Error #1004: Method Number.prototype.toString was invoked on an incompatible object.
+	at Error$/throwError()
+	at Function/<anonymous>()
+	at Function/http://adobe.com/AS3/2006/builtin::call()
+	at global$init()
+// int.prototype.toString.call(value)
+TypeError: Error #1004: Method int.prototype.toString was invoked on an incompatible object.
+	at Error$/throwError()
+	at Function/<anonymous>()
+	at Function/http://adobe.com/AS3/2006/builtin::call()
+	at global$init()
+// uint.prototype.toString.call(value)
+TypeError: Error #1004: Method uint.prototype.toString was invoked on an incompatible object.
+	at Error$/throwError()
+	at Function/<anonymous>()
+	at Function/http://adobe.com/AS3/2006/builtin::call()
+	at global$init()
 
 // value
 true
@@ -22,10 +42,30 @@ true
 [object Boolean]
 // String.prototype.toString.call(value)
 TypeError: Error #1004: Method String.prototype.toString was invoked on an incompatible object.
+	at Error$/throwError()
+	at Function/<anonymous>()
+	at Function/http://adobe.com/AS3/2006/builtin::call()
+	at global$init()
 // Boolean.prototype.toString.call(value)
 true
 // Number.prototype.toString.call(value)
 TypeError: Error #1004: Method Number.prototype.toString was invoked on an incompatible object.
+	at Error$/throwError()
+	at Function/<anonymous>()
+	at Function/http://adobe.com/AS3/2006/builtin::call()
+	at global$init()
+// int.prototype.toString.call(value)
+TypeError: Error #1004: Method int.prototype.toString was invoked on an incompatible object.
+	at Error$/throwError()
+	at Function/<anonymous>()
+	at Function/http://adobe.com/AS3/2006/builtin::call()
+	at global$init()
+// uint.prototype.toString.call(value)
+TypeError: Error #1004: Method uint.prototype.toString was invoked on an incompatible object.
+	at Error$/throwError()
+	at Function/<anonymous>()
+	at Function/http://adobe.com/AS3/2006/builtin::call()
+	at global$init()
 
 // value
 1.5
@@ -33,10 +73,72 @@ TypeError: Error #1004: Method Number.prototype.toString was invoked on an incom
 [object Number]
 // String.prototype.toString.call(value)
 TypeError: Error #1004: Method String.prototype.toString was invoked on an incompatible object.
+	at Error$/throwError()
+	at Function/<anonymous>()
+	at Function/http://adobe.com/AS3/2006/builtin::call()
+	at global$init()
 // Boolean.prototype.toString.call(value)
 TypeError: Error #1004: Method Boolean.prototype.toString was invoked on an incompatible object.
+	at Error$/throwError()
+	at Function/<anonymous>()
+	at Function/http://adobe.com/AS3/2006/builtin::call()
+	at global$init()
 // Number.prototype.toString.call(value)
 1.5
+// int.prototype.toString.call(value)
+TypeError: Error #1004: Method int.prototype.toString was invoked on an incompatible object.
+	at Error$/throwError()
+	at Function/<anonymous>()
+	at Function/http://adobe.com/AS3/2006/builtin::call()
+	at global$init()
+// uint.prototype.toString.call(value)
+1.5
+
+// value
+2
+// Object.prototype.toString.call(value)
+[object Number]
+// String.prototype.toString.call(value)
+TypeError: Error #1004: Method String.prototype.toString was invoked on an incompatible object.
+	at Error$/throwError()
+	at Function/<anonymous>()
+	at Function/http://adobe.com/AS3/2006/builtin::call()
+	at global$init()
+// Boolean.prototype.toString.call(value)
+TypeError: Error #1004: Method Boolean.prototype.toString was invoked on an incompatible object.
+	at Error$/throwError()
+	at Function/<anonymous>()
+	at Function/http://adobe.com/AS3/2006/builtin::call()
+	at global$init()
+// Number.prototype.toString.call(value)
+2
+// int.prototype.toString.call(value)
+2
+// uint.prototype.toString.call(value)
+2
+
+// value
+-2
+// Object.prototype.toString.call(value)
+[object Number]
+// String.prototype.toString.call(value)
+TypeError: Error #1004: Method String.prototype.toString was invoked on an incompatible object.
+	at Error$/throwError()
+	at Function/<anonymous>()
+	at Function/http://adobe.com/AS3/2006/builtin::call()
+	at global$init()
+// Boolean.prototype.toString.call(value)
+TypeError: Error #1004: Method Boolean.prototype.toString was invoked on an incompatible object.
+	at Error$/throwError()
+	at Function/<anonymous>()
+	at Function/http://adobe.com/AS3/2006/builtin::call()
+	at global$init()
+// Number.prototype.toString.call(value)
+-2
+// int.prototype.toString.call(value)
+-2
+// uint.prototype.toString.call(value)
+-2
 
 // value
 null
@@ -44,10 +146,34 @@ null
 [object global]
 // String.prototype.toString.call(value)
 TypeError: Error #1004: Method String.prototype.toString was invoked on an incompatible object.
+	at Error$/throwError()
+	at Function/<anonymous>()
+	at Function/http://adobe.com/AS3/2006/builtin::call()
+	at global$init()
 // Boolean.prototype.toString.call(value)
 TypeError: Error #1004: Method Boolean.prototype.toString was invoked on an incompatible object.
+	at Error$/throwError()
+	at Function/<anonymous>()
+	at Function/http://adobe.com/AS3/2006/builtin::call()
+	at global$init()
 // Number.prototype.toString.call(value)
 TypeError: Error #1004: Method Number.prototype.toString was invoked on an incompatible object.
+	at Error$/throwError()
+	at Function/<anonymous>()
+	at Function/http://adobe.com/AS3/2006/builtin::call()
+	at global$init()
+// int.prototype.toString.call(value)
+TypeError: Error #1004: Method int.prototype.toString was invoked on an incompatible object.
+	at Error$/throwError()
+	at Function/<anonymous>()
+	at Function/http://adobe.com/AS3/2006/builtin::call()
+	at global$init()
+// uint.prototype.toString.call(value)
+TypeError: Error #1004: Method uint.prototype.toString was invoked on an incompatible object.
+	at Error$/throwError()
+	at Function/<anonymous>()
+	at Function/http://adobe.com/AS3/2006/builtin::call()
+	at global$init()
 
 // value
 undefined
@@ -55,7 +181,97 @@ undefined
 [object global]
 // String.prototype.toString.call(value)
 TypeError: Error #1004: Method String.prototype.toString was invoked on an incompatible object.
+	at Error$/throwError()
+	at Function/<anonymous>()
+	at Function/http://adobe.com/AS3/2006/builtin::call()
+	at global$init()
 // Boolean.prototype.toString.call(value)
 TypeError: Error #1004: Method Boolean.prototype.toString was invoked on an incompatible object.
+	at Error$/throwError()
+	at Function/<anonymous>()
+	at Function/http://adobe.com/AS3/2006/builtin::call()
+	at global$init()
 // Number.prototype.toString.call(value)
 TypeError: Error #1004: Method Number.prototype.toString was invoked on an incompatible object.
+	at Error$/throwError()
+	at Function/<anonymous>()
+	at Function/http://adobe.com/AS3/2006/builtin::call()
+	at global$init()
+// int.prototype.toString.call(value)
+TypeError: Error #1004: Method int.prototype.toString was invoked on an incompatible object.
+	at Error$/throwError()
+	at Function/<anonymous>()
+	at Function/http://adobe.com/AS3/2006/builtin::call()
+	at global$init()
+// uint.prototype.toString.call(value)
+TypeError: Error #1004: Method uint.prototype.toString was invoked on an incompatible object.
+	at Error$/throwError()
+	at Function/<anonymous>()
+	at Function/http://adobe.com/AS3/2006/builtin::call()
+	at global$init()
+
+// value
+[object Object]
+// Object.prototype.toString.call(value)
+[object Object]
+// String.prototype.toString.call(value)
+TypeError: Error #1004: Method String.prototype.toString was invoked on an incompatible object.
+	at Error$/throwError()
+	at Function/<anonymous>()
+	at Function/http://adobe.com/AS3/2006/builtin::call()
+	at global$init()
+// Boolean.prototype.toString.call(value)
+TypeError: Error #1004: Method Boolean.prototype.toString was invoked on an incompatible object.
+	at Error$/throwError()
+	at Function/<anonymous>()
+	at Function/http://adobe.com/AS3/2006/builtin::call()
+	at global$init()
+// Number.prototype.toString.call(value)
+TypeError: Error #1004: Method Number.prototype.toString was invoked on an incompatible object.
+	at Error$/throwError()
+	at Function/<anonymous>()
+	at Function/http://adobe.com/AS3/2006/builtin::call()
+	at global$init()
+// int.prototype.toString.call(value)
+TypeError: Error #1004: Method int.prototype.toString was invoked on an incompatible object.
+	at Error$/throwError()
+	at Function/<anonymous>()
+	at Function/http://adobe.com/AS3/2006/builtin::call()
+	at global$init()
+// uint.prototype.toString.call(value)
+TypeError: Error #1004: Method uint.prototype.toString was invoked on an incompatible object.
+	at Error$/throwError()
+	at Function/<anonymous>()
+	at Function/http://adobe.com/AS3/2006/builtin::call()
+	at global$init()
+
+// value
+
+// Object.prototype.toString.call(value)
+[object String]
+// String.prototype.toString.call(value)
+
+// Boolean.prototype.toString.call(value)
+TypeError: Error #1004: Method Boolean.prototype.toString was invoked on an incompatible object.
+	at Error$/throwError()
+	at Function/<anonymous>()
+	at Function/http://adobe.com/AS3/2006/builtin::call()
+	at global$init()
+// Number.prototype.toString.call(value)
+TypeError: Error #1004: Method Number.prototype.toString was invoked on an incompatible object.
+	at Error$/throwError()
+	at Function/<anonymous>()
+	at Function/http://adobe.com/AS3/2006/builtin::call()
+	at global$init()
+// int.prototype.toString.call(value)
+TypeError: Error #1004: Method int.prototype.toString was invoked on an incompatible object.
+	at Error$/throwError()
+	at Function/<anonymous>()
+	at Function/http://adobe.com/AS3/2006/builtin::call()
+	at global$init()
+// uint.prototype.toString.call(value)
+TypeError: Error #1004: Method uint.prototype.toString was invoked on an incompatible object.
+	at Error$/throwError()
+	at Function/<anonymous>()
+	at Function/http://adobe.com/AS3/2006/builtin::call()
+	at global$init()

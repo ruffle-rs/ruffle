@@ -34,3 +34,4 @@ var MYXML:XMLList = new XMLList(<a>b</a><c>d</c>); PASSED!
 var MYXML:XMLList = <><a>b</a><c>d</c></>; PASSED!
 var MYXML:XMLList = new XMLList() PASSED!
 var MYXML:XMLList = new XMLList(5) PASSED!
+TypeError: Error #2023: Class Test$ must inherit from Sprite to link to the root.

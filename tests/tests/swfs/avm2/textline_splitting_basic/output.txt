@@ -1,0 +1,76 @@
+null: [object TextBlock] (null)
+  done: complete
+empty: [object TextBlock] (null)
+  done: complete
+space: [object TextBlock] (null)
+  line: success, 0, null, null, valid;
+  done: complete
+lf: [object TextBlock] (null)
+  line: success, 0, null, null, valid;
+  done: complete
+cr: [object TextBlock] (null)
+  line: success, 0, null, null, valid;
+  done: complete
+crlf: [object TextBlock] (null)
+  line: success, 0, null, null, valid;
+  done: complete
+tab: [object TextBlock] (null)
+  line: success, 0, null, null, valid;
+  done: complete
+spaces: [object TextBlock] (null)
+  line: success, 0, null, null, valid;
+  done: complete
+whitespace2: [object TextBlock] (null)
+  line: success, 0, null, null, valid;
+  line: success, 2, [object TextLine], null, valid;
+  done: complete
+whitespace3: [object TextBlock] (null)
+  line: success, 0, null, null, valid;
+  line: success, 2, [object TextLine], null, valid;
+  line: success, 3, [object TextLine], null, valid;
+  done: complete
+whitespace4: [object TextBlock] (null)
+  line: success, 0, null, null, valid;
+  line: success, 2, [object TextLine], null, valid;
+  line: success, 4, [object TextLine], null, valid;
+  done: complete
+whitespace4: [object TextBlock] (null)
+  line: success, 0, null, null, valid;
+  line: success, 2, [object TextLine], null, valid;
+  line: success, 5, [object TextLine], null, valid;
+  done: complete
+text1: [object TextBlock] (null)
+  line: success, 0, null, null, valid;
+  done: complete
+text2: [object TextBlock] (null)
+  line: success, 0, null, null, valid;
+  line: success, 3, [object TextLine], null, valid;
+  done: complete
+text3: [object TextBlock] (null)
+  line: success, 0, null, null, valid;
+  line: success, 4, [object TextLine], null, valid;
+  done: complete
+text4: [object TextBlock] (null)
+  line: success, 0, null, null, valid;
+  line: success, 3, [object TextLine], null, valid;
+  done: complete
+text5: [object TextBlock] (null)
+  line: success, 0, null, null, valid;
+  line: success, 4, [object TextLine], null, valid;
+  done: complete
+text6: [object TextBlock] (null)
+  line: success, 0, null, null, valid;
+  line: success, 4, [object TextLine], null, valid;
+  line: success, 6, [object TextLine], null, valid;
+  done: complete
+text7: [object TextBlock] (null)
+  line: success, 0, null, null, valid;
+  line: success, 4, [object TextLine], null, valid;
+  done: complete
+text8: [object TextBlock] (null)
+  line: success, 0, null, null, valid;
+  done: complete
+text9: [object TextBlock] (null)
+  line: success, 0, null, null, valid;
+  line: success, 1, [object TextLine], null, valid;
+  done: complete

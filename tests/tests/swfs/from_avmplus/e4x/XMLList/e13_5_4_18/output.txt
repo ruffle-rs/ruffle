@@ -2,3 +2,4 @@ MYXML = new XMLList(xmlDoc), MYXML.propertyIsEnumerable(0) PASSED!
 MYXML = new XMLList(xmlDoc), MYXML.propertyIsEnumerable(1) PASSED!
 MYXML = new XMLList(xmlDoc), MYXML.propertyIsEnumerable(2) PASSED!
 MYXML = new XMLList(xmlDoc), MYXML.propertyIsEnumerable('employee') PASSED!
+TypeError: Error #2023: Class Test$ must inherit from Sprite to link to the root.

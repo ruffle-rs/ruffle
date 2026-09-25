@@ -1,0 +1,7 @@
+--- Testing LocalConnection ---
+--- LocalConnection Deserialization Results ---
+Date: 1672531200000
+XML: root
+DisplayObject: undefined
+Function: [object Object]
+Function Result: undefined

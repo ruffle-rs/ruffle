@@ -13,7 +13,7 @@ package {
             }
 
             if (!(this is Boolean)) {
-                throw new TypeError("Error #1004: Method Boolean.prototype.toString was invoked on an incompatible object.", 1004);
+                Error.throwError(TypeError, 1004, "Boolean.prototype.toString");
             }
 
             return this.AS3::toString();
@@ -25,7 +25,7 @@ package {
             }
 
             if (!(this is Boolean)) {
-                throw new TypeError("Error #1004: Method Boolean.prototype.valueOf was invoked on an incompatible object.", 1004);
+                Error.throwError(TypeError, 1004, "Boolean.prototype.valueOf");
             }
 
             return this;

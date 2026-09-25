@@ -20,7 +20,7 @@ storage-backend-memory = Memorija
 recent-limit = Ograničenje nedavnih datoteka
 recent-clear = Očisti nedavno
 theme = Tema
-theme-system = Zadano sustav
+theme-system = Zadano sustavom
 theme-light = Svijetla
 theme-dark = Tamna
 # See for context https://github.com/FeralInteractive/gamemode
@@ -28,10 +28,12 @@ gamemode = GameMode
 gamemode-tooltip =
     GameMode privremeno primjenjuje skup optimizacija na vaše računalo i/ili Ruffle.
     Ruffle zahtijeva GameMode samo kada se reproducira film.
-gamemode-default = Zadano
+gamemode-default = Zadan
 gamemode-default-tooltip = GameMode će biti omogućen samo kada je postavka napajanja postavljena na visoku.
 # See for context https://wiki.archlinux.org/title/Input_method
 ime-enabled = Način unosa
 ime-enabled-experimental = (eksperimentalno)
 ime-enabled-tooltip = Metoda unosa omogućuje unos znakova koji nisu dostupni na tipkovnici, na primjer kineskih, japanskih ili korejskih znakova.
-ime-enabled-default = Zadano
+ime-enabled-default = Zadan
+device-font-renderer-default = Zadan
+device-font-renderer-embedded = Ugrađen

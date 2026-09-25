@@ -1,4 +1,4 @@
-context-menu-download-swf = .swf downloaden
+context-menu-download-swf = SWF downloaden
 context-menu-copy-debug-info = Kopieer debuginformatie
 context-menu-open-save-manager = Open opgeslagen-data-manager
 context-menu-about-ruffle =

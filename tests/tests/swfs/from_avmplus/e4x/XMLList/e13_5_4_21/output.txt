@@ -9,3 +9,4 @@ MYXML = new XMLList(xmlDoc), MYXML.employee[1].toXMLString() PASSED!
 MYXML = new XMLList(xmlDoc), MYXML.employee[0].firstname.toXMLString() PASSED!
 MYXML = new XMLList(xmlDoc), MYXML.employee[1].firstname.toXMLString() PASSED!
 MYXML = new XMLList(xmlDoc), MYXML.toXMLString() PASSED!
+TypeError: Error #2023: Class Test$ must inherit from Sprite to link to the root.

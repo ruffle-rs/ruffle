@@ -1,6 +1,6 @@
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
-use crate::avm1::property_decl::{DeclContext, StaticDeclarations, SystemClass};
+use crate::avm1::property_decl::{DeclContext, PropertyOrder, StaticDeclarations, SystemClass};
 use crate::avm1::{Object, Value};
 use crate::string::AvmString;
 use ruffle_macros::istr;
@@ -13,7 +13,7 @@ pub fn create_class<'gc>(
     context: &mut DeclContext<'_, 'gc>,
     super_proto: Object<'gc>,
 ) -> SystemClass<'gc> {
-    let class = context.class(constructor, super_proto);
+    let class = context.class(constructor, super_proto, PropertyOrder::PrototypeLast);
     context.define_properties_on(class.proto, PROTO_DECLS(context));
     class
 }
@@ -41,19 +41,15 @@ fn constructor<'gc>(
         .unwrap_or(&true.into())
         .as_bool(activation.swf_version());
 
-    this.set(istr!("caption"), caption.into(), activation)?;
+    this.set(istr!("caption"), caption, activation)?;
 
     if let Some(callback) = callback {
         this.set(istr!("onSelect"), callback, activation)?;
     }
 
-    this.set(
-        istr!("separatorBefore"),
-        separator_before.into(),
-        activation,
-    )?;
-    this.set(istr!("enabled"), enabled.into(), activation)?;
-    this.set(istr!("visible"), visible.into(), activation)?;
+    this.set(istr!("separatorBefore"), separator_before, activation)?;
+    this.set(istr!("enabled"), enabled, activation)?;
+    this.set(istr!("visible"), visible, activation)?;
 
     Ok(Value::Undefined)
 }

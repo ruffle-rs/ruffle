@@ -8,3 +8,4 @@ XML with new line and XML.ignoreWhiteSpace = true PASSED!
 XML with new line and XML.ignoreWhiteSpace = false PASSED!
 new XML("<a><a><b      attr='1      2'>tab</b></a>") PASSED!
 new XML("<a><a><b      attr='1      2'>tab</b></a>") PASSED!
+TypeError: Error #2023: Class Test$ must inherit from Sprite to link to the root.

@@ -1,0 +1,49 @@
+65007
+ArgumentError: Error #2012: ContentElement class cannot be instantiated.
+	at flash.text.engine::ContentElement()
+	at Test()
+undefined
+null
+-1
+null
+null
+null
+null
+null
+rotate0
+userData
+  Value:null
+  Value:5
+  Value:12
+  Value:false
+  Value:undefined
+  Value:hello
+elementFormat
+  Value:null
+  Value:[object ElementFormat]
+eventMirror
+  Value:null
+  Value:[object EventDispatcher]
+textRotation
+  Caught error:TypeError: Error #2007: Parameter textRotation must be non-null.
+	at flash.text.engine::ContentElement/set textRotation()
+  Value:rotate0
+  Caught error:ArgumentError: Error #2008: Parameter textRotation must be one of the accepted values.
+	at flash.text.engine::ContentElement/set textRotation()
+  Value:rotate0
+  Caught error:ArgumentError: Error #2008: Parameter textRotation must be one of the accepted values.
+	at flash.text.engine::ContentElement/set textRotation()
+  Value:rotate0
+  Caught error:ArgumentError: Error #2008: Parameter textRotation must be one of the accepted values.
+	at flash.text.engine::ContentElement/set textRotation()
+  Value:rotate0
+  Caught error:ArgumentError: Error #2008: Parameter textRotation must be one of the accepted values.
+	at flash.text.engine::ContentElement/set textRotation()
+  Value:rotate0
+  Value:rotate0
+  Caught error:ArgumentError: Error #2008: Parameter textRotation must be one of the accepted values.
+	at flash.text.engine::ContentElement/set textRotation()
+  Value:rotate0
+  Value:rotate90
+  Value:rotate180
+  Value:rotate270

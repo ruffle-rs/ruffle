@@ -1,0 +1,34 @@
+Testing case...
+    Error (expected): TypeError: Error #1085: The element type "xml" must be terminated by the matching end-tag "</xml>".
+
+	at Test/test()
+	at Test()
+Testing case...
+    Error (expected): TypeError: Error #1090: XML parser failure: element is malformed.
+
+	at Test/test()
+	at Test()
+Testing case...
+    Error (expected): TypeError: Error #1090: XML parser failure: element is malformed.
+
+	at Test/test()
+	at Test()
+Testing case...
+    Error (expected): TypeError: Error #1090: XML parser failure: element is malformed.
+
+	at Test/test()
+	at Test()
+Testing case...
+    Error (expected): TypeError: Error #1091: XML parser failure: Unterminated CDATA section.
+
+	at Test/test()
+	at Test()
+Testing case...
+    Error (expected): TypeError: Error #1093: XML parser failure: Unterminated DOCTYPE declaration.
+
+	at Test/test()
+	at Test()
+Testing case...
+    Error (expected): TypeError: Error #1050: Cannot convert Object to primitive.
+	at Test/test()
+	at Test()

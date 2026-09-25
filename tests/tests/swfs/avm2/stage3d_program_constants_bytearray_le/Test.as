@@ -18,6 +18,7 @@ package
     import flash.geom.Matrix3D;
     import flash.geom.Vector3D;
     import flash.display.Stage;
+    import flash.display.StageQuality;
     import flash.utils.ByteArray;
     import flash.utils.Endian;
 
@@ -64,13 +65,12 @@ package
         {
             stage.scaleMode = StageScaleMode.NO_SCALE;
             stage.align = StageAlign.TOP_LEFT;
+            stage.quality = StageQuality.BEST;
 
             // Set up ByteArray endianness (little-endian)
             constantsBA.endian = Endian.LITTLE_ENDIAN;
 
             stage3D = stage.stage3Ds[0];
-            stage3D.x = 10;
-            stage3D.y = 10;
 
             //Compile shaders
             vertexAssembly.assemble( Context3DProgramType.VERTEX, VERTEX_SHADER, 1, false );
@@ -176,6 +176,12 @@ package
             projection.perspectiveFieldOfViewRH( fov, viewWidth/viewHeight, zNear, zFar );
             view.appendTranslation( 0, 0, -2 );    //Move view back
             model.appendTranslation( -.5, -.5, -.5 ); //center cube on origin
+            //Apply 40 incremental rotations up front so the rendered frame is deterministic
+            for (var i:int = 0; i < 40; i++) {
+                model.appendRotation( 1.0, Vector3D.Z_AXIS, pivot );
+                model.appendRotation( 1.0, Vector3D.Y_AXIS, pivot );
+                model.appendRotation( 0.5, Vector3D.X_AXIS, pivot );
+            }
             stage.addEventListener( Event.ENTER_FRAME, render );
         }
 
@@ -202,10 +208,6 @@ package
 
         private function render( event:Event ):void
         {
-            //Rotate model on each frame
-            model.appendRotation( 1.0, Vector3D.Z_AXIS, pivot );
-            model.appendRotation( 1.0, Vector3D.Y_AXIS, pivot );
-            model.appendRotation( 0.5, Vector3D.X_AXIS, pivot );
 
             //Combine transforms
             finalTransform.identity();

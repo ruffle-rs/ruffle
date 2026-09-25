@@ -3,3 +3,4 @@
 MYXML = new XML(xmlDoc), MYXML.setChildren(xmlList) PASSED!
 MYXML = new XML(xmlDoc), MYXML.setChildren(new XML ("<firstname>Fred</firstname>")) PASSED!
 MYXML = new XML(xmlDoc), MYXML.setChildren('simple string') PASSED!
+TypeError: Error #2023: Class Test$ must inherit from Sprite to link to the root.

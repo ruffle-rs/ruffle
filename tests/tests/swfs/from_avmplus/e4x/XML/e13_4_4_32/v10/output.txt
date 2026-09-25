@@ -6,3 +6,4 @@ MYXML = new XML(xmlDoc), MYXML.replace('phone','542144') PASSED!
 MYXML = new XML(xmlDoc), MYXML.replace('firstname','Johnny') PASSED!
 MYXML = new XML(xmlDoc), MYXML.replace('*','<phone>1234567</phone>') PASSED!
 MYXML = new XML(xmlDoc), MYXML.replace('@phone','<phone>7654321</phone>') PASSED!
+TypeError: Error #2023: Class Test$ must inherit from Sprite to link to the root.

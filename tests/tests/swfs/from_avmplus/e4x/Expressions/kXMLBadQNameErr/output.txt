@@ -2,3 +2,4 @@ Asserting for TypeError PASSED!
 <:x>hi</x> PASSED!
 Asserting for TypeError PASSED!
 <x :ns='attr'>hi</x> PASSED!
+TypeError: Error #2023: Class Test$ must inherit from Sprite to link to the root.

@@ -1,7 +1,7 @@
 //! flash.filters.GlowFilter object
 
 use crate::avm1::object::NativeObject;
-use crate::avm1::property_decl::{DeclContext, StaticDeclarations, SystemClass};
+use crate::avm1::property_decl::{DeclContext, PropertyOrder, StaticDeclarations, SystemClass};
 use crate::avm1::{Activation, Error, Object, Value};
 use gc_arena::{Collect, Gc, Mutation};
 use std::cell::Cell;
@@ -255,7 +255,12 @@ pub fn create_class<'gc>(
     context: &mut DeclContext<'_, 'gc>,
     super_proto: Object<'gc>,
 ) -> SystemClass<'gc> {
-    let class = context.native_class(table_constructor!(method), None, super_proto);
+    let class = context.native_class(
+        table_constructor!(method),
+        None,
+        super_proto,
+        PropertyOrder::PrototypeFirst,
+    );
     context.define_properties_on(class.proto, PROTO_DECLS(context));
     class
 }

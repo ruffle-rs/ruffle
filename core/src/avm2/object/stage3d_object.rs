@@ -37,6 +37,8 @@ impl<'gc> Stage3DObject<'gc> {
                 base: ScriptObjectData::new(class),
                 context3d_status: Lock::new(Context3DStatus::None),
                 visible: Cell::new(true),
+                x: Cell::new(0.0),
+                y: Cell::new(0.0),
             },
         ))
     }
@@ -87,6 +89,22 @@ impl<'gc> Stage3DObject<'gc> {
     pub fn set_visible(self, visible: bool) {
         self.0.visible.set(visible);
     }
+
+    pub fn x(self) -> f64 {
+        self.0.x.get()
+    }
+
+    pub fn set_x(self, x: f64) {
+        self.0.x.set(x);
+    }
+
+    pub fn y(self) -> f64 {
+        self.0.y.get()
+    }
+
+    pub fn set_y(self, y: f64) {
+        self.0.y.set(y);
+    }
 }
 
 #[derive(Clone, Collect, HasPrefixField)]
@@ -98,7 +116,11 @@ pub struct Stage3DObjectData<'gc> {
 
     /// The state context3D object associated with this Stage3D object.
     context3d_status: Lock<Context3DStatus<'gc>>,
+
     visible: Cell<bool>,
+
+    x: Cell<f64>,
+    y: Cell<f64>,
 }
 
 impl<'gc> TObject<'gc> for Stage3DObject<'gc> {

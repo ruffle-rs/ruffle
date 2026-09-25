@@ -1,6 +1,10 @@
 file-picker-title-open-file = Odpri eno datoteko
+file-picker-title-open-directory = Odpri mapo
 file-picker-filter-supported = Vse podprte datoteke
 file-picker-filter-swf = SWF (*.swf)
 file-picker-filter-spl = FutureSplash Animator (*.spl)
 file-picker-filter-ruf = Ruffle paket (*.ruf)
 file-picker-filter-all = Vse datoteke
+file-picker-select-root-movie-title = Izberite korenski film
+file-picker-select-root-movie-message = V odprtem imeniku izberite korenski film.
+file-picker-select-root-movie-select = Izberi

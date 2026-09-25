@@ -31,7 +31,6 @@ PASSED: eval(_root.draggable50._droptarget) == _level0.loadedTarget.target20 [./
 PASSED: _root.draggable50._droptarget == "/loadedTarget/target100" [./DragDropTest.as:302]
 PASSED: eval(_root.draggable50._droptarget) == _level0.loadedTarget.target100 [./DragDropTest.as:303]
 11. Click on the SECOND GREEN circle.
-Target not found: Target="null" Base="_level0"
 PASSED: _root.tf._x == 0 [./DragDropTest.as:323]
 PASSED: _root.tf._y == 100 [./DragDropTest.as:324]
 PASSED: _root.draggable50._droptarget == "/loadedTarget/target100" [./DragDropTest.as:330]

@@ -85,6 +85,9 @@ error-csp-conflict =
     Ruffle a întâmpinat o problemă majoră în timp ce încerca să se inițializeze.
     Politica de securitate a conținutului a acestui server web nu permite rularea componentei „.wasm” necesare.
     Dacă ești administratorul serverului, te rugăm să consulți wikiul Ruffle pentru ajutor.
+error-url-invalid =
+    Ruffle a eșuat să încarce fișierul Flash SWF.
+    Cel mai probabil motiv este că un URL invalid pentru fișierul SWF a fost transmis la Ruffle.
 error-unknown =
     Ruffle a întâmpinat o problemă majoră în timp ce încerca să afișeze acest conținut Flash.
     { $outdated ->

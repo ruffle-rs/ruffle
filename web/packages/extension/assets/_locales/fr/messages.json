@@ -38,6 +38,15 @@
     "settings_player_version": {
         "message": "Version du lecteur Flash à émuler (un nombre entier entre 1 et 32)"
     },
+    "settings_background_execution_mode": {
+        "message": "Exécution en arrière-plan"
+    },
+    "settings_background_execution_mode_none": {
+        "message": "Pause"
+    },
+    "settings_background_execution_mode_main_thread": {
+        "message": "Faire tourner dans le thread principal"
+    },
     "settings_preferred_renderer": {
         "message": "Moteur de rendu préféré"
     },

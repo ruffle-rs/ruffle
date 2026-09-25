@@ -6,7 +6,7 @@
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::property::Attribute;
-use crate::avm1::property_decl::{DeclContext, StaticDeclarations, SystemClass};
+use crate::avm1::property_decl::{DeclContext, PropertyOrder, StaticDeclarations, SystemClass};
 use crate::avm1::{Object, Value};
 use crate::display_object::{DisplayObject, TDisplayObject};
 use crate::string::AvmString;
@@ -25,7 +25,7 @@ pub fn create_class<'gc>(
     context: &mut DeclContext<'_, 'gc>,
     super_proto: Object<'gc>,
 ) -> SystemClass<'gc> {
-    let class = context.class(constructor, super_proto);
+    let class = context.class(constructor, super_proto, PropertyOrder::PrototypeLast);
     context.define_properties_on(class.proto, PROTO_DECLS(context));
     class
 }
@@ -96,28 +96,28 @@ fn get_transform<'gc>(
         );
         out.set(
             istr!("ra"),
-            (color_transform.r_multiply.to_f64() * 100.0).into(),
+            color_transform.r_multiply.to_f64() * 100.0,
             activation,
         )?;
         out.set(
             istr!("ga"),
-            (color_transform.g_multiply.to_f64() * 100.0).into(),
+            color_transform.g_multiply.to_f64() * 100.0,
             activation,
         )?;
         out.set(
             istr!("ba"),
-            (color_transform.b_multiply.to_f64() * 100.0).into(),
+            color_transform.b_multiply.to_f64() * 100.0,
             activation,
         )?;
         out.set(
             istr!("aa"),
-            (color_transform.a_multiply.to_f64() * 100.0).into(),
+            color_transform.a_multiply.to_f64() * 100.0,
             activation,
         )?;
-        out.set(istr!("rb"), color_transform.r_add.into(), activation)?;
-        out.set(istr!("gb"), color_transform.g_add.into(), activation)?;
-        out.set(istr!("bb"), color_transform.b_add.into(), activation)?;
-        out.set(istr!("ab"), color_transform.a_add.into(), activation)?;
+        out.set(istr!("rb"), color_transform.r_add, activation)?;
+        out.set(istr!("gb"), color_transform.g_add, activation)?;
+        out.set(istr!("bb"), color_transform.b_add, activation)?;
+        out.set(istr!("ab"), color_transform.a_add, activation)?;
         Ok(out.into())
     } else {
         Ok(Value::Undefined)

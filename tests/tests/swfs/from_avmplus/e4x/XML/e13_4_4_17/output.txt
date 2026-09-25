@@ -16,3 +16,4 @@ inScopeNamespaces[0].typeof: PASSED!
 inScopeNamespaces[1].prefix: PASSED!
 Reading one toplevel namespace: PASSED!
 Reading two namespaces up parent chain: PASSED!
+TypeError: Error #2023: Class Test$ must inherit from Sprite to link to the root.

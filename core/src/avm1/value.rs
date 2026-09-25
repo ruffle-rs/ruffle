@@ -455,6 +455,17 @@ impl<'gc> Value<'gc> {
             _ => None,
         }
     }
+
+    /// Converts a value to a SWF4-compatible variable.
+    ///
+    /// SWF4 variables do not support display objects.
+    pub fn as_swf4_variable(self) -> Self {
+        match self {
+            Value::MovieClip(_) => Value::Undefined,
+            Value::Object(obj) if obj.as_display_object().is_some() => Value::Undefined,
+            value => value,
+        }
+    }
 }
 
 /// Value operators.
@@ -569,7 +580,8 @@ impl<'gc> Value<'gc> {
         if !self.is_primitive() {
             // These coercions happen even if `obj` is a dead `MovieClipReference`.
             if let Some(class) = class.coerce_to_object(activation)?
-                && let Some(p) = class.prototype(activation).coerce_to_object(activation)?
+                && let Some(p) = class.prototype(activation)
+                && let Some(p) = p.coerce_to_object(activation)?
                 && let Some(obj) = self.as_object(activation)
             {
                 return obj.is_instance_of(activation, p);
@@ -618,8 +630,7 @@ fn f64_to_string<'gc>(activation: &mut Activation<'_, 'gc>, mut n: f64) -> AvmSt
     } else if n == f64::INFINITY {
         istr!("Infinity")
     } else if n == f64::NEG_INFINITY {
-        // FIXME is there an easy way to use istr! here?
-        AvmString::new_utf8_bytes(activation.gc(), b"-Infinity")
+        istr!("-Infinity")
     } else if n == 0.0 {
         istr!("0")
     } else if n >= -2147483648.0 && n <= 2147483647.0 && n.fract() == 0.0 {
@@ -998,10 +1009,11 @@ mod test {
 
             assert_eq!(vglobal.to_primitive_num(activation).unwrap(), undefined);
 
+            let fn_proto = activation.resolve_prototype([istr!("Function")]);
             let valueof = FunctionObject::native(|_, _, _| Ok(5.into())).build(
                 &activation.context.strings,
-                protos.function,
-                Some(protos.function),
+                fn_proto,
+                None,
             );
 
             let o = Object::new(&activation.context.strings, Some(protos.object));
@@ -1022,7 +1034,6 @@ mod test {
     }
 
     #[test]
-    #[expect(clippy::float_cmp)]
     fn to_number_swf7() {
         with_avm(7, |activation, _this| -> Result<(), Error> {
             let t = Value::Bool(true);
@@ -1044,7 +1055,6 @@ mod test {
     }
 
     #[test]
-    #[expect(clippy::float_cmp)]
     fn to_number_swf6() {
         with_avm(6, |activation, _this| -> Result<(), Error> {
             let t = Value::Bool(true);

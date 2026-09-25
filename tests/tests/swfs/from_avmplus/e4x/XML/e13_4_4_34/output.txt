@@ -9,3 +9,4 @@ setLocalName('*') PASSED!
 setLocalName('x123=5') PASSED!
 setLocalName('123') PASSED!
 setLocalName('!bam') PASSED!
+TypeError: Error #2023: Class Test$ must inherit from Sprite to link to the root.

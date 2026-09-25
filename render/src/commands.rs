@@ -1,5 +1,5 @@
 use crate::backend::ShapeHandle;
-use crate::bitmap::{BitmapHandle, PixelSnapping};
+use crate::bitmap::{BitmapHandle, PixelRegion, PixelSnapping};
 use crate::matrix::Matrix;
 use crate::pixel_bender::PixelBenderShaderHandle;
 use crate::transform::Transform;
@@ -12,6 +12,7 @@ pub trait CommandHandler {
         transform: Transform,
         smoothing: bool,
         pixel_snapping: PixelSnapping,
+        region: PixelRegion,
     );
     fn render_stage3d(&mut self, bitmap: BitmapHandle, transform: Transform);
     fn render_shape(&mut self, shape: ShapeHandle, transform: Transform);
@@ -66,7 +67,8 @@ impl CommandList {
                     transform,
                     smoothing,
                     pixel_snapping,
-                } => handler.render_bitmap(bitmap, transform, smoothing, pixel_snapping),
+                    region,
+                } => handler.render_bitmap(bitmap, transform, smoothing, pixel_snapping, region),
                 Command::RenderShape { shape, transform } => handler.render_shape(shape, transform),
                 Command::RenderStage3D { bitmap, transform } => {
                     handler.render_stage3d(bitmap, transform)
@@ -100,6 +102,7 @@ impl CommandHandler for CommandList {
         transform: Transform,
         smoothing: bool,
         pixel_snapping: PixelSnapping,
+        region: PixelRegion,
     ) {
         if self.maskers_in_progress <= 1 {
             self.commands.push(Command::RenderBitmap {
@@ -107,6 +110,7 @@ impl CommandHandler for CommandList {
                 transform,
                 smoothing,
                 pixel_snapping,
+                region,
             });
         }
     }
@@ -204,6 +208,7 @@ pub enum Command {
         transform: Transform,
         smoothing: bool,
         pixel_snapping: PixelSnapping,
+        region: PixelRegion,
     },
     RenderStage3D {
         bitmap: BitmapHandle,

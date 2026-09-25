@@ -8,3 +8,4 @@ MYXML = new XML(xmlDoc), MYXML2 = new XML(xmlDoc), MYXML2.Team[0].foo = 'bar', M
 MYXML = new XML(xmlDoc), MYXML.Team[0].contains('Giants') PASSED!
 MYXML = new XML(xmlDoc), MYXML.Team[1].contains('Giants') PASSED!
 MYXML = new XML(xmlDoc), MYXML.City.contains('Giants') PASSED!
+TypeError: Error #2023: Class Test$ must inherit from Sprite to link to the root.

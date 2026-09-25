@@ -4,7 +4,7 @@ use crate::avm2::Avm2;
 use crate::avm2::Error;
 use crate::avm2::activation::Activation;
 use crate::avm2::error::{make_error_2037, make_error_2084};
-use crate::avm2::globals::methods::flash_media_sound as sound_methods;
+use crate::avm2::function::FunctionArgs;
 use crate::avm2::globals::slots::flash_net_url_request as url_request_slots;
 use crate::avm2::object::{
     EventObject, QueuedPlay, SoundChannelObject, SoundLoadingState, TObject as _,
@@ -23,7 +23,7 @@ pub use crate::avm2::object::sound_allocator;
 pub fn init<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(sound_object) = this.as_object().and_then(|o| o.as_sound_object()) {
         let class_def = this.instance_class(activation);
@@ -51,10 +51,6 @@ pub fn init<'gc>(
         }
     }
 
-    if args.try_get_object(0).is_some() {
-        this.call_method(sound_methods::LOAD, args, activation)?;
-    }
-
     Ok(Value::Undefined)
 }
 
@@ -62,7 +58,7 @@ pub fn init<'gc>(
 pub fn get_bytes_total<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
@@ -81,7 +77,7 @@ pub fn get_bytes_total<'gc>(
 pub fn get_bytes_loaded<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     // This should have a different value from bytesTotal when the sound is loading.
     avm2_stub_getter!(activation, "flash.media.Sound", "bytesLoaded");
@@ -92,7 +88,7 @@ pub fn get_bytes_loaded<'gc>(
 pub fn get_is_buffering<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     avm2_stub_getter!(activation, "flash.media.Sound", "isBuffering");
     //STUB: We do not yet support network-loaded sounds.
@@ -103,7 +99,7 @@ pub fn get_is_buffering<'gc>(
 pub fn get_is_url_inaccessible<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     avm2_stub_getter!(activation, "flash.media.Sound", "isURLInaccessible");
     //STUB: We do not yet support network-loaded sounds.
@@ -114,7 +110,7 @@ pub fn get_is_url_inaccessible<'gc>(
 pub fn get_url<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     avm2_stub_getter!(activation, "flash.media.Sound", "url");
     //STUB: We do not yet support network-loaded sounds.
@@ -125,7 +121,7 @@ pub fn get_url<'gc>(
 pub fn get_length<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
@@ -145,7 +141,7 @@ pub fn get_length<'gc>(
 pub fn play<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
@@ -197,7 +193,7 @@ pub fn play<'gc>(
 pub fn extract<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     avm2_stub_method!(activation, "flash.media.Sound", "extract");
 
@@ -219,7 +215,7 @@ pub fn extract<'gc>(
 pub fn close<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     avm2_stub_method!(activation, "flash.media.Sound", "close");
     Ok(Value::Undefined)
@@ -229,7 +225,7 @@ pub fn close<'gc>(
 pub fn load<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this_object = this.as_object().unwrap();
 
@@ -270,7 +266,7 @@ pub fn load<'gc>(
 pub fn load_compressed_data_from_byte_array<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this_object = this.as_object().unwrap();
 
@@ -310,7 +306,7 @@ pub fn load_compressed_data_from_byte_array<'gc>(
 pub fn load_pcm_from_byte_array<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this_object = this.as_object().unwrap();
 
@@ -332,7 +328,7 @@ pub fn load_pcm_from_byte_array<'gc>(
 pub fn get_id3<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 

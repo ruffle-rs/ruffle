@@ -4,6 +4,7 @@ use crate::avm2::StageObject;
 use crate::avm2::activation::Activation;
 use crate::avm2::error::{make_error_2005, make_error_2007, make_error_2008, make_error_2078};
 use crate::avm2::filters::FilterAvm2Ext;
+use crate::avm2::function::FunctionArgs;
 use crate::avm2::globals::flash::geom::transform::color_transform_from_transform_object;
 use crate::avm2::globals::flash::geom::transform::has_matrix3d_from_transform_object;
 use crate::avm2::globals::flash::geom::transform::matrix_from_transform_object;
@@ -58,7 +59,7 @@ pub fn initialize_for_allocator<'gc>(
 pub fn get_alpha<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
@@ -73,7 +74,7 @@ pub fn get_alpha<'gc>(
 pub fn set_alpha<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
@@ -89,7 +90,7 @@ pub fn set_alpha<'gc>(
 pub fn get_height<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
@@ -104,7 +105,7 @@ pub fn get_height<'gc>(
 pub fn set_height<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
@@ -122,7 +123,7 @@ pub fn set_height<'gc>(
 pub fn get_scale9grid<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
@@ -143,7 +144,7 @@ pub fn get_scale9grid<'gc>(
 pub fn set_scale9grid<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
@@ -163,7 +164,7 @@ pub fn set_scale9grid<'gc>(
 pub fn get_scale_y<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
@@ -178,7 +179,7 @@ pub fn get_scale_y<'gc>(
 pub fn set_scale_y<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
@@ -194,7 +195,7 @@ pub fn set_scale_y<'gc>(
 pub fn get_width<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
@@ -209,7 +210,7 @@ pub fn get_width<'gc>(
 pub fn set_width<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
@@ -227,7 +228,7 @@ pub fn set_width<'gc>(
 pub fn get_scale_x<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
@@ -242,7 +243,7 @@ pub fn get_scale_x<'gc>(
 pub fn set_scale_x<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
@@ -257,7 +258,7 @@ pub fn set_scale_x<'gc>(
 pub fn get_filters<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
@@ -275,7 +276,7 @@ pub fn get_filters<'gc>(
 pub fn set_filters<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
@@ -313,7 +314,7 @@ pub fn set_filters<'gc>(
 pub fn get_x<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
@@ -328,7 +329,7 @@ pub fn get_x<'gc>(
 pub fn set_x<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
@@ -344,7 +345,7 @@ pub fn set_x<'gc>(
 pub fn get_y<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
@@ -359,7 +360,7 @@ pub fn get_y<'gc>(
 pub fn set_y<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
@@ -372,27 +373,38 @@ pub fn set_y<'gc>(
 }
 
 pub fn get_z<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    _this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _activation: &mut Activation<'_, 'gc>,
+    this: Value<'gc>,
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm2_stub_getter!(activation, "flash.display.DisplayObject", "z");
-    Ok(0.into())
+    let this = this.as_object().unwrap();
+
+    if let Some(dobj) = this.as_display_object() {
+        return Ok(dobj.z().into());
+    }
+    Ok(Value::Undefined)
 }
 
 pub fn set_z<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Value<'gc>,
-    _args: &[Value<'gc>],
+    this: Value<'gc>,
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     avm2_stub_setter!(activation, "flash.display.DisplayObject", "z");
+    let this = this.as_object().unwrap();
+
+    if let Some(dobj) = this.as_display_object() {
+        let z = args.get_f64(0);
+        dobj.set_z(z);
+        dobj.base().set_has_matrix3d_stub(true);
+    }
     Ok(Value::Undefined)
 }
 
 pub fn get_rotation_x<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     avm2_stub_getter!(activation, "flash.display.DisplayObject", "rotationX");
     Ok(0.into())
@@ -401,7 +413,7 @@ pub fn get_rotation_x<'gc>(
 pub fn set_rotation_x<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     avm2_stub_setter!(activation, "flash.display.DisplayObject", "rotationX");
     Ok(Value::Undefined)
@@ -410,7 +422,7 @@ pub fn set_rotation_x<'gc>(
 pub fn get_rotation_y<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     avm2_stub_getter!(activation, "flash.display.DisplayObject", "rotationY");
     Ok(0.into())
@@ -419,7 +431,7 @@ pub fn get_rotation_y<'gc>(
 pub fn set_rotation_y<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     avm2_stub_setter!(activation, "flash.display.DisplayObject", "rotationY");
     Ok(Value::Undefined)
@@ -428,7 +440,7 @@ pub fn set_rotation_y<'gc>(
 pub fn get_rotation_z<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     // TODO This probably interacts with Matrix3D.
     avm2_stub_getter!(activation, "flash.display.DisplayObject", "rotationZ");
@@ -438,7 +450,7 @@ pub fn get_rotation_z<'gc>(
 pub fn set_rotation_z<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     // TODO This probably interacts with Matrix3D.
     avm2_stub_setter!(activation, "flash.display.DisplayObject", "rotationZ");
@@ -448,7 +460,7 @@ pub fn set_rotation_z<'gc>(
 pub fn get_scale_z<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     avm2_stub_getter!(activation, "flash.display.DisplayObject", "scaleZ");
     Ok(1.into())
@@ -457,7 +469,7 @@ pub fn get_scale_z<'gc>(
 pub fn set_scale_z<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     avm2_stub_setter!(activation, "flash.display.DisplayObject", "scaleZ");
     Ok(Value::Undefined)
@@ -467,7 +479,7 @@ pub fn set_scale_z<'gc>(
 pub fn get_rotation<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
@@ -489,12 +501,20 @@ pub fn get_rotation<'gc>(
 pub fn set_rotation<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
     if let Some(dobj) = this.as_display_object() {
-        let new_rotation = args.get_f64(0);
+        let mut new_rotation = args.get_f64(0);
+
+        // Normalize into the range of [-180, 180].
+        new_rotation %= 360.0;
+        if new_rotation < -180.0 {
+            new_rotation += 360.0
+        } else if new_rotation > 180.0 {
+            new_rotation -= 360.0
+        }
 
         dobj.set_rotation(Degrees::from(new_rotation));
     }
@@ -506,7 +526,7 @@ pub fn set_rotation<'gc>(
 pub fn get_name<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
@@ -528,7 +548,7 @@ pub fn get_name<'gc>(
 pub fn set_name<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
@@ -549,7 +569,7 @@ pub fn set_name<'gc>(
 pub fn get_parent<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
@@ -567,7 +587,7 @@ pub fn get_parent<'gc>(
 pub fn get_root<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
@@ -585,7 +605,7 @@ pub fn get_root<'gc>(
 pub fn get_stage<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
@@ -603,7 +623,7 @@ pub fn get_stage<'gc>(
 pub fn get_visible<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
@@ -618,7 +638,7 @@ pub fn get_visible<'gc>(
 pub fn set_visible<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
@@ -635,7 +655,7 @@ pub fn set_visible<'gc>(
 pub fn get_meta_data<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
@@ -651,7 +671,7 @@ pub fn get_meta_data<'gc>(
 pub fn set_meta_data<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
@@ -667,7 +687,7 @@ pub fn set_meta_data<'gc>(
 pub fn get_mouse_x<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
@@ -683,7 +703,7 @@ pub fn get_mouse_x<'gc>(
 pub fn get_mouse_y<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
@@ -699,7 +719,7 @@ pub fn get_mouse_y<'gc>(
 pub fn hit_test_point<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
@@ -749,7 +769,7 @@ pub fn hit_test_point<'gc>(
 pub fn hit_test_object<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
@@ -766,7 +786,7 @@ pub fn hit_test_object<'gc>(
 pub fn get_loader_info<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
@@ -788,7 +808,7 @@ pub fn get_loader_info<'gc>(
 pub fn get_transform<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
@@ -802,7 +822,7 @@ pub fn get_transform<'gc>(
 pub fn set_transform<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
@@ -831,7 +851,7 @@ pub fn set_transform<'gc>(
 pub fn get_blend_mode<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
@@ -846,7 +866,7 @@ pub fn get_blend_mode<'gc>(
 pub fn set_blend_mode<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
@@ -882,7 +902,7 @@ fn new_rectangle<'gc>(
 pub fn get_scroll_rect<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
@@ -921,7 +941,7 @@ pub fn object_to_rectangle<'gc>(object: Object<'gc>) -> Rectangle<Twips> {
 pub fn set_scroll_rect<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
@@ -948,7 +968,7 @@ pub fn set_scroll_rect<'gc>(
 pub fn local_to_global<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
@@ -971,7 +991,7 @@ pub fn local_to_global<'gc>(
 pub fn global_to_local<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
@@ -991,10 +1011,38 @@ pub fn global_to_local<'gc>(
     Ok(Value::Undefined)
 }
 
+/// Helper method for getting the bounds of a `DisplayObject` in the target
+/// space of another `DisplayObject`, using a specific bounds mode. This method
+/// is used to implement `DisplayObject.getRect` and `DisplayObject.getBounds`.
+fn get_dobj_bounds<'gc>(
+    dobj: DisplayObject<'gc>,
+    target: DisplayObject<'gc>,
+    mode: BoundsMode,
+) -> Rectangle<Twips> {
+    let bounds = dobj.bounds(mode);
+    let mut out_bounds = if DisplayObject::ptr_eq(dobj, target) {
+        // Getting the clips bounds in its own coordinate space; no AABB transform needed.
+        bounds
+    } else {
+        // Transform AABB to target space.
+        // Calculate the matrix to transform into the target coordinate space, and transform the above AABB.
+        // Note that this doesn't produce as tight of an AABB as if we had used `bounds_with_transform` with
+        // the final matrix, but this matches Flash's behavior.
+        let to_global_matrix = dobj.local_to_global_matrix();
+        let to_target_matrix = target.global_to_local_matrix().unwrap_or_default();
+        to_target_matrix * to_global_matrix * bounds
+    };
+    if !out_bounds.is_valid() {
+        out_bounds = Rectangle::ZERO;
+    }
+
+    out_bounds
+}
+
 pub fn get_bounds<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
@@ -1003,22 +1051,8 @@ pub fn get_bounds<'gc>(
             .try_get_object(0)
             .and_then(|o| o.as_display_object())
             .unwrap_or(dobj);
-        let bounds = dobj.bounds(BoundsMode::Script);
-        let mut out_bounds = if DisplayObject::ptr_eq(dobj, target) {
-            // Getting the clips bounds in its own coordinate space; no AABB transform needed.
-            bounds
-        } else {
-            // Transform AABB to target space.
-            // Calculate the matrix to transform into the target coordinate space, and transform the above AABB.
-            // Note that this doesn't produce as tight of an AABB as if we had used `bounds_with_transform` with
-            // the final matrix, but this matches Flash's behavior.
-            let to_global_matrix = dobj.local_to_global_matrix();
-            let to_target_matrix = target.global_to_local_matrix().unwrap_or_default();
-            to_target_matrix * to_global_matrix * bounds
-        };
-        if !out_bounds.is_valid() {
-            out_bounds = Rectangle::ZERO;
-        }
+
+        let out_bounds = get_dobj_bounds(dobj, target, BoundsMode::Script);
 
         return new_rectangle(activation, out_bounds);
     }
@@ -1028,17 +1062,27 @@ pub fn get_bounds<'gc>(
 pub fn get_rect<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    // TODO: This should get the bounds ignoring strokes. Always equal to or smaller than getBounds.
-    // Just defer to getBounds for now. Will have to store edge_bounds vs. shape_bounds in Graphic.
-    get_bounds(activation, this, args)
+    let this = this.as_object().unwrap();
+
+    if let Some(dobj) = this.as_display_object() {
+        let target = args
+            .try_get_object(0)
+            .and_then(|o| o.as_display_object())
+            .unwrap_or(dobj);
+
+        let out_bounds = get_dobj_bounds(dobj, target, BoundsMode::ScriptWithoutStrokes);
+
+        return new_rectangle(activation, out_bounds);
+    }
+    Ok(Value::Undefined)
 }
 
 pub fn get_mask<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
@@ -1056,7 +1100,7 @@ pub fn get_mask<'gc>(
 pub fn set_mask<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
@@ -1070,7 +1114,7 @@ pub fn set_mask<'gc>(
 pub fn get_cache_as_bitmap<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
@@ -1083,7 +1127,7 @@ pub fn get_cache_as_bitmap<'gc>(
 pub fn set_cache_as_bitmap<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
@@ -1098,7 +1142,7 @@ pub fn set_cache_as_bitmap<'gc>(
 pub fn get_opaque_background<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
@@ -1116,7 +1160,7 @@ pub fn get_opaque_background<'gc>(
 pub fn set_opaque_background<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
@@ -1136,7 +1180,7 @@ pub fn set_opaque_background<'gc>(
 pub fn set_blend_shader<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 

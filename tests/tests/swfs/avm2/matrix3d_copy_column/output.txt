@@ -1,0 +1,83 @@
+Caught error: ArgumentError: Error #2004: One of the parameters is invalid.
+	at flash.geom::Matrix3D/copyColumnTo()
+	at Function/<anonymous>()
+	at Test/testException()
+	at Test/testExceptions()
+	at Test()
+Caught error: ArgumentError: Error #2004: One of the parameters is invalid.
+	at flash.geom::Matrix3D/copyColumnFrom()
+	at Function/<anonymous>()
+	at Test/testException()
+	at Test/testExceptions()
+	at Test()
+Caught error: ArgumentError: Error #2004: One of the parameters is invalid.
+	at flash.geom::Matrix3D/copyColumnTo()
+	at Function/<anonymous>()
+	at Test/testException()
+	at Test/testExceptions()
+	at Test()
+Caught error: ArgumentError: Error #2004: One of the parameters is invalid.
+	at flash.geom::Matrix3D/copyColumnFrom()
+	at Function/<anonymous>()
+	at Test/testException()
+	at Test/testExceptions()
+	at Test()
+Caught error: TypeError: Error #2007: Parameter vector3D must be non-null.
+	at flash.geom::Matrix3D/copyColumnTo()
+	at Function/<anonymous>()
+	at Test/testException()
+	at Test/testExceptions()
+	at Test()
+Caught error: TypeError: Error #2007: Parameter vector3D must be non-null.
+	at flash.geom::Matrix3D/copyColumnFrom()
+	at Function/<anonymous>()
+	at Test/testException()
+	at Test/testExceptions()
+	at Test()
+Caught error: TypeError: Error #2007: Parameter vector3D must be non-null.
+	at flash.geom::Matrix3D/copyColumnTo()
+	at Function/<anonymous>()
+	at Test/testException()
+	at Test/testExceptions()
+	at Test()
+Caught error: TypeError: Error #2007: Parameter vector3D must be non-null.
+	at flash.geom::Matrix3D/copyColumnFrom()
+	at Function/<anonymous>()
+	at Test/testException()
+	at Test/testExceptions()
+	at Test()
+Untouched after error: 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16
+copyColumnTo(0): (1, 2, 3, 4), matrix 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16
+copyColumnTo(1): (5, 6, 7, 8), matrix 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16
+copyColumnTo(2): (9, 10, 11, 12), matrix 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16
+copyColumnTo(3): (13, 14, 15, 16), matrix 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16
+copyColumnFrom(0): 101,102,103,104,5,6,7,8,9,10,11,12,13,14,15,16
+copyColumnFrom(1): 1,2,3,4,101,102,103,104,9,10,11,12,13,14,15,16
+copyColumnFrom(2): 1,2,3,4,5,6,7,8,101,102,103,104,13,14,15,16
+copyColumnFrom(3): 1,2,3,4,5,6,7,8,9,10,11,12,101,102,103,104
+copyColumnTo(0) special: (NaN, Infinity, -Infinity, 0)
+copyColumnTo(1) special: (1, NaN, 2, 3)
+copyColumnTo(2) special: (Infinity, -Infinity, NaN, Infinity)
+copyColumnTo(3) special: (-Infinity, 0, 0, NaN)
+copyColumnFrom(0) special: NaN,Infinity,-Infinity,NaN,5,6,7,8,9,10,11,12,13,14,15,16
+copyColumnFrom(1) special: 1,2,3,4,NaN,Infinity,-Infinity,NaN,9,10,11,12,13,14,15,16
+copyColumnFrom(2) special: 1,2,3,4,5,6,7,8,NaN,Infinity,-Infinity,NaN,13,14,15,16
+copyColumnFrom(3) special: 1,2,3,4,5,6,7,8,9,10,11,12,NaN,Infinity,-Infinity,NaN
+copyColumnTo(4) coerced: ArgumentError: Error #2004: One of the parameters is invalid.
+copyColumnTo(5) coerced: ArgumentError: Error #2004: One of the parameters is invalid.
+copyColumnTo(4294967295) coerced: ArgumentError: Error #2004: One of the parameters is invalid.
+copyColumnTo(4294967300) coerced: ArgumentError: Error #2004: One of the parameters is invalid.
+copyColumnTo(2.9) coerced: (9, 10, 11, 12)
+copyColumnTo(3.9) coerced: (13, 14, 15, 16)
+copyColumnTo(-1) coerced: ArgumentError: Error #2004: One of the parameters is invalid.
+copyColumnTo(-0.5) coerced: (1, 2, 3, 4)
+copyColumnTo(NaN) coerced: (1, 2, 3, 4)
+copyColumnTo(Infinity) coerced: (1, 2, 3, 4)
+copyColumnTo(-Infinity) coerced: (1, 2, 3, 4)
+copyColumnTo(true) coerced: (5, 6, 7, 8)
+copyColumnTo(false) coerced: (1, 2, 3, 4)
+copyColumnTo(2) coerced: (9, 10, 11, 12)
+copyColumnTo(3.9) coerced: (13, 14, 15, 16)
+copyColumnTo(-1) coerced: ArgumentError: Error #2004: One of the parameters is invalid.
+copyColumnTo(null) coerced: (1, 2, 3, 4)
+copyColumnTo(undefined) coerced: (1, 2, 3, 4)

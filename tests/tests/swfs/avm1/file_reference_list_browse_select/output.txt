@@ -1,0 +1,7 @@
+fileList = undefined
+browse returned true
+onSelect
+target.fileList.length = 3
+name[0] = test1.txt
+name[1] = test2.txt
+name[2] = test3.txt

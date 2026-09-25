@@ -2,12 +2,13 @@
 
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
-use crate::avm1::globals::point::{construct_new_point, point_to_object, value_to_point};
-use crate::avm1::property_decl::{DeclContext, StaticDeclarations, SystemClass};
+use crate::avm1::globals::point::{point_to_object, value_to_point};
+use crate::avm1::property_decl::{DeclContext, PropertyOrder, StaticDeclarations, SystemClass};
 use crate::avm1::{Object, Value};
 use crate::string::AvmString;
 use ruffle_macros::istr;
 
+// TODO: In Flash Player, the Rectangle class is implemented in pure ActionScript.
 const PROTO_DECLS: StaticDeclarations = declare_static_properties! {
     "clone" => method(clone);
     "setEmpty" => method(set_empty);
@@ -37,7 +38,7 @@ pub fn create_class<'gc>(
     context: &mut DeclContext<'_, 'gc>,
     super_proto: Object<'gc>,
 ) -> SystemClass<'gc> {
-    let class = context.class(constructor, super_proto);
+    let class = context.class(constructor, super_proto, PropertyOrder::PrototypeLast);
     context.define_properties_on(class.proto, PROTO_DECLS(context));
     class
 }
@@ -48,10 +49,10 @@ fn constructor<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if args.is_empty() {
-        this.set(istr!("height"), 0.into(), activation)?;
-        this.set(istr!("width"), 0.into(), activation)?;
-        this.set(istr!("y"), 0.into(), activation)?;
-        this.set(istr!("x"), 0.into(), activation)?;
+        this.set(istr!("height"), 0, activation)?;
+        this.set(istr!("width"), 0, activation)?;
+        this.set(istr!("y"), 0, activation)?;
+        this.set(istr!("x"), 0, activation)?;
     } else {
         this.set(
             istr!("x"),
@@ -120,10 +121,10 @@ fn set_empty<'gc>(
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    this.set(istr!("x"), 0.into(), activation)?;
-    this.set(istr!("y"), 0.into(), activation)?;
-    this.set(istr!("width"), 0.into(), activation)?;
-    this.set(istr!("height"), 0.into(), activation)?;
+    this.set(istr!("x"), 0, activation)?;
+    this.set(istr!("y"), 0, activation)?;
+    this.set(istr!("width"), 0, activation)?;
+    this.set(istr!("height"), 0, activation)?;
     Ok(Value::Undefined)
 }
 
@@ -132,15 +133,14 @@ fn clone<'gc>(
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let class = [istr!("flash"), istr!("geom"), istr!("Rectangle")];
     let args = [
         this.get(istr!("x"), activation)?,
         this.get(istr!("y"), activation)?,
         this.get(istr!("width"), activation)?,
         this.get(istr!("height"), activation)?,
     ];
-    let constructor = activation.prototypes().rectangle_constructor;
-    let cloned = constructor.construct(activation, &args)?;
-    Ok(cloned)
+    activation.instantiate_class_as_script(class, &args)
 }
 
 fn contains<'gc>(
@@ -318,6 +318,9 @@ fn union<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let rect = activation
+        .instantiate_class_as_script([istr!("flash"), istr!("geom"), istr!("Rectangle")], &[])?;
+
     let this_left = this
         .get(istr!("x"), activation)?
         .coerce_to_f64(activation)?;
@@ -384,12 +387,12 @@ fn union<'gc>(
         this_bottom.max(other_bottom)
     } - top;
 
-    let constructor = activation.prototypes().rectangle_constructor;
-    let result = constructor.construct(
-        activation,
-        &[left.into(), top.into(), width.into(), height.into()],
-    )?;
-    Ok(result)
+    let rect_obj = rect.coerce_to_object_or_bare(activation)?;
+    rect_obj.set(istr!("x"), left, activation)?;
+    rect_obj.set(istr!("y"), top, activation)?;
+    rect_obj.set(istr!("width"), width, activation)?;
+    rect_obj.set(istr!("height"), height, activation)?;
+    Ok(rect)
 }
 
 fn inflate<'gc>(
@@ -420,18 +423,10 @@ fn inflate<'gc>(
         .to_owned()
         .coerce_to_f64(activation)?;
 
-    this.set(istr!("x"), (x - horizontal).into(), activation)?;
-    this.set(istr!("y"), (y - vertical).into(), activation)?;
-    this.set(
-        istr!("width"),
-        (width + horizontal * 2.0).into(),
-        activation,
-    )?;
-    this.set(
-        istr!("height"),
-        (height + vertical * 2.0).into(),
-        activation,
-    )?;
+    this.set(istr!("x"), x - horizontal, activation)?;
+    this.set(istr!("y"), y - vertical, activation)?;
+    this.set(istr!("width"), width + horizontal * 2.0, activation)?;
+    this.set(istr!("height"), height + vertical * 2.0, activation)?;
 
     Ok(Value::Undefined)
 }
@@ -458,18 +453,10 @@ fn inflate_point<'gc>(
         activation,
     )?;
 
-    this.set(istr!("x"), (x - horizontal).into(), activation)?;
-    this.set(istr!("y"), (y - vertical).into(), activation)?;
-    this.set(
-        istr!("width"),
-        (width + horizontal * 2.0).into(),
-        activation,
-    )?;
-    this.set(
-        istr!("height"),
-        (height + vertical * 2.0).into(),
-        activation,
-    )?;
+    this.set(istr!("x"), x - horizontal, activation)?;
+    this.set(istr!("y"), y - vertical, activation)?;
+    this.set(istr!("width"), width + horizontal * 2.0, activation)?;
+    this.set(istr!("height"), height + vertical * 2.0, activation)?;
 
     Ok(Value::Undefined)
 }
@@ -496,8 +483,8 @@ fn offset<'gc>(
         .to_owned()
         .coerce_to_f64(activation)?;
 
-    this.set(istr!("x"), (x + horizontal).into(), activation)?;
-    this.set(istr!("y"), (y + vertical).into(), activation)?;
+    this.set(istr!("x"), x + horizontal, activation)?;
+    this.set(istr!("y"), y + vertical, activation)?;
 
     Ok(Value::Undefined)
 }
@@ -518,8 +505,8 @@ fn offset_point<'gc>(
         activation,
     )?;
 
-    this.set(istr!("x"), (x + horizontal).into(), activation)?;
-    this.set(istr!("y"), (y + vertical).into(), activation)?;
+    this.set(istr!("x"), x + horizontal, activation)?;
+    this.set(istr!("y"), y + vertical, activation)?;
 
     Ok(Value::Undefined)
 }
@@ -529,6 +516,9 @@ fn intersection<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let rect = activation
+        .instantiate_class_as_script([istr!("flash"), istr!("geom"), istr!("Rectangle")], &[])?;
+
     let this_left = this
         .get(istr!("x"), activation)?
         .coerce_to_f64(activation)?;
@@ -592,17 +582,12 @@ fn intersection<'gc>(
         top = 0.0;
     }
 
-    let constructor = activation.prototypes().rectangle_constructor;
-    let result = constructor.construct(
-        activation,
-        &[
-            left.into(),
-            top.into(),
-            (right - left).into(),
-            (bottom - top).into(),
-        ],
-    )?;
-    Ok(result)
+    let rect_obj = rect.coerce_to_object_or_bare(activation)?;
+    rect_obj.set(istr!("x"), left, activation)?;
+    rect_obj.set(istr!("y"), top, activation)?;
+    rect_obj.set(istr!("width"), right - left, activation)?;
+    rect_obj.set(istr!("height"), bottom - top, activation)?;
+    Ok(rect)
 }
 
 fn equals<'gc>(
@@ -619,13 +604,15 @@ fn equals<'gc>(
         let other_y = other.get(istr!("y"), activation)?;
         let other_width = other.get(istr!("width"), activation)?;
         let other_height = other.get(istr!("height"), activation)?;
-        let proto = activation.prototypes().rectangle;
-        return Ok((this_x == other_x
+        let class = activation
+            .resolve_class([istr!("flash"), istr!("geom"), istr!("Rectangle")])
+            .map_or(Value::Undefined, Value::from);
+        let equals = this_x == other_x
             && this_y == other_y
             && this_width == other_width
             && this_height == other_height
-            && other.is_instance_of(activation, proto)?)
-        .into());
+            && Value::from(*other).instance_of(class, activation)?;
+        return Ok(equals.into());
     }
 
     Ok(false.into())
@@ -654,7 +641,7 @@ fn set_left<'gc>(
     this.set(istr!("x"), new_left, activation)?;
     this.set(
         istr!("width"),
-        (width + (old_left - new_left.coerce_to_f64(activation)?)).into(),
+        width + (old_left - new_left.coerce_to_f64(activation)?),
         activation,
     )?;
     Ok(Value::Undefined)
@@ -683,7 +670,7 @@ fn set_top<'gc>(
     this.set(istr!("y"), new_top, activation)?;
     this.set(
         istr!("height"),
-        (height + (old_top - new_top.coerce_to_f64(activation)?)).into(),
+        height + (old_top - new_top.coerce_to_f64(activation)?),
         activation,
     )?;
     Ok(Value::Undefined)
@@ -717,7 +704,7 @@ fn set_right<'gc>(
         .get(istr!("x"), activation)?
         .coerce_to_f64(activation)?;
 
-    this.set(istr!("width"), (right - x).into(), activation)?;
+    this.set(istr!("width"), right - x, activation)?;
 
     Ok(Value::Undefined)
 }
@@ -750,7 +737,7 @@ fn set_bottom<'gc>(
         .get(istr!("y"), activation)?
         .coerce_to_f64(activation)?;
 
-    this.set(istr!("height"), (bottom - y).into(), activation)?;
+    this.set(istr!("height"), bottom - y, activation)?;
 
     Ok(Value::Undefined)
 }
@@ -762,7 +749,7 @@ fn get_size<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let width = this.get(istr!("width"), activation)?;
     let height = this.get(istr!("height"), activation)?;
-    let point = construct_new_point(&[width, height], activation)?;
+    let point = point_to_object((width, height), activation)?;
     Ok(point)
 }
 
@@ -793,7 +780,7 @@ fn get_top_left<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let x = this.get(istr!("x"), activation)?;
     let y = this.get(istr!("y"), activation)?;
-    let point = construct_new_point(&[x, y], activation)?;
+    let point = point_to_object((x, y), activation)?;
     Ok(point)
 }
 
@@ -827,12 +814,12 @@ fn set_top_left<'gc>(
     this.set(istr!("y"), new_top, activation)?;
     this.set(
         istr!("width"),
-        (width + (old_left - new_left.coerce_to_f64(activation)?)).into(),
+        width + (old_left - new_left.coerce_to_f64(activation)?),
         activation,
     )?;
     this.set(
         istr!("height"),
-        (height + (old_top - new_top.coerce_to_f64(activation)?)).into(),
+        height + (old_top - new_top.coerce_to_f64(activation)?),
         activation,
     )?;
 
@@ -876,8 +863,8 @@ fn set_bottom_right<'gc>(
         .get(istr!("y"), activation)?
         .coerce_to_f64(activation)?;
 
-    this.set(istr!("width"), (bottom - top).into(), activation)?;
-    this.set(istr!("height"), (right - left).into(), activation)?;
+    this.set(istr!("width"), bottom - top, activation)?;
+    this.set(istr!("height"), right - left, activation)?;
 
     Ok(Value::Undefined)
 }

@@ -1,0 +1,30 @@
+Threw: Error: Error #2181: The TextLine class does not implement this property or method.
+	at Error$/throwError()
+	at flash.text.engine::TextLine/set contextMenu()
+	at Function/<anonymous>()
+	at Test/testCall()
+	at Test()
+Threw: Error: Error #2181: The TextLine class does not implement this property or method.
+	at Error$/throwError()
+	at flash.text.engine::TextLine/set focusRect()
+	at Function/<anonymous>()
+	at Test/testCall()
+	at Test()
+Threw: Error: Error #2181: The TextLine class does not implement this property or method.
+	at Error$/throwError()
+	at flash.text.engine::TextLine/set tabChildren()
+	at Function/<anonymous>()
+	at Test/testCall()
+	at Test()
+Threw: Error: Error #2181: The TextLine class does not implement this property or method.
+	at Error$/throwError()
+	at flash.text.engine::TextLine/set tabEnabled()
+	at Function/<anonymous>()
+	at Test/testCall()
+	at Test()
+Threw: Error: Error #2181: The TextLine class does not implement this property or method.
+	at Error$/throwError()
+	at flash.text.engine::TextLine/set tabIndex()
+	at Function/<anonymous>()
+	at Test/testCall()
+	at Test()

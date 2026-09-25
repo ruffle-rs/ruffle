@@ -1,4 +1,5 @@
 package flash.events {
+    [API("688")]
     public class AVPauseAtPeriodEndEvent extends Event {
         public static const AV_PAUSE_AT_PERIOD_END:String = "avPauseAtPeriodEnd";
 

@@ -24,8 +24,6 @@ members = [
     "render/wgpu",
     "render/webgl",
 
-    "stub-report",
-
     "video",
     "video/software",
     "video/external",
@@ -38,6 +36,8 @@ members = [
     "tests/framework",
 
     "tools/asc",
+    "tools/fuzzer",
+    "tools/stub-report",
 ]
 default-members = ["desktop"]
 resolver = "2"
@@ -48,21 +48,25 @@ edition = "2024"
 homepage = "https://ruffle.rs"
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/ruffle-rs/ruffle"
-version = "0.2.0"
+version = "0.6.0"
 
 [workspace.dependencies]
 tracing = "0.1.43"
 tracing-subscriber = { version = "0.3.23", features = ["env-filter"] }
-naga = { version = "27.0.3", features = ["wgsl-out"] }
-wgpu = "27.0.1"
-egui = "0.33.3"
+naga = { version = "30.0.1", features = ["wgsl-out"] }
+wgpu = "30.0.1"
+wgpu-profiler = "0.28.0"
+egui = "0.36.1"
+egui_extras = { version = "0.36.1", default-features = false }
+egui-wgpu = "0.36.1"
+egui-winit = "0.36.1"
 clap = { version = "4.6.1", features = ["derive"] }
 cpal = "0.16.0"
 anyhow = "1.0"
-gc-arena = { git = "https://github.com/kyren/gc-arena.git", rev = "75671ae03f53718357b741ed4027560f14e90836", features = ["enum-map", "hashbrown", "indexmap", "slotmap", "smallvec"] }
+gc-arena = { version = "0.7.0", features = ["enum-map", "hashbrown", "indexmap", "slotmap", "smallvec"] }
 slotmap = "1.1.1"
 async-channel = "2.5.0"
-bitflags = "2.11.1"
+bitflags = "2.12.1"
 bytemuck = "1.25.0"
 chrono = { version = "0.4.44", default-features = false }
 enum-map = "2.7.3"
@@ -80,13 +84,14 @@ url = "2.5.8"
 quick-xml = "0.37.5"
 regress = { git = "https://github.com/ruffle-rs/regras3", rev = "6d48179d6bd448f2cc66b76352c9f048dde968d1" }
 # Make sure to match wasm-bindgen-cli version to this everywhere.
-wasm-bindgen = "=0.2.120"
+wasm-bindgen = "=0.2.127"
 walkdir = "2.5.0"
 tokio = "1.52.3"
 rfd = { version = "0.17.2", default-features = false, features = ["wayland", "xdg-portal"] }
 memmap2 = "0.9.10"
 libtest-mimic = "0.8.2"
 regex = "1.12.3"
+reqwest = { version = "0.12.28", default-features = false }
 toml = "1.0.6"
 toml_edit = "0.25.4"
 vfs = "0.13.0"
@@ -102,13 +107,13 @@ rayon = "1.12.0"
 sha2 = "0.10.9"
 indexmap = "2.13.0"
 fnv = "1.0.7"
-hashbrown = "0.16.1"
+hashbrown = "0.17.1"
 fluent-templates = "0.13.3"
 lzma-rs = "0.3.0"
 tempfile = "3.27.0"
 tracing-wasm = "0.2.1"
-rascal = "0.3.4"
-jpegxr = { git = "https://github.com/ruffle-rs/jpegxr", rev = "5281b4ae42be742779269a9f1a986101f101f32f" }
+rascal = "0.3.5"
+jpegxr = { git = "https://github.com/ruffle-rs/jpegxr", rev = "86cc1749d493288f53d7290ac3eb7082c475b5d9" }
 
 [workspace.lints.rust]
 # Clippy nightly often adds new/buggy lints that we want to ignore.
@@ -139,6 +144,9 @@ manual_range_contains = "allow"  # Less readable: Suggests `(a..b).contains(n)` 
 assigning_clones = "allow"       # Sometimes useful, but more often than not it doesn't do anything as
                                  # we overwrite an empty item. And sometimes it can even be a footgun
                                  # by keeping big allocations alive.
+byte_char_slices = "allow"       # Less expressive: Suggests `b"abc"` byte string literal instead of an explicit
+                                 # `[b'a', b'b', b'c']` array. The array form is clearer when the elements
+                                 # represent a set of alternatives (any-of) rather than a byte sequence.
 
 # Don't optimize build scripts and macros.
 [profile.release.build-override]
@@ -149,6 +157,11 @@ panic = "unwind"
 
 [profile.release]
 panic = "abort"
+
+[profile.dist]
+inherits = "release"
+lto = true
+codegen-units = 1
 
 [profile.dev.package.h263-rs]
 opt-level = 3

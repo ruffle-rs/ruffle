@@ -1,0 +1,214 @@
+
+Source: This is an ampersand: &amp;
+Parsed: This is an ampersand: &
+
+Source: This is a less-than sign: &lt;
+Parsed: This is a less-than sign: <
+
+Source: This is a greater-than sign: &gt;
+Parsed: This is a greater-than sign: >
+
+Source: This is a quotation mark: &quot;
+Parsed: This is a quotation mark: "
+
+Source: This is an apostrophe: &apos;
+Parsed: This is an apostrophe: '
+
+Source: This is a non-breaking space: &nbsp;
+Parsed: This is a non-breaking space:  
+
+Source: &amp;
+Parsed: &
+
+Source: &quot; is a quotation mark
+Parsed: " is a quotation mark
+
+Source: Suppose we have two objects, &quot;foo&quot; and &quot;bar&quot;
+Parsed: Suppose we have two objects, "foo" and "bar"
+
+Source: This is how you write an empty string: &quot;&quot;
+Parsed: This is how you write an empty string: ""
+
+Source: This entity should not be valid: &jjjjj;
+Parsed: This entity should not be valid: &jjjjj;
+
+Source: This entity should not be valid: &1;
+Parsed: This entity should not be valid: &1;
+
+Source: This entity should not be valid: &x2;
+Parsed: This entity should not be valid: &x2;
+
+Source: This entity should not be valid: &;
+Parsed: This entity should not be valid: &;
+
+Source: This is not an entity: amp;
+Parsed: This is not an entity: amp;
+
+Source: ;
+Parsed: ;
+
+Source: This is not an entity: &amp
+Parsed: This is not an entity: &amp
+
+Source: &
+Parsed: &
+
+Source: This is not an entity: &amp ;
+Parsed: This is not an entity: &amp ;
+
+Source: This is not an entity: & amp;
+Parsed: This is not an entity: & amp;
+
+Source: This is not an entity: & amp ;
+Parsed: This is not an entity: & amp ;
+
+Source: This is a greater-than sign: &#62;
+Parsed: This is a greater-than sign: >
+
+Source: This is an ampersand: &#x26;
+Parsed: This is an ampersand: &
+
+Source: This is not an entity: &#;
+Parsed: This is not an entity: &#;
+
+Source: This is not an entity: &#x;
+Parsed: This is not an entity: &#x;
+
+Source: This is a halfwidth Hangul wae: &#-50;
+Parsed: This is a halfwidth Hangul wae: ￎ
+
+Source: This is a unified Chinese yào: &#x-8000;
+Parsed: This is a unified Chinese yào: 耀
+
+Source: This is a left parenthesis: &#+40;
+Parsed: This is a left parenthesis: (
+
+Source: This is a comma: &#x+2c;
+Parsed: This is a comma: ,
+
+Source: This is a less-than sign: &# 60;
+Parsed: This is a less-than sign: <
+
+Source: This is a question mark: &#x  3f;
+Parsed: This is a question mark: ?
+
+Source: This is a greater-than sign: &#62   ;
+Parsed: This is a greater-than sign: >
+
+Source: This is an ampersand: &#x26     ;
+Parsed: This is an ampersand: &
+
+Source: This is a right parenthesis: &# 41  ;
+Parsed: This is a right parenthesis: )
+
+Source: This is an asterisk: &#x  2a ;
+Parsed: This is an asterisk: *
+
+Source: This is a greater-than sign: &#
+62;
+Parsed: This is a greater-than sign: >
+
+Source: This is an ampersand: &#x
+26;
+Parsed: This is an ampersand: &
+
+Source: This is a colon: &#58
+;
+Parsed: This is a colon: :
+
+Source: This is a semicolon: &#x3b
+;
+Parsed: This is a semicolon: ;
+
+Source: This is not an entity: & #58;
+Parsed: This is not an entity: & #58;
+
+Source: This is not an entity: &#  x3b;
+Parsed: This is not an entity: &#  x3b;
+
+Source: This is not an entity: &#+ 40;
+Parsed: This is not an entity: &#+ 40;
+
+Source: This is not an entity: &#x- 2c;
+Parsed: This is not an entity: &#x- 2c;
+
+Source: This is a colon: &#58 0;
+Parsed: This is a colon: :
+
+Source: This is a semicolon: &#x3b 0a;
+Parsed: This is a semicolon: ;
+
+Source: This is truncated to a left parenthesis: &#40a;
+Parsed: This is truncated to a left parenthesis: (
+
+Source: This is truncated to a less-than sign: &#60-9312;
+Parsed: This is truncated to a less-than sign: <
+
+Source: This is truncated to a comma: &#x2cm;
+Parsed: This is truncated to a comma: ,
+
+Source: This is truncated to a question mark: &#x3FQ3a01;
+Parsed: This is truncated to a question mark: ?
+
+Source: This is not an entity: &#(20+6);
+Parsed: This is not an entity: &#(20+6);
+
+Source: Flash rejects this entity even though it is valid in HTML: &#X28;
+Parsed: Flash rejects this entity even though it is valid in HTML: &#X28;
+
+Source: This is a colon: &#x3a;
+Parsed: This is a colon: :
+
+Source: This is a semicolon: &#x3B;
+Parsed: This is a semicolon: ;
+
+Source: This is a registered trademark symbol: &#xaE;
+Parsed: This is a registered trademark symbol: ®
+
+Source: This is a not sign: &#xAc;
+Parsed: This is a not sign: ¬
+
+Source: This is a right parenthesis: &#041;
+Parsed: This is a right parenthesis: )
+
+Source: This is an asterisk: &#x02a;
+Parsed: This is an asterisk: *
+
+Source: This is a horizontal tab: &#9;
+Parsed: This is a horizontal tab: 	
+
+Source: This is a horizontal tab: &#x9;
+Parsed: This is a horizontal tab: 	
+
+Source: This is a unified Chinese nǐ: &#20320;
+Parsed: This is a unified Chinese nǐ: 你
+
+Source: This is a unified Chinese kǎo: &#x8003;
+Parsed: This is a unified Chinese kǎo: 考
+
+Source: This should be a playing card black joker, but Flash truncates it to fit in a u16: &#127183;
+Parsed: This should be a playing card black joker, but Flash truncates it to fit in a u16: 
+
+Source: This should be a Mahjong tile red dragon, but Flash truncates it to fit in a u16: &#x1F004;
+Parsed: This should be a Mahjong tile red dragon, but Flash truncates it to fit in a u16: 
+
+Source: This is a Hangul tyaelp: &#1311768467463786786;
+Parsed: This is a Hangul tyaelp: 턢
+
+Source: This is a Hangul tyaelh: &#x123456789ABCD123;
+Parsed: This is a Hangul tyaelh: 턣
+
+Source: This is a period: &#85968058283706962477102;
+Parsed: This is a period: .
+
+Source: This is a comma: &#x123456789ABCDEF1002c;
+Parsed: This is a comma: ,
+
+Source: This is an asterisk: &#1585830769673288737308020686468841410199594;
+Parsed: This is an asterisk: *
+
+Source: This is an ampersand: &#x123456789ABCDEF1123456789ABCDEF10026;
+Parsed: This is an ampersand: &
+
+Source: This is a double-encoded quotation mark and, unless first XML-parsed, should only be singly decoded: &amp;#x22;
+Parsed: This is a double-encoded quotation mark and, unless first XML-parsed, should only be singly decoded: &#x22;

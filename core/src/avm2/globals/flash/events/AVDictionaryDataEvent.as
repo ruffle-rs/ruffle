@@ -1,6 +1,7 @@
 package flash.events {
     import flash.utils.Dictionary;
 
+    [API("692")]
     public class AVDictionaryDataEvent extends Event {
         public static const AV_DICTIONARY_DATA:String = "avDictionaryData";
 

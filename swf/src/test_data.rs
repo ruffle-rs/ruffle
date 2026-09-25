@@ -1895,11 +1895,14 @@ pub fn tag_tests() -> Vec<TagTestData> {
                 filters: None,
                 background_color: None,
                 blend_mode: None,
-                clip_actions: Some(vec![ClipAction {
-                    events: ClipEventFlag::ENTER_FRAME,
-                    key_code: None,
-                    action_data: &[150, 6, 0, 0, 99, 108, 105, 112, 0, 38, 0],
-                }]),
+                clip_actions: Some(ClipActions {
+                    all_event_flags: ClipEventFlag::ENTER_FRAME,
+                    records: vec![ClipAction {
+                        events: ClipEventFlag::ENTER_FRAME,
+                        key_code: None,
+                        action_data: &[150, 6, 0, 0, 99, 108, 105, 112, 0, 38, 0],
+                    }],
+                }),
                 has_image: false,
                 is_bitmap_cached: None,
                 is_visible: None,
@@ -1925,23 +1928,29 @@ pub fn tag_tests() -> Vec<TagTestData> {
                 filters: None,
                 background_color: None,
                 blend_mode: None,
-                clip_actions: Some(vec![
-                    ClipAction {
-                        events: ClipEventFlag::PRESS | ClipEventFlag::RELEASE,
-                        key_code: None,
-                        action_data: &[150, 3, 0, 0, 65, 0, 38, 0],
-                    },
-                    ClipAction {
-                        events: ClipEventFlag::KEY_PRESS,
-                        key_code: Some(99),
-                        action_data: &[150, 3, 0, 0, 66, 0, 38, 0],
-                    },
-                    ClipAction {
-                        events: ClipEventFlag::ENTER_FRAME,
-                        key_code: None,
-                        action_data: &[150, 3, 0, 0, 67, 0, 38, 0],
-                    },
-                ]),
+                clip_actions: Some(ClipActions {
+                    all_event_flags: ClipEventFlag::PRESS
+                        | ClipEventFlag::RELEASE
+                        | ClipEventFlag::KEY_PRESS
+                        | ClipEventFlag::ENTER_FRAME,
+                    records: vec![
+                        ClipAction {
+                            events: ClipEventFlag::PRESS | ClipEventFlag::RELEASE,
+                            key_code: None,
+                            action_data: &[150, 3, 0, 0, 65, 0, 38, 0],
+                        },
+                        ClipAction {
+                            events: ClipEventFlag::KEY_PRESS,
+                            key_code: Some(99),
+                            action_data: &[150, 3, 0, 0, 66, 0, 38, 0],
+                        },
+                        ClipAction {
+                            events: ClipEventFlag::ENTER_FRAME,
+                            key_code: None,
+                            action_data: &[150, 3, 0, 0, 67, 0, 38, 0],
+                        },
+                    ],
+                }),
                 has_image: false,
                 is_bitmap_cached: None,
                 is_visible: None,
@@ -2094,18 +2103,23 @@ pub fn tag_tests() -> Vec<TagTestData> {
                     a: 255,
                 }),
                 blend_mode: Some(BlendMode::Difference),
-                clip_actions: Some(vec![
-                    ClipAction {
-                        events: ClipEventFlag::RELEASE_OUTSIDE | ClipEventFlag::ROLL_OVER,
-                        key_code: None,
-                        action_data: &[0],
-                    },
-                    ClipAction {
-                        events: ClipEventFlag::DATA,
-                        key_code: None,
-                        action_data: &[150, 3, 0, 0, 66, 0, 38, 0],
-                    },
-                ]),
+                clip_actions: Some(ClipActions {
+                    all_event_flags: ClipEventFlag::RELEASE_OUTSIDE
+                        | ClipEventFlag::ROLL_OVER
+                        | ClipEventFlag::DATA,
+                    records: vec![
+                        ClipAction {
+                            events: ClipEventFlag::RELEASE_OUTSIDE | ClipEventFlag::ROLL_OVER,
+                            key_code: None,
+                            action_data: &[0],
+                        },
+                        ClipAction {
+                            events: ClipEventFlag::DATA,
+                            key_code: None,
+                            action_data: &[150, 3, 0, 0, 66, 0, 38, 0],
+                        },
+                    ],
+                }),
                 has_image: false,
                 is_bitmap_cached: Some(true),
                 is_visible: Some(false),

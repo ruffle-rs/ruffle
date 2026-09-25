@@ -1,7 +1,23 @@
-num_frames = 40
+num_ticks = 2
 
-[image_comparisons.output]
-tolerance = 1
+[[image_comparisons.output.checks]]
+tolerance = 3
+max_outliers = 2160
+
+[[image_comparisons.output.checks]]
+tolerance = 16
+max_outliers = 1250
+
+[[image_comparisons.output.checks]]
+tolerance = 32
+max_outliers = 250
 
 [player_options]
-with_renderer = { optional = true, quality = "low" }
+with_renderer = { quality = "high" }
+
+[[compilers]]
+type = "Asc"
+target = "test.swf"
+class = "Test"
+scripts = ["Test.as", "PerspectiveMatrix3D.as", "AGALMiniAssembler.as"]
+swf_version = 43

@@ -1,0 +1,21 @@
+num_ticks = 1
+known_failure = true
+
+[image_comparisons.output]
+tolerance = 0
+
+[player_options]
+with_renderer = { optional = false, quality = "high" }
+
+[fonts.a]
+family = "TestFontNoInk"
+path = "TestFontNoInk.ttf"
+
+[subtests.embedded.player_options]
+device_font_renderer = "embedded"
+
+[subtests.freetype]
+output_path = "output.freetype.txt"
+
+[subtests.freetype.player_options]
+device_font_renderer = "freetype"

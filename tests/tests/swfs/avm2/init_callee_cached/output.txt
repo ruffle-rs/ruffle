@@ -1,0 +1,24 @@
+// Entered instance init
+this.count ++;
+// this.count is 1
+// arguments.callee is function Function() {}
+// this.savedCallee is null
+// arguments.callee == this.savedCallee? false
+this.count = arguments.callee;
+this.callInitAgain();
+// Entered instance init
+this.count ++;
+// this.count is 2
+// arguments.callee is function Function() {}
+// this.savedCallee is function Function() {}
+// arguments.callee == this.savedCallee? true
+this.count = arguments.callee;
+this.callInitAgain();
+// Entered instance init
+this.count ++;
+// this.count is 3
+// arguments.callee is function Function() {}
+// this.savedCallee is function Function() {}
+// arguments.callee == this.savedCallee? true
+this.count = arguments.callee;
+// this.count >= 3, stopping

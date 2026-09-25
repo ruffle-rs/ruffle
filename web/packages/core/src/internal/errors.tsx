@@ -21,6 +21,12 @@ export class LoadRuffleWasmError extends Error {
     }
 }
 
+export class LoadBeginError extends Error {
+    constructor(message: string) {
+        super(`Failed to begin SWF load: ${message}`);
+    }
+}
+
 export class InvalidOptionsError extends Error {
     constructor(message: string) {
         super(`Invalid options: ${message}`);

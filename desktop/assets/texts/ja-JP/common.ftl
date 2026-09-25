@@ -1,4 +1,4 @@
-language-name = 日本語
+language-name = 日本語 (日本)
 start = 開始
 save = 保存
 cancel = キャンセル

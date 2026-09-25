@@ -1,6 +1,9 @@
 //! Video player display object
 
-use crate::avm1::{NativeObject as Avm1NativeObject, Object as Avm1Object};
+use crate::avm1::{
+    Activation as Avm1Activation, ActivationIdentifier, NativeObject as Avm1NativeObject,
+    Object as Avm1Object,
+};
 use crate::avm2::StageObject as Avm2StageObject;
 use crate::context::{RenderContext, UpdateContext};
 use crate::display_object::{Avm1TextFieldBinding, BoundsMode, DisplayObjectBase, RenderOptions};
@@ -13,6 +16,7 @@ use gc_arena::barrier::unlock;
 use gc_arena::lock::{Lock, RefLock};
 use gc_arena::{Collect, Gc, Mutation};
 use ruffle_common::utils::HasPrefixField;
+use ruffle_macros::istr;
 use ruffle_render::bitmap::{BitmapInfo, PixelSnapping};
 use ruffle_render::commands::CommandHandler;
 use ruffle_render::quality::StageQuality;
@@ -179,6 +183,10 @@ impl<'gc> Video<'gc> {
         ))
     }
 
+    pub fn instantiate(self, mc: &Mutation<'gc>) -> Self {
+        Self(Gc::new(mc, (*self.0).clone()))
+    }
+
     fn set_object(&self, context: &mut UpdateContext<'gc>, to: AvmObject<'gc>) {
         let mc = context.gc();
         unlock!(Gc::write(mc, self.0), VideoData, object).set(Some(to));
@@ -211,7 +219,7 @@ impl<'gc> Video<'gc> {
 
         match self.0.source.get() {
             VideoSource::Swf(swf_source) => {
-                let subslice = SwfSlice::from(movie).to_unbounded_subslice(tag.data);
+                let subslice = SwfSlice::from(movie).to_subslice(tag.data);
                 let mut frames = swf_source.frames.borrow_mut();
 
                 if frames.contains_key(&tag.frame_num.into()) {
@@ -349,10 +357,6 @@ impl<'gc> TDisplayObject<'gc> for Video<'gc> {
         HasPrefixField::as_prefix_gc(self.0)
     }
 
-    fn instantiate(self, gc_context: &Mutation<'gc>) -> DisplayObject<'gc> {
-        Self(Gc::new(gc_context, self.0.as_ref().clone())).into()
-    }
-
     fn post_instantiation(
         self,
         context: &mut UpdateContext<'gc>,
@@ -428,12 +432,19 @@ impl<'gc> TDisplayObject<'gc> for Video<'gc> {
         self.0.keyframes.replace(keyframes);
 
         if self.0.object.get().is_none() && !movie.is_action_script_3() {
-            let object = Avm1Object::new_with_native(
-                &context.strings,
-                Some(context.avm1.prototypes(self.swf_version()).video),
-                Avm1NativeObject::Video(self),
-            );
-            self.set_object(context, object.into());
+            let id = ActivationIdentifier::root("[Construct]");
+            let mut activation = Avm1Activation::from_nothing(context, id, self.into());
+            let constr = activation.resolve_class([istr!("Video")]);
+            let proto = constr.and_then(|c| c.prototype(&mut activation));
+            let native = Avm1NativeObject::Video(self);
+            let object = Avm1Object::new_with_native(activation.strings(), proto, native);
+
+            self.set_object(activation.context, object.into());
+
+            // The constructor is called, even though it does nothing by default.
+            if let Some(constr) = constr {
+                let _ = constr.construct_on_existing(&mut activation, object, &[]);
+            }
         }
 
         self.seek(context, starting_seek);
@@ -543,11 +554,13 @@ impl<'gc> TDisplayObject<'gc> for Video<'gc> {
                 bounds.height().to_pixels() as f32 / bitmap.height as f32,
             );
 
+            let region = bitmap.full_region();
             context.commands.render_bitmap(
                 bitmap.handle,
                 transform,
                 smoothing,
                 PixelSnapping::Never,
+                region,
             );
         } else if codec != Some(VideoCodec::None) {
             tracing::warn!("Video has no decoded frame to render.");

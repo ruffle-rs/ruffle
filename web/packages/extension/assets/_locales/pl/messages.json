@@ -38,6 +38,15 @@
     "settings_player_version": {
         "message": "Numer wersji Flash odtwarzacza do emulowania (zakres 1-32)"
     },
+    "settings_background_execution_mode": {
+        "message": "Wykonywanie w tle"
+    },
+    "settings_background_execution_mode_none": {
+        "message": "Wstrzymaj"
+    },
+    "settings_background_execution_mode_main_thread": {
+        "message": "Uruchom w wątku głównym"
+    },
     "settings_preferred_renderer": {
         "message": "Preferowany renderer"
     },

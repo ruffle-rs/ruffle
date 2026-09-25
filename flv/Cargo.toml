@@ -5,6 +5,9 @@ authors = ["David Wendt <dcrkid@gmail.com>"]
 edition.workspace = true
 license = "MIT OR Apache-2.0"
 
+[lints]
+workspace = true
+
 [dependencies]
 bitflags = { workspace = true }
 thiserror = { workspace = true }

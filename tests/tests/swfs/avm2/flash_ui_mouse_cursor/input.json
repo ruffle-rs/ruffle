@@ -1,0 +1,32 @@
+[
+  { "type": "MouseMove", "pos": [1, 101], "assert_cursor": "Hand" },
+
+  { "type": "MouseDown", "pos": [1, 101], "btn": "Left" },
+  { "type": "MouseUp", "pos": [1, 101], "btn": "Left" },
+
+  { "type": "MouseMove", "pos": [1, 101], "assert_cursor": "Grab" },
+  { "type": "MouseMove", "pos": [1, 1], "assert_cursor": "Grab" },
+  { "type": "MouseMove", "pos": [101, 1], "assert_cursor": "Grab" },
+
+  { "type": "KeyDown", "key": { "Char": "3" } },
+
+  { "type": "MouseMove", "pos": [1, 1], "assert_cursor": "IBeam" },
+  { "type": "MouseMove", "pos": [1, 101], "assert_cursor": "IBeam" },
+  { "type": "MouseMove", "pos": [101, 1], "assert_cursor": "IBeam" },
+
+  { "type": "MouseMove", "pos": [101, 101], "assert_cursor": "Arrow" },
+  { "type": "MouseMove", "pos": [1, 100] },
+  { "type": "MouseMove", "pos": [1, 101], "assert_cursor": "Hand" },
+
+  { "type": "KeyDown", "key": { "Char": "2" } },
+
+  { "type": "MouseMove", "pos": [1, 1], "assert_cursor": "Hand" },
+  { "type": "MouseMove", "pos": [1, 101], "assert_cursor": "Hand" },
+  { "type": "MouseMove", "pos": [101, 1], "assert_cursor": "Hand" },
+
+  { "type": "KeyDown", "key": { "Char": "1" } },
+
+  { "type": "MouseMove", "pos": [1, 1], "assert_cursor": "Arrow" },
+  { "type": "MouseMove", "pos": [1, 101], "assert_cursor": "Arrow" },
+  { "type": "MouseMove", "pos": [101, 1], "assert_cursor": "Arrow" }
+]

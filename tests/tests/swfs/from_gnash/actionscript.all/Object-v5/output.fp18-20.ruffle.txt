@@ -43,7 +43,7 @@ PASSED: obj.__proto__.constructor == Object [./Object.as:161]
 PASSED: typeof(obj.toString) == 'function' [./Object.as:164]
 PASSED: typeof(obj.valueOf) == 'function' [./Object.as:165]
 PASSED: typeof(obj.addProperty) == 'function' [./Object.as:166]
-FAILED: Object.hasOwnProperty('constructor') [./Object.as:168]
+PASSED: Object.hasOwnProperty('constructor') [./Object.as:168]
 PASSED: obj.hasOwnProperty('__constructor__') [./Object.as:176]
 PASSED: obj.member == 1 [./Object.as:180]
 PASSED: typeof(obj.toString()) == 'string' [./Object.as:181]
@@ -117,8 +117,8 @@ PASSED: g.cips == "passed" [./Object.as:935]
 PASSED: result == "cips" [./Object.as:936]
 PASSED: resolveCalled == 5 [./Object.as:937]
 PASSED: TestO.prototype == undefined [./Object.as:947]
-FAILED: expected: "object" obtained: undefined [./Object.as:952]
-FAILED: expected: "hello there" obtained:  [./Object.as:953]
+PASSED: typeof(o.__proto__) == "object" [./Object.as:952]
+PASSED: o.toString() == "hello there" [./Object.as:953]
 PASSED: TestO.prototype == undefined [./Object.as:956]
 PASSED: !nonk._width [./Object.as:968]
 PASSED: !nonk.bobo [./Object.as:969]
@@ -140,6 +140,6 @@ FAILED: expected: "undefined" obtained: object [./Object.as:1019]
 PASSED: typeof(o) == "object" [./Object.as:1021]
 PASSED: o.toString() == "true" [./Object.as:1022]
 FAILED: expected: "undefined" obtained: object [./Object.as:1026]
-#passed: 131
-#failed: 8
+#passed: 134
+#failed: 5
 #total tests run: 139

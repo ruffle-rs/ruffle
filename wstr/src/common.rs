@@ -391,6 +391,15 @@ impl WStr {
         super::ops::str_split(self, separator)
     }
 
+    /// Like [`Self::split`], but yields index ranges into `self` rather than substrings.
+    #[inline]
+    pub fn split_indices<'a, P: Pattern<'a>>(
+        &'a self,
+        separator: P,
+    ) -> super::ops::SplitIndices<'a, P> {
+        super::ops::str_split_indices(self, separator)
+    }
+
     /// Analogue of [`str::split_at`].
     #[inline]
     pub fn split_at(&self, index: usize) -> (&WStr, &WStr) {
@@ -503,6 +512,13 @@ impl<R: RangeBounds<usize>> IndexMut<R> for WStr {
     #[inline]
     fn index_mut(&mut self, idx: R) -> &mut Self::Output {
         self.slice_mut(idx).expect("string indices out of bounds")
+    }
+}
+
+impl AsRef<WStr> for WStr {
+    #[inline]
+    fn as_ref(&self) -> &WStr {
+        self
     }
 }
 

@@ -1,8 +1,213 @@
 ===== height
 0
 Error: Error: Error #2071: The Stage class does not implement this property or method.
+	at Error$/throwError()
+	at flash.display::Stage/set height()
+	at Function/<anonymous>()
+	at Test/logError()
+	at Test()
 ===== width
 0
 Error: Error: Error #2071: The Stage class does not implement this property or method.
+	at Error$/throwError()
+	at flash.display::Stage/set width()
+	at Function/<anonymous>()
+	at Test/logError()
+	at Test()
 ===== textSnapshot
 Error: Error: Error #2071: The Stage class does not implement this property or method.
+	at Error$/throwError()
+	at flash.display::Stage/get textSnapshot()
+	at Function/<anonymous>()
+	at Test/logError()
+	at Test()
+Throwing properties:
+Error: Error: Error #2071: The Stage class does not implement this property or method.
+	at Error$/throwError()
+	at flash.display::Stage/set accessibilityImplementation()
+	at Function/<anonymous>()
+	at Test/logError()
+	at Test()
+Error: Error: Error #2071: The Stage class does not implement this property or method.
+	at Error$/throwError()
+	at flash.display::Stage/set accessibilityProperties()
+	at Function/<anonymous>()
+	at Test/logError()
+	at Test()
+Error: Error: Error #2071: The Stage class does not implement this property or method.
+	at Error$/throwError()
+	at flash.display::Stage/set alpha()
+	at Function/<anonymous>()
+	at Test/logError()
+	at Test()
+Error: Error: Error #2071: The Stage class does not implement this property or method.
+	at Error$/throwError()
+	at flash.display::Stage/set blendMode()
+	at Function/<anonymous>()
+	at Test/logError()
+	at Test()
+Error: Error: Error #2071: The Stage class does not implement this property or method.
+	at Error$/throwError()
+	at flash.display::Stage/set cacheAsBitmap()
+	at Function/<anonymous>()
+	at Test/logError()
+	at Test()
+Error: Error: Error #2071: The Stage class does not implement this property or method.
+	at Error$/throwError()
+	at flash.display::Stage/set contextMenu()
+	at Function/<anonymous>()
+	at Test/logError()
+	at Test()
+Error: Error: Error #2071: The Stage class does not implement this property or method.
+	at Error$/throwError()
+	at flash.display::Stage/set filters()
+	at Function/<anonymous>()
+	at Test/logError()
+	at Test()
+Error: Error: Error #2071: The Stage class does not implement this property or method.
+	at Error$/throwError()
+	at flash.display::Stage/set focusRect()
+	at Function/<anonymous>()
+	at Test/logError()
+	at Test()
+Error: Error: Error #2071: The Stage class does not implement this property or method.
+	at Error$/throwError()
+	at flash.display::Stage/set height()
+	at Function/<anonymous>()
+	at Test/logError()
+	at Test()
+Error: Error: Error #2071: The Stage class does not implement this property or method.
+	at Error$/throwError()
+	at flash.display::Stage/set mask()
+	at Function/<anonymous>()
+	at Test/logError()
+	at Test()
+Error: Error: Error #2071: The Stage class does not implement this property or method.
+	at Error$/throwError()
+	at flash.display::Stage/set mouseEnabled()
+	at Function/<anonymous>()
+	at Test/logError()
+	at Test()
+Error: Error: Error #2071: The Stage class does not implement this property or method.
+	at Error$/throwError()
+	at flash.display::Stage/set name()
+	at Function/<anonymous>()
+	at Test/logError()
+	at Test()
+Error: Error: Error #2071: The Stage class does not implement this property or method.
+	at Error$/throwError()
+	at flash.display::Stage/set opaqueBackground()
+	at Function/<anonymous>()
+	at Test/logError()
+	at Test()
+Error: Error: Error #2071: The Stage class does not implement this property or method.
+	at Error$/throwError()
+	at flash.display::Stage/set rotation()
+	at Function/<anonymous>()
+	at Test/logError()
+	at Test()
+Error: Error: Error #2071: The Stage class does not implement this property or method.
+	at Error$/throwError()
+	at flash.display::Stage/set rotationX()
+	at Function/<anonymous>()
+	at Test/logError()
+	at Test()
+Error: Error: Error #2071: The Stage class does not implement this property or method.
+	at Error$/throwError()
+	at flash.display::Stage/set rotationY()
+	at Function/<anonymous>()
+	at Test/logError()
+	at Test()
+Error: Error: Error #2071: The Stage class does not implement this property or method.
+	at Error$/throwError()
+	at flash.display::Stage/set rotationZ()
+	at Function/<anonymous>()
+	at Test/logError()
+	at Test()
+Error: Error: Error #2071: The Stage class does not implement this property or method.
+	at Error$/throwError()
+	at flash.display::Stage/set scale9Grid()
+	at Function/<anonymous>()
+	at Test/logError()
+	at Test()
+Error: Error: Error #2071: The Stage class does not implement this property or method.
+	at Error$/throwError()
+	at flash.display::Stage/set scaleX()
+	at Function/<anonymous>()
+	at Test/logError()
+	at Test()
+Error: Error: Error #2071: The Stage class does not implement this property or method.
+	at Error$/throwError()
+	at flash.display::Stage/set scaleY()
+	at Function/<anonymous>()
+	at Test/logError()
+	at Test()
+Error: Error: Error #2071: The Stage class does not implement this property or method.
+	at Error$/throwError()
+	at flash.display::Stage/set scaleZ()
+	at Function/<anonymous>()
+	at Test/logError()
+	at Test()
+Error: TypeError: Error #1034: Type Coercion failed: cannot convert 2 to flash.geom.Rectangle.
+	at Function/<anonymous>()
+	at Test/logError()
+	at Test()
+Error: Error: Error #2071: The Stage class does not implement this property or method.
+	at Error$/throwError()
+	at flash.display::Stage/set tabEnabled()
+	at Function/<anonymous>()
+	at Test/logError()
+	at Test()
+Error: Error: Error #2071: The Stage class does not implement this property or method.
+	at Error$/throwError()
+	at flash.display::Stage/set tabIndex()
+	at Function/<anonymous>()
+	at Test/logError()
+	at Test()
+Error: Error: Error #2071: The Stage class does not implement this property or method.
+	at Error$/throwError()
+	at flash.display::Stage/get textSnapshot()
+	at Function/<anonymous>()
+	at Test/logError()
+	at Test()
+Error: Error: Error #2071: The Stage class does not implement this property or method.
+	at Error$/throwError()
+	at flash.display::Stage/set transform()
+	at Function/<anonymous>()
+	at Test/logError()
+	at Test()
+Error: Error: Error #2071: The Stage class does not implement this property or method.
+	at Error$/throwError()
+	at flash.display::Stage/set visible()
+	at Function/<anonymous>()
+	at Test/logError()
+	at Test()
+Error: Error: Error #2071: The Stage class does not implement this property or method.
+	at Error$/throwError()
+	at flash.display::Stage/set width()
+	at Function/<anonymous>()
+	at Test/logError()
+	at Test()
+Error: Error: Error #2071: The Stage class does not implement this property or method.
+	at Error$/throwError()
+	at flash.display::Stage/set x()
+	at Function/<anonymous>()
+	at Test/logError()
+	at Test()
+Error: Error: Error #2071: The Stage class does not implement this property or method.
+	at Error$/throwError()
+	at flash.display::Stage/set y()
+	at Function/<anonymous>()
+	at Test/logError()
+	at Test()
+Error: Error: Error #2071: The Stage class does not implement this property or method.
+	at Error$/throwError()
+	at flash.display::Stage/set z()
+	at Function/<anonymous>()
+	at Test/logError()
+	at Test()
+Error: TypeError: Error #2007: Parameter colorCorrection must be non-null.
+	at flash.display::Stage/set colorCorrection()
+	at Function/<anonymous>()
+	at Test/logError()
+	at Test()

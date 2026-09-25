@@ -12,8 +12,8 @@ use super::{Units, WStr};
 /// - `WStr` searches for the given string.
 /// - `u8` searches for a single LATIN1 code unit.
 /// - `u16` searches for a single UCS2 code unit.
-/// - `&[u8]` searches for any of the given LATIN1 code units.
-/// - `&[u16]` searches for any of the given UCS2 code units.
+/// - `&[u8]` / `[u8; N]` searches for any of the given LATIN1 code units.
+/// - `&[u16]` / `[u16; N]` searches for any of the given UCS2 code units.
 /// - `FnMut(u16) -> bool` searches for code units matching the predicate.
 pub trait Pattern<'a> {
     type Searcher: Searcher<'a>;
@@ -119,6 +119,34 @@ impl<'a> Pattern<'a> for &'a [u16] {
         match haystack.units() {
             Units::Bytes(h) => Either::Left(PredSearcher::new(can_match, h, AnyOf(self))),
             Units::Wide(h) => Either::Right(PredSearcher::new(can_match, h, AnyOf(self))),
+        }
+    }
+}
+
+impl<'a, const N: usize> Pattern<'a> for [u8; N] {
+    type Searcher =
+        Either<PredSearcher<'a, u8, AnyOfArray<u8, N>>, PredSearcher<'a, u16, AnyOfArray<u8, N>>>;
+
+    fn into_searcher(self, haystack: &'a WStr) -> Self::Searcher {
+        let can_match = N != 0;
+
+        match haystack.units() {
+            Units::Bytes(h) => Either::Left(PredSearcher::new(can_match, h, AnyOfArray(self))),
+            Units::Wide(h) => Either::Right(PredSearcher::new(can_match, h, AnyOfArray(self))),
+        }
+    }
+}
+
+impl<'a, const N: usize> Pattern<'a> for [u16; N] {
+    type Searcher =
+        Either<PredSearcher<'a, u8, AnyOfArray<u16, N>>, PredSearcher<'a, u16, AnyOfArray<u16, N>>>;
+
+    fn into_searcher(self, haystack: &'a WStr) -> Self::Searcher {
+        let can_match = N != 0 && (haystack.is_wide() || self.iter().any(|c| *c <= u8::MAX as u16));
+
+        match haystack.units() {
+            Units::Bytes(h) => Either::Left(PredSearcher::new(can_match, h, AnyOfArray(self))),
+            Units::Wide(h) => Either::Right(PredSearcher::new(can_match, h, AnyOfArray(self))),
         }
     }
 }
@@ -255,6 +283,14 @@ impl<T: Copy + Eq> Predicate<T> for T {
 pub struct AnyOf<'a, T>(&'a [T]);
 
 impl<T: Copy, U: Copy + Eq + TryFrom<T>> Predicate<T> for AnyOf<'_, U> {
+    fn matches(&mut self, c: T) -> bool {
+        self.0.iter().any(|m| U::try_from(c).ok() == Some(*m))
+    }
+}
+
+pub struct AnyOfArray<T, const N: usize>([T; N]);
+
+impl<T: Copy, U: Copy + Eq + TryFrom<T>, const N: usize> Predicate<T> for AnyOfArray<U, N> {
     fn matches(&mut self, c: T) -> bool {
         self.0.iter().any(|m| U::try_from(c).ok() == Some(*m))
     }

@@ -3,12 +3,13 @@
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::function::ExecutionReason;
-use crate::avm1::property_decl::{DeclContext, StaticDeclarations, SystemClass};
+use crate::avm1::property_decl::{DeclContext, PropertyOrder, StaticDeclarations, SystemClass};
 use crate::avm1::{Object, Value};
 use crate::string::AvmString;
 
 use ruffle_macros::istr;
 
+// TODO: In Flash Player, the Point class is implemented in pure ActionScript.
 const PROTO_DECLS: StaticDeclarations = declare_static_properties! {
     "length" => property(length; READ_ONLY);
     "clone" => method(clone);
@@ -30,27 +31,19 @@ pub fn create_class<'gc>(
     context: &mut DeclContext<'_, 'gc>,
     super_proto: Object<'gc>,
 ) -> SystemClass<'gc> {
-    let class = context.class(constructor, super_proto);
+    let class = context.class(constructor, super_proto, PropertyOrder::PrototypeLast);
     context.define_properties_on(class.proto, PROTO_DECLS(context));
     context.define_properties_on(class.constr, OBJECT_DECLS(context));
     class
 }
 
-pub fn point_to_object<'gc>(
-    point: (f64, f64),
+pub fn point_to_object<'gc, T: Into<Value<'gc>>>(
+    point: (T, T),
     activation: &mut Activation<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let path = [istr!("flash"), istr!("geom"), istr!("Point")];
     let args = [point.0.into(), point.1.into()];
-    construct_new_point(&args, activation)
-}
-
-pub fn construct_new_point<'gc>(
-    args: &[Value<'gc>],
-    activation: &mut Activation<'_, 'gc>,
-) -> Result<Value<'gc>, Error<'gc>> {
-    let constructor = activation.prototypes().point_constructor;
-    let object = constructor.construct(activation, args)?;
-    Ok(object)
+    activation.instantiate_class_as_script(path, &args)
 }
 
 pub fn value_to_point<'gc>(
@@ -87,8 +80,8 @@ fn constructor<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if args.is_empty() {
-        this.set(istr!("y"), 0.into(), activation)?;
-        this.set(istr!("x"), 0.into(), activation)?;
+        this.set(istr!("y"), 0, activation)?;
+        this.set(istr!("x"), 0, activation)?;
     } else {
         this.set(
             istr!("y"),
@@ -110,14 +103,11 @@ fn clone<'gc>(
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let args = [
+    let args = (
         this.get(istr!("x"), activation)?,
         this.get(istr!("y"), activation)?,
-    ];
-    let constructor = activation.prototypes().point_constructor;
-    let cloned = constructor.construct(activation, &args)?;
-
-    Ok(cloned)
+    );
+    point_to_object(args, activation)
 }
 
 fn equals<'gc>(
@@ -286,8 +276,8 @@ fn normalize<'gc>(
             )
         };
 
-        this.set(istr!("x"), x.into(), activation)?;
-        this.set(istr!("y"), y.into(), activation)?;
+        this.set(istr!("x"), x, activation)?;
+        this.set(istr!("y"), y, activation)?;
     }
 
     Ok(Value::Undefined)
@@ -308,8 +298,8 @@ fn offset<'gc>(
         .unwrap_or(&Value::Undefined)
         .coerce_to_f64(activation)?;
 
-    this.set(istr!("x"), (point.0 + dx).into(), activation)?;
-    this.set(istr!("y"), (point.1 + dy).into(), activation)?;
+    this.set(istr!("x"), point.0 + dx, activation)?;
+    this.set(istr!("y"), point.1 + dy, activation)?;
 
     Ok(Value::Undefined)
 }

@@ -1,0 +1,1743 @@
+// setProperty(_x, 2)
+2
+2
+valueOf
+2
+----------
+// setProperty(_x, -5)
+-5
+-5
+valueOf
+-5
+----------
+// setProperty(_x, 1.5)
+1.5
+1.5
+valueOf
+1.5
+----------
+// setProperty(_x, 0)
+0
+0
+valueOf
+0
+----------
+// setProperty(_x, "10")
+10
+10
+valueOf
+10
+----------
+// setProperty(_x, "10x")
+0
+1
+valueOf
+0
+----------
+// setProperty(_x, "z10")
+0
+1
+valueOf
+0
+----------
+// setProperty(_x, "abc")
+0
+1
+valueOf
+0
+----------
+// setProperty(_x, "")
+0
+1
+valueOf
+0
+----------
+// setProperty(_x, "true")
+0
+1
+valueOf
+0
+----------
+// setProperty(_x, "false")
+0
+1
+valueOf
+0
+----------
+// setProperty(_x, "undefined")
+0
+1
+valueOf
+0
+----------
+// setProperty(_x, "null")
+0
+1
+valueOf
+0
+----------
+// setProperty(_x, true)
+1
+1
+valueOf
+1
+----------
+// setProperty(_x, false)
+0
+0
+valueOf
+0
+----------
+// setProperty(_x, undefined)
+0
+1
+valueOf
+0
+----------
+// setProperty(_x, null)
+0
+1
+valueOf
+0
+----------
+// setProperty(_x, 0.0/0.0)
+0
+1
+valueOf
+0
+----------
+// setProperty(_x, 1.0/0.0)
+-107374182.4
+-107374182.4
+valueOf
+-107374182.4
+----------
+// setProperty(_x, -1.0/0.0)
+-107374182.4
+-107374182.4
+valueOf
+-107374182.4
+----------
+// setProperty(_x, new Object())
+0
+1
+valueOf
+0
+----------
+// setProperty(_y, 2)
+2
+2
+valueOf
+2
+----------
+// setProperty(_y, -5)
+-5
+-5
+valueOf
+-5
+----------
+// setProperty(_y, 1.5)
+1.5
+1.5
+valueOf
+1.5
+----------
+// setProperty(_y, 0)
+0
+0
+valueOf
+0
+----------
+// setProperty(_y, "10")
+10
+10
+valueOf
+10
+----------
+// setProperty(_y, "10x")
+0
+1
+valueOf
+0
+----------
+// setProperty(_y, "z10")
+0
+1
+valueOf
+0
+----------
+// setProperty(_y, "abc")
+0
+1
+valueOf
+0
+----------
+// setProperty(_y, "")
+0
+1
+valueOf
+0
+----------
+// setProperty(_y, "true")
+0
+1
+valueOf
+0
+----------
+// setProperty(_y, "false")
+0
+1
+valueOf
+0
+----------
+// setProperty(_y, "undefined")
+0
+1
+valueOf
+0
+----------
+// setProperty(_y, "null")
+0
+1
+valueOf
+0
+----------
+// setProperty(_y, true)
+1
+1
+valueOf
+1
+----------
+// setProperty(_y, false)
+0
+0
+valueOf
+0
+----------
+// setProperty(_y, undefined)
+0
+1
+valueOf
+0
+----------
+// setProperty(_y, null)
+0
+1
+valueOf
+0
+----------
+// setProperty(_y, 0.0/0.0)
+0
+1
+valueOf
+0
+----------
+// setProperty(_y, 1.0/0.0)
+-107374182.4
+-107374182.4
+valueOf
+-107374182.4
+----------
+// setProperty(_y, -1.0/0.0)
+-107374182.4
+-107374182.4
+valueOf
+-107374182.4
+----------
+// setProperty(_y, new Object())
+0
+1
+valueOf
+0
+----------
+// setProperty(_xscale, 2)
+2
+2
+valueOf
+2
+----------
+// setProperty(_xscale, -5)
+-5
+-5
+valueOf
+-5
+----------
+// setProperty(_xscale, 1.5)
+1.5
+1.5
+valueOf
+1.5
+----------
+// setProperty(_xscale, 0)
+0
+0
+valueOf
+0
+----------
+// setProperty(_xscale, "10")
+10
+10
+valueOf
+10
+----------
+// setProperty(_xscale, "10x")
+0
+1
+valueOf
+0
+----------
+// setProperty(_xscale, "z10")
+0
+1
+valueOf
+0
+----------
+// setProperty(_xscale, "abc")
+0
+1
+valueOf
+0
+----------
+// setProperty(_xscale, "")
+0
+1
+valueOf
+0
+----------
+// setProperty(_xscale, "true")
+0
+1
+valueOf
+0
+----------
+// setProperty(_xscale, "false")
+0
+1
+valueOf
+0
+----------
+// setProperty(_xscale, "undefined")
+0
+1
+valueOf
+0
+----------
+// setProperty(_xscale, "null")
+0
+1
+valueOf
+0
+----------
+// setProperty(_xscale, true)
+1
+1
+valueOf
+1
+----------
+// setProperty(_xscale, false)
+0
+0
+valueOf
+0
+----------
+// setProperty(_xscale, undefined)
+0
+1
+valueOf
+0
+----------
+// setProperty(_xscale, null)
+0
+1
+valueOf
+0
+----------
+// setProperty(_xscale, 0.0/0.0)
+0
+1
+valueOf
+0
+----------
+// setProperty(_xscale, 1.0/0.0)
+Infinity
+Infinity
+valueOf
+Infinity
+----------
+// setProperty(_xscale, -1.0/0.0)
+-Infinity
+-Infinity
+valueOf
+-Infinity
+----------
+// setProperty(_xscale, new Object())
+0
+1
+valueOf
+0
+----------
+// setProperty(_yscale, 2)
+2
+2
+valueOf
+2
+----------
+// setProperty(_yscale, -5)
+-5
+-5
+valueOf
+-5
+----------
+// setProperty(_yscale, 1.5)
+1.5
+1.5
+valueOf
+1.5
+----------
+// setProperty(_yscale, 0)
+0
+0
+valueOf
+0
+----------
+// setProperty(_yscale, "10")
+10
+10
+valueOf
+10
+----------
+// setProperty(_yscale, "10x")
+0
+1
+valueOf
+0
+----------
+// setProperty(_yscale, "z10")
+0
+1
+valueOf
+0
+----------
+// setProperty(_yscale, "abc")
+0
+1
+valueOf
+0
+----------
+// setProperty(_yscale, "")
+0
+1
+valueOf
+0
+----------
+// setProperty(_yscale, "true")
+0
+1
+valueOf
+0
+----------
+// setProperty(_yscale, "false")
+0
+1
+valueOf
+0
+----------
+// setProperty(_yscale, "undefined")
+0
+1
+valueOf
+0
+----------
+// setProperty(_yscale, "null")
+0
+1
+valueOf
+0
+----------
+// setProperty(_yscale, true)
+1
+1
+valueOf
+1
+----------
+// setProperty(_yscale, false)
+0
+0
+valueOf
+0
+----------
+// setProperty(_yscale, undefined)
+0
+1
+valueOf
+0
+----------
+// setProperty(_yscale, null)
+0
+1
+valueOf
+0
+----------
+// setProperty(_yscale, 0.0/0.0)
+0
+1
+valueOf
+0
+----------
+// setProperty(_yscale, 1.0/0.0)
+Infinity
+Infinity
+valueOf
+Infinity
+----------
+// setProperty(_yscale, -1.0/0.0)
+-Infinity
+-Infinity
+valueOf
+-Infinity
+----------
+// setProperty(_yscale, new Object())
+0
+1
+valueOf
+0
+----------
+// setProperty(_alpha, 2)
+1.953125
+1.953125
+valueOf
+1.953125
+----------
+// setProperty(_alpha, -5)
+-4.6875
+-4.6875
+valueOf
+-4.6875
+----------
+// setProperty(_alpha, 1.5)
+1.171875
+1.171875
+valueOf
+1.171875
+----------
+// setProperty(_alpha, 0)
+0
+0
+valueOf
+0
+----------
+// setProperty(_alpha, "10")
+9.765625
+9.765625
+valueOf
+9.765625
+----------
+// setProperty(_alpha, "10x")
+0
+0.78125
+valueOf
+0
+----------
+// setProperty(_alpha, "z10")
+0
+0.78125
+valueOf
+0
+----------
+// setProperty(_alpha, "abc")
+0
+0.78125
+valueOf
+0
+----------
+// setProperty(_alpha, "")
+0
+0.78125
+valueOf
+0
+----------
+// setProperty(_alpha, "true")
+0
+0.78125
+valueOf
+0
+----------
+// setProperty(_alpha, "false")
+0
+0.78125
+valueOf
+0
+----------
+// setProperty(_alpha, "undefined")
+0
+0.78125
+valueOf
+0
+----------
+// setProperty(_alpha, "null")
+0
+0.78125
+valueOf
+0
+----------
+// setProperty(_alpha, true)
+0.78125
+0.78125
+valueOf
+0.78125
+----------
+// setProperty(_alpha, false)
+0
+0
+valueOf
+0
+----------
+// setProperty(_alpha, undefined)
+0
+0.78125
+valueOf
+0
+----------
+// setProperty(_alpha, null)
+0
+0.78125
+valueOf
+0
+----------
+// setProperty(_alpha, 0.0/0.0)
+0
+0.78125
+valueOf
+0
+----------
+// setProperty(_alpha, 1.0/0.0)
+0
+0
+valueOf
+0
+----------
+// setProperty(_alpha, -1.0/0.0)
+0
+0
+valueOf
+0
+----------
+// setProperty(_alpha, new Object())
+0
+0.78125
+valueOf
+0
+----------
+// setProperty(_visible, 2)
+true
+true
+valueOf
+true
+----------
+// setProperty(_visible, -5)
+true
+true
+valueOf
+true
+----------
+// setProperty(_visible, 1.5)
+true
+true
+valueOf
+true
+----------
+// setProperty(_visible, 0)
+false
+false
+valueOf
+false
+----------
+// setProperty(_visible, "10")
+true
+true
+valueOf
+true
+----------
+// setProperty(_visible, "10x")
+false
+true
+valueOf
+false
+----------
+// setProperty(_visible, "z10")
+false
+true
+valueOf
+false
+----------
+// setProperty(_visible, "abc")
+false
+true
+valueOf
+false
+----------
+// setProperty(_visible, "")
+false
+true
+valueOf
+false
+----------
+// setProperty(_visible, "true")
+false
+true
+valueOf
+false
+----------
+// setProperty(_visible, "false")
+false
+true
+valueOf
+false
+----------
+// setProperty(_visible, "undefined")
+false
+true
+valueOf
+false
+----------
+// setProperty(_visible, "null")
+false
+true
+valueOf
+false
+----------
+// setProperty(_visible, true)
+true
+true
+valueOf
+true
+----------
+// setProperty(_visible, false)
+false
+false
+valueOf
+false
+----------
+// setProperty(_visible, undefined)
+false
+true
+valueOf
+false
+----------
+// setProperty(_visible, null)
+false
+true
+valueOf
+false
+----------
+// setProperty(_visible, 0.0/0.0)
+false
+true
+valueOf
+false
+----------
+// setProperty(_visible, 1.0/0.0)
+true
+true
+valueOf
+true
+----------
+// setProperty(_visible, -1.0/0.0)
+true
+true
+valueOf
+true
+----------
+// setProperty(_visible, new Object())
+false
+true
+valueOf
+false
+----------
+// setProperty(_width, 2)
+0
+0
+valueOf
+0
+----------
+// setProperty(_width, -5)
+0
+0
+valueOf
+0
+----------
+// setProperty(_width, 1.5)
+0
+0
+valueOf
+0
+----------
+// setProperty(_width, 0)
+0
+0
+valueOf
+0
+----------
+// setProperty(_width, "10")
+0
+0
+valueOf
+0
+----------
+// setProperty(_width, "10x")
+0
+0
+valueOf
+0
+----------
+// setProperty(_width, "z10")
+0
+0
+valueOf
+0
+----------
+// setProperty(_width, "abc")
+0
+0
+valueOf
+0
+----------
+// setProperty(_width, "")
+0
+0
+valueOf
+0
+----------
+// setProperty(_width, "true")
+0
+0
+valueOf
+0
+----------
+// setProperty(_width, "false")
+0
+0
+valueOf
+0
+----------
+// setProperty(_width, "undefined")
+0
+0
+valueOf
+0
+----------
+// setProperty(_width, "null")
+0
+0
+valueOf
+0
+----------
+// setProperty(_width, true)
+0
+0
+valueOf
+0
+----------
+// setProperty(_width, false)
+0
+0
+valueOf
+0
+----------
+// setProperty(_width, undefined)
+0
+0
+valueOf
+0
+----------
+// setProperty(_width, null)
+0
+0
+valueOf
+0
+----------
+// setProperty(_width, 0.0/0.0)
+0
+0
+valueOf
+0
+----------
+// setProperty(_width, 1.0/0.0)
+0
+0
+valueOf
+0
+----------
+// setProperty(_width, -1.0/0.0)
+0
+0
+valueOf
+0
+----------
+// setProperty(_width, new Object())
+0
+0
+valueOf
+0
+----------
+// setProperty(_height, 2)
+0
+0
+valueOf
+0
+----------
+// setProperty(_height, -5)
+0
+0
+valueOf
+0
+----------
+// setProperty(_height, 1.5)
+0
+0
+valueOf
+0
+----------
+// setProperty(_height, 0)
+0
+0
+valueOf
+0
+----------
+// setProperty(_height, "10")
+0
+0
+valueOf
+0
+----------
+// setProperty(_height, "10x")
+0
+0
+valueOf
+0
+----------
+// setProperty(_height, "z10")
+0
+0
+valueOf
+0
+----------
+// setProperty(_height, "abc")
+0
+0
+valueOf
+0
+----------
+// setProperty(_height, "")
+0
+0
+valueOf
+0
+----------
+// setProperty(_height, "true")
+0
+0
+valueOf
+0
+----------
+// setProperty(_height, "false")
+0
+0
+valueOf
+0
+----------
+// setProperty(_height, "undefined")
+0
+0
+valueOf
+0
+----------
+// setProperty(_height, "null")
+0
+0
+valueOf
+0
+----------
+// setProperty(_height, true)
+0
+0
+valueOf
+0
+----------
+// setProperty(_height, false)
+0
+0
+valueOf
+0
+----------
+// setProperty(_height, undefined)
+0
+0
+valueOf
+0
+----------
+// setProperty(_height, null)
+0
+0
+valueOf
+0
+----------
+// setProperty(_height, 0.0/0.0)
+0
+0
+valueOf
+0
+----------
+// setProperty(_height, 1.0/0.0)
+0
+0
+valueOf
+0
+----------
+// setProperty(_height, -1.0/0.0)
+0
+0
+valueOf
+0
+----------
+// setProperty(_height, new Object())
+0
+0
+valueOf
+0
+----------
+// setProperty(_rotation, 2)
+2
+2
+valueOf
+2
+----------
+// setProperty(_rotation, -5)
+-5
+-5
+valueOf
+-5
+----------
+// setProperty(_rotation, 1.5)
+1.5
+1.5
+valueOf
+1.5
+----------
+// setProperty(_rotation, 0)
+0
+0
+valueOf
+0
+----------
+// setProperty(_rotation, "10")
+10
+10
+valueOf
+10
+----------
+// setProperty(_rotation, "10x")
+0
+1
+valueOf
+0
+----------
+// setProperty(_rotation, "z10")
+0
+1
+valueOf
+0
+----------
+// setProperty(_rotation, "abc")
+0
+1
+valueOf
+0
+----------
+// setProperty(_rotation, "")
+0
+1
+valueOf
+0
+----------
+// setProperty(_rotation, "true")
+0
+1
+valueOf
+0
+----------
+// setProperty(_rotation, "false")
+0
+1
+valueOf
+0
+----------
+// setProperty(_rotation, "undefined")
+0
+1
+valueOf
+0
+----------
+// setProperty(_rotation, "null")
+0
+1
+valueOf
+0
+----------
+// setProperty(_rotation, true)
+1
+1
+valueOf
+1
+----------
+// setProperty(_rotation, false)
+0
+0
+valueOf
+0
+----------
+// setProperty(_rotation, undefined)
+0
+1
+valueOf
+0
+----------
+// setProperty(_rotation, null)
+0
+1
+valueOf
+0
+----------
+// setProperty(_rotation, 0.0/0.0)
+0
+1
+valueOf
+0
+----------
+// setProperty(_rotation, 1.0/0.0)
+NaN
+NaN
+valueOf
+NaN
+----------
+// setProperty(_rotation, -1.0/0.0)
+NaN
+NaN
+valueOf
+NaN
+----------
+// setProperty(_rotation, new Object())
+0
+1
+valueOf
+0
+----------
+// setProperty(_name, 2)
+2
+2
+toString
+[type Object]
+----------
+// setProperty(_name, -5)
+-5
+-5
+toString
+[type Object]
+----------
+// setProperty(_name, 1.5)
+1.5
+1.5
+toString
+[type Object]
+----------
+// setProperty(_name, 0)
+0
+0
+toString
+[type Object]
+----------
+// setProperty(_name, "10")
+10
+10
+toString
+10
+----------
+// setProperty(_name, "10x")
+10x
+10x
+toString
+10x
+----------
+// setProperty(_name, "z10")
+z10
+z10
+toString
+z10
+----------
+// setProperty(_name, "abc")
+abc
+abc
+toString
+abc
+----------
+// setProperty(_name, "")
+
+
+toString
+
+----------
+// setProperty(_name, "true")
+true
+true
+toString
+true
+----------
+// setProperty(_name, "false")
+false
+false
+toString
+false
+----------
+// setProperty(_name, "undefined")
+undefined
+undefined
+toString
+undefined
+----------
+// setProperty(_name, "null")
+null
+null
+toString
+null
+----------
+// setProperty(_name, true)
+true
+true
+toString
+[type Object]
+----------
+// setProperty(_name, false)
+false
+false
+toString
+[type Object]
+----------
+// setProperty(_name, undefined)
+
+
+toString
+[type Object]
+----------
+// setProperty(_name, null)
+null
+null
+toString
+[type Object]
+----------
+// setProperty(_name, 0.0/0.0)
+NaN
+NaN
+toString
+[type Object]
+----------
+// setProperty(_name, 1.0/0.0)
+Infinity
+Infinity
+toString
+[type Object]
+----------
+// setProperty(_name, -1.0/0.0)
+-Infinity
+-Infinity
+toString
+[type Object]
+----------
+// setProperty(_name, new Object())
+[object Object]
+[object Object]
+toString
+[type Object]
+----------
+// setProperty(_highquality, 2)
+2
+2
+valueOf
+2
+----------
+// setProperty(_highquality, -5)
+1
+1
+valueOf
+1
+----------
+// setProperty(_highquality, 1.5)
+1
+1
+valueOf
+1
+----------
+// setProperty(_highquality, 0)
+0
+0
+valueOf
+0
+----------
+// setProperty(_highquality, "10")
+2
+2
+valueOf
+2
+----------
+// setProperty(_highquality, "10x")
+0
+1
+valueOf
+0
+----------
+// setProperty(_highquality, "z10")
+0
+1
+valueOf
+0
+----------
+// setProperty(_highquality, "abc")
+0
+1
+valueOf
+0
+----------
+// setProperty(_highquality, "")
+0
+1
+valueOf
+0
+----------
+// setProperty(_highquality, "true")
+0
+1
+valueOf
+0
+----------
+// setProperty(_highquality, "false")
+0
+1
+valueOf
+0
+----------
+// setProperty(_highquality, "undefined")
+0
+1
+valueOf
+0
+----------
+// setProperty(_highquality, "null")
+0
+1
+valueOf
+0
+----------
+// setProperty(_highquality, true)
+1
+1
+valueOf
+1
+----------
+// setProperty(_highquality, false)
+0
+0
+valueOf
+0
+----------
+// setProperty(_highquality, undefined)
+0
+1
+valueOf
+0
+----------
+// setProperty(_highquality, null)
+0
+1
+valueOf
+0
+----------
+// setProperty(_highquality, 0.0/0.0)
+0
+1
+valueOf
+0
+----------
+// setProperty(_highquality, 1.0/0.0)
+2
+2
+valueOf
+2
+----------
+// setProperty(_highquality, -1.0/0.0)
+1
+1
+valueOf
+1
+----------
+// setProperty(_highquality, new Object())
+0
+1
+valueOf
+0
+----------
+// setProperty(_focusrect, 2)
+true
+true
+false
+----------
+// setProperty(_focusrect, -5)
+true
+true
+false
+----------
+// setProperty(_focusrect, 1.5)
+true
+true
+false
+----------
+// setProperty(_focusrect, 0)
+false
+false
+false
+----------
+// setProperty(_focusrect, "10")
+true
+true
+false
+----------
+// setProperty(_focusrect, "10x")
+false
+true
+false
+----------
+// setProperty(_focusrect, "z10")
+false
+true
+false
+----------
+// setProperty(_focusrect, "abc")
+false
+true
+false
+----------
+// setProperty(_focusrect, "")
+false
+true
+false
+----------
+// setProperty(_focusrect, "true")
+false
+true
+false
+----------
+// setProperty(_focusrect, "false")
+false
+true
+false
+----------
+// setProperty(_focusrect, "undefined")
+false
+true
+false
+----------
+// setProperty(_focusrect, "null")
+false
+true
+false
+----------
+// setProperty(_focusrect, true)
+true
+true
+false
+----------
+// setProperty(_focusrect, false)
+false
+false
+false
+----------
+// setProperty(_focusrect, undefined)
+false
+true
+false
+----------
+// setProperty(_focusrect, null)
+false
+true
+false
+----------
+// setProperty(_focusrect, 0.0/0.0)
+false
+true
+false
+----------
+// setProperty(_focusrect, 1.0/0.0)
+true
+true
+false
+----------
+// setProperty(_focusrect, -1.0/0.0)
+true
+true
+false
+----------
+// setProperty(_focusrect, new Object())
+false
+false
+false
+----------
+// setProperty(_soundbuftime, 2)
+2
+2
+valueOf
+2
+----------
+// setProperty(_soundbuftime, -5)
+-5
+-5
+valueOf
+-5
+----------
+// setProperty(_soundbuftime, 1.5)
+1
+1
+valueOf
+1
+----------
+// setProperty(_soundbuftime, 0)
+0
+0
+valueOf
+0
+----------
+// setProperty(_soundbuftime, "10")
+10
+10
+valueOf
+10
+----------
+// setProperty(_soundbuftime, "10x")
+0
+1
+valueOf
+0
+----------
+// setProperty(_soundbuftime, "z10")
+0
+1
+valueOf
+0
+----------
+// setProperty(_soundbuftime, "abc")
+0
+1
+valueOf
+0
+----------
+// setProperty(_soundbuftime, "")
+0
+1
+valueOf
+0
+----------
+// setProperty(_soundbuftime, "true")
+0
+1
+valueOf
+0
+----------
+// setProperty(_soundbuftime, "false")
+0
+1
+valueOf
+0
+----------
+// setProperty(_soundbuftime, "undefined")
+0
+1
+valueOf
+0
+----------
+// setProperty(_soundbuftime, "null")
+0
+1
+valueOf
+0
+----------
+// setProperty(_soundbuftime, true)
+1
+1
+valueOf
+1
+----------
+// setProperty(_soundbuftime, false)
+0
+0
+valueOf
+0
+----------
+// setProperty(_soundbuftime, undefined)
+0
+1
+valueOf
+0
+----------
+// setProperty(_soundbuftime, null)
+0
+1
+valueOf
+0
+----------
+// setProperty(_soundbuftime, 0.0/0.0)
+0
+1
+valueOf
+0
+----------
+// setProperty(_soundbuftime, 1.0/0.0)
+-2147483648
+-2147483648
+valueOf
+-2147483648
+----------
+// setProperty(_soundbuftime, -1.0/0.0)
+-2147483648
+-2147483648
+valueOf
+-2147483648
+----------
+// setProperty(_soundbuftime, new Object())
+0
+1
+valueOf
+0
+----------
+// setProperty(_quality, 2)
+LOW
+LOW
+toString
+LOW
+----------
+// setProperty(_quality, -5)
+LOW
+LOW
+toString
+LOW
+----------
+// setProperty(_quality, 1.5)
+LOW
+LOW
+toString
+LOW
+----------
+// setProperty(_quality, 0)
+LOW
+LOW
+toString
+LOW
+----------
+// setProperty(_quality, "10")
+LOW
+LOW
+toString
+LOW
+----------
+// setProperty(_quality, "10x")
+LOW
+LOW
+toString
+LOW
+----------
+// setProperty(_quality, "z10")
+LOW
+LOW
+toString
+LOW
+----------
+// setProperty(_quality, "abc")
+LOW
+LOW
+toString
+LOW
+----------
+// setProperty(_quality, "")
+LOW
+LOW
+toString
+LOW
+----------
+// setProperty(_quality, "true")
+LOW
+LOW
+toString
+LOW
+----------
+// setProperty(_quality, "false")
+LOW
+LOW
+toString
+LOW
+----------
+// setProperty(_quality, "undefined")
+LOW
+LOW
+toString
+LOW
+----------
+// setProperty(_quality, "null")
+LOW
+LOW
+toString
+LOW
+----------
+// setProperty(_quality, true)
+LOW
+LOW
+toString
+LOW
+----------
+// setProperty(_quality, false)
+LOW
+LOW
+toString
+LOW
+----------
+// setProperty(_quality, undefined)
+LOW
+LOW
+toString
+LOW
+----------
+// setProperty(_quality, null)
+LOW
+LOW
+toString
+LOW
+----------
+// setProperty(_quality, 0.0/0.0)
+LOW
+LOW
+toString
+LOW
+----------
+// setProperty(_quality, 1.0/0.0)
+LOW
+LOW
+toString
+LOW
+----------
+// setProperty(_quality, -1.0/0.0)
+LOW
+LOW
+toString
+LOW
+----------
+// setProperty(_quality, new Object())
+LOW
+LOW
+toString
+LOW
+----------

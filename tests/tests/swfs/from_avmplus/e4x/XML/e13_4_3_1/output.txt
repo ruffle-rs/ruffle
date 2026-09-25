@@ -2,3 +2,4 @@ typeof XML.prototype PASSED!
 XML.prototype instanceof XML PASSED!
 new XML().prototype instanceof XML PASSED!
 typeof (new XML().prototype) PASSED!
+TypeError: Error #2023: Class Test$ must inherit from Sprite to link to the root.

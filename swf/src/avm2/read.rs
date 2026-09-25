@@ -1,7 +1,8 @@
 use crate::avm2::types::*;
-use crate::error::{Error, Result};
+use crate::error::AbcParseError;
 use crate::extensions::ReadSwfExt;
-use std::io::Read;
+
+type Result<T, E = AbcParseError> = std::result::Result<T, E>;
 
 pub struct Reader<'a> {
     input: &'a [u8],
@@ -39,42 +40,26 @@ impl<'a> Reader<'a> {
         let major_version = self.read_u16()?;
         let constant_pool = self.read_constant_pool()?;
 
-        let len = self.read_u30()?;
-        let mut methods = Vec::with_capacity(len as usize);
-        for _ in 0..len {
-            methods.push(self.read_method()?);
-        }
+        let mut methods = self.read_vec_with_len(Self::read_method)?;
+        let metadata = self.read_vec_with_len(Self::read_metadata_entry)?;
+        let instances = self.read_vec_with_len(Self::read_instance)?;
+        let classes = self.read_vec(instances.len(), Self::read_class)?;
+        let scripts = self.read_vec_with_len(Self::read_script)?;
+        let method_bodies = self.read_vec_with_len(Self::read_method_body)?;
 
-        let len = self.read_u30()?;
-        let metadata = self.read_metadata(len)?;
-
-        let len = self.read_u30()?;
-        let mut instances = Vec::with_capacity(len as usize);
-        for _ in 0..len {
-            instances.push(self.read_instance()?);
-        }
-
-        let mut classes = Vec::with_capacity(len as usize);
-        for _ in 0..len {
-            classes.push(self.read_class()?);
-        }
-
-        let len = self.read_u30()?;
-        let mut scripts = Vec::with_capacity(len as usize);
-        for _ in 0..len {
-            scripts.push(self.read_script()?);
-        }
-
-        let len = self.read_u30()?;
-        let mut method_bodies = Vec::with_capacity(len as usize);
-        for body_idx in 0..len {
-            let body = self.read_method_body()?;
-            if methods[body.method.0 as usize].body.is_some() {
-                // TODO: this should somehow throw error 1121 in FP.
-                return Err(Error::invalid_data("Duplicate method body"));
+        for (body_idx, body) in method_bodies.iter().enumerate() {
+            let Some(dst) = methods.get_mut(body.method.0 as usize) else {
+                return Err(AbcParseError::MethodInfoOutOfBounds {
+                    method_count: methods.len() as u32,
+                    method_index: body.method,
+                });
+            };
+            if dst.body.is_some() {
+                return Err(AbcParseError::DuplicateMethodBody {
+                    method_index: body.method,
+                });
             }
-            methods[body.method.0 as usize].body = Some(Index::new(body_idx));
-            method_bodies.push(body);
+            dst.body = Some(Index::new(body_idx as u32));
         }
 
         Ok(AbcFile {
@@ -92,7 +77,7 @@ impl<'a> Reader<'a> {
     }
 
     fn read_u30(&mut self) -> Result<u32> {
-        self.read_encoded_u32()
+        Ok(self.read_encoded_u32()?)
     }
 
     fn read_i24(&mut self) -> Result<i32> {
@@ -108,14 +93,29 @@ impl<'a> Reader<'a> {
     fn read_string(&mut self) -> Result<Vec<u8>> {
         let len = self.read_u30()?;
         // TODO: Avoid allocating a String.
-        let mut s = Vec::with_capacity(len as usize);
-        self.read_slice(len as usize)?.read_to_end(&mut s)?;
-        Ok(s)
+        let s = self.read_slice(len as usize)?;
+        Ok(s.to_vec())
     }
 
     fn read_index<T>(&mut self) -> Result<Index<T>> {
         use std::marker::PhantomData;
         Ok(Index(self.read_u30()?, PhantomData))
+    }
+
+    fn read_vec<T>(
+        &mut self,
+        len: usize,
+        mut read_elem: impl FnMut(&mut Self) -> Result<T>,
+    ) -> Result<Vec<T>> {
+        (0..len).map(|_| read_elem(self)).collect()
+    }
+
+    fn read_vec_with_len<T>(
+        &mut self,
+        read_elem: impl FnMut(&mut Self) -> Result<T>,
+    ) -> Result<Vec<T>> {
+        let len = self.read_u30()?;
+        self.read_vec(len as usize, read_elem)
     }
 
     fn read_namespace(&mut self) -> Result<Namespace> {
@@ -131,17 +131,14 @@ impl<'a> Reader<'a> {
             0x18 => Namespace::Protected(name),
             0x19 => Namespace::Explicit(name),
             0x1a => Namespace::StaticProtected(name),
-            _ => return Err(Error::invalid_data("Invalid namespace kind")),
+            _ => {
+                return Err(AbcParseError::InvalidNamespace { kind });
+            }
         })
     }
 
     fn read_namespace_set(&mut self) -> Result<NamespaceSet> {
-        let len = self.read_u30()?;
-        let mut namespace_set = Vec::with_capacity(len as usize);
-        for _ in 0..len {
-            namespace_set.push(self.read_index()?);
-        }
-        Ok(namespace_set)
+        self.read_vec_with_len(Self::read_index)
     }
 
     fn read_multiname(&mut self) -> Result<Multiname> {
@@ -177,100 +174,61 @@ impl<'a> Reader<'a> {
             0x1c => Multiname::MultinameLA {
                 namespace_set: self.read_index()?,
             },
-            0x1d => {
-                let base_type = self.read_index()?;
-                let count = self.read_u30()?;
-                let mut parameters = Vec::with_capacity(count as usize);
-
-                for _ in 0..count {
-                    parameters.push(self.read_index()?);
-                }
-
-                Multiname::TypeName {
-                    base_type,
-                    parameters,
-                }
+            0x1d => Multiname::TypeName {
+                base_type: self.read_index()?,
+                parameters: self.read_vec_with_len(Self::read_index)?,
+            },
+            _ => {
+                return Err(AbcParseError::InvalidMultiname { kind });
             }
-            _ => return Err(Error::invalid_data("Invalid multiname kind")),
         })
     }
 
     fn read_constant_pool(&mut self) -> Result<ConstantPool> {
-        let len = self.read_u30()?.saturating_sub(1);
-        let mut ints = Vec::with_capacity(len as usize);
-        for _ in 0..len {
-            ints.push(self.read_i32()?);
-        }
-
-        let len = self.read_u30()?.saturating_sub(1);
-        let mut uints = Vec::with_capacity(len as usize);
-        for _ in 0..len {
-            uints.push(self.read_u30()?);
-        }
-
-        let len = self.read_u30()?.saturating_sub(1);
-        let mut doubles = Vec::with_capacity(len as usize);
-        for _ in 0..len {
-            doubles.push(self.read_f64()?);
-        }
-
-        let len = self.read_u30()?.saturating_sub(1);
-        let mut strings = Vec::with_capacity(len as usize);
-        for _ in 0..len {
-            strings.push(self.read_string()?);
-        }
-
-        let len = self.read_u30()?.saturating_sub(1);
-        let mut namespaces = Vec::with_capacity(len as usize);
-        for _ in 0..len {
-            namespaces.push(self.read_namespace()?);
-        }
-
-        let len = self.read_u30()?.saturating_sub(1);
-        let mut namespace_sets = Vec::with_capacity(len as usize);
-        for _ in 0..len {
-            namespace_sets.push(self.read_namespace_set()?);
-        }
-
-        let len = self.read_u30()?.saturating_sub(1);
-        let mut multinames = Vec::with_capacity(len as usize);
-        for _ in 0..len {
-            multinames.push(self.read_multiname()?);
+        fn read_vec_with_len_sub_1<'a, T>(
+            this: &mut Reader<'a>,
+            read_elem: impl FnMut(&mut Reader<'a>) -> Result<T>,
+        ) -> Result<Vec<T>> {
+            let len = this.read_u30()?.saturating_sub(1);
+            this.read_vec(len as usize, read_elem)
         }
 
         Ok(ConstantPool {
-            ints,
-            uints,
-            doubles,
-            strings,
-            namespaces,
-            namespace_sets,
-            multinames,
+            ints: read_vec_with_len_sub_1(self, Self::read_i32)?,
+            uints: read_vec_with_len_sub_1(self, Self::read_u30)?,
+            doubles: read_vec_with_len_sub_1(self, |this| this.read_f64().map_err(Into::into))?,
+            strings: read_vec_with_len_sub_1(self, Self::read_string)?,
+            namespaces: read_vec_with_len_sub_1(self, Self::read_namespace)?,
+            namespace_sets: read_vec_with_len_sub_1(self, Self::read_namespace_set)?,
+            multinames: read_vec_with_len_sub_1(self, Self::read_multiname)?,
         })
     }
 
     fn read_method(&mut self) -> Result<Method> {
         let num_params = self.read_u30()?;
         let return_type = self.read_index()?;
-        let mut params = Vec::with_capacity(num_params as usize);
-        for _ in 0..num_params {
-            params.push(MethodParam {
-                kind: self.read_index()?,
+        let mut params = self.read_vec(num_params as usize, |this| {
+            Ok(MethodParam {
+                kind: this.read_index()?,
                 name: None,
                 default_value: None,
             })
-        }
+        })?;
+
         let name = self.read_index()?;
         let flags = MethodFlags::from_bits_truncate(self.read_u8()?);
 
         if flags.contains(MethodFlags::HAS_OPTIONAL) {
-            let num_optional_params = self.read_u30()? as usize;
-            if let Some(start) = params.len().checked_sub(num_optional_params) {
-                for param in &mut params[start..] {
+            let num_optional_params = self.read_u30()?;
+            if let Some(start) = num_params.checked_sub(num_optional_params) {
+                for param in &mut params[(start as usize)..] {
                     param.default_value = Some(self.read_constant_value()?);
                 }
             } else {
-                return Err(Error::invalid_data("Too many optional parameters"));
+                return Err(AbcParseError::TooManyOptionalParams {
+                    num_params,
+                    num_optional_params,
+                });
             }
         }
 
@@ -291,7 +249,21 @@ impl<'a> Reader<'a> {
 
     fn read_constant_value(&mut self) -> Result<DefaultValue> {
         let index = self.read_u30()?;
-        Ok(match self.read_u8()? {
+        self.read_default_value_with_index(index)
+    }
+
+    fn read_optional_value(&mut self) -> Result<Option<DefaultValue>> {
+        let index = self.read_u30()?;
+        if index == 0 {
+            Ok(None)
+        } else {
+            self.read_default_value_with_index(index).map(Some)
+        }
+    }
+
+    fn read_default_value_with_index(&mut self, index: u32) -> Result<DefaultValue> {
+        let kind = self.read_u8()?;
+        Ok(match kind {
             0x00 => DefaultValue::Undefined,
             0x01 => DefaultValue::String(Index::new(index)),
             0x03 => DefaultValue::Int(Index::new(index)),
@@ -307,61 +279,28 @@ impl<'a> Reader<'a> {
             0x18 => DefaultValue::Protected(Index::new(index)),
             0x19 => DefaultValue::Explicit(Index::new(index)),
             0x1a => DefaultValue::StaticProtected(Index::new(index)),
-            _ => return Err(Error::invalid_data("Invalid default value")),
+            _ => {
+                return Err(AbcParseError::InvalidNamespace { kind });
+            }
         })
     }
 
-    fn read_optional_value(&mut self) -> Result<Option<DefaultValue>> {
-        let index = self.read_u30()?;
-        if index == 0 {
-            Ok(None)
-        } else {
-            Ok(Some(match self.read_u8()? {
-                0x00 => DefaultValue::Undefined,
-                0x01 => DefaultValue::String(Index::new(index)),
-                0x03 => DefaultValue::Int(Index::new(index)),
-                0x04 => DefaultValue::Uint(Index::new(index)),
-                0x05 => DefaultValue::Private(Index::new(index)),
-                0x06 => DefaultValue::Double(Index::new(index)),
-                0x08 => DefaultValue::Namespace(Index::new(index)),
-                0x0a => DefaultValue::False,
-                0x0b => DefaultValue::True,
-                0x0c => DefaultValue::Null,
-                0x16 => DefaultValue::Package(Index::new(index)),
-                0x17 => DefaultValue::PackageInternal(Index::new(index)),
-                0x18 => DefaultValue::Protected(Index::new(index)),
-                0x19 => DefaultValue::Explicit(Index::new(index)),
-                0x1a => DefaultValue::StaticProtected(Index::new(index)),
-                _ => return Err(Error::invalid_data("Invalid default value")),
-            }))
-        }
-    }
+    fn read_metadata_entry(&mut self) -> Result<Metadata> {
+        let name = self.read_index()?;
+        let num_items = self.read_u30()?;
+        // Data includes the keys and values
+        let key_value_data = self.read_vec(num_items as usize * 2, Self::read_index)?;
 
-    fn read_metadata(&mut self, len: u32) -> Result<Vec<Metadata>> {
-        let mut metadata = Vec::with_capacity(len as usize);
-        for _ in 0..len {
-            let name = self.read_index()?;
-            let num_items = self.read_u30()?;
-            let mut key_value_data = Vec::with_capacity(num_items as usize * 2);
-
-            // Data includes the keys and values
-            for _ in 0..num_items * 2 {
-                key_value_data.push(self.read_index()?);
-            }
-
-            // Split them up here
-            let mut items = Vec::with_capacity(num_items as usize);
-            for i in 0..num_items {
-                items.push(MetadataItem {
-                    key: key_value_data[i as usize],
-                    value: key_value_data[(num_items + i) as usize],
-                })
-            }
-
-            metadata.push(Metadata { name, items });
+        // Split them up here
+        let mut items = Vec::with_capacity(num_items as usize);
+        for i in 0..num_items {
+            items.push(MetadataItem {
+                key: key_value_data[i as usize],
+                value: key_value_data[(num_items + i) as usize],
+            })
         }
 
-        Ok(metadata)
+        Ok(Metadata { name, items })
     }
 
     fn read_instance(&mut self) -> Result<Instance> {
@@ -375,19 +314,9 @@ impl<'a> Reader<'a> {
             None
         };
 
-        let num_interfaces = self.read_u30()?;
-        let mut interfaces = Vec::with_capacity(num_interfaces as usize);
-        for _ in 0..num_interfaces {
-            interfaces.push(self.read_index()?);
-        }
-
+        let interfaces = self.read_vec_with_len(Self::read_index)?;
         let init_method = self.read_index()?;
-
-        let num_traits = self.read_u30()?;
-        let mut traits = Vec::with_capacity(num_traits as usize);
-        for _ in 0..num_traits {
-            traits.push(self.read_trait()?);
-        }
+        let traits = self.read_vec_with_len(Self::read_trait)?;
 
         Ok(Instance {
             name,
@@ -403,35 +332,24 @@ impl<'a> Reader<'a> {
     }
 
     fn read_class(&mut self) -> Result<Class> {
-        let init_method = self.read_index()?;
-        let num_traits = self.read_u30()?;
-        let mut traits = Vec::with_capacity(num_traits as usize);
-        for _ in 0..num_traits {
-            traits.push(self.read_trait()?);
-        }
         Ok(Class {
-            init_method,
-            traits,
+            init_method: self.read_index()?,
+            traits: self.read_vec_with_len(Self::read_trait)?,
         })
     }
 
     fn read_script(&mut self) -> Result<Script> {
-        let init_method = self.read_index()?;
-        let num_traits = self.read_u30()?;
-        let mut traits = Vec::with_capacity(num_traits as usize);
-        for _ in 0..num_traits {
-            traits.push(self.read_trait()?);
-        }
         Ok(Script {
-            init_method,
-            traits,
+            init_method: self.read_index()?,
+            traits: self.read_vec_with_len(Self::read_trait)?,
         })
     }
 
     fn read_trait(&mut self) -> Result<Trait> {
         let name = self.read_index()?;
         let flags = self.read_u8()?;
-        let kind = match flags & 0b1111 {
+        let raw_kind = flags & 0b1111;
+        let kind = match raw_kind {
             0 => TraitKind::Slot {
                 slot_id: self.read_u30()?,
                 type_name: self.read_index()?,
@@ -462,7 +380,9 @@ impl<'a> Reader<'a> {
                 type_name: self.read_index()?,
                 value: self.read_optional_value()?,
             },
-            _ => return Err(Error::invalid_data("Invalid trait kind")),
+            _ => {
+                return Err(AbcParseError::InvalidTraitKind { kind: raw_kind });
+            }
         };
 
         let mut metadata = vec![];
@@ -484,38 +404,20 @@ impl<'a> Reader<'a> {
     }
 
     fn read_method_body(&mut self) -> Result<MethodBody> {
-        let method = self.read_index()?;
-        let max_stack = self.read_u30()?;
-        let num_locals = self.read_u30()?;
-        let init_scope_depth = self.read_u30()?;
-        let max_scope_depth = self.read_u30()?;
-
-        // Read the code data.
-        let code_len = self.read_u30()?;
-        // TODO: Avoid allocating a Vec.
-        let code = self.read_slice(code_len as usize)?.to_vec();
-
-        let num_exceptions = self.read_u30()?;
-        let mut exceptions = Vec::with_capacity(num_exceptions as usize);
-        for _ in 0..num_exceptions {
-            exceptions.push(self.read_exception()?);
-        }
-
-        let num_traits = self.read_u30()?;
-        let mut traits = Vec::with_capacity(num_traits as usize);
-        for _ in 0..num_traits {
-            traits.push(self.read_trait()?);
-        }
-
         Ok(MethodBody {
-            method,
-            max_stack,
-            num_locals,
-            init_scope_depth,
-            max_scope_depth,
-            code,
-            exceptions,
-            traits,
+            method: self.read_index()?,
+            max_stack: self.read_u30()?,
+            num_locals: self.read_u30()?,
+            init_scope_depth: self.read_u30()?,
+            max_scope_depth: self.read_u30()?,
+            code: {
+                // Read the code data.
+                let code_len = self.read_u30()?;
+                // TODO: Avoid allocating a Vec.
+                self.read_slice(code_len as usize)?.to_vec()
+            },
+            exceptions: self.read_vec_with_len(Self::read_exception)?,
+            traits: self.read_vec_with_len(Self::read_trait)?,
         })
     }
 
@@ -526,7 +428,9 @@ impl<'a> Reader<'a> {
         let byte = self.read_u8()?;
         let opcode = match OpCode::from_u8(byte) {
             Some(o) => o,
-            None => return Err(Error::invalid_data(format!("Unknown ABC opcode {byte:#x}"))),
+            None => {
+                return Err(AbcParseError::IllegalOpcode { opcode: byte });
+            }
         };
 
         let op = match opcode {
@@ -764,12 +668,8 @@ impl<'a> Reader<'a> {
             OpCode::LookupSwitch => Op::LookupSwitch(Box::new(LookupSwitch {
                 default_offset: self.read_i24()?,
                 case_offsets: {
-                    let num_cases = self.read_u30()? + 1;
-                    let mut case_offsets = Vec::with_capacity(num_cases as usize);
-                    for _ in 0..num_cases {
-                        case_offsets.push(self.read_i24()?);
-                    }
-                    case_offsets.into()
+                    let num_cases = self.read_u30()? as usize + 1;
+                    self.read_vec(num_cases, Self::read_i24)?.into()
                 },
             })),
             OpCode::LShift => Op::LShift,

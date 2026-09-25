@@ -1,0 +1,13 @@
+obj1.toString
+tellTarget(obj1):clip1
+tellTarget(obj2):
+tellTarget(obj3):clip3
+tellTarget(null):
+tellTarget(undefined):
+tellTarget(5):5
+tellTarget(4):
+tellTarget(clip4):clip4
+tellTarget(a):a
+tellTarget(b):a
+tellTarget(clip5):a
+tellTarget("clip5"):a

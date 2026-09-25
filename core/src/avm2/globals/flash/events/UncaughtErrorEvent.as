@@ -1,4 +1,5 @@
 package flash.events {
+    [API("667")]
     public class UncaughtErrorEvent extends ErrorEvent {
         public static const UNCAUGHT_ERROR:String = "uncaughtError";
 

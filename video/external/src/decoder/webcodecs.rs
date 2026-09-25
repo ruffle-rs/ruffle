@@ -1,4 +1,5 @@
 use std::cell::RefCell;
+use std::mem;
 use std::rc::Rc;
 use std::sync::Arc;
 
@@ -54,7 +55,7 @@ pub struct H264Decoder {
     ///
     /// This in itself results in one frame of delay (because we can't block decode_frame
     /// until the callback is invoked), but it shouldn't matter in practice.
-    last_frame: Rc<RefCell<Option<DecodedFrame>>>,
+    last_frame: Rc<RefCell<LastFrame>>,
 
     // Simply keeping these objects alive, as they are used by the JS side.
     // See: https://rustwasm.github.io/wasm-bindgen/examples/closures.html
@@ -64,57 +65,91 @@ pub struct H264Decoder {
     error_callback: Closure<dyn Fn(DomException)>,
 }
 
+struct LastFrame {
+    status: Result<(), Error>,
+    // This is kept separate from `status` so that it can be reused between frames.
+    data: DecodedFrame<'static>,
+}
+
 impl H264Decoder {
     /// `extradata` should hold "AVCC (MP4) format" decoder configuration, including PPS and SPS.
     /// Make sure it has any start code emulation prevention "three bytes" removed.
     ///
     /// The log_subscriber is needed so that we have proper logging from within the callbacks.
     pub fn new(log_subscriber: Arc<Layered<WASMLayer, Registry>>) -> Result<Self, Error> {
-        let last_frame = Rc::new(RefCell::new(None));
+        let last_frame = Rc::new(RefCell::new(LastFrame {
+            status: Err(Error::DecoderNoOutputFrame),
+            data: DecodedFrame::empty(BitmapFormat::Rgb),
+        }));
         let lf = last_frame.clone();
 
         let log_subscriber_for_output = log_subscriber.clone();
         let output = move |output: &VideoFrame| {
             let _subscriber = tracing::subscriber::set_default(log_subscriber_for_output.clone());
             let visible_rect = output.visible_rect().unwrap();
+            let (width, height) = (visible_rect.width() as u32, visible_rect.height() as u32);
 
-            match output.format().unwrap() {
-                VideoPixelFormat::I420 => {
-                    let mut data: Vec<u8> =
-                        vec![
-                            0;
-                            visible_rect.width() as usize * visible_rect.height() as usize * 3 / 2
-                        ];
-                    let _ = output.copy_to_with_u8_slice(&mut data);
-                    last_frame.replace(Some(DecodedFrame::new(
-                        visible_rect.width() as u32,
-                        visible_rect.height() as u32,
-                        BitmapFormat::Yuv420p,
-                        data,
-                    )));
-                }
-                VideoPixelFormat::Bgrx => {
-                    let mut data: Vec<u8> =
-                        vec![0; visible_rect.width() as usize * visible_rect.height() as usize * 4];
-                    let _ = output.copy_to_with_u8_slice(&mut data);
-                    for pixel in data.chunks_mut(4) {
-                        pixel.swap(0, 2);
-                        pixel[3] = 0xff;
+            type FormatProcessor<'a> = (BitmapFormat, &'a dyn Fn(&mut Vec<u8>));
+
+            let src_format = output.format().unwrap();
+            let processor: Result<FormatProcessor<'_>, _> = match src_format {
+                VideoPixelFormat::I420 => Ok((BitmapFormat::Yuv420p, &|_data| {
+                    // nothing to do
+                })),
+                VideoPixelFormat::Bgrx => Ok((BitmapFormat::Rgba, &|data| {
+                    for [b, _g, r, x] in data.as_chunks_mut::<4>().0 {
+                        std::mem::swap(b, r);
+                        *x = 0xff;
                     }
-                    last_frame.replace(Some(DecodedFrame::new(
-                        visible_rect.width() as u32,
-                        visible_rect.height() as u32,
-                        BitmapFormat::Rgba,
-                        data,
-                    )));
-                }
-                other_format => {
-                    error!("Unsupported pixel format: {:?}", other_format);
-                }
+                })),
+                VideoPixelFormat::Nv12 => Ok((BitmapFormat::Yuv420p, &|data| {
+                    let luma_len = width as usize * height as usize;
+                    let chroma_len = width.div_ceil(2) as usize * height.div_ceil(2) as usize;
+                    assert_eq!(luma_len + 2 * chroma_len, data.len());
+
+                    // Need some scratch space to deinterlace chroma pairs
+                    let original_len = data.len();
+                    data.extend_from_within(luma_len..);
+
+                    let (dst, chroma_pairs) = data.split_at_mut(original_len);
+                    let (u_dst, v_dst) = dst[luma_len..].split_at_mut(chroma_len);
+
+                    use std::iter::zip;
+                    for ((u, v), uv) in zip(zip(u_dst, v_dst), chroma_pairs.as_chunks::<2>().0) {
+                        *u = uv[0];
+                        *v = uv[1];
+                    }
+
+                    // Clear scratch space
+                    data.truncate(original_len);
+                })),
+                other_format => Err(Error::DecoderError(
+                    format!("Unsupported pixel format: {other_format:?}").into(),
+                )),
             };
+
+            let mut frame = last_frame.borrow_mut();
+            frame.status = processor.map(|(dst_format, process_pixels)| {
+                let size_in_bytes = dst_format.length_for_size(width as usize, height as usize);
+
+                // Recycle the last frame's buffer.
+                let mut data = mem::replace(&mut frame.data, DecodedFrame::empty(dst_format))
+                    .into_buf()
+                    .into_owned();
+                data.clear();
+                data.reserve_exact(size_in_bytes);
+
+                data.resize(size_in_bytes, 0);
+                let _ = output.copy_to_with_u8_slice(&mut data);
+                process_pixels(&mut data);
+
+                frame.data = DecodedFrame::new(width, height, dst_format, data);
+            });
+
+            output.close();
         };
 
-        let log_subscriber_for_error = log_subscriber.clone();
+        let log_subscriber_for_error = log_subscriber;
         let error = move |error: &DomException| {
             let _subscriber = tracing::subscriber::set_default(log_subscriber_for_error.clone());
             error!("WebCodecs error: {:}", error.message());
@@ -242,46 +277,34 @@ impl VideoDecoder for H264Decoder {
         Ok(FrameDependency::Past)
     }
 
-    fn decode_frame(&mut self, encoded_frame: EncodedFrame<'_>) -> Result<DecodedFrame, Error> {
+    fn decode_frame_dyn(
+        &mut self,
+        encoded_frame: EncodedFrame<'_>,
+        callback: &mut dyn FnMut(DecodedFrame<'_>),
+    ) -> Result<(), Error> {
         debug!("decoding frame {}", encoded_frame.frame_id);
         trace!("decoder state: {:?}", self.decoder.state());
         trace!("queue size: {}", self.decoder.decode_queue_size());
 
-        for (nalu_type, nalu) in iter_nalus(encoded_frame.data, self.length_size as usize) {
-            let frame_type = match nalu_type {
-                0 => {
-                    trace!("skipping NALU of unspecified type");
-                    continue;
-                }
-                // 1 is "Coded slice of a non-IDR picture"
-                // 2, 3, and 4 are "Coded slice data partition ..." A, B, and C
-                1..NALU_TYPE_IDR => EncodedVideoChunkType::Delta,
-                // This is 5.
-                NALU_TYPE_IDR => EncodedVideoChunkType::Key,
-                // Skipping any NALUs that are not for the VCL, such as SEI (6), SPS (7), PPS (8), etc.
-                // TODO: Maybe handle the SPS and PPS NALUs by reconfiguring the decoder?
-                _ => {
-                    trace!("skipping NALU of type {}", nalu_type);
-                    continue;
-                }
-            };
-            trace!("frame type: {:?}", frame_type);
-
-            // The timestamp doesn't matter for us.
-            let init = EncodedVideoChunkInit::new(&Uint8Array::from(nalu), 0, frame_type);
-            let chunk = EncodedVideoChunk::new(&init).unwrap();
-
-            self.decoder
-                .decode(&chunk)
-                .map_err(js_error_to_decoder_error)?;
-            trace!("decoder state: {:?}", self.decoder.state());
+        let mut frame_type = EncodedVideoChunkType::Delta;
+        for (nalu_type, _nalu) in iter_nalus(encoded_frame.data, self.length_size as usize) {
+            if nalu_type == NALU_TYPE_IDR {
+                frame_type = EncodedVideoChunkType::Key;
+            }
         }
+        trace!("frame type: {:?}", frame_type);
 
-        match self.last_frame.borrow_mut().take() {
-            Some(frame) => Ok(frame),
-            None => Err(Error::DecoderError(
-                "No output frame produced by the decoder".into(),
-            )),
-        }
+        // The timestamp doesn't matter for us.
+        let init = EncodedVideoChunkInit::new(&Uint8Array::from(encoded_frame.data), 0, frame_type);
+        let chunk = EncodedVideoChunk::new(&init).unwrap();
+
+        self.decoder
+            .decode(&chunk)
+            .map_err(js_error_to_decoder_error)?;
+        trace!("decoder state: {:?}", self.decoder.state());
+
+        let mut frame = self.last_frame.borrow_mut();
+        mem::replace(&mut frame.status, Err(Error::DecoderNoOutputFrame))
+            .map(|()| callback(frame.data.reborrow()))
     }
 }

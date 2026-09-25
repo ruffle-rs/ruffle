@@ -1,6 +1,6 @@
 use crate::avm2::error::{
-    XmlErrorCode, make_error_1010, make_error_1085, make_error_1088, make_error_1118,
-    make_unknown_ns_error, make_xml_error,
+    XmlErrorCode, make_error_1010, make_error_1085, make_error_1088, make_error_1098,
+    make_error_1104, make_error_1118, make_unknown_ns_error, make_xml_error,
 };
 use crate::avm2::function::FunctionArgs;
 use crate::avm2::multiname::NamespaceSet;
@@ -141,22 +141,38 @@ impl<'gc> E4XNamespace<'gc> {
         &self,
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<NamespaceObject<'gc>, Error<'gc>> {
-        let args: &[Value<'gc>] = if let Some(prefix) = self.prefix {
-            &[prefix.into(), self.uri.into()]
-        } else {
-            &[self.uri.into()]
-        };
-        let obj = activation
-            .avm2()
-            .classes()
-            .namespace
-            .construct(activation, args)?;
+        let api_version = activation.avm2().root_api_version;
+        let namespace = Namespace::package(self.uri, api_version, activation.strings());
 
-        Ok(obj
-            .as_object()
-            .unwrap()
-            .as_namespace_object()
-            .expect("just constructed a namespace"))
+        let prefix = if let Some(prefix) = self.prefix {
+            // The only allowed prefix if the uri is empty is the literal empty string
+            // TODO - This logic is copied from the `Namespace` constructor, but
+            // is this true for XML? Seems like Flash prevents this situation
+            // from happening during XML parsing.
+            if self.uri.is_empty() && !prefix.is_empty() {
+                return Err(make_error_1098(activation, prefix));
+            }
+
+            if !prefix.is_empty() && !is_xml_name(prefix) {
+                None
+            } else {
+                Some(prefix)
+            }
+        } else {
+            // `self.prefix` is `None`; if the URI is empty the prefix must be
+            // the empty string.
+            // TODO - See comment above, does Flash allow for this scenario
+            // to happen in parsed XML?
+            if self.uri.is_empty() {
+                Some(istr!(""))
+            } else {
+                None
+            }
+        };
+
+        Ok(NamespaceObject::from_ns_and_prefix(
+            activation, namespace, prefix,
+        ))
     }
 }
 
@@ -462,6 +478,7 @@ impl<'gc> E4XNode<'gc> {
         if let E4XNodeKind::Element { children, .. } = &mut *this_kind {
             children.retain(|c| !Gc::ptr_eq(c.0, child.0));
         }
+        child.set_parent(None, gc_context);
     }
 
     pub fn remove_attribute(self, gc_context: &Mutation<'gc>, attribute: Self) {
@@ -469,6 +486,7 @@ impl<'gc> E4XNode<'gc> {
         if let E4XNodeKind::Element { attributes, .. } = &mut *this_kind {
             attributes.retain(|a| !Gc::ptr_eq(a.0, attribute.0));
         }
+        attribute.set_parent(None, gc_context);
     }
 
     /// Append a child to this node, which must be an Element node. This is an
@@ -866,9 +884,6 @@ impl<'gc> E4XNode<'gc> {
                 {
                     return Err(make_error_1088(activation));
                 }
-                Err(XmlError::InvalidAttr(XmlAttrError::Duplicated(_, _))) => {
-                    return Err(make_xml_error(activation, XmlErrorCode::DuplicateAttribute));
-                }
                 Err(XmlError::Syntax(syntax_error)) => {
                     let code = match syntax_error {
                         XmlSyntaxError::UnclosedPIOrXmlDecl => {
@@ -1022,13 +1037,19 @@ impl<'gc> E4XNode<'gc> {
         let attributes = bs
             .attributes()
             .collect::<Result<Vec<_>, XmlAttrError>>()
-            .map_err(|e| {
-                let code = match e {
-                    XmlAttrError::Duplicated(_, _) => XmlErrorCode::DuplicateAttribute,
-                    _ => XmlErrorCode::ElementMalformed,
-                };
+            .map_err(|e| match e {
+                XmlAttrError::Duplicated(pos, _) => {
+                    // Find end of attribute name, handling both a="" and a = "".
+                    let tail = &bs[pos..];
+                    let name_end = tail
+                        .iter()
+                        .position(|&b| b == b'=' || b.is_ascii_whitespace())
+                        .unwrap();
+                    let attr_name = &tail[..name_end];
 
-                make_xml_error(activation, code)
+                    make_error_1104(activation, attr_name, bs.name().as_ref())
+                }
+                _ => make_xml_error(activation, XmlErrorCode::ElementMalformed),
             })?;
 
         for attribute in attributes {

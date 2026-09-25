@@ -210,19 +210,19 @@ impl<'gc> LoaderInfoObject<'gc> {
         if !self.0.complete_event_fired.get() {
             // NOTE: We have to check load progress here because this function
             // is called unconditionally at the end of every frame.
-            let (should_complete, from_url) = match &*self.0.loaded_stream.borrow() {
+            let (should_complete, from_bytes) = match &*self.0.loaded_stream.borrow() {
                 LoaderStream::Swf(movie, root) => (
                     root.as_movie_clip()
                         .map(|mc| mc.loaded_bytes() as i32 >= mc.total_bytes())
                         .unwrap_or(true),
-                    movie.url() != "file:///",
+                    movie.is_from_bytes(),
                 ),
                 _ => (false, false),
             };
 
             if should_complete {
                 let mut activation = Activation::from_nothing(context);
-                if from_url {
+                if !from_bytes {
                     let http_status_evt =
                         EventObject::http_status_event(&mut activation, status, redirected);
 
@@ -264,14 +264,6 @@ impl<'gc> LoaderInfoObject<'gc> {
     }
 
     pub fn unload(self, context: &mut UpdateContext<'gc>) {
-        // Reset properties
-        let movie = &context.root_swf;
-        let empty_swf = Arc::new(SwfMovie::empty(movie.version(), Some(movie.url().into())));
-        let loader_stream = LoaderStream::NotYetLoaded(empty_swf, None, false);
-        self.set_loader_stream(loader_stream, context.gc());
-        self.set_errored(false);
-        self.reset_init_and_complete_events();
-
         let mut loader = self
             .0
             .loader
@@ -280,8 +272,23 @@ impl<'gc> LoaderInfoObject<'gc> {
             .as_container()
             .unwrap();
 
+        let content = loader.child_by_index(0);
+
+        if content.is_some() {
+            let unload_evt = EventObject::bare_default_event(context, "unload");
+            Avm2::dispatch_event(context, unload_evt, self.into());
+        }
+
+        // Reset properties
+        let movie = &context.root_swf;
+        let empty_swf = Arc::new(SwfMovie::empty(movie.version(), Some(movie.url().into())));
+        let loader_stream = LoaderStream::NotYetLoaded(empty_swf, None, false);
+        self.set_loader_stream(loader_stream, context.gc());
+        self.set_errored(false);
+        self.reset_init_and_complete_events();
+
         // Remove the Loader's content element if it exists.
-        if let Some(child) = loader.child_by_index(0) {
+        if let Some(child) = content {
             loader.remove_child(context, child);
         }
     }

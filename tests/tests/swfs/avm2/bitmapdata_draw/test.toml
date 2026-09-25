@@ -13,7 +13,7 @@ tolerance = 128
 max_outliers = 600
 
 [player_options]
-with_renderer = { optional = true, quality = "high" }
+with_renderer = { optional = false, quality = "high" }
 
 [default_fonts]
 serif = ["Noto Sans"]

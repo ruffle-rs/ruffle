@@ -1,0 +1,32 @@
+[workspace]
+members = ["."]
+
+[package]
+name = "ruffle-fuzz"
+version = "0.0.0"
+publish = false
+edition = "2024"
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+libfuzzer-sys = { version = "0.4", optional = true }
+afl = { version = "0.15", optional = true }
+swf = { path = "../swf" }
+[features]
+default = ["libfuzzer"]
+libfuzzer = ["dep:libfuzzer-sys"]
+afl = ["dep:afl"]
+
+[[bin]]
+name = "parse_swf"
+path = "fuzz_targets/parse_swf.rs"
+doc = false
+required-features = ["libfuzzer"]
+
+[[bin]]
+name = "parse_swf_afl"
+path = "fuzz_targets_afl/parse_swf.rs"
+doc = false
+required-features = ["afl"]

@@ -6,10 +6,14 @@ use crate::{
     types::*,
 };
 use bitstream_io::BitRead;
-use byteorder::{LittleEndian, ReadBytesExt};
 use simple_asn1::ASN1Block;
 use std::borrow::Cow;
 use std::io::{self, Read};
+
+/// Maximum buffer capacity for reading the SWF.
+///
+/// Prevents large allocations in case the SWF has a malformed length.
+const MAX_DATA_CAPACITY: u32 = 128 * 1024 * 1024; // 128 MiB
 
 /// Parse a decompressed SWF.
 ///
@@ -68,8 +72,12 @@ pub fn extract_swz(input: &[u8]) -> Result<Vec<u8>> {
 pub fn decompress_swf<'a, R: Read + 'a>(mut input: R) -> Result<SwfBuf> {
     // Read SWF header.
     let compression = read_compression_type(&mut input)?;
-    let version = input.read_u8()?;
-    let uncompressed_len = input.read_u32::<LittleEndian>()?;
+
+    let mut raw_header = [0u8; 5];
+    input.read_exact(&mut raw_header)?;
+
+    let version = raw_header[0];
+    let uncompressed_len = u32::from_le_bytes(*raw_header.split_last_chunk::<4>().unwrap().1);
 
     // Check whether the SWF version is 0.
     // Note that the behavior should actually vary, depending on the player version:
@@ -81,8 +89,14 @@ pub fn decompress_swf<'a, R: Read + 'a>(mut input: R) -> Result<SwfBuf> {
         return Err(Error::invalid_data("Invalid SWF version"));
     }
 
+    // Uncompressed length includes the 4-byte header and 4-byte uncompressed length itself,
+    // subtract it here.
+    let body_len = uncompressed_len
+        .checked_sub(8)
+        .ok_or_else(|| Error::invalid_data("Malformed SWF length"))?;
+
     // Now the SWF switches to a compressed stream.
-    let mut decompress_stream: Box<dyn Read> = match compression {
+    let decompress_stream: Box<dyn Read> = match compression {
         Compression::None => Box::new(input),
         Compression::Zlib => {
             if version < 6 {
@@ -94,15 +108,17 @@ pub fn decompress_swf<'a, R: Read + 'a>(mut input: R) -> Result<SwfBuf> {
             if version < 13 {
                 log::warn!("LZMA compressed SWF is version {version} but minimum version is 13");
             }
-            // Uncompressed length includes the 4-byte header and 4-byte uncompressed length itself,
-            // subtract it here.
-            make_lzma_reader(input, uncompressed_len - 8)?
+            make_lzma_reader(input, body_len)?
         }
     };
 
-    // Decompress the entire SWF.
-    let mut data = Vec::with_capacity(uncompressed_len as usize);
-    if let Err(e) = decompress_stream.read_to_end(&mut data) {
+    // Flash Player allocates a fixed buffer based on the header length and
+    // never accesses data beyond it. Match that behavior by capping reads here.
+    let mut data = Vec::with_capacity(body_len.min(MAX_DATA_CAPACITY) as usize);
+    if let Err(e) = decompress_stream
+        .take(body_len as u64)
+        .read_to_end(&mut data)
+    {
         log::error!("Error decompressing SWF: {e}");
     }
 
@@ -185,7 +201,7 @@ fn make_zlib_reader<'a, R: Read + 'a>(_input: R) -> Result<Box<dyn Read + 'a>> {
 #[cfg(feature = "lzma")]
 fn make_lzma_reader<'a, R: Read + 'a>(
     mut input: R,
-    uncompressed_length: u32,
+    unpacked_size: u32,
 ) -> Result<Box<dyn Read + 'a>> {
     use lzma_rs::{
         decompress::{Options, UnpackedSize},
@@ -207,20 +223,22 @@ fn make_lzma_reader<'a, R: Read + 'a>(
     // To deal with the mangled header, use lzma_rs options to manually provide uncompressed length.
 
     // Read compressed length (ignored)
-    let _ = input.read_u32::<LittleEndian>()?;
+    input.read_exact(&mut [0; 4])?;
 
     // TODO: Switch to lzma-rs streaming API when stable.
-    let mut output = Vec::with_capacity(uncompressed_length as usize);
+    let mut output = Vec::with_capacity(unpacked_size.min(MAX_DATA_CAPACITY) as usize);
     lzma_decompress_with_options(
         &mut io::BufReader::new(input),
         &mut output,
         &Options {
-            unpacked_size: UnpackedSize::UseProvided(Some(uncompressed_length.into())),
+            // [KJ] Note: according to my tests Flash doesn't work without
+            // the end-of-payload marker, so we don't have to worry about it.
+            unpacked_size: UnpackedSize::UseProvided(None),
             allow_incomplete: true,
             memlimit: None,
         },
     )
-    .map_err(|_| Error::invalid_data("Unable to decompress LZMA SWF."))?;
+    .map_err(|e| Error::invalid_data(format!("Unable to decompress LZMA SWF: {e}")))?;
 
     Ok(Box::new(io::Cursor::new(output)))
 }
@@ -228,7 +246,7 @@ fn make_lzma_reader<'a, R: Read + 'a>(
 #[cfg(not(feature = "lzma"))]
 fn make_lzma_reader<'a, R: Read + 'a>(
     _input: R,
-    _uncompressed_length: u32,
+    _unpacked_size: u32,
 ) -> Result<Box<dyn Read + 'a>> {
     Err(Error::unsupported(
         "Support for LZMA compressed SWFs is not enabled.",
@@ -384,11 +402,13 @@ impl<'a> Reader<'a> {
     pub fn read_tag(&mut self) -> Result<Tag<'a>> {
         let (tag_code, length) = self.read_tag_code_and_length()?;
 
-        if let Some(tag_code) = TagCode::from_u16(tag_code) {
-            self.read_tag_with_code(tag_code, length)
+        if let Some(code) = TagCode::from_u16(tag_code) {
+            self.read_tag_with_code(code, length)
         } else {
-            self.read_slice(length)
-                .map(|data| Tag::Unknown { tag_code, data })
+            match self.read_slice(length) {
+                Ok(data) => Ok(Tag::Unknown { tag_code, data }),
+                Err(e) => Err(Error::from(e)),
+            }
         }
         .map_err(|e| Error::swf_parse_error(tag_code, e))
     }
@@ -923,7 +943,7 @@ impl<'a> Reader<'a> {
         &mut self,
     ) -> Result<DefineSceneAndFrameLabelData<'a>> {
         let num_scenes = self.read_encoded_u32()? as usize;
-        let mut scenes = Vec::with_capacity(num_scenes);
+        let mut scenes = Vec::with_capacity(num_scenes.min(256));
         for _ in 0..num_scenes {
             scenes.push(FrameLabelData {
                 frame_num: self.read_encoded_u32()?,
@@ -932,7 +952,7 @@ impl<'a> Reader<'a> {
         }
 
         let num_frame_labels = self.read_encoded_u32()? as usize;
-        let mut frame_labels = Vec::with_capacity(num_frame_labels);
+        let mut frame_labels = Vec::with_capacity(num_frame_labels.min(256));
         for _ in 0..num_frame_labels {
             frame_labels.push(FrameLabelData {
                 frame_num: self.read_encoded_u32()?,
@@ -1008,7 +1028,7 @@ impl<'a> Reader<'a> {
             let offsets_ref = self.get_ref();
 
             // OffsetTable
-            let offsets: Result<Vec<_>> = (0..num_glyphs)
+            let offsets = (0..num_glyphs)
                 .map(|_| {
                     if flags.contains(FontFlag::HAS_WIDE_OFFSETS) {
                         self.read_u32()
@@ -1016,8 +1036,7 @@ impl<'a> Reader<'a> {
                         self.read_u16().map(u32::from)
                     }
                 })
-                .collect();
-            let offsets = offsets?;
+                .collect::<Result<Vec<_>, _>>()?;
 
             // CodeTableOffset
             let code_table_offset = if flags.contains(FontFlag::HAS_WIDE_OFFSETS) {
@@ -1028,22 +1047,7 @@ impl<'a> Reader<'a> {
 
             // GlyphShapeTable
             for (i, glyph) in glyphs.iter_mut().enumerate() {
-                // The glyph shapes are assumed to be positioned per the offset table.
-                // Panic on debug builds if this assumption is wrong, maybe we need to
-                // seek into these offsets instead?
-                debug_assert_eq!(self.pos(offsets_ref), offsets[i] as usize);
-
-                // The glyph shapes must not overlap. Avoid exceeding to the next one.
-                // TODO: What happens on decreasing offsets?
-                let available_bytes = if i < num_glyphs - 1 {
-                    offsets[i + 1] - offsets[i]
-                } else {
-                    code_table_offset - offsets[i]
-                };
-
-                if available_bytes == 0 {
-                    continue;
-                }
+                self.seek_absolute(offsets_ref, offsets[i] as usize);
 
                 let num_bits = self.read_u8()?;
                 let mut shape_context = ShapeContext {
@@ -1053,21 +1057,13 @@ impl<'a> Reader<'a> {
                     num_line_bits: num_bits & 0b1111,
                 };
 
-                if available_bytes == 1 {
-                    continue;
-                }
-
-                // TODO: Avoid reading more than `available_bytes - 1`?
                 let mut bits = self.bits();
                 while let Some(record) = Self::read_shape_record(&mut bits, &mut shape_context)? {
                     glyph.shape_records.push(record);
                 }
             }
 
-            // The code table is assumed to be positioned right after the glyph shapes.
-            // Panic on debug builds if this assumption is wrong, maybe we need to seek
-            // into the code table offset instead?
-            debug_assert_eq!(self.pos(offsets_ref), code_table_offset as usize);
+            self.seek_absolute(offsets_ref, code_table_offset as usize);
 
             // CodeTable
             for glyph in &mut glyphs {
@@ -1192,7 +1188,7 @@ impl<'a> Reader<'a> {
         Ok(zone)
     }
 
-    fn read_define_font_info(&mut self, version: u8) -> Result<FontInfo<'a>> {
+    pub fn read_define_font_info(&mut self, version: u8) -> Result<FontInfo<'a>> {
         let id = self.read_u16()?;
         let name = self.read_str_with_len()?;
         let flags = FontInfoFlag::from_bits_truncate(self.read_u8()?);
@@ -1238,18 +1234,19 @@ impl<'a> Reader<'a> {
         let id = self.read_character_id()?;
         let start_shape_bounds = self.read_rectangle()?;
         let end_shape_bounds = self.read_rectangle()?;
-        let start_edge_bounds;
-        let end_edge_bounds;
-        let flags;
-        if version >= 2 {
-            start_edge_bounds = self.read_rectangle()?;
-            end_edge_bounds = self.read_rectangle()?;
-            flags = DefineMorphShapeFlag::from_bits_truncate(self.read_u8()?);
+        let (start_edge_bounds, end_edge_bounds, flags) = if version >= 2 {
+            (
+                self.read_rectangle()?,
+                self.read_rectangle()?,
+                DefineMorphShapeFlag::from_bits_truncate(self.read_u8()?),
+            )
         } else {
-            start_edge_bounds = start_shape_bounds;
-            end_edge_bounds = end_shape_bounds;
-            flags = DefineMorphShapeFlag::HAS_NON_SCALING_STROKES;
-        }
+            (
+                start_shape_bounds,
+                end_shape_bounds,
+                DefineMorphShapeFlag::HAS_NON_SCALING_STROKES,
+            )
+        };
 
         self.read_u32()?; // Offset to EndEdges.
 
@@ -1487,15 +1484,14 @@ impl<'a> Reader<'a> {
     pub fn read_define_shape(&mut self, version: u8) -> Result<Shape> {
         let id = self.read_u16()?;
         let shape_bounds = self.read_rectangle()?;
-        let edge_bounds;
-        let flags;
-        if version >= 4 {
-            edge_bounds = self.read_rectangle()?;
-            flags = ShapeFlag::from_bits_truncate(self.read_u8()?);
+        let (edge_bounds, flags) = if version >= 4 {
+            (
+                self.read_rectangle()?,
+                ShapeFlag::from_bits_truncate(self.read_u8()?),
+            )
         } else {
-            edge_bounds = shape_bounds;
-            flags = ShapeFlag::HAS_NON_SCALING_STROKES;
-        }
+            (shape_bounds, ShapeFlag::HAS_NON_SCALING_STROKES)
+        };
 
         let (styles, num_fill_bits, num_line_bits) = self.read_shape_styles(version)?;
         let mut records = Vec::new();
@@ -2057,14 +2053,17 @@ impl<'a> Reader<'a> {
         BlendMode::from_u8(self.read_u8()?).ok_or_else(|| Error::invalid_data("Invalid blend mode"))
     }
 
-    fn read_clip_actions(&mut self) -> Result<Vec<ClipAction<'a>>> {
+    fn read_clip_actions(&mut self) -> Result<ClipActions<'a>> {
         self.read_u16()?; // Must be 0
-        self.read_clip_event_flags(); // All event flags
-        let mut clip_actions = vec![];
+        let all_event_flags = self.read_clip_event_flags();
+        let mut records = vec![];
         while let Some(clip_action) = self.read_clip_action()? {
-            clip_actions.push(clip_action);
+            records.push(clip_action);
         }
-        Ok(clip_actions)
+        Ok(ClipActions {
+            all_event_flags,
+            records,
+        })
     }
 
     fn read_clip_action(&mut self) -> Result<Option<ClipAction<'a>>> {
@@ -2075,7 +2074,9 @@ impl<'a> Reader<'a> {
             let mut length = self.read_u32()?;
             let key_code = if events.contains(ClipEventFlag::KEY_PRESS) {
                 // ActionData length includes the 1 byte key code.
-                length -= 1;
+                length = length
+                    .checked_sub(1)
+                    .ok_or_else(|| Error::invalid_data("keyPress clip action without key code"))?;
                 Some(self.read_u8()?)
             } else {
                 None
@@ -2180,7 +2181,7 @@ impl<'a> Reader<'a> {
         let num_matrix_rows = self.read_u8()?;
         let divisor = self.read_f32()?;
         let bias = self.read_f32()?;
-        let num_entries = num_matrix_cols * num_matrix_rows;
+        let num_entries = num_matrix_cols as u16 * num_matrix_rows as u16;
         let mut matrix = Vec::with_capacity(num_entries as usize);
         for _ in 0..num_entries {
             matrix.push(self.read_f32()?);
@@ -2522,7 +2523,11 @@ impl<'a> Reader<'a> {
             3 => BitmapFormat::ColorMap8 {
                 num_colors: self.read_u8()?,
             },
-            4 if version == 1 => BitmapFormat::Rgb15,
+            // Despite the SWF19 specs stating otherwise, the Rgb15
+            // format does display correctly in Flash Player
+            // when it is inside of DefineBitsLossless2.
+            // (see https://github.com/ruffle-rs/ruffle/issues/24431)
+            4 => BitmapFormat::Rgb15,
             5 => BitmapFormat::Rgb32,
             _ => return Err(Error::invalid_data("Invalid bitmap format.")),
         };
@@ -2599,9 +2604,13 @@ pub mod tests {
         Reader::new(data, default_version)
     }
 
-    fn read_from_file(path: &str) -> SwfBuf {
+    fn try_read_from_file(path: &str) -> Result<SwfBuf> {
         let data = std::fs::read(path).unwrap();
-        decompress_swf(&data[..]).unwrap()
+        decompress_swf(&data[..])
+    }
+
+    fn read_from_file(path: &str) -> SwfBuf {
+        try_read_from_file(path).unwrap()
     }
 
     pub fn read_tag_bytes_from_file_with_index(
@@ -2672,6 +2681,13 @@ pub mod tests {
         if cfg!(feature = "lzma") {
             assert_eq!(
                 read_from_file("tests/swfs/lzma.swf").header.compression(),
+                Compression::Lzma
+            );
+            assert!(try_read_from_file("tests/swfs/lzma-malformed-length.swf").is_err());
+            assert_eq!(
+                read_from_file("tests/swfs/lzma-length-too-large.swf")
+                    .header
+                    .compression(),
                 Compression::Lzma
             );
         }

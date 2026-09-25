@@ -41,7 +41,7 @@ impl ThemeController {
         })));
 
         #[cfg(target_os = "linux")]
-        this.start_dbus_theme_watcher_linux().await;
+        this.start_dbus_theme_watcher_linux();
         this.start_theme_preference_watcher(&preferences);
 
         this.set_theme_preference(preferences.theme_preference())
@@ -67,27 +67,32 @@ impl ThemeController {
     }
 
     #[cfg(target_os = "linux")]
-    async fn start_dbus_theme_watcher_linux(&self) {
-        async fn start_inner(this: &ThemeController) -> Result<(), Box<dyn Error>> {
+    fn start_dbus_theme_watcher_linux(&self) {
+        fn start_inner(this: &ThemeController) -> Result<(), Box<dyn Error>> {
             use futures::StreamExt;
 
-            let Some(ref settings) = this.data().freedesktop_settings else {
+            let Some(settings) = this.data().freedesktop_settings.clone() else {
                 return Ok(());
             };
 
-            let mut stream = Box::pin(settings.watch_color_scheme().await?);
-
             let this2 = this.clone();
-            tokio::spawn(Box::pin(async move {
+            tokio::spawn(async move {
+                let mut stream = match settings.watch_color_scheme().await {
+                    Ok(stream) => stream,
+                    Err(err) => {
+                        tracing::warn!("Error watching color scheme: {}", err);
+                        return;
+                    }
+                };
                 while let Some(scheme) = stream.next().await {
                     this2.set_theme(scheme_to_theme(scheme));
                 }
-            }));
+            });
 
             Ok(())
         }
 
-        if let Err(err) = start_inner(self).await {
+        if let Err(err) = start_inner(self) {
             tracing::warn!("Error registering theme watcher: {}", err);
         }
     }

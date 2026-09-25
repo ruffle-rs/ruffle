@@ -1,27 +1,54 @@
-import * as utils from "./utils";
+import {
+    enableBrowserOnOutdatedChromium,
+    getOptions,
+    hasAllUrlsPermission,
+    openOnboardPage,
+} from "./utils";
 import { isMessage } from "./messages";
 
-async function contentScriptRegistered() {
-    const matchingScripts = await utils.scripting.getRegisteredContentScripts({
-        ids: ["plugin-polyfill"],
-    });
-    return matchingScripts?.length > 0;
+/**
+ * Returns whether the plugin polyfill content script is registered and whether
+ * its JS file matches the expected variant.
+ */
+async function getPluginPolyfillRegistration(
+    expectedScript?: string,
+): Promise<{ registered: boolean; matches: boolean }> {
+    const matchingScripts = await browser.scripting.getRegisteredContentScripts(
+        {
+            ids: ["plugin-polyfill"],
+        },
+    );
+
+    if (matchingScripts?.length === 0) {
+        return {
+            registered: false,
+            matches: false,
+        };
+    }
+
+    // Content script IDs are unique, so there is at most one matching script.
+    const script = matchingScripts[0];
+
+    return {
+        registered: true,
+        matches: script?.js?.[0] === expectedScript,
+    };
 }
 
 // Copied from https://github.com/w3c/webextensions/issues/638#issuecomment-2181124486
 async function isHeaderConditionSupported() {
-    let needCleanup = false;
+    let needCleanup: boolean;
     const ruleId = 4;
     try {
         // Throws synchronously if not supported.
-        await utils.declarativeNetRequest.updateDynamicRules({
+        await browser.declarativeNetRequest.updateDynamicRules({
             addRules: [
                 {
                     id: ruleId,
                     condition: { responseHeaders: [{ header: "whatever" }] },
                     action: {
                         type:
-                            chrome.declarativeNetRequest.RuleActionType
+                            browser.declarativeNetRequest.RuleActionType
                                 ?.ALLOW ?? "allow",
                     },
                 },
@@ -34,7 +61,7 @@ async function isHeaderConditionSupported() {
     // Chrome may recognize the properties but have the implementation behind a flag.
     // When the implementation is disabled, validation is skipped too.
     try {
-        await utils.declarativeNetRequest.updateDynamicRules({
+        await browser.declarativeNetRequest.updateDynamicRules({
             removeRuleIds: [ruleId],
             addRules: [
                 {
@@ -42,7 +69,7 @@ async function isHeaderConditionSupported() {
                     condition: { responseHeaders: [] },
                     action: {
                         type:
-                            chrome.declarativeNetRequest.RuleActionType
+                            browser.declarativeNetRequest.RuleActionType
                                 ?.ALLOW ?? "allow",
                     },
                 },
@@ -54,7 +81,7 @@ async function isHeaderConditionSupported() {
         return true; // Validation worked = feature enabled.
     } finally {
         if (needCleanup) {
-            await utils.declarativeNetRequest.updateDynamicRules({
+            await browser.declarativeNetRequest.updateDynamicRules({
                 removeRuleIds: [ruleId],
             });
         }
@@ -63,16 +90,16 @@ async function isHeaderConditionSupported() {
 
 async function enableSWFTakeover() {
     // Checks if the responseHeaders condition is supported and not behind a disabled flag.
-    if (utils.declarativeNetRequest && (await isHeaderConditionSupported())) {
-        const { ruffleEnable } = await utils.getOptions();
+    if (browser.declarativeNetRequest && (await isHeaderConditionSupported())) {
+        const { ruffleEnable } = await getOptions();
         if (ruffleEnable) {
-            const playerPage = utils.runtime.getURL("/player.html");
+            const playerPage = browser.runtime.getURL("/player.html");
             const rules = [
                 {
                     id: 1,
                     action: {
                         type:
-                            chrome.declarativeNetRequest.RuleActionType
+                            browser.declarativeNetRequest.RuleActionType
                                 ?.REDIRECT ?? "redirect",
                         redirect: { regexSubstitution: playerPage + "#\\0" },
                     },
@@ -90,7 +117,7 @@ async function enableSWFTakeover() {
                             },
                         ],
                         resourceTypes: [
-                            chrome.declarativeNetRequest.ResourceType
+                            browser.declarativeNetRequest.ResourceType
                                 ?.MAIN_FRAME ?? "main_frame",
                         ],
                     },
@@ -99,7 +126,7 @@ async function enableSWFTakeover() {
                     id: 2,
                     action: {
                         type:
-                            chrome.declarativeNetRequest.RuleActionType
+                            browser.declarativeNetRequest.RuleActionType
                                 ?.REDIRECT ?? "redirect",
                         redirect: { regexSubstitution: playerPage + "#\\0" },
                     },
@@ -117,7 +144,7 @@ async function enableSWFTakeover() {
                             },
                         ],
                         resourceTypes: [
-                            chrome.declarativeNetRequest.ResourceType
+                            browser.declarativeNetRequest.ResourceType
                                 ?.MAIN_FRAME ?? "main_frame",
                         ],
                     },
@@ -126,7 +153,7 @@ async function enableSWFTakeover() {
                     id: 3,
                     action: {
                         type:
-                            chrome.declarativeNetRequest.RuleActionType
+                            browser.declarativeNetRequest.RuleActionType
                                 ?.REDIRECT ?? "redirect",
                         redirect: { regexSubstitution: playerPage + "#\\0" },
                     },
@@ -135,50 +162,62 @@ async function enableSWFTakeover() {
                             "^.*:\\/\\/.*\\/.*\\.s(?:wf|pl)(\\?.*|#.*|)$",
                         excludedResponseHeaders: [{ header: "content-type" }],
                         resourceTypes: [
-                            chrome.declarativeNetRequest.ResourceType
+                            browser.declarativeNetRequest.ResourceType
                                 ?.MAIN_FRAME ?? "main_frame",
                         ],
                     },
                 },
             ];
-            await chrome.declarativeNetRequest.updateDynamicRules({
+            await browser.declarativeNetRequest.updateDynamicRules({
                 removeRuleIds: [1, 2, 3],
                 addRules: rules,
             });
         }
-        utils.storage.sync.set({ responseHeadersUnsupported: false });
+        browser.storage.sync.set({ responseHeadersUnsupported: false });
     } else {
-        utils.storage.sync.set({ responseHeadersUnsupported: true });
+        browser.storage.sync.set({ responseHeadersUnsupported: true });
     }
 }
 
 async function disableSWFTakeover() {
-    if (utils.declarativeNetRequest && (await isHeaderConditionSupported())) {
-        await utils.declarativeNetRequest.updateDynamicRules({
+    if (browser.declarativeNetRequest && (await isHeaderConditionSupported())) {
+        await browser.declarativeNetRequest.updateDynamicRules({
             removeRuleIds: [1, 2, 3],
         });
-        utils.storage.sync.set({ responseHeadersUnsupported: false });
+        browser.storage.sync.set({ responseHeadersUnsupported: false });
     } else {
-        utils.storage.sync.set({ responseHeadersUnsupported: true });
+        browser.storage.sync.set({ responseHeadersUnsupported: true });
     }
 }
 
 async function enable() {
-    const { swfTakeover } = await utils.getOptions();
+    const { swfTakeover, ignoreOptout } = await getOptions();
     if (swfTakeover) {
         await enableSWFTakeover();
     }
     if (
-        !utils.scripting ||
-        (utils.scripting.ExecutionWorld && !utils.scripting.ExecutionWorld.MAIN)
+        !browser.scripting ||
+        (browser.scripting.ExecutionWorld &&
+            !browser.scripting.ExecutionWorld.MAIN)
     ) {
         return;
     }
-    if (!(await contentScriptRegistered())) {
+    const expectedScript = ignoreOptout
+        ? "dist/pluginPolyfillIgnoreOptout.js"
+        : "dist/pluginPolyfill.js";
+
+    const { registered, matches } =
+        await getPluginPolyfillRegistration(expectedScript);
+    if (!matches) {
+        if (registered) {
+            await browser.scripting.unregisterContentScripts({
+                ids: ["ruffle", "plugin-polyfill", "4399"],
+            });
+        }
         // Reuse the exclude_matches of dist/content.js in the manifest.
         const excludeMatches =
-            utils.runtime.getManifest().content_scripts![0]!.exclude_matches!;
-        await utils.scripting.registerContentScripts([
+            browser.runtime.getManifest().content_scripts![0]!.exclude_matches!;
+        await browser.scripting.registerContentScripts([
             {
                 id: "ruffle",
                 js: ["dist/ruffle.js"],
@@ -191,7 +230,7 @@ async function enable() {
             },
             {
                 id: "plugin-polyfill",
-                js: ["dist/pluginPolyfill.js"],
+                js: [expectedScript],
                 persistAcrossSessions: true,
                 matches: ["<all_urls>"],
                 excludeMatches,
@@ -217,30 +256,28 @@ async function enable() {
 
 async function disable() {
     if (
-        !utils.scripting ||
-        (utils.scripting.ExecutionWorld && !utils.scripting.ExecutionWorld.MAIN)
+        !browser.scripting ||
+        (browser.scripting.ExecutionWorld &&
+            !browser.scripting.ExecutionWorld.MAIN)
     ) {
         return;
     }
-    if (await contentScriptRegistered()) {
-        await utils.scripting.unregisterContentScripts({
+    const { registered } = await getPluginPolyfillRegistration();
+    if (registered) {
+        await browser.scripting.unregisterContentScripts({
             ids: ["ruffle", "plugin-polyfill", "4399"],
         });
     }
     await disableSWFTakeover();
 }
 
-async function onAdded(
-    permissions:
-        | browser.permissions.Permissions
-        | chrome.permissions.Permissions,
-) {
+async function onAdded(permissions: chrome.permissions.Permissions) {
     if (
         permissions.origins &&
         permissions.origins.length >= 1 &&
         permissions.origins[0] !== "<all_urls>"
     ) {
-        await utils.storage.sync.set({
+        await browser.storage.sync.set({
             ["showReloadButton"]: true,
         });
     }
@@ -253,15 +290,16 @@ function onMessage(
 ): void {
     if (isMessage(request)) {
         if (request.type === "open_url_in_player") {
-            chrome.tabs.create({
-                url: utils.runtime.getURL(`player.html#${request.url}`),
+            browser.tabs.create({
+                url: browser.runtime.getURL(`player.html#${request.url}`),
             });
         }
     }
 }
 
 (async () => {
-    const { ruffleEnable } = await utils.getOptions();
+    enableBrowserOnOutdatedChromium();
+    const { ruffleEnable } = await getOptions();
     if (ruffleEnable) {
         await enable();
     }
@@ -269,13 +307,21 @@ function onMessage(
 
 // Listeners must be registered synchronously at the top level,
 // otherwise they won't be called in time when the service worker wakes up
-if (chrome?.runtime && !chrome.runtime.onMessage.hasListener(onMessage)) {
-    chrome.runtime.onMessage.addListener(onMessage);
+if (browser?.runtime && !browser.runtime.onMessage.hasListener(onMessage)) {
+    browser.runtime.onMessage.addListener(onMessage);
 }
 
-utils.storage.onChanged.addListener(async (changes, namespace) => {
+browser.storage.onChanged.addListener(async (changes, namespace) => {
     if (namespace === "sync" && "ruffleEnable" in changes) {
         if (changes["ruffleEnable"]!.newValue) {
+            await enable();
+        } else {
+            await disable();
+        }
+    }
+    if (namespace === "sync" && "ignoreOptout" in changes) {
+        const { ruffleEnable } = await getOptions();
+        if (ruffleEnable) {
             await enable();
         } else {
             await disable();
@@ -292,12 +338,12 @@ utils.storage.onChanged.addListener(async (changes, namespace) => {
 
 async function handleInstalled(details: chrome.runtime.InstalledDetails) {
     if (
-        details.reason === chrome.runtime.OnInstalledReason.INSTALL &&
-        !(await utils.hasAllUrlsPermission())
+        details.reason === browser.runtime.OnInstalledReason.INSTALL &&
+        !(await hasAllUrlsPermission())
     ) {
-        await utils.openOnboardPage();
+        await openOnboardPage();
     }
 }
 
-chrome.runtime.onInstalled.addListener(handleInstalled);
-utils.permissions.onAdded.addListener(onAdded);
+browser.runtime.onInstalled.addListener(handleInstalled);
+browser.permissions.onAdded.addListener(onAdded);

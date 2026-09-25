@@ -65,12 +65,9 @@ PASSED: checkpoint == '/clip1/clip2' [./with.as:340]
 PASSED: checkpoint == '/' [./with.as:350]
 PASSED: _target == "/clip1" [./with.as:355]
 PASSED: _target == "/clip1" [./with.as:359]
-Target not found: Target="../o:t" Base="_level0"
 PASSED: _target == "/" [./with.as:363]
-Target not found: Target="o2.o" Base="_level0"
 PASSED: _target == "/" [./with.as:369]
 PASSED: _target == "/clip1" [./with.as:373]
-Target not found: Target="o2.o.p.t" Base="_level0"
 PASSED: _target == "/" [./with.as:378]
 PASSED: _target == "/clip1" [./with.as:383]
 PASSED: _target == "/clip1" [./with.as:395]

@@ -1,0 +1,103 @@
+Caught: Error: Error #12
+	at Error$/throwError()
+	at Function/http://adobe.com/AS3/2006/builtin::apply()
+	at Test/test()
+	at Test()
+Caught: Error: Error #15
+	at Error$/throwError()
+	at Function/http://adobe.com/AS3/2006/builtin::apply()
+	at Test/test()
+	at Test()
+Caught: Error: Error #1234
+	at Error$/throwError()
+	at Function/http://adobe.com/AS3/2006/builtin::apply()
+	at Test/test()
+	at Test()
+Caught: ReferenceError: Error #1074: Illegal write to read-only property prototype on MethodClosure.
+	at Error$/throwError()
+	at Function/http://adobe.com/AS3/2006/builtin::apply()
+	at Test/test()
+	at Test()
+Caught: Error: Error #1075: Math is not a function.
+	at Error$/throwError()
+	at Function/http://adobe.com/AS3/2006/builtin::apply()
+	at Test/test()
+	at Test()
+Caught: Error: Error #1044: MethodInfo- unsupported flags=.
+	at Error$/throwError()
+	at Function/http://adobe.com/AS3/2006/builtin::apply()
+	at Test/test()
+	at Test()
+Caught: Error: Error #1044: MethodInfo-a unsupported flags=.
+	at Error$/throwError()
+	at Function/http://adobe.com/AS3/2006/builtin::apply()
+	at Test/test()
+	at Test()
+Caught: Error: Error #1044: MethodInfo-a unsupported flags=b.
+	at Error$/throwError()
+	at Function/http://adobe.com/AS3/2006/builtin::apply()
+	at Test/test()
+	at Test()
+Caught: Error: Error #1044: MethodInfo-a unsupported flags=b.
+	at Error$/throwError()
+	at Function/http://adobe.com/AS3/2006/builtin::apply()
+	at Test/test()
+	at Test()
+Caught: Error: Error #3723: Invalid Context3D bounds. Context3D instance bounds must be contained within Stage bounds in constrained mode. Requested Context3D bounds were (,,,), stage bounds are (,,,).
+	at Error$/throwError()
+	at Function/http://adobe.com/AS3/2006/builtin::apply()
+	at Test/test()
+	at Test()
+Caught: Error: Error #3723: Invalid Context3D bounds. Context3D instance bounds must be contained within Stage bounds in constrained mode. Requested Context3D bounds were (a,b,c,d), stage bounds are (e,f,,).
+	at Error$/throwError()
+	at Function/http://adobe.com/AS3/2006/builtin::apply()
+	at Test/test()
+	at Test()
+Caught: Error: Error #3683: Texture too big (max is axa).
+	at Error$/throwError()
+	at Function/http://adobe.com/AS3/2006/builtin::apply()
+	at Test/test()
+	at Test()
+Caught: Error: Error #3683: Texture too big (max is %1x%1).
+	at Error$/throwError()
+	at Function/http://adobe.com/AS3/2006/builtin::apply()
+	at Test/test()
+	at Test()
+Caught: Error: Error #3683: Texture too big (max is %2x%2).
+	at Error$/throwError()
+	at Function/http://adobe.com/AS3/2006/builtin::apply()
+	at Test/test()
+	at Test()
+Caught: Error: Error #3683: Texture too big (max is nullxnull).
+	at Error$/throwError()
+	at Function/http://adobe.com/AS3/2006/builtin::apply()
+	at Test/test()
+	at Test()
+Caught: Error: Error #3683: Texture too big (max is [object Object]x[object Object]).
+	at Error$/throwError()
+	at Function/http://adobe.com/AS3/2006/builtin::apply()
+	at Test/test()
+	at Test()
+Caught: Error: Error #3683: Texture too big (max is 6x6).
+	at Error$/throwError()
+	at Function/http://adobe.com/AS3/2006/builtin::apply()
+	at Test/test()
+	at Test()
+Caught: Error: toString
+	at TrojanHorse/toString()
+	at String$/_replace()
+	at Function/<anonymous>()
+	at Error$/throwError()
+	at Function/http://adobe.com/AS3/2006/builtin::apply()
+	at Test/test()
+	at Test()
+CustomError instantiated
+Error #3683: Texture too big (max is xxx).
+[class String]
+3683
+[class Number]
+Caught: Error
+	at Error$/throwError()
+	at Function/http://adobe.com/AS3/2006/builtin::apply()
+	at Test/test()
+	at Test()

@@ -1,0 +1,10 @@
+mc1.on(initialize,construct)
+mc1.on(initialize)
+mc2.on(initialize,construct)
+mc2.on(initialize)
+mc1.on(initialize,construct)
+mc1.on(construct)
+Sprite
+Sprite
+Sprite
+mc1.onClipEvent(enterFrame)

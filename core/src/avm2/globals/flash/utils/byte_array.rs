@@ -1,9 +1,11 @@
 use std::rc::Rc;
 
+use crate::avm2::Avm2StrRepresentable;
 use crate::avm2::Error;
 use crate::avm2::activation::Activation;
-use crate::avm2::bytearray::{Endian, ObjectEncoding};
+use crate::avm2::bytearray::{CompressionAlgorithm, Endian, ObjectEncoding};
 use crate::avm2::error::{make_error_2008, make_error_2058};
+use crate::avm2::function::FunctionArgs;
 use crate::avm2::object::Object;
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
@@ -20,7 +22,7 @@ pub use crate::avm2::object::byte_array_allocator;
 pub fn get_default_object_encoding<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let value = activation.avm2().default_bytearray_encoding as u8;
 
@@ -30,7 +32,7 @@ pub fn get_default_object_encoding<'gc>(
 pub fn set_default_object_encoding<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let value = args.get_u32(0);
 
@@ -49,7 +51,7 @@ pub fn set_default_object_encoding<'gc>(
 pub fn write_byte<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
@@ -67,7 +69,7 @@ pub fn write_byte<'gc>(
 pub fn write_bytes<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
@@ -119,7 +121,7 @@ pub fn write_bytes<'gc>(
 pub fn read_bytes<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
@@ -165,7 +167,7 @@ pub fn read_bytes<'gc>(
 pub fn write_utf<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
@@ -187,7 +189,7 @@ pub fn write_utf<'gc>(
 pub fn read_utf<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
@@ -209,14 +211,18 @@ pub fn strip_bom<'gc>(activation: &mut Activation<'_, 'gc>, mut bytes: &[u8]) ->
     // Little-endian UTF-16 BOM
     } else if let Some(without_bom) = bytes.strip_prefix(&[0xFF, 0xFE]) {
         let utf16_bytes: Vec<_> = without_bom
-            .chunks_exact(2)
+            .as_chunks::<2>()
+            .0
+            .iter()
             .map(|pair| u16::from_le_bytes([pair[0], pair[1]]))
             .collect();
         return AvmString::new(activation.gc(), WString::from_buf(utf16_bytes));
     // Big-endian UTF-16 BOM
     } else if let Some(without_bom) = bytes.strip_prefix(&[0xFE, 0xFF]) {
         let utf16_bytes: Vec<_> = without_bom
-            .chunks_exact(2)
+            .as_chunks::<2>()
+            .0
+            .iter()
             .map(|pair| u16::from_be_bytes([pair[0], pair[1]]))
             .collect();
         return AvmString::new(activation.gc(), WString::from_buf(utf16_bytes));
@@ -228,7 +234,7 @@ pub fn strip_bom<'gc>(activation: &mut Activation<'_, 'gc>, mut bytes: &[u8]) ->
 pub fn to_string<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
@@ -242,7 +248,7 @@ pub fn to_string<'gc>(
 pub fn clear<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
@@ -257,7 +263,7 @@ pub fn clear<'gc>(
 pub fn get_position<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
@@ -271,7 +277,7 @@ pub fn get_position<'gc>(
 pub fn set_position<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
@@ -286,7 +292,7 @@ pub fn set_position<'gc>(
 pub fn get_bytes_available<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
@@ -300,7 +306,7 @@ pub fn get_bytes_available<'gc>(
 pub fn get_length<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
@@ -314,7 +320,7 @@ pub fn get_length<'gc>(
 pub fn set_length<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
@@ -329,7 +335,7 @@ pub fn set_length<'gc>(
 pub fn get_endian<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
@@ -346,7 +352,7 @@ pub fn get_endian<'gc>(
 pub fn set_endian<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
@@ -367,7 +373,7 @@ pub fn set_endian<'gc>(
 pub fn read_short<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
@@ -384,7 +390,7 @@ pub fn read_short<'gc>(
 pub fn read_unsigned_short<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
@@ -401,7 +407,7 @@ pub fn read_unsigned_short<'gc>(
 pub fn read_double<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
@@ -418,7 +424,7 @@ pub fn read_double<'gc>(
 pub fn read_float<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
@@ -435,7 +441,7 @@ pub fn read_float<'gc>(
 pub fn read_int<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
@@ -452,7 +458,7 @@ pub fn read_int<'gc>(
 pub fn read_unsigned_int<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
@@ -469,7 +475,7 @@ pub fn read_unsigned_int<'gc>(
 pub fn read_boolean<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
@@ -486,7 +492,7 @@ pub fn read_boolean<'gc>(
 pub fn read_byte<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
@@ -503,7 +509,7 @@ pub fn read_byte<'gc>(
 pub fn read_utf_bytes<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
@@ -524,7 +530,7 @@ pub fn read_utf_bytes<'gc>(
 pub fn read_unsigned_byte<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
@@ -541,7 +547,7 @@ pub fn read_unsigned_byte<'gc>(
 pub fn write_float<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
@@ -558,7 +564,7 @@ pub fn write_float<'gc>(
 pub fn write_double<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
@@ -575,7 +581,7 @@ pub fn write_double<'gc>(
 pub fn write_boolean<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
@@ -592,7 +598,7 @@ pub fn write_boolean<'gc>(
 pub fn write_int<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
@@ -607,7 +613,7 @@ pub fn write_int<'gc>(
 pub fn write_unsigned_int<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
@@ -624,7 +630,7 @@ pub fn write_unsigned_int<'gc>(
 pub fn write_short<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
@@ -641,7 +647,7 @@ pub fn write_short<'gc>(
 pub fn write_multi_byte<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
@@ -680,7 +686,7 @@ pub fn write_multi_byte<'gc>(
 pub fn read_multi_byte<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
@@ -712,7 +718,7 @@ pub fn read_multi_byte<'gc>(
 pub fn write_utf_bytes<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
@@ -729,15 +735,15 @@ pub fn write_utf_bytes<'gc>(
 pub fn compress<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
     if let Some(mut bytearray) = this.as_bytearray_mut() {
         let algorithm = args.get_string_non_null(activation, 0, "algorithm")?;
-        let algorithm = match algorithm.parse() {
-            Ok(algorithm) => algorithm,
-            Err(_) => return Err(make_error_2058(activation)),
+        let algorithm = match CompressionAlgorithm::from_avm2_str(&algorithm) {
+            Some(algorithm) => algorithm,
+            None => return Err(make_error_2058(activation)),
         };
         let buffer = bytearray.compress(algorithm);
         bytearray.clear();
@@ -753,15 +759,15 @@ pub fn compress<'gc>(
 pub fn uncompress<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
     if let Some(mut bytearray) = this.as_bytearray_mut() {
         let algorithm = args.get_string_non_null(activation, 0, "algorithm")?;
-        let algorithm = match algorithm.parse() {
-            Ok(algorithm) => algorithm,
-            Err(_) => return Err(make_error_2058(activation)),
+        let algorithm = match CompressionAlgorithm::from_avm2_str(&algorithm) {
+            Some(algorithm) => algorithm,
+            None => return Err(make_error_2058(activation)),
         };
         let buffer = match bytearray.decompress(algorithm) {
             Some(buffer) => buffer,
@@ -780,7 +786,7 @@ pub fn uncompress<'gc>(
 pub fn read_object<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
@@ -822,7 +828,7 @@ pub fn read_object<'gc>(
 pub fn write_object<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
@@ -838,8 +844,7 @@ pub fn write_object<'gc>(
             obj,
             amf_version,
             &mut Default::default(),
-        )
-        .unwrap_or(flash_lso::types::Value::Undefined);
+        );
 
         let element = Element::new("", Rc::new(amf));
         let mut lso = flash_lso::types::Lso::new(vec![element], "", amf_version);
@@ -865,7 +870,7 @@ pub fn write_object<'gc>(
 pub fn get_object_encoding<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
@@ -879,7 +884,7 @@ pub fn get_object_encoding<'gc>(
 pub fn set_object_encoding<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 

@@ -1,5 +1,6 @@
 //! `flash.display.Loader` builtin/prototype
 
+use crate::avm2::function::FunctionArgs;
 use indexmap::IndexMap;
 
 use crate::avm2::ClassObject;
@@ -22,6 +23,7 @@ use crate::display_object::MovieClip;
 use crate::loader::LoadManager;
 use crate::loader::MovieLoaderVMData;
 use crate::tag_utils::SwfMovie;
+use ruffle_common::tag_utils::LoadBytesInfo;
 use std::sync::Arc;
 
 pub fn loader_allocator<'gc>(
@@ -62,7 +64,7 @@ pub fn loader_allocator<'gc>(
 pub fn load<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
@@ -109,18 +111,20 @@ pub fn load<'gc>(
 
     let request = request_from_url_request(activation, url_request)?;
 
-    let url = request.url().to_string();
+    let loader_url = activation.caller_movie_or_root().url().to_string();
+
     let future = activation.context.load_manager.load_movie_into_clip(
         activation.context.player_handle(),
         content.into(),
         request,
-        Some(url),
+        Some(loader_url),
         MovieLoaderVMData::Avm2 {
             loader_info,
             context,
             default_domain: activation
                 .caller_domain()
                 .expect("Missing caller domain in Loader.load"),
+            load_bytes_info: None,
         },
     );
     activation.context.navigator.spawn_future(future);
@@ -232,7 +236,7 @@ pub fn request_from_url_request<'gc>(
 pub fn load_bytes<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    args: &[Value<'gc>],
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
@@ -272,14 +276,22 @@ pub fn load_bytes<'gc>(
         .caller_domain()
         .expect("Missing caller domain in Loader.loadBytes");
 
+    let loader_url = activation.caller_movie_or_root().url().to_string();
+
+    let loader_sandbox_type = activation.caller_movie_or_root().sandbox_type();
+
     if let Err(e) = LoadManager::load_movie_into_clip_bytes(
         activation.context,
         content.into(),
         bytes,
+        loader_url,
         MovieLoaderVMData::Avm2 {
             loader_info,
             context,
             default_domain,
+            load_bytes_info: Some(LoadBytesInfo {
+                loader_sandbox_type,
+            }),
         },
     ) {
         return Err(Error::rust_error(
@@ -293,12 +305,9 @@ pub fn load_bytes<'gc>(
 pub fn unload<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    _args: &[Value<'gc>],
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
-
-    // TODO: Broadcast an "unload" event on the LoaderInfo
-    avm2_stub_method!(activation, "flash.display.Loader", "unload");
 
     let loader_info = this
         .get_slot(loader_slots::_CONTENT_LOADER_INFO)

@@ -1,0 +1,4 @@
+frame1, isPlaying: true
+frame2, isPlaying: true
+// gotoAndStop(2);
+isPlaying: true

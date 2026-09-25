@@ -1,5 +1,4 @@
 num_frames = 50
-known_failure = true
 
 [image_comparisons."output.5"]
 trigger = 5
@@ -9,7 +8,6 @@ trigger = 15
 
 [image_comparisons."output.25"]
 trigger = 25
-known_failure = true
 
 [image_comparisons."output.35"]
 trigger = 35

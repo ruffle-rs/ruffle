@@ -1,0 +1,105 @@
+start
+0
+
+constructor
+start
+0
+
+center
+center
+12
+center
+12
+.
+  Caught error:ArgumentError: Error #2008: Parameter alignment must be one of the accepted values.
+	at flash.text.engine::TabStop/set alignment()
+	at flash.text.engine::TabStop()
+	at Function/<anonymous>()
+	at Test/testConstructor()
+	at Test()
+  Caught error:ArgumentError: Error #2004: One of the parameters is invalid.
+	at flash.text.engine::TabStop/set position()
+	at flash.text.engine::TabStop()
+	at Function/<anonymous>()
+	at Test/testConstructor()
+	at Test()
+  Caught error:TypeError: Error #2007: Parameter decimalAlignmentToken must be non-null.
+	at flash.text.engine::TabStop/set decimalAlignmentToken()
+	at flash.text.engine::TabStop()
+	at Function/<anonymous>()
+	at Test/testConstructor()
+	at Test()
+  Constructed properly
+alignment
+  Caught error:TypeError: Error #2007: Parameter alignment must be non-null.
+	at flash.text.engine::TabStop/set alignment()
+	at Function/<anonymous>()
+	at Test/testSetter()
+	at Test()
+  Value:start
+  Caught error:ArgumentError: Error #2008: Parameter alignment must be one of the accepted values.
+	at flash.text.engine::TabStop/set alignment()
+	at Function/<anonymous>()
+	at Test/testSetter()
+	at Test()
+  Value:start
+  Caught error:ArgumentError: Error #2008: Parameter alignment must be one of the accepted values.
+	at flash.text.engine::TabStop/set alignment()
+	at Function/<anonymous>()
+	at Test/testSetter()
+	at Test()
+  Value:start
+  Value:start
+  Caught error:ArgumentError: Error #2008: Parameter alignment must be one of the accepted values.
+	at flash.text.engine::TabStop/set alignment()
+	at Function/<anonymous>()
+	at Test/testSetter()
+	at Test()
+  Value:start
+  Value:center
+  Value:end
+  Value:decimal
+  Value:center
+  Value:decimal
+  Value:end
+  Value:start
+position
+  Value:0
+  Value:0
+  Value:0.1
+  Value:0.5
+  Value:0.9
+  Value:1.1
+  Value:100
+  Value:100000
+  Caught error:ArgumentError: Error #2004: One of the parameters is invalid.
+	at flash.text.engine::TabStop/set position()
+	at Function/<anonymous>()
+	at Test/testSetter()
+	at Test()
+  Value:100000
+  Caught error:ArgumentError: Error #2004: One of the parameters is invalid.
+	at flash.text.engine::TabStop/set position()
+	at Function/<anonymous>()
+	at Test/testSetter()
+	at Test()
+  Value:100000
+  Value:NaN
+  Value:Infinity
+  Caught error:ArgumentError: Error #2004: One of the parameters is invalid.
+	at flash.text.engine::TabStop/set position()
+	at Function/<anonymous>()
+	at Test/testSetter()
+	at Test()
+  Value:Infinity
+decimalAlignmentToken
+  Caught error:TypeError: Error #2007: Parameter decimalAlignmentToken must be non-null.
+	at flash.text.engine::TabStop/set decimalAlignmentToken()
+	at Function/<anonymous>()
+	at Test/testSetter()
+	at Test()
+  Value:
+  Value:
+  Value:.
+  Value:,
+  Value:abc

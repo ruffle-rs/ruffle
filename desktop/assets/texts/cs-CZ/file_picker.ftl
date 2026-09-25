@@ -5,4 +5,6 @@ file-picker-filter-swf = SWF (*.swf)
 file-picker-filter-spl = FutureSplash Animator (*.spl)
 file-picker-filter-ruf = Balíček Ruffle (*.ruf)
 file-picker-filter-all = Všechny soubory
+file-picker-select-root-movie-title = Vybrat hlavní film
+file-picker-select-root-movie-message = Vybrat hlavní film z otevřeného adresáře.
 file-picker-select-root-movie-select = Vybrat

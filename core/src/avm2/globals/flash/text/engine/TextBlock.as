@@ -3,26 +3,9 @@ package flash.text.engine {
     import __ruffle__.stub_method;
 
     [API("662")]
+    [Ruffle(InstanceAllocator)]
     public final class TextBlock {
         public var userData;
-
-        private var _applyNonLinearFontScaling:Boolean;
-        private var _baselineFontDescription:FontDescription = null;
-        private var _baselineFontSize:Number = 12;
-        private var _baselineZero:String = "roman";
-        private var _bidiLevel:int;
-        private var _lineRotation:String;
-        private var _tabStops:Vector.<TabStop>;
-        private var _textJustifier:TextJustifier;
-
-        [Ruffle(NativeAccessible)]
-        private var _content:ContentElement;
-
-        [Ruffle(NativeAccessible)]
-        private var _textLineCreationResult:String = null;
-
-        [Ruffle(NativeAccessible)]
-        private var _firstLine:TextLine = null;
 
         public function TextBlock(
             content:ContentElement = null,
@@ -47,6 +30,7 @@ package flash.text.engine {
                 this.textJustifier = textJustifier;
             } else {
                 // This should create a new TextJustifier with locale "en", but we don't actually support creating TextJustifiers yet.
+                this.textJustifier = new SpaceJustifier();
             }
 
             this.lineRotation = lineRotation;
@@ -61,90 +45,64 @@ package flash.text.engine {
             this.applyNonLinearFontScaling = applyNonLinearFontScaling;
         }
 
-        public function get applyNonLinearFontScaling():Boolean {
-            return this._applyNonLinearFontScaling;
-        }
+        public native function get applyNonLinearFontScaling():Boolean;
+        public native function set applyNonLinearFontScaling(value:Boolean):void;
 
-        public function set applyNonLinearFontScaling(value:Boolean):void {
-            this._applyNonLinearFontScaling = value;
-        }
+        public native function get baselineFontDescription():FontDescription;
+        public native function set baselineFontDescription(value:FontDescription):void;
 
-        public function get baselineFontDescription():FontDescription {
-            return this._baselineFontDescription;
-        }
+        public native function get baselineFontSize():Number;
+        public native function set baselineFontSize(value:Number):void;
 
-        public function set baselineFontDescription(value:FontDescription):void {
-            this._baselineFontDescription = value;
-        }
+        public native function get baselineZero():String;
+        public native function set baselineZero(value:String):void;
 
-        public function get baselineFontSize():Number {
-            return this._baselineFontSize;
-        }
+        public native function get bidiLevel():int;
+        public native function set bidiLevel(value:int):void;
 
-        public function set baselineFontSize(value:Number):void {
-            this._baselineFontSize = value;
-        }
+        public native function get lineRotation():String;
+        public native function set lineRotation(value:String):void;
 
-        public function get baselineZero():String {
-            return this._baselineZero;
-        }
+        public native function get tabStops():Vector.<TabStop>;
+        public native function set tabStops(value:Vector.<TabStop>):void;
 
-        public function set baselineZero(value:String):void {
-            this._baselineZero = value;
-        }
-
-        public function get bidiLevel():int {
-            return this._bidiLevel;
-        }
-
-        public function set bidiLevel(value:int):void {
-            this._bidiLevel = value;
-        }
-
-        public function get lineRotation():String {
-            return this._lineRotation;
-        }
-
-        public function set lineRotation(value:String):void {
-            if (value == null) {
-                throw new TypeError("Error #2007: Parameter lineRotation must be non-null.", 2007);
-            }
-            // TODO: This should validate that `value` is a member of TextRotation
-            this._lineRotation = value;
-        }
-
-        // Note: FP returns a copy of the Vector passed to it, so modifying the returned Vector doesn't affect the actual internal representation
-        public function get tabStops():Vector.<TabStop> {
-            return this._tabStops;
-        }
-
-        // Note: FP makes a copy of the Vector passed to it, then sets its internal representation to that
-        public function set tabStops(value:Vector.<TabStop>):void {
-            this._tabStops = value;
-        }
-
-        public function get textJustifier():TextJustifier {
-            return this._textJustifier;
-        }
-
+        public native function get textJustifier():TextJustifier;
         public function set textJustifier(value:TextJustifier):void {
-            this._textJustifier = value;
+            this.setTextJustifier(value);
         }
 
-        public function get content():ContentElement {
-            return this._content;
-        }
+        private native function setTextJustifier(value:TextJustifier):void;
 
-        public function set content(value:ContentElement):void {
-            this._content = value;
-        }
+        public native function get content():ContentElement;
+        public native function set content(value:ContentElement):void;
 
-        public native function createTextLine(
+        public function createTextLine(
             previousLine:TextLine = null,
             width:Number = 1000000,
             lineOffset:Number = 0,
             fitSomething:Boolean = false
-        ):TextLine;
+        ):TextLine {
+            if (this.content === null) {
+                return null;
+            }
+
+            if (previousLine !== null) {
+                if (previousLine.validity !== TextLineValidity.VALID || previousLine.textBlock !== this) {
+                    Error.throwError(ArgumentError, 2004);
+                }
+            }
+
+            if (width < 0 || width > TextLine.MAX_LINE_WIDTH) {
+                Error.throwError(ArgumentError, 2004);
+            }
+
+            stub_method("flash.text.engine.TextBlock", "createTextLine");
+
+            return this.DoCreateTextLine(null, previousLine, width, lineOffset, fitSomething);
+        }
+
+        // Match the method name in FP, which can be seen in stack traces
+        private native function DoCreateTextLine(lineToUse:TextLine, previousLine:TextLine, width:Number, lineOffset:Number, fitSomething:Boolean):TextLine;
 
         public function recreateTextLine(
             textLine:TextLine,
@@ -154,41 +112,35 @@ package flash.text.engine {
             fitSomething:Boolean = false
         ):TextLine {
             if (textLine == null) {
-                throw new ArgumentError("Error #2004: One of the parameters is invalid.", 2004);
+                Error.throwError(ArgumentError, 2004);
             }
 
-            if (previousLine) {
-                return null;
+            if (previousLine !== null) {
+                if (previousLine.validity !== TextLineValidity.VALID || previousLine.textBlock !== this || previousLine === textLine) {
+                    Error.throwError(ArgumentError, 2004);
+                }
             }
+
+            if (width < 0 || width > TextLine.MAX_LINE_WIDTH) {
+                Error.throwError(ArgumentError, 2004);
+            }
+
+            // Clear AS-side properties of the text line
+            textLine.userData = null;
 
             stub_method("flash.text.engine.TextBlock", "recreateTextLine");
 
-            // FIXME: Properly recalculate new properties of new TextLine. Text layout
-            // modules often depend on this returning the same textLine, so we can't
-            // call `createTextLine` again.
-            return textLine;
+            return this.DoCreateTextLine(textLine, previousLine, width, lineOffset, fitSomething);
         }
 
-        public function get textLineCreationResult():String {
-            return this._textLineCreationResult;
-        }
+        public native function get textLineCreationResult():String;
 
-        public function get firstLine():TextLine {
-            return this._firstLine;
-        }
+        public native function get firstInvalidLine():TextLine;
 
-        public function get lastLine():TextLine {
-            stub_getter("flash.text.engine.TextBlock", "lastLine");
-            return this._firstLine;
-        }
+        public native function get firstLine():TextLine;
 
-        public function releaseLines(start:TextLine, end:TextLine):void {
-            if (start != end || end != this._firstLine) {
-                stub_method("flash.text.engine.TextBlock", "releaseLines", "with start != end or multiple lines");
-                return;
-            }
-            this._firstLine._validity = "invalid";
-            this._firstLine._textBlock = null;
-        }
+        public native function get lastLine():TextLine;
+
+        public native function releaseLines(start:TextLine, end:TextLine):void;
     }
 }

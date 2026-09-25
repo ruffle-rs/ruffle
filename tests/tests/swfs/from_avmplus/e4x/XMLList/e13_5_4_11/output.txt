@@ -10,3 +10,4 @@ XML.prototype.hasOwnProperty('copy') PASSED!
 XML.prototype.hasOwnProperty('hasSimpleContent') PASSED!
 MYXML = new XMLList(xmlDoc), MYXML.hasOwnProperty('firstname') PASSED!
 MYXML = new XMLList(xmlDoc), MYXML.hasOwnProperty('lastname') PASSED!
+TypeError: Error #2023: Class Test$ must inherit from Sprite to link to the root.

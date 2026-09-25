@@ -1,5 +1,4 @@
 import type { Services } from "@wdio/types";
-import { BrowserStackCapabilities } from "@wdio/types/build/Capabilities";
 
 const capabilities: WebdriverIO.Capabilities[] = [];
 const services: Services.ServiceEntry[] = [];
@@ -34,7 +33,7 @@ if (chrome) {
 if (edge) {
     const args = ["--disable-gpu", "--enable-unsafe-swiftshader"];
     if (headless) {
-        args.push("--headless");
+        args.push("--headless", "--no-sandbox");
     }
     capabilities.push({
         "wdio:maxInstances": maxInstances,
@@ -70,14 +69,14 @@ if (browserstack) {
     const buildIdentifier =
         process.env["BROWSERSTACK_BUILD_ID"] || crypto.randomUUID();
     const buildName = process.env["BROWSERSTACK_BUILD_NAME"] || buildIdentifier;
-    const bsOptions: BrowserStackCapabilities = {
+    const bsOptions = {
         buildName,
         buildIdentifier,
         projectName: "Ruffle Selfhosted",
         networkLogs: true,
         consoleLogs: "info",
         idleTimeout: 300, // Max time the browser's main thread can be blocked
-    };
+    } as const;
     services.push([
         "browserstack",
         {

@@ -1,0 +1,33 @@
+ready
+chain via b
+invisible
+zero scale
+textfield via tf
+tfmask
+throw via own
+delete via hit
+delete via own
+overwrite via hit
+overwrite via own
+xf via old
+xfown at old
+xf armed
+moving hit_xf
+xf via new
+moving btn_xfown
+xfown at new
+rollover via hitB
+drag start
+dt: /btnB
+dt: /hitB
+dt: (none)
+drag end
+drag2 start
+drag2 stopped
+drag2 alive: false
+removed via hit
+removed via own
+rm via hit
+armed
+removing owner
+btn_rm after: undefined

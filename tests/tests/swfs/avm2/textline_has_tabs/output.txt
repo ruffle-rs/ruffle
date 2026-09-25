@@ -1,0 +1,47 @@
+plain text: hasTabs=false
+text with tab: hasTabs=true
+tab only: hasTabs=true
+empty text: no line
+tab in second line / first line ends before tab
+  line 0: begin=0, length=4, hasTabs=false
+  line 1: begin=4, length=4, hasTabs=true
+tab in first line only
+  line 0: begin=0, length=5, hasTabs=true
+  line 1: begin=5, length=3, hasTabs=false
+individual code points
+U+0009: hasTabs=true
+U+000B: hasTabs=false
+U+001C: hasTabs=false
+U+001D: hasTabs=false
+U+001E: hasTabs=false
+U+001F: hasTabs=false
+U+0088: hasTabs=false
+U+0089: hasTabs=false
+U+008A: hasTabs=false
+U+2409: hasTabs=false
+U+240B: hasTabs=false
+U+21B9: hasTabs=false
+U+21E5: hasTabs=false
+U+21E4: hasTabs=false
+U+2B7E: hasTabs=false
+U+2B7F: hasTabs=false
+U+0020: hasTabs=false
+U+00A0: hasTabs=false
+U+1680: hasTabs=false
+U+2000: hasTabs=false
+U+2001: hasTabs=false
+U+2002: hasTabs=false
+U+2003: hasTabs=false
+U+2004: hasTabs=false
+U+2005: hasTabs=false
+U+2006: hasTabs=false
+U+2007: hasTabs=false
+U+2008: hasTabs=false
+U+2009: hasTabs=false
+U+200A: hasTabs=false
+U+202F: hasTabs=false
+U+205F: hasTabs=false
+U+3000: hasTabs=false
+U+200B: hasTabs=false
+U+180E: hasTabs=false
+U+FEFF: hasTabs=false

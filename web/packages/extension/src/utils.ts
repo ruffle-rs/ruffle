@@ -10,39 +10,20 @@ const DEFAULT_OPTIONS: Required<Options> = {
     swfTakeover: true,
 };
 
-// TODO: Once https://crbug.com/798169 is addressed, just use browser.
-// We have to wait until whatever version of Chromium supports that
-// is old enough to be the oldest version we want to support.
-
-export let i18n: typeof browser.i18n | typeof chrome.i18n;
-
-type ScriptingType = (typeof browser.scripting | typeof chrome.scripting) & {
-    ExecutionWorld: {
-        MAIN: string | undefined;
-        ISOLATED: string;
-    };
-};
-
-export let scripting: ScriptingType;
-
-export let storage: typeof browser.storage | typeof chrome.storage;
-
-export let tabs: typeof browser.tabs | typeof chrome.tabs;
-
-export let runtime: typeof browser.runtime | typeof chrome.runtime;
-
-export let permissions: typeof browser.permissions | typeof chrome.permissions;
-
-export let declarativeNetRequest:
-    | typeof browser.declarativeNetRequest
-    | typeof chrome.declarativeNetRequest;
+// TODO: Once Chromium 148 is old enough to be the
+// oldest version we want to support, remove this.
+export function enableBrowserOnOutdatedChromium() {
+    if (!globalThis.browser) {
+        globalThis.browser = chrome;
+    }
+}
 
 function promisify<T>(
     func: (callback: (result: T) => void) => void,
 ): Promise<T> {
     return new Promise((resolve, reject) => {
         func((result) => {
-            const error = chrome.runtime.lastError;
+            const error = browser.runtime.lastError;
             if (error) {
                 reject(error);
             } else {
@@ -52,34 +33,19 @@ function promisify<T>(
     });
 }
 
-if (typeof browser !== "undefined") {
-    i18n = browser.i18n;
-    scripting = browser.scripting as ScriptingType;
-    storage = browser.storage;
-    tabs = browser.tabs;
-    runtime = browser.runtime;
-    permissions = browser.permissions;
-    declarativeNetRequest = browser.declarativeNetRequest;
-} else if (typeof chrome !== "undefined") {
-    i18n = chrome.i18n;
-    scripting = chrome.scripting as ScriptingType;
-    storage = chrome.storage;
-    tabs = chrome.tabs;
-    runtime = chrome.runtime;
-    permissions = chrome.permissions;
-    declarativeNetRequest = chrome.declarativeNetRequest;
-} else {
-    throw new Error("Extension API not found.");
-}
 export const openOptionsPage: () => Promise<void> = () =>
-    runtime.openOptionsPage();
+    browser.runtime.openOptionsPage();
 export const openPlayerPage: () => Promise<void> = () =>
-    promisify((cb: () => void) => tabs.create({ url: "/player.html" }, cb));
+    promisify((cb: () => void) =>
+        browser.tabs.create({ url: "/player.html" }, cb),
+    );
 export const openOnboardPage: () => Promise<void> = () =>
-    promisify((cb: () => void) => tabs.create({ url: "/onboard.html" }, cb));
+    promisify((cb: () => void) =>
+        browser.tabs.create({ url: "/onboard.html" }, cb),
+    );
 
 export async function getOptions(): Promise<Options> {
-    const options = await storage.sync.get();
+    const options = await browser.storage.sync.get();
 
     // Copy over default options if they don't exist yet.
     return { ...DEFAULT_OPTIONS, ...options };
@@ -110,7 +76,7 @@ export async function getExplicitOptions(): Promise<Options> {
 }
 
 export const hasAllUrlsPermission = async () => {
-    const allPermissions = await permissions.getAll();
+    const allPermissions = await browser.permissions.getAll();
     return allPermissions.origins?.includes("<all_urls>") ?? false;
 };
 
@@ -119,7 +85,7 @@ export async function hasHostPermissionForSpecifiedTab(
 ) {
     try {
         return origin
-            ? await permissions.contains({
+            ? await browser.permissions.contains({
                   origins: [origin],
               })
             : await hasAllUrlsPermission();
@@ -130,7 +96,7 @@ export async function hasHostPermissionForSpecifiedTab(
 }
 
 export async function hasHostPermissionForActiveTab() {
-    const [activeTab] = await tabs.query({
+    const [activeTab] = await browser.tabs.query({
         active: true,
         currentWindow: true,
     });
@@ -139,7 +105,7 @@ export async function hasHostPermissionForActiveTab() {
 }
 
 export function setPageLanguage() {
-    document.documentElement.lang = i18n
+    document.documentElement.lang = browser.i18n
         .getMessage("@@ui_locale")
         .replace("_", "-");
 }

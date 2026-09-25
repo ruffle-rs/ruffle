@@ -1,0 +1,65 @@
+textRotation: auto dominantBaseline: roman alignmentBaseline: useDominantBaseline kerning: on breakOpportunity: auto digitCase: default digitWidth: default ligatureLevel: common typographicCase: default
+
+textRotation: auto dominantBaseline: roman alignmentBaseline: useDominantBaseline kerning: on breakOpportunity: auto digitCase: default digitWidth: default ligatureLevel: common typographicCase: invalid
+ArgumentError: Error #2008: Parameter typographicCase must be one of the accepted values.
+	at flash.text.engine::ElementFormat/set typographicCase()
+	at flash.text.engine::ElementFormat()
+	at Test/test()
+	at Test()
+
+textRotation: auto dominantBaseline: roman alignmentBaseline: useDominantBaseline kerning: on breakOpportunity: auto digitCase: default digitWidth: default ligatureLevel: invalid typographicCase: invalid
+ArgumentError: Error #2008: Parameter ligatureLevel must be one of the accepted values.
+	at flash.text.engine::ElementFormat/set ligatureLevel()
+	at flash.text.engine::ElementFormat()
+	at Test/test()
+	at Test()
+
+textRotation: auto dominantBaseline: roman alignmentBaseline: useDominantBaseline kerning: on breakOpportunity: auto digitCase: default digitWidth: invalid ligatureLevel: invalid typographicCase: invalid
+ArgumentError: Error #2008: Parameter digitWidth must be one of the accepted values.
+	at flash.text.engine::ElementFormat/set digitWidth()
+	at flash.text.engine::ElementFormat()
+	at Test/test()
+	at Test()
+
+textRotation: auto dominantBaseline: roman alignmentBaseline: useDominantBaseline kerning: on breakOpportunity: auto digitCase: invalid digitWidth: invalid ligatureLevel: invalid typographicCase: invalid
+ArgumentError: Error #2008: Parameter digitCase must be one of the accepted values.
+	at flash.text.engine::ElementFormat/set digitCase()
+	at flash.text.engine::ElementFormat()
+	at Test/test()
+	at Test()
+
+textRotation: auto dominantBaseline: roman alignmentBaseline: useDominantBaseline kerning: on breakOpportunity: invalid digitCase: invalid digitWidth: invalid ligatureLevel: invalid typographicCase: invalid
+ArgumentError: Error #2008: Parameter breakOpportunity must be one of the accepted values.
+	at flash.text.engine::ElementFormat/set breakOpportunity()
+	at flash.text.engine::ElementFormat()
+	at Test/test()
+	at Test()
+
+textRotation: auto dominantBaseline: roman alignmentBaseline: useDominantBaseline kerning: invalid breakOpportunity: invalid digitCase: invalid digitWidth: invalid ligatureLevel: invalid typographicCase: invalid
+ArgumentError: Error #2008: Parameter kerning must be one of the accepted values.
+	at flash.text.engine::ElementFormat/set kerning()
+	at flash.text.engine::ElementFormat()
+	at Test/test()
+	at Test()
+
+textRotation: auto dominantBaseline: roman alignmentBaseline: invalid kerning: invalid breakOpportunity: invalid digitCase: invalid digitWidth: invalid ligatureLevel: invalid typographicCase: invalid
+ArgumentError: Error #2008: Parameter alignmentBaseline must be one of the accepted values.
+	at flash.text.engine::ElementFormat/set alignmentBaseline()
+	at flash.text.engine::ElementFormat()
+	at Test/test()
+	at Test()
+
+textRotation: auto dominantBaseline: invalid alignmentBaseline: invalid kerning: invalid breakOpportunity: invalid digitCase: invalid digitWidth: invalid ligatureLevel: invalid typographicCase: invalid
+ArgumentError: Error #2008: Parameter dominantBaseline must be one of the accepted values.
+	at flash.text.engine::ElementFormat/set dominantBaseline()
+	at flash.text.engine::ElementFormat()
+	at Test/test()
+	at Test()
+
+textRotation: invalid dominantBaseline: invalid alignmentBaseline: invalid kerning: invalid breakOpportunity: invalid digitCase: invalid digitWidth: invalid ligatureLevel: invalid typographicCase: invalid
+ArgumentError: Error #2008: Parameter textRotation must be one of the accepted values.
+	at flash.text.engine::ElementFormat/set textRotation()
+	at flash.text.engine::ElementFormat()
+	at Test/test()
+	at Test()
+

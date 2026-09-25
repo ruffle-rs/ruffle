@@ -58,10 +58,12 @@ package flash.events {
             this._contextMenuOwner = value;
         }
 
+        [API("662")]
         public function get isMouseTargetInaccessible():Boolean {
             return this._isMouseTargetInaccessible;
         }
 
+        [API("662")]
         public function set isMouseTargetInaccessible(value:Boolean):void {
             this._isMouseTargetInaccessible = value;
         }

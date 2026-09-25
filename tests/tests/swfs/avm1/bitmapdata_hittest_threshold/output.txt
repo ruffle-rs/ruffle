@@ -1,0 +1,6 @@
+threshold=0, transparent pixel (alpha=0):
+false
+threshold=0, opaque pixel (alpha=0xFF):
+true
+threshold=0, out-of-bounds point:
+false

@@ -16,14 +16,11 @@ package flash.utils {
         [Ruffle(NativeAccessible)]
         private var _onUpdateClosure:Function;
 
-        private function checkDelay(delay:Number):void {
-            if (!isFinite(delay) || delay < 0) {
-                throw new RangeError("Timer delay out of range", 2066);
-            }
-        }
-
         public function Timer(delay:Number, repeatCount:int=0) {
-            this.checkDelay(delay);
+            if (!isFinite(delay) || delay < 0) {
+                Error.throwError(RangeError, 2066);
+            }
+
             this._currentCount = 0;
             this._delay = delay;
             this._repeatCount = repeatCount;
@@ -54,7 +51,10 @@ package flash.utils {
         }
 
         public function set delay(value:Number):void {
-            this.checkDelay(delay);
+            if (!isFinite(value) || value < 0) {
+                Error.throwError(RangeError, 2066);
+            }
+
             this._delay = value;
             if (this.running) {
                 this.updateDelay();
