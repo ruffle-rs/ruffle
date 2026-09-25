@@ -569,8 +569,8 @@ impl<'a, 'gc> LayoutBuilder<'a, 'gc> {
                 let fonts =
                     self.context
                         .default_font(default_font, span.style.bold, span.style.italic);
-                if let Some(font_sort) = FontSet::from_fonts(self.context.gc(), &fonts) {
-                    return font_sort;
+                if let Some(&font) = fonts.first() {
+                    return FontSet::from_default_font(self.context.gc(), font);
                 } else {
                     let font_desc = describe_font(span);
                     tracing::error!(

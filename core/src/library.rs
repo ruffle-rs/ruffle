@@ -4,7 +4,9 @@ use crate::backend::audio::SoundHandle;
 use crate::character::Character;
 
 use crate::display_object::{Bitmap, Graphic, MorphShape, Text};
-use crate::font::{Font, FontDescriptor, FontLike, FontQuery, FontType};
+use crate::font::{
+    DefaultFont, Font, FontDescriptor, FontFamilyFilter, FontLike, FontQuery, FontType,
+};
 use crate::prelude::*;
 use crate::string::AvmString;
 use crate::tag_utils::SwfMovie;
@@ -16,7 +18,6 @@ use ruffle_render::utils::remove_invalid_jpeg_data;
 use ruffle_wstr::{WStr, WString};
 
 use crate::backend::ui::{FontDefinition, UiBackend};
-use crate::font::DefaultFont;
 use fnv::{FnvHashMap, FnvHashSet};
 use std::collections::HashMap;
 use std::sync::{Arc, Weak};
@@ -500,36 +501,21 @@ impl<'gc> Library<'gc> {
         renderer: &mut dyn RenderBackend,
         gc_context: &Mutation<'gc>,
     ) -> Vec<Font<'gc>> {
-        // Can't use entry api here as we want to use self for `load_device_font`.
-        // Cache the value as this will be looked up a lot, and font lookup by name can be expensive if lots of fonts exist.
+        // Can't use entry api here as we want to use self for `sort_device_fonts`.
+        // Cache the value as this will be looked up a lot, and font lookup can be expensive.
         if let Some(cache) = self.default_font_cache.get(&(name, is_bold, is_italic)) {
             return cache.clone();
         }
 
-        let mut result = vec![];
-        // First try to find any exactly matching fonts.
-        for name in self.default_font_names.entry(name).or_default().clone() {
-            let query = FontQuery::new(FontType::Device, name, is_bold, is_italic);
-            if let Some(font) = self.get_or_load_exact_device_font(&query, ui, renderer, gc_context)
-            {
-                result.push(font);
-                break; // TODO: Return multiple fonts when it's needed.
-            }
-        }
+        let filter = FontFamilyFilter::Default(name);
 
-        // Nothing found, try a compatible font.
-        if result.is_empty() {
-            for name in self.default_font_names.entry(name).or_default().clone() {
-                let query = FontQuery::new(FontType::Device, name, is_bold, is_italic);
-                if let Some(font) = self.device_fonts.find(&query) {
-                    result.push(font);
-                    break; // TODO: Return multiple fonts when it's needed.
-                }
-            }
-        }
+        let mut result =
+            self.sort_device_fonts(&filter, is_bold, is_italic, ui, renderer, gc_context);
+        result.truncate(1);
 
         self.default_font_cache
             .insert((name, is_bold, is_italic), result.clone());
+
         result
     }
 
@@ -593,13 +579,15 @@ impl<'gc> Library<'gc> {
 
     fn sort_device_fonts(
         &mut self,
-        query: &FontQuery,
+        filter: &FontFamilyFilter,
+        is_bold: bool,
+        is_italic: bool,
         ui: &dyn UiBackend,
         renderer: &mut dyn RenderBackend,
         gc_context: &Mutation<'gc>,
     ) -> Vec<Font<'gc>> {
         // First, ask the backend to sort the fonts for us.
-        let fonts = ui.sort_device_fonts(query, &mut |definition| {
+        let fonts = ui.sort_device_fonts(filter, is_bold, is_italic, &mut |definition| {
             self.register_device_font(gc_context, renderer, definition)
         });
 
@@ -612,17 +600,50 @@ impl<'gc> Library<'gc> {
             return fonts;
         }
 
-        // When the backend failed (or doesn't support sorting fonts), fall back
-        // to loading one font only without sorting.
-        let font = self.get_or_load_device_font(
-            &query.name,
-            query.is_bold,
-            query.is_italic,
-            ui,
-            renderer,
-            gc_context,
-        );
-        font.map(|font| vec![font]).unwrap_or_default()
+        // When the backend failed (or doesn't support sorting fonts),
+        // fall back to loading fonts without sorting.
+        match filter {
+            FontFamilyFilter::Name(name) => self
+                .get_or_load_device_font(name, is_bold, is_italic, ui, renderer, gc_context)
+                .map(|font| vec![font])
+                .unwrap_or_default(),
+
+            FontFamilyFilter::Default(default_font) => {
+                let names = self
+                    .default_font_names
+                    .entry(*default_font)
+                    .or_default()
+                    .clone();
+
+                let mut result = Vec::new();
+
+                // First pass: prefer fonts that exactly match the requested style.
+                for name in &names {
+                    let query = FontQuery::new(FontType::Device, name.clone(), is_bold, is_italic);
+
+                    if let Some(font) =
+                        self.get_or_load_exact_device_font(&query, ui, renderer, gc_context)
+                    {
+                        result.push(font);
+                    }
+                }
+
+                // Second pass: add compatible fonts that weren't already found.
+                for name in names {
+                    let query = FontQuery::new(FontType::Device, name, is_bold, is_italic);
+
+                    if let Some(font) = self.device_fonts.find(&query)
+                        && !result
+                            .iter()
+                            .any(|existing| existing.descriptor() == font.descriptor())
+                    {
+                        result.push(font);
+                    }
+                }
+
+                result
+            }
+        }
     }
 
     pub fn get_or_sort_device_fonts(
@@ -643,7 +664,8 @@ impl<'gc> Library<'gc> {
             return fonts.clone();
         }
 
-        let fonts = self.sort_device_fonts(&query, ui, renderer, gc_context);
+        let filter = FontFamilyFilter::Name(name.to_owned());
+        let fonts = self.sort_device_fonts(&filter, is_bold, is_italic, ui, renderer, gc_context);
         self.font_sort_cache.insert(query, fonts.clone());
         fonts
     }

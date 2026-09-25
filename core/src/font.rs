@@ -36,6 +36,12 @@ pub struct FontQuery {
     pub is_italic: bool,
 }
 
+#[derive(Clone, Debug, Eq, PartialEq, Hash)]
+pub enum FontFamilyFilter {
+    Name(String),
+    Default(DefaultFont),
+}
+
 impl FontQuery {
     pub fn new(font_type: FontType, name: String, is_bold: bool, is_italic: bool) -> Self {
         Self {
@@ -508,6 +514,13 @@ impl<'gc> Font<'gc> {
     /// Used by `EditText` display objects.
     pub fn get_glyph_for_char(&self, c: char) -> Option<GlyphRef<'_>> {
         self.0.glyphs.get_by_code_point(c)
+    }
+
+    pub fn get_missing_glyph(&self, c: char) -> Option<GlyphRef<'_>> {
+        match &self.0.glyphs {
+            GlyphSource::FontFace { face, .. } => face.get_missing_glyph(c).map(GlyphRef::Direct),
+            _ => None,
+        }
     }
 
     /// Determine if this font contains all the glyphs within a given string.

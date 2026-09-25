@@ -105,6 +105,7 @@ impl TestRunner {
                 test.fonts()?,
                 test.font_sorts(),
                 test.options.player_options.device_font_renderer(),
+                test.options.default_fonts.to_map(),
             ))
             .with_viewport_dimensions(
                 viewport_dimensions.width,
