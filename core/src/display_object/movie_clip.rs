@@ -37,7 +37,7 @@ use crate::loader::{self, ContentType};
 use crate::prelude::*;
 use crate::streams::NetStream;
 use crate::string::{AvmString, SwfStrExt as _, WStr, WString};
-use crate::tag_utils::{self, ControlFlow, Error, SwfMovie, SwfSlice, SwfStream};
+use crate::tag_utils::{self, ControlFlow, Error, ShareableSlice, SwfMovie, SwfSlice, SwfStream};
 use crate::vminterface::Instantiator;
 use bitflags::bitflags;
 use core::fmt;
@@ -4609,7 +4609,15 @@ impl<'gc, 'a> MovieClip<'gc> {
                 let mut slice = self.0.shared.get().swf.clone();
                 slice.end = slice.start + self.0.tag_stream_len();
                 slice.start += self.0.tag_stream_pos.get() as usize;
-                Some(context.start_stream(self, self.0.current_frame(), slice, stream_info))
+
+                let shareable_slice = ShareableSlice::from_swf_slice(slice);
+
+                Some(context.start_stream(
+                    self,
+                    self.0.current_frame(),
+                    shareable_slice,
+                    stream_info,
+                ))
             } else {
                 None
             }

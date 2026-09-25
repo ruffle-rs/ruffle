@@ -115,7 +115,7 @@ pub trait AudioBackend: Any {
     /// among the frames of a Flash MovieClip.
     fn start_stream(
         &mut self,
-        clip_data: crate::tag_utils::SwfSlice,
+        clip_data: crate::tag_utils::ShareableSlice,
         handle: &swf::SoundStreamHead,
     ) -> Result<SoundInstanceHandle, DecodeError>;
 
@@ -277,7 +277,7 @@ impl AudioBackend for NullAudioBackend {
 
     fn start_stream(
         &mut self,
-        _clip_data: crate::tag_utils::SwfSlice,
+        _clip_data: crate::tag_utils::ShareableSlice,
         _handle: &swf::SoundStreamHead,
     ) -> Result<SoundInstanceHandle, DecodeError> {
         Ok(SoundInstanceHandle::null())
@@ -592,7 +592,7 @@ impl<'gc> AudioManager<'gc> {
         audio: &mut dyn AudioBackend,
         movie_clip: MovieClip<'gc>,
         clip_frame: u16,
-        data: crate::tag_utils::SwfSlice,
+        data: crate::tag_utils::ShareableSlice,
         stream_info: &swf::SoundStreamHead,
     ) -> Option<SoundInstanceHandle> {
         if self.sounds.len() < Self::MAX_SOUNDS {

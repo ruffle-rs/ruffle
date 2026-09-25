@@ -19,7 +19,7 @@ pub use nellymoser::NellymoserDecoder;
 pub use pcm::PcmDecoder;
 
 use crate::backend::audio::{SoundStreamInfo, SoundStreamWrapping};
-use crate::tag_utils::{ControlFlow, SwfSlice};
+use crate::tag_utils::{ControlFlow, ShareableSlice};
 use ruffle_common::buffer::{Slice, Substream, SubstreamChunksIter};
 use std::io::{Cursor, Read};
 use swf::{AudioCompression, SoundFormat, TagCode};
@@ -129,7 +129,7 @@ struct StandardStreamDecoder {
 impl StandardStreamDecoder {
     /// Constructs a new `StandardStreamDecoder.
     /// `swf_data` should be the tag data of the MovieClip that contains the stream.
-    fn new(stream_info: &swf::SoundStreamHead, swf_data: SwfSlice) -> Result<Self, Error> {
+    fn new(stream_info: &swf::SoundStreamHead, swf_data: ShareableSlice) -> Result<Self, Error> {
         // Create a tag reader to get the audio data from SoundStreamBlock tags.
         let tag_reader = StreamTagReader::new(stream_info, swf_data);
         // Wrap the tag reader in the decoder.
@@ -165,14 +165,14 @@ impl Iterator for StandardStreamDecoder {
 pub struct AdpcmStreamDecoder {
     format: SoundFormat,
     tag_reader: StreamTagReader,
-    decoder: AdpcmDecoder<Cursor<SwfSlice>>,
+    decoder: AdpcmDecoder<Cursor<ShareableSlice>>,
 }
 
 impl AdpcmStreamDecoder {
-    fn new(stream_info: &swf::SoundStreamHead, swf_data: SwfSlice) -> Result<Self, Error> {
-        let movie = swf_data.movie.clone();
+    fn new(stream_info: &swf::SoundStreamHead, swf_data: ShareableSlice) -> Result<Self, Error> {
+        let empty_copy = swf_data.copy_empty();
         let mut tag_reader = StreamTagReader::new(stream_info, swf_data);
-        let audio_data = tag_reader.next().unwrap_or_else(|| SwfSlice::empty(movie));
+        let audio_data = tag_reader.next().unwrap_or(empty_copy);
         let decoder = AdpcmDecoder::new(
             Cursor::new(audio_data),
             stream_info.stream_format.is_stereo,
@@ -226,7 +226,7 @@ impl Iterator for AdpcmStreamDecoder {
 /// Generally this will return a `StandardStreamDecoder`, except for ADPCM streams.
 pub fn make_stream_decoder(
     stream_info: &swf::SoundStreamHead,
-    swf_data: SwfSlice,
+    swf_data: ShareableSlice,
 ) -> Result<Box<dyn Decoder + Send>, Error> {
     let decoder: Box<dyn Decoder + Send> =
         if stream_info.stream_format.compression == AudioCompression::Adpcm {
@@ -259,13 +259,13 @@ pub trait SeekableDecoder: Decoder {
 /// will return consecutive slices of the underlying audio data.
 struct StreamTagReader {
     /// The tag data of the `MovieClip` that contains the streaming audio track.
-    swf_data: SwfSlice,
+    swf_data: ShareableSlice,
 
     /// The audio playback position inside `swf_data`.
     pos: usize,
 
     /// The compressed audio data in the most recent `SoundStreamBlock` we've seen, returned by `Iterator::next`.
-    current_audio_data: SwfSlice,
+    current_audio_data: ShareableSlice,
 
     /// The compression used by the audio data.
     compression: AudioCompression,
@@ -284,8 +284,8 @@ struct StreamTagReader {
 impl StreamTagReader {
     /// Builds a new `StreamTagReader` from the given SWF data.
     /// `swf_data` should be the tag data of a MovieClip.
-    fn new(stream_info: &swf::SoundStreamHead, swf_data: SwfSlice) -> Self {
-        let current_audio_data = SwfSlice::empty(swf_data.movie.clone());
+    fn new(stream_info: &swf::SoundStreamHead, swf_data: ShareableSlice) -> Self {
+        let current_audio_data = swf_data.copy_empty();
         Self {
             swf_data,
             pos: 0,
@@ -298,7 +298,7 @@ impl StreamTagReader {
 }
 
 impl Iterator for StreamTagReader {
-    type Item = SwfSlice;
+    type Item = ShareableSlice;
 
     fn next(&mut self) -> Option<Self::Item> {
         let compression = self.compression;
