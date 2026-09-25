@@ -75,3 +75,23 @@ for (var i = 0; i < paths.length; i++)
     var path = paths[i];
     testDraw('"' + path + '"', path);
 }
+
+trace("Non-string targets");
+
+var o = {};
+o.toString = function () {
+    trace("toString called");
+    return "map";
+};
+o.valueOf = function () {
+    trace("valueOf called");
+    return "map";
+};
+testDraw("object coerced to string", o);
+
+_root.createEmptyMovieClip("1234", 2);
+testDraw("number", 1234);
+_root.createEmptyMovieClip("true", 3);
+testDraw("true", true);
+_root.createEmptyMovieClip("Infinity", 4);
+testDraw("Infinity", 1.0/0.0);

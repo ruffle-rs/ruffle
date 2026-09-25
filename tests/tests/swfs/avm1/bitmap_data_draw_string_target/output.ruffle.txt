@@ -33,3 +33,8 @@ String targets
 "_level0:missing": result=-2, pixel=0
 ":missing": result=-2, pixel=0
 "/:missing": result=-2, pixel=0
+Non-string targets
+object coerced to string: result=-2, pixel=0
+number: result=-2, pixel=0
+true: result=-2, pixel=0
+Infinity: result=-2, pixel=0
