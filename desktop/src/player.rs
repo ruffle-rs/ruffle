@@ -131,7 +131,7 @@ impl ActivePlayer {
         let player_id = PlayerId::new();
         let mut builder = PlayerBuilder::new();
 
-        match CpalAudioBackend::new(preferences.output_device_name().as_deref()) {
+        match CpalAudioBackend::new(preferences.output_device_id().as_deref()) {
             Ok(audio) => {
                 builder = builder.with_audio(audio);
             }
