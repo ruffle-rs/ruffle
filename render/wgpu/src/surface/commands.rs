@@ -442,7 +442,7 @@ impl CommandHandler for WgpuCommandHandler<'_, '_> {
                 0.0,
                 ColorTransform::multiply_from(color),
                 DrawVertices::RectLine,
-                |draw_offsets| DrawCommand::DrawLineRect { draw_offsets },
+                |draw_offsets| DrawCommand::DrawLine { draw_offsets },
             );
         }
     }

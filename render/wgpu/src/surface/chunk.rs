@@ -55,9 +55,6 @@ pub enum DrawCommand {
     DrawLine {
         draw_offsets: DrawOffsets,
     },
-    DrawLineRect {
-        draw_offsets: DrawOffsets,
-    },
     SetMask(MaskState),
 }
 
@@ -68,7 +65,6 @@ impl DrawCommand {
             DrawCommand::RenderTexture { .. } => "render texture",
             DrawCommand::DrawColor { .. } => "draw color",
             DrawCommand::DrawLine { .. } => "draw line",
-            DrawCommand::DrawLineRect { .. } => "draw line rect",
             DrawCommand::SetMask(_) => "set mask state",
             DrawCommand::RenderAlphaMask { .. } => "render alpha mask",
         }
@@ -132,10 +128,7 @@ impl<'encoder> CommandRenderer<'encoder> {
                 self.draw_color(render_pass, draw_offsets.clone())
             }
             DrawCommand::DrawLine { draw_offsets } => {
-                self.draw_lines::<false>(render_pass, draw_offsets.clone())
-            }
-            DrawCommand::DrawLineRect { draw_offsets } => {
-                self.draw_lines::<true>(render_pass, draw_offsets.clone())
+                self.draw_lines(render_pass, draw_offsets.clone())
             }
             DrawCommand::SetMask(mask_state) => self.set_mask_state(*mask_state),
             DrawCommand::RenderAlphaMask {
@@ -250,7 +243,7 @@ impl<'encoder> CommandRenderer<'encoder> {
                     .expect("Vertices must always be present"),
             ),
             self.chunk_buffers.index_buffer.slice(draw_offsets.indices),
-            6,
+            draw_offsets.index_count,
             draw_offsets.instances,
         );
     }
@@ -319,7 +312,7 @@ impl<'encoder> CommandRenderer<'encoder> {
                     .expect("Vertices must always be present"),
             ),
             self.chunk_buffers.index_buffer.slice(draw_offsets.indices),
-            6,
+            draw_offsets.index_count,
             draw_offsets.instances,
         );
 
@@ -343,12 +336,12 @@ impl<'encoder> CommandRenderer<'encoder> {
                     .expect("Vertices must always be present"),
             ),
             self.chunk_buffers.index_buffer.slice(draw_offsets.indices),
-            6,
+            draw_offsets.index_count,
             draw_offsets.instances,
         );
     }
 
-    pub fn draw_lines<const RECT: bool>(
+    pub fn draw_lines(
         &self,
         render_pass: &mut wgpu::RenderPass<'encoder>,
         draw_offsets: DrawOffsets,
@@ -363,7 +356,7 @@ impl<'encoder> CommandRenderer<'encoder> {
                     .expect("Vertices must always be present"),
             ),
             self.chunk_buffers.index_buffer.slice(draw_offsets.indices),
-            if RECT { 5 } else { 2 },
+            draw_offsets.index_count,
             draw_offsets.instances,
         );
     }
