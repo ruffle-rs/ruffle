@@ -39,7 +39,7 @@
         "message": "Version av Flash-spelaren som ska emuleras (intervallet 1–32)"
     },
     "settings_background_execution_mode": {
-        "message": "Bakgrundsexekvering"
+        "message": "Körning i bakgrunden"
     },
     "settings_background_execution_mode_none": {
         "message": "Pausa"
@@ -66,7 +66,7 @@
         "message": "Återställ inställningar"
     },
     "settings_reset_confirm": {
-        "message": "Är du säker på att du vill återställa Ruffle-inställningarna till sina ursprungliga värden?"
+        "message": "Vill du återställa Ruffle-inställningarna till deras ursprungliga standardvärden?"
     },
     "status_init": {
         "message": "Läser den aktuella fliken …"
@@ -99,7 +99,7 @@
         "message": "Ruffle kan inte läsas in på skyddade webbläsarsidor."
     },
     "action_reload": {
-        "message": "Ladda om fliken för att applicera ändringar"
+        "message": "Läs in fliken igen för att verkställa ändringarna"
     },
     "open_player_page": {
         "message": "Öppna SWF-spelaren"
