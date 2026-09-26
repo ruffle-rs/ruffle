@@ -1,0 +1,93 @@
+num_ticks = 80 # 40 frames in 4 seconds, then 1 sec pause, then 3 secs after seeking.
+
+[player_options]
+with_renderer = { optional = false, quality = "low" }
+with_audio = true
+with_video = true
+
+
+[audio_assertions."sound.5"]
+frames = [5]
+max_amplitude = 0.1
+
+[audio_assertions."sound.15"]
+frames = [15]
+min_max_amplitude = 0.3
+max_amplitude = 0.35
+
+[audio_assertions."sound.25"]
+frames = [25]
+min_max_amplitude = 0.6
+max_amplitude = 0.65
+
+[audio_assertions."sound.35"]
+frames = [35]
+min_max_amplitude = 0.9
+max_amplitude = 0.95
+
+# video ended
+[audio_assertions."sound.45"]
+frames = [45]
+max_amplitude = 0.1
+
+# after first seek
+[audio_assertions."sound.55"]
+frames = [55]
+min_max_amplitude = 0.3
+max_amplitude = 0.35
+
+# after second seek
+[audio_assertions."sound.65"]
+frames = [65]
+min_max_amplitude = 0.9
+max_amplitude = 0.95
+
+# ended second time
+[audio_assertions."sound.75"]
+frames = [75]
+max_amplitude = 0.1
+
+
+[image_comparisons."output.5"]
+trigger = 5
+tolerance = 2
+
+[image_comparisons."output.15"]
+trigger = 15
+tolerance = 25
+
+[image_comparisons."output.25"]
+trigger = 25
+tolerance = 40
+
+[image_comparisons."output.35"]
+trigger = 35
+tolerance = 15
+
+# video ended
+[image_comparisons."output.45"]
+trigger = 45
+tolerance = 15
+
+# after first seek
+[image_comparisons."output.55"]
+trigger = 55
+tolerance = 25
+
+# after second seek
+[image_comparisons."output.65"]
+trigger = 65
+tolerance = 15
+
+# ended second time
+[image_comparisons."output.75"]
+trigger = 75
+tolerance = 15
+
+
+[[compilers]]
+type = "Asc"
+target = "test.swf"
+class = "Test"
+scripts = ["Test.as"]
+swf_version = 9
