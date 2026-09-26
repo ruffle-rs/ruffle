@@ -243,7 +243,7 @@ impl<'encoder> CommandRenderer<'encoder> {
         self.prep_bitmap(render_pass, bind_group, blend_mode, render_stage3d);
 
         let vertex_slice = if let Some(vertex_offset) = draw_offsets.vertices {
-            self.dynamic_vertex_buffer.slice(vertex_offset..)
+            self.dynamic_vertex_buffer.slice(vertex_offset)
         } else {
             self.descriptors.quad.vertices_pos_uv.slice(..)
         };
