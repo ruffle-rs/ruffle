@@ -2,7 +2,7 @@ use crate::blend::{ComplexBlend, TrivialBlend};
 use crate::descriptors::Descriptors;
 use crate::mesh::{DrawType, as_mesh};
 use crate::pipelines::Pipelines;
-use crate::surface::buffers::ChunkBufferBuilder;
+use crate::surface::buffers::{ChunkBufferBuilder, DrawOffsets};
 use crate::surface::mask::{MaskMode, MaskState};
 use crate::surface::target::PoolOrArcTexture;
 use ruffle_render::backend::ShapeHandle;
@@ -35,10 +35,9 @@ pub enum DrawCommand {
         // We don't actually _need_ that texture though, thus the _
         _texture: PoolOrArcTexture,
         binds: wgpu::BindGroup,
-        instance_range: Range<u32>,
         blend_mode: TrivialBlend,
         render_stage3d: bool,
-        vertex_offset: Option<wgpu::BufferAddress>,
+        draw_offsets: DrawOffsets,
     },
     RenderAlphaMask {
         maskee: PoolOrArcTexture,
@@ -115,17 +114,15 @@ impl<'encoder> CommandRenderer<'encoder> {
             DrawCommand::RenderTexture {
                 _texture,
                 binds,
-                instance_range,
                 blend_mode,
-                vertex_offset,
+                draw_offsets,
                 render_stage3d,
             } => self.render_texture(
                 render_pass,
-                instance_range.clone(),
                 binds,
                 *blend_mode,
                 *render_stage3d,
-                *vertex_offset,
+                draw_offsets.clone(),
             ),
             DrawCommand::RenderShape {
                 shape,
@@ -238,15 +235,14 @@ impl<'encoder> CommandRenderer<'encoder> {
     pub fn render_texture(
         &self,
         render_pass: &mut wgpu::RenderPass<'encoder>,
-        instance_range: Range<u32>,
         bind_group: &'encoder wgpu::BindGroup,
         blend_mode: TrivialBlend,
         render_stage3d: bool,
-        vertex_offset: Option<wgpu::BufferAddress>,
+        draw_offsets: DrawOffsets,
     ) {
         self.prep_bitmap(render_pass, bind_group, blend_mode, render_stage3d);
 
-        let vertex_slice = if let Some(vertex_offset) = vertex_offset {
+        let vertex_slice = if let Some(vertex_offset) = draw_offsets.vertices {
             self.dynamic_vertex_buffer.slice(vertex_offset..)
         } else {
             self.descriptors.quad.vertices_pos_uv.slice(..)
@@ -257,7 +253,7 @@ impl<'encoder> CommandRenderer<'encoder> {
             vertex_slice,
             self.descriptors.quad.indices.slice(..),
             6,
-            instance_range,
+            draw_offsets.instances,
         );
     }
 
