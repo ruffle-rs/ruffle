@@ -543,12 +543,12 @@ impl CommandHandler for WgpuCommandHandler<'_, '_> {
             matrix,
             0.0,
             Default::default(),
-            DrawVertices::None,
+            DrawVertices::PosQuad,
             |draw_offsets| DrawCommand::RenderAlphaMask {
                 maskee,
                 mask,
                 binds,
-                instance_range: draw_offsets.instances,
+                draw_offsets,
             },
         );
     }

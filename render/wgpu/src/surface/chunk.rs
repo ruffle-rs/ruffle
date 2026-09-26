@@ -43,7 +43,7 @@ pub enum DrawCommand {
         maskee: PoolOrArcTexture,
         mask: PoolOrArcTexture,
         binds: wgpu::BindGroup,
-        instance_range: Range<u32>,
+        draw_offsets: DrawOffsets,
     },
     RenderShape {
         shape: ShapeHandle,
@@ -142,8 +142,8 @@ impl<'encoder> CommandRenderer<'encoder> {
                 maskee,
                 mask,
                 binds,
-                instance_range,
-            } => self.render_alpha_mask(render_pass, maskee, mask, binds, instance_range.clone()),
+                draw_offsets,
+            } => self.render_alpha_mask(render_pass, maskee, mask, binds, draw_offsets.clone()),
         }
     }
 
@@ -303,7 +303,7 @@ impl<'encoder> CommandRenderer<'encoder> {
         _maskee: &PoolOrArcTexture,
         _mask: &PoolOrArcTexture,
         bind_group: &'encoder wgpu::BindGroup,
-        instance_range: Range<u32>,
+        draw_offsets: DrawOffsets,
     ) {
         if cfg!(feature = "render_debug_labels") {
             render_pass.push_debug_group("render_alpha_mask");
@@ -313,10 +313,14 @@ impl<'encoder> CommandRenderer<'encoder> {
 
         self.draw(
             render_pass,
-            self.descriptors.quad.vertices_pos.slice(..),
-            self.descriptors.quad.indices.slice(..),
+            self.chunk_buffers.vertex_buffer.slice(
+                draw_offsets
+                    .vertices
+                    .expect("Vertices must always be present"),
+            ),
+            self.chunk_buffers.index_buffer.slice(draw_offsets.indices),
             6,
-            instance_range,
+            draw_offsets.instances,
         );
 
         if cfg!(feature = "render_debug_labels") {
