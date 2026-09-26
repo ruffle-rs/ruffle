@@ -76,6 +76,7 @@ pub struct DrawOffsets {
     pub vertices: Option<Range<wgpu::BufferAddress>>,
     pub indices: Range<wgpu::BufferAddress>,
     pub instances: Range<u32>,
+    pub index_count: u32,
 }
 
 pub struct ChunkBufferBuilder {
@@ -185,38 +186,45 @@ impl ChunkBufferBuilder {
         vertices: DrawVertices,
     ) -> Result<DrawOffsets, BufferFull> {
         let transform_address = self.transforms.add(&[transform])?;
-        let (vertices, indices) = match vertices {
+        let (vertices, indices, index_count) = match vertices {
             DrawVertices::CustomPosUvQuad(vertices) => (
                 Some(self.vertices.add(vertices)?),
                 self.quad_indices.clone(),
+                6,
             ),
             DrawVertices::PosQuad => (
                 Some(self.quad_pos_vertices.clone()),
                 self.quad_indices.clone(),
+                6,
             ),
             DrawVertices::PosColorQuad => (
                 Some(self.quad_pos_color_vertices.clone()),
                 self.quad_indices.clone(),
+                6,
             ),
             DrawVertices::PosUvQuad => (
                 Some(self.quad_pos_uv_vertices.clone()),
                 self.quad_indices.clone(),
+                6,
             ),
             DrawVertices::Line => (
                 Some(self.quad_pos_color_vertices.clone()),
                 self.line_indices.clone(),
+                2,
             ),
             DrawVertices::RectLine => (
                 Some(self.quad_pos_color_vertices.clone()),
                 self.rect_line_indices.clone(),
+                5,
             ),
-            DrawVertices::None => (None, self.quad_indices.clone()),
+            DrawVertices::None => (None, self.quad_indices.clone(), 0),
         };
         let instance = (transform_address.start as usize / size_of::<Transforms>()) as u32;
         Ok(DrawOffsets {
             vertices,
             indices,
             instances: instance..instance + 1,
+            index_count,
         })
     }
 
