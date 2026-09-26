@@ -4,7 +4,6 @@ use crate::surface::buffers::{ChunkBufferBuilder, ChunkBuffers, DrawOffsets};
 use crate::surface::mask::MaskState;
 use crate::surface::target::PoolOrArcTexture;
 use ruffle_render::pixel_bender::PixelBenderShaderHandle;
-use std::ops::Range;
 
 pub enum Chunk {
     Draw {
@@ -203,15 +202,30 @@ impl<'encoder> CommandRenderer<'encoder> {
     pub fn draw(
         &self,
         render_pass: &mut wgpu::RenderPass<'encoder>,
-        vertices: wgpu::BufferSlice<'encoder>,
-        indices: wgpu::BufferSlice<'encoder>,
-        num_indices: u32,
-        instance_range: Range<u32>,
+        draw_offsets: &'encoder DrawOffsets,
     ) {
-        render_pass.set_vertex_buffer(0, vertices);
-        render_pass.set_index_buffer(indices, wgpu::IndexFormat::Uint32);
+        render_pass.set_vertex_buffer(
+            0,
+            draw_offsets
+                .vertex_buffer
+                .as_ref()
+                .unwrap_or(&self.chunk_buffers.vertex_buffer)
+                .slice(draw_offsets.vertices.clone()),
+        );
+        render_pass.set_index_buffer(
+            draw_offsets
+                .index_buffer
+                .as_ref()
+                .unwrap_or(&self.chunk_buffers.index_buffer)
+                .slice(draw_offsets.indices.clone()),
+            wgpu::IndexFormat::Uint32,
+        );
 
-        render_pass.draw_indexed(0..num_indices, 0, instance_range);
+        render_pass.draw_indexed(
+            0..draw_offsets.index_count,
+            0,
+            draw_offsets.instances.clone(),
+        );
     }
 
     pub fn render_texture(
@@ -224,21 +238,7 @@ impl<'encoder> CommandRenderer<'encoder> {
     ) {
         self.prep_bitmap(render_pass, bind_group, blend_mode, render_stage3d);
 
-        self.draw(
-            render_pass,
-            draw_offsets
-                .vertex_buffer
-                .as_ref()
-                .unwrap_or(&self.chunk_buffers.vertex_buffer)
-                .slice(draw_offsets.vertices.clone()),
-            draw_offsets
-                .index_buffer
-                .as_ref()
-                .unwrap_or(&self.chunk_buffers.index_buffer)
-                .slice(draw_offsets.indices.clone()),
-            draw_offsets.index_count,
-            draw_offsets.instances.clone(),
-        );
+        self.draw(render_pass, draw_offsets);
     }
 
     pub fn draw_gradient(
@@ -249,21 +249,7 @@ impl<'encoder> CommandRenderer<'encoder> {
     ) {
         self.prep_gradient(render_pass, bind_group);
 
-        self.draw(
-            render_pass,
-            draw_offsets
-                .vertex_buffer
-                .as_ref()
-                .unwrap_or(&self.chunk_buffers.vertex_buffer)
-                .slice(draw_offsets.vertices.clone()),
-            draw_offsets
-                .index_buffer
-                .as_ref()
-                .unwrap_or(&self.chunk_buffers.index_buffer)
-                .slice(draw_offsets.indices.clone()),
-            draw_offsets.index_count,
-            draw_offsets.instances.clone(),
-        );
+        self.draw(render_pass, draw_offsets);
     }
 
     pub fn render_alpha_mask(
@@ -280,21 +266,7 @@ impl<'encoder> CommandRenderer<'encoder> {
 
         self.prep_alpha_mask(render_pass, bind_group);
 
-        self.draw(
-            render_pass,
-            draw_offsets
-                .vertex_buffer
-                .as_ref()
-                .unwrap_or(&self.chunk_buffers.vertex_buffer)
-                .slice(draw_offsets.vertices.clone()),
-            draw_offsets
-                .index_buffer
-                .as_ref()
-                .unwrap_or(&self.chunk_buffers.index_buffer)
-                .slice(draw_offsets.indices.clone()),
-            draw_offsets.index_count,
-            draw_offsets.instances.clone(),
-        );
+        self.draw(render_pass, draw_offsets);
 
         if cfg!(feature = "render_debug_labels") {
             render_pass.pop_debug_group();
@@ -308,21 +280,7 @@ impl<'encoder> CommandRenderer<'encoder> {
     ) {
         self.prep_color(render_pass);
 
-        self.draw(
-            render_pass,
-            draw_offsets
-                .vertex_buffer
-                .as_ref()
-                .unwrap_or(&self.chunk_buffers.vertex_buffer)
-                .slice(draw_offsets.vertices.clone()),
-            draw_offsets
-                .index_buffer
-                .as_ref()
-                .unwrap_or(&self.chunk_buffers.index_buffer)
-                .slice(draw_offsets.indices.clone()),
-            draw_offsets.index_count,
-            draw_offsets.instances.clone(),
-        );
+        self.draw(render_pass, draw_offsets);
     }
 
     pub fn draw_lines(
@@ -332,21 +290,7 @@ impl<'encoder> CommandRenderer<'encoder> {
     ) {
         self.prep_lines(render_pass);
 
-        self.draw(
-            render_pass,
-            draw_offsets
-                .vertex_buffer
-                .as_ref()
-                .unwrap_or(&self.chunk_buffers.vertex_buffer)
-                .slice(draw_offsets.vertices.clone()),
-            draw_offsets
-                .index_buffer
-                .as_ref()
-                .unwrap_or(&self.chunk_buffers.index_buffer)
-                .slice(draw_offsets.indices.clone()),
-            draw_offsets.index_count,
-            draw_offsets.instances.clone(),
-        );
+        self.draw(render_pass, draw_offsets);
     }
 
     pub fn set_mask_state(&mut self, mask_state: MaskState) {
