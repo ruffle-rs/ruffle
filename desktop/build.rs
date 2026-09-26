@@ -15,6 +15,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         .commit_date(true)
         .build();
     Emitter::default()
+        .default_on_error()
         .add_instructions(&build)?
         .add_instructions(&cargo)?
         .add_instructions(&gitcl)?
