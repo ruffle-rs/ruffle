@@ -1,7 +1,6 @@
 use crate::buffer_builder::{BufferBuilder, BufferFull};
 use crate::descriptors::Descriptors;
 use crate::{PosColorVertex, PosUvVertex, PosVertex, Transforms};
-use std::mem;
 use std::ops::Range;
 use wgpu::util::StagingBelt;
 
@@ -29,15 +28,13 @@ impl ChunkBuffers {
         });
         let vertex_buffer = descriptors.device.create_buffer(&wgpu::BufferDescriptor {
             label: None,
-            size: (mem::size_of::<PosUvVertex>() as u64 * 4 * ESTIMATED_OBJECTS_PER_CHUNK)
-                .min(descriptors.limits.max_buffer_size),
+            size: descriptors.limits.max_buffer_size,
             usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
             mapped_at_creation: false,
         });
         let index_buffer = descriptors.device.create_buffer(&wgpu::BufferDescriptor {
             label: None,
-            size: (wgpu::IndexFormat::Uint32.byte_size() as u64 * 6 * ESTIMATED_OBJECTS_PER_CHUNK)
-                .min(descriptors.limits.max_buffer_size),
+            size: descriptors.limits.max_buffer_size,
             usage: wgpu::BufferUsages::INDEX | wgpu::BufferUsages::COPY_DST,
             mapped_at_creation: false,
         });
@@ -68,7 +65,6 @@ pub enum DrawVertices<'a> {
     PosQuad,
     Line,
     RectLine,
-    #[expect(dead_code)]
     CustomBuffers {
         vertex_buffer: wgpu::Buffer,
         vertex_range: Range<wgpu::BufferAddress>,
@@ -76,7 +72,6 @@ pub enum DrawVertices<'a> {
         index_range: Range<wgpu::BufferAddress>,
         index_count: u32,
     },
-    None,
 }
 
 #[derive(Clone, Debug)]
@@ -267,14 +262,6 @@ impl ChunkBufferBuilder {
                 indices: index_range,
                 instances,
                 index_count,
-            },
-            DrawVertices::None => DrawOffsets {
-                vertex_buffer: None,
-                index_buffer: None,
-                vertices: None,
-                indices: self.quad_indices.clone(),
-                instances,
-                index_count: 0,
             },
         })
     }
