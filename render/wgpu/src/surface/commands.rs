@@ -2,11 +2,11 @@ use crate::backend::RenderTargetMode;
 use crate::blend::BlendType;
 use crate::blend::TrivialBlend;
 use crate::buffer_pool::TexturePool;
-use crate::mesh::Mesh;
+use crate::mesh::{DrawType, Mesh, as_mesh};
 use crate::surface::Surface;
 use crate::surface::buffers::{ChunkBufferBuilder, ChunkBuffers, DrawOffsets, DrawVertices};
 use crate::surface::chunk::{Chunk, ChunkBlendMode, DrawCommand};
-use crate::surface::mask::MaskState;
+use crate::surface::mask::{MaskMode, MaskState};
 use crate::surface::target::{CommandTarget, PoolOrArcTexture};
 use crate::{Descriptors, PosUvVertex, Transforms, as_texture};
 use ruffle_render::backend::ShapeHandle;
@@ -270,7 +270,7 @@ impl CommandHandler for WgpuCommandHandler<'_, '_> {
                     transform.color_transform,
                     DrawVertices::PosUvQuad,
                     |draw_offsets| DrawCommand::RenderTexture {
-                        _texture: texture,
+                        _texture: Some(texture),
                         binds: bind_group,
                         draw_offsets,
                         blend_mode,
@@ -348,7 +348,10 @@ impl CommandHandler for WgpuCommandHandler<'_, '_> {
             transform.color_transform,
             DrawVertices::CustomPosUvQuad(bytemuck::cast_slice(vertices)),
             |draw_offsets| DrawCommand::RenderTexture {
-                _texture: PoolOrArcTexture::Manual((texture.texture.clone(), texture.view.clone())),
+                _texture: Some(PoolOrArcTexture::Manual((
+                    texture.texture.clone(),
+                    texture.view.clone(),
+                ))),
                 binds: binds.bind_group.clone(),
                 draw_offsets,
                 blend_mode: TrivialBlend::Normal,
@@ -382,7 +385,10 @@ impl CommandHandler for WgpuCommandHandler<'_, '_> {
             transform.color_transform,
             DrawVertices::PosUvQuad,
             |draw_offsets| DrawCommand::RenderTexture {
-                _texture: PoolOrArcTexture::Manual((texture.texture.clone(), texture.view.clone())),
+                _texture: Some(PoolOrArcTexture::Manual((
+                    texture.texture.clone(),
+                    texture.view.clone(),
+                ))),
                 draw_offsets,
                 blend_mode: TrivialBlend::Normal,
                 render_stage3d: true,
@@ -392,16 +398,66 @@ impl CommandHandler for WgpuCommandHandler<'_, '_> {
     }
 
     fn render_shape(&mut self, shape: ShapeHandle, transform: Transform) {
-        self.add_to_current(
-            transform.matrix,
-            transform.tz,
-            transform.color_transform,
-            DrawVertices::None,
-            |draw_offsets| DrawCommand::RenderShape {
-                shape,
-                instance_range: draw_offsets.instances,
-            },
-        );
+        let mesh = as_mesh(&shape);
+        for draw in &mesh.draws {
+            let num_indices = if self.mask_state.mode != MaskMode::DrawMaskStencil
+                && self.mask_state.mode != MaskMode::ClearMaskStencil
+            {
+                draw.num_indices
+            } else {
+                // Omit strokes when drawing a mask stencil.
+                draw.num_mask_indices
+            };
+            if num_indices == 0 {
+                continue;
+            }
+
+            let vertices = DrawVertices::CustomBuffers {
+                vertex_buffer: mesh.vertex_buffer.clone(),
+                vertex_range: draw.vertices.clone(),
+                index_buffer: mesh.index_buffer.clone(),
+                index_range: draw.indices.clone(),
+                index_count: num_indices,
+            };
+            match &draw.draw_type {
+                DrawType::Color => {
+                    self.add_to_current(
+                        transform.matrix,
+                        transform.tz,
+                        transform.color_transform,
+                        vertices,
+                        |draw_offsets| DrawCommand::DrawColor { draw_offsets },
+                    );
+                }
+                DrawType::Gradient { bind_group } => {
+                    self.add_to_current(
+                        transform.matrix,
+                        transform.tz,
+                        transform.color_transform,
+                        vertices,
+                        |draw_offsets| DrawCommand::RenderGradient {
+                            bind_group: bind_group.clone(),
+                            draw_offsets,
+                        },
+                    );
+                }
+                DrawType::Bitmap { binds } => {
+                    self.add_to_current(
+                        transform.matrix,
+                        transform.tz,
+                        transform.color_transform,
+                        vertices,
+                        |draw_offsets| DrawCommand::RenderTexture {
+                            _texture: None,
+                            binds: binds.bind_group.clone(),
+                            blend_mode: TrivialBlend::Normal,
+                            render_stage3d: false,
+                            draw_offsets,
+                        },
+                    );
+                }
+            }
+        }
     }
 
     fn draw_rect(&mut self, color: Color, matrix: Matrix) {

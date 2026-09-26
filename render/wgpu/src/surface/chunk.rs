@@ -1,10 +1,8 @@
 use crate::blend::{ComplexBlend, TrivialBlend};
-use crate::mesh::{DrawType, as_mesh};
 use crate::pipelines::Pipelines;
 use crate::surface::buffers::{ChunkBufferBuilder, ChunkBuffers, DrawOffsets};
-use crate::surface::mask::{MaskMode, MaskState};
+use crate::surface::mask::MaskState;
 use crate::surface::target::PoolOrArcTexture;
-use ruffle_render::backend::ShapeHandle;
 use ruffle_render::pixel_bender::PixelBenderShaderHandle;
 use std::ops::Range;
 
@@ -32,7 +30,7 @@ pub enum DrawCommand {
     RenderTexture {
         // If this is from a texture pool, we need to keep a copy to make sure it isn't freed before we use it.
         // We don't actually _need_ that texture though, thus the _
-        _texture: PoolOrArcTexture,
+        _texture: Option<PoolOrArcTexture>,
         binds: wgpu::BindGroup,
         blend_mode: TrivialBlend,
         render_stage3d: bool,
@@ -44,11 +42,11 @@ pub enum DrawCommand {
         binds: wgpu::BindGroup,
         draw_offsets: DrawOffsets,
     },
-    RenderShape {
-        shape: ShapeHandle,
-        instance_range: Range<u32>,
-    },
     DrawColor {
+        draw_offsets: DrawOffsets,
+    },
+    RenderGradient {
+        bind_group: wgpu::BindGroup,
         draw_offsets: DrawOffsets,
     },
     DrawLine {
@@ -60,12 +58,12 @@ pub enum DrawCommand {
 impl DrawCommand {
     pub fn name(&self) -> &'static str {
         match self {
-            DrawCommand::RenderShape { .. } => "render shape",
             DrawCommand::RenderTexture { .. } => "render texture",
             DrawCommand::DrawColor { .. } => "draw color",
             DrawCommand::DrawLine { .. } => "draw line",
             DrawCommand::SetMask(_) => "set mask state",
             DrawCommand::RenderAlphaMask { .. } => "render alpha mask",
+            DrawCommand::RenderGradient { .. } => "draw gradient",
         }
     }
 }
@@ -115,10 +113,6 @@ impl<'encoder> CommandRenderer<'encoder> {
                 *render_stage3d,
                 draw_offsets,
             ),
-            DrawCommand::RenderShape {
-                shape,
-                instance_range,
-            } => self.render_shape(render_pass, shape, instance_range.clone()),
             DrawCommand::DrawColor { draw_offsets } => self.draw_color(render_pass, draw_offsets),
             DrawCommand::DrawLine { draw_offsets } => self.draw_lines(render_pass, draw_offsets),
             DrawCommand::SetMask(mask_state) => self.set_mask_state(*mask_state),
@@ -128,6 +122,10 @@ impl<'encoder> CommandRenderer<'encoder> {
                 binds,
                 draw_offsets,
             } => self.render_alpha_mask(render_pass, maskee, mask, binds, draw_offsets),
+            DrawCommand::RenderGradient {
+                bind_group,
+                draw_offsets,
+            } => self.draw_gradient(render_pass, bind_group, draw_offsets),
         }
     }
 
@@ -248,46 +246,34 @@ impl<'encoder> CommandRenderer<'encoder> {
         );
     }
 
-    pub fn render_shape(
+    pub fn draw_gradient(
         &self,
         render_pass: &mut wgpu::RenderPass<'encoder>,
-        shape: &'encoder ShapeHandle,
-        instance_range: Range<u32>,
+        bind_group: &'encoder wgpu::BindGroup,
+        draw_offsets: &'encoder DrawOffsets,
     ) {
-        let mesh = as_mesh(shape);
-        for draw in &mesh.draws {
-            let num_indices = if self.mask_state.mode != MaskMode::DrawMaskStencil
-                && self.mask_state.mode != MaskMode::ClearMaskStencil
-            {
-                draw.num_indices
-            } else {
-                // Omit strokes when drawing a mask stencil.
-                draw.num_mask_indices
-            };
-            if num_indices == 0 {
-                continue;
-            }
+        self.prep_gradient(render_pass, bind_group);
 
-            match &draw.draw_type {
-                DrawType::Color => {
-                    self.prep_color(render_pass);
-                }
-                DrawType::Gradient { bind_group, .. } => {
-                    self.prep_gradient(render_pass, bind_group);
-                }
-                DrawType::Bitmap { binds, .. } => {
-                    self.prep_bitmap(render_pass, &binds.bind_group, TrivialBlend::Normal, false);
-                }
-            }
-
-            self.draw(
-                render_pass,
-                mesh.vertex_buffer.slice(draw.vertices.clone()),
-                mesh.index_buffer.slice(draw.indices.clone()),
-                num_indices,
-                instance_range.clone(),
-            );
-        }
+        self.draw(
+            render_pass,
+            draw_offsets
+                .vertex_buffer
+                .as_ref()
+                .unwrap_or(&self.chunk_buffers.vertex_buffer)
+                .slice(
+                    draw_offsets
+                        .vertices
+                        .clone()
+                        .expect("Vertices must always be present"),
+                ),
+            draw_offsets
+                .index_buffer
+                .as_ref()
+                .unwrap_or(&self.chunk_buffers.index_buffer)
+                .slice(draw_offsets.indices.clone()),
+            draw_offsets.index_count,
+            draw_offsets.instances.clone(),
+        );
     }
 
     pub fn render_alpha_mask(
