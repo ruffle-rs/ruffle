@@ -1,0 +1,671 @@
+parser typeof=function
+
+=== simple ===
+status=0
+length=3
+node[0] type=1 value=[a] empty=false
+  attrs typeof=object
+  attr a=[undefined]
+  attr b=[undefined]
+  attr id=[undefined]
+  attr name=[undefined]
+node[1] type=3 value=[EN] empty=false
+  attrs typeof=object
+  attr a=[undefined]
+  attr b=[undefined]
+  attr id=[undefined]
+  attr name=[undefined]
+node[2] type=1 value=[/a] empty=false
+  attrs typeof=object
+  attr a=[undefined]
+  attr b=[undefined]
+  attr id=[undefined]
+  attr name=[undefined]
+
+=== nested ===
+status=0
+length=10
+node[0] type=1 value=[config] empty=false
+  attrs typeof=object
+  attr a=[undefined]
+  attr b=[undefined]
+  attr id=[undefined]
+  attr name=[undefined]
+node[1] type=1 value=[core] empty=false
+  attrs typeof=object
+  attr a=[undefined]
+  attr b=[undefined]
+  attr id=[undefined]
+  attr name=[undefined]
+node[2] type=1 value=[lang] empty=false
+  attrs typeof=object
+  attr a=[undefined]
+  attr b=[undefined]
+  attr id=[undefined]
+  attr name=[undefined]
+node[3] type=3 value=[EN] empty=false
+  attrs typeof=object
+  attr a=[undefined]
+  attr b=[undefined]
+  attr id=[undefined]
+  attr name=[undefined]
+node[4] type=1 value=[/lang] empty=false
+  attrs typeof=object
+  attr a=[undefined]
+  attr b=[undefined]
+  attr id=[undefined]
+  attr name=[undefined]
+node[5] type=1 value=[country] empty=false
+  attrs typeof=object
+  attr a=[undefined]
+  attr b=[undefined]
+  attr id=[undefined]
+  attr name=[undefined]
+node[6] type=3 value=[US] empty=false
+  attrs typeof=object
+  attr a=[undefined]
+  attr b=[undefined]
+  attr id=[undefined]
+  attr name=[undefined]
+node[7] type=1 value=[/country] empty=false
+  attrs typeof=object
+  attr a=[undefined]
+  attr b=[undefined]
+  attr id=[undefined]
+  attr name=[undefined]
+node[8] type=1 value=[/core] empty=false
+  attrs typeof=object
+  attr a=[undefined]
+  attr b=[undefined]
+  attr id=[undefined]
+  attr name=[undefined]
+node[9] type=1 value=[/config] empty=false
+  attrs typeof=object
+  attr a=[undefined]
+  attr b=[undefined]
+  attr id=[undefined]
+  attr name=[undefined]
+
+=== self closing ===
+status=0
+length=3
+node[0] type=1 value=[root] empty=false
+  attrs typeof=object
+  attr a=[undefined]
+  attr b=[undefined]
+  attr id=[undefined]
+  attr name=[undefined]
+node[1] type=1 value=[item] empty=true
+  attrs typeof=object
+  attr a=[undefined]
+  attr b=[undefined]
+  attr id=[undefined]
+  attr name=[undefined]
+node[2] type=1 value=[/root] empty=false
+  attrs typeof=object
+  attr a=[undefined]
+  attr b=[undefined]
+  attr id=[undefined]
+  attr name=[undefined]
+
+=== mixed text ===
+status=0
+length=5
+node[0] type=1 value=[root] empty=false
+  attrs typeof=object
+  attr a=[undefined]
+  attr b=[undefined]
+  attr id=[undefined]
+  attr name=[undefined]
+node[1] type=3 value=[before] empty=false
+  attrs typeof=object
+  attr a=[undefined]
+  attr b=[undefined]
+  attr id=[undefined]
+  attr name=[undefined]
+node[2] type=1 value=[item] empty=true
+  attrs typeof=object
+  attr a=[undefined]
+  attr b=[undefined]
+  attr id=[undefined]
+  attr name=[undefined]
+node[3] type=3 value=[after] empty=false
+  attrs typeof=object
+  attr a=[undefined]
+  attr b=[undefined]
+  attr id=[undefined]
+  attr name=[undefined]
+node[4] type=1 value=[/root] empty=false
+  attrs typeof=object
+  attr a=[undefined]
+  attr b=[undefined]
+  attr id=[undefined]
+  attr name=[undefined]
+
+=== attributes ===
+status=0
+length=5
+node[0] type=1 value=[root] empty=false
+  attrs typeof=object
+  attr a=[undefined]
+  attr b=[undefined]
+  attr id=[undefined]
+  attr name=[undefined]
+node[1] type=1 value=[item] empty=false
+  attrs typeof=object
+  attr a=[undefined]
+  attr b=[undefined]
+  attr id=[5]
+  attr name=[test]
+node[2] type=3 value=[value] empty=false
+  attrs typeof=object
+  attr a=[undefined]
+  attr b=[undefined]
+  attr id=[undefined]
+  attr name=[undefined]
+node[3] type=1 value=[/item] empty=false
+  attrs typeof=object
+  attr a=[undefined]
+  attr b=[undefined]
+  attr id=[undefined]
+  attr name=[undefined]
+node[4] type=1 value=[/root] empty=false
+  attrs typeof=object
+  attr a=[undefined]
+  attr b=[undefined]
+  attr id=[undefined]
+  attr name=[undefined]
+
+=== multiple attributes ===
+status=0
+length=3
+node[0] type=1 value=[root] empty=false
+  attrs typeof=object
+  attr a=[undefined]
+  attr b=[undefined]
+  attr id=[undefined]
+  attr name=[undefined]
+node[1] type=1 value=[item] empty=true
+  attrs typeof=object
+  attr a=[1]
+  attr b=[2]
+  attr id=[undefined]
+  attr name=[undefined]
+node[2] type=1 value=[/root] empty=false
+  attrs typeof=object
+  attr a=[undefined]
+  attr b=[undefined]
+  attr id=[undefined]
+  attr name=[undefined]
+
+=== duplicate attribute ===
+status=0
+length=2
+node[0] type=1 value=[root] empty=false
+  attrs typeof=object
+  attr a=[1]
+  attr b=[undefined]
+  attr id=[undefined]
+  attr name=[undefined]
+node[1] type=1 value=[/root] empty=false
+  attrs typeof=object
+  attr a=[undefined]
+  attr b=[undefined]
+  attr id=[undefined]
+  attr name=[undefined]
+
+=== attribute entities ===
+status=0
+length=3
+node[0] type=1 value=[root] empty=false
+  attrs typeof=object
+  attr a=[undefined]
+  attr b=[undefined]
+  attr id=[undefined]
+  attr name=[undefined]
+node[1] type=1 value=[item] empty=true
+  attrs typeof=object
+  attr a=[A & B]
+  attr b=[<x>]
+  attr id=[undefined]
+  attr name=[undefined]
+node[2] type=1 value=[/root] empty=false
+  attrs typeof=object
+  attr a=[undefined]
+  attr b=[undefined]
+  attr id=[undefined]
+  attr name=[undefined]
+
+=== text entities ===
+status=0
+length=3
+node[0] type=1 value=[root] empty=false
+  attrs typeof=object
+  attr a=[undefined]
+  attr b=[undefined]
+  attr id=[undefined]
+  attr name=[undefined]
+node[1] type=3 value=[A & B < C > D] empty=false
+  attrs typeof=object
+  attr a=[undefined]
+  attr b=[undefined]
+  attr id=[undefined]
+  attr name=[undefined]
+node[2] type=1 value=[/root] empty=false
+  attrs typeof=object
+  attr a=[undefined]
+  attr b=[undefined]
+  attr id=[undefined]
+  attr name=[undefined]
+
+=== numeric entities ===
+status=0
+length=3
+node[0] type=1 value=[root] empty=false
+  attrs typeof=object
+  attr a=[undefined]
+  attr b=[undefined]
+  attr id=[undefined]
+  attr name=[undefined]
+node[1] type=3 value=[AB] empty=false
+  attrs typeof=object
+  attr a=[undefined]
+  attr b=[undefined]
+  attr id=[undefined]
+  attr name=[undefined]
+node[2] type=1 value=[/root] empty=false
+  attrs typeof=object
+  attr a=[undefined]
+  attr b=[undefined]
+  attr id=[undefined]
+  attr name=[undefined]
+
+=== unicode ===
+status=0
+length=3
+node[0] type=1 value=[root] empty=false
+  attrs typeof=object
+  attr a=[undefined]
+  attr b=[undefined]
+  attr id=[undefined]
+  attr name=[undefined]
+node[1] type=3 value=[مرحبا 世界] empty=false
+  attrs typeof=object
+  attr a=[undefined]
+  attr b=[undefined]
+  attr id=[undefined]
+  attr name=[undefined]
+node[2] type=1 value=[/root] empty=false
+  attrs typeof=object
+  attr a=[undefined]
+  attr b=[undefined]
+  attr id=[undefined]
+  attr name=[undefined]
+
+=== cdata ===
+status=0
+length=3
+node[0] type=1 value=[root] empty=false
+  attrs typeof=object
+  attr a=[undefined]
+  attr b=[undefined]
+  attr id=[undefined]
+  attr name=[undefined]
+node[1] type=6 value=[hello <world> & stuff] empty=false
+  attrs typeof=object
+  attr a=[undefined]
+  attr b=[undefined]
+  attr id=[undefined]
+  attr name=[undefined]
+node[2] type=1 value=[/root] empty=false
+  attrs typeof=object
+  attr a=[undefined]
+  attr b=[undefined]
+  attr id=[undefined]
+  attr name=[undefined]
+
+=== comment ===
+status=0
+length=5
+node[0] type=1 value=[root] empty=false
+  attrs typeof=object
+  attr a=[undefined]
+  attr b=[undefined]
+  attr id=[undefined]
+  attr name=[undefined]
+node[1] type=1 value=[item] empty=false
+  attrs typeof=object
+  attr a=[undefined]
+  attr b=[undefined]
+  attr id=[undefined]
+  attr name=[undefined]
+node[2] type=3 value=[value] empty=false
+  attrs typeof=object
+  attr a=[undefined]
+  attr b=[undefined]
+  attr id=[undefined]
+  attr name=[undefined]
+node[3] type=1 value=[/item] empty=false
+  attrs typeof=object
+  attr a=[undefined]
+  attr b=[undefined]
+  attr id=[undefined]
+  attr name=[undefined]
+node[4] type=1 value=[/root] empty=false
+  attrs typeof=object
+  attr a=[undefined]
+  attr b=[undefined]
+  attr id=[undefined]
+  attr name=[undefined]
+
+=== xml declaration ===
+status=0
+length=3
+node[0] type=4 value=[<?xml version="1.0"?>] empty=false
+  attrs typeof=object
+  attr a=[undefined]
+  attr b=[undefined]
+  attr id=[undefined]
+  attr name=[undefined]
+node[1] type=1 value=[root] empty=false
+  attrs typeof=object
+  attr a=[undefined]
+  attr b=[undefined]
+  attr id=[undefined]
+  attr name=[undefined]
+node[2] type=1 value=[/root] empty=false
+  attrs typeof=object
+  attr a=[undefined]
+  attr b=[undefined]
+  attr id=[undefined]
+  attr name=[undefined]
+
+=== doctype ===
+status=0
+length=3
+node[0] type=5 value=[<!DOCTYPE root>] empty=false
+  attrs typeof=object
+  attr a=[undefined]
+  attr b=[undefined]
+  attr id=[undefined]
+  attr name=[undefined]
+node[1] type=1 value=[root] empty=false
+  attrs typeof=object
+  attr a=[undefined]
+  attr b=[undefined]
+  attr id=[undefined]
+  attr name=[undefined]
+node[2] type=1 value=[/root] empty=false
+  attrs typeof=object
+  attr a=[undefined]
+  attr b=[undefined]
+  attr id=[undefined]
+  attr name=[undefined]
+
+=== processing instruction ===
+status=-6
+length=1
+node[0] type=1 value=[root] empty=false
+  attrs typeof=object
+  attr a=[undefined]
+  attr b=[undefined]
+  attr id=[undefined]
+  attr name=[undefined]
+
+=== whitespace false ===
+status=0
+length=7
+node[0] type=1 value=[root] empty=false
+  attrs typeof=object
+  attr a=[undefined]
+  attr b=[undefined]
+  attr id=[undefined]
+  attr name=[undefined]
+node[1] type=3 value=[   ] empty=false
+  attrs typeof=object
+  attr a=[undefined]
+  attr b=[undefined]
+  attr id=[undefined]
+  attr name=[undefined]
+node[2] type=1 value=[item] empty=false
+  attrs typeof=object
+  attr a=[undefined]
+  attr b=[undefined]
+  attr id=[undefined]
+  attr name=[undefined]
+node[3] type=3 value=[ x ] empty=false
+  attrs typeof=object
+  attr a=[undefined]
+  attr b=[undefined]
+  attr id=[undefined]
+  attr name=[undefined]
+node[4] type=1 value=[/item] empty=false
+  attrs typeof=object
+  attr a=[undefined]
+  attr b=[undefined]
+  attr id=[undefined]
+  attr name=[undefined]
+node[5] type=3 value=[   ] empty=false
+  attrs typeof=object
+  attr a=[undefined]
+  attr b=[undefined]
+  attr id=[undefined]
+  attr name=[undefined]
+node[6] type=1 value=[/root] empty=false
+  attrs typeof=object
+  attr a=[undefined]
+  attr b=[undefined]
+  attr id=[undefined]
+  attr name=[undefined]
+
+=== whitespace true ===
+status=0
+length=5
+node[0] type=1 value=[root] empty=false
+  attrs typeof=object
+  attr a=[undefined]
+  attr b=[undefined]
+  attr id=[undefined]
+  attr name=[undefined]
+node[1] type=1 value=[item] empty=false
+  attrs typeof=object
+  attr a=[undefined]
+  attr b=[undefined]
+  attr id=[undefined]
+  attr name=[undefined]
+node[2] type=3 value=[ x ] empty=false
+  attrs typeof=object
+  attr a=[undefined]
+  attr b=[undefined]
+  attr id=[undefined]
+  attr name=[undefined]
+node[3] type=1 value=[/item] empty=false
+  attrs typeof=object
+  attr a=[undefined]
+  attr b=[undefined]
+  attr id=[undefined]
+  attr name=[undefined]
+node[4] type=1 value=[/root] empty=false
+  attrs typeof=object
+  attr a=[undefined]
+  attr b=[undefined]
+  attr id=[undefined]
+  attr name=[undefined]
+
+=== mismatched end ===
+status=0
+length=3
+node[0] type=1 value=[root] empty=false
+  attrs typeof=object
+  attr a=[undefined]
+  attr b=[undefined]
+  attr id=[undefined]
+  attr name=[undefined]
+node[1] type=1 value=[item] empty=false
+  attrs typeof=object
+  attr a=[undefined]
+  attr b=[undefined]
+  attr id=[undefined]
+  attr name=[undefined]
+node[2] type=1 value=[/root] empty=false
+  attrs typeof=object
+  attr a=[undefined]
+  attr b=[undefined]
+  attr id=[undefined]
+  attr name=[undefined]
+
+=== unmatched end ===
+status=0
+length=3
+node[0] type=1 value=[root] empty=false
+  attrs typeof=object
+  attr a=[undefined]
+  attr b=[undefined]
+  attr id=[undefined]
+  attr name=[undefined]
+node[1] type=1 value=[/item] empty=false
+  attrs typeof=object
+  attr a=[undefined]
+  attr b=[undefined]
+  attr id=[undefined]
+  attr name=[undefined]
+node[2] type=1 value=[/root] empty=false
+  attrs typeof=object
+  attr a=[undefined]
+  attr b=[undefined]
+  attr id=[undefined]
+  attr name=[undefined]
+
+=== only unmatched end ===
+status=0
+length=1
+node[0] type=1 value=[/root] empty=false
+  attrs typeof=object
+  attr a=[undefined]
+  attr b=[undefined]
+  attr id=[undefined]
+  attr name=[undefined]
+
+=== unclosed element ===
+status=0
+length=2
+node[0] type=1 value=[root] empty=false
+  attrs typeof=object
+  attr a=[undefined]
+  attr b=[undefined]
+  attr id=[undefined]
+  attr name=[undefined]
+node[1] type=1 value=[item] empty=false
+  attrs typeof=object
+  attr a=[undefined]
+  attr b=[undefined]
+  attr id=[undefined]
+  attr name=[undefined]
+
+=== unquoted attribute ===
+status=-6
+length=0
+
+=== unterminated attribute ===
+status=-8
+length=0
+
+=== unterminated comment ===
+status=-5
+length=1
+node[0] type=1 value=[root] empty=false
+  attrs typeof=object
+  attr a=[undefined]
+  attr b=[undefined]
+  attr id=[undefined]
+  attr name=[undefined]
+
+=== unterminated cdata ===
+status=-2
+length=1
+node[0] type=1 value=[root] empty=false
+  attrs typeof=object
+  attr a=[undefined]
+  attr b=[undefined]
+  attr id=[undefined]
+  attr name=[undefined]
+
+=== existing output array ===
+before:
+length=3
+node[0]=[zero] typeof=string
+node[1]=[one] typeof=string
+node[2]=[two] typeof=string
+status=0
+after:
+length=3
+node[0] type=1 value=[root] empty=false
+  attrs typeof=object
+  attr a=[undefined]
+  attr b=[undefined]
+  attr id=[undefined]
+  attr name=[undefined]
+node[1] type=1 value=[item] empty=true
+  attrs typeof=object
+  attr a=[undefined]
+  attr b=[undefined]
+  attr id=[undefined]
+  attr name=[undefined]
+node[2] type=1 value=[/root] empty=false
+  attrs typeof=object
+  attr a=[undefined]
+  attr b=[undefined]
+  attr id=[undefined]
+  attr name=[undefined]
+
+=== omitted third argument ===
+status=undefined
+length=0
+
+=== bare unclosed tag ===
+status=-6
+length=0
+
+=== attribute missing value ===
+status=-6
+length=0
+
+=== attribute missing equals ===
+status=-6
+length=0
+
+=== attribute missing quote close ===
+status=-8
+length=0
+
+=== empty input ===
+status=0
+length=0
+
+=== issue 2470 malformed nesting ===
+status=0
+length=4
+node[0] type=1 value=[test] empty=false
+  attrs typeof=object
+  attr a=[undefined]
+  attr b=[undefined]
+  attr id=[undefined]
+  attr name=[undefined]
+node[1] type=1 value=[br] empty=false
+  attrs typeof=object
+  attr a=[undefined]
+  attr b=[undefined]
+  attr id=[undefined]
+  attr name=[undefined]
+node[2] type=3 value=[foo] empty=false
+  attrs typeof=object
+  attr a=[undefined]
+  attr b=[undefined]
+  attr id=[undefined]
+  attr name=[undefined]
+node[3] type=1 value=[/test] empty=false
+  attrs typeof=object
+  attr a=[undefined]
+  attr b=[undefined]
+  attr id=[undefined]
+  attr name=[undefined]
