@@ -26,17 +26,38 @@
     "settings_log_level_info": {
         "message": "מידע"
     },
+    "settings_log_level_debug": {
+        "message": "ניפוי שגיאות"
+    },
+    "settings_log_level_trace": {
+        "message": "מעקב"
+    },
     "settings_max_execution_duration": {
         "message": "משך זמן ביצוע ActionScript מורשה מירבי (בשניות)"
     },
     "settings_player_version": {
         "message": "גרסת נגן הפלאש לדמות (טווח של 1-32)"
     },
+    "settings_background_execution_mode": {
+        "message": "הרצה ברקע"
+    },
+    "settings_background_execution_mode_none": {
+        "message": "השהיה"
+    },
+    "settings_background_execution_mode_main_thread": {
+        "message": "הרצה בתהליכון הראשי"
+    },
     "settings_preferred_renderer": {
         "message": "עיבוד מועדף"
     },
     "settings_preferred_renderer_auto": {
         "message": "אוטומטי"
+    },
+    "settings_device_font_renderer": {
+        "message": "מנוע רינדור גופני המכשיר"
+    },
+    "device_font_renderer_embedded": {
+        "message": "מוטמע"
     },
     "settings_advanced_options": {
         "message": "אפשרויות מתקדמות"

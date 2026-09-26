@@ -1,4 +1,4 @@
-context-menu-play = 播放
+context-menu-play = 启动
 context-menu-rewind = 后退
 context-menu-forward = 前进
 context-menu-back = 返回
