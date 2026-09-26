@@ -178,7 +178,7 @@ impl Surface {
                     let mut renderer = CommandRenderer::new(
                         &self.pipelines,
                         descriptors,
-                        &chunk_buffers.vertex_buffer,
+                        &chunk_buffers,
                         &mut mask_state,
                         needs_stencil,
                     );
