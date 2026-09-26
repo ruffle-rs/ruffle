@@ -21,7 +21,7 @@ PASSED: MovieClip.prototype.hasOwnProperty("attachBitmap") [./MovieClip.as:63]
 PASSED: MovieClip.prototype.hasOwnProperty("cacheAsBitmap") [./MovieClip.as:64]
 PASSED: MovieClip.prototype.hasOwnProperty("enabled") [./MovieClip.as:65]
 PASSED: MovieClip.prototype.hasOwnProperty("filters") [./MovieClip.as:66]
-FAILED: MovieClip.prototype.hasOwnProperty("forceSmoothing") [./MovieClip.as:67]
+PASSED: MovieClip.prototype.hasOwnProperty("forceSmoothing") [./MovieClip.as:67]
 PASSED: MovieClip.prototype.hasOwnProperty("opaqueBackground") [./MovieClip.as:68]
 PASSED: MovieClip.prototype.hasOwnProperty("scale9Grid") [./MovieClip.as:69]
 PASSED: MovieClip.prototype.hasOwnProperty("scrollRect") [./MovieClip.as:70]
@@ -931,6 +931,6 @@ PASSED: arguments.length == 0 [./MovieClip.as:2207]
 FAILED: expected: 'val1' obtained:  [./MovieClip.as:2209]
 PASSED: _root.var2 == 'val2' [./MovieClip.as:2214]
 PASSED: _root.var3 == 'val3\n' [./MovieClip.as:2215]
-#passed: 868
-#failed: 59
+#passed: 869
+#failed: 58
 #total tests run: 927

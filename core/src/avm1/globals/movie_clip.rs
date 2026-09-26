@@ -13,6 +13,7 @@ use crate::display_object::{
     Bitmap, BoundsMode, EditText, GotoInfo, MovieClip, StopOrPlay, TInteractiveObject,
 };
 use crate::ecma_conversions::f64_to_wrapping_i32;
+use crate::loader::AVM1_LOADED_IMAGE_DEPTH;
 use crate::prelude::*;
 use crate::string::AvmString;
 use crate::vminterface::Instantiator;
@@ -76,6 +77,7 @@ const PROTO_DECLS: StaticDeclarations = declare_static_properties! {
     "filters" => property(mc_getter!(filters), mc_setter!(set_filters); DONT_DELETE | DONT_ENUM | VERSION_8);
     "transform" => property(mc_getter!(transform), mc_setter!(set_transform); DONT_ENUM | VERSION_8);
     "blendMode" => property(mc_getter!(blend_mode), mc_setter!(set_blend_mode); DONT_DELETE | DONT_ENUM | VERSION_8);
+    "forceSmoothing" => property(mc_getter!(force_smoothing), mc_setter!(set_force_smoothing); DONT_DELETE | DONT_ENUM | VERSION_8);
     "scale9Grid" => property(mc_getter!(scale_9_grid), mc_setter!(set_scale_9_grid); DONT_DELETE | DONT_ENUM | VERSION_8);
     "getURL" => method(mc_method!(get_url); DONT_ENUM | DONT_DELETE);
     "unloadMovie" => method(mc_method!(unload_movie); DONT_ENUM | DONT_DELETE);
@@ -224,6 +226,33 @@ fn set_scale_9_grid<'gc>(
     } else {
         this.set_scaling_grid(Rectangle::default());
     };
+    Ok(())
+}
+
+fn force_smoothing<'gc>(
+    _this: MovieClip<'gc>,
+    _activation: &mut Activation<'_, 'gc>,
+) -> Result<Value<'gc>, Error<'gc>> {
+    // Flash Player never reports the value back.
+    Ok(Value::Undefined)
+}
+
+fn set_force_smoothing<'gc>(
+    this: MovieClip<'gc>,
+    activation: &mut Activation<'_, 'gc>,
+    value: Value<'gc>,
+) -> Result<(), Error<'gc>> {
+    let smoothing = value.as_bool(activation.swf_version());
+    // The shapes placed in this clip check this when they render.
+    this.set_force_smoothing(smoothing);
+    // Bitmaps don't, as the ones from `attachBitmap` are not affected, so the image loaded into
+    // this clip is updated here.
+    if let Some(bitmap) = this
+        .child_by_depth(AVM1_LOADED_IMAGE_DEPTH)
+        .and_then(|child| child.as_bitmap())
+    {
+        bitmap.set_smoothing(smoothing);
+    }
     Ok(())
 }
 
