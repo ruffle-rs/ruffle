@@ -66,6 +66,8 @@ pub enum DrawVertices<'a> {
     PosUvQuad,
     PosColorQuad,
     PosQuad,
+    Line,
+    RectLine,
     None,
 }
 
@@ -84,6 +86,8 @@ pub struct ChunkBufferBuilder {
     quad_pos_color_vertices: Range<wgpu::BufferAddress>,
     quad_pos_uv_vertices: Range<wgpu::BufferAddress>,
     quad_indices: Range<wgpu::BufferAddress>,
+    line_indices: Range<wgpu::BufferAddress>,
+    rect_line_indices: Range<wgpu::BufferAddress>,
 }
 
 impl ChunkBufferBuilder {
@@ -155,6 +159,12 @@ impl ChunkBufferBuilder {
         let quad_indices = indices
             .add(&[0u32, 1, 2, 0, 2, 3])
             .expect("Buffer was just created, quad indices should fit");
+        let line_indices = indices
+            .add(&[0u32, 1])
+            .expect("Buffer was just created, line indices should fit");
+        let rect_line_indices = indices
+            .add(&[0u32, 1, 2, 3, 0])
+            .expect("Buffer was just created, rect line indices should fit");
 
         Self {
             transforms,
@@ -164,6 +174,8 @@ impl ChunkBufferBuilder {
             quad_pos_color_vertices,
             quad_pos_uv_vertices,
             quad_indices,
+            line_indices,
+            rect_line_indices,
         }
     }
 
@@ -189,6 +201,14 @@ impl ChunkBufferBuilder {
             DrawVertices::PosUvQuad => (
                 Some(self.quad_pos_uv_vertices.clone()),
                 self.quad_indices.clone(),
+            ),
+            DrawVertices::Line => (
+                Some(self.quad_pos_color_vertices.clone()),
+                self.line_indices.clone(),
+            ),
+            DrawVertices::RectLine => (
+                Some(self.quad_pos_color_vertices.clone()),
+                self.rect_line_indices.clone(),
             ),
             DrawVertices::None => (None, self.quad_indices.clone()),
         };
