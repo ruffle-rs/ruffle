@@ -63,6 +63,7 @@ impl ChunkBuffers {
 #[derive(Copy, Clone)]
 pub enum DrawVertices<'a> {
     CustomPosUvQuad(&'a [u8]),
+    PosUvQuad,
     None,
 }
 
@@ -77,6 +78,7 @@ pub struct ChunkBufferBuilder {
     transforms: BufferBuilder,
     vertices: BufferBuilder,
     indices: BufferBuilder,
+    quad_pos_uv_vertices: Range<wgpu::BufferAddress>,
     quad_indices: Range<wgpu::BufferAddress>,
 }
 
@@ -90,6 +92,26 @@ impl ChunkBufferBuilder {
         indices.set_buffer_limit(chunk_buffers.index_buffer.size());
 
         // It's extremely likely that every chunk will have a quad, so let's prime those eagerly and save some complexity later
+        let quad_pos_uv_vertices = vertices
+            .add(&[
+                PosUvVertex {
+                    position: [0.0, 0.0],
+                    uv: [0.0, 0.0, 1.0],
+                },
+                PosUvVertex {
+                    position: [1.0, 0.0],
+                    uv: [1.0, 0.0, 1.0],
+                },
+                PosUvVertex {
+                    position: [1.0, 1.0],
+                    uv: [1.0, 1.0, 1.0],
+                },
+                PosUvVertex {
+                    position: [0.0, 1.0],
+                    uv: [0.0, 1.0, 1.0],
+                },
+            ])
+            .expect("Buffer was just created, quad vertices should fit");
         let quad_indices = indices
             .add(&[0u32, 1, 2, 0, 2, 3])
             .expect("Buffer was just created, quad indices should fit");
@@ -98,6 +120,7 @@ impl ChunkBufferBuilder {
             transforms,
             vertices,
             indices,
+            quad_pos_uv_vertices,
             quad_indices,
         }
     }
@@ -111,6 +134,10 @@ impl ChunkBufferBuilder {
         let (vertices, indices) = match vertices {
             DrawVertices::CustomPosUvQuad(vertices) => (
                 Some(self.vertices.add(vertices)?),
+                self.quad_indices.clone(),
+            ),
+            DrawVertices::PosUvQuad => (
+                Some(self.quad_pos_uv_vertices.clone()),
                 self.quad_indices.clone(),
             ),
             DrawVertices::None => (None, self.quad_indices.clone()),

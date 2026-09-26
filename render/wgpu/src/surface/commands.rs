@@ -265,7 +265,7 @@ impl CommandHandler for WgpuCommandHandler<'_, '_> {
                     transform.matrix,
                     transform.tz,
                     transform.color_transform,
-                    DrawVertices::None,
+                    DrawVertices::PosUvQuad,
                     |draw_offsets| DrawCommand::RenderTexture {
                         _texture: texture,
                         binds: bind_group,
@@ -377,7 +377,7 @@ impl CommandHandler for WgpuCommandHandler<'_, '_> {
             matrix,
             transform.tz,
             transform.color_transform,
-            DrawVertices::None,
+            DrawVertices::PosUvQuad,
             |draw_offsets| DrawCommand::RenderTexture {
                 _texture: PoolOrArcTexture::Manual((texture.texture.clone(), texture.view.clone())),
                 draw_offsets,
