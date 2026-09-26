@@ -84,6 +84,25 @@ pub struct DrawOffsets {
     pub index_count: u32,
 }
 
+impl DrawOffsets {
+    pub fn try_merge(&mut self, other: &DrawOffsets) -> bool {
+        if self.vertex_buffer == other.vertex_buffer
+            && self.index_buffer == other.index_buffer
+            && self.vertices == other.vertices
+            && self.indices == other.indices
+            && self.index_count == other.index_count
+            && self.instances.end == other.instances.start
+        {
+            // It's the same exact draw and contiguous instances, let's just engulf the instances
+            self.instances.end = other.instances.end;
+            return true;
+        }
+
+        // [NA] We could, in theory, get smart and try to join contiguous meshes. Is it worth it? It would potentially harm the instancing.
+        false
+    }
+}
+
 pub struct ChunkBufferBuilder {
     transforms: BufferBuilder,
     vertices: BufferBuilder,
