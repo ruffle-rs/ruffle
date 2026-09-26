@@ -181,6 +181,12 @@ pub struct PoolEntry<Type, Description: BufferDescription> {
     pool: Weak<PoolInner<(Type, Description)>>,
 }
 
+impl<Type: PartialEq, Description: BufferDescription> PartialEq for PoolEntry<Type, Description> {
+    fn eq(&self, other: &Self) -> bool {
+        Weak::ptr_eq(&self.pool, &other.pool) && self.item.eq(&other.item)
+    }
+}
+
 impl<Type, Description: BufferDescription> Debug for PoolEntry<Type, Description>
 where
     Type: Debug,

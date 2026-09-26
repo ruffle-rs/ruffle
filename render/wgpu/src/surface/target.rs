@@ -59,7 +59,7 @@ pub struct FrameBuffer {
     size: wgpu::Extent3d,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 /// Holds either a `PoolEntry` texture, or an `Arc`-wrapped texture.
 /// This is used to select between using a texture pool for our framebuffer/resolve-buffer
 /// (when rendering to the main screen), or rendering to a non-pooled `Texture`
