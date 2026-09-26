@@ -872,6 +872,11 @@ impl<'gc> MovieClip<'gc> {
         self.0.initialized()
     }
 
+    pub fn is_executing_avm2_frame_script(self) -> bool {
+        self.0
+            .contains_flag(MovieClipFlags::EXECUTING_AVM2_FRAME_SCRIPT)
+    }
+
     pub fn stop(self, context: &mut UpdateContext<'gc>) {
         self.0.stop(context)
     }

@@ -1,0 +1,5 @@
+construct: 1
+after outside goto: 1
+after goto 4: 4
+frame4
+after undefined goto: 4
