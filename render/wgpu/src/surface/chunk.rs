@@ -242,15 +242,13 @@ impl<'encoder> CommandRenderer<'encoder> {
     ) {
         self.prep_bitmap(render_pass, bind_group, blend_mode, render_stage3d);
 
-        let vertex_slice = if let Some(vertex_offset) = draw_offsets.vertices {
-            self.chunk_buffers.vertex_buffer.slice(vertex_offset)
-        } else {
-            self.descriptors.quad.vertices_pos_uv.slice(..)
-        };
-
         self.draw(
             render_pass,
-            vertex_slice,
+            self.chunk_buffers.vertex_buffer.slice(
+                draw_offsets
+                    .vertices
+                    .expect("Vertices must always be present"),
+            ),
             self.chunk_buffers.index_buffer.slice(draw_offsets.indices),
             6,
             draw_offsets.instances,
