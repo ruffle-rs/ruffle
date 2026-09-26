@@ -10,6 +10,7 @@ const ESTIMATED_OBJECTS_PER_CHUNK: u64 = 200;
 pub struct ChunkBuffers {
     pub transforms: wgpu::Buffer,
     pub vertex_buffer: wgpu::Buffer,
+    pub index_buffer: wgpu::Buffer,
     pub bind_group: wgpu::BindGroup,
 }
 
@@ -33,6 +34,13 @@ impl ChunkBuffers {
             usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
             mapped_at_creation: false,
         });
+        let index_buffer = descriptors.device.create_buffer(&wgpu::BufferDescriptor {
+            label: None,
+            size: (wgpu::IndexFormat::Uint32.byte_size() as u64 * 6 * ESTIMATED_OBJECTS_PER_CHUNK)
+                .min(descriptors.limits.max_buffer_size),
+            usage: wgpu::BufferUsages::INDEX | wgpu::BufferUsages::COPY_DST,
+            mapped_at_creation: false,
+        });
         let bind_group = descriptors
             .device
             .create_bind_group(&wgpu::BindGroupDescriptor {
@@ -47,6 +55,7 @@ impl ChunkBuffers {
             transforms,
             bind_group,
             vertex_buffer,
+            index_buffer,
         }
     }
 }
@@ -60,12 +69,15 @@ pub enum DrawVertices<'a> {
 #[derive(Clone, Debug)]
 pub struct DrawOffsets {
     pub vertices: Option<Range<wgpu::BufferAddress>>,
+    pub indices: Range<wgpu::BufferAddress>,
     pub instances: Range<u32>,
 }
 
 pub struct ChunkBufferBuilder {
     transforms: BufferBuilder,
     vertices: BufferBuilder,
+    indices: BufferBuilder,
+    quad_indices: Range<wgpu::BufferAddress>,
 }
 
 impl ChunkBufferBuilder {
@@ -74,9 +86,19 @@ impl ChunkBufferBuilder {
         transforms.set_buffer_limit(chunk_buffers.transforms.size());
         let mut vertices = BufferBuilder::new(limits, 0);
         vertices.set_buffer_limit(chunk_buffers.vertex_buffer.size());
+        let mut indices = BufferBuilder::new(limits, 0);
+        indices.set_buffer_limit(chunk_buffers.index_buffer.size());
+
+        // It's extremely likely that every chunk will have a quad, so let's prime those eagerly and save some complexity later
+        let quad_indices = indices
+            .add(&[0u32, 1, 2, 0, 2, 3])
+            .expect("Buffer was just created, quad indices should fit");
+
         Self {
             transforms,
             vertices,
+            indices,
+            quad_indices,
         }
     }
 
@@ -86,14 +108,18 @@ impl ChunkBufferBuilder {
         vertices: DrawVertices,
     ) -> Result<DrawOffsets, BufferFull> {
         let transform_address = self.transforms.add(&[transform])?;
-        let vertex_address = match vertices {
-            DrawVertices::CustomPosUvQuad(vertices) => Some(self.vertices.add(vertices)?),
-            DrawVertices::None => None,
+        let (vertices, indices) = match vertices {
+            DrawVertices::CustomPosUvQuad(vertices) => (
+                Some(self.vertices.add(vertices)?),
+                self.quad_indices.clone(),
+            ),
+            DrawVertices::None => (None, self.quad_indices.clone()),
         };
         let instance = (transform_address.start as usize / size_of::<Transforms>()) as u32;
         Ok(DrawOffsets {
+            vertices,
+            indices,
             instances: instance..instance + 1,
-            vertices: vertex_address,
         })
     }
 
@@ -107,5 +133,7 @@ impl ChunkBufferBuilder {
             .copy_to(staging_belt, draw_encoder, &chunk_buffers.transforms);
         self.vertices
             .copy_to(staging_belt, draw_encoder, &chunk_buffers.vertex_buffer);
+        self.indices
+            .copy_to(staging_belt, draw_encoder, &chunk_buffers.index_buffer);
     }
 }
