@@ -284,10 +284,12 @@ impl CommandHandler for WgpuCommandHandler<'_, '_> {
                     |instance_index| DrawCommand::RenderTexture {
                         _texture: texture,
                         binds: bind_group,
-                        instance_range: instance_index..instance_index + 1,
+                        draw_offsets: DrawOffsets {
+                            vertices: None,
+                            instances: instance_index..instance_index + 1,
+                        },
                         blend_mode,
                         render_stage3d: false,
-                        vertex_offset: None,
                     },
                 );
             }
@@ -363,8 +365,7 @@ impl CommandHandler for WgpuCommandHandler<'_, '_> {
             |draw_offsets| DrawCommand::RenderTexture {
                 _texture: PoolOrArcTexture::Manual((texture.texture.clone(), texture.view.clone())),
                 binds: binds.bind_group.clone(),
-                instance_range: draw_offsets.instances,
-                vertex_offset: draw_offsets.vertices,
+                draw_offsets,
                 blend_mode: TrivialBlend::Normal,
                 render_stage3d: false,
             },
@@ -396,8 +397,10 @@ impl CommandHandler for WgpuCommandHandler<'_, '_> {
             transform.color_transform,
             |instance_index| DrawCommand::RenderTexture {
                 _texture: PoolOrArcTexture::Manual((texture.texture.clone(), texture.view.clone())),
-                instance_range: instance_index..instance_index + 1,
-                vertex_offset: None,
+                draw_offsets: DrawOffsets {
+                    vertices: None,
+                    instances: instance_index..instance_index + 1,
+                },
                 blend_mode: TrivialBlend::Normal,
                 render_stage3d: true,
                 binds: binds.bind_group.clone(),

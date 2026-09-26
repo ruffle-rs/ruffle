@@ -57,7 +57,7 @@ pub enum DrawVertices<'a> {
     None,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct DrawOffsets {
     pub vertices: Option<wgpu::BufferAddress>,
     pub instances: Range<u32>,
