@@ -251,7 +251,7 @@ impl<'encoder> CommandRenderer<'encoder> {
         self.draw(
             render_pass,
             vertex_slice,
-            self.descriptors.quad.indices.slice(..),
+            self.chunk_buffers.index_buffer.slice(draw_offsets.indices),
             6,
             draw_offsets.instances,
         );
