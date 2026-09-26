@@ -53,10 +53,10 @@ pub enum DrawCommand {
         draw_offsets: DrawOffsets,
     },
     DrawLine {
-        instance_range: Range<u32>,
+        draw_offsets: DrawOffsets,
     },
     DrawLineRect {
-        instance_range: Range<u32>,
+        draw_offsets: DrawOffsets,
     },
     SetMask(MaskState),
 }
@@ -131,11 +131,11 @@ impl<'encoder> CommandRenderer<'encoder> {
             DrawCommand::DrawColor { draw_offsets } => {
                 self.draw_color(render_pass, draw_offsets.clone())
             }
-            DrawCommand::DrawLine { instance_range } => {
-                self.draw_lines::<false>(render_pass, instance_range.clone())
+            DrawCommand::DrawLine { draw_offsets } => {
+                self.draw_lines::<false>(render_pass, draw_offsets.clone())
             }
-            DrawCommand::DrawLineRect { instance_range } => {
-                self.draw_lines::<true>(render_pass, instance_range.clone())
+            DrawCommand::DrawLineRect { draw_offsets } => {
+                self.draw_lines::<true>(render_pass, draw_offsets.clone())
             }
             DrawCommand::SetMask(mask_state) => self.set_mask_state(*mask_state),
             DrawCommand::RenderAlphaMask {
@@ -351,20 +351,20 @@ impl<'encoder> CommandRenderer<'encoder> {
     pub fn draw_lines<const RECT: bool>(
         &self,
         render_pass: &mut wgpu::RenderPass<'encoder>,
-        instance_range: Range<u32>,
+        draw_offsets: DrawOffsets,
     ) {
         self.prep_lines(render_pass);
 
         self.draw(
             render_pass,
-            self.descriptors.quad.vertices_pos_color.slice(..),
-            if RECT {
-                self.descriptors.quad.indices_line_rect.slice(..)
-            } else {
-                self.descriptors.quad.indices_line.slice(..)
-            },
+            self.chunk_buffers.vertex_buffer.slice(
+                draw_offsets
+                    .vertices
+                    .expect("Vertices must always be present"),
+            ),
+            self.chunk_buffers.index_buffer.slice(draw_offsets.indices),
             if RECT { 5 } else { 2 },
-            instance_range,
+            draw_offsets.instances,
         );
     }
 
