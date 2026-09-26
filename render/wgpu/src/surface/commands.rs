@@ -145,27 +145,11 @@ impl<'encoder, 'global: 'encoder> WgpuCommandHandler<'encoder, 'global> {
         result
     }
 
-    fn add_to_current(
-        &mut self,
-        matrix: Matrix,
-        tz: f64,
-        color_transform: ColorTransform,
-        command_builder: impl FnOnce(DrawOffsets) -> DrawCommand,
-    ) {
-        self.add_to_current_with_vertices(
-            matrix,
-            tz,
-            color_transform,
-            DrawVertices::None,
-            command_builder,
-        )
-    }
-
     fn push_command(&mut self, command: DrawCommand) {
         self.current.push(command);
     }
 
-    fn add_to_current_with_vertices(
+    fn add_to_current(
         &mut self,
         matrix: Matrix,
         tz: f64,
@@ -281,6 +265,7 @@ impl CommandHandler for WgpuCommandHandler<'_, '_> {
                     transform.matrix,
                     transform.tz,
                     transform.color_transform,
+                    DrawVertices::None,
                     |draw_offsets| DrawCommand::RenderTexture {
                         _texture: texture,
                         binds: bind_group,
@@ -354,7 +339,7 @@ impl CommandHandler for WgpuCommandHandler<'_, '_> {
             &self.descriptors.bitmap_samplers,
         );
 
-        self.add_to_current_with_vertices(
+        self.add_to_current(
             matrix,
             transform.tz,
             transform.color_transform,
@@ -392,6 +377,7 @@ impl CommandHandler for WgpuCommandHandler<'_, '_> {
             matrix,
             transform.tz,
             transform.color_transform,
+            DrawVertices::None,
             |draw_offsets| DrawCommand::RenderTexture {
                 _texture: PoolOrArcTexture::Manual((texture.texture.clone(), texture.view.clone())),
                 draw_offsets,
@@ -407,6 +393,7 @@ impl CommandHandler for WgpuCommandHandler<'_, '_> {
             transform.matrix,
             transform.tz,
             transform.color_transform,
+            DrawVertices::None,
             |draw_offsets| DrawCommand::RenderShape {
                 shape,
                 instance_range: draw_offsets.instances,
@@ -419,6 +406,7 @@ impl CommandHandler for WgpuCommandHandler<'_, '_> {
             matrix,
             0.0,
             ColorTransform::multiply_from(color),
+            DrawVertices::None,
             |draw_offsets| DrawCommand::DrawRect {
                 instance_range: draw_offsets.instances,
             },
@@ -437,6 +425,7 @@ impl CommandHandler for WgpuCommandHandler<'_, '_> {
                 matrix,
                 0.0,
                 ColorTransform::multiply_from(color),
+                DrawVertices::None,
                 |draw_offsets| DrawCommand::DrawLine {
                     instance_range: draw_offsets.instances,
                 },
@@ -456,6 +445,7 @@ impl CommandHandler for WgpuCommandHandler<'_, '_> {
                 matrix,
                 0.0,
                 ColorTransform::multiply_from(color),
+                DrawVertices::None,
                 |draw_offsets| DrawCommand::DrawLineRect {
                     instance_range: draw_offsets.instances,
                 },
@@ -549,13 +539,17 @@ impl CommandHandler for WgpuCommandHandler<'_, '_> {
                 label: None,
             });
 
-        self.add_to_current(matrix, 0.0, Default::default(), |draw_offsets| {
-            DrawCommand::RenderAlphaMask {
+        self.add_to_current(
+            matrix,
+            0.0,
+            Default::default(),
+            DrawVertices::None,
+            |draw_offsets| DrawCommand::RenderAlphaMask {
                 maskee,
                 mask,
                 binds,
                 instance_range: draw_offsets.instances,
-            }
-        });
+            },
+        );
     }
 }
