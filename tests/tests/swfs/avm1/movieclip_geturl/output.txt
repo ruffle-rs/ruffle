@@ -1,0 +1,6 @@
+Navigator::navigate_to_url:
+  URL: http://www.example.com
+  Target: _blank
+  Method: POST
+  Param: value2=2
+  Param: value1=string
