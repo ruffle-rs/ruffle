@@ -150,14 +150,14 @@ impl<'encoder, 'global: 'encoder> WgpuCommandHandler<'encoder, 'global> {
         matrix: Matrix,
         tz: f64,
         color_transform: ColorTransform,
-        command_builder: impl FnOnce(u32) -> DrawCommand,
+        command_builder: impl FnOnce(DrawOffsets) -> DrawCommand,
     ) {
         self.add_to_current_with_vertices(
             matrix,
             tz,
             color_transform,
             DrawVertices::None,
-            |offsets| command_builder(offsets.instances.start),
+            command_builder,
         )
     }
 
@@ -281,13 +281,10 @@ impl CommandHandler for WgpuCommandHandler<'_, '_> {
                     transform.matrix,
                     transform.tz,
                     transform.color_transform,
-                    |instance_index| DrawCommand::RenderTexture {
+                    |draw_offsets| DrawCommand::RenderTexture {
                         _texture: texture,
                         binds: bind_group,
-                        draw_offsets: DrawOffsets {
-                            vertices: None,
-                            instances: instance_index..instance_index + 1,
-                        },
+                        draw_offsets,
                         blend_mode,
                         render_stage3d: false,
                     },
@@ -395,12 +392,9 @@ impl CommandHandler for WgpuCommandHandler<'_, '_> {
             matrix,
             transform.tz,
             transform.color_transform,
-            |instance_index| DrawCommand::RenderTexture {
+            |draw_offsets| DrawCommand::RenderTexture {
                 _texture: PoolOrArcTexture::Manual((texture.texture.clone(), texture.view.clone())),
-                draw_offsets: DrawOffsets {
-                    vertices: None,
-                    instances: instance_index..instance_index + 1,
-                },
+                draw_offsets,
                 blend_mode: TrivialBlend::Normal,
                 render_stage3d: true,
                 binds: binds.bind_group.clone(),
@@ -413,9 +407,9 @@ impl CommandHandler for WgpuCommandHandler<'_, '_> {
             transform.matrix,
             transform.tz,
             transform.color_transform,
-            |instance_index| DrawCommand::RenderShape {
+            |draw_offsets| DrawCommand::RenderShape {
                 shape,
-                instance_range: instance_index..instance_index + 1,
+                instance_range: draw_offsets.instances,
             },
         );
     }
@@ -425,8 +419,8 @@ impl CommandHandler for WgpuCommandHandler<'_, '_> {
             matrix,
             0.0,
             ColorTransform::multiply_from(color),
-            |instance_index| DrawCommand::DrawRect {
-                instance_range: instance_index..instance_index + 1,
+            |draw_offsets| DrawCommand::DrawRect {
+                instance_range: draw_offsets.instances,
             },
         );
     }
@@ -443,8 +437,8 @@ impl CommandHandler for WgpuCommandHandler<'_, '_> {
                 matrix,
                 0.0,
                 ColorTransform::multiply_from(color),
-                |instance_index| DrawCommand::DrawLine {
-                    instance_range: instance_index..instance_index + 1,
+                |draw_offsets| DrawCommand::DrawLine {
+                    instance_range: draw_offsets.instances,
                 },
             );
         }
@@ -462,8 +456,8 @@ impl CommandHandler for WgpuCommandHandler<'_, '_> {
                 matrix,
                 0.0,
                 ColorTransform::multiply_from(color),
-                |instance_index| DrawCommand::DrawLineRect {
-                    instance_range: instance_index..instance_index + 1,
+                |draw_offsets| DrawCommand::DrawLineRect {
+                    instance_range: draw_offsets.instances,
                 },
             );
         }
@@ -555,12 +549,12 @@ impl CommandHandler for WgpuCommandHandler<'_, '_> {
                 label: None,
             });
 
-        self.add_to_current(matrix, 0.0, Default::default(), |instance_index| {
+        self.add_to_current(matrix, 0.0, Default::default(), |draw_offsets| {
             DrawCommand::RenderAlphaMask {
                 maskee,
                 mask,
                 binds,
-                instance_range: instance_index..instance_index + 1,
+                instance_range: draw_offsets.instances,
             }
         });
     }
