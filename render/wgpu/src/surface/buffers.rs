@@ -59,7 +59,7 @@ pub enum DrawVertices<'a> {
 
 #[derive(Clone, Debug)]
 pub struct DrawOffsets {
-    pub vertices: Option<wgpu::BufferAddress>,
+    pub vertices: Option<Range<wgpu::BufferAddress>>,
     pub instances: Range<u32>,
 }
 
@@ -87,7 +87,7 @@ impl ChunkBufferBuilder {
     ) -> Result<DrawOffsets, BufferFull> {
         let transform_address = self.transforms.add(&[transform])?;
         let vertex_address = match vertices {
-            DrawVertices::CustomPosUvQuad(vertices) => Some(self.vertices.add(vertices)?.start),
+            DrawVertices::CustomPosUvQuad(vertices) => Some(self.vertices.add(vertices)?),
             DrawVertices::None => None,
         };
         let instance = (transform_address.start as usize / size_of::<Transforms>()) as u32;
