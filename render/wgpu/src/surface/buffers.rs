@@ -2,6 +2,7 @@ use crate::buffer_builder::{BufferBuilder, BufferFull};
 use crate::descriptors::Descriptors;
 use crate::{PosUvVertex, Transforms};
 use std::mem;
+use std::ops::Range;
 use wgpu::util::StagingBelt;
 
 const ESTIMATED_OBJECTS_PER_CHUNK: u64 = 200;
@@ -56,6 +57,12 @@ pub enum DrawVertices<'a> {
     None,
 }
 
+#[derive(Clone)]
+pub struct DrawOffsets {
+    pub vertices: Option<wgpu::BufferAddress>,
+    pub instances: Range<u32>,
+}
+
 pub struct ChunkBufferBuilder {
     transforms: BufferBuilder,
     vertices: BufferBuilder,
@@ -77,16 +84,17 @@ impl ChunkBufferBuilder {
         &mut self,
         transform: Transforms,
         vertices: DrawVertices,
-    ) -> Result<(u32, Option<wgpu::BufferAddress>), BufferFull> {
+    ) -> Result<DrawOffsets, BufferFull> {
         let transform_address = self.transforms.add(&[transform])?;
         let vertex_address = match vertices {
             DrawVertices::CustomPosUvQuad(vertices) => Some(self.vertices.add(vertices)?.start),
             DrawVertices::None => None,
         };
-        Ok((
-            (transform_address.start as usize / size_of::<Transforms>()) as u32,
-            vertex_address,
-        ))
+        let instance = (transform_address.start as usize / size_of::<Transforms>()) as u32;
+        Ok(DrawOffsets {
+            instances: instance..instance + 1,
+            vertices: vertex_address,
+        })
     }
 
     pub fn copy_to(
