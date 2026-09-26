@@ -65,6 +65,83 @@ impl DrawCommand {
             DrawCommand::RenderGradient { .. } => "draw gradient",
         }
     }
+
+    pub fn try_merge(&mut self, other: &DrawCommand) -> bool {
+        match (self, other) {
+            (
+                DrawCommand::DrawColor {
+                    draw_offsets: self_offsets,
+                },
+                DrawCommand::DrawColor {
+                    draw_offsets: other_offsets,
+                },
+            ) => self_offsets.try_merge(other_offsets),
+            (
+                DrawCommand::DrawLine {
+                    draw_offsets: self_offsets,
+                },
+                DrawCommand::DrawLine {
+                    draw_offsets: other_offsets,
+                },
+            ) => self_offsets.try_merge(other_offsets),
+            (
+                DrawCommand::RenderGradient {
+                    bind_group: self_bind_group,
+                    draw_offsets: self_offsets,
+                },
+                DrawCommand::RenderGradient {
+                    bind_group: other_bind_group,
+                    draw_offsets: other_offsets,
+                },
+            ) if self_bind_group == other_bind_group => self_offsets.try_merge(other_offsets),
+            (
+                DrawCommand::RenderTexture {
+                    _texture: self_texture,
+                    binds: self_binds,
+                    blend_mode: self_blend,
+                    render_stage3d: self_stage3d,
+                    draw_offsets: self_offsets,
+                },
+                DrawCommand::RenderTexture {
+                    _texture: other_texture,
+                    binds: other_binds,
+                    blend_mode: other_blend,
+                    render_stage3d: other_stage3d,
+                    draw_offsets: other_offsets,
+                },
+            ) if self_texture == other_texture
+                && self_binds == other_binds
+                && self_blend == other_blend
+                && self_stage3d == other_stage3d =>
+            {
+                self_offsets.try_merge(other_offsets)
+            }
+            (
+                DrawCommand::RenderAlphaMask {
+                    maskee: self_maskee,
+                    mask: self_mask,
+                    binds: self_binds,
+                    draw_offsets: self_offsets,
+                },
+                DrawCommand::RenderAlphaMask {
+                    maskee: other_maskee,
+                    mask: other_mask,
+                    binds: other_binds,
+                    draw_offsets: other_offsets,
+                },
+            ) if self_maskee == other_maskee
+                && self_mask == other_mask
+                && self_binds == other_binds =>
+            {
+                self_offsets.try_merge(other_offsets)
+            }
+            (DrawCommand::SetMask(self_mask), DrawCommand::SetMask(new_mask)) => {
+                *self_mask = *new_mask;
+                true
+            }
+            _ => false,
+        }
+    }
 }
 
 pub struct CommandRenderer<'encoder> {

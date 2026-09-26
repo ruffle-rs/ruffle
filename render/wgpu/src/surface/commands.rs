@@ -146,6 +146,11 @@ impl<'encoder, 'global: 'encoder> WgpuCommandHandler<'encoder, 'global> {
     }
 
     fn push_command(&mut self, command: DrawCommand) {
+        if let Some(existing) = self.current.last_mut()
+            && existing.try_merge(&command)
+        {
+            return;
+        }
         self.current.push(command);
     }
 
