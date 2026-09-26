@@ -1,0 +1,15 @@
+num_ticks = 1
+
+[fonts.a]
+family = "TestFontA"
+path = "TestFontA.ttf"
+
+[fonts.b]
+family = "TestFontB"
+path = "TestFontB.ttf"
+
+[[compilers]]
+type = "Rascal"
+target = "test.swf"
+scripts = ["test.as"]
+swf_version = 15

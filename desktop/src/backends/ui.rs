@@ -322,6 +322,9 @@ impl UiBackend for DesktopUiBackend {
         let name = &query.name;
         let is_bold = query.is_bold;
         let is_italic = query.is_italic;
+        // Reuse the lowercase name core already computed on the `FontQuery`
+        // (`FontQuery::lowercase_name`) instead of lowercasing `name` again here.
+        let lowercase_name = query.lowercase_name.as_str();
 
         let query = fontdb::Query {
             families: &[Family::Name(name)],
@@ -338,8 +341,36 @@ impl UiBackend for DesktopUiBackend {
             ..Default::default()
         };
 
+        // fontdb's `query` compares family names with exact, case-sensitive
+        // equality, so a SWF asking for e.g. "Microsoft Yahei" (lowercase)
+        // won't match the installed system font "Microsoft YaHei". When the
+        // exact query misses, resolve the canonical family casing
+        // case-insensitively and re-run the query, so fontdb still performs its
+        // own weight/style selection against the canonical name.
+        let id = match self.font_database.query(&query) {
+            Some(id) => Some(id),
+            None => {
+                let canonical = self.font_database.faces().find_map(|face| {
+                    face.families
+                        .iter()
+                        .find(|(fam, _)| fam.to_lowercase() == lowercase_name)
+                        .map(|(fam, _)| fam.clone())
+                });
+                canonical.and_then(|canon| {
+                    tracing::info!(
+                        "Device font \"{name}\" matched case-insensitively to \"{canon}\""
+                    );
+                    let query = fontdb::Query {
+                        families: &[Family::Name(&canon)],
+                        ..query
+                    };
+                    self.font_database.query(&query)
+                })
+            }
+        };
+
         // It'd be nice if we can get the full list of candidates... Feature request?
-        if let Some(id) = self.font_database.query(&query)
+        if let Some(id) = id
             && let Some(face) = self.font_database.face(id)
         {
             tracing::info!(
