@@ -1,6 +1,6 @@
 use crate::buffer_builder::{BufferBuilder, BufferFull};
 use crate::descriptors::Descriptors;
-use crate::{PosUvVertex, Transforms};
+use crate::{PosUvVertex, PosVertex, Transforms};
 use std::mem;
 use std::ops::Range;
 use wgpu::util::StagingBelt;
@@ -64,6 +64,7 @@ impl ChunkBuffers {
 pub enum DrawVertices<'a> {
     CustomPosUvQuad(&'a [u8]),
     PosUvQuad,
+    PosQuad,
     None,
 }
 
@@ -78,6 +79,7 @@ pub struct ChunkBufferBuilder {
     transforms: BufferBuilder,
     vertices: BufferBuilder,
     indices: BufferBuilder,
+    quad_pos_vertices: Range<wgpu::BufferAddress>,
     quad_pos_uv_vertices: Range<wgpu::BufferAddress>,
     quad_indices: Range<wgpu::BufferAddress>,
 }
@@ -112,6 +114,22 @@ impl ChunkBufferBuilder {
                 },
             ])
             .expect("Buffer was just created, quad vertices should fit");
+        let quad_pos_vertices = vertices
+            .add(&[
+                PosVertex {
+                    position: [0.0, 0.0],
+                },
+                PosVertex {
+                    position: [1.0, 0.0],
+                },
+                PosVertex {
+                    position: [1.0, 1.0],
+                },
+                PosVertex {
+                    position: [0.0, 1.0],
+                },
+            ])
+            .expect("Buffer was just created, quad vertices should fit");
         let quad_indices = indices
             .add(&[0u32, 1, 2, 0, 2, 3])
             .expect("Buffer was just created, quad indices should fit");
@@ -120,6 +138,7 @@ impl ChunkBufferBuilder {
             transforms,
             vertices,
             indices,
+            quad_pos_vertices,
             quad_pos_uv_vertices,
             quad_indices,
         }
@@ -134,6 +153,10 @@ impl ChunkBufferBuilder {
         let (vertices, indices) = match vertices {
             DrawVertices::CustomPosUvQuad(vertices) => (
                 Some(self.vertices.add(vertices)?),
+                self.quad_indices.clone(),
+            ),
+            DrawVertices::PosQuad => (
+                Some(self.quad_pos_vertices.clone()),
                 self.quad_indices.clone(),
             ),
             DrawVertices::PosUvQuad => (
