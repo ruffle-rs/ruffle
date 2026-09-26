@@ -334,12 +334,12 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
         let vertex_buffer = vertex_buffer.finish(
             &self.descriptors.device,
             create_debug_label!("Shape {} vertices", shape_id),
-            wgpu::BufferUsages::VERTEX,
+            wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_SRC,
         );
         let index_buffer = index_buffer.finish(
             &self.descriptors.device,
             create_debug_label!("Shape {} indices", shape_id),
-            wgpu::BufferUsages::INDEX,
+            wgpu::BufferUsages::INDEX | wgpu::BufferUsages::COPY_SRC,
         );
 
         let draws = draws
