@@ -406,10 +406,8 @@ impl CommandHandler for WgpuCommandHandler<'_, '_> {
             matrix,
             0.0,
             ColorTransform::multiply_from(color),
-            DrawVertices::None,
-            |draw_offsets| DrawCommand::DrawRect {
-                instance_range: draw_offsets.instances,
-            },
+            DrawVertices::PosColorQuad,
+            |draw_offsets| DrawCommand::DrawColor { draw_offsets },
         );
     }
 
