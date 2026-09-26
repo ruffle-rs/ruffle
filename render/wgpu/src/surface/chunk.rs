@@ -230,12 +230,7 @@ impl<'encoder> CommandRenderer<'encoder> {
                 .vertex_buffer
                 .as_ref()
                 .unwrap_or(&self.chunk_buffers.vertex_buffer)
-                .slice(
-                    draw_offsets
-                        .vertices
-                        .clone()
-                        .expect("Vertices must always be present"),
-                ),
+                .slice(draw_offsets.vertices.clone()),
             draw_offsets
                 .index_buffer
                 .as_ref()
@@ -260,12 +255,7 @@ impl<'encoder> CommandRenderer<'encoder> {
                 .vertex_buffer
                 .as_ref()
                 .unwrap_or(&self.chunk_buffers.vertex_buffer)
-                .slice(
-                    draw_offsets
-                        .vertices
-                        .clone()
-                        .expect("Vertices must always be present"),
-                ),
+                .slice(draw_offsets.vertices.clone()),
             draw_offsets
                 .index_buffer
                 .as_ref()
@@ -296,12 +286,7 @@ impl<'encoder> CommandRenderer<'encoder> {
                 .vertex_buffer
                 .as_ref()
                 .unwrap_or(&self.chunk_buffers.vertex_buffer)
-                .slice(
-                    draw_offsets
-                        .vertices
-                        .clone()
-                        .expect("Vertices must always be present"),
-                ),
+                .slice(draw_offsets.vertices.clone()),
             draw_offsets
                 .index_buffer
                 .as_ref()
@@ -329,12 +314,7 @@ impl<'encoder> CommandRenderer<'encoder> {
                 .vertex_buffer
                 .as_ref()
                 .unwrap_or(&self.chunk_buffers.vertex_buffer)
-                .slice(
-                    draw_offsets
-                        .vertices
-                        .clone()
-                        .expect("Vertices must always be present"),
-                ),
+                .slice(draw_offsets.vertices.clone()),
             draw_offsets
                 .index_buffer
                 .as_ref()
@@ -358,12 +338,7 @@ impl<'encoder> CommandRenderer<'encoder> {
                 .vertex_buffer
                 .as_ref()
                 .unwrap_or(&self.chunk_buffers.vertex_buffer)
-                .slice(
-                    draw_offsets
-                        .vertices
-                        .clone()
-                        .expect("Vertices must always be present"),
-                ),
+                .slice(draw_offsets.vertices.clone()),
             draw_offsets
                 .index_buffer
                 .as_ref()

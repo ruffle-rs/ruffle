@@ -78,7 +78,7 @@ pub enum DrawVertices<'a> {
 pub struct DrawOffsets {
     pub vertex_buffer: Option<wgpu::Buffer>,
     pub index_buffer: Option<wgpu::Buffer>,
-    pub vertices: Option<Range<wgpu::BufferAddress>>,
+    pub vertices: Range<wgpu::BufferAddress>,
     pub indices: Range<wgpu::BufferAddress>,
     pub instances: Range<u32>,
     pub index_count: u32,
@@ -200,11 +200,10 @@ impl ChunkBufferBuilder {
             DrawVertices::CustomPosUvQuad(vertex_bytes) => DrawOffsets {
                 vertex_buffer: None,
                 index_buffer: None,
-                vertices: Some(
-                    self.vertices
-                        .add(vertex_bytes)
-                        .map_err(|_| (BufferFull, vertices))?,
-                ),
+                vertices: self
+                    .vertices
+                    .add(vertex_bytes)
+                    .map_err(|_| (BufferFull, vertices))?,
                 indices: self.quad_indices.clone(),
                 instances,
                 index_count: 6,
@@ -212,7 +211,7 @@ impl ChunkBufferBuilder {
             DrawVertices::PosQuad => DrawOffsets {
                 vertex_buffer: None,
                 index_buffer: None,
-                vertices: Some(self.quad_pos_vertices.clone()),
+                vertices: self.quad_pos_vertices.clone(),
                 indices: self.quad_indices.clone(),
                 instances,
                 index_count: 6,
@@ -220,7 +219,7 @@ impl ChunkBufferBuilder {
             DrawVertices::PosColorQuad => DrawOffsets {
                 vertex_buffer: None,
                 index_buffer: None,
-                vertices: Some(self.quad_pos_color_vertices.clone()),
+                vertices: self.quad_pos_color_vertices.clone(),
                 indices: self.quad_indices.clone(),
                 instances,
                 index_count: 6,
@@ -228,7 +227,7 @@ impl ChunkBufferBuilder {
             DrawVertices::PosUvQuad => DrawOffsets {
                 vertex_buffer: None,
                 index_buffer: None,
-                vertices: Some(self.quad_pos_uv_vertices.clone()),
+                vertices: self.quad_pos_uv_vertices.clone(),
                 indices: self.quad_indices.clone(),
                 instances,
                 index_count: 6,
@@ -236,7 +235,7 @@ impl ChunkBufferBuilder {
             DrawVertices::Line => DrawOffsets {
                 vertex_buffer: None,
                 index_buffer: None,
-                vertices: Some(self.quad_pos_color_vertices.clone()),
+                vertices: self.quad_pos_color_vertices.clone(),
                 indices: self.line_indices.clone(),
                 instances,
                 index_count: 2,
@@ -244,7 +243,7 @@ impl ChunkBufferBuilder {
             DrawVertices::RectLine => DrawOffsets {
                 vertex_buffer: None,
                 index_buffer: None,
-                vertices: Some(self.quad_pos_color_vertices.clone()),
+                vertices: self.quad_pos_color_vertices.clone(),
                 indices: self.rect_line_indices.clone(),
                 instances,
                 index_count: 5,
@@ -258,7 +257,7 @@ impl ChunkBufferBuilder {
             } => DrawOffsets {
                 vertex_buffer: Some(vertex_buffer),
                 index_buffer: Some(index_buffer),
-                vertices: Some(vertex_range),
+                vertices: vertex_range,
                 indices: index_range,
                 instances,
                 index_count,
