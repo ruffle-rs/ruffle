@@ -4,9 +4,7 @@ use crate::{
     avm1::{NativeObject, Object as Avm1Object},
     avm2::{
         Activation, Avm2, EventObject as Avm2EventObject, SoundChannelObject,
-        SoundObject as Avm2SoundObject, TObject, bytearray::ByteArrayStorage,
-        globals::slots::flash_events_sample_data_event as sample_data_event_slots,
-        object::ByteArrayObject,
+        SoundObject as Avm2SoundObject, bytearray::ByteArrayStorage, object::ByteArrayObject,
     },
     context::UpdateContext,
     display_object::{self, DisplayObject, MovieClip, TDisplayObject},
@@ -432,6 +430,12 @@ impl<'gc> AudioManager<'gc> {
     /// must write to keep a generated sound playing; supplying fewer ends it.
     const GENERATED_SOUND_MIN_EVENT_SAMPLES: usize = 2048;
 
+    /// Number of stereo sample frames buffered for a generated sound by
+    /// dispatching `SampleDataEvent`s synchronously from `Sound.play()`,
+    /// before it returns. Flash Player dispatches at least 4 events of 4096
+    /// samples each (with the last one being partial) this way.
+    const GENERATED_SOUND_INITIAL_BUFFER_SAMPLES: usize = 16384;
+
     pub fn new() -> Self {
         Self {
             sounds: Vec::with_capacity(Self::MAX_SOUNDS),
@@ -530,9 +534,31 @@ impl<'gc> AudioManager<'gc> {
             .map(|sound| sound.instance)
             .collect();
 
+        // Pre-buffer enough audio to last until the next frame, with some margin.
+        let lookahead_seconds =
+            (Self::GENERATED_SOUND_LOOKAHEAD_FRAMES / *activation.context.frame_rate).clamp(
+                Self::GENERATED_SOUND_MIN_LOOKAHEAD_SECONDS,
+                Self::GENERATED_SOUND_MAX_LOOKAHEAD_SECONDS,
+            );
+        let lookahead_samples =
+            (lookahead_seconds * Self::GENERATED_SOUND_SAMPLE_RATE).ceil() as usize;
+
         for instance in instances {
-            Self::fill_generated_sound(activation, instance);
+            Self::fill_generated_sound(activation, instance, lookahead_samples);
         }
+    }
+
+    /// Fills the initial buffer of a just started generated sound,
+    /// by dispatching `SampleDataEvent`s synchronously.
+    pub fn prefill_generated_sound(
+        activation: &mut Activation<'_, 'gc>,
+        instance: SoundInstanceHandle,
+    ) {
+        Self::fill_generated_sound(
+            activation,
+            instance,
+            Self::GENERATED_SOUND_INITIAL_BUFFER_SAMPLES,
+        );
     }
 
     /// Returns the state of a generated sound instance, if it is still
@@ -553,17 +579,13 @@ impl<'gc> AudioManager<'gc> {
         }
     }
 
-    /// Dispatches `SampleDataEvent`s to a generated sound until enough of its audio is buffered.
-    fn fill_generated_sound(activation: &mut Activation<'_, 'gc>, instance: SoundInstanceHandle) {
-        // Pre-buffer enough audio to last until the next frame, with some margin.
-        let lookahead_seconds =
-            (Self::GENERATED_SOUND_LOOKAHEAD_FRAMES / *activation.context.frame_rate).clamp(
-                Self::GENERATED_SOUND_MIN_LOOKAHEAD_SECONDS,
-                Self::GENERATED_SOUND_MAX_LOOKAHEAD_SECONDS,
-            );
-        let lookahead_samples =
-            (lookahead_seconds * Self::GENERATED_SOUND_SAMPLE_RATE).ceil() as usize;
-
+    /// Dispatches `SampleDataEvent`s to a generated sound until
+    /// at least `target_samples` of its audio is buffered.
+    fn fill_generated_sound(
+        activation: &mut Activation<'_, 'gc>,
+        instance: SoundInstanceHandle,
+        target_samples: usize,
+    ) {
         loop {
             // The sound may have been stopped by a listener in the meantime,
             // even one on a different sound (e.g. with `SoundMixer.stopAll()`).
@@ -587,7 +609,7 @@ impl<'gc> AudioManager<'gc> {
             else {
                 return;
             };
-            if buffered >= lookahead_samples {
+            if buffered >= target_samples {
                 return;
             }
 
@@ -599,13 +621,9 @@ impl<'gc> AudioManager<'gc> {
             let sample_data_evt = Avm2EventObject::sample_data_event(activation, position, data);
             Avm2::dispatch_event(activation.context, sample_data_evt, sound_object.into());
 
-            // The listener may have replaced `event.data`; if it's not a
-            // ByteArray anymore, treat it as if no samples were written.
-            let samples = sample_data_evt
-                .get_slot(sample_data_event_slots::_DATA)
-                .as_object()
-                .and_then(|data| data.as_bytearray().map(|ba| read_generated_samples(&ba)))
-                .unwrap_or_default();
+            // Samples are always read from the ByteArray passed to the event,
+            // even if the listener has since replaced `event.data` (e.g. with `null`).
+            let samples = read_generated_samples(&data.storage());
 
             // If the listener stopped the sound, the samples it wrote are discarded.
             let Some(state) = activation
