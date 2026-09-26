@@ -1,0 +1,212 @@
+[class GradientBevelFilter]
+==baseline
+colors: 1193046,11259375,6636321
+alphas: 0,0.2,1
+alpha bytes: 0,51,255
+alpha inv: Infinity,5,1
+ratios: 17,128,239
+==ratios negative
+colors: 1193046,11259375,6636321
+alphas: 0,0.2,1
+alpha bytes: 0,51,255
+alpha inv: Infinity,5,1
+ratios: 0,0,0
+==ratios over 255
+colors: 1193046,11259375,6636321
+alphas: 0,0.2,1
+alpha bytes: 0,51,255
+alpha inv: Infinity,5,1
+ratios: 255,255,255
+==colors too few
+colors: 1193046
+alphas: 0
+alpha bytes: 0
+alpha inv: Infinity
+ratios: 17
+==alphas too few
+colors: 1193046,11259375,6636321
+alphas: 0.4980392156862745,1,1
+alpha bytes: 127,255,255
+alpha inv: 2.0078740157480315,1,1
+ratios: 17,128,239
+==ratios too few
+colors: 1193046
+alphas: 0
+alpha bytes: 0
+alpha inv: Infinity
+ratios: 128
+==colors too many
+colors: 1118481,2236962,3355443
+alphas: 0,0.4980392156862745,1
+alpha bytes: 0,127,255
+alpha inv: Infinity,2.0078740157480315,1
+ratios: 0,128,255
+==null arrays
+colors: 
+alphas: 
+alpha bytes: 
+alpha inv: 
+ratios: 
+==alphas out of range
+colors: 1193046,11259375,6636321
+alphas: 0,1,1
+alpha bytes: 0,255,255
+alpha inv: Infinity,1,1
+ratios: 17,128,239
+==defaults
+distance: 4
+angle: 45
+colors: 
+alphas: 
+alpha bytes: 
+ratios: 
+blurX: 4, blurY: 4
+strength: 1, quality: 1, type: inner, knockout: false
+==quality negative
+distance: 4
+angle: 45
+colors: 1193046,11259375,6636321
+alphas: 0,0.2,1
+alpha bytes: 0,51,255
+ratios: 17,128,239
+blurX: 4, blurY: 4
+strength: 1, quality: 0, type: inner, knockout: false
+==quality overflow
+distance: 4
+angle: 45
+colors: 1193046,11259375,6636321
+alphas: 0,0.2,1
+alpha bytes: 0,51,255
+ratios: 17,128,239
+blurX: 4, blurY: 4
+strength: 1, quality: 15, type: inner, knockout: false
+==type outer
+distance: 4
+angle: 45
+colors: 1193046,11259375,6636321
+alphas: 0,0.2,1
+alpha bytes: 0,51,255
+ratios: 17,128,239
+blurX: 4, blurY: 4
+strength: 1, quality: 1, type: outer, knockout: false
+==type null
+error: TypeError: Error #2007: Parameter type must be non-null.
+	at flash.filters::GradientBevelFilter/set type()
+	at flash.filters::GradientBevelFilter()
+	at Test/testFull()
+	at Test()
+==strength huge
+distance: 4
+angle: 45
+colors: 1193046,11259375,6636321
+alphas: 0,0.2,1
+alpha bytes: 0,51,255
+ratios: 17,128,239
+blurX: 4, blurY: 4
+strength: 0, quality: 1, type: inner, knockout: false
+[class GradientGlowFilter]
+==baseline
+colors: 1193046,11259375,6636321
+alphas: 0,0.2,1
+alpha bytes: 0,51,255
+alpha inv: Infinity,5,1
+ratios: 17,128,239
+==ratios negative
+colors: 1193046,11259375,6636321
+alphas: 0,0.2,1
+alpha bytes: 0,51,255
+alpha inv: Infinity,5,1
+ratios: 0,0,0
+==ratios over 255
+colors: 1193046,11259375,6636321
+alphas: 0,0.2,1
+alpha bytes: 0,51,255
+alpha inv: Infinity,5,1
+ratios: 255,255,255
+==colors too few
+colors: 1193046
+alphas: 0
+alpha bytes: 0
+alpha inv: Infinity
+ratios: 17
+==alphas too few
+colors: 1193046,11259375,6636321
+alphas: 0.4980392156862745,1,1
+alpha bytes: 127,255,255
+alpha inv: 2.0078740157480315,1,1
+ratios: 17,128,239
+==ratios too few
+colors: 1193046
+alphas: 0
+alpha bytes: 0
+alpha inv: Infinity
+ratios: 128
+==colors too many
+colors: 1118481,2236962,3355443
+alphas: 0,0.4980392156862745,1
+alpha bytes: 0,127,255
+alpha inv: Infinity,2.0078740157480315,1
+ratios: 0,128,255
+==null arrays
+colors: 
+alphas: 
+alpha bytes: 
+alpha inv: 
+ratios: 
+==alphas out of range
+colors: 1193046,11259375,6636321
+alphas: 0,1,1
+alpha bytes: 0,255,255
+alpha inv: Infinity,1,1
+ratios: 17,128,239
+==defaults
+distance: 4
+angle: 45
+colors: 
+alphas: 
+alpha bytes: 
+ratios: 
+blurX: 4, blurY: 4
+strength: 1, quality: 1, type: inner, knockout: false
+==quality negative
+distance: 4
+angle: 45
+colors: 1193046,11259375,6636321
+alphas: 0,0.2,1
+alpha bytes: 0,51,255
+ratios: 17,128,239
+blurX: 4, blurY: 4
+strength: 1, quality: 0, type: inner, knockout: false
+==quality overflow
+distance: 4
+angle: 45
+colors: 1193046,11259375,6636321
+alphas: 0,0.2,1
+alpha bytes: 0,51,255
+ratios: 17,128,239
+blurX: 4, blurY: 4
+strength: 1, quality: 15, type: inner, knockout: false
+==type outer
+distance: 4
+angle: 45
+colors: 1193046,11259375,6636321
+alphas: 0,0.2,1
+alpha bytes: 0,51,255
+ratios: 17,128,239
+blurX: 4, blurY: 4
+strength: 1, quality: 1, type: outer, knockout: false
+==type null
+error: TypeError: Error #2007: Parameter type must be non-null.
+	at flash.filters::GradientGlowFilter/set type()
+	at flash.filters::GradientGlowFilter()
+	at Test/testFull()
+	at Test()
+==strength huge
+distance: 4
+angle: 45
+colors: 1193046,11259375,6636321
+alphas: 0,0.2,1
+alpha bytes: 0,51,255
+ratios: 17,128,239
+blurX: 4, blurY: 4
+strength: 0, quality: 1, type: inner, knockout: false
