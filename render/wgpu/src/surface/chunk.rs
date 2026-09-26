@@ -49,8 +49,8 @@ pub enum DrawCommand {
         shape: ShapeHandle,
         instance_range: Range<u32>,
     },
-    DrawRect {
-        instance_range: Range<u32>,
+    DrawColor {
+        draw_offsets: DrawOffsets,
     },
     DrawLine {
         instance_range: Range<u32>,
@@ -66,7 +66,7 @@ impl DrawCommand {
         match self {
             DrawCommand::RenderShape { .. } => "render shape",
             DrawCommand::RenderTexture { .. } => "render texture",
-            DrawCommand::DrawRect { .. } => "draw rect",
+            DrawCommand::DrawColor { .. } => "draw color",
             DrawCommand::DrawLine { .. } => "draw line",
             DrawCommand::DrawLineRect { .. } => "draw line rect",
             DrawCommand::SetMask(_) => "set mask state",
@@ -128,8 +128,8 @@ impl<'encoder> CommandRenderer<'encoder> {
                 shape,
                 instance_range,
             } => self.render_shape(render_pass, shape, instance_range.clone()),
-            DrawCommand::DrawRect { instance_range } => {
-                self.draw_rect(render_pass, instance_range.clone())
+            DrawCommand::DrawColor { draw_offsets } => {
+                self.draw_color(render_pass, draw_offsets.clone())
             }
             DrawCommand::DrawLine { instance_range } => {
                 self.draw_lines::<false>(render_pass, instance_range.clone())
@@ -328,19 +328,23 @@ impl<'encoder> CommandRenderer<'encoder> {
         }
     }
 
-    pub fn draw_rect(
+    pub fn draw_color(
         &self,
         render_pass: &mut wgpu::RenderPass<'encoder>,
-        instance_range: Range<u32>,
+        draw_offsets: DrawOffsets,
     ) {
         self.prep_color(render_pass);
 
         self.draw(
             render_pass,
-            self.descriptors.quad.vertices_pos_color.slice(..),
-            self.descriptors.quad.indices.slice(..),
+            self.chunk_buffers.vertex_buffer.slice(
+                draw_offsets
+                    .vertices
+                    .expect("Vertices must always be present"),
+            ),
+            self.chunk_buffers.index_buffer.slice(draw_offsets.indices),
             6,
-            instance_range,
+            draw_offsets.instances,
         );
     }
 
