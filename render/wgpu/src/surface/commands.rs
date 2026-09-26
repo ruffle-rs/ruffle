@@ -4,7 +4,7 @@ use crate::blend::TrivialBlend;
 use crate::buffer_pool::TexturePool;
 use crate::mesh::Mesh;
 use crate::surface::Surface;
-use crate::surface::buffers::{ChunkBufferBuilder, ChunkBuffers, DrawVertices};
+use crate::surface::buffers::{ChunkBufferBuilder, ChunkBuffers, DrawOffsets, DrawVertices};
 use crate::surface::chunk::{Chunk, ChunkBlendMode, DrawCommand};
 use crate::surface::mask::MaskState;
 use crate::surface::target::{CommandTarget, PoolOrArcTexture};
@@ -157,7 +157,7 @@ impl<'encoder, 'global: 'encoder> WgpuCommandHandler<'encoder, 'global> {
             tz,
             color_transform,
             DrawVertices::None,
-            |instance_range, _| command_builder(instance_range),
+            |offsets| command_builder(offsets.instances.start),
         )
     }
 
@@ -171,7 +171,7 @@ impl<'encoder, 'global: 'encoder> WgpuCommandHandler<'encoder, 'global> {
         tz: f64,
         color_transform: ColorTransform,
         vertices: DrawVertices,
-        command_builder: impl FnOnce(u32, Option<wgpu::BufferAddress>) -> DrawCommand,
+        command_builder: impl FnOnce(DrawOffsets) -> DrawCommand,
     ) {
         let transform = Transforms {
             world_matrix: [
@@ -188,10 +188,8 @@ impl<'encoder, 'global: 'encoder> WgpuCommandHandler<'encoder, 'global> {
             mult_color: color_transform.mult_rgba_normalized(),
             add_color: color_transform.add_rgba_normalized(),
         };
-        if let Ok((transform_index, vertex_offset)) =
-            self.chunk_buffer_builder.add(transform, vertices)
-        {
-            self.push_command(command_builder(transform_index, vertex_offset));
+        if let Ok(offsets) = self.chunk_buffer_builder.add(transform, vertices) {
+            self.push_command(command_builder(offsets));
         } else {
             self.result.push(Chunk::Draw {
                 chunk: mem::take(&mut self.current),
@@ -201,11 +199,11 @@ impl<'encoder, 'global: 'encoder> WgpuCommandHandler<'encoder, 'global> {
                     ChunkBufferBuilder::new(self.chunk_buffers, &self.descriptors.limits),
                 ),
             });
-            let (transform_index, vertex_offset) = self
+            let offsets = self
                 .chunk_buffer_builder
                 .add(transform, vertices)
                 .expect("Buffer must be able to fit a new thing, it was just emptied");
-            self.push_command(command_builder(transform_index, vertex_offset));
+            self.push_command(command_builder(offsets));
         }
     }
 }
@@ -362,11 +360,11 @@ impl CommandHandler for WgpuCommandHandler<'_, '_> {
             transform.tz,
             transform.color_transform,
             DrawVertices::CustomPosUvQuad(bytemuck::cast_slice(vertices)),
-            |instance_index, vertex_offset| DrawCommand::RenderTexture {
+            |draw_offsets| DrawCommand::RenderTexture {
                 _texture: PoolOrArcTexture::Manual((texture.texture.clone(), texture.view.clone())),
                 binds: binds.bind_group.clone(),
-                instance_range: instance_index..instance_index + 1,
-                vertex_offset,
+                instance_range: draw_offsets.instances,
+                vertex_offset: draw_offsets.vertices,
                 blend_mode: TrivialBlend::Normal,
                 render_stage3d: false,
             },
