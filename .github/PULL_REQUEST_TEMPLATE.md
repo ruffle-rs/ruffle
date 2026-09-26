@@ -14,7 +14,7 @@ too.
 <!-- How can we test this PR? -->
 
 <!--
-If possible, please follow our [test guidelines](https://github.com/ruffle-rs/ruffle/blob/master/CONTRIBUTING.md#test-guidelines)
+Please follow our [test guidelines](https://github.com/ruffle-rs/ruffle/blob/master/CONTRIBUTING.md#test-guidelines)
 to make a SWF test which should fail before this PR, and pass after it. This
 helps us protect against breaking your changes in the future.
 
@@ -27,6 +27,11 @@ observable change you make!
 If you need help with making tests, or do not believe this change is easily
 automatically testable, please describe how we can verify the changes ourselves.
 If there is real world content that we can test on, that helps a lot!
+-->
+
+<!--
+Note: do not mention how to run tests or how to format/lint the code, or that it
+was done as part of testing the PR; this is done automatically in CI.
 -->
 
 ## Checklist
