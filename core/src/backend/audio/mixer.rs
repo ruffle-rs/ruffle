@@ -7,7 +7,9 @@ use crate::tag_utils::SwfSlice;
 use ruffle_common::buffer::Substream;
 use ruffle_common::duration::FloatDuration;
 use slotmap::SlotMap;
+use std::collections::VecDeque;
 use std::io::Cursor;
+use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex, RwLock};
 use swf::AudioCompression;
 
@@ -178,6 +180,9 @@ struct SoundInstance {
     /// The audio stream. Call `next()` to yield sample frames.
     stream: Box<dyn Stream>,
 
+    /// The sample buffer shared with the stream, if this is a generated sound.
+    generated: Option<Arc<GeneratedSoundBuffer>>,
+
     /// Flag indicating whether this sound is still playing.
     /// If this flag is false, the sound will be cleaned up during the
     /// next loop of the sound thread.
@@ -206,6 +211,7 @@ impl SoundInstance {
         SoundInstance {
             handle: Some(handle),
             stream,
+            generated: None,
             active: true,
             left_transform: [1.0, 0.0],
             right_transform: [0.0, 1.0],
@@ -221,11 +227,21 @@ impl SoundInstance {
         SoundInstance {
             handle: None,
             stream,
+            generated: None,
             active: true,
             left_transform: [1.0, 0.0],
             right_transform: [0.0, 1.0],
             peak: [0.0, 0.0],
             range: ([f32::INFINITY; 2], [f32::NEG_INFINITY; 2]),
+        }
+    }
+
+    /// Creates a new `SoundInstance` for a generated sound.
+    fn new_generated(buffer: Arc<GeneratedSoundBuffer>) -> Self {
+        let stream = Box::new(GeneratedSoundStream::new(buffer.clone()));
+        SoundInstance {
+            generated: Some(buffer),
+            ..Self::new_stream(stream)
         }
     }
 
@@ -575,6 +591,52 @@ impl AudioMixer {
         Ok(handle)
     }
 
+    /// Starts a generated (synthesized) sound stream.
+    ///
+    /// Audio samples are provided with `append_generated_sound`.
+    pub fn start_generated_sound(&mut self) -> SoundInstanceHandle {
+        let buffer = Arc::new(GeneratedSoundBuffer::default());
+        let mut sound_instances = self
+            .sound_instances
+            .lock()
+            .expect("Cannot be called reentrant");
+        sound_instances.insert(SoundInstance::new_generated(buffer))
+    }
+
+    /// Returns the shared sample buffer of a generated sound instance.
+    fn generated_sound_buffer(
+        &self,
+        instance: SoundInstanceHandle,
+    ) -> Option<Arc<GeneratedSoundBuffer>> {
+        let sound_instances = self
+            .sound_instances
+            .lock()
+            .expect("Cannot be called reentrant");
+        sound_instances.get(instance)?.generated.clone()
+    }
+
+    /// Appends sample frames to a generated sound instance.
+    pub fn append_generated_sound(&mut self, instance: SoundInstanceHandle, samples: &[[f32; 2]]) {
+        if let Some(buffer) = self.generated_sound_buffer(instance) {
+            buffer.append(samples);
+        }
+    }
+
+    /// Returns the number of sample frames of a generated sound instance
+    /// that have been appended but not played yet.
+    pub fn generated_sound_buffered_samples(&self, instance: SoundInstanceHandle) -> Option<usize> {
+        self.generated_sound_buffer(instance)
+            .map(|buffer| buffer.buffered.load(Ordering::Relaxed))
+    }
+
+    /// Marks a generated sound instance as finished: it ends once
+    /// the already buffered samples have been played.
+    pub fn finish_generated_sound(&mut self, instance: SoundInstanceHandle) {
+        if let Some(buffer) = self.generated_sound_buffer(instance) {
+            buffer.finished.store(true, Ordering::Release);
+        }
+    }
+
     /// Starts a sound.
     ///
     /// The sound must have been registered using `AudioMixer::register_sound`.
@@ -879,6 +941,104 @@ impl Stream for EventSoundStream {
     }
 }
 
+/// The samples of a generated sound, shared between the main thread (which
+/// appends the samples supplied via `SampleDataEvent`) and the audio thread.
+#[derive(Default)]
+struct GeneratedSoundBuffer {
+    /// Sample frames appended by the main thread, not yet taken by the stream.
+    queue: Mutex<VecDeque<[f32; 2]>>,
+    /// The number of sample frames not played yet, including those
+    /// already moved to the stream's local playout buffer.
+    buffered: AtomicUsize,
+    /// Set by the main thread once ActionScript stops supplying samples. The
+    /// stream is exhausted once this is set and all buffered audio has drained.
+    finished: AtomicBool,
+}
+
+impl GeneratedSoundBuffer {
+    fn append(&self, samples: &[[f32; 2]]) {
+        self.queue
+            .lock()
+            .expect("Generated sound queue mutex poisoned")
+            .extend(samples);
+        self.buffered.fetch_add(samples.len(), Ordering::Release);
+    }
+}
+
+/// A stream for sounds synthesized in ActionScript via `SampleDataEvent`.
+struct GeneratedSoundStream {
+    /// Position counter (in output sample frames).
+    position: u32,
+    /// Local buffer drained from the shared queue to reduce lock contention.
+    playout_buffer: VecDeque<[f32; 2]>,
+    /// Samples shared with the main thread.
+    buffer: Arc<GeneratedSoundBuffer>,
+}
+
+impl GeneratedSoundStream {
+    /// Minimum local playout buffer size before pulling more samples from the shared queue.
+    /// 512 sample frames ≈ 11.6 ms at 44100 Hz, roughly one or two typical OS audio
+    /// callback sizes, keeping lock acquisitions to at most one or two per callback.
+    const REFILL_THRESHOLD: usize = 512;
+
+    fn new(buffer: Arc<GeneratedSoundBuffer>) -> Self {
+        Self {
+            position: 0,
+            playout_buffer: VecDeque::new(),
+            buffer,
+        }
+    }
+}
+
+impl dasp::signal::Signal for GeneratedSoundStream {
+    type Frame = [i16; 2];
+
+    #[inline]
+    fn next(&mut self) -> Self::Frame {
+        use dasp::Sample;
+
+        // Refill local buffer in bulk to reduce lock contention. Only take
+        // the lock if the shared queue has anything in it.
+        if self.playout_buffer.len() < Self::REFILL_THRESHOLD
+            && self.buffer.buffered.load(Ordering::Acquire) > self.playout_buffer.len()
+        {
+            let mut queue = self
+                .buffer
+                .queue
+                .lock()
+                .expect("Generated sound queue mutex poisoned");
+            self.playout_buffer.append(&mut queue);
+        }
+
+        self.position += 1;
+
+        if let Some([left, right]) = self.playout_buffer.pop_front() {
+            self.buffer.buffered.fetch_sub(1, Ordering::Relaxed);
+            return [left.to_sample(), right.to_sample()];
+        }
+
+        Default::default()
+    }
+
+    #[inline]
+    fn is_exhausted(&self) -> bool {
+        self.buffer.finished.load(Ordering::Acquire)
+            && self.buffer.buffered.load(Ordering::Acquire) == 0
+    }
+}
+
+impl Stream for GeneratedSoundStream {
+    #[inline]
+    fn source_position(&self) -> u32 {
+        self.position
+    }
+
+    #[inline]
+    fn source_sample_rate(&self) -> u16 {
+        44100
+    }
+}
+
 /// A stream that converts a source stream to a different sample rate.
 struct ConverterStream<S, I>(dasp::signal::interpolate::Converter<S, I>)
 where
@@ -1108,6 +1268,26 @@ macro_rules! impl_audio_mixer_backend {
             stream_info: &SoundStreamInfo,
         ) -> Result<SoundInstanceHandle, DecodeError> {
             self.$mixer.start_substream(stream_data, stream_info)
+        }
+
+        #[inline]
+        fn start_generated_sound(&mut self) -> SoundInstanceHandle {
+            self.$mixer.start_generated_sound()
+        }
+
+        #[inline]
+        fn append_generated_sound(&mut self, instance: SoundInstanceHandle, samples: &[[f32; 2]]) {
+            self.$mixer.append_generated_sound(instance, samples)
+        }
+
+        #[inline]
+        fn generated_sound_buffered_samples(&self, instance: SoundInstanceHandle) -> Option<usize> {
+            self.$mixer.generated_sound_buffered_samples(instance)
+        }
+
+        #[inline]
+        fn finish_generated_sound(&mut self, instance: SoundInstanceHandle) {
+            self.$mixer.finish_generated_sound(instance)
         }
 
         #[inline]
