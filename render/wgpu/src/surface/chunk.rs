@@ -2,7 +2,7 @@ use crate::blend::{ComplexBlend, TrivialBlend};
 use crate::descriptors::Descriptors;
 use crate::mesh::{DrawType, as_mesh};
 use crate::pipelines::Pipelines;
-use crate::surface::buffers::{ChunkBufferBuilder, DrawOffsets};
+use crate::surface::buffers::{ChunkBufferBuilder, ChunkBuffers, DrawOffsets};
 use crate::surface::mask::{MaskMode, MaskState};
 use crate::surface::target::PoolOrArcTexture;
 use ruffle_render::backend::ShapeHandle;
@@ -80,7 +80,7 @@ pub struct CommandRenderer<'encoder> {
     descriptors: &'encoder Descriptors,
     mask_state: &'encoder mut MaskState,
     needs_stencil: bool,
-    dynamic_vertex_buffer: &'encoder wgpu::Buffer,
+    chunk_buffers: &'encoder ChunkBuffers,
 }
 
 impl<'encoder> CommandRenderer<'encoder> {
@@ -88,7 +88,7 @@ impl<'encoder> CommandRenderer<'encoder> {
     pub fn new(
         pipelines: &'encoder Pipelines,
         descriptors: &'encoder Descriptors,
-        dynamic_vertex_buffer: &'encoder wgpu::Buffer,
+        chunk_buffers: &'encoder ChunkBuffers,
         mask_state: &'encoder mut MaskState,
         needs_stencil: bool,
     ) -> Self {
@@ -97,7 +97,7 @@ impl<'encoder> CommandRenderer<'encoder> {
             mask_state,
             descriptors,
             needs_stencil,
-            dynamic_vertex_buffer,
+            chunk_buffers,
         }
     }
 
@@ -243,7 +243,7 @@ impl<'encoder> CommandRenderer<'encoder> {
         self.prep_bitmap(render_pass, bind_group, blend_mode, render_stage3d);
 
         let vertex_slice = if let Some(vertex_offset) = draw_offsets.vertices {
-            self.dynamic_vertex_buffer.slice(vertex_offset)
+            self.chunk_buffers.vertex_buffer.slice(vertex_offset)
         } else {
             self.descriptors.quad.vertices_pos_uv.slice(..)
         };
