@@ -423,10 +423,8 @@ impl CommandHandler for WgpuCommandHandler<'_, '_> {
                 matrix,
                 0.0,
                 ColorTransform::multiply_from(color),
-                DrawVertices::None,
-                |draw_offsets| DrawCommand::DrawLine {
-                    instance_range: draw_offsets.instances,
-                },
+                DrawVertices::Line,
+                |draw_offsets| DrawCommand::DrawLine { draw_offsets },
             );
         }
     }
@@ -443,10 +441,8 @@ impl CommandHandler for WgpuCommandHandler<'_, '_> {
                 matrix,
                 0.0,
                 ColorTransform::multiply_from(color),
-                DrawVertices::None,
-                |draw_offsets| DrawCommand::DrawLineRect {
-                    instance_range: draw_offsets.instances,
-                },
+                DrawVertices::RectLine,
+                |draw_offsets| DrawCommand::DrawLineRect { draw_offsets },
             );
         }
     }
