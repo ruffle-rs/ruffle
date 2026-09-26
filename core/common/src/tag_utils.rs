@@ -5,6 +5,7 @@ use std::fmt::{Debug, Formatter};
 use std::sync::Arc;
 use swf::{Fixed8, HeaderExt, Rectangle, Twips};
 use url::Url;
+use yoke::Yoke;
 
 pub type SwfStream<'a> = swf::read::Reader<'a>;
 
@@ -366,24 +367,16 @@ impl Debug for SwfMovie {
     }
 }
 
+pub type YokeArc<Y, C = dyn yoke::erased::ErasedDestructor + Send + Sync> = Yoke<Y, Arc<C>>;
+
 /// A shared-ownership reference to some portion of an SWF datastream.
 #[derive(Debug, Clone, Collect)]
-#[collect(no_drop)]
-pub struct SwfSlice {
-    pub movie: Arc<SwfMovie>,
-    pub start: usize,
-    pub end: usize,
-}
+#[collect(require_static)]
+pub struct SwfSlice(Yoke<&'static [u8], Arc<SwfMovie>>);
 
 impl From<Arc<SwfMovie>> for SwfSlice {
     fn from(movie: Arc<SwfMovie>) -> Self {
-        let end = movie.data().len();
-
-        Self {
-            movie,
-            start: 0,
-            end,
-        }
+        Self(Yoke::attach_to_cart(movie, |m| m.data.as_slice()))
     }
 }
 
@@ -398,33 +391,23 @@ impl SwfSlice {
     /// Creates an empty SwfSlice.
     #[inline]
     pub fn empty(movie: Arc<SwfMovie>) -> Self {
-        Self {
-            movie,
-            start: 0,
-            end: 0,
-        }
+        Self(Yoke::attach_to_cart(movie, |m| &m.data[..0]))
     }
 
     /// Creates an empty SwfSlice of the same movie.
     #[inline]
     pub fn copy_empty(&self) -> Self {
-        Self::empty(self.movie.clone())
+        Self::empty(self.movie().clone())
     }
 
     /// Construct a new SwfSlice from a regular slice.
     ///
-    /// This function returns None if the given slice is not a subslice of the
-    /// current slice.
+    /// The parameter `slice` must be derived from the same buffer this slice
+    /// was, and must also be within bounds of this slice. If not, then the
+    /// returned slice will be empty.
     pub fn to_subslice(&self, slice: &[u8]) -> Self {
-        let self_pval = self.movie.data().as_ptr() as usize;
-        let slice_pval = slice.as_ptr() as usize;
-
-        if (self_pval + self.start) <= slice_pval && slice_pval < (self_pval + self.end) {
-            Self {
-                movie: self.movie.clone(),
-                start: slice_pval - self_pval,
-                end: (slice_pval - self_pval) + slice.len(),
-            }
+        if let Some(range) = self.data().subslice_range(slice) {
+            Self(self.0.map_project_cloned(|data, _| &data[range]))
         } else {
             self.copy_empty()
         }
@@ -435,18 +418,11 @@ impl SwfSlice {
     /// This function allows subslices outside the current slice to be formed,
     /// as long as they are valid subslices of the movie itself.
     pub fn to_unbounded_subslice(&self, slice: &[u8]) -> Self {
-        let self_pval = self.movie.data().as_ptr() as usize;
-        let self_len = self.movie.data().len();
-        let slice_pval = slice.as_ptr() as usize;
-
-        if self_pval <= slice_pval && slice_pval < (self_pval + self_len) {
-            Self {
-                movie: self.movie.clone(),
-                start: slice_pval - self_pval,
-                end: (slice_pval - self_pval) + slice.len(),
-            }
+        let movie = self.movie().clone();
+        if let Some(range) = movie.data().subslice_range(slice) {
+            Self(Yoke::attach_to_cart(movie, |m| &m.data[range]))
         } else {
-            self.copy_empty()
+            Self::empty(movie)
         }
     }
 
@@ -462,31 +438,52 @@ impl SwfSlice {
         self.to_subslice(reader.get_ref())
     }
 
+    pub fn with_mut(&mut self, f: impl FnOnce(&mut &[u8]) + 'static) {
+        self.0.with_mut(f)
+    }
+
     /// Convert the SwfSlice into a standard data slice.
     pub fn data(&self) -> &[u8] {
-        &self.movie.data()[self.start..self.end]
+        self.0.get()
+    }
+
+    /// Returns the data from the start of this slice up to the end of the whole movie.
+    pub fn data_until_end(&self) -> &[u8] {
+        let movie = self.movie();
+        let range = movie.data().subslice_range(&self.data()[..0]);
+        &movie.data()[range.unwrap_or_default().start..]
+    }
+
+    /// Get the SwfMovie this data comes from.
+    pub fn movie(&self) -> &Arc<SwfMovie> {
+        self.0.backing_cart()
     }
 
     /// Get the version of the SWF this data comes from.
     pub fn version(&self) -> u8 {
-        self.movie.header().version()
+        self.movie().version()
     }
 
     /// Checks if this slice is empty
     pub fn is_empty(&self) -> bool {
-        self.end == self.start
+        self.data().is_empty()
     }
 
     /// Construct a reader for this slice.
     ///
     /// The `from` parameter is the offset to start reading the slice from.
     pub fn read_from(&self, from: u64) -> swf::read::Reader<'_> {
-        swf::read::Reader::new(&self.data()[from as usize..], self.movie.version())
+        swf::read::Reader::new(&self.data()[from as usize..], self.version())
     }
 
     /// Get the length of the SwfSlice.
     pub fn len(&self) -> usize {
-        self.end - self.start
+        self.data().len()
+    }
+
+    /// Convert the SwfSlice into an erased `Arc` slice.
+    pub fn into_erased_yoke(self) -> YokeArc<&'static [u8]> {
+        self.0.erase_arc_cart()
     }
 }
 

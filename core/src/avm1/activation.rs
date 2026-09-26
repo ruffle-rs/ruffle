@@ -527,7 +527,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     }
 
     pub fn run_actions(&mut self, code: SwfSlice) -> Result<ReturnType<'gc>, Error<'gc>> {
-        let mut read = Reader::new(&code.movie.data()[code.start..], self.swf_version());
+        let mut read = Reader::new(code.data_until_end(), self.swf_version());
 
         loop {
             let result = self.do_action(&code, &mut read);
@@ -1551,7 +1551,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
         let val = self.context.avm1.pop();
         if val.as_bool(self.swf_version()) {
-            reader.seek(data.movie.data(), action.offset);
+            reader.seek(data.movie().data(), action.offset);
         }
         Ok(FrameControl::Continue)
     }
@@ -1664,7 +1664,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         reader: &mut Reader<'b>,
         data: &'b SwfSlice,
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
-        reader.seek(data.movie.data(), action.offset);
+        reader.seek(data.movie().data(), action.offset);
         Ok(FrameControl::Continue)
     }
 
