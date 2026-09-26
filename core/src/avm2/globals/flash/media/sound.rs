@@ -12,6 +12,7 @@ use crate::avm2::object::{
 };
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
+use crate::backend::audio::AudioManager;
 use crate::backend::navigator::Request;
 use crate::character::Character;
 use crate::display_object::SoundTransform;
@@ -198,6 +199,8 @@ pub fn play<'gc>(
                 .audio_manager
                 .attach_avm2_sound_channel(handle, sound_channel);
             sound_object.set_generated(activation.gc());
+            // Flash Player fills the initial buffer before `play()` returns.
+            AudioManager::prefill_generated_sound(activation, handle);
             return Ok(sound_channel.into());
         }
 
@@ -252,8 +255,8 @@ pub fn close<'gc>(
     Ok(Value::Undefined)
 }
 
-/// `Sound.load`
-pub fn load<'gc>(
+/// `Sound._load`
+pub fn _load<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     args: FunctionArgs<'_, 'gc>,
