@@ -1,0 +1,10 @@
+num_ticks = 1
+
+# TODO Filters roundtrip through Fixed16/Fixed8, Flash keeps original Numbers
+known_failure = true
+
+[[compilers]]
+type = "Asc"
+class = "Test"
+scripts = ["Test.as"]
+swf_version = 10
