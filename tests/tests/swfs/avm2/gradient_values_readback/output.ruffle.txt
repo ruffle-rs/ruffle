@@ -91,7 +91,8 @@ blurX: 4, blurY: 4
 strength: 1, quality: 1, type: outer, knockout: false
 ==type null
 error: TypeError: Error #2007: Parameter type must be non-null.
-	at flash.display::DisplayObject/set filters()
+	at flash.filters::GradientBevelFilter/set type()
+	at flash.filters::GradientBevelFilter()
 	at Test/testFull()
 	at Test()
 ==strength huge
@@ -196,7 +197,8 @@ blurX: 4, blurY: 4
 strength: 1, quality: 1, type: outer, knockout: false
 ==type null
 error: TypeError: Error #2007: Parameter type must be non-null.
-	at flash.display::DisplayObject/set filters()
+	at flash.filters::GradientGlowFilter/set type()
+	at flash.filters::GradientGlowFilter()
 	at Test/testFull()
 	at Test()
 ==strength huge
