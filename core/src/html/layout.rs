@@ -26,6 +26,14 @@ pub struct LayoutParams {
     pub font_type: FontType,
 }
 
+#[derive(Clone, Copy, Debug)]
+struct InlineImageFloat {
+    is_right: bool,
+    horizontal_extent: Twips,
+    start_y: Twips,
+    bottom: Twips,
+}
+
 /// Accumulates state while incrementally laying out a run of text.
 pub struct LayoutBuilder<'a, 'gc> {
     context: &'a mut dyn LayoutContext<'gc>,
@@ -80,6 +88,9 @@ pub struct LayoutBuilder<'a, 'gc> {
     /// A growing list of layout boxes that form the line currently being laid out.
     boxes: Vec<LayoutBox<'gc>>,
 
+    /// HTML IMG floats that can reduce the width available to text.
+    inline_image_floats: Vec<InlineImageFloat>,
+
     /// The bounds of all laid-out text, excluding margins.
     ///
     /// None indicates that no bounds have yet to be calculated. If the layout
@@ -132,6 +143,7 @@ impl<'a, 'gc> LayoutBuilder<'a, 'gc> {
             lines: Vec::new(),
             current_line_index: 0,
             boxes: Vec::new(),
+            inline_image_floats: Vec::new(),
             bounds: None,
             text_size_bounds: None,
             is_first_line: true,
@@ -145,8 +157,42 @@ impl<'a, 'gc> LayoutBuilder<'a, 'gc> {
     }
 
     fn lay_out_spans(&mut self, fs: &'a FormatSpans) {
-        for (span_start, _end, span_text, span) in fs.iter_spans() {
-            self.lay_out_span(span_start, span_text, span);
+        let images = fs.inline_images();
+        let mut next_image = 0;
+
+        for (span_start, span_end, span_text, span) in fs.iter_spans() {
+            let mut segment_start = 0;
+
+            while let Some(image) = images.get(next_image) {
+                if image.position < span_start {
+                    next_image += 1;
+                    continue;
+                }
+
+                if image.position > span_end {
+                    break;
+                }
+
+                let relative_position = image.position - span_start;
+
+                if relative_position > segment_start {
+                    self.lay_out_span(
+                        span_start + segment_start,
+                        &span_text[segment_start..relative_position],
+                        span,
+                    );
+                }
+
+                self.append_inline_image(image.position, next_image, image, span);
+                segment_start = relative_position;
+                next_image += 1;
+            }
+
+            self.lay_out_span(
+                span_start + segment_start,
+                &span_text[segment_start..],
+                span,
+            );
         }
     }
 
@@ -302,29 +348,35 @@ impl<'a, 'gc> LayoutBuilder<'a, 'gc> {
         let mut line_size_bounds = None;
         let mut box_count: i32 = 0;
         for linebox in self.boxes.iter_mut() {
-            let (text, _tf, font_set, params) =
-                linebox.as_renderable_text(self.text).expect("text");
-
-            // Flash ignores trailing spaces when aligning lines, so should we
-            if self.movie.version() >= 8 && self.current_line_span.align != swf::TextAlign::Left {
-                linebox.bounds = linebox
-                    .bounds
-                    .with_width(font_set.measure(text.trim_end(), params));
+            if let Some((text, _tf, font_set, params)) = linebox.as_renderable_text(self.text) {
+                // Flash ignores trailing spaces when aligning lines, so should we
+                if self.movie.version() >= 8 && self.current_line_span.align != swf::TextAlign::Left
+                {
+                    linebox.bounds = linebox
+                        .bounds
+                        .with_width(font_set.measure(text.trim_end(), params));
+                }
             }
 
-            Self::extend_bounds(&mut line_size_bounds, linebox.bounds);
-
-            box_count += 1;
+            if !linebox.is_inline_image() {
+                Self::extend_bounds(&mut line_size_bounds, linebox.bounds);
+                box_count += 1;
+            }
         }
 
         let mut line_size_bounds = line_size_bounds.unwrap_or_default();
 
         let left_adjustment =
             Self::left_alignment_offset(&self.current_line_span, self.is_first_line);
-        let right_adjustment = Twips::from_pixels(self.current_line_span.right_margin);
+        let (left_float_inset, right_float_inset) = self.active_inline_image_insets();
+        let right_adjustment =
+            Twips::from_pixels(self.current_line_span.right_margin) + right_float_inset;
 
-        let misalignment =
-            self.max_bounds - left_adjustment - right_adjustment - line_size_bounds.width();
+        let misalignment = self.max_bounds
+            - left_adjustment
+            - left_float_inset
+            - right_adjustment
+            - line_size_bounds.width();
         let align_adjustment = max(
             match self.effective_alignment() {
                 swf::TextAlign::Left | swf::TextAlign::Justify => Default::default(),
@@ -356,12 +408,18 @@ impl<'a, 'gc> LayoutBuilder<'a, 'gc> {
                     baseline_adjustment,
                 ));
                 layout_box.bounds += position;
+                box_count += 1;
+            } else if layout_box.is_inline_image() {
+                // IMG alignment is independent of paragraph alignment. Its X
+                // coordinate was chosen when the floating image was appended;
+                // here we only apply the line margin and baseline position.
+                let position = Position::from((left_adjustment, Twips::ZERO));
+                layout_box.bounds += position;
             } else if layout_box.is_bullet() {
                 let position = Position::from((Twips::ZERO, baseline_adjustment));
                 layout_box.bounds += position;
+                box_count += 1;
             }
-
-            box_count += 1;
         }
 
         line_size_bounds +=
@@ -372,12 +430,15 @@ impl<'a, 'gc> LayoutBuilder<'a, 'gc> {
             line_size_bounds += Size::from((Twips::ZERO, self.max_leading));
         }
 
+        let text_size_line_bounds =
+            line_size_bounds + Position::from((-left_float_inset, Twips::ZERO));
+
         if !self.is_input && is_line_empty && last_line {
             // For non-input fields, skip the last line if it's empty.
             // For input fields, we have to take the empty line into account,
             // otherwise it wouldn't be possible to click there to input text.
         } else {
-            Self::extend_bounds(&mut self.text_size_bounds, line_size_bounds);
+            Self::extend_bounds(&mut self.text_size_bounds, text_size_line_bounds);
         }
 
         self.flush_line(end);
@@ -391,10 +452,12 @@ impl<'a, 'gc> LayoutBuilder<'a, 'gc> {
         let mut boxes = mem::take(&mut self.boxes);
         let first_box = boxes.first().unwrap();
         let start = first_box.start();
-        let bounds = boxes
-            .iter()
-            .filter(|b| b.is_text_box())
-            .fold(first_box.bounds, |bounds, b| bounds + b.bounds);
+        let mut text_boxes = boxes.iter().filter(|b| b.is_text_box());
+        let bounds = if let Some(first_text_box) = text_boxes.next() {
+            text_boxes.fold(first_text_box.bounds, |bounds, b| bounds + b.bounds)
+        } else {
+            first_box.bounds
+        };
 
         // Update last line's end position to take into account the delimiter.
         // It's easier to do it here, but maybe after some refactors this update
@@ -455,7 +518,8 @@ impl<'a, 'gc> LayoutBuilder<'a, 'gc> {
         self.is_first_line = end_of_para;
         self.has_line_break = true;
 
-        let font_size = Twips::from_pixels(self.current_line_span.font.size);
+        self.current_line_span = span.clone();
+        let font_size = Twips::from_pixels(span.font.size);
         let metrics = self.font_set.unwrap().metrics();
         self.max_font_size = font_size;
         self.max_ascent = metrics.ascent(font_size);
@@ -670,7 +734,9 @@ impl<'a, 'gc> LayoutBuilder<'a, 'gc> {
         let metrics = font_set.metrics();
         let ascent = metrics.ascent(params.height());
         let descent = metrics.descent(params.height());
-        let box_origin = self.cursor - (Twips::ZERO, ascent).into();
+        let (left_float_inset, _) = self.active_inline_image_insets();
+        let box_origin =
+            self.cursor + (left_float_inset, Twips::ZERO).into() - (Twips::ZERO, ascent).into();
 
         let mut new_box = LayoutBox::from_text(text, start, end, font_set, span);
         let text_width = new_box.text_width();
@@ -680,6 +746,98 @@ impl<'a, 'gc> LayoutBuilder<'a, 'gc> {
         );
 
         self.cursor += (text_width, Twips::ZERO).into();
+        self.append_box(new_box);
+    }
+
+    fn active_inline_image_insets(&self) -> (Twips, Twips) {
+        let mut left = Twips::ZERO;
+        let mut right = Twips::ZERO;
+        let y = self.cursor.y();
+
+        for image_float in &self.inline_image_floats {
+            if y < image_float.start_y || y >= image_float.bottom {
+                continue;
+            }
+
+            if image_float.is_right {
+                right = right.max(image_float.horizontal_extent);
+            } else {
+                left = left.max(image_float.horizontal_extent);
+            }
+        }
+
+        (left, right)
+    }
+
+    fn append_inline_image(
+        &mut self,
+        position: usize,
+        index: usize,
+        image: &crate::html::text_format::InlineImage,
+        span: &TextSpan,
+    ) {
+        self.font_set = Some(self.resolve_font(span));
+        self.newspan(span);
+
+        let has_explicit_size = matches!(
+            (image.width, image.height),
+            (Some(width), Some(height)) if width != 0.0 && height != 0.0
+        );
+
+        let (width, height) = if has_explicit_size {
+            (image.width.unwrap(), image.height.unwrap())
+        } else {
+            (
+                image.intrinsic_width.unwrap_or(0.0),
+                image.intrinsic_height.unwrap_or(0.0),
+            )
+        };
+
+        let width = Twips::from_pixels(width);
+        let height = Twips::from_pixels(height);
+
+        let hspace = Twips::from_pixels(image.hspace.unwrap_or(8.0));
+        let vspace = Twips::from_pixels(image.vspace.unwrap_or(8.0));
+
+        let float_width = Twips::new(width.get().abs());
+        let float_height = Twips::new(height.get().abs());
+        let horizontal_extent = (float_width + hspace * 2).max(Twips::ZERO);
+        let vertical_extent = (float_height + vspace * 2).max(Twips::ZERO);
+
+        let starts_on_next_line = !self.is_start_of_line();
+        let line_advance = self.max_ascent + self.max_descent + self.line_leading_adjustment();
+        let float_start_y = if starts_on_next_line {
+            self.cursor.y() + line_advance
+        } else {
+            self.cursor.y()
+        };
+
+        if width != Twips::ZERO && height != Twips::ZERO {
+            self.inline_image_floats.push(InlineImageFloat {
+                is_right: image.align == Some(true),
+                horizontal_extent,
+                start_y: float_start_y,
+                bottom: float_start_y + vertical_extent,
+            });
+        }
+
+        let x = if image.align == Some(true) {
+            let right_margin = Twips::from_pixels(span.right_margin);
+            (self.max_bounds - right_margin - width - hspace).max(Twips::ZERO)
+        } else {
+            hspace
+        };
+
+        // Flash lays IMG out as a floating visual object. The placeholder
+        // space remains part of the text flow, while the image itself does
+        // not advance the text cursor or affect line height.
+        let box_origin = Position::from((
+            x - Twips::from_pixels(2.0),
+            float_start_y + vspace + Twips::from_pixels(1.0),
+        ));
+        let mut new_box = LayoutBox::from_inline_image(position, index);
+        new_box.bounds = BoxBounds::from_position_and_size(box_origin, Size::from((width, height)));
+
         self.append_box(new_box);
     }
 
@@ -764,8 +922,12 @@ impl<'a, 'gc> LayoutBuilder<'a, 'gc> {
     ///
     /// Offsets returned by this function should not be considered final;
     fn wrap_dimensions(&self, current_span: &TextSpan) -> (Twips, Twips) {
-        let width = self.max_bounds - Twips::from_pixels(self.current_line_span.right_margin);
-        let offset = Self::left_alignment_offset(current_span, self.is_first_line);
+        let (left_float_inset, right_float_inset) = self.active_inline_image_insets();
+        let width = self.max_bounds
+            - Twips::from_pixels(self.current_line_span.right_margin)
+            - right_float_inset;
+        let offset =
+            Self::left_alignment_offset(current_span, self.is_first_line) + left_float_inset;
 
         (width, offset + self.cursor.x())
     }
@@ -784,7 +946,7 @@ impl<'a, 'gc> LayoutBuilder<'a, 'gc> {
     }
 
     fn is_start_of_line(&self) -> bool {
-        self.boxes.is_empty()
+        self.boxes.iter().all(LayoutBox::is_inline_image)
     }
 }
 
@@ -1142,6 +1304,7 @@ pub enum LayoutContent<'gc> {
     /// The drawing will be rendered with its origin at the position of the
     /// layout box's bounds. The size of those bounds do not affect the
     /// rendering of the drawing.
+    InlineImage { position: usize, index: usize },
     Drawing {
         /// The position of the drawing in text.
         position: usize,
@@ -1162,6 +1325,11 @@ impl Debug for LayoutContent<'_> {
             LayoutContent::Bullet { position, .. } => f
                 .debug_struct("Bullet")
                 .field("position", position)
+                .finish(),
+            LayoutContent::InlineImage { position, index } => f
+                .debug_struct("InlineImage")
+                .field("position", position)
+                .field("index", index)
                 .finish(),
             LayoutContent::Drawing { position, .. } => f
                 .debug_struct("Drawing")
@@ -1223,6 +1391,14 @@ impl<'gc> LayoutBox<'gc> {
     /// TODO It's currently unused, but will be useful when adding support for
     /// images embedded in HTML.
     #[allow(unused)]
+    pub fn from_inline_image(position: usize, index: usize) -> Self {
+        Self {
+            bounds: Default::default(),
+            content: LayoutContent::InlineImage { position, index },
+            last_in_line: false,
+        }
+    }
+
     pub fn from_drawing(position: usize, drawing: Drawing) -> Self {
         Self {
             bounds: Default::default(),
@@ -1279,6 +1455,7 @@ impl<'gc> LayoutBox<'gc> {
                 *font_set,
                 *params,
             )),
+            LayoutContent::InlineImage { .. } => None,
             LayoutContent::Drawing { .. } => None,
         }
     }
@@ -1288,8 +1465,13 @@ impl<'gc> LayoutBox<'gc> {
         match &self.content {
             LayoutContent::Text { .. } => None,
             LayoutContent::Bullet { .. } => None,
+            LayoutContent::InlineImage { .. } => None,
             LayoutContent::Drawing { drawing, .. } => Some(drawing),
         }
+    }
+
+    pub fn is_inline_image(&self) -> bool {
+        matches!(&self.content, LayoutContent::InlineImage { .. })
     }
 
     pub fn is_text_box(&self) -> bool {
@@ -1308,6 +1490,7 @@ impl<'gc> LayoutBox<'gc> {
         match &self.content {
             LayoutContent::Text { start, .. } => *start,
             LayoutContent::Bullet { position, .. } => *position,
+            LayoutContent::InlineImage { position, .. } => *position,
             LayoutContent::Drawing { position, .. } => *position,
         }
     }
@@ -1316,6 +1499,7 @@ impl<'gc> LayoutBox<'gc> {
         match &self.content {
             LayoutContent::Text { end, .. } => *end,
             LayoutContent::Bullet { position, .. } => *position,
+            LayoutContent::InlineImage { position, .. } => *position,
             LayoutContent::Drawing { position, .. } => *position,
         }
     }

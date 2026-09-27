@@ -638,12 +638,27 @@ impl TextSpan {
     }
 }
 
+#[derive(Clone, Debug)]
+pub struct InlineImage {
+    pub position: usize,
+    pub src: WString,
+    pub id: Option<WString>,
+    pub width: Option<f64>,
+    pub height: Option<f64>,
+    pub align: Option<bool>,
+    pub hspace: Option<f64>,
+    pub vspace: Option<f64>,
+    pub intrinsic_width: Option<f64>,
+    pub intrinsic_height: Option<f64>,
+}
+
 /// Struct which contains text formatted by `TextSpan`s.
 #[derive(Clone, Debug)]
 pub struct FormatSpans {
     text: WString,
     displayed_text: WString,
     spans: Vec<TextSpan>,
+    inline_images: Vec<InlineImage>,
     default_format: TextFormat,
 }
 
@@ -659,6 +674,7 @@ impl FormatSpans {
             text: WString::new(),
             displayed_text: WString::new(),
             spans: vec![TextSpan::default()],
+            inline_images: Vec::new(),
             default_format: TextFormat::default(),
         }
     }
@@ -669,6 +685,7 @@ impl FormatSpans {
             text: text.into(),
             displayed_text: WString::new(),
             spans: spans.to_vec(),
+            inline_images: Vec::new(),
             default_format: Default::default(),
         }
     }
@@ -679,6 +696,7 @@ impl FormatSpans {
             text,
             displayed_text: WString::new(),
             spans: vec![TextSpan::with_length_and_format(len, &format)],
+            inline_images: Vec::new(),
             default_format: format,
         }
     }
@@ -710,6 +728,7 @@ impl FormatSpans {
         let mut format_stack = vec![default_format.clone()];
         let mut text = WString::new();
         let mut spans: Vec<TextSpan> = Vec::new();
+        let mut inline_images: Vec<InlineImage> = Vec::new();
 
         // quick_xml::Reader requires a [u8] slice, but doesn't actually care about Unicode;
         // this means we can pass the raw buffer in the Latin1 case.
@@ -984,6 +1003,36 @@ impl FormatSpans {
                                 );
                             }
                         }
+                        b"img" => {
+                            if let Some(src) = attribute(b"src") {
+                                inline_images.push(InlineImage {
+                                    position: text.len(),
+                                    src,
+                                    id: attribute(b"id"),
+                                    width: attribute(b"width").and_then(|value| value.parse().ok()),
+                                    height: attribute(b"height")
+                                        .and_then(|value| value.parse().ok()),
+                                    align: attribute(b"align").map(|value| {
+                                        value.to_utf8_lossy().eq_ignore_ascii_case("right")
+                                    }),
+                                    hspace: attribute(b"hspace")
+                                        .and_then(|value| value.parse().ok()),
+                                    vspace: attribute(b"vspace")
+                                        .and_then(|value| value.parse().ok()),
+                                    intrinsic_width: None,
+                                    intrinsic_height: None,
+                                });
+
+                                let mut image_format = format.clone();
+                                image_format.size = Some(2.0);
+
+                                text.push_str(WStr::from_units(b" "));
+                                spans.push(TextSpan::with_length_and_format(1, &image_format));
+                            }
+
+                            // IMG does not alter the text formatting stack.
+                            continue;
+                        }
                         b"span" => {
                             if let Some(class) = attribute(b"class") {
                                 let selector = &class_name_to_selector(&class);
@@ -1111,6 +1160,7 @@ impl FormatSpans {
             text,
             displayed_text: WString::new(),
             spans,
+            inline_images,
             default_format,
         };
         if condense_white && swf_version >= 8 {
@@ -1165,6 +1215,14 @@ impl FormatSpans {
     /// Retrieve the text backing the format spans.
     pub fn text(&self) -> &WStr {
         &self.text
+    }
+
+    pub fn inline_images(&self) -> &[InlineImage] {
+        &self.inline_images
+    }
+
+    pub fn inline_images_mut(&mut self) -> &mut [InlineImage] {
+        &mut self.inline_images
     }
 
     pub fn displayed_text(&self) -> &WStr {
@@ -1521,11 +1579,37 @@ impl FormatSpans {
             open_tags: Vec::new(),
         };
 
-        let spans = self.iter_spans();
+        let images = self.inline_images();
+        let mut next_image = 0;
 
-        for (_start, _end, text, span) in spans {
+        for (span_start, span_end, text, span) in self.iter_spans() {
             state.set_span(span);
-            state.push_text(text);
+            let mut segment_start = 0;
+
+            while let Some(image) = images.get(next_image) {
+                if image.position < span_start {
+                    next_image += 1;
+                    continue;
+                }
+
+                if image.position >= span_end {
+                    break;
+                }
+
+                let relative_position = image.position - span_start;
+
+                if relative_position > segment_start {
+                    state.push_text(&text[segment_start..relative_position]);
+                }
+
+                state.push_inline_image(image);
+                segment_start = relative_position + 1;
+                next_image += 1;
+            }
+
+            if segment_start < text.len() {
+                state.push_text(&text[segment_start..]);
+            }
         }
 
         state.close_all_tags();
@@ -1817,6 +1901,59 @@ impl<'a> FormatState<'a> {
             HtmlTag::A => WStr::from_units(b"</A>"),
             _ => unreachable!(),
         });
+    }
+
+    fn push_inline_image(&mut self, image: &InlineImage) {
+        self.result.push_str(WStr::from_units(b"<IMG SRC=\""));
+
+        let src = image.src.to_utf8_lossy();
+        let src = escape(&*src);
+        self.result.push_utf8(&src);
+
+        self.result.push_byte(b'"');
+
+        if let Some(id) = &image.id {
+            self.result.push_str(WStr::from_units(b" ID=\""));
+            let id = id.to_utf8_lossy();
+            let id = escape(&*id);
+            self.result.push_utf8(&id);
+            self.result.push_byte(b'"');
+        }
+
+        if let Some(width) = image.width
+            && width.is_finite()
+        {
+            let _ = write!(self.result, " WIDTH=\"{}\"", width.trunc() as i64);
+        }
+
+        if let Some(height) = image.height
+            && height.is_finite()
+        {
+            let _ = write!(self.result, " HEIGHT=\"{}\"", height.trunc() as i64);
+        }
+
+        if let Some(align_right) = image.align {
+            let _ = write!(
+                self.result,
+                " ALIGN=\"{}\"",
+                if align_right { "right" } else { "left" }
+            );
+        }
+
+        if let Some(vspace) = image.vspace
+            && vspace.is_finite()
+        {
+            let _ = write!(self.result, " VSPACE=\"{}\"", vspace.trunc() as i64);
+        }
+
+        if let Some(hspace) = image.hspace
+            && hspace.is_finite()
+        {
+            let _ = write!(self.result, " HSPACE=\"{}\"", hspace.trunc() as i64);
+        }
+
+        self.result.push_byte(b'>');
+        self.result.push_byte(b' ');
     }
 
     fn push_text(&mut self, text: &WStr) {

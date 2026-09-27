@@ -35,7 +35,7 @@ use chrono::Utc;
 use core::fmt;
 use gc_arena::barrier::unlock;
 use gc_arena::lock::{Lock, RefLock};
-use gc_arena::{Collect, Gc, Mutation};
+use gc_arena::{Collect, DynamicRoot, Gc, Mutation, Rootable};
 use ruffle_common::utils::HasPrefixField;
 use ruffle_macros::istr;
 use ruffle_render::commands::Command as RenderCommand;
@@ -73,6 +73,19 @@ pub enum AutoSizeMode {
 #[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]
 pub struct EditText<'gc>(Gc<'gc, EditTextData<'gc>>);
+
+#[derive(Clone)]
+struct EditTextHandle(DynamicRoot<Rootable![EditTextData<'_>]>);
+
+impl EditTextHandle {
+    fn stash<'gc>(context: &UpdateContext<'gc>, this: EditText<'gc>) -> Self {
+        Self(context.dynamic_root.stash(context.gc(), this.0))
+    }
+
+    fn fetch<'gc>(&self, context: &UpdateContext<'gc>) -> EditText<'gc> {
+        EditText(context.dynamic_root.fetch(&self.0))
+    }
+}
 
 impl fmt::Debug for EditText<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -119,6 +132,13 @@ pub struct EditTextData<'gc> {
 
     /// The calculated layout.
     layout: RefLock<Layout<'gc>>,
+
+    /// MovieClip containers used by HTML inline images.
+    inline_images: RefLock<Vec<Option<crate::display_object::MovieClip<'gc>>>>,
+
+    /// Incremented whenever inline-image state is replaced, so stale async
+    /// loads cannot update a newer htmlText value.
+    inline_image_generation: Cell<u64>,
 
     /// Style sheet used when parsing HTML.
     style_sheet: Lock<EditTextStyleSheet<'gc>>,
@@ -333,6 +353,8 @@ impl<'gc> EditText<'gc> {
                 border_color: Cell::new(Color::BLACK),
                 object: Lock::new(None),
                 layout: RefLock::new(Default::default()),
+                inline_images: RefLock::new(Vec::new()),
+                inline_image_generation: Cell::new(0),
                 bounds: Cell::new(*swf_tag.bounds()),
                 autosize_lazy_bounds: Cell::new(None),
                 autosize: Cell::new(autosize),
@@ -474,6 +496,44 @@ impl<'gc> EditText<'gc> {
         }
     }
 
+    fn clear_inline_images(self, context: &mut UpdateContext<'gc>) {
+        let images = self.0.text_spans.borrow().inline_images().to_vec();
+        let instances = unlock!(Gc::write(context.gc(), self.0), EditTextData, inline_images)
+            .borrow()
+            .clone();
+
+        if let Some(text_field_object) = self.object1() {
+            let mut activation = Avm1Activation::from_nothing(
+                context,
+                ActivationIdentifier::root("[Clear HTML inline images]"),
+                self.into(),
+            );
+
+            for (image, instance) in images.iter().zip(instances.iter()) {
+                let (Some(id), Some(instance)) = (&image.id, instance) else {
+                    continue;
+                };
+
+                let Some(instance_object) = instance.object1() else {
+                    continue;
+                };
+
+                let name = AvmString::new(activation.gc(), id.clone());
+
+                if matches!(
+                    text_field_object.get(name, &mut activation),
+                    Ok(Avm1Value::Object(current)) if Avm1Object::ptr_eq(current, instance_object)
+                ) {
+                    text_field_object.delete(&mut activation, name);
+                }
+            }
+        }
+
+        unlock!(Gc::write(context.gc(), self.0), EditTextData, inline_images)
+            .borrow_mut()
+            .clear();
+    }
+
     pub fn set_html_text(self, text: &WStr, context: &mut UpdateContext<'gc>) {
         if self.html_text() == text {
             // Note: this check not only prevents text relayout,
@@ -485,11 +545,161 @@ impl<'gc> EditText<'gc> {
             return;
         }
 
+        self.0
+            .inline_image_generation
+            .set(self.0.inline_image_generation.get().wrapping_add(1));
+
         if self.is_effectively_html() {
+            self.clear_inline_images(context);
             self.0.parse_html(text);
             self.relayout(context);
+            self.load_inline_images(context);
         } else {
             self.set_text(text, context);
+        }
+    }
+
+    fn load_inline_images(self, context: &mut UpdateContext<'gc>) {
+        let images = self.0.text_spans.borrow().inline_images().to_vec();
+        let player = context.player_handle();
+        let gc = context.gc();
+        let generation = self.0.inline_image_generation.get();
+        let mut needs_relayout = false;
+
+        for (index, image) in images.iter().enumerate() {
+            let already_loaded = unlock!(Gc::write(gc, self.0), EditTextData, inline_images)
+                .borrow()
+                .get(index)
+                .is_some_and(Option::is_some);
+
+            if already_loaded {
+                continue;
+            }
+
+            if image.src.is_empty() {
+                continue;
+            }
+
+            // `src` may identify an exported MovieClip in the current SWF
+            // instead of an external URL.
+            let linkage_target = context
+                .library
+                .library_for_movie(self.movie())
+                .and_then(|library| {
+                    library
+                        .character_by_export_name(&image.src)
+                        .and_then(|(id, _)| library.instantiate_by_id(id, gc))
+                })
+                .and_then(|display_object| display_object.as_movie_clip());
+
+            if let Some(target) = linkage_target {
+                target.set_placed_by_avm1_script(true);
+                target.set_parent(context, Some(self.into()));
+                {
+                    let mut instances =
+                        unlock!(Gc::write(gc, self.0), EditTextData, inline_images).borrow_mut();
+                    if let Some(instance) = instances.get_mut(index) {
+                        *instance = Some(target);
+                    }
+                }
+
+                target.post_instantiation(context, None, Instantiator::Avm1, true);
+
+                if self.0.inline_image_generation.get() != generation {
+                    continue;
+                }
+
+                if let Some(id) = &image.id {
+                    let name = AvmString::new(gc, id.clone());
+                    target.set_name(gc, name);
+                    target.set_has_explicit_name(true);
+
+                    if let Some(text_field_object) = self.object1()
+                        && let Some(target_object) = target.object1()
+                    {
+                        text_field_object.define_value(
+                            gc,
+                            name,
+                            target_object.into(),
+                            crate::avm1::Attribute::empty(),
+                        );
+                    }
+                }
+
+                let bounds = target.bounds(BoundsMode::Script);
+                let width = bounds.width();
+                let height = bounds.height();
+
+                if width > Twips::ZERO && height > Twips::ZERO {
+                    let width = width.to_pixels();
+                    let height = height.to_pixels();
+                    let mut text_spans = self.0.text_spans.borrow_mut();
+
+                    if let Some(inline_image) = text_spans.inline_images_mut().get_mut(index)
+                        && (inline_image.intrinsic_width != Some(width)
+                            || inline_image.intrinsic_height != Some(height))
+                    {
+                        inline_image.intrinsic_width = Some(width);
+                        inline_image.intrinsic_height = Some(height);
+                        needs_relayout = true;
+                    }
+                }
+
+                continue;
+            }
+
+            let target = crate::display_object::MovieClip::new(self.0.shared.swf.clone(), gc);
+            target.set_parent(context, Some(self.into()));
+            let request =
+                crate::backend::navigator::Request::get(image.src.to_utf8_lossy().into_owned());
+
+            let future = context.load_manager.load_movie_into_clip(
+                player.clone(),
+                DisplayObject::MovieClip(target),
+                request,
+                None,
+                crate::loader::MovieLoaderVMData::Avm1 {
+                    broadcaster: None,
+                    base_clip: self.into(),
+                },
+            );
+
+            let edit_text_handle = EditTextHandle::stash(context, self);
+            let target_handle = crate::display_object::MovieClipHandle::stash(context, target);
+            let completion_player = player.clone();
+
+            let future = Box::pin(async move {
+                future.await?;
+
+                completion_player.lock().unwrap().update(
+                    |context| -> Result<(), crate::loader::Error> {
+                        let edit_text = edit_text_handle.fetch(context);
+
+                        if edit_text.0.inline_image_generation.get() != generation {
+                            return Ok(());
+                        }
+
+                        let target = target_handle.fetch(context);
+                        edit_text.update_inline_image_dimensions(context, index, target);
+
+                        Ok(())
+                    },
+                )?;
+
+                Ok(())
+            });
+
+            context.navigator.spawn_future(future);
+
+            let mut instances =
+                unlock!(Gc::write(gc, self.0), EditTextData, inline_images).borrow_mut();
+            if let Some(instance) = instances.get_mut(index) {
+                *instance = Some(target);
+            }
+        }
+
+        if needs_relayout && self.0.inline_image_generation.get() == generation {
+            self.relayout(context);
         }
     }
 
@@ -861,6 +1071,42 @@ impl<'gc> EditText<'gc> {
         self.try_bind_text_field_variable(activation, true);
     }
 
+    fn update_inline_image_dimensions(
+        self,
+        context: &mut UpdateContext<'gc>,
+        index: usize,
+        image: crate::display_object::MovieClip<'gc>,
+    ) {
+        let bounds = image.bounds(BoundsMode::Script);
+        let width = bounds.width();
+        let height = bounds.height();
+
+        if width <= Twips::ZERO || height <= Twips::ZERO {
+            return;
+        }
+
+        let width = width.to_pixels();
+        let height = height.to_pixels();
+        let mut changed = false;
+
+        {
+            let mut text_spans = self.0.text_spans.borrow_mut();
+
+            if let Some(inline_image) = text_spans.inline_images_mut().get_mut(index)
+                && (inline_image.intrinsic_width != Some(width)
+                    || inline_image.intrinsic_height != Some(height))
+            {
+                inline_image.intrinsic_width = Some(width);
+                inline_image.intrinsic_height = Some(height);
+                changed = true;
+            }
+        }
+
+        if changed {
+            self.relayout(context);
+        }
+    }
+
     /// Relayout the `EditText`.
     ///
     /// This function operates exclusively with the text-span representation of
@@ -895,9 +1141,14 @@ impl<'gc> EditText<'gc> {
             is_word_wrap,
             font_type: self.0.font_type(),
         };
+        let inline_image_count = text_spans.inline_images().len();
         let new_layout =
             html::lower_from_text_spans(&text_spans, context, layout_params, content_width);
         drop(text_spans);
+
+        unlock!(Gc::write(context.gc(), self.0), EditTextData, inline_images)
+            .borrow_mut()
+            .resize_with(inline_image_count, || None);
 
         unlock!(Gc::write(context.gc(), self.0), EditTextData, layout).replace(new_layout);
         // reset scroll
@@ -1317,6 +1568,51 @@ impl<'gc> EditText<'gc> {
                 let underline_y = ascent + (max_descent / 2);
                 let underline_width = lbox.bounds().width();
                 self.render_underline(context, underline_width, underline_y, params.color);
+            }
+        }
+
+        if let LayoutContent::InlineImage { index, .. } = lbox.content() {
+            let image = self.0.inline_images.borrow().get(*index).copied().flatten();
+
+            if let Some(image) = image {
+                let requested_size = self
+                    .0
+                    .text_spans
+                    .borrow()
+                    .inline_images()
+                    .get(*index)
+                    .map(|inline_image| (inline_image.width, inline_image.height));
+
+                let should_scale = matches!(
+                    requested_size,
+                    Some((Some(width), Some(height))) if width != 0.0 && height != 0.0
+                );
+
+                if should_scale {
+                    let image_bounds = image.bounds(BoundsMode::Script);
+                    let image_width = image_bounds.width();
+                    let image_height = image_bounds.height();
+                    let target_width = lbox.bounds().width();
+                    let target_height = lbox.bounds().height();
+
+                    if image_width > Twips::ZERO && image_height > Twips::ZERO {
+                        let scale_x =
+                            target_width.to_pixels() as f32 / image_width.to_pixels() as f32;
+                        let scale_y =
+                            target_height.to_pixels() as f32 / image_height.to_pixels() as f32;
+
+                        context.transform_stack.push(&Transform {
+                            matrix: Matrix::scale(scale_x, scale_y),
+                            ..Default::default()
+                        });
+                        image.render(context);
+                        context.transform_stack.pop();
+                    } else {
+                        image.render(context);
+                    }
+                } else {
+                    image.render(context);
+                }
             }
         }
 
@@ -2255,7 +2551,7 @@ impl<'gc> EditText<'gc> {
                     first_format = Some(text_format);
                     break;
                 }
-                LayoutContent::Drawing { .. } => {}
+                LayoutContent::Drawing { .. } | LayoutContent::InlineImage { .. } => {}
             }
         }
 

@@ -842,6 +842,7 @@ impl DisplayObjectWindow {
         let box_type = match lbox.content() {
             LayoutContent::Text { .. } => "Text box",
             LayoutContent::Bullet { .. } => "Bullet box",
+            LayoutContent::InlineImage { .. } => "Inline image box",
             LayoutContent::Drawing { .. } => "Drawing box",
         };
 

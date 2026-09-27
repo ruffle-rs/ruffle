@@ -1,0 +1,10 @@
+TEXT=A B
+HELLO=_level0.tf.hello
+NAME=hello
+FRAME=1
+TOTALFRAMES=1
+PARENT=_level0.tf
+AFTER_CLEAR=undefined
+SECOND=_level0.tf.hello
+REASSIGNED=custom
+AFTER_REASSIGN_CLEAR=custom

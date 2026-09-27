@@ -1,0 +1,30 @@
+num_ticks = 10
+
+[image_comparisons.output]
+
+[[image_comparisons.output.checks]]
+tolerance = 8
+max_outliers = 4700
+
+[[image_comparisons.output.checks]]
+tolerance = 64
+max_outliers = 2500
+
+[player_options]
+with_renderer = { optional = false }
+
+[[compilers]]
+type = "Rascal"
+target = "test.swf"
+scripts = ["test.as"]
+swf_version = 8
+
+[[compilers]]
+type = "Rascal"
+target = "child.swf"
+scripts = ["child.as"]
+swf_version = 8
+
+[fonts.arial]
+family = "Arial"
+path = "NotoSans.ttf"
