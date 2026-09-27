@@ -1,4 +1,4 @@
-use crate::avm2::error::{make_error_2007, make_error_2008};
+use crate::avm2::error::make_error_2008;
 use crate::avm2::globals::flash::display::shader_job::get_shader_args;
 use crate::avm2::globals::slots::flash_filters_bevel_filter as bevel_filter_slots;
 use crate::avm2::globals::slots::flash_filters_blur_filter as blur_filter_slots;
@@ -235,9 +235,6 @@ fn avm2_to_bevel_filter<'gc>(
     let strength = object
         .get_slot(bevel_filter_slots::STRENGTH)
         .coerce_to_number(activation)?;
-    if matches!(object.get_slot(bevel_filter_slots::TYPE), Value::Null) {
-        return Err(make_error_2007(activation, "type"));
-    }
     let bevel_type = object
         .get_slot(bevel_filter_slots::TYPE)
         .coerce_to_string(activation)?;
@@ -758,12 +755,6 @@ fn avm2_to_gradient_filter<'gc>(
     let strength = object
         .get_slot(gradient_bevel_filter_slots::_STRENGTH)
         .coerce_to_number(activation)?;
-    if matches!(
-        object.get_slot(gradient_bevel_filter_slots::_TYPE),
-        Value::Null
-    ) {
-        return Err(make_error_2007(activation, "type"));
-    }
     let bevel_type = object
         .get_slot(gradient_bevel_filter_slots::_TYPE)
         .coerce_to_string(activation)?;

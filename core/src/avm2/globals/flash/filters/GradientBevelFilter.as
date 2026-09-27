@@ -110,6 +110,9 @@
             return this._type;
         }
         public function set type(value:String):void {
+            if (value == null) {
+                throw new TypeError("Error #2007: Parameter type must be non-null.", 2007);
+            }
             this._type = value;
         }
 
