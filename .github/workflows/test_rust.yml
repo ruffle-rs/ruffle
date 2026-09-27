@@ -16,8 +16,6 @@ env:
   LLVM_COV_OPTS: --branch --profile ci
   LLVM_COV_TEST_OPTS: ${LLVM_COV_OPTS} ${TEST_OPTS} --features ${FEATURES},imgtests,freetype
 
-  LINUX_DEPENDENCIES: mesa-vulkan-drivers libasound2-dev libudev-dev libfontconfig-dev libfreetype6-dev
-
   # This is to counteract the disabling by rust-cache.
   # See: https://github.com/Swatinem/rust-cache/issues/43
   CARGO_INCREMENTAL: '1'
@@ -83,7 +81,7 @@ jobs:
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update
-          sudo apt install -y ${{ env.LINUX_DEPENDENCIES }}
+          sudo apt install -y $(cat .github/linux-dependencies.txt)
 
       - name: Enable freetype tests
         if: runner.os == 'Linux'
@@ -144,7 +142,7 @@ jobs:
       - name: Install Linux dependencies
         run: |
           sudo apt-get update
-          sudo apt install -y ${{ env.LINUX_DEPENDENCIES }}
+          sudo apt install -y $(cat .github/linux-dependencies.txt)
 
       - name: Check formatting
         run: cargo fmt --all -- --check
@@ -227,7 +225,7 @@ jobs:
       - name: Install Linux dependencies
         run: |
           sudo apt-get update
-          sudo apt install -y ${{ env.LINUX_DEPENDENCIES }}
+          sudo apt install -y $(cat .github/linux-dependencies.txt)
 
       - name: Run llvm-cov for SWF tests
         working-directory: tests
