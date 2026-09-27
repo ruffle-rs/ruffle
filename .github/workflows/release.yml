@@ -19,7 +19,6 @@ on:
 
 env:
   RELEASE_SCRIPT: ./.github/scripts/release.py
-  LINUX_DEPENDENCIES: libasound2-dev libudev-dev libfontconfig-dev libfreetype6-dev libssl-dev
 
 jobs:
   create-release:
@@ -185,14 +184,14 @@ jobs:
         if: runner.os == 'Linux' && matrix.target == ''
         run: |
           sudo apt-get update
-          sudo apt install -y ${{ env.LINUX_DEPENDENCIES }}
+          sudo apt install -y $(cat .github/linux-dependencies.txt)
 
       - name: Install Linux i386 dependencies
         if: matrix.target == 'i686-unknown-linux-gnu'
         run: |
           sudo dpkg --add-architecture i386
           sudo apt-get update
-          sudo apt install -y gcc-multilib $(for p in ${{ env.LINUX_DEPENDENCIES }}; do echo "$p:i386"; done)
+          sudo apt install -y gcc-multilib $(sed 's/$/:i386/' .github/linux-dependencies.txt)
           echo "PKG_CONFIG_ALLOW_CROSS=1" | tee -a $GITHUB_ENV
           echo "PKG_CONFIG_LIBDIR=/usr/lib/i386-linux-gnu/pkgconfig" | tee -a $GITHUB_ENV
 
