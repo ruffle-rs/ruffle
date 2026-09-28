@@ -51,6 +51,7 @@ repository = "https://github.com/ruffle-rs/ruffle"
 version = "0.6.0"
 
 [workspace.dependencies]
+rand = { version = "0.10.1", default-features = false }
 png = "0.18.1"
 proc-macro2 = "1.0.106"
 zip = { version = "8.6.0", default-features = false }
