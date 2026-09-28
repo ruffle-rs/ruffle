@@ -508,7 +508,7 @@ impl<'gc> MovieClip<'gc> {
         if let Some(symbol) = progress.cur_preload_symbol.take() {
             match context
                 .library
-                .library_for_movie_mut(swf.movie.clone())
+                .library_for_movie_mut(swf.movie().clone())
                 .character_by_id(symbol)
             {
                 Some(Character::MovieClip(mc)) => {
@@ -3412,7 +3412,7 @@ impl<'gc> MovieClipData<'gc> {
     }
 
     fn tag_stream_len(&self) -> usize {
-        self.shared.get().swf.end - self.shared.get().swf.start
+        self.shared.get().swf.data().len()
     }
 
     /// Handles a PlaceObject tag when running a goto action.
@@ -3715,7 +3715,7 @@ impl<'gc, 'a> MovieClipShared<'gc> {
         context: &mut UpdateContext<'gc>,
         swf_button: swf::Button<'a>,
     ) -> Result<(), Error> {
-        let button = if self.swf.movie.is_action_script_3() {
+        let button = if self.swf.movie().is_action_script_3() {
             Character::Avm2Button(Avm2Button::from_swf_tag(
                 &swf_button,
                 &self.swf,
@@ -4144,7 +4144,7 @@ impl<'gc, 'a> MovieClipShared<'gc> {
         let mut label = frame_label.label.decode(reader.encoding()).into_owned();
 
         // In AVM1, frame labels are case insensitive (ASCII), but in AVM2 they are case sensitive.
-        if !self.swf.movie.is_action_script_3() {
+        if !self.swf.movie().is_action_script_3() {
             label.make_ascii_lowercase();
         }
 
@@ -4606,9 +4606,9 @@ impl<'gc, 'a> MovieClip<'gc> {
             let read = self.0.shared_cell();
             if let (Some(stream_info), None) = (&read.audio_stream_info, self.0.audio_stream.get())
             {
-                let mut slice = self.0.shared.get().swf.clone();
-                slice.end = slice.start + self.0.tag_stream_len();
-                slice.start += self.0.tag_stream_pos.get() as usize;
+                let start = self.0.tag_stream_pos.get() as usize;
+                let swf = &self.0.shared.get().swf;
+                let slice = swf.to_subslice(&swf.data()[start..]);
                 Some(context.start_stream(self, self.0.current_frame(), slice, stream_info))
             } else {
                 None
@@ -4794,7 +4794,7 @@ impl<'gc> MovieClipShared<'gc> {
     }
 
     fn movie(&self) -> Arc<SwfMovie> {
-        self.swf.movie.clone()
+        self.swf.movie().clone()
     }
 
     fn library<'a>(&self, context: &'a UpdateContext<'gc>) -> Option<&'a MovieLibrary<'gc>> {

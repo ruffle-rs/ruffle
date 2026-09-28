@@ -71,6 +71,7 @@ either = "1.16.0"
 chardetng = "0.1.17"
 tracy-client = { version = "0.18.4", optional = true, default-features = false }
 itertools = "0.14.0"
+yoke = { workspace = true, features = ["alloc", "derive"] }
 
 [target.'cfg(not(target_family = "wasm"))'.dependencies.futures]
 workspace = true

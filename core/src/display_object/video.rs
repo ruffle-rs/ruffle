@@ -9,7 +9,7 @@ use crate::context::{RenderContext, UpdateContext};
 use crate::display_object::{Avm1TextFieldBinding, BoundsMode, DisplayObjectBase, RenderOptions};
 use crate::prelude::*;
 use crate::streams::NetStream;
-use crate::tag_utils::{SwfMovie, SwfSlice};
+use crate::tag_utils::SwfMovie;
 use crate::vminterface::{AvmObject, Instantiator};
 use core::fmt;
 use gc_arena::barrier::unlock;
@@ -25,6 +25,7 @@ use ruffle_video::error::Error;
 use ruffle_video::frame::EncodedFrame;
 use std::cell::{Cell, Ref, RefCell, RefMut};
 use std::collections::{BTreeMap, BTreeSet};
+use std::range::Range;
 use std::sync::Arc;
 use swf::{DefineVideoStream, VideoCodec, VideoFrame};
 
@@ -125,7 +126,7 @@ pub struct SwfVideoSource {
     ///
     /// Each frame consists of a start and end parameter which can be used
     /// to reconstruct a reference to the embedded bitstream.
-    frames: RefCell<BTreeMap<u32, (usize, usize)>>,
+    frames: RefCell<BTreeMap<u32, Range<usize>>>,
 }
 
 impl<'gc> Video<'gc> {
@@ -215,18 +216,16 @@ impl<'gc> Video<'gc> {
     /// This function yields an error if this video player is not playing an
     /// embedded SWF video.
     pub fn preload_swf_frame(self, tag: VideoFrame) {
-        let movie = self.0.movie.clone();
-
         match self.0.source.get() {
             VideoSource::Swf(swf_source) => {
-                let subslice = SwfSlice::from(movie).to_subslice(tag.data);
                 let mut frames = swf_source.frames.borrow_mut();
 
                 if frames.contains_key(&tag.frame_num.into()) {
                     tracing::warn!("Duplicate frame {}", tag.frame_num);
                 }
 
-                frames.insert(tag.frame_num.into(), (subslice.start, subslice.end));
+                let range = self.0.movie.data().subslice_range(tag.data);
+                frames.insert(tag.frame_num.into(), range.unwrap_or_default());
             }
             VideoSource::NetStream { .. } => {}
             VideoSource::Unconnected { .. } => {}
@@ -319,10 +318,10 @@ impl<'gc> Video<'gc> {
 
         let res = match self.0.source.get() {
             VideoSource::Swf(swf_source) => match swf_source.frames.borrow().get(&frame_id) {
-                Some((slice_start, slice_end)) => {
+                Some(range) => {
                     let encframe = EncodedFrame {
                         codec: swf_source.streamdef.codec,
-                        data: &self.0.movie.data()[*slice_start..*slice_end],
+                        data: &self.0.movie.data()[*range],
                         frame_id,
                     };
                     context
@@ -391,12 +390,12 @@ impl<'gc> TDisplayObject<'gc> for Video<'gc> {
                     let stream = stream.unwrap();
                     let mut keyframes = BTreeSet::new();
 
-                    for (frame_id, (frame_start, frame_end)) in swf_source.frames.borrow().iter() {
+                    for (frame_id, range) in swf_source.frames.borrow().iter() {
                         let dep = context.video.preload_video_stream_frame(
                             stream,
                             EncodedFrame {
                                 codec: streamdef.codec,
-                                data: &movie.data()[*frame_start..*frame_end],
+                                data: &movie.data()[*range],
                                 frame_id: *frame_id,
                             },
                         );
