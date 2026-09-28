@@ -57,7 +57,7 @@ scopeguard = "1.2.0"
 fluent-templates = { workspace = true }
 egui = { workspace = true, optional = true }
 egui_extras = { workspace = true, default-features = false, optional = true }
-png = { version = "0.18.1", optional = true }
+png = { workspace = true, optional = true }
 flv-rs = { path = "../flv" }
 async-channel = { workspace = true }
 jpegxr = { workspace = true, optional = true }
