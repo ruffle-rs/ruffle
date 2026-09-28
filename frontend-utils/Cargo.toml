@@ -26,7 +26,7 @@ freetype = ["ui", "dep:freetype-rs"]
 # certificates). reqwest picks the backend automatically at runtime from
 # whichever is compiled in, so no code change is needed to switch.
 native-tls = ["reqwest/native-tls"]
-rustls-tls = ["reqwest/rustls-tls"]
+rustls-tls = ["reqwest/rustls"]
 
 [dependencies]
 toml_edit = { workspace = true, features = ["parse"] }
