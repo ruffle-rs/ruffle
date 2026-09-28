@@ -1,6 +1,7 @@
 use crate::sandbox::SandboxType;
 
 use gc_arena::Collect;
+use std::borrow::Cow;
 use std::fmt::{Debug, Formatter};
 use std::sync::Arc;
 use swf::{Fixed8, HeaderExt, Rectangle, Twips};
@@ -17,7 +18,7 @@ pub struct SwfMovie {
     header: HeaderExt,
 
     /// Uncompressed SWF data.
-    data: Vec<u8>,
+    data: Cow<'static, [u8]>,
 
     /// The URL the SWF was downloaded from.
     url: String,
@@ -64,10 +65,10 @@ impl SwfMovie {
         let header = HeaderExt::default_with_swf_version(swf_version);
 
         // TODO What sandbox type should we use here?
-        let sandbox_type = SandboxType::infer(url.as_str(), &header);
+        let sandbox_type = SandboxType::infer(&url, &header);
         Self {
             header,
-            data: vec![],
+            data: Default::default(),
             url,
             loader_url,
             parameters: Vec::new(),
@@ -93,11 +94,11 @@ impl SwfMovie {
         let header = HeaderExt::default_with_swf_version(swf_version);
 
         // TODO What sandbox type should we use here?
-        let sandbox_type = SandboxType::infer(url.as_str(), &header);
+        let sandbox_type = SandboxType::infer(&url, &header);
         Self {
             header,
             compressed_len,
-            data: Vec::new(),
+            data: Default::default(),
             url,
             loader_url,
             parameters: Vec::new(),
@@ -120,11 +121,11 @@ impl SwfMovie {
         let header = HeaderExt::default_with_swf_version(swf_version);
 
         // TODO What sandbox type should we use here?
-        let sandbox_type = SandboxType::infer(url.as_str(), &header);
+        let sandbox_type = SandboxType::infer(&url, &header);
         Self {
             header,
             compressed_len: compressed_data.len(),
-            data: compressed_data,
+            data: compressed_data.into(),
             url,
             loader_url,
             parameters: Vec::new(),
@@ -144,11 +145,10 @@ impl SwfMovie {
     pub fn error_movie(movie_url: String) -> Self {
         let header = HeaderExt::default_error_header();
 
-        // TODO What sandbox type should we use here?
-        let sandbox_type = SandboxType::infer(movie_url.as_str(), &header);
+        let sandbox_type = SandboxType::infer(&movie_url, &header);
         Self {
             header,
-            data: vec![],
+            data: Default::default(),
             url: movie_url,
             loader_url: None,
             parameters: Vec::new(),
@@ -159,6 +159,30 @@ impl SwfMovie {
             is_from_bytes: false,
             sandbox_type,
         }
+    }
+
+    /// Construct a movie from a `'static`, uncompressed datastream.
+    ///
+    /// Used to load AVM1 and AVM2 playerglobals.
+    pub fn from_static_data(data: &'static [u8]) -> Result<Self, swf::error::Error> {
+        let url = "file:///".to_string();
+        let (header, reader) = swf::read::parse_swf_header(data)?;
+
+        // TODO What sandbox type should we use here?
+        let sandbox_type = SandboxType::infer(&url, &header);
+        Ok(Self {
+            encoding: swf::SwfStr::encoding_for_version(header.version()),
+            header,
+            data: Cow::Borrowed(reader.get_ref()),
+            url,
+            loader_url: None,
+            parameters: Vec::new(),
+            compressed_len: 0,
+            is_movie: true,
+            force_avm1: false,
+            is_from_bytes: false,
+            sandbox_type,
+        })
     }
 
     /// Construct a movie based on the contents of the SWF datastream. If the
@@ -181,11 +205,11 @@ impl SwfMovie {
         // a child SWF with different sandboxing.
         let sandbox_type = load_bytes_info
             .map(|i| i.loader_sandbox_type)
-            .unwrap_or_else(|| SandboxType::infer(url.as_str(), &swf_buf.header));
+            .unwrap_or_else(|| SandboxType::infer(&url, &swf_buf.header));
 
         let mut movie = Self {
             header: swf_buf.header,
-            data: swf_buf.data,
+            data: swf_buf.data.into(),
             url,
             loader_url,
             parameters: Vec::new(),
@@ -212,10 +236,10 @@ impl SwfMovie {
             .with_width(Twips::from_pixels_i32(width as i32))
             .with_height(Twips::from_pixels_i32(height as i32));
         let header = HeaderExt::default_with_uncompressed_len(length as i32, stage_size);
-        let sandbox_type = SandboxType::infer(url.as_str(), &header);
+        let sandbox_type = SandboxType::infer(&url, &header);
         let mut movie = Self {
             header,
-            data: vec![],
+            data: Default::default(),
             url,
             loader_url: None,
             parameters: Vec::new(),
