@@ -1002,6 +1002,10 @@ impl FormatSpans {
                             }
                         }
                         b"img" => {
+                            if swf_version < 7 {
+                                continue;
+                            }
+
                             let image_attribute = |name| {
                                 attribute(name)
                                     .map(|value| process_html_entity(&value).unwrap_or(value))
@@ -1329,7 +1333,21 @@ impl FormatSpans {
     fn condense_white_swf8(&mut self) {
         let mut removal_start = Some(0);
         let mut to_remove = Vec::new();
+
         for (i, ch) in self.text().iter().enumerate() {
+            let is_inline_image = self.inline_images.iter().any(|image| image.position == i);
+
+            // The placeholder character for an inline image is a space, but it
+            // must never itself be removed. It still participates in whitespace
+            // condensation, so whitespace following the image is collapsed.
+            if is_inline_image {
+                if let Some(space_start) = removal_start {
+                    to_remove.push((space_start, i));
+                }
+                removal_start = Some(i + 1);
+                continue;
+            }
+
             let is_newline = ch == HTML_NEWLINE;
             let is_space = ch == HTML_SPACE;
 
@@ -1347,9 +1365,11 @@ impl FormatSpans {
                 removal_start = Some(i + 1);
             }
         }
+
         if let Some(space_start) = removal_start {
             to_remove.push((space_start, self.text().len()));
         }
+
         for &(from, to) in to_remove.iter().rev() {
             if from != to {
                 self.replace_text(from, to, WStr::empty());
@@ -1541,6 +1561,30 @@ impl FormatSpans {
         if let Some(text) = self.text.slice(to..) {
             new_string.push_str(text);
         }
+
+        let old_len = self.text.len();
+        let actual_from = from.min(old_len);
+        let actual_to = to.min(old_len);
+        let removed_len = actual_to.saturating_sub(actual_from);
+        let inserted_len = with.len();
+
+        self.inline_images.retain_mut(|image| {
+            if image.position < actual_from {
+                return true;
+            }
+
+            if image.position < actual_to {
+                return false;
+            }
+
+            if inserted_len >= removed_len {
+                image.position += inserted_len - removed_len;
+            } else {
+                image.position -= removed_len - inserted_len;
+            }
+
+            true
+        });
 
         self.text = new_string;
 

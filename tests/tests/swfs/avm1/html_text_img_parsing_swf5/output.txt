@@ -1,0 +1,106 @@
+SOURCE=A<img src='missing.jpg'>B
+MULTILINE=true
+CONDENSE_WHITE=false
+TEXT=
+HTML=A<img src='missing.jpg'>B
+---
+SOURCE=A<img src='missing.jpg' id='hello' width='40.9' height='30.7' align='right' hspace='4.9' vspace='6.2'>B
+MULTILINE=true
+CONDENSE_WHITE=false
+TEXT=
+HTML=A<img src='missing.jpg' id='hello' width='40.9' height='30.7' align='right' hspace='4.9' vspace='6.2'>B
+---
+SOURCE=A<img src='missing.jpg' align='left'>B
+MULTILINE=true
+CONDENSE_WHITE=false
+TEXT=
+HTML=A<img src='missing.jpg' align='left'>B
+---
+SOURCE=A<img src='missing.jpg' align='middle'>B
+MULTILINE=true
+CONDENSE_WHITE=false
+TEXT=
+HTML=A<img src='missing.jpg' align='middle'>B
+---
+SOURCE=A<img id='hello' width='20' height='30'>B
+MULTILINE=true
+CONDENSE_WHITE=false
+TEXT=
+HTML=A<img id='hello' width='20' height='30'>B
+---
+SOURCE=A<img>B
+MULTILINE=true
+CONDENSE_WHITE=false
+TEXT=
+HTML=A<img>B
+---
+SOURCE=A<img src=''>B
+MULTILINE=true
+CONDENSE_WHITE=false
+TEXT=
+HTML=A<img src=''>B
+---
+SOURCE=A<img src='missing.jpg' />B
+MULTILINE=true
+CONDENSE_WHITE=false
+TEXT=
+HTML=A<img src='missing.jpg' />B
+---
+SOURCE=A<img src='foo&amp;bar.jpg' id='a&amp;b'>B
+MULTILINE=true
+CONDENSE_WHITE=false
+TEXT=
+HTML=A<img src='foo&amp;bar.jpg' id='a&amp;b'>B
+---
+SOURCE=A<img src='missing.jpg' width='abc' height='xyz'>B
+MULTILINE=true
+CONDENSE_WHITE=false
+TEXT=
+HTML=A<img src='missing.jpg' width='abc' height='xyz'>B
+---
+SOURCE=A<img src='one.jpg'>B<img src='two.jpg'>C
+MULTILINE=true
+CONDENSE_WHITE=false
+TEXT=
+HTML=A<img src='one.jpg'>B<img src='two.jpg'>C
+---
+SOURCE=A   <img src='missing.jpg'>   B
+MULTILINE=true
+CONDENSE_WHITE=false
+TEXT=
+HTML=A   <img src='missing.jpg'>   B
+---
+SOURCE=A   <img src='missing.jpg'>   B
+MULTILINE=false
+CONDENSE_WHITE=false
+TEXT=
+HTML=A   <img src='missing.jpg'>   B
+---
+SOURCE=A   <img src='missing.jpg'>   B
+MULTILINE=true
+CONDENSE_WHITE=true
+TEXT=
+HTML=A   <img src='missing.jpg'>   B
+---
+SOURCE=A   <img src='missing.jpg'>   B
+MULTILINE=false
+CONDENSE_WHITE=true
+TEXT=
+HTML=A   <img src='missing.jpg'>   B
+---
+SOURCE=A\n  <img src='missing.jpg'>\n  B
+MULTILINE=true
+CONDENSE_WHITE=false
+TEXT=
+HTML=A
+  <img src='missing.jpg'>
+  B
+---
+SOURCE=A\n  <img src='missing.jpg'>\n  B
+MULTILINE=true
+CONDENSE_WHITE=true
+TEXT=
+HTML=A
+  <img src='missing.jpg'>
+  B
+---
