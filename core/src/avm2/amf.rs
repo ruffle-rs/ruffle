@@ -62,7 +62,7 @@ pub fn serialize_value<'gc>(
                     // iterated over by the length of the internal array data.
                     for (i, elem) in values.into_iter().enumerate() {
                         if elem.name == i.to_string() {
-                            dense.push(elem.value.clone());
+                            dense.push(elem.value);
                         } else {
                             sparse.push(elem);
                         }
@@ -246,8 +246,7 @@ pub fn recursive_serialize<'gc>(
             .is_none()
         {
             let name = name.to_utf8_lossy().to_string();
-            let elem =
-                get_or_create_element(activation, name.clone(), value, object_table, amf_version);
+            let elem = get_or_create_element(activation, name, value, object_table, amf_version);
             elements.push(elem);
         }
 

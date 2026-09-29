@@ -1046,15 +1046,11 @@ impl dasp::signal::Signal for EnvelopeSignal {
         self.cur_sample = self.cur_sample.saturating_add(1);
         while self.cur_sample > self.next_point.sample {
             self.prev_point = self.next_point.clone();
-            self.next_point = self
-                .envelope
-                .next()
-                .clone()
-                .unwrap_or(swf::SoundEnvelopePoint {
-                    sample: u32::MAX,
-                    left_volume: self.prev_point.left_volume,
-                    right_volume: self.prev_point.right_volume,
-                });
+            self.next_point = self.envelope.next().unwrap_or(swf::SoundEnvelopePoint {
+                sample: u32::MAX,
+                left_volume: self.prev_point.left_volume,
+                right_volume: self.prev_point.right_volume,
+            });
 
             if self.prev_point.sample > self.next_point.sample {
                 self.next_point.sample = self.prev_point.sample;
