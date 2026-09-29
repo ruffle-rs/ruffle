@@ -3313,11 +3313,8 @@ impl<'gc> TInteractiveObject<'gc> for MovieClip<'gc> {
         }
 
         let is_avm1 = !self.movie().is_action_script_3();
-        if is_avm1 && self.tab_index().is_some() {
-            return true;
-        }
 
-        false
+        is_avm1 && self.tab_index().is_some()
     }
 }
 
