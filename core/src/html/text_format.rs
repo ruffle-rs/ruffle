@@ -1912,8 +1912,8 @@ impl<'a> FormatState<'a> {
 
         self.result.push_byte(b'"');
 
-        // Flash serializes fractional image values as integers, but it is
-        // unclear whether truncation happens during parsing or serialization.
+        // TODO: Determine whether Flash truncates fractional image values during
+        // parsing or serialization.
         if let Some(width) = image.width
             && width.is_finite()
         {
