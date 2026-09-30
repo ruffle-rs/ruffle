@@ -167,8 +167,8 @@ export class InnerPlayer {
     // so avoid shadowing it.
     private readonly contextMenuElement: HTMLElement;
 
-    // Whether the most recent pointer event was from a touch (or pen).
-    private isTouch = false;
+    // Whether any pointer event occurred using a touch (or pen).
+    private hasTouch = false;
     // Whether this device sends contextmenu events.
     // Set to true when a contextmenu event is seen.
     private contextMenuSupported = false;
@@ -1166,7 +1166,7 @@ export class InnerPlayer {
     }
 
     private checkIfTouch(event: PointerEvent): void {
-        this.isTouch =
+        this.hasTouch =
             event.pointerType === "touch" || event.pointerType === "pen";
     }
 
@@ -1586,7 +1586,7 @@ export class InnerPlayer {
         // Give option to disable context menu when touch support is being used
         // to avoid a long press triggering the context menu. (#1972)
         if (
-            this.isTouch &&
+            this.hasTouch &&
             this.loadedConfig?.contextMenu !== ContextMenu.RightClickOnly
         ) {
             addSeparator();
@@ -1706,7 +1706,7 @@ export class InnerPlayer {
             [false, ContextMenu.Off].includes(
                 this.loadedConfig?.contextMenu ?? ContextMenu.On,
             ) ||
-            (this.isTouch &&
+            (this.hasTouch &&
                 this.loadedConfig?.contextMenu === ContextMenu.RightClickOnly)
         ) {
             return;
