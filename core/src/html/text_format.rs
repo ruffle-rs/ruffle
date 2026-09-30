@@ -19,6 +19,35 @@ use super::StyleSheet;
 const HTML_NEWLINE: u16 = b'\r' as u16;
 const HTML_SPACE: u16 = b' ' as u16;
 
+fn parse_html_number(value: &WStr) -> Option<f64> {
+    let value = value.trim_start();
+    let mut end = 0;
+    let mut seen_digit = false;
+    let mut seen_dot = false;
+
+    for (i, ch) in value.iter().enumerate() {
+        let byte = u8::try_from(ch).ok()?;
+
+        if i == 0 && matches!(byte, b'+' | b'-') {
+            end = i + 1;
+        } else if byte.is_ascii_digit() {
+            seen_digit = true;
+            end = i + 1;
+        } else if byte == b'.' && !seen_dot {
+            seen_dot = true;
+            end = i + 1;
+        } else {
+            break;
+        }
+    }
+
+    if !seen_digit {
+        return None;
+    }
+
+    value[..end].parse().ok()
+}
+
 /// Replace HTML entities with their equivalent characters.
 ///
 /// Unknown entities will be ignored.
@@ -411,6 +440,8 @@ pub struct TextSpan {
     /// length of the underlying source string.
     pub span_length: usize,
 
+    image: Option<Box<TextSpanImage>>,
+
     pub font: TextSpanFont,
     pub style: TextSpanStyle,
     pub align: swf::TextAlign,
@@ -446,6 +477,7 @@ impl Default for TextSpan {
     fn default() -> Self {
         Self {
             span_length: 0,
+            image: None,
             font: TextSpanFont::default(),
             style: TextSpanStyle::default(),
             align: swf::TextAlign::Left,
@@ -532,7 +564,9 @@ impl TextSpan {
     /// It is assumed that the two text spans being considered are adjacent;
     /// and we have no way of checking, so this function doesn't check that.
     fn can_merge(&self, rhs: &Self) -> bool {
-        self.font == rhs.font
+        self.image.is_none()
+            && rhs.image.is_none()
+            && self.font == rhs.font
             && self.style == rhs.style
             && self.align == rhs.align
             && self.left_margin == rhs.left_margin
@@ -639,8 +673,7 @@ impl TextSpan {
 }
 
 #[derive(Clone, Debug)]
-struct InlineImage {
-    pub position: usize,
+struct TextSpanImage {
     pub src: WString,
     pub id: Option<WString>,
     pub width: Option<f64>,
@@ -648,6 +681,7 @@ struct InlineImage {
     pub align: Option<bool>,
     pub hspace: Option<f64>,
     pub vspace: Option<f64>,
+    pub check_policy_file: Option<bool>,
 }
 
 /// Struct which contains text formatted by `TextSpan`s.
@@ -656,7 +690,6 @@ pub struct FormatSpans {
     text: WString,
     displayed_text: WString,
     spans: Vec<TextSpan>,
-    inline_images: Vec<InlineImage>,
     default_format: TextFormat,
 }
 
@@ -672,7 +705,6 @@ impl FormatSpans {
             text: WString::new(),
             displayed_text: WString::new(),
             spans: vec![TextSpan::default()],
-            inline_images: Vec::new(),
             default_format: TextFormat::default(),
         }
     }
@@ -683,7 +715,6 @@ impl FormatSpans {
             text: text.into(),
             displayed_text: WString::new(),
             spans: spans.to_vec(),
-            inline_images: Vec::new(),
             default_format: Default::default(),
         }
     }
@@ -694,7 +725,6 @@ impl FormatSpans {
             text,
             displayed_text: WString::new(),
             spans: vec![TextSpan::with_length_and_format(len, &format)],
-            inline_images: Vec::new(),
             default_format: format,
         }
     }
@@ -726,7 +756,6 @@ impl FormatSpans {
         let mut format_stack = vec![default_format.clone()];
         let mut text = WString::new();
         let mut spans: Vec<TextSpan> = Vec::new();
-        let mut inline_images: Vec<InlineImage> = Vec::new();
 
         // quick_xml::Reader requires a [u8] slice, but doesn't actually care about Unicode;
         // this means we can pass the raw buffer in the Latin1 case.
@@ -1012,28 +1041,32 @@ impl FormatSpans {
                             };
 
                             if let Some(src) = image_attribute(b"src") {
-                                inline_images.push(InlineImage {
-                                    position: text.len(),
+                                let image = TextSpanImage {
                                     src,
                                     id: image_attribute(b"id"),
                                     width: image_attribute(b"width")
-                                        .and_then(|value| value.parse().ok()),
+                                        .and_then(|value| parse_html_number(&value)),
                                     height: image_attribute(b"height")
-                                        .and_then(|value| value.parse().ok()),
+                                        .and_then(|value| parse_html_number(&value)),
                                     align: image_attribute(b"align").map(|value| {
                                         value.to_utf8_lossy().eq_ignore_ascii_case("right")
                                     }),
                                     hspace: image_attribute(b"hspace")
-                                        .and_then(|value| value.parse().ok()),
+                                        .and_then(|value| parse_html_number(&value)),
                                     vspace: image_attribute(b"vspace")
-                                        .and_then(|value| value.parse().ok()),
-                                });
+                                        .and_then(|value| parse_html_number(&value)),
+                                    check_policy_file: image_attribute(b"checkpolicyfile").map(
+                                        |value| value.to_utf8_lossy().eq_ignore_ascii_case("true"),
+                                    ),
+                                };
 
                                 let mut image_format = format;
                                 image_format.size = Some(2.0);
 
                                 text.push_str(WStr::from_units(b" "));
-                                spans.push(TextSpan::with_length_and_format(1, &image_format));
+                                let mut span = TextSpan::with_length_and_format(1, &image_format);
+                                span.image = Some(Box::new(image));
+                                spans.push(span);
                             }
 
                             // IMG does not alter the text formatting stack.
@@ -1166,7 +1199,6 @@ impl FormatSpans {
             text,
             displayed_text: WString::new(),
             spans,
-            inline_images,
             default_format,
         };
         if condense_white && swf_version >= 8 {
@@ -1331,11 +1363,16 @@ impl FormatSpans {
     /// SWF8+ condenses whitespace not only in text, but across HTML elements too.
     /// This method assumes that whitespace in text has already been condensed.
     fn condense_white_swf8(&mut self) {
+        let image_positions: Vec<_> = self
+            .iter_spans()
+            .filter_map(|(start, _, _, span)| span.image.as_ref().map(|_| start))
+            .collect();
+
         let mut removal_start = Some(0);
         let mut to_remove = Vec::new();
 
         for (i, ch) in self.text().iter().enumerate() {
-            let is_inline_image = self.inline_images.iter().any(|image| image.position == i);
+            let is_inline_image = image_positions.binary_search(&i).is_ok();
 
             // The placeholder character for an inline image is a space, but it
             // must never itself be removed. It still participates in whitespace
@@ -1562,30 +1599,6 @@ impl FormatSpans {
             new_string.push_str(text);
         }
 
-        let old_len = self.text.len();
-        let actual_from = from.min(old_len);
-        let actual_to = to.min(old_len);
-        let removed_len = actual_to.saturating_sub(actual_from);
-        let inserted_len = with.len();
-
-        self.inline_images.retain_mut(|image| {
-            if image.position < actual_from {
-                return true;
-            }
-
-            if image.position < actual_to {
-                return false;
-            }
-
-            if inserted_len >= removed_len {
-                image.position += inserted_len - removed_len;
-            } else {
-                image.position -= removed_len - inserted_len;
-            }
-
-            true
-        });
-
         self.text = new_string;
 
         self.normalize();
@@ -1617,36 +1630,13 @@ impl FormatSpans {
             open_tags: Vec::new(),
         };
 
-        let images = &self.inline_images;
-        let mut next_image = 0;
-
-        for (span_start, span_end, text, span) in self.iter_spans() {
+        for (_, _, text, span) in self.iter_spans() {
             state.set_span(span);
-            let mut segment_start = 0;
 
-            while let Some(image) = images.get(next_image) {
-                if image.position < span_start {
-                    next_image += 1;
-                    continue;
-                }
-
-                if image.position >= span_end {
-                    break;
-                }
-
-                let relative_position = image.position - span_start;
-
-                if relative_position > segment_start {
-                    state.push_text(&text[segment_start..relative_position]);
-                }
-
+            if let Some(image) = &span.image {
                 state.push_inline_image(image);
-                segment_start = relative_position + 1;
-                next_image += 1;
-            }
-
-            if segment_start < text.len() {
-                state.push_text(&text[segment_start..]);
+            } else {
+                state.push_text(text);
             }
         }
 
@@ -1941,7 +1931,7 @@ impl<'a> FormatState<'a> {
         });
     }
 
-    fn push_inline_image(&mut self, image: &InlineImage) {
+    fn push_inline_image(&mut self, image: &TextSpanImage) {
         self.result.push_str(WStr::from_units(b"<IMG SRC=\""));
 
         let src = image.src.to_utf8_lossy();
@@ -1986,6 +1976,14 @@ impl<'a> FormatState<'a> {
             && hspace.is_finite()
         {
             let _ = write!(self.result, " HSPACE=\"{}\"", hspace.trunc() as i64);
+        }
+
+        if let Some(check_policy_file) = image.check_policy_file {
+            let _ = write!(
+                self.result,
+                " CHECKPOLICYFILE=\"{}\"",
+                if check_policy_file { "true" } else { "false" }
+            );
         }
 
         self.result.push_byte(b'>');

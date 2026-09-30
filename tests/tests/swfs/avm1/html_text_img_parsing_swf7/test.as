@@ -30,6 +30,38 @@ function runCase(html, multiline, condenseWhite) {
     trace("---");
 }
 
+function runReparseCase(html) {
+    var name = "tf" + nextDepth;
+    _root.createTextField(name, nextDepth++, 0, 0, 400, 300);
+
+    var tf = _root[name];
+    tf.html = true;
+    tf.multiline = true;
+    tf.condenseWhite = false;
+
+    if (tf.setNewTextFormat) {
+        var format = new TextFormat();
+        format.font = "Times";
+        format.size = 12;
+        tf.setNewTextFormat(format);
+    }
+
+    tf.htmlText = html;
+
+    var firstHtml = tf.htmlText;
+
+    trace("REPARSE_SOURCE=[" + escapeText(html) + "]");
+    trace("FIRST_TEXT=[" + escapeText(tf.text) + "]");
+    trace("FIRST_HTML=[" + firstHtml + "]");
+
+    tf.htmlText = firstHtml + " ";
+
+    trace("SECOND_SOURCE=[" + escapeText(firstHtml + " ") + "]");
+    trace("SECOND_TEXT=[" + escapeText(tf.text) + "]");
+    trace("SECOND_HTML=[" + tf.htmlText + "]");
+    trace("---");
+}
+
 function runDefaultCase(html) {
     runCase(html, true, false);
 }
@@ -110,6 +142,30 @@ runCase(
     "A\n  <img src='missing.jpg'>\n  B",
     true,
     true
+);
+
+runDefaultCase(
+    "A<img src='missing.jpg' width='40.9px' height='30.7xyz' hspace='4.9px' vspace='6.2xyz'>B"
+);
+
+runDefaultCase(
+    "A<img src='missing.jpg' align='LEFT'>B"
+);
+
+runDefaultCase(
+    "A<img src='missing.jpg' align='Left'>B"
+);
+
+runDefaultCase(
+    "A<img src='missing.jpg' align='something'>B"
+);
+
+runDefaultCase(
+    "A<img src='missing.jpg' checkPolicyFile='true' unknown='value'>B"
+);
+
+runReparseCase(
+    "A<img src='missing.jpg'>B"
 );
 
 stop();
