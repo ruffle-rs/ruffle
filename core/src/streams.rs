@@ -657,6 +657,20 @@ impl<'gc> NetStream<'gc> {
                         seek_time_ms = sample_time_ms;
                     }
                 }
+            } else if let Some(mp4) = &mp4_context
+                && let Some(ati) = audio_track_id
+                && let Some(trk) = mp4.tracks().get(&ati)
+            {
+                // Without a video track, snap to the start of the audio sample
+                // the seek target falls into instead.
+                for sample in trk.samples.iter() {
+                    let sample_time_ms =
+                        sample.decode_timestamp as f64 * 1000.0 / sample.timescale as f64;
+                    if sample_time_ms > offset {
+                        break;
+                    }
+                    seek_time_ms = sample_time_ms;
+                }
             }
 
             // Find the first audio sample at or after the seek target time.
