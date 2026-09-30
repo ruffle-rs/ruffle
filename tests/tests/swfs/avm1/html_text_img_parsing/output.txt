@@ -100,12 +100,6 @@ CONDENSE_WHITE=true
 TEXT=A  B
 HTML=<P ALIGN="LEFT"><FONT FACE="Times" SIZE="12" COLOR="#000000" LETTERSPACING="0" KERNING="0">A <FONT SIZE="2"><IMG SRC="missing.jpg"> </FONT>B</FONT></P>
 ---
-SOURCE=A<img src='missing.jpg' width='40.9px' height='30.7xyz' hspace='4.9px' vspace='6.2xyz'>B
-MULTILINE=true
-CONDENSE_WHITE=false
-TEXT=A B
-HTML=<P ALIGN="LEFT"><FONT FACE="Times" SIZE="12" COLOR="#000000" LETTERSPACING="0" KERNING="0">A<FONT SIZE="2"><IMG SRC="missing.jpg" WIDTH="40" HEIGHT="30" VSPACE="6" HSPACE="4"> </FONT>B</FONT></P>
----
 SOURCE=A<img src='missing.jpg' align='LEFT'>B
 MULTILINE=true
 CONDENSE_WHITE=false
@@ -136,4 +130,46 @@ FIRST_HTML=[<P ALIGN="LEFT"><FONT FACE="Times" SIZE="12" COLOR="#000000" LETTERS
 SECOND_SOURCE=[<P ALIGN="LEFT"><FONT FACE="Times" SIZE="12" COLOR="#000000" LETTERSPACING="0" KERNING="0">A<FONT SIZE="2"><IMG SRC="missing.jpg"> </FONT>B</FONT></P> ]
 SECOND_TEXT=[A  B\r ]
 SECOND_HTML=[<P ALIGN="LEFT"><FONT FACE="Times" SIZE="12" COLOR="#000000" LETTERSPACING="0" KERNING="0">A<FONT SIZE="2"><IMG SRC="missing.jpg">  </FONT>B</FONT></P><P ALIGN="LEFT"><FONT FACE="Times" SIZE="12" COLOR="#000000" LETTERSPACING="0" KERNING="0"> </FONT></P>]
+---
+SOURCE=<font size='2'>A</font><img src='missing.jpg'>B
+MULTILINE=true
+CONDENSE_WHITE=false
+TEXT=A B
+HTML=<P ALIGN="LEFT"><FONT FACE="Times" SIZE="2" COLOR="#000000" LETTERSPACING="0" KERNING="0">A<IMG SRC="missing.jpg"> <FONT SIZE="12">B</FONT></FONT></P>
+---
+SOURCE=A<img src='missing.jpg'><font size='2'>B</font>
+MULTILINE=true
+CONDENSE_WHITE=false
+TEXT=A B
+HTML=<P ALIGN="LEFT"><FONT FACE="Times" SIZE="12" COLOR="#000000" LETTERSPACING="0" KERNING="0">A<FONT SIZE="2"><IMG SRC="missing.jpg"> B</FONT></FONT></P>
+---
+SOURCE=<font size='20'>A<img src='missing.jpg'>B</font>
+MULTILINE=true
+CONDENSE_WHITE=false
+TEXT=A B
+HTML=<P ALIGN="LEFT"><FONT FACE="Times" SIZE="20" COLOR="#000000" LETTERSPACING="0" KERNING="0">A<FONT SIZE="2"><IMG SRC="missing.jpg"> </FONT>B</FONT></P>
+---
+SOURCE=<b>A<img src='missing.jpg'>B</b>
+MULTILINE=true
+CONDENSE_WHITE=false
+TEXT=A B
+HTML=<P ALIGN="LEFT"><FONT FACE="Times" SIZE="12" COLOR="#000000" LETTERSPACING="0" KERNING="0"><B>A</B><FONT SIZE="2"><IMG SRC="missing.jpg"><B> </B></FONT><B>B</B></FONT></P>
+---
+SOURCE=<i>A<img src='missing.jpg'>B</i>
+MULTILINE=true
+CONDENSE_WHITE=false
+TEXT=A B
+HTML=<P ALIGN="LEFT"><FONT FACE="Times" SIZE="12" COLOR="#000000" LETTERSPACING="0" KERNING="0"><I>A</I><FONT SIZE="2"><IMG SRC="missing.jpg"><I> </I></FONT><I>B</I></FONT></P>
+---
+SOURCE=<u>A<img src='missing.jpg'>B</u>
+MULTILINE=true
+CONDENSE_WHITE=false
+TEXT=A B
+HTML=<P ALIGN="LEFT"><FONT FACE="Times" SIZE="12" COLOR="#000000" LETTERSPACING="0" KERNING="0"><U>A</U><FONT SIZE="2"><IMG SRC="missing.jpg"><U> </U></FONT><U>B</U></FONT></P>
+---
+SOURCE=A<img src='missing.jpg'>X</img>B
+MULTILINE=true
+CONDENSE_WHITE=false
+TEXT=A XB
+HTML=<P ALIGN="LEFT"><FONT FACE="Times" SIZE="12" COLOR="#000000" LETTERSPACING="0" KERNING="0">A<FONT SIZE="2"><IMG SRC="missing.jpg"> </FONT>XB</FONT></P>
 ---

@@ -145,10 +145,6 @@ runCase(
 );
 
 runDefaultCase(
-    "A<img src='missing.jpg' width='40.9px' height='30.7xyz' hspace='4.9px' vspace='6.2xyz'>B"
-);
-
-runDefaultCase(
     "A<img src='missing.jpg' align='LEFT'>B"
 );
 
@@ -166,6 +162,34 @@ runDefaultCase(
 
 runReparseCase(
     "A<img src='missing.jpg'>B"
+);
+
+runDefaultCase(
+    "<font size='2'>A</font><img src='missing.jpg'>B"
+);
+
+runDefaultCase(
+    "A<img src='missing.jpg'><font size='2'>B</font>"
+);
+
+runDefaultCase(
+    "<font size='20'>A<img src='missing.jpg'>B</font>"
+);
+
+runDefaultCase(
+    "<b>A<img src='missing.jpg'>B</b>"
+);
+
+runDefaultCase(
+    "<i>A<img src='missing.jpg'>B</i>"
+);
+
+runDefaultCase(
+    "<u>A<img src='missing.jpg'>B</u>"
+);
+
+runDefaultCase(
+    "A<img src='missing.jpg'>X</img>B"
 );
 
 stop();

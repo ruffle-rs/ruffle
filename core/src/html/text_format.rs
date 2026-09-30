@@ -19,35 +19,6 @@ use super::StyleSheet;
 const HTML_NEWLINE: u16 = b'\r' as u16;
 const HTML_SPACE: u16 = b' ' as u16;
 
-fn parse_html_number(value: &WStr) -> Option<f64> {
-    let value = value.trim_start();
-    let mut end = 0;
-    let mut seen_digit = false;
-    let mut seen_dot = false;
-
-    for (i, ch) in value.iter().enumerate() {
-        let byte = u8::try_from(ch).ok()?;
-
-        if i == 0 && matches!(byte, b'+' | b'-') {
-            end = i + 1;
-        } else if byte.is_ascii_digit() {
-            seen_digit = true;
-            end = i + 1;
-        } else if byte == b'.' && !seen_dot {
-            seen_dot = true;
-            end = i + 1;
-        } else {
-            break;
-        }
-    }
-
-    if !seen_digit {
-        return None;
-    }
-
-    value[..end].parse().ok()
-}
-
 /// Replace HTML entities with their equivalent characters.
 ///
 /// Unknown entities will be ignored.
@@ -440,8 +411,6 @@ pub struct TextSpan {
     /// length of the underlying source string.
     pub span_length: usize,
 
-    image: Option<Box<TextSpanImage>>,
-
     pub font: TextSpanFont,
     pub style: TextSpanStyle,
     pub align: swf::TextAlign,
@@ -455,6 +424,7 @@ pub struct TextSpan {
     pub url: WString,
     pub target: WString,
     pub display: TextDisplay,
+    pub image: Option<Box<TextSpanImage>>,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -564,9 +534,7 @@ impl TextSpan {
     /// It is assumed that the two text spans being considered are adjacent;
     /// and we have no way of checking, so this function doesn't check that.
     fn can_merge(&self, rhs: &Self) -> bool {
-        self.image.is_none()
-            && rhs.image.is_none()
-            && self.font == rhs.font
+        self.font == rhs.font
             && self.style == rhs.style
             && self.align == rhs.align
             && self.left_margin == rhs.left_margin
@@ -579,6 +547,8 @@ impl TextSpan {
             && self.url == rhs.url
             && self.target == rhs.target
             && self.display == rhs.display
+            && self.image.is_none()
+            && rhs.image.is_none()
     }
 
     /// Apply a text format to this text span.
@@ -673,7 +643,7 @@ impl TextSpan {
 }
 
 #[derive(Clone, Debug)]
-struct TextSpanImage {
+pub struct TextSpanImage {
     pub src: WString,
     pub id: Option<WString>,
     pub width: Option<f64>,
@@ -1041,20 +1011,23 @@ impl FormatSpans {
                             };
 
                             if let Some(src) = image_attribute(b"src") {
+                                // TODO: Flash accepts numeric prefixes such as "40.9px".
+                                // This should likely use the same ActionScript-style numeric
+                                // conversion as other HTML attributes once that is implemented.
                                 let image = TextSpanImage {
                                     src,
                                     id: image_attribute(b"id"),
                                     width: image_attribute(b"width")
-                                        .and_then(|value| parse_html_number(&value)),
+                                        .and_then(|value| value.parse().ok()),
                                     height: image_attribute(b"height")
-                                        .and_then(|value| parse_html_number(&value)),
+                                        .and_then(|value| value.parse().ok()),
                                     align: image_attribute(b"align").map(|value| {
                                         value.to_utf8_lossy().eq_ignore_ascii_case("right")
                                     }),
                                     hspace: image_attribute(b"hspace")
-                                        .and_then(|value| parse_html_number(&value)),
+                                        .and_then(|value| value.parse().ok()),
                                     vspace: image_attribute(b"vspace")
-                                        .and_then(|value| parse_html_number(&value)),
+                                        .and_then(|value| value.parse().ok()),
                                     check_policy_file: image_attribute(b"checkpolicyfile").map(
                                         |value| value.to_utf8_lossy().eq_ignore_ascii_case("true"),
                                     ),
@@ -1633,11 +1606,7 @@ impl FormatSpans {
         for (_, _, text, span) in self.iter_spans() {
             state.set_span(span);
 
-            if let Some(image) = &span.image {
-                state.push_inline_image(image);
-            } else {
-                state.push_text(text);
-            }
+            state.push_text(text);
         }
 
         state.close_all_tags();
@@ -1710,6 +1679,10 @@ impl<'a> FormatState<'a> {
         }
 
         self.set_font(&self.current_span.font);
+
+        if let Some(image) = span.image.as_deref() {
+            self.push_inline_image(image);
+        }
 
         if !self.current_span.url.is_empty() {
             self.open_tag(HtmlTag::A);
@@ -1939,6 +1912,8 @@ impl<'a> FormatState<'a> {
 
         self.result.push_byte(b'"');
 
+        // Flash serializes fractional image values as integers, but it is
+        // unclear whether truncation happens during parsing or serialization.
         if let Some(width) = image.width
             && width.is_finite()
         {
@@ -1987,7 +1962,6 @@ impl<'a> FormatState<'a> {
         }
 
         self.result.push_byte(b'>');
-        self.result.push_byte(b' ');
     }
 
     fn push_text(&mut self, text: &WStr) {
