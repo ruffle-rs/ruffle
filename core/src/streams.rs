@@ -40,6 +40,14 @@ use swf::{AudioCompression, SoundFormat, VideoCodec, VideoDeblocking};
 use thiserror::Error;
 use url::Url;
 
+/// How far ahead of the stream time (in ms) F4V audio samples are fed to the
+/// audio backend.
+///
+/// The backend ends a sound as soon as it runs out of data, so some slack is
+/// needed to bridge the gaps between ticks. Comparable to the 5 tags of audio
+/// lookahead in FLVs (about 116 ms of AAC at 44.1 kHz), plus some margin.
+const F4V_AUDIO_LOOKAHEAD_MS: f64 = 150.0;
+
 #[derive(Debug, Error)]
 enum NetstreamError {
     #[error("Decoding failed because {0}")]
@@ -215,8 +223,13 @@ pub enum NetStreamType {
         /// Index of the next video sample to decode.
         next_frame: u32,
 
-        /// Index of the next audio sample to feed.
+        /// Index of the first audio sample not yet reached by the stream time.
         next_audio_sample: u32,
+
+        /// Index of the next audio sample to feed into the audio substream.
+        ///
+        /// Runs ahead of `next_audio_sample` by up to `F4V_AUDIO_LOOKAHEAD_MS`.
+        next_fed_audio_sample: u32,
     },
 }
 
@@ -651,11 +664,13 @@ impl<'gc> NetStream<'gc> {
             if let Some(NetStreamType::F4v {
                 next_frame,
                 next_audio_sample,
+                next_fed_audio_sample,
                 ..
             }) = &mut *source.stream_type.borrow_mut()
             {
                 *next_frame = seek_frame.unwrap_or(0);
                 *next_audio_sample = seek_audio_sample;
+                *next_fed_audio_sample = seek_audio_sample;
             }
             source.stream_time.set(seek_time_ms);
         }
@@ -991,6 +1006,7 @@ impl<'gc> NetStream<'gc> {
                     video_stream: None,
                     next_frame: 0,
                     next_audio_sample: 0,
+                    next_fed_audio_sample: 0,
                 }));
                 true
             }
@@ -1520,26 +1536,34 @@ impl<'gc> NetStream<'gc> {
         exhausted
     }
 
-    /// Feed the F4V (AAC) audio track's samples up to `max_time` (in ms) into
-    /// the audio substream, creating it first if needed.
+    /// Feed the F4V (AAC) audio track's samples up to `F4V_AUDIO_LOOKAHEAD_MS`
+    /// past `max_time` (in ms) into the audio substream, creating it first if
+    /// needed.
     ///
     /// `slice` must reference the full stream buffer. The current stream type
     /// must be `NetStreamType::F4v` with an already parsed context.
     ///
     /// Returns `true` if there is no audio track, or if every sample of it
-    /// has been fed.
+    /// has been reached by `max_time`.
     fn f4v_advance_audio(self, slice: &Slice, max_time: f64) -> bool {
         let source = self.source();
-        // As in `f4v_advance_video`, `next_audio_sample` is written back at the end.
-        let (mp4, audio_track_id, mut next_audio_sample) = match &*source.stream_type.borrow() {
-            Some(NetStreamType::F4v {
-                context: Some(mp4),
-                audio_track_id,
-                next_audio_sample,
-                ..
-            }) => (mp4.clone(), *audio_track_id, *next_audio_sample),
-            _ => unreachable!(),
-        };
+        // As in `f4v_advance_video`, the sample indices are written back at the end.
+        let (mp4, audio_track_id, mut next_audio_sample, mut next_fed_audio_sample) =
+            match &*source.stream_type.borrow() {
+                Some(NetStreamType::F4v {
+                    context: Some(mp4),
+                    audio_track_id,
+                    next_audio_sample,
+                    next_fed_audio_sample,
+                    ..
+                }) => (
+                    mp4.clone(),
+                    *audio_track_id,
+                    *next_audio_sample,
+                    *next_fed_audio_sample,
+                ),
+                _ => unreachable!(),
+            };
 
         let Some(ati) = audio_track_id else {
             return true;
@@ -1548,7 +1572,7 @@ impl<'gc> NetStream<'gc> {
         // so the lookup always succeeds.
         let audio_trk = mp4.tracks().get(&ati).unwrap();
 
-        // Initialize audio stream on first use.
+        // Initialize audio stream on first use, or after the previous one ended.
         if source.audio_stream.borrow().is_none() {
             let stsd = &audio_trk.trak(&mp4).mdia.minf.stbl.stsd.contents;
             if let re_mp4::StsdBoxContent::Mp4a(mp4a) = stsd
@@ -1580,43 +1604,60 @@ impl<'gc> NetStream<'gc> {
                 // separate buffer and no FLV-style packet-type framing.
                 let substream = Substream::new(slice.buffer().clone());
                 *source.audio_stream.borrow_mut() = Some((substream, sound_stream_info));
+
+                // The lookahead fed into the previous substream (if any) may not
+                // have been played, so start over from the stream time, just like
+                // FLVs re-read their lookahead tags. Unless the whole track has
+                // been fed, as then the previous sound has simply played to the end.
+                if (next_fed_audio_sample as usize) < audio_trk.samples.len() {
+                    next_fed_audio_sample = next_audio_sample;
+                }
             }
         }
 
-        // Feed audio samples up to max_time.
-        let exhausted = loop {
-            if source.audio_stream.borrow().is_none() {
-                break false;
-            }
-            let Some(smpl) = audio_trk.samples.get(next_audio_sample as usize) else {
-                break true;
-            };
+        let mut audio_stream = source.audio_stream.borrow_mut();
+        let Some((substream, _)) = &mut *audio_stream else {
+            return false;
+        };
+
+        // Feed audio samples up to the lookahead limit.
+        while let Some(smpl) = audio_trk.samples.get(next_fed_audio_sample as usize) {
             let sample_time_ms = smpl.decode_timestamp as f64 * 1000.0 / smpl.timescale as f64;
-            if sample_time_ms > max_time {
-                break false;
+            if sample_time_ms > max_time + F4V_AUDIO_LOOKAHEAD_MS {
+                break;
             }
             let offs = smpl.offset as usize;
             let siz = smpl.size as usize;
             // Wait for the sample to be downloaded instead of skipping it.
             let Some(audio_slice) = slice.get(offs..offs + siz) else {
-                break false;
+                break;
             };
-            next_audio_sample += 1;
+            next_fed_audio_sample += 1;
             // Append the raw AAC access unit directly from the MP4 buffer.
-            if let Some((substream, _)) = &mut *source.audio_stream.borrow_mut() {
-                let _ = substream.append(audio_slice);
+            let _ = substream.append(audio_slice);
+        }
+
+        // Advance over the fed samples that the stream time has reached.
+        while next_audio_sample < next_fed_audio_sample {
+            let smpl = &audio_trk.samples[next_audio_sample as usize];
+            let sample_time_ms = smpl.decode_timestamp as f64 * 1000.0 / smpl.timescale as f64;
+            if sample_time_ms > max_time {
+                break;
             }
-        };
+            next_audio_sample += 1;
+        }
 
         if let Some(NetStreamType::F4v {
             next_audio_sample: nas,
+            next_fed_audio_sample: nfas,
             ..
         }) = &mut *source.stream_type.borrow_mut()
         {
             *nas = next_audio_sample;
+            *nfas = next_fed_audio_sample;
         }
 
-        exhausted
+        next_audio_sample as usize == audio_trk.samples.len()
     }
 
     /// Process stream data.
