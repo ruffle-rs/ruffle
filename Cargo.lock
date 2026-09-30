@@ -5259,7 +5259,7 @@ name = "ruffle_web"
 version = "0.6.0"
 dependencies = [
  "async-channel",
- "base64 0.22.1",
+ "base64 0.23.1",
  "chrono",
  "console_error_panic_hook",
  "futures",
