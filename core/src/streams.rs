@@ -233,6 +233,20 @@ pub enum NetStreamType {
     },
 }
 
+/// The state of an F4V track after advancing it in a tick.
+#[derive(Clone, Copy, Debug)]
+enum F4vTrackStatus {
+    /// The track has been advanced up to the requested time.
+    Ready,
+
+    /// The track is waiting for a sample, at the given time (in ms), to be
+    /// downloaded.
+    Buffering(f64),
+
+    /// There is no such track, or it has been played to the end.
+    Exhausted,
+}
+
 #[derive(Clone, Debug, Collect)]
 #[collect(no_drop)]
 pub struct NetStreamSource {
@@ -1392,14 +1406,14 @@ impl<'gc> NetStream<'gc> {
     /// `slice` must reference the full stream buffer. The current stream type
     /// must be `NetStreamType::F4v` with an already parsed context.
     ///
-    /// Returns `true` if there is no video track, or if every sample of it
+    /// Returns `Exhausted` if there is no video track, or if every sample of it
     /// has been decoded.
     fn f4v_advance_video(
         self,
         context: &mut UpdateContext<'gc>,
         slice: &Slice,
         max_time: f64,
-    ) -> bool {
+    ) -> F4vTrackStatus {
         let source = self.source();
         let buffer = slice.data();
         // Copy out what we need without holding the borrow alive; the updated
@@ -1417,7 +1431,7 @@ impl<'gc> NetStream<'gc> {
             };
 
         let Some(vti) = video_track_id else {
-            return true;
+            return F4vTrackStatus::Exhausted;
         };
         // `vti` was taken from this same immutable `Rc<Mp4>` context's
         // track map, so the lookup always succeeds.
@@ -1450,7 +1464,7 @@ impl<'gc> NetStream<'gc> {
             }
         }
 
-        let exhausted = if let Some(video_handle) = video_stream {
+        let status = if let Some(video_handle) = video_stream {
             // When lagging by more than 500 ms, jump to the latest keyframe within
             // the current tick window rather than decoding every intermediate frame.
             // H.264 frames between keyframes cannot be safely skipped without
@@ -1479,20 +1493,19 @@ impl<'gc> NetStream<'gc> {
             loop {
                 let sample_id = next_frame;
                 let Some(smpl) = trk.samples.get(sample_id as usize) else {
-                    break true;
+                    break F4vTrackStatus::Exhausted;
                 };
 
                 let sample_time_ms = smpl.decode_timestamp as f64 * 1000.0 / smpl.timescale as f64;
                 if sample_time_ms > max_time {
-                    break false;
+                    break F4vTrackStatus::Ready;
                 }
 
                 let offs = smpl.offset as usize;
                 let siz = smpl.size as usize;
 
                 if buffer.len() < offs + siz {
-                    tracing::error!("Buffer too small for F4V video frame");
-                    break false;
+                    break F4vTrackStatus::Buffering(sample_time_ms);
                 }
                 next_frame += 1;
 
@@ -1520,7 +1533,7 @@ impl<'gc> NetStream<'gc> {
                 }
             }
         } else {
-            false
+            F4vTrackStatus::Ready
         };
 
         if let Some(NetStreamType::F4v {
@@ -1533,7 +1546,7 @@ impl<'gc> NetStream<'gc> {
             *nf = next_frame;
         }
 
-        exhausted
+        status
     }
 
     /// Feed the F4V (AAC) audio track's samples up to `F4V_AUDIO_LOOKAHEAD_MS`
@@ -1543,9 +1556,9 @@ impl<'gc> NetStream<'gc> {
     /// `slice` must reference the full stream buffer. The current stream type
     /// must be `NetStreamType::F4v` with an already parsed context.
     ///
-    /// Returns `true` if there is no audio track, or if every sample of it
+    /// Returns `Exhausted` if there is no audio track, or if every sample of it
     /// has been reached by `max_time`.
-    fn f4v_advance_audio(self, slice: &Slice, max_time: f64) -> bool {
+    fn f4v_advance_audio(self, slice: &Slice, max_time: f64) -> F4vTrackStatus {
         let source = self.source();
         // As in `f4v_advance_video`, the sample indices are written back at the end.
         let (mp4, audio_track_id, mut next_audio_sample, mut next_fed_audio_sample) =
@@ -1566,7 +1579,7 @@ impl<'gc> NetStream<'gc> {
             };
 
         let Some(ati) = audio_track_id else {
-            return true;
+            return F4vTrackStatus::Exhausted;
         };
         // As with the video track, `ati` indexes this same immutable context,
         // so the lookup always succeeds.
@@ -1617,7 +1630,7 @@ impl<'gc> NetStream<'gc> {
 
         let mut audio_stream = source.audio_stream.borrow_mut();
         let Some((substream, _)) = &mut *audio_stream else {
-            return false;
+            return F4vTrackStatus::Ready;
         };
 
         // Feed audio samples up to the lookahead limit.
@@ -1657,7 +1670,19 @@ impl<'gc> NetStream<'gc> {
             *nfas = next_fed_audio_sample;
         }
 
-        next_audio_sample as usize == audio_trk.samples.len()
+        match audio_trk.samples.get(next_audio_sample as usize) {
+            None => F4vTrackStatus::Exhausted,
+            // The stream time has reached a sample that couldn't be fed yet.
+            Some(smpl) if next_audio_sample == next_fed_audio_sample => {
+                let sample_time_ms = smpl.decode_timestamp as f64 * 1000.0 / smpl.timescale as f64;
+                if sample_time_ms <= max_time {
+                    F4vTrackStatus::Buffering(sample_time_ms)
+                } else {
+                    F4vTrackStatus::Ready
+                }
+            }
+            Some(_) => F4vTrackStatus::Ready,
+        }
     }
 
     /// Process stream data.
@@ -1685,7 +1710,7 @@ impl<'gc> NetStream<'gc> {
         let slice = source.buffer.borrow().to_full_slice();
         let buffer = slice.data();
 
-        let max_time = source.stream_time.get() + dt.as_millis();
+        let mut max_time = source.stream_time.get() + dt.as_millis();
         let mut buffer_underrun = false;
         let mut error = false;
         let mut max_lookahead_audio_tags = 5;
@@ -1770,12 +1795,36 @@ impl<'gc> NetStream<'gc> {
                 return;
             }
 
-            let video_done = self.f4v_advance_video(context, &slice, max_time);
-            let audio_done = self.f4v_advance_audio(&slice, max_time);
+            // Hold the stream time at the first sample that hasn't been
+            // downloaded yet, instead of letting it run ahead of the data.
+            let video_status = self.f4v_advance_video(context, &slice, max_time);
+            if let F4vTrackStatus::Buffering(time) = video_status {
+                max_time = max_time.min(time);
+            }
+            let audio_status = self.f4v_advance_audio(&slice, max_time);
+            if let F4vTrackStatus::Buffering(time) = audio_status {
+                max_time = max_time.min(time);
+            }
+
+            if matches!(video_status, F4vTrackStatus::Buffering(_))
+                || matches!(audio_status, F4vTrackStatus::Buffering(_))
+            {
+                // Don't let the audio play on through its lookahead while the
+                // stream time is held. Once the data has arrived, a new substream
+                // is started from the held stream time, in sync with the video.
+                if let Some(sound) = source.sound_instance.get() {
+                    context.stop_sound(sound);
+                    context.audio.stop_sound(sound);
+                    source.sound_instance.set(None);
+                }
+                source.audio_stream.replace(None);
+            }
 
             // Signal buffer underrun only when every present track is exhausted,
             // so audio-only or video-only completion doesn't cut the other track short.
-            if video_done && audio_done {
+            if matches!(video_status, F4vTrackStatus::Exhausted)
+                && matches!(audio_status, F4vTrackStatus::Exhausted)
+            {
                 buffer_underrun = true;
             }
         }
