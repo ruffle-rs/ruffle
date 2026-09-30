@@ -1,0 +1,9 @@
+Entered frame 1
+// gotoAndStop(0)
+enterFrame : currentFrame=1
+enterFrame : currentFrame=1
+enterFrame : currentFrame=1
+enterFrame : currentFrame=1
+enterFrame : currentFrame=1
+enterFrame : currentFrame=1
+enterFrame : currentFrame=1
