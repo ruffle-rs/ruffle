@@ -1,4 +1,4 @@
-import { openTest, injectRuffleAndWait } from "../../utils.js";
+import { openTest, injectRuffleAndWaitForInitialization } from "../../utils.js";
 import { expect, use } from "chai";
 import chaiHtml from "chai-html";
 import fs from "fs";
@@ -11,7 +11,7 @@ describe("Object without data attribute", () => {
     });
 
     it("doesn't polyfill with ruffle", async () => {
-        await injectRuffleAndWait(browser);
+        await injectRuffleAndWaitForInitialization(browser);
         const actual = await browser
             .$("#test-container")
             .getHTML({ includeSelectorTag: false, pierceShadowRoot: false });
