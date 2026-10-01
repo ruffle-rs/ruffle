@@ -1,20 +1,12 @@
+/// Constructors
 // new Matrix()
 (a=1, b=0, c=0, d=1, tx=0, ty=0)
 
 // new Matrix(1)
 (a=1, b=undefined, c=undefined, d=undefined, tx=undefined, ty=undefined)
 
-// new Matrix(1, 2)
-(a=1, b=2, c=undefined, d=undefined, tx=undefined, ty=undefined)
-
-// new Matrix(1, 2, 3)
-(a=1, b=2, c=3, d=undefined, tx=undefined, ty=undefined)
-
 // new Matrix(1, 2, 3, {})
 (a=1, b=2, c=3, d=[object Object], tx=undefined, ty=undefined)
-
-// new Matrix(1, 2, 3, 4, 5)
-(a=1, b=2, c=3, d=4, tx=5, ty=undefined)
 
 // new Matrix(1, 2, 3, 4, 5, 6)
 (a=1, b=2, c=3, d=4, tx=5, ty=6)
@@ -22,152 +14,798 @@
 // new Matrix(1, 2, 3, 4, 5, 6, 7)
 (a=1, b=2, c=3, d=4, tx=5, ty=6)
 
-// new Matrix(1, 2, 3, 4, 5, 6) .identity()
+// new Matrix(undefined)
+(a=undefined, b=undefined, c=undefined, d=undefined, tx=undefined, ty=undefined)
+
+// new Matrix('1', '2', '3', '4', '5', '6')
+(a=1, b=2, c=3, d=4, tx=5, ty=6)
+
+
+/// Property enumeration order
+// new Matrix()
+toString transformPoint deltaTransformPoint scale translate rotate identity clone createGradientBox createBox invert concat tx ty b c a d 
+
+// new Matrix(1, 2, 3, 4, 5, 6)
+toString transformPoint deltaTransformPoint scale translate rotate identity clone createGradientBox createBox invert concat ty tx d c b a 
+
+// new Matrix(1, 2, 3, 4, 5, 6).clone()
+toString transformPoint deltaTransformPoint scale translate rotate identity clone createGradientBox createBox invert concat ty tx d c b a 
+
+// {} after identity()
+tx ty b c a d 
+
+// {} after concat(new Matrix())
+ty tx d c b a 
+
+// {a: 2, d: 4} after invert()
+ty tx c b a d 
+
+// Matrix.prototype
+toString transformPoint deltaTransformPoint scale translate rotate identity clone createGradientBox createBox invert concat 
+
+
+/// identity
+// matrix.identity()
+undefined
 (a=1, b=0, c=0, d=1, tx=0, ty=0)
 
+// matrix.identity()
+  set matrix.d = 1
+  set matrix.a = 1
+  set matrix.c = 0
+  set matrix.b = 0
+  set matrix.ty = 0
+  set matrix.tx = 0
 
-/// Clones
-// matrix
+
+/// clone
+// matrix.clone()
 (a=1, b=2, c=3, d=4, tx=5, ty=6)
 
-// cloned
-(a=1, b=2, c=3, d=4, tx=5, ty=6)
-
-// matrix === cloned
+// matrix.clone() === matrix
 false
 
-
-// matrix
-(a=1, b=2, c=[object Object], d=4, tx=5, ty=6)
-
-// cloned
-(a=1, b=2, c=[object Object], d=4, tx=5, ty=6)
-
-// matrix === cloned
-false
-
-
-/// scale
-// matrix
-(a=1, b=0, c=0, d=1, tx=0, ty=0)
-
-// matrix.scale(3, 5)
-(a=3, b=0, c=0, d=5, tx=0, ty=0)
-
-
-// matrix
-(a=2, b=0, c=0, d=2, tx=100, ty=100)
-
-// matrix.scale(7, 11)
-(a=14, b=0, c=0, d=22, tx=700, ty=1100)
-
-
-// matrix
+// Matrix.prototype.clone.call({a: 1, b: 2, c: 3, d: 4, tx: 5, ty: 6})
 (a=1, b=2, c=3, d=4, tx=5, ty=6)
+true
 
-// matrix.scale()
-(a=13, b=34, c=39, d=68, tx=65, ty=102)
-
-
-/// rotate
-(a=1, b=0, c=0, d=1, tx=0, ty=0)
-
-// matrix.rotate(0)
-(a=1, b=0, c=0, d=1, tx=0, ty=0)
-
-
-/// rotate
-// matrix
-(a=1, b=0, c=0, d=1, tx=0, ty=0)
-
-// matrix
+// matrix.clone()
+  get matrix.ty
+  get matrix.tx
+  get matrix.d
+  get matrix.c
+  get matrix.b
+  get matrix.a
 (a=1, b=2, c=3, d=4, tx=5, ty=6)
-
-// matrix.rotate(0)
-(a=1, b=2, c=3, d=4, tx=5, ty=6)
-
-
-// matrix
-(a=1, b=2, c=3, d=4, tx=5, ty=6)
-
-/// translate
-// matrix
-// matrix.translate(3, 5)
-(a=1, b=0, c=0, d=1, tx=3, ty=5)
-
-
-// matrix
-// matrix.translate(7, 11)
-(a=2, b=0, c=0, d=2, tx=107, ty=111)
 
 
 /// concat
-// matrix
+// (a=1, b=0, c=0, d=1, tx=0, ty=0).concat((a=11, b=13, c=17, d=19, tx=23, ty=29))
+undefined
+(a=11, b=13, c=17, d=19, tx=23, ty=29)
 (a=11, b=13, c=17, d=19, tx=23, ty=29)
 
-// matrix
-(a=33, b=65, c=51, d=95, tx=69, ty=145)
+// (a=11, b=13, c=17, d=19, tx=23, ty=29).concat((a=3, b=5, c=0, d=5, tx=0, ty=5))
+undefined
+(a=33, b=120, c=51, d=180, tx=69, ty=265)
+(a=3, b=5, c=0, d=5, tx=0, ty=5)
 
-// matrix
-(a=33, b=65, c=51, d=95, tx=76, ty=154)
+// (a=2, b=0, c=0, d=3, tx=5, ty=7).concat((a=11, b=0, c=0, d=13, tx=17, ty=19))
+undefined
+(a=22, b=0, c=0, d=39, tx=72, ty=110)
+(a=11, b=0, c=0, d=13, tx=17, ty=19)
+
+// (a=2, b=0, c=0, d=3, tx=5, ty=7).concat((a=11, b=1, c=0, d=13, tx=17, ty=19))
+undefined
+(a=22, b=2, c=0, d=39, tx=72, ty=115)
+(a=11, b=1, c=0, d=13, tx=17, ty=19)
+
+// (a=2, b=0, c=1, d=3, tx=5, ty=7).concat((a=11, b=0, c=0, d=13, tx=17, ty=19))
+undefined
+(a=22, b=0, c=11, d=39, tx=72, ty=110)
+(a=11, b=0, c=0, d=13, tx=17, ty=19)
+
+// (a=2, b=NaN, c=0, d=3, tx=5, ty=7).concat((a=11, b=0, c=0, d=13, tx=17, ty=19))
+undefined
+(a=NaN, b=NaN, c=0, d=39, tx=72, ty=110)
+(a=11, b=0, c=0, d=13, tx=17, ty=19)
+
+// (a=2, b=0, c=0, d=3, tx=5, ty=7).concat((a=11, b=0, c=0, d=13, tx=17, ty=19))
+undefined
+(a=22, b=0, c=0, d=39, tx=5517, ty=9119)
+(a=11, b=0, c=0, d=13, tx=17, ty=19)
+
+// matrix.concat()
+(a=NaN, b=NaN, c=NaN, d=NaN, tx=NaN, ty=NaN)
+
+// matrix.concat({a: 2, b: 0, c: 0, d: 3, tx: 4, ty: 5})
+(a=2, b=0, c=0, d=3, tx=6, ty=8)
+
+// matrix.concat(other), no skew
+  get matrix.a
+  get other.a
+  get matrix.d
+  get other.d
+  get matrix.tx
+  get other.a
+  get other.tx
+  get matrix.ty
+  get other.d
+  get other.ty
+  get matrix.b
+  get matrix.c
+  get other.b
+  get other.c
+  set matrix.a = 22
+  set matrix.b = 0
+  set matrix.c = 0
+  set matrix.d = 39
+  set matrix.tx = 72
+  set matrix.ty = 110
+
+// matrix.concat(other), with skew
+  get matrix.a
+  get other.a
+  get matrix.d
+  get other.d
+  get matrix.tx
+  get other.a
+  get other.tx
+  get matrix.ty
+  get other.d
+  get other.ty
+  get matrix.b
+  get matrix.b
+  get other.c
+  get matrix.c
+  get other.b
+  get matrix.a
+  get other.b
+  get matrix.b
+  get other.d
+  get matrix.c
+  get other.a
+  get matrix.d
+  get other.c
+  get matrix.ty
+  get other.c
+  get matrix.tx
+  get other.b
+  set matrix.a = 23
+  set matrix.b = 13
+  set matrix.c = 3
+  set matrix.d = 39
+  set matrix.tx = 79
+  set matrix.ty = 110
+
+// matrix.concat(other), with non-number zero skew
+  get matrix.a
+  get other.a
+  get matrix.d
+  get other.d
+  get matrix.tx
+  get other.a
+  get other.tx
+  get matrix.ty
+  get other.d
+  get other.ty
+  get matrix.b
+  get matrix.c
+  get other.b
+  valueOf other.b
+  get other.c
+  set matrix.a = 22
+  set matrix.b = 0
+  set matrix.c = 0
+  set matrix.d = 39
+  set matrix.tx = Infinity
+  set matrix.ty = 110
+  get matrix.a
+  get matrix.b
+  get matrix.c
+  get matrix.d
+  get matrix.tx
+  get matrix.ty
+(a=22, b=0, c=0, d=39, tx=Infinity, ty=110)
 
 
 /// invert
-// matrix
-(a=1, b=0, c=0, d=1, tx=0, ty=0)
-
-// matrix.invert()
-(a=1, b=0, c=0, d=1, tx=0, ty=0)
-
-
-// matrix
-(a=2, b=3, c=5, d=7, tx=9, ty=11)
-
-// matrix.invert()
+// (a=2, b=3, c=5, d=7, tx=9, ty=11).invert()
+undefined
 (a=-7, b=3, c=5, d=-2, tx=8, ty=-5)
+
+// (a=2, b=0, c=0, d=4, tx=8, ty=16).invert()
+undefined
+(a=0.5, b=0, c=0, d=0.25, tx=-4, ty=-4)
+
+// (a=0, b=0, c=0, d=4, tx=8, ty=16).invert()
+undefined
+(a=Infinity, b=0, c=0, d=0.25, tx=-Infinity, ty=-4)
+
+// (a=0, b=0, c=0, d=0, tx=8, ty=16).invert()
+undefined
+(a=Infinity, b=0, c=0, d=Infinity, tx=-Infinity, ty=-Infinity)
+
+// (a=1, b=2, c=2, d=4, tx=8, ty=16).invert()
+undefined
+(a=1, b=0, c=0, d=1, tx=0, ty=0)
+
+// (a=0, b=1, c=1, d=0, tx=8, ty=16).invert()
+undefined
+(a=0, b=1, c=1, d=0, tx=-16, ty=-8)
+
+// (a=NaN, b=0, c=0, d=2, tx=3, ty=4).invert()
+undefined
+(a=NaN, b=0, c=0, d=0.5, tx=NaN, ty=-2)
+
+// (a=NaN, b=1, c=1, d=2, tx=3, ty=4).invert()
+undefined
+(a=NaN, b=NaN, c=NaN, d=NaN, tx=NaN, ty=NaN)
+
+// (a=2, b=0, c=0, d=4, tx=8, ty=16).invert()
+undefined
+(a=0.5, b=0, c=0, d=0.25, tx=-4, ty=-4)
+
+// (a=1, b=undefined, c=undefined, d=undefined, tx=undefined, ty=undefined).invert()
+undefined
+(a=NaN, b=NaN, c=NaN, d=NaN, tx=NaN, ty=NaN)
+
+// matrix.invert(), no skew
+  get matrix.b
+  get matrix.c
+  get matrix.a
+  set matrix.a = 0.5
+  get matrix.d
+  set matrix.d = 0.25
+  set matrix.c = 0
+  set matrix.b = 0
+  get matrix.a
+  get matrix.tx
+  set matrix.tx = -4
+  get matrix.d
+  get matrix.ty
+  set matrix.ty = -4
+
+// matrix.invert(), with skew
+  get matrix.b
+  get matrix.a
+  get matrix.b
+  get matrix.c
+  get matrix.d
+  set matrix.a = -7
+  set matrix.b = 3
+  set matrix.c = 5
+  set matrix.d = -2
+  get matrix.ty
+  get matrix.tx
+  call matrix.deltaTransformPoint((x=9, y=11))
+  get matrix.d
+  get matrix.b
+  get matrix.a
+  get matrix.c
+  set matrix.tx = 8
+  set matrix.ty = -5
+
+// matrix.invert(), singular
+  get matrix.b
+  get matrix.a
+  get matrix.b
+  get matrix.c
+  get matrix.d
+  call matrix.identity()
+  set matrix.d = 1
+  set matrix.a = 1
+  set matrix.c = 0
+  set matrix.b = 0
+  set matrix.ty = 0
+  set matrix.tx = 0
+
+// matrix.invert(), with non-number zero skew
+  get matrix.b
+  get matrix.c
+  get matrix.a
+  set matrix.a = 0.5
+  get matrix.d
+  set matrix.d = 0.25
+  set matrix.c = 0
+  set matrix.b = 0
+  get matrix.a
+  get matrix.tx
+  set matrix.tx = -4
+  get matrix.d
+  get matrix.ty
+  set matrix.ty = -4
+
+// matrix.invert(), with valueOf zero skew
+  get matrix.b
+  valueOf b
+  get matrix.c
+  valueOf c
+  get matrix.a
+  set matrix.a = 0.5
+  get matrix.d
+  set matrix.d = 0.25
+  set matrix.c = 0
+  set matrix.b = 0
+  get matrix.a
+  get matrix.tx
+  set matrix.tx = -4
+  get matrix.d
+  get matrix.ty
+  set matrix.ty = -4
+
+// matrix.invert() with overridden deltaTransformPoint
+  deltaTransformPoint((x=9, y=11))
+(a=-7, b=3, c=5, d=-2, tx=NaN, ty=NaN)
 
 
 /// createBox
-// matrix = nw Matrix();
-(a=1, b=0, c=0, d=1, tx=0, ty=0)
-
 // matrix.createBox(2, 3)
+undefined
 (a=NaN, b=NaN, c=NaN, d=NaN, tx=0, ty=0)
 
 // matrix.createBox(2, 3, 0)
+undefined
 (a=2, b=0, c=0, d=3, tx=0, ty=0)
+
+// matrix.createBox(2, 3, undefined)
+undefined
+(a=NaN, b=NaN, c=NaN, d=NaN, tx=0, ty=0)
+
+// matrix.createBox(2, 3, 1.5707963267949)
+undefined
+(a=1.22464679914735e-16, b=3, c=-2, d=1.83697019872103e-16, tx=0, ty=0)
+
+// matrix.createBox(2, 3, 0, 4)
+undefined
+(a=2, b=0, c=0, d=3, tx=4, ty=0)
+
+// matrix.createBox(2, 3, 0, 4, 5)
+undefined
+(a=2, b=0, c=0, d=3, tx=4, ty=5)
+
+// matrix.createBox(2, 3, 0, undefined, undefined)
+undefined
+(a=2, b=0, c=0, d=3, tx=undefined, ty=undefined)
+
+// matrix.createBox(2, 3, 0, 4, 5, 6)
+undefined
+(a=2, b=0, c=0, d=3, tx=4, ty=5)
+
+// matrix.createBox(2, 3, 0, 4, 5)
+  call matrix.createBox(2, 3, 0, 4, 5)
+  call matrix.identity()
+  set matrix.d = 1
+  set matrix.a = 1
+  set matrix.c = 0
+  set matrix.b = 0
+  set matrix.ty = 0
+  set matrix.tx = 0
+  call matrix.rotate(0)
+  call matrix.concat((a=1, b=0, c=0, d=1, tx=0, ty=0))
+  get matrix.a
+  get matrix.d
+  get matrix.tx
+  get matrix.ty
+  get matrix.b
+  get matrix.c
+  set matrix.a = 1
+  set matrix.b = 0
+  set matrix.c = 0
+  set matrix.d = 1
+  set matrix.tx = 0
+  set matrix.ty = 0
+  call matrix.scale(2, 3)
+  call matrix.concat((a=2, b=0, c=0, d=3, tx=0, ty=0))
+  get matrix.a
+  get matrix.d
+  get matrix.tx
+  get matrix.ty
+  get matrix.b
+  get matrix.c
+  set matrix.a = 2
+  set matrix.b = 0
+  set matrix.c = 0
+  set matrix.d = 3
+  set matrix.tx = 0
+  set matrix.ty = 0
+  set matrix.tx = 4
+  set matrix.ty = 5
+
+// matrix.createBox(2, 3)
+  call matrix.createBox(2, 3)
+  call matrix.identity()
+  set matrix.d = 1
+  set matrix.a = 1
+  set matrix.c = 0
+  set matrix.b = 0
+  set matrix.ty = 0
+  set matrix.tx = 0
+  call matrix.rotate(undefined)
+  call matrix.concat((a=NaN, b=NaN, c=NaN, d=NaN, tx=0, ty=0))
+  get matrix.a
+  get matrix.d
+  get matrix.tx
+  get matrix.ty
+  get matrix.b
+  get matrix.c
+  get matrix.b
+  get matrix.c
+  get matrix.a
+  get matrix.b
+  get matrix.c
+  get matrix.d
+  get matrix.ty
+  get matrix.tx
+  set matrix.a = NaN
+  set matrix.b = NaN
+  set matrix.c = NaN
+  set matrix.d = NaN
+  set matrix.tx = NaN
+  set matrix.ty = NaN
+  call matrix.scale(2, 3)
+  call matrix.concat((a=2, b=0, c=0, d=3, tx=0, ty=0))
+  get matrix.a
+  get matrix.d
+  get matrix.tx
+  get matrix.ty
+  get matrix.b
+  get matrix.b
+  get matrix.c
+  get matrix.a
+  get matrix.b
+  get matrix.c
+  get matrix.d
+  get matrix.ty
+  get matrix.tx
+  set matrix.a = NaN
+  set matrix.b = NaN
+  set matrix.c = NaN
+  set matrix.d = NaN
+  set matrix.tx = NaN
+  set matrix.ty = NaN
+  set matrix.tx = 0
+  set matrix.ty = 0
 
 
 /// createGradientBox
-// matrix = nw Matrix();
-(a=1, b=0, c=0, d=1, tx=0, ty=0)
+// matrix.createGradientBox(200)
+undefined
+(a=0.1220703125, b=0, c=0, d=NaN, tx=100, ty=NaN)
 
 // matrix.createGradientBox(200, 300)
+undefined
 (a=0.1220703125, b=0, c=0, d=0.18310546875, tx=100, ty=150)
 
 // matrix.createGradientBox(200, 300, 0)
+undefined
 (a=0.1220703125, b=0, c=0, d=0.18310546875, tx=100, ty=150)
+
+// matrix.createGradientBox(200, 300, undefined)
+undefined
+(a=NaN, b=NaN, c=NaN, d=NaN, tx=100, ty=150)
+
+// matrix.createGradientBox(200, 300, 1.5707963267949)
+undefined
+(a=7.47465087370211e-18, b=0.18310546875, c=-0.1220703125, d=1.12119763105532e-17, tx=100, ty=150)
+
+// matrix.createGradientBox(200, 300, 0, 10)
+undefined
+(a=0.1220703125, b=0, c=0, d=0.18310546875, tx=110, ty=150)
+
+// matrix.createGradientBox(200, 300, 0, 10, 20)
+undefined
+(a=0.1220703125, b=0, c=0, d=0.18310546875, tx=110, ty=170)
+
+// matrix.createGradientBox(200, 300, 0, 10, 20)
+undefined
+(a=0.1220703125, b=0, c=0, d=0.18310546875, tx=10100, ty=20150)
+
+// matrix.createGradientBox(200, 300, 0, 10, 20, 30)
+undefined
+(a=0.1220703125, b=0, c=0, d=0.18310546875, tx=110, ty=170)
+
+// matrix.createGradientBox(200, 300)
+  call matrix.createBox(0.1220703125, 0.18310546875, 0, 100, 150)
+  call matrix.identity()
+  set matrix.d = 1
+  set matrix.a = 1
+  set matrix.c = 0
+  set matrix.b = 0
+  set matrix.ty = 0
+  set matrix.tx = 0
+  call matrix.rotate(0)
+  call matrix.concat((a=1, b=0, c=0, d=1, tx=0, ty=0))
+  get matrix.a
+  get matrix.d
+  get matrix.tx
+  get matrix.ty
+  get matrix.b
+  get matrix.c
+  set matrix.a = 1
+  set matrix.b = 0
+  set matrix.c = 0
+  set matrix.d = 1
+  set matrix.tx = 0
+  set matrix.ty = 0
+  call matrix.scale(0.1220703125, 0.18310546875)
+  call matrix.concat((a=0.1220703125, b=0, c=0, d=0.18310546875, tx=0, ty=0))
+  get matrix.a
+  get matrix.d
+  get matrix.tx
+  get matrix.ty
+  get matrix.b
+  get matrix.c
+  set matrix.a = 0.1220703125
+  set matrix.b = 0
+  set matrix.c = 0
+  set matrix.d = 0.18310546875
+  set matrix.tx = 0
+  set matrix.ty = 0
+  set matrix.tx = 100
+  set matrix.ty = 150
+
+// matrix.createGradientBox(200, 300, 1, 10, 20)
+  call matrix.createBox(0.1220703125, 0.18310546875, 1, 110, 170)
+  call matrix.identity()
+  set matrix.d = 1
+  set matrix.a = 1
+  set matrix.c = 0
+  set matrix.b = 0
+  set matrix.ty = 0
+  set matrix.tx = 0
+  call matrix.rotate(1)
+  call matrix.concat((a=0.54030230586814, b=0.841470984807897, c=-0.841470984807897, d=0.54030230586814, tx=0, ty=0))
+  get matrix.a
+  get matrix.d
+  get matrix.tx
+  get matrix.ty
+  get matrix.b
+  get matrix.c
+  get matrix.b
+  get matrix.c
+  get matrix.a
+  get matrix.b
+  get matrix.c
+  get matrix.d
+  get matrix.ty
+  get matrix.tx
+  set matrix.a = 0.54030230586814
+  set matrix.b = 0.841470984807897
+  set matrix.c = -0.841470984807897
+  set matrix.d = 0.54030230586814
+  set matrix.tx = 0
+  set matrix.ty = 0
+  call matrix.scale(0.1220703125, 0.18310546875)
+  call matrix.concat((a=0.1220703125, b=0, c=0, d=0.18310546875, tx=0, ty=0))
+  get matrix.a
+  get matrix.d
+  get matrix.tx
+  get matrix.ty
+  get matrix.b
+  get matrix.b
+  get matrix.c
+  get matrix.a
+  get matrix.b
+  get matrix.c
+  get matrix.d
+  get matrix.ty
+  get matrix.tx
+  set matrix.a = 0.0659548713217944
+  set matrix.b = 0.154077939112774
+  set matrix.c = -0.102718626075183
+  set matrix.d = 0.0989323069826916
+  set matrix.tx = 0
+  set matrix.ty = 0
+  set matrix.tx = 110
+  set matrix.ty = 170
+
+// matrix.createGradientBox(width, height, rotation, x, y) with valueOf
+  valueOf height
+  valueOf y
+  valueOf width
+  valueOf x
+  valueOf height
+  valueOf width
+  valueOf rotation
+  valueOf rotation
+(a=0.1220703125, b=0, c=0, d=0.18310546875, tx=110, ty=170)
+
+
+/// rotate
+// matrix.rotate(0)
+undefined
+(a=1, b=2, c=3, d=4, tx=5, ty=6)
+
+// matrix.rotate(1.5707963267949)
+undefined
+(a=-2, b=1, c=-4, d=3, tx=-6, ty=5)
+
+// matrix.rotate(1)
+undefined
+(a=-1.14263966374765, b=1.92207559654418, c=-1.74497702162717, d=4.68562217789625, tx=-2.34731437950668, ty=7.44916875924832)
+
+// matrix.rotate(undefined)
+undefined
+(a=NaN, b=NaN, c=NaN, d=NaN, tx=NaN, ty=NaN)
+
+// matrix.rotate(1)
+undefined
+(a=-1.14263966374765, b=1.92207559654418, c=-1.74497702162717, d=4.68562217789625, tx=-2.34731437950668, ty=7.44916875924832)
+
+// matrix.rotate(1)
+  call matrix.rotate(1)
+  call matrix.concat((a=0.54030230586814, b=0.841470984807897, c=-0.841470984807897, d=0.54030230586814, tx=0, ty=0))
+  get matrix.a
+  get matrix.d
+  get matrix.tx
+  get matrix.ty
+  get matrix.b
+  get matrix.b
+  get matrix.c
+  get matrix.a
+  get matrix.b
+  get matrix.c
+  get matrix.d
+  get matrix.ty
+  get matrix.tx
+  set matrix.a = -1.14263966374765
+  set matrix.b = 1.92207559654418
+  set matrix.c = -1.74497702162717
+  set matrix.d = 4.68562217789625
+  set matrix.tx = -2.34731437950668
+  set matrix.ty = 7.44916875924832
+
+
+/// scale
+// (a=2, b=0, c=0, d=2, tx=100, ty=100).scale(3, 5)
+undefined
+(a=6, b=0, c=0, d=10, tx=300, ty=500)
+
+// (a=1, b=2, c=3, d=4, tx=5, ty=6).scale(3, 5)
+(a=3, b=10, c=9, d=20, tx=15, ty=30)
+
+// (a=2, b=0, c=0, d=2, tx=100, ty=100).scale(2)
+undefined
+(a=4, b=0, c=0, d=NaN, tx=200, ty=NaN)
+
+// (a=1, b=2, c=3, d=4, tx=5, ty=6).scale(2)
+(a=2, b=NaN, c=6, d=NaN, tx=10, ty=NaN)
+
+// (a=2, b=0, c=0, d=2, tx=100, ty=100).scale(0, 0)
+undefined
+(a=0, b=0, c=0, d=0, tx=0, ty=0)
+
+// (a=1, b=2, c=3, d=4, tx=5, ty=6).scale(0, 0)
+(a=0, b=0, c=0, d=0, tx=0, ty=0)
+
+// (a=2, b=0, c=0, d=2, tx=100, ty=100).scale(2, 3)
+undefined
+(a=4, b=0, c=0, d=6, tx=200, ty=300)
+
+// (a=1, b=2, c=3, d=4, tx=5, ty=6).scale(2, 3)
+(a=2, b=6, c=6, d=12, tx=10, ty=18)
+
+// matrix.scale(2, 3)
+  call matrix.scale(2, 3)
+  call matrix.concat((a=2, b=0, c=0, d=3, tx=0, ty=0))
+  get matrix.a
+  get matrix.d
+  get matrix.tx
+  get matrix.ty
+  get matrix.b
+  get matrix.b
+  get matrix.c
+  get matrix.a
+  get matrix.b
+  get matrix.c
+  get matrix.d
+  get matrix.ty
+  get matrix.tx
+  set matrix.a = 2
+  set matrix.b = 6
+  set matrix.c = 6
+  set matrix.d = 12
+  set matrix.tx = 10
+  set matrix.ty = 18
+
+
+/// translate
+// (a=2, b=0, c=0, d=2, tx=100, ty=100).translate(3, 5)
+undefined
+(a=2, b=0, c=0, d=2, tx=103, ty=105)
+
+// (a=2, b=0, c=0, d=2, tx=100, ty=100).translate(2)
+undefined
+(a=2, b=0, c=0, d=2, tx=102, ty=NaN)
+
+// (a=2, b=0, c=0, d=2, tx=100, ty=100).translate(2, 3)
+undefined
+(a=2, b=0, c=0, d=2, tx=1002, ty=1003)
+
+// matrix.translate(1, 2)
+  get matrix.tx
+  set matrix.tx = 6
+  get matrix.ty
+  set matrix.ty = 8
 
 
 /// transformPoint
-// matrix = new Matrix(2, 3, 5, 7, 11, 13);
-(a=2, b=3, c=5, d=7, tx=11, ty=13)
-
-// matrix.transformPoint();
+// matrix.transformPoint(undefined)
 (x=NaN, y=NaN)
+true
 
-// matrix.transformPoint(new Point(1, 1));
+// matrix.transformPoint(new Point(1, 1))
+(x=18, y=23)
+true
+
+// matrix.transformPoint({x: 2, y: 3})
+(x=30, y=40)
+true
+
+// matrix.transformPoint({x: '2', y: '3'})
+(x=30, y=40)
+true
+
+// new Matrix(2, 3, 5, 7, '11', '13').transformPoint(new Point(1, 1))
+(x=711, y=1013)
+
+// matrix.transformPoint(other)
+  get matrix.d
+  get other.y
+  get matrix.b
+  get other.x
+  get matrix.ty
+  get matrix.a
+  get other.x
+  get matrix.c
+  get other.y
+  get matrix.tx
 (x=18, y=23)
 
 
 /// deltaTransformPoint
-// matrix = new Matrix(2, 3, 5, 7, 11, 13);
-(a=2, b=3, c=5, d=7, tx=11, ty=13)
-
-// matrix.deltaTransformPoint();
+// matrix.deltaTransformPoint(undefined)
 (x=NaN, y=NaN)
+true
 
-// matrix.deltaTransformPoint(new Point(1, 1));
+// matrix.deltaTransformPoint(new Point(1, 1))
+(x=7, y=10)
+true
+
+// matrix.deltaTransformPoint({x: 2, y: 3})
+(x=19, y=27)
+true
+
+// matrix.deltaTransformPoint({x: '2', y: '3'})
+(x=19, y=27)
+true
+
+// matrix.deltaTransformPoint(other)
+  get matrix.d
+  get other.y
+  get matrix.b
+  get other.x
+  get matrix.a
+  get other.x
+  get matrix.c
+  get other.y
 (x=7, y=10)
 
+
+/// toString
+// new Matrix(1.5, -2, NaN, Infinity, 'a', null)
+(a=1.5, b=-2, c=NaN, d=Infinity, tx=a, ty=null)
+
+// Matrix.prototype.toString.call({a: 1, b: 2, c: 3, d: 4, tx: 5, ty: 6})
+(a=1, b=2, c=3, d=4, tx=5, ty=6)
+
+// matrix.toString()
+  get matrix.a
+  get matrix.b
+  get matrix.c
+  get matrix.d
+  get matrix.tx
+  get matrix.ty
+(a=1, b=2, c=3, d=4, tx=5, ty=6)
 
