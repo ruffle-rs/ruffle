@@ -451,6 +451,12 @@ pub fn goto_frame<'gc>(
         }
     };
 
+    if frame == 0 && mc.is_executing_avm2_frame_script() {
+        // Frame zero itself and other invalid values that get coerced into
+        // it should NOOP the Goto.
+        return Ok(());
+    }
+
     let goto_info = GotoInfo {
         frame: frame.max(1) as u16,
         stop_or_play,
