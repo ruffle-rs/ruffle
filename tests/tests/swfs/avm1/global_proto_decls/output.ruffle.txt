@@ -227,7 +227,6 @@ Testing _global.flash.geom.ColorTransform.prototype
 Testing _global.flash.geom.Matrix
   prototype, own, DONT_ENUM, type=[object]
   __proto__, own, type=[object]
-  constructor, own, type=[function]
 Testing _global.flash.geom.Matrix.prototype
   toString, own, type=[function]
   transformPoint, own, type=[function]
@@ -241,8 +240,8 @@ Testing _global.flash.geom.Matrix.prototype
   createBox, own, type=[function]
   invert, own, type=[function]
   concat, own, type=[function]
-  __proto__, own, type=[object]
   constructor, own, type=[function]
+  __proto__, own, type=[object]
 Testing _global.flash.geom.Point
   interpolate, own, type=[function]
   polar, own, type=[function]
