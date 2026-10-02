@@ -9,7 +9,7 @@ use crate::context::{RenderContext, UpdateContext};
 use crate::display_object::{Avm1TextFieldBinding, BoundsMode, DisplayObjectBase, RenderOptions};
 use crate::prelude::*;
 use crate::streams::NetStream;
-use crate::tag_utils::{SwfMovie, SwfSlice};
+use crate::tag_utils::{SwfMovieData, SwfSlice};
 use crate::vminterface::{AvmObject, Instantiator};
 use core::fmt;
 use gc_arena::barrier::unlock;
@@ -72,7 +72,7 @@ pub struct VideoData<'gc> {
     keyframes: RefCell<BTreeSet<u32>>,
 
     /// The movie whose tagstream or code created the Video object.
-    movie: Arc<SwfMovie>,
+    movie: Arc<SwfMovieData>,
     /// The last decoded frame in the video stream.
     ///
     /// NOTE: This is only used for SWF-source video streams.
@@ -131,7 +131,7 @@ pub struct SwfVideoSource {
 impl<'gc> Video<'gc> {
     /// Construct a Video object that is tied to a SWF file's video stream.
     pub fn from_swf_tag(
-        movie: Arc<SwfMovie>,
+        movie: Arc<SwfMovieData>,
         streamdef: DefineVideoStream,
         mc: &Mutation<'gc>,
     ) -> Self {
@@ -162,7 +162,7 @@ impl<'gc> Video<'gc> {
 
     pub fn new(
         mc: &Mutation<'gc>,
-        movie: Arc<SwfMovie>,
+        movie: Arc<SwfMovieData>,
         width: i32,
         height: i32,
         object: Option<AvmObject<'gc>>,
@@ -571,7 +571,7 @@ impl<'gc> TDisplayObject<'gc> for Video<'gc> {
         }
     }
 
-    fn movie(self) -> Arc<SwfMovie> {
+    fn movie(self) -> Arc<SwfMovieData> {
         self.0.movie.clone()
     }
 

@@ -8,7 +8,7 @@ use crate::avm2::script::TranslationUnit;
 use crate::avm2::{Avm2, Error, Multiname, Namespace, QName};
 use crate::context::UpdateContext;
 use crate::string::WStr;
-use crate::tag_utils::{self, ControlFlow, SwfMovie, SwfSlice, SwfStream};
+use crate::tag_utils::{self, ControlFlow, SwfMovieData, SwfSlice, SwfStream};
 use gc_arena::Collect;
 use std::sync::Arc;
 use swf::TagCode;
@@ -835,7 +835,7 @@ pub fn load_playerglobal<'gc>(context: &mut UpdateContext<'gc>, domain: Domain<'
     context.avm2.native_fast_call_list = native::NATIVE_FAST_CALL_LIST;
 
     let movie = Arc::new(
-        SwfMovie::from_data(PLAYERGLOBAL, "file:///".into(), None, None)
+        SwfMovieData::from_data(PLAYERGLOBAL, "file:///".into(), None, None)
             .expect("playerglobal_avm2.swf should be valid"),
     );
 

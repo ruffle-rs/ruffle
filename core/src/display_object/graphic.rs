@@ -8,7 +8,7 @@ use crate::display_object::{BoundsMode, DisplayObjectBase};
 use crate::drawing::Drawing;
 use crate::library::MovieLibrarySource;
 use crate::prelude::*;
-use crate::tag_utils::SwfMovie;
+use crate::tag_utils::SwfMovieData;
 use crate::tessellation_cache::TessellationCache;
 use crate::vminterface::Instantiator;
 use core::fmt;
@@ -51,7 +51,7 @@ impl<'gc> Graphic<'gc> {
     pub fn from_swf_tag(
         context: &mut UpdateContext<'gc>,
         swf_shape: swf::Shape,
-        movie: Arc<SwfMovie>,
+        movie: Arc<SwfMovieData>,
     ) -> Self {
         let library = context.library.library_for_movie(movie.clone()).unwrap();
         let shared = GraphicShared {
@@ -310,7 +310,7 @@ impl<'gc> TDisplayObject<'gc> for Graphic<'gc> {
         }
     }
 
-    fn movie(self) -> Arc<SwfMovie> {
+    fn movie(self) -> Arc<SwfMovieData> {
         self.0.shared.get().movie.clone()
     }
 
@@ -341,7 +341,7 @@ struct GraphicShared {
     render_handle: Option<ShapeHandle>,
     shape_bounds: Rectangle<Twips>,
     edge_bounds: Rectangle<Twips>,
-    movie: Arc<SwfMovie>,
+    movie: Arc<SwfMovieData>,
     #[collect(require_static)]
     scaled_handle: RefCell<TessellationCache>,
 }

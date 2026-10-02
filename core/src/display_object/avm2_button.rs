@@ -18,7 +18,7 @@ use crate::frame_lifecycle::{
     broadcast_frame_constructed, broadcast_frame_exited, catchup_display_object_to_frame,
 };
 use crate::prelude::*;
-use crate::tag_utils::SwfMovie;
+use crate::tag_utils::SwfMovieData;
 use crate::vminterface::Instantiator;
 use core::fmt;
 use either::Either;
@@ -102,7 +102,7 @@ pub struct Avm2ButtonData<'gc> {
 impl<'gc> Avm2Button<'gc> {
     pub fn from_swf_tag(
         button: &swf::Button,
-        movie: Arc<SwfMovie>,
+        movie: Arc<SwfMovieData>,
         context: &mut UpdateContext<'gc>,
         construct_blank_states: bool,
     ) -> Self {
@@ -423,7 +423,7 @@ impl<'gc> TDisplayObject<'gc> for Avm2Button<'gc> {
         self.0.shared.id
     }
 
-    fn movie(self) -> Arc<SwfMovie> {
+    fn movie(self) -> Arc<SwfMovieData> {
         self.0.shared.swf.clone()
     }
 
@@ -821,7 +821,7 @@ impl<'gc> TInteractiveObject<'gc> for Avm2Button<'gc> {
 #[derive(Collect, Debug)]
 #[collect(require_static)]
 struct ButtonShared {
-    swf: Arc<SwfMovie>,
+    swf: Arc<SwfMovieData>,
     id: CharacterId,
     cell: RefCell<ButtonSharedMut>,
 }

@@ -15,7 +15,7 @@ use crate::avm2::vtable::VTable;
 use crate::avm2::{Avm2, Multiname, Namespace};
 use crate::context::UpdateContext;
 use crate::string::{AvmAtom, AvmString};
-use crate::tag_utils::SwfMovie;
+use crate::tag_utils::SwfMovieData;
 use gc_arena::barrier::field;
 use gc_arena::lock::OnceLock;
 use gc_arena::{Collect, Gc, Mutation};
@@ -79,7 +79,7 @@ struct TranslationUnitData<'gc> {
     multinames: Box<[OnceLock<Gc<'gc, Multiname<'gc>>>]>,
 
     /// The movie that this TranslationUnit was loaded from.
-    movie: Arc<SwfMovie>,
+    movie: Arc<SwfMovieData>,
 }
 
 impl<'gc> TranslationUnit<'gc> {
@@ -89,7 +89,7 @@ impl<'gc> TranslationUnit<'gc> {
         abc: AbcFile,
         domain: Domain<'gc>,
         name: Option<AvmString<'gc>>,
-        movie: Arc<SwfMovie>,
+        movie: Arc<SwfMovieData>,
         mc: &Mutation<'gc>,
     ) -> Self {
         use std::iter::repeat_n;
@@ -154,7 +154,7 @@ impl<'gc> TranslationUnit<'gc> {
         Rc::ptr_eq(&self.0.abc, &other.0.abc)
     }
 
-    pub fn movie(self) -> Arc<SwfMovie> {
+    pub fn movie(self) -> Arc<SwfMovieData> {
         self.0.movie.clone()
     }
 

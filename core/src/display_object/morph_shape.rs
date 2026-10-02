@@ -4,7 +4,7 @@ use crate::context::{RenderContext, UpdateContext};
 use crate::display_object::{BoundsMode, DisplayObjectBase};
 use crate::library::MovieLibrarySource;
 use crate::prelude::*;
-use crate::tag_utils::SwfMovie;
+use crate::tag_utils::SwfMovieData;
 use crate::vminterface::Instantiator;
 use core::fmt;
 use gc_arena::barrier::unlock;
@@ -43,7 +43,7 @@ impl<'gc> MorphShape<'gc> {
     pub fn from_swf_tag(
         gc_context: &Mutation<'gc>,
         tag: swf::DefineMorphShape,
-        movie: Arc<SwfMovie>,
+        movie: Arc<SwfMovieData>,
     ) -> Self {
         let shared = MorphShapeShared::from_swf_tag(&tag, movie);
         MorphShape(Gc::new(
@@ -179,7 +179,7 @@ impl<'gc> TDisplayObject<'gc> for MorphShape<'gc> {
         }
     }
 
-    fn movie(self) -> Arc<SwfMovie> {
+    fn movie(self) -> Arc<SwfMovieData> {
         self.0.shared.get().movie.clone()
     }
 }
@@ -199,11 +199,11 @@ pub struct MorphShapeShared {
     start: swf::MorphShape,
     end: swf::MorphShape,
     frames: RefCell<fnv::FnvHashMap<u16, Frame>>,
-    movie: Arc<SwfMovie>,
+    movie: Arc<SwfMovieData>,
 }
 
 impl MorphShapeShared {
-    pub fn from_swf_tag(swf_tag: &swf::DefineMorphShape, movie: Arc<SwfMovie>) -> Self {
+    pub fn from_swf_tag(swf_tag: &swf::DefineMorphShape, movie: Arc<SwfMovieData>) -> Self {
         Self {
             id: swf_tag.id,
             start: swf_tag.start.clone(),

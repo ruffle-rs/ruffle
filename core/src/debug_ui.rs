@@ -21,7 +21,7 @@ use crate::debug_ui::handle::{
 use crate::debug_ui::movie::{MovieListWindow, MovieWindow};
 use crate::display_object::TDisplayObject;
 use crate::prelude::DisplayObject;
-use crate::tag_utils::SwfMovie;
+use crate::tag_utils::SwfMovieData;
 use gc_arena::DynamicRootSet;
 use hashbrown::HashMap;
 use std::fmt::{Debug, Formatter};
@@ -32,7 +32,7 @@ use weak_table::PtrWeakKeyHashMap;
 #[derive(Default)]
 pub struct DebugUi {
     display_objects: HashMap<DisplayObjectHandle, DisplayObjectWindow>,
-    movies: PtrWeakKeyHashMap<Weak<SwfMovie>, MovieWindow>,
+    movies: PtrWeakKeyHashMap<Weak<SwfMovieData>, MovieWindow>,
     avm1_objects: HashMap<AVM1ObjectHandle, Avm1ObjectWindow>,
     avm2_objects: HashMap<AVM2ObjectHandle, Avm2ObjectWindow>,
     avm2_classes: HashMap<ClassHandle, Avm2ClassWindow>,
@@ -49,7 +49,7 @@ pub struct DebugUi {
 pub enum Message {
     TrackDisplayObject(DisplayObjectHandle),
     TrackDomain(DomainHandle),
-    TrackMovie(Arc<SwfMovie>),
+    TrackMovie(Arc<SwfMovieData>),
     TrackAVM1Object(AVM1ObjectHandle),
     TrackAVM2Object(AVM2ObjectHandle),
     TrackAVM2Class(ClassHandle),

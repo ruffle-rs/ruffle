@@ -28,7 +28,7 @@ use crate::html::{
 };
 use crate::prelude::*;
 use crate::string::{AvmString, SwfStrExt as _, WStr, WString, utils as string_utils};
-use crate::tag_utils::SwfMovie;
+use crate::tag_utils::SwfMovieData;
 use crate::vminterface::{AvmObject, Instantiator};
 use chrono::DateTime;
 use chrono::Utc;
@@ -260,7 +260,7 @@ impl<'gc> EditText<'gc> {
     /// Creates a new `EditText` from an SWF `DefineEditText` tag.
     pub fn from_swf_tag(
         context: &mut UpdateContext<'gc>,
-        swf_movie: Arc<SwfMovie>,
+        swf_movie: Arc<SwfMovieData>,
         swf_tag: swf::EditText,
     ) -> Self {
         let default_format = TextFormat::from_swf_tag(swf_tag.clone(), swf_movie.clone(), context);
@@ -362,7 +362,7 @@ impl<'gc> EditText<'gc> {
     /// Create a new, dynamic `EditText`.
     pub fn new(
         context: &mut UpdateContext<'gc>,
-        swf_movie: Arc<SwfMovie>,
+        swf_movie: Arc<SwfMovieData>,
         x: f64,
         y: f64,
         width: f64,
@@ -397,7 +397,7 @@ impl<'gc> EditText<'gc> {
     /// Create a new, dynamic `EditText` representing an AVM2 TextLine.
     pub fn new_fte(
         context: &mut UpdateContext<'gc>,
-        swf_movie: Arc<SwfMovie>,
+        swf_movie: Arc<SwfMovieData>,
         x: f64,
         y: f64,
         width: f64,
@@ -2565,7 +2565,7 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
         self.0.shared.id
     }
 
-    fn movie(self) -> Arc<SwfMovie> {
+    fn movie(self) -> Arc<SwfMovieData> {
         self.0.shared.swf.clone()
     }
 
@@ -3223,7 +3223,7 @@ bitflags::bitflags! {
 #[derive(Debug, Clone, Collect)]
 #[collect(require_static)]
 struct EditTextShared {
-    swf: Arc<SwfMovie>,
+    swf: Arc<SwfMovieData>,
     id: CharacterId,
     initial_text: Option<WString>,
 }

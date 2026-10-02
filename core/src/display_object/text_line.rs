@@ -12,7 +12,7 @@ use crate::display_object::{
 use crate::events::{ClipEvent, ClipEventResult};
 use crate::fte::TextLineValidity;
 use crate::prelude::*;
-use crate::tag_utils::SwfMovie;
+use crate::tag_utils::SwfMovieData;
 use crate::vminterface::Instantiator;
 use core::fmt;
 use gc_arena::barrier::unlock;
@@ -43,7 +43,7 @@ pub struct TextLineData<'gc> {
     avm2_object: Lock<Option<Avm2StageObject<'gc>>>,
     fallback: EditText<'gc>,
     #[collect(require_static)]
-    movie: Arc<SwfMovie>,
+    movie: Arc<SwfMovieData>,
 
     validity: Lock<TextLineValidity<'gc>>,
 
@@ -65,7 +65,7 @@ pub struct TextLineData<'gc> {
 impl<'gc> TextLine<'gc> {
     pub fn new(
         context: &mut UpdateContext<'gc>,
-        movie: Arc<SwfMovie>,
+        movie: Arc<SwfMovieData>,
         fallback: EditText<'gc>,
     ) -> Self {
         TextLine(Gc::new(
@@ -285,7 +285,7 @@ impl<'gc> TDisplayObject<'gc> for TextLine<'gc> {
         0
     }
 
-    fn movie(self) -> Arc<SwfMovie> {
+    fn movie(self) -> Arc<SwfMovieData> {
         self.0.movie.clone()
     }
 

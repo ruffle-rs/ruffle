@@ -1,7 +1,7 @@
 use crate::character::Character;
 use crate::context::UpdateContext;
 use crate::debug_ui::{ItemToSave, Message};
-use crate::tag_utils::SwfMovie;
+use crate::tag_utils::SwfMovieData;
 use egui::{Align, Button, CollapsingHeader, Grid, Id, Layout, TextEdit, Ui, Window};
 use egui_extras::{Column, TableBuilder};
 use std::sync::Arc;
@@ -144,7 +144,7 @@ impl MovieWindow {
         &mut self,
         egui_ctx: &egui::Context,
         context: &mut UpdateContext,
-        movie: Arc<SwfMovie>,
+        movie: Arc<SwfMovieData>,
         messages: &mut Vec<Message>,
     ) -> bool {
         let mut keep_open = true;
@@ -173,7 +173,12 @@ impl MovieWindow {
         keep_open
     }
 
-    fn show_characters(&mut self, ui: &mut Ui, context: &mut UpdateContext, movie: &Arc<SwfMovie>) {
+    fn show_characters(
+        &mut self,
+        ui: &mut Ui,
+        context: &mut UpdateContext,
+        movie: &Arc<SwfMovieData>,
+    ) {
         // Cloned up here so we can still use context afterwards
         let (characters, export_characters) = context
             .library
@@ -221,7 +226,7 @@ impl MovieWindow {
     fn show_information(
         &mut self,
         ui: &mut Ui,
-        movie: &Arc<SwfMovie>,
+        movie: &Arc<SwfMovieData>,
         messages: &mut Vec<Message>,
     ) {
         if !movie.data().is_empty() && ui.button("Save File...").clicked() {
@@ -313,11 +318,11 @@ impl MovieWindow {
     }
 }
 
-pub fn movie_name(movie: &Arc<SwfMovie>) -> String {
+pub fn movie_name(movie: &Arc<SwfMovieData>) -> String {
     format!("SWF {:p}", Arc::as_ptr(movie))
 }
 
-pub fn open_movie_button(ui: &mut Ui, movie: &Arc<SwfMovie>, messages: &mut Vec<Message>) {
+pub fn open_movie_button(ui: &mut Ui, movie: &Arc<SwfMovieData>, messages: &mut Vec<Message>) {
     if ui.button(movie_name(movie)).clicked() {
         messages.push(Message::TrackMovie(movie.clone()));
     }
@@ -341,7 +346,7 @@ pub fn open_character_button(ui: &mut Ui, character: Character) {
     ui.label(name);
 }
 
-fn save_swf(movie: &Arc<SwfMovie>, messages: &mut Vec<Message>) {
+fn save_swf(movie: &Arc<SwfMovieData>, messages: &mut Vec<Message>) {
     let suggested_name = if let Ok(url) = Url::parse(movie.url()) {
         url.path_segments()
             .and_then(|mut segments| segments.next_back())

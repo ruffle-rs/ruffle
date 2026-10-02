@@ -35,7 +35,7 @@ use crate::limits::ExecutionLimit;
 use crate::player::{Player, PostFrameCallback};
 use crate::streams::{NetStream, NetStreamHandle};
 use crate::string::{AvmString, StringContext};
-use crate::tag_utils::SwfMovie;
+use crate::tag_utils::SwfMovieData;
 use crate::vminterface::Instantiator;
 use chardetng::EncodingDetector;
 use encoding_rs::{UTF_8, WINDOWS_1252};
@@ -352,9 +352,13 @@ impl<'gc> LoadManager<'gc> {
                         let importer_movie = importer_movie.fetch(uc);
 
                         if matches!(content_type, ContentType::Swf) {
-                            let movie =
-                                SwfMovie::from_data(&body, url.clone(), Some(url.clone()), None)
-                                    .expect("Could not load movie");
+                            let movie = SwfMovieData::from_data(
+                                &body,
+                                url.clone(),
+                                Some(url.clone()),
+                                None,
+                            )
+                            .expect("Could not load movie");
 
                             let movie = Arc::new(movie);
 
@@ -592,7 +596,7 @@ pub struct MovieLoader<'gc> {
     /// This is only available if the asynchronous loader path has
     /// completed and we expect the Player to periodically tick preload
     /// until loading completes.
-    movie: Option<Arc<SwfMovie>>,
+    movie: Option<Arc<SwfMovieData>>,
 }
 
 impl<'gc> MovieLoader<'gc> {
@@ -774,7 +778,7 @@ impl<'gc> MovieLoader<'gc> {
     ) -> Result<(), Error> {
         ContentType::sniff(&body).expect(ContentType::Swf)?;
 
-        let movie = SwfMovie::from_data(&body, url, loader_url, None)?;
+        let movie = SwfMovieData::from_data(&body, url, loader_url, None)?;
         player.mutate_with_update_context(|uc| {
             // Make a copy of the properties on the root, so we can put them back after replacing it
             let mut root_properties: IndexMap<AvmString, Value> = IndexMap::new();
@@ -956,8 +960,8 @@ pub fn load_root_movie<'gc>(
             .map(|u| u.to_string())
             .unwrap_or(swf_url);
 
-        let mut movie =
-            SwfMovie::from_data(&body, spoofed_or_swf_url, None, None).inspect_err(|error| {
+        let mut movie = SwfMovieData::from_data(&body, spoofed_or_swf_url, None, None)
+            .inspect_err(|error| {
                 player
                     .lock()
                     .unwrap()
@@ -1700,8 +1704,12 @@ impl<'gc> MovieLoader<'gc> {
 
         let movie = match sniffed_type {
             ContentType::Swf => {
-                let mut movie =
-                    SwfMovie::from_data(data, url.clone(), loader_url.clone(), load_bytes_info)?;
+                let mut movie = SwfMovieData::from_data(
+                    data,
+                    url.clone(),
+                    loader_url.clone(),
+                    load_bytes_info,
+                )?;
 
                 if matches!(vm_data, MovieLoaderVMData::Avm1 { .. }) {
                     // If AVM1 loads a SWF, that SWF is always interpreted as
@@ -1715,7 +1723,7 @@ impl<'gc> MovieLoader<'gc> {
                 let (width, height) =
                     ruffle_render::utils::decode_define_bits_jpeg_dimensions(data)
                         .unwrap_or((0, 0));
-                Arc::new(SwfMovie::from_loaded_image(
+                Arc::new(SwfMovieData::from_loaded_image(
                     url.clone(),
                     from_bytes,
                     length,
@@ -1723,7 +1731,7 @@ impl<'gc> MovieLoader<'gc> {
                     height,
                 ))
             }
-            ContentType::Unknown => Arc::new(SwfMovie::error_movie(url.clone())),
+            ContentType::Unknown => Arc::new(SwfMovieData::error_movie(url.clone())),
         };
 
         match uc.load_manager.get_loader_mut(handle) {
@@ -1740,7 +1748,7 @@ impl<'gc> MovieLoader<'gc> {
 
         if let MovieLoaderVMData::Avm2 { loader_info, .. } = vm_data {
             loader_info.set_content_type(sniffed_type);
-            let fake_movie = Arc::new(SwfMovie::fake_with_compressed_len(
+            let fake_movie = Arc::new(SwfMovieData::fake_with_compressed_len(
                 uc.root_swf.version(),
                 loader_url.clone(),
                 data.len(),
@@ -1890,7 +1898,7 @@ impl<'gc> MovieLoader<'gc> {
                 let bitmap_dobj = bitmap_avm2.as_display_object().unwrap();
 
                 if let MovieLoaderVMData::Avm2 { loader_info, .. } = vm_data {
-                    let fake_movie = Arc::new(SwfMovie::fake_with_compressed_len(
+                    let fake_movie = Arc::new(SwfMovieData::fake_with_compressed_len(
                         activation.context.root_swf.version(),
                         loader_url.clone(),
                         data.len(),
@@ -1905,7 +1913,7 @@ impl<'gc> MovieLoader<'gc> {
                 MovieLoader::movie_loader_progress(handle, activation.context, length, length)?;
 
                 if let MovieLoaderVMData::Avm2 { loader_info, .. } = vm_data {
-                    let fake_movie = Arc::new(SwfMovie::fake_with_compressed_data(
+                    let fake_movie = Arc::new(SwfMovieData::fake_with_compressed_data(
                         activation.context.root_swf.version(),
                         loader_url,
                         data.to_vec(),
@@ -1961,7 +1969,7 @@ impl<'gc> MovieLoader<'gc> {
                         MovieLoader::movie_loader_complete(handle, uc, None, status, redirected)?;
                     }
                     MovieLoaderVMData::Avm2 { loader_info, .. } => {
-                        let fake_movie = Arc::new(SwfMovie::fake_with_compressed_len(
+                        let fake_movie = Arc::new(SwfMovieData::fake_with_compressed_len(
                             uc.root_swf.version(),
                             loader_url,
                             data.len(),
@@ -2305,7 +2313,7 @@ impl<'gc> MovieLoader<'gc> {
 
                 let current_movie = mc.movie();
                 let current_version = current_movie.version();
-                let mut initial_loading_movie = SwfMovie::empty(current_version, None);
+                let mut initial_loading_movie = SwfMovieData::empty(current_version, None);
                 initial_loading_movie.set_url(url.to_string());
 
                 mc.replace_with_movie(uc, Some(Arc::new(initial_loading_movie)), true, None);
@@ -2339,7 +2347,7 @@ impl<'gc> MovieLoader<'gc> {
             swf_url = mc.movie().url().to_string();
         };
 
-        let error_movie = SwfMovie::error_movie(swf_url);
+        let error_movie = SwfMovieData::error_movie(swf_url);
         // This also sets total_frames correctly
         mc.replace_with_movie(uc, Some(Arc::new(error_movie)), true, None);
         mc.set_cur_preload_frame(0);

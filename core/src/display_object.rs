@@ -10,7 +10,7 @@ use crate::context::{RenderContext, UpdateContext};
 use crate::drawing::Drawing;
 use crate::prelude::*;
 use crate::string::{AvmString, WString};
-use crate::tag_utils::SwfMovie;
+use crate::tag_utils::SwfMovieData;
 use crate::types::{Degrees, Percent};
 use crate::vminterface::Instantiator;
 use bitflags::bitflags;
@@ -2683,7 +2683,7 @@ pub trait TDisplayObject<'gc>:
     }
 
     /// Return the SWF that defines this display object.
-    fn movie(self) -> Arc<SwfMovie>;
+    fn movie(self) -> Arc<SwfMovieData>;
 
     fn loader_info(self) -> Option<LoaderInfoObject<'gc>> {
         None

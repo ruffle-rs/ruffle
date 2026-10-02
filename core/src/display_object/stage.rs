@@ -17,7 +17,7 @@ use crate::focus_tracker::FocusTracker;
 use crate::frame_lifecycle::broadcast_frame_entered;
 use crate::prelude::*;
 use crate::string::{FromWStr, WStr};
-use crate::tag_utils::SwfMovie;
+use crate::tag_utils::SwfMovieData;
 use crate::vminterface::Instantiator;
 use bitflags::bitflags;
 use gc_arena::barrier::unlock;
@@ -77,7 +77,7 @@ pub struct StageData<'gc> {
     focus_tracker: FocusTracker<'gc>,
 
     /// The swf that registered this stage
-    movie: RefCell<Arc<SwfMovie>>,
+    movie: RefCell<Arc<SwfMovieData>>,
 
     /// The dimensions of the SWF file.
     movie_size: Cell<(u32, u32)>,
@@ -154,7 +154,11 @@ pub struct StageData<'gc> {
 }
 
 impl<'gc> Stage<'gc> {
-    pub fn empty(gc_context: &Mutation<'gc>, fullscreen: bool, movie: Arc<SwfMovie>) -> Stage<'gc> {
+    pub fn empty(
+        gc_context: &Mutation<'gc>,
+        fullscreen: bool,
+        movie: Arc<SwfMovieData>,
+    ) -> Stage<'gc> {
         let stage = Self(Gc::new(
             gc_context,
             StageData {
@@ -235,7 +239,7 @@ impl<'gc> Stage<'gc> {
         self.0.movie_size.set((width, height));
     }
 
-    pub fn set_movie(self, gc_context: &Mutation<'gc>, movie: Arc<SwfMovie>) {
+    pub fn set_movie(self, gc_context: &Mutation<'gc>, movie: Arc<SwfMovieData>) {
         // Stage is the only DO that has a fake movie set and then gets the real movie set.
         // NOTE: Make sure to NOT reset any state here, AVM1 depends on it.
 
@@ -892,7 +896,7 @@ impl<'gc> TDisplayObject<'gc> for Stage<'gc> {
         self.0.loader_info.get()
     }
 
-    fn movie(self) -> Arc<SwfMovie> {
+    fn movie(self) -> Arc<SwfMovieData> {
         self.0.movie.borrow().clone()
     }
 }

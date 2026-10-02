@@ -37,7 +37,7 @@ use crate::string::HasStringContext;
 use crate::string::{AvmString, StringContext};
 use crate::stub::StubCollection;
 use crate::system_properties::SystemProperties;
-use crate::tag_utils::{SwfMovie, SwfSlice};
+use crate::tag_utils::{SwfMovieData, SwfSlice};
 use crate::timer::Timers;
 use crate::vminterface::Instantiator;
 use async_channel::Sender;
@@ -91,7 +91,7 @@ pub struct UpdateContext<'gc> {
     pub needs_render: &'gc mut bool,
 
     /// The root SWF file.
-    pub root_swf: &'gc mut Arc<SwfMovie>,
+    pub root_swf: &'gc mut Arc<SwfMovieData>,
 
     /// The audio backend, used by display objects and AVM to play audio.
     pub audio: &'gc mut dyn AudioBackend,
@@ -356,7 +356,7 @@ impl<'gc> UpdateContext<'gc> {
     /// This should only be called once, as it makes no attempt at proper clean-up
     /// of previous stage contents. If you need to load a new root movie, you
     /// should use `replace_root_movie`.
-    pub fn set_root_movie(&mut self, movie: SwfMovie) {
+    pub fn set_root_movie(&mut self, movie: SwfMovieData) {
         if !self.forced_frame_rate {
             *self.frame_rate = movie.frame_rate().into();
         }
@@ -443,7 +443,7 @@ impl<'gc> UpdateContext<'gc> {
         self.audio.set_frame_rate(*self.frame_rate);
     }
 
-    pub fn replace_root_movie(&mut self, movie: SwfMovie) {
+    pub fn replace_root_movie(&mut self, movie: SwfMovieData) {
         // FIXME Use RAII here, e.g. destroy and recreate
         //       the player instance instead of cleaning up.
 

@@ -10,7 +10,7 @@ use crate::bitmap::bitmap_data::BitmapData;
 use crate::context::{RenderContext, UpdateContext};
 use crate::display_object::{BoundsMode, DisplayObjectBase, DisplayObjectPtr, DisplayObjectWeak};
 use crate::prelude::*;
-use crate::tag_utils::SwfMovie;
+use crate::tag_utils::SwfMovieData;
 use crate::vminterface::Instantiator;
 use core::fmt;
 use gc_arena::barrier::unlock;
@@ -101,7 +101,7 @@ impl fmt::Debug for Bitmap<'_> {
 #[repr(C, align(8))]
 pub struct BitmapGraphicData<'gc> {
     base: DisplayObjectBase<'gc>,
-    movie: Arc<SwfMovie>,
+    movie: Arc<SwfMovieData>,
 
     /// The AVM2 side of this object.
     ///
@@ -143,7 +143,7 @@ impl<'gc> Bitmap<'gc> {
         id: CharacterId,
         bitmap_data: BitmapData<'gc>,
         smoothing: bool,
-        movie: &Arc<SwfMovie>,
+        movie: &Arc<SwfMovieData>,
     ) -> Self {
         // NOTE: We do *not* solicit a handle from the `bitmap_data` at this
         // time due to mutable borrowing issues.
@@ -177,7 +177,7 @@ impl<'gc> Bitmap<'gc> {
         mc: &Mutation<'gc>,
         id: CharacterId,
         bitmap: ruffle_render::bitmap::Bitmap,
-        movie: Arc<SwfMovie>,
+        movie: Arc<SwfMovieData>,
     ) -> Self {
         let width = bitmap.width();
         let height = bitmap.height();
@@ -418,7 +418,7 @@ impl<'gc> TDisplayObject<'gc> for Bitmap<'gc> {
         self.set_avm2_object(context.gc(), Some(to));
     }
 
-    fn movie(self) -> Arc<SwfMovie> {
+    fn movie(self) -> Arc<SwfMovieData> {
         self.0.movie.clone()
     }
 }

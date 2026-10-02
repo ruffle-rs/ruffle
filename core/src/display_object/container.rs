@@ -13,7 +13,7 @@ use crate::display_object::stage::Stage;
 use crate::display_object::{Depth, DisplayObject, TDisplayObject, TInteractiveObject};
 use crate::focus_tracker::TabOrder;
 use crate::string::WStr;
-use crate::tag_utils::SwfMovie;
+use crate::tag_utils::SwfMovieData;
 use gc_arena::{Collect, Mutation};
 use ruffle_macros::{enum_trait_object, istr};
 use ruffle_render::commands::CommandHandler;
@@ -681,7 +681,7 @@ pub struct ChildContainer<'gc> {
 }
 
 impl<'gc> ChildContainer<'gc> {
-    pub fn new(movie: &SwfMovie) -> Self {
+    pub fn new(movie: &SwfMovieData) -> Self {
         Self {
             render_list: Rc::new(Vec::new()),
             depth_list: BTreeMap::new(),

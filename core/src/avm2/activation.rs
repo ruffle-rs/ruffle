@@ -26,7 +26,7 @@ use crate::avm2::value::Value;
 use crate::avm2::{Avm2, Error};
 use crate::context::UpdateContext;
 use crate::string::{AvmAtom, AvmString, HasStringContext, StringContext};
-use crate::tag_utils::SwfMovie;
+use crate::tag_utils::SwfMovieData;
 use gc_arena::Gc;
 use ruffle_macros::istr;
 use std::cell::Cell;
@@ -56,7 +56,7 @@ pub struct Activation<'a, 'gc: 'a> {
     /// The movie that called this builtin method.
     /// This is intended to be used only for builtin methods- if this activation's method
     /// is a bytecode method, the movie will instead be the movie that the bytecode method came from.
-    caller_movie: Option<Arc<SwfMovie>>,
+    caller_movie: Option<Arc<SwfMovieData>>,
 
     /// The superclass of the class that yielded the currently executing method.
     ///
@@ -150,7 +150,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     /// don't have a particular scope to run it in. For example, this is
     /// used to run frame scripts for AVM2 movies.
     ///
-    /// The 'Domain' should come from the SwfMovie associated with whatever
+    /// The 'Domain' should come from the `SwfMovie` associated with whatever
     /// action you're performing. When running frame scripts, this is the
     /// `SwfMovie` associated with the `MovieClip` being processed.
     pub fn from_domain(context: &'a mut UpdateContext<'gc>, domain: Domain<'gc>) -> Self {
@@ -418,7 +418,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         stack_frame: StackFrame<'a, 'gc>,
         bound_superclass_object: Option<ClassObject<'gc>>,
         caller_domain: Option<Domain<'gc>>,
-        caller_movie: Option<Arc<SwfMovie>>,
+        caller_movie: Option<Arc<SwfMovieData>>,
         caller_dxns: Option<AvmString<'gc>>,
     ) -> Result<(), Error<'gc>> {
         self.outer = outer;
@@ -501,13 +501,13 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
     /// Returns the movie of the original AS3 caller. This will be `None`
     /// if this activation was constructed with `from_nothing`
-    pub fn caller_movie(&self) -> Option<Arc<SwfMovie>> {
+    pub fn caller_movie(&self) -> Option<Arc<SwfMovieData>> {
         self.caller_movie.clone()
     }
 
     /// Like `caller_movie()`, but returns the root movie if `caller_movie`
     /// is `None`. This matches what FP does in most cases.
-    pub fn caller_movie_or_root(&self) -> Arc<SwfMovie> {
+    pub fn caller_movie_or_root(&self) -> Arc<SwfMovieData> {
         self.caller_movie().unwrap_or(self.context.root_swf.clone())
     }
 

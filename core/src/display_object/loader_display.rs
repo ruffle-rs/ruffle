@@ -11,7 +11,7 @@ use crate::prelude::*;
 
 use crate::display_object::container::ChildContainer;
 use crate::display_object::interactive::InteractiveObjectBase;
-use crate::tag_utils::SwfMovie;
+use crate::tag_utils::SwfMovieData;
 use crate::vminterface::Instantiator;
 use core::fmt;
 use gc_arena::barrier::unlock;
@@ -42,11 +42,11 @@ pub struct LoaderDisplayData<'gc> {
     base: InteractiveObjectBase<'gc>,
     container: RefLock<ChildContainer<'gc>>,
     avm2_object: Lock<Option<Avm2StageObject<'gc>>>,
-    movie: Arc<SwfMovie>,
+    movie: Arc<SwfMovieData>,
 }
 
 impl<'gc> LoaderDisplay<'gc> {
-    pub fn empty(activation: &mut Activation<'_, 'gc>, movie: Arc<SwfMovie>) -> Self {
+    pub fn empty(activation: &mut Activation<'_, 'gc>, movie: Arc<SwfMovieData>) -> Self {
         let obj = LoaderDisplay(Gc::new(
             activation.gc(),
             LoaderDisplayData {
@@ -125,7 +125,7 @@ impl<'gc> TDisplayObject<'gc> for LoaderDisplay<'gc> {
         self.set_default_instance_name(context);
     }
 
-    fn movie(self) -> Arc<SwfMovie> {
+    fn movie(self) -> Arc<SwfMovieData> {
         self.0.movie.clone()
     }
 
