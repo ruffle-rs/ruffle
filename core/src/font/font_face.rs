@@ -155,33 +155,44 @@ impl FontFace {
     pub fn get_glyph(&self, character: char) -> Option<&Glyph> {
         let face = ttf_parser::Face::parse(&self.data, self.font_index)
             .expect("Font was already checked to be valid");
-        if let Some(glyph_id) = face.glyph_index(character) {
-            return self.glyphs[glyph_id.0 as usize]
-                .get_or_init(|| {
-                    let mut drawing = Drawing::new();
-                    // TTF uses NonZero
-                    drawing.new_fill(
-                        Some(FillStyle::Color(Color::WHITE)),
-                        Some(FillRule::NonZero),
+        let glyph_id = face.glyph_index(character)?;
+        self.get_glyph_by_id(character, glyph_id)
+    }
+
+    pub fn get_missing_glyph(&self, character: char) -> Option<&Glyph> {
+        self.get_glyph_by_id(character, ttf_parser::GlyphId(0))
+    }
+
+    fn get_glyph_by_id(&self, character: char, glyph_id: ttf_parser::GlyphId) -> Option<&Glyph> {
+        let face = ttf_parser::Face::parse(&self.data, self.font_index)
+            .expect("Font was already checked to be valid");
+
+        self.glyphs
+            .get(glyph_id.0 as usize)?
+            .get_or_init(|| {
+                let mut drawing = Drawing::new();
+
+                drawing.new_fill(
+                    Some(FillStyle::Color(Color::WHITE)),
+                    Some(FillRule::NonZero),
+                );
+
+                if face
+                    .outline_glyph(glyph_id, &mut GlyphToDrawing(&mut drawing))
+                    .is_some()
+                {
+                    let advance = face.glyph_hor_advance(glyph_id).map_or_else(
+                        || drawing.self_bounds(true).width(),
+                        |a| Twips::new(a as i32),
                     );
-                    if face
-                        .outline_glyph(glyph_id, &mut GlyphToDrawing(&mut drawing))
-                        .is_some()
-                    {
-                        let advance = face.glyph_hor_advance(glyph_id).map_or_else(
-                            || drawing.self_bounds(true).width(),
-                            |a| Twips::new(a as i32),
-                        );
-                        Some(Glyph::from_drawing(character, advance, drawing))
-                    } else {
-                        let advance = Twips::new(face.glyph_hor_advance(glyph_id)? as i32);
-                        // If we have advance, then this is either an image, SVG or simply missing (ie whitespace)
-                        Some(Glyph::whitespace(character, advance))
-                    }
-                })
-                .as_ref();
-        }
-        None
+
+                    Some(Glyph::from_drawing(character, advance, drawing))
+                } else {
+                    let advance = Twips::new(face.glyph_hor_advance(glyph_id)? as i32);
+                    Some(Glyph::whitespace(character, advance))
+                }
+            })
+            .as_ref()
     }
 
     pub fn has_kerning_info(&self) -> bool {

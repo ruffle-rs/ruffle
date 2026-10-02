@@ -9,7 +9,7 @@ use ruffle_core::backend::ui::{
 };
 #[cfg(feature = "freetype")]
 use ruffle_core::font::FontAtlases;
-use ruffle_core::font::{FontFileData, FontQuery};
+use ruffle_core::font::{DefaultFont, FontFamilyFilter, FontFileData, FontQuery, FontType};
 use serde::Deserialize;
 use url::Url;
 
@@ -83,6 +83,7 @@ impl FileDialogSelection for TestFileSelection {
 pub struct TestUiBackend {
     fonts: HashMap<FontQuery, Font>,
     font_sorts: HashMap<FontQuery, Vec<FontQuery>>,
+    default_fonts: HashMap<DefaultFont, Vec<String>>,
     device_font_renderer: FontRendererKind,
     #[cfg(feature = "freetype")]
     font_atlases: FontAtlases,
@@ -94,10 +95,12 @@ impl TestUiBackend {
         fonts: HashMap<FontQuery, Font>,
         font_sorts: HashMap<FontQuery, Vec<FontQuery>>,
         device_font_renderer: FontRendererKind,
+        default_fonts: HashMap<DefaultFont, Vec<String>>,
     ) -> Self {
         Self {
             fonts,
             font_sorts,
+            default_fonts,
             device_font_renderer,
             #[cfg(feature = "freetype")]
             font_atlases: FontAtlases::new(),
@@ -179,16 +182,56 @@ impl UiBackend for TestUiBackend {
 
     fn sort_device_fonts(
         &self,
-        query: &FontQuery,
+        filter: &FontFamilyFilter,
+        is_bold: bool,
+        is_italic: bool,
         register: &mut dyn FnMut(FontDefinition),
     ) -> Vec<FontQuery> {
-        let Some(sort) = self.font_sorts.get(query) else {
-            return Vec::new();
-        };
-        for query in sort {
-            self.load_device_font(query, register);
+        match filter {
+            FontFamilyFilter::Name(name) => {
+                let query = FontQuery::new(FontType::Device, name.clone(), is_bold, is_italic);
+
+                let Some(sort) = self.font_sorts.get(&query) else {
+                    return Vec::new();
+                };
+
+                for query in sort {
+                    self.load_device_font(query, register);
+                }
+
+                sort.clone()
+            }
+
+            FontFamilyFilter::Default(default_font) => {
+                let Some(names) = self.default_fonts.get(default_font) else {
+                    return Vec::new();
+                };
+
+                let mut result = Vec::new();
+
+                for name in names {
+                    let query = FontQuery::new(FontType::Device, name.clone(), is_bold, is_italic);
+
+                    if let Some(sort) = self.font_sorts.get(&query) {
+                        for query in sort {
+                            self.load_device_font(query, register);
+
+                            if !result.contains(query) {
+                                result.push(query.clone());
+                            }
+                        }
+                    } else {
+                        self.load_device_font(&query, register);
+
+                        if self.fonts.contains_key(&query) && !result.contains(&query) {
+                            result.push(query);
+                        }
+                    }
+                }
+
+                result
+            }
         }
-        sort.clone()
     }
 
     fn display_file_open_dialog(&mut self, filters: Vec<FileFilter>) -> Option<DialogResultFuture> {

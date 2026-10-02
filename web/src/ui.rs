@@ -9,7 +9,7 @@ use ruffle_core::backend::ui::{
 use ruffle_core::backend::ui::{
     FontDefinition, FullscreenError, LanguageIdentifier, MouseCursor, US_ENGLISH, UiBackend,
 };
-use ruffle_core::font::{FontAtlases, FontQuery};
+use ruffle_core::font::{FontAtlases, FontFamilyFilter, FontQuery};
 use ruffle_web_common::JsResult;
 use std::borrow::Cow;
 use url::Url;
@@ -370,7 +370,9 @@ impl UiBackend for WebUiBackend {
 
     fn sort_device_fonts(
         &self,
-        _query: &FontQuery,
+        _filter: &FontFamilyFilter,
+        _is_bold: bool,
+        _is_italic: bool,
         _register: &mut dyn FnMut(FontDefinition),
     ) -> Vec<FontQuery> {
         Vec::new()

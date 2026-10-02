@@ -20,6 +20,7 @@ pub struct FontSet<'gc>(Gc<'gc, FontSetData<'gc>>);
 struct FontSetData<'gc> {
     main_font: Font<'gc>,
     fallback_fonts: Vec<Font<'gc>>,
+    use_main_missing_glyph: bool,
 }
 
 impl<'gc> FontSet<'gc> {
@@ -35,8 +36,20 @@ impl<'gc> FontSet<'gc> {
             FontSetData {
                 main_font,
                 fallback_fonts: fallback_fonts.to_vec(),
+                use_main_missing_glyph: false,
             },
         )))
+    }
+
+    pub fn from_default_font(mc: &Mutation<'gc>, font: Font<'gc>) -> Self {
+        Self(Gc::new(
+            mc,
+            FontSetData {
+                main_font: font,
+                fallback_fonts: vec![],
+                use_main_missing_glyph: true,
+            },
+        ))
     }
 
     /// Creates a font set from one font only.
@@ -46,6 +59,7 @@ impl<'gc> FontSet<'gc> {
             FontSetData {
                 main_font: font,
                 fallback_fonts: vec![],
+                use_main_missing_glyph: false,
             },
         ))
     }
@@ -62,6 +76,12 @@ impl<'gc> FontSet<'gc> {
 impl<'gc> FontLike<'gc> for FontSet<'gc> {
     fn resolve_glyph(&self, c: char) -> Option<GlyphResolution<'_, 'gc>> {
         if let Some(glyph) = self.0.main_font.get_glyph_for_char(c) {
+            return Some(GlyphResolution::new(glyph, self.0.main_font));
+        }
+
+        if self.0.use_main_missing_glyph
+            && let Some(glyph) = self.0.main_font.get_missing_glyph(c)
+        {
             return Some(GlyphResolution::new(glyph, self.0.main_font));
         }
 
