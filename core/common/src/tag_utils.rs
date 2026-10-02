@@ -8,11 +8,15 @@ use url::Url;
 
 pub type SwfStream<'a> = swf::read::Reader<'a>;
 
+/// A shared pointer to a `SwfMovieData`. This type should eventually be made
+/// into a `Gc<'gc, SwfMovieData>`.
+pub type SwfMovie<'gc> = Arc<SwfMovieData>;
+
 /// An open, fully parsed SWF movie ready to play back, either in a Player or a
 /// MovieClip.
 #[derive(Clone, Collect)]
 #[collect(require_static)]
-pub struct SwfMovie {
+pub struct SwfMovieData {
     /// The SWF header parsed from the data stream.
     header: HeaderExt,
 
@@ -35,7 +39,7 @@ pub struct SwfMovie {
     /// The compressed length of the entire datastream
     compressed_len: usize,
 
-    /// Whether this SwfMovie actually represents a loaded movie or fills in for
+    /// Whether this SwfMovieData actually represents a loaded movie or fills in for
     /// something else, like an loaded image, filler movie, or error state.
     is_movie: bool,
 
@@ -57,7 +61,7 @@ pub struct SwfMovie {
     sandbox_type: SandboxType,
 }
 
-impl SwfMovie {
+impl SwfMovieData {
     /// Construct an empty movie.
     pub fn empty(swf_version: u8, loader_url: Option<String>) -> Self {
         let url = "file:///".to_string();
@@ -320,7 +324,7 @@ impl SwfMovie {
         self.header.is_action_script_3()
     }
 
-    /// Whether this `SwfMovie` should be interpreted as AVM2.
+    /// Whether this `SwfMovieData` should be interpreted as AVM2.
     ///
     /// This usually is the same as `is_declared_action_script_3`, but will
     /// return false if this is an AVM2 movie loaded by AVM1 (which we mark by
@@ -350,9 +354,9 @@ impl SwfMovie {
     }
 }
 
-impl Debug for SwfMovie {
+impl Debug for SwfMovieData {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("SwfMovie")
+        f.debug_struct("SwfMovieData")
             .field("header", &self.header)
             .field("data", &self.data.len())
             .field("url", &self.url)
@@ -377,8 +381,8 @@ pub struct SwfSlice {
     pub end: usize,
 }
 
-impl From<Arc<SwfMovie>> for SwfSlice {
-    fn from(movie: Arc<SwfMovie>) -> Self {
+impl From<Arc<SwfMovieData>> for SwfSlice {
+    fn from(movie: Arc<SwfMovieData>) -> Self {
         let end = movie.data().len();
 
         Self {
@@ -400,7 +404,7 @@ impl AsRef<[u8]> for SwfSlice {
 impl SwfSlice {
     /// Creates an empty SwfSlice.
     #[inline]
-    pub fn empty(movie: Arc<SwfMovie>) -> Self {
+    pub fn empty(movie: Arc<SwfMovieData>) -> Self {
         Self {
             entire_data: movie.data.clone(),
             swf_version: movie.version(),

@@ -37,7 +37,7 @@ use crate::loader::{self, ContentType};
 use crate::prelude::*;
 use crate::streams::NetStream;
 use crate::string::{AvmString, SwfStrExt as _, WStr, WString};
-use crate::tag_utils::{self, ControlFlow, Error, SwfMovie, SwfSlice, SwfStream};
+use crate::tag_utils::{self, ControlFlow, Error, SwfMovieData, SwfSlice, SwfStream};
 use crate::vminterface::Instantiator;
 use bitflags::bitflags;
 use core::fmt;
@@ -278,13 +278,13 @@ impl<'gc> MovieClip<'gc> {
         MovieClipWeak(Gc::downgrade(self.0))
     }
 
-    pub fn new(movie: Arc<SwfMovie>, mc: &Mutation<'gc>) -> Self {
+    pub fn new(movie: Arc<SwfMovieData>, mc: &Mutation<'gc>) -> Self {
         let shared = MovieClipShared::empty(movie);
         MovieClip(Gc::new(mc, MovieClipData::new(shared, mc)))
     }
 
     pub fn new_with_avm2(
-        movie: Arc<SwfMovie>,
+        movie: Arc<SwfMovieData>,
         this: Avm2StageObject<'gc>,
         class: Avm2ClassObject<'gc>,
         mc: &Mutation<'gc>,
@@ -300,7 +300,7 @@ impl<'gc> MovieClip<'gc> {
     pub fn new_with_data(
         mc: &Mutation<'gc>,
         id: CharacterId,
-        movie: Arc<SwfMovie>,
+        movie: Arc<SwfMovieData>,
         swf: SwfSlice,
         num_frames: u16,
     ) -> Self {
@@ -312,7 +312,7 @@ impl<'gc> MovieClip<'gc> {
 
     pub fn new_import_assets(
         context: &mut UpdateContext<'gc>,
-        movie: Arc<SwfMovie>,
+        movie: Arc<SwfMovieData>,
         parent: MovieClip<'gc>,
     ) -> Self {
         let loader_info = None;
@@ -327,7 +327,7 @@ impl<'gc> MovieClip<'gc> {
     /// for the entire `Player`.
     pub fn player_root_movie(
         activation: &mut Avm2Activation<'_, 'gc>,
-        movie: Arc<SwfMovie>,
+        movie: Arc<SwfMovieData>,
     ) -> Self {
         let loader_info = if movie.is_action_script_3() {
             // The root movie doesn't have a `Loader`
@@ -359,7 +359,7 @@ impl<'gc> MovieClip<'gc> {
         Self(Gc::new(mc, (*self.0).clone()))
     }
 
-    /// Replace the current MovieClipData with a completely new SwfMovie.
+    /// Replace the current MovieClipData with a completely new movie.
     ///
     /// If no movie is provided, then the movie clip will be replaced with an
     /// empty movie of the same SWF version.
@@ -370,13 +370,13 @@ impl<'gc> MovieClip<'gc> {
     pub fn replace_with_movie(
         self,
         context: &mut UpdateContext<'gc>,
-        movie: Option<Arc<SwfMovie>>,
+        movie: Option<Arc<SwfMovieData>>,
         is_root: bool,
         loader_info: Option<LoaderInfoObject<'gc>>,
     ) {
         let write = Gc::write(context.gc(), self.0);
         let movie =
-            movie.unwrap_or_else(|| Arc::new(SwfMovie::empty(write.movie().version(), None)));
+            movie.unwrap_or_else(|| Arc::new(SwfMovieData::empty(write.movie().version(), None)));
         assert!(
             write.shared.get().loader_info.is_none(),
             "Called replace_movie on a clip with LoaderInfo set"
@@ -2415,7 +2415,7 @@ impl<'gc> MovieClip<'gc> {
             let parent_movie = parent_mc.movie();
             let parent_version = parent_movie.version();
             let parent_url = parent_movie.url();
-            let mut unloaded_movie = SwfMovie::empty(parent_version, None);
+            let mut unloaded_movie = SwfMovieData::empty(parent_version, None);
             unloaded_movie.set_url(parent_url.to_string());
 
             Some(Arc::new(unloaded_movie))
@@ -2526,7 +2526,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
         self.0.id()
     }
 
-    fn movie(self) -> Arc<SwfMovie> {
+    fn movie(self) -> Arc<SwfMovieData> {
         self.0.movie()
     }
 
@@ -3472,7 +3472,7 @@ impl<'gc> MovieClipData<'gc> {
             .get_registered_constructor(self.movie().version(), *symbol_name)
     }
 
-    pub fn movie(&self) -> Arc<SwfMovie> {
+    pub fn movie(&self) -> Arc<SwfMovieData> {
         self.shared.get().movie()
     }
 }
@@ -4052,7 +4052,7 @@ impl<'gc, 'a> MovieClipShared<'gc> {
         context: &mut UpdateContext<'gc>,
         id: CharacterId,
         name: AvmString<'gc>,
-        movie: Arc<SwfMovie>,
+        movie: Arc<SwfMovieData>,
     ) {
         let mc = context.gc();
         let library = context.library.library_for_movie_mut(movie);
@@ -4708,7 +4708,7 @@ pub enum StopOrPlay {
 struct MovieClipShared<'gc> {
     cell: RefCell<MovieClipSharedMut>,
     id: CharacterId,
-    movie: Arc<SwfMovie>,
+    movie: Arc<SwfMovieData>,
     swf_data: SwfSlice,
     header_frames: FrameNumber,
     /// Preload progress for the given clip's tag stream.
@@ -4756,7 +4756,7 @@ struct EagerTags {
 }
 
 impl<'gc> MovieClipShared<'gc> {
-    fn empty(movie: Arc<SwfMovie>) -> Self {
+    fn empty(movie: Arc<SwfMovieData>) -> Self {
         let mut s = Self::with_data(0, movie.clone(), SwfSlice::empty(movie), 1, None, None);
 
         *s.preload_progress.cur_preload_frame.get_mut() = s.header_frames + 1;
@@ -4765,7 +4765,7 @@ impl<'gc> MovieClipShared<'gc> {
     }
 
     fn for_full_movie(
-        movie: Arc<SwfMovie>,
+        movie: Arc<SwfMovieData>,
         loader_info: Option<LoaderInfoObject<'gc>>,
         importer_movie: Option<MovieClip<'gc>>,
     ) -> Self {
@@ -4783,7 +4783,7 @@ impl<'gc> MovieClipShared<'gc> {
 
     fn with_data(
         id: CharacterId,
-        movie: Arc<SwfMovie>,
+        movie: Arc<SwfMovieData>,
         swf_data: SwfSlice,
         header_frames: FrameNumber,
         loader_info: Option<LoaderInfoObject<'gc>>,
@@ -4803,7 +4803,7 @@ impl<'gc> MovieClipShared<'gc> {
         }
     }
 
-    fn movie(&self) -> Arc<SwfMovie> {
+    fn movie(&self) -> Arc<SwfMovieData> {
         self.movie.clone()
     }
 
@@ -5075,7 +5075,7 @@ impl ClipEventHandler {
     /// Build an event handler from a SWF movie and a parsed ClipAction.
     pub fn new(
         swf_action: swf::ClipAction<'_>,
-        movie: Arc<SwfMovie>,
+        movie: Arc<SwfMovieData>,
         all_event_flags: ClipEventFlag,
     ) -> Self {
         let declared_events = swf_action.events;

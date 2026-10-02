@@ -18,7 +18,7 @@ use js_sys::{Error as JsError, Uint8Array};
 use ruffle_core::context::UpdateContext;
 use ruffle_core::context_menu::ContextMenuCallback;
 use ruffle_core::events::{GamepadButton, MouseButton, MouseWheelDelta, TextControlCode};
-use ruffle_core::tag_utils::SwfMovie;
+use ruffle_core::tag_utils::SwfMovieData;
 use ruffle_core::{FloatDuration, Player, PlayerEvent, StaticCallstack, ViewportDimensions};
 use ruffle_web_common::JsResult;
 use serde::Serialize;
@@ -286,7 +286,7 @@ impl RuffleHandle {
             segments.push(&swf_name);
         }
 
-        let mut movie = SwfMovie::from_data(&swf_data.to_vec(), url.to_string(), None, None)
+        let mut movie = SwfMovieData::from_data(&swf_data.to_vec(), url.to_string(), None, None)
             .map_err(|e| {
                 let _ = self.with_core_mut(|core| {
                     core.ui_mut()

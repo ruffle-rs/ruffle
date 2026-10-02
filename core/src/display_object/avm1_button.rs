@@ -13,7 +13,7 @@ use crate::display_object::{Avm1TextFieldBinding, BoundsMode, DisplayObjectBase}
 use crate::events::{ClipEvent, ClipEventResult};
 use crate::prelude::*;
 use crate::string::AvmString;
-use crate::tag_utils::{SwfMovie, SwfSlice};
+use crate::tag_utils::{SwfMovieData, SwfSlice};
 use crate::vminterface::Instantiator;
 use core::fmt;
 use gc_arena::barrier::unlock;
@@ -65,7 +65,7 @@ struct Avm1ButtonDataMut<'gc> {
 impl<'gc> Avm1Button<'gc> {
     pub fn from_swf_tag(
         button: &swf::Button,
-        movie: Arc<SwfMovie>,
+        movie: Arc<SwfMovieData>,
         swf_data: &SwfSlice,
         mc: &Mutation<'gc>,
     ) -> Self {
@@ -262,7 +262,7 @@ impl<'gc> TDisplayObject<'gc> for Avm1Button<'gc> {
         self.0.shared.id
     }
 
-    fn movie(self) -> Arc<SwfMovie> {
+    fn movie(self) -> Arc<SwfMovieData> {
         self.0.movie()
     }
 
@@ -627,7 +627,7 @@ impl<'gc> Avm1ButtonData<'gc> {
         handled
     }
 
-    fn movie(&self) -> Arc<SwfMovie> {
+    fn movie(&self) -> Arc<SwfMovieData> {
         self.shared.swf.clone()
     }
 }
@@ -666,7 +666,7 @@ pub enum ButtonTracking {
 #[derive(Collect, Debug)]
 #[collect(require_static)]
 struct ButtonShared {
-    swf: Arc<SwfMovie>,
+    swf: Arc<SwfMovieData>,
     id: CharacterId,
     actions: Vec<ButtonAction>,
     cell: RefCell<ButtonSharedMut>,

@@ -4,7 +4,7 @@ use crate::context::{RenderContext, UpdateContext};
 use crate::display_object::{BoundsMode, DisplayObjectBase, MovieClip};
 use crate::font::{FontLike, TextRenderSettings};
 use crate::prelude::*;
-use crate::tag_utils::SwfMovie;
+use crate::tag_utils::SwfMovieData;
 use crate::vminterface::Instantiator;
 use core::fmt;
 use gc_arena::Lock;
@@ -42,7 +42,7 @@ pub struct TextData<'gc> {
 impl<'gc> Text<'gc> {
     pub fn from_swf_tag(
         context: &mut UpdateContext<'gc>,
-        swf: Arc<SwfMovie>,
+        swf: Arc<SwfMovieData>,
         tag: &swf::Text,
     ) -> Self {
         Text(Gc::new(
@@ -115,7 +115,7 @@ impl<'gc> TDisplayObject<'gc> for Text<'gc> {
         self.0.shared.get().id
     }
 
-    fn movie(self) -> Arc<SwfMovie> {
+    fn movie(self) -> Arc<SwfMovieData> {
         self.0.shared.get().swf.clone()
     }
 
@@ -300,7 +300,7 @@ impl<'gc> TDisplayObject<'gc> for Text<'gc> {
 #[derive(Debug, Clone, Collect)]
 #[collect(require_static)]
 struct TextShared {
-    swf: Arc<SwfMovie>,
+    swf: Arc<SwfMovieData>,
     id: CharacterId,
     bounds: Rectangle<Twips>,
     text_transform: Matrix,

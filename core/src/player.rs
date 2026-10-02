@@ -55,7 +55,7 @@ use crate::streams::StreamManager;
 use crate::string::{AvmString, AvmStringInterner, StringContext};
 use crate::stub::StubCollection;
 use crate::system_properties::SystemProperties;
-use crate::tag_utils::SwfMovie;
+use crate::tag_utils::SwfMovieData;
 use crate::timer::Timers;
 use crate::vminterface::Instantiator;
 use async_channel::Sender;
@@ -169,7 +169,7 @@ impl<'gc> MouseData<'gc> {
 #[derive(Collect)]
 #[collect(no_drop)]
 struct GcRootData<'gc> {
-    root_swf: Arc<SwfMovie>,
+    root_swf: Arc<SwfMovieData>,
 
     library: Library<'gc>,
 
@@ -250,7 +250,7 @@ impl<'gc> GcRootData<'gc> {
         &mut self,
     ) -> (
         Stage<'gc>,
-        &mut Arc<SwfMovie>,
+        &mut Arc<SwfMovieData>,
         &mut Library<'gc>,
         &mut ActionQueue<'gc>,
         &mut AvmStringInterner<'gc>,
@@ -2625,7 +2625,7 @@ impl Drop for Player {
 
 /// Player factory, which can be used to configure the aspects of a Ruffle player.
 pub struct PlayerBuilder {
-    movie: Option<SwfMovie>,
+    movie: Option<SwfMovieData>,
 
     // Backends
     audio: Option<Box<dyn AudioBackend>>,
@@ -2732,7 +2732,7 @@ impl PlayerBuilder {
 
     /// Configures the player to play an already-loaded movie.
     #[inline]
-    pub fn with_movie(mut self, movie: SwfMovie) -> Self {
+    pub fn with_movie(mut self, movie: SwfMovieData) -> Self {
         self.movie = Some(movie);
         self
     }
@@ -2966,7 +2966,7 @@ impl PlayerBuilder {
         player_version: u8,
         player_runtime: PlayerRuntime,
         fullscreen: bool,
-        fake_movie: Arc<SwfMovie>,
+        fake_movie: Arc<SwfMovieData>,
         external_interface_provider: Option<Box<dyn ExternalInterfaceProvider>>,
         fs_command_provider: Box<dyn FsCommandProvider>,
     ) -> GcRoot<'gc> {
@@ -3064,7 +3064,7 @@ impl PlayerBuilder {
         let language = ui.language();
 
         // Instantiate the player.
-        let fake_movie = Arc::new(SwfMovie::empty(player_version, None));
+        let fake_movie = Arc::new(SwfMovieData::empty(player_version, None));
         let frame_rate = self.frame_rate.unwrap_or(12.0);
         let forced_frame_rate = self.frame_rate.is_some();
         let player = Arc::new_cyclic(|self_ref| {

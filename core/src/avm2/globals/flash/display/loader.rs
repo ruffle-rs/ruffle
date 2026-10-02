@@ -22,7 +22,7 @@ use crate::display_object::LoaderDisplay;
 use crate::display_object::MovieClip;
 use crate::loader::LoadManager;
 use crate::loader::MovieLoaderVMData;
-use crate::tag_utils::SwfMovie;
+use crate::tag_utils::SwfMovieData;
 use ruffle_common::tag_utils::LoadBytesInfo;
 use std::sync::Arc;
 
@@ -46,7 +46,10 @@ pub fn loader_allocator<'gc>(
     let movie = &activation.context.root_swf;
     let loader_info = LoaderInfoObject::not_yet_loaded(
         activation,
-        Arc::new(SwfMovie::empty(movie.version(), Some(movie.url().into()))),
+        Arc::new(SwfMovieData::empty(
+            movie.version(),
+            Some(movie.url().into()),
+        )),
         Some(loader),
         None,
         false,
@@ -95,14 +98,20 @@ pub fn load<'gc>(
     // This is a dummy MovieClip, which will get overwritten in `Loader`
     let movie = &activation.context.root_swf;
     let content = MovieClip::new(
-        Arc::new(SwfMovie::empty(movie.version(), Some(movie.url().into()))),
+        Arc::new(SwfMovieData::empty(
+            movie.version(),
+            Some(movie.url().into()),
+        )),
         activation.gc(),
     );
 
-    // Update the LoaderStream - we still have a fake SwfMovie, but we now have the real target clip.
+    // Update the LoaderStream - we still have a fake SwfMovieData, but we now have the real target clip.
     loader_info.set_loader_stream(
         LoaderStream::NotYetLoaded(
-            Arc::new(SwfMovie::empty(movie.version(), Some(movie.url().into()))),
+            Arc::new(SwfMovieData::empty(
+                movie.version(),
+                Some(movie.url().into()),
+            )),
             Some(content.into()),
             false,
         ),
@@ -268,7 +277,10 @@ pub fn load_bytes<'gc>(
     // This is a dummy MovieClip, which will get overwritten in `Loader`
     let movie = &activation.context.root_swf;
     let content = MovieClip::new(
-        Arc::new(SwfMovie::empty(movie.version(), Some(movie.url().into()))),
+        Arc::new(SwfMovieData::empty(
+            movie.version(),
+            Some(movie.url().into()),
+        )),
         activation.gc(),
     );
 

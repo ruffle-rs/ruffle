@@ -7,7 +7,7 @@ use crate::runner::TestRunner;
 use crate::util::read_bytes;
 use anyhow::{Result, anyhow};
 use ruffle_core::font::{FontQuery, FontType};
-use ruffle_core::tag_utils::SwfMovie;
+use ruffle_core::tag_utils::SwfMovieData;
 use ruffle_input_format::InputInjector;
 use ruffle_socket_format::SocketEvent;
 use vfs::VfsPath;
@@ -74,9 +74,9 @@ impl Test {
         Ok(runner)
     }
 
-    pub fn movie(&self) -> Result<SwfMovie> {
+    pub fn movie(&self) -> Result<SwfMovieData> {
         let data = read_bytes(&self.swf_path)?;
-        let movie = SwfMovie::from_data(
+        let movie = SwfMovieData::from_data(
             &data,
             format!("file://{}", self.swf_path.as_str()),
             None,

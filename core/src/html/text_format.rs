@@ -3,7 +3,7 @@
 use crate::context::UpdateContext;
 use crate::html::iterators::TextSpanIter;
 use crate::string::{Integer, SwfStrExt as _, Units, WStr, WString};
-use crate::tag_utils::SwfMovie;
+use crate::tag_utils::SwfMovieData;
 use gc_arena::Collect;
 use quick_xml::{Reader, escape::escape, events::Event};
 use ruffle_wstr::utils::{swf_is_ascii_hexdigit, swf_is_newline, swf_is_whitespace};
@@ -195,7 +195,7 @@ impl TextFormat {
     /// information from the actually-referenced font.
     pub fn from_swf_tag(
         et: swf::EditText<'_>,
-        swf_movie: Arc<SwfMovie>,
+        swf_movie: Arc<SwfMovieData>,
         context: &mut UpdateContext<'_>,
     ) -> Self {
         let encoding = swf_movie.encoding();

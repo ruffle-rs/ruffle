@@ -8,7 +8,7 @@ use crate::html::layout::context::LayoutContext;
 use crate::html::text_format::{FormatSpans, TextFormat, TextSpan};
 use crate::html::wrap_line;
 use crate::string::WStr;
-use crate::tag_utils::SwfMovie;
+use crate::tag_utils::SwfMovieData;
 use gc_arena::Collect;
 use std::cmp::{Ordering, max, min};
 use std::fmt::{Debug, Formatter};
@@ -20,7 +20,7 @@ use swf::{Rectangle, Twips};
 
 #[derive(Clone)]
 pub struct LayoutParams {
-    pub movie: Arc<SwfMovie>,
+    pub movie: Arc<SwfMovieData>,
     pub is_input: bool,
     pub is_word_wrap: bool,
     pub font_type: FontType,
@@ -31,7 +31,7 @@ pub struct LayoutBuilder<'a, 'gc> {
     context: &'a mut dyn LayoutContext<'gc>,
 
     /// The movie this layout context is pulling fonts from.
-    movie: Arc<SwfMovie>,
+    movie: Arc<SwfMovieData>,
 
     /// Whether user input is allowed.
     is_input: bool,

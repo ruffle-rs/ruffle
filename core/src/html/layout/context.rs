@@ -1,7 +1,7 @@
 use crate::context::{RenderContext, UpdateContext};
 use crate::font::{DefaultFont, Font, FontType};
 use gc_arena::Mutation;
-use ruffle_common::tag_utils::SwfMovie;
+use ruffle_common::tag_utils::SwfMovieData;
 use std::sync::Arc;
 
 /// Provides access to the font resolution operations needed to lay out text,
@@ -17,7 +17,7 @@ pub trait LayoutContext<'gc> {
         font_type: FontType,
         is_bold: bool,
         is_italic: bool,
-        movie: Option<Arc<SwfMovie>>,
+        movie: Option<Arc<SwfMovieData>>,
     ) -> Option<Font<'gc>>;
 
     /// Returns the default font implementations behind a built-in name.
@@ -45,7 +45,7 @@ impl<'gc> LayoutContext<'gc> for UpdateContext<'gc> {
         font_type: FontType,
         is_bold: bool,
         is_italic: bool,
-        movie: Option<Arc<SwfMovie>>,
+        movie: Option<Arc<SwfMovieData>>,
     ) -> Option<Font<'gc>> {
         self.library
             .get_embedded_font_by_name(name, font_type, is_bold, is_italic, movie)
@@ -96,7 +96,7 @@ impl<'gc> LayoutContext<'gc> for RenderContext<'_, 'gc> {
         font_type: FontType,
         is_bold: bool,
         is_italic: bool,
-        movie: Option<Arc<SwfMovie>>,
+        movie: Option<Arc<SwfMovieData>>,
     ) -> Option<Font<'gc>> {
         self.library
             .get_embedded_font_by_name(name, font_type, is_bold, is_italic, movie)
