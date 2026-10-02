@@ -1,0 +1,19 @@
+--- set child.vN (initial bind) ---
+watch v1: undefined -> X
+watch v2: undefined -> Y
+watch v3: undefined -> Z
+tf1.text=X tf2.text=Y tf3.text=Z
+--- set tfN.text (propagate to vars) ---
+watch v1: X -> P
+watch v2: Y -> Q
+watch v3: Z -> R
+child.v1=P v2=Q v3=R
+--- remove child (push tfs back to unbound list) ---
+child=
+--- recreate child (bind_variables reattaches tfs) ---
+child.v1=undefined v2=undefined v3=undefined
+--- set child.vN again ---
+watch v1: undefined -> A
+watch v2: undefined -> B
+watch v3: undefined -> C
+tf1.text=A tf2.text=B tf3.text=C
