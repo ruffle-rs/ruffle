@@ -22,6 +22,8 @@ impl ExporterProgress {
                 .unwrap()
                 .progress_chars("##-"),
             );
+            // json progress output for web api or etc use
+            //eprintln!("__JSON_PROGRESS__: {{\"current\": 0, \"total\": {}}}", progress.length().unwrap_or(0));
             Some(progress)
         } else {
             None
@@ -38,6 +40,8 @@ impl ExporterProgress {
     pub fn inc(&self, delta: u64) {
         if let Some(progress) = &self.progress {
             progress.inc(delta);
+            // json progress output for web api or etc use
+            //eprintln!("__JSON_PROGRESS__: {{\"current\": {}, \"total\": {}}}", progress.position(), progress.length().unwrap_or(0));
         }
     }
 
