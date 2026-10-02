@@ -6,7 +6,7 @@
         "moduleResolution": "NodeNext",
         "target": "es2021",
         "resolveJsonModule": true,
-        "maxNodeModuleJsDepth": 0,
+        "maxNodeModuleJsDepth": 0
     },
-    "include": ["webpack.config.js", "tools/**/*"],
+    "include": ["build.js", "tools/**/*"]
 }
