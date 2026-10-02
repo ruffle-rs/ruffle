@@ -1,6 +1,9 @@
 message-cant-embed =
     Ruffle לא הצליח להריץ את תוכן הפלאש המוטמע בדף זה.
     אתה יכול לפתוח את הקובץ בלשונית נפרדת, על מנת לעקוף בעיה זו.
+message-restored-from-bfcache =
+    הדפדפן שלך שחזר את תוכן הFlash הזה מהפעלה קודמת. כדי להתחיל מחדש, יש לטעון מחדש את הדף.
+    
 panic-title = משהו השתבש :(
 more-info = מידע נוסף
 run-anyway = הפעל בכל זאת
@@ -16,6 +19,12 @@ view-error-details = ראה פרטי שגיאה
 open-in-new-tab = פתח בכרטיסייה חדשה
 click-to-unmute = לחץ על מנת לבטל השתקה
 clipboard-message-title = העתקה והדבקה בRuffle
+clipboard-message-description =
+    { $variant ->
+    *[unsupported] הדפדפן שלך אינו תומך בגישה מלאה ללוח,
+    [access-denied] הגישה ללוח נדחתה,
+    } אבל תמיד אפשר להשתמש במקום זאת בקיצורי הדרך הבאים:
+    
 clipboard-message-copy = { " " } עבור העתקה
 clipboard-message-cut = { " " } עבור גזירה
 clipboard-message-paste = { " " } עבור הדבקה
@@ -78,6 +87,9 @@ error-csp-conflict =
     Ruffle נתקל בבעיה חמורה תוך כדי ניסיון לאתחל.
     מדיניות אבטחת התוכן של שרתו של אתר זה אינה מאפשרת לקובץ ה"wasm." הדרוש לפעול.
     אם אתה מנהל האתר, אנא עיין והועץ בwiki של Ruffle על מנת לקבל עזרה.
+error-url-invalid =
+    Ruffle לא הצליח לטעון את קובץ ה Flash SWF. הסיבה הסבירה ביותר היא שכתובת הURL שהועברה לRuffle עבור קובץ הSWF אינה תקינה.
+    
 error-unknown =
     Ruffle נתקל בבעיה חמורה בניסיון להציג את תוכן פלאש זה.
     { $outdated ->
