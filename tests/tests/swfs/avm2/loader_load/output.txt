@@ -14,6 +14,7 @@ Navigator::fetch:
   URL: http://localhost:8000
   Method: POST
   Headers:
+User-Agent: Mozilla/5.0 (compatible; Shockwave Flash 32.0.0.0)
 MyHeader1: MyDuplicateVal
 MyHeader2: MyVal2
 MyHeader3: MyVal3
@@ -39,6 +40,7 @@ Navigator::fetch:
   URL: http://localhost:8000
   Method: POST
   Headers:
+User-Agent: Mozilla/5.0 (compatible; Shockwave Flash 32.0.0.0)
 MyHeader1: MyDuplicateVal
 MyHeader2: MyVal2
 MyHeader3: MyVal3
@@ -64,6 +66,7 @@ Navigator::fetch:
   URL: http://localhost:8000
   Method: POST
   Headers:
+User-Agent: Mozilla/5.0 (compatible; Shockwave Flash 32.0.0.0)
 MyHeader1: MyDuplicateVal
 MyHeader2: MyVal2
 MyHeader3: MyVal3
@@ -89,6 +92,7 @@ Navigator::fetch:
   URL: http://localhost:8000
   Method: POST
   Headers:
+User-Agent: Mozilla/5.0 (compatible; Shockwave Flash 32.0.0.0)
 MyHeader1: MyDuplicateVal
 MyHeader2: MyVal2
 MyHeader3: MyVal3
@@ -114,6 +118,7 @@ Navigator::fetch:
   URL: http://localhost:8000
   Method: POST
   Headers:
+User-Agent: Mozilla/5.0 (compatible; Shockwave Flash 32.0.0.0)
 MyHeader1: MyDuplicateVal
 MyHeader2: MyVal2
 MyHeader3: MyVal3
