@@ -64,10 +64,6 @@ const isDualWasm = process.env.BUILD_WASM_MVP === "true";
 
 const wasmExtPath = copyAndHashWasm("ruffle_web_bg.wasm");
 
-if (!wasmExtPath) {
-    throw new Error("Could not find core/dist/ruffle_web_bg.wasm");
-}
-
 const wasmMvpPath = isDualWasm
     ? copyAndHashWasm("ruffle_web-wasm_mvp_bg.wasm")
     : wasmExtPath;
@@ -139,5 +135,41 @@ Object.defineProperty(typeof globalThis !== "undefined" ? globalThis : typeof wi
     },
     plugins: [wasmUrlPlugin],
 });
+
+const expectedWasmPaths = [wasmExtPath];
+
+if (isDualWasm) {
+    expectedWasmPaths.push(wasmMvpPath);
+}
+
+const expectedWasmNames = new Set(
+    expectedWasmPaths.map((wasmPath) => path.basename(wasmPath)),
+);
+
+const actualWasmNames = new Set(
+    fs
+        .readdirSync(distDir)
+        .filter((filename) => path.extname(filename) === ".wasm"),
+);
+
+const unexpectedWasmNames = [...actualWasmNames].filter(
+    (filename) => !expectedWasmNames.has(filename),
+);
+
+if (unexpectedWasmNames.length > 0) {
+    throw new Error(
+        `Generated dist contains unexpected WASM files: ${unexpectedWasmNames.join(", ")}`,
+    );
+}
+
+const missingWasmNames = [...expectedWasmNames].filter(
+    (filename) => !actualWasmNames.has(filename),
+);
+
+if (missingWasmNames.length > 0) {
+    throw new Error(
+        `Generated dist is missing expected WASM files: ${missingWasmNames.join(", ")}`,
+    );
+}
 
 console.log("ESBuild complete!");
