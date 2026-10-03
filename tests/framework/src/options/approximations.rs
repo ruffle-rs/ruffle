@@ -15,6 +15,10 @@ pub struct Approximations {
 
 impl Approximations {
     pub fn compare(&self, actual: f64, expected: f64) -> anyhow::Result<()> {
+        if actual.is_nan() && expected.is_nan() {
+            return Ok(());
+        }
+
         let result = match (self.epsilon, self.max_relative) {
             (Some(epsilon), Some(max_relative)) => relative_eq!(
                 actual,
