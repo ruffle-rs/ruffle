@@ -4,11 +4,12 @@ use crate::avm2::activation::Activation;
 use crate::avm2::error::{Error2006Type, make_error_2006, make_error_2008};
 use crate::avm2::function::FunctionArgs;
 use crate::avm2::globals::flash::display::display_object::initialize_for_allocator;
+use crate::avm2::globals::flash::display::loader::load_url;
 use crate::avm2::object::{ClassObject, Object, TextFormatObject};
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
 use crate::avm2::{ArrayObject, ArrayStorage, Error};
-use crate::display_object::{AutoSizeMode, EditText, TextSelection};
+use crate::display_object::{AutoSizeMode, EditText, TDisplayObject, TextSelection};
 use crate::html::TextFormat;
 use crate::string::AvmString;
 use crate::{avm2_stub_getter, avm2_stub_setter};
@@ -439,9 +440,56 @@ pub fn set_html_text<'gc>(
 
         this.set_is_html(true);
         this.set_html_text(&html_text, activation.context);
+
+        let images = this.html_images();
+        let mut image_references = Vec::with_capacity(images.len());
+
+        for (src, id) in images {
+            let loader_class = activation.avm2().classes().loader;
+            let loader = loader_class
+                .construct(activation, &[])?
+                .as_object()
+                .expect("Loader constructor did not return an object");
+
+            if let Some(id) = id {
+                let name = AvmString::new(activation.gc(), id);
+                loader
+                    .as_display_object()
+                    .expect("Loader constructor did not create a display object")
+                    .set_name(activation.gc(), name);
+            }
+
+            load_url(activation, loader, src.to_utf8_lossy().into_owned())?;
+
+            image_references.push(loader);
+        }
+
+        this.set_image_references(activation.gc(), image_references);
     }
 
     Ok(Value::Undefined)
+}
+
+pub fn get_image_reference<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Value<'gc>,
+    args: FunctionArgs<'_, 'gc>,
+) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
+    let Some(this) = this
+        .as_display_object()
+        .and_then(|this| this.as_edit_text())
+    else {
+        return Ok(Value::Undefined);
+    };
+
+    let id = args.get_string(activation, 0);
+
+    Ok(this
+        .image_reference(id.as_wstr())
+        .map(Value::from)
+        .unwrap_or(Value::Null))
 }
 
 pub fn get_length<'gc>(
