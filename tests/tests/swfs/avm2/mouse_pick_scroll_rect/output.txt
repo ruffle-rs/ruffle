@@ -1,0 +1,2 @@
+mouseDown: [object TextField] at 150,100
+mouseDown: [object Stage] at 350,100
