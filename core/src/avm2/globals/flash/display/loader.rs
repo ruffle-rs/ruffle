@@ -62,6 +62,11 @@ pub fn loader_allocator<'gc>(
     Ok(loader.into())
 }
 
+enum LoaderRequest<'gc> {
+    UrlRequest(Object<'gc>),
+    Direct(Request),
+}
+
 pub fn load<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
@@ -72,6 +77,35 @@ pub fn load<'gc>(
     let url_request = args.get_object(activation, 0, "request")?;
     let context = args.try_get_object(1);
 
+    load_request(
+        activation,
+        this,
+        LoaderRequest::UrlRequest(url_request),
+        context,
+    )?;
+
+    Ok(Value::Undefined)
+}
+
+pub(crate) fn load_url<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    loader: Object<'gc>,
+    url: String,
+) -> Result<(), Error<'gc>> {
+    load_request(
+        activation,
+        loader,
+        LoaderRequest::Direct(Request::get(url)),
+        None,
+    )
+}
+
+fn load_request<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
+    request: LoaderRequest<'gc>,
+    context: Option<Object<'gc>>,
+) -> Result<(), Error<'gc>> {
     let loader_info = this
         .get_slot(loader_slots::_CONTENT_LOADER_INFO)
         .as_object()
@@ -118,7 +152,12 @@ pub fn load<'gc>(
         activation.gc(),
     );
 
-    let request = request_from_url_request(activation, url_request)?;
+    let request = match request {
+        LoaderRequest::UrlRequest(url_request) => {
+            request_from_url_request(activation, url_request)?
+        }
+        LoaderRequest::Direct(request) => request,
+    };
 
     let loader_url = activation.caller_movie_or_root().url().to_string();
 
@@ -136,9 +175,10 @@ pub fn load<'gc>(
             load_bytes_info: None,
         },
     );
+
     activation.context.navigator.spawn_future(future);
 
-    Ok(Value::Undefined)
+    Ok(())
 }
 
 pub fn request_from_url_request<'gc>(

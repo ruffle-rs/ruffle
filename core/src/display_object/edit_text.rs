@@ -5,8 +5,8 @@ use crate::avm1::{
     NativeObject as Avm1NativeObject, Object as Avm1Object, Value as Avm1Value,
 };
 use crate::avm2::object::{
-    ClassObject as Avm2ClassObject, EventObject as Avm2EventObject, StageObject as Avm2StageObject,
-    StyleSheetObject as Avm2StyleSheetObject,
+    ClassObject as Avm2ClassObject, EventObject as Avm2EventObject, Object as Avm2Object,
+    StageObject as Avm2StageObject, StyleSheetObject as Avm2StyleSheetObject,
 };
 use crate::avm2::{Activation as Avm2Activation, Avm2};
 use crate::backend::ui::MouseCursor;
@@ -118,6 +118,10 @@ pub struct EditTextData<'gc> {
 
     /// The calculated layout.
     layout: RefLock<Layout<'gc>>,
+
+    /// AVM2 Loader objects corresponding one-to-one, in span order,
+    /// to the currently parsed HTML images.
+    image_references: RefLock<Vec<Avm2Object<'gc>>>,
 
     /// Style sheet used when parsing HTML.
     style_sheet: Lock<EditTextStyleSheet<'gc>>,
@@ -332,6 +336,7 @@ impl<'gc> EditText<'gc> {
                 border_color: Cell::new(Color::BLACK),
                 object: Lock::new(None),
                 layout: RefLock::new(Default::default()),
+                image_references: RefLock::new(Vec::new()),
                 bounds: Cell::new(*swf_tag.bounds()),
                 autosize_lazy_bounds: Cell::new(None),
                 autosize: Cell::new(autosize),
@@ -447,6 +452,8 @@ impl<'gc> EditText<'gc> {
             return;
         }
 
+        self.set_image_references(context.gc(), Vec::new());
+
         if self.0.style_sheet.get().is_some() {
             // When CSS is set, text will always be treated as HTML.
             self.0.parse_html(text);
@@ -484,12 +491,80 @@ impl<'gc> EditText<'gc> {
             return;
         }
 
+        self.set_image_references(context.gc(), Vec::new());
+
         if self.is_effectively_html() {
             self.0.parse_html(text);
             self.relayout(context);
         } else {
             self.set_text(text, context);
         }
+    }
+
+    pub(crate) fn html_images(self) -> Vec<(WString, Option<WString>)> {
+        self.0
+            .text_spans
+            .borrow()
+            .iter_spans()
+            .filter_map(|(_, _, _, span)| span.image.as_deref())
+            .map(|image| (image.src.clone(), image.id.clone()))
+            .collect()
+    }
+
+    pub(crate) fn set_image_references(self, mc: &Mutation<'gc>, references: Vec<Avm2Object<'gc>>) {
+        *unlock!(Gc::write(mc, self.0), EditTextData, image_references).borrow_mut() = references;
+    }
+
+    /// Keep the Loader vector aligned with image spans removed by replaceText.
+    ///
+    /// Text replacement cannot create new HTML image spans, so references
+    /// outside the replaced range remain valid and keep their relative order.
+    fn prune_image_references(self, mc: &Mutation<'gc>, from: usize, to: usize) {
+        if to < from {
+            return;
+        }
+
+        let keep = self
+            .0
+            .text_spans
+            .borrow()
+            .iter_spans()
+            .filter_map(|(start, _, _, span)| {
+                span.image.as_ref().map(|_| start < from || start >= to)
+            })
+            .collect::<Vec<_>>();
+
+        let mut references =
+            unlock!(Gc::write(mc, self.0), EditTextData, image_references).borrow_mut();
+
+        let mut index = 0;
+        references.retain(|_| {
+            let keep_reference = keep.get(index).copied().unwrap_or(false);
+            index += 1;
+            keep_reference
+        });
+    }
+
+    pub(crate) fn image_reference(self, id: &WStr) -> Option<Avm2Object<'gc>> {
+        if id.is_empty() {
+            return None;
+        }
+
+        let spans = self.0.text_spans.borrow();
+        let references = self.0.image_references.borrow();
+
+        spans
+            .iter_spans()
+            .filter_map(|(_, _, _, span)| span.image.as_deref())
+            .zip(references.iter().copied())
+            .filter(|(image, _)| {
+                image
+                    .id
+                    .as_ref()
+                    .is_some_and(|image_id| image_id.as_wstr() == id)
+            })
+            .map(|(_, reference)| reference)
+            .last()
     }
 
     pub fn text_length(self) -> usize {
@@ -828,6 +903,7 @@ impl<'gc> EditText<'gc> {
         text: &WStr,
         context: &mut UpdateContext<'gc>,
     ) {
+        self.prune_image_references(context.gc(), from, to);
         self.0.text_spans.borrow_mut().replace_text(from, to, text);
         self.relayout(context);
     }

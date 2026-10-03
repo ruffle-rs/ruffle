@@ -147,10 +147,7 @@ package flash.text {
 
         public native function getFirstCharInParagraph(charIndex:int):int;
 
-        public function getImageReference(id:String):DisplayObject {
-            stub_method("flash.text.TextField", "getImageReference");
-            return null;
-        }
+        public native function getImageReference(id:String):DisplayObject;
 
         public native function getLineIndexAtPoint(x:Number, y:Number):int;
 
