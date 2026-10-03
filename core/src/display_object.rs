@@ -790,6 +790,16 @@ impl<'gc> DisplayObjectBase<'gc> {
         self.set_flag(DisplayObjectFlags::LOCK_ROOT, value);
     }
 
+    fn force_smoothing(&self) -> bool {
+        self.contains_flag(DisplayObjectFlags::FORCE_SMOOTHING)
+    }
+
+    fn set_force_smoothing(&self, value: bool) -> bool {
+        let changed = self.force_smoothing() != value;
+        self.set_flag(DisplayObjectFlags::FORCE_SMOOTHING, value);
+        changed
+    }
+
     fn transformed_by_script(&self) -> bool {
         self.contains_flag(DisplayObjectFlags::TRANSFORMED_BY_SCRIPT)
     }
@@ -2214,6 +2224,23 @@ pub trait TDisplayObject<'gc>:
         self.base().set_lock_root(value);
     }
 
+    /// Whether the bitmap fills of the shapes placed in this display object are always smoothed.
+    /// Set by the `forceSmoothing` ActionScript property.
+    #[no_dynamic]
+    fn force_smoothing(self) -> bool {
+        self.base().force_smoothing()
+    }
+
+    /// Sets whether the bitmap fills of the shapes placed in this display object are always smoothed.
+    /// Set by the `forceSmoothing` ActionScript property.
+    /// This invalidates any cacheAsBitmap automatically.
+    #[no_dynamic]
+    fn set_force_smoothing(self, value: bool) {
+        if self.base().set_force_smoothing(value) {
+            self.invalidate_cached_bitmap();
+        }
+    }
+
     /// Whether this display object has been transformed by ActionScript.
     /// When this flag is set, changes from SWF `PlaceObject` tags are ignored.
     #[no_dynamic]
@@ -3053,6 +3080,10 @@ bitflags! {
         /// (they need to be instantiated "manually" by
         /// `Sprite.constructChildren`).
         const MANUAL_FRAME_CONSTRUCT  = 1 << 16;
+
+        /// Whether this object forces smoothing of the bitmap fills of the shapes placed in it.
+        /// This is set by the `forceSmoothing` AVM1 property.
+        const FORCE_SMOOTHING          = 1 << 17;
     }
 }
 

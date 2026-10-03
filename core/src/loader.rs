@@ -60,6 +60,9 @@ new_key_type! {
 /// The depth of AVM1 movies that AVM2 loads.
 const LOADER_INSERTED_AVM1_DEPTH: i32 = -0xF000;
 
+/// The depth of an image loaded into an AVM1 movie clip.
+pub const AVM1_LOADED_IMAGE_DEPTH: i32 = 1;
+
 /// How Ruffle should load movies.
 #[cfg_attr(feature = "clap", derive(clap::ValueEnum))]
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -2163,7 +2166,7 @@ impl<'gc> MovieLoader<'gc> {
             if dobj.as_movie_clip().is_none() {
                 let mc = target_clip.as_movie_clip().unwrap();
                 mc.replace_with_movie(uc, Some(movie.unwrap()), true, None);
-                mc.replace_at_depth(uc, dobj, 1);
+                mc.replace_at_depth(uc, dobj, AVM1_LOADED_IMAGE_DEPTH);
 
                 // This sets the MovieClip image state correctly.
                 mc.set_current_frame(1);
