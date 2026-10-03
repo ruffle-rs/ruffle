@@ -1,0 +1,36 @@
+Entered frame 1
+// gotoAndStop(0)
+enterFrame : currentFrame=2
+Entered frame 2
+// gotoAndStop('0')
+enterFrame : currentFrame=3
+Entered frame 3
+// gotoAndStop(undefined)
+enterFrame : currentFrame=4
+Entered frame 4
+// gotoAndPlay({})
+enterFrame : currentFrame=5
+Entered frame 5
+// gotoAndPlay(-Infinity)
+enterFrame : currentFrame=6
+Entered frame 6
+// stop()
+Done testing cases that don't goto! Now let's test some cases that DO goto.
+// addFrameScript(new frame scripts)
+// gotoAndPlay(1)
+Entered frame 1
+// gotoAndPlay(2)
+Entered frame 2
+// gotoAndPlay(-1)
+Entered frame 1
+// gotoAndPlay(3)
+Entered frame 3
+// gotoAndPlay(999)
+Entered frame 3
+// gotoAndPlay(999)
+enterFrame : currentFrame=6
+enterFrame : currentFrame=1
+Entered frame 1
+// gotoAndPlay(4)
+Entered frame 4
+// stop()

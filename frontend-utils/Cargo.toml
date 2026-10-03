@@ -26,14 +26,14 @@ freetype = ["ui", "dep:freetype-rs"]
 # certificates). reqwest picks the backend automatically at runtime from
 # whichever is compiled in, so no code change is needed to switch.
 native-tls = ["reqwest/native-tls"]
-rustls-tls = ["reqwest/rustls-tls"]
+rustls-tls = ["reqwest/rustls"]
 
 [dependencies]
 toml_edit = { workspace = true, features = ["parse"] }
 url = { workspace = true }
 tracing = { workspace = true }
 thiserror = { workspace = true }
-zip = { version = "8.6.0", default-features = false, features = ["deflate"] }
+zip = { workspace = true, features = ["deflate"] }
 urlencoding = "2.1.3"
 ruffle_core = { path = "../core", default-features = false }
 ruffle_render = { path = "../render", default-features = false }
@@ -47,7 +47,7 @@ reqwest = { workspace = true, features = [
     "cookies",
     "charset",
     "http2",
-    "macos-system-configuration",
+    "system-proxy",
 ] }
 tokio = { workspace = true, features = ["net", "macros"], optional = true }
 cpal = { workspace = true, optional = true }

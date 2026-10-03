@@ -22,6 +22,22 @@ pub fn get_text_width<'gc>(
     Ok(measured_text.0.to_pixels().into())
 }
 
+pub fn get_has_tabs<'gc>(
+    _activation: &mut Activation<'_, 'gc>,
+    this: Value<'gc>,
+    _args: FunctionArgs<'_, 'gc>,
+) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this
+        .as_object()
+        .unwrap()
+        .as_display_object()
+        .unwrap()
+        .as_text_line()
+        .unwrap();
+
+    Ok(this.has_tabs().into())
+}
+
 pub fn get_validity<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,

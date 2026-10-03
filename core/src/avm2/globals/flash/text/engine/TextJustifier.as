@@ -1,5 +1,4 @@
 package flash.text.engine {
-    import __ruffle__.stub_getter;
     import __ruffle__.stub_setter;
 
     import flash.utils.getQualifiedClassName;
@@ -7,7 +6,7 @@ package flash.text.engine {
     [API("662")]
     public class TextJustifier {
         private var _lineJustification:String = null;
-        private var _locale:String = "en";
+        private var _locale:String;
 
         public function TextJustifier(locale:String, lineJustification:String) {
             // TODO: Is there a better way to do this?
@@ -15,9 +14,20 @@ package flash.text.engine {
                 throw new ArgumentError("Error #2012: TextJustifier$ class cannot be instantiated.", 2012);
             }
 
-            // TODO: Validate locale
-            this._locale = locale;
+            this.setLocale(locale);
             this.lineJustification = lineJustification;
+        }
+
+        private function setLocale(locale:String):void {
+            if (locale == null) {
+                throw new TypeError("Error #2007: Parameter locale must be non-null.", 2007);
+            }
+
+            if (locale.length < 2) {
+                throw new ArgumentError("Error #2004: One of the parameters is invalid.", 2004);
+            }
+
+            this._locale = locale;
         }
 
         public function get lineJustification():String {
@@ -29,7 +39,6 @@ package flash.text.engine {
         }
 
         public function get locale():String {
-            stub_getter("flash.text.engine.TextJustifier", "locale");
             return this._locale;
         }
 

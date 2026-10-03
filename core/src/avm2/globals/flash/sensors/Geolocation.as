@@ -6,5 +6,14 @@ package flash.sensors {
         public static function get isSupported():Boolean {
             return false;
         }
+
+        public function setRequestedUpdateInterval(interval:Number) {
+            __ruffle__.stub_method("flash.sensors.Geolocation", "setRequestedUpdateInterval");
+        }
+
+        public function get muted():Boolean {
+            __ruffle__.stub_getter("flash.sensors.Geolocation", "muted");
+            return true;
+        }
     }
 }

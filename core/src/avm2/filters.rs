@@ -225,7 +225,7 @@ fn avm2_to_bevel_filter<'gc>(
         .coerce_to_boolean();
     let quality = object
         .get_slot(bevel_filter_slots::QUALITY)
-        .coerce_to_u32(activation)?;
+        .coerce_to_i32(activation)?;
     let shadow_alpha = object
         .get_slot(bevel_filter_slots::SHADOW_ALPHA)
         .coerce_to_number(activation)?;
@@ -300,7 +300,7 @@ fn avm2_to_blur_filter<'gc>(
         .coerce_to_number(activation)?;
     let quality = object
         .get_slot(blur_filter_slots::QUALITY)
-        .coerce_to_u32(activation)?;
+        .coerce_to_i32(activation)?;
     Ok(Filter::BlurFilter(BlurFilter {
         blur_x: Fixed16::from_f64(blur_x.max(0.0)),
         blur_y: Fixed16::from_f64(blur_y.max(0.0)),
@@ -580,7 +580,7 @@ fn avm2_to_drop_shadow_filter<'gc>(
         .coerce_to_boolean();
     let quality = object
         .get_slot(drop_shadow_filter_slots::QUALITY)
-        .coerce_to_u32(activation)?;
+        .coerce_to_i32(activation)?;
     let strength = object
         .get_slot(drop_shadow_filter_slots::STRENGTH)
         .coerce_to_number(activation)?;
@@ -648,7 +648,7 @@ fn avm2_to_glow_filter<'gc>(
         .coerce_to_boolean();
     let quality = object
         .get_slot(glow_filter_slots::QUALITY)
-        .coerce_to_u32(activation)?;
+        .coerce_to_i32(activation)?;
     let strength = object
         .get_slot(glow_filter_slots::STRENGTH)
         .coerce_to_number(activation)?;
@@ -751,7 +751,7 @@ fn avm2_to_gradient_filter<'gc>(
         .coerce_to_boolean();
     let quality = object
         .get_slot(gradient_bevel_filter_slots::_QUALITY)
-        .coerce_to_u32(activation)?;
+        .coerce_to_i32(activation)?;
     let strength = object
         .get_slot(gradient_bevel_filter_slots::_STRENGTH)
         .coerce_to_number(activation)?;
@@ -904,25 +904,22 @@ fn get_gradient_colors<'gc>(
             .as_object()
         && let Some(ratios_array) = ratios_object.as_array_storage()
     {
-        // Flash only keeps the elements from any array until the lowest index in each array
-        for i in 0..ratios_array
-            .length()
-            .min(alphas_array.length())
-            .min(colors_array.length())
-        {
+        // Flash keeps min(colors, ratios) entries; missing alphas default to 1.0.
+        for i in 0..ratios_array.length().min(colors_array.length()) {
             let color = colors_array
                 .get(i)
                 .map(|v| v.coerce_to_u32(activation))
                 .transpose()?
                 .unwrap_or_default();
-            let alpha = colors_array
+            let alpha = match alphas_array.get(i) {
+                Some(value) => value.coerce_to_number(activation)? as f32,
+                None if i < alphas_array.length() => 0.0,
+                // Flash pads a short alphas array with 1.0.
+                None => 1.0,
+            };
+            let ratio = ratios_array
                 .get(i)
-                .map(|v| v.coerce_to_number(activation))
-                .transpose()?
-                .unwrap_or_default() as f32;
-            let ratio = colors_array
-                .get(i)
-                .map(|v| v.coerce_to_u32(activation))
+                .map(|v| v.coerce_to_i32(activation))
                 .transpose()?
                 .unwrap_or_default();
             colors.push(GradientRecord {

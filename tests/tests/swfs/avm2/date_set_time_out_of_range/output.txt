@@ -1,0 +1,62 @@
+zero
+input=0
+setTime=0
+getTime=0
+negative zero
+input=0
+setTime=0
+getTime=0
+min positive subnormal
+setTime=0
+getTime=0
+negative min subnormal
+setTime=0
+getTime=0
+NaN
+input=NaN
+setTime=NaN
+getTime=NaN
+positive infinity
+input=Infinity
+setTime=NaN
+getTime=NaN
+negative infinity
+input=-Infinity
+setTime=NaN
+getTime=NaN
+large positive in-range
+input=8300000000000000
+setTime=8300000000000000
+getTime=8300000000000000
+positive flash limit
+input=8640000000000000
+setTime=8640000000000000
+getTime=8640000000000000
+large negative in-range
+input=-8500000000000000
+setTime=-8500000000000000
+getTime=-8500000000000000
+negative flash limit
+input=-8640000000000000
+setTime=-8640000000000000
+getTime=-8640000000000000
+positive limit + 1
+input=8640000000000001
+setTime=NaN
+getTime=NaN
+negative limit - 1
+input=-8640000000000001
+setTime=NaN
+getTime=NaN
+Number.MAX_VALUE
+input=1.79769313486231e+308
+setTime=NaN
+getTime=NaN
+-Number.MAX_VALUE
+input=-1.79769313486231e+308
+setTime=NaN
+getTime=NaN
+WarLight value
+input=3155378976000000000
+setTime=NaN
+getTime=NaN

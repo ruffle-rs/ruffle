@@ -149,7 +149,7 @@ impl H264Decoder {
             output.close();
         };
 
-        let log_subscriber_for_error = log_subscriber.clone();
+        let log_subscriber_for_error = log_subscriber;
         let error = move |error: &DomException| {
             let _subscriber = tracing::subscriber::set_default(log_subscriber_for_error.clone());
             error!("WebCodecs error: {:}", error.message());

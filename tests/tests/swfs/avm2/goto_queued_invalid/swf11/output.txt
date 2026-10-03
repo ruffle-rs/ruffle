@@ -1,0 +1,43 @@
+Entered frame 1
+// gotoAndStop(0)
+enterFrame : currentFrame=2
+Entered frame 2
+// gotoAndStop('0')
+enterFrame : currentFrame=3
+Entered frame 3
+// gotoAndStop(undefined)
+// Error! ArgumentError: Error #2109: Frame label null not found in scene null.
+	at flash.display::MovieClip/gotoAndStop()
+	at Test/frame3_1()
+enterFrame : currentFrame=4
+Entered frame 4
+// gotoAndPlay({})
+// Error! ArgumentError: Error #2109: Frame label [object Object] not found in scene [object Object].
+	at flash.display::MovieClip/gotoAndPlay()
+	at Test/frame4_1()
+enterFrame : currentFrame=5
+Entered frame 5
+// gotoAndPlay(-Infinity)
+// Error! ArgumentError: Error #2109: Frame label -Infinity not found in scene -Infinity.
+	at flash.display::MovieClip/gotoAndPlay()
+	at Test/frame5_1()
+enterFrame : currentFrame=6
+Entered frame 6
+// stop()
+Done testing cases that don't goto! Now let's test some cases that DO goto.
+// addFrameScript(new frame scripts)
+// gotoAndPlay(1)
+Entered frame 1
+// gotoAndPlay(2)
+Entered frame 2
+// gotoAndPlay(-1)
+Entered frame 1
+// gotoAndPlay(3)
+Entered frame 3
+// gotoAndPlay(999)
+enterFrame : currentFrame=1
+Entered frame 1
+// gotoAndPlay(4)
+Entered frame 4
+// stop()
+enterFrame : currentFrame=4

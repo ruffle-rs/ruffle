@@ -12,6 +12,7 @@ workspace = true
 
 [dependencies]
 clap = { workspace = true }
+clap_complete = { workspace = true, optional = true }
 cpal = { workspace = true }
 egui = { workspace = true }
 egui_extras = { workspace = true, default-features = false, features = ["image"] }
@@ -47,7 +48,7 @@ gilrs = "0.11"
 tokio = { workspace = true, features = ["rt-multi-thread", "macros", "fs"] }
 
 tracing-tracy = { version = "0.11.3", optional = true, features = ["demangle"] }
-rand = "0.10.1"
+rand = { workspace = true, default-features = true }
 thiserror.workspace = true
 async-channel.workspace = true
 unicode-bidi = "0.3.18"
@@ -65,8 +66,8 @@ ashpd = { version = "0.13.0", features = ["settings", "game_mode"] }
 windows-sys = { version = "0.61.2", features = ["Win32_System_Console", "Win32_Storage_FileSystem"] }
 
 [build-dependencies]
-vergen = { version = "9.1.0", features = ["build", "cargo"] }
-vergen-gitcl = { version = "9.1.0" }
+vergen = { version = "10.0.3", features = ["build", "cargo"] }
+vergen-gitcl = { version = "10.0.3" }
 winresource = "0.1"
 
 [package.metadata.winresource]
@@ -81,6 +82,7 @@ OriginalFilename = "ruffle.exe"
 
 [features]
 default = ["software_video", "external_video", "lzma", "fontconfig", "freetype"]
+shell-completions = ["dep:clap_complete"]
 jpegxr = ["ruffle_core/jpegxr"]
 
 # core features

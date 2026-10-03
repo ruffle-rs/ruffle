@@ -19,7 +19,6 @@ on:
 
 env:
   RELEASE_SCRIPT: ./.github/scripts/release.py
-  LINUX_DEPENDENCIES: libasound2-dev libudev-dev libfontconfig-dev libfreetype6-dev libssl-dev
 
 jobs:
   create-release:
@@ -139,13 +138,13 @@ jobs:
 
           # Mac does two Rust builds to make a universal binary
           - build_name: macos-x86_64
-            os: macos-15
+            os: macos-26
             target: x86_64-apple-darwin
             MACOSX_DEPLOYMENT_TARGET: 10.7
             DESKTOP_FEATURES: sandbox,jpegxr,fontconfig-dlopen
 
           - build_name: macos-aarch64
-            os: macos-15
+            os: macos-26
             target: aarch64-apple-darwin
             MACOSX_DEPLOYMENT_TARGET: 11.0
             DESKTOP_FEATURES: sandbox,jpegxr,fontconfig-dlopen
@@ -185,14 +184,14 @@ jobs:
         if: runner.os == 'Linux' && matrix.target == ''
         run: |
           sudo apt-get update
-          sudo apt install -y ${{ env.LINUX_DEPENDENCIES }}
+          sudo apt install -y $(cat .github/linux-dependencies.txt)
 
       - name: Install Linux i386 dependencies
         if: matrix.target == 'i686-unknown-linux-gnu'
         run: |
           sudo dpkg --add-architecture i386
           sudo apt-get update
-          sudo apt install -y gcc-multilib $(for p in ${{ env.LINUX_DEPENDENCIES }}; do echo "$p:i386"; done)
+          sudo apt install -y gcc-multilib $(sed 's/$/:i386/' .github/linux-dependencies.txt)
           echo "PKG_CONFIG_ALLOW_CROSS=1" | tee -a $GITHUB_ENV
           echo "PKG_CONFIG_LIBDIR=/usr/lib/i386-linux-gnu/pkgconfig" | tee -a $GITHUB_ENV
 
@@ -273,7 +272,7 @@ jobs:
   build-mac-universal-binary:
     name: Build macOS universal binary
     needs: [ create-release, build, build-web ]
-    runs-on: macos-15
+    runs-on: macos-26
     env:
       PACKAGE_FILE: ${{ needs.create-release.outputs.package_prefix }}-macos-universal.tar.gz
     steps:

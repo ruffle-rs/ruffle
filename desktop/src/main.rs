@@ -24,6 +24,8 @@ mod windows;
 use crate::preferences::GlobalPreferences;
 use anyhow::{Context, Error};
 use app::App;
+#[cfg(feature = "shell-completions")]
+use clap::CommandFactory;
 use clap::Parser;
 use cli::Opt;
 use rfd::MessageDialogResult;
@@ -150,6 +152,14 @@ fn main() -> Result<(), Error> {
     let _console = windows::Console::attach();
 
     let opt = Opt::parse();
+
+    #[cfg(feature = "shell-completions")]
+    if let Some(shell) = opt.completions {
+        let mut cmd = Opt::command();
+        clap_complete::generate(shell, &mut cmd, "ruffle", &mut std::io::stdout());
+        return Ok(());
+    }
+
     let preferences = GlobalPreferences::load(opt)?;
 
     let logs_path = &preferences.cli.cache_directory.join("log");

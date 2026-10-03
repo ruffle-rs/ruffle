@@ -48,7 +48,7 @@ impl Default for ExternalVideoBackend {
 }
 
 impl ExternalVideoBackend {
-    fn make_decoder(&mut self) -> Result<Box<dyn VideoDecoder>, Error> {
+    fn make_decoder(&self) -> Result<Box<dyn VideoDecoder>, Error> {
         #[cfg(feature = "openh264")]
         if let Some(h264_codec) = self.openh264_codec.as_ref() {
             let decoder = Box::new(crate::decoder::openh264::H264Decoder::new(h264_codec));

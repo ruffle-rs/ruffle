@@ -18,6 +18,7 @@ mod array;
 mod avmplus;
 mod boolean;
 mod class;
+mod concurrent;
 mod date;
 mod error;
 pub mod flash;

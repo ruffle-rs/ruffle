@@ -189,9 +189,8 @@ impl<'gc> Avm1<'gc> {
         }
 
         let constant_pool = context.avm1.constant_pool;
-        // Let's do this once for swf 6 (case sensitive) and once for swf 7 (case insensitive),
-        // as we keep separate _global objects around for those two cases.
-        for swf_version in [6, 7] {
+        // Initialize the playerglobal SWF in both case-sensitive and case-insensitive environments.
+        for swf_version in [6, 8] {
             let mut child_activation = Activation::from_action(
                 context,
                 ActivationIdentifier::root("playerglobal"),

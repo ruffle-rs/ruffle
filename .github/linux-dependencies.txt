@@ -1,0 +1,6 @@
+libasound2-dev
+libudev-dev
+libfontconfig-dev
+libfreetype6-dev
+libssl-dev
+mesa-vulkan-drivers

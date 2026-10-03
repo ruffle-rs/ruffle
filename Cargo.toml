@@ -51,6 +51,11 @@ repository = "https://github.com/ruffle-rs/ruffle"
 version = "0.6.0"
 
 [workspace.dependencies]
+rand = { version = "0.10.1", default-features = false }
+png = "0.18.1"
+proc-macro2 = "1.0.106"
+zip = { version = "8.6.0", default-features = false }
+quote = "1.0.45"
 tracing = "0.1.43"
 tracing-subscriber = { version = "0.3.23", features = ["env-filter"] }
 naga = { version = "30.0.1", features = ["wgsl-out"] }
@@ -61,6 +66,7 @@ egui_extras = { version = "0.36.1", default-features = false }
 egui-wgpu = "0.36.1"
 egui-winit = "0.36.1"
 clap = { version = "4.6.1", features = ["derive"] }
+clap_complete = "4.6"
 cpal = "0.16.0"
 anyhow = "1.0"
 gc-arena = { version = "0.7.0", features = ["enum-map", "hashbrown", "indexmap", "slotmap", "smallvec"] }
@@ -91,7 +97,7 @@ rfd = { version = "0.17.2", default-features = false, features = ["wayland", "xd
 memmap2 = "0.9.10"
 libtest-mimic = "0.8.2"
 regex = "1.12.3"
-reqwest = { version = "0.12.28", default-features = false }
+reqwest = { version = "0.13.5", default-features = false }
 toml = "1.0.6"
 toml_edit = "0.25.4"
 vfs = "0.13.0"
@@ -113,7 +119,7 @@ lzma-rs = "0.3.0"
 tempfile = "3.27.0"
 tracing-wasm = "0.2.1"
 rascal = "0.3.5"
-jpegxr = { git = "https://github.com/ruffle-rs/jpegxr", rev = "5281b4ae42be742779269a9f1a986101f101f32f" }
+jpegxr = { git = "https://github.com/ruffle-rs/jpegxr", rev = "86cc1749d493288f53d7290ac3eb7082c475b5d9" }
 
 [workspace.lints.rust]
 # Clippy nightly often adds new/buggy lints that we want to ignore.

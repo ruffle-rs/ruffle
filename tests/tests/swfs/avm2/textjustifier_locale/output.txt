@@ -1,0 +1,132 @@
+before super locale=null
+after super locale=ja
+en | input="en" | length=2 | locale="en" | localeLength=2
+ja | input="ja" | length=2 | locale="ja" | localeLength=2
+fr-FR | input="fr-FR" | length=5 | locale="fr-FR" | localeLength=5
+zh-Hant | input="zh-Hant" | length=7 | locale="zh-Hant" | localeLength=7
+en-US | input="en-US" | length=5 | locale="en-US" | localeLength=5
+EN | input="EN" | length=2 | locale="EN" | localeLength=2
+empty | input="" | length=0 | ERROR=ArgumentError: Error #2004: One of the parameters is invalid.
+	at flash.text.engine::TextJustifier/setLocale()
+	at flash.text.engine::TextJustifier()
+	at flash.text.engine::SpaceJustifier()
+	at Test/testLocale()
+	at Test()
+1 ascii | input="a" | length=1 | ERROR=ArgumentError: Error #2004: One of the parameters is invalid.
+	at flash.text.engine::TextJustifier/setLocale()
+	at flash.text.engine::TextJustifier()
+	at flash.text.engine::SpaceJustifier()
+	at Test/testLocale()
+	at Test()
+2 ascii | input="ab" | length=2 | locale="ab" | localeLength=2
+3 ascii | input="abc" | length=3 | locale="abc" | localeLength=3
+2 digits | input="12" | length=2 | locale="12" | localeLength=2
+2 at signs | input="@@" | length=2 | locale="@@" | localeLength=2
+2 hyphens | input="--" | length=2 | locale="--" | localeLength=2
+2 underscores | input="__" | length=2 | locale="__" | localeLength=2
+punctuation | input="!?" | length=2 | locale="!?" | localeLength=2
+slashes | input="//" | length=2 | locale="//" | localeLength=2
+1 space | input=" " | length=1 | ERROR=ArgumentError: Error #2004: One of the parameters is invalid.
+	at flash.text.engine::TextJustifier/setLocale()
+	at flash.text.engine::TextJustifier()
+	at flash.text.engine::SpaceJustifier()
+	at Test/testLocale()
+	at Test()
+2 spaces | input="  " | length=2 | locale="  " | localeLength=2
+3 spaces | input="   " | length=3 | locale="   " | localeLength=3
+tab | input="\u0009" | length=1 | ERROR=ArgumentError: Error #2004: One of the parameters is invalid.
+	at flash.text.engine::TextJustifier/setLocale()
+	at flash.text.engine::TextJustifier()
+	at flash.text.engine::SpaceJustifier()
+	at Test/testLocale()
+	at Test()
+2 tabs | input="\u0009\u0009" | length=2 | locale="\u0009\u0009" | localeLength=2
+newline | input="\u000A" | length=1 | ERROR=ArgumentError: Error #2004: One of the parameters is invalid.
+	at flash.text.engine::TextJustifier/setLocale()
+	at flash.text.engine::TextJustifier()
+	at flash.text.engine::SpaceJustifier()
+	at Test/testLocale()
+	at Test()
+2 newlines | input="\u000A\u000A" | length=2 | locale="\u000A\u000A" | localeLength=2
+CRLF | input="\u000D\u000A" | length=2 | locale="\u000D\u000A" | localeLength=2
+NBSP | input="\u00A0" | length=1 | ERROR=ArgumentError: Error #2004: One of the parameters is invalid.
+	at flash.text.engine::TextJustifier/setLocale()
+	at flash.text.engine::TextJustifier()
+	at flash.text.engine::SpaceJustifier()
+	at Test/testLocale()
+	at Test()
+2 NBSP | input="\u00A0\u00A0" | length=2 | locale="\u00A0\u00A0" | localeLength=2
+ZWSP | input="\u200B" | length=1 | ERROR=ArgumentError: Error #2004: One of the parameters is invalid.
+	at flash.text.engine::TextJustifier/setLocale()
+	at flash.text.engine::TextJustifier()
+	at flash.text.engine::SpaceJustifier()
+	at Test/testLocale()
+	at Test()
+2 ZWSP | input="\u200B\u200B" | length=2 | locale="\u200B\u200B" | localeLength=2
+BOM | input="\uFEFF" | length=1 | ERROR=ArgumentError: Error #2004: One of the parameters is invalid.
+	at flash.text.engine::TextJustifier/setLocale()
+	at flash.text.engine::TextJustifier()
+	at flash.text.engine::SpaceJustifier()
+	at Test/testLocale()
+	at Test()
+2 BOM | input="\uFEFF\uFEFF" | length=2 | locale="\uFEFF\uFEFF" | localeLength=2
+e acute | input="\u00E9" | length=1 | ERROR=ArgumentError: Error #2004: One of the parameters is invalid.
+	at flash.text.engine::TextJustifier/setLocale()
+	at flash.text.engine::TextJustifier()
+	at flash.text.engine::SpaceJustifier()
+	at Test/testLocale()
+	at Test()
+Japanese one char | input="\u65E5" | length=1 | ERROR=ArgumentError: Error #2004: One of the parameters is invalid.
+	at flash.text.engine::TextJustifier/setLocale()
+	at flash.text.engine::TextJustifier()
+	at flash.text.engine::SpaceJustifier()
+	at Test/testLocale()
+	at Test()
+Arabic one char | input="\u0639" | length=1 | ERROR=ArgumentError: Error #2004: One of the parameters is invalid.
+	at flash.text.engine::TextJustifier/setLocale()
+	at flash.text.engine::TextJustifier()
+	at flash.text.engine::SpaceJustifier()
+	at Test/testLocale()
+	at Test()
+Japanese two chars | input="\u65E5\u672C" | length=2 | locale="\u65E5\u672C" | localeLength=2
+Arabic two chars | input="\u0639\u0631" | length=2 | locale="\u0639\u0631" | localeLength=2
+e + combining acute | input="e\u0301" | length=2 | locale="e\u0301" | localeLength=2
+surrogate pair | input="\uD83D\uDE00" | length=2 | locale="\uD83D\uDE00" | localeLength=2
+high surrogate | input="?" | length=1 | ERROR=ArgumentError: Error #2004: One of the parameters is invalid.
+	at flash.text.engine::TextJustifier/setLocale()
+	at flash.text.engine::TextJustifier()
+	at flash.text.engine::SpaceJustifier()
+	at Test/testLocale()
+	at Test()
+low surrogate | input="?" | length=1 | ERROR=ArgumentError: Error #2004: One of the parameters is invalid.
+	at flash.text.engine::TextJustifier/setLocale()
+	at flash.text.engine::TextJustifier()
+	at flash.text.engine::SpaceJustifier()
+	at Test/testLocale()
+	at Test()
+two high surrogates | input="??" | length=2 | locale="??" | localeLength=2
+NUL | input="\u0000" | length=1 | ERROR=ArgumentError: Error #2004: One of the parameters is invalid.
+	at flash.text.engine::TextJustifier/setLocale()
+	at flash.text.engine::TextJustifier()
+	at flash.text.engine::SpaceJustifier()
+	at Test/testLocale()
+	at Test()
+2 NUL | input="\u0000\u0000" | length=2 | locale="\u0000\u0000" | localeLength=2
+a NUL | input="a\u0000" | length=2 | locale="a\u0000" | localeLength=2
+NUL a | input="\u0000a" | length=2 | locale="\u0000a" | localeLength=2
+unit separator | input="\u001F" | length=1 | ERROR=ArgumentError: Error #2004: One of the parameters is invalid.
+	at flash.text.engine::TextJustifier/setLocale()
+	at flash.text.engine::TextJustifier()
+	at flash.text.engine::SpaceJustifier()
+	at Test/testLocale()
+	at Test()
+2 unit separators | input="\u001F\u001F" | length=2 | locale="\u001F\u001F" | localeLength=2
+length 10 | input="aaaaaaaaaa" | length=10 | locale="aaaaaaaaaa" | localeLength=10
+length 15 | input="aaaaaaaaaaaaaaa" | length=15 | locale="aaaaaaaaaaaaaaa" | localeLength=15
+long hyphenated | input="this-is-a-test-locale" | length=21 | locale="this-is-a-test-locale" | localeLength=21
+null | ERROR=TypeError: Error #2007: Parameter locale must be non-null.
+	at flash.text.engine::TextJustifier/setLocale()
+	at flash.text.engine::TextJustifier()
+	at flash.text.engine::SpaceJustifier()
+	at Test/testNullLocale()
+	at Test()

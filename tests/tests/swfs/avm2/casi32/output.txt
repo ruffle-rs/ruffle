@@ -1,0 +1,166 @@
+casi32(1, 0, 0) = RangeError: Error #1506: The specified range is invalid.
+	at global/avm2.intrinsics.memory::casi32()
+	at Test/tryCasi32()
+	at Test()
+Domain memory: 
+  0 : 0
+  1 : 0
+  2 : 0
+  3 : 0
+  4 : 0
+  5 : 0
+  6 : 0
+  7 : 0
+casi32(2, 0, 0) = RangeError: Error #1506: The specified range is invalid.
+	at global/avm2.intrinsics.memory::casi32()
+	at Test/tryCasi32()
+	at Test()
+Domain memory: 
+  0 : 0
+  1 : 0
+  2 : 0
+  3 : 0
+  4 : 0
+  5 : 0
+  6 : 0
+  7 : 0
+casi32(3, 0, 0) = RangeError: Error #1506: The specified range is invalid.
+	at global/avm2.intrinsics.memory::casi32()
+	at Test/tryCasi32()
+	at Test()
+Domain memory: 
+  0 : 0
+  1 : 0
+  2 : 0
+  3 : 0
+  4 : 0
+  5 : 0
+  6 : 0
+  7 : 0
+casi32(13, 0, 0) = RangeError: Error #1506: The specified range is invalid.
+	at global/avm2.intrinsics.memory::casi32()
+	at Test/tryCasi32()
+	at Test()
+casi32(-50, 0, 0) = RangeError: Error #1506: The specified range is invalid.
+	at global/avm2.intrinsics.memory::casi32()
+	at Test/tryCasi32()
+	at Test()
+Domain memory: 
+  0 : 0
+  1 : 0
+  2 : 0
+  3 : 0
+  4 : 0
+  5 : 0
+  6 : 0
+  7 : 0
+casi32(-1, 0, 0) = RangeError: Error #1506: The specified range is invalid.
+	at global/avm2.intrinsics.memory::casi32()
+	at Test/tryCasi32()
+	at Test()
+Domain memory: 
+  0 : 0
+  1 : 0
+  2 : 0
+  3 : 0
+  4 : 0
+  5 : 0
+  6 : 0
+  7 : 0
+casi32(2048, 0, 0) = RangeError: Error #1506: The specified range is invalid.
+	at global/avm2.intrinsics.memory::casi32()
+	at Test/tryCasi32()
+	at Test()
+casi32(2047, 0, 0) = RangeError: Error #1506: The specified range is invalid.
+	at global/avm2.intrinsics.memory::casi32()
+	at Test/tryCasi32()
+	at Test()
+casi32(2046, 0, 0) = RangeError: Error #1506: The specified range is invalid.
+	at global/avm2.intrinsics.memory::casi32()
+	at Test/tryCasi32()
+	at Test()
+casi32(2045, 0, 0) = RangeError: Error #1506: The specified range is invalid.
+	at global/avm2.intrinsics.memory::casi32()
+	at Test/tryCasi32()
+	at Test()
+casi32(2044, 0, 0) = 0
+casi32(0, 0, 0) = 0
+Domain memory: 
+  0 : 0
+  1 : 0
+  2 : 0
+  3 : 0
+  4 : 0
+  5 : 0
+  6 : 0
+  7 : 0
+casi32(4, 0, 5) = 0
+Domain memory: 
+  0 : 0
+  1 : 0
+  2 : 0
+  3 : 0
+  4 : 5
+  5 : 0
+  6 : 0
+  7 : 0
+casi32(0, 0, 3) = 0
+Domain memory: 
+  0 : 3
+  1 : 0
+  2 : 0
+  3 : 0
+  4 : 5
+  5 : 0
+  6 : 0
+  7 : 0
+casi32(4, 2, 6) = 5
+Domain memory: 
+  0 : 3
+  1 : 0
+  2 : 0
+  3 : 0
+  4 : 5
+  5 : 0
+  6 : 0
+  7 : 0
+casi32(4, 5, 777) = 5
+Domain memory: 
+  0 : 3
+  1 : 0
+  2 : 0
+  3 : 0
+  4 : 9
+  5 : 3
+  6 : 0
+  7 : 0
+casi32(0, 3, 122) = 3
+Domain memory: 
+  0 : 122
+  1 : 0
+  2 : 0
+  3 : 0
+  4 : 9
+  5 : 3
+  6 : 0
+  7 : 0
+casi32(0, 1, 5) = 122
+Domain memory: 
+  0 : 122
+  1 : 0
+  2 : 0
+  3 : 0
+  4 : 9
+  5 : 3
+  6 : 0
+  7 : 0
+casi32(0, 0, 0) = 122
+Domain memory: 
+  0 : 122
+  1 : 0
+  2 : 0
+  3 : 0
+  4 : 9
+  5 : 3
+  6 : 0
+  7 : 0
