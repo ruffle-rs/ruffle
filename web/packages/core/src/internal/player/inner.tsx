@@ -10,6 +10,7 @@ import {
     UnmuteOverlay,
     URLLoadOptions,
     WindowMode,
+    BFCacheBehavior,
 } from "../../public/config/index.js";
 import { MovieMetadata, ReadyState } from "../../public/player/index.js";
 import { ruffleShadowTemplate } from "../ui/shadow-template.js";
@@ -2215,8 +2216,15 @@ export class InnerPlayer {
      * Inform the user that the browser restored the file from the back/forward cache.
      */
     protected displayRestoredFromBfcacheMessage(): void {
-        // Do not display the message if another one is already shown.
-        if (this.container.querySelector("#message-overlay") !== null) {
+        // Do not display the message if another one is already shown or website opted out.
+        if (
+            this.container.querySelector("#message-overlay") !== null ||
+            this.loadedConfig?.bfcacheBehavior === BFCacheBehavior.Restore
+        ) {
+            return;
+        }
+        if (this.loadedConfig?.bfcacheBehavior === BFCacheBehavior.Reload) {
+            this.reload();
             return;
         }
         const message = textAsParagraphs("message-restored-from-bfcache");
