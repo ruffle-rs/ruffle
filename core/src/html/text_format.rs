@@ -1601,7 +1601,7 @@ impl FormatSpans {
         TextSpanIter::for_format_spans(self)
     }
 
-    pub fn to_html(&self) -> WString {
+    pub fn to_html(&self, swf_version: u8) -> WString {
         if self.text.is_empty() {
             return WString::new();
         }
@@ -1611,6 +1611,7 @@ impl FormatSpans {
             font_stack: VecDeque::new(),
             current_span: &TextSpan::default(),
             open_tags: Vec::new(),
+            swf_version,
         };
 
         let spans = self.iter_spans();
@@ -1653,6 +1654,7 @@ struct FormatState<'a> {
     font_stack: VecDeque<&'a TextSpanFont>,
     current_span: &'a TextSpan,
     open_tags: Vec<HtmlTag>,
+    swf_version: u8,
 }
 
 impl<'a> FormatState<'a> {
@@ -1692,12 +1694,16 @@ impl<'a> FormatState<'a> {
 
         self.set_font(&self.current_span.font);
 
-        if span.image.is_some() {
+        if self.swf_version < 8 && span.image.is_some() {
             self.open_tag(HtmlTag::Img);
         }
 
         if !self.current_span.url.is_empty() {
             self.open_tag(HtmlTag::A);
+        }
+
+        if self.swf_version >= 8 && span.image.is_some() {
+            self.open_tag(HtmlTag::Img);
         }
 
         if self.current_span.style.bold {

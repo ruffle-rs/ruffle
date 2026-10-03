@@ -467,7 +467,7 @@ impl<'gc> EditText<'gc> {
                 return html;
             }
 
-            self.0.text_spans.borrow().to_html()
+            self.0.text_spans.borrow().to_html(self.swf_version())
         } else {
             // Non-HTML text fields always return plain text.
             self.text()
