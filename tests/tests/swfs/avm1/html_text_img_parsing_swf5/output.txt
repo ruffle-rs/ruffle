@@ -64,9 +64,369 @@ CONDENSE_WHITE=false
 TEXT=
 HTML=A<img src='one.jpg'>B<img src='two.jpg'>C
 ---
+SOURCE=A<img src='one.jpg' id='a'>B<img src='two.jpg' id='a'>C
+MULTILINE=true
+CONDENSE_WHITE=false
+TEXT=
+HTML=A<img src='one.jpg' id='a'>B<img src='two.jpg' id='a'>C
+---
 SOURCE=A   <img src='missing.jpg'>   B
 MULTILINE=true
 CONDENSE_WHITE=false
+TEXT=
+HTML=A   <img src='missing.jpg'>   B
+---
+SOURCE=A<img src='missing.jpg' align='LEFT'>B
+MULTILINE=true
+CONDENSE_WHITE=false
+TEXT=
+HTML=A<img src='missing.jpg' align='LEFT'>B
+---
+SOURCE=A<img src='missing.jpg' align='Left'>B
+MULTILINE=true
+CONDENSE_WHITE=false
+TEXT=
+HTML=A<img src='missing.jpg' align='Left'>B
+---
+SOURCE=A<img src='missing.jpg' align='RIGHT'>B
+MULTILINE=true
+CONDENSE_WHITE=false
+TEXT=
+HTML=A<img src='missing.jpg' align='RIGHT'>B
+---
+SOURCE=A<img src='missing.jpg' align='Right'>B
+MULTILINE=true
+CONDENSE_WHITE=false
+TEXT=
+HTML=A<img src='missing.jpg' align='Right'>B
+---
+SOURCE=A<img src='missing.jpg' align='something'>B
+MULTILINE=true
+CONDENSE_WHITE=false
+TEXT=
+HTML=A<img src='missing.jpg' align='something'>B
+---
+SOURCE=A<img src='missing.jpg' checkPolicyFile='true' unknown='value'>B
+MULTILINE=true
+CONDENSE_WHITE=false
+TEXT=
+HTML=A<img src='missing.jpg' checkPolicyFile='true' unknown='value'>B
+---
+SOURCE=<font size='2'>A</font><img src='missing.jpg'>B
+MULTILINE=true
+CONDENSE_WHITE=false
+TEXT=
+HTML=<font size='2'>A</font><img src='missing.jpg'>B
+---
+SOURCE=A<img src='missing.jpg'><font size='2'>B</font>
+MULTILINE=true
+CONDENSE_WHITE=false
+TEXT=
+HTML=A<img src='missing.jpg'><font size='2'>B</font>
+---
+SOURCE=<font size='20'>A<img src='missing.jpg'>B</font>
+MULTILINE=true
+CONDENSE_WHITE=false
+TEXT=
+HTML=<font size='20'>A<img src='missing.jpg'>B</font>
+---
+SOURCE=<b>A<img src='missing.jpg'>B</b>
+MULTILINE=true
+CONDENSE_WHITE=false
+TEXT=
+HTML=<b>A<img src='missing.jpg'>B</b>
+---
+SOURCE=<i>A<img src='missing.jpg'>B</i>
+MULTILINE=true
+CONDENSE_WHITE=false
+TEXT=
+HTML=<i>A<img src='missing.jpg'>B</i>
+---
+SOURCE=<u>A<img src='missing.jpg'>B</u>
+MULTILINE=true
+CONDENSE_WHITE=false
+TEXT=
+HTML=<u>A<img src='missing.jpg'>B</u>
+---
+SOURCE=A<img src='missing.jpg'>X</img>B
+MULTILINE=true
+CONDENSE_WHITE=false
+TEXT=
+HTML=A<img src='missing.jpg'>X</img>B
+---
+SOURCE=A<img src='".jpg' id='"'>B
+MULTILINE=true
+CONDENSE_WHITE=false
+TEXT=
+HTML=A<img src='".jpg' id='"'>B
+---
+SOURCE=A<img src='missing.jpg' checkPolicyFile='True'>B
+MULTILINE=true
+CONDENSE_WHITE=false
+TEXT=
+HTML=A<img src='missing.jpg' checkPolicyFile='True'>B
+---
+SOURCE=A<img src='missing.jpg' checkPolicyFile='false'>B
+MULTILINE=true
+CONDENSE_WHITE=false
+TEXT=
+HTML=A<img src='missing.jpg' checkPolicyFile='false'>B
+---
+SOURCE=A<img src='missing.jpg' checkPolicyFile='FALSE'>B
+MULTILINE=true
+CONDENSE_WHITE=false
+TEXT=
+HTML=A<img src='missing.jpg' checkPolicyFile='FALSE'>B
+---
+SOURCE=A<img src='missing.jpg' checkPolicyFile='unknown'>B
+MULTILINE=true
+CONDENSE_WHITE=false
+TEXT=
+HTML=A<img src='missing.jpg' checkPolicyFile='unknown'>B
+---
+SOURCE=<img src='a.jpg'><img src='b.jpg'>
+MULTILINE=true
+CONDENSE_WHITE=false
+TEXT=
+HTML=<img src='a.jpg'><img src='b.jpg'>
+---
+SOURCE=A<img src='a.jpg'><img src='a.jpg'>B
+MULTILINE=true
+CONDENSE_WHITE=false
+TEXT=
+HTML=A<img src='a.jpg'><img src='a.jpg'>B
+---
+SOURCE=A<img src='a.jpg' id='x'><img src='a.jpg'>B
+MULTILINE=true
+CONDENSE_WHITE=false
+TEXT=
+HTML=A<img src='a.jpg' id='x'><img src='a.jpg'>B
+---
+SOURCE=A<img src='a.jpg' width='7'><img src='a.jpg'>B
+MULTILINE=true
+CONDENSE_WHITE=false
+TEXT=
+HTML=A<img src='a.jpg' width='7'><img src='a.jpg'>B
+---
+SOURCE=A<img src='a.jpg' height='7'><img src='a.jpg'>B
+MULTILINE=true
+CONDENSE_WHITE=false
+TEXT=
+HTML=A<img src='a.jpg' height='7'><img src='a.jpg'>B
+---
+SOURCE=A<img src='a.jpg' height='7'><img src='a.jpg' height='7'>B
+MULTILINE=true
+CONDENSE_WHITE=false
+TEXT=
+HTML=A<img src='a.jpg' height='7'><img src='a.jpg' height='7'>B
+---
+SOURCE=A<img src='a.jpg' align='right'><img src='a.jpg'>B
+MULTILINE=true
+CONDENSE_WHITE=false
+TEXT=
+HTML=A<img src='a.jpg' align='right'><img src='a.jpg'>B
+---
+SOURCE=A<img src='a.jpg' hspace='7'><img src='a.jpg'>B
+MULTILINE=true
+CONDENSE_WHITE=false
+TEXT=
+HTML=A<img src='a.jpg' hspace='7'><img src='a.jpg'>B
+---
+SOURCE=A<img src='a.jpg' hspace='7'><img src='a.jpg' hspace='7'>B
+MULTILINE=true
+CONDENSE_WHITE=false
+TEXT=
+HTML=A<img src='a.jpg' hspace='7'><img src='a.jpg' hspace='7'>B
+---
+SOURCE=A<img src='a.jpg' vspace='7'><img src='a.jpg'>B
+MULTILINE=true
+CONDENSE_WHITE=false
+TEXT=
+HTML=A<img src='a.jpg' vspace='7'><img src='a.jpg'>B
+---
+SOURCE=A<img src='a.jpg' vspace='7'><img src='a.jpg' vspace='7'>B
+MULTILINE=true
+CONDENSE_WHITE=false
+TEXT=
+HTML=A<img src='a.jpg' vspace='7'><img src='a.jpg' vspace='7'>B
+---
+SOURCE=A<img src='a.jpg' checkPolicyFile='true'><img src='a.jpg'>B
+MULTILINE=true
+CONDENSE_WHITE=false
+TEXT=
+HTML=A<img src='a.jpg' checkPolicyFile='true'><img src='a.jpg'>B
+---
+SOURCE=A<img src='a.jpg' checkPolicyFile='true'><img src='a.jpg' checkPolicyFile='true'>B
+MULTILINE=true
+CONDENSE_WHITE=false
+TEXT=
+HTML=A<img src='a.jpg' checkPolicyFile='true'><img src='a.jpg' checkPolicyFile='true'>B
+---
+SOURCE=A<img src='a.jpg'><img src='a.jpg' checkPolicyFile='false'>B
+MULTILINE=true
+CONDENSE_WHITE=false
+TEXT=
+HTML=A<img src='a.jpg'><img src='a.jpg' checkPolicyFile='false'>B
+---
+SOURCE=A<img src='a.jpg'><img src='a.jpg' checkPolicyFile='unknown'>B
+MULTILINE=true
+CONDENSE_WHITE=false
+TEXT=
+HTML=A<img src='a.jpg'><img src='a.jpg' checkPolicyFile='unknown'>B
+---
+SOURCE=<img src='m.jpg'>
+MULTILINE=true
+CONDENSE_WHITE=false
+TEXT=
+HTML=<img src='m.jpg'>
+---
+SOURCE=<img src='m.jpg'>B
+MULTILINE=true
+CONDENSE_WHITE=false
+TEXT=
+HTML=<img src='m.jpg'>B
+---
+SOURCE=A<img src='m.jpg'>
+MULTILINE=true
+CONDENSE_WHITE=false
+TEXT=
+HTML=A<img src='m.jpg'>
+---
+SOURCE=<a href='http://x'>A<img src='m.jpg'>B</a>
+MULTILINE=true
+CONDENSE_WHITE=false
+TEXT=
+HTML=<a href='http://x'>A<img src='m.jpg'>B</a>
+---
+SOURCE=A<b><img src='m.jpg'></b>B
+MULTILINE=true
+CONDENSE_WHITE=false
+TEXT=
+HTML=A<b><img src='m.jpg'></b>B
+---
+SOURCE=A<i><img src='m.jpg'></i>B
+MULTILINE=true
+CONDENSE_WHITE=false
+TEXT=
+HTML=A<i><img src='m.jpg'></i>B
+---
+SOURCE=A<u><img src='m.jpg'></u>B
+MULTILINE=true
+CONDENSE_WHITE=false
+TEXT=
+HTML=A<u><img src='m.jpg'></u>B
+---
+SOURCE=<p align='center'>A<img src='m.jpg'>B</p>
+MULTILINE=true
+CONDENSE_WHITE=false
+TEXT=
+HTML=<p align='center'>A<img src='m.jpg'>B</p>
+---
+SOURCE=<li>A<img src='m.jpg'>B</li>
+MULTILINE=true
+CONDENSE_WHITE=false
+TEXT=
+HTML=<li>A<img src='m.jpg'>B</li>
+---
+SOURCE=<textformat indent='5'>A<img src='m.jpg'>B</textformat>
+MULTILINE=true
+CONDENSE_WHITE=false
+TEXT=
+HTML=<textformat indent='5'>A<img src='m.jpg'>B</textformat>
+---
+SOURCE=<font face='Arial' color='#FF0000'>A<img src='m.jpg'>B</font>
+MULTILINE=true
+CONDENSE_WHITE=false
+TEXT=
+HTML=<font face='Arial' color='#FF0000'>A<img src='m.jpg'>B</font>
+---
+SOURCE=A<br><img src='m.jpg'><br>B
+MULTILINE=true
+CONDENSE_WHITE=false
+TEXT=
+HTML=A<br><img src='m.jpg'><br>B
+---
+SOURCE=<p>A</p><img src='m.jpg'><p>B</p>
+MULTILINE=true
+CONDENSE_WHITE=false
+TEXT=
+HTML=<p>A</p><img src='m.jpg'><p>B</p>
+---
+SOURCE=A<IMG SRC='m.jpg' WIDTH='10' ALIGN='right'>B
+MULTILINE=true
+CONDENSE_WHITE=false
+TEXT=
+HTML=A<IMG SRC='m.jpg' WIDTH='10' ALIGN='right'>B
+---
+SOURCE=A<Img Src='m.jpg'>B
+MULTILINE=true
+CONDENSE_WHITE=false
+TEXT=
+HTML=A<Img Src='m.jpg'>B
+---
+SOURCE=A<img src='a.jpg' src='b.jpg' id='x' id='y'>B
+MULTILINE=true
+CONDENSE_WHITE=false
+TEXT=
+HTML=A<img src='a.jpg' src='b.jpg' id='x' id='y'>B
+---
+SOURCE=A<img src="m.jpg" id="q">B
+MULTILINE=true
+CONDENSE_WHITE=false
+TEXT=
+HTML=A<img src="m.jpg" id="q">B
+---
+SOURCE=A<img src=' m.jpg ' id=' x '>B
+MULTILINE=true
+CONDENSE_WHITE=false
+TEXT=
+HTML=A<img src=' m.jpg ' id=' x '>B
+---
+SOURCE=A<img src='m.jpg' align=' right'>B
+MULTILINE=true
+CONDENSE_WHITE=false
+TEXT=
+HTML=A<img src='m.jpg' align=' right'>B
+---
+SOURCE=A<img src='m.jpg' align=''>B
+MULTILINE=true
+CONDENSE_WHITE=false
+TEXT=
+HTML=A<img src='m.jpg' align=''>B
+---
+SOURCE=A<img src='m.jpg' id=''>B
+MULTILINE=true
+CONDENSE_WHITE=false
+TEXT=
+HTML=A<img src='m.jpg' id=''>B
+---
+SOURCE=A<img src=' '>B
+MULTILINE=true
+CONDENSE_WHITE=false
+TEXT=
+HTML=A<img src=' '>B
+---
+SOURCE=A<img src='m.jpg' checkPolicyFile=''>B
+MULTILINE=true
+CONDENSE_WHITE=false
+TEXT=
+HTML=A<img src='m.jpg' checkPolicyFile=''>B
+---
+SOURCE=A   <img src='missing.jpg'>   B
+MULTILINE=true
+CONDENSE_WHITE=true
+TEXT=
+HTML=A   <img src='missing.jpg'>   B
+---
+SOURCE=A   <img src='missing.jpg'>   B
+MULTILINE=true
+CONDENSE_WHITE=false
+TEXT=
+HTML=A   <img src='missing.jpg'>   B
+---
+SOURCE=A   <img src='missing.jpg'>   B
+MULTILINE=false
+CONDENSE_WHITE=true
 TEXT=
 HTML=A   <img src='missing.jpg'>   B
 ---
@@ -76,31 +436,82 @@ CONDENSE_WHITE=false
 TEXT=
 HTML=A   <img src='missing.jpg'>   B
 ---
-SOURCE=A   <img src='missing.jpg'>   B
+SOURCE=A\n  <img src='missing.jpg'>\n  B
 MULTILINE=true
 CONDENSE_WHITE=true
 TEXT=
-HTML=A   <img src='missing.jpg'>   B
----
-SOURCE=A   <img src='missing.jpg'>   B
-MULTILINE=false
-CONDENSE_WHITE=true
-TEXT=
-HTML=A   <img src='missing.jpg'>   B
+HTML=A\n  <img src='missing.jpg'>\n  B
 ---
 SOURCE=A\n  <img src='missing.jpg'>\n  B
 MULTILINE=true
 CONDENSE_WHITE=false
 TEXT=
-HTML=A
-  <img src='missing.jpg'>
-  B
+HTML=A\n  <img src='missing.jpg'>\n  B
 ---
 SOURCE=A\n  <img src='missing.jpg'>\n  B
+MULTILINE=false
+CONDENSE_WHITE=true
+TEXT=
+HTML=A\n  <img src='missing.jpg'>\n  B
+---
+SOURCE=A\n  <img src='missing.jpg'>\n  B
+MULTILINE=false
+CONDENSE_WHITE=false
+TEXT=
+HTML=A\n  <img src='missing.jpg'>\n  B
+---
+SOURCE=A  \n<img src='missing.jpg'>\n  B
 MULTILINE=true
 CONDENSE_WHITE=true
 TEXT=
-HTML=A
-  <img src='missing.jpg'>
-  B
+HTML=A  \n<img src='missing.jpg'>\n  B
+---
+SOURCE=A  \n<img src='missing.jpg'>\n  B
+MULTILINE=true
+CONDENSE_WHITE=false
+TEXT=
+HTML=A  \n<img src='missing.jpg'>\n  B
+---
+SOURCE=A  \n<img src='missing.jpg'>\n  B
+MULTILINE=false
+CONDENSE_WHITE=true
+TEXT=
+HTML=A  \n<img src='missing.jpg'>\n  B
+---
+SOURCE=A  \n<img src='missing.jpg'>\n  B
+MULTILINE=false
+CONDENSE_WHITE=false
+TEXT=
+HTML=A  \n<img src='missing.jpg'>\n  B
+---
+SOURCE=A  \n<img src='missing.jpg'>  \nB
+MULTILINE=true
+CONDENSE_WHITE=true
+TEXT=
+HTML=A  \n<img src='missing.jpg'>  \nB
+---
+SOURCE=A  \n<img src='missing.jpg'>  \nB
+MULTILINE=true
+CONDENSE_WHITE=false
+TEXT=
+HTML=A  \n<img src='missing.jpg'>  \nB
+---
+SOURCE=A  \n<img src='missing.jpg'>  \nB
+MULTILINE=false
+CONDENSE_WHITE=true
+TEXT=
+HTML=A  \n<img src='missing.jpg'>  \nB
+---
+SOURCE=A  \n<img src='missing.jpg'>  \nB
+MULTILINE=false
+CONDENSE_WHITE=false
+TEXT=
+HTML=A  \n<img src='missing.jpg'>  \nB
+---
+REPARSE_SOURCE=[A<img src='missing.jpg'>B]
+FIRST_TEXT=[]
+FIRST_HTML=[A<img src='missing.jpg'>B]
+SECOND_SOURCE=[A<img src='missing.jpg'>B ]
+SECOND_TEXT=[]
+SECOND_HTML=[A<img src='missing.jpg'>B ]
 ---
