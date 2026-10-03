@@ -219,6 +219,13 @@ pub fn search_scope_stack<'gc>(
             if value_has_own_property(classes, values, multiname) {
                 return Some(values);
             }
+            // Also check the prototype chain for with-scopes.
+            // This is needed for E4X (XML/XMLList) objects where methods like
+            // name(), children(), etc. are defined on the prototype in the public
+            // namespace, but the vtable only has them in the AS3 namespace.
+            if value_has_proto_property(values, multiname) {
+                return Some(values);
+            }
         }
     }
     None
@@ -267,4 +274,24 @@ fn value_has_own_property<'gc>(
         Value::Object(object) => object.has_own_property(multiname),
         _ => vtable.has_trait(multiname),
     }
+}
+
+// Check if a Value has a property on its prototype chain. Used for with-scope
+// resolution in `search_scope_stack`. In avmplus, with-scope resolution uses
+// hasMultinameProperty which checks own properties, traits, AND the prototype
+// chain (delegate). This is particularly important for XML/XMLList objects
+// where methods like name(), children(), etc. are accessible via public
+// namespace prototype functions, even though the vtable traits are in the
+// AS3 namespace.
+fn value_has_proto_property<'gc>(value: Value<'gc>, multiname: &Multiname<'gc>) -> bool {
+    if let Value::Object(object) = value {
+        let mut proto = object.proto();
+        while let Some(p) = proto {
+            if p.base().has_own_dynamic_property(multiname) {
+                return true;
+            }
+            proto = p.proto();
+        }
+    }
+    false
 }
