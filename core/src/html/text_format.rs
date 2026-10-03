@@ -9,7 +9,7 @@ use quick_xml::{Reader, escape::escape, events::Event};
 use ruffle_wstr::utils::{swf_is_ascii_hexdigit, swf_is_newline, swf_is_whitespace};
 use std::borrow::Cow;
 use std::cmp::{Ordering, min};
-use std::collections::VecDeque;
+use std::collections::{HashSet, VecDeque};
 use std::fmt::Write;
 use std::num::Wrapping;
 use std::sync::Arc;
@@ -642,13 +642,19 @@ impl TextSpan {
     }
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum TextSpanImageAlign {
+    Left,
+    Right,
+}
+
 #[derive(Clone, Debug)]
 pub struct TextSpanImage {
     pub src: WString,
     pub id: Option<WString>,
     pub width: Option<f64>,
     pub height: Option<f64>,
-    pub align: Option<bool>,
+    pub align: Option<TextSpanImageAlign>,
     pub hspace: Option<f64>,
     pub vspace: Option<f64>,
     pub check_policy_file: Option<bool>,
@@ -1012,8 +1018,9 @@ impl FormatSpans {
 
                             if let Some(src) = image_attribute(b"src") {
                                 // TODO: Flash accepts numeric prefixes such as "40.9px".
-                                // This should likely use the same ActionScript-style numeric
-                                // conversion as other HTML attributes once that is implemented.
+                                // Determine whether Flash truncates fractional image values during
+                                // parsing or serialization, and use the appropriate ActionScript-style
+                                // numeric conversion here.
                                 let image = TextSpanImage {
                                     src,
                                     id: image_attribute(b"id"),
@@ -1022,21 +1029,30 @@ impl FormatSpans {
                                     height: image_attribute(b"height")
                                         .and_then(|value| value.parse().ok()),
                                     align: image_attribute(b"align").map(|value| {
-                                        value.to_utf8_lossy().eq_ignore_ascii_case("right")
+                                        if value.to_ascii_lowercase().as_wstr()
+                                            == WStr::from_units(b"right")
+                                        {
+                                            TextSpanImageAlign::Right
+                                        } else {
+                                            TextSpanImageAlign::Left
+                                        }
                                     }),
                                     hspace: image_attribute(b"hspace")
                                         .and_then(|value| value.parse().ok()),
                                     vspace: image_attribute(b"vspace")
                                         .and_then(|value| value.parse().ok()),
                                     check_policy_file: image_attribute(b"checkpolicyfile").map(
-                                        |value| value.to_utf8_lossy().eq_ignore_ascii_case("true"),
+                                        |value| {
+                                            value.to_ascii_lowercase().as_wstr()
+                                                == WStr::from_units(b"true")
+                                        },
                                     ),
                                 };
 
                                 let mut image_format = format;
                                 image_format.size = Some(2.0);
 
-                                text.push_str(WStr::from_units(b" "));
+                                text.push_byte(b' ');
                                 let mut span = TextSpan::with_length_and_format(1, &image_format);
                                 span.image = Some(Box::new(image));
                                 spans.push(span);
@@ -1336,7 +1352,7 @@ impl FormatSpans {
     /// SWF8+ condenses whitespace not only in text, but across HTML elements too.
     /// This method assumes that whitespace in text has already been condensed.
     fn condense_white_swf8(&mut self) {
-        let image_positions: Vec<_> = self
+        let image_positions: HashSet<_> = self
             .iter_spans()
             .filter_map(|(start, _, _, span)| span.image.as_ref().map(|_| start))
             .collect();
@@ -1345,21 +1361,16 @@ impl FormatSpans {
         let mut to_remove = Vec::new();
 
         for (i, ch) in self.text().iter().enumerate() {
-            let is_inline_image = image_positions.binary_search(&i).is_ok();
-
-            // The placeholder character for an inline image is a space, but it
-            // must never itself be removed. It still participates in whitespace
-            // condensation, so whitespace following the image is collapsed.
-            if is_inline_image {
-                if let Some(space_start) = removal_start {
-                    to_remove.push((space_start, i));
-                }
-                removal_start = Some(i + 1);
-                continue;
-            }
-
             let is_newline = ch == HTML_NEWLINE;
             let is_space = ch == HTML_SPACE;
+            let is_image = is_space && image_positions.contains(&i);
+
+            // The placeholder character for an image is a space, but it
+            // must never itself be removed. It still participates in whitespace
+            // condensation, so whitespace following the image is collapsed.
+            if is_image && let Some(space_start) = removal_start.take() {
+                to_remove.push((space_start, i));
+            }
 
             // We have to preserve newlines here, as newlines inputted in text
             // are already condensed into space.
@@ -1603,9 +1614,10 @@ impl FormatSpans {
             open_tags: Vec::new(),
         };
 
-        for (_, _, text, span) in self.iter_spans() {
-            state.set_span(span);
+        let spans = self.iter_spans();
 
+        for (_start, _end, text, span) in spans {
+            state.set_span(span);
             state.push_text(text);
         }
 
@@ -1620,6 +1632,7 @@ enum HtmlTag {
     P,
     Li,
     Font,
+    Img,
     A,
     B,
     I,
@@ -1631,7 +1644,7 @@ enum HtmlTag {
 
 impl HtmlTag {
     fn closeable(self) -> bool {
-        self != Self::Br && self != Self::Sbr
+        self != Self::Br && self != Self::Sbr && self != Self::Img
     }
 }
 
@@ -1680,8 +1693,8 @@ impl<'a> FormatState<'a> {
 
         self.set_font(&self.current_span.font);
 
-        if let Some(image) = span.image.as_deref() {
-            self.push_inline_image(image);
+        if span.image.is_some() {
+            self.open_tag(HtmlTag::Img);
         }
 
         if !self.current_span.url.is_empty() {
@@ -1796,6 +1809,14 @@ impl<'a> FormatState<'a> {
                     self.current_span.url, self.current_span.target
                 );
             }
+            HtmlTag::Img => {
+                let current_span = self.current_span;
+                let image = current_span
+                    .image
+                    .as_deref()
+                    .expect("Img tag requires image data");
+                self.push_image(image);
+            }
             HtmlTag::Br => {
                 self.result.push_str(WStr::from_units(b"<BR>"));
             }
@@ -1904,16 +1925,13 @@ impl<'a> FormatState<'a> {
         });
     }
 
-    fn push_inline_image(&mut self, image: &TextSpanImage) {
+    fn push_image(&mut self, image: &TextSpanImage) {
         self.result.push_str(WStr::from_units(b"<IMG SRC=\""));
 
-        let src = image.src.to_utf8_lossy();
-        self.result.push_utf8(&src);
+        self.result.push_str(&image.src);
 
         self.result.push_byte(b'"');
 
-        // TODO: Determine whether Flash truncates fractional image values during
-        // parsing or serialization.
         if let Some(width) = image.width
             && width.is_finite()
         {
@@ -1928,16 +1946,18 @@ impl<'a> FormatState<'a> {
 
         if let Some(id) = &image.id {
             self.result.push_str(WStr::from_units(b" ID=\""));
-            let id = id.to_utf8_lossy();
-            self.result.push_utf8(&id);
+            self.result.push_str(id);
             self.result.push_byte(b'"');
         }
 
-        if let Some(align_right) = image.align {
+        if let Some(align) = image.align {
             let _ = write!(
                 self.result,
                 " ALIGN=\"{}\"",
-                if align_right { "right" } else { "left" }
+                match align {
+                    TextSpanImageAlign::Left => "left",
+                    TextSpanImageAlign::Right => "right",
+                }
             );
         }
 
