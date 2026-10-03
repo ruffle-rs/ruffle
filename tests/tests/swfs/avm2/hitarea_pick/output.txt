@@ -1,0 +1,4 @@
+click invis (150, 50)
+click null (10, 10)
+click null (10, 170)
+click visArea (150, 210)
