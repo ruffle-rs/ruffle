@@ -690,9 +690,20 @@ impl<'gc> Avm2<'gc> {
         error: Error<'gc>,
         extra_info: &str,
     ) {
-        // Flash Player traces uncaught errors, but when trace is disabled
-        // (e.g. release mode), FP doesn't stringify the error for the second
-        // time, which is observable.
+        // Flash Player traces uncaught errors (when tracing is enabled).
+        //
+        // When tracing is enabled, Flash Player will *always* log and stringify
+        // the exception twice.
+        //
+        // When tracing is disabled, the error won't get stringified for the
+        // second time (which is observable), so to improve compatibility in
+        // this regard, we disable this feature when emulating the release mode
+        // of FP.
+        //
+        // There is also the additional behavior of debugger exception dialogs,
+        // and if they are enabled, Flash Player will pause the execution and
+        // show the uncaught exception in a popup. If the popups are disabled,
+        // exceptions are just being traced without pausing the execution.
         if activation.context.player_mode == PlayerMode::Debug {
             let stringified = error.to_string(activation);
             activation.context.avm_trace(&stringified);
