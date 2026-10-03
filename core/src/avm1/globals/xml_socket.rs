@@ -122,6 +122,46 @@ pub fn connect<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    // Compatibility shim for old AS1 SWFs (notably the FFDK socket library
+    // used by the MyCokeGames / CokeMusic Flash titles) that hijack
+    // `XMLSocket.prototype.connect` via a `__proto__` chain on a custom class
+    // WITHOUT ever calling `new XMLSocket()` first. e.g.:
+    //
+    //     FFDK.Socket = function (session) {
+    //         this._session = session;
+    //         this._status = "closed";
+    //     };
+    //     FFDK.Socket.prototype.__proto__ = XMLSocket.prototype;
+    //     FFDK.Socket.prototype.connectXMLSocket = XMLSocket.prototype.connect;
+    //     // ...
+    //     FFDK.Socket.prototype.connect = function (host, port) {
+    //         this._status = "opening";
+    //         return this.connectXMLSocket(host, port); // <-- this call
+    //     };
+    //
+    // Native Flash Player attached the underlying socket state lazily on the
+    // first `connect()` call, so the call would still succeed even though the
+    // constructor was never run on the instance. Ruffle's constructor-based
+    // attach otherwise makes `XmlSocket::cast` below silently fail and the
+    // function returns `Undefined`, which the SWF interprets as a connection
+    // failure with no observable error.
+    //
+    // To preserve compatibility we lazily attach the native data when `this`
+    // is a plain AS1 Object (i.e. has no other native attached). Objects that
+    // already carry another native (Date, MovieClip, ...) are left alone, so
+    // this shim cannot accidentally clobber unrelated state.
+    if matches!(this.native(), NativeObject::None) {
+        let xml_socket = XmlSocket(Gc::new(
+            activation.gc(),
+            XmlSocketData {
+                handle: Cell::new(None),
+                timeout: Cell::new(20000),
+                read_buffer: RefCell::new(VecDeque::new()),
+            },
+        ));
+        this.set_native(activation.gc(), NativeObject::XmlSocket(xml_socket));
+    }
+
     if XmlSocket::cast(this.into()).is_some() {
         let host = args.get(0).copied().unwrap_or(Value::Null);
         let host = if matches!(host, Value::Null | Value::Undefined) {
