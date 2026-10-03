@@ -1,13 +1,6 @@
 import flash.geom.Point;
 import flash.geom.Rectangle;
 
-function dump(rect) {
-    trace("(top=" + rect.top + ", right=" + rect.right + ", bottom=" + rect.bottom + ", left=" + rect.left
-        + ", topLeft=" + rect.topLeft + ", bottomRight=" + rect.bottomRight
-        + ", width=" + rect.width + ", height=" + rect.height + ", size=" + rect.size
-        + ", x=" + rect.x + ", y=" + rect.y + ")");
-}
-
 function keys(obj) {
     var result = "";
     for (var key in obj) {
@@ -26,6 +19,35 @@ function addTracingProperty(name, obj, prop, value) {
     });
 }
 
+function tracingMethod(name, obj, method) {
+    var original = obj[method];
+    obj[method] = function() {
+        var args = "";
+        for (var i = 0; i < arguments.length; i++) {
+            if (i > 0) {
+                args += ", ";
+            }
+            args += arguments[i];
+        }
+        trace("  call " + name + "." + method + "(" + args + ")");
+        return original.apply(this, arguments);
+    };
+}
+
+function tracingNumber(name, value) {
+    return {valueOf: function() {
+        trace("  valueOf " + name);
+        return value;
+    }};
+}
+
+function dump(rect) {
+    trace("(top=" + rect.top + ", right=" + rect.right + ", bottom=" + rect.bottom + ", left=" + rect.left
+        + ", topLeft=" + rect.topLeft + ", bottomRight=" + rect.bottomRight
+        + ", width=" + rect.width + ", height=" + rect.height + ", size=" + rect.size
+        + ", x=" + rect.x + ", y=" + rect.y + ")");
+}
+
 function tracingRect(name, x, y, width, height) {
     var rect = new Rectangle();
     addTracingProperty(name, rect, "x", x);
@@ -42,14 +64,6 @@ function tracingPoint(name, x, y) {
     return point;
 }
 
-function tracingMethod(name, obj, method) {
-    var original = obj[method];
-    obj[method] = function() {
-        trace("  call " + name + "." + method + "()");
-        return original.apply(this, arguments);
-    };
-}
-
 function tracingRectWithMethods(name, x, y, width, height) {
     var rect = tracingRect(name, x, y, width, height);
     tracingMethod(name, rect, "isEmpty");
@@ -58,11 +72,6 @@ function tracingRectWithMethods(name, x, y, width, height) {
     tracingMethod(name, rect, "intersection");
     return rect;
 }
-
-var tracingNumber = {valueOf: function() {
-    trace("  valueOf");
-    return 10;
-}};
 
 trace("/// Constructors");
 
@@ -440,9 +449,9 @@ rect.inflate("1", "2");
 dump(rect);
 trace("");
 
-trace("// self.inflate(tracingNumber, tracingNumber)");
+trace("// self.inflate(dx, dy) with valueOf");
 self = tracingRect("self", 1, 3, 5, 7);
-self.inflate(tracingNumber, tracingNumber);
+self.inflate(tracingNumber("dx", 10), tracingNumber("dy", 10));
 trace("");
 trace("");
 
@@ -493,9 +502,9 @@ rect.offset("1", "2");
 dump(rect);
 trace("");
 
-trace("// self.offset(tracingNumber, tracingNumber)");
+trace("// self.offset(dx, dy) with valueOf");
 self = tracingRect("self", 1, 3, 5, 7);
-self.offset(tracingNumber, tracingNumber);
+self.offset(tracingNumber("dx", 10), tracingNumber("dy", 10));
 trace("");
 trace("");
 
