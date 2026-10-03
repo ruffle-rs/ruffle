@@ -3248,6 +3248,31 @@ impl<'gc> TInteractiveObject<'gc> for MovieClip<'gc> {
                 return propagate.combine_with_parent(self.into());
             }
 
+            if let Some(area) = self.hit_area() {
+                // `hitArea` replaces this clip's own shape. It may lie outside
+                // this clip's bounds, so this is not gated on `world_bounds`.
+                // An unparented area is tested in this clip's local space, matching
+                // `Avm2Button::mouse_pick_avm2`.
+                // Use `SKIP_MASK`, not `MOUSE_PICK`: an invisible hit area must still
+                // hit. `MOUSE_PICK` includes `SKIP_INVISIBLE`, which makes
+                // `hit_test_shape` return early. Matches AVM1 hitArea (#24227).
+                let area_point = if area.parent().is_some() {
+                    Some(point)
+                } else {
+                    self.global_to_local(point)
+                };
+                if let Some(area_point) = area_point
+                    && area.hit_test_shape(context, area_point, HitTestOptions::SKIP_MASK)
+                {
+                    return if self.mouse_enabled() {
+                        Avm2MousePick::Hit(self.into())
+                    } else {
+                        Avm2MousePick::PropagateToParent
+                    };
+                }
+                return Avm2MousePick::Miss;
+            }
+
             // Check drawing, because this selects the current clip, it must have mouse enabled
             if self.world_bounds(BoundsMode::Engine).contains(point)
                 && let Some(drawing) = self.drawing()
