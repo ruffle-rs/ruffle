@@ -1978,12 +1978,8 @@ impl<'a> FormatState<'a> {
             let _ = write!(self.result, " HSPACE=\"{}\"", hspace.trunc() as i64);
         }
 
-        if let Some(check_policy_file) = image.check_policy_file {
-            let _ = write!(
-                self.result,
-                " CHECKPOLICYFILE=\"{}\"",
-                if check_policy_file { "true" } else { "false" }
-            );
+        if image.check_policy_file == Some(true) {
+            let _ = write!(self.result, " CHECKPOLICYFILE=\"true\"");
         }
 
         self.result.push_byte(b'>');
