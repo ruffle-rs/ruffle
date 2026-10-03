@@ -1632,7 +1632,6 @@ enum HtmlTag {
     P,
     Li,
     Font,
-    Img,
     A,
     B,
     I,
@@ -1640,6 +1639,7 @@ enum HtmlTag {
 
     Br,
     Sbr,
+    Img,
 }
 
 impl HtmlTag {
