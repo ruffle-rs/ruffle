@@ -959,6 +959,16 @@ pub fn make_error_2001<'gc>(
 make_error_fn!(make_error_2002, 2002, io_error);
 make_error_fn!(make_error_2003, 2003, security_error);
 
+#[inline(never)]
+#[cold]
+pub fn make_error_2029<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
+    make_error!(io_error(
+        activation,
+        "Error #2029: This URLStream object does not have an open stream.",
+        2029,
+    ))
+}
+
 pub enum Error2004Type {
     Error,
     ArgumentError,
