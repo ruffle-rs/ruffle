@@ -1,0 +1,12 @@
+lower testfonta -> A=true, B=false
+upper TESTFONTA -> A=true, B=false
+mixed tEsTfOnTa -> A=true, B=false
+lower testfontb -> A=false, B=true
+upper TESTFONTB -> A=false, B=true
+prefix XTestFontA -> A=false, B=false
+suffix TestFontAX -> A=false, B=false
+space Test FontA -> A=false, B=false
+leading space  TestFontA -> A=true, B=false
+trailing space TestFontA  -> A=true, B=false
+suffix-hyphen TestFontA-Bold -> A=false, B=false
+done
