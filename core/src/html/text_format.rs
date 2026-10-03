@@ -1030,9 +1030,7 @@ impl FormatSpans {
                                     height: image_attribute(b"height")
                                         .and_then(|value| value.parse().ok()),
                                     align: image_attribute(b"align").map(|value| {
-                                        if value.to_ascii_lowercase().as_wstr()
-                                            == WStr::from_units(b"right")
-                                        {
+                                        if &value == b"right" {
                                             TextSpanImageAlign::Right
                                         } else {
                                             TextSpanImageAlign::Left
