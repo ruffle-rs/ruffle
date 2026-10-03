@@ -82,6 +82,9 @@ error-csp-conflict =
     Ruffle이 초기화를 시도하는 동안 중대한 문제가 발생했습니다.
     이 웹 서버의 CSP(Content Security Policy) 정책이 ".wasm" 필수 구성요소를 실행하는 것을 허용하지 않습니다.
     만약 당신이 서버 관리자라면 Ruffle 위키를 참조하여 도움을 받아볼 수 있습니다.
+error-url-invalid =
+    Ruffle에서 플래시 SWF 파일을 불러오는데 실패하였습니다.
+    유력한 이유로 Ruffle에 전달된 SWF 파일의 URL이 유효하지 않을 수 있습니다.
 error-unknown =
     Ruffle이 플래시 콘텐츠를 표시하려고 시도하는 동안 중대한 문제가 발생했습니다.
     { $outdated ->

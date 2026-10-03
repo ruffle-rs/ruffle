@@ -30,6 +30,7 @@ quality-high8x8 = Югары (8x8)
 quality-high8x8linear = Югары (8x8) сызыклы
 quality-high16x16 = Югары (16x16)
 quality-high16x16linear = Югары (16x16) сызыклы
+letterbox = Леттербоксинг
 letterbox-on = Янык
 letterbox-fullscreen = Фәкать тулы экран
 letterbox-off = Сүндерелгән
@@ -39,10 +40,20 @@ align-left = Сул
 align-right = Уң
 align-top = Өст
 align-bottom = Аста
+align-top-left = Өске сул
+align-bottom-left = Түбән сул
+align-top-right = Өске уң
+align-bottom-right = Түбән уң
 align-force = Көчләп
 scale-mode = Масштаблау режимы
 scale-mode-noscale = Масштабсыз (100%)
+scale-mode-noscale-tooltip =
+    Клипны масштабсыз, оригиналь зурлыгында күрсәтә.
+    
+    StageScaleMode.NO_SCALE режимга туры килә
+scale-mode-exactfit = Эчтәлекне киңәйтү
 scale-mode-force = Көчләп
+scale-mode-force-tooltip = Клипны масштаб режимын үзгәртүне тыя, аны сайланган көйләүгә бикли.
 player-version = Плеер версиясе
 player-runtime = Плеер эш мохите
 player-runtime-flash = Flash Player

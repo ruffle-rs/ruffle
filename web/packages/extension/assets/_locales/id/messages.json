@@ -6,13 +6,13 @@
         "message": "Jalankan konten Flash bahkan di situs web yang tidak mengizinkan Ruffle"
     },
     "settings_show_swf_download": {
-        "message": "Tunjukan tombol unduh SWF di menu konteks"
+        "message": "Tunjukkan tombol unduh SWF di menu konteks"
     },
     "settings_autostart": {
         "message": "Putar secara otomatis tanpa layar pembuka (lalu klik untuk membunyikan)"
     },
     "settings_swf_takeover": {
-        "message": "Mainkan file SWF di browser daripada mengunduh."
+        "message": "Mainkan berkas SWF di browser daripada mengunduh"
     },
     "settings_log_level": {
         "message": "Tingkat log"
@@ -119,6 +119,9 @@
     "settings_saved": {
         "message": "Pengaturan telah disimpan"
     },
+    "onboarding_page": {
+        "message": "Laman Onboarding"
+    },
     "permissions_grant": {
         "message": "Berikan izin kepada Ruffle untuk mengakses semua data saya untuk semua situs web"
     },
@@ -127,6 +130,9 @@
     },
     "grant_single_site_permission": {
         "message": "Aktifkan secara permanen untuk situs web ini"
+    },
+    "permissions_explanation": {
+        "message": "Ekstensi Ruffle akan bekerja terbaik dengan izin untuk mengakses data pada semua situs web. Ini akan menjalankan Ruffle pada website apapun setiap situs web termuat, yang dapat memberi tahu website yang memeriksa Flash Player untuk menjalankan konten Flash. Ini juga akan memberikan kemampuan untuk memuat berkas SWF langsung kepada laman pemutar internal dari situs web lain dan dapat langsung memuat tautan SWF ke laman tersebut. Apabila Izin ini tidak diberikan, maka Anda harus menyalakan Ruffle secara manual pada setiap situs web yang anda ingin gunakan dengan cara mengeklik ikon pada ekstensi dan menyalakan untuk situs itu."
     },
     "swf_player_permissions": {
         "message": "Anda harus memberikan izin kepada origin URL untuk memuat SWF dari URL tersebut."
