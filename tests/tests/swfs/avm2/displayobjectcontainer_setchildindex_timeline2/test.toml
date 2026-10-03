@@ -1,0 +1,17 @@
+num_ticks = 4
+
+# For some reason, Flash Player duplicates
+# the blue rectangle after it loops.
+known_failure = true
+
+[image_comparisons."output.1"]
+trigger = 1
+
+[image_comparisons."output.2"]
+trigger = 2
+
+[image_comparisons."output.3"]
+trigger = 3
+
+[player_options]
+with_renderer = { optional = false, quality = "high" }
