@@ -815,7 +815,7 @@ impl FormatSpans {
                         }
                     };
                     let attribute = move |name| {
-                        attributes.iter().find_map(|attribute| {
+                        attributes.iter().rev().find_map(|attribute| {
                             attribute
                                 .key
                                 .into_inner()
