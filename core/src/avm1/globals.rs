@@ -59,7 +59,6 @@ pub(crate) mod netconnection;
 pub(crate) mod netstream;
 pub(crate) mod number;
 mod object;
-mod point;
 mod print_job;
 mod remote_lso_usage;
 mod selection;
