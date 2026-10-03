@@ -547,8 +547,9 @@ impl TextSpan {
             && self.url == rhs.url
             && self.target == rhs.target
             && self.display == rhs.display
-            && self.image.is_none()
-            && rhs.image.is_none()
+            // Flash Player merges two identical images into one.
+            // Yes, this is stupid, yes, that's how it works.
+            && self.image == rhs.image
     }
 
     /// Apply a text format to this text span.
@@ -648,7 +649,7 @@ pub enum TextSpanImageAlign {
     Right,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct TextSpanImage {
     pub src: WString,
     pub id: Option<WString>,
