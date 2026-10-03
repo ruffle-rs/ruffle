@@ -1006,10 +1006,12 @@ impl Context3D for WgpuContext3D {
                     } else {
                         src_bytes_per_row
                     };
-                let dest_size = dest_bytes_per_row as u64 * rows_per_image as u64;
-                assert!(
-                    dest_bytes_per_row >= src_bytes_per_row && dest_size >= source.len() as u64
-                );
+                // The source slice can contain more data than the calculated upload layout.
+                // Keep the staging buffer large enough for either size.
+                let source_len = source.len() as u64;
+                let dest_size = (dest_bytes_per_row as u64 * rows_per_image as u64).max(source_len);
+
+                assert!(dest_bytes_per_row >= src_bytes_per_row);
 
                 let texture_buffer = self.descriptors.device.create_buffer(&BufferDescriptor {
                     label: None,
