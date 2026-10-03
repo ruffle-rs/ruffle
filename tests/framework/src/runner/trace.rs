@@ -93,7 +93,13 @@ fn test(
             ));
         }
 
-        for (actual, expected) in actual_output.lines().zip(expected_output.lines()) {
+        for (line_number, (actual, expected)) in actual_output
+            .lines()
+            .zip(expected_output.lines())
+            .enumerate()
+        {
+            let line_number = line_number + 1;
+
             // If these are numbers, compare using approx_eq.
             if approx.bare_numbers
                 && let (Ok(actual), Ok(expected)) = (actual.parse::<f64>(), expected.parse::<f64>())
@@ -105,6 +111,7 @@ fn test(
 
                 approx
                     .compare(actual, expected)
+                    .map_err(|e| anyhow!("{e} ({line_number}:0)"))
                     .map_err(add_comparison_to_err)?;
             } else {
                 let mut found = false;
@@ -130,18 +137,26 @@ fn test(
                             .skip(1)
                             .zip(expected_captures.iter().skip(1))
                         {
+                            let actual_val =
+                                actual_val.expect("Missing capture group value for 'actual'");
+                            let expected_val =
+                                expected_val.expect("Missing capture group value for 'expected'");
                             let actual_num = actual_val
-                                .expect("Missing capture group value for 'actual'")
                                 .as_str()
                                 .parse::<f64>()
                                 .expect("Failed to parse 'actual' capture group as float");
                             let expected_num = expected_val
-                                .expect("Missing capture group value for 'expected'")
                                 .as_str()
                                 .parse::<f64>()
                                 .expect("Failed to parse 'expected' capture group as float");
                             approx
                                 .compare(actual_num, expected_num)
+                                .map_err(|e| {
+                                    anyhow!(
+                                        "{e} ({line_number}:{column})",
+                                        column = actual_val.start() + 1
+                                    )
+                                })
                                 .map_err(add_comparison_to_err)?;
                         }
                         let modified_actual = pattern.replace_all(actual, "");
