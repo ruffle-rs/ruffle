@@ -658,7 +658,7 @@ pub struct TextSpanImage {
     pub align: Option<TextSpanImageAlign>,
     pub hspace: Option<f64>,
     pub vspace: Option<f64>,
-    pub check_policy_file: Option<bool>,
+    pub check_policy_file: bool,
 }
 
 /// Struct which contains text formatted by `TextSpan`s.
@@ -1040,12 +1040,10 @@ impl FormatSpans {
                                         .and_then(|value| value.parse().ok()),
                                     vspace: image_attribute(b"vspace")
                                         .and_then(|value| value.parse().ok()),
-                                    check_policy_file: image_attribute(b"checkpolicyfile").map(
-                                        |value| {
-                                            value.to_ascii_lowercase().as_wstr()
-                                                == WStr::from_units(b"true")
-                                        },
-                                    ),
+                                    check_policy_file: image_attribute(b"checkpolicyfile")
+                                        .is_some_and(|value| {
+                                            &value.to_ascii_lowercase() == b"true"
+                                        }),
                                 };
 
                                 let mut image_format = format;
@@ -1978,7 +1976,7 @@ impl<'a> FormatState<'a> {
             let _ = write!(self.result, " HSPACE=\"{}\"", hspace.trunc() as i64);
         }
 
-        if image.check_policy_file == Some(true) {
+        if image.check_policy_file {
             let _ = write!(self.result, " CHECKPOLICYFILE=\"true\"");
         }
 
