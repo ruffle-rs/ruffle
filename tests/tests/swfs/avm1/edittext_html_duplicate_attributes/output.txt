@@ -1,0 +1,247 @@
+sourceHtml=<font face='Arial' face='Verdana'>A</font>
+text=A
+resultHtml=<P ALIGN="LEFT"><FONT FACE="Verdana" SIZE="12" COLOR="#000000" LETTERSPACING="0" KERNING="0">A</FONT></P>
+---
+sourceHtml=<font face='Arial' face='Verdana' face='Courier'>A</font>
+text=A
+resultHtml=<P ALIGN="LEFT"><FONT FACE="Courier" SIZE="12" COLOR="#000000" LETTERSPACING="0" KERNING="0">A</FONT></P>
+---
+sourceHtml=<font size='10' size='20'>A</font>
+text=A
+resultHtml=<P ALIGN="LEFT"><FONT FACE="Times" SIZE="20" COLOR="#000000" LETTERSPACING="0" KERNING="0">A</FONT></P>
+---
+sourceHtml=<font size='10' size='abc'>A</font>
+text=A
+resultHtml=<P ALIGN="LEFT"><FONT FACE="Times" SIZE="12" COLOR="#000000" LETTERSPACING="0" KERNING="0">A</FONT></P>
+---
+sourceHtml=<font size='10' size=''>A</font>
+text=A
+resultHtml=<P ALIGN="LEFT"><FONT FACE="Times" SIZE="12" COLOR="#000000" LETTERSPACING="0" KERNING="0">A</FONT></P>
+---
+sourceHtml=<font size='abc' size='20'>A</font>
+text=A
+resultHtml=<P ALIGN="LEFT"><FONT FACE="Times" SIZE="20" COLOR="#000000" LETTERSPACING="0" KERNING="0">A</FONT></P>
+---
+sourceHtml=<font size='10' size='+5'>A</font>
+text=A
+resultHtml=<P ALIGN="LEFT"><FONT FACE="Times" SIZE="17" COLOR="#000000" LETTERSPACING="0" KERNING="0">A</FONT></P>
+---
+sourceHtml=<font color='#FF0000' color='#00FF00'>A</font>
+text=A
+resultHtml=<P ALIGN="LEFT"><FONT FACE="Times" SIZE="12" COLOR="#00FF00" LETTERSPACING="0" KERNING="0">A</FONT></P>
+---
+sourceHtml=<font color='#FF0000' color='green'>A</font>
+text=A
+resultHtml=<P ALIGN="LEFT"><FONT FACE="Times" SIZE="12" COLOR="#000000" LETTERSPACING="0" KERNING="0">A</FONT></P>
+---
+sourceHtml=<font color='#FF0000' color='#00FF00' color='#0000FF'>A</font>
+text=A
+resultHtml=<P ALIGN="LEFT"><FONT FACE="Times" SIZE="12" COLOR="#0000FF" LETTERSPACING="0" KERNING="0">A</FONT></P>
+---
+sourceHtml=<font letterSpacing='1' letterSpacing='5'>A</font>
+text=A
+resultHtml=<P ALIGN="LEFT"><FONT FACE="Times" SIZE="12" COLOR="#000000" LETTERSPACING="5" KERNING="0">A</FONT></P>
+---
+sourceHtml=<font letterSpacing='1' letterSpacing='abc'>A</font>
+text=A
+resultHtml=<P ALIGN="LEFT"><FONT FACE="Times" SIZE="12" COLOR="#000000" LETTERSPACING="0" KERNING="0">A</FONT></P>
+---
+sourceHtml=<font kerning='1' kerning='0'>A</font>
+text=A
+resultHtml=<P ALIGN="LEFT"><FONT FACE="Times" SIZE="12" COLOR="#000000" LETTERSPACING="0" KERNING="0">A</FONT></P>
+---
+sourceHtml=<font kerning='0' kerning='1'>A</font>
+text=A
+resultHtml=<P ALIGN="LEFT"><FONT FACE="Times" SIZE="12" COLOR="#000000" LETTERSPACING="0" KERNING="1">A</FONT></P>
+---
+sourceHtml=<font kerning='1' kerning='2'>A</font>
+text=A
+resultHtml=<P ALIGN="LEFT"><FONT FACE="Times" SIZE="12" COLOR="#000000" LETTERSPACING="0" KERNING="1">A</FONT></P>
+---
+sourceHtml=<font face='Arial' FACE='Verdana'>A</font>
+text=A
+resultHtml=<P ALIGN="LEFT"><FONT FACE="Verdana" SIZE="12" COLOR="#000000" LETTERSPACING="0" KERNING="0">A</FONT></P>
+---
+sourceHtml=<font FACE='Arial' face='Verdana'>A</font>
+text=A
+resultHtml=<P ALIGN="LEFT"><FONT FACE="Verdana" SIZE="12" COLOR="#000000" LETTERSPACING="0" KERNING="0">A</FONT></P>
+---
+sourceHtml=<font color='#FF0000' size='10' color='#00FF00' size='20'>A</font>
+text=A
+resultHtml=<P ALIGN="LEFT"><FONT FACE="Times" SIZE="20" COLOR="#00FF00" LETTERSPACING="0" KERNING="0">A</FONT></P>
+---
+sourceHtml=<p align='left' align='right'>A</p>
+text=A\r
+resultHtml=<P ALIGN="RIGHT"><FONT FACE="Times" SIZE="12" COLOR="#000000" LETTERSPACING="0" KERNING="0">A</FONT></P>
+---
+sourceHtml=<p align='right' align='center'>A</p>
+text=A\r
+resultHtml=<P ALIGN="CENTER"><FONT FACE="Times" SIZE="12" COLOR="#000000" LETTERSPACING="0" KERNING="0">A</FONT></P>
+---
+sourceHtml=<p align='center' align='justify'>A</p>
+text=A\r
+resultHtml=<P ALIGN="JUSTIFY"><FONT FACE="Times" SIZE="12" COLOR="#000000" LETTERSPACING="0" KERNING="0">A</FONT></P>
+---
+sourceHtml=<p align='right' align='something'>A</p>
+text=A\r
+resultHtml=<P ALIGN="LEFT"><FONT FACE="Times" SIZE="12" COLOR="#000000" LETTERSPACING="0" KERNING="0">A</FONT></P>
+---
+sourceHtml=<p align='right' align=''>A</p>
+text=A\r
+resultHtml=<P ALIGN="LEFT"><FONT FACE="Times" SIZE="12" COLOR="#000000" LETTERSPACING="0" KERNING="0">A</FONT></P>
+---
+sourceHtml=<p align='right' ALIGN='center'>A</p>
+text=A\r
+resultHtml=<P ALIGN="CENTER"><FONT FACE="Times" SIZE="12" COLOR="#000000" LETTERSPACING="0" KERNING="0">A</FONT></P>
+---
+sourceHtml=<a href='http://a.example/' href='http://b.example/'>A</a>
+text=A
+resultHtml=<P ALIGN="LEFT"><FONT FACE="Times" SIZE="12" COLOR="#000000" LETTERSPACING="0" KERNING="0"><A HREF="http://b.example/" TARGET="">A</A></FONT></P>
+---
+sourceHtml=<a href='http://a.example/' href=''>A</a>
+text=A
+resultHtml=<P ALIGN="LEFT"><FONT FACE="Times" SIZE="12" COLOR="#000000" LETTERSPACING="0" KERNING="0">A</FONT></P>
+---
+sourceHtml=<a target='_blank' target='_self' href='http://a.example/'>A</a>
+text=A
+resultHtml=<P ALIGN="LEFT"><FONT FACE="Times" SIZE="12" COLOR="#000000" LETTERSPACING="0" KERNING="0"><A HREF="http://a.example/" TARGET="_self">A</A></FONT></P>
+---
+sourceHtml=<a href='http://a.example/' target='_blank' href='http://b.example/' target='_self'>A</a>
+text=A
+resultHtml=<P ALIGN="LEFT"><FONT FACE="Times" SIZE="12" COLOR="#000000" LETTERSPACING="0" KERNING="0"><A HREF="http://b.example/" TARGET="_self">A</A></FONT></P>
+---
+sourceHtml=<a href='http://a.example/' HREF='http://b.example/'>A</a>
+text=A
+resultHtml=<P ALIGN="LEFT"><FONT FACE="Times" SIZE="12" COLOR="#000000" LETTERSPACING="0" KERNING="0"><A HREF="http://b.example/" TARGET="">A</A></FONT></P>
+---
+sourceHtml=<textformat leftmargin='1' leftmargin='5'>A</textformat>
+text=A
+resultHtml=<TEXTFORMAT LEFTMARGIN="5"><P ALIGN="LEFT"><FONT FACE="Times" SIZE="12" COLOR="#000000" LETTERSPACING="0" KERNING="0">A</FONT></P></TEXTFORMAT>
+---
+sourceHtml=<textformat rightmargin='1' rightmargin='5'>A</textformat>
+text=A
+resultHtml=<TEXTFORMAT RIGHTMARGIN="5"><P ALIGN="LEFT"><FONT FACE="Times" SIZE="12" COLOR="#000000" LETTERSPACING="0" KERNING="0">A</FONT></P></TEXTFORMAT>
+---
+sourceHtml=<textformat indent='1' indent='5'>A</textformat>
+text=A
+resultHtml=<TEXTFORMAT INDENT="5"><P ALIGN="LEFT"><FONT FACE="Times" SIZE="12" COLOR="#000000" LETTERSPACING="0" KERNING="0">A</FONT></P></TEXTFORMAT>
+---
+sourceHtml=<textformat blockindent='1' blockindent='5'>A</textformat>
+text=A
+resultHtml=<TEXTFORMAT BLOCKINDENT="5"><P ALIGN="LEFT"><FONT FACE="Times" SIZE="12" COLOR="#000000" LETTERSPACING="0" KERNING="0">A</FONT></P></TEXTFORMAT>
+---
+sourceHtml=<textformat leading='1' leading='5'>A</textformat>
+text=A
+resultHtml=<TEXTFORMAT LEADING="5"><P ALIGN="LEFT"><FONT FACE="Times" SIZE="12" COLOR="#000000" LETTERSPACING="0" KERNING="0">A</FONT></P></TEXTFORMAT>
+---
+sourceHtml=<textformat tabstops='10,20' tabstops='30,40,50'>A</textformat>
+text=A
+resultHtml=<TEXTFORMAT TABSTOPS="30,40,50"><P ALIGN="LEFT"><FONT FACE="Times" SIZE="12" COLOR="#000000" LETTERSPACING="0" KERNING="0">A</FONT></P></TEXTFORMAT>
+---
+sourceHtml=<textformat leftmargin='5' leftmargin='abc'>A</textformat>
+text=A
+resultHtml=<P ALIGN="LEFT"><FONT FACE="Times" SIZE="12" COLOR="#000000" LETTERSPACING="0" KERNING="0">A</FONT></P>
+---
+sourceHtml=<textformat tabstops='10,20' tabstops=''>A</textformat>
+text=A
+resultHtml=<P ALIGN="LEFT"><FONT FACE="Times" SIZE="12" COLOR="#000000" LETTERSPACING="0" KERNING="0">A</FONT></P>
+---
+sourceHtml=<textformat indent='1' INDENT='5'>A</textformat>
+text=A
+resultHtml=<TEXTFORMAT INDENT="5"><P ALIGN="LEFT"><FONT FACE="Times" SIZE="12" COLOR="#000000" LETTERSPACING="0" KERNING="0">A</FONT></P></TEXTFORMAT>
+---
+sourceHtml=A<img src='one.jpg' src='two.jpg'>B
+text=A B
+resultHtml=<P ALIGN="LEFT"><FONT FACE="Times" SIZE="12" COLOR="#000000" LETTERSPACING="0" KERNING="0">A<FONT SIZE="2"><IMG SRC="two.jpg"> </FONT>B</FONT></P>
+---
+sourceHtml=A<img src='one.jpg' src=''>B
+text=A B
+resultHtml=<P ALIGN="LEFT"><FONT FACE="Times" SIZE="12" COLOR="#000000" LETTERSPACING="0" KERNING="0">A<FONT SIZE="2"><IMG SRC=""> </FONT>B</FONT></P>
+---
+sourceHtml=A<img src='one.jpg' id='first' id='second'>B
+text=A B
+resultHtml=<P ALIGN="LEFT"><FONT FACE="Times" SIZE="12" COLOR="#000000" LETTERSPACING="0" KERNING="0">A<FONT SIZE="2"><IMG SRC="one.jpg" ID="second"> </FONT>B</FONT></P>
+---
+sourceHtml=A<img src='one.jpg' width='10' width='20' height='30' height='40'>B
+text=A B
+resultHtml=<P ALIGN="LEFT"><FONT FACE="Times" SIZE="12" COLOR="#000000" LETTERSPACING="0" KERNING="0">A<FONT SIZE="2"><IMG SRC="one.jpg" WIDTH="20" HEIGHT="40"> </FONT>B</FONT></P>
+---
+sourceHtml=A<img src='one.jpg' width='10' width='abc'>B
+text=A B
+resultHtml=<P ALIGN="LEFT"><FONT FACE="Times" SIZE="12" COLOR="#000000" LETTERSPACING="0" KERNING="0">A<FONT SIZE="2"><IMG SRC="one.jpg"> </FONT>B</FONT></P>
+---
+sourceHtml=A<img src='one.jpg' align='right' align='left'>B
+text=A B
+resultHtml=<P ALIGN="LEFT"><FONT FACE="Times" SIZE="12" COLOR="#000000" LETTERSPACING="0" KERNING="0">A<FONT SIZE="2"><IMG SRC="one.jpg" ALIGN="left"> </FONT>B</FONT></P>
+---
+sourceHtml=A<img src='one.jpg' align='left' align='right'>B
+text=A B
+resultHtml=<P ALIGN="LEFT"><FONT FACE="Times" SIZE="12" COLOR="#000000" LETTERSPACING="0" KERNING="0">A<FONT SIZE="2"><IMG SRC="one.jpg" ALIGN="right"> </FONT>B</FONT></P>
+---
+sourceHtml=A<img src='one.jpg' hspace='1' hspace='5' vspace='2' vspace='6'>B
+text=A B
+resultHtml=<P ALIGN="LEFT"><FONT FACE="Times" SIZE="12" COLOR="#000000" LETTERSPACING="0" KERNING="0">A<FONT SIZE="2"><IMG SRC="one.jpg" VSPACE="6" HSPACE="5"> </FONT>B</FONT></P>
+---
+sourceHtml=A<img src='one.jpg' checkPolicyFile='true' checkPolicyFile='false'>B
+text=A B
+resultHtml=<P ALIGN="LEFT"><FONT FACE="Times" SIZE="12" COLOR="#000000" LETTERSPACING="0" KERNING="0">A<FONT SIZE="2"><IMG SRC="one.jpg"> </FONT>B</FONT></P>
+---
+sourceHtml=A<img src='one.jpg' checkPolicyFile='false' checkPolicyFile='true'>B
+text=A B
+resultHtml=<P ALIGN="LEFT"><FONT FACE="Times" SIZE="12" COLOR="#000000" LETTERSPACING="0" KERNING="0">A<FONT SIZE="2"><IMG SRC="one.jpg" CHECKPOLICYFILE="true"> </FONT>B</FONT></P>
+---
+sourceHtml=A<img src='one.jpg' SRC='two.jpg'>B
+text=A B
+resultHtml=<P ALIGN="LEFT"><FONT FACE="Times" SIZE="12" COLOR="#000000" LETTERSPACING="0" KERNING="0">A<FONT SIZE="2"><IMG SRC="two.jpg"> </FONT>B</FONT></P>
+---
+sourceHtml=<b x='1' x='2'>A</b>
+text=A
+resultHtml=<P ALIGN="LEFT"><FONT FACE="Times" SIZE="12" COLOR="#000000" LETTERSPACING="0" KERNING="0"><B>A</B></FONT></P>
+---
+sourceHtml=<li x='1' x='2'>A</li>
+text=A\r
+resultHtml=<LI><FONT FACE="Times" SIZE="12" COLOR="#000000" LETTERSPACING="0" KERNING="0">A</FONT></LI>
+---
+sourceHtml=A<br x='1' x='2'>B
+text=A\rB
+resultHtml=<P ALIGN="LEFT"><FONT FACE="Times" SIZE="12" COLOR="#000000" LETTERSPACING="0" KERNING="0">A</FONT></P><P ALIGN="LEFT"><FONT FACE="Times" SIZE="12" COLOR="#000000" LETTERSPACING="0" KERNING="0">B</FONT></P>
+---
+sourceHtml=<font color='#FF0000' color='#00FF00'><font size='10' size='20'>A</font>B</font>
+text=AB
+resultHtml=<P ALIGN="LEFT"><FONT FACE="Times" SIZE="20" COLOR="#00FF00" LETTERSPACING="0" KERNING="0">A<FONT SIZE="12">B</FONT></FONT></P>
+---
+sourceHtml=<p align='right' align='center'><font face='Arial' face='Verdana'>A</font></p>
+text=A\r
+resultHtml=<P ALIGN="CENTER"><FONT FACE="Verdana" SIZE="12" COLOR="#000000" LETTERSPACING="0" KERNING="0">A</FONT></P>
+---
+css=.red { color: #FF0000; } .blue { color: #0000FF; } .bold { font-weight: bold; }
+sourceHtml=<p class='red' class='blue'>A</p>
+text=A\r
+  [0] color=255 bold=false url= align=left
+  [1] color=255 bold=false url= align=left
+---
+css=.red { color: #FF0000; } .blue { color: #0000FF; } .bold { font-weight: bold; }
+sourceHtml=<span class='red' class='blue'>A</span>
+text=A
+  [0] color=255 bold=false url= align=left
+---
+css=.red { color: #FF0000; } .blue { color: #0000FF; } .bold { font-weight: bold; }
+sourceHtml=<a href='http://a.example/' class='red' class='blue'>A</a>
+text=A
+  [0] color=255 bold=false url=http://a.example/ align=left
+---
+css=.red { color: #FF0000; } .blue { color: #0000FF; } .bold { font-weight: bold; }
+sourceHtml=<span class='red' CLASS='blue'>A</span>
+text=A
+  [0] color=255 bold=false url= align=left
+---
+css=.red { color: #FF0000; } .blue { color: #0000FF; } .bold { font-weight: bold; }
+sourceHtml=<span class='bold' class='red'>A</span>
+text=A
+  [0] color=16711680 bold=false url= align=left
+---
+css=.red { color: #FF0000; } .blue { color: #0000FF; } .bold { font-weight: bold; }
+sourceHtml=<span class='red' class='missing'>A</span>
+text=A
+  [0] color=0 bold=false url= align=left
+---
