@@ -444,7 +444,7 @@ pub fn set_html_text<'gc>(
         let images = this.html_images();
         let mut image_references = Vec::with_capacity(images.len());
 
-        for (src, id) in images {
+        for (position, src, id) in images {
             let loader_class = activation.avm2().classes().loader;
             let loader = loader_class
                 .construct(activation, &[])?
@@ -461,7 +461,7 @@ pub fn set_html_text<'gc>(
 
             load_url(activation, loader, src.to_utf8_lossy().into_owned())?;
 
-            image_references.push(loader);
+            image_references.push((position, loader));
         }
 
         this.set_image_references(activation.gc(), image_references);

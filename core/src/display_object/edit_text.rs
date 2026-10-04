@@ -119,9 +119,10 @@ pub struct EditTextData<'gc> {
     /// The calculated layout.
     layout: RefLock<Layout<'gc>>,
 
-    /// AVM2 Loader objects corresponding one-to-one, in span order,
-    /// to the currently parsed HTML images.
-    image_references: RefLock<Vec<Avm2Object<'gc>>>,
+    /// Character positions and AVM2 Loaders for runtime HTML images.
+    /// Merged image spans may have multiple Loaders. Text replacement can
+    /// invalidate a Loader while leaving its image metadata in the spans.
+    image_references: RefLock<Vec<(usize, Avm2Object<'gc>)>>,
 
     /// Style sheet used when parsing HTML.
     style_sheet: Lock<EditTextStyleSheet<'gc>>,
@@ -501,47 +502,60 @@ impl<'gc> EditText<'gc> {
         }
     }
 
-    pub(crate) fn html_images(self) -> Vec<(WString, Option<WString>)> {
-        self.0
-            .text_spans
-            .borrow()
-            .iter_spans()
-            .filter_map(|(_, _, _, span)| span.image.as_deref())
-            .map(|image| (image.src.clone(), image.id.clone()))
-            .collect()
+    /// Enumerate image characters, including images in merged spans.
+    pub(crate) fn html_images(self) -> Vec<(usize, WString, Option<WString>)> {
+        let spans = self.0.text_spans.borrow();
+        let mut images = Vec::new();
+
+        for (start, end, _, span) in spans.iter_spans() {
+            if let Some(image) = span.image.as_deref() {
+                for position in start..end {
+                    images.push((position, image.src.clone(), image.id.clone()));
+                }
+            }
+        }
+
+        images
     }
 
-    pub(crate) fn set_image_references(self, mc: &Mutation<'gc>, references: Vec<Avm2Object<'gc>>) {
+    pub(crate) fn set_image_references(
+        self,
+        mc: &Mutation<'gc>,
+        references: Vec<(usize, Avm2Object<'gc>)>,
+    ) {
         *unlock!(Gc::write(mc, self.0), EditTextData, image_references).borrow_mut() = references;
     }
 
-    /// Keep the Loader vector aligned with image spans removed by replaceText.
+    /// Invalidate image references affected by replacement and shift survivors.
     ///
-    /// Text replacement cannot create new HTML image spans, so references
-    /// outside the replaced range remain valid and keep their relative order.
-    fn prune_image_references(self, mc: &Mutation<'gc>, from: usize, to: usize) {
+    /// Flash also invalidates an image at the end boundary of a nonempty
+    /// replacement range. Insertion alone preserves the existing Loaders.
+    fn prune_image_references(
+        self,
+        mc: &Mutation<'gc>,
+        from: usize,
+        to: usize,
+        inserted_len: usize,
+    ) {
         if to < from {
             return;
         }
 
-        let keep = self
-            .0
-            .text_spans
-            .borrow()
-            .iter_spans()
-            .filter_map(|(start, _, _, span)| {
-                span.image.as_ref().map(|_| start < from || start >= to)
-            })
-            .collect::<Vec<_>>();
-
+        let text_len = self.text_length();
+        let removed_len = to.min(text_len).saturating_sub(from.min(text_len));
         let mut references =
             unlock!(Gc::write(mc, self.0), EditTextData, image_references).borrow_mut();
 
-        let mut index = 0;
-        references.retain(|_| {
-            let keep_reference = keep.get(index).copied().unwrap_or(false);
-            index += 1;
-            keep_reference
+        references.retain_mut(|(position, _)| {
+            if from < to && *position >= from && *position <= to {
+                return false;
+            }
+
+            if *position >= to {
+                *position = position.saturating_sub(removed_len) + inserted_len;
+            }
+
+            true
         });
     }
 
@@ -550,21 +564,16 @@ impl<'gc> EditText<'gc> {
             return None;
         }
 
-        let spans = self.0.text_spans.borrow();
-        let references = self.0.image_references.borrow();
-
-        spans
-            .iter_spans()
-            .filter_map(|(_, _, _, span)| span.image.as_deref())
-            .zip(references.iter().copied())
-            .filter(|(image, _)| {
-                image
-                    .id
-                    .as_ref()
-                    .is_some_and(|image_id| image_id.as_wstr() == id)
+        self.0
+            .image_references
+            .borrow()
+            .iter()
+            .rev()
+            .find_map(|(_, reference)| {
+                let display_object = reference.as_display_object()?;
+                let name = display_object.name()?;
+                (name.as_wstr() == id).then_some(*reference)
             })
-            .map(|(_, reference)| reference)
-            .last()
     }
 
     pub fn text_length(self) -> usize {
@@ -903,7 +912,7 @@ impl<'gc> EditText<'gc> {
         text: &WStr,
         context: &mut UpdateContext<'gc>,
     ) {
-        self.prune_image_references(context.gc(), from, to);
+        self.prune_image_references(context.gc(), from, to, text.len());
         self.0.text_spans.borrow_mut().replace_text(from, to, text);
         self.relayout(context);
     }
