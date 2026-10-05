@@ -1,5 +1,3 @@
-// @ts-check
-
 import tseslint from "typescript-eslint";
 import eslint from "@eslint/js";
 import globals from "globals";
@@ -8,7 +6,6 @@ import reactHooks from "eslint-plugin-react-hooks";
 import reactRefresh from "eslint-plugin-react-refresh";
 import eslintPluginPrettierRecommended from "eslint-plugin-prettier/recommended";
 
-// noinspection JSUnusedGlobalSymbols
 export default tseslint.config(
     eslint.configs.recommended,
     eslintPluginPrettierRecommended,
