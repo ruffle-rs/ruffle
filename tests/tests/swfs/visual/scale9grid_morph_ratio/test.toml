@@ -1,0 +1,12 @@
+num_ticks = 2
+
+# A gridded morph moved to a new ratio on frame 2 beside a reference placed there from
+# the start; a sliced tessellation served for the stale ratio cannot match. Antialiasing
+# along the morph's curved outline stays within 28/255, so the tolerance clears it; the
+# start-bounds anchor mutation measures 6222 outliers at this tolerance.
+[image_comparisons.output]
+tolerance = 40
+max_outliers = 1000
+
+[player_options]
+with_renderer = { optional = false }

@@ -39,6 +39,7 @@ mod orphan_manager;
 pub mod pixel_bender;
 mod player;
 mod prelude;
+mod scale9_cache;
 pub mod socket;
 mod streams;
 pub mod string;

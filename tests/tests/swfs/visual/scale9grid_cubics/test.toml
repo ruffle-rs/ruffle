@@ -1,0 +1,17 @@
+num_ticks = 1
+
+# Antialiasing along the curved edges: 3072 measured on Metal across the three
+# columns, ungridded twins included.
+[image_comparisons.output]
+tolerance = 1
+max_outliers = 4200
+
+[player_options]
+with_renderer = { optional = false }
+
+[[compilers]]
+type = "Asc"
+target = "test.swf"
+class = "Test"
+scripts = ["Test.as"]
+swf_version = 43

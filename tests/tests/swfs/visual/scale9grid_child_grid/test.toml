@@ -1,0 +1,18 @@
+num_ticks = 1
+
+# The folded row's slanted edges antialias differently in the two rasterisers; the other
+# rows are pixel-exact. Measured 1096. A child wrongly excluded or wrongly folded moves
+# whole bands and lands far past this.
+[image_comparisons.output]
+tolerance = 1
+max_outliers = 1500
+
+[player_options]
+with_renderer = { optional = false }
+
+[[compilers]]
+type = "Asc"
+target = "test.swf"
+class = "Test"
+scripts = ["Test.as"]
+swf_version = 43

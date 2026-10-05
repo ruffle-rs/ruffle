@@ -1,0 +1,12 @@
+# PlaceObject(Replace) inside a gridded sprite: the swapped-in art must be resliced, not
+# served from the previous art's cached tessellation. Rows three and four replace the
+# character itself: measured on FP 32, the instance keeps the grid it was instantiated
+# with, whichever direction the swap goes. See generate.rs.
+num_ticks = 2
+
+[image_comparisons.output]
+tolerance = 1
+max_outliers = 0
+
+[player_options]
+with_renderer = { optional = false }

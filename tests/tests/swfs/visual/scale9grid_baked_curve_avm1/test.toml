@@ -1,0 +1,11 @@
+num_ticks = 1
+
+# Curve outlines only: the two rasterisers flatten and antialias curves differently.
+# A curve split at the grid line instead of remapped would shift a 7px band along the
+# silhouette and blow far past this.
+[image_comparisons.output]
+tolerance = 1
+max_outliers = 1500
+
+[player_options]
+with_renderer = { optional = false }

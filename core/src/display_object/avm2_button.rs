@@ -580,6 +580,22 @@ impl<'gc> TDisplayObject<'gc> for Avm2Button<'gc> {
         Default::default()
     }
 
+    /// Bounds come from the state currently being shown, descending one level further than
+    /// elsewhere. A state built from a single button record IS that record's character; one
+    /// built from several records has no authored container, so `create_state` synthesizes
+    /// a Sprite to hold them, and that Sprite is the child measured here.
+    ///
+    /// A grid reaches exactly one level of children, so art behind the synthesized Sprite
+    /// sits one level too deep to slice; Flash Player leaves multi-record states unsliced
+    /// too, which the visual/scale9grid_tag test pins. Validation still runs against these
+    /// bounds, so the property round-trips even where it has no visual effect.
+    fn self_bounds_for_scale9(self) -> Rectangle<Twips> {
+        match self.get_state_child(self.0.state.get().into()) {
+            Some(child) => child.base().matrix() * child.self_bounds_for_scale9(),
+            None => Default::default(),
+        }
+    }
+
     fn bounds_with_transform(self, matrix: &Matrix, mode: BoundsMode) -> Rectangle<Twips> {
         // A scroll rect completely overrides an object's bounds,
         // and can even grow the bounding box to be larger than the actual content

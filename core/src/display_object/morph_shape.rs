@@ -4,6 +4,7 @@ use crate::context::{RenderContext, UpdateContext};
 use crate::display_object::{BoundsMode, DisplayObjectBase};
 use crate::library::MovieLibrarySource;
 use crate::prelude::*;
+use crate::scale9_cache::{Scale9Cache, Scale9Key};
 use crate::tag_utils::SwfMovie;
 use crate::vminterface::Instantiator;
 use core::fmt;
@@ -13,6 +14,7 @@ use gc_arena::{Collect, Gc, Mutation};
 use ruffle_common::utils::HasPrefixField;
 use ruffle_render::backend::ShapeHandle;
 use ruffle_render::commands::CommandHandler;
+use ruffle_render::shape_utils::{DistilledShape, Scale9, Scale9Space};
 use std::cell::{RefCell, RefMut};
 use std::sync::Arc;
 use swf::{Fixed8, Fixed16};
@@ -37,9 +39,35 @@ pub struct MorphShapeData<'gc> {
     shared: Lock<Gc<'gc, MorphShapeShared>>,
     /// The AVM2 representation of this MorphShape.
     object: Lock<Option<Avm2StageObject<'gc>>>,
+
+    /// Sliced tessellation of the interpolated frame.
+    #[collect(require_static)]
+    scale9_cache: Scale9Cache,
 }
 
 impl<'gc> MorphShape<'gc> {
+    /// Tessellation of the interpolated frame 9-sliced against `scale9`, cached per instance
+    /// and keyed by the ratio it was built from.
+    fn sliced_handle(
+        self,
+        context: &mut RenderContext,
+        scale9: &Scale9,
+        space: Scale9Space,
+        ratio: u16,
+    ) -> Option<ShapeHandle> {
+        let key = Scale9Key::new(scale9, space).with_ratio(ratio);
+        self.0.scale9_cache.get_or_register(key, || {
+            let shared = self.0.shared.get();
+            let library = context.library.library_for_movie(shared.movie.clone())?;
+            let frame = shared.get_frame(ratio);
+            let distilled: DistilledShape = (&frame.shape).into();
+            Some(context.renderer.register_shape(
+                scale9.apply(distilled, space),
+                &MovieLibrarySource { library },
+            ))
+        })
+    }
+
     pub fn from_swf_tag(
         gc_context: &Mutation<'gc>,
         tag: swf::DefineMorphShape,
@@ -52,6 +80,7 @@ impl<'gc> MorphShape<'gc> {
                 base: Default::default(),
                 shared: Lock::new(Gc::new(gc_context, shared)),
                 object: Lock::new(None),
+                scale9_cache: Scale9Cache::default(),
             },
         ))
     }
@@ -77,7 +106,9 @@ impl<'gc> TDisplayObject<'gc> for MorphShape<'gc> {
             .get_morph_shape(id)
         {
             unlock!(Gc::write(context.gc(), self.0), MorphShapeData, shared)
-                .set(new_morph_shape.0.shared.get())
+                .set(new_morph_shape.0.shared.get());
+            // The key carries no character identity, so the new art could pass for the old.
+            self.0.scale9_cache.clear();
         } else {
             tracing::warn!("PlaceObject: expected morph shape at character ID {}", id);
         }
@@ -111,13 +142,47 @@ impl<'gc> TDisplayObject<'gc> for MorphShape<'gc> {
         }
     }
 
-    fn render_self(self, context: &mut RenderContext) {
+    fn render_self(self, context: &mut RenderContext<'_, 'gc>) {
         let ratio = self.ratio();
+
+        let scale9 = self
+            .scaling_grid_for_render(context)
+            .map(|scale9| (scale9, Scale9Space::Own))
+            .or_else(|| {
+                // The parent's grid is in the parent's space, so a child's matrix folds in --
+                // unless the child carries a grid of its own that cannot slice, where Flash
+                // Player throws the matrix away and remaps the raw coordinates.
+                self.inherited_scaling_grid_for_render(context)
+                    .map(|scale9| {
+                        let matrix = self.base().matrix();
+                        if self.scaling_grid().is_valid() {
+                            (scale9, Scale9Space::Detached(matrix))
+                        } else {
+                            (scale9, Scale9Space::Child(matrix))
+                        }
+                    })
+            });
+        if let Some((scale9, space)) = scale9
+            && let Some(handle) = self.sliced_handle(context, &scale9, space, ratio)
+        {
+            let mut transform = context.transform_stack.transform();
+            transform.matrix *= scale9.unscale(space);
+            context.commands.render_shape(handle, transform);
+            return;
+        }
+
         let shared = self.0.shared.get();
         let shape_handle = shared.get_shape(context, ratio);
         context
             .commands
             .render_shape(shape_handle, context.transform_stack.transform());
+    }
+
+    /// The grid re-anchors on the frame being shown rather than the authored start bounds:
+    /// Flash Player pins an interpolated frame's caps to that frame's own edges. This holds
+    /// whether the grid is the morph's own or a container's.
+    fn self_geometry_for_scale9(self) -> Rectangle<Twips> {
+        self.0.shared.get().get_frame(self.ratio()).bounds
     }
 
     fn self_bounds(self, mode: BoundsMode) -> Rectangle<Twips> {
