@@ -547,8 +547,9 @@ impl TextSpan {
             && self.url == rhs.url
             && self.target == rhs.target
             && self.display == rhs.display
-            && self.image.is_none()
-            && rhs.image.is_none()
+            // Flash Player merges two identical images into one.
+            // Yes, this is stupid, yes, that's how it works.
+            && self.image == rhs.image
     }
 
     /// Apply a text format to this text span.
@@ -648,7 +649,7 @@ pub enum TextSpanImageAlign {
     Right,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct TextSpanImage {
     pub src: WString,
     pub id: Option<WString>,
@@ -657,7 +658,7 @@ pub struct TextSpanImage {
     pub align: Option<TextSpanImageAlign>,
     pub hspace: Option<f64>,
     pub vspace: Option<f64>,
-    pub check_policy_file: Option<bool>,
+    pub check_policy_file: bool,
 }
 
 /// Struct which contains text formatted by `TextSpan`s.
@@ -814,7 +815,7 @@ impl FormatSpans {
                         }
                     };
                     let attribute = move |name| {
-                        attributes.iter().find_map(|attribute| {
+                        attributes.iter().rev().find_map(|attribute| {
                             attribute
                                 .key
                                 .into_inner()
@@ -1029,9 +1030,7 @@ impl FormatSpans {
                                     height: image_attribute(b"height")
                                         .and_then(|value| value.parse().ok()),
                                     align: image_attribute(b"align").map(|value| {
-                                        if value.to_ascii_lowercase().as_wstr()
-                                            == WStr::from_units(b"right")
-                                        {
+                                        if &value == b"right" {
                                             TextSpanImageAlign::Right
                                         } else {
                                             TextSpanImageAlign::Left
@@ -1041,12 +1040,10 @@ impl FormatSpans {
                                         .and_then(|value| value.parse().ok()),
                                     vspace: image_attribute(b"vspace")
                                         .and_then(|value| value.parse().ok()),
-                                    check_policy_file: image_attribute(b"checkpolicyfile").map(
-                                        |value| {
-                                            value.to_ascii_lowercase().as_wstr()
-                                                == WStr::from_units(b"true")
-                                        },
-                                    ),
+                                    check_policy_file: image_attribute(b"checkpolicyfile")
+                                        .is_some_and(|value| {
+                                            &value.to_ascii_lowercase() == b"true"
+                                        }),
                                 };
 
                                 let mut image_format = format;
@@ -1602,7 +1599,7 @@ impl FormatSpans {
         TextSpanIter::for_format_spans(self)
     }
 
-    pub fn to_html(&self) -> WString {
+    pub fn to_html(&self, swf_version: u8) -> WString {
         if self.text.is_empty() {
             return WString::new();
         }
@@ -1612,6 +1609,7 @@ impl FormatSpans {
             font_stack: VecDeque::new(),
             current_span: &TextSpan::default(),
             open_tags: Vec::new(),
+            swf_version,
         };
 
         let spans = self.iter_spans();
@@ -1654,6 +1652,7 @@ struct FormatState<'a> {
     font_stack: VecDeque<&'a TextSpanFont>,
     current_span: &'a TextSpan,
     open_tags: Vec<HtmlTag>,
+    swf_version: u8,
 }
 
 impl<'a> FormatState<'a> {
@@ -1693,12 +1692,16 @@ impl<'a> FormatState<'a> {
 
         self.set_font(&self.current_span.font);
 
-        if span.image.is_some() {
+        if self.swf_version < 8 && span.image.is_some() {
             self.open_tag(HtmlTag::Img);
         }
 
         if !self.current_span.url.is_empty() {
             self.open_tag(HtmlTag::A);
+        }
+
+        if self.swf_version >= 8 && span.image.is_some() {
+            self.open_tag(HtmlTag::Img);
         }
 
         if self.current_span.style.bold {
@@ -1973,12 +1976,8 @@ impl<'a> FormatState<'a> {
             let _ = write!(self.result, " HSPACE=\"{}\"", hspace.trunc() as i64);
         }
 
-        if let Some(check_policy_file) = image.check_policy_file {
-            let _ = write!(
-                self.result,
-                " CHECKPOLICYFILE=\"{}\"",
-                if check_policy_file { "true" } else { "false" }
-            );
+        if image.check_policy_file {
+            let _ = write!(self.result, " CHECKPOLICYFILE=\"true\"");
         }
 
         self.result.push_byte(b'>');
