@@ -6,13 +6,13 @@
         "message": "Jalankan konten Flash bahkan di situs web yang tidak mengizinkan Ruffle"
     },
     "settings_show_swf_download": {
-        "message": "Tunjukan tombol unduh SWF di menu konteks"
+        "message": "Tunjukkan tombol unduh SWF di menu konteks"
     },
     "settings_autostart": {
         "message": "Putar secara otomatis tanpa layar pembuka (lalu klik untuk membunyikan)"
     },
     "settings_swf_takeover": {
-        "message": "Mainkan file SWF di browser daripada mengunduh."
+        "message": "Mainkan berkas SWF di browser daripada mengunduh"
     },
     "settings_log_level": {
         "message": "Tingkat log"

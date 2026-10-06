@@ -49,15 +49,16 @@ scale-mode = Moda Skala
 scale-mode-noscale = Tanpa skala (100%)
 scale-mode-noscale-tooltip =
     Menampilkan SWF pada ukuran aslinya, tanpa zoom.
-    
+
     Sesuai dengan StageScaleMode.NO_SCALE
 scale-mode-noborder = Potong agar Pas
 scale-mode-noborder-tooltip =
     Memenuhi seluruh jendela sambil mempertahankan rasio aspek, dan memotong SWF jika diperlukan.
-    
+
     Sesuai dengan StageScaleMode.NO_BORDER
 scale-mode-force = Paksa
 player-version = Versi Pemutar
+player-runtime = Runtime Pemutar
 player-runtime-flash = Flash Player
 player-runtime-air = Adobe AIR
 custom-framerate = Framerate Khusus
