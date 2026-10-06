@@ -1,0 +1,4 @@
+{
+    "extends": "@tsconfig/strictest/tsconfig.json",
+    "include": ["eslint.config.ts"],
+}
