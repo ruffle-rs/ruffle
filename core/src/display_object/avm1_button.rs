@@ -13,7 +13,7 @@ use crate::display_object::{Avm1TextFieldBinding, BoundsMode, DisplayObjectBase}
 use crate::events::{ClipEvent, ClipEventResult};
 use crate::prelude::*;
 use crate::string::AvmString;
-use crate::tag_utils::{SwfMovieData, SwfSlice};
+use crate::tag_utils::{SwfMovie, SwfSlice};
 use crate::vminterface::Instantiator;
 use core::fmt;
 use gc_arena::barrier::unlock;
@@ -24,7 +24,6 @@ use ruffle_macros::istr;
 use ruffle_render::filters::Filter;
 use std::cell::{Cell, Ref, RefCell, RefMut};
 use std::collections::BTreeMap;
-use std::sync::Arc;
 use swf::ButtonActionCondition;
 
 #[derive(Clone, Collect, Copy)]
@@ -45,7 +44,7 @@ impl fmt::Debug for Avm1Button<'_> {
 pub struct Avm1ButtonData<'gc> {
     base: InteractiveObjectBase<'gc>,
     cell: RefLock<Avm1ButtonDataMut<'gc>>,
-    shared: Gc<'gc, ButtonShared>,
+    shared: Gc<'gc, ButtonShared<'gc>>,
     object: Lock<Option<Object<'gc>>>,
     state: Cell<ButtonState>,
     tracking: Cell<ButtonTracking>,
@@ -65,7 +64,7 @@ struct Avm1ButtonDataMut<'gc> {
 impl<'gc> Avm1Button<'gc> {
     pub fn from_swf_tag(
         button: &swf::Button,
-        movie: Arc<SwfMovieData>,
+        movie: SwfMovie<'gc>,
         swf_data: &SwfSlice,
         mc: &Mutation<'gc>,
     ) -> Self {
@@ -262,7 +261,7 @@ impl<'gc> TDisplayObject<'gc> for Avm1Button<'gc> {
         self.0.shared.id
     }
 
-    fn movie(self) -> Arc<SwfMovieData> {
+    fn movie(self) -> SwfMovie<'gc> {
         self.0.movie()
     }
 
@@ -627,7 +626,7 @@ impl<'gc> Avm1ButtonData<'gc> {
         handled
     }
 
-    fn movie(&self) -> Arc<SwfMovieData> {
+    fn movie(&self) -> SwfMovie<'gc> {
         self.shared.swf.clone()
     }
 }
@@ -664,11 +663,15 @@ pub enum ButtonTracking {
 
 /// Data shared between all instances of a button.
 #[derive(Collect, Debug)]
-#[collect(require_static)]
-struct ButtonShared {
-    swf: Arc<SwfMovieData>,
+#[collect(no_drop)]
+struct ButtonShared<'gc> {
+    swf: SwfMovie<'gc>,
     id: CharacterId,
+
+    #[collect(require_static)]
     actions: Vec<ButtonAction>,
+
+    #[collect(require_static)]
     cell: RefCell<ButtonSharedMut>,
 }
 

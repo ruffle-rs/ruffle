@@ -18,7 +18,7 @@ use crate::frame_lifecycle::{
     broadcast_frame_constructed, broadcast_frame_exited, catchup_display_object_to_frame,
 };
 use crate::prelude::*;
-use crate::tag_utils::SwfMovieData;
+use crate::tag_utils::SwfMovie;
 use crate::vminterface::Instantiator;
 use core::fmt;
 use either::Either;
@@ -28,7 +28,6 @@ use gc_arena::{Collect, Gc, Mutation};
 use ruffle_common::utils::HasPrefixField;
 use ruffle_render::filters::Filter;
 use std::cell::{Cell, RefCell};
-use std::sync::Arc;
 
 #[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]
@@ -48,7 +47,7 @@ impl fmt::Debug for Avm2Button<'_> {
 pub struct Avm2ButtonData<'gc> {
     base: InteractiveObjectBase<'gc>,
 
-    shared: Gc<'gc, ButtonShared>,
+    shared: Gc<'gc, ButtonShared<'gc>>,
 
     /// The display object tree to render when the button is in the UP state.
     up_state: Lock<Option<DisplayObject<'gc>>>,
@@ -102,7 +101,7 @@ pub struct Avm2ButtonData<'gc> {
 impl<'gc> Avm2Button<'gc> {
     pub fn from_swf_tag(
         button: &swf::Button,
-        movie: Arc<SwfMovieData>,
+        movie: SwfMovie<'gc>,
         context: &mut UpdateContext<'gc>,
         construct_blank_states: bool,
     ) -> Self {
@@ -423,7 +422,7 @@ impl<'gc> TDisplayObject<'gc> for Avm2Button<'gc> {
         self.0.shared.id
     }
 
-    fn movie(self) -> Arc<SwfMovieData> {
+    fn movie(self) -> SwfMovie<'gc> {
         self.0.shared.swf.clone()
     }
 
@@ -819,9 +818,9 @@ impl<'gc> TInteractiveObject<'gc> for Avm2Button<'gc> {
 
 /// Data shared between all instances of a button.
 #[derive(Collect, Debug)]
-#[collect(require_static)]
-struct ButtonShared {
-    swf: Arc<SwfMovieData>,
+#[collect(no_drop)]
+struct ButtonShared<'gc> {
+    swf: SwfMovie<'gc>,
     id: CharacterId,
     cell: RefCell<ButtonSharedMut>,
 }

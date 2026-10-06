@@ -55,7 +55,7 @@ use crate::streams::StreamManager;
 use crate::string::{AvmString, AvmStringInterner, StringContext};
 use crate::stub::StubCollection;
 use crate::system_properties::SystemProperties;
-use crate::tag_utils::SwfMovieData;
+use crate::tag_utils::{SwfMovie, SwfMovieData};
 use crate::timer::Timers;
 use crate::vminterface::Instantiator;
 use async_channel::Sender;
@@ -169,7 +169,7 @@ impl<'gc> MouseData<'gc> {
 #[derive(Collect)]
 #[collect(no_drop)]
 struct GcRootData<'gc> {
-    root_swf: Arc<SwfMovieData>,
+    root_swf: SwfMovie<'gc>,
 
     library: Library<'gc>,
 
@@ -250,7 +250,7 @@ impl<'gc> GcRootData<'gc> {
         &mut self,
     ) -> (
         Stage<'gc>,
-        &mut Arc<SwfMovieData>,
+        &mut SwfMovie<'gc>,
         &mut Library<'gc>,
         &mut ActionQueue<'gc>,
         &mut AvmStringInterner<'gc>,
@@ -1978,7 +1978,7 @@ impl Player {
     fn check_display_object_equality(object1: DisplayObject, object2: DisplayObject) -> bool {
         object1.depth() == object2.depth()
             && object1.id() == object2.id()
-            && Arc::ptr_eq(&object1.movie(), &object2.movie())
+            && SwfMovie::ptr_eq(&object1.movie(), &object2.movie())
     }
     ///This searches for a display object by it's id.
     ///When a button is being held down but the mouse stops hovering over the object
@@ -2966,7 +2966,7 @@ impl PlayerBuilder {
         player_version: u8,
         player_runtime: PlayerRuntime,
         fullscreen: bool,
-        fake_movie: Arc<SwfMovieData>,
+        fake_movie: SwfMovie<'gc>,
         external_interface_provider: Option<Box<dyn ExternalInterfaceProvider>>,
         fs_command_provider: Box<dyn FsCommandProvider>,
     ) -> GcRoot<'gc> {
@@ -3064,7 +3064,7 @@ impl PlayerBuilder {
         let language = ui.language();
 
         // Instantiate the player.
-        let fake_movie = Arc::new(SwfMovieData::empty(player_version, None));
+        let fake_movie = SwfMovie::new(SwfMovieData::empty(player_version, None));
         let frame_rate = self.frame_rate.unwrap_or(12.0);
         let forced_frame_rate = self.frame_rate.is_some();
         let player = Arc::new_cyclic(|self_ref| {

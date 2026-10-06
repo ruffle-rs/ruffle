@@ -7,13 +7,12 @@ use crate::avm2::{Avm2, Error};
 use crate::context::UpdateContext;
 use crate::display_object::{DisplayObject, TDisplayObject, TDisplayObjectContainer};
 use crate::loader::ContentType;
-use crate::tag_utils::SwfMovieData;
+use crate::tag_utils::{SwfMovie, SwfMovieData};
 use core::fmt;
 use gc_arena::barrier::unlock;
 use gc_arena::{Collect, Gc, GcWeak, Mutation, lock::RefLock};
 use ruffle_common::utils::HasPrefixField;
 use std::cell::{Cell, Ref};
-use std::sync::Arc;
 
 /// Represents a thing which can be loaded by a loader.
 #[derive(Collect, Clone)]
@@ -33,16 +32,16 @@ pub enum LoaderStream<'gc> {
     /// The `bool` parameter indicates if this is the `Stage`'s loader info;
     /// this is because certain `Stage` properties are accessible even when the
     /// associated movie is not yet loaded.
-    NotYetLoaded(Arc<SwfMovieData>, Option<DisplayObject<'gc>>, bool),
+    NotYetLoaded(SwfMovie<'gc>, Option<DisplayObject<'gc>>, bool),
 
     /// A loaded SWF movie.
     ///
     /// The associated `DisplayObject` is the root movieclip.
-    Swf(Arc<SwfMovieData>, DisplayObject<'gc>),
+    Swf(SwfMovie<'gc>, DisplayObject<'gc>),
 }
 
-impl LoaderStream<'_> {
-    pub fn movie(&self) -> &Arc<SwfMovieData> {
+impl<'gc> LoaderStream<'gc> {
+    pub fn movie(&self) -> &SwfMovie<'gc> {
         match self {
             LoaderStream::NotYetLoaded(movie, _, _) => movie,
             LoaderStream::Swf(movie, _) => movie,
@@ -107,7 +106,7 @@ impl<'gc> LoaderInfoObject<'gc> {
     /// info.
     pub fn not_yet_loaded(
         activation: &mut Activation<'_, 'gc>,
-        movie: Arc<SwfMovieData>,
+        movie: SwfMovie<'gc>,
         loader: Option<StageObject<'gc>>,
         root_clip: Option<DisplayObject<'gc>>,
         is_stage: bool,
@@ -281,7 +280,7 @@ impl<'gc> LoaderInfoObject<'gc> {
 
         // Reset properties
         let movie = &context.root_swf;
-        let empty_swf = Arc::new(SwfMovieData::empty(
+        let empty_swf = SwfMovie::new(SwfMovieData::empty(
             movie.version(),
             Some(movie.url().into()),
         ));
