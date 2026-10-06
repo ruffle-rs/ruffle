@@ -1,3 +1,6 @@
+//! AVM1 AMF serialization and deserialization code.
+//!
+//! Used in objects such as NetConnection, LocalConnection, or SharedObject
 use crate::avm1::{Activation, Attribute, NativeObject, Object, Value};
 use crate::string::AvmString;
 use flash_lso::amf0::read::AMF0Decoder;
@@ -6,6 +9,11 @@ use flash_lso::types::{ClassDefinition, Element, ObjectId, Reference, Value as A
 use ruffle_macros::istr;
 use std::collections::BTreeMap;
 use std::rc::Rc;
+
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+pub struct AmfConfig {
+    pub supports_strict_arrays: bool,
+}
 
 /// AMF0 serializes an object as a TypedObject if its constructor has a class
 /// name registered through `Object.registerClass`; otherwise it serializes it as
@@ -41,6 +49,20 @@ fn object_class_name<'gc>(
             .map(|class_name| class_name.to_utf8_lossy().into_owned()),
         _ => None,
     }
+}
+
+/// Analyze array keys to determine max length and presence of custom properties
+fn analyze_array_keys<'gc>(keys: &[AvmString<'gc>], initial_len: usize) -> (usize, bool) {
+    let mut length = initial_len;
+    let mut has_custom = false;
+
+    for key in keys {
+        match key.to_utf8_lossy().parse::<usize>() {
+            Ok(index) => length = length.max(index + 1),
+            Err(_) => has_custom = true,
+        }
+    }
+    (length, has_custom)
 }
 
 /// Serialize AMF data in NetConnection.addHeader, NetConnection.call, and LocalConnection.send
@@ -80,50 +102,41 @@ fn serialize_object_properties<'gc>(
     object: Object<'gc>,
 ) -> Vec<Element> {
     let mut w = Amf0Writer::default();
-    recursive_serialize(activation, object, &mut w);
+    let config = AmfConfig {
+        supports_strict_arrays: true,
+    };
+    recursive_serialize(activation, object, &mut w, config);
     w.commit_lso("root").into_iter().collect()
 }
 
 /// Serialize an array for NetConnection and LocalConnection
 fn serialize_array<'gc>(activation: &mut Activation<'_, 'gc>, array: Object<'gc>) -> AmfValue {
-    let mut length = array.length(activation).unwrap_or(0).max(0) as usize;
+    let initial_len = array.length(activation).unwrap_or(0).max(0) as usize;
     let keys = array.get_keys(activation, false);
+    let (length, has_custom_properties) = analyze_array_keys(&keys, initial_len);
 
-    // Flash treats any numeric key as an array element. If a numeric key
-    // exceeds the current length, it expands the array's serialization length.
-    for key in &keys {
-        if let Ok(index) = key.to_utf8_lossy().parse::<usize>() {
-            length = length.max(index + 1);
-        }
-    }
-
-    let mut has_custom_properties = false;
-    let mut associative = Vec::new();
-
-    // Flash expects insertion order for these properties
-    for key in keys.into_iter().rev() {
-        // A property is "custom" if it is entirely non-numeric
-        if key.to_utf8_lossy().parse::<usize>().is_err() {
-            has_custom_properties = true;
-        }
-
-        let prop_value = array.get(key, activation).unwrap_or(Value::Undefined);
-        let value = serialize(activation, prop_value);
-        associative.push(Element::new(key.to_string(), Rc::new(value)));
-    }
     if has_custom_properties {
         // Mixed Array: Has true non-numeric keys
+        let associative = keys
+            .into_iter()
+            .rev()
+            .map(|key| {
+                let prop_value = array.get(key, activation).unwrap_or(Value::Undefined);
+                Element::new(key.to_string(), Rc::new(serialize(activation, prop_value)))
+            })
+            .collect();
+
         AmfValue::ECMAArray(ObjectId::INVALID, Vec::new(), associative, length as u32)
     } else {
         // Pure Dense Array: Pad holes with Undefined to maintain contiguous indices
-        let mut dense = Vec::with_capacity(length);
-        for i in 0..length {
-            let elem_name = AvmString::new_utf8(activation.gc(), i.to_string());
-            let prop_value = array.get(elem_name, activation).unwrap_or(Value::Undefined);
-            let value = serialize(activation, prop_value);
-            dense.push(Rc::new(value));
-        }
-        // Output as a StrictArray.
+        let dense = (0..length)
+            .map(|i| {
+                let elem_name = AvmString::new_utf8(activation.gc(), i.to_string());
+                let prop_value = array.get(elem_name, activation).unwrap_or(Value::Undefined);
+                Rc::new(serialize(activation, prop_value))
+            })
+            .collect();
+
         AmfValue::StrictArray(ObjectId::INVALID, dense)
     }
 }
@@ -134,6 +147,7 @@ fn serialize_value_to_writer<'gc>(
     name: &str,
     elem: Value<'gc>,
     writer: &mut dyn ObjWriter<'_>,
+    config: AmfConfig,
 ) {
     match elem {
         Value::Object(o) => {
@@ -142,19 +156,37 @@ fn serialize_value_to_writer<'gc>(
             } else if o.as_display_object().is_some() {
                 writer.undefined(name)
             } else if let NativeObject::Array(_) = o.native() {
-                let (aw, token) = writer.array(CacheKey::from_ptr(o.as_ptr()));
+                let keys = o.get_keys(activation, false);
+                let initial_len = o.length(activation).unwrap_or(0).max(0) as usize;
+                let (length, has_custom_properties) = analyze_array_keys(&keys, initial_len);
 
-                if let Some(mut aw) = aw {
-                    recursive_serialize(activation, o, &mut aw);
-
-                    // TODO: What happens if an exception is thrown here?
-                    let length = o
-                        .length(activation)
-                        .expect("Failed to get length for SharedObject array");
-
-                    aw.commit(name, length as u32);
+                if has_custom_properties || !config.supports_strict_arrays {
+                    let (aw, token) = writer.array(CacheKey::from_ptr(o.as_ptr()));
+                    if let Some(mut aw) = aw {
+                        recursive_serialize(activation, o, &mut aw, config);
+                        aw.commit(name, length as u32);
+                    } else {
+                        writer.reference(name, token);
+                    }
                 } else {
-                    writer.reference(name, token);
+                    let (aw, token) = writer.strict_array(CacheKey::from_ptr(o.as_ptr()));
+                    if let Some(mut aw) = aw {
+                        for i in 0..length {
+                            let elem_name = AvmString::new_utf8(activation.gc(), i.to_string());
+                            let prop_value =
+                                o.get(elem_name, activation).unwrap_or(Value::Undefined);
+                            serialize_value_to_writer(
+                                activation,
+                                &i.to_string(),
+                                prop_value,
+                                &mut aw,
+                                config,
+                            );
+                        }
+                        aw.commit(name);
+                    } else {
+                        writer.reference(name, token);
+                    }
                 }
             } else if let Some(xml_node) = o.as_xml_node() {
                 // TODO: What happens if an exception is thrown here?
@@ -170,7 +202,7 @@ fn serialize_value_to_writer<'gc>(
                 if let Some(class_name) = object_class_name(activation, o) {
                     let (ow, token) = writer.typed_object(&class_name, key);
                     if let Some(mut ow) = ow {
-                        recursive_serialize(activation, o, &mut ow);
+                        recursive_serialize(activation, o, &mut ow, config);
                         ow.commit(name);
                     } else {
                         writer.reference(name, token);
@@ -178,7 +210,7 @@ fn serialize_value_to_writer<'gc>(
                 } else {
                     let (ow, token) = writer.object(key);
                     if let Some(mut ow) = ow {
-                        recursive_serialize(activation, o, &mut ow);
+                        recursive_serialize(activation, o, &mut ow, config);
                         ow.commit(name);
                     } else {
                         writer.reference(name, token);
@@ -201,6 +233,7 @@ pub fn recursive_serialize<'gc>(
     activation: &mut Activation<'_, 'gc>,
     obj: Object<'gc>,
     writer: &mut dyn ObjWriter<'_>,
+    config: AmfConfig,
 ) {
     // Reversed to match flash player ordering
     // Note that because get_keys can recurse, this may result in an OS stack overflow
@@ -219,7 +252,7 @@ pub fn recursive_serialize<'gc>(
         };
 
         let name = element_name.to_utf8_lossy();
-        serialize_value_to_writer(activation, name.as_ref(), elem, writer);
+        serialize_value_to_writer(activation, name.as_ref(), elem, writer, config);
     }
 }
 
@@ -281,9 +314,12 @@ pub fn deserialize_value<'gc>(
                 reference_cache.insert(reference, v);
             }
 
+            // Only define properties for elements that are NOT AMF Undefined holes
             for (i, item) in values.iter().enumerate() {
                 let value = deserialize_value(activation, item, lso, reference_cache);
-                obj.set_element(activation, i as i32, value).unwrap();
+                if !matches!(value, Value::Undefined) {
+                    obj.set_element(activation, i as i32, value).unwrap();
+                }
             }
 
             v
