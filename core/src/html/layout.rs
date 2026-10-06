@@ -8,19 +8,18 @@ use crate::html::layout::context::LayoutContext;
 use crate::html::text_format::{FormatSpans, TextFormat, TextSpan};
 use crate::html::wrap_line;
 use crate::string::WStr;
-use crate::tag_utils::SwfMovieData;
+use crate::tag_utils::SwfMovie;
 use gc_arena::Collect;
 use std::cmp::{Ordering, max, min};
 use std::fmt::{Debug, Formatter};
 use std::mem;
 use std::ops::Range;
 use std::slice::Iter;
-use std::sync::Arc;
 use swf::{Rectangle, Twips};
 
 #[derive(Clone)]
-pub struct LayoutParams {
-    pub movie: Arc<SwfMovieData>,
+pub struct LayoutParams<'gc> {
+    pub movie: SwfMovie<'gc>,
     pub is_input: bool,
     pub is_word_wrap: bool,
     pub font_type: FontType,
@@ -31,7 +30,7 @@ pub struct LayoutBuilder<'a, 'gc> {
     context: &'a mut dyn LayoutContext<'gc>,
 
     /// The movie this layout context is pulling fonts from.
-    movie: Arc<SwfMovieData>,
+    movie: SwfMovie<'gc>,
 
     /// Whether user input is allowed.
     is_input: bool,
@@ -115,7 +114,7 @@ pub struct LayoutBuilder<'a, 'gc> {
 impl<'a, 'gc> LayoutBuilder<'a, 'gc> {
     fn new(
         context: &'a mut dyn LayoutContext<'gc>,
-        params: LayoutParams,
+        params: LayoutParams<'gc>,
         max_bounds: Twips,
         text: &'a WStr,
     ) -> Self {
@@ -792,7 +791,7 @@ impl<'a, 'gc> LayoutBuilder<'a, 'gc> {
 pub fn lower_from_text_spans<'gc>(
     fs: &FormatSpans,
     context: &mut dyn LayoutContext<'gc>,
-    params: LayoutParams,
+    params: LayoutParams<'gc>,
     requested_width: Option<Twips>,
 ) -> Layout<'gc> {
     let requested_width = requested_width.unwrap_or_else(|| {
@@ -813,7 +812,7 @@ pub fn lower_from_text_spans<'gc>(
 fn lower_from_text_spans_known_width<'gc>(
     fs: &FormatSpans,
     context: &mut dyn LayoutContext<'gc>,
-    params: LayoutParams,
+    params: LayoutParams<'gc>,
     bounds: Twips,
 ) -> Layout<'gc> {
     let mut builder = LayoutBuilder::new(context, params, bounds, fs.displayed_text());

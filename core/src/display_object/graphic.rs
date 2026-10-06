@@ -8,7 +8,7 @@ use crate::display_object::{BoundsMode, DisplayObjectBase};
 use crate::drawing::Drawing;
 use crate::library::MovieLibrarySource;
 use crate::prelude::*;
-use crate::tag_utils::SwfMovieData;
+use crate::tag_utils::SwfMovie;
 use crate::tessellation_cache::TessellationCache;
 use crate::vminterface::Instantiator;
 use core::fmt;
@@ -19,7 +19,6 @@ use ruffle_common::utils::HasPrefixField;
 use ruffle_render::backend::ShapeHandle;
 use ruffle_render::commands::CommandHandler;
 use std::cell::{OnceCell, RefCell, RefMut};
-use std::sync::Arc;
 
 #[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]
@@ -38,7 +37,7 @@ impl fmt::Debug for Graphic<'_> {
 #[repr(C, align(8))]
 pub struct GraphicData<'gc> {
     base: DisplayObjectBase<'gc>,
-    shared: Lock<Gc<'gc, GraphicShared>>,
+    shared: Lock<Gc<'gc, GraphicShared<'gc>>>,
     class: Lock<Option<Avm2ClassObject<'gc>>>,
     avm2_object: Lock<Option<Avm2StageObject<'gc>>>,
     /// This is lazily allocated on demand, to make `GraphicData` smaller in the common case.
@@ -51,7 +50,7 @@ impl<'gc> Graphic<'gc> {
     pub fn from_swf_tag(
         context: &mut UpdateContext<'gc>,
         swf_shape: swf::Shape,
-        movie: Arc<SwfMovieData>,
+        movie: SwfMovie<'gc>,
     ) -> Self {
         let library = context.library.library_for_movie(movie.clone()).unwrap();
         let shared = GraphicShared {
@@ -134,7 +133,7 @@ impl<'gc> Graphic<'gc> {
     /// Returns the best shape handle for the current scale, retessellating if necessary.
     fn get_or_retessellate_handle(
         self,
-        context: &mut RenderContext,
+        context: &mut RenderContext<'_, 'gc>,
         base_handle: &ShapeHandle,
         current_scale: f32,
     ) -> ShapeHandle {
@@ -243,7 +242,7 @@ impl<'gc> TDisplayObject<'gc> for Graphic<'gc> {
         self.invalidate_cached_bitmap();
     }
 
-    fn render_self(self, context: &mut RenderContext) {
+    fn render_self(self, context: &mut RenderContext<'_, 'gc>) {
         if !context.is_offscreen
             && !self
                 .world_bounds(BoundsMode::Engine)
@@ -310,7 +309,7 @@ impl<'gc> TDisplayObject<'gc> for Graphic<'gc> {
         }
     }
 
-    fn movie(self) -> Arc<SwfMovieData> {
+    fn movie(self) -> SwfMovie<'gc> {
         self.0.shared.get().movie.clone()
     }
 
@@ -334,14 +333,23 @@ impl<'gc> TDisplayObject<'gc> for Graphic<'gc> {
 
 /// Data shared between all instances of a Graphic.
 #[derive(Collect)]
-#[collect(require_static)]
-struct GraphicShared {
+#[collect(no_drop)]
+struct GraphicShared<'gc> {
+    movie: SwfMovie<'gc>,
     id: CharacterId,
+
+    #[collect(require_static)]
     shape: swf::Shape,
+
+    #[collect(require_static)]
     render_handle: Option<ShapeHandle>,
+
+    #[collect(require_static)]
     shape_bounds: Rectangle<Twips>,
+
+    #[collect(require_static)]
     edge_bounds: Rectangle<Twips>,
-    movie: Arc<SwfMovieData>,
+
     #[collect(require_static)]
     scaled_handle: RefCell<TessellationCache>,
 }

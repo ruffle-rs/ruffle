@@ -10,8 +10,8 @@ use crate::avm2::value::Value;
 use crate::display_object::TDisplayObject;
 use crate::loader::ContentType;
 use crate::string::AvmString;
+use crate::tag_utils::SwfMovie;
 use crate::{avm2_stub_getter, avm2_stub_method};
-use std::sync::Arc;
 use swf::{Compression, write_swf};
 use url::Url;
 
@@ -283,7 +283,7 @@ pub fn get_child_allows_parent<'gc>(
                 // Only the root movie is LoaderStream::Swf but missing a loader.
                 // In that case, return true.
                 assert!(
-                    Arc::ptr_eq(root, activation.context.root_swf)
+                    SwfMovie::ptr_eq(root, activation.context.root_swf)
                         && dobj.as_movie_clip().is_some()
                 );
                 Ok(true.into())
@@ -322,7 +322,7 @@ pub fn get_parent_allows_child<'gc>(
             } else {
                 // See comment on childAllowsParent
                 assert!(
-                    Arc::ptr_eq(root, activation.context.root_swf)
+                    SwfMovie::ptr_eq(root, activation.context.root_swf)
                         && dobj.as_movie_clip().is_some()
                 );
                 Ok(true.into())

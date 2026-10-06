@@ -10,7 +10,7 @@ use crate::bitmap::bitmap_data::BitmapData;
 use crate::context::{RenderContext, UpdateContext};
 use crate::display_object::{BoundsMode, DisplayObjectBase, DisplayObjectPtr, DisplayObjectWeak};
 use crate::prelude::*;
-use crate::tag_utils::SwfMovieData;
+use crate::tag_utils::SwfMovie;
 use crate::vminterface::Instantiator;
 use core::fmt;
 use gc_arena::barrier::unlock;
@@ -19,7 +19,6 @@ use gc_arena::{Collect, Gc, GcWeak, Mutation};
 use ruffle_common::utils::HasPrefixField;
 use ruffle_render::bitmap::{BitmapFormat, PixelSnapping};
 use std::cell::Cell;
-use std::sync::Arc;
 
 #[derive(Clone, Debug, Collect, Copy)]
 #[collect(no_drop)]
@@ -101,7 +100,7 @@ impl fmt::Debug for Bitmap<'_> {
 #[repr(C, align(8))]
 pub struct BitmapGraphicData<'gc> {
     base: DisplayObjectBase<'gc>,
-    movie: Arc<SwfMovieData>,
+    movie: SwfMovie<'gc>,
 
     /// The AVM2 side of this object.
     ///
@@ -143,7 +142,7 @@ impl<'gc> Bitmap<'gc> {
         id: CharacterId,
         bitmap_data: BitmapData<'gc>,
         smoothing: bool,
-        movie: &Arc<SwfMovieData>,
+        movie: &SwfMovie<'gc>,
     ) -> Self {
         // NOTE: We do *not* solicit a handle from the `bitmap_data` at this
         // time due to mutable borrowing issues.
@@ -177,7 +176,7 @@ impl<'gc> Bitmap<'gc> {
         mc: &Mutation<'gc>,
         id: CharacterId,
         bitmap: ruffle_render::bitmap::Bitmap,
-        movie: Arc<SwfMovieData>,
+        movie: SwfMovie<'gc>,
     ) -> Self {
         let width = bitmap.width();
         let height = bitmap.height();
@@ -418,7 +417,7 @@ impl<'gc> TDisplayObject<'gc> for Bitmap<'gc> {
         self.set_avm2_object(context.gc(), Some(to));
     }
 
-    fn movie(self) -> Arc<SwfMovieData> {
+    fn movie(self) -> SwfMovie<'gc> {
         self.0.movie.clone()
     }
 }

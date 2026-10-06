@@ -12,13 +12,12 @@ use crate::avm2::script::TranslationUnit;
 use crate::avm2::value::{Value, abc_default_value};
 use crate::avm2::verify::VerifiedMethodInfo;
 use crate::string::AvmString;
-use crate::tag_utils::SwfMovieData;
+use crate::tag_utils::SwfMovie;
 use gc_arena::barrier::{Write, unlock};
 use gc_arena::lock::OnceLock;
 use gc_arena::{Collect, Gc};
 use std::borrow::Cow;
 use std::rc::Rc;
-use std::sync::Arc;
 use swf::avm2::types::{
     AbcFile, Index, Method as AbcMethod, MethodBody as AbcMethodBody,
     MethodFlags as AbcMethodFlags, MethodParam as AbcMethodParam,
@@ -258,7 +257,7 @@ impl<'gc> Method<'gc> {
     }
 
     /// Get a reference to the SwfMovie this method came from.
-    pub fn owner_movie(self) -> Arc<SwfMovieData> {
+    pub fn owner_movie(self) -> SwfMovie<'gc> {
         self.0.txunit.movie()
     }
 

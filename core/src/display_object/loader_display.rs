@@ -11,7 +11,7 @@ use crate::prelude::*;
 
 use crate::display_object::container::ChildContainer;
 use crate::display_object::interactive::InteractiveObjectBase;
-use crate::tag_utils::SwfMovieData;
+use crate::tag_utils::SwfMovie;
 use crate::vminterface::Instantiator;
 use core::fmt;
 use gc_arena::barrier::unlock;
@@ -19,7 +19,6 @@ use gc_arena::lock::{Lock, RefLock};
 use gc_arena::{Collect, Gc, GcWeak, Mutation};
 use ruffle_common::utils::HasPrefixField;
 use std::cell::{Ref, RefMut};
-use std::sync::Arc;
 
 use super::interactive::Avm2MousePick;
 
@@ -42,11 +41,11 @@ pub struct LoaderDisplayData<'gc> {
     base: InteractiveObjectBase<'gc>,
     container: RefLock<ChildContainer<'gc>>,
     avm2_object: Lock<Option<Avm2StageObject<'gc>>>,
-    movie: Arc<SwfMovieData>,
+    movie: SwfMovie<'gc>,
 }
 
 impl<'gc> LoaderDisplay<'gc> {
-    pub fn empty(activation: &mut Activation<'_, 'gc>, movie: Arc<SwfMovieData>) -> Self {
+    pub fn empty(activation: &mut Activation<'_, 'gc>, movie: SwfMovie<'gc>) -> Self {
         let obj = LoaderDisplay(Gc::new(
             activation.gc(),
             LoaderDisplayData {
@@ -125,7 +124,7 @@ impl<'gc> TDisplayObject<'gc> for LoaderDisplay<'gc> {
         self.set_default_instance_name(context);
     }
 
-    fn movie(self) -> Arc<SwfMovieData> {
+    fn movie(self) -> SwfMovie<'gc> {
         self.0.movie.clone()
     }
 

@@ -10,7 +10,7 @@ use crate::context::{RenderContext, UpdateContext};
 use crate::drawing::Drawing;
 use crate::prelude::*;
 use crate::string::{AvmString, WString};
-use crate::tag_utils::SwfMovieData;
+use crate::tag_utils::SwfMovie;
 use crate::types::{Degrees, Percent};
 use crate::vminterface::Instantiator;
 use bitflags::bitflags;
@@ -25,7 +25,6 @@ use std::cell::{Cell, Ref, RefCell, RefMut};
 use std::fmt::Debug;
 use std::hash::Hash;
 use std::num::NonZero;
-use std::sync::Arc;
 use swf::{ColorTransform, Fixed8};
 
 mod avm1_button;
@@ -2683,7 +2682,7 @@ pub trait TDisplayObject<'gc>:
     }
 
     /// Return the SWF that defines this display object.
-    fn movie(self) -> Arc<SwfMovieData>;
+    fn movie(self) -> SwfMovie<'gc>;
 
     fn loader_info(self) -> Option<LoaderInfoObject<'gc>> {
         None

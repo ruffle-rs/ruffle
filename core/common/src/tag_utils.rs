@@ -1,16 +1,109 @@
 use crate::sandbox::SandboxType;
 
 use gc_arena::Collect;
+use gc_arena::collect::Trace;
 use std::fmt::{Debug, Formatter};
-use std::sync::Arc;
+use std::marker::PhantomData;
+use std::ops::Deref;
+use std::sync::{Arc, Weak};
 use swf::{Fixed8, HeaderExt, Rectangle, Twips};
 use url::Url;
+use weak_table::traits::WeakElement;
 
 pub type SwfStream<'a> = swf::read::Reader<'a>;
 
 /// A shared pointer to a `SwfMovieData`. This type should eventually be made
-/// into a `Gc<'gc, SwfMovieData>`.
-pub type SwfMovie<'gc> = Arc<SwfMovieData>;
+/// into a `Gc<'gc, SwfMovieData>`; it only stores an `Arc` for now to make the
+/// transition easier.
+#[derive(Clone)]
+pub struct SwfMovie<'gc> {
+    pub stored_movie: Arc<SwfMovieData>,
+    pub _phantom: PhantomData<&'gc ()>,
+}
+
+impl<'gc> SwfMovie<'gc> {
+    pub fn new(data: SwfMovieData) -> Self {
+        Self {
+            stored_movie: Arc::new(data),
+            _phantom: PhantomData,
+        }
+    }
+
+    pub fn downgrade(&self) -> SwfMovieWeak<'gc> {
+        SwfMovieWeak {
+            stored_movie: Arc::downgrade(&self.stored_movie),
+            _phantom: PhantomData,
+        }
+    }
+
+    pub fn as_ptr(&self) -> *const SwfMovieData {
+        Arc::as_ptr(&self.stored_movie)
+    }
+
+    pub fn ptr_eq(this: &Self, other: &Self) -> bool {
+        std::ptr::eq(this.as_ptr(), other.as_ptr())
+    }
+}
+
+impl<'gc> Deref for SwfMovie<'gc> {
+    type Target = SwfMovieData;
+
+    fn deref(&self) -> &Self::Target {
+        &self.stored_movie
+    }
+}
+
+// SAFETY: This type doesn't store any Gc pointers
+unsafe impl<'gc> Collect<'gc> for SwfMovie<'gc> {
+    fn trace<C: Trace<'gc>>(&self, _cc: &mut C) {
+        // Nothing to trace
+    }
+}
+
+impl<'gc> Debug for SwfMovie<'gc> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        Debug::fmt(&self.stored_movie, f)
+    }
+}
+
+/// Like `SwfMovie`, but is a weak reference.
+#[derive(Clone)]
+pub struct SwfMovieWeak<'gc> {
+    stored_movie: Weak<SwfMovieData>,
+    _phantom: PhantomData<&'gc ()>,
+}
+
+impl<'gc> SwfMovieWeak<'gc> {
+    pub fn upgrade(&self) -> Option<SwfMovie<'gc>> {
+        if let Some(stored_movie) = self.stored_movie.upgrade() {
+            Some(SwfMovie {
+                stored_movie,
+                _phantom: PhantomData,
+            })
+        } else {
+            None
+        }
+    }
+}
+
+impl<'gc> WeakElement for SwfMovieWeak<'gc> {
+    type Strong = SwfMovie<'gc>;
+
+    fn new(view: &Self::Strong) -> Self {
+        view.downgrade()
+    }
+
+    fn view(&self) -> Option<Self::Strong> {
+        self.upgrade()
+    }
+}
+
+// SAFETY: This type doesn't store any Gc pointers
+unsafe impl<'gc> Collect<'gc> for SwfMovieWeak<'gc> {
+    fn trace<C: Trace<'gc>>(&self, _cc: &mut C) {
+        // Nothing to trace
+    }
+}
 
 /// An open, fully parsed SWF movie ready to play back, either in a Player or a
 /// MovieClip.
@@ -381,8 +474,8 @@ pub struct SwfSlice {
     pub end: usize,
 }
 
-impl From<Arc<SwfMovieData>> for SwfSlice {
-    fn from(movie: Arc<SwfMovieData>) -> Self {
+impl<'gc> From<SwfMovie<'gc>> for SwfSlice {
+    fn from(movie: SwfMovie<'gc>) -> Self {
         let end = movie.data().len();
 
         Self {
@@ -404,7 +497,7 @@ impl AsRef<[u8]> for SwfSlice {
 impl SwfSlice {
     /// Creates an empty SwfSlice.
     #[inline]
-    pub fn empty(movie: Arc<SwfMovieData>) -> Self {
+    pub fn empty(movie: SwfMovie<'_>) -> Self {
         Self {
             entire_data: movie.data.clone(),
             swf_version: movie.version(),

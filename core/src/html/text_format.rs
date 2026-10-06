@@ -3,7 +3,7 @@
 use crate::context::UpdateContext;
 use crate::html::iterators::TextSpanIter;
 use crate::string::{Integer, SwfStrExt as _, Units, WStr, WString};
-use crate::tag_utils::SwfMovieData;
+use crate::tag_utils::SwfMovie;
 use gc_arena::Collect;
 use quick_xml::{Reader, escape::escape, events::Event};
 use ruffle_wstr::utils::{swf_is_ascii_hexdigit, swf_is_newline, swf_is_whitespace};
@@ -12,7 +12,6 @@ use std::cmp::{Ordering, min};
 use std::collections::{HashSet, VecDeque};
 use std::fmt::Write;
 use std::num::Wrapping;
-use std::sync::Arc;
 
 use super::StyleSheet;
 
@@ -193,10 +192,10 @@ impl TextFormat {
     ///
     /// This requires an `UpdateContext` as we will need to retrieve some font
     /// information from the actually-referenced font.
-    pub fn from_swf_tag(
+    pub fn from_swf_tag<'gc>(
         et: swf::EditText<'_>,
-        swf_movie: Arc<SwfMovieData>,
-        context: &mut UpdateContext<'_>,
+        swf_movie: SwfMovie<'gc>,
+        context: &mut UpdateContext<'gc>,
     ) -> Self {
         let encoding = swf_movie.encoding();
         let swf_version = swf_movie.version();

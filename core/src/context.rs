@@ -37,7 +37,7 @@ use crate::string::HasStringContext;
 use crate::string::{AvmString, StringContext};
 use crate::stub::StubCollection;
 use crate::system_properties::SystemProperties;
-use crate::tag_utils::{SwfMovieData, SwfSlice};
+use crate::tag_utils::{SwfMovie, SwfMovieData, SwfSlice};
 use crate::timer::Timers;
 use crate::vminterface::Instantiator;
 use async_channel::Sender;
@@ -91,7 +91,7 @@ pub struct UpdateContext<'gc> {
     pub needs_render: &'gc mut bool,
 
     /// The root SWF file.
-    pub root_swf: &'gc mut Arc<SwfMovieData>,
+    pub root_swf: &'gc mut SwfMovie<'gc>,
 
     /// The audio backend, used by display objects and AVM to play audio.
     pub audio: &'gc mut dyn AudioBackend,
@@ -369,7 +369,7 @@ impl<'gc> UpdateContext<'gc> {
             self.frame_rate,
         );
 
-        *self.root_swf = Arc::new(movie);
+        *self.root_swf = SwfMovie::new(movie);
         *self.instance_counter = 0;
 
         if self.root_swf.is_action_script_3() {

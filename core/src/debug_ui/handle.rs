@@ -1,9 +1,11 @@
 use crate::avm2::object::TObject as _;
 use crate::context::UpdateContext;
 use crate::display_object::{DisplayObject, DisplayObjectPtr, TDisplayObject};
+use crate::tag_utils::{SwfMovie, SwfMovieData};
 use gc_arena::{DynamicRoot, DynamicRootSet, Gc, Rootable};
 use std::fmt::{Debug, Formatter};
 use std::hash::{Hash, Hasher};
+use std::sync::Arc;
 
 // TODO: Make this generic somehow
 #[derive(Clone)]
@@ -278,3 +280,50 @@ impl Hash for FontHandle {
 }
 
 impl Eq for FontHandle {}
+
+// Movie
+
+/// TODO: Once `SwfMovie` is behind a `Gc` instead of an `Arc`, this should
+/// use a proper `DynamicRoot`.
+#[derive(Clone)]
+pub struct MovieHandle {
+    data: Arc<SwfMovieData>,
+    ptr: *const SwfMovieData,
+}
+
+impl MovieHandle {
+    pub fn new<'gc>(_context: &UpdateContext<'gc>, movie: SwfMovie<'gc>) -> Self {
+        Self {
+            data: movie.stored_movie.clone(),
+            ptr: movie.as_ptr(),
+        }
+    }
+
+    pub fn fetch<'gc>(&self, _dynamic_root_set: DynamicRootSet<'gc>) -> SwfMovie<'gc> {
+        SwfMovie {
+            stored_movie: self.data.clone(),
+            _phantom: std::marker::PhantomData,
+        }
+    }
+}
+
+impl Debug for MovieHandle {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.debug_tuple("MovieHandle").field(&self.ptr).finish()
+    }
+}
+
+impl PartialEq<MovieHandle> for MovieHandle {
+    #[inline(always)]
+    fn eq(&self, other: &MovieHandle) -> bool {
+        std::ptr::eq(self.ptr, other.ptr)
+    }
+}
+
+impl Hash for MovieHandle {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.ptr.hash(state);
+    }
+}
+
+impl Eq for MovieHandle {}

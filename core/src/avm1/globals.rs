@@ -9,9 +9,8 @@ use crate::string::{AvmString, StringContext, WStr, WString};
 use crate::tag_utils;
 use crate::tag_utils::ControlFlow;
 use gc_arena::Collect;
-use ruffle_common::tag_utils::{SwfMovieData, SwfSlice, SwfStream};
+use ruffle_common::tag_utils::{SwfMovie, SwfMovieData, SwfSlice, SwfStream};
 use std::str;
-use std::sync::Arc;
 use swf::TagCode;
 
 mod accessibility;
@@ -502,7 +501,7 @@ pub struct SystemPrototypes<'gc> {
 }
 
 pub fn load_playerglobal<'gc>(context: &mut UpdateContext<'gc>) {
-    let movie = Arc::new(
+    let movie = SwfMovie::new(
         SwfMovieData::from_data(PLAYERGLOBAL, "file:///".into(), None, None)
             .expect("playerglobal_avm1.swf should be valid"),
     );
