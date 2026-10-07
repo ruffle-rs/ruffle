@@ -16,7 +16,6 @@ use swf::TagCode;
 mod accessibility;
 pub(super) mod array;
 pub(crate) mod as_broadcaster;
-mod as_setup_error;
 mod asnative;
 mod asset_cache;
 mod automation_action_generator;
@@ -38,7 +37,6 @@ pub(crate) mod convolution_filter;
 pub(crate) mod date;
 pub(crate) mod displacement_map_filter;
 pub(crate) mod drop_shadow_filter;
-pub(crate) mod error;
 mod external_interface;
 pub(crate) mod file_reference;
 pub(crate) mod file_reference_list;
@@ -549,7 +547,6 @@ pub fn create_globals<'gc>(
     let text_format = text_format::create_class(context, object.proto);
     let array = array::create_class(context, object.proto);
     let color = color::create_class(context, object.proto);
-    let error = error::create_class(context, object.proto);
     let xmlnode = xml_node::create_class(context, object.proto);
     let string = string::create_class(context, object.proto);
     let number = number::create_class(context, object.proto);
@@ -611,7 +608,6 @@ pub fn create_globals<'gc>(
     let action_generator = automation_action_generator::create_class(context, object.proto);
     let automation_configuration = automation_configuration::create_class(context, object.proto);
 
-    let as_setup_error = as_setup_error::create_class(context, object.proto);
     let asset_cache = asset_cache::create_class(context, object.proto);
     let remote_lso_usage = remote_lso_usage::create_class(context, object.proto);
 
@@ -639,8 +635,8 @@ pub fn create_globals<'gc>(
         "SharedObject" => value(shared_object.constr; DONT_ENUM);
         "ContextMenuItem" => value(context_menu_item.constr; DONT_ENUM);
         "ContextMenu" => value(context_menu.constr; DONT_ENUM);
-        "Error" => value(error.constr; DONT_ENUM);
-        "AsSetupError" => value(as_setup_error.constr; DONT_ENUM);
+        "Error" => value(null; DONT_ENUM); // Actually in globals.as, reserve the spot here
+        "AsSetupError" => value(null; DONT_ENUM); // Actually in globals.as, reserve the spot here
         "AssetCache" => value(asset_cache.constr; DONT_ENUM);
         "RemoteLSOUsage" => value(remote_lso_usage.constr; DONT_ENUM);
 
