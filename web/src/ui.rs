@@ -337,10 +337,14 @@ impl UiBackend for WebUiBackend {
             return;
         }
 
+        let FontFamilyFilter::Name { name, .. } = &query.family else {
+            return;
+        };
+
         let renderer = canvas_font_renderer::CanvasFontRenderer::new(
             query.is_italic,
             query.is_bold,
-            &query.name,
+            name,
             &self.font_atlases,
         );
 
@@ -348,12 +352,12 @@ impl UiBackend for WebUiBackend {
             Ok(renderer) => {
                 tracing::info!(
                     "Loaded a new canvas font renderer for font \"{}\", italic: {}, bold: {}",
-                    query.name,
+                    name,
                     query.is_italic,
                     query.is_bold
                 );
                 register(FontDefinition::ExternalRenderer {
-                    name: query.name.clone(),
+                    name: name.clone(),
                     is_bold: query.is_bold,
                     is_italic: query.is_italic,
                     font_renderer: Box::new(renderer),
@@ -362,7 +366,7 @@ impl UiBackend for WebUiBackend {
             Err(e) => {
                 tracing::error!(
                     "Failed to set up canvas font renderer for font \"{}\": {e:?}",
-                    query.name
+                    name
                 )
             }
         }
@@ -370,9 +374,7 @@ impl UiBackend for WebUiBackend {
 
     fn sort_device_fonts(
         &self,
-        _filter: &FontFamilyFilter,
-        _is_bold: bool,
-        _is_italic: bool,
+        _query: &FontQuery,
         _register: &mut dyn FnMut(FontDefinition),
     ) -> Vec<FontQuery> {
         Vec::new()

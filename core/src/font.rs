@@ -26,28 +26,71 @@ use std::hash::{Hash, Hasher};
 
 pub use swf::TextGridFit;
 
-#[derive(Clone, Eq, Collect, Debug)]
+#[derive(Clone, Eq, PartialEq, Hash, Collect, Debug)]
 #[collect(require_static)]
 pub struct FontQuery {
     pub font_type: FontType,
-    pub name: String,
-    pub lowercase_name: String,
+    pub family: FontFamilyFilter,
     pub is_bold: bool,
     pub is_italic: bool,
 }
 
-#[derive(Clone, Debug, Eq, PartialEq, Hash)]
+#[derive(Clone, Eq, Collect, Debug)]
+#[collect(require_static)]
 pub enum FontFamilyFilter {
-    Name(String),
+    Name {
+        name: String,
+        lowercase_name: String,
+    },
     Default(DefaultFont),
+}
+
+impl PartialEq for FontFamilyFilter {
+    fn eq(&self, other: &Self) -> bool {
+        match (self, other) {
+            (
+                Self::Name {
+                    lowercase_name: left,
+                    ..
+                },
+                Self::Name {
+                    lowercase_name: right,
+                    ..
+                },
+            ) => left == right,
+            (Self::Default(left), Self::Default(right)) => left == right,
+            _ => false,
+        }
+    }
+}
+
+impl Hash for FontFamilyFilter {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        std::mem::discriminant(self).hash(state);
+        match self {
+            Self::Name { lowercase_name, .. } => lowercase_name.hash(state),
+            Self::Default(default_font) => default_font.hash(state),
+        }
+    }
 }
 
 impl FontQuery {
     pub fn new(font_type: FontType, name: String, is_bold: bool, is_italic: bool) -> Self {
         Self {
             font_type,
-            lowercase_name: name.to_lowercase(),
-            name,
+            family: FontFamilyFilter::Name {
+                lowercase_name: name.to_lowercase(),
+                name,
+            },
+            is_bold,
+            is_italic,
+        }
+    }
+
+    pub fn from_default(default_font: DefaultFont, is_bold: bool, is_italic: bool) -> Self {
+        Self {
+            font_type: FontType::Device,
+            family: FontFamilyFilter::Default(default_font),
             is_bold,
             is_italic,
         }
@@ -56,29 +99,13 @@ impl FontQuery {
     pub fn from_descriptor(font_type: FontType, descriptor: &FontDescriptor) -> Self {
         Self {
             font_type,
-            name: descriptor.name().to_owned(),
-            lowercase_name: descriptor.lowercase_name().to_owned(),
+            family: FontFamilyFilter::Name {
+                name: descriptor.name().to_owned(),
+                lowercase_name: descriptor.lowercase_name().to_owned(),
+            },
             is_bold: descriptor.bold(),
             is_italic: descriptor.italic(),
         }
-    }
-}
-
-impl PartialEq for FontQuery {
-    fn eq(&self, other: &Self) -> bool {
-        self.font_type == other.font_type
-            && self.lowercase_name == other.lowercase_name
-            && self.is_bold == other.is_bold
-            && self.is_italic == other.is_italic
-    }
-}
-
-impl Hash for FontQuery {
-    fn hash<H: Hasher>(&self, state: &mut H) {
-        self.font_type.hash(state);
-        self.lowercase_name.hash(state);
-        self.is_bold.hash(state);
-        self.is_italic.hash(state);
     }
 }
 
@@ -514,13 +541,6 @@ impl<'gc> Font<'gc> {
     /// Used by `EditText` display objects.
     pub fn get_glyph_for_char(&self, c: char) -> Option<GlyphRef<'_>> {
         self.0.glyphs.get_by_code_point(c)
-    }
-
-    pub fn get_missing_glyph(&self, c: char) -> Option<GlyphRef<'_>> {
-        match &self.0.glyphs {
-            GlyphSource::FontFace { face, .. } => face.get_missing_glyph(c).map(GlyphRef::Direct),
-            _ => None,
-        }
     }
 
     /// Determine if this font contains all the glyphs within a given string.

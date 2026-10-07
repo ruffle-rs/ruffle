@@ -182,16 +182,12 @@ impl UiBackend for TestUiBackend {
 
     fn sort_device_fonts(
         &self,
-        filter: &FontFamilyFilter,
-        is_bold: bool,
-        is_italic: bool,
+        query: &FontQuery,
         register: &mut dyn FnMut(FontDefinition),
     ) -> Vec<FontQuery> {
-        match filter {
-            FontFamilyFilter::Name(name) => {
-                let query = FontQuery::new(FontType::Device, name.clone(), is_bold, is_italic);
-
-                let Some(sort) = self.font_sorts.get(&query) else {
+        match &query.family {
+            FontFamilyFilter::Name { .. } => {
+                let Some(sort) = self.font_sorts.get(query) else {
                     return Vec::new();
                 };
 
@@ -210,7 +206,12 @@ impl UiBackend for TestUiBackend {
                 let mut result = Vec::new();
 
                 for name in names {
-                    let query = FontQuery::new(FontType::Device, name.clone(), is_bold, is_italic);
+                    let query = FontQuery::new(
+                        FontType::Device,
+                        name.clone(),
+                        query.is_bold,
+                        query.is_italic,
+                    );
 
                     if let Some(sort) = self.font_sorts.get(&query) {
                         for query in sort {

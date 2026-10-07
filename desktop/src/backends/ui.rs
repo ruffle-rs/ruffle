@@ -319,7 +319,9 @@ impl UiBackend for DesktopUiBackend {
     }
 
     fn load_device_font(&self, query: &FontQuery, register: &mut dyn FnMut(FontDefinition)) {
-        let name = &query.name;
+        let FontFamilyFilter::Name { name, .. } = &query.family else {
+            return;
+        };
         let is_bold = query.is_bold;
         let is_italic = query.is_italic;
 
@@ -362,17 +364,13 @@ impl UiBackend for DesktopUiBackend {
     #[allow(unused_variables)]
     fn sort_device_fonts(
         &self,
-        filter: &FontFamilyFilter,
-        is_bold: bool,
-        is_italic: bool,
+        query: &FontQuery,
         register: &mut dyn FnMut(FontDefinition),
     ) -> Vec<FontQuery> {
         cfg_select! {
             all(unix, feature = "fontconfig") => {
                 fontconfig::sort_device_fonts(
-                    filter,
-                    is_bold,
-                    is_italic,
+                    query,
                     register,
                     self.device_font_renderer,
                     &self.font_atlases,
@@ -531,7 +529,7 @@ fn load_fontdb_font(
 mod fontconfig {
     use crate::backends::ui::{DeviceFontRenderer, load_font_from_file};
     use ruffle_core::backend::ui::FontDefinition;
-    use ruffle_core::font::{DefaultFont, FontAtlases, FontFamilyFilter, FontQuery, FontType};
+    use ruffle_core::font::{DefaultFont, FontAtlases, FontFamilyFilter, FontQuery};
     use std::path::Path;
 
     #[derive(Debug, thiserror::Error)]
@@ -543,9 +541,7 @@ mod fontconfig {
     }
 
     pub fn sort_device_fonts(
-        filter: &FontFamilyFilter,
-        is_bold: bool,
-        is_italic: bool,
+        query: &FontQuery,
         register: &mut dyn FnMut(FontDefinition),
         device_font_renderer: DeviceFontRenderer,
         atlases: &FontAtlases,
@@ -562,8 +558,8 @@ mod fontconfig {
 
         let mut pattern: Pattern<'static> = Pattern::new(fc)?;
 
-        match filter {
-            FontFamilyFilter::Name(name) => {
+        match &query.family {
+            FontFamilyFilter::Name { name, .. } => {
                 let Ok(family) = std::ffi::CString::new(name.as_str()) else {
                     return Err(FontconfigError::MalformedFontFamily);
                 };
@@ -585,10 +581,10 @@ mod fontconfig {
             }
         }
 
-        if is_bold {
+        if query.is_bold {
             pattern.add_integer(fontconfig::FC_WEIGHT, fontconfig::FC_WEIGHT_BOLD)?;
         }
-        if is_italic {
+        if query.is_italic {
             pattern.add_integer(fontconfig::FC_SLANT, fontconfig::FC_SLANT_ITALIC)?;
         }
 
@@ -648,7 +644,7 @@ mod fontconfig {
                 }
             }
 
-            let query = FontQuery::new(FontType::Device, name.to_string(), is_bold, is_italic);
+            let query = FontQuery::new(query.font_type, name.to_string(), is_bold, is_italic);
             font_queries.push(query);
         }
 

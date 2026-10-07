@@ -19,7 +19,10 @@ function measureText(text, fontName) {
     return width;
 }
 
+
+var ch = String.fromCharCode(0x0416);
 trace("primaryA: " + measureText("a", "TestFontA"));
-trace("secondaryB: " + measureText("b", "TestFontB"));
+trace("secondaryGlyph: " + measureText(ch, "TestFontB"));
 trace("sansA: " + measureText("a", "_sans"));
-trace("sansB: " + measureText("b", "_sans"));
+trace("sansGlyph: " + measureText(ch, "_sans"));
+trace("sansMixed: " + measureText("a" + ch, "_sans"));

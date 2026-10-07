@@ -1,7 +1,7 @@
 pub use crate::loader::Error as DialogLoaderError;
 use crate::{
     backend::navigator::OwnedFuture,
-    font::{FontFamilyFilter, FontFileData, FontQuery, FontRenderer},
+    font::{FontFileData, FontQuery, FontRenderer},
 };
 use chrono::{DateTime, Utc};
 pub use fluent_templates::LanguageIdentifier;
@@ -154,9 +154,7 @@ pub trait UiBackend: Any {
 
     fn sort_device_fonts(
         &self,
-        filter: &FontFamilyFilter,
-        is_bold: bool,
-        is_italic: bool,
+        query: &FontQuery,
         register: &mut dyn FnMut(FontDefinition),
     ) -> Vec<FontQuery>;
 
@@ -251,9 +249,7 @@ impl UiBackend for NullUiBackend {
 
     fn sort_device_fonts(
         &self,
-        _filter: &FontFamilyFilter,
-        _is_bold: bool,
-        _is_italic: bool,
+        _query: &FontQuery,
         _register: &mut dyn FnMut(FontDefinition),
     ) -> Vec<FontQuery> {
         Vec::new()
