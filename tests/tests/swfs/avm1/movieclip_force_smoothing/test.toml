@@ -1,0 +1,23 @@
+num_ticks = 60
+
+[subtests.high.image_comparisons."output.high"]
+# Bitmap smoothing differs slightly from Flash Player.
+tolerance = 8
+
+[subtests.high.player_options]
+with_renderer = { optional = false, quality = "high" }
+
+[subtests.low.image_comparisons."output.low"]
+tolerance = 8
+# FIXME Flash Player does not smooth any bitmaps at low quality, Ruffle does.
+known_failure = true
+
+[subtests.low.player_options]
+with_renderer = { optional = false, quality = "low" }
+
+[[compilers]]
+type = "Rascal"
+target = "test.swf"
+scripts = ["test.as"]
+swf_version = 8
+stage_rect = { x_max = 980.0, y_max = 210.0 }

@@ -1,0 +1,18 @@
+image_attached: undefined
+image_untouched: undefined
+image_enabled: undefined
+image_disabled: undefined
+image_early: undefined
+image_reloaded: undefined
+image_reloaded: undefined
+inner: undefined
+shape_untouched: undefined
+shape_enabled: undefined
+shape_disabled: undefined
+shape_reloaded: undefined
+shape_reloaded: undefined
+shape_outer: undefined
+shape_inner: undefined
+set on frame 1
+shape_later: undefined
+shape_solid: undefined
