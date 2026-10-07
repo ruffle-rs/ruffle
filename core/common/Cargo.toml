@@ -22,4 +22,3 @@ swf = { path = "../../swf" }
 thiserror = { workspace = true }
 tracing = { workspace = true }
 url = { workspace = true }
-weak-table = { workspace = true }

@@ -284,7 +284,7 @@ impl<'gc> TDisplayObject<'gc> for TextLine<'gc> {
     }
 
     fn movie(self) -> SwfMovie<'gc> {
-        self.0.movie.clone()
+        self.0.movie
     }
 
     fn replace_with(self, _context: &mut UpdateContext<'gc>, _id: CharacterId) {}

@@ -551,9 +551,9 @@ fn create_text_line<'gc>(activation: &mut Activation<'_, 'gc>, width: f64) -> Te
     let class = activation.avm2().classes().textline;
 
     // TODO should we use the caller's movie instead? Does it matter?
-    let movie = activation.context.root_swf.clone();
+    let movie = *activation.context.root_swf;
 
-    let fallback = EditText::new_fte(activation.context, movie.clone(), 0.0, 0.0, width, 15.0);
+    let fallback = EditText::new_fte(activation.context, movie, 0.0, 0.0, width, 15.0);
     let text_line = TextLine::new(activation.context, movie, fallback);
     initialize_for_allocator(activation.context, text_line.into(), class);
 

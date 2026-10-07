@@ -142,7 +142,7 @@ impl<'gc> Bitmap<'gc> {
         id: CharacterId,
         bitmap_data: BitmapData<'gc>,
         smoothing: bool,
-        movie: &SwfMovie<'gc>,
+        movie: SwfMovie<'gc>,
     ) -> Self {
         // NOTE: We do *not* solicit a handle from the `bitmap_data` at this
         // time due to mutable borrowing issues.
@@ -162,7 +162,7 @@ impl<'gc> Bitmap<'gc> {
                 pixel_snapping: Cell::new(PixelSnapping::Auto),
                 avm2_object: Lock::new(None),
                 avm2_bitmap_class: Lock::new(BitmapClass::NoSubclass),
-                movie: movie.clone(),
+                movie,
             },
         ));
 
@@ -194,7 +194,7 @@ impl<'gc> Bitmap<'gc> {
         let bitmap_data = BitmapData::new_with_pixels(mc, width, height, transparency, pixels);
 
         let smoothing = true;
-        Self::new_with_bitmap_data(mc, id, bitmap_data, smoothing, &movie)
+        Self::new_with_bitmap_data(mc, id, bitmap_data, smoothing, movie)
     }
 
     pub fn instantiate(self, mc: &Mutation<'gc>) -> Self {
@@ -418,6 +418,6 @@ impl<'gc> TDisplayObject<'gc> for Bitmap<'gc> {
     }
 
     fn movie(self) -> SwfMovie<'gc> {
-        self.0.movie.clone()
+        self.0.movie
     }
 }

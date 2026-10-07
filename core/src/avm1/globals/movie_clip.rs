@@ -295,7 +295,7 @@ fn attach_bitmap<'gc>(
             0,
             bitmap_data,
             smoothing,
-            &movie_clip.movie(),
+            movie_clip.movie(),
         );
         movie_clip.replace_at_depth(activation.context, display_object.into(), depth);
         display_object.post_instantiation(activation.context, None, Instantiator::Avm1, true);

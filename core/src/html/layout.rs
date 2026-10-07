@@ -547,7 +547,7 @@ impl<'a, 'gc> LayoutBuilder<'a, 'gc> {
                     self.font_type,
                     span.style.bold,
                     span.style.italic,
-                    Some(self.movie.clone()),
+                    Some(self.movie),
                 )
                 .filter(|f| f.has_glyphs())
         {

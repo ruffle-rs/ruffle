@@ -5,7 +5,6 @@ use crate::tag_utils::{SwfMovie, SwfMovieData};
 use gc_arena::{DynamicRoot, DynamicRootSet, Gc, Rootable};
 use std::fmt::{Debug, Formatter};
 use std::hash::{Hash, Hasher};
-use std::sync::Arc;
 
 // TODO: Make this generic somehow
 #[derive(Clone)]
@@ -287,23 +286,22 @@ impl Eq for FontHandle {}
 /// use a proper `DynamicRoot`.
 #[derive(Clone)]
 pub struct MovieHandle {
-    data: Arc<SwfMovieData>,
+    root: DynamicRoot<Rootable![SwfMovie<'_>]>,
     ptr: *const SwfMovieData,
 }
 
 impl MovieHandle {
-    pub fn new<'gc>(_context: &UpdateContext<'gc>, movie: SwfMovie<'gc>) -> Self {
+    pub fn new<'gc>(context: &UpdateContext<'gc>, movie: SwfMovie<'gc>) -> Self {
         Self {
-            data: movie.stored_movie.clone(),
+            root: context
+                .dynamic_root
+                .stash(context.gc(), Gc::new(context.gc(), movie)),
             ptr: movie.as_ptr(),
         }
     }
 
-    pub fn fetch<'gc>(&self, _dynamic_root_set: DynamicRootSet<'gc>) -> SwfMovie<'gc> {
-        SwfMovie {
-            stored_movie: self.data.clone(),
-            _phantom: std::marker::PhantomData,
-        }
+    pub fn fetch<'gc>(&self, dynamic_root_set: DynamicRootSet<'gc>) -> SwfMovie<'gc> {
+        *dynamic_root_set.fetch(&self.root)
     }
 }
 

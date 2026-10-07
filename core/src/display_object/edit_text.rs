@@ -262,7 +262,7 @@ impl<'gc> EditText<'gc> {
         swf_movie: SwfMovie<'gc>,
         swf_tag: swf::EditText,
     ) -> Self {
-        let default_format = TextFormat::from_swf_tag(swf_tag.clone(), swf_movie.clone(), context);
+        let default_format = TextFormat::from_swf_tag(swf_tag.clone(), swf_movie, context);
         let encoding = swf_movie.encoding();
         let text = swf_tag.initial_text().unwrap_or_default().decode(encoding);
 
@@ -869,7 +869,7 @@ impl<'gc> EditText<'gc> {
     pub fn relayout(self, context: &mut dyn LayoutContext<'gc>) {
         let autosize = self.0.autosize.get();
         let is_word_wrap = self.0.flags.get().contains(EditTextFlag::WORD_WRAP);
-        let movie = self.0.shared.swf.clone();
+        let movie = self.0.shared.swf;
         let padding = Self::GUTTER * 2;
 
         let mut text_spans = self.0.text_spans.borrow_mut();
@@ -2565,7 +2565,7 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
     }
 
     fn movie(self) -> SwfMovie<'gc> {
-        self.0.shared.swf.clone()
+        self.0.shared.swf
     }
 
     /// Construct objects placed on this frame.

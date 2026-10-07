@@ -154,7 +154,7 @@ impl<'gc> TranslationUnit<'gc> {
     }
 
     pub fn movie(self) -> SwfMovie<'gc> {
-        self.0.movie.clone()
+        self.0.movie
     }
 
     pub fn api_version(self, avm2: &Avm2<'gc>) -> ApiVersion {
