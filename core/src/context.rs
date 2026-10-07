@@ -369,7 +369,7 @@ impl<'gc> UpdateContext<'gc> {
             self.frame_rate,
         );
 
-        *self.root_swf = SwfMovie::new(movie);
+        *self.root_swf = SwfMovie::new(self.gc(), movie);
         *self.instance_counter = 0;
 
         if self.root_swf.is_action_script_3() {
@@ -381,7 +381,7 @@ impl<'gc> UpdateContext<'gc> {
             self.root_swf.width().to_pixels() as u32,
             self.root_swf.height().to_pixels() as u32,
         );
-        self.stage.set_movie(self.gc(), self.root_swf.clone());
+        self.stage.set_movie(self.gc(), *self.root_swf);
 
         let stage_domain = self.avm2.stage_domain();
         let mut activation = Avm2Activation::from_domain(self, stage_domain);
@@ -389,12 +389,12 @@ impl<'gc> UpdateContext<'gc> {
         activation
             .context
             .library
-            .library_for_movie_mut(activation.context.root_swf.clone())
+            .library_for_movie_mut(*activation.context.root_swf)
             .set_avm2_domain(stage_domain);
         activation.context.ui.set_mouse_visible(true);
 
-        let swf = activation.context.root_swf.clone();
-        let root: DisplayObject = MovieClip::player_root_movie(&mut activation, swf.clone()).into();
+        let swf = *activation.context.root_swf;
+        let root: DisplayObject = MovieClip::player_root_movie(&mut activation, swf).into();
 
         // The Stage `LoaderInfo` is permanently in the 'not yet loaded' state,
         // and has no associated `Loader` instance.
@@ -409,8 +409,6 @@ impl<'gc> UpdateContext<'gc> {
             .context
             .stage
             .set_loader_info(activation.gc(), stage_loader_info);
-
-        drop(activation);
 
         root.set_depth(0);
         root.set_perspective_projection(None); // Set default PerspectiveProjection

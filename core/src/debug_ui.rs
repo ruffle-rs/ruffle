@@ -133,7 +133,7 @@ impl DebugUi {
                     self.movies.insert(movie, Default::default());
                 }
                 Message::TrackTopLevelMovie => {
-                    let root_movie = context.root_swf.clone();
+                    let root_movie = *context.root_swf;
                     self.movies
                         .insert(MovieHandle::new(context, root_movie), Default::default());
                 }

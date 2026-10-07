@@ -125,7 +125,7 @@ impl<'gc> TDisplayObject<'gc> for LoaderDisplay<'gc> {
     }
 
     fn movie(self) -> SwfMovie<'gc> {
-        self.0.movie.clone()
+        self.0.movie
     }
 
     fn on_parent_removed(self, context: &mut UpdateContext<'gc>) {

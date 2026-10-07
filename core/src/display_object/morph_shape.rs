@@ -179,7 +179,7 @@ impl<'gc> TDisplayObject<'gc> for MorphShape<'gc> {
     }
 
     fn movie(self) -> SwfMovie<'gc> {
-        self.0.shared.get().movie.clone()
+        self.0.shared.get().movie
     }
 }
 
@@ -236,10 +236,7 @@ impl<'gc> MorphShapeShared<'gc> {
         if let Some(handle) = frame.shape_handle.clone() {
             handle
         } else {
-            let library = context
-                .library
-                .library_for_movie(self.movie.clone())
-                .unwrap();
+            let library = context.library.library_for_movie(self.movie).unwrap();
             let handle = context
                 .renderer
                 .register_shape((&frame.shape).into(), &MovieLibrarySource { library });

@@ -7,8 +7,7 @@ use crate::display_object::{Bitmap, Graphic, MorphShape, Text};
 use crate::font::{Font, FontDescriptor, FontLike, FontQuery, FontType};
 use crate::prelude::*;
 use crate::string::AvmString;
-use crate::tag_utils::{SwfMovie, SwfMovieWeak};
-use gc_arena::collect::Trace;
+use crate::tag_utils::SwfMovie;
 use gc_arena::{Collect, Mutation};
 use ruffle_render::backend::RenderBackend;
 use ruffle_render::bitmap::BitmapHandle;
@@ -19,47 +18,19 @@ use crate::backend::ui::{FontDefinition, UiBackend};
 use crate::font::DefaultFont;
 use fnv::{FnvHashMap, FnvHashSet};
 use std::collections::HashMap;
-use weak_table::{PtrWeakKeyHashMap, WeakValueHashMap, traits::WeakElement};
 
 #[derive(Clone, Collect)]
 #[collect(no_drop)]
 struct MovieSymbol<'gc>(SwfMovie<'gc>, CharacterId);
 
-#[derive(Clone, Collect)]
-#[collect(no_drop)]
-struct WeakMovieSymbol<'gc>(SwfMovieWeak<'gc>, CharacterId);
-
-impl<'gc> WeakElement for WeakMovieSymbol<'gc> {
-    type Strong = MovieSymbol<'gc>;
-
-    fn new(view: &Self::Strong) -> Self {
-        Self(view.0.downgrade(), view.1)
-    }
-
-    fn view(&self) -> Option<Self::Strong> {
-        if let Some(strong) = self.0.upgrade() {
-            Some(MovieSymbol(strong, self.1))
-        } else {
-            None
-        }
-    }
-}
-
 /// The mappings between class objects and library characters defined by
 /// `SymbolClass`.
+#[derive(Collect)]
+#[collect(no_drop)]
 pub struct Avm2ClassRegistry<'gc> {
     /// A list of AVM2 class objects and the character IDs they are expected to
     /// instantiate.
-    class_map: WeakValueHashMap<Avm2Class<'gc>, WeakMovieSymbol<'gc>>,
-}
-
-unsafe impl<'gc> Collect<'gc> for Avm2ClassRegistry<'gc> {
-    fn trace<C: Trace<'gc>>(&self, cc: &mut C) {
-        for (key, symbol) in self.class_map.iter() {
-            cc.trace(key);
-            cc.trace(&symbol);
-        }
-    }
+    class_map: HashMap<Avm2Class<'gc>, MovieSymbol<'gc>>,
 }
 
 impl Default for Avm2ClassRegistry<'_> {
@@ -71,7 +42,7 @@ impl Default for Avm2ClassRegistry<'_> {
 impl<'gc> Avm2ClassRegistry<'gc> {
     pub fn new() -> Self {
         Self {
-            class_map: WeakValueHashMap::new(),
+            class_map: HashMap::new(),
         }
     }
 
@@ -81,7 +52,7 @@ impl<'gc> Avm2ClassRegistry<'gc> {
     /// a library symbol.
     pub fn class_symbol(&self, class_def: Avm2Class<'gc>) -> Option<(SwfMovie<'gc>, CharacterId)> {
         match self.class_map.get(&class_def) {
-            Some(MovieSymbol(movie, symbol)) => Some((movie, symbol)),
+            Some(MovieSymbol(movie, symbol)) => Some((*movie, *symbol)),
             None => None,
         }
     }
@@ -266,7 +237,7 @@ impl<'gc> MovieLibrary<'gc> {
             Character::Bitmap(bitmap) => {
                 let avm2_class = bitmap.avm2_class();
                 let bitmap = bitmap.compressed().decode().unwrap();
-                let bitmap = Bitmap::new(mc, id, bitmap, self.swf.clone());
+                let bitmap = Bitmap::new(mc, id, bitmap, self.swf);
                 bitmap.set_avm2_bitmapdata_class(mc, avm2_class);
                 Some(bitmap.instantiate(mc).into())
             }
@@ -402,35 +373,27 @@ impl ruffle_render::bitmap::BitmapSource for MovieLibrarySource<'_, '_> {
     }
 }
 
-struct MovieLibraries<'gc>(PtrWeakKeyHashMap<SwfMovieWeak<'gc>, MovieLibrary<'gc>>);
-
-unsafe impl<'gc> Collect<'gc> for MovieLibraries<'gc> {
-    #[inline]
-    fn trace<C: Trace<'gc>>(&self, cc: &mut C) {
-        for (key, val) in self.0.iter() {
-            cc.trace(&key);
-            cc.trace(val);
-        }
-    }
-}
+#[derive(Collect)]
+#[collect(no_drop)]
+struct MovieLibraries<'gc>(HashMap<SwfMovie<'gc>, MovieLibrary<'gc>>);
 
 impl<'gc> MovieLibraries<'gc> {
     fn new() -> Self {
-        Self(PtrWeakKeyHashMap::new())
+        Self(HashMap::new())
     }
 
-    fn get(&self, key: &SwfMovie<'gc>) -> Option<&MovieLibrary<'gc>> {
-        self.0.get(key)
+    fn get(&self, key: SwfMovie<'gc>) -> Option<&MovieLibrary<'gc>> {
+        self.0.get(&key)
     }
 
     fn get_or_insert_mut(&mut self, movie: SwfMovie<'gc>) -> &mut MovieLibrary<'gc> {
         self.0
-            .entry(movie.clone())
+            .entry(movie)
             .or_insert_with(|| MovieLibrary::new(movie))
     }
 
     fn known_movies(&self) -> impl Iterator<Item = SwfMovie<'gc>> {
-        self.0.keys()
+        self.0.keys().copied()
     }
 }
 
@@ -482,7 +445,7 @@ impl<'gc> Library<'gc> {
     }
 
     pub fn library_for_movie(&self, movie: SwfMovie<'gc>) -> Option<&MovieLibrary<'gc>> {
-        self.movie_libraries.get(&movie)
+        self.movie_libraries.get(movie)
     }
 
     pub fn library_for_movie_mut(&mut self, movie: SwfMovie<'gc>) -> &mut MovieLibrary<'gc> {

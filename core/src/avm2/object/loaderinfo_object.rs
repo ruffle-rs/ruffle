@@ -280,10 +280,10 @@ impl<'gc> LoaderInfoObject<'gc> {
 
         // Reset properties
         let movie = &context.root_swf;
-        let empty_swf = SwfMovie::new(SwfMovieData::empty(
-            movie.version(),
-            Some(movie.url().into()),
-        ));
+        let empty_swf = SwfMovie::new(
+            context.gc(),
+            SwfMovieData::empty(movie.version(), Some(movie.url().into())),
+        );
         let loader_stream = LoaderStream::NotYetLoaded(empty_swf, None, false);
         self.set_loader_stream(loader_stream, context.gc());
         self.set_errored(false);

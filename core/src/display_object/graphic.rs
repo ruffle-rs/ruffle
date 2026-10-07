@@ -52,7 +52,7 @@ impl<'gc> Graphic<'gc> {
         swf_shape: swf::Shape,
         movie: SwfMovie<'gc>,
     ) -> Self {
-        let library = context.library.library_for_movie(movie.clone()).unwrap();
+        let library = context.library.library_for_movie(movie).unwrap();
         let shared = GraphicShared {
             id: swf_shape.id,
             shape_bounds: swf_shape.shape_bounds,
@@ -98,7 +98,7 @@ impl<'gc> Graphic<'gc> {
                 },
                 shape: Vec::new(),
             },
-            movie: context.root_swf.clone(),
+            movie: *context.root_swf,
             scaled_handle: RefCell::new(TessellationCache::new()),
         };
 
@@ -126,7 +126,7 @@ impl<'gc> Graphic<'gc> {
         unlock!(Gc::write(mc, self.0), GraphicData, class).set(Some(class));
     }
 
-    fn set_shared(self, mc: &Mutation<'gc>, shared: Gc<'gc, GraphicShared>) {
+    fn set_shared(self, mc: &Mutation<'gc>, shared: Gc<'gc, GraphicShared<'gc>>) {
         unlock!(Gc::write(mc, self.0), GraphicData, shared).set(shared);
     }
 
@@ -150,7 +150,7 @@ impl<'gc> Graphic<'gc> {
         }
 
         // Retessellate at the new scale
-        let library = context.library.library_for_movie(shared.movie.clone());
+        let library = context.library.library_for_movie(shared.movie);
         if let Some(library) = library {
             let new_handle = context.renderer.register_shape_with_scale(
                 (&shared.shape).into(),
@@ -310,7 +310,7 @@ impl<'gc> TDisplayObject<'gc> for Graphic<'gc> {
     }
 
     fn movie(self) -> SwfMovie<'gc> {
-        self.0.shared.get().movie.clone()
+        self.0.shared.get().movie
     }
 
     fn object1(self) -> Option<Avm1Object<'gc>> {

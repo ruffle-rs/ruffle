@@ -1975,7 +1975,10 @@ impl Player {
     }
 
     //Checks if two displayObjects have the same depth and id and accur in the same movie.s
-    fn check_display_object_equality(object1: DisplayObject, object2: DisplayObject) -> bool {
+    fn check_display_object_equality<'gc>(
+        object1: DisplayObject<'gc>,
+        object2: DisplayObject<'gc>,
+    ) -> bool {
         object1.depth() == object2.depth()
             && object1.id() == object2.id()
             && SwfMovie::ptr_eq(&object1.movie(), &object2.movie())
@@ -2966,7 +2969,6 @@ impl PlayerBuilder {
         player_version: u8,
         player_runtime: PlayerRuntime,
         fullscreen: bool,
-        fake_movie: SwfMovie<'gc>,
         external_interface_provider: Option<Box<dyn ExternalInterfaceProvider>>,
         fs_command_provider: Box<dyn FsCommandProvider>,
     ) -> GcRoot<'gc> {
@@ -2981,6 +2983,8 @@ impl PlayerBuilder {
                 Avm2::new(&mut init, player_version, player_runtime),
             )
         };
+
+        let fake_movie = SwfMovie::new(gc_context, SwfMovieData::empty(player_version, None));
 
         let data = GcRootData {
             audio_manager: AudioManager::new(),
@@ -3008,7 +3012,7 @@ impl PlayerBuilder {
             },
             avm1_shared_objects: HashMap::new(),
             avm2_shared_objects: HashMap::new(),
-            stage: Stage::empty(gc_context, fullscreen, fake_movie.clone()),
+            stage: Stage::empty(gc_context, fullscreen, fake_movie),
             root_swf: fake_movie,
             timers: Timers::new(),
             unbound_text_fields: Vec::new(),
@@ -3064,7 +3068,6 @@ impl PlayerBuilder {
         let language = ui.language();
 
         // Instantiate the player.
-        let fake_movie = SwfMovie::new(SwfMovieData::empty(player_version, None));
         let frame_rate = self.frame_rate.unwrap_or(12.0);
         let forced_frame_rate = self.frame_rate.is_some();
         let player = Arc::new_cyclic(|self_ref| {
@@ -3134,7 +3137,6 @@ impl PlayerBuilder {
                         player_version,
                         self.player_runtime,
                         self.fullscreen,
-                        fake_movie.clone(),
                         self.external_interface_provider,
                         self.fs_command_provider,
                     )

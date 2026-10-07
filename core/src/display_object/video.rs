@@ -214,7 +214,7 @@ impl<'gc> Video<'gc> {
     /// This function yields an error if this video player is not playing an
     /// embedded SWF video.
     pub fn preload_swf_frame(self, tag: VideoFrame) {
-        let movie = self.0.movie.clone();
+        let movie = self.0.movie;
 
         match self.0.source.get() {
             VideoSource::Swf(swf_source) => {
@@ -367,7 +367,7 @@ impl<'gc> TDisplayObject<'gc> for Video<'gc> {
             self.set_default_instance_name(context);
         }
 
-        let movie = self.0.movie.clone();
+        let movie = self.0.movie;
 
         let (stream, keyframes) = match self.0.source.get() {
             VideoSource::Swf(swf_source) => {
@@ -571,7 +571,7 @@ impl<'gc> TDisplayObject<'gc> for Video<'gc> {
     }
 
     fn movie(self) -> SwfMovie<'gc> {
-        self.0.movie.clone()
+        self.0.movie
     }
 
     fn object1(self) -> Option<Avm1Object<'gc>> {

@@ -145,7 +145,8 @@ impl<'gc> Avm2Button<'gc> {
     }
 
     pub fn empty_button(context: &mut UpdateContext<'gc>) -> Self {
-        let movie = context.root_swf.clone();
+        // TODO: Should this be using the caller movie?
+        let movie = *context.root_swf;
         let button_record = swf::Button {
             id: 0,
             is_track_as_menu: false,
@@ -207,7 +208,7 @@ impl<'gc> Avm2Button<'gc> {
             if record.states.contains(swf_state) {
                 match context
                     .library
-                    .library_for_movie_mut(movie.clone())
+                    .library_for_movie_mut(movie)
                     .instantiate_by_id(record.id, context.gc_context)
                 {
                     Some(child) => {
@@ -423,7 +424,7 @@ impl<'gc> TDisplayObject<'gc> for Avm2Button<'gc> {
     }
 
     fn movie(self) -> SwfMovie<'gc> {
-        self.0.shared.swf.clone()
+        self.0.shared.swf
     }
 
     fn post_instantiation(

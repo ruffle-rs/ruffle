@@ -894,7 +894,7 @@ impl<'gc> TDisplayObject<'gc> for Stage<'gc> {
     }
 
     fn movie(self) -> SwfMovie<'gc> {
-        self.0.movie.borrow().clone()
+        *self.0.movie.borrow()
     }
 }
 

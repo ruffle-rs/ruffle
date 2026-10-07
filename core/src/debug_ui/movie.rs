@@ -99,7 +99,7 @@ impl MovieListWindow {
 
                             body.row(18.0, |mut row| {
                                 row.col(|ui| {
-                                    open_movie_button(ui, context, &movie, messages);
+                                    open_movie_button(ui, context, movie, messages);
                                 });
 
                                 row.col(|ui| {
@@ -122,7 +122,7 @@ impl MovieListWindow {
                                     if movie.data().is_empty() {
                                         ui.weak("(Empty)");
                                     } else if ui.button("Save File...").clicked() {
-                                        save_swf(&movie, messages);
+                                        save_swf(movie, messages);
                                     }
                                 });
                             });
@@ -149,7 +149,7 @@ impl MovieWindow {
     ) -> bool {
         let mut keep_open = true;
 
-        Window::new(movie_name(&movie))
+        Window::new(movie_name(movie))
             .id(Id::new(movie.as_ptr()))
             .open(&mut keep_open)
             .scroll([true, true])
@@ -157,7 +157,7 @@ impl MovieWindow {
                 ui.horizontal(|ui| {
                     ui.selectable_value(&mut self.open_panel, Panel::Information, "Information");
 
-                    if let Some(library) = context.library.library_for_movie(movie.clone())
+                    if let Some(library) = context.library.library_for_movie(movie)
                         && !library.characters().is_empty()
                     {
                         ui.selectable_value(&mut self.open_panel, Panel::Characters, "Characters");
@@ -166,8 +166,8 @@ impl MovieWindow {
                 ui.separator();
 
                 match self.open_panel {
-                    Panel::Information => self.show_information(ui, &movie, messages),
-                    Panel::Characters => self.show_characters(ui, context, &movie),
+                    Panel::Information => self.show_information(ui, movie, messages),
+                    Panel::Characters => self.show_characters(ui, context, movie),
                 }
             });
         keep_open
@@ -177,12 +177,12 @@ impl MovieWindow {
         &mut self,
         ui: &mut Ui,
         context: &mut UpdateContext<'gc>,
-        movie: &SwfMovie<'gc>,
+        movie: SwfMovie<'gc>,
     ) {
         // Cloned up here so we can still use context afterwards
         let (characters, export_characters) = context
             .library
-            .library_for_movie(movie.clone())
+            .library_for_movie(movie)
             .map(|l| (l.characters().clone(), l.export_characters().clone()))
             .unwrap_or_default();
 
@@ -223,7 +223,7 @@ impl MovieWindow {
             });
     }
 
-    fn show_information(&mut self, ui: &mut Ui, movie: &SwfMovie, messages: &mut Vec<Message>) {
+    fn show_information(&mut self, ui: &mut Ui, movie: SwfMovie, messages: &mut Vec<Message>) {
         if !movie.data().is_empty() && ui.button("Save File...").clicked() {
             save_swf(movie, messages);
         }
@@ -313,21 +313,18 @@ impl MovieWindow {
     }
 }
 
-pub fn movie_name(movie: &SwfMovie) -> String {
+pub fn movie_name(movie: SwfMovie) -> String {
     format!("SWF {:p}", movie.as_ptr())
 }
 
 pub fn open_movie_button<'gc>(
     ui: &mut Ui,
     context: &UpdateContext<'gc>,
-    movie: &SwfMovie<'gc>,
+    movie: SwfMovie<'gc>,
     messages: &mut Vec<Message>,
 ) {
     if ui.button(movie_name(movie)).clicked() {
-        messages.push(Message::TrackMovie(MovieHandle::new(
-            context,
-            movie.clone(),
-        )));
+        messages.push(Message::TrackMovie(MovieHandle::new(context, movie)));
     }
 }
 
@@ -349,7 +346,7 @@ pub fn open_character_button(ui: &mut Ui, character: Character) {
     ui.label(name);
 }
 
-fn save_swf(movie: &SwfMovie, messages: &mut Vec<Message>) {
+fn save_swf(movie: SwfMovie, messages: &mut Vec<Message>) {
     let suggested_name = if let Ok(url) = Url::parse(movie.url()) {
         url.path_segments()
             .and_then(|mut segments| segments.next_back())

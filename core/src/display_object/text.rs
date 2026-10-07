@@ -68,7 +68,7 @@ impl<'gc> Text<'gc> {
         Self(Gc::new(mc, (*self.0).clone()))
     }
 
-    fn set_shared(&self, context: &mut UpdateContext<'gc>, to: Gc<'gc, TextShared>) {
+    fn set_shared(&self, context: &mut UpdateContext<'gc>, to: Gc<'gc, TextShared<'gc>>) {
         let mc = context.gc();
         unlock!(Gc::write(mc, self.0), TextData, shared).set(to);
     }
@@ -115,7 +115,7 @@ impl<'gc> TDisplayObject<'gc> for Text<'gc> {
     }
 
     fn movie(self) -> SwfMovie<'gc> {
-        self.0.shared.get().swf.clone()
+        self.0.shared.get().swf
     }
 
     fn replace_with(self, context: &mut UpdateContext<'gc>, id: CharacterId) {
