@@ -4,6 +4,8 @@
 
 trace = ASnative(100, 4);
 
+#include "Error.as"
+
 #include "flash/geom/Rectangle.as"
 #include "flash/geom/Point.as"
 #include "flash/geom/Matrix.as"

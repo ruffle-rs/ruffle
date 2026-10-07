@@ -1160,19 +1160,15 @@ Testing _global.AsSetupError
   call, DONT_DELETE
   prototype, DONT_DELETE
   __proto__, DONT_DELETE
-  constructor, DONT_DELETE
 Testing _global.AsSetupError.prototype
   __proto__, DONT_DELETE
-  constructor, DONT_DELETE
 Testing _global.Error
   apply, DONT_DELETE
   call, DONT_DELETE
   prototype, DONT_DELETE
   __proto__, DONT_DELETE
-  constructor, DONT_DELETE
 Testing _global.Error.prototype
   __proto__, DONT_DELETE
-  constructor, DONT_DELETE
 Testing _global.ContextMenu
   apply, DONT_DELETE
   call, DONT_DELETE
