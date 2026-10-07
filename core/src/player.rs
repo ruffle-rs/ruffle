@@ -169,6 +169,8 @@ impl<'gc> MouseData<'gc> {
 #[derive(Collect)]
 #[collect(no_drop)]
 struct GcRootData<'gc> {
+    root_swf: Arc<SwfMovie>,
+
     library: Library<'gc>,
 
     /// The root of the display object hierarchy.
@@ -248,6 +250,7 @@ impl<'gc> GcRootData<'gc> {
         &mut self,
     ) -> (
         Stage<'gc>,
+        &mut Arc<SwfMovie>,
         &mut Library<'gc>,
         &mut ActionQueue<'gc>,
         &mut AvmStringInterner<'gc>,
@@ -273,6 +276,7 @@ impl<'gc> GcRootData<'gc> {
     ) {
         (
             self.stage,
+            &mut self.root_swf,
             &mut self.library,
             &mut self.action_queue,
             &mut self.interner,
@@ -328,8 +332,6 @@ pub struct Player {
 
     /// Whether we're emulating the release or the debug build.
     player_mode: PlayerMode,
-
-    swf: Arc<SwfMovie>,
 
     run_state: RunState,
     needs_render: bool,
@@ -1456,16 +1458,16 @@ impl Player {
             self.needs_render = true;
         }
 
-        if self.should_reset_highlight(event) {
-            self.mutate_with_update_context(|context| {
+        self.mutate_with_update_context(|context| {
+            if Self::should_reset_highlight(context, event) {
                 context.focus_tracker.reset_highlight();
-            });
-        }
+            }
+        });
 
         player_event_handled
     }
 
-    fn should_reset_highlight(&self, event: InputEvent) -> bool {
+    fn should_reset_highlight(context: &mut UpdateContext<'_>, event: InputEvent) -> bool {
         if matches!(
             event,
             InputEvent::MouseDown {
@@ -1477,7 +1479,7 @@ impl Player {
             return true;
         }
 
-        if self.swf.version() < 9
+        if context.root_swf.version() < 9
             && matches!(
                 event,
                 InputEvent::MouseDown {
@@ -2293,6 +2295,7 @@ impl Player {
             #[allow(unused_variables)]
             let (
                 stage,
+                root_swf,
                 library,
                 action_queue,
                 interner,
@@ -2320,7 +2323,7 @@ impl Player {
             let mut update_context = UpdateContext {
                 player_version: this.player_version,
                 player_mode: this.player_mode,
-                root_swf: &mut this.swf,
+                root_swf,
                 library,
                 rng: &mut this.rng,
                 renderer: this.renderer.deref_mut(),
@@ -3005,7 +3008,8 @@ impl PlayerBuilder {
             },
             avm1_shared_objects: HashMap::new(),
             avm2_shared_objects: HashMap::new(),
-            stage: Stage::empty(gc_context, fullscreen, fake_movie),
+            stage: Stage::empty(gc_context, fullscreen, fake_movie.clone()),
+            root_swf: fake_movie,
             timers: Timers::new(),
             unbound_text_fields: Vec::new(),
             stream_manager: StreamManager::new(),
@@ -3076,7 +3080,6 @@ impl PlayerBuilder {
                 locale,
 
                 // SWF info
-                swf: fake_movie.clone(),
                 current_frame: None,
 
                 // Timing
