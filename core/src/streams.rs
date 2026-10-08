@@ -277,6 +277,15 @@ pub struct NetStreamData<'gc> {
 
     /// True if the stream should play when ticked.
     playing: Cell<bool>,
+
+    /// True if this stream was put into data generation mode with play(null).
+    data_generation_mode: Cell<bool>,
+
+    /// Bytes appended while a script-data callback is running.
+    pending_append_bytes: RefCell<Vec<u8>>,
+
+    /// True while handling FLV script data that can call back into AVM.
+    handling_script_data: Cell<bool>,
 }
 
 impl Default for NetStreamSource {
@@ -321,6 +330,9 @@ impl<'gc> NetStream<'gc> {
                 url: RefCell::new(None),
                 attached_to: Lock::new(None),
                 playing: Cell::new(false),
+                data_generation_mode: Cell::new(false),
+                pending_append_bytes: RefCell::new(Vec::new()),
+                handling_script_data: Cell::new(false),
             },
         ))
     }
@@ -380,6 +392,14 @@ impl<'gc> NetStream<'gc> {
         }
 
         source.expected_length.set(Some(expected));
+    }
+
+    pub fn append_bytes(self, context: &mut UpdateContext<'gc>, data: &mut Vec<u8>) {
+        if self.0.handling_script_data.get() {
+            self.0.pending_append_bytes.borrow_mut().append(data);
+        } else {
+            self.load_buffer(context, data);
+        }
     }
 
     /// Append data to the `NetStream`'s current internal buffer.
@@ -585,12 +605,17 @@ impl<'gc> NetStream<'gc> {
         }
     }
 
+    pub fn is_data_generation_mode(self) -> bool {
+        self.0.data_generation_mode.get()
+    }
+
     /// Start playing media from this NetStream.
     ///
     /// If `name` is specified, this will also trigger streaming download of
     /// the given resource. Otherwise, the stream will play whatever data is
     /// available in the buffer.
     pub fn play(self, context: &mut UpdateContext<'gc>, name: Option<AvmString<'gc>>) {
+        self.0.data_generation_mode.set(name.is_none());
         if let Some(name) = name {
             let request = if let Ok(stream_url) = Url::parse(context.root_swf.url())
                 .and_then(|url| url.join(name.to_string().as_str()))
@@ -1145,7 +1170,9 @@ impl<'gc> NetStream<'gc> {
             // This is necessary because the script callback functions can call back into
             // these methods, (e.g. NetStream::play), so we need to avoid holding a borrow
             // while the script data is being handled.
+            self.0.handling_script_data.set(true);
             let _ = self.handle_script_data(avm_object, context, var.name, var.data);
+            self.0.handling_script_data.set(false);
             // Any errors while trying to lookup or call AVM2 properties are silently swallowed.
         }
 
@@ -1282,6 +1309,14 @@ impl<'gc> NetStream<'gc> {
                         .set(max(source.offset.get(), source.preload_offset.get()));
                 }
             }
+        }
+
+        drop(buffer);
+
+        let mut pending = std::mem::take(&mut *self.0.pending_append_bytes.borrow_mut());
+
+        if !pending.is_empty() {
+            self.load_buffer(context, &mut pending);
         }
 
         source.stream_time.set(max_time);

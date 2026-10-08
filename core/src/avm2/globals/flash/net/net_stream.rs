@@ -33,6 +33,33 @@ pub fn get_bytes_total<'gc>(
     Ok(Value::Undefined)
 }
 
+pub fn append_bytes<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Value<'gc>,
+    args: FunctionArgs<'_, 'gc>,
+) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
+    let Some(netstream) = this.as_netstream() else {
+        return Ok(Value::Undefined);
+    };
+
+    if !netstream.is_data_generation_mode() {
+        return Err(make_error_2004(activation, Error2004Type::TypeError));
+    }
+
+    if matches!(args.get_at(0), Value::Null) {
+        return Err(make_error_2004(activation, Error2004Type::TypeError));
+    }
+
+    let arg0 = args.get_object(activation, 0, "bytes")?;
+    let mut bytes = arg0.as_bytearray().unwrap().bytes().to_vec();
+
+    netstream.append_bytes(activation.context, &mut bytes);
+
+    Ok(Value::Undefined)
+}
+
 pub fn play<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
