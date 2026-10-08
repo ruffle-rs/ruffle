@@ -1184,11 +1184,10 @@ Testing _global.ContextMenuItem
   call, DONT_DELETE
   prototype, DONT_DELETE
   __proto__, DONT_DELETE
-  constructor, DONT_DELETE
 Testing _global.ContextMenuItem.prototype
   copy, DONT_DELETE
-  __proto__, DONT_DELETE
   constructor, DONT_DELETE
+  __proto__, DONT_DELETE
 Testing _global.SharedObject
   apply, DONT_DELETE
   call, DONT_DELETE
