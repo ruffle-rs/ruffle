@@ -76,7 +76,7 @@ pub struct StageData<'gc> {
     focus_tracker: FocusTracker<'gc>,
 
     /// The swf that registered this stage
-    movie: RefLock<SwfMovie<'gc>>,
+    movie: Lock<SwfMovie<'gc>>,
 
     /// The dimensions of the SWF file.
     movie_size: Cell<(u32, u32)>,
@@ -185,7 +185,7 @@ impl<'gc> Stage<'gc> {
                 avm2_object: Lock::new(None),
                 loader_info: Lock::new(None),
                 stage3ds: RefLock::new(vec![]),
-                movie: RefLock::new(movie),
+                movie: Lock::new(movie),
                 viewport_matrix: Cell::new(Matrix::IDENTITY),
                 letterbox_matrix: Cell::new(Matrix::IDENTITY),
                 focus_tracker: FocusTracker::new(gc_context),
@@ -240,7 +240,7 @@ impl<'gc> Stage<'gc> {
 
         let is_action_script_3 = movie.is_action_script_3();
 
-        *unlock!(Gc::write(gc_context, self.0), StageData, movie).borrow_mut() = movie;
+        unlock!(Gc::write(gc_context, self.0), StageData, movie).set(movie);
 
         unlock!(Gc::write(gc_context, self.0), StageData, child)
             .borrow_mut()
@@ -894,7 +894,7 @@ impl<'gc> TDisplayObject<'gc> for Stage<'gc> {
     }
 
     fn movie(self) -> SwfMovie<'gc> {
-        *self.0.movie.borrow()
+        self.0.movie.get()
     }
 }
 
