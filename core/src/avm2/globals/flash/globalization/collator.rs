@@ -245,6 +245,42 @@ pub fn get_available_locale_id_names<'gc>(
     _this: Value<'gc>,
     _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
+    // The output is highly platform-dependent, but there are some
+    // characteristics of the output:
+    //
+    //  1. It can contain duplicate entries, but it's not common.
+    //     Noticed one on Windows: "zh-MO@collation=stroke".
+    //
+    //  2. It appears to be *mostly* sorted lexicographically, but not always.
+    //     On Linux "eo" and "tok" were observed right before "be-Latn-BY", the
+    //     rest was sorted.
+    //
+    //  3. It appears to use the BCP-47 format with glibc modifiers.
+    //
+    //  4. Both 2- and 3-letter locales are present.
+    //
+    //  5. Example observed script subtags include: az-Cyrl-AZ, bm-Latn,
+    //     ccp-Cakm-BD, chr-Cher-US, jv-Java-ID, ks-Arab-IN, ks-Deva-IN,
+    //     zh-Hans-HK, shi-Tfng.
+    //
+    //  6. Region subtags can contain numbers, such as: ar-001, en-001, en-029,
+    //     en-150, eo-001, es-419.
+    //
+    //  7. There are IDs that are prefixes of others, such as: bm, bm-Latn,
+    //     bm-Latn-ML, hu-HU, hu-HU@collation=technical.
+    //
+    //  8. Some IDs contain additional subtags, such as: ca-ES-VALENCIA.
+    //
+    //  9. Private-use tags can be present, such as: x-iv_mathan.
+    //
+    //  10. Some IDs end with a glibc modifier, such as (Windows):
+    //      de-DE@collation=phonebook, es-ES@collation=traditional,
+    //      hu-HU@collation=technical, ja-JP@collation=stroke,
+    //      ka-GE@collation=modern, zh-CN@collation=phonebook,
+    //      zh-TW@collation=pinyin;
+    //      and (Linux): ga-IE@currency=EUR, eu-ES@currency=EUR,
+    //      gez-ET@collation=abegede.
+
     avm2_stub_method!(
         activation,
         "flash.globalization.Collator",
