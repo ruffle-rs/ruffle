@@ -271,8 +271,6 @@ export class InnerPlayer {
             backupSaves.addEventListener("click", this.backupSaves.bind(this));
         }
 
-        localizeElements(this.shadow);
-
         this.contextMenuOverlay = this.shadow.getElementById(
             "context-menu-overlay",
         )!;
@@ -284,7 +282,8 @@ export class InnerPlayer {
         this.contextMenuElement.addEventListener("contextmenu", preserveMenu);
         this.contextMenuElement.addEventListener("click", preserveMenu);
 
-        this.contextMenuElement.dir = detectBrowserDirection();
+        this.localize();
+        window.addEventListener("languagechange", () => this.localize());
 
         document.documentElement.addEventListener(
             "pointerdown",
@@ -446,6 +445,17 @@ export class InnerPlayer {
             this.instance?.set_volume(this.volumeSettings.get_volume());
             setVolumeIcon();
         });
+    }
+
+    /**
+     * Updates the parts of the UI which depend on the user's preferred
+     * languages.
+     *
+     * This is called again whenever the preferred languages change.
+     */
+    private localize(): void {
+        localizeElements(this.shadow);
+        this.contextMenuElement.dir = detectBrowserDirection();
     }
 
     /**
