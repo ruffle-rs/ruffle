@@ -133,7 +133,6 @@ pub struct WebUiBackend {
     canvas: HtmlCanvasElement,
     cursor_visible: bool,
     cursor: MouseCursor,
-    language: LanguageIdentifier,
     clipboard_content: String,
 
     /// Is a dialog currently open
@@ -150,17 +149,11 @@ impl WebUiBackend {
         canvas: &HtmlCanvasElement,
         use_canvas_font_renderer: bool,
     ) -> Self {
-        let window = web_sys::window().expect("window()");
-        let preferred_language = window.navigator().language();
-        let language = preferred_language
-            .and_then(|l| l.parse().ok())
-            .unwrap_or_else(|| US_ENGLISH.clone());
         Self {
             js_player,
             canvas: canvas.clone(),
             cursor_visible: true,
             cursor: MouseCursor::Arrow,
-            language,
             clipboard_content: "".into(),
             dialog_open: false,
             use_canvas_font_renderer,
@@ -322,7 +315,14 @@ impl UiBackend for WebUiBackend {
     }
 
     fn language(&self) -> LanguageIdentifier {
-        self.language.clone()
+        // Not cached, as the user may change their preferred languages while
+        // the page is open in some browsers.
+        web_sys::window()
+            .expect("window()")
+            .navigator()
+            .language()
+            .and_then(|l| l.parse().ok())
+            .unwrap_or_else(|| US_ENGLISH.clone())
     }
 
     fn display_unsupported_video(&self, url: Url) {
