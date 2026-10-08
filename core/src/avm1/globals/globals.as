@@ -4,6 +4,7 @@
 
 trace = ASnative(100, 4);
 
+#include "ContextMenuItem.as"
 #include "ContextMenu.as"
 #include "Error.as"
 
