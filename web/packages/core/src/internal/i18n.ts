@@ -117,3 +117,31 @@ export function textAsParagraphs(
         });
     return result;
 }
+
+/**
+ * Fills in the localized texts of all elements under the given root that request one.
+ *
+ * Elements with a `data-i18n-key` attribute get their content set to the text with that key,
+ * and elements with a `data-i18n-title-key` attribute get their title set to the text with that key.
+ *
+ * @param root Root to search for elements in
+ * @param getText Function returning the text for the given ID
+ */
+export function localizeElements(
+    root: ParentNode,
+    getText: (id: string) => string = text,
+): void {
+    for (const element of root.querySelectorAll<HTMLElement | SVGElement>(
+        "[data-i18n-key]",
+    )) {
+        element.textContent = getText(element.dataset["i18nKey"]!);
+    }
+    for (const element of root.querySelectorAll<HTMLElement | SVGElement>(
+        "[data-i18n-title-key]",
+    )) {
+        element.setAttribute(
+            "title",
+            getText(element.dataset["i18nTitleKey"]!),
+        );
+    }
+}

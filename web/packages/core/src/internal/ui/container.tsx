@@ -90,9 +90,8 @@ export function MainContainer() {
                             font-size="60px"
                             fill="#FFF"
                             stroke="#FFF"
-                        >
-                            Click to unmute
-                        </text>
+                            data-i18n-key="click-to-unmute"
+                        ></text>
                     </svg>
                 </div>
             </div>

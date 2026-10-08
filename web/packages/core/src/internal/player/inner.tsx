@@ -13,7 +13,7 @@ import {
 } from "../../public/config/index.js";
 import { MovieMetadata, ReadyState } from "../../public/player/index.js";
 import { ruffleShadowTemplate } from "../ui/shadow-template.js";
-import { text, textAsParagraphs } from "../i18n.js";
+import { localizeElements, text, textAsParagraphs } from "../i18n.js";
 import { swfFileName } from "../../swf-utils.js";
 import { isExtension } from "../../current-script.js";
 import { buildInfo } from "../../build-info.js";
@@ -269,18 +269,9 @@ export class InnerPlayer {
         ) as HTMLElement;
         if (backupSaves) {
             backupSaves.addEventListener("click", this.backupSaves.bind(this));
-            backupSaves.innerText = text("save-backup-all");
         }
 
-        const unmuteSvg = this.unmuteOverlay.querySelector(
-            "#unmute-overlay-svg",
-        ) as SVGElement;
-        if (unmuteSvg) {
-            const unmuteText = unmuteSvg.querySelector(
-                "#unmute-text",
-            ) as SVGTextElement;
-            unmuteText.textContent = text("click-to-unmute");
-        }
+        localizeElements(this.shadow);
 
         this.contextMenuOverlay = this.shadow.getElementById(
             "context-menu-overlay",

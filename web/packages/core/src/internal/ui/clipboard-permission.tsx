@@ -1,5 +1,3 @@
-import { text } from "../i18n.js";
-
 const shortcutModifier = navigator.userAgent.includes("Mac OS X")
     ? "Command"
     : "Ctrl";
@@ -12,19 +10,19 @@ export function ClipboardPermission() {
         <div id="clipboard-modal" class="modal hidden">
             <div class="modal-area">
                 <span class="close-modal"></span>
-                <h2>{text("clipboard-message-title")}</h2>
+                <h2 data-i18n-key="clipboard-message-title"></h2>
                 <p id="clipboard-modal-description"></p>
                 <p>
                     <b>{shortcutModifier}+C</b>
-                    <span>{text("clipboard-message-copy")}</span>
+                    <span data-i18n-key="clipboard-message-copy"></span>
                 </p>
                 <p>
                     <b>{shortcutModifier}+X</b>
-                    <span>{text("clipboard-message-cut")}</span>
+                    <span data-i18n-key="clipboard-message-cut"></span>
                 </p>
                 <p>
                     <b>{shortcutModifier}+V</b>
-                    <span>{text("clipboard-message-paste")}</span>
+                    <span data-i18n-key="clipboard-message-paste"></span>
                 </p>
             </div>
         </div>
