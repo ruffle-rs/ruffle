@@ -1,5 +1,3 @@
-import { text } from "../i18n.js";
-
 /**
  * @returns The HTMLElement containing the hardware acceleration modal
  */
@@ -8,16 +6,16 @@ export function HardwareAcceleration() {
         <div id="hardware-acceleration-modal" class="modal hidden">
             <div class="modal-area">
                 <span class="close-modal"></span>
-                <span id="acceleration-text">
-                    {text("enable-hardware-acceleration")}
-                </span>
+                <span
+                    id="acceleration-text"
+                    data-i18n-key="enable-hardware-acceleration"
+                ></span>
                 <a
                     href="https://github.com/ruffle-rs/ruffle/wiki/Frequently-Asked-Questions-For-Users#chrome-hardware-acceleration"
                     target="_blank"
                     class="modal-button"
-                >
-                    {text("enable-hardware-acceleration-link")}
-                </a>
+                    data-i18n-key="enable-hardware-acceleration-link"
+                ></a>
             </div>
         </div>
     );

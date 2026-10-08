@@ -1,5 +1,3 @@
-import { text } from "../i18n.js";
-
 /**
  * @returns The HTMLElement that can be used to modify the SWF volume
  */
@@ -12,22 +10,22 @@ export function VolumeControls() {
                     <label
                         id="volume-mute"
                         for="mute-checkbox"
-                        title={text("volume-controls-unmute")}
+                        data-i18n-title-key="volume-controls-unmute"
                     ></label>
                     <label
                         id="volume-min"
                         for="mute-checkbox"
-                        title={text("volume-controls-mute")}
+                        data-i18n-title-key="volume-controls-mute"
                     ></label>
                     <label
                         id="volume-mid"
                         for="mute-checkbox"
-                        title={text("volume-controls-mute")}
+                        data-i18n-title-key="volume-controls-mute"
                     ></label>
                     <label
                         id="volume-max"
                         for="mute-checkbox"
-                        title={text("volume-controls-mute")}
+                        data-i18n-title-key="volume-controls-mute"
                     ></label>
                     <input
                         id="volume-slider"
