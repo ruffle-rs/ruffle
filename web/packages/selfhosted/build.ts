@@ -152,6 +152,8 @@ await esbuild.build({
     entryNames: "ruffle",
     format: "iife",
     define: { "import.meta.url": "undefined" },
+    // Make our code and dependencies use built-ins that the page can't break.
+    inject: [path.join(coreDir, "dist", "pristine-globals.js")],
     minify: isProduction,
     sourcemap: true,
     target: "es2021",
