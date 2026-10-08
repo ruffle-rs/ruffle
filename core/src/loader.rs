@@ -2212,10 +2212,7 @@ impl<'gc> MovieLoader<'gc> {
             // This is fired after we process the movie's first frame,
             // in `MovieClip.on_exit_frame`
             MovieLoaderVMData::Avm2 { loader_info, .. } => {
-                let stream = loader_info.loader_stream();
-                let current_movie = *stream.movie();
-
-                drop(stream);
+                let current_movie = loader_info.loader_stream().movie();
 
                 loader_info
                     .set_loader_stream(LoaderStream::Swf(current_movie, dobj.unwrap()), uc.gc());

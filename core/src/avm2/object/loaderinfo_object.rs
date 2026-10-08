@@ -10,12 +10,12 @@ use crate::loader::ContentType;
 use crate::tag_utils::{SwfMovie, SwfMovieData};
 use core::fmt;
 use gc_arena::barrier::unlock;
-use gc_arena::{Collect, Gc, GcWeak, Mutation, lock::RefLock};
+use gc_arena::{Collect, Gc, GcWeak, Mutation, lock::Lock};
 use ruffle_common::utils::HasPrefixField;
-use std::cell::{Cell, Ref};
+use std::cell::Cell;
 
 /// Represents a thing which can be loaded by a loader.
-#[derive(Collect, Clone)]
+#[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]
 pub enum LoaderStream<'gc> {
     /// An SWF movie that has not yet loaded.
@@ -41,10 +41,10 @@ pub enum LoaderStream<'gc> {
 }
 
 impl<'gc> LoaderStream<'gc> {
-    pub fn movie(&self) -> &SwfMovie<'gc> {
+    pub fn movie(&self) -> SwfMovie<'gc> {
         match self {
-            LoaderStream::NotYetLoaded(movie, _, _) => movie,
-            LoaderStream::Swf(movie, _) => movie,
+            LoaderStream::NotYetLoaded(movie, _, _) => *movie,
+            LoaderStream::Swf(movie, _) => *movie,
         }
     }
 }
@@ -75,7 +75,7 @@ pub struct LoaderInfoObjectData<'gc> {
     base: ScriptObjectData<'gc>,
 
     /// The loaded stream that this gets its info from.
-    loaded_stream: RefLock<LoaderStream<'gc>>,
+    loaded_stream: Lock<LoaderStream<'gc>>,
 
     loader: Option<StageObject<'gc>>,
 
@@ -118,7 +118,7 @@ impl<'gc> LoaderInfoObject<'gc> {
             activation.gc(),
             LoaderInfoObjectData {
                 base,
-                loaded_stream: RefLock::new(LoaderStream::NotYetLoaded(movie, root_clip, is_stage)),
+                loaded_stream: Lock::new(LoaderStream::NotYetLoaded(movie, root_clip, is_stage)),
                 loader,
                 init_event_fired: Cell::new(false),
                 complete_event_fired: Cell::new(false),
@@ -209,7 +209,7 @@ impl<'gc> LoaderInfoObject<'gc> {
         if !self.0.complete_event_fired.get() {
             // NOTE: We have to check load progress here because this function
             // is called unconditionally at the end of every frame.
-            let (should_complete, from_bytes) = match &*self.0.loaded_stream.borrow() {
+            let (should_complete, from_bytes) = match self.0.loaded_stream.get() {
                 LoaderStream::Swf(movie, root) => (
                     root.as_movie_clip()
                         .map(|mc| mc.loaded_bytes() as i32 >= mc.total_bytes())
@@ -239,8 +239,8 @@ impl<'gc> LoaderInfoObject<'gc> {
     }
 
     /// Unwrap this object's loader stream
-    pub fn loader_stream(self) -> Ref<'gc, LoaderStream<'gc>> {
-        Gc::as_ref(self.0).loaded_stream.borrow()
+    pub fn loader_stream(self) -> LoaderStream<'gc> {
+        self.0.loaded_stream.get()
     }
 
     pub fn expose_content(self) -> bool {
@@ -255,7 +255,7 @@ impl<'gc> LoaderInfoObject<'gc> {
     }
 
     pub fn set_loader_stream(&self, stream: LoaderStream<'gc>, mc: &Mutation<'gc>) {
-        *unlock!(Gc::write(mc, self.0), LoaderInfoObjectData, loaded_stream).borrow_mut() = stream;
+        unlock!(Gc::write(mc, self.0), LoaderInfoObjectData, loaded_stream).set(stream);
     }
 
     pub fn set_content_type(self, content_type: ContentType) {
