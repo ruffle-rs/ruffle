@@ -31,6 +31,7 @@ mod array_object;
 mod bitmapdata_object;
 mod bytearray_object;
 mod class_object;
+mod collator_object;
 mod content_element_object;
 mod context3d_object;
 mod date_object;
@@ -87,6 +88,9 @@ pub use crate::avm2::object::bytearray_object::{
     ByteArrayObject, ByteArrayObjectWeak, byte_array_allocator,
 };
 pub use crate::avm2::object::class_object::{ClassObject, ClassObjectWeak};
+pub use crate::avm2::object::collator_object::{
+    CollatorObject, CollatorObjectWeak, collator_allocator,
+};
 pub use crate::avm2::object::content_element_object::{
     ContentElementObject, ContentElementObjectWeak, ElementData, content_element_allocator,
 };
@@ -250,6 +254,7 @@ use crate::font::Font;
         MessageChannelObject(MessageChannelObject<'gc>),
         SecurityDomainObject(SecurityDomainObject<'gc>),
         Matrix3DObject(Matrix3DObject<'gc>),
+        CollatorObject(CollatorObject<'gc>),
     }
 )]
 pub trait TObject<'gc>: 'gc + Collect<'gc> + Debug + Into<Object<'gc>> + Clone + Copy {
@@ -816,6 +821,7 @@ impl<'gc> Object<'gc> {
         pub fn as_sound_transform for SoundTransformObject;
         pub fn as_style_sheet for StyleSheetObject;
         pub fn as_matrix3d_object for Matrix3DObject;
+        pub fn as_collator for CollatorObject;
     }
 
     /// Unwrap this object's `Namespace`, if the object is a boxed namespace.
@@ -1025,6 +1031,7 @@ define_weak_enum! {
         MessageChannelObject(MessageChannelObjectWeak<'gc>),
         SecurityDomainObject(SecurityDomainObjectWeak<'gc>),
         Matrix3DObject(Matrix3DObjectWeak<'gc>),
+        CollatorObject(CollatorObjectWeak<'gc>),
     }
 }
 
