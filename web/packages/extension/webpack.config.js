@@ -2,6 +2,7 @@ import fs from "fs";
 import url from "url";
 import json5 from "json5";
 import CopyPlugin from "copy-webpack-plugin";
+import webpack from "webpack";
 
 /**
  * @param {Buffer} content
@@ -134,6 +135,10 @@ export default function (/** @type {Record<string, any>} */ env, _argv) {
         },
         devtool: mode === "development" ? "source-map" : false,
         plugins: [
+            // Make our code and dependencies use built-ins that the page can't break.
+            new webpack.ProvidePlugin({
+                Map: ["ruffle-core/dist/pristine-globals.js", "Map"],
+            }),
             new CopyPlugin({
                 patterns: [
                     {
