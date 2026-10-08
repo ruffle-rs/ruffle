@@ -4,6 +4,7 @@
 
 trace = ASnative(100, 4);
 
+#include "ContextMenu.as"
 #include "Error.as"
 
 #include "flash/geom/Rectangle.as"
