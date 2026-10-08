@@ -16,6 +16,7 @@
     ],
     "devDependencies": {
         "@eslint/js": "^10.0.1",
+        "@fluent/bundle": "^0.19.1",
         "@tsconfig/strictest": "^2.0.8",
         "@wdio/browserstack-service": "^9.39.3",
         "@wdio/cli": "^9.32.0",
