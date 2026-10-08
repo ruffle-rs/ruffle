@@ -1668,14 +1668,14 @@ Testing _global.Error.prototype
 Testing _global.ContextMenu
   apply, type=[function]
   call, type=[function]
+  constructor, type=[function]
   prototype, own, DONT_ENUM, type=[object]
   __proto__, own, type=[object]
-  constructor, own, type=[function]
 Testing _global.ContextMenu.prototype
   hideBuiltInItems, own, DONT_ENUM, type=[function]
   copy, own, DONT_ENUM, type=[function]
-  __proto__, own, type=[object]
   constructor, own, type=[function]
+  __proto__, own, type=[object]
 Testing _global.ContextMenuItem
   apply, type=[function]
   call, type=[function]

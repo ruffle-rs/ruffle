@@ -491,7 +491,6 @@ pub struct SystemPrototypes<'gc> {
     pub xml_node_constructor: Object<'gc>,
     pub xml_constructor: Object<'gc>,
     pub shared_object_constructor: Object<'gc>,
-    pub context_menu_constructor: Object<'gc>,
     pub context_menu_item_constructor: Object<'gc>,
     pub date_constructor: Object<'gc>,
     pub bitmap_data: Object<'gc>,
@@ -561,7 +560,6 @@ pub fn create_globals<'gc>(
     let netstream = netstream::create_class(context, object.proto);
     let netconnection = netconnection::create_class(context, object.proto);
     let xml_socket = xml_socket::create_class(context, object.proto);
-    let context_menu = context_menu::create_class(context, object.proto);
     let context_menu_item = context_menu_item::create_class(context, object.proto);
     let xml = xml::create_class(context, xmlnode.proto);
     let date = date::create_class(context, object.proto);
@@ -634,7 +632,7 @@ pub fn create_globals<'gc>(
         "Microphone" => value(microphone.constr; DONT_ENUM);
         "SharedObject" => value(shared_object.constr; DONT_ENUM);
         "ContextMenuItem" => value(context_menu_item.constr; DONT_ENUM);
-        "ContextMenu" => value(context_menu.constr; DONT_ENUM);
+        "ContextMenu" => value(null; DONT_ENUM); // Actually in globals.as, reserve the spot here
         "Error" => value(null; DONT_ENUM); // Actually in globals.as, reserve the spot here
         "AsSetupError" => value(null; DONT_ENUM); // Actually in globals.as, reserve the spot here
         "AssetCache" => value(asset_cache.constr; DONT_ENUM);
@@ -797,7 +795,6 @@ pub fn create_globals<'gc>(
             xml_node_constructor: xmlnode.constr,
             xml_constructor: xml.constr,
             shared_object_constructor: shared_object.constr,
-            context_menu_constructor: context_menu.constr,
             context_menu_item_constructor: context_menu_item.constr,
             date_constructor: date.constr,
             bitmap_data: bitmap_data.proto,

@@ -1174,12 +1174,11 @@ Testing _global.ContextMenu
   call, DONT_DELETE
   prototype, DONT_DELETE
   __proto__, DONT_DELETE
-  constructor, DONT_DELETE
 Testing _global.ContextMenu.prototype
   hideBuiltInItems, DONT_DELETE
   copy, DONT_DELETE
-  __proto__, DONT_DELETE
   constructor, DONT_DELETE
+  __proto__, DONT_DELETE
 Testing _global.ContextMenuItem
   apply, DONT_DELETE
   call, DONT_DELETE
