@@ -3,10 +3,10 @@ package flash.globalization {
     [Ruffle(InstanceAllocator)]
     public final class Collator {
         public function Collator(requestedLocaleIDName:String, initialMode:String = "sorting") {
-            this.init(requestedLocaleIDName, initialMode);
+            this.ctor(requestedLocaleIDName, initialMode);
         }
 
-        private native function init(requestedLocaleIDName:String, initialMode:String):void;
+        private native function ctor(requestedLocaleIDName:String, initialMode:String):void;
 
         public native function get actualLocaleIDName():String;
 

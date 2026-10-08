@@ -2,6 +2,7 @@
 
 use crate::avm2::Error;
 use crate::avm2::activation::Activation;
+use crate::avm2::error::make_error_1508;
 use crate::avm2::function::FunctionArgs;
 use crate::avm2::globals::string::locale_compare;
 use crate::avm2::object::VectorObject;
@@ -12,17 +13,36 @@ use crate::avm2::vector::VectorStorage;
 use crate::string::AvmString;
 use crate::{avm2_stub_constructor, avm2_stub_getter, avm2_stub_method, avm2_stub_setter};
 
-pub fn init<'gc>(
+pub fn ctor<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm2_stub_constructor!(activation, "flash.globalization.Collator");
+    // Note that this behavior is platform-dependent. Linux for instance rejects
+    // unknown locales (including i-default) and throws
+    //
+    //   TypeError: Error #2007: Parameter Constructor Failed must be non-null.
+    //
+    // In addition, different platforms normalize locale IDs differently.
+    // The current implementation doesn't do any normalization.
+
+    avm2_stub_constructor!(
+        activation,
+        "flash.globalization.Collator",
+        "platform-dependent behavior"
+    );
 
     let this = this.as_object().unwrap();
     let collator = this.as_collator().expect("Must be Collator object");
 
-    let requested_locale_id_name = args.try_get_string(0);
+    let requested_locale_id_name =
+        args.get_string_non_null(activation, 0, "requestedLocaleIDName")?;
+    let initial_mode = args.get_string_non_null(activation, 1, "initialMode")?;
+
+    if &initial_mode != b"sorting" && &initial_mode != b"matching" {
+        return Err(make_error_1508(activation, "initialMode"));
+    }
+
     collator.set_requested_locale_id_name(requested_locale_id_name, activation.gc());
 
     Ok(Value::Undefined)
@@ -50,9 +70,7 @@ pub fn get_requested_locale_id_name<'gc>(
     let this = this.as_object().unwrap();
     let collator = this.as_collator().expect("Must be Collator object");
 
-    Ok(collator
-        .requested_locale_id_name()
-        .map_or(Value::Null, Value::from))
+    Ok(collator.requested_locale_id_name().into())
 }
 
 pub fn get_ignore_case<'gc>(

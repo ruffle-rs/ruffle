@@ -8,6 +8,7 @@ use gc_arena::barrier::unlock;
 use gc_arena::lock::Lock;
 use gc_arena::{Collect, Gc, GcWeak, Mutation};
 use ruffle_common::utils::HasPrefixField;
+use ruffle_macros::istr;
 
 /// A class instance allocator that allocates Collator objects.
 pub fn collator_allocator<'gc>(
@@ -20,7 +21,7 @@ pub fn collator_allocator<'gc>(
         activation.gc(),
         CollatorObjectData {
             base,
-            requested_locale_id_name: Lock::new(None),
+            requested_locale_id_name: Lock::new(istr!("")),
         },
     ))
     .into())
@@ -49,15 +50,15 @@ pub struct CollatorObjectData<'gc> {
     /// Base script object.
     base: ScriptObjectData<'gc>,
 
-    requested_locale_id_name: Lock<Option<AvmString<'gc>>>,
+    requested_locale_id_name: Lock<AvmString<'gc>>,
 }
 
 impl<'gc> CollatorObject<'gc> {
-    pub fn requested_locale_id_name(self) -> Option<AvmString<'gc>> {
+    pub fn requested_locale_id_name(self) -> AvmString<'gc> {
         self.0.requested_locale_id_name.get()
     }
 
-    pub fn set_requested_locale_id_name(self, value: Option<AvmString<'gc>>, mc: &Mutation<'gc>) {
+    pub fn set_requested_locale_id_name(self, value: AvmString<'gc>, mc: &Mutation<'gc>) {
         unlock!(
             Gc::write(mc, self.0),
             CollatorObjectData,
