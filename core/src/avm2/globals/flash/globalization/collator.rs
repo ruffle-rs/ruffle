@@ -1,17 +1,17 @@
 //! `flash.globalization.Collator` native methods
 
-use crate::avm2::Error;
 use crate::avm2::activation::Activation;
 use crate::avm2::error::make_error_1508;
 use crate::avm2::function::FunctionArgs;
 use crate::avm2::globals::string::locale_compare;
-use crate::avm2::object::VectorObject;
 pub use crate::avm2::object::collator_allocator;
+use crate::avm2::object::{CollatorOptions, LastOperationStatus, VectorObject};
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
 use crate::avm2::vector::VectorStorage;
+use crate::avm2::{Avm2StrRepresentable, Error};
 use crate::string::AvmString;
-use crate::{avm2_stub_constructor, avm2_stub_getter, avm2_stub_method, avm2_stub_setter};
+use crate::{avm2_stub_constructor, avm2_stub_getter, avm2_stub_method};
 
 pub fn ctor<'gc>(
     activation: &mut Activation<'_, 'gc>,
@@ -33,7 +33,7 @@ pub fn ctor<'gc>(
     );
 
     let this = this.as_object().unwrap();
-    let collator = this.as_collator().expect("Must be Collator object");
+    let collator = this.as_collator().unwrap();
 
     let requested_locale_id_name =
         args.get_string_non_null(activation, 0, "requestedLocaleIDName")?;
@@ -44,6 +44,9 @@ pub fn ctor<'gc>(
     }
 
     collator.set_requested_locale_id_name(requested_locale_id_name, activation.gc());
+    if &initial_mode == b"matching" {
+        collator.set_options(CollatorOptions::matching());
+    }
 
     Ok(Value::Undefined)
 }
@@ -68,165 +71,199 @@ pub fn get_requested_locale_id_name<'gc>(
     _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
-    let collator = this.as_collator().expect("Must be Collator object");
+    let collator = this.as_collator().unwrap();
 
     Ok(collator.requested_locale_id_name().into())
 }
 
 pub fn get_ignore_case<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    _this: Value<'gc>,
+    _activation: &mut Activation<'_, 'gc>,
+    this: Value<'gc>,
     _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm2_stub_getter!(activation, "flash.globalization.Collator", "ignoreCase");
+    let this = this.as_object().unwrap();
+    let collator = this.as_collator().unwrap();
 
-    Ok(false.into())
+    Ok(collator
+        .options()
+        .contains(CollatorOptions::IGNORE_CASE)
+        .into())
 }
 
 pub fn set_ignore_case<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    _this: Value<'gc>,
-    _args: FunctionArgs<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
+    this: Value<'gc>,
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm2_stub_setter!(activation, "flash.globalization.Collator", "ignoreCase");
+    let this = this.as_object().unwrap();
+    let collator = this.as_collator().unwrap();
+
+    collator.set_option(CollatorOptions::IGNORE_CASE, args.get_bool(0));
+    // TODO: This should set NoError when we start supporting it.
+    collator.set_last_operation_status(LastOperationStatus::UnsupportedError);
 
     Ok(Value::Undefined)
 }
 
 pub fn get_ignore_character_width<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    _this: Value<'gc>,
+    _activation: &mut Activation<'_, 'gc>,
+    this: Value<'gc>,
     _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm2_stub_getter!(
-        activation,
-        "flash.globalization.Collator",
-        "ignoreCharacterWidth"
-    );
+    let this = this.as_object().unwrap();
+    let collator = this.as_collator().unwrap();
 
-    Ok(false.into())
+    Ok(collator
+        .options()
+        .contains(CollatorOptions::IGNORE_CHARACTER_WIDTH)
+        .into())
 }
 
 pub fn set_ignore_character_width<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    _this: Value<'gc>,
-    _args: FunctionArgs<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
+    this: Value<'gc>,
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm2_stub_setter!(
-        activation,
-        "flash.globalization.Collator",
-        "ignoreCharacterWidth"
-    );
+    let this = this.as_object().unwrap();
+    let collator = this.as_collator().unwrap();
+
+    collator.set_option(CollatorOptions::IGNORE_CHARACTER_WIDTH, args.get_bool(0));
+    // TODO: This should set NoError when we start supporting it.
+    // It is supported on Windows, unsupported on Linux.
+    collator.set_last_operation_status(LastOperationStatus::UnsupportedError);
 
     Ok(Value::Undefined)
 }
 
 pub fn get_ignore_diacritics<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    _this: Value<'gc>,
+    _activation: &mut Activation<'_, 'gc>,
+    this: Value<'gc>,
     _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm2_stub_getter!(
-        activation,
-        "flash.globalization.Collator",
-        "ignoreDiacritics"
-    );
+    let this = this.as_object().unwrap();
+    let collator = this.as_collator().unwrap();
 
-    Ok(false.into())
+    Ok(collator
+        .options()
+        .contains(CollatorOptions::IGNORE_DIACRITICS)
+        .into())
 }
 
 pub fn set_ignore_diacritics<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    _this: Value<'gc>,
-    _args: FunctionArgs<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
+    this: Value<'gc>,
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm2_stub_setter!(
-        activation,
-        "flash.globalization.Collator",
-        "ignoreDiacritics"
-    );
+    let this = this.as_object().unwrap();
+    let collator = this.as_collator().unwrap();
+
+    collator.set_option(CollatorOptions::IGNORE_DIACRITICS, args.get_bool(0));
+    // TODO: This should set NoError when we start supporting it.
+    // It is supported on Windows, unsupported on Linux.
+    collator.set_last_operation_status(LastOperationStatus::UnsupportedError);
 
     Ok(Value::Undefined)
 }
 
 pub fn get_ignore_kana_type<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    _this: Value<'gc>,
+    _activation: &mut Activation<'_, 'gc>,
+    this: Value<'gc>,
     _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm2_stub_getter!(activation, "flash.globalization.Collator", "ignoreKanaType");
+    let this = this.as_object().unwrap();
+    let collator = this.as_collator().unwrap();
 
-    Ok(false.into())
+    Ok(collator
+        .options()
+        .contains(CollatorOptions::IGNORE_KANA_TYPE)
+        .into())
 }
 
 pub fn set_ignore_kana_type<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    _this: Value<'gc>,
-    _args: FunctionArgs<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
+    this: Value<'gc>,
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm2_stub_setter!(activation, "flash.globalization.Collator", "ignoreKanaType");
+    let this = this.as_object().unwrap();
+    let collator = this.as_collator().unwrap();
+
+    collator.set_option(CollatorOptions::IGNORE_KANA_TYPE, args.get_bool(0));
+    // TODO: This should set NoError when we start supporting it.
+    // It is supported on Windows, unsupported on Linux.
+    collator.set_last_operation_status(LastOperationStatus::UnsupportedError);
 
     Ok(Value::Undefined)
 }
 
 pub fn get_ignore_symbols<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    _this: Value<'gc>,
+    _activation: &mut Activation<'_, 'gc>,
+    this: Value<'gc>,
     _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm2_stub_getter!(activation, "flash.globalization.Collator", "ignoreSymbols");
+    let this = this.as_object().unwrap();
+    let collator = this.as_collator().unwrap();
 
-    Ok(false.into())
+    Ok(collator
+        .options()
+        .contains(CollatorOptions::IGNORE_SYMBOLS)
+        .into())
 }
 
 pub fn set_ignore_symbols<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    _this: Value<'gc>,
-    _args: FunctionArgs<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
+    this: Value<'gc>,
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm2_stub_setter!(activation, "flash.globalization.Collator", "ignoreSymbols");
+    let this = this.as_object().unwrap();
+    let collator = this.as_collator().unwrap();
+
+    collator.set_option(CollatorOptions::IGNORE_SYMBOLS, args.get_bool(0));
+    // TODO: This should set NoError when we start supporting it.
+    // It is supported on Windows, unsupported on Linux.
+    collator.set_last_operation_status(LastOperationStatus::UnsupportedError);
 
     Ok(Value::Undefined)
 }
 
 pub fn get_last_operation_status<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Value<'gc>,
+    this: Value<'gc>,
     _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm2_stub_getter!(
-        activation,
-        "flash.globalization.Collator",
-        "lastOperationStatus"
-    );
+    let this = this.as_object().unwrap();
+    let collator = this.as_collator().unwrap();
 
-    Ok(AvmString::new_utf8(activation.gc(), "noError").into())
+    Ok(collator
+        .last_operation_status()
+        .as_avm2_str(activation)
+        .into())
 }
 
 pub fn get_numeric_comparison<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    _this: Value<'gc>,
+    _activation: &mut Activation<'_, 'gc>,
+    this: Value<'gc>,
     _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm2_stub_getter!(
-        activation,
-        "flash.globalization.Collator",
-        "numericComparison"
-    );
+    let this = this.as_object().unwrap();
+    let collator = this.as_collator().unwrap();
 
-    Ok(false.into())
+    Ok(collator
+        .options()
+        .contains(CollatorOptions::NUMERIC_COMPARISON)
+        .into())
 }
 
 pub fn set_numeric_comparison<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    _this: Value<'gc>,
-    _args: FunctionArgs<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
+    this: Value<'gc>,
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm2_stub_setter!(
-        activation,
-        "flash.globalization.Collator",
-        "numericComparison"
-    );
+    let this = this.as_object().unwrap();
+    let collator = this.as_collator().unwrap();
+
+    collator.set_option(CollatorOptions::NUMERIC_COMPARISON, args.get_bool(0));
+    // This is unsupported on both Windows and Linux.
+    collator.set_last_operation_status(LastOperationStatus::UnsupportedError);
 
     Ok(Value::Undefined)
 }
