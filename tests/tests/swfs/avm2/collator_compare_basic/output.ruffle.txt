@@ -1,0 +1,93 @@
+// Identical strings
+"": 0 true
+"a": 0 true
+"abc": 0 true
+"ABC": 0 true
+"é": 0 true
+"a b": 0 true
+"123": 0 true
+// Ordering
+a vs b: -1 1 false false
+ vs a: -1 1 false false
+app vs apple: -1 1 false false
+apple vs banana: -1 1 false false
+apple vs Banana: -1 1 false false
+Apple vs banana: -1 1 false false
+1 vs 2: -1 1 false false
+2 vs a: -1 1 false false
+é vs z: 1 -1 false false
+resume vs rf: -1 1 false false
+résumé vs rf: 1 -1 false false
+a vs A: -1 1 false false
+e vs é: -1 1 false false
+// sorting
+abc vs ABC: -1 false
+abc vs Abc: -1 false
+e vs é: -1 false
+resume vs RÉSUMÉ: -1 false
+abc vs abd: -1 false
+// sorting, ignoreCase
+abc vs ABC: 0 true
+abc vs Abc: 0 true
+e vs é: -1 false
+resume vs RÉSUMÉ: -1 false
+abc vs abd: -1 false
+// sorting, ignoreDiacritics
+abc vs ABC: -1 false
+abc vs Abc: -1 false
+e vs é: -1 false
+resume vs RÉSUMÉ: -1 false
+abc vs abd: -1 false
+// sorting, ignoreCase, ignoreDiacritics
+abc vs ABC: 0 true
+abc vs Abc: 0 true
+e vs é: -1 false
+resume vs RÉSUMÉ: -1 false
+abc vs abd: -1 false
+// matching
+abc vs ABC: 0 true
+abc vs Abc: 0 true
+e vs é: -1 false
+resume vs RÉSUMÉ: -1 false
+abc vs abd: -1 false
+// null
+null vs a compare: [class TypeError]
+TypeError: Error #2007: Parameter string1 must be non-null.
+	at flash.globalization::Collator/compare()
+	at Test/testNull()
+	at Test()
+null vs a equals: [class TypeError]
+TypeError: Error #2007: Parameter string1 must be non-null.
+	at flash.globalization::Collator/equals()
+	at Test/testNull()
+	at Test()
+a vs null compare: [class TypeError]
+TypeError: Error #2007: Parameter string2 must be non-null.
+	at flash.globalization::Collator/compare()
+	at Test/testNull()
+	at Test()
+a vs null equals: [class TypeError]
+TypeError: Error #2007: Parameter string2 must be non-null.
+	at flash.globalization::Collator/equals()
+	at Test/testNull()
+	at Test()
+null vs null compare: [class TypeError]
+TypeError: Error #2007: Parameter string1 must be non-null.
+	at flash.globalization::Collator/compare()
+	at Test/testNull()
+	at Test()
+null vs null equals: [class TypeError]
+TypeError: Error #2007: Parameter string1 must be non-null.
+	at flash.globalization::Collator/equals()
+	at Test/testNull()
+	at Test()
+null vs  compare: [class TypeError]
+TypeError: Error #2007: Parameter string1 must be non-null.
+	at flash.globalization::Collator/compare()
+	at Test/testNull()
+	at Test()
+null vs  equals: [class TypeError]
+TypeError: Error #2007: Parameter string1 must be non-null.
+	at flash.globalization::Collator/equals()
+	at Test/testNull()
+	at Test()
