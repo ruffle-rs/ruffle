@@ -3,6 +3,7 @@
 use crate::avm_warn;
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
+use crate::avm1::globals::as_broadcaster;
 use crate::avm1::property::Attribute;
 use crate::avm1::property_decl::{DeclContext, PropertyOrder, StaticDeclarations, SystemClass};
 use crate::avm1::{Object, Value};
@@ -58,6 +59,7 @@ pub mod method {
     pub const IS_PROPERTY_ENUMERABLE: u16 = 7;
     pub const REGISTER_CLASS: u16 = 8;
     pub const CONSTRUCTOR: u16 = 9;
+    pub const BROADCAST_MESSAGE: u16 = 12;
 }
 
 pub fn method<'gc>(
@@ -79,6 +81,7 @@ pub fn method<'gc>(
         IS_PROTOTYPE_OF => is_prototype_of(activation, this, args),
         IS_PROPERTY_ENUMERABLE => is_property_enumerable(activation, this, args),
         REGISTER_CLASS => register_class(activation, this, args),
+        BROADCAST_MESSAGE => as_broadcaster::broadcast_message(activation, this, args),
         _ => Ok(Value::Undefined),
     }
 }
