@@ -10,18 +10,19 @@ use crate::avm2::globals::flash::display::display_object::initialize_for_allocat
 use crate::avm2::globals::slots::flash_display_loader as loader_slots;
 use crate::avm2::globals::slots::flash_net_url_request as url_request_slots;
 use crate::avm2::globals::slots::flash_net_url_request_header as url_request_header_slots;
-use crate::avm2::object::LoaderInfoObject;
 use crate::avm2::object::LoaderStream;
 use crate::avm2::object::TObject as _;
+use crate::avm2::object::{LoaderInfoObject, StageObject};
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
 use crate::avm2::{Error, Object};
 use crate::avm2_stub_method;
 use crate::backend::navigator::{NavigationMethod, Request};
-use crate::display_object::LoaderDisplay;
 use crate::display_object::MovieClip;
+use crate::display_object::{EditText, LoaderDisplay, TDisplayObject};
 use crate::loader::LoadManager;
 use crate::loader::MovieLoaderVMData;
+use crate::string::{AvmString, WStr};
 use crate::tag_utils::{SwfMovie, SwfMovieData};
 use ruffle_common::tag_utils::LoadBytesInfo;
 
@@ -85,6 +86,33 @@ pub fn load<'gc>(
     )?;
 
     Ok(Value::Undefined)
+}
+
+/// Create the runtime Loader for one HTML image character.
+/// Identical images may share a text span, but each character has its own Loader.
+pub(crate) fn create_text_field_image<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    text_field: EditText<'gc>,
+    src: &WStr,
+    id: Option<&WStr>,
+) -> Result<StageObject<'gc>, Error<'gc>> {
+    let loader_class = activation.avm2().classes().loader;
+    let loader = loader_class
+        .construct(activation, &[])?
+        .as_object()
+        .and_then(|object| object.as_stage_object())
+        .expect("Loader constructor did not return a stage object");
+    let display_object = loader.display_object();
+
+    // The internal TextField parent supplies the stage, but is not a container,
+    // so ActionScript still observes parent == null.
+    display_object.set_parent(activation.context, Some(text_field.into()));
+    if let Some(id) = id {
+        display_object.set_name(activation.gc(), AvmString::new(activation.gc(), id));
+    }
+
+    load_url(activation, loader.into(), src.to_utf8_lossy().into_owned())?;
+    Ok(loader)
 }
 
 pub(crate) fn load_url<'gc>(
