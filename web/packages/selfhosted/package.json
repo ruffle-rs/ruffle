@@ -18,7 +18,7 @@
     "scripts": {
         "build": "node build.ts",
         "wdio": "wdio run wdio.conf.ts",
-        "checkTypes": "tsc --noemit"
+        "checkTypes": "tsc --noemit && tsc --noemit -p tsconfig.build.json"
     },
     "dependencies": {
         "ruffle-core": "^0.7.1"

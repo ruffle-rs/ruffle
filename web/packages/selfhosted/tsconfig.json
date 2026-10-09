@@ -9,5 +9,5 @@
         "outDir": "dist",
         "types": ["node", "@wdio/globals/types", "@wdio/mocha-framework", "ruffle-core"]
     },
-    "include": ["js/**/*", "test/**/*", "wdio.conf.ts", "build.ts"],
+    "include": ["js/**/*", "test/**/*", "wdio.conf.ts"],
 }
