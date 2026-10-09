@@ -519,6 +519,10 @@ Testing _global.System
   exactSettings, own, READ_ONLY, type=[boolean]
   __proto__, own, type=[object]
 Testing _global.System.IME
+  _listeners, own, DONT_ENUM, type=[object]
+  removeListener, own, DONT_ENUM, type=[function]
+  addListener, own, DONT_ENUM, type=[function]
+  broadcastMessage, own, DONT_ENUM, type=[function]
   onIMEComposition, own, DONT_ENUM, READ_ONLY, type=[function]
   doConversion, own, DONT_ENUM, READ_ONLY, type=[function]
   setCompositionString, own, DONT_ENUM, READ_ONLY, type=[function]
@@ -534,10 +538,24 @@ Testing _global.System.IME
   JAPANESE_KATAKANA_HALF, own, DONT_ENUM, READ_ONLY, type=[string]
   KOREAN, own, DONT_ENUM, READ_ONLY, type=[string]
   UNKNOWN, own, DONT_ENUM, READ_ONLY, type=[string]
-  _listeners, own, DONT_ENUM, type=[object]
-  removeListener, own, DONT_ENUM, type=[function]
-  addListener, own, DONT_ENUM, type=[function]
-  broadcastMessage, own, DONT_ENUM, type=[function]
+  __proto__, own, type=[object]
+Testing _global.System.IME._listeners
+  length, own, DONT_ENUM, type=[number]
+  __proto__, own, type=[object]
+Testing _global.System.IME._listeners.length
+Testing _global.System.IME.removeListener
+  prototype, own, DONT_ENUM, type=[object]
+  __proto__, own, type=[object]
+Testing _global.System.IME.removeListener.prototype
+  constructor, own, type=[function]
+  __proto__, own, type=[object]
+Testing _global.System.IME.addListener
+  prototype, own, DONT_ENUM, type=[object]
+  __proto__, own, type=[object]
+Testing _global.System.IME.addListener.prototype
+  constructor, own, type=[function]
+  __proto__, own, type=[object]
+Testing _global.System.IME.broadcastMessage
   __proto__, own, type=[object]
 Testing _global.System.IME.onIMEComposition
   __proto__, own, type=[object]
@@ -561,40 +579,6 @@ Testing _global.System.IME.JAPANESE_KATAKANA_FULL
 Testing _global.System.IME.JAPANESE_KATAKANA_HALF
 Testing _global.System.IME.KOREAN
 Testing _global.System.IME.UNKNOWN
-Testing _global.System.IME._listeners
-  length, own, DONT_ENUM, type=[number]
-  __proto__, own, type=[object]
-Testing _global.System.IME._listeners.length
-Testing _global.System.IME.removeListener
-  prototype, own, DONT_ENUM, type=[object]
-  __proto__, own, type=[object]
-Testing _global.System.IME.removeListener.prototype
-  __proto__, own, type=[object]
-  apply, own, DONT_ENUM, type=[function]
-  call, own, DONT_ENUM, type=[function]
-  constructor, own, type=[function]
-Testing _global.System.IME.addListener
-  apply, type=[function]
-  call, type=[function]
-  constructor, type=[function]
-  prototype, own, DONT_ENUM, type=[object]
-  __proto__, own, type=[object]
-Testing _global.System.IME.addListener.prototype
-  __proto__, own, type=[object]
-  apply, own, type=[function]
-  call, own, type=[function]
-  constructor, own, type=[function]
-Testing _global.System.IME.broadcastMessage
-  apply, type=[function]
-  call, type=[function]
-  constructor, type=[function]
-  prototype, own, DONT_ENUM, type=[object]
-  __proto__, own, type=[object]
-Testing _global.System.IME.broadcastMessage.prototype
-  __proto__, own, type=[object]
-  apply, own, type=[function]
-  call, own, type=[function]
-  constructor, own, type=[function]
 Testing _global.System.security
   PolicyFileResolver, own, type=[function]
   sandboxType, own, READ_ONLY, type=[string]
@@ -605,35 +589,18 @@ Testing _global.System.security
   allowDomain, own, type=[function]
   __proto__, own, type=[object]
 Testing _global.System.security.PolicyFileResolver
-  apply, type=[function]
-  call, type=[function]
-  constructor, type=[function]
   __proto__, own, type=[object]
 Testing _global.System.security.sandboxType
 Testing _global.System.security.escapeDomain
-  apply, type=[function]
-  call, type=[function]
-  constructor, type=[function]
   __proto__, own, type=[object]
 Testing _global.System.security.chooseLocalSwfPath
 Testing _global.System.security.loadPolicyFile
-  apply, type=[function]
-  call, type=[function]
-  constructor, type=[function]
   __proto__, own, type=[object]
 Testing _global.System.security.allowInsecureDomain
-  apply, type=[function]
-  call, type=[function]
-  constructor, type=[function]
   __proto__, own, type=[object]
 Testing _global.System.security.allowDomain
-  apply, type=[function]
-  call, type=[function]
-  constructor, type=[function]
   __proto__, own, type=[object]
 Testing _global.System.Product
-  apply, type=[function]
-  call, type=[function]
   __proto__, own, type=[object]
   constructor, own, type=[function]
   prototype, own, DONT_ENUM, type=[object]
@@ -715,19 +682,10 @@ Testing _global.System.capabilities.screenColor
 Testing _global.System.capabilities.pixelAspectRatio
 Testing _global.System.capabilities.hasAccessibility
 Testing _global.System.onStatus
-  apply, type=[function]
-  call, type=[function]
-  constructor, type=[function]
   __proto__, own, type=[object]
 Testing _global.System.showSettings
-  apply, type=[function]
-  call, type=[function]
-  constructor, type=[function]
   __proto__, own, type=[object]
 Testing _global.System.setClipboard
-  apply, type=[function]
-  call, type=[function]
-  constructor, type=[function]
   __proto__, own, type=[object]
 Testing _global.System.useCodepage
 Testing _global.System.exactSettings
@@ -743,23 +701,12 @@ Testing _global.Accessibility
   isActive, own, READ_ONLY, type=[function]
   __proto__, own, type=[object]
 Testing _global.Accessibility.updateProperties
-  apply, type=[function]
-  call, type=[function]
-  constructor, type=[function]
   __proto__, own, type=[object]
 Testing _global.Accessibility.sendEvent
-  apply, type=[function]
-  call, type=[function]
-  constructor, type=[function]
   __proto__, own, type=[object]
 Testing _global.Accessibility.isActive
-  apply, type=[function]
-  call, type=[function]
-  constructor, type=[function]
   __proto__, own, type=[object]
 Testing _global.Video
-  apply, type=[function]
-  call, type=[function]
   __proto__, own, type=[object]
   constructor, own, type=[function]
   prototype, own, DONT_ENUM, type=[object]
@@ -768,16 +715,34 @@ Testing _global.Video.prototype
   __proto__, own, type=[object]
   constructor, own, type=[function]
 Testing _global.Stage
+  _listeners, own, DONT_ENUM, type=[object]
+  removeListener, own, DONT_ENUM, type=[function]
+  addListener, own, DONT_ENUM, type=[function]
+  broadcastMessage, own, DONT_ENUM, type=[function]
   displayState, own, READ_ONLY, type=[string]
   showMenu, own, READ_ONLY, type=[boolean]
   width, own, READ_ONLY, type=[number]
   height, own, READ_ONLY, type=[number]
   scaleMode, own, READ_ONLY, type=[string]
   align, own, READ_ONLY, type=[string]
-  _listeners, own, DONT_ENUM, type=[object]
-  removeListener, own, DONT_ENUM, type=[function]
-  addListener, own, DONT_ENUM, type=[function]
-  broadcastMessage, own, DONT_ENUM, type=[function]
+  __proto__, own, type=[object]
+Testing _global.Stage._listeners
+  length, own, DONT_ENUM, type=[number]
+  __proto__, own, type=[object]
+Testing _global.Stage._listeners.length
+Testing _global.Stage.removeListener
+  prototype, own, type=[object]
+  __proto__, own, type=[object]
+Testing _global.Stage.removeListener.prototype
+  constructor, own, type=[function]
+  __proto__, own, type=[object]
+Testing _global.Stage.addListener
+  prototype, own, type=[object]
+  __proto__, own, type=[object]
+Testing _global.Stage.addListener.prototype
+  constructor, own, type=[function]
+  __proto__, own, type=[object]
+Testing _global.Stage.broadcastMessage
   __proto__, own, type=[object]
 Testing _global.Stage.displayState
 Testing _global.Stage.showMenu
@@ -785,46 +750,7 @@ Testing _global.Stage.width
 Testing _global.Stage.height
 Testing _global.Stage.scaleMode
 Testing _global.Stage.align
-Testing _global.Stage._listeners
-  length, own, DONT_ENUM, type=[number]
-  __proto__, own, type=[object]
-Testing _global.Stage._listeners.length
-Testing _global.Stage.removeListener
-  apply, type=[function]
-  call, type=[function]
-  constructor, type=[function]
-  prototype, own, type=[object]
-  __proto__, own, type=[object]
-Testing _global.Stage.removeListener.prototype
-  __proto__, own, type=[object]
-  apply, own, type=[function]
-  call, own, type=[function]
-  constructor, own, type=[function]
-Testing _global.Stage.addListener
-  constructor, own, type=[function]
-  call, own, type=[function]
-  apply, own, type=[function]
-  prototype, own, type=[object]
-  __proto__, own, type=[object]
-Testing _global.Stage.addListener.prototype
-  __proto__, own, type=[object]
-  apply, own, type=[function]
-  call, own, type=[function]
-  constructor, own, type=[function]
-Testing _global.Stage.broadcastMessage
-  constructor, own, type=[function]
-  call, own, type=[function]
-  apply, own, type=[function]
-  prototype, own, type=[object]
-  __proto__, own, type=[object]
-Testing _global.Stage.broadcastMessage.prototype
-  __proto__, own, type=[object]
-  apply, own, type=[function]
-  call, own, type=[function]
-  constructor, own, type=[function]
 Testing _global.TextFormat
-  apply, type=[function]
-  call, type=[function]
   __proto__, own, type=[object]
   constructor, own, type=[function]
   prototype, own, DONT_ENUM, type=[object]
@@ -852,13 +778,15 @@ Testing _global.TextFormat.prototype
   __proto__, own, type=[object]
   constructor, own, type=[function]
 Testing _global.TextField
-  apply, type=[function]
-  call, type=[function]
   StyleSheet, own, DONT_ENUM, type=[function]
   __proto__, own, type=[object]
   constructor, own, type=[function]
   prototype, own, DONT_ENUM, type=[object]
 Testing _global.TextField.prototype
+  _listeners, own, DONT_ENUM, type=[object]
+  removeListener, own, DONT_ENUM, type=[function]
+  addListener, own, DONT_ENUM, type=[function]
+  broadcastMessage, own, DONT_ENUM, type=[function]
   styleSheet, own, READ_ONLY, type=[undefined]
   mouseWheelEnabled, own, READ_ONLY, type=[undefined]
   condenseWhite, own, READ_ONLY, type=[undefined]
@@ -905,8 +833,6 @@ Testing _global.TextField.prototype
   __proto__, own, type=[object]
   constructor, own, type=[function]
 Testing _global.Button
-  apply, type=[function]
-  call, type=[function]
   __proto__, own, type=[object]
   constructor, own, type=[function]
   prototype, own, DONT_ENUM, type=[object]
@@ -922,6 +848,10 @@ Testing _global.Button.prototype
   __proto__, own, type=[object]
   constructor, own, type=[function]
 Testing _global.Key
+  _listeners, own, DONT_ENUM, type=[object]
+  removeListener, own, DONT_ENUM, type=[function]
+  addListener, own, DONT_ENUM, type=[function]
+  broadcastMessage, own, DONT_ENUM, type=[function]
   isToggled, own, DONT_ENUM, READ_ONLY, type=[function]
   isDown, own, DONT_ENUM, READ_ONLY, type=[function]
   getCode, own, DONT_ENUM, READ_ONLY, type=[function]
@@ -945,30 +875,32 @@ Testing _global.Key
   DELETEKEY, own, DONT_ENUM, READ_ONLY, type=[number]
   BACKSPACE, own, DONT_ENUM, READ_ONLY, type=[number]
   CAPSLOCK, own, DONT_ENUM, READ_ONLY, type=[number]
-  _listeners, own, DONT_ENUM, type=[object]
-  removeListener, own, DONT_ENUM, type=[function]
-  addListener, own, DONT_ENUM, type=[function]
-  broadcastMessage, own, DONT_ENUM, type=[function]
+  __proto__, own, type=[object]
+Testing _global.Key._listeners
+  length, own, DONT_ENUM, type=[number]
+  __proto__, own, type=[object]
+Testing _global.Key._listeners.length
+Testing _global.Key.removeListener
+  prototype, own, type=[object]
+  __proto__, own, type=[object]
+Testing _global.Key.removeListener.prototype
+  constructor, own, type=[function]
+  __proto__, own, type=[object]
+Testing _global.Key.addListener
+  prototype, own, type=[object]
+  __proto__, own, type=[object]
+Testing _global.Key.addListener.prototype
+  constructor, own, type=[function]
+  __proto__, own, type=[object]
+Testing _global.Key.broadcastMessage
   __proto__, own, type=[object]
 Testing _global.Key.isToggled
-  apply, type=[function]
-  call, type=[function]
-  constructor, type=[function]
   __proto__, own, type=[object]
 Testing _global.Key.isDown
-  apply, type=[function]
-  call, type=[function]
-  constructor, type=[function]
   __proto__, own, type=[object]
 Testing _global.Key.getCode
-  apply, type=[function]
-  call, type=[function]
-  constructor, type=[function]
   __proto__, own, type=[object]
 Testing _global.Key.getAscii
-  apply, type=[function]
-  call, type=[function]
-  constructor, type=[function]
   __proto__, own, type=[object]
 Testing _global.Key.ALT
 Testing _global.Key.ENTER
@@ -989,198 +921,88 @@ Testing _global.Key.INSERT
 Testing _global.Key.DELETEKEY
 Testing _global.Key.BACKSPACE
 Testing _global.Key.CAPSLOCK
-Testing _global.Key._listeners
-  length, own, DONT_ENUM, type=[number]
-  __proto__, own, type=[object]
-Testing _global.Key._listeners.length
-Testing _global.Key.removeListener
-  constructor, own, type=[function]
-  call, own, type=[function]
-  apply, own, type=[function]
-  prototype, own, type=[object]
-  __proto__, own, type=[object]
-Testing _global.Key.removeListener.prototype
-  __proto__, own, type=[object]
-  apply, own, type=[function]
-  call, own, type=[function]
-  constructor, own, type=[function]
-Testing _global.Key.addListener
-  constructor, own, type=[function]
-  call, own, type=[function]
-  apply, own, type=[function]
-  prototype, own, type=[object]
-  __proto__, own, type=[object]
-Testing _global.Key.addListener.prototype
-  __proto__, own, type=[object]
-  apply, own, type=[function]
-  call, own, type=[function]
-  constructor, own, type=[function]
-Testing _global.Key.broadcastMessage
-  constructor, own, type=[function]
-  call, own, type=[function]
-  apply, own, type=[function]
-  prototype, own, type=[object]
-  __proto__, own, type=[object]
-Testing _global.Key.broadcastMessage.prototype
-  __proto__, own, type=[object]
-  apply, own, type=[function]
-  call, own, type=[function]
-  constructor, own, type=[function]
 Testing _global.Mouse
+  _listeners, own, DONT_ENUM, type=[object]
+  removeListener, own, DONT_ENUM, type=[function]
+  addListener, own, DONT_ENUM, type=[function]
+  broadcastMessage, own, DONT_ENUM, type=[function]
   setTrailerMode, own, DONT_ENUM, READ_ONLY, type=[function]
   setTrailerPosition, own, DONT_ENUM, READ_ONLY, type=[function]
   setTrailer, own, DONT_ENUM, READ_ONLY, type=[function]
   hide, own, DONT_ENUM, READ_ONLY, type=[function]
   show, own, DONT_ENUM, READ_ONLY, type=[function]
-  _listeners, own, DONT_ENUM, type=[object]
-  removeListener, own, DONT_ENUM, type=[function]
-  addListener, own, DONT_ENUM, type=[function]
-  broadcastMessage, own, DONT_ENUM, type=[function]
-  __proto__, own, type=[object]
-Testing _global.Mouse.setTrailerMode
-  apply, type=[function]
-  call, type=[function]
-  constructor, type=[function]
-  __proto__, own, type=[object]
-Testing _global.Mouse.setTrailerPosition
-  apply, type=[function]
-  call, type=[function]
-  constructor, type=[function]
-  __proto__, own, type=[object]
-Testing _global.Mouse.setTrailer
-  apply, type=[function]
-  call, type=[function]
-  constructor, type=[function]
-  __proto__, own, type=[object]
-Testing _global.Mouse.hide
-  apply, type=[function]
-  call, type=[function]
-  constructor, type=[function]
-  __proto__, own, type=[object]
-Testing _global.Mouse.show
-  apply, type=[function]
-  call, type=[function]
-  constructor, type=[function]
   __proto__, own, type=[object]
 Testing _global.Mouse._listeners
   length, own, DONT_ENUM, type=[number]
   __proto__, own, type=[object]
 Testing _global.Mouse._listeners.length
 Testing _global.Mouse.removeListener
-  constructor, own, type=[function]
-  call, own, type=[function]
-  apply, own, type=[function]
   prototype, own, type=[object]
   __proto__, own, type=[object]
 Testing _global.Mouse.removeListener.prototype
+  constructor, own, type=[function]
   __proto__, own, type=[object]
-  apply, own, type=[function]
-  call, own, type=[function]
-  constructor, own, type=[function]
 Testing _global.Mouse.addListener
-  constructor, own, type=[function]
-  call, own, type=[function]
-  apply, own, type=[function]
   prototype, own, type=[object]
   __proto__, own, type=[object]
 Testing _global.Mouse.addListener.prototype
-  __proto__, own, type=[object]
-  apply, own, type=[function]
-  call, own, type=[function]
   constructor, own, type=[function]
+  __proto__, own, type=[object]
 Testing _global.Mouse.broadcastMessage
-  constructor, own, type=[function]
-  call, own, type=[function]
-  apply, own, type=[function]
-  prototype, own, type=[object]
   __proto__, own, type=[object]
-Testing _global.Mouse.broadcastMessage.prototype
+Testing _global.Mouse.setTrailerMode
   __proto__, own, type=[object]
-  apply, own, type=[function]
-  call, own, type=[function]
-  constructor, own, type=[function]
+Testing _global.Mouse.setTrailerPosition
+  __proto__, own, type=[object]
+Testing _global.Mouse.setTrailer
+  __proto__, own, type=[object]
+Testing _global.Mouse.hide
+  __proto__, own, type=[object]
+Testing _global.Mouse.show
+  __proto__, own, type=[object]
 Testing _global.Selection
+  _listeners, own, DONT_ENUM, type=[object]
+  removeListener, own, DONT_ENUM, type=[function]
+  addListener, own, DONT_ENUM, type=[function]
+  broadcastMessage, own, DONT_ENUM, type=[function]
   setSelection, own, DONT_ENUM, READ_ONLY, type=[function]
   setFocus, own, DONT_ENUM, READ_ONLY, type=[function]
   getFocus, own, DONT_ENUM, READ_ONLY, type=[function]
   getCaretIndex, own, DONT_ENUM, READ_ONLY, type=[function]
   getEndIndex, own, DONT_ENUM, READ_ONLY, type=[function]
   getBeginIndex, own, DONT_ENUM, READ_ONLY, type=[function]
-  _listeners, own, DONT_ENUM, type=[object]
-  removeListener, own, DONT_ENUM, type=[function]
-  addListener, own, DONT_ENUM, type=[function]
-  broadcastMessage, own, DONT_ENUM, type=[function]
-  __proto__, own, type=[object]
-Testing _global.Selection.setSelection
-  apply, type=[function]
-  call, type=[function]
-  constructor, type=[function]
-  __proto__, own, type=[object]
-Testing _global.Selection.setFocus
-  apply, type=[function]
-  call, type=[function]
-  constructor, type=[function]
-  __proto__, own, type=[object]
-Testing _global.Selection.getFocus
-  apply, type=[function]
-  call, type=[function]
-  constructor, type=[function]
-  __proto__, own, type=[object]
-Testing _global.Selection.getCaretIndex
-  apply, type=[function]
-  call, type=[function]
-  constructor, type=[function]
-  __proto__, own, type=[object]
-Testing _global.Selection.getEndIndex
-  apply, type=[function]
-  call, type=[function]
-  constructor, type=[function]
-  __proto__, own, type=[object]
-Testing _global.Selection.getBeginIndex
-  apply, type=[function]
-  call, type=[function]
-  constructor, type=[function]
   __proto__, own, type=[object]
 Testing _global.Selection._listeners
   length, own, DONT_ENUM, type=[number]
   __proto__, own, type=[object]
 Testing _global.Selection._listeners.length
 Testing _global.Selection.removeListener
-  constructor, own, type=[function]
-  call, own, type=[function]
-  apply, own, type=[function]
   prototype, own, type=[object]
   __proto__, own, type=[object]
 Testing _global.Selection.removeListener.prototype
+  constructor, own, type=[function]
   __proto__, own, type=[object]
-  apply, own, type=[function]
-  call, own, type=[function]
-  constructor, own, type=[function]
 Testing _global.Selection.addListener
-  constructor, own, type=[function]
-  call, own, type=[function]
-  apply, own, type=[function]
   prototype, own, type=[object]
   __proto__, own, type=[object]
 Testing _global.Selection.addListener.prototype
-  __proto__, own, type=[object]
-  apply, own, type=[function]
-  call, own, type=[function]
   constructor, own, type=[function]
+  __proto__, own, type=[object]
 Testing _global.Selection.broadcastMessage
-  constructor, own, type=[function]
-  call, own, type=[function]
-  apply, own, type=[function]
-  prototype, own, type=[object]
   __proto__, own, type=[object]
-Testing _global.Selection.broadcastMessage.prototype
+Testing _global.Selection.setSelection
   __proto__, own, type=[object]
-  apply, own, type=[function]
-  call, own, type=[function]
-  constructor, own, type=[function]
+Testing _global.Selection.setFocus
+  __proto__, own, type=[object]
+Testing _global.Selection.getFocus
+  __proto__, own, type=[object]
+Testing _global.Selection.getCaretIndex
+  __proto__, own, type=[object]
+Testing _global.Selection.getEndIndex
+  __proto__, own, type=[object]
+Testing _global.Selection.getBeginIndex
+  __proto__, own, type=[object]
 Testing _global.LoadVars
-  apply, type=[function]
-  call, type=[function]
   __proto__, own, type=[object]
   constructor, own, type=[function]
   prototype, own, DONT_ENUM, type=[object]
@@ -1199,8 +1021,6 @@ Testing _global.LoadVars.prototype
   __proto__, own, type=[object]
   constructor, own, type=[function]
 Testing _global.XML
-  apply, type=[function]
-  call, type=[function]
   __proto__, own, type=[object]
   constructor, own, type=[function]
   prototype, own, DONT_ENUM, type=[object]
@@ -1243,8 +1063,6 @@ Testing _global.XML.prototype
   __proto__, own, type=[object]
   constructor, own, type=[function]
 Testing _global.XMLNode
-  apply, type=[function]
-  call, type=[function]
   __proto__, own, type=[object]
   constructor, own, type=[function]
   prototype, own, DONT_ENUM, type=[object]
@@ -1273,8 +1091,6 @@ Testing _global.XMLNode.prototype
   __proto__, own, type=[object]
   constructor, own, type=[function]
 Testing _global.Sound
-  apply, type=[function]
-  call, type=[function]
   __proto__, own, type=[object]
   constructor, own, type=[function]
   prototype, own, DONT_ENUM, type=[object]
@@ -1326,94 +1142,40 @@ Testing _global.Math
   SQRT2, own, DONT_ENUM, READ_ONLY, type=[number]
   __proto__, own, type=[object]
 Testing _global.Math.pow
-  apply, type=[function]
-  call, type=[function]
-  constructor, type=[function]
   __proto__, own, type=[object]
 Testing _global.Math.acos
-  apply, type=[function]
-  call, type=[function]
-  constructor, type=[function]
   __proto__, own, type=[object]
 Testing _global.Math.asin
-  apply, type=[function]
-  call, type=[function]
-  constructor, type=[function]
   __proto__, own, type=[object]
 Testing _global.Math.atan
-  apply, type=[function]
-  call, type=[function]
-  constructor, type=[function]
   __proto__, own, type=[object]
 Testing _global.Math.ceil
-  apply, type=[function]
-  call, type=[function]
-  constructor, type=[function]
   __proto__, own, type=[object]
 Testing _global.Math.floor
-  apply, type=[function]
-  call, type=[function]
-  constructor, type=[function]
   __proto__, own, type=[object]
 Testing _global.Math.random
-  apply, type=[function]
-  call, type=[function]
-  constructor, type=[function]
   __proto__, own, type=[object]
 Testing _global.Math.round
-  apply, type=[function]
-  call, type=[function]
-  constructor, type=[function]
   __proto__, own, type=[object]
 Testing _global.Math.sqrt
-  apply, type=[function]
-  call, type=[function]
-  constructor, type=[function]
   __proto__, own, type=[object]
 Testing _global.Math.log
-  apply, type=[function]
-  call, type=[function]
-  constructor, type=[function]
   __proto__, own, type=[object]
 Testing _global.Math.exp
-  apply, type=[function]
-  call, type=[function]
-  constructor, type=[function]
   __proto__, own, type=[object]
 Testing _global.Math.tan
-  apply, type=[function]
-  call, type=[function]
-  constructor, type=[function]
   __proto__, own, type=[object]
 Testing _global.Math.atan2
-  apply, type=[function]
-  call, type=[function]
-  constructor, type=[function]
   __proto__, own, type=[object]
 Testing _global.Math.cos
-  apply, type=[function]
-  call, type=[function]
-  constructor, type=[function]
   __proto__, own, type=[object]
 Testing _global.Math.sin
-  apply, type=[function]
-  call, type=[function]
-  constructor, type=[function]
   __proto__, own, type=[object]
 Testing _global.Math.max
-  apply, type=[function]
-  call, type=[function]
-  constructor, type=[function]
   __proto__, own, type=[object]
 Testing _global.Math.min
-  apply, type=[function]
-  call, type=[function]
-  constructor, type=[function]
   __proto__, own, type=[object]
 Testing _global.Math.abs
-  apply, type=[function]
-  call, type=[function]
-  constructor, type=[function]
   __proto__, own, type=[object]
 Testing _global.Math.E
 Testing _global.Math.LN10
@@ -1424,8 +1186,6 @@ Testing _global.Math.PI
 Testing _global.Math.SQRT1_2
 Testing _global.Math.SQRT2
 Testing _global.Array
-  apply, type=[function]
-  call, type=[function]
   NUMERIC, own, type=[number]
   RETURNINDEXEDARRAY, own, type=[number]
   UNIQUESORT, own, type=[number]
@@ -1450,8 +1210,6 @@ Testing _global.Array.prototype
   __proto__, own, type=[object]
   constructor, own, type=[function]
 Testing _global.String
-  apply, type=[function]
-  call, type=[function]
   fromCharCode, own, DONT_ENUM, type=[function]
   __proto__, own, type=[object]
   constructor, own, type=[function]
@@ -1473,8 +1231,6 @@ Testing _global.String.prototype
   __proto__, own, type=[object]
   constructor, own, type=[function]
 Testing _global.Date
-  apply, type=[function]
-  call, type=[function]
   UTC, own, DONT_ENUM, READ_ONLY, type=[function]
   __proto__, own, type=[object]
   constructor, own, type=[function]
@@ -1521,8 +1277,6 @@ Testing _global.Date.prototype
   __proto__, own, type=[object]
   constructor, own, type=[function]
 Testing _global.Boolean
-  apply, type=[function]
-  call, type=[function]
   __proto__, own, type=[object]
   constructor, own, type=[function]
   prototype, own, DONT_ENUM, type=[object]
@@ -1532,8 +1286,6 @@ Testing _global.Boolean.prototype
   __proto__, own, type=[object]
   constructor, own, type=[function]
 Testing _global.Number
-  apply, type=[function]
-  call, type=[function]
   POSITIVE_INFINITY, own, DONT_ENUM, READ_ONLY, type=[number]
   NEGATIVE_INFINITY, own, DONT_ENUM, READ_ONLY, type=[number]
   NaN, own, DONT_ENUM, READ_ONLY, type=[number]
@@ -1549,83 +1301,36 @@ Testing _global.Number.prototype
   constructor, own, type=[function]
 Testing _global.o
 Testing _global.setTimeout
-  apply, type=[function]
-  call, type=[function]
-  constructor, type=[function]
   __proto__, own, type=[object]
 Testing _global.clearInterval
-  apply, type=[function]
-  call, type=[function]
-  constructor, type=[function]
   __proto__, own, type=[object]
 Testing _global.clearTimeout
-  apply, type=[function]
-  call, type=[function]
-  constructor, type=[function]
   __proto__, own, type=[object]
 Testing _global.setInterval
-  apply, type=[function]
-  call, type=[function]
-  constructor, type=[function]
   __proto__, own, type=[object]
 Testing _global.isFinite
-  apply, type=[function]
-  call, type=[function]
-  constructor, type=[function]
   __proto__, own, type=[object]
 Testing _global.isNaN
-  apply, type=[function]
-  call, type=[function]
-  constructor, type=[function]
   __proto__, own, type=[object]
 Testing _global.updateAfterEvent
-  apply, type=[function]
-  call, type=[function]
-  constructor, type=[function]
   __proto__, own, type=[object]
 Testing _global.trace
-  apply, type=[function]
-  call, type=[function]
-  constructor, type=[function]
   __proto__, own, type=[object]
 Testing _global.parseFloat
-  apply, type=[function]
-  call, type=[function]
-  constructor, type=[function]
   __proto__, own, type=[object]
 Testing _global.parseInt
-  apply, type=[function]
-  call, type=[function]
-  constructor, type=[function]
   __proto__, own, type=[object]
 Testing _global.unescape
-  apply, type=[function]
-  call, type=[function]
-  constructor, type=[function]
   __proto__, own, type=[object]
 Testing _global.escape
-  apply, type=[function]
-  call, type=[function]
-  constructor, type=[function]
   __proto__, own, type=[object]
 Testing _global.ASSetNativeAccessor
-  apply, type=[function]
-  call, type=[function]
-  constructor, type=[function]
   __proto__, own, type=[object]
 Testing _global.ASSetNative
-  apply, type=[function]
-  call, type=[function]
-  constructor, type=[function]
   __proto__, own, type=[object]
 Testing _global.ASSetPropFlags
-  apply, type=[function]
-  call, type=[function]
-  constructor, type=[function]
   __proto__, own, type=[object]
 Testing _global.RemoteLSOUsage
-  apply, type=[function]
-  call, type=[function]
   getURLPageSupport, own, DONT_ENUM, type=[function]
   prototype, own, DONT_ENUM, type=[object]
   __proto__, own, type=[object]
@@ -1634,8 +1339,6 @@ Testing _global.RemoteLSOUsage.prototype
   __proto__, own, type=[object]
   constructor, own, type=[function]
 Testing _global.AssetCache
-  apply, type=[function]
-  call, type=[function]
   getDiskUsage, own, DONT_ENUM, type=[function]
   purge, own, DONT_ENUM, type=[function]
   prototype, own, DONT_ENUM, type=[object]
@@ -1645,18 +1348,12 @@ Testing _global.AssetCache.prototype
   __proto__, own, type=[object]
   constructor, own, type=[function]
 Testing _global.AsSetupError
-  apply, type=[function]
-  call, type=[function]
-  constructor, type=[function]
   prototype, own, DONT_ENUM, type=[object]
   __proto__, own, type=[object]
 Testing _global.AsSetupError.prototype
   constructor, own, type=[function]
   __proto__, own, type=[object]
 Testing _global.Error
-  apply, type=[function]
-  call, type=[function]
-  constructor, type=[function]
   prototype, own, DONT_ENUM, type=[object]
   __proto__, own, type=[object]
 Testing _global.Error.prototype
@@ -1666,9 +1363,6 @@ Testing _global.Error.prototype
   constructor, own, type=[function]
   __proto__, own, type=[object]
 Testing _global.ContextMenu
-  apply, type=[function]
-  call, type=[function]
-  constructor, type=[function]
   prototype, own, DONT_ENUM, type=[object]
   __proto__, own, type=[object]
 Testing _global.ContextMenu.prototype
@@ -1677,9 +1371,6 @@ Testing _global.ContextMenu.prototype
   constructor, own, type=[function]
   __proto__, own, type=[object]
 Testing _global.ContextMenuItem
-  apply, type=[function]
-  call, type=[function]
-  constructor, type=[function]
   prototype, own, DONT_ENUM, type=[object]
   __proto__, own, type=[object]
 Testing _global.ContextMenuItem.prototype
@@ -1687,8 +1378,6 @@ Testing _global.ContextMenuItem.prototype
   constructor, own, type=[function]
   __proto__, own, type=[object]
 Testing _global.SharedObject
-  apply, type=[function]
-  call, type=[function]
   getRemote, own, type=[function]
   getLocal, own, type=[function]
   getDiskUsage, own, DONT_ENUM, type=[function]
@@ -1709,8 +1398,6 @@ Testing _global.SharedObject.prototype
   __proto__, own, type=[object]
   constructor, own, type=[function]
 Testing _global.Microphone
-  apply, type=[function]
-  call, type=[function]
   names, own, READ_ONLY, type=[object]
   get, own, type=[function]
   prototype, own, DONT_ENUM, type=[object]
@@ -1727,8 +1414,6 @@ Testing _global.Microphone.prototype
   __proto__, own, type=[object]
   constructor, own, type=[function]
 Testing _global.Camera
-  apply, type=[function]
-  call, type=[function]
   names, own, READ_ONLY, type=[object]
   get, own, type=[function]
   prototype, own, DONT_ENUM, type=[object]
@@ -1744,8 +1429,6 @@ Testing _global.Camera.prototype
   __proto__, own, type=[object]
   constructor, own, type=[function]
 Testing _global.NetStream
-  apply, type=[function]
-  call, type=[function]
   __proto__, own, type=[object]
   constructor, own, type=[function]
   prototype, own, DONT_ENUM, type=[object]
@@ -1775,8 +1458,6 @@ Testing _global.NetStream.prototype
   __proto__, own, type=[object]
   constructor, own, type=[function]
 Testing _global.NetConnection
-  apply, type=[function]
-  call, type=[function]
   __proto__, own, type=[object]
   constructor, own, type=[function]
   prototype, own, DONT_ENUM, type=[object]
@@ -1791,8 +1472,6 @@ Testing _global.NetConnection.prototype
   __proto__, own, type=[object]
   constructor, own, type=[function]
 Testing _global.Color
-  apply, type=[function]
-  call, type=[function]
   prototype, own, DONT_ENUM, type=[object]
   __proto__, own, type=[object]
   constructor, own, type=[function]
@@ -1804,21 +1483,16 @@ Testing _global.Color.prototype
   __proto__, own, type=[object]
   constructor, own, type=[function]
 Testing _global.AsBroadcaster
-  apply, type=[function]
-  call, type=[function]
-  broadcastMessage, own, DONT_ENUM, type=[function]
+  initialize, own, DONT_ENUM, type=[function]
   removeListener, own, DONT_ENUM, type=[function]
   addListener, own, DONT_ENUM, type=[function]
-  initialize, own, DONT_ENUM, type=[function]
+  broadcastMessage, own, DONT_ENUM, type=[function]
   prototype, own, DONT_ENUM, type=[object]
   __proto__, own, type=[object]
-  constructor, own, type=[function]
 Testing _global.AsBroadcaster.prototype
-  __proto__, own, type=[object]
   constructor, own, type=[function]
+  __proto__, own, type=[object]
 Testing _global.XMLSocket
-  apply, type=[function]
-  call, type=[function]
   prototype, own, DONT_ENUM, type=[object]
   __proto__, own, type=[object]
   constructor, own, type=[function]
@@ -1834,8 +1508,6 @@ Testing _global.XMLSocket.prototype
   __proto__, own, type=[object]
   constructor, own, type=[function]
 Testing _global.MovieClip
-  apply, type=[function]
-  call, type=[function]
   prototype, own, DONT_ENUM, type=[object]
   __proto__, own, type=[object]
   constructor, own, type=[function]
@@ -1899,15 +1571,13 @@ Testing _global.MovieClip.prototype
 Testing _global.Infinity
 Testing _global.NaN
 Testing _global.Function
-  apply, type=[function]
-  call, type=[function]
   __proto__, own, type=[object]
   constructor, own, type=[function]
   prototype, own, DONT_ENUM, type=[object]
 Testing _global.Function.prototype
   __proto__, own, type=[object]
-  apply, own, type=[function]
-  call, own, type=[function]
+  apply, own, DONT_ENUM, type=[function]
+  call, own, DONT_ENUM, type=[function]
   constructor, own, type=[function]
 Testing _global.Object
   apply, type=[function]

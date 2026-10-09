@@ -7,7 +7,7 @@ use crate::avm1::parameters::{ParametersExt, UndefinedAs};
 use crate::avm1::property_decl::{DeclContext, PropertyOrder, StaticDeclarations, SystemClass};
 use crate::avm1::{Attribute, NativeObject, Object, Value};
 use crate::ecma_conversions::f64_to_wrapping_i32;
-use crate::string::{AvmString, StringContext};
+use crate::string::AvmString;
 use bitflags::bitflags;
 use gc_arena::Mutation;
 use ruffle_macros::istr;
@@ -139,16 +139,11 @@ impl<'gc> ArrayBuilder<'gc> {
     }
 
     pub fn new(activation: &Activation<'_, 'gc>) -> Self {
-        let proto = activation.prototypes().array;
-        Self::new_with_proto(&activation.context.strings, proto)
-    }
-
-    pub fn new_with_proto(context: &StringContext<'gc>, proto: Object<'gc>) -> Self {
         Self {
-            mc: context.gc(),
-            length_prop: istr!(context, "length"),
-            proto_prop: istr!(context, "__proto__"),
-            proto,
+            mc: activation.gc(),
+            length_prop: istr!(activation, "length"),
+            proto_prop: istr!(activation, "__proto__"),
+            proto: activation.prototypes().array,
         }
     }
 
