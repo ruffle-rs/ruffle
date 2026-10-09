@@ -3,15 +3,16 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::error::make_error_1508;
 use crate::avm2::function::FunctionArgs;
-use crate::avm2::globals::string::locale_compare;
 pub use crate::avm2::object::collator_allocator;
 use crate::avm2::object::{CollatorOptions, LastOperationStatus, VectorObject};
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
 use crate::avm2::vector::VectorStorage;
 use crate::avm2::{Avm2StrRepresentable, Error};
-use crate::string::AvmString;
+use crate::string::utils::swf_to_lowercase;
+use crate::string::{AvmString, WStr};
 use crate::{avm2_stub_constructor, avm2_stub_getter, avm2_stub_method};
+use std::cmp::Ordering;
 
 pub fn ctor<'gc>(
     activation: &mut Activation<'_, 'gc>,
@@ -270,29 +271,73 @@ pub fn set_numeric_comparison<'gc>(
 
 pub fn compare<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Value<'gc>,
+    this: Value<'gc>,
     args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm2_stub_method!(activation, "flash.globalization.Collator", "compare");
+    avm2_stub_method!(
+        activation,
+        "flash.globalization.Collator",
+        "compare",
+        "diacritics and locale-specific rules"
+    );
 
-    let string1 = args.get_value(0);
-    let string2 = args.get_value(1);
+    let this = this.as_object().unwrap();
+    let collator = this.as_collator().unwrap();
 
-    locale_compare(activation, string1, FunctionArgs::from_slice(&[string2]))
+    let string1 = args.get_string_non_null(activation, 0, "string1")?;
+    let string2 = args.get_string_non_null(activation, 1, "string2")?;
+
+    Ok((collate(collator.options(), &string1, &string2) as i32).into())
 }
 
 pub fn equals<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Value<'gc>,
+    this: Value<'gc>,
     args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm2_stub_method!(activation, "flash.globalization.Collator", "equals");
+    avm2_stub_method!(
+        activation,
+        "flash.globalization.Collator",
+        "equals",
+        "diacritics and locale-specific rules"
+    );
 
-    let string1 = args.get_value(0);
-    let string2 = args.get_value(1);
+    let this = this.as_object().unwrap();
+    let collator = this.as_collator().unwrap();
 
-    let result = locale_compare(activation, string1, FunctionArgs::from_slice(&[string2]))?;
-    Ok((result.coerce_to_i32(activation)? == 0).into())
+    let string1 = args.get_string_non_null(activation, 0, "string1")?;
+    let string2 = args.get_string_non_null(activation, 1, "string2")?;
+
+    Ok((collate(collator.options(), &string1, &string2) == Ordering::Equal).into())
+}
+
+/// Compares two strings case-insensitively first, and then, unless case is
+/// ignored, puts lowercase letters before uppercase ones.
+///
+/// TODO: This should use some form of a platform-supplied collator.
+fn collate(options: CollatorOptions, string1: &WStr, string2: &WStr) -> Ordering {
+    let ordering = string1
+        .iter()
+        .map(swf_to_lowercase)
+        .cmp(string2.iter().map(swf_to_lowercase));
+    if ordering != Ordering::Equal || options.contains(CollatorOptions::IGNORE_CASE) {
+        return ordering;
+    }
+
+    string1
+        .iter()
+        .zip(string2.iter())
+        .find(|(c1, c2)| c1 != c2)
+        .map_or(Ordering::Equal, |(c1, c2)| {
+            let is_lowercase = |c| swf_to_lowercase(c) == c;
+            match (is_lowercase(c1), is_lowercase(c2)) {
+                (true, false) => Ordering::Less,
+                (false, true) => Ordering::Greater,
+                // Different characters with the same lowercase form, where
+                // neither is lowercase (e.g. "I" and "İ").
+                _ => c1.cmp(&c2),
+            }
+        })
 }
 
 pub fn get_available_locale_id_names<'gc>(
