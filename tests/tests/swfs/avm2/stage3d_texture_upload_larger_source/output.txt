@@ -1,0 +1,2 @@
+uploadFromBitmapData completed
+smaller bitmap upload completed
