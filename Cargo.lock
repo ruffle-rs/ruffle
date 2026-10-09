@@ -4893,6 +4893,7 @@ dependencies = [
  "tracing",
  "url",
  "urlencoding",
+ "webpki-root-certs",
  "zip",
 ]
 

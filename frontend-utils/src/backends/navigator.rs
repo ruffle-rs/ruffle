@@ -113,6 +113,25 @@ impl<F: FutureSpawner<Error>, I: NavigatorInterface> ExternalNavigatorBackend<F,
             }
         }
 
+        // With only these roots, the platform's trust store isn't used at all,
+        // so for rustls, reqwest doesn't need `rustls-platform-verifier` either.
+        #[cfg(all(
+            feature = "bundled-ca-certs",
+            any(feature = "native-tls", feature = "rustls-tls")
+        ))]
+        {
+            let roots = webpki_root_certs::TLS_SERVER_ROOT_CERTS
+                .iter()
+                .filter_map(|cert| {
+                    reqwest::Certificate::from_der(cert)
+                        .inspect_err(|e| {
+                            tracing::warn!("Couldn't load bundled root certificate: {e}")
+                        })
+                        .ok()
+                });
+            builder = builder.tls_certs_only(roots);
+        }
+
         let client = builder.build().ok().map(Rc::new);
 
         // Force replace the last segment with empty. //
