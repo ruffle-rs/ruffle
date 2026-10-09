@@ -2121,6 +2121,24 @@ impl Player {
                 stage,
             };
 
+            // Flash applies deferred autosizing after Event.RENDER, including
+            // hidden and clipped text. Visit only the active state of buttons.
+            let mut pending_objects: Vec<DisplayObject<'_>> = vec![stage.into()];
+            while let Some(object) = pending_objects.pop() {
+                if let Some(text) = object.as_edit_text() {
+                    text.apply_autosize_bounds();
+                } else if let Some(line) = object.as_text_line() {
+                    line.fallback().apply_autosize_bounds();
+                }
+                if let Some(container) = object.as_container() {
+                    pending_objects.extend(container.iter_render_list());
+                } else if let Some(button) = object.as_avm2_button()
+                    && let Some(state) = button.get_state_child(button.state().into())
+                {
+                    pending_objects.push(state);
+                }
+            }
+
             stage.render_viewport(&mut render_context);
 
             #[cfg(feature = "egui")]
