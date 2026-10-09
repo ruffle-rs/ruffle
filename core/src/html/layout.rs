@@ -560,8 +560,15 @@ impl<'a, 'gc> LayoutBuilder<'a, 'gc> {
 
         // Specifying multiple font names is supported only for device fonts.
         let font_names: Vec<&str> = font_name.split(",").collect();
+        let is_font_list = font_names.len() > 1;
         for font_name in &font_names {
-            let font_name = font_name.trim();
+            // Flash only trims whitespace around commas in a font-family list; a
+            // single font name is looked up as-is, so we must not trim it.
+            let font_name = if is_font_list {
+                font_name.trim()
+            } else {
+                *font_name
+            };
 
             // Check if the font name is one of the known default fonts.
             if let Some(default_font) = DefaultFont::from_name(font_name) {
