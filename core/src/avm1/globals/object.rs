@@ -3,13 +3,17 @@
 use crate::avm_warn;
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
+use crate::avm1::function::ExecutionReason;
+use crate::avm1::parameters::{ParametersExt, UndefinedAs};
 use crate::avm1::property::Attribute;
 use crate::avm1::property_decl::{DeclContext, PropertyOrder, StaticDeclarations, SystemClass};
 use crate::avm1::{Object, Value};
 use crate::avm1_stub;
 use crate::display_object::TDisplayObject;
+use crate::string::AvmString;
 use ruffle_common::avm_string::HasStringContext;
 use ruffle_macros::istr;
+use smallvec::SmallVec;
 
 const PROTO_DECLS: StaticDeclarations = declare_static_properties! {
     use fn method;
@@ -58,6 +62,7 @@ pub mod method {
     pub const IS_PROPERTY_ENUMERABLE: u16 = 7;
     pub const REGISTER_CLASS: u16 = 8;
     pub const CONSTRUCTOR: u16 = 9;
+    pub const BROADCAST_MESSAGE: u16 = 12;
 }
 
 pub fn method<'gc>(
@@ -79,6 +84,7 @@ pub fn method<'gc>(
         IS_PROTOTYPE_OF => is_prototype_of(activation, this, args),
         IS_PROPERTY_ENUMERABLE => is_property_enumerable(activation, this, args),
         REGISTER_CLASS => register_class(activation, this, args),
+        BROADCAST_MESSAGE => broadcast_message(activation, this, args),
         _ => Ok(Value::Undefined),
     }
 }
@@ -284,6 +290,67 @@ fn unwatch<'gc>(
     let result = this.unwatch(activation, name);
 
     Ok(result.into())
+}
+
+/// Implements `AsBroadcaster.broadcastMessage`
+fn broadcast_message<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let Some(event_name) = args.try_get_string(activation, 0, UndefinedAs::Some)? else {
+        return Ok(Value::Undefined);
+    };
+
+    let call_args = &args[1..];
+    let has_listeners = broadcast_internal(this, call_args, event_name, activation)?;
+    Ok(if has_listeners {
+        true.into()
+    } else {
+        Value::Undefined
+    })
+}
+
+/// Calls `method_name` on every listener in `this._listeners`, returning whether there were any.
+pub fn broadcast_internal<'gc>(
+    this: Object<'gc>,
+    call_args: &[Value<'gc>],
+    method_name: AvmString<'gc>,
+    activation: &mut Activation<'_, 'gc>,
+) -> Result<bool, Error<'gc>> {
+    let Value::Object(listeners) = this.get(istr!("_listeners"), activation)? else {
+        return Ok(false);
+    };
+
+    // Collect the listeners up front, so that every listener present when the broadcast
+    // starts gets called, even if `_listeners` is modified by a listener.
+    let length = listeners.length(activation)?;
+    let listeners: SmallVec<[_; 4]> = (0..length)
+        .map(|i| listeners.get_element(activation, i))
+        .collect();
+
+    let mut has_listeners = false;
+    for listener in listeners {
+        // Primitive listeners are boxed, so they get their prototype's methods.
+        // `null` and `undefined` are skipped, and don't count as listeners.
+        let Some(listener_object) = listener.coerce_to_object(activation)? else {
+            continue;
+        };
+
+        has_listeners = true;
+        if method_name.is_empty() {
+            listener_object.call(method_name, activation, listener, call_args)?;
+        } else {
+            listener_object.call_method(
+                method_name,
+                call_args,
+                activation,
+                ExecutionReason::Special,
+            )?;
+        }
+    }
+
+    Ok(has_listeners)
 }
 
 /// Implements `ASSetPropFlags`.

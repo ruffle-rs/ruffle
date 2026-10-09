@@ -230,14 +230,12 @@ pub enum DeclKind<'gc> {
 impl<'gc> Declaration<'gc> {
     #[inline(never)]
     /// Defines the field represented by this declaration on a [`Object`].
-    /// Returns the value defined on the object, or `undefined` if this declaration
-    /// defined a property.
-    pub fn define_on(
+    fn define_on(
         &self,
         context: &mut StringContext<'gc>,
         this: Object<'gc>,
         fn_proto_obj: Object<'gc>,
-    ) -> Value<'gc> {
+    ) {
         let mc = context.gc();
         let fn_proto = Some(Value::from(fn_proto_obj));
 
@@ -249,7 +247,7 @@ impl<'gc> Declaration<'gc> {
                 let setter = setter
                     .map(|setter| FunctionObject::native(setter).build(context, fn_proto, None));
                 this.add_property(mc, name.into(), getter, setter, self.attributes);
-                return Value::Undefined;
+                return;
             }
             DeclKind::TableProperty {
                 native,
@@ -263,7 +261,7 @@ impl<'gc> Declaration<'gc> {
                     FunctionObject::table_native(native, setter).build(context, fn_proto, None)
                 });
                 this.add_property(mc, name.into(), getter, setter, self.attributes);
-                return Value::Undefined;
+                return;
             }
             DeclKind::Method(f) | DeclKind::Function(f) => {
                 let p = matches!(self.kind, DeclKind::Function(_)).then_some(fn_proto_obj);
@@ -280,7 +278,6 @@ impl<'gc> Declaration<'gc> {
         };
 
         this.define_value(mc, name, value, self.attributes);
-        value
     }
 }
 
