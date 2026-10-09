@@ -3,12 +3,14 @@ use crate::avm2::activation::Activation;
 use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{ClassObject, Object, TObject};
 use crate::string::AvmString;
+use bitflags::bitflags;
 use core::fmt;
 use gc_arena::barrier::unlock;
 use gc_arena::lock::Lock;
 use gc_arena::{Collect, Gc, GcWeak, Mutation};
 use ruffle_common::utils::HasPrefixField;
-use ruffle_macros::istr;
+use ruffle_macros::{Avm2Enum, istr};
+use std::cell::Cell;
 
 /// A class instance allocator that allocates Collator objects.
 pub fn collator_allocator<'gc>(
@@ -22,6 +24,8 @@ pub fn collator_allocator<'gc>(
         CollatorObjectData {
             base,
             requested_locale_id_name: Lock::new(istr!("")),
+            options: Cell::new(CollatorOptions::default()),
+            last_operation_status: Cell::new(LastOperationStatus::NoError),
         },
     ))
     .into())
@@ -51,6 +55,43 @@ pub struct CollatorObjectData<'gc> {
     base: ScriptObjectData<'gc>,
 
     requested_locale_id_name: Lock<AvmString<'gc>>,
+
+    options: Cell<CollatorOptions>,
+
+    last_operation_status: Cell<LastOperationStatus>,
+}
+
+bitflags! {
+    /// Collation options that can be set on a Collator.
+    #[derive(Clone, Copy, Default)]
+    pub struct CollatorOptions: u8 {
+        const IGNORE_CASE            = 1 << 0;
+        const IGNORE_CHARACTER_WIDTH = 1 << 1;
+        const IGNORE_DIACRITICS      = 1 << 2;
+        const IGNORE_KANA_TYPE       = 1 << 3;
+        const IGNORE_SYMBOLS         = 1 << 4;
+        const NUMERIC_COMPARISON     = 1 << 5;
+    }
+}
+
+impl CollatorOptions {
+    /// Options used by `CollatorMode.MATCHING`.
+    pub fn matching() -> Self {
+        Self::IGNORE_CASE
+            | Self::IGNORE_CHARACTER_WIDTH
+            | Self::IGNORE_DIACRITICS
+            | Self::IGNORE_KANA_TYPE
+            | Self::IGNORE_SYMBOLS
+    }
+}
+
+/// Values of `flash.globalization.LastOperationStatus`.
+#[derive(Clone, Copy, Avm2Enum)]
+pub enum LastOperationStatus {
+    #[avm2_variant("noError")]
+    NoError,
+    #[avm2_variant("unsupportedError")]
+    UnsupportedError,
 }
 
 impl<'gc> CollatorObject<'gc> {
@@ -65,6 +106,28 @@ impl<'gc> CollatorObject<'gc> {
             requested_locale_id_name
         )
         .set(value);
+    }
+
+    pub fn options(self) -> CollatorOptions {
+        self.0.options.get()
+    }
+
+    pub fn set_options(self, options: CollatorOptions) {
+        self.0.options.set(options);
+    }
+
+    pub fn set_option(self, option: CollatorOptions, value: bool) {
+        let mut options = self.0.options.get();
+        options.set(option, value);
+        self.0.options.set(options);
+    }
+
+    pub fn last_operation_status(self) -> LastOperationStatus {
+        self.0.last_operation_status.get()
+    }
+
+    pub fn set_last_operation_status(self, status: LastOperationStatus) {
+        self.0.last_operation_status.set(status);
     }
 }
 

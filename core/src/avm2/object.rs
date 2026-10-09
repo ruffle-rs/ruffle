@@ -89,7 +89,7 @@ pub use crate::avm2::object::bytearray_object::{
 };
 pub use crate::avm2::object::class_object::{ClassObject, ClassObjectWeak};
 pub use crate::avm2::object::collator_object::{
-    CollatorObject, CollatorObjectWeak, collator_allocator,
+    CollatorObject, CollatorObjectWeak, CollatorOptions, LastOperationStatus, collator_allocator,
 };
 pub use crate::avm2::object::content_element_object::{
     ContentElementObject, ContentElementObjectWeak, ElementData, content_element_allocator,
