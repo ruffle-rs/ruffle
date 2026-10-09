@@ -2,8 +2,8 @@ import { BaseLoadOptions } from "./public/config/index.js";
 import { currentScriptURL, isExtension } from "./current-script.js";
 
 /**
- * Attempt to discover the public path of the current Ruffle source. This can
- * be used to configure Webpack.
+ * Attempt to discover the public path of the current Ruffle source. This is
+ * used to locate Ruffle's other files, such as the .wasm module.
  *
  * A global public path can be specified for all sources using the RufflePlayer
  * config:
@@ -30,7 +30,7 @@ export function publicPath(config: BaseLoadOptions): string {
         path = config.publicPath;
     }
 
-    // Webpack expects the paths to end with a slash.
+    // Relative URLs resolve against the last directory, so it needs a slash.
     if (path !== "" && !path.endsWith("/")) {
         path += "/";
     }

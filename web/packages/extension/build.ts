@@ -4,6 +4,7 @@ import process from "node:process";
 import { fileURLToPath, URL } from "node:url";
 import json5 from "json5";
 import * as esbuild from "esbuild";
+import { wasmAssetsPlugin } from "../core/tools/esbuild_wasm_assets.ts";
 
 interface VersionSeal {
     version_number?: string;
@@ -45,33 +46,9 @@ const isFirefox = envIndex !== -1 && args[envIndex + 1] === "firefox";
 const mode: string = process.env["NODE_ENV"] || "production";
 const isDevelopment: boolean = mode === "development";
 
-// Ensure assets/dist directory exists
-// Clean output directories
-if (fs.existsSync(distDir)) {
-    fs.rmSync(distDir, { recursive: true, force: true });
-}
+// Clean the output directory
+fs.rmSync(distDir, { recursive: true, force: true });
 fs.mkdirSync(distDir, { recursive: true });
-// Copy the WebAssembly binaries used by ruffle-core.
-function copyWasm(filename: string): void {
-    const sourcePath = path.join(coreDir, "dist", filename);
-
-    if (!fs.existsSync(sourcePath)) {
-        throw new Error(`Could not find ${sourcePath}`);
-    }
-
-    fs.copyFileSync(sourcePath, path.join(distDir, filename));
-}
-
-const coreLoadRufflePath = path.join(coreDir, "dist", "load-ruffle.js");
-const coreLoadRuffle = fs.readFileSync(coreLoadRufflePath, "utf8");
-
-const needsMvpWasm = coreLoadRuffle.includes("ruffle_web-wasm_mvp_bg.wasm");
-
-copyWasm("ruffle_web_bg.wasm");
-
-if (needsMvpWasm) {
-    copyWasm("ruffle_web-wasm_mvp_bg.wasm");
-}
 
 // Transform and write manifest.json to assets/
 function transformManifest(): void {
@@ -183,10 +160,12 @@ await esbuild.build({
     bundle: true,
     outdir: distDir,
     format: "iife",
+    assetNames: "[name]",
     inject: [path.join(coreDir, "dist", "pristine-globals.js")],
     minify: false,
     sourcemap: isDevelopment ? "inline" : false,
     target: "es2021",
+    plugins: [wasmAssetsPlugin()],
 });
 
 console.log(`ESBuild for ${mode} complete!`);
