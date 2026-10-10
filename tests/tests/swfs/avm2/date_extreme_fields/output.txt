@@ -1,0 +1,302 @@
+=== Date.UTC construction ===
+minimum
+Date.UTC: -8580041769600000
+time: -8580041769600000
+utcFullYear: -269921
+utcMonth: 3
+utcDate: 20
+utcDay: 4
+utcHours: 0
+utcMinutes: 0
+utcSeconds: 0
+utcMilliseconds: 0
+---
+before minimum
+Date.UTC: -8580041769600001
+time: -8580041769600001
+utcFullYear: -269921
+utcMonth: 3
+utcDate: 19
+utcDay: 3
+utcHours: 0
+utcMinutes: 59
+utcSeconds: 59
+utcMilliseconds: 999
+---
+minimum + 1ms
+Date.UTC: -8580041769599999
+time: -8580041769599999
+utcFullYear: -269921
+utcMonth: 3
+utcDate: 20
+utcDay: 4
+utcHours: 0
+utcMinutes: 0
+utcSeconds: 0
+utcMilliseconds: 1
+---
+chrono negative boundary
+Date.UTC: -8274642998400000
+time: -8274642998400000
+utcFullYear: -260243
+utcMonth: 0
+utcDate: 1
+utcDay: 6
+utcHours: 0
+utcMinutes: 0
+utcSeconds: 0
+utcMilliseconds: 0
+---
+year -1
+Date.UTC: -2240524800000
+time: -2240524800000
+utcFullYear: 1899
+utcMonth: 0
+utcDate: 1
+utcDay: 0
+utcHours: 0
+utcMinutes: 0
+utcSeconds: 0
+utcMilliseconds: 0
+---
+year 0
+Date.UTC: -2208988800000
+time: -2208988800000
+utcFullYear: 1900
+utcMonth: 0
+utcDate: 1
+utcDay: 1
+utcHours: 0
+utcMinutes: 0
+utcSeconds: 0
+utcMilliseconds: 0
+---
+year 99
+Date.UTC: 915148800000
+time: 915148800000
+utcFullYear: 1999
+utcMonth: 0
+utcDate: 1
+utcDay: 5
+utcHours: 0
+utcMinutes: 0
+utcSeconds: 0
+utcMilliseconds: 0
+---
+year 100
+Date.UTC: -59011459200000
+time: -59011459200000
+utcFullYear: 100
+utcMonth: 0
+utcDate: 1
+utcDay: 5
+utcHours: 0
+utcMinutes: 0
+utcSeconds: 0
+utcMilliseconds: 0
+---
+chrono positive boundary
+Date.UTC: 8210266876800000
+time: 8210266876800000
+utcFullYear: 262143
+utcMonth: 0
+utcDate: 1
+utcDay: 2
+utcHours: 0
+utcMinutes: 0
+utcSeconds: 0
+utcMilliseconds: 0
+---
+maximum - 1ms
+Date.UTC: 8639999999999999
+time: 8639999999999999
+utcFullYear: 275760
+utcMonth: 8
+utcDate: 12
+utcDay: 5
+utcHours: 0
+utcMinutes: 59
+utcSeconds: 59
+utcMilliseconds: 999
+---
+maximum
+Date.UTC: 8640000000000000
+time: 8640000000000000
+utcFullYear: 275760
+utcMonth: 8
+utcDate: 13
+utcDay: 6
+utcHours: 0
+utcMinutes: 0
+utcSeconds: 0
+utcMilliseconds: 0
+---
+after maximum
+Date.UTC: 8640000000000001
+time: NaN
+utcFullYear: NaN
+utcMonth: NaN
+utcDate: NaN
+utcDay: NaN
+utcHours: NaN
+utcMinutes: NaN
+utcSeconds: NaN
+utcMilliseconds: NaN
+---
+=== Normalization ===
+month overflow
+Date.UTC: 8640000000000000
+time: 8640000000000000
+utcFullYear: 275760
+utcMonth: 8
+utcDate: 13
+utcDay: 6
+utcHours: 0
+utcMinutes: 0
+utcSeconds: 0
+utcMilliseconds: 0
+---
+month negative
+Date.UTC: -8580041769600000
+time: -8580041769600000
+utcFullYear: -269921
+utcMonth: 3
+utcDate: 20
+utcDay: 4
+utcHours: 0
+utcMinutes: 0
+utcSeconds: 0
+utcMilliseconds: 0
+---
+day overflow to maximum
+Date.UTC: 8640000000000000
+time: 8640000000000000
+utcFullYear: 275760
+utcMonth: 8
+utcDate: 13
+utcDay: 6
+utcHours: 0
+utcMinutes: 0
+utcSeconds: 0
+utcMilliseconds: 0
+---
+hour overflow to maximum
+Date.UTC: 8640000000000000
+time: 8640000000000000
+utcFullYear: 275760
+utcMonth: 8
+utcDate: 13
+utcDay: 6
+utcHours: 0
+utcMinutes: 0
+utcSeconds: 0
+utcMilliseconds: 0
+---
+millisecond underflow
+Date.UTC: -8580041769600001
+time: -8580041769600001
+utcFullYear: -269921
+utcMonth: 3
+utcDate: 19
+utcDay: 3
+utcHours: 0
+utcMinutes: 59
+utcSeconds: 59
+utcMilliseconds: 999
+---
+=== setUTCFullYear ===
+set minimum
+result: -8640000000000000
+time: -8640000000000000
+utcFullYear: -271821
+utcMonth: 3
+utcDate: 20
+utcDay: 2
+utcHours: 0
+utcMinutes: 0
+utcSeconds: 0
+utcMilliseconds: 0
+---
+set before minimum
+result: NaN
+time: NaN
+utcFullYear: NaN
+utcMonth: NaN
+utcDate: NaN
+utcDay: NaN
+utcHours: NaN
+utcMinutes: NaN
+utcSeconds: NaN
+utcMilliseconds: NaN
+---
+set chrono negative boundary
+result: -8334601228800000
+time: -8334601228800000
+utcFullYear: -262143
+utcMonth: 0
+utcDate: 1
+utcDay: 4
+utcHours: 0
+utcMinutes: 0
+utcSeconds: 0
+utcMilliseconds: 0
+---
+set chrono positive boundary
+result: 8210266876800000
+time: 8210266876800000
+utcFullYear: 262143
+utcMonth: 0
+utcDate: 1
+utcDay: 2
+utcHours: 0
+utcMinutes: 0
+utcSeconds: 0
+utcMilliseconds: 0
+---
+set maximum
+result: 8640000000000000
+time: 8640000000000000
+utcFullYear: 275760
+utcMonth: 8
+utcDate: 13
+utcDay: 6
+utcHours: 0
+utcMinutes: 0
+utcSeconds: 0
+utcMilliseconds: 0
+---
+set after maximum
+result: NaN
+time: NaN
+utcFullYear: NaN
+utcMonth: NaN
+utcDate: NaN
+utcDay: NaN
+utcHours: NaN
+utcMinutes: NaN
+utcSeconds: NaN
+utcMilliseconds: NaN
+---
+=== setters from boundary dates ===
+minimum setUTCMilliseconds(-1): NaN
+time: NaN
+utcFullYear: NaN
+utcMonth: NaN
+utcDate: NaN
+utcDay: NaN
+utcHours: NaN
+utcMinutes: NaN
+utcSeconds: NaN
+utcMilliseconds: NaN
+---
+maximum setUTCMilliseconds(1): NaN
+time: NaN
+utcFullYear: NaN
+utcMonth: NaN
+utcDate: NaN
+utcDay: NaN
+utcHours: NaN
+utcMinutes: NaN
+utcSeconds: NaN
+utcMilliseconds: NaN
+---

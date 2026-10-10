@@ -1,0 +1,154 @@
+value: -8640000000000001
+time: NaN
+utcFullYear: NaN
+utcMonth: NaN
+utcDate: NaN
+utcDay: NaN
+utcHours: NaN
+utcMinutes: NaN
+utcSeconds: NaN
+utcMilliseconds: NaN
+---
+value: -8640000000000000
+time: -8640000000000000
+utcFullYear: -271821
+utcMonth: 3
+utcDate: 20
+utcDay: 2
+utcHours: 0
+utcMinutes: 0
+utcSeconds: 0
+utcMilliseconds: 0
+---
+value: -8639999999999999
+time: -8639999999999999
+utcFullYear: -271821
+utcMonth: 3
+utcDate: 20
+utcDay: 2
+utcHours: 0
+utcMinutes: 0
+utcSeconds: 0
+utcMilliseconds: 1
+---
+value: -8500000000000000
+time: -8500000000000000
+utcFullYear: -267385
+utcMonth: 8
+utcDate: 22
+utcDay: 5
+utcHours: 8
+utcMinutes: 53
+utcSeconds: 20
+utcMilliseconds: 0
+---
+value: -8334601228800000
+time: -8334601228800000
+utcFullYear: -262143
+utcMonth: 0
+utcDate: 1
+utcDay: 4
+utcHours: 0
+utcMinutes: 0
+utcSeconds: 0
+utcMilliseconds: 0
+---
+value: -8334601228799999
+time: -8334601228799999
+utcFullYear: -262143
+utcMonth: 0
+utcDate: 1
+utcDay: 4
+utcHours: 0
+utcMinutes: 0
+utcSeconds: 0
+utcMilliseconds: 1
+---
+value: 0
+time: 0
+utcFullYear: 1970
+utcMonth: 0
+utcDate: 1
+utcDay: 4
+utcHours: 0
+utcMinutes: 0
+utcSeconds: 0
+utcMilliseconds: 0
+---
+value: 8210266876799999
+time: 8210266876799999
+utcFullYear: 262142
+utcMonth: 11
+utcDate: 31
+utcDay: 1
+utcHours: 0
+utcMinutes: 59
+utcSeconds: 59
+utcMilliseconds: 999
+---
+value: 8210266876800000
+time: 8210266876800000
+utcFullYear: 262143
+utcMonth: 0
+utcDate: 1
+utcDay: 2
+utcHours: 0
+utcMinutes: 0
+utcSeconds: 0
+utcMilliseconds: 0
+---
+value: 8300000000000000
+time: 8300000000000000
+utcFullYear: 264986
+utcMonth: 6
+utcDate: 12
+utcDay: 3
+utcHours: 19
+utcMinutes: 33
+utcSeconds: 20
+utcMilliseconds: 0
+---
+value: 8500000000000000
+time: 8500000000000000
+utcFullYear: 271324
+utcMonth: 3
+utcDate: 11
+utcDay: 2
+utcHours: 15
+utcMinutes: 6
+utcSeconds: 40
+utcMilliseconds: 0
+---
+value: 8639999999999999
+time: 8639999999999999
+utcFullYear: 275760
+utcMonth: 8
+utcDate: 12
+utcDay: 5
+utcHours: 0
+utcMinutes: 59
+utcSeconds: 59
+utcMilliseconds: 999
+---
+value: 8640000000000000
+time: 8640000000000000
+utcFullYear: 275760
+utcMonth: 8
+utcDate: 13
+utcDay: 6
+utcHours: 0
+utcMinutes: 0
+utcSeconds: 0
+utcMilliseconds: 0
+---
+value: 8640000000000001
+time: NaN
+utcFullYear: NaN
+utcMonth: NaN
+utcDate: NaN
+utcDay: NaN
+utcHours: NaN
+utcMinutes: NaN
+utcSeconds: NaN
+utcMilliseconds: NaN
+---

@@ -4,6 +4,7 @@ use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{ClassObject, Object, TObject};
 use crate::avm2::value::Hint;
 use crate::context::UpdateContext;
+use crate::date::Date;
 use chrono::{DateTime, Utc};
 use core::fmt;
 use gc_arena::{Collect, Gc, GcWeak};
@@ -19,11 +20,12 @@ pub fn date_allocator<'gc>(
         activation.gc(),
         DateObjectData {
             base: ScriptObjectData::new(class),
-            date_time: Cell::new(None),
+            date: Cell::new(f64::NAN),
         },
     ))
     .into())
 }
+
 #[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]
 pub struct DateObject<'gc>(pub Gc<'gc, DateObjectData<'gc>>);
@@ -52,7 +54,7 @@ impl<'gc> DateObject<'gc> {
             context.gc(),
             DateObjectData {
                 base,
-                date_time: Cell::new(Some(date_time)),
+                date: Cell::new(date_time.timestamp_millis() as f64),
             },
         ))
         .into()
@@ -69,24 +71,22 @@ impl<'gc> DateObject<'gc> {
             date_class.instance_vtable(),
         );
 
-        let instance: Object<'gc> = DateObject(Gc::new(
+        DateObject(Gc::new(
             context.gc(),
             DateObjectData {
                 base,
-                date_time: Cell::new(None),
+                date: Cell::new(f64::NAN),
             },
         ))
-        .into();
-
-        instance
+        .into()
     }
 
-    pub fn date_time(self) -> Option<DateTime<Utc>> {
-        self.0.date_time.get()
+    pub(crate) fn date(self) -> Date {
+        Date::from_millis_unclipped(self.0.date.get())
     }
 
-    pub fn set_date_time(self, date_time: Option<DateTime<Utc>>) {
-        self.0.date_time.set(date_time);
+    pub(crate) fn set_date(self, date: Date) {
+        self.0.date.set(date.time());
     }
 }
 
@@ -97,7 +97,7 @@ pub struct DateObjectData<'gc> {
     /// Base script object
     base: ScriptObjectData<'gc>,
 
-    date_time: Cell<Option<DateTime<Utc>>>,
+    date: Cell<f64>,
 }
 
 impl<'gc> TObject<'gc> for DateObject<'gc> {
