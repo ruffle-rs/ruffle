@@ -3,8 +3,8 @@ use crate::avm2::Error;
 use crate::avm2::TObject as _;
 use crate::avm2::Value;
 use crate::avm2::error::{
-    make_error_2008, make_error_3669, make_error_3670, make_error_3671, make_error_3771,
-    make_error_3772, make_error_3773, make_error_3780, make_error_3781,
+    make_error_2008, make_error_3669, make_error_3670, make_error_3671, make_error_3692,
+    make_error_3771, make_error_3772, make_error_3773, make_error_3780, make_error_3781,
 };
 use crate::avm2::function::FunctionArgs;
 use crate::avm2::globals::slots::flash_geom_rectangle as rectangle_slots;
@@ -13,6 +13,10 @@ use crate::avm2_stub_method;
 use ruffle_macros::istr;
 use ruffle_render::backend::BufferUsage;
 use ruffle_render::backend::{Context3DProfile, Context3DTextureFilter};
+use ruffle_render::bitmap::{PixelRegion, PixelSnapping};
+use ruffle_render::commands::{CommandHandler, CommandList};
+use ruffle_render::quality::StageQuality;
+use ruffle_render::transform::Transform;
 use swf::{Rectangle, Twips};
 
 pub fn create_index_buffer<'gc>(
@@ -217,6 +221,66 @@ pub fn present<'gc>(
 
     if let Some(context) = this.as_context_3d() {
         context.present();
+    }
+    Ok(Value::Undefined)
+}
+
+pub fn draw_to_bitmap_data<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Value<'gc>,
+    args: FunctionArgs<'_, 'gc>,
+) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
+    if let Some(context) = this.as_context_3d() {
+        let destination = args
+            .get_object(activation, 0, "destination")?
+            .as_bitmap_data()
+            .unwrap();
+
+        // Flash requires every buffer to be cleared each frame before drawing.
+        // `present` resets that state, so reading the back buffer with no
+        // intervening `clear` throws Error #3692, just like `drawTriangles`.
+        if !context.with_context_3d(|ctx| ctx.buffers_cleared()) {
+            return Err(make_error_3692(activation));
+        }
+
+        // Read the current back buffer (the content rendered since the last
+        // `present`), matching Flash's `drawToBitmapData`. Blit it into the
+        // destination BitmapData's GPU target, then mark it dirty so the pixels
+        // are read back on next access.
+        let (source_handle, source_size) =
+            context.with_context_3d(|ctx| (ctx.back_buffer_handle(), ctx.back_buffer_size()));
+        let (source_width, source_height) = source_size.unwrap_or_default();
+
+        let mut commands = CommandList::new();
+        commands.render_bitmap(
+            source_handle,
+            Transform::default(),
+            false,
+            PixelSnapping::Never,
+            PixelRegion::for_whole_size(source_width, source_height),
+        );
+
+        let handle = destination.bitmap_handle(activation.gc(), activation.context.renderer);
+
+        let (destination, _) = destination.overwrite_cpu_pixels_from_gpu(activation.gc());
+        let mut write = destination.borrow_mut(activation.gc());
+
+        let dirty_region = PixelRegion::for_whole_size(write.width(), write.height());
+
+        let image = activation.context.renderer.render_offscreen(
+            handle,
+            commands,
+            StageQuality::High,
+            dirty_region,
+        );
+
+        if let Some(sync_handle) = image {
+            write.set_gpu_dirty(activation.gc(), sync_handle, dirty_region);
+        } else {
+            return Err("Render backend does not support Context3D.drawToBitmapData".into());
+        }
     }
     Ok(Value::Undefined)
 }

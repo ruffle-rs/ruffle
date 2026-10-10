@@ -1,0 +1,13 @@
+num_ticks = 1
+
+[image_comparisons.output]
+
+[player_options]
+with_renderer = { optional = false, quality = "high" }
+
+[[compilers]]
+type = "Asc"
+target = "test.swf"
+class = "Test"
+scripts = ["Test.as", "AGALMiniAssembler.as"]
+swf_version = 43
