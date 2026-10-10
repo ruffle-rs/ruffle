@@ -17,22 +17,20 @@ use crate::debug_ui::domain::DomainListWindow;
 use crate::debug_ui::font::FontWindow;
 use crate::debug_ui::handle::{
     AVM1ObjectHandle, AVM2ObjectHandle, ClassHandle, DisplayObjectHandle, DomainHandle, FontHandle,
+    MovieHandle,
 };
 use crate::debug_ui::movie::{MovieListWindow, MovieWindow};
 use crate::display_object::TDisplayObject;
 use crate::prelude::DisplayObject;
-use crate::tag_utils::SwfMovie;
 use gc_arena::DynamicRootSet;
 use hashbrown::HashMap;
 use std::fmt::{Debug, Formatter};
-use std::sync::{Arc, Weak};
 use swf::{Color, Rectangle, Twips};
-use weak_table::PtrWeakKeyHashMap;
 
 #[derive(Default)]
 pub struct DebugUi {
     display_objects: HashMap<DisplayObjectHandle, DisplayObjectWindow>,
-    movies: PtrWeakKeyHashMap<Weak<SwfMovie>, MovieWindow>,
+    movies: HashMap<MovieHandle, MovieWindow>,
     avm1_objects: HashMap<AVM1ObjectHandle, Avm1ObjectWindow>,
     avm2_objects: HashMap<AVM2ObjectHandle, Avm2ObjectWindow>,
     avm2_classes: HashMap<ClassHandle, Avm2ClassWindow>,
@@ -49,7 +47,7 @@ pub struct DebugUi {
 pub enum Message {
     TrackDisplayObject(DisplayObjectHandle),
     TrackDomain(DomainHandle),
-    TrackMovie(Arc<SwfMovie>),
+    TrackMovie(MovieHandle),
     TrackAVM1Object(AVM1ObjectHandle),
     TrackAVM2Object(AVM2ObjectHandle),
     TrackAVM2Class(ClassHandle),
@@ -92,8 +90,10 @@ impl DebugUi {
             window.show(egui_ctx, context, class, &mut messages)
         });
 
-        self.movies
-            .retain(|movie, window| window.show(egui_ctx, context, movie, &mut messages));
+        self.movies.retain(|movie, window| {
+            let movie = movie.fetch(context.dynamic_root);
+            window.show(egui_ctx, context, movie, &mut messages)
+        });
 
         self.fonts.retain(|font, window| {
             let font = font.fetch(context.dynamic_root);
@@ -133,8 +133,9 @@ impl DebugUi {
                     self.movies.insert(movie, Default::default());
                 }
                 Message::TrackTopLevelMovie => {
+                    let root_movie = *context.root_swf;
                     self.movies
-                        .insert(context.root_swf.clone(), Default::default());
+                        .insert(MovieHandle::new(context, root_movie), Default::default());
                 }
                 Message::TrackAVM1Object(object) => {
                     self.avm1_objects.insert(object, Default::default());

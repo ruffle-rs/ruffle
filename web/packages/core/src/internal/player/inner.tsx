@@ -13,7 +13,7 @@ import {
 } from "../../public/config/index.js";
 import { MovieMetadata, ReadyState } from "../../public/player/index.js";
 import { ruffleShadowTemplate } from "../ui/shadow-template.js";
-import { text, textAsParagraphs } from "../i18n.js";
+import { localizeElements, text, textAsParagraphs } from "../i18n.js";
 import { swfFileName } from "../../swf-utils.js";
 import { isExtension } from "../../current-script.js";
 import { buildInfo } from "../../build-info.js";
@@ -269,17 +269,6 @@ export class InnerPlayer {
         ) as HTMLElement;
         if (backupSaves) {
             backupSaves.addEventListener("click", this.backupSaves.bind(this));
-            backupSaves.innerText = text("save-backup-all");
-        }
-
-        const unmuteSvg = this.unmuteOverlay.querySelector(
-            "#unmute-overlay-svg",
-        ) as SVGElement;
-        if (unmuteSvg) {
-            const unmuteText = unmuteSvg.querySelector(
-                "#unmute-text",
-            ) as SVGTextElement;
-            unmuteText.textContent = text("click-to-unmute");
         }
 
         this.contextMenuOverlay = this.shadow.getElementById(
@@ -293,7 +282,8 @@ export class InnerPlayer {
         this.contextMenuElement.addEventListener("contextmenu", preserveMenu);
         this.contextMenuElement.addEventListener("click", preserveMenu);
 
-        this.contextMenuElement.dir = detectBrowserDirection();
+        this.localize();
+        window.addEventListener("languagechange", () => this.localize());
 
         document.documentElement.addEventListener(
             "pointerdown",
@@ -455,6 +445,17 @@ export class InnerPlayer {
             this.instance?.set_volume(this.volumeSettings.get_volume());
             setVolumeIcon();
         });
+    }
+
+    /**
+     * Updates the parts of the UI which depend on the user's preferred
+     * languages.
+     *
+     * This is called again whenever the preferred languages change.
+     */
+    private localize(): void {
+        localizeElements(this.shadow);
+        this.contextMenuElement.dir = detectBrowserDirection();
     }
 
     /**

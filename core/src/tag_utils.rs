@@ -3,7 +3,7 @@
 use swf::{CharacterId, TagCode};
 use thiserror::Error;
 
-pub use ruffle_common::tag_utils::{SwfMovie, SwfSlice, SwfStream};
+pub use ruffle_common::tag_utils::{SwfMovie, SwfMovieData, SwfMovieWeak, SwfSlice, SwfStream};
 
 #[derive(Error, Debug)]
 pub enum Error {
@@ -103,11 +103,11 @@ where
 pub fn movie_from_path<P: AsRef<std::path::Path>>(
     path: P,
     loader_url: Option<String>,
-) -> Result<SwfMovie, Error> {
+) -> Result<SwfMovieData, Error> {
     let data = std::fs::read(&path)?;
 
     let abs_path = path.as_ref().canonicalize()?;
     let url = url::Url::from_file_path(abs_path).map_err(|()| Error::InvalidSwfUrl)?;
 
-    SwfMovie::from_data(&data, url.into(), loader_url, None).map_err(Error::InvalidSwf)
+    SwfMovieData::from_data(&data, url.into(), loader_url, None).map_err(Error::InvalidSwf)
 }

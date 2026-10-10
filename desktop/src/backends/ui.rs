@@ -322,24 +322,44 @@ impl UiBackend for DesktopUiBackend {
         let name = &query.name;
         let is_bold = query.is_bold;
         let is_italic = query.is_italic;
+        let lowercase_name = query.lowercase_name.as_str();
 
-        let query = fontdb::Query {
-            families: &[Family::Name(name)],
-            weight: if is_bold {
-                fontdb::Weight::BOLD
-            } else {
-                fontdb::Weight::NORMAL
-            },
-            style: if is_italic {
-                fontdb::Style::Italic
-            } else {
-                fontdb::Style::Normal
-            },
-            ..Default::default()
+        let weight = if is_bold {
+            fontdb::Weight::BOLD
+        } else {
+            fontdb::Weight::NORMAL
+        };
+        let style = if is_italic {
+            fontdb::Style::Italic
+        } else {
+            fontdb::Style::Normal
         };
 
+        // fontdb's `query` is case-sensitive; resolve the canonical family name
+        // case-insensitively (first match) and re-query so fontdb still selects
+        // weight/style. Always resolving case-insensitively avoids order-dependent
+        // picks when case-duplicate fonts are installed.
+        let canonical = self.font_database.faces().find_map(|face| {
+            face.families
+                .iter()
+                .find(|(fam, _)| fam.to_lowercase() == lowercase_name)
+                .map(|(fam, _)| fam.clone())
+        });
+        let id = canonical.and_then(|canon| {
+            if canon.as_str() != name.as_str() {
+                tracing::info!("Device font \"{name}\" matched case-insensitively to \"{canon}\"");
+            }
+            let query = fontdb::Query {
+                families: &[Family::Name(&canon)],
+                weight,
+                style,
+                ..Default::default()
+            };
+            self.font_database.query(&query)
+        });
+
         // It'd be nice if we can get the full list of candidates... Feature request?
-        if let Some(id) = self.font_database.query(&query)
+        if let Some(id) = id
             && let Some(face) = self.font_database.face(id)
         {
             tracing::info!(

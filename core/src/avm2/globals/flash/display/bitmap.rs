@@ -32,7 +32,7 @@ pub fn bitmap_allocator<'gc>(
                 0,
                 bitmap_data,
                 false,
-                &activation.caller_movie_or_root(),
+                activation.caller_movie_or_root(),
             )
             .into();
             return Ok(
@@ -61,7 +61,7 @@ pub fn bitmap_allocator<'gc>(
                 0,
                 new_bitmap_data,
                 false,
-                &activation.caller_movie_or_root(),
+                activation.caller_movie_or_root(),
             );
 
             return Ok(

@@ -18,15 +18,14 @@ navigator = ["fs", "dep:async-io", "dep:tokio"]
 ui = []
 freetype = ["ui", "dep:freetype-rs"]
 
-# TLS backend for reqwest. `native-tls` is enabled by default; it uses the
-# system TLS component (OpenSSL/SChannel/SecureTransport) and keeps the binary
-# smaller, which suits desktop targets. Platforms where native-tls is
-# unavailable or impractical (e.g. Android) should set `default-features = false`
-# and enable `rustls-tls`, which bundles a pure-Rust TLS stack (including root
-# certificates). reqwest picks the backend automatically at runtime from
-# whichever is compiled in, so no code change is needed to switch.
+# TLS backend for reqwest, chosen at compile time (native-tls wins if both are enabled).
+# Either way, root certificates come from the platform's trust store.
+# - `native-tls` (default): the system TLS library; smaller binary.
+# - `rustls-tls`: for platforms without a usable native-tls (e.g. Android).
+#     No crypto provider is included: the app must install one (e.g. from `ring`)
+#     before building any reqwest client, otherwise reqwest panics.
 native-tls = ["reqwest/native-tls"]
-rustls-tls = ["reqwest/rustls"]
+rustls-tls = ["reqwest/rustls-no-provider"]
 
 [dependencies]
 toml_edit = { workspace = true, features = ["parse"] }

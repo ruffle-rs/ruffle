@@ -1,0 +1,23 @@
+<!doctype html>
+<html>
+    <head>
+        <meta charset="utf-8" />
+        <title>EMBED - PAGE WITH BROKEN MAP</title>
+        <script>
+            // Some pages replace Map with an implementation lacking the standard methods (#19758).
+            window.brokenMap = function Map() {};
+            window.Map = window.brokenMap;
+        </script>
+    </head>
+
+    <body>
+        <div id="test-container">
+            <embed
+                type="application/x-shockwave-flash"
+                src="/test_assets/example.swf"
+                width="550"
+                height="400"
+            />
+        </div>
+    </body>
+</html>

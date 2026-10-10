@@ -9,15 +9,13 @@ use crate::string::{AvmString, StringContext, WStr, WString};
 use crate::tag_utils;
 use crate::tag_utils::ControlFlow;
 use gc_arena::Collect;
-use ruffle_common::tag_utils::{SwfMovie, SwfSlice, SwfStream};
+use ruffle_common::tag_utils::{SwfMovie, SwfMovieData, SwfSlice, SwfStream};
 use std::str;
-use std::sync::Arc;
 use swf::TagCode;
 
 mod accessibility;
 pub(super) mod array;
 pub(crate) mod as_broadcaster;
-mod as_setup_error;
 mod asnative;
 mod asset_cache;
 mod automation_action_generator;
@@ -34,12 +32,10 @@ mod color;
 pub(crate) mod color_matrix_filter;
 pub(crate) mod color_transform;
 pub(crate) mod context_menu;
-pub(crate) mod context_menu_item;
 pub(crate) mod convolution_filter;
 pub(crate) mod date;
 pub(crate) mod displacement_map_filter;
 pub(crate) mod drop_shadow_filter;
-pub(crate) mod error;
 mod external_interface;
 pub(crate) mod file_reference;
 pub(crate) mod file_reference_list;
@@ -59,7 +55,6 @@ pub(crate) mod netconnection;
 pub(crate) mod netstream;
 pub(crate) mod number;
 mod object;
-mod point;
 mod print_job;
 mod remote_lso_usage;
 mod selection;
@@ -495,18 +490,15 @@ pub struct SystemPrototypes<'gc> {
     pub xml_node_constructor: Object<'gc>,
     pub xml_constructor: Object<'gc>,
     pub shared_object_constructor: Object<'gc>,
-    pub context_menu_constructor: Object<'gc>,
-    pub context_menu_item_constructor: Object<'gc>,
     pub date_constructor: Object<'gc>,
     pub bitmap_data: Object<'gc>,
     pub file_reference: Object<'gc>,
 }
 
 pub fn load_playerglobal<'gc>(context: &mut UpdateContext<'gc>) {
-    let movie = Arc::new(
-        SwfMovie::from_data(PLAYERGLOBAL, "file:///".into(), None, None)
-            .expect("playerglobal_avm1.swf should be valid"),
-    );
+    let movie_data = SwfMovieData::from_data(PLAYERGLOBAL, "file:///".into(), None, None)
+        .expect("playerglobal_avm1.swf should be valid");
+    let movie = SwfMovie::new(context.gc(), movie_data);
 
     let slice = SwfSlice::from(movie);
 
@@ -552,14 +544,12 @@ pub fn create_globals<'gc>(
     let text_format = text_format::create_class(context, object.proto);
     let array = array::create_class(context, object.proto);
     let color = color::create_class(context, object.proto);
-    let error = error::create_class(context, object.proto);
     let xmlnode = xml_node::create_class(context, object.proto);
     let string = string::create_class(context, object.proto);
     let number = number::create_class(context, object.proto);
     let boolean = boolean::create_class(context, object.proto);
     let load_vars = load_vars::create_class(context, object.proto);
     let local_connection = local_connection::create_class(context, object.proto);
-    let matrix = matrix::create_class(context, object.proto);
     let color_transform = color_transform::create_class(context, object.proto);
     let external_interface = external_interface::create_class(context, object.proto);
     let movie_clip_loader =
@@ -568,8 +558,6 @@ pub fn create_globals<'gc>(
     let netstream = netstream::create_class(context, object.proto);
     let netconnection = netconnection::create_class(context, object.proto);
     let xml_socket = xml_socket::create_class(context, object.proto);
-    let context_menu = context_menu::create_class(context, object.proto);
-    let context_menu_item = context_menu_item::create_class(context, object.proto);
     let xml = xml::create_class(context, xmlnode.proto);
     let date = date::create_class(context, object.proto);
     let transform = transform::create_class(context, object.proto);
@@ -615,7 +603,6 @@ pub fn create_globals<'gc>(
     let action_generator = automation_action_generator::create_class(context, object.proto);
     let automation_configuration = automation_configuration::create_class(context, object.proto);
 
-    let as_setup_error = as_setup_error::create_class(context, object.proto);
     let asset_cache = asset_cache::create_class(context, object.proto);
     let remote_lso_usage = remote_lso_usage::create_class(context, object.proto);
 
@@ -641,10 +628,10 @@ pub fn create_globals<'gc>(
         "Camera" => value(camera.constr; DONT_ENUM);
         "Microphone" => value(microphone.constr; DONT_ENUM);
         "SharedObject" => value(shared_object.constr; DONT_ENUM);
-        "ContextMenuItem" => value(context_menu_item.constr; DONT_ENUM);
-        "ContextMenu" => value(context_menu.constr; DONT_ENUM);
-        "Error" => value(error.constr; DONT_ENUM);
-        "AsSetupError" => value(as_setup_error.constr; DONT_ENUM);
+        "ContextMenuItem" => value(null; DONT_ENUM); // Actually in globals.as, reserve the spot here
+        "ContextMenu" => value(null; DONT_ENUM); // Actually in globals.as, reserve the spot here
+        "Error" => value(null; DONT_ENUM); // Actually in globals.as, reserve the spot here
+        "AsSetupError" => value(null; DONT_ENUM); // Actually in globals.as, reserve the spot here
         "AssetCache" => value(asset_cache.constr; DONT_ENUM);
         "RemoteLSOUsage" => value(remote_lso_usage.constr; DONT_ENUM);
 
@@ -762,7 +749,7 @@ pub fn create_globals<'gc>(
     let decls = declare_properties! {
         "Rectangle" => value(null); // Actually in globals.as, reserve the spot here
         "Point" => value(null); // Actually in globals.as, reserve the spot here
-        "Matrix" => value(matrix.constr);
+        "Matrix" => value(null); // Actually in globals.as, reserve the spot here
         "ColorTransform" => value(color_transform.constr);
         "Transform" => value(transform.constr);
     };
@@ -805,8 +792,6 @@ pub fn create_globals<'gc>(
             xml_node_constructor: xmlnode.constr,
             xml_constructor: xml.constr,
             shared_object_constructor: shared_object.constr,
-            context_menu_constructor: context_menu.constr,
-            context_menu_item_constructor: context_menu_item.constr,
             date_constructor: date.constr,
             bitmap_data: bitmap_data.proto,
             file_reference: file_reference.proto,

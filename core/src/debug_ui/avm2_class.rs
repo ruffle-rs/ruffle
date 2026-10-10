@@ -75,7 +75,7 @@ impl Avm2ClassWindow {
 
                 if let Some(tu) = class.translation_unit() {
                     ui.label("Movie");
-                    open_movie_button(ui, &tu.movie(), messages);
+                    open_movie_button(ui, context, tu.movie(), messages);
                     ui.end_row();
                 }
 

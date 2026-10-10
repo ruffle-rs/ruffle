@@ -88,6 +88,9 @@
 
 #unmute-overlay-svg {
     scale: 0.8;
+
+    /* Translations of the text may be wider than the icon. */
+    overflow: visible;
 }
 
 /* Includes inverted colors from play button! */

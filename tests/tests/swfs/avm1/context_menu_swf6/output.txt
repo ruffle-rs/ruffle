@@ -1,0 +1,15 @@
+// typeof ContextMenu.prototype.copy
+undefined
+
+// typeof ContextMenu.prototype.hideBuiltInItems
+undefined
+
+// typeof ContextMenuItem.prototype.copy
+undefined
+
+// new ContextMenu()
+customItems builtInItems onSelect 
+
+// new ContextMenuItem('Caption')
+visible enabled separatorBefore onSelect caption 
+

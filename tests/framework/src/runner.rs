@@ -21,7 +21,7 @@ use ruffle_core::FloatDuration;
 use ruffle_core::backend::locale::DeterministicLocaleBackend;
 use ruffle_core::backend::navigator::NullExecutor;
 use ruffle_core::limits::ExecutionLimit;
-use ruffle_core::tag_utils::SwfMovie;
+use ruffle_core::tag_utils::SwfMovieData;
 use ruffle_core::{Player, PlayerBuilder};
 use ruffle_input_format::InputInjector;
 use ruffle_render::backend::{RenderBackend, ViewportDimensions};
@@ -62,7 +62,7 @@ pub struct TestRunner {
 impl TestRunner {
     pub fn new(
         test: &Test,
-        movie: SwfMovie,
+        movie: SwfMovieData,
         injector: InputInjector,
         socket_events: Option<Vec<SocketEvent>>,
         renderer: Option<(Box<dyn RenderInterface>, Box<dyn RenderBackend>)>,

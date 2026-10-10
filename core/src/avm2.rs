@@ -28,7 +28,6 @@ use fnv::FnvHashMap;
 use gc_arena::lock::GcRefLock;
 use gc_arena::{Collect, Gc, Mutation};
 use ruffle_wstr::WStr;
-use std::sync::Arc;
 use swf::DoAbc2Flag;
 use swf::avm2::read::Reader;
 use swf::error::AbcParseError;
@@ -507,7 +506,7 @@ impl<'gc> Avm2<'gc> {
         name: Option<AvmString<'gc>>,
         flags: DoAbc2Flag,
         domain: Domain<'gc>,
-        movie: Arc<SwfMovie>,
+        movie: SwfMovie<'gc>,
     ) -> Result<Option<Script<'gc>>, Error<'gc>> {
         let mut reader = Reader::new(data);
         let abc = match reader.read() {
@@ -552,7 +551,7 @@ impl<'gc> Avm2<'gc> {
         context: &mut UpdateContext<'gc>,
         data: &[u8],
         domain: Domain<'gc>,
-        movie: Arc<SwfMovie>,
+        movie: SwfMovie<'gc>,
     ) {
         let mut reader = Reader::new(data);
         let abc = match reader.read() {

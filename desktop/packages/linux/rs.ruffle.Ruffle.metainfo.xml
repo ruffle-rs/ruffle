@@ -390,6 +390,12 @@
         <color type="primary" scheme_preference="dark">#2c4270</color>
     </branding>
     <releases>
+        <release version="0.7.1" date="2026-10-07">
+            <url>https://github.com/ruffle-rs/ruffle/releases/tag/v0.7.1</url>
+        </release>
+        <release version="0.7.0" date="2026-10-07">
+            <url>https://github.com/ruffle-rs/ruffle/releases/tag/v0.7.0</url>
+        </release>
         <release version="0.6.0" date="2026-09-06">
             <url>https://github.com/ruffle-rs/ruffle/releases/tag/v0.6.0</url>
         </release>

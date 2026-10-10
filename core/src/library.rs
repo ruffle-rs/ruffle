@@ -8,7 +8,6 @@ use crate::font::{Font, FontDescriptor, FontLike, FontQuery, FontType};
 use crate::prelude::*;
 use crate::string::AvmString;
 use crate::tag_utils::SwfMovie;
-use gc_arena::collect::Trace;
 use gc_arena::{Collect, Mutation};
 use ruffle_render::backend::RenderBackend;
 use ruffle_render::bitmap::BitmapHandle;
@@ -19,45 +18,19 @@ use crate::backend::ui::{FontDefinition, UiBackend};
 use crate::font::DefaultFont;
 use fnv::{FnvHashMap, FnvHashSet};
 use std::collections::HashMap;
-use std::sync::{Arc, Weak};
-use weak_table::{PtrWeakKeyHashMap, WeakValueHashMap, traits::WeakElement};
 
-#[derive(Clone)]
-struct MovieSymbol(Arc<SwfMovie>, CharacterId);
-
-#[derive(Clone)]
-struct WeakMovieSymbol(Weak<SwfMovie>, CharacterId);
-
-impl WeakElement for WeakMovieSymbol {
-    type Strong = MovieSymbol;
-
-    fn new(view: &Self::Strong) -> Self {
-        Self(Arc::downgrade(&view.0), view.1)
-    }
-
-    fn view(&self) -> Option<Self::Strong> {
-        if let Some(strong) = self.0.upgrade() {
-            Some(MovieSymbol(strong, self.1))
-        } else {
-            None
-        }
-    }
-}
+#[derive(Clone, Collect)]
+#[collect(no_drop)]
+struct MovieSymbol<'gc>(SwfMovie<'gc>, CharacterId);
 
 /// The mappings between class objects and library characters defined by
 /// `SymbolClass`.
+#[derive(Collect)]
+#[collect(no_drop)]
 pub struct Avm2ClassRegistry<'gc> {
     /// A list of AVM2 class objects and the character IDs they are expected to
     /// instantiate.
-    class_map: WeakValueHashMap<Avm2Class<'gc>, WeakMovieSymbol>,
-}
-
-unsafe impl<'gc> Collect<'gc> for Avm2ClassRegistry<'gc> {
-    fn trace<C: Trace<'gc>>(&self, cc: &mut C) {
-        for (k, _) in self.class_map.iter() {
-            cc.trace(k);
-        }
-    }
+    class_map: HashMap<Avm2Class<'gc>, MovieSymbol<'gc>>,
 }
 
 impl Default for Avm2ClassRegistry<'_> {
@@ -69,7 +42,7 @@ impl Default for Avm2ClassRegistry<'_> {
 impl<'gc> Avm2ClassRegistry<'gc> {
     pub fn new() -> Self {
         Self {
-            class_map: WeakValueHashMap::new(),
+            class_map: HashMap::new(),
         }
     }
 
@@ -77,9 +50,9 @@ impl<'gc> Avm2ClassRegistry<'gc> {
     ///
     /// A value of `None` indicates that this AVM2 class is not associated with
     /// a library symbol.
-    pub fn class_symbol(&self, class_def: Avm2Class<'gc>) -> Option<(Arc<SwfMovie>, CharacterId)> {
+    pub fn class_symbol(&self, class_def: Avm2Class<'gc>) -> Option<(SwfMovie<'gc>, CharacterId)> {
         match self.class_map.get(&class_def) {
-            Some(MovieSymbol(movie, symbol)) => Some((movie, symbol)),
+            Some(MovieSymbol(movie, symbol)) => Some((*movie, *symbol)),
             None => None,
         }
     }
@@ -88,11 +61,11 @@ impl<'gc> Avm2ClassRegistry<'gc> {
     pub fn set_class_symbol(
         &mut self,
         class_def: Avm2Class<'gc>,
-        movie: Arc<SwfMovie>,
+        movie: SwfMovie<'gc>,
         symbol: CharacterId,
     ) {
         if let Some(old) = self.class_map.get(&class_def) {
-            if Arc::ptr_eq(&movie, &old.0) && symbol != old.1 {
+            if SwfMovie::ptr_eq(&movie, &old.0) && symbol != old.1 {
                 // Flash player actually allows using the same class in multiple SymbolClass
                 // entries in the same swf, with *different* symbol ids. Whichever one
                 // is processed first will *win*, and the second one will be ignored.
@@ -120,7 +93,7 @@ impl<'gc> Avm2ClassRegistry<'gc> {
 #[derive(Collect)]
 #[collect(no_drop)]
 pub struct MovieLibrary<'gc> {
-    swf: Arc<SwfMovie>,
+    swf: SwfMovie<'gc>,
     characters: HashMap<CharacterId, Character<'gc>>,
     export_characters: Avm1PropertyMap<'gc, CharacterId>,
     imported_assets: HashMap<AvmString<'gc>, CharacterId>,
@@ -130,7 +103,7 @@ pub struct MovieLibrary<'gc> {
 }
 
 impl<'gc> MovieLibrary<'gc> {
-    pub fn new(swf: Arc<SwfMovie>) -> Self {
+    pub fn new(swf: SwfMovie<'gc>) -> Self {
         Self {
             swf,
             characters: HashMap::new(),
@@ -264,7 +237,7 @@ impl<'gc> MovieLibrary<'gc> {
             Character::Bitmap(bitmap) => {
                 let avm2_class = bitmap.avm2_class();
                 let bitmap = bitmap.compressed().decode().unwrap();
-                let bitmap = Bitmap::new(mc, id, bitmap, self.swf.clone());
+                let bitmap = Bitmap::new(mc, id, bitmap, self.swf);
                 bitmap.set_avm2_bitmapdata_class(mc, avm2_class);
                 Some(bitmap.instantiate(mc).into())
             }
@@ -400,34 +373,27 @@ impl ruffle_render::bitmap::BitmapSource for MovieLibrarySource<'_, '_> {
     }
 }
 
-struct MovieLibraries<'gc>(PtrWeakKeyHashMap<Weak<SwfMovie>, MovieLibrary<'gc>>);
-
-unsafe impl<'gc> Collect<'gc> for MovieLibraries<'gc> {
-    #[inline]
-    fn trace<C: Trace<'gc>>(&self, cc: &mut C) {
-        for (_, val) in self.0.iter() {
-            cc.trace(val);
-        }
-    }
-}
+#[derive(Collect)]
+#[collect(no_drop)]
+struct MovieLibraries<'gc>(HashMap<SwfMovie<'gc>, MovieLibrary<'gc>>);
 
 impl<'gc> MovieLibraries<'gc> {
     fn new() -> Self {
-        Self(PtrWeakKeyHashMap::new())
+        Self(HashMap::new())
     }
 
-    fn get(&self, key: &Arc<SwfMovie>) -> Option<&MovieLibrary<'gc>> {
-        self.0.get(key)
+    fn get(&self, key: SwfMovie<'gc>) -> Option<&MovieLibrary<'gc>> {
+        self.0.get(&key)
     }
 
-    fn get_or_insert_mut(&mut self, movie: Arc<SwfMovie>) -> &mut MovieLibrary<'gc> {
+    fn get_or_insert_mut(&mut self, movie: SwfMovie<'gc>) -> &mut MovieLibrary<'gc> {
         self.0
-            .entry(movie.clone())
+            .entry(movie)
             .or_insert_with(|| MovieLibrary::new(movie))
     }
 
-    fn known_movies(&self) -> impl Iterator<Item = Arc<SwfMovie>> {
-        self.0.keys()
+    fn known_movies(&self) -> impl Iterator<Item = SwfMovie<'gc>> {
+        self.0.keys().copied()
     }
 }
 
@@ -478,15 +444,15 @@ impl<'gc> Library<'gc> {
         }
     }
 
-    pub fn library_for_movie(&self, movie: Arc<SwfMovie>) -> Option<&MovieLibrary<'gc>> {
-        self.movie_libraries.get(&movie)
+    pub fn library_for_movie(&self, movie: SwfMovie<'gc>) -> Option<&MovieLibrary<'gc>> {
+        self.movie_libraries.get(movie)
     }
 
-    pub fn library_for_movie_mut(&mut self, movie: Arc<SwfMovie>) -> &mut MovieLibrary<'gc> {
+    pub fn library_for_movie_mut(&mut self, movie: SwfMovie<'gc>) -> &mut MovieLibrary<'gc> {
         self.movie_libraries.get_or_insert_mut(movie)
     }
 
-    pub fn known_movies(&self) -> impl Iterator<Item = Arc<SwfMovie>> {
+    pub fn known_movies(&self) -> impl Iterator<Item = SwfMovie<'gc>> {
         self.movie_libraries.known_movies()
     }
 
@@ -715,7 +681,7 @@ impl<'gc> Library<'gc> {
         font_type: FontType,
         is_bold: bool,
         is_italic: bool,
-        movie: Option<Arc<SwfMovie>>,
+        movie: Option<SwfMovie<'gc>>,
     ) -> Option<Font<'gc>> {
         let query = FontQuery::new(font_type, name.to_owned(), is_bold, is_italic);
         if let Some(font) = self.global_fonts.find(&query) {

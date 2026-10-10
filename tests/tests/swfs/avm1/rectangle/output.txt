@@ -376,18 +376,18 @@ undefined
 // rect.inflate('1', '2')
 (top=1, right=7, bottom=12, left=0, topLeft=(x=0, y=1), bottomRight=(x=7, y=12), width=7, height=11, size=(x=7, y=11), x=0, y=1)
 
-// self.inflate(tracingNumber, tracingNumber)
+// self.inflate(dx, dy) with valueOf
   get self.x
-  valueOf
+  valueOf dx
   set self.x = -9
   get self.width
-  valueOf
+  valueOf dx
   set self.width = 25
   get self.y
-  valueOf
+  valueOf dy
   set self.y = -7
   get self.height
-  valueOf
+  valueOf dy
   set self.height = 27
 
 
@@ -428,12 +428,12 @@ undefined
 // rect.offset('1', '2')
 (top=32, right=115, bottom=327, left=11, topLeft=(x=11, y=32), bottomRight=(x=115, y=327), width=5, height=7, size=(x=5, y=7), x=11, y=32)
 
-// self.offset(tracingNumber, tracingNumber)
+// self.offset(dx, dy) with valueOf
   get self.x
-  valueOf
+  valueOf dx
   set self.x = 11
   get self.y
-  valueOf
+  valueOf dy
   set self.y = 13
 
 
@@ -482,7 +482,11 @@ undefined
 
 /// intersection: property access order
 // self.intersection(other), overlapping
-  call self.intersection()
+  get other.x
+  get other.y
+  get other.width
+  get other.height
+  call self.intersection((x=3, y=5, w=7, h=9))
   call self.isEmpty()
   get self.width
   get self.height
@@ -504,7 +508,11 @@ undefined
 (x=3, y=5, w=3, h=5)
 
 // self.intersection(other), other is empty
-  call self.intersection()
+  get other.x
+  get other.y
+  get other.width
+  get other.height
+  call self.intersection((x=3, y=5, w=0, h=9))
   call self.isEmpty()
   get self.width
   get self.height
@@ -518,7 +526,11 @@ undefined
 false
 
 // self.intersects(other)
-  call self.intersection()
+  get other.x
+  get other.y
+  get other.width
+  get other.height
+  call self.intersection((x=3, y=5, w=7, h=9))
   call self.isEmpty()
   get self.width
   get self.height

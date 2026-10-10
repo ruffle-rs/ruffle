@@ -189,7 +189,7 @@ impl NavigatorBackend for TestNavigatorBackend {
         Box::pin(async move {
             let path = if url.scheme() == "file" {
                 // Flash supports query parameters with local urls.
-                // SwfMovie takes care of exposing those to ActionScript -
+                // SwfMovieData takes care of exposing those to ActionScript -
                 // when we actually load a filesystem url, strip them out.
                 let mut filesystem_url = url.clone();
                 filesystem_url.set_query(None);

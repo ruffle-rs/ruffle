@@ -1,7 +1,6 @@
 import { FluentBundle, FluentResource } from "@fluent/bundle";
 import { negotiateLanguages } from "@fluent/langneg";
 import type { FluentVariable } from "@fluent/bundle";
-import { resetCustomMap, restoreCustomMap } from "../js-polyfills.js";
 
 interface FileBundle {
     [filename: string]: string;
@@ -19,10 +18,8 @@ const bundles: Record<string, FluentBundle> = {};
 for (const [locale, files] of Object.entries(BUNDLED_TEXTS)) {
     const bundle = new FluentBundle(locale);
     if (files) {
-        let customMap: typeof Map | undefined = undefined;
         for (const [filename, text] of Object.entries(files)) {
             if (text) {
-                customMap ??= resetCustomMap();
                 for (const error of bundle.addResource(
                     new FluentResource(text),
                 )) {
@@ -32,7 +29,6 @@ for (const [locale, files] of Object.entries(BUNDLED_TEXTS)) {
                 }
             }
         }
-        restoreCustomMap(customMap);
     }
     bundles[locale] = bundle;
 }
@@ -78,9 +74,6 @@ export function text(
     id: string,
     args?: Record<string, FluentVariable> | null,
 ): string {
-    // A Map override, as in https://github.com/ruffle-rs/ruffle/discussions/19758, may happen after some translations and before others.
-    // As such, the reset may not be needed after one call to this function, but then be needed on the next call to it.
-    const customMap = resetCustomMap();
     const locales = negotiateLanguages(
         navigator.languages,
         Object.keys(bundles),
@@ -95,7 +88,6 @@ export function text(
     }
 
     console.error(`Unknown text key '${id}'`);
-    restoreCustomMap(customMap);
     return id;
 }
 
@@ -124,4 +116,32 @@ export function textAsParagraphs(
             result.appendChild(p);
         });
     return result;
+}
+
+/**
+ * Fills in the localized texts of all elements under the given root that request one.
+ *
+ * Elements with a `data-i18n-key` attribute get their content set to the text with that key,
+ * and elements with a `data-i18n-title-key` attribute get their title set to the text with that key.
+ *
+ * @param root Root to search for elements in
+ * @param getText Function returning the text for the given ID
+ */
+export function localizeElements(
+    root: ParentNode,
+    getText: (id: string) => string = text,
+): void {
+    for (const element of root.querySelectorAll<HTMLElement | SVGElement>(
+        "[data-i18n-key]",
+    )) {
+        element.textContent = getText(element.dataset["i18nKey"]!);
+    }
+    for (const element of root.querySelectorAll<HTMLElement | SVGElement>(
+        "[data-i18n-title-key]",
+    )) {
+        element.setAttribute(
+            "title",
+            getText(element.dataset["i18nTitleKey"]!),
+        );
+    }
 }

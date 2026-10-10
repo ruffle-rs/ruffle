@@ -25,7 +25,6 @@ use std::cell::{Cell, Ref, RefCell, RefMut};
 use std::fmt::Debug;
 use std::hash::Hash;
 use std::num::NonZero;
-use std::sync::Arc;
 use swf::{ColorTransform, Fixed8};
 
 mod avm1_button;
@@ -2683,7 +2682,7 @@ pub trait TDisplayObject<'gc>:
     }
 
     /// Return the SWF that defines this display object.
-    fn movie(self) -> Arc<SwfMovie>;
+    fn movie(self) -> SwfMovie<'gc>;
 
     fn loader_info(self) -> Option<LoaderInfoObject<'gc>> {
         None

@@ -1,39 +1,129 @@
-ContextMenu proto
-CM obj
-customItems
-builtInItems
-onSelect
-Builtin
-save = true
-zoom = true
-quality = true
-play = true
-loop = true
-rewind = true
-forward_back = true
-print = true
-customItems
-copy builtin
-save = true
-zoom = true
-quality = true
-play = false
-loop = true
-rewind = true
-forward_back = true
-print = true
-   ->
-save = true
-zoom = true
-quality = true
-play = false
-loop = true
-rewind = true
-forward_back = true
-print = true
-copy custom
-0 = [object Object]
-   ->
-Shared vars
+/// Constructors
+// new ContextMenu()
+  customItems = 
+  builtInItems = [object Object]
+  onSelect = undefined
+
+// new ContextMenu().builtInItems
+  save = true
+  zoom = true
+  quality = true
+  play = true
+  loop = true
+  rewind = true
+  forward_back = true
+  print = true
+
+// new ContextMenu().customItems instanceof Array
 true
+
+// new ContextMenu(callback).onSelect === callback
 true
+
+// new ContextMenu(undefined).onSelect === undefined
+true
+
+// new ContextMenu(null).onSelect === null
+true
+
+// new ContextMenu(5).onSelect === 5
+true
+
+// new ContextMenu('string').onSelect === 'string'
+true
+
+// new ContextMenu({}).onSelect === {}
+true
+
+// new ContextMenu().builtInItems === new ContextMenu().builtInItems
+false
+
+// new ContextMenu().customItems === new ContextMenu().customItems
+false
+
+// new ContextMenu(), with Object replaced
+
+// new ContextMenu(), with Array replaced
+  new Array()
+false
+
+// ContextMenu.call(obj, callback)
+undefined
+customItems builtInItems onSelect 
+
+
+/// Prototype
+// ContextMenu.prototype
+
+
+// ContextMenu.prototype, without DONT_ENUM
+hideBuiltInItems copy 
+
+// delete ContextMenu.prototype.copy
+false
+
+// delete ContextMenu.prototype.hideBuiltInItems
+false
+
+
+/// copy
+// menu.copy() instanceof ContextMenu
+true
+
+// menu.copy().onSelect === menu.onSelect
+true
+
+// menu.copy().builtInItems === menu.builtInItems
+true
+
+// menu.copy().customItems === menu.customItems
+false
+
+// menu.copy(), with tracing properties
+  new ContextMenu()
+  get menu.onSelect
+  set copy.onSelect = [type Function]
+  get menu.builtInItems
+  set copy.builtInItems = [object Object]
+  set copy.customItems = 
+  get menu.customItems
+  valueOf customItems.length
+  get menu.customItems
+  get copy.customItems
+  call Array.prototype.push(item0 copy)
+  get menu.customItems
+  valueOf customItems.length
+  get menu.customItems
+  get copy.customItems
+  call Array.prototype.push(item1 copy)
+  get menu.customItems
+  valueOf customItems.length
+
+// menu.copy(), with Array replaced
+  new Array()
+  new Array()
+false
+
+// ContextMenu.prototype.copy.call({})
+  customItems = 
+  builtInItems = undefined
+  onSelect = undefined
+
+
+/// hideBuiltInItems
+// menu.hideBuiltInItems()
+undefined
+  save = false
+  zoom = false
+  quality = false
+  play = false
+  loop = false
+  rewind = false
+  forward_back = false
+  print = false
+
+// menu.hideBuiltInItems(), with tracing builtInItems
+  set menu.builtInItems = [object Object]
+
+// menu.hideBuiltInItems(), with Object replaced
+

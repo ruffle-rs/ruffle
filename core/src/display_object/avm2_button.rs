@@ -28,7 +28,6 @@ use gc_arena::{Collect, Gc, Mutation};
 use ruffle_common::utils::HasPrefixField;
 use ruffle_render::filters::Filter;
 use std::cell::{Cell, RefCell};
-use std::sync::Arc;
 
 #[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]
@@ -48,7 +47,7 @@ impl fmt::Debug for Avm2Button<'_> {
 pub struct Avm2ButtonData<'gc> {
     base: InteractiveObjectBase<'gc>,
 
-    shared: Gc<'gc, ButtonShared>,
+    shared: Gc<'gc, ButtonShared<'gc>>,
 
     /// The display object tree to render when the button is in the UP state.
     up_state: Lock<Option<DisplayObject<'gc>>>,
@@ -102,7 +101,7 @@ pub struct Avm2ButtonData<'gc> {
 impl<'gc> Avm2Button<'gc> {
     pub fn from_swf_tag(
         button: &swf::Button,
-        movie: Arc<SwfMovie>,
+        movie: SwfMovie<'gc>,
         context: &mut UpdateContext<'gc>,
         construct_blank_states: bool,
     ) -> Self {
@@ -146,7 +145,8 @@ impl<'gc> Avm2Button<'gc> {
     }
 
     pub fn empty_button(context: &mut UpdateContext<'gc>) -> Self {
-        let movie = context.root_swf.clone();
+        // TODO: Should this be using the caller movie?
+        let movie = *context.root_swf;
         let button_record = swf::Button {
             id: 0,
             is_track_as_menu: false,
@@ -208,7 +208,7 @@ impl<'gc> Avm2Button<'gc> {
             if record.states.contains(swf_state) {
                 match context
                     .library
-                    .library_for_movie_mut(movie.clone())
+                    .library_for_movie_mut(movie)
                     .instantiate_by_id(record.id, context.gc_context)
                 {
                     Some(child) => {
@@ -423,8 +423,8 @@ impl<'gc> TDisplayObject<'gc> for Avm2Button<'gc> {
         self.0.shared.id
     }
 
-    fn movie(self) -> Arc<SwfMovie> {
-        self.0.shared.swf.clone()
+    fn movie(self) -> SwfMovie<'gc> {
+        self.0.shared.swf
     }
 
     fn post_instantiation(
@@ -819,9 +819,9 @@ impl<'gc> TInteractiveObject<'gc> for Avm2Button<'gc> {
 
 /// Data shared between all instances of a button.
 #[derive(Collect, Debug)]
-#[collect(require_static)]
-struct ButtonShared {
-    swf: Arc<SwfMovie>,
+#[collect(no_drop)]
+struct ButtonShared<'gc> {
+    swf: SwfMovie<'gc>,
     id: CharacterId,
     cell: RefCell<ButtonSharedMut>,
 }

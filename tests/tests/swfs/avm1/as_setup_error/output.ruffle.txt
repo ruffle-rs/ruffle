@@ -1,0 +1,52 @@
+/// Return value and global state
+// AsSetupError('Foo')
+undefined
+// typeof Foo
+undefined
+
+
+/// String.prototype.split dispatch
+// AsSetupError('Foo,Bar')
+  call String.prototype.split(,)
+  new Error()
+  set error.name = Foo
+  set error.message = Foo
+  new Error()
+  set error.name = Bar
+  set error.message = Bar
+
+
+/// Non-string names
+// AsSetupError(12) with Number.prototype.split
+  new Error()
+  set error.name = Num
+  set error.message = Num
+
+// AsSetupError(undefined)
+
+
+/// Custom split
+// AsSetupError(names)
+  get result.length
+  valueOf result.length
+  get result.0
+  new Error()
+  set error.name = [object Object]
+  set error.message = [object Object]
+  get result.length
+  valueOf result.length
+// typeof error.name, typeof error.message
+  get error.name
+  get error.message
+object, object
+
+
+/// Error lookup
+// AsSetupError('Foo,Bar') with Error replaced during the first construction
+  new FirstError()
+  new Error()
+  set error.name = Bar
+  set error.message = Bar
+
+// AsSetupError('Foo') with Error also defined on _root
+

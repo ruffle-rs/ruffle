@@ -1,0 +1,120 @@
+// getAvailableLocaleIDNames()
+is Vector.<String>: true
+fixed: false
+non-empty: true
+all entries non-empty: true
+// Calling getAvailableLocaleIDNames() again
+same object: false
+same length: true
+// Modifying the returned vector
+contains pushed entry: false
+contains replaced entry: false
+// requestedLocaleIDName
+"en-US", "sorting": "en-US"
+"en", "sorting": "en"
+"fr-FR", "sorting": "fr-FR"
+"zh-Hans-CN", "sorting": "zh-Hans-CN"
+"sr-Latn-RS", "sorting": "sr-Latn-RS"
+"en-US-POSIX", "sorting": "en-US-POSIX"
+"es-419", "sorting": "es-419"
+"en-001", "sorting": "en-001"
+"en-XX", "sorting": "en-XX"
+"de-DE@collation=phonebook", "sorting": "de-DE@collation=phonebook"
+"i-default", "sorting": "i-default"
+// requestedLocaleIDName with CollatorMode.MATCHING
+"en-US", "matching": "en-US"
+// Invalid initialMode
+"en-US", "invalid": [class ArgumentError]
+ArgumentError: Error #1508: The value specified for argument initialMode is invalid.
+	at flash.globalization::Collator/ctor()
+	at flash.globalization::Collator()
+	at Test/testRequestedLocaleIDNameFor()
+	at Test/testRequestedLocaleIDName()
+	at Test()
+"en-US", "": [class ArgumentError]
+ArgumentError: Error #1508: The value specified for argument initialMode is invalid.
+	at flash.globalization::Collator/ctor()
+	at flash.globalization::Collator()
+	at Test/testRequestedLocaleIDNameFor()
+	at Test/testRequestedLocaleIDName()
+	at Test()
+"en-US", "SORTING": [class ArgumentError]
+ArgumentError: Error #1508: The value specified for argument initialMode is invalid.
+	at flash.globalization::Collator/ctor()
+	at flash.globalization::Collator()
+	at Test/testRequestedLocaleIDNameFor()
+	at Test/testRequestedLocaleIDName()
+	at Test()
+"en-US", "Sorting": [class ArgumentError]
+ArgumentError: Error #1508: The value specified for argument initialMode is invalid.
+	at flash.globalization::Collator/ctor()
+	at flash.globalization::Collator()
+	at Test/testRequestedLocaleIDNameFor()
+	at Test/testRequestedLocaleIDName()
+	at Test()
+"en-US", "MATCHING": [class ArgumentError]
+ArgumentError: Error #1508: The value specified for argument initialMode is invalid.
+	at flash.globalization::Collator/ctor()
+	at flash.globalization::Collator()
+	at Test/testRequestedLocaleIDNameFor()
+	at Test/testRequestedLocaleIDName()
+	at Test()
+"en-US", " sorting": [class ArgumentError]
+ArgumentError: Error #1508: The value specified for argument initialMode is invalid.
+	at flash.globalization::Collator/ctor()
+	at flash.globalization::Collator()
+	at Test/testRequestedLocaleIDNameFor()
+	at Test/testRequestedLocaleIDName()
+	at Test()
+"en-US", "sorting ": [class ArgumentError]
+ArgumentError: Error #1508: The value specified for argument initialMode is invalid.
+	at flash.globalization::Collator/ctor()
+	at flash.globalization::Collator()
+	at Test/testRequestedLocaleIDNameFor()
+	at Test/testRequestedLocaleIDName()
+	at Test()
+"en-US", null: [class TypeError]
+TypeError: Error #2007: Parameter initialMode must be non-null.
+	at flash.globalization::Collator/ctor()
+	at flash.globalization::Collator()
+	at Test/testRequestedLocaleIDNameFor()
+	at Test/testRequestedLocaleIDName()
+	at Test()
+// Null requestedLocaleIDName
+null, "sorting": [class TypeError]
+TypeError: Error #2007: Parameter requestedLocaleIDName must be non-null.
+	at flash.globalization::Collator/ctor()
+	at flash.globalization::Collator()
+	at Test/testRequestedLocaleIDNameFor()
+	at Test/testRequestedLocaleIDName()
+	at Test()
+null, "invalid": [class TypeError]
+TypeError: Error #2007: Parameter requestedLocaleIDName must be non-null.
+	at flash.globalization::Collator/ctor()
+	at flash.globalization::Collator()
+	at Test/testRequestedLocaleIDNameFor()
+	at Test/testRequestedLocaleIDName()
+	at Test()
+null, null: [class TypeError]
+TypeError: Error #2007: Parameter requestedLocaleIDName must be non-null.
+	at flash.globalization::Collator/ctor()
+	at flash.globalization::Collator()
+	at Test/testRequestedLocaleIDNameFor()
+	at Test/testRequestedLocaleIDName()
+	at Test()
+// Empty requestedLocaleIDName
+"", "sorting": ""
+"", "invalid": [class ArgumentError]
+ArgumentError: Error #1508: The value specified for argument initialMode is invalid.
+	at flash.globalization::Collator/ctor()
+	at flash.globalization::Collator()
+	at Test/testRequestedLocaleIDNameFor()
+	at Test/testRequestedLocaleIDName()
+	at Test()
+"", null: [class TypeError]
+TypeError: Error #2007: Parameter initialMode must be non-null.
+	at flash.globalization::Collator/ctor()
+	at flash.globalization::Collator()
+	at Test/testRequestedLocaleIDNameFor()
+	at Test/testRequestedLocaleIDName()
+	at Test()

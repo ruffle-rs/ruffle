@@ -15,7 +15,6 @@ use ruffle_render::transform::Transform;
 use ruffle_wstr::{WStr, WString};
 use std::borrow::Cow;
 use std::cell::RefCell;
-use std::sync::Arc;
 
 #[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]
@@ -34,7 +33,7 @@ impl fmt::Debug for Text<'_> {
 #[repr(C, align(8))]
 pub struct TextData<'gc> {
     base: DisplayObjectBase<'gc>,
-    shared: Lock<Gc<'gc, TextShared>>,
+    shared: Lock<Gc<'gc, TextShared<'gc>>>,
     render_settings: RefCell<TextRenderSettings>,
     avm2_object: Lock<Option<Avm2StageObject<'gc>>>,
 }
@@ -42,7 +41,7 @@ pub struct TextData<'gc> {
 impl<'gc> Text<'gc> {
     pub fn from_swf_tag(
         context: &mut UpdateContext<'gc>,
-        swf: Arc<SwfMovie>,
+        swf: SwfMovie<'gc>,
         tag: &swf::Text,
     ) -> Self {
         Text(Gc::new(
@@ -69,7 +68,7 @@ impl<'gc> Text<'gc> {
         Self(Gc::new(mc, (*self.0).clone()))
     }
 
-    fn set_shared(&self, context: &mut UpdateContext<'gc>, to: Gc<'gc, TextShared>) {
+    fn set_shared(&self, context: &mut UpdateContext<'gc>, to: Gc<'gc, TextShared<'gc>>) {
         let mc = context.gc();
         unlock!(Gc::write(mc, self.0), TextData, shared).set(to);
     }
@@ -115,8 +114,8 @@ impl<'gc> TDisplayObject<'gc> for Text<'gc> {
         self.0.shared.get().id
     }
 
-    fn movie(self) -> Arc<SwfMovie> {
-        self.0.shared.get().swf.clone()
+    fn movie(self) -> SwfMovie<'gc> {
+        self.0.shared.get().swf
     }
 
     fn replace_with(self, context: &mut UpdateContext<'gc>, id: CharacterId) {
@@ -132,7 +131,7 @@ impl<'gc> TDisplayObject<'gc> for Text<'gc> {
         self.invalidate_cached_bitmap();
     }
 
-    fn render_self(self, context: &mut RenderContext) {
+    fn render_self(self, context: &mut RenderContext<'_, 'gc>) {
         let shared = self.0.shared.get();
         context.transform_stack.push(&Transform {
             matrix: shared.text_transform,
@@ -298,12 +297,18 @@ impl<'gc> TDisplayObject<'gc> for Text<'gc> {
 
 /// Data shared between all instances of a text object.
 #[derive(Debug, Clone, Collect)]
-#[collect(require_static)]
-struct TextShared {
-    swf: Arc<SwfMovie>,
+#[collect(no_drop)]
+struct TextShared<'gc> {
+    swf: SwfMovie<'gc>,
     id: CharacterId,
+
+    #[collect(require_static)]
     bounds: Rectangle<Twips>,
+
+    #[collect(require_static)]
     text_transform: Matrix,
+
+    #[collect(require_static)]
     text_blocks: Vec<swf::TextRecord>,
 }
 

@@ -1,7 +1,6 @@
 //! flash.filters.DisplacementMapFilter object
 
 use crate::avm1::clamp::Clamp;
-use crate::avm1::globals::point::point_to_object;
 use crate::avm1::object::NativeObject;
 use crate::avm1::property_decl::{DeclContext, PropertyOrder, StaticDeclarations, SystemClass};
 use crate::avm1::{Activation, Error, Object, Value};
@@ -108,7 +107,9 @@ impl<'gc> DisplacementMapFilter<'gc> {
 
     fn map_point(self, activation: &mut Activation<'_, 'gc>) -> Result<Value<'gc>, Error<'gc>> {
         let map_point = self.0.map_point.get();
-        point_to_object((map_point.x, map_point.y), activation)
+        let path = [istr!("flash"), istr!("geom"), istr!("Point")];
+        let args = [map_point.x.into(), map_point.y.into()];
+        activation.instantiate_class_as_script(path, &args)
     }
 
     fn set_map_point(

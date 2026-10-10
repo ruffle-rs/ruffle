@@ -1,18 +1,76 @@
 use crate::sandbox::SandboxType;
 
-use gc_arena::Collect;
+use gc_arena::{Collect, Gc, GcWeak, Mutation};
 use std::fmt::{Debug, Formatter};
+use std::hash::{Hash, Hasher};
+use std::ops::Deref;
 use std::sync::Arc;
 use swf::{Fixed8, HeaderExt, Rectangle, Twips};
 use url::Url;
 
 pub type SwfStream<'a> = swf::read::Reader<'a>;
 
+/// A shared pointer to a `SwfMovieData`.
+#[derive(Clone, Collect, Copy, Debug)]
+#[collect(no_drop)]
+pub struct SwfMovie<'gc>(Gc<'gc, SwfMovieData>);
+
+impl<'gc> SwfMovie<'gc> {
+    pub fn new(mc: &Mutation<'gc>, data: SwfMovieData) -> Self {
+        SwfMovie(Gc::new(mc, data))
+    }
+
+    pub fn downgrade(self) -> SwfMovieWeak<'gc> {
+        SwfMovieWeak(Gc::downgrade(self.0))
+    }
+
+    pub fn as_ptr(self) -> *const SwfMovieData {
+        Gc::as_ptr(self.0)
+    }
+
+    pub fn ptr_eq(this: &Self, other: &Self) -> bool {
+        std::ptr::eq(this.as_ptr(), other.as_ptr())
+    }
+}
+
+impl<'gc> Deref for SwfMovie<'gc> {
+    type Target = SwfMovieData;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl PartialEq for SwfMovie<'_> {
+    fn eq(&self, other: &Self) -> bool {
+        Gc::ptr_eq(self.0, other.0)
+    }
+}
+
+impl Eq for SwfMovie<'_> {}
+
+impl Hash for SwfMovie<'_> {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        Gc::as_ptr(self.0).hash(state);
+    }
+}
+
+/// Like `SwfMovie`, but is a weak reference.
+#[derive(Clone, Collect, Copy, Debug)]
+#[collect(no_drop)]
+pub struct SwfMovieWeak<'gc>(GcWeak<'gc, SwfMovieData>);
+
+impl<'gc> SwfMovieWeak<'gc> {
+    pub fn upgrade(&self, mc: &Mutation<'gc>) -> Option<SwfMovie<'gc>> {
+        self.0.upgrade(mc).map(SwfMovie)
+    }
+}
+
 /// An open, fully parsed SWF movie ready to play back, either in a Player or a
 /// MovieClip.
 #[derive(Clone, Collect)]
 #[collect(require_static)]
-pub struct SwfMovie {
+pub struct SwfMovieData {
     /// The SWF header parsed from the data stream.
     header: HeaderExt,
 
@@ -35,7 +93,7 @@ pub struct SwfMovie {
     /// The compressed length of the entire datastream
     compressed_len: usize,
 
-    /// Whether this SwfMovie actually represents a loaded movie or fills in for
+    /// Whether this SwfMovieData actually represents a loaded movie or fills in for
     /// something else, like an loaded image, filler movie, or error state.
     is_movie: bool,
 
@@ -57,7 +115,7 @@ pub struct SwfMovie {
     sandbox_type: SandboxType,
 }
 
-impl SwfMovie {
+impl SwfMovieData {
     /// Construct an empty movie.
     pub fn empty(swf_version: u8, loader_url: Option<String>) -> Self {
         let url = "file:///".to_string();
@@ -320,7 +378,7 @@ impl SwfMovie {
         self.header.is_action_script_3()
     }
 
-    /// Whether this `SwfMovie` should be interpreted as AVM2.
+    /// Whether this `SwfMovieData` should be interpreted as AVM2.
     ///
     /// This usually is the same as `is_declared_action_script_3`, but will
     /// return false if this is an AVM2 movie loaded by AVM1 (which we mark by
@@ -350,9 +408,9 @@ impl SwfMovie {
     }
 }
 
-impl Debug for SwfMovie {
+impl Debug for SwfMovieData {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("SwfMovie")
+        f.debug_struct("SwfMovieData")
             .field("header", &self.header)
             .field("data", &self.data.len())
             .field("url", &self.url)
@@ -377,8 +435,8 @@ pub struct SwfSlice {
     pub end: usize,
 }
 
-impl From<Arc<SwfMovie>> for SwfSlice {
-    fn from(movie: Arc<SwfMovie>) -> Self {
+impl<'gc> From<SwfMovie<'gc>> for SwfSlice {
+    fn from(movie: SwfMovie<'gc>) -> Self {
         let end = movie.data().len();
 
         Self {
@@ -400,7 +458,7 @@ impl AsRef<[u8]> for SwfSlice {
 impl SwfSlice {
     /// Creates an empty SwfSlice.
     #[inline]
-    pub fn empty(movie: Arc<SwfMovie>) -> Self {
+    pub fn empty(movie: SwfMovie<'_>) -> Self {
         Self {
             entire_data: movie.data.clone(),
             swf_version: movie.version(),

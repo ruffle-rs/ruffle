@@ -45,7 +45,6 @@ use ruffle_render::transform::Transform;
 use ruffle_wstr::WStrToUtf8;
 use std::cell::{Cell, Ref, RefCell, RefMut};
 use std::collections::VecDeque;
-use std::sync::Arc;
 use swf::ColorTransform;
 use unicode_segmentation::UnicodeSegmentation;
 
@@ -90,7 +89,7 @@ pub struct EditTextData<'gc> {
     base: InteractiveObjectBase<'gc>,
 
     /// Data shared among all instances of this `EditText`.
-    shared: Gc<'gc, EditTextShared>,
+    shared: Gc<'gc, EditTextShared<'gc>>,
 
     /// The AVM1 object handle
     object: Lock<Option<AvmObject<'gc>>>,
@@ -260,10 +259,10 @@ impl<'gc> EditText<'gc> {
     /// Creates a new `EditText` from an SWF `DefineEditText` tag.
     pub fn from_swf_tag(
         context: &mut UpdateContext<'gc>,
-        swf_movie: Arc<SwfMovie>,
+        swf_movie: SwfMovie<'gc>,
         swf_tag: swf::EditText,
     ) -> Self {
-        let default_format = TextFormat::from_swf_tag(swf_tag.clone(), swf_movie.clone(), context);
+        let default_format = TextFormat::from_swf_tag(swf_tag.clone(), swf_movie, context);
         let encoding = swf_movie.encoding();
         let text = swf_tag.initial_text().unwrap_or_default().decode(encoding);
 
@@ -362,7 +361,7 @@ impl<'gc> EditText<'gc> {
     /// Create a new, dynamic `EditText`.
     pub fn new(
         context: &mut UpdateContext<'gc>,
-        swf_movie: Arc<SwfMovie>,
+        swf_movie: SwfMovie<'gc>,
         x: f64,
         y: f64,
         width: f64,
@@ -397,7 +396,7 @@ impl<'gc> EditText<'gc> {
     /// Create a new, dynamic `EditText` representing an AVM2 TextLine.
     pub fn new_fte(
         context: &mut UpdateContext<'gc>,
-        swf_movie: Arc<SwfMovie>,
+        swf_movie: SwfMovie<'gc>,
         x: f64,
         y: f64,
         width: f64,
@@ -870,7 +869,7 @@ impl<'gc> EditText<'gc> {
     pub fn relayout(self, context: &mut dyn LayoutContext<'gc>) {
         let autosize = self.0.autosize.get();
         let is_word_wrap = self.0.flags.get().contains(EditTextFlag::WORD_WRAP);
-        let movie = self.0.shared.swf.clone();
+        let movie = self.0.shared.swf;
         let padding = Self::GUTTER * 2;
 
         let mut text_spans = self.0.text_spans.borrow_mut();
@@ -2565,8 +2564,8 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
         self.0.shared.id
     }
 
-    fn movie(self) -> Arc<SwfMovie> {
-        self.0.shared.swf.clone()
+    fn movie(self) -> SwfMovie<'gc> {
+        self.0.shared.swf
     }
 
     /// Construct objects placed on this frame.
@@ -3221,10 +3220,12 @@ bitflags::bitflags! {
 
 /// Data shared between all instances of a text object.
 #[derive(Debug, Clone, Collect)]
-#[collect(require_static)]
-struct EditTextShared {
-    swf: Arc<SwfMovie>,
+#[collect(no_drop)]
+struct EditTextShared<'gc> {
+    swf: SwfMovie<'gc>,
     id: CharacterId,
+
+    #[collect(require_static)]
     initial_text: Option<WString>,
 }
 

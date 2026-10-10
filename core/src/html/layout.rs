@@ -15,12 +15,11 @@ use std::fmt::{Debug, Formatter};
 use std::mem;
 use std::ops::Range;
 use std::slice::Iter;
-use std::sync::Arc;
 use swf::{Rectangle, Twips};
 
 #[derive(Clone)]
-pub struct LayoutParams {
-    pub movie: Arc<SwfMovie>,
+pub struct LayoutParams<'gc> {
+    pub movie: SwfMovie<'gc>,
     pub is_input: bool,
     pub is_word_wrap: bool,
     pub font_type: FontType,
@@ -31,7 +30,7 @@ pub struct LayoutBuilder<'a, 'gc> {
     context: &'a mut dyn LayoutContext<'gc>,
 
     /// The movie this layout context is pulling fonts from.
-    movie: Arc<SwfMovie>,
+    movie: SwfMovie<'gc>,
 
     /// Whether user input is allowed.
     is_input: bool,
@@ -115,7 +114,7 @@ pub struct LayoutBuilder<'a, 'gc> {
 impl<'a, 'gc> LayoutBuilder<'a, 'gc> {
     fn new(
         context: &'a mut dyn LayoutContext<'gc>,
-        params: LayoutParams,
+        params: LayoutParams<'gc>,
         max_bounds: Twips,
         text: &'a WStr,
     ) -> Self {
@@ -548,7 +547,7 @@ impl<'a, 'gc> LayoutBuilder<'a, 'gc> {
                     self.font_type,
                     span.style.bold,
                     span.style.italic,
-                    Some(self.movie.clone()),
+                    Some(self.movie),
                 )
                 .filter(|f| f.has_glyphs())
         {
@@ -561,8 +560,15 @@ impl<'a, 'gc> LayoutBuilder<'a, 'gc> {
 
         // Specifying multiple font names is supported only for device fonts.
         let font_names: Vec<&str> = font_name.split(",").collect();
+        let is_font_list = font_names.len() > 1;
         for font_name in &font_names {
-            let font_name = font_name.trim();
+            // Flash only trims whitespace around commas in a font-family list; a
+            // single font name is looked up as-is, so we must not trim it.
+            let font_name = if is_font_list {
+                font_name.trim()
+            } else {
+                *font_name
+            };
 
             // Check if the font name is one of the known default fonts.
             if let Some(default_font) = DefaultFont::from_name(font_name) {
@@ -792,7 +798,7 @@ impl<'a, 'gc> LayoutBuilder<'a, 'gc> {
 pub fn lower_from_text_spans<'gc>(
     fs: &FormatSpans,
     context: &mut dyn LayoutContext<'gc>,
-    params: LayoutParams,
+    params: LayoutParams<'gc>,
     requested_width: Option<Twips>,
 ) -> Layout<'gc> {
     let requested_width = requested_width.unwrap_or_else(|| {
@@ -813,7 +819,7 @@ pub fn lower_from_text_spans<'gc>(
 fn lower_from_text_spans_known_width<'gc>(
     fs: &FormatSpans,
     context: &mut dyn LayoutContext<'gc>,
-    params: LayoutParams,
+    params: LayoutParams<'gc>,
     bounds: Twips,
 ) -> Layout<'gc> {
     let mut builder = LayoutBuilder::new(context, params, bounds, fs.displayed_text());

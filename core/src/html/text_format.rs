@@ -12,7 +12,6 @@ use std::cmp::{Ordering, min};
 use std::collections::{HashSet, VecDeque};
 use std::fmt::Write;
 use std::num::Wrapping;
-use std::sync::Arc;
 
 use super::StyleSheet;
 
@@ -193,10 +192,10 @@ impl TextFormat {
     ///
     /// This requires an `UpdateContext` as we will need to retrieve some font
     /// information from the actually-referenced font.
-    pub fn from_swf_tag(
+    pub fn from_swf_tag<'gc>(
         et: swf::EditText<'_>,
-        swf_movie: Arc<SwfMovie>,
-        context: &mut UpdateContext<'_>,
+        swf_movie: SwfMovie<'gc>,
+        context: &mut UpdateContext<'gc>,
     ) -> Self {
         let encoding = swf_movie.encoding();
         let swf_version = swf_movie.version();

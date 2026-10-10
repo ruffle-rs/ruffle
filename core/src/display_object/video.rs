@@ -25,7 +25,6 @@ use ruffle_video::error::Error;
 use ruffle_video::frame::EncodedFrame;
 use std::cell::{Cell, Ref, RefCell, RefMut};
 use std::collections::{BTreeMap, BTreeSet};
-use std::sync::Arc;
 use swf::{DefineVideoStream, VideoCodec, VideoFrame};
 
 /// A Video display object is a high-level interface to a video player.
@@ -72,7 +71,7 @@ pub struct VideoData<'gc> {
     keyframes: RefCell<BTreeSet<u32>>,
 
     /// The movie whose tagstream or code created the Video object.
-    movie: Arc<SwfMovie>,
+    movie: SwfMovie<'gc>,
     /// The last decoded frame in the video stream.
     ///
     /// NOTE: This is only used for SWF-source video streams.
@@ -131,7 +130,7 @@ pub struct SwfVideoSource {
 impl<'gc> Video<'gc> {
     /// Construct a Video object that is tied to a SWF file's video stream.
     pub fn from_swf_tag(
-        movie: Arc<SwfMovie>,
+        movie: SwfMovie<'gc>,
         streamdef: DefineVideoStream,
         mc: &Mutation<'gc>,
     ) -> Self {
@@ -162,7 +161,7 @@ impl<'gc> Video<'gc> {
 
     pub fn new(
         mc: &Mutation<'gc>,
-        movie: Arc<SwfMovie>,
+        movie: SwfMovie<'gc>,
         width: i32,
         height: i32,
         object: Option<AvmObject<'gc>>,
@@ -215,7 +214,7 @@ impl<'gc> Video<'gc> {
     /// This function yields an error if this video player is not playing an
     /// embedded SWF video.
     pub fn preload_swf_frame(self, tag: VideoFrame) {
-        let movie = self.0.movie.clone();
+        let movie = self.0.movie;
 
         match self.0.source.get() {
             VideoSource::Swf(swf_source) => {
@@ -368,7 +367,7 @@ impl<'gc> TDisplayObject<'gc> for Video<'gc> {
             self.set_default_instance_name(context);
         }
 
-        let movie = self.0.movie.clone();
+        let movie = self.0.movie;
 
         let (stream, keyframes) = match self.0.source.get() {
             VideoSource::Swf(swf_source) => {
@@ -571,8 +570,8 @@ impl<'gc> TDisplayObject<'gc> for Video<'gc> {
         }
     }
 
-    fn movie(self) -> Arc<SwfMovie> {
-        self.0.movie.clone()
+    fn movie(self) -> SwfMovie<'gc> {
+        self.0.movie
     }
 
     fn object1(self) -> Option<Avm1Object<'gc>> {

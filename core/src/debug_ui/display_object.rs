@@ -1679,7 +1679,7 @@ impl DisplayObjectWindow {
                 ui.end_row();
 
                 ui.label("Movie");
-                open_movie_button(ui, &object.movie(), messages);
+                open_movie_button(ui, context, object.movie(), messages);
                 ui.end_row();
 
                 ui.label("AVM1 Path");

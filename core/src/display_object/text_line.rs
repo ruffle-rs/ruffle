@@ -20,7 +20,6 @@ use gc_arena::lock::Lock;
 use gc_arena::{Collect, Gc, Mutation};
 use ruffle_common::utils::HasPrefixField;
 use std::cell::Cell;
-use std::sync::Arc;
 use swf::Twips;
 
 #[derive(Clone, Collect, Copy)]
@@ -42,8 +41,7 @@ pub struct TextLineData<'gc> {
     base: InteractiveObjectBase<'gc>,
     avm2_object: Lock<Option<Avm2StageObject<'gc>>>,
     fallback: EditText<'gc>,
-    #[collect(require_static)]
-    movie: Arc<SwfMovie>,
+    movie: SwfMovie<'gc>,
 
     validity: Lock<TextLineValidity<'gc>>,
 
@@ -65,7 +63,7 @@ pub struct TextLineData<'gc> {
 impl<'gc> TextLine<'gc> {
     pub fn new(
         context: &mut UpdateContext<'gc>,
-        movie: Arc<SwfMovie>,
+        movie: SwfMovie<'gc>,
         fallback: EditText<'gc>,
     ) -> Self {
         TextLine(Gc::new(
@@ -285,8 +283,8 @@ impl<'gc> TDisplayObject<'gc> for TextLine<'gc> {
         0
     }
 
-    fn movie(self) -> Arc<SwfMovie> {
-        self.0.movie.clone()
+    fn movie(self) -> SwfMovie<'gc> {
+        self.0.movie
     }
 
     fn replace_with(self, _context: &mut UpdateContext<'gc>, _id: CharacterId) {}

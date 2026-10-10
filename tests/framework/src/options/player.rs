@@ -1,7 +1,7 @@
 use crate::backends::{FontRendererKind, TestAudioBackend};
 use crate::environment::{Environment, RenderInterface};
 use crate::options::RenderOptions;
-use ruffle_core::tag_utils::SwfMovie;
+use ruffle_core::tag_utils::SwfMovieData;
 use ruffle_core::{PlayerBuilder, PlayerMode, PlayerRuntime};
 use ruffle_render::backend::{RenderBackend, ViewportDimensions};
 use serde::Deserialize;
@@ -87,7 +87,7 @@ impl PlayerOptions {
         self.device_font_renderer
     }
 
-    pub fn viewport_dimensions(&self, movie: &SwfMovie) -> ViewportDimensions {
+    pub fn viewport_dimensions(&self, movie: &SwfMovieData) -> ViewportDimensions {
         self.viewport_dimensions
             .unwrap_or_else(|| ViewportDimensions {
                 width: movie.width().to_pixels() as u32,

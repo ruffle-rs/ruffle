@@ -8,9 +8,8 @@ use crate::avm2::script::TranslationUnit;
 use crate::avm2::{Avm2, Error, Multiname, Namespace, QName};
 use crate::context::UpdateContext;
 use crate::string::WStr;
-use crate::tag_utils::{self, ControlFlow, SwfMovie, SwfSlice, SwfStream};
+use crate::tag_utils::{self, ControlFlow, SwfMovie, SwfMovieData, SwfSlice, SwfStream};
 use gc_arena::Collect;
-use std::sync::Arc;
 use swf::TagCode;
 
 mod __ruffle__;
@@ -834,12 +833,11 @@ pub fn load_playerglobal<'gc>(context: &mut UpdateContext<'gc>, domain: Domain<'
     context.avm2.native_custom_constructor_table = native::NATIVE_CUSTOM_CONSTRUCTOR_TABLE;
     context.avm2.native_fast_call_list = native::NATIVE_FAST_CALL_LIST;
 
-    let movie = Arc::new(
-        SwfMovie::from_data(PLAYERGLOBAL, "file:///".into(), None, None)
-            .expect("playerglobal_avm2.swf should be valid"),
-    );
+    let movie_data = SwfMovieData::from_data(PLAYERGLOBAL, "file:///".into(), None, None)
+        .expect("playerglobal_avm2.swf should be valid");
+    let movie = SwfMovie::new(context.gc(), movie_data);
 
-    let slice = SwfSlice::from(movie.clone());
+    let slice = SwfSlice::from(movie);
 
     let mut reader = slice.read_from(0);
 
@@ -848,7 +846,7 @@ pub fn load_playerglobal<'gc>(context: &mut UpdateContext<'gc>, domain: Domain<'
             let do_abc = reader
                 .read_do_abc_2()
                 .expect("playerglobal_avm2.swf should be valid");
-            Avm2::load_builtin_abc(context, do_abc.data, domain, movie.clone());
+            Avm2::load_builtin_abc(context, do_abc.data, domain, movie);
         } else if tag_code != TagCode::End {
             panic!("playerglobal should only contain `DoAbc2` tag - found tag {tag_code:?}")
         }

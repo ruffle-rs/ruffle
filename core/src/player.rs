@@ -55,7 +55,7 @@ use crate::streams::StreamManager;
 use crate::string::{AvmString, AvmStringInterner, StringContext};
 use crate::stub::StubCollection;
 use crate::system_properties::SystemProperties;
-use crate::tag_utils::SwfMovie;
+use crate::tag_utils::{SwfMovie, SwfMovieData};
 use crate::timer::Timers;
 use crate::vminterface::Instantiator;
 use async_channel::Sender;
@@ -169,6 +169,8 @@ impl<'gc> MouseData<'gc> {
 #[derive(Collect)]
 #[collect(no_drop)]
 struct GcRootData<'gc> {
+    root_swf: SwfMovie<'gc>,
+
     library: Library<'gc>,
 
     /// The root of the display object hierarchy.
@@ -248,6 +250,7 @@ impl<'gc> GcRootData<'gc> {
         &mut self,
     ) -> (
         Stage<'gc>,
+        &mut SwfMovie<'gc>,
         &mut Library<'gc>,
         &mut ActionQueue<'gc>,
         &mut AvmStringInterner<'gc>,
@@ -273,6 +276,7 @@ impl<'gc> GcRootData<'gc> {
     ) {
         (
             self.stage,
+            &mut self.root_swf,
             &mut self.library,
             &mut self.action_queue,
             &mut self.interner,
@@ -328,8 +332,6 @@ pub struct Player {
 
     /// Whether we're emulating the release or the debug build.
     player_mode: PlayerMode,
-
-    swf: Arc<SwfMovie>,
 
     run_state: RunState,
     needs_render: bool,
@@ -1456,16 +1458,16 @@ impl Player {
             self.needs_render = true;
         }
 
-        if self.should_reset_highlight(event) {
-            self.mutate_with_update_context(|context| {
+        self.mutate_with_update_context(|context| {
+            if Self::should_reset_highlight(context, event) {
                 context.focus_tracker.reset_highlight();
-            });
-        }
+            }
+        });
 
         player_event_handled
     }
 
-    fn should_reset_highlight(&self, event: InputEvent) -> bool {
+    fn should_reset_highlight(context: &mut UpdateContext<'_>, event: InputEvent) -> bool {
         if matches!(
             event,
             InputEvent::MouseDown {
@@ -1477,7 +1479,7 @@ impl Player {
             return true;
         }
 
-        if self.swf.version() < 9
+        if context.root_swf.version() < 9
             && matches!(
                 event,
                 InputEvent::MouseDown {
@@ -1973,10 +1975,13 @@ impl Player {
     }
 
     //Checks if two displayObjects have the same depth and id and accur in the same movie.s
-    fn check_display_object_equality(object1: DisplayObject, object2: DisplayObject) -> bool {
+    fn check_display_object_equality<'gc>(
+        object1: DisplayObject<'gc>,
+        object2: DisplayObject<'gc>,
+    ) -> bool {
         object1.depth() == object2.depth()
             && object1.id() == object2.id()
-            && Arc::ptr_eq(&object1.movie(), &object2.movie())
+            && SwfMovie::ptr_eq(&object1.movie(), &object2.movie())
     }
     ///This searches for a display object by it's id.
     ///When a button is being held down but the mouse stops hovering over the object
@@ -2293,6 +2298,7 @@ impl Player {
             #[allow(unused_variables)]
             let (
                 stage,
+                root_swf,
                 library,
                 action_queue,
                 interner,
@@ -2320,7 +2326,7 @@ impl Player {
             let mut update_context = UpdateContext {
                 player_version: this.player_version,
                 player_mode: this.player_mode,
-                root_swf: &mut this.swf,
+                root_swf,
                 library,
                 rng: &mut this.rng,
                 renderer: this.renderer.deref_mut(),
@@ -2622,7 +2628,7 @@ impl Drop for Player {
 
 /// Player factory, which can be used to configure the aspects of a Ruffle player.
 pub struct PlayerBuilder {
-    movie: Option<SwfMovie>,
+    movie: Option<SwfMovieData>,
 
     // Backends
     audio: Option<Box<dyn AudioBackend>>,
@@ -2729,7 +2735,7 @@ impl PlayerBuilder {
 
     /// Configures the player to play an already-loaded movie.
     #[inline]
-    pub fn with_movie(mut self, movie: SwfMovie) -> Self {
+    pub fn with_movie(mut self, movie: SwfMovieData) -> Self {
         self.movie = Some(movie);
         self
     }
@@ -2963,7 +2969,6 @@ impl PlayerBuilder {
         player_version: u8,
         player_runtime: PlayerRuntime,
         fullscreen: bool,
-        fake_movie: Arc<SwfMovie>,
         external_interface_provider: Option<Box<dyn ExternalInterfaceProvider>>,
         fs_command_provider: Box<dyn FsCommandProvider>,
     ) -> GcRoot<'gc> {
@@ -2978,6 +2983,8 @@ impl PlayerBuilder {
                 Avm2::new(&mut init, player_version, player_runtime),
             )
         };
+
+        let fake_movie = SwfMovie::new(gc_context, SwfMovieData::empty(player_version, None));
 
         let data = GcRootData {
             audio_manager: AudioManager::new(),
@@ -3006,6 +3013,7 @@ impl PlayerBuilder {
             avm1_shared_objects: HashMap::new(),
             avm2_shared_objects: HashMap::new(),
             stage: Stage::empty(gc_context, fullscreen, fake_movie),
+            root_swf: fake_movie,
             timers: Timers::new(),
             unbound_text_fields: Vec::new(),
             stream_manager: StreamManager::new(),
@@ -3060,7 +3068,6 @@ impl PlayerBuilder {
         let language = ui.language();
 
         // Instantiate the player.
-        let fake_movie = Arc::new(SwfMovie::empty(player_version, None));
         let frame_rate = self.frame_rate.unwrap_or(12.0);
         let forced_frame_rate = self.frame_rate.is_some();
         let player = Arc::new_cyclic(|self_ref| {
@@ -3076,7 +3083,6 @@ impl PlayerBuilder {
                 locale,
 
                 // SWF info
-                swf: fake_movie.clone(),
                 current_frame: None,
 
                 // Timing
@@ -3131,7 +3137,6 @@ impl PlayerBuilder {
                         player_version,
                         self.player_runtime,
                         self.fullscreen,
-                        fake_movie.clone(),
                         self.external_interface_provider,
                         self.fs_command_provider,
                     )
