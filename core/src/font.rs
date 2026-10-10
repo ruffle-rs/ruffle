@@ -318,6 +318,13 @@ struct FontData {
     /// Fonts without a layout are used only to describe a font,
     /// not to provide glyphs.
     has_layout: bool,
+
+    /// Whether this font has the SmallText flag set, in a SWF of version 7
+    /// or later (Flash Player ignores the flag in older SWFs).
+    ///
+    /// Flash Player rounds glyph advances of such fonts up to whole pixels,
+    /// unless the text uses advanced rendering.
+    is_small_text: bool,
 }
 
 impl<'gc> Font<'gc> {
@@ -338,6 +345,7 @@ impl<'gc> Font<'gc> {
                 descriptor,
                 font_type,
                 has_layout: true,
+                is_small_text: false,
             },
         )))
     }
@@ -414,6 +422,7 @@ impl<'gc> Font<'gc> {
                 descriptor,
                 font_type,
                 has_layout: tag.layout.is_some(),
+                is_small_text: tag.flags.contains(swf::FontFlag::IS_SMALL_TEXT),
             },
         ))
     }
@@ -459,6 +468,7 @@ impl<'gc> Font<'gc> {
                 descriptor,
                 font_type: FontType::Device,
                 has_layout: true,
+                is_small_text: false,
             },
         ))
     }
@@ -479,6 +489,7 @@ impl<'gc> Font<'gc> {
                 descriptor,
                 font_type,
                 has_layout: true,
+                is_small_text: false,
             },
         ))
     }
@@ -528,6 +539,10 @@ impl<'gc> Font<'gc> {
 
     pub fn has_layout(self) -> bool {
         self.0.has_layout
+    }
+
+    pub fn is_small_text(self) -> bool {
+        self.0.is_small_text
     }
 
     pub fn sweep_caches(&self) {
