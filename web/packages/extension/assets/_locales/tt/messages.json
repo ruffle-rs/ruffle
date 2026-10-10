@@ -58,5 +58,20 @@
     },
     "status_init": {
         "message": "Агымдагы табны укыйбыз…"
+    },
+    "status_result_disabled": {
+        "message": "Ruffle сүндерелгән."
+    },
+    "open_settings_page": {
+        "message": "Көйләүләр битен ачу"
+    },
+    "settings_page": {
+        "message": "Көйләүләр бите"
+    },
+    "save_settings": {
+        "message": "Көйләүләрне саклау"
+    },
+    "settings_saved": {
+        "message": "Көйләүләр сакланды"
     }
 }

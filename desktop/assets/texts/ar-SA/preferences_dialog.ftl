@@ -20,7 +20,7 @@ storage-backend-memory = الذاكرة
 recent-limit = حد الملفات الحديثة
 recent-clear = إمسح
 theme = المظهر
-theme-system = الإعدادات المبدئية
+theme-system = الإعدادات الإفتراضية
 theme-light = فاتح
 theme-dark = داكن
 # See for context https://github.com/FeralInteractive/gamemode
@@ -35,6 +35,7 @@ ime-enabled = أسلوب الإدخال
 ime-enabled-experimental = (تجريبي)
 ime-enabled-tooltip = يسمح أسلوب الإدخال بإدخال حروف غير موجودة على لوحة المفاتيح، مثلًا الحروف الصينية، أو اليابانية، أو الكورية.
 ime-enabled-default = المبدئي
+device-font-renderer = مُعرِّض خطوط الجهاز
 device-font-renderer-tooltip = يحدد الواجهة الخلفية المستخدمة لعرض خطوط الجهاز.
 device-font-renderer-default = افتراضي
 device-font-renderer-embedded = مضمّن
