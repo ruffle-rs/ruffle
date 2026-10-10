@@ -24,18 +24,24 @@ pub struct EvalParameters {
 
     /// The color to render the font with.
     pub color: swf::Color,
+
+    /// Whether the text is rendered with the advanced text rendering engine.
+    ///
+    /// Flash Player does not round advances of SmallText fonts when it is.
+    pub advanced_rendering: bool,
 }
 
 impl EvalParameters {
     /// Convert the formatting on a text span over to font evaluation
     /// parameters.
-    pub fn from_span(span: &TextSpan) -> Self {
+    pub fn from_span(span: &TextSpan, advanced_rendering: bool) -> Self {
         let color = swf::Color::from_rgb(span.font.color.to_rgb(), 0xFF);
         Self {
             height: Twips::from_pixels(span.font.size),
             letter_spacing: Twips::from_pixels(span.font.letter_spacing),
             kerning: span.font.kerning,
             color,
+            advanced_rendering,
         }
     }
 
@@ -133,7 +139,14 @@ pub trait FontLike<'gc> {
                         unspaced_advance
                     }
                 } else {
-                    Twips::new((advance.get() as f32 * scale) as i32) + params.letter_spacing
+                    let mut spaced_advance =
+                        Twips::new((advance.get() as f32 * scale) as i32) + params.letter_spacing;
+                    if resolution.font.is_small_text() && !params.advanced_rendering {
+                        // Flash Player rounds advances of SmallText fonts up to whole pixels,
+                        // letter spacing included, unless advanced rendering is used.
+                        spaced_advance = ceil_to_pixel(spaced_advance);
+                    }
+                    spaced_advance
                 };
 
                 transform.matrix.a = scale;
@@ -171,4 +184,8 @@ pub trait FontLike<'gc> {
 
 fn round_to_pixel(t: Twips) -> Twips {
     Twips::from_pixels(t.to_pixels().round())
+}
+
+fn ceil_to_pixel(t: Twips) -> Twips {
+    Twips::from_pixels(t.to_pixels().ceil())
 }
