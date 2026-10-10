@@ -1,6 +1,10 @@
 file-picker-title-open-file = פתח קובץ יחיד
+file-picker-title-open-directory = פתח תיקייה
 file-picker-filter-supported = כל הקבצים הנתמכים
 file-picker-filter-swf = SWF (*.swf)
 file-picker-filter-spl = FutureSplash Animator (*.spl)
 file-picker-filter-ruf = Ruffle Bundle (*.ruf)
 file-picker-filter-all = כל הקבצים
+file-picker-select-root-movie-title = בחר את הסרט הראשי
+file-picker-select-root-movie-message = בחר את הסרט הראשי מתוך התיקייה שנפתחה.
+file-picker-select-root-movie-select = בחר

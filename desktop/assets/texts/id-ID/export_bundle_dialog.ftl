@@ -1,4 +1,5 @@
 export-bundle-dialog-title = Ekspor Bundel Ruffle
+export-bundle-dialog-bundle-name = Nama bundel:
 export-bundle-dialog-files-description = Pilih berkas untuk dibundel:
 export-bundle-dialog-files-select-all = Pilih semua
 export-bundle-dialog-export = Ekspor
@@ -8,3 +9,4 @@ export-bundle-dialog-error-user-canceled = Dibatalkan oleh pengguna.
 export-bundle-dialog-error-failed-to-show-picker = Gagal menunjukkan pemilih berkas.
 export-bundle-dialog-error-io-error = Gagal menulis bundel.
 export-bundle-dialog-info-title = Apa itu Bundel Ruffle?
+export-bundle-dialog-info-description = Bundel Ruffle adalah paket universal yang mencakup semua yang diperlukan untuk menjalankan berkas SWF — dengan semua aset dan konfigurasi yang diperlukan. Dengan sebuah bundel, SWF Anda bekerja secara langsung — tanpa ada berkas yang hilang, tanpa pengaturan manual, cukup plug and play.

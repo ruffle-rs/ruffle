@@ -119,6 +119,9 @@
     "settings_saved": {
         "message": "Pengaturan telah disimpan"
     },
+    "onboarding_page": {
+        "message": "Laman Onboarding"
+    },
     "permissions_grant": {
         "message": "Berikan izin kepada Ruffle untuk mengakses semua data saya untuk semua situs web"
     },
