@@ -1,8 +1,8 @@
 //! `EditText` display object and support code.
 
 use crate::avm1::{
-    Activation as Avm1Activation, ActivationIdentifier, Avm1, ExecutionReason,
-    NativeObject as Avm1NativeObject, Object as Avm1Object, Value as Avm1Value,
+    Activation as Avm1Activation, ActivationIdentifier, ArrayBuilder, Attribute, Avm1,
+    ExecutionReason, NativeObject as Avm1NativeObject, Object as Avm1Object,
 };
 use crate::avm2::object::{
     ClassObject as Avm2ClassObject, EventObject as Avm2EventObject, StageObject as Avm2StageObject,
@@ -2093,29 +2093,20 @@ impl<'gc> EditText<'gc> {
         self.on_changed(&mut activation);
     }
 
-    fn initialize_as_broadcaster(self, activation: &mut Avm1Activation<'_, 'gc>) {
-        if let Some(object) = self.object1() {
-            activation
-                .context
-                .avm1
-                .broadcaster_functions(activation.swf_version())
-                .initialize(
-                    &activation.context.strings,
-                    object,
-                    activation.prototypes().array,
-                );
+    fn initialize_listeners(self, activation: &mut Avm1Activation<'_, 'gc>) {
+        let Some(object) = self.object1() else {
+            return;
+        };
 
-            if let Ok(Avm1Value::Object(listeners)) = object.get(istr!("_listeners"), activation) {
-                let length = listeners.length(activation);
-                if matches!(length, Ok(0)) {
-                    // Add the TextField as its own listener to match Flash's behavior
-                    // This makes it so that the TextField's handlers are called before other listeners'.
-                    listeners.set_element(activation, 0, object.into()).unwrap();
-                } else {
-                    tracing::warn!("_listeners should be empty");
-                }
-            }
-        }
+        // Set the TextField as its own listener to match Flash's behavior.
+        // This makes it so that the TextField's handlers are called before other listeners'.
+        let listeners = ArrayBuilder::new(activation).with([object.into()]);
+        object.define_value(
+            activation.gc(),
+            istr!("_listeners"),
+            listeners.into(),
+            Attribute::DONT_ENUM | Attribute::DONT_DELETE,
+        );
     }
 
     fn on_changed(self, activation: &mut Avm1Activation<'_, 'gc>) {
@@ -2184,7 +2175,7 @@ impl<'gc> EditText<'gc> {
             // People can bind to properties of TextFields the same as other display objects.
             Avm1TextFieldBinding::bind_variables(activation);
 
-            self.initialize_as_broadcaster(activation);
+            self.initialize_listeners(activation);
         });
     }
 

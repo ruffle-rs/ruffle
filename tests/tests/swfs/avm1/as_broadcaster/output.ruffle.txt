@@ -102,7 +102,7 @@ true
 true
 
 // AsBroadcaster.initialize(broadcaster), with Array replaced
-true
+false
 
 
 /// addListener

@@ -517,15 +517,9 @@ pub fn load_playerglobal<'gc>(context: &mut UpdateContext<'gc>) {
 /// Initialize default global scope and builtins for an AVM1 instance.
 pub fn create_globals<'gc>(
     context: &mut StringContext<'gc>,
-) -> (
-    SystemPrototypes<'gc>,
-    Object<'gc>,
-    as_broadcaster::BroadcasterFunctions<'gc>,
-) {
+) -> (SystemPrototypes<'gc>, Object<'gc>) {
     let (ref mut context, object, function) =
         DeclContext::new(context, object::create_class, function::create_class);
-
-    let (broadcaster_fns, as_broadcaster) = as_broadcaster::create_class(context, object.proto);
 
     let flash = Object::new(context.strings, Some(object.proto));
     let external = Object::new(context.strings, Some(object.proto));
@@ -552,8 +546,7 @@ pub fn create_globals<'gc>(
     let local_connection = local_connection::create_class(context, object.proto);
     let color_transform = color_transform::create_class(context, object.proto);
     let external_interface = external_interface::create_class(context, object.proto);
-    let movie_clip_loader =
-        movie_clip_loader::create_class(context, object.proto, broadcaster_fns, array.proto);
+    let movie_clip_loader = movie_clip_loader::create_class(context, object.proto);
     let video = video::create_class(context, object.proto);
     let netstream = netstream::create_class(context, object.proto);
     let netconnection = netconnection::create_class(context, object.proto);
@@ -573,12 +566,10 @@ pub fn create_globals<'gc>(
     let gradient_bevel_filter = gradient_filter::create_bevel_class(context, bitmap_filter.proto);
     let gradient_glow_filter = gradient_filter::create_glow_class(context, bitmap_filter.proto);
     let bitmap_data = bitmap_data::create_class(context, object.proto);
-    let file_reference =
-        file_reference::create_class(context, object.proto, broadcaster_fns, array.proto);
-    let file_reference_list =
-        file_reference_list::create_class(context, object.proto, broadcaster_fns, array.proto);
+    let file_reference = file_reference::create_class(context, object.proto);
+    let file_reference_list = file_reference_list::create_class(context, object.proto);
     let shared_object = shared_object::create_class(context, object.proto);
-    let selection = selection::create(context, broadcaster_fns, array.proto);
+    let selection = selection::create(context);
     let camera = camera::create_class(context, object.proto);
     let microphone = microphone::create_class(context, object.proto);
     let print_job = print_job::create_class(context, object.proto);
@@ -587,14 +578,14 @@ pub fn create_globals<'gc>(
     let system = system::create(context);
     let system_security = system_security::create(context);
     let system_capabilities = system_capabilities::create(context);
-    let system_ime = system_ime::create(context, broadcaster_fns, array.proto);
+    let system_ime = system_ime::create(context);
     let system_product = system_product::create_class(context, object.proto);
 
     let math = math::create(context);
     let sound_codec = sound_codec::create(context);
-    let mouse = mouse::create(context, broadcaster_fns, array.proto);
-    let key = key::create(context, broadcaster_fns, array.proto);
-    let stage = stage::create(context, broadcaster_fns, array.proto);
+    let mouse = mouse::create(context);
+    let key = key::create(context);
+    let stage = stage::create(context);
     let accessibility = accessibility::create(context);
 
     let text_renderer = text_renderer::create_class(context, object.proto);
@@ -621,7 +612,7 @@ pub fn create_globals<'gc>(
         // Starting from here, FP defines these through its embedded `playerglobals.swf`
         "MovieClip" => value(movie_clip.constr; DONT_ENUM);
         "XMLSocket" => value(xml_socket.constr; DONT_ENUM);
-        "AsBroadcaster" => value(as_broadcaster.constr; DONT_ENUM);
+        "AsBroadcaster" => value(null; DONT_ENUM); // Actually in globals.as, reserve the spot here
         "Color" => value(color.constr; DONT_ENUM);
         "NetConnection" => value(netconnection.constr; DONT_ENUM);
         "NetStream" => value(netstream.constr; DONT_ENUM);
@@ -797,7 +788,6 @@ pub fn create_globals<'gc>(
             file_reference: file_reference.proto,
         },
         globals,
-        broadcaster_fns,
     )
 }
 

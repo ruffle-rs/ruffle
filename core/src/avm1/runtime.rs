@@ -1,5 +1,4 @@
 use crate::avm1::function::ExecutionReason;
-use crate::avm1::globals::as_broadcaster::BroadcasterFunctions;
 use crate::avm1::globals::{as_broadcaster, create_globals};
 use crate::avm1::object::stage_object;
 use crate::avm1::property_map::PropertyMap;
@@ -32,9 +31,6 @@ struct GlobalEnv<'gc> {
     /// System built-ins that we use internally to construct new objects.
     prototypes: avm1::globals::SystemPrototypes<'gc>,
 
-    /// Cached functions for the AsBroadcaster.
-    broadcaster_functions: BroadcasterFunctions<'gc>,
-
     /// The mappings between symbol names and constructors registered
     /// with `Object.registerClass()`. This is either case-sensitive or case-insensitive.
     constructor_registry: PropertyMap<'gc, Object<'gc>>,
@@ -42,11 +38,10 @@ struct GlobalEnv<'gc> {
 
 impl<'gc> GlobalEnv<'gc> {
     fn create(context: &mut StringContext<'gc>) -> Self {
-        let (prototypes, globals, broadcaster_functions) = create_globals(context);
+        let (prototypes, globals) = create_globals(context);
         Self {
             global_scope: Gc::new(context.gc(), Scope::from_global_object(globals)),
             prototypes,
-            broadcaster_functions,
             constructor_registry: PropertyMap::new(),
         }
     }
@@ -436,14 +431,6 @@ impl<'gc> Avm1<'gc> {
 
     pub fn set_max_recursion_depth(&mut self, max_recursion_depth: u16) {
         self.max_recursion_depth = max_recursion_depth
-    }
-
-    pub fn broadcaster_functions(&self, swf_version: u8) -> BroadcasterFunctions<'gc> {
-        if Self::is_case_sensitive(swf_version) {
-            self.env_case_sensitive.broadcaster_functions
-        } else {
-            self.env_case_insensitive.broadcaster_functions
-        }
     }
 
     /// The Flash Player version we're emulating.

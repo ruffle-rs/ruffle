@@ -4,6 +4,18 @@
 
 trace = ASnative(100, 4);
 
+#include "AsBroadcaster.as"
+
+AsBroadcaster.initialize(Selection);
+AsBroadcaster.initialize(Mouse);
+AsBroadcaster.initialize(Key);
+AsBroadcaster.initialize(TextField.prototype);
+AsBroadcaster.initialize(Stage);
+AsBroadcaster.initialize(System.IME);
+AsBroadcaster.initialize(MovieClipLoader.prototype);
+AsBroadcaster.initialize(flash.net.FileReference.prototype);
+AsBroadcaster.initialize(flash.net.FileReferenceList.prototype);
+
 #include "ContextMenuItem.as"
 #include "ContextMenu.as"
 #include "Error.as"

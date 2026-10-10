@@ -2,7 +2,6 @@
 
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
-use crate::avm1::globals::as_broadcaster::BroadcasterFunctions;
 use crate::avm1::property::Attribute;
 use crate::avm1::property_decl::{DeclContext, PropertyOrder, StaticDeclarations, SystemClass};
 use crate::avm1::{ArrayBuilder, Object, Value};
@@ -20,12 +19,9 @@ const PROTO_DECLS: StaticDeclarations = declare_static_properties! {
 pub fn create_class<'gc>(
     context: &mut DeclContext<'_, 'gc>,
     super_proto: Object<'gc>,
-    broadcaster_fns: BroadcasterFunctions<'gc>,
-    array_proto: Object<'gc>,
 ) -> SystemClass<'gc> {
     let class = context.class(constructor, super_proto, PropertyOrder::PrototypeFirst);
     context.define_properties_on(class.proto, PROTO_DECLS(context));
-    broadcaster_fns.initialize(context.strings, class.proto, array_proto);
     class
 }
 

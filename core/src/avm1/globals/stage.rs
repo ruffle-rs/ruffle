@@ -4,7 +4,6 @@
 
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
-use crate::avm1::globals::as_broadcaster::BroadcasterFunctions;
 use crate::avm1::property_decl::{DeclContext, StaticDeclarations};
 use crate::avm1::{Object, Value};
 use crate::display_object::StageDisplayState;
@@ -20,13 +19,8 @@ const OBJECT_DECLS: StaticDeclarations = declare_static_properties! {
     "displayState" => property(display_state, set_display_state);
 };
 
-pub fn create<'gc>(
-    context: &mut DeclContext<'_, 'gc>,
-    broadcaster_functions: BroadcasterFunctions<'gc>,
-    array_proto: Object<'gc>,
-) -> Object<'gc> {
+pub fn create<'gc>(context: &mut DeclContext<'_, 'gc>) -> Object<'gc> {
     let stage = Object::new(context.strings, Some(context.object_proto));
-    broadcaster_functions.initialize(context.strings, stage, array_proto);
     context.define_properties_on(stage, OBJECT_DECLS(context));
     stage
 }

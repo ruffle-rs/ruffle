@@ -2,7 +2,6 @@ use ruffle_macros::istr;
 
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
-use crate::avm1::globals::as_broadcaster::BroadcasterFunctions;
 use crate::avm1::property_decl::{DeclContext, StaticDeclarations};
 use crate::avm1::{Object, Value};
 use crate::display_object::{EditText, TDisplayObject, TInteractiveObject, TextSelection};
@@ -16,13 +15,8 @@ const OBJECT_DECLS: StaticDeclarations = declare_static_properties! {
     "setSelection" => method(set_selection; DONT_ENUM | DONT_DELETE | READ_ONLY);
 };
 
-pub fn create<'gc>(
-    context: &mut DeclContext<'_, 'gc>,
-    broadcaster_fns: BroadcasterFunctions<'gc>,
-    array_proto: Object<'gc>,
-) -> Object<'gc> {
+pub fn create<'gc>(context: &mut DeclContext<'_, 'gc>) -> Object<'gc> {
     let selection = Object::new(context.strings, Some(context.object_proto));
-    broadcaster_fns.initialize(context.strings, selection, array_proto);
     context.define_properties_on(selection, OBJECT_DECLS(context));
     selection
 }
