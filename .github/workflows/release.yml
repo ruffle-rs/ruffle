@@ -232,7 +232,7 @@ jobs:
 
       # For Windows, we need to upload the unsigned package so that SignPath can download it
       - name: Upload unsigned package
-        if: runner.os == 'Windows' && steps.configure.outputs.release_type != 'nightly'
+        if: runner.os == 'Windows'
         id: upload-unsigned-package
         uses: actions/upload-artifact@v7
         with:
@@ -241,7 +241,7 @@ jobs:
 
       # Now sign it and redownload that! Note that this will need to be _manually approved_ in SignPath, so it has a 1hr timeout.
       - name: Submit signing request
-        if: runner.os == 'Windows' && steps.configure.outputs.release_type != 'nightly'
+        if: runner.os == 'Windows'
         uses: signpath/github-action-submit-signing-request@v3
         with:
           api-token: '${{ secrets.SIGNPATH_API_TOKEN }}'
@@ -258,7 +258,7 @@ jobs:
 
       # And make that our final package :)
       - name: Replace signed package
-        if: runner.os == 'Windows' && steps.configure.outputs.release_type != 'nightly'
+        if: runner.os == 'Windows'
         run: |
           mv signed-package/* ${{ env.PACKAGE_FILE }} -Force
 
