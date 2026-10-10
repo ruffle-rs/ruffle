@@ -3248,8 +3248,8 @@ impl<'gc> TInteractiveObject<'gc> for MovieClip<'gc> {
             }
 
             // Check drawing, because this selects the current clip, it must have mouse enabled
-            if self.world_bounds(BoundsMode::Engine).contains(point)
-                && let Some(drawing) = self.drawing()
+            if let Some(drawing) = self.drawing()
+                && self.world_bounds(BoundsMode::Engine).contains(point)
                 && drawing.hit_test(local_matrix * point, &local_matrix)
             {
                 return if self.mouse_enabled() {
