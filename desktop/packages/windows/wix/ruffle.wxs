@@ -23,6 +23,7 @@ http://wixtoolset.org/schemas/v4/wxs/util https://raw.githubusercontent.com/wixt
     <?define CargoBuildDir = "../../../../target/release"?>
     <?endif?>
 
+<!-- Any changes to the name or manufacturer *must* be reflected on SignPath, or our code signing will fail. -->
     <Package
             Name='Ruffle'
             UpgradeCode='$(var.UpgradeCode)'

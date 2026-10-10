@@ -72,6 +72,7 @@ winresource = "0.1"
 
 [package.metadata.winresource]
 # https://learn.microsoft.com/en-us/windows/win32/menurc/stringfileinfo-block
+# Any changes to the below *must* be reflected on SignPath, or our code signing will fail
 ProductName = "Ruffle"
 FileDescription = "Adobe Flash Player emulator"
 CompanyName = "Ruffle LLC"
