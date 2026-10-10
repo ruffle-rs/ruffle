@@ -1926,7 +1926,14 @@ pub trait TDisplayObject<'gc>:
     /// Set the parent of this display object.
     #[no_dynamic]
     fn set_parent(self, context: &mut UpdateContext<'gc>, parent: Option<DisplayObject<'gc>>) {
-        let had_parent = self.parent().is_some();
+        let old_parent = self.parent();
+        let had_parent = old_parent.is_some();
+        if let Some(old_parent) = old_parent
+            && let Some(text_field) = old_parent.as_edit_text()
+            && parent.is_none_or(|parent| !DisplayObject::ptr_eq(old_parent, parent))
+        {
+            text_field.remove_image_reference(context.gc(), self);
+        }
         let write = Gc::write(context.gc(), self.base());
         DisplayObjectBase::set_parent_ignoring_orphan_list(write, parent);
         let parent_removed = had_parent && parent.is_none();

@@ -167,6 +167,19 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         }
     }
 
+    /// Construct an activation for native work associated with a particular movie.
+    /// Unlike `from_domain`, this also supplies the movie used to resolve loads.
+    pub(crate) fn from_movie(context: &'a mut UpdateContext<'gc>, movie: SwfMovie<'gc>) -> Self {
+        let domain = context
+            .library
+            .library_for_movie(movie)
+            .expect("Movie must have a library before running AVM2")
+            .avm2_domain();
+        let mut activation = Self::from_domain(context, domain);
+        activation.caller_movie = Some(movie);
+        activation
+    }
+
     /// Finds an object on either the current or outer scope of this activation by definition.
     pub fn find_definition(
         &mut self,

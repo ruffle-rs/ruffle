@@ -4,9 +4,10 @@ use crate::avm1::{
     Activation as Avm1Activation, ActivationIdentifier, Avm1, ExecutionReason,
     NativeObject as Avm1NativeObject, Object as Avm1Object, Value as Avm1Value,
 };
+use crate::avm2::globals::flash::display::loader::create_text_field_image;
 use crate::avm2::object::{
-    ClassObject as Avm2ClassObject, EventObject as Avm2EventObject, StageObject as Avm2StageObject,
-    StyleSheetObject as Avm2StyleSheetObject,
+    ClassObject as Avm2ClassObject, EventObject as Avm2EventObject, Object as Avm2Object,
+    StageObject as Avm2StageObject, StyleSheetObject as Avm2StyleSheetObject,
 };
 use crate::avm2::{Activation as Avm2Activation, Avm2};
 use crate::backend::ui::MouseCursor;
@@ -118,6 +119,11 @@ pub struct EditTextData<'gc> {
 
     /// The calculated layout.
     layout: RefLock<Layout<'gc>>,
+
+    /// Character positions and AVM2 Loaders for runtime HTML images.
+    /// Merged image spans may have multiple Loaders. Text replacement can
+    /// invalidate a Loader while leaving its image metadata in the spans.
+    image_references: RefLock<Vec<(usize, Avm2StageObject<'gc>)>>,
 
     /// Style sheet used when parsing HTML.
     style_sheet: Lock<EditTextStyleSheet<'gc>>,
@@ -332,6 +338,7 @@ impl<'gc> EditText<'gc> {
                 border_color: Cell::new(Color::BLACK),
                 object: Lock::new(None),
                 layout: RefLock::new(Default::default()),
+                image_references: RefLock::new(Vec::new()),
                 bounds: Cell::new(*swf_tag.bounds()),
                 autosize_lazy_bounds: Cell::new(None),
                 autosize: Cell::new(autosize),
@@ -447,9 +454,13 @@ impl<'gc> EditText<'gc> {
             return;
         }
 
+        // Changing the text discards references from the previous contents.
+        // The unchanged-text early return above preserves existing Loaders.
+        self.set_image_references(context, Vec::new());
+
         if self.0.style_sheet.get().is_some() {
             // When CSS is set, text will always be treated as HTML.
-            self.0.parse_html(text);
+            self.parse_html(text, context);
         } else {
             let default_format = self.0.text_spans.borrow().default_format().clone();
             self.0
@@ -481,15 +492,192 @@ impl<'gc> EditText<'gc> {
             //
             // For instance, a paragraph may not end with a newline,
             // but its HTML representation will always infer one.
+            //
+            // Flash creates fresh Loaders even when the HTML serialization is
+            // unchanged; keep the spans intact but replace their runtime images.
+            if self.is_effectively_html() {
+                self.rebuild_image_references(context);
+            }
             return;
         }
 
         if self.is_effectively_html() {
-            self.0.parse_html(text);
+            self.parse_html(text, context);
             self.relayout(context);
         } else {
             self.set_text(text, context);
         }
+    }
+
+    /// Keep parsed image metadata and runtime Loaders synchronized for every
+    /// caller, including stylesheet reparsing and internal text updates.
+    fn parse_html(self, text: &WStr, context: &mut UpdateContext<'gc>) {
+        self.0.parse_html(text);
+        self.rebuild_image_references(context);
+    }
+
+    fn rebuild_image_references(self, context: &mut UpdateContext<'gc>) {
+        if !self.movie().is_action_script_3() {
+            return;
+        }
+
+        let images = self.html_images();
+        self.set_image_references(context, Vec::new());
+        if images.is_empty() {
+            return;
+        }
+
+        let mut activation = Avm2Activation::from_movie(context, self.movie());
+        let references = images
+            .into_iter()
+            .map(|(position, src, id)| {
+                create_text_field_image(
+                    &mut activation,
+                    self,
+                    src.as_wstr(),
+                    id.as_ref().map(|id| id.as_wstr()),
+                )
+                .map(|loader| (position, loader))
+            })
+            .collect::<Result<Vec<_>, _>>();
+
+        match references {
+            Ok(references) => self.set_image_references(activation.context, references),
+            Err(error) => Avm2::uncaught_error(
+                &mut activation,
+                Some(self.into()),
+                error,
+                "Error creating TextField HTML image Loaders",
+            ),
+        }
+    }
+
+    /// Enumerate image characters, including images in merged spans.
+    fn html_images(self) -> Vec<(usize, WString, Option<WString>)> {
+        let spans = self.0.text_spans.borrow();
+        let mut images = Vec::new();
+
+        for (start, end, _, span) in spans.iter_spans() {
+            if let Some(image) = span.image.as_deref() {
+                for position in start..end {
+                    images.push((position, image.src.clone(), image.id.clone()));
+                }
+            }
+        }
+
+        images
+    }
+
+    fn set_image_references(
+        self,
+        context: &mut UpdateContext<'gc>,
+        references: Vec<(usize, Avm2StageObject<'gc>)>,
+    ) {
+        let previous = std::mem::replace(
+            &mut *unlock!(
+                Gc::write(context.gc(), self.0),
+                EditTextData,
+                image_references
+            )
+            .borrow_mut(),
+            references,
+        );
+        for (_, reference) in previous {
+            self.detach_image_reference(context, reference);
+        }
+    }
+
+    fn detach_image_reference(
+        self,
+        context: &mut UpdateContext<'gc>,
+        reference: Avm2StageObject<'gc>,
+    ) {
+        let display_object = reference.display_object();
+        if display_object
+            .parent()
+            .is_some_and(|parent| DisplayObject::ptr_eq(parent, self.into()))
+        {
+            // Removing an image reference also removes the internal parent:
+            // a retained Loader must no longer inherit this TextField's stage.
+            display_object.set_parent(context, None);
+        }
+    }
+
+    /// A Loader moved into a display container ceases to be an HTML image
+    /// reference. This only removes the lookup entry; set_parent handles its
+    /// new display-list relationship.
+    pub(crate) fn remove_image_reference(self, mc: &Mutation<'gc>, image: DisplayObject<'gc>) {
+        unlock!(Gc::write(mc, self.0), EditTextData, image_references)
+            .borrow_mut()
+            .retain(|(_, reference)| !DisplayObject::ptr_eq(reference.display_object(), image));
+    }
+
+    /// Invalidate image references affected by replacement and shift survivors.
+    ///
+    /// Flash also invalidates an image at the end boundary of a nonempty
+    /// replacement range. Insertion alone preserves the existing Loaders.
+    fn prune_image_references(
+        self,
+        context: &mut UpdateContext<'gc>,
+        from: usize,
+        to: usize,
+        inserted_len: usize,
+    ) {
+        if to < from {
+            return;
+        }
+
+        let text_len = self.text_length();
+        let removed_len = to.min(text_len).saturating_sub(from.min(text_len));
+        let mut references = unlock!(
+            Gc::write(context.gc(), self.0),
+            EditTextData,
+            image_references
+        )
+        .borrow_mut();
+
+        let mut removed = Vec::new();
+        references.retain_mut(|(position, reference)| {
+            if from < to && *position >= from && *position <= to {
+                removed.push(*reference);
+                return false;
+            }
+
+            if *position >= to {
+                *position = position.saturating_sub(removed_len) + inserted_len;
+            }
+
+            true
+        });
+        // Release the borrow before set_parent removes lookup entries.
+        drop(references);
+        for reference in removed {
+            self.detach_image_reference(context, reference);
+        }
+    }
+
+    /// Look up the current Loader name rather than the parsed image ID.
+    ///
+    /// Identical adjacent image tags may share a text span, but retain distinct
+    /// Loaders. Searching backwards returns the last matching Loader. Renaming
+    /// it exposes an earlier Loader with the original name, while the renamed
+    /// Loader remains accessible under its new name.
+    ///
+    /// Empty names are never returned, and name comparisons are case-sensitive.
+    pub(crate) fn image_reference(self, id: &WStr) -> Option<Avm2Object<'gc>> {
+        if id.is_empty() {
+            return None;
+        }
+
+        self.0
+            .image_references
+            .borrow()
+            .iter()
+            .rev()
+            .find_map(|(_, reference)| {
+                let name = reference.display_object().name()?;
+                (name.as_wstr() == id).then_some((*reference).into())
+            })
     }
 
     pub fn text_length(self) -> usize {
@@ -737,7 +925,7 @@ impl<'gc> EditText<'gc> {
 
         let original_html_text = self.0.original_html_text.borrow().clone();
         if let Some(html) = original_html_text {
-            self.0.parse_html(&html);
+            self.parse_html(&html, context);
         }
         self.relayout(context);
     }
@@ -828,6 +1016,7 @@ impl<'gc> EditText<'gc> {
         text: &WStr,
         context: &mut UpdateContext<'gc>,
     ) {
+        self.prune_image_references(context, from, to, text.len());
         self.0.text_spans.borrow_mut().replace_text(from, to, text);
         self.relayout(context);
     }
@@ -2199,6 +2388,9 @@ impl<'gc> EditText<'gc> {
             .class
             .get()
             .unwrap_or_else(|| context.avm2.classes().textfield);
+
+        // Make initial DefineEditText images available to the AS3 constructor.
+        self.rebuild_image_references(context);
 
         let mut activation = Avm2Activation::from_nothing(context);
 
