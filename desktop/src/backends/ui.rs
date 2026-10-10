@@ -15,7 +15,7 @@ use ruffle_core::backend::ui::{
     FullscreenError, LanguageIdentifier, MouseCursor, MultiDialogResultFuture,
     MultiFileDialogResult, UiBackend,
 };
-use ruffle_core::font::{FontAtlases, FontFileData, FontQuery};
+use ruffle_core::font::{FontAtlases, FontFamilyFilter, FontFileData, FontQuery};
 use std::fs::File;
 use std::path::Path;
 use std::rc::Rc;
@@ -319,7 +319,9 @@ impl UiBackend for DesktopUiBackend {
     }
 
     fn load_device_font(&self, query: &FontQuery, register: &mut dyn FnMut(FontDefinition)) {
-        let name = &query.name;
+        let FontFamilyFilter::Name { name, .. } = &query.family else {
+            return;
+        };
         let is_bold = query.is_bold;
         let is_italic = query.is_italic;
         let lowercase_name = query.lowercase_name.as_str();
@@ -387,9 +389,14 @@ impl UiBackend for DesktopUiBackend {
     ) -> Vec<FontQuery> {
         cfg_select! {
             all(unix, feature = "fontconfig") => {
-                fontconfig::sort_device_fonts(query, register, self.device_font_renderer, &self.font_atlases)
-                    .inspect_err(|err| tracing::error!("Cannot sort device fonts: {err}"))
-                    .unwrap_or_default()
+                fontconfig::sort_device_fonts(
+                    query,
+                    register,
+                    self.device_font_renderer,
+                    &self.font_atlases,
+                )
+                .inspect_err(|err| tracing::error!("Cannot sort device fonts: {err}"))
+                .unwrap_or_default()
             }
             _ => Vec::new(),
         }
@@ -542,7 +549,7 @@ fn load_fontdb_font(
 mod fontconfig {
     use crate::backends::ui::{DeviceFontRenderer, load_font_from_file};
     use ruffle_core::backend::ui::FontDefinition;
-    use ruffle_core::font::{FontAtlases, FontQuery};
+    use ruffle_core::font::{DefaultFont, FontAtlases, FontFamilyFilter, FontQuery};
     use std::path::Path;
 
     #[derive(Debug, thiserror::Error)]
@@ -569,13 +576,30 @@ mod fontconfig {
             return Ok(Vec::new());
         };
 
-        let Ok(family) = std::ffi::CString::new(query.name.as_str()) else {
-            return Err(FontconfigError::MalformedFontFamily);
-        };
-
         let mut pattern: Pattern<'static> = Pattern::new(fc)?;
 
-        pattern.add_string(fontconfig::FC_FAMILY, family.as_c_str())?;
+        match &query.family {
+            FontFamilyFilter::Name { name, .. } => {
+                let Ok(family) = std::ffi::CString::new(name.as_str()) else {
+                    return Err(FontconfigError::MalformedFontFamily);
+                };
+
+                pattern.add_string(fontconfig::FC_FAMILY, family.as_c_str())?;
+            }
+
+            FontFamilyFilter::Default(default_font) => {
+                let family = match default_font {
+                    DefaultFont::Sans => c"sans-serif",
+                    DefaultFont::Serif => c"serif",
+                    DefaultFont::Typewriter => c"monospace",
+                    DefaultFont::JapaneseGothic => c"sans-serif",
+                    DefaultFont::JapaneseGothicMono => c"monospace",
+                    DefaultFont::JapaneseMincho => c"serif",
+                };
+
+                pattern.add_string(fontconfig::FC_FAMILY, family)?;
+            }
+        }
 
         if query.is_bold {
             pattern.add_integer(fontconfig::FC_WEIGHT, fontconfig::FC_WEIGHT_BOLD)?;

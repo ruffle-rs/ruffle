@@ -9,7 +9,7 @@ use ruffle_core::backend::ui::{
 use ruffle_core::backend::ui::{
     FontDefinition, FullscreenError, LanguageIdentifier, MouseCursor, US_ENGLISH, UiBackend,
 };
-use ruffle_core::font::{FontAtlases, FontQuery};
+use ruffle_core::font::{FontAtlases, FontFamilyFilter, FontQuery};
 use ruffle_web_common::JsResult;
 use std::borrow::Cow;
 use url::Url;
@@ -337,10 +337,14 @@ impl UiBackend for WebUiBackend {
             return;
         }
 
+        let FontFamilyFilter::Name { name, .. } = &query.family else {
+            return;
+        };
+
         let renderer = canvas_font_renderer::CanvasFontRenderer::new(
             query.is_italic,
             query.is_bold,
-            &query.name,
+            name,
             &self.font_atlases,
         );
 
@@ -348,12 +352,12 @@ impl UiBackend for WebUiBackend {
             Ok(renderer) => {
                 tracing::info!(
                     "Loaded a new canvas font renderer for font \"{}\", italic: {}, bold: {}",
-                    query.name,
+                    name,
                     query.is_italic,
                     query.is_bold
                 );
                 register(FontDefinition::ExternalRenderer {
-                    name: query.name.clone(),
+                    name: name.clone(),
                     is_bold: query.is_bold,
                     is_italic: query.is_italic,
                     font_renderer: Box::new(renderer),
@@ -362,7 +366,7 @@ impl UiBackend for WebUiBackend {
             Err(e) => {
                 tracing::error!(
                     "Failed to set up canvas font renderer for font \"{}\": {e:?}",
-                    query.name
+                    name
                 )
             }
         }

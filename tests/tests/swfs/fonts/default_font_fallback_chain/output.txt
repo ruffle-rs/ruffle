@@ -1,0 +1,5 @@
+primaryA: 10
+secondaryGlyph: 15
+sansA: 10
+sansGlyph: 15
+sansMixed: 25
