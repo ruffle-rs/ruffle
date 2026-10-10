@@ -22,6 +22,7 @@ interface Manifest {
             data_collection_permissions?: {
                 required: string[];
             };
+            strict_min_version: string;
         };
         [key: string]: unknown;
     };
@@ -99,6 +100,7 @@ function transformManifest(): void {
                 data_collection_permissions: {
                     required: ["none"],
                 },
+                strict_min_version: "128.0",
             },
         };
         manifest.background = {
