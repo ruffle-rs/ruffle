@@ -6,8 +6,8 @@ upper TESTFONTB -> A=false, B=true
 prefix XTestFontA -> A=false, B=false
 suffix TestFontAX -> A=false, B=false
 space Test FontA -> A=false, B=false
-leading space  TestFontA -> A=true, B=false
-trailing space TestFontA  -> A=true, B=false
+leading space  TestFontA -> A=false, B=false
+trailing space TestFontA  -> A=false, B=false
 suffix-hyphen TestFontA-Bold -> A=false, B=false
 suffix-space TestFontA Bold -> A=false, B=false
 done
