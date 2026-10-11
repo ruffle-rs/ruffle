@@ -230,11 +230,11 @@ impl<W: Write> Writer<W> {
     fn write_goto_frame_2(&mut self, action: GotoFrame2) -> Result<()> {
         if action.scene_offset != 0 {
             self.write_action_header(OpCode::GotoFrame2, 3)?;
-            self.write_u8(if action.set_playing { 0b11 } else { 0b01 })?;
+            self.write_u8(if action.set_playing { 0b11 } else { 0b10 })?;
             self.write_u16(action.scene_offset)?;
         } else {
             self.write_action_header(OpCode::GotoFrame2, 1)?;
-            self.write_u8(if action.set_playing { 0b10 } else { 0b00 })?;
+            self.write_u8(if action.set_playing { 0b01 } else { 0b00 })?;
         }
         Ok(())
     }
