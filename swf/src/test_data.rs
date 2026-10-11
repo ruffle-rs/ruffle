@@ -2479,6 +2479,22 @@ pub fn avm1_tests() -> Vec<Avm1TestData> {
             vec![0x9F, 3, 0, 0b11, 3, 1],
         ),
         (
+            4,
+            Action::GotoFrame2(GotoFrame2 {
+                set_playing: true,
+                scene_offset: 0,
+            }),
+            vec![0x9F, 1, 0, 0b01],
+        ),
+        (
+            4,
+            Action::GotoFrame2(GotoFrame2 {
+                set_playing: false,
+                scene_offset: 259,
+            }),
+            vec![0x9F, 3, 0, 0b10, 3, 1],
+        ),
+        (
             3,
             Action::GotoLabel(GotoLabel {
                 label: SwfStr::from_str_with_encoding("testb", WINDOWS_1252).unwrap(),
