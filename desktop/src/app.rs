@@ -32,6 +32,12 @@ struct MainWindow {
     /// (and on X11 only without a compositor). Always false elsewhere.
     occluded: bool,
     mouse_pos: PhysicalPosition<f64>,
+
+    /// Whether `mouse_pos` changed since the last `MouseMove` sent to the player.
+    /// Moves are coalesced, so that a movie with slow mouse handlers sees only
+    /// the latest position instead of every move queued while it was busy.
+    mouse_move_pending: bool,
+
     modifiers: Modifiers,
     min_window_size: LogicalSize<u32>,
     max_window_size: PhysicalSize<u32>,
@@ -115,10 +121,12 @@ impl MainWindow {
                 }
 
                 self.mouse_pos = position;
-                let (x, y) = self.gui.window_to_movie_position(position);
-                let event = PlayerEvent::MouseMove { x, y };
-                self.player.handle_event(event);
-                self.check_redraw();
+
+                // We can't handle mouse move here, doing so would put Ruffle in
+                // a busy loop processing every queued CursorMoved event. Flash
+                // Player does not queue mouse moves and instead skips them
+                // if they happen when the movie is busy.
+                self.mouse_move_pending = true;
             }
             WindowEvent::DroppedFile(file) => {
                 if let Some(content_descriptor) = ContentDescriptor::new_local(&file, None) {
@@ -130,10 +138,10 @@ impl MainWindow {
                 }
             }
             WindowEvent::Focused(true) => {
-                self.player.handle_event(PlayerEvent::FocusGained);
+                self.handle_player_event(PlayerEvent::FocusGained);
             }
             WindowEvent::Focused(false) => {
-                self.player.handle_event(PlayerEvent::FocusLost);
+                self.handle_player_event(PlayerEvent::FocusLost);
             }
             WindowEvent::MouseInput { button, state, .. } => {
                 if self.gui.is_context_menu_visible() {
@@ -160,7 +168,7 @@ impl MainWindow {
                     },
                     ElementState::Released => PlayerEvent::MouseUp { x, y, button },
                 };
-                let handled = self.player.handle_event(event);
+                let handled = self.handle_player_event(event);
                 if !handled && state == ElementState::Pressed && button == RuffleMouseButton::Right
                 {
                     // Show context menu.
@@ -191,7 +199,7 @@ impl MainWindow {
                     MouseScrollDelta::PixelDelta(pos) => MouseWheelDelta::Pixels(pos.y),
                 };
                 let event = PlayerEvent::MouseWheel { delta };
-                self.player.handle_event(event);
+                self.handle_player_event(event);
                 self.check_redraw();
             }
             WindowEvent::CursorEntered { .. } => {
@@ -203,10 +211,13 @@ impl MainWindow {
                 }
             }
             WindowEvent::CursorLeft { .. } => {
+                // The movie has to see the latest position while the mouse
+                // is still in the stage.
+                self.flush_mouse_move();
                 if let Some(mut player) = self.player.get() {
                     player.set_mouse_in_stage(false);
                 }
-                self.player.handle_event(PlayerEvent::MouseLeave);
+                self.handle_player_event(PlayerEvent::MouseLeave);
                 self.check_redraw();
             }
             WindowEvent::ModifiersChanged(new_modifiers) => {
@@ -232,21 +243,21 @@ impl MainWindow {
                 let key = winit_input_to_ruffle_key_descriptor(&event);
                 match event.state {
                     ElementState::Pressed => {
-                        self.player.handle_event(PlayerEvent::KeyDown { key });
+                        self.handle_player_event(PlayerEvent::KeyDown { key });
                         if let Some(control_code) =
                             winit_to_ruffle_text_control(&event, self.modifiers)
                         {
-                            self.player
-                                .handle_event(PlayerEvent::TextControl { code: control_code });
+                            self.handle_player_event(PlayerEvent::TextControl {
+                                code: control_code,
+                            });
                         } else if let Some(text) = event.text {
                             for codepoint in text.chars() {
-                                self.player
-                                    .handle_event(PlayerEvent::TextInput { codepoint });
+                                self.handle_player_event(PlayerEvent::TextInput { codepoint });
                             }
                         }
                     }
                     ElementState::Released => {
-                        self.player.handle_event(PlayerEvent::KeyUp { key });
+                        self.handle_player_event(PlayerEvent::KeyUp { key });
                     }
                 };
                 self.check_redraw();
@@ -254,12 +265,10 @@ impl MainWindow {
             WindowEvent::Ime(ime) => match ime {
                 Ime::Enabled => {}
                 Ime::Preedit(text, cursor) => {
-                    self.player
-                        .handle_event(PlayerEvent::Ime(ImeEvent::Preedit(text, cursor)));
+                    self.handle_player_event(PlayerEvent::Ime(ImeEvent::Preedit(text, cursor)));
                 }
                 Ime::Commit(text) => {
-                    self.player
-                        .handle_event(PlayerEvent::Ime(ImeEvent::Commit(text)));
+                    self.handle_player_event(PlayerEvent::Ime(ImeEvent::Commit(text)));
                 }
                 Ime::Disabled => {}
             },
@@ -364,19 +373,21 @@ impl MainWindow {
     }
 
     fn about_to_wait(&mut self, gilrs: Option<&mut Gilrs>) {
+        // When we don't have any more pending events, flush any pending mouse
+        // moves, so that they can get coalesced properly.
+        self.flush_mouse_move();
+
         if let Some(Event { event, .. }) = gilrs.and_then(|gilrs| gilrs.next_event()) {
             match event {
                 EventType::ButtonPressed(button, _) => {
                     if let Some(button) = gilrs_button_to_gamepad_button(button) {
-                        self.player
-                            .handle_event(PlayerEvent::GamepadButtonDown { button });
+                        self.handle_player_event(PlayerEvent::GamepadButtonDown { button });
                         self.check_redraw();
                     }
                 }
                 EventType::ButtonReleased(button, _) => {
                     if let Some(button) = gilrs_button_to_gamepad_button(button) {
-                        self.player
-                            .handle_event(PlayerEvent::GamepadButtonUp { button });
+                        self.handle_player_event(PlayerEvent::GamepadButtonUp { button });
                         self.check_redraw();
                     }
                 }
@@ -399,6 +410,23 @@ impl MainWindow {
                 self.check_redraw();
             }
         }
+    }
+
+    fn handle_player_event(&mut self, event: PlayerEvent) -> bool {
+        // Apply any pending mouse moves, so that the movie sees the latest
+        // position before e.g. a click.
+        self.flush_mouse_move();
+        self.player.handle_event(event)
+    }
+
+    fn flush_mouse_move(&mut self) {
+        if !std::mem::take(&mut self.mouse_move_pending) {
+            return;
+        }
+
+        let (x, y) = self.gui.window_to_movie_position(self.mouse_pos);
+        self.player.handle_event(PlayerEvent::MouseMove { x, y });
+        self.check_redraw();
     }
 
     fn check_redraw(&self) {
@@ -560,6 +588,7 @@ impl ApplicationHandler<RuffleEvent> for App {
                 minimized: false,
                 occluded: false,
                 mouse_pos: PhysicalPosition::new(0.0, 0.0),
+                mouse_move_pending: false,
                 modifiers: Modifiers::default(),
                 time: Instant::now(),
                 next_frame_time: None,
