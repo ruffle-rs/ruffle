@@ -488,13 +488,13 @@ valueOf
 0
 0
 valueOf
-Infinity
+NaN
 ----------
 // setProperty(_yscale, -1.0/0.0)
 0
 0
 valueOf
-Infinity
+NaN
 ----------
 // setProperty(_yscale, new Object())
 0
