@@ -58,13 +58,7 @@ impl MainWindow {
             // surface also keeps the size it had before, as `GuiController::resize`
             // refuses to reconfigure it to a zero size.
             if !self.minimized && !self.occluded {
-                let mut player = self.player.get();
-                if let Some(ref mut player) = player {
-                    // Even if the movie is paused, user interaction with debug tools can change the render output
-                    player.render();
-                }
-
-                self.gui.render(player);
+                self.gui.render(self.player.get());
             }
 
             // Important that we return here, or we'll get a feedback loop with egui
@@ -185,7 +179,6 @@ impl MainWindow {
                         self.gui.show_context_menu(context_menu, close_event);
                     }
                 }
-                self.check_redraw();
             }
             WindowEvent::MouseWheel { delta, .. } => {
                 if self.gui.is_context_menu_visible() {
@@ -200,14 +193,10 @@ impl MainWindow {
                 };
                 let event = PlayerEvent::MouseWheel { delta };
                 self.handle_player_event(event);
-                self.check_redraw();
             }
             WindowEvent::CursorEntered { .. } => {
                 if let Some(mut player) = self.player.get() {
                     player.set_mouse_in_stage(true);
-                    if player.needs_render() {
-                        self.gui.window().request_redraw();
-                    }
                 }
             }
             WindowEvent::CursorLeft { .. } => {
@@ -218,7 +207,6 @@ impl MainWindow {
                     player.set_mouse_in_stage(false);
                 }
                 self.handle_player_event(PlayerEvent::MouseLeave);
-                self.check_redraw();
             }
             WindowEvent::ModifiersChanged(new_modifiers) => {
                 self.modifiers = new_modifiers;
@@ -260,7 +248,6 @@ impl MainWindow {
                         self.handle_player_event(PlayerEvent::KeyUp { key });
                     }
                 };
-                self.check_redraw();
             }
             WindowEvent::Ime(ime) => match ime {
                 Ime::Enabled => {}
@@ -382,13 +369,11 @@ impl MainWindow {
                 EventType::ButtonPressed(button, _) => {
                     if let Some(button) = gilrs_button_to_gamepad_button(button) {
                         self.handle_player_event(PlayerEvent::GamepadButtonDown { button });
-                        self.check_redraw();
                     }
                 }
                 EventType::ButtonReleased(button, _) => {
                     if let Some(button) = gilrs_button_to_gamepad_button(button) {
                         self.handle_player_event(PlayerEvent::GamepadButtonUp { button });
-                        self.check_redraw();
                     }
                 }
                 _ => {}
@@ -407,16 +392,21 @@ impl MainWindow {
                     player.tick(dt);
                     new_time + player.time_til_next_frame()
                 });
-                self.check_redraw();
             }
         }
+
+        self.render_movie_if_needed();
     }
 
     fn handle_player_event(&mut self, event: PlayerEvent) -> bool {
         // Apply any pending mouse moves, so that the movie sees the latest
         // position before e.g. a click.
         self.flush_mouse_move();
-        self.player.handle_event(event)
+        let handled = self.player.handle_event(event);
+
+        // Handling an event may have made the movie need rendering (on demand).
+        self.render_movie_if_needed();
+        handled
     }
 
     fn flush_mouse_move(&mut self) {
@@ -426,12 +416,20 @@ impl MainWindow {
 
         let (x, y) = self.gui.window_to_movie_position(self.mouse_pos);
         self.player.handle_event(PlayerEvent::MouseMove { x, y });
-        self.check_redraw();
+        self.render_movie_if_needed();
     }
 
-    fn check_redraw(&self) {
-        let player = self.player.get();
-        if player.map(|p| p.needs_render()).unwrap_or_default() || self.gui.needs_render() {
+    fn render_movie_if_needed(&self) {
+        let mut player = self.player.get();
+        let player_needs_render = player.as_ref().is_some_and(|p| p.needs_render());
+        if player_needs_render
+            && !self.minimized
+            && !self.occluded
+            && let Some(player) = player.as_deref_mut()
+        {
+            player.render();
+        }
+        if player_needs_render || self.gui.needs_render() {
             self.gui.window().request_redraw();
         }
     }
