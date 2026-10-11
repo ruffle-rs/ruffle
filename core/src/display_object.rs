@@ -2559,6 +2559,11 @@ pub trait TDisplayObject<'gc>:
                     // we only want to inform ancestors to avoid unnecessary invalidations for tx/ty
                     parent.invalidate_cached_bitmap();
                 }
+                if let scale_y = self.scale_y().unit()
+                    && scale_y < 0.0
+                {
+                    self.base().scale_y.set(Percent::from_unit(scale_y.abs()));
+                }
             }
             if let Some(color_transform) = &place_object.color_transform {
                 self.set_color_transform(*color_transform);
