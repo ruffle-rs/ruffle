@@ -504,10 +504,11 @@ impl<'gc> DisplayObjectBase<'gc> {
             // This can produce some surprising results due to the overlap between flipping/rotation/skewing.
             // For example, in Flash, using Modify->Transform->Flip Horizontal and then tracing _xscale, _yscale, and _rotation
             // will output 100, 100, and 180. (a horizontal flip could also be a 180 degree skew followed by 180 degree rotation!)
+            let det = (a * d - b * c).next_up();
             let rotation_x = f64::atan2(b, a);
             let rotation_y = f64::atan2(-c, d);
             let scale_x = f64::sqrt(a * a + b * b);
-            let scale_y = f64::sqrt(c * c + d * d);
+            let scale_y = det.signum() * f64::sqrt(c * c + d * d);
             self.rotation.set(Degrees::from_radians(rotation_x));
             self.scale_x.set(Percent::from_unit(scale_x));
             self.scale_y.set(Percent::from_unit(scale_y));
@@ -2558,6 +2559,11 @@ pub trait TDisplayObject<'gc>:
                     // Self-transform changes are automatically handled,
                     // we only want to inform ancestors to avoid unnecessary invalidations for tx/ty
                     parent.invalidate_cached_bitmap();
+                }
+                if let scale_y = self.scale_y().unit()
+                    && scale_y < 0.0
+                {
+                    self.base().scale_y.set(Percent::from_unit(scale_y.abs()));
                 }
             }
             if let Some(color_transform) = &place_object.color_transform {
