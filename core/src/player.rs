@@ -985,7 +985,11 @@ impl Player {
         self.mutate_with_update_context(|context| {
             context.renderer.set_viewport_dimensions(dimensions);
             context.stage.build_matrices(context);
-        })
+        });
+
+        // Flash Player renders right away when the viewport is resized,
+        // without waiting for the next frame.
+        self.needs_render = true;
     }
 
     pub fn set_show_menu(&mut self, show_menu: bool) {

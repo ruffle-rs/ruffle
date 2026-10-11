@@ -286,6 +286,9 @@ impl<'gc> Stage<'gc> {
                 | StageQuality::High16x16Linear
         ));
         context.renderer.set_quality(quality);
+
+        // Flash Player redraws right away when the quality is changed.
+        *context.needs_render = true;
     }
 
     pub fn stage3ds(&self) -> Ref<'_, Vec<Avm2Stage3DObject<'gc>>> {
@@ -331,6 +334,9 @@ impl<'gc> Stage<'gc> {
 
         self.0.scale_mode.set(scale_mode);
         self.build_matrices(context);
+
+        // Flash Player redraws right away when the scale mode is changed.
+        *context.needs_render = true;
     }
 
     /// Get whether movies are prevented from changing the stage scale mode.
