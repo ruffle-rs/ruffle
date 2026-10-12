@@ -19,13 +19,32 @@ package flash.filters {
         public var matrix:Array;
 
         [Ruffle(NativeAccessible)]
-        public var matrixX:Number;
+        private var _matrixX:Number = 0;
 
         [Ruffle(NativeAccessible)]
-        public var matrixY:Number;
+        private var _matrixY:Number = 0;
 
         [Ruffle(NativeAccessible)]
         public var preserveAlpha:Boolean;
+
+        // Flash Player clamps the matrix dimensions to 0..15 at the property
+        // boundary: assigning 16/31/255 reads back as 15, and the renderer
+        // only ever sees the top-left 15x15 sub-matrix.
+        public function get matrixX():Number {
+            return this._matrixX;
+        }
+
+        public function set matrixX(value:Number):void {
+            this._matrixX = value < 0 ? 0 : (value > 15 ? 15 : value);
+        }
+
+        public function get matrixY():Number {
+            return this._matrixY;
+        }
+
+        public function set matrixY(value:Number):void {
+            this._matrixY = value < 0 ? 0 : (value > 15 ? 15 : value);
+        }
 
         public function ConvolutionFilter(
             matrixX:Number = 0,
@@ -53,11 +72,11 @@ package flash.filters {
             return new ConvolutionFilter(
                 this.matrixX,
                 this.matrixY,
-                this.matrixull,
+                this.matrix,
                 this.divisor,
                 this.bias,
-                this.preserveAlpharue,
-                this.clamprue,
+                this.preserveAlpha,
+                this.clamp,
                 this.color,
                 this.alpha
             );

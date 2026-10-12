@@ -391,11 +391,13 @@ fn avm2_to_convolution_filter<'gc>(
     let divisor = object
         .get_slot(convolution_filter_slots::DIVISOR)
         .coerce_to_number(activation)?;
+    // Flash Player clamps matrixX/matrixY to 0..15 in the property setters,
+    // so the backing slots never hold a larger value.
     let matrix_x = object
-        .get_slot(convolution_filter_slots::MATRIX_X)
+        .get_slot(convolution_filter_slots::_MATRIX_X)
         .coerce_to_u32(activation)?;
     let matrix_y = object
-        .get_slot(convolution_filter_slots::MATRIX_Y)
+        .get_slot(convolution_filter_slots::_MATRIX_Y)
         .coerce_to_u32(activation)?;
     let preserve_alpha = object
         .get_slot(convolution_filter_slots::PRESERVE_ALPHA)
@@ -411,8 +413,8 @@ fn avm2_to_convolution_filter<'gc>(
         default_color: Color::from_rgb(color, (alpha * 255.0) as u8),
         divisor: divisor as f32,
         matrix,
-        num_matrix_cols: matrix_x.clamp(0, 255) as u8,
-        num_matrix_rows: matrix_y.clamp(0, 255) as u8,
+        num_matrix_cols: matrix_x.clamp(0, 15) as u8,
+        num_matrix_rows: matrix_y.clamp(0, 15) as u8,
         flags,
     }))
 }
