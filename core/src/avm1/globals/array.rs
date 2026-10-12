@@ -130,7 +130,9 @@ pub struct ArrayBuilder<'gc> {
     mc: &'gc Mutation<'gc>,
     length_prop: AvmString<'gc>,
     proto_prop: AvmString<'gc>,
-    proto: Object<'gc>,
+    constructor_prop: AvmString<'gc>,
+    proto: Option<Value<'gc>>,
+    constructor: Option<Object<'gc>>,
 }
 
 impl<'gc> ArrayBuilder<'gc> {
@@ -139,11 +141,22 @@ impl<'gc> ArrayBuilder<'gc> {
     }
 
     pub fn new(activation: &Activation<'_, 'gc>) -> Self {
+        let mut constructor = activation.resolve_class([istr!(activation, "Array")]);
+        let proto = constructor.and_then(|c| c.prototype(activation));
+
+        // Flash Player 9-17 doesn't set `constructor` when global `Array` has no `prototype`.
+        // Flash Player 24+ does (versions in between are untested).
+        if proto.is_none() && activation.context.player_version <= 17 {
+            constructor = None;
+        }
+
         Self {
             mc: activation.gc(),
             length_prop: istr!(activation, "length"),
             proto_prop: istr!(activation, "__proto__"),
-            proto: activation.prototypes().array,
+            constructor_prop: istr!(activation, "constructor"),
+            proto,
+            constructor,
         }
     }
 
@@ -167,12 +180,22 @@ impl<'gc> ArrayBuilder<'gc> {
 
     pub fn with(self, elements: impl IntoIterator<Item = Value<'gc>>) -> Object<'gc> {
         let obj = Object::new_without_proto(self.mc);
-        obj.define_value(
-            self.mc,
-            self.proto_prop,
-            self.proto.into(),
-            Attribute::DONT_ENUM | Attribute::DONT_DELETE,
-        );
+        if let Some(proto) = self.proto {
+            obj.define_value(
+                self.mc,
+                self.proto_prop,
+                proto,
+                Attribute::DONT_ENUM | Attribute::DONT_DELETE,
+            );
+        }
+        if let Some(constructor) = self.constructor {
+            obj.define_value(
+                self.mc,
+                self.constructor_prop,
+                constructor.into(),
+                Attribute::DONT_ENUM | Attribute::DONT_DELETE,
+            );
+        }
 
         self.init_with(obj, elements);
         obj

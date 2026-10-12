@@ -170,7 +170,7 @@ impl<'gc> Object<'gc> {
     pub fn get_data(
         self,
         name: AvmString<'gc>,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &Activation<'_, 'gc>,
     ) -> Option<Value<'gc>> {
         self.0
             .borrow()
@@ -732,7 +732,7 @@ impl<'gc> Object<'gc> {
 
     /// Retrieve the `prototype` of this object, as if it was a function.
     /// (don't confuse this with `self.proto()`!)
-    pub fn prototype(self, activation: &mut Activation<'_, 'gc>) -> Option<Value<'gc>> {
+    pub fn prototype(self, activation: &Activation<'_, 'gc>) -> Option<Value<'gc>> {
         // Ignore getters, __proto__, and SWF version attributes.
         self.get_data(istr!("prototype"), activation)
     }

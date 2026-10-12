@@ -278,7 +278,7 @@ impl<'gc> TDisplayObject<'gc> for Avm1Button<'gc> {
             let id = ActivationIdentifier::root("[Construct]");
             let mut activation = Activation::from_nothing(context, id, self.into());
             let constr = activation.resolve_class([istr!("Button")]);
-            let proto = constr.and_then(|c| c.prototype(&mut activation));
+            let proto = constr.and_then(|c| c.prototype(&activation));
             let native = NativeObject::Button(self);
             let object = Object::new_with_native(activation.strings(), proto, native);
 
