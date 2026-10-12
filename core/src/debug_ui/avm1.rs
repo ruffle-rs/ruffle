@@ -359,7 +359,7 @@ fn object_name(object: Object) -> String {
     // Matching __proto__ to a constant and taking the constants name works, but is super expensive
     if object.as_function().is_some() {
         format!("Function {:p}", object.as_ptr())
-    } else if let NativeObject::Array(_) = object.native() {
+    } else if object.is_native_array() {
         format!("Array {:p}", object.as_ptr())
     } else {
         format!("Object {:p}", object.as_ptr())

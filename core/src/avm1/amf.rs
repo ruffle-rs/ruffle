@@ -54,7 +54,7 @@ pub fn serialize<'gc>(activation: &mut Activation<'_, 'gc>, value: Value<'gc>) -
         Value::Object(object) => {
             if object.as_display_object().is_some() {
                 AmfValue::Undefined
-            } else if let NativeObject::Array(_) = object.native() {
+            } else if object.is_native_array() {
                 serialize_array(activation, object)
             } else if let Some(xml_node) = object.as_xml_node() {
                 let string = xml_node
@@ -141,7 +141,7 @@ fn serialize_value_to_writer<'gc>(
                 // Flash entirely skips functions during object serialization
             } else if o.as_display_object().is_some() {
                 writer.undefined(name)
-            } else if let NativeObject::Array(_) = o.native() {
+            } else if o.is_native_array() {
                 let (aw, token) = writer.array(CacheKey::from_ptr(o.as_ptr()));
 
                 if let Some(mut aw) = aw {

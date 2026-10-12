@@ -941,6 +941,17 @@ impl<'gc> Object<'gc> {
         self.0.borrow().native.as_display_object()
     }
 
+    /// Check if this object is a native array.
+    ///
+    /// This doesn't inspect the object's prototype chain, and so is unrelated to
+    /// `instanceof Array`.
+    ///
+    /// Note that many built-ins don't check this and instead treat any object as
+    /// array-like via its `length` and numeric properties.
+    pub fn is_native_array(self) -> bool {
+        matches!(self.native(), NativeObject::Array(_))
+    }
+
     /// Get the underlying display node for this object, if it exists.
     pub fn as_display_object(self) -> Option<DisplayObject<'gc>> {
         //`super` actually can be used to invoke MovieClip methods
@@ -974,7 +985,7 @@ impl<'gc> Object<'gc> {
             return Ok(());
         }
 
-        if let NativeObject::Array(_) = self.native() {
+        if self.is_native_array() {
             let old_length = self.get_data(istr!("length"), activation);
             if let Some(Value::Number(old_length)) = old_length {
                 for i in new_length.max(0)..f64_to_wrapping_i32(old_length) {
