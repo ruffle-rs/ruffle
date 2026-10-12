@@ -841,16 +841,19 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
     }
 
     fn is_filter_supported(&self, filter: &Filter) -> bool {
-        matches!(
-            filter,
+        match filter {
             Filter::BlurFilter(_)
-                | Filter::GlowFilter(_)
-                | Filter::DropShadowFilter(_)
-                | Filter::ColorMatrixFilter(_)
-                | Filter::ShaderFilter(_)
-                | Filter::BevelFilter(_)
-                | Filter::DisplacementMapFilter(_)
-        )
+            | Filter::GlowFilter(_)
+            | Filter::DropShadowFilter(_)
+            | Filter::ColorMatrixFilter(_)
+            | Filter::ShaderFilter(_)
+            | Filter::BevelFilter(_)
+            | Filter::DisplacementMapFilter(_) => true,
+            Filter::ConvolutionFilter(filter) => {
+                crate::filters::ConvolutionFilterImpl::is_supported(filter)
+            }
+            Filter::GradientGlowFilter(_) | Filter::GradientBevelFilter(_) => false,
+        }
     }
 
     fn is_offscreen_supported(&self) -> bool {

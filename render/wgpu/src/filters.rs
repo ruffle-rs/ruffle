@@ -1,7 +1,9 @@
 mod bevel;
 mod blur;
 mod color_matrix;
+mod convolution;
 mod displacement_map;
+pub use convolution::ConvolutionFilter as ConvolutionFilterImpl;
 mod drop_shadow;
 mod glow;
 mod shader;
@@ -14,6 +16,7 @@ use crate::descriptors::Descriptors;
 use crate::filters::bevel::BevelFilter;
 use crate::filters::blur::BlurFilter;
 use crate::filters::color_matrix::ColorMatrixFilter;
+use crate::filters::convolution::ConvolutionFilter;
 use crate::filters::displacement_map::DisplacementMapFilter;
 use crate::filters::drop_shadow::DropShadowFilter;
 use crate::filters::glow::GlowFilter;
@@ -192,6 +195,7 @@ pub struct Filters {
     pub glow: GlowFilter,
     pub bevel: BevelFilter,
     pub displacement_map: DisplacementMapFilter,
+    pub convolution: ConvolutionFilter,
 }
 
 impl Filters {
@@ -203,6 +207,7 @@ impl Filters {
             glow: GlowFilter::new(device),
             bevel: BevelFilter::new(device),
             displacement_map: DisplacementMapFilter::new(device),
+            convolution: ConvolutionFilter::new(device),
         }
     }
 
@@ -276,6 +281,14 @@ impl Filters {
                 &source,
                 &filter,
             ),
+            Filter::ConvolutionFilter(filter) => descriptors.filters.convolution.apply(
+                descriptors,
+                texture_pool,
+                draw_encoder,
+                staging_belt,
+                &source,
+                &filter,
+            ),
             filter => {
                 static WARNED_FILTERS: LazyLock<Mutex<HashSet<&'static str>>> =
                     LazyLock::new(Default::default);
@@ -283,13 +296,13 @@ impl Filters {
                 let name = match filter {
                     Filter::GradientGlowFilter(_) => "GradientGlowFilter",
                     Filter::GradientBevelFilter(_) => "GradientBevelFilter",
-                    Filter::ConvolutionFilter(_) => "ConvolutionFilter",
                     Filter::ColorMatrixFilter(_)
                     | Filter::BlurFilter(_)
                     | Filter::GlowFilter(_)
                     | Filter::DropShadowFilter(_)
                     | Filter::BevelFilter(_)
                     | Filter::DisplacementMapFilter(_)
+                    | Filter::ConvolutionFilter(_)
                     | Filter::ShaderFilter(_) => unreachable!(),
                 };
                 // Only warn once per filter type
