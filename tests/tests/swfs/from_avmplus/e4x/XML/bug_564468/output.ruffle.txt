@@ -1,5 +1,5 @@
 Asserting for TypeError PASSED!
-lowercase xml FAILED! expected: Error #1092 got: Error #1097
+lowercase xml PASSED!
 Asserting for TypeError PASSED!
 uppercase xml FAILED! expected: Error #1092 got: Error #1097
 Asserting for TypeError PASSED!
