@@ -249,7 +249,7 @@ pub fn unshift<'gc>(
         this.set_element(activation, i as i32, arg)?;
     }
 
-    if let NativeObject::Array(_) = this.native() {
+    if this.is_native_array() {
         this.set_length(activation, new_length)?;
     }
 
@@ -274,7 +274,7 @@ pub fn shift<'gc>(
         this.set_element(activation, i - 1, element)?;
     }
 
-    if let NativeObject::Array(_) = this.native() {
+    if this.is_native_array() {
         this.set_length(activation, length - 1)?;
     }
 
@@ -295,7 +295,7 @@ pub fn pop<'gc>(
 
     this.delete_element(activation, length - 1);
 
-    if let NativeObject::Array(_) = this.native() {
+    if this.is_native_array() {
         this.set_length(activation, length - 1)?;
     }
 
@@ -534,7 +534,7 @@ fn sort_on<'gc>(
 
     let fields = match args.get(0) {
         Some(Value::Object(field_names_array)) => {
-            if !matches!(field_names_array.native(), NativeObject::Array(_)) {
+            if !field_names_array.is_native_array() {
                 // Non-Array fields.
                 // Fallback to standard sort.
                 return sort_internal(
@@ -566,7 +566,7 @@ fn sort_on<'gc>(
 
             match args.get(1) {
                 Some(Value::Object(options_array))
-                    if matches!(options_array.native(), NativeObject::Array(_))
+                    if options_array.is_native_array()
                         && options_array.length(activation)? == length =>
                 {
                     // Array of options.
