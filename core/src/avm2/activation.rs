@@ -1252,12 +1252,41 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                 }
                 Value::Object(name_object) => {
                     if let Some(dictionary) = object.as_dictionary_object() {
-                        let _ = self.pop_stack();
-                        let _ = self.pop_stack();
-                        let value = dictionary.get_property_by_object(name_object);
-                        self.push_stack(value);
+                        // In JIT mode, indexing into a dictionary with a QName
+                        // results in the QName being parsed into a Multiname as
+                        // usual, as it would be in `get_property_slow`. For
+                        // example, the following code:
+                        //
+                        // ```
+                        // var dict:Dictionary = new Dictionary();
+                        // dict[new QName("", "hello")] = "value";
+                        // trace(dict["hello"]);
+                        // for (var key in dict) {
+                        //     trace(getQualifiedClassName(key));
+                        // }
+                        // ```
+                        // traces "value", "String".
+                        //
+                        // This behavior only appears in JIT mode, not in
+                        // interpreter mode. It seems that avmplus intended for
+                        // the JIT mode behavior to be the "expected" behavior,
+                        // as it asserts in Dictionary code that QNames never
+                        // get processed as Dictionary keys. However, this
+                        // assert is skipped in non-debug builds of avmplus,
+                        // which makes it possible to insert a QName into a
+                        // Dictionary in interpreter mode.
 
-                        return Ok(());
+                        let disable_fast_path =
+                            !self.is_interpreter() && name_object.as_qname_object().is_some();
+
+                        if !disable_fast_path {
+                            let _ = self.pop_stack();
+                            let _ = self.pop_stack();
+                            let value = dictionary.get_property_by_object(name_object);
+                            self.push_stack(value);
+
+                            return Ok(());
+                        }
                     }
                 }
                 _ => {}
@@ -1327,12 +1356,19 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                 }
                 Value::Object(name_object) => {
                     if let Some(dictionary) = object.as_dictionary_object() {
-                        let _ = self.pop_stack();
-                        let _ = self.pop_stack();
-                        let _ = self.pop_stack();
-                        dictionary.set_property_by_object(name_object, value, self.gc());
+                        // See comment in `Activation::op_get_property_fast`
 
-                        return Ok(());
+                        let disable_fast_path =
+                            !self.is_interpreter() && name_object.as_qname_object().is_some();
+
+                        if !disable_fast_path {
+                            let _ = self.pop_stack();
+                            let _ = self.pop_stack();
+                            let _ = self.pop_stack();
+                            dictionary.set_property_by_object(name_object, value, self.gc());
+
+                            return Ok(());
+                        }
                     }
                 }
                 _ => {}
