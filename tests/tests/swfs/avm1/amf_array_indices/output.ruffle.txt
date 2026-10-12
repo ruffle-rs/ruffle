@@ -1,0 +1,30 @@
+--- Original State (Pre-Serialization) ---
+LeadingZero Length: 3
+LeadingSpace Length: 4
+TrailingSpace Length: 0
+PlusSign Length: 6
+Negative Length: 0
+
+--- Testing LocalConnection ---
+
+--- Testing SharedObject ---
+
+--- SO Deserialization Complete ---
+SO LeadingSpace Length: 4
+SO LeadingSpace Key: ' 3' = val_space_3
+SO TrailingSpace Key: '4 ' = val_4_space
+
+--- Testing NetConnection ---
+Navigator::fetch:
+  URL: http://localhost:8000/
+  Method: POST
+  Mime-Type: application/x-amf
+  Body: [00, 00, 00, 00, 00, 01, 00, 13, 74, 65, 73, 74, 2E, 61, 76, 6D, 31, 5F, 65, 64, 67, 65, 5F, 6B, 65, 79, 73, 00, 02, 2F, 31, 00, 00, 00, 8B, 0A, 00, 00, 00, 06, 0A, 00, 00, 00, 03, 06, 06, 06, 08, 00, 00, 00, 04, 00, 02, 20, 33, 02, 00, 0B, 76, 61, 6C, 5F, 73, 70, 61, 63, 65, 5F, 33, 00, 00, 09, 08, 00, 00, 00, 00, 00, 02, 34, 20, 02, 00, 0B, 76, 61, 6C, 5F, 34, 5F, 73, 70, 61, 63, 65, 00, 00, 09, 0A, 00, 00, 00, 06, 06, 06, 06, 06, 06, 06, 08, 00, 00, 00, 00, 00, 02, 2D, 31, 02, 00, 09, 76, 61, 6C, 5F, 6E, 65, 67, 5F, 31, 00, 00, 09, 08, 00, 00, 00, 08, 00, 02, 09, 36, 02, 00, 09, 76, 61, 6C, 5F, 74, 61, 62, 5F, 36, 00, 03, 30, 30, 37, 02, 00, 07, 76, 61, 6C, 5F, 30, 30, 37, 00, 00, 09]
+
+--- LC Deserialization Complete ---
+LC LeadingSpace Length: 4
+LC LeadingSpace Key: ' 3' = val_space_3
+LC TrailingSpace Key: '4 ' = val_4_space
+LC Negative Key: '-1' = val_neg_1
+LC MixedEdge Key: '7' = val_007
+LC MixedEdge Key: '	6' = val_tab_6
