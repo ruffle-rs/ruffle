@@ -1800,7 +1800,7 @@ impl<'gc> MovieLoader<'gc> {
                         && let Some(object) = mc.object1()
                     {
                         let id = ActivationIdentifier::root("[Resolve]");
-                        let mut activation = Activation::from_nothing(uc, id, mc.into());
+                        let activation = Activation::from_nothing(uc, id, mc.into());
                         let new_proto = activation.resolve_prototype([istr!("MovieClip")]);
 
                         if let Some(new_proto) = new_proto {

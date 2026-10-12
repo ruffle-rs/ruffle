@@ -75,6 +75,7 @@ ruffle_macros::define_common_strings! {
     "always",
     "any",
     "arguments",
+    "Array",
     "arrow",
     "artist",
     "ascent",

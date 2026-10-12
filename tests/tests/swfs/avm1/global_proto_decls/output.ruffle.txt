@@ -541,6 +541,7 @@ Testing _global.System.IME
   __proto__, own, type=[object]
 Testing _global.System.IME._listeners
   length, own, DONT_ENUM, type=[number]
+  constructor, own, type=[function]
   __proto__, own, type=[object]
 Testing _global.System.IME._listeners.length
 Testing _global.System.IME.removeListener
@@ -728,6 +729,7 @@ Testing _global.Stage
   __proto__, own, type=[object]
 Testing _global.Stage._listeners
   length, own, DONT_ENUM, type=[number]
+  constructor, own, type=[function]
   __proto__, own, type=[object]
 Testing _global.Stage._listeners.length
 Testing _global.Stage.removeListener
@@ -878,6 +880,7 @@ Testing _global.Key
   __proto__, own, type=[object]
 Testing _global.Key._listeners
   length, own, DONT_ENUM, type=[number]
+  constructor, own, type=[function]
   __proto__, own, type=[object]
 Testing _global.Key._listeners.length
 Testing _global.Key.removeListener
@@ -934,6 +937,7 @@ Testing _global.Mouse
   __proto__, own, type=[object]
 Testing _global.Mouse._listeners
   length, own, DONT_ENUM, type=[number]
+  constructor, own, type=[function]
   __proto__, own, type=[object]
 Testing _global.Mouse._listeners.length
 Testing _global.Mouse.removeListener
@@ -974,6 +978,7 @@ Testing _global.Selection
   __proto__, own, type=[object]
 Testing _global.Selection._listeners
   length, own, DONT_ENUM, type=[number]
+  constructor, own, type=[function]
   __proto__, own, type=[object]
 Testing _global.Selection._listeners.length
 Testing _global.Selection.removeListener

@@ -35,19 +35,19 @@ v.className: MyFunction
 
 ### Testing Array
 // []
-v.className: Array
+v.className: MyArray
 // new ARRAY()
 v.className: Array
 // ARRAY()
-v.className: Array
+v.className: MyArray
 // A_STRING.split()
-v.className: Array
+v.className: MyArray
 // AN_ARRAY.slice()
-v.className: Array
+v.className: MyArray
 // A_COLOR_MATRIX_FILTER.matrix
-v.className: Array
+v.className: MyArray
 // A_CONVOLUTION_FILTER.matrix
-v.className: Array
+v.className: MyArray
 
 ### Testing display objects
 current.className: MovieClip
@@ -70,7 +70,7 @@ clip.video.className: MyVideo
 
 ### Testing BitmapFilters
 // current.filters
-v.className: Array
+v.className: MyArray
 BITMAP_FILTERS[0].className: BevelFilter
 BITMAP_FILTERS[0].clone().className: BevelFilter
 current.filters[0].className: MyBevelFilter

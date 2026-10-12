@@ -434,7 +434,7 @@ impl<'gc> TDisplayObject<'gc> for Video<'gc> {
             let id = ActivationIdentifier::root("[Construct]");
             let mut activation = Avm1Activation::from_nothing(context, id, self.into());
             let constr = activation.resolve_class([istr!("Video")]);
-            let proto = constr.and_then(|c| c.prototype(&mut activation));
+            let proto = constr.and_then(|c| c.prototype(&activation));
             let native = Avm1NativeObject::Video(self);
             let object = Avm1Object::new_with_native(activation.strings(), proto, native);
 

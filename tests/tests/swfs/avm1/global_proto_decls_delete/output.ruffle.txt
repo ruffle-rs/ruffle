@@ -277,6 +277,7 @@ Testing _global.flash
 Testing _global.System.IME._listeners.length
 Testing _global.System.IME._listeners
   length, DONT_DELETE
+  constructor, DONT_DELETE
   __proto__, DONT_DELETE
 Testing _global.System.IME.removeListener
   prototype, DONT_DELETE
@@ -425,6 +426,7 @@ Testing _global.Video.prototype
 Testing _global.Stage._listeners.length
 Testing _global.Stage._listeners
   length, DONT_DELETE
+  constructor, DONT_DELETE
   __proto__, DONT_DELETE
 Testing _global.Stage.removeListener
   prototype, DONT_DELETE
@@ -488,6 +490,7 @@ Testing _global.Button.prototype
 Testing _global.Key._listeners.length
 Testing _global.Key._listeners
   length, DONT_DELETE
+  constructor, DONT_DELETE
   __proto__, DONT_DELETE
 Testing _global.Key.removeListener
   prototype, DONT_DELETE
@@ -560,6 +563,7 @@ Testing _global.Key
 Testing _global.Mouse._listeners.length
 Testing _global.Mouse._listeners
   length, DONT_DELETE
+  constructor, DONT_DELETE
   __proto__, DONT_DELETE
 Testing _global.Mouse.removeListener
   prototype, DONT_DELETE
@@ -597,6 +601,7 @@ Testing _global.Mouse
 Testing _global.Selection._listeners.length
 Testing _global.Selection._listeners
   length, DONT_DELETE
+  constructor, DONT_DELETE
   __proto__, DONT_DELETE
 Testing _global.Selection.removeListener
   prototype, DONT_DELETE

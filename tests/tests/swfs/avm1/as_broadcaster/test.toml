@@ -1,6 +1,4 @@
 num_ticks = 1
-# Array literals should take their prototype from the current `_global.Array.prototype`.
-known_failure = true
 
 [[compilers]]
 type = "Rascal"
