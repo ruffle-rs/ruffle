@@ -1,0 +1,6 @@
+box3x3: ff1c1c1c ff555555 ff555555 ff383838 ff000000 
+zero-divisor: ffffffff ffffffff ffffffff ffffffff ff000000 
+bias40: ff363636 ff525252 ff525252 ff444444 ff282828 
+edge: ff000000 ff818181 ffffffff ff000000 ff000000 
+sourceRect: ff808080 ffffffff ff112233 ff112233 ff112233 
+drop: ff000000 ff000000 ff383838 ff717171 ff717171 

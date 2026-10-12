@@ -1,0 +1,9 @@
+num_frames = 1
+
+# output.txt is a Flash Player 32 capture of this movie's traces, and Ruffle's
+# GPU convolution reproduces it exactly.
+#
+# Note that the movie needs a renderer: without one, applyFilter silently falls
+# back to a plain copy and the filter implementation is never exercised.
+[player_options]
+with_renderer = { optional = false, quality = "low" }

@@ -1,0 +1,48 @@
+// source: red channel of the 3x3 around the white pixel at (10,10)
+0 0 0 
+0 255 0 
+0 0 0 
+// 3x3 box blur (divisor 9): red channel, same region
+28 28 28 
+28 28 28 
+28 28 28 
+// 3x3 box blur: red channel of the whole row y=10
+0 0 0 0 0 0 0 0 0 28 28 28 0 0 0 0 0 0 0 0 
+// blur of the white pixel spread: 28
+// blur of the flat 128 block: 128
+// alpha at the transparent source pixel (1,1): 0
+// alpha one pixel away (2,2): 255
+// red one pixel away (2,2): 0
+// blur with bias 10, flat 128 block: 138
+// blur with divisor 0, flat 128 block: 255
+// edge kernel: flat 128 block: 0
+// edge kernel: the isolated white pixel: 255
+// edge kernel: black background: 0
+// unclamped, outside the sourceRect (0,0) rgb: 0xff000000
+// unclamped, on the sourceRect corner (5,5) rgb: 0xff1c1c1c
+// unclamped, below the sourceRect (5,15) rgb: 0x0
+// clamped, on the sourceRect corner (5,5) rgb: 0xff1c1c1c
+// clamped, below the sourceRect (5,15) rgb: 0x0
+// box blur of a pseudo-random pattern, mismatches vs exact floor(sum/9): 0
+// matrixX after set 15: 15
+// matrixX after set 16: 15
+// matrixX after set 31: 15
+// matrixX after set 255: 15
+// 16x1 all-ones on flat value 1: 15
+// 16x1 weights 0..15 on flat value 1: 105
+// 16x1 w[0]=1, dest x=17: 255 dest x=18: 0
+// 16x1 w[15]=1, dest x=3: 0 dest x=2: 0
+// clamped 255x255 sparse kernel, (0,0): 16
+// clamped 255x255 sparse kernel, (10,10): 0
+// clamped 255x255 sparse kernel, (19,19): 0
+// 31x31-declared sparse kernel, center (20,20): 25
+// 31x31-declared sparse kernel, (5,5): 5
+// 31x31-declared sparse kernel, (35,5): 10
+// 31x31-declared sparse kernel, (5,35): 15
+// 31x31-declared sparse kernel, (35,35): 20
+// 31x31-declared sparse kernel, mismatches vs clamped int reference: 0
+// 20x20-declared dense box (effective 15x15), mismatches vs exact floor(hits*255/400): 0
+// 20x20-declared dense box, center (20,20): 143
+// 20x20-declared dense box, ramp (10,10): 40
+// 20x20-declared dense box, ramp (15,15): 107
+// 20x20-declared dense box, corner (0,0): 0
