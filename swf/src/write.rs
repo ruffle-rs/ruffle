@@ -43,6 +43,13 @@ pub fn write_swf<W: Write>(header: &Header, tags: &[Tag<'_>], output: W) -> Resu
     write_swf_raw_tags(header, &swf_body, output)
 }
 
+/// Writes a single tag, including its header, to an output stream.
+///
+/// Unlike [`write_swf`], no implicit `End` tag is appended.
+pub fn write_tag<W: Write>(tag: &Tag<'_>, swf_version: u8, output: W) -> Result<()> {
+    Writer::new(output, swf_version).write_tag(tag)
+}
+
 /// Writes a SWF to the output stream, where the tag list has already been serialized to bytes.
 /// This still appends other header information such as stage size.
 pub fn write_swf_raw_tags<W: Write>(header: &Header, tags: &[u8], mut output: W) -> Result<()> {
