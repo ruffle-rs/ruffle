@@ -43,6 +43,13 @@ pub fn write_swf<W: Write>(header: &Header, tags: &[Tag<'_>], output: W) -> Resu
     write_swf_raw_tags(header, &swf_body, output)
 }
 
+/// Writes a single tag, including its header, to an output stream.
+///
+/// Unlike [`write_swf`], no implicit `End` tag is appended.
+pub fn write_tag<W: Write>(tag: &Tag<'_>, swf_version: u8, output: W) -> Result<()> {
+    Writer::new(output, swf_version).write_tag(tag)
+}
+
 /// Writes a SWF to the output stream, where the tag list has already been serialized to bytes.
 /// This still appends other header information such as stage size.
 pub fn write_swf_raw_tags<W: Write>(header: &Header, tags: &[u8], mut output: W) -> Result<()> {
@@ -2712,6 +2719,67 @@ mod tests {
                 "Error reading tag.\nTag:\n{tag:?}\n\nWrote:\n{written_tag_bytes:?}\n\nExpected:\n{expected_tag_bytes:?}",
             );
         }
+    }
+
+    #[test]
+    fn write_tag_without_end() {
+        let mut buf = Vec::new();
+        super::write_tag(&Tag::ShowFrame, 1, &mut buf).unwrap();
+        assert_eq!(buf, [0b01_000000, 0b00000000]);
+
+        let mut buf = Vec::new();
+        super::write_tag(&Tag::End, 1, &mut buf).unwrap();
+        assert_eq!(buf, [0, 0]);
+    }
+
+    #[test]
+    fn write_tag_long_header() {
+        let mut buf = Vec::new();
+        let tag = Tag::Unknown {
+            tag_code: 512,
+            data: &[0; 100],
+        };
+        super::write_tag(&tag, 1, &mut buf).unwrap();
+        let mut expected = vec![0b00_111111, 0b10000000, 100, 0, 0, 0];
+        expected.extend_from_slice(&[0; 100]);
+        assert_eq!(buf, expected);
+    }
+
+    #[test]
+    fn write_tag_swf_version() {
+        let tag = Tag::EnableDebugger(SwfStr::from_bytes(b"pw"));
+
+        // EnableDebugger
+        let mut buf = Vec::new();
+        super::write_tag(&tag, 5, &mut buf).unwrap();
+        assert_eq!(buf, [0b10_000011, 0b00001110, b'p', b'w', 0]);
+
+        // EnableDebugger2
+        let mut buf = Vec::new();
+        super::write_tag(&tag, 6, &mut buf).unwrap();
+        assert_eq!(buf, [0b00_000101, 0b00010000, 0, 0, b'p', b'w', 0]);
+    }
+
+    #[test]
+    fn write_tag_multiple() {
+        let mut buf = Vec::new();
+        super::write_tag(&Tag::ShowFrame, 1, &mut buf).unwrap();
+        super::write_tag(
+            &Tag::Unknown {
+                tag_code: 512,
+                data: &[0; 100],
+            },
+            1,
+            &mut buf,
+        )
+        .unwrap();
+        super::write_tag(&Tag::End, 1, &mut buf).unwrap();
+
+        let mut expected = vec![0b01_000000, 0b00000000];
+        expected.extend_from_slice(&[0b00_111111, 0b10000000, 100, 0, 0, 0]);
+        expected.extend_from_slice(&[0; 100]);
+        expected.extend_from_slice(&[0, 0]);
+        assert_eq!(buf, expected);
     }
 
     #[test]
