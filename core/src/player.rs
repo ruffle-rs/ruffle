@@ -2589,7 +2589,14 @@ impl Player {
             Err(error) => return Box::pin(async move { Err(error) }),
         }
 
-        let self_reference = self.self_reference.clone();
+        // NOTE: deliberately do not re-lock the Player mutex from this future.
+        // On wasm (single-threaded, `no_threads` Mutex) this future can be
+        // polled while the Player lock is already held elsewhere (e.g. nested
+        // when a JS `fetch` completes synchronously during a rAF tick), and
+        // `Player::fetch`'s continuation locking the player would then trip
+        // std's "cannot recursively acquire mutex" assert. `CompatibilityRules`
+        // is cheap to clone, so capture it up-front instead.
+        let compatibility_rules = self.compatibility_rules.clone();
         let fetch = self.navigator.fetch(request);
         Box::pin(async move {
             let response = fetch.await;
@@ -2598,19 +2605,11 @@ impl Player {
                 return response;
             };
 
-            let Some(player) = self_reference.upgrade() else {
-                return Ok(response);
-            };
-
-            let new_url = player
-                .lock()
-                .unwrap()
-                .compatibility_rules
-                .block_or_rewrite_swf_url(
-                    response.url(),
-                    UrlRewriteStage::AfterResponse,
-                    fetch_reason,
-                )?;
+            let new_url = compatibility_rules.block_or_rewrite_swf_url(
+                response.url(),
+                UrlRewriteStage::AfterResponse,
+                fetch_reason,
+            )?;
             if let Some(new_url) = new_url {
                 response.set_url(new_url);
             }

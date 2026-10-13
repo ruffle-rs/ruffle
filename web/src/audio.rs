@@ -155,7 +155,16 @@ impl Buffer {
     }
 
     fn play(&mut self) -> Result<(), JsError> {
-        let _subscriber = tracing::subscriber::set_default(self.log_subscriber.clone());
+        // `play()` runs from the `onended` closure on every refill; re-installing
+        // the default subscriber re-entrantly panics on wasm, so only set it if
+        // it isn't already active.
+        let _subscriber = if tracing::dispatcher::has_been_set()
+            && tracing::dispatcher::get_default(|d| d.is::<Layered<WASMLayer, Registry>>())
+        {
+            None
+        } else {
+            Some(tracing::subscriber::set_default(self.log_subscriber.clone()))
+        };
 
         let time_left = self.time.get() - self.context.current_time();
         let mut buffer_timestep =

@@ -211,6 +211,16 @@ impl BitmapData {
     }
 }
 
+/// Sync handle returned by `render_offscreen`. The pixels have already been
+/// drawn into the destination bitmap's own <canvas>, so resolving it just reads
+/// those pixels back out.
+#[derive(Debug)]
+struct CanvasSyncHandle {
+    canvas: HtmlCanvasElement,
+}
+
+impl SyncHandle for CanvasSyncHandle {}
+
 impl WebCanvasRenderBackend {
     pub fn new(
         canvas: &HtmlCanvasElement,
@@ -506,12 +516,47 @@ impl RenderBackend for WebCanvasRenderBackend {
 
     fn render_offscreen(
         &mut self,
-        _handle: BitmapHandle,
-        _commands: CommandList,
+        handle: BitmapHandle,
+        commands: CommandList,
         _quality: StageQuality,
         _bounds: PixelRegion,
     ) -> Option<Box<dyn SyncHandle>> {
-        None
+        // The destination bitmap is its own <canvas>; render the command list
+        // (the source display object / bitmap data) directly into it.
+        let (target_canvas, target_context) = {
+            let data = as_bitmap_data(&handle);
+            (data.canvas.clone(), data.context.clone())
+        };
+
+        let mut prev_context = target_context;
+        let mut prev_canvas = target_canvas.clone();
+        std::mem::swap(&mut self.context, &mut prev_context);
+        std::mem::swap(&mut self.canvas, &mut prev_canvas);
+
+        let old_width = self.viewport_width;
+        let old_height = self.viewport_height;
+        self.viewport_width = target_canvas.width();
+        self.viewport_height = target_canvas.height();
+        let old_mask_state = std::mem::replace(&mut self.mask_state, MaskState::DrawContent);
+
+        let _ = self.context.set_transform(1.0, 0.0, 0.0, 1.0, 0.0, 0.0);
+
+        commands.execute(self);
+
+        self.mask_state = old_mask_state;
+        self.viewport_width = old_width;
+        self.viewport_height = old_height;
+
+        std::mem::swap(&mut self.context, &mut prev_context);
+        std::mem::swap(&mut self.canvas, &mut prev_canvas);
+
+        Some(Box::new(CanvasSyncHandle {
+            canvas: target_canvas,
+        }))
+    }
+
+    fn is_offscreen_supported(&self) -> bool {
+        true
     }
 
     fn submit_frame(
@@ -520,8 +565,48 @@ impl RenderBackend for WebCanvasRenderBackend {
         commands: CommandList,
         cache_entries: Vec<BitmapCacheEntry>,
     ) {
-        if !cache_entries.is_empty() {
-            panic!("Bitmap caching is unavailable on the canvas backend");
+        for entry in cache_entries {
+            // Render this cacheAsBitmap entry into its destination bitmap, the
+            // same way the wgpu backend does (minus filter support).
+            let (target_canvas, target_context) = {
+                let data = as_bitmap_data(&entry.handle);
+                (data.canvas.clone(), data.context.clone())
+            };
+
+            let mut prev_context = target_context.clone();
+            let mut prev_canvas = target_canvas.clone();
+            std::mem::swap(&mut self.context, &mut prev_context);
+            std::mem::swap(&mut self.canvas, &mut prev_canvas);
+
+            let old_width = self.viewport_width;
+            let old_height = self.viewport_height;
+            self.viewport_width = target_canvas.width();
+            self.viewport_height = target_canvas.height();
+            let old_mask_state = std::mem::replace(&mut self.mask_state, MaskState::DrawContent);
+
+            let width = target_canvas.width() as f64;
+            let height = target_canvas.height() as f64;
+            let _ = target_context.set_transform(1.0, 0.0, 0.0, 1.0, 0.0, 0.0);
+            let _ = target_context.clear_rect(0.0, 0.0, width, height);
+            if entry.clear.a > 0 {
+                let fill = format!(
+                    "rgba({},{},{},{})",
+                    entry.clear.r,
+                    entry.clear.g,
+                    entry.clear.b,
+                    f32::from(entry.clear.a) / 255.0
+                );
+                target_context.set_fill_style(&JsValue::from_str(&fill));
+                let _ = target_context.fill_rect(0.0, 0.0, width, height);
+            }
+
+            entry.commands.execute(self);
+
+            self.mask_state = old_mask_state;
+            self.viewport_width = old_width;
+            self.viewport_height = old_height;
+            std::mem::swap(&mut self.context, &mut prev_context);
+            std::mem::swap(&mut self.canvas, &mut prev_canvas);
         }
         self.begin_frame(clear);
         commands.execute(self);
@@ -578,10 +663,26 @@ impl RenderBackend for WebCanvasRenderBackend {
 
     fn resolve_sync_handle(
         &mut self,
-        _handle: Box<dyn SyncHandle>,
-        _with_rgba: RgbaBufRead,
+        handle: Box<dyn SyncHandle>,
+        with_rgba: RgbaBufRead,
     ) -> Result<(), Error> {
-        Err(Error::Unimplemented("Sync handle resolution".into()))
+        let handle = Box::<dyn Any>::downcast::<CanvasSyncHandle>(handle)
+            .map_err(|_| Error::Unimplemented("Sync handle resolution".into()))?;
+        let canvas = &handle.canvas;
+        let width = canvas.width();
+        let height = canvas.height();
+        let context: CanvasRenderingContext2d = canvas
+            .get_context("2d")
+            .map_err(Error::JavascriptError)?
+            .ok_or_else(|| Error::Unimplemented("Sync handle resolution".into()))?
+            .dyn_into()
+            .map_err(|_| Error::Unimplemented("Sync handle resolution".into()))?;
+        let image = context
+            .get_image_data(0, 0, width as i32, height as i32)
+            .map_err(Error::JavascriptError)?;
+        let bytes = image.data().to_vec();
+        with_rgba(&bytes, width);
+        Ok(())
     }
 
     fn create_empty_texture(

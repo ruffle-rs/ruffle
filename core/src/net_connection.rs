@@ -517,7 +517,12 @@ impl FlashRemoting {
             let bytes = flash_lso::packet::write::write_to_bytes(&packet, true)
                 .expect("Must be able to serialize a packet");
             let request = Request::post(url, Some((bytes, "application/x-amf".to_string())));
-            let fetch = player.lock().unwrap().fetch(request, FetchReason::Other);
+            // Scope the lock so the guard is definitely released before we
+            // await the fetch future (avoid any chance of re-entrant locking).
+            let fetch = {
+                let guard = player.lock().unwrap();
+                guard.fetch(request, FetchReason::Other)
+            };
             let response: Result<_, ErrorResponse> = async {
                 let response = fetch.await?;
                 let url = response.url().to_string();

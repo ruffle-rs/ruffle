@@ -64,6 +64,24 @@ thread_local! {
 
 type AnimationHandler = Closure<dyn FnMut(f64)>;
 
+thread_local! {
+    static INSTANCE_ERROR_LOG_COUNT: std::cell::Cell<u32> = const { std::cell::Cell::new(0) };
+}
+
+/// Log an instance error, but throttle it. Re-entrant events can make
+/// `WithInstance*`/lock failures repeat endlessly, and the resulting error
+/// strings can exhaust the wasm heap (OOM). Cap the number we log.
+fn log_instance_error(e: &RuffleInstanceError) {
+    let n = INSTANCE_ERROR_LOG_COUNT.with(|c| {
+        let v = c.get();
+        c.set(v.wrapping_add(1));
+        v
+    });
+    if n < 8 {
+        tracing::error!("{}", e);
+    }
+}
+
 struct JsCallback<E> {
     target: EventTarget,
     name: &'static str,
@@ -1005,6 +1023,22 @@ impl RuffleHandle {
         })?
     }
 
+    /// Install this instance's log subscriber as the thread-local default for
+    /// the duration of a call. On wasm, `tracing::subscriber::set_default`
+    /// panics with `BorrowMutError` when called re-entrantly, so skip
+    /// installing when the same subscriber is already the active default.
+    fn install_log_subscriber(
+        subscriber: &Arc<Layered<WASMLayer, Registry>>,
+    ) -> Option<tracing::subscriber::DefaultGuard> {
+        if tracing::dispatcher::has_been_set()
+            && tracing::dispatcher::get_default(|d| d.is::<Layered<WASMLayer, Registry>>())
+        {
+            None
+        } else {
+            Some(tracing::subscriber::set_default(subscriber.clone()))
+        }
+    }
+
     /// Runs the given function on this Ruffle instance.
     fn with_instance<F, O>(self, f: F) -> Result<O, RuffleInstanceError>
     where
@@ -1015,8 +1049,7 @@ impl RuffleHandle {
                 let instances = instances.try_borrow()?;
                 if let Some(instance) = instances.get(self) {
                     let instance = instance.try_borrow()?;
-                    let _subscriber =
-                        tracing::subscriber::set_default(instance.log_subscriber.clone());
+                    let _subscriber = Self::install_log_subscriber(&instance.log_subscriber);
                     Ok(f(&instance))
                 } else {
                     Err(RuffleInstanceError::InstanceNotFound)
@@ -1025,7 +1058,7 @@ impl RuffleHandle {
             .map_err(RuffleInstanceError::from)
             .and_then(std::convert::identity);
         if let Err(e) = &ret {
-            tracing::error!("{}", e);
+            log_instance_error(e);
         }
         ret
     }
@@ -1040,8 +1073,7 @@ impl RuffleHandle {
                 let instances = instances.try_borrow()?;
                 if let Some(instance) = instances.get(self) {
                     let mut instance = instance.try_borrow_mut()?;
-                    let _subscriber =
-                        tracing::subscriber::set_default(instance.log_subscriber.clone());
+                    let _subscriber = Self::install_log_subscriber(&instance.log_subscriber);
                     Ok(f(&mut instance))
                 } else {
                     Err(RuffleInstanceError::InstanceNotFound)
@@ -1050,7 +1082,7 @@ impl RuffleHandle {
             .map_err(RuffleInstanceError::from)
             .and_then(std::convert::identity);
         if let Err(e) = &ret {
-            tracing::error!("{}", e);
+            log_instance_error(e);
         }
         ret
     }
@@ -1065,8 +1097,7 @@ impl RuffleHandle {
                 let instances = instances.try_borrow()?;
                 if let Some(instance) = instances.get(self) {
                     let instance = instance.try_borrow()?;
-                    let _subscriber =
-                        tracing::subscriber::set_default(instance.log_subscriber.clone());
+                    let _subscriber = Self::install_log_subscriber(&instance.log_subscriber);
                     // This clone lets us drop the instance borrow to avoid potential double-borrows.
                     let core = instance.core.clone();
                     drop(instance);
@@ -1082,7 +1113,7 @@ impl RuffleHandle {
             .map_err(RuffleInstanceError::from)
             .and_then(std::convert::identity);
         if let Err(e) = &ret {
-            tracing::error!("{}", e);
+            log_instance_error(e);
         }
         ret
     }
@@ -1097,8 +1128,7 @@ impl RuffleHandle {
                 let instances = instances.try_borrow()?;
                 if let Some(instance) = instances.get(self) {
                     let instance = instance.try_borrow()?;
-                    let _subscriber =
-                        tracing::subscriber::set_default(instance.log_subscriber.clone());
+                    let _subscriber = Self::install_log_subscriber(&instance.log_subscriber);
                     // This clone lets us drop the instance to avoid potential double-borrows.
                     let core = instance.core.clone();
                     drop(instance);
@@ -1114,7 +1144,7 @@ impl RuffleHandle {
             .map_err(RuffleInstanceError::from)
             .and_then(std::convert::identity);
         if let Err(e) = &ret {
-            tracing::error!("{}", e);
+            log_instance_error(e);
         }
         ret
     }
@@ -1288,7 +1318,7 @@ impl RuffleInstance {
             .map(|core| f(&core))
             .map_err(|_| RuffleInstanceError::TryLockError);
         if let Err(e) = &ret {
-            tracing::error!("{}", e);
+            log_instance_error(e);
         }
         ret
     }
@@ -1303,7 +1333,7 @@ impl RuffleInstance {
             .map(|mut core| f(&mut core))
             .map_err(|_| RuffleInstanceError::TryLockError);
         if let Err(e) = &ret {
-            tracing::error!("{}", e);
+            log_instance_error(e);
         }
         ret
     }
