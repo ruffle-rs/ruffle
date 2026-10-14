@@ -1,0 +1,46 @@
+dict = new Dictionary();
+namePubNs = new QName("","name");
+nameWithNs = new QName("withns","name2");
+
+Dictionary data dump start
+  dict[namePubNs] == undefined
+  (couldn't read from dict[nameWithNs]): ReferenceError: Error #1069: Property withns::name2 not found on flash.utils.Dictionary and there is no default value.
+  dict["name"] == undefined
+  dict["name2"] == undefined
+  (couldn't access dict["withns"::"name2"]): ReferenceError: Error #1069: Property withns::name2 not found on flash.utils.Dictionary and there is no default value.
+
+  "name" in dict: false
+  "name2" in dict: false
+  namePubNs in dict: false
+  nameWithNs in dict: false
+  Dictionary key enumeration
+  delete dict["name"] == true
+  Dictionary key enumeration (again)
+  delete dict[namePubNs] == true
+  Dictionary key enumeration (again again)
+Dictionary data dump end
+
+dict[namePubNs] = "value";
+(couldn't write to dict[nameWithNs]): ReferenceError: Error #1056: Cannot create property withns::name2 on flash.utils.Dictionary.
+
+Dictionary data dump start
+  dict[namePubNs] == value
+  (couldn't read from dict[nameWithNs]): ReferenceError: Error #1069: Property withns::name2 not found on flash.utils.Dictionary and there is no default value.
+  dict["name"] == value
+  dict["name2"] == undefined
+  (couldn't access dict["withns"::"name2"]): ReferenceError: Error #1069: Property withns::name2 not found on flash.utils.Dictionary and there is no default value.
+
+  "name" in dict: true
+  "name2" in dict: false
+  namePubNs in dict: false
+  nameWithNs in dict: false
+  Dictionary key enumeration
+    Found a key: "name"
+      typeof key == string
+      key class is String
+  delete dict["name"] == true
+  Dictionary key enumeration (again)
+  delete dict[namePubNs] == true
+  Dictionary key enumeration (again again)
+Dictionary data dump end
+
