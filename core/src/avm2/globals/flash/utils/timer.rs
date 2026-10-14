@@ -18,9 +18,9 @@ pub fn stop<'gc>(
     let this = this.as_object().unwrap();
     let timer = this.as_timer().unwrap();
 
-    if let Some(id) = timer.timer_id() {
-        activation.context.timers.remove(id);
-        timer.set_timer_id(None);
+    if let Some(native_timer) = timer.timer() {
+        activation.context.timers.remove_timer(native_timer);
+        timer.set_timer(None, activation.gc());
     }
 
     Ok(Value::Undefined)
@@ -37,7 +37,7 @@ pub fn start<'gc>(
 
     let delay = this.get_slot(slots::_DELAY).as_f64() as i32;
 
-    if timer.timer_id().is_none() {
+    if timer.timer().is_none() {
         let on_update = this
             .get_slot(slots::_ON_UPDATE_CLOSURE)
             .as_object()
@@ -47,7 +47,9 @@ pub fn start<'gc>(
         // Note - we deliberately do *not* check if currentCount is less than repeatCount.
         // Calling 'start' on a timer that has currentCount >= repeatCount will tick exactly
         // once, and then stop immediately. This is handled by Timer.onUpdate
-        let id = activation.context.timers.add_timer(
+        let mc = activation.gc();
+        let native_timer = activation.context.timers.add_timer(
+            mc,
             TimerCallback::Avm2Callback {
                 closure: Some(on_update),
                 params: vec![],
@@ -55,7 +57,7 @@ pub fn start<'gc>(
             delay,
             false,
         );
-        timer.set_timer_id(Some(id));
+        timer.set_timer(Some(native_timer), mc);
     }
     Ok(Value::Undefined)
 }
@@ -71,8 +73,8 @@ pub fn update_delay<'gc>(
 
     let delay = this.get_slot(slots::_DELAY).as_f64() as i32;
 
-    if let Some(id) = timer.timer_id() {
-        activation.context.timers.set_delay(id, delay);
+    if let Some(native_timer) = timer.timer() {
+        activation.context.timers.set_delay(native_timer, delay);
     }
     Ok(Value::Undefined)
 }
@@ -84,16 +86,16 @@ pub fn get_running<'gc>(
     _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let timer = this.as_object().unwrap().as_timer().unwrap();
-    Ok(timer.timer_id().is_some().into())
+    Ok(timer.timer().is_some().into())
 }
 
-/// Implements `Timer.clearTimerId`
-pub fn clear_timer_id<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+/// Implements `Timer.clearTimer`
+pub fn clear_timer<'gc>(
+    activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let timer = this.as_object().unwrap().as_timer().unwrap();
-    timer.set_timer_id(None);
+    timer.set_timer(None, activation.gc());
     Ok(Value::Undefined)
 }

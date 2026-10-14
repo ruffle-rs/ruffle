@@ -32,7 +32,7 @@ package flash.utils {
                 self.dispatchEvent(new TimerEvent(TimerEvent.TIMER, false, false));
                 if (self.repeatCount != 0 && self._currentCount >= self._repeatCount) {
                     // This will make 'running' return false in a TIMER_COMPLETE event handler
-                    self.clearTimerId();
+                    self.clearTimer();
                     self.dispatchEvent(new TimerEvent(TimerEvent.TIMER_COMPLETE, false, false));
                     return true;
                 }
@@ -74,7 +74,7 @@ package flash.utils {
 
         public native function get running():Boolean;
 
-        private native function clearTimerId():void;
+        private native function clearTimer():void;
 
         public function reset():void {
             this._currentCount = 0;

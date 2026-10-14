@@ -14,9 +14,10 @@ use crate::avm2::{
 use crate::context::UpdateContext;
 use crate::display_object::{DisplayObject, TDisplayObject};
 use crate::string::AvmString;
-use gc_arena::Collect;
+use gc_arena::{Collect, Gc, Mutation};
 use ruffle_common::duration::FloatDuration;
-use std::collections::{BinaryHeap, binary_heap::PeekMut};
+use std::cell::Cell;
+use std::collections::BinaryHeap;
 
 /// Manages the collection of timers.
 #[derive(Collect)]
@@ -53,7 +54,7 @@ impl<'gc> Timers<'gc> {
         while context
             .timers
             .peek()
-            .map(|timer| timer.tick_time)
+            .map(|timer| timer.0.tick_time.get())
             .unwrap_or(context.timers.cur_time)
             < context.timers.cur_time
         {
@@ -63,13 +64,12 @@ impl<'gc> Timers<'gc> {
             // SANITY: Only allow so many ticks per update.
             if tick_count > Self::MAX_TICKS {
                 // Reset our time to a little bit before the nearest timer.
-                context.timers.cur_time = timer.tick_time.wrapping_sub(100);
+                context.timers.cur_time = timer.0.tick_time.get().wrapping_sub(100);
                 break;
             }
 
             // TODO: Can we avoid these clones?
-            let callback = timer.callback.clone();
-            let expected_id = timer.id;
+            let callback = timer.0.callback.clone();
 
             let cancel_timer = match callback {
                 TimerCallback::Avm1Function { func, params } => {
@@ -181,32 +181,31 @@ impl<'gc> Timers<'gc> {
                 break;
             }
 
-            // We need a mutable reference to the timer for the rest.
             // Just checked that there is still at least one timer active, so unwrap must succeed.
-            let mut timer = context.timers.peek_mut().unwrap();
+            let next = context.timers.peek().unwrap();
 
-            if timer.id == expected_id {
+            if Gc::ptr_eq(next.0, timer.0) {
                 // The timer next in line is still the same, so we need to remove or reset it.
-                if timer.is_timeout || cancel_timer {
-                    // Timeouts only fire once, and a false return value from the callback cancels intervals.
-                    drop(timer);
-                    context.timers.pop();
-                } else {
-                    // Reset setInterval timers. `peek_mut` re-sorts the timer in the priority queue.
-                    timer.tick_time = timer.tick_time.wrapping_add(timer.interval);
+                context.timers.pop();
+                // Timeouts only fire once, and a false return value from the callback cancels intervals.
+                if !timer.0.is_timeout && !cancel_timer {
+                    // Reset setInterval timers. Pushing it again re-sorts the timer in the priority queue.
+                    let tick_time = timer.0.tick_time.get().wrapping_add(timer.0.interval.get());
+                    timer.0.tick_time.set(tick_time);
+                    context.timers.timers.push(timer);
                 }
             } else {
-                drop(timer);
                 // The timer is no longer the next in line, and this can only happen if
                 // it cancelled itself manually, or it set a new timer in the past.
                 // Let's make sure it's the former.
-                debug_assert!(!context.timers.timer_exists(expected_id));
+                debug_assert!(!context.timers.contains(timer));
             }
         }
 
         // Return estimated time until next timer tick.
         context.timers.peek().map(|timer| {
-            (timer.tick_time.wrapping_sub(context.timers.cur_time)) as f64 / Self::TIMER_SCALE
+            let tick_time = timer.0.tick_time.get();
+            (tick_time.wrapping_sub(context.timers.cur_time)) as f64 / Self::TIMER_SCALE
         })
     }
 
@@ -238,18 +237,19 @@ impl<'gc> Timers<'gc> {
         self.timers.is_empty()
     }
 
-    /// Whether a timer with the given ID exists.
-    pub fn timer_exists(&self, id: i32) -> bool {
-        self.timers.iter().any(|t| t.id == id)
+    /// Whether the given timer is active.
+    pub fn contains(&self, timer: Timer<'gc>) -> bool {
+        self.timers.iter().any(|t| Gc::ptr_eq(t.0, timer.0))
     }
 
-    /// Registers a new timer and returns the timer ID.
+    /// Registers a new timer and returns it.
     pub fn add_timer(
         &mut self,
+        mc: &Mutation<'gc>,
         callback: TimerCallback<'gc>,
         interval: i32,
         is_timeout: bool,
-    ) -> i32 {
+    ) -> Timer<'gc> {
         // SANITY: Set a minimum interval so we don't spam too much.
         let interval = interval.max(Self::MIN_INTERVAL) as u64 * (Self::TIMER_SCALE as u64);
 
@@ -257,21 +257,33 @@ impl<'gc> Timers<'gc> {
         // and neither should we, as some content uses it as an initial "not yet set up" value.
         self.timer_counter = self.timer_counter.wrapping_add(1);
         let id = self.timer_counter;
-        let timer = Timer {
-            id,
-            callback,
-            tick_time: self.cur_time + interval,
-            interval,
-            is_timeout,
-        };
+        let timer = Timer(Gc::new(
+            mc,
+            TimerData {
+                id,
+                callback,
+                tick_time: Cell::new(self.cur_time + interval),
+                interval: Cell::new(interval),
+                is_timeout,
+            },
+        ));
         self.timers.push(timer);
-        id
+        timer
+    }
+
+    /// Removes a timer by its ID.
+    pub fn remove(&mut self, id: i32) -> bool {
+        self.remove_where(|t| t.0.id == id)
     }
 
     /// Removes a timer.
-    pub fn remove(&mut self, id: i32) -> bool {
+    pub fn remove_timer(&mut self, timer: Timer<'gc>) -> bool {
+        self.remove_where(|t| Gc::ptr_eq(t.0, timer.0))
+    }
+
+    fn remove_where(&mut self, f: impl Fn(&Timer<'gc>) -> bool) -> bool {
         let old_len = self.timers.len();
-        self.timers.retain(|t| t.id != id);
+        self.timers.retain(|t| !f(t));
         let len = self.timers.len();
         // Sanity check: Either we removed a single timer, or none.
         debug_assert!(len == old_len || len == old_len - 1);
@@ -283,35 +295,21 @@ impl<'gc> Timers<'gc> {
     }
 
     /// Changes the delay of a timer.
-    pub fn set_delay(&mut self, id: i32, interval: i32) {
+    pub fn set_delay(&mut self, timer: Timer<'gc>, interval: i32) {
         // SANITY: Set a minimum interval so we don't spam too much.
         let interval = interval.max(Self::MIN_INTERVAL) as u64 * (Self::TIMER_SCALE as u64);
 
         // Due to the limitations of `BinaryHeap`, we have to do this in a slightly roundabout way.
-        let mut timer = None;
-        for t in self.timers.iter() {
-            if t.id == id {
-                timer = Some(t.clone());
-                break;
-            }
-        }
-
-        if let Some(mut timer) = timer {
-            self.remove(id);
-            timer.interval = interval;
-            timer.tick_time = self.cur_time + interval;
-            self.timers.push(timer);
-        } else {
+        if !self.remove_timer(timer) {
             panic!("Changing delay of non-existent timer");
         }
+        timer.0.interval.set(interval);
+        timer.0.tick_time.set(self.cur_time + interval);
+        self.timers.push(timer);
     }
 
-    fn peek(&self) -> Option<&Timer<'gc>> {
-        self.timers.peek()
-    }
-
-    fn peek_mut(&mut self) -> Option<PeekMut<'_, Timer<'gc>>> {
-        self.timers.peek_mut()
+    fn peek(&self) -> Option<Timer<'gc>> {
+        self.timers.peek().copied()
     }
 
     fn pop(&mut self) -> Option<Timer<'gc>> {
@@ -325,11 +323,22 @@ impl Default for Timers<'_> {
     }
 }
 
-/// A timer created via `setInterval`/`setTimeout`.
+/// A timer created via `setInterval`/`setTimeout`/`Timer`.
 /// Runs a callback when it ticks.
-#[derive(Clone, Collect)]
+#[derive(Clone, Copy, Collect)]
 #[collect(no_drop)]
-pub struct Timer<'gc> {
+pub struct Timer<'gc>(Gc<'gc, TimerData<'gc>>);
+
+impl Timer<'_> {
+    /// The ID of the timer.
+    pub fn id(self) -> i32 {
+        self.0.id
+    }
+}
+
+#[derive(Collect)]
+#[collect(no_drop)]
+struct TimerData<'gc> {
     /// The ID of the timer.
     id: i32,
 
@@ -338,10 +347,12 @@ pub struct Timer<'gc> {
     callback: TimerCallback<'gc>,
 
     /// The time when this timer should fire.
-    tick_time: u64,
+    ///
+    /// It must not change while the timer is in the priority queue.
+    tick_time: Cell<u64>,
 
     /// The interval between timer ticks, in microseconds.
-    interval: u64,
+    interval: Cell<u64>,
 
     /// This timer only fires once if `is_timeout` is true.
     is_timeout: bool,
@@ -350,7 +361,7 @@ pub struct Timer<'gc> {
 // Implement `Ord` so that timers can be stored in the BinaryHeap (as a min-heap).
 impl PartialEq for Timer<'_> {
     fn eq(&self, other: &Self) -> bool {
-        self.tick_time == other.tick_time
+        self.0.tick_time == other.0.tick_time
     }
 }
 
@@ -364,7 +375,7 @@ impl PartialOrd for Timer<'_> {
 
 impl Ord for Timer<'_> {
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-        self.tick_time.cmp(&other.tick_time).reverse()
+        self.0.tick_time.cmp(&other.0.tick_time).reverse()
     }
 }
 
