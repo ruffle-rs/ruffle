@@ -48,7 +48,7 @@ pub fn start<'gc>(
         // Calling 'start' on a timer that has currentCount >= repeatCount will tick exactly
         // once, and then stop immediately. This is handled by Timer.onUpdate
         let mc = activation.gc();
-        let native_timer = activation.context.timers.add_timer(
+        let native_timer = activation.context.timers.add_timer_without_id(
             mc,
             TimerCallback::Avm2Callback {
                 closure: Some(on_update),
