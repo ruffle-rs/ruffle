@@ -351,12 +351,12 @@ pub fn create_timer<'gc>(
     //
     // We start the timer immediately
     let mc = activation.gc();
-    let timer = activation
+    let id = activation
         .context
         .timers
-        .add_timer(mc, callback, interval, is_timeout);
+        .add_timer_with_id(mc, callback, interval, is_timeout);
 
-    Ok(timer.id().into())
+    Ok(id.into())
 }
 
 pub fn clear_interval<'gc>(
