@@ -7,14 +7,7 @@ const headless = process.argv.includes("--headless");
 const chrome = process.argv.includes("--chrome");
 const firefox = process.argv.includes("--firefox");
 const edge = process.argv.includes("--edge");
-const browserstack = process.argv.includes("--browserstack");
-const oldVersions = process.argv.includes("--oldVersions");
 const maxInstances = process.argv.includes("--parallel") ? 4 : 1;
-
-let user: string | undefined = undefined;
-let key: string | undefined = undefined;
-let setupLogging = async () => {};
-let reportLogging = async () => {};
 
 if (chrome) {
     const args = ["--disable-gpu", "--enable-unsafe-swiftshader"];
@@ -58,138 +51,6 @@ if (firefox) {
     });
 }
 
-if (browserstack) {
-    user = process.env["BROWSERSTACK_USERNAME"];
-    key = process.env["BROWSERSTACK_ACCESS_KEY"];
-    if (!user || !key) {
-        throw new Error(
-            "BROWSERSTACK_USERNAME and BROWSERSTACK_ACCESS_KEY environment variables are required",
-        );
-    }
-    const buildIdentifier =
-        process.env["BROWSERSTACK_BUILD_ID"] || crypto.randomUUID();
-    const buildName = process.env["BROWSERSTACK_BUILD_NAME"] || buildIdentifier;
-    const bsOptions = {
-        buildName,
-        buildIdentifier,
-        projectName: "Ruffle Selfhosted",
-        networkLogs: true,
-        consoleLogs: "info",
-        idleTimeout: 300, // Max time the browser's main thread can be blocked
-    } as const;
-    services.push([
-        "browserstack",
-        {
-            testObservability: true,
-            testObservabilityOptions: {
-                projectName: "Ruffle Selfhosted",
-                buildName,
-            },
-            browserstackLocal: true,
-        },
-    ]);
-
-    // Relatively latest versions for Mobile
-
-    capabilities.push({
-        browserName: "Chrome",
-        "bstack:options": {
-            deviceName: "Google Pixel 8",
-            osVersion: "14.0",
-            ...bsOptions,
-        },
-    });
-    capabilities.push({
-        browserName: "Safari",
-        "bstack:options": {
-            deviceName: "iPhone 15",
-            osVersion: "17",
-            deviceOrientation: "portrait",
-            ...bsOptions,
-        },
-        "wdio:exclude": [
-            "./test/integration_tests/keyboard_input/test.ts", // Doesn't work on iOS at time of writing
-            "./test/polyfill/classic_frames_provided/test.ts", // Flaky on iOS
-            // Doesn't work on iOS at time of writing: possibly a browser bug.
-            "./test/integration_tests/programmatic_events/test.ts",
-            // Doesn't work on iOS at time of writing: random wdio bugs
-            // and clipboard permissions need special handling.
-            "./test/integration_tests/context_menu/test.ts",
-        ],
-    });
-
-    // These are our supposed minimum-supported browsers
-    if (oldVersions) {
-        capabilities.push({
-            browserName: "Chrome",
-            "bstack:options": {
-                os: "Windows",
-                osVersion: "10",
-                browserVersion: "87.0",
-                ...bsOptions,
-            },
-        });
-        capabilities.push({
-            browserName: "Firefox",
-            "bstack:options": {
-                os: "Windows",
-                osVersion: "10",
-                browserVersion: "94.0",
-                ...bsOptions,
-            },
-        });
-        capabilities.push({
-            browserName: "Safari",
-            "bstack:options": {
-                os: "OS X",
-                osVersion: "Big Sur",
-                browserVersion: "14.1",
-                ...bsOptions,
-            },
-        });
-    }
-
-    setupLogging = async () => {
-        await browser.execute(() => {
-            if (console.logs === undefined) {
-                const log = console.log.bind(console);
-                console.log = function (...args) {
-                    console.logs.push({ level: "info", message: args });
-                    log.apply(console, args);
-                };
-                const warn = console.warn.bind(console);
-                console.warn = function (...args) {
-                    console.logs.push({ level: "warn", message: args });
-                    warn.apply(console, args);
-                };
-                const error = console.error.bind(console);
-                console.error = function (...args) {
-                    console.logs.push({ level: "error", message: args });
-                    error.apply(console, args);
-                };
-            }
-            console.logs = [];
-        });
-    };
-
-    reportLogging = async () => {
-        const logs = await browser.execute(() => {
-            const logs = console.logs;
-            console.logs = [];
-            return logs;
-        });
-        if (logs) {
-            for (const log of logs) {
-                const message = `Console: ${log.message}`;
-                await driver.executeScript(
-                    `browserstack_executor: {"action": "annotate", "arguments": {"data":${JSON.stringify(message)},"level": ${JSON.stringify(log.level)}}}`,
-                    [],
-                );
-            }
-        }
-    };
-}
-
 services.push([
     "static-server",
     {
@@ -209,10 +70,7 @@ declare global {
     }
 }
 
-// @ts-expect-error TS2375 Undefined is the same as not specified here
 export const config: WebdriverIO.Config = {
-    user,
-    key,
     runner: "local",
     specs: [
         "./test/polyfill/**/test.ts",
@@ -235,26 +93,5 @@ export const config: WebdriverIO.Config = {
     mochaOpts: {
         ui: "bdd",
         timeout: 120000,
-    },
-
-    async beforeSuite() {
-        if (!browserstack) {
-            await browser.sessionSubscribe({ events: ["log.entryAdded"] });
-            browser.on("log.entryAdded", (entryAdded) => {
-                console.log(
-                    "[Console] [%s] %s",
-                    entryAdded.level,
-                    entryAdded.text,
-                );
-            });
-        }
-    },
-
-    async beforeTest() {
-        await setupLogging();
-    },
-
-    async afterTest() {
-        await reportLogging();
     },
 };
