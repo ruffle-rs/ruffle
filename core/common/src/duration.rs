@@ -48,11 +48,15 @@ impl FloatDuration {
 
     /// Converts to a `std::time::Duration`.
     ///
+    /// Negative and NaN durations become zero, and durations too long for
+    /// `std::time::Duration` (e.g. infinite ones) become `std::time::Duration::MAX`.
+    ///
     /// Note: This may lose precision for very small durations.
     #[inline]
     #[must_use]
     pub fn to_std(&self) -> std::time::Duration {
-        std::time::Duration::from_secs_f64((self.0 / 1000.0).max(0.0))
+        std::time::Duration::try_from_secs_f64((self.0 / 1000.0).max(0.0))
+            .unwrap_or(std::time::Duration::MAX)
     }
 
     /// Returns the minimum of two durations.
@@ -129,6 +133,16 @@ mod tests {
     fn test_to_std() {
         let d = FloatDuration::from_millis(1500.0);
         assert_eq!(d.to_std(), std::time::Duration::from_millis(1500));
+    }
+
+    #[test]
+    fn test_to_std_out_of_range() {
+        let zero = std::time::Duration::ZERO;
+        let max = std::time::Duration::MAX;
+        assert_eq!(FloatDuration::from_millis(-1.0).to_std(), zero);
+        assert_eq!(FloatDuration::from_millis(f64::NAN).to_std(), zero);
+        assert_eq!(FloatDuration::from_millis(f64::INFINITY).to_std(), max);
+        assert_eq!(FloatDuration::from_millis(f64::NEG_INFINITY).to_std(), zero);
     }
 
     #[test]
