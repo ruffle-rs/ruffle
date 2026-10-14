@@ -350,12 +350,13 @@ pub fn create_timer<'gc>(
     // Otherwise, set a repeat count of 0 (repeat indefinitely)
     //
     // We start the timer immediately
-    let id = activation
+    let mc = activation.gc();
+    let timer = activation
         .context
         .timers
-        .add_timer(callback, interval, is_timeout);
+        .add_timer(mc, callback, interval, is_timeout);
 
-    Ok(id.into())
+    Ok(timer.id().into())
 }
 
 pub fn clear_interval<'gc>(
