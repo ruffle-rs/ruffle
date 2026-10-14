@@ -242,6 +242,17 @@ impl<'gc> Timers<'gc> {
         self.timers.iter().any(|t| Gc::ptr_eq(t.0, timer.0))
     }
 
+    /// Registers a new timer for `setInterval`/`setTimeout` and returns the timer ID.
+    pub fn add_timer_with_id(
+        &mut self,
+        mc: &Mutation<'gc>,
+        callback: TimerCallback<'gc>,
+        interval: i32,
+        is_timeout: bool,
+    ) -> i32 {
+        self.add_timer(mc, callback, interval, is_timeout).id()
+    }
+
     /// Registers a new timer and returns it.
     pub fn add_timer(
         &mut self,
