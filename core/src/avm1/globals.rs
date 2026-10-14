@@ -368,7 +368,7 @@ pub fn clear_interval<'gc>(
         .get(0)
         .unwrap_or(&Value::Undefined)
         .coerce_to_i32(activation)?;
-    if !activation.context.timers.remove(id) {
+    if !activation.context.timers.remove_timer_by_id(id) {
         tracing::info!("clearInterval: Timer {} does not exist", id);
     }
 
