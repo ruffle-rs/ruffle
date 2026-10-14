@@ -2,10 +2,12 @@ use crate::avm2::Error;
 use crate::avm2::activation::Activation;
 use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{ClassObject, Object, TObject};
+use crate::timer::Timer;
 use core::fmt;
-use gc_arena::{Collect, Gc, GcWeak};
+use gc_arena::barrier::unlock;
+use gc_arena::lock::Lock;
+use gc_arena::{Collect, Gc, GcWeak, Mutation};
 use ruffle_common::utils::HasPrefixField;
-use std::cell::Cell;
 
 /// A class instance allocator that allocates Timer objects.
 pub fn timer_allocator<'gc>(
@@ -18,7 +20,7 @@ pub fn timer_allocator<'gc>(
         activation.gc(),
         TimerObjectData {
             base,
-            timer_id: Cell::new(None),
+            timer: Lock::new(None),
         },
     ))
     .into())
@@ -47,17 +49,17 @@ pub struct TimerObjectData<'gc> {
     /// Base script object
     base: ScriptObjectData<'gc>,
 
-    /// The ID of the underlying Ruffle timer, present while the timer is running.
-    timer_id: Cell<Option<i32>>,
+    /// The underlying Ruffle timer, present while the timer is running.
+    timer: Lock<Option<Timer<'gc>>>,
 }
 
-impl TimerObject<'_> {
-    pub fn timer_id(self) -> Option<i32> {
-        self.0.timer_id.get()
+impl<'gc> TimerObject<'gc> {
+    pub fn timer(self) -> Option<Timer<'gc>> {
+        self.0.timer.get()
     }
 
-    pub fn set_timer_id(self, timer_id: Option<i32>) {
-        self.0.timer_id.set(timer_id);
+    pub fn set_timer(self, timer: Option<Timer<'gc>>, mc: &Mutation<'gc>) {
+        unlock!(Gc::write(mc, self.0), TimerObjectData, timer).set(timer);
     }
 }
 
