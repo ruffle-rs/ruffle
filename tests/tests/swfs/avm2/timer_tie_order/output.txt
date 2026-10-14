@@ -1,0 +1,64 @@
+// same delay
+timeout 0
+timeout 1
+timeout 2
+timeout 3
+timeout 4
+timeout 5
+timeout 6
+timeout 7
+// mixed delays
+timeout 1 x1
+timeout 3 x1
+timeout 6 x1
+timeout 0 x2
+timeout 4 x2
+timeout 7 x2
+timeout 2 x3
+timeout 5 x3
+// mixed kinds
+setTimeout 0
+Timer 1
+setInterval 2
+Timer 3
+setTimeout 4
+// intervals
+interval 0 repeat 0
+interval 1 repeat 0
+interval 2 repeat 0
+interval 0 repeat 1
+interval 1 repeat 1
+interval 2 repeat 1
+interval 0 repeat 2
+interval 1 repeat 2
+interval 2 repeat 2
+// cleared
+timeout 0, clearing 3
+timeout 1
+timeout 5
+// restarted timer
+Timer B
+Timer C
+Timer A
+// reset timer
+Timer B
+Timer C
+Timer A
+// delay changed
+Timer B
+Timer C
+Timer A
+// created in callbacks
+P
+Q
+P1
+P2
+Q1
+Q2
+// overdue together
+timeout 30ms
+timeout 10ms
+// overdue intervals
+interval 30ms
+interval 10ms
+Done
