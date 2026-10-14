@@ -1,0 +1,9 @@
+num_ticks = 200
+tick_rate = 10.0
+known_failure = true
+
+[[compilers]]
+type = "Asc"
+class = "Test"
+scripts = ["Test.as"]
+swf_version = 41

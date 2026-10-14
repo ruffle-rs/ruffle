@@ -1,0 +1,6 @@
+frame 1: after enterFrame 0, after frameConstructed 0, after exitFrame 1, after render 3 or more
+frame 2: after enterFrame 0, after frameConstructed 0, after exitFrame 1, after render 3 or more
+frame 3: after enterFrame 0, after frameConstructed 0, after exitFrame 1, after render 3 or more
+frame 4: after enterFrame 0, after frameConstructed 0, after exitFrame 1, after render 3 or more
+frame 5: after enterFrame 0, after frameConstructed 0, after exitFrame 1, after render 3 or more
+Done
