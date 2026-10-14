@@ -283,7 +283,7 @@ impl<'gc> Timers<'gc> {
     }
 
     /// Removes a timer by its ID.
-    pub fn remove(&mut self, id: i32) -> bool {
+    pub fn remove_timer_by_id(&mut self, id: i32) -> bool {
         self.remove_where(|t| t.0.id == id)
     }
 
