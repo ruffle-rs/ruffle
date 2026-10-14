@@ -38,7 +38,7 @@ impl fmt::Debug for TimerObject<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("TimerObject")
             .field("ptr", &Gc::as_ptr(self.0))
-            .field("id", &self.0.timer.get().map(|t| t.id()))
+            .field("id", &self.0.timer.get().and_then(|t| t.id()))
             .finish()
     }
 }
