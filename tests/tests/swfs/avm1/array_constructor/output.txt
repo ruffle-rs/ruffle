@@ -28,3 +28,26 @@ undefined,false
 // Array.call(a, "b")
 a
 b
+[1]: __proto__: Array.prototype, constructor: own Array
+keys: 0 
+own __constructor__: false
+delete constructor: false
+constructor = 5: 5
+// _global.Array = function with customPrototype
+[]: __proto__: customPrototype, constructor: own _global.Array
+arguments: __proto__: customPrototype, constructor: own _global.Array
+Array(): __proto__: customPrototype, constructor: own _global.Array
+'a,b'.split(','): __proto__: customPrototype, constructor: own _global.Array
+new Array(): __proto__: Array.prototype, constructor: inherited Array
+// _global.Array = {prototype: 5}
+[]: __proto__: number 5, constructor: own _global.Array
+// _global.Array = {}
+[]: __proto__: undefined undefined, constructor: own _global.Array
+// _global.Array = {} with prototype getter
+[]: __proto__: undefined undefined, constructor: own _global.Array
+// delete _global.Array
+[]: __proto__: undefined undefined, constructor: inherited undefined undefined
+// _global.Array getter
+[]: __proto__: undefined undefined, constructor: inherited undefined undefined
+// local Array variable
+[]: __proto__: Array.prototype, constructor: own Array
