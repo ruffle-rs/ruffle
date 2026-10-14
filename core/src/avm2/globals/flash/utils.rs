@@ -43,11 +43,11 @@ pub fn set_interval<'gc>(
     };
 
     let mc = activation.gc();
-    let timer = activation
+    let id = activation
         .context
         .timers
-        .add_timer(mc, callback, interval as i32, false);
-    Ok(Value::Integer(timer.id()))
+        .add_timer_with_id(mc, callback, interval as i32, false);
+    Ok(Value::Integer(id))
 }
 
 /// Implements `flash.utils.clearInterval`
@@ -77,11 +77,11 @@ pub fn set_timeout<'gc>(
     };
 
     let mc = activation.gc();
-    let timer = activation
+    let id = activation
         .context
         .timers
-        .add_timer(mc, callback, interval as i32, true);
-    Ok(Value::Integer(timer.id()))
+        .add_timer_with_id(mc, callback, interval as i32, true);
+    Ok(Value::Integer(id))
 }
 
 /// Implements `flash.utils.clearTimeout`
