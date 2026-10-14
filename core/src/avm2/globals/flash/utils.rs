@@ -42,11 +42,12 @@ pub fn set_interval<'gc>(
         params: params.to_vec(),
     };
 
-    Ok(Value::Integer(activation.context.timers.add_timer(
-        callback,
-        interval as i32,
-        false,
-    )))
+    let mc = activation.gc();
+    let timer = activation
+        .context
+        .timers
+        .add_timer(mc, callback, interval as i32, false);
+    Ok(Value::Integer(timer.id()))
 }
 
 /// Implements `flash.utils.clearInterval`
@@ -75,11 +76,12 @@ pub fn set_timeout<'gc>(
         params: params.to_vec(),
     };
 
-    Ok(Value::Integer(activation.context.timers.add_timer(
-        callback,
-        interval as i32,
-        true,
-    )))
+    let mc = activation.gc();
+    let timer = activation
+        .context
+        .timers
+        .add_timer(mc, callback, interval as i32, true);
+    Ok(Value::Integer(timer.id()))
 }
 
 /// Implements `flash.utils.clearTimeout`
