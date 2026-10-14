@@ -57,7 +57,7 @@ pub fn clear_interval<'gc>(
     args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let id = args.get_u32(0);
-    activation.context.timers.remove(id as i32);
+    activation.context.timers.remove_timer_by_id(id as i32);
     Ok(Value::Undefined)
 }
 
@@ -91,7 +91,7 @@ pub fn clear_timeout<'gc>(
     args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let id = args.get_u32(0);
-    activation.context.timers.remove(id as i32);
+    activation.context.timers.remove_timer_by_id(id as i32);
     Ok(Value::Undefined)
 }
 
