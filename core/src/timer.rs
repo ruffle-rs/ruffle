@@ -4,6 +4,8 @@
 //! The timers are stored in a priority queue, where we check if the nearest timer
 //! is ready to tick each frame.
 
+mod timestamp;
+
 use crate::avm1::ExecutionReason;
 use crate::avm1::{Activation, ActivationIdentifier, Object as Avm1Object, Value as Avm1Value};
 use crate::avm2::error::make_null_or_undefined_error;
