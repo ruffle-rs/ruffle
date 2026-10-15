@@ -24,6 +24,8 @@ AsBroadcaster.initialize(flash.net.FileReferenceList.prototype);
 #include "flash/geom/Point.as"
 #include "flash/geom/Matrix.as"
 
+#include "flash/external/ExternalInterface.as"
+
 // The `flash` package is only visible to SWF 8 and later.
 ASSetPropFlags(_global, "flash", 4096);
 
