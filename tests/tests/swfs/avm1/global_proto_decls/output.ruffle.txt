@@ -143,9 +143,9 @@ Testing _global.flash.external.ExternalInterface
   _addCallback, own, DONT_ENUM, READ_ONLY, type=[function]
   _objectID, own, DONT_ENUM, READ_ONLY, type=[function]
   _initJS, own, DONT_ENUM, READ_ONLY, type=[function]
-  prototype, own, DONT_ENUM, type=[object]
-  __proto__, own, type=[object]
-  constructor, own, type=[function]
+  prototype, own, DONT_ENUM, READ_ONLY, type=[object]
+  __proto__, own, READ_ONLY, type=[object]
+  constructor, own, READ_ONLY, type=[function]
 Testing _global.flash.external.ExternalInterface.prototype
   __proto__, own, type=[object]
   constructor, own, type=[function]
