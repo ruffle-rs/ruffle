@@ -1,3 +1,4 @@
+use crate::avm2::Avm2;
 use crate::avm2::bytearray::Endian;
 use crate::avm2::error::{Error2004Type, make_error_2004, make_error_2162, make_error_2165};
 use crate::avm2::function::FunctionArgs;
@@ -6,6 +7,7 @@ use crate::avm2::globals::slots::{
     flash_display_shader_job as shader_job_slots,
     flash_display_shader_parameter as shader_parameter_slots,
 };
+use crate::avm2::object::EventObject;
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::{Activation, Error, Object, TObject as _, Value};
 use crate::pixel_bender::PixelBenderTypeExt;
@@ -359,6 +361,12 @@ pub fn start<'gc>(
             }
         }
     }
+
+    // We always execute the shader synchronously above, so the `complete`
+    // event that ActionScript relies on to read the result would otherwise
+    // never fire.
+    let complete_evt = EventObject::bare_default_event(activation.context, "complete");
+    Avm2::dispatch_event(activation.context, complete_evt, this);
 
     Ok(Value::Undefined)
 }
