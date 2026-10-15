@@ -1,0 +1,15 @@
+num_ticks = 8
+
+[[compilers]]
+type = "Asc"
+target = "loadable.swf"
+class = "Loadable"
+scripts = ["Loadable.as"]
+swf_version = 9
+
+[[compilers]]
+type = "Asc"
+target = "test.swf"
+class = "Test"
+scripts = ["Test.as"]
+swf_version = 9
