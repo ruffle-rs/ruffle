@@ -1,0 +1,15 @@
+num_ticks = 5
+
+# `ShaderJob.start(false)` is still reported as a stub, which would add a
+# warning trace that has nothing to do with the behaviour under test.
+log_warnings = false
+
+[[compilers]]
+type = "Asc"
+target = "test.swf"
+class = "Test"
+scripts = ["Test.as"]
+swf_version = 41
+
+[player_options]
+with_renderer = { optional = false, quality = "low" }
