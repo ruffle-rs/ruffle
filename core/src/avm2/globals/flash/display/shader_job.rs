@@ -365,7 +365,17 @@ pub fn start<'gc>(
     // We always execute the shader synchronously above, so the `complete`
     // event that ActionScript relies on to read the result would otherwise
     // never fire.
-    let complete_evt = EventObject::bare_default_event(activation.context, "complete");
+    let (bitmap_data, byte_array, vector) = if target.as_bitmap_data().is_some() {
+        (Some(target), None, None)
+    } else if target.as_bytearray().is_some() {
+        (None, Some(target), None)
+    } else if target.as_vector_storage().is_some() {
+        (None, None, Some(target))
+    } else {
+        (None, None, None)
+    };
+    let complete_evt =
+        EventObject::shader_event(activation, "complete", bitmap_data, byte_array, vector);
     Avm2::dispatch_event(activation.context, complete_evt, this);
 
     Ok(Value::Undefined)

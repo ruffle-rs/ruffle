@@ -1,2 +1,8 @@
-waitForCompletion=true, target=cdcccc3ecdcccc3ecdcccc3e0000803f
-waitForCompletion=false, target=cdcccc3ecdcccc3ecdcccc3e0000803f
+waitForCompletion=true, type=complete, isShaderEvent=true
+  byteArray is target: true
+  bitmapData: null, vector: null
+  target: cdcccc3ecdcccc3ecdcccc3e0000803f
+waitForCompletion=false, type=complete, isShaderEvent=true
+  byteArray is target: true
+  bitmapData: null, vector: null
+  target: cdcccc3ecdcccc3ecdcccc3e0000803f

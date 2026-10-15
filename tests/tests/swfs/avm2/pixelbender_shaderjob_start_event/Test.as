@@ -3,6 +3,7 @@ package {
     import flash.display.Shader;
     import flash.display.ShaderJob;
     import flash.events.Event;
+    import flash.events.ShaderEvent;
     import flash.utils.ByteArray;
 
     /*
@@ -40,7 +41,13 @@ package {
             var target:ByteArray = new ByteArray();
             var job:ShaderJob = new ShaderJob(new Shader(bytecode), target, 1, 1);
             job.addEventListener(Event.COMPLETE, function (event:Event):void {
-                trace("waitForCompletion=" + waitForCompletion + ", target=" + toHex(target));
+                var shaderEvent:ShaderEvent = event as ShaderEvent;
+                trace("waitForCompletion=" + waitForCompletion + ", type=" + event.type
+                    + ", isShaderEvent=" + (shaderEvent != null));
+                trace("  byteArray is target: " + (shaderEvent != null && shaderEvent.byteArray === target));
+                trace("  bitmapData: " + (shaderEvent == null ? null : shaderEvent.bitmapData)
+                    + ", vector: " + (shaderEvent == null ? null : shaderEvent.vector));
+                trace("  target: " + toHex(target));
             });
             job.start(waitForCompletion);
         }
