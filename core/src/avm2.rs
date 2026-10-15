@@ -397,6 +397,23 @@ impl<'gc> Avm2<'gc> {
         bucket.push(object.downgrade());
     }
 
+    /// Stops broadcasting frame events to the display objects of an unloaded movie, as Flash Player's
+    /// `Loader.unloadAndStop` removes their `enterFrame`, `exitFrame` and `frameConstructed` listeners.
+    /// Without this, an orphaned timeline keeps receiving them until it is garbage collected.
+    pub fn unregister_broadcast_listeners_of_movie(
+        context: &mut UpdateContext<'gc>,
+        movie: SwfMovie<'gc>,
+    ) {
+        for bucket in context.avm2.broadcast_list.values_mut() {
+            bucket.retain(|entry| match entry.upgrade(context.gc_context) {
+                Some(object) => !object
+                    .as_display_object()
+                    .is_some_and(|dobj| SwfMovie::ptr_eq(&dobj.movie(), &movie)),
+                None => false,
+            });
+        }
+    }
+
     /// Dispatch an event on all objects in the current execution list.
     ///
     /// `on_type` specifies a class or interface constructor whose instances,
