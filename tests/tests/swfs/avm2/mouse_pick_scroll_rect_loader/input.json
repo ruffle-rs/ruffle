@@ -1,0 +1,33 @@
+[
+  { "type": "Wait" },
+  { "type": "Wait" },
+  { "type": "Wait" },
+
+  { "type": "MouseMove", "pos": [250, 200] },
+  { "type": "MouseDown", "pos": [250, 200], "btn": "Left" },
+  { "type": "MouseUp", "pos": [250, 200], "btn": "Left" },
+
+  { "type": "Wait" },
+
+  { "type": "MouseMove", "pos": [50, 200] },
+  { "type": "MouseDown", "pos": [50, 200], "btn": "Left" },
+  { "type": "MouseUp", "pos": [50, 200], "btn": "Left" },
+
+  { "type": "Wait" },
+
+  { "type": "MouseMove", "pos": [450, 200] },
+  { "type": "MouseDown", "pos": [450, 200], "btn": "Left" },
+  { "type": "MouseUp", "pos": [450, 200], "btn": "Left" },
+
+  { "type": "Wait" },
+
+  { "type": "MouseMove", "pos": [250, 50] },
+  { "type": "MouseDown", "pos": [250, 50], "btn": "Left" },
+  { "type": "MouseUp", "pos": [250, 50], "btn": "Left" },
+
+  { "type": "Wait" },
+
+  { "type": "MouseMove", "pos": [250, 350] },
+  { "type": "MouseDown", "pos": [250, 350], "btn": "Left" },
+  { "type": "MouseUp", "pos": [250, 350], "btn": "Left" }
+]
