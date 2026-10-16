@@ -222,25 +222,10 @@ impl UiBackend for TestUiBackend {
                             }
                         }
                     } else {
-                        // Prefer an exact style match, then expose other available
-                        // faces in a deterministic order for default-font fallback.
-                        let styles = [
-                            (query.is_bold, query.is_italic),
-                            (false, false),
-                            (true, false),
-                            (false, true),
-                            (true, true),
-                        ];
+                        self.load_device_font(&query, register);
 
-                        for (bold, italic) in styles {
-                            let mut candidate = query.clone();
-                            candidate.is_bold = bold;
-                            candidate.is_italic = italic;
-
-                            if self.fonts.contains_key(&candidate) && !result.contains(&candidate) {
-                                self.load_device_font(&candidate, register);
-                                result.push(candidate);
-                            }
+                        if self.fonts.contains_key(&query) && !result.contains(&query) {
+                            result.push(query);
                         }
                     }
                 }
