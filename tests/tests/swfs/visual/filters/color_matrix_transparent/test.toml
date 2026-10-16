@@ -1,8 +1,6 @@
 num_ticks = 1
 
 [image_comparisons.output]
-# FIXME The offsets don't reach fully transparent pixels
-known_failure = true
 tolerance = 0
 
 [player_options]
