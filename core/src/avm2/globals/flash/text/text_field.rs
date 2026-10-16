@@ -444,6 +444,28 @@ pub fn set_html_text<'gc>(
     Ok(Value::Undefined)
 }
 
+pub fn get_image_reference<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Value<'gc>,
+    args: FunctionArgs<'_, 'gc>,
+) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
+    let Some(this) = this
+        .as_display_object()
+        .and_then(|this| this.as_edit_text())
+    else {
+        return Ok(Value::Undefined);
+    };
+
+    let id = args.get_string_non_null(activation, 0, "id")?;
+
+    Ok(this
+        .image_reference(id.as_wstr())
+        .map(Value::from)
+        .unwrap_or(Value::Null))
+}
+
 pub fn get_length<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
