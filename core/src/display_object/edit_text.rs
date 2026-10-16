@@ -45,7 +45,6 @@ use ruffle_render::transform::Transform;
 use ruffle_wstr::WStrToUtf8;
 use std::cell::{Cell, Ref, RefCell, RefMut};
 use std::collections::VecDeque;
-use swf::ColorTransform;
 use unicode_segmentation::UnicodeSegmentation;
 
 use super::interactive::Avm2MousePick;
@@ -1270,39 +1269,10 @@ impl<'gc> EditText<'gc> {
             let ascent = metrics.ascent(params.height());
             let descent = metrics.descent(params.height());
             let caret_height = ascent + descent;
-            let mut caret_x = Twips::ZERO;
-            font.evaluate(
-                text,
-                params,
-                |pos, transform, glyph, advance, x| {
-                    if glyph.renderable(context) {
-                        // If it's highlighted, override the color.
-                        if matches!(visible_selection, Some(visible_selection) if visible_selection.contains(start + pos)) {
-                            // Set text color to white
-                            context.transform_stack.push(&Transform {
-                                matrix: transform.matrix,
-                                color_transform: ColorTransform::IDENTITY,
-                                perspective_projection: transform.perspective_projection,
-                                tz: transform.tz,
-                            });
-                        } else {
-                            context.transform_stack.push(transform);
-                        }
-                        glyph.render(context);
-                        context.transform_stack.pop();
-                    }
-
-                    // Update caret position
-                    if let Some(caret) = caret {
-                        if pos == caret {
-                            caret_x = x;
-                        } else if caret > 0 && pos == caret - 1 {
-                            // The caret may be rendered at the end, after all glyphs.
-                            caret_x = x + advance;
-                        }
-                    }
-                },
-            );
+            let selection = visible_selection.map(|selection| {
+                selection.start().saturating_sub(start)..selection.end().saturating_sub(start)
+            });
+            let caret_x = html::render::render_text(context, text, font, params, selection, caret);
 
             if caret.is_some() {
                 self.render_caret(context, caret_x, caret_height, params.color, render_state);

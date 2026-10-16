@@ -4,6 +4,7 @@ mod dimensions;
 mod iterators;
 mod layout;
 mod line_wrapping;
+pub(crate) mod render;
 mod text_format;
 
 pub use dimensions::Position;
