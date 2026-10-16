@@ -1,5 +1,6 @@
 //! HTML related utilities
 
+mod bidi;
 mod dimensions;
 mod iterators;
 mod layout;
