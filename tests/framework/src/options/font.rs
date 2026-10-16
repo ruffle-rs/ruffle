@@ -1,6 +1,7 @@
 use ruffle_core::Player;
 use ruffle_core::font::{DefaultFont, FontQuery, FontType};
 use serde::Deserialize;
+use std::collections::HashMap;
 
 #[derive(Deserialize, Default, Clone)]
 #[serde(default, deny_unknown_fields)]
@@ -43,6 +44,20 @@ pub struct DefaultFontsOptions {
 }
 
 impl DefaultFontsOptions {
+    pub fn to_map(&self) -> HashMap<DefaultFont, Vec<String>> {
+        HashMap::from([
+            (DefaultFont::Sans, self.sans.clone()),
+            (DefaultFont::Serif, self.serif.clone()),
+            (DefaultFont::Typewriter, self.typewriter.clone()),
+            (DefaultFont::JapaneseGothic, self.japanese_gothic.clone()),
+            (
+                DefaultFont::JapaneseGothicMono,
+                self.japanese_gothic_mono.clone(),
+            ),
+            (DefaultFont::JapaneseMincho, self.japanese_mincho.clone()),
+        ])
+    }
+
     pub fn apply(&self, player: &mut Player) {
         self.apply_default_font(player, DefaultFont::Sans, &self.sans);
         self.apply_default_font(player, DefaultFont::Serif, &self.serif);
