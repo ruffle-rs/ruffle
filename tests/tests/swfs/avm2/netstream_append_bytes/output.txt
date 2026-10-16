@@ -1,0 +1,16 @@
+valid append
+before length=4, position=4
+before append position=2
+result=undefined
+after length=4, position=2
+without play(null)
+TypeError: Error #2004: One of the parameters is invalid.
+after play(url)
+TypeError: Error #2004: One of the parameters is invalid.
+appendBytes(null)
+TypeError: Error #2004: One of the parameters is invalid.
+reentrant append
+FLV length=14567
+onMetaData
+before callback append
+after callback append
