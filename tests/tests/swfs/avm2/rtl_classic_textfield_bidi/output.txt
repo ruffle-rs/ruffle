@@ -1,0 +1,144 @@
+sample 0: ABC שלום 123
+  index=0 code=65 hasBounds=true
+    hit=0
+  index=1 code=66 hasBounds=true
+    relativeX=right
+    hit=1
+  index=2 code=67 hasBounds=true
+    relativeX=right
+    hit=2
+  index=3 code=32 hasBounds=true
+    relativeX=right
+    hit=3
+  index=4 code=1513 hasBounds=true
+    relativeX=right
+    hit=4
+  index=5 code=1500 hasBounds=true
+    relativeX=right
+    hit=5
+  index=6 code=1493 hasBounds=true
+    relativeX=right
+    hit=6
+  index=7 code=1501 hasBounds=true
+    relativeX=right
+    hit=7
+  index=8 code=32 hasBounds=true
+    relativeX=right
+    hit=8
+  index=9 code=49 hasBounds=true
+    relativeX=right
+    hit=9
+  index=10 code=50 hasBounds=true
+    relativeX=right
+    hit=10
+  index=11 code=51 hasBounds=true
+    relativeX=right
+    hit=11
+sample 1: שלום ABC 123
+  index=0 code=1513 hasBounds=true
+    hit=0
+  index=1 code=1500 hasBounds=true
+    relativeX=right
+    hit=1
+  index=2 code=1493 hasBounds=true
+    relativeX=right
+    hit=2
+  index=3 code=1501 hasBounds=true
+    relativeX=right
+    hit=3
+  index=4 code=32 hasBounds=true
+    relativeX=right
+    hit=4
+  index=5 code=65 hasBounds=true
+    relativeX=right
+    hit=5
+  index=6 code=66 hasBounds=true
+    relativeX=right
+    hit=6
+  index=7 code=67 hasBounds=true
+    relativeX=right
+    hit=7
+  index=8 code=32 hasBounds=true
+    relativeX=right
+    hit=8
+  index=9 code=49 hasBounds=true
+    relativeX=right
+    hit=9
+  index=10 code=50 hasBounds=true
+    relativeX=right
+    hit=10
+  index=11 code=51 hasBounds=true
+    relativeX=right
+    hit=11
+sample 2: 123 שלום ABC
+  index=0 code=49 hasBounds=true
+    hit=0
+  index=1 code=50 hasBounds=true
+    relativeX=right
+    hit=1
+  index=2 code=51 hasBounds=true
+    relativeX=right
+    hit=2
+  index=3 code=32 hasBounds=true
+    relativeX=right
+    hit=3
+  index=4 code=1513 hasBounds=true
+    relativeX=right
+    hit=4
+  index=5 code=1500 hasBounds=true
+    relativeX=right
+    hit=5
+  index=6 code=1493 hasBounds=true
+    relativeX=right
+    hit=6
+  index=7 code=1501 hasBounds=true
+    relativeX=right
+    hit=7
+  index=8 code=32 hasBounds=true
+    relativeX=right
+    hit=8
+  index=9 code=65 hasBounds=true
+    relativeX=right
+    hit=9
+  index=10 code=66 hasBounds=true
+    relativeX=right
+    hit=10
+  index=11 code=67 hasBounds=true
+    relativeX=right
+    hit=11
+sample 3: ABC 123 שלום
+  index=0 code=65 hasBounds=true
+    hit=0
+  index=1 code=66 hasBounds=true
+    relativeX=right
+    hit=1
+  index=2 code=67 hasBounds=true
+    relativeX=right
+    hit=2
+  index=3 code=32 hasBounds=true
+    relativeX=right
+    hit=3
+  index=4 code=49 hasBounds=true
+    relativeX=right
+    hit=4
+  index=5 code=50 hasBounds=true
+    relativeX=right
+    hit=5
+  index=6 code=51 hasBounds=true
+    relativeX=right
+    hit=6
+  index=7 code=32 hasBounds=true
+    relativeX=right
+    hit=7
+  index=8 code=1513 hasBounds=true
+    relativeX=right
+    hit=8
+  index=9 code=1500 hasBounds=true
+    relativeX=right
+    hit=9
+  index=10 code=1493 hasBounds=true
+    relativeX=right
+    hit=10
+  index=11 code=1501 hasBounds=true
+    relativeX=right
+    hit=11
