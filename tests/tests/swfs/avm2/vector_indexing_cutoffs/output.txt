@@ -1,0 +1,18 @@
+NUMERICAL INDEXING
+Attempting to access vec[8000000000] (8 x 10^9
+Got ReferenceError: Error #1069: Property 8000000000 not found on __AS3__.vec.Vector.<int> and there is no default value.
+Attempting to access vec[4 294 967 296] (2^32)
+Got ReferenceError: Error #1069: Property 4294967296 not found on __AS3__.vec.Vector.<int> and there is no default value.
+Attempting to access vec[4294967295] (2^32 - 1)
+Got RangeError: Error #1125: The index 4294967295 is out of range 0.
+Attempting to access vec[4294967294] (2^32 - 2)
+Got RangeError: Error #1125: The index 4294967294 is out of range 0.
+STRING INDEXING
+Attempting to access vec['8000000000']
+Got ReferenceError: Error #1069: Property 8000000000 not found on __AS3__.vec.Vector.<int> and there is no default value.
+Attempting to access vec['4294967296']
+Got ReferenceError: Error #1069: Property 4294967296 not found on __AS3__.vec.Vector.<int> and there is no default value.
+Attempting to access vec['4294967295']
+Got RangeError: Error #1125: The index 4294967295 is out of range 0.
+Attempting to access vec['4294967294']
+Got RangeError: Error #1125: The index 4294967294 is out of range 0.
