@@ -301,6 +301,7 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
         );
         let mut vertex_buffer = BufferBuilder::new(&self.descriptors.limits, 0);
         let mut index_buffer = BufferBuilder::new(&self.descriptors.limits, 0);
+        let mut indices_so_far = 0;
         let mut gradients = Vec::with_capacity(lyon_mesh.gradients.len());
 
         for gradient in lyon_mesh.gradients {
@@ -321,6 +322,7 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
                 draw_id,
                 &mut vertex_buffer,
                 &mut index_buffer,
+                &mut indices_so_far,
             ) {
                 draws.push(draw);
             }
