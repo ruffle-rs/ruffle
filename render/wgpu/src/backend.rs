@@ -632,7 +632,6 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
                     texture.texture.format(),
                     &texture.texture.create_view(&Default::default()),
                     target.color_view(),
-                    target.globals(),
                     target.color_texture().sample_count(),
                     &mut scope.scope("Copy filtered to CAB"),
                 );

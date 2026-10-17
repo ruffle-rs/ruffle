@@ -282,7 +282,6 @@ impl CommandTarget {
                     format,
                     frame_buffer.texture.view(),
                     &texture.create_view(&Default::default()),
-                    &globals,
                     sample_count,
                     encoder,
                 );
