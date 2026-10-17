@@ -657,11 +657,11 @@ pub(super) fn run_pixelbender_shader_impl(
 
     render_pass.set_vertex_buffer(0, vertices.slice(..));
     render_pass.set_index_buffer(
-        descriptors.quad.indices.slice(..),
+        descriptors.quad.index_buffer.slice(..),
         wgpu::IndexFormat::Uint32,
     );
 
-    render_pass.draw_indexed(0..6, 0, 0..1);
+    render_pass.draw_indexed(descriptors.quad.indices_quad.clone(), 0, 0..1);
 
     // Note - we just drop the staging belt, instead of recalling it,
     // since we're not going to use it again.

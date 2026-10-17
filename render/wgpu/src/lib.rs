@@ -7,9 +7,7 @@ use crate::buffer_pool::{BufferPool, PoolEntry};
 use crate::mesh::BitmapBinds;
 use crate::pipelines::Pipelines;
 use crate::target::{RenderTarget, SwapChainTarget};
-use crate::utils::{
-    BufferDimensions, capture_image, create_buffer_with_data, format_list, get_backend_names,
-};
+use crate::utils::{BufferDimensions, capture_image, format_list, get_backend_names};
 use bytemuck::{Pod, Zeroable};
 use descriptors::Descriptors;
 use ruffle_render::backend::RawTexture;

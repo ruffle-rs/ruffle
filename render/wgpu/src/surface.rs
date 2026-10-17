@@ -315,13 +315,19 @@ impl Surface {
 
                     render_pass.set_bind_group(2, &blend_bind_group, &[]);
 
-                    render_pass.set_vertex_buffer(0, descriptors.quad.vertices_pos.slice(..));
+                    render_pass.set_vertex_buffer(
+                        0,
+                        descriptors
+                            .quad
+                            .vertex_buffer
+                            .slice(descriptors.quad.vertices_pos.clone()),
+                    );
                     render_pass.set_index_buffer(
-                        descriptors.quad.indices.slice(..),
+                        descriptors.quad.index_buffer.slice(..),
                         wgpu::IndexFormat::Uint32,
                     );
 
-                    render_pass.draw_indexed(0..6, 0, 0..1);
+                    render_pass.draw_indexed(descriptors.quad.indices_quad.clone(), 0, 0..1);
                 }
             }
         }
