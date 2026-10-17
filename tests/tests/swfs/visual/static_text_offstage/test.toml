@@ -1,0 +1,11 @@
+# test.swf is written by generate.py. output.expected.png is Flash Player 32's
+# output, cropped to the stage.
+num_ticks = 3
+
+# Exact apart from rounding: nothing in the scene is anti-aliased.
+[image_comparisons.output]
+tolerance = 2
+max_outliers = 0
+
+[player_options]
+with_renderer = { optional = false }
