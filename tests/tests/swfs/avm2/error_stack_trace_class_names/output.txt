@@ -1,0 +1,135 @@
+/// Test static
+caught: [class Error]
+Error: thrown
+	at Test$/staticMethod()
+	at Function/<anonymous>()
+	at Test$/run()
+	at Test()
+/// Test instance
+caught: [class Error]
+Error: thrown
+	at Test/instanceMethod()
+	at Function/<anonymous>()
+	at Test$/run()
+	at Test()
+/// Test private
+caught: [class Error]
+Error: thrown
+	at Test/privateMethod()
+	at Function/<anonymous>()
+	at Test$/run()
+	at Test()
+/// Test protected
+caught: [class Error]
+Error: thrown
+	at Test/protectedMethod()
+	at Function/<anonymous>()
+	at Test$/run()
+	at Test()
+/// Test internal
+caught: [class Error]
+Error: thrown
+	at Test/internalMethod()
+	at Function/<anonymous>()
+	at Test$/run()
+	at Test()
+/// Test custom namespace
+caught: [class Error]
+Error: thrown
+	at Test/http://example.com/custom::namespacedMethod()
+	at Function/<anonymous>()
+	at Test$/run()
+	at Test()
+/// Test getter
+caught: [class Error]
+Error: thrown
+	at Test/get getter()
+	at Function/<anonymous>()
+	at Test$/run()
+	at Test()
+/// Test setter
+caught: [class Error]
+Error: thrown
+	at Test/set setter()
+	at Function/<anonymous>()
+	at Test$/run()
+	at Test()
+/// public class constructor
+caught: [class Error]
+Error: thrown
+	at pkg::Pub()
+	at Function/<anonymous>()
+	at Test$/run()
+	at Test()
+/// public class static
+caught: [class Error]
+Error: thrown
+	at pkg::Pub$/staticMethod()
+	at Function/<anonymous>()
+	at Test$/run()
+	at Test()
+/// public class instance
+caught: [class Error]
+Error: thrown
+	at pkg::Pub/instanceMethod()
+	at Function/<anonymous>()
+	at Test$/run()
+	at Test()
+/// public class getter
+caught: [class Error]
+Error: thrown
+	at pkg::Pub/get getter()
+	at Function/<anonymous>()
+	at Test$/run()
+	at Test()
+/// internal class constructor
+caught: [class Error]
+Error: thrown
+	at Hidden()
+	at pkg::Pub$/makeHidden()
+	at Function/<anonymous>()
+	at Test$/run()
+	at Test()
+/// internal class static
+caught: [class Error]
+Error: thrown
+	at Hidden$/staticMethod()
+	at pkg::Pub$/hiddenStatic()
+	at Function/<anonymous>()
+	at Test$/run()
+	at Test()
+/// internal class instance
+caught: [class Error]
+Error: thrown
+	at Hidden/instanceMethod()
+	at Function/<anonymous>()
+	at Test$/run()
+	at Test()
+/// private class constructor
+caught: [class Error]
+Error: thrown
+	at Priv()
+	at Function/<anonymous>()
+	at Test$/run()
+	at Test()
+/// private class static
+caught: [class Error]
+Error: thrown
+	at Priv$/staticMethod()
+	at Function/<anonymous>()
+	at Test$/run()
+	at Test()
+/// private class instance
+caught: [class Error]
+Error: thrown
+	at Priv/instanceMethod()
+	at Function/<anonymous>()
+	at Test$/run()
+	at Test()
+/// private class getter
+caught: [class Error]
+Error: thrown
+	at Priv/get getter()
+	at Function/<anonymous>()
+	at Test$/run()
+	at Test()
