@@ -382,8 +382,14 @@ pub fn display_function<'gc>(output: &mut WString, method: Method<'gc>) {
     let bound_class = method.bound_class();
 
     if let Some(bound_class) = bound_class {
-        let name = bound_class.name().to_qualified_name_no_mc();
-        output.push_str(&name);
+        // Only classes in public namespaces are printed with their namespace;
+        // internal and private classes are printed with just their local name.
+        let name = bound_class.name();
+        if name.namespace().is_namespace() {
+            output.push_str(&name.to_qualified_name_no_mc());
+        } else {
+            output.push_str(&name.local_name());
+        }
     }
 
     // NOTE: The name of a bytecode method refers to the name of the trait that contains the method,
