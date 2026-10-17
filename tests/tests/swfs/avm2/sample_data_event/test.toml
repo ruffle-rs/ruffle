@@ -1,0 +1,31 @@
+# Regression test for sounds generated in ActionScript via SampleDataEvent.
+#
+# A Sound with a SAMPLE_DATA listener is played without ever being loaded,
+# which turns it into a generated sound. The listener synthesizes a 440 Hz
+# sine wave with a peak amplitude of 0.5 for the first ~0.5 seconds, then
+# stops providing samples, which ends the generated sound.
+num_frames = 30
+
+[player_options]
+with_audio = true
+
+# While the generated tone plays, the peak amplitude of the mixed output must
+# stay within [0.4, 0.6] — i.e. the sound is audible and the amplitude written
+# from ActionScript is preserved end-to-end (not silenced, doubled, or clipped).
+[audio_assertions.tone]
+frames = { from = 2, to = 8 }
+min_max_amplitude = 0.4
+max_amplitude = 0.6
+
+# Once the generator stops writing samples (after ~0.5s ≈ frame 12-15 at 24fps),
+# the buffered audio drains and the output must be completely silent.
+[audio_assertions.silence]
+frames = { from = 20, to = 30 }
+max_amplitude = 0.0
+
+[[compilers]]
+type = "Asc"
+target = "test.swf"
+class = "Test"
+scripts = ["Test.as"]
+swf_version = 12
