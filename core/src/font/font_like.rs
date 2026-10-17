@@ -159,15 +159,13 @@ pub trait FontLike<'gc> {
         }
     }
 
-    /// Evaluate device-font glyphs for drawing, retaining logical advances and indices.
-    ///
-    /// Classic TextField can draw device text in visual order while exposing logical
-    /// character bounds. Keep this separate from `evaluate`, which also measures
-    /// text and constructs the layout's character positions.
+    /// Evaluate glyphs for drawing without changing logical advances or indices.
+    /// `run_breaks` contains sorted UTF-16 offsets where bidi ordering restarts.
     fn evaluate_for_render(
         &self,
         text: &WStr,
         params: EvalParameters,
+        run_breaks: &[usize],
         mut glyph_func: impl FnMut(usize, &Transform, GlyphRef, Twips, Twips),
     ) {
         if !self.font_type().is_device() || text.iter().all(|c| c < 0x80) {
@@ -175,28 +173,35 @@ pub trait FontLike<'gc> {
             return;
         }
 
+        // The legacy iterator can produce out-of-range indices for unpaired surrogates.
+        if text.chars().any(|c| c.is_err()) {
+            self.evaluate(text, params, glyph_func);
+            return;
+        }
+
         let units: Vec<u16> = text.iter().collect();
-        // Device text is drawn within the existing left-to-right layout box.
         let bidi = BidiInfo::new(&units, Some(Level::ltr()));
         if !bidi.has_rtl() || bidi.paragraphs.len() != 1 {
             self.evaluate(text, params, glyph_func);
             return;
         }
 
-        let paragraph = &bidi.paragraphs[0];
-        let levels = bidi.reordered_levels(paragraph, paragraph.range.clone());
         let mut advances = Vec::new();
         self.evaluate(text, params, |pos, _, _, advance, _| {
             advances.push((pos, advance));
         });
 
-        let positions = visual_glyph_positions(text, &levels, &advances);
+        let positions = if run_breaks.is_empty() {
+            let paragraph = &bidi.paragraphs[0];
+            let levels = bidi.reordered_levels(paragraph, paragraph.range.clone());
+            visual_glyph_positions(text, &levels, &advances)
+        } else {
+            visual_glyph_positions_for_runs(text, run_breaks, &advances)
+        };
 
         self.evaluate(text, params, |pos, transform, glyph, advance, logical_x| {
             let mut visual_transform = transform.clone();
             visual_transform.matrix.tx = positions[pos];
-            // The drawing uses visual coordinates, but the caret still consumes
-            // the logical x and advance, just as the measurement APIs do.
             glyph_func(pos, &visual_transform, glyph, advance, logical_x);
         });
     }
@@ -213,14 +218,50 @@ pub trait FontLike<'gc> {
     }
 }
 
-/// Map logical UTF-16 glyph positions to their visual x coordinates.
+fn visual_glyph_positions_for_runs(
+    text: &WStr,
+    run_breaks: &[usize],
+    advances: &[(usize, Twips)],
+) -> Vec<Twips> {
+    let mut positions = vec![Twips::ZERO; text.len()];
+    let mut start = 0;
+    let mut x = Twips::ZERO;
+    for end in run_breaks
+        .iter()
+        .copied()
+        .chain(std::iter::once(text.len()))
+    {
+        if start == end {
+            continue;
+        }
+        let run = &text[start..end];
+        let units: Vec<u16> = run.iter().collect();
+        let bidi = BidiInfo::new(&units, Some(Level::ltr()));
+        let paragraph = &bidi.paragraphs[0];
+        let levels = bidi.reordered_levels(paragraph, paragraph.range.clone());
+        let first = advances.partition_point(|&(pos, _)| pos < start);
+        let last = advances.partition_point(|&(pos, _)| pos < end);
+        let run_advances: Vec<_> = advances[first..last]
+            .iter()
+            .map(|&(pos, advance)| (pos - start, advance))
+            .collect();
+        let run_positions = visual_glyph_positions(run, &levels, &run_advances);
+        let run_x = x;
+        for &(pos, advance) in &run_advances {
+            positions[start + pos] = run_x + run_positions[pos];
+            x += advance;
+        }
+        start = end;
+    }
+    positions
+}
+
 fn visual_glyph_positions(
     text: &WStr,
     levels: &[Level],
     advances: &[(usize, Twips)],
 ) -> Vec<Twips> {
-    // Reorder grapheme clusters rather than UTF-16 units, so surrogate pairs
-    // and combining sequences stay together. Shaping is a separate operation.
+    // Keep surrogate pairs and combining sequences together when reordering.
     let decoded = text.to_utf8_lossy();
     let mut offset = 0;
     let clusters: Vec<_> = decoded
@@ -270,6 +311,27 @@ mod tests {
             .into_iter()
             .map(Twips::get)
             .collect()
+    }
+
+    #[test]
+    fn selection_boundaries_restart_visual_order_without_changing_advances() {
+        let units: Vec<_> = "שלום".encode_utf16().collect();
+        let text = WStr::from_units(units.as_slice());
+        let advances =
+            [(0, 10), (1, 20), (2, 30), (3, 40)].map(|(pos, advance)| (pos, Twips::new(advance)));
+        for (breaks, expected) in [
+            ([0, 1], [0, 80, 50, 10]),
+            ([0, 2], [20, 0, 70, 30]),
+            ([1, 3], [0, 40, 10, 60]),
+            ([0, 0], [90, 70, 40, 0]),
+            ([4, 4], [90, 70, 40, 0]),
+        ] {
+            let positions: Vec<_> = visual_glyph_positions_for_runs(text, &breaks, &advances)
+                .into_iter()
+                .map(Twips::get)
+                .collect();
+            assert_eq!(positions, expected);
+        }
     }
 
     #[test]

@@ -1,0 +1,19 @@
+num_ticks = 1
+
+[[compilers]]
+type = "Asc"
+target = "test.swf"
+class = "Test"
+scripts = ["Test.as"]
+swf_version = 10
+
+[fonts.dejavu_sans]
+family = "DejaVu Sans"
+path = "DejaVuSans.ttf"
+
+[player_options]
+with_renderer = { optional = false, quality = "high" }
+
+[image_comparisons.output]
+tolerance = 128
+max_outliers = 120
