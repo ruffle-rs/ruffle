@@ -66,7 +66,6 @@ pub enum DrawVertices<'a> {
         vertex_buffer: wgpu::Buffer,
         vertex_range: Range<wgpu::BufferAddress>,
         index_buffer: wgpu::Buffer,
-        index_buffer_slice: Range<wgpu::BufferAddress>,
         indices: Range<u32>,
     },
 }
@@ -76,7 +75,6 @@ pub struct DrawOffsets {
     pub vertex_buffer: Option<wgpu::Buffer>,
     pub index_buffer: wgpu::Buffer,
     pub vertices: Range<wgpu::BufferAddress>,
-    pub index_buffer_slice: Range<wgpu::BufferAddress>,
     pub indices: Range<u32>,
     pub instances: Range<u32>,
 }
@@ -85,7 +83,6 @@ impl DrawOffsets {
     pub fn try_merge(&mut self, other: &DrawOffsets) -> bool {
         if self.vertex_buffer == other.vertex_buffer
             && self.index_buffer == other.index_buffer
-            && self.index_buffer_slice == other.index_buffer_slice
             && self.vertices == other.vertices
             && self.indices == other.indices
             && self.instances.end == other.instances.start
@@ -202,7 +199,6 @@ impl ChunkBufferBuilder {
                     .vertices
                     .add(vertex_bytes)
                     .map_err(|_| (BufferFull, vertices))?,
-                index_buffer_slice: quad.full_index_range.clone(),
                 indices: quad.indices_quad.clone(),
                 instances,
             },
@@ -211,7 +207,6 @@ impl ChunkBufferBuilder {
                 index_buffer: quad.index_buffer.clone(),
                 vertices: self.quad_pos_vertices.clone(),
                 indices: quad.indices_quad.clone(),
-                index_buffer_slice: quad.full_index_range.clone(),
                 instances,
             },
             DrawVertices::PosColorQuad => DrawOffsets {
@@ -219,7 +214,6 @@ impl ChunkBufferBuilder {
                 index_buffer: quad.index_buffer.clone(),
                 vertices: self.quad_pos_color_vertices.clone(),
                 indices: quad.indices_quad.clone(),
-                index_buffer_slice: quad.full_index_range.clone(),
                 instances,
             },
             DrawVertices::PosUvQuad => DrawOffsets {
@@ -227,7 +221,6 @@ impl ChunkBufferBuilder {
                 index_buffer: quad.index_buffer.clone(),
                 vertices: self.quad_pos_uv_vertices.clone(),
                 indices: quad.indices_quad.clone(),
-                index_buffer_slice: quad.full_index_range.clone(),
                 instances,
             },
             DrawVertices::Line => DrawOffsets {
@@ -235,7 +228,6 @@ impl ChunkBufferBuilder {
                 index_buffer: quad.index_buffer.clone(),
                 vertices: self.quad_pos_color_vertices.clone(),
                 indices: quad.indices_line.clone(),
-                index_buffer_slice: quad.full_index_range.clone(),
                 instances,
             },
             DrawVertices::RectLine => DrawOffsets {
@@ -243,20 +235,17 @@ impl ChunkBufferBuilder {
                 index_buffer: quad.index_buffer.clone(),
                 vertices: self.quad_pos_color_vertices.clone(),
                 indices: quad.indices_line_rect.clone(),
-                index_buffer_slice: quad.full_index_range.clone(),
                 instances,
             },
             DrawVertices::CustomBuffers {
                 vertex_buffer,
                 vertex_range,
                 index_buffer,
-                index_buffer_slice,
                 indices,
             } => DrawOffsets {
                 vertex_buffer: Some(vertex_buffer),
                 index_buffer,
                 vertices: vertex_range,
-                index_buffer_slice,
                 indices,
                 instances,
             },

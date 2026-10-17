@@ -31,9 +31,9 @@ pub fn as_mesh(handle: &ShapeHandle) -> &Mesh {
 pub struct PendingDraw {
     pub draw_type: PendingDrawType,
     pub vertices: Range<wgpu::BufferAddress>,
-    pub indices: Range<wgpu::BufferAddress>,
     pub num_indices: u32,
     pub num_mask_indices: u32,
+    pub index_offset: u32,
 }
 
 impl PendingDraw {
@@ -48,9 +48,8 @@ impl PendingDraw {
                 .draw_type
                 .finish(descriptors, uniform_buffer, gradients),
             vertices: self.vertices,
-            indices: self.indices,
-            num_indices: self.num_indices,
-            num_mask_indices: self.num_mask_indices,
+            indices: self.index_offset..(self.index_offset + self.num_indices),
+            mask_indices: self.index_offset..(self.index_offset + self.num_mask_indices),
         }
     }
 }
@@ -59,12 +58,12 @@ impl PendingDraw {
 pub struct Draw {
     pub draw_type: DrawType,
     pub vertices: Range<wgpu::BufferAddress>,
-    pub indices: Range<wgpu::BufferAddress>,
-    pub num_indices: u32,
-    pub num_mask_indices: u32,
+    pub indices: Range<u32>,
+    pub mask_indices: Range<u32>,
 }
 
 impl PendingDraw {
+    #[expect(clippy::too_many_arguments)]
     pub fn new<T: RenderTarget>(
         backend: &mut WgpuRenderBackend<T>,
         source: &dyn BitmapSource,
@@ -73,6 +72,7 @@ impl PendingDraw {
         draw_id: usize,
         vertex_buffer: &mut BufferBuilder,
         index_buffer: &mut BufferBuilder,
+        indices_so_far: &mut u32,
     ) -> Option<Self> {
         let vertices = match &draw.draw_type {
             TessDrawType::Color => {
@@ -107,11 +107,13 @@ impl PendingDraw {
             }
         };
 
-        let indices = index_buffer
+        index_buffer
             .add(&draw.indices)
             .expect("Mesh index buffer was too large!");
 
         let index_count = draw.indices.len() as u32;
+        let index_offset = *indices_so_far;
+        *indices_so_far += index_count;
         let draw_type = match draw.draw_type {
             TessDrawType::Color => PendingDrawType::color(),
             TessDrawType::Gradient {
@@ -123,7 +125,7 @@ impl PendingDraw {
         Some(PendingDraw {
             draw_type,
             vertices,
-            indices,
+            index_offset,
             num_indices: index_count,
             num_mask_indices: draw.mask_index_count,
         })
