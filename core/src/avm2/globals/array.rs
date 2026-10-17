@@ -131,16 +131,20 @@ pub fn join<'gc>(
 
     let separator = args.get_value(0);
 
-    if let Some(array) = this.as_array_storage() {
+    if let Some(array) = this.as_array_object() {
         let string_separator = if matches!(separator, Value::Undefined) {
             istr!(",")
         } else {
             separator.coerce_to_string(activation)?
         };
 
-        let mut accum = Vec::with_capacity(array.length());
+        // The array may be modified by user code while joining, so only
+        // borrow it to read the length and each element.
+        let length = array.storage().length();
+        let mut accum = Vec::with_capacity(length);
 
-        for (i, item) in array.iter().enumerate() {
+        for i in 0..length {
+            let item = array.storage().get(i);
             let item = resolve_array_hole(activation, this, i, item)?;
 
             if matches!(item, Value::Undefined) || matches!(item, Value::Null) {
