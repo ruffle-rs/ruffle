@@ -150,6 +150,7 @@ pub struct CommandRenderer<'encoder> {
     needs_stencil: bool,
     chunk_buffers: &'encoder ChunkBuffers,
     current_pipeline: Option<&'encoder wgpu::RenderPipeline>,
+    current_index_buffer: Option<&'encoder wgpu::Buffer>,
 }
 
 impl<'encoder> CommandRenderer<'encoder> {
@@ -165,6 +166,7 @@ impl<'encoder> CommandRenderer<'encoder> {
             needs_stencil,
             chunk_buffers,
             current_pipeline: None,
+            current_index_buffer: None,
         }
     }
 
@@ -219,7 +221,7 @@ impl<'encoder> CommandRenderer<'encoder> {
     }
 
     pub fn draw(
-        &self,
+        &mut self,
         render_pass: &mut wgpu::RenderPass<'encoder>,
         draw_offsets: &'encoder DrawOffsets,
     ) {
@@ -231,10 +233,14 @@ impl<'encoder> CommandRenderer<'encoder> {
                 .unwrap_or(&self.chunk_buffers.vertex_buffer)
                 .slice(draw_offsets.vertices.clone()),
         );
-        render_pass.set_index_buffer(
-            draw_offsets.index_buffer.slice(..),
-            wgpu::IndexFormat::Uint32,
-        );
+
+        if self.current_index_buffer != Some(&draw_offsets.index_buffer) {
+            render_pass.set_index_buffer(
+                draw_offsets.index_buffer.slice(..),
+                wgpu::IndexFormat::Uint32,
+            );
+            self.current_index_buffer = Some(&draw_offsets.index_buffer);
+        }
 
         render_pass.draw_indexed(
             draw_offsets.indices.clone(),
