@@ -408,15 +408,15 @@ impl CommandHandler for WgpuCommandHandler<'_, '_> {
     fn render_shape(&mut self, shape: ShapeHandle, transform: Transform) {
         let mesh = as_mesh(&shape);
         for draw in &mesh.draws {
-            let num_indices = if self.mask_state.mode != MaskMode::DrawMaskStencil
+            let indices = if self.mask_state.mode != MaskMode::DrawMaskStencil
                 && self.mask_state.mode != MaskMode::ClearMaskStencil
             {
-                draw.num_indices
+                draw.indices.clone()
             } else {
                 // Omit strokes when drawing a mask stencil.
-                draw.num_mask_indices
+                draw.mask_indices.clone()
             };
-            if num_indices == 0 {
+            if indices.is_empty() {
                 continue;
             }
 
@@ -424,8 +424,7 @@ impl CommandHandler for WgpuCommandHandler<'_, '_> {
                 vertex_buffer: mesh.vertex_buffer.clone(),
                 vertex_range: draw.vertices.clone(),
                 index_buffer: mesh.index_buffer.clone(),
-                index_buffer_slice: draw.indices.clone(),
-                indices: 0..num_indices,
+                indices,
             };
             match &draw.draw_type {
                 DrawType::Color => {

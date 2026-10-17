@@ -232,9 +232,7 @@ impl<'encoder> CommandRenderer<'encoder> {
                 .slice(draw_offsets.vertices.clone()),
         );
         render_pass.set_index_buffer(
-            draw_offsets
-                .index_buffer
-                .slice(draw_offsets.index_buffer_slice.clone()),
+            draw_offsets.index_buffer.slice(..),
             wgpu::IndexFormat::Uint32,
         );
 
