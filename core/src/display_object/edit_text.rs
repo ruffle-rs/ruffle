@@ -1292,7 +1292,7 @@ impl<'gc> EditText<'gc> {
             let descent = metrics.descent(params.height());
             let caret_height = ascent + descent;
             let mut caret_x = Twips::ZERO;
-            font.evaluate(
+            font.evaluate_for_render(
                 text,
                 params,
                 |pos, transform, glyph, advance, x| {

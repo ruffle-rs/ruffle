@@ -4845,6 +4845,7 @@ dependencies = [
  "tracing",
  "tracy-client",
  "ttf-parser",
+ "unicode-bidi",
  "unicode-segmentation",
  "url",
  "wasm-bindgen-futures",
