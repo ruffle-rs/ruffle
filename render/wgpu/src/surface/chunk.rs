@@ -234,14 +234,12 @@ impl<'encoder> CommandRenderer<'encoder> {
         render_pass.set_index_buffer(
             draw_offsets
                 .index_buffer
-                .as_ref()
-                .unwrap_or(&self.chunk_buffers.index_buffer)
-                .slice(draw_offsets.indices.clone()),
+                .slice(draw_offsets.index_buffer_slice.clone()),
             wgpu::IndexFormat::Uint32,
         );
 
         render_pass.draw_indexed(
-            0..draw_offsets.index_count,
+            draw_offsets.indices.clone(),
             0,
             draw_offsets.instances.clone(),
         );
