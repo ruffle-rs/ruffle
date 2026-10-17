@@ -1,5 +1,4 @@
 use crate::blend::{ComplexBlend, TrivialBlend};
-use crate::descriptors::Descriptors;
 use crate::mesh::{DrawType, as_mesh};
 use crate::pipelines::Pipelines;
 use crate::surface::buffers::{ChunkBufferBuilder, ChunkBuffers, DrawOffsets};
@@ -73,17 +72,14 @@ impl DrawCommand {
 
 pub struct CommandRenderer<'encoder> {
     pipelines: &'encoder Pipelines,
-    descriptors: &'encoder Descriptors,
     mask_state: &'encoder mut MaskState,
     needs_stencil: bool,
     chunk_buffers: &'encoder ChunkBuffers,
 }
 
 impl<'encoder> CommandRenderer<'encoder> {
-    #[allow(clippy::too_many_arguments)]
     pub fn new(
         pipelines: &'encoder Pipelines,
-        descriptors: &'encoder Descriptors,
         chunk_buffers: &'encoder ChunkBuffers,
         mask_state: &'encoder mut MaskState,
         needs_stencil: bool,
@@ -91,7 +87,6 @@ impl<'encoder> CommandRenderer<'encoder> {
         Self {
             pipelines,
             mask_state,
-            descriptors,
             needs_stencil,
             chunk_buffers,
         }
@@ -118,25 +113,21 @@ impl<'encoder> CommandRenderer<'encoder> {
                 binds,
                 *blend_mode,
                 *render_stage3d,
-                draw_offsets.clone(),
+                draw_offsets,
             ),
             DrawCommand::RenderShape {
                 shape,
                 instance_range,
             } => self.render_shape(render_pass, shape, instance_range.clone()),
-            DrawCommand::DrawColor { draw_offsets } => {
-                self.draw_color(render_pass, draw_offsets.clone())
-            }
-            DrawCommand::DrawLine { draw_offsets } => {
-                self.draw_lines(render_pass, draw_offsets.clone())
-            }
+            DrawCommand::DrawColor { draw_offsets } => self.draw_color(render_pass, draw_offsets),
+            DrawCommand::DrawLine { draw_offsets } => self.draw_lines(render_pass, draw_offsets),
             DrawCommand::SetMask(mask_state) => self.set_mask_state(*mask_state),
             DrawCommand::RenderAlphaMask {
                 maskee,
                 mask,
                 binds,
                 draw_offsets,
-            } => self.render_alpha_mask(render_pass, maskee, mask, binds, draw_offsets.clone()),
+            } => self.render_alpha_mask(render_pass, maskee, mask, binds, draw_offsets),
         }
     }
 
@@ -231,20 +222,29 @@ impl<'encoder> CommandRenderer<'encoder> {
         bind_group: &'encoder wgpu::BindGroup,
         blend_mode: TrivialBlend,
         render_stage3d: bool,
-        draw_offsets: DrawOffsets,
+        draw_offsets: &'encoder DrawOffsets,
     ) {
         self.prep_bitmap(render_pass, bind_group, blend_mode, render_stage3d);
 
         self.draw(
             render_pass,
-            self.chunk_buffers.vertex_buffer.slice(
-                draw_offsets
-                    .vertices
-                    .expect("Vertices must always be present"),
-            ),
-            self.chunk_buffers.index_buffer.slice(draw_offsets.indices),
+            draw_offsets
+                .vertex_buffer
+                .as_ref()
+                .unwrap_or(&self.chunk_buffers.vertex_buffer)
+                .slice(
+                    draw_offsets
+                        .vertices
+                        .clone()
+                        .expect("Vertices must always be present"),
+                ),
+            draw_offsets
+                .index_buffer
+                .as_ref()
+                .unwrap_or(&self.chunk_buffers.index_buffer)
+                .slice(draw_offsets.indices.clone()),
             draw_offsets.index_count,
-            draw_offsets.instances,
+            draw_offsets.instances.clone(),
         );
     }
 
@@ -296,7 +296,7 @@ impl<'encoder> CommandRenderer<'encoder> {
         _maskee: &PoolOrArcTexture,
         _mask: &PoolOrArcTexture,
         bind_group: &'encoder wgpu::BindGroup,
-        draw_offsets: DrawOffsets,
+        draw_offsets: &'encoder DrawOffsets,
     ) {
         if cfg!(feature = "render_debug_labels") {
             render_pass.push_debug_group("render_alpha_mask");
@@ -306,14 +306,23 @@ impl<'encoder> CommandRenderer<'encoder> {
 
         self.draw(
             render_pass,
-            self.chunk_buffers.vertex_buffer.slice(
-                draw_offsets
-                    .vertices
-                    .expect("Vertices must always be present"),
-            ),
-            self.chunk_buffers.index_buffer.slice(draw_offsets.indices),
+            draw_offsets
+                .vertex_buffer
+                .as_ref()
+                .unwrap_or(&self.chunk_buffers.vertex_buffer)
+                .slice(
+                    draw_offsets
+                        .vertices
+                        .clone()
+                        .expect("Vertices must always be present"),
+                ),
+            draw_offsets
+                .index_buffer
+                .as_ref()
+                .unwrap_or(&self.chunk_buffers.index_buffer)
+                .slice(draw_offsets.indices.clone()),
             draw_offsets.index_count,
-            draw_offsets.instances,
+            draw_offsets.instances.clone(),
         );
 
         if cfg!(feature = "render_debug_labels") {
@@ -324,40 +333,58 @@ impl<'encoder> CommandRenderer<'encoder> {
     pub fn draw_color(
         &self,
         render_pass: &mut wgpu::RenderPass<'encoder>,
-        draw_offsets: DrawOffsets,
+        draw_offsets: &'encoder DrawOffsets,
     ) {
         self.prep_color(render_pass);
 
         self.draw(
             render_pass,
-            self.chunk_buffers.vertex_buffer.slice(
-                draw_offsets
-                    .vertices
-                    .expect("Vertices must always be present"),
-            ),
-            self.chunk_buffers.index_buffer.slice(draw_offsets.indices),
+            draw_offsets
+                .vertex_buffer
+                .as_ref()
+                .unwrap_or(&self.chunk_buffers.vertex_buffer)
+                .slice(
+                    draw_offsets
+                        .vertices
+                        .clone()
+                        .expect("Vertices must always be present"),
+                ),
+            draw_offsets
+                .index_buffer
+                .as_ref()
+                .unwrap_or(&self.chunk_buffers.index_buffer)
+                .slice(draw_offsets.indices.clone()),
             draw_offsets.index_count,
-            draw_offsets.instances,
+            draw_offsets.instances.clone(),
         );
     }
 
     pub fn draw_lines(
         &self,
         render_pass: &mut wgpu::RenderPass<'encoder>,
-        draw_offsets: DrawOffsets,
+        draw_offsets: &'encoder DrawOffsets,
     ) {
         self.prep_lines(render_pass);
 
         self.draw(
             render_pass,
-            self.chunk_buffers.vertex_buffer.slice(
-                draw_offsets
-                    .vertices
-                    .expect("Vertices must always be present"),
-            ),
-            self.chunk_buffers.index_buffer.slice(draw_offsets.indices),
+            draw_offsets
+                .vertex_buffer
+                .as_ref()
+                .unwrap_or(&self.chunk_buffers.vertex_buffer)
+                .slice(
+                    draw_offsets
+                        .vertices
+                        .clone()
+                        .expect("Vertices must always be present"),
+                ),
+            draw_offsets
+                .index_buffer
+                .as_ref()
+                .unwrap_or(&self.chunk_buffers.index_buffer)
+                .slice(draw_offsets.indices.clone()),
             draw_offsets.index_count,
-            draw_offsets.instances,
+            draw_offsets.instances.clone(),
         );
     }
 
