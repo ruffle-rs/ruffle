@@ -177,7 +177,10 @@ impl<'encoder, 'global: 'encoder> WgpuCommandHandler<'encoder, 'global> {
             mult_color: color_transform.mult_rgba_normalized(),
             add_color: color_transform.add_rgba_normalized(),
         };
-        match self.chunk_buffer_builder.add(transform, vertices) {
+        match self
+            .chunk_buffer_builder
+            .add(&self.descriptors.quad, transform, vertices)
+        {
             Ok(offsets) => {
                 self.push_command(command_builder(offsets));
             }
@@ -192,7 +195,7 @@ impl<'encoder, 'global: 'encoder> WgpuCommandHandler<'encoder, 'global> {
                 });
                 let offsets = self
                     .chunk_buffer_builder
-                    .add(transform, vertices)
+                    .add(&self.descriptors.quad, transform, vertices)
                     .expect("Buffer must be able to fit a new thing, it was just emptied");
                 self.push_command(command_builder(offsets));
             }
@@ -421,8 +424,8 @@ impl CommandHandler for WgpuCommandHandler<'_, '_> {
                 vertex_buffer: mesh.vertex_buffer.clone(),
                 vertex_range: draw.vertices.clone(),
                 index_buffer: mesh.index_buffer.clone(),
-                index_range: draw.indices.clone(),
-                index_count: num_indices,
+                index_buffer_slice: draw.indices.clone(),
+                indices: 0..num_indices,
             };
             match &draw.draw_type {
                 DrawType::Color => {
