@@ -149,6 +149,7 @@ pub struct CommandRenderer<'encoder> {
     mask_state: &'encoder mut MaskState,
     needs_stencil: bool,
     chunk_buffers: &'encoder ChunkBuffers,
+    current_pipeline: Option<&'encoder wgpu::RenderPipeline>,
 }
 
 impl<'encoder> CommandRenderer<'encoder> {
@@ -163,6 +164,7 @@ impl<'encoder> CommandRenderer<'encoder> {
             mask_state,
             needs_stencil,
             chunk_buffers,
+            current_pipeline: None,
         }
     }
 
@@ -205,75 +207,15 @@ impl<'encoder> CommandRenderer<'encoder> {
         }
     }
 
-    pub fn prep_color(&self, render_pass: &mut wgpu::RenderPass<'encoder>) {
-        if self.needs_stencil {
-            render_pass.set_pipeline(self.pipelines.color.pipeline_for(self.mask_state.mode));
-        } else {
-            render_pass.set_pipeline(self.pipelines.color.stencilless_pipeline());
-        }
-    }
-
-    pub fn prep_lines(&self, render_pass: &mut wgpu::RenderPass<'encoder>) {
-        if self.needs_stencil {
-            render_pass.set_pipeline(self.pipelines.lines.pipeline_for(self.mask_state.mode));
-        } else {
-            render_pass.set_pipeline(self.pipelines.lines.stencilless_pipeline());
-        }
-    }
-
-    pub fn prep_gradient(
-        &self,
+    pub fn set_pipeline(
+        &mut self,
         render_pass: &mut wgpu::RenderPass<'encoder>,
-        bind_group: &'encoder wgpu::BindGroup,
+        pipeline: &'encoder wgpu::RenderPipeline,
     ) {
-        if self.needs_stencil {
-            render_pass.set_pipeline(self.pipelines.gradients.pipeline_for(self.mask_state.mode));
-        } else {
-            render_pass.set_pipeline(self.pipelines.gradients.stencilless_pipeline());
+        if self.current_pipeline != Some(pipeline) {
+            render_pass.set_pipeline(pipeline);
+            self.current_pipeline = Some(pipeline);
         }
-
-        render_pass.set_bind_group(2, bind_group, &[]);
-    }
-
-    pub fn prep_bitmap(
-        &self,
-        render_pass: &mut wgpu::RenderPass<'encoder>,
-        bind_group: &'encoder wgpu::BindGroup,
-        blend_mode: TrivialBlend,
-        render_stage3d: bool,
-    ) {
-        match (self.needs_stencil, render_stage3d) {
-            (true, true) => {
-                render_pass.set_pipeline(&self.pipelines.bitmap_opaque_dummy_stencil);
-            }
-            (true, false) => {
-                render_pass.set_pipeline(
-                    self.pipelines.bitmap[blend_mode].pipeline_for(self.mask_state.mode),
-                );
-            }
-            (false, true) => {
-                render_pass.set_pipeline(&self.pipelines.bitmap_opaque);
-            }
-            (false, false) => {
-                render_pass.set_pipeline(self.pipelines.bitmap[blend_mode].stencilless_pipeline());
-            }
-        }
-
-        render_pass.set_bind_group(2, bind_group, &[]);
-    }
-
-    pub fn prep_alpha_mask(
-        &self,
-        render_pass: &mut wgpu::RenderPass<'encoder>,
-        bind_group: &'encoder wgpu::BindGroup,
-    ) {
-        if self.needs_stencil {
-            render_pass.set_pipeline(self.pipelines.alpha_mask.pipeline_for(self.mask_state.mode));
-        } else {
-            render_pass.set_pipeline(self.pipelines.alpha_mask.stencilless_pipeline());
-        }
-
-        render_pass.set_bind_group(2, bind_group, &[]);
     }
 
     pub fn draw(
@@ -306,66 +248,111 @@ impl<'encoder> CommandRenderer<'encoder> {
     }
 
     pub fn render_texture(
-        &self,
+        &mut self,
         render_pass: &mut wgpu::RenderPass<'encoder>,
         bind_group: &'encoder wgpu::BindGroup,
         blend_mode: TrivialBlend,
         render_stage3d: bool,
         draw_offsets: &'encoder DrawOffsets,
     ) {
-        self.prep_bitmap(render_pass, bind_group, blend_mode, render_stage3d);
+        match (self.needs_stencil, render_stage3d) {
+            (true, true) => {
+                self.set_pipeline(render_pass, &self.pipelines.bitmap_opaque_dummy_stencil);
+            }
+            (true, false) => {
+                self.set_pipeline(
+                    render_pass,
+                    self.pipelines.bitmap[blend_mode].pipeline_for(self.mask_state.mode),
+                );
+            }
+            (false, true) => {
+                self.set_pipeline(render_pass, &self.pipelines.bitmap_opaque);
+            }
+            (false, false) => {
+                self.set_pipeline(
+                    render_pass,
+                    self.pipelines.bitmap[blend_mode].stencilless_pipeline(),
+                );
+            }
+        }
+
+        render_pass.set_bind_group(2, bind_group, &[]);
 
         self.draw(render_pass, draw_offsets);
     }
 
     pub fn draw_gradient(
-        &self,
+        &mut self,
         render_pass: &mut wgpu::RenderPass<'encoder>,
         bind_group: &'encoder wgpu::BindGroup,
         draw_offsets: &'encoder DrawOffsets,
     ) {
-        self.prep_gradient(render_pass, bind_group);
+        self.set_pipeline(
+            render_pass,
+            if self.needs_stencil {
+                self.pipelines.gradients.pipeline_for(self.mask_state.mode)
+            } else {
+                self.pipelines.gradients.stencilless_pipeline()
+            },
+        );
+
+        render_pass.set_bind_group(2, bind_group, &[]);
 
         self.draw(render_pass, draw_offsets);
     }
 
     pub fn render_alpha_mask(
-        &self,
+        &mut self,
         render_pass: &mut wgpu::RenderPass<'encoder>,
         _maskee: &PoolOrArcTexture,
         _mask: &PoolOrArcTexture,
         bind_group: &'encoder wgpu::BindGroup,
         draw_offsets: &'encoder DrawOffsets,
     ) {
-        if cfg!(feature = "render_debug_labels") {
-            render_pass.push_debug_group("render_alpha_mask");
-        }
+        self.set_pipeline(
+            render_pass,
+            if self.needs_stencil {
+                self.pipelines.alpha_mask.pipeline_for(self.mask_state.mode)
+            } else {
+                self.pipelines.alpha_mask.stencilless_pipeline()
+            },
+        );
 
-        self.prep_alpha_mask(render_pass, bind_group);
+        render_pass.set_bind_group(2, bind_group, &[]);
 
         self.draw(render_pass, draw_offsets);
-
-        if cfg!(feature = "render_debug_labels") {
-            render_pass.pop_debug_group();
-        }
     }
 
     pub fn draw_color(
-        &self,
+        &mut self,
         render_pass: &mut wgpu::RenderPass<'encoder>,
         draw_offsets: &'encoder DrawOffsets,
     ) {
-        self.prep_color(render_pass);
+        self.set_pipeline(
+            render_pass,
+            if self.needs_stencil {
+                self.pipelines.color.pipeline_for(self.mask_state.mode)
+            } else {
+                self.pipelines.color.stencilless_pipeline()
+            },
+        );
 
         self.draw(render_pass, draw_offsets);
     }
 
     pub fn draw_lines(
-        &self,
+        &mut self,
         render_pass: &mut wgpu::RenderPass<'encoder>,
         draw_offsets: &'encoder DrawOffsets,
     ) {
-        self.prep_lines(render_pass);
+        self.set_pipeline(
+            render_pass,
+            if self.needs_stencil {
+                self.pipelines.lines.pipeline_for(self.mask_state.mode)
+            } else {
+                self.pipelines.lines.stencilless_pipeline()
+            },
+        );
 
         self.draw(render_pass, draw_offsets);
     }
