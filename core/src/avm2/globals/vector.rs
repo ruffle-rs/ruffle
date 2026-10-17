@@ -214,10 +214,14 @@ pub fn join<'gc>(
 
     let separator = args.get_string(activation, 0);
 
-    if let Some(vector) = this.as_vector_storage() {
-        let mut accum = Vec::with_capacity(vector.length());
+    if let Some(vector) = this.as_vector_object() {
+        // The vector may be modified by user code while joining, so only
+        // borrow it to read the length and each element.
+        let length = vector.storage().length();
+        let mut accum = Vec::with_capacity(length);
 
-        for item in vector.iter() {
+        for i in 0..length {
+            let item = vector.storage().get(i, activation)?;
             if matches!(item, Value::Undefined) || matches!(item, Value::Null) {
                 accum.push(istr!("null"));
             } else {
