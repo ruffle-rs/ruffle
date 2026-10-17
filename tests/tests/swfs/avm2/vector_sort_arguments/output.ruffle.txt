@@ -1,6 +1,6 @@
 /// sort()
 caught: [class ArgumentError]
-ArgumentError: Error #1063: Argument count mismatch on __AS3__.vec::Vector.<int>/http://adobe.com/AS3/2006/builtin::sort(). Expected 1, got 0.
+ArgumentError: Error #1063: Argument count mismatch on Vector.<int>/http://adobe.com/AS3/2006/builtin::sort(). Expected 1, got 0.
 	at Function/http://adobe.com/AS3/2006/builtin::apply()
 	at Test$/run()
 	at Test()
@@ -41,7 +41,7 @@ vector: [1, 10, 20, 3]
 /// sort("16")
 caught: [class TypeError]
 TypeError: Error #1034: Type Coercion failed: cannot convert "16" to Function.
-	at __AS3__.vec::Vector.<int>/http://adobe.com/AS3/2006/builtin::sort()
+	at Vector.<int>/http://adobe.com/AS3/2006/builtin::sort()
 	at Function/http://adobe.com/AS3/2006/builtin::apply()
 	at Test$/run()
 	at Test()
@@ -49,7 +49,7 @@ vector: [3, 20, 1, 10]
 /// sort("abc")
 caught: [class TypeError]
 TypeError: Error #1034: Type Coercion failed: cannot convert "abc" to Function.
-	at __AS3__.vec::Vector.<int>/http://adobe.com/AS3/2006/builtin::sort()
+	at Vector.<int>/http://adobe.com/AS3/2006/builtin::sort()
 	at Function/http://adobe.com/AS3/2006/builtin::apply()
 	at Test$/run()
 	at Test()
@@ -57,7 +57,7 @@ vector: [3, 20, 1, 10]
 /// sort(true)
 caught: [class TypeError]
 TypeError: Error #1034: Type Coercion failed: cannot convert true to Function.
-	at __AS3__.vec::Vector.<int>/http://adobe.com/AS3/2006/builtin::sort()
+	at Vector.<int>/http://adobe.com/AS3/2006/builtin::sort()
 	at Function/http://adobe.com/AS3/2006/builtin::apply()
 	at Test$/run()
 	at Test()
@@ -65,7 +65,7 @@ vector: [3, 20, 1, 10]
 /// sort(null)
 caught: [class TypeError]
 TypeError: Error #1034: Type Coercion failed: cannot convert null to Function.
-	at __AS3__.vec::Vector.<int>/http://adobe.com/AS3/2006/builtin::sort()
+	at Vector.<int>/http://adobe.com/AS3/2006/builtin::sort()
 	at Function/http://adobe.com/AS3/2006/builtin::apply()
 	at Test$/run()
 	at Test()
@@ -73,7 +73,7 @@ vector: [3, 20, 1, 10]
 /// sort(undefined)
 caught: [class TypeError]
 TypeError: Error #1034: Type Coercion failed: cannot convert undefined to Function.
-	at __AS3__.vec::Vector.<int>/http://adobe.com/AS3/2006/builtin::sort()
+	at Vector.<int>/http://adobe.com/AS3/2006/builtin::sort()
 	at Function/http://adobe.com/AS3/2006/builtin::apply()
 	at Test$/run()
 	at Test()
@@ -81,7 +81,7 @@ vector: [3, 20, 1, 10]
 /// sort({})
 caught: [class TypeError]
 TypeError: Error #1034: Type Coercion failed: cannot convert Object@ADDRESS to Function.
-	at __AS3__.vec::Vector.<int>/http://adobe.com/AS3/2006/builtin::sort()
+	at Vector.<int>/http://adobe.com/AS3/2006/builtin::sort()
 	at Function/http://adobe.com/AS3/2006/builtin::apply()
 	at Test$/run()
 	at Test()
@@ -89,7 +89,7 @@ vector: [3, 20, 1, 10]
 /// sort([16])
 caught: [class TypeError]
 TypeError: Error #1034: Type Coercion failed: cannot convert Array@ADDRESS to Function.
-	at __AS3__.vec::Vector.<int>/http://adobe.com/AS3/2006/builtin::sort()
+	at Vector.<int>/http://adobe.com/AS3/2006/builtin::sort()
 	at Function/http://adobe.com/AS3/2006/builtin::apply()
 	at Test$/run()
 	at Test()
@@ -97,7 +97,7 @@ vector: [3, 20, 1, 10]
 /// sort(noisy)
 caught: [class TypeError]
 TypeError: Error #1034: Type Coercion failed: cannot convert Object@ADDRESS to Function.
-	at __AS3__.vec::Vector.<int>/http://adobe.com/AS3/2006/builtin::sort()
+	at Vector.<int>/http://adobe.com/AS3/2006/builtin::sort()
 	at Function/http://adobe.com/AS3/2006/builtin::apply()
 	at Test$/run()
 	at Test()
@@ -105,7 +105,7 @@ vector: [3, 20, 1, 10]
 /// sort(Number)
 caught: [class TypeError]
 TypeError: Error #1034: Type Coercion failed: cannot convert Number$@ADDRESS to Function.
-	at __AS3__.vec::Vector.<int>/http://adobe.com/AS3/2006/builtin::sort()
+	at Vector.<int>/http://adobe.com/AS3/2006/builtin::sort()
 	at Function/http://adobe.com/AS3/2006/builtin::apply()
 	at Test$/run()
 	at Test()
@@ -115,7 +115,7 @@ returned same vector
 vector: [1, 3, 10, 20]
 /// sort(cmp, 2)
 caught: [class ArgumentError]
-ArgumentError: Error #1063: Argument count mismatch on __AS3__.vec::Vector.<int>/http://adobe.com/AS3/2006/builtin::sort(). Expected 1, got 2.
+ArgumentError: Error #1063: Argument count mismatch on Vector.<int>/http://adobe.com/AS3/2006/builtin::sort(). Expected 1, got 2.
 	at Function/http://adobe.com/AS3/2006/builtin::apply()
 	at Test$/run()
 	at Test()

@@ -6,7 +6,7 @@ length: 5, fixed: false, elements: [first, noisy, third, fourth, pushed]
 toString called on noisy (1)
 caught: [class RangeError]
 RangeError: Error #1125: The index 3 is out of range 3.
-	at __AS3__.vec::Vector.<*>/http://adobe.com/AS3/2006/builtin::join()
+	at Vector.<*>/http://adobe.com/AS3/2006/builtin::join()
 	at Test$/run()
 	at Test()
 length: 3, fixed: false, elements: [first, noisy, third]
@@ -14,7 +14,7 @@ length: 3, fixed: false, elements: [first, noisy, third]
 toString called on noisy (1)
 caught: [class RangeError]
 RangeError: Error #1125: The index 3 is out of range 3.
-	at __AS3__.vec::Vector.<*>/http://adobe.com/AS3/2006/builtin::join()
+	at Vector.<*>/http://adobe.com/AS3/2006/builtin::join()
 	at Test$/run()
 	at Test()
 length: 3, fixed: false, elements: [noisy, third, fourth]
@@ -35,7 +35,7 @@ length: 4, fixed: false, elements: [changed, noisy, third, fourth]
 toString called on noisy (1)
 caught: [class RangeError]
 RangeError: Error #1125: The index 2 is out of range 0.
-	at __AS3__.vec::Vector.<*>/http://adobe.com/AS3/2006/builtin::join()
+	at Vector.<*>/http://adobe.com/AS3/2006/builtin::join()
 	at Test$/run()
 	at Test()
 length: 0, fixed: false, elements: []
@@ -70,11 +70,11 @@ length: 4, fixed: false, elements: [first, noisy, third, fourth]
 toString called on noisy (1)
 caught: [class RangeError]
 RangeError: Error #1126: Cannot change the length of a fixed Vector.
-	at __AS3__.vec::Vector.<*>/http://adobe.com/AS3/2006/builtin::push()
+	at Vector.<*>/http://adobe.com/AS3/2006/builtin::push()
 	at Function/<anonymous>()
 	at Function/<anonymous>()
 	at Noisy/toString()
-	at __AS3__.vec::Vector.<*>/http://adobe.com/AS3/2006/builtin::join()
+	at Vector.<*>/http://adobe.com/AS3/2006/builtin::join()
 	at Test$/run()
 	at Test()
 length: 4, fixed: true, elements: [first, noisy, third, fourth]
