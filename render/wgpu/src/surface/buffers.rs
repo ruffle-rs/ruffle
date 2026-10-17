@@ -60,7 +60,7 @@ impl ChunkBuffers {
     }
 }
 
-#[derive(Copy, Clone)]
+#[derive(Clone, Debug)]
 pub enum DrawVertices<'a> {
     CustomPosUvQuad(&'a [u8]),
     PosUvQuad,
@@ -68,11 +68,21 @@ pub enum DrawVertices<'a> {
     PosQuad,
     Line,
     RectLine,
+    #[expect(dead_code)]
+    CustomBuffers {
+        vertex_buffer: wgpu::Buffer,
+        vertex_range: Range<wgpu::BufferAddress>,
+        index_buffer: wgpu::Buffer,
+        index_range: Range<wgpu::BufferAddress>,
+        index_count: u32,
+    },
     None,
 }
 
 #[derive(Clone, Debug)]
 pub struct DrawOffsets {
+    pub vertex_buffer: Option<wgpu::Buffer>,
+    pub index_buffer: Option<wgpu::Buffer>,
     pub vertices: Option<Range<wgpu::BufferAddress>>,
     pub indices: Range<wgpu::BufferAddress>,
     pub instances: Range<u32>,
@@ -180,51 +190,92 @@ impl ChunkBufferBuilder {
         }
     }
 
-    pub fn add(
+    pub fn add<'a>(
         &mut self,
         transform: Transforms,
-        vertices: DrawVertices,
-    ) -> Result<DrawOffsets, BufferFull> {
-        let transform_address = self.transforms.add(&[transform])?;
-        let (vertices, indices, index_count) = match vertices {
-            DrawVertices::CustomPosUvQuad(vertices) => (
-                Some(self.vertices.add(vertices)?),
-                self.quad_indices.clone(),
-                6,
-            ),
-            DrawVertices::PosQuad => (
-                Some(self.quad_pos_vertices.clone()),
-                self.quad_indices.clone(),
-                6,
-            ),
-            DrawVertices::PosColorQuad => (
-                Some(self.quad_pos_color_vertices.clone()),
-                self.quad_indices.clone(),
-                6,
-            ),
-            DrawVertices::PosUvQuad => (
-                Some(self.quad_pos_uv_vertices.clone()),
-                self.quad_indices.clone(),
-                6,
-            ),
-            DrawVertices::Line => (
-                Some(self.quad_pos_color_vertices.clone()),
-                self.line_indices.clone(),
-                2,
-            ),
-            DrawVertices::RectLine => (
-                Some(self.quad_pos_color_vertices.clone()),
-                self.rect_line_indices.clone(),
-                5,
-            ),
-            DrawVertices::None => (None, self.quad_indices.clone(), 0),
+        vertices: DrawVertices<'a>,
+    ) -> Result<DrawOffsets, (BufferFull, DrawVertices<'a>)> {
+        let transform_address = match self.transforms.add(&[transform]) {
+            Ok(address) => address,
+            Err(e) => return Err((e, vertices)),
         };
         let instance = (transform_address.start as usize / size_of::<Transforms>()) as u32;
-        Ok(DrawOffsets {
-            vertices,
-            indices,
-            instances: instance..instance + 1,
-            index_count,
+        let instances = instance..instance + 1;
+        Ok(match vertices {
+            DrawVertices::CustomPosUvQuad(vertex_bytes) => DrawOffsets {
+                vertex_buffer: None,
+                index_buffer: None,
+                vertices: Some(
+                    self.vertices
+                        .add(vertex_bytes)
+                        .map_err(|_| (BufferFull, vertices))?,
+                ),
+                indices: self.quad_indices.clone(),
+                instances,
+                index_count: 6,
+            },
+            DrawVertices::PosQuad => DrawOffsets {
+                vertex_buffer: None,
+                index_buffer: None,
+                vertices: Some(self.quad_pos_vertices.clone()),
+                indices: self.quad_indices.clone(),
+                instances,
+                index_count: 6,
+            },
+            DrawVertices::PosColorQuad => DrawOffsets {
+                vertex_buffer: None,
+                index_buffer: None,
+                vertices: Some(self.quad_pos_color_vertices.clone()),
+                indices: self.quad_indices.clone(),
+                instances,
+                index_count: 6,
+            },
+            DrawVertices::PosUvQuad => DrawOffsets {
+                vertex_buffer: None,
+                index_buffer: None,
+                vertices: Some(self.quad_pos_uv_vertices.clone()),
+                indices: self.quad_indices.clone(),
+                instances,
+                index_count: 6,
+            },
+            DrawVertices::Line => DrawOffsets {
+                vertex_buffer: None,
+                index_buffer: None,
+                vertices: Some(self.quad_pos_color_vertices.clone()),
+                indices: self.line_indices.clone(),
+                instances,
+                index_count: 2,
+            },
+            DrawVertices::RectLine => DrawOffsets {
+                vertex_buffer: None,
+                index_buffer: None,
+                vertices: Some(self.quad_pos_color_vertices.clone()),
+                indices: self.rect_line_indices.clone(),
+                instances,
+                index_count: 5,
+            },
+            DrawVertices::CustomBuffers {
+                vertex_buffer,
+                vertex_range,
+                index_buffer,
+                index_range,
+                index_count,
+            } => DrawOffsets {
+                vertex_buffer: Some(vertex_buffer),
+                index_buffer: Some(index_buffer),
+                vertices: Some(vertex_range),
+                indices: index_range,
+                instances,
+                index_count,
+            },
+            DrawVertices::None => DrawOffsets {
+                vertex_buffer: None,
+                index_buffer: None,
+                vertices: None,
+                indices: self.quad_indices.clone(),
+                instances,
+                index_count: 0,
+            },
         })
     }
 

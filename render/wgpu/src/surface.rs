@@ -177,7 +177,6 @@ impl Surface {
                     render_pass.set_bind_group(1, &chunk_buffers.bind_group, &[]);
                     let mut renderer = CommandRenderer::new(
                         &self.pipelines,
-                        descriptors,
                         chunk_buffers,
                         &mut mask_state,
                         needs_stencil,

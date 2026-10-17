@@ -172,22 +172,25 @@ impl<'encoder, 'global: 'encoder> WgpuCommandHandler<'encoder, 'global> {
             mult_color: color_transform.mult_rgba_normalized(),
             add_color: color_transform.add_rgba_normalized(),
         };
-        if let Ok(offsets) = self.chunk_buffer_builder.add(transform, vertices) {
-            self.push_command(command_builder(offsets));
-        } else {
-            self.result.push(Chunk::Draw {
-                chunk: mem::take(&mut self.current),
-                needs_stencil: self.needs_stencil,
-                chunk_buffer_builder: mem::replace(
-                    &mut self.chunk_buffer_builder,
-                    ChunkBufferBuilder::new(self.chunk_buffers, &self.descriptors.limits),
-                ),
-            });
-            let offsets = self
-                .chunk_buffer_builder
-                .add(transform, vertices)
-                .expect("Buffer must be able to fit a new thing, it was just emptied");
-            self.push_command(command_builder(offsets));
+        match self.chunk_buffer_builder.add(transform, vertices) {
+            Ok(offsets) => {
+                self.push_command(command_builder(offsets));
+            }
+            Err((_, vertices)) => {
+                self.result.push(Chunk::Draw {
+                    chunk: mem::take(&mut self.current),
+                    needs_stencil: self.needs_stencil,
+                    chunk_buffer_builder: mem::replace(
+                        &mut self.chunk_buffer_builder,
+                        ChunkBufferBuilder::new(self.chunk_buffers, &self.descriptors.limits),
+                    ),
+                });
+                let offsets = self
+                    .chunk_buffer_builder
+                    .add(transform, vertices)
+                    .expect("Buffer must be able to fit a new thing, it was just emptied");
+                self.push_command(command_builder(offsets));
+            }
         }
     }
 }
