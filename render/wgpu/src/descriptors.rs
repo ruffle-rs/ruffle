@@ -1,6 +1,5 @@
 use crate::filters::{FilterVertex, Filters};
 use crate::layouts::BindLayouts;
-use crate::pipelines::VERTEX_BUFFERS_DESCRIPTION_POS_UV;
 use crate::shaders::Shaders;
 use crate::{
     BitmapSamplers, Pipelines, PosColorVertex, PosUvVertex, PosVertex, create_buffer_with_data,
@@ -81,11 +80,7 @@ impl Descriptors {
                         .device
                         .create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
                             label: create_debug_label!("Copy pipeline layout").as_deref(),
-                            bind_group_layouts: &[
-                                Some(&self.bind_layouts.globals),
-                                None,
-                                Some(&self.bind_layouts.bitmap),
-                            ],
+                            bind_group_layouts: &[None, None, Some(&self.bind_layouts.bitmap)],
                             immediate_size: 0,
                         });
                 self.device
@@ -95,7 +90,7 @@ impl Descriptors {
                         vertex: wgpu::VertexState {
                             module: &self.shaders.copy_shader,
                             entry_point: Some("main_vertex"),
-                            buffers: &VERTEX_BUFFERS_DESCRIPTION_POS_UV,
+                            buffers: &[],
                             compilation_options: Default::default(),
                         },
                         fragment: Some(wgpu::FragmentState {

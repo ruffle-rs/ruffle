@@ -98,7 +98,6 @@ impl Surface {
             self.format,
             frame_view,
             target.color_view(),
-            target.globals(),
             1,
             draw_encoder,
         );
