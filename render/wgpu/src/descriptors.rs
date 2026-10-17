@@ -158,6 +158,7 @@ pub struct Quad {
     pub indices_quad: Range<u32>,
     pub indices_line: Range<u32>,
     pub indices_line_rect: Range<u32>,
+    pub full_index_range: Range<wgpu::BufferAddress>,
 }
 
 impl Quad {
@@ -254,6 +255,7 @@ impl Quad {
         let indices_quad = 0..6;
         let indices_line = 0..2;
         let indices_line_rect = 6..11;
+        let full_index_range = 0..index_buffer.size();
 
         Self {
             vertex_buffer: vbo,
@@ -265,6 +267,7 @@ impl Quad {
             indices_quad,
             indices_line,
             indices_line_rect,
+            full_index_range,
         }
     }
 }
