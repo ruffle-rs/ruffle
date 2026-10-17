@@ -11,9 +11,17 @@ struct VertexOutput {
 @group(2) @binding(1) var texture_sampler: sampler;
 
 @vertex
-fn main_vertex(in: common__VertexInputUv) -> VertexOutput {
-    let pos = vec4<f32>((in.position.x * 2.0) - 1.0, -(in.position.y * 2.0) + 1.0, 0.0, 1.0);
-    return VertexOutput(pos, in.uv.xy / in.uv.z);
+fn main_vertex(@builtin(vertex_index) vertex_index: u32) -> VertexOutput {
+	let uv = vec2<f32>(
+        f32((vertex_index << 1u) & 2u),
+        f32(vertex_index & 2u)
+    );
+    let pos = vec4<f32>(
+        uv * vec2<f32>(2.0, -2.0) + vec2<f32>(-1.0, 1.0),
+        0.0,
+        1.0
+    );
+    return VertexOutput(pos, uv);
 }
 
 @fragment

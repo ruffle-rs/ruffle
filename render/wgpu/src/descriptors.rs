@@ -1,14 +1,14 @@
+use crate::buffer_builder::BufferBuilder;
 use crate::filters::{FilterVertex, Filters};
 use crate::layouts::BindLayouts;
-use crate::pipelines::VERTEX_BUFFERS_DESCRIPTION_POS_UV;
 use crate::shaders::Shaders;
-use crate::{
-    BitmapSamplers, Pipelines, PosColorVertex, PosUvVertex, PosVertex, create_buffer_with_data,
-};
+use crate::{BitmapSamplers, Pipelines, PosColorVertex, PosUvVertex, PosVertex};
 use fnv::FnvHashMap;
 use std::fmt::Debug;
+use std::ops::Range;
 use std::sync::{Arc, Mutex};
 use wgpu::Backend;
+use wgpu::util::DeviceExt;
 
 pub struct Descriptors {
     pub wgpu_instance: wgpu::Instance,
@@ -81,11 +81,7 @@ impl Descriptors {
                         .device
                         .create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
                             label: create_debug_label!("Copy pipeline layout").as_deref(),
-                            bind_group_layouts: &[
-                                Some(&self.bind_layouts.globals),
-                                None,
-                                Some(&self.bind_layouts.bitmap),
-                            ],
+                            bind_group_layouts: &[None, None, Some(&self.bind_layouts.bitmap)],
                             immediate_size: 0,
                         });
                 self.device
@@ -95,7 +91,7 @@ impl Descriptors {
                         vertex: wgpu::VertexState {
                             module: &self.shaders.copy_shader,
                             entry_point: Some("main_vertex"),
-                            buffers: &VERTEX_BUFFERS_DESCRIPTION_POS_UV,
+                            buffers: &[],
                             compilation_options: Default::default(),
                         },
                         fragment: Some(wgpu::FragmentState {
@@ -153,144 +149,125 @@ impl Descriptors {
 }
 
 pub struct Quad {
-    pub vertices_pos: wgpu::Buffer,
-    pub vertices_pos_uv: wgpu::Buffer,
-    pub vertices_pos_color: wgpu::Buffer,
-    pub filter_vertices: wgpu::Buffer,
-    pub indices: wgpu::Buffer,
-    pub indices_line: wgpu::Buffer,
-    pub indices_line_rect: wgpu::Buffer,
+    pub vertex_buffer: wgpu::Buffer,
+    pub vertices_pos: Range<wgpu::BufferAddress>,
+    pub vertices_pos_uv: Range<wgpu::BufferAddress>,
+    pub vertices_pos_color: Range<wgpu::BufferAddress>,
+    pub vertices_filter: Range<wgpu::BufferAddress>,
+    pub index_buffer: wgpu::Buffer,
+    pub indices_quad: Range<u32>,
+    pub indices_line: Range<u32>,
+    pub indices_line_rect: Range<u32>,
+    pub full_index_range: Range<wgpu::BufferAddress>,
 }
 
 impl Quad {
     pub fn new(device: &wgpu::Device) -> Self {
-        let vertices_pos = [
-            PosVertex {
-                position: [0.0, 0.0],
-            },
-            PosVertex {
-                position: [1.0, 0.0],
-            },
-            PosVertex {
-                position: [1.0, 1.0],
-            },
-            PosVertex {
-                position: [0.0, 1.0],
-            },
-        ];
-        let vertices_pos_uv = [
-            PosUvVertex {
-                position: [0.0, 0.0],
-                uv: [0.0, 0.0, 1.0],
-            },
-            PosUvVertex {
-                position: [1.0, 0.0],
-                uv: [1.0, 0.0, 1.0],
-            },
-            PosUvVertex {
-                position: [1.0, 1.0],
-                uv: [1.0, 1.0, 1.0],
-            },
-            PosUvVertex {
-                position: [0.0, 1.0],
-                uv: [0.0, 1.0, 1.0],
-            },
-        ];
-        let vertices_pos_color = [
-            PosColorVertex {
-                position: [0.0, 0.0],
-                color: [1.0, 1.0, 1.0, 1.0],
-            },
-            PosColorVertex {
-                position: [1.0, 0.0],
-                color: [1.0, 1.0, 1.0, 1.0],
-            },
-            PosColorVertex {
-                position: [1.0, 1.0],
-                color: [1.0, 1.0, 1.0, 1.0],
-            },
-            PosColorVertex {
-                position: [0.0, 1.0],
-                color: [1.0, 1.0, 1.0, 1.0],
-            },
-        ];
-        let filter_vertices = [
-            FilterVertex {
-                position: [0.0, 0.0],
-                uv: [0.0, 0.0],
-            },
-            FilterVertex {
-                position: [1.0, 0.0],
-                uv: [1.0, 0.0],
-            },
-            FilterVertex {
-                position: [1.0, 1.0],
-                uv: [1.0, 1.0],
-            },
-            FilterVertex {
-                position: [0.0, 1.0],
-                uv: [0.0, 1.0],
-            },
-        ];
-        let indices: [u32; 6] = [0, 1, 2, 0, 2, 3];
-        let indices_line: [u32; 2] = [0, 1];
-        let indices_line_rect: [u32; 5] = [0, 1, 2, 3, 0];
+        let mut vertex_buffer = BufferBuilder::new(&device.limits(), 0);
+        let vertices_pos = vertex_buffer
+            .add(&[
+                PosVertex {
+                    position: [0.0, 0.0],
+                },
+                PosVertex {
+                    position: [1.0, 0.0],
+                },
+                PosVertex {
+                    position: [1.0, 1.0],
+                },
+                PosVertex {
+                    position: [0.0, 1.0],
+                },
+            ])
+            .expect("Quad vertices must fit");
+        let vertices_pos_uv = vertex_buffer
+            .add(&[
+                PosUvVertex {
+                    position: [0.0, 0.0],
+                    uv: [0.0, 0.0, 1.0],
+                },
+                PosUvVertex {
+                    position: [1.0, 0.0],
+                    uv: [1.0, 0.0, 1.0],
+                },
+                PosUvVertex {
+                    position: [1.0, 1.0],
+                    uv: [1.0, 1.0, 1.0],
+                },
+                PosUvVertex {
+                    position: [0.0, 1.0],
+                    uv: [0.0, 1.0, 1.0],
+                },
+            ])
+            .expect("Quad vertices must fit");
+        let vertices_pos_color = vertex_buffer
+            .add(&[
+                PosColorVertex {
+                    position: [0.0, 0.0],
+                    color: [1.0, 1.0, 1.0, 1.0],
+                },
+                PosColorVertex {
+                    position: [1.0, 0.0],
+                    color: [1.0, 1.0, 1.0, 1.0],
+                },
+                PosColorVertex {
+                    position: [1.0, 1.0],
+                    color: [1.0, 1.0, 1.0, 1.0],
+                },
+                PosColorVertex {
+                    position: [0.0, 1.0],
+                    color: [1.0, 1.0, 1.0, 1.0],
+                },
+            ])
+            .expect("Quad vertices must fit");
+        let filter_vertices = vertex_buffer
+            .add(&[
+                FilterVertex {
+                    position: [0.0, 0.0],
+                    uv: [0.0, 0.0],
+                },
+                FilterVertex {
+                    position: [1.0, 0.0],
+                    uv: [1.0, 0.0],
+                },
+                FilterVertex {
+                    position: [1.0, 1.0],
+                    uv: [1.0, 1.0],
+                },
+                FilterVertex {
+                    position: [0.0, 1.0],
+                    uv: [0.0, 1.0],
+                },
+            ])
+            .expect("Filter vertices must fit");
 
-        let vbo_pos = create_buffer_with_data(
+        let vbo = vertex_buffer.finish(
             device,
-            bytemuck::cast_slice(&vertices_pos),
+            Some("Quad vertices".to_string()),
             wgpu::BufferUsages::VERTEX,
-            create_debug_label!("Quad vbo (pos)"),
         );
 
-        let vbo_pos_uv = create_buffer_with_data(
-            device,
-            bytemuck::cast_slice(&vertices_pos_uv),
-            wgpu::BufferUsages::VERTEX,
-            create_debug_label!("Quad vbo (pos & uv)"),
-        );
-
-        let vbo_pos_color = create_buffer_with_data(
-            device,
-            bytemuck::cast_slice(&vertices_pos_color),
-            wgpu::BufferUsages::VERTEX,
-            create_debug_label!("Quad vbo (pos & color)"),
-        );
-
-        let vbo_filter = create_buffer_with_data(
-            device,
-            bytemuck::cast_slice(&filter_vertices),
-            wgpu::BufferUsages::VERTEX,
-            create_debug_label!("Quad vbo (filter)"),
-        );
-
-        let ibo = create_buffer_with_data(
-            device,
-            bytemuck::cast_slice(&indices),
-            wgpu::BufferUsages::INDEX,
-            create_debug_label!("Quad ibo"),
-        );
-        let ibo_line = create_buffer_with_data(
-            device,
-            bytemuck::cast_slice(&indices_line),
-            wgpu::BufferUsages::INDEX,
-            create_debug_label!("Line ibo"),
-        );
-        let ibo_line_rect = create_buffer_with_data(
-            device,
-            bytemuck::cast_slice(&indices_line_rect),
-            wgpu::BufferUsages::INDEX,
-            create_debug_label!("Line rect ibo"),
-        );
+        let index_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: Some("Quad indices"),
+            contents: bytemuck::cast_slice(&[0, 1, 2, 0, 2, 3, 0, 1, 2, 3, 0]),
+            usage: wgpu::BufferUsages::INDEX,
+        });
+        let indices_quad = 0..6;
+        let indices_line = 0..2;
+        let indices_line_rect = 6..11;
+        let full_index_range = 0..index_buffer.size();
 
         Self {
-            vertices_pos: vbo_pos,
-            vertices_pos_uv: vbo_pos_uv,
-            vertices_pos_color: vbo_pos_color,
-            filter_vertices: vbo_filter,
-            indices: ibo,
-            indices_line: ibo_line,
-            indices_line_rect: ibo_line_rect,
+            vertex_buffer: vbo,
+            vertices_pos,
+            vertices_pos_uv,
+            vertices_pos_color,
+            vertices_filter: filter_vertices,
+            index_buffer,
+            indices_quad,
+            indices_line,
+            indices_line_rect,
+            full_index_range,
         }
     }
 }

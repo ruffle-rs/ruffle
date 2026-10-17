@@ -1,10 +1,10 @@
 use crate::buffer_builder::BufferBuilder;
 use crate::buffer_pool::{BufferPool, TexturePool};
 use crate::context3d::WgpuContext3D;
-use crate::dynamic_transforms::DynamicTransforms;
 use crate::filters::FilterSource;
 use crate::mesh::{CommonGradient, Mesh, PendingDraw};
 use crate::pixel_bender::{ShaderMode, run_pixelbender_shader_impl};
+use crate::surface::buffers::ChunkBuffers;
 use crate::surface::{LayerRef, Surface};
 use crate::target::{MaybeOwnedBuffer, TextureTarget};
 use crate::target::{RenderTargetFrame, TextureBufferInfo};
@@ -80,7 +80,7 @@ pub struct WgpuRenderBackend<T: RenderTarget> {
     texture_pool: TexturePool,
     offscreen_texture_pool: TexturePool,
     pub(crate) offscreen_buffer_pool: Arc<BufferPool<wgpu::Buffer, BufferDimensions>>,
-    dynamic_transforms: DynamicTransforms,
+    chunk_buffers: ChunkBuffers,
     active_frame: ActiveFrame,
     profiler: GpuProfiler,
 }
@@ -249,7 +249,7 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
             },
         ));
 
-        let transforms = DynamicTransforms::new(&descriptors);
+        let chunk_buffers = ChunkBuffers::new(&descriptors);
         let active_frame = ActiveFrame::new(&descriptors);
 
         let profiler_settings = GpuProfilerSettings {
@@ -277,7 +277,7 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
             texture_pool: TexturePool::new(),
             offscreen_texture_pool: TexturePool::new(),
             offscreen_buffer_pool: Arc::new(offscreen_buffer_pool),
-            dynamic_transforms: transforms,
+            chunk_buffers,
             active_frame,
             profiler,
         })
@@ -301,6 +301,7 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
         );
         let mut vertex_buffer = BufferBuilder::new(&self.descriptors.limits, 0);
         let mut index_buffer = BufferBuilder::new(&self.descriptors.limits, 0);
+        let mut indices_so_far = 0;
         let mut gradients = Vec::with_capacity(lyon_mesh.gradients.len());
 
         for gradient in lyon_mesh.gradients {
@@ -321,6 +322,7 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
                 draw_id,
                 &mut vertex_buffer,
                 &mut index_buffer,
+                &mut indices_so_far,
             ) {
                 draws.push(draw);
             }
@@ -334,12 +336,12 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
         let vertex_buffer = vertex_buffer.finish(
             &self.descriptors.device,
             create_debug_label!("Shape {} vertices", shape_id),
-            wgpu::BufferUsages::VERTEX,
+            wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_SRC,
         );
         let index_buffer = index_buffer.finish(
             &self.descriptors.device,
             create_debug_label!("Shape {} indices", shape_id),
-            wgpu::BufferUsages::INDEX,
+            wgpu::BufferUsages::INDEX | wgpu::BufferUsages::COPY_SRC,
         );
 
         let draws = draws
@@ -583,7 +585,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
                     &self.meshes,
                     entry.commands,
                     &mut self.active_frame.staging_belt,
-                    &self.dynamic_transforms,
+                    &self.chunk_buffers,
                     &mut self
                         .profiler
                         .scope("Draw to CAB", &mut self.active_frame.command_encoder),
@@ -612,7 +614,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
                     &self.meshes,
                     entry.commands,
                     &mut self.active_frame.staging_belt,
-                    &self.dynamic_transforms,
+                    &self.chunk_buffers,
                     &mut scope.scope("Draw to CAB"),
                     LayerRef::None,
                     &mut self.offscreen_texture_pool,
@@ -632,7 +634,6 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
                     texture.texture.format(),
                     &texture.texture.create_view(&Default::default()),
                     target.color_view(),
-                    target.globals(),
                     target.color_texture().sample_count(),
                     &mut scope.scope("Copy filtered to CAB"),
                 );
@@ -653,7 +654,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
             }),
             &self.descriptors,
             &mut self.active_frame.staging_belt,
-            &self.dynamic_transforms,
+            &self.chunk_buffers,
             &mut self
                 .profiler
                 .scope("Frame commands", &mut self.active_frame.command_encoder),
@@ -723,6 +724,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
         );
 
         let handle = BitmapHandle(Arc::new(Texture {
+            view: texture.create_view(&Default::default()),
             texture,
             repeating_linear: Default::default(),
             repeating_nearest: Default::default(),
@@ -826,7 +828,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
             RenderTargetMode::FreshWithTexture(target.get_texture()),
             &self.descriptors,
             &mut self.active_frame.staging_belt,
-            &self.dynamic_transforms,
+            &self.chunk_buffers,
             &mut self
                 .profiler
                 .scope("Offscreen commands", &mut self.active_frame.command_encoder),
@@ -1001,6 +1003,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
                             | wgpu::TextureUsages::COPY_SRC,
                     });
                 BitmapHandle(Arc::new(Texture {
+                    view: texture.create_view(&Default::default()),
                     texture,
                     repeating_linear: Default::default(),
                     repeating_nearest: Default::default(),
@@ -1161,6 +1164,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
                     | wgpu::TextureUsages::COPY_SRC,
             });
         Ok(BitmapHandle(Arc::new(Texture {
+            view: texture.create_view(&Default::default()),
             texture,
             repeating_linear: Default::default(),
             repeating_nearest: Default::default(),

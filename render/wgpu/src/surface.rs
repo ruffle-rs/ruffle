@@ -1,17 +1,22 @@
+pub mod buffers;
+mod chunk;
 mod commands;
+pub mod mask;
 pub mod target;
 
 use crate::backend::RenderTargetMode;
 use crate::blend::ComplexBlend;
 use crate::buffer_pool::TexturePool;
-use crate::dynamic_transforms::DynamicTransforms;
 use crate::filters::FilterSource;
 use crate::mesh::Mesh;
 use crate::pixel_bender::{ShaderMode, run_pixelbender_shader_impl};
-use crate::surface::commands::{Chunk, CommandRenderer, chunk_blends};
+use crate::surface::buffers::ChunkBuffers;
+pub use crate::surface::commands::LayerRef;
+use crate::surface::commands::chunk_blends;
 use crate::utils::run_copy_pipeline;
 use crate::utils::supported_sample_count;
-use crate::{Descriptors, MaskState, Pipelines};
+use crate::{Descriptors, Pipelines};
+use chunk::{Chunk, CommandRenderer};
 use ruffle_render::commands::CommandList;
 use ruffle_render::pixel_bender_support::{ImageInputTexture, PixelBenderShaderArgument};
 use ruffle_render::quality::StageQuality;
@@ -20,9 +25,8 @@ use target::CommandTarget;
 use tracing::instrument;
 use wgpu_profiler::Scope;
 
-pub use crate::surface::commands::LayerRef;
-
-use self::commands::ChunkBlendMode;
+use crate::surface::mask::MaskState;
+use chunk::ChunkBlendMode;
 
 #[derive(Debug)]
 pub struct Surface {
@@ -70,7 +74,7 @@ impl Surface {
         render_target_mode: RenderTargetMode,
         descriptors: &'global Descriptors,
         staging_belt: &'global mut wgpu::util::StagingBelt,
-        dynamic_transforms: &'global DynamicTransforms,
+        chunk_buffers: &'global ChunkBuffers,
         draw_encoder: &'encoder mut Scope<'global, wgpu::CommandEncoder>,
         meshes: &'global Vec<Mesh>,
         commands: CommandList,
@@ -83,7 +87,7 @@ impl Surface {
             meshes,
             commands,
             staging_belt,
-            dynamic_transforms,
+            chunk_buffers,
             draw_encoder,
             layer,
             texture_pool,
@@ -94,7 +98,6 @@ impl Surface {
             self.format,
             frame_view,
             target.color_view(),
-            target.globals(),
             1,
             draw_encoder,
         );
@@ -109,7 +112,7 @@ impl Surface {
         meshes: &'encoder Vec<Mesh>,
         commands: CommandList,
         staging_belt: &'encoder mut wgpu::util::StagingBelt,
-        dynamic_transforms: &'encoder DynamicTransforms,
+        chunk_buffers: &'encoder ChunkBuffers,
         draw_encoder: &'encoder mut Scope<'global, wgpu::CommandEncoder>,
         nearest_layer: LayerRef<'encoder>,
         texture_pool: &'encoder mut TexturePool,
@@ -124,13 +127,12 @@ impl Surface {
             draw_encoder,
         );
 
-        let mut num_masks = 0;
-        let mut mask_state = MaskState::NoMask;
+        let mut mask_state = MaskState::empty();
         let chunks = chunk_blends(
             commands,
             descriptors,
             staging_belt,
-            dynamic_transforms,
+            chunk_buffers,
             draw_encoder,
             meshes,
             self.quality,
@@ -148,15 +150,9 @@ impl Surface {
                 Chunk::Draw {
                     chunk,
                     needs_stencil,
-                    transforms,
-                    vertices,
+                    chunk_buffer_builder,
                 } => {
-                    transforms.copy_to(staging_belt, draw_encoder, &dynamic_transforms.buffer);
-                    vertices.copy_to(
-                        staging_belt,
-                        draw_encoder,
-                        &dynamic_transforms.vertex_buffer,
-                    );
+                    chunk_buffer_builder.copy_to(staging_belt, draw_encoder, chunk_buffers);
                     let mut render_pass = draw_encoder.scoped_render_pass(
                         format!(
                             "Chunked draw calls {}",
@@ -177,22 +173,17 @@ impl Surface {
                         },
                     );
                     render_pass.set_bind_group(0, target.globals().bind_group(), &[]);
-                    render_pass.set_bind_group(1, &dynamic_transforms.bind_group, &[]);
+                    render_pass.set_bind_group(1, &chunk_buffers.bind_group, &[]);
                     let mut renderer = CommandRenderer::new(
                         &self.pipelines,
-                        descriptors,
-                        &dynamic_transforms.vertex_buffer,
-                        num_masks,
-                        mask_state,
+                        chunk_buffers,
+                        &mut mask_state,
                         needs_stencil,
                     );
 
                     for command in &chunk {
                         renderer.execute(&mut render_pass.scope(command.name()), command);
                     }
-
-                    num_masks = renderer.num_masks();
-                    mask_state = renderer.mask_state();
                 }
                 Chunk::Blend {
                     texture,
@@ -312,20 +303,9 @@ impl Surface {
                     render_pass.set_bind_group(0, target.globals().bind_group(), &[]);
 
                     if needs_stencil {
-                        match mask_state {
-                            MaskState::NoMask => {}
-                            MaskState::DrawMaskStencil => {
-                                render_pass.set_stencil_reference(num_masks - 1);
-                            }
-                            MaskState::DrawMaskedContent => {
-                                render_pass.set_stencil_reference(num_masks);
-                            }
-                            MaskState::ClearMaskStencil => {
-                                render_pass.set_stencil_reference(num_masks);
-                            }
-                        }
+                        mask_state.apply_stencil_reference(&mut render_pass);
                         render_pass.set_pipeline(
-                            self.pipelines.complex_blends[blend_mode].pipeline_for(mask_state),
+                            self.pipelines.complex_blends[blend_mode].pipeline_for(mask_state.mode),
                         );
                     } else {
                         render_pass.set_pipeline(
@@ -335,13 +315,19 @@ impl Surface {
 
                     render_pass.set_bind_group(2, &blend_bind_group, &[]);
 
-                    render_pass.set_vertex_buffer(0, descriptors.quad.vertices_pos.slice(..));
+                    render_pass.set_vertex_buffer(
+                        0,
+                        descriptors
+                            .quad
+                            .vertex_buffer
+                            .slice(descriptors.quad.vertices_pos.clone()),
+                    );
                     render_pass.set_index_buffer(
-                        descriptors.quad.indices.slice(..),
+                        descriptors.quad.index_buffer.slice(..),
                         wgpu::IndexFormat::Uint32,
                     );
 
-                    render_pass.draw_indexed(0..6, 0, 0..1);
+                    render_pass.draw_indexed(descriptors.quad.indices_quad.clone(), 0, 0..1);
                 }
             }
         }

@@ -1,486 +1,25 @@
-use super::target::PoolOrArcTexture;
 use crate::backend::RenderTargetMode;
+use crate::blend::BlendType;
 use crate::blend::TrivialBlend;
-use crate::blend::{BlendType, ComplexBlend};
-use crate::buffer_builder::BufferBuilder;
 use crate::buffer_pool::TexturePool;
-use crate::dynamic_transforms::DynamicTransforms;
 use crate::mesh::{DrawType, Mesh, as_mesh};
 use crate::surface::Surface;
-use crate::surface::target::CommandTarget;
-use crate::{Descriptors, MaskState, Pipelines, PosUvVertex, Transforms, as_texture};
+use crate::surface::buffers::{ChunkBufferBuilder, ChunkBuffers, DrawOffsets, DrawVertices};
+use crate::surface::chunk::{Chunk, ChunkBlendMode, DrawCommand};
+use crate::surface::mask::{MaskMode, MaskState};
+use crate::surface::target::{CommandTarget, PoolOrArcTexture};
+use crate::{Descriptors, PosUvVertex, Transforms, as_texture};
 use ruffle_render::backend::ShapeHandle;
 use ruffle_render::bitmap::{BitmapHandle, PixelRegion, PixelSnapping};
 use ruffle_render::commands::{CommandHandler, CommandList, RenderBlendMode};
 use ruffle_render::lines::{emulate_line, emulate_line_rect};
 use ruffle_render::matrix::Matrix;
-use ruffle_render::pixel_bender::PixelBenderShaderHandle;
 use ruffle_render::quality::StageQuality;
 use ruffle_render::transform::Transform;
 use std::mem;
 use swf::{BlendMode, Color, ColorTransform, Twips};
 use wgpu::Backend;
 use wgpu_profiler::Scope;
-
-pub struct CommandRenderer<'encoder> {
-    pipelines: &'encoder Pipelines,
-    descriptors: &'encoder Descriptors,
-    num_masks: u32,
-    mask_state: MaskState,
-    needs_stencil: bool,
-    dynamic_vertex_buffer: &'encoder wgpu::Buffer,
-}
-
-impl<'encoder> CommandRenderer<'encoder> {
-    #[allow(clippy::too_many_arguments)]
-    pub fn new(
-        pipelines: &'encoder Pipelines,
-        descriptors: &'encoder Descriptors,
-        dynamic_vertex_buffer: &'encoder wgpu::Buffer,
-        num_masks: u32,
-        mask_state: MaskState,
-        needs_stencil: bool,
-    ) -> Self {
-        Self {
-            pipelines,
-            num_masks,
-            mask_state,
-            descriptors,
-            needs_stencil,
-            dynamic_vertex_buffer,
-        }
-    }
-
-    pub fn execute(
-        &mut self,
-        render_pass: &mut wgpu::RenderPass<'encoder>,
-        command: &'encoder DrawCommand,
-    ) {
-        if self.needs_stencil {
-            match self.mask_state {
-                MaskState::NoMask => {}
-                MaskState::DrawMaskStencil => {
-                    render_pass.set_stencil_reference(self.num_masks - 1);
-                }
-                MaskState::DrawMaskedContent => {
-                    render_pass.set_stencil_reference(self.num_masks);
-                }
-                MaskState::ClearMaskStencil => {
-                    render_pass.set_stencil_reference(self.num_masks);
-                }
-            }
-        }
-
-        match command {
-            DrawCommand::RenderBitmap {
-                bitmap,
-                instance_index,
-                vertex_offset,
-                smoothing,
-                blend_mode,
-                render_stage3d,
-            } => self.render_bitmap(
-                render_pass,
-                bitmap,
-                *instance_index,
-                *smoothing,
-                *blend_mode,
-                *render_stage3d,
-                *vertex_offset,
-            ),
-            DrawCommand::RenderTexture {
-                _texture,
-                binds,
-                instance_index,
-                blend_mode,
-            } => self.render_texture(render_pass, *instance_index, binds, *blend_mode),
-            DrawCommand::RenderShape {
-                shape,
-                instance_index,
-            } => self.render_shape(render_pass, shape, *instance_index),
-            DrawCommand::DrawRect { instance_index } => {
-                self.draw_rect(render_pass, *instance_index)
-            }
-            DrawCommand::DrawLine { instance_index } => {
-                self.draw_lines::<false>(render_pass, *instance_index)
-            }
-            DrawCommand::DrawLineRect { instance_index } => {
-                self.draw_lines::<true>(render_pass, *instance_index)
-            }
-            DrawCommand::PushMask => self.push_mask(render_pass),
-            DrawCommand::ActivateMask => self.activate_mask(render_pass),
-            DrawCommand::DeactivateMask => self.deactivate_mask(render_pass),
-            DrawCommand::PopMask => self.pop_mask(render_pass),
-            DrawCommand::RenderAlphaMask {
-                maskee,
-                mask,
-                binds,
-                instance_index,
-            } => self.render_alpha_mask(render_pass, maskee, mask, binds, *instance_index),
-        }
-    }
-
-    pub fn prep_color(&self, render_pass: &mut wgpu::RenderPass<'encoder>) {
-        if self.needs_stencil {
-            render_pass.set_pipeline(self.pipelines.color.pipeline_for(self.mask_state));
-        } else {
-            render_pass.set_pipeline(self.pipelines.color.stencilless_pipeline());
-        }
-    }
-
-    pub fn prep_lines(&self, render_pass: &mut wgpu::RenderPass<'encoder>) {
-        if self.needs_stencil {
-            render_pass.set_pipeline(self.pipelines.lines.pipeline_for(self.mask_state));
-        } else {
-            render_pass.set_pipeline(self.pipelines.lines.stencilless_pipeline());
-        }
-    }
-
-    pub fn prep_gradient(
-        &self,
-        render_pass: &mut wgpu::RenderPass<'encoder>,
-        bind_group: &'encoder wgpu::BindGroup,
-    ) {
-        if self.needs_stencil {
-            render_pass.set_pipeline(self.pipelines.gradients.pipeline_for(self.mask_state));
-        } else {
-            render_pass.set_pipeline(self.pipelines.gradients.stencilless_pipeline());
-        }
-
-        render_pass.set_bind_group(2, bind_group, &[]);
-    }
-
-    pub fn prep_bitmap(
-        &self,
-        render_pass: &mut wgpu::RenderPass<'encoder>,
-        bind_group: &'encoder wgpu::BindGroup,
-        blend_mode: TrivialBlend,
-        render_stage3d: bool,
-    ) {
-        match (self.needs_stencil, render_stage3d) {
-            (true, true) => {
-                render_pass.set_pipeline(&self.pipelines.bitmap_opaque_dummy_stencil);
-            }
-            (true, false) => {
-                render_pass
-                    .set_pipeline(self.pipelines.bitmap[blend_mode].pipeline_for(self.mask_state));
-            }
-            (false, true) => {
-                render_pass.set_pipeline(&self.pipelines.bitmap_opaque);
-            }
-            (false, false) => {
-                render_pass.set_pipeline(self.pipelines.bitmap[blend_mode].stencilless_pipeline());
-            }
-        }
-
-        render_pass.set_bind_group(2, bind_group, &[]);
-    }
-
-    pub fn prep_alpha_mask(
-        &self,
-        render_pass: &mut wgpu::RenderPass<'encoder>,
-        bind_group: &'encoder wgpu::BindGroup,
-    ) {
-        if self.needs_stencil {
-            render_pass.set_pipeline(self.pipelines.alpha_mask.pipeline_for(self.mask_state));
-        } else {
-            render_pass.set_pipeline(self.pipelines.alpha_mask.stencilless_pipeline());
-        }
-
-        render_pass.set_bind_group(2, bind_group, &[]);
-    }
-
-    pub fn draw(
-        &self,
-        render_pass: &mut wgpu::RenderPass<'encoder>,
-        vertices: wgpu::BufferSlice<'encoder>,
-        indices: wgpu::BufferSlice<'encoder>,
-        num_indices: u32,
-        instance_index: u32,
-    ) {
-        render_pass.set_vertex_buffer(0, vertices);
-        render_pass.set_index_buffer(indices, wgpu::IndexFormat::Uint32);
-
-        render_pass.draw_indexed(0..num_indices, 0, instance_index..(instance_index + 1));
-    }
-
-    #[allow(clippy::too_many_arguments)]
-    pub fn render_bitmap(
-        &self,
-        render_pass: &mut wgpu::RenderPass<'encoder>,
-        bitmap: &'encoder BitmapHandle,
-        instance_index: u32,
-        smoothing: bool,
-        blend_mode: TrivialBlend,
-        render_stage3d: bool,
-        vertex_offset: Option<wgpu::BufferAddress>,
-    ) {
-        let texture = as_texture(bitmap);
-
-        let descriptors = self.descriptors;
-        let bind = texture.bind_group(
-            false,
-            smoothing,
-            &descriptors.device,
-            &descriptors.bind_layouts.bitmap,
-            bitmap.clone(),
-            &descriptors.bitmap_samplers,
-        );
-        self.prep_bitmap(render_pass, &bind.bind_group, blend_mode, render_stage3d);
-
-        let vertex_slice = if let Some(vertex_offset) = vertex_offset {
-            self.dynamic_vertex_buffer.slice(vertex_offset..)
-        } else {
-            self.descriptors.quad.vertices_pos_uv.slice(..)
-        };
-
-        self.draw(
-            render_pass,
-            vertex_slice,
-            self.descriptors.quad.indices.slice(..),
-            6,
-            instance_index,
-        );
-    }
-
-    pub fn render_texture(
-        &self,
-        render_pass: &mut wgpu::RenderPass<'encoder>,
-        instance_index: u32,
-        bind_group: &'encoder wgpu::BindGroup,
-        blend_mode: TrivialBlend,
-    ) {
-        self.prep_bitmap(render_pass, bind_group, blend_mode, false);
-
-        self.draw(
-            render_pass,
-            self.descriptors.quad.vertices_pos_uv.slice(..),
-            self.descriptors.quad.indices.slice(..),
-            6,
-            instance_index,
-        );
-    }
-
-    pub fn render_shape(
-        &self,
-        render_pass: &mut wgpu::RenderPass<'encoder>,
-        shape: &'encoder ShapeHandle,
-        instance_index: u32,
-    ) {
-        let mesh = as_mesh(shape);
-        for draw in &mesh.draws {
-            let num_indices = if self.mask_state != MaskState::DrawMaskStencil
-                && self.mask_state != MaskState::ClearMaskStencil
-            {
-                draw.num_indices
-            } else {
-                // Omit strokes when drawing a mask stencil.
-                draw.num_mask_indices
-            };
-            if num_indices == 0 {
-                continue;
-            }
-
-            match &draw.draw_type {
-                DrawType::Color => {
-                    self.prep_color(render_pass);
-                }
-                DrawType::Gradient { bind_group, .. } => {
-                    self.prep_gradient(render_pass, bind_group);
-                }
-                DrawType::Bitmap { binds, .. } => {
-                    self.prep_bitmap(render_pass, &binds.bind_group, TrivialBlend::Normal, false);
-                }
-            }
-
-            self.draw(
-                render_pass,
-                mesh.vertex_buffer.slice(draw.vertices.clone()),
-                mesh.index_buffer.slice(draw.indices.clone()),
-                num_indices,
-                instance_index,
-            );
-        }
-    }
-
-    pub fn render_alpha_mask(
-        &self,
-        render_pass: &mut wgpu::RenderPass<'encoder>,
-        _maskee: &PoolOrArcTexture,
-        _mask: &PoolOrArcTexture,
-        bind_group: &'encoder wgpu::BindGroup,
-        instance_index: u32,
-    ) {
-        if cfg!(feature = "render_debug_labels") {
-            render_pass.push_debug_group("render_alpha_mask");
-        }
-
-        self.prep_alpha_mask(render_pass, bind_group);
-
-        self.draw(
-            render_pass,
-            self.descriptors.quad.vertices_pos.slice(..),
-            self.descriptors.quad.indices.slice(..),
-            6,
-            instance_index,
-        );
-
-        if cfg!(feature = "render_debug_labels") {
-            render_pass.pop_debug_group();
-        }
-    }
-
-    pub fn draw_rect(&self, render_pass: &mut wgpu::RenderPass<'encoder>, instance_index: u32) {
-        self.prep_color(render_pass);
-
-        self.draw(
-            render_pass,
-            self.descriptors.quad.vertices_pos_color.slice(..),
-            self.descriptors.quad.indices.slice(..),
-            6,
-            instance_index,
-        );
-    }
-
-    pub fn draw_lines<const RECT: bool>(
-        &self,
-        render_pass: &mut wgpu::RenderPass<'encoder>,
-        instance_index: u32,
-    ) {
-        self.prep_lines(render_pass);
-
-        self.draw(
-            render_pass,
-            self.descriptors.quad.vertices_pos_color.slice(..),
-            if RECT {
-                self.descriptors.quad.indices_line_rect.slice(..)
-            } else {
-                self.descriptors.quad.indices_line.slice(..)
-            },
-            if RECT { 5 } else { 2 },
-            instance_index,
-        );
-    }
-
-    pub fn push_mask(&mut self, render_pass: &mut wgpu::RenderPass<'encoder>) {
-        debug_assert!(
-            self.mask_state == MaskState::NoMask || self.mask_state == MaskState::DrawMaskedContent
-        );
-        self.num_masks += 1;
-        self.mask_state = MaskState::DrawMaskStencil;
-        render_pass.set_stencil_reference(self.num_masks - 1);
-    }
-
-    pub fn activate_mask(&mut self, render_pass: &mut wgpu::RenderPass<'encoder>) {
-        debug_assert!(self.num_masks > 0 && self.mask_state == MaskState::DrawMaskStencil);
-        self.mask_state = MaskState::DrawMaskedContent;
-        render_pass.set_stencil_reference(self.num_masks);
-    }
-
-    pub fn deactivate_mask(&mut self, render_pass: &mut wgpu::RenderPass<'encoder>) {
-        debug_assert!(self.num_masks > 0 && self.mask_state == MaskState::DrawMaskedContent);
-        self.mask_state = MaskState::ClearMaskStencil;
-        render_pass.set_stencil_reference(self.num_masks);
-    }
-
-    pub fn pop_mask(&mut self, render_pass: &mut wgpu::RenderPass<'encoder>) {
-        debug_assert!(self.num_masks > 0 && self.mask_state == MaskState::ClearMaskStencil);
-        self.num_masks -= 1;
-        render_pass.set_stencil_reference(self.num_masks);
-        if self.num_masks == 0 {
-            self.mask_state = MaskState::NoMask;
-        } else {
-            self.mask_state = MaskState::DrawMaskedContent;
-        };
-    }
-
-    pub fn num_masks(&self) -> u32 {
-        self.num_masks
-    }
-
-    pub fn mask_state(&self) -> MaskState {
-        self.mask_state
-    }
-}
-
-pub enum Chunk {
-    Draw {
-        chunk: Vec<DrawCommand>,
-        needs_stencil: bool,
-        transforms: BufferBuilder,
-        vertices: BufferBuilder,
-    },
-    Blend {
-        texture: PoolOrArcTexture,
-        blend_mode: ChunkBlendMode,
-        needs_stencil: bool,
-    },
-}
-
-#[derive(Debug)]
-pub enum ChunkBlendMode {
-    Complex(ComplexBlend),
-    Shader(PixelBenderShaderHandle),
-}
-
-#[derive(Debug)]
-pub enum DrawCommand {
-    RenderBitmap {
-        bitmap: BitmapHandle,
-        instance_index: u32,
-        vertex_offset: Option<wgpu::BufferAddress>,
-        smoothing: bool,
-        blend_mode: TrivialBlend,
-        render_stage3d: bool,
-    },
-    RenderTexture {
-        _texture: PoolOrArcTexture,
-        binds: wgpu::BindGroup,
-        instance_index: u32,
-        blend_mode: TrivialBlend,
-    },
-    RenderAlphaMask {
-        maskee: PoolOrArcTexture,
-        mask: PoolOrArcTexture,
-        binds: wgpu::BindGroup,
-        instance_index: u32,
-    },
-    RenderShape {
-        shape: ShapeHandle,
-        instance_index: u32,
-    },
-    DrawRect {
-        instance_index: u32,
-    },
-    DrawLine {
-        instance_index: u32,
-    },
-    DrawLineRect {
-        instance_index: u32,
-    },
-    PushMask,
-    ActivateMask,
-    DeactivateMask,
-    PopMask,
-}
-
-impl DrawCommand {
-    pub fn name(&self) -> &'static str {
-        match self {
-            DrawCommand::RenderBitmap { .. } => "render bitmap",
-            DrawCommand::RenderShape { .. } => "render shape",
-            DrawCommand::RenderTexture { .. } => "render texture",
-            DrawCommand::DrawRect { .. } => "draw rect",
-            DrawCommand::DrawLine { .. } => "draw line",
-            DrawCommand::DrawLineRect { .. } => "draw line rect",
-            DrawCommand::PushMask => "push mask",
-            DrawCommand::ActivateMask => "activate mask",
-            DrawCommand::DeactivateMask => "deactivate mask",
-            DrawCommand::PopMask => "pop mask",
-            DrawCommand::RenderAlphaMask { .. } => "render alpha mask",
-        }
-    }
-}
 
 #[derive(Copy, Clone)]
 pub enum LayerRef<'a> {
@@ -496,7 +35,7 @@ pub fn chunk_blends<'encoder, 'global: 'encoder>(
     commands: CommandList,
     descriptors: &'encoder Descriptors,
     staging_belt: &'encoder mut wgpu::util::StagingBelt,
-    dynamic_transforms: &'encoder DynamicTransforms,
+    chunk_buffers: &'encoder ChunkBuffers,
     draw_encoder: &'encoder mut Scope<'global, wgpu::CommandEncoder>,
     meshes: &'encoder Vec<Mesh>,
     quality: StageQuality,
@@ -508,7 +47,7 @@ pub fn chunk_blends<'encoder, 'global: 'encoder>(
     WgpuCommandHandler::new(
         descriptors,
         staging_belt,
-        dynamic_transforms,
+        chunk_buffers,
         draw_encoder,
         meshes,
         quality,
@@ -528,17 +67,16 @@ struct WgpuCommandHandler<'encoder, 'global: 'encoder> {
     nearest_layer: LayerRef<'encoder>,
     meshes: &'encoder Vec<Mesh>,
     staging_belt: &'encoder mut wgpu::util::StagingBelt,
-    dynamic_transforms: &'encoder DynamicTransforms,
+    chunk_buffers: &'encoder ChunkBuffers,
     draw_encoder: &'encoder mut Scope<'global, wgpu::CommandEncoder>,
     texture_pool: &'encoder mut TexturePool,
     emulate_lines: bool,
 
     result: Vec<Chunk>,
     current: Vec<DrawCommand>,
-    transforms: BufferBuilder,
-    vertices: BufferBuilder,
+    chunk_buffer_builder: ChunkBufferBuilder,
     needs_stencil: bool,
-    num_masks: i32,
+    mask_state: MaskState,
 }
 
 impl<'encoder, 'global: 'encoder> WgpuCommandHandler<'encoder, 'global> {
@@ -546,7 +84,7 @@ impl<'encoder, 'global: 'encoder> WgpuCommandHandler<'encoder, 'global> {
     fn new(
         descriptors: &'encoder Descriptors,
         staging_belt: &'encoder mut wgpu::util::StagingBelt,
-        dynamic_transforms: &'encoder DynamicTransforms,
+        chunk_buffers: &'encoder ChunkBuffers,
         draw_encoder: &'encoder mut Scope<'global, wgpu::CommandEncoder>,
         meshes: &'encoder Vec<Mesh>,
         quality: StageQuality,
@@ -555,8 +93,7 @@ impl<'encoder, 'global: 'encoder> WgpuCommandHandler<'encoder, 'global> {
         nearest_layer: LayerRef<'encoder>,
         texture_pool: &'encoder mut TexturePool,
     ) -> Self {
-        let transforms = Self::new_transforms(descriptors, dynamic_transforms);
-        let vertices = Self::new_vertices(descriptors, dynamic_transforms);
+        let chunk_buffer_builder = ChunkBufferBuilder::new(chunk_buffers, &descriptors.limits);
 
         // DirectX does support drawing lines, but it's very inconsistent.
         // With MSAA, lines have 1.4px thickness, which makes them too thick.
@@ -571,36 +108,17 @@ impl<'encoder, 'global: 'encoder> WgpuCommandHandler<'encoder, 'global> {
             nearest_layer,
             meshes,
             staging_belt,
-            dynamic_transforms,
+            chunk_buffers,
             draw_encoder,
             texture_pool,
             emulate_lines,
 
             result: vec![],
             current: vec![],
-            transforms,
-            vertices,
+            chunk_buffer_builder,
             needs_stencil: false,
-            num_masks: 0,
+            mask_state: MaskState::empty(),
         }
-    }
-
-    fn new_transforms(
-        descriptors: &'encoder Descriptors,
-        dynamic_transforms: &'encoder DynamicTransforms,
-    ) -> BufferBuilder {
-        let mut transforms = BufferBuilder::new(&descriptors.limits, 0);
-        transforms.set_buffer_limit(dynamic_transforms.buffer.size());
-        transforms
-    }
-
-    fn new_vertices(
-        descriptors: &'encoder Descriptors,
-        dynamic_transforms: &'encoder DynamicTransforms,
-    ) -> BufferBuilder {
-        let mut vertices = BufferBuilder::new(&descriptors.limits, 0);
-        vertices.set_buffer_limit(dynamic_transforms.vertex_buffer.size());
-        vertices
     }
 
     /// Replaces every blend with a RenderBitmap, with the subcommands rendered out to a temporary texture
@@ -611,25 +129,29 @@ impl<'encoder, 'global: 'encoder> WgpuCommandHandler<'encoder, 'global> {
         let current = mem::take(&mut self.current);
         let mut result = mem::take(&mut self.result);
         let needs_stencil = mem::take(&mut self.needs_stencil);
-        let transforms = mem::replace(
-            &mut self.transforms,
-            Self::new_transforms(self.descriptors, self.dynamic_transforms),
-        );
-        let vertices = mem::replace(
-            &mut self.vertices,
-            Self::new_vertices(self.descriptors, self.dynamic_transforms),
+        let chunk_buffer_builder = mem::replace(
+            &mut self.chunk_buffer_builder,
+            ChunkBufferBuilder::new(self.chunk_buffers, &self.descriptors.limits),
         );
 
         if !current.is_empty() {
             result.push(Chunk::Draw {
                 chunk: current,
                 needs_stencil,
-                transforms,
-                vertices,
+                chunk_buffer_builder,
             });
         }
 
         result
+    }
+
+    fn push_command(&mut self, command: DrawCommand) {
+        if let Some(existing) = self.current.last_mut()
+            && existing.try_merge(&command)
+        {
+            return;
+        }
+        self.current.push(command);
     }
 
     fn add_to_current(
@@ -637,20 +159,8 @@ impl<'encoder, 'global: 'encoder> WgpuCommandHandler<'encoder, 'global> {
         matrix: Matrix,
         tz: f64,
         color_transform: ColorTransform,
-        command_builder: impl FnOnce(u32) -> DrawCommand,
-    ) {
-        self.add_to_current_with_vertices(matrix, tz, color_transform, None, |instance_index, _| {
-            command_builder(instance_index)
-        })
-    }
-
-    fn add_to_current_with_vertices(
-        &mut self,
-        matrix: Matrix,
-        tz: f64,
-        color_transform: ColorTransform,
-        vertices: Option<&[PosUvVertex]>,
-        command_builder: impl FnOnce(u32, Option<wgpu::BufferAddress>) -> DrawCommand,
+        vertices: DrawVertices,
+        command_builder: impl FnOnce(DrawOffsets) -> DrawCommand,
     ) {
         let transform = Transforms {
             world_matrix: [
@@ -667,40 +177,28 @@ impl<'encoder, 'global: 'encoder> WgpuCommandHandler<'encoder, 'global> {
             mult_color: color_transform.mult_rgba_normalized(),
             add_color: color_transform.add_rgba_normalized(),
         };
-        if let (Ok(transform_range), Ok(vertices_range)) = (
-            self.transforms.add(&[transform]),
-            vertices.map(|v| self.vertices.add(v)).transpose(),
-        ) {
-            self.current.push(command_builder(
-                (transform_range.start as usize / size_of::<Transforms>()) as u32,
-                vertices_range.map(|v| v.start),
-            ));
-        } else {
-            self.result.push(Chunk::Draw {
-                chunk: mem::take(&mut self.current),
-                needs_stencil: self.needs_stencil,
-                transforms: mem::replace(
-                    &mut self.transforms,
-                    Self::new_transforms(self.descriptors, self.dynamic_transforms),
-                ),
-                vertices: mem::replace(
-                    &mut self.vertices,
-                    Self::new_vertices(self.descriptors, self.dynamic_transforms),
-                ),
-            });
-            let transform_range = self
-                .transforms
-                .add(&[transform])
-                .expect("Buffer must be able to fit a new thing, it was just emptied");
-            let vertices_range = vertices.map(|v| {
-                self.vertices
-                    .add(v)
-                    .expect("Buffer must be able to fit a new thing, it was just emptied")
-            });
-            self.current.push(command_builder(
-                (transform_range.start as usize / size_of::<Transforms>()) as u32,
-                vertices_range.map(|v| v.start),
-            ));
+        match self
+            .chunk_buffer_builder
+            .add(&self.descriptors.quad, transform, vertices)
+        {
+            Ok(offsets) => {
+                self.push_command(command_builder(offsets));
+            }
+            Err((_, vertices)) => {
+                self.result.push(Chunk::Draw {
+                    chunk: mem::take(&mut self.current),
+                    needs_stencil: self.needs_stencil,
+                    chunk_buffer_builder: mem::replace(
+                        &mut self.chunk_buffer_builder,
+                        ChunkBufferBuilder::new(self.chunk_buffers, &self.descriptors.limits),
+                    ),
+                });
+                let offsets = self
+                    .chunk_buffer_builder
+                    .add(&self.descriptors.quad, transform, vertices)
+                    .expect("Buffer must be able to fit a new thing, it was just emptied");
+                self.push_command(command_builder(offsets));
+            }
         }
     }
 }
@@ -727,7 +225,7 @@ impl CommandHandler for WgpuCommandHandler<'_, '_> {
             self.meshes,
             commands,
             self.staging_belt,
-            self.dynamic_transforms,
+            self.chunk_buffers,
             self.draw_encoder,
             target_layer,
             self.texture_pool,
@@ -739,7 +237,7 @@ impl CommandHandler for WgpuCommandHandler<'_, '_> {
         //
         // TODO Add support for shader blends in masks.
         let is_shader_blend_in_mask =
-            self.num_masks > 0 && matches!(blend_type, BlendType::Shader(_));
+            self.mask_state.count > 0 && matches!(blend_type, BlendType::Shader(_));
         let blend_type = if is_shader_blend_in_mask {
             BlendType::Trivial(TrivialBlend::Normal)
         } else {
@@ -778,11 +276,13 @@ impl CommandHandler for WgpuCommandHandler<'_, '_> {
                     transform.matrix,
                     transform.tz,
                     transform.color_transform,
-                    |instance_index| DrawCommand::RenderTexture {
-                        _texture: texture,
+                    DrawVertices::PosUvQuad,
+                    |draw_offsets| DrawCommand::RenderTexture {
+                        _texture: Some(texture),
                         binds: bind_group,
-                        instance_index,
+                        draw_offsets,
                         blend_mode,
+                        render_stage3d: false,
                     },
                 );
             }
@@ -791,13 +291,9 @@ impl CommandHandler for WgpuCommandHandler<'_, '_> {
                     self.result.push(Chunk::Draw {
                         chunk: mem::take(&mut self.current),
                         needs_stencil: self.needs_stencil,
-                        transforms: mem::replace(
-                            &mut self.transforms,
-                            Self::new_transforms(self.descriptors, self.dynamic_transforms),
-                        ),
-                        vertices: mem::replace(
-                            &mut self.vertices,
-                            Self::new_vertices(self.descriptors, self.dynamic_transforms),
+                        chunk_buffer_builder: mem::replace(
+                            &mut self.chunk_buffer_builder,
+                            ChunkBufferBuilder::new(self.chunk_buffers, &self.descriptors.limits),
                         ),
                     });
                 }
@@ -809,9 +305,9 @@ impl CommandHandler for WgpuCommandHandler<'_, '_> {
                 self.result.push(Chunk::Blend {
                     texture: target.take_color_texture(),
                     blend_mode: chunk_blend_mode,
-                    needs_stencil: self.num_masks > 0,
+                    needs_stencil: self.mask_state.count > 0,
                 });
-                self.needs_stencil = self.num_masks > 0;
+                self.needs_stencil = self.mask_state.count > 0;
             }
         }
     }
@@ -845,16 +341,27 @@ impl CommandHandler for WgpuCommandHandler<'_, '_> {
             ]
         };
 
-        self.add_to_current_with_vertices(
+        let binds = texture.bind_group(
+            false,
+            smoothing,
+            &self.descriptors.device,
+            &self.descriptors.bind_layouts.bitmap,
+            bitmap.clone(),
+            &self.descriptors.bitmap_samplers,
+        );
+
+        self.add_to_current(
             matrix,
             transform.tz,
             transform.color_transform,
-            Some(vertices),
-            |instance_index, vertex_offset| DrawCommand::RenderBitmap {
-                bitmap,
-                instance_index,
-                vertex_offset,
-                smoothing,
+            DrawVertices::CustomPosUvQuad(bytemuck::cast_slice(vertices)),
+            |draw_offsets| DrawCommand::RenderTexture {
+                _texture: Some(PoolOrArcTexture::Manual((
+                    texture.texture.clone(),
+                    texture.view.clone(),
+                ))),
+                binds: binds.bind_group.clone(),
+                draw_offsets,
                 blend_mode: TrivialBlend::Normal,
                 render_stage3d: false,
             },
@@ -870,31 +377,94 @@ impl CommandHandler for WgpuCommandHandler<'_, '_> {
                 texture.texture.height() as f32,
             );
         }
+        let texture = as_texture(&bitmap);
+
+        let binds = texture.bind_group(
+            false,
+            false,
+            &self.descriptors.device,
+            &self.descriptors.bind_layouts.bitmap,
+            bitmap.clone(),
+            &self.descriptors.bitmap_samplers,
+        );
         self.add_to_current(
             matrix,
             transform.tz,
             transform.color_transform,
-            |instance_index| DrawCommand::RenderBitmap {
-                bitmap,
-                instance_index,
-                vertex_offset: None,
-                smoothing: false,
+            DrawVertices::PosUvQuad,
+            |draw_offsets| DrawCommand::RenderTexture {
+                _texture: Some(PoolOrArcTexture::Manual((
+                    texture.texture.clone(),
+                    texture.view.clone(),
+                ))),
+                draw_offsets,
                 blend_mode: TrivialBlend::Normal,
                 render_stage3d: true,
+                binds: binds.bind_group.clone(),
             },
         );
     }
 
     fn render_shape(&mut self, shape: ShapeHandle, transform: Transform) {
-        self.add_to_current(
-            transform.matrix,
-            transform.tz,
-            transform.color_transform,
-            |instance_index| DrawCommand::RenderShape {
-                shape,
-                instance_index,
-            },
-        );
+        let mesh = as_mesh(&shape);
+        for draw in &mesh.draws {
+            let indices = if self.mask_state.mode != MaskMode::DrawMaskStencil
+                && self.mask_state.mode != MaskMode::ClearMaskStencil
+            {
+                draw.indices.clone()
+            } else {
+                // Omit strokes when drawing a mask stencil.
+                draw.mask_indices.clone()
+            };
+            if indices.is_empty() {
+                continue;
+            }
+
+            let vertices = DrawVertices::CustomBuffers {
+                vertex_buffer: mesh.vertex_buffer.clone(),
+                vertex_range: draw.vertices.clone(),
+                index_buffer: mesh.index_buffer.clone(),
+                indices,
+            };
+            match &draw.draw_type {
+                DrawType::Color => {
+                    self.add_to_current(
+                        transform.matrix,
+                        transform.tz,
+                        transform.color_transform,
+                        vertices,
+                        |draw_offsets| DrawCommand::DrawColor { draw_offsets },
+                    );
+                }
+                DrawType::Gradient { bind_group } => {
+                    self.add_to_current(
+                        transform.matrix,
+                        transform.tz,
+                        transform.color_transform,
+                        vertices,
+                        |draw_offsets| DrawCommand::RenderGradient {
+                            bind_group: bind_group.clone(),
+                            draw_offsets,
+                        },
+                    );
+                }
+                DrawType::Bitmap { binds } => {
+                    self.add_to_current(
+                        transform.matrix,
+                        transform.tz,
+                        transform.color_transform,
+                        vertices,
+                        |draw_offsets| DrawCommand::RenderTexture {
+                            _texture: None,
+                            binds: binds.bind_group.clone(),
+                            blend_mode: TrivialBlend::Normal,
+                            render_stage3d: false,
+                            draw_offsets,
+                        },
+                    );
+                }
+            }
+        }
     }
 
     fn draw_rect(&mut self, color: Color, matrix: Matrix) {
@@ -902,7 +472,8 @@ impl CommandHandler for WgpuCommandHandler<'_, '_> {
             matrix,
             0.0,
             ColorTransform::multiply_from(color),
-            |instance_index| DrawCommand::DrawRect { instance_index },
+            DrawVertices::PosColorQuad,
+            |draw_offsets| DrawCommand::DrawColor { draw_offsets },
         );
     }
 
@@ -918,7 +489,8 @@ impl CommandHandler for WgpuCommandHandler<'_, '_> {
                 matrix,
                 0.0,
                 ColorTransform::multiply_from(color),
-                |instance_index| DrawCommand::DrawLine { instance_index },
+                DrawVertices::Line,
+                |draw_offsets| DrawCommand::DrawLine { draw_offsets },
             );
         }
     }
@@ -935,31 +507,34 @@ impl CommandHandler for WgpuCommandHandler<'_, '_> {
                 matrix,
                 0.0,
                 ColorTransform::multiply_from(color),
-                |instance_index| DrawCommand::DrawLineRect { instance_index },
+                DrawVertices::RectLine,
+                |draw_offsets| DrawCommand::DrawLine { draw_offsets },
             );
         }
     }
 
     fn push_mask(&mut self) {
         self.needs_stencil = true;
-        self.num_masks += 1;
-        self.current.push(DrawCommand::PushMask);
+        self.mask_state.push_mask();
+        self.push_command(DrawCommand::SetMask(self.mask_state));
     }
 
     fn activate_mask(&mut self) {
         self.needs_stencil = true;
-        self.current.push(DrawCommand::ActivateMask);
+        self.mask_state.activate_mask();
+        self.push_command(DrawCommand::SetMask(self.mask_state));
     }
 
     fn deactivate_mask(&mut self) {
         self.needs_stencil = true;
-        self.current.push(DrawCommand::DeactivateMask);
+        self.mask_state.deactivate_mask();
+        self.push_command(DrawCommand::SetMask(self.mask_state));
     }
 
     fn pop_mask(&mut self) {
         self.needs_stencil = true;
-        self.num_masks -= 1;
-        self.current.push(DrawCommand::PopMask);
+        self.mask_state.pop_mask();
+        self.push_command(DrawCommand::SetMask(self.mask_state));
     }
 
     fn render_alpha_mask(&mut self, maskee_commands: CommandList, mask_commands: CommandList) {
@@ -977,7 +552,7 @@ impl CommandHandler for WgpuCommandHandler<'_, '_> {
             self.meshes,
             maskee_commands,
             self.staging_belt,
-            self.dynamic_transforms,
+            self.chunk_buffers,
             self.draw_encoder,
             LayerRef::None,
             self.texture_pool,
@@ -992,7 +567,7 @@ impl CommandHandler for WgpuCommandHandler<'_, '_> {
             self.meshes,
             mask_commands,
             self.staging_belt,
-            self.dynamic_transforms,
+            self.chunk_buffers,
             self.draw_encoder,
             LayerRef::None,
             self.texture_pool,
@@ -1024,13 +599,17 @@ impl CommandHandler for WgpuCommandHandler<'_, '_> {
                 label: None,
             });
 
-        self.add_to_current(matrix, 0.0, Default::default(), |instance_index| {
-            DrawCommand::RenderAlphaMask {
+        self.add_to_current(
+            matrix,
+            0.0,
+            Default::default(),
+            DrawVertices::PosQuad,
+            |draw_offsets| DrawCommand::RenderAlphaMask {
                 maskee,
                 mask,
                 binds,
-                instance_index,
-            }
-        });
+                draw_offsets,
+            },
+        );
     }
 }

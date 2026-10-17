@@ -7,12 +7,9 @@ use crate::buffer_pool::{BufferPool, PoolEntry};
 use crate::mesh::BitmapBinds;
 use crate::pipelines::Pipelines;
 use crate::target::{RenderTarget, SwapChainTarget};
-use crate::utils::{
-    BufferDimensions, capture_image, create_buffer_with_data, format_list, get_backend_names,
-};
+use crate::utils::{BufferDimensions, capture_image, format_list, get_backend_names};
 use bytemuck::{Pod, Zeroable};
 use descriptors::Descriptors;
-use enum_map::Enum;
 use ruffle_render::backend::RawTexture;
 use ruffle_render::bitmap::{BitmapHandle, BitmapHandleImpl, PixelRegion, SyncHandle};
 use ruffle_render::shape_utils::GradientType;
@@ -43,7 +40,6 @@ mod buffer_pool;
 #[cfg(feature = "clap")]
 pub mod clap;
 pub mod descriptors;
-mod dynamic_transforms;
 mod filters;
 mod layouts;
 mod mesh;
@@ -58,14 +54,6 @@ pub fn as_texture(handle: &BitmapHandle) -> &Texture {
 
 pub fn raw_texture_as_texture(handle: &dyn RawTexture) -> &wgpu::Texture {
     <dyn Any>::downcast_ref(handle).unwrap()
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Enum)]
-pub enum MaskState {
-    NoMask,
-    DrawMaskStencil,
-    DrawMaskedContent,
-    ClearMaskStencil,
 }
 
 #[repr(C)]
@@ -270,6 +258,7 @@ impl QueueSyncHandle {
 #[derive(Debug)]
 pub struct Texture {
     pub(crate) texture: wgpu::Texture,
+    view: wgpu::TextureView,
     repeating_linear: OnceCell<BitmapBinds>,
     repeating_nearest: OnceCell<BitmapBinds>,
     clamped_linear: OnceCell<BitmapBinds>,
@@ -298,7 +287,7 @@ impl Texture {
                 device,
                 layout,
                 samplers.get_sampler(repeating, smoothed),
-                self.texture.create_view(&Default::default()),
+                self.view.clone(),
                 create_debug_label!("Bitmap {:?} bind group (smoothed: {})", handle.0, smoothed),
             )
         })
