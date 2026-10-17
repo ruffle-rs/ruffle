@@ -1249,6 +1249,167 @@ pub enum LineScaleMode {
     Both,
 }
 
+impl LineScaleMode {
+    /// Returns the scale mode used by the given line style.
+    pub fn from_line_style(style: &LineStyle) -> Self {
+        match (style.allow_scale_x(), style.allow_scale_y()) {
+            (false, false) => Self::None,
+            (true, false) => Self::Horizontal,
+            (false, true) => Self::Vertical,
+            (true, true) => Self::Both,
+        }
+    }
+}
+
+/// The stretch that a transform applies to a shape, with any rotation or reflection removed.
+///
+/// Flash draws thin strokes with the same width on screen along their whole length, even
+/// when the shape is scaled non-uniformly or skewed. Tessellators use this to stroke a shape
+/// as it will appear on screen. Rotation does not affect stroke widths, so it is left out,
+/// and a rotating shape can reuse its tessellation.
+///
+/// This is the symmetric matrix `[[a, b], [b, d]]` from the polar decomposition of the
+/// transform's linear part.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct TessellationScale {
+    a: f32,
+    b: f32,
+    d: f32,
+}
+
+impl TessellationScale {
+    pub const IDENTITY: Self = Self {
+        a: 1.0,
+        b: 0.0,
+        d: 1.0,
+    };
+
+    /// Below this scale, a direction is considered collapsed.
+    const EPSILON: f32 = 0.0000001;
+
+    /// Returns the stretch applied by the given transform.
+    pub fn from_matrix(matrix: &Matrix) -> Self {
+        // The stretch of a matrix `M` is `sqrt(Mᵀ M)`, which for 2x2 matrices is
+        // `(Mᵀ M + |det M| I) / sqrt(trace(Mᵀ M) + 2 |det M|)`.
+        let det = f32::abs(matrix.a * matrix.d - matrix.b * matrix.c);
+        let m11 = matrix.a * matrix.a + matrix.b * matrix.b;
+        let m12 = matrix.a * matrix.c + matrix.b * matrix.d;
+        let m22 = matrix.c * matrix.c + matrix.d * matrix.d;
+        let norm = f32::sqrt(m11 + m22 + 2.0 * det);
+        if norm <= 0.0 {
+            return Self {
+                a: 0.0,
+                b: 0.0,
+                d: 0.0,
+            };
+        }
+        Self {
+            a: (m11 + det) / norm,
+            b: m12 / norm,
+            d: (m22 + det) / norm,
+        }
+    }
+
+    /// Returns the largest factor by which this scales a length in any direction.
+    pub fn max_scale(&self) -> f32 {
+        (self.a + self.d) / 2.0 + f32::hypot((self.a - self.d) / 2.0, self.b)
+    }
+
+    /// Returns the smallest factor by which this scales a length in any direction.
+    pub fn min_scale(&self) -> f32 {
+        (self.a + self.d) / 2.0 - f32::hypot((self.a - self.d) / 2.0, self.b)
+    }
+
+    /// Returns the factor by which a stroke with the given scale mode is widened.
+    ///
+    /// For `Both`, this matches the line scale used by `LineScales`.
+    pub fn line_scale(&self, scale_mode: LineScaleMode) -> f32 {
+        match scale_mode {
+            LineScaleMode::None => 1.0,
+            LineScaleMode::Horizontal => f32::hypot(self.a, self.b),
+            LineScaleMode::Vertical => f32::hypot(self.b, self.d),
+            LineScaleMode::Both => {
+                f32::hypot(self.a + self.b, self.b + self.d) / std::f32::consts::SQRT_2
+            }
+        }
+    }
+
+    /// Applies this stretch to a point.
+    pub fn transform_point(&self, x: f32, y: f32) -> (f32, f32) {
+        (self.a * x + self.b * y, self.b * x + self.d * y)
+    }
+
+    /// Returns the inverse stretch, or `None` if this collapses any direction.
+    pub fn inverse(&self) -> Option<Self> {
+        if self.min_scale() <= Self::EPSILON {
+            return None;
+        }
+        let det = self.a * self.d - self.b * self.b;
+        Some(Self {
+            a: self.d / det,
+            b: -self.b / det,
+            d: self.a / det,
+        })
+    }
+
+    /// Returns how much a shape tessellated with this scale is distorted when it is
+    /// rendered with the `other` scale.
+    pub fn distortion(&self, other: &Self) -> ScaleDistortion {
+        match (self.inverse(), other.inverse()) {
+            (Some(inverse), Some(_)) => {
+                // Rendering with `other` transforms the tessellation by `other * inverse`,
+                // which scales lengths by at most its largest singular value, and at least
+                // by its smallest.
+                let p = other.a * inverse.a + other.b * inverse.b;
+                let q = other.a * inverse.b + other.b * inverse.d;
+                let r = other.b * inverse.a + other.d * inverse.b;
+                let s = other.b * inverse.b + other.d * inverse.d;
+                let sum_of_squares = p * p + q * q + r * r + s * s;
+                let det = f32::abs(p * s - q * r);
+                let max_singular = (f32::sqrt(sum_of_squares + 2.0 * det)
+                    + f32::sqrt(f32::max(sum_of_squares - 2.0 * det, 0.0)))
+                    / 2.0;
+                let min_singular = det / max_singular;
+                let scale = f32::sqrt(det);
+                ScaleDistortion {
+                    scale: f32::max(scale, 1.0 / scale),
+                    stretch: max_singular / min_singular,
+                }
+            }
+            (None, None) => {
+                // Collapsed shapes don't have a meaningful stretch,
+                // so only compare the overall scale.
+                let ratio = other.max_scale() / self.max_scale();
+                let scale = if ratio.is_finite() && ratio > 0.0 {
+                    f32::max(ratio, 1.0 / ratio)
+                } else if self == other {
+                    1.0
+                } else {
+                    f32::INFINITY
+                };
+                ScaleDistortion {
+                    scale,
+                    stretch: 1.0,
+                }
+            }
+            _ => ScaleDistortion {
+                scale: f32::INFINITY,
+                stretch: f32::INFINITY,
+            },
+        }
+    }
+}
+
+/// How much a tessellation is distorted when it is rendered with a different scale.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct ScaleDistortion {
+    /// The factor by which the tessellation is scaled overall, at least 1.
+    pub scale: f32,
+    /// The factor by which the tessellation is stretched more in one direction than in
+    /// another, at least 1.
+    pub stretch: f32,
+}
+
 /// Helper type for calculating line widths for a transformed shape.
 pub struct LineScales<'a> {
     matrix: &'a Matrix,
@@ -1360,6 +1521,7 @@ pub fn cubic_curve_bounds(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use approx::{AbsDiffEq, assert_abs_diff_eq};
     use swf::PointDelta;
 
     const FILL_STYLES: [FillStyle; 1] = [FillStyle::Color(swf::Color {
@@ -1524,5 +1686,121 @@ mod tests {
             swf::Point::new(Twips::new(30), Twips::new(20)),
             -1,
         );
+    }
+
+    /// The tolerance used when comparing the results of `TessellationScale` calculations.
+    const SCALE_EPSILON: f32 = 0.0001;
+
+    impl AbsDiffEq for TessellationScale {
+        type Epsilon = <f32 as AbsDiffEq>::Epsilon;
+        fn default_epsilon() -> Self::Epsilon {
+            f32::default_epsilon()
+        }
+
+        fn abs_diff_eq(&self, other: &Self, epsilon: Self::Epsilon) -> bool {
+            self.a.abs_diff_eq(&other.a, epsilon)
+                && self.b.abs_diff_eq(&other.b, epsilon)
+                && self.d.abs_diff_eq(&other.d, epsilon)
+        }
+    }
+
+    #[test]
+    fn tessellation_scale_ignores_rotation() {
+        let scale = Matrix::scale(10.0, 5.0);
+        let rotated = Matrix::rotate(0.7) * scale;
+        let expected = TessellationScale::from_matrix(&scale);
+        let actual = TessellationScale::from_matrix(&rotated);
+        assert_abs_diff_eq!(actual, expected, epsilon = SCALE_EPSILON);
+        assert_abs_diff_eq!(actual.max_scale(), 10.0, epsilon = SCALE_EPSILON);
+        assert_abs_diff_eq!(actual.min_scale(), 5.0, epsilon = SCALE_EPSILON);
+        let distortion = expected.distortion(&actual);
+        assert_abs_diff_eq!(distortion.scale, 1.0, epsilon = SCALE_EPSILON);
+        assert_abs_diff_eq!(distortion.stretch, 1.0, epsilon = SCALE_EPSILON);
+    }
+
+    #[test]
+    fn tessellation_scale_line_scales() {
+        let scale = TessellationScale::from_matrix(&Matrix::scale(10.0, 5.0));
+        assert_abs_diff_eq!(
+            scale.line_scale(LineScaleMode::None),
+            1.0,
+            epsilon = SCALE_EPSILON
+        );
+        assert_abs_diff_eq!(
+            scale.line_scale(LineScaleMode::Horizontal),
+            10.0,
+            epsilon = SCALE_EPSILON
+        );
+        assert_abs_diff_eq!(
+            scale.line_scale(LineScaleMode::Vertical),
+            5.0,
+            epsilon = SCALE_EPSILON
+        );
+
+        // `Both` matches `LineScales`, including for skewed matrices.
+        let skewed = Matrix {
+            a: 3.1575165,
+            b: -0.9265747,
+            c: -0.8603363,
+            d: 1.2287292,
+            ..Matrix::IDENTITY
+        };
+        assert_abs_diff_eq!(
+            TessellationScale::from_matrix(&skewed).line_scale(LineScaleMode::Both),
+            LineScales::new(&skewed).transform_width(1.0, LineScaleMode::Both),
+            epsilon = SCALE_EPSILON
+        );
+    }
+
+    #[test]
+    fn tessellation_scale_round_trip() {
+        let scale = TessellationScale::from_matrix(&Matrix {
+            a: 3.0,
+            b: 1.0,
+            c: -0.5,
+            d: 0.25,
+            ..Matrix::IDENTITY
+        });
+        let inverse = scale.inverse().expect("scale is invertible");
+        let (x, y) = scale.transform_point(7.0, -3.0);
+        let (x, y) = inverse.transform_point(x, y);
+        assert_abs_diff_eq!(x, 7.0, epsilon = SCALE_EPSILON);
+        assert_abs_diff_eq!(y, -3.0, epsilon = SCALE_EPSILON);
+    }
+
+    #[test]
+    fn tessellation_scale_distortion() {
+        fn assert_distortion(from: (f32, f32), to: (f32, f32), scale: f32, stretch: f32) {
+            let from = TessellationScale::from_matrix(&Matrix::scale(from.0, from.1));
+            let to = TessellationScale::from_matrix(&Matrix::scale(to.0, to.1));
+            let distortion = from.distortion(&to);
+            assert_abs_diff_eq!(distortion.scale, scale, epsilon = SCALE_EPSILON);
+            assert_abs_diff_eq!(distortion.stretch, stretch, epsilon = SCALE_EPSILON);
+        }
+
+        assert_distortion((10.0, 5.0), (10.0, 5.0), 1.0, 1.0);
+        assert_distortion((10.0, 5.0), (20.0, 10.0), 2.0, 1.0);
+        assert_distortion((10.0, 5.0), (5.0, 2.5), 2.0, 1.0);
+        assert_distortion((10.0, 5.0), (10.0, 10.0), f32::sqrt(2.0), 2.0);
+        assert_distortion((10.0, 5.0), (5.0, 10.0), 1.0, 4.0);
+
+        let scale = TessellationScale::from_matrix(&Matrix::scale(10.0, 5.0));
+        let collapsed = TessellationScale::from_matrix(&Matrix::scale(10.0, 0.0));
+        let half_collapsed = TessellationScale::from_matrix(&Matrix::scale(5.0, 0.0));
+        let zero = TessellationScale::from_matrix(&Matrix::ZERO);
+        assert_eq!(scale.distortion(&collapsed).scale, f32::INFINITY);
+        assert_eq!(collapsed.distortion(&scale).scale, f32::INFINITY);
+        assert_abs_diff_eq!(
+            collapsed.distortion(&collapsed).scale,
+            1.0,
+            epsilon = SCALE_EPSILON
+        );
+        assert_abs_diff_eq!(
+            collapsed.distortion(&half_collapsed).scale,
+            2.0,
+            epsilon = SCALE_EPSILON
+        );
+        assert_abs_diff_eq!(zero.distortion(&zero).scale, 1.0, epsilon = SCALE_EPSILON);
+        assert_eq!(zero.distortion(&collapsed).scale, f32::INFINITY);
     }
 }
