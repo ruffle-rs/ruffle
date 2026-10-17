@@ -1,10 +1,10 @@
 //! Array class
 
-use crate::avm2::Error;
 use crate::avm2::activation::Activation;
 use crate::avm2::array::ArrayStorage;
-use crate::avm2::error::{make_error_1005, make_error_1125};
+use crate::avm2::error::{Error, make_error_1005, make_error_1125};
 use crate::avm2::function::FunctionArgs;
+use crate::avm2::index::ArrayIndex;
 use crate::avm2::object::{ArrayObject, Object, TObject};
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
@@ -255,7 +255,10 @@ impl<'gc> ArrayIter<'gc> {
 
             self.index += 1;
 
-            let val = if let Some(val) = array_object.get_index_property(i as usize) {
+            // TODO: What happens when the index reaches u32::MAX?
+            let index = ArrayIndex::from_u32(i).expect("Reached u32::MAX");
+
+            let val = if let Some(val) = array_object.get_index_property(index) {
                 val
             } else if let Some(storage) = array_object.as_vector_storage() {
                 // Special case for Vector- it throws an error if trying to access
@@ -288,7 +291,10 @@ impl<'gc> ArrayIter<'gc> {
 
             let i = self.rev_index;
 
-            let val = self.array_object.get_index_property(i as usize);
+            let index =
+                ArrayIndex::from_u32(i).expect("u32 that was just decremented cannot be u32::MAX");
+
+            let val = self.array_object.get_index_property(index);
 
             let val = if let Some(storage) = self.array_object.as_vector_storage() {
                 // Special case for Vector- it throws an error if trying to access

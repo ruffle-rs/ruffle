@@ -1,12 +1,14 @@
 use std::collections::BTreeMap;
 use std::rc::Rc;
 
-use super::property::Property;
-use crate::avm2::ArrayObject;
 use crate::avm2::ArrayStorage;
 use crate::avm2::bytearray::ByteArrayStorage;
 use crate::avm2::class::Class;
-use crate::avm2::object::{ByteArrayObject, ClassObject, ScriptObject, TObject, VectorObject};
+use crate::avm2::index::ArrayIndex;
+use crate::avm2::object::{
+    ArrayObject, ByteArrayObject, ClassObject, ScriptObject, TObject, VectorObject,
+};
+use crate::avm2::property::Property;
 use crate::avm2::vector::VectorStorage;
 use crate::avm2::{Activation, Error, Object, Value};
 use crate::avm2_stub_method;
@@ -348,7 +350,7 @@ pub fn deserialize_value_impl<'gc>(
 
                 // If the name of the element was a valid array index, we set an
                 // element on the array instead of setting a dynamic property.
-                if let Some(index) = ArrayObject::as_array_index(&name) {
+                if let Some(index) = ArrayIndex::from_wstr(&name) {
                     array.set_element(activation.gc(), index, value);
                 } else {
                     array.set_dynamic_property(

@@ -11,6 +11,7 @@ use crate::avm2::domain::Domain;
 use crate::avm2::error::{self, make_error_2012};
 use crate::avm2::events::{DispatchList, Event};
 use crate::avm2::function::FunctionArgs;
+use crate::avm2::index::ArrayIndex;
 use crate::avm2::property::Property;
 use crate::avm2::regexp::RegExp;
 use crate::avm2::value::{Hint, Value};
@@ -303,7 +304,7 @@ pub trait TObject<'gc>: 'gc + Collect<'gc> + Debug + Into<Object<'gc>> + Clone +
 
     /// Purely an optimization for "array-like" access. This should return
     /// `None` when the lookup needs to be forwarded to the base or throw.
-    fn get_index_property(self, _index: usize) -> Option<Value<'gc>> {
+    fn get_index_property(self, _index: ArrayIndex) -> Option<Value<'gc>> {
         None
     }
 
@@ -356,7 +357,7 @@ pub trait TObject<'gc>: 'gc + Collect<'gc> + Debug + Into<Object<'gc>> + Clone +
     fn set_index_property(
         self,
         _activation: &mut Activation<'_, 'gc>,
-        _index: usize,
+        _index: ArrayIndex,
         _value: Value<'gc>,
     ) -> Option<Result<(), Error<'gc>>> {
         None

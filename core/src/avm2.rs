@@ -58,6 +58,7 @@ mod filters;
 mod flv;
 mod function;
 pub mod globals;
+mod index;
 mod metadata;
 mod method;
 mod multiname;
