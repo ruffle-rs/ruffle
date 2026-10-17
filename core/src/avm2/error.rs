@@ -301,12 +301,6 @@ pub fn make_error_1003<'gc>(activation: &mut Activation<'_, 'gc>, radix: i32) ->
 
 #[inline(never)]
 #[cold]
-pub fn make_error_1005<'gc>(activation: &mut Activation<'_, 'gc>, length: f64) -> Error<'gc> {
-    make_error!(range_error(activation, error_message!(1005, length), 1005))
-}
-
-#[inline(never)]
-#[cold]
 pub fn make_error_1006<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
     make_error!(type_error(activation, error_message!(1006, "value"), 1006))
 }
