@@ -4,7 +4,9 @@ use crate::{PosColorVertex, PosUvVertex, PosVertex, Transforms};
 use std::ops::Range;
 use wgpu::util::StagingBelt;
 
-const ESTIMATED_OBJECTS_PER_CHUNK: u64 = 200;
+// [NA] The higher this value is, the more memory we'll reserve - ideally we can dynamically allocate this
+// but for now this feels reasonable
+const MAX_TRANSFORMS_PER_CHUNK: u64 = 512;
 
 pub struct ChunkBuffers {
     pub transforms: wgpu::Buffer,
@@ -14,8 +16,11 @@ pub struct ChunkBuffers {
 }
 
 pub fn transforms_per_draw(limits: &wgpu::Limits) -> u64 {
-    let maximum = limits.max_uniform_buffer_binding_size / size_of::<Transforms>() as u64;
-    maximum.min(ESTIMATED_OBJECTS_PER_CHUNK)
+    let maximum = limits
+        .max_uniform_buffer_binding_size
+        .min(limits.max_buffer_size)
+        / size_of::<Transforms>() as u64;
+    maximum.min(MAX_TRANSFORMS_PER_CHUNK)
 }
 
 impl ChunkBuffers {
