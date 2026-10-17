@@ -1,0 +1,6 @@
+row=0 colored=false
+row=1 colored=true
+row=2 colored=false
+row=3 colored=true
+row=4 colored=false
+row=5 colored=true
