@@ -1,0 +1,11 @@
+nothing: +1
+setTimeout: +2
+setInterval: +2
+new Timer: +1
+start: +1
+delay changed while running: +1
+stop: +1
+delay changed while stopped: +1
+start again: +1
+reset: +1
+start after reset: +1

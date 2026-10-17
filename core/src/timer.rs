@@ -1,8 +1,10 @@
 //! Timer handling for `setInterval`/`setTimeout`/`Timer` AVM timers.
 //!
 //! We tick the timers during our normal frame loop for deterministic operation.
-//! The timers are stored in a priority queue, where we check if the nearest timer
-//! is ready to tick each frame.
+//! Every update runs all timers that are due, each at most once, in the order they
+//! were created, like Flash Player does when it checks its timers.
+
+mod timestamp;
 
 use crate::avm1::ExecutionReason;
 use crate::avm1::{Activation, ActivationIdentifier, Object as Avm1Object, Value as Avm1Value};
@@ -14,31 +16,64 @@ use crate::avm2::{
 use crate::context::UpdateContext;
 use crate::display_object::{DisplayObject, TDisplayObject};
 use crate::string::AvmString;
-use gc_arena::Collect;
+use gc_arena::{Collect, Gc, Mutation};
 use ruffle_common::duration::FloatDuration;
-use std::collections::{BinaryHeap, binary_heap::PeekMut};
+use std::cell::Cell;
+use std::collections::BTreeMap;
+use std::ops::RangeTo;
+use std::time::Duration;
+use timestamp::TimerTimestamp;
+
+/// The key of an active timer, which orders timers by the time when they should
+/// fire and their sequence numbers.
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Collect)]
+#[collect(require_static)]
+struct TimerKey {
+    tick_time: TimerTimestamp,
+
+    /// Sequence number of the timer.
+    ///
+    /// Sequence numbers have to be strictly increasing and never reused.
+    /// They are used to order timers that should fire at the same time.
+    sequence: u64,
+}
+
+impl TimerKey {
+    /// The range of keys of timers that should have fired before the given
+    /// time.
+    fn due_before(time: TimerTimestamp) -> RangeTo<Self> {
+        ..Self {
+            tick_time: time,
+            sequence: 0,
+        }
+    }
+}
 
 /// Manages the collection of timers.
 #[derive(Collect)]
 #[collect(no_drop)]
 pub struct Timers<'gc> {
-    /// The collection of active timers.
-    timers: BinaryHeap<Timer<'gc>>,
+    /// The active timers keyed by the time when they should fire.
+    timers: BTreeMap<TimerKey, Timer<'gc>>,
 
-    /// An increasing ID used for created timers.
-    timer_counter: i32,
+    /// The timers created by `setInterval`/`setTimeout`, keyed by their IDs.
+    ids: BTreeMap<i32, Timer<'gc>>,
+
+    /// The last ID assigned to a timer created by `setInterval`/`setTimeout`.
+    last_id: i32,
+
+    /// The last sequence number assigned to a timer.
+    last_sequence: u64,
 
     /// The current global time.
-    cur_time: u64,
+    #[collect(require_static)]
+    current_time: TimerTimestamp,
 }
 
 impl<'gc> Timers<'gc> {
     /// Ticks all timers and runs necessary callbacks.
     pub fn update_timers(context: &mut UpdateContext<'gc>, dt: FloatDuration) -> Option<f64> {
-        context.timers.cur_time = context
-            .timers
-            .cur_time
-            .wrapping_add((dt.as_millis() * Self::TIMER_SCALE) as u64);
+        context.timers.current_time += dt.to_std();
 
         if context.timers.is_empty() {
             return None;
@@ -46,30 +81,29 @@ impl<'gc> Timers<'gc> {
 
         let level0 = context.stage.root_clip();
 
-        let mut tick_count = 0;
-
-        // We have to be careful because the timer list can be mutated while updating;
-        // a timer callback could add more timers, clear timers (including itself), etc.
-        while context
+        // Run every timer that is due once, in creation order, even when an interval
+        // missed several ticks. This is what Flash Player does when it checks its timers.
+        let current_time = context.timers.current_time;
+        let mut due: Vec<TimerKey> = context
             .timers
-            .peek()
-            .map(|timer| timer.tick_time)
-            .unwrap_or(context.timers.cur_time)
-            < context.timers.cur_time
-        {
-            let timer = context.timers.peek().unwrap();
+            .timers
+            .range(TimerKey::due_before(current_time))
+            .map(|(&key, _)| key)
+            .collect();
 
-            tick_count += 1;
-            // SANITY: Only allow so many ticks per update.
-            if tick_count > Self::MAX_TICKS {
-                // Reset our time to a little bit before the nearest timer.
-                context.timers.cur_time = timer.tick_time.wrapping_sub(100);
-                break;
-            }
+        // Sequence numbers are unique, so unstable is fine.
+        due.sort_unstable_by_key(|key| key.sequence);
+
+        for key in due {
+            // We have to be careful because the timer list can be mutated while updating;
+            // a timer callback could add more timers, clear timers (including this one),
+            // change their delays, etc.
+            let Some(&timer) = context.timers.timers.get(&key) else {
+                continue;
+            };
 
             // TODO: Can we avoid these clones?
-            let callback = timer.callback.clone();
-            let expected_id = timer.id;
+            let callback = timer.0.callback.clone();
 
             let cancel_timer = match callback {
                 TimerCallback::Avm1Function { func, params } => {
@@ -175,62 +209,50 @@ impl<'gc> Timers<'gc> {
 
             crate::player::Player::run_actions(context);
 
-            if context.timers.is_empty() {
-                // Every last timer was cleared during the callback, including
-                // the one that just ticked, so there is nothing left to do.
-                break;
+            // The callback could have removed the timer.
+            let timers = &mut context.timers;
+            if !timers.contains(timer) {
+                continue;
             }
 
-            // We need a mutable reference to the timer for the rest.
-            // Just checked that there is still at least one timer active, so unwrap must succeed.
-            let mut timer = context.timers.peek_mut().unwrap();
-
-            if timer.id == expected_id {
-                // The timer next in line is still the same, so we need to remove or reset it.
-                if timer.is_timeout || cancel_timer {
-                    // Timeouts only fire once, and a false return value from the callback cancels intervals.
-                    drop(timer);
-                    context.timers.pop();
+            if timer.0.is_timeout || cancel_timer {
+                // Timeouts only fire once, and a false return value from the callback cancels intervals.
+                timers.remove_timer(timer);
+            } else if timer.key() == key {
+                // Reset setInterval timers, unless the callback changed the delay, which
+                // already rescheduled it. Missed ticks are skipped, like in Flash Player.
+                timers.timers.remove(&key);
+                let interval = timer.0.interval.get();
+                let next_tick_time = key.tick_time + interval;
+                let tick_time = if next_tick_time < current_time {
+                    current_time + interval
                 } else {
-                    // Reset setInterval timers. `peek_mut` re-sorts the timer in the priority queue.
-                    timer.tick_time = timer.tick_time.wrapping_add(timer.interval);
-                }
-            } else {
-                drop(timer);
-                // The timer is no longer the next in line, and this can only happen if
-                // it cancelled itself manually, or it set a new timer in the past.
-                // Let's make sure it's the former.
-                debug_assert!(!context.timers.timer_exists(expected_id));
+                    next_tick_time
+                };
+                let key = TimerKey { tick_time, ..key };
+                timer.0.key.set(key);
+                timers.timers.insert(key, timer);
             }
         }
 
         // Return estimated time until next timer tick.
-        context.timers.peek().map(|timer| {
-            (timer.tick_time.wrapping_sub(context.timers.cur_time)) as f64 / Self::TIMER_SCALE
+        context.timers.timers.first_key_value().map(|(key, _)| {
+            FloatDuration::from_std(key.tick_time - context.timers.current_time).as_millis()
         })
     }
 
     /// The minimum interval we allow for timers.
     const MIN_INTERVAL: i32 = 10;
 
-    /// The maximum timer ticks per call to `update_ticks`, for sanity.
-    const MAX_TICKS: i32 = 10;
-
-    /// The scale of the timers (microseconds).
-    const TIMER_SCALE: f64 = 1000.0;
-
     /// Creates a new `Timers` collection.
     pub fn new() -> Self {
         Self {
             timers: Default::default(),
-            timer_counter: 0,
-            cur_time: 0,
+            ids: Default::default(),
+            last_id: 0,
+            last_sequence: 0,
+            current_time: TimerTimestamp::ZERO,
         }
-    }
-
-    /// The number of timers currently active.
-    pub fn num_timers(&self) -> usize {
-        self.timers.len()
     }
 
     /// Whether there are no timers active.
@@ -238,84 +260,123 @@ impl<'gc> Timers<'gc> {
         self.timers.is_empty()
     }
 
-    /// Whether a timer with the given ID exists.
-    pub fn timer_exists(&self, id: i32) -> bool {
-        self.timers.iter().any(|t| t.id == id)
+    /// Whether the given timer is active.
+    pub fn contains(&self, timer: Timer<'gc>) -> bool {
+        self.timers.contains_key(&timer.key())
     }
 
-    /// Registers a new timer and returns the timer ID.
-    pub fn add_timer(
+    /// Registers a new timer for `setInterval`/`setTimeout` and returns the timer ID.
+    pub fn add_timer_with_id(
         &mut self,
+        mc: &Mutation<'gc>,
         callback: TimerCallback<'gc>,
         interval: i32,
         is_timeout: bool,
     ) -> i32 {
-        // SANITY: Set a minimum interval so we don't spam too much.
-        let interval = interval.max(Self::MIN_INTERVAL) as u64 * (Self::TIMER_SCALE as u64);
-
-        // The counter has to be incremented first, because Flash Player never assigns timer ID 0,
+        // The ID has to be incremented first, because Flash Player never assigns timer ID 0,
         // and neither should we, as some content uses it as an initial "not yet set up" value.
-        self.timer_counter = self.timer_counter.wrapping_add(1);
-        let id = self.timer_counter;
-        let timer = Timer {
-            id,
-            callback,
-            tick_time: self.cur_time + interval,
-            interval,
-            is_timeout,
-        };
-        self.timers.push(timer);
+        self.last_id = self.last_id.wrapping_add(1);
+        let id = self.last_id;
+        self.add_timer(mc, Some(id), callback, interval, is_timeout);
         id
     }
 
+    /// Registers a new timer without a ID and returns it.
+    ///
+    /// Flash Player does not use up IDs for `flash.utils.Timer`.
+    pub fn add_timer_without_id(
+        &mut self,
+        mc: &Mutation<'gc>,
+        callback: TimerCallback<'gc>,
+        interval: i32,
+        is_timeout: bool,
+    ) -> Timer<'gc> {
+        self.add_timer(mc, None, callback, interval, is_timeout)
+    }
+
+    fn add_timer(
+        &mut self,
+        mc: &Mutation<'gc>,
+        id: Option<i32>,
+        callback: TimerCallback<'gc>,
+        interval: i32,
+        is_timeout: bool,
+    ) -> Timer<'gc> {
+        // SANITY: Set a minimum interval so we don't spam too much.
+        let interval = Duration::from_millis(interval.max(Self::MIN_INTERVAL) as u64);
+
+        let timer = Timer(Gc::new(
+            mc,
+            TimerData {
+                id,
+                callback,
+                key: Cell::new(TimerKey {
+                    tick_time: self.current_time + interval,
+                    sequence: 0,
+                }),
+                interval: Cell::new(interval),
+                is_timeout,
+            },
+        ));
+        self.insert(timer);
+        timer
+    }
+
+    /// Makes a timer active, ordering it after all other timers.
+    fn insert(&mut self, timer: Timer<'gc>) {
+        self.last_sequence += 1;
+        let key = TimerKey {
+            sequence: self.last_sequence,
+            ..timer.key()
+        };
+        timer.0.key.set(key);
+        self.timers.insert(key, timer);
+        if let Some(id) = timer.0.id {
+            self.ids.insert(id, timer);
+        }
+    }
+
     /// Removes a timer.
-    pub fn remove(&mut self, id: i32) -> bool {
-        let old_len = self.timers.len();
-        self.timers.retain(|t| t.id != id);
-        let len = self.timers.len();
-        // Sanity check: Either we removed a single timer, or none.
-        debug_assert!(len == old_len || len == old_len - 1);
-        len < old_len
+    pub fn remove_timer(&mut self, timer: Timer<'gc>) -> bool {
+        if self.timers.remove(&timer.key()).is_none() {
+            return false;
+        }
+        if let Some(id) = timer.0.id {
+            self.ids.remove(&id);
+        }
+        true
+    }
+
+    /// Removes a timer created by `setInterval`/`setTimeout`.
+    pub fn remove_timer_by_id(&mut self, id: i32) -> bool {
+        match self.ids.get(&id) {
+            Some(&timer) => self.remove_timer(timer),
+            None => false,
+        }
     }
 
     pub fn remove_all(&mut self) {
-        self.timers.clear()
+        self.timers.clear();
+        self.ids.clear();
     }
 
     /// Changes the delay of a timer.
-    pub fn set_delay(&mut self, id: i32, interval: i32) {
+    pub fn set_delay(&mut self, timer: Timer<'gc>, interval: i32) {
         // SANITY: Set a minimum interval so we don't spam too much.
-        let interval = interval.max(Self::MIN_INTERVAL) as u64 * (Self::TIMER_SCALE as u64);
+        let interval = Duration::from_millis(interval.max(Self::MIN_INTERVAL) as u64);
 
-        // Due to the limitations of `BinaryHeap`, we have to do this in a slightly roundabout way.
-        let mut timer = None;
-        for t in self.timers.iter() {
-            if t.id == id {
-                timer = Some(t.clone());
-                break;
-            }
-        }
-
-        if let Some(mut timer) = timer {
-            self.remove(id);
-            timer.interval = interval;
-            timer.tick_time = self.cur_time + interval;
-            self.timers.push(timer);
-        } else {
+        if !self.remove_timer(timer) {
             panic!("Changing delay of non-existent timer");
         }
-    }
 
-    fn peek(&self) -> Option<&Timer<'gc>> {
-        self.timers.peek()
-    }
-
-    fn peek_mut(&mut self) -> Option<PeekMut<'_, Timer<'gc>>> {
-        self.timers.peek_mut()
-    }
-
-    fn pop(&mut self) -> Option<Timer<'gc>> {
-        self.timers.pop()
+        timer.0.interval.set(interval);
+        timer.0.key.set(TimerKey {
+            tick_time: self.current_time + interval,
+            ..timer.key()
+        });
+        // Flash Player runs a timer with a changed delay after the timers created
+        // before the change, so it is ordered as if it was created again.
+        self.insert(timer);
     }
 }
 
@@ -325,47 +386,41 @@ impl Default for Timers<'_> {
     }
 }
 
-/// A timer created via `setInterval`/`setTimeout`.
+/// A timer created via `setInterval`/`setTimeout`/`Timer`.
 /// Runs a callback when it ticks.
-#[derive(Clone, Collect)]
+#[derive(Clone, Copy, Collect)]
 #[collect(no_drop)]
-pub struct Timer<'gc> {
-    /// The ID of the timer.
-    id: i32,
+pub struct Timer<'gc>(Gc<'gc, TimerData<'gc>>);
+
+impl Timer<'_> {
+    /// The key of the timer in `Timers`.
+    fn key(self) -> TimerKey {
+        self.0.key.get()
+    }
+}
+
+#[derive(Collect)]
+#[collect(no_drop)]
+struct TimerData<'gc> {
+    /// The ID of the timer, if it was created by `setInterval`/`setTimeout`.
+    id: Option<i32>,
 
     /// The callback that this timer runs when it fires.
+    ///
     /// A callback is either a function object, or a parent object with a method name.
     callback: TimerCallback<'gc>,
 
-    /// The time when this timer should fire.
-    tick_time: u64,
+    /// The key of the timer in `Timers`, with the time when this timer should fire.
+    ///
+    /// Its sequence number is assigned when the timer is created and again when its
+    /// delay changes. The key must not change while the timer is active.
+    key: Cell<TimerKey>,
 
-    /// The interval between timer ticks, in microseconds.
-    interval: u64,
+    /// The interval between timer ticks.
+    interval: Cell<Duration>,
 
     /// This timer only fires once if `is_timeout` is true.
     is_timeout: bool,
-}
-
-// Implement `Ord` so that timers can be stored in the BinaryHeap (as a min-heap).
-impl PartialEq for Timer<'_> {
-    fn eq(&self, other: &Self) -> bool {
-        self.tick_time == other.tick_time
-    }
-}
-
-impl Eq for Timer<'_> {}
-
-impl PartialOrd for Timer<'_> {
-    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        Some(self.cmp(other))
-    }
-}
-
-impl Ord for Timer<'_> {
-    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-        self.tick_time.cmp(&other.tick_time).reverse()
-    }
 }
 
 /// A callback fired by a `setInterval`/`setTimeout` timer.
