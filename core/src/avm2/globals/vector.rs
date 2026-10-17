@@ -6,7 +6,7 @@ use crate::avm2::error::{make_error_1007, make_error_1034, make_error_1112};
 use crate::avm2::function::FunctionArgs;
 use crate::avm2::globals::array::{
     ArrayIter, SortOptions, compare_numeric_slow, compare_string_case_insensitive,
-    compare_string_case_sensitive,
+    compare_string_case_sensitive, parse_sort_args,
 };
 use crate::avm2::object::{ClassObject, Object, TObject as _, VectorObject};
 use crate::avm2::parameters::ParametersExt;
@@ -601,20 +601,8 @@ pub fn sort<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
-    if let Some(vs) = this.as_vector_storage_mut(activation.gc()) {
-        let fn_or_options = args.get_value(0);
-
-        let (compare_fnc, options) = if let Some(callable) = fn_or_options
-            .as_object()
-            .filter(|o| o.as_class_object().is_some() || o.as_function_object().is_some())
-        {
-            (Some(Value::from(callable)), SortOptions::empty())
-        } else {
-            (
-                None,
-                SortOptions::from_bits_truncate(fn_or_options.coerce_to_u32(activation)? as u8),
-            )
-        };
+    if let Some(vector) = this.as_vector_object() {
+        let (compare_fnc, options) = parse_sort_args(activation, args)?;
 
         let compare = move |activation: &mut Activation<'_, 'gc>, a, b| {
             if let Some(compare_fnc) = compare_fnc {
@@ -639,8 +627,7 @@ pub fn sort<'gc>(
             }
         };
 
-        let mut values: Vec<_> = vs.iter().collect();
-        drop(vs);
+        let mut values: Vec<_> = vector.storage().iter().collect();
 
         let mut unique_sort_satisfied = true;
         super::array::qsort(&mut values, &mut |a, b| {
@@ -663,8 +650,7 @@ pub fn sort<'gc>(
         }
 
         if !options.contains(SortOptions::UNIQUE_SORT) || unique_sort_satisfied {
-            let mut vs = this.as_vector_storage_mut(activation.gc()).unwrap();
-            vs.replace_storage(values);
+            vector.storage_mut(activation.gc()).replace_storage(values);
         }
 
         return Ok(this.into());
