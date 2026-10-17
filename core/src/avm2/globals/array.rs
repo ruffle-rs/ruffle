@@ -3,7 +3,7 @@
 use crate::avm2::Error;
 use crate::avm2::activation::Activation;
 use crate::avm2::array::ArrayStorage;
-use crate::avm2::error::{make_error_1005, make_error_1125};
+use crate::avm2::error::make_error_1125;
 use crate::avm2::function::FunctionArgs;
 use crate::avm2::object::{ArrayObject, Object, TObject};
 use crate::avm2::parameters::ParametersExt;
@@ -27,35 +27,6 @@ pub fn init_custom_prototype<'gc>(
     let prototype_array_object = ArrayObject::for_prototype(activation.context, this);
 
     this.link_prototype(activation.context, prototype_array_object);
-
-    Ok(Value::Undefined)
-}
-
-/// Implements `Array`'s instance initializer.
-pub fn array_initializer<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    this: Value<'gc>,
-    args: FunctionArgs<'_, 'gc>,
-) -> Result<Value<'gc>, Error<'gc>> {
-    let this = this.as_object().unwrap();
-
-    if let Some(mut array) = this.as_array_storage_mut(activation.gc()) {
-        if args.len() == 1
-            && let Some(expected_len) = args.get_optional(0).and_then(|v| v.try_as_f64())
-        {
-            if expected_len < 0.0 || expected_len.is_nan() || expected_len.fract() != 0.0 {
-                return Err(make_error_1005(activation, expected_len));
-            }
-
-            array.set_length(expected_len as usize);
-
-            return Ok(Value::Undefined);
-        }
-
-        for (i, arg) in args.iter().enumerate() {
-            array.set(i, arg);
-        }
-    }
 
     Ok(Value::Undefined)
 }
