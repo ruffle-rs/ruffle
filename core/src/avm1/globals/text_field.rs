@@ -160,6 +160,8 @@ fn set_new_text_format<'gc>(
         && let NativeObject::TextFormat(text_format) = text_format.native()
     {
         text_field.set_new_text_format(text_format.borrow().clone());
+        // The next text or HTML text assignment applies even when the text doesn't change.
+        text_field.force_next_text_update();
     }
 
     Ok(Value::Undefined)

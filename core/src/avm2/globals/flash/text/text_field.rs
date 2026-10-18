@@ -326,6 +326,8 @@ pub fn set_default_text_format<'gc>(
         let new_text_format = args.get_object(activation, 0, "format")?;
         let new_text_format = new_text_format.as_text_format().unwrap();
         this.set_new_text_format(new_text_format.clone());
+        // The next text or HTML text assignment applies even when the text doesn't change.
+        this.force_next_text_update();
     }
 
     Ok(Value::Undefined)
