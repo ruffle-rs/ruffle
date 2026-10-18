@@ -313,7 +313,7 @@ pub fn get_default_text_format<'gc>(
 }
 
 pub fn set_default_text_format<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -323,13 +323,9 @@ pub fn set_default_text_format<'gc>(
         .as_display_object()
         .and_then(|this| this.as_edit_text())
     {
-        let new_text_format = args.try_get_object(0);
-
-        if let Some(new_text_format) = new_text_format
-            && let Some(new_text_format) = new_text_format.as_text_format()
-        {
-            this.set_new_text_format(new_text_format.clone());
-        }
+        let new_text_format = args.get_object(activation, 0, "format")?;
+        let new_text_format = new_text_format.as_text_format().unwrap();
+        this.set_new_text_format(new_text_format.clone());
     }
 
     Ok(Value::Undefined)
