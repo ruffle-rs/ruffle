@@ -1,0 +1,904 @@
+initial
+  text: ABCD
+  sizes: 12,12,14,14
+  default size: 12
+setTextFormat(fmt)
+  text: ABCD
+  sizes: 30,30,30,30
+  default size: 12
+setTextFormat(fmt, -2)
+  [class RangeError]
+  RangeError: Error #2006: The supplied index is out of bounds.
+	at flash.text::TextField/setTextFormat()
+	at Test/test2()
+	at Test/test()
+	at Test()
+  text: ABCD
+  sizes: 12,12,14,14
+  default size: 12
+setTextFormat(fmt, -1)
+  text: ABCD
+  sizes: 30,30,30,30
+  default size: 12
+setTextFormat(fmt, 0)
+  text: ABCD
+  sizes: 30,12,14,14
+  default size: 12
+setTextFormat(fmt, 1)
+  text: ABCD
+  sizes: 12,30,14,14
+  default size: 12
+setTextFormat(fmt, 2)
+  text: ABCD
+  sizes: 12,12,30,14
+  default size: 12
+setTextFormat(fmt, 3)
+  text: ABCD
+  sizes: 12,12,14,30
+  default size: 12
+setTextFormat(fmt, 4)
+  [class RangeError]
+  RangeError: Error #2006: The supplied index is out of bounds.
+	at flash.text::TextField/setTextFormat()
+	at Test/test2()
+	at Test/test()
+	at Test()
+  text: ABCD
+  sizes: 12,12,14,14
+  default size: 12
+setTextFormat(fmt, 5)
+  [class RangeError]
+  RangeError: Error #2006: The supplied index is out of bounds.
+	at flash.text::TextField/setTextFormat()
+	at Test/test2()
+	at Test/test()
+	at Test()
+  text: ABCD
+  sizes: 12,12,14,14
+  default size: 12
+setTextFormat(fmt, -2, -2)
+  [class RangeError]
+  RangeError: Error #2006: The supplied index is out of bounds.
+	at flash.text::TextField/setTextFormat()
+	at Test/test2()
+	at Test/test()
+	at Test()
+  text: ABCD
+  sizes: 12,12,14,14
+  default size: 12
+setTextFormat(fmt, -2, -1)
+  [class RangeError]
+  RangeError: Error #2006: The supplied index is out of bounds.
+	at flash.text::TextField/setTextFormat()
+	at Test/test2()
+	at Test/test()
+	at Test()
+  text: ABCD
+  sizes: 12,12,14,14
+  default size: 12
+setTextFormat(fmt, -2, 0)
+  [class RangeError]
+  RangeError: Error #2006: The supplied index is out of bounds.
+	at flash.text::TextField/setTextFormat()
+	at Test/test2()
+	at Test/test()
+	at Test()
+  text: ABCD
+  sizes: 12,12,14,14
+  default size: 12
+setTextFormat(fmt, -2, 1)
+  [class RangeError]
+  RangeError: Error #2006: The supplied index is out of bounds.
+	at flash.text::TextField/setTextFormat()
+	at Test/test2()
+	at Test/test()
+	at Test()
+  text: ABCD
+  sizes: 12,12,14,14
+  default size: 12
+setTextFormat(fmt, -2, 2)
+  [class RangeError]
+  RangeError: Error #2006: The supplied index is out of bounds.
+	at flash.text::TextField/setTextFormat()
+	at Test/test2()
+	at Test/test()
+	at Test()
+  text: ABCD
+  sizes: 12,12,14,14
+  default size: 12
+setTextFormat(fmt, -2, 3)
+  [class RangeError]
+  RangeError: Error #2006: The supplied index is out of bounds.
+	at flash.text::TextField/setTextFormat()
+	at Test/test2()
+	at Test/test()
+	at Test()
+  text: ABCD
+  sizes: 12,12,14,14
+  default size: 12
+setTextFormat(fmt, -2, 4)
+  [class RangeError]
+  RangeError: Error #2006: The supplied index is out of bounds.
+	at flash.text::TextField/setTextFormat()
+	at Test/test2()
+	at Test/test()
+	at Test()
+  text: ABCD
+  sizes: 12,12,14,14
+  default size: 12
+setTextFormat(fmt, -2, 5)
+  [class RangeError]
+  RangeError: Error #2006: The supplied index is out of bounds.
+	at flash.text::TextField/setTextFormat()
+	at Test/test2()
+	at Test/test()
+	at Test()
+  text: ABCD
+  sizes: 12,12,14,14
+  default size: 12
+setTextFormat(fmt, -1, -2)
+  [class RangeError]
+  RangeError: Error #2006: The supplied index is out of bounds.
+	at flash.text::TextField/setTextFormat()
+	at Test/test2()
+	at Test/test()
+	at Test()
+  text: ABCD
+  sizes: 12,12,14,14
+  default size: 12
+setTextFormat(fmt, -1, -1)
+  text: ABCD
+  sizes: 30,30,30,30
+  default size: 12
+setTextFormat(fmt, -1, 0)
+  [class RangeError]
+  RangeError: Error #2006: The supplied index is out of bounds.
+	at flash.text::TextField/setTextFormat()
+	at Test/test2()
+	at Test/test()
+	at Test()
+  text: ABCD
+  sizes: 12,12,14,14
+  default size: 12
+setTextFormat(fmt, -1, 1)
+  text: ABCD
+  sizes: 30,12,14,14
+  default size: 12
+setTextFormat(fmt, -1, 2)
+  text: ABCD
+  sizes: 30,30,14,14
+  default size: 12
+setTextFormat(fmt, -1, 3)
+  text: ABCD
+  sizes: 30,30,30,14
+  default size: 12
+setTextFormat(fmt, -1, 4)
+  text: ABCD
+  sizes: 30,30,30,30
+  default size: 12
+setTextFormat(fmt, -1, 5)
+  [class RangeError]
+  RangeError: Error #2006: The supplied index is out of bounds.
+	at flash.text::TextField/setTextFormat()
+	at Test/test2()
+	at Test/test()
+	at Test()
+  text: ABCD
+  sizes: 12,12,14,14
+  default size: 12
+setTextFormat(fmt, 0, -2)
+  [class RangeError]
+  RangeError: Error #2006: The supplied index is out of bounds.
+	at flash.text::TextField/setTextFormat()
+	at Test/test2()
+	at Test/test()
+	at Test()
+  text: ABCD
+  sizes: 12,12,14,14
+  default size: 12
+setTextFormat(fmt, 0, -1)
+  text: ABCD
+  sizes: 30,12,14,14
+  default size: 12
+setTextFormat(fmt, 0, 0)
+  [class RangeError]
+  RangeError: Error #2006: The supplied index is out of bounds.
+	at flash.text::TextField/setTextFormat()
+	at Test/test2()
+	at Test/test()
+	at Test()
+  text: ABCD
+  sizes: 12,12,14,14
+  default size: 12
+setTextFormat(fmt, 0, 1)
+  text: ABCD
+  sizes: 30,12,14,14
+  default size: 12
+setTextFormat(fmt, 0, 2)
+  text: ABCD
+  sizes: 30,30,14,14
+  default size: 12
+setTextFormat(fmt, 0, 3)
+  text: ABCD
+  sizes: 30,30,30,14
+  default size: 12
+setTextFormat(fmt, 0, 4)
+  text: ABCD
+  sizes: 30,30,30,30
+  default size: 12
+setTextFormat(fmt, 0, 5)
+  [class RangeError]
+  RangeError: Error #2006: The supplied index is out of bounds.
+	at flash.text::TextField/setTextFormat()
+	at Test/test2()
+	at Test/test()
+	at Test()
+  text: ABCD
+  sizes: 12,12,14,14
+  default size: 12
+setTextFormat(fmt, 1, -2)
+  [class RangeError]
+  RangeError: Error #2006: The supplied index is out of bounds.
+	at flash.text::TextField/setTextFormat()
+	at Test/test2()
+	at Test/test()
+	at Test()
+  text: ABCD
+  sizes: 12,12,14,14
+  default size: 12
+setTextFormat(fmt, 1, -1)
+  text: ABCD
+  sizes: 12,30,14,14
+  default size: 12
+setTextFormat(fmt, 1, 0)
+  [class RangeError]
+  RangeError: Error #2006: The supplied index is out of bounds.
+	at flash.text::TextField/setTextFormat()
+	at Test/test2()
+	at Test/test()
+	at Test()
+  text: ABCD
+  sizes: 12,12,14,14
+  default size: 12
+setTextFormat(fmt, 1, 1)
+  text: ABCD
+  sizes: 12,12,14,14
+  default size: 12
+setTextFormat(fmt, 1, 2)
+  text: ABCD
+  sizes: 12,30,14,14
+  default size: 12
+setTextFormat(fmt, 1, 3)
+  text: ABCD
+  sizes: 12,30,30,14
+  default size: 12
+setTextFormat(fmt, 1, 4)
+  text: ABCD
+  sizes: 12,30,30,30
+  default size: 12
+setTextFormat(fmt, 1, 5)
+  [class RangeError]
+  RangeError: Error #2006: The supplied index is out of bounds.
+	at flash.text::TextField/setTextFormat()
+	at Test/test2()
+	at Test/test()
+	at Test()
+  text: ABCD
+  sizes: 12,12,14,14
+  default size: 12
+setTextFormat(fmt, 2, -2)
+  [class RangeError]
+  RangeError: Error #2006: The supplied index is out of bounds.
+	at flash.text::TextField/setTextFormat()
+	at Test/test2()
+	at Test/test()
+	at Test()
+  text: ABCD
+  sizes: 12,12,14,14
+  default size: 12
+setTextFormat(fmt, 2, -1)
+  text: ABCD
+  sizes: 12,12,30,14
+  default size: 12
+setTextFormat(fmt, 2, 0)
+  [class RangeError]
+  RangeError: Error #2006: The supplied index is out of bounds.
+	at flash.text::TextField/setTextFormat()
+	at Test/test2()
+	at Test/test()
+	at Test()
+  text: ABCD
+  sizes: 12,12,14,14
+  default size: 12
+setTextFormat(fmt, 2, 1)
+  text: ABCD
+  sizes: 12,12,14,14
+  default size: 12
+setTextFormat(fmt, 2, 2)
+  text: ABCD
+  sizes: 12,12,14,14
+  default size: 12
+setTextFormat(fmt, 2, 3)
+  text: ABCD
+  sizes: 12,12,30,14
+  default size: 12
+setTextFormat(fmt, 2, 4)
+  text: ABCD
+  sizes: 12,12,30,30
+  default size: 12
+setTextFormat(fmt, 2, 5)
+  [class RangeError]
+  RangeError: Error #2006: The supplied index is out of bounds.
+	at flash.text::TextField/setTextFormat()
+	at Test/test2()
+	at Test/test()
+	at Test()
+  text: ABCD
+  sizes: 12,12,14,14
+  default size: 12
+setTextFormat(fmt, 3, -2)
+  [class RangeError]
+  RangeError: Error #2006: The supplied index is out of bounds.
+	at flash.text::TextField/setTextFormat()
+	at Test/test2()
+	at Test/test()
+	at Test()
+  text: ABCD
+  sizes: 12,12,14,14
+  default size: 12
+setTextFormat(fmt, 3, -1)
+  text: ABCD
+  sizes: 12,12,14,30
+  default size: 12
+setTextFormat(fmt, 3, 0)
+  [class RangeError]
+  RangeError: Error #2006: The supplied index is out of bounds.
+	at flash.text::TextField/setTextFormat()
+	at Test/test2()
+	at Test/test()
+	at Test()
+  text: ABCD
+  sizes: 12,12,14,14
+  default size: 12
+setTextFormat(fmt, 3, 1)
+  text: ABCD
+  sizes: 12,12,14,14
+  default size: 12
+setTextFormat(fmt, 3, 2)
+  text: ABCD
+  sizes: 12,12,14,14
+  default size: 12
+setTextFormat(fmt, 3, 3)
+  text: ABCD
+  sizes: 12,12,14,14
+  default size: 12
+setTextFormat(fmt, 3, 4)
+  text: ABCD
+  sizes: 12,12,14,30
+  default size: 12
+setTextFormat(fmt, 3, 5)
+  [class RangeError]
+  RangeError: Error #2006: The supplied index is out of bounds.
+	at flash.text::TextField/setTextFormat()
+	at Test/test2()
+	at Test/test()
+	at Test()
+  text: ABCD
+  sizes: 12,12,14,14
+  default size: 12
+setTextFormat(fmt, 4, -2)
+  [class RangeError]
+  RangeError: Error #2006: The supplied index is out of bounds.
+	at flash.text::TextField/setTextFormat()
+	at Test/test2()
+	at Test/test()
+	at Test()
+  text: ABCD
+  sizes: 12,12,14,14
+  default size: 12
+setTextFormat(fmt, 4, -1)
+  [class RangeError]
+  RangeError: Error #2006: The supplied index is out of bounds.
+	at flash.text::TextField/setTextFormat()
+	at Test/test2()
+	at Test/test()
+	at Test()
+  text: ABCD
+  sizes: 12,12,14,14
+  default size: 12
+setTextFormat(fmt, 4, 0)
+  [class RangeError]
+  RangeError: Error #2006: The supplied index is out of bounds.
+	at flash.text::TextField/setTextFormat()
+	at Test/test2()
+	at Test/test()
+	at Test()
+  text: ABCD
+  sizes: 12,12,14,14
+  default size: 12
+setTextFormat(fmt, 4, 1)
+  [class RangeError]
+  RangeError: Error #2006: The supplied index is out of bounds.
+	at flash.text::TextField/setTextFormat()
+	at Test/test2()
+	at Test/test()
+	at Test()
+  text: ABCD
+  sizes: 12,12,14,14
+  default size: 12
+setTextFormat(fmt, 4, 2)
+  [class RangeError]
+  RangeError: Error #2006: The supplied index is out of bounds.
+	at flash.text::TextField/setTextFormat()
+	at Test/test2()
+	at Test/test()
+	at Test()
+  text: ABCD
+  sizes: 12,12,14,14
+  default size: 12
+setTextFormat(fmt, 4, 3)
+  [class RangeError]
+  RangeError: Error #2006: The supplied index is out of bounds.
+	at flash.text::TextField/setTextFormat()
+	at Test/test2()
+	at Test/test()
+	at Test()
+  text: ABCD
+  sizes: 12,12,14,14
+  default size: 12
+setTextFormat(fmt, 4, 4)
+  [class RangeError]
+  RangeError: Error #2006: The supplied index is out of bounds.
+	at flash.text::TextField/setTextFormat()
+	at Test/test2()
+	at Test/test()
+	at Test()
+  text: ABCD
+  sizes: 12,12,14,14
+  default size: 12
+setTextFormat(fmt, 4, 5)
+  [class RangeError]
+  RangeError: Error #2006: The supplied index is out of bounds.
+	at flash.text::TextField/setTextFormat()
+	at Test/test2()
+	at Test/test()
+	at Test()
+  text: ABCD
+  sizes: 12,12,14,14
+  default size: 12
+setTextFormat(fmt, 5, -2)
+  [class RangeError]
+  RangeError: Error #2006: The supplied index is out of bounds.
+	at flash.text::TextField/setTextFormat()
+	at Test/test2()
+	at Test/test()
+	at Test()
+  text: ABCD
+  sizes: 12,12,14,14
+  default size: 12
+setTextFormat(fmt, 5, -1)
+  [class RangeError]
+  RangeError: Error #2006: The supplied index is out of bounds.
+	at flash.text::TextField/setTextFormat()
+	at Test/test2()
+	at Test/test()
+	at Test()
+  text: ABCD
+  sizes: 12,12,14,14
+  default size: 12
+setTextFormat(fmt, 5, 0)
+  [class RangeError]
+  RangeError: Error #2006: The supplied index is out of bounds.
+	at flash.text::TextField/setTextFormat()
+	at Test/test2()
+	at Test/test()
+	at Test()
+  text: ABCD
+  sizes: 12,12,14,14
+  default size: 12
+setTextFormat(fmt, 5, 1)
+  [class RangeError]
+  RangeError: Error #2006: The supplied index is out of bounds.
+	at flash.text::TextField/setTextFormat()
+	at Test/test2()
+	at Test/test()
+	at Test()
+  text: ABCD
+  sizes: 12,12,14,14
+  default size: 12
+setTextFormat(fmt, 5, 2)
+  [class RangeError]
+  RangeError: Error #2006: The supplied index is out of bounds.
+	at flash.text::TextField/setTextFormat()
+	at Test/test2()
+	at Test/test()
+	at Test()
+  text: ABCD
+  sizes: 12,12,14,14
+  default size: 12
+setTextFormat(fmt, 5, 3)
+  [class RangeError]
+  RangeError: Error #2006: The supplied index is out of bounds.
+	at flash.text::TextField/setTextFormat()
+	at Test/test2()
+	at Test/test()
+	at Test()
+  text: ABCD
+  sizes: 12,12,14,14
+  default size: 12
+setTextFormat(fmt, 5, 4)
+  [class RangeError]
+  RangeError: Error #2006: The supplied index is out of bounds.
+	at flash.text::TextField/setTextFormat()
+	at Test/test2()
+	at Test/test()
+	at Test()
+  text: ABCD
+  sizes: 12,12,14,14
+  default size: 12
+setTextFormat(fmt, 5, 5)
+  [class RangeError]
+  RangeError: Error #2006: The supplied index is out of bounds.
+	at flash.text::TextField/setTextFormat()
+	at Test/test2()
+	at Test/test()
+	at Test()
+  text: ABCD
+  sizes: 12,12,14,14
+  default size: 12
+setTextFormat(fmt, 1.7)
+  text: ABCD
+  sizes: 12,30,14,14
+  default size: 12
+setTextFormat(fmt, 2)
+  text: ABCD
+  sizes: 12,12,30,14
+  default size: 12
+setTextFormat(fmt, 3.9)
+  text: ABCD
+  sizes: 12,12,14,30
+  default size: 12
+setTextFormat(fmt, -0.5)
+  text: ABCD
+  sizes: 30,12,14,14
+  default size: 12
+setTextFormat(fmt, -1.5)
+  text: ABCD
+  sizes: 30,30,30,30
+  default size: 12
+setTextFormat(fmt, -1)
+  text: ABCD
+  sizes: 30,30,30,30
+  default size: 12
+setTextFormat(fmt, 4294967295)
+  text: ABCD
+  sizes: 30,30,30,30
+  default size: 12
+setTextFormat(fmt, -2147483648)
+  [class RangeError]
+  RangeError: Error #2006: The supplied index is out of bounds.
+	at flash.text::TextField/setTextFormat()
+	at Test/test2()
+	at Test/test()
+	at Test()
+  text: ABCD
+  sizes: 12,12,14,14
+  default size: 12
+setTextFormat(fmt, 2147483647)
+  [class RangeError]
+  RangeError: Error #2006: The supplied index is out of bounds.
+	at flash.text::TextField/setTextFormat()
+	at Test/test2()
+	at Test/test()
+	at Test()
+  text: ABCD
+  sizes: 12,12,14,14
+  default size: 12
+setTextFormat(fmt, undefined)
+  text: ABCD
+  sizes: 30,12,14,14
+  default size: 12
+setTextFormat(fmt, NaN)
+  text: ABCD
+  sizes: 30,12,14,14
+  default size: 12
+setTextFormat(fmt, 1.7, 3.2)
+  text: ABCD
+  sizes: 12,30,30,14
+  default size: 12
+setTextFormat(fmt, 0, 2147483647)
+  [class RangeError]
+  RangeError: Error #2006: The supplied index is out of bounds.
+	at flash.text::TextField/setTextFormat()
+	at Test/test2()
+	at Test/test()
+	at Test()
+  text: ABCD
+  sizes: 12,12,14,14
+  default size: 12
+setTextFormat(fmt, 2, 4294967297)
+  text: ABCD
+  sizes: 12,12,14,14
+  default size: 12
+setTextFormat(fmt, -5, -5)
+  [class RangeError]
+  RangeError: Error #2006: The supplied index is out of bounds.
+	at flash.text::TextField/setTextFormat()
+	at Test/test2()
+	at Test/test()
+	at Test()
+  text: ABCD
+  sizes: 12,12,14,14
+  default size: 12
+setTextFormat(fmt, 2147483647, -1)
+  [class RangeError]
+  RangeError: Error #2006: The supplied index is out of bounds.
+	at flash.text::TextField/setTextFormat()
+	at Test/test2()
+	at Test/test()
+	at Test()
+  text: ABCD
+  sizes: 12,12,14,14
+  default size: 12
+setTextFormat(fmt, 0, -2147483648)
+  [class RangeError]
+  RangeError: Error #2006: The supplied index is out of bounds.
+	at flash.text::TextField/setTextFormat()
+	at Test/test2()
+	at Test/test()
+	at Test()
+  text: ABCD
+  sizes: 12,12,14,14
+  default size: 12
+setTextFormat(fmt, 4294967295, 4294967295)
+  text: ABCD
+  sizes: 30,30,30,30
+  default size: 12
+setTextFormat(fmt, undefined, undefined)
+  [class RangeError]
+  RangeError: Error #2006: The supplied index is out of bounds.
+	at flash.text::TextField/setTextFormat()
+	at Test/test2()
+	at Test/test()
+	at Test()
+  text: ABCD
+  sizes: 12,12,14,14
+  default size: 12
+setTextFormat(fmt, NaN, NaN)
+  [class RangeError]
+  RangeError: Error #2006: The supplied index is out of bounds.
+	at flash.text::TextField/setTextFormat()
+	at Test/test2()
+	at Test/test()
+	at Test()
+  text: ABCD
+  sizes: 12,12,14,14
+  default size: 12
+setTextFormat(fmt, 0, NaN)
+  [class RangeError]
+  RangeError: Error #2006: The supplied index is out of bounds.
+	at flash.text::TextField/setTextFormat()
+	at Test/test2()
+	at Test/test()
+	at Test()
+  text: ABCD
+  sizes: 12,12,14,14
+  default size: 12
+setTextFormat(null)
+  [class TypeError]
+  TypeError: Error #2007: Parameter format must be non-null.
+	at flash.text::TextField/setTextFormat()
+	at Test/test2()
+	at Test/test()
+	at Test()
+  text: ABCD
+  sizes: 12,12,14,14
+  default size: 12
+setTextFormat(null, 0, 1)
+  [class TypeError]
+  TypeError: Error #2007: Parameter format must be non-null.
+	at flash.text::TextField/setTextFormat()
+	at Test/test2()
+	at Test/test()
+	at Test()
+  text: ABCD
+  sizes: 12,12,14,14
+  default size: 12
+setTextFormat(null, 4, 4)
+  [class TypeError]
+  TypeError: Error #2007: Parameter format must be non-null.
+	at flash.text::TextField/setTextFormat()
+	at Test/test2()
+	at Test/test()
+	at Test()
+  text: ABCD
+  sizes: 12,12,14,14
+  default size: 12
+setTextFormat(null, -2, -2)
+  [class TypeError]
+  TypeError: Error #2007: Parameter format must be non-null.
+	at flash.text::TextField/setTextFormat()
+	at Test/test2()
+	at Test/test()
+	at Test()
+  text: ABCD
+  sizes: 12,12,14,14
+  default size: 12
+empty text
+setTextFormat(fmt)
+  text: 
+  sizes: 
+  default size: 12
+setTextFormat(fmt, -2)
+  [class RangeError]
+  RangeError: Error #2006: The supplied index is out of bounds.
+	at flash.text::TextField/setTextFormat()
+	at Test/test2()
+	at Test()
+  text: 
+  sizes: 
+  default size: 12
+setTextFormat(fmt, -1)
+  text: 
+  sizes: 
+  default size: 12
+setTextFormat(fmt, 0)
+  [class RangeError]
+  RangeError: Error #2006: The supplied index is out of bounds.
+	at flash.text::TextField/setTextFormat()
+	at Test/test2()
+	at Test()
+  text: 
+  sizes: 
+  default size: 12
+setTextFormat(fmt, 1)
+  [class RangeError]
+  RangeError: Error #2006: The supplied index is out of bounds.
+	at flash.text::TextField/setTextFormat()
+	at Test/test2()
+	at Test()
+  text: 
+  sizes: 
+  default size: 12
+setTextFormat(fmt, -2, -2)
+  [class RangeError]
+  RangeError: Error #2006: The supplied index is out of bounds.
+	at flash.text::TextField/setTextFormat()
+	at Test/test2()
+	at Test()
+  text: 
+  sizes: 
+  default size: 12
+setTextFormat(fmt, -2, -1)
+  [class RangeError]
+  RangeError: Error #2006: The supplied index is out of bounds.
+	at flash.text::TextField/setTextFormat()
+	at Test/test2()
+	at Test()
+  text: 
+  sizes: 
+  default size: 12
+setTextFormat(fmt, -2, 0)
+  [class RangeError]
+  RangeError: Error #2006: The supplied index is out of bounds.
+	at flash.text::TextField/setTextFormat()
+	at Test/test2()
+	at Test()
+  text: 
+  sizes: 
+  default size: 12
+setTextFormat(fmt, -2, 1)
+  [class RangeError]
+  RangeError: Error #2006: The supplied index is out of bounds.
+	at flash.text::TextField/setTextFormat()
+	at Test/test2()
+	at Test()
+  text: 
+  sizes: 
+  default size: 12
+setTextFormat(fmt, -1, -2)
+  [class RangeError]
+  RangeError: Error #2006: The supplied index is out of bounds.
+	at flash.text::TextField/setTextFormat()
+	at Test/test2()
+	at Test()
+  text: 
+  sizes: 
+  default size: 12
+setTextFormat(fmt, -1, -1)
+  text: 
+  sizes: 
+  default size: 12
+setTextFormat(fmt, -1, 0)
+  [class RangeError]
+  RangeError: Error #2006: The supplied index is out of bounds.
+	at flash.text::TextField/setTextFormat()
+	at Test/test2()
+	at Test()
+  text: 
+  sizes: 
+  default size: 12
+setTextFormat(fmt, -1, 1)
+  [class RangeError]
+  RangeError: Error #2006: The supplied index is out of bounds.
+	at flash.text::TextField/setTextFormat()
+	at Test/test2()
+	at Test()
+  text: 
+  sizes: 
+  default size: 12
+setTextFormat(fmt, 0, -2)
+  [class RangeError]
+  RangeError: Error #2006: The supplied index is out of bounds.
+	at flash.text::TextField/setTextFormat()
+	at Test/test2()
+	at Test()
+  text: 
+  sizes: 
+  default size: 12
+setTextFormat(fmt, 0, -1)
+  [class RangeError]
+  RangeError: Error #2006: The supplied index is out of bounds.
+	at flash.text::TextField/setTextFormat()
+	at Test/test2()
+	at Test()
+  text: 
+  sizes: 
+  default size: 12
+setTextFormat(fmt, 0, 0)
+  [class RangeError]
+  RangeError: Error #2006: The supplied index is out of bounds.
+	at flash.text::TextField/setTextFormat()
+	at Test/test2()
+	at Test()
+  text: 
+  sizes: 
+  default size: 12
+setTextFormat(fmt, 0, 1)
+  [class RangeError]
+  RangeError: Error #2006: The supplied index is out of bounds.
+	at flash.text::TextField/setTextFormat()
+	at Test/test2()
+	at Test()
+  text: 
+  sizes: 
+  default size: 12
+setTextFormat(fmt, 1, -2)
+  [class RangeError]
+  RangeError: Error #2006: The supplied index is out of bounds.
+	at flash.text::TextField/setTextFormat()
+	at Test/test2()
+	at Test()
+  text: 
+  sizes: 
+  default size: 12
+setTextFormat(fmt, 1, -1)
+  [class RangeError]
+  RangeError: Error #2006: The supplied index is out of bounds.
+	at flash.text::TextField/setTextFormat()
+	at Test/test2()
+	at Test()
+  text: 
+  sizes: 
+  default size: 12
+setTextFormat(fmt, 1, 0)
+  [class RangeError]
+  RangeError: Error #2006: The supplied index is out of bounds.
+	at flash.text::TextField/setTextFormat()
+	at Test/test2()
+	at Test()
+  text: 
+  sizes: 
+  default size: 12
+setTextFormat(fmt, 1, 1)
+  [class RangeError]
+  RangeError: Error #2006: The supplied index is out of bounds.
+	at flash.text::TextField/setTextFormat()
+	at Test/test2()
+	at Test()
+  text: 
+  sizes: 
+  default size: 12
+  text: ABCD
+  sizes: 12,12,12,12
+  default size: 12
