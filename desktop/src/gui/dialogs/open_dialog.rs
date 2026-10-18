@@ -845,11 +845,20 @@ impl<T: InnerField> InnerField for FieldWithCheckbox<T> {
     }
 
     fn ui(&self, ui: &mut Ui, value: &mut Self::Value, error: bool, locale: &LanguageIdentifier) {
-        self.field.ui(ui, &mut value.0, error, locale);
-        let response = ui.checkbox(&mut value.1, self.checkbox_label.localize(locale));
-        if let Some(ref tooltip_label) = self.tooltip_label {
-            response.on_hover_text_at_pointer(tooltip_label.localize(locale));
-        }
+        // Lay out the checkbox first, so that the field only fills the remaining space.
+        // Otherwise the checkbox overflows the available width, and the window keeps growing.
+        ui.with_layout(Layout::right_to_left(egui::Align::Center), |ui| {
+            let response = ui.checkbox(&mut value.1, self.checkbox_label.localize(locale));
+            if let Some(ref tooltip_label) = self.tooltip_label {
+                response.on_hover_text_at_pointer(tooltip_label.localize(locale));
+            }
+            ui.with_layout(
+                Layout::centered_and_justified(egui::Direction::LeftToRight),
+                |ui| {
+                    self.field.ui(ui, &mut value.0, error, locale);
+                },
+            );
+        });
     }
 
     fn value_to_result(&self, value: &Self::Value) -> Result<Self::Result, ()> {
