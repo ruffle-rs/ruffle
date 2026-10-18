@@ -354,8 +354,9 @@ impl Context3D for WgpuContext3D {
     fn bitmap_handle(&self) -> BitmapHandle {
         self.front_buffer_raw_texture_handle.clone()
     }
-    fn back_buffer_handle(&self) -> BitmapHandle {
-        self.back_buffer_raw_texture_handle.clone()
+    fn back_buffer_handle(&self) -> Option<BitmapHandle> {
+        self.back_buffer_size
+            .map(|_| self.back_buffer_raw_texture_handle.clone())
     }
     fn back_buffer_size(&self) -> Option<(u32, u32)> {
         self.back_buffer_size.map(|size| (size.width, size.height))
@@ -701,6 +702,9 @@ impl Context3D for WgpuContext3D {
                 self.current_pipeline
                     .update_has_depth_texture(depth_and_stencil);
                 self.current_pipeline.update_sample_count(sample_count);
+
+                // The new buffers have to be cleared before they're used.
+                self.seen_clear_command = false;
             }
             Context3DCommand::UploadToIndexBuffer {
                 buffer,
