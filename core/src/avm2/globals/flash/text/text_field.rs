@@ -965,21 +965,28 @@ pub fn set_text_format<'gc>(
     {
         let mut begin_index = args.get_i32(1);
         let mut end_index = args.get_i32(2);
+        let text_length = this.text_length() as i32;
 
-        if begin_index < 0 {
+        if begin_index == -1 && end_index == -1 {
+            // Format the whole text, even when it's empty.
             begin_index = 0;
-        }
+            end_index = text_length;
+        } else {
+            if begin_index == -1 {
+                begin_index = 0;
+            }
 
-        if begin_index as usize > this.text_length() {
-            return Err(make_error_2006(activation, Error2006Type::RangeError));
-        }
+            if begin_index < 0 || begin_index >= text_length {
+                return Err(make_error_2006(activation, Error2006Type::RangeError));
+            }
 
-        if end_index < 0 {
-            end_index = this.text_length() as i32;
-        }
+            if end_index == -1 {
+                end_index = begin_index + 1;
+            }
 
-        if end_index as usize > this.text_length() {
-            return Err(make_error_2006(activation, Error2006Type::RangeError));
+            if end_index <= 0 || end_index > text_length {
+                return Err(make_error_2006(activation, Error2006Type::RangeError));
+            }
         }
 
         this.set_text_format(
