@@ -227,6 +227,10 @@ Point getter called!
 new MyPoint(10, 20) called!
 v.className: MyPoint
 
+### Testing Bitmap
+// A_DISPLACEMENT_MAP_FILTER.mapBitmap
+v.className: MyBitmapData
+
 ### Testing TextFormat
 TextFormat getter called!
 new MyTextFormat() called!

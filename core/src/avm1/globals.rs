@@ -489,7 +489,6 @@ pub struct SystemPrototypes<'gc> {
     pub xml_constructor: Object<'gc>,
     pub shared_object_constructor: Object<'gc>,
     pub date_constructor: Object<'gc>,
-    pub bitmap_data: Object<'gc>,
     pub file_reference: Object<'gc>,
 }
 
@@ -781,7 +780,6 @@ pub fn create_globals<'gc>(
             xml_constructor: xml.constr,
             shared_object_constructor: shared_object.constr,
             date_constructor: date.constr,
-            bitmap_data: bitmap_data.proto,
             file_reference: file_reference.proto,
         },
         globals,
