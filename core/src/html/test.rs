@@ -756,6 +756,69 @@ fn formatspans_normalize_set_text_format_no_cut() {
 }
 
 #[test]
+fn formatspans_set_text_format_empty_range() {
+    let tf1 = TextFormat {
+        font: Some(WString::from_utf8("same!")),
+        ..Default::default()
+    };
+
+    let tf2 = TextFormat {
+        font: Some(WString::from_utf8("difference!")),
+        ..Default::default()
+    };
+
+    let mut fs = FormatSpans::from_str_and_spans(
+        WStr::from_units(b"abcdefghi"),
+        &[
+            TextSpan::with_length_and_format(5, &tf1),
+            TextSpan::with_length_and_format(4, &tf2),
+        ],
+    );
+
+    let tf3 = TextFormat {
+        font: Some(WString::from_utf8("Another difference!")),
+        ..Default::default()
+    };
+
+    fs.set_text_format(9, 10, &tf3);
+    fs.set_text_format(12, 15, &tf3);
+    fs.set_text_format(3, 3, &tf3);
+    fs.set_text_format(7, 2, &tf3);
+
+    assert!(fs.span(2).is_none());
+    assert_eq!((0, 1), fs.get_span_boundaries(0, 5));
+    assert_eq!((1, 2), fs.get_span_boundaries(5, 9));
+    assert_eq!(tf1.font, fs.get_text_format(0, 5).font);
+    assert_eq!(tf2.font, fs.get_text_format(5, 9).font);
+}
+
+#[test]
+fn formatspans_set_text_format_clamp_end() {
+    let tf1 = TextFormat {
+        font: Some(WString::from_utf8("same!")),
+        ..Default::default()
+    };
+
+    let mut fs = FormatSpans::from_str_and_spans(
+        WStr::from_units(b"abcdefghi"),
+        &[TextSpan::with_length_and_format(9, &tf1)],
+    );
+
+    let tf2 = TextFormat {
+        font: Some(WString::from_utf8("difference!")),
+        ..Default::default()
+    };
+
+    fs.set_text_format(6, 20, &tf2);
+
+    assert!(fs.span(2).is_none());
+    assert_eq!((0, 1), fs.get_span_boundaries(0, 6));
+    assert_eq!((1, 2), fs.get_span_boundaries(6, 9));
+    assert_eq!(tf1.font, fs.get_text_format(0, 6).font);
+    assert_eq!(tf2.font, fs.get_text_format(6, 9).font);
+}
+
+#[test]
 fn formatspans_replace_text_inbounds() {
     let tf1 = TextFormat {
         font: Some(WString::from_utf8("same!")),
