@@ -321,13 +321,11 @@ pub fn deserialize_value<'gc>(
             }
         }
         AmfValue::XML(content, _) => {
-            let xml_proto = activation.prototypes().xml_constructor;
-
-            if let Ok(Value::Object(obj)) = xml_proto.construct(
-                activation,
-                &[Value::String(AvmString::new_utf8(activation.gc(), content))],
-            ) {
-                Value::Object(obj)
+            // TODO(moulins): how exactly is the XML object instantiated? this matters when
+            // the XML class was monkeypatched by the user.
+            let args = &[Value::String(AvmString::new_utf8(activation.gc(), content))];
+            if let Ok(Some(xml)) = activation.instantiate_class_fast([istr!("XML")], args) {
+                xml
             } else {
                 Value::Undefined
             }

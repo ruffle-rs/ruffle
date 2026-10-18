@@ -363,12 +363,10 @@ impl<'gc> XmlNode<'gc> {
         match self.get_script_object() {
             Some(object) => object,
             None => {
-                let xml_node = activation.prototypes().xml_node_constructor;
-                // TODO(moulins): should this use `Object::prototype`?
-                let prototype = xml_node.get(istr!("prototype"), activation).ok();
-                let object = Object::new(&activation.context.strings, prototype);
+                let proto = activation.resolve_prototype([istr!("XMLNode")]);
+                let native = NativeObject::XmlNode(self);
+                let object = Object::new_with_native(activation.strings(), proto, native);
                 self.introduce_script_object(activation.gc(), object);
-                object.set_native(activation.gc(), NativeObject::XmlNode(self));
                 object
             }
         }
