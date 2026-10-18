@@ -172,23 +172,29 @@ fn get_text_format<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let (begin_index, end_index) = match args {
         [begin_index, end_index, ..] => {
-            let begin_index = begin_index.coerce_to_u32(activation)? as usize;
-            let end_index = end_index.coerce_to_u32(activation)? as usize;
+            let begin_index = begin_index.coerce_to_i32(activation)?;
+            let end_index = end_index.coerce_to_i32(activation)?;
             (begin_index, end_index)
         }
         [begin_index] => {
-            let begin_index = begin_index.coerce_to_u32(activation)? as usize;
-            let end_index = begin_index + 1;
-            (begin_index, end_index)
+            let begin_index = begin_index.coerce_to_i32(activation)?;
+            (begin_index, begin_index.wrapping_add(1))
         }
-        [] => {
-            let begin_index = 0;
-            let end_index = text_field.text_length();
-            (begin_index, end_index)
-        }
+        [] => (0, i32::MAX),
     };
 
-    let text_format = text_field.text_format(begin_index, end_index);
+    let text_length = text_field.text_length();
+    let clamp = |index: i32| (index.max(0) as usize).min(text_length);
+    let (begin_index, end_index) = (clamp(begin_index), clamp(end_index));
+
+    // Empty ranges have no format.
+    // TODO: Move this check to `EditText::text_format` once AVM2's
+    // `getTextFormat` is verified to handle reversed ranges the same way.
+    let text_format = if begin_index < end_index {
+        text_field.text_format(begin_index, end_index)
+    } else {
+        TextFormat::default()
+    };
     Ok(new_text_format(activation, text_format).into())
 }
 
