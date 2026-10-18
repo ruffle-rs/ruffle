@@ -599,7 +599,7 @@ pub fn set_text_color<'gc>(
     {
         let text_color = args.get_u32(0);
         let desired_format = TextFormat {
-            color: Some(swf::Color::from_rgb(text_color, 0xFF)),
+            color: Some(swf::Color::from_rgb(text_color, 0)),
             ..TextFormat::default()
         };
 
