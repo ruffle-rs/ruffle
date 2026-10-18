@@ -32,6 +32,10 @@ class Test {
 
   static var A_STYLE_SHEET = new TextField.StyleSheet();
 
+  static var AN_XML_STRING = "<root attr=\"val\"><a>some text</a><b><c/></b></root>";
+  static var AN_XML = new XML(AN_XML_STRING);
+  static var AN_XML_NODE = AN_XML.firstChild; // force the root node to be created now.
+
   static var POINT_CLASS = flash.geom.Point;
 
   static function main(current) {
@@ -80,6 +84,8 @@ class Test {
     monkeyPatchClass(_global, "TextField");
     monkeyPatchClass(_global, "TextFormat");
     monkeyPatchClass(_global, "Video");
+    monkeyPatchClass(_global, "XML");
+    monkeyPatchClass(_global, "XMLNode");
 
     monkeyPatchClass(_global.flash.display, "BitmapData");
 
@@ -322,7 +328,39 @@ class Test {
     // TODO: test other classes that can be instantiated by AVM1 builtins;
     // see the list in ruffle's `SystemPrototypes`.
 
-    fscommand("quit");
+    // TODO: test SharedObject serialization? (Date, XML, Array, Object)
+
+    trace("");
+    trace("### Testing XML(Node)");
+
+    trace("// walkXmlNode(AN_XML)");
+    walkXmlNode(AN_XML, "");
+
+    trace("// new XMLSocket(); ...");
+    var socket = new XMLSocket();
+    socket.onConnect = function(status) {
+      trace("XMLSocket connected; status: " + status);
+    };
+    socket.onXML = function(data) {
+      trace("XMLSocket received XML data: '" + data + "'");
+      Test.walkXmlNode(data, "");
+    }
+    socket.onClose = function() {
+      trace("XMLSocket closed");
+      fscommand("quit");
+    }
+
+    trace("// Connecting to XMlSocket...");
+    socket.connect("localhost", 8001);
+  }
+
+  static function walkXmlNode(xml, indent) {
+    trace(indent + "- nodeName: " + xml.nodeName + "; class: " + xml.className);
+    var child = xml.firstChild;
+    while (child != null) {
+      walkXmlNode(child, indent + "  ");
+      child = child.nextSibling;
+    }
   }
 
   static function monkeyPatchClass(obj, name) {
