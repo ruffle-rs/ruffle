@@ -23,6 +23,7 @@ declare global {
  */
 export interface PublicAPILike {
     config?: DataLoadOptions | URLLoadOptions | object;
+    extensionConfig?: DataLoadOptions | URLLoadOptions | object;
     sources?: Record<string, SourceAPI>;
     invoked?: boolean;
     newestName?: string | null;
@@ -46,6 +47,7 @@ export class PublicAPI implements PublicAPILike {
      * The configuration object used when Ruffle is instantiated.
      */
     config: DataLoadOptions | URLLoadOptions | object;
+    extensionConfig: DataLoadOptions | URLLoadOptions | object;
     sources: Record<string, SourceAPI>;
     invoked: boolean;
     newestName: string | null;
@@ -68,6 +70,7 @@ export class PublicAPI implements PublicAPILike {
     public constructor(prev?: PublicAPILike | null) {
         this.sources = prev?.sources || {};
         this.config = prev?.config || {};
+        this.extensionConfig = prev?.extensionConfig || {};
         this.invoked = prev?.invoked || false;
         this.newestName = prev?.newestName || null;
 
