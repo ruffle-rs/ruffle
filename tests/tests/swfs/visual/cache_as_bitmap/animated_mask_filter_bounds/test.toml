@@ -1,0 +1,19 @@
+num_frames = 124
+
+[image_comparisons.frame11]
+trigger = "fs_command"
+tolerance = 1
+
+[image_comparisons.frame19]
+trigger = "fs_command"
+tolerance = 1
+
+[image_comparisons.frame35]
+trigger = "fs_command"
+tolerance = 1
+
+[image_comparisons.output]
+tolerance = 1
+
+[player_options]
+with_renderer = { optional = false, quality = "high" }
