@@ -1,0 +1,81 @@
+// call("f", 1, "two")
+null
+
+// addCallback("name", instance, method)
+false
+
+// callback("<invoke/>")
+undefined
+
+// _toXML("a<b")
+  get ExternalInterface._escapeXML
+  call ExternalInterface._escapeXML("a<b")
+<string>_escapeXML result</string>
+
+// _toXML([1])
+  get ExternalInterface._arrayToXML
+  call ExternalInterface._arrayToXML([1])
+_arrayToXML result
+
+// _toXML({})
+  get ExternalInterface._objectToXML
+  call ExternalInterface._objectToXML([object Object])
+_objectToXML result
+
+// _arrayToXML([1])
+  get ExternalInterface._toXML
+  call ExternalInterface._toXML(1)
+<array><property id="0">_toXML result</property></array>
+
+// _objectToXML({k: 1})
+  get ExternalInterface._toXML
+  call ExternalInterface._toXML(1)
+<object><property id="k">_toXML result</property></object>
+
+// _argumentsToXML(["f", 1])
+  get ExternalInterface._toXML
+  call ExternalInterface._toXML(1)
+<arguments>_toXML result</arguments>
+
+// _toAS(<string>a&amp;b</string>)
+a&amp;b
+
+// _toAS(<array/>)
+  get ExternalInterface._arrayToAS
+  call ExternalInterface._arrayToAS(<array> node)
+_arrayToAS result
+
+// _toAS(<object/>)
+  get ExternalInterface._objectToAS
+  call ExternalInterface._objectToAS(<object> node)
+_objectToAS result
+
+// _arrayToAS(<array><property id="0"><number>1</number></property></array>)
+
+
+// _objectToAS(<object><property id="k"><number>1</number></property></object>)
+undefined
+
+// _argumentsToAS(<arguments><number>1</number></arguments>)
+
+
+// _toJS("a")
+undefined
+
+// _toJS([1])
+undefined
+
+// _toJS({})
+undefined
+
+// _arrayToJS([1])
+undefined
+
+// _objectToJS({k: 1})
+undefined
+
+// _callIn(instance, method, <invoke returntype="xml">)
+undefined
+
+// _callIn(instance, method, <invoke returntype="javascript">)
+undefined
