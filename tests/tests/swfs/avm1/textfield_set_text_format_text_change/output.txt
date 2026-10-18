@@ -1,0 +1,37 @@
+setTextFormat(noisy 6 setting long text, fmt)
+  valueOf index
+  text: abcdefgh
+  sizes: 20,21,22,23,24,25,30,27
+setTextFormat(noisy 3 setting short text, fmt)
+  valueOf index
+  text: xy
+  sizes: 20,21
+setTextFormat(noisy 1 setting short text, fmt)
+  valueOf index
+  text: xy
+  sizes: 20,30
+setTextFormat(noisy 1, noisy 7 setting long text, fmt)
+  valueOf begin
+  valueOf end
+  text: abcdefgh
+  sizes: 20,30,30,30,30,30,30,27
+setTextFormat(noisy 5 setting long text, noisy 7, fmt)
+  valueOf begin
+  valueOf end
+  text: abcdefgh
+  sizes: 20,21,22,23,24,30,30,27
+setTextFormat(noisy 0, noisy 4 setting short text, fmt)
+  valueOf begin
+  valueOf end
+  text: xy
+  sizes: 30,30
+setTextFormat(noisy 3 setting short text, noisy 4, fmt)
+  valueOf begin
+  valueOf end
+  text: xy
+  sizes: 20,21
+setTextFormat(noisy 1 setting long text, noisy 4 setting short text, fmt)
+  valueOf begin
+  valueOf end
+  text: xy
+  sizes: 20,30
