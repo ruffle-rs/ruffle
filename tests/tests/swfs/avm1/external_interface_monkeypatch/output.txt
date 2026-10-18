@@ -1,0 +1,139 @@
+// call("f", 1, "two")
+  get ExternalInterface.available
+  get ExternalInterface._initJS
+  call ExternalInterface._initJS()
+  get ExternalInterface._useSetReturnValueHack
+  call ExternalInterface._useSetReturnValueHack()
+  get ExternalInterface._objectID
+  call ExternalInterface._objectID()
+  get ExternalInterface._toJS
+  call ExternalInterface._toJS(1)
+  get ExternalInterface._toJS
+  call ExternalInterface._toJS("two")
+  get ExternalInterface._evalJS
+  call ExternalInterface._evalJS("try { document.getElementById("objectID").SetReturnValue(__flash__toXML(f(js,js)) ); } catch (e) { document.getElementById("objectID").SetReturnValue("<undefined/>"); }")
+  get ExternalInterface._argumentsToXML
+  call ExternalInterface._argumentsToXML(["f", 1, "two"])
+  get ExternalInterface._callOut
+  call ExternalInterface._callOut("<invoke name="f" returntype="xml"><arguments/></invoke>")
+  get ExternalInterface._toAS
+  call ExternalInterface._toAS(<number> node)
+_toAS result
+
+// addCallback("name", instance, method)
+  get ExternalInterface.available
+  get ExternalInterface._initJS
+  call ExternalInterface._initJS()
+  get ExternalInterface._addCallback
+  call ExternalInterface._addCallback("name", [function])
+_addCallback result
+
+// callback("<invoke/>")
+  get ExternalInterface._callIn
+  call ExternalInterface._callIn([object Object], [function], "<invoke/>")
+  instance is the instance: true
+  method is the method: true
+_callIn result
+
+// _toXML("a<b")
+  get ExternalInterface._escapeXML
+  call ExternalInterface._escapeXML("a<b")
+<string>_escapeXML result</string>
+
+// _toXML([1])
+  get ExternalInterface._arrayToXML
+  call ExternalInterface._arrayToXML([1])
+_arrayToXML result
+
+// _toXML({})
+  get ExternalInterface._objectToXML
+  call ExternalInterface._objectToXML([object Object])
+_objectToXML result
+
+// _arrayToXML([1])
+  get ExternalInterface._toXML
+  call ExternalInterface._toXML(1)
+<array><property id="0">_toXML result</property></array>
+
+// _objectToXML({k: 1})
+  get ExternalInterface._toXML
+  call ExternalInterface._toXML(1)
+<object><property id="k">_toXML result</property></object>
+
+// _argumentsToXML(["f", 1])
+  get ExternalInterface._toXML
+  call ExternalInterface._toXML(1)
+<arguments>_toXML result</arguments>
+
+// _toAS(<string>a&amp;b</string>)
+  get ExternalInterface._unescapeXML
+  call ExternalInterface._unescapeXML("a&amp;b")
+_unescapeXML result
+
+// _toAS(<array/>)
+  get ExternalInterface._arrayToAS
+  call ExternalInterface._arrayToAS(<array> node)
+_arrayToAS result
+
+// _toAS(<object/>)
+  get ExternalInterface._objectToAS
+  call ExternalInterface._objectToAS(<object> node)
+_objectToAS result
+
+// _arrayToAS(<array><property id="0"><number>1</number></property></array>)
+  get ExternalInterface._toAS
+  call ExternalInterface._toAS(<number> node)
+_toAS result
+
+// _objectToAS(<object><property id="k"><number>1</number></property></object>)
+  get ExternalInterface._toAS
+  call ExternalInterface._toAS(<number> node)
+_toAS result
+
+// _argumentsToAS(<arguments><number>1</number></arguments>)
+  get ExternalInterface._toAS
+  call ExternalInterface._toAS(<number> node)
+_toAS result
+
+// _toJS("a")
+  get ExternalInterface._unescapeXML
+  call ExternalInterface._unescapeXML("a")
+  get ExternalInterface._jsQuoteString
+  call ExternalInterface._jsQuoteString("_unescapeXML result")
+"_jsQuoteString result"
+
+// _toJS([1])
+  get ExternalInterface._arrayToJS
+  call ExternalInterface._arrayToJS([1])
+_arrayToJS result
+
+// _toJS({})
+  get ExternalInterface._objectToJS
+  call ExternalInterface._objectToJS([object Object])
+_objectToJS result
+
+// _arrayToJS([1])
+  get ExternalInterface._toJS
+  call ExternalInterface._toJS(1)
+[js]
+
+// _objectToJS({k: 1})
+  get ExternalInterface._toJS
+  call ExternalInterface._toJS(1)
+({k:js})
+
+// _callIn(instance, method, <invoke returntype="xml">)
+  get ExternalInterface._argumentsToAS
+  call ExternalInterface._argumentsToAS(<arguments> node)
+  method("_argumentsToAS result")
+  get ExternalInterface._toXML
+  call ExternalInterface._toXML("method result")
+_toXML result
+
+// _callIn(instance, method, <invoke returntype="javascript">)
+  get ExternalInterface._argumentsToAS
+  call ExternalInterface._argumentsToAS(<arguments> node)
+  method("_argumentsToAS result")
+  get ExternalInterface._toJS
+  call ExternalInterface._toJS("method result")
+js
