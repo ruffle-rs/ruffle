@@ -197,16 +197,22 @@ fn set_text_format<'gc>(
     activation: &mut Activation<'_, 'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let mut error = None;
     let (begin_index, end_index, text_format) = match args {
         [begin_index, end_index, text_format, ..] => {
-            let begin_index = begin_index.coerce_to_u32(activation)? as usize;
-            let end_index = end_index.coerce_to_u32(activation)? as usize;
+            let begin_index = begin_index.coerce_to_i32(activation)?.max(0) as usize;
+            let end_index = end_index.coerce_to_i32(activation)?.max(0) as usize;
             (begin_index, end_index, text_format)
         }
         [begin_index, text_format, ..] => {
-            let begin_index = begin_index.coerce_to_u32(activation)? as usize;
-            let end_index = begin_index + 1;
-            (begin_index, end_index, text_format)
+            // When coercing the index throws, Flash Player still applies
+            // the format at index 0, and throws afterwards.
+            let begin_index = begin_index.coerce_to_i32(activation).unwrap_or_else(|e| {
+                error = Some(e);
+                0
+            });
+            let end_index = begin_index.wrapping_add(1).max(0) as usize;
+            (begin_index.max(0) as usize, end_index, text_format)
         }
         [text_format] => {
             let begin_index = 0;
@@ -227,7 +233,7 @@ fn set_text_format<'gc>(
         );
     }
 
-    Ok(Value::Undefined)
+    error.map_or(Ok(Value::Undefined), Err)
 }
 
 fn replace_sel<'gc>(
