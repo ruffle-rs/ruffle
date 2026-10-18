@@ -628,17 +628,17 @@ FAILED: expected: 3 obtained: 0 [./array.as:1742]
 PASSED: backup == this [./array.as:1747]
 FAILED: expected: 3 obtained: 0 [./array.as:1748]
 FAILED: expected: 6 obtained: 0 [./array.as:1750]
-FAILED: expected: "undefined" obtained: function [./array.as:1763]
+PASSED: typeof(ar.constructor) == "undefined" [./array.as:1763]
 PASSED: typeof(ar.constructor) == "function" [./array.as:1771]
-FAILED: expected: "number" obtained: object [./array.as:1772]
-FAILED: expected: 8 obtained:  [./array.as:1773]
+PASSED: typeof(ar.__proto__) == "number" [./array.as:1772]
+PASSED: ar.__proto__ == 8 [./array.as:1773]
 PASSED: typeof(ar.__proto__) == "number" [./array.as:1777]
-FAILED: expected: "undefined" obtained: function [./array.as:1784]
-FAILED: expected: "undefined" obtained: object [./array.as:1785]
-FAILED: expected: undefined obtained:  [./array.as:1786]
-FAILED: expected: "object" obtained: function [./array.as:1791]
-FAILED: expected: "string" obtained: object [./array.as:1792]
-FAILED: expected: "string" obtained:  [./array.as:1793]
-#passed: 606
-#failed: 30
+PASSED: typeof(ar.constructor) == "undefined" [./array.as:1784]
+PASSED: typeof(ar.__proto__) == "undefined" [./array.as:1785]
+PASSED: ar.__proto__ == undefined [./array.as:1786]
+PASSED: typeof(ar.constructor) == "object" [./array.as:1791]
+PASSED: typeof(ar.__proto__) == "string" [./array.as:1792]
+PASSED: ar.__proto__ == "string" [./array.as:1793]
+#passed: 615
+#failed: 21
 #total tests run: 636

@@ -7,7 +7,7 @@ use crate::avm1::parameters::{ParametersExt, UndefinedAs};
 use crate::avm1::property_decl::{DeclContext, PropertyOrder, StaticDeclarations, SystemClass};
 use crate::avm1::{Attribute, NativeObject, Object, Value};
 use crate::ecma_conversions::f64_to_wrapping_i32;
-use crate::string::{AvmString, StringContext};
+use crate::string::AvmString;
 use bitflags::bitflags;
 use gc_arena::Mutation;
 use ruffle_macros::istr;
@@ -130,7 +130,9 @@ pub struct ArrayBuilder<'gc> {
     mc: &'gc Mutation<'gc>,
     length_prop: AvmString<'gc>,
     proto_prop: AvmString<'gc>,
-    proto: Object<'gc>,
+    constructor_prop: AvmString<'gc>,
+    proto: Option<Value<'gc>>,
+    constructor: Option<Object<'gc>>,
 }
 
 impl<'gc> ArrayBuilder<'gc> {
@@ -139,16 +141,22 @@ impl<'gc> ArrayBuilder<'gc> {
     }
 
     pub fn new(activation: &Activation<'_, 'gc>) -> Self {
-        let proto = activation.prototypes().array;
-        Self::new_with_proto(&activation.context.strings, proto)
-    }
+        let mut constructor = activation.resolve_class([istr!(activation, "Array")]);
+        let proto = constructor.and_then(|c| c.prototype(activation));
 
-    pub fn new_with_proto(context: &StringContext<'gc>, proto: Object<'gc>) -> Self {
+        // Flash Player 9-17 doesn't set `constructor` when global `Array` has no `prototype`.
+        // Flash Player 24+ does (versions in between are untested).
+        if proto.is_none() && activation.context.player_version <= 17 {
+            constructor = None;
+        }
+
         Self {
-            mc: context.gc(),
-            length_prop: istr!(context, "length"),
-            proto_prop: istr!(context, "__proto__"),
+            mc: activation.gc(),
+            length_prop: istr!(activation, "length"),
+            proto_prop: istr!(activation, "__proto__"),
+            constructor_prop: istr!(activation, "constructor"),
             proto,
+            constructor,
         }
     }
 
@@ -172,12 +180,22 @@ impl<'gc> ArrayBuilder<'gc> {
 
     pub fn with(self, elements: impl IntoIterator<Item = Value<'gc>>) -> Object<'gc> {
         let obj = Object::new_without_proto(self.mc);
-        obj.define_value(
-            self.mc,
-            self.proto_prop,
-            self.proto.into(),
-            Attribute::DONT_ENUM | Attribute::DONT_DELETE,
-        );
+        if let Some(proto) = self.proto {
+            obj.define_value(
+                self.mc,
+                self.proto_prop,
+                proto,
+                Attribute::DONT_ENUM | Attribute::DONT_DELETE,
+            );
+        }
+        if let Some(constructor) = self.constructor {
+            obj.define_value(
+                self.mc,
+                self.constructor_prop,
+                constructor.into(),
+                Attribute::DONT_ENUM | Attribute::DONT_DELETE,
+            );
+        }
 
         self.init_with(obj, elements);
         obj
@@ -254,7 +272,7 @@ pub fn unshift<'gc>(
         this.set_element(activation, i as i32, arg)?;
     }
 
-    if let NativeObject::Array(_) = this.native() {
+    if this.is_native_array() {
         this.set_length(activation, new_length)?;
     }
 
@@ -279,7 +297,7 @@ pub fn shift<'gc>(
         this.set_element(activation, i - 1, element)?;
     }
 
-    if let NativeObject::Array(_) = this.native() {
+    if this.is_native_array() {
         this.set_length(activation, length - 1)?;
     }
 
@@ -300,7 +318,7 @@ pub fn pop<'gc>(
 
     this.delete_element(activation, length - 1);
 
-    if let NativeObject::Array(_) = this.native() {
+    if this.is_native_array() {
         this.set_length(activation, length - 1)?;
     }
 
@@ -539,7 +557,7 @@ fn sort_on<'gc>(
 
     let fields = match args.get(0) {
         Some(Value::Object(field_names_array)) => {
-            if !matches!(field_names_array.native(), NativeObject::Array(_)) {
+            if !field_names_array.is_native_array() {
                 // Non-Array fields.
                 // Fallback to standard sort.
                 return sort_internal(
@@ -571,7 +589,7 @@ fn sort_on<'gc>(
 
             match args.get(1) {
                 Some(Value::Object(options_array))
-                    if matches!(options_array.native(), NativeObject::Array(_))
+                    if options_array.is_native_array()
                         && options_array.length(activation)? == length =>
                 {
                     // Array of options.

@@ -2000,7 +2000,7 @@ impl<'gc> MovieClip<'gc> {
             let avm1_custom_constr = self.0.get_registered_avm1_constructor(activation.context);
             let avm1_prototype = avm1_custom_constr
                 .or_else(|| activation.resolve_class([istr!("MovieClip")]))
-                .and_then(|c| c.prototype(&mut activation));
+                .and_then(|c| c.prototype(&activation));
 
             let object = Avm1Object::new_with_native(
                 activation.strings(),
@@ -3141,6 +3141,10 @@ impl<'gc> TInteractiveObject<'gc> for MovieClip<'gc> {
 
             if self.maskee().is_some() {
                 // If we're masking another object, we can't be hit.
+                return Avm2MousePick::Miss;
+            }
+
+            if !self.global_in_scroll_rect(point) {
                 return Avm2MousePick::Miss;
             }
 

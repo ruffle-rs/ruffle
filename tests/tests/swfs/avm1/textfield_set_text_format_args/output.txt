@@ -1,0 +1,232 @@
+initial
+  text: ABCD
+  sizes: 12,12,14,14
+  new text format size: 12
+setTextFormat(-1, fmt)
+  text: ABCD
+  sizes: 12,12,14,14
+  new text format size: 12
+setTextFormat(0, fmt)
+  text: ABCD
+  sizes: 30,12,14,14
+  new text format size: 12
+setTextFormat(2, fmt)
+  text: ABCD
+  sizes: 12,12,30,14
+  new text format size: 12
+setTextFormat(3, fmt)
+  text: ABCD
+  sizes: 12,12,14,30
+  new text format size: 12
+setTextFormat(4, fmt)
+  text: ABCD
+  sizes: 12,12,14,14
+  new text format size: 12
+setTextFormat(5, fmt)
+  text: ABCD
+  sizes: 12,12,14,14
+  new text format size: 12
+setTextFormat(100, fmt)
+  text: ABCD
+  sizes: 12,12,14,14
+  new text format size: 12
+setTextFormat(1.5, fmt)
+  text: ABCD
+  sizes: 12,30,14,14
+  new text format size: 12
+setTextFormat(2, fmt)
+  text: ABCD
+  sizes: 12,12,30,14
+  new text format size: 12
+setTextFormat(NaN, fmt)
+  text: ABCD
+  sizes: 30,12,14,14
+  new text format size: 12
+setTextFormat(undefined, fmt)
+  text: ABCD
+  sizes: 30,12,14,14
+  new text format size: 12
+setTextFormat(4294967298, fmt)
+  text: ABCD
+  sizes: 12,12,30,14
+  new text format size: 12
+setTextFormat(2147483647, fmt)
+  text: ABCD
+  sizes: 12,12,14,14
+  new text format size: 12
+setTextFormat(0, 4, fmt)
+  text: ABCD
+  sizes: 30,30,30,30
+  new text format size: 12
+setTextFormat(1, 3, fmt)
+  text: ABCD
+  sizes: 12,30,30,14
+  new text format size: 12
+setTextFormat(2, 2, fmt)
+  text: ABCD
+  sizes: 12,12,14,14
+  new text format size: 12
+setTextFormat(3, 1, fmt)
+  text: ABCD
+  sizes: 12,12,14,14
+  new text format size: 12
+setTextFormat(2, 4, fmt)
+  text: ABCD
+  sizes: 12,12,30,30
+  new text format size: 12
+setTextFormat(2, 10, fmt)
+  text: ABCD
+  sizes: 12,12,30,30
+  new text format size: 12
+setTextFormat(3, 4, fmt)
+  text: ABCD
+  sizes: 12,12,14,30
+  new text format size: 12
+setTextFormat(4, 4, fmt)
+  text: ABCD
+  sizes: 12,12,14,14
+  new text format size: 12
+setTextFormat(4, 5, fmt)
+  text: ABCD
+  sizes: 12,12,14,14
+  new text format size: 12
+setTextFormat(4, 10, fmt)
+  text: ABCD
+  sizes: 12,12,14,14
+  new text format size: 12
+setTextFormat(5, 10, fmt)
+  text: ABCD
+  sizes: 12,12,14,14
+  new text format size: 12
+setTextFormat(10, 2, fmt)
+  text: ABCD
+  sizes: 12,12,14,14
+  new text format size: 12
+setTextFormat(-1, 2, fmt)
+  text: ABCD
+  sizes: 30,30,14,14
+  new text format size: 12
+setTextFormat(0, -1, fmt)
+  text: ABCD
+  sizes: 12,12,14,14
+  new text format size: 12
+setTextFormat(-5, -1, fmt)
+  text: ABCD
+  sizes: 12,12,14,14
+  new text format size: 12
+setTextFormat(NaN, NaN, fmt)
+  text: ABCD
+  sizes: 12,12,14,14
+  new text format size: 12
+setTextFormat(4294967297, 4294967299, fmt)
+  text: ABCD
+  sizes: 12,30,30,14
+  new text format size: 12
+setTextFormat(-4294967295, 2, fmt)
+  text: ABCD
+  sizes: 12,30,14,14
+  new text format size: 12
+setTextFormat(noisy 1, noisy 3, fmt)
+  valueOf begin
+  valueOf end
+  text: ABCD
+  sizes: 12,30,30,14
+  new text format size: 12
+setTextFormat(noisy 2, fmt)
+  valueOf index
+  text: ABCD
+  sizes: 12,12,30,14
+  new text format size: 12
+setTextFormat(noisy "1", noisy "3", fmt)
+  valueOf begin
+  valueOf end
+  text: ABCD
+  sizes: 12,30,30,14
+  new text format size: 12
+setTextFormat(noisy 1, noisy 3, {})
+  valueOf begin
+  valueOf end
+  text: ABCD
+  sizes: 12,12,14,14
+  new text format size: 12
+setTextFormat(noisy 2, undefined)
+  valueOf index
+  text: ABCD
+  sizes: 12,12,14,14
+  new text format size: 12
+setTextFormat(noisy 0, noisy 2, fmt, noisy 3)
+  valueOf begin
+  valueOf end
+  text: ABCD
+  sizes: 30,30,14,14
+  new text format size: 12
+setTextFormat(noisy 0, noisy 2, noisy 3, fmt)
+  valueOf a
+  valueOf b
+  text: ABCD
+  sizes: 12,12,14,14
+  new text format size: 12
+setTextFormat(throwing, noisy 3, fmt)
+  valueOf begin
+  caught: error begin
+  text: ABCD
+  sizes: 12,12,14,14
+  new text format size: 12
+setTextFormat(noisy 1, throwing, fmt)
+  valueOf begin
+  valueOf end
+  caught: error end
+  text: ABCD
+  sizes: 12,12,14,14
+  new text format size: 12
+setTextFormat(throwing, fmt)
+  valueOf index
+  caught: error index
+  text: ABCD
+  sizes: 30,12,14,14
+  new text format size: 12
+setTextFormat(throwing, throwing, {})
+  valueOf begin
+  caught: error begin
+  text: ABCD
+  sizes: 12,12,14,14
+  new text format size: 12
+setTextFormat(throwing, {})
+  valueOf index
+  caught: error index
+  text: ABCD
+  sizes: 12,12,14,14
+  new text format size: 12
+setTextFormat(throwing replacing text, fmt)
+  valueOf index
+  caught: error index
+  text: abcdefgh
+  sizes: 30,12,12,12,12,12,12,12
+  new text format size: 12
+setTextFormat(throwing changing fmt2.size, fmt2)
+  valueOf index
+  caught: error index
+  text: ABCD
+  sizes: 50,12,14,14
+  new text format size: 12
+empty text, setTextFormat(0, fmt)
+  text: 
+  sizes: 
+  new text format size: 12
+  text: ABCD
+  sizes: 12,12,12,12
+  new text format size: 12
+empty text, setTextFormat(0, 1, fmt)
+  text: 
+  sizes: 
+  new text format size: 12
+  text: ABCD
+  sizes: 12,12,12,12
+  new text format size: 12
+empty text, setTextFormat(fmt)
+  text: 
+  sizes: 
+  new text format size: 12
+  text: ABCD
+  sizes: 12,12,12,12
+  new text format size: 12

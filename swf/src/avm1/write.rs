@@ -1,7 +1,7 @@
 use crate::avm1::opcode::OpCode;
 use crate::avm1::types::*;
 use crate::write::SwfWriteExt;
-use std::io::{Result, Write};
+use std::io::{self, Result, Write};
 
 pub struct Writer<W: Write> {
     output: W,
@@ -145,9 +145,22 @@ impl<W: Write> Writer<W> {
             "Opcodes less than 0x80 must have length 0"
         );
         if opcode >= 0x80 {
-            self.write_u16(length as u16)?;
+            self.write_u16_len(length, "action length")?;
         }
         Ok(())
+    }
+
+    /// Writes a length or count field, failing if it does not fit in 16 bits.
+    ///
+    /// `what` describes the field in the error message.
+    fn write_u16_len(&mut self, len: usize, what: &str) -> Result<()> {
+        let len = u16::try_from(len).map_err(|_| {
+            io::Error::new(
+                io::ErrorKind::InvalidInput,
+                format!("{what} {len} does not fit in 16 bits"),
+            )
+        })?;
+        self.write_u16(len)
     }
 
     /// Writes an action that has no payload.
@@ -158,7 +171,7 @@ impl<W: Write> Writer<W> {
     fn write_constant_pool(&mut self, action: &ConstantPool) -> Result<()> {
         let len = 2 + action.strings.iter().map(|c| c.len() + 1).sum::<usize>();
         self.write_action_header(OpCode::ConstantPool, len)?;
-        self.write_u16(action.strings.len() as u16)?;
+        self.write_u16_len(action.strings.len(), "constant pool size")?;
         for string in &action.strings {
             self.write_string(string)?;
         }
@@ -175,11 +188,11 @@ impl<W: Write> Writer<W> {
             + 2;
         self.write_action_header(OpCode::DefineFunction, len)?;
         self.write_string(action.name)?;
-        self.write_u16(action.params.len() as u16)?;
+        self.write_u16_len(action.params.len(), "function parameter count")?;
         for param in &action.params {
             self.write_string(param)?;
         }
-        self.write_u16(action.actions.len() as u16)?;
+        self.write_u16_len(action.actions.len(), "function body length")?;
         self.output.write_all(action.actions)?;
         Ok(())
     }
@@ -196,14 +209,14 @@ impl<W: Write> Writer<W> {
             + 4;
         self.write_action_header(OpCode::DefineFunction2, len)?;
         self.write_string(action.name)?;
-        self.write_u16(action.params.len() as u16)?;
+        self.write_u16_len(action.params.len(), "function parameter count")?;
         self.write_u8(action.register_count)?;
         self.write_u16(action.flags.bits())?;
         for param in &action.params {
             self.write_u8(param.register_index.map(|n| n.get()).unwrap_or_default())?;
             self.write_string(param.name)?;
         }
-        self.write_u16(action.actions.len() as u16)?;
+        self.write_u16_len(action.actions.len(), "function body length")?;
         self.output.write_all(action.actions)?;
         Ok(())
     }
@@ -230,11 +243,11 @@ impl<W: Write> Writer<W> {
     fn write_goto_frame_2(&mut self, action: GotoFrame2) -> Result<()> {
         if action.scene_offset != 0 {
             self.write_action_header(OpCode::GotoFrame2, 3)?;
-            self.write_u8(if action.set_playing { 0b11 } else { 0b01 })?;
+            self.write_u8(if action.set_playing { 0b11 } else { 0b10 })?;
             self.write_u16(action.scene_offset)?;
         } else {
             self.write_action_header(OpCode::GotoFrame2, 1)?;
-            self.write_u8(if action.set_playing { 0b10 } else { 0b00 })?;
+            self.write_u8(if action.set_playing { 0b01 } else { 0b00 })?;
         }
         Ok(())
     }
@@ -358,18 +371,18 @@ impl<W: Write> Writer<W> {
         self.write_u8(flags.bits())?;
 
         let try_size = action.try_body.len();
-        self.write_u16(try_size as u16)?;
+        self.write_u16_len(try_size, "try body length")?;
 
         let catch_size = action
             .catch_body
             .as_ref()
             .map_or(0, |(_, catch_body)| catch_body.len());
-        self.write_u16(catch_size as u16)?;
+        self.write_u16_len(catch_size, "catch body length")?;
 
         let finally_size = action
             .finally_body
             .map_or(0, |finally_body| finally_body.len());
-        self.write_u16(finally_size as u16)?;
+        self.write_u16_len(finally_size, "finally body length")?;
 
         match action.catch_body {
             Some((CatchVar::Var(name), _)) => self.write_string(name)?,
@@ -404,7 +417,7 @@ impl<W: Write> Writer<W> {
 
     fn write_with(&mut self, action: &With) -> Result<()> {
         self.write_action_header(OpCode::With, 2)?;
-        self.write_u16(action.actions.len() as u16)?;
+        self.write_u16_len(action.actions.len(), "with body length")?;
         self.output.write_all(action.actions)?;
         Ok(())
     }
@@ -433,5 +446,136 @@ mod tests {
                 "Error writing action.\nTag:\n{action:?}\n\nWrote:\n{written_bytes:?}\n\nExpected:\n{expected_bytes:?}",
             );
         }
+    }
+
+    fn write(action: &Action) -> Result<Vec<u8>> {
+        let mut written_bytes = Vec::new();
+        Writer::new(&mut written_bytes, 10).write_action(action)?;
+        Ok(written_bytes)
+    }
+
+    fn assert_action_too_long(action: &Action, expected_message: &str) {
+        let err = write(action).expect_err("writing an oversized action should fail");
+        assert_eq!(err.kind(), io::ErrorKind::InvalidInput);
+        assert_eq!(err.to_string(), expected_message);
+    }
+
+    #[test]
+    fn write_action_max_length() {
+        let data = vec![0; u16::MAX as usize];
+        let bytes = write(&Action::Unknown(Unknown {
+            opcode: 0x80,
+            data: &data,
+        }))
+        .unwrap();
+        assert_eq!(bytes[..3], [0x80, 0xFF, 0xFF]);
+        assert_eq!(bytes.len(), 3 + u16::MAX as usize);
+    }
+
+    #[test]
+    fn write_action_too_long() {
+        let data = vec![0; u16::MAX as usize + 1];
+        assert_action_too_long(
+            &Action::Unknown(Unknown {
+                opcode: 0x80,
+                data: &data,
+            }),
+            "action length 65536 does not fit in 16 bits",
+        );
+    }
+
+    #[test]
+    fn write_push_too_long() {
+        let string = "a".repeat(u16::MAX as usize - 1);
+        assert_action_too_long(
+            &Action::Push(Push {
+                values: vec![Value::Str(string.as_str().into())],
+            }),
+            "action length 65536 does not fit in 16 bits",
+        );
+    }
+
+    #[test]
+    fn write_constant_pool_too_long() {
+        assert_action_too_long(
+            &Action::ConstantPool(ConstantPool {
+                strings: vec!["".into(); u16::MAX as usize - 1],
+            }),
+            "action length 65536 does not fit in 16 bits",
+        );
+    }
+
+    #[test]
+    fn write_define_function_body_too_long() {
+        let actions = vec![0; u16::MAX as usize + 1];
+        assert_action_too_long(
+            &Action::DefineFunction(DefineFunction {
+                name: "".into(),
+                params: vec![],
+                actions: &actions,
+            }),
+            "function body length 65536 does not fit in 16 bits",
+        );
+    }
+
+    #[test]
+    fn write_define_function_2_body_too_long() {
+        let actions = vec![0; u16::MAX as usize + 1];
+        assert_action_too_long(
+            &Action::DefineFunction2(DefineFunction2 {
+                name: "".into(),
+                register_count: 0,
+                params: vec![],
+                flags: FunctionFlags::empty(),
+                actions: &actions,
+            }),
+            "function body length 65536 does not fit in 16 bits",
+        );
+    }
+
+    #[test]
+    fn write_try_bodies_too_long() {
+        let body = vec![0; u16::MAX as usize + 1];
+        assert_action_too_long(
+            &Action::Try(Try {
+                try_body: &body,
+                catch_body: None,
+                finally_body: None,
+            }),
+            "try body length 65536 does not fit in 16 bits",
+        );
+        assert_action_too_long(
+            &Action::Try(Try {
+                try_body: &[],
+                catch_body: Some((CatchVar::Register(0), &body)),
+                finally_body: None,
+            }),
+            "catch body length 65536 does not fit in 16 bits",
+        );
+        assert_action_too_long(
+            &Action::Try(Try {
+                try_body: &[],
+                catch_body: None,
+                finally_body: Some(&body),
+            }),
+            "finally body length 65536 does not fit in 16 bits",
+        );
+    }
+
+    #[test]
+    fn write_with_max_length() {
+        let actions = vec![0; u16::MAX as usize];
+        let bytes = write(&Action::With(With { actions: &actions })).unwrap();
+        assert_eq!(bytes[..5], [0x94, 0x02, 0x00, 0xFF, 0xFF]);
+        assert_eq!(bytes.len(), 5 + u16::MAX as usize);
+    }
+
+    #[test]
+    fn write_with_body_too_long() {
+        let actions = vec![0; u16::MAX as usize + 1];
+        assert_action_too_long(
+            &Action::With(With { actions: &actions }),
+            "with body length 65536 does not fit in 16 bits",
+        );
     }
 }

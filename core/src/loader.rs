@@ -1800,7 +1800,7 @@ impl<'gc> MovieLoader<'gc> {
                         && let Some(object) = mc.object1()
                     {
                         let id = ActivationIdentifier::root("[Resolve]");
-                        let mut activation = Activation::from_nothing(uc, id, mc.into());
+                        let activation = Activation::from_nothing(uc, id, mc.into());
                         let new_proto = activation.resolve_prototype([istr!("MovieClip")]);
 
                         if let Some(new_proto) = new_proto {
@@ -2431,12 +2431,7 @@ fn broadcast_avm1_file_event<'gc>(
     event: AvmString<'gc>,
     activation: &mut Activation<'_, 'gc>,
 ) -> Result<bool, crate::avm1::Error<'gc>> {
-    crate::avm1::globals::as_broadcaster::broadcast_internal(
-        target,
-        &[target.into()],
-        event,
-        activation,
-    )
+    crate::avm1::globals::object::broadcast_internal(target, &[target.into()], event, activation)
 }
 
 /// Display a dialog allowing a user to select a file from an AVM1 scope.
@@ -2640,7 +2635,7 @@ pub fn download_file_dialog<'gc>(
 
             let mut activation =
                 Activation::from_stub(uc, ActivationIdentifier::root("[File Dialog]"));
-            use crate::avm1::globals::as_broadcaster;
+            use crate::avm1::globals::object::broadcast_internal;
 
             match dialog_result {
                 Ok(FileDialogResult::Selection(mut selection)) => {
@@ -2648,7 +2643,7 @@ pub fn download_file_dialog<'gc>(
                     // We simulate this by using the initial dialog result
                     file_ref.init_from_file_selection(&mut activation, &*selection);
 
-                    as_broadcaster::broadcast_internal(
+                    broadcast_internal(
                         target_object,
                         &[target_object.into()],
                         istr!("onSelect"),
@@ -2657,7 +2652,7 @@ pub fn download_file_dialog<'gc>(
 
                     match download_res {
                         Ok((body, _, _, _)) => {
-                            as_broadcaster::broadcast_internal(
+                            broadcast_internal(
                                 target_object,
                                 &[target_object.into()],
                                 istr!("onOpen"),
@@ -2674,7 +2669,7 @@ pub fn download_file_dialog<'gc>(
 
                             let total_bytes = body.len();
 
-                            as_broadcaster::broadcast_internal(
+                            broadcast_internal(
                                 target_object,
                                 &[
                                     target_object.into(),
@@ -2685,7 +2680,7 @@ pub fn download_file_dialog<'gc>(
                                 &mut activation,
                             )?;
 
-                            as_broadcaster::broadcast_internal(
+                            broadcast_internal(
                                 target_object,
                                 &[target_object.into()],
                                 istr!("onComplete"),
@@ -2699,7 +2694,7 @@ pub fn download_file_dialog<'gc>(
                                         .context
                                         .avm_trace(&format!("Error opening URL '{url}'"));
 
-                                    as_broadcaster::broadcast_internal(
+                                    broadcast_internal(
                                         target_object,
                                         &[target_object.into()],
                                         istr!("onIOError"),
@@ -2709,7 +2704,7 @@ pub fn download_file_dialog<'gc>(
                                 Error::HttpNotOk(_, _, _, body_len) => {
                                     // If the error happens before the connection is
                                     // established, then don't invoke onOpen
-                                    as_broadcaster::broadcast_internal(
+                                    broadcast_internal(
                                         target_object,
                                         &[target_object.into()],
                                         istr!("onOpen"),
@@ -2720,7 +2715,7 @@ pub fn download_file_dialog<'gc>(
                                         .context
                                         .avm_trace(&format!("Error opening URL '{url}'"));
 
-                                    as_broadcaster::broadcast_internal(
+                                    broadcast_internal(
                                         target_object,
                                         &[target_object.into()],
                                         istr!("onIOError"),
@@ -2729,7 +2724,7 @@ pub fn download_file_dialog<'gc>(
 
                                     // Flash still executes the onProgress callback, even after an error
                                     // However it should only be called if the error occurred after the connection was established
-                                    as_broadcaster::broadcast_internal(
+                                    broadcast_internal(
                                         target_object,
                                         &[
                                             target_object.into(),
@@ -2743,7 +2738,7 @@ pub fn download_file_dialog<'gc>(
                                 Error::FetchError(_) => {
                                     // If the error happens before the connection is
                                     // established, then don't invoke onOpen
-                                    as_broadcaster::broadcast_internal(
+                                    broadcast_internal(
                                         target_object,
                                         &[target_object.into()],
                                         istr!("onOpen"),
@@ -2754,7 +2749,7 @@ pub fn download_file_dialog<'gc>(
                                         .context
                                         .avm_trace(&format!("Error opening URL '{url}'"));
 
-                                    as_broadcaster::broadcast_internal(
+                                    broadcast_internal(
                                         target_object,
                                         &[target_object.into()],
                                         istr!("onIOError"),
@@ -2772,7 +2767,7 @@ pub fn download_file_dialog<'gc>(
                     }
                 }
                 Ok(FileDialogResult::Canceled) => {
-                    as_broadcaster::broadcast_internal(
+                    broadcast_internal(
                         target_object,
                         &[target_object.into()],
                         istr!("onCancel"),
@@ -2852,8 +2847,8 @@ pub fn upload_file<'gc>(
             let mut activation =
                 Activation::from_stub(uc, ActivationIdentifier::root("[File Dialog]"));
 
-            use crate::avm1::globals::as_broadcaster;
-            as_broadcaster::broadcast_internal(
+            use crate::avm1::globals::object::broadcast_internal;
+            broadcast_internal(
                 target_object,
                 &[target_object.into()],
                 istr!("onOpen"),
@@ -2862,7 +2857,7 @@ pub fn upload_file<'gc>(
 
             match result {
                 Ok(_) => {
-                    as_broadcaster::broadcast_internal(
+                    broadcast_internal(
                         target_object,
                         &[
                             target_object.into(),
@@ -2873,7 +2868,7 @@ pub fn upload_file<'gc>(
                         &mut activation,
                     )?;
 
-                    as_broadcaster::broadcast_internal(
+                    broadcast_internal(
                         target_object,
                         &[target_object.into()],
                         istr!("onComplete"),
@@ -2889,7 +2884,7 @@ pub fn upload_file<'gc>(
 
                     match err.error {
                         Error::InvalidDomain(_) => {
-                            as_broadcaster::broadcast_internal(
+                            broadcast_internal(
                                 target_object,
                                 &[target_object.into()],
                                 istr!("onIOError"),
@@ -2897,7 +2892,7 @@ pub fn upload_file<'gc>(
                             )?;
                         }
                         Error::HttpNotOk(_, _, _, _) => {
-                            as_broadcaster::broadcast_internal(
+                            broadcast_internal(
                                 target_object,
                                 &[
                                     target_object.into(),
@@ -2908,7 +2903,7 @@ pub fn upload_file<'gc>(
                                 &mut activation,
                             )?;
 
-                            as_broadcaster::broadcast_internal(
+                            broadcast_internal(
                                 target_object,
                                 &[target_object.into()],
                                 istr!("onHTTPError"),
@@ -2918,7 +2913,7 @@ pub fn upload_file<'gc>(
                         Error::FetchError(msg) => {
                             tracing::warn!("Unhandled fetch error: {:?}", msg);
                             // For now we will just handle this like a dns error
-                            as_broadcaster::broadcast_internal(
+                            broadcast_internal(
                                 target_object,
                                 &[target_object.into()],
                                 istr!("onIOError"),

@@ -1,41 +1,313 @@
+/// AsBroadcaster
 // typeof AsBroadcaster
 function
-// new AsBroadcaster()
-[object Object]
-// broadcaster.addListener(listener1)
+
+// new AsBroadcaster() instanceof AsBroadcaster
 true
-// broadcaster.addListener(listener1) (Adding the same object)
-true
-// broadcaster.addListener(listener2)
-true
-Listener1 got the event!
-// this === listener1
-true
-Listener2 got the event!
-// this === listener2
-true
-Listener1 got: hello! and 123.123
-// this === listener1
-true
-Listener2 got: hello! and 123.123
-// this === listener2
-true
-// broadcaster._listeners
-[object Object],[object Object]
-// broadcaster.removeListener(listener2)
-true
-// broadcaster.removeListener(listener2) (Try to double-remove)
+
+// AsBroadcaster
+
+
+// AsBroadcaster, without DONT_ENUM
+initialize removeListener addListener broadcastMessage 
+
+// delete AsBroadcaster.broadcastMessage
 false
-Listener1 got: Only one and 521
-// this === listener1
-true
-// broadcaster._listeners
-[object Object]
+
+// delete AsBroadcaster.addListener
+false
+
+// delete AsBroadcaster.removeListener
+false
+
+// delete AsBroadcaster.initialize
+false
+
+
+/// initialize
+// AsBroadcaster.initialize(broadcaster)
+undefined
+  _listeners: 0 ()
+
+// broadcaster
+
+
+// broadcaster, without DONT_ENUM
+_listeners removeListener addListener broadcastMessage 
+
 // broadcaster instanceof AsBroadcaster
 false
-// broadcaster.addListener == AsBroadcaster.addListener
+
+// broadcaster._listeners instanceof Array
 true
-// var ab = AsBroadcaster; ab.AddListener(...);
+
+// broadcaster._listeners === makeBroadcaster()._listeners
+false
+
+// broadcaster.broadcastMessage === AsBroadcaster.broadcastMessage
+false
+
+// broadcaster.addListener === AsBroadcaster.addListener
 true
-// ab.broadcastMessage(...);
-ab: Test received!
+
+// broadcaster.removeListener === AsBroadcaster.removeListener
+true
+
+// delete broadcaster.broadcastMessage
+false
+
+// delete broadcaster.addListener
+false
+
+// delete broadcaster.removeListener
+false
+
+// delete broadcaster._listeners
+false
+
+// MovieClipLoader.prototype.addListener === AsBroadcaster.addListener
+true
+
+// Stage.addListener === AsBroadcaster.addListener
+true
+
+// System.IME.addListener === AsBroadcaster.addListener
+true
+
+// Key.addListener === AsBroadcaster.addListener
+true
+
+// Mouse.addListener === AsBroadcaster.addListener
+true
+
+// Selection.addListener === AsBroadcaster.addListener
+true
+
+// TextField.prototype.addListener === AsBroadcaster.addListener
+true
+
+// flash.net.FileReference.prototype.addListener === AsBroadcaster.addListener
+true
+
+// flash.net.FileReferenceList.prototype.addListener === AsBroadcaster.addListener
+true
+
+// AsBroadcaster.initialize(broadcaster), with tracing properties
+  set broadcaster.broadcastMessage = [type Function]
+  set broadcaster.addListener = [type Function]
+  set broadcaster.removeListener = [type Function]
+  set broadcaster._listeners = 
+
+// AsBroadcaster.initialize(broadcaster), with AsBroadcaster replaced
+  get AsBroadcaster.addListener
+  resolve AsBroadcaster.removeListener
+true
+
+// AsBroadcaster.initialize(broadcaster), with Array replaced
+true
+
+
+/// addListener
+// broadcaster.addListener(listener1)
+true
+  _listeners: 1 (listener1)
+
+// broadcaster.addListener(listener1), again
+true
+  _listeners: 1 (listener1)
+
+// broadcaster.addListener(listener2)
+true
+  _listeners: 2 (listener1,listener2)
+
+// broadcaster.addListener(listener1), when not last, with tracing properties
+  call broadcaster.removeListener(listener1)
+  get broadcaster._listeners
+  get broadcaster._listeners
+  call listeners.push(listener1)
+true
+  get broadcaster._listeners
+  _listeners: 2 (listener2,listener1)
+
+// AsBroadcaster.addListener.call({}, listener1)
+true
+
+
+// broadcaster.addListener(undefined)
+true
+  _listeners: 1 (undefined)
+
+// broadcaster.addListener(null)
+true
+  _listeners: 1 (null)
+
+// broadcaster.addListener(0)
+true
+  _listeners: 2 (null,0)
+
+// broadcaster.addListener(false)
+true
+  _listeners: 2 (null,false)
+
+// broadcaster.addListener('0')
+true
+  _listeners: 2 (null,0)
+
+// broadcaster.addListener(NaN)
+true
+  _listeners: 3 (null,0,NaN)
+
+// broadcaster.addListener(NaN)
+true
+  _listeners: 3 (null,0,NaN)
+
+
+/// removeListener
+// broadcaster.removeListener(listener2)
+true
+  _listeners: 1 (listener1)
+
+// broadcaster.removeListener(listener2), again
+false
+  _listeners: 1 (listener1)
+
+// broadcaster.removeListener(listener1), when registered twice
+true
+  _listeners: 2 (listener2,listener1)
+
+// broadcaster.removeListener(false)
+true
+  _listeners: 1 (null)
+
+// broadcaster.removeListener(undefined)
+true
+  _listeners: 1 (false)
+
+// broadcaster.removeListener(tracingNumber('listener', 5))
+  valueOf listener
+true
+  _listeners: 0 ()
+
+// broadcaster.removeListener(listener2), with tracing properties
+  get broadcaster._listeners
+  get listeners.length
+  get listeners.0
+  get listeners.length
+  get listeners.1
+  call listeners.splice(1, 1)
+true
+
+
+/// broadcastMessage
+// broadcaster.broadcastMessage('event1'), without listeners
+undefined
+
+// broadcaster.broadcastMessage('event1')
+  call listener1.event1()
+  this === listener1: true
+  call listener2.event1()
+  this === listener2: true
+true
+
+// broadcaster.broadcastMessage('event2', 'foo', 123)
+  call listener1.event2(foo, 123)
+  this === listener1: true
+  call listener2.event2(foo, 123)
+  this === listener2: true
+true
+
+// broadcaster.broadcastMessage('event1'), with a throwing listener
+  throw 'error'
+  caught error
+
+// broadcaster.broadcastMessage('event1'), with a listener removing itself
+  broadcaster.removeListener(this)
+  call listener1.event1()
+  this === listener1: true
+true
+  _listeners: 1 (listener1)
+
+// broadcaster.broadcastMessage('event1'), with a listener removing a later listener
+  broadcaster.removeListener(listener1)
+  call listener1.event1()
+  this === listener1: true
+true
+  _listeners: 1 ([object Object])
+
+// broadcaster.broadcastMessage('event1'), with _listeners = undefined
+undefined
+
+// broadcaster.broadcastMessage('event1'), with _listeners = 'foo', with String.prototype[0] = listener1
+undefined
+
+// broadcaster.broadcastMessage('event1'), with _listeners = {0: listener1}
+undefined
+
+// broadcaster.broadcastMessage('event1'), with _listeners = [listener1], not inheriting from Array.prototype
+  call listener1.event1()
+  this === listener1: true
+true
+
+// broadcaster.broadcastMessage('event1'), with _listeners = {0: listener1, length: 1}, inheriting from Array.prototype
+  call listener1.event1()
+  this === listener1: true
+true
+
+// broadcaster.broadcastMessage('event1'), with _listeners = {0: listener1, 1: listener2} and tracing length
+undefined
+
+// broadcaster.broadcastMessage('event1'), with tracing properties
+  get broadcaster._listeners
+  call listener1.event1()
+  this === listener1: true
+true
+
+// broadcaster.broadcastMessage('event1'), with _listeners = [, , listener1]
+  call listener1.event1()
+  this === listener1: true
+true
+
+// broadcaster.broadcastMessage('event1'), with _listeners = [null, undefined]
+undefined
+
+// broadcaster.broadcastMessage('event1'), with _listeners = [{}]
+true
+
+// broadcaster.broadcastMessage('event1'), with _listeners = ['foo', 123, true]
+  call String.prototype.event1()
+  this = foo, typeof this = object
+  call Number.prototype.event1()
+  this = 123, typeof this = object
+  call Boolean.prototype.event1()
+  this = true, typeof this = object
+true
+
+// broadcaster.broadcastMessage()
+undefined
+
+// broadcaster.broadcastMessage(123)
+  call traceListener.123()
+true
+
+// broadcaster.broadcastMessage(undefined)
+  call traceListener.undefined()
+true
+
+// broadcaster.broadcastMessage('')
+  call traceListener()
+true
+
+// broadcaster.broadcastMessage({})
+  call traceListener.[object Object]()
+true
+
+// AsBroadcaster.broadcastMessage('event1')
+  call listener1.event1()
+  this === listener1: true
+true
+
+// ASnative(101, 12).call(broadcaster, 'event1')
+  call listener1.event1()
+  this === listener1: true
+true
+

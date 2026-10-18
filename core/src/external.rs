@@ -1,4 +1,3 @@
-use crate::avm1::NativeObject;
 use crate::avm1::Value as Avm1Value;
 use crate::avm1::{Activation as Avm1Activation, ActivationIdentifier as Avm1ActivationIdentifier};
 use crate::avm1::{ArrayBuilder as Avm1ArrayBuilder, Error as Avm1Error, Object as Avm1Object};
@@ -133,7 +132,7 @@ impl Value {
             Avm1Value::Number(value) => value.into(),
             Avm1Value::String(value) => Value::String(value.to_string()),
             Avm1Value::MovieClip(_) => Value::Null,
-            Avm1Value::Object(object) if matches!(object.native(), NativeObject::Array(_)) => {
+            Avm1Value::Object(object) if object.is_native_array() => {
                 let length = object.length(activation)?;
                 let values: Result<Vec<_>, Avm1Error<'gc>> = (0..length)
                     .map(|i| {

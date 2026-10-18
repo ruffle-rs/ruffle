@@ -174,6 +174,19 @@ impl DebugUi {
         }
     }
 
+    pub fn has_open_windows(&self) -> bool {
+        !self.display_objects.is_empty()
+            || !self.movies.is_empty()
+            || !self.avm1_objects.is_empty()
+            || !self.avm2_objects.is_empty()
+            || !self.avm2_classes.is_empty()
+            || !self.domains.is_empty()
+            || !self.fonts.is_empty()
+            || self.movie_list.is_some()
+            || self.domain_list.is_some()
+            || self.display_object_search.is_some()
+    }
+
     pub fn should_suspend_player(&self) -> bool {
         self.display_object_search.is_some()
     }

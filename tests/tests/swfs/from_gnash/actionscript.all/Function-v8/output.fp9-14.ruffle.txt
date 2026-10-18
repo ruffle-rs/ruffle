@@ -120,12 +120,12 @@ PASSED: arguments.callee == _root.f [./Function.as:475]
 PASSED: typeof(arguments.caller) == 'null' [./Function.as:477]
 PASSED: arguments.caller == null [./Function.as:478]
 PASSED: propRecorder.length == 0 [./Function.as:487]
-FAILED: expected: 5 obtained: 4 [./Function.as:495]
+PASSED: propRecorder.length == 5 [./Function.as:495]
 PASSED: propRecorder[0] == '__proto__' [./Function.as:496]
 PASSED: propRecorder[1] == 'callee' [./Function.as:497]
 PASSED: propRecorder[2] == 'caller' [./Function.as:498]
-FAILED: expected: 'constructor' obtained: length [./Function.as:499]
-FAILED: expected: 'length' obtained: undefined [./Function.as:500]
+PASSED: propRecorder[3] == 'constructor' [./Function.as:499]
+PASSED: propRecorder[4] == 'length' [./Function.as:500]
 PASSED: arguments.caller == parent_func [./Function.as:507]
 PASSED: arguments.length == 3 [./Function.as:519]
 PASSED: arguments[0] == 1 [./Function.as:520]
@@ -267,6 +267,6 @@ FAILED: expected: "function" obtained: undefined [./Function.as:1118]
 FAILED: f.hasOwnProperty("__proto__") [./Function.as:1120]
 FAILED: f.hasOwnProperty("constructor") [./Function.as:1121]
 PASSED: called == 0 [./Function.as:1123]
-#passed: 238
-#failed: 26
+#passed: 241
+#failed: 23
 #total tests run: 264

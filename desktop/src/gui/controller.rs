@@ -434,6 +434,19 @@ impl GuiController {
             &screen_descriptor,
         );
 
+        // Debug tools draw over the movie and can modify it. While any of them
+        // is open, show that right away, instead of waiting for the movie to
+        // render on its own. This happens after updating the GUI, so that
+        // the changes made in this pass are visible.
+        //
+        // TODO This does not match how Flash renders the movie, maybe put that
+        //      behind a setting?
+        if let Some(player) = player.as_deref_mut()
+            && player.debug_ui().has_open_windows()
+        {
+            player.render();
+        }
+
         let movie_view = if let Some(player) = player.as_deref_mut() {
             let renderer =
                 <dyn Any>::downcast_ref::<WgpuRenderBackend<MovieView>>(player.renderer_mut())

@@ -264,7 +264,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
     /// Resolve a class constructor on the global scope. This ignores the prototype chain, getters, and attributes.
     pub fn resolve_class(
-        &mut self,
+        &self,
         path: impl IntoIterator<Item = AvmString<'gc>>,
     ) -> Option<Object<'gc>> {
         let mut obj = self.global_object();
@@ -279,7 +279,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
     /// Resolve a class prototype on the global scope. This ignores the prototype chain, getters, and attributes.
     pub fn resolve_prototype(
-        &mut self,
+        &self,
         path: impl IntoIterator<Item = AvmString<'gc>>,
     ) -> Option<Value<'gc>> {
         self.resolve_class(path).and_then(|c| c.prototype(self))
