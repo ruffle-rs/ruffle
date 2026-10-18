@@ -960,9 +960,10 @@ pub fn set_text_format<'gc>(
     if let Some(this) = this
         .as_display_object()
         .and_then(|this| this.as_edit_text())
-        && let Some(tf) = args.try_get_object(0)
-        && let Some(tf) = tf.as_text_format()
     {
+        let tf = args.get_object(activation, 0, "format")?;
+        let tf = tf.as_text_format().unwrap();
+
         let mut begin_index = args.get_i32(1);
         let mut end_index = args.get_i32(2);
         let text_length = this.text_length() as i32;
