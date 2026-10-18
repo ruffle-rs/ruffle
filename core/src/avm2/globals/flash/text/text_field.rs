@@ -772,20 +772,37 @@ pub fn get_text_format<'gc>(
     {
         let mut begin_index = args.get_i32(0);
         let mut end_index = args.get_i32(1);
+        let text_length = this.text_length() as i32;
 
-        if end_index >= 0 && (begin_index >= end_index || begin_index < 0) {
-            return Err(make_error_2006(activation, Error2006Type::RangeError));
-        }
-
-        if begin_index < 0 {
+        if begin_index == -1 && end_index == -1 {
+            // Get the format of the whole text, even when it's empty.
             begin_index = 0;
+            end_index = text_length;
+        } else {
+            if begin_index == -1 {
+                begin_index = 0;
+            }
+
+            if begin_index < 0 || begin_index >= text_length {
+                return Err(make_error_2006(activation, Error2006Type::RangeError));
+            }
+
+            if end_index == -1 {
+                end_index = begin_index + 1;
+            }
+
+            if end_index <= 0 || end_index > text_length {
+                return Err(make_error_2006(activation, Error2006Type::RangeError));
+            }
         }
 
-        if end_index < 0 {
-            end_index = this.text_length() as i32;
-        }
-
-        let tf = this.text_format(begin_index as usize, end_index as usize);
+        // Empty ranges have no format.
+        // TODO: Move this check to `EditText::text_format`.
+        let tf = if begin_index < end_index {
+            this.text_format(begin_index as usize, end_index as usize)
+        } else {
+            TextFormat::default()
+        };
         return Ok(TextFormatObject::from_text_format(activation, tf)?.into());
     }
 
