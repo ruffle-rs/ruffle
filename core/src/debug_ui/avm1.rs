@@ -46,7 +46,7 @@ impl Avm1ObjectWindow {
         let mut activation =
             Activation::from_nothing(context, ActivationIdentifier::root("Debug"), base_clip);
         Window::new(object_name(object))
-            .id(Id::new(object.as_ptr()))
+            .id(Id::unique(object.as_ptr()))
             .open(&mut keep_open)
             .scroll([true, true])
             .show(egui_ctx, |ui| {
@@ -81,7 +81,7 @@ impl Avm1ObjectWindow {
         activation: &mut Activation<'_, 'gc>,
         messages: &mut Vec<Message>,
     ) {
-        Grid::new(ui.id().with("properties"))
+        Grid::new(ui.scope_id().with("properties"))
             .num_columns(2)
             .show(ui, |ui| {
                 let mut keys = object.get_keys(activation, true);
@@ -273,7 +273,7 @@ fn show_value_type_combo_box<'gc>(
     mutation: &Mutation<'gc>,
 ) -> Option<Value<'gc>> {
     let mut new = None;
-    egui::ComboBox::new(egui::Id::new("value_combo").with(key), "Type")
+    egui::ComboBox::new(("value_combo", key), "Type")
         .selected_text(value_label(value))
         .show_ui(ui, |ui| {
             if ui

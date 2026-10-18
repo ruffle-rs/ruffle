@@ -720,7 +720,7 @@ type ValueToTextFn<T> = dyn Fn(T, &LanguageIdentifier) -> Cow<'static, str>;
 type ValueToOptTextFn<T> = dyn Fn(T, &LanguageIdentifier) -> Option<Cow<'static, str>>;
 
 struct EnumDropdownField<T: Copy> {
-    id: egui::Id,
+    id_salt: egui::IdSalt,
     default: T,
     value_to_name: Box<ValueToTextFn<T>>,
     value_to_tooltip: Box<ValueToOptTextFn<T>>,
@@ -730,7 +730,7 @@ struct EnumDropdownField<T: Copy> {
 impl<T: Copy> EnumDropdownField<T> {
     pub fn new(default: T, possible_values: Vec<T>, value_to_name: Box<ValueToTextFn<T>>) -> Self {
         Self {
-            id: egui::Id::new(rand::random::<u64>()),
+            id_salt: egui::IdSalt::new(rand::random::<u64>()),
             default,
             value_to_name,
             possible_values,
@@ -753,7 +753,7 @@ impl<T: Copy + PartialEq> InnerField for EnumDropdownField<T> {
     }
 
     fn ui(&self, ui: &mut Ui, value: &mut Self::Value, _error: bool, locale: &LanguageIdentifier) {
-        ComboBox::from_id_salt(self.id)
+        ComboBox::from_id_salt(self.id_salt)
             .selected_text((self.value_to_name)(*value, locale))
             .show_ui(ui, |ui| {
                 for possible_value in &self.possible_values {
@@ -776,7 +776,7 @@ impl<T: Copy + PartialEq> InnerField for EnumDropdownField<T> {
 }
 
 struct BooleanDropdownField {
-    id: egui::Id,
+    id_salt: egui::IdSalt,
     default: bool,
     value_to_name: Box<ValueToTextFn<bool>>,
 }
@@ -784,7 +784,7 @@ struct BooleanDropdownField {
 impl BooleanDropdownField {
     pub fn new(default: bool, value_to_name: Box<ValueToTextFn<bool>>) -> Self {
         Self {
-            id: egui::Id::new(rand::random::<u64>()),
+            id_salt: egui::IdSalt::new(rand::random::<u64>()),
             default,
             value_to_name,
         }
@@ -800,7 +800,7 @@ impl InnerField for BooleanDropdownField {
     }
 
     fn ui(&self, ui: &mut Ui, value: &mut Self::Value, _error: bool, locale: &LanguageIdentifier) {
-        ComboBox::from_id_salt(self.id)
+        ComboBox::from_id_salt(self.id_salt)
             .selected_text((self.value_to_name)(*value, locale))
             .show_ui(ui, |ui| {
                 ui.selectable_value(value, false, (self.value_to_name)(false, locale));
