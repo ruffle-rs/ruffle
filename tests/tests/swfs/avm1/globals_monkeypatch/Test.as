@@ -81,6 +81,8 @@ class Test {
     monkeyPatchClass(_global, "TextFormat");
     monkeyPatchClass(_global, "Video");
 
+    monkeyPatchClass(_global.flash.display, "BitmapData");
+
     monkeyPatchClass(_global.flash.filters, "BevelFilter");
     monkeyPatchClass(_global.flash.filters, "BlurFilter");
     monkeyPatchClass(_global.flash.filters, "ColorMatrixFilter");
@@ -286,6 +288,13 @@ class Test {
 
     trace("// A_RECTANGLE.bottomRight");
     traceName(A_RECTANGLE.bottomRight);
+
+
+    trace("");
+    trace("### Testing Bitmap");
+
+    trace("// A_DISPLACEMENT_MAP_FILTER.mapBitmap");
+    traceName(A_DISPLACEMENT_MAP_FILTER.mapBitmap);
 
 
     trace("");
