@@ -1,0 +1,70 @@
+// setTextFormat, then same text
+  text = "AB": text=AB sizes=12,12 colors=0,0 new=12/0
+  setTextFormat(big): text=AB sizes=30,30 colors=0,0 new=12/0
+  text = "AB": text=AB sizes=30,30 colors=0,0 new=12/0
+// setNewTextFormat, then same text
+  text = "AB": text=AB sizes=12,12 colors=0,0 new=12/0
+  setTextFormat(big): text=AB sizes=30,30 colors=0,0 new=12/0
+  setNewTextFormat(mid): text=AB sizes=30,30 colors=0,0 new=20/0
+  text = "AB": text=AB sizes=20,20 colors=0,0 new=20/0
+// setNewTextFormat, same text twice
+  text = "AB": text=AB sizes=12,12 colors=0,0 new=12/0
+  setNewTextFormat(mid): text=AB sizes=12,12 colors=0,0 new=20/0
+  text = "AB": text=AB sizes=20,20 colors=0,0 new=20/0
+  setTextFormat(big): text=AB sizes=30,30 colors=0,0 new=20/0
+  text = "AB": text=AB sizes=30,30 colors=0,0 new=20/0
+// textColor, then same text
+  text = "AB": text=AB sizes=12,12 colors=0,0 new=12/0
+  setTextFormat(big): text=AB sizes=30,30 colors=0,0 new=12/0
+  textColor = 0xFF0000: text=AB sizes=30,30 colors=16711680,16711680 new=12/16711680
+  text = "AB": text=AB sizes=30,30 colors=16711680,16711680 new=12/16711680
+// htmlText, then same text
+  htmlText = "<font size='30'>AB</font>": text=AB sizes=30,30 colors=0,0 new=12/0
+  text = "AB": text=AB sizes=30,30 colors=0,0 new=12/0
+  text = "ab": text=ab sizes=12,12 colors=0,0 new=12/0
+// htmlText and setNewTextFormat, then same text
+  htmlText = "<font size='30'>AB</font>": text=AB sizes=30,30 colors=0,0 new=12/0
+  setNewTextFormat(mid): text=AB sizes=30,30 colors=0,0 new=20/0
+  text = "AB": text=AB sizes=20,20 colors=0,0 new=20/0
+// setNewTextFormat, setTextFormat, then same text
+  text = "AB": text=AB sizes=12,12 colors=0,0 new=12/0
+  setNewTextFormat(mid): text=AB sizes=12,12 colors=0,0 new=20/0
+  setTextFormat(big): text=AB sizes=30,30 colors=0,0 new=20/0
+  text = "AB": text=AB sizes=20,20 colors=0,0 new=20/0
+// setNewTextFormat, htmlText, then same text
+  text = "AB": text=AB sizes=12,12 colors=0,0 new=12/0
+  setNewTextFormat(mid): text=AB sizes=12,12 colors=0,0 new=20/0
+  htmlText = "AB": text=AB sizes=20,20 colors=0,0 new=20/0
+  setTextFormat(big): text=AB sizes=30,30 colors=0,0 new=20/0
+  text = "AB": text=AB sizes=30,30 colors=0,0 new=20/0
+// setNewTextFormat, different text, then same text
+  text = "AB": text=AB sizes=12,12 colors=0,0 new=12/0
+  setNewTextFormat(mid): text=AB sizes=12,12 colors=0,0 new=20/0
+  text = "XY": text=XY sizes=20,20 colors=0,0 new=20/0
+  setTextFormat(big): text=XY sizes=30,30 colors=0,0 new=20/0
+  text = "XY": text=XY sizes=30,30 colors=0,0 new=20/0
+// setNewTextFormat, textColor, then same text
+  text = "AB": text=AB sizes=12,12 colors=0,0 new=12/0
+  setTextFormat(big): text=AB sizes=30,30 colors=0,0 new=12/0
+  setNewTextFormat(mid): text=AB sizes=30,30 colors=0,0 new=20/0
+  textColor = 0xFF0000: text=AB sizes=30,30 colors=16711680,16711680 new=20/16711680
+  text = "AB": text=AB sizes=20,20 colors=16711680,16711680 new=20/16711680
+// textColor, setNewTextFormat, then same text
+  text = "AB": text=AB sizes=12,12 colors=0,0 new=12/0
+  setTextFormat(big): text=AB sizes=30,30 colors=0,0 new=12/0
+  textColor = 0xFF0000: text=AB sizes=30,30 colors=16711680,16711680 new=12/16711680
+  setNewTextFormat(mid): text=AB sizes=30,30 colors=16711680,16711680 new=20/16711680
+  text = "AB": text=AB sizes=20,20 colors=16711680,16711680 new=20/16711680
+// same htmlText
+  prepared: length=1 size=12 new=12
+  htmlText = field.htmlText: length=1 size=12 new=12
+// setNewTextFormat (own value), same htmlText
+  prepared: length=1 size=12 new=12
+  setNewTextFormat(field.getNewTextFormat()): length=1 size=12 new=12
+  htmlText = field.htmlText: length=2 size=12 new=12
+// setNewTextFormat, same htmlText twice
+  prepared: length=1 size=12 new=12
+  setNewTextFormat(field.getNewTextFormat()): length=1 size=12 new=12
+  htmlText = field.htmlText: length=2 size=12 new=12
+  replaceText(1, 2, ""): length=1 size=12 new=12
+  htmlText = field.htmlText: length=1 size=12 new=12
