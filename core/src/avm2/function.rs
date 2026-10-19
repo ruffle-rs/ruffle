@@ -254,7 +254,9 @@ pub fn exec<'gc>(
 
             // We must initialize the stack frame here so the lifetime works out
             let stack = activation.context.avm2.stack;
-            let stack_frame = stack.get_frame(declared_arg_count);
+            let Some(stack_frame) = stack.get_frame(declared_arg_count) else {
+                return Err(make_error_1023_runtime(activation));
+            };
 
             let caller_domain = activation.caller_domain();
             let caller_movie = activation.caller_movie();
@@ -322,7 +324,9 @@ pub fn exec<'gc>(
 
             // We must initialize the stack frame here so the lifetime works out
             let stack = activation.context.avm2.stack;
-            let stack_frame = stack.get_frame_for_method(method);
+            let Some(stack_frame) = stack.get_frame_for_method(method) else {
+                return Err(make_error_1023_runtime(activation));
+            };
 
             // This used to be a one step called Activation::from_method,
             // but avoiding moving an Activation around helps perf

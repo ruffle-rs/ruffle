@@ -43,8 +43,9 @@ impl<'gc> Stack<'gc> {
         ))
     }
 
-    /// Returns a slice of stack data for the specified method
-    pub fn get_frame_for_method(&self, method: Method<'gc>) -> StackFrame<'_, 'gc> {
+    /// Returns a slice of stack data for the specified method, or `None` if
+    /// there's not enough space left on the stack.
+    pub fn get_frame_for_method(&self, method: Method<'gc>) -> Option<StackFrame<'_, 'gc>> {
         // Calculate the frame size
         let body = method
             .body()
@@ -57,12 +58,14 @@ impl<'gc> Stack<'gc> {
     /// Returns a slice of stack data with the specified size, starting at the
     /// current stack pointer. Stack frames obtained from this method must be
     /// properly disposed of by using the `dispose_stack_frame` method.
-    pub fn get_frame(&self, frame_size: usize) -> StackFrame<'_, 'gc> {
+    ///
+    /// Returns `None` if there's not enough space left on the stack.
+    pub fn get_frame(&self, frame_size: usize) -> Option<StackFrame<'_, 'gc>> {
         // Create the stack frame
         let stack_data = &self.0.stack;
         let stack_pointer = &self.0.stack_pointer;
 
-        let subslice = &stack_data[stack_pointer.get()..stack_pointer.get() + frame_size];
+        let subslice = stack_data.get(stack_pointer.get()..stack_pointer.get() + frame_size)?;
 
         stack_pointer.set(stack_pointer.get() + frame_size);
 
@@ -73,7 +76,7 @@ impl<'gc> Stack<'gc> {
             value.set(Value::Undefined);
         }
 
-        StackFrame::for_data(subslice)
+        Some(StackFrame::for_data(subslice))
     }
 
     pub fn dispose_stack_frame(self, stack_frame: StackFrame<'_, 'gc>) {
