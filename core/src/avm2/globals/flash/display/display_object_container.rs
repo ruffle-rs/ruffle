@@ -20,7 +20,6 @@ use crate::display_object::HitTestOptions;
 use crate::display_object::{
     DisplayObject, DisplayObjectContainer, TDisplayObject, TDisplayObjectContainer,
 };
-use std::cmp::min;
 
 /// Validate if we can add a child to a parent at a given index.
 ///
@@ -338,7 +337,7 @@ pub fn remove_children<'gc>(
     let this = this.as_object().unwrap();
 
     if let Some(parent) = this.as_display_object()
-        && let Some(mut ctr) = parent.as_container()
+        && let Some(ctr) = parent.as_container()
     {
         let from = args.get_i32(0);
         let to = args.get_i32(1);
@@ -359,10 +358,20 @@ pub fn remove_children<'gc>(
             return Err(make_error_2006(activation, Error2006Type::RangeError));
         }
 
-        ctr.remove_range(
-            activation.context,
-            from as usize..min(ctr.num_children(), to as usize + 1),
-        );
+        // Children are removed one at a time, each with its events dispatched
+        // before the next one is removed. Listeners can change the display
+        // list in the meantime, so the children to remove are decided up
+        // front. Each is removed from its current parent, which can be a
+        // different container by then.
+        let children: Vec<_> = ctr
+            .iter_render_list()
+            .take(to as usize + 1)
+            .skip(from as usize)
+            .collect();
+
+        for child in children {
+            remove_child_from_displaylist(activation.context, child);
+        }
     }
 
     Ok(Value::Undefined)
