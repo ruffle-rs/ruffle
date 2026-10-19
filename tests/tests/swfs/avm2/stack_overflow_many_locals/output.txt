@@ -1,0 +1,7 @@
+caught: [class StackOverflowError]
+Error: Error #1023: Stack overflow occurred.
+caught: [class StackOverflowError]
+Error: Error #1023: Stack overflow occurred.
+caught: [class StackOverflowError]
+Error: Error #1023: Stack overflow occurred.
+// done
