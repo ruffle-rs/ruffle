@@ -1376,9 +1376,14 @@ pub trait TDisplayObject<'gc>:
     }
 
     /// The world bounding box of this object including children, relative to the stage.
+    ///
+    /// For an object with a scroll rect, this is the area of the stage the
+    /// scroll rect is visible in.
     #[no_dynamic]
     fn world_bounds(self, mode: BoundsMode) -> Rectangle<Twips> {
-        self.bounds_with_transform(&self.local_to_global_matrix(), mode)
+        // `bounds_with_transform` returns the scroll rect's size starting at
+        // the origin, so we must not apply the scroll rect's own translation.
+        self.bounds_with_transform(&self.local_to_global_matrix_without_own_scroll_rect(), mode)
     }
 
     /// The world bounding box of this object, as reported by `Transform.pixelBounds`.
@@ -1501,7 +1506,8 @@ pub trait TDisplayObject<'gc>:
         }
     }
 
-    /// Should only be used to implement 'Transform.concatenatedMatrix'
+    /// Returns the matrix for transforming from this object's local space to global stage space,
+    /// without applying the translation of this object's own scroll rect.
     #[no_dynamic]
     fn local_to_global_matrix_without_own_scroll_rect(self) -> Matrix {
         let mut node = self.parent();
