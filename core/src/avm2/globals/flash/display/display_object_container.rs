@@ -6,8 +6,8 @@ use swf::Twips;
 
 use crate::avm2::activation::Activation;
 use crate::avm2::error::{
-    Error2006Type, make_error_2006, make_error_2024, make_error_2025, make_error_2150,
-    make_error_2180, make_error_3783,
+    Error2006Type, make_error_2006, make_error_2024, make_error_2025, make_error_2094,
+    make_error_2150, make_error_2180, make_error_3783,
 };
 use crate::avm2::globals::slots::flash_geom_point as point_slots;
 use crate::avm2::object::{Object, TObject as _};
@@ -90,13 +90,26 @@ fn validate_remove_operation<'gc>(
 }
 
 /// Remove an element from it's parent display list.
-fn remove_child_from_displaylist<'gc>(context: &mut UpdateContext<'gc>, child: DisplayObject<'gc>) {
+///
+/// Throws error #2094 if the element is already being removed.
+fn remove_child_from_displaylist<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    child: DisplayObject<'gc>,
+) -> Result<(), Error<'gc>> {
+    if child.being_removed_by_avm2() {
+        return Err(make_error_2094(activation));
+    }
+
     if let Some(parent) = child.parent()
         && let Some(mut ctr) = parent.as_container()
     {
         child.set_placed_by_avm2_script(true);
-        ctr.remove_child(context, child);
+        child.set_being_removed_by_avm2(true);
+        ctr.remove_child(activation.context, child);
+        child.set_being_removed_by_avm2(false);
     }
+
+    Ok(())
 }
 
 /// Add the `child` to `parent`'s display list.
@@ -224,7 +237,7 @@ pub fn remove_child<'gc>(
             .expect("Child must be a display object");
 
         validate_remove_operation(activation, parent, child)?;
-        remove_child_from_displaylist(activation.context, child);
+        remove_child_from_displaylist(activation, child)?;
 
         return Ok(child.object2_or_null());
     }
@@ -309,7 +322,7 @@ pub fn remove_child_at<'gc>(
     let this = this.as_object().unwrap();
 
     if let Some(parent) = this.as_display_object()
-        && let Some(mut ctr) = parent.as_container()
+        && let Some(ctr) = parent.as_container()
     {
         let target_child = args.get_i32(0);
 
@@ -318,9 +331,7 @@ pub fn remove_child_at<'gc>(
         }
 
         let child = ctr.child_by_index(target_child as usize).unwrap();
-        child.set_placed_by_avm2_script(true);
-
-        ctr.remove_child(activation.context, child);
+        remove_child_from_displaylist(activation, child)?;
 
         return Ok(child.object2_or_null());
     }
@@ -370,7 +381,7 @@ pub fn remove_children<'gc>(
             .collect();
 
         for child in children {
-            remove_child_from_displaylist(activation.context, child);
+            remove_child_from_displaylist(activation, child)?;
         }
     }
 

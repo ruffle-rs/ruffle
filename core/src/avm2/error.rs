@@ -1100,6 +1100,7 @@ pub fn make_error_2085<'gc>(activation: &mut Activation<'_, 'gc>, param_name: &s
     ))
 }
 
+make_error_fn!(make_error_2094, 2094, error);
 make_error_fn!(make_error_2097, 2097, argument_error);
 make_error_fn!(make_error_2099, 2099, error);
 
