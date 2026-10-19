@@ -372,15 +372,21 @@ pub trait TDisplayObjectContainer<'gc>:
     #[no_dynamic]
     fn remove_child_directly(&self, context: &mut UpdateContext<'gc>, child: DisplayObject<'gc>) {
         dispatch_removed_event(child, context);
-        let this: DisplayObjectContainer<'gc> = *self;
-        self.raw_container_mut(context.gc())
+
+        // Event listeners might have moved the child to another container,
+        // in which case it's removed from there instead. They might also
+        // have removed it already, in which case there's nothing left to do.
+        let Some(this) = child.parent().and_then(|parent| parent.as_container()) else {
+            return;
+        };
+        this.raw_container_mut(context.gc())
             .remove_child_from_depth_list(child);
 
         let removed_from_render_list =
             ChildContainer::remove_child_from_render_list(this, child, context);
 
         if removed_from_render_list {
-            if !self.raw_container().is_action_script_3() {
+            if !this.raw_container().is_action_script_3() {
                 child.avm1_unload(context);
             } else if child.object2().is_some() {
                 //TODO: This is an awful, *awful* hack to deal with the fact
@@ -389,7 +395,7 @@ pub trait TDisplayObjectContainer<'gc>:
                 child.set_parent(context, None);
             }
 
-            let this: DisplayObject<'_> = (*self).into();
+            let this: DisplayObject<'_> = this.into();
             this.invalidate_cached_bitmap();
         }
     }
