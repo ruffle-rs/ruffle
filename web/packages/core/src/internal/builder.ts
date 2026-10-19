@@ -89,6 +89,9 @@ export function configureBuilder(
             parseDuration(config.maxExecutionDuration),
         );
     }
+    if (isExplicit(config.maxAvm2CallDepth)) {
+        builder.setMaxAvm2CallDepth(config.maxAvm2CallDepth);
+    }
     if (isExplicit(config.playerVersion)) {
         builder.setPlayerVersion(config.playerVersion);
     }

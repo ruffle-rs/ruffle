@@ -32,6 +32,7 @@ export const DEFAULT_CONFIG: Required<BaseLoadOptions> = {
     preloader: true,
     splashScreen: true,
     maxExecutionDuration: 15,
+    maxAvm2CallDepth: null,
     base: null,
     menu: true,
     allowFullscreen: false,
