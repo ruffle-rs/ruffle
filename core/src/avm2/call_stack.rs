@@ -3,6 +3,11 @@ use crate::avm2::method::Method;
 use crate::string::WString;
 use gc_arena::Collect;
 
+/// The maximum number of frames kept in a captured stack trace.
+///
+/// Flash Player keeps only the innermost frames.
+const MAX_CAPTURED_FRAMES: usize = 64;
+
 #[derive(Collect, Clone)]
 #[collect(no_drop)]
 pub struct CallStack<'gc> {
@@ -20,6 +25,14 @@ impl<'gc> CallStack<'gc> {
 
     pub fn pop(&mut self) {
         self.stack.pop();
+    }
+
+    /// Returns a copy of this call stack, limited to its innermost frames.
+    pub fn capture(&self) -> Self {
+        let start = self.stack.len().saturating_sub(MAX_CAPTURED_FRAMES);
+        Self {
+            stack: self.stack[start..].to_vec(),
+        }
     }
 
     pub fn display(&self, output: &mut WString) {
