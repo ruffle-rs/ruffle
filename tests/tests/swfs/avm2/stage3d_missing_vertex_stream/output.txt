@@ -1,0 +1,37 @@
+/// enableErrorChecking = false
+// all streams set
+drawTriangles did not throw
+pixel: ffff0000
+// stream 1 never set
+drawTriangles did not throw
+pixel: ff000000
+// stream 1 cleared
+drawTriangles did not throw
+pixel: ff000000
+// all streams set again
+drawTriangles did not throw
+pixel: ffff0000
+/// enableErrorChecking = true
+// all streams set
+drawTriangles did not throw
+pixel: ffff0000
+// stream 1 never set
+[class Error]
+Error: Error #3611: Stream 1 is read by the current vertex program but not set.
+	at flash.display3D::Context3D/drawTriangles()
+	at Test/runCase()
+	at Test/runTest()
+	at Test/contextCreated()
+pixel: ff000000
+// stream 1 cleared
+[class Error]
+Error: Error #3611: Stream 1 is read by the current vertex program but not set.
+	at flash.display3D::Context3D/drawTriangles()
+	at Test/runCase()
+	at Test/runTest()
+	at Test/contextCreated()
+pixel: ff000000
+// all streams set again
+drawTriangles did not throw
+pixel: ffff0000
+Done
