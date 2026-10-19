@@ -53,12 +53,13 @@ impl ShaderPairAgal {
         &self,
         descriptors: &Descriptors,
         data: ShaderCompileData,
-    ) -> RefMut<'_, CompiledShaderProgram> {
+    ) -> Result<RefMut<'_, CompiledShaderProgram>, naga_agal::Error> {
         let compiled = self.compiled.borrow_mut();
-        RefMut::map(compiled, |compiled| {
-            compiled.get_or_insert_mut_with_key(data, |data| {
+        let mut error = None;
+        RefMut::filter_map(compiled, |compiled| {
+            let result = compiled.try_get_or_insert_mut_with_key(data, |data| {
                 let vertex_naga_module =
-                    naga_agal::agal_to_naga(&self.vertex_shader, &data.vertex_attributes).unwrap();
+                    naga_agal::agal_to_naga(&self.vertex_shader, &data.vertex_attributes)?;
                 let vertex_module =
                     descriptors
                         .device
@@ -68,8 +69,7 @@ impl ShaderPairAgal {
                         });
 
                 let fragment_naga_module =
-                    naga_agal::agal_to_naga(&self.fragment_shader, &data.vertex_attributes)
-                        .unwrap();
+                    naga_agal::agal_to_naga(&self.fragment_shader, &data.vertex_attributes)?;
                 let fragment_module =
                     descriptors
                         .device
@@ -137,13 +137,15 @@ impl ShaderPairAgal {
                             entries: &layout_entries,
                         });
 
-                CompiledShaderProgram {
+                Ok(CompiledShaderProgram {
                     vertex_module,
                     fragment_module,
                     bind_group_layout,
-                }
-            })
+                })
+            });
+            result.map_err(|e| error = Some(e)).ok()
         })
+        .map_err(|_| error.expect("Compilation should have failed"))
     }
 }
 

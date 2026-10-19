@@ -868,15 +868,25 @@ impl Context3D for WgpuContext3D {
                 let indices =
                     (first_index as u32)..((first_index as u32) + (num_triangles as u32 * 3));
 
-                let unbound_required_textures =
-                    self.current_pipeline.has_unbound_required_textures();
-
-                let new_pipeline = if unbound_required_textures {
-                    None
-                } else {
-                    self.current_pipeline
-                        .rebuild_pipeline(&self.descriptors, &self.vertex_attributes)
-                };
+                let (can_draw, new_pipeline) =
+                    if self.current_pipeline.has_unbound_required_textures() {
+                        (false, None)
+                    } else {
+                        match self
+                            .current_pipeline
+                            .rebuild_pipeline(&self.descriptors, &self.vertex_attributes)
+                        {
+                            Ok(new_pipeline) => (true, new_pipeline),
+                            // Flash skips the draw when the vertex shader reads
+                            // an attribute that has no vertex buffer bound.
+                            // TODO throw Error #3611 when Context3D.enableErrorChecking is set
+                            Err(naga_agal::Error::MissingVertexAttributeData) => (false, None),
+                            Err(e) => {
+                                tracing::error!("Failed to compile AGAL shaders: {e:?}");
+                                (false, None)
+                            }
+                        }
+                    };
 
                 if !self.seen_clear_command {
                     tracing::warn!(
@@ -912,7 +922,7 @@ impl Context3D for WgpuContext3D {
                 render_pass
                     .set_index_buffer(index_buffer.buffer.slice(..), wgpu::IndexFormat::Uint16);
 
-                if !unbound_required_textures {
+                if can_draw {
                     render_pass.draw_indexed(indices, 0, 0..1);
                 }
 
