@@ -635,7 +635,7 @@ impl<'gc> Avm2<'gc> {
     }
 
     pub fn capture_call_stack(&self) -> CallStack<'gc> {
-        self.call_stack.borrow().clone()
+        self.call_stack.borrow().capture()
     }
 
     fn push_scope(&mut self, scope: Scope<'gc>) {
