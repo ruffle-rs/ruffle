@@ -277,16 +277,16 @@ impl CurrentPipeline {
 
     /// If the pipeline is dirty, recompiles it and returns `Some(freshly_compiled_pipeline`)
     /// Otherwise, returns `None`.
+    ///
+    /// If the shaders fail to compile, the pipeline stays dirty.
     pub fn rebuild_pipeline(
         &self,
         descriptors: &Descriptors,
         vertex_attributes: &[Option<VertexAttributeInfo>; MAX_VERTEX_ATTRIBUTES],
-    ) -> Option<(wgpu::RenderPipeline, wgpu::BindGroup)> {
+    ) -> Result<Option<(wgpu::RenderPipeline, wgpu::BindGroup)>, naga_agal::Error> {
         if !self.dirty.get() {
-            return None;
+            return Ok(None);
         }
-
-        self.dirty.set(false);
 
         let bind_group_label = create_debug_label!("Bind group");
 
@@ -405,7 +405,9 @@ impl CurrentPipeline {
                 vertex_attributes: agal_attributes,
                 texture_infos,
             },
-        );
+        )?;
+
+        self.dirty.set(false);
 
         let pipeline_layout_label = create_debug_label!("Pipeline layout");
         let pipeline_layout =
@@ -586,7 +588,7 @@ impl CurrentPipeline {
                 multiview_mask: None,
                 cache: None,
             });
-        Some((compiled, bind_group))
+        Ok(Some((compiled, bind_group)))
     }
 
     pub fn set_culling(&mut self, face: Context3DTriangleFace) {
