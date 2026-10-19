@@ -21,7 +21,7 @@ use std::cell::{Ref, RefMut};
 use std::cmp::Ordering;
 use std::collections::BTreeMap;
 use std::fmt::Debug;
-use std::ops::{Bound, RangeBounds};
+use std::ops::Bound;
 use std::rc::Rc;
 
 /// Dispatch the `removedFromStage` event on a child and all of it's
@@ -426,46 +426,6 @@ pub trait TDisplayObjectContainer<'gc>:
 
         self.raw_container_mut(context.gc())
             .remove_child_from_depth_list(child);
-
-        let this: DisplayObject<'_> = (*self).into();
-        this.invalidate_cached_bitmap();
-    }
-
-    /// Remove a set of children identified by their render list indices from
-    /// this container's render and depth lists.
-    #[no_dynamic]
-    fn remove_range<R>(&mut self, context: &mut UpdateContext<'gc>, range: R)
-    where
-        R: RangeBounds<usize>,
-    {
-        let removed_list: Vec<DisplayObject<'gc>> = self
-            .raw_container()
-            .iter_render_list()
-            .enumerate()
-            .filter(|(i, _)| range.contains(i))
-            .map(|(_, child)| child)
-            .collect();
-
-        for removed in removed_list.iter() {
-            dispatch_removed_event(*removed, context);
-        }
-
-        for removed in removed_list {
-            // The `remove_range` method is only ever called as a result of an ActionScript
-            // call
-            removed.set_placed_by_avm2_script(true);
-            self.raw_container_mut(context.gc())
-                .remove_child_from_depth_list(removed);
-
-            let this: DisplayObjectContainer<'gc> = *self;
-            ChildContainer::remove_child_from_render_list(this, removed, context);
-
-            if !self.raw_container().is_action_script_3() {
-                removed.avm1_unload(context);
-            } else if removed.object2().is_some() {
-                removed.set_parent(context, None);
-            }
-        }
 
         let this: DisplayObject<'_> = (*self).into();
         this.invalidate_cached_bitmap();
