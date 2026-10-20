@@ -104,8 +104,9 @@ pub struct BitmapCache {
     /// The height of the original bitmap, pre-filters
     source_height: u32,
 
-    /// The offset used to draw the final bitmap (i.e. if a filter increases the size)
-    draw_offset: Point<i32>,
+    /// The cached bitmap's origin relative to the object's translation, including filter growth.
+    /// Keep it with the pixels so that translating the object can reuse the same bitmap.
+    draw_offset: Point<Twips>,
 
     /// The current contents of the cache, if any. Values are post-filters.
     bitmap: Option<BitmapInfo>,
@@ -143,7 +144,7 @@ impl BitmapCache {
         source_height: u32,
         actual_width: u32,
         actual_height: u32,
-        draw_offset: Point<i32>,
+        draw_offset: Point<Twips>,
         swf_version: u8,
     ) {
         self.matrix_a = matrix.a;
@@ -160,8 +161,7 @@ impl BitmapCache {
             return; // No need to resize it
         }
         let acceptable_size = if swf_version > 9 {
-            let total = actual_width * actual_height;
-            actual_width < 8191 && actual_height < 8191 && total < 16777215
+            actual_width < 8191 && actual_height < 8191 && actual_width * actual_height < 16777215
         } else {
             actual_width < 2880 && actual_height < 2880
         };
@@ -948,12 +948,25 @@ impl BoundsMode {
     }
 }
 
+fn cache_contains_bitmap<'gc>(this: DisplayObject<'gc>) -> bool {
+    if this.as_bitmap().is_some() {
+        return true;
+    }
+    if let Some(container) = this.as_container() {
+        for child in container.iter_render_list() {
+            if cache_contains_bitmap(child) {
+                return true;
+            }
+        }
+    }
+    false
+}
+
 struct DrawCacheInfo {
     bitmap: BitmapInfo,
     dirty: bool,
     base_transform: Transform,
-    bounds: Rectangle<Twips>,
-    draw_offset: Point<i32>,
+    draw_offset: Point<Twips>,
     filters: Vec<Filter>,
 }
 
@@ -998,26 +1011,63 @@ pub fn render_base<'gc>(
             if width <= u16::MAX as f64 && height <= u16::MAX as f64 {
                 let width = width as u32;
                 let height = height as u32;
-                let mut filter_rect = Rectangle {
-                    x_min: Twips::ZERO,
-                    x_max: Twips::from_pixels_i32(width as i32),
-                    y_min: Twips::ZERO,
-                    y_max: Twips::from_pixels_i32(height as i32),
-                };
-                let stage_matrix = context.stage.view_matrix();
-                for filter in &mut filters {
-                    // Scaling is done by *stage view matrix* only, nothing in-between
-                    filter.scale(stage_matrix.a, stage_matrix.d);
-                    filter_rect = filter.calculate_dest_rect(filter_rect);
-                }
-                let filter_rect = Rectangle {
-                    x_min: filter_rect.x_min.to_pixels().floor() as i32,
-                    x_max: filter_rect.x_max.to_pixels().ceil() as i32,
-                    y_min: filter_rect.y_min.to_pixels().floor() as i32,
-                    y_max: filter_rect.y_max.to_pixels().ceil() as i32,
-                };
-                let draw_offset = Point::new(filter_rect.x_min, filter_rect.y_min);
-                if cache.is_dirty(&base_transform.matrix, width, height) {
+                let dirty = cache.is_dirty(&base_transform.matrix, width, height);
+                if dirty {
+                    let pixel_bounds = if cache_contains_bitmap(this) {
+                        Rectangle {
+                            x_min: base_transform.matrix.tx
+                                + Twips::from_pixels(
+                                    (bounds.x_min - base_transform.matrix.tx)
+                                        .to_pixels()
+                                        .floor(),
+                                ),
+                            y_min: base_transform.matrix.ty
+                                + Twips::from_pixels(
+                                    (bounds.y_min - base_transform.matrix.ty)
+                                        .to_pixels()
+                                        .floor(),
+                                ),
+                            x_max: base_transform.matrix.tx
+                                + Twips::from_pixels(
+                                    (bounds.x_max - base_transform.matrix.tx).to_pixels().ceil(),
+                                ),
+                            y_max: base_transform.matrix.ty
+                                + Twips::from_pixels(
+                                    (bounds.y_max - base_transform.matrix.ty).to_pixels().ceil(),
+                                ),
+                        }
+                    } else {
+                        Rectangle {
+                            x_min: bounds.x_min,
+                            y_min: bounds.y_min,
+                            x_max: bounds.x_min + Twips::from_pixels_i32(width as i32),
+                            y_max: bounds.y_min + Twips::from_pixels_i32(height as i32),
+                        }
+                    };
+                    let mut filter_rect = Rectangle {
+                        x_min: Twips::ZERO,
+                        x_max: pixel_bounds.width(),
+                        y_min: Twips::ZERO,
+                        y_max: pixel_bounds.height(),
+                    };
+                    let stage_matrix = context.stage.view_matrix();
+                    for filter in &mut filters {
+                        // Scaling is done by *stage view matrix* only, nothing in-between
+                        filter.scale(stage_matrix.a, stage_matrix.d);
+                        filter_rect = filter.calculate_dest_rect(filter_rect);
+                    }
+                    let filter_rect = Rectangle {
+                        x_min: filter_rect.x_min.to_pixels().floor() as i32,
+                        x_max: filter_rect.x_max.to_pixels().ceil() as i32,
+                        y_min: filter_rect.y_min.to_pixels().floor() as i32,
+                        y_max: filter_rect.y_max.to_pixels().ceil() as i32,
+                    };
+                    let draw_offset = Point::new(
+                        pixel_bounds.x_min - base_transform.matrix.tx
+                            + Twips::from_pixels_i32(filter_rect.x_min),
+                        pixel_bounds.y_min - base_transform.matrix.ty
+                            + Twips::from_pixels_i32(filter_rect.y_min),
+                    );
                     cache.update(
                         context.renderer,
                         base_transform.matrix,
@@ -1028,24 +1078,14 @@ pub fn render_base<'gc>(
                         draw_offset,
                         swf_version,
                     );
-                    cache_info = cache.bitmap().map(|bitmap| DrawCacheInfo {
-                        bitmap,
-                        dirty: true,
-                        base_transform,
-                        bounds,
-                        draw_offset,
-                        filters,
-                    });
-                } else {
-                    cache_info = cache.bitmap().map(|bitmap| DrawCacheInfo {
-                        bitmap,
-                        dirty: false,
-                        base_transform,
-                        bounds,
-                        draw_offset,
-                        filters,
-                    });
                 }
+                cache_info = cache.bitmap().map(|bitmap| DrawCacheInfo {
+                    bitmap,
+                    dirty,
+                    base_transform,
+                    draw_offset: cache.draw_offset,
+                    filters,
+                });
             } else {
                 if !cache.warned_for_oversize {
                     tracing::warn!(
@@ -1065,13 +1105,10 @@ pub fn render_base<'gc>(
 
     // We can't hold `cache` (which will hold `base`), so this is split up
     if let Some(cache_info) = cache_info {
-        // In order to render an object to a texture, we need to draw its entire bounds.
-        // Calculate the offset from tx/ty in order to accommodate any drawings that extend the bounds
-        // negatively
-        let offset_x = cache_info.bounds.x_min - cache_info.base_transform.matrix.tx
-            + Twips::from_pixels_i32(cache_info.draw_offset.x);
-        let offset_y = cache_info.bounds.y_min - cache_info.base_transform.matrix.ty
-            + Twips::from_pixels_i32(cache_info.draw_offset.y);
+        // Reuse the origin that was used to rasterize these pixels, including when the
+        // object has moved without regenerating its bitmap.
+        let offset_x = cache_info.draw_offset.x;
+        let offset_y = cache_info.draw_offset.y;
 
         if cache_info.dirty {
             let mut transform_stack = TransformStack::new();
