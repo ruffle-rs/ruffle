@@ -1,4 +1,4 @@
-num_frames = 90
+num_frames = 91
 
 [image_comparisons.frame05]
 trigger = 5

@@ -1,12 +1,15 @@
 package {
     import flash.display.*;
     import flash.events.Event;
+    import flash.geom.Rectangle;
     import flash.filters.*;
 
     [SWF(width="640", height="240", frameRate="30", backgroundColor="#FFFFFF")]
     public class Test extends MovieClip {
 
         private var markers:Array = [];
+        private var bodies:Array = [];
+        private var containers:Array = [];
         private var frame:int = 0;
         private var group:Sprite = new Sprite();
 
@@ -88,12 +91,19 @@ package {
                 }
 
                 markers.push(marker);
+                bodies.push(body);
+                containers.push(p);
             }
 
             clip.graphics.endFill();
             addChild(clip);
             group.mask = clip;
             addEventListener(Event.ENTER_FRAME, step);
+        }
+
+        private function formatBounds(r:Rectangle):String {
+            return r.x.toFixed(2) + "," + r.y.toFixed(2) + ","
+                + r.width.toFixed(2) + "," + r.height.toFixed(2);
         }
 
         private function step(event:Event):void {
@@ -103,7 +113,18 @@ package {
                 Shape(markers[i]).rotation = (frame - 1) * 7;
             }
 
+            if (frame == 1 || frame == 5 || frame == 17
+                || frame == 33 || frame == 90) {
+                trace("frame=" + frame);
+                for (i = 0; i < 4; i++) {
+                    trace("case=" + i
+                        + " body=" + formatBounds(Bitmap(bodies[i]).getBounds(stage))
+                        + " container=" + formatBounds(Sprite(containers[i]).getBounds(stage)));
+                }
+            }
+
             if (frame == 90) {
+                trace("DONE");
                 removeEventListener(Event.ENTER_FRAME, step);
             }
         }
