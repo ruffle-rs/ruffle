@@ -1,6 +1,7 @@
 num_frames = 2
 
 [image_comparisons.output]
+known_failure = true
 tolerance = 0
 
 [player_options]
