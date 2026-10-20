@@ -6,5 +6,10 @@ tolerance = 2
 
 [player_options]
 with_renderer = { optional = false, quality = "low" }
-with_default_font = false
-viewport_dimensions = { width = 550, height = 400, scale_factor = 1.0 }
+
+[default_fonts]
+sans = ["Noto Sans"]
+
+[fonts.noto_sans]
+family = "Noto Sans"
+path = "NotoSans.ttf"
