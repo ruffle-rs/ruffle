@@ -5,7 +5,7 @@ known_failure = true
 tolerance = 2
 
 [player_options]
-with_renderer = { optional = false, quality = "low" }
+with_renderer = { optional = false }
 
 [default_fonts]
 sans = ["Noto Sans"]
