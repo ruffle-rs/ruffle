@@ -1,0 +1,5 @@
+Bytearray length is 4, contents are 0,0,0,0
+Bytearray length is 4, contents are 2,0,0,0
+Bytearray length is 2, contents are 2,4
+Bytearray length is 4, contents are 2,4,0,0
+Bytearray length is 4, contents are 2,4,0,0
