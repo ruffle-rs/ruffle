@@ -43,7 +43,7 @@ impl<W: Write + Seek> BundleExporter<W> {
         path: P,
         content: &mut R,
     ) -> BundleExportResult<()> {
-        let options: FileOptions<'_, ()> = FileOptions::default();
+        let options: FileOptions<'_, '_, ()> = FileOptions::default();
 
         self.writer
             .start_file_from_path(Path::new("content").join(path), options)?;
@@ -60,7 +60,7 @@ impl<W: Write + Seek> BundleExporter<W> {
     }
 
     fn write_info(&mut self) -> BundleExportResult<()> {
-        let options: FileOptions<'_, ()> = FileOptions::default();
+        let options: FileOptions<'_, '_, ()> = FileOptions::default();
 
         self.writer
             .start_file_from_path(Path::new(BUNDLE_INFORMATION_FILENAME), options)?;
