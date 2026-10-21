@@ -1,6 +1,7 @@
 use crate::buffer_builder::{BufferBuilder, BufferFull};
 use crate::descriptors::{Descriptors, Quad};
 use crate::{PosColorVertex, PosUvVertex, PosVertex, Transforms};
+use ruffle_render::transform::Transform;
 use std::ops::Range;
 use wgpu::util::StagingBelt;
 
@@ -189,17 +190,36 @@ impl ChunkBufferBuilder {
         }
     }
 
+    fn add_transform(&mut self, transform: &Transform) -> Result<u32, BufferFull> {
+        let instance = Transforms {
+            world_matrix: [
+                [transform.matrix.a, transform.matrix.b, 0.0, 0.0],
+                [transform.matrix.c, transform.matrix.d, 0.0, 0.0],
+                [0.0, 0.0, 1.0, 0.0],
+                [
+                    transform.matrix.tx.to_pixels() as f32,
+                    transform.matrix.ty.to_pixels() as f32,
+                    transform.tz as f32,
+                    1.0,
+                ],
+            ],
+            mult_color: transform.color_transform.mult_rgba_normalized(),
+            add_color: transform.color_transform.add_rgba_normalized(),
+        };
+        let address = self.transforms.add(&[instance])?;
+        Ok((address.start as usize / size_of::<Transforms>()) as u32)
+    }
+
     pub fn add<'a>(
         &mut self,
         quad: &Quad,
-        transform: Transforms,
+        transform: &Transform,
         vertices: DrawVertices<'a>,
     ) -> Result<DrawOffsets, (BufferFull, DrawVertices<'a>)> {
-        let transform_address = match self.transforms.add(&[transform]) {
+        let instance = match self.add_transform(transform) {
             Ok(address) => address,
             Err(e) => return Err((e, vertices)),
         };
-        let instance = (transform_address.start as usize / size_of::<Transforms>()) as u32;
         let instances = instance..instance + 1;
         Ok(match vertices {
             DrawVertices::CustomPosUvQuad(vertex_bytes) => DrawOffsets {
