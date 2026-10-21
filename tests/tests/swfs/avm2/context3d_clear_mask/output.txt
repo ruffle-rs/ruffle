@@ -1,0 +1,4 @@
+ALL: 7
+COLOR: 1
+DEPTH: 2
+STENCIL: 4

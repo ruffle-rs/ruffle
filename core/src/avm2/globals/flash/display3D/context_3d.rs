@@ -238,6 +238,11 @@ pub fn draw_to_bitmap_data<'gc>(
             .as_bitmap_data()
             .unwrap();
 
+        // Before the back buffer is configured, Flash silently does nothing.
+        let Some(source_handle) = context.with_context_3d(|ctx| ctx.back_buffer_handle()) else {
+            return Ok(Value::Undefined);
+        };
+
         // Flash requires every buffer to be cleared each frame before drawing.
         // `present` resets that state, so reading the back buffer with no
         // intervening `clear` throws Error #3692, just like `drawTriangles`.
@@ -249,9 +254,9 @@ pub fn draw_to_bitmap_data<'gc>(
         // `present`), matching Flash's `drawToBitmapData`. Blit it into the
         // destination BitmapData's GPU target, then mark it dirty so the pixels
         // are read back on next access.
-        let (source_handle, source_size) =
-            context.with_context_3d(|ctx| (ctx.back_buffer_handle(), ctx.back_buffer_size()));
-        let (source_width, source_height) = source_size.unwrap_or_default();
+        let (source_width, source_height) = context
+            .with_context_3d(|ctx| ctx.back_buffer_size())
+            .unwrap_or_default();
 
         let mut commands = CommandList::new();
         commands.render_bitmap(
