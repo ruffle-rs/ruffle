@@ -190,7 +190,7 @@ impl ChunkBufferBuilder {
         }
     }
 
-    fn add_transform(&mut self, transform: &Transform) -> Result<u32, BufferFull> {
+    pub fn add_transform(&mut self, transform: &Transform) -> Result<u32, BufferFull> {
         let instance = Transforms {
             world_matrix: [
                 [transform.matrix.a, transform.matrix.b, 0.0, 0.0],
@@ -210,16 +210,12 @@ impl ChunkBufferBuilder {
         Ok((address.start as usize / size_of::<Transforms>()) as u32)
     }
 
-    pub fn add<'a>(
+    pub fn add_draw<'a>(
         &mut self,
         quad: &Quad,
-        transform: &Transform,
+        instance: u32,
         vertices: DrawVertices<'a>,
     ) -> Result<DrawOffsets, (BufferFull, DrawVertices<'a>)> {
-        let instance = match self.add_transform(transform) {
-            Ok(address) => address,
-            Err(e) => return Err((e, vertices)),
-        };
         let instances = instance..instance + 1;
         Ok(match vertices {
             DrawVertices::CustomPosUvQuad(vertex_bytes) => DrawOffsets {
