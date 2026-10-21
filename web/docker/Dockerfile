@@ -2,7 +2,11 @@
 # rm -rf web/docker/docker_builds/packages/*
 # docker build --tag ruffle-web-docker -f web/docker/Dockerfile .
 # docker cp $(docker create ruffle-web-docker:latest):/ruffle/web/packages web/docker/docker_builds/packages
-FROM node:24
+FROM node:24-alpine
+
+# Have to install GNU programs for these, as the BusyBox applets
+# in the image don't support the options we need (wildcard and progress).
+RUN apk add --no-cache wget tar build-base
 
 # Installing wasm-opt from GitHub:
 # Keep the version number in sync with the ones in the Actions workflows!
