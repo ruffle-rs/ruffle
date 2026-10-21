@@ -813,6 +813,14 @@ impl<'gc> DisplayObjectBase<'gc> {
         self.set_flag(DisplayObjectFlags::PLACED_BY_AVM2_SCRIPT, value);
     }
 
+    fn being_removed_by_avm2(&self) -> bool {
+        self.contains_flag(DisplayObjectFlags::BEING_REMOVED_BY_AVM2)
+    }
+
+    fn set_being_removed_by_avm2(&self, value: bool) {
+        self.set_flag(DisplayObjectFlags::BEING_REMOVED_BY_AVM2, value);
+    }
+
     fn manual_frame_construct(&self) -> bool {
         self.contains_flag(DisplayObjectFlags::MANUAL_FRAME_CONSTRUCT)
     }
@@ -2306,6 +2314,18 @@ pub trait TDisplayObject<'gc>:
         self.base().set_placed_by_avm2_script(value)
     }
 
+    /// Whether this display object is being removed by `removeChild`,
+    /// `removeChildAt` or `removeChildren`.
+    #[no_dynamic]
+    fn being_removed_by_avm2(self) -> bool {
+        self.base().being_removed_by_avm2()
+    }
+
+    #[no_dynamic]
+    fn set_being_removed_by_avm2(self, value: bool) {
+        self.base().set_being_removed_by_avm2(value)
+    }
+
     #[no_dynamic]
     fn manual_frame_construct(&self) -> bool {
         self.base().manual_frame_construct()
@@ -3071,6 +3091,12 @@ bitflags! {
         /// (they need to be instantiated "manually" by
         /// `Sprite.constructChildren`).
         const MANUAL_FRAME_CONSTRUCT  = 1 << 16;
+
+        /// Whether this object is being removed by `removeChild`,
+        /// `removeChildAt` or `removeChildren`, which dispatch its removal
+        /// events before removing it. Removing it again with these methods in
+        /// the meantime throws an error.
+        const BEING_REMOVED_BY_AVM2   = 1 << 17;
     }
 }
 
