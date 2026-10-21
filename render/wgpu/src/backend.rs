@@ -585,7 +585,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
                     &self.meshes,
                     entry.commands,
                     &mut self.active_frame.staging_belt,
-                    &self.chunk_buffers,
+                    &mut self.chunk_buffers,
                     &mut self
                         .profiler
                         .scope("Draw to CAB", &mut self.active_frame.command_encoder),
@@ -614,7 +614,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
                     &self.meshes,
                     entry.commands,
                     &mut self.active_frame.staging_belt,
-                    &self.chunk_buffers,
+                    &mut self.chunk_buffers,
                     &mut scope.scope("Draw to CAB"),
                     LayerRef::None,
                     &mut self.offscreen_texture_pool,
@@ -654,7 +654,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
             }),
             &self.descriptors,
             &mut self.active_frame.staging_belt,
-            &self.chunk_buffers,
+            &mut self.chunk_buffers,
             &mut self
                 .profiler
                 .scope("Frame commands", &mut self.active_frame.command_encoder),
@@ -828,7 +828,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
             RenderTargetMode::FreshWithTexture(target.get_texture()),
             &self.descriptors,
             &mut self.active_frame.staging_belt,
-            &self.chunk_buffers,
+            &mut self.chunk_buffers,
             &mut self
                 .profiler
                 .scope("Offscreen commands", &mut self.active_frame.command_encoder),

@@ -74,7 +74,7 @@ impl Surface {
         render_target_mode: RenderTargetMode,
         descriptors: &'global Descriptors,
         staging_belt: &'global mut wgpu::util::StagingBelt,
-        chunk_buffers: &'global ChunkBuffers,
+        chunk_buffers: &'global mut ChunkBuffers,
         draw_encoder: &'encoder mut Scope<'global, wgpu::CommandEncoder>,
         meshes: &'global Vec<Mesh>,
         commands: CommandList,
@@ -112,7 +112,7 @@ impl Surface {
         meshes: &'encoder Vec<Mesh>,
         commands: CommandList,
         staging_belt: &'encoder mut wgpu::util::StagingBelt,
-        chunk_buffers: &'encoder ChunkBuffers,
+        chunk_buffers: &'encoder mut ChunkBuffers,
         draw_encoder: &'encoder mut Scope<'global, wgpu::CommandEncoder>,
         nearest_layer: LayerRef<'encoder>,
         texture_pool: &'encoder mut TexturePool,
@@ -152,7 +152,12 @@ impl Surface {
                     needs_stencil,
                     chunk_buffer_builder,
                 } => {
-                    chunk_buffer_builder.copy_to(staging_belt, draw_encoder, chunk_buffers);
+                    chunk_buffer_builder.copy_to(
+                        staging_belt,
+                        &descriptors.device,
+                        draw_encoder,
+                        chunk_buffers,
+                    );
                     let mut render_pass = draw_encoder.scoped_render_pass(
                         format!(
                             "Chunked draw calls {}",
