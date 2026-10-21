@@ -157,13 +157,24 @@ impl<'encoder, 'global: 'encoder> WgpuCommandHandler<'encoder, 'global> {
     fn add_to_current(
         &mut self,
         transform: &Transform,
+        instance: &mut Option<u32>,
         vertices: DrawVertices,
         command_builder: impl FnOnce(DrawOffsets) -> DrawCommand,
     ) {
-        match self
-            .chunk_buffer_builder
-            .add(&self.descriptors.quad, transform, vertices)
-        {
+        let result = match *instance {
+            Some(existing) => Ok(existing),
+            None => self.chunk_buffer_builder.add_transform(transform),
+        };
+        let result = match result {
+            Ok(new_instance) => {
+                *instance = Some(new_instance);
+                self.chunk_buffer_builder
+                    .add_draw(&self.descriptors.quad, new_instance, vertices)
+            }
+            Err(e) => Err((e, vertices)),
+        };
+
+        match result {
             Ok(offsets) => {
                 self.push_command(command_builder(offsets));
             }
@@ -176,9 +187,16 @@ impl<'encoder, 'global: 'encoder> WgpuCommandHandler<'encoder, 'global> {
                         ChunkBufferBuilder::new(self.chunk_buffers, &self.descriptors.limits),
                     ),
                 });
+                // The transform may already have been written to the old builder, but it's not valid
+                // in the new one - so we must write it again.
+                let new_instance = self
+                    .chunk_buffer_builder
+                    .add_transform(transform)
+                    .expect("Buffer must be able to fit a new transform, it was just emptied");
+                *instance = Some(new_instance);
                 let offsets = self
                     .chunk_buffer_builder
-                    .add(&self.descriptors.quad, transform, vertices)
+                    .add_draw(&self.descriptors.quad, new_instance, vertices)
                     .expect("Buffer must be able to fit a new thing, it was just emptied");
                 self.push_command(command_builder(offsets));
             }
@@ -255,15 +273,18 @@ impl CommandHandler for WgpuCommandHandler<'_, '_> {
                             ],
                             label: None,
                         });
-                self.add_to_current(&transform, DrawVertices::PosUvQuad, |draw_offsets| {
-                    DrawCommand::RenderTexture {
+                self.add_to_current(
+                    &transform,
+                    &mut None,
+                    DrawVertices::PosUvQuad,
+                    |draw_offsets| DrawCommand::RenderTexture {
                         _texture: Some(texture),
                         binds: bind_group,
                         draw_offsets,
                         blend_mode,
                         render_stage3d: false,
-                    }
-                });
+                    },
+                );
             }
             blend_type => {
                 if !self.current.is_empty() {
@@ -330,6 +351,7 @@ impl CommandHandler for WgpuCommandHandler<'_, '_> {
 
         self.add_to_current(
             &transform,
+            &mut None,
             DrawVertices::CustomPosUvQuad(bytemuck::cast_slice(vertices)),
             |draw_offsets| DrawCommand::RenderTexture {
                 _texture: Some(PoolOrArcTexture::Manual((
@@ -362,8 +384,11 @@ impl CommandHandler for WgpuCommandHandler<'_, '_> {
             bitmap.clone(),
             &self.descriptors.bitmap_samplers,
         );
-        self.add_to_current(&transform, DrawVertices::PosUvQuad, |draw_offsets| {
-            DrawCommand::RenderTexture {
+        self.add_to_current(
+            &transform,
+            &mut None,
+            DrawVertices::PosUvQuad,
+            |draw_offsets| DrawCommand::RenderTexture {
                 _texture: Some(PoolOrArcTexture::Manual((
                     texture.texture.clone(),
                     texture.view.clone(),
@@ -372,12 +397,13 @@ impl CommandHandler for WgpuCommandHandler<'_, '_> {
                 blend_mode: TrivialBlend::Normal,
                 render_stage3d: true,
                 binds: binds.bind_group.clone(),
-            }
-        });
+            },
+        );
     }
 
     fn render_shape(&mut self, shape: ShapeHandle, transform: Transform) {
         let mesh = as_mesh(&shape);
+        let mut instance = None;
         for draw in &mesh.draws {
             let indices = if self.mask_state.mode != MaskMode::DrawMaskStencil
                 && self.mask_state.mode != MaskMode::ClearMaskStencil
@@ -399,12 +425,12 @@ impl CommandHandler for WgpuCommandHandler<'_, '_> {
             };
             match &draw.draw_type {
                 DrawType::Color => {
-                    self.add_to_current(&transform, vertices, |draw_offsets| {
+                    self.add_to_current(&transform, &mut instance, vertices, |draw_offsets| {
                         DrawCommand::DrawColor { draw_offsets }
                     });
                 }
                 DrawType::Gradient { bind_group } => {
-                    self.add_to_current(&transform, vertices, |draw_offsets| {
+                    self.add_to_current(&transform, &mut instance, vertices, |draw_offsets| {
                         DrawCommand::RenderGradient {
                             bind_group: bind_group.clone(),
                             draw_offsets,
@@ -412,7 +438,7 @@ impl CommandHandler for WgpuCommandHandler<'_, '_> {
                     });
                 }
                 DrawType::Bitmap { binds } => {
-                    self.add_to_current(&transform, vertices, |draw_offsets| {
+                    self.add_to_current(&transform, &mut instance, vertices, |draw_offsets| {
                         DrawCommand::RenderTexture {
                             _texture: None,
                             binds: binds.bind_group.clone(),
@@ -434,6 +460,7 @@ impl CommandHandler for WgpuCommandHandler<'_, '_> {
                 color_transform: ColorTransform::multiply_from(color),
                 perspective_projection: None,
             },
+            &mut None,
             DrawVertices::PosColorQuad,
             |draw_offsets| DrawCommand::DrawColor { draw_offsets },
         );
@@ -454,6 +481,7 @@ impl CommandHandler for WgpuCommandHandler<'_, '_> {
                     color_transform: ColorTransform::multiply_from(color),
                     perspective_projection: None,
                 },
+                &mut None,
                 DrawVertices::Line,
                 |draw_offsets| DrawCommand::DrawLine { draw_offsets },
             );
@@ -475,6 +503,7 @@ impl CommandHandler for WgpuCommandHandler<'_, '_> {
                     color_transform: ColorTransform::multiply_from(color),
                     perspective_projection: None,
                 },
+                &mut None,
                 DrawVertices::RectLine,
                 |draw_offsets| DrawCommand::DrawLine { draw_offsets },
             );
@@ -574,6 +603,7 @@ impl CommandHandler for WgpuCommandHandler<'_, '_> {
                 color_transform: Default::default(),
                 perspective_projection: None,
             },
+            &mut None,
             DrawVertices::PosQuad,
             |draw_offsets| DrawCommand::RenderAlphaMask {
                 maskee,
