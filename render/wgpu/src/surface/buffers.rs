@@ -25,21 +25,21 @@ pub fn transforms_per_draw(limits: &wgpu::Limits) -> u64 {
 impl ChunkBuffers {
     pub fn new(descriptors: &Descriptors) -> Self {
         let transforms = descriptors.device.create_buffer(&wgpu::BufferDescriptor {
-            label: None,
+            label: create_debug_label!("Chunk transform buffer").as_deref(),
             size: transforms_per_draw(&descriptors.limits) * size_of::<Transforms>() as u64,
             usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
             mapped_at_creation: false,
         });
         let vertex_buffer = descriptors.device.create_buffer(&wgpu::BufferDescriptor {
-            label: None,
-            size: descriptors.limits.max_buffer_size,
+            label: create_debug_label!("Chunk vertex buffer").as_deref(),
+            size: 1024,
             usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
             mapped_at_creation: false,
         });
         let bind_group = descriptors
             .device
             .create_bind_group(&wgpu::BindGroupDescriptor {
-                label: None,
+                label: create_debug_label!("Chunk transforms bind group").as_deref(),
                 layout: &descriptors.bind_layouts.transforms,
                 entries: &[wgpu::BindGroupEntry {
                     binding: 0,
@@ -50,6 +50,17 @@ impl ChunkBuffers {
             transforms,
             bind_group,
             vertex_buffer,
+        }
+    }
+
+    pub fn ensure_vertex_buffer_fit(&mut self, device: &wgpu::Device, required_size: u64) {
+        if self.vertex_buffer.size() < required_size {
+            self.vertex_buffer = device.create_buffer(&wgpu::BufferDescriptor {
+                label: create_debug_label!("Chunk vertex buffer").as_deref(),
+                size: required_size,
+                usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
+                mapped_at_creation: false,
+            });
         }
     }
 }
@@ -110,7 +121,6 @@ impl ChunkBufferBuilder {
         let mut transforms = BufferBuilder::new(limits, 0);
         transforms.set_buffer_limit(chunk_buffers.transforms.size());
         let mut vertices = BufferBuilder::new(limits, 0);
-        vertices.set_buffer_limit(chunk_buffers.vertex_buffer.size());
 
         // It's extremely likely that every chunk will have a quad, so let's prime those eagerly and save some complexity later
         let quad_pos_uv_vertices = vertices
@@ -255,11 +265,13 @@ impl ChunkBufferBuilder {
     pub fn copy_to(
         self,
         staging_belt: &mut StagingBelt,
+        device: &wgpu::Device,
         draw_encoder: &mut wgpu::CommandEncoder,
-        chunk_buffers: &ChunkBuffers,
+        chunk_buffers: &mut ChunkBuffers,
     ) {
         self.transforms
             .copy_to(staging_belt, draw_encoder, &chunk_buffers.transforms);
+        chunk_buffers.ensure_vertex_buffer_fit(device, self.vertices.len() as u64);
         self.vertices
             .copy_to(staging_belt, draw_encoder, &chunk_buffers.vertex_buffer);
     }
