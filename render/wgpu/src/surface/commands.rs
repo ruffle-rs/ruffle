@@ -325,21 +325,6 @@ impl CommandHandler for WgpuCommandHandler<'_, '_> {
         pixel_snapping.apply(&mut transform.matrix);
         transform.matrix *= Matrix::scale(region.width() as f32, region.height() as f32);
 
-        let vertices: &[PosUvVertex] = {
-            let (u0, u1, v0, v1) = (
-                region.x_min as f32 / texture.texture.width() as f32,
-                region.x_max as f32 / texture.texture.width() as f32,
-                region.y_min as f32 / texture.texture.height() as f32,
-                region.y_max as f32 / texture.texture.height() as f32,
-            );
-            &[
-                PosUvVertex::new(0.0, 0.0, u0, v0, 1.0),
-                PosUvVertex::new(1.0, 0.0, u1, v0, 1.0),
-                PosUvVertex::new(1.0, 1.0, u1, v1, 1.0),
-                PosUvVertex::new(0.0, 1.0, u0, v1, 1.0),
-            ]
-        };
-
         let binds = texture.bind_group(
             false,
             smoothing,
@@ -349,21 +334,52 @@ impl CommandHandler for WgpuCommandHandler<'_, '_> {
             &self.descriptors.bitmap_samplers,
         );
 
-        self.add_to_current(
-            &transform,
-            &mut None,
-            DrawVertices::CustomPosUvQuad(bytemuck::cast_slice(vertices)),
-            |draw_offsets| DrawCommand::RenderTexture {
-                _texture: Some(PoolOrArcTexture::Manual((
-                    texture.texture.clone(),
-                    texture.view.clone(),
-                ))),
-                binds: binds.bind_group.clone(),
-                draw_offsets,
-                blend_mode: TrivialBlend::Normal,
-                render_stage3d: false,
-            },
-        );
+        let command_builder = |draw_offsets| DrawCommand::RenderTexture {
+            _texture: Some(PoolOrArcTexture::Manual((
+                texture.texture.clone(),
+                texture.view.clone(),
+            ))),
+            binds: binds.bind_group.clone(),
+            draw_offsets,
+            blend_mode: TrivialBlend::Normal,
+            render_stage3d: false,
+        };
+
+        let texture_width = texture.texture.width();
+        let texture_height = texture.texture.height();
+
+        if region.x_min == 0
+            && region.y_min == 0
+            && region.width() == texture_width
+            && region.height() == texture_height
+        {
+            // Special case "full texture" so that we can merge subsequent draw calls
+            self.add_to_current(
+                &transform,
+                &mut None,
+                DrawVertices::PosUvQuad,
+                command_builder,
+            );
+        } else {
+            let (u0, u1, v0, v1) = (
+                region.x_min as f32 / texture_width as f32,
+                region.x_max as f32 / texture_width as f32,
+                region.y_min as f32 / texture_height as f32,
+                region.y_max as f32 / texture_height as f32,
+            );
+            let vertices = &[
+                PosUvVertex::new(0.0, 0.0, u0, v0, 1.0),
+                PosUvVertex::new(1.0, 0.0, u1, v0, 1.0),
+                PosUvVertex::new(1.0, 1.0, u1, v1, 1.0),
+                PosUvVertex::new(0.0, 1.0, u0, v1, 1.0),
+            ];
+            self.add_to_current(
+                &transform,
+                &mut None,
+                DrawVertices::CustomPosUvQuad(bytemuck::cast_slice(vertices)),
+                command_builder,
+            );
+        };
     }
 
     fn render_stage3d(&mut self, bitmap: BitmapHandle, mut transform: Transform) {
