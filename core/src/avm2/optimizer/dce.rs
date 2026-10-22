@@ -3,6 +3,10 @@ use crate::avm2::op::Op;
 use std::cell::Cell;
 use std::collections::HashSet;
 
+/// An extremely basic dead code elimination pass.
+///
+/// This pass only serves to remove some easily removable dead code. There may
+/// still be unreachable blocks present after this pass.
 pub fn eliminate_dead_code(ops: &[Cell<Op<'_>>], jump_targets: &HashSet<usize>) {
     // Remove jumps and the code that they jump over when the code inside the
     // jump is unreachable
