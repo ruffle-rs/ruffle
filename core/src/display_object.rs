@@ -119,16 +119,20 @@ impl BitmapCache {
     /// Forcefully make this BitmapCache invalid and require regeneration.
     /// This should be used for changes that aren't automatically detected, such as children.
     pub fn make_dirty(&mut self) {
-        // Setting the old transform to something invalid is a cheap way of making it invalid,
-        // without reserving an extra field for.
-        self.matrix_a = f32::NAN;
+        // No cache source can be this wide. Keep the last transform intact so that
+        // regeneration can distinguish content changes from scale or rotation changes.
+        self.source_width = u32::MAX;
+    }
+
+    fn has_same_linear_transform(&self, other: &Matrix) -> bool {
+        self.matrix_a == other.a
+            && self.matrix_b == other.b
+            && self.matrix_c == other.c
+            && self.matrix_d == other.d
     }
 
     fn is_dirty(&self, other: &Matrix, source_width: u32, source_height: u32) -> bool {
-        self.matrix_a != other.a
-            || self.matrix_b != other.b
-            || self.matrix_c != other.c
-            || self.matrix_d != other.d
+        !self.has_same_linear_transform(other)
             || self.source_width != source_width
             || self.source_height != source_height
             || self.bitmap.is_none()
@@ -1013,11 +1017,13 @@ pub fn render_base<'gc>(
                 let height = height as u32;
                 let dirty = cache.is_dirty(&base_transform.matrix, width, height);
                 if dirty {
-                    // Preserve the vector cache's initial subpixel raster origin
-                    // when regenerating it after its bounds change.
+                    // Preserve the vector cache's raster phase across content changes.
+                    // Scale or rotation changes establish a new raster grid.
                     let raster_anchor = if cache_contains_bitmap(this) {
                         Point::new(Twips::ZERO, Twips::ZERO)
-                    } else if cache.bitmap.is_some() {
+                    } else if cache.bitmap.is_some()
+                        && cache.has_same_linear_transform(&base_transform.matrix)
+                    {
                         cache.draw_offset
                     } else {
                         Point::new(
