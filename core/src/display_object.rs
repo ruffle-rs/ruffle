@@ -1013,36 +1013,29 @@ pub fn render_base<'gc>(
                 let height = height as u32;
                 let dirty = cache.is_dirty(&base_transform.matrix, width, height);
                 if dirty {
-                    let pixel_bounds = if cache_contains_bitmap(this) {
-                        Rectangle {
-                            x_min: base_transform.matrix.tx
-                                + Twips::from_pixels(
-                                    (bounds.x_min - base_transform.matrix.tx)
-                                        .to_pixels()
-                                        .floor(),
-                                ),
-                            y_min: base_transform.matrix.ty
-                                + Twips::from_pixels(
-                                    (bounds.y_min - base_transform.matrix.ty)
-                                        .to_pixels()
-                                        .floor(),
-                                ),
-                            x_max: base_transform.matrix.tx
-                                + Twips::from_pixels(
-                                    (bounds.x_max - base_transform.matrix.tx).to_pixels().ceil(),
-                                ),
-                            y_max: base_transform.matrix.ty
-                                + Twips::from_pixels(
-                                    (bounds.y_max - base_transform.matrix.ty).to_pixels().ceil(),
-                                ),
-                        }
+                    // Preserve the vector cache's initial subpixel raster origin
+                    // when regenerating it after its bounds change.
+                    let raster_anchor = if cache_contains_bitmap(this) {
+                        Point::new(Twips::ZERO, Twips::ZERO)
+                    } else if cache.bitmap.is_some() {
+                        cache.draw_offset
                     } else {
-                        Rectangle {
-                            x_min: bounds.x_min,
-                            y_min: bounds.y_min,
-                            x_max: bounds.x_min + Twips::from_pixels_i32(width as i32),
-                            y_max: bounds.y_min + Twips::from_pixels_i32(height as i32),
-                        }
+                        Point::new(
+                            bounds.x_min - base_transform.matrix.tx,
+                            bounds.y_min - base_transform.matrix.ty,
+                        )
+                    };
+                    let origin_x = base_transform.matrix.tx + raster_anchor.x;
+                    let origin_y = base_transform.matrix.ty + raster_anchor.y;
+                    let pixel_bounds = Rectangle {
+                        x_min: origin_x
+                            + Twips::from_pixels((bounds.x_min - origin_x).to_pixels().floor()),
+                        y_min: origin_y
+                            + Twips::from_pixels((bounds.y_min - origin_y).to_pixels().floor()),
+                        x_max: origin_x
+                            + Twips::from_pixels((bounds.x_max - origin_x).to_pixels().ceil()),
+                        y_max: origin_y
+                            + Twips::from_pixels((bounds.y_max - origin_y).to_pixels().ceil()),
                     };
                     let mut filter_rect = Rectangle {
                         x_min: Twips::ZERO,
