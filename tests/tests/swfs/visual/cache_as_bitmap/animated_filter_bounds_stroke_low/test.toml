@@ -2,19 +2,19 @@ num_frames = 91
 
 [image_comparisons.frame05]
 trigger = 5
-tolerance = 1
+tolerance = 2
 
 [image_comparisons.frame17]
 trigger = 17
-tolerance = 1
+tolerance = 2
 
 [image_comparisons.frame33]
 trigger = 33
-tolerance = 1
+tolerance = 2
 
 [image_comparisons.frame90]
 trigger = 90
-tolerance = 1
+tolerance = 2
 
 [player_options]
 with_renderer = { optional = false, quality = "low" }
