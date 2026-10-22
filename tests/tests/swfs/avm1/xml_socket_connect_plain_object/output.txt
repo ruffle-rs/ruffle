@@ -1,0 +1,6 @@
+connect returned: true
+instanceof XMLSocket: false
+onConnect: true
+send returned: 
+onData: <root><item /></root>
+onClose
