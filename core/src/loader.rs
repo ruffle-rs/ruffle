@@ -2221,6 +2221,11 @@ impl<'gc> MovieLoader<'gc> {
                     && dobj.as_movie_clip().is_none()
                 {
                     loader_info.fire_init_and_complete_events(uc, status, redirected);
+                    if let Some(loader) = loader_info.loader()
+                        && let DisplayObject::LoaderDisplay(loader) = loader.display_object()
+                    {
+                        loader.cache_html_image_bounds();
+                    }
                 }
             }
         }
