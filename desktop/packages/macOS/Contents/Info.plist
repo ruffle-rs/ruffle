@@ -26,5 +26,24 @@
     </array>
     <key>NSAccentColorName</key>
     <string>RuffleOrange</string>
+    <key>CFBundleDocumentTypes</key>
+    <array>
+        <dict>
+            <key>CFBundleTypeExtensions</key>
+            <array>
+                <string>swf</string>
+            </array>
+            <key>CFBundleTypeName</key>
+            <string>Flash file</string>
+            <key>CFBundleTypeRole</key>
+            <string>Viewer</string>
+            <key>LSHandlerRank</key>
+            <string>Default</string>
+            <key>LSItemContentTypes</key>
+            <array>
+                <string>com.macromedia.shockwave-flash</string>
+            </array>
+        </dict>
+    </array>
 </dict>
 </plist>
