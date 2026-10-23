@@ -8,6 +8,9 @@
 *.frag			linguist-language=GLSL
 *.vert			linguist-language=GLSL
 
+# swfasm sources are written in RON
+*.swfasm linguist-language=RON
+
 # Binary files
 *.png  binary
 *.fla  binary
