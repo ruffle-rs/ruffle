@@ -848,7 +848,10 @@ fn hit_test<'gc>(
         } else {
             (0, 0)
         };
-        let second_threshold = args.get_i32(activation, 4)?.clamp(0, u8::MAX.into()) as u8;
+        let second_threshold = args
+            .try_get_i32(activation, 4, UndefinedAs::Some)?
+            .unwrap_or(1)
+            .clamp(0, u8::MAX.into()) as u8;
 
         let result = operations::hit_test_bitmapdata(
             activation.context.renderer,
