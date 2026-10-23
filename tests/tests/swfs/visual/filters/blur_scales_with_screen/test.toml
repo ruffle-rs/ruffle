@@ -1,8 +1,18 @@
 num_frames = 1
 
-[image_comparisons.output]
-known_failure = true
+# Blur colors differ from Flash, mostly by 13–14 or 26–27 channel values.
+# Bound the affected channel count and the larger differences separately.
+[[image_comparisons.output.checks]]
 tolerance = 2
+max_outliers = 60000
+
+[[image_comparisons.output.checks]]
+tolerance = 27
+max_outliers = 750
+
+[[image_comparisons.output.checks]]
+tolerance = 30
+max_outliers = 0
 
 [player_options]
 with_renderer = { optional = false, quality = "low" }
