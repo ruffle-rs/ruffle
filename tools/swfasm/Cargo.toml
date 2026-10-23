@@ -16,3 +16,12 @@ clap = { workspace = true }
 ron = "0.12.2"
 serde = { workspace = true, features = ["derive"] }
 swf = { path = "../../swf" }
+
+[dev-dependencies]
+libtest-mimic = { workspace = true }
+ruffle_fs_tests_runner = { path = "../../tests/fs-tests-runner" }
+walkdir = { workspace = true }
+
+[[test]]
+name = "examples"
+harness = false

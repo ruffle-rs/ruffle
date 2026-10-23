@@ -5815,9 +5815,12 @@ version = "0.7.1"
 dependencies = [
  "anyhow",
  "clap",
+ "libtest-mimic",
  "ron",
+ "ruffle_fs_tests_runner",
  "serde",
  "swf 0.3.0",
+ "walkdir",
 ]
 
 [[package]]
