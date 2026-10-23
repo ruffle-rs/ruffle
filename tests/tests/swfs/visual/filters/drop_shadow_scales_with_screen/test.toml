@@ -5,5 +5,5 @@ known_failure = true
 tolerance = 2
 
 [player_options]
-with_renderer = { optional = false, quality = "low" }
+with_renderer = { optional = false }
 viewport_dimensions = { width = 800, height = 400, scale_factor = 1.0 }
