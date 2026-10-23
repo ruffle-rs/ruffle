@@ -1,0 +1,26 @@
+// Low-level control over the encoding, e.g. for creating malformed SWFs.
+Swf(
+    version: 10,
+    tags: [
+        FileAttributes(),
+
+        // A tag with an arbitrary code and body, here SetBackgroundColor.
+        // Binary data can be split into parts, so that each one can be
+        // commented.
+        Raw(code: 9, data: [
+            "ff", // red
+            "80", // green
+            "00", // blue
+        ]),
+
+        // A tag with a code that does not exist.
+        Raw(code: 1000, data: "de ad be ef"),
+
+        // Short bodies use the short header form by default, `force_long`
+        // forces the long one.
+        Raw(code: 1, force_long: true, data: ""),
+
+        ShowFrame,
+        End,
+    ],
+)

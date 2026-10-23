@@ -1,0 +1,13 @@
+// The SWF header, and a timeline of two frames that stops on the second one.
+Swf(
+    version: 8,
+    stage: (width: 320, height: 240),   // pixels, default 550x400
+    frame_rate: 30,                     // frames per second, default 24
+    num_frames: 2,                      // default: the number of ShowFrame tags
+    tags: [
+        FileAttributes(),
+        SetBackgroundColor(0x336699),   // 0xRRGGBB
+        ShowFrame,
+        End,                            // the tag list is not terminated automatically
+    ],
+)

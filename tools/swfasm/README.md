@@ -13,7 +13,8 @@ swfasm test.swfasm -o out.swf
 Sources use the `.swfasm` extension and are written in
 [RON](https://github.com/ron-rs/ron), with the `implicit_some` extension enabled
 (optional values don't need `Some(...)`).
-See [`src/source.rs`](src/source.rs) for everything that is supported.
+See [`examples/`](examples) and [`src/source.rs`](src/source.rs) for everything
+that is supported.
 
 ### Tags
 
