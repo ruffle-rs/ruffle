@@ -1,0 +1,18 @@
+[package]
+name = "swfasm"
+authors.workspace = true
+edition.workspace = true
+homepage.workspace = true
+license.workspace = true
+repository.workspace = true
+version.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+anyhow = { workspace = true }
+clap = { workspace = true }
+ron = "0.12.2"
+serde = { workspace = true, features = ["derive"] }
+swf = { path = "../../swf" }

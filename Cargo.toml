@@ -38,6 +38,7 @@ members = [
     "tools/asc",
     "tools/fuzzer",
     "tools/stub-report",
+    "tools/swfasm",
 ]
 default-members = ["desktop"]
 resolver = "2"
