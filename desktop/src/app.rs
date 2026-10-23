@@ -769,12 +769,7 @@ fn show_graphics_init_error(error: &anyhow::Error) {
     rfd::MessageDialog::new()
         .set_level(rfd::MessageLevel::Error)
         .set_title("Ruffle")
-        .set_description(format!(
-            "Ruffle couldn't start because no supported graphics device was found.\n\n\
-            Ruffle needs hardware acceleration. Try updating your graphics drivers, \
-            or pick a different backend with the --graphics option.\n\n\
-            Details: {error}"
-        ))
+        .set_description(format!("Ruffle failed to start:\n\n{error}"))
         .set_buttons(rfd::MessageButtons::Ok)
         .show();
 }
