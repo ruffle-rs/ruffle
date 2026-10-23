@@ -532,15 +532,23 @@ impl ApplicationHandler<RuffleEvent> for App {
             let window = Arc::new(window);
             let font_database = self.font_database.clone();
 
-            let mut gui = GuiController::new(
+            let mut gui = match GuiController::new(
                 window.clone(),
                 event_loop_proxy.clone(),
                 preferences.clone(),
                 &font_database,
                 movie_url.clone(),
                 no_gui,
-            )
-            .expect("GUI controller should be created");
+            ) {
+                Ok(gui) => gui,
+                Err(e) => {
+                    // Not a bug in Ruffle, so don't send the user to the crash reporter.
+                    tracing::error!("Failed to initialize graphics: {e:#}");
+                    show_graphics_init_error(&e);
+                    event_loop.exit();
+                    return;
+                }
+            };
 
             let mut player = PlayerController::new(
                 event_loop_proxy.clone(),
@@ -755,4 +763,18 @@ enum LoadingState {
     Loading,
     WaitingForResize,
     Loaded,
+}
+
+fn show_graphics_init_error(error: &anyhow::Error) {
+    rfd::MessageDialog::new()
+        .set_level(rfd::MessageLevel::Error)
+        .set_title("Ruffle")
+        .set_description(format!(
+            "Ruffle couldn't start because no supported graphics device was found.\n\n\
+            Ruffle needs hardware acceleration. Try updating your graphics drivers, \
+            or pick a different backend with the --graphics option.\n\n\
+            Details: {error}"
+        ))
+        .set_buttons(rfd::MessageButtons::Ok)
+        .show();
 }
