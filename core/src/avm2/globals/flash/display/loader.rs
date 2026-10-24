@@ -15,7 +15,7 @@ use crate::avm2::object::LoaderStream;
 use crate::avm2::object::TObject as _;
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
-use crate::avm2::{Error, Object};
+use crate::avm2::{Avm2, Error, Object};
 use crate::avm2_stub_method;
 use crate::backend::navigator::{NavigationMethod, Request};
 use crate::display_object::LoaderDisplay;
@@ -329,6 +329,50 @@ pub fn unload<'gc>(
     let loader_info = loader_info.as_loader_info_object().unwrap();
 
     loader_info.unload(activation.context);
+
+    Ok(Value::Undefined)
+}
+
+pub fn unload_and_stop<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Value<'gc>,
+    args: FunctionArgs<'_, 'gc>,
+) -> Result<Value<'gc>, Error<'gc>> {
+    avm2_stub_method!(
+        activation,
+        "flash.display.Loader",
+        "unloadAndStop",
+        "stopping sounds, streams, timers and stage listeners"
+    );
+
+    let gc = args.get_bool(0);
+    let this = this.as_object().unwrap();
+
+    let loader_info = this
+        .get_slot(loader_slots::_CONTENT_LOADER_INFO)
+        .as_object()
+        .unwrap();
+
+    let loader_info = loader_info.as_loader_info_object().unwrap();
+
+    let loaded_movie = match loader_info.loader_stream() {
+        LoaderStream::Swf(movie, _) => Some(movie),
+        LoaderStream::NotYetLoaded(..) => None,
+    };
+
+    loader_info.unload(activation.context);
+
+    // Unlike `unload`, stop the movie's frame listeners and give up its symbol library, so the movie
+    // and everything defined by it can be garbage collected once nothing else refers to it.
+    if let Some(movie) = loaded_movie
+        && !SwfMovie::ptr_eq(&movie, activation.context.root_swf)
+    {
+        Avm2::unregister_broadcast_listeners_of_movie(activation.context, movie);
+        activation.context.library.release_movie(movie);
+        if gc {
+            *activation.context.needs_gc = true;
+        }
+    }
 
     Ok(Value::Undefined)
 }
