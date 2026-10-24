@@ -1,0 +1,29 @@
+// new StackOverflowError()
+name: Error
+message: 
+errorID: 0
+toString: Error
+stack: Error
+	at Test()
+// new StackOverflowError("msg")
+name: Error
+message: msg
+errorID: 0
+toString: Error: msg
+stack: Error: msg
+	at Test()
+// new StackOverflowError("msg", 5)
+name: Error
+message: msg
+errorID: 5
+toString: Error: msg
+stack: Error: msg
+	at Test()
+// prototype
+has own name: true
+name: StackOverflowError
+is Error: true
+// throw and catch
+[class StackOverflowError]
+Error: thrown
+	at Test()
