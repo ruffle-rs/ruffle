@@ -102,6 +102,7 @@ impl<'gc> FocusTracker<'gc> {
         &self,
         new: Option<InteractiveObject<'gc>>,
         context: &mut UpdateContext<'gc>,
+        should_reset_focus: bool,
     ) {
         let old = self.0.focus.get();
 
@@ -114,6 +115,10 @@ impl<'gc> FocusTracker<'gc> {
         }
 
         if Self::dispatch_focus_change_event(context, "mouseFocusChange", old, new, None) {
+            return;
+        }
+
+        if !should_reset_focus {
             return;
         }
 
