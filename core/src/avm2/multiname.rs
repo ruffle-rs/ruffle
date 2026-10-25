@@ -386,7 +386,7 @@ impl<'gc> Multiname<'gc> {
         self.name
     }
 
-    pub fn contains_public_namespace(&self) -> bool {
+    pub fn contains_public_unnamed_namespace(&self) -> bool {
         match self.ns {
             NamespaceSet::Single(ns) => ns.is_public_unnamed(),
             NamespaceSet::Multiple(ns) => ns.iter().any(|ns| ns.is_public_unnamed()),
@@ -444,7 +444,7 @@ impl<'gc> Multiname<'gc> {
 
     /// Whether this multiname is valid for dynamic lookups, such as `array[3]`.
     pub fn valid_dynamic_name(&self) -> bool {
-        self.contains_public_namespace() && !self.is_attribute()
+        self.contains_public_unnamed_namespace() && !self.is_attribute()
     }
 
     /// List the parameters that the selected class must match.
