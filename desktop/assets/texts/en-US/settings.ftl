@@ -84,6 +84,8 @@ scale-mode-force-tooltip =
 
 player-version = Player Version
 
+custom-player-version-string = Custom Player Version
+
 player-runtime = Player Runtime
 player-runtime-flash = Flash Player
 player-runtime-air = Adobe AIR
