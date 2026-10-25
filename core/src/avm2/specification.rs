@@ -313,7 +313,7 @@ impl Definition {
         // so such properties aren't misreported as unimplemented.
         if prototype.instance_class() == i_class {
             for class_trait in i_class.traits() {
-                if !class_trait.name().namespace().is_public() {
+                if !class_trait.name().namespace().is_public_unnamed() {
                     continue;
                 }
                 if let TraitKind::Slot { default_value, .. } = class_trait.kind() {
@@ -379,7 +379,7 @@ impl Definition {
         stubs: &ClassStubs,
     ) {
         for class_trait in traits {
-            if !class_trait.name().namespace().is_public()
+            if !class_trait.name().namespace().is_public_unnamed()
                 && !class_trait
                     .name()
                     .namespace()
