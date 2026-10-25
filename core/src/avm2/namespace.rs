@@ -244,12 +244,15 @@ impl<'gc> Namespace<'gc> {
         )))
     }
 
+    /// Whether this is a public namespace regardless of its URI.
     pub fn is_public(self) -> bool {
-        matches!(self.0.as_deref(), Some(NamespaceData::Namespace(name, _)) if name.as_wstr().is_empty())
+        matches!(self.0.as_deref(), Some(NamespaceData::Namespace(_, _)))
     }
 
-    pub fn is_public_ignoring_ns(self) -> bool {
-        matches!(self.0.as_deref(), Some(NamespaceData::Namespace(_, _)))
+    /// Whether this is the unnamed public namespace, i.e. a public namespace
+    /// with an empty URI.
+    pub fn is_public_unnamed(self) -> bool {
+        matches!(self.0.as_deref(), Some(NamespaceData::Namespace(name, _)) if name.as_wstr().is_empty())
     }
 
     pub fn is_any(self) -> bool {
@@ -258,10 +261,6 @@ impl<'gc> Namespace<'gc> {
 
     pub fn is_private(self) -> bool {
         matches!(self.0.as_deref(), Some(NamespaceData::Private(_)))
-    }
-
-    pub fn is_namespace(self) -> bool {
-        matches!(self.0.as_deref(), Some(NamespaceData::Namespace(_, _)))
     }
 
     pub fn as_uri_opt(self) -> Option<AvmString<'gc>> {

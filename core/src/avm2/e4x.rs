@@ -1344,7 +1344,7 @@ impl<'gc> E4XNode<'gc> {
         let self_ns = self.namespace().map(|ns| ns.uri);
         // FIXME: For cases where we don't have *any* explicit namespace
         // we just give up and assume we should match the default public namespace.
-        if !name.namespace_set().iter().any(|ns| ns.is_namespace()) {
+        if !name.namespace_set().iter().any(|ns| ns.is_public()) {
             return self_ns.is_none_or(|n| n.is_empty());
         }
 
