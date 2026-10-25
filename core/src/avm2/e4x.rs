@@ -73,7 +73,7 @@ pub fn handle_input_multiname<'gc>(
             } else {
                 let mut ns = name.namespace_set().to_vec();
 
-                if !name.contains_public_namespace() {
+                if !name.contains_public_unnamed_namespace() {
                     ns.push(activation.avm2().namespaces.public_all());
                 }
 
