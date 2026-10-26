@@ -333,14 +333,14 @@ impl<W: Write> Writer<W> {
             color_transform.b_multiply,
         ];
         let add = [
-            color_transform.a_add,
+            color_transform.r_add,
             color_transform.g_add,
             color_transform.b_add,
-            color_transform.a_add,
         ];
         let mut bits = self.bits();
-        bits.write_bit(has_mult)?;
+        // CXFORM: HasAddTerms comes first, then HasMultTerms (SWF19, and `read_color_transform`).
         bits.write_bit(has_add)?;
+        bits.write_bit(has_mult)?;
         let mut num_bits = if has_mult {
             multiply
                 .iter()
@@ -2440,6 +2440,61 @@ mod tests {
                 write_dummy_swf(Compression::Lzma).is_ok(),
                 "Failed to write LZMA SWF."
             );
+        }
+    }
+
+    #[test]
+    fn color_transform_without_alpha_round_trips() {
+        // PlaceObject (v1) and DefineButtonCxform carry a CXFORM without alpha. The flags must come
+        // out in the order `read_color_transform` reads them, and the add terms must be sized from
+        // red, green and blue (not alpha).
+        let transforms = [
+            ColorTransform {
+                g_add: 40,
+                ..ColorTransform::IDENTITY
+            },
+            ColorTransform {
+                r_multiply: Fixed8::from_f32(0.5),
+                ..ColorTransform::IDENTITY
+            },
+            ColorTransform {
+                r_multiply: Fixed8::from_f32(0.25),
+                r_add: 300,
+                g_add: -2,
+                ..ColorTransform::IDENTITY
+            },
+        ];
+        for color_transform in transforms {
+            let tags = [
+                Tag::PlaceObject(Box::new(PlaceObject {
+                    version: 1,
+                    action: PlaceObjectAction::Place(1),
+                    depth: 1,
+                    matrix: Some(Matrix::IDENTITY),
+                    color_transform: Some(color_transform),
+                    ratio: None,
+                    name: None,
+                    clip_depth: None,
+                    class_name: None,
+                    filters: None,
+                    background_color: None,
+                    blend_mode: None,
+                    clip_actions: None,
+                    has_image: false,
+                    is_bitmap_cached: None,
+                    is_visible: None,
+                    amf_data: None,
+                })),
+                Tag::DefineButtonColorTransform(ButtonColorTransform {
+                    id: 2,
+                    color_transforms: vec![color_transform],
+                }),
+            ];
+            let mut buf = Vec::new();
+            write_swf(&Header::default_with_swf_version(5), &tags, &mut buf).unwrap();
+            let swf_buf = crate::read::decompress_swf(&buf[..]).unwrap();
+            let swf = crate::read::parse_swf(&swf_buf).unwrap();
+            assert_eq!(&swf.tags[..2], &tags[..]);
         }
     }
 
