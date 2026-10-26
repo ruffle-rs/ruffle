@@ -1,3 +1,4 @@
+use crate::avm2::activation::Activation;
 use crate::avm2::method::Method;
 use crate::avm2::op::Op;
 use crate::avm2::optimizer::blocks::assemble_blocks;
@@ -87,11 +88,16 @@ impl Locals {
 }
 
 pub fn eliminate_dead_stores<'gc>(
+    activation: &mut Activation<'_, 'gc>,
     method: Method<'gc>,
     code_slice: &[Cell<Op<'gc>>],
     method_exceptions: &[Exception<'gc>],
     jump_targets: &HashSet<usize>,
 ) {
+    if !activation.avm2().optimizer_settings().dse_enabled {
+        return;
+    }
+
     if !method_exceptions.is_empty() {
         // If the method has exceptions, control flow is very unpredictable.
         // It's usually not worth it doing analysis then.
