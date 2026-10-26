@@ -677,8 +677,8 @@ impl<'gc> Avm2<'gc> {
         self.optimizer_settings
     }
 
-    pub fn set_early_binding_enabled(&mut self, value: bool) {
-        self.optimizer_settings.early_binding_enabled = value;
+    pub fn set_optimizer_settings(&mut self, settings: OptimizerSettings) {
+        self.optimizer_settings = settings;
     }
 
     // Report an uncaught AVM2 error.
@@ -710,12 +710,14 @@ impl<'gc> Avm2<'gc> {
 #[derive(Clone, Copy)]
 pub struct OptimizerSettings {
     pub early_binding_enabled: bool,
+    pub dse_enabled: bool,
 }
 
 impl OptimizerSettings {
     pub fn enable_all() -> Self {
         OptimizerSettings {
             early_binding_enabled: true,
+            dse_enabled: true,
         }
     }
 }

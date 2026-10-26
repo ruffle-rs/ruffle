@@ -252,6 +252,10 @@ pub struct Opt {
     /// information to help in debugging.
     #[clap(long)]
     pub disable_avm2_early_binding: bool,
+
+    /// Disable AVM2 dead store elimination optimizations.
+    #[clap(long)]
+    pub disable_avm2_dse: bool,
 }
 
 fn parse_movie_file_or_url(path: &str) -> Result<Url, Error> {

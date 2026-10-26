@@ -7,7 +7,9 @@ use crate::avm1::Value;
 use crate::avm1::VariableDumper;
 use crate::avm1::{Activation, ActivationIdentifier};
 use crate::avm2::object::EventObject as Avm2EventObject;
-use crate::avm2::{Activation as Avm2Activation, Avm2, CallStack, SharedObjectObject};
+use crate::avm2::{
+    Activation as Avm2Activation, Avm2, CallStack, OptimizerSettings, SharedObjectObject,
+};
 use crate::backend::navigator::ErrorResponse;
 use crate::backend::navigator::FetchReason;
 use crate::backend::navigator::OwnedFuture;
@@ -2675,6 +2677,7 @@ pub struct PlayerBuilder {
     #[cfg(feature = "known_stubs")]
     stub_report_output: Option<std::path::PathBuf>,
     avm2_early_binding_enabled: bool,
+    avm2_dse_enabled: bool,
     #[cfg(feature = "default_font")]
     default_font: bool,
 }
@@ -2732,6 +2735,7 @@ impl PlayerBuilder {
             #[cfg(feature = "known_stubs")]
             stub_report_output: None,
             avm2_early_binding_enabled: true,
+            avm2_dse_enabled: true,
             #[cfg(feature = "default_font")]
             default_font: true,
         }
@@ -2959,6 +2963,11 @@ impl PlayerBuilder {
 
     pub fn with_avm2_early_binding_enabled(mut self, value: bool) -> Self {
         self.avm2_early_binding_enabled = value;
+        self
+    }
+
+    pub fn with_avm2_dse_enabled(mut self, value: bool) -> Self {
+        self.avm2_dse_enabled = value;
         self
     }
 
@@ -3193,7 +3202,11 @@ impl PlayerBuilder {
 
             context
                 .avm2
-                .set_early_binding_enabled(self.avm2_early_binding_enabled);
+                .set_optimizer_settings(OptimizerSettings {
+                    early_binding_enabled: self.avm2_early_binding_enabled,
+                    dse_enabled: self.avm2_dse_enabled,
+                });
+
             Avm1::load_player_globals(context);
             Avm2::load_player_globals(context);
 
