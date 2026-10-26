@@ -190,7 +190,8 @@ pub struct Avm2<'gc> {
     #[cfg(feature = "avm_debug")]
     pub debug_output: bool,
 
-    pub optimizer_enabled: bool,
+    #[collect(require_static)]
+    pub optimizer_settings: OptimizerSettings,
 }
 
 impl<'gc> Avm2<'gc> {
@@ -240,7 +241,7 @@ impl<'gc> Avm2<'gc> {
             #[cfg(feature = "avm_debug")]
             debug_output: false,
 
-            optimizer_enabled: true,
+            optimizer_settings: OptimizerSettings::enable_all(),
         }
     }
 
@@ -672,12 +673,12 @@ impl<'gc> Avm2<'gc> {
         self.namespaces.public_for(self.root_api_version)
     }
 
-    pub fn optimizer_enabled(&self) -> bool {
-        self.optimizer_enabled
+    pub fn optimizer_settings(&self) -> OptimizerSettings {
+        self.optimizer_settings
     }
 
-    pub fn set_optimizer_enabled(&mut self, value: bool) {
-        self.optimizer_enabled = value;
+    pub fn set_early_binding_enabled(&mut self, value: bool) {
+        self.optimizer_settings.early_binding_enabled = value;
     }
 
     // Report an uncaught AVM2 error.
@@ -703,6 +704,19 @@ impl<'gc> Avm2<'gc> {
         tracing::error!("{}: {}", extra_info, stringified);
 
         // TODO: push the error onto `loaderInfo.uncaughtErrorEvents`
+    }
+}
+
+#[derive(Clone, Copy)]
+pub struct OptimizerSettings {
+    pub early_binding_enabled: bool,
+}
+
+impl OptimizerSettings {
+    pub fn enable_all() -> Self {
+        OptimizerSettings {
+            early_binding_enabled: true,
+        }
     }
 }
 

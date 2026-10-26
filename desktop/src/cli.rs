@@ -246,11 +246,12 @@ pub struct Opt {
     )]
     pub gamepad_button: Vec<(GamepadButton, KeyCode)>,
 
-    /// Disable AVM2 optimizer.
-    /// Note that some early opcode conversions
-    /// (like inlining constant pool entries) can't be disabled.
+    /// Disable AVM2 early binding optimizations.
+    ///
+    /// This will cause most AS3 code to run much slower, but may expose some
+    /// information to help in debugging.
     #[clap(long)]
-    pub no_avm2_optimizer: bool,
+    pub disable_avm2_early_binding: bool,
 }
 
 fn parse_movie_file_or_url(path: &str) -> Result<Url, Error> {
