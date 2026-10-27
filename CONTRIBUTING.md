@@ -103,7 +103,8 @@ The hotkey <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>V</kbd> dumps every variable insi
 This can be very useful to inspect the internal state of games and see, for example, if a coordinate is NaN, your lives
 are negative, or maybe an important object just didn't get initialized.
 
-This currently only works for AVM1. We'd [welcome a PR to change that](https://github.com/ruffle-rs/ruffle/issues/8951)!
+This only works for AVM1. For AVM2 content, use the Debug Tools menu in the desktop player instead, which lets you
+inspect display objects and the properties of AVM2 objects.
 
 ### Render Tree Dumping
 
