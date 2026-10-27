@@ -38,7 +38,7 @@ impl ContextMenu {
         let mut item_clicked = false;
         self.position = self.position.or(egui_ctx.pointer_latest_pos());
 
-        let area = Area::new(Id::new("context_menu"))
+        let area = Area::new(Id::unique("context_menu"))
             .order(Order::Foreground)
             .fixed_pos(self.position.unwrap_or_default())
             .constrain_to(egui_ctx.content_rect())

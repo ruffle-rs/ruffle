@@ -53,46 +53,42 @@ impl DomainListWindow {
         let domain_id = format!("domain_{}_{:p}", depth, domain.as_ptr());
 
         ui.push_id(domain_id, |ui| {
-            CollapsingState::load_with_default_open(ui.ctx(), ui.id().with("domain_header"), false)
-                .show_header(ui, |ui| {
-                    open_domain_button(ui, context, messages, domain);
-                })
-                .body(|ui| {
-                    for (child_index, child_domain) in
-                        domain.children(context.gc()).into_iter().enumerate()
-                    {
-                        ui.push_id(format!("child_domain_{}_{}", depth, child_index), |ui| {
-                            Self::show_domain(
-                                ui,
-                                context,
-                                child_domain,
-                                messages,
-                                search,
-                                depth + 1,
-                            );
-                        });
+            CollapsingState::load_with_default_open(
+                ui.ctx(),
+                ui.scope_id().with("domain_header"),
+                false,
+            )
+            .show_header(ui, |ui| {
+                open_domain_button(ui, context, messages, domain);
+            })
+            .body(|ui| {
+                for (child_index, child_domain) in
+                    domain.children(context.gc()).into_iter().enumerate()
+                {
+                    ui.push_id(format!("child_domain_{}_{}", depth, child_index), |ui| {
+                        Self::show_domain(ui, context, child_domain, messages, search, depth + 1);
+                    });
+                }
+
+                let class_props = domain.classes();
+                let mut classes: Vec<_> = class_props.iter().collect();
+                classes.sort_by_key(|(name, _, _)| *name);
+
+                for (class_index, (_, _, class)) in classes.iter().enumerate() {
+                    let name = class_name(context.gc(), **class);
+                    if !name.to_string().to_ascii_lowercase().contains(search) {
+                        continue;
                     }
 
-                    let class_props = domain.classes();
-                    let mut classes: Vec<_> = class_props.iter().collect();
-                    classes.sort_by_key(|(name, _, _)| *name);
-
-                    for (class_index, (_, _, class)) in classes.iter().enumerate() {
-                        let name = class_name(context.gc(), **class);
-                        if !name.to_string().to_ascii_lowercase().contains(search) {
-                            continue;
+                    ui.push_id(format!("class_{class_index}"), |ui| {
+                        let button = ui.button(format!("Class {name}"));
+                        if button.clicked() {
+                            messages
+                                .push(Message::TrackAVM2Class(ClassHandle::new(context, **class)));
                         }
-
-                        ui.push_id(format!("class_{class_index}"), |ui| {
-                            let button = ui.button(format!("Class {name}"));
-                            if button.clicked() {
-                                messages.push(Message::TrackAVM2Class(ClassHandle::new(
-                                    context, **class,
-                                )));
-                            }
-                        });
-                    }
-                });
+                    });
+                }
+            });
         });
     }
 }
