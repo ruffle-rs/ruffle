@@ -36,5 +36,5 @@ graphic element
     getAtomIndexAtCharIndex(1)=1
     getAtomIndexAtCharIndex(2)=2
     getAtomIndexAtCharIndex(3)=3
-    getAtomIndexAtCharIndex(4)=-1
+    getAtomIndexAtCharIndex(4)=4
     getAtomIndexAtCharIndex(5)=-1
