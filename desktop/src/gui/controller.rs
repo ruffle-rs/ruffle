@@ -42,10 +42,7 @@ pub struct GuiController {
     surface: wgpu::Surface<'static>,
     surface_format: wgpu::TextureFormat,
     movie_view_renderer: Arc<MovieViewRenderer>,
-    // Note that `window.get_inner_size` can change at any point on x11, even between two lines of code.
-    // Use this instead.
     size: PhysicalSize<u32>,
-    /// If this is set, we should not render the main menu.
     no_gui: bool,
     theme_controller: ThemeController,
     #[cfg(feature = "tracy_images")]
@@ -79,7 +76,6 @@ impl GuiController {
             adapter_info.device_type
         );
         let preferred_formats = [
-            // by egui
             wgpu::TextureFormat::Rgba8Unorm,
             wgpu::TextureFormat::Bgra8Unorm,
         ];
@@ -249,7 +245,6 @@ impl GuiController {
                 ..
             }
         ) {
-            // Prevent egui from consuming the Tab key.
             return false;
         }
 
@@ -315,46 +310,27 @@ impl GuiController {
         let surface_texture = match self.surface.get_current_texture() {
             wgpu::CurrentSurfaceTexture::Success(surface_texture) => surface_texture,
             wgpu::CurrentSurfaceTexture::Suboptimal(surface_texture) => {
-                // The acquired texture is still usable - no reason to waste
-                // this frame. The surface should ideally be reconfigured
-                // before the next acquire; usually a resize event arrives and
-                // does that, but not always (e.g. on a display transform
-                // change) - we accept staying suboptimal in that case for now.
                 surface_texture
             }
             state @ (wgpu::CurrentSurfaceTexture::Lost | wgpu::CurrentSurfaceTexture::Outdated) => {
-                // Reconfigure the surface if lost or outdated.
-                // Some sources suggest ignoring `Outdated` and waiting for the next frame,
-                // but I suspect this advice is related explicitly to resizing,
-                // because the future resize event will reconfigure the surface.
-                // However, resizing is not the only possible reason for the surface
-                // to become outdated (resolution / refresh rate change, some internal
-                // platform-specific reasons, wgpu bugs?).
-                // Testing on Vulkan shows that reconfiguring the surface works in that case.
                 tracing::warn!("Surface became unavailable: {:?}, reconfiguring", state);
                 self.reconfigure_surface();
                 return;
             }
             wgpu::CurrentSurfaceTexture::Timeout => {
-                // Acquiring the frame took too long (a full second, as of wgpu 29).
-                // The best thing we can do is skip a frame and wait.
                 tracing::warn!("Surface acquisition timed out, skipping a frame");
                 return;
             }
             wgpu::CurrentSurfaceTexture::Occluded => {
-                // The window is occluded (e.g. minimized or fully covered by
-                // another window), so there is no point in drawing anything.
-                // We normally don't even get here, as `WindowEvent::Occluded`
-                // makes us skip rendering entirely - but the two can race, and
-                // not every platform reports occlusion through winit.
-                // Unlike `Timeout`, this returns immediately, so it would repeat
-                // at the movie's frame rate: keep it quiet, it's not an error.
                 tracing::trace!("Surface is occluded, skipping a frame");
                 return;
             }
             wgpu::CurrentSurfaceTexture::Validation => {
-                // Generic error, not much we can do.
-                panic!("wgpu: Acquiring a texture failed with a validation error");
+                tracing::warn!(
+                    "Surface validation error, reconfiguring surface and skipping frame"
+                );
+                self.reconfigure_surface();
+                return;
             }
         };
 
@@ -385,7 +361,6 @@ impl GuiController {
             .expect("Root viewport must exist")
             .repaint_delay;
 
-        // If we're not in a UI, tell egui which cursor we prefer to use instead
         if !self.egui_winit.egui_ctx().egui_wants_pointer_input()
             && let Some(player) = player.as_deref()
         {
@@ -434,13 +409,6 @@ impl GuiController {
             &screen_descriptor,
         );
 
-        // Debug tools draw over the movie and can modify it. While any of them
-        // is open, show that right away, instead of waiting for the movie to
-        // render on its own. This happens after updating the GUI, so that
-        // the changes made in this pass are visible.
-        //
-        // TODO This does not match how Flash renders the movie, maybe put that
-        //      behind a setting?
         if let Some(player) = player.as_deref_mut()
             && player.debug_ui().has_open_windows()
         {
@@ -493,9 +461,6 @@ impl GuiController {
         command_buffers.push(encoder.finish());
         self.descriptors.queue.submit(command_buffers);
 
-        // Free textures only after submitting the command buffer that may still
-        // reference them.  Destroying a texture before its usage is submitted
-        // causes a wgpu validation panic.
         for id in full_output.textures_delta.free.drain() {
             self.egui_renderer.free_texture(&id);
         }
@@ -613,7 +578,6 @@ fn try_wgpu_backend(backend: wgpu::Backends, window: Arc<Window>) -> Option<wgpu
     }
 }
 
-// Load fallback fonts
 fn load_system_fonts(
     font_database: &Database,
     locale: unic_langid::LanguageIdentifier,
@@ -629,80 +593,71 @@ fn load_system_fonts(
 
     let mut queries: PrioritizedQueries = Vec::new();
 
-    // The main font
     queries.push((1, vec![Family::SansSerif]));
 
-    // Pan-CJK fonts
     queries.push((
         2,
         vec![
-            Family::Name("Noto Sans CJK"),     // Open font
-            Family::Name("Source Han Sans"),   // Open font, same as Noto Sans CJK
-            Family::Name("WenQuanYi Zen Hei"), // Open font
-            Family::Name("Arial Unicode MS"),  // MacOS
+            Family::Name("Noto Sans CJK"),
+            Family::Name("Source Han Sans"),
+            Family::Name("WenQuanYi Zen Hei"),
+            Family::Name("Arial Unicode MS"),
         ],
     ));
 
-    // Korean
     queries.push((
         3 + if is_ko { 0 } else { 1 },
         vec![
-            Family::Name("Noto Sans CJK KR"), // Open font
-            Family::Name("Malgun Gothic"),    // Windows
+            Family::Name("Noto Sans CJK KR"),
+            Family::Name("Malgun Gothic"),
         ],
     ));
 
-    // Japanese
     queries.push((
         3 + if is_ja { 0 } else { 1 },
         vec![
-            Family::Name("Noto Sans CJK JP"), // Open font
-            Family::Name("MS UI Gothic"),     // Windows
+            Family::Name("Noto Sans CJK JP"),
+            Family::Name("MS UI Gothic"),
         ],
     ));
 
-    // Chinese Simplified
     queries.push((
         3 + if is_sc { 0 } else { 1 },
         vec![
-            Family::Name("Noto Sans CJK SC"), // Open font
-            Family::Name("Microsoft YaHei"),  // Windows
+            Family::Name("Noto Sans CJK SC"),
+            Family::Name("Microsoft YaHei"),
         ],
     ));
 
-    // Chinese Traditional
     queries.push((
         3 + if is_tc { 0 } else { 1 },
         vec![
-            Family::Name("Noto Sans CJK TC"),   // Open font
-            Family::Name("Microsoft JhengHei"), // Windows
+            Family::Name("Noto Sans CJK TC"),
+            Family::Name("Microsoft JhengHei"),
         ],
     ));
 
-    // Hebrew
     queries.push((
         4,
         vec![
-            Family::Name("Noto Sans Hebrew"), // Open font
-            Family::Name("Tahoma"),           // Windows
+            Family::Name("Noto Sans Hebrew"),
+            Family::Name("Tahoma"),
         ],
     ));
 
-    // Arabic
     queries.push((
         5,
         vec![
-            Family::Name("Noto Sans Arabic"), // Open font
-            Family::Name("Tahoma"),           // Windows
+            Family::Name("Noto Sans Arabic"),
+            Family::Name("Tahoma"),
         ],
     ));
 
-    // Thai
     queries.push((
         6,
         vec![
-            Family::Name("Noto Sans Thai"), // Open font
-            Family::Name("Tahoma"),         // Windows
+            Family::Name("Noto Sans Thai"),
+            Family::Name("Tahoma"),
         ],
     ));
 
@@ -771,11 +726,7 @@ fn load_system_font(
     let mut fontdata = match src {
         Source::File(path) | Source::SharedFile(path, _) => {
             let data = mmap_system_font(&path)?;
-
-            // egui accepts only static data, so we have to leak mmapped fonts.
-            // This is acceptable, as we're doing it only once.
             let data = Box::leak(Box::new(data));
-
             egui::FontData::from_static(data)
         }
         Source::Binary(bin) => {
@@ -791,8 +742,6 @@ fn load_system_font(
 fn mmap_system_font(path: &Path) -> anyhow::Result<memmap2::Mmap> {
     let file = File::open(path).map_err(|e| anyhow!("Couldn't open font file at {path:?}: {e}"))?;
 
-    // SAFETY: We have to assume that the font file won't change.
-    // This assumption is realistic, as we're using system fonts only.
     let mmap = unsafe { memmap2::Mmap::map(&file) };
 
     let mmap = mmap.map_err(|e| anyhow!("Failed to mmap font file at {path:?}: {e}"))?;
