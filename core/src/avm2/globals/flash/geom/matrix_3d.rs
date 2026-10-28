@@ -5,7 +5,6 @@ use crate::avm2::object::{Matrix3DObject, VectorObject};
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::vector::VectorStorage;
 use crate::avm2::{Activation, Avm2StrRepresentable as _, Error, Object, TObject as _, Value};
-use crate::avm2_stub_method;
 use num_traits::Zero;
 use ruffle_macros::Avm2Enum;
 use ruffle_render::matrix3d::Matrix3D;
@@ -704,17 +703,6 @@ pub fn recompose<'gc>(
         return Err(make_error_2187(activation, orientation));
     };
 
-    if orientation == Orientation3D::Quaternion {
-        // Flash rejects quaternions that aren't unit ones with an
-        // ArgumentError, which we don't reproduce yet.
-        avm2_stub_method!(
-            activation,
-            "flash.geom.Matrix3D",
-            "recompose",
-            "Orientation3D.QUATERNION"
-        );
-    }
-
     // A null component makes 'recompose' fail, leaving the matrix untouched.
     let (Some(translation), Some(rotation), Some(scale)) = (
         read_vector3d_value(components.get_optional(0)),
@@ -749,15 +737,12 @@ pub fn recompose<'gc>(
             rotation_matrix[10] = cx * cy;
         }
 
-        Orientation3D::AxisAngle | Orientation3D::Quaternion => {
+        Orientation3D::AxisAngle => {
             let (mut x, mut y, mut z, mut w) = (rotation_x, rotation_y, rotation_z, rotation_w);
-
-            if orientation == Orientation3D::AxisAngle {
-                x *= (w / 2.0).sin();
-                y *= (w / 2.0).sin();
-                z *= (w / 2.0).sin();
-                w = (w / 2.0).cos();
-            }
+            x *= (w / 2.0).sin();
+            y *= (w / 2.0).sin();
+            z *= (w / 2.0).sin();
+            w = (w / 2.0).cos();
 
             rotation_matrix[0] = 1.0 - 2.0 * y * y - 2.0 * z * z;
             rotation_matrix[1] = 2.0 * x * y + 2.0 * w * z;
@@ -768,6 +753,29 @@ pub fn recompose<'gc>(
             rotation_matrix[8] = 2.0 * x * z + 2.0 * w * y;
             rotation_matrix[9] = 2.0 * y * z - 2.0 * w * x;
             rotation_matrix[10] = 1.0 - 2.0 * x * x - 2.0 * y * y;
+        }
+
+        Orientation3D::Quaternion => {
+            let x = rotation_x as f32;
+            let y = rotation_y as f32;
+            let z = rotation_z as f32;
+            let w = rotation_w as f32;
+            let len2 = x * x + y * y + z * z + w * w;
+            let upper = 1.0 + 1e-5;
+            let lower = 1.0 - 1e-5;
+            if !(lower..=upper).contains(&len2) {
+                return Err(make_error_2004(activation, Error2004Type::ArgumentError));
+            }
+
+            rotation_matrix[0] = (1.0 - 2.0 * y * y - 2.0 * z * z) as f64;
+            rotation_matrix[1] = (2.0 * x * y + 2.0 * w * z) as f64;
+            rotation_matrix[2] = (2.0 * x * z - 2.0 * w * y) as f64;
+            rotation_matrix[4] = (2.0 * x * y - 2.0 * w * z) as f64;
+            rotation_matrix[5] = (1.0 - 2.0 * x * x - 2.0 * z * z) as f64;
+            rotation_matrix[6] = (2.0 * y * z + 2.0 * w * x) as f64;
+            rotation_matrix[8] = (2.0 * x * z + 2.0 * w * y) as f64;
+            rotation_matrix[9] = (2.0 * y * z - 2.0 * w * x) as f64;
+            rotation_matrix[10] = (1.0 - 2.0 * x * x - 2.0 * y * y) as f64;
         }
     }
     rotation_matrix[15] = 1.0;
@@ -884,6 +892,20 @@ pub fn decompose<'gc>(
                 rotation[2] = 0.0;
                 rotation[0] = mr[4].atan2(mr[5]);
             }
+        }
+    }
+
+    if orientation == Orientation3D::Quaternion {
+        let len2 = rotation[0] * rotation[0]
+            + rotation[1] * rotation[1]
+            + rotation[2] * rotation[2]
+            + rotation[3] * rotation[3];
+        let len = len2.sqrt();
+        if len.is_finite() && len != 0.0 {
+            rotation[0] /= len;
+            rotation[1] /= len;
+            rotation[2] /= len;
+            rotation[3] /= len;
         }
     }
 
