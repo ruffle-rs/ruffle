@@ -1,0 +1,14 @@
+num_ticks = 1
+
+[image_comparisons.output]
+tolerance = 0
+
+[player_options]
+with_renderer = { optional = false, quality = "low" }
+
+[[compilers]]
+type = "Asc"
+target = "test.swf"
+class = "Test"
+scripts = ["Test.as"]
+swf_version = 15
