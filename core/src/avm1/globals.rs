@@ -350,10 +350,11 @@ pub fn create_timer<'gc>(
     // Otherwise, set a repeat count of 0 (repeat indefinitely)
     //
     // We start the timer immediately
+    let mc = activation.gc();
     let id = activation
         .context
         .timers
-        .add_timer(callback, interval, is_timeout);
+        .add_timer_with_id(mc, callback, interval, is_timeout);
 
     Ok(id.into())
 }
@@ -367,7 +368,7 @@ pub fn clear_interval<'gc>(
         .get(0)
         .unwrap_or(&Value::Undefined)
         .coerce_to_i32(activation)?;
-    if !activation.context.timers.remove(id) {
+    if !activation.context.timers.remove_timer_by_id(id) {
         tracing::info!("clearInterval: Timer {} does not exist", id);
     }
 
