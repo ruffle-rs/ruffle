@@ -23,7 +23,7 @@
         "@wdio/local-runner": "^9.32.0",
         "@wdio/mocha-framework": "^9.32.0",
         "@wdio/spec-reporter": "^9.32.0",
-        "@wdio/static-server-service": "^9.32.0",
+        "@wdio/static-server-service": "^10.1.0",
         "chai": "^6.3.0",
         "chai-html": "^3.2.0",
         "cross-env": "^10.1.0",
