@@ -1,0 +1,9 @@
+instanceof XMLSocket: true
+send before connect: 
+close before connect: 
+connectXMLSocket returned: true
+connect returned: true
+status: opening
+onConnect: true
+onXML: <root><item /></root>
+onClose
