@@ -7,6 +7,17 @@ pub trait FontRenderer: std::fmt::Debug {
 
     fn get_font_metrics(&self) -> FontMetrics;
 
+    /// Typographic metrics (OS/2 `sTypoAscender`/`sTypoDescender`) at a raster
+    /// size, if the renderer can provide them. The Flash Text Engine reports
+    /// these to ActionScript (matching Flash Player), so a renderer with access
+    /// to the font's OS/2 table should override this; raster renderers work at a
+    /// concrete pixel size, hence `height_px`. The default returns `None`, which
+    /// falls back to the hhea/cell metrics from
+    /// [`FontRenderer::get_font_metrics`].
+    fn get_typo_font_metrics(&self, _height_px: u32) -> Option<FontMetrics> {
+        None
+    }
+
     fn has_kerning_info(&self) -> bool;
 
     fn render_glyph(&self, character: char) -> Option<Glyph>;
