@@ -444,6 +444,20 @@ impl<'gc> TInteractiveObject<'gc> for Avm1Button<'gc> {
     }
 
     fn event_dispatch(self, context: &mut UpdateContext<'gc>, event: ClipEvent) -> ClipEventResult {
+        // Push buttons only track a drag that started on that button.
+        if matches!(
+            event,
+            ClipEvent::DragOver { .. } | ClipEvent::DragOut { .. }
+        ) && !InteractiveObject::option_ptr_eq(context.mouse_data.pressed, Some(self.into()))
+            && !self.get_boolean_property(
+                istr!(context, "trackAsMenu"),
+                self.0.tracking.get() == ButtonTracking::Menu,
+                context,
+            )
+        {
+            return ClipEventResult::NotHandled;
+        }
+
         let self_display_object = self.into();
         let is_enabled = self.enabled(context);
 
