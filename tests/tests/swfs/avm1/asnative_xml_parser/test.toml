@@ -1,0 +1,8 @@
+num_frames = 1
+num_ticks = 1
+
+[[compilers]]
+type = "Rascal"
+target = "test.swf"
+scripts = ["Test.as"]
+swf_version = 8
