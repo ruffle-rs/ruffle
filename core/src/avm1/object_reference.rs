@@ -73,8 +73,17 @@ impl<'gc> MovieClipReference<'gc> {
     ) -> Option<Self> {
         // We can't use as_display_object here as we explicitly don't want to convert `SuperObjects`
         let display_object = object.as_display_object_no_super()?;
-        let (path, cached) = if let DisplayObject::MovieClip(mc) = display_object {
-            (mc.path(), display_object.object1()?)
+        // Flash stores references to display objects (MovieClips, Buttons and TextFields)
+        // as paths and re-resolves them when used. This is observable when the timeline
+        // removes and re-creates an object at the same path: a previously held reference
+        // then refers to the new object, not the removed one (see #2583).
+        let (path, cached) = if matches!(
+            display_object,
+            DisplayObject::MovieClip(_) | DisplayObject::Avm1Button(_) | DisplayObject::EditText(_)
+        ) && (activation.swf_version() > 5
+            || display_object.as_movie_clip().is_some())
+        {
+            (display_object.path(), display_object.object1()?)
         } else if activation.swf_version() <= 5 {
             let display_object = Self::process_swf5_references(activation, display_object)?;
 

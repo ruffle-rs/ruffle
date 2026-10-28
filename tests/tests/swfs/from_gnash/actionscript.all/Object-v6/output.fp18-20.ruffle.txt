@@ -315,7 +315,7 @@ PASSED: nonk.__proto__._width [./Object.as:972]
 PASSED: nonk.__proto__.bobo == "hi there" [./Object.as:973]
 PASSED: nonk.__proto__ [./Object.as:974]
 PASSED: nonk.__proto__ [./Object.as:978]
-FAILED: !nonk._width [./Object.as:979]
+PASSED: !nonk._width [./Object.as:979]
 PASSED: nonk.__proto__._width [./Object.as:980]
 PASSED: this.__proto__.toString() == "orig" [./Object.as:986]
 PASSED: this.__proto__.toString() == "orig" [./Object.as:988]
@@ -328,6 +328,6 @@ FAILED: expected: "undefined" obtained: object [./Object.as:1019]
 PASSED: typeof(o) == "object" [./Object.as:1021]
 PASSED: o.toString() == "true" [./Object.as:1022]
 FAILED: expected: "undefined" obtained: object [./Object.as:1026]
-#passed: 304
-#failed: 23
+#passed: 305
+#failed: 22
 #total tests run: 327
