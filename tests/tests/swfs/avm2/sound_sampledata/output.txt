@@ -1,0 +1,29 @@
+basic: play()
+basic: sampleData 1, position 0, data.length 0, data.position 0, bigEndian, target is the sound true
+basic: play() returned [object SoundChannel], length 0, bytesTotal 0
+basic: sampleData 2, position 2048, data.length 16384, data.position 0, bigEndian, target is the sound true
+basic: sampleData 3, position 4096, data.length 16384, data.position 0, bigEndian, target is the sound true
+basic: sampleData 4, position 6144, data.length 16384, data.position 0, bigEndian, target is the sound true
+basic: sampleData 5, position 8192, data.length 16384, data.position 0, bigEndian, target is the sound true
+basic: sampleData 6, position 10240, data.length 16384, data.position 0, bigEndian, target is the sound true
+basic: soundComplete, channel.position 254.88
+replay: play()
+basic: sampleData 7, position 0, data.length 16384, data.position 0, bigEndian, target is the sound true
+replay: soundComplete, channel.position 22.68
+empty: sampleData, position 0
+empty: soundComplete, channel.position 0.00
+rewound: sampleData, position 0
+rewound (1024 samples): soundComplete, channel.position 23.22
+oversized: sampleData, position 0
+oversized (8193 samples): soundComplete, channel.position 0.00
+big blocks: sampleData, position 0, in play() true
+big blocks: sampleData, position 8192, in play() true
+big blocks: sampleData, position 16384, in play() true
+big blocks: sampleData, position 24576, in play() true
+big blocks: sampleData, position 32768, in play() true
+two channels: sampleData for the first channel, position 0
+two channels: sampleData for the second channel, position 0
+no listener: play() threw ArgumentError 2068
+loading: play() returned [object SoundChannel]
+loading: ioError
+stopped: position before the end true
