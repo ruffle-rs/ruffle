@@ -574,26 +574,15 @@ impl<'gc> VTable<'gc> {
         context: &mut UpdateContext<'gc>,
         receiver: Value<'gc>,
         disp_id: usize,
-    ) -> Option<FunctionObject<'gc>> {
-        self.get_full_method(disp_id)
-            .map(|method| Self::bind_method(context, receiver, method))
-    }
-
-    /// Bind an instance method to a receiver, allowing it to be used as a value. See `VTable::make_bound_method`
-    ///
-    /// It is the caller's responsibility to ensure that the `receiver` passed
-    /// to this method is not Value::Null or Value::Undefined.
-    pub fn bind_method(
-        context: &mut UpdateContext<'gc>,
-        receiver: Value<'gc>,
-        method: &ClassBoundMethod<'gc>,
     ) -> FunctionObject<'gc> {
+        let full_method = self.get_full_method(disp_id).expect("Valid disp id passed");
+
         FunctionObject::from_method(
             context,
-            method.method,
-            method.scope(),
+            full_method.method,
+            full_method.scope(),
             Some(receiver),
-            method.super_class_obj,
+            full_method.super_class_obj,
         )
     }
 
