@@ -3,8 +3,9 @@
 use crate::avm2::Avm2;
 use crate::avm2::Error;
 use crate::avm2::activation::Activation;
-use crate::avm2::error::{make_error_2037, make_error_2084};
+use crate::avm2::error::{make_error_2037, make_error_2068, make_error_2084};
 use crate::avm2::function::FunctionArgs;
+use crate::avm2::globals::slots::flash_events_event_dispatcher as event_dispatcher_slots;
 use crate::avm2::globals::slots::flash_net_url_request as url_request_slots;
 use crate::avm2::object::{
     EventObject, QueuedPlay, SoundChannelObject, SoundLoadingState, TObject as _,
@@ -15,6 +16,7 @@ use crate::backend::navigator::Request;
 use crate::character::Character;
 use crate::display_object::SoundTransform;
 use crate::{avm2_stub_getter, avm2_stub_method};
+use ruffle_macros::istr;
 use swf::{SoundEvent, SoundInfo};
 
 pub use crate::avm2::object::sound_allocator;
@@ -169,6 +171,34 @@ pub fn play<'gc>(
         } else {
             None
         };
+
+        if sound_object.sound_handle().is_none()
+            && matches!(
+                sound_object.loading_state(),
+                SoundLoadingState::New | SoundLoadingState::Generated
+            )
+        {
+            // A sound with no data plays what its `sampleData` listeners
+            // generate, and is invalid without any.
+            let has_listener = this
+                .get_slot(event_dispatcher_slots::DISPATCH_LIST)
+                .as_object()
+                .and_then(|list| {
+                    list.as_dispatch_mut(activation.gc())
+                        .map(|list| list.has_event_listener(istr!("sampleData")))
+                })
+                .unwrap_or(false);
+            if !has_listener {
+                return Err(make_error_2068(activation));
+            }
+
+            sound_object.set_loading_state(SoundLoadingState::Generated);
+            let sound_channel = SoundChannelObject::generated(activation, sound_object);
+            if sound_channel.start_generator(activation.context, sound_transform) {
+                return Ok(sound_channel.into());
+            }
+            return Ok(Value::Null);
+        }
 
         let sound_channel = SoundChannelObject::empty(activation);
 

@@ -466,6 +466,15 @@ impl<'gc> AudioManager<'gc> {
     /// The player will adjust animation speed to stay within this many seconds of the audio track.
     pub const STREAM_DEFAULT_SYNC_THRESHOLD: f64 = 0.2;
 
+    /// How far ahead of playback, in seconds, sounds that generate their
+    /// samples are kept at least: two blocks of the 2048 samples Flash
+    /// usually asks for.
+    const SAMPLE_GENERATOR_MIN_LEAD: f64 = 4096.0 / 44100.0;
+
+    /// How far ahead of playback, in seconds, sounds that generate their
+    /// samples are kept at most, however long ticks get.
+    const SAMPLE_GENERATOR_MAX_LEAD: f64 = 1.0;
+
     pub fn new() -> Self {
         Self {
             sounds: Vec::with_capacity(Self::MAX_SOUNDS),
@@ -532,6 +541,7 @@ impl<'gc> AudioManager<'gc> {
         });
 
         for target in event_targets {
+            target.sound_completed();
             let event = Avm2EventObject::bare_default_event(context, "soundComplete");
             Avm2::dispatch_event(context, event, target.into());
         }
@@ -756,6 +766,33 @@ impl<'gc> AudioManager<'gc> {
             Some(handle)
         } else {
             None
+        }
+    }
+
+    /// Asks the `sampleData` listeners of playing AVM2 sounds that generate
+    /// their samples for more, enough to keep them ahead of playback until
+    /// the next tick. Should be called once per tick, `dt` after the last.
+    pub fn update_sample_generators(context: &mut UpdateContext<'gc>, dt: FloatDuration) {
+        // Flash asks for more whenever its audio buffer has room, from its
+        // audio thread. We can only ask between ticks, so stay a tick ahead,
+        // and a mixing buffer for backends that mix a buffer at a time.
+        let resolution = context
+            .audio
+            .position_resolution()
+            .map_or(0.0, |resolution| resolution.as_secs_f64());
+        let lead = (Self::SAMPLE_GENERATOR_MIN_LEAD
+            + 2.0 * (dt.as_millis() / 1000.0).max(resolution))
+        .min(Self::SAMPLE_GENERATOR_MAX_LEAD);
+        let lead = (lead * f64::from(SampleQueue::SAMPLE_RATE)) as u32;
+
+        let channels: Vec<_> = context
+            .audio_manager
+            .sounds
+            .iter()
+            .filter_map(|sound| sound.avm2_object)
+            .collect();
+        for channel in channels {
+            channel.generate_samples(context, lead);
         }
     }
 
