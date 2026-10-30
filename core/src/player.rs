@@ -2032,8 +2032,14 @@ impl Player {
             {
                 let was_root_movie_loaded = root.loaded_bytes() as i32 == root.total_bytes();
                 did_finish = root.preload(context, limit);
+                let is_root_movie_loaded = root.loaded_bytes() as i32 == root.total_bytes();
 
-                if let Some(loader_info) = root.loader_info().filter(|_| !was_root_movie_loaded) {
+                // The final `progress` event is fired at the end of the frame, together with
+                // `init` and `complete` (see `LoaderInfoObject::fire_init_and_complete_events`).
+                if let Some(loader_info) = root
+                    .loader_info()
+                    .filter(|_| !was_root_movie_loaded && !is_root_movie_loaded)
+                {
                     let mut activation = Avm2Activation::from_nothing(context);
 
                     let progress_evt = Avm2EventObject::progress_event(
