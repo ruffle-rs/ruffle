@@ -20,11 +20,12 @@ pub fn preprocess_peephole(ops: &[Cell<Op<'_>>]) {
 }
 
 /// A peephole optimizer to run after type-aware optimizations. This should be
-/// called once on the entire code slice.
-pub fn postprocess_peephole<'a>(ops: &'a [Cell<Op<'_>>], jump_targets: &HashSet<usize>) {
+/// called on the entire code slice.
+///
+/// This pass removes `pushscope` ops if the method never reads from the scope
+/// stack.
+pub fn push_scope_removal_peephole<'gc>(ops: &[Cell<Op<'gc>>]) {
     // Determine if this method ever depends on the state of the scope stack.
-    let mut uses_scope_ops = false;
-
     for op in ops {
         match op.get() {
             Op::GetScopeObject { .. }
@@ -34,8 +35,8 @@ pub fn postprocess_peephole<'a>(ops: &'a [Cell<Op<'_>>], jump_targets: &HashSet<
             | Op::NewFunction { .. }
             | Op::NewClass { .. }
             | Op::PopScope => {
-                uses_scope_ops = true;
-                break;
+                // If it does, we can't perform this optimization.
+                return;
             }
 
             _ => {}
@@ -43,21 +44,27 @@ pub fn postprocess_peephole<'a>(ops: &'a [Cell<Op<'_>>], jump_targets: &HashSet<
     }
 
     // If the scope stack is never read from, only written to, we can replace
-    // `PushScope` ops with `Pop`. This allows the peephole optimizer to emit
-    // slightly better code.
+    // `PushScope` ops with `Pop`.
     for current_op in ops {
-        match current_op.get() {
+        if matches!(
+            current_op.get(),
             Op::PushScope {
-                input_not_null: true,
-            } if !uses_scope_ops => {
-                current_op.set(Op::Pop);
+                input_not_null: true
             }
-            _ => {}
+        ) {
+            current_op.set(Op::Pop);
         }
     }
+}
 
-    // Now actually run the main peephole optimizer.
-    let mut last_op: Option<&'a Cell<Op<'_>>> = None;
+/// A peephole optimizer to run after type-aware optimizations, and after the
+/// scope removal peephole pass. This should be called on the entire code slice.
+///
+/// This pass removes redundant push+pop pairs, converts arithmetic ops into
+/// their integral versions if possible, and performs other miscellaneous
+/// optimizations.
+pub fn postprocess_peephole<'gc>(ops: &[Cell<Op<'gc>>], jump_targets: &HashSet<usize>) {
+    let mut last_op: Option<&Cell<Op<'gc>>> = None;
 
     for (i, current_op) in ops.iter().enumerate() {
         if jump_targets.contains(&i) {

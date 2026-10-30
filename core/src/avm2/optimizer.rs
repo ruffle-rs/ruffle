@@ -1,5 +1,6 @@
 mod blocks;
 mod dce;
+mod dse;
 mod nop_remover;
 mod peephole;
 mod type_aware;
@@ -43,6 +44,17 @@ pub fn optimize<'gc>(
         &mut jump_targets,
         sets_local_0,
     )?;
+
+    peephole::push_scope_removal_peephole(code_slice);
+    peephole::postprocess_peephole(code_slice, &jump_targets);
+
+    dse::eliminate_dead_stores(
+        activation,
+        method,
+        code_slice,
+        method_exceptions,
+        &jump_targets,
+    );
 
     peephole::postprocess_peephole(code_slice, &jump_targets);
 
