@@ -193,21 +193,14 @@ pub fn play<'gc>(
 pub fn extract<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Value<'gc>,
-    args: FunctionArgs<'_, 'gc>,
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     avm2_stub_method!(activation, "flash.media.Sound", "extract");
 
-    let bytearray = args.try_get_object(0);
-    let length = args.get_f64(1);
-
-    if let Some(bytearray) = bytearray
-        && let Some(mut bytearray) = bytearray.as_bytearray_mut()
-    {
-        bytearray
-            .write_bytes(vec![0u8; length.ceil() as usize].as_slice())
-            .map_err(|e| e.to_avm(activation))?;
-    }
-
+    // Extract nothing. `sampleData` listeners often call this with lengths
+    // computed from the sound, which must not be allocated as a buffer of
+    // silence. Returning `undefined` rather than 0 lets loops such as
+    // `while (len > 0) len -= sound.extract(bytes, len)` end.
     Ok(Value::Undefined)
 }
 
