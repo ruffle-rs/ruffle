@@ -1,4 +1,7 @@
 use std::any::Any;
+use std::collections::VecDeque;
+use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
+use std::sync::{Arc, Mutex};
 
 use crate::{
     avm1::{NativeObject, Object as Avm1Object},
@@ -88,6 +91,75 @@ impl From<swf::SoundStreamHead> for SoundStreamInfo {
     }
 }
 
+/// Sample frames that are generated while a sound plays, shared between the
+/// player, which queues them, and the audio backend, which plays them as they
+/// arrive.
+///
+/// This backs an AVM2 `Sound` with no data, which asks its `sampleData`
+/// listeners for more samples as it plays. The samples are stereo, at 44.1 kHz.
+#[derive(Clone, Default)]
+pub struct SampleQueue(Arc<SampleQueueData>);
+
+#[derive(Default)]
+struct SampleQueueData {
+    samples: Mutex<VecDeque<[i16; 2]>>,
+
+    /// The number of queued sample frames, so that playback can check for
+    /// more without locking.
+    len: AtomicUsize,
+
+    /// Whether the queued samples are the last ones, so that running out of
+    /// them ends the sound rather than waiting for more.
+    ended: AtomicBool,
+}
+
+impl SampleQueue {
+    /// The sample rate of the queued samples.
+    pub const SAMPLE_RATE: u16 = 44100;
+
+    /// Queues sample frames for playback.
+    pub fn push(&self, samples: impl IntoIterator<Item = [i16; 2]>) {
+        let mut queued = self
+            .0
+            .samples
+            .lock()
+            .expect("SampleQueue lock should not be poisoned");
+        let len = queued.len();
+        queued.extend(samples);
+        self.0.len.fetch_add(queued.len() - len, Ordering::Release);
+    }
+
+    /// Marks the queued samples as the last ones.
+    pub fn end(&self) {
+        self.0.ended.store(true, Ordering::Release);
+    }
+
+    /// Returns whether the queued samples are the last ones.
+    pub fn is_ended(&self) -> bool {
+        self.0.ended.load(Ordering::Acquire)
+    }
+
+    /// Moves the queued sample frames to the end of `buffer`, for playback.
+    ///
+    /// Returns whether they were the last ones. This locks only if there are
+    /// samples to take.
+    pub fn take(&self, buffer: &mut VecDeque<[i16; 2]>) -> bool {
+        // Checked first: any samples queued before `end()` are counted by now,
+        // so they can't be missed.
+        let ended = self.is_ended();
+        if self.0.len.load(Ordering::Acquire) > 0 {
+            let mut queued = self
+                .0
+                .samples
+                .lock()
+                .expect("SampleQueue lock should not be poisoned");
+            self.0.len.fetch_sub(queued.len(), Ordering::Release);
+            buffer.append(&mut queued);
+        }
+        ended
+    }
+}
+
 #[derive(Debug, Error)]
 pub enum RegisterError {
     #[error("MP3 sound is too short")]
@@ -139,6 +211,16 @@ pub trait AudioBackend: Any {
         &mut self,
         stream_data: Substream,
         stream_info: &SoundStreamInfo,
+    ) -> Result<SoundInstanceHandle, DecodeError>;
+
+    /// Starts playing the sample frames of a `SampleQueue`, as they are
+    /// queued.
+    ///
+    /// The sound plays silence while it waits for more samples, and ends once
+    /// the queue has been ended and played out.
+    fn start_sample_queue(
+        &mut self,
+        queue: SampleQueue,
     ) -> Result<SoundInstanceHandle, DecodeError>;
 
     /// Stops a playing sound instance.
@@ -287,6 +369,13 @@ impl AudioBackend for NullAudioBackend {
         &mut self,
         _stream_data: Substream,
         _handle: &SoundStreamInfo,
+    ) -> Result<SoundInstanceHandle, DecodeError> {
+        Ok(SoundInstanceHandle::null())
+    }
+
+    fn start_sample_queue(
+        &mut self,
+        _queue: SampleQueue,
     ) -> Result<SoundInstanceHandle, DecodeError> {
         Ok(SoundInstanceHandle::null())
     }
@@ -637,6 +726,36 @@ impl<'gc> AudioManager<'gc> {
             Ok(handle)
         } else {
             Err(DecodeError::TooManySounds)
+        }
+    }
+
+    /// Starts playing the sample frames of a `SampleQueue`, for an AVM2
+    /// `Sound` that generates its samples while it plays.
+    pub fn start_sample_queue(
+        &mut self,
+        audio: &mut dyn AudioBackend,
+        queue: SampleQueue,
+        transform: Option<display_object::SoundTransform>,
+    ) -> Option<SoundInstanceHandle> {
+        if self.sounds.len() < Self::MAX_SOUNDS {
+            let handle = audio
+                .start_sample_queue(queue)
+                .map_err(|e| tracing::warn!("Cannot start sound: {e}"))
+                .ok()?;
+            let instance = SoundInstance {
+                sound: None,
+                instance: handle,
+                display_object: None,
+                transform: transform.unwrap_or_default(),
+                avm1_object: None,
+                avm2_object: None,
+                stream_start_frame: None,
+            };
+            audio.set_sound_transform(handle, self.transform_for_sound(&instance));
+            self.sounds.push(instance);
+            Some(handle)
+        } else {
+            None
         }
     }
 
