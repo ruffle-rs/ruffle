@@ -43,6 +43,7 @@ pub fn sound_allocator<'gc>(
             }),
             id3: Lock::new(None),
             sample_data: Lock::new(None),
+            extract_position: Cell::new(0),
         },
     ))
     .into())
@@ -97,6 +98,10 @@ pub struct SoundObjectData<'gc> {
     /// into. Like in Flash, every request reuses it, rewound but not cleared,
     /// whichever channel it is for.
     sample_data: Lock<Option<ByteArrayObject<'gc>>>,
+
+    /// The sample frame where `extract()` goes on when it is not given a
+    /// position: where the last call ended.
+    extract_position: Cell<usize>,
 }
 
 #[derive(Collect)]
@@ -203,6 +208,14 @@ impl<'gc> SoundObject<'gc> {
         )
         .set(Some(sample_data));
         sample_data
+    }
+
+    pub fn extract_position(self) -> usize {
+        self.0.extract_position.get()
+    }
+
+    pub fn set_extract_position(self, position: usize) {
+        self.0.extract_position.set(position);
     }
 
     pub fn id3(self) -> Option<Object<'gc>> {
