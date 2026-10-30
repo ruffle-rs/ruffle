@@ -8,7 +8,7 @@ use crate::avm2::error::{
 };
 use crate::avm2::function::{FunctionArgs, exec};
 use crate::avm2::index::ArrayIndex;
-use crate::avm2::object::{NamespaceObject, Object, TObject};
+use crate::avm2::object::{FunctionObject, NamespaceObject, Object, TObject};
 use crate::avm2::property::Property;
 use crate::avm2::script::TranslationUnit;
 use crate::avm2::vtable::VTable;
@@ -979,30 +979,11 @@ impl<'gc> Value<'gc> {
                     {
                         return object.get_property_local(multiname, activation);
                     }
-
-                    if let Some(bound_method) = object.get_bound_method(disp_id) {
-                        return Ok(bound_method.into());
-                    }
-
-                    let bound_method = vtable
-                        .make_bound_method(activation.context, *self, disp_id)
-                        .expect("Method should exist");
-
-                    // TODO: Bound methods should be cached on the Method in a
-                    // WeakKeyHashMap<Value, FunctionObject>, not on the Object
-                    object.install_bound_method(activation.gc(), disp_id, bound_method);
-
-                    Ok(bound_method.into())
-                } else {
-                    let bound_method = vtable
-                        .make_bound_method(activation.context, *self, disp_id)
-                        .expect("Method should exist");
-
-                    // TODO: Bound methods should be cached on the Method in a
-                    // WeakKeyHashMap<Value, FunctionObject>, not on the Object
-
-                    Ok(bound_method.into())
                 }
+
+                let bound_method = self.get_bound_method(activation, disp_id);
+
+                Ok(bound_method.into())
             }
             Some(Property::Virtual { get: Some(get), .. }) => {
                 self.call_method_with_args(get, FunctionArgs::empty(), activation)
@@ -1302,14 +1283,6 @@ impl<'gc> Value<'gc> {
         arguments: FunctionArgs<'_, 'gc>,
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
-        // TODO: Bound methods should be cached on the Method in a
-        // WeakKeyHashMap<Value, FunctionObject>, not on the Object
-        if let Some(object) = self.as_object()
-            && let Some(bound_method) = object.get_bound_method(id)
-        {
-            return bound_method.call(activation, *self, arguments);
-        }
-
         let vtable = self.vtable(activation);
 
         let full_method = vtable.get_full_method(id).expect("Method should exist");
@@ -1327,13 +1300,10 @@ impl<'gc> Value<'gc> {
             );
         }
 
-        let bound_method = VTable::bind_method(activation.context, *self, full_method);
+        // Slow path: This method requires an `arguments` object, which means
+        // we need to allocate a `FunctionObject`.
 
-        // TODO: Bound methods should be cached on the Method in a
-        // WeakKeyHashMap<Value, FunctionObject>, not on the Object
-        if let Some(object) = self.as_object() {
-            object.install_bound_method(activation.gc(), id, bound_method);
-        }
+        let bound_method = self.get_bound_method(activation, id);
 
         bound_method.call(activation, *self, arguments)
     }
@@ -1468,6 +1438,32 @@ impl<'gc> Value<'gc> {
 
                 value.construct(activation, arguments)
             }
+        }
+    }
+
+    /// Get a bound `FunctionObject` with this `Value` as its receiver for a
+    /// method with the given `disp_id` on this `Value`'s vtable.
+    ///
+    /// If no such `FunctionObject` has been created yet, this method will
+    /// create one and cache it.
+    pub fn get_bound_method(
+        &self,
+        activation: &mut Activation<'_, 'gc>,
+        disp_id: usize,
+    ) -> FunctionObject<'gc> {
+        // TODO: Bound methods should be cached on the Method in a
+        // WeakKeyHashMap<Value, FunctionObject>, not on the Object. In avmplus,
+        // bound methods are cached on primitives too.
+        let vtable = self.vtable(activation);
+
+        if let Some(bound_method) = self.as_object().and_then(|o| o.get_bound_method(disp_id)) {
+            bound_method
+        } else {
+            let bound_method = vtable.make_bound_method(activation.context, *self, disp_id);
+            if let Some(object) = self.as_object() {
+                object.install_bound_method(activation.gc(), disp_id, bound_method);
+            }
+            bound_method
         }
     }
 
