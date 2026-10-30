@@ -406,6 +406,23 @@ pub fn make_error_1019<'gc>(
 make_error_fn!(make_error_1020, 1020, verify_error);
 make_error_fn!(make_error_1021, 1021, verify_error);
 make_error_fn!(make_error_1023, 1023, verify_error);
+
+/// Create the `StackOverflowError` thrown when a method is called with too
+/// little stack left.
+#[inline(never)]
+#[cold]
+pub fn make_error_1023_runtime<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
+    // Constructing the error calls its constructors, which must not overflow
+    // again.
+    activation.context.avm2.constructing_stack_overflow_error = true;
+    let class = activation.avm2().classes().stackoverflowerror;
+    // Flash Player doesn't set `errorID` here, even though the message has it.
+    let error = error_constructor(activation, class, error_message!(1023), 0);
+    activation.context.avm2.constructing_stack_overflow_error = false;
+
+    make_error!(error)
+}
+
 make_error_fn!(make_error_1024, 1024, verify_error);
 
 #[inline(never)]

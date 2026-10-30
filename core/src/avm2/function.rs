@@ -1,6 +1,6 @@
 use crate::avm2::Multiname;
 use crate::avm2::activation::Activation;
-use crate::avm2::error::{Error, make_error_1001};
+use crate::avm2::error::{Error, make_error_1001, make_error_1023_runtime};
 use crate::avm2::method::{Method, MethodKind, ParamConfig};
 use crate::avm2::object::{ClassObject, FunctionObject};
 use crate::avm2::scope::ScopeChain;
@@ -240,6 +240,10 @@ pub fn exec<'gc>(
     activation: &mut Activation<'_, 'gc>,
     callee: Option<FunctionObject<'gc>>,
 ) -> Result<Value<'gc>, Error<'gc>> {
+    if activation.context.avm2.is_stack_exhausted() {
+        return Err(make_error_1023_runtime(activation));
+    }
+
     let mc = activation.gc();
 
     let caller_dxns = activation.default_xml_namespace();
@@ -250,7 +254,9 @@ pub fn exec<'gc>(
 
             // We must initialize the stack frame here so the lifetime works out
             let stack = activation.context.avm2.stack;
-            let stack_frame = stack.get_frame(declared_arg_count);
+            let Some(stack_frame) = stack.get_frame(declared_arg_count) else {
+                return Err(make_error_1023_runtime(activation));
+            };
 
             let caller_domain = activation.caller_domain();
             let caller_movie = activation.caller_movie();
@@ -318,7 +324,9 @@ pub fn exec<'gc>(
 
             // We must initialize the stack frame here so the lifetime works out
             let stack = activation.context.avm2.stack;
-            let stack_frame = stack.get_frame_for_method(method);
+            let Some(stack_frame) = stack.get_frame_for_method(method) else {
+                return Err(make_error_1023_runtime(activation));
+            };
 
             // This used to be a one step called Activation::from_method,
             // but avoiding moving an Activation around helps perf

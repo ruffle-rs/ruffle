@@ -52,6 +52,7 @@ pub struct RuffleInstanceBuilder {
     pub(crate) wmode: Option<String>, // TODO: Enumify? `Player` is working in strings here too...
     pub(crate) log_level: tracing::Level,
     pub(crate) max_execution_duration: Duration,
+    pub(crate) max_avm2_call_depth: Option<u32>,
     pub(crate) player_version: Option<u8>,
     pub(crate) preferred_renderer: Option<String>, // TODO: Enumify?
     pub(crate) open_url_mode: OpenUrlMode,
@@ -92,6 +93,7 @@ impl Default for RuffleInstanceBuilder {
             wmode: None,
             log_level: tracing::Level::ERROR,
             max_execution_duration: Duration::from_secs_f64(15.0),
+            max_avm2_call_depth: None,
             player_version: None,
             preferred_renderer: None,
             open_url_mode: OpenUrlMode::Allow,
@@ -241,6 +243,11 @@ impl RuffleInstanceBuilder {
     #[wasm_bindgen(js_name = "setMaxExecutionDuration")]
     pub fn set_max_execution_duration(&mut self, value: f64) {
         self.max_execution_duration = Duration::from_secs_f64(value);
+    }
+
+    #[wasm_bindgen(js_name = "setMaxAvm2CallDepth")]
+    pub fn set_max_avm2_call_depth(&mut self, value: Option<u32>) {
+        self.max_avm2_call_depth = value;
     }
 
     #[wasm_bindgen(js_name = "setPlayerVersion")]
@@ -704,6 +711,7 @@ impl RuffleInstanceBuilder {
             ))
             .with_letterbox(self.letterbox)
             .with_max_execution_duration(self.max_execution_duration)
+            .with_max_avm2_call_depth(self.max_avm2_call_depth.map(|depth| depth as usize))
             .with_player_version(self.player_version)
             .with_player_runtime(self.player_runtime)
             .with_compatibility_rules(self.compatibility_rules.clone())

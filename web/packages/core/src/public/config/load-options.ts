@@ -549,6 +549,18 @@ export interface BaseLoadOptions {
     maxExecutionDuration?: Duration;
 
     /**
+     * Maximum depth of the ActionScript 3 call stack. Calling a function
+     * deeper than that throws a StackOverflowError.
+     *
+     * Raising it lets content recurse deeper, but setting it higher than
+     * the browser's stack allows crashes Ruffle instead.
+     * null uses Ruffle's default.
+     *
+     * @default null
+     */
+    maxAvm2CallDepth?: number | null;
+
+    /**
      * Specifies the base directory or URL used to resolve all relative path statements in the SWF file.
      * null means the current directory.
      *

@@ -109,6 +109,30 @@ use self::scope::Scope;
 const BROADCAST_WHITELIST: [&[u8]; 4] =
     [b"enterFrame", b"exitFrame", b"frameConstructed", b"render"];
 
+/// The default maximum depth of the call stack.
+///
+/// Browsers don't expose how much stack is left, so this is based on
+/// measurements. Recursion through the most stack-hungry call paths crashed
+/// at about 800 frames in Chrome on Android, 1000 in desktop Chrome and
+/// 1400-1900 in Firefox (Chrome 155, Firefox 158). 512 leaves a margin for
+/// heavier call paths and devices that weren't measured.
+const DEFAULT_MAX_CALL_DEPTH: usize = 512;
+
+/// The amount of native stack that has to be left for a method to be called.
+///
+/// It has to fit the native code running between two method calls, as well
+/// as throwing the `StackOverflowError` and running the code that catches it.
+#[cfg(not(any(target_family = "wasm", target_env = "musl")))]
+const MIN_REMAINING_STACK: usize = 512 * 1024;
+
+/// The least remaining native stack that's considered realistic when checked
+/// at the first method call on a thread, while little of it is used.
+///
+/// Smaller values mean the platform reports the stack size wrong, and the
+/// call depth is limited instead.
+#[cfg(not(any(target_family = "wasm", target_env = "musl")))]
+const MIN_PLAUSIBLE_STACK: usize = 1024 * 1024;
+
 /// The state of an AVM2 interpreter.
 #[derive(Collect)]
 #[collect(no_drop)]
@@ -128,6 +152,10 @@ pub struct Avm2<'gc> {
 
     /// The current call stack of the player.
     call_stack: GcRefLock<'gc, CallStack<'gc>>,
+
+    /// Whether a `StackOverflowError` is being constructed, which disables
+    /// the stack limit.
+    constructing_stack_overflow_error: bool,
 
     /// This domain is used exclusively for classes from playerglobals
     playerglobals_domain: Domain<'gc>,
@@ -191,6 +219,10 @@ pub struct Avm2<'gc> {
     pub debug_output: bool,
 
     pub optimizer_enabled: bool,
+
+    /// The maximum depth of the call stack, used on platforms where the
+    /// remaining native stack can't be determined (e.g. wasm).
+    max_call_depth: usize,
 }
 
 impl<'gc> Avm2<'gc> {
@@ -213,6 +245,7 @@ impl<'gc> Avm2<'gc> {
             stack: Stack::new(mc),
             scope_stack: Vec::new(),
             call_stack: GcRefLock::new(mc, CallStack::new().into()),
+            constructing_stack_overflow_error: false,
             playerglobals_domain,
             stage_domain,
             system_classes: None,
@@ -241,6 +274,8 @@ impl<'gc> Avm2<'gc> {
             debug_output: false,
 
             optimizer_enabled: true,
+
+            max_call_depth: DEFAULT_MAX_CALL_DEPTH,
         }
     }
 
@@ -638,6 +673,36 @@ impl<'gc> Avm2<'gc> {
         self.call_stack.borrow().capture()
     }
 
+    /// Whether there's too little stack left to call another method.
+    ///
+    /// Flash Player throws a `StackOverflowError` when it runs out of native
+    /// stack, so the depth at which that happens depends on what is called.
+    pub fn is_stack_exhausted(&self) -> bool {
+        if self.constructing_stack_overflow_error {
+            return false;
+        }
+
+        // TODO: Use stacker on musl too, once it reports the stack of the main
+        // thread correctly. Currently it reports only the part that's already
+        // mapped, which grows as the stack is used.
+        // See <https://github.com/rust-lang/stacker/issues/155>
+        #[cfg(not(any(target_family = "wasm", target_env = "musl")))]
+        {
+            thread_local! {
+                static IS_STACK_SIZE_PLAUSIBLE: bool = stacker::remaining_stack()
+                    .is_some_and(|remaining| remaining >= MIN_PLAUSIBLE_STACK);
+            }
+
+            if IS_STACK_SIZE_PLAUSIBLE.with(|plausible| *plausible)
+                && let Some(remaining) = stacker::remaining_stack()
+            {
+                return remaining < MIN_REMAINING_STACK;
+            }
+        }
+
+        self.call_stack.borrow().len() >= self.max_call_depth
+    }
+
     fn push_scope(&mut self, scope: Scope<'gc>) {
         self.scope_stack.push(scope);
     }
@@ -678,6 +743,14 @@ impl<'gc> Avm2<'gc> {
 
     pub fn set_optimizer_enabled(&mut self, value: bool) {
         self.optimizer_enabled = value;
+    }
+
+    pub fn max_call_depth(&self) -> usize {
+        self.max_call_depth
+    }
+
+    pub fn set_max_call_depth(&mut self, value: usize) {
+        self.max_call_depth = value;
     }
 
     // Report an uncaught AVM2 error.

@@ -1,0 +1,47 @@
+// plain
+caught: [class StackOverflowError]
+errorID: 0
+Error: Error #1023: Stack overflow occurred.
+// plain again
+caught: [class StackOverflowError]
+errorID: 0
+Error: Error #1023: Stack overflow occurred.
+// via call
+caught: [class StackOverflowError]
+errorID: 0
+Error: Error #1023: Stack overflow occurred.
+// via apply
+caught: [class StackOverflowError]
+errorID: 0
+Error: Error #1023: Stack overflow occurred.
+// via closure
+caught: [class StackOverflowError]
+errorID: 0
+Error: Error #1023: Stack overflow occurred.
+// via setter
+caught: [class StackOverflowError]
+errorID: 0
+Error: Error #1023: Stack overflow occurred.
+// via getter
+caught: [class StackOverflowError]
+errorID: 0
+Error: Error #1023: Stack overflow occurred.
+// via constructor
+caught: [class StackOverflowError]
+errorID: 0
+Error: Error #1023: Stack overflow occurred.
+// via forEach
+caught: [class StackOverflowError]
+errorID: 0
+Error: Error #1023: Stack overflow occurred.
+// via toString
+caught: [class StackOverflowError]
+errorID: 0
+Error: Error #1023: Stack overflow occurred.
+// catch at every level
+caught: [class StackOverflowError]
+catches: 1
+// finally at every level
+caught: [class StackOverflowError]
+finally ran at every level: true
+// done
