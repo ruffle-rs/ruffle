@@ -3,6 +3,7 @@
 use crate::avm2::Avm2;
 use crate::avm2::Error;
 use crate::avm2::activation::Activation;
+use crate::avm2::bytearray::Endian;
 use crate::avm2::error::{make_error_2037, make_error_2068, make_error_2084};
 use crate::avm2::function::FunctionArgs;
 use crate::avm2::globals::slots::flash_events_event_dispatcher as event_dispatcher_slots;
@@ -219,16 +220,75 @@ pub fn play<'gc>(
 /// `Sound.extract`
 pub fn extract<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Value<'gc>,
-    _args: FunctionArgs<'_, 'gc>,
+    this: Value<'gc>,
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm2_stub_method!(activation, "flash.media.Sound", "extract");
+    let this = this.as_object().unwrap().as_sound_object().unwrap();
+    let target = args.get_object(activation, 0, "target")?;
+    let length = args.get_f64(1);
+    let start_position = args.get_f64(2);
 
-    // Extract nothing. `sampleData` listeners often call this with lengths
-    // computed from the sound, which must not be allocated as a buffer of
-    // silence. Returning `undefined` rather than 0 lets loops such as
-    // `while (len > 0) len -= sound.extract(bytes, len)` end.
-    Ok(Value::Undefined)
+    let Some(sound) = this.sound_handle() else {
+        // Flash extracts nothing from a sound without data.
+        return Ok(0.into());
+    };
+
+    // Lengths and positions are rounded down, as in Flash Player, where an
+    // infinite length extracts nothing. A negative position, the default,
+    // goes on where the last call ended; NaN, and positions from 2^31 on,
+    // start at 0.
+    let length = if length.is_finite() && length > 0.0 {
+        length as usize
+    } else {
+        0
+    };
+    let start = if start_position < 0.0 {
+        this.extract_position()
+    } else if start_position < 2147483648.0 {
+        start_position as usize
+    } else {
+        0
+    };
+
+    // In pieces, written as they are decoded: a long sound takes 8 bytes per
+    // sample frame.
+    const CHUNK_LENGTH: usize = 8192;
+    let mut target = target.as_bytearray_mut().unwrap();
+    let little_endian = target.endian() == Endian::Little;
+    let mut extracted = 0;
+    this.set_extract_position(start);
+    while extracted < length {
+        let chunk_length = (length - extracted).min(CHUNK_LENGTH);
+        let Some(samples) =
+            activation
+                .context
+                .audio
+                .extract_sound(sound, start + extracted, chunk_length)
+        else {
+            // The backend can't decode it: extract nothing, but return
+            // `undefined` like a stub, so that loops such as
+            // `while (len > 0) len -= sound.extract(bytes, len)` end.
+            return Ok(Value::Undefined);
+        };
+        let mut bytes = Vec::with_capacity(samples.len() * 8);
+        for sample in samples.iter().flatten() {
+            if little_endian {
+                bytes.extend_from_slice(&sample.to_le_bytes());
+            } else {
+                bytes.extend_from_slice(&sample.to_be_bytes());
+            }
+        }
+        target
+            .write_bytes(&bytes)
+            .map_err(|e| e.to_avm(activation))?;
+        extracted += samples.len();
+        this.set_extract_position(start + extracted);
+        if samples.len() < chunk_length {
+            break;
+        }
+    }
+
+    Ok((extracted as f64).into())
 }
 
 /// `Sound.close`
