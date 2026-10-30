@@ -4,6 +4,7 @@ added instance1
 added instance2
 exitFrame 1
 root loader: init 1293
+root loader: progress 1293
 root loader: httpStatus 1293
 root loader: complete 1293
 child 1 loader: open 0
