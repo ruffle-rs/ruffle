@@ -220,6 +220,16 @@ pub trait AudioBackend: Any {
     /// the queue has been ended and played out.
     fn start_sample_queue(&mut self, queue: SampleQueue) -> SoundInstanceHandle;
 
+    /// Decodes the sample frames `start..start + length` of a sound as 44.1
+    /// kHz stereo, or fewer if the sound ends first, for AVM2's
+    /// `Sound.extract()`. Returns `None` if the sound can't be decoded.
+    fn extract_sound(
+        &mut self,
+        sound: SoundHandle,
+        start: usize,
+        length: usize,
+    ) -> Option<Vec<[f32; 2]>>;
+
     /// Stops a playing sound instance.
     /// No-op if the sound is not playing.
     fn stop_sound(&mut self, sound: SoundInstanceHandle);
@@ -372,6 +382,15 @@ impl AudioBackend for NullAudioBackend {
 
     fn start_sample_queue(&mut self, _queue: SampleQueue) -> SoundInstanceHandle {
         SoundInstanceHandle::null()
+    }
+
+    fn extract_sound(
+        &mut self,
+        _sound: SoundHandle,
+        _start: usize,
+        _length: usize,
+    ) -> Option<Vec<[f32; 2]>> {
+        None
     }
 
     fn stop_sound(&mut self, _sound: SoundInstanceHandle) {}
