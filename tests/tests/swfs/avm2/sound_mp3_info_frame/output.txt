@@ -1,0 +1,7 @@
+length badtag 1071.0204081632653, extracted 47232, info extracted 47232
+length noframes 1071.0204081632653, extracted 47232
+length info 1071.0204081632653, noinfo 1044.8979591836735
+noinfo complete
+info complete
+noinfo complete again
+noframes complete
