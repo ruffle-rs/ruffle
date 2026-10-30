@@ -3,8 +3,9 @@
 use crate::avm2::Avm2;
 use crate::avm2::Error;
 use crate::avm2::activation::Activation;
-use crate::avm2::error::{make_error_2037, make_error_2084};
+use crate::avm2::error::{make_error_2037, make_error_2068, make_error_2084};
 use crate::avm2::function::FunctionArgs;
+use crate::avm2::globals::slots::flash_events_event_dispatcher as event_dispatcher_slots;
 use crate::avm2::globals::slots::flash_net_url_request as url_request_slots;
 use crate::avm2::object::{
     EventObject, QueuedPlay, SoundChannelObject, SoundLoadingState, TObject as _,
@@ -14,6 +15,7 @@ use crate::avm2::value::Value;
 use crate::backend::navigator::Request;
 use crate::character::Character;
 use crate::display_object::SoundTransform;
+use crate::string::AvmString;
 use crate::{avm2_stub_getter, avm2_stub_method};
 use swf::{SoundEvent, SoundInfo};
 
@@ -170,6 +172,31 @@ pub fn play<'gc>(
             None
         };
 
+        if sound_object.sound_handle().is_none()
+            && sound_object.loading_state() == SoundLoadingState::New
+        {
+            // A sound with no data plays what its `sampleData` listeners
+            // generate, and is invalid without any.
+            let sample_data = AvmString::new_ascii_static(activation.gc(), b"sampleData");
+            let has_listener = this
+                .get_slot(event_dispatcher_slots::DISPATCH_LIST)
+                .as_object()
+                .and_then(|list| {
+                    list.as_dispatch_mut(activation.gc())
+                        .map(|list| list.has_event_listener(sample_data))
+                })
+                .unwrap_or(false);
+            if !has_listener {
+                return Err(make_error_2068(activation));
+            }
+
+            let sound_channel = SoundChannelObject::generated(activation, sound_object);
+            if sound_channel.start_generator(activation.context, sound_transform) {
+                return Ok(sound_channel.into());
+            }
+            return Ok(Value::Null);
+        }
+
         let sound_channel = SoundChannelObject::empty(activation);
 
         let queued_play = QueuedPlay {
@@ -193,21 +220,14 @@ pub fn play<'gc>(
 pub fn extract<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Value<'gc>,
-    args: FunctionArgs<'_, 'gc>,
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     avm2_stub_method!(activation, "flash.media.Sound", "extract");
 
-    let bytearray = args.try_get_object(0);
-    let length = args.get_f64(1);
-
-    if let Some(bytearray) = bytearray
-        && let Some(mut bytearray) = bytearray.as_bytearray_mut()
-    {
-        bytearray
-            .write_bytes(vec![0u8; length.ceil() as usize].as_slice())
-            .map_err(|e| e.to_avm(activation))?;
-    }
-
+    // Extract nothing. `sampleData` listeners often call this with lengths
+    // computed from the sound, which must not be allocated as a buffer of
+    // silence. Returning `undefined` rather than 0 lets loops such as
+    // `while (len > 0) len -= sound.extract(bytes, len)` end.
     Ok(Value::Undefined)
 }
 
