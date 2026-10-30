@@ -38,11 +38,26 @@
     "settings_player_version": {
         "message": "Номер версії Flash Player для емуляції (діапазон 1-32)"
     },
+    "settings_background_execution_mode": {
+        "message": "Виконання у фоновому режимі"
+    },
+    "settings_background_execution_mode_none": {
+        "message": "Пауза"
+    },
+    "settings_background_execution_mode_main_thread": {
+        "message": "Виконати в головному потоці"
+    },
     "settings_preferred_renderer": {
         "message": "Бажаний візуалізатор"
     },
     "settings_preferred_renderer_auto": {
         "message": "Автоматичний"
+    },
+    "settings_device_font_renderer": {
+        "message": "Засіб візуалізації шрифтів пристрою"
+    },
+    "device_font_renderer_embedded": {
+        "message": "Вбудований"
     },
     "settings_advanced_options": {
         "message": "Розширені опції"
