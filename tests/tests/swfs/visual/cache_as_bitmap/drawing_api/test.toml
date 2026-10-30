@@ -1,7 +1,22 @@
 num_frames = 3
 
-[image_comparisons.output]
+# Rectangle edges and diagonal strokes have different rasterization coverage
+# from Flash. Bound both the affected channel count and the larger differences.
+[[image_comparisons.output.checks]]
 tolerance = 1
+max_outliers = 7800
+
+[[image_comparisons.output.checks]]
+tolerance = 13
+max_outliers = 1750
+
+[[image_comparisons.output.checks]]
+tolerance = 51
+max_outliers = 220
+
+[[image_comparisons.output.checks]]
+tolerance = 102
+max_outliers = 0
 
 [player_options]
-with_renderer = { optional = false, quality = "low" }
+with_renderer = { optional = false }
