@@ -220,7 +220,29 @@ impl<'gc> LoaderInfoObject<'gc> {
             };
 
             if should_complete {
+                // Set first: a goto in any of the handlers below runs a nested frame,
+                // which calls us again and would fire these events a second time.
+                self.0.complete_event_fired.set(true);
+
                 let mut activation = Activation::from_nothing(context);
+
+                // The root movie's final 'progress' event, which Flash fires between
+                // 'init' and 'complete'. `Player::preload` leaves it to us: the root
+                // movie usually finishes preloading before its first frame runs, so
+                // a preloader that starts listening there would never see 100%.
+                if self.0.loader.is_none()
+                    && let LoaderStream::Swf(movie, _) = self.0.loaded_stream.get()
+                {
+                    let total_len = movie.compressed_len();
+                    let progress_evt = EventObject::progress_event(
+                        &mut activation,
+                        "progress",
+                        total_len,
+                        total_len,
+                    );
+                    Avm2::dispatch_event(activation.context, progress_evt, self.into());
+                }
+
                 if !from_bytes {
                     let http_status_evt =
                         EventObject::http_status_event(&mut activation, status, redirected);
@@ -228,7 +250,6 @@ impl<'gc> LoaderInfoObject<'gc> {
                     Avm2::dispatch_event(context, http_status_evt, self.into());
                 }
 
-                self.0.complete_event_fired.set(true);
                 let complete_evt = EventObject::bare_default_event(context, "complete");
                 Avm2::dispatch_event(context, complete_evt, self.into());
                 return true;
