@@ -281,6 +281,31 @@ impl<'gc> EventObject<'gc> {
         )
     }
 
+    pub fn sample_data_event(
+        activation: &mut Activation<'_, 'gc>,
+        position: f64,
+        data: Object<'gc>,
+    ) -> EventObject<'gc> {
+        let event_type = AvmString::new_ascii_static(activation.gc(), b"sampleData");
+
+        let sample_data_event_cls = activation.avm2().classes().sampledataevent;
+        Self::from_class_and_args(
+            activation,
+            sample_data_event_cls,
+            &[
+                event_type.into(),
+                // bubbles
+                false.into(),
+                // cancelable
+                false.into(),
+                // theposition
+                position.into(),
+                // thedata
+                data.into(),
+            ],
+        )
+    }
+
     pub fn focus_event(
         activation: &mut Activation<'_, 'gc>,
         event_type: &str,
