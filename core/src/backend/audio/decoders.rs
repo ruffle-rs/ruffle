@@ -381,6 +381,10 @@ impl Read for StreamTagReader {
 pub struct Mp3Metadata {
     pub sample_rate: u16,
     pub num_sample_frames: u32,
+
+    /// The length of the encoder's info frame (Xing, Info or VBRI), if
+    /// there is one. Our decoder skips it, Flash decodes it as silence.
+    pub info_frame_sample_frames: u32,
 }
 
 /// `SubstreamTagReader` reads through the data chunks of a `Substream` with
