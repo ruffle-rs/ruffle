@@ -2391,7 +2391,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         } else {
             self.target_clip()
                 .and_then(|dobj| dobj.as_movie_clip())
-                .map(|mc| mc.frames_loaded() >= min(frame_num, mc.header_frames()) as i32)
+                .map(|mc| mc.avm1_frames_loaded() >= min(frame_num, mc.header_frames()) as i32)
                 .unwrap_or(true)
         };
 
@@ -2435,7 +2435,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             self.target_clip()
                 .and_then(|dobj| dobj.as_movie_clip())
                 .map(|mc| {
-                    mc.frames_loaded() + 1 >= min(frame_num as u16, mc.header_frames()) as i32
+                    mc.avm1_frames_loaded() + 1 >= min(frame_num as u16, mc.header_frames()) as i32
                 })
                 .unwrap_or(true)
         };

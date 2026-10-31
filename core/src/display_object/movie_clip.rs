@@ -351,7 +351,106 @@ impl<'gc> MovieClip<'gc> {
         if let Some(loader_info) = loader_info {
             loader_info.set_loader_stream(LoaderStream::Swf(movie, mc.into()), activation.gc());
         }
+        // Flash Player reads the root movie in chunks, and runs the first frame
+        // as soon as it has arrived. See `Player::preload`.
+        mc.receive_file_bytes(0);
         mc
+    }
+
+    /// The size of the chunks Flash Player reads a SWF file in.
+    pub const FILE_CHUNK_SIZE: u64 = 4096;
+
+    /// Marks the first `file_bytes` bytes of this root movie's SWF file as
+    /// received: only the tags within them are preloaded. Once the whole file
+    /// has been received, all of it is preloaded as usual.
+    ///
+    /// Flash Player reads a SWF file in chunks of `FILE_CHUNK_SIZE` bytes and
+    /// runs the first frame as soon as it has arrived. The rest arrives after
+    /// that frame (from a local file, right after it), so the first frame
+    /// sees a partly loaded movie, unless the file fits in the first chunk.
+    pub fn receive_file_bytes(self, file_bytes: u64) {
+        let file_len = self.movie().compressed_len() as u64;
+        let received = (file_bytes < file_len).then_some(file_bytes);
+        Gc::as_ref(self.0.shared.get())
+            .preload_progress
+            .received_file_bytes
+            .set(received);
+    }
+
+    /// How much of this root movie's SWF file has been received, or `None`
+    /// once all of it has.
+    pub fn received_file_bytes(self) -> Option<u64> {
+        Gc::as_ref(self.0.shared.get())
+            .preload_progress
+            .received_file_bytes
+            .get()
+    }
+
+    /// Lets the rest of this root movie arrive, once its first frame has run.
+    /// Returns whether there is more to receive.
+    pub fn start_receiving_rest(self) -> bool {
+        let progress = &Gc::as_ref(self.0.shared.get()).preload_progress;
+        if self.received_file_bytes().is_some() && self.frames_loaded() >= 1 {
+            progress.is_receiving_rest.set(true);
+        }
+        progress.is_receiving_rest.get()
+    }
+
+    /// Whether the rest of this root movie is arriving after its first frame.
+    /// This stays true until it has arrived and been preloaded, and
+    /// `finish_receiving_rest` has been called.
+    pub fn is_receiving_rest(self) -> bool {
+        Gc::as_ref(self.0.shared.get())
+            .preload_progress
+            .is_receiving_rest
+            .get()
+    }
+
+    /// Returns true once, when the whole movie has arrived.
+    pub fn finish_receiving_rest(self) -> bool {
+        let progress = &Gc::as_ref(self.0.shared.get()).preload_progress;
+        if progress.is_receiving_rest.get() && self.received_file_bytes().is_none() {
+            progress.is_receiving_rest.set(false);
+            return true;
+        }
+        false
+    }
+
+    /// The ends of the received chunks that haven't been reported with a
+    /// `progress` event yet.
+    pub fn take_unreported_chunks(self) -> Vec<u64> {
+        let progress = &Gc::as_ref(self.0.shared.get()).preload_progress;
+        let Some(received) = self.received_file_bytes() else {
+            return vec![];
+        };
+        let reported = progress.reported_file_bytes.replace(received);
+        (reported / Self::FILE_CHUNK_SIZE + 1..=received / Self::FILE_CHUNK_SIZE)
+            .map(|chunk| chunk * Self::FILE_CHUNK_SIZE)
+            .collect()
+    }
+
+    /// The end of the tag data received so far, as an offset into the tag
+    /// stream, or `None` once all of it has been received.
+    ///
+    /// For a compressed SWF, only the decompressed data is kept, so the
+    /// decompressed size of the received file bytes is estimated from the
+    /// compression ratio.
+    fn received_tag_bytes(self) -> Option<u64> {
+        const SWF_FILE_HEADER_LEN: u64 = 8;
+
+        let file_bytes = self.received_file_bytes()?;
+        let movie = self.movie();
+        let file_len = movie.compressed_len() as u64;
+        let total_len = movie.uncompressed_len().max(0) as u64;
+        let decompressed = if file_len == total_len || file_bytes <= SWF_FILE_HEADER_LEN {
+            file_bytes
+        } else {
+            SWF_FILE_HEADER_LEN
+                + (file_bytes - SWF_FILE_HEADER_LEN) * (total_len - SWF_FILE_HEADER_LEN)
+                    / (file_len - SWF_FILE_HEADER_LEN).max(1)
+        };
+        let header_len = total_len.saturating_sub(self.tag_stream_len() as u64);
+        Some(decompressed.saturating_sub(header_len))
     }
 
     pub fn instantiate(self, mc: &Mutation<'gc>) -> Self {
@@ -497,7 +596,14 @@ impl<'gc> MovieClip<'gc> {
             return true;
         }
 
-        let reader = &mut swf.read_from(progress.next_preload_chunk.get());
+        // Only the complete tags in the data received so far can be preloaded.
+        let start = progress.next_preload_chunk.get() as usize;
+        let end = match self.received_tag_bytes() {
+            Some(received) => complete_tags_end(swf.data(), start, received as usize),
+            None => swf.len(),
+        };
+        let is_partly_received = end < swf.len();
+        let reader = &mut swf::read::Reader::new(&swf.data()[start..end], self.movie().version());
 
         let mut sub_preload_done = true;
         if let Some(symbol) = progress.cur_preload_symbol.take() {
@@ -592,16 +698,28 @@ impl<'gc> MovieClip<'gc> {
             Ok(ControlFlow::Continue)
         };
 
-        let result = if sub_preload_done {
-            tag_utils::decode_tags(reader, tag_callback)
+        // Whether preloading stopped before the end of the data, for example
+        // at the execution limit, even if that was the last tag received.
+        let mut did_stop_early = !sub_preload_done;
+        let result = if sub_preload_done && !reader.get_ref().is_empty() {
+            let mut tag_callback = tag_callback;
+            tag_utils::decode_tags(reader, |reader: &mut SwfStream<'_>, tag_code| {
+                let control_flow = tag_callback(reader, tag_code);
+                did_stop_early |= matches!(control_flow, Ok(ControlFlow::Exit));
+                control_flow
+            })
         } else {
             Ok(true)
         };
+        // Running out of received data, which has no End tag, is not the end.
+        let is_waiting_for_data =
+            is_partly_received && !did_stop_early && reader.get_ref().is_empty();
         let is_finished = !progress.awaiting_import.get()
             && (progress.has_end_tag.get()
-                || result.is_err()
-                || !result.unwrap_or_default()
-                || reader.get_ref().is_empty());
+                || !is_partly_received
+                    && (result.is_err()
+                        || !result.unwrap_or_default()
+                        || reader.get_ref().is_empty()));
 
         shared.import_exports_of_importer(context);
 
@@ -619,7 +737,9 @@ impl<'gc> MovieClip<'gc> {
             progress.next_preload_chunk.set(next_chunk);
         }
 
-        is_finished
+        // Preloading what has been received counts as finished: the rest is
+        // waiting for data, not for preloading time.
+        is_finished || is_waiting_for_data
     }
 
     pub fn finish_importing(self) {
@@ -1159,6 +1279,18 @@ impl<'gc> MovieClip<'gc> {
         self.0.frames_loaded()
     }
 
+    /// The amount of frames loaded in this movieclip, as AVM1 sees it in
+    /// `_framesloaded` and `ifFrameLoaded`: while the root movie arrives in
+    /// chunks, Flash Player doesn't count the last frame it has the end of.
+    pub fn avm1_frames_loaded(self) -> i32 {
+        let frames_loaded = self.frames_loaded();
+        if self.received_file_bytes().is_some() {
+            (frames_loaded - 1).max(0)
+        } else {
+            frames_loaded
+        }
+    }
+
     pub fn total_bytes(self) -> i32 {
         // For a loaded SWF, returns the uncompressed size of the SWF.
         // Otherwise, returns the size of the tag list in the clip's DefineSprite tag.
@@ -1177,6 +1309,12 @@ impl<'gc> MovieClip<'gc> {
         }
 
         let swf_header_size = max(self.total_bytes(), 0) as u32 - self.tag_stream_len() as u32;
+
+        // While the root movie arrives, Flash Player reports what it has
+        // received, which includes the start of tags that aren't complete yet.
+        if let Some(received) = self.received_tag_bytes() {
+            return swf_header_size + received.min(self.tag_stream_len() as u64) as u32;
+        }
 
         swf_header_size + progress.next_preload_chunk.get() as u32
     }
@@ -1209,6 +1347,9 @@ impl<'gc> MovieClip<'gc> {
     /// run through `progress`, we instead emulate this property by scaling the
     /// loaded bytes by the compression ratio of the SWF.
     pub fn compressed_loaded_bytes(self) -> u32 {
+        if let Some(received) = self.received_file_bytes() {
+            return received as u32;
+        }
         (self.loaded_bytes() as f64 * self.compressed_total_bytes() as f64
             / self.total_bytes() as f64) as u32
     }
@@ -4654,6 +4795,17 @@ struct PreloadProgress {
     /// Whether preloading encountered an explicit End tag.
     /// Clips without an End tag should not loop, even if they have multiple frames.
     has_end_tag: Cell<bool>,
+
+    /// How much of the SWF file has been received, for a root movie that
+    /// arrives in chunks, or `None` once all of it has (and for other clips).
+    /// See `MovieClip::receive_file_bytes`.
+    received_file_bytes: Cell<Option<u64>>,
+
+    /// Whether the rest of the root movie is arriving after its first frame.
+    is_receiving_rest: Cell<bool>,
+
+    /// How much of the root movie's SWF file `progress` events have reported.
+    reported_file_bytes: Cell<u64>,
 }
 
 impl Default for PreloadProgress {
@@ -4666,6 +4818,9 @@ impl Default for PreloadProgress {
             cur_preload_symbol: Cell::new(None),
             awaiting_import: Cell::new(false),
             has_end_tag: Cell::new(false),
+            received_file_bytes: Cell::new(None),
+            is_receiving_rest: Cell::new(false),
+            reported_file_bytes: Cell::new(0),
         }
     }
 }
@@ -5099,4 +5254,27 @@ impl ClipEventHandler {
             action_data: SwfSlice::from(movie).to_subslice(swf_action.action_data),
         }
     }
+}
+
+/// Returns the end of the last complete tag in `data[start..received]`, as an
+/// offset into `data`: tags that don't fit entirely can't be preloaded yet.
+fn complete_tags_end(data: &[u8], start: usize, received: usize) -> usize {
+    let received = received.min(data.len());
+    let mut pos = start;
+    while let Some(&[a, b]) = data.get(pos..pos + 2) {
+        let code_and_length = u16::from_le_bytes([a, b]);
+        let (header_len, tag_len) = match code_and_length & 0x3f {
+            0x3f => match data.get(pos + 2..pos + 6) {
+                Some(&[a, b, c, d]) => (6, u32::from_le_bytes([a, b, c, d]) as usize),
+                _ => break,
+            },
+            short_len => (2, usize::from(short_len)),
+        };
+        let tag_end = pos.saturating_add(header_len).saturating_add(tag_len);
+        if tag_end > received {
+            break;
+        }
+        pos = tag_end;
+    }
+    pos.max(start)
 }
