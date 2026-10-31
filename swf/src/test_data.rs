@@ -2007,6 +2007,45 @@ pub fn tag_tests() -> Vec<TagTestData> {
             ),
         ),
         (
+            5, // ClipEventFlags have 16 bits before SWF 6, with Data in the second byte.
+            Tag::PlaceObject(Box::new(PlaceObject {
+                version: 2,
+                action: PlaceObjectAction::Place(2),
+                depth: 1,
+                matrix: None,
+                color_transform: None,
+                ratio: None,
+                name: None,
+                clip_depth: None,
+                class_name: None,
+                filters: None,
+                background_color: None,
+                blend_mode: None,
+                clip_actions: Some(ClipActions {
+                    all_event_flags: ClipEventFlag::DATA,
+                    records: vec![ClipAction {
+                        events: ClipEventFlag::DATA,
+                        key_code: None,
+                        action_data: &[0],
+                    }],
+                }),
+                has_image: false,
+                is_bitmap_cached: None,
+                is_visible: None,
+                amf_data: None,
+            })),
+            vec![
+                0x92, 0x06, // header
+                0x82, // flags
+                0x01, 0x00, // depth
+                0x02, 0x00, // character ID
+                0x00, 0x00, // reserved
+                0x00, 0x01, // all event flags
+                0x00, 0x01, 0x01, 0x00, 0x00, 0x00, 0x00, // clip action
+                0x00, 0x00, // end
+            ],
+        ),
+        (
             6, // ClipActions added in SWF version 5-6.
             Tag::PlaceObject(Box::new(PlaceObject {
                 version: 2,
