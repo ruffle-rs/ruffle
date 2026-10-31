@@ -3419,11 +3419,7 @@ impl<'gc> MovieClipData<'gc> {
         let swf_ptr = self.shared.get().swf_data.as_ref().as_ptr();
         let tag_ptr = reader.get_ref().as_ptr();
         let tag_start = (tag_ptr.addr() - swf_ptr.addr()) as u64;
-        let place_object = if version == 1 {
-            reader.read_place_object()
-        } else {
-            reader.read_place_object_2_or_3(version)
-        }?;
+        let place_object = read_place_object(reader, version)?;
 
         // We merge the deltas from this PlaceObject with the previous command.
         let depth: Depth = place_object.depth.into();
@@ -4458,11 +4454,7 @@ impl<'gc, 'a> MovieClip<'gc> {
         let swf_ptr = self.0.shared.get().swf_data.as_ref().as_ptr();
         let tag_ptr = reader.get_ref().as_ptr();
         let tag_start = (tag_ptr.addr() - swf_ptr.addr()) as u64;
-        let place_object = if version == 1 {
-            reader.read_place_object()
-        } else {
-            reader.read_place_object_2_or_3(version)
-        }?;
+        let place_object = read_place_object(reader, version)?;
 
         let new_tag = QueuedTag {
             tag_type: QueuedTagAction::Place(version),
@@ -4484,11 +4476,7 @@ impl<'gc, 'a> MovieClip<'gc> {
         reader: &mut SwfStream<'a>,
         version: u8,
     ) -> Result<(), Error> {
-        let place_object = if version == 1 {
-            reader.read_place_object()
-        } else {
-            reader.read_place_object_2_or_3(version)
-        }?;
+        let place_object = read_place_object(reader, version)?;
         use swf::PlaceObjectAction;
         match place_object.action {
             PlaceObjectAction::Place(id) => {
@@ -4506,6 +4494,8 @@ impl<'gc, 'a> MovieClip<'gc> {
                     child.apply_place_object(context, &place_object);
                 }
             }
+            // Rejected by `read_place_object`.
+            PlaceObjectAction::None => {}
         }
 
         Ok(())
@@ -4836,6 +4826,26 @@ struct GotoPlaceObject<'a> {
 
     /// The version of the PlaceObject tag at `tag_start`.
     version: u8,
+}
+
+/// Reads a PlaceObject tag of the given version.
+fn read_place_object<'a>(
+    reader: &mut SwfStream<'a>,
+    version: u8,
+) -> Result<swf::PlaceObject<'a>, Error> {
+    let place_object = if version == 1 {
+        reader.read_place_object()
+    } else {
+        reader.read_place_object_2_or_3(version)
+    }?;
+    if place_object.action == swf::PlaceObjectAction::None {
+        // TODO How does Flash handle this?
+        // Quick testing shows that it's either ignored or the movie is halted
+        // depending on whether the depth is occupied. It appears that a warning
+        // is produced regardless.
+        return Err(swf::error::Error::invalid_data("Invalid PlaceObject type").into());
+    }
+    Ok(place_object)
 }
 
 impl<'a> GotoPlaceObject<'a> {
