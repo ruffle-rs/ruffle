@@ -5,7 +5,7 @@ use crate::avm2::{
 };
 use crate::context::UpdateContext;
 use crate::debug_ui::avm2_class::{class_name, show_avm2_class};
-use crate::debug_ui::display_object::open_display_object_button;
+use crate::debug_ui::display_object::display_object_row_ui;
 use crate::debug_ui::handle::{AVM2ObjectHandle, DisplayObjectHandle};
 use crate::debug_ui::{ItemToSave, Message};
 use egui::{Align, Checkbox, Grid, Id, Layout, TextEdit, Ui, Window};
@@ -115,7 +115,7 @@ impl Avm2ObjectWindow {
 
                 if let Some(object) = object.as_display_object() {
                     ui.label("Display Object");
-                    open_display_object_button(
+                    display_object_row_ui(
                         ui,
                         activation.context,
                         messages,

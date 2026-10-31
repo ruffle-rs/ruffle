@@ -2,7 +2,7 @@ use crate::avm1::globals::style_sheet::StyleSheetObject;
 use crate::avm1::{Activation, ActivationIdentifier, Error, NativeObject, Object, Value};
 use crate::context::UpdateContext;
 use crate::debug_ui::Message;
-use crate::debug_ui::display_object::open_display_object_button;
+use crate::debug_ui::display_object::display_object_row_ui;
 use crate::debug_ui::handle::{AVM1ObjectHandle, DisplayObjectHandle};
 use crate::string::AvmString;
 use egui::{Grid, Id, TextBuffer, TextEdit, Ui, Window};
@@ -156,7 +156,7 @@ impl Avm1ObjectWindow {
                     }
                     Value::MovieClip(value) => {
                         if let Some((_, _, object)) = value.resolve_reference(activation) {
-                            open_display_object_button(
+                            display_object_row_ui(
                                 ui,
                                 activation.context,
                                 messages,
