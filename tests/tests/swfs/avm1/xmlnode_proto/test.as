@@ -1,0 +1,1 @@
+CustomXMLNode.test();
