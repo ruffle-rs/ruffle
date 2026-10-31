@@ -248,3 +248,20 @@ textfieldOrig.className: TextField
 v.className: MyTextFormat
 // textfieldOrig.getNewTextFormat()
 v.className: MyTextFormat
+
+### Testing XML(Node)
+// walkXmlNode(AN_XML)
+- nodeName: null; class: XML
+  - nodeName: root; class: XMLNode
+    - nodeName: a; class: MyXMLNode
+      - nodeName: null; class: MyXMLNode
+    - nodeName: b; class: MyXMLNode
+      - nodeName: c; class: MyXMLNode
+// new XMLSocket(); ...
+// Connecting to XMlSocket...
+XMLSocket connected; status: true
+XML getter called!
+new MyXML(<root></root>) called!
+XMLSocket received XML data: '[type Object]'
+- nodeName: undefined; class: MyXML
+XMLSocket closed
