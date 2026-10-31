@@ -1865,7 +1865,8 @@ impl<W: Write> Writer<W> {
         if self.version >= 6 {
             self.write_u32(bits)?;
         } else {
-            self.write_u16((bits as u8).into())?;
+            // SWF19 pp. 48-50: For SWFv5, ClipEventFlags only had 2 bytes of flags.
+            self.write_u16(bits as u16)?;
         }
         Ok(())
     }
