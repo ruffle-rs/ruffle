@@ -1858,6 +1858,72 @@ pub fn tag_tests() -> Vec<TagTestData> {
             vec![0b01_000100, 0b000_10011, b'a', b'a', b'!', 0],
         ),
         (
+            1,
+            // Only addition terms, the first of which needs the most bits.
+            Tag::PlaceObject(Box::new(PlaceObject {
+                version: 1,
+                action: PlaceObjectAction::Place(1),
+                depth: 1,
+                matrix: Some(Matrix::IDENTITY),
+                color_transform: Some(ColorTransform {
+                    r_add: 255,
+                    ..Default::default()
+                }),
+                ratio: None,
+                name: None,
+                clip_depth: None,
+                class_name: None,
+                filters: None,
+                background_color: None,
+                blend_mode: None,
+                clip_actions: None,
+                has_image: false,
+                is_bitmap_cached: None,
+                is_visible: None,
+                amf_data: None,
+            })),
+            vec![
+                0x0A, 0x01, // header
+                0x01, 0x00, // character ID
+                0x01, 0x00, // depth
+                0x00, // matrix
+                0xA5, 0xFE, 0x00, 0x00, 0x00, // color transform
+            ],
+        ),
+        (
+            1,
+            // Only multiplication terms.
+            Tag::PlaceObject(Box::new(PlaceObject {
+                version: 1,
+                action: PlaceObjectAction::Place(1),
+                depth: 1,
+                matrix: Some(Matrix::IDENTITY),
+                color_transform: Some(ColorTransform {
+                    r_multiply: Fixed8::from_f32(0.5),
+                    ..Default::default()
+                }),
+                ratio: None,
+                name: None,
+                clip_depth: None,
+                class_name: None,
+                filters: None,
+                background_color: None,
+                blend_mode: None,
+                clip_actions: None,
+                has_image: false,
+                is_bitmap_cached: None,
+                is_visible: None,
+                amf_data: None,
+            })),
+            vec![
+                0x0A, 0x01, // header
+                0x01, 0x00, // character ID
+                0x01, 0x00, // depth
+                0x00, // matrix
+                0x68, 0x80, 0x40, 0x10, 0x00, // color transform
+            ],
+        ),
+        (
             4,
             Tag::PlaceObject(Box::new(PlaceObject {
                 version: 2,
@@ -1912,6 +1978,45 @@ pub fn tag_tests() -> Vec<TagTestData> {
                 "tests/swfs/PlaceObject2-ClipActionsV5-CS6.swf",
                 TagCode::PlaceObject2,
             ),
+        ),
+        (
+            5, // ClipEventFlags have 16 bits before SWF 6, with Data in the second byte.
+            Tag::PlaceObject(Box::new(PlaceObject {
+                version: 2,
+                action: PlaceObjectAction::Place(2),
+                depth: 1,
+                matrix: None,
+                color_transform: None,
+                ratio: None,
+                name: None,
+                clip_depth: None,
+                class_name: None,
+                filters: None,
+                background_color: None,
+                blend_mode: None,
+                clip_actions: Some(ClipActions {
+                    all_event_flags: ClipEventFlag::DATA,
+                    records: vec![ClipAction {
+                        events: ClipEventFlag::DATA,
+                        key_code: None,
+                        action_data: &[0],
+                    }],
+                }),
+                has_image: false,
+                is_bitmap_cached: None,
+                is_visible: None,
+                amf_data: None,
+            })),
+            vec![
+                0x92, 0x06, // header
+                0x82, // flags
+                0x01, 0x00, // depth
+                0x02, 0x00, // character ID
+                0x00, 0x00, // reserved
+                0x00, 0x01, // all event flags
+                0x00, 0x01, 0x01, 0x00, 0x00, 0x00, 0x00, // clip action
+                0x00, 0x00, // end
+            ],
         ),
         (
             6, // ClipActions added in SWF version 5-6.

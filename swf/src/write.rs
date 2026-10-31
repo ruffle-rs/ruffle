@@ -327,77 +327,27 @@ impl<W: Write> Writer<W> {
         Ok(())
     }
 
-    fn write_color_transform_no_alpha(&mut self, color_transform: &ColorTransform) -> Result<()> {
-        // TODO: Assert that alpha is 1.0?
-        let has_mult = !color_transform.r_multiply.is_one()
-            || !color_transform.g_multiply.is_one()
-            || !color_transform.b_multiply.is_one();
-        let has_add =
-            color_transform.r_add != 0 || color_transform.g_add != 0 || color_transform.b_add != 0;
-        let multiply = [
-            color_transform.r_multiply,
-            color_transform.g_multiply,
-            color_transform.b_multiply,
-        ];
-        let add = [
-            color_transform.a_add,
-            color_transform.g_add,
-            color_transform.b_add,
-            color_transform.a_add,
-        ];
-        let mut bits = self.bits();
-        bits.write_bit(has_mult)?;
-        bits.write_bit(has_add)?;
-        let mut num_bits = if has_mult {
-            multiply
-                .iter()
-                .map(|n| count_sbits(n.get().into()))
-                .max()
-                .unwrap()
-        } else {
-            0
-        };
-        if has_add {
-            num_bits = max(
-                num_bits,
-                add.iter().map(|n| count_sbits((*n).into())).max().unwrap(),
-            );
-        }
-        bits.write_ubits_ct::<4>(num_bits)?;
-        if has_mult {
-            bits.write_sbits_fixed8(num_bits, color_transform.r_multiply)?;
-            bits.write_sbits_fixed8(num_bits, color_transform.g_multiply)?;
-            bits.write_sbits_fixed8(num_bits, color_transform.b_multiply)?;
-        }
-        if has_add {
-            bits.write_sbits(num_bits, color_transform.r_add.into())?;
-            bits.write_sbits(num_bits, color_transform.g_add.into())?;
-            bits.write_sbits(num_bits, color_transform.b_add.into())?;
-        }
-        Ok(())
-    }
-
-    fn write_color_transform(&mut self, color_transform: &ColorTransform) -> Result<()> {
-        let has_mult = !color_transform.r_multiply.is_one()
-            || !color_transform.g_multiply.is_one()
-            || !color_transform.b_multiply.is_one()
-            || !color_transform.a_multiply.is_one();
-        let has_add = color_transform.r_add != 0
-            || color_transform.g_add != 0
-            || color_transform.b_add != 0
-            || color_transform.a_add != 0;
-        let multiply = [
+    fn write_color_transform(
+        &mut self,
+        color_transform: &ColorTransform,
+        has_alpha: bool,
+    ) -> Result<()> {
+        // TODO: Assert that alpha is 1.0 when `has_alpha` is false?
+        let num_channels = if has_alpha { 4 } else { 3 };
+        let multiply = &[
             color_transform.r_multiply,
             color_transform.g_multiply,
             color_transform.b_multiply,
             color_transform.a_multiply,
-        ];
-        let add = [
+        ][..num_channels];
+        let add = &[
             color_transform.r_add,
             color_transform.g_add,
             color_transform.b_add,
             color_transform.a_add,
-        ];
+        ][..num_channels];
+        let has_mult = multiply.iter().any(|n| !n.is_one());
+        let has_add = add.iter().any(|&n| n != 0);
         let mut bits = self.bits();
         bits.write_bit(has_add)?;
         bits.write_bit(has_mult)?;
@@ -418,16 +368,14 @@ impl<W: Write> Writer<W> {
         }
         bits.write_ubits_ct::<4>(num_bits)?;
         if has_mult {
-            bits.write_sbits_fixed8(num_bits, color_transform.r_multiply)?;
-            bits.write_sbits_fixed8(num_bits, color_transform.g_multiply)?;
-            bits.write_sbits_fixed8(num_bits, color_transform.b_multiply)?;
-            bits.write_sbits_fixed8(num_bits, color_transform.a_multiply)?;
+            for &n in multiply {
+                bits.write_sbits_fixed8(num_bits, n)?;
+            }
         }
         if has_add {
-            bits.write_sbits(num_bits, color_transform.r_add.into())?;
-            bits.write_sbits(num_bits, color_transform.g_add.into())?;
-            bits.write_sbits(num_bits, color_transform.b_add.into())?;
-            bits.write_sbits(num_bits, color_transform.a_add.into())?;
+            for &n in add {
+                bits.write_sbits(num_bits, n.into())?;
+            }
         }
         Ok(())
     }
@@ -562,7 +510,7 @@ impl<W: Write> Writer<W> {
                     let mut writer = Writer::new(&mut buf, self.version);
                     writer.write_character_id(button_color.id)?;
                     for color_transform in &button_color.color_transforms {
-                        writer.write_color_transform_no_alpha(color_transform)?;
+                        writer.write_color_transform(color_transform, false)?;
                     }
                 }
                 self.write_tag_header(TagCode::DefineButtonCxform, buf.len() as u32)?;
@@ -1362,7 +1310,7 @@ impl<W: Write> Writer<W> {
         self.write_u16(record.depth)?;
         self.write_matrix(&record.matrix)?;
         if tag_version >= 2 {
-            self.write_color_transform(&record.color_transform)?;
+            self.write_color_transform(&record.color_transform, true)?;
             if !record.filters.is_empty() {
                 self.write_u8(record.filters.len() as u8)?;
                 for filter in &record.filters {
@@ -1635,7 +1583,7 @@ impl<W: Write> Writer<W> {
                 writer.write_matrix(&Matrix::IDENTITY)?;
             }
             if let Some(ref color_transform) = place_object.color_transform {
-                writer.write_color_transform_no_alpha(color_transform)?;
+                writer.write_color_transform(color_transform, false)?;
             }
         }
         self.write_tag_header(TagCode::PlaceObject, buf.len() as u32)?;
@@ -1717,7 +1665,7 @@ impl<W: Write> Writer<W> {
                 writer.write_matrix(matrix)?;
             };
             if let Some(ref color_transform) = place_object.color_transform {
-                writer.write_color_transform(color_transform)?;
+                writer.write_color_transform(color_transform, true)?;
             };
             if let Some(ratio) = place_object.ratio {
                 writer.write_u16(ratio)?;
@@ -1917,7 +1865,8 @@ impl<W: Write> Writer<W> {
         if self.version >= 6 {
             self.write_u32(bits)?;
         } else {
-            self.write_u16((bits as u8).into())?;
+            // SWF19 pp. 48-50: For SWFv5, ClipEventFlags only had 2 bytes of flags.
+            self.write_u16(bits as u16)?;
         }
         Ok(())
     }
