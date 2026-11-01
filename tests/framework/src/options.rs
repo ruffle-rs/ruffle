@@ -185,17 +185,27 @@ impl Default for TestOptions {
 
 impl TestOptions {
     pub fn read_with_subtests(path: &VfsPath) -> Result<Vec<Self>> {
-        use serde::de::{Error, IntoDeserializer};
-
         let contents = path.read_to_string()?;
-
-        // This improves TOML error messages.
-        let err_with_input = |mut e: toml::de::Error| {
+        let tests = Self::deserialize_toml(&contents).map_err(|mut e| {
+            // This improves TOML error messages.
             e.set_input(Some(&contents));
             e
-        };
+        })?;
 
-        let mut raw = DeTable::parse(&contents)?;
+        if let Some(first) = tests.first() {
+            first.shared.validate()?;
+        }
+        for test in &tests {
+            test.validate()?;
+        }
+
+        Ok(tests)
+    }
+
+    fn deserialize_toml(contents: &str) -> Result<Vec<Self>, toml::de::Error> {
+        use serde::de::{Error, IntoDeserializer};
+
+        let mut raw = DeTable::parse(contents)?;
 
         // `TestOptions` doesn't actually have this field, so remove it.
         let raw_subtests = raw.get_mut().remove("subtests");
@@ -207,28 +217,23 @@ impl TestOptions {
                 .filter_map(|name| raw.get_mut().remove_entry(*name))
                 .collect();
             let shared = Spanned::new(raw.span(), shared);
-            TestSharedOptions::deserialize(shared.into_deserializer()).map_err(err_with_input)?
+            TestSharedOptions::deserialize(shared.into_deserializer())?
         });
-        shared.validate()?;
 
         let subtests = match raw_subtests.map(|spanned| spanned.into_inner()) {
             // This is a single test, parse and return it.
             None => {
-                let mut parsed =
-                    Self::deserialize(raw.into_deserializer()).map_err(err_with_input)?;
+                let mut parsed = Self::deserialize(raw.into_deserializer())?;
                 parsed.shared = shared;
-                parsed.validate()?;
                 return Ok(vec![parsed]);
             }
-            Some(DeValue::Table(table)) => table,
-            Some(_) => bail!(err_with_input(Error::custom(
-                "'subtests' field should be a table"
-            ))),
+            Some(DeValue::Table(table)) if table.len() >= 2 => table,
+            Some(_) => {
+                return Err(Error::custom(
+                    "'subtests' field should be a table with at least two entries",
+                ));
+            }
         };
-
-        if subtests.len() < 2 {
-            bail!("If present, the [subtests] table must have at least two entries.");
-        }
 
         // Merge default values into each subtest, and deserialize the result.
         let raw = Spanned::new(0..contents.len(), DeValue::Table(raw.into_inner()));
@@ -239,7 +244,9 @@ impl TestOptions {
                 if let DeValue::Table(table) = raw_config.get_ref() {
                     for field in TestSharedOptions::FIELD_NAMES {
                         if table.contains_key(*field) {
-                            bail!("The '{field}' field cannot be overriden in subtests.");
+                            return Err(Error::custom(
+                                "The '{field}' field cannot be overriden in subtests.",
+                            ));
                         }
                     }
                 }
@@ -247,14 +254,11 @@ impl TestOptions {
                 let mut name = name.into_inner().into_owned();
 
                 // Note: when this returns, `name` will be restored to its original value.
-                merge_into_subtest(&raw, &mut raw_config, &mut name).map_err(err_with_input)?;
+                merge_into_subtest(&raw, &mut raw_config, &mut name)?;
 
-                let mut parsed =
-                    Self::deserialize(raw_config.into_deserializer()).map_err(err_with_input)?;
-
+                let mut parsed = Self::deserialize(raw_config.into_deserializer())?;
                 parsed.subtest_name = Some(name);
                 parsed.shared = shared.clone();
-                parsed.validate()?;
                 Ok(parsed)
             })
             .collect()
