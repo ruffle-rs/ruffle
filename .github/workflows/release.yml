@@ -230,6 +230,38 @@ jobs:
           cp ${{ env.CARGO_BUILD_DIR }}/ruffle_desktop.exe package/ruffle.exe
           7z a ${{ env.PACKAGE_FILE }} ./package/*
 
+      # For Windows, we need to upload the unsigned package so that SignPath can download it
+      - name: Upload unsigned package
+        if: runner.os == 'Windows'
+        id: upload-unsigned-package
+        uses: actions/upload-artifact@v7
+        with:
+          path: ${{ env.PACKAGE_FILE }}
+          archive: false
+
+      # Now sign it and redownload that! Note that this will need to be _manually approved_ in SignPath, so it has a 1hr timeout.
+      - name: Submit signing request
+        if: runner.os == 'Windows'
+        uses: signpath/github-action-submit-signing-request@v3
+        with:
+          api-token: '${{ secrets.SIGNPATH_API_TOKEN }}'
+          organization-id: '${{ vars.SIGNPATH_ORG_ID }}'
+          project-slug: '${{ vars.SIGNPATH_PROJECT_SLUG }}'
+          signing-policy-slug: '${{ vars.SIGNPATH_SIGNING_POLICY_SLUG }}'
+          github-artifact-id: '${{ steps.upload-unsigned-package.outputs.artifact-id }}'
+          wait-for-completion: true
+          wait-for-completion-timeout-in-seconds: 3600
+          output-artifact-directory: 'signed-package'
+          skip-decompress: true
+          parameters: |
+            version: ${{ toJSON(needs.create-release.outputs.version) }}
+
+      # And make that our final package :)
+      - name: Replace signed package
+        if: runner.os == 'Windows'
+        run: |
+          mv signed-package/* ${{ env.PACKAGE_FILE }} -Force
+
       - name: Package Linux
         if: runner.os == 'Linux'
         run: |
