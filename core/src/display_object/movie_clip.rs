@@ -358,7 +358,7 @@ impl<'gc> MovieClip<'gc> {
     }
 
     /// The size of the chunks Flash Player reads a SWF file in.
-    pub const FILE_CHUNK_SIZE: u64 = 4096;
+    pub const FILE_CHUNK_SIZE: u64 = tag_utils::FILE_CHUNK_SIZE as u64;
 
     /// Marks the first `file_bytes` bytes of this root movie's SWF file as
     /// received: only the tags within them are preloaded. Once the whole file
@@ -432,7 +432,7 @@ impl<'gc> MovieClip<'gc> {
     /// The end of the tag data received so far, as an offset into the tag
     /// stream, or `None` once all of it has been received.
     ///
-    /// For a compressed SWF, only the decompressed data is kept, so the
+    /// For an LZMA-compressed SWF, only the decompressed data is kept, so the
     /// decompressed size of the received file bytes is estimated from the
     /// compression ratio.
     fn received_tag_bytes(self) -> Option<u64> {
@@ -442,7 +442,9 @@ impl<'gc> MovieClip<'gc> {
         let movie = self.movie();
         let file_len = movie.compressed_len() as u64;
         let total_len = movie.uncompressed_len().max(0) as u64;
-        let decompressed = if file_len == total_len || file_bytes <= SWF_FILE_HEADER_LEN {
+        let decompressed = if let Some(len) = movie.decompressed_len_at(file_bytes as usize) {
+            len as u64
+        } else if file_len == total_len || file_bytes <= SWF_FILE_HEADER_LEN {
             file_bytes
         } else {
             SWF_FILE_HEADER_LEN
@@ -1303,20 +1305,22 @@ impl<'gc> MovieClip<'gc> {
 
     pub fn loaded_bytes(self) -> u32 {
         let progress = &Gc::as_ref(self.0.shared.get()).preload_progress;
+        let swf_header_size = || max(self.total_bytes(), 0) as u32 - self.tag_stream_len() as u32;
+
+        // While the root movie arrives, Flash Player reports what it has
+        // received, which includes the start of tags that aren't complete yet.
+        // That is less than the total even if all tags have been preloaded,
+        // when there is data after the End tag.
+        if let Some(received) = self.received_tag_bytes() {
+            return swf_header_size() + received.min(self.tag_stream_len() as u64) as u32;
+        }
+
         if progress.next_preload_chunk.get() == u64::MAX {
             // u64::MAX is a sentinel for load complete
             return max(self.total_bytes(), 0) as u32;
         }
 
-        let swf_header_size = max(self.total_bytes(), 0) as u32 - self.tag_stream_len() as u32;
-
-        // While the root movie arrives, Flash Player reports what it has
-        // received, which includes the start of tags that aren't complete yet.
-        if let Some(received) = self.received_tag_bytes() {
-            return swf_header_size + received.min(self.tag_stream_len() as u64) as u32;
-        }
-
-        swf_header_size + progress.next_preload_chunk.get() as u32
+        swf_header_size() + progress.next_preload_chunk.get() as u32
     }
 
     /// Calculate the compressed total size of this movie clip's tag stream.

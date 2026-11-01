@@ -3,7 +3,9 @@
 use swf::{CharacterId, TagCode};
 use thiserror::Error;
 
-pub use ruffle_common::tag_utils::{SwfMovie, SwfMovieData, SwfMovieWeak, SwfSlice, SwfStream};
+pub use ruffle_common::tag_utils::{
+    FILE_CHUNK_SIZE, SwfMovie, SwfMovieData, SwfMovieWeak, SwfSlice, SwfStream,
+};
 
 #[derive(Error, Debug)]
 pub enum Error {

@@ -185,6 +185,50 @@ pub fn decompress_swf<'a, R: Read + 'a>(mut input: R) -> Result<SwfBuf> {
     })
 }
 
+/// For a zlib-compressed SWF file, returns how many bytes of the uncompressed
+/// SWF (header included) each prefix of `chunk_len`, `2 * chunk_len`, ...
+/// bytes of the file decompresses to, the last entry being the whole file.
+/// Returns `None` for other files.
+///
+/// Flash Player reads a SWF file in chunks and parses what they decompress to,
+/// so this is how much of the movie it has after each chunk.
+#[cfg(feature = "flate2")]
+pub fn zlib_decompressed_chunk_ends(swf_data: &[u8], chunk_len: usize) -> Option<Vec<u32>> {
+    use flate2::{Decompress, FlushDecompress};
+
+    const HEADER_LEN: usize = 8;
+    if !swf_data.starts_with(b"CWS") || swf_data.len() < HEADER_LEN || chunk_len == 0 {
+        return None;
+    }
+
+    let mut inflate = Decompress::new(true);
+    let mut scratch = vec![0; 64 * 1024];
+    let mut ends = Vec::with_capacity(swf_data.len().div_ceil(chunk_len));
+    let mut is_broken = false;
+    for chunk_end in (chunk_len..swf_data.len() + chunk_len).step_by(chunk_len) {
+        let input_end = chunk_end.min(swf_data.len());
+        // Decompress everything the file up to `input_end` gives.
+        while !is_broken {
+            let (total_in, total_out) = (inflate.total_in(), inflate.total_out());
+            let input = &swf_data[(HEADER_LEN + total_in as usize).min(input_end)..input_end];
+            is_broken = inflate
+                .decompress(input, &mut scratch, FlushDecompress::None)
+                .is_err();
+            if (inflate.total_in(), inflate.total_out()) == (total_in, total_out) {
+                break;
+            }
+        }
+        let end = HEADER_LEN as u64 + inflate.total_out();
+        ends.push(end.min(u32::MAX.into()) as u32);
+    }
+    Some(ends)
+}
+
+#[cfg(not(feature = "flate2"))]
+pub fn zlib_decompressed_chunk_ends(_swf_data: &[u8], _chunk_len: usize) -> Option<Vec<u32>> {
+    None
+}
+
 #[cfg(feature = "flate2")]
 fn make_zlib_reader<'a, R: Read + 'a>(input: R) -> Result<Box<dyn Read + 'a>> {
     use flate2::read::ZlibDecoder;
@@ -2691,6 +2735,26 @@ pub mod tests {
                 Compression::Lzma
             );
         }
+    }
+
+    #[test]
+    #[cfg(feature = "flate2")]
+    fn zlib_chunk_ends() {
+        let data = std::fs::read("tests/swfs/zlib.swf").unwrap();
+        let uncompressed_len = u32::from_le_bytes(data[4..8].try_into().unwrap());
+        for chunk_len in [1, 7, 64, 4096] {
+            let ends = zlib_decompressed_chunk_ends(&data, chunk_len).unwrap();
+            assert_eq!(ends.len(), data.len().div_ceil(chunk_len));
+            assert!(ends.is_sorted());
+            assert_eq!(ends.last(), Some(&uncompressed_len));
+        }
+        // Cut off, the file gives what its chunks decompress to.
+        let full = zlib_decompressed_chunk_ends(&data, 7).unwrap();
+        let cut = zlib_decompressed_chunk_ends(&data[..data.len() / 2], 7).unwrap();
+        assert_eq!(cut[..cut.len() - 1], full[..cut.len() - 1]);
+
+        let uncompressed = std::fs::read("tests/swfs/uncompressed.swf").unwrap();
+        assert_eq!(zlib_decompressed_chunk_ends(&uncompressed, 4096), None);
     }
 
     #[test]
