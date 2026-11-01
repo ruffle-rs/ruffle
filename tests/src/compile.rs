@@ -15,8 +15,10 @@ pub fn main_compile(compile_options: CompileOptions) {
     runner
         .with_root_dir(find_root_dir())
         .with_test_loader(Box::new(move |params, register_trial| {
+            // FIXME(moulins): only load one subtest per dir; all subtests
+            // will always have the same shared options.
             for test in load_test_dir(&params.test_dir, params.test_name) {
-                if !test.options.compilers.is_empty() {
+                if !test.options.shared.compilers.is_empty() {
                     register_trial(test);
                 }
             }
