@@ -214,6 +214,11 @@ pub trait TInteractiveObject<'gc>:
         self.raw_interactive().focus_rect.set(value);
     }
 
+    /// Whether this AVM1 object allows a held mouse press to move to another button.
+    fn track_as_menu(self, _context: &mut UpdateContext<'gc>) -> bool {
+        false
+    }
+
     /// Filter the incoming clip event.
     ///
     /// If this returns `Handled`, then the rest of the event handling

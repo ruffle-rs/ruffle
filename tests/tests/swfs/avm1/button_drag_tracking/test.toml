@@ -1,0 +1,8 @@
+num_ticks = 72
+
+[[compilers]]
+type = "Rascal"
+target = "test.swf"
+scripts = ["test.as"]
+swf_version = 8
+stage_rect = { x_max = 340.0, y_max = 260.0 }
