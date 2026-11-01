@@ -21,6 +21,7 @@ pub mod bitmap;
 mod character;
 pub mod context;
 pub mod context_menu;
+mod date;
 mod drawing;
 mod ecma_conversions;
 pub mod events;
