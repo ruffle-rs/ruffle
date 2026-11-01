@@ -281,6 +281,38 @@ impl<'gc> EventObject<'gc> {
         )
     }
 
+    /// Create a `ShaderEvent`, which is dispatched when a `ShaderJob` finishes
+    /// running its shader. The result of the operation is passed along in
+    /// whichever of the three fields matches the type of the job's target;
+    /// the other two are `null`.
+    pub fn shader_event(
+        activation: &mut Activation<'_, 'gc>,
+        event_type: &str,
+        bitmap_data: Option<Object<'gc>>,
+        byte_array: Option<Object<'gc>>,
+        vector: Option<Object<'gc>>,
+    ) -> EventObject<'gc> {
+        let event_type = AvmString::new_utf8(activation.gc(), event_type);
+        let shader_event_cls = activation.avm2().classes().shaderevent;
+        Self::from_class_and_args(
+            activation,
+            shader_event_cls,
+            &[
+                event_type.into(),
+                // bubbles
+                false.into(),
+                // cancelable
+                false.into(),
+                // bitmapData
+                bitmap_data.map_or(Value::Null, Value::from),
+                // byteArray
+                byte_array.map_or(Value::Null, Value::from),
+                // vector
+                vector.map_or(Value::Null, Value::from),
+            ],
+        )
+    }
+
     pub fn focus_event(
         activation: &mut Activation<'_, 'gc>,
         event_type: &str,

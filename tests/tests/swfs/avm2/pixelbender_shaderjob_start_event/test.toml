@@ -1,0 +1,11 @@
+num_ticks = 5
+
+[[compilers]]
+type = "Asc"
+target = "test.swf"
+class = "Test"
+scripts = ["Test.as"]
+swf_version = 41
+
+[player_options]
+with_renderer = { optional = false, quality = "low" }
