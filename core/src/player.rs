@@ -2034,16 +2034,16 @@ impl Player {
                 did_finish = root.preload(context, limit);
 
                 if let Some(loader_info) = root.loader_info().filter(|_| !was_root_movie_loaded) {
-                    let mut activation = Avm2Activation::from_nothing(context);
+                    let is_root_movie_loaded = root.loaded_bytes() as i32 == root.total_bytes();
 
-                    let progress_evt = Avm2EventObject::progress_event(
-                        &mut activation,
-                        "progress",
-                        root.compressed_loaded_bytes() as usize,
-                        root.compressed_total_bytes() as usize,
-                    );
-
-                    Avm2::dispatch_event(context, progress_evt, loader_info.into());
+                    // A preloader on the first frame waits for the last `progress` event.
+                    // If the movie loads before that frame runs, hold the event until after
+                    // `init`, as Flash Player does.
+                    if is_root_movie_loaded && !root.initialized() {
+                        loader_info.set_last_progress_event_pending();
+                    } else {
+                        loader_info.fire_progress_event(context, root);
+                    }
                 }
             }
 

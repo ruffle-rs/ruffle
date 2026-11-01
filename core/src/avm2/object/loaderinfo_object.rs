@@ -5,7 +5,7 @@ use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{EventObject, Object, StageObject, TObject};
 use crate::avm2::{Avm2, Error};
 use crate::context::UpdateContext;
-use crate::display_object::{DisplayObject, TDisplayObject, TDisplayObjectContainer};
+use crate::display_object::{DisplayObject, MovieClip, TDisplayObject, TDisplayObjectContainer};
 use crate::loader::ContentType;
 use crate::tag_utils::{SwfMovie, SwfMovieData};
 use core::fmt;
@@ -85,6 +85,9 @@ pub struct LoaderInfoObjectData<'gc> {
     /// Whether or not we've fired our 'complete' event
     complete_event_fired: Cell<bool>,
 
+    /// Whether the root movie's last 'progress' event is held until after 'init'
+    last_progress_event_pending: Cell<bool>,
+
     /// The `EventDispatcher` used for `LoaderInfo.sharedEvents`.
     // FIXME: If we ever implement sandboxing, then ensure that we allow
     // events to be fired across security boundaries using this object.
@@ -122,6 +125,7 @@ impl<'gc> LoaderInfoObject<'gc> {
                 loader,
                 init_event_fired: Cell::new(false),
                 complete_event_fired: Cell::new(false),
+                last_progress_event_pending: Cell::new(false),
                 shared_events: activation
                     .context
                     .avm2
@@ -187,6 +191,23 @@ impl<'gc> LoaderInfoObject<'gc> {
         self.0.complete_event_fired.set(false);
     }
 
+    pub fn set_last_progress_event_pending(self) {
+        self.0.last_progress_event_pending.set(true);
+    }
+
+    pub fn fire_progress_event(self, context: &mut UpdateContext<'gc>, mc: MovieClip<'gc>) {
+        let mut activation = Activation::from_nothing(context);
+
+        let progress_evt = EventObject::progress_event(
+            &mut activation,
+            "progress",
+            mc.compressed_loaded_bytes() as usize,
+            mc.compressed_total_bytes() as usize,
+        );
+
+        Avm2::dispatch_event(context, progress_evt, self.into());
+    }
+
     /// Fires the 'init' and 'complete' events if they haven't been fired yet.
     /// Returns `true` if both events have been fired (either as a result of
     /// this call, or due to a previous call).
@@ -204,6 +225,13 @@ impl<'gc> LoaderInfoObject<'gc> {
             // Right now, we fire it when downloading is fully completed.
             let init_evt = EventObject::bare_default_event(context, "init");
             Avm2::dispatch_event(context, init_evt, self.into());
+        }
+
+        if self.0.last_progress_event_pending.take()
+            && let LoaderStream::Swf(_, root) = self.0.loaded_stream.get()
+            && let Some(mc) = root.as_movie_clip()
+        {
+            self.fire_progress_event(context, mc);
         }
 
         if !self.0.complete_event_fired.get() {
