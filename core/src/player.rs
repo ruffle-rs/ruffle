@@ -7,7 +7,9 @@ use crate::avm1::Value;
 use crate::avm1::VariableDumper;
 use crate::avm1::{Activation, ActivationIdentifier};
 use crate::avm2::object::EventObject as Avm2EventObject;
-use crate::avm2::{Activation as Avm2Activation, Avm2, CallStack, SharedObjectObject};
+use crate::avm2::{
+    Activation as Avm2Activation, Avm2, CallStack, OptimizerSettings, SharedObjectObject,
+};
 use crate::backend::navigator::ErrorResponse;
 use crate::backend::navigator::FetchReason;
 use crate::backend::navigator::OwnedFuture;
@@ -2674,7 +2676,8 @@ pub struct PlayerBuilder {
     fs_command_provider: Box<dyn FsCommandProvider>,
     #[cfg(feature = "known_stubs")]
     stub_report_output: Option<std::path::PathBuf>,
-    avm2_optimizer_enabled: bool,
+    avm2_early_binding_enabled: bool,
+    avm2_dse_enabled: bool,
     #[cfg(feature = "default_font")]
     default_font: bool,
 }
@@ -2731,7 +2734,8 @@ impl PlayerBuilder {
             fs_command_provider: Box::new(NullFsCommandProvider),
             #[cfg(feature = "known_stubs")]
             stub_report_output: None,
-            avm2_optimizer_enabled: true,
+            avm2_early_binding_enabled: true,
+            avm2_dse_enabled: true,
             #[cfg(feature = "default_font")]
             default_font: true,
         }
@@ -2957,8 +2961,13 @@ impl PlayerBuilder {
         self
     }
 
-    pub fn with_avm2_optimizer_enabled(mut self, value: bool) -> Self {
-        self.avm2_optimizer_enabled = value;
+    pub fn with_avm2_early_binding_enabled(mut self, value: bool) -> Self {
+        self.avm2_early_binding_enabled = value;
+        self
+    }
+
+    pub fn with_avm2_dse_enabled(mut self, value: bool) -> Self {
+        self.avm2_dse_enabled = value;
         self
     }
 
@@ -3185,15 +3194,19 @@ impl PlayerBuilder {
         }
 
         player_lock.mutate_with_update_context(|context| {
-            if !self.avm2_optimizer_enabled {
+            if !self.avm2_early_binding_enabled {
                 tracing::warn!(
-                    "AVM2 optimizer disabled, some bytecode verification will be missing"
+                    "AVM2 early binding optimizations disabled, some bytecode may behave incorrectly"
                 );
             }
 
             context
                 .avm2
-                .set_optimizer_enabled(self.avm2_optimizer_enabled);
+                .set_optimizer_settings(OptimizerSettings {
+                    early_binding_enabled: self.avm2_early_binding_enabled,
+                    dse_enabled: self.avm2_dse_enabled,
+                });
+
             Avm1::load_player_globals(context);
             Avm2::load_player_globals(context);
 

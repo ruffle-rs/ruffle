@@ -598,11 +598,14 @@ struct Types<'gc> {
     pub namespace: Class<'gc>,
 }
 
-/// Run the type-aware optimizer pass on the ops. This optimizer pass also
-/// performs type verification, so it must be run regardless of whether the
-/// "disable AVM2 optimizer" player option is on or not. If the "disable AVM2
-// optimizer" player option is on, this method will not actually optimize the
-// resulting code.
+/// Run the type-aware optimizer pass on the ops, which performs early binding
+/// optimizations and some constant propagation optimizations.
+///
+/// This optimizer pass also performs type verification, so it must be run
+/// regardless of whether the "disable AVM2 early binding optimizations" player
+/// option is on or not. If the "disable AVM2 early binding optimizations"
+/// player option is on, this method will not run any optimizations on the
+/// resulting code.
 pub fn type_aware_optimize<'gc>(
     activation: &mut Activation<'_, 'gc>,
     method: Method<'gc>,
@@ -706,7 +709,7 @@ pub fn type_aware_optimize<'gc>(
         )?;
     }
 
-    if activation.avm2().optimizer_enabled() {
+    if activation.avm2().optimizer_settings().early_binding_enabled {
         // Now run through the ops and actually optimize them
         for (i, block) in block_list.iter().enumerate() {
             // todo: don't need to clone here
