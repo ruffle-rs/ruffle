@@ -175,7 +175,7 @@ impl Test {
             CompileMode::CompileAndVerify => true,
             CompileMode::UsePrecompiled => return Ok(()), // Pretend all is well!
         };
-        for options in &self.options.compilers {
+        for options in &self.options.shared.compilers {
             options
                 .create_compiler()?
                 .compile(&self.root_path, verify_if_changed)?;

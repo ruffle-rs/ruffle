@@ -19,6 +19,7 @@ use anyhow::{Result, bail};
 use ruffle_render::quality::StageQuality;
 use serde::Deserialize;
 use std::collections::{HashMap, HashSet};
+use std::sync::{Arc, LazyLock};
 use toml::Spanned;
 use toml::de::{DeTable, DeValue};
 use vfs::VfsPath;
@@ -93,12 +94,45 @@ pub struct SharedObjectConfig {
 }
 
 #[derive(Clone, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct TestSharedOptions {
+    #[serde(default)]
+    pub compilers: Vec<SwfCompilerOptions>,
+}
+
+impl TestSharedOptions {
+    const FIELD_NAMES: &[&str] = &["compilers"];
+
+    fn default_arc() -> Arc<Self> {
+        static DEFAULT: LazyLock<Arc<TestSharedOptions>> = LazyLock::new(|| {
+            Arc::new(TestSharedOptions {
+                compilers: Vec::new(),
+            })
+        });
+        Arc::clone(&*DEFAULT)
+    }
+
+    fn validate(&self) -> Result<()> {
+        for options in &self.compilers {
+            options.validate()?;
+        }
+
+        Ok(())
+    }
+}
+
+#[derive(Clone, Deserialize)]
 #[serde(default, deny_unknown_fields)]
 pub struct TestOptions {
-    // Only set when the `test.toml` file has multiple configs,
+    // Only set when the `test.toml` file has multiple subtest,
     // which we handle manually.
     #[serde(skip)]
     pub subtest_name: Option<String>,
+
+    // Options shared by every subtest in a test group.
+    // This will also be handled manually.
+    #[serde(skip, default = "TestSharedOptions::default_arc")]
+    pub shared: Arc<TestSharedOptions>,
 
     pub num_frames: Option<u32>,
     pub num_ticks: Option<u32>,
@@ -118,7 +152,6 @@ pub struct TestOptions {
     pub fonts: HashMap<String, FontOptions>,
     pub font_sorts: HashMap<String, FontSortOptions>,
     pub default_fonts: DefaultFontsOptions,
-    pub compilers: Vec<SwfCompilerOptions>,
     pub shared_objects: HashMap<String, SharedObjectConfig>,
 }
 
@@ -126,6 +159,7 @@ impl Default for TestOptions {
     fn default() -> Self {
         Self {
             subtest_name: None,
+            shared: TestSharedOptions::default_arc(),
             num_frames: None,
             num_ticks: None,
             tick_rate: None,
@@ -144,7 +178,6 @@ impl Default for TestOptions {
             fonts: Default::default(),
             font_sorts: Default::default(),
             default_fonts: Default::default(),
-            compilers: Default::default(),
             shared_objects: Default::default(),
         }
     }
@@ -163,19 +196,33 @@ impl TestOptions {
         };
 
         let mut raw = DeTable::parse(&contents)?;
+
         // `TestOptions` doesn't actually have this field, so remove it.
         let raw_subtests = raw.get_mut().remove("subtests");
+
+        // Manually pull out shared options.
+        let shared = Arc::new({
+            let shared: DeTable = TestSharedOptions::FIELD_NAMES
+                .iter()
+                .filter_map(|name| raw.get_mut().remove_entry(*name))
+                .collect();
+            let shared = Spanned::new(raw.span(), shared);
+            TestSharedOptions::deserialize(shared.into_deserializer()).map_err(err_with_input)?
+        });
+        shared.validate()?;
 
         let subtests = match raw_subtests.map(|spanned| spanned.into_inner()) {
             // This is a single test, parse and return it.
             None => {
-                let parsed = Self::deserialize(raw.into_deserializer()).map_err(err_with_input)?;
+                let mut parsed =
+                    Self::deserialize(raw.into_deserializer()).map_err(err_with_input)?;
+                parsed.shared = shared;
                 parsed.validate()?;
                 return Ok(vec![parsed]);
             }
             Some(DeValue::Table(table)) => table,
             Some(_) => bail!(err_with_input(Error::custom(
-                "'configs' field should be a table"
+                "'subtests' field should be a table"
             ))),
         };
 
@@ -188,6 +235,15 @@ impl TestOptions {
         subtests
             .into_iter()
             .map(|(name, mut raw_config)| {
+                // Don't allow shared options in subtests.
+                if let DeValue::Table(table) = raw_config.get_ref() {
+                    for field in TestSharedOptions::FIELD_NAMES {
+                        if table.contains_key(*field) {
+                            bail!("The '{field}' field cannot be overriden in subtests.");
+                        }
+                    }
+                }
+
                 let mut name = name.into_inner().into_owned();
 
                 // Note: when this returns, `name` will be restored to its original value.
@@ -197,16 +253,11 @@ impl TestOptions {
                     Self::deserialize(raw_config.into_deserializer()).map_err(err_with_input)?;
 
                 parsed.subtest_name = Some(name);
+                parsed.shared = shared.clone();
                 parsed.validate()?;
                 Ok(parsed)
             })
             .collect()
-    }
-
-    pub fn read(path: &VfsPath) -> Result<Self> {
-        let result: Self = toml::from_str(&path.read_to_string()?)?;
-        result.validate()?;
-        Ok(result)
     }
 
     fn validate(&self) -> Result<()> {
@@ -226,10 +277,6 @@ impl TestOptions {
 
         if let Some(approx) = &self.approximations {
             approx.validate()?;
-        }
-
-        for options in &self.compilers {
-            options.validate()?;
         }
 
         Ok(())
