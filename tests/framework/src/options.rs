@@ -19,6 +19,7 @@ use anyhow::{Result, bail};
 use ruffle_render::quality::StageQuality;
 use serde::Deserialize;
 use std::collections::{HashMap, HashSet};
+use std::sync::{Arc, LazyLock, OnceLock};
 use toml::Spanned;
 use toml::de::{DeTable, DeValue};
 use vfs::VfsPath;
@@ -93,12 +94,50 @@ pub struct SharedObjectConfig {
 }
 
 #[derive(Clone, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct TestSharedOptions {
+    #[serde(default)]
+    pub compilers: Vec<SwfCompilerOptions>,
+
+    // Used to only run compilers once per test group.
+    #[serde(skip, default)]
+    pub(crate) compile_ok: OnceLock<bool>,
+}
+
+impl TestSharedOptions {
+    const FIELD_NAMES: &[&str] = &["compilers"];
+
+    fn default_arc() -> Arc<Self> {
+        static DEFAULT: LazyLock<Arc<TestSharedOptions>> = LazyLock::new(|| {
+            Arc::new(TestSharedOptions {
+                compilers: Vec::new(),
+                compile_ok: OnceLock::from(true),
+            })
+        });
+        Arc::clone(&*DEFAULT)
+    }
+
+    fn validate(&self) -> Result<()> {
+        for options in &self.compilers {
+            options.validate()?;
+        }
+
+        Ok(())
+    }
+}
+
+#[derive(Clone, Deserialize)]
 #[serde(default, deny_unknown_fields)]
 pub struct TestOptions {
-    // Only set when the `test.toml` file has multiple configs,
+    // Only set when the `test.toml` file has multiple subtest,
     // which we handle manually.
     #[serde(skip)]
     pub subtest_name: Option<String>,
+
+    // Options shared by every subtest in a test group.
+    // This will also be handled manually.
+    #[serde(skip, default = "TestSharedOptions::default_arc")]
+    pub shared: Arc<TestSharedOptions>,
 
     pub num_frames: Option<u32>,
     pub num_ticks: Option<u32>,
@@ -118,7 +157,6 @@ pub struct TestOptions {
     pub fonts: HashMap<String, FontOptions>,
     pub font_sorts: HashMap<String, FontSortOptions>,
     pub default_fonts: DefaultFontsOptions,
-    pub compilers: Vec<SwfCompilerOptions>,
     pub shared_objects: HashMap<String, SharedObjectConfig>,
 }
 
@@ -126,6 +164,7 @@ impl Default for TestOptions {
     fn default() -> Self {
         Self {
             subtest_name: None,
+            shared: TestSharedOptions::default_arc(),
             num_frames: None,
             num_ticks: None,
             tick_rate: None,
@@ -144,7 +183,6 @@ impl Default for TestOptions {
             fonts: Default::default(),
             font_sorts: Default::default(),
             default_fonts: Default::default(),
-            compilers: Default::default(),
             shared_objects: Default::default(),
         }
     }
@@ -152,61 +190,83 @@ impl Default for TestOptions {
 
 impl TestOptions {
     pub fn read_with_subtests(path: &VfsPath) -> Result<Vec<Self>> {
-        use serde::de::{Error, IntoDeserializer};
-
         let contents = path.read_to_string()?;
-
-        // This improves TOML error messages.
-        let err_with_input = |mut e: toml::de::Error| {
+        let tests = Self::deserialize_toml(&contents).map_err(|mut e| {
+            // This improves TOML error messages.
             e.set_input(Some(&contents));
             e
-        };
+        })?;
 
-        let mut raw = DeTable::parse(&contents)?;
+        if let Some(first) = tests.first() {
+            first.shared.validate()?;
+        }
+        for test in &tests {
+            test.validate()?;
+        }
+
+        Ok(tests)
+    }
+
+    fn deserialize_toml(contents: &str) -> Result<Vec<Self>, toml::de::Error> {
+        use serde::de::{Error, IntoDeserializer};
+
+        let mut raw = DeTable::parse(contents)?;
+
         // `TestOptions` doesn't actually have this field, so remove it.
         let raw_subtests = raw.get_mut().remove("subtests");
+
+        // Manually pull out shared options.
+        let shared = Arc::new({
+            let shared: DeTable = TestSharedOptions::FIELD_NAMES
+                .iter()
+                .filter_map(|name| raw.get_mut().remove_entry(*name))
+                .collect();
+            let shared = Spanned::new(raw.span(), shared);
+            TestSharedOptions::deserialize(shared.into_deserializer())?
+        });
 
         let subtests = match raw_subtests.map(|spanned| spanned.into_inner()) {
             // This is a single test, parse and return it.
             None => {
-                let parsed = Self::deserialize(raw.into_deserializer()).map_err(err_with_input)?;
-                parsed.validate()?;
+                let mut parsed = Self::deserialize(raw.into_deserializer())?;
+                parsed.shared = shared;
                 return Ok(vec![parsed]);
             }
-            Some(DeValue::Table(table)) => table,
-            Some(_) => bail!(err_with_input(Error::custom(
-                "'configs' field should be a table"
-            ))),
+            Some(DeValue::Table(table)) if table.len() >= 2 => table,
+            Some(_) => {
+                return Err(Error::custom(
+                    "'subtests' field should be a table with at least two entries",
+                ));
+            }
         };
-
-        if subtests.len() < 2 {
-            bail!("If present, the [subtests] table must have at least two entries.");
-        }
 
         // Merge default values into each subtest, and deserialize the result.
         let raw = Spanned::new(0..contents.len(), DeValue::Table(raw.into_inner()));
         subtests
             .into_iter()
             .map(|(name, mut raw_config)| {
+                // Don't allow shared options in subtests.
+                if let DeValue::Table(table) = raw_config.get_ref() {
+                    for field in TestSharedOptions::FIELD_NAMES {
+                        if table.contains_key(*field) {
+                            return Err(Error::custom(
+                                "The '{field}' field cannot be overriden in subtests.",
+                            ));
+                        }
+                    }
+                }
+
                 let mut name = name.into_inner().into_owned();
 
                 // Note: when this returns, `name` will be restored to its original value.
-                merge_into_subtest(&raw, &mut raw_config, &mut name).map_err(err_with_input)?;
+                merge_into_subtest(&raw, &mut raw_config, &mut name)?;
 
-                let mut parsed =
-                    Self::deserialize(raw_config.into_deserializer()).map_err(err_with_input)?;
-
+                let mut parsed = Self::deserialize(raw_config.into_deserializer())?;
                 parsed.subtest_name = Some(name);
-                parsed.validate()?;
+                parsed.shared = shared.clone();
                 Ok(parsed)
             })
             .collect()
-    }
-
-    pub fn read(path: &VfsPath) -> Result<Self> {
-        let result: Self = toml::from_str(&path.read_to_string()?)?;
-        result.validate()?;
-        Ok(result)
     }
 
     fn validate(&self) -> Result<()> {
@@ -226,10 +286,6 @@ impl TestOptions {
 
         if let Some(approx) = &self.approximations {
             approx.validate()?;
-        }
-
-        for options in &self.compilers {
-            options.validate()?;
         }
 
         Ok(())
