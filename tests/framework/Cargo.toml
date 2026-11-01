@@ -33,6 +33,7 @@ percent-encoding = { workspace = true }
 cfg-expr = "0.20.8"
 oxipng = "10.1.1"
 rascal = { workspace = true }
+swfasm = { workspace = true }
 sha2 = { workspace = true }
 clap = { workspace = true, optional = true }
 tempfile = { workspace = true }
