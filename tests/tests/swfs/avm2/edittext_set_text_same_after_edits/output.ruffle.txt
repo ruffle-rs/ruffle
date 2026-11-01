@@ -1,0 +1,138 @@
+// appendText(""), then same text
+  text = "AB": text=AB sizes=12,12 default=12
+  setTextFormat(big): text=AB sizes=30,30 default=12
+  appendText(""): text=AB sizes=30,30 default=12
+  setTextFormat(huge): text=AB sizes=40,40 default=12
+  text = field.text: text=AB sizes=40,40 default=12
+// defaultTextFormat, appendText(""), then same text
+  text = "AB": text=AB sizes=12,12 default=12
+  setTextFormat(big): text=AB sizes=30,30 default=12
+  defaultTextFormat = mid: text=AB sizes=30,30 default=20
+  appendText(""): text=AB sizes=30,30 default=20
+  setTextFormat(huge): text=AB sizes=40,40 default=20
+  text = field.text: text=AB sizes=20,20 default=20
+// appendText(""), defaultTextFormat, then same text
+  text = "AB": text=AB sizes=12,12 default=12
+  setTextFormat(big): text=AB sizes=30,30 default=12
+  appendText(""): text=AB sizes=30,30 default=12
+  defaultTextFormat = mid: text=AB sizes=30,30 default=20
+  setTextFormat(huge): text=AB sizes=40,40 default=20
+  text = field.text: text=AB sizes=20,20 default=20
+// appendText("C"), then same text
+  text = "AB": text=AB sizes=12,12 default=12
+  setTextFormat(big): text=AB sizes=30,30 default=12
+  appendText("C"): text=ABC sizes=30,30,12 default=12
+  setTextFormat(huge): text=ABC sizes=40,40,40 default=12
+  text = field.text: text=ABC sizes=40,40,40 default=12
+// defaultTextFormat, appendText("C"), then same text
+  text = "AB": text=AB sizes=12,12 default=12
+  setTextFormat(big): text=AB sizes=30,30 default=12
+  defaultTextFormat = mid: text=AB sizes=30,30 default=20
+  appendText("C"): text=ABC sizes=30,30,20 default=20
+  setTextFormat(huge): text=ABC sizes=40,40,40 default=20
+  text = field.text: text=ABC sizes=20,20,20 default=20
+// appendText("C"), defaultTextFormat, then same text
+  text = "AB": text=AB sizes=12,12 default=12
+  setTextFormat(big): text=AB sizes=30,30 default=12
+  appendText("C"): text=ABC sizes=30,30,12 default=12
+  defaultTextFormat = mid: text=ABC sizes=30,30,12 default=20
+  setTextFormat(huge): text=ABC sizes=40,40,40 default=20
+  text = field.text: text=ABC sizes=20,20,20 default=20
+// replaceText(0, 1, "A"), then same text
+  text = "AB": text=AB sizes=12,12 default=12
+  setTextFormat(big): text=AB sizes=30,30 default=12
+  replaceText(0, 1, "A"): text=AB sizes=30,30 default=12
+  setTextFormat(huge): text=AB sizes=40,40 default=12
+  text = field.text: text=AB sizes=40,40 default=12
+// defaultTextFormat, replaceText(0, 1, "A"), then same text
+  text = "AB": text=AB sizes=12,12 default=12
+  setTextFormat(big): text=AB sizes=30,30 default=12
+  defaultTextFormat = mid: text=AB sizes=30,30 default=20
+  replaceText(0, 1, "A"): text=AB sizes=30,30 default=20
+  setTextFormat(huge): text=AB sizes=40,40 default=20
+  text = field.text: text=AB sizes=20,20 default=20
+// replaceText(0, 1, "A"), defaultTextFormat, then same text
+  text = "AB": text=AB sizes=12,12 default=12
+  setTextFormat(big): text=AB sizes=30,30 default=12
+  replaceText(0, 1, "A"): text=AB sizes=30,30 default=12
+  defaultTextFormat = mid: text=AB sizes=30,30 default=20
+  setTextFormat(huge): text=AB sizes=40,40 default=20
+  text = field.text: text=AB sizes=20,20 default=20
+// replaceText(2, 2, ""), then same text
+  text = "AB": text=AB sizes=12,12 default=12
+  setTextFormat(big): text=AB sizes=30,30 default=12
+  replaceText(2, 2, ""): text=AB sizes=30,30 default=12
+  setTextFormat(huge): text=AB sizes=40,40 default=12
+  text = field.text: text=AB sizes=40,40 default=12
+// defaultTextFormat, replaceText(2, 2, ""), then same text
+  text = "AB": text=AB sizes=12,12 default=12
+  setTextFormat(big): text=AB sizes=30,30 default=12
+  defaultTextFormat = mid: text=AB sizes=30,30 default=20
+  replaceText(2, 2, ""): text=AB sizes=30,30 default=20
+  setTextFormat(huge): text=AB sizes=40,40 default=20
+  text = field.text: text=AB sizes=20,20 default=20
+// replaceText(2, 2, ""), defaultTextFormat, then same text
+  text = "AB": text=AB sizes=12,12 default=12
+  setTextFormat(big): text=AB sizes=30,30 default=12
+  replaceText(2, 2, ""): text=AB sizes=30,30 default=12
+  defaultTextFormat = mid: text=AB sizes=30,30 default=20
+  setTextFormat(huge): text=AB sizes=40,40 default=20
+  text = field.text: text=AB sizes=20,20 default=20
+// replaceSelectedText(""), then same text
+  text = "AB": text=AB sizes=12,12 default=12
+  setTextFormat(big): text=AB sizes=30,30 default=12
+  replaceSelectedText(""): text=AB sizes=12,12 default=12
+  setTextFormat(huge): text=AB sizes=40,40 default=12
+  text = field.text: text=AB sizes=40,40 default=12
+// defaultTextFormat, replaceSelectedText(""), then same text
+  text = "AB": text=AB sizes=12,12 default=12
+  setTextFormat(big): text=AB sizes=30,30 default=12
+  defaultTextFormat = mid: text=AB sizes=30,30 default=20
+  replaceSelectedText(""): text=AB sizes=20,20 default=20
+  setTextFormat(huge): text=AB sizes=40,40 default=20
+  text = field.text: text=AB sizes=20,20 default=20
+// replaceSelectedText(""), defaultTextFormat, then same text
+  text = "AB": text=AB sizes=12,12 default=12
+  setTextFormat(big): text=AB sizes=30,30 default=12
+  replaceSelectedText(""): text=AB sizes=12,12 default=12
+  defaultTextFormat = mid: text=AB sizes=12,12 default=20
+  setTextFormat(huge): text=AB sizes=40,40 default=20
+  text = field.text: text=AB sizes=20,20 default=20
+// replaceSelectedText("X"), then same text
+  text = "AB": text=AB sizes=12,12 default=12
+  setTextFormat(big): text=AB sizes=30,30 default=12
+  replaceSelectedText("X"): text=XB sizes=30,30 default=12
+  setTextFormat(huge): text=XB sizes=40,40 default=12
+  text = field.text: text=XB sizes=40,40 default=12
+// defaultTextFormat, replaceSelectedText("X"), then same text
+  text = "AB": text=AB sizes=12,12 default=12
+  setTextFormat(big): text=AB sizes=30,30 default=12
+  defaultTextFormat = mid: text=AB sizes=30,30 default=20
+  replaceSelectedText("X"): text=XB sizes=30,30 default=20
+  setTextFormat(huge): text=XB sizes=40,40 default=20
+  text = field.text: text=XB sizes=20,20 default=20
+// replaceSelectedText("X"), defaultTextFormat, then same text
+  text = "AB": text=AB sizes=12,12 default=12
+  setTextFormat(big): text=AB sizes=30,30 default=12
+  replaceSelectedText("X"): text=XB sizes=30,30 default=12
+  defaultTextFormat = mid: text=XB sizes=30,30 default=20
+  setTextFormat(huge): text=XB sizes=40,40 default=20
+  text = field.text: text=XB sizes=20,20 default=20
+// replaceText(0, 1, "X"), then old text
+  text = "AB": text=AB sizes=12,12 default=12
+  setTextFormat(big): text=AB sizes=30,30 default=12
+  replaceText(0, 1, "X"): text=XB sizes=30,30 default=12
+  text = "AB": text=AB sizes=12,12 default=12
+// replaceSelectedText("X"), then old text
+  text = "AB": text=AB sizes=12,12 default=12
+  setTextFormat(big): text=AB sizes=30,30 default=12
+  replaceSelectedText("X"): text=XB sizes=30,30 default=12
+  text = "AB": text=AB sizes=12,12 default=12
+// replaceSelectedText("X"), then same text twice
+  text = "AB": text=AB sizes=12,12 default=12
+  setTextFormat(big): text=AB sizes=30,30 default=12
+  replaceSelectedText("X"): text=XB sizes=30,30 default=12
+  setTextFormat(huge): text=XB sizes=40,40 default=12
+  text = field.text: text=XB sizes=40,40 default=12
+  setTextFormat(huge): text=XB sizes=40,40 default=12
+  text = field.text: text=XB sizes=40,40 default=12
