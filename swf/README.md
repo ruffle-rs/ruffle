@@ -7,7 +7,7 @@ A Rust library for reading and writing the Adobe Flash SWF file format.
 ```toml
 # Cargo.toml
 [dependencies]
-swf = "0.2"
+swf = "0.4"
 ```
 
 ## Reading
