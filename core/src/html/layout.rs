@@ -23,6 +23,7 @@ pub struct LayoutParams<'gc> {
     pub is_input: bool,
     pub is_word_wrap: bool,
     pub font_type: FontType,
+    pub fte_bidi_level: Option<i32>,
 }
 
 /// Accumulates state while incrementally laying out a run of text.
@@ -40,6 +41,8 @@ pub struct LayoutBuilder<'a, 'gc> {
 
     /// Type of the font used by the text field.
     font_type: FontType,
+
+    fte_bidi_level: Option<i32>,
 
     /// The position to put text into.
     ///
@@ -140,6 +143,7 @@ impl<'a, 'gc> LayoutBuilder<'a, 'gc> {
             is_input: params.is_input,
             is_word_wrap: params.is_word_wrap,
             font_type: params.font_type,
+            fte_bidi_level: params.fte_bidi_level,
         }
     }
 
@@ -379,7 +383,127 @@ impl<'a, 'gc> LayoutBuilder<'a, 'gc> {
             Self::extend_bounds(&mut self.text_size_bounds, line_size_bounds);
         }
 
+        self.apply_fte_bidi();
         self.flush_line(end);
+    }
+
+    fn apply_fte_bidi(&mut self) {
+        let Some(level) = self.fte_bidi_level else {
+            return;
+        };
+
+        // Initially support paragraph levels 0 and 1.
+        if level != 0 && level != 1 {
+            return;
+        }
+
+        let Some(first_box) = self
+            .boxes
+            .iter()
+            .find(|layout_box| layout_box.is_text_box())
+        else {
+            return;
+        };
+        let Some(last_box) = self
+            .boxes
+            .iter()
+            .rev()
+            .find(|layout_box| layout_box.is_text_box())
+        else {
+            return;
+        };
+
+        let start = first_box.start();
+        let end = last_box.end();
+
+        let Some(line_text) = self.text.slice(start..end) else {
+            return;
+        };
+
+        let mut unicode = String::new();
+        for (_, character) in line_text.char_indices() {
+            let Ok(character) = character else {
+                return;
+            };
+            if character.len_utf16() != 1 {
+                return;
+            }
+            unicode.push(character);
+        }
+
+        let order = super::bidi::visual_order(&unicode, level as u8);
+        if order.len() != line_text.len() {
+            return;
+        }
+
+        let mut advances = vec![None; line_text.len()];
+
+        for layout_box in &self.boxes {
+            if !layout_box.is_text_box() {
+                continue;
+            }
+            let Some((text, _, font, params)) = layout_box.as_renderable_text(self.text) else {
+                continue;
+            };
+
+            let box_start = layout_box.start();
+
+            font.evaluate(text, params, |pos, _, _, advance, _| {
+                if let Some(offset) = box_start
+                    .checked_add(pos)
+                    .and_then(|value| value.checked_sub(start))
+                    && let Some(slot) = advances.get_mut(offset)
+                {
+                    *slot = Some(advance);
+                }
+            });
+        }
+
+        let Some(advances) = advances.into_iter().collect::<Option<Vec<_>>>() else {
+            // Do not apply partial visual positioning when glyph metrics
+            // are missing for part of the line.
+            return;
+        };
+
+        // Visual positions are relative to the start of the first text box.
+        // Preserve the line's existing alignment offset.
+        let line_origin_x = first_box.bounds.origin().x();
+
+        let mut visual_bounds = vec![(Twips::ZERO, Twips::ZERO); line_text.len()];
+
+        let mut cursor = Twips::ZERO;
+
+        for offset in order {
+            let advance = advances[offset];
+            visual_bounds[offset] = (cursor, cursor + advance);
+            cursor += advance;
+        }
+
+        for layout_box in &mut self.boxes {
+            if let LayoutContent::Text {
+                start: box_start,
+                end: box_end,
+                visual_char_bounds,
+                ..
+            } = &mut layout_box.content
+            {
+                let local_start = *box_start - start;
+                let local_end = *box_end - start;
+
+                *visual_char_bounds = Some(
+                    visual_bounds[local_start..local_end]
+                        .iter()
+                        .map(|(left, right)| {
+                            let box_origin_x = layout_box.bounds.origin().x();
+                            (
+                                local_visual_x(*left, line_origin_x, box_origin_x),
+                                local_visual_x(*right, line_origin_x, box_origin_x),
+                            )
+                        })
+                        .collect(),
+                );
+            }
+        }
     }
 
     fn flush_line(&mut self, end: usize) {
@@ -1019,7 +1143,7 @@ impl<'gc> LayoutLine<'gc> {
         result.ok()
     }
 
-    /// Returns x-axis char bounds of the given char relative to the whole layout.
+    /// Returns the x-axis bounds of a character in the whole layout.
     pub fn char_x_bounds(&self, position: usize) -> Option<(Twips, Twips)> {
         let box_index = self.find_box_index_by_position(position)?;
         let layout_box = self.boxes.get(box_index)?;
@@ -1030,7 +1154,14 @@ impl<'gc> LayoutLine<'gc> {
         // and its bounds will end where the next character starts.
         // If it's not a space or the text is not justified, it won't change the value.
         // TODO [KJ] We need to test this behavior with letter spacing or kerning enabled.
-        if layout_box.end() == position + 1
+
+        if !matches!(
+            layout_box.content(),
+            LayoutContent::Text {
+                visual_char_bounds: Some(_),
+                ..
+            }
+        ) && layout_box.end() == position + 1
             && let Some(next_box) = self.boxes.get(box_index + 1)
             && let Some(next_start) = next_box.char_x_bounds(position + 1).map(|(s, _)| s)
         {
@@ -1118,6 +1249,11 @@ pub enum LayoutContent<'gc> {
         #[collect(require_static)]
         char_end_pos: Vec<Twips>,
 
+        /// Optional visual bounds, indexed by logical UTF-16 offsets relative to this box.
+        /// Used for FTE bidirectional text.
+        #[collect(require_static)]
+        visual_char_bounds: Option<Vec<(Twips, Twips)>>,
+
         /// Whether this text should be underlined.
         underline: bool,
     },
@@ -1202,6 +1338,7 @@ impl<'gc> LayoutBox<'gc> {
                 font_set,
                 params,
                 char_end_pos,
+                visual_char_bounds: None,
                 underline: span.style.underline,
             },
             last_in_line: false,
@@ -1339,7 +1476,17 @@ impl<'gc> LayoutBox<'gc> {
         }
     }
 
-    /// Return x-axis char bounds of the given char relative to the whole layout.
+    /// Returns a character's visual x position relative to this layout box.
+    pub fn visual_char_x(&self, position: usize) -> Option<Twips> {
+        match &self.content {
+            LayoutContent::Text {
+                visual_char_bounds: Some(bounds),
+                ..
+            } => bounds.get(position).map(|bounds| bounds.0),
+            _ => None,
+        }
+    }
+
     pub fn char_x_bounds(&self, position: usize) -> Option<(Twips, Twips)> {
         let relative_position = position.checked_sub(self.start())?;
 
@@ -1348,6 +1495,15 @@ impl<'gc> LayoutBox<'gc> {
         };
 
         let origin_x = self.bounds().origin().x();
+
+        if let LayoutContent::Text {
+            visual_char_bounds: Some(bounds),
+            ..
+        } = &self.content
+        {
+            let (left, right) = *bounds.get(relative_position)?;
+            return Some((origin_x + left, origin_x + right));
+        }
 
         Some(if relative_position == 0 {
             (origin_x, origin_x + *char_end_pos.get(0)?)
@@ -1395,5 +1551,26 @@ impl<'layout, 'gc> Iterator for LayoutBoxIter<'layout, 'gc> {
                 return None;
             }
         }
+    }
+}
+
+fn local_visual_x(visual_x: Twips, line_origin_x: Twips, box_origin_x: Twips) -> Twips {
+    visual_x + line_origin_x - box_origin_x
+}
+
+#[cfg(test)]
+mod bidi_position_tests {
+    use super::local_visual_x;
+    use swf::Twips;
+
+    #[test]
+    fn second_box_preserves_line_position() {
+        let x = local_visual_x(
+            Twips::from_pixels(40.0),
+            Twips::from_pixels(20.0),
+            Twips::from_pixels(80.0),
+        );
+
+        assert_eq!(x, Twips::from_pixels(-20.0));
     }
 }

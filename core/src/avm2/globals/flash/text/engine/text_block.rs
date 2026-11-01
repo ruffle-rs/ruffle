@@ -511,6 +511,7 @@ pub fn do_create_text_line<'gc>(
 
     let subtext = &text[previous_position..next_position];
 
+    fallback.set_fte_bidi_level(block.bidi_level());
     fallback.set_text(subtext, activation.context);
 
     let format = spans
