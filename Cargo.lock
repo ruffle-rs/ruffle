@@ -4825,6 +4825,7 @@ dependencies = [
  "serde_json",
  "slotmap",
  "smallvec",
+ "stacker",
  "swf 0.3.0",
  "symphonia",
  "thiserror 2.0.18",

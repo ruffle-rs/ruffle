@@ -2675,6 +2675,7 @@ pub struct PlayerBuilder {
     #[cfg(feature = "known_stubs")]
     stub_report_output: Option<std::path::PathBuf>,
     avm2_optimizer_enabled: bool,
+    max_avm2_call_depth: Option<usize>,
     #[cfg(feature = "default_font")]
     default_font: bool,
 }
@@ -2732,6 +2733,7 @@ impl PlayerBuilder {
             #[cfg(feature = "known_stubs")]
             stub_report_output: None,
             avm2_optimizer_enabled: true,
+            max_avm2_call_depth: None,
             #[cfg(feature = "default_font")]
             default_font: true,
         }
@@ -2959,6 +2961,13 @@ impl PlayerBuilder {
 
     pub fn with_avm2_optimizer_enabled(mut self, value: bool) -> Self {
         self.avm2_optimizer_enabled = value;
+        self
+    }
+
+    /// Sets the maximum depth of the AVM2 call stack, used on platforms where
+    /// the remaining native stack can't be determined (e.g. wasm).
+    pub fn with_max_avm2_call_depth(mut self, value: Option<usize>) -> Self {
+        self.max_avm2_call_depth = value;
         self
     }
 
@@ -3194,6 +3203,9 @@ impl PlayerBuilder {
             context
                 .avm2
                 .set_optimizer_enabled(self.avm2_optimizer_enabled);
+            if let Some(max_avm2_call_depth) = self.max_avm2_call_depth {
+                context.avm2.set_max_call_depth(max_avm2_call_depth);
+            }
             Avm1::load_player_globals(context);
             Avm2::load_player_globals(context);
 
