@@ -5,7 +5,7 @@ use crate::options::TestOptions;
 use crate::options::known_failure::KnownFailure;
 use crate::runner::TestRunner;
 use crate::util::read_bytes;
-use anyhow::{Result, anyhow};
+use anyhow::{Result, anyhow, bail};
 use ruffle_core::font::{FontQuery, FontType};
 use ruffle_core::tag_utils::SwfMovieData;
 use ruffle_input_format::InputInjector;
@@ -175,6 +175,22 @@ impl Test {
             CompileMode::CompileAndVerify => true,
             CompileMode::UsePrecompiled => return Ok(()), // Pretend all is well!
         };
+
+        // Only compile sources once for each test directory.
+        // TODO: use LoceLock::get_or_try_init once stable?
+        let mut result = Ok(());
+        let ok = self.options.shared.compile_ok.get_or_init(|| {
+            result = self.compile_inner(verify_if_changed);
+            result.is_ok()
+        });
+        match (ok, result) {
+            (true, _) => Ok(()),
+            (false, Ok(())) => bail!("Test '{}' already failed to compile", self.name()),
+            (false, Err(e)) => Err(e),
+        }
+    }
+
+    fn compile_inner(&self, verify_if_changed: bool) -> Result<()> {
         for options in &self.options.shared.compilers {
             options
                 .create_compiler()?

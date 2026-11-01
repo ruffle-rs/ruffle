@@ -19,7 +19,7 @@ use anyhow::{Result, bail};
 use ruffle_render::quality::StageQuality;
 use serde::Deserialize;
 use std::collections::{HashMap, HashSet};
-use std::sync::{Arc, LazyLock};
+use std::sync::{Arc, LazyLock, OnceLock};
 use toml::Spanned;
 use toml::de::{DeTable, DeValue};
 use vfs::VfsPath;
@@ -98,6 +98,10 @@ pub struct SharedObjectConfig {
 pub struct TestSharedOptions {
     #[serde(default)]
     pub compilers: Vec<SwfCompilerOptions>,
+
+    // Used to only run compilers once per test group.
+    #[serde(skip, default)]
+    pub(crate) compile_ok: OnceLock<bool>,
 }
 
 impl TestSharedOptions {
@@ -107,6 +111,7 @@ impl TestSharedOptions {
         static DEFAULT: LazyLock<Arc<TestSharedOptions>> = LazyLock::new(|| {
             Arc::new(TestSharedOptions {
                 compilers: Vec::new(),
+                compile_ok: OnceLock::from(true),
             })
         });
         Arc::clone(&*DEFAULT)

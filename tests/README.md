@@ -188,6 +188,18 @@ min_max_amplitude = 0.4
 # When the assertion passes in the future, it'll fail and alert that it now passes.
 known_failure = false
 
+# SharedObject assertions to perform, with the exact SharedObject path (e.g. localhost/test.swf/localName). This block is repeatable.
+[shared_objects."name used in SWF"]
+
+# Extension-less path to the expected sol file.
+# Usually a `.sol` file matching what Flash Player would generate.
+# The test runner will compare against expected + ".sol".
+expected = "foo"
+
+# If true, this shared object is known to fail.
+# The test runner will compare against expected + ".ruffle.sol" instead.
+known_failure = false
+
 # A single device font provided for this test.
 [fonts.FONT_NAME] # FONT_NAME is a name of this particular font
 
@@ -234,8 +246,8 @@ japanese_mincho = ["Test Font", "Test Font Fallback"]
 # ...
 
 # To make tests easier to maintain, we encourage programmatic compilation of source files where possible.
-# This is currently limited to pure AVM1 code.
 # Multiple compiler steps can be included in a single test.
+# This cannot be overridden in subtests; instead, any subtest will triggers all compiler steps.
 [[compilers]]
 
 # Rascal can be used to compile AVM1 code.
@@ -307,18 +319,6 @@ optimize = true
 
 # Whether to include debug info in the bytecode.
 debug = false
-
-# SharedObject assertions to perform, with the exact SharedObject path (e.g. localhost/test.swf/localName). This block is repeatable.
-[shared_objects."name used in SWF"]
-
-# Extension-less path to the expected sol file.
-# Usually a `.sol` file matching what Flash Player would generate.
-# The test runner will compare against expected + ".sol".
-expected = "foo"
-
-# If true, this shared object is known to fail.
-# The test runner will compare against expected + ".ruffle.sol" instead.
-known_failure = false
 ```
 
 ## Multiple tests
