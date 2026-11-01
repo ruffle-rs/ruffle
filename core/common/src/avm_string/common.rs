@@ -374,6 +374,7 @@ ruffle_macros::define_common_strings! {
     "toString",
     "toXMLString",
     "track",
+    "trackAsMenu",
     "traits",
     "transform",
     "Transform",

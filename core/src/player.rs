@@ -127,6 +127,9 @@ pub struct MouseData<'gc> {
 
     /// If the mouse is down, the object that the mouse is currently pressing.
     pub pressed: Option<InteractiveObject<'gc>>,
+
+    /// The AVM1 object that received the mouse press, before menu tracking can transfer it.
+    pub avm1_press_target: Option<InteractiveObject<'gc>>,
     pub right_pressed: Option<InteractiveObject<'gc>>,
     pub middle_pressed: Option<InteractiveObject<'gc>>,
 
@@ -1670,6 +1673,39 @@ impl Player {
             }
 
             let cur_over_object = context.mouse_data.hovered;
+            let pressed_before_hover = context.mouse_data.pressed;
+            let mut drag_over_object = new_over_object;
+            let is_avm1 = !context.stage.movie().is_action_script_3();
+            if !skip_mouse_hover
+                && is_avm1
+                && context.input.is_mouse_down(MouseButton::Left)
+                && !changed_mouse_buttons.contains(MouseButton::Left)
+            {
+                if let Some(pressed) = context.mouse_data.pressed {
+                    if InteractiveObject::option_ptr_eq(cur_over_object, Some(pressed)) {
+                        if !InteractiveObject::option_ptr_eq(drag_over_object, Some(pressed)) {
+                            if pressed.track_as_menu(context) {
+                                context.mouse_data.pressed = None;
+                            } else {
+                                drag_over_object = None;
+                            }
+                        }
+                    } else {
+                        drag_over_object = drag_over_object
+                            .filter(|over| InteractiveObject::ptr_eq(*over, pressed));
+                    }
+                }
+                if context.mouse_data.pressed.is_none()
+                    && !InteractiveObject::option_ptr_eq(cur_over_object, drag_over_object)
+                    && let Some(over) = drag_over_object
+                {
+                    if context.drag_object.is_none() && over.track_as_menu(context) {
+                        context.mouse_data.pressed = Some(over);
+                    } else {
+                        drag_over_object = None;
+                    }
+                }
+            }
             // Check if a new object has been hovered over.
             if !skip_mouse_hover
                 && !InteractiveObject::option_ptr_eq(cur_over_object, new_over_object)
@@ -1678,11 +1714,8 @@ impl Player {
                 // and fires "drag" events.
                 if context.input.is_mouse_down(MouseButton::Left) {
                     context.mouse_data.hovered = new_over_object;
-                    if let Some(down_object) = context.mouse_data.pressed {
-                        if InteractiveObject::option_ptr_eq(
-                            context.mouse_data.pressed,
-                            cur_over_object,
-                        ) {
+                    if let Some(down_object) = pressed_before_hover {
+                        if InteractiveObject::option_ptr_eq(Some(down_object), cur_over_object) {
                             // Dragged from inside the clicked object to the outside.
                             events.push((
                                 down_object,
@@ -1691,8 +1724,8 @@ impl Player {
                                 },
                             ));
                         } else if InteractiveObject::option_ptr_eq(
-                            context.mouse_data.pressed,
-                            new_over_object,
+                            Some(down_object),
+                            drag_over_object,
                         ) {
                             // Dragged from outside the clicked object to the inside.
                             events.push((
@@ -1704,64 +1737,37 @@ impl Player {
                         }
                     }
 
-                    // While dragging, dispatch hover roll/drag events.
-                    // Suppress RollOver/RollOut and DragOver/DragOut events to hovered objects while AVM1 startDrag is active
-                    let suppress_hover_events = context.drag_object.is_some()
-                        && !context.stage.movie().is_action_script_3();
+                    if is_avm1
+                        && !InteractiveObject::option_ptr_eq(
+                            pressed_before_hover,
+                            context.mouse_data.pressed,
+                        )
+                        && let Some(over) = context.mouse_data.pressed
+                    {
+                        events.push((
+                            over,
+                            ClipEvent::DragOver {
+                                from: cur_over_object,
+                            },
+                        ));
+                    }
 
-                    if !suppress_hover_events {
-                        // For AVM1, avoid roll events while dragging; only drag events should be emitted.
-                        let allow_roll_while_dragging = context.stage.movie().is_action_script_3();
-
+                    if !is_avm1 {
                         if let Some(cur_over_object) = cur_over_object {
-                            if allow_roll_while_dragging {
-                                events.push((
-                                    cur_over_object,
-                                    ClipEvent::RollOut {
-                                        to: new_over_object,
-                                    },
-                                ));
-                            }
-                            if !InteractiveObject::option_ptr_eq(
-                                context.mouse_data.pressed,
-                                Some(cur_over_object),
-                            ) && !cur_over_object
-                                .as_displayobject()
-                                .movie()
-                                .is_action_script_3()
-                            {
-                                events.push((
-                                    cur_over_object,
-                                    ClipEvent::DragOut {
-                                        to: new_over_object,
-                                    },
-                                ));
-                            }
+                            events.push((
+                                cur_over_object,
+                                ClipEvent::RollOut {
+                                    to: new_over_object,
+                                },
+                            ));
                         }
                         if let Some(new_over_object) = new_over_object {
-                            if allow_roll_while_dragging {
-                                events.push((
-                                    new_over_object,
-                                    ClipEvent::RollOver {
-                                        from: cur_over_object,
-                                    },
-                                ));
-                            }
-                            if !InteractiveObject::option_ptr_eq(
-                                context.mouse_data.pressed,
-                                Some(new_over_object),
-                            ) && !new_over_object
-                                .as_displayobject()
-                                .movie()
-                                .is_action_script_3()
-                            {
-                                events.push((
-                                    new_over_object,
-                                    ClipEvent::DragOver {
-                                        from: cur_over_object,
-                                    },
-                                ));
-                            }
+                            events.push((
+                                new_over_object,
+                                ClipEvent::RollOver {
+                                    from: cur_over_object,
+                                },
+                            ));
                         }
                     }
                 } else {
@@ -1797,6 +1803,7 @@ impl Player {
                     new_over_object.map_or(MouseCursor::Arrow, |o| o.mouse_cursor(context));
             }
 
+            let mut avm1_mouseup_target = None;
             // Handle presses and releases.
             for button in [MouseButton::Left, MouseButton::Middle, MouseButton::Right] {
                 if !changed_mouse_buttons.contains(button) {
@@ -1804,6 +1811,9 @@ impl Player {
                 }
 
                 if context.input.is_mouse_down(button) {
+                    if is_avm1 && button == MouseButton::Left {
+                        context.mouse_data.avm1_press_target = context.mouse_data.hovered;
+                    }
                     let event = match button {
                         MouseButton::Left => ClipEvent::Press {
                             index: context.input.last_click_index(),
@@ -1822,6 +1832,15 @@ impl Player {
                         events.push((context.stage.into(), event));
                     }
                 } else {
+                    if is_avm1 && button == MouseButton::Left {
+                        if !InteractiveObject::option_ptr_eq(
+                            context.mouse_data.avm1_press_target,
+                            context.mouse_data.hovered,
+                        ) {
+                            avm1_mouseup_target = context.mouse_data.hovered;
+                        }
+                        context.mouse_data.avm1_press_target = None;
+                    }
                     let event = match button {
                         MouseButton::Left => ClipEvent::MouseUpInside,
                         MouseButton::Right => ClipEvent::RightMouseUpInside,
@@ -1939,6 +1958,13 @@ impl Player {
             }
 
             Self::run_actions(context);
+            if let Some(over) = avm1_mouseup_target {
+                // Flash rechecks menu tracking twice after releasing over a different object.
+                // These reads are observable through ActionScript getters.
+                over.track_as_menu(context);
+                over.track_as_menu(context);
+                Self::run_actions(context);
+            }
             needs_render
         });
 
@@ -3009,6 +3035,7 @@ impl PlayerBuilder {
                 current_custom_cursor: None,
                 hovered: None,
                 pressed: None,
+                avm1_press_target: None,
                 right_pressed: None,
                 middle_pressed: None,
                 forced_cursor: None,
