@@ -2094,6 +2094,31 @@ pub trait TDisplayObject<'gc>:
         self.base().scaling_grid.set(rect);
     }
 
+    /// Whether this is one of the text types.
+    #[no_dynamic]
+    fn is_text(self) -> bool {
+        self.as_edit_text().is_some() || self.as_text().is_some() || self.as_text_line().is_some()
+    }
+
+    /// Bounds the grid is validated and sliced against: this object's own geometry plus its
+    /// *direct* children's, without stroke inflation. Unlike `getBounds`, grandchildren are
+    /// excluded, and so is text wherever it appears -- a text field refuses every grid.
+    fn self_bounds_for_scale9(self) -> Rectangle<Twips> {
+        if self.is_text() {
+            return Rectangle::INVALID;
+        }
+        let mode = BoundsMode::ScriptWithoutStrokes;
+        let mut bounds = self.self_bounds(mode);
+        if let Some(container) = self.as_container() {
+            for child in container.iter_render_list() {
+                if !child.is_text() {
+                    bounds = bounds.union(&(child.base().matrix() * child.self_bounds(mode)));
+                }
+            }
+        }
+        bounds
+    }
+
     #[no_dynamic]
     /// Whether this object has been removed. Only applies to AVM1.
     fn avm1_removed(self) -> bool {
