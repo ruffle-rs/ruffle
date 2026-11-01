@@ -1,0 +1,2 @@
+# The SWFs are built by make_swfs.py.
+num_frames = 10
