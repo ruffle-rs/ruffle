@@ -42,11 +42,12 @@ pub fn set_interval<'gc>(
         params: params.to_vec(),
     };
 
-    Ok(Value::Integer(activation.context.timers.add_timer(
-        callback,
-        interval as i32,
-        false,
-    )))
+    let mc = activation.gc();
+    let id = activation
+        .context
+        .timers
+        .add_timer_with_id(mc, callback, interval as i32, false);
+    Ok(Value::Integer(id))
 }
 
 /// Implements `flash.utils.clearInterval`
@@ -56,7 +57,7 @@ pub fn clear_interval<'gc>(
     args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let id = args.get_u32(0);
-    activation.context.timers.remove(id as i32);
+    activation.context.timers.remove_timer_by_id(id as i32);
     Ok(Value::Undefined)
 }
 
@@ -75,11 +76,12 @@ pub fn set_timeout<'gc>(
         params: params.to_vec(),
     };
 
-    Ok(Value::Integer(activation.context.timers.add_timer(
-        callback,
-        interval as i32,
-        true,
-    )))
+    let mc = activation.gc();
+    let id = activation
+        .context
+        .timers
+        .add_timer_with_id(mc, callback, interval as i32, true);
+    Ok(Value::Integer(id))
 }
 
 /// Implements `flash.utils.clearTimeout`
@@ -89,7 +91,7 @@ pub fn clear_timeout<'gc>(
     args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let id = args.get_u32(0);
-    activation.context.timers.remove(id as i32);
+    activation.context.timers.remove_timer_by_id(id as i32);
     Ok(Value::Undefined)
 }
 
