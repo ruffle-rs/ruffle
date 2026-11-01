@@ -39,11 +39,17 @@ fn main_vertex(in: filter__VertexInput) -> filter__VertexOutput {
 fn main_fragment(in: filter__VertexOutput) -> @location(0) vec4<f32> {
     var src = textureSample(texture, texture_sampler, in.uv);
     var f = filter_args;
+    // A fully transparent pixel has no color to unmultiply. Flash treats it as
+    // transparent black, so the offsets still apply there.
+    var rgb = vec3<f32>(0.0);
+    if (src.a > 0.0) {
+        rgb = src.rgb / src.a;
+    }
     var color = vec4<f32>(
-        clamp((f.r_to_r * src.r / src.a) + (f.g_to_r * src.g / src.a) + (f.b_to_r * src.b / src.a) + (f.a_to_r * src.a) + (f.r_extra / 255.0), 0.0, 1.0),
-        clamp((f.r_to_g * src.r / src.a) + (f.g_to_g * src.g / src.a) + (f.b_to_g * src.b / src.a) + (f.a_to_g * src.a) + (f.g_extra / 255.0), 0.0, 1.0),
-        clamp((f.r_to_b * src.r / src.a) + (f.g_to_b * src.g / src.a) + (f.b_to_b * src.b / src.a) + (f.a_to_b * src.a) + (f.b_extra / 255.0), 0.0, 1.0),
-        clamp((f.r_to_a * src.r / src.a) + (f.g_to_a * src.g / src.a) + (f.b_to_a * src.b / src.a) + (f.a_to_a * src.a) + (f.a_extra / 255.0), 0.0, 1.0),
+        clamp((f.r_to_r * rgb.r) + (f.g_to_r * rgb.g) + (f.b_to_r * rgb.b) + (f.a_to_r * src.a) + (f.r_extra / 255.0), 0.0, 1.0),
+        clamp((f.r_to_g * rgb.r) + (f.g_to_g * rgb.g) + (f.b_to_g * rgb.b) + (f.a_to_g * src.a) + (f.g_extra / 255.0), 0.0, 1.0),
+        clamp((f.r_to_b * rgb.r) + (f.g_to_b * rgb.g) + (f.b_to_b * rgb.b) + (f.a_to_b * src.a) + (f.b_extra / 255.0), 0.0, 1.0),
+        clamp((f.r_to_a * rgb.r) + (f.g_to_a * rgb.g) + (f.b_to_a * rgb.b) + (f.a_to_a * src.a) + (f.a_extra / 255.0), 0.0, 1.0),
     );
     return vec4<f32>(color.rgb * color.a, color.a);
 }
