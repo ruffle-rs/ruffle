@@ -1,0 +1,20 @@
+# A sliced object captured into a bitmap cache must match the uncached one, including at a
+# fractional scale and when a filter turns the cache on by itself.
+num_ticks = 1
+
+# The glow and scroll-rect rows land a couple of levels apart between rendering backends
+# (Metal, Vulkan on x86 and on ARM); the slicing itself is exact on all of them, so every
+# pixel is held to within that instead of allowing any to differ freely.
+[image_comparisons.output]
+tolerance = 3
+max_outliers = 0
+
+[player_options]
+with_renderer = { optional = false }
+
+[[compilers]]
+type = "Asc"
+target = "test.swf"
+class = "Test"
+scripts = ["Test.as"]
+swf_version = 43

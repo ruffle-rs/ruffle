@@ -1,0 +1,16 @@
+num_ticks = 1
+
+# Antialiasing along the diagonal edges of the rotated and skewed rows.
+[image_comparisons.output]
+tolerance = 1
+max_outliers = 2400
+
+[player_options]
+with_renderer = { optional = false }
+
+[[compilers]]
+type = "Asc"
+target = "test.swf"
+class = "Test"
+scripts = ["Test.as"]
+swf_version = 43
