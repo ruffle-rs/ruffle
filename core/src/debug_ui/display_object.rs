@@ -947,7 +947,7 @@ impl DisplayObjectWindow {
                     ui.label(label);
                     ui.horizontal(|ui| {
                         if let Some(state_child) = object.get_state_child(state) {
-                            open_display_object_button(
+                            display_object_row_ui(
                                 ui,
                                 context,
                                 messages,
@@ -1253,7 +1253,7 @@ impl DisplayObjectWindow {
                 ui.label("Current Focus");
                 ui.vertical(|ui| {
                     if let Some(focus) = focus.map(|o| o.as_displayobject()) {
-                        open_display_object_button(
+                        display_object_row_ui(
                             ui,
                             context,
                             messages,
@@ -1310,7 +1310,7 @@ impl DisplayObjectWindow {
                             } else {
                                 ui.label(format!("{}.", i + 1));
                             }
-                            open_display_object_button(
+                            display_object_row_ui(
                                 ui,
                                 context,
                                 messages,
@@ -1343,7 +1343,7 @@ impl DisplayObjectWindow {
             .show(ui, |ui| {
                 ui.label("Parent");
                 if let Some(other) = object.parent() {
-                    open_display_object_button(
+                    display_object_row_ui(
                         ui,
                         context,
                         messages,
@@ -1357,7 +1357,7 @@ impl DisplayObjectWindow {
 
                 ui.label("AVM1 Root");
                 if !std::ptr::eq(object.avm1_root().as_ptr(), object.as_ptr()) {
-                    open_display_object_button(
+                    display_object_row_ui(
                         ui,
                         context,
                         messages,
@@ -1372,7 +1372,7 @@ impl DisplayObjectWindow {
                 ui.label("AVM2 Root");
                 if let Some(other) = object.avm2_root() {
                     if !std::ptr::eq(other.as_ptr(), object.as_ptr()) {
-                        open_display_object_button(
+                        display_object_row_ui(
                             ui,
                             context,
                             messages,
@@ -1402,7 +1402,7 @@ impl DisplayObjectWindow {
                     }
                     RenderMask::Stencil(mask) | RenderMask::Alpha(mask) => {
                         ui.horizontal(|ui| {
-                            open_display_object_button(
+                            display_object_row_ui(
                                 ui,
                                 context,
                                 messages,
@@ -1421,7 +1421,7 @@ impl DisplayObjectWindow {
 
                 ui.label("Maskee");
                 if let Some(other) = object.maskee() {
-                    open_display_object_button(
+                    display_object_row_ui(
                         ui,
                         context,
                         messages,
@@ -1789,7 +1789,7 @@ impl DisplayObjectWindow {
         if let Some(ctr) = object.as_container().filter(|x| x.num_children() > 0) {
             CollapsingState::load_with_default_open(ui.ctx(), ui.id().with(object.as_ptr()), false)
                 .show_header(ui, |ui| {
-                    open_display_object_button(
+                    display_object_row_ui(
                         ui,
                         context,
                         messages,
@@ -1807,13 +1807,7 @@ impl DisplayObjectWindow {
             // the space empty where the expand button would be,
             // so it doesn't look like a sibling of the parent.
             ui.indent(ui.id().with(object.as_ptr()), |ui| {
-                open_display_object_button(
-                    ui,
-                    context,
-                    messages,
-                    object,
-                    &mut self.hovered_debug_rect,
-                );
+                display_object_row_ui(ui, context, messages, object, &mut self.hovered_debug_rect);
             });
         }
     }
@@ -1990,22 +1984,29 @@ fn show_text_format_hover(ui: &mut Ui, tf: &TextFormat) {
     });
 }
 
-pub fn open_display_object_button<'gc>(
+pub fn display_object_row_ui<'gc>(
     ui: &mut Ui,
     context: &mut UpdateContext<'gc>,
     messages: &mut Vec<Message>,
     object: DisplayObject<'gc>,
     hover: &mut Option<DisplayObjectHandle>,
 ) {
-    let response = ui.button(summary_name(object));
-    if response.hovered() {
-        *hover = Some(DisplayObjectHandle::new(context, object));
-    }
-    if response.clicked() {
-        messages.push(Message::TrackDisplayObject(DisplayObjectHandle::new(
-            context, object,
-        )));
-    }
+    ui.horizontal(|ui| {
+        let re_track_btn = ui.button(summary_name(object));
+        let visible = object.visible();
+        let re_vis_btn = ui.selectable_label(visible, "👁️");
+        if re_track_btn.hovered() || re_vis_btn.hovered() {
+            *hover = Some(DisplayObjectHandle::new(context, object));
+        }
+        if re_track_btn.clicked() {
+            messages.push(Message::TrackDisplayObject(DisplayObjectHandle::new(
+                context, object,
+            )));
+        }
+        if re_vis_btn.clicked() {
+            object.set_visible(context, !visible);
+        }
+    });
 }
 
 fn show_font<'gc>(
