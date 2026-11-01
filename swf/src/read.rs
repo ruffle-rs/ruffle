@@ -191,7 +191,8 @@ pub fn decompress_swf<'a, R: Read + 'a>(mut input: R) -> Result<SwfBuf> {
 /// Returns `None` for other files.
 ///
 /// Flash Player reads a SWF file in chunks and parses what they decompress to,
-/// so this is how much of the movie it has after each chunk.
+/// so this is how much of the movie it has after each chunk. Like
+/// `decompress_swf`, this goes no further than the length in the header.
 #[cfg(feature = "flate2")]
 pub fn zlib_decompressed_chunk_ends(swf_data: &[u8], chunk_len: usize) -> Option<Vec<u32>> {
     use flate2::{Decompress, FlushDecompress};
@@ -201,6 +202,7 @@ pub fn zlib_decompressed_chunk_ends(swf_data: &[u8], chunk_len: usize) -> Option
         return None;
     }
 
+    let declared_len = u32::from_le_bytes(swf_data[4..8].try_into().ok()?) as u64;
     let mut inflate = Decompress::new(true);
     let mut scratch = vec![0; 64 * 1024];
     let mut ends = Vec::with_capacity(swf_data.len().div_ceil(chunk_len));
@@ -208,7 +210,7 @@ pub fn zlib_decompressed_chunk_ends(swf_data: &[u8], chunk_len: usize) -> Option
     for chunk_end in (chunk_len..swf_data.len() + chunk_len).step_by(chunk_len) {
         let input_end = chunk_end.min(swf_data.len());
         // Decompress everything the file up to `input_end` gives.
-        while !is_broken {
+        while !is_broken && (HEADER_LEN as u64 + inflate.total_out()) < declared_len {
             let (total_in, total_out) = (inflate.total_in(), inflate.total_out());
             let input = &swf_data[(HEADER_LEN + total_in as usize).min(input_end)..input_end];
             is_broken = inflate
@@ -218,7 +220,7 @@ pub fn zlib_decompressed_chunk_ends(swf_data: &[u8], chunk_len: usize) -> Option
                 break;
             }
         }
-        let end = HEADER_LEN as u64 + inflate.total_out();
+        let end = (HEADER_LEN as u64 + inflate.total_out()).min(declared_len);
         ends.push(end.min(u32::MAX.into()) as u32);
     }
     Some(ends)
@@ -2755,6 +2757,19 @@ pub mod tests {
 
         let uncompressed = std::fs::read("tests/swfs/uncompressed.swf").unwrap();
         assert_eq!(zlib_decompressed_chunk_ends(&uncompressed, 4096), None);
+
+        // Compressed data beyond the length in the header isn't inflated
+        // (nor kept by `decompress_swf`).
+        use flate2::{Compression, write::ZlibEncoder};
+        use std::io::Write;
+        let mut body = decompress_swf(&data[..]).unwrap().data;
+        body.resize(body.len() + (1 << 20), 0);
+        let mut encoder = ZlibEncoder::new(data[..8].to_vec(), Compression::best());
+        encoder.write_all(&body).unwrap();
+        let padded = encoder.finish().unwrap();
+        let ends = zlib_decompressed_chunk_ends(&padded, 4096).unwrap();
+        assert_eq!(ends.last(), Some(&uncompressed_len));
+        assert!(ends.iter().all(|&end| end <= uncompressed_len));
     }
 
     #[test]
