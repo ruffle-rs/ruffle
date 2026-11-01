@@ -2,7 +2,10 @@
 
 use crate::avm2::StageObject;
 use crate::avm2::activation::Activation;
-use crate::avm2::error::{make_error_2005, make_error_2007, make_error_2008, make_error_2078};
+use crate::avm2::error::{
+    Error2004Type, make_error_2004, make_error_2005, make_error_2007, make_error_2008,
+    make_error_2078,
+};
 use crate::avm2::filters::FilterAvm2Ext;
 use crate::avm2::function::FunctionArgs;
 use crate::avm2::globals::flash::geom::transform::color_transform_from_transform_object;
@@ -26,6 +29,7 @@ use crate::vminterface::Instantiator;
 use crate::{avm2_stub_getter, avm2_stub_setter};
 use ruffle_render::blend::ExtendedBlendMode;
 use ruffle_render::filters::Filter;
+use ruffle_render::shape_utils::Scale9;
 use std::str::FromStr;
 
 /// Initializes a DisplayObject created from ActionScript.
@@ -127,10 +131,19 @@ pub fn get_scale9grid<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
-    avm2_stub_getter!(activation, "flash.display.DisplayObject", "scale9Grid");
     if let Some(dobj) = this.as_display_object() {
         let rect = dobj.scaling_grid();
         return if rect.is_valid() {
+            // Stored to the twip, reported in whole pixels, truncated per field: (10.5, 10.5,
+            // 39.5, 39.5) reads back (10, 10, 39, 39), not (10, 10, 40, 40).
+            let px = |t: Twips| Twips::from_pixels(t.to_pixels().trunc());
+            let (x, y) = (px(rect.x_min), px(rect.y_min));
+            let rect = Rectangle {
+                x_min: x,
+                y_min: y,
+                x_max: x + px(rect.width()),
+                y_max: y + px(rect.height()),
+            };
             new_rectangle(activation, rect)
         } else {
             Ok(Value::Null)
@@ -148,13 +161,41 @@ pub fn set_scale9grid<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
-    avm2_stub_setter!(activation, "flash.display.DisplayObject", "scale9Grid");
     if let Some(dobj) = this.as_display_object() {
-        let rect = match args.try_get_object(0) {
-            None => Rectangle::default(),
-            Some(rect) => object_to_rectangle(rect),
+        let Some(rect) = args.try_get_object(0) else {
+            dobj.set_scaling_grid(Rectangle::default());
+            return Ok(Value::Undefined);
         };
-        dobj.set_scaling_grid(rect);
+
+        let [x, y, width, height] = [
+            rectangle_slots::X,
+            rectangle_slots::Y,
+            rectangle_slots::WIDTH,
+            rectangle_slots::HEIGHT,
+        ]
+        .map(|slot| rect.get_slot(slot).as_f64());
+
+        // Checked before converting: `NaN as i32` is 0, which would slip through as a
+        // zero-sized grid that Flash Player throws for.
+        if [x, y, width, height].iter().any(|v| !v.is_finite()) || width <= 0.0 || height <= 0.0 {
+            return Err(make_error_2004(activation, Error2004Type::ArgumentError));
+        }
+
+        // Round each field to the nearest twip; `Twips::from_pixels` would truncate instead.
+        let twips = |v: f64| Twips::new((v * Twips::TWIPS_PER_PIXEL as f64).round() as i32);
+        let grid = Rectangle {
+            x_min: twips(x),
+            y_min: twips(y),
+            x_max: Twips::new(twips(x).get().saturating_add(twips(width).get())),
+            y_max: Twips::new(twips(y).get().saturating_add(twips(height).get())),
+        };
+
+        // The same rule the renderer applies: strictly inside the bounds, flush refused.
+        if Scale9::new(dobj.self_bounds_for_scale9(), grid, 1.0, 1.0).is_none() {
+            return Err(make_error_2004(activation, Error2004Type::ArgumentError));
+        }
+
+        dobj.set_scaling_grid(grid);
     }
 
     Ok(Value::Undefined)

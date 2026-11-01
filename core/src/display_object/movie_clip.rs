@@ -2656,7 +2656,10 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
 
     fn render_self(self, context: &mut RenderContext<'_, 'gc>) {
         if let Some(drawing) = self.drawing() {
-            drawing.render(context);
+            match self.scale9_for_render(context) {
+                Some((scale9, to_grid)) => drawing.render_scale9(context, &scale9, to_grid),
+                None => drawing.render(context),
+            }
         }
         self.render_children(context);
     }
@@ -3511,10 +3514,15 @@ impl<'gc, 'a> MovieClipShared<'gc> {
         let id = reader.read_u16()?;
         let rect = reader.read_rectangle()?;
         if let Some(character) = self.library_mut(context).character_by_id(id) {
-            if let Character::MovieClip(clip) = character {
-                clip.set_scaling_grid(rect);
-            } else {
-                tracing::warn!("DefineScalingGrid for invalid ID {}", id);
+            // Flash Player also honors the tag on shapes and buttons, and validates
+            // nothing: the renderer re-checks every grid.
+            match character {
+                Character::MovieClip(clip) => clip.set_scaling_grid(rect),
+                Character::Graphic(graphic) => graphic.set_scaling_grid(rect),
+                Character::Avm1Button(button) => button.set_scaling_grid(rect),
+                Character::Avm2Button(button) => button.set_scaling_grid(rect),
+                // TODO: Morph shapes take the tag too.
+                _ => tracing::warn!("DefineScalingGrid for unsupported ID {}", id),
             }
         }
         Ok(())
