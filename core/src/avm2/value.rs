@@ -8,7 +8,7 @@ use crate::avm2::error::{
 };
 use crate::avm2::function::{FunctionArgs, exec};
 use crate::avm2::index::ArrayIndex;
-use crate::avm2::object::{FunctionObject, NamespaceObject, Object, TObject};
+use crate::avm2::object::{NamespaceObject, Object, TObject};
 use crate::avm2::property::Property;
 use crate::avm2::script::TranslationUnit;
 use crate::avm2::vtable::VTable;
@@ -19,6 +19,7 @@ use gc_arena::Collect;
 use num_bigint::BigInt;
 use num_traits::{ToPrimitive, Zero};
 use ruffle_macros::istr;
+use std::hash::{Hash, Hasher};
 use std::mem::size_of;
 use swf::avm2::types::DefaultValue as AbcDefaultValue;
 
@@ -981,7 +982,8 @@ impl<'gc> Value<'gc> {
                     }
                 }
 
-                let bound_method = self.get_bound_method(activation, disp_id);
+                let bound_method =
+                    vtable.get_or_init_bound_method(activation.context, *self, disp_id);
 
                 Ok(bound_method.into())
             }
@@ -1303,7 +1305,7 @@ impl<'gc> Value<'gc> {
         // Slow path: This method requires an `arguments` object, which means
         // we need to allocate a `FunctionObject`.
 
-        let bound_method = self.get_bound_method(activation, id);
+        let bound_method = vtable.get_or_init_bound_method(activation.context, *self, id);
 
         bound_method.call(activation, *self, arguments)
     }
@@ -1438,32 +1440,6 @@ impl<'gc> Value<'gc> {
 
                 value.construct(activation, arguments)
             }
-        }
-    }
-
-    /// Get a bound `FunctionObject` with this `Value` as its receiver for a
-    /// method with the given `disp_id` on this `Value`'s vtable.
-    ///
-    /// If no such `FunctionObject` has been created yet, this method will
-    /// create one and cache it.
-    pub fn get_bound_method(
-        &self,
-        activation: &mut Activation<'_, 'gc>,
-        disp_id: usize,
-    ) -> FunctionObject<'gc> {
-        // TODO: Bound methods should be cached on the Method in a
-        // WeakKeyHashMap<Value, FunctionObject>, not on the Object. In avmplus,
-        // bound methods are cached on primitives too.
-        let vtable = self.vtable(activation);
-
-        if let Some(bound_method) = self.as_object().and_then(|o| o.get_bound_method(disp_id)) {
-            bound_method
-        } else {
-            let bound_method = vtable.make_bound_method(activation.context, *self, disp_id);
-            if let Some(object) = self.as_object() {
-                object.install_bound_method(activation.gc(), disp_id, bound_method);
-            }
-            bound_method
         }
     }
 
@@ -1957,6 +1933,70 @@ impl<'gc> Value<'gc> {
                 Ok(Some(a < b))
             }
             _ => abstract_lt_slow(self, other, activation),
+        }
+    }
+}
+
+#[derive(Clone, Collect, Copy)]
+#[collect(no_drop)]
+pub struct ValueKey<'gc>(pub Value<'gc>);
+
+impl PartialEq for ValueKey<'_> {
+    fn eq(&self, other: &Self) -> bool {
+        match (self.0, other.0) {
+            (Value::Undefined, Value::Undefined) => true,
+            (Value::Null, Value::Null) => true,
+            (Value::Bool(a), Value::Bool(b)) => a == b,
+            (Value::Number(a), Value::Number(b)) => {
+                // The behavior here is very odd in FP, see the
+                // `avm2/weird_number_bound_methods` test. This behavior is
+                // close enough for now.
+                a.to_bits() == b.to_bits()
+            }
+            (Value::Integer(a), Value::Integer(b)) => a == b,
+            (Value::String(a), Value::String(b)) => {
+                // This actually uses pointer equality! This means that
+                // "a" + "bc" and "abc" are considered different strings, since
+                // the former isn't interned.
+                AvmString::ptr_eq(&a, &b)
+            }
+            (Value::Object(a), Value::Object(b)) => Object::ptr_eq(a, b),
+            _ => false,
+        }
+    }
+}
+
+impl Eq for ValueKey<'_> {}
+
+impl Hash for ValueKey<'_> {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        match self.0 {
+            Value::Undefined => {
+                state.write_u8(0);
+            }
+            Value::Null => {
+                state.write_u8(1);
+            }
+            Value::Bool(b) => {
+                state.write_u8(2);
+                state.write_u8(b as u8);
+            }
+            Value::Number(n) => {
+                state.write_u8(3);
+                state.write_u64(n.to_bits());
+            }
+            Value::Integer(i) => {
+                state.write_u8(4);
+                state.write_i32(i);
+            }
+            Value::String(s) => {
+                state.write_u8(5);
+                state.write_usize(s.as_ptr() as usize);
+            }
+            Value::Object(o) => {
+                state.write_u8(6);
+                state.write_usize(o.as_ptr() as usize);
+            }
         }
     }
 }
