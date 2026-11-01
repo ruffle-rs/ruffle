@@ -36,6 +36,7 @@ ime-enabled-experimental = (experimentell)
 ime-enabled-tooltip = Eine Eingabemethode erlaubt es Zeichen einzugeben welche auf der Tastatur nicht verfügbar sind, wie zum Beispiel chinesische, japanische oder koreanische Zeichen.
 ime-enabled-default = Standard
 device-font-renderer = Geräte-Schriftart-Renderer
+device-font-renderer-tooltip = Wählt das Backend aus, das zum Rendern von Geräteschriftarten verwendet wird.
 device-font-renderer-default = Standard
 device-font-renderer-embedded = Eingebettet
 device-font-renderer-freetype = FreeType
