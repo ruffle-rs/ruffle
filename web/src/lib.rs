@@ -243,6 +243,10 @@ pub enum ScrollingBehavior {
 pub enum DeviceFontRenderer {
     Embedded,
     Canvas,
+    /// Delegate rasterization to the pluggable bridge installed on
+    /// `globalThis.__ruffleCustomFontRenderer`; falls back to `Canvas`
+    /// (per-font) when the bridge is missing or invalid.
+    Custom,
 }
 
 #[wasm_bindgen]

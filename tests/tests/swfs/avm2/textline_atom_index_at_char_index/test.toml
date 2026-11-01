@@ -1,2 +1,2 @@
 num_ticks = 1
-known_failure = true # TextLine.getAtomIndexAtCharIndex is still stubbed.
+known_failure = true # getAtomIndexAtCharIndex approximates 1 char = 1 atom (surrogate pairs and ligatures miscounted).
