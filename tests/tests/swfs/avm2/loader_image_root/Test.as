@@ -24,7 +24,7 @@ package {
 
             urlLoader = new Loader();
             urlLoader.contentLoaderInfo.addEventListener(Event.COMPLETE, onUrlComplete);
-            urlLoader.load(new URLRequest("test_image.jpg"));
+            urlLoader.load(new URLRequest("test_image.png"));
         }
 
         private function snapshot(label:String, loader:Loader):void {
@@ -53,7 +53,7 @@ package {
             dataLoader = new URLLoader();
             dataLoader.dataFormat = URLLoaderDataFormat.BINARY;
             dataLoader.addEventListener(Event.COMPLETE, onDataComplete);
-            dataLoader.load(new URLRequest("test_image.jpg"));
+            dataLoader.load(new URLRequest("test_image.png"));
         }
 
         private function onDataComplete(event:Event):void {
