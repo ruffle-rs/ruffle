@@ -1,4 +1,6 @@
 use std::any::Any;
+use std::collections::VecDeque;
+use std::sync::{Arc, Mutex};
 
 use crate::{
     avm1::{NativeObject, Object as Avm1Object},
@@ -88,6 +90,67 @@ impl From<swf::SoundStreamHead> for SoundStreamInfo {
     }
 }
 
+/// Sample frames that are generated while a sound plays, shared between the
+/// player, which queues them, and the audio backend, which plays them as they
+/// arrive.
+///
+/// This backs an AVM2 `Sound` with no data, which asks its `sampleData`
+/// listeners for more samples as it plays. The samples are stereo, at 44.1 kHz.
+#[derive(Clone, Default)]
+pub struct SampleQueue(Arc<Mutex<SampleQueueData>>);
+
+#[derive(Default)]
+struct SampleQueueData {
+    samples: VecDeque<[i16; 2]>,
+
+    /// Whether the queued samples are the last ones, so that running out of
+    /// them ends the sound rather than waiting for more.
+    ended: bool,
+}
+
+impl SampleQueue {
+    /// The sample rate of the queued samples.
+    pub const SAMPLE_RATE: u16 = 44100;
+
+    /// Queues sample frames for playback.
+    pub fn push(&self, samples: impl IntoIterator<Item = [i16; 2]>) {
+        let mut data = self
+            .0
+            .lock()
+            .expect("SampleQueue lock should not be poisoned");
+        data.samples.extend(samples);
+    }
+
+    /// Marks the queued samples as the last ones.
+    pub fn end(&self) {
+        self.0
+            .lock()
+            .expect("SampleQueue lock should not be poisoned")
+            .ended = true;
+    }
+
+    /// Returns whether the queued samples are the last ones.
+    pub fn is_ended(&self) -> bool {
+        self.0
+            .lock()
+            .expect("SampleQueue lock should not be poisoned")
+            .ended
+    }
+
+    /// Moves the queued sample frames to the end of `buffer`, for playback.
+    ///
+    /// Returns whether they were the last ones. Both are read under the same
+    /// lock, so no samples queued before `end()` can be missed.
+    pub fn take(&self, buffer: &mut VecDeque<[i16; 2]>) -> bool {
+        let mut data = self
+            .0
+            .lock()
+            .expect("SampleQueue lock should not be poisoned");
+        buffer.append(&mut data.samples);
+        data.ended
+    }
+}
+
 #[derive(Debug, Error)]
 pub enum RegisterError {
     #[error("MP3 sound is too short")]
@@ -139,6 +202,16 @@ pub trait AudioBackend: Any {
         &mut self,
         stream_data: Substream,
         stream_info: &SoundStreamInfo,
+    ) -> Result<SoundInstanceHandle, DecodeError>;
+
+    /// Starts playing the sample frames of a `SampleQueue`, as they are
+    /// queued.
+    ///
+    /// The sound plays silence while it waits for more samples, and ends once
+    /// the queue has been ended and played out.
+    fn start_sample_queue(
+        &mut self,
+        queue: SampleQueue,
     ) -> Result<SoundInstanceHandle, DecodeError>;
 
     /// Stops a playing sound instance.
@@ -291,6 +364,13 @@ impl AudioBackend for NullAudioBackend {
         Ok(SoundInstanceHandle::null())
     }
 
+    fn start_sample_queue(
+        &mut self,
+        _queue: SampleQueue,
+    ) -> Result<SoundInstanceHandle, DecodeError> {
+        Ok(SoundInstanceHandle::null())
+    }
+
     fn stop_sound(&mut self, _sound: SoundInstanceHandle) {}
 
     fn stop_all_sounds(&mut self) {}
@@ -377,6 +457,15 @@ impl<'gc> AudioManager<'gc> {
     /// The player will adjust animation speed to stay within this many seconds of the audio track.
     pub const STREAM_DEFAULT_SYNC_THRESHOLD: f64 = 0.2;
 
+    /// How far ahead of playback, in seconds, sounds that generate their
+    /// samples are kept at least: two blocks of the 2048 samples Flash
+    /// usually asks for.
+    const SAMPLE_GENERATOR_MIN_LEAD: f64 = 4096.0 / 44100.0;
+
+    /// How far ahead of playback, in seconds, sounds that generate their
+    /// samples are kept at most, however long ticks get.
+    const SAMPLE_GENERATOR_MAX_LEAD: f64 = 1.0;
+
     pub fn new() -> Self {
         Self {
             sounds: Vec::with_capacity(Self::MAX_SOUNDS),
@@ -443,6 +532,7 @@ impl<'gc> AudioManager<'gc> {
         });
 
         for target in event_targets {
+            target.sound_completed();
             let event = Avm2EventObject::bare_default_event(context, "soundComplete");
             Avm2::dispatch_event(context, event, target.into());
         }
@@ -637,6 +727,63 @@ impl<'gc> AudioManager<'gc> {
             Ok(handle)
         } else {
             Err(DecodeError::TooManySounds)
+        }
+    }
+
+    /// Starts playing the sample frames of a `SampleQueue`, for an AVM2
+    /// `Sound` that generates its samples while it plays.
+    pub fn start_sample_queue(
+        &mut self,
+        audio: &mut dyn AudioBackend,
+        queue: SampleQueue,
+        transform: Option<display_object::SoundTransform>,
+    ) -> Option<SoundInstanceHandle> {
+        if self.sounds.len() < Self::MAX_SOUNDS {
+            let handle = audio
+                .start_sample_queue(queue)
+                .map_err(|e| tracing::warn!("Cannot start sound: {e}"))
+                .ok()?;
+            let instance = SoundInstance {
+                sound: None,
+                instance: handle,
+                display_object: None,
+                transform: transform.unwrap_or_default(),
+                avm1_object: None,
+                avm2_object: None,
+                stream_start_frame: None,
+            };
+            audio.set_sound_transform(handle, self.transform_for_sound(&instance));
+            self.sounds.push(instance);
+            Some(handle)
+        } else {
+            None
+        }
+    }
+
+    /// Asks the `sampleData` listeners of playing AVM2 sounds that generate
+    /// their samples for more, enough to keep them ahead of playback until
+    /// the next tick. Should be called once per tick, `dt` after the last.
+    pub fn update_sample_generators(context: &mut UpdateContext<'gc>, dt: FloatDuration) {
+        // Flash asks for more whenever its audio buffer has room, from its
+        // audio thread. We can only ask between ticks, so stay a tick ahead,
+        // and a mixing buffer for backends that mix a buffer at a time.
+        let resolution = context
+            .audio
+            .position_resolution()
+            .map_or(0.0, |resolution| resolution.as_secs_f64());
+        let lead = (Self::SAMPLE_GENERATOR_MIN_LEAD
+            + 2.0 * (dt.as_millis() / 1000.0).max(resolution))
+        .min(Self::SAMPLE_GENERATOR_MAX_LEAD);
+        let lead = (lead * f64::from(SampleQueue::SAMPLE_RATE)) as u32;
+
+        let channels: Vec<_> = context
+            .audio_manager
+            .sounds
+            .iter()
+            .filter_map(|sound| sound.avm2_object)
+            .collect();
+        for channel in channels {
+            channel.generate_samples(context, lead);
         }
     }
 
