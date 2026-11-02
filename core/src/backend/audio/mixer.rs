@@ -1,12 +1,13 @@
 use super::decoders::{
     self, AdpcmDecoder, Decoder, G711ALawDecoder, G711MuLawDecoder, PcmDecoder, SeekableDecoder,
 };
-use super::{SoundHandle, SoundInstanceHandle, SoundStreamInfo, SoundTransform};
+use super::{SampleQueue, SoundHandle, SoundInstanceHandle, SoundStreamInfo, SoundTransform};
 use crate::backend::audio::{DecodeError, RegisterError};
 use crate::tag_utils::SwfSlice;
 use ruffle_common::buffer::Substream;
 use ruffle_common::duration::FloatDuration;
-use slotmap::SlotMap;
+use slotmap::{SecondaryMap, SlotMap};
+use std::collections::VecDeque;
 use std::io::Cursor;
 use std::sync::{Arc, Mutex, RwLock};
 use swf::AudioCompression;
@@ -58,6 +59,9 @@ impl CircBuf {
 pub struct AudioMixer {
     /// The currently registered sounds.
     sounds: SlotMap<SoundHandle, Sound>,
+
+    /// The sounds decoded so far by `extract_sound`.
+    extracted_sounds: SecondaryMap<SoundHandle, ExtractedSound>,
 
     /// The list of actively playing sound instances.
     sound_instances: Arc<Mutex<SlotMap<SoundInstanceHandle, SoundInstance>>>,
@@ -140,6 +144,80 @@ impl<D: Decoder> dasp::signal::Signal for DecoderStream<D> {
     }
 }
 
+/// A stream that plays the sample frames of a `SampleQueue` as they are queued.
+struct SampleQueueStream {
+    queue: SampleQueue,
+
+    /// Sample frames taken from the queue, still to be played.
+    buffer: VecDeque<[i16; 2]>,
+
+    /// The number of sample frames played so far.
+    position: u32,
+
+    /// Silent sample frames to play before checking the queue again, after
+    /// finding it empty.
+    starved_frames: u16,
+
+    is_exhausted: bool,
+}
+
+impl SampleQueueStream {
+    /// How often to check an empty queue for samples, in sample frames.
+    const STARVED_RETRY_FRAMES: u16 = 256;
+
+    fn new(queue: SampleQueue) -> Self {
+        Self {
+            queue,
+            buffer: VecDeque::new(),
+            position: 0,
+            starved_frames: 0,
+            is_exhausted: false,
+        }
+    }
+}
+
+impl Stream for SampleQueueStream {
+    #[inline]
+    fn source_position(&self) -> u32 {
+        self.position
+    }
+
+    #[inline]
+    fn source_sample_rate(&self) -> u16 {
+        SampleQueue::SAMPLE_RATE
+    }
+}
+
+impl dasp::signal::Signal for SampleQueueStream {
+    type Frame = [i16; 2];
+
+    #[inline]
+    fn next(&mut self) -> [i16; 2] {
+        if self.buffer.is_empty() && self.starved_frames == 0 {
+            let ended = self.queue.take(&mut self.buffer);
+            self.is_exhausted = ended && self.buffer.is_empty();
+            // Before the first samples, keep checking: they are about to be
+            // queued, and waiting would delay the start of the sound.
+            if self.buffer.is_empty() && self.position > 0 {
+                self.starved_frames = Self::STARVED_RETRY_FRAMES;
+            }
+        }
+        if let Some(frame) = self.buffer.pop_front() {
+            self.position = self.position.saturating_add(1);
+            frame
+        } else {
+            // No samples yet: play silence until more are queued.
+            self.starved_frames = self.starved_frames.saturating_sub(1);
+            Default::default()
+        }
+    }
+
+    #[inline]
+    fn is_exhausted(&self) -> bool {
+        self.is_exhausted
+    }
+}
+
 /// Contains the data and metadata for a sound in an SWF file.
 ///
 /// A sound is defined by the `DefineSound` SWF tags and contains the audio data for the sound.
@@ -162,6 +240,72 @@ struct Sound {
     /// `skip_sample_frames` indicates how many sample frames to skip to bypass the delay.
     /// This is `0` unless `format.compression` is `AudioCompression::Mp3`.
     skip_sample_frames: u16,
+
+    /// The number of silent sample frames that Flash decodes before the
+    /// audio, and our decoder does not: the encoder's info frame of an MP3
+    /// file. These count towards the duration and are extracted.
+    lead_in_sample_frames: u32,
+
+    /// Whether `num_sample_frames` is exact, as declared by an SWF, rather
+    /// than estimated from an MP3 file.
+    num_sample_frames_is_exact: bool,
+}
+
+/// A sound being decoded by `AudioMixer::extract_sound`. Sample frames are
+/// at `AudioMixer::EXTRACT_SAMPLE_RATE`.
+struct ExtractedSound {
+    /// The sample frames of silence the sound starts with (see
+    /// `Sound::lead_in_sample_frames`).
+    lead_in: usize,
+
+    /// The length of the sound in sample frames, if it is known exactly.
+    /// Decoding stops there, before any padding the codec adds.
+    length: Option<usize>,
+
+    /// The stream decoding the sound, until it ends.
+    stream: Option<Box<dyn Stream>>,
+
+    /// The sample frame the stream is at.
+    position: usize,
+
+    /// The last sample frames decoded, up to `WINDOW_LENGTH`, ending at
+    /// `position`. Stepping back within them, as reverse playback does,
+    /// doesn't decode the sound from the start again.
+    window: VecDeque<[i16; 2]>,
+}
+
+impl ExtractedSound {
+    /// How many of the last sample frames decoded are kept (2 seconds).
+    const WINDOW_LENGTH: usize = 2 * AudioMixer::EXTRACT_SAMPLE_RATE as usize;
+
+    /// The sample frame that `window` starts at.
+    fn window_start(&self) -> usize {
+        self.position - self.window.len()
+    }
+
+    /// Decodes the next sample frame, or returns `None` at the end.
+    fn next_frame(&mut self) -> Option<[i16; 2]> {
+        if self.length.is_some_and(|length| self.position >= length) {
+            return None;
+        }
+        let frame = if self.position < self.lead_in {
+            [0, 0]
+        } else {
+            let stream = self.stream.as_mut()?;
+            let frame = stream.next();
+            if stream.is_exhausted() {
+                self.stream = None;
+                return None;
+            }
+            frame
+        };
+        self.position += 1;
+        if self.window.len() == Self::WINDOW_LENGTH {
+            self.window.pop_front();
+        }
+        self.window.push_back(frame);
+        Some(frame)
+    }
 }
 
 /// An actively playing instance of a sound.
@@ -243,6 +387,7 @@ impl AudioMixer {
     pub fn new(num_output_channels: u8, output_sample_rate: u32) -> Self {
         Self {
             sounds: SlotMap::with_key(),
+            extracted_sounds: SecondaryMap::new(),
             sound_instances: Arc::new(Mutex::new(SlotMap::with_key())),
             volume: Arc::new(RwLock::new(1.0)),
             num_output_channels,
@@ -337,17 +482,22 @@ impl AudioMixer {
     }
 
     /// Transforms a `Stream` into a new `Stream` that matches the output sample rate.
-    fn make_resampler<S: Stream>(&self, mut stream: S) -> impl Stream + use<S> {
+    fn make_resampler<S: Stream>(&self, stream: S) -> impl Stream + use<S> {
+        Self::make_resampler_to(stream, self.output_sample_rate)
+    }
+
+    /// Transforms a `Stream` into a new `Stream` with the given sample rate.
+    fn make_resampler_to<S: Stream>(mut stream: S, sample_rate: u32) -> impl Stream + use<S> {
         // TODO: Allow interpolator to be user-configurable?
         let left = stream.next();
         let right = stream.next();
         let interpolator = dasp::interpolate::linear::Linear::new(left, right);
-        let sample_rate = stream.source_sample_rate().into();
+        let source_sample_rate = stream.source_sample_rate().into();
         ConverterStream(dasp::signal::interpolate::Converter::from_hz_to_hz(
             stream,
             interpolator,
-            sample_rate,
-            self.output_sample_rate.into(),
+            source_sample_rate,
+            sample_rate.into(),
         ))
     }
 
@@ -368,8 +518,11 @@ impl AudioMixer {
         let stream = EventSoundStream::new_with_settings(
             decoder,
             settings,
-            sound.num_sample_frames,
+            sound
+                .num_sample_frames_is_exact
+                .then_some(sound.num_sample_frames),
             sound.skip_sample_frames,
+            sound.lead_in_sample_frames,
         );
         // Resample the stream to the output sample rate.
         let stream = self.make_resampler(stream);
@@ -527,6 +680,8 @@ impl AudioMixer {
             data: Arc::from(data),
             num_sample_frames: swf_sound.num_samples,
             skip_sample_frames,
+            lead_in_sample_frames: 0,
+            num_sample_frames_is_exact: true,
         };
         Ok(self.sounds.insert(sound))
     }
@@ -547,6 +702,8 @@ impl AudioMixer {
             data,
             num_sample_frames: metadata.num_sample_frames,
             skip_sample_frames: 0,
+            lead_in_sample_frames: metadata.info_frame_sample_frames,
+            num_sample_frames_is_exact: false,
         };
         Ok(self.sounds.insert(sound))
     }
@@ -587,6 +744,7 @@ impl AudioMixer {
         let data = Cursor::new(ArcAsRef(Arc::clone(&sound.data)));
         // Create a stream that decodes and resamples the sound.
         let stream = if sound.skip_sample_frames == 0
+            && sound.lead_in_sample_frames == 0
             && settings.in_sample.is_none()
             && settings.out_sample.is_none()
             && settings.num_loops <= 1
@@ -625,6 +783,122 @@ impl AudioMixer {
             .expect("Cannot be called reentrant");
         let handle = sound_instances.insert(SoundInstance::new_stream(stream));
         Ok(handle)
+    }
+
+    /// Starts playing the sample frames of a `SampleQueue`, as they are queued.
+    pub fn start_sample_queue(
+        &mut self,
+        queue: SampleQueue,
+    ) -> Result<SoundInstanceHandle, DecodeError> {
+        let stream = Box::new(self.make_resampler(SampleQueueStream::new(queue)));
+
+        let mut sound_instances = self
+            .sound_instances
+            .lock()
+            .expect("Cannot be called reentrant");
+        let handle = sound_instances.insert(SoundInstance::new_stream(stream));
+        Ok(handle)
+    }
+
+    /// The sample rate of the sample frames returned by `extract_sound`.
+    pub const EXTRACT_SAMPLE_RATE: u32 = 44100;
+
+    /// Decodes the sample frames `start..start + length` of a sound as
+    /// stereo at `EXTRACT_SAMPLE_RATE`, or fewer if the sound ends first.
+    /// Returns `None` if the sound can't be decoded.
+    ///
+    /// Decoding goes on from where the last call ended, so that a sound
+    /// extracted piece by piece is decoded once.
+    pub fn extract_sound(
+        &mut self,
+        sound: SoundHandle,
+        start: usize,
+        length: usize,
+    ) -> Option<Vec<[f32; 2]>> {
+        let sound_data = self.sounds.get(sound)?;
+        let make_stream = || {
+            Self::make_stream_for_extracting(sound_data)
+                .map_err(|e| tracing::warn!("Cannot extract sound: {e}"))
+                .ok()
+        };
+        if !self.extracted_sounds.contains_key(sound) {
+            let stream = make_stream()?;
+            let to_extract_rate = |sample_frames: u32| {
+                (u64::from(sample_frames) * u64::from(Self::EXTRACT_SAMPLE_RATE)
+                    / u64::from(sound_data.format.sample_rate.max(1))) as usize
+            };
+            let lead_in = to_extract_rate(sound_data.lead_in_sample_frames);
+            self.extracted_sounds.insert(
+                sound,
+                ExtractedSound {
+                    lead_in,
+                    length: sound_data
+                        .num_sample_frames_is_exact
+                        .then(|| lead_in + to_extract_rate(sound_data.num_sample_frames)),
+                    stream: Some(stream),
+                    position: 0,
+                    window: VecDeque::new(),
+                },
+            );
+        }
+        let extracted = &mut self.extracted_sounds[sound];
+
+        let mut end = start.saturating_add(length);
+        if let Some(length) = extracted.length {
+            end = end.min(length);
+        }
+        if start >= end {
+            return Some(Vec::new());
+        }
+
+        if start < extracted.window_start() {
+            // Too far back: decode again from the start.
+            extracted.stream = make_stream();
+            extracted.position = 0;
+            extracted.window.clear();
+        }
+        while extracted.position < start && extracted.next_frame().is_some() {}
+        if extracted.position < start {
+            // The sound ends before `start`.
+            return Some(Vec::new());
+        }
+
+        let to_f32 =
+            |[left, right]: [i16; 2]| [f32::from(left) / 32768.0, f32::from(right) / 32768.0];
+        let mut samples = Vec::with_capacity(end - start);
+        let window_start = extracted.window_start();
+        samples.extend(
+            extracted
+                .window
+                .range(start - window_start..end.min(extracted.position) - window_start)
+                .map(|&frame| to_f32(frame)),
+        );
+        while extracted.position < end
+            && let Some(frame) = extracted.next_frame()
+        {
+            samples.push(to_f32(frame));
+        }
+        Some(samples)
+    }
+
+    /// Creates a `Stream` that decodes a sound from the start, resampled to
+    /// `EXTRACT_SAMPLE_RATE`.
+    fn make_stream_for_extracting(sound: &Sound) -> Result<Box<dyn Stream>, DecodeError> {
+        let data = Cursor::new(ArcAsRef(Arc::clone(&sound.data)));
+        let mut decoder = decoders::make_decoder(&sound.format, data)?;
+        // Skip the MP3 encoder delay of sounds embedded in SWFs, like playback does.
+        for _ in 0..sound.skip_sample_frames {
+            decoder.next();
+        }
+        let stream = DecoderStream::new(decoder);
+        if u32::from(stream.source_sample_rate()) == Self::EXTRACT_SAMPLE_RATE {
+            Ok(Box::new(stream))
+        } else {
+            Ok(Box::new(Self::make_resampler_to(
+                stream,
+                Self::EXTRACT_SAMPLE_RATE,
+            )))
+        }
     }
 
     /// Stops a playing sound instance.
@@ -674,7 +948,8 @@ impl AudioMixer {
     pub fn get_sound_duration(&self, sound: SoundHandle) -> Option<FloatDuration> {
         if let Some(sound) = self.sounds.get(sound) {
             // AS duration does not subtract `skip_sample_frames`.
-            let num_sample_frames: f64 = sound.num_sample_frames.into();
+            let num_sample_frames =
+                f64::from(sound.num_sample_frames) + f64::from(sound.lead_in_sample_frames);
             let sample_rate: f64 = sound.format.sample_rate.into();
             let ms = num_sample_frames * 1000.0 / sample_rate;
             Some(FloatDuration::from_millis(ms))
@@ -790,6 +1065,13 @@ struct EventSoundStream {
     end_sample_frame: Option<u32>,
     cur_sample_frame: u32,
     skip_sample_frames: u32,
+    /// Sample frames of silence that the sound starts with, before the
+    /// decoder's (see `Sound::lead_in_sample_frames`).
+    lead_in_sample_frames: u32,
+    /// Sample frames of the lead-in that each loop starts with.
+    start_lead_in: u32,
+    /// Sample frames of the lead-in still to play in this loop.
+    lead_in_left: u32,
     is_exhausted: bool,
 }
 
@@ -797,27 +1079,36 @@ impl EventSoundStream {
     fn new_with_settings(
         decoder: Box<dyn SeekableDecoder>,
         settings: &swf::SoundInfo,
-        num_sample_frames: u32,
+        num_sample_frames: Option<u32>,
         skip_sample_frames: u16,
+        lead_in_sample_frames: u32,
     ) -> Self {
         let skip_sample_frames: u32 = skip_sample_frames.into();
         let sample_divisor = 44100.0 / f64::from(decoder.sample_rate());
-        let start_sample_frame = (f64::from(settings.in_sample.unwrap_or(0)) / sample_divisor)
-            as u32
-            + skip_sample_frames;
+        // In and out points count the lead-in, which comes before the
+        // decoder's first sample frame.
+        let in_sample_frame = (f64::from(settings.in_sample.unwrap_or(0)) / sample_divisor) as u32;
+        let start_lead_in = lead_in_sample_frames.saturating_sub(in_sample_frame);
+        let start_sample_frame =
+            in_sample_frame.saturating_sub(lead_in_sample_frames) + skip_sample_frames;
+        // Without an out point, a sound whose length is only an estimate
+        // plays to the end of its data.
         let end_sample_frame = settings
             .out_sample
-            .map(|n| (f64::from(n) / sample_divisor) as u32)
-            .unwrap_or(num_sample_frames)
-            + skip_sample_frames;
+            .map(|n| ((f64::from(n) / sample_divisor) as u32).saturating_sub(lead_in_sample_frames))
+            .or(num_sample_frames)
+            .map(|end| end + skip_sample_frames);
 
         let mut stream = Self {
             decoder,
             num_loops: settings.num_loops,
             start_sample_frame,
-            end_sample_frame: Some(end_sample_frame),
+            end_sample_frame,
             cur_sample_frame: start_sample_frame,
             skip_sample_frames,
+            lead_in_sample_frames,
+            start_lead_in,
+            lead_in_left: 0,
             is_exhausted: false,
         };
         stream.next_loop();
@@ -830,6 +1121,7 @@ impl EventSoundStream {
             self.num_loops -= 1;
             self.decoder.seek_to_sample_frame(self.start_sample_frame);
             self.cur_sample_frame = self.start_sample_frame;
+            self.lead_in_left = self.start_lead_in;
         } else {
             self.is_exhausted = true;
         }
@@ -843,6 +1135,10 @@ impl dasp::signal::Signal for EventSoundStream {
     fn next(&mut self) -> Self::Frame {
         // Loop the sound if necessary, and get the next frame.
         if !self.is_exhausted {
+            if self.lead_in_left > 0 {
+                self.lead_in_left -= 1;
+                return [0, 0];
+            }
             if let Some(frame) = self.decoder.next() {
                 self.cur_sample_frame += 1;
                 if let Some(end) = self.end_sample_frame
@@ -869,8 +1165,11 @@ impl dasp::signal::Signal for EventSoundStream {
 impl Stream for EventSoundStream {
     #[inline]
     fn source_position(&self) -> u32 {
-        self.cur_sample_frame
+        (self
+            .cur_sample_frame
             .saturating_sub(self.skip_sample_frames)
+            + self.lead_in_sample_frames)
+            .saturating_sub(self.lead_in_left)
     }
 
     #[inline]
@@ -1104,6 +1403,24 @@ macro_rules! impl_audio_mixer_backend {
             stream_info: &SoundStreamInfo,
         ) -> Result<SoundInstanceHandle, DecodeError> {
             self.$mixer.start_substream(stream_data, stream_info)
+        }
+
+        #[inline]
+        fn start_sample_queue(
+            &mut self,
+            queue: ruffle_core::backend::audio::SampleQueue,
+        ) -> Result<SoundInstanceHandle, DecodeError> {
+            self.$mixer.start_sample_queue(queue)
+        }
+
+        #[inline]
+        fn extract_sound(
+            &mut self,
+            sound: SoundHandle,
+            start: usize,
+            length: usize,
+        ) -> Option<Vec<[f32; 2]>> {
+            self.$mixer.extract_sound(sound, start, length)
         }
 
         #[inline]
