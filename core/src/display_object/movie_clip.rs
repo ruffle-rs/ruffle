@@ -273,6 +273,14 @@ impl<'gc> MovieClipData<'gc> {
 }
 
 impl<'gc> MovieClip<'gc> {
+    /// The AVM1 class currently registered (via `Object.registerClass`) for this clip's symbol.
+    pub fn registered_avm1_constructor(
+        self,
+        context: &mut UpdateContext<'gc>,
+    ) -> Option<Avm1Object<'gc>> {
+        self.0.get_registered_avm1_constructor(context)
+    }
+
     pub fn downgrade(self) -> MovieClipWeak<'gc> {
         MovieClipWeak(Gc::downgrade(self.0))
     }
@@ -556,7 +564,7 @@ impl<'gc> MovieClip<'gc> {
                 }
                 TagCode::DefineText => shared.define_text(context, reader, 1),
                 TagCode::DefineText2 => shared.define_text(context, reader, 2),
-                TagCode::DoInitAction => self.do_init_action(context, reader),
+                TagCode::DoInitAction => self.preload_init_action(context, reader),
                 TagCode::DefineSceneAndFrameLabelData => shared.scene_and_frame_labels(reader),
                 TagCode::ExportAssets => shared.export_assets(context, reader),
                 TagCode::FrameLabel => shared.frame_label(reader),
@@ -629,6 +637,63 @@ impl<'gc> MovieClip<'gc> {
             .preload_progress
             .awaiting_import
             .set(false);
+    }
+
+    /// Handles a `DoInitAction` tag encountered while preloading.
+    ///
+    /// Flash Player runs init actions when their frame is first reached, after the
+    /// objects placed on that frame exist (e.g. `#initclip` code can reference
+    /// `_root.someClip` placed earlier on the same frame), but before those objects
+    /// run their constructors. We therefore store them, and run them from
+    /// `run_frame_internal`/`run_goto`.
+    ///
+    /// Init actions of a movie loaded through `ImportAssets(2)` run in the context of
+    /// the importer, at the position of the import tag; they are queued on the
+    /// importer's frame that is currently being preloaded.
+    fn preload_init_action(
+        self,
+        context: &mut UpdateContext<'gc>,
+        reader: &mut SwfStream<'_>,
+    ) -> Result<(), Error> {
+        let mut target = self;
+        while let Some(importer) = target.0.shared.get().importer_movie {
+            target = importer;
+        }
+        let target_shared = target.0.shared.get();
+        if target_shared.movie().is_declared_action_script_3() {
+            return self.do_init_action(context, reader);
+        }
+
+        let _sprite_id = reader.read_u16()?;
+        let slice = self.0.shared.get().swf_data.resize_to_reader(reader);
+        if !slice.is_empty() {
+            let frame = target_shared.preload_progress.cur_preload_frame.get();
+            target_shared
+                .cell
+                .borrow_mut()
+                .init_actions
+                .entry(frame)
+                .or_default()
+                .push(slice);
+        }
+        Ok(())
+    }
+
+    /// Runs the deferred `DoInitAction` tags of `frame`, if they haven't run yet.
+    fn run_init_actions(self, context: &mut UpdateContext<'gc>, frame: FrameNumber) {
+        let shared = self.0.shared.get();
+        let actions = {
+            let mut write = shared.cell.borrow_mut();
+            let actions = write.init_actions.remove(&frame);
+            // Optimization: free memory when the last entry is removed.
+            if actions.is_some() && write.init_actions.is_empty() {
+                write.init_actions = HashMap::new();
+            }
+            actions
+        };
+        for slice in actions.into_iter().flatten() {
+            Avm1::run_stack_frame_for_init_action(self.into(), slice, context);
+        }
     }
 
     #[inline]
@@ -1453,6 +1518,9 @@ impl<'gc> MovieClip<'gc> {
         if let Err(e) = self.run_abc_and_symbol_tags(context, self.0.current_frame()) {
             tracing::error!("Error running abc/symbol in frame: {e:?}");
         }
+        if run_display_actions && !is_action_script_3 {
+            self.run_init_actions(context, self.0.current_frame());
+        }
 
         // On AS3, we deliberately run all removals before the frame number or
         // tag position updates. This ensures that code that runs gotos when a
@@ -1891,6 +1959,13 @@ impl<'gc> MovieClip<'gc> {
             .iter()
             .filter(|params| params.frame >= frame)
             .for_each(|goto| run_goto_command(self, context, goto));
+
+        // Init actions of the frames we passed through run once their objects exist.
+        if !self.movie().is_action_script_3() {
+            for passed_frame in (from_frame + 1)..=self.current_frame() {
+                self.run_init_actions(context, passed_frame);
+            }
+        }
 
         if !is_implicit {
             // On AVM2, all explicit gotos act the same way as a normal new frame,
@@ -4728,6 +4803,11 @@ struct MovieClipSharedMut {
     // yet been executed. The first time we encounter a frame, we will remove the entry
     // from this map, and process it in `run_eager_script_and_symbol`
     eager_tags: HashMap<FrameNumber, EagerTags>,
+
+    /// AVM1 `DoInitAction` tags found while preloading, keyed by the frame they appear in.
+    /// They are executed (once) the first time that frame is reached, after the frame's
+    /// display list tags have been processed. See `MovieClip::run_init_actions`.
+    init_actions: HashMap<FrameNumber, Vec<SwfSlice>>,
 }
 
 #[derive(Default)]
