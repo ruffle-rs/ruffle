@@ -7,7 +7,7 @@ use crate::avm2::property::{Property, PropertyClass};
 use crate::avm2::property_map::PropertyMap;
 use crate::avm2::scope::ScopeChain;
 use crate::avm2::traits::{Trait, TraitKind};
-use crate::avm2::value::Value;
+use crate::avm2::value::{Value, ValueKey};
 use crate::avm2::{Class, Multiname, Namespace, QName};
 use crate::context::UpdateContext;
 use crate::string::{AvmString, StringContext};
@@ -558,43 +558,32 @@ impl<'gc> VTable<'gc> {
 
     /// Retrieve a bound instance method suitable for use as a value.
     ///
-    /// This returns the bound method object itself, as well as its dispatch
-    /// ID. You will need the additional properties in order to install the
-    /// method into your object.
-    ///
-    /// You should only call this method once per receiver/name pair, and cache
-    /// the result. Otherwise, code that relies on bound methods having stable
-    /// object identitities (e.g. `EventDispatcher.removeEventListener`) will
-    /// fail.
+    /// This returns the bound `FunctionObject` itself. If a bound method for
+    /// the given receiver and method has already been created, this method
+    /// will return the existing one instead of creating a new one.
     ///
     /// It is the caller's responsibility to ensure that the `receiver` passed
     /// to this method is not Value::Null or Value::Undefined.
-    pub fn make_bound_method(
+    pub fn get_or_init_bound_method(
         self,
         context: &mut UpdateContext<'gc>,
         receiver: Value<'gc>,
         disp_id: usize,
-    ) -> Option<FunctionObject<'gc>> {
-        self.get_full_method(disp_id)
-            .map(|method| Self::bind_method(context, receiver, method))
-    }
-
-    /// Bind an instance method to a receiver, allowing it to be used as a value. See `VTable::make_bound_method`
-    ///
-    /// It is the caller's responsibility to ensure that the `receiver` passed
-    /// to this method is not Value::Null or Value::Undefined.
-    pub fn bind_method(
-        context: &mut UpdateContext<'gc>,
-        receiver: Value<'gc>,
-        method: &ClassBoundMethod<'gc>,
     ) -> FunctionObject<'gc> {
-        FunctionObject::from_method(
-            context,
-            method.method,
-            method.scope(),
-            Some(receiver),
-            method.super_class_obj,
-        )
+        let full_method = self.get_full_method(disp_id).expect("Valid disp id passed");
+
+        let mut bound_methods = full_method.method.bound_methods(context.gc());
+        let entry = bound_methods.entry(ValueKey(receiver)).or_insert_with(|| {
+            FunctionObject::from_method(
+                context,
+                full_method.method,
+                full_method.scope(),
+                Some(receiver),
+                full_method.super_class_obj,
+            )
+        });
+
+        *entry
     }
 
     pub fn public_properties(self) -> impl Iterator<Item = (AvmString<'gc>, Property)> {
