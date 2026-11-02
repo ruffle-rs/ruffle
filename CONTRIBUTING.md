@@ -343,3 +343,7 @@ In addition to that policy, Ruffle has some project-specific rules:
 3. Respect maintainers' time. You are responsible for applying all guidelines, and if your contribution ends up requiring a lot of effort from maintainers, it can get ignored or rejected.
 
 4. Do not "dump" LLM-generated code in PRs. If it's not obvious from the policy: we do not accept Pull Requests with hundreds or thousands of lines of untested code that makes your SWF work. Such PRs will simply get rejected. If you want to upstream your code, follow these guidelines instead.
+
+5. Every commit must have a human author who takes responsibility for the patch. Commits listing an AI agent as author will be rejected.
+
+6. Don't list agents in `Co-authored-by:` trailers; that credit is reserved for people. If an agent helped produce the patch, say so in the description (or use an `Assisted-by:` trailer).
