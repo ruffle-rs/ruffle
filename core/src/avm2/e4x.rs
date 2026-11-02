@@ -1472,6 +1472,7 @@ pub fn escape_attribute_value(s: AvmString) -> WString {
             Ok(b'\x0A') => b"&#xA;",
             Ok(b'\x0D') => b"&#xD;",
             Ok(b'\x09') => b"&#x9;",
+            Ok(b'\0') => b"&#x0;",
             _ => {
                 r.push(c);
                 continue;
@@ -1491,6 +1492,7 @@ pub fn escape_element_value(s: AvmString) -> WString {
             Ok(b'<') => b"&lt;",
             Ok(b'>') => b"&gt;",
             Ok(b'&') => b"&amp;",
+            Ok(b'\0') => b"&#x0;",
             _ => {
                 r.push(c);
                 continue;

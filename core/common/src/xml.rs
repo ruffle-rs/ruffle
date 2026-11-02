@@ -1,4 +1,4 @@
-use quick_xml::escape::EscapeError as XmlEscapeError;
+use quick_xml::escape::{EscapeError as XmlEscapeError, ParseCharRefError};
 use regress::Regex;
 use std::str::Utf8Error;
 use std::sync::LazyLock;
@@ -14,22 +14,32 @@ static AVM1_ENTITY_REGEX: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"&[^;&]
 // matched as a single entity, which fails to decode and is preserved.
 static AVM2_ENTITY_REGEX: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"&[^;]*;").unwrap());
 
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum Avm {
+    Avm1,
+    Avm2,
+}
+
 /// AVM1 XML unescaping. Decodes entities individually, even when
 /// preceded by a bare '&' (e.g. "&&amp;" becomes "&&").
 pub fn avm1_unescape(input: &[u8]) -> Result<String, Utf8Error> {
-    custom_unescape(input, &AVM1_ENTITY_REGEX)
+    custom_unescape(input, Avm::Avm1)
 }
 
 /// AVM2 E4X XML unescaping. Does not decode entities preceded by a
 /// bare '&' (e.g. "&&amp;" is preserved as "&&amp;").
 pub fn avm2_unescape(input: &[u8]) -> Result<String, Utf8Error> {
-    custom_unescape(input, &AVM2_ENTITY_REGEX)
+    custom_unescape(input, Avm::Avm2)
 }
 
 /// Handles flash-specific XML unescaping behavior.
 /// We accept all XML entities, and also accept standalone '&' without
 /// a corresponding ';'
-fn custom_unescape(input: &[u8], entity_regex: &Regex) -> Result<String, Utf8Error> {
+fn custom_unescape(input: &[u8], avm: Avm) -> Result<String, Utf8Error> {
+    let entity_regex = match avm {
+        Avm::Avm1 => &AVM1_ENTITY_REGEX,
+        Avm::Avm2 => &AVM2_ENTITY_REGEX,
+    };
     let input = std::str::from_utf8(input)?;
 
     let mut result = String::new();
@@ -49,6 +59,11 @@ fn custom_unescape(input: &[u8], entity_regex: &Regex) -> Result<String, Utf8Err
         // since it bails out if *any* entities in the string lack a terminating ';'
         match quick_xml::escape::unescape(entity) {
             Ok(decoded) => result.push_str(&decoded),
+            Err(XmlEscapeError::InvalidCharRef(ParseCharRefError::IllegalCharacter(0)))
+                if avm == Avm::Avm2 =>
+            {
+                result.push('\0')
+            }
             // Unknown or malformed entities are preserved as-is.
             // The AVM2 regex can match strings like "&&amp;" which contain
             // multiple '&' characters, causing unescape to report UnterminatedEntity
