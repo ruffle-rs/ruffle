@@ -1,8 +1,10 @@
 mod asc;
 mod rascal;
+mod swfasm;
 
 use crate::compiler::asc::AscOptions;
 use crate::compiler::rascal::RascalOptions;
+use crate::compiler::swfasm::SwfasmOptions;
 use serde::Deserialize;
 use vfs::VfsPath;
 
@@ -12,6 +14,7 @@ use vfs::VfsPath;
 pub enum SwfCompilerOptions {
     Rascal(RascalOptions),
     Asc(AscOptions),
+    Swfasm(SwfasmOptions),
 }
 
 impl SwfCompilerOptions {
@@ -19,6 +22,7 @@ impl SwfCompilerOptions {
         match self {
             SwfCompilerOptions::Rascal(options) => options.validate(),
             SwfCompilerOptions::Asc(options) => options.validate(),
+            SwfCompilerOptions::Swfasm(options) => options.validate(),
         }
     }
 
@@ -26,6 +30,7 @@ impl SwfCompilerOptions {
         match self {
             SwfCompilerOptions::Rascal(options) => options.create_compiler(),
             SwfCompilerOptions::Asc(options) => options.create_compiler(),
+            SwfCompilerOptions::Swfasm(options) => options.create_compiler(),
         }
     }
 }

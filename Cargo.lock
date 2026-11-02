@@ -209,7 +209,7 @@ dependencies = [
  "objc2-foundation 0.3.2",
  "parking_lot",
  "percent-encoding",
- "windows-sys 0.59.0",
+ "windows-sys 0.61.2",
  "x11rb",
 ]
 
@@ -401,6 +401,9 @@ name = "bitflags"
 version = "2.13.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3ded4057c258ba199e2d26386d3af3780957ecaee6c4ef4041c6b4b8b97c0b06"
+dependencies = [
+ "serde_core",
+]
 
 [[package]]
 name = "bitstream-io"
@@ -4735,6 +4738,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "ron"
+version = "0.12.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "97b3fe97c18ff24299ea56f802c5693eb34266fb0bc8317f4e101debc8a3ceaf"
+dependencies = [
+ "bitflags 2.13.2",
+ "serde",
+ "serde_derive",
+ "typeid",
+ "unicode-ident",
+]
+
+[[package]]
 name = "roxmltree"
 version = "0.20.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5095,6 +5111,7 @@ dependencies = [
  "ruffle_video_software",
  "serde",
  "sha2",
+ "swfasm",
  "tempfile",
  "toml",
  "url",
@@ -5802,6 +5819,37 @@ dependencies = [
 ]
 
 [[package]]
+name = "swf"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0f7bad150e1155d312085627285ff1586e03efe746ac1aaae05a6b969f8abb50"
+dependencies = [
+ "bitflags 2.13.2",
+ "bitstream-io",
+ "encoding_rs",
+ "enum-map",
+ "flate2",
+ "log",
+ "lzma-rs",
+ "num-derive",
+ "num-traits",
+ "simple_asn1",
+]
+
+[[package]]
+name = "swfasm"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a8a72ec79431650a734b424d517f78f0b3808aca20e1cc2b4776ce9e4c382a79"
+dependencies = [
+ "anyhow",
+ "rascal",
+ "ron",
+ "serde",
+ "swf 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
 name = "symlink"
 version = "0.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -6453,6 +6501,12 @@ name = "typed-path"
 version = "0.13.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9ce898823d8cd0f028662d2f349694b1af0a5cc9be83f1d213a00d3147445e1e"
+
+[[package]]
+name = "typeid"
+version = "1.0.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bc7d623258602320d5c55d1bc22793b57daff0ec7efc270ea7d55ce1d5f5471c"
 
 [[package]]
 name = "typenum"
