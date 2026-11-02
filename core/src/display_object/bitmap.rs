@@ -1,6 +1,7 @@
 //! Bitmap display object
 
 use crate::avm1::Object as Avm1Object;
+use crate::avm2::object::LoaderInfoObject;
 use crate::avm2::{
     Activation as Avm2Activation, Avm2, BitmapDataObject as Avm2BitmapDataObject,
     ClassObject as Avm2ClassObject, FunctionArgs as Avm2FunctionArgs,
@@ -108,6 +109,9 @@ pub struct BitmapGraphicData<'gc> {
     /// storing an AVM1 object.
     avm2_object: Lock<Option<Avm2StageObject<'gc>>>,
 
+    /// LoaderInfo for a bitmap loaded as an independent image.
+    loader_info: Lock<Option<LoaderInfoObject<'gc>>>,
+
     /// The class associated with this Bitmap.
     avm2_bitmap_class: Lock<BitmapClass<'gc>>,
 
@@ -161,6 +165,7 @@ impl<'gc> Bitmap<'gc> {
                 smoothing: Cell::new(smoothing),
                 pixel_snapping: Cell::new(PixelSnapping::Auto),
                 avm2_object: Lock::new(None),
+                loader_info: Lock::new(None),
                 avm2_bitmap_class: Lock::new(BitmapClass::NoSubclass),
                 movie,
             },
@@ -195,6 +200,10 @@ impl<'gc> Bitmap<'gc> {
 
         let smoothing = true;
         Self::new_with_bitmap_data(mc, id, bitmap_data, smoothing, movie)
+    }
+
+    pub fn set_loader_info(self, mc: &Mutation<'gc>, loader_info: LoaderInfoObject<'gc>) {
+        unlock!(Gc::write(mc, self.0), BitmapGraphicData, loader_info).set(Some(loader_info));
     }
 
     pub fn instantiate(self, mc: &Mutation<'gc>) -> Self {
@@ -415,6 +424,10 @@ impl<'gc> TDisplayObject<'gc> for Bitmap<'gc> {
 
     fn set_object2(self, context: &mut UpdateContext<'gc>, to: Avm2StageObject<'gc>) {
         self.set_avm2_object(context.gc(), Some(to));
+    }
+
+    fn loader_info(self) -> Option<LoaderInfoObject<'gc>> {
+        self.0.loader_info.get()
     }
 
     fn movie(self) -> SwfMovie<'gc> {

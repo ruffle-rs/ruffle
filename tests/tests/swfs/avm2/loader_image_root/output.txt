@@ -1,0 +1,45 @@
+ordinary detached root null: true
+ordinary attached root same: true
+ordinary removed root null: true
+=== URL_DETACHED ===
+loader root null: true
+loader root same: false
+content root self: true
+content stage matches loader: true
+content loaderInfo same: true
+info content same: true
+=== URL_ATTACHED ===
+loader root null: false
+loader root same: true
+content root self: true
+content stage matches loader: true
+content loaderInfo same: true
+info content same: true
+=== URL_REMOVED ===
+loader root null: true
+loader root same: false
+content root self: true
+content stage matches loader: true
+content loaderInfo same: true
+info content same: true
+=== BYTES_DETACHED ===
+loader root null: true
+loader root same: false
+content root self: true
+content stage matches loader: true
+content loaderInfo same: true
+info content same: true
+=== BYTES_ATTACHED ===
+loader root null: false
+loader root same: true
+content root self: true
+content stage matches loader: true
+content loaderInfo same: true
+info content same: true
+=== BYTES_REMOVED ===
+loader root null: true
+loader root same: false
+content root self: true
+content stage matches loader: true
+content loaderInfo same: true
+info content same: true
