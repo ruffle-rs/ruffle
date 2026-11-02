@@ -1,0 +1,13 @@
+text &#0;A: length 2, codes 0,65
+attribute &#0;A: length 2, codes 0,65
+text &#00;A: length 2, codes 0,65
+attribute &#00;A: length 2, codes 0,65
+text &#000;A: length 2, codes 0,65
+attribute &#000;A: length 2, codes 0,65
+text &#x0;A: length 2, codes 0,65
+attribute &#x0;A: length 2, codes 0,65
+text &#x00;A: length 2, codes 0,65
+attribute &#x00;A: length 2, codes 0,65
+text A&#0;B: length 3, codes 65,0,66
+attribute round trip: <data label="A&#x0;B"/>
+text round trip: %3Cdata%3EA%26%23x0%3BB%3C/data%3E
