@@ -560,6 +560,15 @@ impl<'gc> MovieClip<'gc> {
                 TagCode::DefineSound => shared.define_sound(context, reader),
                 TagCode::DefineVideoStream => shared.define_video_stream(context, reader),
                 TagCode::DefineSprite => {
+                    if let [lo, hi, ..] = *reader.get_ref() {
+                        let frame = shared.preload_progress.cur_preload_frame.get();
+                        shared
+                            .cell
+                            .borrow_mut()
+                            .sprite_definition_frames
+                            .entry(u16::from_le_bytes([lo, hi]))
+                            .or_insert(frame);
+                    }
                     return shared.define_sprite(context, reader, chunk_limit);
                 }
                 TagCode::DefineText => shared.define_text(context, reader, 1),
@@ -641,15 +650,23 @@ impl<'gc> MovieClip<'gc> {
 
     /// Handles a `DoInitAction` tag encountered while preloading.
     ///
-    /// Flash Player runs init actions when their frame is first reached, after the
-    /// objects placed on that frame exist (e.g. `#initclip` code can reference
-    /// `_root.someClip` placed earlier on the same frame), but before those objects
-    /// run their constructors. We therefore store them, and run them from
-    /// `run_frame_internal`/`run_goto`.
+    /// Flash Player runs init actions when their frame is reached: they are queued like
+    /// `onClipEvent(initialize)` handlers, in tag order, so they run after the frame's
+    /// objects exist (e.g. `#initclip` code can reference `_root.someClip` placed on the
+    /// same frame) but before those objects run their constructors. An init action only
+    /// runs if its target sprite is already defined at that point of the timeline: either
+    /// earlier in the tag stream, or in a frame that the timeline has already reached.
+    /// Otherwise it is skipped, but may still run if its frame is reached again later.
+    /// Init actions for a given sprite run at most once.
     ///
-    /// Init actions of a movie loaded through `ImportAssets(2)` run in the context of
-    /// the importer, at the position of the import tag; they are queued on the
-    /// importer's frame that is currently being preloaded.
+    /// We therefore store them here, and queue them from `run_frame_internal`/`run_goto`.
+    ///
+    /// Init actions nested in a `DefineSprite` (not allowed by the SWF spec) follow the same
+    /// rules on that sprite's timeline.
+    ///
+    /// Init actions of a movie loaded through `ImportAssets(2)` run once in the context of
+    /// the importer, at the position of the import tag; they are queued on the importer's
+    /// frame that is currently being preloaded.
     fn preload_init_action(
         self,
         context: &mut UpdateContext<'gc>,
@@ -664,36 +681,105 @@ impl<'gc> MovieClip<'gc> {
             return self.do_init_action(context, reader);
         }
 
-        let _sprite_id = reader.read_u16()?;
-        let slice = self.0.shared.get().swf_data.resize_to_reader(reader);
-        if !slice.is_empty() {
-            let frame = target_shared.preload_progress.cur_preload_frame.get();
-            target_shared
-                .cell
-                .borrow_mut()
-                .init_actions
-                .entry(frame)
-                .or_default()
-                .push(slice);
-        }
+        let sprite_id = reader.read_u16()?;
+        let own_shared = self.0.shared.get();
+        let bytecode = own_shared.swf_data.resize_to_reader(reader);
+        let imported = own_shared.importer_movie.is_some();
+        // Preloading defines characters in tag order, so the library only contains the
+        // characters defined before this tag. (This includes init actions nested in a
+        // `DefineSprite`, which Flash Player runs when that sprite's frame is reached.)
+        let defined_before = imported
+            || context
+                .library
+                .library_for_movie_mut(self.movie())
+                .character_by_id(sprite_id)
+                .is_some();
+        let frame = target_shared.preload_progress.cur_preload_frame.get();
+        target_shared
+            .cell
+            .borrow_mut()
+            .init_actions
+            .entry(frame)
+            .or_default()
+            .push(InitAction {
+                target: (!imported).then_some(sprite_id),
+                defined_before,
+                bytecode,
+                done: false,
+            });
         Ok(())
     }
 
-    /// Runs the deferred `DoInitAction` tags of `frame`, if they haven't run yet.
-    fn run_init_actions(self, context: &mut UpdateContext<'gc>, frame: FrameNumber) {
+    /// Takes the init actions of `frame` that are able to run now, marking them as done.
+    ///
+    /// If `own_index` is given, only the init action with that index among the ones that
+    /// come from this timeline's own tag stream is considered.
+    fn take_runnable_init_actions(
+        self,
+        context: &mut UpdateContext<'gc>,
+        frame: FrameNumber,
+        own_index: Option<usize>,
+    ) -> Vec<SwfSlice> {
+        let library = context.library.library_for_movie_mut(self.movie());
         let shared = self.0.shared.get();
-        let actions = {
-            let mut write = shared.cell.borrow_mut();
-            let actions = write.init_actions.remove(&frame);
-            // Optimization: free memory when the last entry is removed.
-            if actions.is_some() && write.init_actions.is_empty() {
-                write.init_actions = HashMap::new();
-            }
-            actions
+        let mut write = shared.cell.borrow_mut();
+        let write = &mut *write;
+        let Some(actions) = write.init_actions.get_mut(&frame) else {
+            return Vec::new();
         };
-        for slice in actions.into_iter().flatten() {
-            Avm1::run_stack_frame_for_init_action(self.into(), slice, context);
+
+        let mut taken = Vec::new();
+        let mut own_count = 0;
+        for action in actions.iter_mut() {
+            let own_position = action.target.map(|_| {
+                own_count += 1;
+                own_count - 1
+            });
+            if own_index.is_some() && own_position != own_index {
+                continue;
+            }
+            if action.done {
+                continue;
+            }
+            let runnable = match action.target {
+                None => true,
+                Some(id) => {
+                    !library.avm1_init_action_ran(id)
+                        && (action.defined_before
+                            || write
+                                .sprite_definition_frames
+                                .get(&id)
+                                .is_some_and(|&defined_in| defined_in <= write.max_frame_reached))
+                }
+            };
+            if runnable {
+                action.done = true;
+                if let Some(id) = action.target {
+                    library.set_avm1_init_action_ran(id);
+                }
+                taken.push(action.bytecode.clone());
+            }
         }
+        taken
+    }
+
+    /// Queues init actions with the same priority as `Initialize` clip events.
+    fn queue_init_actions(self, context: &mut UpdateContext<'gc>, actions: Vec<SwfSlice>) {
+        for bytecode in actions {
+            context.action_queue.queue_action(
+                self.into(),
+                ActionType::InitAction { bytecode },
+                false,
+            );
+        }
+    }
+
+    /// Records that the timeline reached `frame`, which makes the sprites defined up to that
+    /// frame available to init actions.
+    fn set_init_actions_frame_reached(self, frame: FrameNumber) {
+        let shared = self.0.shared.get();
+        let mut write = shared.cell.borrow_mut();
+        write.max_frame_reached = write.max_frame_reached.max(frame);
     }
 
     #[inline]
@@ -1466,6 +1552,7 @@ impl<'gc> MovieClip<'gc> {
         let data = shared.swf_data.clone();
         let mut reader = data.read_from(self.0.tag_stream_pos.get());
 
+        let mut own_init_action_index = 0;
         let tag_callback = |reader: &mut SwfStream<'_>, tag_code| {
             match tag_code {
                 TagCode::DoAction => self.do_action(context, reader),
@@ -1505,6 +1592,16 @@ impl<'gc> MovieClip<'gc> {
                 TagCode::RemoveObject2 if run_display_actions && is_action_script_3 => {
                     self.queue_remove_object(reader, 2)
                 }
+                TagCode::DoInitAction if run_display_actions && !is_action_script_3 => {
+                    let actions = self.take_runnable_init_actions(
+                        context,
+                        self.0.current_frame(),
+                        Some(own_init_action_index),
+                    );
+                    own_init_action_index += 1;
+                    self.queue_init_actions(context, actions);
+                    Ok(())
+                }
                 TagCode::SetBackgroundColor => self.set_background_color(context, reader),
                 TagCode::StartSound if run_sounds => self.start_sound_1(context, reader),
                 TagCode::SoundStreamBlock if run_sounds => self.sound_stream_block(context, reader),
@@ -1519,7 +1616,11 @@ impl<'gc> MovieClip<'gc> {
             tracing::error!("Error running abc/symbol in frame: {e:?}");
         }
         if run_display_actions && !is_action_script_3 {
-            self.run_init_actions(context, self.0.current_frame());
+            // E.g. init actions of imported asset movies, which have no tag in this stream.
+            let frame = self.0.current_frame();
+            let actions = self.take_runnable_init_actions(context, frame, None);
+            self.queue_init_actions(context, actions);
+            self.set_init_actions_frame_reached(frame);
         }
 
         // On AS3, we deliberately run all removals before the frame number or
@@ -1922,6 +2023,16 @@ impl<'gc> MovieClip<'gc> {
         // We have to be sure that queued actions are generated in the same order
         // as if the playhead had reached this frame normally.
 
+        // Queue the init actions of the frames we passed through. They run from the action
+        // queue, so the objects placed below will exist by then.
+        if !self.movie().is_action_script_3() {
+            for passed_frame in (from_frame + 1)..=clamped_frame {
+                let actions = self.take_runnable_init_actions(context, passed_frame, None);
+                self.queue_init_actions(context, actions);
+            }
+            self.set_init_actions_frame_reached(clamped_frame);
+        }
+
         // First, sort the goto commands in the order of execution.
         // (Maybe it'd be better to keeps this list sorted as we create it?
         // Currently `swap_remove` calls futz with the order; but we could use `remove`).
@@ -1959,13 +2070,6 @@ impl<'gc> MovieClip<'gc> {
             .iter()
             .filter(|params| params.frame >= frame)
             .for_each(|goto| run_goto_command(self, context, goto));
-
-        // Init actions of the frames we passed through run once their objects exist.
-        if !self.movie().is_action_script_3() {
-            for passed_frame in (from_frame + 1)..=self.current_frame() {
-                self.run_init_actions(context, passed_frame);
-            }
-        }
 
         if !is_implicit {
             // On AVM2, all explicit gotos act the same way as a normal new frame,
@@ -4805,9 +4909,25 @@ struct MovieClipSharedMut {
     eager_tags: HashMap<FrameNumber, EagerTags>,
 
     /// AVM1 `DoInitAction` tags found while preloading, keyed by the frame they appear in.
-    /// They are executed (once) the first time that frame is reached, after the frame's
-    /// display list tags have been processed. See `MovieClip::run_init_actions`.
-    init_actions: HashMap<FrameNumber, Vec<SwfSlice>>,
+    /// See `MovieClip::preload_init_action`.
+    init_actions: HashMap<FrameNumber, Vec<InitAction>>,
+
+    /// The frame in which each sprite of this movie is defined.
+    sprite_definition_frames: HashMap<CharacterId, FrameNumber>,
+
+    /// The highest frame this timeline has reached.
+    max_frame_reached: FrameNumber,
+}
+
+/// An AVM1 `DoInitAction` tag.
+struct InitAction {
+    /// The sprite it initializes, or `None` for init actions of an imported movie.
+    target: Option<CharacterId>,
+    /// Whether the target sprite was defined before this tag in the tag stream.
+    defined_before: bool,
+    bytecode: SwfSlice,
+    /// Whether this init action already ran.
+    done: bool,
 }
 
 #[derive(Default)]

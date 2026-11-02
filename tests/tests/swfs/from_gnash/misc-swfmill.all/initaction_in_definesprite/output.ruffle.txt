@@ -1,3 +1,0 @@
-FAILED: init actions targetting sprite 1 executed again (defined in sprite3)
-PASSED: executing init actions defined in sprite2 and targetting sprite1
-END OF TEST

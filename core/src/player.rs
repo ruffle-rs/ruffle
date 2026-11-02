@@ -2262,6 +2262,9 @@ impl Player {
                 | ActionType::Initialize { bytecode, name } => {
                     Avm1::run_stack_frame_for_action(action.clip, name, bytecode, context);
                 }
+                ActionType::InitAction { bytecode } => {
+                    Avm1::run_stack_frame_for_init_action(action.clip, bytecode, context);
+                }
                 // Change the prototype of a MovieClip and run constructor events.
                 //
                 // If no class was registered for the clip's symbol when it was placed, check
