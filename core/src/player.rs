@@ -128,7 +128,7 @@ pub struct MouseData<'gc> {
     /// If the mouse is down, the object that the mouse is currently pressing.
     pub pressed: Option<InteractiveObject<'gc>>,
 
-    /// The AVM1 object that received the mouse press, before menu tracking can transfer it.
+    /// The original left-press target, before AVM1 menu tracking can transfer capture.
     pub avm1_press_target: Option<InteractiveObject<'gc>>,
     pub right_pressed: Option<InteractiveObject<'gc>>,
     pub middle_pressed: Option<InteractiveObject<'gc>>,
@@ -1675,13 +1675,13 @@ impl Player {
             let cur_over_object = context.mouse_data.hovered;
             let pressed_before_hover = context.mouse_data.pressed;
             let mut drag_over_object = new_over_object;
-            let is_avm1 = !context.stage.movie().is_action_script_3();
             if !skip_mouse_hover
-                && is_avm1
                 && context.input.is_mouse_down(MouseButton::Left)
                 && !changed_mouse_buttons.contains(MouseButton::Left)
             {
-                if let Some(pressed) = context.mouse_data.pressed {
+                if let Some(pressed) = context.mouse_data.pressed
+                    && !pressed.as_displayobject().movie().is_action_script_3()
+                {
                     if InteractiveObject::option_ptr_eq(cur_over_object, Some(pressed)) {
                         if !InteractiveObject::option_ptr_eq(drag_over_object, Some(pressed)) {
                             if pressed.track_as_menu(context) {
@@ -1698,6 +1698,7 @@ impl Player {
                 if context.mouse_data.pressed.is_none()
                     && !InteractiveObject::option_ptr_eq(cur_over_object, drag_over_object)
                     && let Some(over) = drag_over_object
+                    && !over.as_displayobject().movie().is_action_script_3()
                 {
                     if context.drag_object.is_none() && over.track_as_menu(context) {
                         context.mouse_data.pressed = Some(over);
@@ -1737,12 +1738,11 @@ impl Player {
                         }
                     }
 
-                    if is_avm1
-                        && !InteractiveObject::option_ptr_eq(
-                            pressed_before_hover,
-                            context.mouse_data.pressed,
-                        )
-                        && let Some(over) = context.mouse_data.pressed
+                    if !InteractiveObject::option_ptr_eq(
+                        pressed_before_hover,
+                        context.mouse_data.pressed,
+                    ) && let Some(over) = context.mouse_data.pressed
+                        && !over.as_displayobject().movie().is_action_script_3()
                     {
                         events.push((
                             over,
@@ -1752,23 +1752,31 @@ impl Player {
                         ));
                     }
 
-                    if !is_avm1 {
-                        if let Some(cur_over_object) = cur_over_object {
-                            events.push((
-                                cur_over_object,
-                                ClipEvent::RollOut {
-                                    to: new_over_object,
-                                },
-                            ));
-                        }
-                        if let Some(new_over_object) = new_over_object {
-                            events.push((
-                                new_over_object,
-                                ClipEvent::RollOver {
-                                    from: cur_over_object,
-                                },
-                            ));
-                        }
+                    if let Some(cur_over_object) = cur_over_object
+                        && cur_over_object
+                            .as_displayobject()
+                            .movie()
+                            .is_action_script_3()
+                    {
+                        events.push((
+                            cur_over_object,
+                            ClipEvent::RollOut {
+                                to: new_over_object,
+                            },
+                        ));
+                    }
+                    if let Some(new_over_object) = new_over_object
+                        && new_over_object
+                            .as_displayobject()
+                            .movie()
+                            .is_action_script_3()
+                    {
+                        events.push((
+                            new_over_object,
+                            ClipEvent::RollOver {
+                                from: cur_over_object,
+                            },
+                        ));
                     }
                 } else {
                     // The mouse button is up, so fire rollover states for the object we are hovering over.
@@ -1811,7 +1819,7 @@ impl Player {
                 }
 
                 if context.input.is_mouse_down(button) {
-                    if is_avm1 && button == MouseButton::Left {
+                    if button == MouseButton::Left {
                         context.mouse_data.avm1_press_target = context.mouse_data.hovered;
                     }
                     let event = match button {
@@ -1832,12 +1840,14 @@ impl Player {
                         events.push((context.stage.into(), event));
                     }
                 } else {
-                    if is_avm1 && button == MouseButton::Left {
+                    if button == MouseButton::Left {
                         if !InteractiveObject::option_ptr_eq(
                             context.mouse_data.avm1_press_target,
                             context.mouse_data.hovered,
                         ) {
-                            avm1_mouseup_target = context.mouse_data.hovered;
+                            avm1_mouseup_target = context.mouse_data.hovered.filter(|over| {
+                                !over.as_displayobject().movie().is_action_script_3()
+                            });
                         }
                         context.mouse_data.avm1_press_target = None;
                     }
