@@ -1,0 +1,3 @@
+opaque: under shape below=FFFFFFFF untouched=C0FF0000 under shape above=FF0000FF
+transparent: under shape below=C0FF0000 untouched=C0FF0000 under shape above=C0FF0000
+black: under shape below=FF000000 untouched=C0FF0000 under shape above=FF00FF00
