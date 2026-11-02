@@ -19,6 +19,11 @@ pub struct Header {
 }
 
 impl Header {
+    /// Whether the FLV header declares a video track.
+    pub fn has_video(&self) -> bool {
+        self.type_flags.contains(TypeFlags::HAS_VIDEO)
+    }
+
     /// Parse an FLV header.
     ///
     /// The header must, at a minimum, contain the FLV magic, version number,

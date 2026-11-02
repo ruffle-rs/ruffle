@@ -186,7 +186,6 @@ impl NetStreamHandle {
 pub enum NetStreamType {
     /// The stream is an FLV.
     Flv {
-        #[expect(dead_code)] // set but never read
         header: FlvHeader,
 
         /// The currently playing video track's stream instance.
@@ -233,6 +232,15 @@ pub struct NetStreamSource {
 
     /// The current seek offset in the stream in milliseconds.
     stream_time: Cell<f64>,
+
+    /// Byte offsets of video tags processed while the stream was paused.
+    ///
+    /// Playback still starts at the committed stream offset so that preceding
+    /// audio is not lost, but these tags must not be sent to the decoder twice.
+    paused_preview_offsets: RefCell<Vec<usize>>,
+
+    /// Whether a paused seek needs to decode a new preview frame.
+    paused_preview_requested: Cell<bool>,
 
     /// The next queued seek offset in milliseconds.
     ///
@@ -288,6 +296,8 @@ impl Default for NetStreamSource {
             preload_offset: Cell::new(0),
             stream_type: RefCell::new(None),
             stream_time: Cell::new(0.0),
+            paused_preview_offsets: RefCell::new(Vec::new()),
+            paused_preview_requested: Cell::new(false),
             queued_seek_time: Cell::new(None),
             audio_stream: RefCell::new(None),
             sound_instance: Cell::new(None),
@@ -544,7 +554,6 @@ impl<'gc> NetStream<'gc> {
 
                 let tag = tag.unwrap();
                 let stream_time = tag.timestamp as f64;
-                source.stream_time.set(stream_time);
 
                 if skipping_back && stream_time > offset || !skipping_back && stream_time < offset {
                     continue;
@@ -567,11 +576,15 @@ impl<'gc> NetStream<'gc> {
                 }
             }
 
-            let offset = reader
+            let stream_offset = reader
                 .stream_position()
                 .expect("FLV reader stream position") as usize;
-            source.offset.set(offset);
+            source.offset.set(stream_offset);
         }
+
+        source.stream_time.set(offset);
+        source.paused_preview_offsets.borrow_mut().clear();
+        source.paused_preview_requested.set(!self.0.playing.get());
 
         if let Some(NetStreamKind::Avm2(_)) = self.0.avm_object.get() {
             self.trigger_status_event(
@@ -1192,8 +1205,13 @@ impl<'gc> NetStream<'gc> {
             self.execute_seek(context, offset);
         }
 
-        // Paused streams deactivate themselves after seek processing.
-        if !self.0.playing.get() {
+        let is_playing = self.0.playing.get();
+        let can_preload_while_paused =
+            matches!(self.0.avm_object.get(), Some(NetStreamKind::Avm2(_)));
+
+        // AVM1 does not preload stream data while paused. In particular, its
+        // Play.Start event must be dispatched before onMetaData.
+        if !is_playing && !can_preload_while_paused {
             StreamManager::deactivate(context, self);
             return;
         }
@@ -1203,15 +1221,19 @@ impl<'gc> NetStream<'gc> {
             return;
         }
 
-        self.cleanup_sound_stream(context);
+        if is_playing {
+            self.cleanup_sound_stream(context);
+        }
         let slice = source.buffer.borrow().to_full_slice();
         let buffer = slice.data();
 
-        let max_time = source.stream_time.get() + dt.as_millis();
+        let max_time = source.stream_time.get() + if is_playing { dt.as_millis() } else { 0.0 };
         let mut buffer_underrun = false;
         let mut error = false;
         let mut max_lookahead_audio_tags = 5;
         let mut is_lookahead_tag = false;
+        let mut paused_can_commit = true;
+        let mut paused_preview_complete = false;
 
         // At this point we should know our stream type.
         if matches!(
@@ -1219,15 +1241,25 @@ impl<'gc> NetStream<'gc> {
             Some(NetStreamType::Flv { .. })
         ) {
             let mut reader = FlvReader::from_parts(&buffer, source.offset.get());
+            let has_video = match &*source.stream_type.borrow() {
+                Some(NetStreamType::Flv { header, .. }) => header.has_video(),
+                _ => unreachable!(),
+            };
 
             loop {
+                let tag_offset = reader
+                    .stream_position()
+                    .expect("valid position before parsing FLV tag")
+                    as usize;
                 let tag = FlvTag::parse(&mut reader);
                 if let Err(e) = tag {
                     // `is_lookahead_tag` gets set once we start reading tags
                     // after the end & won't ever be set back. We don't want
                     // error states or playback ending to trip until we run
                     // those tags "for realsies"
-                    if !is_lookahead_tag && matches!(e, FlvError::EndOfData) {
+                    if !is_playing && matches!(e, FlvError::EndOfData) {
+                        // Paused preloading may run before the next complete tag arrives.
+                    } else if !is_lookahead_tag && matches!(e, FlvError::EndOfData) {
                         buffer_underrun = true;
                     } else if !is_lookahead_tag {
                         //Corrupt tag or out of data
@@ -1239,9 +1271,32 @@ impl<'gc> NetStream<'gc> {
                 }
 
                 let tag = tag.expect("valid tag");
-                is_lookahead_tag = tag.timestamp as f64 >= max_time; //FLV timestamps are also ms
+                is_lookahead_tag = is_playing && tag.timestamp as f64 >= max_time; //FLV timestamps are also ms
                 if is_lookahead_tag && max_lookahead_audio_tags == 0 {
                     break;
+                }
+
+                let is_paused_script = !is_playing
+                    && paused_can_commit
+                    && tag.timestamp as f64 <= max_time
+                    && matches!(&tag.data, FlvTagData::Script(_));
+                let needs_paused_preview = !is_playing
+                    && has_video
+                    && (source.paused_preview_requested.get()
+                        || self.0.last_decoded_bitmap.borrow().is_none());
+                let is_paused_video_preview = !is_playing
+                    && needs_paused_preview
+                    && matches!(&tag.data, FlvTagData::Video(_));
+
+                if !is_playing && !is_paused_script {
+                    paused_can_commit = false;
+                    if is_paused_video_preview {
+                        // Decode the frame without advancing the committed stream offset.
+                    } else if needs_paused_preview {
+                        continue;
+                    } else {
+                        break;
+                    }
                 }
 
                 let tag_needs_preloading = reader.stream_position().expect("valid position")
@@ -1260,7 +1315,29 @@ impl<'gc> NetStream<'gc> {
                         }
                     }
                     FlvTagData::Video(video_data) if !is_lookahead_tag => {
-                        self.flv_video_tag(context, &slice, video_data, tag_needs_preloading)
+                        let was_previewed =
+                            source.paused_preview_offsets.borrow().contains(&tag_offset);
+                        if is_playing && was_previewed {
+                            source
+                                .paused_preview_offsets
+                                .borrow_mut()
+                                .retain(|offset| *offset != tag_offset);
+                        } else if !was_previewed {
+                            let is_video_frame = matches!(
+                                &video_data.data,
+                                FlvVideoPacket::Data(_)
+                                    | FlvVideoPacket::Vp6Data { .. }
+                                    | FlvVideoPacket::AvcNalu { .. }
+                            );
+                            self.flv_video_tag(context, &slice, video_data, tag_needs_preloading);
+                            if is_paused_video_preview {
+                                source.paused_preview_offsets.borrow_mut().push(tag_offset);
+                                paused_preview_complete = is_video_frame;
+                                if is_video_frame {
+                                    source.paused_preview_requested.set(false);
+                                }
+                            }
+                        }
                     }
                     FlvTagData::Script(script_data) if !is_lookahead_tag => {
                         self.flv_script_tag(context, script_data, tag_needs_preloading);
@@ -1271,7 +1348,7 @@ impl<'gc> NetStream<'gc> {
                     FlvTagData::Video(_) | FlvTagData::Script(_) => {}
                 }
 
-                if !is_lookahead_tag {
+                if !is_lookahead_tag && (is_playing || paused_can_commit) {
                     let offset = reader
                         .stream_position()
                         .expect("FLV reader stream position")
@@ -1281,11 +1358,19 @@ impl<'gc> NetStream<'gc> {
                         .preload_offset
                         .set(max(source.offset.get(), source.preload_offset.get()));
                 }
+
+                if paused_preview_complete {
+                    break;
+                }
             }
         }
 
-        source.stream_time.set(max_time);
-        if let Err(e) = self.commit_sound_stream(context) {
+        if is_playing {
+            source.stream_time.set(max_time);
+        } else if !self.0.playing.get() {
+            StreamManager::deactivate(context, self);
+        }
+        if is_playing && let Err(e) = self.commit_sound_stream(context) {
             //TODO: Fire an error event at AS.
             tracing::error!("Error committing sound stream: {}", e);
         }
