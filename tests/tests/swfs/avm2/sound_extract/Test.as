@@ -66,7 +66,7 @@ package {
             var first:Number = sound.extract(sequential, 1000);
             var second:Number = sound.extract(sequential, 1000);
             var explicit:ByteArray = new ByteArray();
-            var third:Number = sound.extract(explicit, 500, 2300);
+            var third:Number = sound.extract(explicit, 550, 2300);
             var fourth:Number = sound.extract(sequential, 1000);
             var fifth:Number = sound.extract(sequential, 1000, -5);
             trace("stereo: sequential calls returned " + first + ", " + second + ", " + fourth + ", " + fifth +
@@ -79,10 +79,12 @@ package {
             trace("stereo: samples " + sample(all, 2300) + ", " + sample(all, 2325) + ", " + sample(all, 3000));
 
             trace("stereo: first two calls match extract(all) " + same(sequential, 0, all, 0, 2000));
-            trace("stereo: explicit call matches " + same(explicit, 0, all, 2300, 500));
+            trace("stereo: explicit call matches " + same(explicit, 0, all, 2300, 550));
+            // The sine repeats every 100 sample frames, so the explicit call
+            // ends half a period off the sequential calls.
             trace("stereo: call after the explicit one goes on from 2000 " + same(sequential, 2000, all, 2000, 1000) +
-                ", from 2800 " + same(sequential, 2000, all, 2800, 1000));
-            trace("stereo: negative startPosition goes on from 3800 " + same(sequential, 3000, all, 3800, 1000));
+                ", from 2850 " + same(sequential, 2000, all, 2850, 1000));
+            trace("stereo: negative startPosition goes on from 3850 " + same(sequential, 3000, all, 3850, 1000));
 
             var bytes:ByteArray = new ByteArray();
             trace("stereo: 100000 from the last frame returned " + sound.extract(bytes, 100000, count - 1152));
