@@ -527,7 +527,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     }
 
     pub fn run_actions(&mut self, code: SwfSlice) -> Result<ReturnType<'gc>, Error<'gc>> {
-        let mut read = Reader::new(&code.entire_data()[code.start..], self.swf_version());
+        let mut read = Reader::new(code.data_until_end(), self.swf_version());
 
         loop {
             let result = self.do_action(&code, &mut read);
