@@ -1,0 +1,21 @@
+4096: 3 events before play() returned, 12288 samples
+2048: 1 events before play() returned, 2048 samples
+2049: 2 events before play() returned, 4098 samples
+3000: 3 events before play() returned, 9000 samples
+4096: 3 events before play() returned, 12288 samples
+6000: 4 events before play() returned, 24000 samples
+8192: 5 events before play() returned, 40960 samples
+8192,2048: 15 events before play() returned, 36864 samples
+2048,8192: 1 events before play() returned, 2048 samples
+2049,8192: 6 events before play() returned, 43009 samples
+3000,2048: 3 events before play() returned, 7096 samples
+4096,2048: 5 events before play() returned, 12288 samples
+4096,4096,2833,4096: 4 events before play() returned, 15121 samples
+play(500, 3): positions 0 4096 8192 returned 34338, soundComplete at 801.86
+play(1000, 1): positions 0 4096 8192 returned 56388, soundComplete at 1301.86
+play(0, 3): positions 0 4096 8192 returned 12288, soundComplete at 301.86
+play(1000): position after play() 1000.00
+play(1000): position after 500 ms between 1000 and 2000 true, below 1000 false
+played twice: two channels true
+load: 2037
+done
