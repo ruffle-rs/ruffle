@@ -196,6 +196,9 @@ pub struct EditTextData<'gc> {
     /// See <https://docs.ruffle.rs/en_US/FlashPlatform/reference/actionscript/3/flash/text/engine/package-detail.html>
     /// See <https://docs.ruffle.rs/en_US/as3/dev/WS9dd7ed846a005b294b857bfa122bd808ea6-8000.html>
     is_fte: Cell<bool>,
+
+    // Paragraph embedding level for FTE text lines.
+    fte_bidi_level: Cell<i32>,
 }
 
 impl EditTextData<'_> {
@@ -345,6 +348,7 @@ impl<'gc> EditText<'gc> {
                 max_chars: Cell::new(swf_tag.max_length().unwrap_or_default() as i32),
                 mouse_wheel_enabled: Cell::new(true),
                 is_fte: Cell::new(false),
+                fte_bidi_level: Cell::new(0),
                 restrict: RefCell::new(EditTextRestrict::allow_all()),
                 last_click: Cell::new(None),
                 layout_debug_boxes_flags: Cell::new(LayoutDebugBoxesFlag::empty()),
@@ -750,6 +754,14 @@ impl<'gc> EditText<'gc> {
         self.0.is_fte.set(is_fte);
     }
 
+    pub fn fte_bidi_level(self) -> i32 {
+        self.0.fte_bidi_level.get()
+    }
+
+    pub fn set_fte_bidi_level(self, level: i32) {
+        self.0.fte_bidi_level.set(level);
+    }
+
     pub fn layout_debug_boxes_flag(self, flag: LayoutDebugBoxesFlag) -> bool {
         self.0.layout_debug_boxes_flags.get().contains(flag)
     }
@@ -893,6 +905,7 @@ impl<'gc> EditText<'gc> {
             is_input: !self.0.flags.get().contains(EditTextFlag::READ_ONLY),
             is_word_wrap,
             font_type: self.0.font_type(),
+            fte_bidi_level: self.is_fte().then(|| self.fte_bidi_level()),
         };
         let new_layout =
             html::lower_from_text_spans(&text_spans, context, layout_params, content_width);
@@ -1271,22 +1284,26 @@ impl<'gc> EditText<'gc> {
             let descent = metrics.descent(params.height());
             let caret_height = ascent + descent;
             let mut caret_x = Twips::ZERO;
+
             font.evaluate(
                 text,
                 params,
                 |pos, transform, glyph, advance, x| {
+            let visual_x = lbox.visual_char_x(pos).unwrap_or(x);
+            let mut visual_transform = transform.clone();
+            visual_transform.matrix.tx += visual_x - x;
                     if glyph.renderable(context) {
                         // If it's highlighted, override the color.
                         if matches!(visible_selection, Some(visible_selection) if visible_selection.contains(start + pos)) {
                             // Set text color to white
                             context.transform_stack.push(&Transform {
-                                matrix: transform.matrix,
+                                matrix: visual_transform.matrix,
                                 color_transform: ColorTransform::IDENTITY,
                                 perspective_projection: transform.perspective_projection,
                                 tz: transform.tz,
                             });
                         } else {
-                            context.transform_stack.push(transform);
+                            context.transform_stack.push(&visual_transform);
                         }
                         glyph.render(context);
                         context.transform_stack.pop();
@@ -1295,10 +1312,10 @@ impl<'gc> EditText<'gc> {
                     // Update caret position
                     if let Some(caret) = caret {
                         if pos == caret {
-                            caret_x = x;
+                            caret_x = visual_x;
                         } else if caret > 0 && pos == caret - 1 {
                             // The caret may be rendered at the end, after all glyphs.
-                            caret_x = x + advance;
+                            caret_x = visual_x + advance;
                         }
                     }
                 },
