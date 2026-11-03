@@ -246,8 +246,8 @@ pub fn close<'gc>(
     Ok(Value::Undefined)
 }
 
-/// `Sound.load`
-pub fn load<'gc>(
+/// `Sound._load`, called by `Sound.load`
+pub fn _load<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     args: FunctionArgs<'_, 'gc>,
