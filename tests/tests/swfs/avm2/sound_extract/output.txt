@@ -1,13 +1,13 @@
 no data: extract() returned 0
 stereo: length 1071.0204081632653
-stereo: sequential calls returned 1000, 1000, 1000, 1000, explicit call 500, target length 32000
+stereo: sequential calls returned 1000, 1000, 1000, 1000, explicit call 550, target length 32000
 stereo: extract(all) returned 47232, length 377856, position 377856
 stereo: first sample above 0.05 at 2259
 stereo: samples 0.20/-0.20, -0.43/0.43, 0.20/-0.20
 stereo: first two calls match extract(all) true
 stereo: explicit call matches true
-stereo: call after the explicit one goes on from 2000 false, from 2800 true
-stereo: negative startPosition goes on from 3800 true
+stereo: call after the explicit one goes on from 2000 false, from 2850 true
+stereo: negative startPosition goes on from 3850 true
 stereo: 100000 from the last frame returned 1152
 stereo: 100 from past the end returned 0
 stereo: samples left from 40003 after start -5, -Infinity, -2147483649, 1600.9, 2147483647, 2147483648, 1000000000000, Infinity, NaN: 7229, 7229, 7229, 45632, 0, 47232, 47232, 47232, 47232
