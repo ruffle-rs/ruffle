@@ -127,6 +127,9 @@ pub enum SoundLoadingState {
     New,
     Loading,
     Loaded,
+    /// Played with no data, so its `sampleData` listeners generate what it
+    /// plays, and `load` throws.
+    Generated,
 }
 
 impl<'gc> SoundObject<'gc> {

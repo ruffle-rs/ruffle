@@ -173,7 +173,10 @@ pub fn play<'gc>(
         };
 
         if sound_object.sound_handle().is_none()
-            && sound_object.loading_state() == SoundLoadingState::New
+            && matches!(
+                sound_object.loading_state(),
+                SoundLoadingState::New | SoundLoadingState::Generated
+            )
         {
             // A sound with no data plays what its `sampleData` listeners
             // generate, and is invalid without any.
@@ -190,6 +193,7 @@ pub fn play<'gc>(
                 return Err(make_error_2068(activation));
             }
 
+            sound_object.set_loading_state(SoundLoadingState::Generated);
             let sound_channel = SoundChannelObject::generated(activation, sound_object);
             if sound_channel.start_generator(activation.context, sound_transform) {
                 return Ok(sound_channel.into());
