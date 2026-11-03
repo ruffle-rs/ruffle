@@ -305,7 +305,7 @@ impl Avm2ObjectWindow {
             })
             .body(|mut body| {
                 for (name, ns, prop) in entries {
-                    if (self.show_private_items || ns.is_public())
+                    if (self.show_private_items || ns.is_public_unnamed())
                         && name.to_ascii_lowercase().contains(&search)
                     {
                         self.show_property(

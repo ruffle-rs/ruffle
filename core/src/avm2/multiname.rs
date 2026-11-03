@@ -386,30 +386,32 @@ impl<'gc> Multiname<'gc> {
         self.name
     }
 
-    pub fn contains_public_namespace(&self) -> bool {
+    pub fn contains_public_unnamed_namespace(&self) -> bool {
         match self.ns {
-            NamespaceSet::Single(ns) => ns.is_public(),
-            NamespaceSet::Multiple(ns) => ns.iter().any(|ns| ns.is_public()),
+            NamespaceSet::Single(ns) => ns.is_public_unnamed(),
+            NamespaceSet::Multiple(ns) => ns.iter().any(|ns| ns.is_public_unnamed()),
         }
     }
 
     pub fn has_explicit_namespace(&self) -> bool {
         match self.ns {
-            NamespaceSet::Single(ns) => ns.is_namespace() && !ns.is_public(),
+            NamespaceSet::Single(ns) => ns.is_public() && !ns.is_public_unnamed(),
             NamespaceSet::Multiple(_) => false,
         }
     }
 
     pub fn has_nonempty_namespace(&self) -> bool {
         match self.ns {
-            NamespaceSet::Single(ns) => !ns.is_public(),
+            NamespaceSet::Single(ns) => !ns.is_public_unnamed(),
             NamespaceSet::Multiple(_) => true,
         }
     }
 
     pub fn explicit_namespace(&self) -> Option<AvmString<'gc>> {
         match self.ns {
-            NamespaceSet::Single(ns) if ns.is_namespace() && !ns.is_public() => ns.as_uri_opt(),
+            NamespaceSet::Single(ns) if ns.is_public() && !ns.is_public_unnamed() => {
+                ns.as_uri_opt()
+            }
             _ => None,
         }
     }
@@ -442,7 +444,7 @@ impl<'gc> Multiname<'gc> {
 
     /// Whether this multiname is valid for dynamic lookups, such as `array[3]`.
     pub fn valid_dynamic_name(&self) -> bool {
-        self.contains_public_namespace() && !self.is_attribute()
+        self.contains_public_unnamed_namespace() && !self.is_attribute()
     }
 
     /// List the parameters that the selected class must match.

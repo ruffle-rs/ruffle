@@ -22,9 +22,9 @@ pub struct Namespace<'gc>(
 #[derive(Copy, Clone, Collect, Debug, PartialEq, Eq)]
 #[collect(no_drop)]
 enum NamespaceData<'gc> {
-    // note: this is the default "public namespace", corresponding to both
-    // ABC Namespace and PackageNamespace
-    Namespace(AvmAtom<'gc>, #[collect(require_static)] ApiVersion),
+    /// A public namespace with any URI, corresponding to ABC's both
+    /// Namespace and PackageNamespace
+    Public(AvmAtom<'gc>, #[collect(require_static)] ApiVersion),
     PackageInternal(AvmAtom<'gc>),
     Protected(AvmAtom<'gc>),
     Explicit(AvmAtom<'gc>),
@@ -204,7 +204,7 @@ impl<'gc> Namespace<'gc> {
 
         let ns = match abc_namespace {
             AbcNamespace::Namespace(_) | AbcNamespace::Package(_) => {
-                NamespaceData::Namespace(namespace_name, api_version)
+                NamespaceData::Public(namespace_name, api_version)
             }
             AbcNamespace::PackageInternal(_) => NamespaceData::PackageInternal(namespace_name),
             AbcNamespace::Protected(_) => NamespaceData::Protected(namespace_name),
@@ -228,7 +228,7 @@ impl<'gc> Namespace<'gc> {
         let atom = context.intern(package_name.into());
         Self(Some(Gc::new(
             context.gc(),
-            NamespaceData::Namespace(atom, api_version),
+            NamespaceData::Public(atom, api_version),
         )))
     }
 
@@ -244,12 +244,15 @@ impl<'gc> Namespace<'gc> {
         )))
     }
 
+    /// Whether this is a public namespace regardless of its URI.
     pub fn is_public(self) -> bool {
-        matches!(self.0.as_deref(), Some(NamespaceData::Namespace(name, _)) if name.as_wstr().is_empty())
+        matches!(self.0.as_deref(), Some(NamespaceData::Public(_, _)))
     }
 
-    pub fn is_public_ignoring_ns(self) -> bool {
-        matches!(self.0.as_deref(), Some(NamespaceData::Namespace(_, _)))
+    /// Whether this is the unnamed public namespace, i.e. a public namespace
+    /// with an empty URI.
+    pub fn is_public_unnamed(self) -> bool {
+        matches!(self.0.as_deref(), Some(NamespaceData::Public(name, _)) if name.as_wstr().is_empty())
     }
 
     pub fn is_any(self) -> bool {
@@ -260,13 +263,9 @@ impl<'gc> Namespace<'gc> {
         matches!(self.0.as_deref(), Some(NamespaceData::Private(_)))
     }
 
-    pub fn is_namespace(self) -> bool {
-        matches!(self.0.as_deref(), Some(NamespaceData::Namespace(_, _)))
-    }
-
     pub fn as_uri_opt(self) -> Option<AvmString<'gc>> {
         self.0.map(|data| match *data {
-            NamespaceData::Namespace(a, _) => a.into(),
+            NamespaceData::Public(a, _) => a.into(),
             NamespaceData::PackageInternal(a) => a.into(),
             NamespaceData::Protected(a) => a.into(),
             NamespaceData::Explicit(a) => a.into(),
@@ -309,8 +308,8 @@ impl<'gc> Namespace<'gc> {
         }
         match (self.0.as_deref(), other.0.as_deref()) {
             (
-                Some(NamespaceData::Namespace(name1, version1)),
-                Some(NamespaceData::Namespace(name2, version2)),
+                Some(NamespaceData::Public(name1, version1)),
+                Some(NamespaceData::Public(name2, version2)),
             ) => {
                 let name_matches = name1 == name2;
                 let version_matches = version1 <= version2;
@@ -322,7 +321,7 @@ impl<'gc> Namespace<'gc> {
     }
     pub fn matches_api_version(self, match_version: ApiVersion) -> bool {
         match self.0.as_deref() {
-            Some(NamespaceData::Namespace(_, version)) => version <= &match_version,
+            Some(NamespaceData::Public(_, version)) => version <= &match_version,
             _ => true,
         }
     }

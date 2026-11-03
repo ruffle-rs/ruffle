@@ -546,7 +546,7 @@ impl<'gc> VTable<'gc> {
         for interface in class.all_interfaces() {
             for interface_trait in interface.traits() {
                 let interface_name = interface_trait.name();
-                if !interface_name.namespace().is_public() {
+                if !interface_name.namespace().is_public_unnamed() {
                     let public_name = QName::new(internal_ns, interface_name.local_name());
                     if let Some(prop) = this.resolved_traits.get(public_name).copied() {
                         this.resolved_traits.insert(interface_name, prop);
@@ -600,7 +600,7 @@ impl<'gc> VTable<'gc> {
     pub fn public_properties(self) -> impl Iterator<Item = (AvmString<'gc>, Property)> {
         self.resolved_traits()
             .iter()
-            .filter(|(_, ns, _)| ns.is_public())
+            .filter(|(_, ns, _)| ns.is_public_unnamed())
             .map(|(name, _, prop)| (name, *prop))
     }
 }
