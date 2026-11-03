@@ -150,9 +150,8 @@ impl<'gc> SoundChannelObject<'gc> {
 
     /// Starts playing the samples of a generated channel.
     ///
-    /// Like Flash, this asks for the first samples right away, and keeps
-    /// asking for as long as the listeners write the most samples they can,
-    /// up to five such blocks.
+    /// Like Flash, this asks for samples right away, until enough are queued
+    /// (see `initial_samples`).
     ///
     /// Returns `false` if the sound could not be started.
     pub fn start_generator(
@@ -173,10 +172,25 @@ impl<'gc> SoundChannelObject<'gc> {
         self.set_sound_instance(context, instance);
         context.attach_avm2_sound_channel(instance, self);
 
-        while let Some(Self::MAX_GENERATED_SAMPLES) = self.request_samples(context)
-            && generator.generated.get() < 5 * Self::MAX_GENERATED_SAMPLES
-        {}
+        // Flash keeps asking before `play` returns until enough samples are
+        // queued, more the larger the blocks the listeners write.
+        let mut largest = 0;
+        while let Some(samples) = self.request_samples(context) {
+            largest = largest.max(samples);
+            if f64::from(generator.generated.get()) >= Self::initial_samples(largest) {
+                break;
+            }
+        }
         true
+    }
+
+    /// How many sample frames Flash wants queued before `play` returns, given
+    /// the largest block the listeners wrote: just the block itself for 2048,
+    /// about 36834 for 8192. Flash's own rule isn't known; this fits all 61
+    /// block sequences measured in Flash Player 32.
+    fn initial_samples(largest: u32) -> f64 {
+        let excess = f64::from(largest.saturating_sub(Self::MIN_GENERATED_SAMPLES));
+        f64::from(Self::MIN_GENERATED_SAMPLES) + 4.25 * excess + excess * excess / 4352.0
     }
 
     /// Asks for samples until `lead` sample frames are queued ahead of
