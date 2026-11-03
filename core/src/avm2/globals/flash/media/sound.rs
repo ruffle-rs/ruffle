@@ -195,7 +195,8 @@ pub fn play<'gc>(
 
             sound_object.set_loading_state(SoundLoadingState::Generated);
             let sound_channel = SoundChannelObject::generated(activation, sound_object);
-            if sound_channel.start_generator(activation.context, sound_transform) {
+            let start = in_sample.unwrap_or(0);
+            if sound_channel.start_generator(activation.context, sound_transform, start) {
                 return Ok(sound_channel.into());
             }
             return Ok(Value::Null);

@@ -87,6 +87,11 @@ struct SampleGenerator<'gc> {
 
     /// The number of sample frames generated so far.
     generated: Cell<u32>,
+
+    /// The start position passed to `play`, in sample frames. Flash adds it
+    /// to the positions it reports, except in the events dispatched before
+    /// `play` returns.
+    start: Cell<u32>,
 }
 
 pub enum SoundChannelData {
@@ -122,6 +127,7 @@ impl<'gc> SoundChannelObject<'gc> {
                 data,
                 queue: SampleQueue::default(),
                 generated: Cell::new(0),
+                start: Cell::new(0),
             },
         );
         Self::new(activation, Some(generator))
@@ -158,6 +164,7 @@ impl<'gc> SoundChannelObject<'gc> {
         self,
         context: &mut UpdateContext<'gc>,
         sound_transform: Option<SoundTransform>,
+        start: u32,
     ) -> bool {
         let Some(generator) = self.0.generator else {
             return false;
@@ -181,6 +188,7 @@ impl<'gc> SoundChannelObject<'gc> {
                 break;
             }
         }
+        generator.start.set(start);
         true
     }
 
@@ -223,11 +231,12 @@ impl<'gc> SoundChannelObject<'gc> {
 
         generator.data.storage().set_position(0);
         let mut activation = Activation::from_nothing(context);
-        let event = EventObject::sample_data_event(
-            &mut activation,
-            generator.generated.get().into(),
-            generator.data.into(),
-        );
+        let position = generator
+            .generated
+            .get()
+            .saturating_add(generator.start.get());
+        let event =
+            EventObject::sample_data_event(&mut activation, position.into(), generator.data.into());
         Avm2::dispatch_event(context, event, generator.sound.into());
         if !context.audio_manager.is_sound_playing(instance) {
             // A listener stopped the sound.
@@ -267,7 +276,13 @@ impl<'gc> SoundChannelObject<'gc> {
         if let SoundChannelData::Loaded { sound_instance } = &*sound_channel_data
             && let Some(pos) = context.audio.get_sound_position(*sound_instance)
         {
-            self.0.position.set(pos);
+            let start = self
+                .0
+                .generator
+                .map_or(0, |generator| generator.start.get());
+            self.0
+                .position
+                .set(pos + f64::from(start) * 1000.0 / f64::from(SampleQueue::SAMPLE_RATE));
         }
 
         self.0.position.get()
@@ -278,10 +293,13 @@ impl<'gc> SoundChannelObject<'gc> {
     pub fn sound_completed(self) {
         if let Some(generator) = self.0.generator {
             // A generated sound ends where its samples end.
-            let generated = f64::from(generator.generated.get());
+            let end = generator
+                .generated
+                .get()
+                .saturating_add(generator.start.get());
             self.0
                 .position
-                .set(generated * 1000.0 / f64::from(SampleQueue::SAMPLE_RATE));
+                .set(f64::from(end) * 1000.0 / f64::from(SampleQueue::SAMPLE_RATE));
         }
     }
 
