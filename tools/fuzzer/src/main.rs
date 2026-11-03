@@ -1,8 +1,6 @@
 use clap::{CommandFactory, FromArgMatches, Parser, Subcommand};
-use ruffle_fuzzer::{
-    Fuzzer, build_fuzz_targets, check_fuzzers, list_targets, prepare_swf_tests_corpus,
-    run_fuzz_targets,
-};
+use ruffle_fuzzer::corpus::prepare_corpus;
+use ruffle_fuzzer::{Fuzzer, build_fuzz_targets, check_fuzzers, list_targets, run_fuzz_targets};
 use std::collections::HashSet;
 use std::time::Duration;
 
@@ -102,7 +100,7 @@ fn main() -> Result<(), anyhow::Error> {
             }
         }
         Commands::Prepare => {
-            prepare_swf_tests_corpus();
+            prepare_corpus()?;
         }
         Commands::Build { target, fuzzer } => {
             check_fuzzers(&fuzzer)?;
@@ -118,7 +116,7 @@ fn main() -> Result<(), anyhow::Error> {
             check_fuzzers(&fuzzer)?;
 
             if !no_prepare {
-                prepare_swf_tests_corpus();
+                prepare_corpus()?;
             }
 
             if !no_build {
