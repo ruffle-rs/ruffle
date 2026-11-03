@@ -74,6 +74,7 @@ mod tab_stop_object;
 mod text_block_object;
 mod textformat_object;
 mod texture_object;
+mod timer_object;
 mod vector_object;
 mod vertex_buffer_3d_object;
 mod worker_domain_object;
@@ -183,6 +184,7 @@ pub use crate::avm2::object::textformat_object::{
     TextFormatObject, TextFormatObjectWeak, textformat_allocator,
 };
 pub use crate::avm2::object::texture_object::{TextureObject, TextureObjectWeak};
+pub use crate::avm2::object::timer_object::{TimerObject, TimerObjectWeak, timer_allocator};
 pub use crate::avm2::object::vector_object::{VectorObject, VectorObjectWeak, vector_allocator};
 pub use crate::avm2::object::vertex_buffer_3d_object::{
     VertexBuffer3DObject, VertexBuffer3DObjectWeak,
@@ -256,6 +258,7 @@ use crate::font::Font;
         SecurityDomainObject(SecurityDomainObject<'gc>),
         Matrix3DObject(Matrix3DObject<'gc>),
         CollatorObject(CollatorObject<'gc>),
+        TimerObject(TimerObject<'gc>),
     }
 )]
 pub trait TObject<'gc>: 'gc + Collect<'gc> + Debug + Into<Object<'gc>> + Clone + Copy {
@@ -823,6 +826,7 @@ impl<'gc> Object<'gc> {
         pub fn as_style_sheet for StyleSheetObject;
         pub fn as_matrix3d_object for Matrix3DObject;
         pub fn as_collator for CollatorObject;
+        pub fn as_timer for TimerObject;
     }
 
     /// Unwrap this object's `Namespace`, if the object is a boxed namespace.
@@ -1033,6 +1037,7 @@ define_weak_enum! {
         SecurityDomainObject(SecurityDomainObjectWeak<'gc>),
         Matrix3DObject(Matrix3DObjectWeak<'gc>),
         CollatorObject(CollatorObjectWeak<'gc>),
+        TimerObject(TimerObjectWeak<'gc>),
     }
 }
 
