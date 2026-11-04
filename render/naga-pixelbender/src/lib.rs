@@ -61,6 +61,7 @@ pub struct ShaderBuilder<'a> {
     clamp_bilinear: Handle<Expression>,
 
     textures: Vec<Option<Handle<Expression>>>,
+    sample_index: Option<Handle<Expression>>,
 
     // Whenever we read from a particular register
     // for the first time, we create a new local variable
@@ -123,6 +124,13 @@ pub const TEXTURE_START_BIND_INDEX: u32 = 6;
 
 impl ShaderBuilder<'_> {
     pub fn build(shader: &PixelBenderShader) -> Result<NagaModules> {
+        Self::build_with_multisampling(shader, false)
+    }
+
+    pub fn build_with_multisampling(
+        shader: &PixelBenderShader,
+        multisampled: bool,
+    ) -> Result<NagaModules> {
         let mut module = Module::default();
 
         static VERTEX_SHADER: LazyLock<Module> = LazyLock::new(|| {
@@ -209,7 +217,7 @@ impl ShaderBuilder<'_> {
                     arrayed: false,
                     class: ImageClass::Sampled {
                         kind: ScalarKind::Float,
-                        multi: false,
+                        multi: multisampled,
                     },
                 },
             },
@@ -243,6 +251,27 @@ impl ShaderBuilder<'_> {
                 per_primitive: false,
             }),
         });
+
+        let sample_index = if multisampled {
+            let uint = module.types.insert(
+                Type {
+                    name: None,
+                    inner: TypeInner::Scalar(naga::Scalar::U32),
+                },
+                Span::UNDEFINED,
+            );
+            func.arguments.push(FunctionArgument {
+                name: Some("sample_index".to_string()),
+                ty: uint,
+                binding: Some(Binding::BuiltIn(BuiltIn::SampleIndex)),
+            });
+            Some(
+                func.expressions
+                    .append(Expression::FunctionArgument(2), Span::UNDEFINED),
+            )
+        } else {
+            None
+        };
 
         func.result = Some(FunctionResult {
             ty: vec4f,
@@ -342,6 +371,7 @@ impl ShaderBuilder<'_> {
 
             shader,
             textures: Vec::new(),
+            sample_index,
             float_registers: Vec::new(),
             int_registers: Vec::new(),
             blocks,
@@ -379,7 +409,7 @@ impl ShaderBuilder<'_> {
             argument: zeroed_out_of_range_expr,
         });
 
-        let wrapper_func = builder.make_sampler_wrapper();
+        let wrapper_func = (!multisampled).then(|| builder.make_sampler_wrapper());
 
         let (float_parameters_buffer_size, int_parameters_buffer_size) = builder.add_arguments();
         builder.process_opcodes(wrapper_func, zeroed_out_of_range_expr);
@@ -672,6 +702,181 @@ impl ShaderBuilder<'_> {
     /// Samples a texture, determining the out-of-range coordinate behavior
     /// based on `zeroed_out_of_range_expr`. See the comments on `ZEROED_OUT_OF_RANGE_MODE_INDEX`
     /// for more details.
+    fn load_multisampled_texel(
+        &mut self,
+        image: Handle<Expression>,
+        coordinate: Handle<Expression>,
+        size: Handle<Expression>,
+        sample: Handle<Expression>,
+    ) -> Handle<Expression> {
+        let one = self.evaluate_expr(Expression::Splat {
+            size: VectorSize::Bi,
+            value: self.onef32,
+        });
+        let maximum = self.evaluate_expr(Expression::Binary {
+            op: BinaryOperator::Subtract,
+            left: size,
+            right: one,
+        });
+        let zero = self.evaluate_expr(Expression::Splat {
+            size: VectorSize::Bi,
+            value: self.zerof32,
+        });
+        let clamped = self.evaluate_expr(Expression::Math {
+            fun: MathFunction::Clamp,
+            arg: coordinate,
+            arg1: Some(zero),
+            arg2: Some(maximum),
+            arg3: None,
+        });
+        let coordinate = self.evaluate_expr(Expression::As {
+            expr: clamped,
+            kind: ScalarKind::Sint,
+            convert: Some(4),
+        });
+        self.evaluate_expr(Expression::ImageLoad {
+            image,
+            coordinate,
+            array_index: None,
+            sample: Some(sample),
+            level: None,
+        })
+    }
+
+    fn sample_multisampled_texture(
+        &mut self,
+        image: Handle<Expression>,
+        coordinate: Handle<Expression>,
+        size: Handle<Expression>,
+        sample: Handle<Expression>,
+        linear: bool,
+    ) -> Handle<Expression> {
+        let sample = self.evaluate_expr(Expression::As {
+            expr: sample,
+            kind: ScalarKind::Sint,
+            convert: Some(4),
+        });
+        let result = if linear {
+            let half = self
+                .func
+                .expressions
+                .append(Expression::Literal(Literal::F32(0.5)), Span::UNDEFINED);
+            let half = self.evaluate_expr(Expression::Splat {
+                size: VectorSize::Bi,
+                value: half,
+            });
+            let coordinate = self.evaluate_expr(Expression::Binary {
+                op: BinaryOperator::Subtract,
+                left: coordinate,
+                right: half,
+            });
+            let origin = self.evaluate_expr(Expression::Math {
+                fun: MathFunction::Floor,
+                arg: coordinate,
+                arg1: None,
+                arg2: None,
+                arg3: None,
+            });
+            let weight = self.evaluate_expr(Expression::Binary {
+                op: BinaryOperator::Subtract,
+                left: coordinate,
+                right: origin,
+            });
+            let mut texels = Vec::with_capacity(4);
+            for (x, y) in [(0.0, 0.0), (1.0, 0.0), (0.0, 1.0), (1.0, 1.0)] {
+                let x = self
+                    .func
+                    .expressions
+                    .append(Expression::Literal(Literal::F32(x)), Span::UNDEFINED);
+                let y = self
+                    .func
+                    .expressions
+                    .append(Expression::Literal(Literal::F32(y)), Span::UNDEFINED);
+                let offset = self.evaluate_expr(Expression::Compose {
+                    ty: self.vec2f,
+                    components: vec![x, y],
+                });
+                let position = self.evaluate_expr(Expression::Binary {
+                    op: BinaryOperator::Add,
+                    left: origin,
+                    right: offset,
+                });
+                texels.push(self.load_multisampled_texel(image, position, size, sample));
+            }
+            let x = self.evaluate_expr(Expression::AccessIndex {
+                base: weight,
+                index: 0,
+            });
+            let y = self.evaluate_expr(Expression::AccessIndex {
+                base: weight,
+                index: 1,
+            });
+            let x = self.evaluate_expr(Expression::Splat {
+                size: VectorSize::Quad,
+                value: x,
+            });
+            let y = self.evaluate_expr(Expression::Splat {
+                size: VectorSize::Quad,
+                value: y,
+            });
+            let top = self.evaluate_expr(Expression::Math {
+                fun: MathFunction::Mix,
+                arg: texels[0],
+                arg1: Some(texels[1]),
+                arg2: Some(x),
+                arg3: None,
+            });
+            let bottom = self.evaluate_expr(Expression::Math {
+                fun: MathFunction::Mix,
+                arg: texels[2],
+                arg1: Some(texels[3]),
+                arg2: Some(x),
+                arg3: None,
+            });
+            self.evaluate_expr(Expression::Math {
+                fun: MathFunction::Mix,
+                arg: top,
+                arg1: Some(bottom),
+                arg2: Some(y),
+                arg3: None,
+            })
+        } else {
+            self.load_multisampled_texel(image, coordinate, size, sample)
+        };
+        let zero = self.evaluate_expr(Expression::Splat {
+            size: VectorSize::Bi,
+            value: self.zerof32,
+        });
+        let below = self.evaluate_expr(Expression::Binary {
+            op: BinaryOperator::Less,
+            left: coordinate,
+            right: zero,
+        });
+        let above = self.evaluate_expr(Expression::Binary {
+            op: BinaryOperator::Greater,
+            left: coordinate,
+            right: size,
+        });
+        let below = self.evaluate_expr(Expression::Relational {
+            fun: RelationalFunction::Any,
+            argument: below,
+        });
+        let above = self.evaluate_expr(Expression::Relational {
+            fun: RelationalFunction::Any,
+            argument: above,
+        });
+        let outside = self.evaluate_expr(Expression::Binary {
+            op: BinaryOperator::LogicalOr,
+            left: below,
+            right: above,
+        });
+        self.evaluate_expr(Expression::Select {
+            condition: outside,
+            accept: self.zerovec4f,
+            reject: result,
+        })
+    }
+
     fn sample_texture(
         &mut self,
         sample_wrapper_func: Handle<Function>,
@@ -874,7 +1079,7 @@ impl ShaderBuilder<'_> {
 
     fn process_opcodes(
         &mut self,
-        sample_wrapper_func: Handle<Function>,
+        sample_wrapper_func: Option<Handle<Function>>,
         zeroed_out_of_range_expr: Handle<Expression>,
     ) {
         for op in &self.shader.operations {
@@ -1363,6 +1568,20 @@ impl ShaderBuilder<'_> {
                         convert: Some(4),
                     });
 
+                    if let Some(sample_index) = self.sample_index {
+                        let image = self.textures[*tf as usize].unwrap();
+                        let linear = matches!(op, Operation::SampleLinear { .. });
+                        let sampled = self.sample_multisampled_texture(
+                            image,
+                            coord,
+                            size_vec_float,
+                            sample_index,
+                            linear,
+                        );
+                        self.emit_dest_store(sampled, dst);
+                        continue;
+                    }
+
                     let normalized_coord = self.evaluate_expr(Expression::Binary {
                         op: BinaryOperator::Divide,
                         left: coord,
@@ -1378,7 +1597,7 @@ impl ShaderBuilder<'_> {
                     };
 
                     let sample_result = self.sample_texture(
-                        sample_wrapper_func,
+                        sample_wrapper_func.expect("Single-sampled shaders have a sampler wrapper"),
                         normalized_coord,
                         image,
                         sampler,
