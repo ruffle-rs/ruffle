@@ -1132,13 +1132,9 @@ pub fn make_error_2136<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> 
 
 #[inline(never)]
 #[cold]
-pub fn make_error_2146<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    swf_url: &str,
-    method: &str,
-    allow_networking: NetworkingAccessMode,
-) -> Error<'gc> {
-    let value = match allow_networking {
+pub fn make_error_2146<'gc>(activation: &mut Activation<'_, 'gc>, method: &str) -> Error<'gc> {
+    let swf_url = activation.caller_movie_or_root().url().to_string();
+    let value = match activation.context.allow_networking {
         NetworkingAccessMode::Internal => "internal",
         NetworkingAccessMode::None => "none",
         NetworkingAccessMode::All => unreachable!(),
