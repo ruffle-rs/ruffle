@@ -2318,7 +2318,7 @@ dependencies = [
 [[package]]
 name = "h263-rs"
 version = "0.1.0"
-source = "git+https://github.com/ruffle-rs/h263-rs?rev=27ee833ca97aadd2a14cf0b3b4ec8b53f31ff6bd#27ee833ca97aadd2a14cf0b3b4ec8b53f31ff6bd"
+source = "git+https://github.com/ruffle-rs/h263-rs?rev=8215bc7a716f0aa7e0a9bbe97af76c97ac0bfb82#8215bc7a716f0aa7e0a9bbe97af76c97ac0bfb82"
 dependencies = [
  "bitflags 2.13.2",
  "num-traits",
@@ -2328,7 +2328,7 @@ dependencies = [
 [[package]]
 name = "h263-rs-deblock"
 version = "0.1.0"
-source = "git+https://github.com/ruffle-rs/h263-rs?rev=27ee833ca97aadd2a14cf0b3b4ec8b53f31ff6bd#27ee833ca97aadd2a14cf0b3b4ec8b53f31ff6bd"
+source = "git+https://github.com/ruffle-rs/h263-rs?rev=8215bc7a716f0aa7e0a9bbe97af76c97ac0bfb82#8215bc7a716f0aa7e0a9bbe97af76c97ac0bfb82"
 dependencies = [
  "itertools 0.15.0",
  "wide",
@@ -2337,7 +2337,7 @@ dependencies = [
 [[package]]
 name = "h263-rs-yuv"
 version = "0.1.0"
-source = "git+https://github.com/ruffle-rs/h263-rs?rev=27ee833ca97aadd2a14cf0b3b4ec8b53f31ff6bd#27ee833ca97aadd2a14cf0b3b4ec8b53f31ff6bd"
+source = "git+https://github.com/ruffle-rs/h263-rs?rev=8215bc7a716f0aa7e0a9bbe97af76c97ac0bfb82#8215bc7a716f0aa7e0a9bbe97af76c97ac0bfb82"
 dependencies = [
  "bytemuck",
  "wide",
