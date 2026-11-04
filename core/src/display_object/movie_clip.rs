@@ -2884,6 +2884,10 @@ impl<'gc> TInteractiveObject<'gc> for MovieClip<'gc> {
         self.into()
     }
 
+    fn track_as_menu(self, context: &mut UpdateContext<'gc>) -> bool {
+        self.get_avm1_boolean_property(istr!(context, "trackAsMenu"), context, |_| false)
+    }
+
     fn filter_clip_event(
         self,
         context: &mut UpdateContext<'gc>,
@@ -2909,9 +2913,16 @@ impl<'gc> TInteractiveObject<'gc> for MovieClip<'gc> {
     ) -> ClipEventResult {
         let frame_name = match event {
             ClipEvent::RollOut { .. } | ClipEvent::ReleaseOutside => Some(WStr::from_units(b"_up")),
-            ClipEvent::RollOver { .. } | ClipEvent::Release { .. } | ClipEvent::DragOut { .. } => {
+            ClipEvent::RollOver { .. } | ClipEvent::Release { .. } => {
                 Some(WStr::from_units(b"_over"))
             }
+            ClipEvent::DragOut { .. } => Some(WStr::from_units(
+                if InteractiveObject::option_ptr_eq(context.mouse_data.pressed, Some(self.into())) {
+                    b"_over".as_slice()
+                } else {
+                    b"_up"
+                },
+            )),
             ClipEvent::Press { .. } | ClipEvent::DragOver { .. } => {
                 Some(WStr::from_units(b"_down"))
             }

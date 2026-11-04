@@ -1,0 +1,58 @@
+button0 press
+button0 get false
+button0 dragOut
+button0 releaseOutside
+buttons 80/1,80/0,80/0
+clips 80/0,80/0,80/0
+clip0 press
+clip0 get false
+clip0 dragOut
+clip0 releaseOutside
+buttons 80/1,80/0,80/0
+clips 80/1,80/0,80/0
+menu true
+button0 press
+button0 get true
+button1 get true
+button0 dragOut
+button1 dragOver
+button1 release
+button1 get true
+button1 get true
+buttons 80/1,60/3,80/0
+clips 80/0,80/0,80/0
+clip0 press
+clip0 get true
+clip1 get true
+clip0 dragOut
+clip1 dragOver
+clip1 release
+clip1 get true
+clip1 get true
+buttons 80/1,80/3,80/0
+clips 80/1,60/3,80/0
+alternating getters
+button1 get false
+button1 get true
+button1 get false
+buttons 80/0,60/3,80/0
+clips 80/0,80/0,80/0
+button1 get true
+button1 dragOver
+button1 release
+button1 get false
+button1 get true
+buttons 80/0,60/6,80/0
+clips 80/0,80/0,80/0
+clip1 get false
+clip1 get true
+clip1 get false
+buttons 80/0,80/6,80/0
+clips 80/0,60/3,80/0
+clip1 get true
+clip1 dragOver
+clip1 release
+clip1 get false
+clip1 get true
+buttons 80/0,80/6,80/0
+clips 80/0,60/6,80/0

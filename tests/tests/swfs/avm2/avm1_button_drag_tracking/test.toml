@@ -1,0 +1,15 @@
+num_ticks = 140
+
+[[compilers]]
+type = "Rascal"
+target = "avm1.swf"
+scripts = ["avm1.as"]
+swf_version = 8
+stage_rect = { x_max = 340.0, y_max = 260.0 }
+
+[[compilers]]
+type = "Asc"
+target = "test.swf"
+class = "Test"
+scripts = ["Test.as"]
+swf_version = 9
