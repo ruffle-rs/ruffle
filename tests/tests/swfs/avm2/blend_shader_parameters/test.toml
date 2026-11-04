@@ -1,0 +1,7 @@
+num_ticks = 3
+
+image_comparisons.assigned.trigger = 1
+image_comparisons.reassigned.trigger = 3
+
+[player_options]
+with_renderer = { optional = false }
