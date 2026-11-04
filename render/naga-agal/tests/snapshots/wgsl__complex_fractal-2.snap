@@ -27,7 +27,7 @@ fn main(@location(0) param: vec4<f32>) -> FragmentOutput {
     let _e19: vec4<f32> = constant_registers[0u];
     temporary1_.x = _e19.xxxx.x;
     let _e24: vec4<f32> = temporary0_;
-    temporary0_.z = -(_e24.yyyy).x;
+    temporary0_.z = -(_e24.yyyy).z;
     let _e31: vec4<f32> = constant_registers[0u];
     let _e33: vec4<f32> = temporary0_;
     temporary3_.x = (_e31.zzzz * _e33.xxxx).x;
@@ -36,7 +36,7 @@ fn main(@location(0) param: vec4<f32>) -> FragmentOutput {
     temporary0_.x = dot(_e39.xyw, _e41.xzw);
     let _e45: vec4<f32> = temporary3_;
     let _e47: vec4<f32> = temporary0_;
-    temporary0_.y = (_e45.xxxx * _e47.yyyy).x;
+    temporary0_.y = (_e45.xxxx * _e47.yyyy).y;
     let _e52: vec4<f32> = temporary0_;
     let _e56: vec4<f32> = constant_registers[3u];
     let _e58: vec4<f32> = (_e52.xyyy + _e56.xyyy);
@@ -52,7 +52,7 @@ fn main(@location(0) param: vec4<f32>) -> FragmentOutput {
     let _e82: vec4<f32> = temporary3_;
     temporary1_.x = (_e80.xxxx + _e82.xxxx).x;
     let _e87: vec4<f32> = temporary0_;
-    temporary0_.z = -(_e87.yyyy).x;
+    temporary0_.z = -(_e87.yyyy).z;
     let _e94: vec4<f32> = constant_registers[0u];
     let _e96: vec4<f32> = temporary0_;
     temporary3_.x = (_e94.zzzz * _e96.xxxx).x;
@@ -61,7 +61,7 @@ fn main(@location(0) param: vec4<f32>) -> FragmentOutput {
     temporary0_.x = dot(_e101.xyw, _e103.xzw);
     let _e107: vec4<f32> = temporary3_;
     let _e109: vec4<f32> = temporary0_;
-    temporary0_.y = (_e107.xxxx * _e109.yyyy).x;
+    temporary0_.y = (_e107.xxxx * _e109.yyyy).y;
     let _e114: vec4<f32> = temporary0_;
     let _e118: vec4<f32> = constant_registers[3u];
     let _e120: vec4<f32> = (_e114.xyyy + _e118.xyyy);
@@ -77,7 +77,7 @@ fn main(@location(0) param: vec4<f32>) -> FragmentOutput {
     let _e143: vec4<f32> = temporary3_;
     temporary1_.x = (_e141.xxxx + _e143.xxxx).x;
     let _e148: vec4<f32> = temporary0_;
-    temporary0_.z = -(_e148.yyyy).x;
+    temporary0_.z = -(_e148.yyyy).z;
     let _e155: vec4<f32> = constant_registers[0u];
     let _e157: vec4<f32> = temporary0_;
     temporary3_.x = (_e155.zzzz * _e157.xxxx).x;
@@ -86,7 +86,7 @@ fn main(@location(0) param: vec4<f32>) -> FragmentOutput {
     temporary0_.x = dot(_e162.xyw, _e164.xzw);
     let _e168: vec4<f32> = temporary3_;
     let _e170: vec4<f32> = temporary0_;
-    temporary0_.y = (_e168.xxxx * _e170.yyyy).x;
+    temporary0_.y = (_e168.xxxx * _e170.yyyy).y;
     let _e175: vec4<f32> = temporary0_;
     let _e179: vec4<f32> = constant_registers[3u];
     let _e181: vec4<f32> = (_e175.xyyy + _e179.xyyy);
@@ -102,7 +102,7 @@ fn main(@location(0) param: vec4<f32>) -> FragmentOutput {
     let _e204: vec4<f32> = temporary3_;
     temporary1_.x = (_e202.xxxx + _e204.xxxx).x;
     let _e209: vec4<f32> = temporary0_;
-    temporary0_.z = -(_e209.yyyy).x;
+    temporary0_.z = -(_e209.yyyy).z;
     let _e216: vec4<f32> = constant_registers[0u];
     let _e218: vec4<f32> = temporary0_;
     temporary3_.x = (_e216.zzzz * _e218.xxxx).x;
@@ -111,7 +111,7 @@ fn main(@location(0) param: vec4<f32>) -> FragmentOutput {
     temporary0_.x = dot(_e223.xyw, _e225.xzw);
     let _e229: vec4<f32> = temporary3_;
     let _e231: vec4<f32> = temporary0_;
-    temporary0_.y = (_e229.xxxx * _e231.yyyy).x;
+    temporary0_.y = (_e229.xxxx * _e231.yyyy).y;
     let _e236: vec4<f32> = temporary0_;
     let _e240: vec4<f32> = constant_registers[3u];
     let _e242: vec4<f32> = (_e236.xyyy + _e240.xyyy);
@@ -127,7 +127,7 @@ fn main(@location(0) param: vec4<f32>) -> FragmentOutput {
     let _e265: vec4<f32> = temporary3_;
     temporary1_.x = (_e263.xxxx + _e265.xxxx).x;
     let _e270: vec4<f32> = temporary0_;
-    temporary0_.z = -(_e270.yyyy).x;
+    temporary0_.z = -(_e270.yyyy).z;
     let _e277: vec4<f32> = constant_registers[0u];
     let _e279: vec4<f32> = temporary0_;
     temporary3_.x = (_e277.zzzz * _e279.xxxx).x;
@@ -136,7 +136,7 @@ fn main(@location(0) param: vec4<f32>) -> FragmentOutput {
     temporary0_.x = dot(_e284.xyw, _e286.xzw);
     let _e290: vec4<f32> = temporary3_;
     let _e292: vec4<f32> = temporary0_;
-    temporary0_.y = (_e290.xxxx * _e292.yyyy).x;
+    temporary0_.y = (_e290.xxxx * _e292.yyyy).y;
     let _e297: vec4<f32> = temporary0_;
     let _e301: vec4<f32> = constant_registers[3u];
     let _e303: vec4<f32> = (_e297.xyyy + _e301.xyyy);
@@ -152,7 +152,7 @@ fn main(@location(0) param: vec4<f32>) -> FragmentOutput {
     let _e326: vec4<f32> = temporary3_;
     temporary1_.x = (_e324.xxxx + _e326.xxxx).x;
     let _e331: vec4<f32> = temporary0_;
-    temporary0_.z = -(_e331.yyyy).x;
+    temporary0_.z = -(_e331.yyyy).z;
     let _e338: vec4<f32> = constant_registers[0u];
     let _e340: vec4<f32> = temporary0_;
     temporary3_.x = (_e338.zzzz * _e340.xxxx).x;
@@ -161,7 +161,7 @@ fn main(@location(0) param: vec4<f32>) -> FragmentOutput {
     temporary0_.x = dot(_e345.xyw, _e347.xzw);
     let _e351: vec4<f32> = temporary3_;
     let _e353: vec4<f32> = temporary0_;
-    temporary0_.y = (_e351.xxxx * _e353.yyyy).x;
+    temporary0_.y = (_e351.xxxx * _e353.yyyy).y;
     let _e358: vec4<f32> = temporary0_;
     let _e362: vec4<f32> = constant_registers[3u];
     let _e364: vec4<f32> = (_e358.xyyy + _e362.xyyy);
@@ -177,7 +177,7 @@ fn main(@location(0) param: vec4<f32>) -> FragmentOutput {
     let _e387: vec4<f32> = temporary3_;
     temporary1_.x = (_e385.xxxx + _e387.xxxx).x;
     let _e392: vec4<f32> = temporary0_;
-    temporary0_.z = -(_e392.yyyy).x;
+    temporary0_.z = -(_e392.yyyy).z;
     let _e399: vec4<f32> = constant_registers[0u];
     let _e401: vec4<f32> = temporary0_;
     temporary3_.x = (_e399.zzzz * _e401.xxxx).x;
@@ -186,7 +186,7 @@ fn main(@location(0) param: vec4<f32>) -> FragmentOutput {
     temporary0_.x = dot(_e406.xyw, _e408.xzw);
     let _e412: vec4<f32> = temporary3_;
     let _e414: vec4<f32> = temporary0_;
-    temporary0_.y = (_e412.xxxx * _e414.yyyy).x;
+    temporary0_.y = (_e412.xxxx * _e414.yyyy).y;
     let _e419: vec4<f32> = temporary0_;
     let _e423: vec4<f32> = constant_registers[3u];
     let _e425: vec4<f32> = (_e419.xyyy + _e423.xyyy);
@@ -202,7 +202,7 @@ fn main(@location(0) param: vec4<f32>) -> FragmentOutput {
     let _e448: vec4<f32> = temporary3_;
     temporary1_.x = (_e446.xxxx + _e448.xxxx).x;
     let _e453: vec4<f32> = temporary0_;
-    temporary0_.z = -(_e453.yyyy).x;
+    temporary0_.z = -(_e453.yyyy).z;
     let _e460: vec4<f32> = constant_registers[0u];
     let _e462: vec4<f32> = temporary0_;
     temporary3_.x = (_e460.zzzz * _e462.xxxx).x;
@@ -211,7 +211,7 @@ fn main(@location(0) param: vec4<f32>) -> FragmentOutput {
     temporary0_.x = dot(_e467.xyw, _e469.xzw);
     let _e473: vec4<f32> = temporary3_;
     let _e475: vec4<f32> = temporary0_;
-    temporary0_.y = (_e473.xxxx * _e475.yyyy).x;
+    temporary0_.y = (_e473.xxxx * _e475.yyyy).y;
     let _e480: vec4<f32> = temporary0_;
     let _e484: vec4<f32> = constant_registers[3u];
     let _e486: vec4<f32> = (_e480.xyyy + _e484.xyyy);
@@ -227,7 +227,7 @@ fn main(@location(0) param: vec4<f32>) -> FragmentOutput {
     let _e509: vec4<f32> = temporary3_;
     temporary1_.x = (_e507.xxxx + _e509.xxxx).x;
     let _e514: vec4<f32> = temporary0_;
-    temporary0_.z = -(_e514.yyyy).x;
+    temporary0_.z = -(_e514.yyyy).z;
     let _e521: vec4<f32> = constant_registers[0u];
     let _e523: vec4<f32> = temporary0_;
     temporary3_.x = (_e521.zzzz * _e523.xxxx).x;
@@ -236,7 +236,7 @@ fn main(@location(0) param: vec4<f32>) -> FragmentOutput {
     temporary0_.x = dot(_e528.xyw, _e530.xzw);
     let _e534: vec4<f32> = temporary3_;
     let _e536: vec4<f32> = temporary0_;
-    temporary0_.y = (_e534.xxxx * _e536.yyyy).x;
+    temporary0_.y = (_e534.xxxx * _e536.yyyy).y;
     let _e541: vec4<f32> = temporary0_;
     let _e545: vec4<f32> = constant_registers[3u];
     let _e547: vec4<f32> = (_e541.xyyy + _e545.xyyy);
@@ -252,7 +252,7 @@ fn main(@location(0) param: vec4<f32>) -> FragmentOutput {
     let _e570: vec4<f32> = temporary3_;
     temporary1_.x = (_e568.xxxx + _e570.xxxx).x;
     let _e575: vec4<f32> = temporary0_;
-    temporary0_.z = -(_e575.yyyy).x;
+    temporary0_.z = -(_e575.yyyy).z;
     let _e582: vec4<f32> = constant_registers[0u];
     let _e584: vec4<f32> = temporary0_;
     temporary3_.x = (_e582.zzzz * _e584.xxxx).x;
@@ -261,7 +261,7 @@ fn main(@location(0) param: vec4<f32>) -> FragmentOutput {
     temporary0_.x = dot(_e589.xyw, _e591.xzw);
     let _e595: vec4<f32> = temporary3_;
     let _e597: vec4<f32> = temporary0_;
-    temporary0_.y = (_e595.xxxx * _e597.yyyy).x;
+    temporary0_.y = (_e595.xxxx * _e597.yyyy).y;
     let _e602: vec4<f32> = temporary0_;
     let _e606: vec4<f32> = constant_registers[3u];
     let _e608: vec4<f32> = (_e602.xyyy + _e606.xyyy);
@@ -277,7 +277,7 @@ fn main(@location(0) param: vec4<f32>) -> FragmentOutput {
     let _e631: vec4<f32> = temporary3_;
     temporary1_.x = (_e629.xxxx + _e631.xxxx).x;
     let _e636: vec4<f32> = temporary0_;
-    temporary0_.z = -(_e636.yyyy).x;
+    temporary0_.z = -(_e636.yyyy).z;
     let _e643: vec4<f32> = constant_registers[0u];
     let _e645: vec4<f32> = temporary0_;
     temporary3_.x = (_e643.zzzz * _e645.xxxx).x;
@@ -286,7 +286,7 @@ fn main(@location(0) param: vec4<f32>) -> FragmentOutput {
     temporary0_.x = dot(_e650.xyw, _e652.xzw);
     let _e656: vec4<f32> = temporary3_;
     let _e658: vec4<f32> = temporary0_;
-    temporary0_.y = (_e656.xxxx * _e658.yyyy).x;
+    temporary0_.y = (_e656.xxxx * _e658.yyyy).y;
     let _e663: vec4<f32> = temporary0_;
     let _e667: vec4<f32> = constant_registers[3u];
     let _e669: vec4<f32> = (_e663.xyyy + _e667.xyyy);
@@ -302,7 +302,7 @@ fn main(@location(0) param: vec4<f32>) -> FragmentOutput {
     let _e692: vec4<f32> = temporary3_;
     temporary1_.x = (_e690.xxxx + _e692.xxxx).x;
     let _e697: vec4<f32> = temporary0_;
-    temporary0_.z = -(_e697.yyyy).x;
+    temporary0_.z = -(_e697.yyyy).z;
     let _e704: vec4<f32> = constant_registers[0u];
     let _e706: vec4<f32> = temporary0_;
     temporary3_.x = (_e704.zzzz * _e706.xxxx).x;
@@ -311,7 +311,7 @@ fn main(@location(0) param: vec4<f32>) -> FragmentOutput {
     temporary0_.x = dot(_e711.xyw, _e713.xzw);
     let _e717: vec4<f32> = temporary3_;
     let _e719: vec4<f32> = temporary0_;
-    temporary0_.y = (_e717.xxxx * _e719.yyyy).x;
+    temporary0_.y = (_e717.xxxx * _e719.yyyy).y;
     let _e724: vec4<f32> = temporary0_;
     let _e728: vec4<f32> = constant_registers[3u];
     let _e730: vec4<f32> = (_e724.xyyy + _e728.xyyy);
@@ -327,7 +327,7 @@ fn main(@location(0) param: vec4<f32>) -> FragmentOutput {
     let _e753: vec4<f32> = temporary3_;
     temporary1_.x = (_e751.xxxx + _e753.xxxx).x;
     let _e758: vec4<f32> = temporary0_;
-    temporary0_.z = -(_e758.yyyy).x;
+    temporary0_.z = -(_e758.yyyy).z;
     let _e765: vec4<f32> = constant_registers[0u];
     let _e767: vec4<f32> = temporary0_;
     temporary3_.x = (_e765.zzzz * _e767.xxxx).x;
@@ -336,7 +336,7 @@ fn main(@location(0) param: vec4<f32>) -> FragmentOutput {
     temporary0_.x = dot(_e772.xyw, _e774.xzw);
     let _e778: vec4<f32> = temporary3_;
     let _e780: vec4<f32> = temporary0_;
-    temporary0_.y = (_e778.xxxx * _e780.yyyy).x;
+    temporary0_.y = (_e778.xxxx * _e780.yyyy).y;
     let _e785: vec4<f32> = temporary0_;
     let _e789: vec4<f32> = constant_registers[3u];
     let _e791: vec4<f32> = (_e785.xyyy + _e789.xyyy);
@@ -352,7 +352,7 @@ fn main(@location(0) param: vec4<f32>) -> FragmentOutput {
     let _e814: vec4<f32> = temporary3_;
     temporary1_.x = (_e812.xxxx + _e814.xxxx).x;
     let _e819: vec4<f32> = temporary0_;
-    temporary0_.z = -(_e819.yyyy).x;
+    temporary0_.z = -(_e819.yyyy).z;
     let _e826: vec4<f32> = constant_registers[0u];
     let _e828: vec4<f32> = temporary0_;
     temporary3_.x = (_e826.zzzz * _e828.xxxx).x;
@@ -361,7 +361,7 @@ fn main(@location(0) param: vec4<f32>) -> FragmentOutput {
     temporary0_.x = dot(_e833.xyw, _e835.xzw);
     let _e839: vec4<f32> = temporary3_;
     let _e841: vec4<f32> = temporary0_;
-    temporary0_.y = (_e839.xxxx * _e841.yyyy).x;
+    temporary0_.y = (_e839.xxxx * _e841.yyyy).y;
     let _e846: vec4<f32> = temporary0_;
     let _e850: vec4<f32> = constant_registers[3u];
     let _e852: vec4<f32> = (_e846.xyyy + _e850.xyyy);
@@ -377,7 +377,7 @@ fn main(@location(0) param: vec4<f32>) -> FragmentOutput {
     let _e875: vec4<f32> = temporary3_;
     temporary1_.x = (_e873.xxxx + _e875.xxxx).x;
     let _e880: vec4<f32> = temporary0_;
-    temporary0_.z = -(_e880.yyyy).x;
+    temporary0_.z = -(_e880.yyyy).z;
     let _e887: vec4<f32> = constant_registers[0u];
     let _e889: vec4<f32> = temporary0_;
     temporary3_.x = (_e887.zzzz * _e889.xxxx).x;
@@ -386,7 +386,7 @@ fn main(@location(0) param: vec4<f32>) -> FragmentOutput {
     temporary0_.x = dot(_e894.xyw, _e896.xzw);
     let _e900: vec4<f32> = temporary3_;
     let _e902: vec4<f32> = temporary0_;
-    temporary0_.y = (_e900.xxxx * _e902.yyyy).x;
+    temporary0_.y = (_e900.xxxx * _e902.yyyy).y;
     let _e907: vec4<f32> = temporary0_;
     let _e911: vec4<f32> = constant_registers[3u];
     let _e913: vec4<f32> = (_e907.xyyy + _e911.xyyy);
@@ -402,7 +402,7 @@ fn main(@location(0) param: vec4<f32>) -> FragmentOutput {
     let _e936: vec4<f32> = temporary3_;
     temporary1_.x = (_e934.xxxx + _e936.xxxx).x;
     let _e941: vec4<f32> = temporary0_;
-    temporary0_.z = -(_e941.yyyy).x;
+    temporary0_.z = -(_e941.yyyy).z;
     let _e948: vec4<f32> = constant_registers[0u];
     let _e950: vec4<f32> = temporary0_;
     temporary3_.x = (_e948.zzzz * _e950.xxxx).x;
@@ -411,7 +411,7 @@ fn main(@location(0) param: vec4<f32>) -> FragmentOutput {
     temporary0_.x = dot(_e955.xyw, _e957.xzw);
     let _e961: vec4<f32> = temporary3_;
     let _e963: vec4<f32> = temporary0_;
-    temporary0_.y = (_e961.xxxx * _e963.yyyy).x;
+    temporary0_.y = (_e961.xxxx * _e963.yyyy).y;
     let _e968: vec4<f32> = temporary0_;
     let _e972: vec4<f32> = constant_registers[3u];
     let _e974: vec4<f32> = (_e968.xyyy + _e972.xyyy);
@@ -427,7 +427,7 @@ fn main(@location(0) param: vec4<f32>) -> FragmentOutput {
     let _e997: vec4<f32> = temporary3_;
     temporary1_.x = (_e995.xxxx + _e997.xxxx).x;
     let _e1002: vec4<f32> = temporary0_;
-    temporary0_.z = -(_e1002.yyyy).x;
+    temporary0_.z = -(_e1002.yyyy).z;
     let _e1009: vec4<f32> = constant_registers[0u];
     let _e1011: vec4<f32> = temporary0_;
     temporary3_.x = (_e1009.zzzz * _e1011.xxxx).x;
@@ -436,7 +436,7 @@ fn main(@location(0) param: vec4<f32>) -> FragmentOutput {
     temporary0_.x = dot(_e1016.xyw, _e1018.xzw);
     let _e1022: vec4<f32> = temporary3_;
     let _e1024: vec4<f32> = temporary0_;
-    temporary0_.y = (_e1022.xxxx * _e1024.yyyy).x;
+    temporary0_.y = (_e1022.xxxx * _e1024.yyyy).y;
     let _e1029: vec4<f32> = temporary0_;
     let _e1033: vec4<f32> = constant_registers[3u];
     let _e1035: vec4<f32> = (_e1029.xyyy + _e1033.xyyy);
@@ -452,7 +452,7 @@ fn main(@location(0) param: vec4<f32>) -> FragmentOutput {
     let _e1058: vec4<f32> = temporary3_;
     temporary1_.x = (_e1056.xxxx + _e1058.xxxx).x;
     let _e1063: vec4<f32> = temporary0_;
-    temporary0_.z = -(_e1063.yyyy).x;
+    temporary0_.z = -(_e1063.yyyy).z;
     let _e1070: vec4<f32> = constant_registers[0u];
     let _e1072: vec4<f32> = temporary0_;
     temporary3_.x = (_e1070.zzzz * _e1072.xxxx).x;
@@ -461,7 +461,7 @@ fn main(@location(0) param: vec4<f32>) -> FragmentOutput {
     temporary0_.x = dot(_e1077.xyw, _e1079.xzw);
     let _e1083: vec4<f32> = temporary3_;
     let _e1085: vec4<f32> = temporary0_;
-    temporary0_.y = (_e1083.xxxx * _e1085.yyyy).x;
+    temporary0_.y = (_e1083.xxxx * _e1085.yyyy).y;
     let _e1090: vec4<f32> = temporary0_;
     let _e1094: vec4<f32> = constant_registers[3u];
     let _e1096: vec4<f32> = (_e1090.xyyy + _e1094.xyyy);
@@ -477,7 +477,7 @@ fn main(@location(0) param: vec4<f32>) -> FragmentOutput {
     let _e1119: vec4<f32> = temporary3_;
     temporary1_.x = (_e1117.xxxx + _e1119.xxxx).x;
     let _e1124: vec4<f32> = temporary0_;
-    temporary0_.z = -(_e1124.yyyy).x;
+    temporary0_.z = -(_e1124.yyyy).z;
     let _e1131: vec4<f32> = constant_registers[0u];
     let _e1133: vec4<f32> = temporary0_;
     temporary3_.x = (_e1131.zzzz * _e1133.xxxx).x;
@@ -486,7 +486,7 @@ fn main(@location(0) param: vec4<f32>) -> FragmentOutput {
     temporary0_.x = dot(_e1138.xyw, _e1140.xzw);
     let _e1144: vec4<f32> = temporary3_;
     let _e1146: vec4<f32> = temporary0_;
-    temporary0_.y = (_e1144.xxxx * _e1146.yyyy).x;
+    temporary0_.y = (_e1144.xxxx * _e1146.yyyy).y;
     let _e1151: vec4<f32> = temporary0_;
     let _e1155: vec4<f32> = constant_registers[3u];
     let _e1157: vec4<f32> = (_e1151.xyyy + _e1155.xyyy);
@@ -502,7 +502,7 @@ fn main(@location(0) param: vec4<f32>) -> FragmentOutput {
     let _e1180: vec4<f32> = temporary3_;
     temporary1_.x = (_e1178.xxxx + _e1180.xxxx).x;
     let _e1185: vec4<f32> = temporary0_;
-    temporary0_.z = -(_e1185.yyyy).x;
+    temporary0_.z = -(_e1185.yyyy).z;
     let _e1192: vec4<f32> = constant_registers[0u];
     let _e1194: vec4<f32> = temporary0_;
     temporary3_.x = (_e1192.zzzz * _e1194.xxxx).x;
@@ -511,7 +511,7 @@ fn main(@location(0) param: vec4<f32>) -> FragmentOutput {
     temporary0_.x = dot(_e1199.xyw, _e1201.xzw);
     let _e1205: vec4<f32> = temporary3_;
     let _e1207: vec4<f32> = temporary0_;
-    temporary0_.y = (_e1205.xxxx * _e1207.yyyy).x;
+    temporary0_.y = (_e1205.xxxx * _e1207.yyyy).y;
     let _e1212: vec4<f32> = temporary0_;
     let _e1216: vec4<f32> = constant_registers[3u];
     let _e1218: vec4<f32> = (_e1212.xyyy + _e1216.xyyy);
@@ -527,7 +527,7 @@ fn main(@location(0) param: vec4<f32>) -> FragmentOutput {
     let _e1241: vec4<f32> = temporary3_;
     temporary1_.x = (_e1239.xxxx + _e1241.xxxx).x;
     let _e1246: vec4<f32> = temporary0_;
-    temporary0_.z = -(_e1246.yyyy).x;
+    temporary0_.z = -(_e1246.yyyy).z;
     let _e1253: vec4<f32> = constant_registers[0u];
     let _e1255: vec4<f32> = temporary0_;
     temporary3_.x = (_e1253.zzzz * _e1255.xxxx).x;
@@ -536,7 +536,7 @@ fn main(@location(0) param: vec4<f32>) -> FragmentOutput {
     temporary0_.x = dot(_e1260.xyw, _e1262.xzw);
     let _e1266: vec4<f32> = temporary3_;
     let _e1268: vec4<f32> = temporary0_;
-    temporary0_.y = (_e1266.xxxx * _e1268.yyyy).x;
+    temporary0_.y = (_e1266.xxxx * _e1268.yyyy).y;
     let _e1273: vec4<f32> = temporary0_;
     let _e1277: vec4<f32> = constant_registers[3u];
     let _e1279: vec4<f32> = (_e1273.xyyy + _e1277.xyyy);
@@ -552,7 +552,7 @@ fn main(@location(0) param: vec4<f32>) -> FragmentOutput {
     let _e1302: vec4<f32> = temporary3_;
     temporary1_.x = (_e1300.xxxx + _e1302.xxxx).x;
     let _e1307: vec4<f32> = temporary0_;
-    temporary0_.z = -(_e1307.yyyy).x;
+    temporary0_.z = -(_e1307.yyyy).z;
     let _e1314: vec4<f32> = constant_registers[0u];
     let _e1316: vec4<f32> = temporary0_;
     temporary3_.x = (_e1314.zzzz * _e1316.xxxx).x;
@@ -561,7 +561,7 @@ fn main(@location(0) param: vec4<f32>) -> FragmentOutput {
     temporary0_.x = dot(_e1321.xyw, _e1323.xzw);
     let _e1327: vec4<f32> = temporary3_;
     let _e1329: vec4<f32> = temporary0_;
-    temporary0_.y = (_e1327.xxxx * _e1329.yyyy).x;
+    temporary0_.y = (_e1327.xxxx * _e1329.yyyy).y;
     let _e1334: vec4<f32> = temporary0_;
     let _e1338: vec4<f32> = constant_registers[3u];
     let _e1340: vec4<f32> = (_e1334.xyyy + _e1338.xyyy);
@@ -577,7 +577,7 @@ fn main(@location(0) param: vec4<f32>) -> FragmentOutput {
     let _e1363: vec4<f32> = temporary3_;
     temporary1_.x = (_e1361.xxxx + _e1363.xxxx).x;
     let _e1368: vec4<f32> = temporary0_;
-    temporary0_.z = -(_e1368.yyyy).x;
+    temporary0_.z = -(_e1368.yyyy).z;
     let _e1375: vec4<f32> = constant_registers[0u];
     let _e1377: vec4<f32> = temporary0_;
     temporary3_.x = (_e1375.zzzz * _e1377.xxxx).x;
@@ -586,7 +586,7 @@ fn main(@location(0) param: vec4<f32>) -> FragmentOutput {
     temporary0_.x = dot(_e1382.xyw, _e1384.xzw);
     let _e1388: vec4<f32> = temporary3_;
     let _e1390: vec4<f32> = temporary0_;
-    temporary0_.y = (_e1388.xxxx * _e1390.yyyy).x;
+    temporary0_.y = (_e1388.xxxx * _e1390.yyyy).y;
     let _e1395: vec4<f32> = temporary0_;
     let _e1399: vec4<f32> = constant_registers[3u];
     let _e1401: vec4<f32> = (_e1395.xyyy + _e1399.xyyy);
