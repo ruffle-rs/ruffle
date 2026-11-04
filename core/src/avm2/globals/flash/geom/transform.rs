@@ -13,6 +13,7 @@ use crate::{avm2_stub_getter, avm2_stub_method, avm2_stub_setter};
 use ruffle_render::matrix3d::Matrix3D;
 use ruffle_render::perspective_projection::PerspectiveProjection;
 use ruffle_render::quality::StageQuality;
+use ruffle_render::transform::compose_display_list_3d;
 use swf::{ColorTransform, Fixed8, Rectangle};
 
 fn get_display_object(this: Object<'_>) -> DisplayObject<'_> {
@@ -289,9 +290,12 @@ pub fn get_matrix_3d<'gc>(
 
     let display_object = get_display_object(this);
     if display_object.base().has_matrix3d_stub() {
-        let matrix = get_display_object(this).base().matrix();
-        let mut matrix3d = Matrix3D::from_matrix(matrix);
-        matrix3d.set_tz(display_object.z() as f32);
+        let matrix3d = compose_display_list_3d(
+            display_object.base().matrix(),
+            display_object.z(),
+            display_object.rotation_x(),
+            display_object.rotation_y(),
+        );
         Ok(Matrix3DObject::new(activation.context, matrix3d).into())
     } else {
         Ok(Value::Null)
@@ -311,21 +315,22 @@ pub fn set_matrix_3d<'gc>(
 
     let display_object = get_display_object(this);
 
-    let (matrix, has_matrix3d, tz) = {
-        match args.try_get_object(0) {
-            Some(obj) => {
-                let matrix3d = obj.as_matrix3d_object().unwrap().matrix();
-                let matrix = matrix3d.to_matrix();
-                let tz = matrix3d.tz();
-                (matrix, true, tz)
-            }
-            None => (Matrix::IDENTITY, false, 0.0),
+    match args.try_get_object(0) {
+        Some(obj) => {
+            let matrix3d = obj.as_matrix3d_object().unwrap().matrix();
+            display_object.set_matrix(matrix3d.to_matrix());
+            display_object.set_z(matrix3d.tz() as f64);
+            display_object.base().set_has_matrix3d_stub(true);
         }
-    };
-
-    display_object.set_matrix(matrix);
-    display_object.set_z(tz as f64);
-    display_object.base().set_has_matrix3d_stub(has_matrix3d);
+        None => {
+            // Flash Player keeps the existing 2D matrix when matrix3D is set
+            // to null. It only clears 3D-specific state (z, rotationX/Y).
+            display_object.set_z(0.0);
+            display_object.set_rotation_x(0.0);
+            display_object.set_rotation_y(0.0);
+            display_object.base().set_has_matrix3d_stub(false);
+        }
+    }
 
     Ok(Value::Undefined)
 }

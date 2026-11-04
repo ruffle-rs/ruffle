@@ -1284,6 +1284,10 @@ impl<'gc> EditText<'gc> {
                                 color_transform: ColorTransform::IDENTITY,
                                 perspective_projection: transform.perspective_projection,
                                 tz: transform.tz,
+                                rotation_x: transform.rotation_x,
+                                rotation_y: transform.rotation_y,
+                                world: transform.world,
+                                view_z_scale: transform.view_z_scale,
                             });
                         } else {
                             context.transform_stack.push(transform);
@@ -2675,11 +2679,7 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
     fn render_self(self, context: &mut RenderContext<'_, 'gc>) {
         self.apply_autosize_bounds();
 
-        if !context.is_offscreen
-            && !self
-                .world_bounds(BoundsMode::Engine)
-                .intersects(&context.stage.view_bounds())
-        {
+        if context.cull_off_screen(&self.world_bounds(BoundsMode::Engine)) {
             // Off-screen; culled
             return;
         }

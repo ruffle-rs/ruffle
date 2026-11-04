@@ -252,6 +252,7 @@ impl CommandHandler for WgpuCommandHandler<'_, '_> {
                     tz: 0.0,
                     color_transform: Default::default(),
                     perspective_projection: None,
+                    ..Default::default()
                 };
                 let texture = target.take_color_texture();
                 let bind_group =
@@ -322,8 +323,11 @@ impl CommandHandler for WgpuCommandHandler<'_, '_> {
     ) {
         let texture = as_texture(&bitmap);
 
-        pixel_snapping.apply(&mut transform.matrix);
-        transform.matrix *= Matrix::scale(region.width() as f32, region.height() as f32);
+        if transform.world.is_none() {
+            pixel_snapping.apply(&mut transform.matrix);
+        }
+        let transform = transform
+            .with_local_matrix(Matrix::scale(region.width() as f32, region.height() as f32));
 
         let binds = texture.bind_group(
             false,
@@ -382,15 +386,12 @@ impl CommandHandler for WgpuCommandHandler<'_, '_> {
         };
     }
 
-    fn render_stage3d(&mut self, bitmap: BitmapHandle, mut transform: Transform) {
-        {
-            let texture = as_texture(&bitmap);
-            transform.matrix *= Matrix::scale(
-                texture.texture.width() as f32,
-                texture.texture.height() as f32,
-            );
-        }
+    fn render_stage3d(&mut self, bitmap: BitmapHandle, transform: Transform) {
         let texture = as_texture(&bitmap);
+        let transform = transform.with_local_matrix(Matrix::scale(
+            texture.texture.width() as f32,
+            texture.texture.height() as f32,
+        ));
 
         let binds = texture.bind_group(
             false,
@@ -475,6 +476,7 @@ impl CommandHandler for WgpuCommandHandler<'_, '_> {
                 tz: 0.0,
                 color_transform: ColorTransform::multiply_from(color),
                 perspective_projection: None,
+                ..Default::default()
             },
             &mut None,
             DrawVertices::PosColorQuad,
@@ -496,6 +498,7 @@ impl CommandHandler for WgpuCommandHandler<'_, '_> {
                     tz: 0.0,
                     color_transform: ColorTransform::multiply_from(color),
                     perspective_projection: None,
+                    ..Default::default()
                 },
                 &mut None,
                 DrawVertices::Line,
@@ -518,6 +521,7 @@ impl CommandHandler for WgpuCommandHandler<'_, '_> {
                     tz: 0.0,
                     color_transform: ColorTransform::multiply_from(color),
                     perspective_projection: None,
+                    ..Default::default()
                 },
                 &mut None,
                 DrawVertices::RectLine,
@@ -618,6 +622,7 @@ impl CommandHandler for WgpuCommandHandler<'_, '_> {
                 tz: 0.0,
                 color_transform: Default::default(),
                 perspective_projection: None,
+                ..Default::default()
             },
             &mut None,
             DrawVertices::PosQuad,

@@ -609,6 +609,18 @@ impl<'gc> RenderContext<'_, 'gc> {
         self.gc_context
     }
 
+    /// Whether this object can be skipped because its 2D world AABB is
+    /// off-screen.
+    ///
+    /// Display-list 3D (`z` / `rotationX` / `rotationY`) can swing or
+    /// enlarge content into view even when the unprojected AABB misses the
+    /// viewport, so 2D culling is disabled in that case.
+    pub fn cull_off_screen(&self, bounds: &Rectangle<Twips>) -> bool {
+        !self.is_offscreen
+            && !self.transform_stack.transform().uses_3d()
+            && !bounds.intersects(&self.stage.view_bounds())
+    }
+
     /// Draw a rectangle outline.
     ///
     /// The outline is contained within the given bounds.

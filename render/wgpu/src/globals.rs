@@ -35,7 +35,9 @@ impl Globals {
         let vw = viewport_width as f32 / 2.0;
         let vh = viewport_height as f32 / 2.0;
 
-        // TODO: This matrix needs verification. Is it properly scaling?
+        // x/y map viewport pixels to NDC. z uses the same x scale (1/vw) so
+        // that DisplayObject.z, after Transform.view_z_scale has put it in
+        // viewport pixels, has the same unit as x. See Transform.view_z_scale.
         let view_matrix = Matrix3D {
             #[rustfmt::skip]
             raw_data: [

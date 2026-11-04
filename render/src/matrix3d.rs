@@ -40,6 +40,56 @@ impl Matrix3D {
         }
     }
 
+    /// Flash `Matrix3D.recompose(EulerAngles)` X rotation, column-major.
+    pub fn rotate_x(radians: f32) -> Self {
+        let (sin, cos) = radians.sin_cos();
+        Self {
+            raw_data: [
+                1.0, 0.0, 0.0, 0.0, //
+                0.0, cos, sin, 0.0, //
+                0.0, -sin, cos, 0.0, //
+                0.0, 0.0, 0.0, 1.0,
+            ],
+        }
+    }
+
+    /// Flash `Matrix3D.recompose(EulerAngles)` Y rotation, column-major.
+    pub fn rotate_y(radians: f32) -> Self {
+        let (sin, cos) = radians.sin_cos();
+        Self {
+            raw_data: [
+                cos, 0.0, -sin, 0.0, //
+                0.0, 1.0, 0.0, 0.0, //
+                sin, 0.0, cos, 0.0, //
+                0.0, 0.0, 0.0, 1.0,
+            ],
+        }
+    }
+
+    /// Flash `Matrix3D.recompose(EulerAngles)` Z rotation, column-major.
+    /// Matches a 2D `Matrix` rotation (Y-down, positive angle clockwise).
+    pub fn rotate_z(radians: f32) -> Self {
+        let (sin, cos) = radians.sin_cos();
+        Self {
+            raw_data: [
+                cos, sin, 0.0, 0.0, //
+                -sin, cos, 0.0, 0.0, //
+                0.0, 0.0, 1.0, 0.0, //
+                0.0, 0.0, 0.0, 1.0,
+            ],
+        }
+    }
+
+    pub fn as_cols(self) -> [[f32; 4]; 4] {
+        let m = self.raw_data;
+        [
+            [m[0], m[1], m[2], m[3]],
+            [m[4], m[5], m[6], m[7]],
+            [m[8], m[9], m[10], m[11]],
+            [m[12], m[13], m[14], m[15]],
+        ]
+    }
+
     pub fn from_matrix(matrix: Matrix) -> Self {
         Self {
             raw_data: [

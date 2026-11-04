@@ -501,10 +501,10 @@ impl<'gc> TDisplayObject<'gc> for Video<'gc> {
     }
 
     fn render_with_options(self, context: &mut RenderContext<'_, 'gc>, options: RenderOptions) {
-        if !context.is_offscreen
-            && !self
-                .world_bounds(BoundsMode::Engine)
-                .intersects(&context.stage.view_bounds())
+        if context.cull_off_screen(&self.world_bounds(BoundsMode::Engine))
+            && self.z() == 0.0
+            && self.rotation_x() == 0.0
+            && self.rotation_y() == 0.0
         {
             // Off-screen; culled
             return;

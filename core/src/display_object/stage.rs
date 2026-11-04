@@ -621,12 +621,24 @@ impl<'gc> Stage<'gc> {
     /// You can easily observe the difference between render_viewport and render
     /// in FP by checking which stuff can be rendered using `BitmapData.draw`.
     pub fn render_viewport(self, context: &mut RenderContext<'_, 'gc>) {
+        let viewport_matrix = self.0.viewport_matrix.get();
+        // Put z in the same space as x/y after this 2D scale (HiDPI, ShowAll, …)
+        // so perspective uses Flash's stage-pixel focal length.
+        let view_z_scale = (viewport_matrix.a * viewport_matrix.a
+            + viewport_matrix.b * viewport_matrix.b)
+            .sqrt();
         context.transform_stack.push(&Transform {
-            matrix: self.0.viewport_matrix.get(),
+            matrix: viewport_matrix,
             color_transform: Default::default(),
             // TODO: Verify perspective_projection when its rendering is implemented.
             perspective_projection: self.as_displayobject().base().perspective_projection(),
             tz: 0.0,
+            view_z_scale: if view_z_scale > 0.0 {
+                view_z_scale
+            } else {
+                1.0
+            },
+            ..Default::default()
         });
 
         // All of our Stage3D instances get rendered *underneath* the main stage.

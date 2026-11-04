@@ -386,11 +386,10 @@ pub fn get_z<'gc>(
 }
 
 pub fn set_z<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm2_stub_setter!(activation, "flash.display.DisplayObject", "z");
     let this = this.as_object().unwrap();
 
     if let Some(dobj) = this.as_display_object() {
@@ -402,38 +401,56 @@ pub fn set_z<'gc>(
 }
 
 pub fn get_rotation_x<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    _this: Value<'gc>,
+    _activation: &mut Activation<'_, 'gc>,
+    this: Value<'gc>,
     _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm2_stub_getter!(activation, "flash.display.DisplayObject", "rotationX");
-    Ok(0.into())
+    let this = this.as_object().unwrap();
+
+    if let Some(dobj) = this.as_display_object() {
+        return Ok(dobj.rotation_x().into());
+    }
+    Ok(Value::Undefined)
 }
 
 pub fn set_rotation_x<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    _this: Value<'gc>,
-    _args: FunctionArgs<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
+    this: Value<'gc>,
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm2_stub_setter!(activation, "flash.display.DisplayObject", "rotationX");
+    let this = this.as_object().unwrap();
+
+    if let Some(dobj) = this.as_display_object() {
+        dobj.set_rotation_x(args.get_f64(0));
+        dobj.base().set_has_matrix3d_stub(true);
+    }
     Ok(Value::Undefined)
 }
 
 pub fn get_rotation_y<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    _this: Value<'gc>,
+    _activation: &mut Activation<'_, 'gc>,
+    this: Value<'gc>,
     _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm2_stub_getter!(activation, "flash.display.DisplayObject", "rotationY");
-    Ok(0.into())
+    let this = this.as_object().unwrap();
+
+    if let Some(dobj) = this.as_display_object() {
+        return Ok(dobj.rotation_y().into());
+    }
+    Ok(Value::Undefined)
 }
 
 pub fn set_rotation_y<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    _this: Value<'gc>,
-    _args: FunctionArgs<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
+    this: Value<'gc>,
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm2_stub_setter!(activation, "flash.display.DisplayObject", "rotationY");
+    let this = this.as_object().unwrap();
+
+    if let Some(dobj) = this.as_display_object() {
+        dobj.set_rotation_y(args.get_f64(0));
+        dobj.base().set_has_matrix3d_stub(true);
+    }
     Ok(Value::Undefined)
 }
 

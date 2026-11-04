@@ -581,6 +581,7 @@ fn draw<'gc>(
             color_transform,
             perspective_projection: None,
             tz: 0.0,
+            ..Default::default()
         },
         smoothing,
         blend_mode,

@@ -1290,22 +1290,14 @@ impl CommandHandler for WebGlRenderBackend {
             ]
         };
 
-        let mut matrix = transform.matrix;
-        pixel_snapping.apply(&mut matrix);
+        let mut transform = transform;
+        if transform.world.is_none() {
+            pixel_snapping.apply(&mut transform.matrix);
+        }
         // Scale the quad to the region's dimensions.
-        matrix *= Matrix::scale(region.width() as f32, region.height() as f32);
-
-        let world_matrix = [
-            [matrix.a, matrix.b, 0.0, 0.0],
-            [matrix.c, matrix.d, 0.0, 0.0],
-            [0.0, 0.0, 1.0, 0.0],
-            [
-                matrix.tx.to_pixels() as f32,
-                matrix.ty.to_pixels() as f32,
-                0.0,
-                1.0,
-            ],
-        ];
+        let transform = transform
+            .with_local_matrix(Matrix::scale(region.width() as f32, region.height() as f32));
+        let world_matrix = transform.world_matrix_cols();
 
         let mult_color = transform.color_transform.mult_rgba_normalized();
         let add_color = transform.color_transform.add_rgba_normalized();
@@ -1367,17 +1359,7 @@ impl CommandHandler for WebGlRenderBackend {
     }
 
     fn render_shape(&mut self, shape: ShapeHandle, transform: Transform) {
-        let world_matrix = [
-            [transform.matrix.a, transform.matrix.b, 0.0, 0.0],
-            [transform.matrix.c, transform.matrix.d, 0.0, 0.0],
-            [0.0, 0.0, 1.0, 0.0],
-            [
-                transform.matrix.tx.to_pixels() as f32,
-                transform.matrix.ty.to_pixels() as f32,
-                0.0,
-                1.0,
-            ],
-        ];
+        let world_matrix = transform.world_matrix_cols();
 
         let mult_color = transform.color_transform.mult_rgba_normalized();
         let add_color = transform.color_transform.add_rgba_normalized();

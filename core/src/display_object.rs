@@ -272,6 +272,8 @@ pub struct DisplayObjectBase<'gc> {
     color_transform: Cell<ColorTransform>,
     perspective_projection: Cell<Option<PerspectiveProjection>>,
     tz: Cell<f64>,
+    rotation_x: Cell<f64>,
+    rotation_y: Cell<f64>,
 
     // Cached transform properties `_xscale`, `_yscale`, `_rotation`.
     // These are expensive to calculate, so they will be calculated and cached
@@ -349,6 +351,8 @@ impl Default for DisplayObjectBase<'_> {
             color_transform: Default::default(),
             perspective_projection: Default::default(),
             tz: Cell::new(0.0),
+            rotation_x: Cell::new(0.0),
+            rotation_y: Cell::new(0.0),
             rotation: Cell::new(Degrees::from_radians(0.0)),
             scale_x: Cell::new(Percent::from_unit(1.0)),
             scale_y: Cell::new(Percent::from_unit(1.0)),
@@ -410,6 +414,10 @@ impl<'gc> DisplayObjectBase<'gc> {
             color_transform: self.color_transform.get(),
             perspective_projection: self.perspective_projection.get(),
             tz: self.tz.get(),
+            rotation_x: self.rotation_x.get(),
+            rotation_y: self.rotation_y.get(),
+            world: None,
+            view_z_scale: 1.0,
         }
     }
 
@@ -476,6 +484,28 @@ impl<'gc> DisplayObjectBase<'gc> {
         let changed = self.tz.get() != tz;
         self.set_transformed_by_script(true);
         self.tz.set(tz);
+        changed
+    }
+
+    fn rotation_x(&self) -> f64 {
+        self.rotation_x.get()
+    }
+
+    fn set_rotation_x(&self, degrees: f64) -> bool {
+        let changed = self.rotation_x.get() != degrees;
+        self.set_transformed_by_script(true);
+        self.rotation_x.set(degrees);
+        changed
+    }
+
+    fn rotation_y(&self) -> f64 {
+        self.rotation_y.get()
+    }
+
+    fn set_rotation_y(&self, degrees: f64) -> bool {
+        let changed = self.rotation_y.get() != degrees;
+        self.set_transformed_by_script(true);
+        self.rotation_y.set(degrees);
         changed
     }
 
@@ -1092,6 +1122,7 @@ pub fn render_base<'gc>(
                 },
                 perspective_projection: cache_info.base_transform.perspective_projection,
                 tz: Default::default(),
+                ..Default::default()
             });
             let mut offscreen_context = RenderContext {
                 renderer: context.renderer,
@@ -1131,6 +1162,10 @@ pub fn render_base<'gc>(
                         color_transform: cache_info.base_transform.color_transform,
                         perspective_projection: cache_info.base_transform.perspective_projection,
                         tz: cache_info.base_transform.tz,
+                        rotation_x: cache_info.base_transform.rotation_x,
+                        rotation_y: cache_info.base_transform.rotation_y,
+                        world: cache_info.base_transform.world,
+                        view_z_scale: cache_info.base_transform.view_z_scale,
                     },
                     true,
                     PixelSnapping::Always, // cacheAsBitmap forces pixel snapping
@@ -1219,6 +1254,7 @@ pub fn apply_standard_mask_and_scroll<'gc, F>(
             color_transform: Default::default(),
             perspective_projection: None,
             tz: 0.0,
+            ..Default::default()
         });
     }
 
@@ -1657,6 +1693,30 @@ pub trait TDisplayObject<'gc>:
         {
             // Self-transform changes are automatically handled,
             // we only want to inform ancestors to avoid unnecessary invalidations for tx/ty
+            parent.invalidate_cached_bitmap();
+        }
+    }
+
+    fn rotation_x(self) -> f64 {
+        self.base().rotation_x()
+    }
+
+    fn set_rotation_x(self, degrees: f64) {
+        if self.base().set_rotation_x(degrees)
+            && let Some(parent) = self.parent()
+        {
+            parent.invalidate_cached_bitmap();
+        }
+    }
+
+    fn rotation_y(self) -> f64 {
+        self.base().rotation_y()
+    }
+
+    fn set_rotation_y(self, degrees: f64) {
+        if self.base().set_rotation_y(degrees)
+            && let Some(parent) = self.parent()
+        {
             parent.invalidate_cached_bitmap();
         }
     }
