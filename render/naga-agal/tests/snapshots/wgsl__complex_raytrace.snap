@@ -1,6 +1,5 @@
 ---
 source: render/naga-agal/tests/wgsl.rs
-assertion_line: 90
 expression: output
 ---
 struct VertexOutput {
@@ -22,7 +21,7 @@ fn main(@location(0) param: vec4<f32>) -> VertexOutput {
     temporary0_.y = _e3.y;
     temporary0_.z = _e3.z;
     let _e13: vec4<f32> = constant_registers[4u];
-    temporary0_.w = _e13.yyyy.x;
+    temporary0_.w = _e13.yyyy.w;
     let _e19: vec4<f32> = constant_registers[0u];
     let _e22: vec4<f32> = constant_registers[1u];
     let _e25: vec4<f32> = constant_registers[2u];
