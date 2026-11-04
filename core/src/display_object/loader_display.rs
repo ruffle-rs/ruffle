@@ -18,7 +18,7 @@ use gc_arena::barrier::unlock;
 use gc_arena::lock::{Lock, RefLock};
 use gc_arena::{Collect, Gc, GcWeak, Mutation};
 use ruffle_common::utils::HasPrefixField;
-use std::cell::{Ref, RefMut};
+use std::cell::{Cell, Ref, RefMut};
 
 use super::interactive::Avm2MousePick;
 
@@ -41,6 +41,8 @@ pub struct LoaderDisplayData<'gc> {
     base: InteractiveObjectBase<'gc>,
     container: RefLock<ChildContainer<'gc>>,
     avm2_object: Lock<Option<Avm2StageObject<'gc>>>,
+    /// Script bounds retained by HTML image Loaders after their content is unloaded.
+    html_image_bounds: Cell<Option<Rectangle<Twips>>>,
     movie: SwfMovie<'gc>,
 }
 
@@ -52,6 +54,7 @@ impl<'gc> LoaderDisplay<'gc> {
                 base: Default::default(),
                 container: RefLock::new(ChildContainer::new(&movie)),
                 avm2_object: Lock::new(None),
+                html_image_bounds: Cell::new(None),
                 movie,
             },
         ));
@@ -59,6 +62,22 @@ impl<'gc> LoaderDisplay<'gc> {
         obj.set_placed_by_avm2_script(true);
         activation.context.orphan_manager.add_orphan_obj(obj.into());
         obj
+    }
+
+    /// Called after image load events have finished. Flash retains the script
+    /// bounds when an HTML image is unloaded later, but not when its content is
+    /// removed inside the COMPLETE listener itself.
+    pub(crate) fn cache_html_image_bounds(self) {
+        if self
+            .parent()
+            .is_some_and(|parent| parent.as_edit_text().is_some())
+        {
+            let bounds = self
+                .child_by_index(0)
+                .filter(|child| child.as_bitmap().is_some())
+                .map(|child| child.local_bounds(BoundsMode::Script));
+            self.0.html_image_bounds.set(bounds);
+        }
     }
 
     pub fn downgrade(self) -> LoaderDisplayWeak<'gc> {
@@ -79,7 +98,12 @@ impl<'gc> TDisplayObject<'gc> for LoaderDisplay<'gc> {
         self.render_children(context);
     }
 
-    fn self_bounds(self, _mode: BoundsMode) -> Rectangle<Twips> {
+    fn self_bounds(self, mode: BoundsMode) -> Rectangle<Twips> {
+        // Retained script bounds do not represent visible content. In particular,
+        // unload must not leave an image contributing to rendering or hit tests.
+        if !matches!(mode, BoundsMode::Engine) && self.child_by_index(0).is_none() {
+            return self.0.html_image_bounds.get().unwrap_or_default();
+        }
         Default::default()
     }
 
