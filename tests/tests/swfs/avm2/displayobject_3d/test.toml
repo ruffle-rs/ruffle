@@ -1,0 +1,10 @@
+# Trace output is from Ruffle. Re-run in the Flash Player debugger and
+# replace output.txt if any line differs.
+num_frames = 1
+
+[[compilers]]
+type = "Asc"
+target = "test.swf"
+class = "Test"
+scripts = ["Test.as"]
+swf_version = 10

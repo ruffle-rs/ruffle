@@ -1,0 +1,17 @@
+// 2D rotation wraps into [-180, 180]
+rotation=270 -> -90
+rotation=-270 -> 90
+rotation=180 -> 180
+// 3D rotation keeps the native heading (no wrap at ±180)
+rotationX=0, rotation=270 -> 270
+rotation += 90 -> 360
+rotationZ=-90 -> -90 rotationZ -90
+// matrix3D is T * Rz * Ry * Rx * S
+z only 1,0,0,0,0,1,0,0,0,0,1,0,10,20,5,1
+rotationX=90 1,0,0,0,0,0,1,0,0,-1,0,0,0,0,0,1
+rotation=90, rotationX=90 0,1,0,0,0,0,1,0,1,0,0,0,0,0,0,1
+// hitTestObject against a stage rectangle
+onStage vs stageSquare true
+ahead vs stageSquare true
+onStage getBounds 280 120 40 40
+ahead getBounds 280 500 40 40
