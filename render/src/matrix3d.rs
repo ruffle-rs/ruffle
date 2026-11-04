@@ -256,4 +256,14 @@ impl Matrix3D {
     pub fn set_tz(&mut self, tz: f32) {
         self.raw_data[14] = tz;
     }
+
+    /// Transform a point with implicit `w = 1` (column vector, column-major).
+    pub fn transform_xyz(self, x: f32, y: f32, z: f32) -> (f32, f32, f32) {
+        let m = &self.raw_data;
+        (
+            m[0] * x + m[4] * y + m[8] * z + m[12],
+            m[1] * x + m[5] * y + m[9] * z + m[13],
+            m[2] * x + m[6] * y + m[10] * z + m[14],
+        )
+    }
 }

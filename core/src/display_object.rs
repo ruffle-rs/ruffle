@@ -18,9 +18,10 @@ use gc_arena::barrier::{Write, unlock};
 use gc_arena::lock::Lock;
 use gc_arena::{Collect, Gc, Mutation};
 use ruffle_macros::{enum_trait_object, istr};
+use ruffle_render::matrix3d::Matrix3D;
 use ruffle_render::perspective_projection::PerspectiveProjection;
 use ruffle_render::pixel_bender::PixelBenderShaderHandle;
-use ruffle_render::transform::{Transform, TransformStack};
+use ruffle_render::transform::{Transform, TransformStack, compose_display_list_3d};
 use std::cell::{Cell, Ref, RefCell, RefMut};
 use std::fmt::Debug;
 use std::hash::Hash;
@@ -995,6 +996,46 @@ struct DrawCacheInfo {
     filters: Vec<Filter>,
 }
 
+/// Project a local-space AABB through a concatenated display-list 3D matrix
+/// and Flash's default 55° perspective (focal length from `width`).
+fn project_rect_through_perspective(
+    matrix: Matrix3D,
+    rect: Rectangle<Twips>,
+    width: f64,
+    height: f64,
+) -> Rectangle<Twips> {
+    if !rect.is_valid() {
+        return Rectangle::INVALID;
+    }
+
+    let width = width.max(1.0);
+    let height = height.max(1.0);
+    let fl = PerspectiveProjection::default().focal_length(width as f32) as f64;
+    let cx = width / 2.0;
+    let cy = height / 2.0;
+
+    let corners = [
+        (rect.x_min, rect.y_min),
+        (rect.x_max, rect.y_min),
+        (rect.x_min, rect.y_max),
+        (rect.x_max, rect.y_max),
+    ];
+
+    let mut projected = Rectangle::INVALID;
+    for (x, y) in corners {
+        let (wx, wy, wz) = matrix.transform_xyz(x.to_pixels() as f32, y.to_pixels() as f32, 0.0);
+        let w = wz as f64 + fl;
+        if w <= 1e-3 {
+            continue;
+        }
+        let scale = fl / w;
+        let px = cx + (wx as f64 - cx) * scale;
+        let py = cy + (wy as f64 - cy) * scale;
+        projected = projected.encompass(Point::new(Twips::from_pixels(px), Twips::from_pixels(py)));
+    }
+    projected
+}
+
 pub fn render_base<'gc>(
     this: DisplayObject<'gc>,
     context: &mut RenderContext<'_, 'gc>,
@@ -1423,11 +1464,21 @@ pub trait TDisplayObject<'gc>:
     ///
     /// For an object with a scroll rect, this is the area of the stage the
     /// scroll rect is visible in.
+    ///
+    /// When this object or an ancestor uses display-list 3D, the 2D AABB is
+    /// unioned with the perspective-projected silhouette so hit tests and
+    /// culling see the same on-screen area as the renderer.
     #[no_dynamic]
     fn world_bounds(self, mode: BoundsMode) -> Rectangle<Twips> {
         // `bounds_with_transform` returns the scroll rect's size starting at
         // the origin, so we must not apply the scroll rect's own translation.
-        self.bounds_with_transform(&self.local_to_global_matrix_without_own_scroll_rect(), mode)
+        let bounds = self
+            .bounds_with_transform(&self.local_to_global_matrix_without_own_scroll_rect(), mode);
+        if self.display_list_3d_in_chain() {
+            bounds.union(&self.projected_3d_world_bounds(mode))
+        } else {
+            bounds
+        }
     }
 
     /// The world bounding box of this object, as reported by `Transform.pixelBounds`.
@@ -1548,6 +1599,88 @@ pub trait TDisplayObject<'gc>:
             // we only want to inform ancestors to avoid unnecessary invalidations for tx/ty
             parent.invalidate_cached_bitmap();
         }
+    }
+
+    /// True when this clip itself uses display-list 3D (`z` / `rotationX` / `rotationY`).
+    #[no_dynamic]
+    fn has_display_list_3d(self) -> bool {
+        self.rotation_x() != 0.0 || self.rotation_y() != 0.0 || self.z() != 0.0
+    }
+
+    /// True when this clip or an ancestor uses display-list 3D.
+    #[no_dynamic]
+    fn display_list_3d_in_chain(self) -> bool {
+        let mut node = Some(self);
+        while let Some(obj) = node {
+            if obj.as_stage().is_some() {
+                break;
+            }
+            if obj.has_display_list_3d() {
+                return true;
+            }
+            node = obj.parent();
+        }
+        false
+    }
+
+    /// Concatenated display-list 3D matrix from this object's local space to the stage.
+    #[no_dynamic]
+    fn local_to_global_matrix3d(self) -> Matrix3D {
+        let mut matrices = vec![compose_display_list_3d(
+            self.base().matrix(),
+            self.z(),
+            self.rotation_x(),
+            self.rotation_y(),
+        )];
+        let mut node = self.parent();
+        while let Some(display_object) = node {
+            if display_object.as_stage().is_some() {
+                break;
+            }
+            let mut parent_m = compose_display_list_3d(
+                display_object.base().matrix(),
+                display_object.z(),
+                display_object.rotation_x(),
+                display_object.rotation_y(),
+            );
+            if let Some(rect) = display_object.scroll_rect() {
+                parent_m = parent_m.multiply(&Matrix3D::translate(
+                    -rect.x_min.to_pixels() as f32,
+                    -rect.y_min.to_pixels() as f32,
+                    0.0,
+                ));
+            }
+            matrices.push(parent_m);
+            node = display_object.parent();
+        }
+        let mut result = Matrix3D::IDENTITY;
+        for matrix in matrices.iter().rev() {
+            result = result.multiply(matrix);
+        }
+        result
+    }
+
+    /// Perspective-projected stage AABB of this object and its children.
+    ///
+    /// Local XY corners are transformed through the concatenated Matrix3D
+    /// (so `rotationX` / `z` are included) and then through the same
+    /// FOV-55° perspective the renderer uses. 2D AABBs miss content that
+    /// has been pitched onto the screen; games such as Microboats hide
+    /// those clips with `hitTestObject` against a stage rectangle.
+    #[no_dynamic]
+    fn projected_3d_world_bounds(self, mode: BoundsMode) -> Rectangle<Twips> {
+        let mut bounds = project_rect_through_perspective(
+            self.local_to_global_matrix3d(),
+            self.self_bounds(mode),
+            self.movie().width().to_pixels(),
+            self.movie().height().to_pixels(),
+        );
+        if let Some(ctr) = self.as_container() {
+            for child in ctr.iter_render_list() {
+                bounds = bounds.union(&child.projected_3d_world_bounds(mode));
+            }
+        }
+        bounds
     }
 
     /// Returns the matrix for transforming from this object's local space to global stage space,
@@ -2749,6 +2882,8 @@ pub trait TDisplayObject<'gc>:
     #[no_dynamic]
     fn hit_test_object(self, other: DisplayObject<'gc>) -> bool {
         // This is only used in ActionScript so it gets a BoundsMode::Script.
+        // `world_bounds` already unions the 3D-projected silhouette when
+        // display-list 3D is in the parent chain (see that method).
         self.world_bounds(BoundsMode::Script)
             .intersects(&other.world_bounds(BoundsMode::Script))
     }

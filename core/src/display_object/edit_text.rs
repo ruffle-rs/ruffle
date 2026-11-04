@@ -2679,7 +2679,9 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
     fn render_self(self, context: &mut RenderContext<'_, 'gc>) {
         self.apply_autosize_bounds();
 
-        if context.cull_off_screen(&self.world_bounds(BoundsMode::Engine)) {
+        if !context.transform_stack.transform().uses_3d()
+            && context.cull_off_screen(&self.world_bounds(BoundsMode::Engine))
+        {
             // Off-screen; culled
             return;
         }

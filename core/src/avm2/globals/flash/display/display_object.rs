@@ -469,9 +469,15 @@ pub fn set_rotation_z<'gc>(
     this: Value<'gc>,
     args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    // TODO This probably interacts with Matrix3D.
-    avm2_stub_setter!(activation, "flash.display.DisplayObject", "rotationZ");
-    set_rotation(activation, this, args)
+    // `rotationZ` is the Z Euler angle, same as 2D `rotation`, but setting it
+    // puts the object into display-list 3D (`transform.matrix` becomes null).
+    let this_val = this;
+    if let Some(obj) = this_val.as_object()
+        && let Some(dobj) = obj.as_display_object()
+    {
+        dobj.base().set_has_matrix3d_stub(true);
+    }
+    set_rotation(activation, this_val, args)
 }
 
 pub fn get_scale_z<'gc>(

@@ -389,7 +389,9 @@ impl<'gc> TDisplayObject<'gc> for Bitmap<'gc> {
     }
 
     fn render_self(self, context: &mut RenderContext<'_, 'gc>) {
-        if context.cull_off_screen(&self.world_bounds(BoundsMode::Engine)) {
+        if !context.transform_stack.transform().uses_3d()
+            && context.cull_off_screen(&self.world_bounds(BoundsMode::Engine))
+        {
             // Off-screen; culled
             return;
         }

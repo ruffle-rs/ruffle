@@ -220,14 +220,10 @@ mod tests {
     fn compose_rotation_x_tilts_y_axis() {
         let composed = compose_display_list_3d(Matrix::IDENTITY, 0.0, 90.0, 0.0);
         // Rx(90°) sends +Y toward +Z in column-major Flash Matrix3D.
-        let y_axis = [
-            composed.raw_data[4],
-            composed.raw_data[5],
-            composed.raw_data[6],
-        ];
-        assert!((y_axis[0] - 0.0).abs() < 1e-5);
-        assert!((y_axis[1] - 0.0).abs() < 1e-5);
-        assert!((y_axis[2] - 1.0).abs() < 1e-5);
+        let (x, y, z) = composed.transform_xyz(0.0, 1.0, 0.0);
+        assert!((x - 0.0).abs() < 1e-5);
+        assert!((y - 0.0).abs() < 1e-5);
+        assert!((z - 1.0).abs() < 1e-5);
     }
 
     #[test]
