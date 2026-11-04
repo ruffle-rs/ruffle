@@ -172,19 +172,23 @@ fn show_object_tree(
     if tree.children.is_empty() {
         // This item is not expandable, but we want to keep the space empty where the
         // expand button would be, so it doesn't look like a sibling of the parent.
-        ui.indent(ui.id().with(tree.handle.as_ptr()), |ui| {
+        ui.indent(ui.scope_id().with(tree.handle.as_ptr()), |ui| {
             show_item(ui, context, tree, messages, hovered_debug_rect);
         });
     } else {
-        CollapsingState::load_with_default_open(ui.ctx(), ui.id().with(tree.handle.as_ptr()), true)
-            .show_header(ui, |ui| {
-                show_item(ui, context, tree, messages, hovered_debug_rect);
-            })
-            .body(|ui| {
-                for child in &tree.children {
-                    show_object_tree(ui, context, child, messages, hovered_debug_rect);
-                }
-            });
+        CollapsingState::load_with_default_open(
+            ui.ctx(),
+            ui.scope_id().with(tree.handle.as_ptr()),
+            true,
+        )
+        .show_header(ui, |ui| {
+            show_item(ui, context, tree, messages, hovered_debug_rect);
+        })
+        .body(|ui| {
+            for child in &tree.children {
+                show_object_tree(ui, context, child, messages, hovered_debug_rect);
+            }
+        });
     }
 }
 
