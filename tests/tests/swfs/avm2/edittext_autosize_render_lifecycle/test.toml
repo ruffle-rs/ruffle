@@ -1,0 +1,7 @@
+num_ticks = 8
+
+[[compilers]]
+type = "Asc"
+class = "Test"
+scripts = ["Test.as"]
+swf_version = 15
