@@ -502,13 +502,17 @@ pub fn get_rotation<'gc>(
 
     if let Some(dobj) = this.as_display_object() {
         let rot: f64 = dobj.rotation().into();
-        let rem = rot % 360.0;
-
-        if rem <= 180.0 {
-            return Ok(rem.into());
-        } else {
-            return Ok((rem - 360.0).into());
+        // 2D objects wrap into Flash's [-180, 180] range.
+        //
+        // Display-list 3D keeps the native cache unwrapped. Games such as
+        // Microboats lerp `rotation` toward an unbounded simulated heading
+        // (`ROTATION_V`); wrapping the getter at ±180° makes that lerp take
+        // the long way around, so the boat and chase camera flick backwards
+        // until heading wraps another 360°.
+        if dobj.base().has_matrix3d_stub() {
+            return Ok(rot.into());
         }
+        return Ok(Degrees::wrap_180(rot).into());
     }
 
     Ok(Value::Undefined)
@@ -524,15 +528,9 @@ pub fn set_rotation<'gc>(
 
     if let Some(dobj) = this.as_display_object() {
         let mut new_rotation = args.get_f64(0);
-
-        // Normalize into the range of [-180, 180].
-        new_rotation %= 360.0;
-        if new_rotation < -180.0 {
-            new_rotation += 360.0
-        } else if new_rotation > 180.0 {
-            new_rotation -= 360.0
+        if !dobj.base().has_matrix3d_stub() {
+            new_rotation = Degrees::wrap_180(new_rotation);
         }
-
         dobj.set_rotation(Degrees::from(new_rotation));
     }
 

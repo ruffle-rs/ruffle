@@ -47,6 +47,17 @@ impl Degrees {
     pub fn into_radians(self) -> f64 {
         self.0.to_radians()
     }
+
+    /// Wrap into `[-180, 180]`, matching Flash's 2D `DisplayObject.rotation`.
+    pub fn wrap_180(degrees: f64) -> f64 {
+        let mut wrapped = degrees % 360.0;
+        if wrapped < -180.0 {
+            wrapped += 360.0;
+        } else if wrapped > 180.0 {
+            wrapped -= 360.0;
+        }
+        wrapped
+    }
 }
 
 impl From<f64> for Degrees {
@@ -58,5 +69,22 @@ impl From<f64> for Degrees {
 impl From<Degrees> for f64 {
     fn from(degrees: Degrees) -> Self {
         degrees.0
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn wrap_180_matches_flash_rotation_range() {
+        assert_eq!(Degrees::wrap_180(0.0), 0.0);
+        assert_eq!(Degrees::wrap_180(180.0), 180.0);
+        assert_eq!(Degrees::wrap_180(-180.0), -180.0);
+        assert_eq!(Degrees::wrap_180(181.0), -179.0);
+        assert_eq!(Degrees::wrap_180(-181.0), 179.0);
+        assert_eq!(Degrees::wrap_180(360.0), 0.0);
+        assert_eq!(Degrees::wrap_180(540.0), 180.0);
+        assert_eq!(Degrees::wrap_180(-540.0), -180.0);
     }
 }
