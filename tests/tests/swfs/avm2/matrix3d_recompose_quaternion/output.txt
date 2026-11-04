@@ -1,0 +1,108 @@
+identity:
+res: true
+raw: 2,0,0,0,0,3,0,0,0,0,4,0,4,5,6,1
+negative identity:
+res: true
+raw: 2,0,0,0,0,3,0,0,0,0,4,0,4,5,6,1
+half turns:
+res: true
+raw: 0,2,0,0,0,0,3,0,4,0,0,0,4,5,6,1
+inside x:
+res: true
+raw: 2,0,0,0,0,2.999939441680908,0.019042793661355972,0,0,-0.025390392169356346,3.9999194145202637,0,4,5,6,1
+outside x:
+Caught error: ArgumentError: Error #2004: One of the parameters is invalid.
+	at flash.geom::Matrix3D/recompose()
+	at Test/testComponents()
+	at Test/testQuaternion()
+	at Test()
+raw: 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16
+inside w:
+res: true
+raw: 2,0,0,0,0,3,0,0,0,0,4,0,4,5,6,1
+outside w:
+Caught error: ArgumentError: Error #2004: One of the parameters is invalid.
+	at flash.geom::Matrix3D/recompose()
+	at Test/testComponents()
+	at Test/testQuaternion()
+	at Test()
+raw: 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16
+split pair:
+Caught error: ArgumentError: Error #2004: One of the parameters is invalid.
+	at flash.geom::Matrix3D/recompose()
+	at Test/testComponents()
+	at Test/testQuaternion()
+	at Test()
+raw: 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16
+split above:
+res: true
+raw: 2,0,0,0,0,3,0,0,0,0,4,0,4,5,6,1
+split below:
+Caught error: ArgumentError: Error #2004: One of the parameters is invalid.
+	at flash.geom::Matrix3D/recompose()
+	at Test/testComponents()
+	at Test/testQuaternion()
+	at Test()
+raw: 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16
+tilt low:
+Caught error: ArgumentError: Error #2004: One of the parameters is invalid.
+	at flash.geom::Matrix3D/recompose()
+	at Test/testComponents()
+	at Test/testQuaternion()
+	at Test()
+raw: 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16
+tilt high:
+res: true
+raw: 2,0.0002828426950145513,-0.00028284554718993604,0,0.00042426405707374215,1.7881393432617188e-7,3.000030040740967,0,0.0005656910943798721,-4.000040054321289,1.5841858669318754e-7,0,4,5,6,1
+tilt unit:
+res: true
+raw: 2,0.0002828426950145513,-0.0002828426950145513,0,0.00042426405707374215,1.7881393432617188e-7,2.999999761581421,0,0.0005656853900291026,-3.999999761581421,1.5841858669318754e-7,0,4,5,6,1
+four:
+res: true
+raw: -0.00001621246337890625,2.000016212463379,0,0,0,-0.000024318695068359375,3.0000243186950684,0,4.000032424926758,0,-0.0000324249267578125,0,4,5,6,1
+zero:
+Caught error: ArgumentError: Error #2004: One of the parameters is invalid.
+	at flash.geom::Matrix3D/recompose()
+	at Test/testComponents()
+	at Test/testQuaternion()
+	at Test()
+raw: 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16
+nan:
+Caught error: ArgumentError: Error #2004: One of the parameters is invalid.
+	at flash.geom::Matrix3D/recompose()
+	at Test/testComponents()
+	at Test/testQuaternion()
+	at Test()
+raw: 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16
+infinity:
+Caught error: ArgumentError: Error #2004: One of the parameters is invalid.
+	at flash.geom::Matrix3D/recompose()
+	at Test/testComponents()
+	at Test/testQuaternion()
+	at Test()
+raw: 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16
+zero scale:
+res: true
+raw: 0,0,0,0,0,0,0,0,0,0,0,0,4,5,6,1
+negative scale:
+res: true
+raw: -2,0,0,0,0,3,0,0,0,0,-4,0,4,5,6,1
+nan scale:
+res: true
+raw: NaN,NaN,NaN,NaN,0,1,0,0,0,0,1,0,4,5,6,1
+bad negative scale:
+Caught error: ArgumentError: Error #2004: One of the parameters is invalid.
+	at flash.geom::Matrix3D/recompose()
+	at Test/testComponents()
+	at Test/testScale()
+	at Test()
+raw: 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16
+null translation:
+res: false
+raw: 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16
+null rotation:
+res: false
+raw: 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16
+null scale:
+res: false
+raw: 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16
