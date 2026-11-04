@@ -58,6 +58,7 @@ fn get_default_shader_param_value(
 pub fn get_shader_args<'gc>(
     shader_obj: Object<'gc>,
     activation: &mut Activation<'_, 'gc>,
+    include_images: bool,
 ) -> Result<
     (
         PixelBenderShaderHandle,
@@ -93,6 +94,7 @@ pub fn get_shader_args<'gc>(
                 }
             )
         })
+        .filter(|(_, param)| include_images || !matches!(param, PixelBenderParam::Texture { .. }))
         .map(|(index, param)| {
             match param {
                 PixelBenderParam::Normal {
@@ -289,7 +291,7 @@ pub fn start<'gc>(
         .as_object()
         .expect("Missing Shader object");
 
-    let (shader_handle, arguments) = get_shader_args(shader, activation)?;
+    let (shader_handle, arguments) = get_shader_args(shader, activation, true)?;
 
     let target = this
         .get_slot(shader_job_slots::_TARGET)

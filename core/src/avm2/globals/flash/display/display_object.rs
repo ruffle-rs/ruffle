@@ -5,6 +5,7 @@ use crate::avm2::activation::Activation;
 use crate::avm2::error::{make_error_2005, make_error_2007, make_error_2008, make_error_2078};
 use crate::avm2::filters::FilterAvm2Ext;
 use crate::avm2::function::FunctionArgs;
+use crate::avm2::globals::flash::display::shader_job::get_shader_args;
 use crate::avm2::globals::flash::geom::transform::color_transform_from_transform_object;
 use crate::avm2::globals::flash::geom::transform::has_matrix3d_from_transform_object;
 use crate::avm2::globals::flash::geom::transform::matrix_from_transform_object;
@@ -1185,21 +1186,18 @@ pub fn set_blend_shader<'gc>(
     let this = this.as_object().unwrap();
 
     if let Some(dobj) = this.as_display_object() {
-        let Some(shader_data) = args
-            .get_object(activation, 0, "shader")?
-            .get_slot(shader_slots::_DATA)
-            .as_object()
-        else {
+        let shader = args.get_object(activation, 0, "shader")?;
+        if shader.get_slot(shader_slots::_DATA).as_object().is_none() {
             return Err(make_error_2007(activation, "data"));
-        };
+        }
 
-        let shader_handle = shader_data
-            .as_shader_data()
-            .expect("Shader.data is not a ShaderData instance")
-            .pixel_bender_shader()
-            .expect("Missing compiled PixelBender shader");
-
-        dobj.set_blend_shader(Some(shader_handle));
+        // Flash snapshots the parameters when the blend shader is assigned.
+        // The renderer supplies the two image inputs at draw time.
+        let (handle, values) = get_shader_args(shader, activation, false)?;
+        dobj.set_blend_shader(Some(ruffle_render::commands::BlendShader {
+            handle,
+            values,
+        }));
     }
     Ok(Value::Undefined)
 }
