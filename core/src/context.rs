@@ -16,6 +16,7 @@ use crate::backend::{
     storage::StorageBackend,
     ui::UiBackend,
 };
+use crate::config::NetworkingAccessMode;
 use crate::context_menu::ContextMenuState;
 use crate::display_object::{EditText, MovieClip, SoundTransform, Stage};
 use crate::events::PlayerNotification;
@@ -86,6 +87,9 @@ pub struct UpdateContext<'gc> {
     pub player_version: u8,
 
     pub player_mode: PlayerMode,
+
+    /// The value of the `allowNetworking` parameter.
+    pub allow_networking: NetworkingAccessMode,
 
     /// Requests that the player re-renders after this execution (e.g. due to `updateAfterEvent`).
     pub needs_render: &'gc mut bool,

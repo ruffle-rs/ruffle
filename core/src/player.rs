@@ -25,7 +25,7 @@ use crate::backend::{
 };
 use crate::compatibility_rules::CompatibilityRules;
 use crate::compatibility_rules::UrlRewriteStage;
-use crate::config::Letterbox;
+use crate::config::{Letterbox, NetworkingAccessMode};
 use crate::context::{ActionQueue, ActionType, RenderContext, UpdateContext};
 use crate::context_menu::{
     BuiltInItemFlags, ContextMenuCallback, ContextMenuItem, ContextMenuState,
@@ -414,6 +414,9 @@ pub struct Player {
     /// The root SWF URL provided to ActionScript. If None,
     /// the actual loaded url will be used
     spoofed_url: Option<String>,
+
+    /// The value of "allowNetworking" param
+    allow_networking: NetworkingAccessMode,
 
     /// Any compatibility rules to apply for this movie.
     compatibility_rules: CompatibilityRules,
@@ -2338,6 +2341,7 @@ impl Player {
             let mut update_context = UpdateContext {
                 player_version: this.player_version,
                 player_mode: this.player_mode,
+                allow_networking: this.allow_networking,
                 root_swf,
                 library,
                 rng: &mut this.rng,
@@ -2670,6 +2674,7 @@ pub struct PlayerBuilder {
     viewport_scale_factor: f64,
     load_behavior: LoadBehavior,
     spoofed_url: Option<String>,
+    allow_networking: NetworkingAccessMode,
     compatibility_rules: CompatibilityRules,
     gamepad_button_mapping: HashMap<GamepadButton, KeyCode>,
     player_version: Option<u8>,
@@ -2728,6 +2733,7 @@ impl PlayerBuilder {
             viewport_scale_factor: 1.0,
             load_behavior: LoadBehavior::Streaming,
             spoofed_url: None,
+            allow_networking: NetworkingAccessMode::All,
             compatibility_rules: CompatibilityRules::default(),
             gamepad_button_mapping: HashMap::new(),
             player_version: None,
@@ -2903,6 +2909,11 @@ impl PlayerBuilder {
     /// Sets the root SWF URL provided to ActionScript.
     pub fn with_spoofed_url(mut self, url: Option<String>) -> Self {
         self.spoofed_url = url;
+        self
+    }
+
+    pub fn with_allow_networking(mut self, allow_networking: NetworkingAccessMode) -> Self {
+        self.allow_networking = allow_networking;
         self
     }
 
@@ -3143,6 +3154,7 @@ impl PlayerBuilder {
                 self_reference: self_ref.clone(),
                 load_behavior: self.load_behavior,
                 spoofed_url: self.spoofed_url.clone(),
+                allow_networking: self.allow_networking,
                 compatibility_rules: self.compatibility_rules.clone(),
                 stub_tracker: StubCollection::new(),
                 notification_sender: self.notification_sender,
