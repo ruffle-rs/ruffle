@@ -73,6 +73,14 @@ pub trait FontLike<'gc> {
 
     fn metrics(&self) -> FontMetrics;
 
+    /// Typographic metrics (OS/2 `sTypo*`) at a requested height, if the font
+    /// provides them. Used by the Flash Text Engine, which reports them to
+    /// ActionScript like Flash Player; `None` (the default) falls back to the
+    /// hhea/cell [`FontLike::metrics`].
+    fn typo_metrics_at(&self, _height: Twips) -> Option<FontMetrics> {
+        None
+    }
+
     fn scale(&self) -> f32;
 
     fn font_type(&self) -> FontType;

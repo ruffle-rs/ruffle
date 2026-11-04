@@ -86,6 +86,10 @@ impl<'gc> FontLike<'gc> for FontSet<'gc> {
         self.0.main_font.metrics()
     }
 
+    fn typo_metrics_at(&self, height: Twips) -> Option<FontMetrics> {
+        self.0.main_font.typo_metrics_at(height)
+    }
+
     fn scale(&self) -> f32 {
         self.0.main_font.scale()
     }

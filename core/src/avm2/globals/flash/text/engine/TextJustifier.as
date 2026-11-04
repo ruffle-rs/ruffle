@@ -5,6 +5,7 @@ package flash.text.engine {
 
     [API("662")]
     public class TextJustifier {
+        [Ruffle(NativeAccessible)]
         private var _lineJustification:String = null;
         private var _locale:String;
 
