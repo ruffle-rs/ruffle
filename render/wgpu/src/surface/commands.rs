@@ -224,8 +224,10 @@ impl CommandHandler for WgpuCommandHandler<'_, '_> {
         // A shader blend needs geometry coverage even when the foreground color is
         // fully transparent. Replay flat draw lists into the stencil separately.
         // Lists with their own masks or blends need a separate coverage pass.
-        let coverage = (self.mask_state.count == 0
-            && matches!(blend_type, BlendType::Shader(_))
+        let coverage = (matches!(
+            self.mask_state.mode,
+            MaskMode::NoMask | MaskMode::DrawMaskedContent
+        ) && matches!(blend_type, BlendType::Shader(_))
             && commands.commands.iter().all(|command| {
                 matches!(
                     command,
@@ -252,12 +254,10 @@ impl CommandHandler for WgpuCommandHandler<'_, '_> {
         );
         target.ensure_cleared(self.draw_encoder);
 
-        // We currently do not support shader blends in masks. In order not to
-        // break other parts of the scene, we just fall back to a normal blend.
-        //
-        // TODO Add support for shader blends in masks.
-        let is_shader_blend_in_mask =
-            self.mask_state.count > 0 && matches!(blend_type, BlendType::Shader(_));
+        // Use a normal blend inside a mask when the coverage cannot be replayed.
+        let is_shader_blend_in_mask = self.mask_state.count > 0
+            && coverage.is_none()
+            && matches!(blend_type, BlendType::Shader(_));
         let blend_type = if is_shader_blend_in_mask {
             BlendType::Trivial(TrivialBlend::Normal)
         } else {

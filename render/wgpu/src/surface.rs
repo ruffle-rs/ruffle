@@ -227,11 +227,12 @@ impl Surface {
                         .map(|background| &background.0)
                         .unwrap_or_else(|| parent_blend_buffer.texture());
                     let mode = if needs_stencil {
-                        ShaderMode::Blend(
-                            target
+                        ShaderMode::Blend {
+                            attachment: target
                                 .stencil_attachment(descriptors, texture_pool)
                                 .expect("Shader blend coverage requires a stencil attachment"),
-                        )
+                            stencil_reference: mask_state.count,
+                        }
                     } else {
                         ShaderMode::Filter
                     };

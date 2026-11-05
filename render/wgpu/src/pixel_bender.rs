@@ -378,7 +378,10 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
 pub enum ShaderMode<'a> {
     ShaderJob,
     Filter,
-    Blend(wgpu::RenderPassDepthStencilAttachment<'a>),
+    Blend {
+        attachment: wgpu::RenderPassDepthStencilAttachment<'a>,
+        stencil_reference: u32,
+    },
 }
 
 #[expect(clippy::too_many_arguments)]
@@ -395,7 +398,7 @@ pub(super) fn run_pixelbender_shader_impl(
     source: &FilterSource,
 ) -> Result<(), BitmapError> {
     let cached_shader = as_cache_holder(&shader);
-    let use_multisampling = matches!(mode, ShaderMode::Blend(_))
+    let use_multisampling = matches!(mode, ShaderMode::Blend { .. })
         && descriptors.supports_multisampled_blending
         && sample_count > 1;
     let mut multisampled_shader = cached_shader.multisampled.borrow_mut();
@@ -470,7 +473,7 @@ pub(super) fn run_pixelbender_shader_impl(
         // When a Shader is run through a ShaderFilter, out-of-range texture sample coordinates
         // return transparent black (0.0, 0.0, 0.0, 0.0). This is easiest to observe with
         // BitmapData.applyFilter when the BitmapData destination is larger than the source.
-        ShaderMode::Filter | ShaderMode::Blend(_) => [1.0f32, 1.0f32, 1.0f32, 1.0f32],
+        ShaderMode::Filter | ShaderMode::Blend { .. } => [1.0f32, 1.0f32, 1.0f32, 1.0f32],
     }]));
     drop(zeroed_out_of_range_mode_slice);
 
@@ -692,9 +695,12 @@ pub(super) fn run_pixelbender_shader_impl(
             usage: BufferUsages::VERTEX,
         });
 
-    let stencil = match mode {
-        ShaderMode::Blend(attachment) => Some(attachment),
-        ShaderMode::ShaderJob | ShaderMode::Filter => None,
+    let (stencil, stencil_reference) = match mode {
+        ShaderMode::Blend {
+            attachment,
+            stencil_reference,
+        } => (Some(attachment), stencil_reference),
+        ShaderMode::ShaderJob | ShaderMode::Filter => (None, 0),
     };
     let with_stencil = stencil.is_some();
     let pipeline =
@@ -709,7 +715,7 @@ pub(super) fn run_pixelbender_shader_impl(
     render_pass.set_bind_group(0, &bind_group, &[]);
     render_pass.set_pipeline(&pipeline);
     if with_stencil {
-        render_pass.set_stencil_reference(1);
+        render_pass.set_stencil_reference(stencil_reference);
     }
 
     render_pass.set_vertex_buffer(0, vertices.slice(..));
