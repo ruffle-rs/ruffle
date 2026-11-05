@@ -463,7 +463,7 @@ fn f64_to_string<'gc>(n: f64, activation: &mut Activation<'_, 'gc>) -> AvmString
     }
 }
 
-fn f64_to_string_finite_nonzero(n: f64) -> String {
+pub fn f64_to_string_finite_nonzero(n: f64) -> String {
     let (sign, n) = if n.is_sign_negative() {
         ("-", -n)
     } else {
