@@ -11,10 +11,14 @@ function debug_children(x) {
 
     trace("Children:");
 
-    for (var i = 0; i < children.length; i += 1) {
-        trace("Child " + i);
-        debug_node(children[i]);
-        debug_children(children[i]);
+    if (children !== undefined) {
+        for (var i = 0; i < children.length; i += 1) {
+            trace("Child " + i);
+            debug_node(children[i]);
+            debug_children(children[i]);
+        }
+    } else {
+        trace("NO CHILDREN");
     }
 
     trace("End children.");
