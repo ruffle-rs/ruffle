@@ -3,6 +3,7 @@ var cases = [
     "<a><b>foo</a>",
     "<a><b>foo</a><c/>",
     "<a><b>foo</a>bar</a>",
+    "<a><b>foo</a></b>",
     "<r><a><b>foo</a></r>",
     "<a><b><c>foo</b>",
     // End-tag closes an element further up, or one that isn't open.
@@ -27,5 +28,7 @@ var cases = [
 ];
 for (var i = 0; i < cases.length; i++) {
     var xml = new XML(cases[i]);
-    trace(cases[i] + " -> " + xml.status + " -> " + xml.toString());
+    trace("case: " + cases[i]);
+    trace("  returned: " + xml.status);
+    trace("  toString: " + xml.toString());
 }
