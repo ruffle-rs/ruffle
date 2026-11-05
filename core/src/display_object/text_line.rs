@@ -290,11 +290,22 @@ impl<'gc> TDisplayObject<'gc> for TextLine<'gc> {
     fn replace_with(self, _context: &mut UpdateContext<'gc>, _id: CharacterId) {}
 
     fn render_self(self, context: &mut RenderContext<'_, 'gc>) {
-        self.0.fallback.render_self(context);
+        // Render the fallback through the full render path, so that its
+        // matrix, clipping, and culling are applied relative to this line.
+        self.0.fallback.render(context);
     }
 
     fn self_bounds(self, mode: BoundsMode) -> Rectangle<Twips> {
-        self.0.fallback.self_bounds(mode)
+        let mut bounds = self.0.fallback.self_bounds(mode);
+        // Flash's `TextLine` places the baseline of its text at the line's
+        // origin, so its bounds extend `ascent` above and `descent` below
+        // that origin. Our fallback edit text is shifted up by
+        // `GUTTER + ascent` (see `TextBlock.apply_format`), which would
+        // otherwise report the wrong bounds to scripts positioning the line.
+        let (ascent, descent) = self.metrics();
+        bounds.y_min = Twips::from_pixels(-ascent);
+        bounds.y_max = Twips::from_pixels(descent);
+        bounds
     }
 
     fn hit_test_shape(

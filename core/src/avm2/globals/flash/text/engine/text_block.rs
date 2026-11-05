@@ -557,6 +557,11 @@ fn create_text_line<'gc>(activation: &mut Activation<'_, 'gc>, width: f64) -> Te
     let text_line = TextLine::new(activation.context, movie, fallback);
     initialize_for_allocator(activation.context, text_line.into(), class);
 
+    // The fallback edit text is positioned relative to this line; parent it
+    // to the line so that its transform, bounds, and culling resolve through
+    // the line's position on the display list.
+    fallback.set_parent(activation.context, Some(text_line.into()));
+
     text_line
 }
 
@@ -660,5 +665,15 @@ fn apply_format<'gc>(
     let measured_text = edit_text.measure_text(activation.context);
 
     edit_text.set_height(activation.context, measured_text.1.to_pixels());
-    edit_text.set_y(measured_text.1 * line_index as i32);
+
+    // Flash's `TextLine` places the baseline of its text at the line's
+    // origin. Our internal `EditText` draws its first line's baseline
+    // `GUTTER + ascent` below its own origin, so shift it up to compensate.
+    let ascent = edit_text
+        .layout()
+        .lines()
+        .first()
+        .map(|line| line.ascent())
+        .unwrap_or_default();
+    edit_text.set_y((measured_text.1 * line_index as i32) - (EditText::GUTTER + ascent));
 }
