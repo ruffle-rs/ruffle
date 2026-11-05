@@ -22,7 +22,8 @@ package {
                 var c:Point = p.projectionCenter;
                 trace(label, c == null ? "null" : c.x + "," + c.y);
             } catch (e:Error) {
-                trace(label, e.name, e.errorID);
+                trace(label, e.constructor);
+                trace(e.getStackTrace());
             }
         }
 
@@ -50,12 +51,8 @@ package {
                 p.projectionCenter = null;
                 trace("set null: accepted");
             } catch (e:Error) {
-                trace("set null:", e.name, e.errorID);
-                trace("error string:", e.toString());
-                trace("stack trace:", String(e.getStackTrace())
-                    .replace(/\[[^\]]*\]/g, "")
-                    .replace(/\r\n/g, "\n")
-                    .replace(/^[ \t]+/gm, ""));
+                trace("set null:", e.constructor);
+                trace(e.getStackTrace());
             }
             show("after null attempt", p);
 
@@ -63,7 +60,8 @@ package {
                 p.fieldOfView = 60;
                 trace("set FOV after null: accepted");
             } catch (e:Error) {
-                trace("set FOV after null:", e.name, e.errorID);
+                trace("set FOV after null:", e.constructor);
+                trace(e.getStackTrace());
             }
             show("after FOV change", p);
         }
