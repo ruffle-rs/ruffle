@@ -1,0 +1,36 @@
+=== standalone ===
+after set 10,20
+after mutating input 10,20
+getter identity false
+input identity false
+after mutating getter result 10,20
+set null: TypeError 2007
+error string: TypeError: Error #2007: Parameter point must be non-null.
+stack trace: TypeError: Error #2007: Parameter point must be non-null.
+at flash.geom::PerspectiveProjection/set projectionCenter()
+at Test/runCase()
+at Test()
+after null attempt 10,20
+set FOV after null: accepted
+after FOV change 10,20
+=== attached ===
+after set 10,20
+after mutating input 10,20
+getter identity false
+input identity false
+after mutating getter result 10,20
+set null: TypeError 2007
+error string: TypeError: Error #2007: Parameter point must be non-null.
+stack trace: TypeError: Error #2007: Parameter point must be non-null.
+at flash.geom::PerspectiveProjection/set projectionCenter()
+at Test/runCase()
+at Test()
+after null attempt 10,20
+set FOV after null: accepted
+after FOV change 10,20
+=== assignment ===
+original after input mutation 11,22
+attached after input mutation 11,22
+original after replacement 33,44
+attached after original replacement 11,22
+=== DONE ===
