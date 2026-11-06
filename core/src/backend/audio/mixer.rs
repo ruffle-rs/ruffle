@@ -1,12 +1,13 @@
 use super::decoders::{
     self, AdpcmDecoder, Decoder, G711ALawDecoder, G711MuLawDecoder, PcmDecoder, SeekableDecoder,
 };
-use super::{SoundHandle, SoundInstanceHandle, SoundStreamInfo, SoundTransform};
+use super::{SampleQueue, SoundHandle, SoundInstanceHandle, SoundStreamInfo, SoundTransform};
 use crate::backend::audio::{DecodeError, RegisterError};
 use crate::tag_utils::SwfSlice;
 use ruffle_common::buffer::Substream;
 use ruffle_common::duration::FloatDuration;
 use slotmap::SlotMap;
+use std::collections::VecDeque;
 use std::io::Cursor;
 use std::sync::{Arc, Mutex, RwLock};
 use swf::AudioCompression;
@@ -130,6 +131,80 @@ impl<D: Decoder> dasp::signal::Signal for DecoderStream<D> {
             frame
         } else {
             self.is_exhausted = true;
+            Default::default()
+        }
+    }
+
+    #[inline]
+    fn is_exhausted(&self) -> bool {
+        self.is_exhausted
+    }
+}
+
+/// A stream that plays the sample frames of a `SampleQueue` as they are queued.
+struct SampleQueueStream {
+    queue: SampleQueue,
+
+    /// Sample frames taken from the queue, still to be played.
+    buffer: VecDeque<[i16; 2]>,
+
+    /// The number of sample frames played so far.
+    position: u32,
+
+    /// Silent sample frames to play before checking the queue again, after
+    /// finding it empty.
+    starved_frames: u16,
+
+    is_exhausted: bool,
+}
+
+impl SampleQueueStream {
+    /// How often to check an empty queue for samples, in sample frames.
+    const STARVED_RETRY_FRAMES: u16 = 256;
+
+    fn new(queue: SampleQueue) -> Self {
+        Self {
+            queue,
+            buffer: VecDeque::new(),
+            position: 0,
+            starved_frames: 0,
+            is_exhausted: false,
+        }
+    }
+}
+
+impl Stream for SampleQueueStream {
+    #[inline]
+    fn source_position(&self) -> u32 {
+        self.position
+    }
+
+    #[inline]
+    fn source_sample_rate(&self) -> u16 {
+        SampleQueue::SAMPLE_RATE
+    }
+}
+
+impl dasp::signal::Signal for SampleQueueStream {
+    type Frame = [i16; 2];
+
+    #[inline]
+    fn next(&mut self) -> [i16; 2] {
+        if self.buffer.is_empty() && self.starved_frames == 0 {
+            let ended = self.queue.take(&mut self.buffer);
+            self.is_exhausted = ended && self.buffer.is_empty();
+            // Before the first samples, keep checking: they are about to be
+            // queued, and waiting would delay the start of the sound.
+            if self.buffer.is_empty() && self.position > 0 {
+                self.starved_frames = Self::STARVED_RETRY_FRAMES;
+            }
+        }
+        if let Some(frame) = self.buffer.pop_front() {
+            self.position = self.position.saturating_add(1);
+            frame
+        } else {
+            // No samples yet: play silence until more are queued.
+            self.starved_frames = self.starved_frames.saturating_sub(1);
             Default::default()
         }
     }
@@ -627,6 +702,21 @@ impl AudioMixer {
         Ok(handle)
     }
 
+    /// Starts playing the sample frames of a `SampleQueue`, as they are queued.
+    pub fn start_sample_queue(
+        &mut self,
+        queue: SampleQueue,
+    ) -> Result<SoundInstanceHandle, DecodeError> {
+        let stream = Box::new(self.make_resampler(SampleQueueStream::new(queue)));
+
+        let mut sound_instances = self
+            .sound_instances
+            .lock()
+            .expect("Cannot be called reentrant");
+        let handle = sound_instances.insert(SoundInstance::new_stream(stream));
+        Ok(handle)
+    }
+
     /// Stops a playing sound instance.
     pub fn stop_sound(&mut self, sound: SoundInstanceHandle) {
         let mut sound_instances = self
@@ -1104,6 +1194,14 @@ macro_rules! impl_audio_mixer_backend {
             stream_info: &SoundStreamInfo,
         ) -> Result<SoundInstanceHandle, DecodeError> {
             self.$mixer.start_substream(stream_data, stream_info)
+        }
+
+        #[inline]
+        fn start_sample_queue(
+            &mut self,
+            queue: ruffle_core::backend::audio::SampleQueue,
+        ) -> Result<SoundInstanceHandle, DecodeError> {
+            self.$mixer.start_sample_queue(queue)
         }
 
         #[inline]

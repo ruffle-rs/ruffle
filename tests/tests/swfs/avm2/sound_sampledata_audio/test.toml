@@ -1,0 +1,29 @@
+num_ticks = 30
+
+[player_options]
+with_audio = true
+
+[[compilers]]
+type = "Asc"
+target = "test.swf"
+class = "Test"
+scripts = ["Test.as"]
+swf_version = 43
+
+[audio_assertions.little_endian]
+frames = [1, 2, 4, 6, 8]
+min_max_amplitude = 0.49
+max_amplitude = 0.51
+
+[audio_assertions.ended]
+frames = [11, 12, 14]
+max_amplitude = 0.0
+
+[audio_assertions.sound_transform]
+frames = [16, 17, 18, 19]
+min_max_amplitude = 0.24
+max_amplitude = 0.26
+
+[audio_assertions.ended_again]
+frames = [24, 26, 30]
+max_amplitude = 0.0

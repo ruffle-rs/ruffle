@@ -1085,6 +1085,7 @@ make_error_fn!(make_error_2030, 2030, eof_error);
 make_error_fn!(make_error_2037, 2037, error);
 make_error_fn!(make_error_2058, 2058, io_error);
 make_error_fn!(make_error_2067, 2067, error);
+make_error_fn!(make_error_2068, 2068, argument_error);
 make_error_fn!(make_error_2078, 2078, illegal_operation_error);
 make_error_fn!(make_error_2082, 2082, argument_error);
 make_error_fn!(make_error_2083, 2083, argument_error);

@@ -611,6 +611,7 @@ impl Player {
         self.update_timers(dt);
         self.update(|context| {
             StreamManager::tick(context, dt);
+            AudioManager::update_sample_generators(context, dt);
         });
         self.audio.tick();
     }
