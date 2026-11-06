@@ -6,5 +6,5 @@ file-picker-filter-spl = FutureSplash Animator (*.spl)
 file-picker-filter-ruf = Ruffle-пакет (*.ruf)
 file-picker-filter-all = Все файлы
 file-picker-select-root-movie-title = Выбрать корневую анимацию
-file-picker-select-root-movie-message = Выбрать корневую анимацию из открытой директории.
+file-picker-select-root-movie-message = Выберите корневую анимацию из открытой директории.
 file-picker-select-root-movie-select = Выбрать

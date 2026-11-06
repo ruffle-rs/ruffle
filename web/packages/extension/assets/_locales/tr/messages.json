@@ -6,7 +6,7 @@
         "message": "Ruffle'a izin vermeyen sitelerde bile Flash içeriği oynat"
     },
     "settings_show_swf_download": {
-        "message": "Bağlam menüsünde SWF indirmesini göster"
+        "message": "Bağlam menüsünde SWF indirme seçeneğini göster"
     },
     "settings_autostart": {
         "message": "Açılış ekranı olmadan otomatik olarak oynat (sonrasında sesi açmak için tıkla)"
@@ -90,10 +90,10 @@
         "message": "Geçerli sayfa kendisini uyumsuz olarak işaretlediğinden Ruffle yüklenmedi."
     },
     "status_result_disabled": {
-        "message": "Ruffle devre dışı olduğu için yüklenmedi."
+        "message": "Ruffle devre dışı."
     },
     "status_result_error": {
-        "message": "Geçerli sekmenin Ruffle örneği sorgulanırken bir hata oluştu."
+        "message": "Geçerli sekmenin Ruffle görevi sorgulanırken bir hata oluştu."
     },
     "status_result_protected": {
         "message": "Ruffle korumalı tarayıcı sayfalarına yüklenemez."
