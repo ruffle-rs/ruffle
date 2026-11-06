@@ -83,11 +83,6 @@ Testing _global.PrintJob
   constructor, own, type=[function with prototype]
   prototype, own, DONT_ENUM, type=[object]
 Testing _global.PrintJob.prototype
-  orientation, own, READ_ONLY, type=[number]
-  pageWidth, own, READ_ONLY, type=[number]
-  pageHeight, own, READ_ONLY, type=[number]
-  paperWidth, own, READ_ONLY, type=[number]
-  paperHeight, own, READ_ONLY, type=[number]
   send, own, DONT_ENUM, type=[function]
   addPage, own, DONT_ENUM, type=[function]
   start, own, DONT_ENUM, type=[function]

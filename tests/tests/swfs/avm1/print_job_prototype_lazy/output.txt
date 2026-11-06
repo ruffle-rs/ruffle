@@ -1,0 +1,6 @@
+startup, PrintJob.prototype.orientation: false
+new PrintJob(): orientation,pageWidth,pageHeight,paperWidth,paperHeight
+PrintJob() without new: 0
+super() in a subclass: 5 on its prototype, 0 on PrintJob.prototype
+orientation deleted, created again: true -> false
+done
