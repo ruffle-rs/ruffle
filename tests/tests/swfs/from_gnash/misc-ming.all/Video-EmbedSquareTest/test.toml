@@ -1,9 +1,15 @@
 num_ticks = 20
 
 [image_comparisons.output]
-tolerance = 5
 trigger = 1
-known_failure = true
+
+[[image_comparisons.output.checks]]
+tolerance = 4
+max_outliers = 678
+
+[[image_comparisons.output.checks]]
+tolerance = 96
+max_outliers = 0
 
 [player_options]
 with_renderer = { optional = false, quality = "high" }

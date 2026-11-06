@@ -1,0 +1,48 @@
+// Glyph advances
+SmallTextFont 7 'aaaaaaaaaa': textWidth 30, line width 30
+SmallTextFont 7 'abcd abcd': textWidth 30, line width 30
+SmallTextFont 10 'aaaaaaaaaa': textWidth 50, line width 50
+SmallTextFont 10 'abcd abcd': textWidth 41, line width 41
+SmallTextFont 15 'aaaaaaaaaa': textWidth 70, line width 70
+SmallTextFont 15 'abcd abcd': textWidth 60, line width 60
+SmallTextFont 20 'aaaaaaaaaa': textWidth 90, line width 90
+SmallTextFont 20 'abcd abcd': textWidth 77, line width 77
+PlainFont 7 'aaaaaaaaaa': textWidth 30, line width 30
+PlainFont 7 'abcd abcd': textWidth 26.45, line width 26.45
+PlainFont 10 'aaaaaaaaaa': textWidth 42.5, line width 42.5
+PlainFont 10 'abcd abcd': textWidth 37.7, line width 37.7
+PlainFont 15 'aaaaaaaaaa': textWidth 64, line width 64
+PlainFont 15 'abcd abcd': textWidth 56.55, line width 56.55
+PlainFont 20 'aaaaaaaaaa': textWidth 85.5, line width 85.5
+PlainFont 20 'abcd abcd': textWidth 75.5, line width 75.5
+// letterSpacing
+SmallTextFont 20 letterSpacing 0.3: textWidth 90, line width 90
+PlainFont 20 letterSpacing 0.3: textWidth 88.5, line width 88.5
+SmallTextFont 20 letterSpacing 0.5: textWidth 100, line width 100
+PlainFont 20 letterSpacing 0.5: textWidth 90.5, line width 90.5
+SmallTextFont 20 letterSpacing 1.5: textWidth 110, line width 110
+PlainFont 20 letterSpacing 1.5: textWidth 100.5, line width 100.5
+SmallTextFont 20 letterSpacing -0.5: textWidth 90, line width 90
+PlainFont 20 letterSpacing -0.5: textWidth 80.5, line width 80.5
+SmallTextFont 20 letterSpacing -1: textWidth 80, line width 80
+PlainFont 20 letterSpacing -1: textWidth 75.5, line width 75.5
+// kerning
+SmallTextFont 20 kerning: textWidth 63, line width 63
+SmallTextFont 20 kerning letterSpacing 0.45: textWidth 72, line width 72
+PlainFont 20 kerning: textWidth 59.4, line width 59.4
+// Two formats in one line
+SmallTextFont 10 then 20: textWidth 70, line width 70
+SmallTextFont then PlainFont 20: textWidth 87.75, line width 87.75
+// Scaled field
+SmallTextFont 10 scale 2: textWidth 50, line width 50
+// autoSize
+SmallTextFont 10 autoSize: width 54
+// getCharBoundaries
+SmallTextFont 20 'abcd' char 0: x 2, width 9
+SmallTextFont 20 'abcd' char 1: x 11, width 10
+SmallTextFont 20 'abcd' char 2: x 21, width 5
+SmallTextFont 20 'abcd' char 3: x 26, width 12
+// antiAliasType advanced
+SmallTextFont 10 advanced, same textWidth as PlainFont: true
+SmallTextFont 20 advanced, same textWidth as PlainFont: true
+SmallTextFont 10 set to advanced after layout: textWidth 50

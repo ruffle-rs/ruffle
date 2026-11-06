@@ -1,0 +1,5 @@
+# test.swf is Test.as compiled to ABC, plus two DefineFont3 tags added by
+# add_fonts.py: SmallTextFont (SmallText flag set) and PlainFont (the same
+# font without it). mxmlc's [Embed] cannot set the SmallText flag. See
+# add_fonts.py for how to rebuild test.swf.
+num_ticks = 1

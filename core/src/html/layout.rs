@@ -23,6 +23,7 @@ pub struct LayoutParams<'gc> {
     pub is_input: bool,
     pub is_word_wrap: bool,
     pub font_type: FontType,
+    pub advanced_rendering: bool,
 }
 
 /// Accumulates state while incrementally laying out a run of text.
@@ -40,6 +41,9 @@ pub struct LayoutBuilder<'a, 'gc> {
 
     /// Type of the font used by the text field.
     font_type: FontType,
+
+    /// Whether the text field uses the advanced text rendering engine.
+    advanced_rendering: bool,
 
     /// The position to put text into.
     ///
@@ -140,6 +144,7 @@ impl<'a, 'gc> LayoutBuilder<'a, 'gc> {
             is_input: params.is_input,
             is_word_wrap: params.is_word_wrap,
             font_type: params.font_type,
+            advanced_rendering: params.advanced_rendering,
         }
     }
 
@@ -154,7 +159,7 @@ impl<'a, 'gc> LayoutBuilder<'a, 'gc> {
         self.font_set = Some(font_set);
         self.newspan(span);
 
-        let params = EvalParameters::from_span(span);
+        let params = EvalParameters::from_span(span, self.advanced_rendering);
 
         for range in span_text.split_indices([b'\n', b'\r', b'\t']) {
             let slice_start = range.start;
@@ -672,13 +677,13 @@ impl<'a, 'gc> LayoutBuilder<'a, 'gc> {
     /// work, and it should only be called internally.
     fn append_text_fragment(&mut self, text: &'a WStr, start: usize, end: usize, span: &TextSpan) {
         let font_set = self.font_set.expect("text fragment requires a font");
-        let params = EvalParameters::from_span(span);
+        let params = EvalParameters::from_span(span, self.advanced_rendering);
         let metrics = font_set.metrics();
         let ascent = metrics.ascent(params.height());
         let descent = metrics.descent(params.height());
         let box_origin = self.cursor - (Twips::ZERO, ascent).into();
 
-        let mut new_box = LayoutBox::from_text(text, start, end, font_set, span);
+        let mut new_box = LayoutBox::from_text(text, start, end, font_set, span, params);
         let text_width = new_box.text_width();
         new_box.bounds = BoxBounds::from_position_and_size(
             box_origin,
@@ -703,7 +708,7 @@ impl<'a, 'gc> LayoutBuilder<'a, 'gc> {
                 + Self::left_alignment_offset_without_bullet(span, self.is_first_line),
         );
 
-        let params = EvalParameters::from_span(span);
+        let params = EvalParameters::from_span(span, self.advanced_rendering);
         let metrics = bullet_font.metrics();
         let ascent = metrics.ascent(params.height());
         let descent = metrics.descent(params.height());
@@ -712,7 +717,7 @@ impl<'a, 'gc> LayoutBuilder<'a, 'gc> {
         let box_origin = bullet_cursor - (Twips::ZERO, ascent).into();
 
         let pos = self.last_box_end_position();
-        let mut new_bullet = LayoutBox::from_bullet(pos, bullet_font, span);
+        let mut new_bullet = LayoutBox::from_bullet(pos, bullet_font, span, params);
         new_bullet.bounds = BoxBounds::from_position_and_size(
             box_origin,
             Size::from((text_width, ascent + descent)),
@@ -1185,8 +1190,8 @@ impl<'gc> LayoutBox<'gc> {
         end: usize,
         font_set: FontSet<'gc>,
         span: &TextSpan,
+        params: EvalParameters,
     ) -> Self {
-        let params = EvalParameters::from_span(span);
         let mut char_end_pos = Vec::with_capacity(end - start);
 
         font_set.evaluate(text, params, |_, _, _, advance, x| {
@@ -1209,9 +1214,12 @@ impl<'gc> LayoutBox<'gc> {
     }
 
     /// Construct a bullet.
-    pub fn from_bullet(position: usize, font_set: FontSet<'gc>, span: &TextSpan) -> Self {
-        let params = EvalParameters::from_span(span);
-
+    pub fn from_bullet(
+        position: usize,
+        font_set: FontSet<'gc>,
+        span: &TextSpan,
+        params: EvalParameters,
+    ) -> Self {
         Self {
             bounds: Default::default(),
             content: LayoutContent::Bullet {

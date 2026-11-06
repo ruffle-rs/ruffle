@@ -893,6 +893,7 @@ impl<'gc> EditText<'gc> {
             is_input: !self.0.flags.get().contains(EditTextFlag::READ_ONLY),
             is_word_wrap,
             font_type: self.0.font_type(),
+            advanced_rendering: self.0.render_settings.get().is_advanced(),
         };
         let new_layout =
             html::lower_from_text_spans(&text_spans, context, layout_params, content_width);

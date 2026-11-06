@@ -3564,12 +3564,18 @@ impl<'gc, 'a> MovieClipShared<'gc> {
         reader: &mut SwfStream<'a>,
     ) -> Result<(), Error> {
         let settings = reader.read_csm_text_settings()?;
-        match self.library_mut(context).character_by_id(settings.id) {
+        let character = self.library_mut(context).character_by_id(settings.id);
+        match character {
             Some(Character::Text(text)) => {
                 text.set_render_settings(settings.into());
             }
             Some(Character::EditText(edit_text)) => {
                 edit_text.set_render_settings(settings.into());
+                if edit_text.render_settings().is_advanced() {
+                    // Advanced rendering does not round the advances of
+                    // SmallText fonts, so the text has to be laid out again.
+                    edit_text.relayout(context);
+                }
             }
             Some(_) => {
                 tracing::warn!(
@@ -3839,7 +3845,11 @@ impl<'gc, 'a> MovieClipShared<'gc> {
         context: &mut UpdateContext<'gc>,
         reader: &mut SwfStream<'a>,
     ) -> Result<(), Error> {
-        let font = reader.read_define_font_2(2)?;
+        let mut font = reader.read_define_font_2(2)?;
+        // Flash Player ignores the SmallText flag before SWF 7.
+        if self.movie().version() < 7 {
+            font.flags.remove(swf::FontFlag::IS_SMALL_TEXT);
+        }
         let font_id = font.id;
         let font_object = Font::from_swf_tag(
             context.gc(),
@@ -3859,7 +3869,11 @@ impl<'gc, 'a> MovieClipShared<'gc> {
         context: &mut UpdateContext<'gc>,
         reader: &mut SwfStream<'a>,
     ) -> Result<(), Error> {
-        let font = reader.read_define_font_2(3)?;
+        let mut font = reader.read_define_font_2(3)?;
+        // Flash Player ignores the SmallText flag before SWF 7.
+        if self.movie().version() < 7 {
+            font.flags.remove(swf::FontFlag::IS_SMALL_TEXT);
+        }
         let font_id = font.id;
         let font_object = Font::from_swf_tag(
             context.gc(),
