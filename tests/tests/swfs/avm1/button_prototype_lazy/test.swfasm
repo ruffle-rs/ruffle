@@ -1,0 +1,20 @@
+// See test.as.
+Swf(
+    version: 8,
+    frame_rate: 12,
+    tags: [
+        FileAttributes(),
+        SetBackgroundColor(0xFFFFFF),
+
+        // Frame 1
+        DoAction(Rascal(file: "test.as")),
+        // DefineButton2: character 1, no records, no actions.
+        Raw(code: 34, data: InlineBytes(["0100", "00", "0000", "00"])),
+        ShowFrame,
+
+        // Frame 2
+        PlaceObject2(depth: 1, character: 1, name: "b"),
+        ShowFrame,
+        End,
+    ],
+)

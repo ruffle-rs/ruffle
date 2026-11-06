@@ -857,7 +857,6 @@ Testing _global.Button
   constructor, own, type=[function with prototype]
   prototype, own, DONT_ENUM, type=[object]
 Testing _global.Button.prototype
-  tabIndex, own, READ_ONLY, type=[undefined]
   blendMode, own, READ_ONLY, type=[undefined]
   cacheAsBitmap, own, READ_ONLY, type=[undefined]
   filters, own, READ_ONLY, type=[undefined]
