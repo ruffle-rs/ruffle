@@ -1984,6 +1984,25 @@ fn show_text_format_hover(ui: &mut Ui, tf: &TextFormat) {
     });
 }
 
+fn vis_widget(ui: &mut Ui, visible: bool) -> egui::Response {
+    let widgets = ui.style().visuals.widgets.clone();
+    let text_color = if visible {
+        widgets.active.fg_stroke.color
+    } else {
+        widgets.noninteractive.fg_stroke.color
+    };
+    let re = ui.add(egui::Button::new(egui::RichText::new("👁️").color(text_color)).frame(false));
+    if re.contains_pointer() {
+        ui.painter().rect_stroke(
+            re.rect,
+            widgets.active.corner_radius,
+            widgets.active.bg_stroke,
+            egui::StrokeKind::Outside,
+        );
+    }
+    re
+}
+
 pub fn display_object_row_ui<'gc>(
     ui: &mut Ui,
     context: &mut UpdateContext<'gc>,
@@ -1994,7 +2013,7 @@ pub fn display_object_row_ui<'gc>(
     ui.horizontal(|ui| {
         let re_track_btn = ui.button(summary_name(object));
         let visible = object.visible();
-        let re_vis_btn = ui.selectable_label(visible, "👁️");
+        let re_vis_btn = vis_widget(ui, visible);
         if re_track_btn.hovered() || re_vis_btn.hovered() {
             *hover = Some(DisplayObjectHandle::new(context, object));
         }
