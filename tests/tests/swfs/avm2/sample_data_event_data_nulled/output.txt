@@ -1,0 +1,18 @@
+SampleDataEvent received
+Phase: 0
+SampleDataEvent received
+Phase: 4096
+SampleDataEvent received
+Phase: 8192
+Setting event.data to null at phase: 11025
+TypeError: Error #1009: Cannot access a property or method of a null object reference.
+	at Test/onSampleData()
+	at flash.media::Sound/play()
+	at Test()
+SampleDataEvent received
+Phase: 11025
+Setting event.data to null at phase: 11026
+TypeError: Error #1009: Cannot access a property or method of a null object reference.
+	at Test/onSampleData()
+	at flash.media::Sound/play()
+	at Test()
