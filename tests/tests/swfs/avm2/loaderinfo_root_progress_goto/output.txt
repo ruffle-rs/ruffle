@@ -1,0 +1,10 @@
+constructor
+exitFrame
+init
+progress: 1196 / 1196
+gotoAndStop(1)
+exitFrame
+gotoAndStop(1) done
+complete
+enterFrame
+exitFrame

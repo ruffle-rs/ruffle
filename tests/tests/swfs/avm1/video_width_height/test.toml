@@ -1,0 +1,12 @@
+num_ticks = 40
+
+[player_options]
+# Not for image comparison: a renderer is only available with the `imgtests`
+# feature, which is also what enables the video decoders this test needs.
+with_renderer = { optional = false, quality = "low" }
+with_video = true
+
+[[compilers]]
+type = "Swfasm"
+source = "test.swfasm"
+target = "test.swf"

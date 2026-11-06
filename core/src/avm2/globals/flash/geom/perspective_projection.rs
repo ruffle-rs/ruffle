@@ -140,9 +140,16 @@ pub fn set_projection_center<'gc>(
 
     let this = this.as_object().unwrap();
 
-    sync_from_display_object(activation, this)?;
+    let point = args.get_object(activation, 0, "point")?;
+    let x = point.get_slot(point_slots::X);
+    let y = point.get_slot(point_slots::Y);
+    let point = activation
+        .avm2()
+        .classes()
+        .point
+        .construct(activation, &[x, y])?;
 
-    let point = args.get_value(0);
+    sync_from_display_object(activation, this)?;
     this.set_slot(pp_slots::CENTER, point, activation)?;
 
     sync_to_display_object(this)?;

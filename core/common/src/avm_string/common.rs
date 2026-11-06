@@ -401,6 +401,8 @@ ruffle_macros::define_common_strings! {
     "xMax",
     "xMin",
     "xml",
+    "XML",
+    "XMLNode",
     "year",
     "yMax",
     "yMin",

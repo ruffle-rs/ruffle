@@ -1,0 +1,21 @@
+original prototype: width=- height=-
+after new Video(): width=- height=-
+first Video, p1 had width=5: width=undefined height=undefined, v.__proto__ == proto: true, v.width=0 v.height=0
+original prototype: width=- height=-
+enumerable: height,marker,width
+p1 without width: width=- height=undefined, v.__proto__ == proto: true, v.width=undefined v.height=0
+p1 without width and height: width=- height=-, v.__proto__ == proto: true, v.width=undefined v.height=undefined
+after new Video(): width=- height=-
+swapped to p2, after new Video(): width=- height=-
+swapped to p2: width=undefined height=undefined, v.__proto__ == proto: true, v.width=0 v.height=0
+swapped back to p1: width=- height=-, v.__proto__ == proto: true, v.width=undefined v.height=undefined
+swapped to p3 = {height: 1}: width=undefined height=undefined, v.__proto__ == proto: true, v.width=0 v.height=0
+n1 = {}, after placing a Video: width=undefined height=undefined
+n1, made a Date: true
+n1, deleted width and height, after placing a Video: width=- height=-
+n2 = {}, made a Date: true
+n2, after placing a Video: width=undefined height=undefined
+[1, 2], after placing a Video: width=undefined height=undefined, length=6, v.width=0
+new TextFormat(), after placing a Video: width=undefined height=undefined, font=Foo, size=12, v.width=0
+new Date(), after placing a Video: width=undefined height=undefined, year=2000, v.width=0
+done
