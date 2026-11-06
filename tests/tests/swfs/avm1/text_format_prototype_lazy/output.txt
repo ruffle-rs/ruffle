@@ -1,0 +1,19 @@
+startup: font=- size=- bold=- align=- 
+after TextFormat() without new: font=- size=- bold=- align=- 
+after first new: font=undefined size=undefined bold=undefined align=undefined | b.font=Arial
+deleted font, new again: font=- size=undefined bold=undefined align=undefined | c.font=undefined
+swapped to p1 = {font: 5}, new: font=undefined size=undefined bold=undefined align=undefined | d.__proto__ == p1: true, d.font=Arial
+swapped back to p0, new: font=- size=undefined bold=undefined align=undefined | e.font=undefined
+swapped to p1 again (font deleted), new: font=- size=undefined bold=undefined align=undefined | f.font=undefined
+swapped to fresh p2, new: font=undefined size=undefined bold=undefined align=undefined | g.font=Arial
+swapped to fresh p3, getTextFormat(): font=undefined size=undefined bold=undefined align=undefined | h.__proto__ == p3: true
+swapped to fresh p4, getNewTextFormat(): font=undefined size=undefined bold=undefined align=undefined | i.__proto__ == p4: true
+n1 = {}, new: font=undefined size=undefined bold=undefined align=undefined 
+n1, made a Date: true
+n1, deleted font and size, new: font=- size=- bold=undefined align=undefined 
+n2 = {}, made a Date: true
+n2, new: font=undefined size=undefined bold=undefined align=undefined 
+[1, 2], new: font=undefined size=undefined bold=undefined align=undefined | length=6, j.font=Arial
+a TextFormat, new: font=string size=null bold=null align=null | tf.font=Foo, k.font=Arial
+new Date(), new: font=undefined size=undefined bold=undefined align=undefined | year=2000, l.font=Arial
+done
