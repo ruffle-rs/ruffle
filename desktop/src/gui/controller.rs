@@ -112,6 +112,10 @@ impl GuiController {
         );
         let descriptors = Descriptors::new(instance, adapter, device, queue);
         let egui_ctx = Context::default();
+        // The rest of the desktop UI (menu bar offset, movie viewport, egui-wgpu
+        // screen descriptor) assumes egui's pixels_per_point equals the window
+        // scale factor, so egui's own UI zoom would break the layout.
+        egui_ctx.options_mut(|o| o.zoom_with_keyboard = false);
 
         let theme_controller = futures::executor::block_on(ThemeController::new(
             window.clone(),
