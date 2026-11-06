@@ -1156,6 +1156,7 @@ make_error_fn!(
 make_error_fn!(make_error_2180, 2180, argument_error);
 make_error_fn!(make_error_2182, 2182, argument_error);
 make_error_fn!(make_error_2183, 2183, argument_error);
+make_error_fn!(make_error_2189, 2189, argument_error);
 
 #[inline(never)]
 #[cold]
