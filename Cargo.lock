@@ -4938,7 +4938,6 @@ dependencies = [
  "enum-map",
  "flate2",
  "gif",
- "glow",
  "guillotiere",
  "h263-rs-yuv",
  "image",
