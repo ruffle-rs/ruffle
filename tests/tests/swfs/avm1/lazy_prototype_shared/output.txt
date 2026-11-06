@@ -1,0 +1,8 @@
+p1, after new TextFormat: font=undefined size=undefined width=- height=-
+p1, after placing a Video: font=undefined size=undefined width=- height=-, v.__proto__ == p1: true
+p2, after placing a Video: font=- size=- width=undefined height=undefined, v.__proto__ == p2: true
+p2, after new TextFormat: font=- size=- width=undefined height=undefined, tf.__proto__ == p2: true
+p3, after placing a Video: font=- size=- width=undefined height=undefined orientation=-
+p3, deleted width and height, after new TextFormat: font=- size=- width=- height=- orientation=-
+p3, after new PrintJob: font=- size=- width=- height=- orientation=-
+done

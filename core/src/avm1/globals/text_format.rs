@@ -2,7 +2,9 @@
 
 use crate::avm1::object::NativeObject;
 use crate::avm1::parameters::{ParametersExt, UndefinedAs};
-use crate::avm1::property_decl::{DeclContext, PropertyOrder, StaticDeclarations, SystemClass};
+use crate::avm1::property_decl::{
+    self, DeclContext, PropertyOrder, StaticDeclarations, SystemClass,
+};
 use crate::avm1::{Activation, ArrayBuilder, Error, Object, Value};
 use crate::display_object::{AutoSizeMode, EditText, TDisplayObject};
 use crate::ecma_conversions::round_to_even;
@@ -47,6 +49,11 @@ macro_rules! method {
 
 const PROTO_DECLS: StaticDeclarations = declare_static_properties! {
     "getTextExtent" => method(method!(get_text_extent); DONT_ENUM | DONT_DELETE);
+};
+
+/// Defined lazily by the constructor, see
+/// [`property_decl::define_lazy_proto_properties`].
+const LAZY_PROTO_DECLS: StaticDeclarations = declare_static_properties! {
     "font" => property(getter!(font), setter!(set_font));
     "size" => property(getter!(size), setter!(set_size));
     "color" => property(getter!(color), setter!(set_color));
@@ -641,5 +648,16 @@ fn constructor<'gc>(
         activation.gc(),
         NativeObject::TextFormat(Gc::new(activation.gc(), text_format.into())),
     );
+    if let Some(Value::Object(proto)) = this.get_data(istr!("__proto__"), activation) {
+        define_lazy_proto_properties(activation, proto);
+    }
     Ok(this.into())
+}
+
+/// Defines the properties of TextFormat on `proto`, the prototype of a newly
+/// created TextFormat.
+///
+/// See [`property_decl::define_lazy_proto_properties`].
+pub fn define_lazy_proto_properties<'gc>(activation: &mut Activation<'_, 'gc>, proto: Object<'gc>) {
+    property_decl::define_lazy_proto_properties(activation, proto, LAZY_PROTO_DECLS);
 }
