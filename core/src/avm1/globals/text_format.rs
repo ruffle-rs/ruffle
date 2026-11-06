@@ -652,9 +652,7 @@ fn constructor<'gc>(
     );
     if is_new {
         define_instance_properties(activation, this);
-        if let Some(Value::Object(proto)) = this.get_data(istr!("__proto__"), activation) {
-            define_lazy_proto_properties(activation, proto);
-        }
+        property_decl::define_lazy_proto_properties_of(activation, this, LAZY_PROTO_DECLS);
     }
     Ok(this.into())
 }

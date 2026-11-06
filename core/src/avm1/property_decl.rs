@@ -238,6 +238,18 @@ pub fn define_lazy_proto_properties<'gc>(
     context.define_properties_on(proto, decls(&context));
 }
 
+/// Like [`define_lazy_proto_properties`], but on the prototype of `instance`,
+/// for native constructors.
+pub fn define_lazy_proto_properties_of<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    instance: Object<'gc>,
+    decls: StaticDeclarations,
+) {
+    if let Some(Value::Object(proto)) = instance.get_data(istr!("__proto__"), activation) {
+        define_lazy_proto_properties(activation, proto, decls);
+    }
+}
+
 /// The declaration of a property, method, or simple field, that
 /// can be defined on a [`Object`].
 #[derive(Copy, Clone)]
