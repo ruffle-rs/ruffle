@@ -1,7 +1,7 @@
 use crate::avm1::function::ExecutionReason;
 use crate::avm1::globals::create_globals;
 use crate::avm1::globals::object::broadcast_internal;
-use crate::avm1::object::stage_object;
+use crate::avm1::object::{ObjectWeak, stage_object};
 use crate::avm1::property_map::PropertyMap;
 use crate::avm1::scope::Scope;
 use crate::avm1::{Activation, ActivationIdentifier, Error, Object, Value, scope};
@@ -104,6 +104,11 @@ pub struct Avm1<'gc> {
     /// More examples of this are in the movieclip_invalid_get_bounds_X tests.
     use_new_invalid_bounds_value: bool,
 
+    /// The prototype objects that the lazily defined properties of a native
+    /// class have already been defined on, see
+    /// `avm1::property_decl::define_lazy_proto_properties`.
+    lazy_initialized_prototypes: Vec<ObjectWeak<'gc>>,
+
     #[cfg(feature = "avm_debug")]
     pub debug_output: bool,
 }
@@ -128,6 +133,7 @@ impl<'gc> Avm1<'gc> {
             #[cfg(feature = "avm_debug")]
             debug_output: false,
             use_new_invalid_bounds_value: false,
+            lazy_initialized_prototypes: Vec::new(),
         }
     }
 
@@ -628,6 +634,21 @@ impl<'gc> Avm1<'gc> {
     /// Sets use_new_invalid_bounds_value to true.
     pub fn activate_use_new_invalid_bounds_value(&mut self) {
         self.use_new_invalid_bounds_value = true;
+    }
+
+    /// Marks `proto` as having got the lazily defined properties of a native
+    /// class, returning whether it didn't have them yet.
+    pub fn mark_lazy_proto_initialized(&mut self, mc: &Mutation<'gc>, proto: Object<'gc>) -> bool {
+        let initialized = &mut self.lazy_initialized_prototypes;
+        initialized.retain(|p| p.upgrade(mc).is_some());
+        if initialized
+            .iter()
+            .any(|p| p.upgrade(mc).is_some_and(|p| Object::ptr_eq(p, proto)))
+        {
+            return false;
+        }
+        initialized.push(proto.as_weak());
+        true
     }
 
     #[cfg(feature = "avm_debug")]

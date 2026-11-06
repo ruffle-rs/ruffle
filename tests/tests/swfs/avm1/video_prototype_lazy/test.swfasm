@@ -1,0 +1,20 @@
+// See test.as.
+Swf(
+    version: 8,
+    frame_rate: 12,
+    tags: [
+        FileAttributes(),
+        SetBackgroundColor(0xFFFFFF),
+
+        // Frame 1
+        DoAction(Rascal(file: "test.as")),
+        // DefineVideoStream: character 1, no frames, 160x120, no flags, no codec.
+        Raw(code: 60, data: InlineBytes(["0100", "0000", "a000", "7800", "00", "00"])),
+        ShowFrame,
+
+        // Frame 2
+        PlaceObject2(depth: 2, character: 1, name: "v2"),
+        ShowFrame,
+        End,
+    ],
+)
