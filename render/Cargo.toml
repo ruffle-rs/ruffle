@@ -32,7 +32,6 @@ num-traits = { workspace = true }
 num-derive = { workspace = true }
 byteorder = { workspace = true }
 wgpu = { workspace = true, optional = true }
-glow = { workspace = true, optional = true }
 indexmap = { workspace = true }
 naga-agal = { path = "naga-agal" }
 jpegxr = { workspace = true, optional = true }
@@ -55,6 +54,5 @@ default = []
 tessellator = ["lyon"]
 web = ["wasm-bindgen"]
 wgpu = ["dep:wgpu"]
-glow = ["dep:glow"]
 serde = ["dep:serde"]
 jpegxr = ["dep:jpegxr", "image/tiff"]
