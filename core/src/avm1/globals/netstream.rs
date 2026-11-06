@@ -1,4 +1,7 @@
-use crate::avm1::property_decl::{DeclContext, PropertyOrder, StaticDeclarations, SystemClass};
+use crate::avm1::globals::netconnection::NetConnection;
+use crate::avm1::property_decl::{
+    self, DeclContext, PropertyOrder, StaticDeclarations, SystemClass,
+};
 use crate::avm1::{Activation, Error, NativeObject, Object, Value};
 use crate::avm1_stub;
 use crate::streams::NetStream;
@@ -6,10 +9,21 @@ use crate::streams::NetStream;
 pub fn constructor<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
-    _args: &[Value<'gc>],
+    args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let netstream = NetStream::new_avm1(activation.gc(), this);
     this.set_native(activation.gc(), NativeObject::NetStream(netstream));
+
+    // Flash Player only does this with a connected NetConnection, but also
+    // when called without `new`.
+    let connected = args
+        .first()
+        .and_then(|nc| NetConnection::cast(*nc))
+        .and_then(|nc| nc.handle())
+        .is_some_and(|handle| activation.context.net_connections.is_connected(handle));
+    if connected {
+        property_decl::define_lazy_proto_properties_of(activation, this, LAZY_PROTO_DECLS);
+    }
 
     Ok(Value::Undefined)
 }
@@ -32,13 +46,19 @@ const PROTO_DECLS: StaticDeclarations = declare_static_properties! {
     "checkPolicyFile" => property(check_policy_file; DONT_ENUM | DONT_DELETE);
     "maxPauseBufferTime" => property(max_pause_buffer_time; DONT_ENUM | DONT_DELETE);
     "backBufferTime" => property(back_buffer_time; DONT_ENUM | DONT_DELETE);
+};
 
-    // TODO The following shouldn't be built-in properties.
-    "bufferLength" => property(get_buffer_length);
+/// Defined lazily by the constructor, see
+/// [`property_decl::define_lazy_proto_properties`].
+///
+/// TODO: Flash Player also defines `currentFps`, `liveDelay`,
+/// `decodedFrames`, `videocodec` and `audiocodec` this way.
+const LAZY_PROTO_DECLS: StaticDeclarations = declare_static_properties! {
+    "time" => property(get_time);
     "bufferTime" => property(get_buffer_time);
+    "bufferLength" => property(get_buffer_length);
     "bytesLoaded" => property(get_bytes_loaded);
     "bytesTotal" => property(get_bytes_total);
-    "time" => property(get_time);
 };
 
 pub fn create_class<'gc>(

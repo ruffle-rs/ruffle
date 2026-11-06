@@ -1448,11 +1448,6 @@ Testing _global.NetStream
   constructor, own, type=[function with prototype]
   prototype, own, DONT_ENUM, type=[object]
 Testing _global.NetStream.prototype
-  time, own, READ_ONLY, type=[undefined]
-  bytesTotal, own, READ_ONLY, type=[undefined]
-  bytesLoaded, own, READ_ONLY, type=[undefined]
-  bufferTime, own, READ_ONLY, type=[undefined]
-  bufferLength, own, READ_ONLY, type=[undefined]
   backBufferTime, own, DONT_ENUM, READ_ONLY, type=[undefined]
   maxPauseBufferTime, own, DONT_ENUM, READ_ONLY, type=[undefined]
   checkPolicyFile, own, DONT_ENUM, READ_ONLY, type=[undefined]

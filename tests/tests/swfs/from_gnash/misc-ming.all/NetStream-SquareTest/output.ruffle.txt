@@ -3,7 +3,7 @@ PASSED: newly created NetConnection is not connected
 PASSED: NetConnection is connected after .connect(null)
 PASSED: true
 PASSED: true
-FAILED: expected: undefined , obtained: number
+PASSED: undefined == undefined
 PASSED: number == number
 PASSED: number == number
 FAILED: NetStream.prototype.hasOwnProperty('currentFps') [NetStream-SquareTest.c:223] 

@@ -1069,11 +1069,6 @@ Testing __proto__()
 testing _global.NetStream(function)
 Trying to construct _global.NetStream
 Object was constructed
-Testing time()
-Testing bytesTotal()
-Testing bytesLoaded()
-Testing bufferTime()
-Testing bufferLength()
 Testing backBufferTime()
 Testing maxPauseBufferTime()
 Testing checkPolicyFile()
