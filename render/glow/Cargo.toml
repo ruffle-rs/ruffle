@@ -13,7 +13,7 @@ workspace = true
 [dependencies]
 glow = { workspace = true }
 log = { workspace = true }
-ruffle_render = { path = "..", features = ["tessellator", "glow"] }
+ruffle_render = { path = "..", features = ["tessellator"] }
 bytemuck = { workspace = true, features = ["derive"] }
 swf = { path = "../../swf" }
 thiserror = { workspace = true }
