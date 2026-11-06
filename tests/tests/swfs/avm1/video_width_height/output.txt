@@ -1,0 +1,19 @@
+proto.hasOwnProperty(width): true
+proto.hasOwnProperty(height): true
+inst.hasOwnProperty(width): false
+inst.hasOwnProperty(height): false
+unattached: width=0 (number) height=0 (number) _width=160 _height=120
+after attachVideo: width=0 (number) height=0 (number) _width=160 _height=120
+after play: width=0 (number) height=0 (number) _width=160 _height=120
+size changed: width=320 (number) height=233 (number) _width=160 _height=120
+before scaling: width=320 (number) height=233 (number) _width=160 _height=120
+after _width=640 _height=360: width=320 (number) height=233 (number) _width=640 _height=360
+after _xscale=50 _yscale=200: width=320 (number) height=233 (number) _width=80 _height=240
+after _rotation=90: width=320 (number) height=233 (number) _width=240 _height=80
+after reset: width=320 (number) height=233 (number) _width=160 _height=120
+after assigning width=99 height=77: width=320 (number) height=233 (number) _width=160 _height=120
+inst.hasOwnProperty(width): false
+after delete: width=320 (number) height=233 (number) _width=160 _height=120
+after ns.close: width=320 (number) height=233 (number) _width=160 _height=120
+after attachVideo(null): width=320 (number) height=233 (number) _width=160 _height=120
+done

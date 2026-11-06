@@ -73,7 +73,7 @@ mod text_format;
 mod text_renderer;
 pub(crate) mod text_snapshot;
 pub(crate) mod transform;
-mod video;
+pub(crate) mod video;
 pub(crate) mod xml;
 mod xml_node;
 pub(crate) mod xml_socket;

@@ -4,7 +4,9 @@ use crate::avm1::Object;
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::object::NativeObject;
-use crate::avm1::property_decl::{DeclContext, PropertyOrder, StaticDeclarations, SystemClass};
+use crate::avm1::property_decl::{
+    self, DeclContext, PropertyOrder, StaticDeclarations, SystemClass,
+};
 use crate::avm1::value::Value;
 use crate::display_object::Video;
 
@@ -34,6 +36,20 @@ pub fn create_class<'gc>(
     class
 }
 
+/// Defined lazily, see `define_lazy_proto_properties`.
+const LAZY_PROTO_DECLS: StaticDeclarations = declare_static_properties! {
+    "width" => property(video_method!(width); VERSION_6);
+    "height" => property(video_method!(height); VERSION_6);
+};
+
+/// Defines `width` and `height` on `proto`, the prototype of a newly created
+/// Video display object (`new Video()` doesn't count).
+///
+/// See [`property_decl::define_lazy_proto_properties`].
+pub fn define_lazy_proto_properties<'gc>(activation: &mut Activation<'_, 'gc>, proto: Object<'gc>) {
+    property_decl::define_lazy_proto_properties(activation, proto, LAZY_PROTO_DECLS);
+}
+
 pub fn attach_video<'gc>(
     video: Video<'gc>,
     activation: &mut Activation<'_, 'gc>,
@@ -52,4 +68,20 @@ pub fn attach_video<'gc>(
     }
 
     Ok(Value::Undefined)
+}
+
+fn width<'gc>(
+    video: Video<'gc>,
+    _activation: &mut Activation<'_, 'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    Ok(video.decoded_size().0.into())
+}
+
+fn height<'gc>(
+    video: Video<'gc>,
+    _activation: &mut Activation<'_, 'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    Ok(video.decoded_size().1.into())
 }
