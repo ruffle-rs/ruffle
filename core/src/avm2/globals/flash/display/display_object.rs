@@ -1200,6 +1200,7 @@ pub fn set_blend_shader<'gc>(
             .expect("Missing compiled PixelBender shader");
 
         dobj.set_blend_shader(Some(shader_handle));
+        dobj.set_transformed_by_script(true);
     }
     Ok(Value::Undefined)
 }
