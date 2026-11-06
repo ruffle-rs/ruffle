@@ -1,0 +1,74 @@
+// PlaceObject2 tags that place a character at a depth that is already
+// occupied, with and without the move flag.
+Swf(
+    version: 15,
+    tags: [
+        FileAttributes(),
+        SetBackgroundColor(0xFFFFFF),
+
+        // Places sprite 2 at depth 1, then itself at the same depth.
+        DefineSprite(
+            id: 1,
+            tags: [
+                PlaceObject2(depth: 1, character: 2),
+                PlaceObject2(depth: 1, character: 1),
+                ShowFrame,
+            ],
+        ),
+        DefineSprite(id: 2, tags: []),
+        DefineSprite(
+            id: 3,
+            tags: [
+                DoAction(Rascal(r#"trace("Instantiated ID 3");"#)),
+                ShowFrame,
+            ],
+        ),
+
+        // Frame 1
+        PlaceObject2(depth: 1, character: 1),
+        PlaceObject2(depth: 2, character: 3),
+        PlaceObject2(depth: 1, character: 3),
+        ShowFrame,
+
+        // Frame 2
+        DoAction(Rascal(r#"trace("Frame 2");"#)),
+        ShowFrame,
+
+        // Frame 3
+        DefineSprite(
+            id: 4,
+            num_frames: 0,
+            tags: [
+                DoAction(Rascal(r#"trace("Instantiated ID 4");"#)),
+                ShowFrame,
+            ],
+        ),
+        PlaceObject2(depth: 3, character: 4),
+        PlaceObject2(
+            depth: 3,
+            move: true,
+            character: 4,
+            matrix: (translate_x: 0.6, translate_y: 0.6),
+        ),
+        DefineSprite(
+            id: 5,
+            num_frames: 0,
+            tags: [
+                DoAction(Rascal(r#"trace("Instantiated ID 5");"#)),
+                ShowFrame,
+            ],
+        ),
+        PlaceObject2(depth: 4, character: 5),
+        PlaceObject2(
+            depth: 4,
+            move: true,
+            matrix: (translate_x: 0.6, translate_y: 0.6),
+        ),
+        ShowFrame,
+
+        // Frame 4
+        DoAction(Rascal("stop();")),
+        ShowFrame,
+        End,
+    ],
+)
