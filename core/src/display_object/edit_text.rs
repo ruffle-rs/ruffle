@@ -440,7 +440,9 @@ impl<'gc> EditText<'gc> {
     }
 
     pub fn set_text(self, text: &WStr, context: &mut UpdateContext<'gc>) {
-        if self.text() == text {
+        let force_update = self.take_force_next_text_update();
+
+        if self.text() == text && !force_update {
             // Note: this check not only prevents text relayout,
             // but it also has observable effects, because text
             // format is not being reset to the default format.
@@ -474,7 +476,9 @@ impl<'gc> EditText<'gc> {
     }
 
     pub fn set_html_text(self, text: &WStr, context: &mut UpdateContext<'gc>) {
-        if self.html_text() == text {
+        let force_update = self.take_force_next_text_update();
+
+        if self.html_text() == text && !force_update {
             // Note: this check not only prevents text relayout,
             // but it also has observable effects, because not
             // every set of spans is representable as HTML.
@@ -502,6 +506,18 @@ impl<'gc> EditText<'gc> {
 
     pub fn set_new_text_format(self, tf: TextFormat) {
         self.0.text_spans.borrow_mut().set_default_format(tf);
+    }
+
+    /// Makes the next `set_text` or `set_html_text` call update the text,
+    /// even when it doesn't change.
+    pub fn force_next_text_update(self) {
+        self.set_flag(EditTextFlag::FORCE_NEXT_TEXT_UPDATE, true);
+    }
+
+    fn take_force_next_text_update(self) -> bool {
+        let force_update = self.contains_flag(EditTextFlag::FORCE_NEXT_TEXT_UPDATE);
+        self.set_flag(EditTextFlag::FORCE_NEXT_TEXT_UPDATE, false);
+        force_update
     }
 
     pub fn text_format(self, from: usize, to: usize) -> TextFormat {
@@ -3183,6 +3199,7 @@ bitflags::bitflags! {
         const HAS_BACKGROUND = 1 << 1;
         const CONDENSE_WHITE = 1 << 13;
         const ALWAYS_SHOW_SELECTION = 1 << 14;
+        const FORCE_NEXT_TEXT_UPDATE = 1 << 15;
 
         // The following bits need to match `swf::EditTextFlag`.
         const READ_ONLY = 1 << 3;
