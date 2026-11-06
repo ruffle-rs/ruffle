@@ -1,5 +1,5 @@
 [package]
-name = "ruffle_render_webgl"
+name = "ruffle_render_glow"
 authors.workspace = true
 edition.workspace = true
 homepage.workspace = true
