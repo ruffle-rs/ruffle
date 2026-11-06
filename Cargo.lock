@@ -4938,6 +4938,7 @@ dependencies = [
  "enum-map",
  "flate2",
  "gif",
+ "glow",
  "guillotiere",
  "h263-rs-yuv",
  "image",
@@ -4976,18 +4977,15 @@ dependencies = [
 ]
 
 [[package]]
-name = "ruffle_render_webgl"
+name = "ruffle_render_glow"
 version = "0.7.1"
 dependencies = [
  "bytemuck",
- "js-sys",
+ "glow",
  "log",
  "ruffle_render",
- "ruffle_web_common",
  "swf 0.4.0",
  "thiserror 2.0.18",
- "wasm-bindgen",
- "web-sys",
 ]
 
 [[package]]
@@ -5140,11 +5138,12 @@ dependencies = [
  "getrandom 0.4.3",
  "gloo-net",
  "js-sys",
+ "log",
  "rfd",
  "ruffle_core",
  "ruffle_render",
  "ruffle_render_canvas",
- "ruffle_render_webgl",
+ "ruffle_render_glow",
  "ruffle_render_wgpu",
  "ruffle_video_external",
  "ruffle_web_common",
