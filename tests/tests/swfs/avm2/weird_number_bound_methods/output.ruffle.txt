@@ -1,0 +1,12 @@
+(0.0).toPrecision === (0.0).toPrecision: true
+(-0.0).toPrecision === (-0.0).toPrecision: true
+(0).toPrecision === (0).toPrecision: true
+(NaN).toPrecision === (NaN).toPrecision: true
+
+(0.0).toPrecision === (-0.0).toPrecision: false
+(0.0).toPrecision === (0).toPrecision: false
+(-0.0).toPrecision === (0).toPrecision: false
+
+(0.0).toPrecision === (NaN).toPrecision: false
+(-0.0).toPrecision === (NaN).toPrecision: false
+(0).toPrecision === (NaN).toPrecision: false

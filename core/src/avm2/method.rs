@@ -7,16 +7,18 @@ use crate::avm2::error::{
     Error, Error1014Type, make_error_1014, make_error_1027, make_error_1079, make_error_1107,
 };
 use crate::avm2::function::FunctionArgs;
-use crate::avm2::object::ClassObject;
+use crate::avm2::object::{ClassObject, FunctionObject};
 use crate::avm2::script::TranslationUnit;
-use crate::avm2::value::{Value, abc_default_value};
+use crate::avm2::value::{Value, ValueKey, abc_default_value};
 use crate::avm2::verify::VerifiedMethodInfo;
 use crate::string::AvmString;
 use crate::tag_utils::SwfMovie;
 use gc_arena::barrier::{Write, unlock};
-use gc_arena::lock::OnceLock;
-use gc_arena::{Collect, Gc};
+use gc_arena::lock::{OnceLock, RefLock};
+use gc_arena::{Collect, Gc, Mutation};
 use std::borrow::Cow;
+use std::cell::RefMut;
+use std::collections::HashMap;
 use std::rc::Rc;
 use swf::avm2::types::{
     AbcFile, Index, Method as AbcMethod, MethodBody as AbcMethodBody,
@@ -128,6 +130,11 @@ struct MethodData<'gc> {
     /// The class that this method is bound to.
     association: OnceLock<MethodAssociation<'gc>>,
 
+    /// Bound methods associated with this `Method`.
+    ///
+    /// TODO: This should be a weak map
+    bound_methods: RefLock<HashMap<ValueKey<'gc>, FunctionObject<'gc>>>,
+
     /// Whether or not this method was declared as a free-standing function.
     ///
     /// A free-standing function corresponds to the `Function` trait type, and
@@ -231,6 +238,7 @@ impl<'gc> Method<'gc> {
                 return_type,
                 resolved_info: OnceLock::new(),
                 association: OnceLock::new(),
+                bound_methods: RefLock::new(HashMap::new()),
                 is_function,
                 is_unchecked: is_function && all_params_unchecked,
             },
@@ -454,6 +462,13 @@ impl<'gc> Method<'gc> {
         } else {
             Ok(())
         }
+    }
+
+    pub fn bound_methods(
+        &self,
+        mc: &Mutation<'gc>,
+    ) -> RefMut<'_, HashMap<ValueKey<'gc>, FunctionObject<'gc>>> {
+        unlock!(Gc::write(mc, self.0), MethodData, bound_methods).borrow_mut()
     }
 
     pub fn is_function(self) -> bool {
