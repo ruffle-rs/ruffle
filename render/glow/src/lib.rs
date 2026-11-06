@@ -1196,7 +1196,7 @@ impl RenderBackend for GlowRenderBackend {
         "glow"
     }
 
-    fn set_quality(&mut self, quality: StageQuality) {}
+    fn set_quality(&mut self, _quality: StageQuality) {}
 
     fn compile_pixelbender_shader(
         &mut self,
@@ -1811,10 +1811,10 @@ impl ShaderProgram {
 
             let vertex_position_location = gl
                 .get_attrib_location(program, "position")
-                .unwrap_or(0xffff_ffff) as u32;
+                .unwrap_or(0xffff_ffff);
             let vertex_color_location = gl
                 .get_attrib_location(program, "color")
-                .unwrap_or(0xffff_ffff) as u32;
+                .unwrap_or(0xffff_ffff);
             let num_vertex_attributes = if vertex_position_location != 0xffff_ffff {
                 1
             } else {
