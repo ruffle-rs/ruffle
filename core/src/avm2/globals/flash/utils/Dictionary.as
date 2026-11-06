@@ -1,7 +1,6 @@
 package flash.utils {
-    import __ruffle__.stub_constructor;
-
     [Ruffle(InstanceAllocator)]
+    [Ruffle(CustomConstructor)]
     public dynamic class Dictionary {
         prototype.toJSON = function(r:String):* {
             return "Dictionary";
@@ -9,9 +8,8 @@ package flash.utils {
         prototype.setPropertyIsEnumerable("toJSON", false);
 
         public function Dictionary(weakKeys:Boolean = false) {
-            if (weakKeys) {
-                stub_constructor("flash.utils.Dictionary", "with weak keys");
-            }
+            // Dispatched to dictionary_constructor in Rust via
+            // [Ruffle(CustomConstructor)]. This AS-defined method does nothing.
         }
     }
 }
