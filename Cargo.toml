@@ -22,7 +22,7 @@ members = [
     "render/pixel_bender",
     "render/pixel_bender/assembly_tests",
     "render/wgpu",
-    "render/webgl",
+    "render/glow",
 
     "video",
     "video/software",

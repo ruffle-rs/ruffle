@@ -16,7 +16,7 @@ workspace = true
 crate-type = ["cdylib", "rlib"]
 
 [features]
-default = ["canvas", "console_error_panic_hook", "webgl", "wgpu-webgl", "webgpu"]
+default = ["canvas", "console_error_panic_hook", "glow", "wgpu-webgl", "webgpu"]
 
 # core features
 avm2_debug = ["ruffle_core/avm2_debug"]
@@ -25,7 +25,7 @@ jpegxr = ["ruffle_core/jpegxr"]
 
 # web features
 canvas = ["ruffle_render_canvas"]
-webgl = ["ruffle_render_webgl"]
+glow = ["ruffle_render_glow"]
 webgpu = ["ruffle_render_wgpu"]
 wgpu-webgl = ["ruffle_render_wgpu", "ruffle_render_wgpu/webgl"]
 profiling = []
@@ -41,7 +41,7 @@ tracing-wasm = { workspace = true }
 ruffle_render_canvas = { path = "../render/canvas", optional = true }
 ruffle_web_common = { path = "common" }
 ruffle_render = { path = "../render" }
-ruffle_render_webgl = { path = "../render/webgl", optional = true }
+ruffle_render_glow = { path = "../render/glow", optional = true }
 ruffle_render_wgpu = { path = "../render/wgpu", optional = true }
 ruffle_video_external = { path = "../video/external", features = ["webcodecs"] }
 url = { workspace = true }
