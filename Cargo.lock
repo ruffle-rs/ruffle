@@ -209,7 +209,7 @@ dependencies = [
  "objc2-foundation 0.3.2",
  "parking_lot",
  "percent-encoding",
- "windows-sys 0.59.0",
+ "windows-sys 0.61.2",
  "x11rb",
 ]
 
@@ -1409,7 +1409,7 @@ checksum = "05cbdc785020861553f230f23d330ba1fb72613b9d8e0e457f3bdc8ba6db6dcf"
 dependencies = [
  "ahash",
  "egui",
- "enum-map",
+ "enum-map 2.7.3",
  "image",
  "itertools 0.15.0",
  "log",
@@ -1463,7 +1463,16 @@ version = "2.7.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6866f3bfdf8207509a033af1a75a7b08abda06bbaaeae6669323fd5a097df2e9"
 dependencies = [
- "enum-map-derive",
+ "enum-map-derive 0.17.0",
+]
+
+[[package]]
+name = "enum-map"
+version = "3.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d4532960034c15ba2f55e9eee631040ecc473c32e6c4b200828c759840f13a06"
+dependencies = [
+ "enum-map-derive 1.0.1",
 ]
 
 [[package]]
@@ -1475,6 +1484,17 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 2.0.119",
+]
+
+[[package]]
+name = "enum-map-derive"
+version = "1.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7127272f64b3e098f7d81f350d672081b879bff896d219c42370dc858b1af9ff"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 3.0.9",
 ]
 
 [[package]]
@@ -2035,7 +2055,7 @@ version = "0.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "160a11f93020eea95cb4c59e2eda2e4c6353f75aa4fbb01f2bf8729b2e4d6dd2"
 dependencies = [
- "enum-map",
+ "enum-map 2.7.3",
  "gc-arena-derive",
  "hashbrown 0.17.1",
  "indexmap",
@@ -4743,7 +4763,7 @@ dependencies = [
  "egui_extras",
  "either",
  "encoding_rs",
- "enum-map",
+ "enum-map 3.1.0",
  "enumset",
  "flash-lso",
  "flate2",
@@ -4919,7 +4939,7 @@ dependencies = [
  "approx",
  "byteorder",
  "clap",
- "enum-map",
+ "enum-map 3.1.0",
  "flate2",
  "gif",
  "guillotiere",
@@ -4980,7 +5000,7 @@ version = "0.7.1"
 dependencies = [
  "bytemuck",
  "clap",
- "enum-map",
+ "enum-map 3.1.0",
  "fnv",
  "futures",
  "image",
@@ -5732,7 +5752,7 @@ dependencies = [
  "bitflags 2.13.2",
  "bitstream-io",
  "encoding_rs",
- "enum-map",
+ "enum-map 2.7.3",
  "flate2",
  "log",
  "lzma-rs",
@@ -5748,7 +5768,7 @@ dependencies = [
  "bitflags 2.13.2",
  "bitstream-io",
  "encoding_rs",
- "enum-map",
+ "enum-map 3.1.0",
  "flate2",
  "log",
  "lzma-rs",
