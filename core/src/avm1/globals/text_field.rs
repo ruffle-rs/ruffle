@@ -2,7 +2,9 @@ use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::globals::{bitmap_filter, text_format};
 use crate::avm1::object::NativeObject;
-use crate::avm1::property_decl::{DeclContext, PropertyOrder, StaticDeclarations, SystemClass};
+use crate::avm1::property_decl::{
+    self, DeclContext, PropertyOrder, StaticDeclarations, SystemClass,
+};
 use crate::avm1::{ArrayBuilder, Object, Value, globals};
 use crate::display_object::{
     AutoSizeMode, EditText, TDisplayObject, TInteractiveObject, TextSelection,
@@ -67,6 +69,11 @@ const PROTO_DECLS: StaticDeclarations = declare_static_properties! {
     "thickness" => property(tf_getter!(thickness), tf_setter!(set_thickness); VERSION_8);
     "sharpness" => property(tf_getter!(sharpness), tf_setter!(set_sharpness); VERSION_8);
     "filters" => property(tf_getter!(filters), tf_setter!(set_filters); DONT_DELETE | VERSION_8);
+};
+
+/// Defined lazily by the constructor, see
+/// [`property_decl::define_lazy_proto_properties`].
+const LAZY_PROTO_DECLS: StaticDeclarations = declare_static_properties! {
     "scroll" => property(tf_getter!(scroll), tf_setter!(set_scroll));
     "maxscroll" => property(tf_getter!(maxscroll));
     "borderColor" => property(tf_getter!(border_color), tf_setter!(set_border_color));
@@ -104,9 +111,26 @@ pub fn create_class<'gc>(
     context: &mut DeclContext<'_, 'gc>,
     super_proto: Object<'gc>,
 ) -> SystemClass<'gc> {
-    let class = context.empty_class(super_proto, PropertyOrder::PrototypeFirst);
+    let class = context.native_class(
+        constructor,
+        None,
+        super_proto,
+        PropertyOrder::PrototypeFirst,
+    );
     context.define_properties_on(class.proto, PROTO_DECLS(context));
     class
+}
+
+/// The constructor, also called on the objects of TextField display objects.
+/// It's only observable by defining the lazily defined properties, which
+/// happens even for `new TextField()` without a display object.
+fn constructor<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    property_decl::define_lazy_proto_properties_of(activation, this, LAZY_PROTO_DECLS);
+    Ok(this.into())
 }
 
 pub fn password<'gc>(

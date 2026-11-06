@@ -1,0 +1,20 @@
+// See test.as.
+Swf(
+    version: 8,
+    frame_rate: 12,
+    tags: [
+        FileAttributes(),
+        SetBackgroundColor(0xFFFFFF),
+
+        // Frame 1
+        DoAction(Rascal(file: "test.as")),
+        // DefineEditText: character 1, empty bounds, no flags, no variable.
+        Raw(code: 37, data: InlineBytes(["0100", "00", "0000", "00"])),
+        ShowFrame,
+
+        // Frame 2
+        PlaceObject2(depth: 1, character: 1, name: "t"),
+        ShowFrame,
+        End,
+    ],
+)
