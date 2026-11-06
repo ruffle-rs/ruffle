@@ -1,12 +1,12 @@
 var xml = new XML();
 xml.onData = function(str) {
-	delete xml._bytesLoaded;
-	delete xml._bytesTotal;
-	trace("// XML received data: " + str);
-	trace("xml.getBytesLoaded(): " + xml.getBytesLoaded());
-	trace("xml.getBytesTotal(): " + xml.getBytesTotal());
-	trace("xml._bytesLoaded: " + xml._bytesLoaded);
-	trace("xml._bytesTotal: " + xml._bytesTotal);
+    delete xml._bytesLoaded;
+    delete xml._bytesTotal;
+    trace("// XML received data: " + str);
+    trace("xml.getBytesLoaded(): " + xml.getBytesLoaded());
+    trace("xml.getBytesTotal(): " + xml.getBytesTotal());
+    trace("xml._bytesLoaded: " + xml._bytesLoaded);
+    trace("xml._bytesTotal: " + xml._bytesTotal);
 };
 
 trace("// XML before loading request");
