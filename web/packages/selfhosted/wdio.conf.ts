@@ -33,7 +33,7 @@ if (chrome) {
 if (edge) {
     const args = ["--disable-gpu", "--enable-unsafe-swiftshader"];
     if (headless) {
-        args.push("--headless", "--no-sandbox");
+        args.push("--headless");
     }
     capabilities.push({
         "wdio:maxInstances": maxInstances,
