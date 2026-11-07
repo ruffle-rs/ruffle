@@ -19,7 +19,7 @@ crate-type = ["cdylib", "rlib"]
 default = ["canvas", "console_error_panic_hook", "webgl", "wgpu-webgl", "webgpu"]
 
 # core features
-avm_debug = ["ruffle_core/avm_debug"]
+avm2_debug = ["ruffle_core/avm2_debug"]
 lzma = ["ruffle_core/lzma"]
 jpegxr = ["ruffle_core/jpegxr"]
 
