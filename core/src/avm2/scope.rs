@@ -19,8 +19,9 @@ pub struct Scope<'gc> {
 
     /// Indicates whether or not this is a `with` scope.
     ///
-    /// A `with` scope allows searching the dynamic properties of
-    /// this scope.
+    /// A `with` scope allows searching the properties of this scope,
+    /// including properties reachable through the prototype chain
+    /// (matching the AVM2 `[[HasProperty]]` semantics for `with`).
     with: bool,
 }
 
@@ -155,8 +156,22 @@ impl<'gc> ScopeChain<'gc> {
                 }
 
                 // Wasn't in the objects traits, let's try dynamic properties if this is a with scope.
-                if scope.with() && values.has_own_property(activation, multiname) {
-                    return Ok(Some(values));
+                //
+                // [PATCH] AVM2 `with(obj)` resolves names through `[[HasProperty]]`,
+                // i.e. including the prototype chain. The old code used
+                // `has_own_property`, which missed methods defined on a prototype
+                // (e.g. `XML.prototype.name`), causing `findpropstrict name` to
+                // return `undefined` and the following `callproperty` to throw #1006.
+                if scope.with() {
+                    let has_property = match values {
+                        Value::Object(object) => object.has_property(multiname),
+                        // Non-object with-scopes are pathological; fall back to the
+                        // old behavior for those.
+                        _ => values.has_own_property(activation, multiname),
+                    };
+                    if has_property {
+                        return Ok(Some(values));
+                    }
                 }
             }
         }
@@ -216,7 +231,10 @@ pub fn search_scope_stack<'gc>(
             return Some(values);
         } else if scope.with() {
             // We search the dynamic properties if this is a with scope.
-            if value_has_own_property(classes, values, multiname) {
+            //
+            // [PATCH] `with` must use `[[HasProperty]]` (prototype chain),
+            // not `has_own_property`. See `ScopeChain::find` for context.
+            if value_has_property(classes, values, multiname) {
                 return Some(values);
             }
         }
@@ -247,7 +265,11 @@ fn value_has_trait<'gc>(
 }
 
 // Check if a Value has a property without using an Activation. Used only in `search_scope_stack`.
-fn value_has_own_property<'gc>(
+//
+// [PATCH] This is the old `value_has_own_property`, changed to use `has_property`
+// (which walks the prototype chain) for objects. This is required for `with(obj)`
+// to resolve methods defined on `obj`'s prototype (e.g. `XML.prototype.name`).
+fn value_has_property<'gc>(
     classes: &SystemClasses<'gc>,
     value: Value<'gc>,
     multiname: &Multiname<'gc>,
@@ -264,7 +286,7 @@ fn value_has_own_property<'gc>(
     };
 
     match value {
-        Value::Object(object) => object.has_own_property(multiname),
+        Value::Object(object) => object.has_property(multiname),
         _ => vtable.has_trait(multiname),
     }
 }
