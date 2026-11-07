@@ -86,7 +86,7 @@ shell-completions = ["dep:clap_complete"]
 jpegxr = ["ruffle_core/jpegxr"]
 
 # core features
-avm_debug = ["ruffle_core/avm_debug"]
+avm2_debug = ["ruffle_core/avm2_debug"]
 lzma = ["ruffle_core/lzma"]
 software_video = ["ruffle_video_software"]
 external_video = ["ruffle_video_external"]

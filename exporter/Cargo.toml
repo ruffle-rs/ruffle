@@ -22,6 +22,6 @@ rayon = { workspace = true }
 anyhow = { workspace = true }
 
 [features]
-avm_debug = ["ruffle_core/avm_debug"]
+avm2_debug = ["ruffle_core/avm2_debug"]
 render_debug_labels = ["ruffle_render_wgpu/render_debug_labels"]
 lzma = ["ruffle_core/lzma"]

@@ -904,7 +904,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                 };
 
                 if matches {
-                    #[cfg(feature = "avm_debug")]
+                    #[cfg(feature = "avm2_debug")]
                     {
                         let stringified = original_error.to_string(self);
                         tracing::warn!("Caught exception: {}", stringified);
