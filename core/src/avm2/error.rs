@@ -1150,6 +1150,19 @@ pub fn make_error_2146<'gc>(
     ))
 }
 
+#[inline(never)]
+#[cold]
+pub fn make_error_2149<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
+    let movie = activation.caller_movie_or_root();
+    let page_url = activation.context.page_url.clone().unwrap_or_default();
+    // TODO: Use the actual allowScriptAccess value.
+    make_error!(security_error(
+        activation,
+        error_message!(2149, movie.url(), page_url, "always"),
+        2149
+    ))
+}
+
 make_error_fn!(make_error_2150, 2150, argument_error);
 make_error_fn!(make_error_2162, 2162, argument_error);
 
