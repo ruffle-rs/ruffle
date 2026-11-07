@@ -1,0 +1,12 @@
+distinct, mergeAlpha omitted:
+0 / 255
+distinct, mergeAlpha false:
+0 / 255
+distinct, mergeAlpha true:
+255 / 255
+self, mergeAlpha omitted:
+0 / 255
+self, mergeAlpha false:
+0 / 255
+self, mergeAlpha true:
+255 / 255
