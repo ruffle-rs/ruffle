@@ -249,6 +249,24 @@ v.className: MyTextFormat
 // textfieldOrig.getNewTextFormat()
 v.className: MyTextFormat
 
+### Testing FileReference
+// A_FILE_REFERENCE_LIST.browse(A_FILE_BROWSE_FILTER)
+flash getter called!
+net getter called!
+FileReference getter called!
+new MyFileReference() called!
+flash getter called!
+net getter called!
+FileReference getter called!
+new MyFileReference() called!
+flash getter called!
+net getter called!
+FileReference getter called!
+new MyFileReference() called!
+FileReferenceList.browse - onSelect
+fileList.className: MyArray
+target.fileList.length = 0
+
 ### Testing XML(Node)
 // walkXmlNode(AN_XML)
 - nodeName: null; class: XML

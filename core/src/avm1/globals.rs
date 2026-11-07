@@ -487,7 +487,6 @@ pub struct SystemPrototypes<'gc> {
     pub array_constructor: Object<'gc>,
     pub shared_object_constructor: Object<'gc>,
     pub date_constructor: Object<'gc>,
-    pub file_reference: Object<'gc>,
 }
 
 pub fn load_playerglobal<'gc>(context: &mut UpdateContext<'gc>) {
@@ -776,7 +775,6 @@ pub fn create_globals<'gc>(
             array_constructor: array.constr,
             shared_object_constructor: shared_object.constr,
             date_constructor: date.constr,
-            file_reference: file_reference.proto,
         },
         globals,
     )
