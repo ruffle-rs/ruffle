@@ -1,0 +1,16 @@
+TEST: navigateToURL
+[class SecurityError]
+SecurityError: Error #2146: Security sandbox violation: file:///test.swf cannot call navigateToURL because the HTML/container parameter allowNetworking has the value internal.
+	at global/flash.net::navigateToURL()
+	at Function/<anonymous>()
+	at Test/check()
+	at Test()
+END
+TEST: fscommand
+[class SecurityError]
+SecurityError: Error #2149: Security sandbox violation: file:///test.swf cannot make fscommand calls to  (allowScriptAccess is always).
+	at global/flash.system::fscommand()
+	at Function/<anonymous>()
+	at Test/check()
+	at Test()
+END
