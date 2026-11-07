@@ -3,8 +3,10 @@
 use crate::avm2::Avm2;
 use crate::avm2::Error;
 use crate::avm2::activation::Activation;
-use crate::avm2::error::{make_error_2037, make_error_2084};
+use crate::avm2::bytearray::Endian;
+use crate::avm2::error::{make_error_2037, make_error_2068, make_error_2084};
 use crate::avm2::function::FunctionArgs;
+use crate::avm2::globals::slots::flash_events_event_dispatcher as event_dispatcher_slots;
 use crate::avm2::globals::slots::flash_net_url_request as url_request_slots;
 use crate::avm2::object::{
     EventObject, QueuedPlay, SoundChannelObject, SoundLoadingState, TObject as _,
@@ -14,6 +16,7 @@ use crate::avm2::value::Value;
 use crate::backend::navigator::Request;
 use crate::character::Character;
 use crate::display_object::SoundTransform;
+use crate::string::AvmString;
 use crate::{avm2_stub_getter, avm2_stub_method};
 use swf::{SoundEvent, SoundInfo};
 
@@ -170,6 +173,31 @@ pub fn play<'gc>(
             None
         };
 
+        if sound_object.sound_handle().is_none()
+            && sound_object.loading_state() == SoundLoadingState::New
+        {
+            // A sound with no data plays what its `sampleData` listeners
+            // generate, and is invalid without any.
+            let sample_data = AvmString::new_ascii_static(activation.gc(), b"sampleData");
+            let has_listener = this
+                .get_slot(event_dispatcher_slots::DISPATCH_LIST)
+                .as_object()
+                .and_then(|list| {
+                    list.as_dispatch_mut(activation.gc())
+                        .map(|list| list.has_event_listener(sample_data))
+                })
+                .unwrap_or(false);
+            if !has_listener {
+                return Err(make_error_2068(activation));
+            }
+
+            let sound_channel = SoundChannelObject::generated(activation, sound_object);
+            if sound_channel.start_generator(activation.context, sound_transform) {
+                return Ok(sound_channel.into());
+            }
+            return Ok(Value::Null);
+        }
+
         let sound_channel = SoundChannelObject::empty(activation);
 
         let queued_play = QueuedPlay {
@@ -192,23 +220,75 @@ pub fn play<'gc>(
 /// `Sound.extract`
 pub fn extract<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Value<'gc>,
+    this: Value<'gc>,
     args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm2_stub_method!(activation, "flash.media.Sound", "extract");
-
-    let bytearray = args.try_get_object(0);
+    let this = this.as_object().unwrap().as_sound_object().unwrap();
+    let target = args.get_object(activation, 0, "target")?;
     let length = args.get_f64(1);
+    let start_position = args.get_f64(2);
 
-    if let Some(bytearray) = bytearray
-        && let Some(mut bytearray) = bytearray.as_bytearray_mut()
-    {
-        bytearray
-            .write_bytes(vec![0u8; length.ceil() as usize].as_slice())
+    let Some(sound) = this.sound_handle() else {
+        // Flash extracts nothing from a sound without data.
+        return Ok(0.into());
+    };
+
+    // Lengths and positions are rounded down, as in Flash Player, where an
+    // infinite length extracts nothing. A negative position, the default,
+    // goes on where the last call ended; NaN, and positions from 2^31 on,
+    // start at 0.
+    let length = if length.is_finite() && length > 0.0 {
+        length as usize
+    } else {
+        0
+    };
+    let start = if start_position < 0.0 {
+        this.extract_position()
+    } else if start_position < 2147483648.0 {
+        start_position as usize
+    } else {
+        0
+    };
+
+    // In pieces, written as they are decoded: a long sound takes 8 bytes per
+    // sample frame.
+    const CHUNK_LENGTH: usize = 8192;
+    let mut target = target.as_bytearray_mut().unwrap();
+    let little_endian = target.endian() == Endian::Little;
+    let mut extracted = 0;
+    this.set_extract_position(start);
+    while extracted < length {
+        let chunk_length = (length - extracted).min(CHUNK_LENGTH);
+        let Some(samples) =
+            activation
+                .context
+                .audio
+                .extract_sound(sound, start + extracted, chunk_length)
+        else {
+            // The backend can't decode it: extract nothing, but return
+            // `undefined` like a stub, so that loops such as
+            // `while (len > 0) len -= sound.extract(bytes, len)` end.
+            return Ok(Value::Undefined);
+        };
+        let mut bytes = Vec::with_capacity(samples.len() * 8);
+        for sample in samples.iter().flatten() {
+            if little_endian {
+                bytes.extend_from_slice(&sample.to_le_bytes());
+            } else {
+                bytes.extend_from_slice(&sample.to_be_bytes());
+            }
+        }
+        target
+            .write_bytes(&bytes)
             .map_err(|e| e.to_avm(activation))?;
+        extracted += samples.len();
+        this.set_extract_position(start + extracted);
+        if samples.len() < chunk_length {
+            break;
+        }
     }
 
-    Ok(Value::Undefined)
+    Ok((extracted as f64).into())
 }
 
 /// `Sound.close`
