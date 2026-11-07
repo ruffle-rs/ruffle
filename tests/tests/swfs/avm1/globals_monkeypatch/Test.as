@@ -32,6 +32,12 @@ class Test {
 
   static var A_STYLE_SHEET = new TextField.StyleSheet();
 
+  static var A_FILE_REFERENCE_LIST = new flash.net.FileReferenceList();
+  static var A_FILE_BROWSE_FILTER = [{
+    description: "debug-select-success",
+    extension: "*.txt"
+  }];
+
   static var AN_XML_STRING = "<root attr=\"val\"><a>some text</a><b><c/></b></root>";
   static var AN_XML = new XML(AN_XML_STRING);
   static var AN_XML_NODE = AN_XML.firstChild; // force the root node to be created now.
@@ -106,6 +112,9 @@ class Test {
     monkeyPatchClass(_global.flash.geom, "Rectangle");
     monkeyPatchClass(_global.flash.geom, "Transform");
     monkeyPatch(_global.flash, "geom", _global.flash.geom);
+
+    monkeyPatchClass(_global.flash.net, "FileReference");
+    monkeyPatch(_global.flash, "net", _global.flash.net);
 
     trace("// hiding flash.filters..."); 
     _global.ASSetPropFlags(_global.flash, "filters", 0x2000 /* version 9 */);
@@ -330,6 +339,28 @@ class Test {
 
     // TODO: test SharedObject serialization? (Date, XML, Array, Object)
 
+
+    trace("");
+    trace("### Testing FileReference");
+
+    A_FILE_REFERENCE_LIST.addListener({
+      onSelect: function(target) {
+        trace("FileReferenceList.browse - onSelect");
+        Test.traceName(target.fileList, "fileList");
+        trace("target.fileList.length = " + target.fileList.length);
+        for (var i = 0; i < target.fileList.length; i++) {
+          Test.traceName(target.fileList[i], "fileList[" + i + "]");
+        }
+
+        Test.testXml();
+      }
+    });
+
+    trace("// A_FILE_REFERENCE_LIST.browse(A_FILE_BROWSE_FILTER)");
+    A_FILE_REFERENCE_LIST.browse(A_FILE_BROWSE_FILTER);
+  }
+
+  static function testXml() {
     trace("");
     trace("### Testing XML(Node)");
 
