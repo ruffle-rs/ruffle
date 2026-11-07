@@ -1,0 +1,12 @@
+num_ticks = 10
+log_fetch = true
+known_failure = true
+
+[[compilers]]
+type = "Rascal"
+target = "test.swf"
+scripts = ["test.as"]
+swf_version = 8
+
+[shared_objects."localhost/test.swf/avm1_amf_edge_keys"]
+expected = "avm1_amf_edge_keys"
