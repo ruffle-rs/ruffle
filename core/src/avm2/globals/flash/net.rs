@@ -1,12 +1,13 @@
 //! `flash.net` namespace
 
-use crate::avm2::error::{Error1014Type, make_error_1014, make_error_2007};
+use crate::avm2::error::{Error1014Type, make_error_1014, make_error_2007, make_error_2146};
 use crate::avm2::function::FunctionArgs;
 use crate::avm2::globals::slots::flash_net_url_request as url_request_slots;
 use crate::avm2::object::TObject;
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::{Activation, Error, Object, Value};
 use crate::backend::navigator::NavigationMethod;
+use crate::config::NetworkingAccessMode;
 use indexmap::IndexMap;
 
 pub mod file_reference;
@@ -78,6 +79,17 @@ pub fn navigate_to_url<'gc>(
     _this: Value<'gc>,
     args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let allow_networking = activation.context.allow_networking;
+    if allow_networking != NetworkingAccessMode::All {
+        let swf_url = activation.caller_movie_or_root().url().to_string();
+        return Err(make_error_2146(
+            activation,
+            &swf_url,
+            "navigateToURL",
+            allow_networking,
+        ));
+    }
+
     let request = args.get_object(activation, 0, "request")?;
 
     let target = args.get_string(activation, 1);

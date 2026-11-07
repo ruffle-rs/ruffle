@@ -7,6 +7,7 @@ use crate::avm2::method::Method;
 use crate::avm2::multiname::Multiname;
 use crate::avm2::object::{ClassObject, ErrorObject};
 use crate::avm2::value::Value;
+use crate::config::NetworkingAccessMode;
 use crate::error_message;
 use crate::string::{AvmString, WString};
 
@@ -1127,6 +1128,26 @@ pub fn make_error_2136<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> 
     let movie = activation.caller_movie_or_root();
     let url = movie.url();
     make_error!(error(activation, error_message!(2136, url), 2136))
+}
+
+#[inline(never)]
+#[cold]
+pub fn make_error_2146<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    swf_url: &str,
+    method: &str,
+    allow_networking: NetworkingAccessMode,
+) -> Error<'gc> {
+    let value = match allow_networking {
+        NetworkingAccessMode::Internal => "internal",
+        NetworkingAccessMode::None => "none",
+        NetworkingAccessMode::All => unreachable!(),
+    };
+    make_error!(security_error(
+        activation,
+        error_message!(2146, swf_url, method, value),
+        2146
+    ))
 }
 
 make_error_fn!(make_error_2150, 2150, argument_error);
