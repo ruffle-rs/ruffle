@@ -1,0 +1,343 @@
+fontType=embedded
+hasHebrew=true
+hasArabic=true
+sample 0 length=4
+  index=0 code=1513 hasBounds=true
+    hit=0
+  index=1 code=1500 hasBounds=true
+    relativeX=right
+    hit=1
+  index=2 code=1493 hasBounds=true
+    relativeX=right
+    hit=2
+  index=3 code=1501 hasBounds=true
+    relativeX=right
+    hit=3
+sample 1 length=5
+  index=0 code=1605 hasBounds=true
+    hit=0
+  index=1 code=1585 hasBounds=true
+    relativeX=right
+    hit=1
+  index=2 code=1581 hasBounds=true
+    relativeX=right
+    hit=2
+  index=3 code=1576 hasBounds=true
+    relativeX=right
+    hit=3
+  index=4 code=1575 hasBounds=true
+    relativeX=right
+    hit=4
+sample 2 length=12
+  index=0 code=1587 hasBounds=true
+    hit=0
+  index=1 code=1604 hasBounds=true
+    relativeX=right
+    hit=1
+  index=2 code=1575 hasBounds=true
+    relativeX=right
+    hit=2
+  index=3 code=1605 hasBounds=true
+    relativeX=right
+    hit=3
+  index=4 code=32 hasBounds=true
+    relativeX=right
+    hit=4
+  index=5 code=1777 hasBounds=true
+    relativeX=right
+    hit=5
+  index=6 code=1778 hasBounds=true
+    relativeX=right
+    hit=6
+  index=7 code=1779 hasBounds=true
+    relativeX=right
+    hit=7
+  index=8 code=32 hasBounds=true
+    relativeX=right
+    hit=8
+  index=9 code=65 hasBounds=true
+    relativeX=right
+    hit=9
+  index=10 code=66 hasBounds=true
+    relativeX=right
+    hit=10
+  index=11 code=67 hasBounds=true
+    relativeX=right
+    hit=11
+sample 3 length=14
+  index=0 code=65 hasBounds=true
+    hit=0
+  index=1 code=66 hasBounds=true
+    relativeX=right
+    hit=1
+  index=2 code=67 hasBounds=true
+    relativeX=right
+    hit=2
+  index=3 code=32 hasBounds=true
+    relativeX=right
+    hit=3
+  index=4 code=40 hasBounds=true
+    relativeX=right
+    hit=4
+  index=5 code=1513 hasBounds=true
+    relativeX=right
+    hit=5
+  index=6 code=1500 hasBounds=true
+    relativeX=right
+    hit=6
+  index=7 code=1493 hasBounds=true
+    relativeX=right
+    hit=7
+  index=8 code=1501 hasBounds=true
+    relativeX=right
+    hit=8
+  index=9 code=41 hasBounds=true
+    relativeX=right
+    hit=9
+  index=10 code=32 hasBounds=true
+    relativeX=right
+    hit=10
+  index=11 code=49 hasBounds=true
+    relativeX=right
+    hit=11
+  index=12 code=50 hasBounds=true
+    relativeX=right
+    hit=12
+  index=13 code=51 hasBounds=true
+    relativeX=right
+    hit=13
+sample 4 length=14
+  index=0 code=1513 hasBounds=true
+    hit=0
+  index=1 code=1500 hasBounds=true
+    relativeX=right
+    hit=1
+  index=2 code=1493 hasBounds=true
+    relativeX=right
+    hit=2
+  index=3 code=1501 hasBounds=true
+    relativeX=right
+    hit=3
+  index=4 code=32 hasBounds=true
+    relativeX=right
+    hit=4
+  index=5 code=40 hasBounds=true
+    relativeX=right
+    hit=5
+  index=6 code=65 hasBounds=true
+    relativeX=right
+    hit=6
+  index=7 code=66 hasBounds=true
+    relativeX=right
+    hit=7
+  index=8 code=67 hasBounds=true
+    relativeX=right
+    hit=8
+  index=9 code=41 hasBounds=true
+    relativeX=right
+    hit=9
+  index=10 code=32 hasBounds=true
+    relativeX=right
+    hit=10
+  index=11 code=49 hasBounds=true
+    relativeX=right
+    hit=11
+  index=12 code=50 hasBounds=true
+    relativeX=right
+    hit=12
+  index=13 code=51 hasBounds=true
+    relativeX=right
+    hit=13
+sample 5 length=13
+  index=0 code=8207 hasBounds=false
+  index=1 code=1513 hasBounds=true
+    hit=1
+  index=2 code=1500 hasBounds=true
+    relativeX=right
+    hit=2
+  index=3 code=1493 hasBounds=true
+    relativeX=right
+    hit=3
+  index=4 code=1501 hasBounds=true
+    relativeX=right
+    hit=4
+  index=5 code=32 hasBounds=true
+    relativeX=right
+    hit=5
+  index=6 code=65 hasBounds=true
+    relativeX=right
+    hit=6
+  index=7 code=66 hasBounds=true
+    relativeX=right
+    hit=7
+  index=8 code=67 hasBounds=true
+    relativeX=right
+    hit=8
+  index=9 code=32 hasBounds=true
+    relativeX=right
+    hit=9
+  index=10 code=49 hasBounds=true
+    relativeX=right
+    hit=10
+  index=11 code=50 hasBounds=true
+    relativeX=right
+    hit=11
+  index=12 code=51 hasBounds=true
+    relativeX=right
+    hit=12
+sample 6 length=13
+  index=0 code=8206 hasBounds=false
+  index=1 code=1513 hasBounds=true
+    hit=1
+  index=2 code=1500 hasBounds=true
+    relativeX=right
+    hit=2
+  index=3 code=1493 hasBounds=true
+    relativeX=right
+    hit=3
+  index=4 code=1501 hasBounds=true
+    relativeX=right
+    hit=4
+  index=5 code=32 hasBounds=true
+    relativeX=right
+    hit=5
+  index=6 code=65 hasBounds=true
+    relativeX=right
+    hit=6
+  index=7 code=66 hasBounds=true
+    relativeX=right
+    hit=7
+  index=8 code=67 hasBounds=true
+    relativeX=right
+    hit=8
+  index=9 code=32 hasBounds=true
+    relativeX=right
+    hit=9
+  index=10 code=49 hasBounds=true
+    relativeX=right
+    hit=10
+  index=11 code=50 hasBounds=true
+    relativeX=right
+    hit=11
+  index=12 code=51 hasBounds=true
+    relativeX=right
+    hit=12
+sample 7 length=18
+  index=0 code=65 hasBounds=true
+    hit=0
+  index=1 code=66 hasBounds=true
+    relativeX=right
+    hit=1
+  index=2 code=67 hasBounds=true
+    relativeX=right
+    hit=2
+  index=3 code=32 hasBounds=true
+    relativeX=right
+    hit=3
+  index=4 code=8235 hasBounds=false
+  index=5 code=1513 hasBounds=true
+    hit=5
+  index=6 code=1500 hasBounds=true
+    relativeX=right
+    hit=6
+  index=7 code=1493 hasBounds=true
+    relativeX=right
+    hit=7
+  index=8 code=1501 hasBounds=true
+    relativeX=right
+    hit=8
+  index=9 code=32 hasBounds=true
+    relativeX=right
+    hit=9
+  index=10 code=49 hasBounds=true
+    relativeX=right
+    hit=10
+  index=11 code=50 hasBounds=true
+    relativeX=right
+    hit=11
+  index=12 code=51 hasBounds=true
+    relativeX=right
+    hit=12
+  index=13 code=8236 hasBounds=false
+  index=14 code=32 hasBounds=true
+    hit=14
+  index=15 code=88 hasBounds=true
+    relativeX=right
+    hit=15
+  index=16 code=89 hasBounds=true
+    relativeX=right
+    hit=16
+  index=17 code=90 hasBounds=true
+    relativeX=right
+    hit=17
+sample 8 length=17
+  index=0 code=65 hasBounds=true
+    hit=0
+  index=1 code=66 hasBounds=true
+    relativeX=right
+    hit=1
+  index=2 code=67 hasBounds=true
+    relativeX=right
+    hit=2
+  index=3 code=32 hasBounds=true
+    relativeX=right
+    hit=3
+  index=4 code=8238 hasBounds=false
+  index=5 code=68 hasBounds=true
+    hit=5
+  index=6 code=69 hasBounds=true
+    relativeX=right
+    hit=6
+  index=7 code=70 hasBounds=true
+    relativeX=right
+    hit=7
+  index=8 code=32 hasBounds=true
+    relativeX=right
+    hit=8
+  index=9 code=49 hasBounds=true
+    relativeX=right
+    hit=9
+  index=10 code=50 hasBounds=true
+    relativeX=right
+    hit=10
+  index=11 code=51 hasBounds=true
+    relativeX=right
+    hit=11
+  index=12 code=8236 hasBounds=false
+  index=13 code=32 hasBounds=true
+    hit=13
+  index=14 code=88 hasBounds=true
+    relativeX=right
+    hit=14
+  index=15 code=89 hasBounds=true
+    relativeX=right
+    hit=15
+  index=16 code=90 hasBounds=true
+    relativeX=right
+    hit=16
+sample 9 length=10
+  index=0 code=8234 hasBounds=false
+  index=1 code=1513 hasBounds=true
+    hit=1
+  index=2 code=1500 hasBounds=true
+    relativeX=right
+    hit=2
+  index=3 code=1493 hasBounds=true
+    relativeX=right
+    hit=3
+  index=4 code=1501 hasBounds=true
+    relativeX=right
+    hit=4
+  index=5 code=32 hasBounds=true
+    relativeX=right
+    hit=5
+  index=6 code=65 hasBounds=true
+    relativeX=right
+    hit=6
+  index=7 code=66 hasBounds=true
+    relativeX=right
+    hit=7
+  index=8 code=67 hasBounds=true
+    relativeX=right
+    hit=8
+  index=9 code=8236 hasBounds=false

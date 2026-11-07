@@ -4,6 +4,8 @@ use crate::html::TextSpan;
 use crate::prelude::*;
 use crate::string::WStr;
 use ruffle_render::transform::Transform;
+use unicode_bidi::{Level, utf16::BidiInfo};
+use unicode_segmentation::UnicodeSegmentation;
 
 /// Parameters necessary to evaluate a font.
 #[derive(Copy, Clone, Debug)]
@@ -157,6 +159,53 @@ pub trait FontLike<'gc> {
         }
     }
 
+    /// Evaluate glyphs for drawing without changing logical advances or indices.
+    /// `run_breaks` contains sorted UTF-16 offsets where bidi ordering restarts.
+    fn evaluate_for_render(
+        &self,
+        text: &WStr,
+        params: EvalParameters,
+        run_breaks: &[usize],
+        mut glyph_func: impl FnMut(usize, &Transform, GlyphRef, Twips, Twips),
+    ) {
+        if !self.font_type().is_device() || text.iter().all(|c| c < 0x80) {
+            self.evaluate(text, params, glyph_func);
+            return;
+        }
+
+        // The legacy iterator can produce out-of-range indices for unpaired surrogates.
+        if text.chars().any(|c| c.is_err()) {
+            self.evaluate(text, params, glyph_func);
+            return;
+        }
+
+        let units: Vec<u16> = text.iter().collect();
+        let bidi = BidiInfo::new(&units, Some(Level::ltr()));
+        if !bidi.has_rtl() || bidi.paragraphs.len() != 1 {
+            self.evaluate(text, params, glyph_func);
+            return;
+        }
+
+        let mut advances = Vec::new();
+        self.evaluate(text, params, |pos, _, _, advance, _| {
+            advances.push((pos, advance));
+        });
+
+        let positions = if run_breaks.is_empty() {
+            let paragraph = &bidi.paragraphs[0];
+            let levels = bidi.reordered_levels(paragraph, paragraph.range.clone());
+            visual_glyph_positions(text, &levels, &advances)
+        } else {
+            visual_glyph_positions_for_runs(text, run_breaks, &advances)
+        };
+
+        self.evaluate(text, params, |pos, transform, glyph, advance, logical_x| {
+            let mut visual_transform = transform.clone();
+            visual_transform.matrix.tx = positions[pos];
+            glyph_func(pos, &visual_transform, glyph, advance, logical_x);
+        });
+    }
+
     /// Measure a particular string's width.
     fn measure(&self, text: &WStr, params: EvalParameters) -> Twips {
         let mut width = Twips::ZERO;
@@ -169,6 +218,150 @@ pub trait FontLike<'gc> {
     }
 }
 
+fn visual_glyph_positions_for_runs(
+    text: &WStr,
+    run_breaks: &[usize],
+    advances: &[(usize, Twips)],
+) -> Vec<Twips> {
+    let mut positions = vec![Twips::ZERO; text.len()];
+    let mut start = 0;
+    let mut x = Twips::ZERO;
+    for end in run_breaks
+        .iter()
+        .copied()
+        .chain(std::iter::once(text.len()))
+    {
+        if start == end {
+            continue;
+        }
+        let run = &text[start..end];
+        let units: Vec<u16> = run.iter().collect();
+        let bidi = BidiInfo::new(&units, Some(Level::ltr()));
+        let paragraph = &bidi.paragraphs[0];
+        let levels = bidi.reordered_levels(paragraph, paragraph.range.clone());
+        let first = advances.partition_point(|&(pos, _)| pos < start);
+        let last = advances.partition_point(|&(pos, _)| pos < end);
+        let run_advances: Vec<_> = advances[first..last]
+            .iter()
+            .map(|&(pos, advance)| (pos - start, advance))
+            .collect();
+        let run_positions = visual_glyph_positions(run, &levels, &run_advances);
+        let run_x = x;
+        for &(pos, advance) in &run_advances {
+            positions[start + pos] = run_x + run_positions[pos];
+            x += advance;
+        }
+        start = end;
+    }
+    positions
+}
+
+fn visual_glyph_positions(
+    text: &WStr,
+    levels: &[Level],
+    advances: &[(usize, Twips)],
+) -> Vec<Twips> {
+    // Keep surrogate pairs and combining sequences together when reordering.
+    let decoded = text.to_utf8_lossy();
+    let mut offset = 0;
+    let clusters: Vec<_> = decoded
+        .graphemes(true)
+        .map(|grapheme| {
+            let start = offset;
+            offset += grapheme.encode_utf16().count();
+            start..offset
+        })
+        .collect();
+    let cluster_levels: Vec<_> = clusters.iter().map(|c| levels[c.start]).collect();
+    let visual_order = BidiInfo::reorder_visual(&cluster_levels);
+    let mut positions = vec![Twips::ZERO; text.len()];
+    let mut visual_x = Twips::ZERO;
+    for cluster_index in visual_order {
+        let cluster = &clusters[cluster_index];
+        let start = advances.partition_point(|&(pos, _)| pos < cluster.start);
+        let end = advances.partition_point(|&(pos, _)| pos < cluster.end);
+        for &(pos, advance) in &advances[start..end] {
+            positions[pos] = visual_x;
+            visual_x += advance;
+        }
+    }
+    positions
+}
+
 fn round_to_pixel(t: Twips) -> Twips {
     Twips::from_pixels(t.to_pixels().round())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn positions(text: &str, advances: &[i32]) -> Vec<i32> {
+        let units: Vec<_> = text.encode_utf16().collect();
+        let text = WStr::from_units(units.as_slice());
+        let bidi = BidiInfo::new(&units, Some(Level::ltr()));
+        let paragraph = &bidi.paragraphs[0];
+        let levels = bidi.reordered_levels(paragraph, paragraph.range.clone());
+        let glyphs: Vec<_> = text
+            .char_indices()
+            .zip(advances)
+            .map(|((pos, _), &advance)| (pos, Twips::new(advance)))
+            .collect();
+        visual_glyph_positions(text, &levels, &glyphs)
+            .into_iter()
+            .map(Twips::get)
+            .collect()
+    }
+
+    #[test]
+    fn selection_boundaries_restart_visual_order_without_changing_advances() {
+        let units: Vec<_> = "שלום".encode_utf16().collect();
+        let text = WStr::from_units(units.as_slice());
+        let advances =
+            [(0, 10), (1, 20), (2, 30), (3, 40)].map(|(pos, advance)| (pos, Twips::new(advance)));
+        for (breaks, expected) in [
+            ([0, 1], [0, 80, 50, 10]),
+            ([0, 2], [20, 0, 70, 30]),
+            ([1, 3], [0, 40, 10, 60]),
+            ([0, 0], [90, 70, 40, 0]),
+            ([4, 4], [90, 70, 40, 0]),
+        ] {
+            let positions: Vec<_> = visual_glyph_positions_for_runs(text, &breaks, &advances)
+                .into_iter()
+                .map(Twips::get)
+                .collect();
+            assert_eq!(positions, expected);
+        }
+    }
+
+    #[test]
+    fn ltr_positions_are_unchanged() {
+        assert_eq!(positions("ABC", &[10, 20, 30]), [0, 10, 30]);
+    }
+
+    #[test]
+    fn rtl_uses_each_glyphs_advance() {
+        assert_eq!(positions("שלום", &[10, 20, 30, 40]), [90, 70, 40, 0]);
+    }
+
+    #[test]
+    fn mixed_text_keeps_digit_order() {
+        assert_eq!(
+            positions("ABC שלום 123", &[10; 12]),
+            [0, 10, 20, 30, 110, 100, 90, 80, 70, 40, 50, 60]
+        );
+    }
+
+    #[test]
+    fn combining_sequences_remain_together() {
+        assert_eq!(positions("א\u{05b0}ב", &[10, 0, 10]), [10, 20, 0]);
+    }
+
+    #[test]
+    fn supplementary_characters_use_utf16_positions() {
+        let result = positions("\u{1ee00}א", &[10, 10]);
+        assert_eq!(result.len(), 3);
+        assert_eq!(result[0], 10);
+        assert_eq!(result[2], 0);
+    }
 }

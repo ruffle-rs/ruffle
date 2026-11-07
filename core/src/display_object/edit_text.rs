@@ -1271,9 +1271,22 @@ impl<'gc> EditText<'gc> {
             let descent = metrics.descent(params.height());
             let caret_height = ascent + descent;
             let mut caret_x = Twips::ZERO;
-            font.evaluate(
+            // Flash restarts bidi ordering at visible selection boundaries.
+            let selection_breaks = visible_selection
+                .filter(|selection| !selection.is_caret())
+                .map(|selection| {
+                    [
+                        selection.start().saturating_sub(start).min(text.len()),
+                        selection.end().saturating_sub(start).min(text.len()),
+                    ]
+                });
+            let run_breaks = selection_breaks
+                .as_ref()
+                .map_or(&[][..], |breaks| &breaks[..]);
+            font.evaluate_for_render(
                 text,
                 params,
+                run_breaks,
                 |pos, transform, glyph, advance, x| {
                     if glyph.renderable(context) {
                         // If it's highlighted, override the color.

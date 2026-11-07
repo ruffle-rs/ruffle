@@ -1,0 +1,45 @@
+source=0 length=2
+  sourceIndex=0 code=1488
+  sourceIndex=1 code=65
+case=0 length=2
+  index=0 code=1488 hasBounds=true
+    hit=0
+  index=1 code=65 hasBounds=true
+    hit=1
+source=1 length=3
+  sourceIndex=0 code=1488
+  sourceIndex=1 code=55296
+  sourceIndex=2 code=65
+case=1 length=3
+  index=0 code=1488 hasBounds=true
+    hit=0
+  index=1 code=65533 hasBounds=true
+    hit=1
+  index=2 code=65 hasBounds=true
+    hit=2
+source=2 length=3
+  sourceIndex=0 code=1488
+  sourceIndex=1 code=56320
+  sourceIndex=2 code=65
+case=2 length=3
+  index=0 code=1488 hasBounds=true
+    hit=0
+  index=1 code=65533 hasBounds=true
+    hit=1
+  index=2 code=65 hasBounds=true
+    hit=2
+source=3 length=4
+  sourceIndex=0 code=1488
+  sourceIndex=1 code=55357
+  sourceIndex=2 code=56832
+  sourceIndex=3 code=65
+case=3 length=4
+  index=0 code=1488 hasBounds=true
+    hit=0
+  index=1 code=55357 hasBounds=true
+    hit=1
+  index=2 code=56832 hasBounds=true
+    hit=2
+  index=3 code=65 hasBounds=true
+    hit=3
+done
