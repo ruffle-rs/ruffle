@@ -2518,44 +2518,6 @@ pub trait TDisplayObject<'gc>:
         render_base(self.into(), context, options)
     }
 
-    #[cfg(not(feature = "avm_debug"))]
-    #[no_dynamic]
-    fn display_render_tree(self, _depth: usize) {}
-
-    #[cfg(feature = "avm_debug")]
-    #[no_dynamic]
-    fn display_render_tree(self, depth: usize) {
-        let mut self_str = &*format!("{self:?}");
-        if let Some(end_char) = self_str.find(|c: char| !c.is_ascii_alphanumeric()) {
-            self_str = &self_str[..end_char];
-        }
-
-        let bounds = self.world_bounds(BoundsMode::Engine);
-
-        let mut classname = "".to_string();
-        if let Some(o) = self.object2() {
-            classname = format!("{:?}", o.base().class_name());
-        }
-
-        println!(
-            "{} rel({},{}) abs({},{}) {} {} {} id={} depth={}",
-            " ".repeat(depth),
-            self.x(),
-            self.y(),
-            bounds.x_min.to_pixels(),
-            bounds.y_min.to_pixels(),
-            classname,
-            self.name().map(|s| s.to_string()).unwrap_or_default(),
-            self_str,
-            self.id(),
-            depth
-        );
-
-        if let Some(ctr) = self.as_container() {
-            ctr.recurse_render_tree(depth + 1);
-        }
-    }
-
     fn avm1_unload(self, context: &mut UpdateContext<'gc>) {
         // Unload children.
         if let Some(ctr) = self.as_container() {

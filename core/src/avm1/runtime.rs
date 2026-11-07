@@ -1,3 +1,4 @@
+use crate::avm1;
 use crate::avm1::function::ExecutionReason;
 use crate::avm1::globals::create_globals;
 use crate::avm1::globals::object::broadcast_internal;
@@ -12,7 +13,6 @@ use crate::display_object::{
 use crate::frame_lifecycle::FramePhase;
 use crate::string::{AvmString, StringContext};
 use crate::tag_utils::SwfSlice;
-use crate::{avm_debug, avm1};
 use gc_arena::{Collect, Gc, Mutation};
 use std::borrow::Cow;
 use swf::avm1::read::Reader;
@@ -108,9 +108,6 @@ pub struct Avm1<'gc> {
     /// class have already been defined on, see
     /// `avm1::property_decl::define_lazy_proto_properties`.
     lazy_initialized_prototypes: Vec<ObjectWeak<'gc>>,
-
-    #[cfg(feature = "avm_debug")]
-    pub debug_output: bool,
 }
 
 impl<'gc> Avm1<'gc> {
@@ -130,8 +127,6 @@ impl<'gc> Avm1<'gc> {
             has_mouse_listener: false,
             clip_exec_list: None,
 
-            #[cfg(feature = "avm_debug")]
-            debug_output: false,
             use_new_invalid_bounds_value: false,
             lazy_initialized_prototypes: Vec::new(),
         }
@@ -376,19 +371,14 @@ impl<'gc> Avm1<'gc> {
     }
 
     pub fn push(&mut self, value: Value<'gc>) {
-        avm_debug!(self, "Stack push {}: {value:?}", self.stack.len());
         self.stack.push(value);
     }
 
     pub fn pop(&mut self) -> Value<'gc> {
-        let value = self.stack.pop().unwrap_or_else(|| {
+        self.stack.pop().unwrap_or_else(|| {
             tracing::warn!("Avm1::pop: Stack underflow");
             Value::Undefined
-        });
-
-        avm_debug!(self, "Stack pop {}: {value:?}", self.stack.len());
-
-        value
+        })
     }
 
     #[inline(always)]
@@ -650,25 +640,6 @@ impl<'gc> Avm1<'gc> {
         initialized.push(proto.as_weak());
         true
     }
-
-    #[cfg(feature = "avm_debug")]
-    #[inline]
-    pub fn show_debug_output(&self) -> bool {
-        self.debug_output
-    }
-
-    #[cfg(not(feature = "avm_debug"))]
-    pub const fn show_debug_output(&self) -> bool {
-        false
-    }
-
-    #[cfg(feature = "avm_debug")]
-    pub fn set_show_debug_output(&mut self, visible: bool) {
-        self.debug_output = visible;
-    }
-
-    #[cfg(not(feature = "avm_debug"))]
-    pub const fn set_show_debug_output(&self, _visible: bool) {}
 
     pub fn handle_error(activation: &mut Activation<'_, 'gc>, error: Error<'gc>) {
         match &error {
