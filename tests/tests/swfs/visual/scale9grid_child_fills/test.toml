@@ -1,0 +1,20 @@
+# Gradient-filled children sliced by their container's grid: the fill fit is conjugated
+# through the child's matrix, which a solid fill could not show.
+#
+# The budget is antialiasing along the curved row's outline, where the rasterisers place
+# the edge a pixel apart; the gradients and the geometry match exactly.
+num_ticks = 1
+
+[image_comparisons.output]
+tolerance = 2
+max_outliers = 1500
+
+[player_options]
+with_renderer = { optional = false }
+
+[[compilers]]
+type = "Asc"
+target = "test.swf"
+class = "Test"
+scripts = ["Test.as"]
+swf_version = 43

@@ -580,6 +580,16 @@ impl<'gc> TDisplayObject<'gc> for Avm2Button<'gc> {
         Default::default()
     }
 
+    /// Measured from the state being shown. A multi-record state is a synthesized Sprite,
+    /// which puts its art two levels down, so like in Flash Player it validates but does
+    /// not slice.
+    fn self_bounds_for_scale9(self) -> Rectangle<Twips> {
+        match self.get_state_child(self.0.state.get().into()) {
+            Some(child) => child.base().matrix() * child.self_bounds_for_scale9(),
+            None => Default::default(),
+        }
+    }
+
     fn bounds_with_transform(self, matrix: &Matrix, mode: BoundsMode) -> Rectangle<Twips> {
         // A scroll rect completely overrides an object's bounds,
         // and can even grow the bounding box to be larger than the actual content

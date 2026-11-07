@@ -2131,6 +2131,7 @@ impl Player {
                 is_offscreen: false,
                 use_bitmap_cache: true,
                 stage,
+                untransformed_source: None,
             };
 
             stage.render_viewport(&mut render_context);
