@@ -211,8 +211,13 @@ impl<'gc> LoaderInfoObject<'gc> {
             // is called unconditionally at the end of every frame.
             let (should_complete, from_bytes) = match self.0.loaded_stream.get() {
                 LoaderStream::Swf(movie, root) => (
+                    // A root movie that is still arriving isn't complete,
+                    // even if its End tag has (with data after it).
                     root.as_movie_clip()
-                        .map(|mc| mc.loaded_bytes() as i32 >= mc.total_bytes())
+                        .map(|mc| {
+                            mc.received_file_bytes().is_none()
+                                && mc.loaded_bytes() as i32 >= mc.total_bytes()
+                        })
                         .unwrap_or(true),
                     movie.is_from_bytes(),
                 ),

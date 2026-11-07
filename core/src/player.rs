@@ -32,8 +32,8 @@ use crate::context_menu::{
 };
 use crate::display_object::Avm2MousePick;
 use crate::display_object::{
-    EditText, GotoInfo, InteractiveObject, Stage, StageAlign, StageDisplayState, StageScaleMode,
-    StopOrPlay, TInteractiveObject, WindowMode,
+    EditText, GotoInfo, InteractiveObject, MovieClip, Stage, StageAlign, StageDisplayState,
+    StageScaleMode, StopOrPlay, TInteractiveObject, WindowMode,
 };
 use crate::events::GamepadButton;
 use crate::events::PlayerNotification;
@@ -2024,6 +2024,7 @@ impl Player {
     /// simulate a particular load condition or stress chunked loading may use
     /// this in lieu of an unlimited execution limit.
     pub fn preload(&mut self, limit: &mut ExecutionLimit) -> bool {
+        let is_streaming = self.load_behavior == LoadBehavior::Streaming;
         self.mutate_with_update_context(|context| {
             let mut did_finish = true;
 
@@ -2032,26 +2033,31 @@ impl Player {
                 .root_clip()
                 .and_then(|root| root.as_movie_clip())
             {
-                let was_root_movie_loaded = root.loaded_bytes() as i32 == root.total_bytes();
+                // Other load behaviors promise that movies see themselves
+                // loaded immediately.
+                if !is_streaming && root.received_file_bytes().is_some() {
+                    root.receive_file_bytes(u64::MAX);
+                }
+
+                // The root movie arrives chunk by chunk, as in Flash Player:
+                // before the first frame, until that frame is complete, and
+                // the rest after it (see `Player::run_frame`), with a
+                // `progress` event for each chunk once it has been preloaded.
                 did_finish = root.preload(context, limit);
-                let is_root_movie_loaded = root.loaded_bytes() as i32 == root.total_bytes();
-
-                // The final `progress` event is fired at the end of the frame, together with
-                // `init` and `complete` (see `LoaderInfoObject::fire_init_and_complete_events`).
-                if let Some(loader_info) = root
-                    .loader_info()
-                    .filter(|_| !was_root_movie_loaded && !is_root_movie_loaded)
+                while did_finish
+                    && let Some(received) = root.received_file_bytes()
+                    && (root.frames_loaded() < 1 || root.is_receiving_rest())
                 {
-                    let mut activation = Avm2Activation::from_nothing(context);
+                    if root.is_receiving_rest() {
+                        Self::report_root_progress(context, root);
+                    }
+                    root.receive_file_bytes(received + MovieClip::FILE_CHUNK_SIZE);
+                    did_finish = root.preload(context, limit);
+                }
 
-                    let progress_evt = Avm2EventObject::progress_event(
-                        &mut activation,
-                        "progress",
-                        root.compressed_loaded_bytes() as usize,
-                        root.compressed_total_bytes() as usize,
-                    );
-
-                    Avm2::dispatch_event(context, progress_evt, loader_info.into());
+                // The last `progress` event comes with `complete`.
+                if did_finish && root.finish_receiving_rest() {
+                    root.try_fire_loaderinfo_events(context);
                 }
             }
 
@@ -2063,6 +2069,24 @@ impl Player {
 
             did_finish
         })
+    }
+
+    /// Fires a `progress` event for each chunk of the root movie that has
+    /// been received and preloaded since the last one.
+    fn report_root_progress<'gc>(context: &mut UpdateContext<'gc>, root: MovieClip<'gc>) {
+        let file_len = root.compressed_total_bytes() as usize;
+        for chunk_end in root.take_unreported_chunks() {
+            if let Some(loader_info) = root.loader_info() {
+                let mut activation = Avm2Activation::from_nothing(context);
+                let progress_evt = Avm2EventObject::progress_event(
+                    &mut activation,
+                    "progress",
+                    chunk_end as usize,
+                    file_len,
+                );
+                Avm2::dispatch_event(context, progress_evt, loader_info.into());
+            }
+        }
     }
 
     #[instrument(level = "debug", skip_all)]
@@ -2099,6 +2123,19 @@ impl Player {
                 (cb.callback)(context, cb.data);
             }
         });
+
+        // Flash Player receives the rest of the root movie right after its
+        // first frame (from a local file, all of it, before any timer runs).
+        let is_receiving_rest = self.mutate_with_update_context(|context| {
+            context
+                .stage
+                .root_clip()
+                .and_then(|root| root.as_movie_clip())
+                .is_some_and(|root| root.start_receiving_rest())
+        });
+        if is_receiving_rest {
+            self.preload(&mut execution_limit);
+        }
 
         self.needs_render = true;
     }
