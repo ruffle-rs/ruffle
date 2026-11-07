@@ -130,13 +130,6 @@ These are additive - you can specify multiple at the same time. You must have th
 - `--firefox` for Firefox
 - `--edge` for Edge
 
-### BrowserStack (Mobile Browsers)
-To run tests on mobile devices on BrowserStack, pass the `--browserstack` argument.
-We also have our "minimum supported desktop browsers" available too, by additionally passing `--oldVersions`.
-
-You will need a BrowserStack account (Maintainers may contact @Dinnerbone on Discord for an invite to the Ruffle team),
-and set the appropriate values to `BROWSERSTACK_USERNAME` and `BROWSERSTACK_ACCESS_KEY` environment variables.
-
 ### Other Options
 Pass `--headless` to hide the browser windows. This is useful and recommended in almost every case, but if you want to debug why a test fails then it's very useful to not pass this.
 
