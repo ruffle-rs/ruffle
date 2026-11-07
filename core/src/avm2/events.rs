@@ -364,12 +364,6 @@ fn dispatch_event_to_target<'gc>(
     event: EventObject<'gc>,
     simulate_dispatch: bool,
 ) {
-    avm_debug!(
-        activation.context.avm2,
-        "Event dispatch: {} to {current_target:?}",
-        event.event().event_type(),
-    );
-
     let dispatch_list = dispatcher.get_slot(slots::DISPATCH_LIST).as_object();
 
     if dispatch_list.is_none() {
