@@ -198,26 +198,28 @@ impl Surface {
                     assert!(!needs_stencil, "Shader blend mode not implemented in masks");
                     let parent_blend_buffer =
                         target.update_blend_buffer(descriptors, texture_pool, draw_encoder);
+                    let mut arguments: Vec<PixelBenderShaderArgument<'_>> = shader.values;
+                    arguments.extend([
+                        PixelBenderShaderArgument::ImageInput {
+                            index: 0,
+                            channels: 0xFF,
+                            name: "background".to_string(),
+                            texture: Some(ImageInputTexture::TextureRef(
+                                parent_blend_buffer.texture(),
+                            )),
+                        },
+                        PixelBenderShaderArgument::ImageInput {
+                            index: 1,
+                            channels: 0xff,
+                            name: "foreground".to_string(),
+                            texture: Some(ImageInputTexture::TextureRef(texture.texture())),
+                        },
+                    ]);
                     run_pixelbender_shader_impl(
                         descriptors,
-                        shader,
+                        shader.handle,
                         ShaderMode::Filter,
-                        &[
-                            PixelBenderShaderArgument::ImageInput {
-                                index: 0,
-                                channels: 0xFF,
-                                name: "background".to_string(),
-                                texture: Some(ImageInputTexture::TextureRef(
-                                    parent_blend_buffer.texture(),
-                                )),
-                            },
-                            PixelBenderShaderArgument::ImageInput {
-                                index: 1,
-                                channels: 0xff,
-                                name: "foreground".to_string(),
-                                texture: Some(ImageInputTexture::TextureRef(texture.texture())),
-                            },
-                        ],
+                        &arguments,
                         parent_blend_buffer.texture(),
                         draw_encoder,
                         target.color_attachments(),

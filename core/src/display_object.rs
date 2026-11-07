@@ -18,8 +18,8 @@ use gc_arena::barrier::{Write, unlock};
 use gc_arena::lock::Lock;
 use gc_arena::{Collect, Gc, Mutation};
 use ruffle_macros::{enum_trait_object, istr};
+use ruffle_render::commands::BlendShader;
 use ruffle_render::perspective_projection::PerspectiveProjection;
-use ruffle_render::pixel_bender::PixelBenderShaderHandle;
 use ruffle_render::transform::{Transform, TransformStack};
 use std::cell::{Cell, Ref, RefCell, RefMut};
 use std::fmt::Debug;
@@ -324,7 +324,7 @@ pub struct DisplayObjectBase<'gc> {
 struct DisplayObjectBaseMut {
     filters: Box<[Filter]>,
 
-    blend_shader: Option<PixelBenderShaderHandle>,
+    blend_shader: Option<BlendShader>,
 
     /// If this Display Object should cacheAsBitmap - and if so, the cache itself.
     /// None means not cached, Some means cached.
@@ -745,11 +745,11 @@ impl<'gc> DisplayObjectBase<'gc> {
         self.blend_mode.replace(value) != value
     }
 
-    fn blend_shader(&self) -> Option<PixelBenderShaderHandle> {
+    fn blend_shader(&self) -> Option<BlendShader> {
         self.cell.borrow().blend_shader.clone()
     }
 
-    fn set_blend_shader(&self, value: Option<PixelBenderShaderHandle>) {
+    fn set_blend_shader(&self, value: Option<BlendShader>) {
         self.cell.borrow_mut().blend_shader = value;
     }
 
@@ -2176,12 +2176,12 @@ pub trait TDisplayObject<'gc>:
     }
 
     #[no_dynamic]
-    fn blend_shader(self) -> Option<PixelBenderShaderHandle> {
+    fn blend_shader(self) -> Option<BlendShader> {
         self.base().blend_shader()
     }
 
     #[no_dynamic]
-    fn set_blend_shader(self, value: Option<PixelBenderShaderHandle>) {
+    fn set_blend_shader(self, value: Option<BlendShader>) {
         self.base().set_blend_shader(value);
         self.set_blend_mode(ExtendedBlendMode::Shader);
     }
