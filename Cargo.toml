@@ -119,6 +119,7 @@ lzma-rs = "0.3.0"
 tempfile = "3.27.0"
 tracing-wasm = "0.2.1"
 rascal = "0.3.5"
+swfasm = "0.1.0"
 jpegxr = { git = "https://github.com/ruffle-rs/jpegxr", rev = "86cc1749d493288f53d7290ac3eb7082c475b5d9" }
 
 [workspace.lints.rust]
