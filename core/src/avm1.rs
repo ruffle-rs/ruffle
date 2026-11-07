@@ -45,6 +45,15 @@ pub use runtime::Avm1;
 pub use value::Value;
 
 #[macro_export]
+macro_rules! avm_debug {
+    ($avm: expr, $($arg:tt)*) => (
+        if $avm.show_debug_output() {
+            tracing::debug!($($arg)*)
+        }
+    )
+}
+
+#[macro_export]
 macro_rules! avm_warn {
     ($activation: ident, $($arg:tt)*) => (
         if cfg!(feature = "avm_debug") {

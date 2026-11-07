@@ -1162,16 +1162,14 @@ impl Player {
                     self.mutate_with_update_context(|context| {
                         if context.avm1.show_debug_output() {
                             tracing::info!(
-                                "AVM Debugging turned off! Press CTRL+ALT+D to turn on again."
+                                "AVM1 Debugging turned off! Press CTRL+ALT+D to turn on again."
                             );
                             context.avm1.set_show_debug_output(false);
-                            context.avm2.set_show_debug_output(false);
                         } else {
                             tracing::info!(
-                                "AVM Debugging turned on! Press CTRL+ALT+D to turn off."
+                                "AVM1 Debugging turned on! Press CTRL+ALT+D to turn off."
                             );
                             context.avm1.set_show_debug_output(true);
-                            context.avm2.set_show_debug_output(true);
                         }
                     });
                 }
