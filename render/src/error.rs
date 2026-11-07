@@ -39,6 +39,9 @@ pub enum Error {
     #[error("Javascript error")]
     JavascriptError(wasm_bindgen::JsValue),
 
+    #[error("Couldn't create texture")]
+    UnableToCreateTexture,
+
     #[error("Unknown handle {0:?}")]
     UnknownHandle(BitmapHandle),
 
