@@ -50,7 +50,6 @@ pub enum XmlStatus {
     AttributeNotTerminated = -8,
 
     /// A start-tag was not matched with an end-tag.
-    #[expect(dead_code)]
     MismatchedStart = -9,
 
     /// An end-tag was encountered without a matching start-tag.
@@ -153,6 +152,20 @@ impl<'gc> Xml<'gc> {
                     | quick_xml::Error::InvalidAttr(AttrError::Duplicated(_, _)) => {
                         XmlStatus::ElementMalformed
                     }
+                    // Flash only treats the start-tag as unmatched when the end-tag
+                    // closes the element directly above it, as in `<a><b>foo</a>`.
+                    quick_xml::Error::IllFormed(IllFormedError::MismatchedEndTag {
+                        ref found,
+                        ..
+                    }) if open_tags
+                        .iter()
+                        .rev()
+                        .nth(1)
+                        .and_then(|node| node.node_name())
+                        .is_some_and(|name| name.to_utf8_lossy() == found.as_str()) =>
+                    {
+                        XmlStatus::MismatchedStart
+                    }
                     quick_xml::Error::IllFormed(
                         IllFormedError::MismatchedEndTag { .. }
                         | IllFormedError::UnmatchedEndTag { .. },
@@ -224,7 +237,12 @@ impl<'gc> Xml<'gc> {
                     let doctype = Some(AvmString::new(activation.gc(), doctype));
                     unlock!(Gc::write(activation.gc(), self.0), XmlData, doctype).set(doctype);
                 }
-                Event::Eof => break,
+                Event::Eof => {
+                    if open_tags.len() > 1 {
+                        self.0.status.set(XmlStatus::MismatchedStart);
+                    }
+                    break;
+                }
                 _ => {}
             }
         }
