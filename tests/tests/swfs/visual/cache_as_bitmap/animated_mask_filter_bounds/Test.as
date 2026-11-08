@@ -41,8 +41,12 @@ package {
 
                 var maskShape:Shape = new Shape();
                 container.addChild(maskShape);
+                if (i == 4) {
+                    drawMask(maskShape, 0, 0, 40, 80);
+                } else {
+                    drawMask(maskShape, -12, -12, 104, 104);
+                }
                 bitmap.mask = maskShape;
-                drawMask(maskShape, -12, -12, 104, 104);
 
                 if (i == 0 || i == 1 || i == 4 || i == 5) {
                     container.filters = [new ColorMatrixFilter([
@@ -99,16 +103,11 @@ package {
 
                 if (i == 4) {
                     // Intentional visible clipping motion.
-                    drawMask(maskShape, controlPhase * 10, 0, 40, 80);
+                    maskShape.x = controlPhase * 10;
                 } else {
-                    // Changing mask bounds; bitmap remains fully covered.
-                    drawMask(
-                        maskShape,
-                        -12 - delta,
-                        -12 - delta,
-                        104 + delta * 2,
-                        104 + delta * 2
-                    );
+                    // Move the mask while it still fully covers the bitmap.
+                    maskShape.x = -delta;
+                    maskShape.y = -delta;
                 }
 
                 if (i == 5) {
