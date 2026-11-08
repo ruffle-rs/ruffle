@@ -48,6 +48,10 @@ v.className: MyArray
 v.className: MyArray
 // A_CONVOLUTION_FILTER.matrix
 v.className: MyArray
+// Camera.names
+v.className: MyArray
+// Microphone.names
+v.className: MyArray
 
 ### Testing display objects
 current.className: MovieClip
