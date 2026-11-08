@@ -236,10 +236,10 @@ fn get_local<'gc>(
     }
 
     // Data property only should exist when created with getLocal/Remote
-    let constructor = activation.prototypes().shared_object_constructor;
-    let this = constructor
-        .construct(activation, &[])?
-        .coerce_to_object_or_bare(activation)?;
+    let class_path = [istr!("SharedObject")];
+    let Value::Object(this) = activation.instantiate_class_as_script(class_path, &[])? else {
+        return Ok(Value::Null);
+    };
 
     // Set the internal name
     if let NativeObject::SharedObject(shared_object) = this.native() {
