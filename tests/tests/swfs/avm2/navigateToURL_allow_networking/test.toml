@@ -1,0 +1,27 @@
+num_ticks = 1
+log_fetch = true
+
+[[compilers]]
+type = "Asc"
+target = "test.swf"
+class = "Test"
+scripts = ["Test.as"]
+swf_version = 43
+
+[subtests.all]
+output_path = "output.all.txt"
+
+[subtests.all.player_options]
+allow_networking = "all"
+
+[subtests.none]
+output_path = "output.none.txt"
+
+[subtests.none.player_options]
+allow_networking = "none"
+
+[subtests.internal]
+output_path = "output.internal.txt"
+
+[subtests.internal.player_options]
+allow_networking = "internal"

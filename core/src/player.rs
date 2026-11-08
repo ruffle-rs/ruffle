@@ -7,7 +7,9 @@ use crate::avm1::Value;
 use crate::avm1::VariableDumper;
 use crate::avm1::{Activation, ActivationIdentifier};
 use crate::avm2::object::EventObject as Avm2EventObject;
-use crate::avm2::{Activation as Avm2Activation, Avm2, CallStack, SharedObjectObject};
+use crate::avm2::{
+    Activation as Avm2Activation, Avm2, CallStack, OptimizerSettings, SharedObjectObject,
+};
 use crate::backend::navigator::ErrorResponse;
 use crate::backend::navigator::FetchReason;
 use crate::backend::navigator::OwnedFuture;
@@ -23,7 +25,7 @@ use crate::backend::{
 };
 use crate::compatibility_rules::CompatibilityRules;
 use crate::compatibility_rules::UrlRewriteStage;
-use crate::config::Letterbox;
+use crate::config::{Letterbox, NetworkingAccessMode};
 use crate::context::{ActionQueue, ActionType, RenderContext, UpdateContext};
 use crate::context_menu::{
     BuiltInItemFlags, ContextMenuCallback, ContextMenuItem, ContextMenuState,
@@ -412,6 +414,9 @@ pub struct Player {
     /// The root SWF URL provided to ActionScript. If None,
     /// the actual loaded url will be used
     spoofed_url: Option<String>,
+
+    /// The value of "allowNetworking" param
+    allow_networking: NetworkingAccessMode,
 
     /// Any compatibility rules to apply for this movie.
     compatibility_rules: CompatibilityRules,
@@ -2336,6 +2341,7 @@ impl Player {
             let mut update_context = UpdateContext {
                 player_version: this.player_version,
                 player_mode: this.player_mode,
+                allow_networking: this.allow_networking,
                 root_swf,
                 library,
                 rng: &mut this.rng,
@@ -2668,6 +2674,7 @@ pub struct PlayerBuilder {
     viewport_scale_factor: f64,
     load_behavior: LoadBehavior,
     spoofed_url: Option<String>,
+    allow_networking: NetworkingAccessMode,
     compatibility_rules: CompatibilityRules,
     gamepad_button_mapping: HashMap<GamepadButton, KeyCode>,
     player_version: Option<u8>,
@@ -2680,7 +2687,8 @@ pub struct PlayerBuilder {
     fs_command_provider: Box<dyn FsCommandProvider>,
     #[cfg(feature = "known_stubs")]
     stub_report_output: Option<std::path::PathBuf>,
-    avm2_optimizer_enabled: bool,
+    avm2_early_binding_enabled: bool,
+    avm2_dse_enabled: bool,
     #[cfg(feature = "default_font")]
     default_font: bool,
 }
@@ -2725,6 +2733,7 @@ impl PlayerBuilder {
             viewport_scale_factor: 1.0,
             load_behavior: LoadBehavior::Streaming,
             spoofed_url: None,
+            allow_networking: NetworkingAccessMode::All,
             compatibility_rules: CompatibilityRules::default(),
             gamepad_button_mapping: HashMap::new(),
             player_version: None,
@@ -2737,7 +2746,8 @@ impl PlayerBuilder {
             fs_command_provider: Box::new(NullFsCommandProvider),
             #[cfg(feature = "known_stubs")]
             stub_report_output: None,
-            avm2_optimizer_enabled: true,
+            avm2_early_binding_enabled: true,
+            avm2_dse_enabled: true,
             #[cfg(feature = "default_font")]
             default_font: true,
         }
@@ -2902,6 +2912,11 @@ impl PlayerBuilder {
         self
     }
 
+    pub fn with_allow_networking(mut self, allow_networking: NetworkingAccessMode) -> Self {
+        self.allow_networking = allow_networking;
+        self
+    }
+
     /// Sets the compatibility rules to use with this movie.
     pub fn with_compatibility_rules(mut self, compatibility_rules: CompatibilityRules) -> Self {
         self.compatibility_rules = compatibility_rules;
@@ -2963,8 +2978,13 @@ impl PlayerBuilder {
         self
     }
 
-    pub fn with_avm2_optimizer_enabled(mut self, value: bool) -> Self {
-        self.avm2_optimizer_enabled = value;
+    pub fn with_avm2_early_binding_enabled(mut self, value: bool) -> Self {
+        self.avm2_early_binding_enabled = value;
+        self
+    }
+
+    pub fn with_avm2_dse_enabled(mut self, value: bool) -> Self {
+        self.avm2_dse_enabled = value;
         self
     }
 
@@ -3134,6 +3154,7 @@ impl PlayerBuilder {
                 self_reference: self_ref.clone(),
                 load_behavior: self.load_behavior,
                 spoofed_url: self.spoofed_url.clone(),
+                allow_networking: self.allow_networking,
                 compatibility_rules: self.compatibility_rules.clone(),
                 stub_tracker: StubCollection::new(),
                 notification_sender: self.notification_sender,
@@ -3191,15 +3212,19 @@ impl PlayerBuilder {
         }
 
         player_lock.mutate_with_update_context(|context| {
-            if !self.avm2_optimizer_enabled {
+            if !self.avm2_early_binding_enabled {
                 tracing::warn!(
-                    "AVM2 optimizer disabled, some bytecode verification will be missing"
+                    "AVM2 early binding optimizations disabled, some bytecode may behave incorrectly"
                 );
             }
 
             context
                 .avm2
-                .set_optimizer_enabled(self.avm2_optimizer_enabled);
+                .set_optimizer_settings(OptimizerSettings {
+                    early_binding_enabled: self.avm2_early_binding_enabled,
+                    dse_enabled: self.avm2_dse_enabled,
+                });
+
             Avm1::load_player_globals(context);
             Avm2::load_player_globals(context);
 

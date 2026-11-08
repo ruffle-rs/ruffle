@@ -113,6 +113,10 @@ runtime = "AIR"
 # The version of the player to emulate. If not set, it uses the newest one ruffle knows about.
 version = 32
 
+# The value of the `allowNetworking` parameter: "all", "internal", or "none".
+# Defaults to "all".
+allow_networking = "all"
+
 # Whether Ruffle's default font should be available.
 # It's not recommended to enable this option, as it will introduce differences
 # in behavior between Ruffle and Flash.

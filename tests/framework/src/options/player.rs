@@ -1,6 +1,7 @@
 use crate::backends::{FontRendererKind, TestAudioBackend};
 use crate::environment::{Environment, RenderInterface};
 use crate::options::RenderOptions;
+use ruffle_core::config::NetworkingAccessMode;
 use ruffle_core::tag_utils::SwfMovieData;
 use ruffle_core::{PlayerBuilder, PlayerMode, PlayerRuntime};
 use ruffle_render::backend::{RenderBackend, ViewportDimensions};
@@ -18,6 +19,7 @@ pub struct PlayerOptions {
     runtime: PlayerRuntime,
     version: Option<u8>,
     mode: Option<PlayerMode>,
+    allow_networking: Option<NetworkingAccessMode>,
     with_default_font: bool,
     device_font_renderer: FontRendererKind,
 }
@@ -39,6 +41,7 @@ impl PlayerOptions {
         player_builder = player_builder
             .with_player_runtime(self.runtime)
             .with_player_version(self.version)
+            .with_allow_networking(self.allow_networking.unwrap_or(NetworkingAccessMode::All))
             // Assume flashplayerdebugger is used in tests
             .with_player_mode(self.mode.unwrap_or(PlayerMode::Debug))
             .with_default_font(self.with_default_font);

@@ -706,6 +706,7 @@ impl RuffleInstanceBuilder {
             .with_max_execution_duration(self.max_execution_duration)
             .with_player_version(self.player_version)
             .with_player_runtime(self.player_runtime)
+            .with_allow_networking(self.allow_networking)
             .with_compatibility_rules(self.compatibility_rules.clone())
             .with_quality(self.quality)
             .with_align(self.stage_align, self.force_align)

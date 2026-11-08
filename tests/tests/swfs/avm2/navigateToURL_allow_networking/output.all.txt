@@ -1,0 +1,4 @@
+Navigator::navigate_to_url:
+  URL: https://example.com/
+  Target: _blank
+  Method: GET
