@@ -253,6 +253,17 @@ v.className: MyTextFormat
 // textfieldOrig.getNewTextFormat()
 v.className: MyTextFormat
 
+### Testing SharedObject
+// SHARED_OBJECT.getLocal('test1')
+SharedObject getter called!
+new MySharedObject() called!
+v.className: MySharedObject
+// delete _global.SharedObject
+// SHARED_OBJECT.getLocal('test1')
+v.className: MySharedObject
+// SHARED_OBJECT.getLocal('test2')
+v isn't an object: null (type: null)
+
 ### Testing FileReference
 // A_FILE_REFERENCE_LIST.browse(A_FILE_BROWSE_FILTER)
 flash getter called!

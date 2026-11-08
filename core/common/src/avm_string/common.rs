@@ -346,6 +346,7 @@ ruffle_macros::define_common_strings! {
     "save",
     "Selection",
     "separatorBefore",
+    "SharedObject",
     "smallCaps",
     "songname",
     "splice",

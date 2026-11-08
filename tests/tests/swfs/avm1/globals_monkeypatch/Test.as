@@ -6,6 +6,7 @@ class Test {
   static var OBJECT = Object;
   static var ARRAY = Array;
   static var FUNCTION = Function;
+  static var SHARED_OBJECT = SharedObject;
 
   static var AN_ARRAY = [];
   static var A_STRING = new String("hello world");
@@ -92,6 +93,7 @@ class Test {
     monkeyPatchClass(_global, "Video");
     monkeyPatchClass(_global, "XML");
     monkeyPatchClass(_global, "XMLNode");
+    monkeyPatchClass(_global, "SharedObject");
 
     monkeyPatchClass(_global.flash.display, "BitmapData");
 
@@ -339,6 +341,18 @@ class Test {
     trace("// textfieldOrig.getNewTextFormat()");
     traceName(textfieldOrig.getNewTextFormat());
 
+    trace("");
+    trace("### Testing SharedObject");
+
+    trace("// SHARED_OBJECT.getLocal('test1')");
+    traceName(SHARED_OBJECT.getLocal("test1"));
+    
+    trace("// delete _global.SharedObject");
+    delete _global.SharedObject;
+    trace("// SHARED_OBJECT.getLocal('test1')");
+    traceName(SHARED_OBJECT.getLocal("test1"));
+    trace("// SHARED_OBJECT.getLocal('test2')");
+    traceName(SHARED_OBJECT.getLocal("test2"));
 
     // TODO: test other classes that can be instantiated by AVM1 builtins;
     // see the list in ruffle's `SystemPrototypes`.
