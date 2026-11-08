@@ -181,6 +181,12 @@ class Test {
     trace("// A_CONVOLUTION_FILTER.matrix");
     traceName(A_CONVOLUTION_FILTER.matrix);
 
+    trace("// Camera.names");
+    traceName(Camera.names);
+
+    trace("// Microphone.names");
+    traceName(Microphone.names);
+
     // TODO: test other Array-producing native APIs?
     // Hopefully they all behave identically.
 

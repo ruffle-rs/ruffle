@@ -484,7 +484,6 @@ pub fn unescape<'gc>(
 pub struct SystemPrototypes<'gc> {
     pub object: Object<'gc>,
     pub object_constructor: Object<'gc>,
-    pub array_constructor: Object<'gc>,
     pub shared_object_constructor: Object<'gc>,
     pub date_constructor: Object<'gc>,
 }
@@ -772,7 +771,6 @@ pub fn create_globals<'gc>(
         SystemPrototypes {
             object: object.proto,
             object_constructor: object.constr,
-            array_constructor: array.constr,
             shared_object_constructor: shared_object.constr,
             date_constructor: date.constr,
         },

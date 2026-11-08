@@ -237,12 +237,12 @@ pub fn deserialize_value<'gc>(
         AmfValue::String(s) => Value::String(AvmString::new_utf8(activation.gc(), s)),
         AmfValue::Bool(b) => (*b).into(),
         AmfValue::ECMAArray(_, _, associative, len) => {
-            let array_constructor = activation.prototypes().array_constructor;
-            if let Ok(Value::Object(obj)) =
-                array_constructor.construct(activation, &[(*len).into()])
+            // TODO(moulins): how exactly is the Array object instantiated? this matters when
+            // the Array class was monkeypatched by the user.
+            let args = &[Value::from(*len)];
+            if let Ok(Some(v @ Value::Object(obj))) =
+                activation.instantiate_class_fast([istr!("Array")], args)
             {
-                let v: Value<'gc> = obj.into();
-
                 // This should always be valid, but lets be sure
                 if let Some(reference) = lso.as_reference(val) {
                     reference_cache.insert(reference, v);
@@ -269,24 +269,25 @@ pub fn deserialize_value<'gc>(
             }
         }
         AmfValue::StrictArray(_, values) => {
-            let array_constructor = activation.prototypes().array_constructor;
-            let obj = array_constructor
-                .construct(activation, &[Value::from_usize_lossy(values.len())])
-                .expect("AVM1 Array constructor should be infallible")
-                .as_object(activation)
-                .expect("AVM1 Array constructor should return an object");
+            // TODO(moulins): how exactly is the Array object instantiated? this matters when
+            // the Array class was monkeypatched by the user.
+            let args = &[Value::from_usize_lossy(values.len())];
+            if let Ok(Some(v @ Value::Object(obj))) =
+                activation.instantiate_class_fast([istr!("Array")], args)
+            {
+                if let Some(reference) = lso.as_reference(val) {
+                    reference_cache.insert(reference, v);
+                }
 
-            let v: Value<'gc> = obj.into();
-            if let Some(reference) = lso.as_reference(val) {
-                reference_cache.insert(reference, v);
+                for (i, item) in values.iter().enumerate() {
+                    let value = deserialize_value(activation, item, lso, reference_cache);
+                    obj.set_element(activation, i as i32, value).unwrap();
+                }
+
+                v
+            } else {
+                Value::Undefined
             }
-
-            for (i, item) in values.iter().enumerate() {
-                let value = deserialize_value(activation, item, lso, reference_cache);
-                obj.set_element(activation, i as i32, value).unwrap();
-            }
-
-            v
         }
 
         AmfValue::Object(_, elements, _) => {
