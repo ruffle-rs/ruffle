@@ -1,9 +1,9 @@
 select event
-file['creationDate']: null
+file['creationDate']: Fri Oct 20 06:47:03 GMT+0545 2000
 file['creator']: null
 file['data']: null
 file['extension'] throw: ReferenceError: Error #1069: Property extension not found on flash.net.FileReference and there is no default value.
-file['modificationDate']: null
+file['modificationDate']: Wed Oct 25 09:50:06 GMT+0545 2000
 file['name']: test.txt
 file['size']: 13
 file['type']: .txt
