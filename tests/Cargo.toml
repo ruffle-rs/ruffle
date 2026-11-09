@@ -20,14 +20,14 @@ imgtests = [
     "ruffle_test_framework/ruffle_video_external",
 ]
 imgtests_glow = [
-    "khronos-egl",  
+    "khronos-egl",
     "ruffle_render",
     "ruffle_render_glow",
     "ruffle_test_framework/ruffle_video_software",
     "ruffle_test_framework/ruffle_video_external",
 ]
 freetype = ["ruffle_test_framework/freetype"]
-jpegxr = ["ruffle_test_framework/jpegxr"]   
+jpegxr = ["ruffle_test_framework/jpegxr"]
 lzma = ["ruffle_test_framework/lzma"]
 
 [dependencies]
