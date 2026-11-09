@@ -53,6 +53,10 @@ impl Date {
         )
     }
 
+    pub fn from_utc(date_time: chrono::DateTime<chrono::Utc>) -> Self {
+        Self(date_time.timestamp_millis() as f64)
+    }
+
     /// Create from current date and time.
     fn now(locale: &dyn LocaleBackend) -> Self {
         Self(locale.get_current_date_time().timestamp_millis() as f64)

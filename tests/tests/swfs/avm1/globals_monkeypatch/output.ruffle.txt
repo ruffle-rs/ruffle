@@ -264,6 +264,12 @@ v.className: MySharedObject
 // SHARED_OBJECT.getLocal('test2')
 v isn't an object: null (type: null)
 
+### Testing Date
+// A_FILE_REFERENCE.browse(A_FILE_BROWSE_FILTER)
+FileReference.browse - onSelect
+creationDate.className: MyDate
+modificationDate.className: MyDate
+
 ### Testing FileReference
 // A_FILE_REFERENCE_LIST.browse(A_FILE_BROWSE_FILTER)
 flash getter called!

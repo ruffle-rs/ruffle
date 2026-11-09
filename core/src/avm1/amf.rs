@@ -313,10 +313,11 @@ pub fn deserialize_value<'gc>(
             v
         }
         AmfValue::Date(time, _) => {
-            let date_proto = activation.prototypes().date_constructor;
-
-            if let Ok(Value::Object(obj)) = date_proto.construct(activation, &[(*time).into()]) {
-                Value::Object(obj)
+            // TODO(moulins): how exactly is the Date object instantiated? this matters when
+            // the Date class was monkeypatched by the user.
+            let args = &[Value::from(*time)];
+            if let Ok(Some(date)) = activation.instantiate_class_fast([istr!("Date")], args) {
+                date
             } else {
                 Value::Undefined
             }
