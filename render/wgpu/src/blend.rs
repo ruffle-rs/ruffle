@@ -1,6 +1,6 @@
 use enum_map::Enum;
 
-use ruffle_render::{commands::RenderBlendMode, pixel_bender::PixelBenderShaderHandle};
+use ruffle_render::commands::{BlendShader, RenderBlendMode};
 use swf::BlendMode;
 
 #[derive(Enum, Debug, Copy, Clone)]
@@ -25,7 +25,7 @@ pub enum BlendType {
     Complex(ComplexBlend),
 
     /// Invoke a custom `PixelBender` shader.
-    Shader(PixelBenderShaderHandle),
+    Shader(BlendShader),
 }
 
 impl BlendType {
