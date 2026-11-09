@@ -19,11 +19,20 @@ imgtests = [
     "ruffle_test_framework/ruffle_video_software",
     "ruffle_test_framework/ruffle_video_external",
 ]
+imgtests_glow = [
+    "khronos-egl",  
+    "ruffle_render",
+    "ruffle_render_glow",
+    "ruffle_test_framework/ruffle_video_software",
+    "ruffle_test_framework/ruffle_video_external",
+]
 freetype = ["ruffle_test_framework/freetype"]
-jpegxr = ["ruffle_test_framework/jpegxr"]
+jpegxr = ["ruffle_test_framework/jpegxr"]   
 lzma = ["ruffle_test_framework/lzma"]
 
 [dependencies]
+ruffle_render = { path = "../render", optional = true }
+ruffle_render_glow = { path = "../render/glow", optional = true }
 ruffle_render_wgpu = { path = "../render/wgpu", optional = true }
 ruffle_fs_tests_runner = { path = "fs-tests-runner" }
 ruffle_test_framework = { path = "framework", features = ["clap"] }
@@ -33,6 +42,7 @@ serde = { workspace = true }
 toml = { workspace = true }
 temp-dir = "0.2.0"
 ruffle_core = { path = "../core" }
+khronos-egl = { version = "6.0.0", optional = true, features = ["static"] }
 
 [dev-dependencies]
 ruffle_core = { path = "../core", features = ["timeline_debug", "avm2_debug", "audio", "mp3", "aac", "default_font"] }

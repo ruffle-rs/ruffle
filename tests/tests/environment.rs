@@ -57,7 +57,15 @@ impl Environment for NativeEnvironment {
         self.descriptors.is_some()
     }
 
-    #[cfg(feature = "imgtests")]
+    #[cfg(feature = "imgtests_glow")]
+    fn is_render_supported(
+        &self,
+        _requirements: &ruffle_test_framework::options::RenderOptions,
+    ) -> bool {
+        true
+    }
+
+    #[cfg(any(feature = "imgtests", feature = "imgtests_glow"))]
     fn create_renderer(
         &self,
         width: u32,
@@ -163,5 +171,133 @@ mod renderer {
         let (instance, adapter, device, queue) = create_wgpu_device()?;
 
         Some(Arc::new(Descriptors::new(instance, adapter, device, queue)))
+    }
+}
+
+#[cfg(feature = "imgtests_glow")]
+mod renderer {
+    use super::NativeEnvironment;
+    use image::RgbaImage;
+    use ruffle_render_glow::GlowRenderBackend;
+    use ruffle_render_glow::glow::*;
+    use ruffle_test_framework::environment::{RenderBackend, RenderInterface};
+    use std::any::Any;
+    use std::sync::Arc;
+    extern crate khronos_egl as egl;
+
+    pub struct NativeRenderInterface {
+        name: String,
+        gl: Arc<ruffle_render_glow::glow::Context>,
+        _egl: egl::Instance<egl::Static>,
+        _egl_display: egl::Display,
+        _egl_surface: egl::Surface,
+    }
+
+    pub fn create_pair(
+        _env: &NativeEnvironment,
+        width: u32,
+        height: u32,
+    ) -> Option<(Box<dyn RenderInterface>, Box<dyn RenderBackend>)> {
+        let egl = egl::Instance::new(egl::Static);
+        let egl_display = unsafe { egl.get_display(egl::DEFAULT_DISPLAY).unwrap() };
+        egl.initialize(egl_display).unwrap();
+        let attributes = [
+            egl::RED_SIZE,
+            8,
+            egl::GREEN_SIZE,
+            8,
+            egl::BLUE_SIZE,
+            8,
+            egl::ALPHA_SIZE,
+            8,
+            egl::STENCIL_SIZE,
+            8,
+            egl::DEPTH_SIZE,
+            24,
+            egl::NONE,
+        ];
+        let config = egl
+            .choose_first_config(egl_display, &attributes)
+            .unwrap()
+            .unwrap();
+        let context_attributes = [
+            egl::CONTEXT_MAJOR_VERSION,
+            3,
+            egl::CONTEXT_MINOR_VERSION,
+            2,
+            egl::NONE,
+        ];
+        let egl_ctx = egl
+            .create_context(egl_display, config, None, &context_attributes)
+            .unwrap();
+        let surface_attributes = [
+            egl::WIDTH,
+            width as i32,
+            egl::HEIGHT,
+            height as i32,
+            egl::NONE,
+        ];
+        let egl_surface = egl
+            .create_pbuffer_surface(egl_display, config, &surface_attributes)
+            .unwrap();
+        egl.make_current(
+            egl_display,
+            Some(egl_surface),
+            Some(egl_surface),
+            Some(egl_ctx),
+        )
+        .unwrap();
+        let name = format!("{}-{:?}", std::env::consts::OS, "glow");
+
+        unsafe {
+            let gl = Arc::new(ruffle_render_glow::glow::Context::from_loader_function(
+                |s| egl.get_proc_address(s).unwrap() as *const _,
+            ));
+            Some((
+                Box::new(NativeRenderInterface {
+                    name,
+                    gl: gl.clone(),
+                    _egl: egl,
+                    _egl_display: egl_display,
+                    _egl_surface: egl_surface,
+                }),
+                Box::new(GlowRenderBackend::new(gl.clone(), false, ruffle_render::quality::StageQuality::High).expect(
+                    "glow Render backend creation must not fail, everything was checked ahead of time",
+                )),
+        ))
+        }
+    }
+
+    impl RenderInterface for NativeRenderInterface {
+        fn name(&self) -> String {
+            self.name.clone()
+        }
+
+        fn capture(&self, backend: &mut dyn RenderBackend) -> RgbaImage {
+            let renderer = <dyn Any>::downcast_mut::<GlowRenderBackend>(backend).unwrap();
+
+            let width = renderer.viewport_dimensions().width;
+            let height = renderer.viewport_dimensions().height;
+            let buf_size: usize = usize::try_from(width * height * 4).unwrap();
+            let mut pixels = vec![0; buf_size];
+
+            unsafe {
+                self.gl.finish();
+                self.gl.read_pixels(
+                    0,
+                    0,
+                    width as i32,
+                    height as i32,
+                    ruffle_render_glow::glow::RGBA,
+                    ruffle_render_glow::glow::UNSIGNED_BYTE,
+                    ruffle_render_glow::glow::PixelPackData::Slice(Some(&mut pixels[..])),
+                );
+            }
+            let mut ret =
+                image::RgbaImage::from_raw(width, height, pixels).expect("Failed to capture image");
+            // glReadPixels returns the framebuffer flipped
+            image::imageops::flip_vertical_in_place(&mut ret);
+            ret
+        }
     }
 }
