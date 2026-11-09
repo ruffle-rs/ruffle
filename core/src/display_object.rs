@@ -253,13 +253,32 @@ pub enum RenderMask<'gc> {
     Alpha(DisplayObject<'gc>),
 }
 
+/// How a display object is attached to another object.
+///
+/// Both relationships provide an ancestor for transforms, stage, and root.
+/// Only DisplayList represents membership in the parent's display list.
+#[derive(Clone, Collect, Copy)]
+#[collect(no_drop)]
+pub enum DisplayObjectAttachment<'gc> {
+    DisplayList(DisplayObject<'gc>),
+    Embedded(DisplayObject<'gc>),
+}
+
+impl<'gc> DisplayObjectAttachment<'gc> {
+    fn object(self) -> DisplayObject<'gc> {
+        match self {
+            Self::DisplayList(object) | Self::Embedded(object) => object,
+        }
+    }
+}
+
 #[derive(Clone, Collect)]
 #[collect(no_drop)]
 // Ensure this always has the same alignment as its subclasses (needed for `Gc` casts).
 #[repr(align(8))]
 pub struct DisplayObjectBase<'gc> {
     cell: RefCell<DisplayObjectBaseMut>,
-    parent: Lock<Option<DisplayObject<'gc>>>,
+    parent: Lock<Option<DisplayObjectAttachment<'gc>>>,
     place_frame: Cell<u16>,
     depth: Cell<Depth>,
     ratio: Cell<u16>,
@@ -673,12 +692,15 @@ impl<'gc> DisplayObjectBase<'gc> {
     }
 
     fn parent(&self) -> Option<DisplayObject<'gc>> {
-        self.parent.get()
+        self.parent.get().map(DisplayObjectAttachment::object)
     }
 
     /// You should almost always use `DisplayObject.set_parent` instead, which
     /// properly handles 'orphan' movie clips
-    fn set_parent_ignoring_orphan_list(this: &Write<Self>, parent: Option<DisplayObject<'gc>>) {
+    fn set_attachment_ignoring_orphan_list(
+        this: &Write<Self>,
+        parent: Option<DisplayObjectAttachment<'gc>>,
+    ) {
         unlock!(this, Self, parent).set(parent)
     }
 
@@ -1950,21 +1972,74 @@ pub trait TDisplayObject<'gc>:
         self.base().parent()
     }
 
+    /// The parent responsible for display-list traversal, if any.
+    #[no_dynamic]
+    fn display_list_parent(self) -> Option<DisplayObject<'gc>> {
+        match self.base().parent.get() {
+            Some(DisplayObjectAttachment::DisplayList(parent)) => Some(parent),
+            _ => None,
+        }
+    }
+
+    /// The embedding owner, if this object is not a display-list child.
+    #[no_dynamic]
+    fn embedded_parent(self) -> Option<DisplayObject<'gc>> {
+        match self.base().parent.get() {
+            Some(DisplayObjectAttachment::Embedded(parent)) => Some(parent),
+            _ => None,
+        }
+    }
+
     /// Set the parent of this display object.
     #[no_dynamic]
     fn set_parent(self, context: &mut UpdateContext<'gc>, parent: Option<DisplayObject<'gc>>) {
-        let had_parent = self.parent().is_some();
-        let write = Gc::write(context.gc(), self.base());
-        DisplayObjectBase::set_parent_ignoring_orphan_list(write, parent);
-        let parent_removed = had_parent && parent.is_none();
+        self.set_attachment(context, parent.map(DisplayObjectAttachment::DisplayList));
+    }
 
-        if parent_removed {
+    /// Attach to an owner without becoming one of its display-list children.
+    #[no_dynamic]
+    fn set_embedded_parent(self, context: &mut UpdateContext<'gc>, parent: DisplayObject<'gc>) {
+        self.set_attachment(context, Some(DisplayObjectAttachment::Embedded(parent)));
+    }
+
+    /// Update the relationship while preserving parent-change notifications.
+    #[no_dynamic]
+    fn set_attachment(
+        self,
+        context: &mut UpdateContext<'gc>,
+        attachment: Option<DisplayObjectAttachment<'gc>>,
+    ) {
+        let parent = attachment.map(DisplayObjectAttachment::object);
+        let had_parent = self.parent().is_some();
+        let embedded_parent = match attachment {
+            Some(DisplayObjectAttachment::Embedded(owner)) => Some(owner),
+            _ => None,
+        };
+        if let Some(owner) = self.embedded_parent()
+            && !DisplayObject::option_ptr_eq(Some(owner), embedded_parent)
+        {
+            owner.on_embedded_child_removed(context, self);
+        }
+
+        let write = Gc::write(context.gc(), self.base());
+        DisplayObjectBase::set_attachment_ignoring_orphan_list(write, attachment);
+
+        if had_parent && parent.is_none() {
             if let Some(int) = self.as_interactive() {
                 int.drop_focus(context);
             }
 
             self.on_parent_removed(context);
         }
+    }
+
+    /// Notify an embedding owner before an object leaves its ownership.
+    /// Implementations unregister their child without changing its attachment.
+    fn on_embedded_child_removed(
+        self,
+        _context: &mut UpdateContext<'gc>,
+        _child: DisplayObject<'gc>,
+    ) {
     }
 
     /// This method is called when the parent is removed.
@@ -1990,7 +2065,8 @@ pub trait TDisplayObject<'gc>:
     /// seen in AVM2. Notably, it disallows access to non-container parents.
     #[no_dynamic]
     fn avm2_parent(self) -> Option<DisplayObject<'gc>> {
-        self.parent().filter(|p| p.as_container().is_some())
+        self.display_list_parent()
+            .filter(|p| p.as_container().is_some())
     }
 
     #[no_dynamic]
