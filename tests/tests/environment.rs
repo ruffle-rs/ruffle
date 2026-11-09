@@ -54,15 +54,11 @@ impl Environment for NativeEnvironment {
         &self,
         _requirements: &ruffle_test_framework::options::RenderOptions,
     ) -> bool {
-        self.descriptors.is_some()
-    }
-
-    #[cfg(feature = "imgtests_glow")]
-    fn is_render_supported(
-        &self,
-        _requirements: &ruffle_test_framework::options::RenderOptions,
-    ) -> bool {
-        true
+        if cfg!(feature = "imgtests") {
+            self.descriptors.is_some()
+        } else {
+            cfg!(feature = "imgtests_glow")
+        }
     }
 
     #[cfg(any(feature = "imgtests", feature = "imgtests_glow"))]
@@ -174,7 +170,8 @@ mod renderer {
     }
 }
 
-#[cfg(feature = "imgtests_glow")]
+// TODO: Refactor tests so renderers aren't mutually exclusive
+#[cfg(all(feature = "imgtests_glow", not(feature = "imgtests")))]
 mod renderer {
     use super::NativeEnvironment;
     use image::RgbaImage;
@@ -261,7 +258,7 @@ mod renderer {
                     _egl_display: egl_display,
                     _egl_surface: egl_surface,
                 }),
-                Box::new(GlowRenderBackend::new(gl.clone(), false, ruffle_render::quality::StageQuality::High).expect(
+                Box::new(GlowRenderBackend::new(gl, false, ruffle_render::quality::StageQuality::High).expect(
                     "glow Render backend creation must not fail, everything was checked ahead of time",
                 )),
         ))
