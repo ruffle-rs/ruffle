@@ -33,6 +33,7 @@ class Test {
 
   static var A_STYLE_SHEET = new TextField.StyleSheet();
 
+  static var A_FILE_REFERENCE = new flash.net.FileReference();
   static var A_FILE_REFERENCE_LIST = new flash.net.FileReferenceList();
   static var A_FILE_BROWSE_FILTER = [{
     description: "debug-select-success",
@@ -94,6 +95,7 @@ class Test {
     monkeyPatchClass(_global, "XML");
     monkeyPatchClass(_global, "XMLNode");
     monkeyPatchClass(_global, "SharedObject");
+    monkeyPatchClass(_global, "Date");
 
     monkeyPatchClass(_global.flash.display, "BitmapData");
 
@@ -359,7 +361,27 @@ class Test {
 
     // TODO: test SharedObject serialization? (Date, XML, Array, Object)
 
+    // TODO: test Dates in FLV metadata?
 
+
+    trace("");
+    trace("### Testing Date");
+
+    A_FILE_REFERENCE.addListener({
+      onSelect: function(target) {
+        trace("FileReference.browse - onSelect");
+        Test.traceName(target.creationDate, "creationDate");
+        Test.traceName(target.modificationDate, "modificationDate");
+
+        Test.testFileReference();
+      }
+    });
+
+    trace("// A_FILE_REFERENCE.browse(A_FILE_BROWSE_FILTER)");
+    A_FILE_REFERENCE.browse(A_FILE_BROWSE_FILTER);
+  }
+
+  static function testFileReference() {
     trace("");
     trace("### Testing FileReference");
 

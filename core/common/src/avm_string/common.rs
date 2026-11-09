@@ -127,6 +127,7 @@ ruffle_macros::define_common_strings! {
     "ConvolutionFilter",
     "customItems",
     "data",
+    "Date",
     "decimal",
     "declaredBy",
     "decode",

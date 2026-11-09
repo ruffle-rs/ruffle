@@ -484,7 +484,6 @@ pub fn unescape<'gc>(
 pub struct SystemPrototypes<'gc> {
     pub object: Object<'gc>,
     pub object_constructor: Object<'gc>,
-    pub date_constructor: Object<'gc>,
 }
 
 pub fn load_playerglobal<'gc>(context: &mut UpdateContext<'gc>) {
@@ -770,7 +769,6 @@ pub fn create_globals<'gc>(
         SystemPrototypes {
             object: object.proto,
             object_constructor: object.constr,
-            date_constructor: date.constr,
         },
         globals,
     )
