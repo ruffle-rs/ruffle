@@ -26,3 +26,14 @@ var attrRoundTrip:XML = new XML("<data label=\"A&#0;B\"></data>");
 trace("attribute round trip: " + attrRoundTrip.toXMLString());
 
 trace("text round trip: " + escape(middle.toXMLString()));
+
+XML.ignoreComments = false;
+XML.ignoreProcessingInstructions = false;
+
+for each (var literal:String in ["&#0;", "&#x0;", "&amp;"]) {
+  var comment:XML = new XML("<data><!--A" + literal + "B--></data>");
+  trace("comment A" + literal + "B: " + comment.children()[0].toXMLString());
+
+  var pi:XML = new XML("<data><?test A" + literal + "B?></data>");
+  trace("processing instruction A" + literal + "B: " + pi.children()[0].toXMLString());
+}
