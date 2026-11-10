@@ -1,0 +1,9 @@
+frame 1: _currentframe 1, _framesloaded 2/6, bytes 4096/18928
+frame 1: ifFrameLoaded(2)
+frame 1: ifFrameLoaded(3)
+enterFrame 1: _currentframe 2, _framesloaded 6/6, bytes 18928/18928
+enterFrame 1: ifFrameLoaded(6)
+enterFrame 2: _currentframe 3, _framesloaded 6/6, bytes 18928/18928
+enterFrame 2: ifFrameLoaded(6)
+enterFrame 3: _currentframe 4, _framesloaded 6/6, bytes 18928/18928
+enterFrame 3: ifFrameLoaded(6)
