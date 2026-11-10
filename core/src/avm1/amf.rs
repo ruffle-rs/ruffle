@@ -2,7 +2,7 @@ use crate::avm1::{Activation, Attribute, NativeObject, Object, Value};
 use crate::string::AvmString;
 use flash_lso::amf0::writer::{Amf0Writer, CacheKey, ObjWriter};
 use flash_lso::types::{
-    ClassDefinition, ECMAArrayObjectValue, Element, ObjectId, ObjectValue, Reference,
+    ClassDefinition, DateValue, ECMAArrayObjectValue, Element, ObjectId, ObjectValue, Reference,
     Value as AmfValue,
 };
 use ruffle_macros::istr;
@@ -85,8 +85,11 @@ pub fn serialize<'gc>(activation: &mut Activation<'_, 'gc>, value: Value<'gc>) -
                 }
             } else if let NativeObject::Date(date) = object.native() {
                 AmfValue::Date {
-                    time: date.get().time(),
-                    timezone_or_utc: None,
+                    id: ObjectId::INVALID,
+                    data: DateValue {
+                        time: date.get().time(),
+                        timezone_or_utc: None,
+                    },
                 }
             } else {
                 let class_def =
@@ -459,11 +462,11 @@ fn deserialize_value_inner<'gc>(
 
             value
         }
-        AmfValue::Date { time, .. } => {
+        AmfValue::Date { data, .. } => {
             // TODO(moulins): how exactly is the Date object instantiated? this matters when
             // the Date class was monkeypatched by the user.
             let value = if let Ok(Some(date)) =
-                activation.instantiate_class_fast([istr!("Date")], &[Value::from(*time)])
+                activation.instantiate_class_fast([istr!("Date")], &[Value::from(data.time)])
             {
                 date
             } else {
