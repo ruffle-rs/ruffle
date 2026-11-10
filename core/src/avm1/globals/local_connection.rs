@@ -110,13 +110,7 @@ impl<'gc> LocalConnection<'gc> {
         );
         let mut args = Vec::with_capacity(amf_arguments.len());
         for arg in amf_arguments {
-            let reader = flash_lso::read::Reader::default();
-            let value = deserialize_value(
-                &mut activation,
-                &arg,
-                &reader.amf0_decoder,
-                &mut Default::default(),
-            );
+            let value = deserialize_value(&mut activation, &arg);
             args.push(value);
         }
         this.call_method(

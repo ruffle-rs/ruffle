@@ -1,5 +1,4 @@
 use std::collections::BTreeMap;
-use std::rc::Rc;
 
 use crate::avm2::ArrayStorage;
 use crate::avm2::bytearray::ByteArrayStorage;
@@ -18,7 +17,7 @@ use flash_lso::types::{AMFVersion, Element, Lso, ObjectId};
 use flash_lso::types::{Attribute, ClassDefinition, Value as AmfValue};
 use fnv::FnvHashMap;
 
-pub type ObjectTable<'gc> = FnvHashMap<Object<'gc>, Rc<AmfValue>>;
+pub type ObjectTable<'gc> = FnvHashMap<Object<'gc>, AmfValue>;
 
 /// Serialize a Value to an AmfValue
 pub fn serialize_value<'gc>(
@@ -274,11 +273,11 @@ fn get_or_create_value<'gc>(
     val: Value<'gc>,
     object_table: &mut ObjectTable<'gc>,
     amf_version: AMFVersion,
-) -> Rc<AmfValue> {
+) -> AmfValue {
     if let Some(obj) = val.as_object() {
         match object_table.get(&obj) {
-            Some(rc_val) => {
-                // Even though we'll clone the same 'Rc<AmfValue>' for each occurrence
+            Some(value) => {
+                // Even though we'll clone the same 'AmfValue' for each occurrence
                 // of 'Object', flash_lso doesn't serialize this correctly yet.
                 avm2_stub_method!(
                     activation,
@@ -286,20 +285,17 @@ fn get_or_create_value<'gc>(
                     "writeObject",
                     "with same Object used multiple times"
                 );
-                rc_val.clone()
+                value.clone()
             }
             None => {
                 let value = serialize_value(activation, val, amf_version, object_table);
-                let rc_val = Rc::new(value);
-
                 // We cannot use Entry, since we need to pass in 'object_table' to 'serialize_value'
-                object_table.insert(obj, rc_val.clone());
-                rc_val
+                object_table.insert(obj, value.clone());
+                value
             }
         }
     } else {
-        let value = serialize_value(activation, val, amf_version, object_table);
-        Rc::new(value)
+        serialize_value(activation, val, amf_version, object_table)
     }
 }
 
