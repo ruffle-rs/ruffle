@@ -8,13 +8,13 @@ use crate::avm1_stub;
 
 const PROTO_DECLS: StaticDeclarations = declare_static_properties! {
     use fn method;
-    "setSilenceLevel" => method(SET_SILENCE_LEVEL; DONT_ENUM | DONT_DELETE);
-    "setRate" => method(SET_RATE; DONT_ENUM | DONT_DELETE);
-    "setGain" => method(SET_GAIN; DONT_ENUM | DONT_DELETE);
-    "setUseEchoSuppression" => method(SET_USE_ECHO_SUPPRESSION; DONT_ENUM | DONT_DELETE);
-    "setCodec" => method(SET_CODEC; DONT_ENUM | DONT_DELETE);
-    "setFramesPerPacket" => method(SET_FRAMES_PER_PACKET; DONT_ENUM | DONT_DELETE);
-    "setEncodeQuality" => method(SET_ENCODE_QUALITY; DONT_ENUM | DONT_DELETE);
+    "setSilenceLevel" => method(SET_SILENCE_LEVEL; DONT_ENUM | DONT_DELETE | VERSION_6);
+    "setRate" => method(SET_RATE; DONT_ENUM | DONT_DELETE | VERSION_6);
+    "setGain" => method(SET_GAIN; DONT_ENUM | DONT_DELETE | VERSION_6);
+    "setUseEchoSuppression" => method(SET_USE_ECHO_SUPPRESSION; DONT_ENUM | DONT_DELETE | VERSION_6);
+    "setCodec" => method(SET_CODEC; DONT_ENUM | DONT_DELETE | VERSION_10);
+    "setFramesPerPacket" => method(SET_FRAMES_PER_PACKET; DONT_ENUM | DONT_DELETE | VERSION_10);
+    "setEncodeQuality" => method(SET_ENCODE_QUALITY; DONT_ENUM | DONT_DELETE | VERSION_10);
 };
 
 const OBJECT_DECLS: StaticDeclarations = declare_static_properties! {
