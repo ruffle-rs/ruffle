@@ -72,8 +72,27 @@ pub fn serialize_value<'gc>(
 
                     AmfValue::ECMAArray(ObjectId::INVALID, dense, sparse, len)
                 } else {
-                    // TODO: is this right?
-                    AmfValue::ECMAArray(ObjectId::INVALID, vec![], values, len)
+                    // Flash Player writes an Array whose only properties are indices as an
+                    // AMF0 strict array (0x0A) of `length` elements, with holes written as
+                    // `undefined`. Arrays with any non-index property keep the ECMA array
+                    // encoding (0x08).
+                    let index_of = |name: &str| {
+                        name.parse::<u32>()
+                            .ok()
+                            .filter(|i| *i < len && i.to_string() == name)
+                    };
+
+                    if values.iter().all(|elem| index_of(&elem.name).is_some()) {
+                        let mut dense = vec![Rc::new(AmfValue::Undefined); len as usize];
+                        for elem in values {
+                            if let Some(i) = index_of(&elem.name) {
+                                dense[i as usize] = elem.value;
+                            }
+                        }
+                        AmfValue::StrictArray(ObjectId::INVALID, dense)
+                    } else {
+                        AmfValue::ECMAArray(ObjectId::INVALID, vec![], values, len)
+                    }
                 }
             } else if let Some(vec) = o.as_vector_storage() {
                 let val_type = vec.value_type();
