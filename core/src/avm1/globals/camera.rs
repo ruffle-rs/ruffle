@@ -8,12 +8,12 @@ use crate::avm1_stub;
 
 const PROTO_DECLS: StaticDeclarations = declare_static_properties! {
     use fn method;
-    "setMode" => method(SET_MODE; DONT_ENUM | DONT_DELETE);
-    "setQuality" => method(SET_QUALITY; DONT_ENUM | DONT_DELETE);
-    "setKeyFrameInterval" => method(SET_KEY_FRAME_INTERVAL; DONT_ENUM | DONT_DELETE);
-    "setMotionLevel" => method(SET_MOTION_LEVEL; DONT_ENUM | DONT_DELETE);
-    "setLoopback" => method(SET_LOOPBACK; DONT_ENUM | DONT_DELETE);
-    "setCursor" => method(SET_CURSOR; DONT_ENUM | DONT_DELETE);
+    "setMode" => method(SET_MODE; DONT_ENUM | DONT_DELETE | VERSION_6);
+    "setQuality" => method(SET_QUALITY; DONT_ENUM | DONT_DELETE | VERSION_6);
+    "setKeyFrameInterval" => method(SET_KEY_FRAME_INTERVAL; DONT_ENUM | DONT_DELETE | VERSION_6);
+    "setMotionLevel" => method(SET_MOTION_LEVEL; DONT_ENUM | DONT_DELETE | VERSION_6);
+    "setLoopback" => method(SET_LOOPBACK; DONT_ENUM | DONT_DELETE | VERSION_6);
+    "setCursor" => method(SET_CURSOR; DONT_ENUM | DONT_DELETE | VERSION_6);
 };
 
 const OBJECT_DECLS: StaticDeclarations = declare_static_properties! {
