@@ -326,7 +326,6 @@ impl<'gc> Avm1<'gc> {
 
         let has_listener =
             broadcast_internal(broadcaster, args, method, &mut activation).unwrap_or(false);
-        drop(activation);
 
         if &broadcaster_name == b"Mouse" {
             context.avm1.has_mouse_listener = has_listener;
