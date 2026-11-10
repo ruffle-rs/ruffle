@@ -973,6 +973,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                 }
             }),
         );
+        // TODO(moulins): should this mimic `PropertyOrder::PrototypeFirst` or `PrototypeLast`?
         let name = func.name();
         let prototype = Object::new(&self.context.strings, Some(self.prototypes().object));
         let fn_proto = self.resolve_prototype([istr!(self, "Function")]);
