@@ -1688,7 +1688,7 @@ checksum = "1c66915cc5391097de7a2b0b972e8505aa33c0df401fd3a6811dbdb32881ba48"
 [[package]]
 name = "flash-lso"
 version = "0.7.0"
-source = "git+https://github.com/ruffle-rs/rust-flash-lso?rev=5a6d5ec2db456e19f1a0cd4ed70b40ece687af82#5a6d5ec2db456e19f1a0cd4ed70b40ece687af82"
+source = "git+https://github.com/ruffle-rs/rust-flash-lso?rev=92b982014751d699acdf961f155ed8d2e955cb2e#92b982014751d699acdf961f155ed8d2e955cb2e"
 dependencies = [
  "enumset",
  "nom 8.0.0",

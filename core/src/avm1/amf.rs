@@ -183,9 +183,19 @@ fn serialize_value_to_writer<'gc>(
                 let string = xml_node
                     .into_string(activation)
                     .expect("Failed to convert xml to string in SharedObject");
-                writer.xml(name, string.to_utf8_lossy().as_ref(), true)
+                writer.xml(
+                    CacheKey::from_ptr(o.as_ptr()),
+                    name,
+                    string.to_utf8_lossy().as_ref(),
+                    true,
+                )
             } else if let NativeObject::Date(date) = o.native() {
-                writer.date(name, date.get().time(), None)
+                writer.date(
+                    CacheKey::from_ptr(o.as_ptr()),
+                    name,
+                    date.get().time(),
+                    None,
+                )
             } else {
                 let key = CacheKey::from_ptr(o.as_ptr());
 
