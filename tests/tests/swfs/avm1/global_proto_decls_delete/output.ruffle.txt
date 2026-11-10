@@ -999,7 +999,6 @@ Testing _global.Microphone.prototype
 Testing _global.Camera
   prototype, DONT_DELETE
   __proto__, DONT_DELETE
-  constructor, DONT_DELETE
 Testing _global.Camera.prototype
   setCursor, DONT_DELETE
   setLoopback, DONT_DELETE
@@ -1007,8 +1006,8 @@ Testing _global.Camera.prototype
   setKeyFrameInterval, DONT_DELETE
   setQuality, DONT_DELETE
   setMode, DONT_DELETE
-  __proto__, DONT_DELETE
   constructor, DONT_DELETE
+  __proto__, DONT_DELETE
 Testing _global.NetStream
   __proto__, DONT_DELETE
   constructor, DONT_DELETE
