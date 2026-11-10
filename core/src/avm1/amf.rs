@@ -1,7 +1,7 @@
 use crate::avm1::{Activation, Attribute, NativeObject, Object, Value};
 use crate::string::AvmString;
 use flash_lso::amf0::writer::{Amf0Writer, CacheKey, ObjWriter};
-use flash_lso::types::{ClassDefinition, Element, ObjectId, Value as AmfValue};
+use flash_lso::types::{ClassDefinition, Element, ObjectId, ObjectValue, Value as AmfValue};
 use ruffle_macros::istr;
 
 /// AMF0 serializes an object as a TypedObject if its constructor has a class
@@ -64,7 +64,13 @@ pub fn serialize<'gc>(activation: &mut Activation<'_, 'gc>, value: Value<'gc>) -
                 let class_def =
                     object_class_name(activation, object).map(ClassDefinition::default_with_name);
                 let elements = serialize_object_properties(activation, object);
-                AmfValue::Object(ObjectId::INVALID, elements, class_def)
+                AmfValue::Object {
+                    id: ObjectId::INVALID,
+                    data: ObjectValue {
+                        elements,
+                        class_definition: class_def,
+                    },
+                }
             }
         }
         Value::MovieClip(_) => AmfValue::Undefined,
@@ -276,7 +282,7 @@ pub fn deserialize_value<'gc>(activation: &mut Activation<'_, 'gc>, val: &AmfVal
             v
         }
 
-        AmfValue::Object(_, elements, _) => {
+        AmfValue::Object { data, .. } => {
             // Deserialize Object
             let obj = Object::new(
                 &activation.context.strings,
@@ -285,7 +291,7 @@ pub fn deserialize_value<'gc>(activation: &mut Activation<'_, 'gc>, val: &AmfVal
 
             let v: Value<'gc> = obj.into();
 
-            for entry in elements {
+            for entry in &data.elements {
                 let value = deserialize_value(activation, entry.value());
                 let name = AvmString::new_utf8(activation.gc(), &entry.name);
                 obj.define_value(activation.gc(), name, value, Attribute::empty());

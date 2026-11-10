@@ -13,7 +13,7 @@ use crate::avm2::{Activation, Error, Object, Value};
 use crate::avm2_stub_method;
 use crate::string::AvmString;
 use enumset::EnumSet;
-use flash_lso::types::{AMFVersion, Element, Lso, ObjectId};
+use flash_lso::types::{AMFVersion, Element, Lso, ObjectId, ObjectValue};
 use flash_lso::types::{Attribute, ClassDefinition, Value as AmfValue};
 use fnv::FnvHashMap;
 
@@ -157,20 +157,21 @@ pub fn serialize_value<'gc>(
                     object_table,
                 )
                 .unwrap();
-                AmfValue::Object(
-                    ObjectId::INVALID,
-                    object_body,
-                    if amf_version == AMFVersion::AMF3 {
-                        Some(ClassDefinition {
-                            name,
-                            attributes,
-                            // FIXME - implement this
-                            static_properties,
-                        })
-                    } else {
-                        None
+                AmfValue::Object {
+                    id: ObjectId::INVALID,
+                    data: ObjectValue {
+                        elements: object_body,
+                        class_definition: if amf_version == AMFVersion::AMF3 {
+                            Some(ClassDefinition {
+                                name,
+                                attributes,
+                                static_properties,
+                            })
+                        } else {
+                            None
+                        },
                     },
-                )
+                }
             }
         }
     }
@@ -374,8 +375,8 @@ pub fn deserialize_value_impl<'gc>(
 
             array.into()
         }
-        AmfValue::Object(id, elements, class) => {
-            let target_class = if let Some(class) = class {
+        AmfValue::Object { id, data } => {
+            let target_class = if let Some(class) = &data.class_definition {
                 let name = AvmString::new_utf8(activation.gc(), &class.name);
                 alias_to_class(activation, name)?
             } else {
@@ -384,7 +385,7 @@ pub fn deserialize_value_impl<'gc>(
             let obj = target_class.construct(activation, &[])?;
             object_map.insert(*id, obj.as_object().unwrap());
 
-            for entry in elements {
+            for entry in &data.elements {
                 let name = entry.name();
                 let value = deserialize_value_impl(activation, entry.value(), object_map)?;
                 // Flash player logs the error and continues deserializing the rest of the object,
