@@ -292,7 +292,10 @@ pub fn call<'gc>(
                 activation.context,
                 handle,
                 command.to_string(),
-                AMFValue::StrictArray(ObjectId::INVALID, arguments),
+                AMFValue::StrictArray {
+                    id: ObjectId::INVALID,
+                    values: arguments,
+                },
                 responder,
             );
         } else {
@@ -300,7 +303,10 @@ pub fn call<'gc>(
                 activation.context,
                 handle,
                 command.to_string(),
-                AMFValue::StrictArray(ObjectId::INVALID, arguments),
+                AMFValue::StrictArray {
+                    id: ObjectId::INVALID,
+                    values: arguments,
+                },
             );
         }
 
