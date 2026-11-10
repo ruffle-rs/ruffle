@@ -43,7 +43,7 @@ serde = { workspace = true }
 serde_json = { workspace = true, features = ["preserve_order"] }
 nellymoser-rs = { git = "https://github.com/ruffle-rs/nellymoser", rev = "073eb48d907201f46dea0c8feb4e8d9a1d92208c", optional = true }
 regress = { workspace = true }
-flash-lso = { git = "https://github.com/ruffle-rs/rust-flash-lso", rev = "ddfe1da345b44b28606a54569136ec1c0d331161" }
+flash-lso = { git = "https://github.com/ruffle-rs/rust-flash-lso", rev = "11a0836a52c4aacbca96d8299bffd12f9715eec2" }
 lzma-rs = { workspace = true, optional = true }
 dasp = { version = "0.11.0", features = ["interpolate", "interpolate-linear", "signal"], optional = true }
 symphonia = { version = "0.5.5", default-features = false, optional = true }

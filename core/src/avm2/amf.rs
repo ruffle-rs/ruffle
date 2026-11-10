@@ -14,8 +14,8 @@ use crate::avm2_stub_method;
 use crate::string::AvmString;
 use enumset::EnumSet;
 use flash_lso::types::{
-    AMFVersion, DictionaryEntry, DictionaryObjectValue, ECMAArrayObjectValue, Element, Lso,
-    ObjectId, ObjectValue, VectorObjectValue, VectorPrimitiveValue,
+    AMFVersion, DateValue, DictionaryEntry, DictionaryObjectValue, ECMAArrayObjectValue, Element,
+    Lso, ObjectId, ObjectValue, VectorObjectValue, VectorPrimitiveValue,
 };
 use flash_lso::types::{Attribute, ClassDefinition, Value as AmfValue};
 use fnv::FnvHashMap;
@@ -138,8 +138,11 @@ pub fn serialize_value<'gc>(
                 let time = time.unwrap_or(f64::NAN);
 
                 AmfValue::Date {
-                    time,
-                    timezone_or_utc: None,
+                    id: ObjectId::INVALID,
+                    data: DateValue {
+                        time,
+                        timezone_or_utc: None,
+                    },
                 }
             } else if let Some(xml) = o.as_xml_object() {
                 // `is_string` is `true` for the AS3 XML class
@@ -455,11 +458,11 @@ pub fn deserialize_value_impl<'gc>(
 
             obj
         }
-        AmfValue::Date { time, .. } => activation
+        AmfValue::Date { data, .. } => activation
             .avm2()
             .classes()
             .date
-            .construct(activation, &[(*time).into()])?,
+            .construct(activation, &[data.time.into()])?,
         AmfValue::XML { value: content, .. } => activation.avm2().classes().xml.construct(
             activation,
             &[Value::String(AvmString::new_utf8(activation.gc(), content))],
