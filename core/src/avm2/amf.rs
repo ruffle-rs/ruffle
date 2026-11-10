@@ -15,7 +15,7 @@ use crate::string::AvmString;
 use enumset::EnumSet;
 use flash_lso::types::{
     AMFVersion, DictionaryEntry, DictionaryObjectValue, ECMAArrayObjectValue, Element, Lso,
-    ObjectId, ObjectValue, VectorObjectValue,
+    ObjectId, ObjectValue, VectorObjectValue, VectorPrimitiveValue,
 };
 use flash_lso::types::{Attribute, ClassDefinition, Value as AmfValue};
 use fnv::FnvHashMap;
@@ -95,19 +95,19 @@ pub fn serialize_value<'gc>(
                 let val_type = vec.value_type();
                 if val_type == Some(activation.avm2().class_defs().int) {
                     let int_vec: Vec<_> = vec.iter().map(|v| v.as_i32()).collect();
-                    AmfValue::VectorInt(VectorObjectValue {
+                    AmfValue::VectorInt(VectorPrimitiveValue {
                         values: int_vec,
                         fixed_length: vec.is_fixed(),
                     })
                 } else if val_type == Some(activation.avm2().class_defs().uint) {
                     let uint_vec: Vec<_> = vec.iter().map(|v| v.as_u32()).collect();
-                    AmfValue::VectorUInt(VectorObjectValue {
+                    AmfValue::VectorUInt(VectorPrimitiveValue {
                         values: uint_vec,
                         fixed_length: vec.is_fixed(),
                     })
                 } else if val_type == Some(activation.avm2().class_defs().number) {
                     let num_vec: Vec<_> = vec.iter().map(|v| v.as_f64()).collect();
-                    AmfValue::VectorDouble(VectorObjectValue {
+                    AmfValue::VectorDouble(VectorPrimitiveValue {
                         values: num_vec,
                         fixed_length: vec.is_fixed(),
                     })
@@ -120,7 +120,14 @@ pub fn serialize_value<'gc>(
                     let val_type = val_type.unwrap_or(activation.avm2().class_defs().object);
 
                     let name = class_to_alias(activation, val_type);
-                    AmfValue::VectorObject(ObjectId::INVALID, obj_vec, name, vec.is_fixed())
+                    AmfValue::VectorObject {
+                        id: ObjectId::INVALID,
+                        data: VectorObjectValue {
+                            values: obj_vec,
+                            object_type_name: name,
+                            fixed_length: vec.is_fixed(),
+                        },
+                    }
                 }
             } else if let Some(date) = o.as_date_object() {
                 let time = date
@@ -481,17 +488,18 @@ pub fn deserialize_value_impl<'gc>(
             );
             VectorObject::from_vector(storage, activation).into()
         }
-        AmfValue::VectorObject(id, vec, ty_name, is_fixed) => {
-            let name = AvmString::new_utf8(activation.gc(), ty_name);
+        AmfValue::VectorObject { id, data } => {
+            let name = AvmString::new_utf8(activation.gc(), &data.object_type_name);
             let class = alias_to_class(activation, name)?;
 
             // Create an empty vector, as it has to exist in the map before reading children, in case they reference it
             let empty_storage =
-                VectorStorage::new(0, *is_fixed, Some(class.inner_class_definition()));
+                VectorStorage::new(0, data.fixed_length, Some(class.inner_class_definition()));
             let obj = VectorObject::from_vector(empty_storage, activation);
             object_map.insert(*id, obj.into());
 
-            let new_values = vec
+            let new_values = data
+                .values
                 .iter()
                 .map(|v| {
                     deserialize_value_impl(activation, v, object_map).map(|value| {
