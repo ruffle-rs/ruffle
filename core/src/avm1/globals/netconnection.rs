@@ -14,8 +14,6 @@ use gc_arena::{Collect, Gc};
 use ruffle_macros::istr;
 use ruffle_wstr::WStr;
 use std::cell::Cell;
-use std::collections::BTreeMap;
-use std::rc::Rc;
 
 #[derive(Clone, Debug, Collect)]
 #[collect(require_static)]
@@ -117,14 +115,7 @@ impl<'gc> NetConnection<'gc> {
             ResponderCallback::Result => istr!("onResult"),
             ResponderCallback::Status => istr!("onStatus"),
         };
-        let reader = flash_lso::read::Reader::default();
-        let mut reference_cache = BTreeMap::default();
-        let value = deserialize_value(
-            &mut activation,
-            message,
-            &reader.amf0_decoder,
-            &mut reference_cache,
-        );
+        let value = deserialize_value(&mut activation, message);
         responder.call_method(
             method_name,
             &[value],
@@ -249,7 +240,7 @@ fn add_header<'gc>(
             Header {
                 name: name.to_string(),
                 must_understand,
-                value: Rc::new(value),
+                value,
             },
         );
     }
@@ -274,7 +265,7 @@ fn call<'gc>(
 
     if args.len() > 2 {
         for arg in &args[2..] {
-            arguments.push(Rc::new(serialize(activation, *arg)));
+            arguments.push(serialize(activation, *arg));
         }
     }
 

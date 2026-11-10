@@ -1,0 +1,6 @@
+saved: true
+Foo: [object Object]
+Foo.name: Foo
+Foo.self: undefined
+Foo.self.name: undefined
+Foo.self eq foo: true

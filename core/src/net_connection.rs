@@ -15,7 +15,6 @@ use flash_lso::types::{AMFVersion, Value as AmfValue};
 use gc_arena::{Collect, DynamicRoot, Gc, Rootable};
 use slotmap::{SlotMap, new_key_type};
 use std::fmt::{Debug, Formatter};
-use std::rc::Rc;
 use std::sync::{Arc, Mutex};
 
 new_key_type! {
@@ -48,7 +47,7 @@ impl ResponderHandle {
         &self,
         context: &mut UpdateContext<'_>,
         callback: ResponderCallback,
-        message: Rc<AmfValue>,
+        message: AmfValue,
     ) {
         match self {
             ResponderHandle::Avm2(handle) => {
@@ -481,7 +480,7 @@ impl FlashRemoting {
             Message {
                 target_uri: command,
                 response_uri: format!("/{}", self.outgoing_queue.len() + 1), // Flash is 1-based... simplifies tests to stay the same
-                contents: Rc::new(message),
+                contents: message,
             },
             responder_handle,
         ));
