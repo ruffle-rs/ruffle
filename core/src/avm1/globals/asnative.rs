@@ -78,7 +78,7 @@ pub fn asnative<'gc>(
         2100 => None, // TODO
         2101 => None, // TODO
         2102 => Some(globals::camera::method),
-        2104 => None, // TODO
+        2104 => Some(globals::microphone::method),
         2106 => None, // TODO
         2107 => None, // TODO
         2108 => None, // TODO

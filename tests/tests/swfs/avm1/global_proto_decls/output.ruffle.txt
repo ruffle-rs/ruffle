@@ -1470,7 +1470,7 @@ Testing _global.SharedObject.prototype
   constructor, own, type=[function with prototype]
 Testing _global.Microphone
   names, own, READ_ONLY, type=[object]
-  get, own, type=[function]
+  get, own, type=[function with prototype]
   prototype, own, DONT_ENUM, type=[object]
   __proto__, own, type=[object]
   constructor, own, type=[function with prototype]

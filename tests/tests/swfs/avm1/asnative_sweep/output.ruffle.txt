@@ -16,6 +16,7 @@ ASnative(1110, _): function
 ASnative(1111, _): function
 ASnative(1999, _): function
 ASnative(2102, _): function
+ASnative(2104, _): function
 ASnative(2700, _): function
 ASnative(2800, _): function
 ASnative(2900, _): function
