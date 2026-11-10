@@ -1,0 +1,12 @@
+TextFormat.prototype: own=false, typeof=undefined, enumerable=false
+new TextFormat(): own=true, typeof=function, enumerable=true
+TextFormat.prototype, after new TextFormat(): own=false, typeof=undefined, enumerable=false
+same function on two instances: false
+works: number
+TextFormat() without new: own=false, typeof=undefined, enumerable=false
+getTextFormat(): own=true, typeof=function, enumerable=true
+getNewTextFormat(): own=true, typeof=function, enumerable=true
+super() in a subclass: own=true, typeof=function, enumerable=true
+assigned: 5
+deleted: true, typeof after: undefined
+done

@@ -139,6 +139,7 @@ fn new_text_format<'gc>(
         activation.gc(),
         NativeObject::TextFormat(Gc::new(activation.gc(), text_format.into())),
     );
+    text_format::define_instance_properties(activation, object);
     if let Some(Value::Object(proto)) = proto {
         text_format::define_lazy_proto_properties(activation, proto);
     }
