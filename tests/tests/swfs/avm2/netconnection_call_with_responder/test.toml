@@ -1,0 +1,9 @@
+num_ticks = 10
+log_fetch = true
+
+[[compilers]]
+type = "Asc"
+target = "test.swf"
+class = "Test"
+scripts = ["Test.as"]
+swf_version = 9
