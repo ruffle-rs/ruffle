@@ -1,7 +1,9 @@
 use crate::avm1::{Activation, Attribute, NativeObject, Object, Value};
 use crate::string::AvmString;
 use flash_lso::amf0::writer::{Amf0Writer, CacheKey, ObjWriter};
-use flash_lso::types::{ClassDefinition, Element, ObjectId, ObjectValue, Value as AmfValue};
+use flash_lso::types::{
+    ClassDefinition, ECMAArrayObjectValue, Element, ObjectId, ObjectValue, Value as AmfValue,
+};
 use ruffle_macros::istr;
 
 /// AMF0 serializes an object as a TypedObject if its constructor has a class
@@ -57,9 +59,15 @@ pub fn serialize<'gc>(activation: &mut Activation<'_, 'gc>, value: Value<'gc>) -
                 let string = xml_node
                     .into_string(activation)
                     .expect("Failed to convert xml to string in SharedObject");
-                AmfValue::XML(string.to_utf8_lossy().into_owned(), true)
+                AmfValue::XML {
+                    value: string.to_utf8_lossy().into_owned(),
+                    is_string: true,
+                }
             } else if let NativeObject::Date(date) = object.native() {
-                AmfValue::Date(date.get().time(), None)
+                AmfValue::Date {
+                    time: date.get().time(),
+                    timezone_or_utc: None,
+                }
             } else {
                 let class_def =
                     object_class_name(activation, object).map(ClassDefinition::default_with_name);
@@ -116,7 +124,14 @@ fn serialize_array<'gc>(activation: &mut Activation<'_, 'gc>, array: Object<'gc>
     }
     if has_custom_properties {
         // Mixed Array: Has true non-numeric keys
-        AmfValue::ECMAArray(ObjectId::INVALID, Vec::new(), associative, length as u32)
+        AmfValue::ECMAArray {
+            id: ObjectId::INVALID,
+            data: ECMAArrayObjectValue {
+                dense: Vec::new(),
+                elements: associative,
+                length: length as u32,
+            },
+        }
     } else {
         // Pure Dense Array: Pad holes with Undefined to maintain contiguous indices
         let mut dense = Vec::with_capacity(length);
@@ -127,7 +142,10 @@ fn serialize_array<'gc>(activation: &mut Activation<'_, 'gc>, array: Object<'gc>
             dense.push(value);
         }
         // Output as a StrictArray.
-        AmfValue::StrictArray(ObjectId::INVALID, dense)
+        AmfValue::StrictArray {
+            id: ObjectId::INVALID,
+            values: dense,
+        }
     }
 }
 
@@ -234,15 +252,15 @@ pub fn deserialize_value<'gc>(activation: &mut Activation<'_, 'gc>, val: &AmfVal
         AmfValue::Number(f) => (*f).into(),
         AmfValue::String(s) => Value::String(AvmString::new_utf8(activation.gc(), s)),
         AmfValue::Bool(b) => (*b).into(),
-        AmfValue::ECMAArray(_, _, associative, len) => {
+        AmfValue::ECMAArray { data, .. } => {
             // TODO(moulins): how exactly is the Array object instantiated? this matters when
             // the Array class was monkeypatched by the user.
             if let Ok(Some(Value::Object(obj))) =
-                activation.instantiate_class_fast([istr!("Array")], &[Value::from(*len)])
+                activation.instantiate_class_fast([istr!("Array")], &[Value::from(data.length)])
             {
                 let v: Value<'gc> = obj.into();
 
-                for entry in associative {
+                for entry in &data.elements {
                     let value = deserialize_value(activation, entry.value());
 
                     if let Ok(i) = entry.name().parse::<i32>() {
@@ -262,7 +280,7 @@ pub fn deserialize_value<'gc>(activation: &mut Activation<'_, 'gc>, val: &AmfVal
                 Value::Undefined
             }
         }
-        AmfValue::StrictArray(_, values) => {
+        AmfValue::StrictArray { values, .. } => {
             // TODO(moulins): how exactly is the Array object instantiated? this matters when
             // the Array class was monkeypatched by the user.
             let args = &[Value::from_usize_lossy(values.len())];
@@ -299,7 +317,7 @@ pub fn deserialize_value<'gc>(activation: &mut Activation<'_, 'gc>, val: &AmfVal
 
             v
         }
-        AmfValue::Date(time, _) => {
+        AmfValue::Date { time, .. } => {
             // TODO(moulins): how exactly is the Date object instantiated? this matters when
             // the Date class was monkeypatched by the user.
             if let Ok(Some(date)) =
@@ -310,7 +328,7 @@ pub fn deserialize_value<'gc>(activation: &mut Activation<'_, 'gc>, val: &AmfVal
                 Value::Undefined
             }
         }
-        AmfValue::XML(content, _) => {
+        AmfValue::XML { value: content, .. } => {
             // TODO(moulins): how exactly is the XML object instantiated? this matters when
             // the XML class was monkeypatched by the user.
             let args = &[Value::String(AvmString::new_utf8(activation.gc(), content))];
