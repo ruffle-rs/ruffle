@@ -173,7 +173,8 @@ fn serialize_value_to_writer<'gc>(
                         .length(activation)
                         .expect("Failed to get length for SharedObject array");
 
-                    aw.commit(name, length as u32);
+                    aw.set_length(length as u32);
+                    aw.commit(name);
                 } else {
                     writer.reference(name, token);
                 }
