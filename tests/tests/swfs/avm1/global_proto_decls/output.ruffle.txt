@@ -825,7 +825,6 @@ Testing _global.TextFormat
   constructor, own, type=[function with prototype]
   prototype, own, DONT_ENUM, type=[object]
 Testing _global.TextFormat.prototype
-  getTextExtent, own, DONT_ENUM, type=[function]
   __proto__, own, type=[object]
   constructor, own, type=[function with prototype]
 Testing _global.TextField
