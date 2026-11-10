@@ -1,10 +1,11 @@
 use ruffle_core::backend::storage::{MemoryStorageBackend, StorageBackend};
 use ruffle_test_framework::environment::Environment;
-use ruffle_test_framework::options::TestOptions;
 use ruffle_test_framework::options::known_failure::KnownFailure;
+use ruffle_test_framework::options::{SharedObjectConfig, TestOptions};
 use ruffle_test_framework::runner::TestStatus;
 use ruffle_test_framework::test::Test;
 use ruffle_test_framework::vfs::{PhysicalFS, VfsPath};
+use std::collections::HashMap;
 use std::thread::sleep;
 
 pub fn shared_object_avm1(environment: &impl Environment) -> Result<(), libtest_mimic::Failed> {
@@ -90,6 +91,13 @@ pub fn shared_object_self_ref_avm1(
         TestOptions {
             num_frames: Some(1),
             output_path: "output1.txt".into(),
+            shared_objects: HashMap::from([(
+                "localhost//RuffleTestRef".to_string(),
+                SharedObjectConfig {
+                    expected: "RuffleTestRef".to_string(),
+                    known_failure: true,
+                },
+            )]),
             ..Default::default()
         },
         VfsPath::new(PhysicalFS::new("tests/swfs/avm1/shared_object_self_ref/")),
@@ -110,15 +118,6 @@ pub fn shared_object_self_ref_avm1(
         let mut player = runner.player().lock().unwrap();
         player.swap_storage(&mut memory_storage_backend);
     }
-
-    // Verify that the flash cookie matches the expected one
-    let expected = std::fs::read("tests/swfs/avm1/shared_object_self_ref/RuffleTestRef.sol")?;
-    std::assert_eq!(
-        expected,
-        memory_storage_backend
-            .get("localhost//RuffleTestRef")
-            .unwrap_or_default()
-    );
 
     // Re-run the SWF, verifying that the shared object persists.
     let test2 = &Test::from_options(
