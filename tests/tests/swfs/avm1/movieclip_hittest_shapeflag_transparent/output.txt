@@ -1,0 +1,6 @@
+reference (opaque), then _xscale=300: shape(50,50)=true shape(250,50)=false
+_alpha=0, then _xscale=300: shape(50,50)=true shape(250,50)=true
+_alpha=1, then _xscale=300: shape(50,50)=true shape(250,50)=false
+parent _alpha=0, then _xscale=300: shape(50,50)=true shape(250,50)=true
+_alpha=0, then _alpha=100 and _xscale=300: shape(50,50)=true shape(250,50)=true
+_alpha=-50, then _xscale=300: shape(50,50)=true shape(250,50)=false
