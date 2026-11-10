@@ -245,6 +245,7 @@ impl<'gc> TDisplayObject<'gc> for Graphic<'gc> {
             // Off-screen; culled
             return;
         }
+        self.record_drawn(context);
 
         if let Some(drawing) = self.0.drawing.get() {
             drawing.borrow().render(context);
@@ -266,7 +267,7 @@ impl<'gc> TDisplayObject<'gc> for Graphic<'gc> {
 
     fn hit_test_shape(
         self,
-        _context: &mut UpdateContext<'gc>,
+        context: &mut UpdateContext<'gc>,
         point: Point<Twips>,
         options: HitTestOptions,
     ) -> bool {
@@ -274,7 +275,7 @@ impl<'gc> TDisplayObject<'gc> for Graphic<'gc> {
         if (!options.contains(HitTestOptions::SKIP_INVISIBLE) || self.visible())
             && self.world_bounds(BoundsMode::Engine).contains(point)
         {
-            let Some(local_matrix) = self.global_to_local_matrix() else {
+            let Some(local_matrix) = self.drawn_global_to_local_matrix(context) else {
                 return false;
             };
             let point = local_matrix * point;

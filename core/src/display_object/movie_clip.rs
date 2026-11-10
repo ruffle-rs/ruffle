@@ -2656,6 +2656,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
 
     fn render_self(self, context: &mut RenderContext<'_, 'gc>) {
         if let Some(drawing) = self.drawing() {
+            self.record_drawn(context);
             drawing.render(context);
         }
         self.render_children(context);
@@ -2687,7 +2688,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
         }
 
         if self.world_bounds(BoundsMode::Engine).contains(point) {
-            let Some(local_matrix) = self.global_to_local_matrix() else {
+            let Some(local_matrix) = self.drawn_global_to_local_matrix(context) else {
                 return false;
             };
             if let Some(masker) = self.masker()
