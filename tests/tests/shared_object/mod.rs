@@ -1,6 +1,5 @@
 use ruffle_core::backend::storage::{MemoryStorageBackend, StorageBackend};
 use ruffle_test_framework::environment::Environment;
-use ruffle_test_framework::options::known_failure::KnownFailure;
 use ruffle_test_framework::options::{SharedObjectConfig, TestOptions};
 use ruffle_test_framework::runner::TestStatus;
 use ruffle_test_framework::test::Test;
@@ -95,7 +94,7 @@ pub fn shared_object_self_ref_avm1(
                 "localhost//RuffleTestRef".to_string(),
                 SharedObjectConfig {
                     expected: "RuffleTestRef".to_string(),
-                    known_failure: true,
+                    known_failure: false,
                 },
             )]),
             ..Default::default()
@@ -124,7 +123,6 @@ pub fn shared_object_self_ref_avm1(
         TestOptions {
             num_frames: Some(1),
             output_path: "output2.txt".into(),
-            known_failure: KnownFailure::TraceOutput { ruffle_check: true },
             ..Default::default()
         },
         VfsPath::new(PhysicalFS::new("tests/swfs/avm1/shared_object_self_ref/")),

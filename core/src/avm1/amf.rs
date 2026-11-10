@@ -2,9 +2,29 @@ use crate::avm1::{Activation, Attribute, NativeObject, Object, Value};
 use crate::string::AvmString;
 use flash_lso::amf0::writer::{Amf0Writer, CacheKey, ObjWriter};
 use flash_lso::types::{
-    ClassDefinition, ECMAArrayObjectValue, Element, ObjectId, ObjectValue, Value as AmfValue,
+    ClassDefinition, ECMAArrayObjectValue, Element, ObjectId, ObjectValue, Reference,
+    Value as AmfValue,
 };
 use ruffle_macros::istr;
+
+/// Tracks AMF0 referenceable values in wire order.
+#[derive(Default)]
+pub(crate) struct Amf0ReferenceCache<'gc> {
+    values: Vec<Value<'gc>>,
+}
+
+impl<'gc> Amf0ReferenceCache<'gc> {
+    pub(crate) fn insert(&mut self, value: Value<'gc>) {
+        // AMF0 reference indices are unsigned 16-bit integers.
+        if self.values.len() <= usize::from(u16::MAX) {
+            self.values.push(value);
+        }
+    }
+
+    fn get(&self, reference: Reference) -> Option<Value<'gc>> {
+        self.values.get(usize::from(reference.index())).copied()
+    }
+}
 
 /// AMF0 serializes an object as a TypedObject if its constructor has a class
 /// name registered through `Object.registerClass`; otherwise it serializes it as
@@ -91,7 +111,11 @@ fn serialize_object_properties<'gc>(
     object: Object<'gc>,
 ) -> Vec<Element> {
     let mut w = Amf0Writer::default();
-    recursive_serialize(activation, object, &mut w);
+    // Reserve the root object's wire-format slot before serializing its properties.
+    let root_key = CacheKey::from_ptr(object.as_ptr());
+    let root_reference = w.make_reference();
+    w.cache_add(root_key, root_reference);
+    recursive_serialize(activation, object, &mut w, true);
     w.commit_lso("root").into_iter().collect()
 }
 
@@ -119,8 +143,10 @@ fn serialize_array<'gc>(activation: &mut Activation<'_, 'gc>, array: Object<'gc>
         }
 
         let prop_value = array.get(key, activation).unwrap_or(Value::Undefined);
-        let value = serialize(activation, prop_value);
-        associative.push(Element::new(key.to_string(), value));
+        associative.push(Element::new(
+            key.to_string(),
+            serialize(activation, prop_value),
+        ));
     }
     if has_custom_properties {
         // Mixed Array: Has true non-numeric keys
@@ -138,8 +164,7 @@ fn serialize_array<'gc>(activation: &mut Activation<'_, 'gc>, array: Object<'gc>
         for i in 0..length {
             let elem_name = AvmString::new_utf8(activation.gc(), i.to_string());
             let prop_value = array.get(elem_name, activation).unwrap_or(Value::Undefined);
-            let value = serialize(activation, prop_value);
-            dense.push(value);
+            dense.push(serialize(activation, prop_value));
         }
         // Output as a StrictArray.
         AmfValue::StrictArray {
@@ -150,11 +175,13 @@ fn serialize_array<'gc>(activation: &mut Activation<'_, 'gc>, array: Object<'gc>
 }
 
 /// Helper to serialize a specific value into the ObjWriter cache architecture.
+/// LSO values do not treat XML values as referenceable, while AMF remoting does.
 fn serialize_value_to_writer<'gc>(
     activation: &mut Activation<'_, 'gc>,
     name: &str,
     elem: Value<'gc>,
     writer: &mut dyn ObjWriter<'_>,
+    xml_is_referenceable: bool,
 ) {
     match elem {
         Value::Object(o) => {
@@ -166,13 +193,12 @@ fn serialize_value_to_writer<'gc>(
                 let (aw, token) = writer.array(CacheKey::from_ptr(o.as_ptr()));
 
                 if let Some(mut aw) = aw {
-                    recursive_serialize(activation, o, &mut aw);
+                    recursive_serialize(activation, o, &mut aw, xml_is_referenceable);
 
                     // TODO: What happens if an exception is thrown here?
                     let length = o
                         .length(activation)
                         .expect("Failed to get length for SharedObject array");
-
                     aw.set_length(length as u32);
                     aw.commit(name);
                 } else {
@@ -183,12 +209,22 @@ fn serialize_value_to_writer<'gc>(
                 let string = xml_node
                     .into_string(activation)
                     .expect("Failed to convert xml to string in SharedObject");
-                writer.xml(
-                    CacheKey::from_ptr(o.as_ptr()),
-                    name,
-                    string.to_utf8_lossy().as_ref(),
-                    true,
-                )
+                if xml_is_referenceable {
+                    writer.xml(
+                        CacheKey::from_ptr(o.as_ptr()),
+                        name,
+                        string.to_utf8_lossy().as_ref(),
+                        true,
+                    );
+                } else {
+                    writer.add_element(
+                        name,
+                        AmfValue::XML {
+                            value: string.to_utf8_lossy().into_owned(),
+                            is_string: true,
+                        },
+                    );
+                }
             } else if let NativeObject::Date(date) = o.native() {
                 writer.date(
                     CacheKey::from_ptr(o.as_ptr()),
@@ -202,7 +238,7 @@ fn serialize_value_to_writer<'gc>(
                 if let Some(class_name) = object_class_name(activation, o) {
                     let (ow, token) = writer.typed_object(&class_name, key);
                     if let Some(mut ow) = ow {
-                        recursive_serialize(activation, o, &mut ow);
+                        recursive_serialize(activation, o, &mut ow, xml_is_referenceable);
                         ow.commit(name);
                     } else {
                         writer.reference(name, token);
@@ -210,7 +246,7 @@ fn serialize_value_to_writer<'gc>(
                 } else {
                     let (ow, token) = writer.object(key);
                     if let Some(mut ow) = ow {
-                        recursive_serialize(activation, o, &mut ow);
+                        recursive_serialize(activation, o, &mut ow, xml_is_referenceable);
                         ow.commit(name);
                     } else {
                         writer.reference(name, token);
@@ -229,10 +265,11 @@ fn serialize_value_to_writer<'gc>(
 /// Serialize an Object and any children to a JSON object
 /// Used to serialize objects for NetConnection and LocalConnection Flash Remoting
 /// As well as for SharedObject LSO
-pub fn recursive_serialize<'gc>(
+pub(crate) fn recursive_serialize<'gc>(
     activation: &mut Activation<'_, 'gc>,
     obj: Object<'gc>,
     writer: &mut dyn ObjWriter<'_>,
+    xml_is_referenceable: bool,
 ) {
     // Reversed to match flash player ordering
     // Note that because get_keys can recurse, this may result in an OS stack overflow
@@ -251,12 +288,59 @@ pub fn recursive_serialize<'gc>(
         };
 
         let name = element_name.to_utf8_lossy();
-        serialize_value_to_writer(activation, name.as_ref(), elem, writer);
+        serialize_value_to_writer(
+            activation,
+            name.as_ref(),
+            elem,
+            writer,
+            xml_is_referenceable,
+        );
     }
 }
 
-/// Deserialize a AmfValue to a Value
-pub fn deserialize_value<'gc>(activation: &mut Activation<'_, 'gc>, val: &AmfValue) -> Value<'gc> {
+/// Instantiate an AMF0 XML value.
+///
+/// If the global XML constructor is unavailable, Flash creates an
+/// object without a prototype instead of reconstructing an XML document.
+fn instantiate_amf0_xml<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    args: &[Value<'gc>],
+) -> Value<'gc> {
+    // Use the current global binding when available.
+    if let Some(constructor) = activation.resolve_class([istr!("XML")]) {
+        return constructor
+            .construct(activation, args)
+            .unwrap_or(Value::Undefined);
+    }
+
+    // Flash returns an object without a prototype when XML is unavailable.
+    Object::new_without_proto(activation.gc()).into()
+}
+
+/// Deserialize an AmfValue to a Value, using AMF remoting reference-table semantics.
+pub fn deserialize_value<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    val: &AmfValue,
+    reference_cache: &mut Amf0ReferenceCache<'gc>,
+) -> Value<'gc> {
+    deserialize_value_inner(activation, val, reference_cache, true)
+}
+
+/// Deserialize an LSO value, where XML values do not occupy reference-table slots.
+pub(crate) fn deserialize_lso_value<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    val: &AmfValue,
+    reference_cache: &mut Amf0ReferenceCache<'gc>,
+) -> Value<'gc> {
+    deserialize_value_inner(activation, val, reference_cache, false)
+}
+
+fn deserialize_value_inner<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    val: &AmfValue,
+    reference_cache: &mut Amf0ReferenceCache<'gc>,
+    xml_is_referenceable: bool,
+) -> Value<'gc> {
     match val {
         AmfValue::Null => Value::Null,
         AmfValue::Undefined => Value::Undefined,
@@ -266,30 +350,50 @@ pub fn deserialize_value<'gc>(activation: &mut Activation<'_, 'gc>, val: &AmfVal
         AmfValue::ECMAArray { data, .. } => {
             // TODO(moulins): how exactly is the Array object instantiated? this matters when
             // the Array class was monkeypatched by the user.
-            if let Ok(Some(Value::Object(obj))) =
+            let Ok(Some(Value::Object(obj))) =
                 activation.instantiate_class_fast([istr!("Array")], &[Value::from(data.length)])
-            {
-                let v: Value<'gc> = obj.into();
-
+            else {
+                // The value still occupies a reference-table slot, even if it could not be
+                // instantiated in AVM1. Its children must also be visited to keep subsequent
+                // reference indices aligned.
+                reference_cache.insert(Value::Undefined);
                 for entry in &data.elements {
-                    let value = deserialize_value(activation, entry.value());
-
-                    if let Ok(i) = entry.name().parse::<i32>() {
-                        obj.set_element(activation, i, value).unwrap();
-                    } else {
-                        obj.define_value(
-                            activation.gc(),
-                            AvmString::new_utf8(activation.gc(), &entry.name),
-                            value,
-                            Attribute::empty(),
-                        );
-                    }
+                    let _ = deserialize_value_inner(
+                        activation,
+                        entry.value(),
+                        reference_cache,
+                        xml_is_referenceable,
+                    );
                 }
+                return Value::Undefined;
+            };
 
-                v
-            } else {
-                Value::Undefined
+            let value: Value<'gc> = obj.into();
+
+            // Register before deserializing children so references back to this array work.
+            reference_cache.insert(value);
+
+            for entry in &data.elements {
+                let child = deserialize_value_inner(
+                    activation,
+                    entry.value(),
+                    reference_cache,
+                    xml_is_referenceable,
+                );
+
+                if let Ok(i) = entry.name().parse::<i32>() {
+                    obj.set_element(activation, i, child).unwrap();
+                } else {
+                    obj.define_value(
+                        activation.gc(),
+                        AvmString::new_utf8(activation.gc(), &entry.name),
+                        child,
+                        Attribute::empty(),
+                    );
+                }
             }
+
+            value
         }
         AmfValue::StrictArray { values, .. } => {
             // TODO(moulins): how exactly is the Array object instantiated? this matters when
@@ -298,19 +402,38 @@ pub fn deserialize_value<'gc>(activation: &mut Activation<'_, 'gc>, val: &AmfVal
             let Ok(Some(Value::Object(obj))) =
                 activation.instantiate_class_fast([istr!("Array")], args)
             else {
+                // The value still occupies a reference-table slot, even if it could not be
+                // instantiated in AVM1. Its children must also be visited to keep subsequent
+                // reference indices aligned.
+                reference_cache.insert(Value::Undefined);
+                for item in values {
+                    let _ = deserialize_value_inner(
+                        activation,
+                        item,
+                        reference_cache,
+                        xml_is_referenceable,
+                    );
+                }
                 return Value::Undefined;
             };
 
-            let v: Value<'gc> = obj.into();
+            let value: Value<'gc> = obj.into();
+
+            // Register before deserializing children so self-references work.
+            reference_cache.insert(value);
 
             for (i, item) in values.iter().enumerate() {
-                let value = deserialize_value(activation, item);
-                obj.set_element(activation, i as i32, value).unwrap();
+                let child = deserialize_value_inner(
+                    activation,
+                    item,
+                    reference_cache,
+                    xml_is_referenceable,
+                );
+                obj.set_element(activation, i as i32, child).unwrap();
             }
 
-            v
+            value
         }
-
         AmfValue::Object { data, .. } => {
             // Deserialize Object
             let obj = Object::new(
@@ -318,38 +441,285 @@ pub fn deserialize_value<'gc>(activation: &mut Activation<'_, 'gc>, val: &AmfVal
                 Some(activation.prototypes().object),
             );
 
-            let v: Value<'gc> = obj.into();
+            let value: Value<'gc> = obj.into();
+
+            // Register before deserializing children so self-references work.
+            reference_cache.insert(value);
 
             for entry in &data.elements {
-                let value = deserialize_value(activation, entry.value());
+                let child = deserialize_value_inner(
+                    activation,
+                    entry.value(),
+                    reference_cache,
+                    xml_is_referenceable,
+                );
                 let name = AvmString::new_utf8(activation.gc(), &entry.name);
-                obj.define_value(activation.gc(), name, value, Attribute::empty());
+                obj.define_value(activation.gc(), name, child, Attribute::empty());
             }
 
-            v
+            value
         }
         AmfValue::Date { time, .. } => {
             // TODO(moulins): how exactly is the Date object instantiated? this matters when
             // the Date class was monkeypatched by the user.
-            if let Ok(Some(date)) =
+            let value = if let Ok(Some(date)) =
                 activation.instantiate_class_fast([istr!("Date")], &[Value::from(*time)])
             {
                 date
             } else {
                 Value::Undefined
-            }
+            };
+
+            reference_cache.insert(value);
+            value
         }
         AmfValue::XML { value: content, .. } => {
+            // AMF deserialization uses the built-in XML class, even if content has
+            // modified the global XML constructor.
+            //
             // TODO(moulins): how exactly is the XML object instantiated? this matters when
             // the XML class was monkeypatched by the user.
             let args = &[Value::String(AvmString::new_utf8(activation.gc(), content))];
-            if let Ok(Some(xml)) = activation.instantiate_class_fast([istr!("XML")], args) {
-                xml
-            } else {
-                Value::Undefined
+            let value = instantiate_amf0_xml(activation, args);
+
+            if xml_is_referenceable {
+                reference_cache.insert(value);
             }
+            value
         }
-        AmfValue::Reference(_) => Value::Undefined,
+        AmfValue::Reference(reference) => {
+            // Invalid references in malformed files resolve to undefined.
+            reference_cache.get(*reference).unwrap_or(Value::Undefined)
+        }
         _ => Value::Undefined,
+    }
+}
+
+const MAX_AMF0_REFERENCES: usize = u16::MAX as usize + 1;
+
+/// Count the referenceable values contained in an AMF0 value, including the
+/// value itself when it is a complex type.
+fn count_amf0_references(value: &AmfValue) -> usize {
+    let count = match value {
+        AmfValue::Object { data, .. } => 1usize.saturating_add(
+            data.elements
+                .iter()
+                .map(|element| count_amf0_references(element.value()))
+                .fold(0, usize::saturating_add),
+        ),
+        AmfValue::ECMAArray { data, .. } => {
+            let dense_count = data
+                .dense
+                .iter()
+                .map(count_amf0_references)
+                .fold(0, usize::saturating_add);
+
+            let element_count = data
+                .elements
+                .iter()
+                .map(|element| count_amf0_references(element.value()))
+                .fold(0, usize::saturating_add);
+
+            1usize
+                .saturating_add(dense_count)
+                .saturating_add(element_count)
+        }
+        AmfValue::StrictArray { values, .. } => 1usize.saturating_add(
+            values
+                .iter()
+                .map(count_amf0_references)
+                .fold(0, usize::saturating_add),
+        ),
+        AmfValue::Date { .. } | AmfValue::XML { .. } => 1,
+        _ => 0,
+    };
+
+    count.min(MAX_AMF0_REFERENCES)
+}
+
+/// Create a LocalConnection reference table containing the top-level argument
+/// and placeholders for objects in earlier properties. Those earlier objects
+/// keep their wire indices, but Flash does not preserve their identity when a
+/// later property refers to them.
+fn local_connection_reference_cache<'gc>(
+    root: Value<'gc>,
+    references_before_property: usize,
+) -> Amf0ReferenceCache<'gc> {
+    let mut reference_cache = Amf0ReferenceCache::default();
+    reference_cache.insert(root);
+    for _ in 1..references_before_property.min(MAX_AMF0_REFERENCES) {
+        reference_cache.insert(Value::Undefined);
+    }
+    reference_cache
+}
+
+/// Deserialize a LocalConnection argument. Reference indices are still counted
+/// across the argument, but values from earlier sibling properties are not
+/// carried into a later property's cache.
+pub(crate) fn deserialize_local_connection_value<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    val: &AmfValue,
+) -> Value<'gc> {
+    match val {
+        AmfValue::Object { data, .. } => {
+            let obj = Object::new(
+                &activation.context.strings,
+                Some(activation.prototypes().object),
+            );
+            let root: Value<'gc> = obj.into();
+            let mut references_before_property = 1;
+
+            for entry in &data.elements {
+                let mut reference_cache =
+                    local_connection_reference_cache(root, references_before_property);
+                let child = deserialize_value(activation, entry.value(), &mut reference_cache);
+                let name = AvmString::new_utf8(activation.gc(), &entry.name);
+                obj.define_value(activation.gc(), name, child, Attribute::empty());
+                references_before_property = references_before_property
+                    .saturating_add(count_amf0_references(entry.value()))
+                    .min(MAX_AMF0_REFERENCES);
+            }
+
+            root
+        }
+        AmfValue::ECMAArray { data, .. } => {
+            let Ok(Some(Value::Object(obj))) =
+                activation.instantiate_class_fast([istr!("Array")], &[Value::from(data.length)])
+            else {
+                return Value::Undefined;
+            };
+            let root: Value<'gc> = obj.into();
+            let mut references_before_property = 1;
+
+            for (index, item) in data.dense.iter().enumerate() {
+                let mut reference_cache =
+                    local_connection_reference_cache(root, references_before_property);
+                let child = deserialize_value(activation, item, &mut reference_cache);
+                obj.set_element(activation, index as i32, child).unwrap();
+                references_before_property = references_before_property
+                    .saturating_add(count_amf0_references(item))
+                    .min(MAX_AMF0_REFERENCES);
+            }
+
+            for entry in &data.elements {
+                let mut reference_cache =
+                    local_connection_reference_cache(root, references_before_property);
+                let child = deserialize_value(activation, entry.value(), &mut reference_cache);
+
+                if let Ok(index) = entry.name().parse::<i32>() {
+                    obj.set_element(activation, index, child)
+                        .expect("Failed to set a sparse LocalConnection array element");
+                } else {
+                    obj.define_value(
+                        activation.gc(),
+                        AvmString::new_utf8(activation.gc(), &entry.name),
+                        child,
+                        Attribute::empty(),
+                    );
+                }
+
+                references_before_property = references_before_property
+                    .saturating_add(count_amf0_references(entry.value()))
+                    .min(MAX_AMF0_REFERENCES);
+            }
+
+            root
+        }
+        AmfValue::StrictArray { values, .. } => {
+            let args = &[Value::from_usize_lossy(values.len())];
+            let Ok(Some(Value::Object(obj))) =
+                activation.instantiate_class_fast([istr!("Array")], args)
+            else {
+                return Value::Undefined;
+            };
+            let root: Value<'gc> = obj.into();
+            let mut references_before_property = 1;
+
+            for (index, item) in values.iter().enumerate() {
+                let mut reference_cache =
+                    local_connection_reference_cache(root, references_before_property);
+                let child = deserialize_value(activation, item, &mut reference_cache);
+                obj.set_element(activation, index as i32, child)
+                    .expect("Failed to set a dense LocalConnection array element");
+                references_before_property = references_before_property
+                    .saturating_add(count_amf0_references(item))
+                    .min(MAX_AMF0_REFERENCES);
+            }
+
+            root
+        }
+        _ => {
+            let mut reference_cache = Amf0ReferenceCache::default();
+            deserialize_value(activation, val, &mut reference_cache)
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::avm1::error::Error;
+    use crate::avm1::test_utils::with_avm;
+
+    #[test]
+    fn reference_cache_stops_at_the_amf0_reference_limit() {
+        with_avm(8, |_activation, _this| -> Result<(), Error> {
+            let mut reference_cache = Amf0ReferenceCache::default();
+
+            // AMF0 references use a 16-bit index, so indices 0 through 65535
+            // are the complete set of representable references.
+            for _ in 0..=u16::MAX {
+                reference_cache.insert(Value::Undefined);
+            }
+            assert_eq!(reference_cache.values.len(), MAX_AMF0_REFERENCES);
+
+            // Additional objects cannot be addressed by an AMF0 reference.
+            reference_cache.insert(Value::Null);
+            assert_eq!(reference_cache.values.len(), MAX_AMF0_REFERENCES);
+
+            Ok(())
+        });
+    }
+
+    #[test]
+    fn local_connection_deserializes_dense_ecma_array_values() {
+        with_avm(8, |activation, _this| -> Result<(), Error> {
+            let value = AmfValue::ECMAArray {
+                id: ObjectId::INVALID,
+                data: ECMAArrayObjectValue {
+                    dense: vec![
+                        AmfValue::Object {
+                            id: ObjectId::INVALID,
+                            data: ObjectValue {
+                                elements: vec![Element::new(
+                                    "marker",
+                                    AmfValue::String("dense".to_string()),
+                                )],
+                                class_definition: None,
+                            },
+                        },
+                        AmfValue::Number(42.0),
+                    ],
+                    elements: Vec::new(),
+                    length: 2,
+                },
+            };
+
+            let Value::Object(array) = deserialize_local_connection_value(activation, &value)
+            else {
+                panic!("LocalConnection ECMA array should deserialize to an array");
+            };
+
+            let Value::Object(first) = array.get_element(activation, 0) else {
+                panic!("First dense ECMA array value should be an object");
+            };
+            assert_eq!(
+                first.get(AvmString::new_utf8(activation.gc(), "marker"), activation)?,
+                Value::String(AvmString::new_utf8(activation.gc(), "dense")),
+            );
+            assert_eq!(array.get_element(activation, 1), 42.0.into());
+
+            Ok(())
+        });
     }
 }
