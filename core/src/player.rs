@@ -2144,6 +2144,34 @@ impl Player {
         &mut *self.ui
     }
 
+    /// Sets the AVM1 class of a timeline-placed `MovieClip`, runs its construct events,
+    /// then its constructor.
+    fn construct_avm1_clip<'gc>(
+        context: &mut UpdateContext<'gc>,
+        clip: DisplayObject<'gc>,
+        constructor: Object<'gc>,
+        events: Vec<crate::tag_utils::SwfSlice>,
+    ) {
+        let mut activation =
+            Activation::from_nothing(context, ActivationIdentifier::root("[Construct]"), clip);
+        // TODO(moulins): should this use `Object::prototype`?
+        if let Ok(prototype) = constructor.get(istr!("prototype"), &mut activation)
+            && let Some(object) = clip.object1()
+        {
+            object.define_value(
+                activation.gc(),
+                istr!("__proto__"),
+                prototype,
+                Attribute::DONT_ENUM | Attribute::DONT_DELETE,
+            );
+            for event in events {
+                let _ = activation.run_child_frame_for_action("[Actions]", clip, event);
+            }
+
+            let _ = constructor.construct_on_existing(&mut activation, object, &[]);
+        }
+    }
+
     pub fn run_actions(context: &mut UpdateContext<'_>) {
         // Note that actions can queue further actions, so a while loop is necessary here.
         while let Some(action) = context.action_queue.pop_action() {
@@ -2161,36 +2189,29 @@ impl Player {
                 | ActionType::Initialize { bytecode, name } => {
                     Avm1::run_stack_frame_for_action(action.clip, name, bytecode, context);
                 }
+                ActionType::InitAction { bytecode } => {
+                    Avm1::run_stack_frame_for_init_action(action.clip, bytecode, context);
+                }
                 // Change the prototype of a MovieClip and run constructor events.
+                //
+                // If no class was registered for the clip's symbol when it was placed, check
+                // again now: the frame's init actions (`#initclip`) run after the frame's
+                // objects are placed, but before they are constructed, and may register it.
+                ActionType::Construct {
+                    constructor: None,
+                    events,
+                } if let Some(constructor) = action
+                    .clip
+                    .as_movie_clip()
+                    .and_then(|mc| mc.registered_avm1_constructor(context)) =>
+                {
+                    Self::construct_avm1_clip(context, action.clip, constructor, events);
+                }
                 ActionType::Construct {
                     constructor: Some(constructor),
                     events,
                 } => {
-                    let mut activation = Activation::from_nothing(
-                        context,
-                        ActivationIdentifier::root("[Construct]"),
-                        action.clip,
-                    );
-                    // TODO(moulins): should this use `Object::prototype`?
-                    if let Ok(prototype) = constructor.get(istr!("prototype"), &mut activation)
-                        && let Some(object) = action.clip.object1()
-                    {
-                        object.define_value(
-                            activation.gc(),
-                            istr!("__proto__"),
-                            prototype,
-                            Attribute::DONT_ENUM | Attribute::DONT_DELETE,
-                        );
-                        for event in events {
-                            let _ = activation.run_child_frame_for_action(
-                                "[Actions]",
-                                action.clip,
-                                event,
-                            );
-                        }
-
-                        let _ = constructor.construct_on_existing(&mut activation, object, &[]);
-                    }
+                    Self::construct_avm1_clip(context, action.clip, constructor, events);
                 }
                 // Run constructor events without changing the prototype.
                 ActionType::Construct {

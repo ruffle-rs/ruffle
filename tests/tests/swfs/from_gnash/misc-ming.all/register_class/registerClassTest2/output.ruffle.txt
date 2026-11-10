@@ -14,6 +14,8 @@ PASSED: typeof(MovieClip.prototype.getDepth)  ==  'function' [registerClassTest2
 PASSED: clip1.getDepth()  ==  10 [registerClassTest2.c:151]
 PASSED: clip2.getDepth()  ==  undefined [registerClassTest2.c:153]
 theClass1 proto onLoad (_level0.clip1)
+mc3.initactions
+PASSED: [object Object] == [object Object]
 mc3.onClipInitialize
 PASSED: movieclip == movieclip
 PASSED: [object Object] == [object Object]
@@ -27,15 +29,16 @@ _level0.clipevs.onLoad (theClass3 proto)
 _level0.clipevs.frame0 actions
 _level0.noclipevs.onLoad (theClass3 proto)
 _level0.noclipevs.frame0 actions
-FAILED: expected: 3 obtained: 2 [registerClassTest2.c:212] 
+_level0.clip3.onLoad (theClass3 proto)
+_level0.clip3.frame0 actions
+PASSED: _root.theClass3onLoadCalls.length  ==  3 [registerClassTest2.c:212]
 PASSED: _root.theClass3onLoadCalls[0]  ==  _level0.clipevs [registerClassTest2.c:213]
 FAILED: expected: _level0.clip3 obtained: _level0.noclipevs [registerClassTest2.c:215] 
-FAILED: expected: _level0.noclipevs obtained: undefined [registerClassTest2.c:216] 
-FAILED: expected: 3 obtained: 2 [registerClassTest2.c:218] 
+FAILED: expected: _level0.noclipevs obtained: _level0.clip3 [registerClassTest2.c:216] 
+PASSED: _root.mc3frame0.length  ==  3 [registerClassTest2.c:218]
 PASSED: _root.mc3frame0[0]  ==  _level0.clipevs [registerClassTest2.c:219]
 PASSED: _root.mc3frame0[1]  ==  _level0.noclipevs [registerClassTest2.c:220]
-FAILED: expected: _level0.clip3 obtained: undefined [registerClassTest2.c:221] 
-FAILED: Tests run 30 (expected 31) [undefined]
-#passed: 25
-#failed: 6
+PASSED: _root.mc3frame0[2]  ==  _level0.clip3 [registerClassTest2.c:221]
+#passed: 29
+#failed: 2
 #total tests run: 31

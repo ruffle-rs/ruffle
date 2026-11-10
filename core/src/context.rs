@@ -670,6 +670,10 @@ pub enum ActionType<'gc> {
         name: &'static str,
     },
 
+    /// AVM1 `DoInitAction` (`#initclip`) code. Runs with the same priority as `Initialize`
+    /// events, in the order its tag appears relative to the frame's placements.
+    InitAction { bytecode: SwfSlice },
+
     /// Construct a movie with a custom class or on(construct) events.
     Construct {
         constructor: Option<Avm1Object<'gc>>,
@@ -694,7 +698,9 @@ pub enum ActionType<'gc> {
 impl ActionType<'_> {
     fn priority(&self) -> ActionPriority {
         match self {
-            ActionType::Initialize { .. } => ActionPriority::Initialize,
+            ActionType::Initialize { .. } | ActionType::InitAction { .. } => {
+                ActionPriority::Initialize
+            }
             ActionType::Construct { .. } => ActionPriority::Construct,
             _ => ActionPriority::Default,
         }
@@ -713,6 +719,10 @@ impl fmt::Debug for ActionType<'_> {
                 .debug_struct("ActionType::Initialize")
                 .field("bytecode", bytecode)
                 .field("name", name)
+                .finish(),
+            ActionType::InitAction { bytecode } => f
+                .debug_struct("ActionType::InitAction")
+                .field("bytecode", bytecode)
                 .finish(),
             ActionType::Construct {
                 constructor,

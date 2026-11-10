@@ -16,7 +16,7 @@ mc2 unloaded [action_execution_order_test12.sc:103]
 PASSED: _root.loadOrder == 0+  [action_execution_order_test12.sc:172]
 PASSED: _root.enterFrameOrder == 0+1+2+3+1+2+3+1+2+1+2+  [action_execution_order_test12.sc:173]
 PASSED: _root.unloadOrder == 0+1+2+3+4+5+  [action_execution_order_test12.sc:176]
-FAILED: asOrder: expected: "0+1+2+3+4+" , obtained: "0+1+2+4+"  [action_execution_order_test12.sc:202]
+FAILED: asOrder: expected: "0+1+2+3+4+" , obtained: "0+1+2+4+3+"  [action_execution_order_test12.sc:202]
 #passed: 13
 #failed: 1
 __END_OF_TEST__
