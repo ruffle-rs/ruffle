@@ -1,0 +1,5 @@
+frame 1, scale 40: hitTest(275, 200, true) = false
+frame 2, scale 80: hitTest(275, 200, true) = false
+frame 3, scale 160: hitTest(275, 200, true) = false
+frame 4, scale 320: hitTest(275, 200, true) = false
+frame 5, scale 640: hitTest(275, 200, true) = false
