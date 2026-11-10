@@ -1,10 +1,10 @@
-use crate::avm1::amf::{deserialize_value, recursive_serialize};
+use crate::avm1::amf::{Amf0ReferenceCache, deserialize_lso_value, recursive_serialize};
 use crate::avm1::property_decl::{DeclContext, PropertyOrder, StaticDeclarations, SystemClass};
 use crate::avm1::{Activation, Attribute, Error, NativeObject, Object, Value};
 use crate::avm1_stub;
 use crate::display_object::TDisplayObject;
 use crate::string::AvmString;
-use flash_lso::amf0::writer::Amf0Writer;
+use flash_lso::amf0::writer::{Amf0Writer, CacheKey, ObjWriter};
 use flash_lso::types::Lso;
 use gc_arena::{Collect, Gc};
 use ruffle_macros::istr;
@@ -87,11 +87,17 @@ fn deserialize_lso<'gc>(
         Some(activation.prototypes().object),
     );
 
+    let mut reference_cache = Amf0ReferenceCache::default();
+
+    // The flattened LSO body omits SharedObject.data itself, but Flash Player
+    // still reserves reference-table slot 0 for that implicit root object.
+    reference_cache.insert(obj.into());
+
     for child in &lso.body {
         obj.define_value(
             activation.gc(),
             AvmString::new_utf8(activation.gc(), &child.name),
-            deserialize_value(activation, child.value()),
+            deserialize_lso_value(activation, child.value(), &mut reference_cache),
             Attribute::empty(),
         );
     }
@@ -101,7 +107,14 @@ fn deserialize_lso<'gc>(
 
 fn new_lso<'gc>(activation: &mut Activation<'_, 'gc>, name: &str, data: Object<'gc>) -> Lso {
     let mut w = Amf0Writer::default();
-    recursive_serialize(activation, data, &mut w);
+
+    // SharedObject.data is the first value in Flash Player's AMF0 reference
+    // table, even though its properties are written directly into the LSO body.
+    // Reserve its slot so child objects use the same indices as Flash Player.
+    let root_reference = w.make_reference();
+    w.cache_add(CacheKey::from_ptr(data.as_ptr()), root_reference);
+
+    recursive_serialize(activation, data, &mut w, false);
     w.commit_lso(
         &name
             .split('/')
