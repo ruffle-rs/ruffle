@@ -981,7 +981,16 @@ pub fn render_base<'gc>(
     }
 
     let blend_mode = this.blend_mode();
-    let original_commands = if blend_mode != ExtendedBlendMode::Normal {
+    // Keep an explicit stencil mask active when the shader writes to the backdrop.
+    let stencil_shader = if blend_mode == ExtendedBlendMode::Shader
+        && matches!(this.get_render_mask(), RenderMask::Stencil(_))
+        && this.opaque_background().is_none()
+    {
+        this.blend_shader().map(RenderBlendMode::Shader)
+    } else {
+        None
+    };
+    let original_commands = if blend_mode != ExtendedBlendMode::Normal && stencil_shader.is_none() {
         Some(std::mem::take(&mut context.commands))
     } else {
         None
@@ -1138,6 +1147,7 @@ pub fn render_base<'gc>(
                 )
             },
             &options,
+            stencil_shader,
         );
     } else {
         if let Some(background) = this.opaque_background() {
@@ -1157,6 +1167,7 @@ pub fn render_base<'gc>(
             context,
             |context| this.render_self(context),
             &options,
+            stencil_shader,
         );
     }
 
@@ -1194,6 +1205,7 @@ pub fn apply_standard_mask_and_scroll<'gc, F>(
     context: &mut RenderContext<'_, 'gc>,
     draw: F,
     options: &RenderOptions,
+    stencil_shader: Option<RenderBlendMode>,
 ) where
     F: FnOnce(&mut RenderContext<'_, 'gc>),
 {
@@ -1277,6 +1289,13 @@ pub fn apply_standard_mask_and_scroll<'gc, F>(
         context
             .commands
             .render_alpha_mask(maskee_commands, mask_commands);
+    } else if let Some(blend_mode) = stencil_shader {
+        let original_commands = std::mem::take(&mut context.commands);
+        draw(context);
+        let commands = std::mem::replace(&mut context.commands, original_commands);
+        if !commands.is_empty() {
+            context.commands.blend(commands, blend_mode);
+        }
     } else {
         draw(context);
     }
