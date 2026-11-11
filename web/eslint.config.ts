@@ -12,8 +12,11 @@ export default tseslint.config(
     {
         ignores: [
             "**/dist/**",
+            "**/dist-local/**",
             "**/docs/**",
             "packages/selfhosted/test_assets/swfobject.js",
+            "packages/demo/src/local-patcher/inline-html.js",
+            "packages/demo/src/local-patcher/url-patcher.js",
         ],
     },
     {
