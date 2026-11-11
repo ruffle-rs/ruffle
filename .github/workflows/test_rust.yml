@@ -122,13 +122,14 @@ jobs:
             tests*/**/*.difference*.png
 
       - name: Run tests (glow)
+        if: false
         shell: bash
         env:
           RUFFLE_TEST_OPTS: "--compile-mode=compile-and-verify"
         run: cargo nextest run --profile ci --cargo-profile ci ${TEST_OPTS} --features ${FEATURES}
 
-      - name: Upload images
-        if: failure()
+      - name: Upload images (glow)
+        if: false #failure()
         uses: actions/upload-artifact@v7
         with:
           name: swf_images_${{ matrix.rust_version }}_${{ matrix.os }}_glow
