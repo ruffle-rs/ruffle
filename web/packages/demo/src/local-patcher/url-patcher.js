@@ -38,7 +38,7 @@ const decodedRes = {};
 function decodeResourceIfExist(name) {
     if (typeof name != "string") {
         // skip undefined
-        return name;
+        return null;
     }
     if (name.startsWith("blob:")) {
         // skip blob: urls
