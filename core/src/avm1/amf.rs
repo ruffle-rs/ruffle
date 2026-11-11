@@ -330,6 +330,7 @@ pub fn deserialize_value<'gc>(
 }
 
 /// Deserialize an LSO value, where XML values do not occupy reference-table slots.
+/// Used by SharedObject and LocalConnection deserialization.
 pub(crate) fn deserialize_lso_value<'gc>(
     activation: &mut Activation<'_, 'gc>,
     val: &AmfValue,
@@ -575,7 +576,7 @@ pub(crate) fn deserialize_local_connection_value<'gc>(
             for entry in &data.elements {
                 let mut reference_cache =
                     local_connection_reference_cache(root, references_before_property);
-                let child = deserialize_value(activation, entry.value(), &mut reference_cache);
+                let child = deserialize_lso_value(activation, entry.value(), &mut reference_cache);
                 let name = AvmString::new_utf8(activation.gc(), &entry.name);
                 obj.define_value(activation.gc(), name, child, Attribute::empty());
                 references_before_property = references_before_property
@@ -597,7 +598,7 @@ pub(crate) fn deserialize_local_connection_value<'gc>(
             for (index, item) in data.dense.iter().enumerate() {
                 let mut reference_cache =
                     local_connection_reference_cache(root, references_before_property);
-                let child = deserialize_value(activation, item, &mut reference_cache);
+                let child = deserialize_lso_value(activation, item, &mut reference_cache);
                 obj.set_element(activation, index as i32, child).unwrap();
                 references_before_property = references_before_property
                     .saturating_add(count_amf0_references(item))
@@ -607,7 +608,7 @@ pub(crate) fn deserialize_local_connection_value<'gc>(
             for entry in &data.elements {
                 let mut reference_cache =
                     local_connection_reference_cache(root, references_before_property);
-                let child = deserialize_value(activation, entry.value(), &mut reference_cache);
+                let child = deserialize_lso_value(activation, entry.value(), &mut reference_cache);
 
                 if let Ok(index) = entry.name().parse::<i32>() {
                     obj.set_element(activation, index, child)
@@ -641,7 +642,7 @@ pub(crate) fn deserialize_local_connection_value<'gc>(
             for (index, item) in values.iter().enumerate() {
                 let mut reference_cache =
                     local_connection_reference_cache(root, references_before_property);
-                let child = deserialize_value(activation, item, &mut reference_cache);
+                let child = deserialize_lso_value(activation, item, &mut reference_cache);
                 obj.set_element(activation, index as i32, child)
                     .expect("Failed to set a dense LocalConnection array element");
                 references_before_property = references_before_property
@@ -653,7 +654,7 @@ pub(crate) fn deserialize_local_connection_value<'gc>(
         }
         _ => {
             let mut reference_cache = Amf0ReferenceCache::default();
-            deserialize_value(activation, val, &mut reference_cache)
+            deserialize_lso_value(activation, val, &mut reference_cache)
         }
     }
 }

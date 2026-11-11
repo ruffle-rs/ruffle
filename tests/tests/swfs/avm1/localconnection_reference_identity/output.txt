@@ -1,0 +1,5 @@
+Connected: true
+First marker: shared
+Second type: object
+Second marker: shared
+Self reference: true
