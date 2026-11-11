@@ -49,16 +49,20 @@ impl NativeEnvironment {
 }
 
 impl Environment for NativeEnvironment {
-    #[cfg(feature = "imgtests")]
+    #[cfg(all(feature = "imgtests", not(feature = "imgtests_glow")))]
     fn is_render_supported(
         &self,
         _requirements: &ruffle_test_framework::options::RenderOptions,
     ) -> bool {
-        if cfg!(feature = "imgtests") {
-            self.descriptors.is_some()
-        } else {
-            cfg!(feature = "imgtests_glow")
-        }
+        self.descriptors.is_some()
+    }
+
+    #[cfg(all(feature = "imgtests_glow", not(feature = "imgtests")))]
+    fn is_render_supported(
+        &self,
+        _requirements: &ruffle_test_framework::options::RenderOptions,
+    ) -> bool {
+        true
     }
 
     #[cfg(any(feature = "imgtests", feature = "imgtests_glow"))]
