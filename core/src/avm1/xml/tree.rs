@@ -9,12 +9,35 @@ use gc_arena::{
     lock::{Lock, RefLock},
 };
 use quick_xml::encoding::EncodingError;
-use quick_xml::escape::escape;
 use quick_xml::events::BytesStart;
 use ruffle_common::xml::avm1_unescape;
 use ruffle_macros::istr;
 use std::cell::RefMut;
 use std::fmt;
+
+/// Use a WString-based helper that escapes XML special
+/// characters while preserving all other UTF-16 code units.
+fn escape_xml_value(value: AvmString<'_>) -> WString {
+    let mut result = WString::with_capacity(value.len(), value.is_wide());
+
+    for c in &value {
+        let escaped: &[u8] = match u8::try_from(c) {
+            Ok(b'<') => b"&lt;",
+            Ok(b'>') => b"&gt;",
+            Ok(b'&') => b"&amp;",
+            Ok(b'\'') => b"&apos;",
+            Ok(b'"') => b"&quot;",
+            _ => {
+                result.push(c);
+                continue;
+            }
+        };
+
+        result.push_str(WStr::from_units(escaped));
+    }
+
+    result
+}
 
 pub const ELEMENT_NODE: u8 = 1;
 pub const TEXT_NODE: u8 = 3;
@@ -492,13 +515,12 @@ impl<'gc> XmlNode<'gc> {
 
                 for (key, value) in self.attributes().own_properties() {
                     let value = value.coerce_to_string(activation)?;
-                    let value = value.to_utf8_lossy();
-                    let value = escape(&*value);
+                    let value = escape_xml_value(value);
 
                     result.push_byte(b' ');
                     result.push_str(&key);
                     result.push_str(WStr::from_units(b"=\""));
-                    result.push_utf8(&value);
+                    result.push_str(&value);
                     result.push_byte(b'"');
                 }
 
@@ -520,9 +542,8 @@ impl<'gc> XmlNode<'gc> {
             }
         } else {
             let value = self.0.node_value.get().unwrap();
-            let value = value.to_utf8_lossy();
-            let value = escape(&*value);
-            result.push_utf8(&value);
+            let value = escape_xml_value(value);
+            result.push_str(&value);
         }
 
         Ok(())
