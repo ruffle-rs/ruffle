@@ -12,6 +12,8 @@ declare global {
          * {@link PublicAPI} instance itself.
          */
         RufflePlayer?: PublicAPILike | PublicAPI;
+        /** Bypass file: origin checks */
+        RufflePlayerDynSrc?: ((path: string) => string) | undefined;
     }
 }
 
