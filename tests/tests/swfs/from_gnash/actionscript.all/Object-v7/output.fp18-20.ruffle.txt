@@ -19,7 +19,7 @@ PASSED: typeof(Object.prototype.isPrototypeOf) == 'function' [./Object.as:63]
 PASSED: typeof(Object.prototype.hasOwnProperty) == 'function' [./Object.as:64]
 PASSED: Object.prototype.constructor == Object [./Object.as:66]
 PASSED: typeof(Object.prototype.toString.constructor) == 'function' [./Object.as:67]
-FAILED: expected: Function obtained: [type Function] [./Object.as:71]
+PASSED: Object.prototype.toString.constructor == Function [./Object.as:71]
 PASSED: Object.prototype.prototype == undefined [./Object.as:75]
 PASSED: Object.prototype.__proto__ == undefined [./Object.as:81]
 PASSED: !Object.prototype.hasOwnProperty("__proto__") [./Object.as:82]
@@ -328,6 +328,6 @@ FAILED: expected: "undefined" obtained: object [./Object.as:1019]
 PASSED: typeof(o) == "object" [./Object.as:1021]
 PASSED: o.toString() == "true" [./Object.as:1022]
 FAILED: expected: "undefined" obtained: object [./Object.as:1026]
-#passed: 313
-#failed: 14
+#passed: 314
+#failed: 13
 #total tests run: 327
