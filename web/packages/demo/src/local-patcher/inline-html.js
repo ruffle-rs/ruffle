@@ -101,7 +101,8 @@ function patchIndexHtml(htmlContent, indexJsContent) {
     });
     const document = htmlDom.window.document;
     for (const scriptElement of document.getElementsByTagName("script")) {
-        if (getResName(scriptElement.getAttribute("src")) == "index.js") {
+        const src = scriptElement.getAttribute("src");
+        if (src && getResName(src) == "index.js") {
             scriptElement.removeAttribute("src");
             scriptElement.innerHTML = indexJsContent;
         }
