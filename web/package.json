@@ -48,8 +48,10 @@
     },
     "scripts": {
         "build": "npm run build --workspace=ruffle-core && npm run build --workspace=ruffle-demo --workspace=ruffle-extension --workspace=ruffle-selfhosted",
+        "build:local": "npm run build && npm run build-local --workspace=ruffle-demo",
         "build:debug": "cross-env NODE_ENV=development CARGO_FEATURES=avm2_debug npm run build",
         "build:dual-wasm": "cross-env BUILD_WASM_MVP=true npm run build",
+        "build:dual-wasm-local": "cross-env BUILD_WASM_MVP=true npm run build:local",
         "build:repro": "cross-env ENABLE_VERSION_SEAL=true npm run build",
         "build:dual-wasm-repro": "cross-env BUILD_WASM_MVP=true ENABLE_VERSION_SEAL=true npm run build",
         "demo": "npm run preview --workspace ruffle-demo",
