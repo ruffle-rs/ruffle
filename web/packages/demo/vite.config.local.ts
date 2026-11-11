@@ -10,6 +10,8 @@ export default defineConfig({
         rollupOptions: {
             input: ["./index.html"],
             output: {
+                inlineDynamicImports: true,
+                manualChunks: undefined,
                 entryFileNames: "index.js",
                 chunkFileNames: "chunk-[name].js",
                 assetFileNames: "asset-[name][extname]",
