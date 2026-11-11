@@ -14,6 +14,26 @@ SecurityError: Error #2149: Security sandbox violation: file:///test.swf cannot 
 	at Test/check()
 	at Test()
 END
+TEST: ExternalInterface.available
+value: true
+no error
+END
+TEST: ExternalInterface.call
+[class SecurityError]
+SecurityError: Error #2060: Security sandbox violation: ExternalInterface caller file:///test.swf cannot access .
+	at flash.external::ExternalInterface$/call()
+	at Function/<anonymous>()
+	at Test/check()
+	at Test()
+END
+TEST: ExternalInterface.addCallback
+[class SecurityError]
+SecurityError: Error #2060: Security sandbox violation: ExternalInterface caller file:///test.swf cannot access .
+	at flash.external::ExternalInterface$/addCallback()
+	at Function/<anonymous>()
+	at Test/check()
+	at Test()
+END
 TEST: sendToURL
 no error
 END
