@@ -268,8 +268,9 @@ pub enum DeclKind<'gc> {
     Method(NativeFunction),
     /// Declares a native function with a `prototype`.
     /// Prefer using [`Self::Method`] when defining host functions.
-    #[expect(unused)] // kept for symmetry.
+    #[expect(unused)] // TODO: remove
     TableFunction(TableNativeFunction, u16),
+    #[expect(unused)] // TODO: remove
     Function(NativeFunction),
     /// Declares a static string value.
     String(&'static [u8]),

@@ -985,7 +985,6 @@ Testing _global.SharedObject.prototype
 Testing _global.Microphone
   prototype, DONT_DELETE
   __proto__, DONT_DELETE
-  constructor, DONT_DELETE
 Testing _global.Microphone.prototype
   setEncodeQuality, DONT_DELETE
   setFramesPerPacket, DONT_DELETE
@@ -994,8 +993,8 @@ Testing _global.Microphone.prototype
   setGain, DONT_DELETE
   setRate, DONT_DELETE
   setSilenceLevel, DONT_DELETE
-  __proto__, DONT_DELETE
   constructor, DONT_DELETE
+  __proto__, DONT_DELETE
 Testing _global.Camera
   prototype, DONT_DELETE
   __proto__, DONT_DELETE
