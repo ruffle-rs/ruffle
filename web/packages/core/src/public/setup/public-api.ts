@@ -13,7 +13,7 @@ declare global {
          */
         RufflePlayer?: PublicAPILike | PublicAPI;
         /** Bypass file: origin checks */
-        RufflePlayerDynSrc?: ((path: string) => string) | undefined;
+        RuffleBypassFileOriginCheck?: boolean | undefined;
     }
 }
 

@@ -112,5 +112,7 @@ Object.defineProperty(window, "fetch", {
     enumerable: false,
 });
 
-// RufflePlayerDynSrc must be pre-defined and it is used in panic.tsx to bypass file: origin check
+// RuffleBypassFileOriginCheck must be pre-defined and it is used in panic.tsx to bypass file: origin check
+window.RuffleBypassFileOriginCheck = true;
+// RufflePlayerDynSrc must be pre-defined and it is used in inline-html to process imports
 window.RufflePlayerDynSrc = decodeResourceIfExist;

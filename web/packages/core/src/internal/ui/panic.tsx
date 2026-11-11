@@ -176,8 +176,9 @@ function createPanicError(error: Error | null): {
         if (
             error.swfUrl &&
             !error.swfUrl.protocol.includes("http") &&
-            /* not SA player build */ typeof window.RufflePlayerDynSrc ===
-                "undefined"
+            /* not SA player build */ (typeof window.RuffleBypassFileOriginCheck ===
+                "undefined" ||
+                !window.RuffleBypassFileOriginCheck)
         ) {
             // Loading a swf on the `file:` protocol
             return {
@@ -221,8 +222,9 @@ function createPanicError(error: Error | null): {
     if (error instanceof LoadRuffleWasmError) {
         if (
             window.location.protocol === "file:" &&
-            /* not SA player build */ typeof window.RufflePlayerDynSrc ===
-                "undefined"
+            /* not SA player build */ (typeof window.RuffleBypassFileOriginCheck ===
+                "undefined" ||
+                !window.RuffleBypassFileOriginCheck)
         ) {
             // Loading the wasm from the `file:` protocol
             return {
