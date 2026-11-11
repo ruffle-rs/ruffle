@@ -390,7 +390,7 @@ impl GlowRenderBackend {
 
     fn build_msaa_buffers(&mut self) -> Result<(), Error> {
         unsafe {
-            if self.gl2 || self.msaa_sample_count <= 1 {
+            if !self.gl2 || self.msaa_sample_count <= 1 {
                 self.gl.bind_framebuffer(glow::FRAMEBUFFER, None);
                 self.gl.bind_renderbuffer(glow::RENDERBUFFER, None);
                 return Ok(());
