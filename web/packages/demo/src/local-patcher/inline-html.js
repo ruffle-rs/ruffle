@@ -145,7 +145,7 @@ async function main() {
     const indexJs = replaceJs(generatePlayerJs(`${DIST_DIR}/url-patcher.unpacked.js`, `${DIST_DIR}/index.js`, dynSrcContent));
     let htmlContent = readFileSync(`${DIST_DIR}/index.html`, "utf-8");
     htmlContent = await minimizeHtml(patchIndexHtml(htmlContent, indexJs));
-    writeFileSync(`${DIST_DIR}/index.html`, htmlContent, "utf-8");
+    writeFileSync(`${DIST_DIR}/RuffleDemoSA.html`, htmlContent, "utf-8");
 }
 
 main();

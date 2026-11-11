@@ -150,6 +150,24 @@ jobs:
           name: selfhosted-dist
           path: web/packages/selfhosted/dist
 
+      - name: Build SA player
+        env:
+          RUSTFLAGS: -D warnings
+          # Verify that all features build.
+          CARGO_FLAGS: --all-features
+        working-directory: web
+        shell: bash -l {0}
+        run: |
+          npm ci
+          npm run build --workspace=ruffle-core
+          npm run build-local --workspace=ruffle-demo
+
+      - name: Upload SA player artifacts
+        uses: actions/upload-artifact@v7
+        with:
+          name: RuffleDemoSA
+          path: web/packages/demo/dist-local/RuffleDemoSA.html
+
 
   browser-tests:
     needs: build-for-browser-tests
