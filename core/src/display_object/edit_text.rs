@@ -770,7 +770,14 @@ impl<'gc> EditText<'gc> {
 
     fn device_font_scale_x(self) -> f32 {
         let m = self.local_to_global_matrix();
-        m.d / m.a
+        if m.a == 0.0 && m.b != 0.0 {
+            // Rotated a quarter turn, where `d / a` is `0 / 0`.
+            // FIXME: This is not what Flash Player does. It lays device text out upright
+            // in global space, so neither this nor `d / a` matches it once rotated.
+            m.c.hypot(m.d) / m.b.abs()
+        } else {
+            m.d / m.a
+        }
     }
 
     /// Returns the matrix for transforming from layout
