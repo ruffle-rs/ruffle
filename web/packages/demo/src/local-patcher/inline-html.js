@@ -135,8 +135,6 @@ async function main() {
                 "authorLink": "https://ruffle.rs",
                 "config": {
                     "autoplay": "on",
-                    "backgroundColor": "#31497D",
-                    "letterbox": "off",
                     "unmuteOverlay": "hidden"
                 }
             }
