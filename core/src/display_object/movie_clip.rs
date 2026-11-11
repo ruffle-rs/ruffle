@@ -2297,6 +2297,8 @@ impl<'gc> MovieClip<'gc> {
     pub fn drawing_mut(&self) -> RefMut<'_, Drawing> {
         // We're about to change graphics, so invalidate on the next frame
         self.invalidate_cached_bitmap();
+        // Like Flash, hit test the new drawing where the object is now.
+        self.base().drawn.set(None);
         self.0.drawing.get_or_init(Default::default).borrow_mut()
     }
 
