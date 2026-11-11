@@ -107,7 +107,7 @@ impl<'a, 'gc> DeclContext<'a, 'gc> {
     #[inline(never)]
     pub fn define_properties_on(&mut self, this: Object<'gc>, decls: &[Declaration<'gc>]) {
         for decl in decls {
-            decl.define_on(self.strings, this, self.fn_proto);
+            decl.define_on(self.strings, this, self.fn_proto, self.object_proto);
         }
     }
 
@@ -285,9 +285,11 @@ impl<'gc> Declaration<'gc> {
         context: &mut StringContext<'gc>,
         this: Object<'gc>,
         fn_proto_obj: Object<'gc>,
+        object_proto_obj: Object<'gc>,
     ) {
         let mc = context.gc();
         let fn_proto = Some(Value::from(fn_proto_obj));
+        let obj_proto = Some(Value::from(object_proto_obj));
 
         let name = context.intern_static(WStr::from_units(self.name));
         let value = match self.kind {
@@ -314,11 +316,13 @@ impl<'gc> Declaration<'gc> {
                 return;
             }
             DeclKind::Method(f) | DeclKind::Function(f) => {
-                let p = matches!(self.kind, DeclKind::Function(_)).then_some(fn_proto_obj);
+                let p = matches!(self.kind, DeclKind::Function(_))
+                    .then(|| Object::new(context, obj_proto));
                 FunctionObject::native(f).build(context, fn_proto, p).into()
             }
             DeclKind::TableMethod(f, index) | DeclKind::TableFunction(f, index) => {
-                let p = matches!(self.kind, DeclKind::Function(_)).then_some(fn_proto_obj);
+                let p = matches!(self.kind, DeclKind::TableFunction(..))
+                    .then(|| Object::new(context, obj_proto));
                 FunctionObject::table_native(f, index)
                     .build(context, fn_proto, p)
                     .into()
