@@ -2693,12 +2693,10 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
 
         fn is_transform_positive_scale_only(context: &mut RenderContext) -> bool {
             let Matrix { a, b, c, d, .. } = context.transform_stack.transform().matrix;
-            // Flash does allow small shear. The following value is higher than
-            // expected due to the fact that the final calculated shear differs
-            // between Flash and Ruffle, and using a precise value would hide
-            // some objects that should otherwise be shown.
-            const ALLOWED_SHEAR: f32 = 0.006;
-            b.abs() < ALLOWED_SHEAR && c.abs() < ALLOWED_SHEAR && a > 0.0 && d > 0.0
+            // Flash does allow small shear. This is its exact limit: fields at it are
+            // shown, fields just above it are hidden.
+            const ALLOWED_SHEAR: f32 = 5.0 / 1024.0;
+            b.abs() <= ALLOWED_SHEAR && c.abs() <= ALLOWED_SHEAR && a > 0.0 && d > 0.0
         }
 
         // EditText is not rendered if device font is used
