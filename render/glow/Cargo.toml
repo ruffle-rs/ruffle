@@ -1,0 +1,19 @@
+[package]
+name = "ruffle_render_glow"
+authors.workspace = true
+edition.workspace = true
+homepage.workspace = true
+license.workspace = true
+repository.workspace = true
+version.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+glow = { workspace = true }
+log = { workspace = true }
+ruffle_render = { path = "..", features = ["tessellator"] }
+bytemuck = { workspace = true, features = ["derive"] }
+swf = { path = "../../swf" }
+thiserror = { workspace = true }

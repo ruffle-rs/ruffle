@@ -12,6 +12,7 @@ concurrency:
 
 env:
   FEATURES: lzma,jpegxr,imgtests
+  FEATURES_GLOW: lzma,jpegxr,imgtests_glow
   TEST_OPTS: --workspace --locked --no-fail-fast -j 4
   LLVM_COV_OPTS: --branch --profile ci
   LLVM_COV_TEST_OPTS: ${LLVM_COV_OPTS} ${TEST_OPTS} --features ${FEATURES},imgtests,freetype
@@ -86,7 +87,9 @@ jobs:
       - name: Enable freetype tests
         if: runner.os == 'Linux'
         shell: bash
-        run: echo FEATURES=${FEATURES},freetype | tee -a $GITHUB_ENV
+        run: |
+          echo FEATURES=${FEATURES},freetype | tee -a $GITHUB_ENV
+          echo FEATURES_GLOW=${FEATURES_GLOW},freetype | tee -a $GITHUB_ENV
 
       - name: Cache Cargo output
         uses: Swatinem/rust-cache@v2
@@ -114,6 +117,22 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: swf_images_${{ matrix.rust_version }}_${{ matrix.os }}
+          path: |
+            tests*/**/*.actual*.png
+            tests*/**/*.difference*.png
+
+      - name: Run tests (glow)
+        if: false
+        shell: bash
+        env:
+          RUFFLE_TEST_OPTS: "--compile-mode=compile-and-verify"
+        run: cargo nextest run --profile ci --cargo-profile ci ${TEST_OPTS} --features ${FEATURES}
+
+      - name: Upload images (glow)
+        if: false #failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: swf_images_${{ matrix.rust_version }}_${{ matrix.os }}_glow
           path: |
             tests*/**/*.actual*.png
             tests*/**/*.difference*.png
@@ -236,7 +255,7 @@ jobs:
             --exclude ruffle_scanner
             --exclude ruffle_frontend_utils
             --exclude ruffle_render_canvas
-            --exclude ruffle_render_webgl
+            --exclude ruffle_render_glow
             --exclude ruffle_web
             --exclude ruffle_web_common
             --exclude ruffle_web_safari
