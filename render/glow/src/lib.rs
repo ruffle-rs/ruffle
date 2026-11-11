@@ -108,8 +108,8 @@ pub struct GlowRenderBackend {
     /// glow context
     gl: Arc<glow::Context>,
 
-    // Bool for checking if current context is GLES3/WebGL2
-    gl2: bool,
+    // Bool for checking if current context is WebGL2/OpenGL ES 3
+    gles3: bool,
 
     // The frame buffers used for resolving MSAA.
     msaa_buffers: Option<MsaaBuffers>,
@@ -174,11 +174,11 @@ impl GlowRenderBackend {
         quality: StageQuality,
     ) -> Result<Self, Error> {
         unsafe {
-            let gl2 = gl.version().major >= 3;
+            let gles3 = gl.version().major >= 3;
 
             let mut msaa_sample_count = quality.sample_count().min(4);
 
-            if gl2 {
+            if gles3 {
                 // Determine MSAA sample count.
                 let max_samples = gl.get_parameter_i32(glow::MAX_SAMPLES) as u32;
 
@@ -218,7 +218,7 @@ impl GlowRenderBackend {
 
             let mut renderer = Self {
                 gl,
-                gl2,
+                gles3,
 
                 msaa_buffers: None,
                 msaa_sample_count,
@@ -390,7 +390,7 @@ impl GlowRenderBackend {
 
     fn build_msaa_buffers(&mut self) -> Result<(), Error> {
         unsafe {
-            if !self.gl2 || self.msaa_sample_count <= 1 {
+            if !self.gles3 || self.msaa_sample_count <= 1 {
                 self.gl.bind_framebuffer(glow::FRAMEBUFFER, None);
                 self.gl.bind_renderbuffer(glow::RENDERBUFFER, None);
                 return Ok(());
@@ -794,8 +794,8 @@ impl GlowRenderBackend {
 
     fn end_frame(&self) {
         unsafe {
-            // Resolve MSAA, if we're using it (WebGL2).
-            if self.gl2
+            // Resolve MSAA, if we're using it (WebGL2/OpenGL ES 3).
+            if self.gles3
                 && let Some(msaa_buffers) = &self.msaa_buffers
             {
                 // Disable any remaining masking state.
@@ -1523,7 +1523,7 @@ impl CommandHandler for GlowRenderBackend {
                             filter,
                         );
                         // On WebGL1, you are unable to change the wrapping parameter of non-power-of-2 textures.
-                        let wrap = if self.gl2 && bitmap.is_repeating {
+                        let wrap = if self.gles3 && bitmap.is_repeating {
                             glow::REPEAT as i32
                         } else {
                             glow::CLAMP_TO_EDGE as i32
