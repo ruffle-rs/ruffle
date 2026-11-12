@@ -161,7 +161,7 @@ pub fn remove_invalid_jpeg_data(data: &[u8]) -> Cow<'_, [u8]> {
 
 /// Some SWFs report unreasonable bitmap dimensions (#1191).
 /// Fail before decoding such bitmaps to avoid panics.
-fn validate_size(width: u16, height: u16) -> Result<(), Error> {
+fn validate_size(width: u32, height: u32) -> Result<(), Error> {
     const INVALID_SIZE: usize = 0x8000000; // 128MB
 
     let size = (width as usize).saturating_mul(height as usize);
@@ -179,7 +179,7 @@ fn decode_jpeg_dimensions(jpeg_data: &[u8]) -> Result<(u16, u16), Error> {
     let metadata = decoder
         .info()
         .expect("info() should always return Some if read_info returned Ok");
-    validate_size(metadata.width, metadata.height)?;
+    validate_size(metadata.width.into(), metadata.height.into())?;
     Ok((metadata.width, metadata.height))
 }
 
@@ -193,7 +193,7 @@ fn decode_jpeg(jpeg_data: &[u8], alpha_data: Option<&[u8]>) -> Result<Bitmap<'st
     let metadata = decoder
         .info()
         .expect("info() should always return Some if read_info returned Ok");
-    validate_size(metadata.width, metadata.height)?;
+    validate_size(metadata.width.into(), metadata.height.into())?;
     let decoded_data = decoder.decode()?;
 
     let decoded_data = match metadata.pixel_format {
@@ -279,7 +279,7 @@ pub fn decode_define_bits_lossless(
     let out_data = match swf_tag.format {
         swf::BitmapFormat::Rgb15 => {
             let padded_width = (swf_tag.width + 0b1) & !0b1;
-            validate_size(swf_tag.width, swf_tag.height)?;
+            validate_size(swf_tag.width.into(), swf_tag.height.into())?;
             let mut out_data =
                 Vec::with_capacity(swf_tag.width as usize * swf_tag.height as usize * 4);
             let mut i = 0;
@@ -331,7 +331,7 @@ pub fn decode_define_bits_lossless(
                 i += if has_alpha { 4 } else { 3 };
             }
 
-            validate_size(swf_tag.width, swf_tag.height)?;
+            validate_size(swf_tag.width.into(), swf_tag.height.into())?;
             let mut out_data =
                 Vec::with_capacity(swf_tag.width as usize * swf_tag.height as usize * 4);
             for _ in 0..swf_tag.height {
