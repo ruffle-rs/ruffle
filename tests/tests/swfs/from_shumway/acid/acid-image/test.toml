@@ -2,8 +2,10 @@
 
 num_frames = 10
 
+# The fixed point matrix of the rotation setter moves a few texels and edge pixels of the bitmap.
 [image_comparisons.output]
 tolerance = 11
+max_outliers = 40
 
 [player_options]
 with_renderer = { optional = false, quality = "low" }
