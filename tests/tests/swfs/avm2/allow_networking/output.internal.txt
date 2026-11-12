@@ -14,3 +14,6 @@ SecurityError: Error #2149: Security sandbox violation: file:///test.swf cannot 
 	at Test/check()
 	at Test()
 END
+TEST: sendToURL
+no error
+END

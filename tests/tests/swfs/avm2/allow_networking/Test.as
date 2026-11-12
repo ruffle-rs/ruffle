@@ -1,7 +1,6 @@
 package {
     import flash.display.MovieClip;
-    import flash.net.navigateToURL;
-    import flash.net.URLRequest;
+    import flash.net.*;
     import flash.system.fscommand;
 
     public class Test extends MovieClip {
@@ -12,6 +11,10 @@ package {
 
             check("fscommand", function():void {
                 fscommand("test", "argument");
+            });
+
+            check("sendToURL", function() {
+                sendToURL(new URLRequest("https://example.com/"));
             });
         }
 
