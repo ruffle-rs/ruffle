@@ -1,4 +1,5 @@
 use rfd::{MessageButtons, MessageDialog, MessageDialogResult, MessageLevel};
+use ruffle_common::url_ext::UrlExt;
 use ruffle_frontend_utils::backends::navigator::NavigatorInterface;
 use ruffle_frontend_utils::content::ContentDescriptor;
 use std::fs::File;
@@ -32,7 +33,7 @@ impl PathAllowList {
     pub fn new(content_descriptor: &ContentDescriptor) -> Self {
         let mut allowed_path_prefixes = Vec::new();
 
-        if let Ok(movie_path) = content_descriptor.url.to_file_path() {
+        if let Some(movie_path) = content_descriptor.url.to_local_file_path() {
             if let Some(parent) = movie_path.parent() {
                 // TODO Remove it after integrating recents & bookmarks with
                 //   opening a directory.
@@ -196,5 +197,32 @@ impl NavigatorInterface for DesktopNavigatorInterface {
             )));
         let result = receiver.await;
         result == Ok(NetworkAccessDialogResult::Allow)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn remote_content_has_no_allowed_paths() {
+        let url = Url::parse("http://localhost:8000/movie.swf").expect("valid URL");
+        let allow_list = PathAllowList::new(&ContentDescriptor::new_remote(url));
+        assert!(
+            allow_list
+                .allowed_path_prefixes
+                .lock()
+                .expect("Non-poisoned lock")
+                .is_empty()
+        );
+    }
+
+    #[test]
+    fn local_content_allows_its_directory() {
+        let directory = std::env::temp_dir();
+        let content = ContentDescriptor::new_local(&directory.join("movie.swf"), None)
+            .expect("absolute path");
+        let allow_list = PathAllowList::new(&content);
+        assert!(allow_list.is_path_allowed(&directory));
     }
 }

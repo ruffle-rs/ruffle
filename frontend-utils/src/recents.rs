@@ -5,6 +5,7 @@ pub use read::read_recents;
 pub use write::RecentsWriter;
 
 use crate::content::ContentDescriptor;
+use ruffle_common::url_ext::UrlExt;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Recent {
@@ -23,9 +24,9 @@ impl Recent {
     #[cfg(feature = "fs")]
     pub fn is_available(&self) -> bool {
         if self.content_descriptor.url.scheme() == "file" {
-            return match self.content_descriptor.url.to_file_path() {
-                Ok(path) => path.exists(),
-                Err(()) => false,
+            return match self.content_descriptor.url.to_local_file_path() {
+                Some(path) => path.exists(),
+                None => false,
             };
         }
 
