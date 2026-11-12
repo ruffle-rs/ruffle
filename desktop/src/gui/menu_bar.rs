@@ -122,7 +122,7 @@ impl MenuBar {
                                 if Button::new(&bookmark.name).ui(ui).clicked() {
                                     ui.close();
                                     let mut options = self.default_launch_options.clone();
-                                    options.bookmark_name = Some(bookmark.name.clone());
+                                    options.custom_title = Some(bookmark.name.clone());
                                     let _ = self.event_loop.send_event(RuffleEvent::Open(
                                         bookmark.content_descriptor.clone(),
                                         Box::new(options),

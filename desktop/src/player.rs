@@ -42,7 +42,7 @@ use winit::window::Window;
 #[derive(Debug, Clone)]
 pub struct LaunchOptions {
     pub player: PlayerOptions,
-    pub bookmark_name: Option<String>,
+    pub custom_title: Option<String>,
     pub proxy: Option<Url>,
     pub socket_allowed: HashSet<String>,
     pub tcp_connections: Option<SocketMode>,
@@ -95,7 +95,7 @@ impl From<&GlobalPreferences> for LaunchOptions {
                 },
             },
             proxy: value.cli.proxy.clone(),
-            bookmark_name: None,
+            custom_title: None,
             fullscreen: value.cli.fullscreen,
             save_directory: value.cli.save_directory.clone(),
             cache_directory: value.cli.cache_directory.clone(),
@@ -109,8 +109,8 @@ impl From<&GlobalPreferences> for LaunchOptions {
     }
 }
 
-fn window_title(content_name: &str, bookmark_name: Option<&str>) -> String {
-    let name = bookmark_name
+fn window_title(content_name: &str, custom_title: Option<&str>) -> String {
+    let name = custom_title
         .filter(|name| !name.trim().is_empty())
         .unwrap_or(content_name);
     format!("Ruffle - {name}")
@@ -201,7 +201,7 @@ impl ActivePlayer {
 
                 Cow::Owned(LaunchOptions {
                     player,
-                    bookmark_name: opt.bookmark_name.clone(),
+                    custom_title: opt.custom_title.clone(),
                     proxy: opt.proxy.clone(),
                     socket_allowed: opt.socket_allowed.clone(),
                     tcp_connections: opt.tcp_connections,
@@ -353,7 +353,7 @@ impl ActivePlayer {
             .with_avm2_dse_enabled(opt.avm2_dse_enabled);
         let player = builder.build();
 
-        window.set_title(&window_title(&readable_name, opt.bookmark_name.as_deref()));
+        window.set_title(&window_title(&readable_name, opt.custom_title.as_deref()));
 
         SWF_INFO.with(|i| *i.borrow_mut() = Some(readable_name));
 
@@ -585,7 +585,7 @@ mod tests {
     use super::window_title;
 
     #[test]
-    fn bookmark_window_title() {
+    fn custom_window_title() {
         assert_eq!(
             window_title("viewer.swf", Some("Operations Console")),
             "Ruffle - Operations Console"
@@ -598,7 +598,7 @@ mod tests {
     }
 
     #[test]
-    fn blank_bookmark_window_title() {
+    fn blank_custom_window_title() {
         for name in ["", " \t\n", "\u{2003}"] {
             assert_eq!(
                 window_title("viewer.swf", Some(name)),
@@ -608,7 +608,7 @@ mod tests {
     }
 
     #[test]
-    fn bookmark_window_title_preserves_name() {
+    fn custom_window_title_preserves_name() {
         let name = "  Op\u{e9}rations \u{65e5}\u{672c}  ";
         assert_eq!(
             window_title("viewer.swf", Some(name)),

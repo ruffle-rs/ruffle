@@ -308,7 +308,7 @@ impl OpenDialog {
 
         if let Some(result) = self.path.result() {
             let mut launch_options = self.options.clone();
-            launch_options.bookmark_name = None;
+            launch_options.custom_title = None;
             if self
                 .event_loop
                 .send_event(RuffleEvent::Open(result, Box::new(launch_options)))
