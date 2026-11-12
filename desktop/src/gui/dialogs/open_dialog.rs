@@ -720,7 +720,7 @@ type ValueToTextFn<T> = dyn Fn(T, &LanguageIdentifier) -> Cow<'static, str>;
 type ValueToOptTextFn<T> = dyn Fn(T, &LanguageIdentifier) -> Option<Cow<'static, str>>;
 
 struct EnumDropdownField<T: Copy> {
-    id: egui::Id,
+    id_salt: egui::IdSalt,
     default: T,
     value_to_name: Box<ValueToTextFn<T>>,
     value_to_tooltip: Box<ValueToOptTextFn<T>>,
@@ -730,7 +730,7 @@ struct EnumDropdownField<T: Copy> {
 impl<T: Copy> EnumDropdownField<T> {
     pub fn new(default: T, possible_values: Vec<T>, value_to_name: Box<ValueToTextFn<T>>) -> Self {
         Self {
-            id: egui::Id::new(rand::random::<u64>()),
+            id_salt: egui::IdSalt::new(rand::random::<u64>()),
             default,
             value_to_name,
             possible_values,
@@ -753,7 +753,7 @@ impl<T: Copy + PartialEq> InnerField for EnumDropdownField<T> {
     }
 
     fn ui(&self, ui: &mut Ui, value: &mut Self::Value, _error: bool, locale: &LanguageIdentifier) {
-        ComboBox::from_id_salt(self.id)
+        ComboBox::from_id_salt(self.id_salt)
             .selected_text((self.value_to_name)(*value, locale))
             .show_ui(ui, |ui| {
                 for possible_value in &self.possible_values {
@@ -776,7 +776,7 @@ impl<T: Copy + PartialEq> InnerField for EnumDropdownField<T> {
 }
 
 struct BooleanDropdownField {
-    id: egui::Id,
+    id_salt: egui::IdSalt,
     default: bool,
     value_to_name: Box<ValueToTextFn<bool>>,
 }
@@ -784,7 +784,7 @@ struct BooleanDropdownField {
 impl BooleanDropdownField {
     pub fn new(default: bool, value_to_name: Box<ValueToTextFn<bool>>) -> Self {
         Self {
-            id: egui::Id::new(rand::random::<u64>()),
+            id_salt: egui::IdSalt::new(rand::random::<u64>()),
             default,
             value_to_name,
         }
@@ -800,7 +800,7 @@ impl InnerField for BooleanDropdownField {
     }
 
     fn ui(&self, ui: &mut Ui, value: &mut Self::Value, _error: bool, locale: &LanguageIdentifier) {
-        ComboBox::from_id_salt(self.id)
+        ComboBox::from_id_salt(self.id_salt)
             .selected_text((self.value_to_name)(*value, locale))
             .show_ui(ui, |ui| {
                 ui.selectable_value(value, false, (self.value_to_name)(false, locale));
@@ -845,11 +845,20 @@ impl<T: InnerField> InnerField for FieldWithCheckbox<T> {
     }
 
     fn ui(&self, ui: &mut Ui, value: &mut Self::Value, error: bool, locale: &LanguageIdentifier) {
-        self.field.ui(ui, &mut value.0, error, locale);
-        let response = ui.checkbox(&mut value.1, self.checkbox_label.localize(locale));
-        if let Some(ref tooltip_label) = self.tooltip_label {
-            response.on_hover_text_at_pointer(tooltip_label.localize(locale));
-        }
+        // Lay out the checkbox first, so that the field only fills the remaining space.
+        // Otherwise the checkbox overflows the available width, and the window keeps growing.
+        ui.with_layout(Layout::right_to_left(egui::Align::Center), |ui| {
+            let response = ui.checkbox(&mut value.1, self.checkbox_label.localize(locale));
+            if let Some(ref tooltip_label) = self.tooltip_label {
+                response.on_hover_text_at_pointer(tooltip_label.localize(locale));
+            }
+            ui.with_layout(
+                Layout::centered_and_justified(egui::Direction::LeftToRight),
+                |ui| {
+                    self.field.ui(ui, &mut value.0, error, locale);
+                },
+            );
+        });
     }
 
     fn value_to_result(&self, value: &Self::Value) -> Result<Self::Result, ()> {
