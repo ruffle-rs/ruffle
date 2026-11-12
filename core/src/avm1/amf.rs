@@ -174,48 +174,13 @@ fn serialize_array<'gc>(
     array: Object<'gc>,
     array_encoding: ArrayEncoding,
 ) -> AmfValue {
-    let mut length = array.length(activation).unwrap_or(0).max(0) as usize;
+    let length = array.length(activation).unwrap_or(0).max(0) as usize;
     let keys = array.get_keys(activation, false);
+    let array_info = array_serialization_info(&keys, length, array_encoding);
 
-    let is_strict_array = match array_encoding {
-        ArrayEncoding::EcmaArray => false,
-        ArrayEncoding::StrictWhenDense => {
-            for key in &keys {
-                if let Some(index) = avm1_array_index(key.to_utf8_lossy().as_ref()) {
-                    length = length.max(index as usize + 1);
-                }
-            }
-
-            // LocalConnection must preserve holes and noncanonical numeric-looking
-            // property names, so only genuinely dense arrays use strict encoding.
-            keys.len() == length
-                && keys.iter().all(|key| {
-                    avm1_array_index(key.to_utf8_lossy().as_ref())
-                        .is_some_and(|index| (index as usize) < length)
-                })
-        }
-        ArrayEncoding::StrictWhenNoCustomProperties => {
-            let mut has_custom_properties = false;
-            for key in &keys {
-                if let Some(index) = net_connection_array_index(key.to_utf8_lossy().as_ref()) {
-                    if let Some(end) = index.checked_add(1) {
-                        length = length.max(end);
-                    }
-                } else {
-                    has_custom_properties = true;
-                }
-            }
-
-            // NetConnection follows Flash's legacy numeric-key test: a sparse
-            // array with only numeric keys is still a strict array, with holes
-            // serialized as explicit undefined values.
-            !has_custom_properties
-        }
-    };
-
-    if is_strict_array {
-        let mut dense = Vec::with_capacity(length);
-        for i in 0..length {
+    if array_info.is_strict_array {
+        let mut dense = Vec::with_capacity(array_info.length);
+        for i in 0..array_info.length {
             let elem_name = AvmString::new_utf8(activation.gc(), i.to_string());
             let prop_value = array.get(elem_name, activation).unwrap_or(Value::Undefined);
             dense.push(serialize_with_array_encoding(
@@ -244,7 +209,7 @@ fn serialize_array<'gc>(
             data: ECMAArrayObjectValue {
                 dense: Vec::new(),
                 elements,
-                length: length as u32,
+                length: array_info.length as u32,
             },
         }
     }
@@ -259,6 +224,62 @@ pub(crate) enum ArrayEncoding {
     StrictWhenDense,
     /// NetConnection uses strict arrays whenever there are no custom properties.
     StrictWhenNoCustomProperties,
+}
+
+/// The wire representation and effective length selected for an AVM1 array.
+struct ArraySerializationInfo {
+    is_strict_array: bool,
+    length: usize,
+}
+
+/// Select an array representation using the rules of its transport.
+///
+/// Keep this shared by both AMF-value and LSO-writer serialization so nested
+/// and top-level arrays apply exactly the same classification and length rules.
+fn array_serialization_info(
+    keys: &[AvmString],
+    mut length: usize,
+    array_encoding: ArrayEncoding,
+) -> ArraySerializationInfo {
+    let is_strict_array = match array_encoding {
+        ArrayEncoding::EcmaArray => false,
+        ArrayEncoding::StrictWhenDense => {
+            for key in keys {
+                if let Some(index) = avm1_array_index(key.to_utf8_lossy().as_ref()) {
+                    length = length.max(index as usize + 1);
+                }
+            }
+
+            // LocalConnection preserves holes and noncanonical numeric-looking
+            // property names, so only genuinely dense arrays use strict encoding.
+            keys.len() == length
+                && keys.iter().all(|key| {
+                    avm1_array_index(key.to_utf8_lossy().as_ref())
+                        .is_some_and(|index| (index as usize) < length)
+                })
+        }
+        ArrayEncoding::StrictWhenNoCustomProperties => {
+            let mut has_custom_properties = false;
+            for key in keys {
+                if let Some(index) = net_connection_array_index(key.to_utf8_lossy().as_ref()) {
+                    if let Some(end) = index.checked_add(1) {
+                        length = length.max(end);
+                    }
+                } else {
+                    has_custom_properties = true;
+                }
+            }
+
+            // NetConnection treats sparse arrays with only numeric keys as
+            // strict arrays, serializing holes as explicit undefined values.
+            !has_custom_properties
+        }
+    };
+
+    ArraySerializationInfo {
+        is_strict_array,
+        length,
+    }
 }
 
 /// Helper to serialize a specific value into the ObjWriter cache architecture.
@@ -276,39 +297,15 @@ fn serialize_value_to_writer<'gc>(
             } else if o.as_display_object().is_some() {
                 writer.undefined(name)
             } else if o.is_native_array() {
-                let mut length = o.length(activation).unwrap_or(0).max(0) as usize;
+                let length = o.length(activation).unwrap_or(0).max(0) as usize;
                 let keys = o.get_keys(activation, false);
-                let is_strict_array = match array_encoding {
-                    ArrayEncoding::EcmaArray => false,
-                    ArrayEncoding::StrictWhenDense => {
-                        keys.len() == length
-                            && keys.iter().all(|key| {
-                                avm1_array_index(key.to_utf8_lossy().as_ref())
-                                    .is_some_and(|index| (index as usize) < length)
-                            })
-                    }
-                    ArrayEncoding::StrictWhenNoCustomProperties => {
-                        let mut has_custom_properties = false;
-                        for key in &keys {
-                            if let Some(index) =
-                                net_connection_array_index(key.to_utf8_lossy().as_ref())
-                            {
-                                if let Some(end) = index.checked_add(1) {
-                                    length = length.max(end);
-                                }
-                            } else {
-                                has_custom_properties = true;
-                            }
-                        }
-                        !has_custom_properties
-                    }
-                };
+                let array_info = array_serialization_info(&keys, length, array_encoding);
 
-                if is_strict_array {
+                if array_info.is_strict_array {
                     let (aw, token) = writer.strict_array(CacheKey::from_ptr(o.as_ptr()));
 
                     if let Some(mut aw) = aw {
-                        for i in 0..length {
+                        for i in 0..array_info.length {
                             let elem_name = AvmString::new_utf8(activation.gc(), i.to_string());
                             let prop_value =
                                 o.get(elem_name, activation).unwrap_or(Value::Undefined);
@@ -330,7 +327,7 @@ fn serialize_value_to_writer<'gc>(
 
                     if let Some(mut aw) = aw {
                         recursive_serialize(activation, o, &mut aw, array_encoding);
-                        aw.set_length(length as u32);
+                        aw.set_length(array_info.length as u32);
                         aw.commit(name);
                     } else {
                         writer.reference(name, token);
@@ -805,6 +802,54 @@ mod tests {
             // Additional objects cannot be addressed by an AMF0 reference.
             reference_cache.insert(Value::Null);
             assert_eq!(reference_cache.values.len(), MAX_AMF0_REFERENCES);
+
+            Ok(())
+        });
+    }
+
+    #[test]
+    fn array_serialization_info_applies_transport_specific_rules() {
+        with_avm(8, |activation, _this| -> Result<(), Error> {
+            let dense_keys = vec![AvmString::new_utf8(activation.gc(), "0")];
+            let dense = array_serialization_info(
+                &dense_keys,
+                0,
+                ArrayEncoding::StrictWhenDense,
+            );
+            assert!(dense.is_strict_array);
+            assert_eq!(dense.length, 1);
+
+            let sparse_keys = vec![
+                AvmString::new_utf8(activation.gc(), "0"),
+                AvmString::new_utf8(activation.gc(), "3"),
+            ];
+            let local_connection = array_serialization_info(
+                &sparse_keys,
+                4,
+                ArrayEncoding::StrictWhenDense,
+            );
+            assert!(!local_connection.is_strict_array);
+            assert_eq!(local_connection.length, 4);
+
+            let net_connection = array_serialization_info(
+                &sparse_keys,
+                4,
+                ArrayEncoding::StrictWhenNoCustomProperties,
+            );
+            assert!(net_connection.is_strict_array);
+            assert_eq!(net_connection.length, 4);
+
+            let custom_keys = vec![AvmString::new_utf8(activation.gc(), "+1")];
+            let net_connection_custom = array_serialization_info(
+                &custom_keys,
+                0,
+                ArrayEncoding::StrictWhenNoCustomProperties,
+            );
+            assert!(!net_connection_custom.is_strict_array);
+
+            let shared_object =
+                array_serialization_info(&dense_keys, 1, ArrayEncoding::EcmaArray);
+            assert!(!shared_object.is_strict_array);
 
             Ok(())
         });
