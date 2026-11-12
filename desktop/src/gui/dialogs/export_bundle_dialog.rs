@@ -1,6 +1,7 @@
 use crate::gui::{FilePicker, text};
 use egui::{Align2, Ui, Window};
 use rfd::FileHandle;
+use ruffle_common::url_ext::UrlExt;
 use ruffle_frontend_utils::bundle::exporter::FilesystemHelper;
 use ruffle_frontend_utils::bundle::exporter::FilesystemHelperError;
 use ruffle_frontend_utils::bundle::info::BundleInformation;
@@ -106,7 +107,7 @@ impl ExportBundleDialog {
     pub fn new(config: ExportBundleDialogConfiguration, picker: FilePicker) -> Self {
         let mut bundle_local_files = false;
         let mut local_files = Vec::new();
-        if let Ok(root_movie) = config.content_descriptor.url.to_file_path() {
+        if let Some(root_movie) = config.content_descriptor.url.to_local_file_path() {
             bundle_local_files = true;
             if let Some(root_content_path) = &config.content_descriptor.root_content_path {
                 for entry in walkdir::WalkDir::new(root_content_path)
