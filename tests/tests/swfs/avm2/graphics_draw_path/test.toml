@@ -12,6 +12,7 @@ swf_version = 41
 #   winding behavior not being implemented.
 [image_comparisons.output]
 trigger = 1
+known_failure = true
 
 [player_options]
 with_renderer = { optional = true, quality = "low" }

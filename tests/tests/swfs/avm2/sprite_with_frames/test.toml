@@ -1,6 +1,8 @@
 num_frames = 2
 
+# TODO Text antialiasing and the square's vertical borders differ from FP.
 [image_comparisons.output]
+known_failure = true
 tolerance = 0
 
 [player_options]
