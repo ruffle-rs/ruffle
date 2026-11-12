@@ -270,6 +270,8 @@ fn decode_jpeg(jpeg_data: &[u8], alpha_data: Option<&[u8]>) -> Result<Bitmap<'st
 pub fn decode_define_bits_lossless(
     swf_tag: &swf::DefineBitsLossless,
 ) -> Result<Bitmap<'static>, Error> {
+    validate_size(swf_tag.width.into(), swf_tag.height.into())?;
+
     // Decompress the image data (DEFLATE compression).
     let mut decoded_data = decompress_zlib(&swf_tag.data)?;
 
@@ -279,7 +281,6 @@ pub fn decode_define_bits_lossless(
     let out_data = match swf_tag.format {
         swf::BitmapFormat::Rgb15 => {
             let padded_width = (swf_tag.width + 0b1) & !0b1;
-            validate_size(swf_tag.width.into(), swf_tag.height.into())?;
             let mut out_data =
                 Vec::with_capacity(swf_tag.width as usize * swf_tag.height as usize * 4);
             let mut i = 0;
@@ -331,7 +332,6 @@ pub fn decode_define_bits_lossless(
                 i += if has_alpha { 4 } else { 3 };
             }
 
-            validate_size(swf_tag.width.into(), swf_tag.height.into())?;
             let mut out_data =
                 Vec::with_capacity(swf_tag.width as usize * swf_tag.height as usize * 4);
             for _ in 0..swf_tag.height {
@@ -381,6 +381,7 @@ fn decode_png(data: &[u8]) -> Result<Bitmap<'static>, Error> {
     // Ideally we'd want to normalize to 8-bit RGB only, but seems like the `png` crate provides no such a feature.
     decoder.set_transformations(Transformations::normalize_to_color8());
     let mut reader = decoder.read_info()?;
+    validate_size(reader.info().width, reader.info().height)?;
 
     let mut data = vec![0; reader.output_buffer_size().ok_or(Error::TooLarge)?];
     let info = match reader.next_frame(&mut data) {
