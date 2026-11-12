@@ -42,7 +42,11 @@ function decodeResourceIfExist(name) {
     }
     if (name.startsWith("blob:")) {
         // skip blob: urls
-        return name;
+        return null;
+    }
+    if (name.startsWith("http:") || name.startsWith("https:")) {
+        // skip http(s): urls since we are local files
+        return null;
     }
     const slashIndex = name.indexOf("/");
     if (slashIndex >= 0) {
@@ -64,36 +68,6 @@ function decodeResourceIfExist(name) {
     RUFFLE_RES[name].length = 0; // reduce memory usage
     return decoded;
 }
-
-// patch url
-const OriginalURL = URL;
-function PatchedURL() {
-    if (!new.target) throw new TypeError("'new' is required");
-    const decodedURL = decodeResourceIfExist(arguments[0]);
-    let self;
-    if (decodedURL == null) {
-        // URL cannot be decoded
-        self = Reflect.construct(OriginalURL, arguments, new.target);
-    } else {
-        // Use decoded URL
-        self = Reflect.construct(OriginalURL, [decodedURL], new.target);
-    }
-    return self;
-}
-PatchedURL.prototype = Object.create(OriginalURL.prototype, {
-    constructor: {
-        value: PatchedURL,
-        writable: true,
-        configurable: true,
-    },
-});
-Object.setPrototypeOf(PatchedURL, OriginalURL);
-Object.defineProperty(window, "URL", {
-    value: PatchedURL,
-    writable: true,
-    configurable: true,
-    enumerable: false,
-});
 
 // patch fetch
 const originalFetch = fetch;
