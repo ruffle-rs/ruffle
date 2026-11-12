@@ -1,3 +1,4 @@
+use crate::avm2::error::make_error_2189;
 use crate::avm2::function::FunctionArgs;
 use crate::avm2::globals::slots::flash_geom_color_transform as ct_slots;
 use crate::avm2::globals::slots::flash_geom_matrix as matrix_slots;
@@ -69,7 +70,7 @@ pub fn get_matrix<'gc>(
 }
 
 pub fn set_matrix<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -82,6 +83,7 @@ pub fn set_matrix<'gc>(
     };
 
     let matrix = object_to_matrix(obj);
+    dobj.set_matrix3d_owner(activation.gc(), None);
     dobj.set_matrix(matrix);
     dobj.set_transformed_by_script(true);
     if let Some(parent) = dobj.parent() {
@@ -311,10 +313,20 @@ pub fn set_matrix_3d<'gc>(
 
     let display_object = get_display_object(this);
 
+    let object = args
+        .try_get_object(0)
+        .map(|object| object.as_matrix3d_object().unwrap());
+    if let Some(object) = object
+        && let Some(owner) = object.owner(activation.gc())
+        && !gc_arena::Gc::ptr_eq(owner, display_object.base())
+    {
+        return Err(make_error_2189(activation));
+    }
+
     let (matrix, has_matrix3d, tz) = {
-        match args.try_get_object(0) {
-            Some(obj) => {
-                let matrix3d = obj.as_matrix3d_object().unwrap().matrix();
+        match object {
+            Some(object) => {
+                let matrix3d = object.matrix();
                 let matrix = matrix3d.to_matrix();
                 let tz = matrix3d.tz();
                 (matrix, true, tz)
@@ -323,6 +335,7 @@ pub fn set_matrix_3d<'gc>(
         }
     };
 
+    display_object.set_matrix3d_owner(activation.gc(), object);
     display_object.set_matrix(matrix);
     display_object.set_z(tz as f64);
     display_object.base().set_has_matrix3d_stub(has_matrix3d);

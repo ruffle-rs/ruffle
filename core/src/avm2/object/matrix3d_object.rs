@@ -3,8 +3,11 @@ use crate::avm2::activation::Activation;
 use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{ClassObject, Object, TObject};
 use crate::context::UpdateContext;
+use crate::display_object::DisplayObjectBase;
 use core::fmt;
-use gc_arena::{Collect, Gc, GcWeak};
+use gc_arena::barrier::unlock;
+use gc_arena::lock::Lock;
+use gc_arena::{Collect, Gc, GcWeak, Mutation};
 use ruffle_common::utils::HasPrefixField;
 use ruffle_render::matrix3d::Matrix3D;
 use std::cell::{Ref, RefCell, RefMut};
@@ -21,6 +24,7 @@ pub fn matrix_3d_allocator<'gc>(
         Matrix3DObjectData {
             base,
             matrix: RefCell::new(Matrix3D::IDENTITY),
+            owner: Lock::new(None),
         },
     ))
     .into())
@@ -50,6 +54,8 @@ pub struct Matrix3DObjectData<'gc> {
     base: ScriptObjectData<'gc>,
 
     matrix: RefCell<Matrix3D>,
+    // Matrix ownership must not keep the DisplayObject alive.
+    owner: Lock<Option<GcWeak<'gc, DisplayObjectBase<'gc>>>>,
 }
 
 impl<'gc> Matrix3DObject<'gc> {
@@ -61,8 +67,17 @@ impl<'gc> Matrix3DObject<'gc> {
             Matrix3DObjectData {
                 base,
                 matrix: RefCell::new(matrix),
+                owner: Lock::new(None),
             },
         ))
+    }
+
+    pub fn owner(self, mc: &Mutation<'gc>) -> Option<Gc<'gc, DisplayObjectBase<'gc>>> {
+        self.0.owner.get().and_then(|owner| owner.upgrade(mc))
+    }
+
+    pub fn set_owner(self, mc: &Mutation<'gc>, owner: Option<Gc<'gc, DisplayObjectBase<'gc>>>) {
+        unlock!(Gc::write(mc, self.0), Matrix3DObjectData, owner).set(owner.map(Gc::downgrade));
     }
 
     pub fn matrix_ref(&self) -> Ref<'_, Matrix3D> {
