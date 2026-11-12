@@ -484,14 +484,7 @@ pub fn get_rotation<'gc>(
     let this = this.as_object().unwrap();
 
     if let Some(dobj) = this.as_display_object() {
-        let rot: f64 = dobj.rotation().into();
-        let rem = rot % 360.0;
-
-        if rem <= 180.0 {
-            return Ok(rem.into());
-        } else {
-            return Ok((rem - 360.0).into());
-        }
+        return Ok(f64::from(dobj.rotation()).into());
     }
 
     Ok(Value::Undefined)
@@ -506,17 +499,7 @@ pub fn set_rotation<'gc>(
     let this = this.as_object().unwrap();
 
     if let Some(dobj) = this.as_display_object() {
-        let mut new_rotation = args.get_f64(0);
-
-        // Normalize into the range of [-180, 180].
-        new_rotation %= 360.0;
-        if new_rotation < -180.0 {
-            new_rotation += 360.0
-        } else if new_rotation > 180.0 {
-            new_rotation -= 360.0
-        }
-
-        dobj.set_rotation(Degrees::from(new_rotation));
+        dobj.set_rotation(Degrees::from(args.get_f64(0)));
     }
 
     Ok(Value::Undefined)

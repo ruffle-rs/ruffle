@@ -276,6 +276,7 @@ pub struct DisplayObjectBase<'gc> {
     // Cached transform properties `_xscale`, `_yscale`, `_rotation`.
     // These are expensive to calculate, so they will be calculated and cached
     // when AS requests one of these properties.
+    // The rotation is kept as it was set, and is only normalized when read.
     rotation: Cell<Degrees>,
     scale_x: Cell<Percent>,
     scale_y: Cell<Percent>,
@@ -517,7 +518,14 @@ impl<'gc> DisplayObjectBase<'gc> {
 
     fn rotation(&self) -> Degrees {
         self.cache_scale_rotation();
-        self.rotation.get()
+        // Normalize into the range of [-180, 180].
+        let mut degrees = f64::from(self.rotation.get()) % 360.0;
+        if degrees < -180.0 {
+            degrees += 360.0
+        } else if degrees > 180.0 {
+            degrees -= 360.0
+        }
+        degrees.into()
     }
 
     fn set_rotation(&self, degrees: Degrees) -> bool {
@@ -535,7 +543,7 @@ impl<'gc> DisplayObjectBase<'gc> {
         // values, so for now, we never modify the matrix if the
         // rotation is NaN. Hopefully, there are no SWFs depending
         // on the weird behavior when b or d is non-zero.
-        if degrees.into_radians().is_nan() {
+        if !degrees.into_radians().is_finite() {
             return changed;
         }
 
@@ -1670,12 +1678,13 @@ pub trait TDisplayObject<'gc>:
         degrees
     }
 
-    /// Sets the rotation in degrees this display object in local space.
+    /// Sets the rotation in degrees this display object in local space, which does not have
+    /// to be normalized.
     /// Set by the `_rotation`/`rotation` ActionScript properties.
     /// This invalidates any ancestors cacheAsBitmap automatically.
     #[no_dynamic]
-    fn set_rotation(self, radians: Degrees) {
-        if self.base().set_rotation(radians) {
+    fn set_rotation(self, degrees: Degrees) {
+        if self.base().set_rotation(degrees) {
             self.set_scale_rotation_cached();
             if let Some(parent) = self.parent() {
                 // Self-transform changes are automatically handled,
