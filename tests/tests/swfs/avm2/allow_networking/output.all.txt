@@ -8,3 +8,6 @@ END
 TEST: fscommand
 no error
 END
+TEST: sendToURL
+no error
+END
