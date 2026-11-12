@@ -162,7 +162,7 @@ impl BookmarksDialog {
 
         enum BookmarkAction {
             Remove(usize),
-            Start(ContentDescriptor),
+            Start(ContentDescriptor, String),
         }
 
         let mut action = None;
@@ -214,6 +214,7 @@ impl BookmarksDialog {
                                     ui.close();
                                     action = Some(BookmarkAction::Start(
                                         bookmark.content_descriptor.clone(),
+                                        bookmark.name.clone(),
                                     ))
                                 }
                                 if ui.button(text(locale, "remove")).clicked() {
@@ -236,6 +237,7 @@ impl BookmarksDialog {
                             if response.double_clicked() {
                                 action = Some(BookmarkAction::Start(
                                     bookmark.content_descriptor.clone(),
+                                    bookmark.name.clone(),
                                 ));
                             }
                         });
@@ -254,11 +256,12 @@ impl BookmarksDialog {
                 }
                 false
             }
-            Some(BookmarkAction::Start(content_descriptor)) => {
-                let _ = self.event_loop.send_event(RuffleEvent::Open(
-                    content_descriptor,
-                    Box::new(LaunchOptions::from(&self.preferences)),
-                ));
+            Some(BookmarkAction::Start(content_descriptor, name)) => {
+                let mut options = LaunchOptions::from(&self.preferences);
+                options.bookmark_name = Some(name);
+                let _ = self
+                    .event_loop
+                    .send_event(RuffleEvent::Open(content_descriptor, Box::new(options)));
                 true
             }
             None => false,

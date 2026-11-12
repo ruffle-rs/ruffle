@@ -42,6 +42,7 @@ use winit::window::Window;
 #[derive(Debug, Clone)]
 pub struct LaunchOptions {
     pub player: PlayerOptions,
+    pub bookmark_name: Option<String>,
     pub proxy: Option<Url>,
     pub socket_allowed: HashSet<String>,
     pub tcp_connections: Option<SocketMode>,
@@ -94,6 +95,7 @@ impl From<&GlobalPreferences> for LaunchOptions {
                 },
             },
             proxy: value.cli.proxy.clone(),
+            bookmark_name: None,
             fullscreen: value.cli.fullscreen,
             save_directory: value.cli.save_directory.clone(),
             cache_directory: value.cli.cache_directory.clone(),
@@ -105,6 +107,13 @@ impl From<&GlobalPreferences> for LaunchOptions {
             avm2_dse_enabled: !value.cli.disable_avm2_dse,
         }
     }
+}
+
+fn window_title(content_name: &str, bookmark_name: Option<&str>) -> String {
+    let name = bookmark_name
+        .filter(|name| !name.trim().is_empty())
+        .unwrap_or(content_name);
+    format!("Ruffle - {name}")
 }
 
 /// Represents a current Player and any associated state with that player,
@@ -192,6 +201,7 @@ impl ActivePlayer {
 
                 Cow::Owned(LaunchOptions {
                     player,
+                    bookmark_name: opt.bookmark_name.clone(),
                     proxy: opt.proxy.clone(),
                     socket_allowed: opt.socket_allowed.clone(),
                     tcp_connections: opt.tcp_connections,
@@ -343,7 +353,7 @@ impl ActivePlayer {
             .with_avm2_dse_enabled(opt.avm2_dse_enabled);
         let player = builder.build();
 
-        window.set_title(&format!("Ruffle - {readable_name}"));
+        window.set_title(&window_title(&readable_name, opt.bookmark_name.as_deref()));
 
         SWF_INFO.with(|i| *i.borrow_mut() = Some(readable_name));
 
@@ -567,5 +577,42 @@ impl<E: std::error::Error + 'static> FutureSpawner<E> for WinitExecutor {
         task.detach();
         // Immediately schedule the future to be polled for the first time.
         runnable.schedule();
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::window_title;
+
+    #[test]
+    fn bookmark_window_title() {
+        assert_eq!(
+            window_title("viewer.swf", Some("Operations Console")),
+            "Ruffle - Operations Console"
+        );
+    }
+
+    #[test]
+    fn content_window_title() {
+        assert_eq!(window_title("viewer.swf", None), "Ruffle - viewer.swf");
+    }
+
+    #[test]
+    fn blank_bookmark_window_title() {
+        for name in ["", " \t\n", "\u{2003}"] {
+            assert_eq!(
+                window_title("viewer.swf", Some(name)),
+                "Ruffle - viewer.swf"
+            );
+        }
+    }
+
+    #[test]
+    fn bookmark_window_title_preserves_name() {
+        let name = "  Op\u{e9}rations \u{65e5}\u{672c}  ";
+        assert_eq!(
+            window_title("viewer.swf", Some(name)),
+            format!("Ruffle - {name}")
+        );
     }
 }
