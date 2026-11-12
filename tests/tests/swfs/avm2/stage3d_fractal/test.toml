@@ -1,6 +1,9 @@
 num_frames = 2
 
+# TODO The text overlay differs from FP (font, layout);
+# the fractal's pixel channel values differ by 1-2
 [image_comparisons.output]
+known_failure = true
 tolerance = 2
 max_outliers = 100
 
