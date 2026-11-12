@@ -54,7 +54,7 @@ pub fn decode_define_bits_jpeg_dimensions(data: &[u8]) -> Result<(u32, u32), Err
     let format = determine_jpeg_tag_format(data);
     match format {
         JpegTagFormat::Jpeg => decode_jpeg_dimensions(data).map(|(w, h)| (w.into(), h.into())),
-        JpegTagFormat::JpegXr => decode_jpegxr_dimensions(data).map(|(w, h)| (w.into(), h.into())),
+        JpegTagFormat::JpegXr => decode_jpegxr_dimensions(data),
         JpegTagFormat::Png => decode_png_dimensions(data),
         JpegTagFormat::Gif => decode_gif_dimensions(data).map(|(w, h)| (w.into(), h.into())),
         JpegTagFormat::Unknown => Err(Error::UnknownType),
@@ -469,14 +469,14 @@ fn decode_gif(data: &[u8]) -> Result<Bitmap<'static>, Error> {
 fn decode_jpegxr(data: &[u8]) -> Result<Bitmap<'static>, Error> {
     // TODO: Could this be unified with 'core/src/avm2/globals/flash/display3D/textures/atf_jpegxr'?
 
+    // The dimensions must be validated before decoding: jxrlib computes its intermediate
+    // buffer size in 32-bit arithmetic, which wraps for large header-declared dimensions.
+    let (jpeg_width, jpeg_height) = decode_jpegxr_dimensions(data)?;
+
     let mut decoder =
         jpegxr::ImageDecode::with_reader(Cursor::new(data)).map_err(Error::InvalidJpegXr)?;
 
     let pixel_format = decoder.get_pixel_format().map_err(Error::InvalidJpegXr)?;
-
-    let (jpeg_width, jpeg_height) = decoder.get_size().map_err(Error::InvalidJpegXr)?;
-    let jpeg_width = jpeg_width as u32;
-    let jpeg_height = jpeg_height as u32;
 
     let info = jpegxr::PixelInfo::from_format(pixel_format);
     let stride = jpeg_width as usize * info.bits_per_pixel() / 8;
@@ -513,17 +513,19 @@ fn decode_jpegxr(_: &[u8]) -> Result<Bitmap<'static>, Error> {
 }
 
 #[cfg(feature = "jpegxr")]
-fn decode_jpegxr_dimensions(data: &[u8]) -> Result<(u16, u16), Error> {
-    let (jpeg_width, jpeg_height) = jpegxr::ImageDecode::with_reader(Cursor::new(data))
-        .map_err(Error::InvalidJpegXr)?
-        .get_size()
-        .map_err(Error::InvalidJpegXr)?;
+fn decode_jpegxr_dimensions(data: &[u8]) -> Result<(u32, u32), Error> {
+    let decoder =
+        jpegxr::ImageDecode::with_reader(Cursor::new(data)).map_err(Error::InvalidJpegXr)?;
+    let (jpeg_width, jpeg_height) = decoder.get_size().map_err(Error::InvalidJpegXr)?;
+    let jpeg_width = u32::try_from(jpeg_width).map_err(|_| Error::TooLarge)?;
+    let jpeg_height = u32::try_from(jpeg_height).map_err(|_| Error::TooLarge)?;
+    validate_size(jpeg_width, jpeg_height)?;
 
-    Ok((jpeg_width as u16, jpeg_height as u16))
+    Ok((jpeg_width, jpeg_height))
 }
 
 #[cfg(not(feature = "jpegxr"))]
-fn decode_jpegxr_dimensions(_: &[u8]) -> Result<(u16, u16), Error> {
+fn decode_jpegxr_dimensions(_: &[u8]) -> Result<(u32, u32), Error> {
     Err(Error::Unimplemented("JPEG-XR decoding not compiled".into()))
 }
 
