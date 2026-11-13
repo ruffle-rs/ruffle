@@ -1,0 +1,2500 @@
+matrix = (a=-10, b=-10, c=-10, d=-10, tx=0, ty=0)
+   rotation = -135
+   scaleX = 14.142135623730951
+   scaleY = 14.142135623730951
+matrix = (a=-10, b=-10, c=-10, d=-5, tx=0, ty=0)
+   rotation = -135
+   scaleX = 14.142135623730951
+   scaleY = -11.180339887498949
+matrix = (a=-10, b=-10, c=-10, d=0, tx=0, ty=0)
+   rotation = -135
+   scaleX = 14.142135623730951
+   scaleY = -10
+matrix = (a=-10, b=-10, c=-10, d=5, tx=0, ty=0)
+   rotation = -135
+   scaleX = 14.142135623730951
+   scaleY = -11.180339887498949
+matrix = (a=-10, b=-10, c=-10, d=10, tx=0, ty=0)
+   rotation = -135
+   scaleX = 14.142135623730951
+   scaleY = -14.142135623730951
+matrix = (a=-10, b=-10, c=-5, d=-10, tx=0, ty=0)
+   rotation = -135
+   scaleX = 14.142135623730951
+   scaleY = 11.180339887498949
+matrix = (a=-10, b=-10, c=-5, d=-5, tx=0, ty=0)
+   rotation = -135
+   scaleX = 14.142135623730951
+   scaleY = 7.0710678118654755
+matrix = (a=-10, b=-10, c=-5, d=0, tx=0, ty=0)
+   rotation = -135
+   scaleX = 14.142135623730951
+   scaleY = -5
+matrix = (a=-10, b=-10, c=-5, d=5, tx=0, ty=0)
+   rotation = -135
+   scaleX = 14.142135623730951
+   scaleY = -7.0710678118654755
+matrix = (a=-10, b=-10, c=-5, d=10, tx=0, ty=0)
+   rotation = -135
+   scaleX = 14.142135623730951
+   scaleY = -11.180339887498949
+matrix = (a=-10, b=-10, c=0, d=-10, tx=0, ty=0)
+   rotation = -135
+   scaleX = 14.142135623730951
+   scaleY = 10
+matrix = (a=-10, b=-10, c=0, d=-5, tx=0, ty=0)
+   rotation = -135
+   scaleX = 14.142135623730951
+   scaleY = 5
+matrix = (a=-10, b=-10, c=0, d=0, tx=0, ty=0)
+   rotation = -135
+   scaleX = 14.142135623730951
+   scaleY = 0
+matrix = (a=-10, b=-10, c=0, d=5, tx=0, ty=0)
+   rotation = -135
+   scaleX = 14.142135623730951
+   scaleY = -5
+matrix = (a=-10, b=-10, c=0, d=10, tx=0, ty=0)
+   rotation = -135
+   scaleX = 14.142135623730951
+   scaleY = -10
+matrix = (a=-10, b=-10, c=5, d=-10, tx=0, ty=0)
+   rotation = -135
+   scaleX = 14.142135623730951
+   scaleY = 11.180339887498949
+matrix = (a=-10, b=-10, c=5, d=-5, tx=0, ty=0)
+   rotation = -135
+   scaleX = 14.142135623730951
+   scaleY = 7.0710678118654755
+matrix = (a=-10, b=-10, c=5, d=0, tx=0, ty=0)
+   rotation = -135
+   scaleX = 14.142135623730951
+   scaleY = 5
+matrix = (a=-10, b=-10, c=5, d=5, tx=0, ty=0)
+   rotation = -135
+   scaleX = 14.142135623730951
+   scaleY = 7.0710678118654755
+matrix = (a=-10, b=-10, c=5, d=10, tx=0, ty=0)
+   rotation = -135
+   scaleX = 14.142135623730951
+   scaleY = -11.180339887498949
+matrix = (a=-10, b=-10, c=10, d=-10, tx=0, ty=0)
+   rotation = -135
+   scaleX = 14.142135623730951
+   scaleY = 14.142135623730951
+matrix = (a=-10, b=-10, c=10, d=-5, tx=0, ty=0)
+   rotation = -135
+   scaleX = 14.142135623730951
+   scaleY = 11.180339887498949
+matrix = (a=-10, b=-10, c=10, d=0, tx=0, ty=0)
+   rotation = -135
+   scaleX = 14.142135623730951
+   scaleY = 10
+matrix = (a=-10, b=-10, c=10, d=5, tx=0, ty=0)
+   rotation = -135
+   scaleX = 14.142135623730951
+   scaleY = 11.180339887498949
+matrix = (a=-10, b=-10, c=10, d=10, tx=0, ty=0)
+   rotation = -135
+   scaleX = 14.142135623730951
+   scaleY = 14.142135623730951
+matrix = (a=-10, b=-5, c=-10, d=-10, tx=0, ty=0)
+   rotation = -153.43494882292202
+   scaleX = 11.180339887498949
+   scaleY = 14.142135623730951
+matrix = (a=-10, b=-5, c=-10, d=-5, tx=0, ty=0)
+   rotation = -153.43494882292202
+   scaleX = 11.180339887498949
+   scaleY = 11.180339887498949
+matrix = (a=-10, b=-5, c=-10, d=0, tx=0, ty=0)
+   rotation = -153.43494882292202
+   scaleX = 11.180339887498949
+   scaleY = -10
+matrix = (a=-10, b=-5, c=-10, d=5, tx=0, ty=0)
+   rotation = -153.43494882292202
+   scaleX = 11.180339887498949
+   scaleY = -11.180339887498949
+matrix = (a=-10, b=-5, c=-10, d=10, tx=0, ty=0)
+   rotation = -153.43494882292202
+   scaleX = 11.180339887498949
+   scaleY = -14.142135623730951
+matrix = (a=-10, b=-5, c=-5, d=-10, tx=0, ty=0)
+   rotation = -153.43494882292202
+   scaleX = 11.180339887498949
+   scaleY = 11.180339887498949
+matrix = (a=-10, b=-5, c=-5, d=-5, tx=0, ty=0)
+   rotation = -153.43494882292202
+   scaleX = 11.180339887498949
+   scaleY = 7.0710678118654755
+matrix = (a=-10, b=-5, c=-5, d=0, tx=0, ty=0)
+   rotation = -153.43494882292202
+   scaleX = 11.180339887498949
+   scaleY = -5
+matrix = (a=-10, b=-5, c=-5, d=5, tx=0, ty=0)
+   rotation = -153.43494882292202
+   scaleX = 11.180339887498949
+   scaleY = -7.0710678118654755
+matrix = (a=-10, b=-5, c=-5, d=10, tx=0, ty=0)
+   rotation = -153.43494882292202
+   scaleX = 11.180339887498949
+   scaleY = -11.180339887498949
+matrix = (a=-10, b=-5, c=0, d=-10, tx=0, ty=0)
+   rotation = -153.43494882292202
+   scaleX = 11.180339887498949
+   scaleY = 10
+matrix = (a=-10, b=-5, c=0, d=-5, tx=0, ty=0)
+   rotation = -153.43494882292202
+   scaleX = 11.180339887498949
+   scaleY = 5
+matrix = (a=-10, b=-5, c=0, d=0, tx=0, ty=0)
+   rotation = -153.43494882292202
+   scaleX = 11.180339887498949
+   scaleY = 0
+matrix = (a=-10, b=-5, c=0, d=5, tx=0, ty=0)
+   rotation = -153.43494882292202
+   scaleX = 11.180339887498949
+   scaleY = -5
+matrix = (a=-10, b=-5, c=0, d=10, tx=0, ty=0)
+   rotation = -153.43494882292202
+   scaleX = 11.180339887498949
+   scaleY = -10
+matrix = (a=-10, b=-5, c=5, d=-10, tx=0, ty=0)
+   rotation = -153.43494882292202
+   scaleX = 11.180339887498949
+   scaleY = 11.180339887498949
+matrix = (a=-10, b=-5, c=5, d=-5, tx=0, ty=0)
+   rotation = -153.43494882292202
+   scaleX = 11.180339887498949
+   scaleY = 7.0710678118654755
+matrix = (a=-10, b=-5, c=5, d=0, tx=0, ty=0)
+   rotation = -153.43494882292202
+   scaleX = 11.180339887498949
+   scaleY = 5
+matrix = (a=-10, b=-5, c=5, d=5, tx=0, ty=0)
+   rotation = -153.43494882292202
+   scaleX = 11.180339887498949
+   scaleY = -7.0710678118654755
+matrix = (a=-10, b=-5, c=5, d=10, tx=0, ty=0)
+   rotation = -153.43494882292202
+   scaleX = 11.180339887498949
+   scaleY = -11.180339887498949
+matrix = (a=-10, b=-5, c=10, d=-10, tx=0, ty=0)
+   rotation = -153.43494882292202
+   scaleX = 11.180339887498949
+   scaleY = 14.142135623730951
+matrix = (a=-10, b=-5, c=10, d=-5, tx=0, ty=0)
+   rotation = -153.43494882292202
+   scaleX = 11.180339887498949
+   scaleY = 11.180339887498949
+matrix = (a=-10, b=-5, c=10, d=0, tx=0, ty=0)
+   rotation = -153.43494882292202
+   scaleX = 11.180339887498949
+   scaleY = 10
+matrix = (a=-10, b=-5, c=10, d=5, tx=0, ty=0)
+   rotation = -153.43494882292202
+   scaleX = 11.180339887498949
+   scaleY = 11.180339887498949
+matrix = (a=-10, b=-5, c=10, d=10, tx=0, ty=0)
+   rotation = -153.43494882292202
+   scaleX = 11.180339887498949
+   scaleY = -14.142135623730951
+matrix = (a=-10, b=0, c=-10, d=-10, tx=0, ty=0)
+   rotation = 180
+   scaleX = 10
+   scaleY = 14.142135623730951
+matrix = (a=-10, b=0, c=-10, d=-5, tx=0, ty=0)
+   rotation = 180
+   scaleX = 10
+   scaleY = 11.180339887498949
+matrix = (a=-10, b=0, c=-10, d=0, tx=0, ty=0)
+   rotation = 180
+   scaleX = 10
+   scaleY = 10
+matrix = (a=-10, b=0, c=-10, d=5, tx=0, ty=0)
+   rotation = 180
+   scaleX = 10
+   scaleY = -11.180339887498949
+matrix = (a=-10, b=0, c=-10, d=10, tx=0, ty=0)
+   rotation = 180
+   scaleX = 10
+   scaleY = -14.142135623730951
+matrix = (a=-10, b=0, c=-5, d=-10, tx=0, ty=0)
+   rotation = 180
+   scaleX = 10
+   scaleY = 11.180339887498949
+matrix = (a=-10, b=0, c=-5, d=-5, tx=0, ty=0)
+   rotation = 180
+   scaleX = 10
+   scaleY = 7.0710678118654755
+matrix = (a=-10, b=0, c=-5, d=0, tx=0, ty=0)
+   rotation = 180
+   scaleX = 10
+   scaleY = 5
+matrix = (a=-10, b=0, c=-5, d=5, tx=0, ty=0)
+   rotation = 180
+   scaleX = 10
+   scaleY = -7.0710678118654755
+matrix = (a=-10, b=0, c=-5, d=10, tx=0, ty=0)
+   rotation = 180
+   scaleX = 10
+   scaleY = -11.180339887498949
+matrix = (a=-10, b=0, c=0, d=-10, tx=0, ty=0)
+   rotation = 180
+   scaleX = 10
+   scaleY = 10
+matrix = (a=-10, b=0, c=0, d=-5, tx=0, ty=0)
+   rotation = 180
+   scaleX = 10
+   scaleY = 5
+matrix = (a=-10, b=0, c=0, d=0, tx=0, ty=0)
+   rotation = 180
+   scaleX = 10
+   scaleY = 0
+matrix = (a=-10, b=0, c=0, d=5, tx=0, ty=0)
+   rotation = 180
+   scaleX = 10
+   scaleY = -5
+matrix = (a=-10, b=0, c=0, d=10, tx=0, ty=0)
+   rotation = 180
+   scaleX = 10
+   scaleY = -10
+matrix = (a=-10, b=0, c=5, d=-10, tx=0, ty=0)
+   rotation = 180
+   scaleX = 10
+   scaleY = 11.180339887498949
+matrix = (a=-10, b=0, c=5, d=-5, tx=0, ty=0)
+   rotation = 180
+   scaleX = 10
+   scaleY = 7.0710678118654755
+matrix = (a=-10, b=0, c=5, d=0, tx=0, ty=0)
+   rotation = 180
+   scaleX = 10
+   scaleY = 5
+matrix = (a=-10, b=0, c=5, d=5, tx=0, ty=0)
+   rotation = 180
+   scaleX = 10
+   scaleY = -7.0710678118654755
+matrix = (a=-10, b=0, c=5, d=10, tx=0, ty=0)
+   rotation = 180
+   scaleX = 10
+   scaleY = -11.180339887498949
+matrix = (a=-10, b=0, c=10, d=-10, tx=0, ty=0)
+   rotation = 180
+   scaleX = 10
+   scaleY = 14.142135623730951
+matrix = (a=-10, b=0, c=10, d=-5, tx=0, ty=0)
+   rotation = 180
+   scaleX = 10
+   scaleY = 11.180339887498949
+matrix = (a=-10, b=0, c=10, d=0, tx=0, ty=0)
+   rotation = 180
+   scaleX = 10
+   scaleY = 10
+matrix = (a=-10, b=0, c=10, d=5, tx=0, ty=0)
+   rotation = 180
+   scaleX = 10
+   scaleY = -11.180339887498949
+matrix = (a=-10, b=0, c=10, d=10, tx=0, ty=0)
+   rotation = 180
+   scaleX = 10
+   scaleY = -14.142135623730951
+matrix = (a=-10, b=5, c=-10, d=-10, tx=0, ty=0)
+   rotation = 153.43494882292202
+   scaleX = 11.180339887498949
+   scaleY = 14.142135623730951
+matrix = (a=-10, b=5, c=-10, d=-5, tx=0, ty=0)
+   rotation = 153.43494882292202
+   scaleX = 11.180339887498949
+   scaleY = 11.180339887498949
+matrix = (a=-10, b=5, c=-10, d=0, tx=0, ty=0)
+   rotation = 153.43494882292202
+   scaleX = 11.180339887498949
+   scaleY = 10
+matrix = (a=-10, b=5, c=-10, d=5, tx=0, ty=0)
+   rotation = 153.43494882292202
+   scaleX = 11.180339887498949
+   scaleY = 11.180339887498949
+matrix = (a=-10, b=5, c=-10, d=10, tx=0, ty=0)
+   rotation = 153.43494882292202
+   scaleX = 11.180339887498949
+   scaleY = -14.142135623730951
+matrix = (a=-10, b=5, c=-5, d=-10, tx=0, ty=0)
+   rotation = 153.43494882292202
+   scaleX = 11.180339887498949
+   scaleY = 11.180339887498949
+matrix = (a=-10, b=5, c=-5, d=-5, tx=0, ty=0)
+   rotation = 153.43494882292202
+   scaleX = 11.180339887498949
+   scaleY = 7.0710678118654755
+matrix = (a=-10, b=5, c=-5, d=0, tx=0, ty=0)
+   rotation = 153.43494882292202
+   scaleX = 11.180339887498949
+   scaleY = 5
+matrix = (a=-10, b=5, c=-5, d=5, tx=0, ty=0)
+   rotation = 153.43494882292202
+   scaleX = 11.180339887498949
+   scaleY = -7.0710678118654755
+matrix = (a=-10, b=5, c=-5, d=10, tx=0, ty=0)
+   rotation = 153.43494882292202
+   scaleX = 11.180339887498949
+   scaleY = -11.180339887498949
+matrix = (a=-10, b=5, c=0, d=-10, tx=0, ty=0)
+   rotation = 153.43494882292202
+   scaleX = 11.180339887498949
+   scaleY = 10
+matrix = (a=-10, b=5, c=0, d=-5, tx=0, ty=0)
+   rotation = 153.43494882292202
+   scaleX = 11.180339887498949
+   scaleY = 5
+matrix = (a=-10, b=5, c=0, d=0, tx=0, ty=0)
+   rotation = 153.43494882292202
+   scaleX = 11.180339887498949
+   scaleY = 0
+matrix = (a=-10, b=5, c=0, d=5, tx=0, ty=0)
+   rotation = 153.43494882292202
+   scaleX = 11.180339887498949
+   scaleY = -5
+matrix = (a=-10, b=5, c=0, d=10, tx=0, ty=0)
+   rotation = 153.43494882292202
+   scaleX = 11.180339887498949
+   scaleY = -10
+matrix = (a=-10, b=5, c=5, d=-10, tx=0, ty=0)
+   rotation = 153.43494882292202
+   scaleX = 11.180339887498949
+   scaleY = 11.180339887498949
+matrix = (a=-10, b=5, c=5, d=-5, tx=0, ty=0)
+   rotation = 153.43494882292202
+   scaleX = 11.180339887498949
+   scaleY = 7.0710678118654755
+matrix = (a=-10, b=5, c=5, d=0, tx=0, ty=0)
+   rotation = 153.43494882292202
+   scaleX = 11.180339887498949
+   scaleY = -5
+matrix = (a=-10, b=5, c=5, d=5, tx=0, ty=0)
+   rotation = 153.43494882292202
+   scaleX = 11.180339887498949
+   scaleY = -7.0710678118654755
+matrix = (a=-10, b=5, c=5, d=10, tx=0, ty=0)
+   rotation = 153.43494882292202
+   scaleX = 11.180339887498949
+   scaleY = -11.180339887498949
+matrix = (a=-10, b=5, c=10, d=-10, tx=0, ty=0)
+   rotation = 153.43494882292202
+   scaleX = 11.180339887498949
+   scaleY = 14.142135623730951
+matrix = (a=-10, b=5, c=10, d=-5, tx=0, ty=0)
+   rotation = 153.43494882292202
+   scaleX = 11.180339887498949
+   scaleY = 11.180339887498949
+matrix = (a=-10, b=5, c=10, d=0, tx=0, ty=0)
+   rotation = 153.43494882292202
+   scaleX = 11.180339887498949
+   scaleY = -10
+matrix = (a=-10, b=5, c=10, d=5, tx=0, ty=0)
+   rotation = 153.43494882292202
+   scaleX = 11.180339887498949
+   scaleY = -11.180339887498949
+matrix = (a=-10, b=5, c=10, d=10, tx=0, ty=0)
+   rotation = 153.43494882292202
+   scaleX = 11.180339887498949
+   scaleY = -14.142135623730951
+matrix = (a=-10, b=10, c=-10, d=-10, tx=0, ty=0)
+   rotation = 135
+   scaleX = 14.142135623730951
+   scaleY = 14.142135623730951
+matrix = (a=-10, b=10, c=-10, d=-5, tx=0, ty=0)
+   rotation = 135
+   scaleX = 14.142135623730951
+   scaleY = 11.180339887498949
+matrix = (a=-10, b=10, c=-10, d=0, tx=0, ty=0)
+   rotation = 135
+   scaleX = 14.142135623730951
+   scaleY = 10
+matrix = (a=-10, b=10, c=-10, d=5, tx=0, ty=0)
+   rotation = 135
+   scaleX = 14.142135623730951
+   scaleY = 11.180339887498949
+matrix = (a=-10, b=10, c=-10, d=10, tx=0, ty=0)
+   rotation = 135
+   scaleX = 14.142135623730951
+   scaleY = 14.142135623730951
+matrix = (a=-10, b=10, c=-5, d=-10, tx=0, ty=0)
+   rotation = 135
+   scaleX = 14.142135623730951
+   scaleY = 11.180339887498949
+matrix = (a=-10, b=10, c=-5, d=-5, tx=0, ty=0)
+   rotation = 135
+   scaleX = 14.142135623730951
+   scaleY = 7.0710678118654755
+matrix = (a=-10, b=10, c=-5, d=0, tx=0, ty=0)
+   rotation = 135
+   scaleX = 14.142135623730951
+   scaleY = 5
+matrix = (a=-10, b=10, c=-5, d=5, tx=0, ty=0)
+   rotation = 135
+   scaleX = 14.142135623730951
+   scaleY = 7.0710678118654755
+matrix = (a=-10, b=10, c=-5, d=10, tx=0, ty=0)
+   rotation = 135
+   scaleX = 14.142135623730951
+   scaleY = -11.180339887498949
+matrix = (a=-10, b=10, c=0, d=-10, tx=0, ty=0)
+   rotation = 135
+   scaleX = 14.142135623730951
+   scaleY = 10
+matrix = (a=-10, b=10, c=0, d=-5, tx=0, ty=0)
+   rotation = 135
+   scaleX = 14.142135623730951
+   scaleY = 5
+matrix = (a=-10, b=10, c=0, d=0, tx=0, ty=0)
+   rotation = 135
+   scaleX = 14.142135623730951
+   scaleY = 0
+matrix = (a=-10, b=10, c=0, d=5, tx=0, ty=0)
+   rotation = 135
+   scaleX = 14.142135623730951
+   scaleY = -5
+matrix = (a=-10, b=10, c=0, d=10, tx=0, ty=0)
+   rotation = 135
+   scaleX = 14.142135623730951
+   scaleY = -10
+matrix = (a=-10, b=10, c=5, d=-10, tx=0, ty=0)
+   rotation = 135
+   scaleX = 14.142135623730951
+   scaleY = 11.180339887498949
+matrix = (a=-10, b=10, c=5, d=-5, tx=0, ty=0)
+   rotation = 135
+   scaleX = 14.142135623730951
+   scaleY = 7.0710678118654755
+matrix = (a=-10, b=10, c=5, d=0, tx=0, ty=0)
+   rotation = 135
+   scaleX = 14.142135623730951
+   scaleY = -5
+matrix = (a=-10, b=10, c=5, d=5, tx=0, ty=0)
+   rotation = 135
+   scaleX = 14.142135623730951
+   scaleY = -7.0710678118654755
+matrix = (a=-10, b=10, c=5, d=10, tx=0, ty=0)
+   rotation = 135
+   scaleX = 14.142135623730951
+   scaleY = -11.180339887498949
+matrix = (a=-10, b=10, c=10, d=-10, tx=0, ty=0)
+   rotation = 135
+   scaleX = 14.142135623730951
+   scaleY = 14.142135623730951
+matrix = (a=-10, b=10, c=10, d=-5, tx=0, ty=0)
+   rotation = 135
+   scaleX = 14.142135623730951
+   scaleY = -11.180339887498949
+matrix = (a=-10, b=10, c=10, d=0, tx=0, ty=0)
+   rotation = 135
+   scaleX = 14.142135623730951
+   scaleY = -10
+matrix = (a=-10, b=10, c=10, d=5, tx=0, ty=0)
+   rotation = 135
+   scaleX = 14.142135623730951
+   scaleY = -11.180339887498949
+matrix = (a=-10, b=10, c=10, d=10, tx=0, ty=0)
+   rotation = 135
+   scaleX = 14.142135623730951
+   scaleY = -14.142135623730951
+matrix = (a=-5, b=-10, c=-10, d=-10, tx=0, ty=0)
+   rotation = -116.56505117707799
+   scaleX = 11.180339887498949
+   scaleY = -14.142135623730951
+matrix = (a=-5, b=-10, c=-10, d=-5, tx=0, ty=0)
+   rotation = -116.56505117707799
+   scaleX = 11.180339887498949
+   scaleY = -11.180339887498949
+matrix = (a=-5, b=-10, c=-10, d=0, tx=0, ty=0)
+   rotation = -116.56505117707799
+   scaleX = 11.180339887498949
+   scaleY = -10
+matrix = (a=-5, b=-10, c=-10, d=5, tx=0, ty=0)
+   rotation = -116.56505117707799
+   scaleX = 11.180339887498949
+   scaleY = -11.180339887498949
+matrix = (a=-5, b=-10, c=-10, d=10, tx=0, ty=0)
+   rotation = -116.56505117707799
+   scaleX = 11.180339887498949
+   scaleY = -14.142135623730951
+matrix = (a=-5, b=-10, c=-5, d=-10, tx=0, ty=0)
+   rotation = -116.56505117707799
+   scaleX = 11.180339887498949
+   scaleY = 11.180339887498949
+matrix = (a=-5, b=-10, c=-5, d=-5, tx=0, ty=0)
+   rotation = -116.56505117707799
+   scaleX = 11.180339887498949
+   scaleY = -7.0710678118654755
+matrix = (a=-5, b=-10, c=-5, d=0, tx=0, ty=0)
+   rotation = -116.56505117707799
+   scaleX = 11.180339887498949
+   scaleY = -5
+matrix = (a=-5, b=-10, c=-5, d=5, tx=0, ty=0)
+   rotation = -116.56505117707799
+   scaleX = 11.180339887498949
+   scaleY = -7.0710678118654755
+matrix = (a=-5, b=-10, c=-5, d=10, tx=0, ty=0)
+   rotation = -116.56505117707799
+   scaleX = 11.180339887498949
+   scaleY = -11.180339887498949
+matrix = (a=-5, b=-10, c=0, d=-10, tx=0, ty=0)
+   rotation = -116.56505117707799
+   scaleX = 11.180339887498949
+   scaleY = 10
+matrix = (a=-5, b=-10, c=0, d=-5, tx=0, ty=0)
+   rotation = -116.56505117707799
+   scaleX = 11.180339887498949
+   scaleY = 5
+matrix = (a=-5, b=-10, c=0, d=0, tx=0, ty=0)
+   rotation = -116.56505117707799
+   scaleX = 11.180339887498949
+   scaleY = 0
+matrix = (a=-5, b=-10, c=0, d=5, tx=0, ty=0)
+   rotation = -116.56505117707799
+   scaleX = 11.180339887498949
+   scaleY = -5
+matrix = (a=-5, b=-10, c=0, d=10, tx=0, ty=0)
+   rotation = -116.56505117707799
+   scaleX = 11.180339887498949
+   scaleY = -10
+matrix = (a=-5, b=-10, c=5, d=-10, tx=0, ty=0)
+   rotation = -116.56505117707799
+   scaleX = 11.180339887498949
+   scaleY = 11.180339887498949
+matrix = (a=-5, b=-10, c=5, d=-5, tx=0, ty=0)
+   rotation = -116.56505117707799
+   scaleX = 11.180339887498949
+   scaleY = 7.0710678118654755
+matrix = (a=-5, b=-10, c=5, d=0, tx=0, ty=0)
+   rotation = -116.56505117707799
+   scaleX = 11.180339887498949
+   scaleY = 5
+matrix = (a=-5, b=-10, c=5, d=5, tx=0, ty=0)
+   rotation = -116.56505117707799
+   scaleX = 11.180339887498949
+   scaleY = 7.0710678118654755
+matrix = (a=-5, b=-10, c=5, d=10, tx=0, ty=0)
+   rotation = -116.56505117707799
+   scaleX = 11.180339887498949
+   scaleY = 11.180339887498949
+matrix = (a=-5, b=-10, c=10, d=-10, tx=0, ty=0)
+   rotation = -116.56505117707799
+   scaleX = 11.180339887498949
+   scaleY = 14.142135623730951
+matrix = (a=-5, b=-10, c=10, d=-5, tx=0, ty=0)
+   rotation = -116.56505117707799
+   scaleX = 11.180339887498949
+   scaleY = 11.180339887498949
+matrix = (a=-5, b=-10, c=10, d=0, tx=0, ty=0)
+   rotation = -116.56505117707799
+   scaleX = 11.180339887498949
+   scaleY = 10
+matrix = (a=-5, b=-10, c=10, d=5, tx=0, ty=0)
+   rotation = -116.56505117707799
+   scaleX = 11.180339887498949
+   scaleY = 11.180339887498949
+matrix = (a=-5, b=-10, c=10, d=10, tx=0, ty=0)
+   rotation = -116.56505117707799
+   scaleX = 11.180339887498949
+   scaleY = 14.142135623730951
+matrix = (a=-5, b=-5, c=-10, d=-10, tx=0, ty=0)
+   rotation = -135
+   scaleX = 7.0710678118654755
+   scaleY = 14.142135623730951
+matrix = (a=-5, b=-5, c=-10, d=-5, tx=0, ty=0)
+   rotation = -135
+   scaleX = 7.0710678118654755
+   scaleY = -11.180339887498949
+matrix = (a=-5, b=-5, c=-10, d=0, tx=0, ty=0)
+   rotation = -135
+   scaleX = 7.0710678118654755
+   scaleY = -10
+matrix = (a=-5, b=-5, c=-10, d=5, tx=0, ty=0)
+   rotation = -135
+   scaleX = 7.0710678118654755
+   scaleY = -11.180339887498949
+matrix = (a=-5, b=-5, c=-10, d=10, tx=0, ty=0)
+   rotation = -135
+   scaleX = 7.0710678118654755
+   scaleY = -14.142135623730951
+matrix = (a=-5, b=-5, c=-5, d=-10, tx=0, ty=0)
+   rotation = -135
+   scaleX = 7.0710678118654755
+   scaleY = 11.180339887498949
+matrix = (a=-5, b=-5, c=-5, d=-5, tx=0, ty=0)
+   rotation = -135
+   scaleX = 7.0710678118654755
+   scaleY = 7.0710678118654755
+matrix = (a=-5, b=-5, c=-5, d=0, tx=0, ty=0)
+   rotation = -135
+   scaleX = 7.0710678118654755
+   scaleY = -5
+matrix = (a=-5, b=-5, c=-5, d=5, tx=0, ty=0)
+   rotation = -135
+   scaleX = 7.0710678118654755
+   scaleY = -7.0710678118654755
+matrix = (a=-5, b=-5, c=-5, d=10, tx=0, ty=0)
+   rotation = -135
+   scaleX = 7.0710678118654755
+   scaleY = -11.180339887498949
+matrix = (a=-5, b=-5, c=0, d=-10, tx=0, ty=0)
+   rotation = -135
+   scaleX = 7.0710678118654755
+   scaleY = 10
+matrix = (a=-5, b=-5, c=0, d=-5, tx=0, ty=0)
+   rotation = -135
+   scaleX = 7.0710678118654755
+   scaleY = 5
+matrix = (a=-5, b=-5, c=0, d=0, tx=0, ty=0)
+   rotation = -135
+   scaleX = 7.0710678118654755
+   scaleY = 0
+matrix = (a=-5, b=-5, c=0, d=5, tx=0, ty=0)
+   rotation = -135
+   scaleX = 7.0710678118654755
+   scaleY = -5
+matrix = (a=-5, b=-5, c=0, d=10, tx=0, ty=0)
+   rotation = -135
+   scaleX = 7.0710678118654755
+   scaleY = -10
+matrix = (a=-5, b=-5, c=5, d=-10, tx=0, ty=0)
+   rotation = -135
+   scaleX = 7.0710678118654755
+   scaleY = 11.180339887498949
+matrix = (a=-5, b=-5, c=5, d=-5, tx=0, ty=0)
+   rotation = -135
+   scaleX = 7.0710678118654755
+   scaleY = 7.0710678118654755
+matrix = (a=-5, b=-5, c=5, d=0, tx=0, ty=0)
+   rotation = -135
+   scaleX = 7.0710678118654755
+   scaleY = 5
+matrix = (a=-5, b=-5, c=5, d=5, tx=0, ty=0)
+   rotation = -135
+   scaleX = 7.0710678118654755
+   scaleY = 7.0710678118654755
+matrix = (a=-5, b=-5, c=5, d=10, tx=0, ty=0)
+   rotation = -135
+   scaleX = 7.0710678118654755
+   scaleY = -11.180339887498949
+matrix = (a=-5, b=-5, c=10, d=-10, tx=0, ty=0)
+   rotation = -135
+   scaleX = 7.0710678118654755
+   scaleY = 14.142135623730951
+matrix = (a=-5, b=-5, c=10, d=-5, tx=0, ty=0)
+   rotation = -135
+   scaleX = 7.0710678118654755
+   scaleY = 11.180339887498949
+matrix = (a=-5, b=-5, c=10, d=0, tx=0, ty=0)
+   rotation = -135
+   scaleX = 7.0710678118654755
+   scaleY = 10
+matrix = (a=-5, b=-5, c=10, d=5, tx=0, ty=0)
+   rotation = -135
+   scaleX = 7.0710678118654755
+   scaleY = 11.180339887498949
+matrix = (a=-5, b=-5, c=10, d=10, tx=0, ty=0)
+   rotation = -135
+   scaleX = 7.0710678118654755
+   scaleY = 14.142135623730951
+matrix = (a=-5, b=0, c=-10, d=-10, tx=0, ty=0)
+   rotation = 180
+   scaleX = 5
+   scaleY = 14.142135623730951
+matrix = (a=-5, b=0, c=-10, d=-5, tx=0, ty=0)
+   rotation = 180
+   scaleX = 5
+   scaleY = 11.180339887498949
+matrix = (a=-5, b=0, c=-10, d=0, tx=0, ty=0)
+   rotation = 180
+   scaleX = 5
+   scaleY = 10
+matrix = (a=-5, b=0, c=-10, d=5, tx=0, ty=0)
+   rotation = 180
+   scaleX = 5
+   scaleY = -11.180339887498949
+matrix = (a=-5, b=0, c=-10, d=10, tx=0, ty=0)
+   rotation = 180
+   scaleX = 5
+   scaleY = -14.142135623730951
+matrix = (a=-5, b=0, c=-5, d=-10, tx=0, ty=0)
+   rotation = 180
+   scaleX = 5
+   scaleY = 11.180339887498949
+matrix = (a=-5, b=0, c=-5, d=-5, tx=0, ty=0)
+   rotation = 180
+   scaleX = 5
+   scaleY = 7.0710678118654755
+matrix = (a=-5, b=0, c=-5, d=0, tx=0, ty=0)
+   rotation = 180
+   scaleX = 5
+   scaleY = 5
+matrix = (a=-5, b=0, c=-5, d=5, tx=0, ty=0)
+   rotation = 180
+   scaleX = 5
+   scaleY = -7.0710678118654755
+matrix = (a=-5, b=0, c=-5, d=10, tx=0, ty=0)
+   rotation = 180
+   scaleX = 5
+   scaleY = -11.180339887498949
+matrix = (a=-5, b=0, c=0, d=-10, tx=0, ty=0)
+   rotation = 180
+   scaleX = 5
+   scaleY = 10
+matrix = (a=-5, b=0, c=0, d=-5, tx=0, ty=0)
+   rotation = 180
+   scaleX = 5
+   scaleY = 5
+matrix = (a=-5, b=0, c=0, d=0, tx=0, ty=0)
+   rotation = 180
+   scaleX = 5
+   scaleY = 0
+matrix = (a=-5, b=0, c=0, d=5, tx=0, ty=0)
+   rotation = 180
+   scaleX = 5
+   scaleY = -5
+matrix = (a=-5, b=0, c=0, d=10, tx=0, ty=0)
+   rotation = 180
+   scaleX = 5
+   scaleY = -10
+matrix = (a=-5, b=0, c=5, d=-10, tx=0, ty=0)
+   rotation = 180
+   scaleX = 5
+   scaleY = 11.180339887498949
+matrix = (a=-5, b=0, c=5, d=-5, tx=0, ty=0)
+   rotation = 180
+   scaleX = 5
+   scaleY = 7.0710678118654755
+matrix = (a=-5, b=0, c=5, d=0, tx=0, ty=0)
+   rotation = 180
+   scaleX = 5
+   scaleY = 5
+matrix = (a=-5, b=0, c=5, d=5, tx=0, ty=0)
+   rotation = 180
+   scaleX = 5
+   scaleY = -7.0710678118654755
+matrix = (a=-5, b=0, c=5, d=10, tx=0, ty=0)
+   rotation = 180
+   scaleX = 5
+   scaleY = -11.180339887498949
+matrix = (a=-5, b=0, c=10, d=-10, tx=0, ty=0)
+   rotation = 180
+   scaleX = 5
+   scaleY = 14.142135623730951
+matrix = (a=-5, b=0, c=10, d=-5, tx=0, ty=0)
+   rotation = 180
+   scaleX = 5
+   scaleY = 11.180339887498949
+matrix = (a=-5, b=0, c=10, d=0, tx=0, ty=0)
+   rotation = 180
+   scaleX = 5
+   scaleY = 10
+matrix = (a=-5, b=0, c=10, d=5, tx=0, ty=0)
+   rotation = 180
+   scaleX = 5
+   scaleY = -11.180339887498949
+matrix = (a=-5, b=0, c=10, d=10, tx=0, ty=0)
+   rotation = 180
+   scaleX = 5
+   scaleY = -14.142135623730951
+matrix = (a=-5, b=5, c=-10, d=-10, tx=0, ty=0)
+   rotation = 135
+   scaleX = 7.0710678118654755
+   scaleY = 14.142135623730951
+matrix = (a=-5, b=5, c=-10, d=-5, tx=0, ty=0)
+   rotation = 135
+   scaleX = 7.0710678118654755
+   scaleY = 11.180339887498949
+matrix = (a=-5, b=5, c=-10, d=0, tx=0, ty=0)
+   rotation = 135
+   scaleX = 7.0710678118654755
+   scaleY = 10
+matrix = (a=-5, b=5, c=-10, d=5, tx=0, ty=0)
+   rotation = 135
+   scaleX = 7.0710678118654755
+   scaleY = 11.180339887498949
+matrix = (a=-5, b=5, c=-10, d=10, tx=0, ty=0)
+   rotation = 135
+   scaleX = 7.0710678118654755
+   scaleY = 14.142135623730951
+matrix = (a=-5, b=5, c=-5, d=-10, tx=0, ty=0)
+   rotation = 135
+   scaleX = 7.0710678118654755
+   scaleY = 11.180339887498949
+matrix = (a=-5, b=5, c=-5, d=-5, tx=0, ty=0)
+   rotation = 135
+   scaleX = 7.0710678118654755
+   scaleY = 7.0710678118654755
+matrix = (a=-5, b=5, c=-5, d=0, tx=0, ty=0)
+   rotation = 135
+   scaleX = 7.0710678118654755
+   scaleY = 5
+matrix = (a=-5, b=5, c=-5, d=5, tx=0, ty=0)
+   rotation = 135
+   scaleX = 7.0710678118654755
+   scaleY = 7.0710678118654755
+matrix = (a=-5, b=5, c=-5, d=10, tx=0, ty=0)
+   rotation = 135
+   scaleX = 7.0710678118654755
+   scaleY = -11.180339887498949
+matrix = (a=-5, b=5, c=0, d=-10, tx=0, ty=0)
+   rotation = 135
+   scaleX = 7.0710678118654755
+   scaleY = 10
+matrix = (a=-5, b=5, c=0, d=-5, tx=0, ty=0)
+   rotation = 135
+   scaleX = 7.0710678118654755
+   scaleY = 5
+matrix = (a=-5, b=5, c=0, d=0, tx=0, ty=0)
+   rotation = 135
+   scaleX = 7.0710678118654755
+   scaleY = 0
+matrix = (a=-5, b=5, c=0, d=5, tx=0, ty=0)
+   rotation = 135
+   scaleX = 7.0710678118654755
+   scaleY = -5
+matrix = (a=-5, b=5, c=0, d=10, tx=0, ty=0)
+   rotation = 135
+   scaleX = 7.0710678118654755
+   scaleY = -10
+matrix = (a=-5, b=5, c=5, d=-10, tx=0, ty=0)
+   rotation = 135
+   scaleX = 7.0710678118654755
+   scaleY = 11.180339887498949
+matrix = (a=-5, b=5, c=5, d=-5, tx=0, ty=0)
+   rotation = 135
+   scaleX = 7.0710678118654755
+   scaleY = 7.0710678118654755
+matrix = (a=-5, b=5, c=5, d=0, tx=0, ty=0)
+   rotation = 135
+   scaleX = 7.0710678118654755
+   scaleY = -5
+matrix = (a=-5, b=5, c=5, d=5, tx=0, ty=0)
+   rotation = 135
+   scaleX = 7.0710678118654755
+   scaleY = -7.0710678118654755
+matrix = (a=-5, b=5, c=5, d=10, tx=0, ty=0)
+   rotation = 135
+   scaleX = 7.0710678118654755
+   scaleY = -11.180339887498949
+matrix = (a=-5, b=5, c=10, d=-10, tx=0, ty=0)
+   rotation = 135
+   scaleX = 7.0710678118654755
+   scaleY = 14.142135623730951
+matrix = (a=-5, b=5, c=10, d=-5, tx=0, ty=0)
+   rotation = 135
+   scaleX = 7.0710678118654755
+   scaleY = -11.180339887498949
+matrix = (a=-5, b=5, c=10, d=0, tx=0, ty=0)
+   rotation = 135
+   scaleX = 7.0710678118654755
+   scaleY = -10
+matrix = (a=-5, b=5, c=10, d=5, tx=0, ty=0)
+   rotation = 135
+   scaleX = 7.0710678118654755
+   scaleY = -11.180339887498949
+matrix = (a=-5, b=5, c=10, d=10, tx=0, ty=0)
+   rotation = 135
+   scaleX = 7.0710678118654755
+   scaleY = -14.142135623730951
+matrix = (a=-5, b=10, c=-10, d=-10, tx=0, ty=0)
+   rotation = 116.56505117707799
+   scaleX = 11.180339887498949
+   scaleY = 14.142135623730951
+matrix = (a=-5, b=10, c=-10, d=-5, tx=0, ty=0)
+   rotation = 116.56505117707799
+   scaleX = 11.180339887498949
+   scaleY = 11.180339887498949
+matrix = (a=-5, b=10, c=-10, d=0, tx=0, ty=0)
+   rotation = 116.56505117707799
+   scaleX = 11.180339887498949
+   scaleY = 10
+matrix = (a=-5, b=10, c=-10, d=5, tx=0, ty=0)
+   rotation = 116.56505117707799
+   scaleX = 11.180339887498949
+   scaleY = 11.180339887498949
+matrix = (a=-5, b=10, c=-10, d=10, tx=0, ty=0)
+   rotation = 116.56505117707799
+   scaleX = 11.180339887498949
+   scaleY = 14.142135623730951
+matrix = (a=-5, b=10, c=-5, d=-10, tx=0, ty=0)
+   rotation = 116.56505117707799
+   scaleX = 11.180339887498949
+   scaleY = 11.180339887498949
+matrix = (a=-5, b=10, c=-5, d=-5, tx=0, ty=0)
+   rotation = 116.56505117707799
+   scaleX = 11.180339887498949
+   scaleY = 7.0710678118654755
+matrix = (a=-5, b=10, c=-5, d=0, tx=0, ty=0)
+   rotation = 116.56505117707799
+   scaleX = 11.180339887498949
+   scaleY = 5
+matrix = (a=-5, b=10, c=-5, d=5, tx=0, ty=0)
+   rotation = 116.56505117707799
+   scaleX = 11.180339887498949
+   scaleY = 7.0710678118654755
+matrix = (a=-5, b=10, c=-5, d=10, tx=0, ty=0)
+   rotation = 116.56505117707799
+   scaleX = 11.180339887498949
+   scaleY = 11.180339887498949
+matrix = (a=-5, b=10, c=0, d=-10, tx=0, ty=0)
+   rotation = 116.56505117707799
+   scaleX = 11.180339887498949
+   scaleY = 10
+matrix = (a=-5, b=10, c=0, d=-5, tx=0, ty=0)
+   rotation = 116.56505117707799
+   scaleX = 11.180339887498949
+   scaleY = 5
+matrix = (a=-5, b=10, c=0, d=0, tx=0, ty=0)
+   rotation = 116.56505117707799
+   scaleX = 11.180339887498949
+   scaleY = 0
+matrix = (a=-5, b=10, c=0, d=5, tx=0, ty=0)
+   rotation = 116.56505117707799
+   scaleX = 11.180339887498949
+   scaleY = -5
+matrix = (a=-5, b=10, c=0, d=10, tx=0, ty=0)
+   rotation = 116.56505117707799
+   scaleX = 11.180339887498949
+   scaleY = -10
+matrix = (a=-5, b=10, c=5, d=-10, tx=0, ty=0)
+   rotation = 116.56505117707799
+   scaleX = 11.180339887498949
+   scaleY = 11.180339887498949
+matrix = (a=-5, b=10, c=5, d=-5, tx=0, ty=0)
+   rotation = 116.56505117707799
+   scaleX = 11.180339887498949
+   scaleY = -7.0710678118654755
+matrix = (a=-5, b=10, c=5, d=0, tx=0, ty=0)
+   rotation = 116.56505117707799
+   scaleX = 11.180339887498949
+   scaleY = -5
+matrix = (a=-5, b=10, c=5, d=5, tx=0, ty=0)
+   rotation = 116.56505117707799
+   scaleX = 11.180339887498949
+   scaleY = -7.0710678118654755
+matrix = (a=-5, b=10, c=5, d=10, tx=0, ty=0)
+   rotation = 116.56505117707799
+   scaleX = 11.180339887498949
+   scaleY = -11.180339887498949
+matrix = (a=-5, b=10, c=10, d=-10, tx=0, ty=0)
+   rotation = 116.56505117707799
+   scaleX = 11.180339887498949
+   scaleY = -14.142135623730951
+matrix = (a=-5, b=10, c=10, d=-5, tx=0, ty=0)
+   rotation = 116.56505117707799
+   scaleX = 11.180339887498949
+   scaleY = -11.180339887498949
+matrix = (a=-5, b=10, c=10, d=0, tx=0, ty=0)
+   rotation = 116.56505117707799
+   scaleX = 11.180339887498949
+   scaleY = -10
+matrix = (a=-5, b=10, c=10, d=5, tx=0, ty=0)
+   rotation = 116.56505117707799
+   scaleX = 11.180339887498949
+   scaleY = -11.180339887498949
+matrix = (a=-5, b=10, c=10, d=10, tx=0, ty=0)
+   rotation = 116.56505117707799
+   scaleX = 11.180339887498949
+   scaleY = -14.142135623730951
+matrix = (a=0, b=-10, c=-10, d=-10, tx=0, ty=0)
+   rotation = -90
+   scaleX = 10
+   scaleY = -14.142135623730951
+matrix = (a=0, b=-10, c=-10, d=-5, tx=0, ty=0)
+   rotation = -90
+   scaleX = 10
+   scaleY = -11.180339887498949
+matrix = (a=0, b=-10, c=-10, d=0, tx=0, ty=0)
+   rotation = -90
+   scaleX = 10
+   scaleY = -10
+matrix = (a=0, b=-10, c=-10, d=5, tx=0, ty=0)
+   rotation = -90
+   scaleX = 10
+   scaleY = -11.180339887498949
+matrix = (a=0, b=-10, c=-10, d=10, tx=0, ty=0)
+   rotation = -90
+   scaleX = 10
+   scaleY = -14.142135623730951
+matrix = (a=0, b=-10, c=-5, d=-10, tx=0, ty=0)
+   rotation = -90
+   scaleX = 10
+   scaleY = -11.180339887498949
+matrix = (a=0, b=-10, c=-5, d=-5, tx=0, ty=0)
+   rotation = -90
+   scaleX = 10
+   scaleY = -7.0710678118654755
+matrix = (a=0, b=-10, c=-5, d=0, tx=0, ty=0)
+   rotation = -90
+   scaleX = 10
+   scaleY = -5
+matrix = (a=0, b=-10, c=-5, d=5, tx=0, ty=0)
+   rotation = -90
+   scaleX = 10
+   scaleY = -7.0710678118654755
+matrix = (a=0, b=-10, c=-5, d=10, tx=0, ty=0)
+   rotation = -90
+   scaleX = 10
+   scaleY = -11.180339887498949
+matrix = (a=0, b=-10, c=0, d=-10, tx=0, ty=0)
+   rotation = -90
+   scaleX = 10
+   scaleY = 10
+matrix = (a=0, b=-10, c=0, d=-5, tx=0, ty=0)
+   rotation = -90
+   scaleX = 10
+   scaleY = 5
+matrix = (a=0, b=-10, c=0, d=0, tx=0, ty=0)
+   rotation = -90
+   scaleX = 10
+   scaleY = 0
+matrix = (a=0, b=-10, c=0, d=5, tx=0, ty=0)
+   rotation = -90
+   scaleX = 10
+   scaleY = 5
+matrix = (a=0, b=-10, c=0, d=10, tx=0, ty=0)
+   rotation = -90
+   scaleX = 10
+   scaleY = 10
+matrix = (a=0, b=-10, c=5, d=-10, tx=0, ty=0)
+   rotation = -90
+   scaleX = 10
+   scaleY = 11.180339887498949
+matrix = (a=0, b=-10, c=5, d=-5, tx=0, ty=0)
+   rotation = -90
+   scaleX = 10
+   scaleY = 7.0710678118654755
+matrix = (a=0, b=-10, c=5, d=0, tx=0, ty=0)
+   rotation = -90
+   scaleX = 10
+   scaleY = 5
+matrix = (a=0, b=-10, c=5, d=5, tx=0, ty=0)
+   rotation = -90
+   scaleX = 10
+   scaleY = 7.0710678118654755
+matrix = (a=0, b=-10, c=5, d=10, tx=0, ty=0)
+   rotation = -90
+   scaleX = 10
+   scaleY = 11.180339887498949
+matrix = (a=0, b=-10, c=10, d=-10, tx=0, ty=0)
+   rotation = -90
+   scaleX = 10
+   scaleY = 14.142135623730951
+matrix = (a=0, b=-10, c=10, d=-5, tx=0, ty=0)
+   rotation = -90
+   scaleX = 10
+   scaleY = 11.180339887498949
+matrix = (a=0, b=-10, c=10, d=0, tx=0, ty=0)
+   rotation = -90
+   scaleX = 10
+   scaleY = 10
+matrix = (a=0, b=-10, c=10, d=5, tx=0, ty=0)
+   rotation = -90
+   scaleX = 10
+   scaleY = 11.180339887498949
+matrix = (a=0, b=-10, c=10, d=10, tx=0, ty=0)
+   rotation = -90
+   scaleX = 10
+   scaleY = 14.142135623730951
+matrix = (a=0, b=-5, c=-10, d=-10, tx=0, ty=0)
+   rotation = -90
+   scaleX = 5
+   scaleY = -14.142135623730951
+matrix = (a=0, b=-5, c=-10, d=-5, tx=0, ty=0)
+   rotation = -90
+   scaleX = 5
+   scaleY = -11.180339887498949
+matrix = (a=0, b=-5, c=-10, d=0, tx=0, ty=0)
+   rotation = -90
+   scaleX = 5
+   scaleY = -10
+matrix = (a=0, b=-5, c=-10, d=5, tx=0, ty=0)
+   rotation = -90
+   scaleX = 5
+   scaleY = -11.180339887498949
+matrix = (a=0, b=-5, c=-10, d=10, tx=0, ty=0)
+   rotation = -90
+   scaleX = 5
+   scaleY = -14.142135623730951
+matrix = (a=0, b=-5, c=-5, d=-10, tx=0, ty=0)
+   rotation = -90
+   scaleX = 5
+   scaleY = -11.180339887498949
+matrix = (a=0, b=-5, c=-5, d=-5, tx=0, ty=0)
+   rotation = -90
+   scaleX = 5
+   scaleY = -7.0710678118654755
+matrix = (a=0, b=-5, c=-5, d=0, tx=0, ty=0)
+   rotation = -90
+   scaleX = 5
+   scaleY = -5
+matrix = (a=0, b=-5, c=-5, d=5, tx=0, ty=0)
+   rotation = -90
+   scaleX = 5
+   scaleY = -7.0710678118654755
+matrix = (a=0, b=-5, c=-5, d=10, tx=0, ty=0)
+   rotation = -90
+   scaleX = 5
+   scaleY = -11.180339887498949
+matrix = (a=0, b=-5, c=0, d=-10, tx=0, ty=0)
+   rotation = -90
+   scaleX = 5
+   scaleY = 10
+matrix = (a=0, b=-5, c=0, d=-5, tx=0, ty=0)
+   rotation = -90
+   scaleX = 5
+   scaleY = 5
+matrix = (a=0, b=-5, c=0, d=0, tx=0, ty=0)
+   rotation = -90
+   scaleX = 5
+   scaleY = 0
+matrix = (a=0, b=-5, c=0, d=5, tx=0, ty=0)
+   rotation = -90
+   scaleX = 5
+   scaleY = 5
+matrix = (a=0, b=-5, c=0, d=10, tx=0, ty=0)
+   rotation = -90
+   scaleX = 5
+   scaleY = 10
+matrix = (a=0, b=-5, c=5, d=-10, tx=0, ty=0)
+   rotation = -90
+   scaleX = 5
+   scaleY = 11.180339887498949
+matrix = (a=0, b=-5, c=5, d=-5, tx=0, ty=0)
+   rotation = -90
+   scaleX = 5
+   scaleY = 7.0710678118654755
+matrix = (a=0, b=-5, c=5, d=0, tx=0, ty=0)
+   rotation = -90
+   scaleX = 5
+   scaleY = 5
+matrix = (a=0, b=-5, c=5, d=5, tx=0, ty=0)
+   rotation = -90
+   scaleX = 5
+   scaleY = 7.0710678118654755
+matrix = (a=0, b=-5, c=5, d=10, tx=0, ty=0)
+   rotation = -90
+   scaleX = 5
+   scaleY = 11.180339887498949
+matrix = (a=0, b=-5, c=10, d=-10, tx=0, ty=0)
+   rotation = -90
+   scaleX = 5
+   scaleY = 14.142135623730951
+matrix = (a=0, b=-5, c=10, d=-5, tx=0, ty=0)
+   rotation = -90
+   scaleX = 5
+   scaleY = 11.180339887498949
+matrix = (a=0, b=-5, c=10, d=0, tx=0, ty=0)
+   rotation = -90
+   scaleX = 5
+   scaleY = 10
+matrix = (a=0, b=-5, c=10, d=5, tx=0, ty=0)
+   rotation = -90
+   scaleX = 5
+   scaleY = 11.180339887498949
+matrix = (a=0, b=-5, c=10, d=10, tx=0, ty=0)
+   rotation = -90
+   scaleX = 5
+   scaleY = 14.142135623730951
+matrix = (a=0, b=0, c=-10, d=-10, tx=0, ty=0)
+   rotation = 0
+   scaleX = 0
+   scaleY = 14.142135623730951
+matrix = (a=0, b=0, c=-10, d=-5, tx=0, ty=0)
+   rotation = 0
+   scaleX = 0
+   scaleY = 11.180339887498949
+matrix = (a=0, b=0, c=-10, d=0, tx=0, ty=0)
+   rotation = 0
+   scaleX = 0
+   scaleY = 10
+matrix = (a=0, b=0, c=-10, d=5, tx=0, ty=0)
+   rotation = 0
+   scaleX = 0
+   scaleY = 11.180339887498949
+matrix = (a=0, b=0, c=-10, d=10, tx=0, ty=0)
+   rotation = 0
+   scaleX = 0
+   scaleY = 14.142135623730951
+matrix = (a=0, b=0, c=-5, d=-10, tx=0, ty=0)
+   rotation = 0
+   scaleX = 0
+   scaleY = 11.180339887498949
+matrix = (a=0, b=0, c=-5, d=-5, tx=0, ty=0)
+   rotation = 0
+   scaleX = 0
+   scaleY = 7.0710678118654755
+matrix = (a=0, b=0, c=-5, d=0, tx=0, ty=0)
+   rotation = 0
+   scaleX = 0
+   scaleY = 5
+matrix = (a=0, b=0, c=-5, d=5, tx=0, ty=0)
+   rotation = 0
+   scaleX = 0
+   scaleY = 7.0710678118654755
+matrix = (a=0, b=0, c=-5, d=10, tx=0, ty=0)
+   rotation = 0
+   scaleX = 0
+   scaleY = 11.180339887498949
+matrix = (a=0, b=0, c=0, d=-10, tx=0, ty=0)
+   rotation = 0
+   scaleX = 0
+   scaleY = 10
+matrix = (a=0, b=0, c=0, d=-5, tx=0, ty=0)
+   rotation = 0
+   scaleX = 0
+   scaleY = 5
+matrix = (a=0, b=0, c=0, d=0, tx=0, ty=0)
+   rotation = 0
+   scaleX = 0
+   scaleY = 0
+matrix = (a=0, b=0, c=0, d=5, tx=0, ty=0)
+   rotation = 0
+   scaleX = 0
+   scaleY = 5
+matrix = (a=0, b=0, c=0, d=10, tx=0, ty=0)
+   rotation = 0
+   scaleX = 0
+   scaleY = 10
+matrix = (a=0, b=0, c=5, d=-10, tx=0, ty=0)
+   rotation = 0
+   scaleX = 0
+   scaleY = 11.180339887498949
+matrix = (a=0, b=0, c=5, d=-5, tx=0, ty=0)
+   rotation = 0
+   scaleX = 0
+   scaleY = 7.0710678118654755
+matrix = (a=0, b=0, c=5, d=0, tx=0, ty=0)
+   rotation = 0
+   scaleX = 0
+   scaleY = 5
+matrix = (a=0, b=0, c=5, d=5, tx=0, ty=0)
+   rotation = 0
+   scaleX = 0
+   scaleY = 7.0710678118654755
+matrix = (a=0, b=0, c=5, d=10, tx=0, ty=0)
+   rotation = 0
+   scaleX = 0
+   scaleY = 11.180339887498949
+matrix = (a=0, b=0, c=10, d=-10, tx=0, ty=0)
+   rotation = 0
+   scaleX = 0
+   scaleY = 14.142135623730951
+matrix = (a=0, b=0, c=10, d=-5, tx=0, ty=0)
+   rotation = 0
+   scaleX = 0
+   scaleY = 11.180339887498949
+matrix = (a=0, b=0, c=10, d=0, tx=0, ty=0)
+   rotation = 0
+   scaleX = 0
+   scaleY = 10
+matrix = (a=0, b=0, c=10, d=5, tx=0, ty=0)
+   rotation = 0
+   scaleX = 0
+   scaleY = 11.180339887498949
+matrix = (a=0, b=0, c=10, d=10, tx=0, ty=0)
+   rotation = 0
+   scaleX = 0
+   scaleY = 14.142135623730951
+matrix = (a=0, b=5, c=-10, d=-10, tx=0, ty=0)
+   rotation = 90
+   scaleX = 5
+   scaleY = 14.142135623730951
+matrix = (a=0, b=5, c=-10, d=-5, tx=0, ty=0)
+   rotation = 90
+   scaleX = 5
+   scaleY = 11.180339887498949
+matrix = (a=0, b=5, c=-10, d=0, tx=0, ty=0)
+   rotation = 90
+   scaleX = 5
+   scaleY = 10
+matrix = (a=0, b=5, c=-10, d=5, tx=0, ty=0)
+   rotation = 90
+   scaleX = 5
+   scaleY = 11.180339887498949
+matrix = (a=0, b=5, c=-10, d=10, tx=0, ty=0)
+   rotation = 90
+   scaleX = 5
+   scaleY = 14.142135623730951
+matrix = (a=0, b=5, c=-5, d=-10, tx=0, ty=0)
+   rotation = 90
+   scaleX = 5
+   scaleY = 11.180339887498949
+matrix = (a=0, b=5, c=-5, d=-5, tx=0, ty=0)
+   rotation = 90
+   scaleX = 5
+   scaleY = 7.0710678118654755
+matrix = (a=0, b=5, c=-5, d=0, tx=0, ty=0)
+   rotation = 90
+   scaleX = 5
+   scaleY = 5
+matrix = (a=0, b=5, c=-5, d=5, tx=0, ty=0)
+   rotation = 90
+   scaleX = 5
+   scaleY = 7.0710678118654755
+matrix = (a=0, b=5, c=-5, d=10, tx=0, ty=0)
+   rotation = 90
+   scaleX = 5
+   scaleY = 11.180339887498949
+matrix = (a=0, b=5, c=0, d=-10, tx=0, ty=0)
+   rotation = 90
+   scaleX = 5
+   scaleY = 10
+matrix = (a=0, b=5, c=0, d=-5, tx=0, ty=0)
+   rotation = 90
+   scaleX = 5
+   scaleY = 5
+matrix = (a=0, b=5, c=0, d=0, tx=0, ty=0)
+   rotation = 90
+   scaleX = 5
+   scaleY = 0
+matrix = (a=0, b=5, c=0, d=5, tx=0, ty=0)
+   rotation = 90
+   scaleX = 5
+   scaleY = 5
+matrix = (a=0, b=5, c=0, d=10, tx=0, ty=0)
+   rotation = 90
+   scaleX = 5
+   scaleY = 10
+matrix = (a=0, b=5, c=5, d=-10, tx=0, ty=0)
+   rotation = 90
+   scaleX = 5
+   scaleY = -11.180339887498949
+matrix = (a=0, b=5, c=5, d=-5, tx=0, ty=0)
+   rotation = 90
+   scaleX = 5
+   scaleY = -7.0710678118654755
+matrix = (a=0, b=5, c=5, d=0, tx=0, ty=0)
+   rotation = 90
+   scaleX = 5
+   scaleY = -5
+matrix = (a=0, b=5, c=5, d=5, tx=0, ty=0)
+   rotation = 90
+   scaleX = 5
+   scaleY = -7.0710678118654755
+matrix = (a=0, b=5, c=5, d=10, tx=0, ty=0)
+   rotation = 90
+   scaleX = 5
+   scaleY = -11.180339887498949
+matrix = (a=0, b=5, c=10, d=-10, tx=0, ty=0)
+   rotation = 90
+   scaleX = 5
+   scaleY = -14.142135623730951
+matrix = (a=0, b=5, c=10, d=-5, tx=0, ty=0)
+   rotation = 90
+   scaleX = 5
+   scaleY = -11.180339887498949
+matrix = (a=0, b=5, c=10, d=0, tx=0, ty=0)
+   rotation = 90
+   scaleX = 5
+   scaleY = -10
+matrix = (a=0, b=5, c=10, d=5, tx=0, ty=0)
+   rotation = 90
+   scaleX = 5
+   scaleY = -11.180339887498949
+matrix = (a=0, b=5, c=10, d=10, tx=0, ty=0)
+   rotation = 90
+   scaleX = 5
+   scaleY = -14.142135623730951
+matrix = (a=0, b=10, c=-10, d=-10, tx=0, ty=0)
+   rotation = 90
+   scaleX = 10
+   scaleY = 14.142135623730951
+matrix = (a=0, b=10, c=-10, d=-5, tx=0, ty=0)
+   rotation = 90
+   scaleX = 10
+   scaleY = 11.180339887498949
+matrix = (a=0, b=10, c=-10, d=0, tx=0, ty=0)
+   rotation = 90
+   scaleX = 10
+   scaleY = 10
+matrix = (a=0, b=10, c=-10, d=5, tx=0, ty=0)
+   rotation = 90
+   scaleX = 10
+   scaleY = 11.180339887498949
+matrix = (a=0, b=10, c=-10, d=10, tx=0, ty=0)
+   rotation = 90
+   scaleX = 10
+   scaleY = 14.142135623730951
+matrix = (a=0, b=10, c=-5, d=-10, tx=0, ty=0)
+   rotation = 90
+   scaleX = 10
+   scaleY = 11.180339887498949
+matrix = (a=0, b=10, c=-5, d=-5, tx=0, ty=0)
+   rotation = 90
+   scaleX = 10
+   scaleY = 7.0710678118654755
+matrix = (a=0, b=10, c=-5, d=0, tx=0, ty=0)
+   rotation = 90
+   scaleX = 10
+   scaleY = 5
+matrix = (a=0, b=10, c=-5, d=5, tx=0, ty=0)
+   rotation = 90
+   scaleX = 10
+   scaleY = 7.0710678118654755
+matrix = (a=0, b=10, c=-5, d=10, tx=0, ty=0)
+   rotation = 90
+   scaleX = 10
+   scaleY = 11.180339887498949
+matrix = (a=0, b=10, c=0, d=-10, tx=0, ty=0)
+   rotation = 90
+   scaleX = 10
+   scaleY = 10
+matrix = (a=0, b=10, c=0, d=-5, tx=0, ty=0)
+   rotation = 90
+   scaleX = 10
+   scaleY = 5
+matrix = (a=0, b=10, c=0, d=0, tx=0, ty=0)
+   rotation = 90
+   scaleX = 10
+   scaleY = 0
+matrix = (a=0, b=10, c=0, d=5, tx=0, ty=0)
+   rotation = 90
+   scaleX = 10
+   scaleY = 5
+matrix = (a=0, b=10, c=0, d=10, tx=0, ty=0)
+   rotation = 90
+   scaleX = 10
+   scaleY = 10
+matrix = (a=0, b=10, c=5, d=-10, tx=0, ty=0)
+   rotation = 90
+   scaleX = 10
+   scaleY = -11.180339887498949
+matrix = (a=0, b=10, c=5, d=-5, tx=0, ty=0)
+   rotation = 90
+   scaleX = 10
+   scaleY = -7.0710678118654755
+matrix = (a=0, b=10, c=5, d=0, tx=0, ty=0)
+   rotation = 90
+   scaleX = 10
+   scaleY = -5
+matrix = (a=0, b=10, c=5, d=5, tx=0, ty=0)
+   rotation = 90
+   scaleX = 10
+   scaleY = -7.0710678118654755
+matrix = (a=0, b=10, c=5, d=10, tx=0, ty=0)
+   rotation = 90
+   scaleX = 10
+   scaleY = -11.180339887498949
+matrix = (a=0, b=10, c=10, d=-10, tx=0, ty=0)
+   rotation = 90
+   scaleX = 10
+   scaleY = -14.142135623730951
+matrix = (a=0, b=10, c=10, d=-5, tx=0, ty=0)
+   rotation = 90
+   scaleX = 10
+   scaleY = -11.180339887498949
+matrix = (a=0, b=10, c=10, d=0, tx=0, ty=0)
+   rotation = 90
+   scaleX = 10
+   scaleY = -10
+matrix = (a=0, b=10, c=10, d=5, tx=0, ty=0)
+   rotation = 90
+   scaleX = 10
+   scaleY = -11.180339887498949
+matrix = (a=0, b=10, c=10, d=10, tx=0, ty=0)
+   rotation = 90
+   scaleX = 10
+   scaleY = -14.142135623730951
+matrix = (a=5, b=-10, c=-10, d=-10, tx=0, ty=0)
+   rotation = -63.43494882292201
+   scaleX = 11.180339887498949
+   scaleY = -14.142135623730951
+matrix = (a=5, b=-10, c=-10, d=-5, tx=0, ty=0)
+   rotation = -63.43494882292201
+   scaleX = 11.180339887498949
+   scaleY = -11.180339887498949
+matrix = (a=5, b=-10, c=-10, d=0, tx=0, ty=0)
+   rotation = -63.43494882292201
+   scaleX = 11.180339887498949
+   scaleY = -10
+matrix = (a=5, b=-10, c=-10, d=5, tx=0, ty=0)
+   rotation = -63.43494882292201
+   scaleX = 11.180339887498949
+   scaleY = -11.180339887498949
+matrix = (a=5, b=-10, c=-10, d=10, tx=0, ty=0)
+   rotation = -63.43494882292201
+   scaleX = 11.180339887498949
+   scaleY = -14.142135623730951
+matrix = (a=5, b=-10, c=-5, d=-10, tx=0, ty=0)
+   rotation = -63.43494882292201
+   scaleX = 11.180339887498949
+   scaleY = -11.180339887498949
+matrix = (a=5, b=-10, c=-5, d=-5, tx=0, ty=0)
+   rotation = -63.43494882292201
+   scaleX = 11.180339887498949
+   scaleY = -7.0710678118654755
+matrix = (a=5, b=-10, c=-5, d=0, tx=0, ty=0)
+   rotation = -63.43494882292201
+   scaleX = 11.180339887498949
+   scaleY = -5
+matrix = (a=5, b=-10, c=-5, d=5, tx=0, ty=0)
+   rotation = -63.43494882292201
+   scaleX = 11.180339887498949
+   scaleY = -7.0710678118654755
+matrix = (a=5, b=-10, c=-5, d=10, tx=0, ty=0)
+   rotation = -63.43494882292201
+   scaleX = 11.180339887498949
+   scaleY = 11.180339887498949
+matrix = (a=5, b=-10, c=0, d=-10, tx=0, ty=0)
+   rotation = -63.43494882292201
+   scaleX = 11.180339887498949
+   scaleY = -10
+matrix = (a=5, b=-10, c=0, d=-5, tx=0, ty=0)
+   rotation = -63.43494882292201
+   scaleX = 11.180339887498949
+   scaleY = -5
+matrix = (a=5, b=-10, c=0, d=0, tx=0, ty=0)
+   rotation = -63.43494882292201
+   scaleX = 11.180339887498949
+   scaleY = 0
+matrix = (a=5, b=-10, c=0, d=5, tx=0, ty=0)
+   rotation = -63.43494882292201
+   scaleX = 11.180339887498949
+   scaleY = 5
+matrix = (a=5, b=-10, c=0, d=10, tx=0, ty=0)
+   rotation = -63.43494882292201
+   scaleX = 11.180339887498949
+   scaleY = 10
+matrix = (a=5, b=-10, c=5, d=-10, tx=0, ty=0)
+   rotation = -63.43494882292201
+   scaleX = 11.180339887498949
+   scaleY = 11.180339887498949
+matrix = (a=5, b=-10, c=5, d=-5, tx=0, ty=0)
+   rotation = -63.43494882292201
+   scaleX = 11.180339887498949
+   scaleY = 7.0710678118654755
+matrix = (a=5, b=-10, c=5, d=0, tx=0, ty=0)
+   rotation = -63.43494882292201
+   scaleX = 11.180339887498949
+   scaleY = 5
+matrix = (a=5, b=-10, c=5, d=5, tx=0, ty=0)
+   rotation = -63.43494882292201
+   scaleX = 11.180339887498949
+   scaleY = 7.0710678118654755
+matrix = (a=5, b=-10, c=5, d=10, tx=0, ty=0)
+   rotation = -63.43494882292201
+   scaleX = 11.180339887498949
+   scaleY = 11.180339887498949
+matrix = (a=5, b=-10, c=10, d=-10, tx=0, ty=0)
+   rotation = -63.43494882292201
+   scaleX = 11.180339887498949
+   scaleY = 14.142135623730951
+matrix = (a=5, b=-10, c=10, d=-5, tx=0, ty=0)
+   rotation = -63.43494882292201
+   scaleX = 11.180339887498949
+   scaleY = 11.180339887498949
+matrix = (a=5, b=-10, c=10, d=0, tx=0, ty=0)
+   rotation = -63.43494882292201
+   scaleX = 11.180339887498949
+   scaleY = 10
+matrix = (a=5, b=-10, c=10, d=5, tx=0, ty=0)
+   rotation = -63.43494882292201
+   scaleX = 11.180339887498949
+   scaleY = 11.180339887498949
+matrix = (a=5, b=-10, c=10, d=10, tx=0, ty=0)
+   rotation = -63.43494882292201
+   scaleX = 11.180339887498949
+   scaleY = 14.142135623730951
+matrix = (a=5, b=-5, c=-10, d=-10, tx=0, ty=0)
+   rotation = -45
+   scaleX = 7.0710678118654755
+   scaleY = -14.142135623730951
+matrix = (a=5, b=-5, c=-10, d=-5, tx=0, ty=0)
+   rotation = -45
+   scaleX = 7.0710678118654755
+   scaleY = -11.180339887498949
+matrix = (a=5, b=-5, c=-10, d=0, tx=0, ty=0)
+   rotation = -45
+   scaleX = 7.0710678118654755
+   scaleY = -10
+matrix = (a=5, b=-5, c=-10, d=5, tx=0, ty=0)
+   rotation = -45
+   scaleX = 7.0710678118654755
+   scaleY = -11.180339887498949
+matrix = (a=5, b=-5, c=-10, d=10, tx=0, ty=0)
+   rotation = -45
+   scaleX = 7.0710678118654755
+   scaleY = 14.142135623730951
+matrix = (a=5, b=-5, c=-5, d=-10, tx=0, ty=0)
+   rotation = -45
+   scaleX = 7.0710678118654755
+   scaleY = -11.180339887498949
+matrix = (a=5, b=-5, c=-5, d=-5, tx=0, ty=0)
+   rotation = -45
+   scaleX = 7.0710678118654755
+   scaleY = -7.0710678118654755
+matrix = (a=5, b=-5, c=-5, d=0, tx=0, ty=0)
+   rotation = -45
+   scaleX = 7.0710678118654755
+   scaleY = -5
+matrix = (a=5, b=-5, c=-5, d=5, tx=0, ty=0)
+   rotation = -45
+   scaleX = 7.0710678118654755
+   scaleY = 7.0710678118654755
+matrix = (a=5, b=-5, c=-5, d=10, tx=0, ty=0)
+   rotation = -45
+   scaleX = 7.0710678118654755
+   scaleY = 11.180339887498949
+matrix = (a=5, b=-5, c=0, d=-10, tx=0, ty=0)
+   rotation = -45
+   scaleX = 7.0710678118654755
+   scaleY = -10
+matrix = (a=5, b=-5, c=0, d=-5, tx=0, ty=0)
+   rotation = -45
+   scaleX = 7.0710678118654755
+   scaleY = -5
+matrix = (a=5, b=-5, c=0, d=0, tx=0, ty=0)
+   rotation = -45
+   scaleX = 7.0710678118654755
+   scaleY = 0
+matrix = (a=5, b=-5, c=0, d=5, tx=0, ty=0)
+   rotation = -45
+   scaleX = 7.0710678118654755
+   scaleY = 5
+matrix = (a=5, b=-5, c=0, d=10, tx=0, ty=0)
+   rotation = -45
+   scaleX = 7.0710678118654755
+   scaleY = 10
+matrix = (a=5, b=-5, c=5, d=-10, tx=0, ty=0)
+   rotation = -45
+   scaleX = 7.0710678118654755
+   scaleY = -11.180339887498949
+matrix = (a=5, b=-5, c=5, d=-5, tx=0, ty=0)
+   rotation = -45
+   scaleX = 7.0710678118654755
+   scaleY = 7.0710678118654755
+matrix = (a=5, b=-5, c=5, d=0, tx=0, ty=0)
+   rotation = -45
+   scaleX = 7.0710678118654755
+   scaleY = 5
+matrix = (a=5, b=-5, c=5, d=5, tx=0, ty=0)
+   rotation = -45
+   scaleX = 7.0710678118654755
+   scaleY = 7.0710678118654755
+matrix = (a=5, b=-5, c=5, d=10, tx=0, ty=0)
+   rotation = -45
+   scaleX = 7.0710678118654755
+   scaleY = 11.180339887498949
+matrix = (a=5, b=-5, c=10, d=-10, tx=0, ty=0)
+   rotation = -45
+   scaleX = 7.0710678118654755
+   scaleY = 14.142135623730951
+matrix = (a=5, b=-5, c=10, d=-5, tx=0, ty=0)
+   rotation = -45
+   scaleX = 7.0710678118654755
+   scaleY = 11.180339887498949
+matrix = (a=5, b=-5, c=10, d=0, tx=0, ty=0)
+   rotation = -45
+   scaleX = 7.0710678118654755
+   scaleY = 10
+matrix = (a=5, b=-5, c=10, d=5, tx=0, ty=0)
+   rotation = -45
+   scaleX = 7.0710678118654755
+   scaleY = 11.180339887498949
+matrix = (a=5, b=-5, c=10, d=10, tx=0, ty=0)
+   rotation = -45
+   scaleX = 7.0710678118654755
+   scaleY = 14.142135623730951
+matrix = (a=5, b=0, c=-10, d=-10, tx=0, ty=0)
+   rotation = 0
+   scaleX = 5
+   scaleY = -14.142135623730951
+matrix = (a=5, b=0, c=-10, d=-5, tx=0, ty=0)
+   rotation = 0
+   scaleX = 5
+   scaleY = -11.180339887498949
+matrix = (a=5, b=0, c=-10, d=0, tx=0, ty=0)
+   rotation = 0
+   scaleX = 5
+   scaleY = 10
+matrix = (a=5, b=0, c=-10, d=5, tx=0, ty=0)
+   rotation = 0
+   scaleX = 5
+   scaleY = 11.180339887498949
+matrix = (a=5, b=0, c=-10, d=10, tx=0, ty=0)
+   rotation = 0
+   scaleX = 5
+   scaleY = 14.142135623730951
+matrix = (a=5, b=0, c=-5, d=-10, tx=0, ty=0)
+   rotation = 0
+   scaleX = 5
+   scaleY = -11.180339887498949
+matrix = (a=5, b=0, c=-5, d=-5, tx=0, ty=0)
+   rotation = 0
+   scaleX = 5
+   scaleY = -7.0710678118654755
+matrix = (a=5, b=0, c=-5, d=0, tx=0, ty=0)
+   rotation = 0
+   scaleX = 5
+   scaleY = 5
+matrix = (a=5, b=0, c=-5, d=5, tx=0, ty=0)
+   rotation = 0
+   scaleX = 5
+   scaleY = 7.0710678118654755
+matrix = (a=5, b=0, c=-5, d=10, tx=0, ty=0)
+   rotation = 0
+   scaleX = 5
+   scaleY = 11.180339887498949
+matrix = (a=5, b=0, c=0, d=-10, tx=0, ty=0)
+   rotation = 0
+   scaleX = 5
+   scaleY = -10
+matrix = (a=5, b=0, c=0, d=-5, tx=0, ty=0)
+   rotation = 0
+   scaleX = 5
+   scaleY = -5
+matrix = (a=5, b=0, c=0, d=0, tx=0, ty=0)
+   rotation = 0
+   scaleX = 5
+   scaleY = 0
+matrix = (a=5, b=0, c=0, d=5, tx=0, ty=0)
+   rotation = 0
+   scaleX = 5
+   scaleY = 5
+matrix = (a=5, b=0, c=0, d=10, tx=0, ty=0)
+   rotation = 0
+   scaleX = 5
+   scaleY = 10
+matrix = (a=5, b=0, c=5, d=-10, tx=0, ty=0)
+   rotation = 0
+   scaleX = 5
+   scaleY = -11.180339887498949
+matrix = (a=5, b=0, c=5, d=-5, tx=0, ty=0)
+   rotation = 0
+   scaleX = 5
+   scaleY = -7.0710678118654755
+matrix = (a=5, b=0, c=5, d=0, tx=0, ty=0)
+   rotation = 0
+   scaleX = 5
+   scaleY = 5
+matrix = (a=5, b=0, c=5, d=5, tx=0, ty=0)
+   rotation = 0
+   scaleX = 5
+   scaleY = 7.0710678118654755
+matrix = (a=5, b=0, c=5, d=10, tx=0, ty=0)
+   rotation = 0
+   scaleX = 5
+   scaleY = 11.180339887498949
+matrix = (a=5, b=0, c=10, d=-10, tx=0, ty=0)
+   rotation = 0
+   scaleX = 5
+   scaleY = -14.142135623730951
+matrix = (a=5, b=0, c=10, d=-5, tx=0, ty=0)
+   rotation = 0
+   scaleX = 5
+   scaleY = -11.180339887498949
+matrix = (a=5, b=0, c=10, d=0, tx=0, ty=0)
+   rotation = 0
+   scaleX = 5
+   scaleY = 10
+matrix = (a=5, b=0, c=10, d=5, tx=0, ty=0)
+   rotation = 0
+   scaleX = 5
+   scaleY = 11.180339887498949
+matrix = (a=5, b=0, c=10, d=10, tx=0, ty=0)
+   rotation = 0
+   scaleX = 5
+   scaleY = 14.142135623730951
+matrix = (a=5, b=5, c=-10, d=-10, tx=0, ty=0)
+   rotation = 45
+   scaleX = 7.0710678118654755
+   scaleY = 14.142135623730951
+matrix = (a=5, b=5, c=-10, d=-5, tx=0, ty=0)
+   rotation = 45
+   scaleX = 7.0710678118654755
+   scaleY = 11.180339887498949
+matrix = (a=5, b=5, c=-10, d=0, tx=0, ty=0)
+   rotation = 45
+   scaleX = 7.0710678118654755
+   scaleY = 10
+matrix = (a=5, b=5, c=-10, d=5, tx=0, ty=0)
+   rotation = 45
+   scaleX = 7.0710678118654755
+   scaleY = 11.180339887498949
+matrix = (a=5, b=5, c=-10, d=10, tx=0, ty=0)
+   rotation = 45
+   scaleX = 7.0710678118654755
+   scaleY = 14.142135623730951
+matrix = (a=5, b=5, c=-5, d=-10, tx=0, ty=0)
+   rotation = 45
+   scaleX = 7.0710678118654755
+   scaleY = -11.180339887498949
+matrix = (a=5, b=5, c=-5, d=-5, tx=0, ty=0)
+   rotation = 45
+   scaleX = 7.0710678118654755
+   scaleY = 7.0710678118654755
+matrix = (a=5, b=5, c=-5, d=0, tx=0, ty=0)
+   rotation = 45
+   scaleX = 7.0710678118654755
+   scaleY = 5
+matrix = (a=5, b=5, c=-5, d=5, tx=0, ty=0)
+   rotation = 45
+   scaleX = 7.0710678118654755
+   scaleY = 7.0710678118654755
+matrix = (a=5, b=5, c=-5, d=10, tx=0, ty=0)
+   rotation = 45
+   scaleX = 7.0710678118654755
+   scaleY = 11.180339887498949
+matrix = (a=5, b=5, c=0, d=-10, tx=0, ty=0)
+   rotation = 45
+   scaleX = 7.0710678118654755
+   scaleY = -10
+matrix = (a=5, b=5, c=0, d=-5, tx=0, ty=0)
+   rotation = 45
+   scaleX = 7.0710678118654755
+   scaleY = -5
+matrix = (a=5, b=5, c=0, d=0, tx=0, ty=0)
+   rotation = 45
+   scaleX = 7.0710678118654755
+   scaleY = 0
+matrix = (a=5, b=5, c=0, d=5, tx=0, ty=0)
+   rotation = 45
+   scaleX = 7.0710678118654755
+   scaleY = 5
+matrix = (a=5, b=5, c=0, d=10, tx=0, ty=0)
+   rotation = 45
+   scaleX = 7.0710678118654755
+   scaleY = 10
+matrix = (a=5, b=5, c=5, d=-10, tx=0, ty=0)
+   rotation = 45
+   scaleX = 7.0710678118654755
+   scaleY = -11.180339887498949
+matrix = (a=5, b=5, c=5, d=-5, tx=0, ty=0)
+   rotation = 45
+   scaleX = 7.0710678118654755
+   scaleY = -7.0710678118654755
+matrix = (a=5, b=5, c=5, d=0, tx=0, ty=0)
+   rotation = 45
+   scaleX = 7.0710678118654755
+   scaleY = -5
+matrix = (a=5, b=5, c=5, d=5, tx=0, ty=0)
+   rotation = 45
+   scaleX = 7.0710678118654755
+   scaleY = 7.0710678118654755
+matrix = (a=5, b=5, c=5, d=10, tx=0, ty=0)
+   rotation = 45
+   scaleX = 7.0710678118654755
+   scaleY = 11.180339887498949
+matrix = (a=5, b=5, c=10, d=-10, tx=0, ty=0)
+   rotation = 45
+   scaleX = 7.0710678118654755
+   scaleY = -14.142135623730951
+matrix = (a=5, b=5, c=10, d=-5, tx=0, ty=0)
+   rotation = 45
+   scaleX = 7.0710678118654755
+   scaleY = -11.180339887498949
+matrix = (a=5, b=5, c=10, d=0, tx=0, ty=0)
+   rotation = 45
+   scaleX = 7.0710678118654755
+   scaleY = -10
+matrix = (a=5, b=5, c=10, d=5, tx=0, ty=0)
+   rotation = 45
+   scaleX = 7.0710678118654755
+   scaleY = -11.180339887498949
+matrix = (a=5, b=5, c=10, d=10, tx=0, ty=0)
+   rotation = 45
+   scaleX = 7.0710678118654755
+   scaleY = 14.142135623730951
+matrix = (a=5, b=10, c=-10, d=-10, tx=0, ty=0)
+   rotation = 63.43494882292201
+   scaleX = 11.180339887498949
+   scaleY = 14.142135623730951
+matrix = (a=5, b=10, c=-10, d=-5, tx=0, ty=0)
+   rotation = 63.43494882292201
+   scaleX = 11.180339887498949
+   scaleY = 11.180339887498949
+matrix = (a=5, b=10, c=-10, d=0, tx=0, ty=0)
+   rotation = 63.43494882292201
+   scaleX = 11.180339887498949
+   scaleY = 10
+matrix = (a=5, b=10, c=-10, d=5, tx=0, ty=0)
+   rotation = 63.43494882292201
+   scaleX = 11.180339887498949
+   scaleY = 11.180339887498949
+matrix = (a=5, b=10, c=-10, d=10, tx=0, ty=0)
+   rotation = 63.43494882292201
+   scaleX = 11.180339887498949
+   scaleY = 14.142135623730951
+matrix = (a=5, b=10, c=-5, d=-10, tx=0, ty=0)
+   rotation = 63.43494882292201
+   scaleX = 11.180339887498949
+   scaleY = 11.180339887498949
+matrix = (a=5, b=10, c=-5, d=-5, tx=0, ty=0)
+   rotation = 63.43494882292201
+   scaleX = 11.180339887498949
+   scaleY = 7.0710678118654755
+matrix = (a=5, b=10, c=-5, d=0, tx=0, ty=0)
+   rotation = 63.43494882292201
+   scaleX = 11.180339887498949
+   scaleY = 5
+matrix = (a=5, b=10, c=-5, d=5, tx=0, ty=0)
+   rotation = 63.43494882292201
+   scaleX = 11.180339887498949
+   scaleY = 7.0710678118654755
+matrix = (a=5, b=10, c=-5, d=10, tx=0, ty=0)
+   rotation = 63.43494882292201
+   scaleX = 11.180339887498949
+   scaleY = 11.180339887498949
+matrix = (a=5, b=10, c=0, d=-10, tx=0, ty=0)
+   rotation = 63.43494882292201
+   scaleX = 11.180339887498949
+   scaleY = -10
+matrix = (a=5, b=10, c=0, d=-5, tx=0, ty=0)
+   rotation = 63.43494882292201
+   scaleX = 11.180339887498949
+   scaleY = -5
+matrix = (a=5, b=10, c=0, d=0, tx=0, ty=0)
+   rotation = 63.43494882292201
+   scaleX = 11.180339887498949
+   scaleY = 0
+matrix = (a=5, b=10, c=0, d=5, tx=0, ty=0)
+   rotation = 63.43494882292201
+   scaleX = 11.180339887498949
+   scaleY = 5
+matrix = (a=5, b=10, c=0, d=10, tx=0, ty=0)
+   rotation = 63.43494882292201
+   scaleX = 11.180339887498949
+   scaleY = 10
+matrix = (a=5, b=10, c=5, d=-10, tx=0, ty=0)
+   rotation = 63.43494882292201
+   scaleX = 11.180339887498949
+   scaleY = -11.180339887498949
+matrix = (a=5, b=10, c=5, d=-5, tx=0, ty=0)
+   rotation = 63.43494882292201
+   scaleX = 11.180339887498949
+   scaleY = -7.0710678118654755
+matrix = (a=5, b=10, c=5, d=0, tx=0, ty=0)
+   rotation = 63.43494882292201
+   scaleX = 11.180339887498949
+   scaleY = -5
+matrix = (a=5, b=10, c=5, d=5, tx=0, ty=0)
+   rotation = 63.43494882292201
+   scaleX = 11.180339887498949
+   scaleY = -7.0710678118654755
+matrix = (a=5, b=10, c=5, d=10, tx=0, ty=0)
+   rotation = 63.43494882292201
+   scaleX = 11.180339887498949
+   scaleY = 11.180339887498949
+matrix = (a=5, b=10, c=10, d=-10, tx=0, ty=0)
+   rotation = 63.43494882292201
+   scaleX = 11.180339887498949
+   scaleY = -14.142135623730951
+matrix = (a=5, b=10, c=10, d=-5, tx=0, ty=0)
+   rotation = 63.43494882292201
+   scaleX = 11.180339887498949
+   scaleY = -11.180339887498949
+matrix = (a=5, b=10, c=10, d=0, tx=0, ty=0)
+   rotation = 63.43494882292201
+   scaleX = 11.180339887498949
+   scaleY = -10
+matrix = (a=5, b=10, c=10, d=5, tx=0, ty=0)
+   rotation = 63.43494882292201
+   scaleX = 11.180339887498949
+   scaleY = -11.180339887498949
+matrix = (a=5, b=10, c=10, d=10, tx=0, ty=0)
+   rotation = 63.43494882292201
+   scaleX = 11.180339887498949
+   scaleY = -14.142135623730951
+matrix = (a=10, b=-10, c=-10, d=-10, tx=0, ty=0)
+   rotation = -45
+   scaleX = 14.142135623730951
+   scaleY = -14.142135623730951
+matrix = (a=10, b=-10, c=-10, d=-5, tx=0, ty=0)
+   rotation = -45
+   scaleX = 14.142135623730951
+   scaleY = -11.180339887498949
+matrix = (a=10, b=-10, c=-10, d=0, tx=0, ty=0)
+   rotation = -45
+   scaleX = 14.142135623730951
+   scaleY = -10
+matrix = (a=10, b=-10, c=-10, d=5, tx=0, ty=0)
+   rotation = -45
+   scaleX = 14.142135623730951
+   scaleY = -11.180339887498949
+matrix = (a=10, b=-10, c=-10, d=10, tx=0, ty=0)
+   rotation = -45
+   scaleX = 14.142135623730951
+   scaleY = 14.142135623730951
+matrix = (a=10, b=-10, c=-5, d=-10, tx=0, ty=0)
+   rotation = -45
+   scaleX = 14.142135623730951
+   scaleY = -11.180339887498949
+matrix = (a=10, b=-10, c=-5, d=-5, tx=0, ty=0)
+   rotation = -45
+   scaleX = 14.142135623730951
+   scaleY = -7.0710678118654755
+matrix = (a=10, b=-10, c=-5, d=0, tx=0, ty=0)
+   rotation = -45
+   scaleX = 14.142135623730951
+   scaleY = -5
+matrix = (a=10, b=-10, c=-5, d=5, tx=0, ty=0)
+   rotation = -45
+   scaleX = 14.142135623730951
+   scaleY = 7.0710678118654755
+matrix = (a=10, b=-10, c=-5, d=10, tx=0, ty=0)
+   rotation = -45
+   scaleX = 14.142135623730951
+   scaleY = 11.180339887498949
+matrix = (a=10, b=-10, c=0, d=-10, tx=0, ty=0)
+   rotation = -45
+   scaleX = 14.142135623730951
+   scaleY = -10
+matrix = (a=10, b=-10, c=0, d=-5, tx=0, ty=0)
+   rotation = -45
+   scaleX = 14.142135623730951
+   scaleY = -5
+matrix = (a=10, b=-10, c=0, d=0, tx=0, ty=0)
+   rotation = -45
+   scaleX = 14.142135623730951
+   scaleY = 0
+matrix = (a=10, b=-10, c=0, d=5, tx=0, ty=0)
+   rotation = -45
+   scaleX = 14.142135623730951
+   scaleY = 5
+matrix = (a=10, b=-10, c=0, d=10, tx=0, ty=0)
+   rotation = -45
+   scaleX = 14.142135623730951
+   scaleY = 10
+matrix = (a=10, b=-10, c=5, d=-10, tx=0, ty=0)
+   rotation = -45
+   scaleX = 14.142135623730951
+   scaleY = -11.180339887498949
+matrix = (a=10, b=-10, c=5, d=-5, tx=0, ty=0)
+   rotation = -45
+   scaleX = 14.142135623730951
+   scaleY = 7.0710678118654755
+matrix = (a=10, b=-10, c=5, d=0, tx=0, ty=0)
+   rotation = -45
+   scaleX = 14.142135623730951
+   scaleY = 5
+matrix = (a=10, b=-10, c=5, d=5, tx=0, ty=0)
+   rotation = -45
+   scaleX = 14.142135623730951
+   scaleY = 7.0710678118654755
+matrix = (a=10, b=-10, c=5, d=10, tx=0, ty=0)
+   rotation = -45
+   scaleX = 14.142135623730951
+   scaleY = 11.180339887498949
+matrix = (a=10, b=-10, c=10, d=-10, tx=0, ty=0)
+   rotation = -45
+   scaleX = 14.142135623730951
+   scaleY = 14.142135623730951
+matrix = (a=10, b=-10, c=10, d=-5, tx=0, ty=0)
+   rotation = -45
+   scaleX = 14.142135623730951
+   scaleY = 11.180339887498949
+matrix = (a=10, b=-10, c=10, d=0, tx=0, ty=0)
+   rotation = -45
+   scaleX = 14.142135623730951
+   scaleY = 10
+matrix = (a=10, b=-10, c=10, d=5, tx=0, ty=0)
+   rotation = -45
+   scaleX = 14.142135623730951
+   scaleY = 11.180339887498949
+matrix = (a=10, b=-10, c=10, d=10, tx=0, ty=0)
+   rotation = -45
+   scaleX = 14.142135623730951
+   scaleY = 14.142135623730951
+matrix = (a=10, b=-5, c=-10, d=-10, tx=0, ty=0)
+   rotation = -26.56505117707799
+   scaleX = 11.180339887498949
+   scaleY = -14.142135623730951
+matrix = (a=10, b=-5, c=-10, d=-5, tx=0, ty=0)
+   rotation = -26.56505117707799
+   scaleX = 11.180339887498949
+   scaleY = -11.180339887498949
+matrix = (a=10, b=-5, c=-10, d=0, tx=0, ty=0)
+   rotation = -26.56505117707799
+   scaleX = 11.180339887498949
+   scaleY = -10
+matrix = (a=10, b=-5, c=-10, d=5, tx=0, ty=0)
+   rotation = -26.56505117707799
+   scaleX = 11.180339887498949
+   scaleY = 11.180339887498949
+matrix = (a=10, b=-5, c=-10, d=10, tx=0, ty=0)
+   rotation = -26.56505117707799
+   scaleX = 11.180339887498949
+   scaleY = 14.142135623730951
+matrix = (a=10, b=-5, c=-5, d=-10, tx=0, ty=0)
+   rotation = -26.56505117707799
+   scaleX = 11.180339887498949
+   scaleY = -11.180339887498949
+matrix = (a=10, b=-5, c=-5, d=-5, tx=0, ty=0)
+   rotation = -26.56505117707799
+   scaleX = 11.180339887498949
+   scaleY = -7.0710678118654755
+matrix = (a=10, b=-5, c=-5, d=0, tx=0, ty=0)
+   rotation = -26.56505117707799
+   scaleX = 11.180339887498949
+   scaleY = -5
+matrix = (a=10, b=-5, c=-5, d=5, tx=0, ty=0)
+   rotation = -26.56505117707799
+   scaleX = 11.180339887498949
+   scaleY = 7.0710678118654755
+matrix = (a=10, b=-5, c=-5, d=10, tx=0, ty=0)
+   rotation = -26.56505117707799
+   scaleX = 11.180339887498949
+   scaleY = 11.180339887498949
+matrix = (a=10, b=-5, c=0, d=-10, tx=0, ty=0)
+   rotation = -26.56505117707799
+   scaleX = 11.180339887498949
+   scaleY = -10
+matrix = (a=10, b=-5, c=0, d=-5, tx=0, ty=0)
+   rotation = -26.56505117707799
+   scaleX = 11.180339887498949
+   scaleY = -5
+matrix = (a=10, b=-5, c=0, d=0, tx=0, ty=0)
+   rotation = -26.56505117707799
+   scaleX = 11.180339887498949
+   scaleY = 0
+matrix = (a=10, b=-5, c=0, d=5, tx=0, ty=0)
+   rotation = -26.56505117707799
+   scaleX = 11.180339887498949
+   scaleY = 5
+matrix = (a=10, b=-5, c=0, d=10, tx=0, ty=0)
+   rotation = -26.56505117707799
+   scaleX = 11.180339887498949
+   scaleY = 10
+matrix = (a=10, b=-5, c=5, d=-10, tx=0, ty=0)
+   rotation = -26.56505117707799
+   scaleX = 11.180339887498949
+   scaleY = -11.180339887498949
+matrix = (a=10, b=-5, c=5, d=-5, tx=0, ty=0)
+   rotation = -26.56505117707799
+   scaleX = 11.180339887498949
+   scaleY = -7.0710678118654755
+matrix = (a=10, b=-5, c=5, d=0, tx=0, ty=0)
+   rotation = -26.56505117707799
+   scaleX = 11.180339887498949
+   scaleY = 5
+matrix = (a=10, b=-5, c=5, d=5, tx=0, ty=0)
+   rotation = -26.56505117707799
+   scaleX = 11.180339887498949
+   scaleY = 7.0710678118654755
+matrix = (a=10, b=-5, c=5, d=10, tx=0, ty=0)
+   rotation = -26.56505117707799
+   scaleX = 11.180339887498949
+   scaleY = 11.180339887498949
+matrix = (a=10, b=-5, c=10, d=-10, tx=0, ty=0)
+   rotation = -26.56505117707799
+   scaleX = 11.180339887498949
+   scaleY = -14.142135623730951
+matrix = (a=10, b=-5, c=10, d=-5, tx=0, ty=0)
+   rotation = -26.56505117707799
+   scaleX = 11.180339887498949
+   scaleY = 11.180339887498949
+matrix = (a=10, b=-5, c=10, d=0, tx=0, ty=0)
+   rotation = -26.56505117707799
+   scaleX = 11.180339887498949
+   scaleY = 10
+matrix = (a=10, b=-5, c=10, d=5, tx=0, ty=0)
+   rotation = -26.56505117707799
+   scaleX = 11.180339887498949
+   scaleY = 11.180339887498949
+matrix = (a=10, b=-5, c=10, d=10, tx=0, ty=0)
+   rotation = -26.56505117707799
+   scaleX = 11.180339887498949
+   scaleY = 14.142135623730951
+matrix = (a=10, b=0, c=-10, d=-10, tx=0, ty=0)
+   rotation = 0
+   scaleX = 10
+   scaleY = -14.142135623730951
+matrix = (a=10, b=0, c=-10, d=-5, tx=0, ty=0)
+   rotation = 0
+   scaleX = 10
+   scaleY = -11.180339887498949
+matrix = (a=10, b=0, c=-10, d=0, tx=0, ty=0)
+   rotation = 0
+   scaleX = 10
+   scaleY = 10
+matrix = (a=10, b=0, c=-10, d=5, tx=0, ty=0)
+   rotation = 0
+   scaleX = 10
+   scaleY = 11.180339887498949
+matrix = (a=10, b=0, c=-10, d=10, tx=0, ty=0)
+   rotation = 0
+   scaleX = 10
+   scaleY = 14.142135623730951
+matrix = (a=10, b=0, c=-5, d=-10, tx=0, ty=0)
+   rotation = 0
+   scaleX = 10
+   scaleY = -11.180339887498949
+matrix = (a=10, b=0, c=-5, d=-5, tx=0, ty=0)
+   rotation = 0
+   scaleX = 10
+   scaleY = -7.0710678118654755
+matrix = (a=10, b=0, c=-5, d=0, tx=0, ty=0)
+   rotation = 0
+   scaleX = 10
+   scaleY = 5
+matrix = (a=10, b=0, c=-5, d=5, tx=0, ty=0)
+   rotation = 0
+   scaleX = 10
+   scaleY = 7.0710678118654755
+matrix = (a=10, b=0, c=-5, d=10, tx=0, ty=0)
+   rotation = 0
+   scaleX = 10
+   scaleY = 11.180339887498949
+matrix = (a=10, b=0, c=0, d=-10, tx=0, ty=0)
+   rotation = 0
+   scaleX = 10
+   scaleY = -10
+matrix = (a=10, b=0, c=0, d=-5, tx=0, ty=0)
+   rotation = 0
+   scaleX = 10
+   scaleY = -5
+matrix = (a=10, b=0, c=0, d=0, tx=0, ty=0)
+   rotation = 0
+   scaleX = 10
+   scaleY = 0
+matrix = (a=10, b=0, c=0, d=5, tx=0, ty=0)
+   rotation = 0
+   scaleX = 10
+   scaleY = 5
+matrix = (a=10, b=0, c=0, d=10, tx=0, ty=0)
+   rotation = 0
+   scaleX = 10
+   scaleY = 10
+matrix = (a=10, b=0, c=5, d=-10, tx=0, ty=0)
+   rotation = 0
+   scaleX = 10
+   scaleY = -11.180339887498949
+matrix = (a=10, b=0, c=5, d=-5, tx=0, ty=0)
+   rotation = 0
+   scaleX = 10
+   scaleY = -7.0710678118654755
+matrix = (a=10, b=0, c=5, d=0, tx=0, ty=0)
+   rotation = 0
+   scaleX = 10
+   scaleY = 5
+matrix = (a=10, b=0, c=5, d=5, tx=0, ty=0)
+   rotation = 0
+   scaleX = 10
+   scaleY = 7.0710678118654755
+matrix = (a=10, b=0, c=5, d=10, tx=0, ty=0)
+   rotation = 0
+   scaleX = 10
+   scaleY = 11.180339887498949
+matrix = (a=10, b=0, c=10, d=-10, tx=0, ty=0)
+   rotation = 0
+   scaleX = 10
+   scaleY = -14.142135623730951
+matrix = (a=10, b=0, c=10, d=-5, tx=0, ty=0)
+   rotation = 0
+   scaleX = 10
+   scaleY = -11.180339887498949
+matrix = (a=10, b=0, c=10, d=0, tx=0, ty=0)
+   rotation = 0
+   scaleX = 10
+   scaleY = 10
+matrix = (a=10, b=0, c=10, d=5, tx=0, ty=0)
+   rotation = 0
+   scaleX = 10
+   scaleY = 11.180339887498949
+matrix = (a=10, b=0, c=10, d=10, tx=0, ty=0)
+   rotation = 0
+   scaleX = 10
+   scaleY = 14.142135623730951
+matrix = (a=10, b=5, c=-10, d=-10, tx=0, ty=0)
+   rotation = 26.56505117707799
+   scaleX = 11.180339887498949
+   scaleY = -14.142135623730951
+matrix = (a=10, b=5, c=-10, d=-5, tx=0, ty=0)
+   rotation = 26.56505117707799
+   scaleX = 11.180339887498949
+   scaleY = 11.180339887498949
+matrix = (a=10, b=5, c=-10, d=0, tx=0, ty=0)
+   rotation = 26.56505117707799
+   scaleX = 11.180339887498949
+   scaleY = 10
+matrix = (a=10, b=5, c=-10, d=5, tx=0, ty=0)
+   rotation = 26.56505117707799
+   scaleX = 11.180339887498949
+   scaleY = 11.180339887498949
+matrix = (a=10, b=5, c=-10, d=10, tx=0, ty=0)
+   rotation = 26.56505117707799
+   scaleX = 11.180339887498949
+   scaleY = 14.142135623730951
+matrix = (a=10, b=5, c=-5, d=-10, tx=0, ty=0)
+   rotation = 26.56505117707799
+   scaleX = 11.180339887498949
+   scaleY = -11.180339887498949
+matrix = (a=10, b=5, c=-5, d=-5, tx=0, ty=0)
+   rotation = 26.56505117707799
+   scaleX = 11.180339887498949
+   scaleY = -7.0710678118654755
+matrix = (a=10, b=5, c=-5, d=0, tx=0, ty=0)
+   rotation = 26.56505117707799
+   scaleX = 11.180339887498949
+   scaleY = 5
+matrix = (a=10, b=5, c=-5, d=5, tx=0, ty=0)
+   rotation = 26.56505117707799
+   scaleX = 11.180339887498949
+   scaleY = 7.0710678118654755
+matrix = (a=10, b=5, c=-5, d=10, tx=0, ty=0)
+   rotation = 26.56505117707799
+   scaleX = 11.180339887498949
+   scaleY = 11.180339887498949
+matrix = (a=10, b=5, c=0, d=-10, tx=0, ty=0)
+   rotation = 26.56505117707799
+   scaleX = 11.180339887498949
+   scaleY = -10
+matrix = (a=10, b=5, c=0, d=-5, tx=0, ty=0)
+   rotation = 26.56505117707799
+   scaleX = 11.180339887498949
+   scaleY = -5
+matrix = (a=10, b=5, c=0, d=0, tx=0, ty=0)
+   rotation = 26.56505117707799
+   scaleX = 11.180339887498949
+   scaleY = 0
+matrix = (a=10, b=5, c=0, d=5, tx=0, ty=0)
+   rotation = 26.56505117707799
+   scaleX = 11.180339887498949
+   scaleY = 5
+matrix = (a=10, b=5, c=0, d=10, tx=0, ty=0)
+   rotation = 26.56505117707799
+   scaleX = 11.180339887498949
+   scaleY = 10
+matrix = (a=10, b=5, c=5, d=-10, tx=0, ty=0)
+   rotation = 26.56505117707799
+   scaleX = 11.180339887498949
+   scaleY = -11.180339887498949
+matrix = (a=10, b=5, c=5, d=-5, tx=0, ty=0)
+   rotation = 26.56505117707799
+   scaleX = 11.180339887498949
+   scaleY = -7.0710678118654755
+matrix = (a=10, b=5, c=5, d=0, tx=0, ty=0)
+   rotation = 26.56505117707799
+   scaleX = 11.180339887498949
+   scaleY = -5
+matrix = (a=10, b=5, c=5, d=5, tx=0, ty=0)
+   rotation = 26.56505117707799
+   scaleX = 11.180339887498949
+   scaleY = 7.0710678118654755
+matrix = (a=10, b=5, c=5, d=10, tx=0, ty=0)
+   rotation = 26.56505117707799
+   scaleX = 11.180339887498949
+   scaleY = 11.180339887498949
+matrix = (a=10, b=5, c=10, d=-10, tx=0, ty=0)
+   rotation = 26.56505117707799
+   scaleX = 11.180339887498949
+   scaleY = -14.142135623730951
+matrix = (a=10, b=5, c=10, d=-5, tx=0, ty=0)
+   rotation = 26.56505117707799
+   scaleX = 11.180339887498949
+   scaleY = -11.180339887498949
+matrix = (a=10, b=5, c=10, d=0, tx=0, ty=0)
+   rotation = 26.56505117707799
+   scaleX = 11.180339887498949
+   scaleY = -10
+matrix = (a=10, b=5, c=10, d=5, tx=0, ty=0)
+   rotation = 26.56505117707799
+   scaleX = 11.180339887498949
+   scaleY = 11.180339887498949
+matrix = (a=10, b=5, c=10, d=10, tx=0, ty=0)
+   rotation = 26.56505117707799
+   scaleX = 11.180339887498949
+   scaleY = 14.142135623730951
+matrix = (a=10, b=10, c=-10, d=-10, tx=0, ty=0)
+   rotation = 45
+   scaleX = 14.142135623730951
+   scaleY = 14.142135623730951
+matrix = (a=10, b=10, c=-10, d=-5, tx=0, ty=0)
+   rotation = 45
+   scaleX = 14.142135623730951
+   scaleY = 11.180339887498949
+matrix = (a=10, b=10, c=-10, d=0, tx=0, ty=0)
+   rotation = 45
+   scaleX = 14.142135623730951
+   scaleY = 10
+matrix = (a=10, b=10, c=-10, d=5, tx=0, ty=0)
+   rotation = 45
+   scaleX = 14.142135623730951
+   scaleY = 11.180339887498949
+matrix = (a=10, b=10, c=-10, d=10, tx=0, ty=0)
+   rotation = 45
+   scaleX = 14.142135623730951
+   scaleY = 14.142135623730951
+matrix = (a=10, b=10, c=-5, d=-10, tx=0, ty=0)
+   rotation = 45
+   scaleX = 14.142135623730951
+   scaleY = -11.180339887498949
+matrix = (a=10, b=10, c=-5, d=-5, tx=0, ty=0)
+   rotation = 45
+   scaleX = 14.142135623730951
+   scaleY = 7.0710678118654755
+matrix = (a=10, b=10, c=-5, d=0, tx=0, ty=0)
+   rotation = 45
+   scaleX = 14.142135623730951
+   scaleY = 5
+matrix = (a=10, b=10, c=-5, d=5, tx=0, ty=0)
+   rotation = 45
+   scaleX = 14.142135623730951
+   scaleY = 7.0710678118654755
+matrix = (a=10, b=10, c=-5, d=10, tx=0, ty=0)
+   rotation = 45
+   scaleX = 14.142135623730951
+   scaleY = 11.180339887498949
+matrix = (a=10, b=10, c=0, d=-10, tx=0, ty=0)
+   rotation = 45
+   scaleX = 14.142135623730951
+   scaleY = -10
+matrix = (a=10, b=10, c=0, d=-5, tx=0, ty=0)
+   rotation = 45
+   scaleX = 14.142135623730951
+   scaleY = -5
+matrix = (a=10, b=10, c=0, d=0, tx=0, ty=0)
+   rotation = 45
+   scaleX = 14.142135623730951
+   scaleY = 0
+matrix = (a=10, b=10, c=0, d=5, tx=0, ty=0)
+   rotation = 45
+   scaleX = 14.142135623730951
+   scaleY = 5
+matrix = (a=10, b=10, c=0, d=10, tx=0, ty=0)
+   rotation = 45
+   scaleX = 14.142135623730951
+   scaleY = 10
+matrix = (a=10, b=10, c=5, d=-10, tx=0, ty=0)
+   rotation = 45
+   scaleX = 14.142135623730951
+   scaleY = -11.180339887498949
+matrix = (a=10, b=10, c=5, d=-5, tx=0, ty=0)
+   rotation = 45
+   scaleX = 14.142135623730951
+   scaleY = -7.0710678118654755
+matrix = (a=10, b=10, c=5, d=0, tx=0, ty=0)
+   rotation = 45
+   scaleX = 14.142135623730951
+   scaleY = -5
+matrix = (a=10, b=10, c=5, d=5, tx=0, ty=0)
+   rotation = 45
+   scaleX = 14.142135623730951
+   scaleY = 7.0710678118654755
+matrix = (a=10, b=10, c=5, d=10, tx=0, ty=0)
+   rotation = 45
+   scaleX = 14.142135623730951
+   scaleY = 11.180339887498949
+matrix = (a=10, b=10, c=10, d=-10, tx=0, ty=0)
+   rotation = 45
+   scaleX = 14.142135623730951
+   scaleY = -14.142135623730951
+matrix = (a=10, b=10, c=10, d=-5, tx=0, ty=0)
+   rotation = 45
+   scaleX = 14.142135623730951
+   scaleY = -11.180339887498949
+matrix = (a=10, b=10, c=10, d=0, tx=0, ty=0)
+   rotation = 45
+   scaleX = 14.142135623730951
+   scaleY = -10
+matrix = (a=10, b=10, c=10, d=5, tx=0, ty=0)
+   rotation = 45
+   scaleX = 14.142135623730951
+   scaleY = -11.180339887498949
+matrix = (a=10, b=10, c=10, d=10, tx=0, ty=0)
+   rotation = 45
+   scaleX = 14.142135623730951
+   scaleY = 14.142135623730951
