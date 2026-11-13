@@ -1,6 +1,6 @@
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
-use crate::avm1::globals::bitmap_filter;
+use crate::avm1::globals::{bitmap_filter, text_format};
 use crate::avm1::object::NativeObject;
 use crate::avm1::property_decl::{DeclContext, PropertyOrder, StaticDeclarations, SystemClass};
 use crate::avm1::{ArrayBuilder, Object, Value, globals};
@@ -139,6 +139,10 @@ fn new_text_format<'gc>(
         activation.gc(),
         NativeObject::TextFormat(Gc::new(activation.gc(), text_format.into())),
     );
+    text_format::define_instance_properties(activation, object);
+    if let Some(Value::Object(proto)) = proto {
+        text_format::define_lazy_proto_properties(activation, proto);
+    }
     object
 }
 

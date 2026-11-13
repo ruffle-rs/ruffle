@@ -457,7 +457,6 @@ Testing _global.TextFormat
   constructor, DONT_DELETE
   prototype, DONT_DELETE
 Testing _global.TextFormat.prototype
-  getTextExtent, DONT_DELETE
   __proto__, DONT_DELETE
   constructor, DONT_DELETE
 Testing _global.TextField
