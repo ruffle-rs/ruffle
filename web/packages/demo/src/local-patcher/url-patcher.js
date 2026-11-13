@@ -79,6 +79,36 @@ function decodeResourceIfExist(name) {
     return decoded;
 }
 
+// patch url
+const OriginalURL = URL;
+function PatchedURL() {
+    if (!new.target) throw new TypeError("'new' is required");
+    const decodedURL = decodeResourceIfExist(arguments[0]);
+    let self;
+    if (decodedURL == null) {
+        // URL cannot be decoded
+        self = Reflect.construct(OriginalURL, arguments, new.target);
+    } else {
+        // Use decoded URL
+        self = Reflect.construct(OriginalURL, [decodedURL], new.target);
+    }
+    return self;
+}
+PatchedURL.prototype = Object.create(OriginalURL.prototype, {
+    constructor: {
+        value: PatchedURL,
+        writable: true,
+        configurable: true,
+    },
+});
+Object.setPrototypeOf(PatchedURL, OriginalURL);
+Object.defineProperty(window, "URL", {
+    value: PatchedURL,
+    writable: true,
+    configurable: true,
+    enumerable: false,
+});
+
 // patch fetch
 const originalFetch = fetch;
 function patchedFetch() {
