@@ -42,6 +42,7 @@ function decodeResourceIfExist(name) {
     if (name instanceof URL) {
         name = name.href;
     }
+    const originalName = name;
     if (typeof name != "string") {
         // skip undefined
         return null;
@@ -65,11 +66,11 @@ function decodeResourceIfExist(name) {
     }
     if (!RUFFLE_RES[name]) {
         // resource does not exist
-        console.warn("url-patcher: unable to patch url", name);
+        console.warn("url-patcher: unable to patch url", originalName, "->", name);
         return null;
     }
-    console.log("url-patcher: patching url", name);
     const decoded = deb85gz(RUFFLE_RES[name]);
+    console.log("url-patcher: patched url", originalName, "->", name, "->", decoded);
     decodedRes[name] = decoded;
     RUFFLE_RES[name].length = 0; // reduce memory usage
     return decoded;
