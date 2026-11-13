@@ -4,6 +4,17 @@ use png::DecodingError;
 use std::borrow::Cow;
 use std::io::{Cursor, Read};
 use swf::Color;
+use zune_jpeg::{
+    JpegDecoder,
+    zune_core::{bytestream::ZCursor, colorspace::ColorSpace, options::DecoderOptions},
+};
+
+// JPEG markers
+const SOF0: u8 = 0xC0; // Start of frame
+const RST0: u8 = 0xD0; // Restart (we shouldn't see this before SOS, but just in case)
+const RST7: u8 = 0xD7;
+const SOI: u8 = 0xD8; // Start of image
+const EOI: u8 = 0xD9; // End of image
 
 /// The format of image data in a DefineBitsJpeg2/3 tag.
 /// Generally this will be JPEG, but according to SWF19, these tags can also contain PNG and GIF data.
@@ -70,8 +81,13 @@ pub fn glue_tables_to_jpeg<'a>(
     if let Some(jpeg_tables) = jpeg_tables
         && jpeg_tables.len() >= 2
     {
+        // The tables usually end with an EOI marker, which must not end up in
+        // the middle of the glued JPEG.
+        let jpeg_tables = jpeg_tables
+            .strip_suffix(&[0xFF, EOI])
+            .unwrap_or(jpeg_tables);
         let mut full_jpeg = Vec::with_capacity(jpeg_tables.len() + jpeg_data.len());
-        full_jpeg.extend_from_slice(&jpeg_tables[..jpeg_tables.len() - 2]);
+        full_jpeg.extend_from_slice(jpeg_tables);
         if jpeg_data.len() >= 2 {
             full_jpeg.extend_from_slice(&jpeg_data[2..]);
         }
@@ -99,14 +115,7 @@ pub fn remove_invalid_jpeg_data(data: &[u8]) -> Cow<'_, [u8]> {
     // v9 SWF can contain one of these malformed JPEGs and display correctly).
     // See https://github.com/ruffle-rs/ruffle/issues/8775 for various examples.
 
-    // JPEG markers
-    const SOF0: u8 = 0xC0; // Start of frame
-    const RST0: u8 = 0xD0; // Restart (we shouldn't see this before SOS, but just in case)
-    const RST7: u8 = 0xD7;
-    const SOI: u8 = 0xD8; // Start of image
-    const EOI: u8 = 0xD9; // End of image
-
-    let mut data: Cow<[u8]> = if let Some(stripped) = data.strip_prefix(&[0xFF, EOI, 0xFF, SOI]) {
+    if let Some(stripped) = data.strip_prefix(&[0xFF, EOI, 0xFF, SOI]) {
         // Common case: usually the sequence is at the beginning as the spec says, so adjust the slice to avoid a copy.
         stripped.into()
     } else {
@@ -146,17 +155,7 @@ pub fn remove_invalid_jpeg_data(data: &[u8]) -> Cow<'_, [u8]> {
             jpeg_data = jpeg_data.get(payload_len + 2..).unwrap_or_default();
             pos += payload_len + 2;
         }
-    };
-
-    // Some JPEGs are missing the final EOI marker (JPEG optimizers truncate it?)
-    // Flash and most image decoders will still display these images, but jpeg-decoder errors.
-    // Glue on an EOI marker if its not already there and hope for the best.
-    if !data.ends_with(&[0xFF, EOI]) {
-        tracing::warn!("JPEG is missing EOI marker and may not decode properly");
-        data.to_mut().extend_from_slice(&[0xFF, EOI]);
     }
-
-    data
 }
 
 /// Some SWFs report unreasonable bitmap dimensions (#1191).
@@ -171,55 +170,39 @@ fn validate_size(width: u32, height: u32) -> Result<(), Error> {
     Ok(())
 }
 
+type ZuneJpegDecoder<'a> = JpegDecoder<ZCursor<&'a [u8]>>;
+
+/// Reads the headers of a JPEG, failing if it's too large. The decoder decodes to RGB.
+fn read_jpeg_headers(jpeg_data: &[u8]) -> Result<(ZuneJpegDecoder<'_>, u16, u16), Error> {
+    // zune-jpeg rejects images larger than 16384 pixels, leave that to `validate_size`.
+    let options = DecoderOptions::default()
+        .set_max_width(u16::MAX.into())
+        .set_max_height(u16::MAX.into())
+        .jpeg_set_out_colorspace(ColorSpace::RGB);
+    let mut decoder = JpegDecoder::new_with_options(ZCursor::new(jpeg_data), options);
+    decoder.decode_headers()?;
+
+    let info = decoder
+        .info()
+        .expect("info() should always return Some if decode_headers returned Ok");
+    validate_size(info.width.into(), info.height.into())?;
+
+    Ok((decoder, info.width, info.height))
+}
+
 fn decode_jpeg_dimensions(jpeg_data: &[u8]) -> Result<(u16, u16), Error> {
     let jpeg_data = remove_invalid_jpeg_data(jpeg_data);
+    let (_, width, height) = read_jpeg_headers(&jpeg_data)?;
 
-    let mut decoder = jpeg_decoder::Decoder::new(&jpeg_data[..]);
-    decoder.read_info()?;
-    let metadata = decoder
-        .info()
-        .expect("info() should always return Some if read_info returned Ok");
-    validate_size(metadata.width.into(), metadata.height.into())?;
-    Ok((metadata.width, metadata.height))
+    Ok((width, height))
 }
 
 /// Decodes a JPEG with optional alpha data.
 /// The decoded bitmap will have pre-multiplied alpha.
 fn decode_jpeg(jpeg_data: &[u8], alpha_data: Option<&[u8]>) -> Result<Bitmap<'static>, Error> {
     let jpeg_data = remove_invalid_jpeg_data(jpeg_data);
-
-    let mut decoder = jpeg_decoder::Decoder::new(&jpeg_data[..]);
-    decoder.read_info()?;
-    let metadata = decoder
-        .info()
-        .expect("info() should always return Some if read_info returned Ok");
-    validate_size(metadata.width.into(), metadata.height.into())?;
+    let (mut decoder, width, height) = read_jpeg_headers(&jpeg_data)?;
     let decoded_data = decoder.decode()?;
-
-    let decoded_data = match metadata.pixel_format {
-        jpeg_decoder::PixelFormat::RGB24 => decoded_data,
-        jpeg_decoder::PixelFormat::CMYK32 => decoded_data
-            .as_chunks::<4>()
-            .0
-            .iter()
-            .flat_map(|cmyk| {
-                let c = 255 - u16::from(cmyk[0]);
-                let m = 255 - u16::from(cmyk[1]);
-                let y = 255 - u16::from(cmyk[2]);
-                let k = 255 - u16::from(cmyk[3]);
-
-                let r = c * k / 255;
-                let g = m * k / 255;
-                let b = y * k / 255;
-                [r as u8, g as u8, b as u8]
-            })
-            .collect(),
-        jpeg_decoder::PixelFormat::L8 => decoded_data.iter().flat_map(|&c| [c, c, c]).collect(),
-        jpeg_decoder::PixelFormat::L16 => {
-            tracing::warn!("Unimplemented L16 JPEG pixel format");
-            decoded_data
-        }
-    };
 
     // Decompress the alpha data (DEFLATE compression).
     if let Some(alpha_data) = alpha_data {
@@ -243,9 +226,10 @@ fn decode_jpeg(jpeg_data: &[u8], alpha_data: Option<&[u8]>) -> Result<Bitmap<'st
                     [r, g, b, a]
                 })
                 .collect();
+
             return Ok(Bitmap::new(
-                metadata.width.into(),
-                metadata.height.into(),
+                width.into(),
+                height.into(),
                 BitmapFormat::Rgba,
                 rgba,
             ));
@@ -257,8 +241,8 @@ fn decode_jpeg(jpeg_data: &[u8], alpha_data: Option<&[u8]>) -> Result<Bitmap<'st
 
     // No alpha.
     Ok(Bitmap::new(
-        metadata.width.into(),
-        metadata.height.into(),
+        width.into(),
+        height.into(),
         BitmapFormat::Rgb,
         decoded_data,
     ))
