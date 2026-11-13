@@ -43,10 +43,10 @@ const PROTO_DECLS: StaticDeclarations = declare_static_properties! {
 };
 
 const OBJECT_DECLS: StaticDeclarations = declare_static_properties! {
-    "deleteAll" => method(delete_all; DONT_ENUM);
-    "getDiskUsage" => method(get_disk_usage; DONT_ENUM);
-    "getLocal" => method(get_local);
-    "getRemote" => method(get_remote);
+    "deleteAll" => method(@As2 delete_all; DONT_ENUM);
+    "getDiskUsage" => method(@As2 get_disk_usage; DONT_ENUM);
+    "getLocal" => method(@As2 get_local);
+    "getRemote" => method(@As2 get_remote);
 };
 
 pub fn create_class<'gc>(

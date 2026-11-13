@@ -15,14 +15,14 @@ pub fn constructor<'gc>(
 }
 
 const PROTO_DECLS: StaticDeclarations = declare_static_properties! {
-    "publish" => method(publish; DONT_ENUM | DONT_DELETE);
-    "play" => method(play; DONT_ENUM | DONT_DELETE);
-    "play2" => method(play2; DONT_ENUM | DONT_DELETE);
-    "receiveAudio" => method(receive_audio; DONT_ENUM | DONT_DELETE);
-    "receiveVideo" => method(receive_video; DONT_ENUM | DONT_DELETE);
-    "pause" => method(pause; DONT_ENUM | DONT_DELETE);
-    "seek" => method(seek; DONT_ENUM | DONT_DELETE);
-    "onPeerConnect" => method(on_peer_connect; DONT_ENUM | DONT_DELETE);
+    "publish" => method(@As2 publish; DONT_ENUM | DONT_DELETE);
+    "play" => method(@As2 play; DONT_ENUM | DONT_DELETE);
+    "play2" => method(@As2 play2; DONT_ENUM | DONT_DELETE);
+    "receiveAudio" => method(@As2 receive_audio; DONT_ENUM | DONT_DELETE);
+    "receiveVideo" => method(@As2 receive_video; DONT_ENUM | DONT_DELETE);
+    "pause" => method(@As2 pause; DONT_ENUM | DONT_DELETE);
+    "seek" => method(@As2 seek; DONT_ENUM | DONT_DELETE);
+    "onPeerConnect" => method(@As2 on_peer_connect; DONT_ENUM | DONT_DELETE);
     "close" => method(close; DONT_ENUM | DONT_DELETE);
     "attachAudio" => method(attach_audio; DONT_ENUM | DONT_DELETE);
     "attachVideo" => method(attach_video; DONT_ENUM | DONT_DELETE);

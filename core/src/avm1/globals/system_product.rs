@@ -7,12 +7,12 @@ use crate::avm1::{Attribute, Object, Value};
 use crate::avm1_stub;
 
 const PROTO_DECLS: StaticDeclarations = declare_static_properties! {
-    "isRunning" => method(is_running);
-    "isInstalled" => method(is_installed);
-    "launch" => method(launch);
-    "download" => method(download);
-    "validate" => method(validate);
-    "installedVersion" => method(installed_version);
+    "isRunning" => method(@As2 is_running);
+    "isInstalled" => method(@As2 is_installed);
+    "launch" => method(@As2 launch);
+    "download" => method(@As2 download);
+    "validate" => method(@As2 validate);
+    "installedVersion" => method(@As2 installed_version);
 };
 
 pub fn create_class<'gc>(
