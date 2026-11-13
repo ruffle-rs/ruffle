@@ -1480,6 +1480,7 @@ pub fn draw<'gc>(
         is_offscreen: true,
         use_bitmap_cache: false,
         stage: context.stage,
+        player_runtime: context.avm2.player_runtime,
     };
 
     // Make the screen opacity match the opacity of this bitmap

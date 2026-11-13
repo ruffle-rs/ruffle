@@ -30,7 +30,7 @@ use crate::local_connection::LocalConnections;
 use crate::net_connection::NetConnections;
 use crate::orphan_manager::OrphanManager;
 use crate::player::PostFrameCallback;
-use crate::player::{MouseData, Player};
+use crate::player::{MouseData, Player, PlayerRuntime};
 use crate::prelude::*;
 use crate::socket::Sockets;
 use crate::streams::StreamManager;
@@ -603,6 +603,8 @@ pub struct RenderContext<'a, 'gc> {
 
     /// The current player's stage (including all loaded levels)
     pub stage: Stage<'gc>,
+
+    pub player_runtime: PlayerRuntime,
 }
 
 impl<'gc> RenderContext<'_, 'gc> {

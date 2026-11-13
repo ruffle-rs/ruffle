@@ -327,8 +327,7 @@ pub struct Player {
     player_version: u8,
 
     /// The runtime we're emulating (Flash Player or Adobe AIR).
-    /// In Adobe AIR mode, additional classes are available
-    #[expect(unused)]
+    /// In Adobe AIR mode, additional classes are available.
     player_runtime: PlayerRuntime,
 
     /// Whether we're emulating the release or the debug build.
@@ -2056,6 +2055,7 @@ impl Player {
                 is_offscreen: false,
                 use_bitmap_cache: true,
                 stage,
+                player_runtime: this.player_runtime,
             };
 
             stage.render_viewport(&mut render_context);
