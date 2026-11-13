@@ -1,0 +1,12 @@
+num_ticks = 6
+known_failure = true
+
+[player_options]
+with_default_font = true
+
+[[compilers]]
+type = "Asc"
+target = "test.swf"
+class = "Test"
+scripts = ["Test.as"]
+swf_version = 10
