@@ -71,7 +71,7 @@ error-wasm-disabled-on-edge =
     O Ruffle falhou ao carregar o componente de ficheiro ".wasm" necessário.
     Tente corrigir isto nas definições do navegador; clique em "Privacidade, pesquisa e serviços", deslize para baixo e desative "Melhore a sua segurança na Web".
     Isto permitirá ao navegador carregar os ficheiros ".wasm" necessários.
-    Se o problema persistir, talvez precise de um navegador diferente.
+    Se o problema persistir, talvez precise de usar um navegador diferente.
 error-wasm-unsupported-browser =
     O navegador que usa não suporta as extensões WebAssembly de que o Ruffle necessita para executar.
     Deve mudar para um navegador suportado.
@@ -85,6 +85,9 @@ error-csp-conflict =
     O Ruffle encontrou um problema grave ao tentar inicializar.
     A Política de Segurança de Conteúdos deste servidor web não permite executar o componente ".wasm" necessário.
     Se é o administrador do servidor, consulte a wiki do Ruffle para obter ajuda.
+error-url-invalid =
+    O Ruffle falhou ao carregar o ficheiro Flash SWF.
+    O motivo mais provável é que uma URL inválida para o ficheiro SWF tenha sido fornecida ao Ruffle.
 error-unknown =
     O Ruffle encontrou um problema grave ao tentar apresentar este conteúdo Flash.
     { $outdated ->
