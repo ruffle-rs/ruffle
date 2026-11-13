@@ -2840,12 +2840,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "jpeg-decoder"
-version = "0.3.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "00810f1d8b74be64b13dbf3db89ac67740615d6c891f0e7b6179326533011a07"
-
-[[package]]
 name = "jpegxr"
 version = "0.3.1"
 source = "git+https://github.com/ruffle-rs/jpegxr?rev=86cc1749d493288f53d7290ac3eb7082c475b5d9#86cc1749d493288f53d7290ac3eb7082c475b5d9"
@@ -4942,7 +4936,6 @@ dependencies = [
  "h263-rs-yuv",
  "image",
  "indexmap",
- "jpeg-decoder",
  "jpegxr",
  "lyon",
  "lyon_geom",
@@ -4960,6 +4953,7 @@ dependencies = [
  "tracing",
  "wasm-bindgen",
  "wgpu",
+ "zune-jpeg",
 ]
 
 [[package]]

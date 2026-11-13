@@ -4,6 +4,10 @@ use png::DecodingError;
 use std::borrow::Cow;
 use std::io::{Cursor, Read};
 use swf::Color;
+use zune_jpeg::{
+    JpegDecoder,
+    zune_core::{bytestream::ZCursor, colorspace::ColorSpace, options::DecoderOptions},
+};
 
 /// The format of image data in a DefineBitsJpeg2/3 tag.
 /// Generally this will be JPEG, but according to SWF19, these tags can also contain PNG and GIF data.
@@ -171,16 +175,36 @@ fn validate_size(width: u16, height: u16) -> Result<(), Error> {
     Ok(())
 }
 
+/// `DecoderOptions` with:
+///
+/// - `max_width` / `max_height` raised to `u16::MAX`, so `validate_size` is the sole gate
+///   on oversized bitmaps (matches the behavior of the previously used `jpeg-decoder`
+///   which had no built-in dimension cap).
+/// - output colorspace set to RGB, so that `decode()` always returns 3-channel RGB24
+fn zune_decoder_options() -> DecoderOptions {
+    DecoderOptions::default()
+        .set_max_width(u16::MAX.into())
+        .set_max_height(u16::MAX.into())
+        .jpeg_set_out_colorspace(ColorSpace::RGB)
+}
+
 fn decode_jpeg_dimensions(jpeg_data: &[u8]) -> Result<(u16, u16), Error> {
     let jpeg_data = remove_invalid_jpeg_data(jpeg_data);
 
-    let mut decoder = jpeg_decoder::Decoder::new(&jpeg_data[..]);
-    decoder.read_info()?;
-    let metadata = decoder
-        .info()
-        .expect("info() should always return Some if read_info returned Ok");
-    validate_size(metadata.width, metadata.height)?;
-    Ok((metadata.width, metadata.height))
+    let mut decoder =
+        JpegDecoder::new_with_options(ZCursor::new(&jpeg_data[..]), zune_decoder_options());
+
+    decoder.decode_headers()?;
+
+    let (width, height) = decoder
+        .dimensions()
+        .expect("dimensions() should always return Some if decode_headers returned Ok");
+    let width = u16::try_from(width).map_err(|_| Error::TooLarge)?;
+    let height = u16::try_from(height).map_err(|_| Error::TooLarge)?;
+
+    validate_size(width, height)?;
+
+    Ok((width, height))
 }
 
 /// Decodes a JPEG with optional alpha data.
@@ -188,38 +212,21 @@ fn decode_jpeg_dimensions(jpeg_data: &[u8]) -> Result<(u16, u16), Error> {
 fn decode_jpeg(jpeg_data: &[u8], alpha_data: Option<&[u8]>) -> Result<Bitmap<'static>, Error> {
     let jpeg_data = remove_invalid_jpeg_data(jpeg_data);
 
-    let mut decoder = jpeg_decoder::Decoder::new(&jpeg_data[..]);
-    decoder.read_info()?;
-    let metadata = decoder
-        .info()
-        .expect("info() should always return Some if read_info returned Ok");
-    validate_size(metadata.width, metadata.height)?;
+    let mut decoder =
+        JpegDecoder::new_with_options(ZCursor::new(&jpeg_data[..]), zune_decoder_options());
+
+    decoder.decode_headers()?;
+
+    let (width, height) = decoder
+        .dimensions()
+        .expect("dimensions() should always return Some if decode_headers returned Ok");
+    let width = u16::try_from(width).map_err(|_| Error::TooLarge)?;
+    let height = u16::try_from(height).map_err(|_| Error::TooLarge)?;
+
+    validate_size(width, height)?;
+
+    // Always 3-channel RGB24; see `zune_decoder_options`.
     let decoded_data = decoder.decode()?;
-
-    let decoded_data = match metadata.pixel_format {
-        jpeg_decoder::PixelFormat::RGB24 => decoded_data,
-        jpeg_decoder::PixelFormat::CMYK32 => decoded_data
-            .as_chunks::<4>()
-            .0
-            .iter()
-            .flat_map(|cmyk| {
-                let c = 255 - u16::from(cmyk[0]);
-                let m = 255 - u16::from(cmyk[1]);
-                let y = 255 - u16::from(cmyk[2]);
-                let k = 255 - u16::from(cmyk[3]);
-
-                let r = c * k / 255;
-                let g = m * k / 255;
-                let b = y * k / 255;
-                [r as u8, g as u8, b as u8]
-            })
-            .collect(),
-        jpeg_decoder::PixelFormat::L8 => decoded_data.iter().flat_map(|&c| [c, c, c]).collect(),
-        jpeg_decoder::PixelFormat::L16 => {
-            tracing::warn!("Unimplemented L16 JPEG pixel format");
-            decoded_data
-        }
-    };
 
     // Decompress the alpha data (DEFLATE compression).
     if let Some(alpha_data) = alpha_data {
@@ -243,9 +250,10 @@ fn decode_jpeg(jpeg_data: &[u8], alpha_data: Option<&[u8]>) -> Result<Bitmap<'st
                     [r, g, b, a]
                 })
                 .collect();
+
             return Ok(Bitmap::new(
-                metadata.width.into(),
-                metadata.height.into(),
+                width.into(),
+                height.into(),
                 BitmapFormat::Rgba,
                 rgba,
             ));
@@ -257,8 +265,8 @@ fn decode_jpeg(jpeg_data: &[u8], alpha_data: Option<&[u8]>) -> Result<Bitmap<'st
 
     // No alpha.
     Ok(Bitmap::new(
-        metadata.width.into(),
-        metadata.height.into(),
+        width.into(),
+        height.into(),
         BitmapFormat::Rgb,
         decoded_data,
     ))
