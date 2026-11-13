@@ -1,5 +1,6 @@
 num_ticks = 1
 log_fetch = true
+log_external_interface = true
 
 [[compilers]]
 type = "Asc"

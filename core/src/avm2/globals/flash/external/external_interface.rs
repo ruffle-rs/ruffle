@@ -1,7 +1,8 @@
-use crate::avm2::error::make_error_2067;
+use crate::avm2::error::{make_error_2060, make_error_2067};
 use crate::avm2::function::FunctionArgs;
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::{Activation, Error, Value};
+use crate::config::NetworkingAccessMode;
 use crate::external::{Callback, ExternalInterface, Value as ExternalValue};
 use crate::string::AvmString;
 
@@ -26,10 +27,17 @@ pub fn call<'gc>(
 }
 
 fn check_available<'gc>(activation: &mut Activation<'_, 'gc>) -> Result<(), Error<'gc>> {
-    if !activation.context.external_interface.available() {
-        return Err(make_error_2067(activation));
-    }
-    Ok(())
+    Err(match activation.context.allow_networking {
+        NetworkingAccessMode::All => {
+            if activation.context.external_interface.available() {
+                return Ok(());
+            }
+
+            make_error_2067(activation)
+        }
+        NetworkingAccessMode::Internal => make_error_2060(activation),
+        NetworkingAccessMode::None => make_error_2067(activation),
+    })
 }
 
 pub fn get_available<'gc>(
@@ -37,7 +45,14 @@ pub fn get_available<'gc>(
     _this: Value<'gc>,
     _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    Ok(activation.context.external_interface.available().into())
+    Ok(match activation.context.allow_networking {
+        // For some strange reason internal can still return true.
+        NetworkingAccessMode::All | NetworkingAccessMode::Internal => {
+            activation.context.external_interface.available()
+        }
+        NetworkingAccessMode::None => false,
+    }
+    .into())
 }
 
 pub fn add_callback<'gc>(

@@ -1,4 +1,5 @@
 pub mod environment;
+pub mod external_interface;
 pub mod fs_commands;
 pub mod image_trigger;
 pub mod options;
