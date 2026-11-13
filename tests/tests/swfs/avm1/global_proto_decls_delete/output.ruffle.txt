@@ -1165,17 +1165,4 @@ Testing _global.Object.prototype
   watch, DONT_DELETE
   constructor, DONT_DELETE
 Testing _global.ASnative
-  toLocaleString, DONT_DELETE
-  isPropertyEnumerable, DONT_DELETE
-  isPrototypeOf, DONT_DELETE
-  hasOwnProperty, DONT_DELETE
-  toString, DONT_DELETE
-  valueOf, DONT_DELETE
-  addProperty, DONT_DELETE
-  unwatch, DONT_DELETE
-  watch, DONT_DELETE
-  apply, DONT_DELETE
-  call, DONT_DELETE
-  constructor, DONT_DELETE
-  __proto__, DONT_DELETE
 Done
