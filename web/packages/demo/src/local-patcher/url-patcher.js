@@ -51,8 +51,11 @@ function decodeResourceIfExist(name) {
         // skip blob: urls
         return null;
     }
-    if (name.startsWith("http:") || name.startsWith("https:")) {
-        // skip http(s): urls since we are local files
+    // skip http(s): urls since we are local files, but someone may upload the html to http servers
+    if (name.startsWith("http:") && location.protocol != "http:") {
+        return null;
+    }
+    if (name.startsWith("https:") && location.protocol != "https:") {
         return null;
     }
     const slashIndex = name.lastIndexOf("/");
