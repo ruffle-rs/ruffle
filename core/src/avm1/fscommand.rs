@@ -7,17 +7,7 @@ use crate::string::WStr;
 
 /// Parse an FSCommand URL.
 pub fn parse(url: &WStr) -> Option<&WStr> {
-    let prefix = WStr::from_units(b"fscommand:");
-    if url.len() < prefix.len() {
-        return None;
-    }
-
-    let (head, tail) = url.split_at(prefix.len());
-    if head.eq_ignore_case(prefix) {
-        Some(tail)
-    } else {
-        None
-    }
+    url.strip_prefix_ignore_case(WStr::from_units(b"fscommand:"))
 }
 
 pub fn handle<'gc>(
