@@ -32,7 +32,6 @@ pub enum XmlStatus {
     DeclNotTerminated = -3,
 
     /// The DOCTYPE declaration was not properly terminated.
-    #[expect(dead_code)]
     DoctypeNotTerminated = -4,
 
     /// A comment was not properly terminated.
@@ -255,58 +254,47 @@ fn native_xml_status(error: &quick_xml::Error) -> XmlStatus {
     match error {
         quick_xml::Error::Syntax(SyntaxError::UnclosedCData) => XmlStatus::CdataNotTerminated,
         quick_xml::Error::Syntax(SyntaxError::UnclosedComment) => XmlStatus::CommentNotTerminated,
-        quick_xml::Error::Syntax(SyntaxError::UnclosedTag) => XmlStatus::ElementMalformed,
-        quick_xml::Error::Syntax(_) => XmlStatus::ElementMalformed,
-
-        quick_xml::Error::InvalidAttr(AttrError::UnquotedValue(_))
-        | quick_xml::Error::InvalidAttr(AttrError::ExpectedEq(_))
-        | quick_xml::Error::InvalidAttr(AttrError::Duplicated(_, _)) => XmlStatus::ElementMalformed,
-
+        quick_xml::Error::Syntax(SyntaxError::UnclosedDoctype) => XmlStatus::DoctypeNotTerminated,
         quick_xml::Error::InvalidAttr(AttrError::ExpectedQuote(_, _)) => {
             XmlStatus::AttributeNotTerminated
         }
-
-        quick_xml::Error::InvalidAttr(AttrError::ExpectedValue(_)) => XmlStatus::ElementMalformed,
-
         quick_xml::Error::IllFormed(
             IllFormedError::MismatchedEndTag { .. } | IllFormedError::UnmatchedEndTag { .. },
         ) => XmlStatus::MismatchedEnd,
-
         quick_xml::Error::IllFormed(IllFormedError::MissingDeclVersion(_)) => {
             XmlStatus::DeclNotTerminated
         }
-
-        _ => XmlStatus::OutOfMemory,
+        _ => XmlStatus::ElementMalformed,
     }
 }
 
+fn native_xml_reader(source: &str) -> Reader<&[u8]> {
+    let mut parser = Reader::from_str(source);
+    parser.config_mut().check_end_names = false;
+    parser.config_mut().allow_unmatched_ends = true;
+    parser
+}
+
+fn native_xml_is_declaration(source: &str) -> bool {
+    source
+        .as_bytes()
+        .get(..5)
+        .is_some_and(|prefix| prefix.eq_ignore_ascii_case(b"<?xml"))
+}
+
 fn native_xml_unclosed_tag_status(data: &str) -> XmlStatus {
-    let mut in_tag = false;
+    // The reader has already isolated one unterminated tag, so only the
+    // remaining quote state distinguishes a malformed tag from an attribute.
     let mut quote = None;
-
     for byte in data.bytes() {
-        if !in_tag {
-            if byte == b'<' {
-                in_tag = true;
-            }
-            continue;
-        }
-
-        if let Some(current_quote) = quote {
-            if byte == current_quote {
-                quote = None;
-            }
-            continue;
-        }
-
-        match byte {
-            b'\'' | b'"' => quote = Some(byte),
-            b'>' => in_tag = false,
-            _ => {}
-        }
+        quote = match quote {
+            Some(current_quote) if byte == current_quote => None,
+            None if matches!(byte, b'\'' | b'"') => Some(byte),
+            _ => quote,
+        };
     }
 
-    if in_tag && quote.is_some() {
+    if quote.is_some() {
         XmlStatus::AttributeNotTerminated
     } else {
         XmlStatus::ElementMalformed
@@ -342,6 +330,32 @@ fn push_native_xml_node<'gc>(
     Ok(())
 }
 
+fn push_native_xml_text<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    output: Object<'gc>,
+    node_type: u8,
+    bytes: &[u8],
+    ignore_white: bool,
+) -> Result<(), Error<'gc>> {
+    if bytes.is_empty()
+        || ignore_white
+            && bytes
+                .iter()
+                .all(|c| matches!(*c, b'\t' | b'\n' | b'\r' | b' '))
+    {
+        return Ok(());
+    }
+
+    push_native_xml_node(
+        activation,
+        output,
+        node_type,
+        AvmString::new_utf8_bytes(activation.gc(), bytes),
+        Object::new_without_proto(activation.gc()),
+        false,
+    )
+}
+
 fn native_xml_parse<'gc>(
     activation: &mut Activation<'_, 'gc>,
     args: &[Value<'gc>],
@@ -356,17 +370,63 @@ fn native_xml_parse<'gc>(
     output.set_length(activation, 0)?;
 
     let xml_utf8 = xml.to_utf8_lossy();
-    let mut parser = Reader::from_str(&xml_utf8);
-    parser.config_mut().check_end_names = false;
-    parser.config_mut().allow_unmatched_ends = true;
+    let mut source: &str = &xml_utf8;
+    let mut parser = native_xml_reader(source);
 
     loop {
+        // quick-xml discards an initial UTF-8 BOM and excludes it from its
+        // offsets. Flash treats it as text, including with ignoreWhite enabled.
+        // Consume the entire initial text run to preserve node boundaries.
+        if parser.buffer_position() == 0 && source.starts_with('\u{feff}') {
+            let text_end = source.find('<').unwrap_or(source.len());
+            let text = match avm1_unescape(&source.as_bytes()[..text_end]) {
+                Ok(text) => text,
+                Err(error) => {
+                    let error = quick_xml::Error::Encoding(EncodingError::Utf8(error));
+                    return Ok((native_xml_status(&error) as i8 as f64).into());
+                }
+            };
+            push_native_xml_text(
+                activation,
+                *output,
+                TEXT_NODE,
+                text.as_bytes(),
+                ignore_white,
+            )?;
+            source = &source[text_end..];
+            parser = native_xml_reader(source);
+            continue;
+        }
+
+        let event_start = parser.buffer_position() as usize;
         let event = match parser.read_event() {
             Ok(event) => event,
+            Err(quick_xml::Error::IllFormed(IllFormedError::MissingDoctypeName)) => {
+                // Flash accepts a DOCTYPE without a name. quick-xml consumes it,
+                // but stops parsing after the error, so resume from the remainder.
+                let event_end = parser.buffer_position() as usize;
+                push_native_xml_node(
+                    activation,
+                    *output,
+                    5,
+                    AvmString::new_utf8(activation.gc(), &source[event_start..event_end]),
+                    Object::new_without_proto(activation.gc()),
+                    false,
+                )?;
+                source = &source[event_end..];
+                parser = native_xml_reader(source);
+                continue;
+            }
             Err(error) => {
+                let invalid_markup = &source[parser.error_position() as usize..];
                 let status = match error {
                     quick_xml::Error::Syntax(SyntaxError::UnclosedTag) => {
-                        native_xml_unclosed_tag_status(&xml_utf8)
+                        native_xml_unclosed_tag_status(invalid_markup)
+                    }
+                    quick_xml::Error::Syntax(SyntaxError::UnclosedPIOrXmlDecl)
+                        if native_xml_is_declaration(invalid_markup) =>
+                    {
+                        XmlStatus::DeclNotTerminated
                     }
                     _ => native_xml_status(&error),
                 };
@@ -374,25 +434,35 @@ fn native_xml_parse<'gc>(
             }
         };
 
+        let empty = matches!(&event, Event::Empty(_));
         match event {
-            Event::Start(bs) => {
+            Event::Start(bs) | Event::Empty(bs) => {
                 let value = AvmString::new_utf8_bytes(activation.gc(), bs.name().into_inner());
                 let attrs = Object::new_without_proto(activation.gc());
 
                 let mut attributes = bs.attributes();
                 attributes.with_checks(false);
-                let attributes = attributes.collect::<Result<Vec<_>, _>>();
+                // Validate in source order so an earlier raw `<` takes
+                // precedence over a malformed attribute later in the tag.
+                let attributes = attributes
+                    .map(|attribute| {
+                        let attribute = attribute.map_err(|error| {
+                            native_xml_status(&quick_xml::Error::InvalidAttr(error))
+                        })?;
+                        // Check before decoding so an encoded &lt; remains valid.
+                        if attribute.value.contains(&b'<') {
+                            return Err(XmlStatus::AttributeNotTerminated);
+                        }
+                        Ok(attribute)
+                    })
+                    .collect::<Result<Vec<_>, _>>();
 
                 let attributes = match attributes {
                     Ok(attributes) => attributes,
-                    Err(error) => {
-                        return Ok(
-                            (native_xml_status(&quick_xml::Error::InvalidAttr(error)) as i8 as f64)
-                                .into(),
-                        );
-                    }
+                    Err(status) => return Ok((status as i8 as f64).into()),
                 };
 
+                // Flash keeps the first occurrence of a duplicate attribute.
                 for attribute in attributes.iter().rev() {
                     let key =
                         AvmString::new_utf8_bytes(activation.gc(), attribute.key.into_inner());
@@ -409,44 +479,7 @@ fn native_xml_parse<'gc>(
                     attrs.set(key, value, activation)?;
                 }
 
-                push_native_xml_node(activation, *output, ELEMENT_NODE, value, attrs, false)?;
-            }
-
-            Event::Empty(bs) => {
-                let value = AvmString::new_utf8_bytes(activation.gc(), bs.name().into_inner());
-                let attrs = Object::new_without_proto(activation.gc());
-
-                let mut attributes = bs.attributes();
-                attributes.with_checks(false);
-                let attributes = attributes.collect::<Result<Vec<_>, _>>();
-
-                let attributes = match attributes {
-                    Ok(attributes) => attributes,
-                    Err(error) => {
-                        return Ok(
-                            (native_xml_status(&quick_xml::Error::InvalidAttr(error)) as i8 as f64)
-                                .into(),
-                        );
-                    }
-                };
-
-                for attribute in attributes.iter().rev() {
-                    let key =
-                        AvmString::new_utf8_bytes(activation.gc(), attribute.key.into_inner());
-
-                    let value_str = match avm1_unescape(&attribute.value) {
-                        Ok(value) => value,
-                        Err(error) => {
-                            let error = quick_xml::Error::Encoding(EncodingError::Utf8(error));
-                            return Ok((native_xml_status(&error) as i8 as f64).into());
-                        }
-                    };
-
-                    let value = AvmString::new_utf8(activation.gc(), value_str);
-                    attrs.set(key, value, activation)?;
-                }
-
-                push_native_xml_node(activation, *output, ELEMENT_NODE, value, attrs, true)?;
+                push_native_xml_node(activation, *output, ELEMENT_NODE, value, attrs, empty)?;
             }
 
             Event::End(be) => {
@@ -474,73 +507,49 @@ fn native_xml_parse<'gc>(
                     }
                 };
 
-                let bytes = text.as_bytes();
-                let whitespace = bytes
-                    .iter()
-                    .all(|c| matches!(*c, b'\t' | b'\n' | b'\r' | b' '));
-
-                if !(bytes.is_empty() || ignore_white && whitespace) {
-                    push_native_xml_node(
-                        activation,
-                        *output,
-                        TEXT_NODE,
-                        AvmString::new_utf8_bytes(activation.gc(), bytes),
-                        Object::new_without_proto(activation.gc()),
-                        false,
-                    )?;
-                }
+                push_native_xml_text(
+                    activation,
+                    *output,
+                    TEXT_NODE,
+                    text.as_bytes(),
+                    ignore_white,
+                )?;
             }
 
             Event::CData(bt) => {
                 let text = bt.into_inner();
-                let bytes = text.as_ref();
-                let whitespace = bytes
-                    .iter()
-                    .all(|c| matches!(*c, b'\t' | b'\n' | b'\r' | b' '));
-
-                if !(bytes.is_empty() || ignore_white && whitespace) {
-                    push_native_xml_node(
-                        activation,
-                        *output,
-                        6,
-                        AvmString::new_utf8_bytes(activation.gc(), bytes),
-                        Object::new_without_proto(activation.gc()),
-                        false,
-                    )?;
-                }
+                push_native_xml_text(activation, *output, 6, text.as_ref(), ignore_white)?;
             }
-            Event::Decl(bd) => {
-                let mut value = WString::from_buf(b"<?".to_vec());
-                value.push_str(WStr::from_units(&*bd));
-                value.push_str(WStr::from_units(b"?>"));
+            Event::Decl(_) | Event::PI(_) => {
+                let event_end = parser.buffer_position() as usize;
+                let markup = &source[event_start..event_end];
+                // Flash recognizes the case-insensitive prefix `<?xml`, even
+                // when it is followed by more name characters.
+                if !native_xml_is_declaration(markup) {
+                    return Ok((XmlStatus::ElementMalformed as i8 as f64).into());
+                }
 
                 push_native_xml_node(
                     activation,
                     *output,
                     4,
-                    AvmString::new(activation.gc(), value),
+                    AvmString::new_utf8(activation.gc(), markup),
                     Object::new_without_proto(activation.gc()),
                     false,
                 )?;
             }
-            Event::DocType(bt) => {
-                let mut value = WString::from_buf(b"<!DOCTYPE ".to_vec());
-                value.push_str(WStr::from_units(&*bt.escape_ascii().collect::<Vec<_>>()));
-                value.push_byte(b'>');
-
+            Event::DocType(_) => {
+                // Preserve the source spelling, including quotes and UTF-8.
+                let event_end = parser.buffer_position() as usize;
                 push_native_xml_node(
                     activation,
                     *output,
                     5,
-                    AvmString::new(activation.gc(), value),
+                    AvmString::new_utf8(activation.gc(), &source[event_start..event_end]),
                     Object::new_without_proto(activation.gc()),
                     false,
                 )?;
             }
-            Event::PI(_) => {
-                return Ok((XmlStatus::ElementMalformed as i8 as f64).into());
-            }
-
             Event::Eof => break,
 
             _ => {}
