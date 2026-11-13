@@ -335,6 +335,9 @@ Testing _global.System.IME
   UNKNOWN, DONT_DELETE
   __proto__, DONT_DELETE
 Testing _global.System.security.PolicyFileResolver
+  prototype, DONT_DELETE
+  __proto__, DONT_DELETE
+Testing _global.System.security.PolicyFileResolver.prototype
   __proto__, DONT_DELETE
 Testing _global.System.security.sandboxType
 Testing _global.System.security.escapeDomain
