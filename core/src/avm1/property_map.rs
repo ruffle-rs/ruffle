@@ -22,6 +22,11 @@ impl<'gc, V> PropertyMap<'gc, V> {
         Self(FnvIndexMap::default())
     }
 
+    /// Returns the number of stored properties.
+    pub fn len(&self) -> usize {
+        self.0.len()
+    }
+
     pub fn contains_key<T: AsRef<WStr>>(&self, key: T, case_sensitive: bool) -> bool {
         if case_sensitive {
             self.0.contains_key(&CaseSensitive(key.as_ref()))
