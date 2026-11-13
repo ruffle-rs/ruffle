@@ -1,0 +1,37 @@
+=== Initial state ===
+Length: 10
+0: true
+4: true
+5: false
+6: true
+9: true
+-0: true
+05: true
+ 5: true
++5: true
+-5: true
+5 : true
+
+=== Set length to 5 without canonical index 5 ===
+Length: 5
+4: true
+5: false
+6: false
+9: false
+-0: true
+05: true
+ 5: true
++5: true
+-5: true
+5 : true
+
+=== Set length to 0 ===
+Length: 0
+0: false
+4: false
+-0: true
+05: true
+ 5: true
++5: true
+-5: true
+5 : true
