@@ -1,5 +1,6 @@
 use std::path::{Path, PathBuf};
 
+use ruffle_common::url_ext::UrlExt;
 use thiserror::Error;
 use url::Url;
 
@@ -133,7 +134,7 @@ impl<P: AsRef<Path>> FilesystemHelper<P> {
     ) -> Result<(), FilesystemHelperError> {
         let file = std::fs::File::create(output)?;
 
-        if let Ok(root_movie_path) = info.url.to_file_path() {
+        if let Some(root_movie_path) = info.url.to_local_file_path() {
             info.url = self.real_path_to_bundle_url(&root_movie_path)?;
         }
 

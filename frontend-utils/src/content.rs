@@ -96,13 +96,14 @@ impl PlayingContent {
         url: &Url,
         interface: impl crate::backends::navigator::NavigatorInterface,
     ) -> Result<Vec<u8>, std::io::Error> {
+        use ruffle_common::url_ext::UrlExt;
         use std::io::{ErrorKind, Read};
 
         match self {
             PlayingContent::DirectFile(_) => {
                 let path = url
-                    .to_file_path()
-                    .map_err(|_| std::io::Error::other("Could not turn url into file path"))?;
+                    .to_local_file_path()
+                    .ok_or_else(|| std::io::Error::other("Could not turn url into file path"))?;
                 let mut result = vec![];
                 let mut file = interface.open_file(&path).await?;
                 file.read_to_end(&mut result)?;

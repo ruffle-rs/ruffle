@@ -9,6 +9,7 @@ use crate::gui::{FilePicker, MovieView};
 use crate::preferences::GlobalPreferences;
 use crate::{CALLSTACK, RENDER_INFO, SWF_INFO};
 use anyhow::anyhow;
+use ruffle_common::url_ext::UrlExt;
 use ruffle_core::backend::navigator::{OwnedFuture, SocketMode};
 use ruffle_core::config::Letterbox;
 use ruffle_core::events::{GamepadButton, KeyCode};
@@ -143,9 +144,7 @@ impl ActivePlayer {
         };
 
         let mut content = PlayingContent::DirectFile(content_descriptor.clone());
-        if content_descriptor.url.scheme() == "file"
-            && let Ok(path) = content_descriptor.url.to_file_path()
-        {
+        if let Some(path) = content_descriptor.url.to_local_file_path() {
             match Bundle::from_path(&path) {
                 Ok(bundle) => {
                     if bundle.warnings().is_empty() {

@@ -1,0 +1,4 @@
+disallowed-methods = [
+    # `allow-invalid`: the method does not exist on wasm.
+    { path = "url::Url::to_file_path", allow-invalid = true, reason = "it does not check the scheme, use `ruffle_common::url_ext::UrlExt::to_local_file_path` instead" },
+]
