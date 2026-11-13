@@ -36,6 +36,12 @@ function enb85gz(data) {
 const decodedRes = {};
 
 function decodeResourceIfExist(name) {
+    if (name instanceof Request) {
+        name = name.url;
+    }
+    if (name instanceof URL) {
+        name = name.href;
+    }
     if (typeof name != "string") {
         // skip undefined
         return null;
