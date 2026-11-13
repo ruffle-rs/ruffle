@@ -26,7 +26,7 @@ const PROTO_DECLS: StaticDeclarations = declare_static_properties! {
     "isPrototypeOf" => method(IS_PROTOTYPE_OF; DONT_ENUM | DONT_DELETE | VERSION_6);
     "isPropertyEnumerable" => method(IS_PROPERTY_ENUMERABLE; DONT_DELETE | DONT_ENUM | VERSION_6);
     use default;
-    "toLocaleString" => method(to_locale_string; DONT_ENUM | DONT_DELETE);
+    "toLocaleString" => method(@As2 to_locale_string; DONT_ENUM | DONT_DELETE);
 };
 
 const OBJECT_DECLS: StaticDeclarations = declare_static_properties! {

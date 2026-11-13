@@ -90,7 +90,7 @@ const PROTO_DECLS: StaticDeclarations = declare_static_properties! {
     "blueOffset" => property(get_blue_offset, set_blue_offset);
     "rgb" => property(get_rgb, set_rgb);
     "concat" => method(concat);
-    "toString" => method(to_string);
+    "toString" => method(@As2 to_string);
 };
 
 pub fn create_class<'gc>(

@@ -18,13 +18,13 @@ const PROTO_DECLS: StaticDeclarations = declare_static_properties! {
     "send" => method(send; DONT_ENUM | DONT_DELETE);
     "sendAndLoad" => method(send_and_load; DONT_ENUM | DONT_DELETE);
     "decode" => method(decode; DONT_ENUM | DONT_DELETE);
-    "getBytesLoaded" => method(get_bytes_loaded; DONT_ENUM | DONT_DELETE);
-    "getBytesTotal" => method(get_bytes_total; DONT_ENUM | DONT_DELETE);
+    "getBytesLoaded" => method(@As2 get_bytes_loaded; DONT_ENUM | DONT_DELETE);
+    "getBytesTotal" => method(@As2 get_bytes_total; DONT_ENUM | DONT_DELETE);
     "toString" => method(to_string; DONT_ENUM | DONT_DELETE);
     "contentType" => value("application/x-www-form-urlencoded"; DONT_ENUM | DONT_DELETE);
-    "onLoad" => method(on_load; DONT_ENUM | DONT_DELETE);
-    "onData" => method(on_data; DONT_ENUM | DONT_DELETE);
-    "addRequestHeader" => method(add_request_header; DONT_ENUM | DONT_DELETE);
+    "onLoad" => method(@As2 on_load; DONT_ENUM | DONT_DELETE);
+    "onData" => method(@As2 on_data; DONT_ENUM | DONT_DELETE);
+    "addRequestHeader" => method(@As2 add_request_header; DONT_ENUM | DONT_DELETE);
 };
 
 pub fn create_class<'gc>(
