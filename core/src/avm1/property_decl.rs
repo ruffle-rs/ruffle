@@ -259,22 +259,42 @@ pub enum DeclKind<'gc> {
         getter: NativeFunction,
         setter: Option<NativeFunction>,
     },
-    /// Declares a native host function.
-    ///
-    /// This is intended for use with defining host object prototypes. Notably,
-    /// this creates a function object without an explicit `prototype`, which
-    /// is only possible when defining host functions.
-    TableMethod(TableNativeFunction, u16),
-    Method(NativeFunction),
-    /// Declares a native function with a `prototype`.
-    /// Prefer using [`Self::Method`] when defining host functions.
-    #[expect(unused)] // kept for symmetry.
-    TableFunction(TableNativeFunction, u16),
-    Function(NativeFunction),
+    /// Declares a function with the given Rust implementation.
+    TableMethod(DeclFunctionKind, TableNativeFunction, u16),
+    Method(DeclFunctionKind, NativeFunction),
     /// Declares a static string value.
     String(&'static [u8]),
     /// Declares a static value.
     Value(Value<'gc>),
+}
+
+#[derive(Copy, Clone)]
+pub enum DeclFunctionKind {
+    /// An `ASnative` host function.
+    ///
+    /// These are instances of the `Function` class, but do not have a `prototype`.
+    Native,
+    /// A function implemented in ActionScript inside FP's `playerglobal`.
+    ///
+    /// These are 'full' `Function` instances, with a fresh `prototype`.`
+    As2,
+}
+
+impl DeclFunctionKind {
+    fn make_function<'gc>(
+        self,
+        context: &mut StringContext<'gc>,
+        func: FunctionObject<'gc>,
+        fn_proto: Option<Value<'gc>>,
+        obj_proto: Option<Value<'gc>>,
+    ) -> Value<'gc> {
+        let prototype = match self {
+            Self::Native => None,
+            Self::As2 => Some(Object::new(context, obj_proto)),
+        };
+
+        func.build(context, fn_proto, prototype).into()
+    }
 }
 
 impl<'gc> Declaration<'gc> {
@@ -315,17 +335,13 @@ impl<'gc> Declaration<'gc> {
                 this.add_property(mc, name.into(), getter, setter, self.attributes);
                 return;
             }
-            DeclKind::Method(f) | DeclKind::Function(f) => {
-                let p = matches!(self.kind, DeclKind::Function(_))
-                    .then(|| Object::new(context, obj_proto));
-                FunctionObject::native(f).build(context, fn_proto, p).into()
+            DeclKind::Method(kind, f) => {
+                let f = FunctionObject::native(f);
+                kind.make_function(context, f, fn_proto, obj_proto)
             }
-            DeclKind::TableMethod(f, index) | DeclKind::TableFunction(f, index) => {
-                let p = matches!(self.kind, DeclKind::TableFunction(..))
-                    .then(|| Object::new(context, obj_proto));
-                FunctionObject::table_native(f, index)
-                    .build(context, fn_proto, p)
-                    .into()
+            DeclKind::TableMethod(kind, f, index) => {
+                let f = FunctionObject::table_native(f, index);
+                kind.make_function(context, f, fn_proto, obj_proto)
             }
             DeclKind::String(s) => context.intern_static(WStr::from_units(s)).into(),
             DeclKind::Value(value) => value,
@@ -344,12 +360,13 @@ impl<'gc> Declaration<'gc> {
 ///     "length" => property(get_length);
 ///     "filters" => property(get_filters, set_filters);
 ///     "to_string" => method(to_string);
-///     "to_string2" => function(to_string);
+///     // you can indicate a `DeclFunctionKind` like so; the default is `Native`.
+///     "to_string2" => method(@As2 to_string);
 ///     // switches to 'table mode': function-like definitions will now take
 ///     // an integer index instead of a function pointer, and will dispatch it to the
 ///     // method provided here.
 ///     use fn method;
-///     "callme" => function(CALLME);
+///     "callme" => method(CALLME);
 ///     // you can go back to the 'default' mode
 ///     use default;
 ///     "locale" => value("en-US");
@@ -478,23 +495,32 @@ macro_rules! __declare_properties {
             setter: None,
         }
     };
-    (@kind [default] method($method:expr)) => {
-        $crate::avm1::property_decl::DeclKind::Method($method)
+    (@kind [default] method( $(@$fn_kind:ident)? $method:expr)) => {
+        $crate::avm1::property_decl::DeclKind::Method(
+            __declare_properties!(@fn_kind $($fn_kind)?),
+            $method,
+        )
     };
-    (@kind [fn $($path:ident)::+] method($method:ident)) => {
-        $crate::avm1::property_decl::DeclKind::TableMethod($($path)::+, $($path::)+$method)
-    };
-    (@kind [default] function($function:expr)) => {
-        $crate::avm1::property_decl::DeclKind::Function($function)
-    };
-    (@kind [fn $($path:ident)::+] function($function:ident)) => {
-        $crate::avm1::property_decl::DeclKind::TableFunction($($path)::+, $($path::)+$function)
+    (@kind [fn $($path:ident)::+] method( $(@$fn_kind:ident)? $method:ident)) => {
+        $crate::avm1::property_decl::DeclKind::TableMethod(
+            __declare_properties!(@fn_kind $($fn_kind)?),
+            $($path)::+,
+            $($path::)+$method,
+        )
     };
     (@kind $_mode:tt value(null)) => {
         $crate::avm1::property_decl::DeclKind::Value(Value::Null)
     };
     (@kind $_mode:tt value($obj:expr)) => {
         $crate::avm1::property_decl::DeclValueConvertible($obj).convert()
+    };
+
+    (@fn_kind) => {
+        $crate::avm1::property_decl::DeclFunctionKind::Native
+    };
+
+    (@fn_kind $fn_kind:ident) => {
+        $crate::avm1::property_decl::DeclFunctionKind::$fn_kind
     };
 }
 

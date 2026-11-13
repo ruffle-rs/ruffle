@@ -17,9 +17,9 @@ const PROTO_DECLS: StaticDeclarations = declare_static_properties! {
 };
 
 const OBJECT_DECLS: StaticDeclarations = declare_static_properties! {
-    // In playerglobals.swf, this is a bytecode function delegating to the internal native impl.
-    "get" => function(|a, this, args| method(a, this, args, method::INTERNAL_GET));
     use fn method;
+    // In playerglobals.swf, this is a bytecode function delegating to the internal native impl.
+    "get" => method(@As2 INTERNAL_GET);
     "names" => property(GET_NAMES);
 };
 
