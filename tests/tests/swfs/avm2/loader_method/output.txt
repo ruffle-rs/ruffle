@@ -13,6 +13,8 @@ undefined
 Navigator::fetch:
   URL: http://localhost:8000
   Method: GET
+  Headers:
+Accept: */*
 
 Test 1
 // request.url
@@ -29,6 +31,8 @@ undefined
 Navigator::fetch:
   URL: http://localhost:8000
   Method: POST
+  Headers:
+Accept: */*
   Mime-Type: application/x-www-form-urlencoded
   Body: [object Object]
 
@@ -47,6 +51,8 @@ undefined
 Navigator::fetch:
   URL: http://localhost:8000
   Method: GET
+  Headers:
+Accept: */*
 
 Test 3
 // request.url
@@ -63,6 +69,8 @@ undefined
 Navigator::fetch:
   URL: http://localhost:8000
   Method: GET
+  Headers:
+Accept: */*
 
 Test 4
 // request.url
@@ -79,6 +87,8 @@ undefined
 Navigator::fetch:
   URL: http://localhost:8000
   Method: GET
+  Headers:
+Accept: */*
 
 Test 5
 TypeError: Error #1034: Type Coercion failed: cannot convert Object@00000000000 to flash.net.URLRequest.
