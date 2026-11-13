@@ -1090,27 +1090,13 @@ impl<'a> NagaBuilder<'a> {
                 value: expr,
             });
         } else {
-            // A scalar write occurs when we have exactly one component in the dest write mask.
-            let scalar_write = [Mask::X, Mask::Y, Mask::Z, Mask::W]
-                .into_iter()
-                .filter(|mask| dest.write_mask.contains(*mask))
-                .count()
-                == 1;
-
             for (i, mask) in [(0, Mask::X), (1, Mask::Y), (2, Mask::Z), (3, Mask::W)] {
                 if dest.write_mask.contains(mask) {
-                    let source_component = if scalar_write || source_is_scalar {
-                        if source_is_scalar {
-                            expr
-                        } else {
-                            // Grab the first component of the source expression - all of them should be
-                            // the same when doing a scalar write.
-                            self.evaluate_expr(Expression::AccessIndex {
-                                base: expr,
-                                index: 0,
-                            })
-                        }
+                    let source_component = if source_is_scalar {
+                        expr
                     } else {
+                        // AGAL swizzles are positional: dest component `i` takes component `i`
+                        // of the (already swizzled) source.
                         self.evaluate_expr(Expression::AccessIndex {
                             base: expr,
                             index: i,
