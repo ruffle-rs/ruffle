@@ -8,10 +8,14 @@ frames = [2]
 min_max_amplitude = 0.29
 max_amplitude = 0.31
 
+# sound.mp3 starts with an info frame, which plays as a frame of silence
+# on every loop, as in Flash Player. The instance started on frame 1 is
+# in its second loop, so it no longer adds up in phase with the ones
+# started on frame 3.
 [audio_assertions.non_streaming_multiple]
 frames = [4]
-min_max_amplitude = 1.76
-max_amplitude = 1.78
+min_max_amplitude = 1.19
+max_amplitude = 1.21
 
 [audio_assertions.single_vol_full]
 frames = [8,10,12,16]

@@ -101,7 +101,7 @@ PASSED: typeof(s.duration) == "undefined" [./Sound.as:338]
 PASSED: typeof(s.getPosition()) == "undefined" [./Sound.as:339]
 PASSED: typeof(s.getDuration()) == "undefined" [./Sound.as:340]
 onLoad called
-FAILED: expected: 209 obtained: 0 [./Sound.as:328]
+PASSED: s.duration == 209 [./Sound.as:328]
 PASSED: s.position == 0 [./Sound.as:329]
 PASSED: typeof(s.getBytesTotal()) == "number" [./Sound.as:345]
 PASSED: typeof(s.getBytesLoaded()) == "number" [./Sound.as:346]
@@ -111,11 +111,11 @@ PASSED: typeof(s.getDuration()) == "number" [./Sound.as:349]
 Waiting 3 seconds for onSoundComplete to be called
 onSoundComplete called
 PASSED: onSoundComplete called
-FAILED: expected: 209 obtained: 0 [./Sound.as:296]
+PASSED: s.position == 209 [./Sound.as:296]
 PASSED: s.onLoadCalled [./Sound.as:300]
 PASSED: typeof(s.onLoadArg) == 'boolean' [./Sound.as:301]
 PASSED: s.onLoadArg == true [./Sound.as:302]
 PASSED: mp3 over one minute long loaded
-#passed: 92
-#failed: 20
+#passed: 94
+#failed: 18
 #total tests run: 112
