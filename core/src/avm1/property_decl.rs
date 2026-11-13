@@ -274,6 +274,8 @@ pub enum DeclFunctionKind {
     ///
     /// These are instances of the `Function` class, but do not have a `prototype`.
     Native,
+    /// A 'pure builtin' function, which has no `__proto__` and no `prototype`.
+    Bare,
     /// A function implemented in ActionScript inside FP's `playerglobal`.
     ///
     /// These are 'full' `Function` instances, with a fresh `prototype`.`
@@ -288,12 +290,13 @@ impl DeclFunctionKind {
         fn_proto: Option<Value<'gc>>,
         obj_proto: Option<Value<'gc>>,
     ) -> Value<'gc> {
-        let prototype = match self {
-            Self::Native => None,
-            Self::As2 => Some(Object::new(context, obj_proto)),
+        let (proto, prototype) = match self {
+            Self::Native => (fn_proto, None),
+            Self::Bare => (None, None),
+            Self::As2 => (fn_proto, Some(Object::new(context, obj_proto))),
         };
 
-        func.build(context, fn_proto, prototype).into()
+        func.build(context, proto, prototype).into()
     }
 }
 

@@ -1671,17 +1671,4 @@ Testing _global.Object.prototype
   watch, own, type=[function]
   constructor, own, type=[function with prototype]
 Testing _global.ASnative
-  toLocaleString, type=[function with prototype]
-  isPropertyEnumerable, type=[function]
-  isPrototypeOf, type=[function]
-  hasOwnProperty, type=[function]
-  toString, type=[function]
-  valueOf, type=[function]
-  addProperty, type=[function]
-  unwatch, type=[function]
-  watch, type=[function]
-  apply, type=[function]
-  call, type=[function]
-  constructor, type=[function with prototype]
-  __proto__, own, type=[object]
 Done
