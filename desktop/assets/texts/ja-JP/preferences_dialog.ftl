@@ -36,6 +36,7 @@ ime-enabled-experimental = (実験的)
 ime-enabled-tooltip = インプットメソッドによって、中国語、日本語、韓国語の文字のようなキーボード単体にはない文字を入力できるようになります。
 ime-enabled-default = 既定
 device-font-renderer = デバイスフォントレンダラ
+device-font-renderer-tooltip = デバイスフォントの描画に使用するバックエンドを選択してください。
 device-font-renderer-default = 既定
 device-font-renderer-embedded = 埋め込み
 device-font-renderer-freetype = FreeType
