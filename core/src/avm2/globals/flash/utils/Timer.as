@@ -2,15 +2,13 @@ package flash.utils {
     import flash.events.EventDispatcher;
     import flash.events.TimerEvent;
 
+    [Ruffle(InstanceAllocator)]
     public class Timer extends EventDispatcher {
         private var _currentCount:int;
         private var _repeatCount:int;
 
         [Ruffle(NativeAccessible)]
         private var _delay:Number;
-
-        [Ruffle(NativeAccessible)]
-        private var _timerId:int = -1;
 
         // Returns 'true' if we should cancel the underlying Ruffle native timer
         [Ruffle(NativeAccessible)]
@@ -34,7 +32,7 @@ package flash.utils {
                 self.dispatchEvent(new TimerEvent(TimerEvent.TIMER, false, false));
                 if (self.repeatCount != 0 && self._currentCount >= self._repeatCount) {
                     // This will make 'running' return false in a TIMER_COMPLETE event handler
-                    self._timerId = -1;
+                    self.clearTimer();
                     self.dispatchEvent(new TimerEvent(TimerEvent.TIMER_COMPLETE, false, false));
                     return true;
                 }
@@ -74,9 +72,9 @@ package flash.utils {
             }
         }
 
-        public function get running():Boolean {
-            return this._timerId != -1;
-        }
+        public native function get running():Boolean;
+
+        private native function clearTimer():void;
 
         public function reset():void {
             this._currentCount = 0;
