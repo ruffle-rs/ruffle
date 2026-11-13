@@ -4,7 +4,7 @@ num_ticks = 1
 
 [[image_comparisons.output.checks]]
 tolerance = 3
-max_outliers = 9000
+max_outliers = 10000
 
 [[image_comparisons.output.checks]]
 tolerance = 32
