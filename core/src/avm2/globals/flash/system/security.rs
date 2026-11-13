@@ -5,6 +5,7 @@ use crate::avm2::activation::Activation;
 use crate::avm2::function::FunctionArgs;
 use crate::avm2::value::Value;
 use crate::avm2_stub_method;
+use crate::player::PlayerRuntime;
 use crate::string::AvmString;
 use url::Url;
 
@@ -40,16 +41,24 @@ pub fn get_sandbox_type<'gc>(
     _this: Value<'gc>,
     _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let movie = activation
-        .caller_movie()
-        .expect("Caller movie expected for sandboxType");
-    let sandbox_type = match movie.sandbox_type() {
-        SandboxType::Remote => "remote",
-        SandboxType::LocalWithFile => "localWithFile",
-        SandboxType::LocalWithNetwork => "localWithNetwork",
-        SandboxType::LocalTrusted => "localTrusted",
-        SandboxType::Application => "application",
+    let sandbox_type = match activation.context.avm2.player_runtime {
+        // See https://github.com/ruffle-rs/ruffle/issues/19681.
+        PlayerRuntime::AIR => "application",
+        PlayerRuntime::FlashPlayer => {
+            let movie = activation
+                .caller_movie()
+                .expect("Caller movie expected for sandboxType");
+
+            match movie.sandbox_type() {
+                SandboxType::Remote => "remote",
+                SandboxType::LocalWithFile => "localWithFile",
+                SandboxType::LocalWithNetwork => "localWithNetwork",
+                SandboxType::LocalTrusted => "localTrusted",
+                SandboxType::Application => "application",
+            }
+        }
     };
+
     Ok(AvmString::new_utf8(activation.gc(), sandbox_type).into())
 }
 
