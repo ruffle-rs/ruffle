@@ -81,7 +81,12 @@ function testInstance(className, instance) {
 
         var originalVal = originalValues["key_" + key];
 
-        properties += ", type=[" + (typeof(originalVal)) + "]";
+        var t = typeof(originalVal);
+        if (t === "function" && originalVal.prototype) {
+            t = "function with prototype";
+        }
+
+        properties += ", type=[" + t + "]";
 
         trace("  " + key + properties);
     }
@@ -167,3 +172,5 @@ testInstance("_global.XMLSocket");
 testInstance("_global.MovieClip");
 testInstance("_global.Function");
 testInstance("_global.Object");
+
+fscommand("quit");

@@ -596,7 +596,7 @@ pub fn create_globals<'gc>(
         // TODO: ASconstructor
         "Object" => value(object.constr; DONT_ENUM);
         "Function" => value(function.constr; DONT_ENUM | VERSION_6);
-        // TODO: enableDebugConsole - is this only present in the debugger version of FP?
+        // skipped: enableDebugConsole - this is only present in the debugger version of FP
         "NaN" => property(get_nan; DONT_ENUM);
         "Infinity" => property(get_infinity; DONT_ENUM);
 

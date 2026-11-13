@@ -5,9 +5,10 @@ function testDecls(object) {
     }
 
     ASSetPropFlags(object, null, 0, 1);
+    var hasOwnProperty = Object.prototype.hasOwnProperty;
     for (var key in object) {
         var properties = "";
-        var isOwn = object.hasOwnProperty(key);
+        var isOwn = hasOwnProperty.call(object, key);
         if (isOwn) {
             properties += ", own";
         }
@@ -24,7 +25,12 @@ function testDecls(object) {
         }
         object[key] = old;
 
-        properties += ", type=[" + (typeof(old)) + "]";
+        var t = typeof(old);
+        if (t === "function" && old.prototype) {
+            t = "function with prototype";
+        }
+
+        properties += ", type=[" + t + "]";
 
         trace("  " + key + properties);
     }
@@ -32,17 +38,17 @@ function testDecls(object) {
 
 function callAndRecurse(prop, name) {
     // Don't recurse infinitely.
-    if (prop == "__proto__") return;
-    if (prop == "constructor") return;
+    if (prop === "__proto__") return;
+    if (prop === "constructor") return;
 
     // i is the object, name is its name.
-    name = name + "." + prop;
+    name = (name == "" ? "_global" : name + "." + prop);
     var i = eval(name);
 
     trace("Testing " + name);
     testDecls(i);
 
-    if (i.prototype) {
+    if (i && i.prototype) {
         trace("Testing " + name + ".prototype");
         testDecls(i.prototype);
     }
@@ -55,12 +61,10 @@ function callAndRecurse(prop, name) {
     }
 };
 
-start = "_global";
-obj = eval(start);
+// Skip this, it is only present in the debugger version of FP.
+delete _global.enableDebugConsole;
 
-ASSetPropFlags(obj, null, 0, 1);
-for (prop in obj) {
-    callAndRecurse(prop, start);
-}
+callAndRecurse(_global, "");
 
 trace("Done");
+fscommand("quit");
