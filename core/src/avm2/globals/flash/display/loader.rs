@@ -332,3 +332,12 @@ pub fn unload<'gc>(
 
     Ok(Value::Undefined)
 }
+
+pub fn unload_and_stop<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Value<'gc>,
+    args: FunctionArgs<'_, 'gc>,
+) -> Result<Value<'gc>, Error<'gc>> {
+    avm2_stub_method!(activation, "flash.display.Loader", "unloadAndStop");
+    unload(activation, this, args)
+}
