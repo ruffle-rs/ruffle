@@ -75,7 +75,7 @@ function minimizeHtml(htmlContent) {
 const DIST_DIR = "dist-local";
 
 function getResName(path) {
-    const slashIndex = path.indexOf("/");
+    const slashIndex = path.lastIndexOf("/");
     if (slashIndex >= 0) {
         // leave filename only
         path = path.substring(slashIndex + 1);

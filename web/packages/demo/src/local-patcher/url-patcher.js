@@ -54,7 +54,7 @@ function decodeResourceIfExist(name) {
         // skip http(s): urls since we are local files
         return null;
     }
-    const slashIndex = name.indexOf("/");
+    const slashIndex = name.lastIndexOf("/");
     if (slashIndex >= 0) {
         // leave filename only
         name = name.substring(slashIndex + 1);
