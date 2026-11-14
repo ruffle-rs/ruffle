@@ -6,7 +6,19 @@ package flash.concurrent {
         }
 
         public function Mutex() {
-            throw new Error("Error #1520: Mutex cannot be initialized.", 1520);
+            if (!isSupported) {
+                throw new Error("Error #1520: Mutex cannot be initialized.", 1520);
+            }
+        }
+
+        public function lock():void {
+        }
+
+        public function tryLock():Boolean {
+            return false;
+        }
+
+        public function unlock():void {
         }
     }
 }
