@@ -4,8 +4,8 @@ use crate::avm2::Error;
 use crate::avm2::activation::Activation;
 use crate::avm2::bytearray::ByteArrayStorage;
 use crate::avm2::error::{
-    Error2004Type, make_error_2004, make_error_2005, make_error_2008, make_error_2015,
-    make_error_2027,
+    Error2004Type, make_error_2004, make_error_2005, make_error_2007, make_error_2008,
+    make_error_2015, make_error_2027,
 };
 use crate::avm2::filters::FilterAvm2Ext;
 use crate::avm2::function::FunctionArgs;
@@ -20,7 +20,6 @@ use crate::avm2::object::{BitmapDataObject, ByteArrayObject, Object, TObject, Ve
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
 use crate::avm2::vector::VectorStorage;
-use crate::avm2_stub_method;
 use crate::bitmap::bitmap_data::{BitmapData, ChannelOptions, ThresholdOperation};
 use crate::bitmap::bitmap_data::{BitmapDataDrawError, IBitmapDrawable};
 use crate::bitmap::{is_size_valid, operations};
@@ -1134,14 +1133,14 @@ pub fn apply_filter<'gc>(
     let this = this.as_object().unwrap();
 
     if let Some(dest_bitmap) = this.as_bitmap_data() {
-        let source_bitmap = args
+                let mut source_bitmap = args
             .get_object(activation, 0, "sourceBitmapData")?
             .as_bitmap_data()
             .unwrap();
-        let source_rect = args.get_object(activation, 1, "sourceRect")?;
-        let mut source_rect = object_to_rectangle(source_rect);
-        let filter = args.get_object(activation, 3, "filter")?;
-        let filter = Filter::from_avm2_object(activation, filter)?;
+        let mut source_rect = object_to_rectangle(args.get_object(activation, 1, "sourceRect")?);
+        let filter_obj = args.get_object(activation, 3, "filter")?;
+        let filter = Filter::from_avm2_object(activation, filter_obj)?;
+
 
         if matches!(filter, Filter::ShaderFilter(_)) {
             let source_bitmap_rect = Rectangle {
@@ -1150,28 +1149,49 @@ pub fn apply_filter<'gc>(
                 y_min: Twips::ZERO,
                 y_max: Twips::from_pixels(source_bitmap.height() as f64),
             };
-            // Flash performs an odd translation/cropping behavior when sourceRect
-            // has a non-zero x or y starting value, which I haven't yet managed to reproduce.
-            //
-            // Additionally, when both x and y are 0, the 'width' and 'height' seem to
-            // be ignored completely in favor of the using the dimensions of the source
-            // image (even if a larger or smaller rect is passed in)
-            //
-            // To make matters worse, the behavior of ShaderFilter seems platform-dependent
-            // (or at least resolution-dependent). The test
-            // 'tests/tests/swfs/avm2/pixelbender_effect_glassDisplace_shaderfilter/test.swf'
-            // renders slightly differently in Linux vs a Windows VM (part of the mandelbrot fractal
-            // in the top image is cut off in the Windows Flash Player, but not in the Linux Flash Player)
             if source_rect != source_bitmap_rect {
-                avm2_stub_method!(
-                    activation,
-                    "flash.display.BitmapData",
-                    "applyFilter",
-                    "ShaderFilter with non-standard sourceRect"
+                let crop_x = source_rect.x_min.to_pixels().floor() as i32;
+                let crop_y = source_rect.y_min.to_pixels().floor() as i32;
+                let crop_w = (source_rect.width().to_pixels().ceil() as i32).max(1) as u32;
+                let crop_h = (source_rect.height().to_pixels().ceil() as i32).max(1) as u32;
+
+                let cropped = BitmapData::new(
+                    activation.gc(),
+                    crop_w,
+                    crop_h,
+                    source_bitmap.transparency(),
+                    0,
                 );
-                source_rect = source_bitmap_rect;
+                let src_sync = source_bitmap.sync(activation.context.renderer);
+                let src_pixels = src_sync.borrow();
+                let dst_sync = cropped.sync(activation.context.renderer);
+                let mut dst_pixels = dst_sync.borrow_mut(activation.gc());
+                for y in 0..crop_h as i32 {
+                    for x in 0..crop_w as i32 {
+                        let sx = crop_x + x;
+                        let sy = crop_y + y;
+                        if sx >= 0
+                            && sy >= 0
+                            && sx < source_bitmap.width() as i32
+                            && sy < source_bitmap.height() as i32
+                        {
+                            dst_pixels.set_pixel32_raw(x as u32, y as u32, src_pixels.get_pixel32_raw(sx as u32, sy as u32));
+                        }
+                    }
+                }
+                drop(dst_pixels);
+                drop(src_pixels);
+
+                source_bitmap = cropped;
+                source_rect = Rectangle {
+                    x_min: Twips::ZERO,
+                    x_max: Twips::from_pixels(crop_w as f64),
+                    y_min: Twips::ZERO,
+                    y_max: Twips::from_pixels(crop_h as f64),
+                };
             }
         }
+
 
         let source_point = (
             source_rect.x_min.to_pixels().floor() as u32,
@@ -1596,4 +1616,188 @@ pub fn merge<'gc>(
     }
 
     Ok(Value::Undefined)
+}
+
+/// Implements `BitmapData.generateFilterRect`.
+pub fn generate_filter_rect<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Value<'gc>,
+    args: FunctionArgs<'_, 'gc>,
+) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+    let bitmap_data = this.as_bitmap_data().unwrap();
+    bitmap_data.check_valid(activation)?;
+
+    let source_rect = args
+        .try_get_object(0)
+        .ok_or_else(|| make_error_2007(activation, "sourceRect"))?;
+    let filter_obj = args
+        .try_get_object(1)
+        .ok_or_else(|| make_error_2007(activation, "filter"))?;
+
+    let filter = Filter::from_avm2_object(activation, filter_obj)?;
+
+    if matches!(filter, Filter::ShaderFilter(_)) {
+        return activation.avm2().classes().rectangle.construct(
+            activation,
+            &[
+                0.into(),
+                0.into(),
+                bitmap_data.width().into(),
+                bitmap_data.height().into(),
+            ],
+        );
+    }
+
+    let x = source_rect
+        .get_slot(rectangle_slots::X)
+        .coerce_to_number(activation)?;
+    let y = source_rect
+        .get_slot(rectangle_slots::Y)
+        .coerce_to_number(activation)?;
+    let width = source_rect
+        .get_slot(rectangle_slots::WIDTH)
+        .coerce_to_number(activation)?;
+    let height = source_rect
+        .get_slot(rectangle_slots::HEIGHT)
+        .coerce_to_number(activation)?;
+
+    let twips_rect = Rectangle {
+        x_min: Twips::from_pixels(x),
+        x_max: Twips::from_pixels(x + width),
+        y_min: Twips::from_pixels(y),
+        y_max: Twips::from_pixels(y + height),
+    };
+
+    let dest_rect = filter.calculate_dest_rect(twips_rect);
+    let dest_x = dest_rect.x_min.to_pixels().floor();
+    let dest_y = dest_rect.y_min.to_pixels().floor();
+    let dest_w = dest_rect.width().to_pixels().ceil();
+    let dest_h = dest_rect.height().to_pixels().ceil();
+
+    activation.avm2().classes().rectangle.construct(
+        activation,
+        &[dest_x.into(), dest_y.into(), dest_w.into(), dest_h.into()],
+    )
+}
+
+/// Implements `BitmapData.encode`.
+pub fn encode<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Value<'gc>,
+    args: FunctionArgs<'_, 'gc>,
+) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+    let bitmap_data = this.as_bitmap_data().unwrap();
+    bitmap_data.check_valid(activation)?;
+
+    let rect_obj = args
+        .try_get_object(0)
+        .ok_or_else(|| make_error_2007(activation, "rect"))?;
+    let compressor = args
+        .try_get_object(1)
+        .ok_or_else(|| make_error_2007(activation, "compressor"))?;
+
+    let byte_array_obj = if let Some(ba) = args.try_get_object(2) {
+        ba
+    } else {
+        let storage = ByteArrayStorage::new(activation.context);
+        ByteArrayObject::from_storage(activation.context, storage).into()
+    };
+
+    let (rx, ry, rw, rh) = get_rectangle_x_y_width_height(activation, rect_obj)?;
+    let bmp_w = bitmap_data.width() as i32;
+    let bmp_h = bitmap_data.height() as i32;
+
+    let x0 = rx.max(0).min(bmp_w);
+    let y0 = ry.max(0).min(bmp_h);
+    let x1 = rx.saturating_add(rw).max(0).min(bmp_w);
+    let y1 = ry.saturating_add(rh).max(0).min(bmp_h);
+
+    if x1 <= x0 || y1 <= y0 {
+        return Ok(byte_array_obj.into());
+    }
+
+    let out_w = (x1 - x0) as u32;
+    let out_h = (y1 - y0) as u32;
+
+    let sync = bitmap_data.sync(activation.context.renderer);
+    let pixels = sync.borrow();
+    let mut rgba_bytes = Vec::with_capacity((out_w * out_h * 4) as usize);
+    for y in y0..y1 {
+        for x in x0..x1 {
+            let color = pixels.get_pixel32_raw(x as u32, y as u32).to_un_multiplied_alpha();
+            rgba_bytes.push(color.red());
+            rgba_bytes.push(color.green());
+            rgba_bytes.push(color.blue());
+            rgba_bytes.push(color.alpha());
+        }
+    }
+    drop(pixels);
+
+    let mut encoded = Vec::new();
+    let class_name = compressor.instance_class().name();
+    let is_flash_display = class_name.namespace().is_public()
+        && &*class_name.namespace().as_uri(activation.strings()) == b"flash.display";
+    let local_name = class_name.local_name();
+    let pub_ns = activation.avm2().find_public_namespace();
+    let compressor_val = Value::from(compressor);
+
+    if is_flash_display && &*local_name == b"PNGEncoderOptions" {
+        use image::ImageEncoder;
+        use image::codecs::png::{CompressionType, FilterType, PngEncoder};
+
+        let fast_name = crate::string::AvmString::new_ascii_static(activation.gc(), b"fastCompression");
+        let fast = compressor_val
+            .get_property(&crate::avm2::Multiname::new(pub_ns, fast_name), activation)?
+            .coerce_to_boolean();
+        let compression = if fast {
+            CompressionType::Fast
+        } else {
+            CompressionType::Default
+        };
+        let encoder = PngEncoder::new_with_quality(&mut encoded, compression, FilterType::Sub);
+        let _ = encoder.write_image(
+            &rgba_bytes,
+            out_w,
+            out_h,
+            image::ExtendedColorType::Rgba8,
+        );
+    } else if is_flash_display && &*local_name == b"JPEGEncoderOptions" {
+        use image::ImageEncoder;
+        use image::codecs::jpeg::JpegEncoder;
+
+        let quality_name = crate::string::AvmString::new_ascii_static(activation.gc(), b"quality");
+        let quality = compressor_val
+            .get_property(
+                &crate::avm2::Multiname::new(pub_ns, quality_name),
+                activation,
+            )?
+            .coerce_to_u32(activation)?
+            .clamp(1, 100) as u8;
+        let mut rgb_bytes = Vec::with_capacity((out_w * out_h * 3) as usize);
+        for chunk in rgba_bytes.chunks_exact(4) {
+            rgb_bytes.push(chunk[0]);
+            rgb_bytes.push(chunk[1]);
+            rgb_bytes.push(chunk[2]);
+}
+        let encoder = JpegEncoder::new_with_quality(&mut encoded, quality);
+        let _ = encoder.write_image(
+            &rgb_bytes,
+            out_w,
+            out_h,
+            image::ExtendedColorType::Rgb8,
+        );
+    } else {
+        return Err(make_error_2007(activation, "compressor"));
+    }
+
+
+    if let Some(mut ba) = byte_array_obj.as_bytearray_mut() {
+        let pos = ba.position();
+        let _ = ba.write_at(&encoded, pos);
+        ba.set_position(pos + encoded.len());
+    }
+
+    Ok(byte_array_obj.into())
 }
