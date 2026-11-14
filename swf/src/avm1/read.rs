@@ -8,8 +8,6 @@ type Result<T, E = UnexpectedEof> = std::result::Result<T, E>;
 
 pub struct Reader<'a> {
     input: &'a [u8],
-    #[expect(dead_code)]
-    version: u8,
 }
 
 impl<'a> ReadSwfExt<'a> for Reader<'a> {
@@ -26,8 +24,8 @@ impl<'a> ReadSwfExt<'a> for Reader<'a> {
 
 impl<'a> Reader<'a> {
     #[inline]
-    pub const fn new(input: &'a [u8], version: u8) -> Self {
-        Self { input, version }
+    pub const fn new(input: &'a [u8]) -> Self {
+        Self { input }
     }
 
     #[inline]
@@ -422,8 +420,8 @@ pub mod tests {
 
     #[test]
     fn read_action() {
-        for (swf_version, expected_action, action_bytes) in test_data::avm1_tests() {
-            let mut reader = Reader::new(&action_bytes[..], swf_version);
+        for (_swf_version, expected_action, action_bytes) in test_data::avm1_tests() {
+            let mut reader = Reader::new(&action_bytes[..]);
             let parsed_action = reader.read_action().unwrap();
             assert_eq!(
                 parsed_action, expected_action,
@@ -436,7 +434,7 @@ pub mod tests {
     #[test]
     fn read_parse_error() {
         let action_bytes = [0xff, 0xff, 0xff, 0x00, 0x00];
-        let mut reader = Reader::new(&action_bytes[..], 5);
+        let mut reader = Reader::new(&action_bytes[..]);
         match reader.read_action() {
             Err(_) => (),
             result => {
@@ -452,7 +450,7 @@ pub mod tests {
             0x9b, 0x08, 0x00, 0x66, 0x6f, 0x6f, 0x00, 0x00, 0x00, 0x0a, 0x00, 0x96, 0x06, 0x00,
             0x00, 0x74, 0x65, 0x73, 0x74, 0x00, 0x26, 0x00,
         ];
-        let mut reader = Reader::new(&action_bytes[..], 5);
+        let mut reader = Reader::new(&action_bytes[..]);
         let action = reader.read_action().unwrap();
         assert_eq!(
             action,
@@ -464,7 +462,7 @@ pub mod tests {
         );
 
         if let Action::DefineFunction(DefineFunction { actions, .. }) = action {
-            let mut reader = Reader::new(actions, 5);
+            let mut reader = Reader::new(actions);
             let action = reader.read_action().unwrap();
             assert_eq!(
                 action,
@@ -490,7 +488,7 @@ pub mod tests {
             3,  // undefined
             3,  // Extra byte at the end shouldn't be read.
         ];
-        let mut reader = Reader::new(&action_bytes, 5);
+        let mut reader = Reader::new(&action_bytes);
         let action = reader.read_action().unwrap();
         assert_eq!(
             action,
@@ -513,7 +511,7 @@ pub mod tests {
             OpCode::Add as u8,
             OpCode::Subtract as u8,
         ];
-        let mut reader = Reader::new(&action_bytes[..], 5);
+        let mut reader = Reader::new(&action_bytes[..]);
 
         let action = reader.read_action().unwrap();
         assert_eq!(
