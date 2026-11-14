@@ -7,7 +7,6 @@ use crate::avm2::object::FontObject;
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
 use crate::avm2::{ArrayObject, Error};
-use crate::avm2_stub_method;
 use crate::string::AvmString;
 
 pub use crate::avm2::object::font_allocator;
@@ -94,19 +93,9 @@ pub fn has_glyphs<'gc>(
 pub fn enumerate_fonts<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Value<'gc>,
-    args: FunctionArgs<'_, 'gc>,
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let mut fonts: Vec<Font<'gc>> = Vec::new();
-
-    if args.get_bool(0) {
-        // We could include the ones we know about, but what to do for the ones that weren't eagerly loaded?
-        avm2_stub_method!(
-            activation,
-            "flash.text.Font",
-            "enumerateFonts",
-            "with device fonts"
-        );
-    }
 
     fonts.append(&mut activation.context.library.global_fonts());
 

@@ -1,7 +1,4 @@
 package flash.text {
-    import __ruffle__.stub_getter;
-    import __ruffle__.stub_setter;
-    import __ruffle__.stub_method;
 
     import flash.display.InteractiveObject;
     import flash.display.DisplayObject;
@@ -94,8 +91,7 @@ package flash.text {
         }
 
         public function set useRichTextClipboard(value:Boolean):void {
-            this._useRichTextClipboard = value;
-            stub_setter("flash.text.TextField", "useRichTextClipboard");
+        this._useRichTextClipboard = value;
         }
 
         public native function get wordWrap():Boolean;
@@ -132,7 +128,7 @@ package flash.text {
         public native function get selectedText():String;
 
         public function insertXMLText(beginIndex:int, endIndex:int, text:String, paste:Boolean = false):void {
-            stub_method("flash.text.TextField", "insertXMLText");
+        this.replaceText(beginIndex, endIndex, text);
         }
 
         public native function getCharIndexAtPoint(x:Number, y:Number):int;
@@ -148,7 +144,6 @@ package flash.text {
         public native function getFirstCharInParagraph(charIndex:int):int;
 
         public function getImageReference(id:String):DisplayObject {
-            stub_method("flash.text.TextField", "getImageReference");
             return null;
         }
 
@@ -159,13 +154,11 @@ package flash.text {
         public native function getParagraphLength(charIndex:int):int;
 
         public static function isFontCompatible(fontName:String, fontStyle:String):Boolean {
-            stub_method("flash.text.TextField", "isFontCompatible");
             return true;
         }
 
         [API("670")]
         public function get textInteractionMode():String {
-            stub_getter("flash.text.TextField", "textInteractionMode");
             return TextInteractionMode.NORMAL;
         }
     }
