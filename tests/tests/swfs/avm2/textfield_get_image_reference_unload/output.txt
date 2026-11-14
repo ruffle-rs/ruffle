@@ -1,0 +1,29 @@
+COMPLETE
+CONTENT_BEFORE_NULL=false
+PARENT_BEFORE_NULL=true
+STAGE_BEFORE_NULL=false
+=== BEFORE_UNLOAD ===
+IMAGE_enterFrame=true
+ORPHAN_enterFrame=true
+IMAGE_frameConstructed=true
+ORPHAN_frameConstructed=true
+IMAGE_exitFrame=true
+ORPHAN_exitFrame=true
+CALL_UNLOAD
+UNLOAD_EVENT
+CONTENT_AFTER_NULL=true
+REFERENCE_AFTER_SAME=true
+TEXT_AFTER_SAME=true
+HTML_AFTER_SAME=true
+PARENT_AFTER_NULL=true
+WIDTH_AFTER=434
+HEIGHT_AFTER=342
+=== AFTER_UNLOAD ===
+IMAGE_enterFrame=true
+ORPHAN_enterFrame=true
+IMAGE_frameConstructed=true
+ORPHAN_frameConstructed=true
+IMAGE_exitFrame=true
+ORPHAN_exitFrame=true
+LATER_CONTENT_NULL=true
+LATER_REFERENCE_SAME=true
