@@ -161,7 +161,7 @@ pub fn remove_invalid_jpeg_data(data: &[u8]) -> Cow<'_, [u8]> {
 
 /// Some SWFs report unreasonable bitmap dimensions (#1191).
 /// Fail before decoding such bitmaps to avoid panics.
-fn validate_size(width: u16, height: u16) -> Result<(), Error> {
+fn validate_size(width: u32, height: u32) -> Result<(), Error> {
     const INVALID_SIZE: usize = 0x8000000; // 128MB
 
     let size = (width as usize).saturating_mul(height as usize);
@@ -179,7 +179,7 @@ fn decode_jpeg_dimensions(jpeg_data: &[u8]) -> Result<(u16, u16), Error> {
     let metadata = decoder
         .info()
         .expect("info() should always return Some if read_info returned Ok");
-    validate_size(metadata.width, metadata.height)?;
+    validate_size(metadata.width.into(), metadata.height.into())?;
     Ok((metadata.width, metadata.height))
 }
 
@@ -193,7 +193,7 @@ fn decode_jpeg(jpeg_data: &[u8], alpha_data: Option<&[u8]>) -> Result<Bitmap<'st
     let metadata = decoder
         .info()
         .expect("info() should always return Some if read_info returned Ok");
-    validate_size(metadata.width, metadata.height)?;
+    validate_size(metadata.width.into(), metadata.height.into())?;
     let decoded_data = decoder.decode()?;
 
     let decoded_data = match metadata.pixel_format {
@@ -270,6 +270,8 @@ fn decode_jpeg(jpeg_data: &[u8], alpha_data: Option<&[u8]>) -> Result<Bitmap<'st
 pub fn decode_define_bits_lossless(
     swf_tag: &swf::DefineBitsLossless,
 ) -> Result<Bitmap<'static>, Error> {
+    validate_size(swf_tag.width.into(), swf_tag.height.into())?;
+
     // Decompress the image data (DEFLATE compression).
     let mut decoded_data = decompress_zlib(&swf_tag.data)?;
 
@@ -279,7 +281,6 @@ pub fn decode_define_bits_lossless(
     let out_data = match swf_tag.format {
         swf::BitmapFormat::Rgb15 => {
             let padded_width = (swf_tag.width + 0b1) & !0b1;
-            validate_size(swf_tag.width, swf_tag.height)?;
             let mut out_data =
                 Vec::with_capacity(swf_tag.width as usize * swf_tag.height as usize * 4);
             let mut i = 0;
@@ -331,7 +332,6 @@ pub fn decode_define_bits_lossless(
                 i += if has_alpha { 4 } else { 3 };
             }
 
-            validate_size(swf_tag.width, swf_tag.height)?;
             let mut out_data =
                 Vec::with_capacity(swf_tag.width as usize * swf_tag.height as usize * 4);
             for _ in 0..swf_tag.height {
@@ -381,6 +381,7 @@ fn decode_png(data: &[u8]) -> Result<Bitmap<'static>, Error> {
     // Ideally we'd want to normalize to 8-bit RGB only, but seems like the `png` crate provides no such a feature.
     decoder.set_transformations(Transformations::normalize_to_color8());
     let mut reader = decoder.read_info()?;
+    validate_size(reader.info().width, reader.info().height)?;
 
     let mut data = vec![0; reader.output_buffer_size().ok_or(Error::TooLarge)?];
     let info = match reader.next_frame(&mut data) {
@@ -469,14 +470,14 @@ fn decode_gif(data: &[u8]) -> Result<Bitmap<'static>, Error> {
 fn decode_jpegxr(data: &[u8]) -> Result<Bitmap<'static>, Error> {
     // TODO: Could this be unified with 'core/src/avm2/globals/flash/display3D/textures/atf_jpegxr'?
 
+    // The dimensions must be validated before decoding: jxrlib computes its intermediate
+    // buffer size in 32-bit arithmetic, which wraps for large header-declared dimensions.
+    let (jpeg_width, jpeg_height) = decode_jpegxr_dimensions(data)?;
+
     let mut decoder =
         jpegxr::ImageDecode::with_reader(Cursor::new(data)).map_err(Error::InvalidJpegXr)?;
 
     let pixel_format = decoder.get_pixel_format().map_err(Error::InvalidJpegXr)?;
-
-    let (jpeg_width, jpeg_height) = decoder.get_size().map_err(Error::InvalidJpegXr)?;
-    let jpeg_width = jpeg_width as u32;
-    let jpeg_height = jpeg_height as u32;
 
     let info = jpegxr::PixelInfo::from_format(pixel_format);
     let stride = jpeg_width as usize * info.bits_per_pixel() / 8;
@@ -500,8 +501,8 @@ fn decode_jpegxr(data: &[u8]) -> Result<Bitmap<'static>, Error> {
         .into_vec();
 
     Ok(Bitmap::new(
-        jpeg_width,
-        jpeg_height,
+        jpeg_width.into(),
+        jpeg_height.into(),
         BitmapFormat::Rgba,
         data,
     ))
@@ -514,12 +515,14 @@ fn decode_jpegxr(_: &[u8]) -> Result<Bitmap<'static>, Error> {
 
 #[cfg(feature = "jpegxr")]
 fn decode_jpegxr_dimensions(data: &[u8]) -> Result<(u16, u16), Error> {
-    let (jpeg_width, jpeg_height) = jpegxr::ImageDecode::with_reader(Cursor::new(data))
-        .map_err(Error::InvalidJpegXr)?
-        .get_size()
-        .map_err(Error::InvalidJpegXr)?;
+    let decoder =
+        jpegxr::ImageDecode::with_reader(Cursor::new(data)).map_err(Error::InvalidJpegXr)?;
+    let (jpeg_width, jpeg_height) = decoder.get_size().map_err(Error::InvalidJpegXr)?;
+    let jpeg_width = u16::try_from(jpeg_width).map_err(|_| Error::TooLarge)?;
+    let jpeg_height = u16::try_from(jpeg_height).map_err(|_| Error::TooLarge)?;
+    validate_size(jpeg_width.into(), jpeg_height.into())?;
 
-    Ok((jpeg_width as u16, jpeg_height as u16))
+    Ok((jpeg_width, jpeg_height))
 }
 
 #[cfg(not(feature = "jpegxr"))]
