@@ -1,6 +1,7 @@
 use crate::compiler::SwfCompiler;
 use crate::util::{read_bytes, write_bytes_and_verify_if_changed};
 use serde::Deserialize;
+use swfasm::Compiler;
 use swfasm::files::FileProvider;
 use vfs::VfsPath;
 
@@ -37,7 +38,9 @@ impl SwfCompiler for SwfasmCompiler {
 
         // Paths in the source are relative to the directory of the source.
         let files = VfsFileProvider(source_path.parent());
-        let swf = swfasm::compile_str(&source, &files)
+        let swf = Compiler::new()
+            .with_files(&files)
+            .compile_str(&source)
             .map_err(|e| anyhow::anyhow!("Failed to compile '{}': {e:#}", self.source))?;
         let output_path = root_dir.join(&self.target)?;
 
