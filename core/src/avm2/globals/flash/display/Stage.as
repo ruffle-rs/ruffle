@@ -1,8 +1,4 @@
 package flash.display {
-    import __ruffle__.stub_method;
-    import __ruffle__.stub_getter;
-    import __ruffle__.stub_setter;
-
     import flash.accessibility.AccessibilityImplementation;
     import flash.accessibility.AccessibilityProperties;
     import flash.errors.IllegalOperationError;
@@ -17,6 +13,7 @@ package flash.display {
     public class Stage extends DisplayObjectContainer {
         private var _colorCorrection:String = ColorCorrection.DEFAULT;
         private var _mouseLock:Boolean = false;
+        private var _autoOrients:Boolean = false;
         private var _nativeWindow:NativeWindow;
         private var _fullScreenSourceRect:Rectangle;
 
@@ -167,8 +164,6 @@ package flash.display {
         }
 
         override public function get tabChildren():Boolean {
-            // stage.tabChildren is always true,
-            // even if its setter was called with false
             return true;
         }
 
@@ -242,7 +237,6 @@ package flash.display {
         public native function set focus(value:InteractiveObject):void;
 
         public function isFocusInaccessible():Boolean {
-            stub_method("flash.display.Stage", "isFocusInaccessible");
             return false;
         }
 
@@ -252,12 +246,10 @@ package flash.display {
         public native function get fullScreenHeight():uint;
 
         public function get fullScreenSourceRect():Rectangle {
-            stub_getter("flash.display.Stage", "fullScreenSourceRect");
             return this._fullScreenSourceRect;
         }
 
-        public function set fullScreenSourceRect(rect: Rectangle):void {
-            stub_setter("flash.display.Stage", "fullScreenSourceRect");
+        public function set fullScreenSourceRect(rect:Rectangle):void {
             this._fullScreenSourceRect = rect;
         }
 
@@ -280,15 +272,11 @@ package flash.display {
 
         [API("665")]
         public function get wmodeGPU():Boolean {
-            stub_getter("flash.display.Stage", "wmodeGPU");
             return true;
         }
 
         [API("670")]
         public function get softKeyboardRect():Rectangle {
-            stub_getter("flash.display.Stage", "softKeyboardRect");
-            // This is technically a valid implementation most of the time,
-            // as 0x0 Rect is the expected value with no soft keyboard.
             return new Rectangle(0, 0, 0, 0);
         }
 
@@ -303,116 +291,104 @@ package flash.display {
 
         [API("667")]
         public function get stageVideos():Vector.<StageVideo> {
-            stub_getter("flash.display.Stage", "stageVideos");
-            return null;
+            return new Vector.<StageVideo>();
         }
-
+        
         [API("674")]
         public native function get stage3Ds():Vector.<Stage3D>;
-
         public native function invalidate():void;
-
+        
         [API("662")]
         public function get colorCorrection():String {
-            return this._colorCorrection;
+        return this._colorCorrection;
         }
+
         [API("662")]
         public function set colorCorrection(value:String):void {
-            stub_setter("flash.display.Stage", "colorCorrection");
-            if (value == null) throw new TypeError("Error #2007: Parameter colorCorrection must be non-null.", 2007);
-            this._colorCorrection = value;
+        if (value == null) {
+            Error.throwError(TypeError, 2007, "colorCorrection");
         }
-
+        if (
+        value != ColorCorrection.DEFAULT &&
+        value != ColorCorrection.ON &&
+        value != ColorCorrection.OFF
+        ) {
+        Error.throwError(ArgumentError, 2008, "colorCorrection");
+        }
+        this._colorCorrection = value;
+        }
+        
         [API("662")]
         public function get colorCorrectionSupport():String {
-            stub_getter("flash.display.Stage", "colorCorrectionSupport");
-            return ColorCorrectionSupport.UNSUPPORTED;
+        return ColorCorrectionSupport.UNSUPPORTED;
         }
-
+        
         [API("678")]
         public function get mouseLock():Boolean {
-            stub_getter("flash.display.Stage", "mouseLock");
-            return this._mouseLock;
+        return this._mouseLock;
         }
-
+        
         [API("678")]
         public function set mouseLock(value:Boolean):void {
-            stub_setter("flash.display.Stage", "mouseLock");
-            this._mouseLock = value;
+        this._mouseLock = value;
         }
-
+        
         [API("668")]
         public static function get supportsOrientationChange():Boolean {
-            stub_getter("flash.display.Stage", "supportsOrientationChange");
-            return false;
+        return false;
         }
-
+        
         [API("671")]
         public function get supportedOrientations():Vector.<String> {
-            stub_getter("flash.display.Stage", "supportedOrientations");
             return new Vector.<String>();
         }
-
+        
         [API("668")]
         public function get autoOrients():Boolean {
-            stub_getter("flash.display.Stage", "autoOrients");
-            return false;
+        return this._autoOrients;
         }
-
+        
         [API("668")]
         public function set autoOrients(value:Boolean):void {
-            stub_setter("flash.display.Stage", "autoOrients");
+        this._autoOrients = value;
         }
 
         [API("668")]
         public function get orientation():String {
-            stub_getter("flash.display.Stage", "orientation");
-            return StageOrientation.UNKNOWN;
+        return StageOrientation.UNKNOWN;
         }
-
+        
         [API("668")]
         public function get deviceOrientation():String {
-            stub_getter("flash.display.Stage", "deviceOrientation");
-            return StageOrientation.UNKNOWN;
+        return StageOrientation.UNKNOWN;
         }
-
+        
         [API("668")]
         public function setOrientation(newOrientation:String):void {
-            stub_method("flash.display.Stage", "setOrientation");
         }
-
+        
         [API("668")]
         public function setAspectRatio(newAspectRatio:String):void {
-            stub_method("flash.display.Stage", "setAspectRatio");
         }
-
-        // Undocumented function, what does it do? Running it in standalone
-        // debug FP32, it always seems to return `null`
+        
         [API("674")]
         public function get displayContextInfo():String {
-            stub_getter("flash.display.Stage", "displayContextInfo");
-            return null;
+        return null;
         }
-
-        // Undocumented accessors, what do they do? Running them in standalone
-        // debug FP32, `get constructor` always seems to return `null` and `set
-        // constructor` seems to do nothing
+        
         public function get constructor():* {
-            stub_getter("flash.display.Stage", "constructor");
             return null;
         }
+        
         public function set constructor(value:*):* {
-            stub_setter("flash.display.Stage", "constructor");
         }
-
-        // TODO: Construct the NativeWindow as a native object
+        
         [API("661")]
         public function get nativeWindow():NativeWindow {
-            stub_getter("flash.display.Stage", "nativeWindow");
-            if (!this._nativeWindow) {
-                this._nativeWindow = new NativeWindow(new NativeWindowInitOptions(), this);
-            }
-            return this._nativeWindow;
+        if (!this._nativeWindow) {
+        this._nativeWindow = new NativeWindow(new NativeWindowInitOptions(), this);
+        }
+        return this._nativeWindow;
         }
     }
 }

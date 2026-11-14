@@ -1,6 +1,4 @@
 package flash.display {
-    import __ruffle__.stub_method;
-
     import flash.geom.Rectangle;
     import flash.media.SoundTransform;
 
@@ -30,12 +28,12 @@ package flash.display {
 
         [API("667")]
         public function startTouchDrag(touchPointID:int, lockCenter:Boolean = false, bounds:Rectangle = null):void {
-            stub_method("flash.display.Sprite", "startTouchDrag");
+            this.startDrag(lockCenter, bounds);
         }
 
         [API("667")]
         public function stopTouchDrag(touchPointID:int):void {
-            stub_method("flash.display.Sprite", "stopTouchDrag");
+            this.stopDrag();
         }
 
         public native function get hitArea():Sprite;

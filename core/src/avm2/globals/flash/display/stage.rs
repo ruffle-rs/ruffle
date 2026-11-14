@@ -8,7 +8,6 @@ use crate::avm2::object::VectorObject;
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
 use crate::avm2::vector::VectorStorage;
-use crate::avm2_stub_getter;
 use crate::display_object::{
     StageDisplayState, TDisplayObject, TDisplayObjectContainer, TInteractiveObject,
 };
@@ -370,29 +369,23 @@ pub fn set_stage_height<'gc>(
     Ok(Value::Undefined)
 }
 
-/// Implement `allowsFullScreen`'s getter
-pub fn get_allows_full_screen<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    _this: Value<'gc>,
-    _args: FunctionArgs<'_, 'gc>,
-) -> Result<Value<'gc>, Error<'gc>> {
-    avm2_stub_getter!(activation, "flash.display.Stage", "allowsFullScreen");
-    Ok(true.into())
-}
+  /// Implement `allowsFullScreen`'s getter
+  pub fn get_allows_full_screen<'gc>(
+      _activation: &mut Activation<'_, 'gc>,
+      _this: Value<'gc>,
+      _args: FunctionArgs<'_, 'gc>,
+  ) -> Result<Value<'gc>, Error<'gc>> {
+      Ok(true.into())
+  }
 
-/// Implement `allowsFullScreenInteractive`'s getter
-pub fn get_allows_full_screen_interactive<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    _this: Value<'gc>,
-    _args: FunctionArgs<'_, 'gc>,
-) -> Result<Value<'gc>, Error<'gc>> {
-    avm2_stub_getter!(
-        activation,
-        "flash.display.Stage",
-        "allowsFullScreenInteractive"
-    );
-    Ok(false.into())
-}
+  /// Implement `allowsFullScreenInteractive`'s getter
+  pub fn get_allows_full_screen_interactive<'gc>(
+      _activation: &mut Activation<'_, 'gc>,
+      _this: Value<'gc>,
+      _args: FunctionArgs<'_, 'gc>,
+  ) -> Result<Value<'gc>, Error<'gc>> {
+      Ok(true.into())
+  }
 
 /// Implement `quality`'s getter
 pub fn get_quality<'gc>(
@@ -460,8 +453,8 @@ pub fn get_full_screen_height<'gc>(
     _this: Value<'gc>,
     _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm2_stub_getter!(activation, "flash.display.Stage", "fullScreenHeight");
-    Ok(768.into())
+    let dims = activation.context.renderer.viewport_dimensions();
+    Ok((dims.height.max(768)).into())
 }
 
 /// Stage.fullScreenWidth's getter
@@ -470,8 +463,8 @@ pub fn get_full_screen_width<'gc>(
     _this: Value<'gc>,
     _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm2_stub_getter!(activation, "flash.display.Stage", "fullScreenWidth");
-    Ok(1024.into())
+    let dims = activation.context.renderer.viewport_dimensions();
+    Ok((dims.width.max(1024)).into())
 }
 
 pub fn set_tab_children<'gc>(
