@@ -1,9 +1,5 @@
 package flash.net {
-    import __ruffle__.stub_method;
-
     import flash.events.EventDispatcher;
-    import flash.events.StatusEvent;
-    import flash.utils.setTimeout;
 
     [Ruffle(InstanceAllocator)]
     public class LocalConnection extends EventDispatcher {
@@ -28,11 +24,9 @@ package flash.net {
         public native function set client(client:Object):void;
 
         public function allowDomain(...domains):void {
-            stub_method("flash.net.LocalConnection", "allowDomain");
         }
 
         public function allowInsecureDomain(...domains):void {
-            stub_method("flash.net.LocalConnection", "allowInsecureDomain");
         }
     }
 }

@@ -5,10 +5,7 @@ pub use crate::avm2::object::net_connection_allocator;
 use crate::avm2::parameters::ParametersExt;
 use crate::net_connection::NetConnections;
 use crate::string::AvmString;
-use crate::{
-    avm2::{Activation, Error, Value},
-    avm2_stub_method,
-};
+use crate::avm2::{Activation, Error, Value};
 use flash_lso::packet::Header;
 use flash_lso::types::AMFVersion;
 use flash_lso::types::ObjectId;
@@ -42,12 +39,7 @@ pub fn connect<'gc>(
                 url.to_string(),
             );
         } else {
-            avm2_stub_method!(
-                activation,
-                "flash.net.NetConnection",
-                "connect",
-                "with non-null, non-http command"
-            );
+            NetConnections::connect_to_local(activation.context, connection);
         }
     } else {
         NetConnections::connect_to_local(activation.context, connection);
