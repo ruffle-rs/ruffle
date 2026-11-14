@@ -299,6 +299,7 @@ pub enum Value<'a> {
     Str(&'a SwfStr),
     Register(u8),
     ConstantPool(u16),
+    Invalid { kind: u8 },
 }
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]

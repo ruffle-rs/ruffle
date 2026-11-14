@@ -328,15 +328,7 @@ impl<'a> Reader<'a> {
                 7 => Value::Int(self.read_i32()?),
                 8 => Value::ConstantPool(self.read_u8()?.into()),
                 9 => Value::ConstantPool(self.read_u16()?),
-                type_ => {
-                    // Newest Flash Player exits on unknown value types. However, older versions
-                    // (at least FP9) just ignore them and continue to the next value.
-                    // We follow the lenient behavior in order to support more content (e.g. #8389
-                    // doesn't work on newest Flash Player).
-                    // TODO: Return an error if we ever add player version emulation.
-                    log::warn!("Invalid value type in ActionPush: {type_}");
-                    continue;
-                }
+                kind => Value::Invalid { kind },
             };
             values.push(value);
         }
@@ -503,7 +495,7 @@ pub mod tests {
         assert_eq!(
             action,
             Action::Push(Push {
-                values: vec![Value::Null, Value::Undefined]
+                values: vec![Value::Null, Value::Invalid { kind: 10 }, Value::Undefined]
             })
         );
     }

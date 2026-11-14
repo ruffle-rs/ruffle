@@ -1904,6 +1904,15 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                         Value::Undefined
                     }
                 }
+                SwfValue::Invalid { kind } => {
+                    // Newest Flash Player exits on unknown value types. However, older versions
+                    // (at least FP9) just ignore them and continue to the next value.
+                    // We follow the lenient behavior in order to support more content (e.g. #8389
+                    // doesn't work on newest Flash Player).
+                    // TODO: Return an error depending on the player version?
+                    avm_warn!(self, "Invalid value type in ActionPush: {kind}");
+                    continue;
+                }
             };
             self.stack_push(value); // Needs to handle MovieClipReferences, in case pushing a register
         }
