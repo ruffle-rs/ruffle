@@ -1,5 +1,5 @@
 use crate::avm1::object::parse_canonical_array_index;
-use crate::avm1::{Activation, Attribute, NativeObject, Object, Value};
+use crate::avm1::{Activation, ArrayBuilder, Attribute, NativeObject, Object, Value};
 use crate::string::{AvmString, from_utf8};
 use flash_lso::amf0::writer::{Amf0Writer, CacheKey, ObjWriter};
 use flash_lso::types::{
@@ -468,25 +468,10 @@ fn deserialize_value_inner<'gc>(
         AmfValue::String(s) => Value::String(AvmString::new_utf8(activation.gc(), s)),
         AmfValue::Bool(b) => (*b).into(),
         AmfValue::ECMAArray { data, .. } => {
-            // TODO(moulins): how exactly is the Array object instantiated? this matters when
-            // the Array class was monkeypatched by the user.
-            let Ok(Some(Value::Object(obj))) =
-                activation.instantiate_class_fast([istr!("Array")], &[Value::from(data.length)])
-            else {
-                // The value still occupies a reference-table slot, even if it could not be
-                // instantiated in AVM1. Its children must also be visited to keep subsequent
-                // reference indices aligned.
-                reference_cache.insert(Value::Undefined);
-                for entry in &data.elements {
-                    let _ = deserialize_value_inner(
-                        activation,
-                        entry.value(),
-                        reference_cache,
-                        xml_is_referenceable,
-                    );
-                }
-                return Value::Undefined;
-            };
+            let obj = ArrayBuilder::empty_with_len(
+                activation,
+                i32::try_from(data.length).unwrap_or(i32::MAX),
+            );
 
             let value: Value<'gc> = obj.into();
 
@@ -516,26 +501,10 @@ fn deserialize_value_inner<'gc>(
             value
         }
         AmfValue::StrictArray { values, .. } => {
-            // TODO(moulins): how exactly is the Array object instantiated? this matters when
-            // the Array class was monkeypatched by the user.
-            let args = &[Value::from_usize_lossy(values.len())];
-            let Ok(Some(Value::Object(obj))) =
-                activation.instantiate_class_fast([istr!("Array")], args)
-            else {
-                // The value still occupies a reference-table slot, even if it could not be
-                // instantiated in AVM1. Its children must also be visited to keep subsequent
-                // reference indices aligned.
-                reference_cache.insert(Value::Undefined);
-                for item in values {
-                    let _ = deserialize_value_inner(
-                        activation,
-                        item,
-                        reference_cache,
-                        xml_is_referenceable,
-                    );
-                }
-                return Value::Undefined;
-            };
+            let obj = ArrayBuilder::empty_with_len(
+                activation,
+                i32::try_from(values.len()).unwrap_or(i32::MAX),
+            );
 
             let value: Value<'gc> = obj.into();
 

@@ -140,6 +140,12 @@ impl<'gc> ArrayBuilder<'gc> {
         Self::new(activation).with([])
     }
 
+    /// Creates an empty native array with the given length, without invoking
+    /// the script-visible Array constructor or any inherited length accessor.
+    pub fn empty_with_len(activation: &Activation<'_, 'gc>, length: i32) -> Object<'gc> {
+        Self::new(activation).with_length([], Some(length))
+    }
+
     pub fn new(activation: &Activation<'_, 'gc>) -> Self {
         let mut constructor = activation.resolve_class([istr!(activation, "Array")]);
         let proto = constructor.and_then(|c| c.prototype(activation));
@@ -160,18 +166,23 @@ impl<'gc> ArrayBuilder<'gc> {
         }
     }
 
-    fn init_with(self, this: Object<'gc>, elements: impl IntoIterator<Item = Value<'gc>>) {
-        let mut length: i32 = 0;
+    fn init_with(
+        self,
+        this: Object<'gc>,
+        elements: impl IntoIterator<Item = Value<'gc>>,
+        length: Option<i32>,
+    ) {
+        let mut element_count: i32 = 0;
         for value in elements.into_iter() {
-            let length_str = AvmString::new_utf8(self.mc, length.to_string());
-            this.define_value(self.mc, length_str, value, Attribute::empty());
-            length += 1;
+            let index = AvmString::new_utf8(self.mc, element_count.to_string());
+            this.define_value(self.mc, index, value, Attribute::empty());
+            element_count += 1;
         }
 
         this.define_value(
             self.mc,
             self.length_prop,
-            length.into(),
+            length.unwrap_or(element_count).into(),
             Attribute::DONT_ENUM | Attribute::DONT_DELETE,
         );
 
@@ -179,6 +190,14 @@ impl<'gc> ArrayBuilder<'gc> {
     }
 
     pub fn with(self, elements: impl IntoIterator<Item = Value<'gc>>) -> Object<'gc> {
+        self.with_length(elements, None)
+    }
+
+    fn with_length(
+        self,
+        elements: impl IntoIterator<Item = Value<'gc>>,
+        length: Option<i32>,
+    ) -> Object<'gc> {
         let obj = Object::new_without_proto(self.mc);
         if let Some(proto) = self.proto {
             obj.define_value(
@@ -197,7 +216,7 @@ impl<'gc> ArrayBuilder<'gc> {
             );
         }
 
-        self.init_with(obj, elements);
+        self.init_with(obj, elements, length);
         obj
     }
 }
@@ -210,10 +229,10 @@ fn constructor<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let builder = ArrayBuilder::new(activation);
     if let [Value::Number(length)] = *args {
-        builder.init_with(this, []);
+        builder.init_with(this, [], None);
         this.set_length(activation, length.clamp_to_i32())?;
     } else {
-        builder.init_with(this, args.iter().cloned());
+        builder.init_with(this, args.iter().cloned(), None);
     }
 
     Ok(this.into())
