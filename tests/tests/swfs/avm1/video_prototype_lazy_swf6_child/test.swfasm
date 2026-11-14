@@ -8,8 +8,13 @@ Swf(
 
         // Frame 1
         DoAction(Rascal(file: "test.as")),
-        // DefineVideoStream: character 1, no frames, 160x120, no flags, no codec.
-        Raw(code: 60, data: InlineBytes(["0100", "0000", "a000", "7800", "00", "00"])),
+        DefineVideoStream(
+            id: 1,
+            num_frames: 0,
+            width: 160,
+            height: 120,
+            codec: None,
+        ),
         ShowFrame,
 
         // Frame 2
