@@ -592,11 +592,12 @@ pub fn create_globals<'gc>(
     let globals = Object::new_without_proto(context.gc());
     let decls = declare_properties! {
         // ASnative doesn't seem to have an ASnative index (searched in `ASnative(0..10000, 0..10000)`).
-        "ASnative" => method(asnative::asnative; DONT_ENUM);
+        // It also has no `__proto__`!
+        "ASnative" => method(@Bare asnative::asnative; DONT_ENUM);
         // TODO: ASconstructor
         "Object" => value(object.constr; DONT_ENUM);
         "Function" => value(function.constr; DONT_ENUM | VERSION_6);
-        // TODO: enableDebugConsole - is this only present in the debugger version of FP?
+        // skipped: enableDebugConsole - this is only present in the debugger version of FP
         "NaN" => property(get_nan; DONT_ENUM);
         "Infinity" => property(get_infinity; DONT_ENUM);
 

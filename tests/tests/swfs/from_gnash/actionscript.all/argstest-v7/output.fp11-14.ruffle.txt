@@ -129,7 +129,10 @@ testing _global.System.security(object)
 testing _global.System.security.PolicyFileResolver(function)
 Trying to construct _global.System.security.PolicyFileResolver
 Object was constructed
+Testing constructor()
 Testing __constructor__()
+testing _global.System.security.PolicyFileResolver.__constructor__(undefined)
+Testing __proto__()
 testing _global.System.security.sandboxType(string)
 testing _global.System.security.escapeDomain(function)
 Trying to construct _global.System.security.escapeDomain

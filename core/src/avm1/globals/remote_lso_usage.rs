@@ -5,7 +5,7 @@ use crate::avm1::{Object, Value};
 use crate::avm1_stub;
 
 const OBJECT_DECLS: StaticDeclarations = declare_static_properties! {
-    "getURLPageSupport" => method(get_url_page_support; DONT_ENUM);
+    "getURLPageSupport" => method(@As2 get_url_page_support; DONT_ENUM);
 };
 
 pub fn create_class<'gc>(

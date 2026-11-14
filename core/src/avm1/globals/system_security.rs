@@ -15,7 +15,7 @@ const OBJECT_DECLS: StaticDeclarations = declare_static_properties! {
     "chooseLocalSwfPath" => property(get_choose_local_swf_path);
     "escapeDomain" => method(escape_domain);
     "sandboxType" => property(get_sandbox_type);
-    "PolicyFileResolver" => method(policy_file_resolver);
+    "PolicyFileResolver" => method(@As2 policy_file_resolver);
 };
 
 pub fn create<'gc>(context: &mut DeclContext<'_, 'gc>) -> Object<'gc> {
