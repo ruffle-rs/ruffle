@@ -1,6 +1,4 @@
 package flash.display {
-    import __ruffle__.stub_method;
-
     import flash.display.LoaderInfo;
     import flash.display.DisplayObject;
     import flash.errors.IllegalOperationError;
@@ -31,13 +29,10 @@ package flash.display {
 
         [API("662")]
         public function unloadAndStop(gc:Boolean = true):void {
-            stub_method("flash.display.Loader", "unloadAndStop");
             this.unload();
         }
 
-        public function close():void {
-            stub_method("flash.display.Loader", "close");
-        }
+        public native function close():void;
 
         override public function addChild(child:DisplayObject):DisplayObject {
             throw new IllegalOperationError("Error #2069: The Loader class does not implement this method.", 2069);
