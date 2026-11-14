@@ -25,7 +25,7 @@ use std::cell::{Cell, Ref, RefCell, RefMut};
 use std::fmt::Debug;
 use std::hash::Hash;
 use std::num::NonZero;
-use swf::{ColorTransform, Fixed8};
+use swf::{ColorTransform, Fixed8, Fixed16};
 
 mod avm1_button;
 mod avm2_button;
@@ -276,6 +276,7 @@ pub struct DisplayObjectBase<'gc> {
     // Cached transform properties `_xscale`, `_yscale`, `_rotation`.
     // These are expensive to calculate, so they will be calculated and cached
     // when AS requests one of these properties.
+    // The rotation is kept as it was set, and is only normalized when read.
     rotation: Cell<Degrees>,
     scale_x: Cell<Percent>,
     scale_y: Cell<Percent>,
@@ -517,43 +518,45 @@ impl<'gc> DisplayObjectBase<'gc> {
 
     fn rotation(&self) -> Degrees {
         self.cache_scale_rotation();
-        self.rotation.get()
+        // Normalize into the range of [-180, 180].
+        let mut degrees = f64::from(self.rotation.get()) % 360.0;
+        if degrees < -180.0 {
+            degrees += 360.0
+        } else if degrees > 180.0 {
+            degrees -= 360.0
+        }
+        degrees.into()
     }
 
     fn set_rotation(&self, degrees: Degrees) -> bool {
         self.set_transformed_by_script(true);
         self.cache_scale_rotation();
+        // Not normalized before comparing: to Flash Player 360 is not the same value as 0,
+        // and setting it rebuilds the matrix.
         let changed = self.rotation.get() != degrees;
         self.rotation.set(degrees);
-
-        // FIXME - this isn't quite correct. In Flash player,
-        // trying to set rotation to NaN does nothing if the current
-        // matrix 'b' and 'd' terms are both zero. However, if one
-        // of those terms is non-zero, then the entire matrix gets
-        // modified in a way that depends on its starting values.
-        // I haven't been able to figure out how to reproduce those
-        // values, so for now, we never modify the matrix if the
-        // rotation is NaN. Hopefully, there are no SWFs depending
-        // on the weird behavior when b or d is non-zero.
-        if degrees.into_radians().is_nan() {
-            return changed;
+        if changed {
+            self.update_matrix_from_scale_rotation();
         }
-
-        let skew = self.skew.get();
-        let cos_x = f64::cos(degrees.into_radians());
-        let sin_x = f64::sin(degrees.into_radians());
-        let cos_y = f64::cos(degrees.into_radians() + skew);
-        let sin_y = f64::sin(degrees.into_radians() + skew);
-        let scale_x = self.scale_x.get().unit();
-        let scale_y = self.scale_y.get().unit();
-        let mut matrix = self.matrix.get();
-        matrix.a = (scale_x * cos_x) as f32;
-        matrix.b = (scale_x * sin_x) as f32;
-        matrix.c = (scale_y * -sin_y) as f32;
-        matrix.d = (scale_y * cos_y) as f32;
-        self.matrix.set(matrix);
-
         changed
+    }
+
+    /// Rewrites the matrix from the cached scale, rotation and skew in 16.16 fixed point,
+    /// which is what setting any one of them does in Flash Player.
+    fn update_matrix_from_scale_rotation(&self) {
+        // Widened, so that the sum of rotation and skew cannot overflow.
+        let rotation = i64::from(to_fixed16(self.rotation.get().into()).get());
+        let skew = i64::from(to_fixed16(self.skew.get().to_degrees()).get());
+        let scale_x = to_fixed16(self.scale_x.get().unit());
+        let scale_y = to_fixed16(self.scale_y.get().unit());
+        let (sin_x, cos_x) = fixed16_sin_cos(rotation);
+        let (sin_y, cos_y) = fixed16_sin_cos(rotation + skew);
+        let mut matrix = self.matrix.get();
+        matrix.a = fixed16_mul_round(cos_x, scale_x).to_f32();
+        matrix.b = fixed16_mul_round(sin_x, scale_x).to_f32();
+        matrix.c = -fixed16_mul_round(sin_y, scale_y).to_f32();
+        matrix.d = fixed16_mul_round(cos_y, scale_y).to_f32();
+        self.matrix.set(matrix);
     }
 
     fn scale_x(&self) -> Percent {
@@ -561,33 +564,14 @@ impl<'gc> DisplayObjectBase<'gc> {
         self.scale_x.get()
     }
 
-    fn set_scale_x(&self, mut value: Percent) -> bool {
-        let changed = self.scale_x.get() != value;
+    fn set_scale_x(&self, value: Percent) -> bool {
         self.set_transformed_by_script(true);
         self.cache_scale_rotation();
+        let changed = self.scale_x.get() != value;
         self.scale_x.set(value);
-
-        // Note - in order to match Flash's behavior, the 'scale_x' field is set to NaN
-        // (which gets reported back to ActionScript), but we treat it as 0 for
-        // the purposes of updating the matrix
-        if value.percent().is_nan() {
-            value = 0.0.into();
+        if changed {
+            self.update_matrix_from_scale_rotation();
         }
-
-        // Similarly, a rotation of `NaN` can be reported to ActionScript, but we
-        // treat it as 0.0 when calculating the matrix
-        let mut rot = self.rotation.get().into_radians();
-        if rot.is_nan() {
-            rot = 0.0;
-        }
-
-        let cos = f64::cos(rot);
-        let sin = f64::sin(rot);
-        let mut matrix = self.matrix.get();
-        matrix.a = (cos * value.unit()) as f32;
-        matrix.b = (sin * value.unit()) as f32;
-        self.matrix.set(matrix);
-
         changed
     }
 
@@ -596,34 +580,14 @@ impl<'gc> DisplayObjectBase<'gc> {
         self.scale_y.get()
     }
 
-    fn set_scale_y(&self, mut value: Percent) -> bool {
-        let changed = self.scale_y.get() != value;
+    fn set_scale_y(&self, value: Percent) -> bool {
         self.set_transformed_by_script(true);
         self.cache_scale_rotation();
+        let changed = self.scale_y.get() != value;
         self.scale_y.set(value);
-
-        // Note - in order to match Flash's behavior, the 'scale_y' field is set to NaN
-        // (which gets reported back to ActionScript), but we treat it as 0 for
-        // the purposes of updating the matrix
-        if value.percent().is_nan() {
-            value = 0.0.into();
+        if changed {
+            self.update_matrix_from_scale_rotation();
         }
-
-        // Similarly, a rotation of `NaN` can be reported to ActionScript, but we
-        // treat it as 0.0 when calculating the matrix
-        let mut rot = self.rotation.get().into_radians();
-        if rot.is_nan() {
-            rot = 0.0;
-        }
-
-        let skew = self.skew.get();
-        let cos = f64::cos(rot + skew);
-        let sin = f64::sin(rot + skew);
-        let mut matrix = self.matrix.get();
-        matrix.c = (-sin * value.unit()) as f32;
-        matrix.d = (cos * value.unit()) as f32;
-        self.matrix.set(matrix);
-
         changed
     }
 
@@ -927,6 +891,57 @@ impl<'gc> DisplayObjectBase<'gc> {
     pub fn set_has_matrix3d_stub(&self, value: bool) {
         self.set_flag(DisplayObjectFlags::HAS_MATRIX3D_STUB, value)
     }
+}
+
+/// Converts to 16.16 fixed point the way Flash Player's transform setters do: like
+/// `Fixed16::from_f64`, but a value that is out of range becomes the most negative value
+/// instead of being saturated.
+fn to_fixed16(value: f64) -> Fixed16 {
+    if value.abs() >= -Fixed16::MIN.to_f64() {
+        Fixed16::MIN
+    } else {
+        Fixed16::from_f64(value)
+    }
+}
+
+/// The product of two 16.16 values, rounded to the nearest value instead of truncated as
+/// by `Fixed16`'s multiplication. A tie rounds up.
+fn fixed16_mul_round(a: Fixed16, b: Fixed16) -> Fixed16 {
+    let half = 1 << (Fixed16::FRACTIONAL_BITS - 1);
+    let product = (i64::from(a.get()) * i64::from(b.get()) + half) >> Fixed16::FRACTIONAL_BITS;
+    Fixed16::from_bits(product as i32)
+}
+
+/// Sine and cosine of a 16.16 angle in degrees, as 16.16 values, the way Flash Player's
+/// transform setters compute them.
+///
+/// The sine is exact at every multiple of 0.25 degrees of the first quadrant, onto which
+/// the other quadrants are mirrored. In between it is interpolated from the multiple
+/// below, but Flash Player weighs the step by the leftover angle in degrees, not by the
+/// fraction of the step, so it only covers a quarter of the way to the next multiple.
+fn fixed16_sin_cos(degrees: i64) -> (Fixed16, Fixed16) {
+    const ONE: i64 = Fixed16::ONE.get() as i64;
+    const STEP: i64 = ONE / 4;
+    const QUADRANT: i64 = 90 * ONE;
+
+    fn sin_first_quadrant(angle: i64) -> f64 {
+        let sin_at_step = |step: i64| ((step * STEP) as f64 / ONE as f64).to_radians().sin();
+        let (step, leftover) = (angle / STEP, angle % STEP);
+        sin_at_step(step)
+            + leftover as f64 / ONE as f64 * (sin_at_step(step + 1) - sin_at_step(step))
+    }
+
+    let sin = |angle: i64| {
+        let angle = angle.rem_euclid(4 * QUADRANT);
+        let value = match angle / QUADRANT {
+            0 => sin_first_quadrant(angle),
+            1 => sin_first_quadrant(2 * QUADRANT - angle),
+            2 => -sin_first_quadrant(angle - 2 * QUADRANT),
+            _ => -sin_first_quadrant(4 * QUADRANT - angle),
+        };
+        Fixed16::from_bits((value * ONE as f64 + 0.5).floor() as i32)
+    };
+    (sin(degrees), sin(degrees + QUADRANT))
 }
 
 /// Indicates which kind of bounds should be returned by `self_bounds`.
@@ -1670,12 +1685,13 @@ pub trait TDisplayObject<'gc>:
         degrees
     }
 
-    /// Sets the rotation in degrees this display object in local space.
+    /// Sets the rotation in degrees this display object in local space, which does not have
+    /// to be normalized.
     /// Set by the `_rotation`/`rotation` ActionScript properties.
     /// This invalidates any ancestors cacheAsBitmap automatically.
     #[no_dynamic]
-    fn set_rotation(self, radians: Degrees) {
-        if self.base().set_rotation(radians) {
+    fn set_rotation(self, degrees: Degrees) {
+        if self.base().set_rotation(degrees) {
             self.set_scale_rotation_cached();
             if let Some(parent) = self.parent() {
                 // Self-transform changes are automatically handled,

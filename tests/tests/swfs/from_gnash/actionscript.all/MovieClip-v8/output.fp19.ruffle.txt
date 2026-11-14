@@ -828,15 +828,15 @@ PASSED: _root.transform.matrix.toString() == "(a=-3, b=0, c=0, d=1, tx=30, ty=20
 FAILED: expected: "(x=-2361, y=27, w=2397, h=842)" obtained: (x=-2376, y=25, w=2412, h=847) [./MovieClip.as:1862]
 PASSED: _root.transform.matrix.toString() == "(a=-3, b=0, c=0, d=-2, tx=30, ty=20)" [./MovieClip.as:1866]
 FAILED: expected: "(x=-2361, y=-1671, w=2397, h=1684)" obtained: (x=-2376, y=-1684, w=2412, h=1694) [./MovieClip.as:1867]
-FAILED: expected: 0 obtained: -1.83697014652885e-16 [./MovieClip.as:1871]
+PASSED: _root.transform.matrix.a == 0 [./MovieClip.as:1871]
 PASSED: _root.transform.matrix.b == 3 [./MovieClip.as:1872]
 PASSED: _root.transform.matrix.c == -2 [./MovieClip.as:1873]
-FAILED: expected: 0 obtained: -1.22464685258517e-16 [./MovieClip.as:1874]
+PASSED: _root.transform.matrix.d == 0 [./MovieClip.as:1874]
 PASSED: _root.transform.matrix.tx == 30 [./MovieClip.as:1875]
 PASSED: _root.transform.matrix.ty == 20 [./MovieClip.as:1876]
 FAILED: expected: "(x=-1663, y=16, w=1684, h=2397)" obtained: (x=-1674, y=14, w=1694, h=2412) [./MovieClip.as:1877]
 PASSED: _root._y == 20 [./MovieClip.as:1881]
-FAILED: expected: "(a=0, b=3, c=-2, d=0, tx=30, ty=20)" obtained: (a=-1.83697014652885e-16, b=3, c=-2, d=-1.22464685258517e-16, tx=30, ty=20) [./MovieClip.as:1883]
+PASSED: _root.transform.matrix.toString() == "(a=0, b=3, c=-2, d=0, tx=30, ty=20)" [./MovieClip.as:1883]
 FAILED: expected: "(x=-1663, y=16, w=1684, h=2397)" obtained: (x=-1674, y=14, w=1694, h=2412) [./MovieClip.as:1884]
 PASSED: _root.transform.matrix.toString() == "(a=-3, b=0, c=0, d=-2, tx=0, ty=0)" [./MovieClip.as:1887]
 FAILED: expected: "(x=-2391, y=-1691, w=2397, h=1684)" obtained: (x=-2406, y=-1704, w=2412, h=1694) [./MovieClip.as:1888]
@@ -1082,6 +1082,6 @@ PASSED: arguments.length == 0 [./MovieClip.as:2207]
 FAILED: expected: 'val1' obtained: undefined [./MovieClip.as:2209]
 PASSED: _root.var2 == 'val2' [./MovieClip.as:2214]
 PASSED: _root.var3 == 'val3\n' [./MovieClip.as:2215]
-#passed: 999
-#failed: 78
+#passed: 1002
+#failed: 75
 #total tests run: 1077

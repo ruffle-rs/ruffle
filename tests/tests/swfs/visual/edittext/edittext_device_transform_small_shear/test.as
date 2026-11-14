@@ -1,5 +1,13 @@
 Stage.scaleMode = "noScale";
 
+// A square that is always drawn, to tell an empty render from hidden fields.
+_root.beginFill(0xFF00FF);
+_root.moveTo(10, 10);
+_root.lineTo(20, 10);
+_root.lineTo(20, 20);
+_root.lineTo(10, 20);
+_root.endFill();
+
 var nextX = 10;
 var nextY = 30;
 
@@ -87,3 +95,11 @@ tf.backgroundColor = 0x0000FF;
 tf.border = true;
 tf.background = false;
 tf.embedFonts = false;
+
+// Just above the limit of 5/1024, the fields are hidden.
+nextX = 50;
+
+renderField(_root, 1, 0.004884, 0, 1);
+renderField(_root, 1, 0, 0.004884, 1);
+renderField(_root, 1, -0.004884, 0, 1);
+renderField(_root, 1, 0, -0.004884, 1);
