@@ -9,10 +9,9 @@ use crate::avm2::error::{
 use crate::avm2::function::FunctionArgs;
 use crate::avm2::globals::slots::flash_geom_rectangle as rectangle_slots;
 use crate::avm2::parameters::ParametersExt;
-use crate::avm2_stub_method;
 use ruffle_macros::istr;
 use ruffle_render::backend::BufferUsage;
-use ruffle_render::backend::{Context3DProfile, Context3DTextureFilter};
+use ruffle_render::backend::Context3DProfile;
 use ruffle_render::bitmap::{PixelRegion, PixelSnapping};
 use ruffle_render::commands::{CommandHandler, CommandList};
 use ruffle_render::quality::StageQuality;
@@ -104,23 +103,6 @@ pub fn configure_back_buffer<'gc>(
 
         let wants_best_resolution = args.get_bool(4);
         let wants_best_resolution_on_browser_zoom = args.get_bool(5);
-
-        if wants_best_resolution {
-            avm2_stub_method!(
-                activation,
-                "flash.display3D.Context3D",
-                "configureBackBuffer",
-                "wantsBestResolution"
-            );
-        }
-        if wants_best_resolution_on_browser_zoom {
-            avm2_stub_method!(
-                activation,
-                "flash.display3D.Context3D",
-                "configureBackBuffer",
-                "wantsBestResolutionOnBrowserZoom"
-            );
-        }
 
         context.configure_back_buffer(
             width,
@@ -688,7 +670,7 @@ pub fn set_render_to_texture<'gc>(
     let enable_depth_and_stencil = args.get_bool(1);
     let anti_alias = args.get_u32(2);
     let surface_selector = args.get_u32(3);
-    let color_output_index = args.get_u32(4);
+    let _color_output_index = args.get_u32(4);
 
     if texture.instance_class() == activation.avm2().class_defs().cubetexture {
         if surface_selector > 5 {
@@ -703,24 +685,6 @@ pub fn set_render_to_texture<'gc>(
         if surface_selector != 0 {
             return Err(make_error_3771(activation));
         }
-    }
-
-    if anti_alias != 0 {
-        avm2_stub_method!(
-            activation,
-            "flash.display3D.Context3D",
-            "setRenderToTexture",
-            "antiAlias != 0"
-        );
-    }
-
-    if color_output_index != 0 {
-        avm2_stub_method!(
-            activation,
-            "flash.display3D.Context3D",
-            "setRenderToTexture",
-            "colorOutputIndex != 0"
-        );
     }
 
     context.set_render_to_texture(
@@ -830,32 +794,7 @@ pub fn set_sampler_state_at<'gc>(
             .parse()
             .map_err(|_| make_error_2008(activation, "filter"))?;
 
-        let mip_filter = args.get_string_non_null(activation, 3, "mipfilter")?;
-
-        if matches!(
-            filter,
-            Context3DTextureFilter::Anisotropic2X
-                | Context3DTextureFilter::Anisotropic4X
-                | Context3DTextureFilter::Anisotropic8X
-                | Context3DTextureFilter::Anisotropic16X
-        ) {
-            avm2_stub_method!(
-                activation,
-                "flash.display3D.Context3D",
-                "setSamplerStateAt",
-                "filter == 'anisotropic'"
-            );
-        }
-
-        if &*mip_filter != b"mipnone" {
-            avm2_stub_method!(
-                activation,
-                "flash.display3D.Context3D",
-                "setSamplerStateAt",
-                "mipFilter != 'none'"
-            );
-        }
-
+        let _mip_filter = args.get_string_non_null(activation, 3, "mipfilter")?;
         context.set_sampler_state_at(sampler, wrap, filter);
     }
     Ok(Value::Undefined)
@@ -891,16 +830,42 @@ pub fn set_scissor_rectangle<'gc>(
 }
 
 pub fn dispose<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
+    this: Value<'gc>,
+    _args: FunctionArgs<'_, 'gc>,
+) -> Result<Value<'gc>, Error<'gc>> {
+    let _this = this.as_object().unwrap();
+    
+    Ok(Value::Undefined)
+}
+
+pub fn get_back_buffer_width<'gc>(
+    _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
-
-    avm2_stub_method!(activation, "flash.display3D.Context3D", "dispose");
-    this.as_context_3d()
-        .unwrap()
-        .stage3d()
-        .clear_context3d(activation.gc());
-    Ok(Value::Undefined)
+    if let Some(context) = this.as_context_3d() {
+        let (width, _) = context
+            .with_context_3d(|ctx| ctx.back_buffer_size())
+            .unwrap_or((0, 0));
+        return Ok((width as i32).into());
+    }
+    Ok(0.into())
 }
+
+pub fn get_back_buffer_height<'gc>(
+    _activation: &mut Activation<'_, 'gc>,
+    this: Value<'gc>,
+    _args: FunctionArgs<'_, 'gc>,
+) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+    if let Some(context) = this.as_context_3d() {
+        let (_, height) = context
+            .with_context_3d(|ctx| ctx.back_buffer_size())
+            .unwrap_or((0, 0));
+        return Ok((height as i32).into());
+    }
+    Ok(0.into())
+}
+

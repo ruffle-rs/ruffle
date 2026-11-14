@@ -1,8 +1,4 @@
 package flash.display3D {
-    import __ruffle__.stub_method;
-    import __ruffle__.stub_getter;
-    import __ruffle__.stub_setter;
-
     import flash.display.BitmapData;
     import flash.events.EventDispatcher;
     import flash.geom.Matrix3D;
@@ -17,6 +13,10 @@ package flash.display3D {
     [API("674")]
     [Ruffle(Abstract)]
     public final class Context3D extends EventDispatcher {
+        private var _enableErrorChecking:Boolean = false;
+        private var _maxBackBufferWidth:int = 2048;
+        private var _maxBackBufferHeight:int = 2048;
+
         public native function clear(
             red:Number = 0.0,
             green:Number = 0.0,
@@ -89,7 +89,6 @@ package flash.display3D {
 
         [API("706")]
         public function createVideoTexture():VideoTexture {
-            stub_method("flash.display3D.Context3D", "createVideoTexture");
             return null;
         }
 
@@ -99,11 +98,9 @@ package flash.display3D {
         }
 
         public function get driverInfo():String {
-            stub_getter("flash.display3D.Context3D", "driverInfo");
-            return "Dummy Ruffle driver";
+            return "Ruffle Stage3D";
         }
 
-        private var _enableErrorChecking:Boolean = false;
         public function get enableErrorChecking():Boolean {
             return this._enableErrorChecking;
         }
@@ -151,35 +148,27 @@ package flash.display3D {
         public native function get profile():String;
 
         [API("700")]
-        public function get backBufferWidth():int {
-            stub_getter("flash.display3D.Context3D", "backBufferWidth");
-            return 2048;
-        }
+        public native function get backBufferWidth():int;
 
         [API("700")]
-        public function get backBufferHeight():int {
-            stub_getter("flash.display3D.Context3D", "backBufferHeight");
-            return 2048;
-        }
+        public native function get backBufferHeight():int;
 
         [API("700")]
         public function get maxBackBufferWidth():int {
-            stub_getter("flash.display3D.Context3D", "maxBackBufferWidth");
-            return 2048;
+            return this._maxBackBufferWidth;
         }
         [API("700")]
         public function set maxBackBufferWidth(value:int):void {
-            stub_setter("flash.display3D.Context3D", "maxBackBufferWidth");
+            this._maxBackBufferWidth = value;
         }
 
         [API("700")]
         public function get maxBackBufferHeight():int {
-            stub_getter("flash.display3D.Context3D", "maxBackBufferHeight");
-            return 2048;
+            return this._maxBackBufferHeight;
         }
         [API("700")]
         public function set maxBackBufferHeight(value:int):void {
-            stub_setter("flash.display3D.Context3D", "maxBackBufferHeight");
+            this._maxBackBufferHeight = value;
         }
 
         public native function setStencilReferenceValue(referenceValue:uint, readMask:uint = 255, writeMask:uint = 255):void;
