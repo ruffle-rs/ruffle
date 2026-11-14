@@ -901,22 +901,32 @@ impl<'gc> Object<'gc> {
         }
     }
 
-    pub fn set_native(self, mc: &Mutation<'gc>, native: NativeObject<'gc>) {
+    /// Sets the native data of this object, unless it already has some.
+    ///
+    /// Returns whether it was set, so that native constructors can skip
+    /// what Flash Player only does for objects that weren't native yet.
+    pub fn set_native(self, mc: &Mutation<'gc>, native: NativeObject<'gc>) -> bool {
         assert!(!matches!(native, NativeObject::None));
 
         let old_native = self.0.borrow().native;
         match old_native {
             // TODO(moulins): can `super` point to another `super`?
             NativeObject::Super(zuper) => zuper.this().set_native(mc, native),
-            NativeObject::None => self.0.borrow_mut(mc).native = native,
+            NativeObject::None => {
+                self.0.borrow_mut(mc).native = native;
+                true
+            }
             // Trying to construct the same object twice (e.g. with `super()`) does nothing.
-            _ if mem::discriminant(&old_native) == mem::discriminant(&native) => (),
+            _ if mem::discriminant(&old_native) == mem::discriminant(&native) => false,
             // FIXME: in FP, some native classes (e.g. Sound) appear to be constructible over
             // display objects; we don't support this properly.
             // See the `avm1/register_class_with_sound` test for an example.
-            _ => tracing::warn!(
-                "AVM1: tried to call set_native on an-already constructed native Object"
-            ),
+            _ => {
+                tracing::warn!(
+                    "AVM1: tried to call set_native on an-already constructed native Object"
+                );
+                false
+            }
         }
     }
 
