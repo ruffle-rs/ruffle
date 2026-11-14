@@ -1,0 +1,56 @@
+== primordial ==
+isPrimordial = true
+state = running
+primordial terminate threw:
+[class IllegalOperationError]
+Error: Error #3732: Worker.terminate is only available for background workers.
+	at flash.system::Worker/terminate()
+	at Test/tryTerminate()
+	at Test()
+state after = running
+primordial start threw:
+[class IllegalOperationError]
+Error: Error #1511: Worker is already started.
+	at flash.system::Worker/start()
+	at Test/tryStart()
+	at Test()
+state after start = running
+== createWorker(null) ==
+[class TypeError]
+TypeError: Error #2007: Parameter swf must be non-null.
+	at flash.system::WorkerDomain/createWorker()
+	at Test()
+== terminate on New ==
+isPrimordial = false
+state = new
+first terminate returned false
+state = new
+second terminate returned false
+state = new
+== terminate on Terminated ==
+first start returned
+second start threw:
+[class IllegalOperationError]
+Error: Error #1511: Worker is already started.
+	at flash.system::Worker/start()
+	at Test/tryStart()
+	at Test()
+state after start = new
+first terminate returned true
+state = terminated
+second terminate returned false
+state = terminated
+terminated start threw:
+[class IllegalOperationError]
+Error: Error #1511: Worker is already started.
+	at flash.system::Worker/start()
+	at Test/tryStart()
+	at Test()
+state = terminated
+runWorker workerState event: [Event type="workerState" bubbles=false cancelable=false eventPhase=2], state = terminated
+== workerState events ==
+worker start returned
+state after start = new
+worker workerState event: [Event type="workerState" bubbles=false cancelable=false eventPhase=2], state = running
+running terminate returned true
+worker workerState event: [Event type="workerState" bubbles=false cancelable=false eventPhase=2], state = terminated

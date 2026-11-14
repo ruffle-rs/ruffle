@@ -917,6 +917,7 @@ make_error_fn!(make_error_1131, 1131, type_error);
 make_error_fn!(make_error_1132, 1132, syntax_error);
 make_error_fn!(make_error_1504, 1504, error);
 make_error_fn!(make_error_1506, 1506, range_error);
+make_error_fn!(make_error_1511, 1511, illegal_operation_error);
 
 #[inline(never)]
 #[cold]
@@ -1233,6 +1234,7 @@ make_error_fn!(
     argument_error
 );
 
+make_error_fn!(make_error_3732, 3732, illegal_operation_error);
 make_error_fn!(make_error_3771, 3771, argument_error);
 make_error_fn!(make_error_3772, 3772, argument_error);
 make_error_fn!(make_error_3773, 3773, argument_error);
