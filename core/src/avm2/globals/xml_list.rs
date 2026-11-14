@@ -612,3 +612,73 @@ pub fn namespace_internal_impl<'gc>(
         _ => Err(make_error_1086(activation, "namespace")),
     }
 }
+
+// ECMA-357 13.5.4.12 XMLList.prototype.hasOwnProperty ( P )
+pub fn has_own_property<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Value<'gc>,
+    args: FunctionArgs<'_, 'gc>,
+) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+    let list = this.as_xml_list_object().unwrap();
+    let name = args.get_value(0);
+
+    let multiname = if name
+        .as_object()
+        .and_then(|o| o.as_qname_object())
+        .is_some()
+    {
+        name_to_multiname(activation, name, false)?
+    } else {
+        let name_str = name.coerce_to_string(activation)?;
+        crate::avm2::e4x::string_to_multiname(activation, name_str)
+    };
+
+    if let Some(local_name) = multiname.local_name()
+        && !multiname.has_explicit_namespace()
+        && !multiname.is_attribute()
+        && let Ok(index) = local_name.parse::<usize>()
+    {
+        return Ok((index < list.length()).into());
+    }
+
+    let found = list.children().iter().any(|child| {
+        if let E4XNodeKind::Element {
+            children,
+            attributes,
+            ..
+        } = &*child.node().kind()
+        {
+            let search = if multiname.is_attribute() {
+                attributes
+            } else {
+                children
+            };
+            search.iter().any(|c| c.matches_name(&multiname))
+        } else {
+            false
+        }
+    });
+
+    Ok(found.into())
+}
+
+// ECMA-357 13.5.4.19 XMLList.prototype.propertyIsEnumerable ( P )
+pub fn property_is_enumerable<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Value<'gc>,
+    args: FunctionArgs<'_, 'gc>,
+) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+    let list = this.as_xml_list_object().unwrap();
+    let name = args.get_value(0).coerce_to_string(activation)?;
+
+    if let Ok(index) = name.parse::<usize>()
+        && index.to_string().as_bytes() == &*name
+    {
+        return Ok((index < list.length()).into());
+    }
+
+    Ok(false.into())
+}
+

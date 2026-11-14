@@ -68,6 +68,9 @@ package {
             return this;
         }
 
+        override AS3 native function hasOwnProperty(name:* = null):Boolean;
+        override AS3 native function propertyIsEnumerable(name:* = null):Boolean;
+
         prototype.hasComplexContent = function():Boolean {
             var self:XMLList = this;
             return self.AS3::hasComplexContent();
@@ -255,6 +258,27 @@ package {
             var self:XMLList = this;
             return self.AS3::normalize();
         }
+        
+        prototype.hasOwnProperty = function(name:* = null):Boolean {
+            if (this === prototype) {
+            return Object.prototype.hasOwnProperty.call(this, name);
+        }
+            var self:XMLList = this;
+            return self.AS3::hasOwnProperty(name);
+        };
+
+        prototype.propertyIsEnumerable = function(name:* = null):Boolean {
+            if (this === prototype) {
+            return Object.prototype.propertyIsEnumerable.call(this, name);
+        }
+            var self:XMLList = this;
+            return self.AS3::propertyIsEnumerable(name);
+        };
+
+        prototype.valueOf = function():XMLList {
+            var self:XMLList = this;
+            return self.AS3::valueOf();
+        };
 
         prototype.setPropertyIsEnumerable("hasComplexContent", false);
         prototype.setPropertyIsEnumerable("hasSimpleContent", false);
@@ -293,6 +317,9 @@ package {
         prototype.setPropertyIsEnumerable("processingInstructions", false);
         prototype.setPropertyIsEnumerable("elements", false);
         prototype.setPropertyIsEnumerable("normalize", false);
+        prototype.setPropertyIsEnumerable("hasOwnProperty", false);
+        prototype.setPropertyIsEnumerable("propertyIsEnumerable", false);
+        prototype.setPropertyIsEnumerable("valueOf", false);
 
         public static const length:* = 1;
     }

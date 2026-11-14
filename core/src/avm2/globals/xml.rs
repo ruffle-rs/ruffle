@@ -1338,3 +1338,66 @@ pub fn notification<'gc>(
     let node = xml.node();
     Ok(node.notification().map_or(Value::Null, |fun| fun.into()))
 }
+
+// ECMA-357 13.4.4.16 XML.prototype.hasOwnProperty ( P )
+pub fn has_own_property<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Value<'gc>,
+    args: FunctionArgs<'_, 'gc>,
+) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+    let xml = this.as_xml_object().unwrap();
+    let name = args.get_value(0);
+
+    let multiname = if name
+        .as_object()
+        .and_then(|o| o.as_qname_object())
+        .is_some()
+    {
+        name_to_multiname(activation, name, false)?
+    } else {
+        let name_str = name.coerce_to_string(activation)?;
+        crate::avm2::e4x::string_to_multiname(activation, name_str)
+    };
+
+    if let Some(local_name) = multiname.local_name()
+        && !multiname.has_explicit_namespace()
+        && !multiname.is_attribute()
+        && let Ok(index) = local_name.parse::<usize>()
+    {
+        return Ok((index == 0).into());
+    }
+
+    if let E4XNodeKind::Element {
+        children,
+        attributes,
+        ..
+    } = &*xml.node().kind()
+    {
+        let search_children = if multiname.is_attribute() {
+            attributes
+        } else {
+            children
+        };
+
+        if search_children
+            .iter()
+            .any(|child| child.matches_name(&multiname))
+        {
+            return Ok(true.into());
+        }
+    }
+
+    Ok(xml.base().has_own_dynamic_property(&multiname).into())
+}
+
+// ECMA-357 13.4.4.27 XML.prototype.propertyIsEnumerable ( P )
+pub fn property_is_enumerable<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    _this: Value<'gc>,
+    args: FunctionArgs<'_, 'gc>,
+) -> Result<Value<'gc>, Error<'gc>> {
+    let name = args.get_value(0).coerce_to_string(activation)?;
+    Ok((&*name == b"0").into())
+}
+
