@@ -1,0 +1,44 @@
+LocalConnection connected=true
+GETTERS INSTALLED Array: global=true, prototype=true
+GETTERS INSTALLED Date: global=true, prototype=true
+GETTERS INSTALLED XML: global=true, prototype=true
+GETTER/SETTER INSTALLED Array.prototype.length: true
+GLOBAL GETTER Date
+Navigator::fetch:
+  URL: http://localhost:8000/
+  Method: POST
+  Mime-Type: application/x-amf
+  Body: [00, 00, 00, 00, 00, 01, 00, 22, 70, 72, 6F, 62, 65, 2E, 61, 6D, 66, 30, 43, 6F, 6E, 73, 74, 72, 75, 63, 74, 6F, 72, 49, 6E, 73, 74, 61, 6E, 74, 69, 61, 74, 69, 6F, 6E, 00, 02, 2F, 31, 00, 00, 00, 05, 0A, 00, 00, 00, 00]
+========== LocalConnection ==========
+LocalConnection.StrictArray.type=object
+LocalConnection.StrictArray.probeConstructor=undefined
+LocalConnection.StrictArray.probePrototype=Array prototype
+LocalConnection.StrictArray.constructorIsProbe=true
+LocalConnection.StrictArray.instanceofOriginal=true
+LocalConnection.StrictArray.probeArgument=undefined
+LocalConnection.StrictArray.length=2
+LocalConnection.StrictArray[0]=strict-zero
+LocalConnection.StrictArray[1]=strict-one
+LocalConnection.StrictArray.extra=undefined
+LocalConnection.ECMAArray.type=object
+LocalConnection.ECMAArray.probeConstructor=undefined
+LocalConnection.ECMAArray.probePrototype=Array prototype
+LocalConnection.ECMAArray.constructorIsProbe=true
+LocalConnection.ECMAArray.instanceofOriginal=true
+LocalConnection.ECMAArray.probeArgument=undefined
+LocalConnection.ECMAArray.length=1
+LocalConnection.ECMAArray[0]=ecma-zero
+LocalConnection.ECMAArray[1]=undefined
+LocalConnection.ECMAArray.extra=ecma-extra
+LocalConnection.Date.type=object
+LocalConnection.XML.type=object
+LocalConnection.XML.probeConstructor=undefined
+LocalConnection.XML.probePrototype=XML prototype
+LocalConnection.XML.constructorIsProbe=true
+LocalConnection.XML.instanceofOriginal=true
+LocalConnection.XML.probeArgument=undefined
+LocalConnection.XML.firstChildType=object
+LocalConnection.XML.root=probe
+LocalConnection.XML.toStringType=function
+LocalConnection.XML.toString=<probe id="xml-probe"><child>xml-value</child></probe>
+CONSTRUCTOR Date; argc=0; arg0=undefined

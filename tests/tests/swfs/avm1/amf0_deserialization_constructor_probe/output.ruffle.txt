@@ -1,0 +1,22 @@
+LocalConnection connected=true
+GETTERS INSTALLED Array: global=true, prototype=true
+GETTERS INSTALLED Date: global=true, prototype=true
+GETTERS INSTALLED XML: global=true, prototype=true
+GETTER/SETTER INSTALLED Array.prototype.length: true
+Navigator::fetch:
+  URL: http://localhost:8000/
+  Method: POST
+  Mime-Type: application/x-amf
+  Body: [00, 00, 00, 00, 00, 01, 00, 22, 70, 72, 6F, 62, 65, 2E, 61, 6D, 66, 30, 43, 6F, 6E, 73, 74, 72, 75, 63, 74, 6F, 72, 49, 6E, 73, 74, 61, 6E, 74, 69, 61, 74, 69, 6F, 6E, 00, 02, 2F, 31, 00, 00, 00, 05, 0A, 00, 00, 00, 00]
+CONSTRUCTOR XML; argc=1; arg0=<probe id="xml-probe"><child>xml-value</child></probe>
+CONSTRUCTOR Date; argc=1; arg0=1234567890000
+CONSTRUCTOR Array; argc=1; arg0=1
+CONSTRUCTOR Array; argc=1; arg0=2
+========== LocalConnection ==========
+LocalConnection.StrictArray.type=object
+LocalConnection.StrictArray.probeConstructor=undefined
+LocalConnection.StrictArray.probePrototype=Array prototype
+LocalConnection.StrictArray.constructorIsProbe=true
+LocalConnection.StrictArray.instanceofOriginal=true
+LocalConnection.StrictArray.probeArgument=undefined
+ARRAY PROTOTYPE LENGTH GETTER
