@@ -973,7 +973,7 @@ fn copy_pixels<'gc>(
             (dest_x, dest_y),
             alpha_bitmap,
             (alpha_x, alpha_y),
-            merge_alpha.unwrap_or(true),
+            merge_alpha.unwrap_or(false),
         );
     } else {
         operations::copy_pixels(
