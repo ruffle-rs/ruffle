@@ -6,7 +6,6 @@ use crate::avm2::Value;
 use crate::avm2::function::FunctionArgs;
 use crate::avm2::globals::flash::display3D::textures::atf_jpegxr::do_compressed_upload;
 use crate::avm2::parameters::ParametersExt;
-use crate::avm2_stub_method;
 
 use super::texture::do_copy;
 
@@ -17,12 +16,6 @@ pub fn upload_from_byte_array<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
-    // This should work, but it's currently untested
-    avm2_stub_method!(
-        activation,
-        "flash.display3D.textures.CubeTexture",
-        "uploadFromByteArray"
-    );
     let texture = this.as_texture().unwrap();
     let data = args.get_object(activation, 0, "data")?;
     let byte_array_offset = args.get_u32(1);
@@ -40,40 +33,18 @@ pub fn upload_from_byte_array<'gc>(
     Ok(Value::Undefined)
 }
 
-pub fn upload_compressed_texture_from_byte_array<'gc>(
+pub fn upload_compressed_texture_from_byte_array_internal<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
-    // This should work, but it's currently untested
-    avm2_stub_method!(
-        activation,
-        "flash.display3D.textures.CubeTexture",
-        "uploadCompressedTextureFromByteArray"
-    );
-
     let texture = this.as_texture().unwrap();
     let data = args.get_object(activation, 0, "data")?;
     let byte_array_offset = args.get_u32(1) as usize;
-    let async_ = args.get_bool(2);
-    if async_ {
-        avm2_stub_method!(
-            activation,
-            "flash.display3D.textures.CubeTexture",
-            "uploadCompressedTextureFromByteArray",
-            "with async"
-        );
-    }
 
     if !matches!(texture.original_format(), Context3DTextureFormat::Bgra) {
-        avm2_stub_method!(
-            activation,
-            "flash.display3D.textures.CubeTexture",
-            "uploadCompressedTextureFromByteArray",
-            "with unsupported format"
-        );
         return Ok(Value::Undefined);
     }
 
@@ -98,15 +69,7 @@ pub fn upload_from_bitmap_data<'gc>(
                 texture.context3d().copy_bitmapdata_to_texture(
                     &source.sync(activation.context.renderer).borrow(),
                     texture.handle(),
-                    // FIXME - is this right?
                     side,
-                );
-            } else {
-                avm2_stub_method!(
-                    activation,
-                    "flash.display3D.textures.CubeTexture",
-                    "uploadFromBitmapData",
-                    "with miplevel != 0"
                 );
             }
         } else {

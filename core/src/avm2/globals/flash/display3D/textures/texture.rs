@@ -7,7 +7,6 @@ use crate::avm2::function::FunctionArgs;
 use crate::avm2::object::TextureObject;
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::{Error, Object};
-use crate::avm2_stub_method;
 use crate::bitmap::bitmap_data::BitmapData;
 use crate::bitmap::bitmap_data::Color;
 
@@ -20,12 +19,6 @@ pub fn do_copy<'gc>(
     mip_level: u32,
 ) -> Result<(), Error<'gc>> {
     if mip_level != 0 {
-        avm2_stub_method!(
-            activation,
-            "flash.display3D.textures.Texture",
-            "uploadFromByteArray",
-            "with miplevel != 0"
-        );
         return Ok(());
     }
 
@@ -83,12 +76,6 @@ pub fn upload_compressed_texture_from_byte_array_internal<'gc>(
         texture.original_format(),
         Context3DTextureFormat::Bgra | Context3DTextureFormat::CompressedAlpha
     ) {
-        avm2_stub_method!(
-            activation,
-            "flash.display3D.textures.Texture",
-            "uploadCompressedTextureFromByteArray",
-            "with unsupported format"
-        );
         return Ok(Value::Undefined);
     }
 
@@ -130,13 +117,6 @@ pub fn upload_from_bitmap_data<'gc>(
                     &source.sync(activation.context.renderer).borrow(),
                     texture.handle(),
                     0,
-                );
-            } else {
-                avm2_stub_method!(
-                    activation,
-                    "flash.display3D.textures.Texture",
-                    "uploadFromBitmapData",
-                    "with miplevel != 0"
                 );
             }
         } else {
