@@ -5,124 +5,135 @@ package flash.media {
     import flash.display.BitmapData;
 
     public final class Camera extends EventDispatcher {
+        private var _bandwidth:int = 16384;
+        private var _fps:Number = 15;
+        private var _height:int = 120;
+        private var _index:int = 0;
+        private var _keyFrameInterval:int = 15;
+        private var _loopback:Boolean = false;
+        private var _motionLevel:int = 50;
+        private var _motionTimeout:int = 2000;
+        private var _name:String = "";
+        private var _quality:int = 0;
+        private var _width:int = 160;
+
         [API("682")]
-        public function copyToByteArray(rect:Rectangle, destination:ByteArray) {
-            __ruffle__.stub_method("flash.media.Camera", "copyToByteArray");
+        public function copyToByteArray(rect:Rectangle, destination:ByteArray):void {
+            if (rect == null) {
+                Error.throwError(TypeError, 2007, "rect");
+            }
+            if (destination == null) {
+                Error.throwError(TypeError, 2007, "destination");
+            }
         }
 
         [API("682")]
-        public function copyToVector(rect:Rectangle, destination:Vector.<uint>) {
-            __ruffle__.stub_method("flash.media.Camera", "copyToVector");
+        public function copyToVector(rect:Rectangle, destination:Vector.<uint>):void {
+            if (rect == null) {
+                Error.throwError(TypeError, 2007, "rect");
+            }
+            if (destination == null) {
+                Error.throwError(TypeError, 2007, "destination");
+            }
         }
 
         [API("682")]
-        public function drawToBitmapData(destination:BitmapData) {
-            __ruffle__.stub_method("flash.media.Camera", "drawToBitmapData");
+        public function drawToBitmapData(destination:BitmapData):void {
+            if (destination == null) {
+                Error.throwError(TypeError, 2007, "destination");
+            }
         }
 
         public static function getCamera(name:String = null):Camera {
-            __ruffle__.stub_method("flash.media.Camera", "getCamera");
             return null;
         }
 
-        public function setKeyFrameInterval(keyFrameInterval:int) {
-            __ruffle__.stub_method("flash.media.Camera", "setKeyFrameInterval");
+        public function setKeyFrameInterval(keyFrameInterval:int):void {
+            this._keyFrameInterval = Math.max(1, Math.min(48, keyFrameInterval));
         }
 
-        public function setLoopback(compress:Boolean = false) {
-            __ruffle__.stub_method("flash.media.Camera", "setLoopback");
+        public function setLoopback(compress:Boolean = false):void {
+            this._loopback = compress;
         }
 
-        public function setMode(width:int, height:int, fps:Number, favorArea:Boolean = true) {
-            __ruffle__.stub_method("flash.media.Camera", "setMode");
+        public function setMode(width:int, height:int, fps:Number, favorArea:Boolean = true):void {
+            this._width = width;
+            this._height = height;
+            this._fps = fps;
         }
 
-        public function setMotionLevel(motionLevel:int, timeout:int = 2000) {
-            __ruffle__.stub_method("flash.media.Camera", "setMotionLevel");
+        public function setMotionLevel(motionLevel:int, timeout:int = 2000):void {
+            this._motionLevel = motionLevel;
+            this._motionTimeout = timeout;
         }
 
-        public function setQuality(bandwidth:int, quality:int) {
-            __ruffle__.stub_method("flash.media.Camera", "setQuality");
+        public function setQuality(bandwidth:int, quality:int):void {
+            this._bandwidth = bandwidth;
+            this._quality = quality;
         }
 
         public function get activityLevel():Number {
-            __ruffle__.stub_getter("flash.media.Camera", "activityLevel");
-            return 0;
+            return -1;
         }
 
         public function get bandwidth():int {
-            __ruffle__.stub_getter("flash.media.Camera", "bandwidth");
-            return 0;
+            return this._bandwidth;
         }
 
         public function get currentFPS():Number {
-            __ruffle__.stub_getter("flash.media.Camera", "currentFPS");
             return 0;
         }
 
         public function get fps():Number {
-            __ruffle__.stub_getter("flash.media.Camera", "fps");
-            return 0;
+            return this._fps;
         }
 
         public function get height():int {
-            __ruffle__.stub_getter("flash.media.Camera", "height");
-            return 0;
+            return this._height;
         }
 
         public function get index():int {
-            __ruffle__.stub_getter("flash.media.Camera", "index");
-            return 0;
+            return this._index;
         }
 
         public static function get isSupported():Boolean {
-            __ruffle__.stub_getter("flash.media.Camera", "isSupported");
             return false;
         }
 
         public function get keyFrameInterval():int {
-            __ruffle__.stub_getter("flash.media.Camera", "keyFrameInterval");
-            return 0;
+            return this._keyFrameInterval;
         }
 
         public function get loopback():Boolean {
-            __ruffle__.stub_getter("flash.media.Camera", "loopback");
-            return false;
+            return this._loopback;
         }
 
         public function get motionLevel():int {
-            __ruffle__.stub_getter("flash.media.Camera", "motionLevel");
-            return 0;
+            return this._motionLevel;
         }
 
         public function get motionTimeout():int {
-            __ruffle__.stub_getter("flash.media.Camera", "motionTimeout");
-            return 0;
+            return this._motionTimeout;
         }
 
         public function get muted():Boolean {
-            __ruffle__.stub_getter("flash.media.Camera", "muted");
             return true;
         }
 
         public function get name():String {
-            __ruffle__.stub_getter("flash.media.Camera", "name");
-            return "";
+            return this._name;
         }
 
         public static function get names():Array {
-            __ruffle__.stub_getter("flash.media.Camera", "names");
             return [];
         }
 
         public function get quality():int {
-            __ruffle__.stub_getter("flash.media.Camera", "quality");
-            return 0;
+            return this._quality;
         }
 
         public function get width():int {
-            __ruffle__.stub_getter("flash.media.Camera", "width");
-            return 0;
+            return this._width;
         }
     }
 }
