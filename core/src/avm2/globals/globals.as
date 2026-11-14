@@ -371,6 +371,7 @@ include "flash/net/XMLSocket.as"
 include "flash/filesystem/File.as" // File extends FileReference
 include "flash/filesystem/FileStream.as"
 
+include "flash/net/drm/AddToDeviceGroupSetting.as"
 include "flash/net/drm/AuthenticationMethod.as"
 include "flash/net/drm/DRMContentData.as"
 include "flash/net/drm/DRMDeviceGroup.as"

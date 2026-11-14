@@ -1,36 +1,30 @@
 package flash.net.drm {
-    import __ruffle__.stub_getter;
-
     [API("667")]
     public final class VoucherAccessInfo {
-        public function get displayName():String {
-            stub_getter("flash.net.drm.VoucherAccessInfo", "displayName");
+        private var _displayName:String = null;
+        private var _authenticationMethod:String = AuthenticationMethod.ANONYMOUS;
+        private var _domain:String = null;
+        private var _policyID:String = null;
+        private var _deviceGroup:DRMDeviceGroup = null;
 
-            return null;
+        public function get displayName():String {
+            return this._displayName;
         }
 
         public function get authenticationMethod():String {
-            stub_getter("flash.net.drm.VoucherAccessInfo", "authenticationMethod");
-
-            return null;
+            return this._authenticationMethod;
         }
 
         public function get domain():String {
-            stub_getter("flash.net.drm.VoucherAccessInfo", "domain");
-
-            return null;
+            return this._domain;
         }
 
         public function get policyID():String {
-            stub_getter("flash.net.drm.VoucherAccessInfo", "policyID");
-
-            return null;
+            return this._policyID;
         }
 
         public function get deviceGroup():DRMDeviceGroup {
-            stub_getter("flash.net.drm.VoucherAccessInfo", "deviceGroup");
-
-            return null;
+            return this._deviceGroup;
         }
     }
 }
