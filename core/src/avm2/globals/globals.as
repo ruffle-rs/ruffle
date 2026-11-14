@@ -25,6 +25,8 @@ include "flash/automation/AutomationAction.as"
 include "flash/automation/KeyboardAutomationAction.as"
 include "flash/automation/MouseAutomationAction.as"
 include "flash/automation/StageCapture.as"
+include "flash/automation/ActionGenerator.as"
+include "flash/automation/Configuration.as"
 
 include "flash/concurrent/Condition.as"
 include "flash/concurrent/Mutex.as"
