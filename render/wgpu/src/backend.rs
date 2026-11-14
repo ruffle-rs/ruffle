@@ -970,10 +970,9 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
             .parsed_shader()
             .output_channels()
             .expect("No output parameter");
-        let has_padding = output_channels == 3;
 
-        let texture_format =
-            crate::pixel_bender::temporary_texture_format_for_channels(output_channels as u32);
+        // Always render into an RGBA texture, unused channels are stripped on readback.
+        let texture_format = wgpu::TextureFormat::Rgba32Float;
 
         let target_handle = match target {
             PixelBenderTarget::Bitmap(handle) => handle.clone(),
@@ -1092,10 +1091,9 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
                     sync_handle,
                     Box::new(|raw_pixels, buffer_width| {
                         let width = *width as usize;
+                        let out_stride = output_channels * std::mem::size_of::<f32>();
 
-                        if buffer_width as usize
-                            != width * output_channels * std::mem::size_of::<f32>()
-                        {
+                        if buffer_width as usize != width * out_stride {
                             let mut new_pixels = Vec::new();
                             for row in raw_pixels.chunks(buffer_width as usize) {
                                 let actual_row = &row[0..(width * std::mem::size_of::<[f32; 4]>())];
@@ -1104,15 +1102,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
                                     .as_chunks::<{ std::mem::size_of::<[f32; 4]>() }>()
                                     .0
                                 {
-                                    if has_padding {
-                                        // Take the first three channels
-                                        new_pixels.extend_from_slice(
-                                            &pixel[0..(3 * std::mem::size_of::<f32>())],
-                                        );
-                                    } else {
-                                        // Copy the pixel as-is
-                                        new_pixels.extend_from_slice(pixel);
-                                    }
+                                    new_pixels.extend_from_slice(&pixel[0..out_stride]);
                                 }
                             }
                             output = Some(new_pixels);
