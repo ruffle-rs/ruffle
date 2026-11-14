@@ -93,7 +93,7 @@ impl<W: Write> Writer<W> {
             Action::Play => self.write_small_action(OpCode::Play),
             Action::Pop => self.write_small_action(OpCode::Pop),
             Action::PreviousFrame => self.write_small_action(OpCode::PreviousFrame),
-            Action::Push(action) => self.write_push(action),
+            Action::Push(action) => self.write_push_raw(action),
             Action::PushDuplicate => self.write_small_action(OpCode::PushDuplicate),
             Action::RandomNumber => self.write_small_action(OpCode::RandomNumber),
             Action::RemoveSprite => self.write_small_action(OpCode::RemoveSprite),
@@ -268,9 +268,15 @@ impl<W: Write> Writer<W> {
         Ok(())
     }
 
-    fn write_push(&mut self, action: &Push) -> Result<()> {
-        let len = action
-            .values
+    fn write_push_raw(&mut self, action: &PushValues) -> Result<()> {
+        let raw = action.as_strict_slice();
+        self.write_action_header(OpCode::Push, raw.len())?;
+        self.output.write_all(raw)?;
+        Ok(())
+    }
+
+    pub fn write_push(&mut self, values: &[Value]) -> Result<()> {
+        let len = values
             .iter()
             .map(|v| match *v {
                 Value::Str(string) => string.len() + 2,
@@ -283,8 +289,9 @@ impl<W: Write> Writer<W> {
                 Value::Invalid { .. } => 1,
             })
             .sum();
+
         self.write_action_header(OpCode::Push, len)?;
-        for value in &action.values {
+        for value in values {
             self.write_push_value(value)?;
         }
         Ok(())
@@ -322,14 +329,13 @@ impl<W: Write> Writer<W> {
                 self.write_u8(7)?;
                 self.write_i32(v)?;
             }
+            Value::ConstantPool(v) if v < 256 => {
+                self.write_u8(8)?;
+                self.write_u8(v as u8)?;
+            }
             Value::ConstantPool(v) => {
-                if v < 256 {
-                    self.write_u8(8)?;
-                    self.write_u8(v as u8)?;
-                } else {
-                    self.write_u8(9)?;
-                    self.write_u16(v)?;
-                }
+                self.write_u8(9)?;
+                self.write_u16(v)?;
             }
             Value::Invalid { kind } => self.write_u8(kind)?,
         };
@@ -443,6 +449,18 @@ mod tests {
         }
     }
 
+    #[test]
+    fn write_push() {
+        for (_swf_version, values, expected_bytes) in test_data::avm1_push_tests() {
+            let mut written_bytes = Vec::new();
+            Writer::new(&mut written_bytes).write_push(&values).unwrap();
+            assert_eq!(
+                written_bytes, expected_bytes,
+                "Error writing push values.\nTag:\nPush({values:?})\n\nWrote:\n{written_bytes:?}\n\nExpected:\n{expected_bytes:?}",
+            );
+        }
+    }
+
     fn write(action: &Action) -> Result<Vec<u8>> {
         let mut written_bytes = Vec::new();
         Writer::new(&mut written_bytes).write_action(action)?;
@@ -481,12 +499,18 @@ mod tests {
 
     #[test]
     fn write_push_too_long() {
+        let mut written_bytes = Vec::new();
+        let mut writer = Writer::new(&mut written_bytes);
+
         let string = "a".repeat(u16::MAX as usize - 1);
-        assert_action_too_long(
-            &Action::Push(Push {
-                values: vec![Value::Str(string.as_str().into())],
-            }),
-            "action length 65536 does not fit in 16 bits",
+
+        let err = writer
+            .write_push(&[Value::Str(string.as_str().into())])
+            .expect_err("writing an oversized action should fail");
+        assert_eq!(err.kind(), io::ErrorKind::InvalidInput);
+        assert_eq!(
+            err.to_string(),
+            "action length 65536 does not fit in 16 bits"
         );
     }
 

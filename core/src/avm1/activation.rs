@@ -1879,10 +1879,10 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         Ok(FrameControl::Continue)
     }
 
-    fn action_push(&mut self, action: Push) -> Result<FrameControl<'gc>, Error<'gc>> {
-        for value in action.values {
+    fn action_push(&mut self, action: PushValues) -> Result<FrameControl<'gc>, Error<'gc>> {
+        for value in action {
             use swf::avm1::types::Value as SwfValue;
-            let value = match value {
+            let value = match value? {
                 SwfValue::Undefined => Value::Undefined,
                 SwfValue::Null => Value::Null,
                 SwfValue::Bool(v) => v.into(),
