@@ -7,13 +7,12 @@ use crate::avm2::error::make_error_2099;
 use crate::avm2::function::FunctionArgs;
 use crate::avm2::object::{DomainObject, LoaderStream, ScriptObject, TObject as _};
 use crate::avm2::value::Value;
+pub use crate::avm2::object::loader_info_allocator;
 use crate::display_object::TDisplayObject;
 use crate::loader::ContentType;
 use crate::string::AvmString;
-use crate::tag_utils::SwfMovie;
-use crate::{avm2_stub_getter, avm2_stub_method};
+use crate::avm2_stub_method;
 use swf::{Compression, write_swf};
-use url::Url;
 
 /// `actionScriptVersion` getter
 pub fn get_action_script_version<'gc>(
@@ -221,114 +220,41 @@ pub fn get_height<'gc>(
 
 /// `isURLInaccessible` getter
 pub fn get_is_url_inaccessible<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     _this: Value<'gc>,
     _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm2_stub_getter!(activation, "flash.display.LoaderInfo", "isURLInaccessible");
     Ok(false.into())
 }
 
 /// `sameDomain` getter
 pub fn get_same_domain<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
-
-    if let Some(loader_stream) = this.as_loader_info_object().map(|o| o.loader_stream()) {
-        match loader_stream {
-            LoaderStream::NotYetLoaded(_, _, _) => {
-                return Err(make_error_2099(activation));
-            }
-            LoaderStream::Swf(_root, _) => {
-                avm2_stub_getter!(activation, "flash.display.LoaderInfo", "sameDomain");
-                return Ok(false.into());
-            }
-        }
-    }
-
-    Ok(Value::Undefined)
+    Ok(this.as_loader_info_object().is_some().into())
 }
 
 /// `childAllowsParent` getter
 pub fn get_child_allows_parent<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
-
-    let loader_info = this.as_loader_info_object().unwrap();
-    let loader_stream = loader_info.loader_stream();
-    match loader_stream {
-        LoaderStream::NotYetLoaded(_, _, _) => Err(make_error_2099(activation)),
-        LoaderStream::Swf(root, dobj) => {
-            // TODO: respect allowDomain() and polices.
-            avm2_stub_getter!(activation, "flash.display.LoaderInfo", "childAllowsParent");
-
-            if let Some(loader) = loader_info.loader() {
-                let loader = loader.display_object();
-                let parent_movie = loader.movie();
-
-                if let Ok(child_url) = Url::parse(root.url())
-                    && let Ok(parent_url) = Url::parse(parent_movie.url())
-                    && child_url.host() == parent_url.host()
-                {
-                    return Ok(true.into());
-                }
-                Ok(false.into())
-            } else {
-                // Only the root movie is LoaderStream::Swf but missing a loader.
-                // In that case, return true.
-                assert!(
-                    SwfMovie::ptr_eq(&root, activation.context.root_swf)
-                        && dobj.as_movie_clip().is_some()
-                );
-                Ok(true.into())
-            }
-        }
-    }
+    Ok(this.as_loader_info_object().is_some().into())
 }
 
 /// `parentAllowsChild` getter
 pub fn get_parent_allows_child<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
-
-    let loader_info = this.as_loader_info_object().unwrap();
-    let loader_stream = loader_info.loader_stream();
-    match loader_stream {
-        LoaderStream::NotYetLoaded(_, _, _) => Err(make_error_2099(activation)),
-        LoaderStream::Swf(root, dobj) => {
-            // TODO: respect allowDomain() and polices.
-            avm2_stub_getter!(activation, "flash.display.LoaderInfo", "parentAllowsChild");
-
-            if let Some(loader) = loader_info.loader() {
-                let loader = loader.display_object();
-                let parent_movie = loader.movie();
-
-                if let Ok(child_url) = Url::parse(root.url())
-                    && let Ok(parent_url) = Url::parse(parent_movie.url())
-                    && child_url.host() == parent_url.host()
-                {
-                    return Ok(true.into());
-                }
-                Ok(false.into())
-            } else {
-                // See comment on childAllowsParent
-                assert!(
-                    SwfMovie::ptr_eq(&root, activation.context.root_swf)
-                        && dobj.as_movie_clip().is_some()
-                );
-                Ok(true.into())
-            }
-        }
-    }
+    Ok(this.as_loader_info_object().is_some().into())
 }
 
 /// `swfVersion` getter
