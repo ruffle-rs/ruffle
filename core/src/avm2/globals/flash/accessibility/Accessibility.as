@@ -1,18 +1,23 @@
 package flash.accessibility {
-    import __ruffle__.stub_method;
-
     import flash.display.DisplayObject;
 
     [Ruffle(Abstract)]
     public final class Accessibility {
-        private static var _active:Boolean;
+        private static var _active:Boolean = false;
 
         public static function sendEvent(source:DisplayObject, childID:uint, eventType:uint, nonHTML:Boolean = false):void {
-            stub_method("flash.accessibility.Accessibility", "sendEvent");
+            if (source == null) {
+                Error.throwError(TypeError, 2007, "source");
+            }
+            if (!_active) {
+                return;
+            }
         }
 
         public static function updateProperties():void {
-            stub_method("flash.accessibility.Accessibility", "updateProperties");
+            if (!_active) {
+                return;
+            }
         }
 
         public static function get active():Boolean {
