@@ -1,7 +1,4 @@
 package flash.display {
-    import __ruffle__.stub_method;
-    import __ruffle__.stub_setter;
-
     import flash.accessibility.AccessibilityImplementation;
     import flash.geom.Rectangle;
     import flash.ui.ContextMenu;
@@ -16,7 +13,6 @@ package flash.display {
             return this._accessibilityImpl;
         }
         public function set accessibilityImplementation(value:AccessibilityImplementation):void {
-            stub_setter("flash.display.InteractiveObject", "accessibilityImplementation");
             this._accessibilityImpl = value;
         }
 
@@ -29,13 +25,11 @@ package flash.display {
         }
         [API("670")]
         public function set needsSoftKeyboard(value:Boolean):void {
-            stub_setter("flash.display.InteractiveObject", "needsSoftKeyboard");
             this._needsSoftKeyboard = value;
         }
 
         [API("670")]
         public function requestSoftKeyboard():Boolean {
-            stub_method("flash.display.InteractiveObject", "requestSoftKeyboard");
             return false;
         }
 
@@ -45,7 +39,6 @@ package flash.display {
         }
         [API("670")]
         public function set softKeyboardInputAreaOfInterest(value:Rectangle):void {
-            stub_setter("flash.display.InteractiveObject", "softKeyboardInputAreaOfInterest");
             this._softKeyboardInputAreaOfInterest = value;
         }
 
