@@ -62,8 +62,23 @@ package flash.events {
         }
 
         override public function toString():String {
-            // should fail on FP too, see discussion https://github.com/ruffle-rs/ruffle/pull/12330
-            return this.formatToString("TransformGestureEvent", "type", "bubbles", "cancelable", "args");
+            return this.formatToString(
+                "TransformGestureEvent",
+                "type",
+                "bubbles",
+                "cancelable",
+                "phase",
+                "localX",
+                "localY",
+                "scaleX",
+                "scaleY",
+                "rotation",
+                "offsetX",
+                "offsetY",
+                "ctrlKey",
+                "altKey",
+                "shiftKey"
+            );
         }
 
         public function get offsetX():Number {
