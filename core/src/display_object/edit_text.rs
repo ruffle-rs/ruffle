@@ -26,6 +26,7 @@ use crate::html::{
     FormatSpans, Layout, LayoutBox, LayoutContent, LayoutContext, LayoutLine, LayoutMetrics,
     Position, TextFormat,
 };
+use crate::player::PlayerRuntime;
 use crate::prelude::*;
 use crate::string::{AvmString, SwfStrExt as _, WStr, WString, utils as string_utils};
 use crate::tag_utils::SwfMovie;
@@ -1195,10 +1196,17 @@ impl<'gc> EditText<'gc> {
         let height = line_bounds.height() + leading;
 
         let color = if self.has_focus() {
-            Color::BLACK
+            // AIR uses a different color than regular Flash.
+            // See https://github.com/ruffle-rs/ruffle/issues/25018.
+            match context.player_runtime {
+                PlayerRuntime::AIR => Color::from_rgb(0x00B5D5FF, 255),
+                PlayerRuntime::FlashPlayer => Color::BLACK,
+            }
         } else {
+            // TODO: verify AIR's exact unfocused color
             Color::GRAY
         };
+
         let selection_box = context.transform_stack.transform().matrix
             * Matrix::create_box(
                 width.to_pixels() as f32,

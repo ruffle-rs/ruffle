@@ -1104,6 +1104,7 @@ pub fn render_base<'gc>(
                 is_offscreen: true,
                 use_bitmap_cache: true,
                 stage: context.stage,
+                player_runtime: context.player_runtime,
             };
             this.render_self(&mut offscreen_context);
             offscreen_context.cache_draws.push(BitmapCacheEntry {
