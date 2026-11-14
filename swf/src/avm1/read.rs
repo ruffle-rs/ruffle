@@ -2,10 +2,12 @@ use crate::avm1::opcode::OpCode;
 use crate::avm1::types::*;
 use crate::error::{Avm1ParseError, UnexpectedEof};
 use crate::extensions::ReadSwfExt;
+use std::fmt;
 use std::num::NonZeroU8;
 
 type Result<T, E = UnexpectedEof> = std::result::Result<T, E>;
 
+#[derive(Clone)]
 pub struct Reader<'a> {
     input: &'a [u8],
 }
@@ -56,7 +58,7 @@ impl<'a> Reader<'a> {
             .read_opcode_and_length()
             .map_err(|source| Avm1ParseError::new(None, source))?;
 
-        let start = self.input;
+        let start = self.as_slice();
         let action = self
             .read_op(opcode, &mut length)
             .map_err(|source| Avm1ParseError::new(Some(opcode), source));
@@ -65,12 +67,17 @@ impl<'a> Reader<'a> {
         let end_pos = (start.as_ptr() as usize + length) as *const u8;
         if !std::ptr::eq(self.input.as_ptr(), end_pos) {
             // We incorrectly parsed this action.
-            // Re-sync to the expected end of the action and throw an error.
+            // Re-sync to the expected end of the action and log an error.
             self.input = &start[length.min(start.len())..];
-            log::warn!("Length mismatch in AVM1 action: {}", OpCode::format(opcode));
+            Self::on_length_mismatch(opcode);
         }
 
         action
+    }
+
+    #[inline(never)]
+    fn on_length_mismatch(opcode: u8) {
+        log::warn!("Length mismatch in AVM1 action: {}", OpCode::format(opcode));
     }
 
     fn read_opcode_and_length(&mut self) -> Result<(u8, usize)> {
@@ -310,27 +317,27 @@ impl<'a> Reader<'a> {
         })
     }
 
-    fn read_push(&mut self, length: usize) -> Result<Push<'a>> {
-        // TODO: Verify correct version for complex types.
-        let end_pos = (self.input.as_ptr() as usize + length) as *const u8;
-        let mut values = Vec::with_capacity(4);
-        while self.input.as_ptr() < end_pos {
-            let value = match self.read_u8()? {
-                0 => Value::Str(self.read_str()?),
-                1 => Value::Float(self.read_f32()?),
-                2 => Value::Null,
-                3 => Value::Undefined,
-                4 => Value::Register(self.read_u8()?),
-                5 => Value::Bool(self.read_u8()? != 0),
-                6 => Value::Double(self.read_f64_me()?),
-                7 => Value::Int(self.read_i32()?),
-                8 => Value::ConstantPool(self.read_u8()?.into()),
-                9 => Value::ConstantPool(self.read_u16()?),
-                kind => Value::Invalid { kind },
-            };
-            values.push(value);
-        }
-        Ok(Push { values })
+    fn read_push(&mut self, length: usize) -> Result<PushValues<'a>> {
+        Ok(PushValues {
+            inner: Self::new(self.as_slice()),
+            end: self.read_slice(length)?.as_ptr_range().end,
+        })
+    }
+
+    fn read_push_value(&mut self) -> Result<Value<'a>> {
+        Ok(match self.read_u8()? {
+            0 => Value::Str(self.read_str()?),
+            1 => Value::Float(self.read_f32()?),
+            2 => Value::Null,
+            3 => Value::Undefined,
+            4 => Value::Register(self.read_u8()?),
+            5 => Value::Bool(self.read_u8()? != 0),
+            6 => Value::Double(self.read_f64_me()?),
+            7 => Value::Int(self.read_i32()?),
+            8 => Value::ConstantPool(self.read_u8()?.into()),
+            9 => Value::ConstantPool(self.read_u16()?),
+            kind => Value::Invalid { kind },
+        })
     }
 
     fn read_set_target(&mut self) -> Result<SetTarget<'a>> {
@@ -412,6 +419,63 @@ impl<'a> Reader<'a> {
     }
 }
 
+#[derive(Clone)]
+pub struct PushValues<'a> {
+    inner: Reader<'a>,
+    end: *const u8,
+}
+
+impl<'a> PushValues<'a> {
+    pub(crate) fn as_strict_slice(&self) -> &'a [u8] {
+        let data = self.inner.as_slice();
+        let len = self.end.addr() - data.as_ptr().addr();
+        &data[..len]
+    }
+
+    #[cfg(test)]
+    pub(crate) fn from_raw(data: &'a [u8]) -> Self {
+        Self {
+            inner: Reader::new(data),
+            end: data.as_ptr_range().end,
+        }
+    }
+}
+
+impl<'a> fmt::Debug for PushValues<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        f.write_str("PushValues { .. }")
+    }
+}
+
+impl<'a> PartialEq for PushValues<'a> {
+    fn eq(&self, other: &Self) -> bool {
+        Iterator::eq(self.clone().map(Result::ok), other.clone().map(Result::ok))
+    }
+}
+
+impl<'a> Iterator for PushValues<'a> {
+    type Item = Result<Value<'a>, Avm1ParseError>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let cur = self.inner.as_slice().as_ptr();
+        if cur >= self.end {
+            if cur != self.end {
+                // The last push value was incomplete and we read past the action's end.
+                // In FP 11 and above this crashes the player, but we implement the older,
+                // more lenient behavior.
+                Reader::on_length_mismatch(OpCode::Push as u8);
+            }
+
+            return None;
+        }
+
+        match self.inner.read_push_value() {
+            Ok(v) => Some(Ok(v)),
+            Err(e) => Some(Err(Avm1ParseError::new(Some(OpCode::Push as u8), e))),
+        }
+    }
+}
+
 #[cfg(test)]
 pub mod tests {
     use super::*;
@@ -426,6 +490,21 @@ pub mod tests {
             assert_eq!(
                 parsed_action, expected_action,
                 "Incorrectly parsed action.\nRead:\n{parsed_action:?}\n\nExpected:\n{expected_action:?}",
+            );
+        }
+    }
+
+    #[test]
+    fn read_push() {
+        for (_swf_version, expected_values, push_bytes) in test_data::avm1_push_tests() {
+            let mut reader = Reader::new(&push_bytes[..]);
+            let Action::Push(values) = reader.read_action().unwrap() else {
+                panic!("expected a Push");
+            };
+            let parsed_values = values.collect::<Result<Vec<_>, _>>().unwrap();
+            assert_eq!(
+                parsed_values, *expected_values,
+                "Incorrectly parsed push values.\nRead:\n{parsed_values:?}\n\nExpected:\n{expected_values:?}",
             );
         }
     }
@@ -463,20 +542,21 @@ pub mod tests {
 
         if let Action::DefineFunction(DefineFunction { actions, .. }) = action {
             let mut reader = Reader::new(actions);
-            let action = reader.read_action().unwrap();
+            let Action::Push(values) = reader.read_action().unwrap() else {
+                panic!("expected a Push");
+            };
+            let values = values.collect::<Result<Vec<_>, _>>().unwrap();
             assert_eq!(
-                action,
-                Action::Push(Push {
-                    values: vec![Value::Str(
-                        SwfStr::from_str_with_encoding("test", WINDOWS_1252).unwrap()
-                    )]
-                })
+                values,
+                &[Value::Str(
+                    SwfStr::from_str_with_encoding("test", WINDOWS_1252).unwrap()
+                )],
             );
         }
     }
 
     #[test]
-    fn read_push() {
+    fn read_push_with_extra() {
         // ActionPush doesn't provide an explicit # of values, but instead reads values
         // until the end of the action. Ensure we don't read extra values.
         let action_bytes = [
@@ -488,13 +568,14 @@ pub mod tests {
             3,  // undefined
             3,  // Extra byte at the end shouldn't be read.
         ];
-        let mut reader = Reader::new(&action_bytes);
-        let action = reader.read_action().unwrap();
+        let mut reader = Reader::new(&action_bytes[..]);
+        let Action::Push(values) = reader.read_action().unwrap() else {
+            panic!("expected a Push");
+        };
+        let parsed_values = values.collect::<Result<Vec<_>, _>>().unwrap();
         assert_eq!(
-            action,
-            Action::Push(Push {
-                values: vec![Value::Null, Value::Invalid { kind: 10 }, Value::Undefined]
-            })
+            parsed_values,
+            &[Value::Null, Value::Invalid { kind: 10 }, Value::Undefined],
         );
     }
 

@@ -24,6 +24,7 @@ pub fn echo_swf(filename: &str) {
 pub type TestData<T> = (u8, T, Vec<u8>);
 pub type TagTestData = TestData<Tag<'static>>;
 pub type Avm1TestData = TestData<Action<'static>>;
+pub type Avm1PushTestData = TestData<Vec<Value<'static>>>;
 pub type Avm2TestData = TestData<AbcFile>;
 
 pub fn tag_tests() -> Vec<TagTestData> {
@@ -2650,103 +2651,8 @@ pub fn avm1_tests() -> Vec<Avm1TestData> {
         (3, Action::PreviousFrame, vec![0x05]),
         (
             4,
-            Action::Push(Push {
-                values: vec![Value::Str(
-                    SwfStr::from_str_with_encoding("test", WINDOWS_1252).unwrap(),
-                )],
-            }),
-            vec![0x96, 6, 0, 0, 116, 101, 115, 116, 0],
-        ),
-        (
-            4,
-            Action::Push(Push {
-                values: vec![Value::Float(0.0)],
-            }),
-            vec![0x96, 5, 0, 1, 0, 0, 0, 0],
-        ),
-        (
-            5,
-            Action::Push(Push {
-                values: vec![Value::Double(1.5)],
-            }),
-            vec![0x96, 9, 0, 6, 0, 0, 248, 63, 0, 0, 0, 0],
-        ),
-        (
-            5,
-            Action::Push(Push {
-                values: vec![Value::Null],
-            }),
-            vec![0x96, 1, 0, 2],
-        ),
-        (
-            5,
-            Action::Push(Push {
-                values: vec![Value::Undefined],
-            }),
-            vec![0x96, 1, 0, 3],
-        ),
-        (
-            5,
-            Action::Push(Push {
-                values: vec![Value::Null, Value::Undefined],
-            }),
-            vec![0x96, 2, 0, 2, 3],
-        ),
-        (
-            5,
-            Action::Push(Push {
-                values: vec![Value::Register(1)],
-            }),
-            vec![0x96, 2, 0, 4, 1],
-        ),
-        (
-            5,
-            Action::Push(Push {
-                values: vec![Value::Bool(false)],
-            }),
-            vec![0x96, 2, 0, 5, 0],
-        ),
-        (
-            5,
-            Action::Push(Push {
-                values: vec![Value::Bool(true)],
-            }),
-            vec![0x96, 2, 0, 5, 1],
-        ),
-        (
-            5,
-            Action::Push(Push {
-                values: vec![Value::Double(0.0)],
-            }),
-            vec![0x96, 9, 0, 6, 0, 0, 0, 0, 0, 0, 0, 0],
-        ),
-        (
-            5,
-            Action::Push(Push {
-                values: vec![Value::Int(31)],
-            }),
-            vec![0x96, 5, 0, 7, 31, 0, 0, 0],
-        ),
-        (
-            5,
-            Action::Push(Push {
-                values: vec![Value::Int(-50)],
-            }),
-            vec![0x96, 5, 0, 7, 206, 255, 255, 255],
-        ),
-        (
-            5,
-            Action::Push(Push {
-                values: vec![Value::ConstantPool(77)],
-            }),
-            vec![0x96, 2, 0, 8, 77],
-        ),
-        (
-            5,
-            Action::Push(Push {
-                values: vec![Value::ConstantPool(257)],
-            }),
-            vec![0x96, 3, 0, 9, 1, 1],
+            Action::Push(PushValues::from_raw(&[0, 0] /* an empty string */)),
+            vec![0x96, 2, 0, 0, 0],
         ),
         (4, Action::RandomNumber, vec![0x30]),
         (
@@ -2821,6 +2727,47 @@ pub fn avm1_tests() -> Vec<Avm1TestData> {
                 0x65, 0x00, 0x1c, 0x47, 0x3e,
             ],
         ),
+    ]
+}
+
+pub fn avm1_push_tests() -> Vec<Avm1PushTestData> {
+    vec![
+        (
+            4,
+            vec![Value::Str(
+                SwfStr::from_str_with_encoding("test", WINDOWS_1252).unwrap(),
+            )],
+            vec![0x96, 6, 0, 0, 116, 101, 115, 116, 0],
+        ),
+        (4, vec![Value::Float(0.0)], vec![0x96, 5, 0, 1, 0, 0, 0, 0]),
+        (
+            5,
+            vec![Value::Double(1.5)],
+            vec![0x96, 9, 0, 6, 0, 0, 248, 63, 0, 0, 0, 0],
+        ),
+        (5, vec![Value::Null], vec![0x96, 1, 0, 2]),
+        (5, vec![Value::Undefined], vec![0x96, 1, 0, 3]),
+        (
+            5,
+            vec![Value::Null, Value::Undefined],
+            vec![0x96, 2, 0, 2, 3],
+        ),
+        (5, vec![Value::Register(1)], vec![0x96, 2, 0, 4, 1]),
+        (5, vec![Value::Bool(false)], vec![0x96, 2, 0, 5, 0]),
+        (5, vec![Value::Bool(true)], vec![0x96, 2, 0, 5, 1]),
+        (
+            5,
+            vec![Value::Double(0.0)],
+            vec![0x96, 9, 0, 6, 0, 0, 0, 0, 0, 0, 0, 0],
+        ),
+        (5, vec![Value::Int(31)], vec![0x96, 5, 0, 7, 31, 0, 0, 0]),
+        (
+            5,
+            vec![Value::Int(-50)],
+            vec![0x96, 5, 0, 7, 206, 255, 255, 255],
+        ),
+        (5, vec![Value::ConstantPool(77)], vec![0x96, 2, 0, 8, 77]),
+        (5, vec![Value::ConstantPool(257)], vec![0x96, 3, 0, 9, 1, 1]),
     ]
 }
 
