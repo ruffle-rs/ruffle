@@ -3,16 +3,24 @@ package flash.sensors {
 
     [API("668")]
     public class Geolocation extends EventDispatcher {
+        private var _requestedUpdateInterval:Number = 0;
+
+        public function Geolocation() {
+            super();
+        }
+
         public static function get isSupported():Boolean {
             return false;
         }
 
-        public function setRequestedUpdateInterval(interval:Number) {
-            __ruffle__.stub_method("flash.sensors.Geolocation", "setRequestedUpdateInterval");
+        public function setRequestedUpdateInterval(interval:Number):void {
+            if (interval <= 0 || isNaN(interval)) {
+                Error.throwError(ArgumentError, 2004);
+            }
+            this._requestedUpdateInterval = interval;
         }
 
         public function get muted():Boolean {
-            __ruffle__.stub_getter("flash.sensors.Geolocation", "muted");
             return true;
         }
     }
