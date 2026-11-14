@@ -284,6 +284,8 @@ include "flash/globalization/StringTools.as"
 
 include "flash/html/HTMLLoader.as"
 
+include "flash/media/scanHardware.as"
+include "flash/media/AudioDeviceManager.as"
 include "flash/media/AudioDecoder.as"
 include "flash/media/AudioOutputChangeReason.as"
 include "flash/media/AudioPlaybackMode.as"
