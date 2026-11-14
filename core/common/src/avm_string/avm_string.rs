@@ -102,7 +102,12 @@ impl<'gc> AvmString<'gc> {
 
     #[inline]
     pub fn ptr_eq(this: &Self, other: &Self) -> bool {
-        std::ptr::eq(this.as_wstr(), other.as_wstr())
+        std::ptr::eq(this.as_ptr(), other.as_ptr())
+    }
+
+    #[inline]
+    pub fn as_ptr(self) -> *const () {
+        Gc::as_ptr(self.0) as *const ()
     }
 
     /// Like [`WStr::split`], but yields dependent `AvmString`s
