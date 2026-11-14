@@ -1,5 +1,4 @@
 package flash.geom {
-    import __ruffle__.stub_method;
 
     [Ruffle(InstanceAllocator)]
     public class Matrix3D {
@@ -63,8 +62,56 @@ package flash.geom {
         public native function clone():Matrix3D;
 
         public function pointAt(pos:Vector3D, at:Vector3D = null, up:Vector3D = null):void {
-            stub_method("flash.geom.Matrix3D", "pointAt");
+            if (pos == null) {
+                Error.throwError(TypeError, 2007, "pos");
+            }
+            if (at == null) {
+                at = new Vector3D(0, 0, -1);
+            }
+            if (up == null) {
+                up = new Vector3D(0, -1, 0);
+            }
+
+            var dir:Vector3D = at.subtract(pos);
+            var vup:Vector3D = up.clone();
+            dir.normalize();
+            vup.normalize();
+
+            var dir2:Vector3D = dir.clone();
+            dir2.scaleBy(vup.dotProduct(dir));
+            vup = vup.subtract(dir2);
+
+            if (vup.length > 0) {
+                vup.normalize();
+            } else if (dir.x != 0) {
+                vup = new Vector3D(-dir.y, dir.x, 0);
+            } else {
+                vup = new Vector3D(1, 0, 0);
+            }
+
+            var right:Vector3D = vup.crossProduct(dir);
+            right.normalize();
+
+            var raw:Vector.<Number> = this.rawData;
+            raw = right.x;
+            raw = right.y;
+            raw = right.z;
+            raw = 0.0;
+            raw = vup.x;
+            raw = vup.y;
+            raw = vup.z;
+            raw = 0.0;
+            raw = dir.x;
+            raw = dir.y;
+            raw = dir.z;
+            raw = 0.0;
+            raw = pos.x;
+            raw = pos.y;
+            raw = pos.z;
+            raw = 1.0;
+            this.rawData = raw;
         }
+
 
         public function interpolateTo(toMat:Matrix3D, percent:Number):void {
             if (toMat == null) {

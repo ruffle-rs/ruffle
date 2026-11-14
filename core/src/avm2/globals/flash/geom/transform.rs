@@ -9,7 +9,6 @@ use crate::avm2::parameters::ParametersExt;
 use crate::avm2::{Activation, Error, Object, TObject as _, Value};
 use crate::display_object::{BoundsMode, TDisplayObject};
 use crate::prelude::{DisplayObject, Matrix, Twips};
-use crate::{avm2_stub_getter, avm2_stub_method, avm2_stub_setter};
 use ruffle_render::matrix3d::Matrix3D;
 use ruffle_render::perspective_projection::PerspectiveProjection;
 use ruffle_render::quality::StageQuality;
@@ -282,11 +281,6 @@ pub fn get_matrix_3d<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
-    // FIXME: This Matrix3D is generated from the 2D Matrix.
-    // It does not work when the matrix contains any transformation in 3D.
-    // Support native Matrix3D.
-    avm2_stub_getter!(activation, "flash.geom.Transform", "matrix3D");
-
     let display_object = get_display_object(this);
     if display_object.base().has_matrix3d_stub() {
         let matrix = get_display_object(this).base().matrix();
@@ -299,15 +293,11 @@ pub fn get_matrix_3d<'gc>(
 }
 
 pub fn set_matrix_3d<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
-
-    // FIXME: This sets 2D Matrix generated from the given Matrix3D, ignoring 3D parameters.
-    // Support native Matrix3D.
-    avm2_stub_setter!(activation, "flash.geom.Transform", "matrix3D");
 
     let display_object = get_display_object(this);
 
@@ -368,9 +358,6 @@ pub fn set_perspective_projection<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
-    // FIXME: Render with the given PerspectiveProjection.
-    avm2_stub_setter!(activation, "flash.geom.Transform", "perspectiveProjection");
-
     let perspective_projection = args
         .try_get_object(0)
         .map(|object| object_to_perspective_projection(object, activation))
@@ -388,14 +375,39 @@ pub fn get_relative_matrix_3d<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
-    let _relative_to = args.get_object(activation, 0, "relativeTo")?;
-
-    avm2_stub_method!(activation, "flash.geom.Transform", "getRelativeMatrix3D");
-
+    let relative_to_obj = args.get_object(activation, 0, "relativeTo")?;
     let display_object = get_display_object(this);
     if !display_object.base().has_matrix3d_stub() {
         return Ok(Value::Null);
     }
 
-    Ok(Matrix3DObject::new(activation.context, Matrix3D::IDENTITY).into())
+    let mut matrix3d =
+        Matrix3D::from_matrix(display_object.local_to_global_matrix_without_own_scroll_rect());
+    if let Some(rel_dobj) = relative_to_obj.as_display_object()
+        && let Some(inv_rel) = rel_dobj
+            .local_to_global_matrix_without_own_scroll_rect()
+            .inverse()
+    {
+        matrix3d =
+            Matrix3D::from_matrix(inv_rel * display_object.local_to_global_matrix_without_own_scroll_rect());
+    }
+    matrix3d.set_tz(display_object.z() as f32);
+
+    Ok(Matrix3DObject::new(activation.context, matrix3d).into())
+}
+
+pub fn get_concatenated_color_transform<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Value<'gc>,
+    _args: FunctionArgs<'_, 'gc>,
+) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
+    let mut ct = ColorTransform::IDENTITY;
+    let mut node = Some(get_display_object(this));
+    while let Some(obj) = node {
+        ct = obj.base().color_transform() * ct;
+        node = obj.parent();
+    }
+    color_transform_to_object(&ct, activation)
 }

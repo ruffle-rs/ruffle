@@ -6,7 +6,6 @@ use crate::avm2::globals::slots::flash_geom_point as point_slots;
 use crate::avm2::object::Matrix3DObject;
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::{Activation, Error, Object, TObject as _, Value};
-use crate::avm2_stub_setter;
 use crate::display_object::TDisplayObject;
 use ruffle_render::perspective_projection::PerspectiveProjection;
 
@@ -45,12 +44,6 @@ pub fn set_focal_length<'gc>(
     this: Value<'gc>,
     args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    // FIXME: Render with the given PerspectiveProjection.
-    avm2_stub_setter!(
-        activation,
-        "flash.geom.PerspectiveProjection",
-        "focalLength"
-    );
     let this = this.as_object().unwrap();
 
     let focal_length = args.get_f64(0);
@@ -86,12 +79,6 @@ pub fn set_field_of_view<'gc>(
     this: Value<'gc>,
     args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    // FIXME: Render with the given PerspectiveProjection.
-    avm2_stub_setter!(
-        activation,
-        "flash.geom.PerspectiveProjection",
-        "fieldOfView"
-    );
 
     let this = this.as_object().unwrap();
 
@@ -131,12 +118,6 @@ pub fn set_projection_center<'gc>(
     this: Value<'gc>,
     args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    // FIXME: Render with the given PerspectiveProjection.
-    avm2_stub_setter!(
-        activation,
-        "flash.geom.PerspectiveProjection",
-        "projectionCenter"
-    );
 
     let this = this.as_object().unwrap();
 

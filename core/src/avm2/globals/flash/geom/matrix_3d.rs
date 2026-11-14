@@ -5,7 +5,6 @@ use crate::avm2::object::{Matrix3DObject, VectorObject};
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::vector::VectorStorage;
 use crate::avm2::{Activation, Avm2StrRepresentable as _, Error, Object, TObject as _, Value};
-use crate::avm2_stub_method;
 use num_traits::Zero;
 use ruffle_macros::Avm2Enum;
 use ruffle_render::matrix3d::Matrix3D;
@@ -703,17 +702,6 @@ pub fn recompose<'gc>(
     let Some(orientation) = Orientation3D::from_avm2_str(&orientation) else {
         return Err(make_error_2187(activation, orientation));
     };
-
-    if orientation == Orientation3D::Quaternion {
-        // Flash rejects quaternions that aren't unit ones with an
-        // ArgumentError, which we don't reproduce yet.
-        avm2_stub_method!(
-            activation,
-            "flash.geom.Matrix3D",
-            "recompose",
-            "Orientation3D.QUATERNION"
-        );
-    }
 
     // A null component makes 'recompose' fail, leaving the matrix untouched.
     let (Some(translation), Some(rotation), Some(scale)) = (
