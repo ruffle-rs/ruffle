@@ -1,13 +1,23 @@
 //! `flash.display.LoaderInfo` builtin/prototype
 
 use crate::avm2::Error;
+use crate::avm2::error::make_error_2012;
+use crate::avm2::{ClassObject, Object};
 use crate::avm2::activation::Activation;
 use crate::avm2::bytearray::Endian;
 use crate::avm2::error::make_error_2099;
 use crate::avm2::function::FunctionArgs;
 use crate::avm2::object::{DomainObject, LoaderStream, ScriptObject, TObject as _};
 use crate::avm2::value::Value;
-pub use crate::avm2::object::loader_info_allocator;
+pub fn loader_info_allocator<'gc>(
+    class: ClassObject<'gc>,
+    activation: &mut Activation<'_, 'gc>,
+) -> Result<Object<'gc>, Error<'gc>> {
+    Err(make_error_2012(
+        activation,
+        class.inner_class_definition().name().local_name(),
+    ))
+}
 use crate::display_object::TDisplayObject;
 use crate::loader::ContentType;
 use crate::string::AvmString;
