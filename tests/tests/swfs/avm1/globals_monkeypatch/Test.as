@@ -6,6 +6,7 @@ class Test {
   static var OBJECT = Object;
   static var ARRAY = Array;
   static var FUNCTION = Function;
+  static var SHARED_OBJECT = SharedObject;
 
   static var AN_ARRAY = [];
   static var A_STRING = new String("hello world");
@@ -31,6 +32,17 @@ class Test {
   ];
 
   static var A_STYLE_SHEET = new TextField.StyleSheet();
+
+  static var A_FILE_REFERENCE = new flash.net.FileReference();
+  static var A_FILE_REFERENCE_LIST = new flash.net.FileReferenceList();
+  static var A_FILE_BROWSE_FILTER = [{
+    description: "debug-select-success",
+    extension: "*.txt"
+  }];
+
+  static var AN_XML_STRING = "<root attr=\"val\"><a>some text</a><b><c/></b></root>";
+  static var AN_XML = new XML(AN_XML_STRING);
+  static var AN_XML_NODE = AN_XML.firstChild; // force the root node to be created now.
 
   static var POINT_CLASS = flash.geom.Point;
 
@@ -80,6 +92,12 @@ class Test {
     monkeyPatchClass(_global, "TextField");
     monkeyPatchClass(_global, "TextFormat");
     monkeyPatchClass(_global, "Video");
+    monkeyPatchClass(_global, "XML");
+    monkeyPatchClass(_global, "XMLNode");
+    monkeyPatchClass(_global, "SharedObject");
+    monkeyPatchClass(_global, "Date");
+
+    monkeyPatchClass(_global.flash.display, "BitmapData");
 
     monkeyPatchClass(_global.flash.filters, "BevelFilter");
     monkeyPatchClass(_global.flash.filters, "BlurFilter");
@@ -98,6 +116,9 @@ class Test {
     monkeyPatchClass(_global.flash.geom, "Rectangle");
     monkeyPatchClass(_global.flash.geom, "Transform");
     monkeyPatch(_global.flash, "geom", _global.flash.geom);
+
+    monkeyPatchClass(_global.flash.net, "FileReference");
+    monkeyPatch(_global.flash, "net", _global.flash.net);
 
     trace("// hiding flash.filters..."); 
     _global.ASSetPropFlags(_global.flash, "filters", 0x2000 /* version 9 */);
@@ -163,6 +184,12 @@ class Test {
 
     trace("// A_CONVOLUTION_FILTER.matrix");
     traceName(A_CONVOLUTION_FILTER.matrix);
+
+    trace("// Camera.names");
+    traceName(Camera.names);
+
+    trace("// Microphone.names");
+    traceName(Microphone.names);
 
     // TODO: test other Array-producing native APIs?
     // Hopefully they all behave identically.
@@ -289,6 +316,13 @@ class Test {
 
 
     trace("");
+    trace("### Testing Bitmap");
+
+    trace("// A_DISPLACEMENT_MAP_FILTER.mapBitmap");
+    traceName(A_DISPLACEMENT_MAP_FILTER.mapBitmap);
+
+
+    trace("");
     trace("### Testing TextFormat");
     clip.textfield.setTextFormat(new TextFormat());
 
@@ -309,11 +343,97 @@ class Test {
     trace("// textfieldOrig.getNewTextFormat()");
     traceName(textfieldOrig.getNewTextFormat());
 
+    trace("");
+    trace("### Testing SharedObject");
+
+    trace("// SHARED_OBJECT.getLocal('test1')");
+    traceName(SHARED_OBJECT.getLocal("test1"));
+    
+    trace("// delete _global.SharedObject");
+    delete _global.SharedObject;
+    trace("// SHARED_OBJECT.getLocal('test1')");
+    traceName(SHARED_OBJECT.getLocal("test1"));
+    trace("// SHARED_OBJECT.getLocal('test2')");
+    traceName(SHARED_OBJECT.getLocal("test2"));
 
     // TODO: test other classes that can be instantiated by AVM1 builtins;
     // see the list in ruffle's `SystemPrototypes`.
 
-    fscommand("quit");
+    // TODO: test SharedObject serialization? (Date, XML, Array, Object)
+
+    // TODO: test Dates in FLV metadata?
+
+
+    trace("");
+    trace("### Testing Date");
+
+    A_FILE_REFERENCE.addListener({
+      onSelect: function(target) {
+        trace("FileReference.browse - onSelect");
+        Test.traceName(target.creationDate, "creationDate");
+        Test.traceName(target.modificationDate, "modificationDate");
+
+        Test.testFileReference();
+      }
+    });
+
+    trace("// A_FILE_REFERENCE.browse(A_FILE_BROWSE_FILTER)");
+    A_FILE_REFERENCE.browse(A_FILE_BROWSE_FILTER);
+  }
+
+  static function testFileReference() {
+    trace("");
+    trace("### Testing FileReference");
+
+    A_FILE_REFERENCE_LIST.addListener({
+      onSelect: function(target) {
+        trace("FileReferenceList.browse - onSelect");
+        Test.traceName(target.fileList, "fileList");
+        trace("target.fileList.length = " + target.fileList.length);
+        for (var i = 0; i < target.fileList.length; i++) {
+          Test.traceName(target.fileList[i], "fileList[" + i + "]");
+        }
+
+        Test.testXml();
+      }
+    });
+
+    trace("// A_FILE_REFERENCE_LIST.browse(A_FILE_BROWSE_FILTER)");
+    A_FILE_REFERENCE_LIST.browse(A_FILE_BROWSE_FILTER);
+  }
+
+  static function testXml() {
+    trace("");
+    trace("### Testing XML(Node)");
+
+    trace("// walkXmlNode(AN_XML)");
+    walkXmlNode(AN_XML, "");
+
+    trace("// new XMLSocket(); ...");
+    var socket = new XMLSocket();
+    socket.onConnect = function(status) {
+      trace("XMLSocket connected; status: " + status);
+    };
+    socket.onXML = function(data) {
+      trace("XMLSocket received XML data: '" + data + "'");
+      Test.walkXmlNode(data, "");
+    }
+    socket.onClose = function() {
+      trace("XMLSocket closed");
+      fscommand("quit");
+    }
+
+    trace("// Connecting to XMlSocket...");
+    socket.connect("localhost", 8001);
+  }
+
+  static function walkXmlNode(xml, indent) {
+    trace(indent + "- nodeName: " + xml.nodeName + "; class: " + xml.className);
+    var child = xml.firstChild;
+    while (child != null) {
+      walkXmlNode(child, indent + "  ");
+      child = child.nextSibling;
+    }
   }
 
   static function monkeyPatchClass(obj, name) {

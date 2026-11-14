@@ -85,7 +85,7 @@ package __AS3__.vec {
 
             prototype.some = function(callback:*, receiver:* = void 0):Boolean {
                 var v:Vector$double = this;
-                return v.AS3::some(checker, receiver);
+                return v.AS3::some(callback, receiver);
             };
 
             prototype.sort = function(func:*):* {

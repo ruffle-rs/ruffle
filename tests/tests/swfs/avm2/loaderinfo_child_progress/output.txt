@@ -1,0 +1,9 @@
+loader progress: 0 / 1220
+loader progress: 1220 / 1220
+child constructor
+child exitFrame
+loader init
+child init
+loader complete
+child complete
+child exitFrame

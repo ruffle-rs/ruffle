@@ -1,0 +1,234 @@
+/// new Array(0)
+length: 0
+/// new Array(0)
+length: 0
+/// new Array(5)
+length: 5
+/// new Array(4294967295)
+length: 4294967295
+/// new Array(-1)
+caught: [class RangeError]
+RangeError: Error #1005: Array index is not a positive integer (-1).
+	at Error$/throwError()
+	at Array()
+	at Function/<anonymous>()
+	at Test$/run()
+	at Test()
+/// new Array(1.5)
+caught: [class RangeError]
+RangeError: Error #1005: Array index is not a positive integer (1.5).
+	at Error$/throwError()
+	at Array()
+	at Function/<anonymous>()
+	at Test$/run()
+	at Test()
+/// new Array(NaN)
+caught: [class RangeError]
+RangeError: Error #1005: Array index is not a positive integer (NaN).
+	at Error$/throwError()
+	at Array()
+	at Function/<anonymous>()
+	at Test$/run()
+	at Test()
+/// new Array(Infinity)
+caught: [class RangeError]
+RangeError: Error #1005: Array index is not a positive integer (Infinity).
+	at Error$/throwError()
+	at Array()
+	at Function/<anonymous>()
+	at Test$/run()
+	at Test()
+/// new Array(-Infinity)
+caught: [class RangeError]
+RangeError: Error #1005: Array index is not a positive integer (-Infinity).
+	at Error$/throwError()
+	at Array()
+	at Function/<anonymous>()
+	at Test$/run()
+	at Test()
+/// new Array(4294967296)
+caught: [class RangeError]
+RangeError: Error #1005: Array index is not a positive integer (4294967296).
+	at Error$/throwError()
+	at Array()
+	at Function/<anonymous>()
+	at Test$/run()
+	at Test()
+/// new Array(10000000000)
+caught: [class RangeError]
+RangeError: Error #1005: Array index is not a positive integer (10000000000).
+	at Error$/throwError()
+	at Array()
+	at Function/<anonymous>()
+	at Test$/run()
+	at Test()
+/// new Array(int -1)
+caught: [class RangeError]
+RangeError: Error #1005: Array index is not a positive integer (-1).
+	at Error$/throwError()
+	at Array()
+	at Function/<anonymous>()
+	at Test$/run()
+	at Test()
+/// new Array(uint 7)
+length: 7
+/// Array(5)
+length: 5
+/// Array(-1)
+caught: [class RangeError]
+RangeError: Error #1005: Array index is not a positive integer (-1).
+	at Error$/throwError()
+	at Array()
+	at Function/<anonymous>()
+	at Test$/run()
+	at Test()
+/// Array(1.5)
+caught: [class RangeError]
+RangeError: Error #1005: Array index is not a positive integer (1.5).
+	at Error$/throwError()
+	at Array()
+	at Function/<anonymous>()
+	at Test$/run()
+	at Test()
+/// new Array(values[0]: string)
+length: 1
+[0]: string, present
+/// new Array(values[1]: string)
+length: 1
+[0]: string, present
+/// new Array(values[2]: string)
+length: 1
+[0]: string, present
+/// new Array(values[3]: boolean)
+length: 1
+[0]: boolean, present
+/// new Array(values[4]: boolean)
+length: 1
+[0]: boolean, present
+/// new Array(values[5]: object)
+length: 1
+[0]: object, present
+/// new Array(values[6]: undefined)
+length: 1
+[0]: undefined, present
+/// new Array(values[7]: object)
+length: 1
+[0]: object, present
+/// new Array(values[8]: number)
+length: 5
+/// new Array(values[9]: number)
+length: 5
+/// new Array(values[10]: number)
+length: 5
+/// new Array(values[11]: object)
+length: 1
+[0]: object, present
+/// new Array(values[12]: object)
+length: 1
+[0]: object, present
+/// new Array(* int -3)
+caught: [class RangeError]
+RangeError: Error #1005: Array index is not a positive integer (-3).
+	at Error$/throwError()
+	at Array()
+	at Function/<anonymous>()
+	at Test$/run()
+	at Test()
+/// new Array(* uint 3)
+length: 3
+[0]: undefined, hole
+[1]: undefined, hole
+[2]: undefined, hole
+/// new Array(5, 6)
+length: 2
+[0]: number, present
+[1]: number, present
+/// new Array(-1, 6)
+length: 2
+[0]: number, present
+[1]: number, present
+/// new Array(1.5, "a")
+length: 2
+[0]: number, present
+[1]: string, present
+/// new ArraySub0()
+set length(0), length before: 0, [0] before: undefined
+ArraySub0 constructor
+length: 0
+/// new ArraySub1(5)
+ArraySub1 constructor
+set length(5), length before: 0, [0] before: undefined
+ArraySub1 constructor done
+length: 5
+/// new ArraySub1(0)
+ArraySub1 constructor
+set length(0), length before: 0, [0] before: undefined
+ArraySub1 constructor done
+length: 0
+/// new ArraySub1("5")
+ArraySub1 constructor
+set length(1), length before: 0, [0] before: undefined
+ArraySub1 constructor done
+length: 1
+[0]: string, present
+/// new ArraySub1(-1)
+ArraySub1 constructor
+caught: [class RangeError]
+RangeError: Error #1005: Array index is not a positive integer (-1).
+	at Error$/throwError()
+	at Array()
+	at ArraySub1()
+	at Function/<anonymous>()
+	at Test$/run()
+	at Test()
+/// new ArraySub3(1, 2, 3)
+ArraySub3 constructor
+set length(3), length before: 0, [0] before: undefined
+ArraySub3 constructor done
+length: 3
+[0]: number, present
+[1]: number, present
+[2]: number, present
+/// new ArraySub0(), setter throws
+set length(0), length before: 0, [0] before: undefined
+caught: [class Error]
+Error: thrown from set length
+	at ArraySub0/set length()
+	at Array()
+	at ArraySub0()
+	at Function/<anonymous>()
+	at Test$/run()
+	at Test()
+/// new ArraySub1(5), setter throws
+ArraySub1 constructor
+set length(5), length before: 0, [0] before: undefined
+caught: [class Error]
+Error: thrown from set length
+	at ArraySub1/set length()
+	at Array()
+	at ArraySub1()
+	at Function/<anonymous>()
+	at Test$/run()
+	at Test()
+/// new ArraySub1("5"), setter throws
+ArraySub1 constructor
+set length(1), length before: 0, [0] before: undefined
+caught: [class Error]
+Error: thrown from set length
+	at ArraySub1/set length()
+	at Array()
+	at ArraySub1()
+	at Function/<anonymous>()
+	at Test$/run()
+	at Test()
+/// new ArraySub3(1, 2, 3), setter throws
+ArraySub3 constructor
+set length(3), length before: 0, [0] before: undefined
+caught: [class Error]
+Error: thrown from set length
+	at ArraySub3/set length()
+	at Array()
+	at ArraySub3()
+	at Function/<anonymous>()
+	at Test$/run()
+	at Test()

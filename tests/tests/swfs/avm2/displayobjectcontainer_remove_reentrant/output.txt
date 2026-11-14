@@ -1,0 +1,257 @@
+// removeChild in removed
+  removed #1
+  caught: [class Error]
+  Error: Error #2094: Event dispatch recursion overflow.
+	at flash.display::DisplayObjectContainer/removeChild()
+	at Function/<anonymous>()
+	at Test/attempt()
+	at Function/<anonymous>()
+	at flash.display::DisplayObjectContainer/removeChild()
+	at Function/<anonymous>()
+	at Test/attempt()
+	at Test/run()
+	at Test/probe()
+	at Test()
+  returned
+  a: this, b: null, c: a, d: a, g: b
+// removeChild in removedFromStage
+  removedFromStage #1
+  caught: [class Error]
+  Error: Error #2094: Event dispatch recursion overflow.
+	at flash.display::DisplayObjectContainer/removeChild()
+	at Function/<anonymous>()
+	at Test/attempt()
+	at Function/<anonymous>()
+	at flash.display::DisplayObjectContainer/removeChild()
+	at Function/<anonymous>()
+	at Test/attempt()
+	at Test/run()
+	at Test/probe()
+	at Test()
+  returned
+  a: this, b: null, c: a, d: a, g: b
+// removeChildAt in removed
+  removed #1
+  caught: [class Error]
+  Error: Error #2094: Event dispatch recursion overflow.
+	at flash.display::DisplayObjectContainer/removeChildAt()
+	at Function/<anonymous>()
+	at Test/attempt()
+	at Function/<anonymous>()
+	at flash.display::DisplayObjectContainer/removeChildAt()
+	at Function/<anonymous>()
+	at Test/attempt()
+	at Test/run()
+	at Test/probe()
+	at Test()
+  returned
+  a: this, b: null, c: a, d: a, g: b
+// removeChildren in removed
+  removed #1
+  caught: [class Error]
+  Error: Error #2094: Event dispatch recursion overflow.
+	at flash.display::DisplayObjectContainer/removeChildren()
+	at Test/attempt()
+	at Function/<anonymous>()
+	at flash.display::DisplayObjectContainer/removeChildren()
+	at Test/attempt()
+	at Test/run()
+	at Test/probe()
+	at Test()
+  returned
+  a: this, b: null, c: null, d: null, g: b
+// removeChildren in removed of removeChild
+  removed #1
+  caught: [class Error]
+  Error: Error #2094: Event dispatch recursion overflow.
+	at flash.display::DisplayObjectContainer/removeChildren()
+	at Test/attempt()
+	at Function/<anonymous>()
+	at flash.display::DisplayObjectContainer/removeChild()
+	at Function/<anonymous>()
+	at Test/attempt()
+	at Test/run()
+	at Test/probe()
+	at Test()
+  returned
+  a: this, b: null, c: null, d: a, g: b
+// removeChild in a nested event
+  removed #1
+  caught: [class Error]
+  Error: Error #2094: Event dispatch recursion overflow.
+	at flash.display::DisplayObjectContainer/removeChild()
+	at Function/<anonymous>()
+	at Test/attempt()
+	at Function/<anonymous>()
+	at flash.events::EventDispatcher/dispatchEventFunction()
+	at flash.events::EventDispatcher/dispatchEvent()
+	at Function/<anonymous>()
+	at Test/attempt()
+	at Function/<anonymous>()
+	at flash.display::DisplayObjectContainer/removeChild()
+	at Function/<anonymous>()
+	at Test/attempt()
+	at Test/run()
+	at Test/probe()
+	at Test()
+  returned
+  returned
+  a: this, b: null, c: a, d: a, g: b
+// removeChild of a non-child in removed
+  removed #1
+  caught: [class ArgumentError]
+  ArgumentError: Error #2025: The supplied DisplayObject must be a child of the caller.
+	at flash.display::DisplayObjectContainer/removeChild()
+	at Function/<anonymous>()
+	at Test/attempt()
+	at Function/<anonymous>()
+	at flash.display::DisplayObjectContainer/removeChild()
+	at Function/<anonymous>()
+	at Test/attempt()
+	at Test/run()
+	at Test/probe()
+	at Test()
+  returned
+  a: this, b: null, c: a, d: a, g: b
+// removeChild of a sibling in removed
+  removed #1
+  returned
+  returned
+  a: this, b: null, c: null, d: a, g: b
+// removeChild in removed of reparenting
+  removed #1
+  removed #2
+  returned
+  returned
+  a: this, b: other, c: a, d: a, g: b
+// removeChild after a re-entrant removal
+  removed of b on b
+  caught: [class Error]
+  Error: Error #2094: Event dispatch recursion overflow.
+	at flash.display::DisplayObjectContainer/removeChild()
+	at Function/<anonymous>()
+	at Test/attempt()
+	at Function/<anonymous>()
+	at flash.display::DisplayObjectContainer/removeChild()
+	at Test()
+  returned
+  a: this, b: null, c: a, d: a, g: b
+// removeChild of self in removedFromStage of an ancestor
+  removedFromStage #1
+  removedFromStage #2
+  caught: [class Error]
+  Error: Error #2094: Event dispatch recursion overflow.
+	at flash.display::DisplayObjectContainer/removeChild()
+	at Function/<anonymous>()
+	at Test/attempt()
+	at Function/<anonymous>()
+	at flash.display::DisplayObjectContainer/removeChild()
+	at Function/<anonymous>()
+	at Test/attempt()
+	at Function/<anonymous>()
+	at flash.display::DisplayObjectContainer/removeChild()
+	at Function/<anonymous>()
+	at Test/attempt()
+	at Test/run()
+	at Test()
+  returned
+  returned
+  a: null, b: null, c: a, d: a, g: b
+// mutual removeChild in removed
+  removed of b on b
+  removed of c on c
+  caught: [class Error]
+  Error: Error #2094: Event dispatch recursion overflow.
+	at flash.display::DisplayObjectContainer/removeChild()
+	at Function/<anonymous>()
+	at Test/attempt()
+	at Function/<anonymous>()
+	at flash.display::DisplayObjectContainer/removeChild()
+	at Function/<anonymous>()
+	at Test/attempt()
+	at Function/<anonymous>()
+	at flash.display::DisplayObjectContainer/removeChild()
+	at Function/<anonymous>()
+	at Test/attempt()
+	at Test/run()
+	at Test()
+  returned
+  returned
+  a: this, b: null, c: null, d: a, g: b
+// mutual removeChild in removed and removedFromStage
+  removed of b on b
+  removedFromStage of c on c
+  caught: [class Error]
+  Error: Error #2094: Event dispatch recursion overflow.
+	at flash.display::DisplayObjectContainer/removeChild()
+	at Function/<anonymous>()
+	at Test/attempt()
+	at Function/<anonymous>()
+	at flash.display::DisplayObjectContainer/removeChild()
+	at Function/<anonymous>()
+	at Test/attempt()
+	at Function/<anonymous>()
+	at flash.display::DisplayObjectContainer/removeChild()
+	at Function/<anonymous>()
+	at Test/attempt()
+	at Test/run()
+	at Test()
+  returned
+  returned
+  a: this, b: null, c: null, d: a, g: b
+// removeChild in removed on the parent
+  removed of b on a
+  caught: [class Error]
+  Error: Error #2094: Event dispatch recursion overflow.
+	at flash.display::DisplayObjectContainer/removeChild()
+	at Function/<anonymous>()
+	at Test/attempt()
+	at Function/<anonymous>()
+	at flash.display::DisplayObjectContainer/removeChild()
+	at Function/<anonymous>()
+	at Test/attempt()
+	at Test/run()
+	at Test()
+  returned
+  a: this, b: null, c: a, d: a, g: b
+// removeChild in removed captured on an ancestor
+  removed of b on this
+  caught: [class Error]
+  Error: Error #2094: Event dispatch recursion overflow.
+	at flash.display::DisplayObjectContainer/removeChild()
+	at Function/<anonymous>()
+	at Test/attempt()
+	at Function/<anonymous>()
+	at flash.display::DisplayObjectContainer/removeChild()
+	at Function/<anonymous>()
+	at Test/attempt()
+	at Test/run()
+	at Test()
+  returned
+  a: this, b: null, c: a, d: a, g: b
+// removeChild of the parent in removedFromStage of a grandchild
+  removedFromStage of g on g
+  caught: [class Error]
+  Error: Error #2094: Event dispatch recursion overflow.
+	at flash.display::DisplayObjectContainer/removeChild()
+	at Function/<anonymous>()
+	at Test/attempt()
+	at Function/<anonymous>()
+	at flash.display::DisplayObjectContainer/removeChild()
+	at Function/<anonymous>()
+	at Test/attempt()
+	at Test/run()
+	at Test()
+  returned
+  a: this, b: null, c: a, d: a, g: b
+// removeChild of self in removedFromStage of a grandchild
+  removedFromStage of g on g
+  returned
+  returned
+  a: this, b: null, c: a, d: a, g: null
+// removeChild of the parent in removed
+  removed of b on b
+  returned
+  returned
+  a: null, b: null, c: a, d: a, g: b
+// done

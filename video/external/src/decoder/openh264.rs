@@ -5,7 +5,7 @@ use std::fs::File;
 use std::io::copy;
 use std::path::{Path, PathBuf};
 use std::ptr;
-use std::sync::Arc;
+use std::rc::Rc;
 
 use crate::decoder::VideoDecoder;
 use crate::decoder::openh264_sys::{self, ISVCDecoder, OpenH264, videoFormatI420};
@@ -39,11 +39,11 @@ pub enum OpenH264Error {
 
 /// OpenH264 codec representation.
 pub struct OpenH264Codec {
-    openh264: Arc<OpenH264>,
+    openh264: Rc<OpenH264>,
 }
 
 impl OpenH264Codec {
-    const VERSION: OpenH264Version = OpenH264Version(2, 4, 1);
+    const VERSION: OpenH264Version = OpenH264Version(2, 7, 0);
 
     /// Returns the OpenH264 library data for the current platform.
     fn get_data() -> Result<OpenH264Data, Box<dyn std::error::Error>> {
@@ -51,44 +51,48 @@ impl OpenH264Codec {
         const ARCH: &str = std::env::consts::ARCH;
 
         let local_filenames = match OS {
-            "linux" => ["libopenh264.so.7", "libopenh264.so.2.4.1", "libopenh264.so"].as_slice(),
+            "linux" => ["libopenh264.so.8", "libopenh264.so.2.7.0", "libopenh264.so"].as_slice(),
             // TODO: investigate other OSes
             _ => [].as_slice(),
         };
 
-        // Source: https://github.com/cisco/openh264/releases/tag/v2.4.1
+        // Source: https://github.com/cisco/openh264/releases/tag/v2.7.0
         let (download_filename, download_sha256) = match (OS, ARCH) {
             ("linux", "x86") => (
-                "libopenh264-2.4.1-linux32.7.so",
-                "b7cf0e407f99056d90cbf62787a34820a7595b2129b165319d50766e00a66704",
+                "libopenh264-2.7.0-linux32.8.so",
+                "7d095448e75ea49799e48cc11f079091f4c61b127dd71ece27b3496359102ecf",
             ),
             ("linux", "x86_64") => (
-                "libopenh264-2.4.1-linux64.7.so",
-                "1392d21466bc638e68151b716d5b2086d54cd812afd43253f1adb5b6e0185f51",
+                "libopenh264-2.7.0-linux64.8.so",
+                "1522f873a482923c5ec018a4415e1866898197528828c50f90fd300c94620df3",
             ),
             ("linux", "arm") => (
-                "libopenh264-2.4.1-linux-arm.7.so",
-                "fd1dfb27d30bb72e903c9d2b4c650104a4369d2e7ffe8a4a533e8db2e7e9b19e",
+                "libopenh264-2.7.0-linux-arm.8.so",
+                "c9702982cad7ae0da05ca1e62834666f56b0290484af463f0887c8c48043e82b",
             ),
             ("linux", "aarch64") => (
-                "libopenh264-2.4.1-linux-arm64.7.so",
-                "e8ea7e42855ceb4a90e7bd0b3abeba0c58b5f97166e8b0a30eefd58e099557a4",
+                "libopenh264-2.7.0-linux-arm64.8.so",
+                "9ac664b0154fd0868491c2a904397b8a05779874c0603b8b1f16ad15de1ffd82",
             ),
             ("macos", "x86_64") => (
-                "libopenh264-2.4.1-mac-x64.dylib",
-                "cc0ba518a63791c37571f3c851f0aa03a4fbda5410acc214ecd4f24f8d1c478e",
+                "libopenh264-2.7.0-mac-x64.dylib",
+                "31d38bcbe9348e9b44ca38dd08fa1e2af79ffce6521276449ef05e3cd39136f4",
             ),
             ("macos", "aarch64") => (
-                "libopenh264-2.4.1-mac-arm64.dylib",
-                "213ff93831cfa3dd6d7ad0c3a3403a6ceedf4ac1341e1278b5b869d42fefb496",
+                "libopenh264-2.7.0-mac-arm64.dylib",
+                "2e1ae3cd10c08328ca03a1f304fd2a1a2a7e5658c6d5a8582101a963f7995ef0",
             ),
             ("windows", "x86") => (
-                "openh264-2.4.1-win32.dll",
-                "83270149640469c994a62cc32a6d8c0413cd7b802b7f1f2f532159f5bdc1cedd",
+                "openh264-2.7.0-win32.dll",
+                "ee34d9606c5cc96cdea694a6bc95ed1b6230b9854689f56c7fa30d211daf48b0",
             ),
             ("windows", "x86_64") => (
-                "openh264-2.4.1-win64.dll",
-                "081b0c081480d177cbfddfbc90b1613640e702f875897b30d8de195cde73dd34",
+                "openh264-2.7.0-win64.dll",
+                "0ef5e7f3b38753b15c13afa0418d4d7805fa228e6adfd3e425bbf758cff1c288",
+            ),
+            ("windows", "aarch64") => (
+                "openh264-2.7.0-win-arm64.dll",
+                "2f8f11a40d1450fd5c7afc1c5e38b9f6ba6c95c47582845b16c0bfe154ed75a4",
             ),
             (os, arch) => return Err(format!("Unsupported OS/arch: {os}/{arch}").into()),
         };
@@ -106,7 +110,7 @@ impl OpenH264Codec {
         directory: &Path,
     ) -> Result<PathBuf, Box<dyn std::error::Error>> {
         // See the license at: https://www.openh264.org/BINARY_LICENSE.txt
-        const URL_BASE: &str = "http://ciscobinary.openh264.org/";
+        const URL_BASE: &str = "https://ciscobinary.openh264.org/";
         const URL_SUFFIX: &str = ".bz2";
 
         let (filename, sha256sum) = (
@@ -164,7 +168,7 @@ impl OpenH264Codec {
         }
 
         Ok(Self {
-            openh264: Arc::new(openh264),
+            openh264: Rc::new(openh264),
         })
     }
 
@@ -197,7 +201,7 @@ pub struct H264Decoder {
     /// How many bytes are used to store the length of the NALU (1, 2, 3, or 4).
     length_size: u8,
 
-    openh264: Arc<OpenH264>,
+    openh264: Rc<OpenH264>,
     decoder: *mut ISVCDecoder,
 
     scratch: Vec<u8>,

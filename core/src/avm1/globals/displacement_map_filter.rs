@@ -78,10 +78,10 @@ impl<'gc> DisplacementMapFilter<'gc> {
 
     fn map_bitmap(self, activation: &mut Activation<'_, 'gc>) -> Option<Object<'gc>> {
         if let Some(map_bitmap) = self.0.map_bitmap.get() {
-            let proto = activation.prototypes().bitmap_data;
-            let result = Object::new(activation.strings(), Some(proto));
-            result.set_native(activation.gc(), NativeObject::BitmapData(map_bitmap));
-            Some(result)
+            let class_name = [istr!("flash"), istr!("display"), istr!("BitmapData")];
+            let proto = activation.resolve_prototype(class_name);
+            let native = NativeObject::BitmapData(map_bitmap);
+            Some(Object::new_with_native(activation.strings(), proto, native))
         } else {
             None
         }

@@ -1,0 +1,63 @@
+case: <a><b>foo</a>
+  returned: -9
+  toString: <a><b>foo</b></a>
+case: <a><b>foo</a><c/>
+  returned: -9
+  toString: <a><b>foo</b></a>
+case: <a><b>foo</a>bar</a>
+  returned: -9
+  toString: <a><b>foo</b></a>
+case: <a><b>foo</a></b>
+  returned: -9
+  toString: <a><b>foo</b></a>
+case: <r><a><b>foo</a></r>
+  returned: -9
+  toString: <r><a><b>foo</b></a></r>
+case: <a><b><c>foo</b>
+  returned: -9
+  toString: <a><b><c>foo</c></b></a>
+case: <a><b><c>foo</a>
+  returned: -10
+  toString: <a><b><c>foo</c></b></a>
+case: <r><a><b><c>foo</a></r>
+  returned: -10
+  toString: <r><a><b><c>foo</c></b></a></r>
+case: <a><b>foo</b></c></a>
+  returned: -10
+  toString: <a><b>foo</b></a>
+case: <a>foo</b>
+  returned: -10
+  toString: <a>foo</a>
+case: <a><b/>foo</c>
+  returned: -10
+  toString: <a><b />foo</a>
+case: <a><b>foo</A>
+  returned: -10
+  toString: <a><b>foo</b></a>
+case: foo</a>
+  returned: -10
+  toString: foo
+case: <a></a></a>
+  returned: -10
+  toString: <a />
+case: <a>foo
+  returned: -9
+  toString: <a>foo</a>
+case: <a><b>foo</b>
+  returned: -9
+  toString: <a><b>foo</b></a>
+case: <a><b>
+  returned: -9
+  toString: <a><b /></a>
+case: <a/><b>
+  returned: -9
+  toString: <a /><b />
+case: <a><b>foo</b></a>
+  returned: 0
+  toString: <a><b>foo</b></a>
+case: <a>foo</a>
+  returned: 0
+  toString: <a>foo</a>
+case: <a/><b/>
+  returned: 0
+  toString: <a /><b />

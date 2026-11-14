@@ -1,8 +1,8 @@
 //! Video player display object
 
 use crate::avm1::{
-    Activation as Avm1Activation, ActivationIdentifier, NativeObject as Avm1NativeObject,
-    Object as Avm1Object,
+    self, Activation as Avm1Activation, ActivationIdentifier, NativeObject as Avm1NativeObject,
+    Object as Avm1Object, Value as Avm1Value,
 };
 use crate::avm2::StageObject as Avm2StageObject;
 use crate::context::{RenderContext, UpdateContext};
@@ -198,6 +198,22 @@ impl<'gc> Video<'gc> {
 
     pub fn set_size(self, width: i32, height: i32) {
         self.0.size.set((width, height));
+    }
+
+    /// The size of the most recently decoded frame, or `(0, 0)` if no frame
+    /// has been decoded yet.
+    pub fn decoded_size(self) -> (u32, u32) {
+        let bitmap = match self.0.source.get() {
+            VideoSource::Swf(_) => self
+                .0
+                .decoded_frame
+                .borrow()
+                .as_ref()
+                .map(|(_, b)| b.clone()),
+            VideoSource::NetStream { stream } => stream.last_decoded_bitmap(),
+            VideoSource::Unconnected => None,
+        };
+        bitmap.map_or((0, 0), |b| (b.width, b.height))
     }
 
     /// Convert this Video into a NetStream sourced video.
@@ -435,6 +451,9 @@ impl<'gc> TDisplayObject<'gc> for Video<'gc> {
             let mut activation = Avm1Activation::from_nothing(context, id, self.into());
             let constr = activation.resolve_class([istr!("Video")]);
             let proto = constr.and_then(|c| c.prototype(&activation));
+            if let Some(Avm1Value::Object(proto)) = proto {
+                avm1::globals::video::define_lazy_proto_properties(&mut activation, proto);
+            }
             let native = Avm1NativeObject::Video(self);
             let object = Avm1Object::new_with_native(activation.strings(), proto, native);
 

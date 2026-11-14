@@ -1,10 +1,10 @@
-use crate::avm2::Error;
-use crate::avm2::Multiname;
 use crate::avm2::activation::Activation;
 use crate::avm2::bytearray::ByteArrayStorage;
-use crate::avm2::error::make_error_2136;
+use crate::avm2::error::{Error, make_error_2136};
+use crate::avm2::index::ArrayIndex;
+use crate::avm2::multiname::Multiname;
 use crate::avm2::object::script_object::ScriptObjectData;
-use crate::avm2::object::{ArrayObject, ClassObject, Object, TObject};
+use crate::avm2::object::{ClassObject, Object, TObject};
 use crate::avm2::value::Value;
 use crate::character::Character;
 use crate::context::UpdateContext;
@@ -99,13 +99,15 @@ impl<'gc> ByteArrayObject<'gc> {
     fn set_element(
         self,
         activation: &mut Activation<'_, 'gc>,
-        index: usize,
+        index: ArrayIndex,
         value: Value<'gc>,
     ) -> Result<(), Error<'gc>> {
+        let coerced_value = value.coerce_to_u32(activation)?;
+
         self.0
             .storage
             .borrow_mut()
-            .set(index, value.coerce_to_u32(activation)? as u8);
+            .set(index.as_usize(), coerced_value as u8);
 
         Ok(())
     }
@@ -131,7 +133,7 @@ impl<'gc> TObject<'gc> for ByteArrayObject<'gc> {
     ) -> Result<Value<'gc>, Error<'gc>> {
         if name.valid_dynamic_name()
             && let Some(name) = name.local_name()
-            && let Some(index) = ArrayObject::as_array_index(&name)
+            && let Some(index) = ArrayIndex::from_wstr(&name)
         {
             return Ok(self.get_index_property(index).unwrap());
         }
@@ -139,13 +141,13 @@ impl<'gc> TObject<'gc> for ByteArrayObject<'gc> {
         self.base().get_property_local(name, activation)
     }
 
-    fn get_index_property(self, index: usize) -> Option<Value<'gc>> {
+    fn get_index_property(self, index: ArrayIndex) -> Option<Value<'gc>> {
         // ByteArrays never forward to base even for out-of-bounds access.
         Some(
             self.0
                 .storage
                 .borrow()
-                .get(index)
+                .get(index.as_usize())
                 .map_or(Value::Undefined, |val| Value::Integer(val as i32)),
         )
     }
@@ -153,7 +155,7 @@ impl<'gc> TObject<'gc> for ByteArrayObject<'gc> {
     fn set_index_property(
         self,
         activation: &mut Activation<'_, 'gc>,
-        index: usize,
+        index: ArrayIndex,
         value: Value<'gc>,
     ) -> Option<Result<(), Error<'gc>>> {
         // ByteArrays never forward to base even for out-of-bounds access.
@@ -168,7 +170,7 @@ impl<'gc> TObject<'gc> for ByteArrayObject<'gc> {
     ) -> Result<(), Error<'gc>> {
         if name.valid_dynamic_name()
             && let Some(name) = name.local_name()
-            && let Some(index) = ArrayObject::as_array_index(&name)
+            && let Some(index) = ArrayIndex::from_wstr(&name)
         {
             return self.set_element(activation, index, value);
         }
@@ -179,8 +181,9 @@ impl<'gc> TObject<'gc> for ByteArrayObject<'gc> {
     fn has_own_property(self, name: &Multiname<'gc>) -> bool {
         if name.valid_dynamic_name()
             && let Some(name) = name.local_name()
-            && let Some(index) = ArrayObject::as_array_index(&name)
+            && let Some(index) = ArrayIndex::from_wstr(&name)
         {
+            let index = index.as_usize();
             return self.0.storage.borrow().get(index).is_some();
         }
 

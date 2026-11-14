@@ -4,7 +4,7 @@ use swf::ColorTransform;
 
 /// Represents the transform for a DisplayObject.
 /// This includes both the transformation matrix and the color transform.
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug, Default, PartialEq)]
 pub struct Transform {
     pub matrix: Matrix,
     pub tz: f64,

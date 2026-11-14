@@ -1,0 +1,125 @@
+///// Vector.<int>
+/// AS3::some
+callback(1, 0, same vector: true, this is receiver: false)
+callback(2, 1, same vector: true, this is receiver: false)
+result: true
+/// public::some
+callback(1, 0, same vector: true, this is receiver: false)
+callback(2, 1, same vector: true, this is receiver: false)
+result: true
+/// public::some, receiver
+callback(1, 0, same vector: true, this is receiver: true)
+callback(2, 1, same vector: true, this is receiver: true)
+result: true
+/// public::some, no match
+callback(1, 0, same vector: true, this is receiver: false)
+callback(2, 1, same vector: true, this is receiver: false)
+callback(3, 2, same vector: true, this is receiver: false)
+result: false
+/// public::some, null
+result: false
+/// prototype.some.call
+callback(1, 0, same vector: true, this is receiver: false)
+callback(2, 1, same vector: true, this is receiver: false)
+callback(3, 2, same vector: true, this is receiver: false)
+result: true
+///// Vector.<uint>
+/// AS3::some
+callback(1, 0, same vector: true, this is receiver: false)
+callback(2, 1, same vector: true, this is receiver: false)
+result: true
+/// public::some
+callback(1, 0, same vector: true, this is receiver: false)
+callback(2, 1, same vector: true, this is receiver: false)
+result: true
+/// public::some, receiver
+callback(1, 0, same vector: true, this is receiver: true)
+callback(2, 1, same vector: true, this is receiver: true)
+result: true
+/// public::some, no match
+callback(1, 0, same vector: true, this is receiver: false)
+callback(2, 1, same vector: true, this is receiver: false)
+callback(3, 2, same vector: true, this is receiver: false)
+result: false
+/// public::some, null
+result: false
+/// prototype.some.call
+callback(1, 0, same vector: true, this is receiver: false)
+callback(2, 1, same vector: true, this is receiver: false)
+callback(3, 2, same vector: true, this is receiver: false)
+result: true
+///// Vector.<Number>
+/// AS3::some
+callback(1, 0, same vector: true, this is receiver: false)
+callback(2, 1, same vector: true, this is receiver: false)
+result: true
+/// public::some
+callback(1, 0, same vector: true, this is receiver: false)
+callback(2, 1, same vector: true, this is receiver: false)
+result: true
+/// public::some, receiver
+callback(1, 0, same vector: true, this is receiver: true)
+callback(2, 1, same vector: true, this is receiver: true)
+result: true
+/// public::some, no match
+callback(1, 0, same vector: true, this is receiver: false)
+callback(2, 1, same vector: true, this is receiver: false)
+callback(3, 2, same vector: true, this is receiver: false)
+result: false
+/// public::some, null
+result: false
+/// prototype.some.call
+callback(1, 0, same vector: true, this is receiver: false)
+callback(2, 1, same vector: true, this is receiver: false)
+callback(3, 2, same vector: true, this is receiver: false)
+result: true
+///// Vector.<Object>
+/// AS3::some
+callback(1, 0, same vector: true, this is receiver: false)
+callback(2, 1, same vector: true, this is receiver: false)
+result: true
+/// public::some
+callback(1, 0, same vector: true, this is receiver: false)
+callback(2, 1, same vector: true, this is receiver: false)
+result: true
+/// public::some, receiver
+callback(1, 0, same vector: true, this is receiver: true)
+callback(2, 1, same vector: true, this is receiver: true)
+result: true
+/// public::some, no match
+callback(1, 0, same vector: true, this is receiver: false)
+callback(2, 1, same vector: true, this is receiver: false)
+callback(3, 2, same vector: true, this is receiver: false)
+result: false
+/// public::some, null
+result: false
+/// prototype.some.call
+callback(1, 0, same vector: true, this is receiver: false)
+callback(2, 1, same vector: true, this is receiver: false)
+callback(3, 2, same vector: true, this is receiver: false)
+result: true
+///// Vector.<String>
+/// AS3::some
+callback(1, 0, same vector: true, this is receiver: false)
+callback(2, 1, same vector: true, this is receiver: false)
+result: true
+/// public::some
+callback(1, 0, same vector: true, this is receiver: false)
+callback(2, 1, same vector: true, this is receiver: false)
+result: true
+/// public::some, receiver
+callback(1, 0, same vector: true, this is receiver: true)
+callback(2, 1, same vector: true, this is receiver: true)
+result: true
+/// public::some, no match
+callback(1, 0, same vector: true, this is receiver: false)
+callback(2, 1, same vector: true, this is receiver: false)
+callback(3, 2, same vector: true, this is receiver: false)
+result: false
+/// public::some, null
+result: false
+/// prototype.some.call
+callback(1, 0, same vector: true, this is receiver: false)
+callback(2, 1, same vector: true, this is receiver: false)
+callback(3, 2, same vector: true, this is receiver: false)
+result: true

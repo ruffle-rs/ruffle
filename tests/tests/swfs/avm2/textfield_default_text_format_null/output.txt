@@ -1,0 +1,20 @@
+initial
+  default: size=12 bold=false color=0
+  new text: size=12 bold=false color=0
+after setting a format
+  default: size=30 bold=true color=16711680
+  new text: size=30 bold=true color=16711680
+setting null
+  [class TypeError]
+  TypeError: Error #2007: Parameter format must be non-null.
+	at flash.text::TextField/set defaultTextFormat()
+	at Test()
+  default: size=30 bold=true color=16711680
+  new text: size=30 bold=true color=16711680
+setting null on a field with text
+  [class TypeError]
+  TypeError: Error #2007: Parameter format must be non-null.
+	at flash.text::TextField/set defaultTextFormat()
+	at Test()
+  default: size=30 bold=true color=16711680
+  new text: size=30 bold=true color=16711680

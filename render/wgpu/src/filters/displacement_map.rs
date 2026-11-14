@@ -267,10 +267,10 @@ impl DisplacementMapFilter {
 
         render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
         render_pass.set_index_buffer(
-            descriptors.quad.indices.slice(..),
+            descriptors.quad.index_buffer.slice(..),
             wgpu::IndexFormat::Uint32,
         );
-        render_pass.draw_indexed(0..6, 0, 0..1);
+        render_pass.draw_indexed(descriptors.quad.indices_quad.clone(), 0, 0..1);
         Some(target)
     }
 }

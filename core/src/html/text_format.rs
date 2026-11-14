@@ -1510,7 +1510,14 @@ impl FormatSpans {
 
     /// Change some portion of the text to have a particular set of text
     /// attributes.
+    ///
+    /// The range is clamped to the end of the text. Empty ranges are ignored.
     pub fn set_text_format(&mut self, from: usize, to: usize, fmt: &TextFormat) {
+        let to = min(to, self.text.len());
+        if from >= to {
+            return;
+        }
+
         self.ensure_span_break_at(from);
         self.ensure_span_break_at(to);
 

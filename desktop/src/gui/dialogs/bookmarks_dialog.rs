@@ -162,7 +162,10 @@ impl BookmarksDialog {
 
         enum BookmarkAction {
             Remove(usize),
-            Start(ContentDescriptor),
+            Start {
+                content_descriptor: ContentDescriptor,
+                name: String,
+            },
         }
 
         let mut action = None;
@@ -212,9 +215,10 @@ impl BookmarksDialog {
                             response.context_menu(|ui| {
                                 if ui.button(text(locale, "start")).clicked() {
                                     ui.close();
-                                    action = Some(BookmarkAction::Start(
-                                        bookmark.content_descriptor.clone(),
-                                    ))
+                                    action = Some(BookmarkAction::Start {
+                                        content_descriptor: bookmark.content_descriptor.clone(),
+                                        name: bookmark.name.clone(),
+                                    })
                                 }
                                 if ui.button(text(locale, "remove")).clicked() {
                                     ui.close();
@@ -234,9 +238,10 @@ impl BookmarksDialog {
                                 });
                             }
                             if response.double_clicked() {
-                                action = Some(BookmarkAction::Start(
-                                    bookmark.content_descriptor.clone(),
-                                ));
+                                action = Some(BookmarkAction::Start {
+                                    content_descriptor: bookmark.content_descriptor.clone(),
+                                    name: bookmark.name.clone(),
+                                });
                             }
                         });
                     }
@@ -254,11 +259,15 @@ impl BookmarksDialog {
                 }
                 false
             }
-            Some(BookmarkAction::Start(content_descriptor)) => {
-                let _ = self.event_loop.send_event(RuffleEvent::Open(
-                    content_descriptor,
-                    Box::new(LaunchOptions::from(&self.preferences)),
-                ));
+            Some(BookmarkAction::Start {
+                content_descriptor,
+                name,
+            }) => {
+                let mut options = LaunchOptions::from(&self.preferences);
+                options.custom_title = Some(name);
+                let _ = self
+                    .event_loop
+                    .send_event(RuffleEvent::Open(content_descriptor, Box::new(options)));
                 true
             }
             None => false,

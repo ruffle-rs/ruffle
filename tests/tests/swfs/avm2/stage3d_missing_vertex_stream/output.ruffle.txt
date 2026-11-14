@@ -1,0 +1,27 @@
+/// enableErrorChecking = false
+// all streams set
+drawTriangles did not throw
+pixel: ffff0000
+// stream 1 never set
+drawTriangles did not throw
+pixel: ff000000
+// stream 1 cleared
+drawTriangles did not throw
+pixel: ff000000
+// all streams set again
+drawTriangles did not throw
+pixel: ffff0000
+/// enableErrorChecking = true
+// all streams set
+drawTriangles did not throw
+pixel: ffff0000
+// stream 1 never set
+drawTriangles did not throw
+pixel: ff000000
+// stream 1 cleared
+drawTriangles did not throw
+pixel: ff000000
+// all streams set again
+drawTriangles did not throw
+pixel: ffff0000
+Done

@@ -1,0 +1,68 @@
+/// push
+toString called on noisy (1)
+result: first-noisy-third-fourth
+length: 5, elements: [first, noisy, third, fourth, pushed]
+/// pop
+toString called on noisy (1)
+result: first-noisy-third-
+length: 3, elements: [first, noisy, third]
+/// shift
+toString called on noisy (1)
+result: first-noisy-fourth-
+length: 3, elements: [noisy, third, fourth]
+/// unshift
+toString called on noisy (1)
+toString called on noisy (2)
+result: first-noisy-noisy-third
+length: 5, elements: [unshifted, first, noisy, third, fourth]
+/// set next element
+toString called on noisy (1)
+result: first-noisy-changed-fourth
+length: 4, elements: [first, noisy, changed, fourth]
+/// set previous element
+toString called on noisy (1)
+result: first-noisy-third-fourth
+length: 4, elements: [changed, noisy, third, fourth]
+/// set far element
+toString called on noisy (1)
+result: first-noisy-third-fourth
+length: 7, elements: [first, noisy, third, fourth, undefined, undefined, far]
+/// length = 0
+toString called on noisy (1)
+result: first-noisy--
+length: 0, elements: []
+/// length = 10
+toString called on noisy (1)
+result: first-noisy-third-fourth
+length: 10, elements: [first, noisy, third, fourth, undefined, undefined, undefined, undefined, undefined, undefined]
+/// splice
+toString called on noisy (1)
+result: first-noisy-s3-third
+length: 5, elements: [s1, s2, s3, third, fourth]
+/// reverse
+toString called on noisy (1)
+toString called on noisy (2)
+result: first-noisy-noisy-first
+length: 4, elements: [fourth, third, noisy, first]
+/// join
+toString called on noisy (1)
+toString called on noisy (2)
+nested join: first+noisy+third+fourth
+result: first-noisy-third-fourth
+length: 4, elements: [first, noisy, third, fourth]
+/// toString, push
+toString called on noisy (1)
+result: first,noisy,third,fourth
+length: 5, elements: [first, noisy, third, fourth, pushed]
+/// separator, push
+toString called on | (1)
+result: a|b|c|pushed
+length: 4, elements: [a, b, c, pushed]
+/// separator, length = 0
+toString called on | (1)
+result: 
+length: 0, elements: []
+/// hole from prototype, push
+toString called on proto (1)
+result: a-proto-c
+length: 4, elements: [a, undefined, c, pushed]

@@ -119,8 +119,8 @@ pub fn will_trigger<'gc>(
     Ok(false.into())
 }
 
-/// Implements `EventDispatcher.dispatchEvent`.
-pub fn dispatch_event_internal<'gc>(
+/// Implements `EventDispatcher.dispatchEventFunction`.
+pub fn dispatch_event_function<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     args: FunctionArgs<'_, 'gc>,

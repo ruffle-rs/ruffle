@@ -1142,6 +1142,7 @@ Testing _global.Function.prototype
   __proto__, DONT_DELETE
   apply, DONT_DELETE
   call, DONT_DELETE
+  constructor, DONT_DELETE
 Testing _global.Object
   apply, DONT_DELETE
   call, DONT_DELETE
@@ -1170,8 +1171,8 @@ Testing _global.ASnative
   addProperty, DONT_DELETE
   unwatch, DONT_DELETE
   watch, DONT_DELETE
-  constructor, DONT_DELETE
   apply, DONT_DELETE
   call, DONT_DELETE
+  constructor, DONT_DELETE
   __proto__, DONT_DELETE
 Done

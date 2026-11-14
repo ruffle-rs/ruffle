@@ -1,0 +1,269 @@
+getTextFormat()
+  size=null color=null bold=null italic=null underline=false
+getTextFormat(-2)
+  size=null color=null bold=null italic=null underline=null
+getTextFormat(-1)
+  size=null color=null bold=null italic=null underline=null
+getTextFormat(0)
+  size=10 color=16711680 bold=true italic=false underline=false
+getTextFormat(1)
+  size=12 color=16711680 bold=false italic=false underline=false
+getTextFormat(2)
+  size=14 color=255 bold=false italic=false underline=false
+getTextFormat(3)
+  size=16 color=255 bold=false italic=true underline=false
+getTextFormat(4)
+  size=null color=null bold=null italic=null underline=null
+getTextFormat(5)
+  size=null color=null bold=null italic=null underline=null
+getTextFormat(-2, -2)
+  size=null color=null bold=null italic=null underline=null
+getTextFormat(-2, -1)
+  size=null color=null bold=null italic=null underline=null
+getTextFormat(-2, 0)
+  size=null color=null bold=null italic=null underline=null
+getTextFormat(-2, 1)
+  size=10 color=16711680 bold=true italic=false underline=false
+getTextFormat(-2, 2)
+  size=null color=16711680 bold=null italic=false underline=false
+getTextFormat(-2, 3)
+  size=null color=null bold=null italic=false underline=false
+getTextFormat(-2, 4)
+  size=null color=null bold=null italic=null underline=false
+getTextFormat(-2, 5)
+  size=null color=null bold=null italic=null underline=false
+getTextFormat(-1, -2)
+  size=null color=null bold=null italic=null underline=null
+getTextFormat(-1, -1)
+  size=null color=null bold=null italic=null underline=null
+getTextFormat(-1, 0)
+  size=null color=null bold=null italic=null underline=null
+getTextFormat(-1, 1)
+  size=10 color=16711680 bold=true italic=false underline=false
+getTextFormat(-1, 2)
+  size=null color=16711680 bold=null italic=false underline=false
+getTextFormat(-1, 3)
+  size=null color=null bold=null italic=false underline=false
+getTextFormat(-1, 4)
+  size=null color=null bold=null italic=null underline=false
+getTextFormat(-1, 5)
+  size=null color=null bold=null italic=null underline=false
+getTextFormat(0, -2)
+  size=null color=null bold=null italic=null underline=null
+getTextFormat(0, -1)
+  size=null color=null bold=null italic=null underline=null
+getTextFormat(0, 0)
+  size=null color=null bold=null italic=null underline=null
+getTextFormat(0, 1)
+  size=10 color=16711680 bold=true italic=false underline=false
+getTextFormat(0, 2)
+  size=null color=16711680 bold=null italic=false underline=false
+getTextFormat(0, 3)
+  size=null color=null bold=null italic=false underline=false
+getTextFormat(0, 4)
+  size=null color=null bold=null italic=null underline=false
+getTextFormat(0, 5)
+  size=null color=null bold=null italic=null underline=false
+getTextFormat(1, -2)
+  size=null color=null bold=null italic=null underline=null
+getTextFormat(1, -1)
+  size=null color=null bold=null italic=null underline=null
+getTextFormat(1, 0)
+  size=null color=null bold=null italic=null underline=null
+getTextFormat(1, 1)
+  size=null color=null bold=null italic=null underline=null
+getTextFormat(1, 2)
+  size=12 color=16711680 bold=false italic=false underline=false
+getTextFormat(1, 3)
+  size=null color=null bold=false italic=false underline=false
+getTextFormat(1, 4)
+  size=null color=null bold=false italic=null underline=false
+getTextFormat(1, 5)
+  size=null color=null bold=false italic=null underline=false
+getTextFormat(2, -2)
+  size=null color=null bold=null italic=null underline=null
+getTextFormat(2, -1)
+  size=null color=null bold=null italic=null underline=null
+getTextFormat(2, 0)
+  size=null color=null bold=null italic=null underline=null
+getTextFormat(2, 1)
+  size=null color=null bold=null italic=null underline=null
+getTextFormat(2, 2)
+  size=null color=null bold=null italic=null underline=null
+getTextFormat(2, 3)
+  size=14 color=255 bold=false italic=false underline=false
+getTextFormat(2, 4)
+  size=null color=255 bold=false italic=null underline=false
+getTextFormat(2, 5)
+  size=null color=255 bold=false italic=null underline=false
+getTextFormat(3, -2)
+  size=null color=null bold=null italic=null underline=null
+getTextFormat(3, -1)
+  size=null color=null bold=null italic=null underline=null
+getTextFormat(3, 0)
+  size=null color=null bold=null italic=null underline=null
+getTextFormat(3, 1)
+  size=null color=null bold=null italic=null underline=null
+getTextFormat(3, 2)
+  size=null color=null bold=null italic=null underline=null
+getTextFormat(3, 3)
+  size=null color=null bold=null italic=null underline=null
+getTextFormat(3, 4)
+  size=16 color=255 bold=false italic=true underline=false
+getTextFormat(3, 5)
+  size=16 color=255 bold=false italic=true underline=false
+getTextFormat(4, -2)
+  size=null color=null bold=null italic=null underline=null
+getTextFormat(4, -1)
+  size=null color=null bold=null italic=null underline=null
+getTextFormat(4, 0)
+  size=null color=null bold=null italic=null underline=null
+getTextFormat(4, 1)
+  size=null color=null bold=null italic=null underline=null
+getTextFormat(4, 2)
+  size=null color=null bold=null italic=null underline=null
+getTextFormat(4, 3)
+  size=null color=null bold=null italic=null underline=null
+getTextFormat(4, 4)
+  size=null color=null bold=null italic=null underline=null
+getTextFormat(4, 5)
+  size=null color=null bold=null italic=null underline=null
+getTextFormat(5, -2)
+  size=null color=null bold=null italic=null underline=null
+getTextFormat(5, -1)
+  size=null color=null bold=null italic=null underline=null
+getTextFormat(5, 0)
+  size=null color=null bold=null italic=null underline=null
+getTextFormat(5, 1)
+  size=null color=null bold=null italic=null underline=null
+getTextFormat(5, 2)
+  size=null color=null bold=null italic=null underline=null
+getTextFormat(5, 3)
+  size=null color=null bold=null italic=null underline=null
+getTextFormat(5, 4)
+  size=null color=null bold=null italic=null underline=null
+getTextFormat(5, 5)
+  size=null color=null bold=null italic=null underline=null
+getTextFormat(1.5)
+  size=12 color=16711680 bold=false italic=false underline=false
+getTextFormat("2")
+  size=14 color=255 bold=false italic=false underline=false
+getTextFormat(NaN)
+  size=10 color=16711680 bold=true italic=false underline=false
+getTextFormat(undefined)
+  size=10 color=16711680 bold=true italic=false underline=false
+getTextFormat(4294967298)
+  size=14 color=255 bold=false italic=false underline=false
+getTextFormat(2147483647)
+  size=null color=null bold=null italic=null underline=null
+getTextFormat(-4294967295)
+  size=12 color=16711680 bold=false italic=false underline=false
+getTextFormat(1.5, 3.5)
+  size=null color=null bold=false italic=false underline=false
+getTextFormat(NaN, NaN)
+  size=null color=null bold=null italic=null underline=null
+getTextFormat(0, NaN)
+  size=null color=null bold=null italic=null underline=null
+getTextFormat(4294967297, 4294967299)
+  size=null color=null bold=false italic=false underline=false
+getTextFormat(-4294967295, 2)
+  size=12 color=16711680 bold=false italic=false underline=false
+getTextFormat(0, 2147483647)
+  size=null color=null bold=null italic=null underline=false
+getTextFormat(noisy 1, noisy 3)
+  valueOf begin
+  valueOf end
+  size=null color=null bold=false italic=false underline=false
+getTextFormat(noisy 2)
+  valueOf index
+  size=14 color=255 bold=false italic=false underline=false
+getTextFormat(noisy 0, noisy 2, noisy 3)
+  valueOf begin
+  valueOf end
+  size=null color=16711680 bold=null italic=false underline=false
+getTextFormat(throwing, noisy 3)
+  valueOf begin
+  caught: error begin
+getTextFormat(noisy 1, throwing)
+  valueOf begin
+  valueOf end
+  caught: error end
+getTextFormat(throwing)
+  valueOf index
+  caught: error index
+getTextFormat(changing to long 6)
+  valueOf index
+  size=26 color=0 bold=true italic=false underline=false
+getTextFormat(changing to short 3)
+  valueOf index
+  size=null color=null bold=null italic=null underline=null
+getTextFormat(changing to short 1)
+  valueOf index
+  size=31 color=0 bold=false italic=false underline=false
+getTextFormat(noisy 1, changing to long 7)
+  valueOf begin
+  valueOf end
+  size=null color=0 bold=null italic=false underline=false
+getTextFormat(changing to long 5, noisy 7)
+  valueOf begin
+  valueOf end
+  size=null color=0 bold=true italic=false underline=false
+getTextFormat(noisy 0, changing to short 4)
+  valueOf begin
+  valueOf end
+  size=null color=0 bold=false italic=false underline=false
+getTextFormat(changing to short 3, noisy 4)
+  valueOf begin
+  valueOf end
+  size=null color=null bold=null italic=null underline=null
+getTextFormat() on long text
+  size=null color=0 bold=null italic=false underline=false
+getTextFormat(1, 7) on long text
+  size=null color=0 bold=null italic=false underline=false
+getTextFormat(1, 4) on long text
+  size=null color=0 bold=false italic=false underline=false
+getTextFormat(5, 7) on long text
+  size=null color=0 bold=true italic=false underline=false
+empty text
+getTextFormat()
+  size=null color=null bold=null italic=null underline=null
+getTextFormat(-2)
+  size=null color=null bold=null italic=null underline=null
+getTextFormat(-1)
+  size=null color=null bold=null italic=null underline=null
+getTextFormat(0)
+  size=null color=null bold=null italic=null underline=null
+getTextFormat(1)
+  size=null color=null bold=null italic=null underline=null
+getTextFormat(-2, -2)
+  size=null color=null bold=null italic=null underline=null
+getTextFormat(-2, -1)
+  size=null color=null bold=null italic=null underline=null
+getTextFormat(-2, 0)
+  size=null color=null bold=null italic=null underline=null
+getTextFormat(-2, 1)
+  size=null color=null bold=null italic=null underline=null
+getTextFormat(-1, -2)
+  size=null color=null bold=null italic=null underline=null
+getTextFormat(-1, -1)
+  size=null color=null bold=null italic=null underline=null
+getTextFormat(-1, 0)
+  size=null color=null bold=null italic=null underline=null
+getTextFormat(-1, 1)
+  size=null color=null bold=null italic=null underline=null
+getTextFormat(0, -2)
+  size=null color=null bold=null italic=null underline=null
+getTextFormat(0, -1)
+  size=null color=null bold=null italic=null underline=null
+getTextFormat(0, 0)
+  size=null color=null bold=null italic=null underline=null
+getTextFormat(0, 1)
+  size=null color=null bold=null italic=null underline=null
+getTextFormat(1, -2)
+  size=null color=null bold=null italic=null underline=null
+getTextFormat(1, -1)
+  size=null color=null bold=null italic=null underline=null
+getTextFormat(1, 0)
+  size=null color=null bold=null italic=null underline=null
+getTextFormat(1, 1)
+  size=null color=null bold=null italic=null underline=null

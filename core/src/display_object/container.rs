@@ -21,7 +21,7 @@ use std::cell::{Ref, RefMut};
 use std::cmp::Ordering;
 use std::collections::BTreeMap;
 use std::fmt::Debug;
-use std::ops::{Bound, RangeBounds};
+use std::ops::Bound;
 use std::rc::Rc;
 
 /// Dispatch the `removedFromStage` event on a child and all of it's
@@ -372,15 +372,21 @@ pub trait TDisplayObjectContainer<'gc>:
     #[no_dynamic]
     fn remove_child_directly(&self, context: &mut UpdateContext<'gc>, child: DisplayObject<'gc>) {
         dispatch_removed_event(child, context);
-        let this: DisplayObjectContainer<'gc> = *self;
-        self.raw_container_mut(context.gc())
+
+        // Event listeners might have moved the child to another container,
+        // in which case it's removed from there instead. They might also
+        // have removed it already, in which case there's nothing left to do.
+        let Some(this) = child.parent().and_then(|parent| parent.as_container()) else {
+            return;
+        };
+        this.raw_container_mut(context.gc())
             .remove_child_from_depth_list(child);
 
         let removed_from_render_list =
             ChildContainer::remove_child_from_render_list(this, child, context);
 
         if removed_from_render_list {
-            if !self.raw_container().is_action_script_3() {
+            if !this.raw_container().is_action_script_3() {
                 child.avm1_unload(context);
             } else if child.object2().is_some() {
                 //TODO: This is an awful, *awful* hack to deal with the fact
@@ -389,7 +395,7 @@ pub trait TDisplayObjectContainer<'gc>:
                 child.set_parent(context, None);
             }
 
-            let this: DisplayObject<'_> = (*self).into();
+            let this: DisplayObject<'_> = this.into();
             this.invalidate_cached_bitmap();
         }
     }
@@ -426,46 +432,6 @@ pub trait TDisplayObjectContainer<'gc>:
 
         self.raw_container_mut(context.gc())
             .remove_child_from_depth_list(child);
-
-        let this: DisplayObject<'_> = (*self).into();
-        this.invalidate_cached_bitmap();
-    }
-
-    /// Remove a set of children identified by their render list indices from
-    /// this container's render and depth lists.
-    #[no_dynamic]
-    fn remove_range<R>(&mut self, context: &mut UpdateContext<'gc>, range: R)
-    where
-        R: RangeBounds<usize>,
-    {
-        let removed_list: Vec<DisplayObject<'gc>> = self
-            .raw_container()
-            .iter_render_list()
-            .enumerate()
-            .filter(|(i, _)| range.contains(i))
-            .map(|(_, child)| child)
-            .collect();
-
-        for removed in removed_list.iter() {
-            dispatch_removed_event(*removed, context);
-        }
-
-        for removed in removed_list {
-            // The `remove_range` method is only ever called as a result of an ActionScript
-            // call
-            removed.set_placed_by_avm2_script(true);
-            self.raw_container_mut(context.gc())
-                .remove_child_from_depth_list(removed);
-
-            let this: DisplayObjectContainer<'gc> = *self;
-            ChildContainer::remove_child_from_render_list(this, removed, context);
-
-            if !self.raw_container().is_action_script_3() {
-                removed.avm1_unload(context);
-            } else if removed.object2().is_some() {
-                removed.set_parent(context, None);
-            }
-        }
 
         let this: DisplayObject<'_> = (*self).into();
         this.invalidate_cached_bitmap();
@@ -589,18 +555,6 @@ pub trait TDisplayObjectContainer<'gc>:
             context.commands.deactivate_mask();
             clip_child.render(context);
             context.commands.pop_mask();
-        }
-    }
-
-    #[cfg(not(feature = "avm_debug"))]
-    #[no_dynamic]
-    fn recurse_render_tree(&self, _depth: usize) {}
-
-    #[cfg(feature = "avm_debug")]
-    #[no_dynamic]
-    fn recurse_render_tree(&self, depth: usize) {
-        for child in self.iter_render_list() {
-            child.display_render_tree(depth);
         }
     }
 }

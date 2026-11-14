@@ -3,7 +3,7 @@
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::property_decl::{DeclContext, PropertyOrder, StaticDeclarations, SystemClass};
-use crate::avm1::{Object, Value};
+use crate::avm1::{ArrayBuilder, Object, Value};
 use crate::avm1_stub;
 
 const PROTO_DECLS: StaticDeclarations = declare_static_properties! {
@@ -46,10 +46,7 @@ fn get_names<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     avm1_stub!(activation, "Microphone", "names");
-    activation
-        .prototypes()
-        .array_constructor
-        .construct(activation, &[])
+    Ok(ArrayBuilder::empty(activation).into())
 }
 
 fn set_silence_level<'gc>(

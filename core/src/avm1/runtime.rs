@@ -1,7 +1,8 @@
+use crate::avm1;
 use crate::avm1::function::ExecutionReason;
 use crate::avm1::globals::create_globals;
 use crate::avm1::globals::object::broadcast_internal;
-use crate::avm1::object::stage_object;
+use crate::avm1::object::{ObjectWeak, stage_object};
 use crate::avm1::property_map::PropertyMap;
 use crate::avm1::scope::Scope;
 use crate::avm1::{Activation, ActivationIdentifier, Error, Object, Value, scope};
@@ -12,7 +13,6 @@ use crate::display_object::{
 use crate::frame_lifecycle::FramePhase;
 use crate::string::{AvmString, StringContext};
 use crate::tag_utils::SwfSlice;
-use crate::{avm_debug, avm1};
 use gc_arena::{Collect, Gc, Mutation};
 use std::borrow::Cow;
 use swf::avm1::read::Reader;
@@ -104,8 +104,10 @@ pub struct Avm1<'gc> {
     /// More examples of this are in the movieclip_invalid_get_bounds_X tests.
     use_new_invalid_bounds_value: bool,
 
-    #[cfg(feature = "avm_debug")]
-    pub debug_output: bool,
+    /// The prototype objects that the lazily defined properties of a native
+    /// class have already been defined on, see
+    /// `avm1::property_decl::define_lazy_proto_properties`.
+    lazy_initialized_prototypes: Vec<ObjectWeak<'gc>>,
 }
 
 impl<'gc> Avm1<'gc> {
@@ -125,9 +127,8 @@ impl<'gc> Avm1<'gc> {
             has_mouse_listener: false,
             clip_exec_list: None,
 
-            #[cfg(feature = "avm_debug")]
-            debug_output: false,
             use_new_invalid_bounds_value: false,
+            lazy_initialized_prototypes: Vec::new(),
         }
     }
 
@@ -325,7 +326,6 @@ impl<'gc> Avm1<'gc> {
 
         let has_listener =
             broadcast_internal(broadcaster, args, method, &mut activation).unwrap_or(false);
-        drop(activation);
 
         if &broadcaster_name == b"Mouse" {
             context.avm1.has_mouse_listener = has_listener;
@@ -370,19 +370,14 @@ impl<'gc> Avm1<'gc> {
     }
 
     pub fn push(&mut self, value: Value<'gc>) {
-        avm_debug!(self, "Stack push {}: {value:?}", self.stack.len());
         self.stack.push(value);
     }
 
     pub fn pop(&mut self) -> Value<'gc> {
-        let value = self.stack.pop().unwrap_or_else(|| {
+        self.stack.pop().unwrap_or_else(|| {
             tracing::warn!("Avm1::pop: Stack underflow");
             Value::Undefined
-        });
-
-        avm_debug!(self, "Stack pop {}: {value:?}", self.stack.len());
-
-        value
+        })
     }
 
     #[inline(always)]
@@ -630,24 +625,20 @@ impl<'gc> Avm1<'gc> {
         self.use_new_invalid_bounds_value = true;
     }
 
-    #[cfg(feature = "avm_debug")]
-    #[inline]
-    pub fn show_debug_output(&self) -> bool {
-        self.debug_output
+    /// Marks `proto` as having got the lazily defined properties of a native
+    /// class, returning whether it didn't have them yet.
+    pub fn mark_lazy_proto_initialized(&mut self, mc: &Mutation<'gc>, proto: Object<'gc>) -> bool {
+        let initialized = &mut self.lazy_initialized_prototypes;
+        initialized.retain(|p| p.upgrade(mc).is_some());
+        if initialized
+            .iter()
+            .any(|p| p.upgrade(mc).is_some_and(|p| Object::ptr_eq(p, proto)))
+        {
+            return false;
+        }
+        initialized.push(proto.as_weak());
+        true
     }
-
-    #[cfg(not(feature = "avm_debug"))]
-    pub const fn show_debug_output(&self) -> bool {
-        false
-    }
-
-    #[cfg(feature = "avm_debug")]
-    pub fn set_show_debug_output(&mut self, visible: bool) {
-        self.debug_output = visible;
-    }
-
-    #[cfg(not(feature = "avm_debug"))]
-    pub const fn set_show_debug_output(&self, _visible: bool) {}
 
     pub fn handle_error(activation: &mut Activation<'_, 'gc>, error: Error<'gc>) {
         match &error {

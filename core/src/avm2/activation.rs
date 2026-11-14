@@ -637,7 +637,6 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         loop {
             let op = &opcodes[ip];
             ip += 1;
-            avm_debug!(self.avm2(), "Opcode: {op:?}");
 
             let result = match op {
                 Op::PushDouble { value } => self.op_push_double(*value),
@@ -905,7 +904,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                 };
 
                 if matches {
-                    #[cfg(feature = "avm_debug")]
+                    #[cfg(feature = "avm2_debug")]
                     {
                         let stringified = original_error.to_string(self);
                         tracing::warn!("Caught exception: {}", stringified);
@@ -1615,7 +1614,6 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     fn op_find_def(&mut self, multiname: Gc<'gc, Multiname<'gc>>) -> Result<(), Error<'gc>> {
         // Verifier ensures that multiname is non-lazy
 
-        avm_debug!(self.avm2(), "Resolving {:?}", *multiname);
         let (_, script) = self.domain().find_defining_script(self, &multiname)?;
         let obj = script.globals(self.context)?;
         self.push_stack(obj);
@@ -1623,8 +1621,6 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     }
 
     fn op_find_property(&mut self, multiname: Gc<'gc, Multiname<'gc>>) -> Result<(), Error<'gc>> {
-        avm_debug!(self.context.avm2, "Resolving {:?}", *multiname);
-
         let multiname = multiname.fill_with_runtime_params(self)?;
         let result = self
             .find_definition(&multiname)?
@@ -1639,8 +1635,6 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         &mut self,
         multiname: Gc<'gc, Multiname<'gc>>,
     ) -> Result<(), Error<'gc>> {
-        avm_debug!(self.context.avm2, "Resolving {:?}", *multiname);
-
         let multiname = multiname.fill_with_runtime_params(self)?;
         let result = self
             .find_definition(&multiname)?
@@ -2999,55 +2993,33 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         Ok(())
     }
 
-    #[cfg(feature = "avm_debug")]
-    fn op_debug(
-        &mut self,
-        is_local_register: bool,
-        register_name: AvmAtom<'gc>,
-        register: u8,
-    ) -> Result<(), Error<'gc>> {
-        if is_local_register {
-            if (register as usize) < self.num_locals {
-                let value = self.local_register(register as u32);
-
-                avm_debug!(self.avm2(), "Debug: {register_name} = {value:?}");
-            } else {
-                avm_debug!(
-                    self.avm2(),
-                    "Debug: {register_name} = <out-of-bounds register #{register}>",
-                );
-            }
-        } else {
-            avm_debug!(self.avm2(), "Unknown debugging mode!");
-        }
-
-        Ok(())
-    }
-
-    #[cfg(not(feature = "avm_debug"))]
     fn op_debug(
         &mut self,
         _is_local_register: bool,
         _register_name: AvmAtom<'gc>,
         _register: u8,
     ) -> Result<(), Error<'gc>> {
+        // while a debugger is not attached, this is a no-op
+
+        // NOTE: This op will be removed by the optimizer. If this method is
+        // ever changed to do something, this op needs to be removed from the
+        // list of no-op ops in `Op::is_nop`.
+
         Ok(())
     }
 
-    #[cfg(feature = "avm_debug")]
-    fn op_debug_file(&mut self, file_name: AvmAtom<'gc>) -> Result<(), Error<'gc>> {
-        avm_debug!(self.avm2(), "File: {file_name}");
-
-        Ok(())
-    }
-
-    #[cfg(not(feature = "avm_debug"))]
     fn op_debug_file(&mut self, _file_name: AvmAtom<'gc>) -> Result<(), Error<'gc>> {
+        // TODO: Use file name information in stack traces
+
+        // NOTE: This op will be removed by the optimizer. See comment in `op_debug`.
+
         Ok(())
     }
 
-    fn op_debug_line(&mut self, line_num: u32) -> Result<(), Error<'gc>> {
-        avm_debug!(self.avm2(), "Line: {line_num}");
+    fn op_debug_line(&mut self, _line_num: u32) -> Result<(), Error<'gc>> {
+        // TODO: Use line number information in stack traces
+
+        // NOTE: This op will be removed by the optimizer. See comment in `op_debug`.
 
         Ok(())
     }

@@ -1,0 +1,8 @@
+parent placed Video on P: width=undefined height=undefined, v.__proto__ == P: true
+parent deleted P.width: width=- height=undefined
+child: same Video class as parent: false
+child placed Video on P: width=- height=undefined, v.__proto__ == P: true
+child placed Video on R: width=undefined height=undefined, v.__proto__ == R: true
+child deleted R.width: width=- height=undefined
+parent placed Video on R: width=- height=undefined, v.__proto__ == R: true
+done

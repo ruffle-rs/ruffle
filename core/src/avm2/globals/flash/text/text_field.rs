@@ -313,7 +313,7 @@ pub fn get_default_text_format<'gc>(
 }
 
 pub fn set_default_text_format<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -323,13 +323,11 @@ pub fn set_default_text_format<'gc>(
         .as_display_object()
         .and_then(|this| this.as_edit_text())
     {
-        let new_text_format = args.try_get_object(0);
-
-        if let Some(new_text_format) = new_text_format
-            && let Some(new_text_format) = new_text_format.as_text_format()
-        {
-            this.set_new_text_format(new_text_format.clone());
-        }
+        let new_text_format = args.get_object(activation, 0, "format")?;
+        let new_text_format = new_text_format.as_text_format().unwrap();
+        this.set_new_text_format(new_text_format.clone());
+        // The next text or HTML text assignment applies even when the text doesn't change.
+        this.force_next_text_update();
     }
 
     Ok(Value::Undefined)
@@ -603,7 +601,7 @@ pub fn set_text_color<'gc>(
     {
         let text_color = args.get_u32(0);
         let desired_format = TextFormat {
-            color: Some(swf::Color::from_rgb(text_color, 0xFF)),
+            color: Some(swf::Color::from_rgb(text_color, 0)),
             ..TextFormat::default()
         };
 
@@ -776,20 +774,37 @@ pub fn get_text_format<'gc>(
     {
         let mut begin_index = args.get_i32(0);
         let mut end_index = args.get_i32(1);
+        let text_length = this.text_length() as i32;
 
-        if end_index >= 0 && (begin_index >= end_index || begin_index < 0) {
-            return Err(make_error_2006(activation, Error2006Type::RangeError));
-        }
-
-        if begin_index < 0 {
+        if begin_index == -1 && end_index == -1 {
+            // Get the format of the whole text, even when it's empty.
             begin_index = 0;
+            end_index = text_length;
+        } else {
+            if begin_index == -1 {
+                begin_index = 0;
+            }
+
+            if begin_index < 0 || begin_index >= text_length {
+                return Err(make_error_2006(activation, Error2006Type::RangeError));
+            }
+
+            if end_index == -1 {
+                end_index = begin_index + 1;
+            }
+
+            if end_index <= 0 || end_index > text_length {
+                return Err(make_error_2006(activation, Error2006Type::RangeError));
+            }
         }
 
-        if end_index < 0 {
-            end_index = this.text_length() as i32;
-        }
-
-        let tf = this.text_format(begin_index as usize, end_index as usize);
+        // Empty ranges have no format.
+        // TODO: Move this check to `EditText::text_format`.
+        let tf = if begin_index < end_index {
+            this.text_format(begin_index as usize, end_index as usize)
+        } else {
+            TextFormat::default()
+        };
         return Ok(TextFormatObject::from_text_format(activation, tf)?.into());
     }
 
@@ -947,26 +962,34 @@ pub fn set_text_format<'gc>(
     if let Some(this) = this
         .as_display_object()
         .and_then(|this| this.as_edit_text())
-        && let Some(tf) = args.try_get_object(0)
-        && let Some(tf) = tf.as_text_format()
     {
+        let tf = args.get_object(activation, 0, "format")?;
+        let tf = tf.as_text_format().unwrap();
+
         let mut begin_index = args.get_i32(1);
         let mut end_index = args.get_i32(2);
+        let text_length = this.text_length() as i32;
 
-        if begin_index < 0 {
+        if begin_index == -1 && end_index == -1 {
+            // Format the whole text, even when it's empty.
             begin_index = 0;
-        }
+            end_index = text_length;
+        } else {
+            if begin_index == -1 {
+                begin_index = 0;
+            }
 
-        if begin_index as usize > this.text_length() {
-            return Err(make_error_2006(activation, Error2006Type::RangeError));
-        }
+            if begin_index < 0 || begin_index >= text_length {
+                return Err(make_error_2006(activation, Error2006Type::RangeError));
+            }
 
-        if end_index < 0 {
-            end_index = this.text_length() as i32;
-        }
+            if end_index == -1 {
+                end_index = begin_index + 1;
+            }
 
-        if end_index as usize > this.text_length() {
-            return Err(make_error_2006(activation, Error2006Type::RangeError));
+            if end_index <= 0 || end_index > text_length {
+                return Err(make_error_2006(activation, Error2006Type::RangeError));
+            }
         }
 
         this.set_text_format(

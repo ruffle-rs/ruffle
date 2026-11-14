@@ -73,7 +73,7 @@ mod text_format;
 mod text_renderer;
 pub(crate) mod text_snapshot;
 pub(crate) mod transform;
-mod video;
+pub(crate) mod video;
 pub(crate) mod xml;
 mod xml_node;
 pub(crate) mod xml_socket;
@@ -484,13 +484,6 @@ pub fn unescape<'gc>(
 pub struct SystemPrototypes<'gc> {
     pub object: Object<'gc>,
     pub object_constructor: Object<'gc>,
-    pub array_constructor: Object<'gc>,
-    pub xml_node_constructor: Object<'gc>,
-    pub xml_constructor: Object<'gc>,
-    pub shared_object_constructor: Object<'gc>,
-    pub date_constructor: Object<'gc>,
-    pub bitmap_data: Object<'gc>,
-    pub file_reference: Object<'gc>,
 }
 
 pub fn load_playerglobal<'gc>(context: &mut UpdateContext<'gc>) {
@@ -776,13 +769,6 @@ pub fn create_globals<'gc>(
         SystemPrototypes {
             object: object.proto,
             object_constructor: object.constr,
-            array_constructor: array.constr,
-            xml_node_constructor: xmlnode.constr,
-            xml_constructor: xml.constr,
-            shared_object_constructor: shared_object.constr,
-            date_constructor: date.constr,
-            bitmap_data: bitmap_data.proto,
-            file_reference: file_reference.proto,
         },
         globals,
     )

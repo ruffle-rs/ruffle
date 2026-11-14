@@ -84,4 +84,8 @@ impl BufferBuilder {
             view.copy_from_slice(&self.inner);
         }
     }
+
+    pub fn len(&self) -> usize {
+        self.inner.len()
+    }
 }

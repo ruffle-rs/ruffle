@@ -10,4 +10,3 @@ swf_version = 8
 
 [shared_objects."localhost//avm1_test_suite"]
 expected = "avm1_test_suite"
-known_failure = true

@@ -42,6 +42,7 @@ use winit::window::Window;
 #[derive(Debug, Clone)]
 pub struct LaunchOptions {
     pub player: PlayerOptions,
+    pub custom_title: Option<String>,
     pub proxy: Option<Url>,
     pub socket_allowed: HashSet<String>,
     pub tcp_connections: Option<SocketMode>,
@@ -50,7 +51,8 @@ pub struct LaunchOptions {
     pub cache_directory: PathBuf,
     pub filesystem_access_mode: FilesystemAccessMode,
     pub gamepad_button_mapping: HashMap<GamepadButton, KeyCode>,
-    pub avm2_optimizer_enabled: bool,
+    pub avm2_early_binding_enabled: bool,
+    pub avm2_dse_enabled: bool,
 }
 
 impl From<&GlobalPreferences> for LaunchOptions {
@@ -93,6 +95,7 @@ impl From<&GlobalPreferences> for LaunchOptions {
                 },
             },
             proxy: value.cli.proxy.clone(),
+            custom_title: None,
             fullscreen: value.cli.fullscreen,
             save_directory: value.cli.save_directory.clone(),
             cache_directory: value.cli.cache_directory.clone(),
@@ -100,9 +103,17 @@ impl From<&GlobalPreferences> for LaunchOptions {
             socket_allowed: HashSet::from_iter(value.cli.socket_allow.iter().cloned()),
             tcp_connections: value.cli.tcp_connections,
             gamepad_button_mapping: HashMap::from_iter(value.cli.gamepad_button.iter().cloned()),
-            avm2_optimizer_enabled: !value.cli.no_avm2_optimizer,
+            avm2_early_binding_enabled: !value.cli.disable_avm2_early_binding,
+            avm2_dse_enabled: !value.cli.disable_avm2_dse,
         }
     }
+}
+
+fn window_title(content_name: &str, custom_title: Option<&str>) -> String {
+    let name = custom_title
+        .filter(|name| !name.trim().is_empty())
+        .unwrap_or(content_name);
+    format!("Ruffle - {name}")
 }
 
 /// Represents a current Player and any associated state with that player,
@@ -190,6 +201,7 @@ impl ActivePlayer {
 
                 Cow::Owned(LaunchOptions {
                     player,
+                    custom_title: opt.custom_title.clone(),
                     proxy: opt.proxy.clone(),
                     socket_allowed: opt.socket_allowed.clone(),
                     tcp_connections: opt.tcp_connections,
@@ -198,7 +210,8 @@ impl ActivePlayer {
                     cache_directory: opt.cache_directory.clone(),
                     filesystem_access_mode: opt.filesystem_access_mode,
                     gamepad_button_mapping: opt.gamepad_button_mapping.clone(),
-                    avm2_optimizer_enabled: opt.avm2_optimizer_enabled,
+                    avm2_early_binding_enabled: opt.avm2_early_binding_enabled,
+                    avm2_dse_enabled: opt.avm2_dse_enabled,
                 })
             }
         };
@@ -336,10 +349,11 @@ impl ActivePlayer {
             .with_player_version(opt.player.player_version)
             .with_player_runtime(opt.player.player_runtime.unwrap_or_default())
             .with_frame_rate(opt.player.frame_rate)
-            .with_avm2_optimizer_enabled(opt.avm2_optimizer_enabled);
+            .with_avm2_early_binding_enabled(opt.avm2_early_binding_enabled)
+            .with_avm2_dse_enabled(opt.avm2_dse_enabled);
         let player = builder.build();
 
-        window.set_title(&format!("Ruffle - {readable_name}"));
+        window.set_title(&window_title(&readable_name, opt.custom_title.as_deref()));
 
         SWF_INFO.with(|i| *i.borrow_mut() = Some(readable_name));
 
@@ -563,5 +577,42 @@ impl<E: std::error::Error + 'static> FutureSpawner<E> for WinitExecutor {
         task.detach();
         // Immediately schedule the future to be polled for the first time.
         runnable.schedule();
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::window_title;
+
+    #[test]
+    fn custom_window_title() {
+        assert_eq!(
+            window_title("viewer.swf", Some("Operations Console")),
+            "Ruffle - Operations Console"
+        );
+    }
+
+    #[test]
+    fn content_window_title() {
+        assert_eq!(window_title("viewer.swf", None), "Ruffle - viewer.swf");
+    }
+
+    #[test]
+    fn blank_custom_window_title() {
+        for name in ["", " \t\n", "\u{2003}"] {
+            assert_eq!(
+                window_title("viewer.swf", Some(name)),
+                "Ruffle - viewer.swf"
+            );
+        }
+    }
+
+    #[test]
+    fn custom_window_title_preserves_name() {
+        let name = "  Op\u{e9}rations \u{65e5}\u{672c}  ";
+        assert_eq!(
+            window_title("viewer.swf", Some(name)),
+            format!("Ruffle - {name}")
+        );
     }
 }

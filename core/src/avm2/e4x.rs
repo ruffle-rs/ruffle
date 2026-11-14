@@ -953,7 +953,7 @@ impl<'gc> E4XNode<'gc> {
                         continue;
                     }
 
-                    let text = avm2_unescape(bt)
+                    let text = std::str::from_utf8(bt)
                         .map_err(|_| make_xml_error(activation, XmlErrorCode::ElementMalformed))?;
                     let text = AvmString::new_utf8(activation.gc(), text);
 
@@ -975,7 +975,7 @@ impl<'gc> E4XNode<'gc> {
                         continue;
                     }
 
-                    let text = avm2_unescape(bt)
+                    let text = std::str::from_utf8(bt)
                         .map_err(|_| make_xml_error(activation, XmlErrorCode::ElementMalformed))?;
 
                     let (name, value) = if let Some((name, value)) = text.split_once(' ') {
@@ -1472,6 +1472,7 @@ pub fn escape_attribute_value(s: AvmString) -> WString {
             Ok(b'\x0A') => b"&#xA;",
             Ok(b'\x0D') => b"&#xD;",
             Ok(b'\x09') => b"&#x9;",
+            Ok(b'\0') => b"&#x0;",
             _ => {
                 r.push(c);
                 continue;
@@ -1491,6 +1492,7 @@ pub fn escape_element_value(s: AvmString) -> WString {
             Ok(b'<') => b"&lt;",
             Ok(b'>') => b"&gt;",
             Ok(b'&') => b"&amp;",
+            Ok(b'\0') => b"&#x0;",
             _ => {
                 r.push(c);
                 continue;

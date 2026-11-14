@@ -813,6 +813,14 @@ impl<'gc> DisplayObjectBase<'gc> {
         self.set_flag(DisplayObjectFlags::PLACED_BY_AVM2_SCRIPT, value);
     }
 
+    fn being_removed_by_avm2(&self) -> bool {
+        self.contains_flag(DisplayObjectFlags::BEING_REMOVED_BY_AVM2)
+    }
+
+    fn set_being_removed_by_avm2(&self, value: bool) {
+        self.set_flag(DisplayObjectFlags::BEING_REMOVED_BY_AVM2, value);
+    }
+
     fn manual_frame_construct(&self) -> bool {
         self.contains_flag(DisplayObjectFlags::MANUAL_FRAME_CONSTRUCT)
     }
@@ -1376,9 +1384,14 @@ pub trait TDisplayObject<'gc>:
     }
 
     /// The world bounding box of this object including children, relative to the stage.
+    ///
+    /// For an object with a scroll rect, this is the area of the stage the
+    /// scroll rect is visible in.
     #[no_dynamic]
     fn world_bounds(self, mode: BoundsMode) -> Rectangle<Twips> {
-        self.bounds_with_transform(&self.local_to_global_matrix(), mode)
+        // `bounds_with_transform` returns the scroll rect's size starting at
+        // the origin, so we must not apply the scroll rect's own translation.
+        self.bounds_with_transform(&self.local_to_global_matrix_without_own_scroll_rect(), mode)
     }
 
     /// The world bounding box of this object, as reported by `Transform.pixelBounds`.
@@ -1506,7 +1519,8 @@ pub trait TDisplayObject<'gc>:
         }
     }
 
-    /// Should only be used to implement 'Transform.concatenatedMatrix'
+    /// Returns the matrix for transforming from this object's local space to global stage space,
+    /// without applying the translation of this object's own scroll rect.
     #[no_dynamic]
     fn local_to_global_matrix_without_own_scroll_rect(self) -> Matrix {
         let mut node = self.parent();
@@ -2305,6 +2319,18 @@ pub trait TDisplayObject<'gc>:
         self.base().set_placed_by_avm2_script(value)
     }
 
+    /// Whether this display object is being removed by `removeChild`,
+    /// `removeChildAt` or `removeChildren`.
+    #[no_dynamic]
+    fn being_removed_by_avm2(self) -> bool {
+        self.base().being_removed_by_avm2()
+    }
+
+    #[no_dynamic]
+    fn set_being_removed_by_avm2(self, value: bool) {
+        self.base().set_being_removed_by_avm2(value)
+    }
+
     #[no_dynamic]
     fn manual_frame_construct(&self) -> bool {
         self.base().manual_frame_construct()
@@ -2495,44 +2521,6 @@ pub trait TDisplayObject<'gc>:
 
     fn render_with_options(self, context: &mut RenderContext<'_, 'gc>, options: RenderOptions) {
         render_base(self.into(), context, options)
-    }
-
-    #[cfg(not(feature = "avm_debug"))]
-    #[no_dynamic]
-    fn display_render_tree(self, _depth: usize) {}
-
-    #[cfg(feature = "avm_debug")]
-    #[no_dynamic]
-    fn display_render_tree(self, depth: usize) {
-        let mut self_str = &*format!("{self:?}");
-        if let Some(end_char) = self_str.find(|c: char| !c.is_ascii_alphanumeric()) {
-            self_str = &self_str[..end_char];
-        }
-
-        let bounds = self.world_bounds(BoundsMode::Engine);
-
-        let mut classname = "".to_string();
-        if let Some(o) = self.object2() {
-            classname = format!("{:?}", o.base().class_name());
-        }
-
-        println!(
-            "{} rel({},{}) abs({},{}) {} {} {} id={} depth={}",
-            " ".repeat(depth),
-            self.x(),
-            self.y(),
-            bounds.x_min.to_pixels(),
-            bounds.y_min.to_pixels(),
-            classname,
-            self.name().map(|s| s.to_string()).unwrap_or_default(),
-            self_str,
-            self.id(),
-            depth
-        );
-
-        if let Some(ctr) = self.as_container() {
-            ctr.recurse_render_tree(depth + 1);
-        }
     }
 
     fn avm1_unload(self, context: &mut UpdateContext<'gc>) {
@@ -3070,6 +3058,12 @@ bitflags! {
         /// (they need to be instantiated "manually" by
         /// `Sprite.constructChildren`).
         const MANUAL_FRAME_CONSTRUCT  = 1 << 16;
+
+        /// Whether this object is being removed by `removeChild`,
+        /// `removeChildAt` or `removeChildren`, which dispatch its removal
+        /// events before removing it. Removing it again with these methods in
+        /// the meantime throws an error.
+        const BEING_REMOVED_BY_AVM2   = 1 << 17;
     }
 }
 

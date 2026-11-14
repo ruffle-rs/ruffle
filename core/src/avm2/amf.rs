@@ -1,22 +1,26 @@
 use std::collections::BTreeMap;
-use std::rc::Rc;
 
-use super::property::Property;
-use crate::avm2::ArrayObject;
 use crate::avm2::ArrayStorage;
 use crate::avm2::bytearray::ByteArrayStorage;
 use crate::avm2::class::Class;
-use crate::avm2::object::{ByteArrayObject, ClassObject, ScriptObject, TObject, VectorObject};
+use crate::avm2::index::ArrayIndex;
+use crate::avm2::object::{
+    ArrayObject, ByteArrayObject, ClassObject, ScriptObject, TObject, VectorObject,
+};
+use crate::avm2::property::Property;
 use crate::avm2::vector::VectorStorage;
 use crate::avm2::{Activation, Error, Object, Value};
 use crate::avm2_stub_method;
 use crate::string::AvmString;
 use enumset::EnumSet;
-use flash_lso::types::{AMFVersion, Element, Lso, ObjectId};
+use flash_lso::types::{
+    AMFVersion, DateValue, DictionaryEntry, DictionaryObjectValue, ECMAArrayObjectValue, Element,
+    Lso, ObjectId, ObjectValue, VectorObjectValue, VectorPrimitiveValue,
+};
 use flash_lso::types::{Attribute, ClassDefinition, Value as AmfValue};
 use fnv::FnvHashMap;
 
-pub type ObjectTable<'gc> = FnvHashMap<Object<'gc>, Rc<AmfValue>>;
+pub type ObjectTable<'gc> = FnvHashMap<Object<'gc>, AmfValue>;
 
 /// Serialize a Value to an AmfValue
 pub fn serialize_value<'gc>(
@@ -68,22 +72,45 @@ pub fn serialize_value<'gc>(
                         }
                     }
 
-                    AmfValue::ECMAArray(ObjectId::INVALID, dense, sparse, len)
+                    AmfValue::ECMAArray {
+                        id: ObjectId::INVALID,
+                        data: ECMAArrayObjectValue {
+                            dense,
+                            elements: sparse,
+                            length: len,
+                        },
+                    }
                 } else {
                     // TODO: is this right?
-                    AmfValue::ECMAArray(ObjectId::INVALID, vec![], values, len)
+                    AmfValue::ECMAArray {
+                        id: ObjectId::INVALID,
+                        data: ECMAArrayObjectValue {
+                            dense: vec![],
+                            elements: values,
+                            length: len,
+                        },
+                    }
                 }
             } else if let Some(vec) = o.as_vector_storage() {
                 let val_type = vec.value_type();
                 if val_type == Some(activation.avm2().class_defs().int) {
                     let int_vec: Vec<_> = vec.iter().map(|v| v.as_i32()).collect();
-                    AmfValue::VectorInt(int_vec, vec.is_fixed())
+                    AmfValue::VectorInt(VectorPrimitiveValue {
+                        values: int_vec,
+                        fixed_length: vec.is_fixed(),
+                    })
                 } else if val_type == Some(activation.avm2().class_defs().uint) {
                     let uint_vec: Vec<_> = vec.iter().map(|v| v.as_u32()).collect();
-                    AmfValue::VectorUInt(uint_vec, vec.is_fixed())
+                    AmfValue::VectorUInt(VectorPrimitiveValue {
+                        values: uint_vec,
+                        fixed_length: vec.is_fixed(),
+                    })
                 } else if val_type == Some(activation.avm2().class_defs().number) {
                     let num_vec: Vec<_> = vec.iter().map(|v| v.as_f64()).collect();
-                    AmfValue::VectorDouble(num_vec, vec.is_fixed())
+                    AmfValue::VectorDouble(VectorPrimitiveValue {
+                        values: num_vec,
+                        fixed_length: vec.is_fixed(),
+                    })
                 } else {
                     let obj_vec: Vec<_> = vec
                         .iter()
@@ -93,7 +120,14 @@ pub fn serialize_value<'gc>(
                     let val_type = val_type.unwrap_or(activation.avm2().class_defs().object);
 
                     let name = class_to_alias(activation, val_type);
-                    AmfValue::VectorObject(ObjectId::INVALID, obj_vec, name, vec.is_fixed())
+                    AmfValue::VectorObject {
+                        id: ObjectId::INVALID,
+                        data: VectorObjectValue {
+                            values: obj_vec,
+                            object_type_name: name,
+                            fixed_length: vec.is_fixed(),
+                        },
+                    }
                 }
             } else if let Some(date) = o.as_date_object() {
                 let time = date
@@ -103,10 +137,19 @@ pub fn serialize_value<'gc>(
                 // "Invalid Date" is serialized as a NaN
                 let time = time.unwrap_or(f64::NAN);
 
-                AmfValue::Date(time, None)
+                AmfValue::Date {
+                    id: ObjectId::INVALID,
+                    data: DateValue {
+                        time,
+                        timezone_or_utc: None,
+                    },
+                }
             } else if let Some(xml) = o.as_xml_object() {
                 // `is_string` is `true` for the AS3 XML class
-                AmfValue::XML(xml.node().xml_to_xml_string(activation).to_string(), true)
+                AmfValue::XML {
+                    value: xml.node().xml_to_xml_string(activation).to_string(),
+                    is_string: true,
+                }
             } else if let Some(bytearray) = o.as_bytearray() {
                 AmfValue::ByteArray(bytearray.bytes().to_vec())
             } else if let Some(dictionary) = o.as_dictionary_object() {
@@ -128,14 +171,20 @@ pub fn serialize_value<'gc>(
                     let name = get_or_create_value(activation, name, object_table, amf_version);
                     let value = get_or_create_value(activation, value, object_table, amf_version);
 
-                    dictionary_body.push((name, value));
+                    dictionary_body.push(DictionaryEntry { key: name, value });
 
                     last_index = dictionary
                         .get_next_enumerant(last_index, activation)
                         .unwrap();
                 }
 
-                AmfValue::Dictionary(ObjectId::INVALID, dictionary_body, has_weak_keys)
+                AmfValue::Dictionary {
+                    id: ObjectId::INVALID,
+                    data: DictionaryObjectValue {
+                        elements: dictionary_body,
+                        weak_keys: has_weak_keys,
+                    },
+                }
             } else {
                 let class = o.instance_class();
                 let name = class_to_alias(activation, class);
@@ -156,20 +205,21 @@ pub fn serialize_value<'gc>(
                     object_table,
                 )
                 .unwrap();
-                AmfValue::Object(
-                    ObjectId::INVALID,
-                    object_body,
-                    if amf_version == AMFVersion::AMF3 {
-                        Some(ClassDefinition {
-                            name,
-                            attributes,
-                            // FIXME - implement this
-                            static_properties,
-                        })
-                    } else {
-                        None
+                AmfValue::Object {
+                    id: ObjectId::INVALID,
+                    data: ObjectValue {
+                        elements: object_body,
+                        class_definition: if amf_version == AMFVersion::AMF3 {
+                            Some(ClassDefinition {
+                                name,
+                                attributes,
+                                static_properties,
+                            })
+                        } else {
+                            None
+                        },
                     },
-                )
+                }
             }
         }
     }
@@ -272,11 +322,11 @@ fn get_or_create_value<'gc>(
     val: Value<'gc>,
     object_table: &mut ObjectTable<'gc>,
     amf_version: AMFVersion,
-) -> Rc<AmfValue> {
+) -> AmfValue {
     if let Some(obj) = val.as_object() {
         match object_table.get(&obj) {
-            Some(rc_val) => {
-                // Even though we'll clone the same 'Rc<AmfValue>' for each occurrence
+            Some(value) => {
+                // Even though we'll clone the same 'AmfValue' for each occurrence
                 // of 'Object', flash_lso doesn't serialize this correctly yet.
                 avm2_stub_method!(
                     activation,
@@ -284,20 +334,17 @@ fn get_or_create_value<'gc>(
                     "writeObject",
                     "with same Object used multiple times"
                 );
-                rc_val.clone()
+                value.clone()
             }
             None => {
                 let value = serialize_value(activation, val, amf_version, object_table);
-                let rc_val = Rc::new(value);
-
                 // We cannot use Entry, since we need to pass in 'object_table' to 'serialize_value'
-                object_table.insert(obj, rc_val.clone());
-                rc_val
+                object_table.insert(obj, value.clone());
+                value
             }
         }
     } else {
-        let value = serialize_value(activation, val, amf_version, object_table);
-        Rc::new(value)
+        serialize_value(activation, val, amf_version, object_table)
     }
 }
 
@@ -327,14 +374,14 @@ pub fn deserialize_value_impl<'gc>(
             let bytearray = ByteArrayObject::from_storage(activation.context, storage);
             bytearray.into()
         }
-        AmfValue::ECMAArray(id, values, elements, _) => {
+        AmfValue::ECMAArray { id, data } => {
             let empty_storage = ArrayStorage::new(0);
             let array = ArrayObject::from_storage(activation.context, empty_storage);
             object_map.insert(*id, array.into());
 
             // First let's create an array out of `values` (dense portion), then we add the elements onto it.
-            let mut arr: Vec<Option<Value<'gc>>> = Vec::with_capacity(values.len());
-            for value in values {
+            let mut arr: Vec<Option<Value<'gc>>> = Vec::with_capacity(data.dense.len());
+            for value in &data.dense {
                 arr.push(Some(deserialize_value_impl(activation, value, object_map)?));
             }
             array
@@ -342,13 +389,13 @@ pub fn deserialize_value_impl<'gc>(
                 .replace_dense_storage(arr);
 
             // Now let's add each element as a property
-            for element in elements {
+            for element in &data.elements {
                 let name = ruffle_wstr::from_utf8(element.name());
                 let value = deserialize_value_impl(activation, element.value(), object_map)?;
 
                 // If the name of the element was a valid array index, we set an
                 // element on the array instead of setting a dynamic property.
-                if let Some(index) = ArrayObject::as_array_index(&name) {
+                if let Some(index) = ArrayIndex::from_wstr(&name) {
                     array.set_element(activation.gc(), index, value);
                 } else {
                     array.set_dynamic_property(
@@ -360,7 +407,7 @@ pub fn deserialize_value_impl<'gc>(
             }
             array.into()
         }
-        AmfValue::StrictArray(id, values) => {
+        AmfValue::StrictArray { id, values } => {
             let empty_storage = ArrayStorage::new(0);
             let array = ArrayObject::from_storage(activation.context, empty_storage);
             object_map.insert(*id, array.into());
@@ -376,8 +423,8 @@ pub fn deserialize_value_impl<'gc>(
 
             array.into()
         }
-        AmfValue::Object(id, elements, class) => {
-            let target_class = if let Some(class) = class {
+        AmfValue::Object { id, data } => {
+            let target_class = if let Some(class) = &data.class_definition {
                 let name = AvmString::new_utf8(activation.gc(), &class.name);
                 alias_to_class(activation, name)?
             } else {
@@ -386,7 +433,7 @@ pub fn deserialize_value_impl<'gc>(
             let obj = target_class.construct(activation, &[])?;
             object_map.insert(*id, obj.as_object().unwrap());
 
-            for entry in elements {
+            for entry in &data.elements {
                 let name = entry.name();
                 let value = deserialize_value_impl(activation, entry.value(), object_map)?;
                 // Flash player logs the error and continues deserializing the rest of the object,
@@ -411,50 +458,51 @@ pub fn deserialize_value_impl<'gc>(
 
             obj
         }
-        AmfValue::Date(time, _) => activation
+        AmfValue::Date { data, .. } => activation
             .avm2()
             .classes()
             .date
-            .construct(activation, &[(*time).into()])?,
-        AmfValue::XML(content, _) => activation.avm2().classes().xml.construct(
+            .construct(activation, &[data.time.into()])?,
+        AmfValue::XML { value: content, .. } => activation.avm2().classes().xml.construct(
             activation,
             &[Value::String(AvmString::new_utf8(activation.gc(), content))],
         )?,
-        AmfValue::VectorDouble(vec, is_fixed) => {
+        AmfValue::VectorDouble(data) => {
             let storage = VectorStorage::from_values(
-                vec.iter().map(|v| (*v).into()).collect(),
-                *is_fixed,
+                data.values.iter().map(|v| (*v).into()).collect(),
+                data.fixed_length,
                 Some(activation.avm2().class_defs().number),
             );
             VectorObject::from_vector(storage, activation).into()
         }
-        AmfValue::VectorUInt(vec, is_fixed) => {
+        AmfValue::VectorUInt(data) => {
             let storage = VectorStorage::from_values(
-                vec.iter().map(|v| (*v).into()).collect(),
-                *is_fixed,
+                data.values.iter().map(|v| (*v).into()).collect(),
+                data.fixed_length,
                 Some(activation.avm2().class_defs().uint),
             );
             VectorObject::from_vector(storage, activation).into()
         }
-        AmfValue::VectorInt(vec, is_fixed) => {
+        AmfValue::VectorInt(data) => {
             let storage = VectorStorage::from_values(
-                vec.iter().map(|v| (*v).into()).collect(),
-                *is_fixed,
+                data.values.iter().map(|v| (*v).into()).collect(),
+                data.fixed_length,
                 Some(activation.avm2().class_defs().int),
             );
             VectorObject::from_vector(storage, activation).into()
         }
-        AmfValue::VectorObject(id, vec, ty_name, is_fixed) => {
-            let name = AvmString::new_utf8(activation.gc(), ty_name);
+        AmfValue::VectorObject { id, data } => {
+            let name = AvmString::new_utf8(activation.gc(), &data.object_type_name);
             let class = alias_to_class(activation, name)?;
 
             // Create an empty vector, as it has to exist in the map before reading children, in case they reference it
             let empty_storage =
-                VectorStorage::new(0, *is_fixed, Some(class.inner_class_definition()));
+                VectorStorage::new(0, data.fixed_length, Some(class.inner_class_definition()));
             let obj = VectorObject::from_vector(empty_storage, activation);
             object_map.insert(*id, obj.into());
 
-            let new_values = vec
+            let new_values = data
+                .values
                 .iter()
                 .map(|v| {
                     deserialize_value_impl(activation, v, object_map).map(|value| {
@@ -474,12 +522,12 @@ pub fn deserialize_value_impl<'gc>(
 
             obj.into()
         }
-        AmfValue::Dictionary(id, values, has_weak_keys) => {
+        AmfValue::Dictionary { id, data } => {
             let obj = activation
                 .avm2()
                 .classes()
                 .dictionary
-                .construct(activation, &[(*has_weak_keys).into()])?
+                .construct(activation, &[data.weak_keys.into()])?
                 .as_object()
                 .unwrap();
 
@@ -488,9 +536,9 @@ pub fn deserialize_value_impl<'gc>(
                 .as_dictionary_object()
                 .expect("Failed to get dictionary from constructed object");
 
-            for (key, value) in values {
-                let key = deserialize_value_impl(activation, key, object_map)?;
-                let value = deserialize_value_impl(activation, value, object_map)?;
+            for entry in &data.elements {
+                let key = deserialize_value_impl(activation, &entry.key, object_map)?;
+                let value = deserialize_value_impl(activation, &entry.value, object_map)?;
 
                 if let Value::Object(key) = key {
                     dict_obj.set_property_by_object(key, value, activation.gc());

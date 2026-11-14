@@ -1,0 +1,8 @@
+num_ticks = 1
+
+[[compilers]]
+type = "Asc"
+target = "test.swf"
+class = "Test"
+scripts = ["Test.as", "ArraySub0.as", "ArraySub1.as", "ArraySub3.as"]
+swf_version = 43

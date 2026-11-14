@@ -1,0 +1,8 @@
+no clear: ff808080
+clear: no error
+after clear: ff808080
+after configure: [class Error]
+Error: Error #3692: All buffers need to be cleared every frame before drawing.
+	at flash.display3D::Context3D/drawToBitmapData()
+	at Test/read()
+	at Test/onContext()

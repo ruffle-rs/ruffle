@@ -43,7 +43,8 @@ impl<R: Read + Seek> ZipSource<R> {
         self.0
             .borrow()
             .file_names()
-            .map(ToOwned::to_owned)
+            .flatten()
+            .map(String::from)
             .collect()
     }
 }

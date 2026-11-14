@@ -132,6 +132,15 @@ impl<'gc> TDisplayObject<'gc> for Text<'gc> {
     }
 
     fn render_self(self, context: &mut RenderContext<'_, 'gc>) {
+        if !context.is_offscreen
+            && !self
+                .world_bounds(BoundsMode::Engine)
+                .intersects(&context.stage.view_bounds())
+        {
+            // Off-screen; culled
+            return;
+        }
+
         let shared = self.0.shared.get();
         context.transform_stack.push(&Transform {
             matrix: shared.text_transform,

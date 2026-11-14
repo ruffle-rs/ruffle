@@ -7,6 +7,7 @@ use crate::avm2::method::Method;
 use crate::avm2::multiname::Multiname;
 use crate::avm2::object::{ClassObject, ErrorObject};
 use crate::avm2::value::Value;
+use crate::config::NetworkingAccessMode;
 use crate::error_message;
 use crate::string::{AvmString, WString};
 
@@ -297,12 +298,6 @@ make_error_fn!(make_error_1002, 1002, range_error);
 #[cold]
 pub fn make_error_1003<'gc>(activation: &mut Activation<'_, 'gc>, radix: i32) -> Error<'gc> {
     make_error!(range_error(activation, error_message!(1003, radix), 1003))
-}
-
-#[inline(never)]
-#[cold]
-pub fn make_error_1005<'gc>(activation: &mut Activation<'_, 'gc>, length: f64) -> Error<'gc> {
-    make_error!(range_error(activation, error_message!(1005, length), 1005))
 }
 
 #[inline(never)]
@@ -1106,6 +1101,7 @@ pub fn make_error_2085<'gc>(activation: &mut Activation<'_, 'gc>, param_name: &s
     ))
 }
 
+make_error_fn!(make_error_2094, 2094, error);
 make_error_fn!(make_error_2097, 2097, argument_error);
 make_error_fn!(make_error_2099, 2099, error);
 
@@ -1132,6 +1128,35 @@ pub fn make_error_2136<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> 
     let movie = activation.caller_movie_or_root();
     let url = movie.url();
     make_error!(error(activation, error_message!(2136, url), 2136))
+}
+
+#[inline(never)]
+#[cold]
+pub fn make_error_2146<'gc>(activation: &mut Activation<'_, 'gc>, method: &str) -> Error<'gc> {
+    let swf_url = activation.caller_movie_or_root().url().to_string();
+    let value = match activation.context.allow_networking {
+        NetworkingAccessMode::Internal => "internal",
+        NetworkingAccessMode::None => "none",
+        NetworkingAccessMode::All => unreachable!(),
+    };
+    make_error!(security_error(
+        activation,
+        error_message!(2146, swf_url, method, value),
+        2146
+    ))
+}
+
+#[inline(never)]
+#[cold]
+pub fn make_error_2149<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
+    let movie = activation.caller_movie_or_root();
+    let page_url = activation.context.page_url.clone().unwrap_or_default();
+    // TODO: Use the actual allowScriptAccess value.
+    make_error!(security_error(
+        activation,
+        error_message!(2149, movie.url(), page_url, "always"),
+        2149
+    ))
 }
 
 make_error_fn!(make_error_2150, 2150, argument_error);
@@ -1188,6 +1213,7 @@ pub fn make_error_2187<'gc>(
 make_error_fn!(make_error_3669, 3669, error);
 make_error_fn!(make_error_3670, 3670, argument_error);
 make_error_fn!(make_error_3671, 3671, argument_error);
+make_error_fn!(make_error_3692, 3692, error);
 
 // This isn't used if the `jpegxr` feature is disabled, see
 // `globals::flash::display3D::textures::atf_jpegxr`

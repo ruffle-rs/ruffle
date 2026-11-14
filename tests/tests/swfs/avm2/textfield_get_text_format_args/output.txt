@@ -1,0 +1,567 @@
+getTextFormat()
+  size=null color=null bold=null italic=null underline=false
+getTextFormat(-2)
+  [class RangeError]
+  RangeError: Error #2006: The supplied index is out of bounds.
+	at flash.text::TextField/getTextFormat()
+	at Test/test()
+	at Test/testAll()
+	at Test()
+getTextFormat(-1)
+  size=null color=null bold=null italic=null underline=false
+getTextFormat(0)
+  size=10 color=16711680 bold=true italic=false underline=false
+getTextFormat(1)
+  size=12 color=16711680 bold=false italic=false underline=false
+getTextFormat(2)
+  size=14 color=255 bold=false italic=false underline=false
+getTextFormat(3)
+  size=16 color=255 bold=false italic=true underline=false
+getTextFormat(4)
+  [class RangeError]
+  RangeError: Error #2006: The supplied index is out of bounds.
+	at flash.text::TextField/getTextFormat()
+	at Test/test()
+	at Test/testAll()
+	at Test()
+getTextFormat(5)
+  [class RangeError]
+  RangeError: Error #2006: The supplied index is out of bounds.
+	at flash.text::TextField/getTextFormat()
+	at Test/test()
+	at Test/testAll()
+	at Test()
+getTextFormat(-2, -2)
+  [class RangeError]
+  RangeError: Error #2006: The supplied index is out of bounds.
+	at flash.text::TextField/getTextFormat()
+	at Test/test()
+	at Test/testAll()
+	at Test()
+getTextFormat(-2, -1)
+  [class RangeError]
+  RangeError: Error #2006: The supplied index is out of bounds.
+	at flash.text::TextField/getTextFormat()
+	at Test/test()
+	at Test/testAll()
+	at Test()
+getTextFormat(-2, 0)
+  [class RangeError]
+  RangeError: Error #2006: The supplied index is out of bounds.
+	at flash.text::TextField/getTextFormat()
+	at Test/test()
+	at Test/testAll()
+	at Test()
+getTextFormat(-2, 1)
+  [class RangeError]
+  RangeError: Error #2006: The supplied index is out of bounds.
+	at flash.text::TextField/getTextFormat()
+	at Test/test()
+	at Test/testAll()
+	at Test()
+getTextFormat(-2, 2)
+  [class RangeError]
+  RangeError: Error #2006: The supplied index is out of bounds.
+	at flash.text::TextField/getTextFormat()
+	at Test/test()
+	at Test/testAll()
+	at Test()
+getTextFormat(-2, 3)
+  [class RangeError]
+  RangeError: Error #2006: The supplied index is out of bounds.
+	at flash.text::TextField/getTextFormat()
+	at Test/test()
+	at Test/testAll()
+	at Test()
+getTextFormat(-2, 4)
+  [class RangeError]
+  RangeError: Error #2006: The supplied index is out of bounds.
+	at flash.text::TextField/getTextFormat()
+	at Test/test()
+	at Test/testAll()
+	at Test()
+getTextFormat(-2, 5)
+  [class RangeError]
+  RangeError: Error #2006: The supplied index is out of bounds.
+	at flash.text::TextField/getTextFormat()
+	at Test/test()
+	at Test/testAll()
+	at Test()
+getTextFormat(-1, -2)
+  [class RangeError]
+  RangeError: Error #2006: The supplied index is out of bounds.
+	at flash.text::TextField/getTextFormat()
+	at Test/test()
+	at Test/testAll()
+	at Test()
+getTextFormat(-1, -1)
+  size=null color=null bold=null italic=null underline=false
+getTextFormat(-1, 0)
+  [class RangeError]
+  RangeError: Error #2006: The supplied index is out of bounds.
+	at flash.text::TextField/getTextFormat()
+	at Test/test()
+	at Test/testAll()
+	at Test()
+getTextFormat(-1, 1)
+  size=10 color=16711680 bold=true italic=false underline=false
+getTextFormat(-1, 2)
+  size=null color=16711680 bold=null italic=false underline=false
+getTextFormat(-1, 3)
+  size=null color=null bold=null italic=false underline=false
+getTextFormat(-1, 4)
+  size=null color=null bold=null italic=null underline=false
+getTextFormat(-1, 5)
+  [class RangeError]
+  RangeError: Error #2006: The supplied index is out of bounds.
+	at flash.text::TextField/getTextFormat()
+	at Test/test()
+	at Test/testAll()
+	at Test()
+getTextFormat(0, -2)
+  [class RangeError]
+  RangeError: Error #2006: The supplied index is out of bounds.
+	at flash.text::TextField/getTextFormat()
+	at Test/test()
+	at Test/testAll()
+	at Test()
+getTextFormat(0, -1)
+  size=10 color=16711680 bold=true italic=false underline=false
+getTextFormat(0, 0)
+  [class RangeError]
+  RangeError: Error #2006: The supplied index is out of bounds.
+	at flash.text::TextField/getTextFormat()
+	at Test/test()
+	at Test/testAll()
+	at Test()
+getTextFormat(0, 1)
+  size=10 color=16711680 bold=true italic=false underline=false
+getTextFormat(0, 2)
+  size=null color=16711680 bold=null italic=false underline=false
+getTextFormat(0, 3)
+  size=null color=null bold=null italic=false underline=false
+getTextFormat(0, 4)
+  size=null color=null bold=null italic=null underline=false
+getTextFormat(0, 5)
+  [class RangeError]
+  RangeError: Error #2006: The supplied index is out of bounds.
+	at flash.text::TextField/getTextFormat()
+	at Test/test()
+	at Test/testAll()
+	at Test()
+getTextFormat(1, -2)
+  [class RangeError]
+  RangeError: Error #2006: The supplied index is out of bounds.
+	at flash.text::TextField/getTextFormat()
+	at Test/test()
+	at Test/testAll()
+	at Test()
+getTextFormat(1, -1)
+  size=12 color=16711680 bold=false italic=false underline=false
+getTextFormat(1, 0)
+  [class RangeError]
+  RangeError: Error #2006: The supplied index is out of bounds.
+	at flash.text::TextField/getTextFormat()
+	at Test/test()
+	at Test/testAll()
+	at Test()
+getTextFormat(1, 1)
+  size=null color=null bold=null italic=null underline=null
+getTextFormat(1, 2)
+  size=12 color=16711680 bold=false italic=false underline=false
+getTextFormat(1, 3)
+  size=null color=null bold=false italic=false underline=false
+getTextFormat(1, 4)
+  size=null color=null bold=false italic=null underline=false
+getTextFormat(1, 5)
+  [class RangeError]
+  RangeError: Error #2006: The supplied index is out of bounds.
+	at flash.text::TextField/getTextFormat()
+	at Test/test()
+	at Test/testAll()
+	at Test()
+getTextFormat(2, -2)
+  [class RangeError]
+  RangeError: Error #2006: The supplied index is out of bounds.
+	at flash.text::TextField/getTextFormat()
+	at Test/test()
+	at Test/testAll()
+	at Test()
+getTextFormat(2, -1)
+  size=14 color=255 bold=false italic=false underline=false
+getTextFormat(2, 0)
+  [class RangeError]
+  RangeError: Error #2006: The supplied index is out of bounds.
+	at flash.text::TextField/getTextFormat()
+	at Test/test()
+	at Test/testAll()
+	at Test()
+getTextFormat(2, 1)
+  size=null color=null bold=null italic=null underline=null
+getTextFormat(2, 2)
+  size=null color=null bold=null italic=null underline=null
+getTextFormat(2, 3)
+  size=14 color=255 bold=false italic=false underline=false
+getTextFormat(2, 4)
+  size=null color=255 bold=false italic=null underline=false
+getTextFormat(2, 5)
+  [class RangeError]
+  RangeError: Error #2006: The supplied index is out of bounds.
+	at flash.text::TextField/getTextFormat()
+	at Test/test()
+	at Test/testAll()
+	at Test()
+getTextFormat(3, -2)
+  [class RangeError]
+  RangeError: Error #2006: The supplied index is out of bounds.
+	at flash.text::TextField/getTextFormat()
+	at Test/test()
+	at Test/testAll()
+	at Test()
+getTextFormat(3, -1)
+  size=16 color=255 bold=false italic=true underline=false
+getTextFormat(3, 0)
+  [class RangeError]
+  RangeError: Error #2006: The supplied index is out of bounds.
+	at flash.text::TextField/getTextFormat()
+	at Test/test()
+	at Test/testAll()
+	at Test()
+getTextFormat(3, 1)
+  size=null color=null bold=null italic=null underline=null
+getTextFormat(3, 2)
+  size=null color=null bold=null italic=null underline=null
+getTextFormat(3, 3)
+  size=null color=null bold=null italic=null underline=null
+getTextFormat(3, 4)
+  size=16 color=255 bold=false italic=true underline=false
+getTextFormat(3, 5)
+  [class RangeError]
+  RangeError: Error #2006: The supplied index is out of bounds.
+	at flash.text::TextField/getTextFormat()
+	at Test/test()
+	at Test/testAll()
+	at Test()
+getTextFormat(4, -2)
+  [class RangeError]
+  RangeError: Error #2006: The supplied index is out of bounds.
+	at flash.text::TextField/getTextFormat()
+	at Test/test()
+	at Test/testAll()
+	at Test()
+getTextFormat(4, -1)
+  [class RangeError]
+  RangeError: Error #2006: The supplied index is out of bounds.
+	at flash.text::TextField/getTextFormat()
+	at Test/test()
+	at Test/testAll()
+	at Test()
+getTextFormat(4, 0)
+  [class RangeError]
+  RangeError: Error #2006: The supplied index is out of bounds.
+	at flash.text::TextField/getTextFormat()
+	at Test/test()
+	at Test/testAll()
+	at Test()
+getTextFormat(4, 1)
+  [class RangeError]
+  RangeError: Error #2006: The supplied index is out of bounds.
+	at flash.text::TextField/getTextFormat()
+	at Test/test()
+	at Test/testAll()
+	at Test()
+getTextFormat(4, 2)
+  [class RangeError]
+  RangeError: Error #2006: The supplied index is out of bounds.
+	at flash.text::TextField/getTextFormat()
+	at Test/test()
+	at Test/testAll()
+	at Test()
+getTextFormat(4, 3)
+  [class RangeError]
+  RangeError: Error #2006: The supplied index is out of bounds.
+	at flash.text::TextField/getTextFormat()
+	at Test/test()
+	at Test/testAll()
+	at Test()
+getTextFormat(4, 4)
+  [class RangeError]
+  RangeError: Error #2006: The supplied index is out of bounds.
+	at flash.text::TextField/getTextFormat()
+	at Test/test()
+	at Test/testAll()
+	at Test()
+getTextFormat(4, 5)
+  [class RangeError]
+  RangeError: Error #2006: The supplied index is out of bounds.
+	at flash.text::TextField/getTextFormat()
+	at Test/test()
+	at Test/testAll()
+	at Test()
+getTextFormat(5, -2)
+  [class RangeError]
+  RangeError: Error #2006: The supplied index is out of bounds.
+	at flash.text::TextField/getTextFormat()
+	at Test/test()
+	at Test/testAll()
+	at Test()
+getTextFormat(5, -1)
+  [class RangeError]
+  RangeError: Error #2006: The supplied index is out of bounds.
+	at flash.text::TextField/getTextFormat()
+	at Test/test()
+	at Test/testAll()
+	at Test()
+getTextFormat(5, 0)
+  [class RangeError]
+  RangeError: Error #2006: The supplied index is out of bounds.
+	at flash.text::TextField/getTextFormat()
+	at Test/test()
+	at Test/testAll()
+	at Test()
+getTextFormat(5, 1)
+  [class RangeError]
+  RangeError: Error #2006: The supplied index is out of bounds.
+	at flash.text::TextField/getTextFormat()
+	at Test/test()
+	at Test/testAll()
+	at Test()
+getTextFormat(5, 2)
+  [class RangeError]
+  RangeError: Error #2006: The supplied index is out of bounds.
+	at flash.text::TextField/getTextFormat()
+	at Test/test()
+	at Test/testAll()
+	at Test()
+getTextFormat(5, 3)
+  [class RangeError]
+  RangeError: Error #2006: The supplied index is out of bounds.
+	at flash.text::TextField/getTextFormat()
+	at Test/test()
+	at Test/testAll()
+	at Test()
+getTextFormat(5, 4)
+  [class RangeError]
+  RangeError: Error #2006: The supplied index is out of bounds.
+	at flash.text::TextField/getTextFormat()
+	at Test/test()
+	at Test/testAll()
+	at Test()
+getTextFormat(5, 5)
+  [class RangeError]
+  RangeError: Error #2006: The supplied index is out of bounds.
+	at flash.text::TextField/getTextFormat()
+	at Test/test()
+	at Test/testAll()
+	at Test()
+getTextFormat(1.7)
+  size=12 color=16711680 bold=false italic=false underline=false
+getTextFormat(2)
+  size=14 color=255 bold=false italic=false underline=false
+getTextFormat(3.9)
+  size=16 color=255 bold=false italic=true underline=false
+getTextFormat(-0.5)
+  size=10 color=16711680 bold=true italic=false underline=false
+getTextFormat(-1.5)
+  size=null color=null bold=null italic=null underline=false
+getTextFormat(-1)
+  size=null color=null bold=null italic=null underline=false
+getTextFormat(4294967295)
+  size=null color=null bold=null italic=null underline=false
+getTextFormat(-2147483648)
+  [class RangeError]
+  RangeError: Error #2006: The supplied index is out of bounds.
+	at flash.text::TextField/getTextFormat()
+	at Test/test()
+	at Test()
+getTextFormat(2147483647)
+  [class RangeError]
+  RangeError: Error #2006: The supplied index is out of bounds.
+	at flash.text::TextField/getTextFormat()
+	at Test/test()
+	at Test()
+getTextFormat(undefined)
+  size=10 color=16711680 bold=true italic=false underline=false
+getTextFormat(NaN)
+  size=10 color=16711680 bold=true italic=false underline=false
+getTextFormat(1.7, 3.2)
+  size=null color=null bold=false italic=false underline=false
+getTextFormat(0, 2147483647)
+  [class RangeError]
+  RangeError: Error #2006: The supplied index is out of bounds.
+	at flash.text::TextField/getTextFormat()
+	at Test/test()
+	at Test()
+getTextFormat(2, 4294967297)
+  size=null color=null bold=null italic=null underline=null
+getTextFormat(-5, -5)
+  [class RangeError]
+  RangeError: Error #2006: The supplied index is out of bounds.
+	at flash.text::TextField/getTextFormat()
+	at Test/test()
+	at Test()
+getTextFormat(2147483647, -1)
+  [class RangeError]
+  RangeError: Error #2006: The supplied index is out of bounds.
+	at flash.text::TextField/getTextFormat()
+	at Test/test()
+	at Test()
+getTextFormat(0, -2147483648)
+  [class RangeError]
+  RangeError: Error #2006: The supplied index is out of bounds.
+	at flash.text::TextField/getTextFormat()
+	at Test/test()
+	at Test()
+getTextFormat(4294967295, 4294967295)
+  size=null color=null bold=null italic=null underline=false
+getTextFormat(undefined, undefined)
+  [class RangeError]
+  RangeError: Error #2006: The supplied index is out of bounds.
+	at flash.text::TextField/getTextFormat()
+	at Test/test()
+	at Test()
+getTextFormat(NaN, NaN)
+  [class RangeError]
+  RangeError: Error #2006: The supplied index is out of bounds.
+	at flash.text::TextField/getTextFormat()
+	at Test/test()
+	at Test()
+getTextFormat(0, NaN)
+  [class RangeError]
+  RangeError: Error #2006: The supplied index is out of bounds.
+	at flash.text::TextField/getTextFormat()
+	at Test/test()
+	at Test()
+empty text
+getTextFormat()
+  size=null color=null bold=null italic=null underline=null
+getTextFormat(-2)
+  [class RangeError]
+  RangeError: Error #2006: The supplied index is out of bounds.
+	at flash.text::TextField/getTextFormat()
+	at Test/test()
+	at Test/testAll()
+	at Test()
+getTextFormat(-1)
+  size=null color=null bold=null italic=null underline=null
+getTextFormat(0)
+  [class RangeError]
+  RangeError: Error #2006: The supplied index is out of bounds.
+	at flash.text::TextField/getTextFormat()
+	at Test/test()
+	at Test/testAll()
+	at Test()
+getTextFormat(1)
+  [class RangeError]
+  RangeError: Error #2006: The supplied index is out of bounds.
+	at flash.text::TextField/getTextFormat()
+	at Test/test()
+	at Test/testAll()
+	at Test()
+getTextFormat(-2, -2)
+  [class RangeError]
+  RangeError: Error #2006: The supplied index is out of bounds.
+	at flash.text::TextField/getTextFormat()
+	at Test/test()
+	at Test/testAll()
+	at Test()
+getTextFormat(-2, -1)
+  [class RangeError]
+  RangeError: Error #2006: The supplied index is out of bounds.
+	at flash.text::TextField/getTextFormat()
+	at Test/test()
+	at Test/testAll()
+	at Test()
+getTextFormat(-2, 0)
+  [class RangeError]
+  RangeError: Error #2006: The supplied index is out of bounds.
+	at flash.text::TextField/getTextFormat()
+	at Test/test()
+	at Test/testAll()
+	at Test()
+getTextFormat(-2, 1)
+  [class RangeError]
+  RangeError: Error #2006: The supplied index is out of bounds.
+	at flash.text::TextField/getTextFormat()
+	at Test/test()
+	at Test/testAll()
+	at Test()
+getTextFormat(-1, -2)
+  [class RangeError]
+  RangeError: Error #2006: The supplied index is out of bounds.
+	at flash.text::TextField/getTextFormat()
+	at Test/test()
+	at Test/testAll()
+	at Test()
+getTextFormat(-1, -1)
+  size=null color=null bold=null italic=null underline=null
+getTextFormat(-1, 0)
+  [class RangeError]
+  RangeError: Error #2006: The supplied index is out of bounds.
+	at flash.text::TextField/getTextFormat()
+	at Test/test()
+	at Test/testAll()
+	at Test()
+getTextFormat(-1, 1)
+  [class RangeError]
+  RangeError: Error #2006: The supplied index is out of bounds.
+	at flash.text::TextField/getTextFormat()
+	at Test/test()
+	at Test/testAll()
+	at Test()
+getTextFormat(0, -2)
+  [class RangeError]
+  RangeError: Error #2006: The supplied index is out of bounds.
+	at flash.text::TextField/getTextFormat()
+	at Test/test()
+	at Test/testAll()
+	at Test()
+getTextFormat(0, -1)
+  [class RangeError]
+  RangeError: Error #2006: The supplied index is out of bounds.
+	at flash.text::TextField/getTextFormat()
+	at Test/test()
+	at Test/testAll()
+	at Test()
+getTextFormat(0, 0)
+  [class RangeError]
+  RangeError: Error #2006: The supplied index is out of bounds.
+	at flash.text::TextField/getTextFormat()
+	at Test/test()
+	at Test/testAll()
+	at Test()
+getTextFormat(0, 1)
+  [class RangeError]
+  RangeError: Error #2006: The supplied index is out of bounds.
+	at flash.text::TextField/getTextFormat()
+	at Test/test()
+	at Test/testAll()
+	at Test()
+getTextFormat(1, -2)
+  [class RangeError]
+  RangeError: Error #2006: The supplied index is out of bounds.
+	at flash.text::TextField/getTextFormat()
+	at Test/test()
+	at Test/testAll()
+	at Test()
+getTextFormat(1, -1)
+  [class RangeError]
+  RangeError: Error #2006: The supplied index is out of bounds.
+	at flash.text::TextField/getTextFormat()
+	at Test/test()
+	at Test/testAll()
+	at Test()
+getTextFormat(1, 0)
+  [class RangeError]
+  RangeError: Error #2006: The supplied index is out of bounds.
+	at flash.text::TextField/getTextFormat()
+	at Test/test()
+	at Test/testAll()
+	at Test()
+getTextFormat(1, 1)
+  [class RangeError]
+  RangeError: Error #2006: The supplied index is out of bounds.
+	at flash.text::TextField/getTextFormat()
+	at Test/test()
+	at Test/testAll()
+	at Test()

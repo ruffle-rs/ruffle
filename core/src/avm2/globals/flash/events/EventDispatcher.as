@@ -28,13 +28,13 @@ package flash.events {
         public function dispatchEvent(event:Event):Boolean {
             // Some SWFs rely on the getter for `target` being called
             if (event.target) {
-                return this.dispatchEventInternal(event.clone());
+                return this.dispatchEventFunction(event.clone());
             } else {
-                return this.dispatchEventInternal(event);
+                return this.dispatchEventFunction(event);
             }
         }
 
-        private native function dispatchEventInternal(event:Event):Boolean;
+        private native function dispatchEventFunction(event:Event):Boolean;
 
         public native function willTrigger(type:String):Boolean;
 

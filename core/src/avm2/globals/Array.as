@@ -151,8 +151,24 @@ package {
             prototype.setPropertyIsEnumerable("unshift", false);
         }
 
-        // Constructor (defined in Rust)
-        public native function Array(...rest);
+        public function Array(...args) {
+            var argCount:uint = args.length;
+            if (argCount == 1 && (args[0] is Number)) {
+                var length:Number = args[0];
+
+                // Make sure that length fits in uint.
+                if (length != uint(length)) {
+                    Error.throwError(RangeError, 1005, length);
+                }
+
+                this.length = length;
+            } else {
+                this.length = argCount;
+                for (var i:uint = 0; i < argCount; i++) {
+                    this[i] = args[i];
+                }
+            }
+        }
 
         // Instance methods
         AS3 native function concat(...rest):Array;

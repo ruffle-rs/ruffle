@@ -1,0 +1,10 @@
+num_ticks = 1
+# Only the names of Vector methods in stack traces differ from Flash Player.
+known_failure = true
+
+[[compilers]]
+type = "Asc"
+target = "test.swf"
+class = "Test"
+scripts = ["Test.as", "Noisy.as"]
+swf_version = 43

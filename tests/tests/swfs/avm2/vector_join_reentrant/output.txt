@@ -1,0 +1,96 @@
+/// push
+toString called on noisy (1)
+result: first-noisy-third-fourth
+length: 5, fixed: false, elements: [first, noisy, third, fourth, pushed]
+/// pop
+toString called on noisy (1)
+caught: [class RangeError]
+RangeError: Error #1125: The index 3 is out of range 3.
+	at Vector$object/http://adobe.com/AS3/2006/builtin::join()
+	at Test$/run()
+	at Test()
+length: 3, fixed: false, elements: [first, noisy, third]
+/// shift
+toString called on noisy (1)
+caught: [class RangeError]
+RangeError: Error #1125: The index 3 is out of range 3.
+	at Vector$object/http://adobe.com/AS3/2006/builtin::join()
+	at Test$/run()
+	at Test()
+length: 3, fixed: false, elements: [noisy, third, fourth]
+/// unshift
+toString called on noisy (1)
+toString called on noisy (2)
+result: first-noisy-noisy-third
+length: 5, fixed: false, elements: [unshifted, first, noisy, third, fourth]
+/// set next element
+toString called on noisy (1)
+result: first-noisy-changed-fourth
+length: 4, fixed: false, elements: [first, noisy, changed, fourth]
+/// set previous element
+toString called on noisy (1)
+result: first-noisy-third-fourth
+length: 4, fixed: false, elements: [changed, noisy, third, fourth]
+/// length = 0
+toString called on noisy (1)
+caught: [class RangeError]
+RangeError: Error #1125: The index 2 is out of range 0.
+	at Vector$object/http://adobe.com/AS3/2006/builtin::join()
+	at Test$/run()
+	at Test()
+length: 0, fixed: false, elements: []
+/// length = 10
+toString called on noisy (1)
+result: first-noisy-third-fourth
+length: 10, fixed: false, elements: [first, noisy, third, fourth, null, null, null, null, null, null]
+/// splice
+toString called on noisy (1)
+result: first-noisy-s3-third
+length: 5, fixed: false, elements: [s1, s2, s3, third, fourth]
+/// reverse
+toString called on noisy (1)
+toString called on noisy (2)
+result: first-noisy-noisy-first
+length: 4, fixed: false, elements: [fourth, third, noisy, first]
+/// sort
+toString called on noisy (1)
+toString called on noisy (2)
+toString called on noisy (3)
+toString called on noisy (4)
+toString called on noisy (5)
+result: first-noisy-noisy-third
+length: 4, fixed: false, elements: [first, fourth, noisy, third]
+/// join
+toString called on noisy (1)
+toString called on noisy (2)
+nested join: first+noisy+third+fourth
+result: first-noisy-third-fourth
+length: 4, fixed: false, elements: [first, noisy, third, fourth]
+/// fixed, push
+toString called on noisy (1)
+caught: [class RangeError]
+RangeError: Error #1126: Cannot change the length of a fixed Vector.
+	at Vector$object/http://adobe.com/AS3/2006/builtin::push()
+	at Function/<anonymous>()
+	at Function/<anonymous>()
+	at Noisy/toString()
+	at Vector$object/http://adobe.com/AS3/2006/builtin::join()
+	at Test$/run()
+	at Test()
+length: 4, fixed: true, elements: [first, noisy, third, fourth]
+/// fixed, set next element
+toString called on noisy (1)
+result: first-noisy-changed-fourth
+length: 4, fixed: true, elements: [first, noisy, changed, fourth]
+/// fixed, unfix and push
+toString called on noisy (1)
+result: first-noisy-third-fourth
+length: 5, fixed: false, elements: [first, noisy, third, fourth, pushed]
+/// toString, push
+toString called on noisy (1)
+result: first,noisy,third,fourth
+length: 5, fixed: false, elements: [first, noisy, third, fourth, pushed]
+/// separator, push
+toString called on | (1)
+result: a|b|c|pushed
+length: 4, fixed: false, elements: [a, b, c, pushed]

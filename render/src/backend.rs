@@ -272,6 +272,17 @@ pub trait Context3D: Any {
     fn profile(&self) -> Context3DProfile;
     // The BitmapHandle for the texture we're rendering to
     fn bitmap_handle(&self) -> BitmapHandle;
+    // The BitmapHandle for the current back buffer texture, or `None` if the back
+    // buffer hasn't been configured yet. Unlike `bitmap_handle` (which is the front
+    // buffer, shown after `present`), this holds the content rendered since the
+    // last `present`.
+    fn back_buffer_handle(&self) -> Option<BitmapHandle>;
+    // The (width, height) of the back buffer, or `None` before it is configured.
+    fn back_buffer_size(&self) -> Option<(u32, u32)>;
+    // Whether every buffer has been cleared since the last `present` (or since
+    // the context was created). Flash requires a clear each frame before
+    // drawing, so `Context3D.drawToBitmapData` throws Error #3692 when false.
+    fn buffers_cleared(&self) -> bool;
     // Whether or not we should actually render the texture
     // as part of stage rendering
     fn should_render(&self) -> bool;

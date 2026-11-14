@@ -218,7 +218,10 @@ impl BlurFilter {
                 } else {
                     (
                         flip.color_view(),
-                        descriptors.quad.filter_vertices.slice(..),
+                        descriptors
+                            .quad
+                            .vertex_buffer
+                            .slice(descriptors.quad.vertices_filter.clone()),
                         flip.width() as f32,
                         flip.height() as f32,
                     )
@@ -331,9 +334,9 @@ impl BlurFilter {
 
         render_pass.set_vertex_buffer(0, vertices);
         render_pass.set_index_buffer(
-            descriptors.quad.indices.slice(..),
+            descriptors.quad.index_buffer.slice(..),
             wgpu::IndexFormat::Uint32,
         );
-        render_pass.draw_indexed(0..6, 0, 0..1);
+        render_pass.draw_indexed(descriptors.quad.indices_quad.clone(), 0, 0..1);
     }
 }

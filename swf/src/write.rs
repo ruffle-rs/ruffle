@@ -43,6 +43,13 @@ pub fn write_swf<W: Write>(header: &Header, tags: &[Tag<'_>], output: W) -> Resu
     write_swf_raw_tags(header, &swf_body, output)
 }
 
+/// Writes a single tag, including its header, to an output stream.
+///
+/// Unlike [`write_swf`], no implicit `End` tag is appended.
+pub fn write_tag<W: Write>(tag: &Tag<'_>, swf_version: u8, output: W) -> Result<()> {
+    Writer::new(output, swf_version).write_tag(tag)
+}
+
 /// Writes a SWF to the output stream, where the tag list has already been serialized to bytes.
 /// This still appends other header information such as stage size.
 pub fn write_swf_raw_tags<W: Write>(header: &Header, tags: &[u8], mut output: W) -> Result<()> {
@@ -320,77 +327,27 @@ impl<W: Write> Writer<W> {
         Ok(())
     }
 
-    fn write_color_transform_no_alpha(&mut self, color_transform: &ColorTransform) -> Result<()> {
-        // TODO: Assert that alpha is 1.0?
-        let has_mult = !color_transform.r_multiply.is_one()
-            || !color_transform.g_multiply.is_one()
-            || !color_transform.b_multiply.is_one();
-        let has_add =
-            color_transform.r_add != 0 || color_transform.g_add != 0 || color_transform.b_add != 0;
-        let multiply = [
-            color_transform.r_multiply,
-            color_transform.g_multiply,
-            color_transform.b_multiply,
-        ];
-        let add = [
-            color_transform.a_add,
-            color_transform.g_add,
-            color_transform.b_add,
-            color_transform.a_add,
-        ];
-        let mut bits = self.bits();
-        bits.write_bit(has_mult)?;
-        bits.write_bit(has_add)?;
-        let mut num_bits = if has_mult {
-            multiply
-                .iter()
-                .map(|n| count_sbits(n.get().into()))
-                .max()
-                .unwrap()
-        } else {
-            0
-        };
-        if has_add {
-            num_bits = max(
-                num_bits,
-                add.iter().map(|n| count_sbits((*n).into())).max().unwrap(),
-            );
-        }
-        bits.write_ubits_ct::<4>(num_bits)?;
-        if has_mult {
-            bits.write_sbits_fixed8(num_bits, color_transform.r_multiply)?;
-            bits.write_sbits_fixed8(num_bits, color_transform.g_multiply)?;
-            bits.write_sbits_fixed8(num_bits, color_transform.b_multiply)?;
-        }
-        if has_add {
-            bits.write_sbits(num_bits, color_transform.r_add.into())?;
-            bits.write_sbits(num_bits, color_transform.g_add.into())?;
-            bits.write_sbits(num_bits, color_transform.b_add.into())?;
-        }
-        Ok(())
-    }
-
-    fn write_color_transform(&mut self, color_transform: &ColorTransform) -> Result<()> {
-        let has_mult = !color_transform.r_multiply.is_one()
-            || !color_transform.g_multiply.is_one()
-            || !color_transform.b_multiply.is_one()
-            || !color_transform.a_multiply.is_one();
-        let has_add = color_transform.r_add != 0
-            || color_transform.g_add != 0
-            || color_transform.b_add != 0
-            || color_transform.a_add != 0;
-        let multiply = [
+    fn write_color_transform(
+        &mut self,
+        color_transform: &ColorTransform,
+        has_alpha: bool,
+    ) -> Result<()> {
+        // TODO: Assert that alpha is 1.0 when `has_alpha` is false?
+        let num_channels = if has_alpha { 4 } else { 3 };
+        let multiply = &[
             color_transform.r_multiply,
             color_transform.g_multiply,
             color_transform.b_multiply,
             color_transform.a_multiply,
-        ];
-        let add = [
+        ][..num_channels];
+        let add = &[
             color_transform.r_add,
             color_transform.g_add,
             color_transform.b_add,
             color_transform.a_add,
-        ];
+        ][..num_channels];
+        let has_mult = multiply.iter().any(|n| !n.is_one());
+        let has_add = add.iter().any(|&n| n != 0);
         let mut bits = self.bits();
         bits.write_bit(has_add)?;
         bits.write_bit(has_mult)?;
@@ -411,16 +368,14 @@ impl<W: Write> Writer<W> {
         }
         bits.write_ubits_ct::<4>(num_bits)?;
         if has_mult {
-            bits.write_sbits_fixed8(num_bits, color_transform.r_multiply)?;
-            bits.write_sbits_fixed8(num_bits, color_transform.g_multiply)?;
-            bits.write_sbits_fixed8(num_bits, color_transform.b_multiply)?;
-            bits.write_sbits_fixed8(num_bits, color_transform.a_multiply)?;
+            for &n in multiply {
+                bits.write_sbits_fixed8(num_bits, n)?;
+            }
         }
         if has_add {
-            bits.write_sbits(num_bits, color_transform.r_add.into())?;
-            bits.write_sbits(num_bits, color_transform.g_add.into())?;
-            bits.write_sbits(num_bits, color_transform.b_add.into())?;
-            bits.write_sbits(num_bits, color_transform.a_add.into())?;
+            for &n in add {
+                bits.write_sbits(num_bits, n.into())?;
+            }
         }
         Ok(())
     }
@@ -555,7 +510,7 @@ impl<W: Write> Writer<W> {
                     let mut writer = Writer::new(&mut buf, self.version);
                     writer.write_character_id(button_color.id)?;
                     for color_transform in &button_color.color_transforms {
-                        writer.write_color_transform_no_alpha(color_transform)?;
+                        writer.write_color_transform(color_transform, false)?;
                     }
                 }
                 self.write_tag_header(TagCode::DefineButtonCxform, buf.len() as u32)?;
@@ -1355,7 +1310,7 @@ impl<W: Write> Writer<W> {
         self.write_u16(record.depth)?;
         self.write_matrix(&record.matrix)?;
         if tag_version >= 2 {
-            self.write_color_transform(&record.color_transform)?;
+            self.write_color_transform(&record.color_transform, true)?;
             if !record.filters.is_empty() {
                 self.write_u8(record.filters.len() as u8)?;
                 for filter in &record.filters {
@@ -1628,7 +1583,7 @@ impl<W: Write> Writer<W> {
                 writer.write_matrix(&Matrix::IDENTITY)?;
             }
             if let Some(ref color_transform) = place_object.color_transform {
-                writer.write_color_transform_no_alpha(color_transform)?;
+                writer.write_color_transform(color_transform, false)?;
             }
         }
         self.write_tag_header(TagCode::PlaceObject, buf.len() as u32)?;
@@ -1704,13 +1659,13 @@ impl<W: Write> Writer<W> {
             match place_object.action {
                 PlaceObjectAction::Place(character_id)
                 | PlaceObjectAction::Replace(character_id) => writer.write_u16(character_id)?,
-                PlaceObjectAction::Modify => (),
+                PlaceObjectAction::Modify | PlaceObjectAction::None => (),
             }
             if let Some(ref matrix) = place_object.matrix {
                 writer.write_matrix(matrix)?;
             };
             if let Some(ref color_transform) = place_object.color_transform {
-                writer.write_color_transform(color_transform)?;
+                writer.write_color_transform(color_transform, true)?;
             };
             if let Some(ratio) = place_object.ratio {
                 writer.write_u16(ratio)?;
@@ -1910,7 +1865,8 @@ impl<W: Write> Writer<W> {
         if self.version >= 6 {
             self.write_u32(bits)?;
         } else {
-            self.write_u16((bits as u8).into())?;
+            // SWF19 pp. 48-50: For SWFv5, ClipEventFlags only had 2 bytes of flags.
+            self.write_u16(bits as u16)?;
         }
         Ok(())
     }
@@ -2712,6 +2668,67 @@ mod tests {
                 "Error reading tag.\nTag:\n{tag:?}\n\nWrote:\n{written_tag_bytes:?}\n\nExpected:\n{expected_tag_bytes:?}",
             );
         }
+    }
+
+    #[test]
+    fn write_tag_without_end() {
+        let mut buf = Vec::new();
+        super::write_tag(&Tag::ShowFrame, 1, &mut buf).unwrap();
+        assert_eq!(buf, [0b01_000000, 0b00000000]);
+
+        let mut buf = Vec::new();
+        super::write_tag(&Tag::End, 1, &mut buf).unwrap();
+        assert_eq!(buf, [0, 0]);
+    }
+
+    #[test]
+    fn write_tag_long_header() {
+        let mut buf = Vec::new();
+        let tag = Tag::Unknown {
+            tag_code: 512,
+            data: &[0; 100],
+        };
+        super::write_tag(&tag, 1, &mut buf).unwrap();
+        let mut expected = vec![0b00_111111, 0b10000000, 100, 0, 0, 0];
+        expected.extend_from_slice(&[0; 100]);
+        assert_eq!(buf, expected);
+    }
+
+    #[test]
+    fn write_tag_swf_version() {
+        let tag = Tag::EnableDebugger(SwfStr::from_bytes(b"pw"));
+
+        // EnableDebugger
+        let mut buf = Vec::new();
+        super::write_tag(&tag, 5, &mut buf).unwrap();
+        assert_eq!(buf, [0b10_000011, 0b00001110, b'p', b'w', 0]);
+
+        // EnableDebugger2
+        let mut buf = Vec::new();
+        super::write_tag(&tag, 6, &mut buf).unwrap();
+        assert_eq!(buf, [0b00_000101, 0b00010000, 0, 0, b'p', b'w', 0]);
+    }
+
+    #[test]
+    fn write_tag_multiple() {
+        let mut buf = Vec::new();
+        super::write_tag(&Tag::ShowFrame, 1, &mut buf).unwrap();
+        super::write_tag(
+            &Tag::Unknown {
+                tag_code: 512,
+                data: &[0; 100],
+            },
+            1,
+            &mut buf,
+        )
+        .unwrap();
+        super::write_tag(&Tag::End, 1, &mut buf).unwrap();
+
+        let mut expected = vec![0b01_000000, 0b00000000];
+        expected.extend_from_slice(&[0b00_111111, 0b10000000, 100, 0, 0, 0]);
+        expected.extend_from_slice(&[0; 100]);
+        expected.extend_from_slice(&[0, 0]);
+        assert_eq!(buf, expected);
     }
 
     #[test]

@@ -18,7 +18,7 @@ with_renderer = { quality = "low" }
 
 [subtests.high.image_comparisons."output.high"]
 tolerance = 16
-max_outliers = 3200
+max_outliers = 3204
 
 [subtests.high.player_options]
 with_renderer = { quality = "high" }

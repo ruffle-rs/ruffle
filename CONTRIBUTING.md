@@ -69,46 +69,27 @@ There is still much Flash functionality that is unimplemented. Check for the ["u
 
 ## Debugging ActionScript Content
 
-To enable debug logging, set `RUST_LOG=warn,ruffle=info,ruffle_core=debug,avm_trace=info` and run Ruffle from the command line.
-This will also enable printing `trace()` statements.
-
-Additionally, if you build Ruffle with `--features avm_debug` then you will activate a few more built-in debugging utilities inside Ruffle, listed below.
+To enable debug logging, set `RUST_LOG=warn,ruffle=info,ruffle_core=debug,avm_trace=info` and run Ruffle from the command line. This will also enable printing `trace()` statements.
 
 ### Logging caught exceptions
 
-Some SWFs may catch and suppress exceptions, which can hide the fact that the SWF is trying to use an unimplemented definition. To log call caught exceptions, build ruffle with `--features avm_debug`.
+Some AVM2 SWFs may catch and suppress exceptions, which can hide the fact that the SWF is trying to use an unimplemented definition. To log call caught exceptions, build ruffle with `--features avm2_debug`. Caught exceptions will then be logged as "Caught exception: ...".
 
-Caught exceptions will be logged as "Caught exception: <exception object>"
-Note that some SWFs throw and catch exceptions as part of their normal control flow, so a caught exception
-does not necessarily indicate a bug in Ruffle.
+Note that some SWFs throw and catch exceptions as part of their normal control flow, so a caught exception does not necessarily indicate a bug in Ruffle.
 
 ### Warnings and Errors
 
-All AVM errors and warnings will print their stack trace so that you can view where they are in relation to the
-ActionScript inside the movie.
+All AVM2 errors will print their stack trace so that you can view where they are in relation to the ActionScript inside the movie.
 
-### Step-By-Step Output
+### Debug Tools
 
-The hotkey <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>D</kbd> toggles verbose AVM debugging output on and off (default off).
-You will be able to follow the flow of ActionScript inside of a SWF movie, as each action is performed.
-Please note that this will likely slow down Ruffle, and it may significantly spam output. Please use sparingly.
-
-When paired with a tool such as [JPEXS](https://github.com/jindrapetrik/jpexs-decompiler), you can compare the ActionScript
-you see being executed in Ruffle with the actual ActionScript inside of a SWF movie, and attempt to find whatever problem
-it is that you're looking for.
-
-### Complete Variable Dumping
-
-The hotkey <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>V</kbd> dumps every variable inside the AVM at the moment you press it.
-This can be very useful to inspect the internal state of games and see, for example, if a coordinate is NaN, your lives
-are negative, or maybe an important object just didn't get initialized.
-
-This currently only works for AVM1. We'd [welcome a PR to change that](https://github.com/ruffle-rs/ruffle/issues/8951)!
-
-### Render Tree Dumping
-
-The hotkey <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>F</kbd> dumps the DisplayObject render tree at the moment you press it.
-This allows you to see Ruffle's representation of the objects on the Stage.
+The Debug Tools in the desktop player provide several functions that aid debugging. These include:
+ - inspecting the properties of AVM1 and AVM2 objects
+ - viewing the display object hierarchy
+ - searching for display objects
+ - viewing and editing the properties of display objects
+ - viewing all loaded AVM2 classes and domains
+ - viewing all loaded SWF movies
 
 ## Reporting Bugs
 
@@ -342,3 +323,7 @@ In addition to that policy, Ruffle has some project-specific rules:
 3. Respect maintainers' time. You are responsible for applying all guidelines, and if your contribution ends up requiring a lot of effort from maintainers, it can get ignored or rejected.
 
 4. Do not "dump" LLM-generated code in PRs. If it's not obvious from the policy: we do not accept Pull Requests with hundreds or thousands of lines of untested code that makes your SWF work. Such PRs will simply get rejected. If you want to upstream your code, follow these guidelines instead.
+
+5. Every commit must have a human author who takes responsibility for the patch. Commits listing an AI agent as author will be rejected.
+
+6. Don't list agents in `Co-authored-by:` trailers; that credit is reserved for people. If an agent helped produce the patch, say so in the description (or use an `Assisted-by:` trailer).

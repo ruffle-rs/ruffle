@@ -3,6 +3,7 @@
 use crate::avm2::Multiname;
 use crate::avm2::activation::Activation;
 use crate::avm2::error::{Error, ReferenceErrorCode, make_error_1125, make_reference_error};
+use crate::avm2::index::ArrayIndex;
 use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{ClassObject, Object, TObject};
 use crate::avm2::value::Value;
@@ -219,16 +220,20 @@ impl<'gc> TObject<'gc> for VectorObject<'gc> {
         }
     }
 
-    fn get_index_property(self, index: usize) -> Option<Value<'gc>> {
+    fn get_index_property(self, index: ArrayIndex) -> Option<Value<'gc>> {
+        let index = index.as_usize();
+
         self.0.vector.borrow().get_optional(index)
     }
 
     fn set_index_property(
         self,
         activation: &mut Activation<'_, 'gc>,
-        index: usize,
+        index: ArrayIndex,
         value: Value<'gc>,
     ) -> Option<Result<(), Error<'gc>>> {
+        let index = index.as_usize();
+
         Some(self.set_element(activation, index, value))
     }
 

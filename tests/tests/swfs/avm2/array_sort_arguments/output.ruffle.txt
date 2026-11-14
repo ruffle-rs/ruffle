@@ -1,0 +1,327 @@
+/// sort()
+returned same array
+array: [1, 10, 20, 3]
+/// sort(16)
+returned same array
+array: [1, 3, 10, 20]
+/// sort(16.7)
+returned same array
+array: [1, 3, 10, 20]
+/// sort(-1)
+returned: [1, 3, 0, 2]
+array: [3, 20, 1, 10]
+/// sort(NaN)
+returned same array
+array: [1, 10, 20, 3]
+/// sort(Infinity)
+returned same array
+array: [1, 10, 20, 3]
+/// sort(-Infinity)
+returned same array
+array: [1, 10, 20, 3]
+/// sort(4294967312)
+returned same array
+array: [1, 3, 10, 20]
+/// sort(1e10)
+returned same array
+array: [1, 10, 20, 3]
+/// sort(-16)
+returned same array
+array: [1, 3, 10, 20]
+/// sort(272)
+returned same array
+array: [1, 3, 10, 20]
+/// sort(256)
+returned same array
+array: [1, 10, 20, 3]
+/// sort("16")
+caught: [class TypeError]
+TypeError: Error #1034: Type Coercion failed: cannot convert "16" to Function.
+	at Array/http://adobe.com/AS3/2006/builtin::sort()
+	at Test$/run()
+	at Test()
+array: [3, 20, 1, 10]
+/// sort("abc")
+caught: [class TypeError]
+TypeError: Error #1034: Type Coercion failed: cannot convert "abc" to Function.
+	at Array/http://adobe.com/AS3/2006/builtin::sort()
+	at Test$/run()
+	at Test()
+array: [3, 20, 1, 10]
+/// sort(true)
+caught: [class TypeError]
+TypeError: Error #1034: Type Coercion failed: cannot convert true to Function.
+	at Array/http://adobe.com/AS3/2006/builtin::sort()
+	at Test$/run()
+	at Test()
+array: [3, 20, 1, 10]
+/// sort(null)
+caught: [class TypeError]
+TypeError: Error #1034: Type Coercion failed: cannot convert null to Function.
+	at Array/http://adobe.com/AS3/2006/builtin::sort()
+	at Test$/run()
+	at Test()
+array: [3, 20, 1, 10]
+/// sort(undefined)
+caught: [class TypeError]
+TypeError: Error #1034: Type Coercion failed: cannot convert undefined to Function.
+	at Array/http://adobe.com/AS3/2006/builtin::sort()
+	at Test$/run()
+	at Test()
+array: [3, 20, 1, 10]
+/// sort({})
+caught: [class TypeError]
+TypeError: Error #1034: Type Coercion failed: cannot convert Object@ADDRESS to Function.
+	at Array/http://adobe.com/AS3/2006/builtin::sort()
+	at Test$/run()
+	at Test()
+array: [3, 20, 1, 10]
+/// sort([16])
+caught: [class TypeError]
+TypeError: Error #1034: Type Coercion failed: cannot convert Array@ADDRESS to Function.
+	at Array/http://adobe.com/AS3/2006/builtin::sort()
+	at Test$/run()
+	at Test()
+array: [3, 20, 1, 10]
+/// sort(noisy)
+caught: [class TypeError]
+TypeError: Error #1034: Type Coercion failed: cannot convert Object@ADDRESS to Function.
+	at Array/http://adobe.com/AS3/2006/builtin::sort()
+	at Test$/run()
+	at Test()
+array: [3, 20, 1, 10]
+/// sort(Number)
+caught: [class TypeError]
+TypeError: Error #1034: Type Coercion failed: cannot convert Number$@ADDRESS to Function.
+	at Array/http://adobe.com/AS3/2006/builtin::sort()
+	at Test$/run()
+	at Test()
+array: [3, 20, 1, 10]
+/// sort(cmp)
+returned same array
+array: [1, 3, 10, 20]
+/// sort(cmp, 2)
+returned same array
+array: [20, 10, 3, 1]
+/// sort(cmp, 2.5)
+returned same array
+array: [20, 10, 3, 1]
+/// sort(cmp, 4294967298)
+returned same array
+array: [20, 10, 3, 1]
+/// sort(cmp, Infinity)
+returned same array
+array: [1, 3, 10, 20]
+/// sort(cmp, -1)
+returned: [1, 3, 0, 2]
+array: [3, 20, 1, 10]
+/// sort(cmp, "2")
+caught: [class TypeError]
+TypeError: Error #1034: Type Coercion failed: cannot convert "2" to Number.
+	at Array/http://adobe.com/AS3/2006/builtin::sort()
+	at Test$/run()
+	at Test()
+array: [3, 20, 1, 10]
+/// sort(cmp, true)
+caught: [class TypeError]
+TypeError: Error #1034: Type Coercion failed: cannot convert true to Number.
+	at Array/http://adobe.com/AS3/2006/builtin::sort()
+	at Test$/run()
+	at Test()
+array: [3, 20, 1, 10]
+/// sort(cmp, null)
+caught: [class TypeError]
+TypeError: Error #1034: Type Coercion failed: cannot convert null to Number.
+	at Array/http://adobe.com/AS3/2006/builtin::sort()
+	at Test$/run()
+	at Test()
+array: [3, 20, 1, 10]
+/// sort(cmp, undefined)
+caught: [class TypeError]
+TypeError: Error #1034: Type Coercion failed: cannot convert undefined to Number.
+	at Array/http://adobe.com/AS3/2006/builtin::sort()
+	at Test$/run()
+	at Test()
+array: [3, 20, 1, 10]
+/// sort(cmp, {})
+caught: [class TypeError]
+TypeError: Error #1034: Type Coercion failed: cannot convert Object@ADDRESS to Number.
+	at Array/http://adobe.com/AS3/2006/builtin::sort()
+	at Test$/run()
+	at Test()
+array: [3, 20, 1, 10]
+/// sort(cmp, noisy)
+caught: [class TypeError]
+TypeError: Error #1034: Type Coercion failed: cannot convert Object@ADDRESS to Number.
+	at Array/http://adobe.com/AS3/2006/builtin::sort()
+	at Test$/run()
+	at Test()
+array: [3, 20, 1, 10]
+/// sort(cmp, 2, "extra")
+returned same array
+array: [20, 10, 3, 1]
+/// sort(null, 16)
+caught: [class TypeError]
+TypeError: Error #1034: Type Coercion failed: cannot convert null to Function.
+	at Array/http://adobe.com/AS3/2006/builtin::sort()
+	at Test$/run()
+	at Test()
+array: [3, 20, 1, 10]
+/// sort(undefined, 16)
+caught: [class TypeError]
+TypeError: Error #1034: Type Coercion failed: cannot convert undefined to Function.
+	at Array/http://adobe.com/AS3/2006/builtin::sort()
+	at Test$/run()
+	at Test()
+array: [3, 20, 1, 10]
+/// sort({}, 16)
+caught: [class TypeError]
+TypeError: Error #1034: Type Coercion failed: cannot convert Object@ADDRESS to Function.
+	at Array/http://adobe.com/AS3/2006/builtin::sort()
+	at Test$/run()
+	at Test()
+array: [3, 20, 1, 10]
+/// sort(16, 2)
+returned same array
+array: [1, 3, 10, 20]
+/// sort(16, {})
+returned same array
+array: [1, 3, 10, 20]
+/// sort("16", 2)
+caught: [class TypeError]
+TypeError: Error #1034: Type Coercion failed: cannot convert "16" to Function.
+	at Array/http://adobe.com/AS3/2006/builtin::sort()
+	at Test$/run()
+	at Test()
+array: [3, 20, 1, 10]
+/// sort(16, 2, "extra")
+returned same array
+array: [1, 3, 10, 20]
+/// sort(0)
+[3, 20, 1, 10] returned same array, array: [1, 10, 20, 3]
+[b, A, c, B] returned same array, array: [A, B, b, c]
+[3, 1, 3] returned same array, array: [1, 3, 3]
+/// sort(1)
+[3, 20, 1, 10] returned same array, array: [1, 10, 20, 3]
+[b, A, c, B] returned same array, array: [A, B, b, c]
+[3, 1, 3] returned same array, array: [1, 3, 3]
+/// sort(2)
+[3, 20, 1, 10] returned same array, array: [3, 20, 10, 1]
+[b, A, c, B] returned same array, array: [c, b, B, A]
+[3, 1, 3] returned same array, array: [3, 3, 1]
+/// sort(3)
+[3, 20, 1, 10] returned same array, array: [3, 20, 10, 1]
+[b, A, c, B] returned same array, array: [c, b, B, A]
+[3, 1, 3] returned same array, array: [3, 3, 1]
+/// sort(4)
+[3, 20, 1, 10] returned same array, array: [1, 10, 20, 3]
+[b, A, c, B] returned same array, array: [A, B, b, c]
+[3, 1, 3] returned 0, array: [3, 1, 3]
+/// sort(5)
+[3, 20, 1, 10] returned same array, array: [1, 10, 20, 3]
+[b, A, c, B] returned 0, array: [b, A, c, B]
+[3, 1, 3] returned 0, array: [3, 1, 3]
+/// sort(6)
+[3, 20, 1, 10] returned same array, array: [3, 20, 10, 1]
+[b, A, c, B] returned same array, array: [c, b, B, A]
+[3, 1, 3] returned 0, array: [3, 1, 3]
+/// sort(7)
+[3, 20, 1, 10] returned same array, array: [3, 20, 10, 1]
+[b, A, c, B] returned 0, array: [b, A, c, B]
+[3, 1, 3] returned 0, array: [3, 1, 3]
+/// sort(8)
+[3, 20, 1, 10] returned [2, 3, 1, 0], array: [3, 20, 1, 10]
+[b, A, c, B] returned [1, 3, 0, 2], array: [b, A, c, B]
+[3, 1, 3] returned [1, 0, 2], array: [3, 1, 3]
+/// sort(9)
+[3, 20, 1, 10] returned [2, 3, 1, 0], array: [3, 20, 1, 10]
+[b, A, c, B] returned [1, 3, 0, 2], array: [b, A, c, B]
+[3, 1, 3] returned [1, 0, 2], array: [3, 1, 3]
+/// sort(10)
+[3, 20, 1, 10] returned [0, 1, 3, 2], array: [3, 20, 1, 10]
+[b, A, c, B] returned [2, 0, 3, 1], array: [b, A, c, B]
+[3, 1, 3] returned [0, 2, 1], array: [3, 1, 3]
+/// sort(11)
+[3, 20, 1, 10] returned [0, 1, 3, 2], array: [3, 20, 1, 10]
+[b, A, c, B] returned [2, 0, 3, 1], array: [b, A, c, B]
+[3, 1, 3] returned [0, 2, 1], array: [3, 1, 3]
+/// sort(12)
+[3, 20, 1, 10] returned [2, 3, 1, 0], array: [3, 20, 1, 10]
+[b, A, c, B] returned [1, 3, 0, 2], array: [b, A, c, B]
+[3, 1, 3] returned 0, array: [3, 1, 3]
+/// sort(13)
+[3, 20, 1, 10] returned [2, 3, 1, 0], array: [3, 20, 1, 10]
+[b, A, c, B] returned 0, array: [b, A, c, B]
+[3, 1, 3] returned 0, array: [3, 1, 3]
+/// sort(14)
+[3, 20, 1, 10] returned [0, 1, 3, 2], array: [3, 20, 1, 10]
+[b, A, c, B] returned [2, 0, 3, 1], array: [b, A, c, B]
+[3, 1, 3] returned 0, array: [3, 1, 3]
+/// sort(15)
+[3, 20, 1, 10] returned [0, 1, 3, 2], array: [3, 20, 1, 10]
+[b, A, c, B] returned 0, array: [b, A, c, B]
+[3, 1, 3] returned 0, array: [3, 1, 3]
+/// sort(16)
+[3, 20, 1, 10] returned same array, array: [1, 3, 10, 20]
+[b, A, c, B] returned same array, array: [c, A, b, B]
+[3, 1, 3] returned same array, array: [1, 3, 3]
+/// sort(17)
+[3, 20, 1, 10] returned same array, array: [1, 3, 10, 20]
+[b, A, c, B] returned same array, array: [c, A, b, B]
+[3, 1, 3] returned same array, array: [1, 3, 3]
+/// sort(18)
+[3, 20, 1, 10] returned same array, array: [20, 10, 3, 1]
+[b, A, c, B] returned same array, array: [c, A, b, B]
+[3, 1, 3] returned same array, array: [3, 3, 1]
+/// sort(19)
+[3, 20, 1, 10] returned same array, array: [20, 10, 3, 1]
+[b, A, c, B] returned same array, array: [c, A, b, B]
+[3, 1, 3] returned same array, array: [3, 3, 1]
+/// sort(20)
+[3, 20, 1, 10] returned same array, array: [1, 3, 10, 20]
+[b, A, c, B] returned 0, array: [b, A, c, B]
+[3, 1, 3] returned 0, array: [3, 1, 3]
+/// sort(21)
+[3, 20, 1, 10] returned same array, array: [1, 3, 10, 20]
+[b, A, c, B] returned 0, array: [b, A, c, B]
+[3, 1, 3] returned 0, array: [3, 1, 3]
+/// sort(22)
+[3, 20, 1, 10] returned same array, array: [20, 10, 3, 1]
+[b, A, c, B] returned 0, array: [b, A, c, B]
+[3, 1, 3] returned 0, array: [3, 1, 3]
+/// sort(23)
+[3, 20, 1, 10] returned same array, array: [20, 10, 3, 1]
+[b, A, c, B] returned 0, array: [b, A, c, B]
+[3, 1, 3] returned 0, array: [3, 1, 3]
+/// sort(24)
+[3, 20, 1, 10] returned [2, 0, 3, 1], array: [3, 20, 1, 10]
+[b, A, c, B] returned [2, 1, 0, 3], array: [b, A, c, B]
+[3, 1, 3] returned [1, 0, 2], array: [3, 1, 3]
+/// sort(25)
+[3, 20, 1, 10] returned [2, 0, 3, 1], array: [3, 20, 1, 10]
+[b, A, c, B] returned [2, 1, 0, 3], array: [b, A, c, B]
+[3, 1, 3] returned [1, 0, 2], array: [3, 1, 3]
+/// sort(26)
+[3, 20, 1, 10] returned [1, 3, 0, 2], array: [3, 20, 1, 10]
+[b, A, c, B] returned [2, 1, 0, 3], array: [b, A, c, B]
+[3, 1, 3] returned [0, 2, 1], array: [3, 1, 3]
+/// sort(27)
+[3, 20, 1, 10] returned [1, 3, 0, 2], array: [3, 20, 1, 10]
+[b, A, c, B] returned [2, 1, 0, 3], array: [b, A, c, B]
+[3, 1, 3] returned [0, 2, 1], array: [3, 1, 3]
+/// sort(28)
+[3, 20, 1, 10] returned [2, 0, 3, 1], array: [3, 20, 1, 10]
+[b, A, c, B] returned 0, array: [b, A, c, B]
+[3, 1, 3] returned 0, array: [3, 1, 3]
+/// sort(29)
+[3, 20, 1, 10] returned [2, 0, 3, 1], array: [3, 20, 1, 10]
+[b, A, c, B] returned 0, array: [b, A, c, B]
+[3, 1, 3] returned 0, array: [3, 1, 3]
+/// sort(30)
+[3, 20, 1, 10] returned [1, 3, 0, 2], array: [3, 20, 1, 10]
+[b, A, c, B] returned 0, array: [b, A, c, B]
+[3, 1, 3] returned 0, array: [3, 1, 3]
+/// sort(31)
+[3, 20, 1, 10] returned [1, 3, 0, 2], array: [3, 20, 1, 10]
+[b, A, c, B] returned 0, array: [b, A, c, B]
+[3, 1, 3] returned 0, array: [3, 1, 3]

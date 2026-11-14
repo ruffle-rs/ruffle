@@ -4,8 +4,8 @@ use crate::avm2::activation::Activation;
 use crate::avm2::class::Class;
 use crate::avm2::dynamic_map::{DynamicKey, DynamicMap};
 use crate::avm2::error;
-use crate::avm2::object::array_object::parse_u32_index;
-use crate::avm2::object::{ArrayObject, ClassObject, FunctionObject, Object, TObject};
+use crate::avm2::index::{ArrayIndex, parse_u32_index};
+use crate::avm2::object::{ClassObject, FunctionObject, Object, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::vtable::VTable;
 use crate::avm2::{Error, Multiname, QName};
@@ -479,7 +479,7 @@ pub fn get_dynamic_property<'gc>(
         //
         // This special-case doesn't apply to anything else (e.g. Vector elements).
         if let Some(array) = this_proto.as_array_object()
-            && let Some(index) = ArrayObject::as_array_index(&local_name)
+            && let Some(index) = ArrayIndex::from_wstr(&local_name)
             && let Some(value) = array.get_index_property(index)
         {
             return Ok(Some(value));

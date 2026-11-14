@@ -7,6 +7,7 @@ use crate::avm2::error::{
     make_error_1115,
 };
 use crate::avm2::function::{FunctionArgs, exec};
+use crate::avm2::index::ArrayIndex;
 use crate::avm2::object::{NamespaceObject, Object, TObject};
 use crate::avm2::property::Property;
 use crate::avm2::script::TranslationUnit;
@@ -641,15 +642,12 @@ impl<'gc> Value<'gc> {
 
     // If the current value represents an index (a unsigned integer less than u32::MAX),
     // then return that value. Returns None otherwise.
-    pub fn try_as_index(&self) -> Option<usize> {
-        Some(match self {
-            value @ Value::Integer(num) if value.is_u32() => *num as usize,
-            value @ Value::Number(num) if value.is_u32() && *num < u32::MAX as f64 => {
-                assert!(num.is_finite());
-                *num as usize
-            }
-            _ => return None,
-        })
+    pub fn try_as_index(&self) -> Option<ArrayIndex> {
+        match self {
+            Value::Integer(num) => ArrayIndex::from_i32(*num),
+            Value::Number(num) => ArrayIndex::from_f64(*num),
+            _ => None,
+        }
     }
 
     /// Yields `true` if the given value is an unboxed primitive value.

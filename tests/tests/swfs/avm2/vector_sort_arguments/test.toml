@@ -1,0 +1,11 @@
+num_ticks = 1
+# Stack trace frames and class names in error messages differ from Flash Player.
+# Sorting strings with NUMERIC doesn't throw TypeError #1034 like in Flash Player.
+known_failure = true
+
+[[compilers]]
+type = "Asc"
+target = "test.swf"
+class = "Test"
+scripts = ["Test.as"]
+swf_version = 43

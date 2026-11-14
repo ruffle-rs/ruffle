@@ -5,7 +5,7 @@ use ruffle_macros::istr;
 
 use crate::avm1::function::{FunctionObject, NativeFunction, TableNativeFunction};
 use crate::avm1::property::Attribute;
-use crate::avm1::{Object, Value};
+use crate::avm1::{Activation, Object, Value};
 use crate::string::{HasStringContext, StringContext, WStr};
 
 /// Selects the own-property insertion order Flash uses when building a given
@@ -76,6 +76,30 @@ impl<'a, 'gc> DeclContext<'a, 'gc> {
         (ctx, object, function)
     }
 
+    /// Creates a context for defining properties after the globals have been
+    /// created, such as in [`define_lazy_proto_properties`].
+    ///
+    /// `Function` is resolved on the activation's `_global`, which user code
+    /// can change. If it (or its prototype) isn't an object, the Object
+    /// prototype is used instead, which doesn't matter for properties, as
+    /// their functions are unobservable by user code. Such a context shouldn't
+    /// be used to build classes.
+    pub fn from_activation(activation: &'a mut Activation<'_, 'gc>) -> Self {
+        let object_proto = activation.prototypes().object;
+        let function_class = activation.resolve_class([istr!("Function")]);
+        let fn_proto = match function_class.and_then(|c| c.prototype(activation)) {
+            Some(Value::Object(fn_proto)) => fn_proto,
+            _ => object_proto,
+        };
+        let function_class = function_class.unwrap_or(object_proto);
+        Self {
+            strings: &mut activation.context.strings,
+            object_proto,
+            fn_proto,
+            function_class,
+        }
+    }
+
     pub fn gc(&self) -> &'gc Mutation<'gc> {
         self.strings.gc()
     }
@@ -83,7 +107,7 @@ impl<'a, 'gc> DeclContext<'a, 'gc> {
     #[inline(never)]
     pub fn define_properties_on(&mut self, this: Object<'gc>, decls: &[Declaration<'gc>]) {
         for decl in decls {
-            decl.define_on(self.strings, this, self.fn_proto);
+            decl.define_on(self.strings, this, self.fn_proto, self.object_proto);
         }
     }
 
@@ -187,6 +211,32 @@ pub struct SystemClass<'gc> {
 /// isn't useful at runtime.
 pub type StaticDeclarations = for<'gc> fn(&DeclContext<'_, 'gc>) -> &'gc [Declaration<'gc>];
 
+/// Defines `decls` on `proto`, the prototype of a newly created instance of a
+/// native class, unless lazily defined properties were already defined on it.
+///
+/// Flash Player doesn't define some properties of native classes on their
+/// prototype up front, but only when an instance with a native object is
+/// created, on the prototype that instance gets. This happens at most once for
+/// each prototype object, regardless of what it contains: existing values are
+/// overwritten, and deleted properties are never defined on that prototype
+/// again.
+pub fn define_lazy_proto_properties<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    proto: Object<'gc>,
+    decls: StaticDeclarations,
+) {
+    if !activation
+        .context
+        .avm1
+        .mark_lazy_proto_initialized(activation.gc(), proto)
+    {
+        return;
+    }
+
+    let mut context = DeclContext::from_activation(activation);
+    context.define_properties_on(proto, decls(&context));
+}
+
 /// The declaration of a property, method, or simple field, that
 /// can be defined on a [`Object`].
 #[derive(Copy, Clone)]
@@ -235,9 +285,11 @@ impl<'gc> Declaration<'gc> {
         context: &mut StringContext<'gc>,
         this: Object<'gc>,
         fn_proto_obj: Object<'gc>,
+        object_proto_obj: Object<'gc>,
     ) {
         let mc = context.gc();
         let fn_proto = Some(Value::from(fn_proto_obj));
+        let obj_proto = Some(Value::from(object_proto_obj));
 
         let name = context.intern_static(WStr::from_units(self.name));
         let value = match self.kind {
@@ -264,11 +316,13 @@ impl<'gc> Declaration<'gc> {
                 return;
             }
             DeclKind::Method(f) | DeclKind::Function(f) => {
-                let p = matches!(self.kind, DeclKind::Function(_)).then_some(fn_proto_obj);
+                let p = matches!(self.kind, DeclKind::Function(_))
+                    .then(|| Object::new(context, obj_proto));
                 FunctionObject::native(f).build(context, fn_proto, p).into()
             }
             DeclKind::TableMethod(f, index) | DeclKind::TableFunction(f, index) => {
-                let p = matches!(self.kind, DeclKind::Function(_)).then_some(fn_proto_obj);
+                let p = matches!(self.kind, DeclKind::TableFunction(..))
+                    .then(|| Object::new(context, obj_proto));
                 FunctionObject::table_native(f, index)
                     .build(context, fn_proto, p)
                     .into()

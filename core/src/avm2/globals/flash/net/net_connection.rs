@@ -15,7 +15,6 @@ use flash_lso::types::ObjectId;
 use flash_lso::types::Value as AMFValue;
 use fnv::FnvHashMap;
 use ruffle_wstr::WStr;
-use std::rc::Rc;
 
 pub fn connect<'gc>(
     activation: &mut Activation<'_, 'gc>,
@@ -284,7 +283,7 @@ pub fn call<'gc>(
     let mut object_table = FnvHashMap::default();
     for arg in args.get_slice_from(2..) {
         let value = serialize_value(activation, arg, AMFVersion::AMF0, &mut object_table);
-        arguments.push(Rc::new(value));
+        arguments.push(value);
     }
 
     if let Some(handle) = connection.handle() {
@@ -293,7 +292,10 @@ pub fn call<'gc>(
                 activation.context,
                 handle,
                 command.to_string(),
-                AMFValue::StrictArray(ObjectId::INVALID, arguments),
+                AMFValue::StrictArray {
+                    id: ObjectId::INVALID,
+                    values: arguments,
+                },
                 responder,
             );
         } else {
@@ -301,7 +303,10 @@ pub fn call<'gc>(
                 activation.context,
                 handle,
                 command.to_string(),
-                AMFValue::StrictArray(ObjectId::INVALID, arguments),
+                AMFValue::StrictArray {
+                    id: ObjectId::INVALID,
+                    values: arguments,
+                },
             );
         }
 
@@ -347,7 +352,7 @@ pub fn add_header<'gc>(
             Header {
                 name: name.to_string(),
                 must_understand,
-                value: Rc::new(value),
+                value,
             },
         );
     }

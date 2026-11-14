@@ -32,15 +32,6 @@ use swf::DoAbc2Flag;
 use swf::avm2::read::Reader;
 use swf::error::AbcParseError;
 
-#[macro_export]
-macro_rules! avm_debug {
-    ($avm: expr, $($arg:tt)*) => (
-        if $avm.show_debug_output() {
-            tracing::debug!($($arg)*)
-        }
-    )
-}
-
 pub mod activation;
 mod amf;
 pub mod api_version;
@@ -58,6 +49,7 @@ mod filters;
 mod flv;
 mod function;
 pub mod globals;
+mod index;
 mod metadata;
 mod method;
 mod multiname;
@@ -186,10 +178,8 @@ pub struct Avm2<'gc> {
     #[collect(require_static)]
     pub root_api_version: ApiVersion,
 
-    #[cfg(feature = "avm_debug")]
-    pub debug_output: bool,
-
-    pub optimizer_enabled: bool,
+    #[collect(require_static)]
+    pub optimizer_settings: OptimizerSettings,
 }
 
 impl<'gc> Avm2<'gc> {
@@ -236,10 +226,7 @@ impl<'gc> Avm2<'gc> {
             // Set the lowest version for now - this will be overridden when we set our movie
             root_api_version: ApiVersion::AllVersions,
 
-            #[cfg(feature = "avm_debug")]
-            debug_output: false,
-
-            optimizer_enabled: true,
+            optimizer_settings: OptimizerSettings::enable_all(),
         }
     }
 
@@ -634,7 +621,7 @@ impl<'gc> Avm2<'gc> {
     }
 
     pub fn capture_call_stack(&self) -> CallStack<'gc> {
-        self.call_stack.borrow().clone()
+        self.call_stack.borrow().capture()
     }
 
     fn push_scope(&mut self, scope: Scope<'gc>) {
@@ -645,25 +632,6 @@ impl<'gc> Avm2<'gc> {
         self.scope_stack.pop();
     }
 
-    #[cfg(feature = "avm_debug")]
-    #[inline]
-    pub fn show_debug_output(&self) -> bool {
-        self.debug_output
-    }
-
-    #[cfg(not(feature = "avm_debug"))]
-    pub const fn show_debug_output(&self) -> bool {
-        false
-    }
-
-    #[cfg(feature = "avm_debug")]
-    pub fn set_show_debug_output(&mut self, visible: bool) {
-        self.debug_output = visible;
-    }
-
-    #[cfg(not(feature = "avm_debug"))]
-    pub const fn set_show_debug_output(&self, _visible: bool) {}
-
     /// Gets the public namespace, versioned based on the current root SWF.
     /// See `AvmCore::findPublicNamespace()`
     /// https://github.com/adobe/avmplus/blob/858d034a3bd3a54d9b70909386435cf4aec81d21/core/AvmCore.cpp#L5809C25-L5809C25
@@ -671,12 +639,12 @@ impl<'gc> Avm2<'gc> {
         self.namespaces.public_for(self.root_api_version)
     }
 
-    pub fn optimizer_enabled(&self) -> bool {
-        self.optimizer_enabled
+    pub fn optimizer_settings(&self) -> OptimizerSettings {
+        self.optimizer_settings
     }
 
-    pub fn set_optimizer_enabled(&mut self, value: bool) {
-        self.optimizer_enabled = value;
+    pub fn set_optimizer_settings(&mut self, settings: OptimizerSettings) {
+        self.optimizer_settings = settings;
     }
 
     // Report an uncaught AVM2 error.
@@ -702,6 +670,21 @@ impl<'gc> Avm2<'gc> {
         tracing::error!("{}: {}", extra_info, stringified);
 
         // TODO: push the error onto `loaderInfo.uncaughtErrorEvents`
+    }
+}
+
+#[derive(Clone, Copy)]
+pub struct OptimizerSettings {
+    pub early_binding_enabled: bool,
+    pub dse_enabled: bool,
+}
+
+impl OptimizerSettings {
+    pub fn enable_all() -> Self {
+        OptimizerSettings {
+            early_binding_enabled: true,
+            dse_enabled: true,
+        }
     }
 }
 

@@ -1,12 +1,14 @@
 //! `flash.net` namespace
 
-use crate::avm2::error::{Error1014Type, make_error_1014, make_error_2007};
+use crate::avm2::error::{Error1014Type, make_error_1014, make_error_2007, make_error_2146};
 use crate::avm2::function::FunctionArgs;
 use crate::avm2::globals::slots::flash_net_url_request as url_request_slots;
 use crate::avm2::object::TObject;
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::{Activation, Error, Object, Value};
+use crate::avm2_stub_method;
 use crate::backend::navigator::NavigationMethod;
+use crate::config::NetworkingAccessMode;
 use indexmap::IndexMap;
 
 pub mod file_reference;
@@ -78,6 +80,10 @@ pub fn navigate_to_url<'gc>(
     _this: Value<'gc>,
     args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
+    if activation.context.allow_networking != NetworkingAccessMode::All {
+        return Err(make_error_2146(activation, "navigateToURL"));
+    }
+
     let request = args.get_object(activation, 0, "request")?;
 
     let target = args.get_string(activation, 1);
@@ -102,6 +108,20 @@ pub fn navigate_to_url<'gc>(
             Ok(Value::Undefined)
         }
     }
+}
+
+/// Implements `flash.net.sendToURL`
+pub fn send_to_url<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    _this: Value<'gc>,
+    _args: FunctionArgs<'_, 'gc>,
+) -> Result<Value<'gc>, Error<'gc>> {
+    if activation.context.allow_networking == NetworkingAccessMode::None {
+        return Err(make_error_2146(activation, "sendToURL"));
+    }
+
+    avm2_stub_method!(activation, "flash.net", "sendToURL");
+    Ok(Value::Undefined)
 }
 
 pub fn register_class_alias<'gc>(

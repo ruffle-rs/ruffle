@@ -1,0 +1,13 @@
+TEST: navigateToURL
+Navigator::navigate_to_url:
+  URL: https://example.com/
+  Target: _blank
+  Method: GET
+no error
+END
+TEST: fscommand
+no error
+END
+TEST: sendToURL
+no error
+END
