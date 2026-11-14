@@ -316,11 +316,11 @@ pub fn start<'gc>(
     };
 
     match shader_handle.0.parsed_shader().output_channels() {
+        // Flash only rejects 1/2-channel outputs for `BitmapData` targets.
         Some(3 | 4) => {}
+        Some(1 | 2) if matches!(pixel_bender_target, PixelBenderTarget::Bytes { .. }) => {}
         channels => {
-            tracing::warn!(
-                "Unsupported number of shader output channels: {channels:?}, expected 3 or 4"
-            );
+            tracing::warn!("Unsupported shader output channels {channels:?} for this target");
             return Err(make_error_2162(activation));
         }
     }
