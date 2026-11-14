@@ -30,7 +30,7 @@ use crate::display_object::{
 };
 use crate::html::TextFormat;
 use crate::streams::NetStream;
-use crate::string::AvmString;
+use crate::string::{AvmString, WStr};
 use gc_arena::{Collect, Gc, Mutation};
 use ruffle_macros::istr;
 use std::cell::{Cell, RefCell};
@@ -41,6 +41,29 @@ pub mod stage_object;
 pub mod super_object;
 
 pub use script_object::{Object, ObjectHandle, ObjectWeak};
+
+/// Parse a canonical nonnegative AVM1 array index.
+pub(crate) fn parse_canonical_array_index(name: &WStr) -> Option<i32> {
+    let Ok(index) = name.parse::<i32>() else {
+        return None;
+    };
+
+    // A canonical nonnegative decimal index has no sign or leading zero.
+    let is_canonical = match index {
+        0 => name.len() == 1,
+        1.. => name
+            .get(0)
+            .is_some_and(|first| (b'1' as u16..=b'9' as u16).contains(&first)),
+        _ => false,
+    };
+
+    debug_assert_eq!(
+        is_canonical,
+        index >= 0 && name == index.to_string().as_bytes()
+    );
+
+    is_canonical.then_some(index)
+}
 
 #[derive(Copy, Clone, Collect)]
 #[collect(no_drop)]
