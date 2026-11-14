@@ -1,5 +1,4 @@
 package flash.display {
-    import __ruffle__.stub_getter;
 
     import flash.accessibility.AccessibilityProperties;
     import flash.geom.ColorTransform;
@@ -42,7 +41,6 @@ package flash.display {
         public native function areInaccessibleObjectsUnderPoint(point:Point):Boolean;
 
         public function get textSnapshot():TextSnapshot {
-            stub_getter("flash.display.DisplayObjectContainer", "textSnapshot")
             return new TextSnapshot();
         }
     }

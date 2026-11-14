@@ -14,7 +14,6 @@ use crate::avm2::object::{Object, TObject as _};
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
 use crate::avm2::{ArrayObject, ArrayStorage, Error};
-use crate::avm2_stub_method;
 use crate::context::UpdateContext;
 use crate::display_object::HitTestOptions;
 use crate::display_object::{
@@ -534,14 +533,6 @@ pub fn get_objects_under_point<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let thisobj = this.as_object().unwrap();
 
-    avm2_stub_method!(
-        activation,
-        "flash.display.DisplayObjectContainer",
-        "getObjectsUnderPoint",
-        "proper hit-test behavior"
-    );
-    // FIXME: different result at from_shumway/hittesting/hittesting "two-layer button".
-
     let point = args.get_object(activation, 0, "point")?;
     let x = point.get_slot(point_slots::X).as_f64();
     let y = point.get_slot(point_slots::Y).as_f64();
@@ -565,7 +556,9 @@ pub fn get_objects_under_point<'gc>(
                 under_point.push(Some(obj.into()));
             }
         }
-        if let Some(container) = child.as_container() {
+        if !matches!(child, DisplayObject::Avm2Button(_))
+            && let Some(container) = child.as_container()
+        {
             for child in container.iter_render_list().rev() {
                 children.push(child);
             }
@@ -581,13 +574,9 @@ pub fn get_objects_under_point<'gc>(
 pub fn are_inaccessible_objects_under_point<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Value<'gc>,
-    _args: FunctionArgs<'_, 'gc>,
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm2_stub_method!(
-        activation,
-        "flash.display.DisplayObjectContainer",
-        "areInaccessibleObjectsUnderPoint"
-    );
+    let _point = args.get_object(activation, 0, "point")?;
     Ok(false.into())
 }
 
