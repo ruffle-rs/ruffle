@@ -11,8 +11,8 @@ use crate::context::{RenderContext, UpdateContext};
 use crate::display_object::{RenderOptions, TDisplayObject};
 use gc_arena::Mutation;
 use ruffle_render::backend::RenderBackend;
-use ruffle_render::bitmap::{PixelRegion, PixelSnapping};
-use ruffle_render::commands::{CommandHandler, CommandList, RenderBlendMode};
+use ruffle_render::bitmap::{BitmapHandle, PixelRegion, PixelSnapping};
+use ruffle_render::commands::{Command, CommandHandler, CommandList, RenderBlendMode};
 use ruffle_render::filters::Filter;
 use ruffle_render::matrix::Matrix;
 use ruffle_render::quality::StageQuality;
@@ -1553,9 +1553,21 @@ pub fn draw<'gc>(
         cache_draws.is_empty(),
         "BitmapData.draw() should not use cacheAsBitmap"
     );
-    let image = context
-        .renderer
-        .render_offscreen(handle, commands, quality, dirty_region);
+
+    // Flash Player renders the source directly into the target, one object at a time.
+    // So when the source contains a `Bitmap` of the target itself, that bitmap shows
+    // the target as already modified by the objects drawn before it (e.g. "feedback"
+    // effects drawing a container that holds their own bitmap). We emulate this by
+    // rendering the commands in consecutive passes, split before each such bitmap.
+    let mut image = None;
+    for commands in split_before_self_bitmaps(commands, &handle) {
+        image = context
+            .renderer
+            .render_offscreen(handle.clone(), commands, quality, dirty_region);
+        if image.is_none() {
+            break;
+        }
+    }
 
     match image {
         Some(sync_handle) => {
@@ -1564,6 +1576,48 @@ pub fn draw<'gc>(
         }
         None => Err(BitmapDataDrawError::Unimplemented),
     }
+}
+
+/// Splits `commands` before each top-level command rendering the bitmap `target`,
+/// so that they can be rendered in consecutive passes (see `draw`).
+///
+/// Commands nested in masks are never split; if the bitmap is only drawn there,
+/// the list is returned unchanged.
+fn split_before_self_bitmaps(commands: CommandList, target: &BitmapHandle) -> Vec<CommandList> {
+    let mut mask_depth = 0;
+    let mut split_points = vec![];
+    for (index, command) in commands.commands.iter().enumerate() {
+        match command {
+            Command::PushMask => mask_depth += 1,
+            Command::PopMask => mask_depth -= 1,
+            Command::RenderBitmap { bitmap, .. }
+                if mask_depth == 0 && index > 0 && bitmap == target =>
+            {
+                split_points.push(index);
+            }
+            _ => {}
+        }
+    }
+    if split_points.is_empty() {
+        return vec![commands];
+    }
+
+    let mut parts = Vec::with_capacity(split_points.len() + 1);
+    let mut rest = commands.commands;
+    for split in split_points.into_iter().rev() {
+        let tail = rest.split_off(split);
+        parts.push(tail);
+    }
+    parts.push(rest);
+    parts.reverse();
+    parts
+        .into_iter()
+        .map(|commands| {
+            let mut list = CommandList::new();
+            list.commands = commands;
+            list
+        })
+        .collect()
 }
 
 pub fn get_vector<'gc>(
