@@ -1,0 +1,50 @@
+<!doctype html>
+<html>
+
+<head>
+    <title>pointer_coords</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <style>
+        /* The SWF stage is 200x200. The wrapper halves it visually with
+         * CSS `zoom`, so the canvas's bounding rect is 100x100 on screen
+         * while the backing buffer stays 200x200 (or 200*DPR). Pointer-coord
+         * mapping must compensate for this so a click at the visual centre
+         * lands on stage (100, 100).
+         *
+         * `zoom` (not `transform: scale`) is the vector that actually
+         * reproduces the bug: under `zoom` a synthetic event's offsetX is
+         * reported in the zoomed/visual space, so the old `offsetX * dpr`
+         * mapping lands at half the correct stage coord. Under `transform`
+         * offsetX is reported in unscaled layout space and the old mapping
+         * already happened to be correct, which is why a transform-based
+         * fixture passed with and without the fix.
+         *
+         * The wrapper is pinned to the viewport origin (margin 0 + absolute
+         * top/left 0) so the canvas's bounding rect is exactly (0, 0, 100,
+         * 100). That lets the test dispatch pointer events at hardcoded
+         * client coords instead of measuring the canvas with
+         * getBoundingClientRect (the very API under test). */
+        body {
+            margin: 0;
+        }
+        #scaled-wrapper {
+            position: absolute;
+            top: 0;
+            left: 0;
+            zoom: 0.5;
+            width: 200px;
+            height: 200px;
+        }
+        #objectElement {
+            display: block;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="scaled-wrapper">
+        <object type="application/x-shockwave-flash" data="test.swf" width="200" height="200" id="objectElement"></object>
+    </div>
+</body>
+
+</html>
