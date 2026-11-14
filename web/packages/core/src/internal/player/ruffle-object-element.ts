@@ -83,20 +83,11 @@ export class RuffleObjectElement extends RufflePlayerElement {
         }
 
         if (url) {
-            // Get the configuration options that have been overwritten for this movie.
-            const attributeCheckOptions = [
-                "allowNetworking",
-                "base",
-                "bgcolor",
-                "flashvars",
-            ];
             const getOptionString = (optionName: string) =>
                 findCaseInsensitive(
                     this.params,
                     optionName,
-                    attributeCheckOptions.includes(optionName)
-                        ? this.getAttribute(optionName)
-                        : null,
+                    this.getAttribute(optionName),
                 );
             const options = getPolyfillOptions(url, getOptionString);
 
