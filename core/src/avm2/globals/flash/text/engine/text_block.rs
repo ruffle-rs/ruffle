@@ -11,7 +11,6 @@ use crate::display_object::{DisplayObject, EditText, TDisplayObject, TextLine};
 use crate::fte::{TextBaselineValue, TextLineCreationResultValue, TextRotationValue};
 use crate::html::{FormatSpans, TextFormat, TextSpan};
 use crate::string::{WStr, WString};
-use crate::{avm2_stub_getter, avm2_stub_setter};
 
 pub use crate::avm2::object::text_block_allocator;
 
@@ -25,17 +24,11 @@ pub fn get_apply_non_linear_font_scaling<'gc>(
 }
 
 pub fn set_apply_non_linear_font_scaling<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap().as_text_block_object().unwrap();
-
-    avm2_stub_setter!(
-        activation,
-        "flash.text.engine.TextBlock",
-        "applyNonLinearFontScaling"
-    );
 
     this.set_apply_non_linear_font_scaling(args.get_bool(0));
 
@@ -60,12 +53,6 @@ pub fn set_baseline_font_description<'gc>(
     args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap().as_text_block_object().unwrap();
-
-    avm2_stub_setter!(
-        activation,
-        "flash.text.engine.TextBlock",
-        "baselineFontDescription"
-    );
 
     let value = args
         .try_get_object(0)
@@ -96,12 +83,6 @@ pub fn set_baseline_font_size<'gc>(
         return Err(make_error_2004(activation, Error2004Type::ArgumentError));
     }
 
-    avm2_stub_setter!(
-        activation,
-        "flash.text.engine.TextBlock",
-        "baselineFontSize"
-    );
-
     this.set_baseline_font_size(value);
 
     Ok(Value::Undefined)
@@ -128,8 +109,6 @@ pub fn set_baseline_zero<'gc>(
         .filter(|v| !matches!(v, TextBaselineValue::UseDominantBaseline))
         .ok_or_else(|| make_error_2008(activation, "baselineZero"))?;
 
-    avm2_stub_setter!(activation, "flash.text.engine.TextBlock", "baselineZero");
-
     this.set_baseline_zero(value);
 
     Ok(Value::Undefined)
@@ -154,8 +133,6 @@ pub fn set_bidi_level<'gc>(
     if value < 0 {
         return Err(make_error_2004(activation, Error2004Type::ArgumentError));
     }
-
-    avm2_stub_setter!(activation, "flash.text.engine.TextBlock", "bidiLevel");
 
     this.set_bidi_level(value);
 
@@ -182,8 +159,6 @@ pub fn set_line_rotation<'gc>(
     let value = TextRotationValue::from_avm2_str(&value)
         .filter(|v| !matches!(v, TextRotationValue::Auto))
         .ok_or_else(|| make_error_2008(activation, "lineRotation"))?;
-
-    avm2_stub_setter!(activation, "flash.text.engine.TextBlock", "lineRotation");
 
     this.set_line_rotation(value);
 
@@ -213,8 +188,6 @@ pub fn set_tab_stops<'gc>(
         .and_then(|v| v.as_vector_object())
         .map(|v| VectorObject::from_vector(v.storage().clone(), activation));
 
-    avm2_stub_setter!(activation, "flash.text.engine.TextBlock", "tabStops");
-
     this.set_tab_stops(tab_stops, activation.gc());
 
     Ok(Value::Undefined)
@@ -240,8 +213,6 @@ pub fn set_text_justifier<'gc>(
     let this = this.as_object().unwrap().as_text_block_object().unwrap();
 
     let justifier = args.get_object(activation, 0, "textJustifier")?;
-
-    avm2_stub_setter!(activation, "flash.text.engine.TextBlock", "textJustifier");
 
     this.set_text_justifier(justifier, activation.gc());
 
@@ -296,15 +267,10 @@ pub fn get_text_line_creation_result<'gc>(
 }
 
 pub fn get_first_invalid_line<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     _this: Value<'gc>,
     _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm2_stub_getter!(
-        activation,
-        "flash.text.engine.TextBlock",
-        "firstInvalidLine"
-    );
 
     Ok(Value::Null)
 }
@@ -325,13 +291,11 @@ pub fn get_first_line<'gc>(
 }
 
 pub fn get_last_line<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap().as_text_block_object().unwrap();
-
-    avm2_stub_getter!(activation, "flash.text.engine.TextBlock", "lastLine");
 
     let line = this
         .lines()

@@ -1,24 +1,20 @@
 package flash.text.engine {
-    import __ruffle__.stub_getter;
-    import __ruffle__.stub_setter;
-    import __ruffle__.stub_method;
-
     import flash.display.DisplayObject;
     import flash.display.DisplayObjectContainer;
     import flash.errors.IllegalOperationError;
     import flash.geom.Rectangle;
     import flash.ui.ContextMenu;
 
-    // FIXME: None of the DisplayObjectContainer methods actually work on
-    // the TextLine class in Ruffle, despite the methods working fine in FP-
-    // however, it's unlikely that SWFs will actually attempt to add children
-    // to a TextLine.
     [Ruffle(Abstract)]
     [API("662")]
     public final class TextLine extends DisplayObjectContainer {
         public static const MAX_LINE_WIDTH:int = 1000000;
 
         public var userData;
+
+        public function get mirrorRegions():Vector.<TextLineMirrorRegion> {
+            return null;
+        }
 
         public native function get rawTextLength():int;
 
@@ -32,7 +28,6 @@ package flash.text.engine {
 
         [API("670")]
         public function get totalAscent():Number {
-            stub_getter("flash.text.engine.TextLine", "totalAscent");
             return this.ascent;
         }
 
@@ -40,12 +35,10 @@ package flash.text.engine {
 
         [API("670")]
         public function get totalDescent():Number {
-            stub_getter("flash.text.engine.TextLine", "totalDescent");
             return this.descent;
         }
 
         public function get unjustifiedTextWidth():Number {
-            stub_getter("flash.text.engine.TextLine", "unjustifiedTextWidth");
             return this.specifiedWidth;
         }
 
@@ -56,12 +49,10 @@ package flash.text.engine {
         public native function set validity(value:String):void;
 
         public function get hasGraphicElement():Boolean {
-            stub_getter("flash.text.engine.TextLine", "hasGraphicElement");
             return false;
         }
 
         public function get atomCount():int {
-            stub_getter("flash.text.engine.TextLine", "atomCount");
             return this.rawTextLength;
         }
 
@@ -69,19 +60,16 @@ package flash.text.engine {
         public native function get nextLine():TextLine;
 
         public function getBaselinePosition(baseline:String):Number {
-            stub_method("flash.text.engine.TextLine", "getBaselinePosition");
             return 0.0;
         }
 
         public native function get hasTabs():Boolean;
 
         public function getAtomIndexAtPoint(stageX:Number, stageY:Number):int {
-            stub_method("flash.text.engine.TextLine", "getAtomIndexAtPoint");
             return -1;
         }
 
         public function getAtomIndexAtCharIndex(charIndex:int):int {
-            stub_method("flash.text.engine.TextLine", "getAtomIndexAtCharIndex");
             var index:int = charIndex - this.textBlockBeginIndex;
             if (index < 0 || index >= this.rawTextLength) {
                 return -1;
@@ -89,50 +77,53 @@ package flash.text.engine {
             return index;
         }
 
+        private function checkAtomIndex(index:int):void {
+            if (index < 0 || index >= this.atomCount) {
+                Error.throwError(RangeError, 2006);
+            }
+        }
+
         public function getAtomBidiLevel(index:int):int {
-            stub_method("flash.text.engine.TextLine", "getAtomBidiLevel");
+            this.checkAtomIndex(index);
             return 0;
         }
 
         public function getAtomBounds(index:int):Rectangle {
-            stub_method("flash.text.engine.TextLine", "getAtomBounds");
+            this.checkAtomIndex(index);
             return new Rectangle(0, 0, 0, 0);
         }
 
         public function getAtomCenter(index:int):Number {
-            stub_method("flash.text.engine.TextLine", "getAtomCenter");
-            return 1.0;
+            this.checkAtomIndex(index);
+            return 0.0;
         }
 
         public function getAtomGraphic(index:int):DisplayObject {
-            stub_method("flash.text.engine.TextLine", "getAtomGraphic");
+            this.checkAtomIndex(index);
             return null;
         }
 
         public function getAtomTextBlockBeginIndex(index:int):int {
-            stub_method("flash.text.engine.TextLine", "getAtomTextBlockBeginIndex");
-            return 0;
+            this.checkAtomIndex(index);
+            return this.textBlockBeginIndex + index;
         }
 
         public function getAtomTextBlockEndIndex(index:int):int {
-            stub_method("flash.text.engine.TextLine", "getAtomTextBlockEndIndex");
-            return 0;
+            this.checkAtomIndex(index);
+            return this.textBlockBeginIndex + index + 1;
         }
 
         public function getAtomTextRotation(index:int):String {
-            stub_method("flash.text.engine.TextLine", "getAtomTextRotation");
+            this.checkAtomIndex(index);
             return TextRotation.ROTATE_0;
         }
 
         public function getAtomWordBoundaryOnLeft(index:int):Boolean {
-            stub_method("flash.text.engine.TextLine", "getAtomWordBoundaryOnLeft");
+            this.checkAtomIndex(index);
             return false;
         }
 
-        // This function does nothing in Flash Player 32
         public function flushAtomData():void { }
-
-        // Overrides
 
         override public function set contextMenu(cm:ContextMenu):void {
             Error.throwError(IllegalOperationError, 2181);
@@ -153,7 +144,5 @@ package flash.text.engine {
         override public function set tabIndex(index:int):void {
             Error.throwError(IllegalOperationError, 2181);
         }
-
-        // End of overrides
     }
 }

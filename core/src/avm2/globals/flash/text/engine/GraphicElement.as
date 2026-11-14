@@ -1,13 +1,13 @@
 package flash.text.engine {
-    import __ruffle__.stub_constructor;
-    import __ruffle__.stub_getter;
-    import __ruffle__.stub_setter;
-
     import flash.display.DisplayObject;
     import flash.events.EventDispatcher;
 
     [API("662")]
     public final class GraphicElement extends ContentElement {
+        private var _graphic:DisplayObject;
+        private var _elementWidth:Number;
+        private var _elementHeight:Number;
+
         public function GraphicElement(
             graphic:DisplayObject = null,
             elementWidth:Number = 15.0,
@@ -18,7 +18,9 @@ package flash.text.engine {
         ) {
             super(elementFormat, eventMirror, textRotation);
 
-            stub_constructor("flash.text.engine.GraphicElement");
+            this._graphic = graphic;
+            this._elementWidth = elementWidth;
+            this._elementHeight = elementHeight;
 
             this.init();
         }
@@ -26,29 +28,24 @@ package flash.text.engine {
         private native function init():void;
 
         public function get elementHeight():Number {
-            stub_getter("flash.text.engine.GraphicElement", "elementHeight");
-            return 15.0;
+            return this._elementHeight;
         }
         public function set elementHeight(value:Number):void {
-            stub_setter("flash.text.engine.GraphicElement", "elementHeight");
+            this._elementHeight = value;
         }
 
         public function get elementWidth():Number {
-            stub_getter("flash.text.engine.GraphicElement", "elementWidth");
-            return 15.0;
+            return this._elementWidth;
         }
-
         public function set elementWidth(value:Number):void {
-            stub_setter("flash.text.engine.GraphicElement", "elementWidth");
+            this._elementWidth = value;
         }
 
         public function get graphic():DisplayObject {
-            stub_getter("flash.text.engine.GraphicElement", "graphic");
-            return null;
+            return this._graphic;
         }
-
         public function set graphic(value:DisplayObject):void {
-            stub_setter("flash.text.engine.GraphicElement", "graphic");
+            this._graphic = value;
         }
     }
 }

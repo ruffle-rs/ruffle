@@ -1,6 +1,4 @@
 package flash.text.engine {
-    import __ruffle__.stub_getter;
-    import __ruffle__.stub_method;
 
     [API("662")]
     [Ruffle(InstanceAllocator)]
@@ -96,8 +94,6 @@ package flash.text.engine {
                 Error.throwError(ArgumentError, 2004);
             }
 
-            stub_method("flash.text.engine.TextBlock", "createTextLine");
-
             return this.DoCreateTextLine(null, previousLine, width, lineOffset, fitSomething);
         }
 
@@ -127,8 +123,6 @@ package flash.text.engine {
 
             // Clear AS-side properties of the text line
             textLine.userData = null;
-
-            stub_method("flash.text.engine.TextBlock", "recreateTextLine");
 
             return this.DoCreateTextLine(textLine, previousLine, width, lineOffset, fitSomething);
         }

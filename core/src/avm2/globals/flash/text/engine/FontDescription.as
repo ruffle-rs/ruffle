@@ -1,5 +1,4 @@
 package flash.text.engine {
-    import __ruffle__.stub_method;
 
     [API("662")]
     [Ruffle(InstanceAllocator)]
@@ -53,7 +52,6 @@ package flash.text.engine {
         }
 
         public static function isFontCompatible(fontName:String, fontWeight:String, fontPosture:String):Boolean {
-            stub_method("flash.text.engine.FontDescription", "isFontCompatible");
             return false;
         }
     }

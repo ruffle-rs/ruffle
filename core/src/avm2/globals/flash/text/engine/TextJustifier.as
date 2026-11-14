@@ -1,6 +1,4 @@
 package flash.text.engine {
-    import __ruffle__.stub_setter;
-
     import flash.utils.getQualifiedClassName;
 
     [API("662")]
@@ -9,13 +7,16 @@ package flash.text.engine {
         private var _locale:String;
 
         public function TextJustifier(locale:String, lineJustification:String) {
-            // TODO: Is there a better way to do this?
             if (getQualifiedClassName(this) === "flash.text.engine::TextJustifier") {
                 throw new ArgumentError("Error #2012: TextJustifier$ class cannot be instantiated.", 2012);
             }
 
             this.setLocale(locale);
             this.lineJustification = lineJustification;
+        }
+
+        public static function getJustifierForLocale(locale:String):TextJustifier {
+            return new SpaceJustifier(locale);
         }
 
         private function setLocale(locale:String):void {
