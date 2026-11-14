@@ -1,11 +1,13 @@
 //! `flash.net.URLLoader` native function definitions
 
 use crate::avm2::activation::Activation;
+use crate::avm2::error::make_error_2146;
 use crate::avm2::function::FunctionArgs;
 use crate::avm2::globals::flash::display::loader::request_from_url_request;
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
 use crate::avm2::{Error, Object};
+use crate::config::NetworkingAccessMode;
 
 /// Native function definition for `URLLoader.load`
 pub fn load<'gc>(
@@ -16,6 +18,12 @@ pub fn load<'gc>(
     let this = this.as_object().unwrap();
 
     let request = args.get_object(activation, 0, "request")?;
+
+    // In Flash URLLoader seems to be implemented with URLStream, in Ruffle
+    // it's the reverse.
+    if activation.context.allow_networking == NetworkingAccessMode::None {
+        return Err(make_error_2146(activation, "URLStream.load"));
+    }
 
     spawn_fetch(activation, this, request)
 }
