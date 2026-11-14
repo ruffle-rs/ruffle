@@ -32,6 +32,7 @@ include "flash/concurrent/Condition.as"
 include "flash/concurrent/Mutex.as"
 
 include "flash/crypto.as"
+include "flash/debugger.as"
 
 include "flash/utils/IDataInput.as"
 include "flash/utils/IDataOutput.as"
