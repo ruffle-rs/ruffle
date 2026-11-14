@@ -11,7 +11,6 @@ use crate::avm2::vector::VectorStorage;
 use crate::avm2::{Avm2StrRepresentable, Error};
 use crate::string::utils::swf_to_lowercase;
 use crate::string::{AvmString, WStr};
-use crate::{avm2_stub_constructor, avm2_stub_getter, avm2_stub_method};
 use std::cmp::Ordering;
 
 pub fn ctor<'gc>(
@@ -26,12 +25,6 @@ pub fn ctor<'gc>(
     //
     // In addition, different platforms normalize locale IDs differently.
     // The current implementation doesn't do any normalization.
-
-    avm2_stub_constructor!(
-        activation,
-        "flash.globalization.Collator",
-        "platform-dependent behavior"
-    );
 
     let this = this.as_object().unwrap();
     let collator = this.as_collator().unwrap();
@@ -57,11 +50,6 @@ pub fn get_actual_locale_id_name<'gc>(
     _this: Value<'gc>,
     _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm2_stub_getter!(
-        activation,
-        "flash.globalization.Collator",
-        "actualLocaleIDName"
-    );
 
     Ok(AvmString::new_utf8(activation.gc(), "en-US").into())
 }
@@ -274,12 +262,6 @@ pub fn compare<'gc>(
     this: Value<'gc>,
     args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm2_stub_method!(
-        activation,
-        "flash.globalization.Collator",
-        "compare",
-        "diacritics and locale-specific rules"
-    );
 
     let this = this.as_object().unwrap();
     let collator = this.as_collator().unwrap();
@@ -295,12 +277,6 @@ pub fn equals<'gc>(
     this: Value<'gc>,
     args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm2_stub_method!(
-        activation,
-        "flash.globalization.Collator",
-        "equals",
-        "diacritics and locale-specific rules"
-    );
 
     let this = this.as_object().unwrap();
     let collator = this.as_collator().unwrap();
@@ -380,12 +356,6 @@ pub fn get_available_locale_id_names<'gc>(
     //      zh-TW@collation=pinyin;
     //      and (Linux): ga-IE@currency=EUR, eu-ES@currency=EUR,
     //      gez-ET@collation=abegede.
-
-    avm2_stub_method!(
-        activation,
-        "flash.globalization.Collator",
-        "getAvailableLocaleIDNames"
-    );
 
     let storage = VectorStorage::from_values(
         vec![AvmString::new_utf8(activation.gc(), "en-US").into()],

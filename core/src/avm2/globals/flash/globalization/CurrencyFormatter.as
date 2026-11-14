@@ -1,137 +1,122 @@
 package flash.globalization {
-    import __ruffle__.stub_constructor;
-    import __ruffle__.stub_getter;
-    import __ruffle__.stub_method;
-    import __ruffle__.stub_setter;
-
     [API("667")]
     public final class CurrencyFormatter {
         private var _requestedLocaleIDName:String;
+        private var _currencyISOCode:String = "USD";
+        private var _currencySymbol:String = "$";
         private var _decimalSeparator:String = ".";
         private var _digitsType:uint = NationalDigitsType.EUROPEAN;
         private var _fractionalDigits:int = 2;
         private var _groupingPattern:String = "3;*";
         private var _groupingSeparator:String = ",";
         private var _leadingZero:Boolean = true;
-        private var _negativeCurrencyFormat:uint = 1;
+        private var _negativeCurrencyFormat:uint = 0;
         private var _negativeSymbol:String = "-";
         private var _positiveCurrencyFormat:uint = 0;
-        private var _trailingZeros = true;
-        private var _useGrouping = true;
+        private var _trailingZeros:Boolean = true;
+        private var _useGrouping:Boolean = true;
+        private var _lastOperationStatus:String = LastOperationStatus.NO_ERROR;
 
         public function CurrencyFormatter(requestedLocaleIDName:String) {
-            stub_constructor("flash.globalization.CurrencyFormatter");
+            if (requestedLocaleIDName == null) {
+                Error.throwError(TypeError, 2007, "requestedLocaleIDName");
+            }
             this._requestedLocaleIDName = requestedLocaleIDName;
         }
 
         public function get actualLocaleIDName():String {
-            stub_getter("flash.globalization.CurrencyFormatter", "actualLocaleIDName");
-            return "en-US";
+            return this._requestedLocaleIDName == LocaleID.DEFAULT ? "en-US" : this._requestedLocaleIDName;
         }
 
         public function get currencyISOCode():String {
-            stub_getter("flash.globalization.CurrencyFormatter", "currencyISOCode");
-            return "USD";
+            return this._currencyISOCode;
         }
 
         public function get currencySymbol():String {
-            stub_getter("flash.globalization.CurrencyFormatter", "currencySymbol");
-            return "$";
+            return this._currencySymbol;
         }
 
         public function get decimalSeparator():String {
-            stub_getter("flash.globalization.CurrencyFormatter", "decimalSeparator");
             return this._decimalSeparator;
         }
-
         public function set decimalSeparator(value:String):void {
-            stub_setter("flash.globalization.CurrencyFormatter", "decimalSeparator");
+            if (value == null) {
+                Error.throwError(TypeError, 2007, "value");
+            }
             this._decimalSeparator = value;
         }
 
         public function get digitsType():uint {
-            stub_getter("flash.globalization.CurrencyFormatter", "digitsType");
             return this._digitsType;
         }
-
         public function set digitsType(value:uint):void {
-            stub_setter("flash.globalization.CurrencyFormatter", "digitsType");
             this._digitsType = value;
         }
 
         public function get fractionalDigits():int {
-            stub_getter("flash.globalization.CurrencyFormatter", "fractionalDigits");
             return this._fractionalDigits;
         }
-
         public function set fractionalDigits(value:int):void {
-            stub_setter("flash.globalization.CurrencyFormatter", "fractionalDigits");
             this._fractionalDigits = value;
         }
 
         public function get groupingPattern():String {
-            stub_getter("flash.globalization.CurrencyFormatter", "groupingPattern");
             return this._groupingPattern;
         }
-
         public function set groupingPattern(value:String):void {
-            stub_setter("flash.globalization.CurrencyFormatter", "groupingPattern");
+            if (value == null) {
+                Error.throwError(TypeError, 2007, "value");
+            }
             this._groupingPattern = value;
         }
 
         public function get groupingSeparator():String {
-            stub_getter("flash.globalization.CurrencyFormatter", "groupingSeparator");
             return this._groupingSeparator;
         }
-
         public function set groupingSeparator(value:String):void {
-            stub_setter("flash.globalization.CurrencyFormatter", "groupingSeparator");
+            if (value == null) {
+                Error.throwError(TypeError, 2007, "value");
+            }
             this._groupingSeparator = value;
         }
 
         public function get lastOperationStatus():String {
-            stub_getter("flash.globalization.CurrencyFormatter", "lastOperationStatus");
-            return "noError";
+            return this._lastOperationStatus;
         }
 
         public function get leadingZero():Boolean {
-            stub_getter("flash.globalization.CurrencyFormatter", "leadingZero");
             return this._leadingZero;
         }
-
         public function set leadingZero(value:Boolean):void {
-            stub_setter("flash.globalization.CurrencyFormatter", "leadingZero");
             this._leadingZero = value;
         }
 
         public function get negativeCurrencyFormat():uint {
-            stub_getter("flash.globalization.CurrencyFormatter", "negativeCurrencyFormat");
             return this._negativeCurrencyFormat;
         }
-
         public function set negativeCurrencyFormat(value:uint):void {
-            stub_setter("flash.globalization.CurrencyFormatter", "negativeCurrencyFormat");
-            this._negativeCurrencyFormat = value;
+            if (value <= 15) {
+                this._negativeCurrencyFormat = value;
+            }
         }
 
         public function get negativeSymbol():String {
-            stub_getter("flash.globalization.CurrencyFormatter", "negativeSymbol");
             return this._negativeSymbol;
         }
-
         public function set negativeSymbol(value:String):void {
-            stub_setter("flash.globalization.CurrencyFormatter", "negativeSymbol");
+            if (value == null) {
+                Error.throwError(TypeError, 2007, "value");
+            }
             this._negativeSymbol = value;
         }
 
         public function get positiveCurrencyFormat():uint {
-            stub_getter("flash.globalization.CurrencyFormatter", "positiveCurrencyFormat");
             return this._positiveCurrencyFormat;
         }
-
         public function set positiveCurrencyFormat(value:uint):void {
-            stub_setter("flash.globalization.CurrencyFormatter", "positiveCurrencyFormat");
-            this._positiveCurrencyFormat = value;
+            if (value <= 3) {
+                this._positiveCurrencyFormat = value;
+            }
         }
 
         public function get requestedLocaleIDName():String {
@@ -139,47 +124,151 @@ package flash.globalization {
         }
 
         public function get trailingZeros():Boolean {
-            stub_getter("flash.globalization.CurrencyFormatter", "trailingZeros");
             return this._trailingZeros;
         }
-
         public function set trailingZeros(value:Boolean):void {
-            stub_setter("flash.globalization.CurrencyFormatter", "trailingZeros");
             this._trailingZeros = value;
         }
 
         public function get useGrouping():Boolean {
-            stub_getter("flash.globalization.CurrencyFormatter", "useGrouping");
             return this._useGrouping;
         }
-
         public function set useGrouping(value:Boolean):void {
-            stub_setter("flash.globalization.CurrencyFormatter", "useGrouping");
             this._useGrouping = value;
         }
 
+        private function applyGrouping(intStr:String):String {
+            if (!this._useGrouping || this._groupingSeparator.length == 0 || intStr.length <= 3) {
+                return intStr;
+            }
+            var parts:Array = [];
+            var i:int = intStr.length;
+            while (i > 3) {
+                parts.unshift(intStr.substring(i - 3, i));
+                i -= 3;
+            }
+            if (i > 0) {
+                parts.unshift(intStr.substring(0, i));
+            }
+            return parts.join(this._groupingSeparator);
+        }
+
         public function format(value:Number, withCurrencySymbol:Boolean = false):String {
-            stub_method("flash.globalization.CurrencyFormatter", "format");
-            return value.toString();
+            this._lastOperationStatus = LastOperationStatus.NO_ERROR;
+            if (isNaN(value)) {
+                return "NaN";
+            }
+            var isNeg:Boolean = value < 0;
+            var absVal:Number = Math.abs(value);
+            var fracDigits:int = this._fractionalDigits < 0 ? 0 : this._fractionalDigits;
+            var fixed:String = absVal.toFixed(fracDigits);
+            var dotIdx:int = fixed.indexOf(".");
+            var intPart:String = dotIdx >= 0 ? fixed.substring(0, dotIdx) : fixed;
+            var fracPart:String = dotIdx >= 0 ? fixed.substring(dotIdx + 1) : "";
+
+            if (!this._leadingZero && intPart == "0" && fracPart.length > 0) {
+                intPart = "";
+            } else {
+                intPart = this.applyGrouping(intPart);
+            }
+            if (!this._trailingZeros && fracPart.length > 0) {
+                fracPart = fracPart.replace(/0+$/, "");
+            }
+
+            var numStr:String = fracPart.length > 0 ? (intPart + this._decimalSeparator + fracPart) : intPart;
+            if (numStr.length == 0) {
+                numStr = "0";
+            }
+
+            var sym:String = withCurrencySymbol ? this._currencySymbol : this._currencyISOCode;
+            if (!isNeg) {
+                switch (this._positiveCurrencyFormat) {
+                    case 1:
+                        return numStr + sym;
+                    case 2:
+                        return sym + " " + numStr;
+                    case 3:
+                        return numStr + " " + sym;
+                    default:
+                        return sym + numStr;
+                }
+            }
+            switch (this._negativeCurrencyFormat) {
+                case 0:
+                    return "(" + sym + numStr + ")";
+                case 2:
+                    return sym + this._negativeSymbol + numStr;
+                case 3:
+                    return sym + numStr + this._negativeSymbol;
+                case 4:
+                    return "(" + numStr + sym + ")";
+                case 5:
+                    return this._negativeSymbol + numStr + sym;
+                default:
+                    return this._negativeSymbol + sym + numStr;
+            }
         }
 
         public function formattingWithCurrencySymbolIsSafe(requestedISOCode:String):Boolean {
-            stub_method("flash.globalization.CurrencyFormatter", "formattingWithCurrencySymbolIsSafe");
-            return true;
+            if (requestedISOCode == null) {
+                Error.throwError(TypeError, 2007, "requestedISOCode");
+            }
+            this._lastOperationStatus = LastOperationStatus.NO_ERROR;
+            return requestedISOCode.toUpperCase() == this._currencyISOCode.toUpperCase();
         }
 
         public function parse(inputString:String):CurrencyParseResult {
-            stub_method("flash.globalization.CurrencyFormatter", "parse");
-            return new CurrencyParseResult();
-        }
-
+            if (inputString == null) {
+                Error.throwError(TypeError, 2007, "inputString");
+            }
+            var cleaned:String = inputString;
+            var detectedSymbol:String = "";
+            if (this._currencySymbol.length > 0 && cleaned.indexOf(this._currencySymbol) >= 0) {
+                detectedSymbol = this._currencySymbol;
+                cleaned = cleaned.split(this._currencySymbol).join("");
+            } else if (this._currencyISOCode.length > 0 && cleaned.indexOf(this._currencyISOCode) >= 0) {
+                detectedSymbol = this._currencyISOCode;
+                cleaned = cleaned.split(this._currencyISOCode).join("");
+            }
+            cleaned = cleaned.replace(/^\s+|\s+$/g, "");
+            var isNeg:Boolean = false;
+            if (cleaned.charAt(0) == "(" && cleaned.charAt(cleaned.length - 1) == ")") {
+                isNeg = true;
+                cleaned = cleaned.substring(1, cleaned.length - 1);
+            } else if (this._negativeSymbol.length > 0 && cleaned.indexOf(this._negativeSymbol) >= 0) {
+                isNeg = true;
+                cleaned = cleaned.split(this._negativeSymbol).join("");
+            }
+            if (this._groupingSeparator.length > 0) {
+                cleaned = cleaned.split(this._groupingSeparator).join("");
+            }
+            if (this._decimalSeparator.length > 0 && this._decimalSeparator != ".") {
+                cleaned = cleaned.split(this._decimalSeparator).join(".");
+            }
+            var num:Number = Number(cleaned);
+            if (isNaN(num)) {
+                this._lastOperationStatus = LastOperationStatus.PARSE_ERROR;
+                return new CurrencyParseResult(NaN, "");
+            }
+            if (isNeg) {
+                num = -num;
+            }
+                this._lastOperationStatus = LastOperationStatus.NO_ERROR;
+                return new CurrencyParseResult(num, detectedSymbol);
+            }
         public function setCurrency(currencyISOCode:String, currencySymbol:String):void {
-            stub_method("flash.globalization.CurrencyFormatter", "setCurrency");
-        }
-
+            if (currencyISOCode == null) {
+                Error.throwError(TypeError, 2007, "currencyISOCode");
+            }
+            if (currencySymbol == null) {
+                Error.throwError(TypeError, 2007, "currencySymbol");
+            }
+            this._currencyISOCode = currencyISOCode;
+            this._currencySymbol = currencySymbol;
+            this._lastOperationStatus = LastOperationStatus.NO_ERROR;
+            }
         public static function getAvailableLocaleIDNames():Vector.<String> {
-            stub_method("flash.globalization.CurrencyFormatter", "getAvailableLocaleIDNames");
-            return new <String>["en-US"];
-        }
+            return new ["en-US"];
+            }
     }
 }
