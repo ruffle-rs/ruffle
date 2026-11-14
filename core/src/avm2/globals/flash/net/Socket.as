@@ -1,5 +1,4 @@
 package flash.net {
-    import __ruffle__.stub_getter;
 
     import flash.events.EventDispatcher;
     import flash.utils.ByteArray;
@@ -28,10 +27,7 @@ package flash.net {
         public native function get bytesAvailable():uint;
 
         [API("674")]
-        public function get bytesPending():uint {
-            stub_getter("flash.net.Socket", "bytesPending");
-            return 0;
-        }
+        public native function get bytesPending():uint;
 
         public native function get endian():String;
         public native function set endian(value:String):void;

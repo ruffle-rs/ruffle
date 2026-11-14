@@ -396,6 +396,7 @@ include "flash/sampler/StackFrame.as"
 include "flash/security/CertificateStatus.as"
 include "flash/security/X509Certificate.as"
 include "flash/security/X500DistinguishedName.as"
+include "flash/net/SecureSocket.as"
 
 include "flash/sensors/Accelerometer.as"
 include "flash/sensors/Geolocation.as"

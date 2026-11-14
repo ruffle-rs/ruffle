@@ -116,6 +116,20 @@ pub fn get_bytes_available<'gc>(
     Ok(Value::Undefined)
 }
 
+pub fn get_bytes_pending<'gc>(
+    _activation: &mut Activation<'_, 'gc>,
+    this: Value<'gc>,
+    _args: FunctionArgs<'_, 'gc>,
+) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
+    if let Some(socket) = this.as_socket() {
+        return Ok(Value::from_usize_lossy(socket.write_buffer().len()));
+    }
+
+    Ok(0.into())
+}
+
 pub fn get_endian<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,

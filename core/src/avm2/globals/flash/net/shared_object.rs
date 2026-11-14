@@ -1,12 +1,11 @@
 //! `flash.net.SharedObject` builtin/prototype
 
-use crate::avm2::error::make_error_2130;
+use crate::avm2::error::{make_error_2008, make_error_2130};
 use crate::avm2::function::FunctionArgs;
 use crate::avm2::object::{ScriptObject, SharedObjectObject};
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::{Activation, Error, Object, Value};
 use crate::string::AvmString;
-use crate::{avm2_stub_getter, avm2_stub_method, avm2_stub_setter};
 use flash_lso::types::{AMFVersion, Lso};
 use ruffle_macros::istr;
 use std::borrow::Cow;
@@ -246,11 +245,10 @@ pub fn get_size<'gc>(
 }
 
 pub fn close<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     _this: Value<'gc>,
     _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm2_stub_method!(activation, "flash.net.SharedObject", "close");
     Ok(Value::Undefined)
 }
 
@@ -274,19 +272,21 @@ pub fn clear<'gc>(
 }
 
 pub fn get_object_encoding<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     _this: Value<'gc>,
     _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm2_stub_getter!(activation, "flash.net.SharedObject", "objectEncoding");
-    Ok(0.into())
+    Ok(3.into())
 }
 
 pub fn set_object_encoding<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Value<'gc>,
-    _args: FunctionArgs<'_, 'gc>,
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm2_stub_setter!(activation, "flash.net.SharedObject", "objectEncoding");
-    Ok(Value::Undefined)
+    let new_encoding = args.get_u32(0);
+    match new_encoding {
+        0 | 3 => Ok(Value::Undefined),
+        _ => Err(make_error_2008(activation, "objectEncoding")),
+    }
 }
