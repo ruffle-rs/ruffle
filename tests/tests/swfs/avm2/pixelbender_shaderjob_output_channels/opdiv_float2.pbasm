@@ -1,0 +1,13 @@
+version 1i
+name "TestOpDiv"
+
+param.in "_OutCoord", float2, f0.rg
+
+param.tex "texture", 0i, 2i
+
+param.in "divisor", float, f1.rgba
+
+param.out "result", float2, f2.rg
+
+smpl.n  f2.rgba, f0.rg, 0i
+div     f2.rgba, f1.rrrr
