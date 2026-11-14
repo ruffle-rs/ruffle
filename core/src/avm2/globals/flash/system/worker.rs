@@ -6,7 +6,6 @@ use crate::avm2::function::FunctionArgs;
 use crate::avm2::object::{MessageChannelObject, WorkerObject};
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
-use crate::avm2_stub_method;
 
 /// Implements `Worker.createMessageChannel`
 pub fn create_message_channel<'gc>(
@@ -14,8 +13,6 @@ pub fn create_message_channel<'gc>(
     _this: Value<'gc>,
     args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm2_stub_method!(activation, "flash.system.Worker", "createMessageChannel");
-
     let _receiver = args.get_object(activation, 0, "receiver")?;
 
     let message_channel = MessageChannelObject::new(activation);

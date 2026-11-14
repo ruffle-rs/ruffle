@@ -1,16 +1,11 @@
 package flash.system {
-    [Ruffle(InstanceAllocator)]
+    [Ruffle(Abstract)]
     public class SecurityDomain {
-        private static var dummyDomain:SecurityDomain = null;
+        public static native function get currentDomain():SecurityDomain;
 
-        private static native function instantiateInternal():SecurityDomain;
-
-        public static function get currentDomain():SecurityDomain {
-            if (dummyDomain == null) {
-                dummyDomain = instantiateInternal();
-            }
-
-            return dummyDomain;
+        [API("682")]
+        public function get domainID():String {
+            return null;
         }
     }
 }

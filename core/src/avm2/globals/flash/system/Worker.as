@@ -1,7 +1,4 @@
 package flash.system {
-    import __ruffle__.stub_getter;
-    import __ruffle__.stub_method;
-
     import flash.events.Event;
     import flash.events.EventDispatcher;
     import flash.system.MessageChannel;
@@ -14,10 +11,10 @@ package flash.system {
         }
 
         private static var _current:Worker;
+        private var _sharedProperties:Object = new Object();
+        private var _state:String = WorkerState.RUNNING;
 
         public static function get current():Worker {
-            stub_getter("flash.system.Worker", "current");
-
             if (!_current) {
                 _current = instantiateInternal();
             }
@@ -25,20 +22,39 @@ package flash.system {
             return _current;
         }
 
+        public function get isPrimordial():Boolean {
+            return this == current;
+        }
+
+        public function get state():String {
+            return this._state;
+        }
+
         public native function createMessageChannel(receiver:Worker):MessageChannel;
 
         public function setSharedProperty(key:String, value:*):void {
-            stub_method("flash.system.Worker", "setSharedProperty");
+            if (key == null) {
+                Error.throwError(TypeError, 2007, "key");
+            }
+            this._sharedProperties[key] = value;
         }
 
         public function getSharedProperty(key:String):* {
-            stub_method("flash.system.Worker", "getSharedProperty");
+            if (key == null) {
+                Error.throwError(TypeError, 2007, "key");
+            }
+            return this._sharedProperties[key];
         }
 
         public function start():void {
+            this._state = WorkerState.RUNNING;
             this.dispatchEvent(new Event(Event.WORKER_STATE));
+        }
 
-            stub_method("flash.system.Worker", "start");
+        public function terminate():Boolean {
+            this._state = WorkerState.TERMINATED;
+            this.dispatchEvent(new Event(Event.WORKER_STATE));
+            return false;
         }
 
         private static native function instantiateInternal():Worker;

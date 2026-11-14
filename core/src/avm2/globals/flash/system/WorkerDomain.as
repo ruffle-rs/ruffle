@@ -1,6 +1,4 @@
 package flash.system {
-    import __ruffle__.stub_getter;
-
     import flash.utils.ByteArray;
     import flash.system.Worker;
 
@@ -14,8 +12,6 @@ package flash.system {
         private static var _current:WorkerDomain;
 
         public static function get current():WorkerDomain {
-            stub_getter("flash.system.WorkerDomain", "current");
-
             if (!_current) {
                 _current = instantiateInternal();
             }
@@ -24,6 +20,10 @@ package flash.system {
         }
 
         public native function createWorker(swf:ByteArray, giveAppPrivileges:Boolean = false):Worker;
+
+        public function listWorkers():Vector.<Worker> {
+            return new <Worker>[Worker.current];
+        }
 
         private static native function instantiateInternal():WorkerDomain;
     }

@@ -4,7 +4,6 @@ use crate::avm2::Error;
 use crate::avm2::activation::Activation;
 use crate::avm2::function::FunctionArgs;
 use crate::avm2::value::Value;
-use crate::avm2_stub_method;
 use crate::string::AvmString;
 use url::Url;
 
@@ -54,37 +53,33 @@ pub fn get_sandbox_type<'gc>(
 }
 
 pub fn allow_domain<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     _this: Value<'gc>,
     _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm2_stub_method!(activation, "flash.system.Security", "allowDomain");
     Ok(Value::Undefined)
 }
 
 pub fn allow_insecure_domain<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     _this: Value<'gc>,
     _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm2_stub_method!(activation, "flash.system.Security", "allowInsecureDomain");
     Ok(Value::Undefined)
 }
 
 pub fn load_policy_file<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     _this: Value<'gc>,
     _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm2_stub_method!(activation, "flash.system.Security", "loadPolicyFile");
     Ok(Value::Undefined)
 }
 
 pub fn show_settings<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     _this: Value<'gc>,
     _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm2_stub_method!(activation, "flash.system.Security", "showSettings");
     Ok(Value::Undefined)
 }
