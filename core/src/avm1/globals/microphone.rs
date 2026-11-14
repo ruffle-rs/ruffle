@@ -2,112 +2,50 @@
 
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
-use crate::avm1::property_decl::{DeclContext, PropertyOrder, StaticDeclarations, SystemClass};
 use crate::avm1::{ArrayBuilder, Object, Value};
 use crate::avm1_stub;
 
-const PROTO_DECLS: StaticDeclarations = declare_static_properties! {
-    "setSilenceLevel" => method(set_silence_level; DONT_ENUM | DONT_DELETE);
-    "setRate" => method(set_rate; DONT_ENUM | DONT_DELETE);
-    "setGain" => method(set_gain; DONT_ENUM | DONT_DELETE);
-    "setUseEchoSuppression" => method(set_use_echo_suppression; DONT_ENUM | DONT_DELETE);
-    "setCodec" => method(set_codec; DONT_ENUM | DONT_DELETE);
-    "setFramesPerPacket" => method(set_frames_per_packet; DONT_ENUM | DONT_DELETE);
-    "setEncodeQuality" => method(set_encode_quality; DONT_ENUM | DONT_DELETE);
-};
+pub mod method {
+    pub const SET_SILENCE_LEVEL: u16 = 0;
+    pub const SET_RATE: u16 = 1;
+    pub const SET_GAIN: u16 = 2;
+    pub const SET_USE_ECHO_SUPPRESSION: u16 = 3;
+    pub const SET_CODEC: u16 = 4;
+    pub const SET_FRAMES_PER_PACKET: u16 = 5;
+    pub const SET_ENCODE_QUALITY: u16 = 6;
 
-const OBJECT_DECLS: StaticDeclarations = declare_static_properties! {
-    "get" => method(get);
-    "names" => property(get_names);
-};
-
-pub fn create_class<'gc>(
-    context: &mut DeclContext<'_, 'gc>,
-    super_proto: Object<'gc>,
-) -> SystemClass<'gc> {
-    let class = context.empty_class(super_proto, PropertyOrder::PrototypeLast);
-    context.define_properties_on(class.proto, PROTO_DECLS(context));
-    context.define_properties_on(class.constr, OBJECT_DECLS(context));
-    class
+    pub const INTERNAL_GET: u16 = 200;
+    pub const GET_NAMES: u16 = 201;
 }
-fn get<'gc>(
+
+pub fn method<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
+    index: u16,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm1_stub!(activation, "Microphone", "get");
-    // Microphone.get() returns null when there's no microphone.
-    Ok(Value::Null)
-}
+    use method::*;
+    const CNAME: &str = "Microphone";
 
-fn get_names<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
-    _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    avm1_stub!(activation, "Microphone", "names");
-    Ok(ArrayBuilder::empty(activation).into())
-}
+    match index {
+        INTERNAL_GET => {
+            avm1_stub!(activation, CNAME, "get");
+            // Microphone.get() returns null when there's no microphone.
+            return Ok(Value::Null);
+        }
+        GET_NAMES => {
+            avm1_stub!(activation, CNAME, "names");
+            return Ok(ArrayBuilder::empty(activation).into());
+        }
+        SET_SILENCE_LEVEL => avm1_stub!(activation, CNAME, "setSilenceLevel"),
+        SET_RATE => avm1_stub!(activation, CNAME, "setRate"),
+        SET_GAIN => avm1_stub!(activation, CNAME, "setGain"),
+        SET_USE_ECHO_SUPPRESSION => avm1_stub!(activation, CNAME, "setUseEchoSuppression"),
+        SET_CODEC => avm1_stub!(activation, CNAME, "setCodec"),
+        SET_FRAMES_PER_PACKET => avm1_stub!(activation, CNAME, "setFramesPerPacket"),
+        SET_ENCODE_QUALITY => avm1_stub!(activation, CNAME, "setEncodeQuality"),
+        _ => (),
+    }
 
-fn set_silence_level<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
-    _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    avm1_stub!(activation, "Microphone", "setSilenceLevel");
-    Ok(Value::Undefined)
-}
-
-fn set_rate<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
-    _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    avm1_stub!(activation, "Microphone", "setRate");
-    Ok(Value::Undefined)
-}
-
-fn set_gain<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
-    _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    avm1_stub!(activation, "Microphone", "setGain");
-    Ok(Value::Undefined)
-}
-
-fn set_use_echo_suppression<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
-    _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    avm1_stub!(activation, "Microphone", "setUseEchoSuppression");
-    Ok(Value::Undefined)
-}
-
-fn set_codec<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
-    _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    avm1_stub!(activation, "Microphone", "setCodec");
-    Ok(Value::Undefined)
-}
-
-fn set_frames_per_packet<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
-    _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    avm1_stub!(activation, "Microphone", "setFramesPerPacket");
-    Ok(Value::Undefined)
-}
-
-fn set_encode_quality<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
-    _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    avm1_stub!(activation, "Microphone", "setEncodeQuality");
     Ok(Value::Undefined)
 }

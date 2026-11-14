@@ -561,8 +561,6 @@ pub fn create_globals<'gc>(
     let file_reference_list = file_reference_list::create_class(context, object.proto);
     let shared_object = shared_object::create_class(context, object.proto);
     let selection = selection::create(context);
-    let camera = camera::create_class(context, object.proto);
-    let microphone = microphone::create_class(context, object.proto);
     let print_job = print_job::create_class(context, object.proto);
     let text_snapshot = text_snapshot::create_class(context, object.proto);
 
@@ -607,8 +605,8 @@ pub fn create_globals<'gc>(
         "Color" => value(color.constr; DONT_ENUM);
         "NetConnection" => value(netconnection.constr; DONT_ENUM);
         "NetStream" => value(netstream.constr; DONT_ENUM);
-        "Camera" => value(camera.constr; DONT_ENUM);
-        "Microphone" => value(microphone.constr; DONT_ENUM);
+        "Camera" => value(null; DONT_ENUM); // Actually in globals.as, reserve the spot here
+        "Microphone" => value(null; DONT_ENUM); // Actually in globals.as, reserve the spot here
         "SharedObject" => value(shared_object.constr; DONT_ENUM);
         "ContextMenuItem" => value(null; DONT_ENUM); // Actually in globals.as, reserve the spot here
         "ContextMenu" => value(null; DONT_ENUM); // Actually in globals.as, reserve the spot here

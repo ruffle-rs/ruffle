@@ -16,6 +16,8 @@ AsBroadcaster.initialize(MovieClipLoader.prototype);
 AsBroadcaster.initialize(flash.net.FileReference.prototype);
 AsBroadcaster.initialize(flash.net.FileReferenceList.prototype);
 
+#include "Camera.as"
+#include "Microphone.as"
 #include "ContextMenuItem.as"
 #include "ContextMenu.as"
 #include "Error.as"

@@ -38,6 +38,7 @@ pub fn asnative<'gc>(
         1111 => Some(globals::displacement_map_filter::method),
         1999 => Some(globals::accessibility::method),
         2102 => Some(globals::camera::method),
+        2104 => Some(globals::microphone::method),
         2700 => Some(globals::automation_stage_capture::method),
         2800 => Some(globals::automation_action_generator::method),
         2900 => Some(globals::automation_configuration::method),
