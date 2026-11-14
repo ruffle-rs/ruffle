@@ -303,6 +303,27 @@ pub fn create_class<'gc>(
     class
 }
 
+/// Instantiate an AMF0 XML value without invoking the script-visible constructor.
+pub(crate) fn from_amf0<'gc>(activation: &mut Activation<'_, 'gc>, content: &str) -> Value<'gc> {
+    // Flash uses the current XML prototype, but bypasses a monkey-patched
+    // constructor (and any accessor installed on the constructor's prototype).
+    let resolved_prototype = activation.resolve_prototype([istr!("XML")]);
+    let object = Object::new(activation.strings(), resolved_prototype);
+
+    let xml = Xml::empty(&activation.context.strings, object);
+    let content = AvmString::new_utf8(activation.gc(), content);
+    let ignore_whitespace = object
+        .get(istr!("ignoreWhite"), activation)
+        .unwrap_or(Value::Undefined)
+        .as_bool(activation.swf_version());
+
+    if let Err(e) = xml.parse(activation, &content, ignore_whitespace) {
+        avm_warn!(activation, "XML parsing error: {}", e);
+    }
+
+    object.into()
+}
+
 /// XML (document) constructor
 fn constructor<'gc>(
     activation: &mut Activation<'_, 'gc>,
