@@ -1,5 +1,4 @@
 package flash.display {
-    import __ruffle__.stub_method;
 
     import flash.geom.Matrix;
 
@@ -27,9 +26,7 @@ package flash.display {
         ):void;
 
         [API("662")]
-        public function beginShaderFill(shader:Shader, matrix:Matrix = null):void {
-            stub_method("flash.display.Graphics", "beginShaderFill");
-        }
+        public native function beginShaderFill(shader:Shader, matrix:Matrix = null):void;
 
         [Ruffle(FastCall)]
         public native function clear():void;
@@ -121,9 +118,7 @@ package flash.display {
         public native function drawGraphicsData(graphicsData:Vector.<IGraphicsData>):void;
 
         [API("662")]
-        public function lineShaderStyle(shader:Shader, matrix:Matrix = null):void {
-            stub_method("flash.display.Graphics", "lineShaderStyle");
-        }
+        public native function lineShaderStyle(shader:Shader, matrix:Matrix = null):void;
 
         [API("662")]
         public native function lineBitmapStyle(

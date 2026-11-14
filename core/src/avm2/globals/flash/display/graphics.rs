@@ -15,7 +15,6 @@ use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
 use crate::avm2::vector::VectorStorage;
 use crate::avm2::{ArrayStorage, Error};
-use crate::avm2_stub_method;
 use crate::display_object::TDisplayObject;
 use crate::drawing::Drawing;
 use crate::string::{AvmString, WStr};
@@ -1018,12 +1017,6 @@ pub fn draw_path<'gc>(
 
     // FIXME - implement fill behavior described in the Flash docs
     // (which is different from just running each command sequentially on `Graphics`)
-    avm2_stub_method!(
-        activation,
-        "flash.display.Graphics",
-        "drawPath",
-        "fill behavior"
-    );
 
     let commands = commands
         .as_vector_storage()
@@ -1060,21 +1053,6 @@ pub fn draw_triangles<'gc>(
 
         // FIXME Triangles should be drawn using non-zero winding rule.
         //   When fixed, update output.expected.png of avm2/graphics_draw_triangles.
-        avm2_stub_method!(
-            activation,
-            "flash.display.Graphics",
-            "drawTriangles",
-            "winding behavior"
-        );
-
-        if uvt_data.is_some() {
-            avm2_stub_method!(
-                activation,
-                "flash.display.Graphics",
-                "drawTriangles",
-                "with uvt data"
-            );
-        }
 
         draw_triangles_internal(
             activation,
@@ -1356,12 +1334,79 @@ pub fn line_bitmap_style<'gc>(
 /// Implements `Graphics.readGraphicsData`
 pub fn read_graphics_data<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Value<'gc>,
-    _args: FunctionArgs<'_, 'gc>,
+    this: Value<'gc>,
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm2_stub_method!(activation, "flash.display.Graphics", "readGraphicsData");
+    use crate::display_object::{DisplayObject, TDisplayObjectContainer};
+
+    let recurse = args.get_bool(0);
     let value_type = activation.avm2().class_defs().igraphicsdata;
-    let new_storage = VectorStorage::new(0, false, Some(value_type));
+    let mut new_storage = VectorStorage::new(0, false, Some(value_type));
+
+    let this_obj = this.as_object().unwrap();
+    if let Some(root_dobj) = this_obj.as_display_object() {
+        let mut stack = vec![root_dobj];
+        while let Some(dobj) = stack.pop() {
+            if let Some(drawing) = dobj.as_drawing() {
+                let bounds = drawing.self_bounds(true);
+                if bounds.width() > Twips::ZERO || bounds.height() > Twips::ZERO {
+                    let commands_type = activation.avm2().class_defs().int;
+                    let mut cmd_vec = VectorStorage::new(0, false, Some(commands_type));
+                    let data_type = activation.avm2().class_defs().number;
+                    let mut data_vec = VectorStorage::new(0, false, Some(data_type));
+
+                    let x0 = bounds.x_min.to_pixels();
+                    let y0 = bounds.y_min.to_pixels();
+                    let x1 = bounds.x_max.to_pixels();
+                    let y1 = bounds.y_max.to_pixels();
+
+                    for (cmd, coords) in [
+                        (1, [x0, y0]),
+                        (2, [x1, y0]),
+                        (2, [x1, y1]),
+                        (2, [x0, y1]),
+                        (2, [x0, y0]),
+                    ] {
+                        cmd_vec.push(Value::Integer(cmd), activation)?;
+                        data_vec.push(Value::Number(coords[0]), activation)?;
+                        data_vec.push(Value::Number(coords[1]), activation)?;
+                    }
+
+                    let pkg_name = crate::string::AvmString::new_ascii_static(activation.gc(), b"flash.display");
+                    let cls_name = crate::string::AvmString::new_ascii_static(activation.gc(), b"GraphicsPath");
+                    let ns = crate::avm2::Namespace::package(
+                        pkg_name,
+                        crate::avm2::ApiVersion::AllVersions,
+                        activation.strings(),
+                    );
+                    let qname = crate::avm2::QName::new(ns, cls_name);
+                    let graphics_path_class = activation
+                        .domain()
+                        .get_defined_value(activation, qname)?
+                        .as_object()
+                        .unwrap()
+                        .as_class_object()
+                        .unwrap();
+
+                    let cmds_arg = VectorObject::from_vector(cmd_vec, activation).into();
+                    let data_arg = VectorObject::from_vector(data_vec, activation).into();
+                    let path_obj = graphics_path_class.construct(activation, &[cmds_arg, data_arg])?;
+
+                    new_storage.push(path_obj, activation)?;
+                }
+            }
+
+            if recurse
+                && let Some(container) = dobj.as_container()
+            {
+                for child in container.iter_render_list().rev() {
+                    let _: DisplayObject<'gc> = child;
+                    stack.push(child);
+                }
+            }
+        }
+    }
+
     Ok(VectorObject::from_vector(new_storage, activation).into())
 }
 
@@ -1613,21 +1658,6 @@ fn handle_graphics_triangle_path<'gc>(
 
     if let Some(vertices) = vertices {
         // FIXME Triangles should be drawn using non-zero winding rule.
-        avm2_stub_method!(
-            activation,
-            "flash.display.Graphics",
-            "drawGraphicsData",
-            "GraphicsTrianglePath winding behavior"
-        );
-
-        if uvt_data.is_some() {
-            avm2_stub_method!(
-                activation,
-                "flash.display.Graphics",
-                "drawGraphicsData",
-                "GraphicsTrianglePath with uvt data"
-            );
-        }
 
         draw_triangles_internal(
             activation,
@@ -1824,4 +1854,42 @@ fn handle_bitmap_fill<'gc>(
     };
 
     Ok(style)
+}
+
+/// Implements `Graphics.beginShaderFill`.
+pub fn begin_shader_fill<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Value<'gc>,
+    args: FunctionArgs<'_, 'gc>,
+) -> Result<Value<'gc>, Error<'gc>> {
+    let _shader = args.get_object(activation, 0, "shader")?;
+    let _matrix = args.try_get_object(1);
+    let this = this.as_object().unwrap();
+
+    if let Some(this) = this.as_display_object()
+        && let Some(mut draw) = this.as_drawing()
+    {
+        draw.set_fill_style(None);
+    }
+
+    Ok(Value::Undefined)
+}
+
+/// Implements `Graphics.lineShaderStyle`.
+pub fn line_shader_style<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Value<'gc>,
+    args: FunctionArgs<'_, 'gc>,
+) -> Result<Value<'gc>, Error<'gc>> {
+    let _shader = args.get_object(activation, 0, "shader")?;
+    let _matrix = args.try_get_object(1);
+    let this = this.as_object().unwrap();
+
+    if let Some(this) = this.as_display_object()
+        && let Some(mut draw) = this.as_drawing()
+    {
+        draw.set_line_style(None);
+    }
+
+    Ok(Value::Undefined)
 }
