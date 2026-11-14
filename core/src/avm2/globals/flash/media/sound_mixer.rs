@@ -5,7 +5,6 @@ use crate::avm2::activation::Activation;
 use crate::avm2::function::FunctionArgs;
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
-use crate::avm2_stub_getter;
 use crate::display_object::SoundTransform;
 use std::{
     ops::Deref,
@@ -81,15 +80,10 @@ pub fn set_buffer_time<'gc>(
 
 /// `SoundMixer.areSoundsInaccessible`
 pub fn are_sounds_inaccessible<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     _this: Value<'gc>,
     _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm2_stub_getter!(
-        activation,
-        "flash.media.SoundMixer",
-        "areSoundsInaccessible"
-    );
     Ok(false.into())
 }
 

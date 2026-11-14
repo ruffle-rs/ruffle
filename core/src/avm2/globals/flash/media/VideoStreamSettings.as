@@ -1,27 +1,30 @@
 package flash.media {
-    import __ruffle__.stub_method;
-    import __ruffle__.stub_getter;
-
     [API("674")]
     public class VideoStreamSettings {
-        private var _bandwidth:int;
-        private var _codec:String;
-        private var _fps:Number;
-        private var _height:int;
-        private var _keyFrameInterval:int;
-        private var _quality:int;
-        private var _width:int;
+        private var _bandwidth:int = 16384;
+        private var _codec:String = VideoCodec.SORENSON;
+        private var _fps:Number = 15;
+        private var _height:int = 120;
+        private var _keyFrameInterval:int = 15;
+        private var _quality:int = 0;
+        private var _width:int = 160;
+
+        public function VideoStreamSettings() {
+        }
 
         public function setKeyFrameInterval(keyFrameInterval:int):void {
-            stub_method("flash.media.VideoStreamSettings", "setKeyFrameInterval");
+            this._keyFrameInterval = Math.max(1, Math.min(300, keyFrameInterval));
         }
 
         public function setMode(width:int, height:int, fps:Number):void {
-            stub_method("flash.media.VideoStreamSettings", "setMode");
+            this._width = width;
+            this._height = height;
+            this._fps = fps;
         }
 
         public function setQuality(bandwidth:int, quality:int):void {
-            stub_method("flash.media.VideoStreamSettings", "setQuality");
+            this._bandwidth = bandwidth;
+            this._quality = quality;
         }
 
         public function get bandwidth():int {
@@ -45,7 +48,6 @@ package flash.media {
         }
 
         public function get quality():int {
-            stub_getter("flash.media.VideoStreamSettings", "quality");
             return this._quality;
         }
 

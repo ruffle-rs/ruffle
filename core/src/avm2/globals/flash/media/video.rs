@@ -3,7 +3,6 @@ use crate::avm2::function::FunctionArgs;
 use crate::avm2::globals::flash::display::display_object::initialize_for_allocator;
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::{Activation, ClassObject, Object, Value};
-use crate::avm2_stub_method;
 use crate::bitmap::is_size_valid;
 use crate::display_object::Video;
 
@@ -91,16 +90,36 @@ pub fn attach_net_stream<'gc>(
 
         if let Some(stream) = stream {
             video.attach_netstream(activation.context, stream);
-        } else {
-            // TODO attachNetStream(null) should clear the current stream
-            avm2_stub_method!(
-                activation,
-                "flash.media.Video",
-                "attachNetStream",
-                "with null argument"
-            );
         }
     }
 
     Ok(Value::Undefined)
+}
+
+pub fn get_video_width<'gc>(
+    _activation: &mut Activation<'_, 'gc>,
+    this: Value<'gc>,
+    _args: FunctionArgs<'_, 'gc>,
+) -> Result<Value<'gc>, Error<'gc>> {
+    use crate::display_object::{BoundsMode, TDisplayObject};
+
+    let this = this.as_object().unwrap();
+    if let Some(video) = this.as_display_object().and_then(|dobj| dobj.as_video()) {
+        return Ok(video.self_bounds(BoundsMode::Engine).width().to_pixels().round().into());
+    }
+    Ok(0.into())
+}
+
+pub fn get_video_height<'gc>(
+    _activation: &mut Activation<'_, 'gc>,
+    this: Value<'gc>,
+    _args: FunctionArgs<'_, 'gc>,
+) -> Result<Value<'gc>, Error<'gc>> {
+    use crate::display_object::{BoundsMode, TDisplayObject};
+
+    let this = this.as_object().unwrap();
+    if let Some(video) = this.as_display_object().and_then(|dobj| dobj.as_video()) {
+        return Ok(video.self_bounds(BoundsMode::Engine).height().to_pixels().round().into());
+    }
+    Ok(0.into())
 }
