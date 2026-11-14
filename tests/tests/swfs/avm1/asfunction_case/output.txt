@@ -1,0 +1,8 @@
+_global.uncasedcallback with input: basic_check
+
+_global.uncasedcallback with input: MixedCase
+
+_global.uncasedcallback with input: ALL_CAPS
+
+_global.CasedCallback with input: Cased Function
+
