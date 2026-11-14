@@ -1,6 +1,8 @@
 package flash.external {
     [Ruffle(Abstract)]
     public final class ExternalInterface {
+        public static var marshallExceptions:Boolean = false;
+
         public static native function get available():Boolean;
 
         public static native function addCallback(functionName:String, closure:Function):void;
