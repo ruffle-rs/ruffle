@@ -67,7 +67,15 @@ pub struct XmlObjectData<'gc> {
 pub enum NotificationCommand {
     AttributeAdded,
     AttributeChanged,
+    AttributeRemoved,
+    NodeAdded,
+    NodeChanged,
+    NodeRemoved,
     NameSet,
+    NamespaceAdded,
+    NamespaceRemoved,
+    NamespaceSet,
+    TextSet,
 }
 
 impl<'gc> XmlObject<'gc> {
@@ -307,7 +315,31 @@ impl<'gc> XmlObject<'gc> {
                 let command = match command {
                     NotificationCommand::AttributeAdded => istr!("attributeAdded"),
                     NotificationCommand::AttributeChanged => istr!("attributeChanged"),
+                    NotificationCommand::AttributeRemoved => {
+                        AvmString::new_ascii_static(activation.gc(), b"attributeRemoved")
+                    }
+                    NotificationCommand::NodeAdded => {
+                        AvmString::new_ascii_static(activation.gc(), b"nodeAdded")
+                    }
+                    NotificationCommand::NodeChanged => {
+                        AvmString::new_ascii_static(activation.gc(), b"nodeChanged")
+                    }
+                    NotificationCommand::NodeRemoved => {
+                        AvmString::new_ascii_static(activation.gc(), b"nodeRemoved")
+                    }
                     NotificationCommand::NameSet => istr!("nameSet"),
+                    NotificationCommand::NamespaceAdded => {
+                        AvmString::new_ascii_static(activation.gc(), b"namespaceAdded")
+                    }
+                    NotificationCommand::NamespaceRemoved => {
+                        AvmString::new_ascii_static(activation.gc(), b"namespaceRemoved")
+                    }
+                    NotificationCommand::NamespaceSet => {
+                        AvmString::new_ascii_static(activation.gc(), b"namespaceSet")
+                    }
+                    NotificationCommand::TextSet => {
+                        AvmString::new_ascii_static(activation.gc(), b"textSet")
+                    }
                 };
                 let args = [
                     current_target.into(),
@@ -609,9 +641,9 @@ impl<'gc> TObject<'gc> for XmlObject<'gc> {
         // 11.
         let index = self_node.remove_matching_children(activation.gc(), &name);
 
-        let index = if let Some((index, node)) = index {
+        let (index, prior_node) = if let Some((index, node)) = index {
             self_node.insert_at(activation.gc(), index, node);
-            index
+            (index, Some(node))
         // 12. If i == undefined
         } else {
             // 12.a. Let i = x.[[Length]]
@@ -620,13 +652,6 @@ impl<'gc> TObject<'gc> for XmlObject<'gc> {
 
             // 12.b. If (primitiveAssign == true)
             if primitive_assign {
-                // 12.b.i. If (n.uri == null)
-                // 12.b.i.1. Let name be a new QName created as if by calling the constructor new
-                //           QName(GetDefaultNamespace(), n)
-                // 12.b.ii. Else
-                // 12.b.ii.1. Let name be a new QName created as if by calling the constructor new QName(n)
-
-                // 12.b.iii. Create a new XML object y with y.[[Name]] = name, y.[[Class]] = "element" and y.[[Parent]] = x
                 let node = E4XNode::element(
                     activation.gc(),
                     namespace_for_multiname(&name, activation),
@@ -635,34 +660,91 @@ impl<'gc> TObject<'gc> for XmlObject<'gc> {
                 );
                 // 12.b.v. Call the [[Replace]] method of x with arguments ToString(i) and y
                 self_node.replace(index, XmlObject::new(node, activation).into(), activation)?;
-                // FIXME: 12.b.iv. Let ns be the result of calling [[GetNamespace]] on name with no arguments
-                // 12.b.vi. Call [[AddInScopeNamespace]] on y with argument ns
             }
 
-            index
+            (index, None)
         };
 
         // 13. If (primitiveAssign == true)
         if primitive_assign {
-            let E4XNodeKind::Element { children, .. } = &mut *self_node.kind_mut(activation.gc())
-            else {
+            let target_child = if let E4XNodeKind::Element { children, .. } = &*self_node.kind() {
+                children[index]
+            } else {
                 unreachable!("Node should be of Element kind");
             };
 
+            let target_xml = XmlObject::new(target_child, activation);
+            let prior_text = if let E4XNodeKind::Element { children, .. } = &*target_child.kind() {
+                children
+                    .first()
+                    .map(|c| Value::String(c.xml_to_string(activation)))
+                    .unwrap_or(Value::Undefined)
+            } else {
+                Value::Undefined
+            };
+
+            let removed_children: Vec<E4XNode<'gc>> =
+                if let E4XNodeKind::Element { children, .. } = &*target_child.kind() {
+                    children.iter().filter(|c| c.is_element()).copied().collect()
+                } else {
+                    Vec::new()
+                };
+
+            for removed in removed_children {
+                let removed_xml = XmlObject::new(removed, activation);
+                target_xml.trigger_notification(
+                    activation,
+                    NotificationCommand::NodeRemoved,
+                    removed_xml.into(),
+                    Value::Undefined,
+                );
+            }
+
             // 13.a. Delete all the properties of the XML object x[i]
-            children[index].remove_all_children(activation.gc());
+            target_child.remove_all_children(activation.gc());
 
             // 13.b. Let s = ToString(c)
             let val = value.coerce_to_string(activation)?;
 
             // 13.c. If s is not the empty string, call the [[Replace]] method of x[i] with arguments "0" and s
             if !val.is_empty() {
-                children[index].replace(0, value, activation)?;
+                target_child.replace(0, value, activation)?;
+                target_xml.trigger_notification(
+                    activation,
+                    NotificationCommand::TextSet,
+                    val.into(),
+                    prior_text,
+                );
             }
         // 14. Else
         } else {
             // 14.a. Call the [[Replace]] method of x with arguments ToString(i) and c
             self_node.replace(index, value, activation)?;
+            let new_child = if let E4XNodeKind::Element { children, .. } = &*self_node.kind() {
+                children.get(index).copied()
+            } else {
+                None
+            };
+
+            if let Some(child_node) = new_child {
+                let child_xml = XmlObject::new(child_node, activation);
+                if let Some(prior) = prior_node {
+                    let prior_xml = XmlObject::new(prior, activation);
+                    self.trigger_notification(
+                        activation,
+                        NotificationCommand::NodeChanged,
+                        child_xml.into(),
+                        prior_xml.into(),
+                    );
+                } else {
+                    self.trigger_notification(
+                        activation,
+                        NotificationCommand::NodeAdded,
+                        child_xml.into(),
+                        Value::Undefined,
+                    );
+                }
+            }
         }
 
         // 15. Return
@@ -723,42 +805,61 @@ impl<'gc> TObject<'gc> for XmlObject<'gc> {
 
         // 3. If Type(n) is AttributeName
         if name.is_attribute() {
-            // 3.a. For each a in x.[[Attributes]]
-            // 3.a.i. If ((n.[[Name]].localName == "*") or
-            //            (n.[[Name]].localName == a.[[Name]].localName))
-            //        and ((n.[[Name]].uri == null) or (n.[[Name]].uri == a.[[Name]].uri))
-            // 3.a.i.1. Let a.[[Parent]] = null
-            // 3.a.i.2. Remove the attribute a from x.[[Attributes]]
-            node.remove_matching_attribute(activation.gc(), &name);
+            while let Some((_, attr)) = node.remove_matching_attribute(activation.gc(), &name) {
+                let attr_name = attr.local_name().map_or(Value::Undefined, Value::String);
+                let attr_val = match &*attr.kind() {
+                    E4XNodeKind::Attribute(v) => Value::String(*v),
+                    _ => Value::Undefined,
+                };
+                self.trigger_notification(
+                    activation,
+                    NotificationCommand::AttributeRemoved,
+                    attr_name,
+                    attr_val,
+                );
+            }
 
             // 3.b. Return true
             return Ok(true);
         }
 
-        let E4XNodeKind::Element { children, .. } = &mut *node.kind_mut(activation.gc()) else {
-            return Ok(true);
-        };
-
-        // 4. Let dp = 0
-        // 5. For q = 0 to x.[[Length]]-1
-        children.retain(|child| {
-            // 5.a. If ((n.localName == "*")
-            //   or (x[q].[[Class]] == "element" and x[q].[[Name]].localName == n.localName))
-            //   and ((n.uri == null) or (x[q].[[Class]] == “element” and n.uri == x[q].[[Name]].uri ))
-            let should_retain = if name.is_any_name() {
-                false
-            } else if child.is_element() {
-                !child.matches_name(&name)
-            } else {
-                true
+        let mut removed = Vec::new();
+        {
+            let E4XNodeKind::Element { children, .. } = &mut *node.kind_mut(activation.gc()) else {
+                return Ok(true);
             };
 
-            if !should_retain {
-                child.set_parent(None, activation.gc());
-            }
+            // 4. Let dp = 0
+            // 5. For q = 0 to x.[[Length]]-1
+            children.retain(|child| {
+                let should_retain = if name.is_any_name() {
+                    false
+                } else if child.is_element() {
+                    !child.matches_name(&name)
+                } else {
+                    true
+                };
 
-            should_retain
-        });
+                if !should_retain {
+                    child.set_parent(None, activation.gc());
+                    if child.is_element() {
+                        removed.push(*child);
+                    }
+                }
+
+                should_retain
+            });
+        }
+
+        for removed_node in removed {
+            let removed_xml = XmlObject::new(removed_node, activation);
+            self.trigger_notification(
+                activation,
+                NotificationCommand::NodeRemoved,
+                removed_xml.into(),
+                Value::Undefined,
+            );
+        }
 
         // 6. Let x.[[Length]] = x.[[Length]] - dp
         // 7. Return true.
