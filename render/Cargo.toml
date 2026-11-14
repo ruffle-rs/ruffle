@@ -42,9 +42,10 @@ guillotiere = "0.7.0"
 version = "0.12.1"
 optional = true
 
-[dependencies.jpeg-decoder]
-version = "0.3.2"
-default-features = false # can't use rayon on web
+[dependencies.zune-jpeg]
+version = "0.5.0"
+default-features = false
+features = ["std"]
 
 [dev-dependencies]
 approx = { workspace = true }
