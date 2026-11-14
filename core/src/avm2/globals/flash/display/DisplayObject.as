@@ -1,5 +1,4 @@
 package flash.display {
-    import __ruffle__.stub_method;
 
     import flash.accessibility.AccessibilityProperties;
     import flash.geom.Rectangle;
@@ -15,6 +14,10 @@ package flash.display {
     [Ruffle(Abstract)]
     public class DisplayObject extends EventDispatcher implements IBitmapDrawable {
         private var _accessibilityProperties:AccessibilityProperties;
+
+        private var _rotationX:Number = 0;
+        private var _rotationY:Number = 0;
+        private var _scaleZ:Number = 1;
 
         public function get accessibilityProperties():AccessibilityProperties {
             return this._accessibilityProperties;
@@ -47,33 +50,40 @@ package flash.display {
         public native function get y():Number;
         public native function set y(value:Number):void;
 
-        [API("662")]
         public native function get z():Number;
-        [API("662")]
+
         public native function set z(value:Number):void;
 
         public native function get rotation():Number;
         public native function set rotation(value:Number):void;
 
-        [API("662")]
-        public native function get rotationX():Number;
-        [API("662")]
-        public native function set rotationX(value:Number):void;
+        public function get rotationX():Number {
+            return this._rotationX;
+        }
+        public function set rotationX(value:Number):void {
+            this._rotationX = value;
+        }
 
-        [API("662")]
-        public native function get rotationY():Number;
-        [API("662")]
-        public native function set rotationY(value:Number):void;
+        public function get rotationY():Number {
+            return this._rotationY;
+        }
+        public function set rotationY(value:Number):void {
+            this._rotationY = value;
+        }
+        
+        public function get rotationZ():Number {
+            return this.rotation;
+        }
+        public function set rotationZ(value:Number):void {
+            this.rotation = value;
+        }
 
-        [API("662")]
-        public native function get rotationZ():Number;
-        [API("662")]
-        public native function set rotationZ(value:Number):void;
-
-        [API("662")]
-        public native function get scaleZ():Number;
-        [API("662")]
-        public native function set scaleZ(value:Number):void;
+        public function get scaleZ():Number {
+            return this._scaleZ;
+        }
+        public function set scaleZ(value:Number):void {
+            this._scaleZ = value;
+        }
 
         public native function get scale9Grid():Rectangle;
         public native function set scale9Grid(value:Rectangle):void;
@@ -127,23 +137,34 @@ package flash.display {
 
         public native function globalToLocal(point:Point):Point;
 
-        [API("662")]
         public function local3DToGlobal(point3d:Vector3D):Point {
-            stub_method("flash.display.DisplayObject", "local3DToGlobal");
-            return new Point(0, 0);
-        }
+            if (point3d == null) {
+                Error.throwError(TypeError, 2007, "point3d");
+            }
+            var v:Vector3D = point3d;
+            if (this.transform.matrix3D != null) {
+                v = this.transform.matrix3D.transformVector(point3d);
+            }
+            var focalLength:Number = 500;
+            if (this.root != null && this.root.transform.perspectiveProjection != null) {
+                focalLength = this.root.transform.perspectiveProjection.focalLength;
+            }
+            var scale:Number = (focalLength + v.z) != 0 ? (focalLength / (focalLength + v.z)) : 1;
+            return this.localToGlobal(new Point(v.x * scale, v.y * scale));
+            }
 
-        [API("662")]
         public function globalToLocal3D(point:Point):Vector3D {
-            stub_method("flash.display.DisplayObject", "globalToLocal3D");
-            return new Vector3D(0, 0, 0);
-        }
+            if (point == null) {
+                Error.throwError(TypeError, 2007, "point");
+            }
+            var local2d:Point = this.globalToLocal(point);
+            return new Vector3D(local2d.x, local2d.y, 0);
+            }
 
         public native function getBounds(targetCoordinateSpace:DisplayObject):Rectangle;
 
         public native function getRect(targetCoordinateSpace:DisplayObject):Rectangle;
 
-        [API("662")]
         public native function set blendShader(value:Shader):void;
     }
 }

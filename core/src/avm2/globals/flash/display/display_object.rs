@@ -23,7 +23,6 @@ use crate::prelude::*;
 use crate::string::AvmString;
 use crate::types::{Degrees, Percent};
 use crate::vminterface::Instantiator;
-use crate::{avm2_stub_getter, avm2_stub_setter};
 use ruffle_render::blend::ExtendedBlendMode;
 use ruffle_render::filters::Filter;
 use std::str::FromStr;
@@ -127,7 +126,6 @@ pub fn get_scale9grid<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
-    avm2_stub_getter!(activation, "flash.display.DisplayObject", "scale9Grid");
     if let Some(dobj) = this.as_display_object() {
         let rect = dobj.scaling_grid();
         return if rect.is_valid() {
@@ -142,13 +140,12 @@ pub fn get_scale9grid<'gc>(
 
 /// Implements `scale9Grid`'s setter.
 pub fn set_scale9grid<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
-    avm2_stub_setter!(activation, "flash.display.DisplayObject", "scale9Grid");
     if let Some(dobj) = this.as_display_object() {
         let rect = match args.try_get_object(0) {
             None => Rectangle::default(),
@@ -386,11 +383,10 @@ pub fn get_z<'gc>(
 }
 
 pub fn set_z<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm2_stub_setter!(activation, "flash.display.DisplayObject", "z");
     let this = this.as_object().unwrap();
 
     if let Some(dobj) = this.as_display_object() {
@@ -398,80 +394,6 @@ pub fn set_z<'gc>(
         dobj.set_z(z);
         dobj.base().set_has_matrix3d_stub(true);
     }
-    Ok(Value::Undefined)
-}
-
-pub fn get_rotation_x<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    _this: Value<'gc>,
-    _args: FunctionArgs<'_, 'gc>,
-) -> Result<Value<'gc>, Error<'gc>> {
-    avm2_stub_getter!(activation, "flash.display.DisplayObject", "rotationX");
-    Ok(0.into())
-}
-
-pub fn set_rotation_x<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    _this: Value<'gc>,
-    _args: FunctionArgs<'_, 'gc>,
-) -> Result<Value<'gc>, Error<'gc>> {
-    avm2_stub_setter!(activation, "flash.display.DisplayObject", "rotationX");
-    Ok(Value::Undefined)
-}
-
-pub fn get_rotation_y<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    _this: Value<'gc>,
-    _args: FunctionArgs<'_, 'gc>,
-) -> Result<Value<'gc>, Error<'gc>> {
-    avm2_stub_getter!(activation, "flash.display.DisplayObject", "rotationY");
-    Ok(0.into())
-}
-
-pub fn set_rotation_y<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    _this: Value<'gc>,
-    _args: FunctionArgs<'_, 'gc>,
-) -> Result<Value<'gc>, Error<'gc>> {
-    avm2_stub_setter!(activation, "flash.display.DisplayObject", "rotationY");
-    Ok(Value::Undefined)
-}
-
-pub fn get_rotation_z<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    this: Value<'gc>,
-    args: FunctionArgs<'_, 'gc>,
-) -> Result<Value<'gc>, Error<'gc>> {
-    // TODO This probably interacts with Matrix3D.
-    avm2_stub_getter!(activation, "flash.display.DisplayObject", "rotationZ");
-    get_rotation(activation, this, args)
-}
-
-pub fn set_rotation_z<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    this: Value<'gc>,
-    args: FunctionArgs<'_, 'gc>,
-) -> Result<Value<'gc>, Error<'gc>> {
-    // TODO This probably interacts with Matrix3D.
-    avm2_stub_setter!(activation, "flash.display.DisplayObject", "rotationZ");
-    set_rotation(activation, this, args)
-}
-
-pub fn get_scale_z<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    _this: Value<'gc>,
-    _args: FunctionArgs<'_, 'gc>,
-) -> Result<Value<'gc>, Error<'gc>> {
-    avm2_stub_getter!(activation, "flash.display.DisplayObject", "scaleZ");
-    Ok(1.into())
-}
-
-pub fn set_scale_z<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    _this: Value<'gc>,
-    _args: FunctionArgs<'_, 'gc>,
-) -> Result<Value<'gc>, Error<'gc>> {
-    avm2_stub_setter!(activation, "flash.display.DisplayObject", "scaleZ");
     Ok(Value::Undefined)
 }
 
@@ -653,13 +575,12 @@ pub fn set_visible<'gc>(
 
 /// Implements `metaData`'s getter.
 pub fn get_meta_data<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
-    avm2_stub_getter!(activation, "flash.display.DisplayObject", "metaData");
     if let Some(dobj) = this.as_display_object() {
         return Ok(dobj.meta_data().map_or(Value::Null, Value::Object));
     }
