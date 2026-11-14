@@ -34,9 +34,6 @@ use swf::avm2::types::MethodFlags as AbcMethodFlags;
 
 /// Represents a single activation of a given AVM2 function or keyframe.
 pub struct Activation<'a, 'gc: 'a> {
-    /// The number of locals this method uses.
-    num_locals: usize,
-
     /// This represents the outer scope of the method that is executing.
     ///
     /// The outer scope gives an activation access to the "outer world", including
@@ -130,7 +127,6 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     /// `Activation`.
     pub fn from_nothing(context: &'a mut UpdateContext<'gc>) -> Self {
         Self {
-            num_locals: 0,
             outer: ScopeChain::new(context.avm2.stage_domain),
             caller_domain: None,
             caller_movie: None,
@@ -154,7 +150,6 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     /// `SwfMovie` associated with the `MovieClip` being processed.
     pub fn from_domain(context: &'a mut UpdateContext<'gc>, domain: Domain<'gc>) -> Self {
         Self {
-            num_locals: 0,
             outer: ScopeChain::new(context.avm2.stage_domain),
             caller_domain: Some(domain),
             caller_movie: None,
@@ -361,7 +356,6 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             assert!(this.is_of_type(bound_class));
         }
 
-        self.num_locals = num_locals;
         self.outer = outer;
         self.caller_domain = Some(outer.domain());
         self.caller_movie = Some(method.owner_movie());
@@ -391,7 +385,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
         // `Stack::get_stack_frame` already initializes all values on the frame
         // to undefined, so we just have to increase the stack pointer
-        self.reset_stack();
+        self.stack.set_stack_pointer(num_locals);
 
         // Inherit the caller's default XML namespace if this method doesn't
         // set its own via dxns opcodes.
@@ -595,17 +589,6 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
         let stack = self.context.avm2.stack;
         stack.dispose_stack_frame(self.stack.take());
-    }
-
-    /// Clears the operand stack used by this activation.
-    ///
-    /// This is called `reset_stack` because it sets the stack pointer to the
-    /// first stack entry, which also makes it useful for initializing the stack.
-    #[inline]
-    fn reset_stack(&self) {
-        // This sets the stack pointer to the first stack entry, which is right
-        // after all the entries for local registers
-        self.stack.set_stack_pointer(self.num_locals);
     }
 
     /// Clears the scope stack used by this activation.
@@ -910,9 +893,14 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                         tracing::warn!("Caught exception: {}", stringified);
                     }
 
-                    self.reset_stack();
-                    self.push_stack(error);
+                    // Reset stack pointer to the first stack entry.
+                    if let Some(body) = method.body() {
+                        self.stack.set_stack_pointer(body.num_locals as usize);
+                    } else if cfg!(debug_assertions) {
+                        panic!("the current method is missing a body");
+                    }
 
+                    self.push_stack(error);
                     self.clear_scope();
                     return Ok(e.target_offset);
                 }
