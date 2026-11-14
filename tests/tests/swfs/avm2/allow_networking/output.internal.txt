@@ -17,3 +17,21 @@ END
 TEST: sendToURL
 no error
 END
+TEST: new URLLoader
+no error
+END
+TEST: URLLoader.load
+no error
+END
+TEST: URLStream.load
+no error
+END
+Navigator::fetch:
+  URL: http://example1.com
+  Method: GET
+Navigator::fetch:
+  URL: http://example2.com
+  Method: GET
+Navigator::fetch:
+  URL: http://example3.com
+  Method: GET

@@ -22,3 +22,29 @@ SecurityError: Error #2146: Security sandbox violation: file:///test.swf cannot 
 	at Test/check()
 	at Test()
 END
+TEST: new URLLoader
+[class SecurityError]
+SecurityError: Error #2146: Security sandbox violation: file:/// cannot call URLStream.load because the HTML/container parameter allowNetworking has the value none.
+	at flash.net::URLLoader/load()
+	at flash.net::URLLoader()
+	at Function/<anonymous>()
+	at Test/check()
+	at Test()
+END
+TEST: URLLoader.load
+[class SecurityError]
+SecurityError: Error #2146: Security sandbox violation: file:///test.swf cannot call URLStream.load because the HTML/container parameter allowNetworking has the value none.
+	at flash.net::URLLoader/load()
+	at Function/<anonymous>()
+	at Test/check()
+	at Test()
+END
+TEST: URLStream.load
+[class SecurityError]
+SecurityError: Error #2146: Security sandbox violation: file:/// cannot call URLStream.load because the HTML/container parameter allowNetworking has the value none.
+	at flash.net::URLLoader/load()
+	at flash.net::URLStream/load()
+	at Function/<anonymous>()
+	at Test/check()
+	at Test()
+END
