@@ -11,7 +11,6 @@ use crate::avm2::object::{
 };
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::{Activation, ArrayObject, ArrayStorage, Error, Multiname, Value};
-use crate::avm2_stub_method;
 use crate::string::AvmString;
 
 pub fn init<'gc>(
@@ -400,8 +399,16 @@ pub fn add_namespace<'gc>(
         },
     );
 
+    xml.trigger_notification(
+        activation,
+        NotificationCommand::NamespaceAdded,
+        ns.into(),
+        Value::Undefined,
+    );
+
     // 3. Return x
     Ok(this.into())
+
 }
 
 // ECMA-357 13.4.4.36 XML.prototype.setNamespace (ns)
@@ -426,9 +433,11 @@ pub fn set_namespace<'gc>(
         return Ok(Value::Undefined);
     }
 
+        let previous_ns = xml.namespace_object(activation, &node.in_scope_namespaces())?;
+
     // 2. Let ns2 be a new Namespace created as if by calling the constructor new Namespace(ns)
     let value = args.get_value(0);
-    let ns = activation
+    let ns_obj = activation
         .avm2()
         .classes()
         .namespace
@@ -439,8 +448,8 @@ pub fn set_namespace<'gc>(
         .unwrap();
 
     let ns = E4XNamespace {
-        prefix: ns.prefix(),
-        uri: ns.namespace().as_uri(activation.strings()),
+        prefix: ns_obj.prefix(),
+        uri: ns_obj.namespace().as_uri(activation.strings()),
     };
 
     // 3. Let x.[[Name]] be a new QName created as if by calling the constructor new QName(ns2, x.[[Name]])
@@ -460,6 +469,13 @@ pub fn set_namespace<'gc>(
         // 5.a. Call x.[[AddInScopeNamespace]](ns2)
         node.add_in_scope_namespace(activation.gc(), ns);
     }
+
+    xml.trigger_notification(
+        activation,
+        NotificationCommand::NamespaceSet,
+        ns_obj.into(),
+        previous_ns.into(),
+    );
 
     Ok(Value::Undefined)
 }
@@ -482,7 +498,7 @@ pub fn remove_namespace<'gc>(
 
     // 2. Let ns be a Namespace object created as if by calling the function Namespace( namespace )
     let value = args.get_value(0);
-    let ns = activation
+    let ns_obj = activation
         .avm2()
         .classes()
         .namespace
@@ -492,8 +508,8 @@ pub fn remove_namespace<'gc>(
         .as_namespace_object()
         .unwrap();
     let ns = E4XNamespace {
-        prefix: ns.prefix(),
-        uri: ns.namespace().as_uri(activation.strings()),
+        prefix: ns_obj.prefix(),
+        uri: ns_obj.namespace().as_uri(activation.strings()),
     };
 
     // 3. Let thisNS be the result of calling [[GetNamespace]] on x.[[Name]] with argument x.[[InScopeNamespaces]]
@@ -550,6 +566,13 @@ pub fn remove_namespace<'gc>(
             remove_namespace(activation, xml.into(), args)?;
         }
     }
+
+    xml.trigger_notification(
+        activation,
+        NotificationCommand::NamespaceRemoved,
+        ns_obj.into(),
+        Value::Undefined,
+    );
 
     // 9. Return x
     Ok(this.into())
@@ -901,6 +924,23 @@ pub fn prepend_child<'gc>(
     // 1. Call the [[Insert]] method of this object with arguments "0" and value
     xml.node().insert(0, child, activation)?;
 
+    let inserted = if let E4XNodeKind::Element { children, .. } = &*xml.node().kind() {
+        children.first().copied()
+    } else {
+        None
+    };
+    if let Some(inserted_node) = inserted
+        && inserted_node.is_element()
+    {
+        let inserted_xml = XmlObject::new(inserted_node, activation);
+        xml.trigger_notification(
+            activation,
+            NotificationCommand::NodeAdded,
+            inserted_xml.into(),
+            Value::Undefined,
+        );
+    }
+
     // 2. Return x
     Ok(xml.into())
 }
@@ -1094,6 +1134,22 @@ pub fn insert_child_after<'gc>(
         if let Some(index) = index {
             // 3.a.i.1. Call the [[Insert]] method of x with arguments ToString(i + 1) and child2
             xml.node().insert(index + 1, child2, activation)?;
+            let inserted = if let E4XNodeKind::Element { children, .. } = &*xml.node().kind() {
+                children.get(index + 1).copied()
+            } else {
+                None
+            };
+            if let Some(inserted_node) = inserted
+                && inserted_node.is_element()
+            {
+                let inserted_xml = XmlObject::new(inserted_node, activation);
+                xml.trigger_notification(
+                    activation,
+                    NotificationCommand::NodeAdded,
+                    inserted_xml.into(),
+                    Value::Undefined,
+                );
+            }
             // 3.a.i.2. Return x
             return Ok(xml.into());
         }
@@ -1101,6 +1157,22 @@ pub fn insert_child_after<'gc>(
     } else if matches!(child1, Value::Null) {
         // 2.a. Call the [[Insert]] method of x with arguments "0" and child2
         xml.node().insert(0, child2, activation)?;
+        let inserted = if let E4XNodeKind::Element { children, .. } = &*xml.node().kind() {
+            children.first().copied()
+        } else {
+            None
+        };
+        if let Some(inserted_node) = inserted
+            && inserted_node.is_element()
+        {
+            let inserted_xml = XmlObject::new(inserted_node, activation);
+            xml.trigger_notification(
+                activation,
+                NotificationCommand::NodeAdded,
+                inserted_xml.into(),
+                Value::Undefined,
+            );
+        }
         // 2.b. Return x
         return Ok(xml.into());
     }
@@ -1152,6 +1224,22 @@ pub fn insert_child_before<'gc>(
         if let Some(index) = index {
             // 3.a.i.1. Call the [[Insert]] method of x with arguments ToString(i) and child2
             xml.node().insert(index, child2, activation)?;
+            let inserted = if let E4XNodeKind::Element { children, .. } = &*xml.node().kind() {
+                children.get(index).copied()
+            } else {
+                None
+            };
+            if let Some(inserted_node) = inserted
+                && inserted_node.is_element()
+            {
+                let inserted_xml = XmlObject::new(inserted_node, activation);
+                xml.trigger_notification(
+                    activation,
+                    NotificationCommand::NodeAdded,
+                    inserted_xml.into(),
+                    Value::Undefined,
+                );
+            }
             // 3.a.i.2. Return x
             return Ok(xml.into());
         }
@@ -1165,6 +1253,22 @@ pub fn insert_child_before<'gc>(
 
         // 2.a. Call the [[Insert]] method of x with arguments ToString(x.[[Length]]) and child2
         xml.node().insert(length, child2, activation)?;
+        let inserted = if let E4XNodeKind::Element { children, .. } = &*xml.node().kind() {
+            children.get(length).copied()
+        } else {
+            None
+        };
+        if let Some(inserted_node) = inserted
+            && inserted_node.is_element()
+        {
+            let inserted_xml = XmlObject::new(inserted_node, activation);
+            xml.trigger_notification(
+                activation,
+                NotificationCommand::NodeAdded,
+                inserted_xml.into(),
+                Value::Undefined,
+            );
+        }
         // 2.b. Return x
         return Ok(xml.into());
     }
@@ -1319,7 +1423,6 @@ pub fn set_notification<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
-    avm2_stub_method!(activation, "XML", "setNotification");
     let xml = this.as_xml_object().unwrap();
     let node = xml.node();
     let func = args.try_get_function(0);
