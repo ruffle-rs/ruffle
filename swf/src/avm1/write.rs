@@ -280,13 +280,9 @@ impl<W: Write> Writer<W> {
                 Value::Register(_) | Value::Bool(_) => 2,
                 Value::Double(_) => 9,
                 Value::Float(_) | Value::Int(_) => 5,
-                Value::ConstantPool(v) => {
-                    if v < 256 {
-                        2
-                    } else {
-                        3
-                    }
-                }
+                Value::ConstantPool(v) if v < 256 => 2,
+                Value::ConstantPool(_) => 3,
+                Value::Invalid { .. } => 1
             })
             .sum();
         self.write_action_header(OpCode::Push, len)?;
@@ -337,6 +333,7 @@ impl<W: Write> Writer<W> {
                     self.write_u16(v)?;
                 }
             }
+            Value::Invalid { kind } => self.write_u8(kind)?,
         };
         Ok(())
     }
