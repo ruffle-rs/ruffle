@@ -10,7 +10,6 @@ use crate::avm2::object::{
 use crate::avm2::property::Property;
 use crate::avm2::vector::VectorStorage;
 use crate::avm2::{Activation, Error, Object, Value};
-use crate::avm2_stub_method;
 use crate::string::AvmString;
 use enumset::EnumSet;
 use flash_lso::types::{
@@ -20,7 +19,25 @@ use flash_lso::types::{
 use flash_lso::types::{Attribute, ClassDefinition, Value as AmfValue};
 use fnv::FnvHashMap;
 
-pub type ObjectTable<'gc> = FnvHashMap<Object<'gc>, AmfValue>;
+pub type ObjectTable<'gc> = FnvHashMap<Object<'gc>, ObjectId>;
+
+fn get_or_create_object_id<'gc>(
+    object: Object<'gc>,
+    object_table: &mut ObjectTable<'gc>,
+    amf_version: AMFVersion,
+) -> Result<ObjectId, AmfValue> {
+    if amf_version != AMFVersion::AMF3 {
+        return Ok(ObjectId::INVALID);
+    }
+
+    if let Some(id) = object_table.get(&object) {
+        return Err(AmfValue::Amf3ObjectReference(*id));
+    }
+
+    let id = ObjectId(object_table.len() as i64);
+    object_table.insert(object, id);
+    Ok(id)
+}
 
 /// Serialize a Value to an AmfValue
 pub fn serialize_value<'gc>(
@@ -50,6 +67,10 @@ pub fn serialize_value<'gc>(
             } else if o.as_display_object().is_some() {
                 AmfValue::Undefined
             } else if let Some(array_storage) = o.as_array_storage() {
+                let id = match get_or_create_object_id(o, object_table, amf_version) {
+                    Ok(id) => id,
+                    Err(reference) => return reference,
+                };
                 let len = array_storage.length() as u32;
                 drop(array_storage);
 
@@ -73,7 +94,7 @@ pub fn serialize_value<'gc>(
                     }
 
                     AmfValue::ECMAArray {
-                        id: ObjectId::INVALID,
+                        id,
                         data: ECMAArrayObjectValue {
                             dense,
                             elements: sparse,
@@ -83,7 +104,7 @@ pub fn serialize_value<'gc>(
                 } else {
                     // TODO: is this right?
                     AmfValue::ECMAArray {
-                        id: ObjectId::INVALID,
+                        id,
                         data: ECMAArrayObjectValue {
                             dense: vec![],
                             elements: values,
@@ -112,6 +133,10 @@ pub fn serialize_value<'gc>(
                         fixed_length: vec.is_fixed(),
                     })
                 } else {
+                    let id = match get_or_create_object_id(o, object_table, amf_version) {
+                        Ok(id) => id,
+                        Err(reference) => return reference,
+                    };
                     let obj_vec: Vec<_> = vec
                         .iter()
                         .map(|v| serialize_value(activation, v, amf_version, object_table))
@@ -121,7 +146,7 @@ pub fn serialize_value<'gc>(
 
                     let name = class_to_alias(activation, val_type);
                     AmfValue::VectorObject {
-                        id: ObjectId::INVALID,
+                        id,
                         data: VectorObjectValue {
                             values: obj_vec,
                             object_type_name: name,
@@ -137,8 +162,12 @@ pub fn serialize_value<'gc>(
                 // "Invalid Date" is serialized as a NaN
                 let time = time.unwrap_or(f64::NAN);
 
+                let id = match get_or_create_object_id(o, object_table, amf_version) {
+                    Ok(id) => id,
+                    Err(reference) => return reference,
+                };
                 AmfValue::Date {
-                    id: ObjectId::INVALID,
+                    id,
                     data: DateValue {
                         time,
                         timezone_or_utc: None,
@@ -156,6 +185,10 @@ pub fn serialize_value<'gc>(
                 // FIXME change this once weak keys are implemented
                 let has_weak_keys = false;
 
+                let id = match get_or_create_object_id(o, object_table, amf_version) {
+                    Ok(id) => id,
+                    Err(reference) => return reference,
+                };
                 let mut dictionary_body = Vec::new();
 
                 let mut last_index = dictionary.get_next_enumerant(0, activation).unwrap();
@@ -179,13 +212,17 @@ pub fn serialize_value<'gc>(
                 }
 
                 AmfValue::Dictionary {
-                    id: ObjectId::INVALID,
+                    id,
                     data: DictionaryObjectValue {
                         elements: dictionary_body,
                         weak_keys: has_weak_keys,
                     },
                 }
             } else {
+                let id = match get_or_create_object_id(o, object_table, amf_version) {
+                    Ok(id) => id,
+                    Err(reference) => return reference,
+                };
                 let class = o.instance_class();
                 let name = class_to_alias(activation, class);
 
@@ -206,7 +243,7 @@ pub fn serialize_value<'gc>(
                 )
                 .unwrap();
                 AmfValue::Object {
-                    id: ObjectId::INVALID,
+                    id,
                     data: ObjectValue {
                         elements: object_body,
                         class_definition: if amf_version == AMFVersion::AMF3 {
@@ -323,29 +360,7 @@ fn get_or_create_value<'gc>(
     object_table: &mut ObjectTable<'gc>,
     amf_version: AMFVersion,
 ) -> AmfValue {
-    if let Some(obj) = val.as_object() {
-        match object_table.get(&obj) {
-            Some(value) => {
-                // Even though we'll clone the same 'AmfValue' for each occurrence
-                // of 'Object', flash_lso doesn't serialize this correctly yet.
-                avm2_stub_method!(
-                    activation,
-                    "flash.utils.ByteArray",
-                    "writeObject",
-                    "with same Object used multiple times"
-                );
-                value.clone()
-            }
-            None => {
-                let value = serialize_value(activation, val, amf_version, object_table);
-                // We cannot use Entry, since we need to pass in 'object_table' to 'serialize_value'
-                object_table.insert(obj, value.clone());
-                value
-            }
-        }
-    } else {
-        serialize_value(activation, val, amf_version, object_table)
-    }
+    serialize_value(activation, val, amf_version, object_table)
 }
 
 /// Deserialize a AmfValue to a Value
