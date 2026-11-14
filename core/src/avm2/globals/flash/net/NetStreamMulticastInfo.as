@@ -20,9 +20,68 @@ package flash.net {
         private var _sendControlBytesPerSecondToServer:Number;
         private var _sendDataBytesPerSecond:Number;
 
+        public function NetStreamMulticastInfo(
+            sendDataBytesPerSecond:Number = 0,
+            sendControlBytesPerSecond:Number = 0,
+            receiveDataBytesPerSecond:Number = 0,
+            receiveControlBytesPerSecond:Number = 0,
+            bytesPushedToPeers:Number = 0,
+            fragmentsPushedToPeers:Number = 0,
+            bytesRequestedByPeers:Number = 0,
+            fragmentsRequestedByPeers:Number = 0,
+            bytesPushedFromPeers:Number = 0,
+            fragmentsPushedFromPeers:Number = 0,
+            bytesRequestedFromPeers:Number = 0,
+            fragmentsRequestedFromPeers:Number = 0,
+            sendControlBytesPerSecondToServer:Number = 0,
+            receiveDataBytesPerSecondFromServer:Number = 0,
+            bytesReceivedFromServer:Number = 0,
+            fragmentsReceivedFromServer:Number = 0,
+            receiveDataBytesPerSecondFromIPMulticast:Number = 0,
+            bytesReceivedFromIPMulticast:Number = 0,
+            fragmentsReceivedFromIPMulticast:Number = 0
+        ) {
+            this._sendDataBytesPerSecond = sendDataBytesPerSecond;
+            this._sendControlBytesPerSecond = sendControlBytesPerSecond;
+            this._receiveDataBytesPerSecond = receiveDataBytesPerSecond;
+            this._receiveControlBytesPerSecond = receiveControlBytesPerSecond;
+            this._bytesPushedToPeers = bytesPushedToPeers;
+            this._fragmentsPushedToPeers = fragmentsPushedToPeers;
+            this._bytesRequestedByPeers = bytesRequestedByPeers;
+            this._fragmentsRequestedByPeers = fragmentsRequestedByPeers;
+            this._bytesPushedFromPeers = bytesPushedFromPeers;
+            this._fragmentsPushedFromPeers = fragmentsPushedFromPeers;
+            this._bytesRequestedFromPeers = bytesRequestedFromPeers;
+            this._fragmentsRequestedFromPeers = fragmentsRequestedFromPeers;
+            this._sendControlBytesPerSecondToServer = sendControlBytesPerSecondToServer;
+            this._receiveDataBytesPerSecondFromServer = receiveDataBytesPerSecondFromServer;
+            this._bytesReceivedFromServer = bytesReceivedFromServer;
+            this._fragmentsReceivedFromServer = fragmentsReceivedFromServer;
+            this._receiveDataBytesPerSecondFromIPMulticast = receiveDataBytesPerSecondFromIPMulticast;
+            this._bytesReceivedFromIPMulticast = bytesReceivedFromIPMulticast;
+            this._fragmentsReceivedFromIPMulticast = fragmentsReceivedFromIPMulticast;
+        }
+
         public function toString():String {
-            __ruffle__.stub_method("flash.net.NetStreamMulticastInfo", "toString");
-            return "";
+            return "sendDataBytesPerSecond=" + this._sendDataBytesPerSecond +
+                " sendControlBytesPerSecond=" + this._sendControlBytesPerSecond +
+                " receiveDataBytesPerSecond=" + this._receiveDataBytesPerSecond +
+                " receiveControlBytesPerSecond=" + this._receiveControlBytesPerSecond +
+                " bytesPushedToPeers=" + this._bytesPushedToPeers +
+                " fragmentsPushedToPeers=" + this._fragmentsPushedToPeers +
+                " bytesRequestedByPeers=" + this._bytesRequestedByPeers +
+                " fragmentsRequestedByPeers=" + this._fragmentsRequestedByPeers +
+                " bytesPushedFromPeers=" + this._bytesPushedFromPeers +
+                " fragmentsPushedFromPeers=" + this._fragmentsPushedFromPeers +
+                " bytesRequestedFromPeers=" + this._bytesRequestedFromPeers +
+                " fragmentsRequestedFromPeers=" + this._fragmentsRequestedFromPeers +
+                " sendControlBytesPerSecondToServer=" + this._sendControlBytesPerSecondToServer +
+                " receiveDataBytesPerSecondFromServer=" + this._receiveDataBytesPerSecondFromServer +
+                " bytesReceivedFromServer=" + this._bytesReceivedFromServer +
+                " fragmentsReceivedFromServer=" + this._fragmentsReceivedFromServer +
+                " receiveDataBytesPerSecondFromIPMulticast=" + this._receiveDataBytesPerSecondFromIPMulticast +
+                " bytesReceivedFromIPMulticast=" + this._bytesReceivedFromIPMulticast +
+                " fragmentsReceivedFromIPMulticast=" + this._fragmentsReceivedFromIPMulticast;
         }
 
         public function get bytesPushedFromPeers():Number {

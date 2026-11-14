@@ -5,8 +5,14 @@ package flash.net {
         public static const AMF3:uint = 3;
         public static const DEFAULT:uint = 3;
 
-        public static native function get dynamicPropertyWriter():IDynamicPropertyWriter;
+        private static var _dynamicPropertyWriter:IDynamicPropertyWriter = null;
 
-        public static native function set dynamicPropertyWriter(value:IDynamicPropertyWriter):void;
+        public static function get dynamicPropertyWriter():IDynamicPropertyWriter {
+            return _dynamicPropertyWriter;
+        }
+
+        public static function set dynamicPropertyWriter(value:IDynamicPropertyWriter):void {
+            _dynamicPropertyWriter = value;
+        }
     }
 }
