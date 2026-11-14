@@ -6,12 +6,9 @@ use crate::avm2::globals::slots::{
     flash_display_shader_job as shader_job_slots,
     flash_display_shader_parameter as shader_parameter_slots,
 };
-use crate::avm2::parameters::ParametersExt;
 use crate::avm2::{Activation, Error, Object, TObject as _, Value};
 use crate::pixel_bender::PixelBenderTypeExt;
 use crate::string::AvmString;
-
-use crate::avm2_stub_method;
 
 use ruffle_render::backend::{PixelBenderOutput, PixelBenderTarget};
 use ruffle_render::bitmap::PixelRegion;
@@ -267,23 +264,14 @@ fn make_float_texture<'gc, S: PixelSource>(
     })
 }
 
-/// Implements `ShaderJob.start`.
-pub fn start<'gc>(
+/// Implements `ShaderJob.startInternal`.
+pub fn start_internal<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    args: FunctionArgs<'_, 'gc>,
+    _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
-    let wait_for_completion = args.get_bool(0);
-    if !wait_for_completion {
-        avm2_stub_method!(
-            activation,
-            "flash.display.ShaderJob",
-            "start",
-            "with waitForCompletion=false"
-        );
-    }
     let shader = this
         .get_slot(shader_job_slots::_SHADER)
         .as_object()

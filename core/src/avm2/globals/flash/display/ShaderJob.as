@@ -1,9 +1,7 @@
 package flash.display {
-    import __ruffle__.stub_method;
-    import __ruffle__.stub_getter;
-    import __ruffle__.stub_constructor;
-
     import flash.events.EventDispatcher;
+    import flash.events.ShaderEvent;
+    import flash.utils.ByteArray;
 
     [API("662")]
     public class ShaderJob extends EventDispatcher {
@@ -19,19 +17,36 @@ package flash.display {
         [Ruffle(NativeAccessible)]
         private var _height:int;
 
+        private var _progress:Number = 0;
+
         public function ShaderJob(shader:Shader = null, target:Object = null, width:int = 0, height:int = 0) {
             this._shader = shader;
             this._target = target;
             this._width = width;
             this._height = height;
-            stub_constructor("flash.display.ShaderJob");
         }
 
         public function cancel():void {
-            stub_method("flash.display.ShaderJob", "cancel")
+            this._progress = 0;
         }
 
-        public native function start(waitForCompletion:Boolean = false):void;
+        public function start(waitForCompletion:Boolean = false):void {
+            this._progress = 0;
+            this.startInternal(waitForCompletion);
+            this._progress = 1;
+            if (!waitForCompletion) {
+                this.dispatchEvent(new ShaderEvent(
+                    ShaderEvent.COMPLETE,
+                    false,
+                    false,
+                    this._target as BitmapData,
+                    this._target as ByteArray,
+                    this._target as Vector.<Number>
+                ));
+            }
+        }
+
+        private native function startInternal(waitForCompletion:Boolean = false):void;
 
         public function get height():int {
             return this._height;
@@ -50,8 +65,7 @@ package flash.display {
         }
 
         public function get progress():Number {
-            stub_getter("flash.display.ShaderJob", "progress")
-            return 0;
+            return this._progress;
         }
 
         public function get shader():Shader {
