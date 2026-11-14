@@ -1,8 +1,7 @@
 package flash.display {
-    import __ruffle__.stub_getter;
-    import __ruffle__.stub_setter;
-
     public dynamic class MovieClip extends Sprite {
+        private var _trackAsMenu:Boolean = false;
+
         public function MovieClip() {}
 
         public native function get currentFrame():int;
@@ -20,11 +19,10 @@ package flash.display {
         public native function get totalFrames():int;
 
         public function get trackAsMenu():Boolean {
-            stub_getter("flash.display.MovieClip", "trackAsMenu");
-            return false;
+            return this._trackAsMenu;
         }
         public function set trackAsMenu(value:Boolean):void {
-            stub_setter("flash.display.MovieClip", "trackAsMenu");
+            this._trackAsMenu = value;
         }
 
         public native function addFrameScript(...args):void;
