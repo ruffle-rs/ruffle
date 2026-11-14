@@ -1,6 +1,4 @@
 package flash.xml {
-    import __ruffle__.stub_method;
-
     import flash.xml.XMLNode;
     import flash.xml.XMLNodeType;
 
@@ -22,14 +20,6 @@ package flash.xml {
         }
 
         public function parseXML(input:String):void {
-            // This is something of a hack, but that's somewhat the nature of XMLDocument
-            // It accepts things like `<node>...</node> <!-- comment --> foo` which is FOUR children:
-            // `<node>...</node>` gets parsed as an element
-            // ` ` gets parsed as a text node
-            // `<!-- comment -->` gets parsed as a comment
-            // ` foo` is another text node
-            // To achieve this, just wrap it all together in a parent.
-
             var oldSettings = XML.AS3::settings();
             var newSettings = XML.AS3::defaultSettings();
             newSettings.ignoreWhitespace = this.ignoreWhite;
@@ -37,6 +27,7 @@ package flash.xml {
 
             try {
                 clear();
+                this.idMap = {};
                 var root = new XML("<xml>" + input + "</xml>");
                 for each (var child in root.children()) {
                     appendChild(_convertXmlNode(child));
@@ -57,7 +48,12 @@ package flash.xml {
 
             var attributes = {};
             for each (var attribute in original.attributes()) {
-                attributes[_convertXmlName(attribute)] = attribute.toString();
+                var attrName:String = _convertXmlName(attribute);
+                var attrVal:String = attribute.toString();
+                attributes[attrName] = attrVal;
+                if (attrName == "id") {
+                    this.idMap[attrVal] = result;
+                }
             }
             for each (var ns in original.namespaceDeclarations()) {
                 var name = "xmlns";
@@ -74,7 +70,7 @@ package flash.xml {
         private function _convertXmlName(node:XML):String {
             var ns = node.namespace();
             if (ns.prefix) {
-            return ns.prefix + ":" + node.localName();
+                return ns.prefix + ":" + node.localName();
             }
             return node.localName();
         }
@@ -101,8 +97,17 @@ package flash.xml {
         }
 
         override public function toString():String {
-            stub_method("flash.xml.XMLDocument", "toString");
-            return super.toString();
+            var out:String = "";
+            if (this.xmlDecl != null) {
+                out += String(this.xmlDecl);
+            }
+            if (this.docTypeDecl != null) {
+                out += String(this.docTypeDecl);
+            }
+            for each (var child:XMLNode in this.childNodes) {
+                out += child.toString();
+            }
+            return out;
         }
     }
 }
