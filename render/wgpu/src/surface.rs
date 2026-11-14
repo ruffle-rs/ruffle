@@ -195,21 +195,56 @@ impl Surface {
                     blend_mode: ChunkBlendMode::Shader(shader),
                     needs_stencil,
                 } => {
-                    assert!(!needs_stencil, "Shader blend mode not implemented in masks");
                     let parent_blend_buffer =
                         target.update_blend_buffer(descriptors, texture_pool, draw_encoder);
+                    // The foreground must retain its individual samples until the
+                    // blend shader runs. Otherwise stencil coverage antialiases it twice.
+                    let multisampled_background = if texture.texture().sample_count() > 1 {
+                        let background = texture_pool.get_texture(
+                            descriptors,
+                            texture.texture().size(),
+                            wgpu::TextureUsages::TEXTURE_BINDING
+                                | wgpu::TextureUsages::RENDER_ATTACHMENT,
+                            parent_blend_buffer.texture().format(),
+                            texture.texture().sample_count(),
+                        );
+                        run_copy_pipeline(
+                            descriptors,
+                            parent_blend_buffer.texture().format(),
+                            &background.1,
+                            &parent_blend_buffer
+                                .texture()
+                                .create_view(&Default::default()),
+                            texture.texture().sample_count(),
+                            draw_encoder,
+                        );
+                        Some(background)
+                    } else {
+                        None
+                    };
+                    let background = multisampled_background
+                        .as_ref()
+                        .map(|background| &background.0)
+                        .unwrap_or_else(|| parent_blend_buffer.texture());
+                    let mode = if needs_stencil {
+                        ShaderMode::Blend(
+                            target
+                                .stencil_attachment(descriptors, texture_pool)
+                                .expect("Shader blend coverage requires a stencil attachment"),
+                        )
+                    } else {
+                        ShaderMode::Filter
+                    };
                     run_pixelbender_shader_impl(
                         descriptors,
                         shader,
-                        ShaderMode::Filter,
+                        mode,
                         &[
                             PixelBenderShaderArgument::ImageInput {
                                 index: 0,
                                 channels: 0xFF,
                                 name: "background".to_string(),
-                                texture: Some(ImageInputTexture::TextureRef(
-                                    parent_blend_buffer.texture(),
-                                )),
+                                texture: Some(ImageInputTexture::TextureRef(background)),
                             },
                             PixelBenderShaderArgument::ImageInput {
                                 index: 1,
