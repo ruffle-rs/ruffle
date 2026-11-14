@@ -5794,15 +5794,16 @@ dependencies = [
 
 [[package]]
 name = "swfasm"
-version = "0.1.0"
+version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a8a72ec79431650a734b424d517f78f0b3808aca20e1cc2b4776ce9e4c382a79"
+checksum = "c8d0e8bfd6b9045fdda3afdf04e9c717917cd6df199f5710728da715f756f8b3"
 dependencies = [
  "anyhow",
  "rascal",
  "ron",
  "serde",
  "swf 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "tempfile",
 ]
 
 [[package]]
