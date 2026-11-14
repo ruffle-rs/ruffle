@@ -1095,27 +1095,12 @@ fn delete_array_elements_in_range<'gc>(
             .collect::<Vec<_>>();
 
         for key in keys {
-            let key_string = key.as_wstr();
-            let Ok(index) = key_string.parse::<i32>() else {
+            let Some(index) = super::parse_canonical_array_index(key.as_wstr()) else {
                 continue;
             };
 
-            // A canonical nonnegative decimal index has no sign or leading zero.
-            let is_canonical = match index {
-                0 => key_string.len() == 1,
-                1.. => key_string
-                    .get(0)
-                    .is_some_and(|first| (b'1' as u16..=b'9' as u16).contains(&first)),
-                _ => false,
-            };
-
-            debug_assert_eq!(
-                is_canonical,
-                index >= 0 && key_string == index.to_string().as_bytes()
-            );
-
             // Only delete properties whose names are canonical decimal indices.
-            if is_canonical && range.contains(&index) {
+            if range.contains(&index) {
                 object.delete(activation, key);
             }
         }

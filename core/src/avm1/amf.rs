@@ -1,5 +1,10 @@
-use crate::avm1::{Activation, Attribute, NativeObject, Object, Value};
-use crate::string::AvmString;
+use crate::avm1::globals::date::DeferredAmf0Date;
+use crate::avm1::globals::date::from_amf0 as date_from_amf0;
+use crate::avm1::globals::date::from_local_connection_amf0 as local_date_from_amf0;
+use crate::avm1::globals::xml::from_amf0 as xml_from_amf0;
+use crate::avm1::object::parse_canonical_array_index;
+use crate::avm1::{Activation, ArrayBuilder, Attribute, NativeObject, Object, Value};
+use crate::string::{AvmString, from_utf8};
 use flash_lso::amf0::writer::{Amf0Writer, CacheKey, ObjWriter};
 use flash_lso::types::{
     ClassDefinition, DateValue, ECMAArrayObjectValue, Element, ObjectId, ObjectValue, Reference,
@@ -62,8 +67,28 @@ fn object_class_name<'gc>(
     }
 }
 
-/// Serialize AMF data in NetConnection.addHeader, NetConnection.call, and LocalConnection.send
+/// Serialize AMF data for LocalConnection.send.
 pub fn serialize<'gc>(activation: &mut Activation<'_, 'gc>, value: Value<'gc>) -> AmfValue {
+    serialize_with_array_encoding(activation, value, ArrayEncoding::StrictWhenDense)
+}
+
+/// Serialize AMF data for NetConnection.addHeader and NetConnection.call.
+pub fn serialize_net_connection<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    value: Value<'gc>,
+) -> AmfValue {
+    serialize_with_array_encoding(
+        activation,
+        value,
+        ArrayEncoding::StrictWhenNoCustomProperties,
+    )
+}
+
+fn serialize_with_array_encoding<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    value: Value<'gc>,
+    array_encoding: ArrayEncoding,
+) -> AmfValue {
     match value {
         Value::Undefined => AmfValue::Undefined,
         Value::Null => AmfValue::Null,
@@ -74,7 +99,7 @@ pub fn serialize<'gc>(activation: &mut Activation<'_, 'gc>, value: Value<'gc>) -
             if object.as_display_object().is_some() {
                 AmfValue::Undefined
             } else if object.is_native_array() {
-                serialize_array(activation, object)
+                serialize_array(activation, object, array_encoding)
             } else if let Some(xml_node) = object.as_xml_node() {
                 let string = xml_node
                     .into_string(activation)
@@ -84,6 +109,10 @@ pub fn serialize<'gc>(activation: &mut Activation<'_, 'gc>, value: Value<'gc>) -
                     is_string: true,
                 }
             } else if let NativeObject::Date(date) = object.native() {
+                // Flash resolves the global Date constructor while serializing AMF0 dates.
+                let global = activation.global_object();
+                let _ = global.get(istr!("Date"), activation);
+
                 AmfValue::Date {
                     id: ObjectId::INVALID,
                     data: DateValue {
@@ -94,7 +123,7 @@ pub fn serialize<'gc>(activation: &mut Activation<'_, 'gc>, value: Value<'gc>) -
             } else {
                 let class_def =
                     object_class_name(activation, object).map(ClassDefinition::default_with_name);
-                let elements = serialize_object_properties(activation, object);
+                let elements = serialize_object_properties(activation, object, array_encoding);
                 AmfValue::Object {
                     id: ObjectId::INVALID,
                     data: ObjectValue {
@@ -108,118 +137,211 @@ pub fn serialize<'gc>(activation: &mut Activation<'_, 'gc>, value: Value<'gc>) -
     }
 }
 
-/// Serialize an Object in NetConnection or LocalConnection
+/// Serialize an Object in NetConnection or LocalConnection.
 fn serialize_object_properties<'gc>(
     activation: &mut Activation<'_, 'gc>,
     object: Object<'gc>,
+    array_encoding: ArrayEncoding,
 ) -> Vec<Element> {
     let mut w = Amf0Writer::default();
-    // Reserve the root object's wire-format slot before serializing its properties.
+
+    // The root object is written by the enclosing NetConnection/LocalConnection
+    // value, while this writer serializes only its properties. Reserve its slot
+    // here so references in those properties use the wire-format index.
     let root_key = CacheKey::from_ptr(object.as_ptr());
     let root_reference = w.make_reference();
     w.cache_add(root_key, root_reference);
-    recursive_serialize(activation, object, &mut w, true);
+
+    recursive_serialize(activation, object, &mut w, array_encoding);
     w.commit_lso("root").into_iter().collect()
 }
 
-/// Serialize an array for NetConnection and LocalConnection
-fn serialize_array<'gc>(activation: &mut Activation<'_, 'gc>, array: Object<'gc>) -> AmfValue {
-    let mut length = array.length(activation).unwrap_or(0).max(0) as usize;
-    let keys = array.get_keys(activation, false);
-
-    // Flash treats any numeric key as an array element. If a numeric key
-    // exceeds the current length, it expands the array's serialization length.
-    for key in &keys {
-        if let Ok(index) = key.to_utf8_lossy().parse::<usize>() {
-            length = length.max(index + 1);
-        }
-    }
-
-    let mut has_custom_properties = false;
-    let mut associative = Vec::new();
-
-    // Flash expects insertion order for these properties
-    for key in keys.into_iter().rev() {
-        // A property is "custom" if it is entirely non-numeric
-        if key.to_utf8_lossy().parse::<usize>().is_err() {
-            has_custom_properties = true;
-        }
-
-        let prop_value = array.get(key, activation).unwrap_or(Value::Undefined);
-        associative.push(Element::new(
-            key.to_string(),
-            serialize(activation, prop_value),
-        ));
-    }
-    if has_custom_properties {
-        // Mixed Array: Has true non-numeric keys
-        AmfValue::ECMAArray {
-            id: ObjectId::INVALID,
-            data: ECMAArrayObjectValue {
-                dense: Vec::new(),
-                elements: associative,
-                length: length as u32,
-            },
-        }
+/// Parse a numeric array key the way Flash's NetConnection AMF serializer does.
+/// Leading zeroes are accepted, but leading plus signs, whitespace, and negative
+/// values remain associative property names.
+fn net_connection_array_index(name: &str) -> Option<u32> {
+    // Rust's integer parser accepts a leading '+', but Flash keeps that key associative.
+    if name.starts_with('+') {
+        None
     } else {
-        // Pure Dense Array: Pad holes with Undefined to maintain contiguous indices
-        let mut dense = Vec::with_capacity(length);
-        for i in 0..length {
-            let elem_name = AvmString::new_utf8(activation.gc(), i.to_string());
-            let prop_value = array.get(elem_name, activation).unwrap_or(Value::Undefined);
-            dense.push(serialize(activation, prop_value));
+        name.parse::<u32>().ok()
+    }
+}
+
+/// Serialize an array according to the transport-specific AMF0 array rules.
+fn serialize_array<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    array: Object<'gc>,
+    array_encoding: ArrayEncoding,
+) -> AmfValue {
+    let length = array.length(activation).unwrap_or(0).max(0) as usize;
+    let keys = array.get_keys(activation, false);
+    let array_info = array_serialization_info(&keys, length, array_encoding);
+
+    if array_info.is_strict_array {
+        let mut dense = Vec::with_capacity(array_info.length);
+        for i in 0..array_info.length {
+            let prop_value = array.get_element(activation, i as i32);
+            dense.push(serialize_with_array_encoding(
+                activation,
+                prop_value,
+                array_encoding,
+            ));
         }
-        // Output as a StrictArray.
         AmfValue::StrictArray {
             id: ObjectId::INVALID,
             values: dense,
         }
+    } else {
+        // ECMA arrays preserve associative properties and, for LocalConnection,
+        // preserve sparse indices without materializing undefined holes.
+        let mut elements = Vec::with_capacity(keys.len());
+        for key in keys.into_iter().rev() {
+            let prop_value = array.get(key, activation).unwrap_or(Value::Undefined);
+            elements.push(Element::new(
+                key.to_string(),
+                serialize_with_array_encoding(activation, prop_value, array_encoding),
+            ));
+        }
+        AmfValue::ECMAArray {
+            id: ObjectId::INVALID,
+            data: ECMAArrayObjectValue {
+                dense: Vec::new(),
+                elements,
+                length: array_info.length as u32,
+            },
+        }
+    }
+}
+
+/// How native AVM1 arrays are represented in the enclosing AMF0 format.
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub(crate) enum ArrayEncoding {
+    /// SharedObject LSO bodies encode arrays as ECMA arrays.
+    EcmaArray,
+    /// LocalConnection uses strict arrays only when every array index exists.
+    StrictWhenDense,
+    /// NetConnection uses strict arrays whenever there are no custom properties.
+    StrictWhenNoCustomProperties,
+}
+
+/// The wire representation and effective length selected for an AVM1 array.
+struct ArraySerializationInfo {
+    is_strict_array: bool,
+    length: usize,
+}
+
+/// Select an array representation using the rules of its transport.
+///
+/// Keep this shared by both AMF-value and LSO-writer serialization so nested
+/// and top-level arrays apply exactly the same classification and length rules.
+fn array_serialization_info(
+    keys: &[AvmString],
+    mut length: usize,
+    array_encoding: ArrayEncoding,
+) -> ArraySerializationInfo {
+    let is_strict_array = match array_encoding {
+        ArrayEncoding::EcmaArray => false,
+        ArrayEncoding::StrictWhenDense => {
+            for key in keys {
+                if let Some(index) = parse_canonical_array_index(key.as_wstr()) {
+                    length = length.max(index as usize + 1);
+                }
+            }
+
+            // LocalConnection preserves holes and noncanonical numeric-looking
+            // property names, so only genuinely dense arrays use strict encoding.
+            keys.len() == length
+                && keys.iter().all(|key| {
+                    parse_canonical_array_index(key.as_wstr())
+                        .is_some_and(|index| (index as usize) < length)
+                })
+        }
+        ArrayEncoding::StrictWhenNoCustomProperties => {
+            let mut has_custom_properties = false;
+            let mut strict_array_length = length;
+            for key in keys {
+                if let Some(index) = net_connection_array_index(key.to_utf8_lossy().as_ref()) {
+                    if let Some(end) = index.checked_add(1) {
+                        strict_array_length = strict_array_length.max(end as usize);
+                    }
+                } else {
+                    has_custom_properties = true;
+                }
+            }
+
+            if !has_custom_properties {
+                length = strict_array_length;
+            }
+
+            // NetConnection treats sparse arrays with only numeric keys as
+            // strict arrays, serializing holes as explicit undefined values.
+            !has_custom_properties
+        }
+    };
+
+    ArraySerializationInfo {
+        is_strict_array,
+        length,
     }
 }
 
 /// Helper to serialize a specific value into the ObjWriter cache architecture.
-/// LSO values do not treat XML values as referenceable, while AMF remoting does.
 fn serialize_value_to_writer<'gc>(
     activation: &mut Activation<'_, 'gc>,
     name: &str,
     elem: Value<'gc>,
     writer: &mut dyn ObjWriter<'_>,
-    xml_is_referenceable: bool,
+    array_encoding: ArrayEncoding,
 ) {
     match elem {
         Value::Object(o) => {
             if o.as_function().is_some() {
-                // Flash entirely skips functions during object serialization
+                // Flash entirely skips functions during object serialization.
             } else if o.as_display_object().is_some() {
                 writer.undefined(name)
             } else if o.is_native_array() {
-                let (aw, token) = writer.array(CacheKey::from_ptr(o.as_ptr()));
+                let length = o.length(activation).unwrap_or(0).max(0) as usize;
+                let keys = o.get_keys(activation, false);
+                let array_info = array_serialization_info(&keys, length, array_encoding);
 
-                if let Some(mut aw) = aw {
-                    recursive_serialize(activation, o, &mut aw, xml_is_referenceable);
+                if array_info.is_strict_array {
+                    let (aw, token) = writer.strict_array(CacheKey::from_ptr(o.as_ptr()));
 
-                    // TODO: What happens if an exception is thrown here?
-                    let length = o
-                        .length(activation)
-                        .expect("Failed to get length for SharedObject array");
-                    aw.set_length(length as u32);
-                    aw.commit(name);
+                    if let Some(mut aw) = aw {
+                        for i in 0..array_info.length {
+                            let prop_value = o.get_element(activation, i as i32);
+                            serialize_value_to_writer(
+                                activation,
+                                "",
+                                prop_value,
+                                &mut aw,
+                                array_encoding,
+                            );
+                        }
+
+                        aw.commit(name);
+                    } else {
+                        writer.reference(name, token);
+                    }
                 } else {
-                    writer.reference(name, token);
+                    let (aw, token) = writer.array(CacheKey::from_ptr(o.as_ptr()));
+
+                    if let Some(mut aw) = aw {
+                        recursive_serialize(activation, o, &mut aw, array_encoding);
+                        aw.set_length(array_info.length as u32);
+                        aw.commit(name);
+                    } else {
+                        writer.reference(name, token);
+                    }
                 }
             } else if let Some(xml_node) = o.as_xml_node() {
                 // TODO: What happens if an exception is thrown here?
                 let string = xml_node
                     .into_string(activation)
                     .expect("Failed to convert xml to string in SharedObject");
-                if xml_is_referenceable {
-                    writer.xml(
-                        CacheKey::from_ptr(o.as_ptr()),
-                        name,
-                        string.to_utf8_lossy().as_ref(),
-                        true,
-                    );
-                } else {
+                if array_encoding == ArrayEncoding::EcmaArray {
+                    // SharedObject LSO bodies do not include XML in their reference table.
                     writer.add_element(
                         name,
                         AmfValue::XML {
@@ -227,8 +349,20 @@ fn serialize_value_to_writer<'gc>(
                             is_string: true,
                         },
                     );
+                } else {
+                    // AMF remoting does include XML in the reference table.
+                    writer.xml(
+                        CacheKey::from_ptr(o.as_ptr()),
+                        name,
+                        string.to_utf8_lossy().as_ref(),
+                        true,
+                    );
                 }
             } else if let NativeObject::Date(date) = o.native() {
+                // Flash resolves the global Date constructor while serializing AMF0 dates.
+                let global = activation.global_object();
+                let _ = global.get(istr!("Date"), activation);
+
                 writer.date(
                     CacheKey::from_ptr(o.as_ptr()),
                     name,
@@ -241,7 +375,7 @@ fn serialize_value_to_writer<'gc>(
                 if let Some(class_name) = object_class_name(activation, o) {
                     let (ow, token) = writer.typed_object(&class_name, key);
                     if let Some(mut ow) = ow {
-                        recursive_serialize(activation, o, &mut ow, xml_is_referenceable);
+                        recursive_serialize(activation, o, &mut ow, array_encoding);
                         ow.commit(name);
                     } else {
                         writer.reference(name, token);
@@ -249,7 +383,7 @@ fn serialize_value_to_writer<'gc>(
                 } else {
                     let (ow, token) = writer.object(key);
                     if let Some(mut ow) = ow {
-                        recursive_serialize(activation, o, &mut ow, xml_is_referenceable);
+                        recursive_serialize(activation, o, &mut ow, array_encoding);
                         ow.commit(name);
                     } else {
                         writer.reference(name, token);
@@ -272,7 +406,7 @@ pub(crate) fn recursive_serialize<'gc>(
     activation: &mut Activation<'_, 'gc>,
     obj: Object<'gc>,
     writer: &mut dyn ObjWriter<'_>,
-    xml_is_referenceable: bool,
+    array_encoding: ArrayEncoding,
 ) {
     // Reversed to match flash player ordering
     // Note that because get_keys can recurse, this may result in an OS stack overflow
@@ -291,33 +425,8 @@ pub(crate) fn recursive_serialize<'gc>(
         };
 
         let name = element_name.to_utf8_lossy();
-        serialize_value_to_writer(
-            activation,
-            name.as_ref(),
-            elem,
-            writer,
-            xml_is_referenceable,
-        );
+        serialize_value_to_writer(activation, name.as_ref(), elem, writer, array_encoding);
     }
-}
-
-/// Instantiate an AMF0 XML value.
-///
-/// If the global XML constructor is unavailable, Flash creates an
-/// object without a prototype instead of reconstructing an XML document.
-fn instantiate_amf0_xml<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    args: &[Value<'gc>],
-) -> Value<'gc> {
-    // Use the current global binding when available.
-    if let Some(constructor) = activation.resolve_class([istr!("XML")]) {
-        return constructor
-            .construct(activation, args)
-            .unwrap_or(Value::Undefined);
-    }
-
-    // Flash returns an object without a prototype when XML is unavailable.
-    Object::new_without_proto(activation.gc()).into()
 }
 
 /// Deserialize an AmfValue to a Value, using AMF remoting reference-table semantics.
@@ -326,17 +435,50 @@ pub fn deserialize_value<'gc>(
     val: &AmfValue,
     reference_cache: &mut Amf0ReferenceCache<'gc>,
 ) -> Value<'gc> {
-    deserialize_value_inner(activation, val, reference_cache, true)
+    let mut deferred_dates = Vec::new();
+    deserialize_value_inner(
+        activation,
+        val,
+        reference_cache,
+        true,
+        false,
+        &mut deferred_dates,
+    )
 }
 
 /// Deserialize an LSO value, where XML values do not occupy reference-table slots.
-/// Used by SharedObject and LocalConnection deserialization.
+/// Used by SharedObject deserialization.
 pub(crate) fn deserialize_lso_value<'gc>(
     activation: &mut Activation<'_, 'gc>,
     val: &AmfValue,
     reference_cache: &mut Amf0ReferenceCache<'gc>,
 ) -> Value<'gc> {
-    deserialize_value_inner(activation, val, reference_cache, false)
+    let mut deferred_dates = Vec::new();
+    deserialize_value_inner(
+        activation,
+        val,
+        reference_cache,
+        false,
+        false,
+        &mut deferred_dates,
+    )
+}
+
+/// Deserialize a LocalConnection LSO value, applying LocalConnection-specific class behavior.
+fn deserialize_local_connection_lso_value<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    val: &AmfValue,
+    reference_cache: &mut Amf0ReferenceCache<'gc>,
+    deferred_dates: &mut Vec<DeferredAmf0Date<'gc>>,
+) -> Value<'gc> {
+    deserialize_value_inner(
+        activation,
+        val,
+        reference_cache,
+        false,
+        true,
+        deferred_dates,
+    )
 }
 
 fn deserialize_value_inner<'gc>(
@@ -344,6 +486,8 @@ fn deserialize_value_inner<'gc>(
     val: &AmfValue,
     reference_cache: &mut Amf0ReferenceCache<'gc>,
     xml_is_referenceable: bool,
+    local_connection: bool,
+    deferred_dates: &mut Vec<DeferredAmf0Date<'gc>>,
 ) -> Value<'gc> {
     match val {
         AmfValue::Null => Value::Null,
@@ -352,25 +496,10 @@ fn deserialize_value_inner<'gc>(
         AmfValue::String(s) => Value::String(AvmString::new_utf8(activation.gc(), s)),
         AmfValue::Bool(b) => (*b).into(),
         AmfValue::ECMAArray { data, .. } => {
-            // TODO(moulins): how exactly is the Array object instantiated? this matters when
-            // the Array class was monkeypatched by the user.
-            let Ok(Some(Value::Object(obj))) =
-                activation.instantiate_class_fast([istr!("Array")], &[Value::from(data.length)])
-            else {
-                // The value still occupies a reference-table slot, even if it could not be
-                // instantiated in AVM1. Its children must also be visited to keep subsequent
-                // reference indices aligned.
-                reference_cache.insert(Value::Undefined);
-                for entry in &data.elements {
-                    let _ = deserialize_value_inner(
-                        activation,
-                        entry.value(),
-                        reference_cache,
-                        xml_is_referenceable,
-                    );
-                }
-                return Value::Undefined;
-            };
+            let obj = ArrayBuilder::empty_with_len(
+                activation,
+                i32::try_from(data.length).unwrap_or(i32::MAX),
+            );
 
             let value: Value<'gc> = obj.into();
 
@@ -383,9 +512,11 @@ fn deserialize_value_inner<'gc>(
                     entry.value(),
                     reference_cache,
                     xml_is_referenceable,
+                    local_connection,
+                    deferred_dates,
                 );
 
-                if let Ok(i) = entry.name().parse::<i32>() {
+                if let Some(i) = parse_canonical_array_index(from_utf8(entry.name()).as_ref()) {
                     obj.set_element(activation, i, child).unwrap();
                 } else {
                     obj.define_value(
@@ -400,26 +531,10 @@ fn deserialize_value_inner<'gc>(
             value
         }
         AmfValue::StrictArray { values, .. } => {
-            // TODO(moulins): how exactly is the Array object instantiated? this matters when
-            // the Array class was monkeypatched by the user.
-            let args = &[Value::from_usize_lossy(values.len())];
-            let Ok(Some(Value::Object(obj))) =
-                activation.instantiate_class_fast([istr!("Array")], args)
-            else {
-                // The value still occupies a reference-table slot, even if it could not be
-                // instantiated in AVM1. Its children must also be visited to keep subsequent
-                // reference indices aligned.
-                reference_cache.insert(Value::Undefined);
-                for item in values {
-                    let _ = deserialize_value_inner(
-                        activation,
-                        item,
-                        reference_cache,
-                        xml_is_referenceable,
-                    );
-                }
-                return Value::Undefined;
-            };
+            let obj = ArrayBuilder::empty_with_len(
+                activation,
+                i32::try_from(values.len()).unwrap_or(i32::MAX),
+            );
 
             let value: Value<'gc> = obj.into();
 
@@ -432,6 +547,8 @@ fn deserialize_value_inner<'gc>(
                     item,
                     reference_cache,
                     xml_is_referenceable,
+                    local_connection,
+                    deferred_dates,
                 );
                 obj.set_element(activation, i as i32, child).unwrap();
             }
@@ -456,6 +573,8 @@ fn deserialize_value_inner<'gc>(
                     entry.value(),
                     reference_cache,
                     xml_is_referenceable,
+                    local_connection,
+                    deferred_dates,
                 );
                 let name = AvmString::new_utf8(activation.gc(), &entry.name);
                 obj.define_value(activation.gc(), name, child, Attribute::empty());
@@ -464,27 +583,19 @@ fn deserialize_value_inner<'gc>(
             value
         }
         AmfValue::Date { data, .. } => {
-            // TODO(moulins): how exactly is the Date object instantiated? this matters when
-            // the Date class was monkeypatched by the user.
-            let value = if let Ok(Some(date)) =
-                activation.instantiate_class_fast([istr!("Date")], &[Value::from(data.time)])
-            {
-                date
+            let value = if local_connection {
+                local_date_from_amf0(activation, data.time, deferred_dates)
             } else {
-                Value::Undefined
+                date_from_amf0(activation, data.time)
             };
 
             reference_cache.insert(value);
             value
         }
         AmfValue::XML { value: content, .. } => {
-            // AMF deserialization uses the built-in XML class, even if content has
-            // modified the global XML constructor.
-            //
-            // TODO(moulins): how exactly is the XML object instantiated? this matters when
-            // the XML class was monkeypatched by the user.
-            let args = &[Value::String(AvmString::new_utf8(activation.gc(), content))];
-            let value = instantiate_amf0_xml(activation, args);
+            // Flash creates a native XML document using the current XML prototype,
+            // without invoking the script-visible XML constructor.
+            let value = xml_from_amf0(activation, content);
 
             if xml_is_referenceable {
                 reference_cache.insert(value);
@@ -563,6 +674,7 @@ fn local_connection_reference_cache<'gc>(
 pub(crate) fn deserialize_local_connection_value<'gc>(
     activation: &mut Activation<'_, 'gc>,
     val: &AmfValue,
+    deferred_dates: &mut Vec<DeferredAmf0Date<'gc>>,
 ) -> Value<'gc> {
     match val {
         AmfValue::Object { data, .. } => {
@@ -576,7 +688,12 @@ pub(crate) fn deserialize_local_connection_value<'gc>(
             for entry in &data.elements {
                 let mut reference_cache =
                     local_connection_reference_cache(root, references_before_property);
-                let child = deserialize_lso_value(activation, entry.value(), &mut reference_cache);
+                let child = deserialize_local_connection_lso_value(
+                    activation,
+                    entry.value(),
+                    &mut reference_cache,
+                    deferred_dates,
+                );
                 let name = AvmString::new_utf8(activation.gc(), &entry.name);
                 obj.define_value(activation.gc(), name, child, Attribute::empty());
                 references_before_property = references_before_property
@@ -598,7 +715,12 @@ pub(crate) fn deserialize_local_connection_value<'gc>(
             for (index, item) in data.dense.iter().enumerate() {
                 let mut reference_cache =
                     local_connection_reference_cache(root, references_before_property);
-                let child = deserialize_lso_value(activation, item, &mut reference_cache);
+                let child = deserialize_local_connection_lso_value(
+                    activation,
+                    item,
+                    &mut reference_cache,
+                    deferred_dates,
+                );
                 obj.set_element(activation, index as i32, child).unwrap();
                 references_before_property = references_before_property
                     .saturating_add(count_amf0_references(item))
@@ -608,9 +730,14 @@ pub(crate) fn deserialize_local_connection_value<'gc>(
             for entry in &data.elements {
                 let mut reference_cache =
                     local_connection_reference_cache(root, references_before_property);
-                let child = deserialize_lso_value(activation, entry.value(), &mut reference_cache);
+                let child = deserialize_local_connection_lso_value(
+                    activation,
+                    entry.value(),
+                    &mut reference_cache,
+                    deferred_dates,
+                );
 
-                if let Ok(index) = entry.name().parse::<i32>() {
+                if let Some(index) = parse_canonical_array_index(from_utf8(entry.name()).as_ref()) {
                     obj.set_element(activation, index, child)
                         .expect("Failed to set a sparse LocalConnection array element");
                 } else {
@@ -642,7 +769,12 @@ pub(crate) fn deserialize_local_connection_value<'gc>(
             for (index, item) in values.iter().enumerate() {
                 let mut reference_cache =
                     local_connection_reference_cache(root, references_before_property);
-                let child = deserialize_lso_value(activation, item, &mut reference_cache);
+                let child = deserialize_local_connection_lso_value(
+                    activation,
+                    item,
+                    &mut reference_cache,
+                    deferred_dates,
+                );
                 obj.set_element(activation, index as i32, child)
                     .expect("Failed to set a dense LocalConnection array element");
                 references_before_property = references_before_property
@@ -654,7 +786,12 @@ pub(crate) fn deserialize_local_connection_value<'gc>(
         }
         _ => {
             let mut reference_cache = Amf0ReferenceCache::default();
-            deserialize_lso_value(activation, val, &mut reference_cache)
+            deserialize_local_connection_lso_value(
+                activation,
+                val,
+                &mut reference_cache,
+                deferred_dates,
+            )
         }
     }
 }
@@ -686,6 +823,58 @@ mod tests {
     }
 
     #[test]
+    fn array_serialization_info_applies_transport_specific_rules() {
+        with_avm(8, |activation, _this| -> Result<(), Error> {
+            let dense_keys = vec![AvmString::new_utf8(activation.gc(), "0")];
+            let dense = array_serialization_info(&dense_keys, 0, ArrayEncoding::StrictWhenDense);
+            assert!(dense.is_strict_array);
+            assert_eq!(dense.length, 1);
+
+            let sparse_keys = vec![
+                AvmString::new_utf8(activation.gc(), "0"),
+                AvmString::new_utf8(activation.gc(), "3"),
+            ];
+            let local_connection =
+                array_serialization_info(&sparse_keys, 4, ArrayEncoding::StrictWhenDense);
+            assert!(!local_connection.is_strict_array);
+            assert_eq!(local_connection.length, 4);
+
+            let net_connection = array_serialization_info(
+                &sparse_keys,
+                4,
+                ArrayEncoding::StrictWhenNoCustomProperties,
+            );
+            assert!(net_connection.is_strict_array);
+            assert_eq!(net_connection.length, 4);
+
+            let custom_keys = vec![AvmString::new_utf8(activation.gc(), "+1")];
+            let net_connection_custom = array_serialization_info(
+                &custom_keys,
+                0,
+                ArrayEncoding::StrictWhenNoCustomProperties,
+            );
+            assert!(!net_connection_custom.is_strict_array);
+
+            let mixed_keys = vec![
+                AvmString::new_utf8(activation.gc(), "2147483648"),
+                AvmString::new_utf8(activation.gc(), "4294967296"),
+            ];
+            let net_connection_mixed = array_serialization_info(
+                &mixed_keys,
+                1,
+                ArrayEncoding::StrictWhenNoCustomProperties,
+            );
+            assert!(!net_connection_mixed.is_strict_array);
+            assert_eq!(net_connection_mixed.length, 1);
+
+            let shared_object = array_serialization_info(&dense_keys, 1, ArrayEncoding::EcmaArray);
+            assert!(!shared_object.is_strict_array);
+
+            Ok(())
+        });
+    }
+
+    #[test]
     fn local_connection_deserializes_dense_ecma_array_values() {
         with_avm(8, |activation, _this| -> Result<(), Error> {
             let value = AmfValue::ECMAArray {
@@ -709,7 +898,9 @@ mod tests {
                 },
             };
 
-            let Value::Object(array) = deserialize_local_connection_value(activation, &value)
+            let mut deferred_dates = Vec::new();
+            let Value::Object(array) =
+                deserialize_local_connection_value(activation, &value, &mut deferred_dates)
             else {
                 panic!("LocalConnection ECMA array should deserialize to an array");
             };
