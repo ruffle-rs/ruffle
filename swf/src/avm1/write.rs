@@ -5,8 +5,6 @@ use std::io::{self, Result, Write};
 
 pub struct Writer<W: Write> {
     output: W,
-    #[expect(dead_code)]
-    version: u8,
 }
 
 impl<W: Write> SwfWriteExt for Writer<W> {
@@ -17,8 +15,8 @@ impl<W: Write> SwfWriteExt for Writer<W> {
 }
 
 impl<W: Write> Writer<W> {
-    pub fn new(output: W, version: u8) -> Self {
-        Self { output, version }
+    pub fn new(output: W) -> Self {
+        Self { output }
     }
 
     #[inline]
@@ -282,7 +280,7 @@ impl<W: Write> Writer<W> {
                 Value::Float(_) | Value::Int(_) => 5,
                 Value::ConstantPool(v) if v < 256 => 2,
                 Value::ConstantPool(_) => 3,
-                Value::Invalid { .. } => 1
+                Value::Invalid { .. } => 1,
             })
             .sum();
         self.write_action_header(OpCode::Push, len)?;
@@ -433,9 +431,9 @@ mod tests {
 
     #[test]
     fn write_action() {
-        for (swf_version, action, expected_bytes) in test_data::avm1_tests() {
+        for (_swf_version, action, expected_bytes) in test_data::avm1_tests() {
             let mut written_bytes = Vec::new();
-            Writer::new(&mut written_bytes, swf_version)
+            Writer::new(&mut written_bytes)
                 .write_action(&action)
                 .unwrap();
             assert_eq!(
@@ -447,7 +445,7 @@ mod tests {
 
     fn write(action: &Action) -> Result<Vec<u8>> {
         let mut written_bytes = Vec::new();
-        Writer::new(&mut written_bytes, 10).write_action(action)?;
+        Writer::new(&mut written_bytes).write_action(action)?;
         Ok(written_bytes)
     }
 
