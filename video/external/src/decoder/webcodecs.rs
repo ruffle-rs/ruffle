@@ -253,6 +253,11 @@ impl VideoDecoder for H264Decoder {
         let data = Uint8Array::from(configuration_data);
         config.set_description(&data);
         config.set_optimize_for_latency(true);
+        // Some browsers on some systems don't like to play some content with hardware acceleration,
+        // so we prefer software decoding for now, which is usually less picky.
+        // (e.g. WeedToWonder in Firefox on Linux with Radeon.)
+        // TODO: Turn this into a preference? Autodetect known-good or known-bad contexts/content?
+        config.set_hardware_acceleration(web_sys::HardwareAcceleration::PreferSoftware);
         self.decoder
             .configure(&config)
             .map_err(js_error_to_decoder_error)?;
