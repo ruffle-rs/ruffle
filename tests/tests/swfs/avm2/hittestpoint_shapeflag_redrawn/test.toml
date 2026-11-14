@@ -1,0 +1,9 @@
+# Expected output recorded with Flash Player 32 (standalone debugger).
+num_ticks = 4
+
+[[compilers]]
+type = "Asc"
+target = "test.swf"
+class = "Test"
+scripts = ["Test.as"]
+swf_version = 15

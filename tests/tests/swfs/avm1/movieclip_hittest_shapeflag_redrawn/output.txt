@@ -1,0 +1,7 @@
+never rendered, redrawn at x=200: shape(50,50)=false shape(250,50)=true shape(350,50)=false bounds(50,50)=false bounds(250,50)=true bounds(350,50)=false
+rendered, then redrawn at x=200: shape(50,50)=false shape(250,50)=true shape(350,50)=false bounds(50,50)=false bounds(250,50)=true bounds(350,50)=false
+rendered, then redrawn at x=200 and _x=100: shape(50,50)=false shape(250,50)=false shape(350,50)=true bounds(50,50)=false bounds(250,50)=false bounds(350,50)=true
+rendered, then cleared: shape(50,50)=false shape(250,50)=false shape(350,50)=false bounds(50,50)=false bounds(250,50)=false bounds(350,50)=false
+rendered, then a second square added at x=200: shape(50,50)=true shape(250,50)=true shape(350,50)=false bounds(50,50)=true bounds(250,50)=true bounds(350,50)=false
+next frame: b: shape(50,50)=false shape(250,50)=true shape(350,50)=false bounds(50,50)=false bounds(250,50)=true bounds(350,50)=false
+next frame: d: shape(50,50)=false shape(250,50)=false shape(350,50)=false bounds(50,50)=false bounds(250,50)=false bounds(350,50)=false

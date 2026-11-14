@@ -1,0 +1,7 @@
+Shape never rendered, redrawn at x=200: shape(50,50)=false shape(250,50)=true shape(350,50)=false bounds(350,50)=false
+Shape rendered, then redrawn at x=200: shape(50,50)=false shape(250,50)=true shape(350,50)=false bounds(350,50)=false
+Shape rendered, then redrawn at x=200 and x=100: shape(50,50)=false shape(250,50)=false shape(350,50)=true bounds(350,50)=true
+Sprite rendered, then redrawn at x=200: shape(50,50)=false shape(250,50)=true shape(350,50)=false bounds(350,50)=false
+Sprite rendered, then redrawn at x=200 and x=100: shape(50,50)=false shape(250,50)=false shape(350,50)=true bounds(350,50)=true
+next frame: Shape redrawn and moved: shape(50,50)=false shape(250,50)=false shape(350,50)=true bounds(350,50)=true
+next frame: Sprite redrawn and moved: shape(50,50)=false shape(250,50)=false shape(350,50)=true bounds(350,50)=true
