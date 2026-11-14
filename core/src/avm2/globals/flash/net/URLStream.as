@@ -1,14 +1,9 @@
 package flash.net {
-    import __ruffle__.stub_constructor;
-    import __ruffle__.stub_getter;
-    import __ruffle__.stub_setter;
-
     import flash.events.Event;
     import flash.events.EventDispatcher;
     import flash.utils.Endian;
     import flash.utils.IDataInput;
     import flash.utils.ByteArray;
-    import flash.events.Event;
     import flash.events.HTTPStatusEvent;
     import flash.events.IOErrorEvent;
     import flash.events.ProgressEvent;
@@ -16,19 +11,11 @@ package flash.net {
 
     public class URLStream extends EventDispatcher implements IDataInput {
         private var _endian:String = Endian.BIG_ENDIAN;
+        private var _objectEncoding:uint = ObjectEncoding.DEFAULT;
         private var _connected:Boolean = false;
-
-        // FIXME - we currently implement `URLStream` using a `URLLoader`,
-        // which means that content can't actually be "streamed" (it becomes
-        // available all at once when the entire download finishes).
-        // We should write an actual "streaming" implementation that exposes
-        // content as it comes in over the network, but this will require changes
-        // to `NavigatorBackend`. See https://github.com/ruffle-rs/ruffle/pull/11046
         private var _loader:URLLoader = new URLLoader();
 
         public function URLStream() {
-            stub_constructor("flash.net.URLStream", "streaming support");
-
             this._loader.dataFormat = URLLoaderDataFormat.BINARY;
             var self = this;
 
@@ -36,7 +23,10 @@ package flash.net {
                 self.dispatchEvent(new Event(Event.OPEN));
             });
             this._loader.addEventListener(Event.COMPLETE, function(e:*):void {
-                self._loader.data.endian = self._endian;
+                if (self._loader.data) {
+                    self._loader.data.endian = self._endian;
+                    self._loader.data.objectEncoding = self._objectEncoding;
+                }
                 self.dispatchEvent(new Event(Event.COMPLETE));
             });
             this._loader.addEventListener(IOErrorEvent.IO_ERROR, function(e:*):void {
@@ -46,7 +36,10 @@ package flash.net {
                 self.dispatchEvent(new SecurityErrorEvent(SecurityErrorEvent.SECURITY_ERROR));
             });
             this._loader.addEventListener(ProgressEvent.PROGRESS, function(e:*):void {
-                self._loader.data.endian = self._endian;
+                if (self._loader.data) {
+                    self._loader.data.endian = self._endian;
+                    self._loader.data.objectEncoding = self._objectEncoding;
+                }
                 self.dispatchEvent(new ProgressEvent(ProgressEvent.PROGRESS, false, false, e.bytesLoaded, e.bytesTotal));
             });
             this._loader.addEventListener(HTTPStatusEvent.HTTP_STATUS, function(e:*):void {
@@ -91,11 +84,17 @@ package flash.net {
         }
 
         public function get objectEncoding():uint {
-            stub_getter("flash.net.URLStream", "objectEncoding");
-            return 0;
+            return this._objectEncoding;
         }
+
         public function set objectEncoding(value:uint):void {
-            stub_setter("flash.net.URLStream", "objectEncoding");
+            if (value !== ObjectEncoding.AMF0 && value !== ObjectEncoding.AMF3) {
+                throw new ArgumentError("Error #2008: Parameter objectEncoding must be one of the accepted values.", 2008);
+            }
+            this._objectEncoding = value;
+            if (this._loader.data) {
+                this._loader.data.objectEncoding = value;
+            }
         }
 
         public function readBoolean():Boolean {

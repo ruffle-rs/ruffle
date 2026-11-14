@@ -1,6 +1,4 @@
 package flash.net {
-    import __ruffle__.stub_method;
-
     import flash.events.EventDispatcher;
     import flash.net.URLRequest;
 
@@ -26,7 +24,9 @@ package flash.net {
         public native function load(request:URLRequest):void;
 
         public function close():void {
-            stub_method("flash.net.URLLoader", "close");
+            this.data = null;
+            this.bytesLoaded = 0;
+            this.bytesTotal = 0;
         }
     }
 }

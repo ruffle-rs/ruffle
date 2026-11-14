@@ -7,7 +7,7 @@ package flash.net {
         private var _url:String;
 
         [Ruffle(NativeAccessible)]
-        private var _contentType:String = "application/x-www-form-urlencoded"; // ignored
+        private var _contentType:String = "application/x-www-form-urlencoded";
 
         [Ruffle(NativeAccessible)]
         private var _requestHeaders:Array = [];
@@ -19,6 +19,14 @@ package flash.net {
 
         [Ruffle(NativeAccessible)]
         private var _data:Object;
+
+        private var _authenticate:Boolean = true;
+        private var _cacheResponse:Boolean = true;
+        private var _followRedirects:Boolean = true;
+        private var _idleTimeout:Number = 0;
+        private var _manageCookies:Boolean = true;
+        private var _useCache:Boolean = true;
+        private var _userAgent:String = null;
 
         public function URLRequest(url:String = null) {
             this._url = url;
@@ -42,7 +50,6 @@ package flash.net {
                 throw new ArgumentError("Error #2008: Parameter method must be one of the accepted values.", 2008);
             }
 
-            // TODO: AIR is supposed to support other methods like PUT or DELETE.
             this._method = value;
         }
 
@@ -76,6 +83,62 @@ package flash.net {
 
         public function set digest(value:String):void {
             this._digest = value;
+        }
+
+        public function get authenticate():Boolean {
+            return this._authenticate;
+        }
+
+        public function set authenticate(value:Boolean):void {
+            this._authenticate = value;
+        }
+
+        public function get cacheResponse():Boolean {
+            return this._cacheResponse;
+        }
+
+        public function set cacheResponse(value:Boolean):void {
+            this._cacheResponse = value;
+        }
+
+        public function get followRedirects():Boolean {
+            return this._followRedirects;
+        }
+
+        public function set followRedirects(value:Boolean):void {
+            this._followRedirects = value;
+        }
+
+        public function get idleTimeout():Number {
+            return this._idleTimeout;
+        }
+
+        public function set idleTimeout(value:Number):void {
+            this._idleTimeout = value;
+        }
+
+        public function get manageCookies():Boolean {
+            return this._manageCookies;
+        }
+
+        public function set manageCookies(value:Boolean):void {
+            this._manageCookies = value;
+        }
+
+        public function get useCache():Boolean {
+            return this._useCache;
+        }
+
+        public function set useCache(value:Boolean):void {
+            this._useCache = value;
+        }
+
+        public function get userAgent():String {
+            return this._userAgent;
+        }
+
+        public function set userAgent(value:String):void {
+            this._userAgent = value;
         }
     }
 }
