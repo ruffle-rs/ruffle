@@ -1,0 +1,6 @@
+space between entities: 60,32,62
+newline entity: 120,13,121
+entity in text: 84,111,109,32,38,32,74,101,114,114,121
+adjacent entities: 38,38
+whitespace-only text between tags: 60,62
+non-ASCII text around an entity: 99,97,102,233,32,38,32,99,114,232,109,101
