@@ -1,160 +1,151 @@
 package flash.media {
-    import __ruffle__.stub_getter;
-    import __ruffle__.stub_setter;
-    import __ruffle__.stub_method;
-
     import flash.events.EventDispatcher;
 
     public final class Microphone extends EventDispatcher {
+        private var _codec:String = SoundCodec.NELLYMOSER;
+        private var _enableVAD:Boolean = false;
+        private var _encodeQuality:int = 6;
+        private var _enhancedOptions:MicrophoneEnhancedOptions = new MicrophoneEnhancedOptions();
+        private var _framesPerPacket:int = 2;
+        private var _gain:Number = 50;
+        private var _noiseSuppressionLevel:int = -30;
+        private var _rate:int = 8;
+        private var _silenceLevel:Number = 10;
+        private var _silenceTimeout:int = 2000;
+        private var _soundTransform:SoundTransform = new SoundTransform();
+        private var _useEchoSuppression:Boolean = false;
+
         [API("672")]
         public static function getEnhancedMicrophone(index:int = -1):Microphone {
-            stub_method("flash.media.Microphone", "getEnhancedMicrophone");
-            return new Microphone();
+            return null;
         }
 
         public static function getMicrophone(index:int = -1):Microphone {
-            stub_method("flash.media.Microphone", "getMicrophone");
-            return new Microphone();
+            return null;
         }
 
         public function setLoopBack(isLooped:Boolean = true):void {
-            stub_method("flash.media.Microphone", "setLoopBack");
         }
 
         public function setSilenceLevel(silenceLevel:Number, timeout:int = -1):void {
-            stub_method("flash.media.Microphone", "setSilenceLevel");
+            this._silenceLevel = silenceLevel;
+            if (timeout >= 0) {
+                this._silenceTimeout = timeout;
+            }
         }
 
         public function setUseEchoSuppression(isEchoSuppressed:Boolean):void {
-            stub_method("flash.media.Microphone", "setUseEchoSuppression");
+            this._useEchoSuppression = isEchoSuppressed;
         }
 
         public function get activityLevel():Number {
-            stub_getter("flash.media.Microphone", "activityLevel");
-            return 0.0;
+            return -1;
         }
 
         public function get codec():String {
-            stub_getter("flash.media.Microphone", "codec");
-            return "";
+            return this._codec;
         }
 
-        public function set codec(codec:String) {
-            stub_setter("flash.media.Microphone", "codec");
+        public function set codec(codec:String):void {
+            this._codec = codec;
         }
 
         public function get enableVAD():Boolean {
-            stub_getter("flash.media.Microphone", "enableVAD");
-            return false;
+            return this._enableVAD;
         }
 
-        public function set enableVAD(isEnabled:Boolean) {
-            stub_setter("flash.media.Microphone", "enableVAD");
+        public function set enableVAD(isEnabled:Boolean):void {
+            this._enableVAD = isEnabled;
         }
 
         public function get encodeQuality():int {
-            stub_getter("flash.media.Microphone", "encodeQuality");
-            return 0;
+            return this._encodeQuality;
         }
 
-        public function set encodeQuality(quality:int) {
-            stub_setter("flash.media.Microphone", "encodeQuality");
+        public function set encodeQuality(quality:int):void {
+            this._encodeQuality = quality;
         }
 
         [API("672")]
         public function get enhancedOptions():MicrophoneEnhancedOptions {
-            stub_getter("flash.media.Microphone", "enhancedOptions");
-            return new MicrophoneEnhancedOptions();
+            return this._enhancedOptions;
         }
 
         [API("672")]
-        public function set enhancedOptions(params:MicrophoneEnhancedOptions) {
-            stub_setter("flash.media.Microphone", "enhancedOptions");
+        public function set enhancedOptions(params:MicrophoneEnhancedOptions):void {
+            this._enhancedOptions = params;
         }
 
         public function get framesPerPacket():int {
-            stub_getter("flash.media.Microphone", "framesPerPacket");
-            return 0;
+            return this._framesPerPacket;
         }
 
-        public function set framesPerPacket(fpp:int) {
-            stub_setter("flash.media.Microphone", "framesPerPacket");
+        public function set framesPerPacket(fpp:int):void {
+            this._framesPerPacket = fpp;
         }
 
         public function get gain():Number {
-            stub_getter("flash.media.Microphone", "gain");
-            return 0.0;
+            return this._gain;
         }
 
-        public function set gain(gain:Number) {
-            stub_setter("flash.media.Microphone", "gain");
+        public function set gain(gain:Number):void {
+            this._gain = gain;
         }
 
         public function get index():int {
-            stub_getter("flash.media.Microphone", "index");
             return 0;
         }
 
         public static function get isSupported():Boolean {
-            stub_getter("flash.media.Microphone", "isSupported");
             return false;
         }
 
         public function get muted():Boolean {
-            stub_getter("flash.media.Microphone", "muted");
             return true;
         }
 
         public function get name():String {
-            stub_getter("flash.media.Microphone", "name");
             return "";
         }
 
         public static function get names():Array {
-            stub_getter("flash.media.Microphone", "names");
             return [];
         }
 
         public function get noiseSuppressionLevel():int {
-            stub_getter("flash.media.Microphone", "noiseSuppressionLevel");
-            return 0;
+            return this._noiseSuppressionLevel;
         }
 
-        public function set noiseSuppressionLevel(level:int) {
-            stub_setter("flash.media.Microphone", "noiseSuppressionLevel");
+        public function set noiseSuppressionLevel(level:int):void {
+            this._noiseSuppressionLevel = level;
         }
 
         public function get rate():int {
-            stub_getter("flash.media.Microphone", "rate");
-            return 0;
+            return this._rate;
         }
 
-        public function set rate(level:int) {
-            stub_setter("flash.media.Microphone", "rate");
+        public function set rate(level:int):void {
+            this._rate = level;
         }
 
         public function get silenceLevel():Number {
-            stub_getter("flash.media.Microphone", "silenceLevel");
-            return 0;
+            return this._silenceLevel;
         }
 
         public function get silenceTimeout():int {
-            stub_getter("flash.media.Microphone", "silenceTimeout");
-            return 0;
+            return this._silenceTimeout;
         }
 
         public function get soundTransform():flash.media.SoundTransform {
-            stub_getter("flash.media.Microphone", "soundTransform");
-            return new SoundTransform();
+            return this._soundTransform;
         }
 
-        public function set soundTransform(tf:flash.media.SoundTransform) {
-            stub_setter("flash.media.Microphone", "soundTransform");
+        public function set soundTransform(tf:flash.media.SoundTransform):void {
+            this._soundTransform = tf;
         }
 
         public function get useEchoSuppression():Boolean {
-            stub_getter("flash.media.Microphone", "useEchoSuppression");
-            return false;
+            return this._useEchoSuppression;
         }
     }
 }

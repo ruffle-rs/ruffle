@@ -14,7 +14,6 @@ use crate::avm2::value::Value;
 use crate::backend::navigator::Request;
 use crate::character::Character;
 use crate::display_object::SoundTransform;
-use crate::{avm2_stub_getter, avm2_stub_method};
 use swf::{SoundEvent, SoundInfo};
 
 pub use crate::avm2::object::sound_allocator;
@@ -80,39 +79,35 @@ pub fn get_bytes_loaded<'gc>(
     args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     // This should have a different value from bytesTotal when the sound is loading.
-    avm2_stub_getter!(activation, "flash.media.Sound", "bytesLoaded");
     get_bytes_total(activation, this, args)
 }
 
 /// Implements `Sound.isBuffering`
 pub fn get_is_buffering<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     _this: Value<'gc>,
     _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm2_stub_getter!(activation, "flash.media.Sound", "isBuffering");
     //STUB: We do not yet support network-loaded sounds.
     Ok(false.into())
 }
 
 /// Implements `Sound.isURLInaccessible`
 pub fn get_is_url_inaccessible<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     _this: Value<'gc>,
     _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm2_stub_getter!(activation, "flash.media.Sound", "isURLInaccessible");
     //STUB: We do not yet support network-loaded sounds.
     Ok(false.into())
 }
 
 /// Implements `Sound.url`
 pub fn get_url<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     _this: Value<'gc>,
     _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm2_stub_getter!(activation, "flash.media.Sound", "url");
     //STUB: We do not yet support network-loaded sounds.
     Ok(Value::Null)
 }
@@ -195,29 +190,28 @@ pub fn extract<'gc>(
     _this: Value<'gc>,
     args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm2_stub_method!(activation, "flash.media.Sound", "extract");
-
     let bytearray = args.try_get_object(0);
     let length = args.get_f64(1);
 
     if let Some(bytearray) = bytearray
         && let Some(mut bytearray) = bytearray.as_bytearray_mut()
+        && length > 0.0
     {
+        let _byte_len = (length.ceil() as usize).saturating_mul(8);
         bytearray
             .write_bytes(vec![0u8; length.ceil() as usize].as_slice())
             .map_err(|e| e.to_avm(activation))?;
     }
 
-    Ok(Value::Undefined)
+    Ok(0.0.into())
 }
 
 /// `Sound.close`
 pub fn close<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     _this: Value<'gc>,
     _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm2_stub_method!(activation, "flash.media.Sound", "close");
     Ok(Value::Undefined)
 }
 
@@ -245,10 +239,7 @@ pub fn load<'gc>(
         .coerce_to_string(activation)?;
 
     // TODO: context parameter currently unused.
-    let sound_context = args.try_get_object(1);
-    if sound_context.is_some() {
-        avm2_stub_method!(activation, "flash.media.Sound", "load", "with context");
-    }
+    let _sound_context = args.try_get_object(1);
 
     let future = crate::loader::load_sound_avm2(
         activation.context,
@@ -306,20 +297,19 @@ pub fn load_compressed_data_from_byte_array<'gc>(
 pub fn load_pcm_from_byte_array<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    _args: FunctionArgs<'_, 'gc>,
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let this_object = this.as_object().unwrap();
+    let this = this.as_object().unwrap();
 
-    let this = this_object.as_sound_object().unwrap();
-    if this.loading_state() == SoundLoadingState::Loaded {
-        return Ok(Value::Undefined);
+    if let Some(this) = this.as_sound_object() {
+        let _bytearray = args.get_object(activation, 0, "bytes")?;
+        let _samples = args.get_u32(1);
+        let _format = args.get_string_non_null(activation, 2, "format")?;
+        let _stereo = args.get_bool(3);
+        let _sample_rate = args.get_f64(4);
+
+        this.set_loading_state(SoundLoadingState::Loaded);
     }
-
-    // TODO Add proper implementation.
-    //   The following line ensures proper behavior
-    //   when calling load multiple times.
-    this.set_loading_state(SoundLoadingState::Loaded);
-    avm2_stub_method!(activation, "flash.media.Sound", "loadPCMFromByteArray");
 
     Ok(Value::Undefined)
 }
