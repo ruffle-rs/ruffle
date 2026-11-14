@@ -1,3 +1,7 @@
+use crate::avm1::globals::date::DeferredAmf0Date;
+use crate::avm1::globals::date::from_amf0 as date_from_amf0;
+use crate::avm1::globals::date::from_local_connection_amf0 as local_date_from_amf0;
+use crate::avm1::globals::xml::from_amf0 as xml_from_amf0;
 use crate::avm1::object::parse_canonical_array_index;
 use crate::avm1::{Activation, ArrayBuilder, Attribute, NativeObject, Object, Value};
 use crate::string::{AvmString, from_utf8};
@@ -105,6 +109,10 @@ fn serialize_with_array_encoding<'gc>(
                     is_string: true,
                 }
             } else if let NativeObject::Date(date) = object.native() {
+                // Flash resolves the global Date constructor while serializing AMF0 dates.
+                let global = activation.global_object();
+                let _ = global.get(istr!("Date"), activation);
+
                 AmfValue::Date {
                     id: ObjectId::INVALID,
                     data: DateValue {
@@ -351,6 +359,10 @@ fn serialize_value_to_writer<'gc>(
                     );
                 }
             } else if let NativeObject::Date(date) = o.native() {
+                // Flash resolves the global Date constructor while serializing AMF0 dates.
+                let global = activation.global_object();
+                let _ = global.get(istr!("Date"), activation);
+
                 writer.date(
                     CacheKey::from_ptr(o.as_ptr()),
                     name,
@@ -417,42 +429,56 @@ pub(crate) fn recursive_serialize<'gc>(
     }
 }
 
-/// Instantiate an AMF0 XML value.
-///
-/// If the global XML constructor is unavailable, Flash creates an
-/// object without a prototype instead of reconstructing an XML document.
-fn instantiate_amf0_xml<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    args: &[Value<'gc>],
-) -> Value<'gc> {
-    // Use the current global binding when available.
-    if let Some(constructor) = activation.resolve_class([istr!("XML")]) {
-        return constructor
-            .construct(activation, args)
-            .unwrap_or(Value::Undefined);
-    }
-
-    // Flash returns an object without a prototype when XML is unavailable.
-    Object::new_without_proto(activation.gc()).into()
-}
-
 /// Deserialize an AmfValue to a Value, using AMF remoting reference-table semantics.
 pub fn deserialize_value<'gc>(
     activation: &mut Activation<'_, 'gc>,
     val: &AmfValue,
     reference_cache: &mut Amf0ReferenceCache<'gc>,
 ) -> Value<'gc> {
-    deserialize_value_inner(activation, val, reference_cache, true)
+    let mut deferred_dates = Vec::new();
+    deserialize_value_inner(
+        activation,
+        val,
+        reference_cache,
+        true,
+        false,
+        &mut deferred_dates,
+    )
 }
 
 /// Deserialize an LSO value, where XML values do not occupy reference-table slots.
-/// Used by SharedObject and LocalConnection deserialization.
+/// Used by SharedObject deserialization.
 pub(crate) fn deserialize_lso_value<'gc>(
     activation: &mut Activation<'_, 'gc>,
     val: &AmfValue,
     reference_cache: &mut Amf0ReferenceCache<'gc>,
 ) -> Value<'gc> {
-    deserialize_value_inner(activation, val, reference_cache, false)
+    let mut deferred_dates = Vec::new();
+    deserialize_value_inner(
+        activation,
+        val,
+        reference_cache,
+        false,
+        false,
+        &mut deferred_dates,
+    )
+}
+
+/// Deserialize a LocalConnection LSO value, applying LocalConnection-specific class behavior.
+fn deserialize_local_connection_lso_value<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    val: &AmfValue,
+    reference_cache: &mut Amf0ReferenceCache<'gc>,
+    deferred_dates: &mut Vec<DeferredAmf0Date<'gc>>,
+) -> Value<'gc> {
+    deserialize_value_inner(
+        activation,
+        val,
+        reference_cache,
+        false,
+        true,
+        deferred_dates,
+    )
 }
 
 fn deserialize_value_inner<'gc>(
@@ -460,6 +486,8 @@ fn deserialize_value_inner<'gc>(
     val: &AmfValue,
     reference_cache: &mut Amf0ReferenceCache<'gc>,
     xml_is_referenceable: bool,
+    local_connection: bool,
+    deferred_dates: &mut Vec<DeferredAmf0Date<'gc>>,
 ) -> Value<'gc> {
     match val {
         AmfValue::Null => Value::Null,
@@ -484,6 +512,8 @@ fn deserialize_value_inner<'gc>(
                     entry.value(),
                     reference_cache,
                     xml_is_referenceable,
+                    local_connection,
+                    deferred_dates,
                 );
 
                 if let Some(i) = parse_canonical_array_index(from_utf8(entry.name()).as_ref()) {
@@ -517,6 +547,8 @@ fn deserialize_value_inner<'gc>(
                     item,
                     reference_cache,
                     xml_is_referenceable,
+                    local_connection,
+                    deferred_dates,
                 );
                 obj.set_element(activation, i as i32, child).unwrap();
             }
@@ -541,6 +573,8 @@ fn deserialize_value_inner<'gc>(
                     entry.value(),
                     reference_cache,
                     xml_is_referenceable,
+                    local_connection,
+                    deferred_dates,
                 );
                 let name = AvmString::new_utf8(activation.gc(), &entry.name);
                 obj.define_value(activation.gc(), name, child, Attribute::empty());
@@ -549,27 +583,19 @@ fn deserialize_value_inner<'gc>(
             value
         }
         AmfValue::Date { data, .. } => {
-            // TODO(moulins): how exactly is the Date object instantiated? this matters when
-            // the Date class was monkeypatched by the user.
-            let value = if let Ok(Some(date)) =
-                activation.instantiate_class_fast([istr!("Date")], &[Value::from(data.time)])
-            {
-                date
+            let value = if local_connection {
+                local_date_from_amf0(activation, data.time, deferred_dates)
             } else {
-                Value::Undefined
+                date_from_amf0(activation, data.time)
             };
 
             reference_cache.insert(value);
             value
         }
         AmfValue::XML { value: content, .. } => {
-            // AMF deserialization uses the built-in XML class, even if content has
-            // modified the global XML constructor.
-            //
-            // TODO(moulins): how exactly is the XML object instantiated? this matters when
-            // the XML class was monkeypatched by the user.
-            let args = &[Value::String(AvmString::new_utf8(activation.gc(), content))];
-            let value = instantiate_amf0_xml(activation, args);
+            // Flash creates a native XML document using the current XML prototype,
+            // without invoking the script-visible XML constructor.
+            let value = xml_from_amf0(activation, content);
 
             if xml_is_referenceable {
                 reference_cache.insert(value);
@@ -648,6 +674,7 @@ fn local_connection_reference_cache<'gc>(
 pub(crate) fn deserialize_local_connection_value<'gc>(
     activation: &mut Activation<'_, 'gc>,
     val: &AmfValue,
+    deferred_dates: &mut Vec<DeferredAmf0Date<'gc>>,
 ) -> Value<'gc> {
     match val {
         AmfValue::Object { data, .. } => {
@@ -661,7 +688,12 @@ pub(crate) fn deserialize_local_connection_value<'gc>(
             for entry in &data.elements {
                 let mut reference_cache =
                     local_connection_reference_cache(root, references_before_property);
-                let child = deserialize_lso_value(activation, entry.value(), &mut reference_cache);
+                let child = deserialize_local_connection_lso_value(
+                    activation,
+                    entry.value(),
+                    &mut reference_cache,
+                    deferred_dates,
+                );
                 let name = AvmString::new_utf8(activation.gc(), &entry.name);
                 obj.define_value(activation.gc(), name, child, Attribute::empty());
                 references_before_property = references_before_property
@@ -683,7 +715,12 @@ pub(crate) fn deserialize_local_connection_value<'gc>(
             for (index, item) in data.dense.iter().enumerate() {
                 let mut reference_cache =
                     local_connection_reference_cache(root, references_before_property);
-                let child = deserialize_lso_value(activation, item, &mut reference_cache);
+                let child = deserialize_local_connection_lso_value(
+                    activation,
+                    item,
+                    &mut reference_cache,
+                    deferred_dates,
+                );
                 obj.set_element(activation, index as i32, child).unwrap();
                 references_before_property = references_before_property
                     .saturating_add(count_amf0_references(item))
@@ -693,7 +730,12 @@ pub(crate) fn deserialize_local_connection_value<'gc>(
             for entry in &data.elements {
                 let mut reference_cache =
                     local_connection_reference_cache(root, references_before_property);
-                let child = deserialize_lso_value(activation, entry.value(), &mut reference_cache);
+                let child = deserialize_local_connection_lso_value(
+                    activation,
+                    entry.value(),
+                    &mut reference_cache,
+                    deferred_dates,
+                );
 
                 if let Some(index) = parse_canonical_array_index(from_utf8(entry.name()).as_ref()) {
                     obj.set_element(activation, index, child)
@@ -727,7 +769,12 @@ pub(crate) fn deserialize_local_connection_value<'gc>(
             for (index, item) in values.iter().enumerate() {
                 let mut reference_cache =
                     local_connection_reference_cache(root, references_before_property);
-                let child = deserialize_lso_value(activation, item, &mut reference_cache);
+                let child = deserialize_local_connection_lso_value(
+                    activation,
+                    item,
+                    &mut reference_cache,
+                    deferred_dates,
+                );
                 obj.set_element(activation, index as i32, child)
                     .expect("Failed to set a dense LocalConnection array element");
                 references_before_property = references_before_property
@@ -739,7 +786,12 @@ pub(crate) fn deserialize_local_connection_value<'gc>(
         }
         _ => {
             let mut reference_cache = Amf0ReferenceCache::default();
-            deserialize_lso_value(activation, val, &mut reference_cache)
+            deserialize_local_connection_lso_value(
+                activation,
+                val,
+                &mut reference_cache,
+                deferred_dates,
+            )
         }
     }
 }
@@ -846,7 +898,9 @@ mod tests {
                 },
             };
 
-            let Value::Object(array) = deserialize_local_connection_value(activation, &value)
+            let mut deferred_dates = Vec::new();
+            let Value::Object(array) =
+                deserialize_local_connection_value(activation, &value, &mut deferred_dates)
             else {
                 panic!("LocalConnection ECMA array should deserialize to an array");
             };

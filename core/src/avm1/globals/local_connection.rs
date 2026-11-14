@@ -3,6 +3,7 @@
 use crate::avm1::activation::Activation;
 use crate::avm1::amf::{deserialize_local_connection_value, serialize};
 use crate::avm1::error::Error;
+use crate::avm1::globals::date::DeferredAmf0Date;
 use crate::avm1::property_decl::{DeclContext, PropertyOrder, StaticDeclarations, SystemClass};
 use crate::avm1::{ActivationIdentifier, ExecutionReason, NativeObject, Object, Value};
 use crate::avm1_stub;
@@ -109,15 +110,28 @@ impl<'gc> LocalConnection<'gc> {
             root_clip,
         );
         let mut args = Vec::with_capacity(amf_arguments.len());
+        let mut deferred_dates = Vec::<DeferredAmf0Date<'gc>>::new();
         for arg in amf_arguments {
-            args.push(deserialize_local_connection_value(&mut activation, &arg));
+            args.push(deserialize_local_connection_value(
+                &mut activation,
+                &arg,
+                &mut deferred_dates,
+            ));
         }
-        this.call_method(
+        let callback_result = this.call_method(
             method_name,
             &args,
             &mut activation,
             ExecutionReason::Special,
-        )?;
+        );
+
+        // Flash invokes LocalConnection Date constructors after the receiving
+        // method has returned, not while its arguments are being decoded.
+        for date in deferred_dates {
+            date.initialize(&mut activation);
+        }
+
+        callback_result?;
         Ok(())
     }
 }
