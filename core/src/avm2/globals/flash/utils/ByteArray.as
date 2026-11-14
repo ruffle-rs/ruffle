@@ -1,5 +1,4 @@
 package flash.utils {
-    import __ruffle__.stub_setter;
 
     [Ruffle(InstanceAllocator)]
     public class ByteArray implements IDataInput2, IDataOutput2 {
@@ -7,14 +6,37 @@ package flash.utils {
 
         [API("684")]
         public function set shareable(shareable:Boolean):void {
-            stub_setter("flash.utils.ByteArray", "shareable");
-
             this._shareable = shareable;
         }
 
         [API("684")]
         public function get shareable():Boolean {
             return this._shareable;
+        }
+        
+        [API("684")]
+        public function atomicCompareAndSwapIntAt(byteIndex:int, expectedValue:int, newValue:int):int {
+            if (byteIndex < 0 || byteIndex % 4 != 0 || byteIndex + 4 > this.length) {
+                Error.throwError(RangeError, 2006);
+            }
+            var savedPos:uint = this.position;
+            this.position = byteIndex;
+            var current:int = this.readInt();
+            if (current == expectedValue) {
+                this.position = byteIndex;
+                this.writeInt(newValue);
+            }
+            this.position = savedPos;
+            return current;
+        }
+
+        [API("684")]
+        public function atomicCompareAndSwapLength(expectedLength:int, newLength:int):int {
+            var current:int = int(this.length);
+            if (current == expectedLength) {
+                this.length = uint(newLength);
+            }
+            return current;
         }
 
         public static native function get defaultObjectEncoding():uint;
