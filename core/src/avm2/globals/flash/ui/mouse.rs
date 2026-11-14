@@ -6,7 +6,6 @@ use crate::avm2::function::FunctionArgs;
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
 use crate::avm2::{Avm2StrRepresentable, Error};
-use crate::avm2_stub_method;
 use crate::backend::ui::MouseCursor;
 use ruffle_macros::istr;
 
@@ -52,7 +51,6 @@ pub fn set_cursor<'gc>(
             .custom_cursors
             .contains(&value)
         {
-            avm2_stub_method!(activation, "flash.ui.Mouse", "cursor", "with custom cursor");
             activation.context.mouse_data.current_custom_cursor = Some(value);
             None
         } else {
@@ -88,7 +86,6 @@ pub fn register_cursor<'gc>(
     _this: Value<'gc>,
     args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm2_stub_method!(activation, "flash.ui.Mouse", "registerCursor");
     let name = args.get_string_non_null(activation, 0, "name")?;
     activation.context.mouse_data.custom_cursors.insert(name);
     Ok(Value::Undefined)
@@ -99,7 +96,6 @@ pub fn unregister_cursor<'gc>(
     _this: Value<'gc>,
     args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm2_stub_method!(activation, "flash.ui.Mouse", "unregisterCursor");
     let name = args.get_string_non_null(activation, 0, "name")?;
     activation.context.mouse_data.custom_cursors.remove(&name);
     if activation.context.mouse_data.current_custom_cursor == Some(name) {

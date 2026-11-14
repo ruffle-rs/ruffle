@@ -1,6 +1,4 @@
 package flash.ui {
-    import __ruffle__.stub_getter;
-
     import flash.display.NativeMenu;
 
     public final class ContextMenu extends NativeMenu {
@@ -65,9 +63,14 @@ package flash.ui {
         }
 
         public static function get isSupported():Boolean {
-            // TODO: return true when implementation actually affects the context menu
-            stub_getter("flash.ui.ContextMenu", "isSupported");
-            return false;
+            return true;
+        }
+
+        override public function clone():NativeMenu {
+            var copy:ContextMenu = new ContextMenu();
+            copy.customItems = this._customItems ? this._customItems.concat() : new Array();
+            copy.clipboardMenu = this._clipboardMenu;
+            return copy;
         }
     }
 }
