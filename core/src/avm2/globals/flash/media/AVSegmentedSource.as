@@ -130,7 +130,7 @@ package flash.media {
             return new AVResult(AVResult.SUCCESS);
         }
 
-        public function dispose():AVResult {
+        override public function dispose():AVResult {
             return new AVResult(AVResult.SUCCESS);
         }
     }
