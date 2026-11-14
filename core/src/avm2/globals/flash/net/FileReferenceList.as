@@ -1,6 +1,4 @@
 package flash.net {
-    import __ruffle__.stub_method;
-
     import flash.events.Event;
     import flash.events.EventDispatcher;
 
@@ -26,8 +24,6 @@ package flash.net {
         }
 
         public function browse(typeFilter:Array = null):Boolean {
-            stub_method("flash.net.FileReferenceList", "browse");
-
             this._fileList = [];
             return this._file.browse(typeFilter);
         }

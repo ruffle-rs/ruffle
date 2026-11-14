@@ -6,7 +6,6 @@ use crate::avm2::globals::slots::flash_net_url_request as url_request_slots;
 use crate::avm2::object::TObject;
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::{Activation, Error, Object, Value};
-use crate::avm2_stub_method;
 use crate::backend::navigator::NavigationMethod;
 use crate::config::NetworkingAccessMode;
 use indexmap::IndexMap;
@@ -114,14 +113,48 @@ pub fn navigate_to_url<'gc>(
 pub fn send_to_url<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Value<'gc>,
-    _args: FunctionArgs<'_, 'gc>,
+    args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     if activation.context.allow_networking == NetworkingAccessMode::None {
         return Err(make_error_2146(activation, "sendToURL"));
     }
 
-    avm2_stub_method!(activation, "flash.net", "sendToURL");
-    Ok(Value::Undefined)
+    let request = args.get_object(activation, 0, "request")?;
+
+    match request.get_slot(url_request_slots::_URL) {
+        Value::Null => Err(make_error_2007(activation, "url")),
+        url => {
+            let url = url.coerce_to_string(activation)?.to_string();
+            let method = request
+                .get_slot(url_request_slots::_METHOD)
+                .coerce_to_string(activation)?;
+            let method = NavigationMethod::from_method_str(&method).unwrap();
+            let data = request.get_slot(url_request_slots::_DATA);
+            let (url, vars) = parse_data(activation, &url, &data)?;
+
+            let req = if vars.is_empty() {
+                crate::backend::navigator::Request::request(method, url, None)
+            } else {
+                let body = url::form_urlencoded::Serializer::new(String::new())
+                    .extend_pairs(vars)
+                    .finish()
+                    .into_bytes();
+                crate::backend::navigator::Request::request(
+                    method,
+                    url,
+                    Some((body, "application/x-www-form-urlencoded".to_string())),
+                )
+            };
+            let future = activation.context.navigator.fetch(req);
+            activation.context.navigator.spawn_future(Box::pin(async move {
+                let _ = future.await;
+                Ok(())
+            }));
+
+
+            Ok(Value::Undefined)
+        }
+    }
 }
 
 pub fn register_class_alias<'gc>(
