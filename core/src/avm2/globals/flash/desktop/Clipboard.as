@@ -1,58 +1,118 @@
 package flash.desktop {
-    import __ruffle__.stub_getter;
-    import __ruffle__.stub_method;
-
     import flash.system.System;
+    import flash.utils.ByteArray;
 
     public class Clipboard {
-        private static var _generalClipboard = new Clipboard();
+        private static var _generalClipboard:Clipboard = new Clipboard();
+
+        private var _data:Object = {};
+        private var _handlers:Object = {};
+        private var _serializable:Object = {};
 
         public static function get generalClipboard():Clipboard {
             return Clipboard._generalClipboard;
         }
 
-        function Clipboard() {
-            // TODO: This should only be callable in AIR
+        public function Clipboard() {
         }
 
         public function get formats():Array {
-            stub_getter("flash.desktop.Clipboard", "formats");
-            return new Array();
+            var result:Array = [];
+            var key:String;
+            for (key in this._data) {
+                result.push(key);
+            }
+            for (key in this._handlers) {
+                if (!(key in this._data)) {
+                    result.push(key);
+                }
+            }
+            return result;
         }
 
         public function clear():void {
-            stub_method("flash.desktop.Clipboard", "clear");
+            this._data = {};
+            this._handlers = {};
+            this._serializable = {};
         }
 
         public function clearData(format:String):void {
-            stub_method("flash.desktop.Clipboard", "clearData");
+            if (format == null) {
+                Error.throwError(TypeError, 2007, "format");
+            }
+            delete this._data[format];
+            delete this._handlers[format];
+            delete this._serializable[format];
         }
 
         public function getData(
             format:String,
             transferMode:String = ClipboardTransferMode.ORIGINAL_PREFERRED
         ):Object {
-            stub_method("flash.desktop.Clipboard", "getData");
-            return null;
+            if (format == null) {
+                Error.throwError(TypeError, 2007, "format");
+            }
+
+            var value:Object = null;
+            if (format in this._handlers) {
+                var handler:Function = this._handlers[format];
+                value = handler();
+            } else if (format in this._data) {
+                value = this._data[format];
+            } else {
+                return null;
+            }
+
+            if (value != null && transferMode == ClipboardTransferMode.CLONE_ONLY) {
+                if (!this._serializable[format]) {
+                    return null;
+                }
+                var bytes:ByteArray = new ByteArray();
+                bytes.writeObject(value);
+                bytes.position = 0;
+                return bytes.readObject();
+            }
+
+            return value;
         }
 
         public function hasFormat(format:String):Boolean {
-            stub_method("flash.desktop.Clipboard", "hasFormat");
-            return false;
+            if (format == null) {
+                Error.throwError(TypeError, 2007, "format");
+            }
+            return (format in this._data) || (format in this._handlers);
         }
 
         public function setData(format:String, data:Object, serializable:Boolean = true):Boolean {
-            stub_method("flash.desktop.Clipboard", "setData");
-            if (format == ClipboardFormats.TEXT_FORMAT) {
-                System.setClipboard(data);
-                return true;
+            if (format == null) {
+                Error.throwError(TypeError, 2007, "format");
             }
-            return false;
+            if (data == null) {
+                Error.throwError(TypeError, 2007, "data");
+            }
+
+            delete this._handlers[format];
+            this._data[format] = data;
+            this._serializable[format] = serializable;
+
+            if (format == ClipboardFormats.TEXT_FORMAT) {
+                System.setClipboard(String(data));
+            }
+            return true;
         }
 
         public function setDataHandler(format:String, handler:Function, serializable:Boolean = true):Boolean {
-            stub_method("flash.desktop.Clipboard", "setDataHandler");
-            return false;
+            if (format == null) {
+                Error.throwError(TypeError, 2007, "format");
+            }
+            if (handler == null) {
+                Error.throwError(TypeError, 2007, "handler");
+            }
+
+            delete this._data[format];
+            this._handlers[format] = handler;
+            this._serializable[format] = serializable;
+            return true;
         }
     }
 }
