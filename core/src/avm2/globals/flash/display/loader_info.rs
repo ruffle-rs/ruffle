@@ -1,23 +1,12 @@
 //! `flash.display.LoaderInfo` builtin/prototype
 
 use crate::avm2::Error;
-use crate::avm2::error::make_error_2012;
-use crate::avm2::{ClassObject, Object};
 use crate::avm2::activation::Activation;
 use crate::avm2::bytearray::Endian;
 use crate::avm2::error::make_error_2099;
 use crate::avm2::function::FunctionArgs;
 use crate::avm2::object::{DomainObject, LoaderStream, ScriptObject, TObject as _};
 use crate::avm2::value::Value;
-pub fn loader_info_allocator<'gc>(
-    class: ClassObject<'gc>,
-    activation: &mut Activation<'_, 'gc>,
-) -> Result<Object<'gc>, Error<'gc>> {
-    Err(make_error_2012(
-        activation,
-        class.inner_class_definition().name().local_name(),
-    ))
-}
 use crate::display_object::TDisplayObject;
 use crate::loader::ContentType;
 use crate::string::AvmString;
@@ -238,32 +227,56 @@ pub fn get_is_url_inaccessible<'gc>(
 
 /// `sameDomain` getter
 pub fn get_same_domain<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
-    Ok(this.as_loader_info_object().is_some().into())
+
+    if let Some(loader_stream) = this.as_loader_info_object().map(|o| o.loader_stream()) {
+        match loader_stream {
+            LoaderStream::NotYetLoaded(_, _, _) => {
+                return Err(make_error_2099(activation));
+            }
+            LoaderStream::Swf(_root, _) => {
+                return Ok(true.into());
+            }
+        }
+    }
+
+    Ok(Value::Undefined)
 }
 
 /// `childAllowsParent` getter
 pub fn get_child_allows_parent<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
-    Ok(this.as_loader_info_object().is_some().into())
+
+    let loader_info = this.as_loader_info_object().unwrap();
+    let loader_stream = loader_info.loader_stream();
+    match loader_stream {
+        LoaderStream::NotYetLoaded(_, _, _) => Err(make_error_2099(activation)),
+        LoaderStream::Swf(_root, _dobj) => Ok(true.into()),
+    }
 }
 
 /// `parentAllowsChild` getter
 pub fn get_parent_allows_child<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
-    Ok(this.as_loader_info_object().is_some().into())
+
+    let loader_info = this.as_loader_info_object().unwrap();
+    let loader_stream = loader_info.loader_stream();
+    match loader_stream {
+        LoaderStream::NotYetLoaded(_, _, _) => Err(make_error_2099(activation)),
+        LoaderStream::Swf(_root, _dobj) => Ok(true.into()),
+    }
 }
 
 /// `swfVersion` getter

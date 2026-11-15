@@ -6,7 +6,7 @@ package flash.display {
     import flash.system.ApplicationDomain;
     import flash.utils.ByteArray;
 
-    [Ruffle(InstanceAllocator)]
+    [Ruffle(Abstract)]
     public class LoaderInfo extends EventDispatcher {
         private var _parentSandboxBridge:Object = null;
         private var _childSandboxBridge:Object = null;
