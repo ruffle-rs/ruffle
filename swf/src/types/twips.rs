@@ -103,6 +103,24 @@ impl Twips {
         Self((pixels * Self::TWIPS_PER_PIXEL as f64) as i32)
     }
 
+    /// Converts the given number of `pixels` into twips, rounding to the nearest twip.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// use swf::Twips;
+    ///
+    /// // Output is rounded if more precise than a twip (1/20 pixels).
+    /// let twips = Twips::from_pixels_round(40.018);
+    /// assert_eq!(twips.get(), 800);
+    /// let twips = Twips::from_pixels_round(40.03);
+    /// assert_eq!(twips.get(), 801);
+    /// ```
+    #[inline]
+    pub fn from_pixels_round(pixels: f64) -> Self {
+        Self((pixels * Self::TWIPS_PER_PIXEL as f64).round() as i32)
+    }
+
     /// Converts the given number of `pixels` into twips.
     #[inline]
     pub const fn from_pixels_i32(pixels: i32) -> Self {

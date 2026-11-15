@@ -2,6 +2,7 @@ use crate::matrix::Matrix;
 use enum_map::Enum;
 use ruffle_wstr::{FromWStr, WStr};
 use smallvec::SmallVec;
+use std::borrow::Cow;
 use swf::{CharacterId, FillStyle, LineStyle, Rectangle, Shape, ShapeRecord, Twips};
 
 /// Controls the accuracy of the approximated quadratic curve, when splitting up a cubic curve
@@ -117,12 +118,12 @@ pub fn calculate_shape_bounds(shape_records: &[swf::ShapeRecord]) -> swf::Rectan
 #[cfg_attr(test, derive(PartialEq))]
 pub enum DrawPath<'a> {
     Stroke {
-        style: &'a LineStyle,
+        style: Cow<'a, LineStyle>,
         is_closed: bool,
         commands: Vec<DrawCommand>,
     },
     Fill {
-        style: &'a FillStyle,
+        style: Cow<'a, FillStyle>,
         commands: Vec<DrawCommand>,
         winding_rule: FillRule,
     },
@@ -547,7 +548,7 @@ impl<'a> ShapeConverter<'a> {
             }
             let style = unsafe { self.fill_styles.get_unchecked(i) };
             self.commands.push(DrawPath::Fill {
-                style,
+                style: Cow::Borrowed(style),
                 commands: path.to_draw_commands().collect(),
                 winding_rule: self.winding_rule,
             });
@@ -565,7 +566,7 @@ impl<'a> ShapeConverter<'a> {
                     continue;
                 }
                 self.commands.push(DrawPath::Stroke {
-                    style,
+                    style: Cow::Borrowed(style),
                     is_closed: segment.is_closed(),
                     commands: segment.to_draw_commands().collect(),
                 });
@@ -1357,6 +1358,262 @@ pub fn cubic_curve_bounds(
     }
 }
 
+/// One axis of a 9-slice grid, resolved against the shape bounds and the object's scale.
+#[derive(Copy, Clone, Debug, PartialEq)]
+struct Scale9Axis {
+    bounds_min: f64,
+    bounds_max: f64,
+    grid_min: f64,
+    grid_max: f64,
+    scale: f64,
+}
+
+impl Scale9Axis {
+    /// `None` unless the grid is strictly inside the bounds and the scale positive, which is
+    /// what keeps `map`'s divisors non-zero. `DefineScalingGrid` validates nothing, so this
+    /// is the only check every grid goes through.
+    fn new(bounds: (Twips, Twips), grid: (Twips, Twips), scale: f32) -> Option<Self> {
+        if grid.0 <= bounds.0
+            || grid.1 >= bounds.1
+            || grid.0 >= grid.1
+            || !scale.is_finite()
+            || scale <= 0.0
+        {
+            return None;
+        }
+        Some(Self {
+            bounds_min: bounds.0.get().into(),
+            bounds_max: bounds.1.get().into(),
+            grid_min: grid.0.get().into(),
+            grid_max: grid.1.get().into(),
+            scale: scale.into(),
+        })
+    }
+
+    /// Where the map sends a coordinate: the shape's own space, already scaled by `scale`.
+    /// Corners keep their authored size inside the plainly scaled extent; below the corner
+    /// sum the center is dropped and the corners shrink in proportion to their sizes.
+    fn map(&self, p: f64) -> f64 {
+        let corner_lo = self.grid_min - self.bounds_min;
+        let corner_hi = self.bounds_max - self.grid_max;
+        let span = (self.bounds_max - self.bounds_min) * self.scale;
+        let center = span - corner_lo - corner_hi;
+        let origin = self.bounds_min * self.scale;
+        let end = self.bounds_max * self.scale;
+        if center >= 0.0 {
+            if p <= self.grid_min {
+                origin + (p - self.bounds_min)
+            } else if p >= self.grid_max {
+                end - (self.bounds_max - p)
+            } else {
+                origin + corner_lo + (p - self.grid_min) * center / (self.grid_max - self.grid_min)
+            }
+        } else {
+            let shrink = span / (corner_lo + corner_hi);
+            if p <= self.grid_min {
+                origin + (p - self.bounds_min) * shrink
+            } else if p >= self.grid_max {
+                end - (self.bounds_max - p) * shrink
+            } else {
+                origin + corner_lo * shrink
+            }
+        }
+    }
+
+    fn remap(&self, p: Twips) -> Twips {
+        Twips::new(self.map(p.get().into()).round() as i32)
+    }
+
+    /// The affine taking `[lo, hi]` to where the map sends it, as `(scale, offset)`: exact
+    /// within one region, a two-point fit across them. A zero-extent range only translates.
+    fn span_affine(&self, lo: f64, hi: f64) -> (f64, f64) {
+        let (out_lo, out_hi) = (self.map(lo), self.map(hi));
+        if hi - lo <= f64::EPSILON {
+            return (1.0, out_lo - lo);
+        }
+        let k = (out_hi - out_lo) / (hi - lo);
+        (k, out_lo - lo * k)
+    }
+}
+
+/// A 9-slice grid resolved against the bounds and the scale it applies to. Coordinates are
+/// in the space of the object that owns the grid.
+///
+/// Compares exactly: the scale is baked into the vertices, so a cached tessellation for a
+/// near-miss would render the object at the wrong size.
+#[derive(Copy, Clone, Debug, PartialEq)]
+pub struct Scale9 {
+    pub scale_x: f32,
+    pub scale_y: f32,
+    x: Scale9Axis,
+    y: Scale9Axis,
+}
+
+impl Scale9 {
+    /// `None` unless the grid can slice on both axes: strictly inside the bounds, positive
+    /// scale. A grid that fails this renders plainly scaled.
+    pub fn new(
+        bounds: Rectangle<Twips>,
+        grid: Rectangle<Twips>,
+        scale_x: f32,
+        scale_y: f32,
+    ) -> Option<Self> {
+        Some(Self {
+            scale_x,
+            scale_y,
+            x: Scale9Axis::new(
+                (bounds.x_min, bounds.x_max),
+                (grid.x_min, grid.x_max),
+                scale_x,
+            )?,
+            y: Scale9Axis::new(
+                (bounds.y_min, bounds.y_max),
+                (grid.y_min, grid.y_max),
+                scale_y,
+            )?,
+        })
+    }
+
+    /// Remaps a shape's geometry. Every point goes through the per-axis map, control points
+    /// included: Flash Player rewrites the path rather than compositing nine clipped draws,
+    /// and does not subdivide curves at the grid lines.
+    ///
+    /// Each path's fill matrix follows the affine its own bounds moved by, so a path spanning
+    /// the shape paints as if unsliced and a path inside one cell moves with that cell.
+    ///
+    /// `to_grid` takes the shape's coordinates into the grid's: identity when the shape owns
+    /// the grid, the child's matrix when a container's grid slices its child.
+    pub fn apply<'a>(&self, mut shape: DistilledShape<'a>, to_grid: Matrix) -> DistilledShape<'a> {
+        let Some(from_grid) = to_grid.inverse() else {
+            return shape;
+        };
+        let remap = |point: &mut swf::Point<Twips>| {
+            let p = to_grid * *point;
+            *point = from_grid * swf::Point::new(self.x.remap(p.x), self.y.remap(p.y));
+        };
+        // Computed before the remap: it needs the path's bounds as authored.
+        let moved_fill = |fill: &FillStyle, commands: &[DrawCommand]| {
+            let [x0, y0, x1, y1] = grid_space_bbox(commands, to_grid)?;
+            let (kx, ox) = self.x.span_affine(x0, x1);
+            let (ky, oy) = self.y.span_affine(y0, y1);
+            let fit = Matrix {
+                a: kx as f32,
+                b: 0.0,
+                c: 0.0,
+                d: ky as f32,
+                tx: Twips::new(ox.round() as i32),
+                ty: Twips::new(oy.round() as i32),
+            };
+            transformed_fill(fill, from_grid * fit * to_grid)
+        };
+
+        for path in &mut shape.paths {
+            let commands = match path {
+                DrawPath::Fill {
+                    style, commands, ..
+                } => {
+                    if let Some(fill) = moved_fill(style, commands) {
+                        *style = Cow::Owned(fill);
+                    }
+                    commands
+                }
+                DrawPath::Stroke {
+                    style, commands, ..
+                } => {
+                    if let Some(fill) = moved_fill(style.fill_style(), commands) {
+                        *style = Cow::Owned(style.as_ref().clone().with_fill_style(fill));
+                    }
+                    commands
+                }
+            };
+            for command in commands {
+                match command {
+                    DrawCommand::MoveTo(point) | DrawCommand::LineTo(point) => remap(point),
+                    DrawCommand::QuadraticCurveTo { control, anchor } => {
+                        remap(control);
+                        remap(anchor);
+                    }
+                    // TODO: Flash Player converts cubics to quadratics before the map,
+                    // which does not commute with the conversion.
+                    DrawCommand::CubicCurveTo {
+                        control_a,
+                        control_b,
+                        anchor,
+                    } => {
+                        remap(control_a);
+                        remap(control_b);
+                        remap(anchor);
+                    }
+                }
+            }
+        }
+        shape
+    }
+
+    /// Right-multiply the render matrix by this to draw geometry `apply` produced. The remap
+    /// bakes in the object's own scale, so it has to come back out of the matrix or the shape
+    /// is scaled twice; that is also what keeps stroke widths unscaled.
+    pub fn unscale(&self, to_grid: Matrix) -> Matrix {
+        let unscale = Matrix {
+            a: 1.0 / self.scale_x,
+            d: 1.0 / self.scale_y,
+            ..Matrix::IDENTITY
+        };
+        to_grid.inverse().unwrap_or_default() * unscale * to_grid
+    }
+}
+
+/// A copy of `style` with its texture moved by `transform`, or `None` for a solid color.
+fn transformed_fill(style: &FillStyle, transform: Matrix) -> Option<FillStyle> {
+    let moved = |m: &swf::Matrix| swf::Matrix::from(transform * Matrix::from(*m));
+    let mut style = style.clone();
+    match &mut style {
+        FillStyle::Color(_) => return None,
+        FillStyle::LinearGradient(gradient)
+        | FillStyle::RadialGradient(gradient)
+        | FillStyle::FocalGradient { gradient, .. } => gradient.matrix = moved(&gradient.matrix),
+        FillStyle::Bitmap { matrix, .. } => *matrix = moved(matrix),
+    }
+    Some(style)
+}
+
+/// `[x_min, y_min, x_max, y_max]` in the grid's space, over anchors and control points alike.
+/// `None` when the path never puts ink down.
+fn grid_space_bbox(commands: &[DrawCommand], to_grid: Matrix) -> Option<[f64; 4]> {
+    let mut bbox: Option<[f64; 4]> = None;
+    let mut include = |p: swf::Point<Twips>| {
+        let p = to_grid * p;
+        let (x, y) = (p.x.get().into(), p.y.get().into());
+        let b = bbox.get_or_insert([x, y, x, y]);
+        *b = [b[0].min(x), b[1].min(y), b[2].max(x), b[3].max(y)];
+    };
+    // `Drawing` opens each path with a `MoveTo` at the previous path's end and closes an open
+    // stroke with a zero-length `LineTo`; neither puts ink down, so neither may widen the
+    // bbox. A `MoveTo` only counts once ink departs from it.
+    let mut pending_move = None;
+    for command in commands {
+        let points: &[swf::Point<Twips>] = match command {
+            DrawCommand::MoveTo(point) => {
+                pending_move = Some(*point);
+                continue;
+            }
+            DrawCommand::LineTo(point) if pending_move == Some(*point) => continue,
+            DrawCommand::LineTo(point) => &[*point],
+            DrawCommand::QuadraticCurveTo { control, anchor } => &[*control, *anchor],
+            DrawCommand::CubicCurveTo {
+                control_a,
+                control_b,
+                anchor,
+            } => &[*control_a, *control_b, *anchor],
+        };
+        if let Some(start) = pending_move.take() {
+            include(start);
+        }
+        points.iter().copied().for_each(&mut include);
+    }
+    bbox
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1414,7 +1671,7 @@ mod tests {
         ]);
         let commands = ShapeConverter::from_shape(&shape).into_commands();
         let expected = vec![DrawPath::Fill {
-            style: &FILL_STYLES[0],
+            style: Cow::Borrowed(&FILL_STYLES[0]),
             commands: vec![
                 DrawCommand::MoveTo(swf::Point::from_pixels(100.0, 100.0)),
                 DrawCommand::LineTo(swf::Point::from_pixels(200.0, 100.0)),
@@ -1460,7 +1717,7 @@ mod tests {
         ]);
         let commands = ShapeConverter::from_shape(&shape).into_commands();
         let expected = vec![DrawPath::Fill {
-            style: &FILL_STYLES[0],
+            style: Cow::Borrowed(&FILL_STYLES[0]),
             commands: vec![
                 DrawCommand::MoveTo(swf::Point::from_pixels(100.0, 100.0)),
                 DrawCommand::LineTo(swf::Point::from_pixels(200.0, 100.0)),

@@ -20,6 +20,7 @@ use gc_arena::{Collect, Gc, Mutation};
 use ruffle_macros::{enum_trait_object, istr};
 use ruffle_render::perspective_projection::PerspectiveProjection;
 use ruffle_render::pixel_bender::PixelBenderShaderHandle;
+use ruffle_render::shape_utils::Scale9;
 use ruffle_render::transform::{Transform, TransformStack};
 use std::cell::{Cell, Ref, RefCell, RefMut};
 use std::fmt::Debug;
@@ -833,9 +834,11 @@ impl<'gc> DisplayObjectBase<'gc> {
         self.contains_flag(DisplayObjectFlags::CACHE_AS_BITMAP)
     }
 
-    fn set_bitmap_cached_preference(&self, value: bool) {
+    fn set_bitmap_cached_preference(&self, value: bool) -> bool {
+        let changed = self.is_bitmap_cached_preference() != value;
         self.set_flag(DisplayObjectFlags::CACHE_AS_BITMAP, value);
         self.recheck_cache_as_bitmap();
+        changed
     }
 
     fn bitmap_cache_mut(&self) -> RefMut<'_, Option<BitmapCache>> {
@@ -963,6 +966,16 @@ struct DrawCacheInfo {
     bounds: Rectangle<Twips>,
     draw_offset: Point<i32>,
     filters: Vec<Filter>,
+}
+
+/// Whether `object` renders plainly whatever its grid: every kind of mask does, and so does
+/// the object `BitmapData.draw` is drawing, which loses its grid along with its transform.
+/// Timeline and stencil masks draw with the mask flag up, while an alpha masker renders into
+/// its own command list and only its `maskee` link gives it away.
+fn scale9_suppressed<'gc>(context: &RenderContext<'_, 'gc>, object: DisplayObject<'gc>) -> bool {
+    context.commands.drawing_mask()
+        || object.maskee().is_some()
+        || matches!(context.untransformed_source, Some(source) if DisplayObject::ptr_eq(source, object))
 }
 
 pub fn render_base<'gc>(
@@ -1104,6 +1117,7 @@ pub fn render_base<'gc>(
                 is_offscreen: true,
                 use_bitmap_cache: true,
                 stage: context.stage,
+                untransformed_source: context.untransformed_source,
             };
             this.render_self(&mut offscreen_context);
             offscreen_context.cache_draws.push(BitmapCacheEntry {
@@ -2092,6 +2106,75 @@ pub trait TDisplayObject<'gc>:
     #[no_dynamic]
     fn set_scaling_grid(self, rect: Rectangle<Twips>) {
         self.base().scaling_grid.set(rect);
+        // A cached bitmap only redraws on matrix or size changes, and the grid moves neither.
+        self.invalidate_cached_bitmap();
+    }
+
+    /// The grid to 9-slice with, gated on this object's *own* matrix: rotation, skew and
+    /// negative scale disable slicing, while an ancestor's transform applies to the sliced
+    /// result instead of suppressing it. `Scale9::new` refuses a non-positive scale.
+    #[no_dynamic]
+    fn active_scaling_grid(self) -> Option<Scale9> {
+        // Authoring rounds a nominally axis-aligned matrix to the nearest 1/65536, so real
+        // content arrives carrying a skew of a few units. Flash Player slices up to 1/4096
+        // in either term and not beyond, at any scale.
+        const SKEW_EPSILON: f32 = 1.0 / 4096.0;
+        let grid = self.scaling_grid();
+        let matrix = self.base().matrix();
+        if !grid.is_valid() || matrix.b.abs() > SKEW_EPSILON || matrix.c.abs() > SKEW_EPSILON {
+            return None;
+        }
+        Scale9::new(self.self_bounds_for_scale9(), grid, matrix.a, matrix.d)
+    }
+
+    /// Whether this is one of the text types.
+    #[no_dynamic]
+    fn is_text(self) -> bool {
+        self.as_edit_text().is_some() || self.as_text().is_some() || self.as_text_line().is_some()
+    }
+
+    /// Bounds the grid is validated and sliced against: this object's own geometry plus its
+    /// *direct* children's, without stroke inflation. Unlike `getBounds`, grandchildren are
+    /// excluded, and so is text wherever it appears -- a text field refuses every grid.
+    fn self_bounds_for_scale9(self) -> Rectangle<Twips> {
+        if self.is_text() {
+            return Rectangle::INVALID;
+        }
+        let mode = BoundsMode::ScriptWithoutStrokes;
+        let mut bounds = self.self_bounds(mode);
+        if let Some(container) = self.as_container() {
+            for child in container.iter_render_list() {
+                if !child.is_text() {
+                    bounds = bounds.union(&(child.base().matrix() * child.self_bounds(mode)));
+                }
+            }
+        }
+        bounds
+    }
+
+    /// The grid to slice with while rendering, and the matrix into its space: the object's
+    /// own grid, or for a shape child without one, its parent's. Flash Player does not
+    /// propagate past one level, and the child's matrix is folded into the map.
+    // TODO: A child whose own grid exists but cannot slice has its matrix discarded rather
+    // than folded in by Flash Player.
+    #[no_dynamic]
+    fn scale9_for_render(self, context: &RenderContext<'_, 'gc>) -> Option<(Scale9, Matrix)> {
+        if scale9_suppressed(context, self) {
+            return None;
+        }
+        if let Some(scale9) = self.active_scaling_grid() {
+            return Some((scale9, Matrix::IDENTITY));
+        }
+        // A bitmap-cached child is a bitmap as far as the parent's grid is concerned.
+        if !matches!(self, DisplayObject::Graphic(_)) || self.is_bitmap_cached() {
+            return None;
+        }
+        let parent = self.parent()?;
+        let matrix = self.base().matrix();
+        if scale9_suppressed(context, parent) || matrix.inverse().is_none() {
+            return None;
+        }
+        Some((parent.active_scaling_grid()?, matrix))
     }
 
     #[no_dynamic]
@@ -2272,7 +2355,11 @@ pub trait TDisplayObject<'gc>:
     /// Note that the object will still be bitmap cached if a filter is active.
     #[no_dynamic]
     fn set_bitmap_cached_preference(self, value: bool) {
-        self.base().set_bitmap_cached_preference(value)
+        // The flag also decides whether a parent's scale9Grid slices this child, so a
+        // cached ancestor has to redraw when it flips.
+        if self.base().set_bitmap_cached_preference(value) {
+            self.invalidate_cached_bitmap();
+        }
     }
 
     /// Whether this display object has a scroll rectangle applied.

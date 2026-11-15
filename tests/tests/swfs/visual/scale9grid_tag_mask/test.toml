@@ -1,0 +1,9 @@
+num_ticks = 1
+
+# A gridded clip-depth masker reveals exactly what its ungridded twin does.
+[image_comparisons.output]
+tolerance = 1
+max_outliers = 0
+
+[player_options]
+with_renderer = { optional = false }

@@ -1,0 +1,16 @@
+# Antialiasing along the rotated row's diagonal edges; the axis-aligned rows are exact.
+num_ticks = 1
+
+[image_comparisons.output]
+tolerance = 1
+max_outliers = 6000
+
+[player_options]
+with_renderer = { optional = false }
+
+[[compilers]]
+type = "Asc"
+target = "test.swf"
+class = "Test"
+scripts = ["Test.as"]
+swf_version = 43
