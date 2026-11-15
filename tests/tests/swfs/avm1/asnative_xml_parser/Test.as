@@ -515,3 +515,12 @@ function runOutputObjectCase(label, output)
 
 runOutputObjectCase("array output with additional attributes", []);
 runOutputObjectCase("plain output object", {});
+
+var outputWithExistingProperties = {};
+outputWithExistingProperties[0] = "old";
+outputWithExistingProperties[5] = "stale";
+outputWithExistingProperties.length = 10;
+runOutputObjectCase(
+    "plain output object with existing properties",
+    outputWithExistingProperties
+);

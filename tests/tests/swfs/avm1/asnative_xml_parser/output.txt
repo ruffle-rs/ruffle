@@ -1448,3 +1448,28 @@ length=1
 node[0] type=1 value=[/a] empty=false
   attrs typeof=object
 output keys=0,1,2
+
+=== plain output object with existing properties ===
+status=0
+length=10
+output[0]:
+length=1
+node[0] type=1 value=[a] empty=false
+  attrs typeof=object
+  attr q=[1]
+  attr z=[2]
+output[1]:
+length=1
+node[0] type=3 value=[text] empty=false
+  attrs typeof=object
+output[2]:
+length=1
+node[0] type=1 value=[/a] empty=false
+  attrs typeof=object
+output[5]:
+length=1
+node[0]=[stale] typeof=string
+output[length]:
+length=1
+node[0]=[10] typeof=number
+output keys=0,1,2,5,length
