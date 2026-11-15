@@ -76,7 +76,7 @@
     ],
     "web_accessible_resources": [{
         // SWF takeover redirects require player.html to be web accessible.
-        "resources": ["dist/ruffle.js", "dist/*.wasm", "player.html"],
+        "resources": ["dist/*.wasm", "player.html"],
         "matches": ["<all_urls>"],
     }],
     "declarative_net_request": {
