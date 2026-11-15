@@ -6,6 +6,7 @@ use crate::backends::{
     TestAudioBackend, TestLogBackend, TestNavigatorBackend, TestStorageBackend, TestUiBackend,
 };
 use crate::environment::RenderInterface;
+use crate::external_interface::TestExternalInterfaceProvider;
 use crate::fs_commands::{FsCommand, TestFsCommandProvider};
 use crate::image_trigger::ImageTrigger;
 use crate::options::image_comparison::ImageComparison;
@@ -118,6 +119,11 @@ impl TestRunner {
         } else {
             None
         };
+
+        if test.options.log_external_interface {
+            builder = builder
+                .with_external_interface(Box::new(TestExternalInterfaceProvider::new(log.clone())));
+        }
 
         // Test player options may override anything set above
         let player = test

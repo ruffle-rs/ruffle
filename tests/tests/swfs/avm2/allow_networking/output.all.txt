@@ -8,6 +8,18 @@ END
 TEST: fscommand
 no error
 END
+TEST: ExternalInterface.available
+value: true
+no error
+END
+TEST: ExternalInterface.call
+ExternalInterfaceProvider::call_method foo
+no error
+END
+TEST: ExternalInterface.addCallback
+ExternalInterfaceProvider::on_callback_available callme
+no error
+END
 TEST: sendToURL
 no error
 END

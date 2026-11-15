@@ -14,6 +14,26 @@ SecurityError: Error #2149: Security sandbox violation: file:///test.swf cannot 
 	at Test/check()
 	at Test()
 END
+TEST: ExternalInterface.available
+value: false
+no error
+END
+TEST: ExternalInterface.call
+[class Error]
+Error: Error #2067: The ExternalInterface is not available in this container. ExternalInterface requires Internet Explorer ActiveX, Firefox, Mozilla 1.7.5 and greater, or other browsers that support NPRuntime.
+	at flash.external::ExternalInterface$/call()
+	at Function/<anonymous>()
+	at Test/check()
+	at Test()
+END
+TEST: ExternalInterface.addCallback
+[class Error]
+Error: Error #2067: The ExternalInterface is not available in this container. ExternalInterface requires Internet Explorer ActiveX, Firefox, Mozilla 1.7.5 and greater, or other browsers that support NPRuntime.
+	at flash.external::ExternalInterface$/addCallback()
+	at Function/<anonymous>()
+	at Test/check()
+	at Test()
+END
 TEST: sendToURL
 [class SecurityError]
 SecurityError: Error #2146: Security sandbox violation: file:///test.swf cannot call sendToURL because the HTML/container parameter allowNetworking has the value none.

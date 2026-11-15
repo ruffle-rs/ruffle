@@ -1085,6 +1085,19 @@ pub fn make_error_2027<'gc>(
 make_error_fn!(make_error_2030, 2030, eof_error);
 make_error_fn!(make_error_2037, 2037, error);
 make_error_fn!(make_error_2058, 2058, io_error);
+
+#[inline(never)]
+#[cold]
+pub fn make_error_2060<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
+    let movie = activation.caller_movie_or_root();
+    let page_url = activation.context.page_url.clone().unwrap_or_default();
+    make_error!(security_error(
+        activation,
+        error_message!(2060, movie.url(), page_url),
+        2060
+    ))
+}
+
 make_error_fn!(make_error_2067, 2067, error);
 make_error_fn!(make_error_2078, 2078, illegal_operation_error);
 make_error_fn!(make_error_2082, 2082, argument_error);
