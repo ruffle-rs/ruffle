@@ -43,7 +43,11 @@ pub fn local_shared_object_key(
     movie_path = movie_path.strip_suffix('/').unwrap_or(movie_path);
 
     let movie_host = if movie_url.scheme() == "file" {
-        // Remove drive letter on Windows
+        // Remove drive letter on Windows. This is observable, as `localPath` is
+        // validated against the path without the drive letter.
+        // Flash Player on Linux removes the first path component instead
+        // (`/home/user/game.swf` becomes `user/game.swf`), which looks like
+        // a bug that came from the drive letter logic. We don't replicate it.
         if let [_, b':', b'/', ..] = movie_path.as_bytes() {
             movie_path = &movie_path[3..];
         }
