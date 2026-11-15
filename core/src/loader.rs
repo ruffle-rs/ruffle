@@ -2199,7 +2199,6 @@ impl<'gc> MovieLoader<'gc> {
                         base_clip,
                         broadcaster,
                         istr!(uc, "broadcastMessage"),
-                        // TODO: Pass an actual httpStatus argument instead of 0.
                         &[
                             istr!(uc, "onLoadComplete").into(),
                             target_clip.object1_or_undef(),
