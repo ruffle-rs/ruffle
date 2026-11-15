@@ -7,7 +7,7 @@ use crate::avm1::globals::movie_clip::object_to_rectangle;
 use crate::avm1::object::NativeObject;
 use crate::avm1::parameters::{ParametersExt, UndefinedAs};
 use crate::avm1::property_decl::{DeclContext, PropertyOrder, StaticDeclarations, SystemClass};
-use crate::avm1::{Activation, Attribute, Error, Object, Value};
+use crate::avm1::{Activation, Error, Object, Value};
 use crate::bitmap::bitmap_data::BitmapData;
 use crate::bitmap::bitmap_data::{BitmapDataDrawError, IBitmapDrawable};
 use crate::bitmap::bitmap_data::{ChannelOptions, ThresholdOperation};
@@ -78,21 +78,11 @@ fn new_bitmap_data<'gc>(
     bitmap_data: BitmapData<'gc>,
     activation: &mut Activation<'_, 'gc>,
 ) -> Object<'gc> {
-    let gc_context = activation.gc();
-
-    let object = Object::new_without_proto(gc_context);
-    // Set `__proto__` manually since `Object::new()` doesn't support primitive prototypes.
-    // TODO: Pass `proto` to `Object::new()` once possible.
-    if let Some(proto) = proto {
-        object.define_value(
-            gc_context,
-            istr!("__proto__"),
-            proto,
-            Attribute::DONT_ENUM | Attribute::DONT_DELETE,
-        );
-    }
-    object.set_native(gc_context, NativeObject::BitmapData(bitmap_data));
-    object
+    Object::new_with_native(
+        activation.strings(),
+        proto,
+        NativeObject::BitmapData(bitmap_data),
+    )
 }
 
 fn constructor<'gc>(
