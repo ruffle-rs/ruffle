@@ -804,6 +804,10 @@ impl<'gc> E4XNode<'gc> {
 
         let data_utf8 = string.to_utf8_lossy();
         let mut parser = NsReader::from_str(&data_utf8);
+        // Flash has no limit on the number of namespace declarations per element.
+        parser
+            .resolver_mut()
+            .set_max_declarations_per_element(usize::MAX);
         parser.config_mut().allow_dangling_amp = true;
         let mut open_tags: Vec<E4XNode<'gc>> = vec![];
 
