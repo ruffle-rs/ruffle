@@ -115,7 +115,8 @@ fn custom_unescape(input: &[u8], avm: Avm) -> Result<String, Utf8Error> {
             Err(
                 XmlEscapeError::InvalidCharRef(_)
                 | XmlEscapeError::UnrecognizedEntity(_, _)
-                | XmlEscapeError::UnterminatedEntity(_),
+                | XmlEscapeError::UnterminatedEntity(_)
+                | XmlEscapeError::TooManyNestedEntities,
             ) => result.push_str(entity),
         }
 
