@@ -26,7 +26,11 @@ package flash.media {
         public native function extract(target:ByteArray, length:Number, startPosition:Number = -1):Number;
         public native function close():void;
 
-        public native function load(stream:URLRequest, context:SoundLoaderContext = null):void;
+        public function load(stream:URLRequest, context:SoundLoaderContext = null):void {
+            this._load(stream, context);
+        }
+
+        private native function _load(stream:URLRequest, context:SoundLoaderContext):void;
 
         [API("674")]
         public native function loadCompressedDataFromByteArray(bytes:ByteArray, bytesLength:uint):void;
