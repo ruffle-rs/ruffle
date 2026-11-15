@@ -155,10 +155,8 @@ fn get_local<'gc>(
     movie_url.set_query(None);
     movie_url.set_fragment(None);
 
-    let secure = args
-        .get(2)
-        .unwrap_or(&Value::Undefined)
-        .as_bool(activation.swf_version());
+    // Only the boolean `true` is secure, other values aren't converted.
+    let secure = matches!(args.get(2), Some(Value::Bool(true)));
 
     // Secure parameter disallows using the shared object from non-HTTPS.
     if secure && movie_url.scheme() != "https" {
