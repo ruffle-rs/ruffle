@@ -87,6 +87,12 @@ impl<'gc> Avm2ClassRegistry<'gc> {
         }
         self.class_map.insert(class_def, MovieSymbol(movie, symbol));
     }
+
+    /// Forget every class associated with a symbol of the given movie.
+    fn release_movie(&mut self, movie: SwfMovie<'gc>) {
+        self.class_map
+            .retain(|_, MovieSymbol(symbol_movie, _)| !SwfMovie::ptr_eq(symbol_movie, &movie));
+    }
 }
 
 /// Symbol library for a single given SWF.
@@ -395,6 +401,10 @@ impl<'gc> MovieLibraries<'gc> {
     fn known_movies(&self) -> impl Iterator<Item = SwfMovie<'gc>> {
         self.0.keys().copied()
     }
+
+    fn remove(&mut self, movie: SwfMovie<'gc>) -> Option<MovieLibrary<'gc>> {
+        self.0.remove(&movie)
+    }
 }
 
 /// Symbol library for multiple movies.
@@ -454,6 +464,20 @@ impl<'gc> Library<'gc> {
 
     pub fn known_movies(&self) -> impl Iterator<Item = SwfMovie<'gc>> {
         self.movie_libraries.known_movies()
+    }
+
+    /// Drops the symbol library of a movie unloaded with `Loader.unloadAndStop`.
+    ///
+    /// Libraries are otherwise kept for the lifetime of the player, and a library holds its movie,
+    /// every character defined by it (with their shape and bitmap handles) and the AVM2 classes
+    /// bound to its symbols. Releasing it lets the garbage collector reclaim all of that once no
+    /// display object or script refers to the movie any more.
+    ///
+    /// Objects created from the movie that are still alive keep what they already hold, but can no
+    /// longer instantiate further symbols from it.
+    pub fn release_movie(&mut self, movie: SwfMovie<'gc>) -> bool {
+        self.avm2_class_registry.release_movie(movie);
+        self.movie_libraries.remove(movie).is_some()
     }
 
     /// Returns the default Font implementations behind the built in names (ie `_sans`)
