@@ -24,7 +24,7 @@ SecurityError: Error #2146: Security sandbox violation: file:///test.swf cannot 
 END
 TEST: new URLLoader
 [class SecurityError]
-SecurityError: Error #2146: Security sandbox violation: file:/// cannot call URLStream.load because the HTML/container parameter allowNetworking has the value none.
+SecurityError: Error #2146: Security sandbox violation: file:///test.swf cannot call URLStream.load because the HTML/container parameter allowNetworking has the value none.
 	at flash.net::URLLoader/load()
 	at flash.net::URLLoader()
 	at Function/<anonymous>()
@@ -41,9 +41,45 @@ SecurityError: Error #2146: Security sandbox violation: file:///test.swf cannot 
 END
 TEST: URLStream.load
 [class SecurityError]
-SecurityError: Error #2146: Security sandbox violation: file:/// cannot call URLStream.load because the HTML/container parameter allowNetworking has the value none.
+SecurityError: Error #2146: Security sandbox violation: file:///test.swf cannot call URLStream.load because the HTML/container parameter allowNetworking has the value none.
 	at flash.net::URLLoader/load()
 	at flash.net::URLStream/load()
+	at Function/<anonymous>()
+	at Test/check()
+	at Test()
+END
+TEST: new Socket
+[class SecurityError]
+SecurityError: Error #2146: Security sandbox violation: file:///test.swf cannot call Socket.connect because the HTML/container parameter allowNetworking has the value none.
+	at flash.net::Socket/connect()
+	at flash.net::Socket()
+	at Function/<anonymous>()
+	at Test/check()
+	at Test()
+END
+TEST: Socket.connect
+[class SecurityError]
+SecurityError: Error #2146: Security sandbox violation: file:///test.swf cannot call Socket.connect because the HTML/container parameter allowNetworking has the value none.
+	at flash.net::Socket/connect()
+	at Function/<anonymous>()
+	at Test/check()
+	at Test()
+END
+TEST: new XMLSocket
+[class SecurityError]
+SecurityError: Error #2146: Security sandbox violation: file:///test.swf cannot call Socket.connect because the HTML/container parameter allowNetworking has the value none.
+	at flash.net::Socket/connect()
+	at flash.net::XMLSocket/connect()
+	at flash.net::XMLSocket()
+	at Function/<anonymous>()
+	at Test/check()
+	at Test()
+END
+TEST: XMLSocket.connect
+[class SecurityError]
+SecurityError: Error #2146: Security sandbox violation: file:///test.swf cannot call Socket.connect because the HTML/container parameter allowNetworking has the value none.
+	at flash.net::Socket/connect()
+	at flash.net::XMLSocket/connect()
 	at Function/<anonymous>()
 	at Test/check()
 	at Test()

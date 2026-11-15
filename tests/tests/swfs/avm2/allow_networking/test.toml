@@ -15,6 +15,8 @@ output_path = "output.all.txt"
 allow_networking = "all"
 
 [subtests.none]
+# Ruffle uses the wrong SWF URL (#25195)
+known_failure = true
 output_path = "output.none.txt"
 
 [subtests.none.player_options]
