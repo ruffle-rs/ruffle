@@ -66,6 +66,7 @@ package flash.ui {
             return true;
         }
 
+        [API("668")]
         override public function clone():NativeMenu {
             var copy:ContextMenu = new ContextMenu();
             copy.customItems = this._customItems ? this._customItems.concat() : new Array();
