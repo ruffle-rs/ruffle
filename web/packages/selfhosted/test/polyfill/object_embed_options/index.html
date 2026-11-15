@@ -1,0 +1,72 @@
+<!doctype html>
+<html>
+    <head>
+        <meta charset="utf-8" />
+        <title>Object and embed options</title>
+    </head>
+
+    <body>
+        <div id="test-container">
+            <object
+                id="object-attributes"
+                type="application/x-shockwave-flash"
+                data="/test_assets/example.swf"
+                width="500"
+                height="500"
+                allowFullScreen="false"
+                allowScriptAccess="never"
+                menu="false"
+                quality="low"
+                scale="noScale"
+                wmode="transparent"
+            ></object>
+            <embed
+                id="embed-attributes"
+                type="application/x-shockwave-flash"
+                src="/test_assets/example.swf"
+                width="500"
+                height="500"
+                allowFullScreen="false"
+                allowScriptAccess="never"
+                menu="false"
+                quality="low"
+                scale="noScale"
+                wmode="transparent"
+            />
+            <object
+                id="object-params"
+                type="application/x-shockwave-flash"
+                data="/test_assets/example.swf"
+                width="500"
+                height="500"
+            >
+                <param name="allowFullScreen" value="false" />
+                <param name="allowScriptAccess" value="never" />
+                <param name="menu" value="false" />
+                <param name="quality" value="low" />
+                <param name="scale" value="noScale" />
+                <param name="wmode" value="transparent" />
+            </object>
+            <object
+                id="object-params-override"
+                type="application/x-shockwave-flash"
+                data="/test_assets/example.swf"
+                width="500"
+                height="500"
+                allowFullScreen="true"
+                allowScriptAccess="always"
+                menu="true"
+                quality="high"
+                wmode="transparent"
+            >
+                <!-- "wmode" as attribute only -->
+                <param name="allowFullScreen" value="false" />
+                <param name="allowScriptAccess" value="never" />
+                <param name="menu" value="false" />
+                <param name="quality" value="low" />
+                <param name="scale" value="noScale" />
+                <!-- "scale" as param only -->
+            </object>
+        </div>
+    </body>
+</html>
