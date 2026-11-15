@@ -1,0 +1,11 @@
+Before ConstantPool
+After ConstantPool
+string
+
+string
+unterminated�
+string
+FSCommand:quit
+string
+undefined
+undefined

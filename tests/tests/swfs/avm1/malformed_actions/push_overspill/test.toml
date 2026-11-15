@@ -1,0 +1,9 @@
+num_ticks = 1
+
+# Crashes in FP11 and above.
+player_options.version = 10
+
+[[compilers]]
+type = "Swfasm"
+source = "test.swfasm"
+target = "test.swf"

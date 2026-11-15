@@ -1,0 +1,52 @@
+Swf(
+    version: 6,
+    frame_rate: 12,
+    tags: [
+        FileAttributes(),
+        SetBackgroundColor(0xFFFFFF),
+
+        // Frame 1
+        DoAction(InlineBytes([
+            // Push "Before ConstantPool"
+            "96 1500 00 4265666f726520436f6e7374616e74506f6f6c00",
+            "26", // Trace
+
+            // ConstantPool; declaring 10 strings, but with only enough space for (almost) three.
+            // If parsing could continue beyond the action's bound, the following actions
+            // would be interpreted as string data.
+            //
+            // Instead:
+            // - in Flash Player 9 and 10, the action executes but strings not in bounds
+            //   of the action are pushed as the number '0'.
+            // - in Flash Player 11 and above, the player crashes upon executing the
+            //   malformed action.
+            "88 2200 0a00",
+                "416674657220436f6e7374616e74506f6f6c 00", // #0: "After ConstantPool"
+                "00",                                      // #1: ""
+                "756e7465726d696e61746564",                // #1: "unterminated", without NUL
+            
+            "96 0200 08 00",    // Push constant0 ("After ConstantPool")
+            "4c 26 44 26",      // PushDuplicate Trace TypeOf Trace
+
+            "96 0200 08 01",    // Push constant1 ("")
+            "4c 26 44 26",      // PushDuplicate Trace TypeOf Trace
+
+            "96 0200 08 02",    // Push constant2 ("unterminated" without NUL)
+            "4c 26 44 26",      // PushDuplicate Trace TypeOf Trace
+
+            "96 0200 08 09",    // Push constant9 ("FSCommand:quit")
+            "4c 26 44 26",      // PushDuplicate Trace TypeOf Trace
+
+            "96 0200 08 0f",    // Push constant15 (out of bounds)
+            "4c 26 44 26",      // PushDuplicate Trace TypeOf Trace
+
+            // GetURL "FSCommand:quit", ""
+            "83 1000 4653436f6d6d616e643a7175697400 00",
+
+            "00" // End
+        ])),
+        ShowFrame,
+
+        End,
+    ],
+)

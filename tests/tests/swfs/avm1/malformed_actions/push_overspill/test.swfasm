@@ -1,0 +1,33 @@
+Swf(
+    version: 6,
+    frame_rate: 12,
+    tags: [
+        FileAttributes(),
+        SetBackgroundColor(0xFFFFFF),
+
+        // Frame 1
+        DoAction(InlineBytes([
+            // Push 4 ints, with the last value left incomplete.
+            //
+            // - in Flash Player 9 and 10, the action executes and the last int
+            //   is partially read from the following actions.
+            // - in Flash Player 11 and above, the player crashes upon executing the
+            //   malformed action.
+            "96 1200",
+                "07 01000000", // 1i32
+                "07 02000000", // 2i32
+                "07 03000000", // 3i32
+                "07 0400",     // 4i32 (incomplete)
+
+            "26 26 26 26", // Trace (x4)
+
+            // GetURL "FSCommand:quit", ""
+            "83 1000 4653436f6d6d616e643a7175697400 00",
+
+            "00" // End
+        ])),
+        ShowFrame,
+
+        End,
+    ],
+)

@@ -1,0 +1,2 @@
+Before ConstantPool
+After ConstantPool

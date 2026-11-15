@@ -1,0 +1,11 @@
+Before ConstantPool
+After ConstantPool
+string
+
+string
+0
+number
+0
+number
+undefined
+undefined
