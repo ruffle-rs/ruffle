@@ -20,6 +20,26 @@ END
 TEST: URLStream.load
 no error
 END
+TEST: new Socket
+Navigator::connect_socket
+    Host: localhost; Port: 8000
+no error
+END
+TEST: Socket.connect
+Navigator::connect_socket
+    Host: example.com; Port: 8000
+no error
+END
+TEST: new XMLSocket
+Navigator::connect_socket
+    Host: 8.8.8.8; Port: 8000
+no error
+END
+TEST: XMLSocket.connect
+Navigator::connect_socket
+    Host: localhost; Port: 8000
+no error
+END
 Navigator::fetch:
   URL: http://example1.com
   Method: GET
