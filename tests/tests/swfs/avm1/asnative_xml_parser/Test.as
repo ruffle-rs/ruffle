@@ -23,10 +23,15 @@ function dumpNodes(nodes)
 
             if (typeof node.attrs == "object")
             {
-                trace("  attr a=[" + node.attrs.a + "]");
-                trace("  attr b=[" + node.attrs.b + "]");
-                trace("  attr id=[" + node.attrs.id + "]");
-                trace("  attr name=[" + node.attrs.name + "]");
+                var names = [];
+                for (var name in node.attrs) {
+                    names.push(name);
+                }
+                names.sort();
+                for (var j = 0; j < names.length; j++) {
+                    var name = names[j];
+                    trace("  attr " + name + "=[" + node.attrs[name] + "]");
+                }
             }
         }
         else
@@ -484,3 +489,29 @@ runCase("attribute error priority: raw less before unquoted", '<a b="<" c=bad/>'
 runCase("attribute error priority: raw less before missing equals", '<a b="<" c "bad"/>', false);
 runCase("attribute error priority: unquoted before raw less", '<a c=bad b="<"/>', false);
 runCase("attribute error priority: duplicate raw less", '<a b="first" b="<"/>', false);
+
+// Output objects use numeric keys without requiring an Array or a length property.
+function runOutputObjectCase(label, output)
+{
+    trace("");
+    trace("=== " + label + " ===");
+    var status = parser.call(undefined, '<a q="1" z="2">text</a>', output, false);
+    trace("status=" + status);
+    trace("length=" + output.length);
+
+    var keys = [];
+    for (var key in output) {
+        keys.push(key);
+    }
+    keys.sort();
+
+    for (var i = 0; i < keys.length; i++) {
+        var key = keys[i];
+        trace("output[" + key + "]:");
+        dumpNodes([output[key]]);
+    }
+    trace("output keys=" + keys.join(","));
+}
+
+runOutputObjectCase("array output with additional attributes", []);
+runOutputObjectCase("plain output object", {});

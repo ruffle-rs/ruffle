@@ -250,6 +250,11 @@ impl<'gc> Xml<'gc> {
     }
 }
 
+// Token types used by the undocumented ASnative XML tokenizer.
+const NATIVE_XML_DECLARATION_NODE: u8 = 4;
+const NATIVE_XML_DOCTYPE_NODE: u8 = 5;
+const NATIVE_XML_CDATA_NODE: u8 = 6;
+
 fn native_xml_status(error: &quick_xml::Error) -> XmlStatus {
     match error {
         quick_xml::Error::Syntax(SyntaxError::UnclosedCData) => XmlStatus::CdataNotTerminated,
@@ -304,6 +309,7 @@ fn native_xml_unclosed_tag_status(data: &str) -> XmlStatus {
 fn push_native_xml_node<'gc>(
     activation: &mut Activation<'_, 'gc>,
     output: Object<'gc>,
+    output_index: &mut i32,
     node_type: u8,
     value: AvmString<'gc>,
     attrs: Object<'gc>,
@@ -313,19 +319,11 @@ fn push_native_xml_node<'gc>(
 
     node.set(istr!("type"), node_type as f64, activation)?;
     node.set(istr!("value"), value, activation)?;
-    node.set(
-        AvmString::new_utf8(activation.gc(), "attrs"),
-        attrs,
-        activation,
-    )?;
-    node.set(
-        AvmString::new_utf8(activation.gc(), "empty"),
-        empty,
-        activation,
-    )?;
+    node.set(istr!("attrs"), attrs, activation)?;
+    node.set(istr!("empty"), empty, activation)?;
 
-    let index = output.length(activation)?;
-    output.set_element(activation, index, node.into())?;
+    output.set_element(activation, *output_index, node.into())?;
+    *output_index = output_index.wrapping_add(1);
 
     Ok(())
 }
@@ -333,6 +331,7 @@ fn push_native_xml_node<'gc>(
 fn push_native_xml_text<'gc>(
     activation: &mut Activation<'_, 'gc>,
     output: Object<'gc>,
+    output_index: &mut i32,
     node_type: u8,
     bytes: &[u8],
     ignore_white: bool,
@@ -349,6 +348,7 @@ fn push_native_xml_text<'gc>(
     push_native_xml_node(
         activation,
         output,
+        output_index,
         node_type,
         AvmString::new_utf8_bytes(activation.gc(), bytes),
         Object::new_without_proto(activation.gc()),
@@ -367,7 +367,12 @@ fn native_xml_parse<'gc>(
     let xml = xml.coerce_to_string(activation)?;
     let ignore_white = ignore_white.as_bool(activation.swf_version());
 
-    output.set_length(activation, 0)?;
+    // Reset native array storage without introducing a length property on
+    // other output objects.
+    if matches!(output.native(), NativeObject::Array(_)) {
+        output.set_length(activation, 0)?;
+    }
+    let mut output_index = 0;
 
     let xml_utf8 = xml.to_utf8_lossy();
     let mut source: &str = &xml_utf8;
@@ -389,6 +394,7 @@ fn native_xml_parse<'gc>(
             push_native_xml_text(
                 activation,
                 *output,
+                &mut output_index,
                 TEXT_NODE,
                 text.as_bytes(),
                 ignore_white,
@@ -408,7 +414,8 @@ fn native_xml_parse<'gc>(
                 push_native_xml_node(
                     activation,
                     *output,
-                    5,
+                    &mut output_index,
+                    NATIVE_XML_DOCTYPE_NODE,
                     AvmString::new_utf8(activation.gc(), &source[event_start..event_end]),
                     Object::new_without_proto(activation.gc()),
                     false,
@@ -479,7 +486,15 @@ fn native_xml_parse<'gc>(
                     attrs.set(key, value, activation)?;
                 }
 
-                push_native_xml_node(activation, *output, ELEMENT_NODE, value, attrs, empty)?;
+                push_native_xml_node(
+                    activation,
+                    *output,
+                    &mut output_index,
+                    ELEMENT_NODE,
+                    value,
+                    attrs,
+                    empty,
+                )?;
             }
 
             Event::End(be) => {
@@ -491,6 +506,7 @@ fn native_xml_parse<'gc>(
                 push_native_xml_node(
                     activation,
                     *output,
+                    &mut output_index,
                     ELEMENT_NODE,
                     AvmString::new_utf8_bytes(activation.gc(), &value),
                     Object::new_without_proto(activation.gc()),
@@ -510,6 +526,7 @@ fn native_xml_parse<'gc>(
                 push_native_xml_text(
                     activation,
                     *output,
+                    &mut output_index,
                     TEXT_NODE,
                     text.as_bytes(),
                     ignore_white,
@@ -518,7 +535,14 @@ fn native_xml_parse<'gc>(
 
             Event::CData(bt) => {
                 let text = bt.into_inner();
-                push_native_xml_text(activation, *output, 6, text.as_ref(), ignore_white)?;
+                push_native_xml_text(
+                    activation,
+                    *output,
+                    &mut output_index,
+                    NATIVE_XML_CDATA_NODE,
+                    text.as_ref(),
+                    ignore_white,
+                )?;
             }
             Event::Decl(_) | Event::PI(_) => {
                 let event_end = parser.buffer_position() as usize;
@@ -532,7 +556,8 @@ fn native_xml_parse<'gc>(
                 push_native_xml_node(
                     activation,
                     *output,
-                    4,
+                    &mut output_index,
+                    NATIVE_XML_DECLARATION_NODE,
                     AvmString::new_utf8(activation.gc(), markup),
                     Object::new_without_proto(activation.gc()),
                     false,
@@ -544,7 +569,8 @@ fn native_xml_parse<'gc>(
                 push_native_xml_node(
                     activation,
                     *output,
-                    5,
+                    &mut output_index,
+                    NATIVE_XML_DOCTYPE_NODE,
                     AvmString::new_utf8(activation.gc(), &source[event_start..event_end]),
                     Object::new_without_proto(activation.gc()),
                     false,
