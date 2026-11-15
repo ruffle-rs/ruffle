@@ -1,6 +1,6 @@
 //! `flash.net.SharedObject` builtin/prototype
 
-use crate::avm2::error::make_error_2130;
+use crate::avm2::error::{make_error_2130, make_error_2134};
 use crate::avm2::function::FunctionArgs;
 use crate::avm2::object::{ScriptObject, SharedObjectObject};
 use crate::avm2::parameters::ParametersExt;
@@ -51,7 +51,7 @@ pub fn get_local<'gc>(
         local_path.as_deref(),
         secure,
     ) else {
-        return Ok(Value::Null);
+        return Err(make_error_2134(activation));
     };
 
     // Check if this is referencing an existing shared object

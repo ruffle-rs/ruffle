@@ -1121,6 +1121,7 @@ pub fn make_error_2109<'gc>(
 
 make_error_fn!(make_error_2126, 2126, argument_error);
 make_error_fn!(make_error_2130, 2130, error);
+make_error_fn!(make_error_2134, 2134, error);
 
 #[inline(never)]
 #[cold]
