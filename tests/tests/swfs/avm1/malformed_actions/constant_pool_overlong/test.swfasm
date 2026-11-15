@@ -1,0 +1,32 @@
+Swf(
+    version: 6,
+    frame_rate: 12,
+    tags: [
+        FileAttributes(),
+        SetBackgroundColor(0xFFFFFF),
+
+        // Frame 1
+        DoAction(InlineBytes([
+            // Push "Before ConstantPool"
+            "96 1500 00 4265666f726520436f6e7374616e74506f6f6c00",
+            "26", // Trace
+
+            // ConstantPool; declaring 1 string with some trailing bytes.
+            // In Flash Player, the trailing bytes are ignored.
+            "88 1900 0100",
+                "416674657220436f6e7374616e74506f6f6c00", // #0: "After ConstantPool"
+                "deadbeef",                               // some garbage
+
+            "96 0200 08 00",    // Push constant0 ("After ConstantPool")
+            "26",               // Trace
+
+            // GetURL "FSCommand:quit", ""
+            "83 1000 4653436f6d6d616e643a7175697400 00",
+
+            "00" // End
+        ])),
+        ShowFrame,
+
+        End,
+    ],
+)
