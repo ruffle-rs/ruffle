@@ -21,7 +21,6 @@ pub fn loader_info_allocator<'gc>(
 use crate::display_object::TDisplayObject;
 use crate::loader::ContentType;
 use crate::string::AvmString;
-use crate::avm2_stub_method;
 use swf::{Compression, write_swf};
 
 /// `actionScriptVersion` getter
@@ -344,7 +343,7 @@ pub fn get_bytes<'gc>(
 
     let loader_info = this.as_loader_info_object().unwrap();
     let loader_stream = loader_info.loader_stream();
-    let (root, dobj) = match loader_stream {
+    let (root, _dobj) = match loader_stream {
         LoaderStream::NotYetLoaded(_, None, _) => {
             if loader_info.errored() {
                 return activation
@@ -372,16 +371,6 @@ pub fn get_bytes<'gc>(
 
     if root.data().is_empty() {
         return Ok(ba.into());
-    }
-
-    if dobj.as_bitmap().is_some() {
-        // TODO - we need to construct a fake SWF that contains a 'Define' tag for the image data.
-        avm2_stub_method!(
-            activation,
-            "flash.display.LoaderInfo",
-            "bytes",
-            "with image"
-        );
     }
 
     let mut ba_write = ba.as_bytearray_mut().unwrap();

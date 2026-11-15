@@ -1,8 +1,4 @@
 package flash.net {
-    import __ruffle__.stub_method;
-    import __ruffle__.stub_getter;
-    import __ruffle__.stub_setter;
-
     [API("661")]
     public class URLRequestDefaults {
         public static var _authenticate:Boolean = true;
@@ -14,7 +10,7 @@ package flash.net {
         public static var _userAgent:String;
 
         public static function setLoginCredentialsForHost(hostname:String, user:String, password:String):* {
-            stub_method("flash.media.URLRequestDefaults", "setLoginCredentialsForHost");
+            return null;
         }
 
         public static function get authenticate():Boolean {
@@ -66,12 +62,10 @@ package flash.net {
         }
 
         public static function get userAgent():String {
-            stub_getter("flash.net.URLRequestDefaults", "userAgent");
             return _userAgent;
         }
 
         public static function set userAgent(value:String):void {
-            stub_setter("flash.net.URLRequestDefaults", "userAgent");
             _userAgent = value;
         }
     }

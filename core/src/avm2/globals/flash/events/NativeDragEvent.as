@@ -1,6 +1,4 @@
 package flash.events {
-    import __ruffle__.stub_constructor;
-
     import flash.desktop.Clipboard;
     import flash.desktop.NativeDragOptions;
     import flash.display.InteractiveObject;
@@ -34,8 +32,11 @@ package flash.events {
             shiftKey:Boolean = false,
             commandKey:Boolean = false
         ) {
-            super(type, bubbles, cancelable, localX, localY, relatedObject);
-            stub_constructor("flash.events.NativeDragEvent");
+            super(type, bubbles, cancelable, localX, localY, relatedObject, controlKey, altKey, shiftKey);
+            this.clipboard = clipboard;
+            this.allowedActions = allowedActions;
+            this.dropAction = dropAction;
+            this.commandKey = commandKey;
         }
 
         override public function clone():Event {
@@ -78,4 +79,3 @@ package flash.events {
         }
     }
 }
-

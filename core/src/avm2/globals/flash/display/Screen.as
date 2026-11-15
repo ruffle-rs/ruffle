@@ -1,17 +1,12 @@
 package flash.display {
-    import __ruffle__.stub_getter;
-
     import flash.events.EventDispatcher;
     import flash.geom.Rectangle;
 
     [API("661")]
-    // FIXME this class should be `[Ruffle(Abstract)]`
     public final class Screen extends EventDispatcher {
         private static var _mainScreen:Screen = null;
 
         public static function get mainScreen():Screen {
-            stub_getter("flash.display.Screen", "mainScreen");
-
             if (_mainScreen === null) {
                 _mainScreen = new Screen();
             }
@@ -19,9 +14,19 @@ package flash.display {
             return _mainScreen;
         }
 
-        public function get visibleBounds():Rectangle {
-            stub_getter("flash.display.Screen", "visibleBounds");
+        public static function get screens():Array {
+            return [mainScreen];
+        }
 
+        public function get bounds():Rectangle {
+            return new Rectangle(0, 0, 0, 0);
+        }
+
+        public function get colorDepth():int {
+            return 32;
+        }
+
+        public function get visibleBounds():Rectangle {
             return new Rectangle(0, 0, 0, 0);
         }
     }

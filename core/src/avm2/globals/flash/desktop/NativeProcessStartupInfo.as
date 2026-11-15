@@ -1,40 +1,38 @@
 package flash.desktop {
-    import __ruffle__.stub_getter;
-    import __ruffle__.stub_setter;
-
     import flash.filesystem.File;
 
     [API("668")]
     public class NativeProcessStartupInfo {
+        private var _arguments:Vector.<String> = new Vector.<String>();
+        private var _executable:File = null;
+        private var _workingDirectory:File = null;
+
         public function NativeProcessStartupInfo() {
             super();
         }
 
         public function get arguments():Vector.<String> {
-            stub_getter("flash.desktop.NativeProcessStartupInfo", "arguments");
-            return null;
+            return this._arguments;
         }
 
         public function set arguments(value:Vector.<String>):void {
-            stub_setter("flash.desktop.NativeProcessStartupInfo", "arguments");
+            this._arguments = value;
         }
 
         public function get executable():File {
-            stub_getter("flash.desktop.NativeProcessStartupInfo", "executable");
-            return null;
+            return this._executable;
         }
 
         public function set executable(value:File):void {
-            stub_setter("flash.desktop.NativeProcessStartupInfo", "executable");
+            this._executable = value;
         }
 
         public function get workingDirectory():File {
-            stub_getter("flash.desktop.NativeProcessStartupInfo", "workingDirectory");
-            return null;
+            return this._workingDirectory;
         }
 
         public function set workingDirectory(value:File):void {
-            stub_setter("flash.desktop.NativeProcessStartupInfo", "workingDirectory");
+            this._workingDirectory = value;
         }
     }
 }

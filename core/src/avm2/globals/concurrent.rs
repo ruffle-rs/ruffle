@@ -3,16 +3,13 @@ use crate::avm2::error::{Error, make_error_1506};
 use crate::avm2::function::FunctionArgs;
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
-use crate::avm2_stub_method;
 
 pub fn mfence<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     _this: Value<'gc>,
     _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     // TODO: This should perform an atomic fence, if we ever support Worker
-
-    avm2_stub_method!(activation, "avm2.intrinsics.memory", "mfence");
 
     Ok(Value::Undefined)
 }
@@ -45,8 +42,6 @@ pub fn casi32<'gc>(
 
     // TODO: This should perform an *atomic* compare-and-swap, if we ever
     // support Worker
-
-    avm2_stub_method!(activation, "avm2.intrinsics.memory", "casi32");
 
     // TODO: Can we unify some of the code here with the domain memory code in
     // `Activation`?

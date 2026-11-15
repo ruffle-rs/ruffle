@@ -1,5 +1,4 @@
 package flash.events {
-    import __ruffle__.stub_method;
 
     import flash.utils.ByteArray;
     import flash.display.InteractiveObject;
@@ -88,13 +87,11 @@ package flash.events {
 
         [API("675")]
         public function getSamples(buffer:ByteArray, append:Boolean = false):uint {
-            stub_method("flash.events.TouchEvent", "getSamples");
             return 0;
         }
 
         [API("675")]
         public function isToolButtonDown(index:int):Boolean {
-            stub_method("flash.events.TouchEvent", "isToolButtonDown");
             return false;
         }
 

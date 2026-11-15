@@ -11,8 +11,6 @@ use crate::avm2::{Activation, Error, Multiname, Namespace, Object, Value};
 use crate::context::UpdateContext;
 use crate::string::{AvmString, StringContext};
 
-use crate::avm2_stub_method_context;
-
 use gc_arena::Gc;
 use ruffle_macros::istr;
 
@@ -414,12 +412,6 @@ fn describe_internal_body<'gc>(
     }
 
     if flags.contains(DescribeTypeFlags::INCLUDE_METADATA) {
-        avm2_stub_method_context!(
-            context,
-            "avmplus",
-            "describeTypeJSON",
-            "with top-level metadata"
-        );
 
         let metadata_object = ArrayObject::empty(context);
         traits.set_dynamic_property(istr!(context, "metadata"), metadata_object.into(), mc);

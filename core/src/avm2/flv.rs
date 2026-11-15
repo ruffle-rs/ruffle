@@ -71,10 +71,11 @@ impl<'gc> FlvValueAvm2Ext<'gc> for FlvValue<'_> {
             FlvValue::Null => Avm2Value::Null,
             FlvValue::Undefined => Avm2Value::Undefined,
             _ => {
-                unimplemented!(
-                    "FLV data to AVM2 data conversion unimplemented for {:?}",
+                tracing::warn!(
+                    "FLV data to AVM2 data conversion unsupported for {:?}",
                     self
                 );
+                Avm2Value::Undefined
             }
         }
     }

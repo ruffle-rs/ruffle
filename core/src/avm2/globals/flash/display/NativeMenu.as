@@ -1,6 +1,4 @@
 package flash.display {
-    import __ruffle__.stub_method;
-
     import flash.events.EventDispatcher;
 
     // According to the documentation, it should be [API("661")]
@@ -36,15 +34,12 @@ package flash.display {
         // Adds a menu item at the bottom of the menu.
         [API("668")]
         public function addItem(item:NativeMenuItem):NativeMenuItem {
-            stub_method("flash.display.NativeMenu", "addItem");
             return this.addItemAt(item, this.numItems);
         }
 
         // Inserts a menu item at the specified position.
         [API("668")]
         public function addItemAt(item:NativeMenuItem, index:int):NativeMenuItem {
-            stub_method("flash.display.NativeMenu", "addItemAt");
-
             if (this._items == null) {
                 this._items = [];
             }
@@ -64,84 +59,106 @@ package flash.display {
         // Adds a submenu to the menu by inserting a new menu item.
         [API("668")]
         public function addSubmenu(submenu:NativeMenu, label:String):NativeMenuItem {
-            stub_method("flash.display.NativeMenu", "addSubmenu");
-            return null;
+            return this.addSubmenuAt(submenu, this.numItems, label);
         }
 
         // Adds a submenu to the menu by inserting a new menu item at the specified position.
         [API("668")]
         public function addSubmenuAt(submenu:NativeMenu, index:int, label:String):NativeMenuItem {
-            stub_method("flash.display.NativeMenu", "addSubmenuAt");
-            return null;
+            var item:NativeMenuItem = new NativeMenuItem(label);
+            item.submenu = submenu;
+            return this.addItemAt(item, index);
         }
 
         // Creates a copy of the menu and all items.
         [API("668")]
         public function clone():NativeMenu {
-            stub_method("flash.display.NativeMenu", "clone");
-            return null;
+            var copy:NativeMenu = new NativeMenu();
+            if (this._items != null) {
+                copy._items = this._items.AS3::concat();
+            }
+            return copy;
         }
 
         // Reports whether this menu contains the specified menu item.
         [API("668")]
         public function containsItem(item:NativeMenuItem):Boolean {
-            stub_method("flash.display.NativeMenu", "containsItem");
-            return false;
+            return this.getItemIndex(item) >= 0;
         }
 
         // Pops up this menu at the specified location.
         [API("668")]
         public function display(stage:Stage, stageX:Number, stageY:Number):void {
-            stub_method("flash.display.NativeMenu", "display");
         }
 
         // Gets the menu item at the specified index.
         [API("668")]
         public function getItemAt(index:int):NativeMenuItem {
-            stub_method("flash.display.NativeMenu", "getItemAt");
-            return null;
+            if (index < 0 || index >= this.numItems) {
+                throw new RangeError("Error #2006: The supplied index is out of bounds.", 2006);
+            }
+            return this._items[index];
         }
 
         // Gets the menu item with the specified name.
         [API("668")]
         public function getItemByName(name:String):NativeMenuItem {
-            stub_method("flash.display.NativeMenu", "getItemByName");
+            if (this._items != null) {
+                for (var i:int = 0; i < this._items.length; i++) {
+                    if (this._items[i].name == name) {
+                        return this._items[i];
+                    }
+                }
+            }
             return null;
         }
 
         // Gets the position of the specified item.
         [API("668")]
         public function getItemIndex(item:NativeMenuItem):int {
-            stub_method("flash.display.NativeMenu", "getItemIndex");
-            return -1;
+            if (this._items == null) {
+                return -1;
+            }
+            return this._items.indexOf(item);
         }
 
         // Removes all items from the menu.
         [API("668")]
         public function removeAllItems():void {
-            stub_method("flash.display.NativeMenu", "removeAllItems");
-
             this._items = [];
         }
 
         // Removes the specified menu item.
         [API("668")]
         public function removeItem(item:NativeMenuItem):NativeMenuItem {
-            stub_method("flash.display.NativeMenu", "removeItem");
-            return null;
+            var idx:int = this.getItemIndex(item);
+            if (idx < 0) {
+                throw new ArgumentError("Error #2004: One of the parameters is invalid.", 2004);
+            }
+            return this.removeItemAt(idx);
         }
 
         // Removes and returns the menu item at the specified index.
         [API("668")]
         public function removeItemAt(index:int):NativeMenuItem {
-            stub_method("flash.display.NativeMenu", "removeItemAt");
-            return null;
+            if (index < 0 || index >= this.numItems) {
+                throw new RangeError("Error #2006: The supplied index is out of bounds.", 2006);
+            }
+            return this._items.splice(index, 1)[0];
         }
 
         // Moves a menu item to the specified position.
         [API("668")]
         public function setItemIndex(item:NativeMenuItem, index:int):void {
-            stub_method("flash.display.NativeMenu", "setItemIndex");
+            var currentIdx:int = this.getItemIndex(item);
+            if (currentIdx < 0) {
+                throw new ArgumentError("Error #2004: One of the parameters is invalid.", 2004);
+            }
+            if (index < 0 || index >= this.numItems) {
+                throw new RangeError("Error #2006: The supplied index is out of bounds.", 2006);
+            }
+            this._items.splice(currentIdx, 1);
+            this._items.splice(index, 0, item);
         }
 
         [API("668")]

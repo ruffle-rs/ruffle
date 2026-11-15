@@ -26,10 +26,33 @@ package flash.net {
         private var _videoLossRate:Number;
         private var _xmpData:Object;
 
-        public function toString():String {
-            __ruffle__.stub_method("flash.net.NetStreamInfo", "toString")
-            return super.toString();
-        }
+              public function toString():String {
+                return "currentBytesPerSecond=" + this._currentBytesPerSecond +
+                    " byteCount=" + this._byteCount +
+                    " maxBytesPerSecond=" + this._maxBytesPerSecond +
+                    " audioBytesPerSecond=" + this._audioBytesPerSecond +
+                    " audioByteCount=" + this._audioByteCount +
+                    " videoBytesPerSecond=" + this._videoBytesPerSecond +
+                    " videoByteCount=" + this._videoByteCount +
+                    " dataBytesPerSecond=" + this._dataBytesPerSecond +
+                    " dataByteCount=" + this._dataByteCount +
+                    " playbackBytesPerSecond=" + this._playbackBytesPerSecond +
+                    " droppedFrames=" + this._droppedFrames +
+                    " audioBufferLength=" + this._audioBufferLength +
+                    " videoBufferLength=" + this._videoBufferLength +
+                    " dataBufferLength=" + this._dataBufferLength +
+                    " audioBufferByteLength=" + this._audioBufferByteLength +
+                    " videoBufferByteLength=" + this._videoBufferByteLength +
+                    " dataBufferByteLength=" + this._dataBufferByteLength +
+                    " SRTT=" + this._SRTT +
+                    " audioLossRate=" + this._audioLossRate +
+                    " videoLossRate=" + this._videoLossRate +
+                    " metaData=" + this._metaData +
+                    " xmpData=" + this._xmpData +
+                    " uri=" + this._uri +
+                    " resourceName=" + this._resourceName +
+                    " isLive=" + this._isLive;
+            }
 
         public function get audioBufferByteLength():Number {
             return this._audioBufferByteLength;

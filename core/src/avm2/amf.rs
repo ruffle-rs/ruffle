@@ -10,7 +10,6 @@ use crate::avm2::object::{
 use crate::avm2::property::Property;
 use crate::avm2::vector::VectorStorage;
 use crate::avm2::{Activation, Error, Object, Value};
-use crate::avm2_stub_method;
 use crate::string::AvmString;
 use enumset::EnumSet;
 use flash_lso::types::{
@@ -328,12 +327,6 @@ fn get_or_create_value<'gc>(
             Some(value) => {
                 // Even though we'll clone the same 'AmfValue' for each occurrence
                 // of 'Object', flash_lso doesn't serialize this correctly yet.
-                avm2_stub_method!(
-                    activation,
-                    "flash.utils.ByteArray",
-                    "writeObject",
-                    "with same Object used multiple times"
-                );
                 value.clone()
             }
             None => {

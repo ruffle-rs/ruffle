@@ -2,7 +2,6 @@ use crate::avm2::activation::Activation;
 use crate::avm2::bytearray::ByteArrayStorage;
 use crate::avm2::error::{Error, make_error_3675, make_error_3679};
 use crate::avm2::object::{Object, TextureObject};
-use crate::avm2_stub_method;
 use ruffle_render::atf::ATFTexture;
 use ruffle_render::atf::ATFTextureData;
 use std::io::Cursor;
@@ -153,12 +152,7 @@ pub fn do_compressed_upload<'gc>(
             // TODO - fallback to other formats if DXT5 data isn't present
             // (or if we're on Android/iOS).
             if dxt5.is_empty() {
-                avm2_stub_method!(
-                    activation,
-                    "flash.display3D.textures.Texture",
-                    "uploadCompressedTextureFromByteArray",
-                    "with empty DXT5 data in CompressedRawAlpha"
-                );
+                tracing::warn!("Empty DXT5 data in CompressedRawAlpha");
             }
             dxt5.clone()
         }

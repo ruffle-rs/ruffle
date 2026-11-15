@@ -1,8 +1,4 @@
 package flash.filesystem {
-    import __ruffle__.stub_constructor;
-    import __ruffle__.stub_getter;
-    import __ruffle__.stub_method;
-
     import flash.net.FileReference;
 
     [API("661")]
@@ -12,100 +8,109 @@ package flash.filesystem {
         private static var _documentsDirectory:File = null;
         private static var _userDirectory:File = null;
 
+        private var _nativePath:String = "";
+
         public function File(path:String = null) {
-            stub_constructor("flash.filesystem.File");
+            super();
+            if (path != null) {
+                if (path.indexOf("file://") == 0) {
+                    this._nativePath = path.substring(7);
+                } else {
+                    this._nativePath = path;
+                }
+            }
         }
 
         public static function get applicationDirectory():File {
-            stub_getter("flash.filesystem.File", "applicationDirectory");
-
             if (_applicationDirectory === null) {
-                _applicationDirectory = new File();
+                _applicationDirectory = new File("/");
             }
-
             return _applicationDirectory;
         }
 
         public static function get applicationStorageDirectory():File {
-            stub_getter("flash.filesystem.File", "applicationStorageDirectory");
-
             if (_applicationStorageDirectory === null) {
-                _applicationStorageDirectory = new File();
+                _applicationStorageDirectory = new File("/storage");
             }
-
             return _applicationStorageDirectory;
         }
 
         public static function get documentsDirectory():File {
-            stub_getter("flash.filesystem.File", "documentsDirectory");
-
             if (_documentsDirectory === null) {
-                _documentsDirectory = new File();
+                _documentsDirectory = new File("/documents");
             }
-
             return _documentsDirectory;
         }
 
         public static function get userDirectory():File {
-            stub_getter("flash.filesystem.File", "userDirectory");
-
             if (_userDirectory === null) {
-                _userDirectory = new File();
+                _userDirectory = new File("/user");
             }
-
             return _userDirectory;
         }
 
         public static function get separator():String {
-            stub_getter("flash.filesystem.File", "separator");
-
             return "/";
         }
 
         public function resolvePath(path:String):File {
-            stub_method("flash.filesystem.File", "resolvePath");
-
-            return new File();
+            if (path == null) {
+                Error.throwError(TypeError, 2007, "path");
+            }
+            if (path.length > 0 && path.charAt(0) == "/") {
+                return new File(path);
+            }
+            var base:String = this._nativePath;
+            if (base.length > 0 && base.charAt(base.length - 1) != "/") {
+                base += "/";
+            }
+            return new File(base + path);
         }
 
         public function get exists():Boolean {
-            stub_getter("flash.filesystem.File", "exists");
-
             return false;
         }
 
         public function get nativePath():String {
-            stub_getter("flash.filesystem.File", "nativePath");
+            return this._nativePath;
+        }
 
-            return "";
+        public function set nativePath(value:String):void {
+            this._nativePath = value != null ? value : "";
         }
 
         public function get url():String {
-            stub_getter("flash.filesystem.File", "url");
+            return this._nativePath.length > 0 ? "file://" + this._nativePath : "";
+        }
 
-            return "";
+        public function set url(value:String):void {
+            if (value != null && value.indexOf("file://") == 0) {
+                this._nativePath = value.substring(7);
+            } else {
+                this._nativePath = value != null ? value : "";
+            }
         }
 
         public function canonicalize():void {
-            stub_method("flash.filesystem.File", "canonicalize");
         }
 
         public function createDirectory():void {
-            stub_method("flash.filesystem.File", "createDirectory");
         }
 
         public function deleteDirectory(deleteDirectoryContents:Boolean = false):void {
-            stub_method("flash.filesystem.File", "deleteDirectory");
+        }
+
+        public function deleteFile():void {
         }
 
         public function getDirectoryListing():Array {
-            stub_method("flash.filesystem.File", "getDirectoryListing");
-
             return [];
         }
 
         public function moveTo(newLocation:FileReference, overwrite:Boolean = false):void {
-            stub_method("flash.filesystem.File", "moveTo");
+        }
+
+        public function copyTo(newLocation:FileReference, overwrite:Boolean = false):void {
         }
     }
 }
