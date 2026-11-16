@@ -2784,6 +2784,96 @@ pub fn download_file_dialog<'gc>(
     })
 }
 
+/// Dispatches `open`, then `progress` with the whole upload sent.
+fn open_and_progress<'gc>(
+    activation: &mut Avm2Activation<'_, 'gc>,
+    target: Avm2Object<'gc>,
+    total_size: usize,
+) {
+    let open_evt = Avm2EventObject::bare_default_event(activation.context, "open");
+    Avm2::dispatch_event(activation.context, open_evt, target);
+
+    let progress_evt =
+        Avm2EventObject::progress_event(activation, "progress", total_size, total_size);
+    Avm2::dispatch_event(activation.context, progress_evt, target);
+}
+
+/// Uploads a file from an AVM2 `FileReference`, as `FileReference.upload`
+/// does: a `multipart/form-data` POST to `url` with `fields`, then the file's
+/// `data` in a field named `data_field`.
+///
+/// On success the target gets `open`, `progress`, `complete` and then
+/// `uploadCompleteData` with the response body. If the server answers with
+/// an error status, it gets `open`, `progress`, `httpStatus` and `ioError`;
+/// if the request fails without a response, only `ioError`.
+pub fn upload_file_avm2<'gc>(
+    uc: &UpdateContext<'gc>,
+    target_object: FileReferenceObject<'gc>,
+    url: String,
+    fields: IndexMap<String, String>,
+    data_field: String,
+    file_name: String,
+    data: Vec<u8>,
+) -> OwnedFuture<(), Error> {
+    let player = uc.player_handle();
+    let handle = FileReferenceObjectHandle::stash(uc, target_object);
+
+    Box::pin(async move {
+        let total_size = data.len();
+        let upload = crate::multipart::upload_body(&file_name, &fields, &data_field, &data);
+        let content_type = upload.content_type();
+        let req = Request::post(url, Some((upload.body, content_type)));
+
+        // Doing this in two steps to prevent holding the player lock during fetch
+        let future = player.lock().unwrap().fetch(req, FetchReason::Other);
+        let response = wait_for_full_response(future).await;
+
+        player.lock().unwrap().update(|uc| -> Result<(), Error> {
+            let target: Avm2Object = handle.fetch(uc).into();
+            let mut activation = Avm2Activation::from_nothing(uc);
+
+            match response {
+                Ok((body, _, _, _)) => {
+                    open_and_progress(&mut activation, target, total_size);
+
+                    let complete_evt =
+                        Avm2EventObject::bare_default_event(activation.context, "complete");
+                    Avm2::dispatch_event(activation.context, complete_evt, target);
+
+                    let body = AvmString::new_utf8(activation.gc(), String::from_utf8_lossy(&body));
+                    let data_evt =
+                        Avm2EventObject::data_event(&mut activation, "uploadCompleteData", body);
+                    Avm2::dispatch_event(activation.context, data_evt, target);
+                }
+                Err(response) => {
+                    tracing::warn!(
+                        "Error during FileReference upload to {:?}: {:?}",
+                        response.url,
+                        response.error
+                    );
+
+                    if let Error::HttpNotOk(_, status, redirected, _) = response.error {
+                        open_and_progress(&mut activation, target, total_size);
+
+                        let http_status_evt =
+                            Avm2EventObject::http_status_event(&mut activation, status, redirected);
+                        Avm2::dispatch_event(activation.context, http_status_evt, target);
+                    }
+
+                    let io_error_evt = Avm2EventObject::io_error_event(
+                        &mut activation,
+                        "Error #2038: File I/O Error.",
+                        2038,
+                    );
+                    Avm2::dispatch_event(activation.context, io_error_evt, target);
+                }
+            }
+
+            Ok(())
+        })
+    })
+}
+
 /// Uploads the given `data` to the provided `url`.
 /// `file_name` is sent along with the data, as part of the multipart/form-data body.
 ///

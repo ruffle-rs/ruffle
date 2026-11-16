@@ -1,12 +1,18 @@
 use crate::avm2::bytearray::ByteArrayStorage;
-use crate::avm2::error::{make_error_2037, make_error_2097, make_error_2174};
+use crate::avm2::error::{
+    make_error_2007, make_error_2037, make_error_2097, make_error_2146, make_error_2174,
+};
 use crate::avm2::function::FunctionArgs;
 use crate::avm2::globals::slots::flash_net_file_filter as file_filter_slots;
+use crate::avm2::globals::slots::flash_net_url_request as url_request_slots;
 use crate::avm2::object::{ByteArrayObject, DateObject, FileReference};
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::{Activation, Avm2, Error, EventObject, TObject as _, Value};
+use crate::backend::navigator::NavigationMethod;
 use crate::backend::ui::FileFilter;
+use crate::config::NetworkingAccessMode;
 use crate::string::AvmString;
+use indexmap::IndexMap;
 
 pub use crate::avm2::object::file_reference_allocator;
 
@@ -279,6 +285,72 @@ pub fn save_internal<'gc>(
         }
         None => return Err(make_error_2174(activation)),
     }
+
+    Ok(Value::Undefined)
+}
+
+pub fn upload_internal<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Value<'gc>,
+    args: FunctionArgs<'_, 'gc>,
+) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
+    let this = this.as_file_reference().unwrap();
+
+    let request = args.get_object(activation, 0, "request")?;
+    let data_field = args.get_string(activation, 1).to_string();
+
+    // Uploading needs a file from browse(), but not load().
+    let (file_name, data) = match *this.file_reference() {
+        FileReference::None => return Err(make_error_2037(activation)),
+        FileReference::FileDialogSelection(ref selection) => {
+            (selection.file_name(), selection.contents().to_vec())
+        }
+    };
+
+    if activation.context.allow_networking == NetworkingAccessMode::None {
+        return Err(make_error_2146(activation, "FileReference.upload"));
+    }
+
+    let url = match request.get_slot(url_request_slots::_URL) {
+        Value::Null => return Err(make_error_2007(activation, "url")),
+        url => url.coerce_to_string(activation)?.to_string(),
+    };
+    // Uploads are always POSTs. With a POST request, URLVariables go in the
+    // multipart body as separate fields, and any other data is appended to
+    // the URL, as navigateToURL does. With a GET request, as Flash Player
+    // does, the data is appended to the URL as a string, so URLVariables
+    // are escaped as their toString() escapes them.
+    let method = request
+        .get_slot(url_request_slots::_METHOD)
+        .coerce_to_string(activation)?;
+    let method =
+        NavigationMethod::from_method_str(&method).expect("URLRequest should have a valid method");
+    let data_value = request.get_slot(url_request_slots::_DATA);
+    let (url, fields) = match (method, data_value) {
+        (NavigationMethod::Get, Value::Null | Value::Undefined) => (url, IndexMap::new()),
+        (NavigationMethod::Get, data) => {
+            let mut url = url;
+            if !url.contains('?') {
+                url.push('?');
+            }
+            url.push_str(&data.coerce_to_string(activation)?.to_string());
+            (url, IndexMap::new())
+        }
+        (NavigationMethod::Post, data) => super::parse_data(activation, &url, &data)?,
+    };
+
+    let future = crate::loader::upload_file_avm2(
+        activation.context,
+        this,
+        url,
+        fields,
+        data_field,
+        file_name,
+        data,
+    );
+    activation.context.navigator.spawn_future(future);
 
     Ok(Value::Undefined)
 }
