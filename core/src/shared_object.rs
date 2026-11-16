@@ -53,7 +53,12 @@ pub fn local_shared_object_key(
         }
         "localhost"
     } else {
-        movie_url.host_str().unwrap_or_default()
+        match movie_url.host_str().unwrap_or_default() {
+            // Local movies use `localhost`, so network movies from `localhost`
+            // are stored separately, under `#localhost`, as in Flash Player.
+            "localhost" => "#localhost",
+            host => host,
+        }
     };
 
     let local_path = if let Some(local_path) = local_path {
