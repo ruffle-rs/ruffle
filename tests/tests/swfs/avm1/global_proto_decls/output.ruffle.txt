@@ -1459,8 +1459,6 @@ Testing _global.SharedObject
   __proto__, own, type=[object]
   constructor, own, type=[function with prototype]
 Testing _global.SharedObject.prototype
-  onSync, own, DONT_ENUM, type=[function]
-  onStatus, own, DONT_ENUM, type=[function]
   clear, own, DONT_ENUM, type=[function]
   setFps, own, DONT_ENUM, type=[function]
   getSize, own, DONT_ENUM, type=[function]
