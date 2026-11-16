@@ -176,6 +176,9 @@ pub struct MovieClipData<'gc> {
     object1: Lock<Option<Avm1Object<'gc>>>,
     object2: Lock<Option<Avm2StageObject<'gc>>>,
 
+    /// An unloadMovie operation is waiting for its handlers and cleanup.
+    avm1_unload_pending: Cell<bool>,
+
     drop_target: Lock<Option<DisplayObject<'gc>>>,
 
     /// A DisplayObject (doesn't need to be visible) to use for hit tests instead of this clip.
@@ -247,6 +250,7 @@ impl<'gc> MovieClipData<'gc> {
             audio_stream: Cell::new(None),
             object1: Lock::new(None),
             object2: Lock::new(None),
+            avm1_unload_pending: Cell::new(false),
             clip_event_handlers: OnceCell::new(),
             clip_event_flags: Cell::new(ClipEventFlag::empty()),
             flags: Cell::new(MovieClipFlags::empty()),
@@ -2370,6 +2374,10 @@ impl<'gc> MovieClip<'gc> {
     // after one frame if the target is a MovieClip? Test the behaviour and adapt the code
     // if necessary.
     pub fn avm1_unload_movie(self, context: &mut UpdateContext<'gc>) {
+        if self.0.avm1_unload_pending.replace(true) {
+            return;
+        }
+
         // TODO: In Flash player, the MovieClip properties change to the unloaded state
         // one frame after the unloadMovie command has been read, even if the MovieClip
         // is not a root MovieClip (see the movieclip_library_state_values test).
@@ -2422,6 +2430,39 @@ impl<'gc> MovieClip<'gc> {
         };
 
         self.replace_with_movie(context, movie, self.is_root(), None);
+
+        // Keep properties available to the queued unload handlers.
+        context.action_queue.queue_action(
+            self.into(),
+            ActionType::ResetAvm1MovieClip {
+                movie: self.movie(),
+            },
+            true,
+        );
+    }
+
+    pub(crate) fn finish_avm1_unload(self, context: &mut UpdateContext<'gc>, movie: SwfMovie<'gc>) {
+        self.0.avm1_unload_pending.set(false);
+
+        // Skip cleanup if another movie has already replaced the unloaded movie.
+        if !SwfMovie::ptr_eq(&self.movie(), &movie) {
+            return;
+        }
+
+        let Some(object) = self.0.object1.get() else {
+            return;
+        };
+
+        let mut activation = Avm1Activation::from_nothing(
+            context,
+            ActivationIdentifier::root("[UnloadMovie]"),
+            self.into(),
+        );
+        let prototype = activation
+            .resolve_class([istr!("MovieClip")])
+            .and_then(|class| class.prototype(&activation));
+
+        object.reset_for_movie_unload(activation.strings(), prototype);
     }
 
     pub fn attach_audio(self, context: &mut UpdateContext<'gc>, netstream: Option<NetStream<'gc>>) {

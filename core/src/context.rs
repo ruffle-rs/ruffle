@@ -683,6 +683,9 @@ pub enum ActionType<'gc> {
         args: Vec<Avm1Value<'gc>>,
     },
 
+    /// Reset a MovieClip's properties after its unload handlers have run.
+    ResetAvm1MovieClip { movie: SwfMovie<'gc> },
+
     /// A system listener method.
     NotifyListeners {
         listener: AvmString<'gc>,
@@ -722,6 +725,7 @@ impl fmt::Debug for ActionType<'_> {
                 .field("constructor", constructor)
                 .field("events", events)
                 .finish(),
+            ActionType::ResetAvm1MovieClip { .. } => f.write_str("ActionType::ResetAvm1MovieClip"),
             ActionType::Method { object, name, args } => f
                 .debug_struct("ActionType::Method")
                 .field("object", object)
