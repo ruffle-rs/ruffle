@@ -26,6 +26,9 @@ END
 TEST: URLStream.load
 no error
 END
+TEST: Loader.load
+no error
+END
 TEST: new Socket
 Navigator::connect_socket
     Host: localhost; Port: 8000
@@ -54,4 +57,7 @@ Navigator::fetch:
   Method: GET
 Navigator::fetch:
   URL: http://example3.com
+  Method: GET
+Navigator::fetch:
+  URL: http://example4.com
   Method: GET

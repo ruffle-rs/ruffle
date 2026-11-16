@@ -1,5 +1,6 @@
 package {
     import flash.display.MovieClip;
+    import flash.display.Loader;
     import flash.net.*;
     import flash.system.fscommand;
 
@@ -33,6 +34,11 @@ package {
             check("URLStream.load", function() {
                 var stream = new URLStream();
                 stream.load(new URLRequest("http://example3.com"));
+            });
+
+            check("Loader.load", function() {
+                var loader = new Loader();
+                loader.load(new URLRequest("http://example4.com"));
             });
 
             check("new Socket", function() {
