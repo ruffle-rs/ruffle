@@ -1,0 +1,39 @@
+num_ticks = 90
+# Ruffle doesn't give SWF 5 and 6 movies from the same domain the same shared objects,
+# and exposes SharedObject.flush and Function.call to SWF 5.
+known_failure = true
+
+[[compilers]]
+type = "Rascal"
+target = "test.swf"
+scripts = ["test.as"]
+swf_version = 5
+use_network = true
+
+[[compilers]]
+type = "Rascal"
+target = "sub/child.swf"
+scripts = ["child.as"]
+swf_version = 6
+use_network = true
+
+[[compilers]]
+type = "Rascal"
+target = "localhost/host.swf"
+scripts = ["host.as"]
+swf_version = 5
+use_network = true
+
+[[compilers]]
+type = "Rascal"
+target = "localhost/a/child.swf"
+scripts = ["http_child.as"]
+swf_version = 6
+use_network = true
+
+[[compilers]]
+type = "Rascal"
+target = "localhost/d/child.swf"
+scripts = ["http_child.as"]
+swf_version = 6
+use_network = true

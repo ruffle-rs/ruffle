@@ -1,0 +1,43 @@
+// Bytecode called by its own movie
+root, null: new, true
+root, /: new, true
+root, /nonexistent: null
+child frame, null: new, true
+// Bytecode called by the other movie
+child, called by root, null: same as child frame, null
+child, called by root, /: same as root, /
+child, called by root, /nonexistent: null
+root, called by child, null: same as root, null
+root, called by child, /: same as root, /
+root, called by child, /nonexistent: null
+// Bytecode with the other movie's level as this
+root, method of child, null: same as root, null
+root, method of child, /: same as root, /
+root, method of child, /nonexistent: null
+child, method of root, null: same as child frame, null
+child, method of root, /: same as root, /
+child, method of root, /nonexistent: null
+root, called with child as this, null: same as root, null
+root, called with child as this, /: same as root, /
+root, called with child as this, /nonexistent: null
+// Root bytecode with the child in the scope chain or as target
+root, in with (child), null: same as root, null
+root, in with (child), /: same as root, /
+root, in with (child), /nonexistent: null
+root, defined in with (child), null: same as root, null
+root, defined in with (child), /: same as root, /
+root, defined in with (child), /nonexistent: null
+root, with child as target, null: same as root, null
+root, with child as target, /: same as root, /
+root, with child as target, /nonexistent: null
+// Root bytecode called back on the child's level
+root, onEnterFrame of child, null: same as root, null
+// Movies from the same domain over HTTP
+host, null: new, true
+host, /: new, true
+child a on _level11, loaded by host, frame, null: new, true
+child a on _level11, loaded by host, called by host, null: same as child a on _level11, loaded by host, frame, null
+child a on _level11, loaded by host, called by host, /: same as host, /
+child d on _level12, loaded by root, frame, null: same as child a on _level11, loaded by host, frame, null
+child d on _level12, loaded by root, called by host, null: same as child a on _level11, loaded by host, frame, null
+child d on _level12, loaded by root, called by host, /: same as host, /

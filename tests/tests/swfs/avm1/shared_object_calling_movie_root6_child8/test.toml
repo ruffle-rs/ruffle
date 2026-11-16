@@ -1,0 +1,36 @@
+num_ticks = 90
+
+[[compilers]]
+type = "Rascal"
+target = "test.swf"
+scripts = ["test.as"]
+swf_version = 6
+use_network = true
+
+[[compilers]]
+type = "Rascal"
+target = "sub/child.swf"
+scripts = ["child.as"]
+swf_version = 8
+use_network = true
+
+[[compilers]]
+type = "Rascal"
+target = "localhost/host.swf"
+scripts = ["host.as"]
+swf_version = 6
+use_network = true
+
+[[compilers]]
+type = "Rascal"
+target = "localhost/a/child.swf"
+scripts = ["http_child.as"]
+swf_version = 8
+use_network = true
+
+[[compilers]]
+type = "Rascal"
+target = "localhost/d/child.swf"
+scripts = ["http_child.as"]
+swf_version = 8
+use_network = true
