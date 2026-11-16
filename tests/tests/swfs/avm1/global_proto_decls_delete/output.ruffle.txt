@@ -974,8 +974,6 @@ Testing _global.SharedObject
   __proto__, DONT_DELETE
   constructor, DONT_DELETE
 Testing _global.SharedObject.prototype
-  onSync, DONT_DELETE
-  onStatus, DONT_DELETE
   clear, DONT_DELETE
   setFps, DONT_DELETE
   getSize, DONT_DELETE

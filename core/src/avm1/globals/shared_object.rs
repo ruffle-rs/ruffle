@@ -36,10 +36,6 @@ const PROTO_DECLS: StaticDeclarations = declare_static_properties! {
     "getSize" => method(get_size; DONT_ENUM | DONT_DELETE);
     "setFps" => method(set_fps; DONT_ENUM | DONT_DELETE);
     "clear" => method(clear; DONT_ENUM | DONT_DELETE);
-
-    // TODO Looks like onStatus & onSync are not built-in properties.
-    "onStatus" => method(on_status; DONT_ENUM | DONT_DELETE);
-    "onSync" => method(on_sync; DONT_ENUM | DONT_DELETE);
 };
 
 const OBJECT_DECLS: StaticDeclarations = declare_static_properties! {
@@ -304,24 +300,6 @@ fn set_fps<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     avm1_stub!(activation, "SharedObject", "setFps");
-    Ok(Value::Undefined)
-}
-
-fn on_status<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
-    _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    avm1_stub!(activation, "SharedObject", "onStatus");
-    Ok(Value::Undefined)
-}
-
-fn on_sync<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
-    _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    avm1_stub!(activation, "SharedObject", "onSync");
     Ok(Value::Undefined)
 }
 

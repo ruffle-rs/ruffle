@@ -1304,8 +1304,6 @@ Testing __proto__()
 testing _global.SharedObject(function)
 Trying to construct _global.SharedObject
 Object was constructed
-Testing onSync()
-Testing onStatus()
 Testing clear()
 Testing setFps()
 Testing getSize()
