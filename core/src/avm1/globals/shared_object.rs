@@ -29,13 +29,13 @@ impl SharedObject {
 }
 
 const PROTO_DECLS: StaticDeclarations = declare_static_properties! {
-    "connect" => method(connect; DONT_ENUM | DONT_DELETE);
-    "send" => method(send; DONT_ENUM | DONT_DELETE);
-    "flush" => method(flush; DONT_ENUM | DONT_DELETE);
-    "close" => method(close; DONT_ENUM | DONT_DELETE);
-    "getSize" => method(get_size; DONT_ENUM | DONT_DELETE);
-    "setFps" => method(set_fps; DONT_ENUM | DONT_DELETE);
-    "clear" => method(clear; DONT_ENUM | DONT_DELETE);
+    "connect" => method(connect; DONT_ENUM | DONT_DELETE | VERSION_6);
+    "send" => method(send; DONT_ENUM | DONT_DELETE | VERSION_6);
+    "flush" => method(flush; DONT_ENUM | DONT_DELETE | VERSION_6);
+    "close" => method(close; DONT_ENUM | DONT_DELETE | VERSION_6);
+    "getSize" => method(get_size; DONT_ENUM | DONT_DELETE | VERSION_6);
+    "setFps" => method(set_fps; DONT_ENUM | DONT_DELETE | VERSION_6);
+    "clear" => method(clear; DONT_ENUM | DONT_DELETE | VERSION_6);
 };
 
 const OBJECT_DECLS: StaticDeclarations = declare_static_properties! {
