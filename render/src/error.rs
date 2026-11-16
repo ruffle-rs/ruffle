@@ -16,7 +16,7 @@ pub enum Error {
     InvalidZlibCompression(std::io::Error),
 
     #[error("Invalid JPEG")]
-    InvalidJpeg(#[from] jpeg_decoder::Error),
+    InvalidJpeg(#[from] zune_jpeg::errors::DecodeErrors),
 
     #[cfg(feature = "jpegxr")]
     #[error("Invalid JPEG-XR: {0}")]
