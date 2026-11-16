@@ -227,7 +227,7 @@ pub fn serialize_value<'gc>(
                 let name = class_to_alias(activation, class);
 
                 let mut attributes = EnumSet::empty();
-                if !class.is_sealed() {
+                if serializes_dynamic_properties(activation, class) {
                     attributes.insert(Attribute::Dynamic);
                 }
 
@@ -281,6 +281,16 @@ fn class_to_alias<'gc>(activation: &mut Activation<'_, 'gc>, class: Class<'gc>) 
     }
 }
 
+/// Whether Flash serializes the dynamic properties of instances of `class`.
+/// `XMLList` is dynamic, but its children aren't stored as dynamic properties.
+/// See https://github.com/adobe/avmplus/blob/858d034a3bd3a54d9b70909386435cf4aec81d21/core/AvmSerializer.cpp#L294-L297
+fn serializes_dynamic_properties<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    class: Class<'gc>,
+) -> bool {
+    !class.is_sealed() && class != activation.avm2().class_defs().xml_list
+}
+
 /// Serialize an Object and any children to a AMF object
 pub fn recursive_serialize<'gc>(
     activation: &mut Activation<'_, 'gc>,
@@ -318,7 +328,12 @@ pub fn recursive_serialize<'gc>(
         }
     }
 
-    // FIXME: Flash only seems to use this enumeration for dynamic classes.
+    // Flash avoids enumerating properties of non-dynamic classes.
+    // This can be observed by attempting to serialize a sealed Proxy subclass.
+    if !serializes_dynamic_properties(activation, obj.instance_class()) {
+        return Ok(());
+    }
+
     let mut last_index = obj.get_next_enumerant(0, activation)?;
     while last_index != 0 {
         let name = obj
