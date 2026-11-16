@@ -376,6 +376,8 @@ impl<'gc> NetStream<'gc> {
             context.audio_manager.stop_sound(context.audio, instance);
         }
 
+        self.0.pending_append_bytes.borrow_mut().clear();
+
         unlock!(Gc::write(context.gc(), self.0), NetStreamData, source)
             .set(Gc::new(context.gc(), Default::default()));
     }
