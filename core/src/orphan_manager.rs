@@ -108,5 +108,11 @@ fn valid_orphan<'gc>(
     dobj: DisplayObjectWeak<'gc>,
     mc: &Mutation<'gc>,
 ) -> Option<DisplayObject<'gc>> {
-    dobj.upgrade(mc).filter(|dobj| dobj.parent().is_none())
+    dobj.upgrade(mc).filter(|dobj| {
+        // HTML image Loaders have a TextField as their internal parent, but
+        // are not traversed through a container's display list. They still
+        // need their frames run like ordinary orphan Loaders.
+        dobj.parent()
+            .is_none_or(|parent| parent.as_edit_text().is_some())
+    })
 }
