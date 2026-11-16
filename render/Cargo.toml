@@ -17,7 +17,6 @@ pixel_bender = { path = "pixel_bender"}
 tracing = { workspace = true }
 gif = "0.14.2"
 png = { workspace = true }
-image = { workspace = true }
 flate2 = { workspace = true }
 smallvec = { workspace = true }
 lyon = { version = "1.0.1", optional = true }
@@ -34,7 +33,7 @@ byteorder = { workspace = true }
 wgpu = { workspace = true, optional = true }
 indexmap = { workspace = true }
 naga-agal = { path = "naga-agal" }
-jpegxr = { workspace = true, optional = true }
+jxr = { workspace = true, optional = true }
 guillotiere = "0.7.0"
 
 # This crate has a `compile_error!` on apple platforms
@@ -55,4 +54,4 @@ tessellator = ["lyon"]
 web = ["wasm-bindgen"]
 wgpu = ["dep:wgpu"]
 serde = ["dep:serde"]
-jpegxr = ["dep:jpegxr", "image/tiff"]
+jpegxr = ["dep:jxr"]

@@ -6,6 +6,8 @@ pub mod bitmap;
 pub mod blend;
 pub mod error;
 pub mod filters;
+#[cfg(feature = "jpegxr")]
+pub mod jpegxr;
 pub mod lines;
 pub mod matrix;
 pub mod matrix3d;
