@@ -59,3 +59,16 @@ pub(crate) fn matrix_from_props(
         ..Default::default()
     }
 }
+
+pub(crate) fn to_skip_update(value: f64, _matrix: &Matrix) -> bool {
+    // FIXME - this isn't quite correct. In Flash player,
+    // trying to set rotation to NaN does nothing if the current
+    // matrix 'b' and 'd' terms are both zero. However, if one
+    // of those terms is non-zero, then the entire matrix gets
+    // modified in a way that depends on its starting values.
+    // I haven't been able to figure out how to reproduce those
+    // values, so for now, we never modify the matrix if the
+    // rotation is NaN. Hopefully, there are no SWFs depending
+    // on the weird behavior when b or d is non-zero.
+    value.is_nan()
+}

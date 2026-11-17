@@ -508,16 +508,9 @@ impl<'gc> DisplayObjectBase<'gc> {
         let changed = self.rotation.get() != degrees;
         self.rotation.set(degrees);
 
-        // FIXME - this isn't quite correct. In Flash player,
-        // trying to set rotation to NaN does nothing if the current
-        // matrix 'b' and 'd' terms are both zero. However, if one
-        // of those terms is non-zero, then the entire matrix gets
-        // modified in a way that depends on its starting values.
-        // I haven't been able to figure out how to reproduce those
-        // values, so for now, we never modify the matrix if the
-        // rotation is NaN. Hopefully, there are no SWFs depending
-        // on the weird behavior when b or d is non-zero.
-        if degrees.into_radians().is_nan() {
+        let mut matrix = self.matrix.get();
+
+        if sync_transform_matrix::to_skip_update(degrees.into_radians(), &matrix) {
             return changed;
         }
 
@@ -528,7 +521,6 @@ impl<'gc> DisplayObjectBase<'gc> {
             self.skew.get(),
         );
 
-        let mut matrix = self.matrix.get();
         matrix.a = computed_matrix.a;
         matrix.b = computed_matrix.b;
         matrix.c = computed_matrix.c;
