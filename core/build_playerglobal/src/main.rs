@@ -13,7 +13,11 @@ use cli::Commands;
 use std::path::{Path, PathBuf};
 
 fn main() {
-    let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    // Read at runtime: `env!` would bake in the path of whichever checkout
+    // compiled this binary, which may not be the one running it.
+    let root = PathBuf::from(
+        std::env::var_os("CARGO_MANIFEST_DIR").expect("must be run through `cargo run`"),
+    );
     let repo_root = root.join("../../");
 
     let args = cli::Cli::parse();

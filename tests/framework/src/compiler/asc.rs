@@ -8,6 +8,7 @@ use ruffle_core::swf::{
     SymbolClassLink, Tag, Twips,
 };
 use serde::Deserialize;
+use std::path::Path;
 use tempfile::TempDir;
 use vfs::VfsPath;
 
@@ -132,7 +133,8 @@ impl SwfCompiler for AscCompiler {
 
         java_args.push(&class_script);
 
-        let mut asc_config = asc::AscConfig::new(java_args);
+        // Tests run with the `tests` package directory as the working directory.
+        let mut asc_config = asc::AscConfig::new(Path::new(".."), java_args);
         asc_config.working_directory(tmp_dir);
         asc::run_asc(asc_config)?;
 
