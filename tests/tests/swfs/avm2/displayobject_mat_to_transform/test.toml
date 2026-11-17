@@ -1,0 +1,7 @@
+num_ticks = 1
+known_failure = true
+
+[approximations]
+number_patterns = [
+    "rotation = ([0-9.-]+)"
+]
