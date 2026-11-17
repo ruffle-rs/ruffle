@@ -302,14 +302,10 @@ impl<'a> PixelBenderShaderAssembly<'a> {
                 let tf = self.next_arg(&opcode_pair, &mut arguments)?;
 
                 let tf = self.argument_as_int(tf)?;
-                let (_, reg_src) = self.argument_as_reg(reg_src, RegisterType::Source, false)?;
-                let (_, reg_dst) = self.argument_as_reg(
-                    reg_dst,
-                    RegisterType::Destination {
-                        extra_size: RegisterSize::None,
-                    },
-                    false,
-                )?;
+                let (extra_size, reg_src) =
+                    self.argument_as_reg(reg_src, RegisterType::Source, false)?;
+                let (_, reg_dst) =
+                    self.argument_as_reg(reg_dst, RegisterType::Destination { extra_size }, false)?;
 
                 if opcode.ends_with(".n") {
                     self.write.write_u8(Opcode::SampleNearest as u8)?;
