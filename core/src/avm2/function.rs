@@ -385,7 +385,7 @@ pub fn display_function<'gc>(output: &mut WString, method: Method<'gc>) {
         // Only classes in public namespaces are printed with their namespace;
         // internal and private classes are printed with just their local name.
         let name = bound_class.name();
-        if name.namespace().is_namespace() {
+        if name.namespace().is_public() {
             output.push_str(&name.to_qualified_name_no_mc());
         } else {
             output.push_str(&name.local_name());
@@ -419,7 +419,7 @@ pub fn display_function<'gc>(output: &mut WString, method: Method<'gc>) {
                     TraitKind::Getter { .. } => output.push_utf8("get "),
                     _ => (),
                 }
-                if method_trait.name().namespace().is_namespace() {
+                if method_trait.name().namespace().is_public() {
                     output.push_str(&method_trait.name().to_qualified_name_no_mc());
                 } else {
                     output.push_str(&method_trait.name().local_name());

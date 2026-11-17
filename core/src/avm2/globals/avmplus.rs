@@ -181,7 +181,7 @@ fn describe_internal_body<'gc>(
     // FIXME - avmplus iterates over their own hashtable, so the order in the final XML
     // is different
     for (prop_name, ns, prop) in vtable.resolved_traits().iter() {
-        if !ns.is_public_ignoring_ns() {
+        if !ns.is_public() {
             continue;
         }
 

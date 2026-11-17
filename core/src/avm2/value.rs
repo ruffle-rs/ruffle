@@ -975,7 +975,7 @@ impl<'gc> Value<'gc> {
                     // avmplus has a special case for XML and XMLList objects, so we need one as well
                     // https://github.com/adobe/avmplus/blob/858d034a3bd3a54d9b70909386435cf4aec81d21/core/Toplevel.cpp#L629-L634
                     if (object.as_xml_object().is_some() || object.as_xml_list_object().is_some())
-                        && multiname.contains_public_namespace()
+                        && multiname.contains_public_unnamed_namespace()
                     {
                         return object.get_property_local(multiname, activation);
                     }
@@ -1086,7 +1086,7 @@ impl<'gc> Value<'gc> {
                 if let Some(object) = self.as_object() {
                     // Similar to the get_property special case for XML/XMLList.
                     if (object.as_xml_object().is_some() || object.as_xml_list_object().is_some())
-                        && multiname.contains_public_namespace()
+                        && multiname.contains_public_unnamed_namespace()
                     {
                         return object.set_property_local(multiname, value, activation);
                     }
@@ -1363,7 +1363,7 @@ impl<'gc> Value<'gc> {
                         // Similar to the get_property special case for XML/XMLList.
                         if (object.as_xml_object().is_some()
                             || object.as_xml_list_object().is_some())
-                            && multiname.contains_public_namespace()
+                            && multiname.contains_public_unnamed_namespace()
                         {
                             return object.delete_property_local(activation, multiname);
                         }
