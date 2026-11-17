@@ -14,8 +14,8 @@ package {
 						break;
 
 					// TestAssignMatrix family:
-					//   Assign arbitrary matrix to clip.transform.matrix and verify the change in property values.
-					//   The matrices can be "invalid." For example, NaN, -0, Infinity, or singular matrix.
+					//	 Assign arbitrary matrix to clip.transform.matrix and verify the change in property values.
+					//	 The matrices can be "invalid." For example, NaN, -0, Infinity, or singular matrix.
 					case 2:
 						TestAssignMatrix_RandomPositive();
 						break;
@@ -41,6 +41,9 @@ package {
 						break;
 					case 8:
 						TestArctanNan();
+						break;
+					case 9:
+						TestUpdateMatrix();
 						break;
 				}
 			});
@@ -322,6 +325,104 @@ package {
 			printChange(clip, "scaleY", 1);
 			printChange(clip, "rotation", 0);
 			trace("");
+		}
+
+		public function TestUpdateMatrix(): void {
+			var mats:Array = [
+				new Matrix( 0, 0, 0, 0, 0, 0), // zero
+
+				// well-known matrix
+				new Matrix( 1, 0, 0, 1, 0, 0),
+				new Matrix(-1, 0, 0,-1, 0, 0),
+				new Matrix( 0, 1, 1, 0, 0, 0),
+
+				// one-off
+				new Matrix( 1, 0, 0, 0, 0, 0),
+				new Matrix( 0, 1, 0, 0, 0, 0),
+				new Matrix( 0, 0, 1, 0, 0, 0),
+				new Matrix( 0, 0, 0, 1, 0, 0),
+
+				new Matrix( 2, 0, 0, 0, 0, 0),
+				new Matrix( 0, 2, 0, 0, 0, 0),
+				new Matrix( 0, 0, 2, 0, 0, 0),
+				new Matrix( 0, 0, 0, 2, 0, 0),
+
+				new Matrix(-1, 0, 0, 0, 0, 0),
+				new Matrix( 0,-1, 0, 0, 0, 0),
+				new Matrix( 0, 0,-1, 0, 0, 0),
+				new Matrix( 0, 0, 0,-1, 0, 0),
+
+				new Matrix(-2, 0, 0, 0, 0, 0),
+				new Matrix( 0,-2, 0, 0, 0, 0),
+				new Matrix( 0, 0,-2, 0, 0, 0),
+				new Matrix( 0, 0, 0,-2, 0, 0),
+
+				// two zero
+				new Matrix( 1, 1, 0, 0, 0, 0),
+				new Matrix( 2, 1, 0, 0, 0, 0),
+				new Matrix( 1, 2, 0, 0, 0, 0),
+				new Matrix( 2, 2, 0, 0, 0, 0),
+
+				new Matrix( 0, 0, 1, 1, 0, 0),
+				new Matrix( 0, 0, 2, 1, 0, 0),
+				new Matrix( 0, 0, 1, 2, 0, 0),
+				new Matrix( 0, 0, 2, 2, 0, 0),
+
+				new Matrix( 1, 0, 0,-1, 0, 0),
+				new Matrix( 2, 0, 0,-1, 0, 0),
+				new Matrix(-1, 0, 0, 1, 0, 0),
+				new Matrix(-1, 0, 0, 2, 0, 0),
+
+				// one zero
+				new Matrix( 1, 1, 1, 0, 0, 0),
+				new Matrix( 1, 0, 1, 1, 0, 0),
+				new Matrix( 1, 1, 1, 0, 0, 0),
+				new Matrix( 0, 1, 1, 1, 0, 0),
+
+				new Matrix( 2, 1, 1, 0, 0, 0),
+				new Matrix( 1, 2, 1, 0, 0, 0),
+				new Matrix( 1, 1, 2, 0, 0, 0),
+				new Matrix( 2, 0, 1, 1, 0, 0),
+				new Matrix( 1, 0, 2, 1, 0, 0),
+				new Matrix( 1, 0, 1, 2, 0, 0),
+				new Matrix( 2, 1, 1, 0, 0, 0),
+				new Matrix( 1, 2, 1, 0, 0, 0),
+				new Matrix( 1, 1, 2, 0, 0, 0),
+				new Matrix( 0, 2, 1, 1, 0, 0),
+				new Matrix( 0, 1, 2, 1, 0, 0),
+				new Matrix( 0, 1, 1, 2, 0, 0),
+
+				// full
+				new Matrix( 1, 1, 1, 1, 0, 0),
+				new Matrix( 1,-1,-1, 1, 0, 0),
+				new Matrix(-1, 1, 1,-1, 0, 0),
+				new Matrix(-1,-1,-1,-1, 0, 0),
+
+				new Matrix( 2, 2, 2, 2, 0, 0),
+				new Matrix( 2, 1, 1, 2, 0, 0),
+				new Matrix( 1, 2, 2, 1, 0, 0),
+
+				new Matrix( 2,-2,-2, 2, 0, 0),
+				new Matrix( 2,-1,-1, 2, 0, 0),
+				new Matrix( 1,-2,-2, 1, 0, 0),
+
+				new Matrix(-1, 2, 2,-1, 0, 0),
+				new Matrix(-2, 1, 1,-2, 0, 0),
+				new Matrix(-2, 2, 2,-2, 0, 0),
+
+				new Matrix(-2,-2,-2,-2, 0, 0),
+				new Matrix(-2,-1,-1,-2, 0, 0),
+				new Matrix(-1,-2,-2,-1, 0, 0),
+			];
+
+			for each (var m1:Matrix in mats) {
+				for each (var m2:Matrix in mats) {
+					var clip:MovieClip = new MovieClip();
+					clip.transform.matrix = m1;
+					printChange(clip, 'matrix', m2);
+					trace("");
+				}
+			}
 		}
 
 		private function printChange(clip:MovieClip, prop:String, value:*): void {

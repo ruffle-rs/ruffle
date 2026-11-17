@@ -1,0 +1,11 @@
+num_ticks = 1
+known_failure = true
+
+[approximations]
+number_patterns = [
+    'a=(NaN|[0-9.e+-]*), b=(NaN|[0-9.e+-]*), c=(NaN|[0-9.e+-]*), d=(NaN|[0-9.e+-]*), tx=(NaN|[0-9.e+-]*), ty=(NaN|[0-9.e+-]*)',
+    'rotation=(NaN|[0-9.e+-]*), scaleX=(NaN|[0-9.e+-]*), scaleY=(NaN|[0-9.e+-]*),',
+]
+
+epsilon = 2e-2
+max_relative = 1e-2
