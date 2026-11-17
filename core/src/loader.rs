@@ -1897,6 +1897,13 @@ impl<'gc> MovieLoader<'gc> {
                 let bitmap_dobj = bitmap_avm2.as_display_object().unwrap();
 
                 if let MovieLoaderVMData::Avm2 { loader_info, .. } = vm_data {
+                    // A loaded image is its own AVM2 root, even when detached.
+                    bitmap_dobj.set_is_root(true);
+                    bitmap_dobj
+                        .as_bitmap()
+                        .expect("Bitmap constructor must create a Bitmap")
+                        .set_loader_info(activation.gc(), loader_info);
+
                     let fake_movie = SwfMovie::new(
                         activation.gc(),
                         SwfMovieData::fake_with_compressed_len(
