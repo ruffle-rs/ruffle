@@ -77,10 +77,10 @@ const PROTO_DECLS: StaticDeclarations = declare_static_properties! {
     "transform" => property(mc_getter!(transform), mc_setter!(set_transform); DONT_ENUM | VERSION_8);
     "blendMode" => property(mc_getter!(blend_mode), mc_setter!(set_blend_mode); DONT_DELETE | DONT_ENUM | VERSION_8);
     "scale9Grid" => property(mc_getter!(scale_9_grid), mc_setter!(set_scale_9_grid); DONT_DELETE | DONT_ENUM | VERSION_8);
-    "getURL" => method(mc_method!(get_url); DONT_ENUM | DONT_DELETE);
-    "unloadMovie" => method(mc_method!(unload_movie); DONT_ENUM | DONT_DELETE);
-    "loadVariables" => method(mc_method!(load_variables); DONT_ENUM | DONT_DELETE);
-    "loadMovie" => method(mc_method!(load_movie); DONT_ENUM | DONT_DELETE);
+    "getURL" => method(@As2 mc_method!(get_url); DONT_ENUM | DONT_DELETE);
+    "unloadMovie" => method(@As2 mc_method!(unload_movie); DONT_ENUM | DONT_DELETE);
+    "loadVariables" => method(@As2 mc_method!(load_variables); DONT_ENUM | DONT_DELETE);
+    "loadMovie" => method(@As2 mc_method!(load_movie); DONT_ENUM | DONT_DELETE);
     "attachMovie" => method(mc_method!(attach_movie); DONT_ENUM | DONT_DELETE);
     "swapDepths" => method(mc_method!(swap_depths); DONT_ENUM | DONT_DELETE);
     "localToGlobal" => method(mc_method!(local_to_global); DONT_ENUM | DONT_DELETE);
@@ -119,7 +119,7 @@ const PROTO_DECLS: StaticDeclarations = declare_static_properties! {
     "lineGradientStyle" => method(mc_method!(line_gradient_style); DONT_ENUM | DONT_DELETE | VERSION_8);
     "beginBitmapFill" => method(mc_method!(begin_bitmap_fill); DONT_ENUM | DONT_DELETE | VERSION_8);
     "createTextField" => method(mc_method!(create_text_field); DONT_ENUM | DONT_DELETE);
-    "getTextSnapshot" => method(get_text_snapshot; DONT_ENUM | DONT_DELETE);
+    "getTextSnapshot" => method(@As2 get_text_snapshot; DONT_ENUM | DONT_DELETE);
     // NOTE: `focusEnabled` is not a built-in property of MovieClip.
     // NOTE: `tabEnabled` is not a built-in property of MovieClip.
     // NOTE: `tabChildren` is not a built-in property of MovieClip.

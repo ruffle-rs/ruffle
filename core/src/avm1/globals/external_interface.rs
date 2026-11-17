@@ -21,8 +21,8 @@ const OBJECT_DECLS: StaticDeclarations = declare_static_properties! {
     "_jsQuoteString" => method(js_quote_string; DONT_ENUM | DONT_DELETE | READ_ONLY | VERSION_8);
     "_useSetReturnValueHack" => method(use_set_return_value_hack; DONT_ENUM | DONT_DELETE | READ_ONLY | VERSION_8);
     "available" => property(get_available; DONT_ENUM | DONT_DELETE | READ_ONLY | VERSION_8);
-    "addCallback" => method(add_callback; DONT_ENUM | DONT_DELETE | READ_ONLY | VERSION_8);
-    "call" => method(call; DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "addCallback" => method(@As2 add_callback; DONT_ENUM | DONT_DELETE | READ_ONLY | VERSION_8);
+    "call" => method(@As2 call; DONT_ENUM | DONT_DELETE | READ_ONLY);
 };
 
 pub fn create_class<'gc>(

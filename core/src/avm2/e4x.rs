@@ -20,7 +20,7 @@ use quick_xml::{
     events::{BytesStart, Event, attributes::AttrError as XmlAttrError},
     name::ResolveResult,
 };
-use ruffle_common::xml::avm2_unescape;
+use ruffle_common::xml::{CoalescedEvent, TextCoalescer, avm2_unescape};
 use ruffle_macros::istr;
 
 use std::cell::{Ref, RefMut};
@@ -804,9 +804,15 @@ impl<'gc> E4XNode<'gc> {
 
         let data_utf8 = string.to_utf8_lossy();
         let mut parser = NsReader::from_str(&data_utf8);
+        // Flash has no limit on the number of namespace declarations per element.
+        parser
+            .resolver_mut()
+            .set_max_declarations_per_element(usize::MAX);
+        parser.config_mut().allow_dangling_amp = true;
         let mut open_tags: Vec<E4XNode<'gc>> = vec![];
 
         let mut top_level = vec![];
+        let mut text_coalescer = TextCoalescer::default();
 
         // This can't be a closure that captures these variables, because we need to modify them
         // outside of this body.
@@ -863,8 +869,23 @@ impl<'gc> E4XNode<'gc> {
         }
 
         loop {
-            let event = match parser.read_event() {
-                Ok(event) => event,
+            let event = match text_coalescer.read_event(|| parser.read_event()) {
+                Ok(CoalescedEvent::Text(text)) => {
+                    handle_text_cdata(
+                        avm2_unescape(&text)
+                            .map_err(|_| {
+                                make_xml_error(activation, XmlErrorCode::ElementMalformed)
+                            })?
+                            .as_bytes(),
+                        ignore_white,
+                        &mut open_tags,
+                        &mut top_level,
+                        true,
+                        activation,
+                    );
+                    continue;
+                }
+                Ok(CoalescedEvent::Event(event)) => event,
                 Err(XmlError::IllFormed(IllFormedError::MismatchedEndTag { expected, found })) => {
                     // We must accept </a/>, </a />, and </a b="c">
                     // TODO: Reject </a bc>, </a//>, <a //> etc.
@@ -886,9 +907,10 @@ impl<'gc> E4XNode<'gc> {
                 }
                 Err(XmlError::Syntax(syntax_error)) => {
                     let code = match syntax_error {
-                        XmlSyntaxError::UnclosedPIOrXmlDecl => {
+                        XmlSyntaxError::UnclosedPI => {
                             XmlErrorCode::UnterminatedProcessingInstruction
                         }
+                        XmlSyntaxError::UnclosedXmlDecl => XmlErrorCode::UnterminatedXmlDecl,
                         XmlSyntaxError::UnclosedComment => XmlErrorCode::UnterminatedComment,
                         XmlSyntaxError::UnclosedDoctype => XmlErrorCode::UnterminatedDoctype,
                         XmlSyntaxError::UnclosedCData => XmlErrorCode::UnterminatedCData,
@@ -922,19 +944,8 @@ impl<'gc> E4XNode<'gc> {
                         top_level.push(node);
                     }
                 }
-                Event::Text(bt) => {
-                    handle_text_cdata(
-                        avm2_unescape(bt)
-                            .map_err(|_| {
-                                make_xml_error(activation, XmlErrorCode::ElementMalformed)
-                            })?
-                            .as_bytes(),
-                        ignore_white,
-                        &mut open_tags,
-                        &mut top_level,
-                        true,
-                        activation,
-                    );
+                Event::Text(_) | Event::GeneralRef(_) => {
+                    unreachable!("Text is returned by the TextCoalescer")
                 }
                 Event::CData(bt) => {
                     // This is already unescaped
@@ -1057,7 +1068,7 @@ impl<'gc> E4XNode<'gc> {
                 .map_err(|_| make_xml_error(activation, XmlErrorCode::ElementMalformed))?;
             let value = AvmString::new_utf8(activation.gc(), value_str);
 
-            let (ns, local_name) = parser.resolve_attribute(attribute.key);
+            let (ns, local_name) = parser.resolver().resolve_attribute(attribute.key);
 
             let local_name = ruffle_wstr::from_utf8_bytes(local_name.into_inner());
             let name = activation.strings().intern_wstr(local_name).into();
@@ -1106,7 +1117,7 @@ impl<'gc> E4XNode<'gc> {
             attribute_nodes.push(attribute);
         }
 
-        let (ns, local_name) = parser.resolve_element(bs.name());
+        let (ns, local_name) = parser.resolver().resolve_element(bs.name());
 
         let local_name = ruffle_wstr::from_utf8_bytes(local_name.into_inner());
         let name = activation.strings().intern_wstr(local_name).into();

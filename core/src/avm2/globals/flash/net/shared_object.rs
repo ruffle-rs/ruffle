@@ -5,11 +5,11 @@ use crate::avm2::function::FunctionArgs;
 use crate::avm2::object::{ScriptObject, SharedObjectObject};
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::{Activation, Error, Object, Value};
+use crate::shared_object::local_shared_object_key;
 use crate::string::AvmString;
 use crate::{avm2_stub_getter, avm2_stub_method, avm2_stub_setter};
 use flash_lso::types::{AMFVersion, Lso};
 use ruffle_macros::istr;
-use std::borrow::Cow;
 
 fn new_lso<'gc>(
     activation: &mut Activation<'_, 'gc>,
@@ -40,107 +40,19 @@ pub fn get_local<'gc>(
     _this: Value<'gc>,
     args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    // TODO: It appears that Flash does some kind of escaping here:
-    // the name "foo\uD800" correspond to a file named "fooE#FB#FB#D.sol".
-
     let name = args.get_string_non_null(activation, 0, "name")?;
-    let name = name.to_utf8_lossy();
-
-    const INVALID_CHARS: &str = "~%&\\;:\"',<>?# ";
-    if name.contains(|c| INVALID_CHARS.contains(c)) {
-        tracing::error!("SharedObject::get_local: Invalid character in name");
-        return Ok(Value::Null);
-    }
-
-    let mut movie_url = if let Ok(url) = url::Url::parse(activation.context.root_swf.url()) {
-        url
-    } else {
-        tracing::error!("SharedObject::get_local: Unable to parse movie URL");
-        return Ok(Value::Null);
-    };
-    movie_url.set_query(None);
-    movie_url.set_fragment(None);
-
+    let local_path = args.try_get_string(1);
+    let local_path = local_path.as_ref().map(|p| p.to_utf8_lossy());
     let secure = args.get_bool(2);
 
-    // Secure parameter disallows using the shared object from non-HTTPS.
-    if secure && movie_url.scheme() != "https" {
-        tracing::warn!(
-            "SharedObject.get_local: Tried to load a secure shared object from non-HTTPS origin"
-        );
+    let Some(full_name) = local_shared_object_key(
+        activation.context.root_swf.url(),
+        &name.to_utf8_lossy(),
+        local_path.as_deref(),
+        secure,
+    ) else {
         return Ok(Value::Null);
-    }
-
-    // Shared objects are sandboxed per-domain.
-    // By default, they are keyed based on the SWF URL, but the `localHost` parameter can modify this path.
-    let mut movie_path = movie_url.path();
-    // Remove leading/trailing slashes.
-    movie_path = movie_path.strip_prefix('/').unwrap_or(movie_path);
-    movie_path = movie_path.strip_suffix('/').unwrap_or(movie_path);
-
-    let movie_host = if movie_url.scheme() == "file" {
-        // Remove drive letter on Windows (TODO: move this logic into DiskStorageBackend?)
-        if let [_, b':', b'/', ..] = movie_path.as_bytes() {
-            movie_path = &movie_path[3..];
-        }
-        "localhost"
-    } else {
-        movie_url.host_str().unwrap_or_default()
     };
-
-    let local_path = &args.try_get_string(1);
-    let local_path = if let Some(local_path) = local_path {
-        // Empty local path always fails.
-        if local_path.is_empty() {
-            return Ok(Value::Null);
-        }
-
-        // Remove leading/trailing slashes.
-        let mut local_path = local_path.to_utf8_lossy();
-        if local_path.ends_with('/') {
-            match &mut local_path {
-                Cow::Owned(p) => {
-                    p.pop();
-                }
-                Cow::Borrowed(p) => *p = &p[..p.len() - 1],
-            }
-        }
-        if local_path.starts_with('/') {
-            match &mut local_path {
-                Cow::Owned(p) => {
-                    p.remove(0);
-                }
-                Cow::Borrowed(p) => *p = &p[1..],
-            }
-        }
-
-        // Verify that local_path is a prefix of the SWF path.
-        if movie_path.starts_with(local_path.as_ref())
-            && (local_path.is_empty()
-                || movie_path.len() == local_path.len()
-                || movie_path[local_path.len()..].starts_with('/'))
-        {
-            local_path
-        } else {
-            tracing::warn!("SharedObject.get_local: localPath parameter does not match SWF path");
-            return Ok(Value::Null);
-        }
-    } else {
-        Cow::Borrowed(movie_path)
-    };
-
-    // Final SO path: foo.com/folder/game.swf/SOName
-    // SOName may be a path containing slashes. In this case, prefix with # to mimic Flash Player behavior.
-    let prefix = if name.contains('/') { "#" } else { "" };
-    let full_name = format!("{movie_host}/{local_path}/{prefix}{name}");
-
-    // Avoid any paths with `..` to prevent SWFs from crawling the file system on desktop.
-    // Flash will generally fail to save shared objects with a path component starting with `.`,
-    // so let's disallow them altogether.
-    if full_name.split('/').any(|s| s.starts_with('.')) {
-        tracing::error!("SharedObject.get_local: Invalid path with .. segments");
-        return Ok(Value::Null);
-    }
 
     // Check if this is referencing an existing shared object
     if let Some(so) = activation.context.avm2_shared_objects.get(&full_name) {

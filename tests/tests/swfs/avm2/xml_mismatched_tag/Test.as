@@ -25,6 +25,9 @@ var testcases = [
   // TODO
   // "<a></a bc>",
   "<root><a></a/><test/></root>",
+  "<a>text</a/>",
+  "<a>x &amp; y</a/>",
+  '<root><a>x &amp; y</a b="c"></root>',
 ]
 
 for each (var testcase in testcases) {

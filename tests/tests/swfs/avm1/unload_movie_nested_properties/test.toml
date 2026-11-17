@@ -1,4 +1,3 @@
-# Child onUnload is skipped when unloading its parent; also fails on unmodified master.
 known_failure = true
 
 num_ticks = 12
