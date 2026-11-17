@@ -1,7 +1,14 @@
 num_frames = 1
-ignore = true # big differences across rendering backends :(
 
-[image_comparisons.output]
+# TODO: Fix the big differences across rendering backends
+[[image_comparisons.output.checks]]
+filter = 'os = "windows"'
+max_outliers = 588
+tolerance = 0
+
+[[image_comparisons.output.checks]]
+filter = 'not(os = "windows")'
+max_outliers = 1830
 tolerance = 0
 
 [player_options]
