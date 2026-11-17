@@ -27,6 +27,7 @@ pub struct PlayerOptions {
     pub referer: Option<Url>,
     pub cookie: Option<String>,
     pub player_version: Option<u8>,
+    pub custom_player_version_string: Option<String>,
     pub player_runtime: Option<PlayerRuntime>,
     pub frame_rate: Option<f64>,
     pub dummy_external_interface: Option<bool>,
@@ -52,6 +53,10 @@ impl PlayerOptions {
             referer: self.referer.clone().or_else(|| other.referer.clone()),
             cookie: self.cookie.clone().or_else(|| other.cookie.clone()),
             player_version: self.player_version.or(other.player_version),
+            custom_player_version_string: self
+                .custom_player_version_string
+                .clone()
+                .or_else(|| other.custom_player_version_string.clone()),
             player_runtime: self.player_runtime.or(other.player_runtime),
             frame_rate: self.frame_rate.or(other.frame_rate),
             dummy_external_interface: self
