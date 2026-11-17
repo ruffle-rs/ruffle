@@ -55,9 +55,17 @@ pub(crate) fn props_from_matrix(matrix: Matrix) -> (Degrees, Percent, Percent, f
         f64::atan2(xsignum * b, xsignum * a)
     };
     let skew = {
-        // `ysignum` multiplication is required here for pi difference.
-        let rotation_y = atan2(-ysignum * c, ysignum * d);
-        let rotation_x = atan2(b, a);
+        let rotation_y = if (b, c, d) == (0.0, 0.0, 0.0) && a > 0.0 {
+            0.0
+        } else {
+            // `ysignum` multiplication is required here for pi difference.
+            atan2(-ysignum * c, ysignum * d)
+        };
+        let rotation_x = if (a, b, c) == (0.0, 0.0, 0.0) && d > 0.0 {
+            0.0
+        } else {
+            atan2(b, a)
+        };
         (rotation_y - rotation_x).rem_euclid(2.0 * std::f64::consts::PI)
     };
 
@@ -123,6 +131,19 @@ pub(crate) fn from_swf_matrix(swf_matrix: swf::Matrix) -> (Degrees, Percent, Per
     // atan2(0, 0) is generally arbitrary.
     if (swf_matrix.a, swf_matrix.b) == (Fixed16::ZERO, Fixed16::ZERO) {
         rotation = Degrees::from_radians(std::f64::consts::PI / 2.0);
+    }
+
+    // TODO: Refactoring
+    // I think it's possible to simplify/merge those logics to props_from_matrix.
+    if (swf_matrix.b, swf_matrix.c, swf_matrix.d) == (Fixed16::ZERO, Fixed16::ZERO, Fixed16::ZERO)
+        && swf_matrix.a > Fixed16::ZERO
+    {
+        skew = std::f64::consts::PI / 2.0 - f64::atan2(swf_matrix.b.into(), swf_matrix.a.into());
+    }
+    if (swf_matrix.a, swf_matrix.b, swf_matrix.c) == (Fixed16::ZERO, Fixed16::ZERO, Fixed16::ZERO)
+        && swf_matrix.d > Fixed16::ZERO
+    {
+        skew = f64::atan2((-swf_matrix.c).into(), swf_matrix.d.into()) - std::f64::consts::PI / 2.0;
     }
 
     (rotation, scale_x, scale_y, skew, matrix)
