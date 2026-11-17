@@ -11,7 +11,7 @@ use crate::surface::target::{CommandTarget, PoolOrArcTexture};
 use crate::{Descriptors, PosUvVertex, as_texture};
 use ruffle_render::backend::ShapeHandle;
 use ruffle_render::bitmap::{BitmapHandle, PixelRegion, PixelSnapping};
-use ruffle_render::commands::{CommandHandler, CommandList, RenderBlendMode};
+use ruffle_render::commands::{Command, CommandHandler, CommandList, RenderBlendMode};
 use ruffle_render::lines::{emulate_line, emulate_line_rect};
 use ruffle_render::matrix::Matrix;
 use ruffle_render::quality::StageQuality;
@@ -77,6 +77,7 @@ struct WgpuCommandHandler<'encoder, 'global: 'encoder> {
     chunk_buffer_builder: ChunkBufferBuilder,
     needs_stencil: bool,
     mask_state: MaskState,
+    drawing_blend_coverage: bool,
 }
 
 impl<'encoder, 'global: 'encoder> WgpuCommandHandler<'encoder, 'global> {
@@ -118,6 +119,7 @@ impl<'encoder, 'global: 'encoder> WgpuCommandHandler<'encoder, 'global> {
             chunk_buffer_builder,
             needs_stencil: false,
             mask_state: MaskState::empty(),
+            drawing_blend_coverage: false,
         }
     }
 
@@ -219,6 +221,25 @@ impl CommandHandler for WgpuCommandHandler<'_, '_> {
             self.nearest_layer
         };
         let blend_type = BlendType::from(blend_mode);
+        // A shader blend needs geometry coverage even when the foreground color is
+        // fully transparent. Replay flat draw lists into the stencil separately.
+        // Lists with their own masks or blends need a separate coverage pass.
+        let coverage = (matches!(
+            self.mask_state.mode,
+            MaskMode::NoMask | MaskMode::DrawMaskedContent
+        ) && matches!(blend_type, BlendType::Shader(_))
+            && commands.commands.iter().all(|command| {
+                matches!(
+                    command,
+                    Command::RenderBitmap { .. }
+                        | Command::RenderShape { .. }
+                        | Command::DrawRect { .. }
+                        | Command::DrawLine { .. }
+                        | Command::DrawLineRect { .. }
+                )
+            }))
+        .then(|| commands.clone());
+
         let clear_color = blend_type.default_color();
         let target = surface.draw_commands(
             RenderTargetMode::FreshWithColor(clear_color),
@@ -233,12 +254,10 @@ impl CommandHandler for WgpuCommandHandler<'_, '_> {
         );
         target.ensure_cleared(self.draw_encoder);
 
-        // We currently do not support shader blends in masks. In order not to
-        // break other parts of the scene, we just fall back to a normal blend.
-        //
-        // TODO Add support for shader blends in masks.
-        let is_shader_blend_in_mask =
-            self.mask_state.count > 0 && matches!(blend_type, BlendType::Shader(_));
+        // Use a normal blend inside a mask when the coverage cannot be replayed.
+        let is_shader_blend_in_mask = self.mask_state.count > 0
+            && coverage.is_none()
+            && matches!(blend_type, BlendType::Shader(_));
         let blend_type = if is_shader_blend_in_mask {
             BlendType::Trivial(TrivialBlend::Normal)
         } else {
@@ -287,6 +306,14 @@ impl CommandHandler for WgpuCommandHandler<'_, '_> {
                 );
             }
             blend_type => {
+                if let Some(coverage) = &coverage {
+                    self.push_mask();
+                    self.drawing_blend_coverage = true;
+                    coverage.clone().execute(self);
+                    self.drawing_blend_coverage = false;
+                    self.activate_mask();
+                }
+
                 if !self.current.is_empty() {
                     self.result.push(Chunk::Draw {
                         chunk: mem::take(&mut self.current),
@@ -302,12 +329,29 @@ impl CommandHandler for WgpuCommandHandler<'_, '_> {
                     BlendType::Shader(shader) => ChunkBlendMode::Shader(shader),
                     _ => unreachable!(),
                 };
+                let texture = if matches!(chunk_blend_mode, ChunkBlendMode::Shader(_))
+                    && coverage.is_some()
+                    && self.descriptors.supports_multisampled_blending
+                    && target.sample_count() > 1
+                {
+                    target.take_multisampled_color_texture()
+                } else {
+                    target.take_color_texture()
+                };
                 self.result.push(Chunk::Blend {
-                    texture: target.take_color_texture(),
+                    texture,
                     blend_mode: chunk_blend_mode,
                     needs_stencil: self.mask_state.count > 0,
                 });
                 self.needs_stencil = self.mask_state.count > 0;
+
+                if let Some(coverage) = coverage {
+                    self.deactivate_mask();
+                    self.drawing_blend_coverage = true;
+                    coverage.execute(self);
+                    self.drawing_blend_coverage = false;
+                    self.pop_mask();
+                }
             }
         }
     }
@@ -421,8 +465,9 @@ impl CommandHandler for WgpuCommandHandler<'_, '_> {
         let mesh = as_mesh(&shape);
         let mut instance = None;
         for draw in &mesh.draws {
-            let indices = if self.mask_state.mode != MaskMode::DrawMaskStencil
-                && self.mask_state.mode != MaskMode::ClearMaskStencil
+            let indices = if self.drawing_blend_coverage
+                || (self.mask_state.mode != MaskMode::DrawMaskStencil
+                    && self.mask_state.mode != MaskMode::ClearMaskStencil)
             {
                 draw.indices.clone()
             } else {

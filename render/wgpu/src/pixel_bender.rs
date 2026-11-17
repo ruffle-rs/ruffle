@@ -31,7 +31,7 @@ use crate::{
 pub struct PixelBenderWgpuShader {
     bind_group_layout: wgpu::BindGroupLayout,
     pipeline_layout: PipelineLayout,
-    pipelines: RefCell<HashMap<(u32, wgpu::TextureFormat), RenderPipeline>>,
+    pipelines: RefCell<HashMap<(u32, wgpu::TextureFormat, bool), RenderPipeline>>,
     vertex_shader: wgpu::ShaderModule,
     fragment_shader: wgpu::ShaderModule,
     shader: PixelBenderShader,
@@ -41,6 +41,7 @@ pub struct PixelBenderWgpuShader {
     int_parameters_buffer_size: u64,
     zeroed_out_of_range_mode: wgpu::Buffer,
     staging_belt: RefCell<StagingBelt>,
+    multisampled: RefCell<Option<Box<PixelBenderWgpuShader>>>,
 }
 
 impl PixelBenderWgpuShader {
@@ -50,10 +51,11 @@ impl PixelBenderWgpuShader {
         descriptors: &Descriptors,
         samples: u32,
         format: TextureFormat,
+        with_stencil: bool,
     ) -> wgpu::RenderPipeline {
         self.pipelines
             .borrow_mut()
-            .entry((samples, format))
+            .entry((samples, format, with_stencil))
             .or_insert_with(|| {
                 descriptors
                     .device
@@ -81,7 +83,24 @@ impl PixelBenderWgpuShader {
                             compilation_options: Default::default(),
                         }),
                         primitive: Default::default(),
-                        depth_stencil: None,
+                        depth_stencil: with_stencil.then(|| {
+                            let test_coverage = wgpu::StencilFaceState {
+                                compare: wgpu::CompareFunction::Equal,
+                                ..wgpu::StencilFaceState::IGNORE
+                            };
+                            wgpu::DepthStencilState {
+                                format: wgpu::TextureFormat::Stencil8,
+                                depth_write_enabled: Some(false),
+                                depth_compare: Some(wgpu::CompareFunction::Always),
+                                stencil: wgpu::StencilState {
+                                    front: test_coverage,
+                                    back: test_coverage,
+                                    read_mask: 0xff,
+                                    write_mask: 0,
+                                },
+                                bias: wgpu::DepthBiasState::default(),
+                            }
+                        }),
                         multisample: wgpu::MultisampleState {
                             count: samples,
                             mask: !0,
@@ -107,6 +126,14 @@ pub fn as_cache_holder(handle: &PixelBenderShaderHandle) -> &PixelBenderWgpuShad
 
 impl PixelBenderWgpuShader {
     pub fn new(descriptors: &Descriptors, shader: PixelBenderShader) -> PixelBenderWgpuShader {
+        Self::new_with_multisampling(descriptors, shader, false)
+    }
+
+    fn new_with_multisampling(
+        descriptors: &Descriptors,
+        shader: PixelBenderShader,
+        multisampled: bool,
+    ) -> PixelBenderWgpuShader {
         let mut layout_entries = vec![
             // One sampler per filter/wrapping combination - see BitmapFilters
             // An AGAL shader can use any of these samplers, so
@@ -168,9 +195,11 @@ impl PixelBenderWgpuShader {
                     binding,
                     visibility: wgpu::ShaderStages::FRAGMENT,
                     ty: wgpu::BindingType::Texture {
-                        sample_type: wgpu::TextureSampleType::Float { filterable: true },
+                        sample_type: wgpu::TextureSampleType::Float {
+                            filterable: !multisampled,
+                        },
                         view_dimension: wgpu::TextureViewDimension::D2,
-                        multisampled: false,
+                        multisampled,
                     },
                     count: None,
                 });
@@ -199,7 +228,8 @@ impl PixelBenderWgpuShader {
                 });
 
         let shaders =
-            naga_pixelbender::ShaderBuilder::build(&shader).expect("Failed to compile shader");
+            naga_pixelbender::ShaderBuilder::build_with_multisampling(&shader, multisampled)
+                .expect("Failed to compile shader");
 
         let float_label =
             create_debug_label!("PixelBender float parameters buffer for {:?}", shader.name);
@@ -247,6 +277,7 @@ impl PixelBenderWgpuShader {
             bind_group_layout,
             pipeline_layout,
             pipelines: Default::default(),
+            multisampled: RefCell::new(None),
             shader,
             vertex_shader,
             fragment_shader,
@@ -344,16 +375,20 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
     }
 }
 
-pub enum ShaderMode {
+pub enum ShaderMode<'a> {
     ShaderJob,
     Filter,
+    Blend {
+        attachment: wgpu::RenderPassDepthStencilAttachment<'a>,
+        stencil_reference: u32,
+    },
 }
 
 #[expect(clippy::too_many_arguments)]
 pub(super) fn run_pixelbender_shader_impl(
     descriptors: &Descriptors,
     shader: PixelBenderShaderHandle,
-    mode: ShaderMode,
+    mode: ShaderMode<'_>,
     arguments: &[PixelBenderShaderArgument],
     target: &wgpu::Texture,
     render_command_encoder: &mut CommandEncoder,
@@ -362,7 +397,23 @@ pub(super) fn run_pixelbender_shader_impl(
     // FIXME - do we cover the whole source or the whole dest?
     source: &FilterSource,
 ) -> Result<(), BitmapError> {
-    let compiled_shader = &as_cache_holder(&shader);
+    let cached_shader = as_cache_holder(&shader);
+    let use_multisampling = matches!(mode, ShaderMode::Blend { .. })
+        && descriptors.supports_multisampled_blending
+        && sample_count > 1;
+    let mut multisampled_shader = cached_shader.multisampled.borrow_mut();
+    let compiled_shader = if use_multisampling {
+        let shader = multisampled_shader.get_or_insert_with(|| {
+            Box::new(PixelBenderWgpuShader::new_with_multisampling(
+                descriptors,
+                cached_shader.shader.clone(),
+                true,
+            ))
+        });
+        &**shader
+    } else {
+        cached_shader
+    };
     let mut staging_belt = compiled_shader.staging_belt.borrow_mut();
 
     let mut arguments = arguments.to_vec();
@@ -415,14 +466,14 @@ pub(super) fn run_pixelbender_shader_impl(
     );
 
     // This would ideally be a single f32, but web requires at least 16 bytes
-    zeroed_out_of_range_mode_slice.copy_from_slice(bytemuck::cast_slice(&[match mode {
+    zeroed_out_of_range_mode_slice.copy_from_slice(bytemuck::cast_slice(&[match &mode {
         // When a Shader is run via a ShaderJob, out-of-range texture sample coordinates
         // seem to be clamped to the edge of the texture (despite what the docs describe)
         ShaderMode::ShaderJob => [0.0f32, 0.0f32, 0.0f32, 0.0f32],
         // When a Shader is run through a ShaderFilter, out-of-range texture sample coordinates
         // return transparent black (0.0, 0.0, 0.0, 0.0). This is easiest to observe with
         // BitmapData.applyFilter when the BitmapData destination is larger than the source.
-        ShaderMode::Filter => [1.0f32, 1.0f32, 1.0f32, 1.0f32],
+        ShaderMode::Filter | ShaderMode::Blend { .. } => [1.0f32, 1.0f32, 1.0f32, 1.0f32],
     }]));
     drop(zeroed_out_of_range_mode_slice);
 
@@ -644,16 +695,28 @@ pub(super) fn run_pixelbender_shader_impl(
             usage: BufferUsages::VERTEX,
         });
 
-    let pipeline = compiled_shader.get_pipeline(descriptors, sample_count, target.format());
+    let (stencil, stencil_reference) = match mode {
+        ShaderMode::Blend {
+            attachment,
+            stencil_reference,
+        } => (Some(attachment), stencil_reference),
+        ShaderMode::ShaderJob | ShaderMode::Filter => (None, 0),
+    };
+    let with_stencil = stencil.is_some();
+    let pipeline =
+        compiled_shader.get_pipeline(descriptors, sample_count, target.format(), with_stencil);
 
     let mut render_pass = render_command_encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
         label: Some("PixelBender render pass"),
         color_attachments: &[color_attachment],
-        depth_stencil_attachment: None,
+        depth_stencil_attachment: stencil,
         ..Default::default()
     });
     render_pass.set_bind_group(0, &bind_group, &[]);
     render_pass.set_pipeline(&pipeline);
+    if with_stencil {
+        render_pass.set_stencil_reference(stencil_reference);
+    }
 
     render_pass.set_vertex_buffer(0, vertices.slice(..));
     render_pass.set_index_buffer(
