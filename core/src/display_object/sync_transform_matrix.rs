@@ -38,21 +38,25 @@ pub(crate) fn props_from_matrix(matrix: Matrix) -> (Degrees, Percent, Percent, f
     // This can produce some surprising results due to the overlap between flipping/rotation/skewing.
     // For example, in Flash, using Modify->Transform->Flip Horizontal and then tracing _xscale, _yscale, and _rotation
     // will output 100, 100, and 180. (a horizontal flip could also be a 180 degree skew followed by 180 degree rotation!)
-    let xsignum = if a == -1.0 && b == 0.0 && c == 0.0 && d == 1.0 {
-        -1.0
-    } else {
-        1.0
-    };
+    if (a, b, c, d) == (-1.0, 0.0, 0.0, 1.0) {
+        // early return for this specific case.
+        // This is the only confirmed case where scale_x is negative.
+        let scale_x = Percent::from_unit(-1.0);
+        let scale_y = Percent::from_unit(1.0);
+        let rotation = Degrees::from(0.0);
+        let skew = 0.0;
+        return (rotation, scale_x, scale_y, skew);
+    }
+
     let ysignum = if (a * d) < (b * c) { -1.0 } else { 1.0 };
 
-    let scale_x = xsignum * f64::sqrt(a * a + b * b);
-    let scale_y = xsignum * ysignum * f64::sqrt(c * c + d * d);
+    let scale_x = f64::sqrt(a * a + b * b);
+    let scale_y = ysignum * f64::sqrt(c * c + d * d);
 
     let rotation = if (nan_to_zero(a), b, c) == (0.0, 0.0, 0.0) && d > 0.0 {
         0.0
     } else {
-        // `xsignum` multiplication is required here for pi difference.
-        f64::atan2(xsignum * b, xsignum * a)
+        f64::atan2(b, a)
     };
     let skew = {
         let rotation_y = if (b, c, nan_to_zero(d)) == (0.0, 0.0, 0.0) && a > 0.0 {
