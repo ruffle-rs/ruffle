@@ -1,0 +1,51 @@
+[
+  { "type": "Wait" },
+  { "type": "Wait" },
+
+  { "type": "MouseDown", "pos": [90, 190], "btn": "Left" }, { "type": "MouseUp", "pos": [90, 190], "btn": "Left" },
+  { "type": "MouseDown", "pos": [155, 175], "btn": "Left" }, { "type": "MouseUp", "pos": [155, 175], "btn": "Left" },
+  { "type": "MouseDown", "pos": [160, 140], "btn": "Left" }, { "type": "MouseUp", "pos": [160, 140], "btn": "Left" },
+  { "type": "MouseDown", "pos": [140, 230], "btn": "Left" }, { "type": "MouseUp", "pos": [140, 230], "btn": "Left" },
+  { "type": "MouseDown", "pos": [290, 90], "btn": "Left" }, { "type": "MouseUp", "pos": [290, 90], "btn": "Left" },
+  { "type": "MouseDown", "pos": [350, 125], "btn": "Left" }, { "type": "MouseUp", "pos": [350, 125], "btn": "Left" },
+  { "type": "MouseDown", "pos": [275, 200], "btn": "Left" }, { "type": "MouseUp", "pos": [275, 200], "btn": "Left" },
+  { "type": "MouseDown", "pos": [275, 240], "btn": "Left" }, { "type": "MouseUp", "pos": [275, 240], "btn": "Left" },
+  { "type": "MouseDown", "pos": [130, 200], "btn": "Left" }, { "type": "MouseUp", "pos": [130, 200], "btn": "Left" },
+
+  { "type": "KeyDown", "key": "Space" },
+
+  { "type": "MouseDown", "pos": [90, 190], "btn": "Left" }, { "type": "MouseUp", "pos": [90, 190], "btn": "Left" },
+  { "type": "MouseDown", "pos": [155, 175], "btn": "Left" }, { "type": "MouseUp", "pos": [155, 175], "btn": "Left" },
+  { "type": "MouseDown", "pos": [160, 140], "btn": "Left" }, { "type": "MouseUp", "pos": [160, 140], "btn": "Left" },
+  { "type": "MouseDown", "pos": [140, 230], "btn": "Left" }, { "type": "MouseUp", "pos": [140, 230], "btn": "Left" },
+  { "type": "MouseDown", "pos": [290, 90], "btn": "Left" }, { "type": "MouseUp", "pos": [290, 90], "btn": "Left" },
+  { "type": "MouseDown", "pos": [350, 125], "btn": "Left" }, { "type": "MouseUp", "pos": [350, 125], "btn": "Left" },
+  { "type": "MouseDown", "pos": [275, 200], "btn": "Left" }, { "type": "MouseUp", "pos": [275, 200], "btn": "Left" },
+  { "type": "MouseDown", "pos": [275, 240], "btn": "Left" }, { "type": "MouseUp", "pos": [275, 240], "btn": "Left" },
+  { "type": "MouseDown", "pos": [130, 200], "btn": "Left" }, { "type": "MouseUp", "pos": [130, 200], "btn": "Left" },
+
+  { "type": "KeyDown", "key": "Space" },
+  { "type": "KeyDown", "key": "LeftShift" },
+
+  { "type": "MouseDown", "pos": [90, 190], "btn": "Left" }, { "type": "MouseUp", "pos": [90, 190], "btn": "Left" },
+  { "type": "MouseDown", "pos": [155, 175], "btn": "Left" }, { "type": "MouseUp", "pos": [155, 175], "btn": "Left" },
+  { "type": "MouseDown", "pos": [160, 140], "btn": "Left" }, { "type": "MouseUp", "pos": [160, 140], "btn": "Left" },
+  { "type": "MouseDown", "pos": [140, 230], "btn": "Left" }, { "type": "MouseUp", "pos": [140, 230], "btn": "Left" },
+  { "type": "MouseDown", "pos": [290, 90], "btn": "Left" }, { "type": "MouseUp", "pos": [290, 90], "btn": "Left" },
+  { "type": "MouseDown", "pos": [350, 125], "btn": "Left" }, { "type": "MouseUp", "pos": [350, 125], "btn": "Left" },
+  { "type": "MouseDown", "pos": [275, 200], "btn": "Left" }, { "type": "MouseUp", "pos": [275, 200], "btn": "Left" },
+  { "type": "MouseDown", "pos": [275, 240], "btn": "Left" }, { "type": "MouseUp", "pos": [275, 240], "btn": "Left" },
+  { "type": "MouseDown", "pos": [130, 200], "btn": "Left" }, { "type": "MouseUp", "pos": [130, 200], "btn": "Left" },
+
+  { "type": "KeyDown", "key": "Space" },
+
+  { "type": "MouseDown", "pos": [90, 190], "btn": "Left" }, { "type": "MouseUp", "pos": [90, 190], "btn": "Left" },
+  { "type": "MouseDown", "pos": [155, 175], "btn": "Left" }, { "type": "MouseUp", "pos": [155, 175], "btn": "Left" },
+  { "type": "MouseDown", "pos": [160, 140], "btn": "Left" }, { "type": "MouseUp", "pos": [160, 140], "btn": "Left" },
+  { "type": "MouseDown", "pos": [140, 230], "btn": "Left" }, { "type": "MouseUp", "pos": [140, 230], "btn": "Left" },
+  { "type": "MouseDown", "pos": [290, 90], "btn": "Left" }, { "type": "MouseUp", "pos": [290, 90], "btn": "Left" },
+  { "type": "MouseDown", "pos": [350, 125], "btn": "Left" }, { "type": "MouseUp", "pos": [350, 125], "btn": "Left" },
+  { "type": "MouseDown", "pos": [275, 200], "btn": "Left" }, { "type": "MouseUp", "pos": [275, 200], "btn": "Left" },
+  { "type": "MouseDown", "pos": [275, 240], "btn": "Left" }, { "type": "MouseUp", "pos": [275, 240], "btn": "Left" },
+  { "type": "MouseDown", "pos": [130, 200], "btn": "Left" }, { "type": "MouseUp", "pos": [130, 200], "btn": "Left" }
+]
