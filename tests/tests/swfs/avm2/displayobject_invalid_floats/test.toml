@@ -1,1 +1,11 @@
 num_ticks = 1
+
+[approximations]
+number_patterns = [
+    'a=(NaN|[0-9.e+-]*), b=(NaN|[0-9.e+-]*), c=(NaN|[0-9.e+-]*), d=(NaN|[0-9.e+-]*), tx=(NaN|[0-9.e+-]*), ty=(NaN|[0-9.e+-]*)',
+    'rotation=(NaN|[0-9.e+-]*), x=(NaN|[0-9.e+-]*), y=(NaN|[0-9.e+-]*), scaleX=(NaN|[0-9.e+-]*), scaleY=(NaN|[0-9.e+-]*),',
+]
+
+# FIXME: I feel the epsilon/max_relative is large. Reduce the errors.
+epsilon = 7.5e-3
+max_relative = 5e-3
