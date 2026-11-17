@@ -522,6 +522,10 @@ impl<'gc> DisplayObjectBase<'gc> {
         let changed = self.rotation.get() != degrees;
         self.rotation.set(degrees);
 
+        if !changed {
+            return changed;
+        }
+
         let mut matrix = self.matrix.get();
 
         if sync_transform_matrix::to_skip_update(degrees.into_radians(), &matrix) {
@@ -555,6 +559,10 @@ impl<'gc> DisplayObjectBase<'gc> {
         self.cache_scale_rotation();
         self.scale_x.set(value);
 
+        if !changed {
+            return changed;
+        }
+
         let mut matrix = self.matrix.get();
 
         if sync_transform_matrix::to_skip_update(value.unit(), &matrix) {
@@ -587,6 +595,10 @@ impl<'gc> DisplayObjectBase<'gc> {
         self.set_transformed_by_script(true);
         self.cache_scale_rotation();
         self.scale_y.set(value);
+
+        if !changed {
+            return changed;
+        }
 
         // Surprisingly, unlike scaleX or rotation setter, the scaleY setter
         // does not appear to have an early-return when updating to NaN.

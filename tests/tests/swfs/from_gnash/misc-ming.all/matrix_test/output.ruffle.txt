@@ -155,7 +155,7 @@ PASSED: !staticmc.hitTest(50, 331, false) [matrix_test.c:376]
 PASSED: staticmc.transform.matrix.toString()  ==  '(a=-1, b=0, c=0, d=1, tx=50, ty=300)' [matrix_test.c:380]
 PASSED: staticmc._x  ==  50 [matrix_test.c:382]
 PASSED: staticmc._y  ==  300 [matrix_test.c:383]
-FAILED: expected: 100 obtained: -100 [matrix_test.c:384] 
+PASSED: staticmc._xscale  ==  100 [matrix_test.c:384]
 PASSED: staticmc._yscale  ==  100 [matrix_test.c:385]
 PASSED: staticmc._rotation  ==  180 [matrix_test.c:386]
 PASSED: printBounds(staticmc.getBounds())  ==  '-30.05,-30.05 30.05,30.05' [matrix_test.c:387]
@@ -1081,6 +1081,6 @@ FAILED: expected: '(a=0, b=-2, c=-1, d=0, tx=0, ty=0)' obtained: (a=-1.224646852
 PASSED: staticmc._rotation  ==  90 [matrix_test.c:1884]
 PASSED: staticmc._xscale  ==  -200 [matrix_test.c:1885]
 PASSED: staticmc._yscale  ==  100 [matrix_test.c:1886]
-#passed: 1075
-#failed: 8
+#passed: 1076
+#failed: 7
 #total tests run: 1083
