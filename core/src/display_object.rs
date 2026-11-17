@@ -570,6 +570,8 @@ impl<'gc> DisplayObjectBase<'gc> {
 
         matrix.a = computed_matrix.a;
         matrix.b = computed_matrix.b;
+        matrix.c = computed_matrix.c;
+        matrix.d = computed_matrix.d;
         self.matrix.set(matrix);
 
         changed
@@ -597,6 +599,8 @@ impl<'gc> DisplayObjectBase<'gc> {
         );
 
         let mut matrix = self.matrix.get();
+        matrix.a = computed_matrix.a;
+        matrix.b = computed_matrix.b;
         matrix.c = computed_matrix.c;
         matrix.d = computed_matrix.d;
         self.matrix.set(matrix);
