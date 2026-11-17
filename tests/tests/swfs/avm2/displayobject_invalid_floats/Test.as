@@ -39,6 +39,9 @@ package {
 						// Remove this `return` when that's fixed.
 						TestAssignMatrix_Infinite();
 						break;
+					case 8:
+						TestArctanNan();
+						break;
 				}
 			});
 		}
@@ -246,6 +249,79 @@ package {
 					}
 				}
 			}
+		}
+
+		public function TestArctanNan(): void {
+			var matVals1:Array = [2, 3];
+			var matVals2:Array = [0, NaN];
+			var matVals3:Array = [1, NaN];
+			var matVals4:Array = [1, 0];
+			var matVals5:Array = [-1, 0];
+
+			trace("// TestArctanNan");
+			var clip:MovieClip = new MovieClip();
+
+			clip.transform.matrix = new Matrix(1, 0, 1, NaN, 0, 0);
+			printChange(clip, "scaleX", 1);
+			printChange(clip, "scaleY", 1);
+			printChange(clip, "rotation", 0);
+			trace("");
+
+			clip.transform.matrix = new Matrix(1, 0, NaN, 1, 0, 0);
+			printChange(clip, "scaleX", 1);
+			printChange(clip, "scaleY", 1);
+			printChange(clip, "rotation", 0);
+			trace("");
+
+			clip.transform.matrix = new Matrix(1, 0, NaN, 0, 0, 0);
+			printChange(clip, "scaleX", 1);
+			printChange(clip, "scaleY", 1);
+			printChange(clip, "rotation", 0);
+			trace("");
+
+			clip.transform.matrix = new Matrix(1, 0, 0, NaN, 0, 0);
+			printChange(clip, "scaleX", 1);
+			printChange(clip, "scaleY", 1);
+			printChange(clip, "rotation", 0);
+			trace("");
+
+			clip.transform.matrix = new Matrix(1, 0, NaN, NaN, 0, 0);
+			printChange(clip, "scaleX", 1);
+			printChange(clip, "scaleY", 1);
+			printChange(clip, "rotation", 0);
+			trace("");
+
+			//
+
+			clip.transform.matrix = new Matrix(1, NaN, 0, 1, 0, 0);
+			printChange(clip, "scaleX", 1);
+			printChange(clip, "scaleY", 1);
+			printChange(clip, "rotation", 0);
+			trace("");
+
+			clip.transform.matrix = new Matrix(NaN, 1, 0, 1, 0, 0);
+			printChange(clip, "scaleX", 1);
+			printChange(clip, "scaleY", 1);
+			printChange(clip, "rotation", 0);
+			trace("");
+
+			clip.transform.matrix = new Matrix(NaN, 0, 0, 1, 0, 0);
+			printChange(clip, "scaleX", 1);
+			printChange(clip, "scaleY", 1);
+			printChange(clip, "rotation", 0);
+			trace("");
+
+			clip.transform.matrix = new Matrix(0, NaN, 0, 1, 0, 0);
+			printChange(clip, "scaleX", 1);
+			printChange(clip, "scaleY", 1);
+			printChange(clip, "rotation", 0);
+			trace("");
+
+			clip.transform.matrix = new Matrix(NaN, NaN, 0, 1, 0, 0);
+			printChange(clip, "scaleX", 1);
+			printChange(clip, "scaleY", 1);
+			printChange(clip, "rotation", 0);
+			trace("");
 		}
 
 		private function printChange(clip:MovieClip, prop:String, value:*): void {
