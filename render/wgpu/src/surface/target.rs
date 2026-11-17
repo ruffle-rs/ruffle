@@ -221,7 +221,11 @@ impl CommandTarget {
                 size,
                 format,
                 if sample_count > 1 {
-                    wgpu::TextureUsages::RENDER_ATTACHMENT
+                    let mut usage = wgpu::TextureUsages::RENDER_ATTACHMENT;
+                    if descriptors.supports_multisampled_blending {
+                        usage |= wgpu::TextureUsages::TEXTURE_BINDING;
+                    }
+                    usage
                 } else {
                     wgpu::TextureUsages::RENDER_ATTACHMENT
                         | wgpu::TextureUsages::COPY_SRC
@@ -329,6 +333,10 @@ impl CommandTarget {
                 ..Default::default()
             });
         }
+    }
+
+    pub fn take_multisampled_color_texture(self) -> PoolOrArcTexture {
+        self.frame_buffer.take_texture()
     }
 
     pub fn take_color_texture(self) -> PoolOrArcTexture {
