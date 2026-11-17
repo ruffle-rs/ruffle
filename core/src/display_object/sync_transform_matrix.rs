@@ -6,6 +6,18 @@ use swf::Fixed16;
 use crate::types::{Degrees, Percent};
 
 pub(crate) fn props_from_matrix(matrix: Matrix) -> (Degrees, Percent, Percent, f64) {
+    let atan2 = |x: f64, y: f64| {
+        let nan_to_neginf = |x: f64| if x.is_nan() { f64::NEG_INFINITY } else { x };
+
+        let x = nan_to_neginf(x);
+        let y = nan_to_neginf(y);
+        if (x, y) == (0.0, 0.0) {
+            // different value from Number.atan2 or Math.atan2.
+            return std::f64::consts::PI / 2.0;
+        }
+        f64::atan2(x, y)
+    };
+
     let Matrix { a, b, c, d, .. } = matrix;
     let a = f64::from(a);
     let b = f64::from(b);
@@ -32,8 +44,8 @@ pub(crate) fn props_from_matrix(matrix: Matrix) -> (Degrees, Percent, Percent, f
     let rotation = f64::atan2(b, a);
     let skew = {
         // `ysignum` multiplication is required here for pi difference.
-        let rotation_y = f64::atan2(-ysignum * c, ysignum * d);
-        let rotation_x = f64::atan2(b, a);
+        let rotation_y = atan2(-ysignum * c, ysignum * d);
+        let rotation_x = atan2(b, a);
         rotation_y - rotation_x
     };
 
