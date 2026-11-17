@@ -29,6 +29,15 @@ END
 TEST: Loader.load
 no error
 END
+TEST: new Sound
+no error
+END
+TEST: Sound.load
+no error
+END
+TEST: Sound.load(null)
+no error
+END
 TEST: new Socket
 Navigator::connect_socket
     Host: localhost; Port: 8000
@@ -60,4 +69,10 @@ Navigator::fetch:
   Method: GET
 Navigator::fetch:
   URL: http://example4.com
+  Method: GET
+Navigator::fetch:
+  URL: http://example5.com
+  Method: GET
+Navigator::fetch:
+  URL: http://example6.com
   Method: GET

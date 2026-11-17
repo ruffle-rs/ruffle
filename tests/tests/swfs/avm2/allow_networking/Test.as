@@ -2,6 +2,7 @@ package {
     import flash.display.MovieClip;
     import flash.display.Loader;
     import flash.net.*;
+    import flash.media.Sound;
     import flash.system.fscommand;
 
     public class Test extends MovieClip {
@@ -39,6 +40,20 @@ package {
             check("Loader.load", function() {
                 var loader = new Loader();
                 loader.load(new URLRequest("http://example4.com"));
+            });
+
+            check("new Sound", function() {
+                new Sound(new URLRequest("http://example5.com"));
+            });
+
+            check("Sound.load", function() {
+                var sound = new Sound();
+                sound.load(new URLRequest("http://example6.com"));
+            });
+
+            check("Sound.load(null)", function() {
+                var sound = new Sound();
+                sound.load(null);
             });
 
             check("new Socket", function() {
