@@ -4,7 +4,7 @@ package flash.system {
         import __ruffle__.stub_method;
         import __ruffle__.stub_getter;
 
-        public static function gc():void {}
+        public static native function gc():void;
 
         public static function pauseForGCIfCollectionImminent(imminence:Number = 0.75):void {
             stub_method("flash.system.System", "pauseForGCIfCollectionImminent");
