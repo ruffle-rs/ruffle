@@ -200,6 +200,9 @@ package {
 								printChange(clip, prop1, 0);
 								trace("");
 								clip.transform.matrix = new Matrix(matVals[idx1], matVals[idx2], matVals[idx3], matVals[idx4], 0, 0);
+								printChange(clip, prop1, 1);
+								trace("");
+								clip.transform.matrix = new Matrix(matVals[idx1], matVals[idx2], matVals[idx3], matVals[idx4], 0, 0);
 								printChange(clip, prop1, 2);
 								trace("");
 							}
