@@ -60,21 +60,21 @@ clip[rotation] = NaN
   transform.matrix = (a=1.4142135381698608, b=0, c=NaN, d=NaN, tx=0, ty=0)
 
   transform.matrix = (a=1, b=1, c=1, d=0, tx=0, ty=0)
-  rotation=45, scaleX=1.4142135623730951, scaleY=1, 
+  rotation=45, scaleX=1.4142135623730951, scaleY=-1, 
 clip[rotation] = NaN
-  rotation=NaN, scaleX=1.4142135623730951, scaleY=1, 
+  rotation=NaN, scaleX=1.4142135623730951, scaleY=-1, 
   transform.matrix = (a=1.4142135381698608, b=0, c=0.7071067690849304, d=-0.7071067690849304, tx=0, ty=0)
 
   transform.matrix = (a=-1, b=-1, c=-1, d=0, tx=0, ty=0)
-  rotation=-135, scaleX=1.4142135623730951, scaleY=1, 
+  rotation=-135, scaleX=1.4142135623730951, scaleY=-1, 
 clip[rotation] = NaN
-  rotation=NaN, scaleX=1.4142135623730951, scaleY=1, 
+  rotation=NaN, scaleX=1.4142135623730951, scaleY=-1, 
   transform.matrix = (a=1.4142135381698608, b=0, c=0.7071067690849304, d=-0.7071067690849304, tx=0, ty=0)
 
   transform.matrix = (a=2, b=2, c=3, d=2, tx=0, ty=0)
-  rotation=45, scaleX=2.8284271247461903, scaleY=3.605551275463989, 
+  rotation=45, scaleX=2.8284271247461903, scaleY=-3.605551275463989, 
 clip[rotation] = NaN
-  rotation=NaN, scaleX=2.8284271247461903, scaleY=3.605551275463989, 
+  rotation=NaN, scaleX=2.8284271247461903, scaleY=-3.605551275463989, 
   transform.matrix = (a=2.8284270763397217, b=0, c=3.535533905029297, d=-0.7071067690849304, tx=0, ty=0)
 
   transform.matrix = (a=0, b=0, c=NaN, d=0, tx=0, ty=0)
@@ -132,9 +132,9 @@ clip[rotation] = NaN
   transform.matrix = (a=1.4142135381698608, b=0, c=0, d=0, tx=0, ty=0)
 
   transform.matrix = (a=2, b=3, c=2, d=2, tx=0, ty=0)
-  rotation=56.309932474020215, scaleX=3.605551275463989, scaleY=2.8284271247461903, 
+  rotation=56.309932474020215, scaleX=3.605551275463989, scaleY=-2.8284271247461903, 
 clip[rotation] = NaN
-  rotation=NaN, scaleX=3.605551275463989, scaleY=2.8284271247461903, 
+  rotation=NaN, scaleX=3.605551275463989, scaleY=-2.8284271247461903, 
   transform.matrix = (a=3.605551242828369, b=0, c=2.773500919342041, d=-0.5547001957893372, tx=0, ty=0)
 
   transform.matrix = (a=0, b=NaN, c=0, d=0, tx=0, ty=0)
@@ -192,9 +192,9 @@ clip[rotation] = NaN
   transform.matrix = (a=1, b=0, c=1, d=6.123234262925839e-17, tx=0, ty=0)
 
   transform.matrix = (a=2, b=3, c=3, d=2, tx=0, ty=0)
-  rotation=56.309932474020215, scaleX=3.605551275463989, scaleY=3.605551275463989, 
+  rotation=56.309932474020215, scaleX=3.605551275463989, scaleY=-3.605551275463989, 
 clip[rotation] = NaN
-  rotation=NaN, scaleX=3.605551275463989, scaleY=3.605551275463989, 
+  rotation=NaN, scaleX=3.605551275463989, scaleY=-3.605551275463989, 
   transform.matrix = (a=3.605551242828369, b=0, c=3.3282012939453125, d=-1.3867504596710205, tx=0, ty=0)
 
   transform.matrix = (a=0, b=NaN, c=NaN, d=0, tx=0, ty=0)
@@ -222,9 +222,9 @@ clip[rotation] = NaN
   transform.matrix = (a=1, b=0, c=-2.4492937051703357e-16, d=1, tx=0, ty=0)
 
   transform.matrix = (a=2, b=3, c=3, d=3, tx=0, ty=0)
-  rotation=56.309932474020215, scaleX=3.605551275463989, scaleY=4.242640687119285, 
+  rotation=56.309932474020215, scaleX=3.605551275463989, scaleY=-4.242640687119285, 
 clip[rotation] = NaN
-  rotation=NaN, scaleX=3.605551275463989, scaleY=4.242640687119285, 
+  rotation=NaN, scaleX=3.605551275463989, scaleY=-4.242640687119285, 
   transform.matrix = (a=3.605551242828369, b=0, c=4.160251617431641, d=-0.8320503234863281, tx=0, ty=0)
 
   transform.matrix = (a=0, b=NaN, c=NaN, d=NaN, tx=0, ty=0)
@@ -270,15 +270,15 @@ clip[rotation] = NaN
   transform.matrix = (a=0, b=0, c=NaN, d=NaN, tx=0, ty=0)
 
   transform.matrix = (a=0, b=1, c=1, d=1, tx=0, ty=0)
-  rotation=90, scaleX=1, scaleY=1.4142135623730951, 
+  rotation=90, scaleX=1, scaleY=-1.4142135623730951, 
 clip[rotation] = NaN
-  rotation=NaN, scaleX=1, scaleY=1.4142135623730951, 
+  rotation=NaN, scaleX=1, scaleY=-1.4142135623730951, 
   transform.matrix = (a=1, b=0, c=1, d=-1, tx=0, ty=0)
 
   transform.matrix = (a=0, b=-1, c=-1, d=-1, tx=0, ty=0)
-  rotation=-90, scaleX=1, scaleY=1.4142135623730951, 
+  rotation=-90, scaleX=1, scaleY=-1.4142135623730951, 
 clip[rotation] = NaN
-  rotation=NaN, scaleX=1, scaleY=1.4142135623730951, 
+  rotation=NaN, scaleX=1, scaleY=-1.4142135623730951, 
   transform.matrix = (a=1, b=0, c=1, d=-1, tx=0, ty=0)
 
   transform.matrix = (a=3, b=2, c=2, d=3, tx=0, ty=0)
@@ -300,16 +300,16 @@ clip[rotation] = NaN
   transform.matrix = (a=0, b=0, c=NaN, d=NaN, tx=0, ty=0)
 
   transform.matrix = (a=0, b=1, c=1, d=0, tx=0, ty=0)
-  rotation=90, scaleX=1, scaleY=1, 
+  rotation=90, scaleX=1, scaleY=-1, 
 clip[rotation] = NaN
-  rotation=NaN, scaleX=1, scaleY=1, 
-  transform.matrix = (a=1, b=0, c=1.2246468525851679e-16, d=-1, tx=0, ty=0)
+  rotation=NaN, scaleX=1, scaleY=-1, 
+  transform.matrix = (a=1, b=0, c=0, d=-1, tx=0, ty=0)
 
   transform.matrix = (a=0, b=-1, c=-1, d=0, tx=0, ty=0)
-  rotation=-90, scaleX=1, scaleY=1, 
+  rotation=-90, scaleX=1, scaleY=-1, 
 clip[rotation] = NaN
-  rotation=NaN, scaleX=1, scaleY=1, 
-  transform.matrix = (a=1, b=0, c=-1.2246468525851679e-16, d=-1, tx=0, ty=0)
+  rotation=NaN, scaleX=1, scaleY=-1, 
+  transform.matrix = (a=1, b=0, c=0, d=-1, tx=0, ty=0)
 
   transform.matrix = (a=3, b=2, c=3, d=2, tx=0, ty=0)
   rotation=33.690067525979785, scaleX=3.605551275463989, scaleY=3.605551275463989, 
@@ -432,9 +432,9 @@ clip[rotation] = NaN
   transform.matrix = (a=0, b=0, c=-1, d=6.123234262925839e-17, tx=0, ty=0)
 
   transform.matrix = (a=3, b=3, c=3, d=2, tx=0, ty=0)
-  rotation=45, scaleX=4.242640687119285, scaleY=3.605551275463989, 
+  rotation=45, scaleX=4.242640687119285, scaleY=-3.605551275463989, 
 clip[rotation] = NaN
-  rotation=NaN, scaleX=4.242640687119285, scaleY=3.605551275463989, 
+  rotation=NaN, scaleX=4.242640687119285, scaleY=-3.605551275463989, 
   transform.matrix = (a=4.242640495300293, b=0, c=3.535533905029297, d=-0.7071067690849304, tx=0, ty=0)
 
   transform.matrix = (a=NaN, b=NaN, c=NaN, d=0, tx=0, ty=0)
@@ -553,21 +553,21 @@ clip[scaleX] = NaN
   transform.matrix = (a=0, b=0, c=1, d=NaN, tx=0, ty=0)
 
   transform.matrix = (a=1, b=1, c=1, d=0, tx=0, ty=0)
-  rotation=45, scaleX=1.4142135623730951, scaleY=1, 
+  rotation=45, scaleX=1.4142135623730951, scaleY=-1, 
 clip[scaleX] = NaN
-  rotation=45, scaleX=NaN, scaleY=1, 
+  rotation=45, scaleX=NaN, scaleY=-1, 
   transform.matrix = (a=0, b=0, c=1, d=0, tx=0, ty=0)
 
   transform.matrix = (a=-1, b=-1, c=-1, d=0, tx=0, ty=0)
-  rotation=-135, scaleX=1.4142135623730951, scaleY=1, 
+  rotation=-135, scaleX=1.4142135623730951, scaleY=-1, 
 clip[scaleX] = NaN
-  rotation=-135, scaleX=NaN, scaleY=1, 
+  rotation=-135, scaleX=NaN, scaleY=-1, 
   transform.matrix = (a=0, b=0, c=-1, d=0, tx=0, ty=0)
 
   transform.matrix = (a=2, b=2, c=3, d=2, tx=0, ty=0)
-  rotation=45, scaleX=2.8284271247461903, scaleY=3.605551275463989, 
+  rotation=45, scaleX=2.8284271247461903, scaleY=-3.605551275463989, 
 clip[scaleX] = NaN
-  rotation=45, scaleX=NaN, scaleY=3.605551275463989, 
+  rotation=45, scaleX=NaN, scaleY=-3.605551275463989, 
   transform.matrix = (a=0, b=0, c=3, d=2, tx=0, ty=0)
 
   transform.matrix = (a=0, b=0, c=NaN, d=0, tx=0, ty=0)
@@ -625,9 +625,9 @@ clip[scaleX] = NaN
   transform.matrix = (a=0, b=0, c=0, d=0, tx=0, ty=0)
 
   transform.matrix = (a=2, b=3, c=2, d=2, tx=0, ty=0)
-  rotation=56.309932474020215, scaleX=3.605551275463989, scaleY=2.8284271247461903, 
+  rotation=56.309932474020215, scaleX=3.605551275463989, scaleY=-2.8284271247461903, 
 clip[scaleX] = NaN
-  rotation=56.309932474020215, scaleX=NaN, scaleY=2.8284271247461903, 
+  rotation=56.309932474020215, scaleX=NaN, scaleY=-2.8284271247461903, 
   transform.matrix = (a=0, b=0, c=2, d=2, tx=0, ty=0)
 
   transform.matrix = (a=0, b=NaN, c=0, d=0, tx=0, ty=0)
@@ -685,9 +685,9 @@ clip[scaleX] = NaN
   transform.matrix = (a=0, b=0, c=-1, d=0, tx=0, ty=0)
 
   transform.matrix = (a=2, b=3, c=3, d=2, tx=0, ty=0)
-  rotation=56.309932474020215, scaleX=3.605551275463989, scaleY=3.605551275463989, 
+  rotation=56.309932474020215, scaleX=3.605551275463989, scaleY=-3.605551275463989, 
 clip[scaleX] = NaN
-  rotation=56.309932474020215, scaleX=NaN, scaleY=3.605551275463989, 
+  rotation=56.309932474020215, scaleX=NaN, scaleY=-3.605551275463989, 
   transform.matrix = (a=0, b=0, c=3, d=2, tx=0, ty=0)
 
   transform.matrix = (a=0, b=NaN, c=NaN, d=0, tx=0, ty=0)
@@ -715,9 +715,9 @@ clip[scaleX] = NaN
   transform.matrix = (a=0, b=0, c=0, d=-1, tx=0, ty=0)
 
   transform.matrix = (a=2, b=3, c=3, d=3, tx=0, ty=0)
-  rotation=56.309932474020215, scaleX=3.605551275463989, scaleY=4.242640687119285, 
+  rotation=56.309932474020215, scaleX=3.605551275463989, scaleY=-4.242640687119285, 
 clip[scaleX] = NaN
-  rotation=56.309932474020215, scaleX=NaN, scaleY=4.242640687119285, 
+  rotation=56.309932474020215, scaleX=NaN, scaleY=-4.242640687119285, 
   transform.matrix = (a=0, b=0, c=3, d=3, tx=0, ty=0)
 
   transform.matrix = (a=0, b=NaN, c=NaN, d=NaN, tx=0, ty=0)
@@ -763,15 +763,15 @@ clip[scaleX] = NaN
   transform.matrix = (a=0, b=0, c=1, d=1, tx=0, ty=0)
 
   transform.matrix = (a=0, b=1, c=1, d=1, tx=0, ty=0)
-  rotation=90, scaleX=1, scaleY=1.4142135623730951, 
+  rotation=90, scaleX=1, scaleY=-1.4142135623730951, 
 clip[scaleX] = NaN
-  rotation=90, scaleX=NaN, scaleY=1.4142135623730951, 
+  rotation=90, scaleX=NaN, scaleY=-1.4142135623730951, 
   transform.matrix = (a=0, b=0, c=1, d=1, tx=0, ty=0)
 
   transform.matrix = (a=0, b=-1, c=-1, d=-1, tx=0, ty=0)
-  rotation=-90, scaleX=1, scaleY=1.4142135623730951, 
+  rotation=-90, scaleX=1, scaleY=-1.4142135623730951, 
 clip[scaleX] = NaN
-  rotation=-90, scaleX=NaN, scaleY=1.4142135623730951, 
+  rotation=-90, scaleX=NaN, scaleY=-1.4142135623730951, 
   transform.matrix = (a=0, b=0, c=-1, d=-1, tx=0, ty=0)
 
   transform.matrix = (a=3, b=2, c=2, d=3, tx=0, ty=0)
@@ -793,15 +793,15 @@ clip[scaleX] = NaN
   transform.matrix = (a=0, b=0, c=1, d=NaN, tx=0, ty=0)
 
   transform.matrix = (a=0, b=1, c=1, d=0, tx=0, ty=0)
-  rotation=90, scaleX=1, scaleY=1, 
+  rotation=90, scaleX=1, scaleY=-1, 
 clip[scaleX] = NaN
-  rotation=90, scaleX=NaN, scaleY=1, 
+  rotation=90, scaleX=NaN, scaleY=-1, 
   transform.matrix = (a=0, b=0, c=1, d=0, tx=0, ty=0)
 
   transform.matrix = (a=0, b=-1, c=-1, d=0, tx=0, ty=0)
-  rotation=-90, scaleX=1, scaleY=1, 
+  rotation=-90, scaleX=1, scaleY=-1, 
 clip[scaleX] = NaN
-  rotation=-90, scaleX=NaN, scaleY=1, 
+  rotation=-90, scaleX=NaN, scaleY=-1, 
   transform.matrix = (a=0, b=0, c=-1, d=0, tx=0, ty=0)
 
   transform.matrix = (a=3, b=2, c=3, d=2, tx=0, ty=0)
@@ -925,9 +925,9 @@ clip[scaleX] = NaN
   transform.matrix = (a=0, b=0, c=-1, d=0, tx=0, ty=0)
 
   transform.matrix = (a=3, b=3, c=3, d=2, tx=0, ty=0)
-  rotation=45, scaleX=4.242640687119285, scaleY=3.605551275463989, 
+  rotation=45, scaleX=4.242640687119285, scaleY=-3.605551275463989, 
 clip[scaleX] = NaN
-  rotation=45, scaleX=NaN, scaleY=3.605551275463989, 
+  rotation=45, scaleX=NaN, scaleY=-3.605551275463989, 
   transform.matrix = (a=0, b=0, c=3, d=2, tx=0, ty=0)
 
   transform.matrix = (a=NaN, b=NaN, c=NaN, d=0, tx=0, ty=0)
@@ -1046,19 +1046,19 @@ clip[scaleY] = NaN
   transform.matrix = (a=1, b=1, c=NaN, d=NaN, tx=0, ty=0)
 
   transform.matrix = (a=1, b=1, c=1, d=0, tx=0, ty=0)
-  rotation=45, scaleX=1.4142135623730951, scaleY=1, 
+  rotation=45, scaleX=1.4142135623730951, scaleY=-1, 
 clip[scaleY] = NaN
   rotation=45, scaleX=1.4142135623730951, scaleY=NaN, 
   transform.matrix = (a=1, b=1, c=0, d=0, tx=0, ty=0)
 
   transform.matrix = (a=-1, b=-1, c=-1, d=0, tx=0, ty=0)
-  rotation=-135, scaleX=1.4142135623730951, scaleY=1, 
+  rotation=-135, scaleX=1.4142135623730951, scaleY=-1, 
 clip[scaleY] = NaN
   rotation=-135, scaleX=1.4142135623730951, scaleY=NaN, 
   transform.matrix = (a=-1, b=-1, c=0, d=0, tx=0, ty=0)
 
   transform.matrix = (a=2, b=2, c=3, d=2, tx=0, ty=0)
-  rotation=45, scaleX=2.8284271247461903, scaleY=3.605551275463989, 
+  rotation=45, scaleX=2.8284271247461903, scaleY=-3.605551275463989, 
 clip[scaleY] = NaN
   rotation=45, scaleX=2.8284271247461903, scaleY=NaN, 
   transform.matrix = (a=2, b=2, c=0, d=0, tx=0, ty=0)
@@ -1118,7 +1118,7 @@ clip[scaleY] = NaN
   transform.matrix = (a=-1, b=-1, c=0, d=0, tx=0, ty=0)
 
   transform.matrix = (a=2, b=3, c=2, d=2, tx=0, ty=0)
-  rotation=56.309932474020215, scaleX=3.605551275463989, scaleY=2.8284271247461903, 
+  rotation=56.309932474020215, scaleX=3.605551275463989, scaleY=-2.8284271247461903, 
 clip[scaleY] = NaN
   rotation=56.309932474020215, scaleX=3.605551275463989, scaleY=NaN, 
   transform.matrix = (a=2, b=3, c=0, d=0, tx=0, ty=0)
@@ -1178,7 +1178,7 @@ clip[scaleY] = NaN
   transform.matrix = (a=-1, b=0, c=0, d=0, tx=0, ty=0)
 
   transform.matrix = (a=2, b=3, c=3, d=2, tx=0, ty=0)
-  rotation=56.309932474020215, scaleX=3.605551275463989, scaleY=3.605551275463989, 
+  rotation=56.309932474020215, scaleX=3.605551275463989, scaleY=-3.605551275463989, 
 clip[scaleY] = NaN
   rotation=56.309932474020215, scaleX=3.605551275463989, scaleY=NaN, 
   transform.matrix = (a=2, b=3, c=0, d=0, tx=0, ty=0)
@@ -1208,7 +1208,7 @@ clip[scaleY] = NaN
   transform.matrix = (a=-1, b=0, c=0, d=0, tx=0, ty=0)
 
   transform.matrix = (a=2, b=3, c=3, d=3, tx=0, ty=0)
-  rotation=56.309932474020215, scaleX=3.605551275463989, scaleY=4.242640687119285, 
+  rotation=56.309932474020215, scaleX=3.605551275463989, scaleY=-4.242640687119285, 
 clip[scaleY] = NaN
   rotation=56.309932474020215, scaleX=3.605551275463989, scaleY=NaN, 
   transform.matrix = (a=2, b=3, c=0, d=0, tx=0, ty=0)
@@ -1256,13 +1256,13 @@ clip[scaleY] = NaN
   transform.matrix = (a=NaN, b=1, c=NaN, d=NaN, tx=0, ty=0)
 
   transform.matrix = (a=0, b=1, c=1, d=1, tx=0, ty=0)
-  rotation=90, scaleX=1, scaleY=1.4142135623730951, 
+  rotation=90, scaleX=1, scaleY=-1.4142135623730951, 
 clip[scaleY] = NaN
   rotation=90, scaleX=1, scaleY=NaN, 
   transform.matrix = (a=0, b=1, c=0, d=0, tx=0, ty=0)
 
   transform.matrix = (a=0, b=-1, c=-1, d=-1, tx=0, ty=0)
-  rotation=-90, scaleX=1, scaleY=1.4142135623730951, 
+  rotation=-90, scaleX=1, scaleY=-1.4142135623730951, 
 clip[scaleY] = NaN
   rotation=-90, scaleX=1, scaleY=NaN, 
   transform.matrix = (a=0, b=-1, c=0, d=0, tx=0, ty=0)
@@ -1286,13 +1286,13 @@ clip[scaleY] = NaN
   transform.matrix = (a=NaN, b=1, c=NaN, d=NaN, tx=0, ty=0)
 
   transform.matrix = (a=0, b=1, c=1, d=0, tx=0, ty=0)
-  rotation=90, scaleX=1, scaleY=1, 
+  rotation=90, scaleX=1, scaleY=-1, 
 clip[scaleY] = NaN
   rotation=90, scaleX=1, scaleY=NaN, 
   transform.matrix = (a=0, b=1, c=0, d=0, tx=0, ty=0)
 
   transform.matrix = (a=0, b=-1, c=-1, d=0, tx=0, ty=0)
-  rotation=-90, scaleX=1, scaleY=1, 
+  rotation=-90, scaleX=1, scaleY=-1, 
 clip[scaleY] = NaN
   rotation=-90, scaleX=1, scaleY=NaN, 
   transform.matrix = (a=0, b=-1, c=0, d=0, tx=0, ty=0)
@@ -1418,7 +1418,7 @@ clip[scaleY] = NaN
   transform.matrix = (a=0, b=0, c=0, d=0, tx=0, ty=0)
 
   transform.matrix = (a=3, b=3, c=3, d=2, tx=0, ty=0)
-  rotation=45, scaleX=4.242640687119285, scaleY=3.605551275463989, 
+  rotation=45, scaleX=4.242640687119285, scaleY=-3.605551275463989, 
 clip[scaleY] = NaN
   rotation=45, scaleX=4.242640687119285, scaleY=NaN, 
   transform.matrix = (a=3, b=3, c=0, d=0, tx=0, ty=0)
