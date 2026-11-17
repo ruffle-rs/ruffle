@@ -541,6 +541,12 @@ impl<'gc> DisplayObjectBase<'gc> {
         self.cache_scale_rotation();
         self.scale_x.set(value);
 
+        let mut matrix = self.matrix.get();
+
+        if sync_transform_matrix::to_skip_update(value.unit(), &matrix) {
+            return changed;
+        }
+
         let computed_matrix = sync_transform_matrix::matrix_from_props(
             self.rotation.get(),
             value,
@@ -548,7 +554,6 @@ impl<'gc> DisplayObjectBase<'gc> {
             self.skew.get(),
         );
 
-        let mut matrix = self.matrix.get();
         matrix.a = computed_matrix.a;
         matrix.b = computed_matrix.b;
         self.matrix.set(matrix);
@@ -566,6 +571,9 @@ impl<'gc> DisplayObjectBase<'gc> {
         self.set_transformed_by_script(true);
         self.cache_scale_rotation();
         self.scale_y.set(value);
+
+        // Surprisingly, unlike scaleX or rotation setter, the scaleY setter
+        // does not appear to have an early-return when updating to NaN.
 
         let computed_matrix = sync_transform_matrix::matrix_from_props(
             self.rotation.get(),
