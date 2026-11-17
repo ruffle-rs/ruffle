@@ -1,0 +1,10 @@
+SWF 6 SmallText DefineFont2 10px: textWidth 42
+SWF 6 SmallText DefineFont2 20px: textWidth 70
+SWF 6 plain DefineFont2 10px: textWidth 42
+SWF 6 SmallText DefineFont3 10px: textWidth 42
+SWF 6 SmallText DefineFont3 20px: textWidth 70
+SWF 7 SmallText DefineFont2 10px: textWidth 50
+SWF 7 SmallText DefineFont2 20px: textWidth 72
+SWF 7 plain DefineFont2 10px: textWidth 42
+SWF 7 SmallText DefineFont3 10px: textWidth 50
+SWF 7 SmallText DefineFont3 20px: textWidth 72
