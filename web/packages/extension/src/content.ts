@@ -192,14 +192,18 @@ function isXMLDocument(): boolean {
             }
         }
     });
-
+    const autoStartOptions = options.autostart
+        ? {
+              autoplay: "on",
+              unmuteOverlay: "hidden",
+              splashScreen: false,
+          }
+        : {};
     await sendMessageToPage({
         type: "load",
         config: {
             ...explicitOptions,
-            autoplay: options.autostart ? "on" : "auto",
-            unmuteOverlay: options.autostart ? "hidden" : "visible",
-            splashScreen: !options.autostart,
+            ...autoStartOptions,
         },
         publicPath: browser.runtime.getURL("/dist/"),
     });
