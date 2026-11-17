@@ -4,9 +4,10 @@ use crate::avm2::Avm2;
 use crate::avm2::Error;
 use crate::avm2::EventObject;
 use crate::avm2::activation::Activation;
+use crate::avm2::bytearray::ByteArrayStorage;
 use crate::avm2::globals::slots::flash_media_id3info as id3_slots;
 use crate::avm2::object::script_object::ScriptObjectData;
-use crate::avm2::object::{ClassObject, Object, TObject};
+use crate::avm2::object::{ByteArrayObject, ClassObject, Object, TObject};
 use crate::backend::audio::{AudioManager, SoundHandle};
 use crate::context::UpdateContext;
 use crate::display_object::SoundTransform;
@@ -41,6 +42,8 @@ pub fn sound_allocator<'gc>(
                 queued_plays: Vec::new(),
             }),
             id3: Lock::new(None),
+            sample_data: Lock::new(None),
+            extract_position: Cell::new(0),
         },
     ))
     .into())
@@ -90,6 +93,15 @@ pub struct SoundObjectData<'gc> {
 
     /// ID3Info Object
     id3: Lock<Option<Object<'gc>>>,
+
+    /// The `ByteArray` that `sampleData` listeners write generated samples
+    /// into. Like in Flash, every request reuses it, rewound but not cleared,
+    /// whichever channel it is for.
+    sample_data: Lock<Option<ByteArrayObject<'gc>>>,
+
+    /// The sample frame where `extract()` goes on when it is not given a
+    /// position: where the last call ended.
+    extract_position: Cell<usize>,
 }
 
 #[derive(Collect)]
@@ -180,6 +192,30 @@ impl<'gc> SoundObject<'gc> {
             }
         }
         self.set_loading_state(SoundLoadingState::Loaded);
+    }
+
+    /// The `ByteArray` that `sampleData` listeners write generated samples into.
+    pub fn sample_data(self, context: &mut UpdateContext<'gc>) -> ByteArrayObject<'gc> {
+        if let Some(sample_data) = self.0.sample_data.get() {
+            return sample_data;
+        }
+        let storage = ByteArrayStorage::new(context);
+        let sample_data = ByteArrayObject::from_storage(context, storage);
+        unlock!(
+            Gc::write(context.gc(), self.0),
+            SoundObjectData,
+            sample_data
+        )
+        .set(Some(sample_data));
+        sample_data
+    }
+
+    pub fn extract_position(self) -> usize {
+        self.0.extract_position.get()
+    }
+
+    pub fn set_extract_position(self, position: usize) {
+        self.0.extract_position.set(position);
     }
 
     pub fn id3(self) -> Option<Object<'gc>> {
