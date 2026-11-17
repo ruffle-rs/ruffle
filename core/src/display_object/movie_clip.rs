@@ -17,6 +17,7 @@ use crate::backend::navigator::Request;
 use crate::backend::ui::MouseCursor;
 use crate::binary_data::BinaryData;
 use crate::character::{BitmapCharacter, Character, CompressedBitmap};
+use crate::config::NetworkingAccessMode;
 use crate::context::{ActionType, RenderContext, UpdateContext};
 use crate::display_object::container::{ChildContainer, dispatch_removed_event};
 use crate::display_object::interactive::{
@@ -770,6 +771,13 @@ impl<'gc> MovieClip<'gc> {
 
         // FP does not attempt to load the url if it is empty
         if asset_url.is_empty() {
+            return Ok(());
+        }
+
+        if context.allow_networking == NetworkingAccessMode::None {
+            tracing::warn!(
+                "Blocked asset import from {asset_url} because allowNetworking is set to none"
+            );
             return Ok(());
         }
 
