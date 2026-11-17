@@ -9243,13 +9243,13 @@ clip[rotation] = Infinity
   rotation=0, scaleX=0, scaleY=Infinity, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=0, scaleY=Infinity, 
-  transform.matrix = (a=0, b=0, c=0, d=-Infinity, tx=0, ty=0)
+  transform.matrix = (a=0, b=0, c=Infinity, d=-Infinity, tx=0, ty=0)
 
   transform.matrix = (a=0, b=0, c=1, d=0, tx=0, ty=0)
   rotation=0, scaleX=0, scaleY=1, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=0, scaleY=1, 
-  transform.matrix = (a=0, b=0, c=1, d=0, tx=0, ty=0)
+  transform.matrix = (a=0, b=0, c=1, d=6.123234262925839e-17, tx=0, ty=0)
 
   transform.matrix = (a=0, b=0, c=1, d=1, tx=0, ty=0)
   rotation=0, scaleX=0, scaleY=1.4142135623730951, 
@@ -9261,25 +9261,25 @@ clip[rotation] = Infinity
   rotation=0, scaleX=0, scaleY=Infinity, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=0, scaleY=Infinity, 
-  transform.matrix = (a=0, b=0, c=1, d=Infinity, tx=0, ty=0)
+  transform.matrix = (a=0, b=0, c=NaN, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=0, b=0, c=1, d=-Infinity, tx=0, ty=0)
   rotation=0, scaleX=0, scaleY=Infinity, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=0, scaleY=Infinity, 
-  transform.matrix = (a=0, b=0, c=1, d=-Infinity, tx=0, ty=0)
+  transform.matrix = (a=0, b=0, c=Infinity, d=-Infinity, tx=0, ty=0)
 
   transform.matrix = (a=0, b=0, c=Infinity, d=0, tx=0, ty=0)
   rotation=0, scaleX=0, scaleY=Infinity, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=0, scaleY=Infinity, 
-  transform.matrix = (a=0, b=0, c=Infinity, d=0, tx=0, ty=0)
+  transform.matrix = (a=0, b=0, c=Infinity, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=0, b=0, c=Infinity, d=1, tx=0, ty=0)
   rotation=0, scaleX=0, scaleY=Infinity, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=0, scaleY=Infinity, 
-  transform.matrix = (a=0, b=0, c=Infinity, d=1, tx=0, ty=0)
+  transform.matrix = (a=0, b=0, c=Infinity, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=0, b=0, c=Infinity, d=Infinity, tx=0, ty=0)
   rotation=0, scaleX=0, scaleY=Infinity, 
@@ -9297,13 +9297,13 @@ clip[rotation] = Infinity
   rotation=0, scaleX=0, scaleY=Infinity, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=0, scaleY=Infinity, 
-  transform.matrix = (a=0, b=0, c=-Infinity, d=0, tx=0, ty=0)
+  transform.matrix = (a=0, b=0, c=-Infinity, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=0, b=0, c=-Infinity, d=1, tx=0, ty=0)
   rotation=0, scaleX=0, scaleY=Infinity, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=0, scaleY=Infinity, 
-  transform.matrix = (a=0, b=0, c=-Infinity, d=1, tx=0, ty=0)
+  transform.matrix = (a=0, b=0, c=-Infinity, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=0, b=0, c=-Infinity, d=Infinity, tx=0, ty=0)
   rotation=0, scaleX=0, scaleY=Infinity, 
@@ -9321,289 +9321,289 @@ clip[rotation] = Infinity
   rotation=90, scaleX=1, scaleY=0, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=1, scaleY=0, 
-  transform.matrix = (a=0, b=1, c=0, d=0, tx=0, ty=0)
+  transform.matrix = (a=1, b=0, c=0, d=0, tx=0, ty=0)
 
   transform.matrix = (a=0, b=1, c=0, d=1, tx=0, ty=0)
   rotation=90, scaleX=1, scaleY=1, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=1, scaleY=1, 
-  transform.matrix = (a=0, b=1, c=0, d=1, tx=0, ty=0)
+  transform.matrix = (a=1, b=0, c=1, d=6.123234262925839e-17, tx=0, ty=0)
 
   transform.matrix = (a=0, b=1, c=0, d=Infinity, tx=0, ty=0)
   rotation=90, scaleX=1, scaleY=Infinity, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=1, scaleY=Infinity, 
-  transform.matrix = (a=0, b=1, c=0, d=Infinity, tx=0, ty=0)
+  transform.matrix = (a=1, b=0, c=Infinity, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=0, b=1, c=0, d=-Infinity, tx=0, ty=0)
   rotation=90, scaleX=1, scaleY=Infinity, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=1, scaleY=Infinity, 
-  transform.matrix = (a=0, b=1, c=0, d=-Infinity, tx=0, ty=0)
+  transform.matrix = (a=1, b=0, c=-Infinity, d=-Infinity, tx=0, ty=0)
 
   transform.matrix = (a=0, b=1, c=1, d=0, tx=0, ty=0)
   rotation=90, scaleX=1, scaleY=1, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=1, scaleY=1, 
-  transform.matrix = (a=0, b=1, c=1, d=0, tx=0, ty=0)
+  transform.matrix = (a=1, b=0, c=1.2246468525851679e-16, d=-1, tx=0, ty=0)
 
   transform.matrix = (a=0, b=1, c=1, d=1, tx=0, ty=0)
   rotation=90, scaleX=1, scaleY=1.4142135623730951, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=1, scaleY=1.4142135623730951, 
-  transform.matrix = (a=0, b=1, c=1, d=1, tx=0, ty=0)
+  transform.matrix = (a=1, b=0, c=1, d=-1, tx=0, ty=0)
 
   transform.matrix = (a=0, b=1, c=1, d=Infinity, tx=0, ty=0)
   rotation=90, scaleX=1, scaleY=Infinity, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=1, scaleY=Infinity, 
-  transform.matrix = (a=0, b=1, c=1, d=Infinity, tx=0, ty=0)
+  transform.matrix = (a=1, b=0, c=Infinity, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=0, b=1, c=1, d=-Infinity, tx=0, ty=0)
   rotation=90, scaleX=1, scaleY=Infinity, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=1, scaleY=Infinity, 
-  transform.matrix = (a=0, b=1, c=1, d=-Infinity, tx=0, ty=0)
+  transform.matrix = (a=1, b=0, c=-Infinity, d=-Infinity, tx=0, ty=0)
 
   transform.matrix = (a=0, b=1, c=Infinity, d=0, tx=0, ty=0)
   rotation=90, scaleX=1, scaleY=Infinity, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=1, scaleY=Infinity, 
-  transform.matrix = (a=0, b=1, c=Infinity, d=0, tx=0, ty=0)
+  transform.matrix = (a=1, b=0, c=Infinity, d=-Infinity, tx=0, ty=0)
 
   transform.matrix = (a=0, b=1, c=Infinity, d=1, tx=0, ty=0)
   rotation=90, scaleX=1, scaleY=Infinity, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=1, scaleY=Infinity, 
-  transform.matrix = (a=0, b=1, c=Infinity, d=1, tx=0, ty=0)
+  transform.matrix = (a=1, b=0, c=Infinity, d=-Infinity, tx=0, ty=0)
 
   transform.matrix = (a=0, b=1, c=Infinity, d=Infinity, tx=0, ty=0)
   rotation=90, scaleX=1, scaleY=Infinity, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=1, scaleY=Infinity, 
-  transform.matrix = (a=0, b=1, c=Infinity, d=Infinity, tx=0, ty=0)
+  transform.matrix = (a=1, b=0, c=Infinity, d=-Infinity, tx=0, ty=0)
 
   transform.matrix = (a=0, b=1, c=Infinity, d=-Infinity, tx=0, ty=0)
   rotation=90, scaleX=1, scaleY=Infinity, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=1, scaleY=Infinity, 
-  transform.matrix = (a=0, b=1, c=Infinity, d=-Infinity, tx=0, ty=0)
+  transform.matrix = (a=1, b=0, c=-Infinity, d=-Infinity, tx=0, ty=0)
 
   transform.matrix = (a=0, b=1, c=-Infinity, d=0, tx=0, ty=0)
   rotation=90, scaleX=1, scaleY=Infinity, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=1, scaleY=Infinity, 
-  transform.matrix = (a=0, b=1, c=-Infinity, d=0, tx=0, ty=0)
+  transform.matrix = (a=1, b=0, c=NaN, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=0, b=1, c=-Infinity, d=1, tx=0, ty=0)
   rotation=90, scaleX=1, scaleY=Infinity, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=1, scaleY=Infinity, 
-  transform.matrix = (a=0, b=1, c=-Infinity, d=1, tx=0, ty=0)
+  transform.matrix = (a=1, b=0, c=NaN, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=0, b=1, c=-Infinity, d=Infinity, tx=0, ty=0)
   rotation=90, scaleX=1, scaleY=Infinity, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=1, scaleY=Infinity, 
-  transform.matrix = (a=0, b=1, c=-Infinity, d=Infinity, tx=0, ty=0)
+  transform.matrix = (a=1, b=0, c=Infinity, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=0, b=1, c=-Infinity, d=-Infinity, tx=0, ty=0)
   rotation=90, scaleX=1, scaleY=Infinity, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=1, scaleY=Infinity, 
-  transform.matrix = (a=0, b=1, c=-Infinity, d=-Infinity, tx=0, ty=0)
+  transform.matrix = (a=1, b=0, c=-Infinity, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=0, b=Infinity, c=0, d=0, tx=0, ty=0)
   rotation=90, scaleX=Infinity, scaleY=0, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=0, 
-  transform.matrix = (a=0, b=Infinity, c=0, d=0, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=0, d=0, tx=0, ty=0)
 
   transform.matrix = (a=0, b=Infinity, c=0, d=1, tx=0, ty=0)
   rotation=90, scaleX=Infinity, scaleY=1, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=1, 
-  transform.matrix = (a=0, b=Infinity, c=0, d=1, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=1, d=6.123234262925839e-17, tx=0, ty=0)
 
   transform.matrix = (a=0, b=Infinity, c=0, d=Infinity, tx=0, ty=0)
   rotation=90, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=0, b=Infinity, c=0, d=Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=Infinity, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=0, b=Infinity, c=0, d=-Infinity, tx=0, ty=0)
   rotation=90, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=0, b=Infinity, c=0, d=-Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=-Infinity, d=-Infinity, tx=0, ty=0)
 
   transform.matrix = (a=0, b=Infinity, c=1, d=0, tx=0, ty=0)
   rotation=90, scaleX=Infinity, scaleY=1, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=1, 
-  transform.matrix = (a=0, b=Infinity, c=1, d=0, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=1.2246468525851679e-16, d=-1, tx=0, ty=0)
 
   transform.matrix = (a=0, b=Infinity, c=1, d=1, tx=0, ty=0)
   rotation=90, scaleX=Infinity, scaleY=1.4142135623730951, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=1.4142135623730951, 
-  transform.matrix = (a=0, b=Infinity, c=1, d=1, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=1, d=-1, tx=0, ty=0)
 
   transform.matrix = (a=0, b=Infinity, c=1, d=Infinity, tx=0, ty=0)
   rotation=90, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=0, b=Infinity, c=1, d=Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=Infinity, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=0, b=Infinity, c=1, d=-Infinity, tx=0, ty=0)
   rotation=90, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=0, b=Infinity, c=1, d=-Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=-Infinity, d=-Infinity, tx=0, ty=0)
 
   transform.matrix = (a=0, b=Infinity, c=Infinity, d=0, tx=0, ty=0)
   rotation=90, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=0, b=Infinity, c=Infinity, d=0, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=Infinity, d=-Infinity, tx=0, ty=0)
 
   transform.matrix = (a=0, b=Infinity, c=Infinity, d=1, tx=0, ty=0)
   rotation=90, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=0, b=Infinity, c=Infinity, d=1, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=Infinity, d=-Infinity, tx=0, ty=0)
 
   transform.matrix = (a=0, b=Infinity, c=Infinity, d=Infinity, tx=0, ty=0)
   rotation=90, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=0, b=Infinity, c=Infinity, d=Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=Infinity, d=-Infinity, tx=0, ty=0)
 
   transform.matrix = (a=0, b=Infinity, c=Infinity, d=-Infinity, tx=0, ty=0)
   rotation=90, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=0, b=Infinity, c=Infinity, d=-Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=-Infinity, d=-Infinity, tx=0, ty=0)
 
   transform.matrix = (a=0, b=Infinity, c=-Infinity, d=0, tx=0, ty=0)
   rotation=90, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=0, b=Infinity, c=-Infinity, d=0, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=NaN, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=0, b=Infinity, c=-Infinity, d=1, tx=0, ty=0)
   rotation=90, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=0, b=Infinity, c=-Infinity, d=1, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=NaN, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=0, b=Infinity, c=-Infinity, d=Infinity, tx=0, ty=0)
   rotation=90, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=0, b=Infinity, c=-Infinity, d=Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=Infinity, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=0, b=Infinity, c=-Infinity, d=-Infinity, tx=0, ty=0)
   rotation=90, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=0, b=Infinity, c=-Infinity, d=-Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=-Infinity, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=0, b=-Infinity, c=0, d=0, tx=0, ty=0)
   rotation=-90, scaleX=Infinity, scaleY=0, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=0, 
-  transform.matrix = (a=0, b=-Infinity, c=0, d=0, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=0, d=0, tx=0, ty=0)
 
   transform.matrix = (a=0, b=-Infinity, c=0, d=1, tx=0, ty=0)
   rotation=-90, scaleX=Infinity, scaleY=1, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=1, 
-  transform.matrix = (a=0, b=-Infinity, c=0, d=1, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=-1, d=6.123234262925839e-17, tx=0, ty=0)
 
   transform.matrix = (a=0, b=-Infinity, c=0, d=Infinity, tx=0, ty=0)
   rotation=-90, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=0, b=-Infinity, c=0, d=Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=-Infinity, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=0, b=-Infinity, c=0, d=-Infinity, tx=0, ty=0)
   rotation=-90, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=0, b=-Infinity, c=0, d=-Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=Infinity, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=0, b=-Infinity, c=1, d=0, tx=0, ty=0)
   rotation=-90, scaleX=Infinity, scaleY=1, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=1, 
-  transform.matrix = (a=0, b=-Infinity, c=1, d=0, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=0, d=1, tx=0, ty=0)
 
   transform.matrix = (a=0, b=-Infinity, c=1, d=1, tx=0, ty=0)
   rotation=-90, scaleX=Infinity, scaleY=1.4142135623730951, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=1.4142135623730951, 
-  transform.matrix = (a=0, b=-Infinity, c=1, d=1, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=-1, d=1, tx=0, ty=0)
 
   transform.matrix = (a=0, b=-Infinity, c=1, d=Infinity, tx=0, ty=0)
   rotation=-90, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=0, b=-Infinity, c=1, d=Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=-Infinity, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=0, b=-Infinity, c=1, d=-Infinity, tx=0, ty=0)
   rotation=-90, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=0, b=-Infinity, c=1, d=-Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=Infinity, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=0, b=-Infinity, c=Infinity, d=0, tx=0, ty=0)
   rotation=-90, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=0, b=-Infinity, c=Infinity, d=0, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=NaN, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=0, b=-Infinity, c=Infinity, d=1, tx=0, ty=0)
   rotation=-90, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=0, b=-Infinity, c=Infinity, d=1, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=NaN, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=0, b=-Infinity, c=Infinity, d=Infinity, tx=0, ty=0)
   rotation=-90, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=0, b=-Infinity, c=Infinity, d=Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=-Infinity, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=0, b=-Infinity, c=Infinity, d=-Infinity, tx=0, ty=0)
   rotation=-90, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=0, b=-Infinity, c=Infinity, d=-Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=Infinity, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=0, b=-Infinity, c=-Infinity, d=0, tx=0, ty=0)
   rotation=-90, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=0, b=-Infinity, c=-Infinity, d=0, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=-Infinity, d=-Infinity, tx=0, ty=0)
 
   transform.matrix = (a=0, b=-Infinity, c=-Infinity, d=1, tx=0, ty=0)
   rotation=-90, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=0, b=-Infinity, c=-Infinity, d=1, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=-Infinity, d=-Infinity, tx=0, ty=0)
 
   transform.matrix = (a=0, b=-Infinity, c=-Infinity, d=Infinity, tx=0, ty=0)
   rotation=-90, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=0, b=-Infinity, c=-Infinity, d=Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=-Infinity, d=-Infinity, tx=0, ty=0)
 
   transform.matrix = (a=0, b=-Infinity, c=-Infinity, d=-Infinity, tx=0, ty=0)
   rotation=-90, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=0, b=-Infinity, c=-Infinity, d=-Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=Infinity, d=-Infinity, tx=0, ty=0)
 
   transform.matrix = (a=1, b=0, c=0, d=0, tx=0, ty=0)
   rotation=0, scaleX=1, scaleY=0, 
@@ -9621,19 +9621,19 @@ clip[rotation] = Infinity
   rotation=0, scaleX=1, scaleY=Infinity, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=1, scaleY=Infinity, 
-  transform.matrix = (a=1, b=0, c=0, d=Infinity, tx=0, ty=0)
+  transform.matrix = (a=1, b=0, c=NaN, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=1, b=0, c=0, d=-Infinity, tx=0, ty=0)
   rotation=0, scaleX=1, scaleY=Infinity, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=1, scaleY=Infinity, 
-  transform.matrix = (a=1, b=0, c=0, d=-Infinity, tx=0, ty=0)
+  transform.matrix = (a=1, b=0, c=Infinity, d=-Infinity, tx=0, ty=0)
 
   transform.matrix = (a=1, b=0, c=1, d=0, tx=0, ty=0)
   rotation=0, scaleX=1, scaleY=1, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=1, scaleY=1, 
-  transform.matrix = (a=1, b=0, c=1, d=0, tx=0, ty=0)
+  transform.matrix = (a=1, b=0, c=1, d=6.123234262925839e-17, tx=0, ty=0)
 
   transform.matrix = (a=1, b=0, c=1, d=1, tx=0, ty=0)
   rotation=0, scaleX=1, scaleY=1.4142135623730951, 
@@ -9645,25 +9645,25 @@ clip[rotation] = Infinity
   rotation=0, scaleX=1, scaleY=Infinity, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=1, scaleY=Infinity, 
-  transform.matrix = (a=1, b=0, c=1, d=Infinity, tx=0, ty=0)
+  transform.matrix = (a=1, b=0, c=NaN, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=1, b=0, c=1, d=-Infinity, tx=0, ty=0)
   rotation=0, scaleX=1, scaleY=Infinity, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=1, scaleY=Infinity, 
-  transform.matrix = (a=1, b=0, c=1, d=-Infinity, tx=0, ty=0)
+  transform.matrix = (a=1, b=0, c=Infinity, d=-Infinity, tx=0, ty=0)
 
   transform.matrix = (a=1, b=0, c=Infinity, d=0, tx=0, ty=0)
   rotation=0, scaleX=1, scaleY=Infinity, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=1, scaleY=Infinity, 
-  transform.matrix = (a=1, b=0, c=Infinity, d=0, tx=0, ty=0)
+  transform.matrix = (a=1, b=0, c=Infinity, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=1, b=0, c=Infinity, d=1, tx=0, ty=0)
   rotation=0, scaleX=1, scaleY=Infinity, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=1, scaleY=Infinity, 
-  transform.matrix = (a=1, b=0, c=Infinity, d=1, tx=0, ty=0)
+  transform.matrix = (a=1, b=0, c=Infinity, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=1, b=0, c=Infinity, d=Infinity, tx=0, ty=0)
   rotation=0, scaleX=1, scaleY=Infinity, 
@@ -9681,13 +9681,13 @@ clip[rotation] = Infinity
   rotation=0, scaleX=1, scaleY=Infinity, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=1, scaleY=Infinity, 
-  transform.matrix = (a=1, b=0, c=-Infinity, d=0, tx=0, ty=0)
+  transform.matrix = (a=1, b=0, c=-Infinity, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=1, b=0, c=-Infinity, d=1, tx=0, ty=0)
   rotation=0, scaleX=1, scaleY=Infinity, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=1, scaleY=Infinity, 
-  transform.matrix = (a=1, b=0, c=-Infinity, d=1, tx=0, ty=0)
+  transform.matrix = (a=1, b=0, c=-Infinity, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=1, b=0, c=-Infinity, d=Infinity, tx=0, ty=0)
   rotation=0, scaleX=1, scaleY=Infinity, 
@@ -9705,1057 +9705,1057 @@ clip[rotation] = Infinity
   rotation=45, scaleX=1.4142135623730951, scaleY=0, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=1.4142135623730951, scaleY=0, 
-  transform.matrix = (a=1, b=1, c=0, d=0, tx=0, ty=0)
+  transform.matrix = (a=1.4142135381698608, b=0, c=0, d=0, tx=0, ty=0)
 
   transform.matrix = (a=1, b=1, c=0, d=1, tx=0, ty=0)
   rotation=45, scaleX=1.4142135623730951, scaleY=1, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=1.4142135623730951, scaleY=1, 
-  transform.matrix = (a=1, b=1, c=0, d=1, tx=0, ty=0)
+  transform.matrix = (a=1.4142135381698608, b=0, c=0.7071067690849304, d=0.7071067690849304, tx=0, ty=0)
 
   transform.matrix = (a=1, b=1, c=0, d=Infinity, tx=0, ty=0)
   rotation=45, scaleX=1.4142135623730951, scaleY=Infinity, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=1.4142135623730951, scaleY=Infinity, 
-  transform.matrix = (a=1, b=1, c=0, d=Infinity, tx=0, ty=0)
+  transform.matrix = (a=1.4142135381698608, b=0, c=Infinity, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=1, b=1, c=0, d=-Infinity, tx=0, ty=0)
   rotation=45, scaleX=1.4142135623730951, scaleY=Infinity, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=1.4142135623730951, scaleY=Infinity, 
-  transform.matrix = (a=1, b=1, c=0, d=-Infinity, tx=0, ty=0)
+  transform.matrix = (a=1.4142135381698608, b=0, c=-Infinity, d=-Infinity, tx=0, ty=0)
 
   transform.matrix = (a=1, b=1, c=1, d=0, tx=0, ty=0)
   rotation=45, scaleX=1.4142135623730951, scaleY=1, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=1.4142135623730951, scaleY=1, 
-  transform.matrix = (a=1, b=1, c=1, d=0, tx=0, ty=0)
+  transform.matrix = (a=1.4142135381698608, b=0, c=0.7071067690849304, d=-0.7071067690849304, tx=0, ty=0)
 
   transform.matrix = (a=1, b=1, c=1, d=1, tx=0, ty=0)
   rotation=45, scaleX=1.4142135623730951, scaleY=1.4142135623730951, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=1.4142135623730951, scaleY=1.4142135623730951, 
-  transform.matrix = (a=1, b=1, c=1, d=1, tx=0, ty=0)
+  transform.matrix = (a=1.4142135381698608, b=0, c=1.4142135381698608, d=8.659560603426554e-17, tx=0, ty=0)
 
   transform.matrix = (a=1, b=1, c=1, d=Infinity, tx=0, ty=0)
   rotation=45, scaleX=1.4142135623730951, scaleY=Infinity, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=1.4142135623730951, scaleY=Infinity, 
-  transform.matrix = (a=1, b=1, c=1, d=Infinity, tx=0, ty=0)
+  transform.matrix = (a=1.4142135381698608, b=0, c=Infinity, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=1, b=1, c=1, d=-Infinity, tx=0, ty=0)
   rotation=45, scaleX=1.4142135623730951, scaleY=Infinity, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=1.4142135623730951, scaleY=Infinity, 
-  transform.matrix = (a=1, b=1, c=1, d=-Infinity, tx=0, ty=0)
+  transform.matrix = (a=1.4142135381698608, b=0, c=-Infinity, d=-Infinity, tx=0, ty=0)
 
   transform.matrix = (a=1, b=1, c=Infinity, d=0, tx=0, ty=0)
   rotation=45, scaleX=1.4142135623730951, scaleY=Infinity, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=1.4142135623730951, scaleY=Infinity, 
-  transform.matrix = (a=1, b=1, c=Infinity, d=0, tx=0, ty=0)
+  transform.matrix = (a=1.4142135381698608, b=0, c=Infinity, d=-Infinity, tx=0, ty=0)
 
   transform.matrix = (a=1, b=1, c=Infinity, d=1, tx=0, ty=0)
   rotation=45, scaleX=1.4142135623730951, scaleY=Infinity, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=1.4142135623730951, scaleY=Infinity, 
-  transform.matrix = (a=1, b=1, c=Infinity, d=1, tx=0, ty=0)
+  transform.matrix = (a=1.4142135381698608, b=0, c=Infinity, d=-Infinity, tx=0, ty=0)
 
   transform.matrix = (a=1, b=1, c=Infinity, d=Infinity, tx=0, ty=0)
   rotation=45, scaleX=1.4142135623730951, scaleY=Infinity, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=1.4142135623730951, scaleY=Infinity, 
-  transform.matrix = (a=1, b=1, c=Infinity, d=Infinity, tx=0, ty=0)
+  transform.matrix = (a=1.4142135381698608, b=0, c=Infinity, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=1, b=1, c=Infinity, d=-Infinity, tx=0, ty=0)
   rotation=45, scaleX=1.4142135623730951, scaleY=Infinity, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=1.4142135623730951, scaleY=Infinity, 
-  transform.matrix = (a=1, b=1, c=Infinity, d=-Infinity, tx=0, ty=0)
+  transform.matrix = (a=1.4142135381698608, b=0, c=Infinity, d=-Infinity, tx=0, ty=0)
 
   transform.matrix = (a=1, b=1, c=-Infinity, d=0, tx=0, ty=0)
   rotation=45, scaleX=1.4142135623730951, scaleY=Infinity, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=1.4142135623730951, scaleY=Infinity, 
-  transform.matrix = (a=1, b=1, c=-Infinity, d=0, tx=0, ty=0)
+  transform.matrix = (a=1.4142135381698608, b=0, c=-Infinity, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=1, b=1, c=-Infinity, d=1, tx=0, ty=0)
   rotation=45, scaleX=1.4142135623730951, scaleY=Infinity, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=1.4142135623730951, scaleY=Infinity, 
-  transform.matrix = (a=1, b=1, c=-Infinity, d=1, tx=0, ty=0)
+  transform.matrix = (a=1.4142135381698608, b=0, c=-Infinity, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=1, b=1, c=-Infinity, d=Infinity, tx=0, ty=0)
   rotation=45, scaleX=1.4142135623730951, scaleY=Infinity, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=1.4142135623730951, scaleY=Infinity, 
-  transform.matrix = (a=1, b=1, c=-Infinity, d=Infinity, tx=0, ty=0)
+  transform.matrix = (a=1.4142135381698608, b=0, c=NaN, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=1, b=1, c=-Infinity, d=-Infinity, tx=0, ty=0)
   rotation=45, scaleX=1.4142135623730951, scaleY=Infinity, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=1.4142135623730951, scaleY=Infinity, 
-  transform.matrix = (a=1, b=1, c=-Infinity, d=-Infinity, tx=0, ty=0)
+  transform.matrix = (a=1.4142135381698608, b=0, c=-Infinity, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=1, b=Infinity, c=0, d=0, tx=0, ty=0)
   rotation=90, scaleX=Infinity, scaleY=0, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=0, 
-  transform.matrix = (a=1, b=Infinity, c=0, d=0, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=0, d=0, tx=0, ty=0)
 
   transform.matrix = (a=1, b=Infinity, c=0, d=1, tx=0, ty=0)
   rotation=90, scaleX=Infinity, scaleY=1, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=1, 
-  transform.matrix = (a=1, b=Infinity, c=0, d=1, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=1, d=6.123234262925839e-17, tx=0, ty=0)
 
   transform.matrix = (a=1, b=Infinity, c=0, d=Infinity, tx=0, ty=0)
   rotation=90, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=1, b=Infinity, c=0, d=Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=Infinity, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=1, b=Infinity, c=0, d=-Infinity, tx=0, ty=0)
   rotation=90, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=1, b=Infinity, c=0, d=-Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=-Infinity, d=-Infinity, tx=0, ty=0)
 
   transform.matrix = (a=1, b=Infinity, c=1, d=0, tx=0, ty=0)
   rotation=90, scaleX=Infinity, scaleY=1, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=1, 
-  transform.matrix = (a=1, b=Infinity, c=1, d=0, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=1.2246468525851679e-16, d=-1, tx=0, ty=0)
 
   transform.matrix = (a=1, b=Infinity, c=1, d=1, tx=0, ty=0)
   rotation=90, scaleX=Infinity, scaleY=1.4142135623730951, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=1.4142135623730951, 
-  transform.matrix = (a=1, b=Infinity, c=1, d=1, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=1, d=-1, tx=0, ty=0)
 
   transform.matrix = (a=1, b=Infinity, c=1, d=Infinity, tx=0, ty=0)
   rotation=90, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=1, b=Infinity, c=1, d=Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=Infinity, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=1, b=Infinity, c=1, d=-Infinity, tx=0, ty=0)
   rotation=90, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=1, b=Infinity, c=1, d=-Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=-Infinity, d=-Infinity, tx=0, ty=0)
 
   transform.matrix = (a=1, b=Infinity, c=Infinity, d=0, tx=0, ty=0)
   rotation=90, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=1, b=Infinity, c=Infinity, d=0, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=Infinity, d=-Infinity, tx=0, ty=0)
 
   transform.matrix = (a=1, b=Infinity, c=Infinity, d=1, tx=0, ty=0)
   rotation=90, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=1, b=Infinity, c=Infinity, d=1, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=Infinity, d=-Infinity, tx=0, ty=0)
 
   transform.matrix = (a=1, b=Infinity, c=Infinity, d=Infinity, tx=0, ty=0)
   rotation=90, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=1, b=Infinity, c=Infinity, d=Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=Infinity, d=-Infinity, tx=0, ty=0)
 
   transform.matrix = (a=1, b=Infinity, c=Infinity, d=-Infinity, tx=0, ty=0)
   rotation=90, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=1, b=Infinity, c=Infinity, d=-Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=-Infinity, d=-Infinity, tx=0, ty=0)
 
   transform.matrix = (a=1, b=Infinity, c=-Infinity, d=0, tx=0, ty=0)
   rotation=90, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=1, b=Infinity, c=-Infinity, d=0, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=NaN, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=1, b=Infinity, c=-Infinity, d=1, tx=0, ty=0)
   rotation=90, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=1, b=Infinity, c=-Infinity, d=1, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=NaN, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=1, b=Infinity, c=-Infinity, d=Infinity, tx=0, ty=0)
   rotation=90, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=1, b=Infinity, c=-Infinity, d=Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=Infinity, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=1, b=Infinity, c=-Infinity, d=-Infinity, tx=0, ty=0)
   rotation=90, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=1, b=Infinity, c=-Infinity, d=-Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=-Infinity, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=1, b=-Infinity, c=0, d=0, tx=0, ty=0)
   rotation=-90, scaleX=Infinity, scaleY=0, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=0, 
-  transform.matrix = (a=1, b=-Infinity, c=0, d=0, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=0, d=0, tx=0, ty=0)
 
   transform.matrix = (a=1, b=-Infinity, c=0, d=1, tx=0, ty=0)
   rotation=-90, scaleX=Infinity, scaleY=1, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=1, 
-  transform.matrix = (a=1, b=-Infinity, c=0, d=1, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=-1, d=6.123234262925839e-17, tx=0, ty=0)
 
   transform.matrix = (a=1, b=-Infinity, c=0, d=Infinity, tx=0, ty=0)
   rotation=-90, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=1, b=-Infinity, c=0, d=Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=-Infinity, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=1, b=-Infinity, c=0, d=-Infinity, tx=0, ty=0)
   rotation=-90, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=1, b=-Infinity, c=0, d=-Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=Infinity, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=1, b=-Infinity, c=1, d=0, tx=0, ty=0)
   rotation=-90, scaleX=Infinity, scaleY=1, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=1, 
-  transform.matrix = (a=1, b=-Infinity, c=1, d=0, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=0, d=1, tx=0, ty=0)
 
   transform.matrix = (a=1, b=-Infinity, c=1, d=1, tx=0, ty=0)
   rotation=-90, scaleX=Infinity, scaleY=1.4142135623730951, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=1.4142135623730951, 
-  transform.matrix = (a=1, b=-Infinity, c=1, d=1, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=-1, d=1, tx=0, ty=0)
 
   transform.matrix = (a=1, b=-Infinity, c=1, d=Infinity, tx=0, ty=0)
   rotation=-90, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=1, b=-Infinity, c=1, d=Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=-Infinity, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=1, b=-Infinity, c=1, d=-Infinity, tx=0, ty=0)
   rotation=-90, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=1, b=-Infinity, c=1, d=-Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=Infinity, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=1, b=-Infinity, c=Infinity, d=0, tx=0, ty=0)
   rotation=-90, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=1, b=-Infinity, c=Infinity, d=0, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=NaN, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=1, b=-Infinity, c=Infinity, d=1, tx=0, ty=0)
   rotation=-90, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=1, b=-Infinity, c=Infinity, d=1, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=NaN, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=1, b=-Infinity, c=Infinity, d=Infinity, tx=0, ty=0)
   rotation=-90, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=1, b=-Infinity, c=Infinity, d=Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=-Infinity, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=1, b=-Infinity, c=Infinity, d=-Infinity, tx=0, ty=0)
   rotation=-90, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=1, b=-Infinity, c=Infinity, d=-Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=Infinity, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=1, b=-Infinity, c=-Infinity, d=0, tx=0, ty=0)
   rotation=-90, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=1, b=-Infinity, c=-Infinity, d=0, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=-Infinity, d=-Infinity, tx=0, ty=0)
 
   transform.matrix = (a=1, b=-Infinity, c=-Infinity, d=1, tx=0, ty=0)
   rotation=-90, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=1, b=-Infinity, c=-Infinity, d=1, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=-Infinity, d=-Infinity, tx=0, ty=0)
 
   transform.matrix = (a=1, b=-Infinity, c=-Infinity, d=Infinity, tx=0, ty=0)
   rotation=-90, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=1, b=-Infinity, c=-Infinity, d=Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=-Infinity, d=-Infinity, tx=0, ty=0)
 
   transform.matrix = (a=1, b=-Infinity, c=-Infinity, d=-Infinity, tx=0, ty=0)
   rotation=-90, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=1, b=-Infinity, c=-Infinity, d=-Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=Infinity, d=-Infinity, tx=0, ty=0)
 
   transform.matrix = (a=Infinity, b=0, c=0, d=0, tx=0, ty=0)
   rotation=0, scaleX=Infinity, scaleY=0, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=0, 
-  transform.matrix = (a=Infinity, b=0, c=0, d=0, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=0, d=0, tx=0, ty=0)
 
   transform.matrix = (a=Infinity, b=0, c=0, d=1, tx=0, ty=0)
   rotation=0, scaleX=Infinity, scaleY=1, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=1, 
-  transform.matrix = (a=Infinity, b=0, c=0, d=1, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=0, d=1, tx=0, ty=0)
 
   transform.matrix = (a=Infinity, b=0, c=0, d=Infinity, tx=0, ty=0)
   rotation=0, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=Infinity, b=0, c=0, d=Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=NaN, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=Infinity, b=0, c=0, d=-Infinity, tx=0, ty=0)
   rotation=0, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=Infinity, b=0, c=0, d=-Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=Infinity, d=-Infinity, tx=0, ty=0)
 
   transform.matrix = (a=Infinity, b=0, c=1, d=0, tx=0, ty=0)
   rotation=0, scaleX=Infinity, scaleY=1, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=1, 
-  transform.matrix = (a=Infinity, b=0, c=1, d=0, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=1, d=6.123234262925839e-17, tx=0, ty=0)
 
   transform.matrix = (a=Infinity, b=0, c=1, d=1, tx=0, ty=0)
   rotation=0, scaleX=Infinity, scaleY=1.4142135623730951, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=1.4142135623730951, 
-  transform.matrix = (a=Infinity, b=0, c=1, d=1, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=1, d=1, tx=0, ty=0)
 
   transform.matrix = (a=Infinity, b=0, c=1, d=Infinity, tx=0, ty=0)
   rotation=0, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=Infinity, b=0, c=1, d=Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=NaN, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=Infinity, b=0, c=1, d=-Infinity, tx=0, ty=0)
   rotation=0, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=Infinity, b=0, c=1, d=-Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=Infinity, d=-Infinity, tx=0, ty=0)
 
   transform.matrix = (a=Infinity, b=0, c=Infinity, d=0, tx=0, ty=0)
   rotation=0, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=Infinity, b=0, c=Infinity, d=0, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=Infinity, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=Infinity, b=0, c=Infinity, d=1, tx=0, ty=0)
   rotation=0, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=Infinity, b=0, c=Infinity, d=1, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=Infinity, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=Infinity, b=0, c=Infinity, d=Infinity, tx=0, ty=0)
   rotation=0, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=Infinity, b=0, c=Infinity, d=Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=Infinity, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=Infinity, b=0, c=Infinity, d=-Infinity, tx=0, ty=0)
   rotation=0, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=Infinity, b=0, c=Infinity, d=-Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=Infinity, d=-Infinity, tx=0, ty=0)
 
   transform.matrix = (a=Infinity, b=0, c=-Infinity, d=0, tx=0, ty=0)
   rotation=0, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=Infinity, b=0, c=-Infinity, d=0, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=-Infinity, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=Infinity, b=0, c=-Infinity, d=1, tx=0, ty=0)
   rotation=0, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=Infinity, b=0, c=-Infinity, d=1, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=-Infinity, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=Infinity, b=0, c=-Infinity, d=Infinity, tx=0, ty=0)
   rotation=0, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=Infinity, b=0, c=-Infinity, d=Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=-Infinity, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=Infinity, b=0, c=-Infinity, d=-Infinity, tx=0, ty=0)
   rotation=0, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=Infinity, b=0, c=-Infinity, d=-Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=-Infinity, d=-Infinity, tx=0, ty=0)
 
   transform.matrix = (a=Infinity, b=1, c=0, d=0, tx=0, ty=0)
   rotation=0, scaleX=Infinity, scaleY=0, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=0, 
-  transform.matrix = (a=Infinity, b=1, c=0, d=0, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=0, d=0, tx=0, ty=0)
 
   transform.matrix = (a=Infinity, b=1, c=0, d=1, tx=0, ty=0)
   rotation=0, scaleX=Infinity, scaleY=1, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=1, 
-  transform.matrix = (a=Infinity, b=1, c=0, d=1, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=0, d=1, tx=0, ty=0)
 
   transform.matrix = (a=Infinity, b=1, c=0, d=Infinity, tx=0, ty=0)
   rotation=0, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=Infinity, b=1, c=0, d=Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=NaN, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=Infinity, b=1, c=0, d=-Infinity, tx=0, ty=0)
   rotation=0, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=Infinity, b=1, c=0, d=-Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=Infinity, d=-Infinity, tx=0, ty=0)
 
   transform.matrix = (a=Infinity, b=1, c=1, d=0, tx=0, ty=0)
   rotation=0, scaleX=Infinity, scaleY=1, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=1, 
-  transform.matrix = (a=Infinity, b=1, c=1, d=0, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=1, d=6.123234262925839e-17, tx=0, ty=0)
 
   transform.matrix = (a=Infinity, b=1, c=1, d=1, tx=0, ty=0)
   rotation=0, scaleX=Infinity, scaleY=1.4142135623730951, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=1.4142135623730951, 
-  transform.matrix = (a=Infinity, b=1, c=1, d=1, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=1, d=1, tx=0, ty=0)
 
   transform.matrix = (a=Infinity, b=1, c=1, d=Infinity, tx=0, ty=0)
   rotation=0, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=Infinity, b=1, c=1, d=Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=NaN, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=Infinity, b=1, c=1, d=-Infinity, tx=0, ty=0)
   rotation=0, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=Infinity, b=1, c=1, d=-Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=Infinity, d=-Infinity, tx=0, ty=0)
 
   transform.matrix = (a=Infinity, b=1, c=Infinity, d=0, tx=0, ty=0)
   rotation=0, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=Infinity, b=1, c=Infinity, d=0, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=Infinity, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=Infinity, b=1, c=Infinity, d=1, tx=0, ty=0)
   rotation=0, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=Infinity, b=1, c=Infinity, d=1, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=Infinity, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=Infinity, b=1, c=Infinity, d=Infinity, tx=0, ty=0)
   rotation=0, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=Infinity, b=1, c=Infinity, d=Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=Infinity, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=Infinity, b=1, c=Infinity, d=-Infinity, tx=0, ty=0)
   rotation=0, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=Infinity, b=1, c=Infinity, d=-Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=Infinity, d=-Infinity, tx=0, ty=0)
 
   transform.matrix = (a=Infinity, b=1, c=-Infinity, d=0, tx=0, ty=0)
   rotation=0, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=Infinity, b=1, c=-Infinity, d=0, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=-Infinity, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=Infinity, b=1, c=-Infinity, d=1, tx=0, ty=0)
   rotation=0, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=Infinity, b=1, c=-Infinity, d=1, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=-Infinity, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=Infinity, b=1, c=-Infinity, d=Infinity, tx=0, ty=0)
   rotation=0, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=Infinity, b=1, c=-Infinity, d=Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=-Infinity, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=Infinity, b=1, c=-Infinity, d=-Infinity, tx=0, ty=0)
   rotation=0, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=Infinity, b=1, c=-Infinity, d=-Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=-Infinity, d=-Infinity, tx=0, ty=0)
 
   transform.matrix = (a=Infinity, b=Infinity, c=0, d=0, tx=0, ty=0)
   rotation=45, scaleX=Infinity, scaleY=0, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=0, 
-  transform.matrix = (a=Infinity, b=Infinity, c=0, d=0, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=0, d=0, tx=0, ty=0)
 
   transform.matrix = (a=Infinity, b=Infinity, c=0, d=1, tx=0, ty=0)
   rotation=45, scaleX=Infinity, scaleY=1, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=1, 
-  transform.matrix = (a=Infinity, b=Infinity, c=0, d=1, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=0.7071067690849304, d=0.7071067690849304, tx=0, ty=0)
 
   transform.matrix = (a=Infinity, b=Infinity, c=0, d=Infinity, tx=0, ty=0)
   rotation=45, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=Infinity, b=Infinity, c=0, d=Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=Infinity, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=Infinity, b=Infinity, c=0, d=-Infinity, tx=0, ty=0)
   rotation=45, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=Infinity, b=Infinity, c=0, d=-Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=-Infinity, d=-Infinity, tx=0, ty=0)
 
   transform.matrix = (a=Infinity, b=Infinity, c=1, d=0, tx=0, ty=0)
   rotation=45, scaleX=Infinity, scaleY=1, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=1, 
-  transform.matrix = (a=Infinity, b=Infinity, c=1, d=0, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=0.7071067690849304, d=-0.7071067690849304, tx=0, ty=0)
 
   transform.matrix = (a=Infinity, b=Infinity, c=1, d=1, tx=0, ty=0)
   rotation=45, scaleX=Infinity, scaleY=1.4142135623730951, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=1.4142135623730951, 
-  transform.matrix = (a=Infinity, b=Infinity, c=1, d=1, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=1.4142135381698608, d=8.659560603426554e-17, tx=0, ty=0)
 
   transform.matrix = (a=Infinity, b=Infinity, c=1, d=Infinity, tx=0, ty=0)
   rotation=45, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=Infinity, b=Infinity, c=1, d=Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=Infinity, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=Infinity, b=Infinity, c=1, d=-Infinity, tx=0, ty=0)
   rotation=45, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=Infinity, b=Infinity, c=1, d=-Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=-Infinity, d=-Infinity, tx=0, ty=0)
 
   transform.matrix = (a=Infinity, b=Infinity, c=Infinity, d=0, tx=0, ty=0)
   rotation=45, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=Infinity, b=Infinity, c=Infinity, d=0, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=Infinity, d=-Infinity, tx=0, ty=0)
 
   transform.matrix = (a=Infinity, b=Infinity, c=Infinity, d=1, tx=0, ty=0)
   rotation=45, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=Infinity, b=Infinity, c=Infinity, d=1, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=Infinity, d=-Infinity, tx=0, ty=0)
 
   transform.matrix = (a=Infinity, b=Infinity, c=Infinity, d=Infinity, tx=0, ty=0)
   rotation=45, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=Infinity, b=Infinity, c=Infinity, d=Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=Infinity, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=Infinity, b=Infinity, c=Infinity, d=-Infinity, tx=0, ty=0)
   rotation=45, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=Infinity, b=Infinity, c=Infinity, d=-Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=Infinity, d=-Infinity, tx=0, ty=0)
 
   transform.matrix = (a=Infinity, b=Infinity, c=-Infinity, d=0, tx=0, ty=0)
   rotation=45, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=Infinity, b=Infinity, c=-Infinity, d=0, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=-Infinity, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=Infinity, b=Infinity, c=-Infinity, d=1, tx=0, ty=0)
   rotation=45, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=Infinity, b=Infinity, c=-Infinity, d=1, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=-Infinity, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=Infinity, b=Infinity, c=-Infinity, d=Infinity, tx=0, ty=0)
   rotation=45, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=Infinity, b=Infinity, c=-Infinity, d=Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=NaN, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=Infinity, b=Infinity, c=-Infinity, d=-Infinity, tx=0, ty=0)
   rotation=45, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=Infinity, b=Infinity, c=-Infinity, d=-Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=-Infinity, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=Infinity, b=-Infinity, c=0, d=0, tx=0, ty=0)
   rotation=-45, scaleX=Infinity, scaleY=0, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=0, 
-  transform.matrix = (a=Infinity, b=-Infinity, c=0, d=0, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=0, d=0, tx=0, ty=0)
 
   transform.matrix = (a=Infinity, b=-Infinity, c=0, d=1, tx=0, ty=0)
   rotation=-45, scaleX=Infinity, scaleY=1, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=1, 
-  transform.matrix = (a=Infinity, b=-Infinity, c=0, d=1, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=-0.7071067690849304, d=0.7071067690849304, tx=0, ty=0)
 
   transform.matrix = (a=Infinity, b=-Infinity, c=0, d=Infinity, tx=0, ty=0)
   rotation=-45, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=Infinity, b=-Infinity, c=0, d=Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=-Infinity, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=Infinity, b=-Infinity, c=0, d=-Infinity, tx=0, ty=0)
   rotation=-45, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=Infinity, b=-Infinity, c=0, d=-Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=Infinity, d=-Infinity, tx=0, ty=0)
 
   transform.matrix = (a=Infinity, b=-Infinity, c=1, d=0, tx=0, ty=0)
   rotation=-45, scaleX=Infinity, scaleY=1, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=1, 
-  transform.matrix = (a=Infinity, b=-Infinity, c=1, d=0, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=0.7071067690849304, d=0.7071067690849304, tx=0, ty=0)
 
   transform.matrix = (a=Infinity, b=-Infinity, c=1, d=1, tx=0, ty=0)
   rotation=-45, scaleX=Infinity, scaleY=1.4142135623730951, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=1.4142135623730951, 
-  transform.matrix = (a=Infinity, b=-Infinity, c=1, d=1, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=0, d=1.4142135381698608, tx=0, ty=0)
 
   transform.matrix = (a=Infinity, b=-Infinity, c=1, d=Infinity, tx=0, ty=0)
   rotation=-45, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=Infinity, b=-Infinity, c=1, d=Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=-Infinity, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=Infinity, b=-Infinity, c=1, d=-Infinity, tx=0, ty=0)
   rotation=-45, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=Infinity, b=-Infinity, c=1, d=-Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=Infinity, d=-Infinity, tx=0, ty=0)
 
   transform.matrix = (a=Infinity, b=-Infinity, c=Infinity, d=0, tx=0, ty=0)
   rotation=-45, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=Infinity, b=-Infinity, c=Infinity, d=0, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=Infinity, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=Infinity, b=-Infinity, c=Infinity, d=1, tx=0, ty=0)
   rotation=-45, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=Infinity, b=-Infinity, c=Infinity, d=1, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=Infinity, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=Infinity, b=-Infinity, c=Infinity, d=Infinity, tx=0, ty=0)
   rotation=-45, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=Infinity, b=-Infinity, c=Infinity, d=Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=NaN, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=Infinity, b=-Infinity, c=Infinity, d=-Infinity, tx=0, ty=0)
   rotation=-45, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=Infinity, b=-Infinity, c=Infinity, d=-Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=Infinity, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=Infinity, b=-Infinity, c=-Infinity, d=0, tx=0, ty=0)
   rotation=-45, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=Infinity, b=-Infinity, c=-Infinity, d=0, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=-Infinity, d=-Infinity, tx=0, ty=0)
 
   transform.matrix = (a=Infinity, b=-Infinity, c=-Infinity, d=1, tx=0, ty=0)
   rotation=-45, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=Infinity, b=-Infinity, c=-Infinity, d=1, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=-Infinity, d=-Infinity, tx=0, ty=0)
 
   transform.matrix = (a=Infinity, b=-Infinity, c=-Infinity, d=Infinity, tx=0, ty=0)
   rotation=-45, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=Infinity, b=-Infinity, c=-Infinity, d=Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=-Infinity, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=Infinity, b=-Infinity, c=-Infinity, d=-Infinity, tx=0, ty=0)
   rotation=-45, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=Infinity, b=-Infinity, c=-Infinity, d=-Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=-Infinity, d=-Infinity, tx=0, ty=0)
 
   transform.matrix = (a=-Infinity, b=0, c=0, d=0, tx=0, ty=0)
   rotation=180, scaleX=Infinity, scaleY=0, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=0, 
-  transform.matrix = (a=-Infinity, b=0, c=0, d=0, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=0, d=0, tx=0, ty=0)
 
   transform.matrix = (a=-Infinity, b=0, c=0, d=1, tx=0, ty=0)
   rotation=180, scaleX=Infinity, scaleY=1, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=1, 
-  transform.matrix = (a=-Infinity, b=0, c=0, d=1, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=1.2246468525851679e-16, d=-1, tx=0, ty=0)
 
   transform.matrix = (a=-Infinity, b=0, c=0, d=Infinity, tx=0, ty=0)
   rotation=180, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=-Infinity, b=0, c=0, d=Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=Infinity, d=-Infinity, tx=0, ty=0)
 
   transform.matrix = (a=-Infinity, b=0, c=0, d=-Infinity, tx=0, ty=0)
   rotation=180, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=-Infinity, b=0, c=0, d=-Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=-Infinity, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=-Infinity, b=0, c=1, d=0, tx=0, ty=0)
   rotation=180, scaleX=Infinity, scaleY=1, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=1, 
-  transform.matrix = (a=-Infinity, b=0, c=1, d=0, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=-1, d=-1.8369701465288538e-16, tx=0, ty=0)
 
   transform.matrix = (a=-Infinity, b=0, c=1, d=1, tx=0, ty=0)
   rotation=180, scaleX=Infinity, scaleY=1.4142135623730951, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=1.4142135623730951, 
-  transform.matrix = (a=-Infinity, b=0, c=1, d=1, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=-1, d=-1, tx=0, ty=0)
 
   transform.matrix = (a=-Infinity, b=0, c=1, d=Infinity, tx=0, ty=0)
   rotation=180, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=-Infinity, b=0, c=1, d=Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=Infinity, d=-Infinity, tx=0, ty=0)
 
   transform.matrix = (a=-Infinity, b=0, c=1, d=-Infinity, tx=0, ty=0)
   rotation=180, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=-Infinity, b=0, c=1, d=-Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=-Infinity, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=-Infinity, b=0, c=Infinity, d=0, tx=0, ty=0)
   rotation=180, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=-Infinity, b=0, c=Infinity, d=0, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=-Infinity, d=-Infinity, tx=0, ty=0)
 
   transform.matrix = (a=-Infinity, b=0, c=Infinity, d=1, tx=0, ty=0)
   rotation=180, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=-Infinity, b=0, c=Infinity, d=1, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=-Infinity, d=-Infinity, tx=0, ty=0)
 
   transform.matrix = (a=-Infinity, b=0, c=Infinity, d=Infinity, tx=0, ty=0)
   rotation=180, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=-Infinity, b=0, c=Infinity, d=Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=-Infinity, d=-Infinity, tx=0, ty=0)
 
   transform.matrix = (a=-Infinity, b=0, c=Infinity, d=-Infinity, tx=0, ty=0)
   rotation=180, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=-Infinity, b=0, c=Infinity, d=-Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=-Infinity, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=-Infinity, b=0, c=-Infinity, d=0, tx=0, ty=0)
   rotation=180, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=-Infinity, b=0, c=-Infinity, d=0, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=Infinity, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=-Infinity, b=0, c=-Infinity, d=1, tx=0, ty=0)
   rotation=180, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=-Infinity, b=0, c=-Infinity, d=1, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=Infinity, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=-Infinity, b=0, c=-Infinity, d=Infinity, tx=0, ty=0)
   rotation=180, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=-Infinity, b=0, c=-Infinity, d=Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=Infinity, d=-Infinity, tx=0, ty=0)
 
   transform.matrix = (a=-Infinity, b=0, c=-Infinity, d=-Infinity, tx=0, ty=0)
   rotation=180, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=-Infinity, b=0, c=-Infinity, d=-Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=Infinity, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=-Infinity, b=1, c=0, d=0, tx=0, ty=0)
   rotation=180, scaleX=Infinity, scaleY=0, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=0, 
-  transform.matrix = (a=-Infinity, b=1, c=0, d=0, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=0, d=0, tx=0, ty=0)
 
   transform.matrix = (a=-Infinity, b=1, c=0, d=1, tx=0, ty=0)
   rotation=180, scaleX=Infinity, scaleY=1, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=1, 
-  transform.matrix = (a=-Infinity, b=1, c=0, d=1, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=1.2246468525851679e-16, d=-1, tx=0, ty=0)
 
   transform.matrix = (a=-Infinity, b=1, c=0, d=Infinity, tx=0, ty=0)
   rotation=180, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=-Infinity, b=1, c=0, d=Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=Infinity, d=-Infinity, tx=0, ty=0)
 
   transform.matrix = (a=-Infinity, b=1, c=0, d=-Infinity, tx=0, ty=0)
   rotation=180, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=-Infinity, b=1, c=0, d=-Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=-Infinity, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=-Infinity, b=1, c=1, d=0, tx=0, ty=0)
   rotation=180, scaleX=Infinity, scaleY=1, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=1, 
-  transform.matrix = (a=-Infinity, b=1, c=1, d=0, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=-1, d=-1.8369701465288538e-16, tx=0, ty=0)
 
   transform.matrix = (a=-Infinity, b=1, c=1, d=1, tx=0, ty=0)
   rotation=180, scaleX=Infinity, scaleY=1.4142135623730951, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=1.4142135623730951, 
-  transform.matrix = (a=-Infinity, b=1, c=1, d=1, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=-1, d=-1, tx=0, ty=0)
 
   transform.matrix = (a=-Infinity, b=1, c=1, d=Infinity, tx=0, ty=0)
   rotation=180, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=-Infinity, b=1, c=1, d=Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=Infinity, d=-Infinity, tx=0, ty=0)
 
   transform.matrix = (a=-Infinity, b=1, c=1, d=-Infinity, tx=0, ty=0)
   rotation=180, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=-Infinity, b=1, c=1, d=-Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=-Infinity, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=-Infinity, b=1, c=Infinity, d=0, tx=0, ty=0)
   rotation=180, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=-Infinity, b=1, c=Infinity, d=0, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=-Infinity, d=-Infinity, tx=0, ty=0)
 
   transform.matrix = (a=-Infinity, b=1, c=Infinity, d=1, tx=0, ty=0)
   rotation=180, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=-Infinity, b=1, c=Infinity, d=1, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=-Infinity, d=-Infinity, tx=0, ty=0)
 
   transform.matrix = (a=-Infinity, b=1, c=Infinity, d=Infinity, tx=0, ty=0)
   rotation=180, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=-Infinity, b=1, c=Infinity, d=Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=-Infinity, d=-Infinity, tx=0, ty=0)
 
   transform.matrix = (a=-Infinity, b=1, c=Infinity, d=-Infinity, tx=0, ty=0)
   rotation=180, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=-Infinity, b=1, c=Infinity, d=-Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=-Infinity, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=-Infinity, b=1, c=-Infinity, d=0, tx=0, ty=0)
   rotation=180, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=-Infinity, b=1, c=-Infinity, d=0, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=Infinity, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=-Infinity, b=1, c=-Infinity, d=1, tx=0, ty=0)
   rotation=180, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=-Infinity, b=1, c=-Infinity, d=1, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=Infinity, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=-Infinity, b=1, c=-Infinity, d=Infinity, tx=0, ty=0)
   rotation=180, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=-Infinity, b=1, c=-Infinity, d=Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=Infinity, d=-Infinity, tx=0, ty=0)
 
   transform.matrix = (a=-Infinity, b=1, c=-Infinity, d=-Infinity, tx=0, ty=0)
   rotation=180, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=-Infinity, b=1, c=-Infinity, d=-Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=Infinity, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=-Infinity, b=Infinity, c=0, d=0, tx=0, ty=0)
   rotation=135, scaleX=Infinity, scaleY=0, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=0, 
-  transform.matrix = (a=-Infinity, b=Infinity, c=0, d=0, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=0, d=0, tx=0, ty=0)
 
   transform.matrix = (a=-Infinity, b=Infinity, c=0, d=1, tx=0, ty=0)
   rotation=135, scaleX=Infinity, scaleY=1, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=1, 
-  transform.matrix = (a=-Infinity, b=Infinity, c=0, d=1, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=0.7071067690849304, d=-0.7071067690849304, tx=0, ty=0)
 
   transform.matrix = (a=-Infinity, b=Infinity, c=0, d=Infinity, tx=0, ty=0)
   rotation=135, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=-Infinity, b=Infinity, c=0, d=Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=Infinity, d=-Infinity, tx=0, ty=0)
 
   transform.matrix = (a=-Infinity, b=Infinity, c=0, d=-Infinity, tx=0, ty=0)
   rotation=135, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=-Infinity, b=Infinity, c=0, d=-Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=-Infinity, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=-Infinity, b=Infinity, c=1, d=0, tx=0, ty=0)
   rotation=135, scaleX=Infinity, scaleY=1, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=1, 
-  transform.matrix = (a=-Infinity, b=Infinity, c=1, d=0, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=-0.7071067690849304, d=-0.7071067690849304, tx=0, ty=0)
 
   transform.matrix = (a=-Infinity, b=Infinity, c=1, d=1, tx=0, ty=0)
   rotation=135, scaleX=Infinity, scaleY=1.4142135623730951, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=1.4142135623730951, 
-  transform.matrix = (a=-Infinity, b=Infinity, c=1, d=1, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=1.7319121206853109e-16, d=-1.4142135381698608, tx=0, ty=0)
 
   transform.matrix = (a=-Infinity, b=Infinity, c=1, d=Infinity, tx=0, ty=0)
   rotation=135, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=-Infinity, b=Infinity, c=1, d=Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=Infinity, d=-Infinity, tx=0, ty=0)
 
   transform.matrix = (a=-Infinity, b=Infinity, c=1, d=-Infinity, tx=0, ty=0)
   rotation=135, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=-Infinity, b=Infinity, c=1, d=-Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=-Infinity, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=-Infinity, b=Infinity, c=Infinity, d=0, tx=0, ty=0)
   rotation=135, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=-Infinity, b=Infinity, c=Infinity, d=0, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=-Infinity, d=-Infinity, tx=0, ty=0)
 
   transform.matrix = (a=-Infinity, b=Infinity, c=Infinity, d=1, tx=0, ty=0)
   rotation=135, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=-Infinity, b=Infinity, c=Infinity, d=1, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=-Infinity, d=-Infinity, tx=0, ty=0)
 
   transform.matrix = (a=-Infinity, b=Infinity, c=Infinity, d=Infinity, tx=0, ty=0)
   rotation=135, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=-Infinity, b=Infinity, c=Infinity, d=Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=Infinity, d=-Infinity, tx=0, ty=0)
 
   transform.matrix = (a=-Infinity, b=Infinity, c=Infinity, d=-Infinity, tx=0, ty=0)
   rotation=135, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=-Infinity, b=Infinity, c=Infinity, d=-Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=-Infinity, d=-Infinity, tx=0, ty=0)
 
   transform.matrix = (a=-Infinity, b=Infinity, c=-Infinity, d=0, tx=0, ty=0)
   rotation=135, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=-Infinity, b=Infinity, c=-Infinity, d=0, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=Infinity, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=-Infinity, b=Infinity, c=-Infinity, d=1, tx=0, ty=0)
   rotation=135, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=-Infinity, b=Infinity, c=-Infinity, d=1, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=Infinity, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=-Infinity, b=Infinity, c=-Infinity, d=Infinity, tx=0, ty=0)
   rotation=135, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=-Infinity, b=Infinity, c=-Infinity, d=Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=Infinity, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=-Infinity, b=Infinity, c=-Infinity, d=-Infinity, tx=0, ty=0)
   rotation=135, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=-Infinity, b=Infinity, c=-Infinity, d=-Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=NaN, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=-Infinity, b=-Infinity, c=0, d=0, tx=0, ty=0)
   rotation=-135, scaleX=Infinity, scaleY=0, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=0, 
-  transform.matrix = (a=-Infinity, b=-Infinity, c=0, d=0, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=0, d=0, tx=0, ty=0)
 
   transform.matrix = (a=-Infinity, b=-Infinity, c=0, d=1, tx=0, ty=0)
   rotation=-135, scaleX=Infinity, scaleY=1, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=1, 
-  transform.matrix = (a=-Infinity, b=-Infinity, c=0, d=1, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=-0.7071067690849304, d=-0.7071067690849304, tx=0, ty=0)
 
   transform.matrix = (a=-Infinity, b=-Infinity, c=0, d=Infinity, tx=0, ty=0)
   rotation=-135, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=-Infinity, b=-Infinity, c=0, d=Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=-Infinity, d=-Infinity, tx=0, ty=0)
 
   transform.matrix = (a=-Infinity, b=-Infinity, c=0, d=-Infinity, tx=0, ty=0)
   rotation=-135, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=-Infinity, b=-Infinity, c=0, d=-Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=Infinity, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=-Infinity, b=-Infinity, c=1, d=0, tx=0, ty=0)
   rotation=-135, scaleX=Infinity, scaleY=1, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=1, 
-  transform.matrix = (a=-Infinity, b=-Infinity, c=1, d=0, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=-0.7071067690849304, d=0.7071067690849304, tx=0, ty=0)
 
   transform.matrix = (a=-Infinity, b=-Infinity, c=1, d=1, tx=0, ty=0)
   rotation=-135, scaleX=Infinity, scaleY=1.4142135623730951, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=1.4142135623730951, 
-  transform.matrix = (a=-Infinity, b=-Infinity, c=1, d=1, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=-1.4142135381698608, d=8.659560603426554e-17, tx=0, ty=0)
 
   transform.matrix = (a=-Infinity, b=-Infinity, c=1, d=Infinity, tx=0, ty=0)
   rotation=-135, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=-Infinity, b=-Infinity, c=1, d=Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=-Infinity, d=-Infinity, tx=0, ty=0)
 
   transform.matrix = (a=-Infinity, b=-Infinity, c=1, d=-Infinity, tx=0, ty=0)
   rotation=-135, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=-Infinity, b=-Infinity, c=1, d=-Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=Infinity, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=-Infinity, b=-Infinity, c=Infinity, d=0, tx=0, ty=0)
   rotation=-135, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=-Infinity, b=-Infinity, c=Infinity, d=0, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=-Infinity, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=-Infinity, b=-Infinity, c=Infinity, d=1, tx=0, ty=0)
   rotation=-135, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=-Infinity, b=-Infinity, c=Infinity, d=1, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=-Infinity, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=-Infinity, b=-Infinity, c=Infinity, d=Infinity, tx=0, ty=0)
   rotation=-135, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=-Infinity, b=-Infinity, c=Infinity, d=Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=-Infinity, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=-Infinity, b=-Infinity, c=Infinity, d=-Infinity, tx=0, ty=0)
   rotation=-135, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=-Infinity, b=-Infinity, c=Infinity, d=-Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=NaN, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=-Infinity, b=-Infinity, c=-Infinity, d=0, tx=0, ty=0)
   rotation=-135, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=-Infinity, b=-Infinity, c=-Infinity, d=0, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=Infinity, d=-Infinity, tx=0, ty=0)
 
   transform.matrix = (a=-Infinity, b=-Infinity, c=-Infinity, d=1, tx=0, ty=0)
   rotation=-135, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=-Infinity, b=-Infinity, c=-Infinity, d=1, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=Infinity, d=-Infinity, tx=0, ty=0)
 
   transform.matrix = (a=-Infinity, b=-Infinity, c=-Infinity, d=Infinity, tx=0, ty=0)
   rotation=-135, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=-Infinity, b=-Infinity, c=-Infinity, d=Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=-Infinity, d=-Infinity, tx=0, ty=0)
 
   transform.matrix = (a=-Infinity, b=-Infinity, c=-Infinity, d=-Infinity, tx=0, ty=0)
   rotation=-135, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=-Infinity, b=-Infinity, c=-Infinity, d=-Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=Infinity, d=-Infinity, tx=0, ty=0)
 
 // TestAssignMatrix: scaleX = Infinity
   transform.matrix = (a=0, b=0, c=0, d=0, tx=0, ty=0)
@@ -13854,13 +13854,13 @@ clip[rotation] = -Infinity
   rotation=0, scaleX=0, scaleY=Infinity, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=0, scaleY=Infinity, 
-  transform.matrix = (a=0, b=0, c=0, d=-Infinity, tx=0, ty=0)
+  transform.matrix = (a=0, b=0, c=Infinity, d=-Infinity, tx=0, ty=0)
 
   transform.matrix = (a=0, b=0, c=1, d=0, tx=0, ty=0)
   rotation=0, scaleX=0, scaleY=1, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=0, scaleY=1, 
-  transform.matrix = (a=0, b=0, c=1, d=0, tx=0, ty=0)
+  transform.matrix = (a=0, b=0, c=1, d=6.123234262925839e-17, tx=0, ty=0)
 
   transform.matrix = (a=0, b=0, c=1, d=1, tx=0, ty=0)
   rotation=0, scaleX=0, scaleY=1.4142135623730951, 
@@ -13872,25 +13872,25 @@ clip[rotation] = -Infinity
   rotation=0, scaleX=0, scaleY=Infinity, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=0, scaleY=Infinity, 
-  transform.matrix = (a=0, b=0, c=1, d=Infinity, tx=0, ty=0)
+  transform.matrix = (a=0, b=0, c=NaN, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=0, b=0, c=1, d=-Infinity, tx=0, ty=0)
   rotation=0, scaleX=0, scaleY=Infinity, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=0, scaleY=Infinity, 
-  transform.matrix = (a=0, b=0, c=1, d=-Infinity, tx=0, ty=0)
+  transform.matrix = (a=0, b=0, c=Infinity, d=-Infinity, tx=0, ty=0)
 
   transform.matrix = (a=0, b=0, c=Infinity, d=0, tx=0, ty=0)
   rotation=0, scaleX=0, scaleY=Infinity, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=0, scaleY=Infinity, 
-  transform.matrix = (a=0, b=0, c=Infinity, d=0, tx=0, ty=0)
+  transform.matrix = (a=0, b=0, c=Infinity, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=0, b=0, c=Infinity, d=1, tx=0, ty=0)
   rotation=0, scaleX=0, scaleY=Infinity, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=0, scaleY=Infinity, 
-  transform.matrix = (a=0, b=0, c=Infinity, d=1, tx=0, ty=0)
+  transform.matrix = (a=0, b=0, c=Infinity, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=0, b=0, c=Infinity, d=Infinity, tx=0, ty=0)
   rotation=0, scaleX=0, scaleY=Infinity, 
@@ -13908,13 +13908,13 @@ clip[rotation] = -Infinity
   rotation=0, scaleX=0, scaleY=Infinity, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=0, scaleY=Infinity, 
-  transform.matrix = (a=0, b=0, c=-Infinity, d=0, tx=0, ty=0)
+  transform.matrix = (a=0, b=0, c=-Infinity, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=0, b=0, c=-Infinity, d=1, tx=0, ty=0)
   rotation=0, scaleX=0, scaleY=Infinity, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=0, scaleY=Infinity, 
-  transform.matrix = (a=0, b=0, c=-Infinity, d=1, tx=0, ty=0)
+  transform.matrix = (a=0, b=0, c=-Infinity, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=0, b=0, c=-Infinity, d=Infinity, tx=0, ty=0)
   rotation=0, scaleX=0, scaleY=Infinity, 
@@ -13932,289 +13932,289 @@ clip[rotation] = -Infinity
   rotation=90, scaleX=1, scaleY=0, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=1, scaleY=0, 
-  transform.matrix = (a=0, b=1, c=0, d=0, tx=0, ty=0)
+  transform.matrix = (a=1, b=0, c=0, d=0, tx=0, ty=0)
 
   transform.matrix = (a=0, b=1, c=0, d=1, tx=0, ty=0)
   rotation=90, scaleX=1, scaleY=1, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=1, scaleY=1, 
-  transform.matrix = (a=0, b=1, c=0, d=1, tx=0, ty=0)
+  transform.matrix = (a=1, b=0, c=1, d=6.123234262925839e-17, tx=0, ty=0)
 
   transform.matrix = (a=0, b=1, c=0, d=Infinity, tx=0, ty=0)
   rotation=90, scaleX=1, scaleY=Infinity, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=1, scaleY=Infinity, 
-  transform.matrix = (a=0, b=1, c=0, d=Infinity, tx=0, ty=0)
+  transform.matrix = (a=1, b=0, c=Infinity, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=0, b=1, c=0, d=-Infinity, tx=0, ty=0)
   rotation=90, scaleX=1, scaleY=Infinity, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=1, scaleY=Infinity, 
-  transform.matrix = (a=0, b=1, c=0, d=-Infinity, tx=0, ty=0)
+  transform.matrix = (a=1, b=0, c=-Infinity, d=-Infinity, tx=0, ty=0)
 
   transform.matrix = (a=0, b=1, c=1, d=0, tx=0, ty=0)
   rotation=90, scaleX=1, scaleY=1, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=1, scaleY=1, 
-  transform.matrix = (a=0, b=1, c=1, d=0, tx=0, ty=0)
+  transform.matrix = (a=1, b=0, c=1.2246468525851679e-16, d=-1, tx=0, ty=0)
 
   transform.matrix = (a=0, b=1, c=1, d=1, tx=0, ty=0)
   rotation=90, scaleX=1, scaleY=1.4142135623730951, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=1, scaleY=1.4142135623730951, 
-  transform.matrix = (a=0, b=1, c=1, d=1, tx=0, ty=0)
+  transform.matrix = (a=1, b=0, c=1, d=-1, tx=0, ty=0)
 
   transform.matrix = (a=0, b=1, c=1, d=Infinity, tx=0, ty=0)
   rotation=90, scaleX=1, scaleY=Infinity, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=1, scaleY=Infinity, 
-  transform.matrix = (a=0, b=1, c=1, d=Infinity, tx=0, ty=0)
+  transform.matrix = (a=1, b=0, c=Infinity, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=0, b=1, c=1, d=-Infinity, tx=0, ty=0)
   rotation=90, scaleX=1, scaleY=Infinity, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=1, scaleY=Infinity, 
-  transform.matrix = (a=0, b=1, c=1, d=-Infinity, tx=0, ty=0)
+  transform.matrix = (a=1, b=0, c=-Infinity, d=-Infinity, tx=0, ty=0)
 
   transform.matrix = (a=0, b=1, c=Infinity, d=0, tx=0, ty=0)
   rotation=90, scaleX=1, scaleY=Infinity, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=1, scaleY=Infinity, 
-  transform.matrix = (a=0, b=1, c=Infinity, d=0, tx=0, ty=0)
+  transform.matrix = (a=1, b=0, c=Infinity, d=-Infinity, tx=0, ty=0)
 
   transform.matrix = (a=0, b=1, c=Infinity, d=1, tx=0, ty=0)
   rotation=90, scaleX=1, scaleY=Infinity, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=1, scaleY=Infinity, 
-  transform.matrix = (a=0, b=1, c=Infinity, d=1, tx=0, ty=0)
+  transform.matrix = (a=1, b=0, c=Infinity, d=-Infinity, tx=0, ty=0)
 
   transform.matrix = (a=0, b=1, c=Infinity, d=Infinity, tx=0, ty=0)
   rotation=90, scaleX=1, scaleY=Infinity, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=1, scaleY=Infinity, 
-  transform.matrix = (a=0, b=1, c=Infinity, d=Infinity, tx=0, ty=0)
+  transform.matrix = (a=1, b=0, c=Infinity, d=-Infinity, tx=0, ty=0)
 
   transform.matrix = (a=0, b=1, c=Infinity, d=-Infinity, tx=0, ty=0)
   rotation=90, scaleX=1, scaleY=Infinity, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=1, scaleY=Infinity, 
-  transform.matrix = (a=0, b=1, c=Infinity, d=-Infinity, tx=0, ty=0)
+  transform.matrix = (a=1, b=0, c=-Infinity, d=-Infinity, tx=0, ty=0)
 
   transform.matrix = (a=0, b=1, c=-Infinity, d=0, tx=0, ty=0)
   rotation=90, scaleX=1, scaleY=Infinity, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=1, scaleY=Infinity, 
-  transform.matrix = (a=0, b=1, c=-Infinity, d=0, tx=0, ty=0)
+  transform.matrix = (a=1, b=0, c=NaN, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=0, b=1, c=-Infinity, d=1, tx=0, ty=0)
   rotation=90, scaleX=1, scaleY=Infinity, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=1, scaleY=Infinity, 
-  transform.matrix = (a=0, b=1, c=-Infinity, d=1, tx=0, ty=0)
+  transform.matrix = (a=1, b=0, c=NaN, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=0, b=1, c=-Infinity, d=Infinity, tx=0, ty=0)
   rotation=90, scaleX=1, scaleY=Infinity, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=1, scaleY=Infinity, 
-  transform.matrix = (a=0, b=1, c=-Infinity, d=Infinity, tx=0, ty=0)
+  transform.matrix = (a=1, b=0, c=Infinity, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=0, b=1, c=-Infinity, d=-Infinity, tx=0, ty=0)
   rotation=90, scaleX=1, scaleY=Infinity, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=1, scaleY=Infinity, 
-  transform.matrix = (a=0, b=1, c=-Infinity, d=-Infinity, tx=0, ty=0)
+  transform.matrix = (a=1, b=0, c=-Infinity, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=0, b=Infinity, c=0, d=0, tx=0, ty=0)
   rotation=90, scaleX=Infinity, scaleY=0, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=0, 
-  transform.matrix = (a=0, b=Infinity, c=0, d=0, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=0, d=0, tx=0, ty=0)
 
   transform.matrix = (a=0, b=Infinity, c=0, d=1, tx=0, ty=0)
   rotation=90, scaleX=Infinity, scaleY=1, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=1, 
-  transform.matrix = (a=0, b=Infinity, c=0, d=1, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=1, d=6.123234262925839e-17, tx=0, ty=0)
 
   transform.matrix = (a=0, b=Infinity, c=0, d=Infinity, tx=0, ty=0)
   rotation=90, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=0, b=Infinity, c=0, d=Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=Infinity, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=0, b=Infinity, c=0, d=-Infinity, tx=0, ty=0)
   rotation=90, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=0, b=Infinity, c=0, d=-Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=-Infinity, d=-Infinity, tx=0, ty=0)
 
   transform.matrix = (a=0, b=Infinity, c=1, d=0, tx=0, ty=0)
   rotation=90, scaleX=Infinity, scaleY=1, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=1, 
-  transform.matrix = (a=0, b=Infinity, c=1, d=0, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=1.2246468525851679e-16, d=-1, tx=0, ty=0)
 
   transform.matrix = (a=0, b=Infinity, c=1, d=1, tx=0, ty=0)
   rotation=90, scaleX=Infinity, scaleY=1.4142135623730951, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=1.4142135623730951, 
-  transform.matrix = (a=0, b=Infinity, c=1, d=1, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=1, d=-1, tx=0, ty=0)
 
   transform.matrix = (a=0, b=Infinity, c=1, d=Infinity, tx=0, ty=0)
   rotation=90, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=0, b=Infinity, c=1, d=Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=Infinity, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=0, b=Infinity, c=1, d=-Infinity, tx=0, ty=0)
   rotation=90, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=0, b=Infinity, c=1, d=-Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=-Infinity, d=-Infinity, tx=0, ty=0)
 
   transform.matrix = (a=0, b=Infinity, c=Infinity, d=0, tx=0, ty=0)
   rotation=90, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=0, b=Infinity, c=Infinity, d=0, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=Infinity, d=-Infinity, tx=0, ty=0)
 
   transform.matrix = (a=0, b=Infinity, c=Infinity, d=1, tx=0, ty=0)
   rotation=90, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=0, b=Infinity, c=Infinity, d=1, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=Infinity, d=-Infinity, tx=0, ty=0)
 
   transform.matrix = (a=0, b=Infinity, c=Infinity, d=Infinity, tx=0, ty=0)
   rotation=90, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=0, b=Infinity, c=Infinity, d=Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=Infinity, d=-Infinity, tx=0, ty=0)
 
   transform.matrix = (a=0, b=Infinity, c=Infinity, d=-Infinity, tx=0, ty=0)
   rotation=90, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=0, b=Infinity, c=Infinity, d=-Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=-Infinity, d=-Infinity, tx=0, ty=0)
 
   transform.matrix = (a=0, b=Infinity, c=-Infinity, d=0, tx=0, ty=0)
   rotation=90, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=0, b=Infinity, c=-Infinity, d=0, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=NaN, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=0, b=Infinity, c=-Infinity, d=1, tx=0, ty=0)
   rotation=90, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=0, b=Infinity, c=-Infinity, d=1, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=NaN, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=0, b=Infinity, c=-Infinity, d=Infinity, tx=0, ty=0)
   rotation=90, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=0, b=Infinity, c=-Infinity, d=Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=Infinity, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=0, b=Infinity, c=-Infinity, d=-Infinity, tx=0, ty=0)
   rotation=90, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=0, b=Infinity, c=-Infinity, d=-Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=-Infinity, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=0, b=-Infinity, c=0, d=0, tx=0, ty=0)
   rotation=-90, scaleX=Infinity, scaleY=0, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=0, 
-  transform.matrix = (a=0, b=-Infinity, c=0, d=0, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=0, d=0, tx=0, ty=0)
 
   transform.matrix = (a=0, b=-Infinity, c=0, d=1, tx=0, ty=0)
   rotation=-90, scaleX=Infinity, scaleY=1, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=1, 
-  transform.matrix = (a=0, b=-Infinity, c=0, d=1, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=-1, d=6.123234262925839e-17, tx=0, ty=0)
 
   transform.matrix = (a=0, b=-Infinity, c=0, d=Infinity, tx=0, ty=0)
   rotation=-90, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=0, b=-Infinity, c=0, d=Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=-Infinity, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=0, b=-Infinity, c=0, d=-Infinity, tx=0, ty=0)
   rotation=-90, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=0, b=-Infinity, c=0, d=-Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=Infinity, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=0, b=-Infinity, c=1, d=0, tx=0, ty=0)
   rotation=-90, scaleX=Infinity, scaleY=1, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=1, 
-  transform.matrix = (a=0, b=-Infinity, c=1, d=0, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=0, d=1, tx=0, ty=0)
 
   transform.matrix = (a=0, b=-Infinity, c=1, d=1, tx=0, ty=0)
   rotation=-90, scaleX=Infinity, scaleY=1.4142135623730951, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=1.4142135623730951, 
-  transform.matrix = (a=0, b=-Infinity, c=1, d=1, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=-1, d=1, tx=0, ty=0)
 
   transform.matrix = (a=0, b=-Infinity, c=1, d=Infinity, tx=0, ty=0)
   rotation=-90, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=0, b=-Infinity, c=1, d=Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=-Infinity, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=0, b=-Infinity, c=1, d=-Infinity, tx=0, ty=0)
   rotation=-90, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=0, b=-Infinity, c=1, d=-Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=Infinity, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=0, b=-Infinity, c=Infinity, d=0, tx=0, ty=0)
   rotation=-90, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=0, b=-Infinity, c=Infinity, d=0, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=NaN, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=0, b=-Infinity, c=Infinity, d=1, tx=0, ty=0)
   rotation=-90, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=0, b=-Infinity, c=Infinity, d=1, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=NaN, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=0, b=-Infinity, c=Infinity, d=Infinity, tx=0, ty=0)
   rotation=-90, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=0, b=-Infinity, c=Infinity, d=Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=-Infinity, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=0, b=-Infinity, c=Infinity, d=-Infinity, tx=0, ty=0)
   rotation=-90, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=0, b=-Infinity, c=Infinity, d=-Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=Infinity, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=0, b=-Infinity, c=-Infinity, d=0, tx=0, ty=0)
   rotation=-90, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=0, b=-Infinity, c=-Infinity, d=0, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=-Infinity, d=-Infinity, tx=0, ty=0)
 
   transform.matrix = (a=0, b=-Infinity, c=-Infinity, d=1, tx=0, ty=0)
   rotation=-90, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=0, b=-Infinity, c=-Infinity, d=1, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=-Infinity, d=-Infinity, tx=0, ty=0)
 
   transform.matrix = (a=0, b=-Infinity, c=-Infinity, d=Infinity, tx=0, ty=0)
   rotation=-90, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=0, b=-Infinity, c=-Infinity, d=Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=-Infinity, d=-Infinity, tx=0, ty=0)
 
   transform.matrix = (a=0, b=-Infinity, c=-Infinity, d=-Infinity, tx=0, ty=0)
   rotation=-90, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=0, b=-Infinity, c=-Infinity, d=-Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=Infinity, d=-Infinity, tx=0, ty=0)
 
   transform.matrix = (a=1, b=0, c=0, d=0, tx=0, ty=0)
   rotation=0, scaleX=1, scaleY=0, 
@@ -14232,19 +14232,19 @@ clip[rotation] = -Infinity
   rotation=0, scaleX=1, scaleY=Infinity, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=1, scaleY=Infinity, 
-  transform.matrix = (a=1, b=0, c=0, d=Infinity, tx=0, ty=0)
+  transform.matrix = (a=1, b=0, c=NaN, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=1, b=0, c=0, d=-Infinity, tx=0, ty=0)
   rotation=0, scaleX=1, scaleY=Infinity, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=1, scaleY=Infinity, 
-  transform.matrix = (a=1, b=0, c=0, d=-Infinity, tx=0, ty=0)
+  transform.matrix = (a=1, b=0, c=Infinity, d=-Infinity, tx=0, ty=0)
 
   transform.matrix = (a=1, b=0, c=1, d=0, tx=0, ty=0)
   rotation=0, scaleX=1, scaleY=1, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=1, scaleY=1, 
-  transform.matrix = (a=1, b=0, c=1, d=0, tx=0, ty=0)
+  transform.matrix = (a=1, b=0, c=1, d=6.123234262925839e-17, tx=0, ty=0)
 
   transform.matrix = (a=1, b=0, c=1, d=1, tx=0, ty=0)
   rotation=0, scaleX=1, scaleY=1.4142135623730951, 
@@ -14256,25 +14256,25 @@ clip[rotation] = -Infinity
   rotation=0, scaleX=1, scaleY=Infinity, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=1, scaleY=Infinity, 
-  transform.matrix = (a=1, b=0, c=1, d=Infinity, tx=0, ty=0)
+  transform.matrix = (a=1, b=0, c=NaN, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=1, b=0, c=1, d=-Infinity, tx=0, ty=0)
   rotation=0, scaleX=1, scaleY=Infinity, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=1, scaleY=Infinity, 
-  transform.matrix = (a=1, b=0, c=1, d=-Infinity, tx=0, ty=0)
+  transform.matrix = (a=1, b=0, c=Infinity, d=-Infinity, tx=0, ty=0)
 
   transform.matrix = (a=1, b=0, c=Infinity, d=0, tx=0, ty=0)
   rotation=0, scaleX=1, scaleY=Infinity, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=1, scaleY=Infinity, 
-  transform.matrix = (a=1, b=0, c=Infinity, d=0, tx=0, ty=0)
+  transform.matrix = (a=1, b=0, c=Infinity, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=1, b=0, c=Infinity, d=1, tx=0, ty=0)
   rotation=0, scaleX=1, scaleY=Infinity, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=1, scaleY=Infinity, 
-  transform.matrix = (a=1, b=0, c=Infinity, d=1, tx=0, ty=0)
+  transform.matrix = (a=1, b=0, c=Infinity, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=1, b=0, c=Infinity, d=Infinity, tx=0, ty=0)
   rotation=0, scaleX=1, scaleY=Infinity, 
@@ -14292,13 +14292,13 @@ clip[rotation] = -Infinity
   rotation=0, scaleX=1, scaleY=Infinity, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=1, scaleY=Infinity, 
-  transform.matrix = (a=1, b=0, c=-Infinity, d=0, tx=0, ty=0)
+  transform.matrix = (a=1, b=0, c=-Infinity, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=1, b=0, c=-Infinity, d=1, tx=0, ty=0)
   rotation=0, scaleX=1, scaleY=Infinity, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=1, scaleY=Infinity, 
-  transform.matrix = (a=1, b=0, c=-Infinity, d=1, tx=0, ty=0)
+  transform.matrix = (a=1, b=0, c=-Infinity, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=1, b=0, c=-Infinity, d=Infinity, tx=0, ty=0)
   rotation=0, scaleX=1, scaleY=Infinity, 
@@ -14316,1057 +14316,1057 @@ clip[rotation] = -Infinity
   rotation=45, scaleX=1.4142135623730951, scaleY=0, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=1.4142135623730951, scaleY=0, 
-  transform.matrix = (a=1, b=1, c=0, d=0, tx=0, ty=0)
+  transform.matrix = (a=1.4142135381698608, b=0, c=0, d=0, tx=0, ty=0)
 
   transform.matrix = (a=1, b=1, c=0, d=1, tx=0, ty=0)
   rotation=45, scaleX=1.4142135623730951, scaleY=1, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=1.4142135623730951, scaleY=1, 
-  transform.matrix = (a=1, b=1, c=0, d=1, tx=0, ty=0)
+  transform.matrix = (a=1.4142135381698608, b=0, c=0.7071067690849304, d=0.7071067690849304, tx=0, ty=0)
 
   transform.matrix = (a=1, b=1, c=0, d=Infinity, tx=0, ty=0)
   rotation=45, scaleX=1.4142135623730951, scaleY=Infinity, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=1.4142135623730951, scaleY=Infinity, 
-  transform.matrix = (a=1, b=1, c=0, d=Infinity, tx=0, ty=0)
+  transform.matrix = (a=1.4142135381698608, b=0, c=Infinity, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=1, b=1, c=0, d=-Infinity, tx=0, ty=0)
   rotation=45, scaleX=1.4142135623730951, scaleY=Infinity, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=1.4142135623730951, scaleY=Infinity, 
-  transform.matrix = (a=1, b=1, c=0, d=-Infinity, tx=0, ty=0)
+  transform.matrix = (a=1.4142135381698608, b=0, c=-Infinity, d=-Infinity, tx=0, ty=0)
 
   transform.matrix = (a=1, b=1, c=1, d=0, tx=0, ty=0)
   rotation=45, scaleX=1.4142135623730951, scaleY=1, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=1.4142135623730951, scaleY=1, 
-  transform.matrix = (a=1, b=1, c=1, d=0, tx=0, ty=0)
+  transform.matrix = (a=1.4142135381698608, b=0, c=0.7071067690849304, d=-0.7071067690849304, tx=0, ty=0)
 
   transform.matrix = (a=1, b=1, c=1, d=1, tx=0, ty=0)
   rotation=45, scaleX=1.4142135623730951, scaleY=1.4142135623730951, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=1.4142135623730951, scaleY=1.4142135623730951, 
-  transform.matrix = (a=1, b=1, c=1, d=1, tx=0, ty=0)
+  transform.matrix = (a=1.4142135381698608, b=0, c=1.4142135381698608, d=8.659560603426554e-17, tx=0, ty=0)
 
   transform.matrix = (a=1, b=1, c=1, d=Infinity, tx=0, ty=0)
   rotation=45, scaleX=1.4142135623730951, scaleY=Infinity, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=1.4142135623730951, scaleY=Infinity, 
-  transform.matrix = (a=1, b=1, c=1, d=Infinity, tx=0, ty=0)
+  transform.matrix = (a=1.4142135381698608, b=0, c=Infinity, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=1, b=1, c=1, d=-Infinity, tx=0, ty=0)
   rotation=45, scaleX=1.4142135623730951, scaleY=Infinity, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=1.4142135623730951, scaleY=Infinity, 
-  transform.matrix = (a=1, b=1, c=1, d=-Infinity, tx=0, ty=0)
+  transform.matrix = (a=1.4142135381698608, b=0, c=-Infinity, d=-Infinity, tx=0, ty=0)
 
   transform.matrix = (a=1, b=1, c=Infinity, d=0, tx=0, ty=0)
   rotation=45, scaleX=1.4142135623730951, scaleY=Infinity, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=1.4142135623730951, scaleY=Infinity, 
-  transform.matrix = (a=1, b=1, c=Infinity, d=0, tx=0, ty=0)
+  transform.matrix = (a=1.4142135381698608, b=0, c=Infinity, d=-Infinity, tx=0, ty=0)
 
   transform.matrix = (a=1, b=1, c=Infinity, d=1, tx=0, ty=0)
   rotation=45, scaleX=1.4142135623730951, scaleY=Infinity, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=1.4142135623730951, scaleY=Infinity, 
-  transform.matrix = (a=1, b=1, c=Infinity, d=1, tx=0, ty=0)
+  transform.matrix = (a=1.4142135381698608, b=0, c=Infinity, d=-Infinity, tx=0, ty=0)
 
   transform.matrix = (a=1, b=1, c=Infinity, d=Infinity, tx=0, ty=0)
   rotation=45, scaleX=1.4142135623730951, scaleY=Infinity, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=1.4142135623730951, scaleY=Infinity, 
-  transform.matrix = (a=1, b=1, c=Infinity, d=Infinity, tx=0, ty=0)
+  transform.matrix = (a=1.4142135381698608, b=0, c=Infinity, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=1, b=1, c=Infinity, d=-Infinity, tx=0, ty=0)
   rotation=45, scaleX=1.4142135623730951, scaleY=Infinity, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=1.4142135623730951, scaleY=Infinity, 
-  transform.matrix = (a=1, b=1, c=Infinity, d=-Infinity, tx=0, ty=0)
+  transform.matrix = (a=1.4142135381698608, b=0, c=Infinity, d=-Infinity, tx=0, ty=0)
 
   transform.matrix = (a=1, b=1, c=-Infinity, d=0, tx=0, ty=0)
   rotation=45, scaleX=1.4142135623730951, scaleY=Infinity, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=1.4142135623730951, scaleY=Infinity, 
-  transform.matrix = (a=1, b=1, c=-Infinity, d=0, tx=0, ty=0)
+  transform.matrix = (a=1.4142135381698608, b=0, c=-Infinity, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=1, b=1, c=-Infinity, d=1, tx=0, ty=0)
   rotation=45, scaleX=1.4142135623730951, scaleY=Infinity, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=1.4142135623730951, scaleY=Infinity, 
-  transform.matrix = (a=1, b=1, c=-Infinity, d=1, tx=0, ty=0)
+  transform.matrix = (a=1.4142135381698608, b=0, c=-Infinity, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=1, b=1, c=-Infinity, d=Infinity, tx=0, ty=0)
   rotation=45, scaleX=1.4142135623730951, scaleY=Infinity, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=1.4142135623730951, scaleY=Infinity, 
-  transform.matrix = (a=1, b=1, c=-Infinity, d=Infinity, tx=0, ty=0)
+  transform.matrix = (a=1.4142135381698608, b=0, c=NaN, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=1, b=1, c=-Infinity, d=-Infinity, tx=0, ty=0)
   rotation=45, scaleX=1.4142135623730951, scaleY=Infinity, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=1.4142135623730951, scaleY=Infinity, 
-  transform.matrix = (a=1, b=1, c=-Infinity, d=-Infinity, tx=0, ty=0)
+  transform.matrix = (a=1.4142135381698608, b=0, c=-Infinity, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=1, b=Infinity, c=0, d=0, tx=0, ty=0)
   rotation=90, scaleX=Infinity, scaleY=0, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=0, 
-  transform.matrix = (a=1, b=Infinity, c=0, d=0, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=0, d=0, tx=0, ty=0)
 
   transform.matrix = (a=1, b=Infinity, c=0, d=1, tx=0, ty=0)
   rotation=90, scaleX=Infinity, scaleY=1, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=1, 
-  transform.matrix = (a=1, b=Infinity, c=0, d=1, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=1, d=6.123234262925839e-17, tx=0, ty=0)
 
   transform.matrix = (a=1, b=Infinity, c=0, d=Infinity, tx=0, ty=0)
   rotation=90, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=1, b=Infinity, c=0, d=Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=Infinity, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=1, b=Infinity, c=0, d=-Infinity, tx=0, ty=0)
   rotation=90, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=1, b=Infinity, c=0, d=-Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=-Infinity, d=-Infinity, tx=0, ty=0)
 
   transform.matrix = (a=1, b=Infinity, c=1, d=0, tx=0, ty=0)
   rotation=90, scaleX=Infinity, scaleY=1, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=1, 
-  transform.matrix = (a=1, b=Infinity, c=1, d=0, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=1.2246468525851679e-16, d=-1, tx=0, ty=0)
 
   transform.matrix = (a=1, b=Infinity, c=1, d=1, tx=0, ty=0)
   rotation=90, scaleX=Infinity, scaleY=1.4142135623730951, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=1.4142135623730951, 
-  transform.matrix = (a=1, b=Infinity, c=1, d=1, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=1, d=-1, tx=0, ty=0)
 
   transform.matrix = (a=1, b=Infinity, c=1, d=Infinity, tx=0, ty=0)
   rotation=90, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=1, b=Infinity, c=1, d=Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=Infinity, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=1, b=Infinity, c=1, d=-Infinity, tx=0, ty=0)
   rotation=90, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=1, b=Infinity, c=1, d=-Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=-Infinity, d=-Infinity, tx=0, ty=0)
 
   transform.matrix = (a=1, b=Infinity, c=Infinity, d=0, tx=0, ty=0)
   rotation=90, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=1, b=Infinity, c=Infinity, d=0, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=Infinity, d=-Infinity, tx=0, ty=0)
 
   transform.matrix = (a=1, b=Infinity, c=Infinity, d=1, tx=0, ty=0)
   rotation=90, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=1, b=Infinity, c=Infinity, d=1, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=Infinity, d=-Infinity, tx=0, ty=0)
 
   transform.matrix = (a=1, b=Infinity, c=Infinity, d=Infinity, tx=0, ty=0)
   rotation=90, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=1, b=Infinity, c=Infinity, d=Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=Infinity, d=-Infinity, tx=0, ty=0)
 
   transform.matrix = (a=1, b=Infinity, c=Infinity, d=-Infinity, tx=0, ty=0)
   rotation=90, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=1, b=Infinity, c=Infinity, d=-Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=-Infinity, d=-Infinity, tx=0, ty=0)
 
   transform.matrix = (a=1, b=Infinity, c=-Infinity, d=0, tx=0, ty=0)
   rotation=90, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=1, b=Infinity, c=-Infinity, d=0, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=NaN, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=1, b=Infinity, c=-Infinity, d=1, tx=0, ty=0)
   rotation=90, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=1, b=Infinity, c=-Infinity, d=1, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=NaN, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=1, b=Infinity, c=-Infinity, d=Infinity, tx=0, ty=0)
   rotation=90, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=1, b=Infinity, c=-Infinity, d=Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=Infinity, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=1, b=Infinity, c=-Infinity, d=-Infinity, tx=0, ty=0)
   rotation=90, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=1, b=Infinity, c=-Infinity, d=-Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=-Infinity, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=1, b=-Infinity, c=0, d=0, tx=0, ty=0)
   rotation=-90, scaleX=Infinity, scaleY=0, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=0, 
-  transform.matrix = (a=1, b=-Infinity, c=0, d=0, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=0, d=0, tx=0, ty=0)
 
   transform.matrix = (a=1, b=-Infinity, c=0, d=1, tx=0, ty=0)
   rotation=-90, scaleX=Infinity, scaleY=1, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=1, 
-  transform.matrix = (a=1, b=-Infinity, c=0, d=1, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=-1, d=6.123234262925839e-17, tx=0, ty=0)
 
   transform.matrix = (a=1, b=-Infinity, c=0, d=Infinity, tx=0, ty=0)
   rotation=-90, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=1, b=-Infinity, c=0, d=Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=-Infinity, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=1, b=-Infinity, c=0, d=-Infinity, tx=0, ty=0)
   rotation=-90, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=1, b=-Infinity, c=0, d=-Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=Infinity, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=1, b=-Infinity, c=1, d=0, tx=0, ty=0)
   rotation=-90, scaleX=Infinity, scaleY=1, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=1, 
-  transform.matrix = (a=1, b=-Infinity, c=1, d=0, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=0, d=1, tx=0, ty=0)
 
   transform.matrix = (a=1, b=-Infinity, c=1, d=1, tx=0, ty=0)
   rotation=-90, scaleX=Infinity, scaleY=1.4142135623730951, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=1.4142135623730951, 
-  transform.matrix = (a=1, b=-Infinity, c=1, d=1, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=-1, d=1, tx=0, ty=0)
 
   transform.matrix = (a=1, b=-Infinity, c=1, d=Infinity, tx=0, ty=0)
   rotation=-90, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=1, b=-Infinity, c=1, d=Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=-Infinity, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=1, b=-Infinity, c=1, d=-Infinity, tx=0, ty=0)
   rotation=-90, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=1, b=-Infinity, c=1, d=-Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=Infinity, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=1, b=-Infinity, c=Infinity, d=0, tx=0, ty=0)
   rotation=-90, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=1, b=-Infinity, c=Infinity, d=0, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=NaN, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=1, b=-Infinity, c=Infinity, d=1, tx=0, ty=0)
   rotation=-90, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=1, b=-Infinity, c=Infinity, d=1, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=NaN, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=1, b=-Infinity, c=Infinity, d=Infinity, tx=0, ty=0)
   rotation=-90, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=1, b=-Infinity, c=Infinity, d=Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=-Infinity, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=1, b=-Infinity, c=Infinity, d=-Infinity, tx=0, ty=0)
   rotation=-90, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=1, b=-Infinity, c=Infinity, d=-Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=Infinity, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=1, b=-Infinity, c=-Infinity, d=0, tx=0, ty=0)
   rotation=-90, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=1, b=-Infinity, c=-Infinity, d=0, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=-Infinity, d=-Infinity, tx=0, ty=0)
 
   transform.matrix = (a=1, b=-Infinity, c=-Infinity, d=1, tx=0, ty=0)
   rotation=-90, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=1, b=-Infinity, c=-Infinity, d=1, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=-Infinity, d=-Infinity, tx=0, ty=0)
 
   transform.matrix = (a=1, b=-Infinity, c=-Infinity, d=Infinity, tx=0, ty=0)
   rotation=-90, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=1, b=-Infinity, c=-Infinity, d=Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=-Infinity, d=-Infinity, tx=0, ty=0)
 
   transform.matrix = (a=1, b=-Infinity, c=-Infinity, d=-Infinity, tx=0, ty=0)
   rotation=-90, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=1, b=-Infinity, c=-Infinity, d=-Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=Infinity, d=-Infinity, tx=0, ty=0)
 
   transform.matrix = (a=Infinity, b=0, c=0, d=0, tx=0, ty=0)
   rotation=0, scaleX=Infinity, scaleY=0, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=0, 
-  transform.matrix = (a=Infinity, b=0, c=0, d=0, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=0, d=0, tx=0, ty=0)
 
   transform.matrix = (a=Infinity, b=0, c=0, d=1, tx=0, ty=0)
   rotation=0, scaleX=Infinity, scaleY=1, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=1, 
-  transform.matrix = (a=Infinity, b=0, c=0, d=1, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=0, d=1, tx=0, ty=0)
 
   transform.matrix = (a=Infinity, b=0, c=0, d=Infinity, tx=0, ty=0)
   rotation=0, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=Infinity, b=0, c=0, d=Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=NaN, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=Infinity, b=0, c=0, d=-Infinity, tx=0, ty=0)
   rotation=0, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=Infinity, b=0, c=0, d=-Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=Infinity, d=-Infinity, tx=0, ty=0)
 
   transform.matrix = (a=Infinity, b=0, c=1, d=0, tx=0, ty=0)
   rotation=0, scaleX=Infinity, scaleY=1, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=1, 
-  transform.matrix = (a=Infinity, b=0, c=1, d=0, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=1, d=6.123234262925839e-17, tx=0, ty=0)
 
   transform.matrix = (a=Infinity, b=0, c=1, d=1, tx=0, ty=0)
   rotation=0, scaleX=Infinity, scaleY=1.4142135623730951, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=1.4142135623730951, 
-  transform.matrix = (a=Infinity, b=0, c=1, d=1, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=1, d=1, tx=0, ty=0)
 
   transform.matrix = (a=Infinity, b=0, c=1, d=Infinity, tx=0, ty=0)
   rotation=0, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=Infinity, b=0, c=1, d=Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=NaN, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=Infinity, b=0, c=1, d=-Infinity, tx=0, ty=0)
   rotation=0, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=Infinity, b=0, c=1, d=-Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=Infinity, d=-Infinity, tx=0, ty=0)
 
   transform.matrix = (a=Infinity, b=0, c=Infinity, d=0, tx=0, ty=0)
   rotation=0, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=Infinity, b=0, c=Infinity, d=0, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=Infinity, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=Infinity, b=0, c=Infinity, d=1, tx=0, ty=0)
   rotation=0, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=Infinity, b=0, c=Infinity, d=1, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=Infinity, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=Infinity, b=0, c=Infinity, d=Infinity, tx=0, ty=0)
   rotation=0, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=Infinity, b=0, c=Infinity, d=Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=Infinity, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=Infinity, b=0, c=Infinity, d=-Infinity, tx=0, ty=0)
   rotation=0, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=Infinity, b=0, c=Infinity, d=-Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=Infinity, d=-Infinity, tx=0, ty=0)
 
   transform.matrix = (a=Infinity, b=0, c=-Infinity, d=0, tx=0, ty=0)
   rotation=0, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=Infinity, b=0, c=-Infinity, d=0, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=-Infinity, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=Infinity, b=0, c=-Infinity, d=1, tx=0, ty=0)
   rotation=0, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=Infinity, b=0, c=-Infinity, d=1, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=-Infinity, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=Infinity, b=0, c=-Infinity, d=Infinity, tx=0, ty=0)
   rotation=0, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=Infinity, b=0, c=-Infinity, d=Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=-Infinity, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=Infinity, b=0, c=-Infinity, d=-Infinity, tx=0, ty=0)
   rotation=0, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=Infinity, b=0, c=-Infinity, d=-Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=-Infinity, d=-Infinity, tx=0, ty=0)
 
   transform.matrix = (a=Infinity, b=1, c=0, d=0, tx=0, ty=0)
   rotation=0, scaleX=Infinity, scaleY=0, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=0, 
-  transform.matrix = (a=Infinity, b=1, c=0, d=0, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=0, d=0, tx=0, ty=0)
 
   transform.matrix = (a=Infinity, b=1, c=0, d=1, tx=0, ty=0)
   rotation=0, scaleX=Infinity, scaleY=1, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=1, 
-  transform.matrix = (a=Infinity, b=1, c=0, d=1, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=0, d=1, tx=0, ty=0)
 
   transform.matrix = (a=Infinity, b=1, c=0, d=Infinity, tx=0, ty=0)
   rotation=0, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=Infinity, b=1, c=0, d=Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=NaN, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=Infinity, b=1, c=0, d=-Infinity, tx=0, ty=0)
   rotation=0, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=Infinity, b=1, c=0, d=-Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=Infinity, d=-Infinity, tx=0, ty=0)
 
   transform.matrix = (a=Infinity, b=1, c=1, d=0, tx=0, ty=0)
   rotation=0, scaleX=Infinity, scaleY=1, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=1, 
-  transform.matrix = (a=Infinity, b=1, c=1, d=0, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=1, d=6.123234262925839e-17, tx=0, ty=0)
 
   transform.matrix = (a=Infinity, b=1, c=1, d=1, tx=0, ty=0)
   rotation=0, scaleX=Infinity, scaleY=1.4142135623730951, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=1.4142135623730951, 
-  transform.matrix = (a=Infinity, b=1, c=1, d=1, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=1, d=1, tx=0, ty=0)
 
   transform.matrix = (a=Infinity, b=1, c=1, d=Infinity, tx=0, ty=0)
   rotation=0, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=Infinity, b=1, c=1, d=Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=NaN, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=Infinity, b=1, c=1, d=-Infinity, tx=0, ty=0)
   rotation=0, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=Infinity, b=1, c=1, d=-Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=Infinity, d=-Infinity, tx=0, ty=0)
 
   transform.matrix = (a=Infinity, b=1, c=Infinity, d=0, tx=0, ty=0)
   rotation=0, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=Infinity, b=1, c=Infinity, d=0, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=Infinity, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=Infinity, b=1, c=Infinity, d=1, tx=0, ty=0)
   rotation=0, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=Infinity, b=1, c=Infinity, d=1, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=Infinity, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=Infinity, b=1, c=Infinity, d=Infinity, tx=0, ty=0)
   rotation=0, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=Infinity, b=1, c=Infinity, d=Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=Infinity, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=Infinity, b=1, c=Infinity, d=-Infinity, tx=0, ty=0)
   rotation=0, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=Infinity, b=1, c=Infinity, d=-Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=Infinity, d=-Infinity, tx=0, ty=0)
 
   transform.matrix = (a=Infinity, b=1, c=-Infinity, d=0, tx=0, ty=0)
   rotation=0, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=Infinity, b=1, c=-Infinity, d=0, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=-Infinity, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=Infinity, b=1, c=-Infinity, d=1, tx=0, ty=0)
   rotation=0, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=Infinity, b=1, c=-Infinity, d=1, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=-Infinity, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=Infinity, b=1, c=-Infinity, d=Infinity, tx=0, ty=0)
   rotation=0, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=Infinity, b=1, c=-Infinity, d=Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=-Infinity, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=Infinity, b=1, c=-Infinity, d=-Infinity, tx=0, ty=0)
   rotation=0, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=Infinity, b=1, c=-Infinity, d=-Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=-Infinity, d=-Infinity, tx=0, ty=0)
 
   transform.matrix = (a=Infinity, b=Infinity, c=0, d=0, tx=0, ty=0)
   rotation=45, scaleX=Infinity, scaleY=0, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=0, 
-  transform.matrix = (a=Infinity, b=Infinity, c=0, d=0, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=0, d=0, tx=0, ty=0)
 
   transform.matrix = (a=Infinity, b=Infinity, c=0, d=1, tx=0, ty=0)
   rotation=45, scaleX=Infinity, scaleY=1, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=1, 
-  transform.matrix = (a=Infinity, b=Infinity, c=0, d=1, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=0.7071067690849304, d=0.7071067690849304, tx=0, ty=0)
 
   transform.matrix = (a=Infinity, b=Infinity, c=0, d=Infinity, tx=0, ty=0)
   rotation=45, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=Infinity, b=Infinity, c=0, d=Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=Infinity, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=Infinity, b=Infinity, c=0, d=-Infinity, tx=0, ty=0)
   rotation=45, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=Infinity, b=Infinity, c=0, d=-Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=-Infinity, d=-Infinity, tx=0, ty=0)
 
   transform.matrix = (a=Infinity, b=Infinity, c=1, d=0, tx=0, ty=0)
   rotation=45, scaleX=Infinity, scaleY=1, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=1, 
-  transform.matrix = (a=Infinity, b=Infinity, c=1, d=0, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=0.7071067690849304, d=-0.7071067690849304, tx=0, ty=0)
 
   transform.matrix = (a=Infinity, b=Infinity, c=1, d=1, tx=0, ty=0)
   rotation=45, scaleX=Infinity, scaleY=1.4142135623730951, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=1.4142135623730951, 
-  transform.matrix = (a=Infinity, b=Infinity, c=1, d=1, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=1.4142135381698608, d=8.659560603426554e-17, tx=0, ty=0)
 
   transform.matrix = (a=Infinity, b=Infinity, c=1, d=Infinity, tx=0, ty=0)
   rotation=45, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=Infinity, b=Infinity, c=1, d=Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=Infinity, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=Infinity, b=Infinity, c=1, d=-Infinity, tx=0, ty=0)
   rotation=45, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=Infinity, b=Infinity, c=1, d=-Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=-Infinity, d=-Infinity, tx=0, ty=0)
 
   transform.matrix = (a=Infinity, b=Infinity, c=Infinity, d=0, tx=0, ty=0)
   rotation=45, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=Infinity, b=Infinity, c=Infinity, d=0, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=Infinity, d=-Infinity, tx=0, ty=0)
 
   transform.matrix = (a=Infinity, b=Infinity, c=Infinity, d=1, tx=0, ty=0)
   rotation=45, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=Infinity, b=Infinity, c=Infinity, d=1, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=Infinity, d=-Infinity, tx=0, ty=0)
 
   transform.matrix = (a=Infinity, b=Infinity, c=Infinity, d=Infinity, tx=0, ty=0)
   rotation=45, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=Infinity, b=Infinity, c=Infinity, d=Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=Infinity, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=Infinity, b=Infinity, c=Infinity, d=-Infinity, tx=0, ty=0)
   rotation=45, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=Infinity, b=Infinity, c=Infinity, d=-Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=Infinity, d=-Infinity, tx=0, ty=0)
 
   transform.matrix = (a=Infinity, b=Infinity, c=-Infinity, d=0, tx=0, ty=0)
   rotation=45, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=Infinity, b=Infinity, c=-Infinity, d=0, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=-Infinity, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=Infinity, b=Infinity, c=-Infinity, d=1, tx=0, ty=0)
   rotation=45, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=Infinity, b=Infinity, c=-Infinity, d=1, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=-Infinity, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=Infinity, b=Infinity, c=-Infinity, d=Infinity, tx=0, ty=0)
   rotation=45, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=Infinity, b=Infinity, c=-Infinity, d=Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=NaN, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=Infinity, b=Infinity, c=-Infinity, d=-Infinity, tx=0, ty=0)
   rotation=45, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=Infinity, b=Infinity, c=-Infinity, d=-Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=-Infinity, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=Infinity, b=-Infinity, c=0, d=0, tx=0, ty=0)
   rotation=-45, scaleX=Infinity, scaleY=0, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=0, 
-  transform.matrix = (a=Infinity, b=-Infinity, c=0, d=0, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=0, d=0, tx=0, ty=0)
 
   transform.matrix = (a=Infinity, b=-Infinity, c=0, d=1, tx=0, ty=0)
   rotation=-45, scaleX=Infinity, scaleY=1, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=1, 
-  transform.matrix = (a=Infinity, b=-Infinity, c=0, d=1, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=-0.7071067690849304, d=0.7071067690849304, tx=0, ty=0)
 
   transform.matrix = (a=Infinity, b=-Infinity, c=0, d=Infinity, tx=0, ty=0)
   rotation=-45, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=Infinity, b=-Infinity, c=0, d=Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=-Infinity, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=Infinity, b=-Infinity, c=0, d=-Infinity, tx=0, ty=0)
   rotation=-45, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=Infinity, b=-Infinity, c=0, d=-Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=Infinity, d=-Infinity, tx=0, ty=0)
 
   transform.matrix = (a=Infinity, b=-Infinity, c=1, d=0, tx=0, ty=0)
   rotation=-45, scaleX=Infinity, scaleY=1, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=1, 
-  transform.matrix = (a=Infinity, b=-Infinity, c=1, d=0, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=0.7071067690849304, d=0.7071067690849304, tx=0, ty=0)
 
   transform.matrix = (a=Infinity, b=-Infinity, c=1, d=1, tx=0, ty=0)
   rotation=-45, scaleX=Infinity, scaleY=1.4142135623730951, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=1.4142135623730951, 
-  transform.matrix = (a=Infinity, b=-Infinity, c=1, d=1, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=0, d=1.4142135381698608, tx=0, ty=0)
 
   transform.matrix = (a=Infinity, b=-Infinity, c=1, d=Infinity, tx=0, ty=0)
   rotation=-45, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=Infinity, b=-Infinity, c=1, d=Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=-Infinity, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=Infinity, b=-Infinity, c=1, d=-Infinity, tx=0, ty=0)
   rotation=-45, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=Infinity, b=-Infinity, c=1, d=-Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=Infinity, d=-Infinity, tx=0, ty=0)
 
   transform.matrix = (a=Infinity, b=-Infinity, c=Infinity, d=0, tx=0, ty=0)
   rotation=-45, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=Infinity, b=-Infinity, c=Infinity, d=0, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=Infinity, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=Infinity, b=-Infinity, c=Infinity, d=1, tx=0, ty=0)
   rotation=-45, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=Infinity, b=-Infinity, c=Infinity, d=1, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=Infinity, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=Infinity, b=-Infinity, c=Infinity, d=Infinity, tx=0, ty=0)
   rotation=-45, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=Infinity, b=-Infinity, c=Infinity, d=Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=NaN, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=Infinity, b=-Infinity, c=Infinity, d=-Infinity, tx=0, ty=0)
   rotation=-45, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=Infinity, b=-Infinity, c=Infinity, d=-Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=Infinity, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=Infinity, b=-Infinity, c=-Infinity, d=0, tx=0, ty=0)
   rotation=-45, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=Infinity, b=-Infinity, c=-Infinity, d=0, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=-Infinity, d=-Infinity, tx=0, ty=0)
 
   transform.matrix = (a=Infinity, b=-Infinity, c=-Infinity, d=1, tx=0, ty=0)
   rotation=-45, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=Infinity, b=-Infinity, c=-Infinity, d=1, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=-Infinity, d=-Infinity, tx=0, ty=0)
 
   transform.matrix = (a=Infinity, b=-Infinity, c=-Infinity, d=Infinity, tx=0, ty=0)
   rotation=-45, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=Infinity, b=-Infinity, c=-Infinity, d=Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=-Infinity, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=Infinity, b=-Infinity, c=-Infinity, d=-Infinity, tx=0, ty=0)
   rotation=-45, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=Infinity, b=-Infinity, c=-Infinity, d=-Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=-Infinity, d=-Infinity, tx=0, ty=0)
 
   transform.matrix = (a=-Infinity, b=0, c=0, d=0, tx=0, ty=0)
   rotation=180, scaleX=Infinity, scaleY=0, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=0, 
-  transform.matrix = (a=-Infinity, b=0, c=0, d=0, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=0, d=0, tx=0, ty=0)
 
   transform.matrix = (a=-Infinity, b=0, c=0, d=1, tx=0, ty=0)
   rotation=180, scaleX=Infinity, scaleY=1, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=1, 
-  transform.matrix = (a=-Infinity, b=0, c=0, d=1, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=1.2246468525851679e-16, d=-1, tx=0, ty=0)
 
   transform.matrix = (a=-Infinity, b=0, c=0, d=Infinity, tx=0, ty=0)
   rotation=180, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=-Infinity, b=0, c=0, d=Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=Infinity, d=-Infinity, tx=0, ty=0)
 
   transform.matrix = (a=-Infinity, b=0, c=0, d=-Infinity, tx=0, ty=0)
   rotation=180, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=-Infinity, b=0, c=0, d=-Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=-Infinity, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=-Infinity, b=0, c=1, d=0, tx=0, ty=0)
   rotation=180, scaleX=Infinity, scaleY=1, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=1, 
-  transform.matrix = (a=-Infinity, b=0, c=1, d=0, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=-1, d=-1.8369701465288538e-16, tx=0, ty=0)
 
   transform.matrix = (a=-Infinity, b=0, c=1, d=1, tx=0, ty=0)
   rotation=180, scaleX=Infinity, scaleY=1.4142135623730951, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=1.4142135623730951, 
-  transform.matrix = (a=-Infinity, b=0, c=1, d=1, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=-1, d=-1, tx=0, ty=0)
 
   transform.matrix = (a=-Infinity, b=0, c=1, d=Infinity, tx=0, ty=0)
   rotation=180, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=-Infinity, b=0, c=1, d=Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=Infinity, d=-Infinity, tx=0, ty=0)
 
   transform.matrix = (a=-Infinity, b=0, c=1, d=-Infinity, tx=0, ty=0)
   rotation=180, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=-Infinity, b=0, c=1, d=-Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=-Infinity, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=-Infinity, b=0, c=Infinity, d=0, tx=0, ty=0)
   rotation=180, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=-Infinity, b=0, c=Infinity, d=0, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=-Infinity, d=-Infinity, tx=0, ty=0)
 
   transform.matrix = (a=-Infinity, b=0, c=Infinity, d=1, tx=0, ty=0)
   rotation=180, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=-Infinity, b=0, c=Infinity, d=1, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=-Infinity, d=-Infinity, tx=0, ty=0)
 
   transform.matrix = (a=-Infinity, b=0, c=Infinity, d=Infinity, tx=0, ty=0)
   rotation=180, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=-Infinity, b=0, c=Infinity, d=Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=-Infinity, d=-Infinity, tx=0, ty=0)
 
   transform.matrix = (a=-Infinity, b=0, c=Infinity, d=-Infinity, tx=0, ty=0)
   rotation=180, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=-Infinity, b=0, c=Infinity, d=-Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=-Infinity, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=-Infinity, b=0, c=-Infinity, d=0, tx=0, ty=0)
   rotation=180, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=-Infinity, b=0, c=-Infinity, d=0, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=Infinity, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=-Infinity, b=0, c=-Infinity, d=1, tx=0, ty=0)
   rotation=180, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=-Infinity, b=0, c=-Infinity, d=1, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=Infinity, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=-Infinity, b=0, c=-Infinity, d=Infinity, tx=0, ty=0)
   rotation=180, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=-Infinity, b=0, c=-Infinity, d=Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=Infinity, d=-Infinity, tx=0, ty=0)
 
   transform.matrix = (a=-Infinity, b=0, c=-Infinity, d=-Infinity, tx=0, ty=0)
   rotation=180, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=-Infinity, b=0, c=-Infinity, d=-Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=Infinity, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=-Infinity, b=1, c=0, d=0, tx=0, ty=0)
   rotation=180, scaleX=Infinity, scaleY=0, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=0, 
-  transform.matrix = (a=-Infinity, b=1, c=0, d=0, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=0, d=0, tx=0, ty=0)
 
   transform.matrix = (a=-Infinity, b=1, c=0, d=1, tx=0, ty=0)
   rotation=180, scaleX=Infinity, scaleY=1, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=1, 
-  transform.matrix = (a=-Infinity, b=1, c=0, d=1, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=1.2246468525851679e-16, d=-1, tx=0, ty=0)
 
   transform.matrix = (a=-Infinity, b=1, c=0, d=Infinity, tx=0, ty=0)
   rotation=180, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=-Infinity, b=1, c=0, d=Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=Infinity, d=-Infinity, tx=0, ty=0)
 
   transform.matrix = (a=-Infinity, b=1, c=0, d=-Infinity, tx=0, ty=0)
   rotation=180, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=-Infinity, b=1, c=0, d=-Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=-Infinity, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=-Infinity, b=1, c=1, d=0, tx=0, ty=0)
   rotation=180, scaleX=Infinity, scaleY=1, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=1, 
-  transform.matrix = (a=-Infinity, b=1, c=1, d=0, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=-1, d=-1.8369701465288538e-16, tx=0, ty=0)
 
   transform.matrix = (a=-Infinity, b=1, c=1, d=1, tx=0, ty=0)
   rotation=180, scaleX=Infinity, scaleY=1.4142135623730951, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=1.4142135623730951, 
-  transform.matrix = (a=-Infinity, b=1, c=1, d=1, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=-1, d=-1, tx=0, ty=0)
 
   transform.matrix = (a=-Infinity, b=1, c=1, d=Infinity, tx=0, ty=0)
   rotation=180, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=-Infinity, b=1, c=1, d=Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=Infinity, d=-Infinity, tx=0, ty=0)
 
   transform.matrix = (a=-Infinity, b=1, c=1, d=-Infinity, tx=0, ty=0)
   rotation=180, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=-Infinity, b=1, c=1, d=-Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=-Infinity, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=-Infinity, b=1, c=Infinity, d=0, tx=0, ty=0)
   rotation=180, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=-Infinity, b=1, c=Infinity, d=0, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=-Infinity, d=-Infinity, tx=0, ty=0)
 
   transform.matrix = (a=-Infinity, b=1, c=Infinity, d=1, tx=0, ty=0)
   rotation=180, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=-Infinity, b=1, c=Infinity, d=1, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=-Infinity, d=-Infinity, tx=0, ty=0)
 
   transform.matrix = (a=-Infinity, b=1, c=Infinity, d=Infinity, tx=0, ty=0)
   rotation=180, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=-Infinity, b=1, c=Infinity, d=Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=-Infinity, d=-Infinity, tx=0, ty=0)
 
   transform.matrix = (a=-Infinity, b=1, c=Infinity, d=-Infinity, tx=0, ty=0)
   rotation=180, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=-Infinity, b=1, c=Infinity, d=-Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=-Infinity, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=-Infinity, b=1, c=-Infinity, d=0, tx=0, ty=0)
   rotation=180, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=-Infinity, b=1, c=-Infinity, d=0, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=Infinity, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=-Infinity, b=1, c=-Infinity, d=1, tx=0, ty=0)
   rotation=180, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=-Infinity, b=1, c=-Infinity, d=1, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=Infinity, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=-Infinity, b=1, c=-Infinity, d=Infinity, tx=0, ty=0)
   rotation=180, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=-Infinity, b=1, c=-Infinity, d=Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=Infinity, d=-Infinity, tx=0, ty=0)
 
   transform.matrix = (a=-Infinity, b=1, c=-Infinity, d=-Infinity, tx=0, ty=0)
   rotation=180, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=-Infinity, b=1, c=-Infinity, d=-Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=Infinity, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=-Infinity, b=Infinity, c=0, d=0, tx=0, ty=0)
   rotation=135, scaleX=Infinity, scaleY=0, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=0, 
-  transform.matrix = (a=-Infinity, b=Infinity, c=0, d=0, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=0, d=0, tx=0, ty=0)
 
   transform.matrix = (a=-Infinity, b=Infinity, c=0, d=1, tx=0, ty=0)
   rotation=135, scaleX=Infinity, scaleY=1, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=1, 
-  transform.matrix = (a=-Infinity, b=Infinity, c=0, d=1, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=0.7071067690849304, d=-0.7071067690849304, tx=0, ty=0)
 
   transform.matrix = (a=-Infinity, b=Infinity, c=0, d=Infinity, tx=0, ty=0)
   rotation=135, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=-Infinity, b=Infinity, c=0, d=Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=Infinity, d=-Infinity, tx=0, ty=0)
 
   transform.matrix = (a=-Infinity, b=Infinity, c=0, d=-Infinity, tx=0, ty=0)
   rotation=135, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=-Infinity, b=Infinity, c=0, d=-Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=-Infinity, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=-Infinity, b=Infinity, c=1, d=0, tx=0, ty=0)
   rotation=135, scaleX=Infinity, scaleY=1, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=1, 
-  transform.matrix = (a=-Infinity, b=Infinity, c=1, d=0, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=-0.7071067690849304, d=-0.7071067690849304, tx=0, ty=0)
 
   transform.matrix = (a=-Infinity, b=Infinity, c=1, d=1, tx=0, ty=0)
   rotation=135, scaleX=Infinity, scaleY=1.4142135623730951, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=1.4142135623730951, 
-  transform.matrix = (a=-Infinity, b=Infinity, c=1, d=1, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=1.7319121206853109e-16, d=-1.4142135381698608, tx=0, ty=0)
 
   transform.matrix = (a=-Infinity, b=Infinity, c=1, d=Infinity, tx=0, ty=0)
   rotation=135, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=-Infinity, b=Infinity, c=1, d=Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=Infinity, d=-Infinity, tx=0, ty=0)
 
   transform.matrix = (a=-Infinity, b=Infinity, c=1, d=-Infinity, tx=0, ty=0)
   rotation=135, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=-Infinity, b=Infinity, c=1, d=-Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=-Infinity, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=-Infinity, b=Infinity, c=Infinity, d=0, tx=0, ty=0)
   rotation=135, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=-Infinity, b=Infinity, c=Infinity, d=0, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=-Infinity, d=-Infinity, tx=0, ty=0)
 
   transform.matrix = (a=-Infinity, b=Infinity, c=Infinity, d=1, tx=0, ty=0)
   rotation=135, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=-Infinity, b=Infinity, c=Infinity, d=1, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=-Infinity, d=-Infinity, tx=0, ty=0)
 
   transform.matrix = (a=-Infinity, b=Infinity, c=Infinity, d=Infinity, tx=0, ty=0)
   rotation=135, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=-Infinity, b=Infinity, c=Infinity, d=Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=Infinity, d=-Infinity, tx=0, ty=0)
 
   transform.matrix = (a=-Infinity, b=Infinity, c=Infinity, d=-Infinity, tx=0, ty=0)
   rotation=135, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=-Infinity, b=Infinity, c=Infinity, d=-Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=-Infinity, d=-Infinity, tx=0, ty=0)
 
   transform.matrix = (a=-Infinity, b=Infinity, c=-Infinity, d=0, tx=0, ty=0)
   rotation=135, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=-Infinity, b=Infinity, c=-Infinity, d=0, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=Infinity, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=-Infinity, b=Infinity, c=-Infinity, d=1, tx=0, ty=0)
   rotation=135, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=-Infinity, b=Infinity, c=-Infinity, d=1, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=Infinity, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=-Infinity, b=Infinity, c=-Infinity, d=Infinity, tx=0, ty=0)
   rotation=135, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=-Infinity, b=Infinity, c=-Infinity, d=Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=Infinity, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=-Infinity, b=Infinity, c=-Infinity, d=-Infinity, tx=0, ty=0)
   rotation=135, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=-Infinity, b=Infinity, c=-Infinity, d=-Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=NaN, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=-Infinity, b=-Infinity, c=0, d=0, tx=0, ty=0)
   rotation=-135, scaleX=Infinity, scaleY=0, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=0, 
-  transform.matrix = (a=-Infinity, b=-Infinity, c=0, d=0, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=0, d=0, tx=0, ty=0)
 
   transform.matrix = (a=-Infinity, b=-Infinity, c=0, d=1, tx=0, ty=0)
   rotation=-135, scaleX=Infinity, scaleY=1, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=1, 
-  transform.matrix = (a=-Infinity, b=-Infinity, c=0, d=1, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=-0.7071067690849304, d=-0.7071067690849304, tx=0, ty=0)
 
   transform.matrix = (a=-Infinity, b=-Infinity, c=0, d=Infinity, tx=0, ty=0)
   rotation=-135, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=-Infinity, b=-Infinity, c=0, d=Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=-Infinity, d=-Infinity, tx=0, ty=0)
 
   transform.matrix = (a=-Infinity, b=-Infinity, c=0, d=-Infinity, tx=0, ty=0)
   rotation=-135, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=-Infinity, b=-Infinity, c=0, d=-Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=Infinity, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=-Infinity, b=-Infinity, c=1, d=0, tx=0, ty=0)
   rotation=-135, scaleX=Infinity, scaleY=1, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=1, 
-  transform.matrix = (a=-Infinity, b=-Infinity, c=1, d=0, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=-0.7071067690849304, d=0.7071067690849304, tx=0, ty=0)
 
   transform.matrix = (a=-Infinity, b=-Infinity, c=1, d=1, tx=0, ty=0)
   rotation=-135, scaleX=Infinity, scaleY=1.4142135623730951, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=1.4142135623730951, 
-  transform.matrix = (a=-Infinity, b=-Infinity, c=1, d=1, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=-1.4142135381698608, d=8.659560603426554e-17, tx=0, ty=0)
 
   transform.matrix = (a=-Infinity, b=-Infinity, c=1, d=Infinity, tx=0, ty=0)
   rotation=-135, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=-Infinity, b=-Infinity, c=1, d=Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=-Infinity, d=-Infinity, tx=0, ty=0)
 
   transform.matrix = (a=-Infinity, b=-Infinity, c=1, d=-Infinity, tx=0, ty=0)
   rotation=-135, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=-Infinity, b=-Infinity, c=1, d=-Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=Infinity, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=-Infinity, b=-Infinity, c=Infinity, d=0, tx=0, ty=0)
   rotation=-135, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=-Infinity, b=-Infinity, c=Infinity, d=0, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=-Infinity, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=-Infinity, b=-Infinity, c=Infinity, d=1, tx=0, ty=0)
   rotation=-135, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=-Infinity, b=-Infinity, c=Infinity, d=1, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=-Infinity, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=-Infinity, b=-Infinity, c=Infinity, d=Infinity, tx=0, ty=0)
   rotation=-135, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=-Infinity, b=-Infinity, c=Infinity, d=Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=-Infinity, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=-Infinity, b=-Infinity, c=Infinity, d=-Infinity, tx=0, ty=0)
   rotation=-135, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=-Infinity, b=-Infinity, c=Infinity, d=-Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=NaN, d=Infinity, tx=0, ty=0)
 
   transform.matrix = (a=-Infinity, b=-Infinity, c=-Infinity, d=0, tx=0, ty=0)
   rotation=-135, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=-Infinity, b=-Infinity, c=-Infinity, d=0, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=Infinity, d=-Infinity, tx=0, ty=0)
 
   transform.matrix = (a=-Infinity, b=-Infinity, c=-Infinity, d=1, tx=0, ty=0)
   rotation=-135, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=-Infinity, b=-Infinity, c=-Infinity, d=1, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=Infinity, d=-Infinity, tx=0, ty=0)
 
   transform.matrix = (a=-Infinity, b=-Infinity, c=-Infinity, d=Infinity, tx=0, ty=0)
   rotation=-135, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=-Infinity, b=-Infinity, c=-Infinity, d=Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=-Infinity, d=-Infinity, tx=0, ty=0)
 
   transform.matrix = (a=-Infinity, b=-Infinity, c=-Infinity, d=-Infinity, tx=0, ty=0)
   rotation=-135, scaleX=Infinity, scaleY=Infinity, 
 clip[rotation] = -Infinity
   rotation=NaN, scaleX=Infinity, scaleY=Infinity, 
-  transform.matrix = (a=-Infinity, b=-Infinity, c=-Infinity, d=-Infinity, tx=0, ty=0)
+  transform.matrix = (a=Infinity, b=NaN, c=Infinity, d=-Infinity, tx=0, ty=0)
 
 // TestAssignMatrix: scaleX = -Infinity
   transform.matrix = (a=0, b=0, c=0, d=0, tx=0, ty=0)

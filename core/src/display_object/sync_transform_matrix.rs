@@ -101,7 +101,7 @@ pub(crate) fn from_swf_matrix(swf_matrix: swf::Matrix) -> (Degrees, Percent, Per
     (rotation, scale_x, scale_y, skew, matrix)
 }
 
-pub(crate) fn to_skip_update(value: f64, _matrix: &Matrix) -> bool {
+pub(crate) fn to_skip_update(value: f64, matrix: &Matrix) -> bool {
     // FIXME - this isn't quite correct. In Flash player,
     // trying to set rotation to NaN does nothing if the current
     // matrix 'b' and 'd' terms are both zero. However, if one
@@ -111,7 +111,7 @@ pub(crate) fn to_skip_update(value: f64, _matrix: &Matrix) -> bool {
     // values, so for now, we never modify the matrix if the
     // rotation is NaN. Hopefully, there are no SWFs depending
     // on the weird behavior when b or d is non-zero.
-    value.is_nan()
+    value.is_nan() && matrix.a == 0.0 && matrix.b == 0.0 && matrix.c == 0.0 && matrix.d >= 0.0
 }
 
 #[inline]
