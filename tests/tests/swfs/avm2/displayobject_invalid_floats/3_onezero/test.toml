@@ -1,4 +1,5 @@
 num_ticks = 1
+
 known_failure = true
 
 [approximations]
@@ -7,6 +8,5 @@ number_patterns = [
     'rotation=(NaN|[0-9.e+-]*), scaleX=(NaN|[0-9.e+-]*), scaleY=(NaN|[0-9.e+-]*),',
 ]
 
-# FIXME: I feel the epsilon/max_relative is large. Reduce the errors.
 epsilon = 2e-2
 max_relative = 1e-2
