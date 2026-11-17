@@ -1,10 +1,12 @@
 use crate::avm2::amf::serialize_value;
 use crate::avm2::error::{
     Error2004Type, make_error_2004, make_error_2082, make_error_2083, make_error_2085,
+    make_error_2146,
 };
 use crate::avm2::function::FunctionArgs;
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::{Activation, Error, Value};
+use crate::config::NetworkingAccessMode;
 use crate::string::AvmString;
 use flash_lso::types::AMFVersion;
 
@@ -30,6 +32,10 @@ pub fn send<'gc>(
     args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
+
+    if activation.context.allow_networking == NetworkingAccessMode::None {
+        return Err(make_error_2146(activation, "LocalConnection.send"));
+    }
 
     let connection_name = args.get_string_non_null(activation, 0, "connectionName")?;
     let method_name = args.get_string_non_null(activation, 1, "methodName")?;
@@ -80,6 +86,9 @@ pub fn connect<'gc>(
     let connection_name = args.get_string_non_null(activation, 0, "connectionName")?;
     if connection_name.is_empty() {
         return Err(make_error_2085(activation, "connectionName"));
+    }
+    if activation.context.allow_networking == NetworkingAccessMode::None {
+        return Err(make_error_2146(activation, "LocalConnection.connect"));
     }
     if connection_name.contains(b':') {
         return Err(make_error_2004(activation, Error2004Type::ArgumentError));
