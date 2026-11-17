@@ -1,0 +1,17 @@
+{
+    "name": "@ruffle-rs/swash-font-renderer",
+    "version": "0.1.0",
+    "description": "Pluggable swash-based device font renderer for Ruffle, built as a standalone WASM module.",
+    "private": true,
+    "scripts": {
+        "build:cargo": "cargo build --release --target wasm32-unknown-unknown",
+        "build:bindgen": "wasm-bindgen --target web --out-dir pkg --out-name swash-font-renderer target/wasm32-unknown-unknown/release/ruffle_swash_font_renderer.wasm",
+        "build:opt": "wasm-opt -O -g -o pkg/swash-font-renderer_bg.wasm pkg/swash-font-renderer_bg.wasm",
+        "build:postbuild": "node scripts/postbuild.mjs",
+        "build": "npm run build:cargo && npm run build:bindgen && npm run build:opt && npm run build:postbuild",
+        "build:nooptim": "npm run build:cargo && npm run build:bindgen && npm run build:postbuild"
+    },
+    "engines": {
+        "node": ">= 16"
+    }
+}

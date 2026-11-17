@@ -39,6 +39,13 @@ members = [
     "tools/fuzzer",
     "tools/stub-report",
 ]
+# Pluggable font renderers (napi-rs addons, standalone WASM modules, ...)
+# build for different targets and keep their own Cargo.toml; keep them out
+# of the main WASM/desktop workspace build.
+exclude = [
+    "font-renderers/gdi-font-renderer",
+    "font-renderers/swash-font-renderer",
+]
 default-members = ["desktop"]
 resolver = "2"
 
