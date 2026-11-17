@@ -46,7 +46,7 @@ pub(crate) fn props_from_matrix(matrix: Matrix) -> (Degrees, Percent, Percent, f
         // `ysignum` multiplication is required here for pi difference.
         let rotation_y = atan2(-ysignum * c, ysignum * d);
         let rotation_x = atan2(b, a);
-        rotation_y - rotation_x
+        (rotation_y - rotation_x).rem_euclid(2.0 * std::f64::consts::PI)
     };
 
     let scale_x = Percent::from_unit(scale_x);
