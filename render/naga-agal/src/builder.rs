@@ -1543,9 +1543,9 @@ impl<'a> NagaBuilder<'a> {
                 let source2 = source2.assert_source_field();
 
                 let source1 =
-                    self.emit_source_field_load_with_swizzle_out(source1, false, VectorSize::Tri)?;
+                    self.emit_source_field_load_with_swizzle_out(source1, true, VectorSize::Tri)?;
                 let source2 =
-                    self.emit_source_field_load_with_swizzle_out(source2, false, VectorSize::Tri)?;
+                    self.emit_source_field_load_with_swizzle_out(source2, true, VectorSize::Tri)?;
 
                 let dp3 = self.evaluate_expr(Expression::Math {
                     fun: MathFunction::Dot,
