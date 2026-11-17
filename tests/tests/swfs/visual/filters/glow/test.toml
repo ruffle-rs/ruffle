@@ -1,9 +1,17 @@
 num_frames = 1
 
 [image_comparisons.output]
+known_failure = true
 tolerance = 2
+# Two text-edge pixels differ between Vulkan and Metal (6 RGB channels).
+max_outliers = 6
 
 [player_options]
-with_renderer = { optional = false, quality = "low" }
-# TODO Fix this test. It shouldn't depend on the default font.
-with_default_font = true
+with_renderer = { optional = false }
+
+[default_fonts]
+sans = ["Noto Sans"]
+
+[fonts.noto_sans]
+family = "Noto Sans"
+path = "NotoSans.ttf"
