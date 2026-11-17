@@ -1,0 +1,18 @@
+Swf(
+    version: 7,
+    tags: [
+        // ImportAssets
+        Raw(
+            code: 57,
+            data: InlineBytes([
+                "61 73 73 65 74 73 2e 73 77 66 00", // "assets.swf"
+                "01 00",                            // Asset count
+                "01 00",                            // Local character ID
+                "63 6c 69 70 00",                   // Export name "clip"
+            ]),
+        ),
+        PlaceObject2(depth: 1, character: 1),
+        ShowFrame,
+        End,
+    ],
+)

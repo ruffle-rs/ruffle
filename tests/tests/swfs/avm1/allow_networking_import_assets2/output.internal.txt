@@ -1,0 +1,4 @@
+Navigator::fetch:
+  URL: assets.swf
+  Method: GET
+Imported clip ran

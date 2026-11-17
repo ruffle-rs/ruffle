@@ -1,0 +1,15 @@
+Swf(
+    version: 7,
+    tags: [
+        DefineSprite(
+            id: 1,
+            tags: [
+                DoAction(Rascal(r#"trace("Imported clip ran"); stop();"#)),
+                ShowFrame,
+            ],
+        ),
+        ExportAssets([(character: 1, name: "clip")]),
+        ShowFrame,
+        End,
+    ],
+)
