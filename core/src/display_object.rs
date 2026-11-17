@@ -535,28 +535,14 @@ impl<'gc> DisplayObjectBase<'gc> {
         self.scale_x.get()
     }
 
-    fn set_scale_x(&self, mut value: Percent) -> bool {
+    fn set_scale_x(&self, value: Percent) -> bool {
         let changed = self.scale_x.get() != value;
         self.set_transformed_by_script(true);
         self.cache_scale_rotation();
         self.scale_x.set(value);
 
-        // Note - in order to match Flash's behavior, the 'scale_x' field is set to NaN
-        // (which gets reported back to ActionScript), but we treat it as 0 for
-        // the purposes of updating the matrix
-        if value.percent().is_nan() {
-            value = 0.0.into();
-        }
-
-        // Similarly, a rotation of `NaN` can be reported to ActionScript, but we
-        // treat it as 0.0 when calculating the matrix
-        let mut rot = self.rotation.get().into_radians();
-        if rot.is_nan() {
-            rot = 0.0;
-        }
-
         let computed_matrix = sync_transform_matrix::matrix_from_props(
-            Degrees::from_radians(rot),
+            self.rotation.get(),
             value,
             self.scale_y.get(),
             self.skew.get(),
@@ -575,28 +561,14 @@ impl<'gc> DisplayObjectBase<'gc> {
         self.scale_y.get()
     }
 
-    fn set_scale_y(&self, mut value: Percent) -> bool {
+    fn set_scale_y(&self, value: Percent) -> bool {
         let changed = self.scale_y.get() != value;
         self.set_transformed_by_script(true);
         self.cache_scale_rotation();
         self.scale_y.set(value);
 
-        // Note - in order to match Flash's behavior, the 'scale_y' field is set to NaN
-        // (which gets reported back to ActionScript), but we treat it as 0 for
-        // the purposes of updating the matrix
-        if value.percent().is_nan() {
-            value = 0.0.into();
-        }
-
-        // Similarly, a rotation of `NaN` can be reported to ActionScript, but we
-        // treat it as 0.0 when calculating the matrix
-        let mut rot = self.rotation.get().into_radians();
-        if rot.is_nan() {
-            rot = 0.0;
-        }
-
         let computed_matrix = sync_transform_matrix::matrix_from_props(
-            Degrees::from_radians(rot),
+            self.rotation.get(),
             self.scale_x.get(),
             value,
             self.skew.get(),

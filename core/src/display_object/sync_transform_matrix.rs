@@ -44,12 +44,18 @@ pub(crate) fn matrix_from_props(
     scale_y: Percent,
     skew: f64,
 ) -> Matrix {
-    let cos_x = f64::cos(degrees.into_radians());
-    let sin_x = f64::sin(degrees.into_radians());
-    let cos_y = f64::cos(degrees.into_radians() + skew);
-    let sin_y = f64::sin(degrees.into_radians() + skew);
-    let scale_x = scale_x.unit();
-    let scale_y = scale_y.unit();
+    // Note - in order to match Flash's behavior, the 'scale_x'/`scale_y` field is set to NaN
+    // (which gets reported back to ActionScript), but we treat it as 0 for the purposes of
+    // updating the matrix
+    let scale_x = nan_to_zero(scale_x.unit());
+    let scale_y = nan_to_zero(scale_y.unit());
+
+    // Similarly, a rotation of `NaN` can be reported to ActionScript, but we
+    // treat it as 0.0 when calculating the matrix
+    let degrees = nan_to_zero(degrees.into_radians());
+
+    let (sin_x, cos_x) = degrees.sin_cos();
+    let (sin_y, cos_y) = (degrees + skew).sin_cos();
 
     Matrix {
         a: (scale_x * cos_x) as f32,
@@ -71,4 +77,9 @@ pub(crate) fn to_skip_update(value: f64, _matrix: &Matrix) -> bool {
     // rotation is NaN. Hopefully, there are no SWFs depending
     // on the weird behavior when b or d is non-zero.
     value.is_nan()
+}
+
+#[inline]
+fn nan_to_zero(val: f64) -> f64 {
+    if val.is_nan() { 0.0 } else { val }
 }
