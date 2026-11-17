@@ -2,6 +2,7 @@ use crate::backend::ShapeHandle;
 use crate::bitmap::{BitmapHandle, PixelRegion, PixelSnapping};
 use crate::matrix::Matrix;
 use crate::pixel_bender::PixelBenderShaderHandle;
+use crate::pixel_bender_support::PixelBenderShaderArgument;
 use crate::transform::Transform;
 use swf::{BlendMode, Color};
 
@@ -36,7 +37,13 @@ pub trait CommandHandler {
 #[derive(Debug, Clone)]
 pub enum RenderBlendMode {
     Builtin(BlendMode),
-    Shader(PixelBenderShaderHandle),
+    Shader(BlendShader),
+}
+
+#[derive(Debug, Clone)]
+pub struct BlendShader {
+    pub handle: PixelBenderShaderHandle,
+    pub values: Vec<PixelBenderShaderArgument<'static>>,
 }
 
 #[derive(Debug, Default, Clone)]

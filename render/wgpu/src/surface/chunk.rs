@@ -3,7 +3,7 @@ use crate::pipelines::Pipelines;
 use crate::surface::buffers::{ChunkBufferBuilder, ChunkBuffers, DrawOffsets};
 use crate::surface::mask::MaskState;
 use crate::surface::target::PoolOrArcTexture;
-use ruffle_render::pixel_bender::PixelBenderShaderHandle;
+use ruffle_render::commands::BlendShader;
 
 pub enum Chunk {
     Draw {
@@ -21,7 +21,7 @@ pub enum Chunk {
 #[derive(Debug)]
 pub enum ChunkBlendMode {
     Complex(ComplexBlend),
-    Shader(PixelBenderShaderHandle),
+    Shader(BlendShader),
 }
 
 #[derive(Debug)]

@@ -858,7 +858,7 @@ fn avm2_to_shader_filter<'gc>(
         .dynamic_root
         .stash(activation.gc(), Gc::new(activation.gc(), shader_obj));
 
-    let (shader_handle, shader_args) = get_shader_args(shader_obj, activation)?;
+    let (shader_handle, shader_args) = get_shader_args(shader_obj, activation, true)?;
 
     Ok(ShaderFilter {
         shader_object: Box::new(ObjectWrapper { root: dyn_root }),
