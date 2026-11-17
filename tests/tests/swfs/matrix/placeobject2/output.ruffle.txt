@@ -25,41 +25,41 @@ _yscale: 100
 _rotation: 0
 // frame 5
 matrix: (a=-1, b=0, c=0, d=1, tx=0, ty=0)
-_xscale: 100
-_yscale: 100
+_xscale: -100
+_yscale: -100
 _rotation: 180
 // frame 5
 matrix: (a=-1, b=1.22464685258517e-16, c=0, d=1, tx=0, ty=0)
 _xscale: 100
-_yscale: 100
+_yscale: -100
 _rotation: 180
 // frame 6
 matrix: (a=-1, b=0, c=0, d=1, tx=0, ty=0)
-_xscale: 100
-_yscale: 100
+_xscale: -100
+_yscale: -100
 _rotation: 180
 // frame 6
-matrix: (a=-1, b=0, c=0, d=1, tx=0, ty=0)
-_xscale: 100
+matrix: (a=-1, b=0, c=-1.22464685258517e-16, d=-1, tx=0, ty=0)
+_xscale: -100
 _yscale: 100
 _rotation: 180
 // frame 7
 matrix: (a=1, b=0, c=0, d=-1, tx=0, ty=0)
 _xscale: 100
-_yscale: 100
+_yscale: -100
 _rotation: 0
 // frame 7
 matrix: (a=1, b=0, c=0, d=-1, tx=0, ty=0)
 _xscale: 100
-_yscale: 100
+_yscale: -100
 _rotation: 0
 // frame 8
 matrix: (a=1, b=0, c=0, d=-1, tx=0, ty=0)
 _xscale: 100
-_yscale: 100
+_yscale: -100
 _rotation: 0
 // frame 8
-matrix: (a=1, b=0, c=1.22464685258517e-16, d=-1, tx=0, ty=0)
+matrix: (a=1, b=0, c=0, d=1, tx=0, ty=0)
 _xscale: 100
 _yscale: 100
 _rotation: 0
@@ -87,42 +87,42 @@ _rotation: 180
 matrix: (a=0, b=0, c=0, d=0, tx=0, ty=0)
 _xscale: 0
 _yscale: 0
-_rotation: 0
+_rotation: 90
 // frame 11
-matrix: (a=1, b=0, c=0, d=0, tx=0, ty=0)
+matrix: (a=6.12323426292584e-17, b=1, c=0, d=0, tx=0, ty=0)
 _xscale: 100
 _yscale: 0
-_rotation: 0
+_rotation: 90
 // frame 12
 matrix: (a=0, b=0, c=0, d=0, tx=0, ty=0)
 _xscale: 0
 _yscale: 0
-_rotation: 0
+_rotation: 90
 // frame 12
-matrix: (a=0, b=0, c=0, d=1, tx=0, ty=0)
+matrix: (a=0, b=0, c=-1, d=6.12323426292584e-17, tx=0, ty=0)
 _xscale: 0
 _yscale: 100
-_rotation: 0
+_rotation: 90
 // frame 13
 matrix: (a=0, b=0, c=0, d=1, tx=0, ty=0)
 _xscale: 0
 _yscale: 100
-_rotation: 0
+_rotation: 90
 // frame 13
-matrix: (a=1, b=0, c=0, d=1, tx=0, ty=0)
+matrix: (a=6.12323426292584e-17, b=1, c=0, d=1, tx=0, ty=0)
 _xscale: 100
 _yscale: 100
-_rotation: 0
+_rotation: 90
 // frame 14
 matrix: (a=0, b=0, c=0, d=1, tx=0, ty=0)
 _xscale: 0
 _yscale: 100
-_rotation: 0
+_rotation: 90
 // frame 14
-matrix: (a=0, b=0, c=0, d=1, tx=0, ty=0)
+matrix: (a=0, b=0, c=-1, d=6.12323426292584e-17, tx=0, ty=0)
 _xscale: 0
 _yscale: 100
-_rotation: 0
+_rotation: 90
 // frame 15
 matrix: (a=1, b=0, c=0, d=0, tx=0, ty=0)
 _xscale: 100
@@ -147,22 +147,22 @@ _rotation: 0
 matrix: (a=0, b=0, c=0, d=-1, tx=0, ty=0)
 _xscale: 0
 _yscale: 100
-_rotation: 0
+_rotation: 90
 // frame 17
-matrix: (a=1, b=0, c=0, d=-1, tx=0, ty=0)
+matrix: (a=6.12323426292584e-17, b=1, c=0, d=-1, tx=0, ty=0)
 _xscale: 100
 _yscale: 100
-_rotation: 0
+_rotation: 90
 // frame 18
 matrix: (a=0, b=0, c=0, d=-1, tx=0, ty=0)
 _xscale: 0
 _yscale: 100
-_rotation: 0
+_rotation: 90
 // frame 18
-matrix: (a=0, b=0, c=1.22464685258517e-16, d=-1, tx=0, ty=0)
+matrix: (a=0, b=0, c=1, d=6.12323426292584e-17, tx=0, ty=0)
 _xscale: 0
 _yscale: 100
-_rotation: 0
+_rotation: 90
 // frame 19
 matrix: (a=-1, b=0, c=0, d=0, tx=0, ty=0)
 _xscale: 100
@@ -186,20 +186,20 @@ _rotation: 180
 // frame 21
 matrix: (a=1, b=0, c=0, d=-2, tx=0, ty=0)
 _xscale: 100
-_yscale: 200
+_yscale: -200
 _rotation: 0
 // frame 21
 matrix: (a=1, b=0, c=0, d=-2, tx=0, ty=0)
 _xscale: 100
-_yscale: 200
+_yscale: -200
 _rotation: 0
 // frame 22
 matrix: (a=1, b=0, c=0, d=-2, tx=0, ty=0)
 _xscale: 100
-_yscale: 200
+_yscale: -200
 _rotation: 0
 // frame 22
-matrix: (a=1, b=0, c=1.22464685258517e-16, d=-1, tx=0, ty=0)
+matrix: (a=1, b=0, c=0, d=1, tx=0, ty=0)
 _xscale: 100
 _yscale: 100
 _rotation: 0

@@ -423,6 +423,20 @@ impl<'gc> DisplayObjectBase<'gc> {
         self.set_scale_rotation_cached(false);
     }
 
+    pub fn update_with_swf_matrix(&self, matrix: swf::Matrix) {
+        let (degrees, scale_x, scale_y, skew, matrix) =
+            sync_transform_matrix::from_swf_matrix(matrix);
+
+        self.rotation.set(degrees);
+        self.scale_x.set(scale_x);
+        self.scale_y.set(scale_y);
+        self.skew.set(skew);
+        self.matrix.set(matrix);
+
+        // We did some tweaks inside from_swf_matrix. Please do not recalculate.
+        self.set_scale_rotation_cached(true);
+    }
+
     pub fn color_transform(&self) -> ColorTransform {
         self.color_transform.get()
     }
@@ -2517,7 +2531,7 @@ pub trait TDisplayObject<'gc>:
         // PlaceObject tags only apply if this object has not been dynamically moved by AS code.
         if !self.transformed_by_script() {
             if let Some(matrix) = place_object.matrix {
-                self.set_matrix(matrix.into());
+                self.base().update_with_swf_matrix(matrix);
                 if let Some(parent) = self.parent() {
                     // Self-transform changes are automatically handled,
                     // we only want to inform ancestors to avoid unnecessary invalidations for tx/ty

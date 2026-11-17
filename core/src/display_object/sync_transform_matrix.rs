@@ -1,6 +1,7 @@
 // Synchronization/computation between matrix and transform (i.e. scale/rotation/skew).
 
 use ruffle_render::matrix::Matrix;
+use swf::Fixed16;
 
 use crate::types::{Degrees, Percent};
 
@@ -67,6 +68,37 @@ pub(crate) fn matrix_from_props(
         d: (scale_y * cos_y) as f32,
         ..Default::default()
     }
+}
+
+/// from_swf_matrix includes tweaks specific to SWF PlaceObject family tags.
+pub(crate) fn from_swf_matrix(swf_matrix: swf::Matrix) -> (Degrees, Percent, Percent, f64, Matrix) {
+    let matrix: Matrix = swf_matrix.into();
+    let (mut rotation, mut scale_x, mut scale_y, mut skew) = props_from_matrix(matrix);
+
+    let negate_scale_xy = swf_matrix.a < Fixed16::ZERO
+        && (swf_matrix.b, swf_matrix.c) == (Fixed16::ZERO, Fixed16::ZERO)
+        && swf_matrix.d > Fixed16::ZERO;
+    let negate_scale_y =
+        negate_scale_xy || swf_matrix.a * swf_matrix.d < swf_matrix.b * swf_matrix.c;
+
+    if negate_scale_xy {
+        scale_x = Percent::from(-scale_x.percent());
+    }
+
+    // invariant: matrix.
+    // - `scale_y *= -1` reverses the sign of `c` and `d`.
+    // - `skew += pi` also reverses the sign of `c` and `d`.
+    if negate_scale_y {
+        scale_y = Percent::from(-scale_y.percent());
+        skew = (skew + std::f64::consts::PI).rem_euclid(2.0 * std::f64::consts::PI);
+    }
+
+    // atan2(0, 0) is generally arbitrary.
+    if (swf_matrix.a, swf_matrix.b) == (Fixed16::ZERO, Fixed16::ZERO) {
+        rotation = Degrees::from_radians(std::f64::consts::PI / 2.0);
+    }
+
+    (rotation, scale_x, scale_y, skew, matrix)
 }
 
 pub(crate) fn to_skip_update(value: f64, _matrix: &Matrix) -> bool {
