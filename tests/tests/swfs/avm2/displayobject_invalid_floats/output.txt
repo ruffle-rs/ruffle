@@ -1,60 +1,75 @@
-Setting initial matrix: (a=2, b=0, c=4, d=0, tx=5, ty=6)
-Initial value: clip[rotation] = 0
-Setting clip[rotation] = NaN gave: NaN
-Matrix: (a=2, b=0, c=4, d=0, tx=5, ty=6)
-Setting initial matrix: (a=2, b=0, c=4, d=0, tx=5, ty=6)
-Initial value: clip[rotation] = 0
-Setting clip[rotation] = NaN gave: NaN
-Matrix: (a=2, b=0, c=4, d=0, tx=5, ty=6)
-Setting initial matrix: (a=7, b=0, c=9, d=0, tx=11, ty=12)
-Initial value: clip[rotation] = 0
-Setting clip[rotation] = NaN gave: NaN
-Matrix: (a=7, b=0, c=9, d=0, tx=11, ty=12)
-Setting initial matrix: (a=2, b=0, c=4, d=0, tx=5, ty=6)
-Initial value: clip[x] = 5
-Setting clip[x] = NaN gave: 0
-Matrix: (a=2, b=0, c=4, d=0, tx=0, ty=6)
-Setting initial matrix: (a=2, b=0, c=4, d=0, tx=5, ty=6)
-Initial value: clip[x] = 5
-Setting clip[x] = NaN gave: 0
-Matrix: (a=2, b=0, c=4, d=0, tx=0, ty=6)
-Setting initial matrix: (a=7, b=0, c=9, d=0, tx=11, ty=12)
-Initial value: clip[x] = 11
-Setting clip[x] = NaN gave: 0
-Matrix: (a=7, b=0, c=9, d=0, tx=0, ty=12)
-Setting initial matrix: (a=2, b=0, c=4, d=0, tx=5, ty=6)
-Initial value: clip[y] = 6
-Setting clip[y] = NaN gave: 0
-Matrix: (a=2, b=0, c=4, d=0, tx=5, ty=0)
-Setting initial matrix: (a=2, b=0, c=4, d=0, tx=5, ty=6)
-Initial value: clip[y] = 6
-Setting clip[y] = NaN gave: 0
-Matrix: (a=2, b=0, c=4, d=0, tx=5, ty=0)
-Setting initial matrix: (a=7, b=0, c=9, d=0, tx=11, ty=12)
-Initial value: clip[y] = 12
-Setting clip[y] = NaN gave: 0
-Matrix: (a=7, b=0, c=9, d=0, tx=11, ty=0)
-Setting initial matrix: (a=2, b=0, c=4, d=0, tx=5, ty=6)
-Initial value: clip[scaleX] = 2
-Setting clip[scaleX] = NaN gave: NaN
-Matrix: (a=0, b=0, c=4, d=0, tx=5, ty=6)
-Setting initial matrix: (a=2, b=0, c=4, d=0, tx=5, ty=6)
-Initial value: clip[scaleX] = 2
-Setting clip[scaleX] = NaN gave: NaN
-Matrix: (a=0, b=0, c=4, d=0, tx=5, ty=6)
-Setting initial matrix: (a=7, b=0, c=9, d=0, tx=11, ty=12)
-Initial value: clip[scaleX] = 7
-Setting clip[scaleX] = NaN gave: NaN
-Matrix: (a=0, b=0, c=9, d=0, tx=11, ty=12)
-Setting initial matrix: (a=2, b=0, c=4, d=0, tx=5, ty=6)
-Initial value: clip[scaleY] = 4
-Setting clip[scaleY] = NaN gave: NaN
-Matrix: (a=2, b=0, c=0, d=0, tx=5, ty=6)
-Setting initial matrix: (a=2, b=0, c=4, d=0, tx=5, ty=6)
-Initial value: clip[scaleY] = 4
-Setting clip[scaleY] = NaN gave: NaN
-Matrix: (a=2, b=0, c=0, d=0, tx=5, ty=6)
-Setting initial matrix: (a=7, b=0, c=9, d=0, tx=11, ty=12)
-Initial value: clip[scaleY] = 9
-Setting clip[scaleY] = NaN gave: NaN
-Matrix: (a=7, b=0, c=0, d=0, tx=11, ty=12)
+  transform.matrix = (a=2, b=0, c=4, d=0, tx=5, ty=6)
+  rotation=0, x=5, y=6, scaleX=2, scaleY=4, 
+clip[rotation] = NaN
+  rotation=NaN, x=5, y=6, scaleX=2, scaleY=4, 
+  transform.matrix = (a=2, b=0, c=4, d=0, tx=5, ty=6)
+  transform.matrix = (a=2, b=0, c=4, d=0, tx=5, ty=6)
+  rotation=0, x=5, y=6, scaleX=2, scaleY=4, 
+clip[rotation] = NaN
+  rotation=NaN, x=5, y=6, scaleX=2, scaleY=4, 
+  transform.matrix = (a=2, b=0, c=4, d=0, tx=5, ty=6)
+  transform.matrix = (a=7, b=0, c=9, d=0, tx=11, ty=12)
+  rotation=0, x=11, y=12, scaleX=7, scaleY=9, 
+clip[rotation] = NaN
+  rotation=NaN, x=11, y=12, scaleX=7, scaleY=9, 
+  transform.matrix = (a=7, b=0, c=9, d=0, tx=11, ty=12)
+  transform.matrix = (a=2, b=0, c=4, d=0, tx=5, ty=6)
+  rotation=0, x=5, y=6, scaleX=2, scaleY=4, 
+clip[x] = NaN
+  rotation=0, x=0, y=6, scaleX=2, scaleY=4, 
+  transform.matrix = (a=2, b=0, c=4, d=0, tx=0, ty=6)
+  transform.matrix = (a=2, b=0, c=4, d=0, tx=5, ty=6)
+  rotation=0, x=5, y=6, scaleX=2, scaleY=4, 
+clip[x] = NaN
+  rotation=0, x=0, y=6, scaleX=2, scaleY=4, 
+  transform.matrix = (a=2, b=0, c=4, d=0, tx=0, ty=6)
+  transform.matrix = (a=7, b=0, c=9, d=0, tx=11, ty=12)
+  rotation=0, x=11, y=12, scaleX=7, scaleY=9, 
+clip[x] = NaN
+  rotation=0, x=0, y=12, scaleX=7, scaleY=9, 
+  transform.matrix = (a=7, b=0, c=9, d=0, tx=0, ty=12)
+  transform.matrix = (a=2, b=0, c=4, d=0, tx=5, ty=6)
+  rotation=0, x=5, y=6, scaleX=2, scaleY=4, 
+clip[y] = NaN
+  rotation=0, x=5, y=0, scaleX=2, scaleY=4, 
+  transform.matrix = (a=2, b=0, c=4, d=0, tx=5, ty=0)
+  transform.matrix = (a=2, b=0, c=4, d=0, tx=5, ty=6)
+  rotation=0, x=5, y=6, scaleX=2, scaleY=4, 
+clip[y] = NaN
+  rotation=0, x=5, y=0, scaleX=2, scaleY=4, 
+  transform.matrix = (a=2, b=0, c=4, d=0, tx=5, ty=0)
+  transform.matrix = (a=7, b=0, c=9, d=0, tx=11, ty=12)
+  rotation=0, x=11, y=12, scaleX=7, scaleY=9, 
+clip[y] = NaN
+  rotation=0, x=11, y=0, scaleX=7, scaleY=9, 
+  transform.matrix = (a=7, b=0, c=9, d=0, tx=11, ty=0)
+  transform.matrix = (a=2, b=0, c=4, d=0, tx=5, ty=6)
+  rotation=0, x=5, y=6, scaleX=2, scaleY=4, 
+clip[scaleX] = NaN
+  rotation=0, x=5, y=6, scaleX=NaN, scaleY=4, 
+  transform.matrix = (a=0, b=0, c=4, d=0, tx=5, ty=6)
+  transform.matrix = (a=2, b=0, c=4, d=0, tx=5, ty=6)
+  rotation=0, x=5, y=6, scaleX=2, scaleY=4, 
+clip[scaleX] = NaN
+  rotation=0, x=5, y=6, scaleX=NaN, scaleY=4, 
+  transform.matrix = (a=0, b=0, c=4, d=0, tx=5, ty=6)
+  transform.matrix = (a=7, b=0, c=9, d=0, tx=11, ty=12)
+  rotation=0, x=11, y=12, scaleX=7, scaleY=9, 
+clip[scaleX] = NaN
+  rotation=0, x=11, y=12, scaleX=NaN, scaleY=9, 
+  transform.matrix = (a=0, b=0, c=9, d=0, tx=11, ty=12)
+  transform.matrix = (a=2, b=0, c=4, d=0, tx=5, ty=6)
+  rotation=0, x=5, y=6, scaleX=2, scaleY=4, 
+clip[scaleY] = NaN
+  rotation=0, x=5, y=6, scaleX=2, scaleY=NaN, 
+  transform.matrix = (a=2, b=0, c=0, d=0, tx=5, ty=6)
+  transform.matrix = (a=2, b=0, c=4, d=0, tx=5, ty=6)
+  rotation=0, x=5, y=6, scaleX=2, scaleY=4, 
+clip[scaleY] = NaN
+  rotation=0, x=5, y=6, scaleX=2, scaleY=NaN, 
+  transform.matrix = (a=2, b=0, c=0, d=0, tx=5, ty=6)
+  transform.matrix = (a=7, b=0, c=9, d=0, tx=11, ty=12)
+  rotation=0, x=11, y=12, scaleX=7, scaleY=9, 
+clip[scaleY] = NaN
+  rotation=0, x=11, y=12, scaleX=7, scaleY=NaN, 
+  transform.matrix = (a=7, b=0, c=0, d=0, tx=11, ty=12)
