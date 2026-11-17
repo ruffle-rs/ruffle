@@ -1,0 +1,30 @@
+num_ticks = 3
+log_fetch = true
+
+[[compilers]]
+type = "Swfasm"
+source = "assets.swfasm"
+target = "assets.swf"
+
+[[compilers]]
+type = "Swfasm"
+source = "test.swfasm"
+target = "test.swf"
+
+[subtests.all]
+output_path = "output.all.txt"
+
+[subtests.all.player_options]
+allow_networking = "all"
+
+[subtests.internal]
+output_path = "output.internal.txt"
+
+[subtests.internal.player_options]
+allow_networking = "internal"
+
+[subtests.none]
+output_path = "output.none.txt"
+
+[subtests.none.player_options]
+allow_networking = "none"
