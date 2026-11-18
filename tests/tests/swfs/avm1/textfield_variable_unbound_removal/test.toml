@@ -1,0 +1,8 @@
+num_ticks = 3
+known_failure.panic = "index out of bounds: the len is 1 but the index is 1"
+
+[[compilers]]
+type = "Rascal"
+target = "test.swf"
+scripts = ["test.as"]
+swf_version = 8
