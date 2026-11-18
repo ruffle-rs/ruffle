@@ -1723,7 +1723,13 @@ impl<'gc> MovieLoader<'gc> {
                 let (width, height) =
                     ruffle_render::utils::decode_define_bits_jpeg_dimensions(data)
                         .unwrap_or((0, 0));
-                SwfMovieData::from_loaded_image(url.clone(), from_bytes, length, width, height)
+                SwfMovieData::from_loaded_image(
+                    url.clone(),
+                    load_bytes_info.cloned(),
+                    length,
+                    width,
+                    height,
+                )
             }
             ContentType::Unknown => SwfMovieData::error_movie(url.clone()),
         };
