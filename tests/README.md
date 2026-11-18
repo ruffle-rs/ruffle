@@ -238,7 +238,6 @@ japanese_mincho = ["Test Font", "Test Font Fallback"]
 # ...
 
 # To make tests easier to maintain, we encourage programmatic compilation of source files where possible.
-# This is currently limited to pure AVM1 code.
 # Multiple compiler steps can be included in a single test.
 [[compilers]]
 
@@ -311,6 +310,22 @@ optimize = true
 
 # Whether to include debug info in the bytecode.
 debug = false
+
+[[compilers]]
+
+# swfasm can be used to compile a textual representation of a SWF file.
+# It gives full control over the tags, e.g. multiple frames, sprites and placements,
+# or hand-crafted tags and bytecode. AVM1 code can be embedded from ActionScript using Rascal.
+# See https://github.com/kjarosh/swfasm for the format.
+# Not all tags are supported yet; unsupported ones can be written using the `Raw` tag,
+# which should be replaced with a proper one once swfasm supports it.
+type = "Swfasm"
+
+# The SWF to compile.
+target = "test.swf"
+
+# The swfasm source file. Paths of files referenced in it are relative to its directory.
+source = "test.swfasm"
 
 # SharedObject assertions to perform, with the exact SharedObject path (e.g. localhost/test.swf/localName). This block is repeatable.
 [shared_objects."name used in SWF"]

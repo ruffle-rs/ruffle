@@ -193,6 +193,30 @@ swf_version = 15
 
 Then, whenever you run the tests it'll automatically build `test.swf` (version 15) with the source code of `test.as`. Consult the [full documentation](tests/README.md) for more details about this format.
 
+When a test needs more control over the SWF structure than a script provides (e.g. multiple frames, sprites and placements, or hand-crafted tags and bytecode), use [swfasm](https://github.com/kjarosh/swfasm). It compiles a textual ([RON](https://github.com/ron-rs/ron)) representation of a SWF file, and AVM1 code can be embedded in it from ActionScript using Rascal:
+```ron
+Swf(
+    version: 8,
+    frame_rate: 12,
+    tags: [
+        FileAttributes(),
+        DoAction(Rascal(file: "test.as")),
+        ShowFrame,
+        End,
+    ],
+)
+```
+
+Save it as `test.swfasm` and add a section like the following to `test.toml`:
+```toml
+[[compilers]]
+type = "Swfasm"
+source = "test.swfasm"
+target = "test.swf"
+```
+
+swfasm doesn't support all SWF tags yet. A tag that isn't supported can be written using the `Raw` tag, which takes the tag code and its body as bytes, e.g. `Raw(code: 26, data: InlineBytes("01 02 ff"))`. Once swfasm supports that tag, the `Raw` tag should be replaced with it.
+
 There is also the ability to only compile the test and not run it - use `cargo testutils compile` to compile all swfs (which takes the same filters as tests does, e.g. `cargo testutils compile avm1/movieclip_lockroot`).
 
 If you want to conveniently run the test that you create in Flash Player, we also have a `cargo testutils execute` command - this only works on Linux currently, and you must configure the Flash Player paths in a `.flash_players.toml` file which looks something like:
