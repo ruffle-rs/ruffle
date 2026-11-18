@@ -1,21 +1,30 @@
 use anyhow::anyhow;
 use std::io::ErrorKind;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::process::Command;
 
 pub struct AscConfig {
+    asc_jar: PathBuf,
     args: Vec<String>,
     custom_main_class: Option<String>,
     working_directory: Option<PathBuf>,
 }
 
 impl AscConfig {
-    pub fn new<I, A>(args: I) -> Self
+    /// Creates a config that runs the `asc.jar` found in `repo_root`, the
+    /// root of the Ruffle repository.
+    ///
+    /// The jar is located from a path supplied at runtime rather than from
+    /// this crate's own `CARGO_MANIFEST_DIR`: a compile-time path would be
+    /// baked into the binary, and could point into a different checkout
+    /// (such as a since-deleted worktree) that shared the same target dir.
+    pub fn new<I, A>(repo_root: &Path, args: I) -> Self
     where
         I: IntoIterator<Item = A>,
         A: Into<String>,
     {
         Self {
+            asc_jar: repo_root.join("tools/asc/asc.jar"),
             args: args.into_iter().map(|a| a.into()).collect(),
             custom_main_class: None,
             working_directory: None,
@@ -34,7 +43,12 @@ impl AscConfig {
 }
 
 pub fn run_asc(config: AscConfig) -> anyhow::Result<()> {
-    let asc_path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("asc.jar");
+    // Make the path absolute, since `working_directory` may change
+    // the directory `java` resolves it against.
+    let asc_path = std::path::absolute(&config.asc_jar)?;
+    if !asc_path.is_file() {
+        return Err(anyhow!("asc.jar not found at {}", asc_path.display()));
+    }
 
     let mut cli_args: Vec<String> = vec![
         "-classpath".to_string(),
