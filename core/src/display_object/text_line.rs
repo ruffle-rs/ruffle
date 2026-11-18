@@ -10,7 +10,7 @@ use crate::display_object::{
     Avm2MousePick, BoundsMode, DisplayObjectBase, EditText, InteractiveObject,
 };
 use crate::events::{ClipEvent, ClipEventResult};
-use crate::fte::TextLineValidity;
+use crate::fte::{TextBaselineValue, TextLineValidity};
 use crate::prelude::*;
 use crate::tag_utils::SwfMovie;
 use crate::vminterface::Instantiator;
@@ -50,6 +50,10 @@ pub struct TextLineData<'gc> {
 
     specified_width: Cell<f64>,
 
+    /// The `baselineZero` of the block when this line was created. Flash keeps
+    /// using it after the line is released from its block.
+    baseline_zero: Cell<TextBaselineValue>,
+
     raw_text_length: Cell<u32>,
 
     begin_index: Cell<u32>,
@@ -77,6 +81,7 @@ impl<'gc> TextLine<'gc> {
                 text_block: Lock::new(None),
                 hide_block_from_script: Cell::new(false),
                 specified_width: Cell::new(0.0),
+                baseline_zero: Cell::new(TextBaselineValue::Roman),
                 raw_text_length: Cell::new(0),
                 begin_index: Cell::new(0),
                 end_index: Cell::new(0),
@@ -100,6 +105,7 @@ impl<'gc> TextLine<'gc> {
         self.set_hide_block_from_script(false);
 
         self.set_specified_width(0.0);
+        self.set_baseline_zero(TextBaselineValue::Roman);
         self.set_raw_text_length(0);
         self.set_begin_index(0);
         self.set_end_index(0);
@@ -169,6 +175,14 @@ impl<'gc> TextLine<'gc> {
 
     pub fn fallback(self) -> EditText<'gc> {
         self.0.fallback
+    }
+
+    pub fn baseline_zero(self) -> TextBaselineValue {
+        self.0.baseline_zero.get()
+    }
+
+    pub fn set_baseline_zero(self, value: TextBaselineValue) {
+        self.0.baseline_zero.set(value);
     }
 
     pub fn validity(self) -> TextLineValidity<'gc> {

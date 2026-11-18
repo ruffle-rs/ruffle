@@ -526,6 +526,7 @@ pub fn do_create_text_line<'gc>(
 
     text_line.set_text_block(Some(block), activation.gc());
     text_line.set_specified_width(width);
+    text_line.set_baseline_zero(block.baseline_zero());
     text_line.set_raw_text_length(subtext.len() as u32);
     text_line.set_begin_index(previous_position as u32);
     text_line.set_end_index(next_position as u32);
