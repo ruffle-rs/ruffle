@@ -328,7 +328,6 @@ pub struct Player {
 
     /// The runtime we're emulating (Flash Player or Adobe AIR).
     /// In Adobe AIR mode, additional classes are available
-    #[expect(unused)]
     player_runtime: PlayerRuntime,
 
     /// Whether we're emulating the release or the debug build.
@@ -2479,6 +2478,10 @@ impl Player {
 
     pub fn spoofed_url(&self) -> Option<&str> {
         self.spoofed_url.as_deref()
+    }
+
+    pub fn player_runtime(&self) -> PlayerRuntime {
+        self.player_runtime
     }
 
     pub fn compatibility_rules(&self) -> &CompatibilityRules {

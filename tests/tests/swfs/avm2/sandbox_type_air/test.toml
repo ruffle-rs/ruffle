@@ -1,0 +1,25 @@
+num_ticks = 10
+
+[player_options]
+runtime = "AIR"
+
+[[compilers]]
+type = "Asc"
+target = "test.swf"
+class = "Test"
+scripts = ["Test.as"]
+swf_version = 20
+
+[[compilers]]
+type = "Asc"
+target = "child.swf"
+class = "Child"
+scripts = ["Child.as"]
+swf_version = 20
+
+[[compilers]]
+type = "Asc"
+target = "localhost/child.swf"
+class = "Child"
+scripts = ["Child.as"]
+swf_version = 20

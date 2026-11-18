@@ -122,7 +122,7 @@ impl SwfMovieData {
         let header = HeaderExt::default_with_swf_version(swf_version);
 
         // TODO What sandbox type should we use here?
-        let sandbox_type = SandboxType::infer(url.as_str(), &header);
+        let sandbox_type = SandboxType::infer(url.as_str(), &header, None);
         Self {
             header,
             data: Arc::new(Vec::new()),
@@ -151,7 +151,7 @@ impl SwfMovieData {
         let header = HeaderExt::default_with_swf_version(swf_version);
 
         // TODO What sandbox type should we use here?
-        let sandbox_type = SandboxType::infer(url.as_str(), &header);
+        let sandbox_type = SandboxType::infer(url.as_str(), &header, None);
         Self {
             header,
             compressed_len,
@@ -178,7 +178,7 @@ impl SwfMovieData {
         let header = HeaderExt::default_with_swf_version(swf_version);
 
         // TODO What sandbox type should we use here?
-        let sandbox_type = SandboxType::infer(url.as_str(), &header);
+        let sandbox_type = SandboxType::infer(url.as_str(), &header, None);
         Self {
             header,
             compressed_len: compressed_data.len(),
@@ -203,7 +203,7 @@ impl SwfMovieData {
         let header = HeaderExt::default_error_header();
 
         // TODO What sandbox type should we use here?
-        let sandbox_type = SandboxType::infer(movie_url.as_str(), &header);
+        let sandbox_type = SandboxType::infer(movie_url.as_str(), &header, None);
         Self {
             header,
             data: Arc::new(Vec::new()),
@@ -222,11 +222,15 @@ impl SwfMovieData {
     /// Construct a movie based on the contents of the SWF datastream. If the
     /// SWF was loaded specifically from the AVM2 method `Loader.loadBytes`,
     /// this method accepts extra information as a `LoadBytesInfo`.
+    ///
+    /// When emulating AIR, `air_application_url` is the URL of the
+    /// application's SWF, see [`SandboxType::infer`].
     pub fn from_data(
         swf_data: &[u8],
         url: String,
         loader_url: Option<String>,
         load_bytes_info: Option<LoadBytesInfo>,
+        air_application_url: Option<&str>,
     ) -> Result<Self, swf::error::Error> {
         let compressed_len = swf_data.len();
         let swf_buf = swf::read::decompress_swf(swf_data)?;
@@ -239,7 +243,9 @@ impl SwfMovieData {
         // a child SWF with different sandboxing.
         let sandbox_type = load_bytes_info
             .map(|i| i.loader_sandbox_type)
-            .unwrap_or_else(|| SandboxType::infer(url.as_str(), &swf_buf.header));
+            .unwrap_or_else(|| {
+                SandboxType::infer(url.as_str(), &swf_buf.header, air_application_url)
+            });
 
         let mut movie = Self {
             header: swf_buf.header,
@@ -270,7 +276,7 @@ impl SwfMovieData {
             .with_width(Twips::from_pixels_i32(width as i32))
             .with_height(Twips::from_pixels_i32(height as i32));
         let header = HeaderExt::default_with_uncompressed_len(length as i32, stage_size);
-        let sandbox_type = SandboxType::infer(url.as_str(), &header);
+        let sandbox_type = SandboxType::infer(url.as_str(), &header, None);
         let mut movie = Self {
             header,
             data: Arc::new(Vec::new()),

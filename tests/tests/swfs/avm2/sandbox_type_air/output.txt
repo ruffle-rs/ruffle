@@ -1,0 +1,7 @@
+Root sandbox type: application
+Loading child.swf
+Child sandbox type: application
+Loading http://localhost:8000/child.swf
+Child sandbox type: remote
+Loading the bytes of child.swf
+Child sandbox type: application

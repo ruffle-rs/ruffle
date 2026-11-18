@@ -19,7 +19,9 @@ use ruffle_core::context::UpdateContext;
 use ruffle_core::context_menu::ContextMenuCallback;
 use ruffle_core::events::{GamepadButton, MouseButton, MouseWheelDelta, TextControlCode};
 use ruffle_core::tag_utils::SwfMovieData;
-use ruffle_core::{FloatDuration, Player, PlayerEvent, StaticCallstack, ViewportDimensions};
+use ruffle_core::{
+    FloatDuration, Player, PlayerEvent, PlayerRuntime, StaticCallstack, ViewportDimensions,
+};
 use ruffle_web_common::JsResult;
 use serde::Serialize;
 use slotmap::{SlotMap, new_key_type};
@@ -286,14 +288,25 @@ impl RuffleHandle {
             segments.push(&swf_name);
         }
 
-        let mut movie = SwfMovieData::from_data(&swf_data.to_vec(), url.to_string(), None, None)
-            .map_err(|e| {
-                let _ = self.with_core_mut(|core| {
-                    core.ui_mut()
-                        .display_root_movie_download_failed_message(true, e.to_string());
-                });
-                format!("Error loading movie: {e}")
-            })?;
+        // An AIR application's SWF is part of the application itself.
+        let air_application_url = match self.with_core(|core| core.player_runtime()) {
+            Ok(PlayerRuntime::AIR) => Some(url.to_string()),
+            _ => None,
+        };
+        let mut movie = SwfMovieData::from_data(
+            &swf_data.to_vec(),
+            url.to_string(),
+            None,
+            None,
+            air_application_url.as_deref(),
+        )
+        .map_err(|e| {
+            let _ = self.with_core_mut(|core| {
+                core.ui_mut()
+                    .display_root_movie_download_failed_message(true, e.to_string());
+            });
+            format!("Error loading movie: {e}")
+        })?;
         movie.append_parameters(parse_movie_parameters(&parameters));
 
         self.on_metadata(movie.header());
