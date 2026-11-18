@@ -578,6 +578,10 @@ pub enum Tag<'a> {
         url: &'a SwfStr,
         imports: Vec<ExportedAsset<'a>>,
     },
+    ImportAssets2 {
+        url: &'a SwfStr,
+        imports: Vec<ExportedAsset<'a>>,
+    },
     JpegTables(JpegTables<'a>),
     NameCharacter(NameCharacter<'a>),
     SetBackgroundColor(SetBackgroundColor),
