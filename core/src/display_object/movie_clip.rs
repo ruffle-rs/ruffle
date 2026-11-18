@@ -1379,11 +1379,16 @@ impl<'gc> MovieClip<'gc> {
             || self.current_frame() < self.frames_loaded() as u16
         {
             NextFrame::Next
-        // The movie clip does not loop on 2 conditions:
+        // The movie clip does not loop on 3 conditions:
         //  1. There was really only one frame, regardless of what the header
         //     declared.
         //  2. The movie clip does not have an End tag.
-        } else if self.frames_loaded() <= 1 || !mc.preload_progress.has_end_tag.get() {
+        //  3. The SWF has less data than its header declares, so it's still
+        //     considered to be loading.
+        } else if self.frames_loaded() <= 1
+            || !mc.preload_progress.has_end_tag.get()
+            || (self.loaded_bytes() as i32) < self.total_bytes()
+        {
             NextFrame::Same
         } else {
             NextFrame::First
