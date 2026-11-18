@@ -1,0 +1,7 @@
+get holderA
+get holderA
+removing b
+b: undefined
+get holderA
+a: new A
+b: undefined
