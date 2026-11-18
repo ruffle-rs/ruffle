@@ -1,0 +1,112 @@
+/// test.swf
+// localeCompare
+"".localeCompare(null), direct: 1
+"".localeCompare(null), prototype: 1
+"".localeCompare(null), call: 1
+"".localeCompare(null), apply: 1
+"".localeCompare(undefined), direct: 1
+"".localeCompare(undefined), prototype: 1
+"".localeCompare(undefined), call: 1
+"".localeCompare(undefined), apply: 1
+"a".localeCompare(null), direct: 0
+"a".localeCompare(null), prototype: 0
+"a".localeCompare(null), call: 0
+"a".localeCompare(null), apply: 0
+"a".localeCompare(undefined), direct: 0
+"a".localeCompare(undefined), prototype: 0
+"a".localeCompare(undefined), call: 0
+"a".localeCompare(undefined), apply: 0
+// sort NUMERIC
+direct: 268435455,-268435455,1
+prototype: 268435455,-268435455,1
+call: 268435455,-268435455,1
+apply: 268435455,-268435455,1
+// sort with a comparator returning fractions
+direct: 3,1,2
+prototype: 3,1,2
+call: 3,1,2
+apply: 3,1,2
+/// child10.swf
+// localeCompare
+"".localeCompare(null), direct: 1
+"".localeCompare(null), prototype: 1
+"".localeCompare(null), call: 1
+"".localeCompare(null), apply: 1
+"".localeCompare(undefined), direct: 1
+"".localeCompare(undefined), prototype: 1
+"".localeCompare(undefined), call: 1
+"".localeCompare(undefined), apply: 1
+"a".localeCompare(null), direct: 0
+"a".localeCompare(null), prototype: 0
+"a".localeCompare(null), call: 0
+"a".localeCompare(null), apply: 0
+"a".localeCompare(undefined), direct: 0
+"a".localeCompare(undefined), prototype: 0
+"a".localeCompare(undefined), call: 0
+"a".localeCompare(undefined), apply: 0
+// sort NUMERIC
+direct: 268435455,-268435455,1
+prototype: 268435455,-268435455,1
+call: 268435455,-268435455,1
+apply: 268435455,-268435455,1
+// sort with a comparator returning fractions
+direct: 3,1,2
+prototype: 3,1,2
+call: 3,1,2
+apply: 3,1,2
+/// child12.swf
+// localeCompare
+"".localeCompare(null), direct: -1
+"".localeCompare(null), prototype: -1
+"".localeCompare(null), call: -1
+"".localeCompare(null), apply: -1
+"".localeCompare(undefined), direct: -1
+"".localeCompare(undefined), prototype: -1
+"".localeCompare(undefined), call: -1
+"".localeCompare(undefined), apply: -1
+"a".localeCompare(null), direct: -13
+"a".localeCompare(null), prototype: -13
+"a".localeCompare(null), call: -13
+"a".localeCompare(null), apply: -13
+"a".localeCompare(undefined), direct: -20
+"a".localeCompare(undefined), prototype: -20
+"a".localeCompare(undefined), call: -20
+"a".localeCompare(undefined), apply: -20
+// sort NUMERIC
+direct: -268435455,1,268435455
+prototype: -268435455,1,268435455
+call: -268435455,1,268435455
+apply: -268435455,1,268435455
+// sort with a comparator returning fractions
+direct: 3,1,2
+prototype: 3,1,2
+call: 3,1,2
+apply: 3,1,2
+/// child19.swf
+// localeCompare
+"".localeCompare(null), direct: -1
+"".localeCompare(null), prototype: -1
+"".localeCompare(null), call: -1
+"".localeCompare(null), apply: -1
+"".localeCompare(undefined), direct: -1
+"".localeCompare(undefined), prototype: -1
+"".localeCompare(undefined), call: -1
+"".localeCompare(undefined), apply: -1
+"a".localeCompare(null), direct: -13
+"a".localeCompare(null), prototype: -13
+"a".localeCompare(null), call: -13
+"a".localeCompare(null), apply: -13
+"a".localeCompare(undefined), direct: -20
+"a".localeCompare(undefined), prototype: -20
+"a".localeCompare(undefined), call: -20
+"a".localeCompare(undefined), apply: -20
+// sort NUMERIC
+direct: -268435455,1,268435455
+prototype: -268435455,1,268435455
+call: -268435455,1,268435455
+apply: -268435455,1,268435455
+// sort with a comparator returning fractions
+direct: 1,2,3
+prototype: 1,2,3
+call: 1,2,3
+apply: 1,2,3
