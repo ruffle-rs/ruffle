@@ -149,16 +149,24 @@ impl<'gc> MovieLibrary<'gc> {
         self.export_characters.insert(export_name, id, false);
     }
 
-    pub fn register_font_name(&mut self, character_id: u16, font_name: &str) {
+    pub fn register_font_name(
+        &mut self,
+        character_id: u16,
+        font_name: &str,
+        is_bold: bool,
+        is_italic: bool,
+    ) {
         let Some(Character::Font(font)) = self.character_by_id(character_id) else {
             return;
         };
 
-        let descriptor = FontDescriptor::from_parts(
-            font_name,
-            font.descriptor().bold(),
-            font.descriptor().italic(),
-        );
+        let (is_bold, is_italic) = if font.is_define_font_1() {
+            (is_bold, is_italic)
+        } else {
+            // Fonts from other tags keep their own style flags.
+            (font.descriptor().bold(), font.descriptor().italic())
+        };
+        let descriptor = FontDescriptor::from_parts(font_name, is_bold, is_italic);
         self.fonts.register_with_descriptor(font, &descriptor);
     }
 
