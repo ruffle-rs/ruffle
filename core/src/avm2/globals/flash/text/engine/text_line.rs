@@ -1,3 +1,4 @@
+use crate::avm2::Avm2StrRepresentable;
 use crate::avm2::activation::Activation;
 use crate::avm2::error::{Error, make_error_2008};
 use crate::avm2::function::FunctionArgs;
@@ -236,4 +237,20 @@ pub fn get_text_height<'gc>(
 
     let measured_text = text_line.measure_text(activation.context);
     Ok(measured_text.1.to_pixels().into())
+}
+
+pub fn get_baseline_zero<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Value<'gc>,
+    _args: FunctionArgs<'_, 'gc>,
+) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this
+        .as_object()
+        .unwrap()
+        .as_display_object()
+        .unwrap()
+        .as_text_line()
+        .unwrap();
+
+    Ok(this.baseline_zero().as_avm2_str(activation).into())
 }
