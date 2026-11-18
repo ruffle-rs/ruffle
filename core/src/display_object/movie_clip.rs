@@ -54,7 +54,7 @@ use std::cell::{Cell, OnceCell, Ref, RefCell, RefMut};
 use std::cmp::max;
 use std::collections::HashMap;
 use swf::extensions::ReadSwfExt;
-use swf::{ClipEventFlag, DefineBitsLossless, FrameLabelData, TagCode, UTF_8};
+use swf::{ClipEventFlag, DefineBitsLossless, FontInfoFlag, FrameLabelData, TagCode, UTF_8};
 
 use super::BitmapClass;
 use super::interactive::Avm2MousePick;
@@ -3902,15 +3902,13 @@ impl<'gc, 'a> MovieClipShared<'gc> {
     ) -> Result<(), Error> {
         let font_info = reader.read_define_font_info(version)?;
 
-        // For some reason Flash doesn't seem to use font_info's flags
-        // (bold, italic) here.
-        //
-        // TODO Maybe there are some cases where it is used?
         let character_id = font_info.id;
         let font_name = &font_info.name.to_str_lossy(reader.encoding());
+        let is_bold = font_info.flags.contains(FontInfoFlag::IS_BOLD);
+        let is_italic = font_info.flags.contains(FontInfoFlag::IS_ITALIC);
 
         self.library_mut(context)
-            .register_font_name(character_id, font_name);
+            .register_font_name(character_id, font_name, is_bold, is_italic);
         Ok(())
     }
 
