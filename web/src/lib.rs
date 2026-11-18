@@ -37,7 +37,7 @@ use url::Url;
 use wasm_bindgen::convert::FromWasmAbi;
 use wasm_bindgen::prelude::*;
 use web_sys::{
-    AddEventListenerOptions, ClipboardEvent, Element, EventTarget, FocusEvent,
+    AddEventListenerOptions, ClipboardEvent, Element, ErrorEvent, EventTarget, FocusEvent,
     Gamepad as WebGamepad, GamepadButton as WebGamepadButton, HtmlCanvasElement, HtmlElement,
     KeyboardEvent, Node, PageTransitionEvent, PointerEvent, ShadowRoot, WebGlContextEvent,
     WheelEvent, Window,
@@ -1379,39 +1379,92 @@ fn global_init() {
     std::panic::set_hook(Box::new(|info| {
         RUFFLE_GLOBAL_PANIC.call_once(|| {
             console_error_panic_hook::hook(info);
-
-            let _ = INSTANCES.try_with(|instances| {
-                let mut players = Vec::new();
-
-                // We have to be super cautious to not panic here, and not hold any borrows for
-                // longer than we need to.
-                // We grab all of the JsPlayers out from the list and release our hold, as they
-                // may call back to destroy() - which will mutably borrow instances.
-
-                if let Ok(instances) = instances.try_borrow() {
-                    for (_, instance) in instances.iter() {
-                        if let Ok((player, Some(callstack))) = instance
-                            .try_borrow()
-                            .map(|i| (i.js_player.clone(), i.callstack.clone()))
-                        {
-                            players.push((player, callstack));
-                        }
-                    }
-                }
-                for (player, callstack) in players {
-                    let error = JsError::new(&info.to_string());
-                    callstack.avm2(|callstack| {
-                        let _ = js_sys::Reflect::set(
-                            &error,
-                            &"avmStack".into(),
-                            &callstack.to_string().into(),
-                        );
-                    });
-                    player.panic(&error);
-                }
-            });
+            show_fatal_error(|| JsError::new(&info.to_string()));
         });
     }));
 
+    register_uncaught_wasm_error_handler();
+
     tracing::info!("Ruffle WASM module has been initialized");
+}
+
+/// Shows the error returned by `make_error` on every Ruffle instance.
+fn show_fatal_error(make_error: impl Fn() -> JsError) {
+    let _ = INSTANCES.try_with(|instances| {
+        let mut players = Vec::new();
+
+        // We have to be super cautious to not panic here, and not hold any borrows for
+        // longer than we need to.
+        // We grab all of the JsPlayers out from the list and release our hold, as they
+        // may call back to destroy() - which will mutably borrow instances.
+
+        if let Ok(instances) = instances.try_borrow() {
+            for (_, instance) in instances.iter() {
+                if let Ok((player, Some(callstack))) = instance
+                    .try_borrow()
+                    .map(|i| (i.js_player.clone(), i.callstack.clone()))
+                {
+                    players.push((player, callstack));
+                }
+            }
+        }
+        for (player, callstack) in players {
+            let error = make_error();
+
+            callstack.avm2(|callstack| {
+                let _ =
+                    js_sys::Reflect::set(&error, &"avmStack".into(), &callstack.to_string().into());
+            });
+
+            player.panic(&error);
+        }
+    });
+}
+
+/// Registers a handler that handles errors thrown out of Ruffle's WASM code
+/// that aren't Rust panics, like a stack overflow, as fatal.
+///
+/// Such an error skips all Rust destructors on its way out, so the player
+/// can be left locked. Without this, the first error reported would be a
+/// later panic from trying to lock it again, instead of the actual cause.
+fn register_uncaught_wasm_error_handler() {
+    let Some(window) = web_sys::window() else {
+        return;
+    };
+
+    let listener = Closure::<dyn FnMut(ErrorEvent)>::new(|event: ErrorEvent| {
+        // The error has already left all JavaScript and WASM code at this
+        // point, so an instance can only be locked or borrowed if the error
+        // was thrown out of Ruffle while it was.
+        if !is_any_instance_left_locked() {
+            return;
+        }
+
+        let error = event
+            .error()
+            .dyn_into::<JsError>()
+            .unwrap_or_else(|_| JsError::new(&event.message()));
+
+        RUFFLE_GLOBAL_PANIC.call_once(|| show_fatal_error(|| error.clone()));
+    });
+
+    let _ = window.add_event_listener_with_callback("error", listener.as_ref().unchecked_ref());
+
+    listener.forget();
+}
+
+fn is_any_instance_left_locked() -> bool {
+    INSTANCES
+        .try_with(|instances| {
+            let Ok(instances) = instances.try_borrow() else {
+                return true;
+            };
+
+            instances.values().any(|instance| {
+                instance
+                    .try_borrow()
+                    .map_or(true, |instance| instance.core.try_lock().is_err())
+            })
+        })
+        .unwrap_or(false)
 }
