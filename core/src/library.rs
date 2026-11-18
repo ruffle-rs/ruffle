@@ -100,6 +100,8 @@ pub struct MovieLibrary<'gc> {
     jpeg_tables: Option<Vec<u8>>,
     fonts: FontMap<'gc>,
     avm2_domain: Option<Avm2Domain<'gc>>,
+    /// Sprites whose AVM1 init actions (`DoInitAction`) already ran.
+    avm1_init_action_targets: FnvHashSet<CharacterId>,
 }
 
 impl<'gc> MovieLibrary<'gc> {
@@ -112,7 +114,19 @@ impl<'gc> MovieLibrary<'gc> {
             jpeg_tables: None,
             fonts: Default::default(),
             avm2_domain: None,
+            avm1_init_action_targets: FnvHashSet::default(),
         }
+    }
+
+    /// Whether AVM1 init actions for the sprite `id` already ran.
+    pub fn avm1_init_action_ran(&self, id: CharacterId) -> bool {
+        self.avm1_init_action_targets.contains(&id)
+    }
+
+    /// Records that AVM1 init actions for the sprite `id` ran.
+    /// Returns `false` if they already had.
+    pub fn set_avm1_init_action_ran(&mut self, id: CharacterId) -> bool {
+        self.avm1_init_action_targets.insert(id)
     }
 
     /// Registers a character; returns `true` if successful, or `false` if a character with
