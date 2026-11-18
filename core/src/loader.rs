@@ -32,7 +32,7 @@ use crate::display_object::{
 };
 use crate::events::ClipEvent;
 use crate::limits::ExecutionLimit;
-use crate::player::{Player, PostFrameCallback};
+use crate::player::{Player, PlayerRuntime, PostFrameCallback};
 use crate::streams::{NetStream, NetStreamHandle};
 use crate::string::{AvmString, StringContext};
 use crate::tag_utils::{SwfMovie, SwfMovieData};
@@ -357,6 +357,7 @@ impl<'gc> LoadManager<'gc> {
                                 url.clone(),
                                 Some(url.clone()),
                                 None,
+                                uc.air_application_url(),
                             )
                             .expect("Could not load movie");
 
@@ -778,7 +779,10 @@ impl<'gc> MovieLoader<'gc> {
     ) -> Result<(), Error> {
         ContentType::sniff(&body).expect(ContentType::Swf)?;
 
-        let movie = SwfMovieData::from_data(&body, url, loader_url, None)?;
+        let air_application_url =
+            player.mutate_with_update_context(|uc| uc.air_application_url().map(str::to_owned));
+        let movie =
+            SwfMovieData::from_data(&body, url, loader_url, None, air_application_url.as_deref())?;
         player.mutate_with_update_context(|uc| {
             // Make a copy of the properties on the root, so we can put them back after replacing it
             let mut root_properties: IndexMap<AvmString, Value> = IndexMap::new();
@@ -960,14 +964,25 @@ pub fn load_root_movie<'gc>(
             .map(|u| u.to_string())
             .unwrap_or(swf_url);
 
-        let mut movie = SwfMovieData::from_data(&body, spoofed_or_swf_url, None, None)
-            .inspect_err(|error| {
-                player
-                    .lock()
-                    .unwrap()
-                    .ui()
-                    .display_root_movie_download_failed_message(true, error.to_string());
-            })?;
+        // An AIR application's SWF is part of the application itself.
+        let air_application_url = match player.lock().unwrap().player_runtime() {
+            PlayerRuntime::AIR => Some(spoofed_or_swf_url.clone()),
+            PlayerRuntime::FlashPlayer => None,
+        };
+        let mut movie = SwfMovieData::from_data(
+            &body,
+            spoofed_or_swf_url,
+            None,
+            None,
+            air_application_url.as_deref(),
+        )
+        .inspect_err(|error| {
+            player
+                .lock()
+                .unwrap()
+                .ui()
+                .display_root_movie_download_failed_message(true, error.to_string());
+        })?;
         on_metadata(movie.header());
         movie.append_parameters(parameters);
         player.lock().unwrap().mutate_with_update_context(|uc| {
@@ -1709,6 +1724,7 @@ impl<'gc> MovieLoader<'gc> {
                     url.clone(),
                     loader_url.clone(),
                     load_bytes_info,
+                    uc.air_application_url(),
                 )?;
 
                 if matches!(vm_data, MovieLoaderVMData::Avm1 { .. }) {

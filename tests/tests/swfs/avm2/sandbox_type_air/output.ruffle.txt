@@ -1,7 +1,0 @@
-Root sandbox type: localWithFile
-Loading child.swf
-Child sandbox type: localWithFile
-Loading http://localhost:8000/child.swf
-Child sandbox type: remote
-Loading the bytes of child.swf
-Child sandbox type: localWithFile

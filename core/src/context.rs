@@ -30,7 +30,7 @@ use crate::local_connection::LocalConnections;
 use crate::net_connection::NetConnections;
 use crate::orphan_manager::OrphanManager;
 use crate::player::PostFrameCallback;
-use crate::player::{MouseData, Player};
+use crate::player::{MouseData, Player, PlayerRuntime};
 use crate::prelude::*;
 use crate::socket::Sockets;
 use crate::streams::StreamManager;
@@ -254,6 +254,15 @@ impl<'gc> HasStringContext<'gc> for UpdateContext<'gc> {
 
 /// Convenience methods for controlling audio.
 impl<'gc> UpdateContext<'gc> {
+    /// The URL of the AIR application's SWF when emulating AIR, which
+    /// decides which loaded SWFs are part of the application.
+    pub fn air_application_url(&self) -> Option<&str> {
+        match self.avm2.player_runtime {
+            PlayerRuntime::AIR => Some(self.root_swf.url()),
+            PlayerRuntime::FlashPlayer => None,
+        }
+    }
+
     pub fn global_sound_transform(&self) -> &SoundTransform {
         self.audio_manager.global_sound_transform()
     }

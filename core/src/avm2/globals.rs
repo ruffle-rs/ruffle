@@ -846,7 +846,7 @@ pub fn load_playerglobal<'gc>(context: &mut UpdateContext<'gc>, domain: Domain<'
     context.avm2.native_custom_constructor_table = native::NATIVE_CUSTOM_CONSTRUCTOR_TABLE;
     context.avm2.native_fast_call_list = native::NATIVE_FAST_CALL_LIST;
 
-    let movie_data = SwfMovieData::from_data(PLAYERGLOBAL, "file:///".into(), None, None)
+    let movie_data = SwfMovieData::from_data(PLAYERGLOBAL, "file:///".into(), None, None, None)
         .expect("playerglobal_avm2.swf should be valid");
     let movie = SwfMovie::new(context.gc(), movie_data);
 

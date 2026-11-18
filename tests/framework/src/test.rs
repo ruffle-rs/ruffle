@@ -6,6 +6,7 @@ use crate::options::known_failure::KnownFailure;
 use crate::runner::TestRunner;
 use crate::util::read_bytes;
 use anyhow::{Result, anyhow};
+use ruffle_core::PlayerRuntime;
 use ruffle_core::font::{FontQuery, FontType};
 use ruffle_core::tag_utils::SwfMovieData;
 use ruffle_input_format::InputInjector;
@@ -76,13 +77,13 @@ impl Test {
 
     pub fn movie(&self) -> Result<SwfMovieData> {
         let data = read_bytes(&self.swf_path)?;
-        let movie = SwfMovieData::from_data(
-            &data,
-            format!("file://{}", self.swf_path.as_str()),
-            None,
-            None,
-        )
-        .map_err(|e| anyhow!("Error parsing SWF: {e}"))?;
+        let url = format!("file://{}", self.swf_path.as_str());
+        let air_application_url = match self.options.player_options.runtime() {
+            PlayerRuntime::AIR => Some(url.clone()),
+            PlayerRuntime::FlashPlayer => None,
+        };
+        let movie = SwfMovieData::from_data(&data, url, None, None, air_application_url.as_deref())
+            .map_err(|e| anyhow!("Error parsing SWF: {e}"))?;
         Ok(movie)
     }
 

@@ -25,6 +25,10 @@ pub struct PlayerOptions {
 }
 
 impl PlayerOptions {
+    pub fn runtime(&self) -> PlayerRuntime {
+        self.runtime
+    }
+
     pub fn setup(&self, mut player_builder: PlayerBuilder) -> anyhow::Result<PlayerBuilder> {
         if let Some(max_execution_duration) = self.max_execution_duration {
             player_builder = player_builder.with_max_execution_duration(max_execution_duration);
