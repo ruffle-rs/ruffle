@@ -556,11 +556,11 @@ pub enum MovieLoaderVMData<'gc> {
 }
 
 impl<'gc> MovieLoaderVMData<'gc> {
-    fn load_bytes_info(&self) -> Option<LoadBytesInfo> {
+    fn load_bytes_info(&self) -> Option<&LoadBytesInfo> {
         match self {
             MovieLoaderVMData::Avm2 {
                 load_bytes_info, ..
-            } => *load_bytes_info,
+            } => load_bytes_info.as_ref(),
             _ => None,
         }
     }
@@ -1708,7 +1708,7 @@ impl<'gc> MovieLoader<'gc> {
                     data,
                     url.clone(),
                     loader_url.clone(),
-                    load_bytes_info,
+                    load_bytes_info.cloned(),
                 )?;
 
                 if matches!(vm_data, MovieLoaderVMData::Avm1 { .. }) {

@@ -238,9 +238,11 @@ impl SwfMovieData {
         // use the sandbox type of the loader SWF, to ensure that it can't load
         // a child SWF with different sandboxing.
         let sandbox_type = load_bytes_info
+            .as_ref()
             .map(|i| i.loader_sandbox_type)
             .unwrap_or_else(|| SandboxType::infer(url.as_str(), &swf_buf.header));
 
+        let is_from_bytes = load_bytes_info.is_some();
         let mut movie = Self {
             header: swf_buf.header,
             data: Arc::new(swf_buf.data),
@@ -251,7 +253,7 @@ impl SwfMovieData {
             compressed_len,
             is_movie: true,
             force_avm1: false,
-            is_from_bytes: load_bytes_info.is_some(),
+            is_from_bytes,
             sandbox_type,
         };
         movie.append_parameters_from_url();
@@ -561,7 +563,7 @@ impl SwfSlice {
 
 /// Extra information provided when a SWF is loaded using `Loader.loadBytes`
 /// (as opposed to when it is loaded from a URL).
-#[derive(Clone, Copy)]
+#[derive(Clone)]
 pub struct LoadBytesInfo {
     pub loader_sandbox_type: SandboxType,
 }
