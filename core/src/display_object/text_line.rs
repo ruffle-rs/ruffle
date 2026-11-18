@@ -10,8 +10,11 @@ use crate::display_object::{
     Avm2MousePick, BoundsMode, DisplayObjectBase, EditText, InteractiveObject,
 };
 use crate::events::{ClipEvent, ClipEventResult};
+use crate::font::FontLike;
 use crate::fte::{TextBaselineValue, TextLineValidity};
+use crate::html::LayoutContent;
 use crate::prelude::*;
+use crate::string::WStr;
 use crate::tag_utils::SwfMovie;
 use crate::vminterface::Instantiator;
 use core::fmt;
@@ -178,12 +181,44 @@ impl<'gc> TextLine<'gc> {
         self.0.fallback
     }
 
+    /// The number of atoms in the line, taking each character as an atom,
+    /// except for CRLF, which is a single atom.
+    // TODO: Ligatures aren't handled; Flash makes each of them a single atom.
+    pub fn atom_count(self) -> u32 {
+        self.0.fallback.text().len() as u32
+    }
+
     pub fn baseline_zero(self) -> TextBaselineValue {
         self.0.baseline_zero.get()
     }
 
     pub fn set_baseline_zero(self, value: TextBaselineValue) {
         self.0.baseline_zero.set(value);
+    }
+
+    /// The advance of a space in the line's font, which Flash uses as the
+    /// width of the line terminator's atom.
+    pub fn space_advance(self) -> Twips {
+        let layout = self.0.fallback.layout();
+        let text_box = layout.lines().first().and_then(|line| {
+            line.boxes_iter()
+                .find_map(|layout_box| match layout_box.content() {
+                    LayoutContent::Text {
+                        font_set, params, ..
+                    } => Some((*font_set, *params)),
+                    _ => None,
+                })
+        });
+
+        let mut advance = Twips::ZERO;
+
+        if let Some((font_set, params)) = text_box {
+            font_set.evaluate(WStr::from_units(b" "), params, |_, _, _, space, _| {
+                advance = space;
+            });
+        }
+
+        advance
     }
 
     /// The fallback text field lays out its text below its top edge, inset by

@@ -60,10 +60,7 @@ package flash.text.engine {
             return false;
         }
 
-        public function get atomCount():int {
-            stub_getter("flash.text.engine.TextLine", "atomCount");
-            return this.rawTextLength;
-        }
+        public native function get atomCount():int;
 
         public native function get previousLine():TextLine;
         public native function get nextLine():TextLine;
@@ -120,10 +117,7 @@ package flash.text.engine {
             return 0;
         }
 
-        public function getAtomBounds(index:int):Rectangle {
-            stub_method("flash.text.engine.TextLine", "getAtomBounds");
-            return new Rectangle(0, 0, 0, 0);
-        }
+        public native function getAtomBounds(index:int):Rectangle;
 
         public function getAtomCenter(index:int):Number {
             stub_method("flash.text.engine.TextLine", "getAtomCenter");
