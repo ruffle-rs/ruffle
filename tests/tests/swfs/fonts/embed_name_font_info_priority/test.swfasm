@@ -1,0 +1,280 @@
+Swf(
+    version: 8,
+    tags: [
+        // DefineFont + DefineFontInfo2, then DefineFont2 with the same name.
+        // DefineFont 1
+        Raw(
+            code: 10,
+            data: InlineBytes([
+                "01 00",                   // Font ID
+                "08 00 0a 00 0c 00 0e 00", // Offset table
+                "10 00 10 00 10 00 10 00", // Empty glyph shapes
+            ]),
+        ),
+        // DefineFontInfo2 for font 1
+        Raw(
+            code: 62,
+            data: InlineBytes([
+                "01 00",                   // Font ID
+                "08",                      // Name length
+                "54 65 73 74 46 6f 6e 74", // Name "TestFont"
+                "01",                      // Flags: wide codes
+                "01",                      // Language code
+                "30 00 31 00 32 00 33 00", // Code table "0123"
+            ]),
+        ),
+        // DefineFont2 2
+        Raw(
+            code: 48,
+            data: InlineBytes([
+                "02 00",                   // Font ID
+                "84",                      // Flags: has layout, wide codes
+                "00",                      // Language code
+                "08",                      // Name length
+                "54 65 73 74 46 6f 6e 74", // Name "TestFont"
+                "04 00",                   // Glyph count
+                "0a 00 0c 00 0e 00 10 00", // Offset table
+                "12 00",                   // Code table offset
+                "10 00 10 00 10 00 10 00", // Empty glyph shapes
+                "30 00 31 00 32 00 33 00", // Code table "0123"
+                "20 03 e0 00 00 00",       // Ascent, descent, leading
+                "00 02 00 02 00 02 00 02", // Advances
+                "00 00 00 00",             // Empty bounds
+                "00 00",                   // Kerning count
+            ]),
+        ),
+        // DefineFont2, then DefineFont + DefineFontInfo2 with the same name.
+        // DefineFont2 3
+        Raw(
+            code: 48,
+            data: InlineBytes([
+                "03 00",                      // Font ID
+                "84",                         // Flags: has layout, wide codes
+                "00",                         // Language code
+                "09",                         // Name length
+                "54 65 73 74 46 6f 6e 74 32", // Name "TestFont2"
+                "04 00",                      // Glyph count
+                "0a 00 0c 00 0e 00 10 00",    // Offset table
+                "12 00",                      // Code table offset
+                "10 00 10 00 10 00 10 00",    // Empty glyph shapes
+                "30 00 31 00 32 00 33 00",    // Code table "0123"
+                "20 03 e0 00 00 00",          // Ascent, descent, leading
+                "00 02 00 02 00 02 00 02",    // Advances
+                "00 00 00 00",                // Empty bounds
+                "00 00",                      // Kerning count
+            ]),
+        ),
+        // DefineFont 4
+        Raw(
+            code: 10,
+            data: InlineBytes([
+                "04 00",                   // Font ID
+                "08 00 0a 00 0c 00 0e 00", // Offset table
+                "10 00 10 00 10 00 10 00", // Empty glyph shapes
+            ]),
+        ),
+        // DefineFontInfo2 for font 4
+        Raw(
+            code: 62,
+            data: InlineBytes([
+                "04 00",                      // Font ID
+                "09",                         // Name length
+                "54 65 73 74 46 6f 6e 74 32", // Name "TestFont2"
+                "01",                         // Flags: wide codes
+                "01",                         // Language code
+                "30 00 31 00 32 00 33 00",    // Code table "0123"
+            ]),
+        ),
+        // Only DefineFont + DefineFontInfo2.
+        // DefineFont 5
+        Raw(
+            code: 10,
+            data: InlineBytes([
+                "05 00",                   // Font ID
+                "08 00 0a 00 0c 00 0e 00", // Offset table
+                "10 00 10 00 10 00 10 00", // Empty glyph shapes
+            ]),
+        ),
+        // DefineFontInfo2 for font 5
+        Raw(
+            code: 62,
+            data: InlineBytes([
+                "05 00",                   // Font ID
+                "08",                      // Name length
+                "49 6e 66 6f 4f 6e 6c 79", // Name "InfoOnly"
+                "01",                      // Flags: wide codes
+                "01",                      // Language code
+                "30 00 31 00 32 00 33 00", // Code table "0123"
+            ]),
+        ),
+        // DefineFont + DefineFontInfo(2) with style flags, then a regular
+        // DefineFont2 with the same name.
+        // DefineFont 6
+        Raw(
+            code: 10,
+            data: InlineBytes([
+                "06 00",                   // Font ID
+                "08 00 0a 00 0c 00 0e 00", // Offset table
+                "10 00 10 00 10 00 10 00", // Empty glyph shapes
+            ]),
+        ),
+        // DefineFontInfo2 for font 6
+        Raw(
+            code: 62,
+            data: InlineBytes([
+                "06 00",                   // Font ID
+                "07",                      // Name length
+                "49 74 61 6c 69 63 32",    // Name "Italic2"
+                "05",                      // Flags: wide codes, italic
+                "01",                      // Language code
+                "30 00 31 00 32 00 33 00", // Code table "0123"
+            ]),
+        ),
+        // DefineFont2 7
+        Raw(
+            code: 48,
+            data: InlineBytes([
+                "07 00",                   // Font ID
+                "84",                      // Flags: has layout, wide codes
+                "00",                      // Language code
+                "07",                      // Name length
+                "49 74 61 6c 69 63 32",    // Name "Italic2"
+                "04 00",                   // Glyph count
+                "0a 00 0c 00 0e 00 10 00", // Offset table
+                "12 00",                   // Code table offset
+                "10 00 10 00 10 00 10 00", // Empty glyph shapes
+                "30 00 31 00 32 00 33 00", // Code table "0123"
+                "20 03 e0 00 00 00",       // Ascent, descent, leading
+                "00 02 00 02 00 02 00 02", // Advances
+                "00 00 00 00",             // Empty bounds
+                "00 00",                   // Kerning count
+            ]),
+        ),
+        // DefineFont 8
+        Raw(
+            code: 10,
+            data: InlineBytes([
+                "08 00",                   // Font ID
+                "08 00 0a 00 0c 00 0e 00", // Offset table
+                "10 00 10 00 10 00 10 00", // Empty glyph shapes
+            ]),
+        ),
+        // DefineFontInfo2 for font 8
+        Raw(
+            code: 62,
+            data: InlineBytes([
+                "08 00",                   // Font ID
+                "05",                      // Name length
+                "42 6f 6c 64 32",          // Name "Bold2"
+                "03",                      // Flags: wide codes, bold
+                "01",                      // Language code
+                "30 00 31 00 32 00 33 00", // Code table "0123"
+            ]),
+        ),
+        // DefineFont2 9
+        Raw(
+            code: 48,
+            data: InlineBytes([
+                "09 00",                   // Font ID
+                "84",                      // Flags: has layout, wide codes
+                "00",                      // Language code
+                "05",                      // Name length
+                "42 6f 6c 64 32",          // Name "Bold2"
+                "04 00",                   // Glyph count
+                "0a 00 0c 00 0e 00 10 00", // Offset table
+                "12 00",                   // Code table offset
+                "10 00 10 00 10 00 10 00", // Empty glyph shapes
+                "30 00 31 00 32 00 33 00", // Code table "0123"
+                "20 03 e0 00 00 00",       // Ascent, descent, leading
+                "00 02 00 02 00 02 00 02", // Advances
+                "00 00 00 00",             // Empty bounds
+                "00 00",                   // Kerning count
+            ]),
+        ),
+        // DefineFont 10
+        Raw(
+            code: 10,
+            data: InlineBytes([
+                "0a 00",                   // Font ID
+                "08 00 0a 00 0c 00 0e 00", // Offset table
+                "10 00 10 00 10 00 10 00", // Empty glyph shapes
+            ]),
+        ),
+        // DefineFontInfo2 for font 10
+        Raw(
+            code: 62,
+            data: InlineBytes([
+                "0a 00",                            // Font ID
+                "0b",                               // Name length
+                "42 6f 6c 64 49 74 61 6c 69 63 32", // Name "BoldItalic2"
+                "07",                               // Flags: wide codes, bold, italic
+                "01",                               // Language code
+                "30 00 31 00 32 00 33 00",          // Code table "0123"
+            ]),
+        ),
+        // DefineFont2 11
+        Raw(
+            code: 48,
+            data: InlineBytes([
+                "0b 00",                            // Font ID
+                "84",                               // Flags: has layout, wide codes
+                "00",                               // Language code
+                "0b",                               // Name length
+                "42 6f 6c 64 49 74 61 6c 69 63 32", // Name "BoldItalic2"
+                "04 00",                            // Glyph count
+                "0a 00 0c 00 0e 00 10 00",          // Offset table
+                "12 00",                            // Code table offset
+                "10 00 10 00 10 00 10 00",          // Empty glyph shapes
+                "30 00 31 00 32 00 33 00",          // Code table "0123"
+                "20 03 e0 00 00 00",                // Ascent, descent, leading
+                "00 02 00 02 00 02 00 02",          // Advances
+                "00 00 00 00",                      // Empty bounds
+                "00 00",                            // Kerning count
+            ]),
+        ),
+        // DefineFont 12
+        Raw(
+            code: 10,
+            data: InlineBytes([
+                "0c 00",                   // Font ID
+                "08 00 0a 00 0c 00 0e 00", // Offset table
+                "10 00 10 00 10 00 10 00", // Empty glyph shapes
+            ]),
+        ),
+        // DefineFontInfo for font 12
+        Raw(
+            code: 13,
+            data: InlineBytes([
+                "0c 00",                   // Font ID
+                "07",                      // Name length
+                "49 74 61 6c 69 63 31",    // Name "Italic1"
+                "05",                      // Flags: wide codes, italic
+                "30 00 31 00 32 00 33 00", // Code table "0123"
+            ]),
+        ),
+        // DefineFont2 13
+        Raw(
+            code: 48,
+            data: InlineBytes([
+                "0d 00",                   // Font ID
+                "84",                      // Flags: has layout, wide codes
+                "00",                      // Language code
+                "07",                      // Name length
+                "49 74 61 6c 69 63 31",    // Name "Italic1"
+                "04 00",                   // Glyph count
+                "0a 00 0c 00 0e 00 10 00", // Offset table
+                "12 00",                   // Code table offset
+                "10 00 10 00 10 00 10 00", // Empty glyph shapes
+                "30 00 31 00 32 00 33 00", // Code table "0123"
+                "20 03 e0 00 00 00",       // Ascent, descent, leading
+                "00 02 00 02 00 02 00 02", // Advances
+                "00 00 00 00",             // Empty bounds
+                "00 00",                   // Kerning count
+            ]),
+        ),
+
+        DoAction(Rascal(file: "test.as")),
+        ShowFrame,
+        End,
+    ],
+)
