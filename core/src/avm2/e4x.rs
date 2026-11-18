@@ -805,9 +805,7 @@ impl<'gc> E4XNode<'gc> {
         let data_utf8 = string.to_utf8_lossy();
         let mut parser = NsReader::from_str(&data_utf8);
         // Flash has no limit on the number of namespace declarations per element.
-        parser
-            .resolver_mut()
-            .set_max_declarations_per_element(usize::MAX);
+        parser.resolver_mut().set_max_namespace_bindings(usize::MAX);
         parser.config_mut().allow_dangling_amp = true;
         let mut open_tags: Vec<E4XNode<'gc>> = vec![];
 
@@ -950,7 +948,7 @@ impl<'gc> E4XNode<'gc> {
                 Event::CData(bt) => {
                     // This is already unescaped
                     handle_text_cdata(
-                        bt,
+                        bt.as_bytes(),
                         ignore_white,
                         &mut open_tags,
                         &mut top_level,
@@ -964,9 +962,7 @@ impl<'gc> E4XNode<'gc> {
                         continue;
                     }
 
-                    let text = std::str::from_utf8(bt)
-                        .map_err(|_| make_xml_error(activation, XmlErrorCode::ElementMalformed))?;
-                    let text = AvmString::new_utf8(activation.gc(), text);
+                    let text = AvmString::new_utf8(activation.gc(), bt.as_ref());
 
                     let node = E4XNode(Gc::new(
                         activation.gc(),
@@ -986,8 +982,7 @@ impl<'gc> E4XNode<'gc> {
                         continue;
                     }
 
-                    let text = std::str::from_utf8(bt)
-                        .map_err(|_| make_xml_error(activation, XmlErrorCode::ElementMalformed))?;
+                    let text: &str = bt;
 
                     let (name, value) = if let Some((name, value)) = text.split_once(' ') {
                         (
@@ -1051,30 +1046,30 @@ impl<'gc> E4XNode<'gc> {
             .map_err(|e| match e {
                 XmlAttrError::Duplicated(pos, _) => {
                     // Find end of attribute name, handling both a="" and a = "".
-                    let tail = &bs[pos..];
+                    let tail = &bs.as_bytes()[pos..];
                     let name_end = tail
                         .iter()
                         .position(|&b| b == b'=' || b.is_ascii_whitespace())
                         .unwrap();
                     let attr_name = &tail[..name_end];
 
-                    make_error_1104(activation, attr_name, bs.name().as_ref())
+                    make_error_1104(activation, attr_name, bs.name().into_inner().as_bytes())
                 }
                 _ => make_xml_error(activation, XmlErrorCode::ElementMalformed),
             })?;
 
         for attribute in attributes {
-            let value_str = avm2_unescape(&attribute.value)
+            let value_str = avm2_unescape(attribute.value.as_bytes())
                 .map_err(|_| make_xml_error(activation, XmlErrorCode::ElementMalformed))?;
             let value = AvmString::new_utf8(activation.gc(), value_str);
 
             let (ns, local_name) = parser.resolver().resolve_attribute(attribute.key);
 
-            let local_name = ruffle_wstr::from_utf8_bytes(local_name.into_inner());
+            let local_name = ruffle_wstr::from_utf8(local_name.into_inner());
             let name = activation.strings().intern_wstr(local_name).into();
 
             let namespace = match ns {
-                ResolveResult::Bound(ns) if ns.into_inner() == b"http://www.w3.org/2000/xmlns/" => {
+                ResolveResult::Bound(ns) if ns.into_inner() == "http://www.w3.org/2000/xmlns/" => {
                     namespaces.push(E4XNamespace {
                         uri: value,
                         prefix: Some(name),
@@ -1082,14 +1077,15 @@ impl<'gc> E4XNode<'gc> {
                     continue;
                 }
                 ResolveResult::Bound(ns) => {
-                    let prefix = attribute.key.prefix().map(|prefix| {
-                        AvmString::new_utf8_bytes(activation.gc(), prefix.into_inner())
-                    });
-                    let uri = AvmString::new_utf8_bytes(activation.gc(), ns.into_inner());
+                    let prefix = attribute
+                        .key
+                        .prefix()
+                        .map(|prefix| AvmString::new_utf8(activation.gc(), prefix.into_inner()));
+                    let uri = AvmString::new_utf8(activation.gc(), ns.into_inner());
                     Some(E4XNamespace { prefix, uri })
                 }
                 ResolveResult::Unknown(ns) => {
-                    return Err(make_unknown_ns_error(activation, &ns, name));
+                    return Err(make_unknown_ns_error(activation, ns.as_bytes(), name));
                 }
                 ResolveResult::Unbound => {
                     // The default XML namespace declaration
@@ -1119,7 +1115,7 @@ impl<'gc> E4XNode<'gc> {
 
         let (ns, local_name) = parser.resolver().resolve_element(bs.name());
 
-        let local_name = ruffle_wstr::from_utf8_bytes(local_name.into_inner());
+        let local_name = ruffle_wstr::from_utf8(local_name.into_inner());
         let name = activation.strings().intern_wstr(local_name).into();
 
         let namespace = match ns {
@@ -1127,12 +1123,12 @@ impl<'gc> E4XNode<'gc> {
                 let prefix = bs
                     .name()
                     .prefix()
-                    .map(|prefix| AvmString::new_utf8_bytes(activation.gc(), prefix.into_inner()));
-                let uri = AvmString::new_utf8_bytes(activation.gc(), ns.into_inner());
+                    .map(|prefix| AvmString::new_utf8(activation.gc(), prefix.into_inner()));
+                let uri = AvmString::new_utf8(activation.gc(), ns.into_inner());
                 Some(E4XNamespace { prefix, uri })
             }
             ResolveResult::Unknown(ns) => {
-                return Err(make_unknown_ns_error(activation, &ns, name));
+                return Err(make_unknown_ns_error(activation, ns.as_bytes(), name));
             }
             ResolveResult::Unbound => {
                 // Check if there's an explicit xmlns="" declaration in this element.

@@ -2,7 +2,7 @@
 
 use crate::context::UpdateContext;
 use crate::html::iterators::TextSpanIter;
-use crate::string::{Integer, SwfStrExt as _, Units, WStr, WString};
+use crate::string::{Integer, SwfStrExt as _, WStr, WString};
 use crate::tag_utils::SwfMovie;
 use gc_arena::Collect;
 use quick_xml::{Reader, escape::escape, events::Event};
@@ -734,28 +734,10 @@ impl FormatSpans {
         let mut text = WString::new();
         let mut spans: Vec<TextSpan> = Vec::new();
 
-        // quick_xml::Reader requires a [u8] slice, but doesn't actually care about Unicode;
-        // this means we can pass the raw buffer in the Latin1 case.
-        let (raw_bytes, is_raw_latin1) = match html.units() {
-            Units::Bytes(units) => (Cow::Borrowed(units), true),
-            // TODO: In principle, we should be able to encode (and later decode)
-            // the utf16 units in the [u8] array without discarding losing surrogates.
-            Units::Wide(_) => (
-                Cow::Owned(html.to_utf8_lossy().into_owned().into_bytes()),
-                false,
-            ),
-        };
-
-        // Helper function to decode a byte sequence returned by quick_xml into a WString.
-        // TODO: use Cow<'_, WStr>?
-        let decode_to_wstr = |raw: &[u8]| -> WString {
-            if is_raw_latin1 {
-                WString::from_buf(raw.to_vec())
-            } else {
-                let utf8 = std::str::from_utf8(raw).expect("raw should be valid utf8");
-                WString::from_utf8(utf8)
-            }
-        };
+        // quick_xml::Reader requires valid UTF-8 input.
+        // TODO: In principle, we should be able to encode (and later decode)
+        // the utf16 units without losing unpaired surrogates.
+        let html_utf8 = html.to_utf8_lossy();
 
         // Flash ignores mismatched end tags (i.e. end tags with a missing/different corresponding
         // start tag). `quick-xml` checks end tag mismatches by default, but it cannot recover after
@@ -771,7 +753,7 @@ impl FormatSpans {
         // For applying display: block at the end of the tag
         let mut display_block = false;
 
-        let mut reader = Reader::from_reader(&raw_bytes[..]);
+        let mut reader = Reader::from_str(&html_utf8);
         let reader_config = reader.config_mut();
         reader_config.expand_empty_elements = true;
         reader_config.check_end_names = false;
@@ -805,7 +787,7 @@ impl FormatSpans {
         loop {
             let event = match text_coalescer.read_event(|| reader.read_event()) {
                 Ok(CoalescedEvent::Text(raw_text)) => {
-                    let e = decode_to_wstr(&raw_text);
+                    let e = WString::from_utf8_bytes(raw_text);
                     let e = process_html_entity(&e).unwrap_or(e);
 
                     let format = format_stack.last().unwrap().clone();
@@ -838,7 +820,7 @@ impl FormatSpans {
 
             match event {
                 Ok(Event::Start(ref e)) => {
-                    let tag_name = &e.name().into_inner().to_ascii_lowercase()[..];
+                    let tag_name = &e.name().into_inner().as_bytes().to_ascii_lowercase()[..];
                     let attributes: Result<Vec<_>, _> = e.attributes().with_checks(false).collect();
                     let attributes = match attributes {
                         Ok(attributes) => attributes,
@@ -855,8 +837,9 @@ impl FormatSpans {
                             attribute
                                 .key
                                 .into_inner()
+                                .as_bytes()
                                 .eq_ignore_ascii_case(name)
-                                .then(|| decode_to_wstr(&attribute.value))
+                                .then(|| WString::from_utf8(&attribute.value))
                         })
                     };
                     let mut format = format_stack.last().unwrap().clone();
@@ -1118,7 +1101,7 @@ impl FormatSpans {
                     format_stack.push(format);
                 }
                 Ok(Event::End(e)) => {
-                    let tag_name = &e.name().into_inner().to_ascii_lowercase()[..];
+                    let tag_name = &e.name().into_inner().as_bytes().to_ascii_lowercase()[..];
                     // Check for a mismatch.
                     match opened_starts.last() {
                         Some(start) => {

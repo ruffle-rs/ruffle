@@ -15,7 +15,7 @@ pub enum CoalescedEvent<'a> {
 /// Merges runs of `Event::Text` and `Event::GeneralRef` into one piece of text,
 /// like quick-xml reported them before 0.38.
 ///
-/// The text is kept as raw bytes, as it isn't necessarily UTF-8.
+/// The text is kept as raw (UTF-8) bytes, as that is what the unescaping functions take.
 #[derive(Default)]
 pub struct TextCoalescer<'a> {
     lookahead: Option<Result<Event<'a>, XmlError>>,
@@ -30,10 +30,10 @@ impl<'a> TextCoalescer<'a> {
 
         loop {
             match self.lookahead.take().unwrap_or_else(&mut read) {
-                Ok(Event::Text(e)) => text.extend_from_slice(&e),
+                Ok(Event::Text(e)) => text.extend_from_slice(e.as_bytes()),
                 Ok(Event::GeneralRef(e)) => {
                     text.push(b'&');
-                    text.extend_from_slice(&e);
+                    text.extend_from_slice(e.as_bytes());
                     text.push(b';');
                 }
                 other if text.is_empty() => return other.map(CoalescedEvent::Event),
