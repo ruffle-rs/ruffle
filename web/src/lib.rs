@@ -604,10 +604,8 @@ impl RuffleHandle {
                 false,
                 move |js_event: PointerEvent| {
                     let _ = ruffle.with_instance(move |instance| {
-                        let event = PlayerEvent::MouseMove {
-                            x: js_event.offset_x() * instance.device_pixel_ratio,
-                            y: js_event.offset_y() * instance.device_pixel_ratio,
-                        };
+                        let (x, y) = pointer_to_stage_coords(&js_event, &instance.canvas);
+                        let event = PlayerEvent::MouseMove { x, y };
                         let _ = instance.with_core_mut(|core| {
                             core.handle_event(event);
                         });
@@ -661,16 +659,16 @@ impl RuffleHandle {
                                 .unchecked_ref::<Element>()
                                 .set_pointer_capture(js_event.pointer_id());
                         }
-                        let device_pixel_ratio = instance.device_pixel_ratio;
                         let button = match js_event.button() {
                             0 => MouseButton::Left,
                             1 => MouseButton::Middle,
                             2 => MouseButton::Right,
                             _ => MouseButton::Unknown,
                         };
+                        let (x, y) = pointer_to_stage_coords(&js_event, &instance.canvas);
                         let event = PlayerEvent::MouseDown {
-                            x: js_event.offset_x() * device_pixel_ratio,
-                            y: js_event.offset_y() * device_pixel_ratio,
+                            x,
+                            y,
                             button,
                             // TODO The index should be provided by the browser, not calculated.
                             index: None,
@@ -700,9 +698,10 @@ impl RuffleHandle {
                                 .unchecked_ref::<Element>()
                                 .release_pointer_capture(js_event.pointer_id());
                         }
+                        let (x, y) = pointer_to_stage_coords(&js_event, &instance.canvas);
                         let event = PlayerEvent::MouseUp {
-                            x: js_event.offset_x() * instance.device_pixel_ratio,
-                            y: js_event.offset_y() * instance.device_pixel_ratio,
+                            x,
+                            y,
                             button: match js_event.button() {
                                 0 => MouseButton::Left,
                                 1 => MouseButton::Middle,
@@ -1340,6 +1339,27 @@ pub enum RuffleInstanceError {
     TryLockError,
     #[error("Ruffle Instance ID does not exist")]
     InstanceNotFound,
+}
+
+/// Map a pointer event's client position into canvas-backing-buffer coords.
+/// Uses `getBoundingClientRect` so this stays correct under CSS transforms,
+/// browser zoom, and any device-pixel-ratio.
+fn pointer_to_stage_coords(js_event: &PointerEvent, canvas: &HtmlCanvasElement) -> (f64, f64) {
+    let rect = AsRef::<Element>::as_ref(canvas).get_bounding_client_rect();
+    let scale_x = if rect.width() > 0.0 {
+        f64::from(canvas.width()) / rect.width()
+    } else {
+        0.0
+    };
+    let scale_y = if rect.height() > 0.0 {
+        f64::from(canvas.height()) / rect.height()
+    } else {
+        0.0
+    };
+    (
+        (js_event.client_x() - rect.left()) * scale_x,
+        (js_event.client_y() - rect.top()) * scale_y,
+    )
 }
 
 fn parse_movie_parameters(input: &JsValue) -> Vec<(String, String)> {
