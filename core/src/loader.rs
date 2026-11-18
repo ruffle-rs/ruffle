@@ -528,7 +528,7 @@ pub enum LoaderStatus {
     Failed,
 }
 
-#[derive(Collect, Clone, Copy)]
+#[derive(Collect, Clone)]
 #[collect(no_drop)]
 pub enum MovieLoaderVMData<'gc> {
     Avm1 {
@@ -1614,7 +1614,7 @@ impl<'gc> MovieLoader<'gc> {
                 target_clip,
                 vm_data,
                 ..
-            }) => (*target_clip, *vm_data),
+            }) => (*target_clip, vm_data.clone()),
             None => return Err(Error::Cancelled),
         };
 
@@ -1667,7 +1667,7 @@ impl<'gc> MovieLoader<'gc> {
                 target_clip,
                 vm_data,
                 ..
-            }) => (*target_clip, *vm_data),
+            }) => (*target_clip, vm_data.clone()),
             None => return Err(Error::Cancelled),
         };
 
@@ -2022,7 +2022,7 @@ impl<'gc> MovieLoader<'gc> {
                 target_clip,
                 vm_data,
                 ..
-            }) => (*target_clip, *vm_data),
+            }) => (*target_clip, vm_data.clone()),
             None => return Err(Error::Cancelled),
         };
 
@@ -2077,7 +2077,7 @@ impl<'gc> MovieLoader<'gc> {
                 movie,
                 vm_data,
                 ..
-            }) => (*target_clip, *vm_data, *movie),
+            }) => (*target_clip, vm_data.clone(), *movie),
             None => return Err(Error::Cancelled),
         };
 
@@ -2252,7 +2252,7 @@ impl<'gc> MovieLoader<'gc> {
                 target_clip,
                 vm_data,
                 ..
-            }) => (*target_clip, *vm_data),
+            }) => (*target_clip, vm_data.clone()),
             None => return Err(Error::Cancelled),
         };
 
