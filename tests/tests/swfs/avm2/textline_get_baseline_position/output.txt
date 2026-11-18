@@ -1,0 +1,23 @@
+size=10 baselineZero=roman: roman=0 ascent=-8 descent=2 ideographicTop=-8 ideographicCenter=-3 ideographicBottom=2
+size=10 baselineZero=ascent: roman=8 ascent=0 descent=10 ideographicTop=0 ideographicCenter=5 ideographicBottom=10
+size=10 baselineZero=descent: roman=-2 ascent=-10 descent=0 ideographicTop=-10 ideographicCenter=-5 ideographicBottom=0
+size=10 baselineZero=ideographicTop: roman=8 ascent=0 descent=10 ideographicTop=0 ideographicCenter=5 ideographicBottom=10
+size=10 baselineZero=ideographicCenter: roman=3 ascent=-5 descent=5 ideographicTop=-5 ideographicCenter=0 ideographicBottom=5
+size=10 baselineZero=ideographicBottom: roman=-2 ascent=-10 descent=0 ideographicTop=-10 ideographicCenter=-5 ideographicBottom=0
+size=20 baselineZero=roman: roman=0 ascent=-16 descent=4 ideographicTop=-16 ideographicCenter=-6 ideographicBottom=4
+size=20 baselineZero=ascent: roman=16 ascent=0 descent=20 ideographicTop=0 ideographicCenter=10 ideographicBottom=20
+size=20 baselineZero=descent: roman=-4 ascent=-20 descent=0 ideographicTop=-20 ideographicCenter=-10 ideographicBottom=0
+size=20 baselineZero=ideographicTop: roman=16 ascent=0 descent=20 ideographicTop=0 ideographicCenter=10 ideographicBottom=20
+size=20 baselineZero=ideographicCenter: roman=6 ascent=-10 descent=10 ideographicTop=-10 ideographicCenter=0 ideographicBottom=10
+size=20 baselineZero=ideographicBottom: roman=-4 ascent=-20 descent=0 ideographicTop=-20 ideographicCenter=-10 ideographicBottom=0
+size=40 baselineZero=roman: roman=0 ascent=-32 descent=8 ideographicTop=-32 ideographicCenter=-12 ideographicBottom=8
+size=40 baselineZero=ascent: roman=32 ascent=0 descent=40 ideographicTop=0 ideographicCenter=20 ideographicBottom=40
+size=40 baselineZero=descent: roman=-8 ascent=-40 descent=0 ideographicTop=-40 ideographicCenter=-20 ideographicBottom=0
+size=40 baselineZero=ideographicTop: roman=32 ascent=0 descent=40 ideographicTop=0 ideographicCenter=20 ideographicBottom=40
+size=40 baselineZero=ideographicCenter: roman=12 ascent=-20 descent=20 ideographicTop=-20 ideographicCenter=0 ideographicBottom=20
+size=40 baselineZero=ideographicBottom: roman=-8 ascent=-40 descent=0 ideographicTop=-40 ideographicCenter=-20 ideographicBottom=0
+released: textBlock=null roman=16 descent=20
+static: textBlock=null roman=-4 ascent=-20
+invalid : ArgumentError #2008
+invalid bogus: ArgumentError #2008
+invalid null: TypeError #2007
