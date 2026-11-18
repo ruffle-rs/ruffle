@@ -2410,8 +2410,21 @@ impl<'gc> MovieClip<'gc> {
                             return Ok(());
                         }
 
-                        mc.avm1_unload(uc);
-                        mc.transform_to_unloaded_state(uc);
+                        // Unloaded levels other than `_level0` are removed, as in
+                        // Flash Player.
+                        // TODO: Unloading `_level0` stops all levels in Flash Player.
+                        if mc.is_nonzero_level()
+                            && let Some(DisplayObject::Stage(stage)) = mc.parent()
+                        {
+                            // The level is removed right away, so its queued `onUnload`
+                            // handlers don't run (methods of removed clips can't be
+                            // called), as in Flash Player. `remove_child` would keep a
+                            // level with an `onUnload` handler until the handler has run.
+                            stage.remove_child_directly(uc, mc.into());
+                        } else {
+                            mc.avm1_unload(uc);
+                            mc.transform_to_unloaded_state(uc);
+                        }
                         Ok(())
                     })?;
                 Ok(())
