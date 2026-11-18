@@ -254,7 +254,7 @@ impl<'gc> EditText<'gc> {
     ///
     /// See <https://open-flash.github.io/mirrors/as2-language-reference/TextFormat.html#getTextExtent()>.
     /// See <https://help.adobe.com/en_US/FlashPlatform/reference/actionscript/3/flash/text/TextLineMetrics.html>.
-    const GUTTER: Twips = Twips::new(40);
+    pub const GUTTER: Twips = Twips::new(40);
 
     /// Creates a new `EditText` from an SWF `DefineEditText` tag.
     pub fn from_swf_tag(

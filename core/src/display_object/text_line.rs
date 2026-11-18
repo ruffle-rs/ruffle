@@ -19,6 +19,7 @@ use gc_arena::barrier::unlock;
 use gc_arena::lock::Lock;
 use gc_arena::{Collect, Gc, Mutation};
 use ruffle_common::utils::HasPrefixField;
+use ruffle_render::transform::Transform;
 use std::cell::Cell;
 use swf::Twips;
 
@@ -185,6 +186,21 @@ impl<'gc> TextLine<'gc> {
         self.0.baseline_zero.set(value);
     }
 
+    /// The fallback text field lays out its text below its top edge, inset by
+    /// its gutter, while a `TextLine`'s origin is the start of its baseline.
+    fn fallback_to_local_matrix(self) -> Matrix {
+        let ascent = self
+            .0
+            .fallback
+            .layout()
+            .lines()
+            .first()
+            .map(|line| line.ascent())
+            .unwrap_or_default();
+
+        Matrix::translate(-EditText::GUTTER, -(EditText::GUTTER + ascent))
+    }
+
     pub fn validity(self) -> TextLineValidity<'gc> {
         self.0.validity.get()
     }
@@ -304,11 +320,28 @@ impl<'gc> TDisplayObject<'gc> for TextLine<'gc> {
     fn replace_with(self, _context: &mut UpdateContext<'gc>, _id: CharacterId) {}
 
     fn render_self(self, context: &mut RenderContext<'_, 'gc>) {
+        context.transform_stack.push(&Transform {
+            matrix: self.fallback_to_local_matrix(),
+            ..Default::default()
+        });
         self.0.fallback.render_self(context);
+        context.transform_stack.pop();
     }
 
-    fn self_bounds(self, mode: BoundsMode) -> Rectangle<Twips> {
-        self.0.fallback.self_bounds(mode)
+    fn self_bounds(self, _mode: BoundsMode) -> Rectangle<Twips> {
+        let layout = self.0.fallback.layout();
+        let Some(line) = layout.lines().first() else {
+            return Rectangle::default();
+        };
+
+        Rectangle {
+            x_min: Twips::ZERO,
+            y_min: -line.ascent(),
+            x_max: layout.text_size().width(),
+            // Unlike Flash, Ruffle doesn't break lines to fit the specified
+            // width, so the fallback text field may wrap into more rows.
+            y_max: layout.text_size().height() - line.ascent(),
+        }
     }
 
     fn hit_test_shape(

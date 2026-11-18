@@ -1,7 +1,10 @@
 num_frames = 5
 
 [image_comparisons.output]
-tolerance = 1
+# Glyph rasterization differs from Flash Player, but misplaced text
+# produces far more outliers.
+tolerance = 128
+max_outliers = 1500
 
 [player_options]
-with_renderer = { optional = false, quality = "low" }
+with_renderer = { optional = false, quality = "high" }
