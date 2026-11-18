@@ -1413,9 +1413,14 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         } else if level_target > -1 {
             // `loadMovieNum` call.
             if clip_target.is_none() && level_target > -1 {
-                // Ensure the level exists
-                // [NA] TODO: This should actually create the level in the future when it's loaded
-                clip_target = Some(self.get_or_create_level(level_target));
+                clip_target = if url.is_empty() {
+                    // Unloading doesn't create the level.
+                    self.get_level(level_target)
+                } else {
+                    // Ensure the level exists
+                    // [NA] TODO: This should actually create the level in the future when it's loaded
+                    Some(self.get_or_create_level(level_target))
+                };
             }
             if let Some(clip_target) = clip_target {
                 if url.is_empty() {
