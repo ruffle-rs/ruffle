@@ -392,18 +392,10 @@ impl Op<'_> {
     }
 
     pub fn is_nop(&self) -> bool {
-        if cfg!(feature = "avm_debug") {
-            matches!(self, Op::Nop | Op::CoerceA)
-        } else {
-            matches!(
-                self,
-                Op::Nop
-                    | Op::CoerceA
-                    | Op::Debug { .. }
-                    | Op::DebugFile { .. }
-                    | Op::DebugLine { .. }
-            )
-        }
+        matches!(
+            self,
+            Op::Nop | Op::CoerceA | Op::Debug { .. } | Op::DebugFile { .. } | Op::DebugLine { .. }
+        )
     }
 
     /// Whether all this op does is push a single value to the stack, possibly

@@ -48,6 +48,10 @@ v.className: MyArray
 v.className: MyArray
 // A_CONVOLUTION_FILTER.matrix
 v.className: MyArray
+// Camera.names
+v.className: MyArray
+// Microphone.names
+v.className: MyArray
 
 ### Testing display objects
 current.className: MovieClip
@@ -248,6 +252,41 @@ textfieldOrig.className: TextField
 v.className: MyTextFormat
 // textfieldOrig.getNewTextFormat()
 v.className: MyTextFormat
+
+### Testing SharedObject
+// SHARED_OBJECT.getLocal('test1')
+SharedObject getter called!
+new MySharedObject() called!
+v.className: MySharedObject
+// delete _global.SharedObject
+// SHARED_OBJECT.getLocal('test1')
+v.className: MySharedObject
+// SHARED_OBJECT.getLocal('test2')
+v isn't an object: null (type: null)
+
+### Testing Date
+// A_FILE_REFERENCE.browse(A_FILE_BROWSE_FILTER)
+FileReference.browse - onSelect
+creationDate.className: MyDate
+modificationDate.className: MyDate
+
+### Testing FileReference
+// A_FILE_REFERENCE_LIST.browse(A_FILE_BROWSE_FILTER)
+flash getter called!
+net getter called!
+FileReference getter called!
+new MyFileReference() called!
+flash getter called!
+net getter called!
+FileReference getter called!
+new MyFileReference() called!
+flash getter called!
+net getter called!
+FileReference getter called!
+new MyFileReference() called!
+FileReferenceList.browse - onSelect
+fileList.className: MyArray
+target.fileList.length = 0
 
 ### Testing XML(Node)
 // walkXmlNode(AN_XML)

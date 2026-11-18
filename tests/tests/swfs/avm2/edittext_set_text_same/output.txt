@@ -1,0 +1,115 @@
+// setTextFormat, then same text
+  text = "AB": text=AB sizes=12,12 default=12
+  setTextFormat(big): text=AB sizes=30,30 default=12
+  text = "AB": text=AB sizes=30,30 default=12
+  text = "ab": text=ab sizes=12,12 default=12
+// htmlText, then same text
+  htmlText = "<font size='30'>AB</font>": text=AB sizes=30,30 default=12
+  text = "AB": text=AB sizes=30,30 default=12
+  text = "ab": text=ab sizes=12,12 default=12
+// defaultTextFormat, then same text
+  text = "AB": text=AB sizes=12,12 default=12
+  defaultTextFormat = big: text=AB sizes=12,12 default=30
+  text = "AB": text=AB sizes=30,30 default=30
+// setTextFormat and defaultTextFormat, then same text
+  text = "AB": text=AB sizes=12,12 default=12
+  setTextFormat(big): text=AB sizes=30,30 default=12
+  defaultTextFormat = mid: text=AB sizes=30,30 default=20
+  text = "AB": text=AB sizes=20,20 default=20
+// htmlText and defaultTextFormat, then same text
+  htmlText = "<font size='30'>AB</font>": text=AB sizes=30,30 default=12
+  defaultTextFormat = mid: text=AB sizes=30,30 default=20
+  text = "AB": text=AB sizes=20,20 default=20
+// defaultTextFormat set to its own value, then same text
+  text = "AB": text=AB sizes=12,12 default=12
+  setTextFormat(big): text=AB sizes=30,30 default=12
+  defaultTextFormat = field.defaultTextFormat: text=AB sizes=30,30 default=12
+  text = "AB": text=AB sizes=12,12 default=12
+// defaultTextFormat set to an equal value, then same text
+  text = "AB": text=AB sizes=12,12 default=12
+  setTextFormat(big): text=AB sizes=30,30 default=12
+  defaultTextFormat = twelve: text=AB sizes=30,30 default=12
+  text = "AB": text=AB sizes=12,12 default=12
+// defaultTextFormat changed and changed back, then same text
+  text = "AB": text=AB sizes=12,12 default=12
+  setTextFormat(big): text=AB sizes=30,30 default=12
+  defaultTextFormat = mid: text=AB sizes=30,30 default=20
+  defaultTextFormat = twelve: text=AB sizes=30,30 default=12
+  text = "AB": text=AB sizes=12,12 default=12
+// defaultTextFormat, setTextFormat, then same text
+  text = "AB": text=AB sizes=12,12 default=12
+  defaultTextFormat = mid: text=AB sizes=12,12 default=20
+  setTextFormat(big): text=AB sizes=30,30 default=20
+  text = "AB": text=AB sizes=20,20 default=20
+// defaultTextFormat, same text twice
+  text = "AB": text=AB sizes=12,12 default=12
+  defaultTextFormat = mid: text=AB sizes=12,12 default=20
+  text = "AB": text=AB sizes=20,20 default=20
+  setTextFormat(big): text=AB sizes=30,30 default=20
+  text = "AB": text=AB sizes=30,30 default=20
+// defaultTextFormat, different text, then same text
+  text = "AB": text=AB sizes=12,12 default=12
+  defaultTextFormat = mid: text=AB sizes=12,12 default=20
+  text = "XY": text=XY sizes=20,20 default=20
+  setTextFormat(big): text=XY sizes=30,30 default=20
+  text = "XY": text=XY sizes=30,30 default=20
+// defaultTextFormat, htmlText, then same text
+  text = "AB": text=AB sizes=12,12 default=12
+  defaultTextFormat = mid: text=AB sizes=12,12 default=20
+  htmlText = "AB": text=AB sizes=20,20 default=20
+  setTextFormat(big): text=AB sizes=30,30 default=20
+  text = "AB": text=AB sizes=30,30 default=20
+// textColor, then same text
+  text = "AB": text=AB sizes=12,12 default=12
+    colors=0,0 default color=0
+  setTextFormat(big): text=AB sizes=30,30 default=12
+    colors=0,0 default color=0
+  textColor = 0xFF0000: text=AB sizes=30,30 default=12
+    colors=16711680,16711680 default color=16711680
+  text = "AB": text=AB sizes=30,30 default=12
+    colors=16711680,16711680 default color=16711680
+// defaultTextFormat, textColor, then same text
+  text = "AB": text=AB sizes=12,12 default=12
+    colors=0,0 default color=0
+  setTextFormat(big): text=AB sizes=30,30 default=12
+    colors=0,0 default color=0
+  defaultTextFormat = mid: text=AB sizes=30,30 default=20
+    colors=0,0 default color=0
+  textColor = 0xFF0000: text=AB sizes=30,30 default=20
+    colors=16711680,16711680 default color=16711680
+  text = "AB": text=AB sizes=20,20 default=20
+    colors=16711680,16711680 default color=16711680
+// textColor, defaultTextFormat, then same text
+  text = "AB": text=AB sizes=12,12 default=12
+    colors=0,0 default color=0
+  setTextFormat(big): text=AB sizes=30,30 default=12
+    colors=0,0 default color=0
+  textColor = 0xFF0000: text=AB sizes=30,30 default=12
+    colors=16711680,16711680 default color=16711680
+  defaultTextFormat = mid: text=AB sizes=30,30 default=20
+    colors=16711680,16711680 default color=16711680
+  text = "AB": text=AB sizes=20,20 default=20
+    colors=16711680,16711680 default color=16711680
+// same htmlText
+  prepared: length=1 size=12 default=12
+  htmlText = field.htmlText: length=1 size=12 default=12
+// defaultTextFormat (own value), same htmlText
+  prepared: length=1 size=12 default=12
+  defaultTextFormat = field.defaultTextFormat: length=1 size=12 default=12
+  htmlText = field.htmlText: length=2 size=12 default=12
+// defaultTextFormat (size 20), same htmlText
+  prepared: length=1 size=12 default=12
+  defaultTextFormat = mid: length=1 size=12 default=20
+  htmlText = html: length=2 size=12 default=20
+// defaultTextFormat, same htmlText, same htmlText again
+  prepared: length=1 size=12 default=12
+  defaultTextFormat = field.defaultTextFormat: length=1 size=12 default=12
+  htmlText = field.htmlText: length=2 size=12 default=12
+  replaceText(1, 2, ""): length=1 size=12 default=12
+  htmlText = field.htmlText: length=1 size=12 default=12
+// defaultTextFormat, same htmlText, then same text
+  prepared: length=1 size=12 default=12
+  defaultTextFormat = field.defaultTextFormat: length=1 size=12 default=12
+  htmlText = field.htmlText: length=2 size=12 default=12
+  setTextFormat(big): length=2 size=30 default=12
+  text = field.text: length=2 size=30 default=12

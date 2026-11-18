@@ -484,10 +484,6 @@ pub fn unescape<'gc>(
 pub struct SystemPrototypes<'gc> {
     pub object: Object<'gc>,
     pub object_constructor: Object<'gc>,
-    pub array_constructor: Object<'gc>,
-    pub shared_object_constructor: Object<'gc>,
-    pub date_constructor: Object<'gc>,
-    pub file_reference: Object<'gc>,
 }
 
 pub fn load_playerglobal<'gc>(context: &mut UpdateContext<'gc>) {
@@ -596,11 +592,12 @@ pub fn create_globals<'gc>(
     let globals = Object::new_without_proto(context.gc());
     let decls = declare_properties! {
         // ASnative doesn't seem to have an ASnative index (searched in `ASnative(0..10000, 0..10000)`).
-        "ASnative" => method(asnative::asnative; DONT_ENUM);
+        // It also has no `__proto__`!
+        "ASnative" => method(@Bare asnative::asnative; DONT_ENUM);
         // TODO: ASconstructor
         "Object" => value(object.constr; DONT_ENUM);
         "Function" => value(function.constr; DONT_ENUM | VERSION_6);
-        // TODO: enableDebugConsole - is this only present in the debugger version of FP?
+        // skipped: enableDebugConsole - this is only present in the debugger version of FP
         "NaN" => property(get_nan; DONT_ENUM);
         "Infinity" => property(get_infinity; DONT_ENUM);
 
@@ -773,10 +770,6 @@ pub fn create_globals<'gc>(
         SystemPrototypes {
             object: object.proto,
             object_constructor: object.constr,
-            array_constructor: array.constr,
-            shared_object_constructor: shared_object.constr,
-            date_constructor: date.constr,
-            file_reference: file_reference.proto,
         },
         globals,
     )

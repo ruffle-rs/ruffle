@@ -12,8 +12,10 @@ pub mod worker_domain;
 
 use crate::avm2::Error;
 use crate::avm2::activation::Activation;
+use crate::avm2::error::make_error_2149;
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
+use crate::config::NetworkingAccessMode;
 
 /// Implements `flash.system.fscommand` method
 pub fn fscommand<'gc>(
@@ -23,6 +25,11 @@ pub fn fscommand<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let command = args.get_string(activation, 0);
     let args = args.get_string(activation, 1);
+
+    // TODO: Check allowScriptAccess as well.
+    if activation.context.allow_networking != NetworkingAccessMode::All {
+        return Err(make_error_2149(activation));
+    }
 
     if !activation
         .context

@@ -335,6 +335,9 @@ Testing _global.System.IME
   UNKNOWN, DONT_DELETE
   __proto__, DONT_DELETE
 Testing _global.System.security.PolicyFileResolver
+  prototype, DONT_DELETE
+  __proto__, DONT_DELETE
+Testing _global.System.security.PolicyFileResolver.prototype
   __proto__, DONT_DELETE
 Testing _global.System.security.sandboxType
 Testing _global.System.security.escapeDomain
@@ -971,8 +974,6 @@ Testing _global.SharedObject
   __proto__, DONT_DELETE
   constructor, DONT_DELETE
 Testing _global.SharedObject.prototype
-  onSync, DONT_DELETE
-  onStatus, DONT_DELETE
   clear, DONT_DELETE
   setFps, DONT_DELETE
   getSize, DONT_DELETE
@@ -1142,6 +1143,7 @@ Testing _global.Function.prototype
   __proto__, DONT_DELETE
   apply, DONT_DELETE
   call, DONT_DELETE
+  constructor, DONT_DELETE
 Testing _global.Object
   apply, DONT_DELETE
   call, DONT_DELETE
@@ -1161,17 +1163,4 @@ Testing _global.Object.prototype
   watch, DONT_DELETE
   constructor, DONT_DELETE
 Testing _global.ASnative
-  toLocaleString, DONT_DELETE
-  isPropertyEnumerable, DONT_DELETE
-  isPrototypeOf, DONT_DELETE
-  hasOwnProperty, DONT_DELETE
-  toString, DONT_DELETE
-  valueOf, DONT_DELETE
-  addProperty, DONT_DELETE
-  unwatch, DONT_DELETE
-  watch, DONT_DELETE
-  constructor, DONT_DELETE
-  apply, DONT_DELETE
-  call, DONT_DELETE
-  __proto__, DONT_DELETE
 Done

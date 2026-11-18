@@ -13,7 +13,6 @@ mod activation;
 mod amf;
 mod callable_value;
 mod clamp;
-mod debug;
 mod error;
 mod flv;
 mod fscommand;
@@ -29,7 +28,6 @@ mod value;
 mod xml;
 
 pub use activation::{Activation, ActivationIdentifier};
-pub use debug::VariableDumper;
 pub use error::Error;
 pub use flv::FlvValueAvm1Ext;
 pub use function::ExecutionReason;
@@ -47,22 +45,14 @@ pub use value::Value;
 #[macro_export]
 macro_rules! avm_warn {
     ($activation: ident, $($arg:tt)*) => (
-        if cfg!(feature = "avm_debug") {
-            tracing::warn!("{} -- in {}", format!($($arg)*), $activation.id)
-        } else {
-            tracing::warn!($($arg)*)
-        }
+        tracing::warn!($($arg)*)
     )
 }
 
 #[macro_export]
 macro_rules! avm_error {
     ($activation: ident, $($arg:tt)*) => (
-        if cfg!(feature = "avm_debug") {
-            tracing::error!("{} -- in {}", format!($($arg)*), $activation.id)
-        } else {
-            tracing::error!($($arg)*)
-        }
+        tracing::error!($($arg)*)
     )
 }
 

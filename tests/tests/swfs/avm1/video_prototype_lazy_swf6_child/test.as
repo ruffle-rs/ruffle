@@ -10,7 +10,7 @@ function desc(o, name)
 {
    return !o.hasOwnProperty(name) ? "-" : typeof o[name];
 }
-function has(o)
+function show(o)
 {
    return "width=" + desc(o,"width") + " height=" + desc(o,"height");
 }
@@ -29,9 +29,9 @@ if(this.started == undefined)
          Video.prototype = P;
          this.gotoAndStop(1);
          this.gotoAndStop(2);
-         trace("parent placed Video on P: " + has(P) + ", v.__proto__ == P: " + (this.v2.__proto__ == P));
+         trace("parent placed Video on P: " + show(P) + ", v.__proto__ == P: " + (this.v2.__proto__ == P));
          delete P.width;
-         trace("parent deleted P.width: " + has(P));
+         trace("parent deleted P.width: " + show(P));
          this.createEmptyMovieClip("holder",10);
          this.holder.loadMovie("child.swf");
       }
@@ -42,7 +42,7 @@ if(this.started == undefined)
          Video.prototype = R;
          this.gotoAndStop(1);
          this.gotoAndStop(2);
-         trace("parent placed Video on R: " + has(R) + ", v.__proto__ == R: " + (this.v2.__proto__ == R));
+         trace("parent placed Video on R: " + show(R) + ", v.__proto__ == R: " + (this.v2.__proto__ == R));
          trace("done");
          delete this.onEnterFrame;
       }

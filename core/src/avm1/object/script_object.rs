@@ -264,9 +264,12 @@ impl<'gc> Object<'gc> {
                     let new_length = value.coerce_to_i32(activation)?;
                     let old_length = self.get_data(istr!("length"), activation);
                     if let Some(Value::Number(old_length)) = old_length {
-                        for i in new_length.max(0)..f64_to_wrapping_i32(old_length) {
-                            self.delete_element(activation, i);
-                        }
+                        delete_array_elements_in_range(
+                            self,
+                            activation,
+                            new_length.max(0),
+                            f64_to_wrapping_i32(old_length),
+                        );
                     }
                 } else if let Some(index) = parse_array_index(name) {
                     let length = self.length(activation)?;
@@ -988,9 +991,12 @@ impl<'gc> Object<'gc> {
         if self.is_native_array() {
             let old_length = self.get_data(istr!("length"), activation);
             if let Some(Value::Number(old_length)) = old_length {
-                for i in new_length.max(0)..f64_to_wrapping_i32(old_length) {
-                    self.delete_element(activation, i);
-                }
+                delete_array_elements_in_range(
+                    self,
+                    activation,
+                    new_length.max(0),
+                    f64_to_wrapping_i32(old_length),
+                );
             }
         }
 
@@ -1052,6 +1058,67 @@ impl<'gc> Object<'gc> {
 
         let index_str = AvmString::new_utf8(activation.gc(), index.to_string());
         self.delete(activation, index_str)
+    }
+}
+
+/// Delete array elements in a length-truncation range using the cheaper iteration strategy.
+///
+/// When the range is smaller than the number of stored properties, deleting indices directly
+/// avoids enumerating every property. Otherwise, enumerating own properties avoids walking
+/// large numbers of absent indices in a sparse array.
+/// Flash Player does not use this optimization and visits every index in the truncated range.
+fn delete_array_elements_in_range<'gc>(
+    object: Object<'gc>,
+    activation: &mut Activation<'_, 'gc>,
+    start: i32,
+    end: i32,
+) {
+    if start >= end {
+        return;
+    }
+
+    let range = start..end;
+    let range_length = range.len();
+    let property_count = object.0.borrow().properties.len();
+
+    if range_length <= property_count {
+        for index in range {
+            object.delete_element(activation, index);
+        }
+    } else {
+        let keys = object
+            .0
+            .borrow()
+            .properties
+            .iter()
+            .map(|(key, _)| key)
+            .collect::<Vec<_>>();
+
+        for key in keys {
+            let key_string = key.as_wstr();
+            let Ok(index) = key_string.parse::<i32>() else {
+                continue;
+            };
+
+            // A canonical nonnegative decimal index has no sign or leading zero.
+            let is_canonical = match index {
+                0 => key_string.len() == 1,
+                1.. => key_string
+                    .get(0)
+                    .is_some_and(|first| (b'1' as u16..=b'9' as u16).contains(&first)),
+                _ => false,
+            };
+
+            debug_assert_eq!(
+                is_canonical,
+                index >= 0 && key_string == index.to_string().as_bytes()
+            );
+
+            // Only delete properties whose names are canonical decimal indices.
+            if is_canonical && range.contains(&index) {
+                object.delete(activation, key);
+            }
+        }
     }
 }
 

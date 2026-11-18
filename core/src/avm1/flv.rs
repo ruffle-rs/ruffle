@@ -2,6 +2,8 @@ use crate::avm1::{Activation, ArrayBuilder, Object, Value as Avm1Value};
 use crate::string::AvmString;
 use flv_rs::{Value as FlvValue, Variable as FlvVariable};
 
+use ruffle_macros::istr;
+
 fn avm1_object_from_flv_variables<'gc>(
     activation: &mut Activation<'_, 'gc>,
     variables: Vec<FlvVariable>,
@@ -29,10 +31,14 @@ fn avm1_date_from_flv_date<'gc>(
     unix_time: f64,
     _local_offset: i16,
 ) -> Avm1Value<'gc> {
-    let constructor = activation.prototypes().date_constructor;
-    let result = constructor.construct(activation, &[unix_time.into()]);
-
-    result.expect("AVM1 date constructed from FLV date")
+    // TODO(moulins): how exactly is the Date object instantiated? this matters when
+    // the Date class was monkeypatched by the user.
+    let args = &[Avm1Value::from(unix_time)];
+    if let Ok(Some(date)) = activation.instantiate_class_fast([istr!("Date")], args) {
+        date
+    } else {
+        Avm1Value::Undefined
+    }
 }
 
 fn avm1_array_from_flv_values<'gc>(

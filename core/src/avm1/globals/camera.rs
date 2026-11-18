@@ -3,7 +3,7 @@
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::property_decl::{DeclContext, PropertyOrder, StaticDeclarations, SystemClass};
-use crate::avm1::{Object, Value};
+use crate::avm1::{ArrayBuilder, Object, Value};
 use crate::avm1_stub;
 
 const PROTO_DECLS: StaticDeclarations = declare_static_properties! {
@@ -17,9 +17,9 @@ const PROTO_DECLS: StaticDeclarations = declare_static_properties! {
 };
 
 const OBJECT_DECLS: StaticDeclarations = declare_static_properties! {
-    // In playerglobals.swf, this is a bytecode function delegating to the internal native impl.
-    "get" => function(|a, this, args| method(a, this, args, method::INTERNAL_GET));
     use fn method;
+    // In playerglobals.swf, this is a bytecode function delegating to the internal native impl.
+    "get" => method(@As2 INTERNAL_GET);
     "names" => property(GET_NAMES);
 };
 
@@ -62,10 +62,7 @@ pub fn method<'gc>(
         }
         GET_NAMES => {
             avm1_stub!(activation, CNAME, "names");
-            return activation
-                .prototypes()
-                .array_constructor
-                .construct(activation, &[]);
+            return Ok(ArrayBuilder::empty(activation).into());
         }
         SET_MODE => avm1_stub!(activation, CNAME, "setMode"),
         SET_QUALITY => avm1_stub!(activation, CNAME, "setQuality"),

@@ -2036,7 +2036,6 @@ impl<'gc> MovieClip<'gc> {
                 return;
             }
 
-            drop(activation);
             let mut events = Vec::new();
 
             for event_handler in self.clip_actions().iter() {

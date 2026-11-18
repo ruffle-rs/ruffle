@@ -58,8 +58,8 @@ zip = { version = "9.0.5", default-features = false }
 quote = "1.0.45"
 tracing = "0.1.43"
 tracing-subscriber = { version = "0.3.23", features = ["env-filter"] }
-naga = { version = "30.0.1", features = ["wgsl-out"] }
-wgpu = "30.0.1"
+naga = { version = "30.0.2", features = ["wgsl-out"] }
+wgpu = "30.0.2"
 wgpu-profiler = "0.28.0"
 egui = "0.36.1"
 egui_extras = { version = "0.36.1", default-features = false }
@@ -87,7 +87,7 @@ num-traits = "0.2.19"
 serde = "1.0.228"
 thiserror = "2.0.18"
 url = "2.5.8"
-quick-xml = "0.37.5"
+quick-xml = "0.41.0"
 regress = { git = "https://github.com/ruffle-rs/regras3", rev = "6d48179d6bd448f2cc66b76352c9f048dde968d1" }
 # Make sure to match wasm-bindgen-cli version to this everywhere.
 wasm-bindgen = "=0.2.127"
@@ -119,7 +119,7 @@ lzma-rs = "0.3.0"
 tempfile = "3.27.0"
 tracing-wasm = "0.2.1"
 rascal = "0.3.5"
-swfasm = "0.1.0"
+swfasm = "0.2.0"
 jpegxr = { git = "https://github.com/ruffle-rs/jpegxr", rev = "86cc1749d493288f53d7290ac3eb7082c475b5d9" }
 
 [workspace.lints.rust]

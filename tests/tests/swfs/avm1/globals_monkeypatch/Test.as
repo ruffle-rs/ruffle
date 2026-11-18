@@ -6,6 +6,7 @@ class Test {
   static var OBJECT = Object;
   static var ARRAY = Array;
   static var FUNCTION = Function;
+  static var SHARED_OBJECT = SharedObject;
 
   static var AN_ARRAY = [];
   static var A_STRING = new String("hello world");
@@ -31,6 +32,13 @@ class Test {
   ];
 
   static var A_STYLE_SHEET = new TextField.StyleSheet();
+
+  static var A_FILE_REFERENCE = new flash.net.FileReference();
+  static var A_FILE_REFERENCE_LIST = new flash.net.FileReferenceList();
+  static var A_FILE_BROWSE_FILTER = [{
+    description: "debug-select-success",
+    extension: "*.txt"
+  }];
 
   static var AN_XML_STRING = "<root attr=\"val\"><a>some text</a><b><c/></b></root>";
   static var AN_XML = new XML(AN_XML_STRING);
@@ -86,6 +94,8 @@ class Test {
     monkeyPatchClass(_global, "Video");
     monkeyPatchClass(_global, "XML");
     monkeyPatchClass(_global, "XMLNode");
+    monkeyPatchClass(_global, "SharedObject");
+    monkeyPatchClass(_global, "Date");
 
     monkeyPatchClass(_global.flash.display, "BitmapData");
 
@@ -106,6 +116,9 @@ class Test {
     monkeyPatchClass(_global.flash.geom, "Rectangle");
     monkeyPatchClass(_global.flash.geom, "Transform");
     monkeyPatch(_global.flash, "geom", _global.flash.geom);
+
+    monkeyPatchClass(_global.flash.net, "FileReference");
+    monkeyPatch(_global.flash, "net", _global.flash.net);
 
     trace("// hiding flash.filters..."); 
     _global.ASSetPropFlags(_global.flash, "filters", 0x2000 /* version 9 */);
@@ -171,6 +184,12 @@ class Test {
 
     trace("// A_CONVOLUTION_FILTER.matrix");
     traceName(A_CONVOLUTION_FILTER.matrix);
+
+    trace("// Camera.names");
+    traceName(Camera.names);
+
+    trace("// Microphone.names");
+    traceName(Microphone.names);
 
     // TODO: test other Array-producing native APIs?
     // Hopefully they all behave identically.
@@ -324,12 +343,66 @@ class Test {
     trace("// textfieldOrig.getNewTextFormat()");
     traceName(textfieldOrig.getNewTextFormat());
 
+    trace("");
+    trace("### Testing SharedObject");
+
+    trace("// SHARED_OBJECT.getLocal('test1')");
+    traceName(SHARED_OBJECT.getLocal("test1"));
+    
+    trace("// delete _global.SharedObject");
+    delete _global.SharedObject;
+    trace("// SHARED_OBJECT.getLocal('test1')");
+    traceName(SHARED_OBJECT.getLocal("test1"));
+    trace("// SHARED_OBJECT.getLocal('test2')");
+    traceName(SHARED_OBJECT.getLocal("test2"));
 
     // TODO: test other classes that can be instantiated by AVM1 builtins;
     // see the list in ruffle's `SystemPrototypes`.
 
     // TODO: test SharedObject serialization? (Date, XML, Array, Object)
 
+    // TODO: test Dates in FLV metadata?
+
+
+    trace("");
+    trace("### Testing Date");
+
+    A_FILE_REFERENCE.addListener({
+      onSelect: function(target) {
+        trace("FileReference.browse - onSelect");
+        Test.traceName(target.creationDate, "creationDate");
+        Test.traceName(target.modificationDate, "modificationDate");
+
+        Test.testFileReference();
+      }
+    });
+
+    trace("// A_FILE_REFERENCE.browse(A_FILE_BROWSE_FILTER)");
+    A_FILE_REFERENCE.browse(A_FILE_BROWSE_FILTER);
+  }
+
+  static function testFileReference() {
+    trace("");
+    trace("### Testing FileReference");
+
+    A_FILE_REFERENCE_LIST.addListener({
+      onSelect: function(target) {
+        trace("FileReferenceList.browse - onSelect");
+        Test.traceName(target.fileList, "fileList");
+        trace("target.fileList.length = " + target.fileList.length);
+        for (var i = 0; i < target.fileList.length; i++) {
+          Test.traceName(target.fileList[i], "fileList[" + i + "]");
+        }
+
+        Test.testXml();
+      }
+    });
+
+    trace("// A_FILE_REFERENCE_LIST.browse(A_FILE_BROWSE_FILTER)");
+    A_FILE_REFERENCE_LIST.browse(A_FILE_BROWSE_FILTER);
+  }
+
+  static function testXml() {
     trace("");
     trace("### Testing XML(Node)");
 

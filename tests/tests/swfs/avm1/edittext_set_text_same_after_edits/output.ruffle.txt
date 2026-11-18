@@ -1,0 +1,98 @@
+// replaceText(0, 1, "A"), then same text
+  text = "AB": text=AB sizes=12,12 new=12
+  setTextFormat(big): text=AB sizes=30,30 new=12
+  replaceText(0, 1, "A"): text=AB sizes=30,30 new=12
+  setTextFormat(huge): text=AB sizes=40,40 new=12
+  text = field.text: text=AB sizes=40,40 new=12
+// setNewTextFormat, replaceText(0, 1, "A"), then same text
+  text = "AB": text=AB sizes=12,12 new=12
+  setTextFormat(big): text=AB sizes=30,30 new=12
+  setNewTextFormat(mid): text=AB sizes=30,30 new=20
+  replaceText(0, 1, "A"): text=AB sizes=30,30 new=20
+  setTextFormat(huge): text=AB sizes=40,40 new=20
+  text = field.text: text=AB sizes=20,20 new=20
+// replaceText(0, 1, "A"), setNewTextFormat, then same text
+  text = "AB": text=AB sizes=12,12 new=12
+  setTextFormat(big): text=AB sizes=30,30 new=12
+  replaceText(0, 1, "A"): text=AB sizes=30,30 new=12
+  setNewTextFormat(mid): text=AB sizes=30,30 new=20
+  setTextFormat(huge): text=AB sizes=40,40 new=20
+  text = field.text: text=AB sizes=20,20 new=20
+// replaceText(2, 2, ""), then same text
+  text = "AB": text=AB sizes=12,12 new=12
+  setTextFormat(big): text=AB sizes=30,30 new=12
+  replaceText(2, 2, ""): text=AB sizes=30,30 new=12
+  setTextFormat(huge): text=AB sizes=40,40 new=12
+  text = field.text: text=AB sizes=40,40 new=12
+// setNewTextFormat, replaceText(2, 2, ""), then same text
+  text = "AB": text=AB sizes=12,12 new=12
+  setTextFormat(big): text=AB sizes=30,30 new=12
+  setNewTextFormat(mid): text=AB sizes=30,30 new=20
+  replaceText(2, 2, ""): text=AB sizes=30,30 new=20
+  setTextFormat(huge): text=AB sizes=40,40 new=20
+  text = field.text: text=AB sizes=20,20 new=20
+// replaceText(2, 2, ""), setNewTextFormat, then same text
+  text = "AB": text=AB sizes=12,12 new=12
+  setTextFormat(big): text=AB sizes=30,30 new=12
+  replaceText(2, 2, ""): text=AB sizes=30,30 new=12
+  setNewTextFormat(mid): text=AB sizes=30,30 new=20
+  setTextFormat(huge): text=AB sizes=40,40 new=20
+  text = field.text: text=AB sizes=20,20 new=20
+// replaceSel(""), then same text
+  text = "AB": text=AB sizes=12,12 new=12
+  setTextFormat(big): text=AB sizes=30,30 new=12
+  replaceSel(""): text=AB sizes=12,12 new=12
+  setTextFormat(huge): text=AB sizes=40,40 new=12
+  text = field.text: text=AB sizes=40,40 new=12
+// setNewTextFormat, replaceSel(""), then same text
+  text = "AB": text=AB sizes=12,12 new=12
+  setTextFormat(big): text=AB sizes=30,30 new=12
+  setNewTextFormat(mid): text=AB sizes=30,30 new=20
+  replaceSel(""): text=AB sizes=20,20 new=20
+  setTextFormat(huge): text=AB sizes=40,40 new=20
+  text = field.text: text=AB sizes=20,20 new=20
+// replaceSel(""), setNewTextFormat, then same text
+  text = "AB": text=AB sizes=12,12 new=12
+  setTextFormat(big): text=AB sizes=30,30 new=12
+  replaceSel(""): text=AB sizes=12,12 new=12
+  setNewTextFormat(mid): text=AB sizes=12,12 new=20
+  setTextFormat(huge): text=AB sizes=40,40 new=20
+  text = field.text: text=AB sizes=20,20 new=20
+// replaceSel("X"), then same text
+  text = "AB": text=AB sizes=12,12 new=12
+  setTextFormat(big): text=AB sizes=30,30 new=12
+  replaceSel("X"): text=XAB sizes=12,12,12 new=12
+  setTextFormat(huge): text=XAB sizes=40,40,40 new=12
+  text = field.text: text=XAB sizes=40,40,40 new=12
+// setNewTextFormat, replaceSel("X"), then same text
+  text = "AB": text=AB sizes=12,12 new=12
+  setTextFormat(big): text=AB sizes=30,30 new=12
+  setNewTextFormat(mid): text=AB sizes=30,30 new=20
+  replaceSel("X"): text=XAB sizes=20,20,20 new=20
+  setTextFormat(huge): text=XAB sizes=40,40,40 new=20
+  text = field.text: text=XAB sizes=20,20,20 new=20
+// replaceSel("X"), setNewTextFormat, then same text
+  text = "AB": text=AB sizes=12,12 new=12
+  setTextFormat(big): text=AB sizes=30,30 new=12
+  replaceSel("X"): text=XAB sizes=12,12,12 new=12
+  setNewTextFormat(mid): text=XAB sizes=12,12,12 new=20
+  setTextFormat(huge): text=XAB sizes=40,40,40 new=20
+  text = field.text: text=XAB sizes=20,20,20 new=20
+// replaceText(0, 1, "X"), then old text
+  text = "AB": text=AB sizes=12,12 new=12
+  setTextFormat(big): text=AB sizes=30,30 new=12
+  replaceText(0, 1, "X"): text=XB sizes=30,30 new=12
+  text = "AB": text=AB sizes=12,12 new=12
+// replaceSel("X"), then old text
+  text = "AB": text=AB sizes=12,12 new=12
+  setTextFormat(big): text=AB sizes=30,30 new=12
+  replaceSel("X"): text=XAB sizes=12,12,12 new=12
+  text = "AB": text=AB sizes=12,12 new=12
+// replaceSel("X"), then same text twice
+  text = "AB": text=AB sizes=12,12 new=12
+  setTextFormat(big): text=AB sizes=30,30 new=12
+  replaceSel("X"): text=XAB sizes=12,12,12 new=12
+  setTextFormat(huge): text=XAB sizes=40,40,40 new=12
+  text = field.text: text=XAB sizes=40,40,40 new=12
+  setTextFormat(huge): text=XAB sizes=40,40,40 new=12
+  text = field.text: text=XAB sizes=40,40,40 new=12

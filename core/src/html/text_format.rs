@@ -6,6 +6,7 @@ use crate::string::{Integer, SwfStrExt as _, Units, WStr, WString};
 use crate::tag_utils::SwfMovie;
 use gc_arena::Collect;
 use quick_xml::{Reader, escape::escape, events::Event};
+use ruffle_common::xml::{CoalescedEvent, TextCoalescer};
 use ruffle_wstr::utils::{swf_is_ascii_hexdigit, swf_is_newline, swf_is_whitespace};
 use std::borrow::Cow;
 use std::cmp::{Ordering, min};
@@ -775,6 +776,7 @@ impl FormatSpans {
         reader_config.expand_empty_elements = true;
         reader_config.check_end_names = false;
         reader_config.allow_unmatched_ends = true;
+        reader_config.allow_dangling_amp = true;
 
         fn class_name_to_selector(class: &WStr) -> WString {
             let mut selector = WString::from_utf8(".");
@@ -798,8 +800,43 @@ impl FormatSpans {
             }
         }
 
+        let mut text_coalescer = TextCoalescer::default();
+
         loop {
-            match reader.read_event() {
+            let event = match text_coalescer.read_event(|| reader.read_event()) {
+                Ok(CoalescedEvent::Text(raw_text)) => {
+                    let e = decode_to_wstr(&raw_text);
+                    let e = process_html_entity(&e).unwrap_or(e);
+
+                    let format = format_stack.last().unwrap().clone();
+
+                    if let Some(TextDisplay::None) = format.display {
+                        continue;
+                    }
+
+                    if swf_version <= 7 && e.trim().is_empty() {
+                        // SWFs version 6,7 ignore whitespace-only text.
+                        // But whitespace is preserved when there
+                        // is any non-whitespace character.
+                        continue;
+                    }
+
+                    let e = if condense_white {
+                        Self::condense_white_in_text(e)
+                    } else {
+                        e.replace(swf_is_newline, WStr::from_units(&[HTML_NEWLINE]))
+                    };
+
+                    text.push_str(&e);
+                    spans.push(TextSpan::with_length_and_format(e.len(), &format));
+
+                    continue;
+                }
+                Ok(CoalescedEvent::Event(event)) => Ok(event),
+                Err(e) => Err(e),
+            };
+
+            match event {
                 Ok(Event::Start(ref e)) => {
                     let tag_name = &e.name().into_inner().to_ascii_lowercase()[..];
                     let attributes: Result<Vec<_>, _> = e.attributes().with_checks(false).collect();
@@ -1079,28 +1116,6 @@ impl FormatSpans {
                     opened_starts.push(opened_buffer.len());
                     opened_buffer.extend(tag_name);
                     format_stack.push(format);
-                }
-                Ok(Event::Text(e)) if !e.is_empty() => 'text: {
-                    let e = decode_to_wstr(&e.into_inner());
-                    let e = process_html_entity(&e).unwrap_or(e);
-                    let format = format_stack.last().unwrap().clone();
-                    if let Some(TextDisplay::None) = format.display {
-                        break 'text;
-                    }
-
-                    if swf_version <= 7 && e.trim().is_empty() {
-                        // SWFs version 6,7 ignore whitespace-only text.
-                        // But whitespace is preserved when there
-                        // is any non-whitespace character.
-                        break 'text;
-                    }
-                    let e = if condense_white {
-                        Self::condense_white_in_text(e)
-                    } else {
-                        e.replace(swf_is_newline, WStr::from_units(&[HTML_NEWLINE]))
-                    };
-                    text.push_str(&e);
-                    spans.push(TextSpan::with_length_and_format(e.len(), &format));
                 }
                 Ok(Event::End(e)) => {
                     let tag_name = &e.name().into_inner().to_ascii_lowercase()[..];

@@ -1,5 +1,6 @@
 use crate::gui::{FilePicker, LocalizableText, text};
 use egui::{TextEdit, Ui};
+use ruffle_common::url_ext::UrlExt;
 use ruffle_frontend_utils::content::ContentDescriptor;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex, MutexGuard};
@@ -16,9 +17,7 @@ impl PathOrUrlFieldValue {
     fn new(value: ContentDescriptor) -> Self {
         let url = &value.url;
         Self {
-            representation: if url.scheme() == "file"
-                && let Ok(path) = url.to_file_path()
-            {
+            representation: if let Some(path) = url.to_local_file_path() {
                 path.to_string_lossy().to_string()
             } else {
                 url.to_string()
@@ -97,8 +96,7 @@ impl PathOrUrlField {
                 .content_descriptor
                 .as_ref()
                 .map(|desc| &desc.url)
-                .filter(|url| url.scheme() == "file")
-                .and_then(|url| url.to_file_path().ok())
+                .and_then(|url| url.to_local_file_path())
                 .map(|mut path| {
                     path.pop();
                     path

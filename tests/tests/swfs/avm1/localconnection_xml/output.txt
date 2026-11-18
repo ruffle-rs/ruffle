@@ -1,0 +1,14 @@
+Connected: true
+XML value 0 type: object
+XML value 1 type: object
+XML 0 instanceof XML: true
+XML 1 instanceof XML: true
+XMLs have same constructor: true
+XML 0 root: first
+XML 0 attribute: one
+XML 0 child: child
+XML 0 text: alpha
+XML 1 root: second
+XML 1 attribute: two
+XML 1 child: child
+XML 1 text: beta

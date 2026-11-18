@@ -13,7 +13,7 @@ use crate::avm2::globals::{
     init_native_system_classes,
 };
 use crate::avm2::method::{Method, NativeMethodImpl};
-use crate::avm2::object::FunctionObject;
+use crate::avm2::object::{FunctionObject, WorkerObject};
 use crate::avm2::scope::ScopeChain;
 use crate::avm2::script::{Script, TranslationUnit};
 use crate::avm2::stack::Stack;
@@ -31,15 +31,6 @@ use ruffle_wstr::WStr;
 use swf::DoAbc2Flag;
 use swf::avm2::read::Reader;
 use swf::error::AbcParseError;
-
-#[macro_export]
-macro_rules! avm_debug {
-    ($avm: expr, $($arg:tt)*) => (
-        if $avm.show_debug_output() {
-            tracing::debug!($($arg)*)
-        }
-    )
-}
 
 pub mod activation;
 mod amf;
@@ -147,6 +138,18 @@ pub struct Avm2<'gc> {
     /// However, it's not strictly defined which items end up there.
     toplevel_global_object: Option<Object<'gc>>,
 
+    /// The `Worker` whose runtime this `Avm2` instance represents — what
+    /// `Worker.current` returns from any AS3 code executed by this `Avm2`.
+    /// For the main `Avm2` this is the primordial worker; for an `Avm2`
+    /// owned by a background worker thread it will be that worker.
+    /// Populated during AVM2 initialization, once system classes are loaded,
+    /// and remains set for the rest of the worker's lifetime.
+    current_worker: Option<WorkerObject<'gc>>,
+
+    /// Workers with a state change whose `workerState` event hasn't been
+    /// dispatched yet.
+    pub pending_worker_updates: Vec<WorkerObject<'gc>>,
+
     /// Pre-created known namespaces.
     namespaces: Gc<'gc, CommonNamespaces<'gc>>,
 
@@ -187,9 +190,6 @@ pub struct Avm2<'gc> {
     #[collect(require_static)]
     pub root_api_version: ApiVersion,
 
-    #[cfg(feature = "avm_debug")]
-    pub debug_output: bool,
-
     #[collect(require_static)]
     pub optimizer_settings: OptimizerSettings,
 }
@@ -219,6 +219,8 @@ impl<'gc> Avm2<'gc> {
             system_classes: None,
             system_class_defs: None,
             toplevel_global_object: None,
+            current_worker: None,
+            pending_worker_updates: Vec::new(),
 
             namespaces: Gc::new(mc, namespaces),
 
@@ -237,9 +239,6 @@ impl<'gc> Avm2<'gc> {
 
             // Set the lowest version for now - this will be overridden when we set our movie
             root_api_version: ApiVersion::AllVersions,
-
-            #[cfg(feature = "avm_debug")]
-            debug_output: false,
 
             optimizer_settings: OptimizerSettings::enable_all(),
         }
@@ -270,6 +269,16 @@ impl<'gc> Avm2<'gc> {
 
     pub fn toplevel_global_object(&self) -> Option<Object<'gc>> {
         self.toplevel_global_object
+    }
+
+    /// Returns the `Worker` whose runtime this `Avm2` instance represents.
+    /// For the main `Avm2` this is the primordial worker; for an `Avm2`
+    /// owned by a background worker thread this is that worker.
+    ///
+    /// Panics if called before AVM2 initialization is complete.
+    pub fn current_worker(&self) -> WorkerObject<'gc> {
+        self.current_worker
+            .expect("current worker should be initialized before any AVM2 code runs")
     }
 
     pub fn register_class_alias(&mut self, name: AvmString<'gc>, class_object: ClassObject<'gc>) {
@@ -397,6 +406,15 @@ impl<'gc> Avm2<'gc> {
         }
 
         bucket.push(object.downgrade());
+    }
+
+    /// Applies pending worker state changes and dispatches their
+    /// `workerState` events. Workers queued by those event handlers are left
+    /// for the next call.
+    pub fn update_pending_workers(context: &mut UpdateContext<'gc>) {
+        for worker in std::mem::take(&mut context.avm2.pending_worker_updates) {
+            worker.update_state(context);
+        }
     }
 
     /// Dispatch an event on all objects in the current execution list.
@@ -646,25 +664,6 @@ impl<'gc> Avm2<'gc> {
     fn pop_scope(&mut self) {
         self.scope_stack.pop();
     }
-
-    #[cfg(feature = "avm_debug")]
-    #[inline]
-    pub fn show_debug_output(&self) -> bool {
-        self.debug_output
-    }
-
-    #[cfg(not(feature = "avm_debug"))]
-    pub const fn show_debug_output(&self) -> bool {
-        false
-    }
-
-    #[cfg(feature = "avm_debug")]
-    pub fn set_show_debug_output(&mut self, visible: bool) {
-        self.debug_output = visible;
-    }
-
-    #[cfg(not(feature = "avm_debug"))]
-    pub const fn set_show_debug_output(&self, _visible: bool) {}
 
     /// Gets the public namespace, versioned based on the current root SWF.
     /// See `AvmCore::findPublicNamespace()`

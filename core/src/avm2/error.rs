@@ -224,7 +224,6 @@ pub enum XmlErrorCode {
     /// Error #1091: XML parser failure: Unterminated CDATA section.
     UnterminatedCData = 1091,
     /// Error #1092: XML parser failure: Unterminated XML declaration.
-    #[allow(unused)]
     UnterminatedXmlDecl = 1092,
     /// Error #1093: XML parser failure: Unterminated DOCTYPE declaration.
     UnterminatedDoctype = 1093,
@@ -917,6 +916,7 @@ make_error_fn!(make_error_1131, 1131, type_error);
 make_error_fn!(make_error_1132, 1132, syntax_error);
 make_error_fn!(make_error_1504, 1504, error);
 make_error_fn!(make_error_1506, 1506, range_error);
+make_error_fn!(make_error_1511, 1511, illegal_operation_error);
 
 #[inline(never)]
 #[cold]
@@ -1121,6 +1121,7 @@ pub fn make_error_2109<'gc>(
 
 make_error_fn!(make_error_2126, 2126, argument_error);
 make_error_fn!(make_error_2130, 2130, error);
+make_error_fn!(make_error_2134, 2134, error);
 
 #[inline(never)]
 #[cold]
@@ -1132,13 +1133,9 @@ pub fn make_error_2136<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> 
 
 #[inline(never)]
 #[cold]
-pub fn make_error_2146<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    swf_url: &str,
-    method: &str,
-    allow_networking: NetworkingAccessMode,
-) -> Error<'gc> {
-    let value = match allow_networking {
+pub fn make_error_2146<'gc>(activation: &mut Activation<'_, 'gc>, method: &str) -> Error<'gc> {
+    let swf_url = activation.caller_movie_or_root().url().to_string();
+    let value = match activation.context.allow_networking {
         NetworkingAccessMode::Internal => "internal",
         NetworkingAccessMode::None => "none",
         NetworkingAccessMode::All => unreachable!(),
@@ -1147,6 +1144,19 @@ pub fn make_error_2146<'gc>(
         activation,
         error_message!(2146, swf_url, method, value),
         2146
+    ))
+}
+
+#[inline(never)]
+#[cold]
+pub fn make_error_2149<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
+    let movie = activation.caller_movie_or_root();
+    let page_url = activation.context.page_url.clone().unwrap_or_default();
+    // TODO: Use the actual allowScriptAccess value.
+    make_error!(security_error(
+        activation,
+        error_message!(2149, movie.url(), page_url, "always"),
+        2149
     ))
 }
 
@@ -1224,6 +1234,7 @@ make_error_fn!(
     argument_error
 );
 
+make_error_fn!(make_error_3732, 3732, illegal_operation_error);
 make_error_fn!(make_error_3771, 3771, argument_error);
 make_error_fn!(make_error_3772, 3772, argument_error);
 make_error_fn!(make_error_3773, 3773, argument_error);

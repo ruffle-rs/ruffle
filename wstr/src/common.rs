@@ -406,6 +406,12 @@ impl WStr {
         (&self[..index], &self[index..])
     }
 
+    /// Analogue of [`str::split_at_checked`].
+    #[inline]
+    pub fn split_at_checked(&self, index: usize) -> Option<(&WStr, &WStr)> {
+        (index <= self.len()).then(|| self.split_at(index))
+    }
+
     /// Analogue of [`str::split_once`].
     #[inline]
     pub fn split_once<'a, P: Pattern<'a>>(&'a self, pattern: P) -> Option<(&'a WStr, &'a WStr)> {
@@ -470,6 +476,14 @@ impl WStr {
     #[inline]
     pub fn strip_prefix<'a, P: Pattern<'a>>(&'a self, pattern: P) -> Option<&'a WStr> {
         super::ops::strip_prefix(self, pattern)
+    }
+
+    /// Like [`Self::strip_prefix`], but matches the prefix case-insensitively
+    #[inline]
+    pub fn strip_prefix_ignore_case(&self, prefix: &WStr) -> Option<&WStr> {
+        let (head, rest) = self.split_at_checked(prefix.len())?;
+
+        head.eq_ignore_case(prefix).then_some(rest)
     }
 
     /// Analogue of [`str::strip_suffix`].

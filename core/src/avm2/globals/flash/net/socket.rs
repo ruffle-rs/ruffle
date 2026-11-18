@@ -1,11 +1,10 @@
-use std::rc::Rc;
-
 use crate::avm2::bytearray::{Endian, ObjectEncoding};
-use crate::avm2::error::{make_error_2002, make_error_2003, make_error_2008};
+use crate::avm2::error::{make_error_2002, make_error_2003, make_error_2008, make_error_2146};
 use crate::avm2::function::FunctionArgs;
 pub use crate::avm2::object::socket_allocator;
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::{Activation, Error, Value};
+use crate::config::NetworkingAccessMode;
 use crate::context::UpdateContext;
 use crate::string::AvmString;
 use encoding_rs::Encoding;
@@ -42,6 +41,10 @@ pub fn connect<'gc>(
     let host = args.get_string(activation, 0);
     let port = args.get_u32(1);
     let port: u16 = port.try_into().map_err(|_| make_error_2003(activation))?;
+
+    if activation.context.allow_networking == NetworkingAccessMode::None {
+        return Err(make_error_2146(activation, "Socket.connect"));
+    }
 
     let UpdateContext {
         sockets, navigator, ..
@@ -723,7 +726,7 @@ pub fn write_object<'gc>(
             &mut Default::default(),
         );
 
-        let element = Element::new("", Rc::new(amf));
+        let element = Element::new("", amf);
         let mut lso = flash_lso::types::Lso::new(vec![element], "", amf_version);
         let bytes =
             flash_lso::write::write_to_bytes(&mut lso).map_err(|_| "Failed to serialize object")?;

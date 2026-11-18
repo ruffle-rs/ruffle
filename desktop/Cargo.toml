@@ -20,6 +20,7 @@ egui-wgpu = { workspace = true, features = ["winit"] }
 image = { workspace = true, features = ["png"] }
 egui-winit = { workspace = true }
 fontdb = "0.23"
+ruffle_common = { path = "../core/common" }
 ruffle_core = { path = "../core", features = ["audio", "clap", "mp3", "aac", "nellymoser", "default_compatibility_rules", "egui"] }
 ruffle_render = { path = "../render", features = ["clap"] }
 ruffle_render_wgpu = { path = "../render/wgpu", features = ["clap"] }
@@ -86,7 +87,7 @@ shell-completions = ["dep:clap_complete"]
 jpegxr = ["ruffle_core/jpegxr"]
 
 # core features
-avm_debug = ["ruffle_core/avm_debug"]
+avm2_debug = ["ruffle_core/avm2_debug"]
 lzma = ["ruffle_core/lzma"]
 software_video = ["ruffle_video_software"]
 external_video = ["ruffle_video_external"]

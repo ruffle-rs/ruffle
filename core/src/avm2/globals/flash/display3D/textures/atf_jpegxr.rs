@@ -116,8 +116,9 @@ pub fn do_compressed_upload<'gc>(
             for i in 0..(dxt1_alpha.len() / 6) {
                 let alpha_lookup_table = &dxt1_alpha[i * 6..(i + 1) * 6];
                 let jpegxr_alpha_first = &jpegxr_alpha.as_raw()[i * 4..(i + 1) * 4];
+                // Each pixel is 4 bytes (RGBA), so multiply the pixel index by 4
                 let jpegxr_alpha_second =
-                    &jpegxr_alpha.as_raw()[(second_half + (i * 4))..(second_half + ((i + 1) * 4))];
+                    &jpegxr_alpha.as_raw()[((second_half + i) * 4)..((second_half + i + 1) * 4)];
 
                 let rgb_lookup_table = &dxt5_rgb[i * 4..(i + 1) * 4];
                 let jpegxr_bgr_first = &jpegxr_bgr[(i * 2)..((i + 1) * 2)];

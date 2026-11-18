@@ -16,7 +16,7 @@ use quick_xml::encoding::EncodingError;
 use quick_xml::errors::IllFormedError;
 use quick_xml::events::attributes::AttrError;
 use quick_xml::{Reader, events::Event};
-use ruffle_common::xml::avm1_unescape;
+use ruffle_common::xml::{CoalescedEvent, TextCoalescer, avm1_unescape};
 use ruffle_macros::istr;
 
 #[derive(Clone, Copy, Collect)]
@@ -50,7 +50,6 @@ pub enum XmlStatus {
     AttributeNotTerminated = -8,
 
     /// A start-tag was not matched with an end-tag.
-    #[expect(dead_code)]
     MismatchedStart = -9,
 
     /// An end-tag was encountered without a matching start-tag.
@@ -141,17 +140,34 @@ impl<'gc> Xml<'gc> {
     ) -> Result<(), quick_xml::Error> {
         let data_utf8 = data.to_utf8_lossy();
         let mut parser = Reader::from_str(&data_utf8);
+        parser.config_mut().allow_dangling_amp = true;
+        let mut text_coalescer = TextCoalescer::default();
         let mut open_tags = vec![self.root()];
 
         self.0.status.set(XmlStatus::NoError);
 
         loop {
-            let event = parser.read_event().map_err(|error| {
+            let event = text_coalescer.read_event(|| parser.read_event());
+            let event = event.map_err(|error| {
                 self.0.status.set(match error {
                     quick_xml::Error::Syntax(_)
                     | quick_xml::Error::InvalidAttr(AttrError::ExpectedEq(_))
                     | quick_xml::Error::InvalidAttr(AttrError::Duplicated(_, _)) => {
                         XmlStatus::ElementMalformed
+                    }
+                    // Flash only treats the start-tag as unmatched when the end-tag
+                    // closes the element directly above it, as in `<a><b>foo</a>`.
+                    quick_xml::Error::IllFormed(IllFormedError::MismatchedEndTag {
+                        ref found,
+                        ..
+                    }) if open_tags
+                        .iter()
+                        .rev()
+                        .nth(1)
+                        .and_then(|node| node.node_name())
+                        .is_some_and(|name| name.to_utf8_lossy() == found.as_str()) =>
+                    {
+                        XmlStatus::MismatchedStart
                     }
                     quick_xml::Error::IllFormed(
                         IllFormedError::MismatchedEndTag { .. }
@@ -173,6 +189,21 @@ impl<'gc> Xml<'gc> {
                 error
             })?;
 
+            let event = match event {
+                CoalescedEvent::Text(text) => {
+                    Self::handle_text_cdata(
+                        avm1_unescape(&text)
+                            .map_err(|e| quick_xml::Error::Encoding(EncodingError::Utf8(e)))?
+                            .as_bytes(),
+                        ignore_white,
+                        &open_tags,
+                        activation,
+                    );
+                    continue;
+                }
+                CoalescedEvent::Event(event) => event,
+            };
+
             match event {
                 Event::Start(bs) => {
                     let child = XmlNode::from_start_event(activation, bs, self.id_map())?;
@@ -191,16 +222,6 @@ impl<'gc> Xml<'gc> {
                 }
                 Event::End(_) => {
                     open_tags.pop();
-                }
-                Event::Text(bt) => {
-                    Self::handle_text_cdata(
-                        avm1_unescape(&bt)
-                            .map_err(|e| quick_xml::Error::Encoding(EncodingError::Utf8(e)))?
-                            .as_bytes(),
-                        ignore_white,
-                        &open_tags,
-                        activation,
-                    );
                 }
                 Event::CData(bt) => {
                     // This is already unescaped
@@ -224,7 +245,12 @@ impl<'gc> Xml<'gc> {
                     let doctype = Some(AvmString::new(activation.gc(), doctype));
                     unlock!(Gc::write(activation.gc(), self.0), XmlData, doctype).set(doctype);
                 }
-                Event::Eof => break,
+                Event::Eof => {
+                    if open_tags.len() > 1 {
+                        self.0.status.set(XmlStatus::MismatchedStart);
+                    }
+                    break;
+                }
                 _ => {}
             }
         }
@@ -259,9 +285,9 @@ const PROTO_DECLS: StaticDeclarations = declare_static_properties! {
     "parseXML" => method(parse_xml);
     "load" => method(load);
     "sendAndLoad" => method(send_and_load);
-    "onData" => method(on_data);
-    "getBytesLoaded" => method(get_bytes_loaded);
-    "getBytesTotal" => method(get_bytes_total);
+    "onData" => method(@As2 on_data);
+    "getBytesLoaded" => method(@As2 get_bytes_loaded);
+    "getBytesTotal" => method(@As2 get_bytes_total);
     "contentType" => value("application/x-www-form-urlencoded"; READ_ONLY);
     "docTypeDecl" => property(doc_type_decl; READ_ONLY);
     "ignoreWhite" => value(false);

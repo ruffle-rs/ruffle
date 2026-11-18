@@ -3,7 +3,7 @@
 use crate::avm2::Avm2;
 use crate::avm2::Error;
 use crate::avm2::activation::Activation;
-use crate::avm2::error::{make_error_2037, make_error_2084};
+use crate::avm2::error::{make_error_2037, make_error_2084, make_error_2146};
 use crate::avm2::function::FunctionArgs;
 use crate::avm2::globals::slots::flash_net_url_request as url_request_slots;
 use crate::avm2::object::{
@@ -13,6 +13,7 @@ use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
 use crate::backend::navigator::Request;
 use crate::character::Character;
+use crate::config::NetworkingAccessMode;
 use crate::display_object::SoundTransform;
 use crate::{avm2_stub_getter, avm2_stub_method};
 use swf::{SoundEvent, SoundInfo};
@@ -239,6 +240,10 @@ pub fn load<'gc>(
         // FP ignores calls of `load(null)`
         None => return Ok(Value::Undefined),
     };
+
+    if activation.context.allow_networking == NetworkingAccessMode::None {
+        return Err(make_error_2146(activation, "Sound.load"));
+    }
 
     let url = url_request
         .get_slot(url_request_slots::_URL)

@@ -1,0 +1,23 @@
+Connected: true
+XML value 0 type: object
+XML value 1 type: object
+XML 0 instanceof OriginalXML: false
+XML 1 instanceof OriginalXML: false
+XMLs have same constructor: true
+XML 0 constructor type: undefined
+XML 0 constructor is Object: false
+XML 0 constructor is XMLNode: false
+XML 1 constructor is Object: false
+XML 1 constructor is XMLNode: false
+XML 0 toString: undefined
+XML 1 toString: undefined
+XML 0 nodeName: undefined
+XML 0 nodeValue: undefined
+XML 1 nodeName: undefined
+XML 1 nodeValue: undefined
+XML 0 has no firstChild
+XML 1 has no firstChild
+Object property: shared
+Shared object identity: false
+Shared second type: undefined
+Shared second marker: undefined

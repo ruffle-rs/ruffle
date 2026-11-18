@@ -132,7 +132,7 @@ pub fn get_uri<'gc>(
     if let Some(this) = this.as_qname_object() {
         return Ok(this
             .uri(activation.strings())
-            .map_or_else(|| Value::Null, Value::from));
+            .map_or(Value::Null, Value::from));
     }
 
     Ok(Value::Undefined)

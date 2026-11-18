@@ -27,6 +27,12 @@ const PROTO_DECLS: StaticDeclarations = declare_static_properties! {
     "attachVideo" => method(video_method!(attach_video); DONT_ENUM | DONT_DELETE | VERSION_6);
 };
 
+/// Defined lazily, see `define_lazy_proto_properties`.
+const LAZY_PROTO_DECLS: StaticDeclarations = declare_static_properties! {
+    "width" => property(video_method!(width); VERSION_6);
+    "height" => property(video_method!(height); VERSION_6);
+};
+
 pub fn create_class<'gc>(
     context: &mut DeclContext<'_, 'gc>,
     super_proto: Object<'gc>,
@@ -35,12 +41,6 @@ pub fn create_class<'gc>(
     context.define_properties_on(class.proto, PROTO_DECLS(context));
     class
 }
-
-/// Defined lazily, see `define_lazy_proto_properties`.
-const LAZY_PROTO_DECLS: StaticDeclarations = declare_static_properties! {
-    "width" => property(video_method!(width); VERSION_6);
-    "height" => property(video_method!(height); VERSION_6);
-};
 
 /// Defines `width` and `height` on `proto`, the prototype of a newly created
 /// Video display object (`new Video()` doesn't count).

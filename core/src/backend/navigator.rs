@@ -7,6 +7,7 @@ use async_channel::{Receiver, Sender};
 use encoding_rs::Encoding;
 use enumset::EnumSetType;
 use indexmap::IndexMap;
+use ruffle_common::url_ext::UrlExt;
 use std::any::Any;
 use std::borrow::Cow;
 use std::fmt;
@@ -530,29 +531,6 @@ pub fn create_specific_fetch_error<ErrorType: Display>(
     }
 }
 
-// Url doesn't implement from_file_path and to_file_path for WASM targets.
-// Therefore, we need to use cfg to make Ruffle compile for all targets.
-
-#[cfg(any(unix, windows, target_os = "redox"))]
-fn url_from_file_path(path: &Path) -> Result<Url, ()> {
-    Url::from_file_path(path)
-}
-
-#[cfg(not(any(unix, windows, target_os = "redox")))]
-fn url_from_file_path(_path: &Path) -> Result<Url, ()> {
-    Err(())
-}
-
-#[cfg(any(unix, windows, target_os = "redox"))]
-fn url_to_file_path(url: &Url) -> Result<PathBuf, ()> {
-    Url::to_file_path(url)
-}
-
-#[cfg(not(any(unix, windows, target_os = "redox")))]
-fn url_to_file_path(_path: &Url) -> Result<PathBuf, ()> {
-    Err(())
-}
-
 // The following functions are implementations used in multiple places.
 // To avoid duplicated code, they are placed here as public functions.
 
@@ -577,7 +555,7 @@ pub fn resolve_url_with_relative_base_path<NavigatorType: NavigatorBackend>(
         }
     }
 
-    if let Ok(mut base_url) = url_from_file_path(base_path.as_path()) {
+    if let Some(mut base_url) = Url::from_local_file_path(base_path.as_path()) {
         // Make sure we have a trailing slash, so that joining a request url like 'data.txt'
         // gets appended, rather than replacing the last component.
         base_url.path_segments_mut().unwrap().push("");
@@ -682,9 +660,9 @@ pub fn fetch_path<NavigatorType: NavigatorBackend>(
         let mut filesystem_url = url.clone();
         filesystem_url.set_query(None);
 
-        match url_to_file_path(&filesystem_url) {
-            Ok(path) => path,
-            Err(_) => {
+        match filesystem_url.to_local_file_path() {
+            Some(path) => path,
+            None => {
                 return async_return(Err(create_specific_fetch_error(
                     "Unable to create path out of URL",
                     url.as_str(),

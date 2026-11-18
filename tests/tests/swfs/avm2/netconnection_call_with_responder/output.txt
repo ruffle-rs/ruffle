@@ -1,0 +1,6 @@
+NetConnection.call invoked with a Responder
+Navigator::fetch:
+  URL: http://localhost:8000/
+  Method: POST
+  Mime-Type: application/x-amf
+  Body: [00, 00, 00, 00, 00, 01, 00, 12, 74, 65, 73, 74, 2E, 77, 69, 74, 68, 52, 65, 73, 70, 6F, 6E, 64, 65, 72, 00, 02, 2F, 31, 00, 00, 00, 28, 0A, 00, 00, 00, 01, 03, 00, 05, 76, 61, 6C, 75, 65, 02, 00, 15, 73, 65, 6E, 74, 20, 77, 69, 74, 68, 20, 61, 20, 72, 65, 73, 70, 6F, 6E, 64, 65, 72, 00, 00, 09]

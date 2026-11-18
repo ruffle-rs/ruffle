@@ -5,7 +5,7 @@ use indexmap::IndexMap;
 
 use crate::avm2::ClassObject;
 use crate::avm2::activation::Activation;
-use crate::avm2::error::make_error_2007;
+use crate::avm2::error::{make_error_2007, make_error_2146};
 use crate::avm2::globals::flash::display::display_object::initialize_for_allocator;
 use crate::avm2::globals::slots::flash_display_loader as loader_slots;
 use crate::avm2::globals::slots::flash_net_url_request as url_request_slots;
@@ -18,6 +18,7 @@ use crate::avm2::value::Value;
 use crate::avm2::{Error, Object};
 use crate::avm2_stub_method;
 use crate::backend::navigator::{NavigationMethod, Request};
+use crate::config::NetworkingAccessMode;
 use crate::display_object::LoaderDisplay;
 use crate::display_object::MovieClip;
 use crate::loader::LoadManager;
@@ -78,6 +79,10 @@ pub fn load<'gc>(
         .unwrap();
 
     let loader_info = loader_info.as_loader_info_object().unwrap();
+
+    if activation.context.allow_networking == NetworkingAccessMode::None {
+        return Err(make_error_2146(activation, "Loader.load"));
+    }
 
     if loader_info.init_event_fired() {
         // FIXME: When calling load/loadBytes, then calling load/loadBytes again
@@ -331,4 +336,13 @@ pub fn unload<'gc>(
     loader_info.unload(activation.context);
 
     Ok(Value::Undefined)
+}
+
+pub fn unload_and_stop<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Value<'gc>,
+    args: FunctionArgs<'_, 'gc>,
+) -> Result<Value<'gc>, Error<'gc>> {
+    avm2_stub_method!(activation, "flash.display.Loader", "unloadAndStop");
+    unload(activation, this, args)
 }

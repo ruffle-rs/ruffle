@@ -1,0 +1,43 @@
+=== Initial state ===
+Length: 1000000
+
+=== Set length to 500000 ===
+Length: 500000
+0: true
+5: true
+499999: true
+500000: false
+999999: false
+-0: true
+05: true
+ 5: true
++5: true
+-5: true
+5 : true
+
+=== Set length to 0 ===
+Length: 0
+0: false
+5: false
+499999: false
+-0: true
+05: true
+ 5: true
++5: true
+-5: true
+5 : true
+
+=== Sparse array without canonical index 5 ===
+Length: 1000000
+5: false
+05: true
+Length after truncation: 5
+0: true
+5: false
+999999: false
+-0: true
+05: true
+ 5: true
++5: true
+-5: true
+5 : true

@@ -30,14 +30,6 @@ use web_time::Instant;
 
 use super::object_reference::MovieClipReference;
 
-macro_rules! avm_debug {
-    ($avm: expr, $($arg:tt)*) => (
-        if $avm.show_debug_output() {
-            tracing::debug!($($arg)*)
-        }
-    )
-}
-
 #[derive(Clone)]
 pub enum ReturnType<'gc> {
     Implicit,
@@ -223,12 +215,6 @@ pub struct Activation<'a, 'gc: 'a> {
     _tracy_span: tracy_client::Span,
 }
 
-impl Drop for Activation<'_, '_> {
-    fn drop(&mut self) {
-        avm_debug!(self.context.avm1, "END {}", self.id);
-    }
-}
-
 impl<'gc> HasStringContext<'gc> for Activation<'_, 'gc> {
     #[inline(always)]
     fn strings_ref(&self) -> &StringContext<'gc> {
@@ -329,7 +315,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         local_registers: &'a [Cell<Value<'gc>>],
     ) -> Self {
         debug_assert!(swf_version > 0, "cannot execute code with SWF version 0");
-        avm_debug!(context.avm1, "START {id}");
+
         #[cfg(feature = "tracy_avm")]
         let tracy_span = {
             let span = tracy_client::Client::running()
@@ -361,7 +347,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         scope: Gc<'gc, Scope<'gc>>,
     ) -> Activation<'b, 'gc> {
         let id = self.id.child(name);
-        avm_debug!(self.context.avm1, "START {id}");
+
         #[cfg(feature = "tracy_avm")]
         let tracy_span = {
             let span = tracy_client::Client::running()
@@ -398,8 +384,6 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         id: ActivationIdentifier<'a>,
         base_clip: DisplayObject<'gc>,
     ) -> Self {
-        avm_debug!(context.avm1, "START {id}");
-
         let swf_version = base_clip.swf_version();
         debug_assert!(swf_version > 0, "cannot execute code with SWF version 0");
         let scope = context.avm1.global_scope(swf_version);
@@ -527,7 +511,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     }
 
     pub fn run_actions(&mut self, code: SwfSlice) -> Result<ReturnType<'gc>, Error<'gc>> {
-        let mut read = Reader::new(&code.entire_data()[code.start..], self.swf_version());
+        let mut read = Reader::new(&code.entire_data()[code.start..]);
 
         loop {
             let result = self.do_action(&code, &mut read);
@@ -558,11 +542,6 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             Ok(FrameControl::Return(ReturnType::Implicit))
         } else {
             let action = reader.read_action()?;
-            avm_debug!(
-                self.context.avm1,
-                "({}) Action: {action:?}",
-                self.id.depth(),
-            );
 
             match action {
                 Action::Add => self.action_add(),
@@ -1900,10 +1879,10 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         Ok(FrameControl::Continue)
     }
 
-    fn action_push(&mut self, action: Push) -> Result<FrameControl<'gc>, Error<'gc>> {
-        for value in action.values {
+    fn action_push(&mut self, action: PushValues) -> Result<FrameControl<'gc>, Error<'gc>> {
+        for value in action {
             use swf::avm1::types::Value as SwfValue;
-            let value = match value {
+            let value = match value? {
                 SwfValue::Undefined => Value::Undefined,
                 SwfValue::Null => Value::Null,
                 SwfValue::Bool(v) => v.into(),
@@ -1924,6 +1903,15 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                         );
                         Value::Undefined
                     }
+                }
+                SwfValue::Invalid { kind } => {
+                    // Newest Flash Player exits on unknown value types. However, older versions
+                    // (at least FP9) just ignore them and continue to the next value.
+                    // We follow the lenient behavior in order to support more content (e.g. #8389
+                    // doesn't work on newest Flash Player).
+                    // TODO: Return an error depending on the player version?
+                    avm_warn!(self, "Invalid value type in ActionPush: {kind}");
+                    continue;
                 }
             };
             self.stack_push(value); // Needs to handle MovieClipReferences, in case pushing a register
@@ -2250,13 +2238,6 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
     fn action_throw(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
         let value = self.context.avm1.pop();
-        avm_debug!(
-            self.context.avm1,
-            "Thrown exception: {}",
-            value
-                .coerce_to_string(self)
-                .unwrap_or_else(|_| istr!(self, "undefined"))
-        );
         Err(Error::ThrownValue(value))
     }
 

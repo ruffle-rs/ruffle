@@ -9,6 +9,7 @@ use crate::gui::{FilePicker, MovieView};
 use crate::preferences::GlobalPreferences;
 use crate::{CALLSTACK, RENDER_INFO, SWF_INFO};
 use anyhow::anyhow;
+use ruffle_common::url_ext::UrlExt;
 use ruffle_core::backend::navigator::{OwnedFuture, SocketMode};
 use ruffle_core::config::Letterbox;
 use ruffle_core::events::{GamepadButton, KeyCode};
@@ -42,6 +43,7 @@ use winit::window::Window;
 #[derive(Debug, Clone)]
 pub struct LaunchOptions {
     pub player: PlayerOptions,
+    pub custom_title: Option<String>,
     pub proxy: Option<Url>,
     pub socket_allowed: HashSet<String>,
     pub tcp_connections: Option<SocketMode>,
@@ -94,6 +96,7 @@ impl From<&GlobalPreferences> for LaunchOptions {
                 },
             },
             proxy: value.cli.proxy.clone(),
+            custom_title: None,
             fullscreen: value.cli.fullscreen,
             save_directory: value.cli.save_directory.clone(),
             cache_directory: value.cli.cache_directory.clone(),
@@ -105,6 +108,13 @@ impl From<&GlobalPreferences> for LaunchOptions {
             avm2_dse_enabled: !value.cli.disable_avm2_dse,
         }
     }
+}
+
+fn window_title(content_name: &str, custom_title: Option<&str>) -> String {
+    let name = custom_title
+        .filter(|name| !name.trim().is_empty())
+        .unwrap_or(content_name);
+    format!("Ruffle - {name}")
 }
 
 /// Represents a current Player and any associated state with that player,
@@ -143,9 +153,7 @@ impl ActivePlayer {
         };
 
         let mut content = PlayingContent::DirectFile(content_descriptor.clone());
-        if content_descriptor.url.scheme() == "file"
-            && let Ok(path) = content_descriptor.url.to_file_path()
-        {
+        if let Some(path) = content_descriptor.url.to_local_file_path() {
             match Bundle::from_path(&path) {
                 Ok(bundle) => {
                     if bundle.warnings().is_empty() {
@@ -192,6 +200,7 @@ impl ActivePlayer {
 
                 Cow::Owned(LaunchOptions {
                     player,
+                    custom_title: opt.custom_title.clone(),
                     proxy: opt.proxy.clone(),
                     socket_allowed: opt.socket_allowed.clone(),
                     tcp_connections: opt.tcp_connections,
@@ -343,7 +352,7 @@ impl ActivePlayer {
             .with_avm2_dse_enabled(opt.avm2_dse_enabled);
         let player = builder.build();
 
-        window.set_title(&format!("Ruffle - {readable_name}"));
+        window.set_title(&window_title(&readable_name, opt.custom_title.as_deref()));
 
         SWF_INFO.with(|i| *i.borrow_mut() = Some(readable_name));
 
@@ -567,5 +576,42 @@ impl<E: std::error::Error + 'static> FutureSpawner<E> for WinitExecutor {
         task.detach();
         // Immediately schedule the future to be polled for the first time.
         runnable.schedule();
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::window_title;
+
+    #[test]
+    fn custom_window_title() {
+        assert_eq!(
+            window_title("viewer.swf", Some("Operations Console")),
+            "Ruffle - Operations Console"
+        );
+    }
+
+    #[test]
+    fn content_window_title() {
+        assert_eq!(window_title("viewer.swf", None), "Ruffle - viewer.swf");
+    }
+
+    #[test]
+    fn blank_custom_window_title() {
+        for name in ["", " \t\n", "\u{2003}"] {
+            assert_eq!(
+                window_title("viewer.swf", Some(name)),
+                "Ruffle - viewer.swf"
+            );
+        }
+    }
+
+    #[test]
+    fn custom_window_title_preserves_name() {
+        let name = "  Op\u{e9}rations \u{65e5}\u{672c}  ";
+        assert_eq!(
+            window_title("viewer.swf", Some(name)),
+            format!("Ruffle - {name}")
+        );
     }
 }
