@@ -1,0 +1,22 @@
+num_ticks = 60
+log_warnings = false
+# Ruffle creates a level as soon as a movie starts loading into it.
+known_failure = true
+
+[[compilers]]
+type = "Rascal"
+target = "test.swf"
+scripts = ["test.as"]
+swf_version = 8
+
+[[compilers]]
+type = "Rascal"
+target = "first.swf"
+scripts = ["first.as"]
+swf_version = 8
+
+[[compilers]]
+type = "Rascal"
+target = "second.swf"
+scripts = ["second.as"]
+swf_version = 8
