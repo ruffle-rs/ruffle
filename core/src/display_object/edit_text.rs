@@ -1406,8 +1406,12 @@ impl<'gc> EditText<'gc> {
             return true;
         };
 
-        // Any previous binding should have been cleared.
-        debug_assert!(self.0.bound_display_object.get().is_none());
+        // Binding other text fields can run ActionScript, which can remove this
+        // one or bind it by setting its variable while it's still in the list
+        // of unbound text fields.
+        if self.avm1_removed() || self.0.bound_display_object.get().is_some() {
+            return true;
+        }
 
         let Some(mut parent) = self.avm1_parent() else {
             return false;
