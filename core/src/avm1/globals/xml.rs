@@ -225,11 +225,11 @@ impl<'gc> Xml<'gc> {
                 }
                 Event::CData(bt) => {
                     // This is already unescaped
-                    Self::handle_text_cdata(&bt.into_inner(), ignore_white, &open_tags, activation);
+                    Self::handle_text_cdata(bt.as_bytes(), ignore_white, &open_tags, activation);
                 }
                 Event::Decl(bd) => {
                     let mut xml_decl = WString::from_buf(b"<?".to_vec());
-                    xml_decl.push_str(WStr::from_units(&*bd));
+                    xml_decl.push_str(WStr::from_units(bd.as_bytes()));
                     xml_decl.push_str(WStr::from_units(b"?>"));
                     let xml_decl = Some(AvmString::new(activation.gc(), xml_decl));
                     unlock!(Gc::write(activation.gc(), self.0), XmlData, xml_decl).set(xml_decl);
@@ -240,7 +240,9 @@ impl<'gc> Xml<'gc> {
                     // Flash is also case-insensitive for DOCTYPE declarations. However,
                     // the `.docTypeDecl` property preserves the original case.
                     let mut doctype = WString::from_buf(b"<!DOCTYPE ".to_vec());
-                    doctype.push_str(WStr::from_units(&*bt.escape_ascii().collect::<Vec<_>>()));
+                    doctype.push_str(WStr::from_units(
+                        &*bt.as_bytes().escape_ascii().collect::<Vec<_>>(),
+                    ));
                     doctype.push_byte(b'>');
                     let doctype = Some(AvmString::new(activation.gc(), doctype));
                     unlock!(Gc::write(activation.gc(), self.0), XmlData, doctype).set(doctype);

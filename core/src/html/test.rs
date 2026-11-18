@@ -931,3 +931,16 @@ fn formatspans_replace_text_degenerate() {
     assert_eq!((0, 1), fs.get_span_boundaries(0, 5));
     assert_eq!((1, 2), fs.get_span_boundaries(5, 9));
 }
+
+#[test]
+fn from_html_latin1() {
+    // Non-ASCII Latin1 units must survive parsing, both in text and in attribute values.
+    let html = WStr::from_units(b"<b>caf\xe9 \xe0<font face=\"\xe9\">x</font></b>");
+    let fs = FormatSpans::from_html(html, TextFormat::default(), None, false, false, 10);
+
+    assert_eq!(WStr::from_units(b"caf\xe9 \xe0x"), fs.text());
+    assert_eq!(
+        Some(WString::from_buf(b"\xe9".to_vec())),
+        fs.get_text_format(6, 7).font
+    );
+}

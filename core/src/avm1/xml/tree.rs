@@ -108,16 +108,16 @@ impl<'gc> XmlNode<'gc> {
         bs: BytesStart<'_>,
         id_map: Object<'gc>,
     ) -> Result<Self, quick_xml::Error> {
-        let name = AvmString::new_utf8_bytes(activation.gc(), bs.name().into_inner());
+        let name = AvmString::new_utf8(activation.gc(), bs.name().into_inner());
         let node = Self::new(activation.gc(), ELEMENT_NODE, Some(name));
 
         // Reverse attributes so they appear in the `PropertyMap` in their definition order.
         let attributes = bs.attributes().collect::<Result<Vec<_>, _>>()?;
 
         for attribute in attributes.iter().rev() {
-            let key = AvmString::new_utf8_bytes(activation.gc(), attribute.key.into_inner());
+            let key = AvmString::new_utf8(activation.gc(), attribute.key.into_inner());
 
-            let value_str = avm1_unescape(&attribute.value)
+            let value_str = avm1_unescape(attribute.value.as_bytes())
                 .map_err(|e| quick_xml::Error::Encoding(EncodingError::Utf8(e)))?;
             let value = AvmString::new_utf8(activation.gc(), value_str);
 
@@ -126,7 +126,7 @@ impl<'gc> XmlNode<'gc> {
                 .define_value(activation.gc(), key, value.into(), Attribute::empty());
 
             // Update the ID map.
-            if attribute.key.into_inner() == b"id" {
+            if attribute.key.into_inner() == "id" {
                 id_map.define_value(
                     activation.gc(),
                     value,
