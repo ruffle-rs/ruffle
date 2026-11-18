@@ -1,0 +1,34 @@
+
+// 32x24 varying alpha (default compression)
+encoded length > 0: true
+loaded w=32 h=24
+compare == 0: false
+compare result type: BitmapData
+
+// 32x24 varying alpha (fastCompression=true)
+encoded length > 0: true
+loaded w=32 h=24
+compare == 0: false
+compare result type: BitmapData
+
+// 32x24 opaque (default)
+encoded length > 0: true
+loaded w=32 h=24
+compare == 0: true
+
+// 32x24 opaque (fastCompression=true)
+encoded length > 0: true
+loaded w=32 h=24
+compare == 0: true
+
+// 1x1 opaque red pixel
+encoded length > 0: true
+loaded w=1 h=1
+compare == 0: true
+
+// transparent fully zero alpha
+encoded length > 0: true
+loaded w=16 h=16
+compare == 0: true
+
+// done
