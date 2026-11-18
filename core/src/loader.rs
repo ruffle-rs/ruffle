@@ -259,6 +259,22 @@ impl<'gc> LoadManager<'gc> {
         self.0.get_mut(handle)
     }
 
+    /// Cancels the movie loads into `target` that haven't received their
+    /// movie yet.
+    pub fn cancel_pending_movie_loads_into(&mut self, target: DisplayObject<'gc>) {
+        self.0.retain(|_, loader| {
+            !(loader.is_pending() && DisplayObject::ptr_eq(loader.target_clip, target))
+        });
+    }
+
+    /// Returns whether a movie load into `target` hasn't received its movie
+    /// yet.
+    pub fn has_pending_movie_load_into(&self, target: DisplayObject<'gc>) -> bool {
+        self.0
+            .values()
+            .any(|loader| loader.is_pending() && DisplayObject::ptr_eq(loader.target_clip, target))
+    }
+
     /// Checks if the target clip on the given handle's loader
     /// has been `avm1_removed()`. If so, it will set the `loader_status`
     /// to `Failed` and return `true`.
@@ -600,6 +616,11 @@ pub struct MovieLoader<'gc> {
 }
 
 impl<'gc> MovieLoader<'gc> {
+    /// Returns whether the movie hasn't been received yet.
+    fn is_pending(&self) -> bool {
+        matches!(self.loader_status, LoaderStatus::Pending)
+    }
+
     fn replace_root_movie(&mut self, new_root: DisplayObject<'gc>) {
         self.target_clip = new_root;
         if let MovieLoaderVMData::Avm1 { base_clip, .. } = &mut self.vm_data {
@@ -2224,8 +2245,10 @@ impl<'gc> MovieLoader<'gc> {
             }
         }
 
-        let loader = uc.load_manager.get_loader_mut(handle).unwrap();
-        loader.loader_status = LoaderStatus::Succeeded;
+        // Script code run above may have cancelled the load.
+        if let Some(loader) = uc.load_manager.get_loader_mut(handle) {
+            loader.loader_status = LoaderStatus::Succeeded;
+        }
 
         Ok(())
     }
@@ -2297,8 +2320,10 @@ impl<'gc> MovieLoader<'gc> {
             }
         }
 
-        let loader = uc.load_manager.get_loader_mut(handle).unwrap();
-        loader.loader_status = LoaderStatus::Failed;
+        // Script code run above may have cancelled the load.
+        if let Some(loader) = uc.load_manager.get_loader_mut(handle) {
+            loader.loader_status = LoaderStatus::Failed;
+        }
 
         Ok(())
     }
