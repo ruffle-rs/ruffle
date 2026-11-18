@@ -295,7 +295,7 @@ pub fn load_bytes<'gc>(
 
     let loader_url = activation.caller_movie_or_root().url().to_string();
 
-    let loader_sandbox_type = activation.caller_movie_or_root().sandbox_type();
+    let inherited_sandbox_type = activation.caller_movie_or_root().sandbox_type();
 
     if let Err(e) = LoadManager::load_movie_into_clip_bytes(
         activation.context,
@@ -307,7 +307,7 @@ pub fn load_bytes<'gc>(
             context,
             default_domain,
             load_bytes_info: Some(LoadBytesInfo {
-                loader_sandbox_type,
+                inherited_sandbox_type,
             }),
         },
     ) {
