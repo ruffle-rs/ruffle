@@ -2,7 +2,7 @@ use ruffle_core::backend::storage::StorageBackend;
 use std::fs;
 use std::fs::File;
 use std::io::Write;
-use std::path::{Component, Path, PathBuf};
+use std::path::{Component, PathBuf};
 
 pub struct DiskStorageBackend {
     shared_objects_path: PathBuf,
@@ -23,22 +23,27 @@ impl DiskStorageBackend {
         }
     }
 
-    /// Verifies that the path contains no `..` components to prevent accessing files outside of the Ruffle directory.
-    fn is_path_allowed(path: &Path) -> bool {
-        path.components().all(|c| c != Component::ParentDir)
-    }
-
-    fn get_shared_object_path(&self, name: &str) -> PathBuf {
-        self.shared_objects_path.join(format!("{name}.sol"))
+    /// Returns the path of the shared object file, or `None` when it would not
+    /// refer to a file inside the shared objects directory.
+    ///
+    /// Only normal components are allowed in the name, which rejects `..`,
+    /// absolute paths, and (on Windows) drive and UNC prefixes.
+    fn get_shared_object_path(&self, name: &str) -> Option<PathBuf> {
+        let relative_path = PathBuf::from(format!("{name}.sol"));
+        if !relative_path
+            .components()
+            .all(|c| matches!(c, Component::Normal(_)))
+        {
+            tracing::warn!("Invalid shared object name \"{}\"", name);
+            return None;
+        }
+        Some(self.shared_objects_path.join(relative_path))
     }
 }
 
 impl StorageBackend for DiskStorageBackend {
     fn get(&self, name: &str) -> Option<Vec<u8>> {
-        let path = self.get_shared_object_path(name);
-        if !Self::is_path_allowed(&path) {
-            return None;
-        }
+        let path = self.get_shared_object_path(name)?;
         match std::fs::read(path) {
             Ok(data) => Some(data),
             Err(e) => {
@@ -49,10 +54,9 @@ impl StorageBackend for DiskStorageBackend {
     }
 
     fn put(&mut self, name: &str, value: &[u8]) -> bool {
-        let path = self.get_shared_object_path(name);
-        if !Self::is_path_allowed(&path) {
+        let Some(path) = self.get_shared_object_path(name) else {
             return false;
-        }
+        };
         if let Some(parent_dir) = path.parent()
             && !parent_dir.exists()
             && let Err(r) = fs::create_dir_all(parent_dir)
@@ -78,10 +82,46 @@ impl StorageBackend for DiskStorageBackend {
     }
 
     fn remove_key(&mut self, name: &str) {
-        let path = self.get_shared_object_path(name);
-        if !Self::is_path_allowed(&path) {
+        let Some(path) = self.get_shared_object_path(name) else {
             return;
-        }
+        };
         let _ = fs::remove_file(path);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn backend() -> DiskStorageBackend {
+        DiskStorageBackend {
+            shared_objects_path: PathBuf::from("base"),
+        }
+    }
+
+    #[test]
+    fn shared_object_path_inside_directory() {
+        assert_eq!(
+            backend().get_shared_object_path("localhost/game.swf/so"),
+            Some(PathBuf::from("base/localhost/game.swf/so.sol"))
+        );
+    }
+
+    #[test]
+    fn shared_object_path_outside_directory() {
+        let backend = backend();
+        assert_eq!(backend.get_shared_object_path("../so"), None);
+        assert_eq!(backend.get_shared_object_path("localhost/../../so"), None);
+        assert_eq!(backend.get_shared_object_path("/so"), None);
+        assert_eq!(backend.get_shared_object_path("./so"), None);
+        #[cfg(windows)]
+        {
+            assert_eq!(backend.get_shared_object_path("C:/so"), None);
+            assert_eq!(backend.get_shared_object_path("C:so"), None);
+            assert_eq!(
+                backend.get_shared_object_path("\\\\server\\share\\so"),
+                None
+            );
+        }
     }
 }
