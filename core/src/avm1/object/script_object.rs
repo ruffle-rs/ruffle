@@ -109,28 +109,6 @@ impl fmt::Debug for Object<'_> {
 }
 
 impl<'gc> Object<'gc> {
-    /// Clear own properties after a MovieClip unload, ignoring property flags.
-    pub fn reset_for_movie_unload(
-        self,
-        context: &StringContext<'gc>,
-        prototype: Option<Value<'gc>>,
-    ) {
-        {
-            let mut data = self.0.borrow_mut(context.gc());
-            data.properties = PropertyMap::new();
-            data.watchers = PropertyMap::new();
-        }
-
-        if let Some(prototype) = prototype {
-            self.define_value(
-                context.gc(),
-                istr!(context, "__proto__"),
-                prototype,
-                Attribute::DONT_ENUM | Attribute::DONT_DELETE,
-            );
-        }
-    }
-
     pub fn as_weak(self) -> ObjectWeak<'gc> {
         ObjectWeak(Gc::downgrade(self.0))
     }

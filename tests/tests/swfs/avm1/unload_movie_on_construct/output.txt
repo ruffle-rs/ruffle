@@ -1,0 +1,10 @@
+before constructCalls=1
+immediate constructCalls=1 custom=number fromConstruct=1
+construct #1 custom=undefined fromConstruct=undefined x=0 y=0 lockroot=false
+construct #2 custom=undefined fromConstruct=undefined x=37 y=49 lockroot=true
+unload custom=number fromConstruct=1 viaParentCustom=number viaParentConstruct=1 savedConstruct=2
+final constructCalls=2 unloadCalls=1
+final custom=undefined onRelease=undefined fromConstruct=2
+final x=37 y=49 lockroot=true
+final defaultPrototype=true
+UNLOAD_CONSTRUCT_COMPLETE

@@ -179,6 +179,9 @@ pub struct MovieClipData<'gc> {
     /// An unloadMovie operation is waiting for its handlers and cleanup.
     avm1_unload_pending: Cell<bool>,
 
+    /// Fresh AVM1 state belonging to the currently pending unload.
+    avm1_unload_object: Lock<Option<Avm1Object<'gc>>>,
+
     drop_target: Lock<Option<DisplayObject<'gc>>>,
 
     /// A DisplayObject (doesn't need to be visible) to use for hit tests instead of this clip.
@@ -251,6 +254,7 @@ impl<'gc> MovieClipData<'gc> {
             object1: Lock::new(None),
             object2: Lock::new(None),
             avm1_unload_pending: Cell::new(false),
+            avm1_unload_object: Lock::new(None),
             clip_event_handlers: OnceCell::new(),
             clip_event_flags: Cell::new(ClipEventFlag::empty()),
             flags: Cell::new(MovieClipFlags::empty()),
@@ -2431,38 +2435,94 @@ impl<'gc> MovieClip<'gc> {
 
         self.replace_with_movie(context, movie, self.is_root(), None);
 
-        // Keep properties available to the queued unload handlers.
+        // Construct fresh AVM1 state before dispatching the queued unload handlers.
         context.action_queue.queue_action(
             self.into(),
-            ActionType::ResetAvm1MovieClip {
+            ActionType::ConstructAvm1UnloadedMovieClip {
                 movie: self.movie(),
             },
             true,
         );
     }
 
-    pub(crate) fn finish_avm1_unload(self, context: &mut UpdateContext<'gc>, movie: SwfMovie<'gc>) {
-        self.0.avm1_unload_pending.set(false);
+    /// Whether this object belongs to the clip's current or constructing state.
+    pub(crate) fn owns_avm1_object(self, object: Avm1Object<'gc>) -> bool {
+        self.0
+            .object1
+            .get()
+            .is_some_and(|current| current.as_ptr() == object.as_ptr())
+            || self
+                .0
+                .avm1_unload_object
+                .get()
+                .is_some_and(|pending| pending.as_ptr() == object.as_ptr())
+    }
 
-        // Skip cleanup if another movie has already replaced the unloaded movie.
+    pub(crate) fn construct_avm1_unloaded_movie(
+        self,
+        context: &mut UpdateContext<'gc>,
+        movie: SwfMovie<'gc>,
+    ) {
         if !SwfMovie::ptr_eq(&self.movie(), &movie) {
+            self.0.avm1_unload_object.take();
+            self.0.avm1_unload_pending.set(false);
             return;
         }
 
-        let Some(object) = self.0.object1.get() else {
-            return;
-        };
-
         let mut activation = Avm1Activation::from_nothing(
             context,
-            ActivationIdentifier::root("[UnloadMovie]"),
+            ActivationIdentifier::root("[onConstruct]"),
             self.into(),
         );
         let prototype = activation
             .resolve_class([istr!("MovieClip")])
             .and_then(|class| class.prototype(&activation));
+        let object = Avm1Object::new_with_native(
+            activation.strings(),
+            prototype,
+            Avm1NativeObject::MovieClip(self),
+        );
 
-        object.reset_for_movie_unload(activation.strings(), prototype);
+        unlock!(
+            Gc::write(activation.gc(), self.0),
+            MovieClipData,
+            avm1_unload_object
+        )
+        .set(Some(object));
+
+        // Keep the old object installed until its unload handlers have run.
+        // References created by onConstruct can already access the fresh object.
+        if let Err(error) = object.call_method(
+            istr!("onConstruct"),
+            &[],
+            &mut activation,
+            Avm1ExecutionReason::Special,
+        ) {
+            Avm1::handle_error(&mut activation, error);
+        }
+
+        activation.context.action_queue.queue_action(
+            self.into(),
+            ActionType::FinishAvm1Unload { movie, object },
+            true,
+        );
+    }
+
+    pub(crate) fn finish_avm1_unload(
+        self,
+        context: &mut UpdateContext<'gc>,
+        movie: SwfMovie<'gc>,
+        object: Avm1Object<'gc>,
+    ) {
+        self.0.avm1_unload_object.take();
+        self.0.avm1_unload_pending.set(false);
+
+        // Skip publication if another movie has already replaced the unloaded movie.
+        if !SwfMovie::ptr_eq(&self.movie(), &movie) {
+            return;
+        }
+
+        unlock!(Gc::write(context.gc(), self.0), MovieClipData, object1).set(Some(object));
     }
 
     pub fn attach_audio(self, context: &mut UpdateContext<'gc>, netstream: Option<NetStream<'gc>>) {
