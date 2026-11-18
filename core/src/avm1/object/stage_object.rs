@@ -509,7 +509,10 @@ fn frames_loaded<'gc>(
     this: DisplayObject<'gc>,
 ) -> Value<'gc> {
     if let Some(mc) = this.as_movie_clip() {
-        return mc.frames_loaded().min(mc.header_frames() as i32).into();
+        return mc
+            .avm1_frames_loaded()
+            .min(mc.header_frames() as i32)
+            .into();
     }
     Value::Undefined
 }

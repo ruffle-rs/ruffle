@@ -66,6 +66,9 @@ impl<'gc> SwfMovieWeak<'gc> {
     }
 }
 
+/// The size of the chunks Flash Player reads a SWF file in.
+pub const FILE_CHUNK_SIZE: usize = 4096;
+
 /// An open, fully parsed SWF movie ready to play back, either in a Player or a
 /// MovieClip.
 #[derive(Clone, Collect)]
@@ -92,6 +95,10 @@ pub struct SwfMovieData {
 
     /// The compressed length of the entire datastream
     compressed_len: usize,
+
+    /// For a zlib-compressed SWF, how many bytes of the uncompressed SWF each
+    /// `FILE_CHUNK_SIZE` bytes of the file add up to. See `decompressed_len_at`.
+    file_chunk_ends: Option<Arc<[u32]>>,
 
     /// Whether this SwfMovieData actually represents a loaded movie or fills in for
     /// something else, like an loaded image, filler movie, or error state.
@@ -131,6 +138,7 @@ impl SwfMovieData {
             parameters: Vec::new(),
             encoding: swf::UTF_8,
             compressed_len: 0,
+            file_chunk_ends: None,
             is_movie: false,
             force_avm1: false,
             is_from_bytes: false,
@@ -155,6 +163,7 @@ impl SwfMovieData {
         Self {
             header,
             compressed_len,
+            file_chunk_ends: None,
             data: Arc::new(Vec::new()),
             url,
             loader_url,
@@ -182,6 +191,7 @@ impl SwfMovieData {
         Self {
             header,
             compressed_len: compressed_data.len(),
+            file_chunk_ends: None,
             data: Arc::new(compressed_data),
             url,
             loader_url,
@@ -212,6 +222,7 @@ impl SwfMovieData {
             parameters: Vec::new(),
             encoding: swf::UTF_8,
             compressed_len: 0,
+            file_chunk_ends: None,
             is_movie: false,
             force_avm1: false,
             is_from_bytes: false,
@@ -230,6 +241,8 @@ impl SwfMovieData {
     ) -> Result<Self, swf::error::Error> {
         let compressed_len = swf_data.len();
         let swf_buf = swf::read::decompress_swf(swf_data)?;
+        let file_chunk_ends =
+            swf::read::zlib_decompressed_chunk_ends(swf_data, FILE_CHUNK_SIZE).map(Arc::from);
         let encoding = swf::SwfStr::encoding_for_version(swf_buf.header.version());
 
         // The loader SWF has full control over the tags of a SWF loaded using
@@ -249,6 +262,7 @@ impl SwfMovieData {
             parameters: Vec::new(),
             encoding,
             compressed_len,
+            file_chunk_ends,
             is_movie: true,
             force_avm1: false,
             is_from_bytes: load_bytes_info.is_some(),
@@ -279,6 +293,7 @@ impl SwfMovieData {
             parameters: Vec::new(),
             encoding: swf::UTF_8,
             compressed_len: length,
+            file_chunk_ends: None,
             is_movie: false,
             force_avm1: false,
             is_from_bytes,
@@ -371,6 +386,19 @@ impl SwfMovieData {
 
     pub fn uncompressed_len(&self) -> i32 {
         self.header.uncompressed_len()
+    }
+
+    /// How many bytes of the uncompressed SWF (header included) the first
+    /// `file_bytes` bytes of the SWF file decompress to, a multiple of
+    /// `FILE_CHUNK_SIZE`. `None` if not known exactly, for files that aren't
+    /// zlib-compressed.
+    pub fn decompressed_len_at(&self, file_bytes: usize) -> Option<usize> {
+        let chunks = file_bytes / FILE_CHUNK_SIZE;
+        let ends = self.file_chunk_ends.as_ref()?;
+        Some(match chunks.checked_sub(1) {
+            Some(i) => *ends.get(i).or(ends.last())? as usize,
+            None => file_bytes,
+        })
     }
 
     /// Whether the SWF's FileAttributes tag declares the SWF to be AVM2.

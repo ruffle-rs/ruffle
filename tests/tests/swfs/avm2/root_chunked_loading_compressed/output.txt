@@ -1,0 +1,8 @@
+constructor: currentFrame 1, framesLoaded 2/4, bytes 4096/6189
+init: currentFrame 1, framesLoaded 2/4, bytes 4096/6189
+progress 4096/6189: currentFrame 1, framesLoaded 2/4, bytes 4096/6189
+progress 6189/6189: currentFrame 1, framesLoaded 4/4, bytes 6189/6189
+complete: currentFrame 1, framesLoaded 4/4, bytes 6189/6189
+enterFrame 1: currentFrame 2, framesLoaded 4/4, bytes 6189/6189
+enterFrame 2: currentFrame 3, framesLoaded 4/4, bytes 6189/6189
+enterFrame 3: currentFrame 4, framesLoaded 4/4, bytes 6189/6189
