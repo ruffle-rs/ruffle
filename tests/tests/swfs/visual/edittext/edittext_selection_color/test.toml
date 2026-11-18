@@ -8,7 +8,6 @@ tolerance = 4
 
 [subtests.air.image_comparisons."output.air"]
 tolerance = 4
-known_failure = true
 
 [subtests.air.player_options]
 runtime = "AIR"
