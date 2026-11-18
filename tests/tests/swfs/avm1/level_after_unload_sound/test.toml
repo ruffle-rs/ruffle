@@ -1,0 +1,32 @@
+num_ticks = 35
+log_warnings = false
+
+[player_options]
+with_audio = true
+
+[[compilers]]
+type = "Rascal"
+target = "test.swf"
+scripts = ["test.as"]
+swf_version = 8
+frame_rate = 2
+
+[[compilers]]
+type = "Rascal"
+target = "child.swf"
+scripts = ["child.as"]
+swf_version = 8
+frame_rate = 2
+
+
+# The frames with audio in Flash Player: each sound starts in the frame after
+# its level starts loading, and keeps playing after the level is unloaded.
+# The first and last frame of each sound are only partially audible, so they
+# aren't checked.
+[audio_assertions.sound]
+frames = [4, 5, 6, 7, 8, 14, 15, 16, 17, 18, 24, 25, 26, 27, 28]
+min_max_amplitude = 0.001
+
+[audio_assertions.silence]
+frames = [1, 2, 10, 11, 12, 20, 21, 22, 30, 31, 32]
+max_amplitude = 0.0
