@@ -58,8 +58,8 @@ zip = { version = "9.0.5", default-features = false }
 quote = "1.0.45"
 tracing = "0.1.43"
 tracing-subscriber = { version = "0.3.23", features = ["env-filter"] }
-naga = { version = "30.0.1", features = ["wgsl-out"] }
-wgpu = "30.0.1"
+naga = { version = "30.0.2", features = ["wgsl-out"] }
+wgpu = "30.0.2"
 wgpu-profiler = "0.28.0"
 egui = "0.36.1"
 egui_extras = { version = "0.36.1", default-features = false }
