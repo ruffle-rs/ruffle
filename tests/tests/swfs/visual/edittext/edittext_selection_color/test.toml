@@ -1,0 +1,14 @@
+num_ticks = 2
+
+[player_options]
+with_renderer = { optional = false, quality = "high" }
+
+[subtests.flash.image_comparisons."output.flash"]
+tolerance = 4
+
+[subtests.air.image_comparisons."output.air"]
+tolerance = 4
+known_failure = true
+
+[subtests.air.player_options]
+runtime = "AIR"
