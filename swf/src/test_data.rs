@@ -1814,6 +1814,28 @@ pub fn tag_tests() -> Vec<TagTestData> {
                     name: "Test💯".into(),
                 }],
             },
+            read_tag_bytes_from_file("tests/swfs/ImportAssets-CS6.swf", TagCode::ImportAssets),
+        ),
+        (
+            8,
+            Tag::ImportAssets2 {
+                url: "ExportAssets-CS6.swf".into(),
+                imports: vec![ExportedAsset {
+                    id: 1,
+                    name: "Test💯".into(),
+                }],
+            },
+            read_tag_bytes_from_file("tests/swfs/ImportAssets2-CS6.swf", TagCode::ImportAssets2),
+        ),
+        (
+            7,
+            Tag::ImportAssets2 {
+                url: "ExportAssets-CS6.swf".into(),
+                imports: vec![ExportedAsset {
+                    id: 1,
+                    name: "Test💯".into(),
+                }],
+            },
             read_tag_bytes_from_file("tests/swfs/ImportAssets2-CS6.swf", TagCode::ImportAssets2),
         ),
         (
