@@ -1,0 +1,41 @@
+num_ticks = 80
+known_failure = true
+
+[[compilers]]
+type = "Asc"
+target = "test.swf"
+class = "Test"
+scripts = ["Test.as"]
+swf_version = 21
+
+[[compilers]]
+type = "Asc"
+target = "sub/loader.swf"
+class = "Middle"
+scripts = ["Middle.as"]
+swf_version = 21
+
+[[compilers]]
+type = "Asc"
+target = "child.swf"
+class = "Child"
+scripts = ["Child.as"]
+swf_version = 21
+
+[[compilers]]
+type = "Rascal"
+target = "child_avm1.swf"
+scripts = ["child_avm1.as"]
+swf_version = 8
+
+[shared_objects."localhost/test.swf/so"]
+expected = "sols/root_so"
+
+[shared_objects."localhost/sub/loader.swf/so"]
+expected = "sols/sub_so"
+
+[shared_objects."localhost/test.swf/avm1"]
+expected = "sols/root_avm1"
+
+[shared_objects."localhost/sub/loader.swf/avm1"]
+expected = "sols/sub_avm1"
