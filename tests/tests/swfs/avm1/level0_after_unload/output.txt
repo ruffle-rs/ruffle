@@ -1,0 +1,3 @@
+before: movieclip, _level0, string, test.swf, 1
+// Unloading _level0
+right after: movieclip, _level0, string, test.swf, 1
