@@ -487,14 +487,7 @@ fn set_rotation<'gc>(
     this: DisplayObject<'gc>,
     degrees: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
-    if let Some(mut degrees) = property_coerce_to_number(activation, degrees)? {
-        // Normalize into the range of [-180, 180].
-        degrees %= 360.0;
-        if degrees < -180.0 {
-            degrees += 360.0
-        } else if degrees > 180.0 {
-            degrees -= 360.0
-        }
+    if let Some(degrees) = property_coerce_to_number(activation, degrees)? {
         this.set_rotation(degrees.into());
     }
     Ok(())
