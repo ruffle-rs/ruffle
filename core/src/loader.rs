@@ -41,6 +41,7 @@ use chardetng::EncodingDetector;
 use encoding_rs::{UTF_8, WINDOWS_1252};
 use gc_arena::Collect;
 use indexmap::IndexMap;
+use memchr::memmem;
 use ruffle_common::tag_utils::LoadBytesInfo;
 use ruffle_macros::istr;
 use ruffle_render::utils::{JpegTagFormat, determine_jpeg_tag_format};
@@ -2783,8 +2784,18 @@ pub fn download_file_dialog<'gc>(
     })
 }
 
+/// Escapes a field or file name for a `multipart/form-data` header, like
+/// Flash Player and browsers do.
+fn escape_form_data_name(name: &str) -> String {
+    name.replace('"', "%22")
+        .replace('\r', "%0D")
+        .replace('\n', "%0A")
+}
+
 /// Uploads the given `data` to the provided `url`.
-/// `file_name` is sent along with the data, as part of the multipart/form-data body.
+/// `file_name` is sent along with the data, as part of the multipart/form-data body,
+/// in the field named `field_name`. `post_data` is a URL-encoded variable string whose
+/// variables are sent as additional form fields.
 ///
 /// `target_object` is the AVM1 `FileReference` object which initialized the upload.
 ///
@@ -2795,6 +2806,8 @@ pub fn upload_file<'gc>(
     url: String,
     data: Vec<u8>,
     file_name: String,
+    field_name: String,
+    post_data: Option<String>,
 ) -> OwnedFuture<(), Error> {
     let player = uc.player_handle();
     let target_object = ObjectHandle::stash(uc, target_object);
@@ -2802,42 +2815,77 @@ pub fn upload_file<'gc>(
     Box::pin(async move {
         let total_size_bytes = data.len();
 
-        //FIXME: The code below won't work if the payload contains the boundary separator
-        if file_name.contains("------------BOUNDARY")
-            || data.windows(20).any(|b| b == b"------------BOUNDARY")
-        {
+        // Lowercase: the web backend sends the MIME type through `Blob.type`,
+        // which is ASCII-lowercased by the browser.
+        const BOUNDARY: &str = "----------ruffleformboundaryei4ch2ei4gl6";
+        let boundary_bytes = BOUNDARY.as_bytes();
+
+        let mut out_data = Vec::new();
+        let mut contains_boundary = false;
+
+        let mut add_field = |name: &str, filename: Option<&str>, value: &[u8]| {
+            let name = escape_form_data_name(name);
+            let filename = filename.map(escape_form_data_name);
+
+            contains_boundary |= [
+                name.as_bytes(),
+                filename.as_deref().unwrap_or_default().as_bytes(),
+                value,
+            ]
+            .into_iter()
+            .any(|part| memmem::find(part, boundary_bytes).is_some());
+
+            let start: &[&[u8]] = &[
+                b"--",
+                boundary_bytes,
+                b"\r\nContent-Disposition: form-data; name=\"",
+                name.as_bytes(),
+                b"\"",
+            ];
+
+            let file: &[&[u8]] = match &filename {
+                Some(filename) => &[
+                    b"; filename=\"",
+                    filename.as_bytes(),
+                    b"\"\r\nContent-Type: application/octet-stream",
+                ],
+                None => &[],
+            };
+
+            let end: &[&[u8]] = &[b"\r\n\r\n", value, b"\r\n"];
+
+            out_data.extend([start, file, end].into_iter().flatten().copied().flatten());
+        };
+
+        add_field("Filename", None, file_name.as_bytes());
+
+        if let Some(post_data) = &post_data {
+            for (key, value) in form_urlencoded::parse(post_data.as_bytes()) {
+                add_field(&key, None, value.as_bytes());
+            }
+        }
+
+        add_field(&field_name, Some(&file_name), &data);
+        add_field("Upload", None, b"Submit Query");
+        let closing: [&[u8]; 3] = [b"--", boundary_bytes, b"--\r\n"];
+        out_data.extend(closing.into_iter().flatten());
+
+        if contains_boundary {
             tracing::error!("File upload data contains boundary separator, request cannot be sent");
+
             return Err(Error::Cancelled);
         }
 
-        // Format the data into multipart/form-data
-        let mut out_data = Vec::new();
-        out_data.extend_from_slice(b"------------BOUNDARY\n");
-        out_data.extend_from_slice(b"Content-Disposition: form-data; name=\"Filename\"\n\n");
-        out_data.extend_from_slice(file_name.as_bytes());
-        out_data.extend_from_slice(b"\n------------BOUNDARY\n");
-        out_data
-            .extend_from_slice(b"Content-Disposition: form-data; name=\"Filedata\"; filename=\"");
-        out_data.extend_from_slice(file_name.as_bytes());
-        out_data.extend_from_slice(b"\"\n");
-        out_data.extend_from_slice(b"Content-Type: application/octet-stream\n\n");
-        out_data.extend_from_slice(&data);
-        out_data.extend_from_slice(b"\n------------BOUNDARY\n");
-        out_data.extend_from_slice(b"Content-Disposition: form-data; name=\"Upload\"\n\n");
-        out_data.extend_from_slice(b"Submit Query");
-        out_data.extend_from_slice(b"\n------------BOUNDARY\n");
-
-        // Upload the data
         let req = Request::post(
             url,
             Some((
                 out_data,
-                "multipart/form-data; boundary=------------BOUNDARY".to_string(),
+                format!("multipart/form-data; boundary={BOUNDARY}"),
             )),
         );
         // Doing this in two steps to prevent holding the player lock during fetch
         let future = player.lock().unwrap().fetch(req, FetchReason::Other);
-        let result = future.await;
+        let result = wait_for_full_response(future).await;
 
         // Fire the load handler.
         player.lock().unwrap().update(|uc| -> Result<(), Error> {
@@ -2855,7 +2903,7 @@ pub fn upload_file<'gc>(
             )?;
 
             match result {
-                Ok(_) => {
+                Ok((body, _, _, _)) => {
                     broadcast_internal(
                         target_object,
                         &[
@@ -2873,6 +2921,17 @@ pub fn upload_file<'gc>(
                         istr!("onComplete"),
                         &mut activation,
                     )?;
+
+                    if !body.is_empty() {
+                        let data = AvmString::new_utf8_bytes(activation.gc(), &body);
+
+                        broadcast_internal(
+                            target_object,
+                            &[target_object.into(), data.into()],
+                            istr!("onUploadCompleteData"),
+                            &mut activation,
+                        )?;
+                    }
                 }
                 Err(err) => {
                     // If the error was due to the domain not existing, then this should call
@@ -2890,7 +2949,7 @@ pub fn upload_file<'gc>(
                                 &mut activation,
                             )?;
                         }
-                        Error::HttpNotOk(_, _, _, _) => {
+                        Error::HttpNotOk(_, status, _, _) => {
                             broadcast_internal(
                                 target_object,
                                 &[
@@ -2904,7 +2963,7 @@ pub fn upload_file<'gc>(
 
                             broadcast_internal(
                                 target_object,
-                                &[target_object.into()],
+                                &[target_object.into(), status.into()],
                                 istr!("onHTTPError"),
                                 &mut activation,
                             )?;
