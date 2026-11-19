@@ -1,0 +1,4 @@
+get holderA
+b: _level0.b
+a: new A
+b: new B
