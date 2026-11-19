@@ -45,7 +45,7 @@ pub fn get_local<'gc>(
     let local_path = local_path.as_ref().map(|p| p.to_utf8_lossy());
     let secure = args.get_bool(2);
 
-    let Some(full_name) = local_shared_object_key(
+    let Some(key) = local_shared_object_key(
         activation.context.root_swf.url(),
         &name.to_utf8_lossy(),
         local_path.as_deref(),
@@ -55,14 +55,14 @@ pub fn get_local<'gc>(
     };
 
     // Check if this is referencing an existing shared object
-    if let Some(so) = activation.context.avm2_shared_objects.get(&full_name) {
+    if let Some(so) = activation.context.avm2_shared_objects.get(key.instance()) {
         return Ok((*so).into());
     }
 
     let mut data = None;
 
     // Load the data object from storage if it existed prior
-    if let Some(saved) = activation.context.storage.get(&full_name)
+    if let Some(saved) = key.load(activation.context.storage)
         && let Ok(lso) = flash_lso::read::Reader::default().parse(&saved)
     {
         data = crate::avm2::amf::deserialize_lso(activation, &lso)?.into();
@@ -76,12 +76,12 @@ pub fn get_local<'gc>(
     };
 
     let created_shared_object =
-        SharedObjectObject::from_data_and_name(activation, data, full_name.clone());
+        SharedObjectObject::from_data_and_name(activation, data, key.storage().to_owned());
 
     activation
         .context
         .avm2_shared_objects
-        .insert(full_name, created_shared_object);
+        .insert(key.instance().to_owned(), created_shared_object);
 
     Ok(created_shared_object.into())
 }
