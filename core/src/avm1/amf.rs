@@ -751,20 +751,38 @@ fn count_amf0_references(value: &AmfValue) -> usize {
     count.min(MAX_AMF0_REFERENCES)
 }
 
-/// Create a LocalConnection reference table containing the top-level argument
-/// and placeholders for objects in earlier properties. Those earlier objects
-/// keep their wire indices, but Flash does not preserve their identity when a
-/// later property refers to them.
-fn local_connection_reference_cache<'gc>(
-    root: Value<'gc>,
+/// Tracks the reference-table positions of values preceding the current
+/// LocalConnection property. Earlier sibling values keep their wire indices,
+/// but Flash does not preserve their identity when a later property refers to them.
+struct LocalConnectionReferenceState {
     references_before_property: usize,
-) -> Amf0ReferenceCache<'gc> {
-    let mut reference_cache = Amf0ReferenceCache::default();
-    reference_cache.insert(root);
-    for _ in 1..references_before_property.min(MAX_AMF0_REFERENCES) {
-        reference_cache.insert(Value::Undefined);
+}
+
+impl LocalConnectionReferenceState {
+    fn new() -> Self {
+        Self {
+            // The top-level argument occupies reference index zero.
+            references_before_property: 1,
+        }
     }
-    reference_cache
+
+    /// Create a property-local cache, preserving earlier indices as placeholders.
+    fn cache_for_property<'gc>(&self, root: Value<'gc>) -> Amf0ReferenceCache<'gc> {
+        let mut reference_cache = Amf0ReferenceCache::default();
+        reference_cache.insert(root);
+        for _ in 1..self.references_before_property.min(MAX_AMF0_REFERENCES) {
+            reference_cache.insert(Value::Undefined);
+        }
+        reference_cache
+    }
+
+    /// Advance past a property while retaining its wire-format reference count.
+    fn advance(&mut self, value: &AmfValue) {
+        self.references_before_property = self
+            .references_before_property
+            .saturating_add(count_amf0_references(value))
+            .min(MAX_AMF0_REFERENCES);
+    }
 }
 
 /// Deserialize a LocalConnection argument. Reference indices are still counted
@@ -782,11 +800,10 @@ pub(crate) fn deserialize_local_connection_value<'gc>(
                 Some(activation.prototypes().object),
             );
             let root: Value<'gc> = obj.into();
-            let mut references_before_property = 1;
+            let mut reference_state = LocalConnectionReferenceState::new();
 
             for entry in &data.elements {
-                let mut reference_cache =
-                    local_connection_reference_cache(root, references_before_property);
+                let mut reference_cache = reference_state.cache_for_property(root);
                 let child = deserialize_local_connection_lso_value(
                     activation,
                     entry.value(),
@@ -795,9 +812,7 @@ pub(crate) fn deserialize_local_connection_value<'gc>(
                 );
                 let name = AvmString::new_utf8(activation.gc(), &entry.name);
                 obj.define_value(activation.gc(), name, child, Attribute::empty());
-                references_before_property = references_before_property
-                    .saturating_add(count_amf0_references(entry.value()))
-                    .min(MAX_AMF0_REFERENCES);
+                reference_state.advance(entry.value());
             }
 
             root
@@ -809,11 +824,10 @@ pub(crate) fn deserialize_local_connection_value<'gc>(
                 return Value::Undefined;
             };
             let root: Value<'gc> = obj.into();
-            let mut references_before_property = 1;
+            let mut reference_state = LocalConnectionReferenceState::new();
 
             for (index, item) in data.dense.iter().enumerate() {
-                let mut reference_cache =
-                    local_connection_reference_cache(root, references_before_property);
+                let mut reference_cache = reference_state.cache_for_property(root);
                 let child = deserialize_local_connection_lso_value(
                     activation,
                     item,
@@ -821,14 +835,11 @@ pub(crate) fn deserialize_local_connection_value<'gc>(
                     deferred_dates,
                 );
                 obj.set_element(activation, index as i32, child).unwrap();
-                references_before_property = references_before_property
-                    .saturating_add(count_amf0_references(item))
-                    .min(MAX_AMF0_REFERENCES);
+                reference_state.advance(item);
             }
 
             for entry in &data.elements {
-                let mut reference_cache =
-                    local_connection_reference_cache(root, references_before_property);
+                let mut reference_cache = reference_state.cache_for_property(root);
                 let child = deserialize_local_connection_lso_value(
                     activation,
                     entry.value(),
@@ -848,9 +859,7 @@ pub(crate) fn deserialize_local_connection_value<'gc>(
                     );
                 }
 
-                references_before_property = references_before_property
-                    .saturating_add(count_amf0_references(entry.value()))
-                    .min(MAX_AMF0_REFERENCES);
+                reference_state.advance(entry.value());
             }
 
             root
@@ -863,11 +872,10 @@ pub(crate) fn deserialize_local_connection_value<'gc>(
                 return Value::Undefined;
             };
             let root: Value<'gc> = obj.into();
-            let mut references_before_property = 1;
+            let mut reference_state = LocalConnectionReferenceState::new();
 
             for (index, item) in values.iter().enumerate() {
-                let mut reference_cache =
-                    local_connection_reference_cache(root, references_before_property);
+                let mut reference_cache = reference_state.cache_for_property(root);
                 let child = deserialize_local_connection_lso_value(
                     activation,
                     item,
@@ -876,9 +884,7 @@ pub(crate) fn deserialize_local_connection_value<'gc>(
                 );
                 obj.set_element(activation, index as i32, child)
                     .expect("Failed to set a dense LocalConnection array element");
-                references_before_property = references_before_property
-                    .saturating_add(count_amf0_references(item))
-                    .min(MAX_AMF0_REFERENCES);
+                reference_state.advance(item);
             }
 
             root
@@ -919,6 +925,26 @@ mod tests {
 
             Ok(())
         });
+    }
+
+    #[test]
+    fn local_connection_reference_state_keeps_sibling_indices_as_placeholders() {
+        let root = Value::Null;
+        let mut state = LocalConnectionReferenceState::new();
+
+        assert_eq!(state.cache_for_property(root).values, vec![root]);
+
+        let previous_property = AmfValue::Date {
+            id: ObjectId::INVALID,
+            data: DateValue {
+                time: 0.0,
+                timezone_or_utc: None,
+            },
+        };
+        state.advance(&previous_property);
+
+        let next_property_cache = state.cache_for_property(root);
+        assert_eq!(next_property_cache.values, vec![root, Value::Undefined]);
     }
 
     #[test]
