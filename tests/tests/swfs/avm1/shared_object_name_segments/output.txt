@@ -1,0 +1,37 @@
+"save": ok
+".save": ok
+"..save": ok
+"...": ok
+"dir/.save": ok
+"x/y/z": ok
+"": null
+"/": ok
+"/save": ok
+"save/": ok
+".": ok
+"..": ok
+"./save": ok
+"././save": ok
+"./a/b": ok
+"a/./b": ok
+"a/b/./c": ok
+"./.": ok
+"./..": ok
+"save/.": ok
+"save/..": ok
+"a/./.": ok
+"../save": null
+"dir/../save": null
+"a/b/../c": null
+"a/./../b": null
+"a//b": null
+"save" == "./save": true
+"save" == "././save": true
+"a/b" == "./a/b": true
+"a/b" == "a/./b": false
+"a/b/c" == "a/b/./c": false
+"." == "./.": true
+".." == "./..": true
+"save" == "/save": true
+"save" == "save/": false
+".save" == "save": false
