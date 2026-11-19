@@ -1,0 +1,3 @@
+before loadMovie: typeof btn object, btn._width 100, btn._height 40
+after loadMovie: typeof btn object, btn._width 100, btn._height 40
+10 frames later: typeof btn movieclip, btn._width 20, btn._height 10

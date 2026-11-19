@@ -1,0 +1,44 @@
+// loadMovie with an image, targeting a button on the timeline.
+// image.png was made with: magick -size 20x10 xc:'#3366cc' -define png:exclude-chunks=date,time -strip image.png
+Swf(
+    version: 8,
+    frame_rate: 24.0,
+    tags: [
+        FileAttributes(),
+
+        // A 100x40 pixel red rectangle.
+        Raw(code: 2, data: InlineBytes([
+            "01 00",
+            "60 00 3e 80 00 19 00",
+            "01 00 cc 33 33",
+            "00",
+            "10",
+            "13 d0 fa 1c ac 83 a2 0c 39 67 00 00",
+        ])),
+        DefineButton(
+            id: 2,
+            records: [(states: [Up, Over, Down, HitTest], character: 1, depth: 1)],
+            actions: InlineBytes(["00"]),
+        ),
+        PlaceObject2(depth: 1, character: 2, name: "btn"),
+
+        DoAction(Rascal(r#"
+            function describe(label) {
+                trace(label + ": typeof btn " + typeof(_root.btn) + ", btn._width " + _root.btn._width + ", btn._height " + _root.btn._height);
+            }
+            describe("before loadMovie");
+            loadMovie("image.png", "_root.btn");
+            describe("after loadMovie");
+            var frames = 0;
+            _root.onEnterFrame = function() {
+                frames = frames + 1;
+                if (frames == 10) {
+                    describe("10 frames later");
+                    delete _root.onEnterFrame;
+                }
+            };
+        "#)),
+        ShowFrame,
+        End,
+    ],
+)
