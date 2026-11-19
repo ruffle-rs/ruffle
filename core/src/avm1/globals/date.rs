@@ -700,3 +700,31 @@ pub fn method<'gc>(
         GET_TIME..=GET_TIMEZONE_OFFSET | SET_YEAR.. => unreachable!(), // Handled above.
     })
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::avm1::error::Error;
+    use crate::avm1::function::FunctionObject;
+    use crate::avm1::test_utils::with_avm;
+
+    #[test]
+    fn amf0_date_returns_undefined_when_native_constructor_declines() {
+        with_avm(8, |activation, _| -> Result<(), Error> {
+            let global = activation.global_object();
+            let prototype = Object::new(
+                &activation.context.strings,
+                Some(activation.prototypes().object),
+            );
+            let constructor = FunctionObject::constructor(|_, _, _| Ok(Value::Undefined), None)
+                .build(&activation.context.strings, None, Some(prototype));
+            global.set_data(istr!("Date"), constructor.into(), activation)?;
+
+            // Native constructors that cannot initialize an instance may
+            // return undefined. This is a defensive fallback not exposed by
+            // any ordinary script-defined constructor.
+            assert_eq!(from_amf0(activation, 1234.0), Value::Undefined);
+            Ok(())
+        });
+    }
+}

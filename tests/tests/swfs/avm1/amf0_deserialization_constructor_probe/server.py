@@ -27,4 +27,3 @@ def run(server_class=HTTPServer, handler_class=MyHandler):
 
 if __name__ == '__main__':
     run()
-

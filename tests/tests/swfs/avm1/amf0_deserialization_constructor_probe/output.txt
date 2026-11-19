@@ -65,4 +65,3 @@ LocalConnection.XML.root=probe
 LocalConnection.XML.toStringType=function
 LocalConnection.XML.toString=<probe id="xml-probe"><child>xml-value</child></probe>
 CONSTRUCTOR Date; phase=LocalConnection callback; argc=0
-

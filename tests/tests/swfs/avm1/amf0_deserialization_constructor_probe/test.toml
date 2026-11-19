@@ -7,4 +7,3 @@ target = "test.swf"
 scripts = ["test.as"]
 swf_version = 8
 use_network = true
-

@@ -11,4 +11,3 @@ When running under flash player, you'll need to allow the SWF to make network co
 ```
 
 where `ancestor/of/swf/path` is any path that's an ancestor of the path of `test.swf` (e.g. `/home/username/`) 
-

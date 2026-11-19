@@ -328,4 +328,3 @@ probePhase = "NetConnection call";
 netConnection.call("probe.amf0ConstructorInstantiation", responder);
 trace("AFTER NetConnection call");
 probePhase = "after NetConnection call";
-
