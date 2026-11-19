@@ -1,0 +1,4 @@
+before loadMovie: typeof btn object, btn._width 100, btn._height 40
+after loadMovie: typeof btn object, btn._width 100, btn._height 40
+child: this _level0.btn, _parent _level0, _name btn
+10 frames later: typeof btn movieclip, btn._width 30, btn._height 15
