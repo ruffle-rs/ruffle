@@ -191,58 +191,34 @@ fn net_connection_array_index(name: &str) -> Option<u32> {
     }
 }
 
-/// Serialize an array using the representation selected by its AMF0 context.
+/// Serialize a top-level array using the shared AMF0 array-writer path.
 fn serialize_array<'gc>(
     activation: &mut Activation<'_, 'gc>,
     array: Object<'gc>,
     serialization_context: SerializationContext,
 ) -> AmfValue {
-    let (keys, array_info) =
-        array_serialization_info_for_array(activation, array, serialization_context);
-    let cache_key = CacheKey::from_ptr(array.as_ptr());
     let mut writer = Amf0Writer::default();
 
-    if array_info.is_strict_array {
-        let (array_writer, _) = writer.strict_array(cache_key);
-        let mut array_writer =
-            array_writer.expect("A new top-level array must not already be cached");
-
-        for_each_array_entry(
-            activation,
-            array,
-            &keys,
-            &array_info,
-            |activation, _, value| {
-                // Root array entries retain their independent value-serialization
-                // contexts instead of sharing the root array's reference cache.
-                let value = serialize_array_element(activation, value, serialization_context);
-                array_writer.add_element("", value);
-            },
-        );
-
-        array_writer.commit("root");
-    } else {
-        // ECMA arrays preserve associative properties and, for LocalConnection,
-        // preserve sparse indices without materializing undefined holes.
-        let (array_writer, _) = writer.array(cache_key);
-        let mut array_writer =
-            array_writer.expect("A new top-level array must not already be cached");
-
-        for_each_array_entry(
-            activation,
-            array,
-            &keys,
-            &array_info,
-            |activation, name, value| {
-                let name = name.expect("ECMA array entries have property names");
-                let value = serialize_with_context(activation, value, serialization_context);
-                array_writer.add_element(&name.to_string(), value);
-            },
-        );
-
-        array_writer.set_length(array_info.length as u32);
-        array_writer.commit("root");
-    }
+    serialize_array_to_writer(
+        activation,
+        "root",
+        array,
+        &mut writer,
+        serialization_context,
+        |activation, property_name, value, array_writer| {
+            // Root array entries retain independent value-serialization contexts
+            // instead of sharing the root array's reference cache.
+            let value = if property_name.is_some() {
+                serialize_with_context(activation, value, serialization_context)
+            } else {
+                serialize_array_element(activation, value, serialization_context)
+            };
+            let property_name = property_name
+                .map(|name| name.to_string())
+                .unwrap_or_default();
+            array_writer.add_element(&property_name, value);
+        },
+    );
 
     writer
         .commit_lso("root")
@@ -250,6 +226,69 @@ fn serialize_array<'gc>(
         .next()
         .expect("Top-level AMF0 array serialization must produce one value")
         .value
+}
+
+/// Build an AMF0 array with a caller-specific child-value serializer.
+///
+/// Root arrays serialize each entry through an independent AMF-value context,
+/// while nested arrays serialize entries into the enclosing object writer.
+/// The array representation, entry traversal, length, and reference handling
+/// remain common to both paths.
+fn serialize_array_to_writer<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    name: &str,
+    array: Object<'gc>,
+    writer: &mut dyn ObjWriter<'_>,
+    serialization_context: SerializationContext,
+    mut serialize_entry: impl FnMut(
+        &mut Activation<'_, 'gc>,
+        Option<AvmString<'gc>>,
+        Value<'gc>,
+        &mut dyn ObjWriter<'_>,
+    ),
+) {
+    let (keys, array_info) =
+        array_serialization_info_for_array(activation, array, serialization_context);
+    let cache_key = CacheKey::from_ptr(array.as_ptr());
+
+    if array_info.is_strict_array {
+        let (array_writer, token) = writer.strict_array(cache_key);
+
+        if let Some(mut array_writer) = array_writer {
+            for_each_array_entry(
+                activation,
+                array,
+                &keys,
+                &array_info,
+                |activation, property_name, value| {
+                    serialize_entry(activation, property_name, value, &mut array_writer);
+                },
+            );
+            array_writer.commit(name);
+        } else {
+            writer.reference(name, token);
+        }
+    } else {
+        // ECMA arrays preserve associative properties and, for LocalConnection,
+        // preserve sparse indices without materializing undefined holes.
+        let (array_writer, token) = writer.array(cache_key);
+
+        if let Some(mut array_writer) = array_writer {
+            for_each_array_entry(
+                activation,
+                array,
+                &keys,
+                &array_info,
+                |activation, property_name, value| {
+                    serialize_entry(activation, property_name, value, &mut array_writer);
+                },
+            );
+            array_writer.set_length(array_info.length as u32);
+            array_writer.commit(name);
+        } else {
+            writer.reference(name, token);
+        }
+    }
 }
 
 /// Determine whether a LocalConnection array needs ECMA encoding to preserve
@@ -478,61 +517,33 @@ fn serialize_classified_value_to_writer<'gc>(
         Amf0ValueSerializationKind::Object { object, kind } => match kind {
             Amf0ObjectSerializationKind::DisplayObject => writer.undefined(name),
             Amf0ObjectSerializationKind::Array => {
-                let (keys, array_info) =
-                    array_serialization_info_for_array(activation, object, serialization_context);
-
-                if array_info.is_strict_array {
-                    let (aw, token) = writer.strict_array(CacheKey::from_ptr(object.as_ptr()));
-
-                    if let Some(mut aw) = aw {
-                        for_each_array_entry(
-                            activation,
-                            object,
-                            &keys,
-                            &array_info,
-                            |activation, _, value| {
-                                serialize_array_element_to_writer(
-                                    activation,
-                                    "",
-                                    value,
-                                    &mut aw,
-                                    serialization_context,
-                                );
-                            },
-                        );
-
-                        aw.commit(name);
-                    } else {
-                        writer.reference(name, token);
-                    }
-                } else {
-                    let (aw, token) = writer.array(CacheKey::from_ptr(object.as_ptr()));
-
-                    if let Some(mut aw) = aw {
-                        for_each_array_entry(
-                            activation,
-                            object,
-                            &keys,
-                            &array_info,
-                            |activation, property_name, value| {
-                                let property_name =
-                                    property_name.expect("ECMA array entries have property names");
-                                let property_name = property_name.to_utf8_lossy();
-                                serialize_value_to_writer(
-                                    activation,
-                                    property_name.as_ref(),
-                                    value,
-                                    &mut aw,
-                                    serialization_context,
-                                );
-                            },
-                        );
-                        aw.set_length(array_info.length as u32);
-                        aw.commit(name);
-                    } else {
-                        writer.reference(name, token);
-                    }
-                }
+                serialize_array_to_writer(
+                    activation,
+                    name,
+                    object,
+                    writer,
+                    serialization_context,
+                    |activation, property_name, value, array_writer| {
+                        if let Some(property_name) = property_name {
+                            let property_name = property_name.to_utf8_lossy();
+                            serialize_value_to_writer(
+                                activation,
+                                property_name.as_ref(),
+                                value,
+                                array_writer,
+                                serialization_context,
+                            );
+                        } else {
+                            serialize_array_element_to_writer(
+                                activation,
+                                "",
+                                value,
+                                array_writer,
+                                serialization_context,
+                            );
+                        }
+                    },
+                );
             }
             Amf0ObjectSerializationKind::Xml(value) => {
                 if matches!(serialization_context, SerializationContext::SharedObject) {
