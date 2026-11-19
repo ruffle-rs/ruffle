@@ -1,0 +1,6 @@
+sound.length: 1044.8979591836735
+never read: at soundComplete 1044.8979591836735, later 1044.8979591836735
+read at the start: at soundComplete 1044.8979591836735, later 1044.8979591836735
+looped twice: at soundComplete 1044.8979591836735, later 1044.8979591836735
+started at 300: at soundComplete 1044.8979591836735, later 1044.8979591836735
+stopped before reading: 0
