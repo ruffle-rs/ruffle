@@ -1,0 +1,12 @@
+--- Source Array ---
+Length: 2
+Has own index 0: false
+Index 0: inherited_zero
+Has own index 1: true
+Index 1: own_one
+--- Received Array ---
+Length: 2
+Has own index 0: true
+Index 0: inherited_zero
+Has own index 1: true
+Index 1: own_one

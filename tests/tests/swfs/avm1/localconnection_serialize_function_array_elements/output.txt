@@ -1,0 +1,20 @@
+--- Source Array ---
+Length: 2
+Index 0 type: function
+Index 1: keep
+--- Direct Array Result ---
+Length: 2
+Has own index 0: false
+Index 0 type: undefined
+Index 0: undefined
+Has own index 1: true
+Index 1 type: string
+Index 1: keep
+--- Nested Array Result ---
+Length: 2
+Has own index 0: false
+Index 0 type: undefined
+Index 0: undefined
+Has own index 1: true
+Index 1 type: string
+Index 1: keep
