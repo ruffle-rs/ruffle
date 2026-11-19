@@ -1,0 +1,6 @@
+num_frames = 1
+
+[[compilers]]
+type = "Swfasm"
+target = "test.swf"
+source = "test.swfasm"
