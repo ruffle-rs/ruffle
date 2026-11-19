@@ -5,8 +5,9 @@ use std::cell::{Cell, RefCell};
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::globals::date::Date;
+use crate::avm1::globals::object::define_listeners;
 use crate::avm1::property_decl::{DeclContext, PropertyOrder, StaticDeclarations, SystemClass};
-use crate::avm1::{NativeObject, Object, Value};
+use crate::avm1::{Attribute, NativeObject, Object, Value};
 use crate::avm1_stub;
 use crate::backend::ui::{FileDialogSelection, FileFilter};
 use crate::string::AvmString;
@@ -449,5 +450,8 @@ fn constructor<'gc>(
         activation.gc(),
         NativeObject::FileReference(FileReferenceObject::new(activation.gc())),
     );
+
+    define_listeners(activation, this, [], Attribute::empty());
+
     Ok(Value::Undefined)
 }

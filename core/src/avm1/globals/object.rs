@@ -7,7 +7,7 @@ use crate::avm1::function::ExecutionReason;
 use crate::avm1::parameters::{ParametersExt, UndefinedAs};
 use crate::avm1::property::Attribute;
 use crate::avm1::property_decl::{DeclContext, PropertyOrder, StaticDeclarations, SystemClass};
-use crate::avm1::{Object, Value};
+use crate::avm1::{ArrayBuilder, Object, Value};
 use crate::avm1_stub;
 use crate::display_object::TDisplayObject;
 use crate::string::AvmString;
@@ -309,6 +309,26 @@ fn broadcast_message<'gc>(
     } else {
         Value::Undefined
     })
+}
+
+/// Defines an own `_listeners` array on `object`, with the given listeners.
+///
+/// `AsBroadcaster.initialize` is called on the prototypes of some classes, but
+/// their instances still have their own listener array, like in Flash.
+pub fn define_listeners<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    object: Object<'gc>,
+    listeners: impl IntoIterator<Item = Value<'gc>>,
+    attributes: Attribute,
+) {
+    let listeners = ArrayBuilder::new(activation).with(listeners);
+
+    object.define_value(
+        activation.gc(),
+        istr!("_listeners"),
+        listeners.into(),
+        attributes,
+    );
 }
 
 /// Calls `method_name` on every listener in `this._listeners`, returning whether there were any.
