@@ -592,35 +592,19 @@ fn deserialize_value_inner<'gc>(
                 i32::try_from(data.length).unwrap_or(i32::MAX),
             );
 
-            let value: Value<'gc> = obj.into();
-
             // Register before deserializing children so references back to this array work.
-            reference_cache.insert(value);
+            reference_cache.insert(obj.into());
 
-            for entry in &data.elements {
-                let child = deserialize_value_inner(
+            let entries = data.elements.iter().map(Amf0ArrayEntry::Property);
+            deserialize_array_entries(activation, obj, entries, |activation, value| {
+                deserialize_value_inner(
                     activation,
-                    entry.value(),
+                    value,
                     reference_cache,
                     deserialization_context,
                     deferred_dates,
-                );
-
-                if let Some(i) = parse_canonical_array_index(from_utf8(entry.name()).as_ref()) {
-                    // An ECMA-array entry is an explicit property even when undefined.
-                    // Missing entries are not present in data.elements and remain holes.
-                    obj.set_element(activation, i, child).unwrap();
-                } else {
-                    obj.define_value(
-                        activation.gc(),
-                        AvmString::new_utf8(activation.gc(), &entry.name),
-                        child,
-                        Attribute::empty(),
-                    );
-                }
-            }
-
-            value
+                )
+            })
         }
         AmfValue::StrictArray { values, .. } => {
             let obj = ArrayBuilder::empty_with_len(
@@ -628,26 +612,22 @@ fn deserialize_value_inner<'gc>(
                 i32::try_from(values.len()).unwrap_or(i32::MAX),
             );
 
-            let value: Value<'gc> = obj.into();
-
             // Register before deserializing children so self-references work.
-            reference_cache.insert(value);
+            reference_cache.insert(obj.into());
 
-            for (i, item) in values.iter().enumerate() {
-                // Strict arrays encode every index, including undefined values.
-                // Unlike an omitted ECMA-array entry, an undefined strict-array
-                // element is an own property in Flash Player.
-                let child = deserialize_value_inner(
+            let entries = values
+                .iter()
+                .enumerate()
+                .map(|(index, value)| Amf0ArrayEntry::Dense { index, value });
+            deserialize_array_entries(activation, obj, entries, |activation, value| {
+                deserialize_value_inner(
                     activation,
-                    item,
+                    value,
                     reference_cache,
                     deserialization_context,
                     deferred_dates,
-                );
-                obj.set_element(activation, i as i32, child).unwrap();
-            }
-
-            value
+                )
+            })
         }
         AmfValue::Object { data, .. } => {
             // Deserialize Object
@@ -785,56 +765,51 @@ impl LocalConnectionReferenceState {
     }
 }
 
-/// One entry in a LocalConnection array, in wire order.
-enum LocalConnectionArrayEntry<'a> {
+/// One entry in an AMF0 array, in wire order.
+enum Amf0ArrayEntry<'a> {
     Dense { index: usize, value: &'a AmfValue },
     Property(&'a Element),
 }
 
-/// Where a decoded LocalConnection array entry should be stored.
-enum LocalConnectionArrayProperty<'a> {
+/// Where a decoded AMF0 array entry should be stored.
+enum Amf0ArrayProperty<'a> {
     Index(i32),
     Named(&'a Element),
 }
 
-/// Populate a LocalConnection array while retaining its per-sibling reference behavior.
-fn deserialize_local_connection_array<'gc, 'a>(
+/// Populate an AVM1 array using the supplied AMF0 value decoder.
+fn deserialize_array_entries<'gc, 'a>(
     activation: &mut Activation<'_, 'gc>,
     obj: Object<'gc>,
-    entries: impl Iterator<Item = LocalConnectionArrayEntry<'a>>,
-    deferred_dates: &mut Vec<DeferredAmf0Date<'gc>>,
+    entries: impl Iterator<Item = Amf0ArrayEntry<'a>>,
+    mut deserialize_value: impl FnMut(&mut Activation<'_, 'gc>, &AmfValue) -> Value<'gc>,
 ) -> Value<'gc> {
     let root: Value<'gc> = obj.into();
-    let mut reference_state = LocalConnectionReferenceState::new();
 
     for entry in entries {
         let (value, property) = match entry {
-            LocalConnectionArrayEntry::Dense { index, value } => {
-                (value, LocalConnectionArrayProperty::Index(index as i32))
+            Amf0ArrayEntry::Dense { index, value } => {
+                (value, Amf0ArrayProperty::Index(index as i32))
             }
-            LocalConnectionArrayEntry::Property(entry) => {
+            Amf0ArrayEntry::Property(entry) => {
                 let property = match parse_canonical_array_index(from_utf8(entry.name()).as_ref()) {
-                    Some(index) => LocalConnectionArrayProperty::Index(index),
-                    None => LocalConnectionArrayProperty::Named(entry),
+                    Some(index) => Amf0ArrayProperty::Index(index),
+                    None => Amf0ArrayProperty::Named(entry),
                 };
                 (entry.value(), property)
             }
         };
 
-        let mut reference_cache = reference_state.cache_for_property(root);
-        let child = deserialize_local_connection_lso_value(
-            activation,
-            value,
-            &mut reference_cache,
-            deferred_dates,
-        );
+        let child = deserialize_value(activation, value);
 
+        // Every supplied entry is explicit, even when its value is undefined.
+        // Missing ECMA-array entries are not present in the iterator and remain holes.
         match property {
-            LocalConnectionArrayProperty::Index(index) => {
+            Amf0ArrayProperty::Index(index) => {
                 obj.set_element(activation, index, child)
-                    .expect("Failed to set a LocalConnection array element");
+                    .expect("Failed to set an AMF0 array element");
             }
-            LocalConnectionArrayProperty::Named(entry) => {
+            Amf0ArrayProperty::Named(entry) => {
                 obj.define_value(
                     activation.gc(),
                     AvmString::new_utf8(activation.gc(), &entry.name),
@@ -843,11 +818,32 @@ fn deserialize_local_connection_array<'gc, 'a>(
                 );
             }
         }
-
-        reference_state.advance(value);
     }
 
     root
+}
+
+/// Populate a LocalConnection array while retaining its per-sibling reference behavior.
+fn deserialize_local_connection_array<'gc, 'a>(
+    activation: &mut Activation<'_, 'gc>,
+    obj: Object<'gc>,
+    entries: impl Iterator<Item = Amf0ArrayEntry<'a>>,
+    deferred_dates: &mut Vec<DeferredAmf0Date<'gc>>,
+) -> Value<'gc> {
+    let root: Value<'gc> = obj.into();
+    let mut reference_state = LocalConnectionReferenceState::new();
+
+    deserialize_array_entries(activation, obj, entries, |activation, value| {
+        let mut reference_cache = reference_state.cache_for_property(root);
+        let child = deserialize_local_connection_lso_value(
+            activation,
+            value,
+            &mut reference_cache,
+            deferred_dates,
+        );
+        reference_state.advance(value);
+        child
+    })
 }
 
 /// Deserialize a LocalConnection argument. Reference indices are still counted
@@ -893,11 +889,8 @@ pub(crate) fn deserialize_local_connection_value<'gc>(
                 .dense
                 .iter()
                 .enumerate()
-                .map(|(index, value)| LocalConnectionArrayEntry::Dense { index, value });
-            let property_entries = data
-                .elements
-                .iter()
-                .map(LocalConnectionArrayEntry::Property);
+                .map(|(index, value)| Amf0ArrayEntry::Dense { index, value });
+            let property_entries = data.elements.iter().map(Amf0ArrayEntry::Property);
 
             deserialize_local_connection_array(
                 activation,
@@ -917,7 +910,7 @@ pub(crate) fn deserialize_local_connection_value<'gc>(
             let entries = values
                 .iter()
                 .enumerate()
-                .map(|(index, value)| LocalConnectionArrayEntry::Dense { index, value });
+                .map(|(index, value)| Amf0ArrayEntry::Dense { index, value });
 
             deserialize_local_connection_array(activation, obj, entries, deferred_dates)
         }
