@@ -44,7 +44,10 @@
 #splash-screen,
 #message-overlay {
     position: absolute;
-    inset: 0;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
 }
 
 #container {
@@ -127,7 +130,10 @@
 
 #panic-details-modal {
     position: absolute;
-    inset: 0;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
     background: #0008;
     display: flex;
     align-items: center;
