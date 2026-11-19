@@ -1,5 +1,6 @@
 //! Management of async loaders
 
+use crate::avm1::globals::object::broadcast_internal;
 use crate::avm1::{Activation, ActivationIdentifier};
 use crate::avm1::{Attribute, Avm1};
 use crate::avm1::{ExecutionReason, NativeObject};
@@ -2634,8 +2635,6 @@ pub fn download_file_dialog<'gc>(
 
             let mut activation =
                 Activation::from_stub(uc, ActivationIdentifier::root("[File Dialog]"));
-            use crate::avm1::globals::object::broadcast_internal;
-
             match dialog_result {
                 Ok(FileDialogResult::Selection(mut selection)) => {
                     // onSelect and onOpen should be called before the download begins
@@ -2687,81 +2686,7 @@ pub fn download_file_dialog<'gc>(
                             )?;
                         }
                         Err(err) => {
-                            match err.error {
-                                Error::InvalidDomain(_) => {
-                                    activation
-                                        .context
-                                        .avm_trace(&format!("Error opening URL '{url}'"));
-
-                                    broadcast_internal(
-                                        target_object,
-                                        &[target_object.into()],
-                                        istr!("onIOError"),
-                                        &mut activation,
-                                    )?;
-                                }
-                                Error::HttpNotOk(_, _, _, body_len) => {
-                                    // If the error happens before the connection is
-                                    // established, then don't invoke onOpen
-                                    broadcast_internal(
-                                        target_object,
-                                        &[target_object.into()],
-                                        istr!("onOpen"),
-                                        &mut activation,
-                                    )?;
-
-                                    activation
-                                        .context
-                                        .avm_trace(&format!("Error opening URL '{url}'"));
-
-                                    broadcast_internal(
-                                        target_object,
-                                        &[target_object.into()],
-                                        istr!("onIOError"),
-                                        &mut activation,
-                                    )?;
-
-                                    // Flash still executes the onProgress callback, even after an error
-                                    // However it should only be called if the error occurred after the connection was established
-                                    broadcast_internal(
-                                        target_object,
-                                        &[
-                                            target_object.into(),
-                                            Value::from_u64_lossy(body_len),
-                                            Value::from_u64_lossy(body_len),
-                                        ],
-                                        istr!("onProgress"),
-                                        &mut activation,
-                                    )?;
-                                }
-                                Error::FetchError(_) => {
-                                    // If the error happens before the connection is
-                                    // established, then don't invoke onOpen
-                                    broadcast_internal(
-                                        target_object,
-                                        &[target_object.into()],
-                                        istr!("onOpen"),
-                                        &mut activation,
-                                    )?;
-
-                                    activation
-                                        .context
-                                        .avm_trace(&format!("Error opening URL '{url}'"));
-
-                                    broadcast_internal(
-                                        target_object,
-                                        &[target_object.into()],
-                                        istr!("onIOError"),
-                                        &mut activation,
-                                    )?;
-                                }
-                                _ => {
-                                    tracing::warn!(
-                                        "Unhandled non-fetch error on download: {:?}",
-                                        err.error
-                                    );
-                                }
-                            }
+                            report_download_error(&mut activation, target_object, &url, err.error)?;
                         }
                     }
                 }
@@ -2781,6 +2706,90 @@ pub fn download_file_dialog<'gc>(
             Ok(())
         })
     })
+}
+
+/// Calls the listeners of an AVM1 `FileReference` for a download that failed
+/// before receiving a response.
+fn report_download_error<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    target_object: Object<'gc>,
+    url: &str,
+    error: Error,
+) -> Result<(), Error> {
+    match error {
+        Error::InvalidDomain(_) => {
+            activation
+                .context
+                .avm_trace(&format!("Error opening URL '{url}'"));
+
+            broadcast_internal(
+                target_object,
+                &[target_object.into()],
+                istr!("onIOError"),
+                activation,
+            )?;
+        }
+        Error::HttpNotOk(_, _, _, body_len) => {
+            // If the error happens before the connection is
+            // established, then don't invoke onOpen
+            broadcast_internal(
+                target_object,
+                &[target_object.into()],
+                istr!("onOpen"),
+                activation,
+            )?;
+
+            activation
+                .context
+                .avm_trace(&format!("Error opening URL '{url}'"));
+
+            broadcast_internal(
+                target_object,
+                &[target_object.into()],
+                istr!("onIOError"),
+                activation,
+            )?;
+
+            // Flash still executes the onProgress callback, even after an error
+            // However it should only be called if the error occurred after the connection was established
+            broadcast_internal(
+                target_object,
+                &[
+                    target_object.into(),
+                    Value::from_u64_lossy(body_len),
+                    Value::from_u64_lossy(body_len),
+                ],
+                istr!("onProgress"),
+                activation,
+            )?;
+        }
+        Error::FetchError(_) => {
+            // If the error happens before the connection is
+            // established, then don't invoke onOpen
+            broadcast_internal(
+                target_object,
+                &[target_object.into()],
+                istr!("onOpen"),
+                activation,
+            )?;
+
+            activation
+                .context
+                .avm_trace(&format!("Error opening URL '{url}'"));
+
+            broadcast_internal(
+                target_object,
+                &[target_object.into()],
+                istr!("onIOError"),
+                activation,
+            )?;
+        }
+        _ => {
+            tracing::warn!("Unhandled non-fetch error on download: {:?}", error);
+        }
+    }
+
+    Ok(())
 }
 
 /// Uploads the given `data` to the provided `url`.
