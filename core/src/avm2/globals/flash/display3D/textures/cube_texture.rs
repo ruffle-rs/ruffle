@@ -8,7 +8,7 @@ use crate::avm2::globals::flash::display3D::textures::atf_jpegxr::do_compressed_
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2_stub_method;
 
-use super::texture::do_copy;
+use super::texture::{check_bitmap_data_upload, do_copy};
 
 pub fn upload_from_byte_array<'gc>(
     activation: &mut Activation<'_, 'gc>,
@@ -92,6 +92,8 @@ pub fn upload_from_bitmap_data<'gc>(
         let source_obj = args.get_object(activation, 0, "source")?;
 
         if let Some(source) = source_obj.as_bitmap_data() {
+            check_bitmap_data_upload(activation, texture)?;
+
             let side = args.get_u32(1);
             let mip_level = args.get_u32(2);
             if mip_level == 0 {

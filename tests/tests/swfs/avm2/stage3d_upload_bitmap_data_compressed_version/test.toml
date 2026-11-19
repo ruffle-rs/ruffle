@@ -1,5 +1,4 @@
 num_frames = 5
-known_failure = true
 
 [player_options]
 with_renderer = { optional = false }
