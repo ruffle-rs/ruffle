@@ -785,6 +785,71 @@ impl LocalConnectionReferenceState {
     }
 }
 
+/// One entry in a LocalConnection array, in wire order.
+enum LocalConnectionArrayEntry<'a> {
+    Dense { index: usize, value: &'a AmfValue },
+    Property(&'a Element),
+}
+
+/// Where a decoded LocalConnection array entry should be stored.
+enum LocalConnectionArrayProperty<'a> {
+    Index(i32),
+    Named(&'a Element),
+}
+
+/// Populate a LocalConnection array while retaining its per-sibling reference behavior.
+fn deserialize_local_connection_array<'gc, 'a>(
+    activation: &mut Activation<'_, 'gc>,
+    obj: Object<'gc>,
+    entries: impl Iterator<Item = LocalConnectionArrayEntry<'a>>,
+    deferred_dates: &mut Vec<DeferredAmf0Date<'gc>>,
+) -> Value<'gc> {
+    let root: Value<'gc> = obj.into();
+    let mut reference_state = LocalConnectionReferenceState::new();
+
+    for entry in entries {
+        let (value, property) = match entry {
+            LocalConnectionArrayEntry::Dense { index, value } => {
+                (value, LocalConnectionArrayProperty::Index(index as i32))
+            }
+            LocalConnectionArrayEntry::Property(entry) => {
+                let property = match parse_canonical_array_index(from_utf8(entry.name()).as_ref()) {
+                    Some(index) => LocalConnectionArrayProperty::Index(index),
+                    None => LocalConnectionArrayProperty::Named(entry),
+                };
+                (entry.value(), property)
+            }
+        };
+
+        let mut reference_cache = reference_state.cache_for_property(root);
+        let child = deserialize_local_connection_lso_value(
+            activation,
+            value,
+            &mut reference_cache,
+            deferred_dates,
+        );
+
+        match property {
+            LocalConnectionArrayProperty::Index(index) => {
+                obj.set_element(activation, index, child)
+                    .expect("Failed to set a LocalConnection array element");
+            }
+            LocalConnectionArrayProperty::Named(entry) => {
+                obj.define_value(
+                    activation.gc(),
+                    AvmString::new_utf8(activation.gc(), &entry.name),
+                    child,
+                    Attribute::empty(),
+                );
+            }
+        }
+
+        reference_state.advance(value);
+    }
+
+    root
+}
+
 /// Deserialize a LocalConnection argument. Reference indices are still counted
 /// across the argument, but values from earlier sibling properties are not
 /// carried into a later property's cache.
@@ -823,46 +888,23 @@ pub(crate) fn deserialize_local_connection_value<'gc>(
             else {
                 return Value::Undefined;
             };
-            let root: Value<'gc> = obj.into();
-            let mut reference_state = LocalConnectionReferenceState::new();
 
-            for (index, item) in data.dense.iter().enumerate() {
-                let mut reference_cache = reference_state.cache_for_property(root);
-                let child = deserialize_local_connection_lso_value(
-                    activation,
-                    item,
-                    &mut reference_cache,
-                    deferred_dates,
-                );
-                obj.set_element(activation, index as i32, child).unwrap();
-                reference_state.advance(item);
-            }
+            let dense_entries = data
+                .dense
+                .iter()
+                .enumerate()
+                .map(|(index, value)| LocalConnectionArrayEntry::Dense { index, value });
+            let property_entries = data
+                .elements
+                .iter()
+                .map(LocalConnectionArrayEntry::Property);
 
-            for entry in &data.elements {
-                let mut reference_cache = reference_state.cache_for_property(root);
-                let child = deserialize_local_connection_lso_value(
-                    activation,
-                    entry.value(),
-                    &mut reference_cache,
-                    deferred_dates,
-                );
-
-                if let Some(index) = parse_canonical_array_index(from_utf8(entry.name()).as_ref()) {
-                    obj.set_element(activation, index, child)
-                        .expect("Failed to set a sparse LocalConnection array element");
-                } else {
-                    obj.define_value(
-                        activation.gc(),
-                        AvmString::new_utf8(activation.gc(), &entry.name),
-                        child,
-                        Attribute::empty(),
-                    );
-                }
-
-                reference_state.advance(entry.value());
-            }
-
-            root
+            deserialize_local_connection_array(
+                activation,
+                obj,
+                dense_entries.chain(property_entries),
+                deferred_dates,
+            )
         }
         AmfValue::StrictArray { values, .. } => {
             let args = &[Value::from_usize_lossy(values.len())];
@@ -871,23 +913,13 @@ pub(crate) fn deserialize_local_connection_value<'gc>(
             else {
                 return Value::Undefined;
             };
-            let root: Value<'gc> = obj.into();
-            let mut reference_state = LocalConnectionReferenceState::new();
 
-            for (index, item) in values.iter().enumerate() {
-                let mut reference_cache = reference_state.cache_for_property(root);
-                let child = deserialize_local_connection_lso_value(
-                    activation,
-                    item,
-                    &mut reference_cache,
-                    deferred_dates,
-                );
-                obj.set_element(activation, index as i32, child)
-                    .expect("Failed to set a dense LocalConnection array element");
-                reference_state.advance(item);
-            }
+            let entries = values
+                .iter()
+                .enumerate()
+                .map(|(index, value)| LocalConnectionArrayEntry::Dense { index, value });
 
-            root
+            deserialize_local_connection_array(activation, obj, entries, deferred_dates)
         }
         _ => {
             let mut reference_cache = Amf0ReferenceCache::default();
@@ -1016,6 +1048,25 @@ mod tests {
             let shared_object =
                 array_serialization_info(&dense_keys, 1, SerializationContext::SharedObject, false);
             assert!(!shared_object.is_strict_array);
+
+            Ok(())
+        });
+    }
+
+    #[test]
+    fn local_connection_deserializes_strict_array_values() {
+        with_avm(8, |activation, _this| -> Result<(), Error> {
+            let value = AmfValue::StrictArray {
+                id: ObjectId::INVALID,
+                values: vec![AmfValue::Number(42.0)],
+            };
+
+            let mut deferred_dates = Vec::new();
+            let array = deserialize_local_connection_value(activation, &value, &mut deferred_dates)
+                .as_object(activation)
+                .expect("LocalConnection strict array should deserialize to an array");
+
+            assert_eq!(array.get_element(activation, 0), 42.0.into());
 
             Ok(())
         });
