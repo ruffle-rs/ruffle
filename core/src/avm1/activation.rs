@@ -650,18 +650,10 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     }
 
     fn stack_push(&mut self, mut value: Value<'gc>) {
-        if let Value::Object(obj) = value {
-            // Note that there currently exists a subtle issue with this logic:
-            // If the cached `Object` in a `MovieClipReference` becomes invalidated, causing it to switch back to path-based object resolution,
-            // it should *never* switch back to cache-based resolution
-            // However, currently if a `MovieClipReference` in this invalidated-cache state is converted back to an `Object`, such as when passed as an argument to a function,
-            // if it pushed back onto the stack then it will be converted into a new `MovieClipReference`, causing it to switch back to cache-based resolution
-            // Fixing this will require a thorough refactor of AVM1 to store `Either<MovieClipReference, Object>
-            // can refer to a MovieClip
-            // There is a ignored test for this issue of "reference laundering" at "avm1/string_paths_reference_launder"
-            if let Some(mcr) = MovieClipReference::try_from_stage_object(self, obj) {
-                value = Value::MovieClip(mcr);
-            }
+        if let Value::Object(obj) = value
+            && let Some(mcr) = MovieClipReference::try_from_stage_object(self, obj)
+        {
+            value = Value::MovieClip(mcr);
         }
 
         self.context.avm1.push(value);
@@ -669,11 +661,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
     fn pop_call_args(&mut self, num_args: usize) -> Vec<Value<'gc>> {
         (0..num_args.min(self.context.avm1.stack_len()))
-            .map(|_| {
-                let arg = self.context.avm1.pop();
-                // Unwrap MovieClipReferences, if possible.
-                arg.as_object(self).map(Value::from).unwrap_or(arg)
-            })
+            .map(|_| self.context.avm1.pop())
             .collect()
     }
 
@@ -2610,7 +2598,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         allow_empty: bool,
     ) -> Result<Option<DisplayObject<'gc>>, Error<'gc>> {
         // If the value you got was a display object, we can just toss it straight back.
-        if let Value::Object(o) = target
+        if let Some(o) = target.as_object(self)
             && let Some(o) = o.as_display_object()
         {
             return Ok(Some(o));
