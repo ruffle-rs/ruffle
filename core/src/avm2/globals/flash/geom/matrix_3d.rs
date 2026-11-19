@@ -5,7 +5,6 @@ use crate::avm2::object::{Matrix3DObject, VectorObject};
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::vector::VectorStorage;
 use crate::avm2::{Activation, Avm2StrRepresentable as _, Error, Object, TObject as _, Value};
-use crate::avm2_stub_method;
 use num_traits::Zero;
 use ruffle_macros::Avm2Enum;
 use ruffle_render::matrix3d::Matrix3D;
@@ -708,17 +707,6 @@ pub fn recompose<'gc>(
         return Err(make_error_2187(activation, orientation));
     };
 
-    if orientation == Orientation3D::Quaternion {
-        // Flash rejects quaternions that aren't unit ones with an
-        // ArgumentError, which we don't reproduce yet.
-        avm2_stub_method!(
-            activation,
-            "flash.geom.Matrix3D",
-            "recompose",
-            "Orientation3D.QUATERNION"
-        );
-    }
-
     // A null component makes 'recompose' fail, leaving the matrix untouched.
     let (Some(translation), Some(rotation), Some(scale)) = (
         read_vector3d_value(components.get_optional(0)),
@@ -735,43 +723,83 @@ pub fn recompose<'gc>(
     let mut rotation_matrix = [0.0; 16];
     match orientation {
         Orientation3D::EulerAngles => {
-            let cx = rotation_x.cos();
-            let cy = rotation_y.cos();
-            let cz = rotation_z.cos();
-            let sx = rotation_x.sin();
-            let sy = rotation_y.sin();
-            let sz = rotation_z.sin();
+            // Flash Player calculates Euler angle rotations at f32 precision,
+            // apart from the sines and cosines, which it calculates at f64
+            // precision.
+            let sin_cos = |angle: f64| {
+                let (sin, cos) = f64::from(angle as f32).sin_cos();
+                (sin as f32, cos as f32)
+            };
+            let (sx, cx) = sin_cos(rotation_x);
+            let (sy, cy) = sin_cos(rotation_y);
+            let (sz, cz) = sin_cos(rotation_z);
+            let sy_cz = sy * cz;
+            let sy_sz = sy * sz;
 
-            rotation_matrix[0] = cy * cz;
-            rotation_matrix[1] = cy * sz;
-            rotation_matrix[2] = -sy;
-            rotation_matrix[4] = sx * sy * cz - cx * sz;
-            rotation_matrix[5] = sx * sy * sz + cx * cz;
-            rotation_matrix[6] = sx * cy;
-            rotation_matrix[8] = cx * sy * cz + sx * sz;
-            rotation_matrix[9] = cx * sy * sz - sx * cz;
-            rotation_matrix[10] = cx * cy;
+            rotation_matrix[0] = (cy * cz).into();
+            rotation_matrix[1] = (cy * sz).into();
+            rotation_matrix[2] = (-sy).into();
+            rotation_matrix[4] = (sx * sy_cz - cx * sz).into();
+            rotation_matrix[5] = (sx * sy_sz + cx * cz).into();
+            rotation_matrix[6] = (sx * cy).into();
+            rotation_matrix[8] = (cx * sy_cz + sx * sz).into();
+            rotation_matrix[9] = (cx * sy_sz - sx * cz).into();
+            rotation_matrix[10] = (cx * cy).into();
         }
 
-        Orientation3D::AxisAngle | Orientation3D::Quaternion => {
-            let (mut x, mut y, mut z, mut w) = (rotation_x, rotation_y, rotation_z, rotation_w);
+        Orientation3D::AxisAngle => {
+            // Flash Player normalizes the axis at f32 precision, scaling the
+            // angle along with it, and calculates the rotation from that at
+            // f64 precision.
+            let [mut x, mut y, mut z, mut angle] =
+                [rotation_x, rotation_y, rotation_z, rotation_w].map(|f| f as f32);
 
-            if orientation == Orientation3D::AxisAngle {
-                x *= (w / 2.0).sin();
-                y *= (w / 2.0).sin();
-                z *= (w / 2.0).sin();
-                w = (w / 2.0).cos();
+            let length_squared = x * x + y * y + z * z;
+            if length_squared != 0.0 {
+                let inverse_length = (1.0 / f64::from(length_squared).sqrt()) as f32;
+                x *= inverse_length;
+                y *= inverse_length;
+                z *= inverse_length;
+                angle *= inverse_length;
             }
 
-            rotation_matrix[0] = 1.0 - 2.0 * y * y - 2.0 * z * z;
-            rotation_matrix[1] = 2.0 * x * y + 2.0 * w * z;
-            rotation_matrix[2] = 2.0 * x * z - 2.0 * w * y;
-            rotation_matrix[4] = 2.0 * x * y - 2.0 * w * z;
-            rotation_matrix[5] = 1.0 - 2.0 * x * x - 2.0 * z * z;
-            rotation_matrix[6] = 2.0 * y * z + 2.0 * w * x;
-            rotation_matrix[8] = 2.0 * x * z + 2.0 * w * y;
-            rotation_matrix[9] = 2.0 * y * z - 2.0 * w * x;
-            rotation_matrix[10] = 1.0 - 2.0 * x * x - 2.0 * y * y;
+            let (sin, cos) = f64::from(angle).sin_cos();
+            let t = 1.0 - cos;
+            let [xx, yy, zz, xy, xz, yz] =
+                [x * x, y * y, z * z, x * y, x * z, y * z].map(f64::from);
+            let [x, y, z] = [x, y, z].map(f64::from);
+
+            rotation_matrix[0] = xx * t + cos;
+            rotation_matrix[1] = xy * t + z * sin;
+            rotation_matrix[2] = xz * t - y * sin;
+            rotation_matrix[4] = xy * t - z * sin;
+            rotation_matrix[5] = yy * t + cos;
+            rotation_matrix[6] = yz * t + x * sin;
+            rotation_matrix[8] = xz * t + y * sin;
+            rotation_matrix[9] = yz * t - x * sin;
+            rotation_matrix[10] = zz * t + cos;
+        }
+
+        Orientation3D::Quaternion => {
+            // Flash Player calculates quaternion rotations at f32 precision.
+            let [x, y, z, w] = [rotation_x, rotation_y, rotation_z, rotation_w].map(|f| f as f32);
+
+            // Quaternions that aren't unit ones (or aren't finite) are
+            // rejected, leaving the matrix untouched.
+            let length_squared = w * w + x * x + y * y + z * z;
+            if !(0.99999..=1.00001).contains(&length_squared) {
+                return Err(make_error_2004(activation, Error2004Type::ArgumentError));
+            }
+
+            rotation_matrix[0] = (1.0 - 2.0 * (y * y + z * z)).into();
+            rotation_matrix[1] = (2.0 * x * y + 2.0 * w * z).into();
+            rotation_matrix[2] = (2.0 * x * z - 2.0 * w * y).into();
+            rotation_matrix[4] = (2.0 * x * y - 2.0 * w * z).into();
+            rotation_matrix[5] = (1.0 - 2.0 * (x * x + z * z)).into();
+            rotation_matrix[6] = (2.0 * y * z + 2.0 * w * x).into();
+            rotation_matrix[8] = (2.0 * x * z + 2.0 * w * y).into();
+            rotation_matrix[9] = (2.0 * y * z - 2.0 * w * x).into();
+            rotation_matrix[10] = (1.0 - 2.0 * (x * x + y * y)).into();
         }
     }
     rotation_matrix[15] = 1.0;
