@@ -1,0 +1,19 @@
+num_ticks = 5
+known_failure = true
+
+[player_options]
+with_renderer = { optional = false }
+
+[[compilers]]
+type = "Asc"
+target = "test.swf"
+class = "Test"
+scripts = ["Test.as", "Uploads.as"]
+swf_version = 16
+
+[[compilers]]
+type = "Asc"
+target = "child.swf"
+class = "Child"
+scripts = ["Child.as", "Uploads.as"]
+swf_version = 17
