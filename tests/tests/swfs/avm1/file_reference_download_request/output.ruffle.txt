@@ -1,0 +1,19 @@
+// download 0
+download() returned true
+Navigator::fetch:
+  URL: http://localhost:8000/download.txt?debug-chunk-size=16
+  Method: GET
+onSelect(debug-success.txt)
+onOpen(debug-success.txt)
+onProgress(debug-success.txt, 40, 40)
+onComplete(debug-success.txt)
+// download 1 with postData
+download() returned true
+Navigator::fetch:
+  URL: http://localhost:8000/download.txt?debug-chunk-size=16
+  Method: GET
+onSelect(debug-success.txt)
+onOpen(debug-success.txt)
+onProgress(debug-success.txt, 40, 40)
+onComplete(debug-success.txt)
+// done
