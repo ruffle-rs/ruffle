@@ -18,10 +18,6 @@ CONSTRUCTOR XML; phase=after NetConnection call; argc=1
 CONSTRUCTOR XML; arg0=<probe id="xml-probe"><child>xml-value</child></probe>
 CONSTRUCTOR Date; phase=after NetConnection call; argc=1
 CONSTRUCTOR Date; arg0=1234567890000
-CONSTRUCTOR Array; phase=after NetConnection call; argc=1
-CONSTRUCTOR Array; arg0=1
-CONSTRUCTOR Array; phase=after NetConnection call; argc=1
-CONSTRUCTOR Array; arg0=2
 CALLBACK LocalConnection
 ========== LocalConnection ==========
 LocalConnection.StrictArray.type=object
@@ -32,5 +28,42 @@ LocalConnection.StrictArray.probePrototype=Array prototype
 LocalConnection.StrictArray.constructorIsProbe=true
 LocalConnection.StrictArray.instanceofOriginal=true
 LocalConnection.StrictArray.probeArgument=undefined
-ARRAY PROTOTYPE LENGTH GETTER; phase=LocalConnection callback
+LocalConnection.StrictArray.length=2
+LocalConnection.StrictArray[0]=strict-zero
+LocalConnection.StrictArray[1]=strict-one
+LocalConnection.StrictArray.extra=undefined
+LocalConnection.ECMAArray.type=object
+LocalConnection.ECMAArray.isNull=false
+LocalConnection.ECMAArray.isUndefined=false
+LocalConnection.ECMAArray.probeConstructor=undefined
+LocalConnection.ECMAArray.probePrototype=Array prototype
+LocalConnection.ECMAArray.constructorIsProbe=true
+LocalConnection.ECMAArray.instanceofOriginal=true
+LocalConnection.ECMAArray.probeArgument=undefined
+LocalConnection.ECMAArray.length=1
+LocalConnection.ECMAArray[0]=ecma-zero
+LocalConnection.ECMAArray[1]=undefined
+LocalConnection.ECMAArray.extra=ecma-extra
+LocalConnection.Date.type=object
+LocalConnection.Date.isNull=false
+LocalConnection.Date.isUndefined=false
+LocalConnection.Date.probeConstructor=undefined
+LocalConnection.Date.probePrototype=Date prototype
+LocalConnection.Date.constructorIsProbe=true
+LocalConnection.Date.instanceofOriginal=true
+LocalConnection.Date.probeArgument=undefined
+LocalConnection.Date.getTimeType=function
+LocalConnection.Date.isNativeDate=true
+LocalConnection.Date.getTime=undefined
+LocalConnection.XML.type=object
+LocalConnection.XML.isNull=false
+LocalConnection.XML.isUndefined=false
+LocalConnection.XML.probeConstructor=undefined
+LocalConnection.XML.probePrototype=XML prototype
+LocalConnection.XML.constructorIsProbe=true
+LocalConnection.XML.instanceofOriginal=true
+LocalConnection.XML.probeArgument=undefined
+LocalConnection.XML.firstChildType=undefined
+LocalConnection.XML.toStringType=function
+LocalConnection.XML.toString=
 
