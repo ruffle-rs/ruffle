@@ -168,13 +168,17 @@ fn serialize_array<'gc>(
 ) -> AmfValue {
     let length = array.length(activation).unwrap_or(0).max(0) as usize;
     let keys = array.get_keys(activation, false);
-    let array_info = array_serialization_info(&keys, length, serialization_context);
+    let requires_ecma_encoding =
+        matches!(serialization_context, SerializationContext::LocalConnection)
+            && array_requires_ecma_encoding(activation, array, &keys);
+    let array_info =
+        array_serialization_info(&keys, length, serialization_context, requires_ecma_encoding);
 
     if array_info.is_strict_array {
         let mut dense = Vec::with_capacity(array_info.length);
         for i in 0..array_info.length {
-            let prop_value = array.get_element(activation, i as i32);
-            dense.push(serialize_with_context(
+            let prop_value = array_element_for_serialization(activation, array, i);
+            dense.push(serialize_array_element(
                 activation,
                 prop_value,
                 serialization_context,
@@ -189,11 +193,17 @@ fn serialize_array<'gc>(
         // preserve sparse indices without materializing undefined holes.
         let mut elements = Vec::with_capacity(keys.len());
         for key in keys.into_iter().rev() {
-            let prop_value = array.get(key, activation).unwrap_or(Value::Undefined);
-            elements.push(Element::new(
-                key.to_string(),
-                serialize_with_context(activation, prop_value, serialization_context),
-            ));
+            let prop_value = array
+                .get_stored_property(activation, key)
+                .unwrap_or(Value::Undefined);
+
+            if matches!(prop_value, Value::Object(object) if object.as_function().is_some()) {
+                // Functions are omitted from ECMA arrays, leaving their indices as holes.
+                continue;
+            }
+
+            let value = serialize_with_context(activation, prop_value, serialization_context);
+            elements.push(Element::new(key.to_string(), value));
         }
         AmfValue::ECMAArray {
             id: ObjectId::INVALID,
@@ -203,6 +213,53 @@ fn serialize_array<'gc>(
                 length: array_info.length as u32,
             },
         }
+    }
+}
+
+/// Determine whether a LocalConnection array needs ECMA encoding to preserve
+/// entries that would otherwise be indistinguishable from holes in a strict array.
+fn array_requires_ecma_encoding<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    array: Object<'gc>,
+    keys: &[AvmString<'gc>],
+) -> bool {
+    keys.iter().any(|key| {
+        let value = array
+            .get_stored_property(activation, *key)
+            .unwrap_or(Value::Undefined);
+        matches!(value, Value::Undefined | Value::MovieClip(_))
+            || matches!(
+                value,
+                Value::Object(object)
+                    if object.as_function().is_some() || object.as_display_object().is_some()
+            )
+    })
+}
+
+/// Retrieve an array index without invoking getters.
+fn array_element_for_serialization<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    array: Object<'gc>,
+    index: usize,
+) -> Value<'gc> {
+    let name = AvmString::new_utf8(activation.gc(), index.to_string());
+    array
+        .get_stored_property(activation, name)
+        .unwrap_or(Value::Undefined)
+}
+
+/// Serialize an array element. Unlike an ordinary object property, a
+/// function-valued array element occupies an index and therefore becomes
+/// undefined instead of being omitted.
+fn serialize_array_element<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    value: Value<'gc>,
+    serialization_context: SerializationContext,
+) -> AmfValue {
+    if matches!(value, Value::Object(object) if object.as_function().is_some()) {
+        AmfValue::Undefined
+    } else {
+        serialize_with_context(activation, value, serialization_context)
     }
 }
 
@@ -233,6 +290,7 @@ fn array_serialization_info(
     keys: &[AvmString],
     mut length: usize,
     serialization_context: SerializationContext,
+    force_ecma_array: bool,
 ) -> ArraySerializationInfo {
     let is_strict_array = match serialization_context {
         SerializationContext::SharedObject => {
@@ -248,7 +306,8 @@ fn array_serialization_info(
 
             // LocalConnection preserves holes and noncanonical numeric-looking
             // property names, so only genuinely dense arrays use strict encoding.
-            keys.len() == length
+            !force_ecma_array
+                && keys.len() == length
                 && keys.iter().all(|key| {
                     parse_canonical_array_index(key.as_wstr())
                         .is_some_and(|index| (index as usize) < length)
@@ -284,6 +343,21 @@ fn array_serialization_info(
     }
 }
 
+/// Serialize an array element while preserving its index if it is a function.
+fn serialize_array_element_to_writer<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    name: &str,
+    elem: Value<'gc>,
+    writer: &mut dyn ObjWriter<'_>,
+    serialization_context: SerializationContext,
+) {
+    if matches!(elem, Value::Object(object) if object.as_function().is_some()) {
+        writer.undefined(name);
+    } else {
+        serialize_value_to_writer(activation, name, elem, writer, serialization_context);
+    }
+}
+
 /// Helper to serialize a specific value into the ObjWriter cache architecture.
 fn serialize_value_to_writer<'gc>(
     activation: &mut Activation<'_, 'gc>,
@@ -301,15 +375,23 @@ fn serialize_value_to_writer<'gc>(
             } else if o.is_native_array() {
                 let length = o.length(activation).unwrap_or(0).max(0) as usize;
                 let keys = o.get_keys(activation, false);
-                let array_info = array_serialization_info(&keys, length, serialization_context);
+                let requires_ecma_encoding =
+                    matches!(serialization_context, SerializationContext::LocalConnection)
+                        && array_requires_ecma_encoding(activation, o, &keys);
+                let array_info = array_serialization_info(
+                    &keys,
+                    length,
+                    serialization_context,
+                    requires_ecma_encoding,
+                );
 
                 if array_info.is_strict_array {
                     let (aw, token) = writer.strict_array(CacheKey::from_ptr(o.as_ptr()));
 
                     if let Some(mut aw) = aw {
                         for i in 0..array_info.length {
-                            let prop_value = o.get_element(activation, i as i32);
-                            serialize_value_to_writer(
+                            let prop_value = array_element_for_serialization(activation, o, i);
+                            serialize_array_element_to_writer(
                                 activation,
                                 "",
                                 prop_value,
@@ -512,6 +594,8 @@ fn deserialize_value_inner<'gc>(
                 );
 
                 if let Some(i) = parse_canonical_array_index(from_utf8(entry.name()).as_ref()) {
+                    // An ECMA-array entry is an explicit property even when undefined.
+                    // Missing entries are not present in data.elements and remain holes.
                     obj.set_element(activation, i, child).unwrap();
                 } else {
                     obj.define_value(
@@ -553,6 +637,9 @@ fn deserialize_value_inner<'gc>(
             reference_cache.insert(value);
 
             for (i, item) in values.iter().enumerate() {
+                // Strict arrays encode every index, including undefined values.
+                // Unlike an omitted ECMA-array entry, an undefined strict-array
+                // element is an own property in Flash Player.
                 let child = deserialize_value_inner(
                     activation,
                     item,
@@ -815,41 +902,70 @@ mod tests {
     fn array_serialization_info_applies_transport_specific_rules() {
         with_avm(8, |activation, _this| -> Result<(), Error> {
             let dense_keys = vec![AvmString::new_utf8(activation.gc(), "0")];
-            let dense =
-                array_serialization_info(&dense_keys, 0, SerializationContext::LocalConnection);
+            let dense = array_serialization_info(
+                &dense_keys,
+                0,
+                SerializationContext::LocalConnection,
+                false,
+            );
             assert!(dense.is_strict_array);
             assert_eq!(dense.length, 1);
+
+            let dense_with_explicit_undefined = array_serialization_info(
+                &dense_keys,
+                1,
+                SerializationContext::LocalConnection,
+                true,
+            );
+            assert!(!dense_with_explicit_undefined.is_strict_array);
+            assert_eq!(dense_with_explicit_undefined.length, 1);
 
             let sparse_keys = vec![
                 AvmString::new_utf8(activation.gc(), "0"),
                 AvmString::new_utf8(activation.gc(), "3"),
             ];
-            let local_connection =
-                array_serialization_info(&sparse_keys, 4, SerializationContext::LocalConnection);
+            let local_connection = array_serialization_info(
+                &sparse_keys,
+                4,
+                SerializationContext::LocalConnection,
+                false,
+            );
             assert!(!local_connection.is_strict_array);
             assert_eq!(local_connection.length, 4);
 
-            let net_connection =
-                array_serialization_info(&sparse_keys, 4, SerializationContext::NetConnection);
+            let net_connection = array_serialization_info(
+                &sparse_keys,
+                4,
+                SerializationContext::NetConnection,
+                false,
+            );
             assert!(net_connection.is_strict_array);
             assert_eq!(net_connection.length, 4);
 
             let custom_keys = vec![AvmString::new_utf8(activation.gc(), "+1")];
-            let net_connection_custom =
-                array_serialization_info(&custom_keys, 0, SerializationContext::NetConnection);
+            let net_connection_custom = array_serialization_info(
+                &custom_keys,
+                0,
+                SerializationContext::NetConnection,
+                false,
+            );
             assert!(!net_connection_custom.is_strict_array);
 
             let mixed_keys = vec![
                 AvmString::new_utf8(activation.gc(), "2147483648"),
                 AvmString::new_utf8(activation.gc(), "4294967296"),
             ];
-            let net_connection_mixed =
-                array_serialization_info(&mixed_keys, 1, SerializationContext::NetConnection);
+            let net_connection_mixed = array_serialization_info(
+                &mixed_keys,
+                1,
+                SerializationContext::NetConnection,
+                false,
+            );
             assert!(!net_connection_mixed.is_strict_array);
             assert_eq!(net_connection_mixed.length, 1);
 
             let shared_object =
-                array_serialization_info(&dense_keys, 1, SerializationContext::SharedObject);
+                array_serialization_info(&dense_keys, 1, SerializationContext::SharedObject, false);
             assert!(!shared_object.is_strict_array);
 
             Ok(())
