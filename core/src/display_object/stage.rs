@@ -88,6 +88,9 @@ pub struct StageData<'gc> {
     /// identity matrix unless explicitly set from ActionScript)
     viewport_matrix: Cell<Matrix>,
 
+    /// How many times the stage has been drawn.
+    render_count: Cell<u32>,
+
     /// Matrix used for rendering the letterbox.
     ///
     /// It represents the transformation of the whole window into the
@@ -187,6 +190,7 @@ impl<'gc> Stage<'gc> {
                 stage3ds: RefLock::new(vec![]),
                 movie: Lock::new(movie),
                 viewport_matrix: Cell::new(Matrix::IDENTITY),
+                render_count: Cell::new(0),
                 letterbox_matrix: Cell::new(Matrix::IDENTITY),
                 focus_tracker: FocusTracker::new(gc_context),
             },
@@ -210,6 +214,10 @@ impl<'gc> Stage<'gc> {
             .get()
             .inverse()
             .unwrap_or(Matrix::ZERO)
+    }
+
+    pub fn render_count(self) -> u32 {
+        self.0.render_count.get()
     }
 
     pub fn view_matrix(self) -> Matrix {
@@ -621,6 +629,8 @@ impl<'gc> Stage<'gc> {
     /// You can easily observe the difference between render_viewport and render
     /// in FP by checking which stuff can be rendered using `BitmapData.draw`.
     pub fn render_viewport(self, context: &mut RenderContext<'_, 'gc>) {
+        let count = &self.0.render_count;
+        count.set(count.get().wrapping_add(1));
         context.transform_stack.push(&Transform {
             matrix: self.0.viewport_matrix.get(),
             color_transform: Default::default(),

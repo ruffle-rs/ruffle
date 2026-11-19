@@ -269,6 +269,8 @@ pub struct DisplayObjectBase<'gc> {
     // The transform of this display object.
     // (Split into several fields for easier access)
     matrix: Cell<Matrix>,
+    /// When this object was last drawn (`Stage::render_count`), and its matrix then.
+    drawn: Cell<Option<(u32, Matrix)>>,
     color_transform: Cell<ColorTransform>,
     perspective_projection: Cell<Option<PerspectiveProjection>>,
     tz: Cell<f64>,
@@ -346,6 +348,7 @@ impl Default for DisplayObjectBase<'_> {
             name: Lock::new(None),
             clip_depth: Default::default(),
             matrix: Default::default(),
+            drawn: Default::default(),
             color_transform: Default::default(),
             perspective_projection: Default::default(),
             tz: Cell::new(0.0),
@@ -1549,6 +1552,33 @@ pub trait TDisplayObject<'gc>:
     #[no_dynamic]
     fn global_to_local_matrix(self) -> Option<Matrix> {
         self.local_to_global_matrix().inverse()
+    }
+
+    /// Called when this object is drawn (on screen or into a bitmap): remembers its
+    /// local-to-global matrix. Like Flash, fully transparent or off-stage objects
+    /// don't count as drawn.
+    #[no_dynamic]
+    fn record_drawn(self, context: &RenderContext<'_, 'gc>) {
+        let matrix = self.local_to_global_matrix();
+        let bounds = matrix * self.self_bounds(BoundsMode::Engine);
+        let on_stage = bounds.intersects(&context.stage.view_bounds());
+        let alpha = context.transform_stack.transform().color_transform;
+        let transparent = alpha.a_multiply == Fixed8::ZERO && alpha.a_add <= 0;
+        if on_stage && !transparent {
+            let render = context.stage.render_count();
+            self.base().drawn.set(Some((render, matrix)));
+        }
+    }
+
+    /// Like `global_to_local_matrix`, but uses the matrix from when this object was
+    /// last drawn, if it was drawn in or after the latest render. This matches how
+    /// Flash hit tests shapes.
+    #[no_dynamic]
+    fn drawn_global_to_local_matrix(self, context: &UpdateContext<'gc>) -> Option<Matrix> {
+        match self.base().drawn.get() {
+            Some((render, matrix)) if render == context.stage.render_count() => matrix.inverse(),
+            _ => self.global_to_local_matrix(),
+        }
     }
 
     /// Converts a local position to a global stage position
