@@ -393,6 +393,12 @@ pub trait TDisplayObjectContainer<'gc>:
                 //that unloaded AVM1 clips see their parents, while AVM2 clips
                 //don't.
                 child.set_parent(context, None);
+
+                // Flash Player clears the focus of a removed object
+                // without dispatching any focus events.
+                if let Some(int) = child.as_interactive() {
+                    int.drop_focus_without_events(context);
+                }
             }
 
             let this: DisplayObject<'_> = this.into();

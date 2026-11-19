@@ -636,6 +636,15 @@ pub trait TInteractiveObject<'gc>:
         }
     }
 
+    /// If this object has focus, this method drops it without dispatching focus events.
+    #[no_dynamic]
+    fn drop_focus_without_events(self, context: &mut UpdateContext<'gc>) {
+        if self.has_focus() {
+            let tracker = context.focus_tracker;
+            tracker.clear_without_events(context);
+        }
+    }
+
     #[no_dynamic]
     fn call_focus_handler(
         self,

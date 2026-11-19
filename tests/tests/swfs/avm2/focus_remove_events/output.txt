@@ -1,0 +1,41 @@
+===== removeChild of the focused button
+  focusIn on b, relatedObject: null, focus: b
+Focus set: b
+  removed on b, focus: b
+  removedFromStage on b, focus: b
+After: null
+Cleanup
+===== removeChildAt of the focused button
+  focusIn on b, relatedObject: null, focus: b
+Focus set: b
+  removed on b, focus: b
+  removedFromStage on b, focus: b
+After: null
+Cleanup
+===== removeChildren on the focused button's parent
+  focusIn on b, relatedObject: null, focus: b
+Focus set: b
+  removed on b, focus: b
+  removedFromStage on b, focus: b
+After: null
+Cleanup
+===== removeChild of a focused input text field
+  focusIn on t, relatedObject: null, focus: t
+Focus set: t
+  removed on t, focus: t
+  removedFromStage on t, focus: t
+After: null
+Cleanup
+===== removeChild of a focused sprite
+  focusIn on s, relatedObject: null, focus: s
+Focus set: s
+  removed on s, focus: s
+  removedFromStage on s, focus: s
+After: null
+Cleanup
+===== removeChild of a focused button from an off-stage parent
+  focusIn on b, relatedObject: null, focus: b
+Focus set: b
+  removed on b, focus: b
+After: null
+Cleanup

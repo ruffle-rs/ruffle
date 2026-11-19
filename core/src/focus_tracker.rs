@@ -97,6 +97,24 @@ impl<'gc> FocusTracker<'gc> {
         self.set_internal(None, context, true);
     }
 
+    /// Clear the focus without dispatching any focus events.
+    ///
+    /// Flash Player does this when the focused object is removed from its parent.
+    pub fn clear_without_events(&self, context: &mut UpdateContext<'gc>) {
+        let Some(old) = self.0.focus.get() else {
+            return;
+        };
+
+        let focus = unlock!(Gc::write(context.gc(), self.0), FocusTrackerData, focus);
+        focus.set(None);
+        self.update_highlight(context);
+
+        old.set_has_focus(false);
+        old.on_focus_changed(context, false, None);
+
+        self.update_virtual_keyboard(context);
+    }
+
     /// Set the focus and acknowledge that this change was caused by a pointer device.
     pub fn set_by_mouse(
         &self,

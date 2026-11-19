@@ -1959,10 +1959,6 @@ pub trait TDisplayObject<'gc>:
         let parent_removed = had_parent && parent.is_none();
 
         if parent_removed {
-            if let Some(int) = self.as_interactive() {
-                int.drop_focus(context);
-            }
-
             self.on_parent_removed(context);
         }
     }
