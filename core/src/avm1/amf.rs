@@ -95,36 +95,60 @@ fn serialize_primitive_value(value: Value<'_>) -> AmfValue {
     }
 }
 
+/// The AVM0 representation of an AVM1 object before backend-specific writing.
+enum Amf0ObjectSerializationKind {
+    DisplayObject,
+    Array,
+    Xml(String),
+    Date(f64),
+    Object(Option<String>),
+}
+
+/// Classify an AVM1 object once for either AMF-value or object-writer serialization.
+fn classify_amf0_object<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    object: Object<'gc>,
+) -> Amf0ObjectSerializationKind {
+    if object.as_display_object().is_some() {
+        Amf0ObjectSerializationKind::DisplayObject
+    } else if object.is_native_array() {
+        Amf0ObjectSerializationKind::Array
+    } else if let Some(xml_node) = object.as_xml_node() {
+        let string = xml_node
+            .into_string(activation)
+            .expect("Failed to convert xml to string in SharedObject");
+        Amf0ObjectSerializationKind::Xml(string.to_utf8_lossy().into_owned())
+    } else if let NativeObject::Date(date) = object.native() {
+        Amf0ObjectSerializationKind::Date(date.get().time())
+    } else {
+        Amf0ObjectSerializationKind::Object(object_class_name(activation, object))
+    }
+}
+
 fn serialize_with_context<'gc>(
     activation: &mut Activation<'_, 'gc>,
     value: Value<'gc>,
     serialization_context: SerializationContext,
 ) -> AmfValue {
     match value {
-        Value::Object(object) => {
-            if object.as_display_object().is_some() {
-                AmfValue::Undefined
-            } else if object.is_native_array() {
+        Value::Object(object) => match classify_amf0_object(activation, object) {
+            Amf0ObjectSerializationKind::DisplayObject => AmfValue::Undefined,
+            Amf0ObjectSerializationKind::Array => {
                 serialize_array(activation, object, serialization_context)
-            } else if let Some(xml_node) = object.as_xml_node() {
-                let string = xml_node
-                    .into_string(activation)
-                    .expect("Failed to convert xml to string in SharedObject");
-                AmfValue::XML {
-                    value: string.to_utf8_lossy().into_owned(),
-                    is_string: true,
-                }
-            } else if let NativeObject::Date(date) = object.native() {
-                AmfValue::Date {
-                    id: ObjectId::INVALID,
-                    data: DateValue {
-                        time: date.get().time(),
-                        timezone_or_utc: None,
-                    },
-                }
-            } else {
-                let class_def =
-                    object_class_name(activation, object).map(ClassDefinition::default_with_name);
+            }
+            Amf0ObjectSerializationKind::Xml(value) => AmfValue::XML {
+                value,
+                is_string: true,
+            },
+            Amf0ObjectSerializationKind::Date(time) => AmfValue::Date {
+                id: ObjectId::INVALID,
+                data: DateValue {
+                    time,
+                    timezone_or_utc: None,
+                },
+            },
+            Amf0ObjectSerializationKind::Object(class_name) => {
+                let class_def = class_name.map(ClassDefinition::default_with_name);
                 let elements =
                     serialize_object_properties(activation, object, serialization_context);
                 AmfValue::Object {
@@ -135,7 +159,7 @@ fn serialize_with_context<'gc>(
                     },
                 }
             }
-        }
+        },
         value => serialize_primitive_value(value),
     }
 }
@@ -426,112 +450,107 @@ fn serialize_value_to_writer<'gc>(
         Value::Object(o) => {
             if o.as_function().is_some() {
                 // Flash entirely skips functions during object serialization.
-            } else if o.as_display_object().is_some() {
-                writer.undefined(name)
-            } else if o.is_native_array() {
-                let (keys, array_info) =
-                    array_serialization_info_for_array(activation, o, serialization_context);
-
-                if array_info.is_strict_array {
-                    let (aw, token) = writer.strict_array(CacheKey::from_ptr(o.as_ptr()));
-
-                    if let Some(mut aw) = aw {
-                        for_each_array_entry(
-                            activation,
-                            o,
-                            &keys,
-                            &array_info,
-                            |activation, _, value| {
-                                serialize_array_element_to_writer(
-                                    activation,
-                                    "",
-                                    value,
-                                    &mut aw,
-                                    serialization_context,
-                                );
-                            },
-                        );
-
-                        aw.commit(name);
-                    } else {
-                        writer.reference(name, token);
-                    }
-                } else {
-                    let (aw, token) = writer.array(CacheKey::from_ptr(o.as_ptr()));
-
-                    if let Some(mut aw) = aw {
-                        for_each_array_entry(
-                            activation,
-                            o,
-                            &keys,
-                            &array_info,
-                            |activation, property_name, value| {
-                                let property_name =
-                                    property_name.expect("ECMA array entries have property names");
-                                let property_name = property_name.to_utf8_lossy();
-                                serialize_value_to_writer(
-                                    activation,
-                                    property_name.as_ref(),
-                                    value,
-                                    &mut aw,
-                                    serialization_context,
-                                );
-                            },
-                        );
-                        aw.set_length(array_info.length as u32);
-                        aw.commit(name);
-                    } else {
-                        writer.reference(name, token);
-                    }
-                }
-            } else if let Some(xml_node) = o.as_xml_node() {
-                // TODO: What happens if an exception is thrown here?
-                let string = xml_node
-                    .into_string(activation)
-                    .expect("Failed to convert xml to string in SharedObject");
-                if matches!(serialization_context, SerializationContext::SharedObject) {
-                    // SharedObject LSO values do not occupy XML reference-table entries.
-                    writer.add_element(
-                        name,
-                        AmfValue::XML {
-                            value: string.to_utf8_lossy().into_owned(),
-                            is_string: true,
-                        },
-                    );
-                } else {
-                    // LocalConnection and NetConnection XML values occupy reference-table entries.
-                    writer.xml(
-                        CacheKey::from_ptr(o.as_ptr()),
-                        name,
-                        string.to_utf8_lossy().as_ref(),
-                        true,
-                    );
-                }
-            } else if let NativeObject::Date(date) = o.native() {
-                writer.date(
-                    CacheKey::from_ptr(o.as_ptr()),
-                    name,
-                    date.get().time(),
-                    None,
-                )
             } else {
-                let key = CacheKey::from_ptr(o.as_ptr());
+                match classify_amf0_object(activation, o) {
+                    Amf0ObjectSerializationKind::DisplayObject => writer.undefined(name),
+                    Amf0ObjectSerializationKind::Array => {
+                        let (keys, array_info) = array_serialization_info_for_array(
+                            activation,
+                            o,
+                            serialization_context,
+                        );
 
-                if let Some(class_name) = object_class_name(activation, o) {
-                    let (ow, token) = writer.typed_object(&class_name, key);
-                    if let Some(mut ow) = ow {
-                        recursive_serialize(activation, o, &mut ow, serialization_context);
-                        ow.commit(name);
-                    } else {
-                        writer.reference(name, token);
+                        if array_info.is_strict_array {
+                            let (aw, token) = writer.strict_array(CacheKey::from_ptr(o.as_ptr()));
+
+                            if let Some(mut aw) = aw {
+                                for_each_array_entry(
+                                    activation,
+                                    o,
+                                    &keys,
+                                    &array_info,
+                                    |activation, _, value| {
+                                        serialize_array_element_to_writer(
+                                            activation,
+                                            "",
+                                            value,
+                                            &mut aw,
+                                            serialization_context,
+                                        );
+                                    },
+                                );
+
+                                aw.commit(name);
+                            } else {
+                                writer.reference(name, token);
+                            }
+                        } else {
+                            let (aw, token) = writer.array(CacheKey::from_ptr(o.as_ptr()));
+
+                            if let Some(mut aw) = aw {
+                                for_each_array_entry(
+                                    activation,
+                                    o,
+                                    &keys,
+                                    &array_info,
+                                    |activation, property_name, value| {
+                                        let property_name = property_name
+                                            .expect("ECMA array entries have property names");
+                                        let property_name = property_name.to_utf8_lossy();
+                                        serialize_value_to_writer(
+                                            activation,
+                                            property_name.as_ref(),
+                                            value,
+                                            &mut aw,
+                                            serialization_context,
+                                        );
+                                    },
+                                );
+                                aw.set_length(array_info.length as u32);
+                                aw.commit(name);
+                            } else {
+                                writer.reference(name, token);
+                            }
+                        }
                     }
-                } else {
-                    let (ow, token) = writer.object(key);
-                    if let Some(mut ow) = ow {
-                        recursive_serialize(activation, o, &mut ow, serialization_context);
-                        ow.commit(name);
-                    } else {
-                        writer.reference(name, token);
+                    Amf0ObjectSerializationKind::Xml(value) => {
+                        if matches!(serialization_context, SerializationContext::SharedObject) {
+                            // SharedObject LSO values do not occupy XML reference-table entries.
+                            writer.add_element(
+                                name,
+                                AmfValue::XML {
+                                    value,
+                                    is_string: true,
+                                },
+                            );
+                        } else {
+                            // LocalConnection and NetConnection XML values occupy reference-table entries.
+                            writer.xml(CacheKey::from_ptr(o.as_ptr()), name, &value, true);
+                        }
+                    }
+                    Amf0ObjectSerializationKind::Date(time) => {
+                        writer.date(CacheKey::from_ptr(o.as_ptr()), name, time, None)
+                    }
+                    Amf0ObjectSerializationKind::Object(class_name) => {
+                        let key = CacheKey::from_ptr(o.as_ptr());
+
+                        if let Some(class_name) = class_name {
+                            let (ow, token) = writer.typed_object(&class_name, key);
+                            if let Some(mut ow) = ow {
+                                recursive_serialize(activation, o, &mut ow, serialization_context);
+                                ow.commit(name);
+                            } else {
+                                writer.reference(name, token);
+                            }
+                        } else {
+                            let (ow, token) = writer.object(key);
+                            if let Some(mut ow) = ow {
+                                recursive_serialize(activation, o, &mut ow, serialization_context);
+                                ow.commit(name);
+                            } else {
+                                writer.reference(name, token);
+                            }
+                        }
                     }
                 }
             }
