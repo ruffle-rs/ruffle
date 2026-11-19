@@ -2654,6 +2654,14 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
     }
 
     fn run_frame_scripts(self, context: &mut UpdateContext<'gc>) {
+        if self.movie().is_action_script_3() && self.swf_version() == 9 {
+            for child in self.iter_render_list() {
+                if child.object2().is_none() && !child.manual_frame_construct() {
+                    child.construct_frame(context);
+                }
+            }
+        }
+
         self.run_local_frame_scripts(context);
 
         for child in self.iter_render_list() {

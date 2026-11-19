@@ -1,0 +1,9 @@
+BEGIN SWF9_GOTO_CHILD_BINDING
+before goto frame=1 children=0 slot=false byName=false constructors=0
+immediately after goto frame=2 children=1 slot=false byName=false constructors=0
+root frame script end
+leaf constructor #1
+sender frame script 1
+sibling event frame=2 children=1 slot=true byName=true constructors=1
+final frame=2 children=1 slot=true byName=true constructors=1
+SWF9_GOTO_CHILD_BINDING_COMPLETE
