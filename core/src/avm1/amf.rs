@@ -170,45 +170,43 @@ fn serialize_array<'gc>(
     array: Object<'gc>,
     serialization_context: SerializationContext,
 ) -> AmfValue {
-    let length = array.length(activation).unwrap_or(0).max(0) as usize;
-    let keys = array.get_keys(activation, false);
-    let requires_ecma_encoding =
-        matches!(serialization_context, SerializationContext::LocalConnection)
-            && array_requires_ecma_encoding(activation, array, &keys);
-    let array_info =
-        array_serialization_info(&keys, length, serialization_context, requires_ecma_encoding);
+    let (keys, array_info) =
+        array_serialization_info_for_array(activation, array, serialization_context);
 
     if array_info.is_strict_array {
-        let mut dense = Vec::with_capacity(array_info.length);
-        for i in 0..array_info.length {
-            let prop_value = array_element_for_serialization(activation, array, i);
-            dense.push(serialize_array_element(
-                activation,
-                prop_value,
-                serialization_context,
-            ));
-        }
+        let mut values = Vec::with_capacity(array_info.length);
+        for_each_array_entry(
+            activation,
+            array,
+            &keys,
+            &array_info,
+            |activation, _, value| {
+                values.push(serialize_array_element(
+                    activation,
+                    value,
+                    serialization_context,
+                ));
+            },
+        );
         AmfValue::StrictArray {
             id: ObjectId::INVALID,
-            values: dense,
+            values,
         }
     } else {
         // ECMA arrays preserve associative properties and, for LocalConnection,
         // preserve sparse indices without materializing undefined holes.
         let mut elements = Vec::with_capacity(keys.len());
-        for key in keys.into_iter().rev() {
-            let prop_value = array
-                .get_stored_property(activation, key)
-                .unwrap_or(Value::Undefined);
-
-            if matches!(prop_value, Value::Object(object) if object.as_function().is_some()) {
-                // Functions are omitted from ECMA arrays, leaving their indices as holes.
-                continue;
-            }
-
-            let value = serialize_with_context(activation, prop_value, serialization_context);
-            elements.push(Element::new(key.to_string(), value));
-        }
+        for_each_array_entry(
+            activation,
+            array,
+            &keys,
+            &array_info,
+            |activation, name, value| {
+                let name = name.expect("ECMA array entries have property names");
+                let value = serialize_with_context(activation, value, serialization_context);
+                elements.push(Element::new(name.to_string(), value));
+            },
+        );
         AmfValue::ECMAArray {
             id: ObjectId::INVALID,
             data: ECMAArrayObjectValue {
@@ -286,6 +284,23 @@ struct ArraySerializationInfo {
     length: usize,
 }
 
+/// Determine the array representation and entries using one shared set of AVM1 rules.
+fn array_serialization_info_for_array<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    array: Object<'gc>,
+    serialization_context: SerializationContext,
+) -> (Vec<AvmString<'gc>>, ArraySerializationInfo) {
+    let length = array.length(activation).unwrap_or(0).max(0) as usize;
+    let keys = array.get_keys(activation, false);
+    let requires_ecma_encoding =
+        matches!(serialization_context, SerializationContext::LocalConnection)
+            && array_requires_ecma_encoding(activation, array, &keys);
+    let array_info =
+        array_serialization_info(&keys, length, serialization_context, requires_ecma_encoding);
+
+    (keys, array_info)
+}
+
 /// Select an array representation using the rules of its transport.
 ///
 /// Keep this shared by both AMF-value and LSO-writer serialization so nested
@@ -347,6 +362,36 @@ fn array_serialization_info(
     }
 }
 
+/// Visit array entries in their serialized order. Strict arrays include every
+/// index up to their encoded length; ECMA arrays include only present,
+/// non-function properties.
+fn for_each_array_entry<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    array: Object<'gc>,
+    keys: &[AvmString<'gc>],
+    array_info: &ArraySerializationInfo,
+    mut serialize_entry: impl FnMut(&mut Activation<'_, 'gc>, Option<AvmString<'gc>>, Value<'gc>),
+) {
+    if array_info.is_strict_array {
+        for index in 0..array_info.length {
+            let value = array_element_for_serialization(activation, array, index);
+            serialize_entry(activation, None, value);
+        }
+    } else {
+        for key in keys.iter().rev() {
+            let value = array
+                .get_stored_property(activation, *key)
+                .unwrap_or(Value::Undefined);
+
+            if matches!(value, Value::Object(object) if object.as_function().is_some()) {
+                continue;
+            }
+
+            serialize_entry(activation, Some(*key), value);
+        }
+    }
+}
+
 /// Serialize an array element while preserving its index if it is a function.
 fn serialize_array_element_to_writer<'gc>(
     activation: &mut Activation<'_, 'gc>,
@@ -377,32 +422,28 @@ fn serialize_value_to_writer<'gc>(
             } else if o.as_display_object().is_some() {
                 writer.undefined(name)
             } else if o.is_native_array() {
-                let length = o.length(activation).unwrap_or(0).max(0) as usize;
-                let keys = o.get_keys(activation, false);
-                let requires_ecma_encoding =
-                    matches!(serialization_context, SerializationContext::LocalConnection)
-                        && array_requires_ecma_encoding(activation, o, &keys);
-                let array_info = array_serialization_info(
-                    &keys,
-                    length,
-                    serialization_context,
-                    requires_ecma_encoding,
-                );
+                let (keys, array_info) =
+                    array_serialization_info_for_array(activation, o, serialization_context);
 
                 if array_info.is_strict_array {
                     let (aw, token) = writer.strict_array(CacheKey::from_ptr(o.as_ptr()));
 
                     if let Some(mut aw) = aw {
-                        for i in 0..array_info.length {
-                            let prop_value = array_element_for_serialization(activation, o, i);
-                            serialize_array_element_to_writer(
-                                activation,
-                                "",
-                                prop_value,
-                                &mut aw,
-                                serialization_context,
-                            );
-                        }
+                        for_each_array_entry(
+                            activation,
+                            o,
+                            &keys,
+                            &array_info,
+                            |activation, _, value| {
+                                serialize_array_element_to_writer(
+                                    activation,
+                                    "",
+                                    value,
+                                    &mut aw,
+                                    serialization_context,
+                                );
+                            },
+                        );
 
                         aw.commit(name);
                     } else {
@@ -412,7 +453,24 @@ fn serialize_value_to_writer<'gc>(
                     let (aw, token) = writer.array(CacheKey::from_ptr(o.as_ptr()));
 
                     if let Some(mut aw) = aw {
-                        recursive_serialize(activation, o, &mut aw, serialization_context);
+                        for_each_array_entry(
+                            activation,
+                            o,
+                            &keys,
+                            &array_info,
+                            |activation, property_name, value| {
+                                let property_name =
+                                    property_name.expect("ECMA array entries have property names");
+                                let property_name = property_name.to_utf8_lossy();
+                                serialize_value_to_writer(
+                                    activation,
+                                    property_name.as_ref(),
+                                    value,
+                                    &mut aw,
+                                    serialization_context,
+                                );
+                            },
+                        );
                         aw.set_length(array_info.length as u32);
                         aw.commit(name);
                     } else {
