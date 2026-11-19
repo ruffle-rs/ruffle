@@ -421,12 +421,21 @@ pub fn upload<'gc>(
                 None => "file".to_string(),
             };
 
+            let field_name = match args.get(1) {
+                Some(Value::Undefined | Value::Null) | None => "Filedata".to_string(),
+                Some(v) => v.coerce_to_string(activation)?.to_string(),
+            };
+
+            let post_data = file_reference.0.post_data.get().map(|s| s.to_string());
+
             let process = crate::loader::upload_file(
                 activation.context,
                 this,
                 url_string,
                 file_reference.0.data.borrow().clone(),
                 file_name,
+                field_name,
+                post_data,
             );
 
             activation.context.navigator.spawn_future(process);

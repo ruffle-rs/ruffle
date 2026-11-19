@@ -4817,6 +4817,7 @@ dependencies = [
  "jpegxr",
  "linkme",
  "lzma-rs",
+ "memchr",
  "naga-agal",
  "nellymoser-rs",
  "num-bigint",
