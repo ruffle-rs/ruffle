@@ -83,17 +83,24 @@ pub fn serialize_net_connection<'gc>(
     serialize_with_context(activation, value, SerializationContext::NetConnection)
 }
 
-fn serialize_with_context<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    value: Value<'gc>,
-    serialization_context: SerializationContext,
-) -> AmfValue {
+fn serialize_primitive_value(value: Value<'_>) -> AmfValue {
     match value {
         Value::Undefined => AmfValue::Undefined,
         Value::Null => AmfValue::Null,
         Value::Bool(bool) => AmfValue::Bool(bool),
         Value::Number(number) => AmfValue::Number(number),
         Value::String(string) => AmfValue::String(string.to_string()),
+        Value::MovieClip(_) => AmfValue::Undefined,
+        Value::Object(_) => unreachable!("Object values are serialized separately"),
+    }
+}
+
+fn serialize_with_context<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    value: Value<'gc>,
+    serialization_context: SerializationContext,
+) -> AmfValue {
+    match value {
         Value::Object(object) => {
             if object.as_display_object().is_some() {
                 AmfValue::Undefined
@@ -129,7 +136,7 @@ fn serialize_with_context<'gc>(
                 }
             }
         }
-        Value::MovieClip(_) => AmfValue::Undefined,
+        value => serialize_primitive_value(value),
     }
 }
 
@@ -529,11 +536,7 @@ fn serialize_value_to_writer<'gc>(
                 }
             }
         }
-        Value::Number(f) => writer.number(name, f),
-        Value::String(s) => writer.string(name, s.to_utf8_lossy().as_ref()),
-        Value::Undefined | Value::MovieClip(_) => writer.undefined(name),
-        Value::Null => writer.null(name),
-        Value::Bool(b) => writer.bool(name, b),
+        value => writer.add_element(name, serialize_primitive_value(value)),
     }
 }
 
@@ -1009,6 +1012,34 @@ mod tests {
     use super::*;
     use crate::avm1::error::Error;
     use crate::avm1::test_utils::with_avm;
+
+    #[test]
+    fn serialize_primitive_values() {
+        with_avm(8, |activation, _this| -> Result<(), Error> {
+            assert_eq!(
+                serialize_primitive_value(Value::Undefined),
+                AmfValue::Undefined
+            );
+            assert_eq!(serialize_primitive_value(Value::Null), AmfValue::Null);
+            assert_eq!(
+                serialize_primitive_value(Value::Bool(true)),
+                AmfValue::Bool(true)
+            );
+            assert_eq!(
+                serialize_primitive_value(Value::Number(42.5)),
+                AmfValue::Number(42.5)
+            );
+            assert_eq!(
+                serialize_primitive_value(Value::String(AvmString::new_utf8(
+                    activation.gc(),
+                    "value",
+                ))),
+                AmfValue::String("value".to_string())
+            );
+
+            Ok(())
+        });
+    }
 
     #[test]
     fn reference_cache_stops_at_the_amf0_reference_limit() {
