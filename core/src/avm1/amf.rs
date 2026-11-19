@@ -630,7 +630,6 @@ fn deserialize_value_inner<'gc>(
             })
         }
         AmfValue::Object { data, .. } => {
-            // Deserialize Object
             let obj = Object::new(
                 &activation.context.strings,
                 Some(activation.prototypes().object),
@@ -641,19 +640,20 @@ fn deserialize_value_inner<'gc>(
             // Register before deserializing children so self-references work.
             reference_cache.insert(value);
 
-            for entry in &data.elements {
-                let child = deserialize_value_inner(
-                    activation,
-                    entry.value(),
-                    reference_cache,
-                    deserialization_context,
-                    deferred_dates,
-                );
-                let name = AvmString::new_utf8(activation.gc(), &entry.name);
-                obj.define_value(activation.gc(), name, child, Attribute::empty());
-            }
-
-            value
+            deserialize_object_entries(
+                activation,
+                obj,
+                data.elements.iter(),
+                |activation, value| {
+                    deserialize_value_inner(
+                        activation,
+                        value,
+                        reference_cache,
+                        deserialization_context,
+                        deferred_dates,
+                    )
+                },
+            )
         }
         AmfValue::Date { data, .. } => {
             let value = match deserialization_context {
@@ -823,6 +823,24 @@ fn deserialize_array_entries<'gc, 'a>(
     root
 }
 
+/// Populate an AVM1 object using the supplied AMF0 value decoder.
+fn deserialize_object_entries<'gc, 'a>(
+    activation: &mut Activation<'_, 'gc>,
+    obj: Object<'gc>,
+    entries: impl Iterator<Item = &'a Element>,
+    mut deserialize_value: impl FnMut(&mut Activation<'_, 'gc>, &AmfValue) -> Value<'gc>,
+) -> Value<'gc> {
+    let root: Value<'gc> = obj.into();
+
+    for entry in entries {
+        let child = deserialize_value(activation, entry.value());
+        let name = AvmString::new_utf8(activation.gc(), &entry.name);
+        obj.define_value(activation.gc(), name, child, Attribute::empty());
+    }
+
+    root
+}
+
 /// Populate a LocalConnection array while retaining its per-sibling reference behavior.
 fn deserialize_local_connection_array<'gc, 'a>(
     activation: &mut Activation<'_, 'gc>,
@@ -863,20 +881,22 @@ pub(crate) fn deserialize_local_connection_value<'gc>(
             let root: Value<'gc> = obj.into();
             let mut reference_state = LocalConnectionReferenceState::new();
 
-            for entry in &data.elements {
-                let mut reference_cache = reference_state.cache_for_property(root);
-                let child = deserialize_local_connection_lso_value(
-                    activation,
-                    entry.value(),
-                    &mut reference_cache,
-                    deferred_dates,
-                );
-                let name = AvmString::new_utf8(activation.gc(), &entry.name);
-                obj.define_value(activation.gc(), name, child, Attribute::empty());
-                reference_state.advance(entry.value());
-            }
-
-            root
+            deserialize_object_entries(
+                activation,
+                obj,
+                data.elements.iter(),
+                |activation, value| {
+                    let mut reference_cache = reference_state.cache_for_property(root);
+                    let child = deserialize_local_connection_lso_value(
+                        activation,
+                        value,
+                        &mut reference_cache,
+                        deferred_dates,
+                    );
+                    reference_state.advance(value);
+                    child
+                },
+            )
         }
         AmfValue::ECMAArray { data, .. } => {
             let Ok(Some(Value::Object(obj))) =
