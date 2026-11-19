@@ -1,0 +1,30 @@
+===== text field hidden
+  onSetFocus _level0.p1.t, old: null
+Focus set: _level0.p1.t
+  onKillFocus _level0.p1.t, new: null
+After: null
+===== parent of a text field hidden
+  onSetFocus _level0.p2.t, old: null
+Focus set: _level0.p2.t
+  onKillFocus _level0.p2.t, new: null
+After: null
+===== grandparent of a text field hidden
+  onSetFocus _level0.g3.p.t, old: null
+Focus set: _level0.g3.p.t
+  onKillFocus _level0.g3.p.t, new: null
+After: null
+===== clip hidden
+  onSetFocus _level0.p4.c, old: null
+Focus set: _level0.p4.c
+  onKillFocus _level0.p4.c, new: null
+After: null
+===== parent of a clip hidden
+  onSetFocus _level0.p5.c, old: null
+Focus set: _level0.p5.c
+  onKillFocus _level0.p5.c, new: null
+After: null
+===== text field hidden, focused, hidden again
+  onSetFocus _level0.p6.t, old: null
+Focus set: _level0.p6.t
+After: _level0.p6.t
+  onKillFocus _level0.p6.t, new: null

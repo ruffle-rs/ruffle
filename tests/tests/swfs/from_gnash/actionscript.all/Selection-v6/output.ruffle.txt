@@ -46,12 +46,12 @@ PASSED: mc._visible == false [./Selection.as:130]
 PASSED: Selection.getFocus() == null [./Selection.as:131]
 FAILED: expected: false obtained: true [./Selection.as:133]
 PASSED: Selection.getFocus() == "_level0.mc" [./Selection.as:134]
-FAILED: expected: "_level0.mc" obtained: null [./Selection.as:136]
+PASSED: Selection.getFocus() == "_level0.mc" [./Selection.as:136]
 PASSED: ret == true [./Selection.as:139]
 PASSED: Selection.getFocus() == null [./Selection.as:140]
 FAILED: expected: false obtained: true [./Selection.as:143]
-FAILED: expected: "_level0.mc" obtained: null [./Selection.as:145]
-FAILED: expected: "_level0.mc" obtained: null [./Selection.as:147]
+PASSED: Selection.getFocus() == "_level0.mc" [./Selection.as:145]
+PASSED: Selection.getFocus() == "_level0.mc" [./Selection.as:147]
 PASSED: Selection.getFocus() == null [./Selection.as:149]
 PASSED: Selection.getFocus() == "_level0.mc" [./Selection.as:153]
 PASSED: Selection.getFocus() == "_level0.mc" [./Selection.as:155]
@@ -120,6 +120,6 @@ PASSED: Selection.getBeginIndex() == 10 [./Selection.as:301]
 PASSED: Selection.getBeginIndex() == 10 [./Selection.as:303]
 FAILED: expected: 9 obtained: 10 [./Selection.as:305]
 FAILED: expected: 0 obtained: 10 [./Selection.as:307]
-#passed: 102
-#failed: 16
+#passed: 105
+#failed: 13
 #total tests run: 118

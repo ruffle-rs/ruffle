@@ -1,0 +1,69 @@
+===== focused button hidden
+  focusIn on b, relatedObject: null, focus: b
+Focus set: b
+  focusOut on b, relatedObject: null, focus: null
+After: null
+Cleanup
+  removedFromStage on b, focus: null
+===== parent of the focused button hidden
+  focusIn on b, relatedObject: null, focus: b
+Focus set: b
+  focusOut on b, relatedObject: null, focus: null
+After: null
+After showing the parent again: null
+Cleanup
+  removedFromStage on b, focus: null
+===== grandparent of the focused button hidden
+  focusIn on b, relatedObject: null, focus: b
+Focus set: b
+  focusOut on b, relatedObject: null, focus: null
+After: null
+Cleanup
+  removedFromStage on b, focus: null
+===== parent of a focused input text field hidden
+  focusIn on t, relatedObject: null, focus: t
+Focus set: t
+  focusOut on t, relatedObject: null, focus: null
+After: null
+Cleanup
+  removedFromStage on t, focus: null
+===== parent of a focused off-stage button hidden
+  focusIn on b, relatedObject: null, focus: b
+Focus set: b
+  focusOut on b, relatedObject: null, focus: null
+After: null
+Cleanup
+===== focus set while the parent is hidden
+  focusIn on b, relatedObject: null, focus: b
+Focus set: b
+Cleanup
+  focusOut on b, relatedObject: null, focus: null
+  removedFromStage on b, focus: null
+===== already hidden parent hidden again
+  focusIn on b, relatedObject: null, focus: b
+Focus set: b
+After: b
+Cleanup
+  focusOut on b, relatedObject: null, focus: null
+  removedFromStage on b, focus: null
+===== already hidden button hidden again
+  focusIn on b, relatedObject: null, focus: b
+Focus set: b
+After: b
+Cleanup
+  focusOut on b, relatedObject: null, focus: null
+  removedFromStage on b, focus: null
+===== visible parent of the focused button made visible
+  focusIn on b, relatedObject: null, focus: b
+Focus set: b
+After: b
+Cleanup
+  focusOut on b, relatedObject: null, focus: null
+  removedFromStage on b, focus: null
+===== sibling of the focused button hidden
+  focusIn on b, relatedObject: null, focus: b
+Focus set: b
+After: b
+Cleanup
+  focusOut on b, relatedObject: null, focus: null
+  removedFromStage on b, focus: null

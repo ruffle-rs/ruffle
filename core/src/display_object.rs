@@ -2126,16 +2126,26 @@ pub trait TDisplayObject<'gc>:
     /// Returned by the `_visible`/`visible` ActionScript properties.
     #[no_dynamic]
     fn set_visible(self, context: &mut UpdateContext<'gc>, value: bool) {
-        if self.base().set_visible(value)
-            && let Some(parent) = self.parent()
-        {
+        let changed = self.base().set_visible(value);
+        if changed && let Some(parent) = self.parent() {
             // We don't need to invalidate ourselves, we're just toggling if the bitmap is rendered.
             parent.invalidate_cached_bitmap();
         }
 
-        if !value && let Some(int) = self.as_interactive() {
-            // The focus is dropped when it's made invisible.
-            int.drop_focus(context);
+        if changed && !value {
+            // The focus is dropped when the focused object
+            // or one of its ancestors is made invisible.
+            let tracker = context.focus_tracker;
+            if let Some(focus) = tracker.get() {
+                let mut ancestor = Some(focus.as_displayobject());
+                while let Some(object) = ancestor {
+                    if DisplayObject::ptr_eq(object, self) {
+                        tracker.set(None, context);
+                        break;
+                    }
+                    ancestor = object.parent();
+                }
+            }
         }
     }
 
