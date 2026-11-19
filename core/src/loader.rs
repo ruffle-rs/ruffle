@@ -2655,58 +2655,74 @@ pub fn download_file_dialog<'gc>(
 
         // Doing this in two steps to prevent holding the player lock during fetch
         let future = player.lock().unwrap().fetch(request, FetchReason::Other);
-        let download_res = wait_for_full_response(future).await;
+        let mut response = match future.await {
+            Ok(response) => response,
+            Err(response) => {
+                return with_file_reference(&player, &target_object, |activation, object, _| {
+                    report_download_error(activation, object, &url, response.error)
+                });
+            }
+        };
 
-        // Fire the load handler.
-        with_file_reference(
-            &player,
-            &target_object,
-            |activation, target_object, file_ref| {
-                match download_res {
-                    Ok((body, _, _, _)) => {
-                        broadcast_internal(
-                            target_object,
-                            &[target_object.into()],
-                            istr!("onOpen"),
-                            activation,
-                        )?;
+        let total_bytes = response.expected_length().ok().flatten();
+        with_file_reference(&player, &target_object, |activation, object, _| {
+            broadcast_avm1_file_event(object, istr!("onOpen"), activation)?;
+            Ok(())
+        })?;
 
-                        // onProgress and onComplete expect to receive the current state
-                        // of the file, as we simulate an instant 100% download from the
-                        // perspective of AS, we want to refresh the file_ref internal data
-                        // before invoking the callbacks
+        // Like Flash Player, report the progress for every chunk of the
+        // response as it arrives.
+        let mut body = Vec::new();
+        loop {
+            match response.next_chunk().await {
+                Ok(Some(chunk)) => {
+                    body.extend_from_slice(&chunk);
+                    let loaded = body.len() as u64;
+                    let total = total_bytes.unwrap_or(loaded);
 
-                        selection.write_and_refresh(&body);
-                        file_ref.init_from_file_selection(activation, &*selection);
-
-                        let total_bytes = body.len();
-
-                        broadcast_internal(
-                            target_object,
-                            &[
-                                target_object.into(),
-                                Value::from_usize_lossy(total_bytes),
-                                Value::from_usize_lossy(total_bytes),
-                            ],
-                            istr!("onProgress"),
-                            activation,
-                        )?;
-
-                        broadcast_internal(
-                            target_object,
-                            &[target_object.into()],
-                            istr!("onComplete"),
-                            activation,
-                        )?;
-                    }
-                    Err(err) => {
-                        report_download_error(activation, target_object, &url, err.error)?;
-                    }
+                    with_file_reference(&player, &target_object, |activation, object, _| {
+                        let args = [
+                            object.into(),
+                            Value::from_u64_lossy(loaded),
+                            Value::from_u64_lossy(total),
+                        ];
+                        broadcast_internal(object, &args, istr!("onProgress"), activation)?;
+                        Ok(())
+                    })?;
                 }
+                Ok(None) => {
+                    // onComplete expects to receive the current state of the
+                    // file, so write it before invoking the callback.
+                    selection.write_and_refresh(&body);
 
-                Ok(())
-            },
-        )
+                    return with_file_reference(
+                        &player,
+                        &target_object,
+                        |activation, object, file_ref| {
+                            file_ref.init_from_file_selection(activation, &*selection);
+                            broadcast_avm1_file_event(object, istr!("onComplete"), activation)?;
+                            Ok(())
+                        },
+                    );
+                }
+                Err(err) => {
+                    tracing::warn!("Download of {url} failed: {err:?}");
+
+                    return with_file_reference(
+                        &player,
+                        &target_object,
+                        |activation, object, _| {
+                            activation
+                                .context
+                                .avm_trace(&format!("Error opening URL '{url}'"));
+                            broadcast_avm1_file_event(object, istr!("onIOError"), activation)?;
+
+                            Ok(())
+                        },
+                    );
+                }
+            }
+        }
     })
 }
 
