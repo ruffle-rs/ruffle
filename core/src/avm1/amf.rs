@@ -513,6 +513,17 @@ pub(crate) fn recursive_serialize<'gc>(
     }
 }
 
+/// Selects the Flash-specific behavior used when deserializing an AMF0 value.
+#[derive(Clone, Copy)]
+enum DeserializationContext {
+    /// NetConnection remoting: XML values participate in the reference table.
+    NetConnection,
+    /// LocalConnection: Date construction is deferred and XML is not referenceable.
+    LocalConnection,
+    /// SharedObject LSO: XML values do not participate in the reference table.
+    SharedObject,
+}
+
 /// Deserialize an AmfValue to a Value, using AMF remoting reference-table semantics.
 pub fn deserialize_value<'gc>(
     activation: &mut Activation<'_, 'gc>,
@@ -524,8 +535,7 @@ pub fn deserialize_value<'gc>(
         activation,
         val,
         reference_cache,
-        true,
-        false,
+        DeserializationContext::NetConnection,
         &mut deferred_dates,
     )
 }
@@ -542,8 +552,7 @@ pub(crate) fn deserialize_lso_value<'gc>(
         activation,
         val,
         reference_cache,
-        false,
-        false,
+        DeserializationContext::SharedObject,
         &mut deferred_dates,
     )
 }
@@ -559,8 +568,7 @@ fn deserialize_local_connection_lso_value<'gc>(
         activation,
         val,
         reference_cache,
-        false,
-        true,
+        DeserializationContext::LocalConnection,
         deferred_dates,
     )
 }
@@ -569,8 +577,7 @@ fn deserialize_value_inner<'gc>(
     activation: &mut Activation<'_, 'gc>,
     val: &AmfValue,
     reference_cache: &mut Amf0ReferenceCache<'gc>,
-    xml_is_referenceable: bool,
-    local_connection: bool,
+    deserialization_context: DeserializationContext,
     deferred_dates: &mut Vec<DeferredAmf0Date<'gc>>,
 ) -> Value<'gc> {
     match val {
@@ -595,8 +602,7 @@ fn deserialize_value_inner<'gc>(
                     activation,
                     entry.value(),
                     reference_cache,
-                    xml_is_referenceable,
-                    local_connection,
+                    deserialization_context,
                     deferred_dates,
                 );
 
@@ -635,8 +641,7 @@ fn deserialize_value_inner<'gc>(
                     activation,
                     item,
                     reference_cache,
-                    xml_is_referenceable,
-                    local_connection,
+                    deserialization_context,
                     deferred_dates,
                 );
                 obj.set_element(activation, i as i32, child).unwrap();
@@ -661,8 +666,7 @@ fn deserialize_value_inner<'gc>(
                     activation,
                     entry.value(),
                     reference_cache,
-                    xml_is_referenceable,
-                    local_connection,
+                    deserialization_context,
                     deferred_dates,
                 );
                 let name = AvmString::new_utf8(activation.gc(), &entry.name);
@@ -672,10 +676,13 @@ fn deserialize_value_inner<'gc>(
             value
         }
         AmfValue::Date { data, .. } => {
-            let value = if local_connection {
-                local_date_from_amf0(activation, data.time, deferred_dates)
-            } else {
-                date_from_amf0(activation, data.time)
+            let value = match deserialization_context {
+                DeserializationContext::LocalConnection => {
+                    local_date_from_amf0(activation, data.time, deferred_dates)
+                }
+                DeserializationContext::NetConnection | DeserializationContext::SharedObject => {
+                    date_from_amf0(activation, data.time)
+                }
             };
 
             reference_cache.insert(value);
@@ -686,7 +693,10 @@ fn deserialize_value_inner<'gc>(
             // without invoking the script-visible XML constructor.
             let value = xml_from_amf0(activation, content);
 
-            if xml_is_referenceable {
+            if matches!(
+                deserialization_context,
+                DeserializationContext::NetConnection
+            ) {
                 reference_cache.insert(value);
             }
             value
