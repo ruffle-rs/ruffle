@@ -33,12 +33,14 @@ impl AscConfig {
     }
 }
 
-pub fn run_asc(config: AscConfig) -> anyhow::Result<()> {
-    let asc_path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("asc.jar");
+pub fn jar_path() -> PathBuf {
+    PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("asc.jar")
+}
 
+pub fn run_asc(config: AscConfig) -> anyhow::Result<()> {
     let mut cli_args: Vec<String> = vec![
         "-classpath".to_string(),
-        asc_path.to_string_lossy().into_owned(),
+        jar_path().to_string_lossy().into_owned(),
         config
             .custom_main_class
             .unwrap_or_else(|| "macromedia.asc.embedding.Main".to_string()),
