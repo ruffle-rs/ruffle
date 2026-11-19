@@ -87,6 +87,12 @@ impl Filter {
     }
 
     pub fn calculate_dest_rect(&self, source_rect: Rectangle<Twips>) -> Rectangle<Twips> {
+        // Filters don't give an empty object any bounds. Growing an invalid
+        // rectangle would also turn it into a huge valid one.
+        if !source_rect.is_valid() {
+            return source_rect;
+        }
+
         match self {
             Filter::BlurFilter(filter) => filter.calculate_dest_rect(source_rect),
             Filter::GlowFilter(filter) => filter.calculate_dest_rect(source_rect),
