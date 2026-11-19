@@ -1,0 +1,16 @@
+root SWF 16 Texture bgra: ok
+root SWF 16 CubeTexture bgra: ok
+root SWF 16 Texture rgbaHalfFloat: ok
+root SWF 16 CubeTexture rgbaHalfFloat: ok
+root SWF 16 Texture compressed: ok
+root SWF 16 CubeTexture compressed: ok
+root SWF 16 Texture compressedAlpha: ok
+root SWF 16 CubeTexture compressedAlpha: ok
+child SWF 17 Texture bgra: ok
+child SWF 17 CubeTexture bgra: ok
+child SWF 17 Texture rgbaHalfFloat: ok
+child SWF 17 CubeTexture rgbaHalfFloat: ok
+child SWF 17 Texture compressed: ok
+child SWF 17 CubeTexture compressed: ok
+child SWF 17 Texture compressedAlpha: ok
+child SWF 17 CubeTexture compressedAlpha: ok
