@@ -478,7 +478,7 @@ impl<'gc> Avm1<'gc> {
             // Get the parent of this object
             if let Some(parent_container) = child.parent().and_then(|p| p.as_container()) {
                 // Remove it
-                parent_container.remove_child_directly(context, child);
+                parent_container.remove_child_directly(context, child, false);
 
                 // Update pending removal state
                 parent_container

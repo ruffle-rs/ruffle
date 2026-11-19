@@ -1,0 +1,73 @@
+===== focused button moved to another on-stage container
+  focusIn on b, relatedObject: null, focus: b
+Focus set: b
+  removed on b, focus: b
+  removedFromStage on b, focus: b
+  added on b, focus: b
+  addedToStage on b, focus: b
+After: b
+Cleanup
+  focusOut on b, relatedObject: null, focus: null
+  removedFromStage on b, focus: null
+===== focused button re-added to its own parent
+  focusIn on b, relatedObject: null, focus: b
+Focus set: b
+After: b
+Cleanup
+  focusOut on b, relatedObject: null, focus: null
+  removedFromStage on b, focus: null
+===== focused button moved with addChildAt
+  focusIn on b, relatedObject: null, focus: b
+Focus set: b
+  removed on b, focus: b
+  removedFromStage on b, focus: b
+  added on b, focus: b
+  addedToStage on b, focus: b
+After: b
+Cleanup
+  focusOut on b, relatedObject: null, focus: null
+  removedFromStage on b, focus: null
+===== focused button moved to an off-stage container
+  focusIn on b, relatedObject: null, focus: b
+Focus set: b
+  removed on b, focus: b
+  removedFromStage on b, focus: b
+  added on b, focus: b
+After: b
+Cleanup
+  focusOut on b, relatedObject: null, focus: null
+===== focused button moved with setChildIndex
+  focusIn on b, relatedObject: null, focus: b
+Focus set: b
+After: b
+Cleanup
+  focusOut on b, relatedObject: null, focus: null
+  removedFromStage on b, focus: null
+===== focused button moved with swapChildren
+  focusIn on b, relatedObject: null, focus: b
+Focus set: b
+After: b
+Cleanup
+  focusOut on b, relatedObject: null, focus: null
+  removedFromStage on b, focus: null
+===== focused off-stage button moved onto the stage
+  focusIn on b, relatedObject: null, focus: b
+Focus set: b
+  removed on b, focus: b
+  added on b, focus: b
+  addedToStage on b, focus: b
+After: b
+Cleanup
+  focusOut on b, relatedObject: null, focus: null
+  removedFromStage on b, focus: null
+===== focused input text field moved to another on-stage container
+  focusIn on t, relatedObject: null, focus: t
+Focus set: t
+  removed on t, focus: t
+  removedFromStage on t, focus: t
+  added on t, focus: t
+  addedToStage on t, focus: t
+After: t
+Cleanup
+  focusOut on t, relatedObject: null, focus: null
+  removedFromStage on t, focus: null

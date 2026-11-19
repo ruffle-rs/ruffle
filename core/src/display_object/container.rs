@@ -278,7 +278,13 @@ pub trait TDisplayObjectContainer<'gc>:
         let parent_changed = if let Some(old_parent) = child.parent() {
             if !DisplayObject::ptr_eq(old_parent, this) {
                 if let Some(mut old_parent) = old_parent.as_container() {
-                    old_parent.remove_child(context, child);
+                    if old_parent.raw_container().is_action_script_3() {
+                        // Flash Player keeps the focus of an object
+                        // that is moved to another container.
+                        old_parent.remove_child_directly(context, child, true);
+                    } else {
+                        old_parent.remove_child(context, child);
+                    }
                 }
 
                 true
@@ -365,12 +371,19 @@ pub trait TDisplayObjectContainer<'gc>:
             }
         }
 
-        self.remove_child_directly(context, child);
+        self.remove_child_directly(context, child, false);
     }
 
     /// Remove (and unloads) a child display object from this container's render and depth lists.
+    ///
+    /// `keep_focus` is set when the child is about to be added to another container.
     #[no_dynamic]
-    fn remove_child_directly(&self, context: &mut UpdateContext<'gc>, child: DisplayObject<'gc>) {
+    fn remove_child_directly(
+        &self,
+        context: &mut UpdateContext<'gc>,
+        child: DisplayObject<'gc>,
+        keep_focus: bool,
+    ) {
         dispatch_removed_event(child, context);
 
         // Event listeners might have moved the child to another container,
@@ -396,7 +409,7 @@ pub trait TDisplayObjectContainer<'gc>:
 
                 // Flash Player clears the focus of a removed object
                 // without dispatching any focus events.
-                if let Some(int) = child.as_interactive() {
+                if !keep_focus && let Some(int) = child.as_interactive() {
                     int.drop_focus_without_events(context);
                 }
             }
