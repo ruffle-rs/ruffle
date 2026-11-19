@@ -1,0 +1,11 @@
+Swf(
+    version: 38,
+    stage: (width: 64.0, height: 64.0),
+    tags: [
+        FileAttributes(action_script_3: true),
+        DoAbc(Asc(file: "Test.as", scripts: [])),
+        SymbolClass([(character: 0, name: "Test")]),
+        ShowFrame,
+        End,
+    ],
+)

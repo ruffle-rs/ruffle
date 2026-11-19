@@ -424,14 +424,6 @@ impl Context3D for WgpuContext3D {
     ) -> Result<Rc<dyn ruffle_render::backend::Texture>, Error> {
         let format = convert_texture_format(format);
 
-        // Wgpu doesn't support using this as a render attachment. Hopefully no swfs try
-        // to use it as one.
-        let render_attachment = if matches!(format, TextureFormat::Bc3RgbaUnorm) {
-            TextureUsages::empty()
-        } else {
-            TextureUsages::RENDER_ATTACHMENT
-        };
-
         if streaming_levels != 0 {
             return Err(Error::Unimplemented(
                 format!("streamingLevels={streaming_levels}").into(),
@@ -450,7 +442,7 @@ impl Context3D for WgpuContext3D {
             dimension: TextureDimension::D2,
             format,
             view_formats: &[format],
-            usage: TextureUsages::TEXTURE_BINDING | TextureUsages::COPY_DST | render_attachment,
+            usage: texture_usages(format),
         });
         Ok(Rc::new(TextureWrapper { texture }))
     }
@@ -483,12 +475,7 @@ impl Context3D for WgpuContext3D {
             dimension: TextureDimension::D2,
             format,
             view_formats: &[format],
-            // Note - `optimize_for_render_to_texture` is just a hint, so
-            // have to use `TextureUsages::TEXTURE_BINDING` even if the hint
-            // is `false`.
-            usage: TextureUsages::TEXTURE_BINDING
-                | TextureUsages::COPY_DST
-                | TextureUsages::RENDER_ATTACHMENT,
+            usage: texture_usages(format),
         });
         Ok(Rc::new(TextureWrapper { texture }))
     }
@@ -1320,6 +1307,22 @@ fn convert_texture_format(input: Context3DTextureFormat) -> wgpu::TextureFormat 
         // as with BgrPacked
         Context3DTextureFormat::Compressed => TextureFormat::Rgba8Unorm,
         Context3DTextureFormat::RgbaHalfFloat => TextureFormat::Rgba16Float,
+    }
+}
+
+/// The usages of a texture created by `createTexture` or `createCubeTexture`.
+fn texture_usages(format: TextureFormat) -> TextureUsages {
+    // Note - `optimize_for_render_to_texture` is just a hint, so
+    // have to use `TextureUsages::TEXTURE_BINDING` even if the hint
+    // is `false`.
+    let usages = TextureUsages::TEXTURE_BINDING | TextureUsages::COPY_DST;
+
+    // Wgpu doesn't support using this as a render attachment. Hopefully no swfs try
+    // to use it as one.
+    if matches!(format, TextureFormat::Bc3RgbaUnorm) {
+        usages
+    } else {
+        usages | TextureUsages::RENDER_ATTACHMENT
     }
 }
 
