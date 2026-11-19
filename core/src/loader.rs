@@ -2619,6 +2619,27 @@ pub fn download_file_dialog<'gc>(
         // Dialog is done, allow opening new dialogs
         player.lock().unwrap().ui_mut().close_file_dialog();
 
+        // onSelect and onCancel are called as soon as the dialog is closed,
+        // before the download starts.
+        with_file_reference(&player, &target_object, |activation, object, file_ref| {
+            match &dialog_result {
+                Ok(FileDialogResult::Selection(selection)) => {
+                    file_ref.init_from_file_selection(activation, &**selection);
+                    broadcast_avm1_file_event(object, istr!("onSelect"), activation)?;
+                }
+                Ok(FileDialogResult::Canceled) => {
+                    broadcast_avm1_file_event(object, istr!("onCancel"), activation)?;
+                }
+                Err(err) => tracing::warn!("Download dialog had an error {:?}", err),
+            }
+
+            Ok(())
+        })?;
+
+        let Ok(FileDialogResult::Selection(mut selection)) = dialog_result else {
+            return Ok(());
+        };
+
         // Download the data
         let req = Request::get(url.clone());
         // Doing this in two steps to prevent holding the player lock during fetch
@@ -2630,71 +2651,45 @@ pub fn download_file_dialog<'gc>(
             &player,
             &target_object,
             |activation, target_object, file_ref| {
-                match dialog_result {
-                    Ok(FileDialogResult::Selection(mut selection)) => {
-                        // onSelect and onOpen should be called before the download begins
-                        // We simulate this by using the initial dialog result
-                        file_ref.init_from_file_selection(activation, &*selection);
-
+                match download_res {
+                    Ok((body, _, _, _)) => {
                         broadcast_internal(
                             target_object,
                             &[target_object.into()],
-                            istr!("onSelect"),
+                            istr!("onOpen"),
                             activation,
                         )?;
 
-                        match download_res {
-                            Ok((body, _, _, _)) => {
-                                broadcast_internal(
-                                    target_object,
-                                    &[target_object.into()],
-                                    istr!("onOpen"),
-                                    activation,
-                                )?;
+                        // onProgress and onComplete expect to receive the current state
+                        // of the file, as we simulate an instant 100% download from the
+                        // perspective of AS, we want to refresh the file_ref internal data
+                        // before invoking the callbacks
 
-                                // onProgress and onComplete expect to receive the current state
-                                // of the file, as we simulate an instant 100% download from the
-                                // perspective of AS, we want to refresh the file_ref internal data
-                                // before invoking the callbacks
+                        selection.write_and_refresh(&body);
+                        file_ref.init_from_file_selection(activation, &*selection);
 
-                                selection.write_and_refresh(&body);
-                                file_ref.init_from_file_selection(activation, &*selection);
+                        let total_bytes = body.len();
 
-                                let total_bytes = body.len();
+                        broadcast_internal(
+                            target_object,
+                            &[
+                                target_object.into(),
+                                Value::from_usize_lossy(total_bytes),
+                                Value::from_usize_lossy(total_bytes),
+                            ],
+                            istr!("onProgress"),
+                            activation,
+                        )?;
 
-                                broadcast_internal(
-                                    target_object,
-                                    &[
-                                        target_object.into(),
-                                        Value::from_usize_lossy(total_bytes),
-                                        Value::from_usize_lossy(total_bytes),
-                                    ],
-                                    istr!("onProgress"),
-                                    activation,
-                                )?;
-
-                                broadcast_internal(
-                                    target_object,
-                                    &[target_object.into()],
-                                    istr!("onComplete"),
-                                    activation,
-                                )?;
-                            }
-                            Err(err) => {
-                                report_download_error(activation, target_object, &url, err.error)?;
-                            }
-                        }
-                    }
-                    Ok(FileDialogResult::Canceled) => {
                         broadcast_internal(
                             target_object,
                             &[target_object.into()],
-                            istr!("onCancel"),
+                            istr!("onComplete"),
                             activation,
                         )?;
                     }
                     Err(err) => {
-                        tracing::warn!("Download dialog had an error {:?}", err);
+                        report_download_error(activation, target_object, &url, err.error)?;
                     }
                 }
 
