@@ -1,0 +1,3 @@
+frame 1: marker true, world.child true, world.slash1 true, root.x root variable
+slash: removeMovieClip(this), then unloadMovie(this)
+slash: after unloadMovie(this): marker true, world.child true, world.slash1 false, root.x root variable
