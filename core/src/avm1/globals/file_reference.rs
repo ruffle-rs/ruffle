@@ -25,6 +25,10 @@ impl<'gc> FileReferenceObject<'gc> {
         Self(Gc::new(mc, Default::default()))
     }
 
+    pub fn post_data(self) -> Option<AvmString<'gc>> {
+        self.0.post_data.get()
+    }
+
     pub fn init_from_file_selection(
         self,
         activation: &mut Activation<'_, 'gc>,

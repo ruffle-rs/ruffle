@@ -2621,29 +2621,40 @@ pub fn download_file_dialog<'gc>(
 
         // onSelect and onCancel are called as soon as the dialog is closed,
         // before the download starts.
-        with_file_reference(&player, &target_object, |activation, object, file_ref| {
-            match &dialog_result {
-                Ok(FileDialogResult::Selection(selection)) => {
-                    file_ref.init_from_file_selection(activation, &**selection);
-                    broadcast_avm1_file_event(object, istr!("onSelect"), activation)?;
+        let post_data =
+            with_file_reference(&player, &target_object, |activation, object, file_ref| {
+                match &dialog_result {
+                    Ok(FileDialogResult::Selection(selection)) => {
+                        file_ref.init_from_file_selection(activation, &**selection);
+                        broadcast_avm1_file_event(object, istr!("onSelect"), activation)?;
+                    }
+                    Ok(FileDialogResult::Canceled) => {
+                        broadcast_avm1_file_event(object, istr!("onCancel"), activation)?;
+                    }
+                    Err(err) => tracing::warn!("Download dialog had an error {:?}", err),
                 }
-                Ok(FileDialogResult::Canceled) => {
-                    broadcast_avm1_file_event(object, istr!("onCancel"), activation)?;
-                }
-                Err(err) => tracing::warn!("Download dialog had an error {:?}", err),
-            }
 
-            Ok(())
-        })?;
+                Ok(file_ref.post_data().map(|post_data| post_data.to_string()))
+            })?;
 
         let Ok(FileDialogResult::Selection(mut selection)) = dialog_result else {
             return Ok(());
         };
 
-        // Download the data
-        let req = Request::get(url.clone());
+        // Like Flash Player, send `postData` as the body of a POST request.
+        let request = match post_data {
+            Some(post_data) if !post_data.is_empty() => Request::post(
+                url.clone(),
+                Some((
+                    post_data.into_bytes(),
+                    "application/x-www-form-urlencoded".to_string(),
+                )),
+            ),
+            _ => Request::get(url.clone()),
+        };
+
         // Doing this in two steps to prevent holding the player lock during fetch
-        let future = player.lock().unwrap().fetch(req, FetchReason::Other);
+        let future = player.lock().unwrap().fetch(request, FetchReason::Other);
         let download_res = wait_for_full_response(future).await;
 
         // Fire the load handler.
