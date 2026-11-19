@@ -22,8 +22,8 @@ PASSED: TextFormat.prototype.hasOwnProperty('url') [./TextFormat.as:50]
 PASSED: TextFormat.prototype.hasOwnProperty('color') [./TextFormat.as:51]
 PASSED: TextFormat.prototype.hasOwnProperty('size') [./TextFormat.as:52]
 PASSED: TextFormat.prototype.hasOwnProperty('font') [./TextFormat.as:53]
-FAILED: !TextFormat.prototype.hasOwnProperty('getTextExtent') [./TextFormat.as:54]
-FAILED: tfObj.hasOwnProperty('getTextExtent') [./TextFormat.as:55]
+PASSED: !TextFormat.prototype.hasOwnProperty('getTextExtent') [./TextFormat.as:54]
+PASSED: tfObj.hasOwnProperty('getTextExtent') [./TextFormat.as:55]
 PASSED: typeof(tfObj.display) == 'string' [./TextFormat.as:61]
 PASSED: tfObj.display == 'block' [./TextFormat.as:62]
 PASSED: typeof(tfObj.bullet) == 'null' [./TextFormat.as:63]
@@ -167,6 +167,6 @@ FAILED: expected: 27 obtained: 4 [./TextFormat.as:474]
 FAILED: expected: 36 obtained: 4 [./TextFormat.as:475]
 FAILED: expected: 18.55 obtained: 0 [./TextFormat.as:480]
 FAILED: expected: 4.7 obtained: 0 [./TextFormat.as:481]
-#passed: 130
-#failed: 36
+#passed: 132
+#failed: 34
 #total tests run: 166
