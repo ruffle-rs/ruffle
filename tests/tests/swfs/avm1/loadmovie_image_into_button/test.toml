@@ -1,5 +1,5 @@
 num_ticks = 15
-known_failure.panic = "called `Option::unwrap()` on a `None` value"
+known_failure = true
 
 [[compilers]]
 type = "Swfasm"
