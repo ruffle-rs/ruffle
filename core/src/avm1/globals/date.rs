@@ -4,6 +4,7 @@ use crate::avm1::{Activation, Error, NativeObject, Object, Value};
 use crate::backend::locale::LocaleBackend;
 use crate::string::AvmString;
 use gc_arena::Gc;
+use ruffle_macros::istr;
 use std::cell::Cell;
 
 #[inline]
@@ -336,6 +337,96 @@ const OBJECT_DECLS: StaticDeclarations = declare_static_properties! {
     use fn method;
     "UTC" => method(UTC; DONT_ENUM | DONT_DELETE | READ_ONLY);
 };
+
+/// Instantiate an AMF0 Date using Flash's built-in Date constructor behavior.
+pub(crate) fn from_amf0<'gc>(activation: &mut Activation<'_, 'gc>, time: f64) -> Value<'gc> {
+    // Flash returns undefined if the script-visible Date binding is missing or
+    // is not callable. Native Date constructors create a native Date; a
+    // script-defined replacement instead supplies only the resulting object's
+    // prototype, without invoking its constructor.
+    let Some(constructor) = activation.resolve_class([istr!("Date")]) else {
+        return Value::Undefined;
+    };
+    let Some(function) = constructor.as_function() else {
+        return Value::Undefined;
+    };
+
+    let object = if function.has_native_constructor() {
+        let Ok(Value::Object(object)) = constructor.construct(activation, &[]) else {
+            return Value::Undefined;
+        };
+
+        // AMF0 supplies the timestamp separately from the zero-argument
+        // construction that Flash performs.
+        if let NativeObject::Date(date) = object.native() {
+            date.set(Date(time));
+        }
+
+        object
+    } else {
+        // For a script-defined Date binding, Flash creates an ordinary object
+        // using the constructor's stored prototype. It does not call the
+        // constructor or install native Date state.
+        Object::new(
+            &activation.context.strings,
+            constructor.prototype(activation),
+        )
+    };
+
+    object.into()
+}
+
+/// A LocalConnection Date whose constructor runs after the receiving callback.
+pub(crate) struct DeferredAmf0Date<'gc> {
+    constructor: Object<'gc>,
+    object: Object<'gc>,
+}
+
+impl<'gc> DeferredAmf0Date<'gc> {
+    pub(crate) fn initialize(self, activation: &mut Activation<'_, 'gc>) {
+        // Flash exposes the newly allocated object to the LocalConnection
+        // callback, then invokes the script-defined Date constructor.
+        let _ = self
+            .constructor
+            .construct_on_existing(activation, self.object, &[]);
+    }
+}
+
+/// Create the uninitialized object used for a LocalConnection AMF0 Date.
+pub(crate) fn from_local_connection_amf0<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    time: f64,
+    deferred_dates: &mut Vec<DeferredAmf0Date<'gc>>,
+) -> Value<'gc> {
+    // Resolve the script-visible Date binding when the LocalConnection message
+    // is delivered, not when the sender serializes the value.
+    let global = activation.global_object();
+    let Ok(Value::Object(constructor)) = global.get(istr!("Date"), activation) else {
+        return Value::Undefined;
+    };
+    let Some(function) = constructor.as_function() else {
+        return Value::Undefined;
+    };
+
+    // Native Date construction initializes the timestamp immediately. Only
+    // script-defined replacements need to be deferred until after the callback.
+    if function.has_native_constructor() {
+        return from_amf0(activation, time);
+    }
+
+    // Resolve the stored prototype without invoking a virtual prototype
+    // getter, and defer the script constructor until after onReceiveData returns.
+    let object = Object::new(
+        &activation.context.strings,
+        constructor.prototype(activation),
+    );
+    deferred_dates.push(DeferredAmf0Date {
+        constructor,
+        object,
+    });
+
+    object.into()
+}
 
 pub fn create_class<'gc>(
     context: &mut DeclContext<'_, 'gc>,
