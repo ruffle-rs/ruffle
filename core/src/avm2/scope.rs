@@ -220,7 +220,7 @@ pub fn search_scope_stack<'gc>(
                 return Some(values);
             }
             // Also check the prototype chain, like avmplus does.
-            if value_has_proto_property(values, multiname) {
+            if value_has_proto_property(classes, values, multiname) {
                 return Some(values);
             }
         }
@@ -276,15 +276,17 @@ fn value_has_own_property<'gc>(
 // Check if a Value has a property on its prototype chain. Used for with-scope
 // resolution in `search_scope_stack`: avmplus's `hasMultinameProperty` checks
 // own properties, traits, and the prototype chain (delegate).
-fn value_has_proto_property<'gc>(value: Value<'gc>, multiname: &Multiname<'gc>) -> bool {
-    if let Value::Object(object) = value {
-        let mut proto = object.proto();
-        while let Some(p) = proto {
-            if p.has_own_property(multiname) {
-                return true;
-            }
-            proto = p.proto();
+fn value_has_proto_property<'gc>(
+    classes: &SystemClasses<'gc>,
+    value: Value<'gc>,
+    multiname: &Multiname<'gc>,
+) -> bool {
+    let mut proto = value.proto_with_classes(classes);
+    while let Some(p) = proto {
+        if p.has_own_property(multiname) {
+            return true;
         }
+        proto = p.proto();
     }
     false
 }
