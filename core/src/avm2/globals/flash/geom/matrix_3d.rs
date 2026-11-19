@@ -8,6 +8,7 @@ use crate::avm2::{Activation, Avm2StrRepresentable as _, Error, Object, TObject 
 use num_traits::Zero;
 use ruffle_macros::Avm2Enum;
 use ruffle_render::matrix3d::Matrix3D;
+use std::f64::consts::PI;
 
 pub use crate::avm2::object::matrix_3d_allocator;
 
@@ -231,70 +232,106 @@ pub fn prepend_scale<'gc>(
 }
 
 /// Implements `Matrix3D.appendRotation`.
-///
-/// Based on OpenFL: https://github.com/openfl/openfl/blob/971a4c9e43b5472fd84d73920a2b7c1b3d8d9257/src/openfl/geom/Matrix3D.hx
 pub fn append_rotation<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
+    rotate(activation, this, args, Composition::Append)
+}
+
+/// Implements `Matrix3D.prependRotation`.
+pub fn prepend_rotation<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Value<'gc>,
+    args: FunctionArgs<'_, 'gc>,
+) -> Result<Value<'gc>, Error<'gc>> {
+    rotate(activation, this, args, Composition::Prepend)
+}
+
+/// Whether a transformation is applied after (appended to) or before
+/// (prepended to) the existing matrix.
+#[derive(Clone, Copy)]
+enum Composition {
+    Append,
+    Prepend,
+}
+
+fn rotate<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Value<'gc>,
+    args: FunctionArgs<'_, 'gc>,
+    composition: Composition,
+) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap().as_matrix3d_object().unwrap();
     let degrees = args.get_f64(0);
     let axis = args.get_object(activation, 1, "axis")?;
-    let pivot_point = args.try_get_object(2);
+    let pivot_point = args.try_get_object(2).map(read_vector3d);
 
-    let [tx, ty, tz, _] = if let Some(pivot_point) = pivot_point {
-        read_vector3d(pivot_point)
-    } else {
-        [0.0, 0.0, 0.0, 0.0]
+    // Flash Player converts the angle differently depending on the method
+    // and on whether there is a pivot point.
+    let radians = match (composition, pivot_point) {
+        (Composition::Prepend, Some(_)) => degrees * f64::from((PI / 180.0) as f32),
+        (Composition::Append, Some(_)) => f64::from(degrees as f32) * (PI / 180.0),
+        (_, None) => degrees * (PI / 180.0),
     };
 
-    let radian = degrees * std::f64::consts::PI / 180.0;
-    let cos = radian.cos();
-    let sin = radian.sin();
+    let [x, y, z, _] = read_vector3d(axis);
+    let (axis, _) = normalize_axis([x, y, z].map(|f| f as f32));
+    let mut rotation = Matrix3D {
+        raw_data: axis_angle_matrix(radians, axis),
+    };
 
-    let [mut x, mut y, mut z, _] = read_vector3d(axis);
-    let mut x2 = x * x;
-    let mut y2 = y * y;
-    let mut z2 = z * z;
-    let ls = x2 + y2 + z2;
-
-    if ls != 0.0 {
-        let l = ls.sqrt();
-        x /= l;
-        y /= l;
-        z /= l;
-        x2 /= ls;
-        y2 /= ls;
-        z2 /= ls;
+    if let Some([px, py, pz, _]) = pivot_point {
+        let [px, py, pz] = [px as f32, py as f32, pz as f32];
+        rotation = Matrix3D::translate(px, py, pz)
+            .multiply(&rotation.multiply(&Matrix3D::translate(-px, -py, -pz)));
     }
 
-    let ccos = 1.0 - cos;
-
-    #[rustfmt::skip]
-    let m: RawData = [
-        x2 + (y2 + z2) * cos,
-        x * y * ccos + z * sin,
-        x * z * ccos - y * sin,
-        0.0,
-        x * y * ccos - z * sin,
-        y2 + (x2 + z2) * cos,
-        y * z * ccos + x * sin,
-        0.0,
-        x * z * ccos + y * sin,
-        y * z * ccos - x * sin,
-        z2 + (x2 + y2) * cos,
-        0.0,
-        (tx * (y2 + z2) - x * (ty * y + tz * z)) * ccos + (ty * z - tz * y) * sin,
-        (ty * (x2 + z2) - y * (tx * x + tz * z)) * ccos + (tz * x - tx * z) * sin,
-        (tz * (x2 + y2) - z * (tx * x + ty * y)) * ccos + (tx * y - ty * x) * sin,
-        1.0,
-    ].map(|f| f as f32);
-
-    let result = Matrix3D { raw_data: m }.multiply(&this.matrix_ref());
+    let result = match composition {
+        Composition::Append => rotation.multiply(&this.matrix_ref()),
+        Composition::Prepend => this.matrix_ref().multiply(&rotation),
+    };
     this.replace_matrix(result);
 
     Ok(Value::Undefined)
+}
+
+/// Normalizes a rotation axis the way Flash Player does: at f32 precision,
+/// with the inverse length calculated at f64 precision. Returns the axis and
+/// the factor it was multiplied by.
+fn normalize_axis(axis: [f32; 3]) -> ([f32; 3], f32) {
+    let [x, y, z] = axis;
+    let length_squared = x * x + y * y + z * z;
+
+    if length_squared == 0.0 {
+        return (axis, 1.0);
+    }
+
+    let inverse_length = (1.0 / f64::from(length_squared).sqrt()) as f32;
+
+    (axis.map(|c| c * inverse_length), inverse_length)
+}
+
+/// Calculates the matrix of a rotation by `radians` around a normalized
+/// `axis` the way Flash Player does: the products of the axis components at
+/// f32 precision, and the rest at f64 precision.
+fn axis_angle_matrix(radians: f64, axis: [f32; 3]) -> RawData {
+    let [x, y, z] = axis;
+    let [xx, yy, zz, xy, xz, yz] = [x * x, y * y, z * z, x * y, x * z, y * z].map(f64::from);
+    let [x, y, z] = axis.map(f64::from);
+    let (sin, cos) = radians.sin_cos();
+    let t = 1.0 - cos;
+
+    #[rustfmt::skip]
+    let m = [
+        xx * t + cos, xy * t + z * sin, xz * t - y * sin, 0.0,
+        xy * t - z * sin, yy * t + cos, yz * t + x * sin, 0.0,
+        xz * t + y * sin, yz * t - x * sin, zz * t + cos, 0.0,
+        0.0, 0.0, 0.0, 1.0,
+    ];
+
+    m.map(|f| f as f32)
 }
 
 /// Implements `Matrix3D.copyColumnTo`.
@@ -742,36 +779,11 @@ pub fn recompose<'gc>(
         }
 
         Orientation3D::AxisAngle => {
-            // Flash Player normalizes the axis at f32 precision, scaling the
-            // angle along with it, and calculates the rotation from that at
-            // f64 precision.
-            let [mut x, mut y, mut z, mut angle] =
-                [rotation_x, rotation_y, rotation_z, rotation_w].map(|f| f as f32);
-
-            let length_squared = x * x + y * y + z * z;
-            if length_squared != 0.0 {
-                let inverse_length = (1.0 / f64::from(length_squared).sqrt()) as f32;
-                x *= inverse_length;
-                y *= inverse_length;
-                z *= inverse_length;
-                angle *= inverse_length;
-            }
-
-            let (sin, cos) = f64::from(angle).sin_cos();
-            let t = 1.0 - cos;
-            let [xx, yy, zz, xy, xz, yz] =
-                [x * x, y * y, z * z, x * y, x * z, y * z].map(f64::from);
-            let [x, y, z] = [x, y, z].map(f64::from);
-
-            rotation_matrix[0] = xx * t + cos;
-            rotation_matrix[1] = xy * t + z * sin;
-            rotation_matrix[2] = xz * t - y * sin;
-            rotation_matrix[4] = xy * t - z * sin;
-            rotation_matrix[5] = yy * t + cos;
-            rotation_matrix[6] = yz * t + x * sin;
-            rotation_matrix[8] = xz * t + y * sin;
-            rotation_matrix[9] = yz * t - x * sin;
-            rotation_matrix[10] = zz * t + cos;
+            // Flash Player scales the angle along with the axis.
+            let (axis, factor) =
+                normalize_axis([rotation_x, rotation_y, rotation_z].map(|f| f as f32));
+            let angle = rotation_w as f32 * factor;
+            rotation_matrix = axis_angle_matrix(angle.into(), axis).map(f64::from);
         }
 
         Orientation3D::Quaternion => {
