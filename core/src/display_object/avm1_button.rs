@@ -421,6 +421,14 @@ impl<'gc> TInteractiveObject<'gc> for Avm1Button<'gc> {
         self.into()
     }
 
+    fn track_as_menu(self, context: &mut UpdateContext<'gc>) -> bool {
+        self.get_boolean_property(
+            istr!(context, "trackAsMenu"),
+            self.0.tracking.get() == ButtonTracking::Menu,
+            context,
+        )
+    }
+
     fn filter_clip_event(
         self,
         _context: &mut UpdateContext<'gc>,
@@ -452,7 +460,11 @@ impl<'gc> TInteractiveObject<'gc> for Avm1Button<'gc> {
         let shared = shared.cell.borrow();
         let (new_state, condition, sound) = match event {
             ClipEvent::DragOut { .. } => (
-                ButtonState::Over,
+                if InteractiveObject::option_ptr_eq(context.mouse_data.pressed, Some(self.into())) {
+                    ButtonState::Over
+                } else {
+                    ButtonState::Up
+                },
                 Some(ButtonActionCondition::OVER_DOWN_TO_OUT_DOWN),
                 None,
             ),
