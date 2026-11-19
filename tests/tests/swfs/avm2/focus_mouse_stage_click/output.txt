@@ -1,0 +1,15 @@
+  focusIn on rootButton, relatedObject: null, focus: rootButton
+focus set to rootButton
+  mouseFocusChange on rootButton, relatedObject: null, focus: rootButton
+  focusOut on rootButton, relatedObject: null, focus: null
+click on stage, focus: null
+  focusIn on buttonInNoTabParent, relatedObject: null, focus: buttonInNoTabParent
+focus set to buttonInNoTabParent
+  mouseFocusChange on buttonInNoTabParent, relatedObject: null, focus: buttonInNoTabParent
+  focusOut on buttonInNoTabParent, relatedObject: null, focus: null
+click on stage, focus: null
+  focusIn on tabDisabledButton, relatedObject: null, focus: tabDisabledButton
+focus set to tabDisabledButton
+  mouseFocusChange on tabDisabledButton, relatedObject: null, focus: tabDisabledButton
+  focusOut on tabDisabledButton, relatedObject: null, focus: null
+click on stage, focus: null

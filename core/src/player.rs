@@ -1897,10 +1897,12 @@ impl Player {
         });
         if should_focus {
             tracker.set_by_mouse(pressed_object, context);
-        } else if tracker
-            .get()
-            .is_some_and(|int| int.is_focusable_by_mouse(context))
-        {
+        } else if tracker.get().is_some_and(|int| {
+            // Clicking the stage clears the focus of any AVM2 object,
+            // even one that could not have been focused by mouse.
+            (pressed_object.is_none() && int.as_displayobject().movie().is_action_script_3())
+                || int.is_focusable_by_mouse(context)
+        }) {
             // Need to clear the focus if an object focusable by mouse was un-focused.
             tracker.set_by_mouse(None, context);
         }
