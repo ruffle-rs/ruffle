@@ -2178,8 +2178,11 @@ impl<'gc> MovieLoader<'gc> {
             }
         } else if let Some(dobj) = dobj {
             // This is a load of an image into AVM1 - add it as a child of the target clip.
-            if dobj.as_movie_clip().is_none() {
-                let mc = target_clip.as_movie_clip().unwrap();
+            // TODO: Flash Player also loads images into buttons, replacing
+            // them with a movie clip (#9704). Like for SWFs, we skip them.
+            if dobj.as_movie_clip().is_none()
+                && let Some(mc) = target_clip.as_movie_clip()
+            {
                 mc.replace_with_movie(uc, Some(movie.unwrap()), true, None);
                 mc.replace_at_depth(uc, dobj, 1);
 
