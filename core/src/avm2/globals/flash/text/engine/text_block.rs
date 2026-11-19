@@ -500,6 +500,7 @@ pub fn do_create_text_line<'gc>(
         // `TextLine.recreateTextLine` is the caller: completely reset the
         // properties of the passed line and use it.
         line.reset_properties(activation.gc());
+        line.fallback().set_width(activation.context, width);
         line
     } else {
         // `TextLine.createTextLine` is the caller: create a new `TextLine`.

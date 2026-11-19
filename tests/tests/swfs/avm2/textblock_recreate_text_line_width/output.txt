@@ -1,0 +1,5 @@
+recreated is the same object: true
+specifiedWidth: 1000
+same rawTextLength: true
+same width: true
+same height: true
