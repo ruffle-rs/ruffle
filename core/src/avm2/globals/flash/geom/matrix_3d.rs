@@ -787,8 +787,6 @@ pub fn recompose<'gc>(
 }
 
 /// Implements `Matrix3D.decompose`.
-///
-/// Based on OpenFL: https://github.com/openfl/openfl/blob/971a4c9e43b5472fd84d73920a2b7c1b3d8d9257/src/openfl/geom/Matrix3D.hx#L437
 pub fn decompose<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
@@ -801,91 +799,36 @@ pub fn decompose<'gc>(
         return Err(make_error_2187(activation, orientation));
     };
 
-    let mut mr = this.matrix_ref().raw_data.map(|f| f as f64);
+    let decomposed = this.matrix_ref().decompose();
+    let [translation_x, translation_y, translation_z] = decomposed.translation;
+    let translation = [translation_x, translation_y, translation_z, 0.0];
+    let [scale_x, scale_y, scale_z] = decomposed.scale;
+    let scale = [scale_x, scale_y, scale_z, 0.0];
 
-    let translation = [mr[12], mr[13], mr[14], 0.0];
+    // Flash Player calculates quaternions at f32 precision, and axis-angle
+    // rotations at f64 precision from those.
+    let rotation = match orientation {
+        Orientation3D::Quaternion => decomposed.quaternion().map(f64::from),
 
-    let scale_x = (mr[0] * mr[0] + mr[1] * mr[1] + mr[2] * mr[2]).sqrt();
-    let scale_y = (mr[4] * mr[4] + mr[5] * mr[5] + mr[6] * mr[6]).sqrt();
-    let mut scale_z = (mr[8] * mr[8] + mr[9] * mr[9] + mr[10] * mr[10]).sqrt();
-
-    if mr[0] * (mr[5] * mr[10] - mr[6] * mr[9]) - mr[1] * (mr[4] * mr[10] - mr[6] * mr[8])
-        + mr[2] * (mr[4] * mr[9] - mr[5] * mr[8])
-        < 0.0
-    {
-        scale_z = -scale_z;
-    }
-
-    mr[0] /= scale_x;
-    mr[1] /= scale_x;
-    mr[2] /= scale_x;
-    mr[4] /= scale_y;
-    mr[5] /= scale_y;
-    mr[6] /= scale_y;
-    mr[8] /= scale_z;
-    mr[9] /= scale_z;
-    mr[10] /= scale_z;
-
-    let mut rotation = [0.0; 4];
-
-    match orientation {
         Orientation3D::AxisAngle => {
-            rotation[3] = ((mr[0] + mr[5] + mr[10] - 1.0) / 2.0).acos();
+            let [x, y, z, w] = decomposed.quaternion().map(f64::from);
+            let angle = 2.0 * w.acos();
+            let length = (1.0 - w * w).sqrt();
 
-            let length = ((mr[6] - mr[9]) * (mr[6] - mr[9])
-                + (mr[8] - mr[2]) * (mr[8] - mr[2])
-                + (mr[1] - mr[4]) * (mr[1] - mr[4]))
-                .sqrt();
-
-            if length != 0.0 {
-                rotation[0] = (mr[6] - mr[9]) / length;
-                rotation[1] = (mr[8] - mr[2]) / length;
-                rotation[2] = (mr[1] - mr[4]) / length;
-            }
-        }
-
-        Orientation3D::Quaternion => {
-            let trace = mr[0] + mr[5] + mr[10];
-
-            if trace > 0.0 {
-                rotation[3] = (1.0 + trace).sqrt() / 2.0;
-
-                rotation[0] = (mr[6] - mr[9]) / (4.0 * rotation[3]);
-                rotation[1] = (mr[8] - mr[2]) / (4.0 * rotation[3]);
-                rotation[2] = (mr[1] - mr[4]) / (4.0 * rotation[3]);
-            } else if mr[0] > mr[5] && mr[0] > mr[10] {
-                rotation[0] = (1.0 + mr[0] - mr[5] - mr[10]).sqrt() / 2.0;
-
-                rotation[3] = (mr[6] - mr[9]) / (4.0 * rotation[0]);
-                rotation[1] = (mr[1] + mr[4]) / (4.0 * rotation[0]);
-                rotation[2] = (mr[8] + mr[2]) / (4.0 * rotation[0]);
-            } else if mr[5] > mr[10] {
-                rotation[1] = (1.0 + mr[5] - mr[0] - mr[10]).sqrt() / 2.0;
-
-                rotation[0] = (mr[1] + mr[4]) / (4.0 * rotation[1]);
-                rotation[3] = (mr[8] - mr[2]) / (4.0 * rotation[1]);
-                rotation[2] = (mr[6] + mr[9]) / (4.0 * rotation[1]);
+            if length == 0.0 {
+                [0.0, 0.0, 0.0, angle]
             } else {
-                rotation[2] = (1.0 + mr[10] - mr[0] - mr[5]).sqrt() / 2.0;
-
-                rotation[0] = (mr[8] + mr[2]) / (4.0 * rotation[2]);
-                rotation[1] = (mr[6] + mr[9]) / (4.0 * rotation[2]);
-                rotation[3] = (mr[1] - mr[4]) / (4.0 * rotation[2]);
+                [x / length, y / length, z / length, angle]
             }
         }
 
         Orientation3D::EulerAngles => {
-            rotation[1] = (-mr[2]).asin();
+            let [x, y, z] = decomposed.euler_angles();
 
-            if mr[2] != 1.0 && mr[2] != -1.0 {
-                rotation[0] = mr[6].atan2(mr[10]);
-                rotation[2] = mr[1].atan2(mr[0]);
-            } else {
-                rotation[2] = 0.0;
-                rotation[0] = mr[4].atan2(mr[5]);
-            }
+            [x, y, z, 0.0]
         }
     }
+    .map(|v| f64::from(v as f32));
 
     // NOTE: It looks like Flash Player returns uninitialized values here when
     // it doesn't write to a certain component, e.g. rotation.w in case of
@@ -893,7 +836,7 @@ pub fn decompose<'gc>(
     let components = [
         vector3d_to_object(activation, translation),
         vector3d_to_object(activation, rotation),
-        vector3d_to_object(activation, [scale_x, scale_y, scale_z, 0.0]),
+        vector3d_to_object(activation, scale),
     ];
 
     let vector3d = activation
