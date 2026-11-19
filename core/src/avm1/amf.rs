@@ -6,10 +6,7 @@ use crate::avm1::object::parse_canonical_array_index;
 use crate::avm1::{Activation, ArrayBuilder, Attribute, NativeObject, Object, Value};
 use crate::string::{AvmString, from_utf8};
 use flash_lso::amf0::writer::{Amf0Writer, CacheKey, ObjWriter};
-use flash_lso::types::{
-    ClassDefinition, DateValue, ECMAArrayObjectValue, Element, ObjectId, ObjectValue, Reference,
-    Value as AmfValue,
-};
+use flash_lso::types::{ECMAArrayObjectValue, Element, ObjectId, Reference, Value as AmfValue};
 use ruffle_macros::istr;
 
 /// Tracks AMF0 referenceable values in wire order.
@@ -154,56 +151,32 @@ fn serialize_with_context<'gc>(
     serialization_context: SerializationContext,
 ) -> AmfValue {
     match classify_amf0_value(activation, value) {
-        Amf0ValueSerializationKind::Primitive(value) => value,
-        Amf0ValueSerializationKind::Object { object, kind } => match kind {
-            Amf0ObjectSerializationKind::DisplayObject => AmfValue::Undefined,
-            Amf0ObjectSerializationKind::Array => {
-                serialize_array(activation, object, serialization_context)
-            }
-            Amf0ObjectSerializationKind::Xml(value) => AmfValue::XML {
-                value,
-                is_string: true,
-            },
-            Amf0ObjectSerializationKind::Date(time) => AmfValue::Date {
-                id: ObjectId::INVALID,
-                data: DateValue {
-                    time,
-                    timezone_or_utc: None,
-                },
-            },
-            Amf0ObjectSerializationKind::Object(class_name) => {
-                let class_def = class_name.map(ClassDefinition::default_with_name);
-                let elements =
-                    serialize_object_properties(activation, object, serialization_context);
-                AmfValue::Object {
-                    id: ObjectId::INVALID,
-                    data: ObjectValue {
-                        elements,
-                        class_definition: class_def,
-                    },
-                }
-            }
-        },
+        Amf0ValueSerializationKind::Object {
+            object,
+            kind: Amf0ObjectSerializationKind::Array,
+        } => {
+            // Keep root arrays on this path: their elements currently use
+            // independent value serializers rather than one shared writer cache.
+            serialize_array(activation, object, serialization_context)
+        }
+        classification => {
+            let mut writer = Amf0Writer::default();
+            serialize_classified_value_to_writer(
+                activation,
+                "root",
+                classification,
+                &mut writer,
+                serialization_context,
+            );
+
+            writer
+                .commit_lso("root")
+                .into_iter()
+                .next()
+                .expect("Top-level AMF0 serialization must produce one value")
+                .value
+        }
     }
-}
-
-/// Serialize an Object in NetConnection or LocalConnection.
-fn serialize_object_properties<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    object: Object<'gc>,
-    serialization_context: SerializationContext,
-) -> Vec<Element> {
-    let mut w = Amf0Writer::default();
-
-    // The root object is written by the enclosing NetConnection/LocalConnection
-    // value, while this writer serializes only its properties. Reserve its slot
-    // here so references in those properties use the wire-format index.
-    let root_key = CacheKey::from_ptr(object.as_ptr());
-    let root_reference = w.make_reference();
-    w.cache_add(root_key, root_reference);
-
-    recursive_serialize(activation, object, &mut w, serialization_context);
-    w.commit_lso("root").into_iter().collect()
 }
 
 /// Parse a numeric array key the way Flash's NetConnection AMF serializer does.
@@ -476,7 +449,24 @@ fn serialize_value_to_writer<'gc>(
         return;
     }
 
-    match classify_amf0_value(activation, elem) {
+    let classification = classify_amf0_value(activation, elem);
+    serialize_classified_value_to_writer(
+        activation,
+        name,
+        classification,
+        writer,
+        serialization_context,
+    );
+}
+
+fn serialize_classified_value_to_writer<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    name: &str,
+    classification: Amf0ValueSerializationKind<'gc>,
+    writer: &mut dyn ObjWriter<'_>,
+    serialization_context: SerializationContext,
+) {
+    match classification {
         Amf0ValueSerializationKind::Primitive(value) => writer.add_element(name, value),
         Amf0ValueSerializationKind::Object { object, kind } => match kind {
             Amf0ObjectSerializationKind::DisplayObject => writer.undefined(name),
@@ -1052,6 +1042,55 @@ mod tests {
     use super::*;
     use crate::avm1::error::Error;
     use crate::avm1::test_utils::with_avm;
+    use flash_lso::types::{DateValue, ObjectValue};
+
+    #[test]
+    fn top_level_primitive_values_use_amf0_writer() {
+        with_avm(8, |activation, _this| -> Result<(), Error> {
+            assert_eq!(
+                serialize_with_context(
+                    activation,
+                    Value::Undefined,
+                    SerializationContext::NetConnection,
+                ),
+                AmfValue::Undefined
+            );
+            assert_eq!(
+                serialize_with_context(
+                    activation,
+                    Value::Null,
+                    SerializationContext::NetConnection,
+                ),
+                AmfValue::Null
+            );
+            assert_eq!(
+                serialize_with_context(
+                    activation,
+                    Value::Bool(true),
+                    SerializationContext::NetConnection,
+                ),
+                AmfValue::Bool(true)
+            );
+            assert_eq!(
+                serialize_with_context(
+                    activation,
+                    Value::Number(42.5),
+                    SerializationContext::NetConnection,
+                ),
+                AmfValue::Number(42.5)
+            );
+            assert_eq!(
+                serialize_with_context(
+                    activation,
+                    Value::String(AvmString::new_utf8(activation.gc(), "value")),
+                    SerializationContext::NetConnection,
+                ),
+                AmfValue::String("value".to_string())
+            );
+
+            Ok(())
+        });
+    }
 
     #[test]
     fn classify_primitive_values() {
