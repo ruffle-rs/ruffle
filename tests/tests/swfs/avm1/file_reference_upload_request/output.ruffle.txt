@@ -1,0 +1,24 @@
+// upload 0: http://localhost:8000/upload?debug-success&q=1
+onSelect(test.txt)
+upload() returned true
+Navigator::fetch:
+  URL: http://localhost:8000/upload?debug-success&q=1
+  Method: POST
+  Mime-Type: multipart/form-data; boundary=------------BOUNDARY
+  Body: ------------BOUNDARY
+Content-Disposition: form-data; name="Filename"
+
+test.txt
+------------BOUNDARY
+Content-Disposition: form-data; name="Filedata"; filename="test.txt"
+Content-Type: application/octet-stream
+
+Hello, World!
+------------BOUNDARY
+Content-Disposition: form-data; name="Upload"
+
+Submit Query
+------------BOUNDARY
+
+onOpen(test.txt)
+onComplete(test.txt)
