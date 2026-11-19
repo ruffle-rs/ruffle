@@ -16,6 +16,7 @@ use crate::context::UpdateContext;
 use crate::display_object::{DisplayObject, MovieClip, TDisplayObject};
 use crate::loader::LoadManager;
 use crate::orphan_manager::OrphanManager;
+use std::mem;
 use tracing::instrument;
 
 /// Which phase of the frame we're currently in.
@@ -140,6 +141,7 @@ pub fn run_inner_goto_frame<'gc>(
     // When performing goto, frame scripts behave the same as when entering a new frame
     // so no separate cleanup is performed on ones registered during frame script phase
     context.frame_script_cleanup_queue.clear();
+    context.frame_script_cleanup_skip_next = false;
 
     // Note - we do *not* call `enter_frame` or dispatch an `enterFrame` event
 
@@ -171,6 +173,7 @@ pub fn run_inner_goto_frame<'gc>(
     context.orphan_manager.cleanup_dead_orphans(context.gc());
 
     *context.frame_phase = old_phase;
+    context.frame_script_cleanup_skip_next = old_phase == FramePhase::FrameScripts;
 }
 
 /// Broadcast a `enterFrame` event to all `DisplayObject`s.
@@ -204,6 +207,34 @@ fn run_frame_script_cleanup<'gc>(context: &mut UpdateContext<'gc>) {
         clip.set_last_queued_script_frame(None);
         clip.run_local_frame_scripts(context);
     }
+
+    context.frame_script_cleanup_skip_next = false;
+
+    for clip in mem::take(&mut context.frame_script_cleanup_dropped) {
+        let frame = clip.current_frame();
+
+        if clip.last_queued_script_frame() != Some(frame) {
+            clip.set_has_pending_script(false);
+            clip.set_last_queued_script_frame(Some(frame));
+        }
+    }
+}
+
+/// Run the frame scripts queued for the cleanup pass (including dropped ones)
+/// as part of a nested frame script pass, such as the one run when a
+/// `SimpleButton` with movie clip states is constructed.
+pub fn run_nested_frame_script_cleanup<'gc>(context: &mut UpdateContext<'gc>) {
+    let queued = mem::take(&mut context.frame_script_cleanup_queue);
+    let dropped = mem::take(&mut context.frame_script_cleanup_dropped);
+
+    for clip in queued.into_iter().chain(dropped) {
+        if clip.last_queued_script_frame() != Some(clip.current_frame()) {
+            clip.set_has_pending_script(true);
+            clip.run_local_frame_scripts(context);
+        }
+    }
+
+    context.frame_script_cleanup_skip_next = *context.frame_phase == FramePhase::FrameScripts;
 }
 
 /// Run all previously-executed frame phases on a newly-constructed display
