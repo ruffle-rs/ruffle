@@ -1,0 +1,24 @@
+// new TextField()
+own: false
+shared: true
+same as the prototype's: true
+enumerable: false
+length: 0, contains itself: false
+after addListener on one: 1, other: 1
+delete: false, still the same array: true
+// new MovieClipLoader()
+own: true
+shared: false
+same as the prototype's: false
+enumerable: false
+length: 1, contains itself: true
+after addListener on one: 2, other: 1
+delete: true, still the same array: false
+// createTextField()
+own: true
+shared: false
+same as the prototype's: false
+enumerable: false
+length: 1, contains itself: true
+after addListener on one: 2, other: 1
+delete: false, still the same array: true
