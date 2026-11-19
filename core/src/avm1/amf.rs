@@ -6,7 +6,7 @@ use crate::avm1::object::parse_canonical_array_index;
 use crate::avm1::{Activation, ArrayBuilder, Attribute, NativeObject, Object, Value};
 use crate::string::{AvmString, from_utf8};
 use flash_lso::amf0::writer::{Amf0Writer, CacheKey, ObjWriter};
-use flash_lso::types::{ECMAArrayObjectValue, Element, ObjectId, Reference, Value as AmfValue};
+use flash_lso::types::{Element, Reference, Value as AmfValue};
 use ruffle_macros::istr;
 
 /// Tracks AMF0 referenceable values in wire order.
@@ -199,30 +199,35 @@ fn serialize_array<'gc>(
 ) -> AmfValue {
     let (keys, array_info) =
         array_serialization_info_for_array(activation, array, serialization_context);
+    let cache_key = CacheKey::from_ptr(array.as_ptr());
+    let mut writer = Amf0Writer::default();
 
     if array_info.is_strict_array {
-        let mut values = Vec::with_capacity(array_info.length);
+        let (array_writer, _) = writer.strict_array(cache_key);
+        let mut array_writer =
+            array_writer.expect("A new top-level array must not already be cached");
+
         for_each_array_entry(
             activation,
             array,
             &keys,
             &array_info,
             |activation, _, value| {
-                values.push(serialize_array_element(
-                    activation,
-                    value,
-                    serialization_context,
-                ));
+                // Root array entries retain their independent value-serialization
+                // contexts instead of sharing the root array's reference cache.
+                let value = serialize_array_element(activation, value, serialization_context);
+                array_writer.add_element("", value);
             },
         );
-        AmfValue::StrictArray {
-            id: ObjectId::INVALID,
-            values,
-        }
+
+        array_writer.commit("root");
     } else {
         // ECMA arrays preserve associative properties and, for LocalConnection,
         // preserve sparse indices without materializing undefined holes.
-        let mut elements = Vec::with_capacity(keys.len());
+        let (array_writer, _) = writer.array(cache_key);
+        let mut array_writer =
+            array_writer.expect("A new top-level array must not already be cached");
+
         for_each_array_entry(
             activation,
             array,
@@ -231,18 +236,20 @@ fn serialize_array<'gc>(
             |activation, name, value| {
                 let name = name.expect("ECMA array entries have property names");
                 let value = serialize_with_context(activation, value, serialization_context);
-                elements.push(Element::new(name.to_string(), value));
+                array_writer.add_element(&name.to_string(), value);
             },
         );
-        AmfValue::ECMAArray {
-            id: ObjectId::INVALID,
-            data: ECMAArrayObjectValue {
-                dense: Vec::new(),
-                elements,
-                length: array_info.length as u32,
-            },
-        }
+
+        array_writer.set_length(array_info.length as u32);
+        array_writer.commit("root");
     }
+
+    writer
+        .commit_lso("root")
+        .into_iter()
+        .next()
+        .expect("Top-level AMF0 array serialization must produce one value")
+        .value
 }
 
 /// Determine whether a LocalConnection array needs ECMA encoding to preserve
@@ -1042,7 +1049,7 @@ mod tests {
     use super::*;
     use crate::avm1::error::Error;
     use crate::avm1::test_utils::with_avm;
-    use flash_lso::types::{DateValue, ObjectValue};
+    use flash_lso::types::{DateValue, ECMAArrayObjectValue, ObjectId, ObjectValue};
 
     #[test]
     fn top_level_primitive_values_use_amf0_writer() {
@@ -1087,6 +1094,44 @@ mod tests {
                 ),
                 AmfValue::String("value".to_string())
             );
+
+            Ok(())
+        });
+    }
+
+    #[test]
+    fn top_level_arrays_use_amf0_writer() {
+        with_avm(8, |activation, _this| -> Result<(), Error> {
+            let array = ArrayBuilder::empty_with_len(activation, 2);
+            array
+                .set_element(activation, 0, Value::Number(1.0))
+                .unwrap();
+            array
+                .set_element(activation, 1, Value::Number(2.0))
+                .unwrap();
+            let value: Value<'_> = array.into();
+
+            assert!(matches!(
+                serialize_with_context(
+                    activation,
+                    value,
+                    SerializationContext::NetConnection,
+                ),
+                AmfValue::StrictArray { values, .. }
+                    if values == vec![AmfValue::Number(1.0), AmfValue::Number(2.0)]
+            ));
+
+            assert!(matches!(
+                serialize_with_context(
+                    activation,
+                    value,
+                    SerializationContext::SharedObject,
+                ),
+                AmfValue::ECMAArray { data, .. }
+                    if data.dense.is_empty()
+                        && data.length == 2
+                        && data.elements.len() == 2
+            ));
 
             Ok(())
         });
