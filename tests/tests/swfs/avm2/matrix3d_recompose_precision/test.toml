@@ -2,7 +2,6 @@
 # Windows differs in the last bit of a few cells (the general quaternion and
 # axis-angle cases).
 num_ticks = 1
-known_failure = true
 
 [[compilers]]
 type = "Asc"
