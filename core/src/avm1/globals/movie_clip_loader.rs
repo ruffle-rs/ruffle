@@ -31,7 +31,12 @@ fn constructor<'gc>(
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    define_listeners(activation, this, [this.into()], Attribute::DONT_ENUM);
+    define_listeners(
+        activation,
+        this,
+        [this.into()],
+        Attribute::DONT_ENUM | Attribute::DONT_DELETE,
+    );
 
     Ok(Value::Undefined)
 }
