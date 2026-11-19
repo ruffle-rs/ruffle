@@ -1,5 +1,6 @@
 //! Management of async loaders
 
+use crate::avm1::globals::file_reference::FileReferenceObject as Avm1FileReferenceObject;
 use crate::avm1::globals::object::broadcast_internal;
 use crate::avm1::{Activation, ActivationIdentifier};
 use crate::avm1::{Attribute, Avm1};
@@ -2625,86 +2626,104 @@ pub fn download_file_dialog<'gc>(
         let download_res = wait_for_full_response(future).await;
 
         // Fire the load handler.
-        player.lock().unwrap().update(|uc| -> Result<(), Error> {
-            let target_object = target_object.fetch(uc);
+        with_file_reference(
+            &player,
+            &target_object,
+            |activation, target_object, file_ref| {
+                match dialog_result {
+                    Ok(FileDialogResult::Selection(mut selection)) => {
+                        // onSelect and onOpen should be called before the download begins
+                        // We simulate this by using the initial dialog result
+                        file_ref.init_from_file_selection(activation, &*selection);
 
-            let file_ref = match target_object.native() {
-                NativeObject::FileReference(fr) => fr,
-                _ => panic!("NativeObject must be FileReference"),
-            };
+                        broadcast_internal(
+                            target_object,
+                            &[target_object.into()],
+                            istr!("onSelect"),
+                            activation,
+                        )?;
 
-            let mut activation =
-                Activation::from_stub(uc, ActivationIdentifier::root("[File Dialog]"));
-            match dialog_result {
-                Ok(FileDialogResult::Selection(mut selection)) => {
-                    // onSelect and onOpen should be called before the download begins
-                    // We simulate this by using the initial dialog result
-                    file_ref.init_from_file_selection(&mut activation, &*selection);
+                        match download_res {
+                            Ok((body, _, _, _)) => {
+                                broadcast_internal(
+                                    target_object,
+                                    &[target_object.into()],
+                                    istr!("onOpen"),
+                                    activation,
+                                )?;
 
-                    broadcast_internal(
-                        target_object,
-                        &[target_object.into()],
-                        istr!("onSelect"),
-                        &mut activation,
-                    )?;
+                                // onProgress and onComplete expect to receive the current state
+                                // of the file, as we simulate an instant 100% download from the
+                                // perspective of AS, we want to refresh the file_ref internal data
+                                // before invoking the callbacks
 
-                    match download_res {
-                        Ok((body, _, _, _)) => {
-                            broadcast_internal(
-                                target_object,
-                                &[target_object.into()],
-                                istr!("onOpen"),
-                                &mut activation,
-                            )?;
+                                selection.write_and_refresh(&body);
+                                file_ref.init_from_file_selection(activation, &*selection);
 
-                            // onProgress and onComplete expect to receive the current state
-                            // of the file, as we simulate an instant 100% download from the
-                            // perspective of AS, we want to refresh the file_ref internal data
-                            // before invoking the callbacks
+                                let total_bytes = body.len();
 
-                            selection.write_and_refresh(&body);
-                            file_ref.init_from_file_selection(&mut activation, &*selection);
+                                broadcast_internal(
+                                    target_object,
+                                    &[
+                                        target_object.into(),
+                                        Value::from_usize_lossy(total_bytes),
+                                        Value::from_usize_lossy(total_bytes),
+                                    ],
+                                    istr!("onProgress"),
+                                    activation,
+                                )?;
 
-                            let total_bytes = body.len();
-
-                            broadcast_internal(
-                                target_object,
-                                &[
-                                    target_object.into(),
-                                    Value::from_usize_lossy(total_bytes),
-                                    Value::from_usize_lossy(total_bytes),
-                                ],
-                                istr!("onProgress"),
-                                &mut activation,
-                            )?;
-
-                            broadcast_internal(
-                                target_object,
-                                &[target_object.into()],
-                                istr!("onComplete"),
-                                &mut activation,
-                            )?;
-                        }
-                        Err(err) => {
-                            report_download_error(&mut activation, target_object, &url, err.error)?;
+                                broadcast_internal(
+                                    target_object,
+                                    &[target_object.into()],
+                                    istr!("onComplete"),
+                                    activation,
+                                )?;
+                            }
+                            Err(err) => {
+                                report_download_error(activation, target_object, &url, err.error)?;
+                            }
                         }
                     }
+                    Ok(FileDialogResult::Canceled) => {
+                        broadcast_internal(
+                            target_object,
+                            &[target_object.into()],
+                            istr!("onCancel"),
+                            activation,
+                        )?;
+                    }
+                    Err(err) => {
+                        tracing::warn!("Download dialog had an error {:?}", err);
+                    }
                 }
-                Ok(FileDialogResult::Canceled) => {
-                    broadcast_internal(
-                        target_object,
-                        &[target_object.into()],
-                        istr!("onCancel"),
-                        &mut activation,
-                    )?;
-                }
-                Err(err) => {
-                    tracing::warn!("Download dialog had an error {:?}", err);
-                }
-            }
 
-            Ok(())
-        })
+                Ok(())
+            },
+        )
+    })
+}
+
+/// Runs `f` with the AVM1 `FileReference` object `target` of a file
+/// operation, in a new update of the player.
+fn with_file_reference<R>(
+    player: &Mutex<Player>,
+    target: &ObjectHandle,
+    f: impl for<'gc> FnOnce(
+        &mut Activation<'_, 'gc>,
+        Object<'gc>,
+        Avm1FileReferenceObject<'gc>,
+    ) -> Result<R, Error>,
+) -> Result<R, Error> {
+    player.lock().unwrap().update(|uc| {
+        let object = target.fetch(uc);
+        let NativeObject::FileReference(file_ref) = object.native() else {
+            panic!("NativeObject must be FileReference");
+        };
+
+        let mut activation = Activation::from_stub(uc, ActivationIdentifier::root("[File Dialog]"));
+
+        f(&mut activation, object, file_ref)
     })
 }
 
