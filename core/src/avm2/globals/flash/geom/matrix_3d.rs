@@ -42,6 +42,10 @@ fn read_vector3d_value(value: Option<Value<'_>>) -> Option<[f64; 4]> {
     Some(read_vector3d(object))
 }
 
+fn dot3(a: &[f32], b: &[f32]) -> f32 {
+    a[0] * b[0] + a[1] * b[1] + a[2] * b[2]
+}
+
 /// Creates a `Vector3D` with the given components.
 fn vector3d_to_object<'gc>(
     activation: &mut Activation<'_, 'gc>,
@@ -801,91 +805,112 @@ pub fn decompose<'gc>(
         return Err(make_error_2187(activation, orientation));
     };
 
-    let mut mr = this.matrix_ref().raw_data.map(|f| f as f64);
+    let raw = this.matrix_ref().raw_data;
+    let translation = [raw[12], raw[13], raw[14], 0.0].map(f64::from);
 
-    let translation = [mr[12], mr[13], mr[14], 0.0];
+    // Flash Player removes any skew by orthonormalizing the columns at f32
+    // precision (Gram-Schmidt). The lengths of the columns only use their X,
+    // Y and Z components, but the projections onto the previous columns use
+    // their W components too.
+    let dot4 = |a: [f32; 4], b: [f32; 4]| dot3(&a, &b) + a[3] * b[3];
+    let normalize = |v: [f32; 4], length: f32| {
+        let inverse = 1.0 / length;
+        v.map(|c| c * inverse)
+    };
+    let [x_column, y_column, z_column] =
+        [0, 4, 8].map(|i| [raw[i], raw[i + 1], raw[i + 2], raw[i + 3]]);
 
-    let scale_x = (mr[0] * mr[0] + mr[1] * mr[1] + mr[2] * mr[2]).sqrt();
-    let scale_y = (mr[4] * mr[4] + mr[5] * mr[5] + mr[6] * mr[6]).sqrt();
-    let mut scale_z = (mr[8] * mr[8] + mr[9] * mr[9] + mr[10] * mr[10]).sqrt();
+    let scale_x = dot3(&x_column, &x_column).sqrt();
+    let x_axis = normalize(x_column, scale_x);
 
-    if mr[0] * (mr[5] * mr[10] - mr[6] * mr[9]) - mr[1] * (mr[4] * mr[10] - mr[6] * mr[8])
-        + mr[2] * (mr[4] * mr[9] - mr[5] * mr[8])
-        < 0.0
-    {
+    let xy = dot4(x_axis, y_column);
+    let y_axis: [f32; 4] = std::array::from_fn(|i| y_column[i] - xy * x_axis[i]);
+    let scale_y = dot3(&y_axis, &y_axis).sqrt();
+    let y_axis = normalize(y_axis, scale_y);
+
+    let xz = dot4(x_axis, z_column);
+    let yz = dot4(y_axis, z_column);
+    let z_axis: [f32; 4] = std::array::from_fn(|i| z_column[i] - xz * x_axis[i] - yz * y_axis[i]);
+    let mut scale_z = dot3(&z_axis, &z_axis).sqrt();
+    let mut z_axis = normalize(z_axis, scale_z);
+
+    // The axes are only treated as mirrored when they're (almost) exactly
+    // orthonormal, which they might not be when the W components are used.
+    let cross = [
+        x_axis[1] * y_axis[2] - x_axis[2] * y_axis[1],
+        x_axis[2] * y_axis[0] - x_axis[0] * y_axis[2],
+        x_axis[0] * y_axis[1] - x_axis[1] * y_axis[0],
+    ];
+    if dot3(&cross, &z_axis) < -0.99999 {
         scale_z = -scale_z;
+        z_axis = z_axis.map(|c| -c);
     }
 
-    mr[0] /= scale_x;
-    mr[1] /= scale_x;
-    mr[2] /= scale_x;
-    mr[4] /= scale_y;
-    mr[5] /= scale_y;
-    mr[6] /= scale_y;
-    mr[8] /= scale_z;
-    mr[9] /= scale_z;
-    mr[10] /= scale_z;
-
-    let mut rotation = [0.0; 4];
-
-    match orientation {
-        Orientation3D::AxisAngle => {
-            rotation[3] = ((mr[0] + mr[5] + mr[10] - 1.0) / 2.0).acos();
-
-            let length = ((mr[6] - mr[9]) * (mr[6] - mr[9])
-                + (mr[8] - mr[2]) * (mr[8] - mr[2])
-                + (mr[1] - mr[4]) * (mr[1] - mr[4]))
-                .sqrt();
-
-            if length != 0.0 {
-                rotation[0] = (mr[6] - mr[9]) / length;
-                rotation[1] = (mr[8] - mr[2]) / length;
-                rotation[2] = (mr[1] - mr[4]) / length;
-            }
+    // Scales close to 1 are reported as exactly 1.
+    let scale = [scale_x, scale_y, scale_z, 0.0].map(|s| {
+        if (f64::from(s) - 1.0).abs() < 0.001 {
+            1.0
+        } else {
+            f64::from(s)
         }
+    });
 
-        Orientation3D::Quaternion => {
-            let trace = mr[0] + mr[5] + mr[10];
+    let [m0, m1, m2, _] = x_axis;
+    let [m4, m5, m6, _] = y_axis;
+    let [m8, m9, m10, _] = z_axis;
 
-            if trace > 0.0 {
-                rotation[3] = (1.0 + trace).sqrt() / 2.0;
+    // Flash Player calculates quaternions at f32 precision, and axis-angle
+    // rotations at f64 precision from those.
+    let quaternion = || {
+        let trace = m0 + m5 + m10;
+        let half_sqrt = |v: f32| (v + 1.0).sqrt() / 2.0;
 
-                rotation[0] = (mr[6] - mr[9]) / (4.0 * rotation[3]);
-                rotation[1] = (mr[8] - mr[2]) / (4.0 * rotation[3]);
-                rotation[2] = (mr[1] - mr[4]) / (4.0 * rotation[3]);
-            } else if mr[0] > mr[5] && mr[0] > mr[10] {
-                rotation[0] = (1.0 + mr[0] - mr[5] - mr[10]).sqrt() / 2.0;
+        if trace > 0.0 {
+            let w = half_sqrt(trace);
+            let k = 1.0 / (4.0 * w);
+            [(m6 - m9) * k, (m8 - m2) * k, (m1 - m4) * k, w]
+        } else if m0 > m5 && m0 > m10 {
+            let x = half_sqrt(m0 - (m5 + m10));
+            let k = 1.0 / (4.0 * x);
+            [x, (m1 + m4) * k, (m8 + m2) * k, (m6 - m9) * k]
+        } else if m5 > m10 {
+            let y = half_sqrt(m5 - (m0 + m10));
+            let k = 1.0 / (4.0 * y);
+            [(m1 + m4) * k, y, (m6 + m9) * k, (m8 - m2) * k]
+        } else {
+            let z = half_sqrt(m10 - (m0 + m5));
+            let k = 1.0 / (4.0 * z);
+            [(m8 + m2) * k, (m6 + m9) * k, z, (m1 - m4) * k]
+        }
+    };
 
-                rotation[3] = (mr[6] - mr[9]) / (4.0 * rotation[0]);
-                rotation[1] = (mr[1] + mr[4]) / (4.0 * rotation[0]);
-                rotation[2] = (mr[8] + mr[2]) / (4.0 * rotation[0]);
-            } else if mr[5] > mr[10] {
-                rotation[1] = (1.0 + mr[5] - mr[0] - mr[10]).sqrt() / 2.0;
+    let rotation = match orientation {
+        Orientation3D::Quaternion => quaternion().map(f64::from),
 
-                rotation[0] = (mr[1] + mr[4]) / (4.0 * rotation[1]);
-                rotation[3] = (mr[8] - mr[2]) / (4.0 * rotation[1]);
-                rotation[2] = (mr[6] + mr[9]) / (4.0 * rotation[1]);
+        Orientation3D::AxisAngle => {
+            let [x, y, z, w] = quaternion().map(f64::from);
+            let angle = 2.0 * w.acos();
+            let length = (1.0 - w * w).sqrt();
+
+            if length == 0.0 {
+                [0.0, 0.0, 0.0, angle]
             } else {
-                rotation[2] = (1.0 + mr[10] - mr[0] - mr[5]).sqrt() / 2.0;
-
-                rotation[0] = (mr[8] + mr[2]) / (4.0 * rotation[2]);
-                rotation[1] = (mr[6] + mr[9]) / (4.0 * rotation[2]);
-                rotation[3] = (mr[1] - mr[4]) / (4.0 * rotation[2]);
+                [x / length, y / length, z / length, angle]
             }
         }
 
         Orientation3D::EulerAngles => {
-            rotation[1] = (-mr[2]).asin();
+            let [m0, m1, m2, m4, m5, m6, m10] = [m0, m1, m2, m4, m5, m6, m10].map(f64::from);
+            let rotation_y = (-m2).asin();
 
-            if mr[2] != 1.0 && mr[2] != -1.0 {
-                rotation[0] = mr[6].atan2(mr[10]);
-                rotation[2] = mr[1].atan2(mr[0]);
+            if rotation_y.cos() > 0.0 {
+                [m6.atan2(m10), rotation_y, m1.atan2(m0), 0.0]
             } else {
-                rotation[2] = 0.0;
-                rotation[0] = mr[4].atan2(mr[5]);
+                [m4.atan2(m5), rotation_y, 0.0, 0.0]
             }
         }
     }
+    .map(|v| f64::from(v as f32));
 
     // NOTE: It looks like Flash Player returns uninitialized values here when
     // it doesn't write to a certain component, e.g. rotation.w in case of
@@ -893,7 +918,7 @@ pub fn decompose<'gc>(
     let components = [
         vector3d_to_object(activation, translation),
         vector3d_to_object(activation, rotation),
-        vector3d_to_object(activation, [scale_x, scale_y, scale_z, 0.0]),
+        vector3d_to_object(activation, scale),
     ];
 
     let vector3d = activation
