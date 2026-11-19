@@ -243,6 +243,16 @@ pub struct UpdateContext<'gc> {
     // Movie clips whose frame scripts were registered during frame script phase
     // requires a separate clean-up pass when running frame-scripts instead of executing them in place
     pub frame_script_cleanup_queue: VecDeque<MovieClip<'gc>>,
+
+    /// Set when a nested frame pass (a goto, or constructing a `SimpleButton`
+    /// with movie clip states) finishes during the frame script phase. Flash
+    /// Player then drops the next frame script registered for the cleanup pass.
+    pub frame_script_cleanup_skip_next: bool,
+
+    /// Movie clips whose frame script was dropped from the cleanup pass. Their
+    /// current frame script is considered executed once the pass ends, unless
+    /// a goto ran it in the meantime.
+    pub frame_script_cleanup_dropped: Vec<MovieClip<'gc>>,
 }
 
 impl<'gc> HasStringContext<'gc> for UpdateContext<'gc> {

@@ -16,6 +16,7 @@ use crate::display_object::{BoundsMode, DisplayObjectBase, MovieClip};
 use crate::events::{ClipEvent, ClipEventResult};
 use crate::frame_lifecycle::{
     broadcast_frame_constructed, broadcast_frame_exited, catchup_display_object_to_frame,
+    run_nested_frame_script_cleanup,
 };
 use crate::prelude::*;
 use crate::tag_utils::SwfMovie;
@@ -532,6 +533,7 @@ impl<'gc> TDisplayObject<'gc> for Avm2Button<'gc> {
                     broadcast_frame_constructed(context);
                     self.set_state(context, ButtonState::Up);
                     stage.run_frame_scripts(context);
+                    run_nested_frame_script_cleanup(context);
                     broadcast_frame_exited(context);
                 }
 
