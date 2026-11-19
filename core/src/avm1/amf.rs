@@ -1,5 +1,6 @@
+use crate::avm1::object::parse_canonical_array_index;
 use crate::avm1::{Activation, Attribute, NativeObject, Object, Value};
-use crate::string::AvmString;
+use crate::string::{AvmString, from_utf8};
 use flash_lso::amf0::writer::{Amf0Writer, CacheKey, ObjWriter};
 use flash_lso::types::{
     ClassDefinition, DateValue, ECMAArrayObjectValue, Element, ObjectId, ObjectValue, Reference,
@@ -62,8 +63,27 @@ fn object_class_name<'gc>(
     }
 }
 
-/// Serialize AMF data in NetConnection.addHeader, NetConnection.call, and LocalConnection.send
-pub fn serialize<'gc>(activation: &mut Activation<'_, 'gc>, value: Value<'gc>) -> AmfValue {
+/// Serialize AMF data for LocalConnection.send.
+pub fn serialize_local_connection<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    value: Value<'gc>,
+) -> AmfValue {
+    serialize_with_context(activation, value, SerializationContext::LocalConnection)
+}
+
+/// Serialize AMF data for NetConnection.addHeader and NetConnection.call.
+pub fn serialize_net_connection<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    value: Value<'gc>,
+) -> AmfValue {
+    serialize_with_context(activation, value, SerializationContext::NetConnection)
+}
+
+fn serialize_with_context<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    value: Value<'gc>,
+    serialization_context: SerializationContext,
+) -> AmfValue {
     match value {
         Value::Undefined => AmfValue::Undefined,
         Value::Null => AmfValue::Null,
@@ -74,7 +94,7 @@ pub fn serialize<'gc>(activation: &mut Activation<'_, 'gc>, value: Value<'gc>) -
             if object.as_display_object().is_some() {
                 AmfValue::Undefined
             } else if object.is_native_array() {
-                serialize_array(activation, object)
+                serialize_array(activation, object, serialization_context)
             } else if let Some(xml_node) = object.as_xml_node() {
                 let string = xml_node
                     .into_string(activation)
@@ -94,7 +114,8 @@ pub fn serialize<'gc>(activation: &mut Activation<'_, 'gc>, value: Value<'gc>) -
             } else {
                 let class_def =
                     object_class_name(activation, object).map(ClassDefinition::default_with_name);
-                let elements = serialize_object_properties(activation, object);
+                let elements =
+                    serialize_object_properties(activation, object, serialization_context);
                 AmfValue::Object {
                     id: ObjectId::INVALID,
                     data: ObjectValue {
@@ -108,124 +129,245 @@ pub fn serialize<'gc>(activation: &mut Activation<'_, 'gc>, value: Value<'gc>) -
     }
 }
 
-/// Serialize an Object in NetConnection or LocalConnection
+/// Serialize an Object in NetConnection or LocalConnection.
 fn serialize_object_properties<'gc>(
     activation: &mut Activation<'_, 'gc>,
     object: Object<'gc>,
+    serialization_context: SerializationContext,
 ) -> Vec<Element> {
     let mut w = Amf0Writer::default();
-    // Reserve the root object's wire-format slot before serializing its properties.
+
+    // The root object is written by the enclosing NetConnection/LocalConnection
+    // value, while this writer serializes only its properties. Reserve its slot
+    // here so references in those properties use the wire-format index.
     let root_key = CacheKey::from_ptr(object.as_ptr());
     let root_reference = w.make_reference();
     w.cache_add(root_key, root_reference);
-    recursive_serialize(activation, object, &mut w, true);
+
+    recursive_serialize(activation, object, &mut w, serialization_context);
     w.commit_lso("root").into_iter().collect()
 }
 
-/// Serialize an array for NetConnection and LocalConnection
-fn serialize_array<'gc>(activation: &mut Activation<'_, 'gc>, array: Object<'gc>) -> AmfValue {
+/// Parse a numeric array key the way Flash's NetConnection AMF serializer does.
+/// Leading zeroes are accepted, but leading plus signs, whitespace, and negative
+/// values remain associative property names.
+fn net_connection_array_index(name: &str) -> Option<u32> {
+    // Rust's integer parser accepts a leading '+', but Flash keeps that key associative.
+    if name.starts_with('+') {
+        None
+    } else {
+        name.parse::<u32>().ok()
+    }
+}
+
+/// Serialize an array using the representation selected by its AMF0 context.
+fn serialize_array<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    array: Object<'gc>,
+    serialization_context: SerializationContext,
+) -> AmfValue {
     let mut length = array.length(activation).unwrap_or(0).max(0) as usize;
     let keys = array.get_keys(activation, false);
 
-    // Flash treats any numeric key as an array element. If a numeric key
-    // exceeds the current length, it expands the array's serialization length.
-    for key in &keys {
-        if let Ok(index) = key.to_utf8_lossy().parse::<usize>() {
-            length = length.max(index + 1);
+    let is_strict_array = match serialization_context {
+        SerializationContext::SharedObject => {
+            // SharedObject arrays are always encoded as ECMA arrays.
+            false
         }
-    }
+        SerializationContext::LocalConnection => {
+            for key in &keys {
+                if let Some(index) = parse_canonical_array_index(key.as_wstr()) {
+                    length = length.max(index as usize + 1);
+                }
+            }
 
-    let mut has_custom_properties = false;
-    let mut associative = Vec::new();
-
-    // Flash expects insertion order for these properties
-    for key in keys.into_iter().rev() {
-        // A property is "custom" if it is entirely non-numeric
-        if key.to_utf8_lossy().parse::<usize>().is_err() {
-            has_custom_properties = true;
+            // Preserve holes and noncanonical numeric-looking properties; only genuinely dense
+            // arrays use strict encoding.
+            keys.len() == length
+                && keys.iter().all(|key| {
+                    parse_canonical_array_index(key.as_wstr())
+                        .is_some_and(|index| (index as usize) < length)
+                })
         }
+        SerializationContext::NetConnection => {
+            // Custom properties force ECMA encoding; numeric keys can extend strict length.
+            let mut has_custom_properties = false;
+            let mut strict_array_length = length;
+            for key in &keys {
+                if let Some(index) = net_connection_array_index(key.to_utf8_lossy().as_ref()) {
+                    if let Some(end) = index.checked_add(1) {
+                        strict_array_length = strict_array_length.max(end as usize);
+                    }
+                } else {
+                    has_custom_properties = true;
+                }
+            }
 
-        let prop_value = array.get(key, activation).unwrap_or(Value::Undefined);
-        associative.push(Element::new(
-            key.to_string(),
-            serialize(activation, prop_value),
-        ));
-    }
-    if has_custom_properties {
-        // Mixed Array: Has true non-numeric keys
-        AmfValue::ECMAArray {
-            id: ObjectId::INVALID,
-            data: ECMAArrayObjectValue {
-                dense: Vec::new(),
-                elements: associative,
-                length: length as u32,
-            },
+            if !has_custom_properties {
+                length = strict_array_length;
+            }
+
+            // NetConnection follows Flash's legacy numeric-key test: a sparse
+            // array with only numeric keys is still a strict array, with holes
+            // serialized as explicit undefined values.
+            !has_custom_properties
         }
-    } else {
-        // Pure Dense Array: Pad holes with Undefined to maintain contiguous indices
+    };
+
+    if is_strict_array {
         let mut dense = Vec::with_capacity(length);
         for i in 0..length {
-            let elem_name = AvmString::new_utf8(activation.gc(), i.to_string());
-            let prop_value = array.get(elem_name, activation).unwrap_or(Value::Undefined);
-            dense.push(serialize(activation, prop_value));
+            let prop_value = array.get_element(activation, i as i32);
+            dense.push(serialize_with_context(
+                activation,
+                prop_value,
+                serialization_context,
+            ));
         }
-        // Output as a StrictArray.
         AmfValue::StrictArray {
             id: ObjectId::INVALID,
             values: dense,
         }
+    } else {
+        // ECMA arrays preserve associative properties and, for LocalConnection,
+        // preserve sparse indices without materializing undefined holes.
+        let mut elements = Vec::with_capacity(keys.len());
+        for key in keys.into_iter().rev() {
+            let prop_value = array.get(key, activation).unwrap_or(Value::Undefined);
+            elements.push(Element::new(
+                key.to_string(),
+                serialize_with_context(activation, prop_value, serialization_context),
+            ));
+        }
+        AmfValue::ECMAArray {
+            id: ObjectId::INVALID,
+            data: ECMAArrayObjectValue {
+                dense: Vec::new(),
+                elements,
+                length: length as u32,
+            },
+        }
     }
 }
 
+/// The transport whose AMF0 serialization rules are being applied.
+///
+/// The context determines both array representation and XML reference handling.
+#[derive(Clone, Copy)]
+pub(crate) enum SerializationContext {
+    /// SharedObject LSO serialization.
+    SharedObject,
+    /// LocalConnection message serialization.
+    LocalConnection,
+    /// NetConnection remoting serialization.
+    NetConnection,
+}
+
 /// Helper to serialize a specific value into the ObjWriter cache architecture.
-/// LSO values do not treat XML values as referenceable, while AMF remoting does.
 fn serialize_value_to_writer<'gc>(
     activation: &mut Activation<'_, 'gc>,
     name: &str,
     elem: Value<'gc>,
     writer: &mut dyn ObjWriter<'_>,
-    xml_is_referenceable: bool,
+    serialization_context: SerializationContext,
 ) {
     match elem {
         Value::Object(o) => {
             if o.as_function().is_some() {
-                // Flash entirely skips functions during object serialization
+                // Flash entirely skips functions during object serialization.
             } else if o.as_display_object().is_some() {
                 writer.undefined(name)
             } else if o.is_native_array() {
-                let (aw, token) = writer.array(CacheKey::from_ptr(o.as_ptr()));
+                let mut length = o.length(activation).unwrap_or(0).max(0) as usize;
+                let keys = o.get_keys(activation, false);
+                let is_strict_array = match serialization_context {
+                    SerializationContext::SharedObject => {
+                        // SharedObject arrays are always encoded as ECMA arrays.
+                        false
+                    }
+                    SerializationContext::LocalConnection => {
+                        // Strict encoding requires every canonical array index to be present.
+                        keys.len() == length
+                            && keys.iter().all(|key| {
+                                parse_canonical_array_index(key.as_wstr())
+                                    .is_some_and(|index| (index as usize) < length)
+                            })
+                    }
+                    SerializationContext::NetConnection => {
+                        // Custom properties force ECMA encoding; numeric keys can extend strict length.
+                        let mut has_custom_properties = false;
+                        let mut strict_array_length = length;
+                        for key in &keys {
+                            if let Some(index) =
+                                net_connection_array_index(key.to_utf8_lossy().as_ref())
+                            {
+                                if let Some(end) = index.checked_add(1) {
+                                    strict_array_length = strict_array_length.max(end as usize);
+                                }
+                            } else {
+                                has_custom_properties = true;
+                            }
+                        }
 
-                if let Some(mut aw) = aw {
-                    recursive_serialize(activation, o, &mut aw, xml_is_referenceable);
+                        if !has_custom_properties {
+                            length = strict_array_length;
+                        }
 
-                    // TODO: What happens if an exception is thrown here?
-                    let length = o
-                        .length(activation)
-                        .expect("Failed to get length for SharedObject array");
-                    aw.set_length(length as u32);
-                    aw.commit(name);
+                        !has_custom_properties
+                    }
+                };
+
+                if is_strict_array {
+                    let (aw, token) = writer.strict_array(CacheKey::from_ptr(o.as_ptr()));
+
+                    if let Some(mut aw) = aw {
+                        for i in 0..length {
+                            let prop_value = o.get_element(activation, i as i32);
+                            serialize_value_to_writer(
+                                activation,
+                                "",
+                                prop_value,
+                                &mut aw,
+                                serialization_context,
+                            );
+                        }
+
+                        aw.commit(name);
+                    } else {
+                        writer.reference(name, token);
+                    }
                 } else {
-                    writer.reference(name, token);
+                    let (aw, token) = writer.array(CacheKey::from_ptr(o.as_ptr()));
+
+                    if let Some(mut aw) = aw {
+                        recursive_serialize(activation, o, &mut aw, serialization_context);
+                        aw.set_length(length as u32);
+                        aw.commit(name);
+                    } else {
+                        writer.reference(name, token);
+                    }
                 }
             } else if let Some(xml_node) = o.as_xml_node() {
                 // TODO: What happens if an exception is thrown here?
                 let string = xml_node
                     .into_string(activation)
                     .expect("Failed to convert xml to string in SharedObject");
-                if xml_is_referenceable {
-                    writer.xml(
-                        CacheKey::from_ptr(o.as_ptr()),
-                        name,
-                        string.to_utf8_lossy().as_ref(),
-                        true,
-                    );
-                } else {
+                if matches!(serialization_context, SerializationContext::SharedObject) {
+                    // SharedObject LSO values do not occupy XML reference-table entries.
                     writer.add_element(
                         name,
                         AmfValue::XML {
                             value: string.to_utf8_lossy().into_owned(),
                             is_string: true,
                         },
+                    );
+                } else {
+                    // LocalConnection and NetConnection XML values occupy reference-table entries.
+                    writer.xml(
+                        CacheKey::from_ptr(o.as_ptr()),
+                        name,
+                        string.to_utf8_lossy().as_ref(),
+                        true,
                     );
                 }
             } else if let NativeObject::Date(date) = o.native() {
@@ -241,7 +383,7 @@ fn serialize_value_to_writer<'gc>(
                 if let Some(class_name) = object_class_name(activation, o) {
                     let (ow, token) = writer.typed_object(&class_name, key);
                     if let Some(mut ow) = ow {
-                        recursive_serialize(activation, o, &mut ow, xml_is_referenceable);
+                        recursive_serialize(activation, o, &mut ow, serialization_context);
                         ow.commit(name);
                     } else {
                         writer.reference(name, token);
@@ -249,7 +391,7 @@ fn serialize_value_to_writer<'gc>(
                 } else {
                     let (ow, token) = writer.object(key);
                     if let Some(mut ow) = ow {
-                        recursive_serialize(activation, o, &mut ow, xml_is_referenceable);
+                        recursive_serialize(activation, o, &mut ow, serialization_context);
                         ow.commit(name);
                     } else {
                         writer.reference(name, token);
@@ -265,14 +407,12 @@ fn serialize_value_to_writer<'gc>(
     }
 }
 
-/// Serialize an Object and any children to a JSON object
-/// Used to serialize objects for NetConnection and LocalConnection Flash Remoting
-/// As well as for SharedObject LSO
+/// Serialize the enumerable properties of an object using the given AMF0 context.
 pub(crate) fn recursive_serialize<'gc>(
     activation: &mut Activation<'_, 'gc>,
     obj: Object<'gc>,
     writer: &mut dyn ObjWriter<'_>,
-    xml_is_referenceable: bool,
+    serialization_context: SerializationContext,
 ) {
     // Reversed to match flash player ordering
     // Note that because get_keys can recurse, this may result in an OS stack overflow
@@ -296,7 +436,7 @@ pub(crate) fn recursive_serialize<'gc>(
             name.as_ref(),
             elem,
             writer,
-            xml_is_referenceable,
+            serialization_context,
         );
     }
 }
@@ -385,7 +525,7 @@ fn deserialize_value_inner<'gc>(
                     xml_is_referenceable,
                 );
 
-                if let Ok(i) = entry.name().parse::<i32>() {
+                if let Some(i) = parse_canonical_array_index(from_utf8(entry.name()).as_ref()) {
                     obj.set_element(activation, i, child).unwrap();
                 } else {
                     obj.define_value(
@@ -610,7 +750,7 @@ pub(crate) fn deserialize_local_connection_value<'gc>(
                     local_connection_reference_cache(root, references_before_property);
                 let child = deserialize_lso_value(activation, entry.value(), &mut reference_cache);
 
-                if let Ok(index) = entry.name().parse::<i32>() {
+                if let Some(index) = parse_canonical_array_index(from_utf8(entry.name()).as_ref()) {
                     obj.set_element(activation, index, child)
                         .expect("Failed to set a sparse LocalConnection array element");
                 } else {
