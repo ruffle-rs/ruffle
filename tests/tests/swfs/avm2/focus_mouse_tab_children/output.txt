@@ -1,0 +1,27 @@
+  mouseFocusChange on stage, relatedObject: rootButton, focus: null
+  focusIn on rootButton, relatedObject: null, focus: rootButton
+click rootButton, focus: rootButton
+  mouseFocusChange on rootButton, relatedObject: buttonInNoTabParent, focus: rootButton
+  focusOut on rootButton, relatedObject: null, focus: null
+click buttonInNoTabParent, focus: null
+  mouseFocusChange on stage, relatedObject: buttonInNoTabGrandparent, focus: null
+click buttonInNoTabGrandparent, focus: null
+  mouseFocusChange on stage, relatedObject: buttonModeSpriteInNoTabParent, focus: null
+click buttonModeSpriteInNoTabParent, focus: null
+  mouseFocusChange on stage, relatedObject: tabEnabledButtonInNoTabParent, focus: null
+click tabEnabledButtonInNoTabParent, focus: null
+  mouseFocusChange on stage, relatedObject: inputTextInNoTabParent, focus: null
+  focusIn on inputTextInNoTabParent, relatedObject: null, focus: inputTextInNoTabParent
+click inputTextInNoTabParent, focus: inputTextInNoTabParent
+  mouseFocusChange on inputTextInNoTabParent, relatedObject: buttonModeSpriteWithNoTabChildren, focus: inputTextInNoTabParent
+  focusOut on inputTextInNoTabParent, relatedObject: buttonModeSpriteWithNoTabChildren, focus: buttonModeSpriteWithNoTabChildren
+  focusIn on buttonModeSpriteWithNoTabChildren, relatedObject: inputTextInNoTabParent, focus: buttonModeSpriteWithNoTabChildren
+click buttonModeSpriteWithNoTabChildren, focus: buttonModeSpriteWithNoTabChildren
+  mouseFocusChange on buttonModeSpriteWithNoTabChildren, relatedObject: buttonInRestoredParent, focus: buttonModeSpriteWithNoTabChildren
+  focusOut on buttonModeSpriteWithNoTabChildren, relatedObject: buttonInRestoredParent, focus: buttonInRestoredParent
+  focusIn on buttonInRestoredParent, relatedObject: buttonModeSpriteWithNoTabChildren, focus: buttonInRestoredParent
+click buttonInRestoredParent, focus: buttonInRestoredParent
+  mouseFocusChange on buttonInRestoredParent, relatedObject: rootButton, focus: buttonInRestoredParent
+  focusOut on buttonInRestoredParent, relatedObject: rootButton, focus: rootButton
+  focusIn on rootButton, relatedObject: buttonInRestoredParent, focus: rootButton
+click rootButton, focus: rootButton

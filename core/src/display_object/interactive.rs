@@ -610,10 +610,24 @@ pub trait TInteractiveObject<'gc>:
     ///
     /// The default behavior is following:
     /// * in AVM1 objects cannot be focused by mouse,
-    /// * in AVM2 objects can be focused by mouse when they are tab enabled.
+    /// * in AVM2 objects can be focused by mouse when they are tab enabled
+    ///   and none of their ancestors has `tabChildren` set to `false`.
     fn is_focusable_by_mouse(self, context: &mut UpdateContext<'gc>) -> bool {
         let self_do = self.as_displayobject();
-        self_do.movie().is_action_script_3() && self.tab_enabled(context)
+        if !self_do.movie().is_action_script_3() || !self.tab_enabled(context) {
+            return false;
+        }
+
+        let mut ancestor = self_do.parent();
+        while let Some(object) = ancestor {
+            if let Some(container) = object.as_container()
+                && !container.is_tab_children(context)
+            {
+                return false;
+            }
+            ancestor = object.parent();
+        }
+        true
     }
 
     /// Called whenever the focus tracker has deemed this display object worthy, or no longer worthy,
