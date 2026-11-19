@@ -121,38 +121,6 @@ impl NavigatorBackend for TestNavigatorBackend {
     }
 
     fn fetch(&self, request: Request) -> OwnedFuture<Box<dyn SuccessResponse>, ErrorResponse> {
-        if request.url().contains("?debug-success") {
-            return Box::pin(async move {
-                let response: Box<dyn SuccessResponse> = Box::new(TestResponse {
-                    url: request.url().to_string(),
-                    body: b"Hello, World!".to_vec(),
-                    chunk_gotten: false,
-                    status: 200,
-                    redirected: false,
-                });
-
-                Ok(response)
-            });
-        }
-
-        if request.url().contains("?debug-error-statuscode") {
-            return Box::pin(async move {
-                Err(ErrorResponse {
-                    url: request.url().to_string(),
-                    error: Error::HttpNotOk(request.url().to_string(), 0, false, 0),
-                })
-            });
-        }
-
-        if request.url().contains("?debug-error-dns") {
-            return Box::pin(async move {
-                Err(ErrorResponse {
-                    url: request.url().to_string(),
-                    error: Error::InvalidDomain(request.url().to_string()),
-                })
-            });
-        }
-
         // Log request.
         if let Some(log) = &self.log {
             log.avm_trace("Navigator::fetch:");
@@ -173,10 +141,58 @@ impl NavigatorBackend for TestNavigatorBackend {
                 log.avm_trace(&format!("  Mime-Type: {mime_type}"));
                 if mime_type == "application/x-www-form-urlencoded" {
                     log.avm_trace(&format!("  Body: {}", String::from_utf8_lossy(body)));
+                } else if mime_type.starts_with("multipart/form-data") {
+                    // Show the line endings, as they are part of the format.
+                    let body = String::from_utf8_lossy(body).replace('\r', "\\r");
+                    log.avm_trace(&format!("  Body: {body}"));
                 } else {
                     log.avm_trace(&format!("  Body: {body:02X?}"));
                 }
             }
+        }
+
+        if request.url().contains("?debug-success") {
+            let body = if request.url().contains("?debug-success-empty") {
+                Vec::new()
+            } else {
+                b"Hello, World!".to_vec()
+            };
+
+            return Box::pin(async move {
+                let response: Box<dyn SuccessResponse> = Box::new(TestResponse {
+                    url: request.url().to_string(),
+                    body,
+                    chunk_gotten: false,
+                    status: 200,
+                    redirected: false,
+                });
+
+                Ok(response)
+            });
+        }
+
+        if let Some((_, rest)) = request.url().split_once("?debug-error-statuscode") {
+            // An optional status code can be given, e.g. `?debug-error-statuscode=404`.
+            let status = rest
+                .strip_prefix('=')
+                .and_then(|code| code.parse().ok())
+                .unwrap_or(0);
+
+            return Box::pin(async move {
+                Err(ErrorResponse {
+                    url: request.url().to_string(),
+                    error: Error::HttpNotOk(request.url().to_string(), status, false, 0),
+                })
+            });
+        }
+
+        if request.url().contains("?debug-error-dns") {
+            return Box::pin(async move {
+                Err(ErrorResponse {
+                    url: request.url().to_string(),
+                    error: Error::InvalidDomain(request.url().to_string()),
+                })
+            });
         }
 
         let url = match self.resolve_url(request.url()) {
