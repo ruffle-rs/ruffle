@@ -303,6 +303,7 @@ ruffle_macros::define_common_strings! {
     "onSetFocus",
     "onStatus",
     "onUnload",
+    "onUploadCompleteData",
     "onXML",
     "optional",
     "outer",
