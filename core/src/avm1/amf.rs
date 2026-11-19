@@ -1,3 +1,4 @@
+use crate::avm1::globals::xml::from_amf0 as xml_from_amf0;
 use crate::avm1::object::parse_canonical_array_index;
 use crate::avm1::{Activation, ArrayBuilder, Attribute, NativeObject, Object, Value};
 use crate::string::{AvmString, from_utf8};
@@ -509,25 +510,6 @@ pub(crate) fn recursive_serialize<'gc>(
     }
 }
 
-/// Instantiate an AMF0 XML value.
-///
-/// If the global XML constructor is unavailable, Flash creates an
-/// object without a prototype instead of reconstructing an XML document.
-fn instantiate_amf0_xml<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    args: &[Value<'gc>],
-) -> Value<'gc> {
-    // Use the current global binding when available.
-    if let Some(constructor) = activation.resolve_class([istr!("XML")]) {
-        return constructor
-            .construct(activation, args)
-            .unwrap_or(Value::Undefined);
-    }
-
-    // Flash returns an object without a prototype when XML is unavailable.
-    Object::new_without_proto(activation.gc()).into()
-}
-
 /// Deserialize an AmfValue to a Value, using AMF remoting reference-table semantics.
 pub fn deserialize_value<'gc>(
     activation: &mut Activation<'_, 'gc>,
@@ -660,13 +642,9 @@ fn deserialize_value_inner<'gc>(
             value
         }
         AmfValue::XML { value: content, .. } => {
-            // AMF deserialization uses the built-in XML class, even if content has
-            // modified the global XML constructor.
-            //
-            // TODO(moulins): how exactly is the XML object instantiated? this matters when
-            // the XML class was monkeypatched by the user.
-            let args = &[Value::String(AvmString::new_utf8(activation.gc(), content))];
-            let value = instantiate_amf0_xml(activation, args);
+            // Flash creates a native XML document using the current XML prototype,
+            // without invoking the script-visible XML constructor.
+            let value = xml_from_amf0(activation, content);
 
             if xml_is_referenceable {
                 reference_cache.insert(value);
