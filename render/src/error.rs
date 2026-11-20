@@ -20,11 +20,7 @@ pub enum Error {
 
     #[cfg(feature = "jpegxr")]
     #[error("Invalid JPEG-XR: {0}")]
-    InvalidJpegXr(#[from] jpegxr::JXRError),
-
-    #[cfg(feature = "jpegxr")]
-    #[error("Error decoding TIFF from JPEG-XR: {0}")]
-    MalformedTiffFromJpegXr(#[from] image::ImageError),
+    InvalidJpegXr(#[from] jxr::JxrError),
 
     #[error("Invalid PNG")]
     InvalidPng(#[from] png::DecodingError),

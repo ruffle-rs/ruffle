@@ -5,11 +5,7 @@ use crate::avm2::object::{Object, TextureObject};
 use crate::avm2_stub_method;
 use ruffle_render::atf::ATFTexture;
 use ruffle_render::atf::ATFTextureData;
-use std::io::Cursor;
-
-use jpegxr::PixelFormat;
-use std::io::Read;
-use std::io::Seek;
+use ruffle_render::jpegxr::{self, JpegXrImage};
 
 pub fn do_compressed_upload<'gc>(
     activation: &mut Activation<'_, 'gc>,
@@ -36,16 +32,11 @@ pub fn do_compressed_upload<'gc>(
     // Just use the first mip level for now. We ignore the builtin format - the JPEG-XR format
     // appears to override it
     let bitmap = match &atf_texture.face_mip_data[0][0] {
-        ATFTextureData::JpegXR(bytes) => jpegxr_to_tiff(
+        ATFTextureData::JpegXR(bytes) => check_size(
+            jpegxr::decode_rgba8(bytes).expect("Failed to decode JPEG-XR image"),
             atf_texture.width,
             atf_texture.height,
-            &mut Cursor::new(bytes),
-        )
-        .0
-        .to_rgba8()
-        .pixels()
-        .flat_map(|p| p.0)
-        .collect(),
+        ),
         ATFTextureData::CompressedAlpha {
             dxt1_alpha_compressed,
             jpegxr_alpha: orig_jpegxr_alpha,
@@ -75,37 +66,34 @@ pub fn do_compressed_upload<'gc>(
             // 'COMPRESSED_ALPHA' images are encoded in a very strange way. The LZMA-compressed DXT1/DXT5
             // sections just hold the DXT lookup table block. The associated values for each block
             // are stored in JPEG-XR images, which are optionally compressed
-            let (jpegxr_alpha, pixel_format) = jpegxr_to_tiff(
-                atf_texture.width / 4,
-                atf_texture.height / 2,
-                &mut Cursor::new(orig_jpegxr_alpha),
-            );
-
-            let jpegxr_alpha = jpegxr_alpha.to_rgba8();
-            assert_eq!(
-                pixel_format,
-                PixelFormat::PixelFormat8bppGray,
+            assert!(
+                jpegxr::is_gray8(orig_jpegxr_alpha).expect("Failed to decode JPEG-XR image"),
                 "Unexpected JPEG-XR alpha format"
             );
-
-            let jpegxr_bgr = jpegxr_to_raw_pixels(
+            let jpegxr_alpha = check_size(
+                jpegxr::decode_rgba8(orig_jpegxr_alpha).expect("Failed to decode JPEG-XR image"),
                 atf_texture.width / 4,
                 atf_texture.height / 2,
-                &mut Cursor::new(orig_jpegxr_bgr),
+            );
+
+            let jpegxr_bgr = check_size(
+                jpegxr::decode_rgb565(orig_jpegxr_bgr).expect("Failed to decode JPEG-XR image"),
+                atf_texture.width / 4,
+                atf_texture.height / 2,
             );
 
             let mut reconstructed_dxt = vec![];
 
             assert_eq!(dxt1_alpha.len() / 6, dxt5_rgb.len() / 4, "Bad DXT data");
             assert_eq!(
-                jpegxr_alpha.as_raw().len() / 8,
+                jpegxr_alpha.len() / 8,
                 jpegxr_bgr.len() / 4,
                 "Bad JPEG-XR data"
             );
 
             assert_eq!(
                 dxt1_alpha.len() / 6,
-                jpegxr_alpha.as_raw().len() / 8,
+                jpegxr_alpha.len() / 8,
                 "Dxt data doesn't match jpegxr data"
             );
 
@@ -115,10 +103,10 @@ pub fn do_compressed_upload<'gc>(
             // See https://github.com/adobe/dds2atf/blob/cbc479be2e77daa273306161af571f8255aec78d/pvr2atfcore.cpp#L884
             for i in 0..(dxt1_alpha.len() / 6) {
                 let alpha_lookup_table = &dxt1_alpha[i * 6..(i + 1) * 6];
-                let jpegxr_alpha_first = &jpegxr_alpha.as_raw()[i * 4..(i + 1) * 4];
+                let jpegxr_alpha_first = &jpegxr_alpha[i * 4..(i + 1) * 4];
                 // Each pixel is 4 bytes (RGBA), so multiply the pixel index by 4
                 let jpegxr_alpha_second =
-                    &jpegxr_alpha.as_raw()[((second_half + i) * 4)..((second_half + i + 1) * 4)];
+                    &jpegxr_alpha[((second_half + i) * 4)..((second_half + i + 1) * 4)];
 
                 let rgb_lookup_table = &dxt5_rgb[i * 4..(i + 1) * 4];
                 let jpegxr_bgr_first = &jpegxr_bgr[(i * 2)..((i + 1) * 2)];
@@ -175,66 +163,8 @@ pub fn do_compressed_upload<'gc>(
     Ok(())
 }
 
-fn jpegxr_to_raw_pixels<R: Read + Seek>(atf_width: u32, atf_height: u32, bytes: R) -> Vec<u8> {
-    let mut decoder =
-        jpegxr::ImageDecode::with_reader(bytes).expect("Failed to decode JPEG-XR image");
-
-    let pixel_format = decoder
-        .get_pixel_format()
-        .expect("Failed to get pixel format");
-    let (jpeg_width, jpeg_height) = decoder.get_size().expect("Failed to get JPEG-XR size");
-
-    assert_eq!(jpeg_width as u32, atf_width, "Mismatched JPEG-XR width");
-    assert_eq!(jpeg_height as u32, atf_height, "Mismatched JPEG-XR height");
-
-    let info = jpegxr::PixelInfo::from_format(pixel_format);
-    let stride = jpeg_width as usize * info.bits_per_pixel() / 8;
-
-    let size = stride * jpeg_height as usize;
-
-    let mut output = vec![0; size];
-
-    decoder
-        .copy_all(&mut output, stride)
-        .expect("Failed to decode");
-    output
-}
-
-fn jpegxr_to_tiff<R: Read + Seek>(
-    atf_width: u32,
-    atf_height: u32,
-    bytes: R,
-) -> (image::DynamicImage, jpegxr::PixelFormat) {
-    let mut decoder =
-        jpegxr::ImageDecode::with_reader(bytes).expect("Failed to decode JPEG-XR image");
-
-    let pixel_format = decoder
-        .get_pixel_format()
-        .expect("Failed to get pixel format");
-
-    let (jpeg_width, jpeg_height) = decoder.get_size().expect("Failed to get JPEG-XR size");
-    let jpeg_width = jpeg_width as u32;
-    let jpeg_height = jpeg_height as u32;
-
-    assert_eq!(jpeg_width, atf_width, "Mismatched JPEG-XR width");
-    assert_eq!(jpeg_height, atf_height, "Mismatched JPEG-XR height");
-
-    let info = jpegxr::PixelInfo::from_format(pixel_format);
-    let stride = jpeg_width as usize * info.bits_per_pixel() / 8;
-    let size = stride * jpeg_height as usize;
-
-    // We convert the result to a TIFF - this makes the jpegxr library handle
-    // all of the weird JPEG-XR alpha formats for us. We can then use the normal
-    // `image` crate to decode the TIFF to an rgba array.
-    let mut bmp_buffer = vec![0; size];
-    decoder
-        .convert_to_tiff(&mut Cursor::new(&mut bmp_buffer))
-        .expect("Failed to convert to bitmap");
-
-    let image_reader =
-        image::ImageReader::with_format(Cursor::new(bmp_buffer), image::ImageFormat::Tiff);
-    (
-        image_reader.decode().expect("Failed to decode Bitmap"),
-        pixel_format,
-    )
+fn check_size(image: JpegXrImage, atf_width: u32, atf_height: u32) -> Vec<u8> {
+    assert_eq!(image.width, atf_width, "Mismatched JPEG-XR width");
+    assert_eq!(image.height, atf_height, "Mismatched JPEG-XR height");
+    image.data
 }
