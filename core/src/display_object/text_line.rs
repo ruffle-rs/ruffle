@@ -7,7 +7,7 @@ use crate::backend::ui::MouseCursor;
 use crate::context::{RenderContext, UpdateContext};
 use crate::display_object::interactive::{InteractiveObjectBase, TInteractiveObject};
 use crate::display_object::{
-    Avm2MousePick, BoundsMode, DisplayObjectBase, EditText, InteractiveObject,
+    Avm2MousePick, BoundsMode, DisplayObjectBase, EditText, HitTestOptions, InteractiveObject,
 };
 use crate::events::{ClipEvent, ClipEventResult};
 use crate::fte::TextLineValidity;

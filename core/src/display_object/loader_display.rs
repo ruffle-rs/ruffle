@@ -5,7 +5,7 @@ use crate::backend::ui::MouseCursor;
 use crate::context::RenderContext;
 use crate::context::UpdateContext;
 use crate::display_object::TInteractiveObject;
-use crate::display_object::{BoundsMode, DisplayObjectBase, DisplayObjectPtr};
+use crate::display_object::{BoundsMode, DisplayObjectBase, DisplayObjectPtr, HitTestOptions};
 use crate::events::{ClipEvent, ClipEventResult};
 use crate::prelude::*;
 
