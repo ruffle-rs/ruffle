@@ -1,8 +1,9 @@
 //! LocalConnection-specific AMF0 deserialization behavior.
 
-use super::{
-    Amf0ArrayEntry, Amf0ReferenceCache, DeserializationContext, MAX_AMF0_REFERENCES,
-    deserialize_array_entries, deserialize_object_entries, deserialize_value_inner,
+use super::MAX_AMF0_REFERENCES;
+use super::deserialization::{
+    Amf0ArrayEntry, Amf0ReferenceCache, DeserializationContext, deserialize_array_entries,
+    deserialize_object_entries, deserialize_value_inner,
 };
 use crate::avm1::globals::date::DeferredAmf0Date;
 use crate::avm1::{Activation, Object, Value};
