@@ -56,7 +56,9 @@ use std::cell::{Cell, OnceCell, Ref, RefCell, RefMut};
 use std::cmp::max;
 use std::collections::HashMap;
 use swf::extensions::ReadSwfExt;
-use swf::{CharacterId, ClipEventFlag, DefineBitsLossless, FrameLabelData, TagCode, Twips, UTF_8};
+use swf::{
+    CharacterId, ClipEventFlag, DefineBitsLossless, FrameLabelData, Point, TagCode, Twips, UTF_8,
+};
 
 use super::BitmapClass;
 use super::interactive::Avm2MousePick;

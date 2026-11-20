@@ -1,5 +1,5 @@
 pub use crate::display_object::{DisplayObject, TDisplayObject};
-pub use swf::{Point, Rectangle};
+pub use swf::Rectangle;
 
 /// A depth for a Flash display object in AVM1.
 /// This is different than defined in `swf`; during execution, clips

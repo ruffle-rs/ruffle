@@ -46,7 +46,7 @@ use ruffle_render::transform::Transform;
 use ruffle_wstr::WStrToUtf8;
 use std::cell::{Cell, Ref, RefCell, RefMut};
 use std::collections::VecDeque;
-use swf::{CharacterId, Color, ColorTransform, Twips};
+use swf::{CharacterId, Color, ColorTransform, Point, Twips};
 use unicode_segmentation::UnicodeSegmentation;
 
 use super::interactive::Avm2MousePick;

@@ -23,7 +23,7 @@ use ruffle_render::matrix::Matrix;
 use ruffle_render::shape_utils::{DrawCommand, GradientType};
 use swf::{
     Color, FillStyle, Fixed8, Gradient, GradientInterpolation, GradientRecord, GradientSpread,
-    LineCapStyle, LineJoinStyle, LineStyle, Twips,
+    LineCapStyle, LineJoinStyle, LineStyle, Point, Twips,
 };
 
 macro_rules! mc_method {
