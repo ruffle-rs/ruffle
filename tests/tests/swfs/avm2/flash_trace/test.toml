@@ -3,7 +3,7 @@
 # To get FP's output, open the SWF in the non-debugger projector, and
 # copy the text that appears.
 
-num_frames = 1
+num_ticks = 1
 
 [[compilers]]
 type = "Asc"

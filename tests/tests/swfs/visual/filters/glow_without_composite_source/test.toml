@@ -1,7 +1,7 @@
 # THIS TEST HAS BEEN EDITED IN FFDEC
 # Steps: save the fla, load the swf in ffdec, edit every PlaceObject filter to remove CompositeSource
 
-num_frames = 1
+num_ticks = 1
 
 [image_comparisons.output]
 tolerance = 3

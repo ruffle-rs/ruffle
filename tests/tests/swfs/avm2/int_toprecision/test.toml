@@ -1,2 +1,2 @@
-num_frames = 1
+num_ticks = 1
 known_failure = true # Known failure because Flash Player has a print routine that adds extraneous zeros to things

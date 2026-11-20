@@ -1,7 +1,7 @@
 # This SWF and source code come from https://www.jacksondunstan.com/articles/1998
 # "Stage3D Post-Processing Special Effects"
 
-num_frames = 5
+num_ticks = 5
 
 [image_comparisons.output]
 tolerance = 8

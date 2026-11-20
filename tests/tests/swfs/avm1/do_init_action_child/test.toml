@@ -4,4 +4,4 @@
 # .swf files were handcrafted using the JPEXS Decompiler and have
 # no corresponding sources files.
 
-num_frames = 2
+num_ticks = 2

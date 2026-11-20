@@ -2,7 +2,7 @@
 # tags use the same font name ('Impact'), even though one
 # of them is really Times New Roman.
 
-num_frames = 1
+num_ticks = 1
 
 [image_comparisons.output]
 tolerance = 0

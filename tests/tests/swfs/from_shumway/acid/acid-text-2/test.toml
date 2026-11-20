@@ -1,6 +1,6 @@
 # Test adapted from Shumway at https://github.com/mozilla/shumway/tree/master/test/swfs/acid
 
-num_frames = 1
+num_ticks = 1
 
 [image_comparisons.output]
 tolerance = 128

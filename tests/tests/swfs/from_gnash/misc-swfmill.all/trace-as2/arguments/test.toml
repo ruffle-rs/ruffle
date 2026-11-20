@@ -1,4 +1,4 @@
-num_frames = 30
+num_ticks = 30
 
 [subtests.fp10]
 output_path = "output.fp10.txt"

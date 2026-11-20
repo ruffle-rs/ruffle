@@ -1,2 +1,2 @@
 # This test contains manually-crafted bytecode.
-num_frames = 2
+num_ticks = 2
