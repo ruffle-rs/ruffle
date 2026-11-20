@@ -880,9 +880,9 @@ impl<'gc> Layout<'gc> {
     /// positioned at the given y coordinate.
     ///
     /// If the coordinate is at line leading, the line above is returned.
-    /// If the coordinate is above all lines, [`Result::Err`] is returned
+    /// If the coordinate is above all lines, [`Err`] is returned
     /// with the index of the first line.
-    /// If the coordinate is below all lines, [`Result::Err`] is returned
+    /// If the coordinate is below all lines, [`Err`] is returned
     /// with the index of the last line.
     pub fn find_line_index_by_y(&self, y: Twips) -> Result<usize, usize> {
         let lines_len = self.lines.len();

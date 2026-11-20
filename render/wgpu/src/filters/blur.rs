@@ -33,7 +33,7 @@ pub struct BlurFilter {
     uniform_buffer: wgpu::Buffer,
     vertices_size: wgpu::BufferSize,
     uniform_size: wgpu::BufferSize,
-    pipelines: SampleCountMap<OnceLock<wgpu::RenderPipeline>>,
+    pipelines: SampleCountMap<OnceLock<RenderPipeline>>,
 }
 
 impl BlurFilter {
@@ -54,7 +54,7 @@ impl BlurFilter {
             ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
             count: None,
         };
-        let uniform_size = std::mem::size_of::<BlurUniform>() as u64;
+        let uniform_size = size_of::<BlurUniform>() as u64;
         let bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
             entries: &[
                 texture,
@@ -73,7 +73,7 @@ impl BlurFilter {
             label: create_debug_label!("Blur filter binds (with buffer)").as_deref(),
         });
 
-        let vertices_size = std::mem::size_of::<[FilterVertex; 4]>() as u64;
+        let vertices_size = size_of::<[FilterVertex; 4]>() as u64;
         let vertex_buffer = device.create_buffer(&wgpu::BufferDescriptor {
             label: None,
             size: vertices_size,
@@ -105,7 +105,7 @@ impl BlurFilter {
         }
     }
 
-    fn pipeline(&self, descriptors: &Descriptors, msaa_sample_count: u32) -> &wgpu::RenderPipeline {
+    fn pipeline(&self, descriptors: &Descriptors, msaa_sample_count: u32) -> &RenderPipeline {
         self.pipelines.get_or_init(msaa_sample_count, || {
             let label = create_debug_label!("Blur Filter ({} msaa)", msaa_sample_count);
             descriptors
@@ -150,7 +150,7 @@ impl BlurFilter {
         &self,
         descriptors: &Descriptors,
         texture_pool: &mut TexturePool,
-        draw_encoder: &mut wgpu::CommandEncoder,
+        draw_encoder: &mut CommandEncoder,
         staging_belt: &mut StagingBelt,
         source: &FilterSource,
         filter: &BlurFilterArgs,

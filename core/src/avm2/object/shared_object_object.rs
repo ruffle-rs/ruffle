@@ -76,7 +76,7 @@ impl<'gc> TObject<'gc> for SharedObjectObject<'gc> {
     }
 }
 
-impl std::fmt::Debug for SharedObjectObject<'_> {
+impl Debug for SharedObjectObject<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "SharedObject")
     }

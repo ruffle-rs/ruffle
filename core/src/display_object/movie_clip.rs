@@ -1875,7 +1875,7 @@ impl<'gc> MovieClip<'gc> {
                     tracing::error!(
                         "Unexpected PlaceObject during goto: {:?}",
                         params.place_object
-                    )
+                    );
                 }
             }
         };
@@ -3745,12 +3745,10 @@ impl<'gc, 'a> MovieClipShared<'gc> {
                     button_colors.id
                 );
             }
-            None => {
-                tracing::warn!(
-                    "DefineButtonCxform: Character ID {} doesn't exist",
-                    button_colors.id
-                );
-            }
+            None => tracing::warn!(
+                "DefineButtonCxform: Character ID {} doesn't exist",
+                button_colors.id
+            ),
         }
         Ok(())
     }
@@ -3775,12 +3773,10 @@ impl<'gc, 'a> MovieClipShared<'gc> {
                     button_sounds.id
                 );
             }
-            None => {
-                tracing::warn!(
-                    "DefineButtonSound: Character ID {} doesn't exist",
-                    button_sounds.id
-                );
-            }
+            None => tracing::warn!(
+                "DefineButtonSound: Character ID {} doesn't exist",
+                button_sounds.id
+            ),
         }
         Ok(())
     }
@@ -4075,7 +4071,7 @@ impl<'gc, 'a> MovieClipShared<'gc> {
             tracing::warn!(
                 "Can't register export {}: Character ID {} doesn't exist",
                 name,
-                id,
+                id
             );
         }
     }
@@ -4424,8 +4420,8 @@ impl<'gc, 'a> MovieClip<'gc> {
                             }
                             _ => {
                                 tracing::warn!(
-                                    "Symbol class {name} cannot be assigned to character id {id}",
-                                );
+                                    "Symbol class {name} cannot be assigned to character id {id}"
+                                )
                             }
                         }
                     }

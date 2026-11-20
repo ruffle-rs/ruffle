@@ -295,8 +295,7 @@ impl TestRunner {
         }
 
         let player = self.player.lock().unwrap();
-        let Some(audio) = <dyn std::any::Any>::downcast_ref::<TestAudioBackend>(player.audio())
-        else {
+        let Some(audio) = <dyn Any>::downcast_ref::<TestAudioBackend>(player.audio()) else {
             return Err(anyhow!("Audio assertions require audio"));
         };
 

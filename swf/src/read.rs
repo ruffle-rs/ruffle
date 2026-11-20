@@ -3109,10 +3109,8 @@ pub mod tests {
         let tag_bytes = [0xff, 0xff, 0xff, 0xff, 0xff, 0xff];
         let mut reader = Reader::new(&tag_bytes[..], 5);
         match reader.read_tag() {
-            Err(crate::error::Error::SwfParseError { .. }) => (),
-            result => {
-                panic!("Expected SwfParseError, got {result:?}");
-            }
+            Err(Error::SwfParseError { .. }) => (),
+            result => panic!("Expected SwfParseError, got {result:?}"),
         }
     }
 

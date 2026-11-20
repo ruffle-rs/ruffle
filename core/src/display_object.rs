@@ -1223,7 +1223,7 @@ pub fn apply_standard_mask_and_scroll<'gc, F>(
     }
 
     let mask = this.get_render_mask();
-    let mut mask_transform = ruffle_render::transform::Transform::default();
+    let mut mask_transform = Transform::default();
     if let RenderMask::Stencil(m) | RenderMask::Alpha(m) = mask {
         if options.apply_transform {
             mask_transform.matrix = this.global_to_local_matrix().unwrap_or_default();

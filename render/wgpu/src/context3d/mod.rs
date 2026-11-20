@@ -48,20 +48,20 @@ pub struct WgpuContext3D {
 
     buffer_staging_belt: StagingBelt,
 
-    current_texture_view: Option<wgpu::TextureView>,
+    current_texture_view: Option<TextureView>,
     current_texture_size: Option<Extent3d>,
-    current_depth_texture_view: Option<wgpu::TextureView>,
-    current_texture_resolve_view: Option<wgpu::TextureView>,
+    current_depth_texture_view: Option<TextureView>,
+    current_texture_resolve_view: Option<TextureView>,
 
     back_buffer_sample_count: u32,
     back_buffer_size: Option<Extent3d>,
-    back_buffer_texture_view: Option<wgpu::TextureView>,
-    back_buffer_depth_texture_view: Option<wgpu::TextureView>,
-    back_buffer_resolve_texture_view: Option<wgpu::TextureView>,
+    back_buffer_texture_view: Option<TextureView>,
+    back_buffer_depth_texture_view: Option<TextureView>,
+    back_buffer_resolve_texture_view: Option<TextureView>,
 
-    front_buffer_texture_view: Option<wgpu::TextureView>,
-    front_buffer_depth_texture_view: Option<wgpu::TextureView>,
-    front_buffer_resolve_texture_view: Option<wgpu::TextureView>,
+    front_buffer_texture_view: Option<TextureView>,
+    front_buffer_depth_texture_view: Option<TextureView>,
+    front_buffer_resolve_texture_view: Option<TextureView>,
 
     back_buffer_raw_texture_handle: BitmapHandle,
     front_buffer_raw_texture_handle: BitmapHandle,
@@ -94,8 +94,8 @@ impl WgpuContext3D {
     pub fn new(descriptors: Arc<Descriptors>, profile: Context3DProfile) -> Self {
         let make_dummy_handle = || {
             let texture_label = create_debug_label!("Render target texture");
-            let format = wgpu::TextureFormat::Rgba8Unorm;
-            let dummy_texture = descriptors.device.create_texture(&wgpu::TextureDescriptor {
+            let format = TextureFormat::Rgba8Unorm;
+            let dummy_texture = descriptors.device.create_texture(&TextureDescriptor {
                 label: texture_label.as_deref(),
                 size: Extent3d {
                     width: 1,
@@ -104,10 +104,10 @@ impl WgpuContext3D {
                 },
                 mip_level_count: 1,
                 sample_count: 1,
-                dimension: wgpu::TextureDimension::D2,
+                dimension: TextureDimension::D2,
                 format,
                 view_formats: &[format],
-                usage: wgpu::TextureUsages::COPY_SRC,
+                usage: TextureUsages::COPY_SRC,
             });
 
             BitmapHandle(Arc::new(Texture {
@@ -171,7 +171,7 @@ impl WgpuContext3D {
     fn create_depth_texture(&self, width: u32, height: u32, sample_count: u32) -> TextureView {
         self.descriptors
             .device
-            .create_texture(&wgpu::TextureDescriptor {
+            .create_texture(&TextureDescriptor {
                 label: Some("Context3D depth texture"),
                 size: Extent3d {
                     width,
@@ -181,9 +181,9 @@ impl WgpuContext3D {
                 mip_level_count: 1,
                 sample_count,
                 dimension: TextureDimension::D2,
-                format: wgpu::TextureFormat::Depth24PlusStencil8,
-                view_formats: &[wgpu::TextureFormat::Depth24PlusStencil8],
-                usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
+                format: TextureFormat::Depth24PlusStencil8,
+                view_formats: &[TextureFormat::Depth24PlusStencil8],
+                usage: TextureUsages::RENDER_ATTACHMENT,
             })
             .create_view(&Default::default())
     }
@@ -374,7 +374,7 @@ impl Context3D for WgpuContext3D {
         _ruffle_usage: ruffle_render::backend::BufferUsage,
         num_indices: u32,
     ) -> Box<dyn IndexBuffer> {
-        let size = align_copy_buffer_size(num_indices as usize * std::mem::size_of::<u16>()) as u32;
+        let size = align_copy_buffer_size(num_indices as usize * size_of::<u16>()) as u32;
         let buffer = self.descriptors.device.create_buffer(&BufferDescriptor {
             label: None,
             size: size as u64,
@@ -418,7 +418,7 @@ impl Context3D for WgpuContext3D {
         &mut self,
         width: u32,
         height: u32,
-        format: ruffle_render::backend::Context3DTextureFormat,
+        format: Context3DTextureFormat,
         _optimize_for_render_to_texture: bool,
         streaming_levels: u32,
     ) -> Result<Rc<dyn ruffle_render::backend::Texture>, Error> {
@@ -458,7 +458,7 @@ impl Context3D for WgpuContext3D {
     fn create_cube_texture(
         &mut self,
         size: u32,
-        format: ruffle_render::backend::Context3DTextureFormat,
+        format: Context3DTextureFormat,
         _optimize_for_render_to_texture: bool,
         streaming_levels: u32,
     ) -> Result<Rc<dyn ruffle_render::backend::Texture>, Error> {
@@ -538,7 +538,7 @@ impl Context3D for WgpuContext3D {
                 wants_best_resolution: _,
                 wants_best_resolution_on_browser_zoom: _,
             } => {
-                let format = wgpu::TextureFormat::Rgba8Unorm;
+                let format = TextureFormat::Rgba8Unorm;
 
                 let mut sample_count = anti_alias;
                 if sample_count == 0 {
@@ -556,51 +556,44 @@ impl Context3D for WgpuContext3D {
 
                 let make_it = || {
                     // TODO - see if we can deduplicate this with the code in `CommandTarget`
-                    let wgpu_texture =
-                        self.descriptors
-                            .device
-                            .create_texture(&wgpu::TextureDescriptor {
-                                label: texture_label.as_deref(),
-                                size: Extent3d {
-                                    width,
-                                    height,
-                                    depth_or_array_layers: 1,
-                                },
-                                mip_level_count: 1,
-                                sample_count,
-                                dimension: wgpu::TextureDimension::D2,
-                                format,
-                                view_formats: &[format],
-                                usage: if sample_count > 1 {
-                                    wgpu::TextureUsages::RENDER_ATTACHMENT
-                                } else {
-                                    wgpu::TextureUsages::RENDER_ATTACHMENT
-                                        | wgpu::TextureUsages::COPY_SRC
-                                        | wgpu::TextureUsages::TEXTURE_BINDING
-                                },
-                            });
+                    let wgpu_texture = self.descriptors.device.create_texture(&TextureDescriptor {
+                        label: texture_label.as_deref(),
+                        size: Extent3d {
+                            width,
+                            height,
+                            depth_or_array_layers: 1,
+                        },
+                        mip_level_count: 1,
+                        sample_count,
+                        dimension: TextureDimension::D2,
+                        format,
+                        view_formats: &[format],
+                        usage: if sample_count > 1 {
+                            TextureUsages::RENDER_ATTACHMENT
+                        } else {
+                            TextureUsages::RENDER_ATTACHMENT
+                                | TextureUsages::COPY_SRC
+                                | TextureUsages::TEXTURE_BINDING
+                        },
+                    });
 
                     let resolve_texture = if sample_count > 1 {
-                        Some(
-                            self.descriptors
-                                .device
-                                .create_texture(&wgpu::TextureDescriptor {
-                                    label: texture_label.as_deref(),
-                                    size: Extent3d {
-                                        width,
-                                        height,
-                                        depth_or_array_layers: 1,
-                                    },
-                                    mip_level_count: 1,
-                                    sample_count: 1,
-                                    dimension: wgpu::TextureDimension::D2,
-                                    format,
-                                    view_formats: &[format],
-                                    usage: wgpu::TextureUsages::RENDER_ATTACHMENT
-                                        | wgpu::TextureUsages::COPY_SRC
-                                        | wgpu::TextureUsages::TEXTURE_BINDING,
-                                }),
-                        )
+                        Some(self.descriptors.device.create_texture(&TextureDescriptor {
+                            label: texture_label.as_deref(),
+                            size: Extent3d {
+                                width,
+                                height,
+                                depth_or_array_layers: 1,
+                            },
+                            mip_level_count: 1,
+                            sample_count: 1,
+                            dimension: TextureDimension::D2,
+                            format,
+                            view_formats: &[format],
+                            usage: TextureUsages::RENDER_ATTACHMENT
+                                | TextureUsages::COPY_SRC
+                                | TextureUsages::TEXTURE_BINDING,
+                        }))
                     } else {
                         None
                     };
@@ -724,7 +717,7 @@ impl Context3D for WgpuContext3D {
                 // which uses the existing data (at the beginning or end) to fill out the copy
                 // to the required length and offset. Without this, we would lose data in the CPU
                 // buffer whenever we performed a copy with an unalignd offset or length.
-                let offset_bytes = start_offset * std::mem::size_of::<u16>();
+                let offset_bytes = start_offset * size_of::<u16>();
                 let rounded_down_offset =
                     offset_bytes - (offset_bytes % COPY_BUFFER_ALIGNMENT as usize);
                 let rounded_up_length = align_copy_buffer_size(data.len());
@@ -762,8 +755,7 @@ impl Context3D for WgpuContext3D {
                     .write_buffer(
                         &mut self.buffer_command_encoder,
                         &buffer.buffer,
-                        (start_vertex * (data32_per_vertex as usize) * std::mem::size_of::<f32>())
-                            as u64,
+                        (start_vertex * (data32_per_vertex as usize) * size_of::<f32>()) as u64,
                         NonZeroU64::new(data.len() as u64).unwrap(),
                     )
                     .slice(..data.len())
@@ -813,27 +805,22 @@ impl Context3D for WgpuContext3D {
                 if sample_count != 1 {
                     let texture_label = create_debug_label!("Render target texture MSAA");
 
-                    let msaa_texture =
-                        self.descriptors
-                            .device
-                            .create_texture(&wgpu::TextureDescriptor {
-                                label: texture_label.as_deref(),
-                                size: Extent3d {
-                                    width: texture_wrapper.texture.width(),
-                                    height: texture_wrapper.texture.height(),
-                                    depth_or_array_layers: texture_wrapper
-                                        .texture
-                                        .depth_or_array_layers(),
-                                },
-                                mip_level_count: 1,
-                                sample_count,
-                                dimension: texture_wrapper.texture.dimension(),
-                                format: texture_wrapper.texture.format(),
-                                view_formats: &[texture_wrapper.texture.format()],
-                                usage: wgpu::TextureUsages::RENDER_ATTACHMENT
-                                    | wgpu::TextureUsages::COPY_SRC
-                                    | wgpu::TextureUsages::TEXTURE_BINDING,
-                            });
+                    let msaa_texture = self.descriptors.device.create_texture(&TextureDescriptor {
+                        label: texture_label.as_deref(),
+                        size: Extent3d {
+                            width: texture_wrapper.texture.width(),
+                            height: texture_wrapper.texture.height(),
+                            depth_or_array_layers: texture_wrapper.texture.depth_or_array_layers(),
+                        },
+                        mip_level_count: 1,
+                        sample_count,
+                        dimension: texture_wrapper.texture.dimension(),
+                        format: texture_wrapper.texture.format(),
+                        view_formats: &[texture_wrapper.texture.format()],
+                        usage: TextureUsages::RENDER_ATTACHMENT
+                            | TextureUsages::COPY_SRC
+                            | TextureUsages::TEXTURE_BINDING,
+                    });
 
                     self.current_texture_resolve_view =
                         Some(texture_wrapper.texture.create_view(&view_desc));
@@ -987,16 +974,14 @@ impl Context3D for WgpuContext3D {
                     ProgramType::Fragment => &self.current_pipeline.fragment_shader_uniforms,
                 };
 
-                let offset = first_register as u64
-                    * AGAL_FLOATS_PER_REGISTER
-                    * std::mem::size_of::<f32>() as u64;
+                let offset =
+                    first_register as u64 * AGAL_FLOATS_PER_REGISTER * size_of::<f32>() as u64;
 
                 let mut buffer_view = self.buffer_staging_belt.write_buffer(
                     &mut self.buffer_command_encoder,
                     buffer,
                     offset,
-                    NonZeroU64::new(std::mem::size_of_val(matrix_raw_data_column_major) as u64)
-                        .unwrap(),
+                    NonZeroU64::new(size_of_val(matrix_raw_data_column_major) as u64).unwrap(),
                 );
                 // Despite what the docs claim, we copy in *column* major order, rather than *row* major order.
                 // See this code in OpenFL: https://github.com/openfl/openfl/blob/971a4c9e43b5472fd84d73920a2b7c1b3d8d9257/src/openfl/display3D/Context3D.hx#L1532-L1550
@@ -1029,7 +1014,7 @@ impl Context3D for WgpuContext3D {
 
                 // Wgpu requires us to pad the image rows to a multiple of COPY_BYTES_PER_ROW_ALIGNMENT
                 let dest_bytes_per_row =
-                    if matches!(dest.texture.format(), wgpu::TextureFormat::Rgba8Unorm) {
+                    if matches!(dest.texture.format(), TextureFormat::Rgba8Unorm) {
                         (source_width * 4).next_multiple_of(COPY_BYTES_PER_ROW_ALIGNMENT)
                     } else {
                         src_bytes_per_row
@@ -1088,7 +1073,7 @@ impl Context3D for WgpuContext3D {
                         aspect: wgpu::TextureAspect::All,
                     },
                     // The copy size uses the original image, with the original row size
-                    wgpu::Extent3d {
+                    Extent3d {
                         width: source_width,
                         height: source_height,
                         depth_or_array_layers: 1,
@@ -1104,7 +1089,7 @@ impl Context3D for WgpuContext3D {
                     let texture_wrapper =
                         <dyn Any>::downcast_ref::<TextureWrapper>(texture.as_ref()).unwrap();
 
-                    let mut view: wgpu::TextureViewDescriptor = Default::default();
+                    let mut view: TextureViewDescriptor = Default::default();
                     if cube {
                         view.dimension = Some(wgpu::TextureViewDimension::Cube);
                         view.array_layer_count = Some(6);
@@ -1278,7 +1263,7 @@ pub struct ClearColor {
     mask: u32,
 }
 
-fn convert_texture_format(input: Context3DTextureFormat) -> wgpu::TextureFormat {
+fn convert_texture_format(input: Context3DTextureFormat) -> TextureFormat {
     match input {
         // Some of these formats are unsupported by wgpu to various degrees:
         // * Bgra doesn't exist in webgl

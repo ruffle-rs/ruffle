@@ -330,7 +330,7 @@ pub struct FilterVertex {
 
 pub const VERTEX_BUFFERS_DESCRIPTION_FILTERS: [Option<wgpu::VertexBufferLayout>; 1] =
     [Some(wgpu::VertexBufferLayout {
-        array_stride: std::mem::size_of::<FilterVertex>() as u64,
+        array_stride: size_of::<FilterVertex>() as u64,
         step_mode: wgpu::VertexStepMode::Vertex,
         attributes: &vertex_attr_array![
             0 => Float32x2,
@@ -348,7 +348,7 @@ pub struct FilterVertexWithBlur {
 
 pub const VERTEX_BUFFERS_DESCRIPTION_FILTERS_WITH_BLUR: [Option<wgpu::VertexBufferLayout>; 1] =
     [Some(wgpu::VertexBufferLayout {
-        array_stride: std::mem::size_of::<FilterVertexWithBlur>() as u64,
+        array_stride: size_of::<FilterVertexWithBlur>() as u64,
         step_mode: wgpu::VertexStepMode::Vertex,
         attributes: &vertex_attr_array![
             0 => Float32x2,
@@ -368,7 +368,7 @@ pub struct FilterVertexWithDoubleBlur {
 
 pub const VERTEX_BUFFERS_DESCRIPTION_FILTERS_WITH_DOUBLE_BLUR: [Option<wgpu::VertexBufferLayout>;
     1] = [Some(wgpu::VertexBufferLayout {
-    array_stride: std::mem::size_of::<FilterVertexWithDoubleBlur>() as u64,
+    array_stride: size_of::<FilterVertexWithDoubleBlur>() as u64,
     step_mode: wgpu::VertexStepMode::Vertex,
     attributes: &vertex_attr_array![
         0 => Float32x2,

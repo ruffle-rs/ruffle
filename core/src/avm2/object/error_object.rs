@@ -30,7 +30,7 @@ pub struct ErrorObject<'gc>(pub Gc<'gc, ErrorObjectData<'gc>>);
 #[collect(no_drop)]
 pub struct ErrorObjectWeak<'gc>(pub GcWeak<'gc, ErrorObjectData<'gc>>);
 
-impl fmt::Debug for ErrorObject<'_> {
+impl Debug for ErrorObject<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("ErrorObject")
             .field("class", &self.base().class_name())

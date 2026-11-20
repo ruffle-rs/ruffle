@@ -41,7 +41,7 @@ pub fn shared_object_avm1(environment: &impl Environment) -> Result<(), libtest_
 
     // Verify that the flash cookie matches the expected one
     let expected = std::fs::read("tests/swfs/avm1/shared_object/RuffleTest.sol")?;
-    std::assert_eq!(
+    assert_eq!(
         expected,
         memory_storage_backend
             .get("localhost//RuffleTest")
@@ -180,7 +180,7 @@ pub fn shared_object_avm2(environment: &impl Environment) -> Result<(), libtest_
 
     // Verify that the flash cookie matches the expected one
     let expected = std::fs::read("tests/swfs/avm2/shared_object/RuffleTest.sol")?;
-    std::assert_eq!(
+    assert_eq!(
         expected,
         memory_storage_backend
             .get("localhost//RuffleTest")

@@ -204,7 +204,7 @@ fn jpegxr_to_tiff<R: Read + Seek>(
     atf_width: u32,
     atf_height: u32,
     bytes: R,
-) -> (image::DynamicImage, jpegxr::PixelFormat) {
+) -> (image::DynamicImage, PixelFormat) {
     let mut decoder =
         jpegxr::ImageDecode::with_reader(bytes).expect("Failed to decode JPEG-XR image");
 

@@ -8,7 +8,7 @@ use wgpu::{BlendState, PrimitiveTopology, vertex_attr_array};
 
 pub const VERTEX_BUFFERS_DESCRIPTION_POS: [Option<wgpu::VertexBufferLayout>; 1] =
     [Some(wgpu::VertexBufferLayout {
-        array_stride: std::mem::size_of::<PosVertex>() as u64,
+        array_stride: size_of::<PosVertex>() as u64,
         step_mode: wgpu::VertexStepMode::Vertex,
         attributes: &vertex_attr_array![
             0 => Float32x2,
@@ -17,7 +17,7 @@ pub const VERTEX_BUFFERS_DESCRIPTION_POS: [Option<wgpu::VertexBufferLayout>; 1] 
 
 pub const VERTEX_BUFFERS_DESCRIPTION_POS_UV: [Option<wgpu::VertexBufferLayout>; 1] =
     [Some(wgpu::VertexBufferLayout {
-        array_stride: std::mem::size_of::<PosUvVertex>() as u64,
+        array_stride: size_of::<PosUvVertex>() as u64,
         step_mode: wgpu::VertexStepMode::Vertex,
         attributes: &vertex_attr_array![
             0 => Float32x2,
@@ -27,7 +27,7 @@ pub const VERTEX_BUFFERS_DESCRIPTION_POS_UV: [Option<wgpu::VertexBufferLayout>; 
 
 pub const VERTEX_BUFFERS_DESCRIPTION_COLOR: [Option<wgpu::VertexBufferLayout>; 1] =
     [Some(wgpu::VertexBufferLayout {
-        array_stride: std::mem::size_of::<PosColorVertex>() as u64,
+        array_stride: size_of::<PosColorVertex>() as u64,
         step_mode: wgpu::VertexStepMode::Vertex,
         attributes: &vertex_attr_array![
             0 => Float32x2,

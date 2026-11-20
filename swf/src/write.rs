@@ -2672,11 +2672,11 @@ mod tests {
     #[test]
     fn write_tag_without_end() {
         let mut buf = Vec::new();
-        super::write_tag(&Tag::ShowFrame, 1, &mut buf).unwrap();
+        write_tag(&Tag::ShowFrame, 1, &mut buf).unwrap();
         assert_eq!(buf, [0b01_000000, 0b00000000]);
 
         let mut buf = Vec::new();
-        super::write_tag(&Tag::End, 1, &mut buf).unwrap();
+        write_tag(&Tag::End, 1, &mut buf).unwrap();
         assert_eq!(buf, [0, 0]);
     }
 
@@ -2687,7 +2687,7 @@ mod tests {
             tag_code: 512,
             data: &[0; 100],
         };
-        super::write_tag(&tag, 1, &mut buf).unwrap();
+        write_tag(&tag, 1, &mut buf).unwrap();
         let mut expected = vec![0b00_111111, 0b10000000, 100, 0, 0, 0];
         expected.extend_from_slice(&[0; 100]);
         assert_eq!(buf, expected);
@@ -2699,20 +2699,20 @@ mod tests {
 
         // EnableDebugger
         let mut buf = Vec::new();
-        super::write_tag(&tag, 5, &mut buf).unwrap();
+        write_tag(&tag, 5, &mut buf).unwrap();
         assert_eq!(buf, [0b10_000011, 0b00001110, b'p', b'w', 0]);
 
         // EnableDebugger2
         let mut buf = Vec::new();
-        super::write_tag(&tag, 6, &mut buf).unwrap();
+        write_tag(&tag, 6, &mut buf).unwrap();
         assert_eq!(buf, [0b00_000101, 0b00010000, 0, 0, b'p', b'w', 0]);
     }
 
     #[test]
     fn write_tag_multiple() {
         let mut buf = Vec::new();
-        super::write_tag(&Tag::ShowFrame, 1, &mut buf).unwrap();
-        super::write_tag(
+        write_tag(&Tag::ShowFrame, 1, &mut buf).unwrap();
+        write_tag(
             &Tag::Unknown {
                 tag_code: 512,
                 data: &[0; 100],
@@ -2721,7 +2721,7 @@ mod tests {
             &mut buf,
         )
         .unwrap();
-        super::write_tag(&Tag::End, 1, &mut buf).unwrap();
+        write_tag(&Tag::End, 1, &mut buf).unwrap();
 
         let mut expected = vec![0b01_000000, 0b00000000];
         expected.extend_from_slice(&[0b00_111111, 0b10000000, 100, 0, 0, 0]);

@@ -716,7 +716,7 @@ mod wrapper {
 
 pub use wrapper::BitmapRawDataWrapper;
 
-impl std::fmt::Debug for BitmapRawData<'_> {
+impl Debug for BitmapRawData<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("BitmapRawData")
             .field("dirty_state", &self.dirty_state)
