@@ -5,3 +5,6 @@ file-picker-filter-swf = SWF (*.swf)
 file-picker-filter-spl = FutureSplash Animator (*.spl)
 file-picker-filter-ruf = Ruffle пакет (*.ruf)
 file-picker-filter-all = Бөтен файллар
+file-picker-select-root-movie-title = Төп клипны сайлау
+file-picker-select-root-movie-message = Ачылган директориядән төп клипны сайлагыз.
+file-picker-select-root-movie-select = Сайлау
