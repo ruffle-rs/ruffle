@@ -24,7 +24,7 @@ pub fn preprocess_peephole(ops: &[Cell<Op<'_>>]) {
 ///
 /// This pass removes `pushscope` ops if the method never reads from the scope
 /// stack.
-pub fn push_scope_removal_peephole<'gc>(ops: &[Cell<Op<'gc>>]) {
+pub fn push_scope_removal_peephole(ops: &[Cell<Op>]) {
     // Determine if this method ever depends on the state of the scope stack.
     for op in ops {
         match op.get() {

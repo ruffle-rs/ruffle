@@ -65,7 +65,7 @@ pub fn optimize<'gc>(
     Ok(())
 }
 
-fn determine_sets_local_0<'gc>(ops: &[Cell<Op<'gc>>]) -> bool {
+fn determine_sets_local_0(ops: &[Cell<Op>]) -> bool {
     for op in ops {
         match op.get() {
             Op::SetLocal { index }
