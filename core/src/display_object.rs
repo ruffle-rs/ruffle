@@ -8,7 +8,6 @@ use crate::avm2::{
 };
 use crate::context::{RenderContext, UpdateContext};
 use crate::drawing::Drawing;
-use crate::prelude::*;
 use crate::string::{AvmString, WString};
 use crate::tag_utils::SwfMovie;
 use crate::types::{Degrees, Percent};
@@ -3267,6 +3266,12 @@ impl Default for SoundTransform {
         }
     }
 }
+
+/// A depth for a Flash display object in AVM1.
+/// This is different than defined in `swf`; during execution, clips
+/// created from SWF tags have their depth biased to negative numbers,
+/// and clips can be dynamically switched by AS to depths in the range of 32-bits.
+pub type Depth = i32;
 
 /// A version of `DisplayObject` that holds weak pointers.
 /// Currently, this is only used by orphan handling, so we only

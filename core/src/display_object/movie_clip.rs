@@ -26,8 +26,9 @@ use crate::display_object::interactive::{
     InteractiveObject, InteractiveObjectBase, TInteractiveObject,
 };
 use crate::display_object::{
-    Avm1Button, Avm1TextFieldBinding, Avm2Button, BoundsMode, DisplayObject, DisplayObjectBase,
-    DisplayObjectPtr, EditText, Graphic, HitTestOptions, MorphShape, TDisplayObject, Text, Video,
+    Avm1Button, Avm1TextFieldBinding, Avm2Button, BoundsMode, Depth, DisplayObject,
+    DisplayObjectBase, DisplayObjectPtr, EditText, Graphic, HitTestOptions, MorphShape,
+    TDisplayObject, Text, Video,
 };
 use crate::drawing::Drawing;
 use crate::events::{ButtonKeyCode, ClipEvent, ClipEventResult};
@@ -37,7 +38,6 @@ use crate::library::MovieLibrary;
 use crate::limits::ExecutionLimit;
 use crate::loader::LoadManager;
 use crate::loader::{self, ContentType};
-use crate::prelude::*;
 use crate::streams::NetStream;
 use crate::string::{AvmString, SwfStrExt as _, WStr, WString};
 use crate::tag_utils::{self, ControlFlow, Error, SwfMovie, SwfMovieData, SwfSlice, SwfStream};
