@@ -14,7 +14,7 @@ use ruffle_common::utils::HasPrefixField;
 use ruffle_render::backend::ShapeHandle;
 use ruffle_render::commands::CommandHandler;
 use std::cell::{RefCell, RefMut};
-use swf::{CharacterId, Fixed8, Fixed16, Twips};
+use swf::{CharacterId, Color, Fixed8, Fixed16, Twips};
 
 #[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]
