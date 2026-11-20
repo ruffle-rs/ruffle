@@ -1,0 +1,36 @@
+// Rebuild Test.abc from Test.as, ProbeClip.as, and Leaf.as with ASC.
+// Use tools/asc/asc.jar and the generated playerglobal_import.abc:
+// java -jar <asc.jar> -AS3 -import <playerglobal_import.abc> -in Leaf.as -in ProbeClip.as Test.as
+Swf(
+    version: 9,
+    stage: (width: 400.0, height: 300.0),
+    frame_rate: 12.0,
+    tags: [
+        FileAttributes(action_script_3: true),
+        SetBackgroundColor(0xFFFFFF),
+        DefineSprite(id: 2, tags: [ShowFrame, End]),
+        DefineSprite(
+            id: 1,
+            tags: [
+                // Frame 1 is empty; frame 2 places a named child.
+                ShowFrame,
+                PlaceObject2(
+                    depth: 1,
+                    character: 2,
+                    matrix: (),
+                    name: "child",
+                ),
+                ShowFrame,
+                End,
+            ],
+        ),
+        DoAbc2(lazy_initialize: true, name: "probe", data: File("Test.abc")),
+        SymbolClass([
+            (character: 0, name: "Test"),
+            (character: 1, name: "ProbeClip"),
+            (character: 2, name: "Leaf"),
+        ]),
+        ShowFrame,
+        End,
+    ],
+)
