@@ -9,7 +9,7 @@ use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
 use crate::avm2_stub_method;
 
-fn this_worker<'gc>(this: Value<'gc>) -> WorkerObject<'gc> {
+fn this_worker(this: Value) -> WorkerObject {
     this.as_object()
         .and_then(|o| o.as_worker_object())
         .expect("Worker native called on non-Worker object")

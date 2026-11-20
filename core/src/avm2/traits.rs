@@ -290,7 +290,7 @@ fn default_value_for_type<'gc>(type_name: Option<Gc<'gc, Multiname<'gc>>>) -> Va
 }
 
 /// Like `default_value_for_type`, but takes a `Class` instead of a `Multiname`.
-fn default_value_for_class<'gc>(type_class: Option<Class<'gc>>) -> Value<'gc> {
+fn default_value_for_class(type_class: Option<Class>) -> Value {
     if let Some(type_class) = type_class {
         if type_class.is_builtin_boolean() {
             false.into()

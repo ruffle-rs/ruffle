@@ -157,7 +157,7 @@ impl<'gc> AvmSerializer<'gc> {
         activation: &mut Activation<'_, 'gc>,
         obj: Object<'gc>,
     ) -> Result<JsonValue, Error<'gc>> {
-        fn skip_value<'gc>(value: Value<'gc>) -> bool {
+        fn skip_value(value: Value) -> bool {
             match value {
                 Value::Undefined => true,
                 Value::Object(obj) => obj.as_function_object().is_some(),

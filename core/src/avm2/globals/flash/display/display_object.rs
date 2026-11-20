@@ -916,7 +916,7 @@ pub fn get_scroll_rect<'gc>(
     Ok(Value::Undefined)
 }
 
-pub fn object_to_rectangle<'gc>(object: Object<'gc>) -> Rectangle<Twips> {
+pub fn object_to_rectangle(object: Object) -> Rectangle<Twips> {
     const SLOTS: &[usize] = &[
         rectangle_slots::X,
         rectangle_slots::Y,
