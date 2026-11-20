@@ -57,7 +57,8 @@ use std::cmp::max;
 use std::collections::HashMap;
 use swf::extensions::ReadSwfExt;
 use swf::{
-    CharacterId, ClipEventFlag, DefineBitsLossless, FrameLabelData, Point, TagCode, Twips, UTF_8,
+    CharacterId, ClipEventFlag, DefineBitsLossless, FrameLabelData, Point, Rectangle, TagCode,
+    Twips, UTF_8,
 };
 
 use super::BitmapClass;

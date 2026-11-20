@@ -6,7 +6,6 @@ use crate::display_object::{
     TDisplayObjectContainer,
 };
 use crate::font::{FontLike, TextRenderSettings};
-use crate::prelude::*;
 use crate::tag_utils::SwfMovie;
 use crate::vminterface::Instantiator;
 use core::fmt;
@@ -19,7 +18,7 @@ use ruffle_render::transform::Transform;
 use ruffle_wstr::{WStr, WString};
 use std::borrow::Cow;
 use std::cell::RefCell;
-use swf::{CharacterId, Point, Twips};
+use swf::{CharacterId, Point, Rectangle, Twips};
 
 #[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]
