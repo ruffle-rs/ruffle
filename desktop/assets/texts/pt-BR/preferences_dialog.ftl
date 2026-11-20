@@ -35,6 +35,7 @@ ime-enabled = Método de entrada
 ime-enabled-experimental = (experimental)
 ime-enabled-tooltip = Um método de entrada permite digitar caracteres que não estão disponíveis no teclado, por exemplo, caracteres chineses, japoneses ou coreanos.
 ime-enabled-default = Padrão
+device-font-renderer = Renderizador de Fonte do Dispositivo
 device-font-renderer-tooltip = Seleciona o backend usado para renderizar as fontes do dispositivo.
 device-font-renderer-default = Padrão
 device-font-renderer-embedded = Incorporado

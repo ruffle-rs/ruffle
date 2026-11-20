@@ -1,4 +1,4 @@
-preferences-dialog = העדפות עבור Ruffle
+preferences-dialog = העדפות Ruffle
 preference-locked-by-cli = לקריאה בלבד (הוגדר על ידי ממשק שורת הפקודות)
 graphics-backend = גרפיקת צד שרת
 graphics-backend-default = ברירת מחדל
@@ -34,3 +34,9 @@ gamemode-default-tooltip = GameMode יופעל רק כאשר העדפת הספק
 ime-enabled = שיטת קלט
 ime-enabled-experimental = (ניסיוני)
 ime-enabled-tooltip = שיטת קלט מאפשרת להזין תווים שאינם זמינים במקלדת, כמו למשל תווים סיניים, יפניים או קוריאניים.
+ime-enabled-default = ברירת מחדל
+device-font-renderer = מנוע רינדור גופני המכשיר
+device-font-renderer-tooltip = בוחר את מנוע הרינדור המשמש להצגת גופני המכשיר.
+device-font-renderer-default = ברירת מחדל
+device-font-renderer-embedded = מובנה
+device-font-renderer-freetype = FreeType
