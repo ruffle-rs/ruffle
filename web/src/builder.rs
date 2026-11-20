@@ -13,7 +13,9 @@ use ruffle_core::config::{Letterbox, NetworkingAccessMode};
 use ruffle_core::events::{GamepadButton, KeyCode};
 use ruffle_core::font::{DefaultFont, FontFileData};
 use ruffle_core::ttf_parser;
-use ruffle_core::{Color, Player, PlayerBuilder, PlayerRuntime, StageAlign, StageScaleMode, swf};
+use ruffle_core::{
+    Color, Player, PlayerBuilder, PlayerRuntime, StageAlign, StageScaleMode, TickMode, swf,
+};
 use ruffle_render::backend::RenderBackend;
 use ruffle_render::quality::StageQuality;
 use ruffle_video_external::backend::ExternalVideoBackend;
@@ -712,6 +714,8 @@ impl RuffleInstanceBuilder {
             .with_align(self.stage_align, self.force_align)
             .with_scale_mode(self.scale, self.force_scale)
             .with_frame_rate(self.frame_rate)
+            // Web ticks on every requestAnimationFrame callback, i.e. once per display refresh.
+            .with_tick_mode(TickMode::ConstantRate)
             .with_page_url(window.location().href().ok())
             .with_gamepad_button_mapping(self.gamepad_button_mapping.clone())
             .build();
