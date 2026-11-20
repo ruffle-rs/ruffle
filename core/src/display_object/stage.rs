@@ -11,7 +11,7 @@ use crate::config::Letterbox;
 use crate::context::{RenderContext, UpdateContext};
 use crate::display_object::container::{ChildContainer, TDisplayObjectContainer};
 use crate::display_object::interactive::{InteractiveObjectBase, TInteractiveObject};
-use crate::display_object::{BoundsMode, DisplayObjectBase};
+use crate::display_object::{BoundsMode, DisplayObjectBase, TDisplayObject};
 use crate::events::{ClipEvent, ClipEventResult};
 use crate::focus_tracker::FocusTracker;
 use crate::frame_lifecycle::broadcast_frame_entered;

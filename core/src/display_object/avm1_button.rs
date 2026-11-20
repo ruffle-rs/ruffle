@@ -9,7 +9,9 @@ use crate::display_object::container::{
 use crate::display_object::interactive::{
     Avm2MousePick, InteractiveObject, InteractiveObjectBase, TInteractiveObject,
 };
-use crate::display_object::{Avm1TextFieldBinding, BoundsMode, DisplayObjectBase, HitTestOptions};
+use crate::display_object::{
+    Avm1TextFieldBinding, BoundsMode, DisplayObjectBase, HitTestOptions, TDisplayObject,
+};
 use crate::events::{ClipEvent, ClipEventResult};
 use crate::prelude::*;
 use crate::string::AvmString;

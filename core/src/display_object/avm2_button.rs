@@ -13,7 +13,9 @@ use crate::display_object::container::{
     dispatch_added_to_stage_event, dispatch_removed_event,
 };
 use crate::display_object::interactive::{InteractiveObjectBase, TInteractiveObject};
-use crate::display_object::{BoundsMode, DisplayObjectBase, HitTestOptions, MovieClip};
+use crate::display_object::{
+    BoundsMode, DisplayObjectBase, HitTestOptions, MovieClip, TDisplayObject,
+};
 use crate::events::{ClipEvent, ClipEventResult};
 use crate::frame_lifecycle::{
     broadcast_frame_constructed, broadcast_frame_exited, catchup_display_object_to_frame,

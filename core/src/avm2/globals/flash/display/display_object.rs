@@ -17,7 +17,7 @@ use crate::avm2::value::Value;
 use crate::avm2::{ArrayObject, ArrayStorage};
 use crate::avm2::{ClassObject, Error};
 use crate::context::UpdateContext;
-use crate::display_object::{BoundsMode, HitTestOptions};
+use crate::display_object::{BoundsMode, HitTestOptions, TDisplayObject};
 use crate::ecma_conversions::round_to_even;
 use crate::prelude::*;
 use crate::string::AvmString;
