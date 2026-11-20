@@ -558,11 +558,15 @@ impl Player {
 
         self.frame_accumulator += dt;
         let frame_duration = self.frame_duration();
+        // Display refresh timestamps jitter by fractions of a millisecond, which would leave the
+        // remainder at the frame boundary and alternate zero and two frames per refresh. Run a frame
+        // due within half a tick (at most half a frame) now, so steady refreshes advance steadily.
+        let early = FloatDuration::from_millis((dt.min(frame_duration).as_millis() / 2.0).max(0.0));
 
         let max_frames_per_tick = self.max_frames_per_tick();
         let mut frame = 0;
 
-        while frame < max_frames_per_tick && self.frame_accumulator >= frame_duration {
+        while frame < max_frames_per_tick && self.frame_accumulator + early >= frame_duration {
             let timer = Instant::now();
             self.run_frame();
             let elapsed = timer.elapsed().as_millis() as f64;
@@ -3310,4 +3314,37 @@ pub enum PlayerMode {
 
     /// Represents the debug version of Flash Player, i.e. flashplayerdebugger.
     Debug,
+}
+
+#[cfg(test)]
+mod frame_pacing_tests {
+    use super::*;
+
+    /// Frames run on each display refresh, with timestamps rounded to 0.1ms as browsers report them.
+    fn frames_per_refresh(refresh_hz: f64) -> Vec<usize> {
+        let player = PlayerBuilder::new()
+            .with_movie(SwfMovieData::empty(10, None))
+            .with_frame_rate(Some(60.0))
+            .with_autoplay(true)
+            .build();
+        let mut player = player.lock().unwrap();
+        let stamp = |k: u32| (f64::from(k) * 10_000.0 / refresh_hz).round() / 10.0;
+        (1..=240)
+            .map(|k| {
+                player.recent_run_frame_timings.clear();
+                player.tick(FloatDuration::from_millis(stamp(k) - stamp(k - 1)));
+                player.recent_run_frame_timings.len()
+            })
+            .collect()
+    }
+
+    #[test]
+    fn jittered_refreshes_run_steady_frames() {
+        assert_eq!(frames_per_refresh(60.0), vec![1; 240]);
+        assert!(
+            frames_per_refresh(120.0)
+                .chunks(2)
+                .all(|pair| pair == [0, 1])
+        );
+    }
 }
