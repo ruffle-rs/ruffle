@@ -1,4 +1,4 @@
-num_frames = 1
+num_ticks = 1
 
 # TODO Gradient fills are off by up to ~20 levels, and some shape edges differ from FP.
 [image_comparisons.output]

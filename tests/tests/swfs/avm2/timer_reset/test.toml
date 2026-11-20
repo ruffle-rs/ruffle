@@ -1,2 +1,2 @@
-num_frames = 160
+num_ticks = 160
 sleep_to_meet_frame_rate = true

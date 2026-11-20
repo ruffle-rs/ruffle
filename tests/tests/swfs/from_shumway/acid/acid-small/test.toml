@@ -1,6 +1,6 @@
 # Test adapted from Shumway at https://github.com/mozilla/shumway/tree/master/test/swfs/acid
 
-num_frames = 5
+num_ticks = 5
 
 # FIXME The output differs wrt. stroke widths.
 

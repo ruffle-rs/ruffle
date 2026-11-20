@@ -2,7 +2,7 @@
 # from the https://github.com/saharan/OGSL repository
 # All of the necessary files were copied into this directory.
 
-num_frames = 80
+num_ticks = 80
 
 [image_comparisons.output]
 tolerance = 8

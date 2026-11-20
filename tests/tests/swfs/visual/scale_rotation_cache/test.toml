@@ -1,4 +1,4 @@
-num_frames = 50
+num_ticks = 50
 
 [image_comparisons."output.5"]
 trigger = 5

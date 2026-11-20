@@ -3,7 +3,7 @@
 #
 # gradient.jxr generated with gradient.png via https://www.aconvert.com/image/png-to-jxr/
 
-num_frames = 3
+num_ticks = 3
 
 [image_comparisons.output]
 tolerance = 1

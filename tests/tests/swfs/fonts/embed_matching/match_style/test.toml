@@ -1,6 +1,6 @@
 # This test shows that it ignores missing glyphs when matching embedded fonts, choosing only on style and name
 
-num_frames = 1
+num_ticks = 1
 
 [image_comparisons.output]
 tolerance = 3

@@ -2,5 +2,5 @@
 # load successfully, the script initializer would run and print something. TODO:
 # expand the test framework to be able to compare error output so we can ensure
 # an uncaught VerifyError is properly being thrown.
-num_frames = 1
+num_ticks = 1
 known_failure = true

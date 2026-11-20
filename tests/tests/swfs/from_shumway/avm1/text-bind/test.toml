@@ -1,6 +1,6 @@
 # Test adapted from Shumway at https://github.com/mozilla/shumway/tree/master/test/swfs/avm1/text_bind
 
-num_frames = 6
+num_ticks = 6
 
 [[image_comparisons.output.checks]]
 tolerance = 128

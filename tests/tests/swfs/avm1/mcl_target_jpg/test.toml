@@ -1,4 +1,4 @@
-num_frames = 11
+num_ticks = 11
 
 [image_comparisons.output]
 tolerance = 3
