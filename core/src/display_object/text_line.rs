@@ -7,12 +7,11 @@ use crate::backend::ui::MouseCursor;
 use crate::context::{RenderContext, UpdateContext};
 use crate::display_object::interactive::{InteractiveObjectBase, TInteractiveObject};
 use crate::display_object::{
-    Avm2MousePick, BoundsMode, DisplayObjectBase, EditText, HitTestOptions, InteractiveObject,
-    TDisplayObject,
+    Avm2MousePick, BoundsMode, DisplayObject, DisplayObjectBase, EditText, HitTestOptions,
+    InteractiveObject, TDisplayObject,
 };
 use crate::events::{ClipEvent, ClipEventResult};
 use crate::fte::TextLineValidity;
-use crate::prelude::*;
 use crate::tag_utils::SwfMovie;
 use crate::vminterface::Instantiator;
 use core::fmt;

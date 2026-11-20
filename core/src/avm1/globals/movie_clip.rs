@@ -10,8 +10,8 @@ use crate::avm1::{self, ArrayBuilder, Object, Value};
 use crate::backend::navigator::NavigationMethod;
 use crate::context::UpdateContext;
 use crate::display_object::{
-    Bitmap, BoundsMode, EditText, GotoInfo, HitTestOptions, MovieClip, StopOrPlay, TDisplayObject,
-    TDisplayObjectContainer, TInteractiveObject,
+    Bitmap, BoundsMode, DisplayObject, EditText, GotoInfo, HitTestOptions, MovieClip, StopOrPlay,
+    TDisplayObject, TDisplayObjectContainer, TInteractiveObject,
 };
 use crate::ecma_conversions::f64_to_wrapping_i32;
 use crate::prelude::*;

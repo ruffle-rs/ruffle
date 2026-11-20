@@ -14,13 +14,12 @@ use crate::display_object::container::{
 };
 use crate::display_object::interactive::{InteractiveObjectBase, TInteractiveObject};
 use crate::display_object::{
-    BoundsMode, DisplayObjectBase, HitTestOptions, MovieClip, TDisplayObject,
+    BoundsMode, DisplayObject, DisplayObjectBase, HitTestOptions, MovieClip, TDisplayObject,
 };
 use crate::events::{ClipEvent, ClipEventResult};
 use crate::frame_lifecycle::{
     broadcast_frame_constructed, broadcast_frame_exited, catchup_display_object_to_frame,
 };
-use crate::prelude::*;
 use crate::tag_utils::SwfMovie;
 use crate::vminterface::Instantiator;
 use core::fmt;

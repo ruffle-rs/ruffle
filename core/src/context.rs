@@ -19,7 +19,8 @@ use crate::backend::{
 use crate::config::NetworkingAccessMode;
 use crate::context_menu::ContextMenuState;
 use crate::display_object::{
-    EditText, MovieClip, SoundTransform, Stage, TDisplayObject, TDisplayObjectContainer,
+    DisplayObject, EditText, MovieClip, SoundTransform, Stage, TDisplayObject,
+    TDisplayObjectContainer,
 };
 use crate::events::PlayerNotification;
 use crate::external::ExternalInterface;
@@ -33,7 +34,6 @@ use crate::net_connection::NetConnections;
 use crate::orphan_manager::OrphanManager;
 use crate::player::PostFrameCallback;
 use crate::player::{MouseData, Player};
-use crate::prelude::*;
 use crate::socket::Sockets;
 use crate::streams::StreamManager;
 use crate::string::HasStringContext;
