@@ -99,6 +99,19 @@ jobs:
         with:
           tool: cargo-nextest
 
+      # Without DXC, wgpu compiles DX12 shaders with the much slower FXC, which
+      # adds up, as nextest runs each render test in its own process. wgpu uses
+      # DXC when it finds `dxcompiler.dll`, so it only has to be on `PATH`.
+      - name: Use DXC for DX12 shaders
+        if: runner.os == 'Windows'
+        shell: bash
+        run: |
+          arch=$([ "$RUNNER_ARCH" = ARM64 ] && echo arm64 || echo x64)
+          sdk=$(ls -d "/c/Program Files (x86)/Windows Kits/10/bin/"10.*/$arch | sort -V | tail -1)
+          test -f "$sdk/dxcompiler.dll"
+          test -f "$sdk/dxil.dll"
+          cygpath -w "$sdk" >> $GITHUB_PATH
+
       - name: Run tests
         shell: bash
         env:
