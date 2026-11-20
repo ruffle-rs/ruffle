@@ -19,6 +19,7 @@ use ruffle_common::utils::HasPrefixField;
 use ruffle_macros::istr;
 use ruffle_render::bitmap::{BitmapInfo, PixelSnapping};
 use ruffle_render::commands::CommandHandler;
+use ruffle_render::matrix::Matrix;
 use ruffle_render::quality::StageQuality;
 use ruffle_video::VideoStreamHandle;
 use ruffle_video::error::Error;

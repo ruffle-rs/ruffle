@@ -13,6 +13,7 @@ use gc_arena::Lock;
 use gc_arena::barrier::unlock;
 use gc_arena::{Collect, Gc, Mutation};
 use ruffle_common::utils::HasPrefixField;
+use ruffle_render::matrix::Matrix;
 use ruffle_render::transform::Transform;
 use ruffle_wstr::{WStr, WString};
 use std::borrow::Cow;

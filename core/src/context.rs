@@ -48,6 +48,7 @@ use enum_map::EnumMap;
 use gc_arena::{Collect, Mutation};
 use ruffle_render::backend::{BitmapCacheEntry, RenderBackend};
 use ruffle_render::commands::{CommandHandler, CommandList};
+use ruffle_render::matrix::Matrix;
 use ruffle_render::transform::TransformStack;
 use ruffle_video::backend::VideoBackend;
 use std::collections::{HashMap, VecDeque};

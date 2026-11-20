@@ -19,6 +19,7 @@ use crate::string::AvmString;
 use crate::vminterface::Instantiator;
 use crate::{avm_error, avm_warn, avm1_stub};
 use ruffle_macros::istr;
+use ruffle_render::matrix::Matrix;
 use ruffle_render::shape_utils::{DrawCommand, GradientType};
 use swf::{
     FillStyle, Fixed8, Gradient, GradientInterpolation, GradientRecord, GradientSpread,

@@ -28,6 +28,7 @@ use gc_arena::lock::Lock;
 use gc_arena::{Collect, Gc, Mutation};
 use ruffle_common::utils::HasPrefixField;
 use ruffle_render::filters::Filter;
+use ruffle_render::matrix::Matrix;
 use std::cell::{Cell, RefCell};
 use swf::{CharacterId, Twips};
 
