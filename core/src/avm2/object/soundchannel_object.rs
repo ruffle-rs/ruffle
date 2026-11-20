@@ -95,8 +95,10 @@ impl<'gc> SoundChannelObject<'gc> {
     /// Return the position of the playing sound in seconds.
     pub fn position(self, context: &mut UpdateContext<'gc>) -> f64 {
         // The position is cached on read. This means that if the position isn't read until after
-        // the sound has played, the position will be 0 (#9952).
+        // the sound has been stopped, the position will be 0 (#9952). Once the sound has finished
+        // playing, the position is its duration.
         let sound_channel_data = self.0.sound_channel_data.borrow();
+
         if let SoundChannelData::Loaded { sound_instance } = &*sound_channel_data
             && let Some(pos) = context.audio.get_sound_position(*sound_instance)
         {
@@ -104,6 +106,12 @@ impl<'gc> SoundChannelObject<'gc> {
         }
 
         self.0.position.get()
+    }
+
+    /// Sets the position of the sound in milliseconds, e.g. to its duration
+    /// once it has finished playing.
+    pub fn set_position(self, position: f64) {
+        self.0.position.set(position);
     }
 
     pub fn instance(self) -> Option<SoundInstanceHandle> {
