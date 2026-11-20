@@ -66,6 +66,12 @@ ashpd = { version = "0.14.0", features = ["settings", "game_mode"] }
 [target.'cfg(windows)'.dependencies]
 windows-sys = { version = "0.61.2", features = ["Win32_System_Console", "Win32_Storage_FileSystem"] }
 
+[target.'cfg(target_os = "macos")'.dependencies]
+objc2 = "0.6.5"
+objc2-app-kit = { version = "0.3.2", default-features = false, features = ["std", "NSApplication"] }
+objc2-core-services = { version = "0.3.2", default-features = false, features = ["AE", "AEDataModel", "AppleEvents"] }
+objc2-foundation = { version = "0.3.2", default-features = false, features = ["std", "NSAppleEventDescriptor", "NSAppleEventManager", "NSNotification", "NSString", "NSURL", "objc2-core-services"] }
+
 [build-dependencies]
 vergen = { version = "10.0.3", features = ["build", "cargo"] }
 vergen-gitcl = { version = "10.0.3" }
