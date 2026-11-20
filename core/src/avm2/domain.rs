@@ -56,6 +56,9 @@ struct DomainDataMut<'gc> {
     /// A list of all exported definitions and the script that exported them.
     defs: PropertyMap<'gc, Script<'gc>>,
 
+    /// Definitions already resolved in this domain, including inherited ones.
+    cached_defs: PropertyMap<'gc, Script<'gc>>,
+
     /// A map of all Clasess defined in this domain. Used by ClassObject
     /// to perform early interface resolution.
     classes: PropertyMap<'gc, Class<'gc>>,
@@ -91,6 +94,7 @@ impl<'gc> Domain<'gc> {
             DomainData {
                 cell: RefLock::new(DomainDataMut {
                     defs: PropertyMap::new(),
+                    cached_defs: PropertyMap::new(),
                     classes: PropertyMap::new(),
                     #[cfg(feature = "egui")]
                     children: Vec::new(),
@@ -145,6 +149,7 @@ impl<'gc> Domain<'gc> {
             DomainData {
                 cell: RefLock::new(DomainDataMut {
                     defs: PropertyMap::new(),
+                    cached_defs: PropertyMap::new(),
                     classes: PropertyMap::new(),
                     #[cfg(feature = "egui")]
                     children: Vec::new(),
@@ -203,20 +208,53 @@ impl<'gc> Domain<'gc> {
     /// be returned.
     pub fn get_defining_script(
         self,
+        mc: &Mutation<'gc>,
         multiname: &Multiname<'gc>,
     ) -> Option<(QName<'gc>, Script<'gc>)> {
-        if let Some(name) = multiname.local_name()
-            && let Some((ns, script)) = self.cell().defs.get_with_ns_for_multiname(multiname)
+        let name = multiname.local_name()?;
+
+        // Previously resolved definitions take priority, starting in this domain.
+        // A later load into a parent must not change an existing binding.
+        let mut current = Some(self);
+        while let Some(domain) = current {
+            let cached = {
+                let data = domain.cell();
+                data.cached_defs
+                    .get_with_ns_for_multiname(multiname)
+                    .map(|(ns, script)| (QName::new(ns, name), *script))
+            };
+            if let Some((name, script)) = cached {
+                if !Gc::ptr_eq(self.0, domain.0) {
+                    self.cell_mut(mc).cached_defs.insert_at_end(name, script);
+                }
+                return Some((name, script));
+            }
+            current = domain.0.parent;
+        }
+
+        // For a first lookup, search loaded definitions from the oldest parent.
+        let (owner, name, script) = self.get_loaded_defining_script(multiname)?;
+        owner.cell_mut(mc).cached_defs.insert_at_end(name, script);
+        if !Gc::ptr_eq(self.0, owner.0) {
+            self.cell_mut(mc).cached_defs.insert_at_end(name, script);
+        }
+        Some((name, script))
+    }
+
+    fn get_loaded_defining_script(
+        self,
+        multiname: &Multiname<'gc>,
+    ) -> Option<(Domain<'gc>, QName<'gc>, Script<'gc>)> {
+        if let Some(parent) = self.0.parent
+            && let Some(definition) = parent.get_loaded_defining_script(multiname)
         {
-            let qname = QName::new(ns, name);
-            return Some((qname, *script));
+            return Some(definition);
         }
 
-        if let Some(parent) = self.0.parent {
-            return parent.get_defining_script(multiname);
-        }
-
-        None
+        let name = multiname.local_name()?;
+        let data = self.cell();
+        let (ns, script) = data.defs.get_with_ns_for_multiname(multiname)?;
+        Some((self, QName::new(ns, name), *script))
     }
 
     fn get_class_inner(self, multiname: &Multiname<'gc>) -> Option<Class<'gc>> {
@@ -262,7 +300,7 @@ impl<'gc> Domain<'gc> {
         activation: &mut Activation<'_, 'gc>,
         multiname: &Multiname<'gc>,
     ) -> Result<(QName<'gc>, Script<'gc>), Error<'gc>> {
-        match self.get_defining_script(multiname) {
+        match self.get_defining_script(activation.gc(), multiname) {
             Some(val) => Ok(val),
             None => Err(make_error_1065(activation, multiname)),
         }
@@ -315,7 +353,8 @@ impl<'gc> Domain<'gc> {
         } else {
             let name = QName::from_qualified_name(name, activation.context);
 
-            self.get_defining_script(&name.into()).is_some()
+            self.get_defining_script(activation.gc(), &name.into())
+                .is_some()
         }
     }
 

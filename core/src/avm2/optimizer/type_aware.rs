@@ -1393,8 +1393,9 @@ fn abstract_interpret_ops<'gc>(
 
                     // Then check the domain
                     if !stack_push_done
-                        && let Some((_, script)) =
-                            outer_scope.domain().get_defining_script(&multiname)
+                        && let Some((_, script)) = outer_scope
+                            .domain()
+                            .get_defining_script(activation.gc(), &multiname)
                     {
                         // NOTE: avmplus rewrites this into a FindDef, and it caches
                         // the results of that FindDef at runtime, rather than caching
@@ -1416,7 +1417,7 @@ fn abstract_interpret_ops<'gc>(
             Op::FindDef { multiname } => {
                 let domain = activation.domain();
 
-                if let Some((_, script)) = domain.get_defining_script(&multiname) {
+                if let Some((_, script)) = domain.get_defining_script(activation.gc(), &multiname) {
                     // See comment above for GetScriptGlobals optimization
                     optimize_op_to!(Op::GetScriptGlobals { script });
 
