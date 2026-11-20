@@ -1,0 +1,1475 @@
+parser typeof=function
+
+=== simple ===
+status=0
+length=3
+node[0] type=1 value=[a] empty=false
+  attrs typeof=object
+node[1] type=3 value=[EN] empty=false
+  attrs typeof=object
+node[2] type=1 value=[/a] empty=false
+  attrs typeof=object
+
+=== nested ===
+status=0
+length=10
+node[0] type=1 value=[config] empty=false
+  attrs typeof=object
+node[1] type=1 value=[core] empty=false
+  attrs typeof=object
+node[2] type=1 value=[lang] empty=false
+  attrs typeof=object
+node[3] type=3 value=[EN] empty=false
+  attrs typeof=object
+node[4] type=1 value=[/lang] empty=false
+  attrs typeof=object
+node[5] type=1 value=[country] empty=false
+  attrs typeof=object
+node[6] type=3 value=[US] empty=false
+  attrs typeof=object
+node[7] type=1 value=[/country] empty=false
+  attrs typeof=object
+node[8] type=1 value=[/core] empty=false
+  attrs typeof=object
+node[9] type=1 value=[/config] empty=false
+  attrs typeof=object
+
+=== self closing ===
+status=0
+length=3
+node[0] type=1 value=[root] empty=false
+  attrs typeof=object
+node[1] type=1 value=[item] empty=true
+  attrs typeof=object
+node[2] type=1 value=[/root] empty=false
+  attrs typeof=object
+
+=== mixed text ===
+status=0
+length=5
+node[0] type=1 value=[root] empty=false
+  attrs typeof=object
+node[1] type=3 value=[before] empty=false
+  attrs typeof=object
+node[2] type=1 value=[item] empty=true
+  attrs typeof=object
+node[3] type=3 value=[after] empty=false
+  attrs typeof=object
+node[4] type=1 value=[/root] empty=false
+  attrs typeof=object
+
+=== attributes ===
+status=0
+length=5
+node[0] type=1 value=[root] empty=false
+  attrs typeof=object
+node[1] type=1 value=[item] empty=false
+  attrs typeof=object
+  attr id=[5]
+  attr name=[test]
+node[2] type=3 value=[value] empty=false
+  attrs typeof=object
+node[3] type=1 value=[/item] empty=false
+  attrs typeof=object
+node[4] type=1 value=[/root] empty=false
+  attrs typeof=object
+
+=== multiple attributes ===
+status=0
+length=3
+node[0] type=1 value=[root] empty=false
+  attrs typeof=object
+node[1] type=1 value=[item] empty=true
+  attrs typeof=object
+  attr a=[1]
+  attr b=[2]
+node[2] type=1 value=[/root] empty=false
+  attrs typeof=object
+
+=== duplicate attribute ===
+status=0
+length=2
+node[0] type=1 value=[root] empty=false
+  attrs typeof=object
+  attr a=[1]
+node[1] type=1 value=[/root] empty=false
+  attrs typeof=object
+
+=== attribute entities ===
+status=0
+length=3
+node[0] type=1 value=[root] empty=false
+  attrs typeof=object
+node[1] type=1 value=[item] empty=true
+  attrs typeof=object
+  attr a=[A & B]
+  attr b=[<x>]
+node[2] type=1 value=[/root] empty=false
+  attrs typeof=object
+
+=== text entities ===
+status=0
+length=3
+node[0] type=1 value=[root] empty=false
+  attrs typeof=object
+node[1] type=3 value=[A & B < C > D] empty=false
+  attrs typeof=object
+node[2] type=1 value=[/root] empty=false
+  attrs typeof=object
+
+=== numeric entities ===
+status=0
+length=3
+node[0] type=1 value=[root] empty=false
+  attrs typeof=object
+node[1] type=3 value=[AB] empty=false
+  attrs typeof=object
+node[2] type=1 value=[/root] empty=false
+  attrs typeof=object
+
+=== unicode ===
+status=0
+length=3
+node[0] type=1 value=[root] empty=false
+  attrs typeof=object
+node[1] type=3 value=[مرحبا 世界] empty=false
+  attrs typeof=object
+node[2] type=1 value=[/root] empty=false
+  attrs typeof=object
+
+=== cdata ===
+status=0
+length=3
+node[0] type=1 value=[root] empty=false
+  attrs typeof=object
+node[1] type=6 value=[hello <world> & stuff] empty=false
+  attrs typeof=object
+node[2] type=1 value=[/root] empty=false
+  attrs typeof=object
+
+=== comment ===
+status=0
+length=5
+node[0] type=1 value=[root] empty=false
+  attrs typeof=object
+node[1] type=1 value=[item] empty=false
+  attrs typeof=object
+node[2] type=3 value=[value] empty=false
+  attrs typeof=object
+node[3] type=1 value=[/item] empty=false
+  attrs typeof=object
+node[4] type=1 value=[/root] empty=false
+  attrs typeof=object
+
+=== xml declaration ===
+status=0
+length=3
+node[0] type=4 value=[<?xml version="1.0"?>] empty=false
+  attrs typeof=object
+node[1] type=1 value=[root] empty=false
+  attrs typeof=object
+node[2] type=1 value=[/root] empty=false
+  attrs typeof=object
+
+=== doctype ===
+status=0
+length=3
+node[0] type=5 value=[<!DOCTYPE root>] empty=false
+  attrs typeof=object
+node[1] type=1 value=[root] empty=false
+  attrs typeof=object
+node[2] type=1 value=[/root] empty=false
+  attrs typeof=object
+
+=== processing instruction ===
+status=-6
+length=1
+node[0] type=1 value=[root] empty=false
+  attrs typeof=object
+
+=== whitespace false ===
+status=0
+length=7
+node[0] type=1 value=[root] empty=false
+  attrs typeof=object
+node[1] type=3 value=[   ] empty=false
+  attrs typeof=object
+node[2] type=1 value=[item] empty=false
+  attrs typeof=object
+node[3] type=3 value=[ x ] empty=false
+  attrs typeof=object
+node[4] type=1 value=[/item] empty=false
+  attrs typeof=object
+node[5] type=3 value=[   ] empty=false
+  attrs typeof=object
+node[6] type=1 value=[/root] empty=false
+  attrs typeof=object
+
+=== whitespace true ===
+status=0
+length=5
+node[0] type=1 value=[root] empty=false
+  attrs typeof=object
+node[1] type=1 value=[item] empty=false
+  attrs typeof=object
+node[2] type=3 value=[ x ] empty=false
+  attrs typeof=object
+node[3] type=1 value=[/item] empty=false
+  attrs typeof=object
+node[4] type=1 value=[/root] empty=false
+  attrs typeof=object
+
+=== mismatched end ===
+status=0
+length=3
+node[0] type=1 value=[root] empty=false
+  attrs typeof=object
+node[1] type=1 value=[item] empty=false
+  attrs typeof=object
+node[2] type=1 value=[/root] empty=false
+  attrs typeof=object
+
+=== unmatched end ===
+status=0
+length=3
+node[0] type=1 value=[root] empty=false
+  attrs typeof=object
+node[1] type=1 value=[/item] empty=false
+  attrs typeof=object
+node[2] type=1 value=[/root] empty=false
+  attrs typeof=object
+
+=== only unmatched end ===
+status=0
+length=1
+node[0] type=1 value=[/root] empty=false
+  attrs typeof=object
+
+=== unclosed element ===
+status=0
+length=2
+node[0] type=1 value=[root] empty=false
+  attrs typeof=object
+node[1] type=1 value=[item] empty=false
+  attrs typeof=object
+
+=== unquoted attribute ===
+status=-6
+length=0
+
+=== unterminated attribute ===
+status=-8
+length=0
+
+=== unterminated comment ===
+status=-5
+length=1
+node[0] type=1 value=[root] empty=false
+  attrs typeof=object
+
+=== unterminated cdata ===
+status=-2
+length=1
+node[0] type=1 value=[root] empty=false
+  attrs typeof=object
+
+=== existing output array ===
+before:
+length=3
+node[0]=[zero] typeof=string
+node[1]=[one] typeof=string
+node[2]=[two] typeof=string
+status=0
+after:
+length=3
+node[0] type=1 value=[root] empty=false
+  attrs typeof=object
+node[1] type=1 value=[item] empty=true
+  attrs typeof=object
+node[2] type=1 value=[/root] empty=false
+  attrs typeof=object
+
+=== omitted third argument ===
+status=undefined
+length=0
+
+=== bare unclosed tag ===
+status=-6
+length=0
+
+=== attribute missing value ===
+status=-6
+length=0
+
+=== attribute missing equals ===
+status=-6
+length=0
+
+=== attribute missing quote close ===
+status=-8
+length=0
+
+=== empty input ===
+status=0
+length=0
+
+=== issue 2470 malformed nesting ===
+status=0
+length=4
+node[0] type=1 value=[test] empty=false
+  attrs typeof=object
+node[1] type=1 value=[br] empty=false
+  attrs typeof=object
+node[2] type=3 value=[foo] empty=false
+  attrs typeof=object
+node[3] type=1 value=[/test] empty=false
+  attrs typeof=object
+
+=== valid nested XML; ignoreWhite=false ===
+status=0
+length=5
+node[0] type=1 value=[a] empty=false
+  attrs typeof=object
+node[1] type=1 value=[b] empty=false
+  attrs typeof=object
+node[2] type=3 value=[foo] empty=false
+  attrs typeof=object
+node[3] type=1 value=[/b] empty=false
+  attrs typeof=object
+node[4] type=1 value=[/a] empty=false
+  attrs typeof=object
+
+=== valid nested XML; ignoreWhite=true ===
+status=0
+length=5
+node[0] type=1 value=[a] empty=false
+  attrs typeof=object
+node[1] type=1 value=[b] empty=false
+  attrs typeof=object
+node[2] type=3 value=[foo] empty=false
+  attrs typeof=object
+node[3] type=1 value=[/b] empty=false
+  attrs typeof=object
+node[4] type=1 value=[/a] empty=false
+  attrs typeof=object
+
+=== unterminated CDATA after start tag; ignoreWhite=false ===
+status=-2
+length=1
+node[0] type=1 value=[a] empty=false
+  attrs typeof=object
+
+=== unterminated CDATA after start tag; ignoreWhite=true ===
+status=-2
+length=1
+node[0] type=1 value=[a] empty=false
+  attrs typeof=object
+
+=== unterminated XML declaration; ignoreWhite=false ===
+status=-3
+length=0
+
+=== unterminated XML declaration; ignoreWhite=true ===
+status=-3
+length=0
+
+=== unterminated DOCTYPE; ignoreWhite=false ===
+status=-4
+length=0
+
+=== unterminated DOCTYPE; ignoreWhite=true ===
+status=-4
+length=0
+
+=== unterminated comment after start tag; ignoreWhite=false ===
+status=-5
+length=1
+node[0] type=1 value=[a] empty=false
+  attrs typeof=object
+
+=== unterminated comment after start tag; ignoreWhite=true ===
+status=-5
+length=1
+node[0] type=1 value=[a] empty=false
+  attrs typeof=object
+
+=== unquoted attribute with text; ignoreWhite=false ===
+status=-6
+length=0
+
+=== unquoted attribute with text; ignoreWhite=true ===
+status=-6
+length=0
+
+=== unterminated attribute with text; ignoreWhite=false ===
+status=-8
+length=0
+
+=== unterminated attribute with text; ignoreWhite=true ===
+status=-8
+length=0
+
+=== bare less than; ignoreWhite=false ===
+status=-6
+length=0
+
+=== bare less than; ignoreWhite=true ===
+status=-6
+length=0
+
+=== bare end tag; ignoreWhite=false ===
+status=-6
+length=0
+
+=== bare end tag; ignoreWhite=true ===
+status=-6
+length=0
+
+=== bare declaration start; ignoreWhite=false ===
+status=-6
+length=0
+
+=== bare declaration start; ignoreWhite=true ===
+status=-6
+length=0
+
+=== bare xml declaration; ignoreWhite=false ===
+status=-3
+length=0
+
+=== bare xml declaration; ignoreWhite=true ===
+status=-3
+length=0
+
+=== declaration missing question mark; ignoreWhite=false ===
+status=-3
+length=0
+
+=== declaration missing question mark; ignoreWhite=true ===
+status=-3
+length=0
+
+=== declaration without version; ignoreWhite=false ===
+status=0
+length=1
+node[0] type=4 value=[<?xml?>] empty=false
+  attrs typeof=object
+
+=== declaration without version; ignoreWhite=true ===
+status=0
+length=1
+node[0] type=4 value=[<?xml?>] empty=false
+  attrs typeof=object
+
+=== declaration after element; ignoreWhite=false ===
+status=0
+length=2
+node[0] type=1 value=[a] empty=true
+  attrs typeof=object
+node[1] type=4 value=[<?xml version="1.0"?>] empty=false
+  attrs typeof=object
+
+=== declaration after element; ignoreWhite=true ===
+status=0
+length=2
+node[0] type=1 value=[a] empty=true
+  attrs typeof=object
+node[1] type=4 value=[<?xml version="1.0"?>] empty=false
+  attrs typeof=object
+
+=== valid processing instruction; ignoreWhite=false ===
+status=-6
+length=0
+
+=== valid processing instruction; ignoreWhite=true ===
+status=-6
+length=0
+
+=== unfinished processing instruction; ignoreWhite=false ===
+status=-6
+length=0
+
+=== unfinished processing instruction; ignoreWhite=true ===
+status=-6
+length=0
+
+=== bare doctype; ignoreWhite=false ===
+status=-4
+length=0
+
+=== bare doctype; ignoreWhite=true ===
+status=-4
+length=0
+
+=== doctype without name; ignoreWhite=false ===
+status=0
+length=1
+node[0] type=5 value=[<!DOCTYPE>] empty=false
+  attrs typeof=object
+
+=== doctype without name; ignoreWhite=true ===
+status=0
+length=1
+node[0] type=5 value=[<!DOCTYPE>] empty=false
+  attrs typeof=object
+
+=== doctype internal subset; ignoreWhite=false ===
+status=0
+length=2
+node[0] type=5 value=[<!DOCTYPE a [<!ELEMENT a ANY>]>] empty=false
+  attrs typeof=object
+node[1] type=1 value=[a] empty=true
+  attrs typeof=object
+
+=== doctype internal subset; ignoreWhite=true ===
+status=0
+length=2
+node[0] type=5 value=[<!DOCTYPE a [<!ELEMENT a ANY>]>] empty=false
+  attrs typeof=object
+node[1] type=1 value=[a] empty=true
+  attrs typeof=object
+
+=== unfinished internal subset; ignoreWhite=false ===
+status=-4
+length=0
+
+=== unfinished internal subset; ignoreWhite=true ===
+status=-4
+length=0
+
+=== doctype literal unicode escapes; ignoreWhite=false ===
+status=0
+length=2
+node[0] type=5 value=[<!DOCTYPE a SYSTEM "\u0645\u0631\u062d\u0628\u0627.dtd">] empty=false
+  attrs typeof=object
+node[1] type=1 value=[a] empty=true
+  attrs typeof=object
+
+=== doctype literal unicode escapes; ignoreWhite=true ===
+status=0
+length=2
+node[0] type=5 value=[<!DOCTYPE a SYSTEM "\u0645\u0631\u062d\u0628\u0627.dtd">] empty=false
+  attrs typeof=object
+node[1] type=1 value=[a] empty=true
+  attrs typeof=object
+
+=== declaration literal unicode escapes; ignoreWhite=false ===
+status=0
+length=2
+node[0] type=4 value=[<?xml version="1.0" note="\u0645\u0631\u062d\u0628\u0627"?>] empty=false
+  attrs typeof=object
+node[1] type=1 value=[a] empty=true
+  attrs typeof=object
+
+=== declaration literal unicode escapes; ignoreWhite=true ===
+status=0
+length=2
+node[0] type=4 value=[<?xml version="1.0" note="\u0645\u0631\u062d\u0628\u0627"?>] empty=false
+  attrs typeof=object
+node[1] type=1 value=[a] empty=true
+  attrs typeof=object
+
+=== bare comment; ignoreWhite=false ===
+status=-5
+length=0
+
+=== bare comment; ignoreWhite=true ===
+status=-5
+length=0
+
+=== comment partial close; ignoreWhite=false ===
+status=-5
+length=0
+
+=== comment partial close; ignoreWhite=true ===
+status=-5
+length=0
+
+=== bare cdata; ignoreWhite=false ===
+status=-2
+length=0
+
+=== bare cdata; ignoreWhite=true ===
+status=-2
+length=0
+
+=== cdata partial close; ignoreWhite=false ===
+status=-2
+length=0
+
+=== cdata partial close; ignoreWhite=true ===
+status=-2
+length=0
+
+=== unclosed start; ignoreWhite=false ===
+status=0
+length=1
+node[0] type=1 value=[a] empty=false
+  attrs typeof=object
+
+=== unclosed start; ignoreWhite=true ===
+status=0
+length=1
+node[0] type=1 value=[a] empty=false
+  attrs typeof=object
+
+=== unmatched end; ignoreWhite=false ===
+status=0
+length=1
+node[0] type=1 value=[/a] empty=false
+  attrs typeof=object
+
+=== unmatched end; ignoreWhite=true ===
+status=0
+length=1
+node[0] type=1 value=[/a] empty=false
+  attrs typeof=object
+
+=== mismatched end; ignoreWhite=false ===
+status=0
+length=2
+node[0] type=1 value=[a] empty=false
+  attrs typeof=object
+node[1] type=1 value=[/b] empty=false
+  attrs typeof=object
+
+=== mismatched end; ignoreWhite=true ===
+status=0
+length=2
+node[0] type=1 value=[a] empty=false
+  attrs typeof=object
+node[1] type=1 value=[/b] empty=false
+  attrs typeof=object
+
+=== reversed nesting; ignoreWhite=false ===
+status=0
+length=4
+node[0] type=1 value=[a] empty=false
+  attrs typeof=object
+node[1] type=1 value=[b] empty=false
+  attrs typeof=object
+node[2] type=1 value=[/a] empty=false
+  attrs typeof=object
+node[3] type=1 value=[/b] empty=false
+  attrs typeof=object
+
+=== reversed nesting; ignoreWhite=true ===
+status=0
+length=4
+node[0] type=1 value=[a] empty=false
+  attrs typeof=object
+node[1] type=1 value=[b] empty=false
+  attrs typeof=object
+node[2] type=1 value=[/a] empty=false
+  attrs typeof=object
+node[3] type=1 value=[/b] empty=false
+  attrs typeof=object
+
+=== multiple roots; ignoreWhite=false ===
+status=0
+length=2
+node[0] type=1 value=[a] empty=true
+  attrs typeof=object
+node[1] type=1 value=[b] empty=true
+  attrs typeof=object
+
+=== multiple roots; ignoreWhite=true ===
+status=0
+length=2
+node[0] type=1 value=[a] empty=true
+  attrs typeof=object
+node[1] type=1 value=[b] empty=true
+  attrs typeof=object
+
+=== single quote unfinished; ignoreWhite=false ===
+status=-8
+length=0
+
+=== single quote unfinished; ignoreWhite=true ===
+status=-8
+length=0
+
+=== double quote unfinished; ignoreWhite=false ===
+status=-8
+length=0
+
+=== double quote unfinished; ignoreWhite=true ===
+status=-8
+length=0
+
+=== attribute without equals; ignoreWhite=false ===
+status=-6
+length=0
+
+=== attribute without equals; ignoreWhite=true ===
+status=-6
+length=0
+
+=== attribute without value; ignoreWhite=false ===
+status=-6
+length=0
+
+=== attribute without value; ignoreWhite=true ===
+status=-6
+length=0
+
+=== duplicate attributes; ignoreWhite=false ===
+status=0
+length=1
+node[0] type=1 value=[a] empty=true
+  attrs typeof=object
+  attr b=[first]
+
+=== duplicate attributes; ignoreWhite=true ===
+status=0
+length=1
+node[0] type=1 value=[a] empty=true
+  attrs typeof=object
+  attr b=[first]
+
+=== comment before unfinished tag; ignoreWhite=false ===
+status=-6
+length=1
+node[0] type=3 value=[ ] empty=false
+  attrs typeof=object
+
+=== comment before unfinished tag; ignoreWhite=true ===
+status=-6
+length=0
+
+=== cdata before unfinished tag; ignoreWhite=false ===
+status=-6
+length=1
+node[0] type=6 value=[<x a="] empty=false
+  attrs typeof=object
+
+=== cdata before unfinished tag; ignoreWhite=true ===
+status=-6
+length=1
+node[0] type=6 value=[<x a="] empty=false
+  attrs typeof=object
+
+=== quoted angle bracket; ignoreWhite=false ===
+status=-8
+length=0
+
+=== quoted angle bracket; ignoreWhite=true ===
+status=-8
+length=0
+
+=== unknown entity; ignoreWhite=false ===
+status=0
+length=3
+node[0] type=1 value=[a] empty=false
+  attrs typeof=object
+node[1] type=3 value=[&unknown;] empty=false
+  attrs typeof=object
+node[2] type=1 value=[/a] empty=false
+  attrs typeof=object
+
+=== unknown entity; ignoreWhite=true ===
+status=0
+length=3
+node[0] type=1 value=[a] empty=false
+  attrs typeof=object
+node[1] type=3 value=[&unknown;] empty=false
+  attrs typeof=object
+node[2] type=1 value=[/a] empty=false
+  attrs typeof=object
+
+=== unfinished entity; ignoreWhite=false ===
+status=0
+length=3
+node[0] type=1 value=[a] empty=false
+  attrs typeof=object
+node[1] type=3 value=[&amp] empty=false
+  attrs typeof=object
+node[2] type=1 value=[/a] empty=false
+  attrs typeof=object
+
+=== unfinished entity; ignoreWhite=true ===
+status=0
+length=3
+node[0] type=1 value=[a] empty=false
+  attrs typeof=object
+node[1] type=3 value=[&amp] empty=false
+  attrs typeof=object
+node[2] type=1 value=[/a] empty=false
+  attrs typeof=object
+
+=== comment error before cdata error; ignoreWhite=false ===
+status=-5
+length=0
+
+=== comment error before cdata error; ignoreWhite=true ===
+status=-5
+length=0
+
+=== cdata error before comment error; ignoreWhite=false ===
+status=-2
+length=0
+
+=== cdata error before comment error; ignoreWhite=true ===
+status=-2
+length=0
+
+=== attribute error before comment error; ignoreWhite=false ===
+status=-8
+length=0
+
+=== attribute error before comment error; ignoreWhite=true ===
+status=-8
+length=0
+
+=== valid prefix before declaration error; ignoreWhite=false ===
+status=-3
+length=1
+node[0] type=1 value=[a] empty=true
+  attrs typeof=object
+
+=== valid prefix before declaration error; ignoreWhite=true ===
+status=-3
+length=1
+node[0] type=1 value=[a] empty=true
+  attrs typeof=object
+
+=== valid prefix before doctype error; ignoreWhite=false ===
+status=-4
+length=1
+node[0] type=1 value=[a] empty=true
+  attrs typeof=object
+
+=== valid prefix before doctype error; ignoreWhite=true ===
+status=-4
+length=1
+node[0] type=1 value=[a] empty=true
+  attrs typeof=object
+
+=== attribute raw less than; ignoreWhite=false ===
+status=-8
+length=0
+
+=== attribute raw less than; ignoreWhite=true ===
+status=-8
+length=0
+
+=== attribute raw greater than; ignoreWhite=false ===
+status=0
+length=1
+node[0] type=1 value=[a] empty=true
+  attrs typeof=object
+  attr b=[>]
+
+=== attribute raw greater than; ignoreWhite=true ===
+status=0
+length=1
+node[0] type=1 value=[a] empty=true
+  attrs typeof=object
+  attr b=[>]
+
+=== attribute less than in text; ignoreWhite=false ===
+status=-8
+length=0
+
+=== attribute less than in text; ignoreWhite=true ===
+status=-8
+length=0
+
+=== attribute greater than in text; ignoreWhite=false ===
+status=0
+length=1
+node[0] type=1 value=[a] empty=true
+  attrs typeof=object
+  attr b=[x>y]
+
+=== attribute greater than in text; ignoreWhite=true ===
+status=0
+length=1
+node[0] type=1 value=[a] empty=true
+  attrs typeof=object
+  attr b=[x>y]
+
+=== attribute raw greater single quotes; ignoreWhite=false ===
+status=0
+length=1
+node[0] type=1 value=[a] empty=true
+  attrs typeof=object
+  attr b=[x>y]
+
+=== attribute raw greater single quotes; ignoreWhite=true ===
+status=0
+length=1
+node[0] type=1 value=[a] empty=true
+  attrs typeof=object
+  attr b=[x>y]
+
+=== attribute encoded less than; ignoreWhite=false ===
+status=0
+length=1
+node[0] type=1 value=[a] empty=true
+  attrs typeof=object
+  attr b=[<]
+
+=== attribute encoded less than; ignoreWhite=true ===
+status=0
+length=1
+node[0] type=1 value=[a] empty=true
+  attrs typeof=object
+  attr b=[<]
+
+=== attribute encoded greater than; ignoreWhite=false ===
+status=0
+length=1
+node[0] type=1 value=[a] empty=true
+  attrs typeof=object
+  attr b=[>]
+
+=== attribute encoded greater than; ignoreWhite=true ===
+status=0
+length=1
+node[0] type=1 value=[a] empty=true
+  attrs typeof=object
+  attr b=[>]
+
+=== attribute encoded angle pair; ignoreWhite=false ===
+status=0
+length=1
+node[0] type=1 value=[a] empty=true
+  attrs typeof=object
+  attr b=[<x>]
+
+=== attribute encoded angle pair; ignoreWhite=true ===
+status=0
+length=1
+node[0] type=1 value=[a] empty=true
+  attrs typeof=object
+  attr b=[<x>]
+
+=== attribute greater then malformed attribute; ignoreWhite=false ===
+status=-6
+length=0
+
+=== attribute greater then malformed attribute; ignoreWhite=true ===
+status=-6
+length=0
+
+=== attribute greater then missing equals; ignoreWhite=false ===
+status=-6
+length=0
+
+=== attribute greater then missing equals; ignoreWhite=true ===
+status=-6
+length=0
+
+=== attribute malformed then greater; ignoreWhite=false ===
+status=-6
+length=0
+
+=== attribute malformed then greater; ignoreWhite=true ===
+status=-6
+length=0
+
+=== duplicate ignored greater; ignoreWhite=false ===
+status=0
+length=1
+node[0] type=1 value=[a] empty=true
+  attrs typeof=object
+  attr b=[first]
+
+=== duplicate ignored greater; ignoreWhite=true ===
+status=0
+length=1
+node[0] type=1 value=[a] empty=true
+  attrs typeof=object
+  attr b=[first]
+
+=== duplicate first greater; ignoreWhite=false ===
+status=0
+length=1
+node[0] type=1 value=[a] empty=true
+  attrs typeof=object
+  attr b=[>]
+
+=== duplicate first greater; ignoreWhite=true ===
+status=0
+length=1
+node[0] type=1 value=[a] empty=true
+  attrs typeof=object
+  attr b=[>]
+
+=== attribute less than unfinished; ignoreWhite=false ===
+status=-8
+length=0
+
+=== attribute less than unfinished; ignoreWhite=true ===
+status=-8
+length=0
+
+=== empty doctype followed by element; ignoreWhite=false ===
+status=0
+length=2
+node[0] type=5 value=[<!DOCTYPE>] empty=false
+  attrs typeof=object
+node[1] type=1 value=[a] empty=true
+  attrs typeof=object
+
+=== empty doctype followed by element; ignoreWhite=true ===
+status=0
+length=2
+node[0] type=5 value=[<!DOCTYPE>] empty=false
+  attrs typeof=object
+node[1] type=1 value=[a] empty=true
+  attrs typeof=object
+
+=== empty doctype between elements; ignoreWhite=false ===
+status=0
+length=3
+node[0] type=1 value=[a] empty=true
+  attrs typeof=object
+node[1] type=5 value=[<!DOCTYPE>] empty=false
+  attrs typeof=object
+node[2] type=1 value=[b] empty=true
+  attrs typeof=object
+
+=== empty doctype between elements; ignoreWhite=true ===
+status=0
+length=3
+node[0] type=1 value=[a] empty=true
+  attrs typeof=object
+node[1] type=5 value=[<!DOCTYPE>] empty=false
+  attrs typeof=object
+node[2] type=1 value=[b] empty=true
+  attrs typeof=object
+
+=== repeated empty doctype; ignoreWhite=false ===
+status=0
+length=3
+node[0] type=5 value=[<!DOCTYPE>] empty=false
+  attrs typeof=object
+node[1] type=5 value=[<!DOCTYPE>] empty=false
+  attrs typeof=object
+node[2] type=1 value=[a] empty=true
+  attrs typeof=object
+
+=== repeated empty doctype; ignoreWhite=true ===
+status=0
+length=3
+node[0] type=5 value=[<!DOCTYPE>] empty=false
+  attrs typeof=object
+node[1] type=5 value=[<!DOCTYPE>] empty=false
+  attrs typeof=object
+node[2] type=1 value=[a] empty=true
+  attrs typeof=object
+
+=== empty doctype followed by error; ignoreWhite=false ===
+status=-8
+length=1
+node[0] type=5 value=[<!DOCTYPE>] empty=false
+  attrs typeof=object
+
+=== empty doctype followed by error; ignoreWhite=true ===
+status=-8
+length=1
+node[0] type=5 value=[<!DOCTYPE>] empty=false
+  attrs typeof=object
+
+=== empty doctype followed by declaration; ignoreWhite=false ===
+status=0
+length=3
+node[0] type=5 value=[<!DOCTYPE>] empty=false
+  attrs typeof=object
+node[1] type=4 value=[<?xml?>] empty=false
+  attrs typeof=object
+node[2] type=1 value=[a] empty=true
+  attrs typeof=object
+
+=== empty doctype followed by declaration; ignoreWhite=true ===
+status=0
+length=3
+node[0] type=5 value=[<!DOCTYPE>] empty=false
+  attrs typeof=object
+node[1] type=4 value=[<?xml?>] empty=false
+  attrs typeof=object
+node[2] type=1 value=[a] empty=true
+  attrs typeof=object
+
+=== empty doctype with spaces; ignoreWhite=false ===
+status=0
+length=2
+node[0] type=5 value=[<!DOCTYPE   >] empty=false
+  attrs typeof=object
+node[1] type=1 value=[a] empty=true
+  attrs typeof=object
+
+=== empty doctype with spaces; ignoreWhite=true ===
+status=0
+length=2
+node[0] type=5 value=[<!DOCTYPE   >] empty=false
+  attrs typeof=object
+node[1] type=1 value=[a] empty=true
+  attrs typeof=object
+
+=== doctype extra spaces; ignoreWhite=false ===
+status=0
+length=2
+node[0] type=5 value=[<!DOCTYPE   a>] empty=false
+  attrs typeof=object
+node[1] type=1 value=[a] empty=true
+  attrs typeof=object
+
+=== doctype extra spaces; ignoreWhite=true ===
+status=0
+length=2
+node[0] type=5 value=[<!DOCTYPE   a>] empty=false
+  attrs typeof=object
+node[1] type=1 value=[a] empty=true
+  attrs typeof=object
+
+=== doctype trailing spaces; ignoreWhite=false ===
+status=0
+length=2
+node[0] type=5 value=[<!DOCTYPE a   >] empty=false
+  attrs typeof=object
+node[1] type=1 value=[a] empty=true
+  attrs typeof=object
+
+=== doctype trailing spaces; ignoreWhite=true ===
+status=0
+length=2
+node[0] type=5 value=[<!DOCTYPE a   >] empty=false
+  attrs typeof=object
+node[1] type=1 value=[a] empty=true
+  attrs typeof=object
+
+=== doctype lowercase; ignoreWhite=false ===
+status=0
+length=2
+node[0] type=5 value=[<!doctype a>] empty=false
+  attrs typeof=object
+node[1] type=1 value=[a] empty=true
+  attrs typeof=object
+
+=== doctype lowercase; ignoreWhite=true ===
+status=0
+length=2
+node[0] type=5 value=[<!doctype a>] empty=false
+  attrs typeof=object
+node[1] type=1 value=[a] empty=true
+  attrs typeof=object
+
+=== doctype mixed case; ignoreWhite=false ===
+status=0
+length=2
+node[0] type=5 value=[<!DocType a>] empty=false
+  attrs typeof=object
+node[1] type=1 value=[a] empty=true
+  attrs typeof=object
+
+=== doctype mixed case; ignoreWhite=true ===
+status=0
+length=2
+node[0] type=5 value=[<!DocType a>] empty=false
+  attrs typeof=object
+node[1] type=1 value=[a] empty=true
+  attrs typeof=object
+
+=== doctype quoted greater; ignoreWhite=false ===
+status=0
+length=3
+node[0] type=5 value=[<!DOCTYPE a SYSTEM "x>] empty=false
+  attrs typeof=object
+node[1] type=3 value=[y">] empty=false
+  attrs typeof=object
+node[2] type=1 value=[a] empty=true
+  attrs typeof=object
+
+=== doctype quoted greater; ignoreWhite=true ===
+status=0
+length=3
+node[0] type=5 value=[<!DOCTYPE a SYSTEM "x>] empty=false
+  attrs typeof=object
+node[1] type=3 value=[y">] empty=false
+  attrs typeof=object
+node[2] type=1 value=[a] empty=true
+  attrs typeof=object
+
+=== doctype backslash; ignoreWhite=false ===
+status=0
+length=2
+node[0] type=5 value=[<!DOCTYPE a SYSTEM "dir\file.dtd">] empty=false
+  attrs typeof=object
+node[1] type=1 value=[a] empty=true
+  attrs typeof=object
+
+=== doctype backslash; ignoreWhite=true ===
+status=0
+length=2
+node[0] type=5 value=[<!DOCTYPE a SYSTEM "dir\file.dtd">] empty=false
+  attrs typeof=object
+node[1] type=1 value=[a] empty=true
+  attrs typeof=object
+
+=== doctype unicode; ignoreWhite=false ===
+status=0
+length=2
+node[0] type=5 value=[<!DOCTYPE a SYSTEM "مرحبا.dtd">] empty=false
+  attrs typeof=object
+node[1] type=1 value=[a] empty=true
+  attrs typeof=object
+
+=== doctype unicode; ignoreWhite=true ===
+status=0
+length=2
+node[0] type=5 value=[<!DOCTYPE a SYSTEM "مرحبا.dtd">] empty=false
+  attrs typeof=object
+node[1] type=1 value=[a] empty=true
+  attrs typeof=object
+
+=== declaration unicode; ignoreWhite=false ===
+status=0
+length=2
+node[0] type=4 value=[<?xml version="1.0" note="مرحبا"?>] empty=false
+  attrs typeof=object
+node[1] type=1 value=[a] empty=true
+  attrs typeof=object
+
+=== declaration unicode; ignoreWhite=true ===
+status=0
+length=2
+node[0] type=4 value=[<?xml version="1.0" note="مرحبا"?>] empty=false
+  attrs typeof=object
+node[1] type=1 value=[a] empty=true
+  attrs typeof=object
+
+=== unicode names and attribute; ignoreWhite=false ===
+status=0
+length=3
+node[0] type=1 value=[مرحبا] empty=false
+  attrs typeof=object
+  attr b=[العالم]
+node[1] type=3 value=[世界] empty=false
+  attrs typeof=object
+node[2] type=1 value=[/مرحبا] empty=false
+  attrs typeof=object
+
+=== unicode names and attribute; ignoreWhite=true ===
+status=0
+length=3
+node[0] type=1 value=[مرحبا] empty=false
+  attrs typeof=object
+  attr b=[العالم]
+node[1] type=3 value=[世界] empty=false
+  attrs typeof=object
+node[2] type=1 value=[/مرحبا] empty=false
+  attrs typeof=object
+
+=== declaration uppercase unfinished; ignoreWhite=false ===
+status=-3
+length=0
+
+=== declaration uppercase unfinished; ignoreWhite=true ===
+status=-3
+length=0
+
+=== declaration uppercase complete; ignoreWhite=false ===
+status=0
+length=1
+node[0] type=4 value=[<?XML version="1.0"?>] empty=false
+  attrs typeof=object
+
+=== declaration uppercase complete; ignoreWhite=true ===
+status=0
+length=1
+node[0] type=4 value=[<?XML version="1.0"?>] empty=false
+  attrs typeof=object
+
+=== xml-prefixed PI unfinished; ignoreWhite=false ===
+status=-3
+length=0
+
+=== xml-prefixed PI unfinished; ignoreWhite=true ===
+status=-3
+length=0
+
+=== xml-prefixed PI complete; ignoreWhite=false ===
+status=0
+length=1
+node[0] type=4 value=[<?xmlfoo?>] empty=false
+  attrs typeof=object
+
+=== xml-prefixed PI complete; ignoreWhite=true ===
+status=0
+length=1
+node[0] type=4 value=[<?xmlfoo?>] empty=false
+  attrs typeof=object
+
+=== xml stylesheet PI unfinished; ignoreWhite=false ===
+status=-3
+length=0
+
+=== xml stylesheet PI unfinished; ignoreWhite=true ===
+status=-3
+length=0
+
+=== xml stylesheet PI complete; ignoreWhite=false ===
+status=0
+length=1
+node[0] type=4 value=[<?xml-stylesheet href="x"?>] empty=false
+  attrs typeof=object
+
+=== xml stylesheet PI complete; ignoreWhite=true ===
+status=0
+length=1
+node[0] type=4 value=[<?xml-stylesheet href="x"?>] empty=false
+  attrs typeof=object
+
+=== declaration tab separator unfinished; ignoreWhite=false ===
+status=-3
+length=0
+
+=== declaration tab separator unfinished; ignoreWhite=true ===
+status=-3
+length=0
+
+=== doctype bare after text; ignoreWhite=false ===
+status=-4
+length=1
+node[0] type=3 value=[prefix] empty=false
+  attrs typeof=object
+
+=== doctype bare after text; ignoreWhite=true ===
+status=-4
+length=1
+node[0] type=3 value=[prefix] empty=false
+  attrs typeof=object
+
+=== declaration bare after text; ignoreWhite=false ===
+status=-3
+length=1
+node[0] type=3 value=[prefix] empty=false
+  attrs typeof=object
+
+=== declaration bare after text; ignoreWhite=true ===
+status=-3
+length=1
+node[0] type=3 value=[prefix] empty=false
+  attrs typeof=object
+
+=== BOM before doctype; ignoreWhite=false ===
+status=0
+length=3
+node[0] type=3 value=[﻿] empty=false
+  attrs typeof=object
+node[1] type=5 value=[<!DOCTYPE a>] empty=false
+  attrs typeof=object
+node[2] type=1 value=[a] empty=true
+  attrs typeof=object
+
+=== BOM before doctype; ignoreWhite=true ===
+status=0
+length=3
+node[0] type=3 value=[﻿] empty=false
+  attrs typeof=object
+node[1] type=5 value=[<!DOCTYPE a>] empty=false
+  attrs typeof=object
+node[2] type=1 value=[a] empty=true
+  attrs typeof=object
+
+=== BOM before empty doctype; ignoreWhite=false ===
+status=0
+length=3
+node[0] type=3 value=[﻿] empty=false
+  attrs typeof=object
+node[1] type=5 value=[<!DOCTYPE>] empty=false
+  attrs typeof=object
+node[2] type=1 value=[a] empty=true
+  attrs typeof=object
+
+=== BOM before empty doctype; ignoreWhite=true ===
+status=0
+length=3
+node[0] type=3 value=[﻿] empty=false
+  attrs typeof=object
+node[1] type=5 value=[<!DOCTYPE>] empty=false
+  attrs typeof=object
+node[2] type=1 value=[a] empty=true
+  attrs typeof=object
+
+=== attribute error priority: raw less before unquoted ===
+status=-8
+length=0
+
+=== attribute error priority: raw less before missing equals ===
+status=-8
+length=0
+
+=== attribute error priority: unquoted before raw less ===
+status=-6
+length=0
+
+=== attribute error priority: duplicate raw less ===
+status=-8
+length=0
+
+=== array output with additional attributes ===
+status=0
+length=3
+output[0]:
+length=1
+node[0] type=1 value=[a] empty=false
+  attrs typeof=object
+  attr q=[1]
+  attr z=[2]
+output[1]:
+length=1
+node[0] type=3 value=[text] empty=false
+  attrs typeof=object
+output[2]:
+length=1
+node[0] type=1 value=[/a] empty=false
+  attrs typeof=object
+output keys=0,1,2
+
+=== plain output object ===
+status=0
+length=undefined
+output[0]:
+length=1
+node[0] type=1 value=[a] empty=false
+  attrs typeof=object
+  attr q=[1]
+  attr z=[2]
+output[1]:
+length=1
+node[0] type=3 value=[text] empty=false
+  attrs typeof=object
+output[2]:
+length=1
+node[0] type=1 value=[/a] empty=false
+  attrs typeof=object
+output keys=0,1,2
+
+=== plain output object with existing properties ===
+status=0
+length=10
+output[0]:
+length=1
+node[0] type=1 value=[a] empty=false
+  attrs typeof=object
+  attr q=[1]
+  attr z=[2]
+output[1]:
+length=1
+node[0] type=3 value=[text] empty=false
+  attrs typeof=object
+output[2]:
+length=1
+node[0] type=1 value=[/a] empty=false
+  attrs typeof=object
+output[5]:
+length=1
+node[0]=[stale] typeof=string
+output[length]:
+length=1
+node[0]=[10] typeof=number
+output keys=0,1,2,5,length
