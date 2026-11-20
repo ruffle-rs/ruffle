@@ -4776,6 +4776,7 @@ dependencies = [
  "regress",
  "ruffle_macros",
  "ruffle_wstr",
+ "stable_deref_trait",
  "swf 0.4.0",
  "thiserror 2.0.21",
  "tracing",

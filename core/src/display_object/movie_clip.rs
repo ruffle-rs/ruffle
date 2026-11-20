@@ -43,7 +43,7 @@ use crate::vminterface::Instantiator;
 use bitflags::bitflags;
 use core::fmt;
 use gc_arena::barrier::unlock;
-use gc_arena::lock::{Lock, RefLock};
+use gc_arena::lock::{Lock, OnceLock, RefLock};
 use gc_arena::{Collect, DynamicRoot, Gc, GcWeak, Mutation, Rootable};
 use ruffle_common::utils::HasPrefixField;
 use ruffle_macros::istr;
@@ -53,6 +53,7 @@ use std::borrow::Cow;
 use std::cell::{Cell, OnceCell, Ref, RefCell, RefMut};
 use std::cmp::max;
 use std::collections::HashMap;
+use std::range::Range;
 use swf::extensions::ReadSwfExt;
 use swf::{ClipEventFlag, DefineBitsLossless, FrameLabelData, TagCode, UTF_8};
 
@@ -195,8 +196,8 @@ pub struct MovieClipData<'gc> {
 
     audio_stream: Cell<Option<SoundInstanceHandle>>,
 
-    #[collect(require_static)]
-    clip_event_handlers: OnceCell<Box<[ClipEventHandler]>>,
+    clip_event_handlers: OnceLock<Box<[ClipEventHandler<'gc>]>>,
+
     /// This is lazily allocated on demand, to make `MovieClipData` smaller in the common case.
     #[collect(require_static)]
     drawing: OnceCell<Box<RefCell<Drawing>>>,
@@ -248,7 +249,7 @@ impl<'gc> MovieClipData<'gc> {
             audio_stream: Cell::new(None),
             object1: Lock::new(None),
             object2: Lock::new(None),
-            clip_event_handlers: OnceCell::new(),
+            clip_event_handlers: OnceLock::new(),
             clip_event_flags: Cell::new(ClipEventFlag::empty()),
             flags: Cell::new(MovieClipFlags::empty()),
             drawing: OnceCell::new(),
@@ -301,7 +302,7 @@ impl<'gc> MovieClip<'gc> {
         mc: &Mutation<'gc>,
         id: CharacterId,
         movie: SwfMovie<'gc>,
-        swf: SwfSlice,
+        swf: SwfSlice<'gc>,
         num_frames: u16,
     ) -> Self {
         let shared = MovieClipShared::with_data(id, movie, swf, num_frames, None, None);
@@ -1298,7 +1299,7 @@ impl<'gc> MovieClip<'gc> {
     }
 
     /// Gets the clip events for this MovieClip.
-    pub fn clip_actions(self) -> &'gc [ClipEventHandler] {
+    pub fn clip_actions(self) -> &'gc [ClipEventHandler<'gc>] {
         match Gc::as_ref(self.0).clip_event_handlers.get() {
             Some(handlers) => handlers,
             None => &[],
@@ -1310,23 +1311,26 @@ impl<'gc> MovieClip<'gc> {
     /// tag on a MovieClip instance.
     pub fn init_clip_event_handlers(
         self,
+        mc: &Mutation<'gc>,
         all_event_flags: ClipEventFlag,
-        event_handlers: Box<[ClipEventHandler]>,
+        event_handlers: Box<[ClipEventHandler<'gc>]>,
     ) {
-        if self.0.clip_event_handlers.get().is_some() {
-            panic!("Clip event handlers already initialized");
-        }
-
-        self.0.clip_event_handlers.get_or_init(|| event_handlers);
+        let write = Gc::write(mc, self.0);
+        unlock!(write, MovieClipData, clip_event_handlers)
+            .set(event_handlers)
+            .expect("Clip event handlers already initialized");
         self.0.clip_event_flags.set(all_event_flags);
     }
 
     /// Returns an iterator of AVM1 `DoAction` blocks on the given frame number.
     /// Used by the AVM `Call` action.
-    pub fn actions_on_frame(self, frame: FrameNumber) -> impl DoubleEndedIterator<Item = SwfSlice> {
+    pub fn actions_on_frame(
+        self,
+        frame: FrameNumber,
+    ) -> impl DoubleEndedIterator<Item = SwfSlice<'gc>> {
         use swf::read::Reader;
 
-        let mut actions: SmallVec<[SwfSlice; 2]> = SmallVec::new();
+        let mut actions: SmallVec<[SwfSlice<'gc>; 2]> = SmallVec::new();
 
         // Iterate through this clip's tags, counting frames until we reach the target frame.
         if frame > 0 && frame <= self.header_frames() {
@@ -1557,6 +1561,7 @@ impl<'gc> MovieClip<'gc> {
                     {
                         // Convert from `swf::ClipAction` to Ruffle's `ClipEventHandler`.
                         clip.init_clip_event_handlers(
+                            context.gc(),
                             clip_actions.all_event_flags,
                             clip_actions
                                 .records
@@ -4252,7 +4257,11 @@ impl<'gc, 'a> MovieClipShared<'gc> {
 
         let cur_frame = self.preload_progress.cur_preload_frame.get() - 1;
         let abc = match tag_code {
-            TagCode::DoAbc | TagCode::DoAbc2 => self.swf_data.resize_to_reader(reader),
+            TagCode::DoAbc | TagCode::DoAbc2 => self
+                .swf_data
+                .data()
+                .subslice_range(reader.get_ref())
+                .unwrap_or_default(),
             _ => unreachable!(),
         };
 
@@ -4334,13 +4343,15 @@ impl<'gc, 'a> MovieClip<'gc> {
         context: &mut UpdateContext<'gc>,
         current_frame: FrameNumber,
     ) -> Result<(), Error> {
-        let Some(eager_tags) = self.0.shared.get().take_eager_tags(current_frame) else {
+        let shared = self.0.shared.get();
+        let Some(eager_tags) = shared.take_eager_tags(current_frame) else {
             return Ok(());
         };
 
         let mut eager_scripts = Vec::new();
 
-        for (tag_code, abc) in eager_tags.abc_tags {
+        for (tag_code, range) in eager_tags.abc_tags {
+            let abc = shared.swf_data.slice(range);
             let mut reader = abc.read_from(0);
             let eager_script = match tag_code {
                 TagCode::DoAbc => self.do_abc(context, &mut reader)?,
@@ -4697,7 +4708,7 @@ struct MovieClipShared<'gc> {
     cell: RefCell<MovieClipSharedMut>,
     id: CharacterId,
     movie: SwfMovie<'gc>,
-    swf_data: SwfSlice,
+    swf_data: SwfSlice<'gc>,
     header_frames: FrameNumber,
     /// Preload progress for the given clip's tag stream.
     #[collect(require_static)]
@@ -4739,7 +4750,7 @@ struct MovieClipSharedMut {
 
 #[derive(Default)]
 struct EagerTags {
-    abc_tags: Vec<(TagCode, SwfSlice)>,
+    abc_tags: Vec<(TagCode, Range<usize>)>,
     symbolclass_names: Vec<(WString, u16)>,
 }
 
@@ -4772,7 +4783,7 @@ impl<'gc> MovieClipShared<'gc> {
     fn with_data(
         id: CharacterId,
         movie: SwfMovie<'gc>,
-        swf_data: SwfSlice,
+        swf_data: SwfSlice<'gc>,
         header_frames: FrameNumber,
         loader_info: Option<LoaderInfoObject<'gc>>,
         importer_movie: Option<MovieClip<'gc>>,
@@ -5065,23 +5076,26 @@ bitflags! {
 
 /// Actions that are attached to a `MovieClip` event in
 /// an `onClipEvent`/`on` handler.
-#[derive(Debug, Clone)]
-pub struct ClipEventHandler {
+#[derive(Collect, Clone, Debug)]
+#[collect(no_drop)]
+pub struct ClipEventHandler<'gc> {
     /// The events that triggers this handler.
+    #[collect(require_static)]
     effective_events: ClipEventFlag,
 
     /// The key code used by the `onKeyPress` event.
     ///
     /// Only used if `events` contains `ClipEventFlag::KEY_PRESS`.
+    #[collect(require_static)]
     key_code: ButtonKeyCode,
 
     /// The actions to run.
-    action_data: SwfSlice,
+    action_data: SwfSlice<'gc>,
 }
 
-impl ClipEventHandler {
+impl<'gc> ClipEventHandler<'gc> {
     /// Build an event handler from a SWF movie and a parsed ClipAction.
-    pub fn new<'gc>(
+    pub fn new(
         swf_action: swf::ClipAction<'_>,
         movie: SwfMovie<'gc>,
         all_event_flags: ClipEventFlag,
