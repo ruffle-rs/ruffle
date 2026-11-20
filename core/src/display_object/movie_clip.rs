@@ -860,6 +860,12 @@ impl<'gc> MovieClip<'gc> {
         self.0.play()
     }
 
+    /// The value of AS3's `isPlaying`.
+    pub fn is_playing_for_avm2(self) -> bool {
+        self.programmatically_played()
+            && (self.playing() || self.0.contains_flag(MovieClipFlags::STOPPED_BY_QUEUED_GOTO))
+    }
+
     pub fn prev_frame(self, context: &mut UpdateContext<'gc>) {
         if self.current_frame() > 1 {
             let goto_info = GotoInfo {
@@ -942,13 +948,23 @@ impl<'gc> MovieClip<'gc> {
     fn goto_frame_now(self, context: &mut UpdateContext<'gc>, goto_info: GotoInfo) {
         match goto_info.stop_or_play {
             StopOrPlay::Stop => self.stop(context),
-            StopOrPlay::Play => self.play(),
+            StopOrPlay::Play => {
+                if self.movie().is_action_script_3() {
+                    self.set_programmatically_played();
+                }
+
+                self.play();
+            }
         }
 
+        self.run_goto_or_no_op(context, goto_info.frame);
+    }
+
+    fn run_goto_or_no_op(self, context: &mut UpdateContext<'gc>, frame: FrameNumber) {
         // In AS3, no-op gotos have side effects that are visible to user
         // code. Hence, we have to run them anyway.
-        if goto_info.frame != self.current_frame() {
-            self.run_goto(context, goto_info.frame, false);
+        if frame != self.current_frame() {
+            self.run_goto(context, frame, false);
         } else {
             self.no_op_goto(context);
         }
@@ -2503,9 +2519,19 @@ impl<'gc> MovieClip<'gc> {
 
         let goto_info = self.0.queued_goto.take();
         if let Some(goto_info) = goto_info {
-            self.goto_frame_now(context, goto_info);
+            match goto_info.stop_or_play {
+                StopOrPlay::Stop => {
+                    let was_playing = self.is_playing_for_avm2();
 
-            // In SWFv10+, the `goto_frame_now` above will trigger an inner goto
+                    self.stop(context);
+                    self.0
+                        .set_flag(MovieClipFlags::STOPPED_BY_QUEUED_GOTO, was_playing);
+                    self.run_goto_or_no_op(context, goto_info.frame);
+                }
+                StopOrPlay::Play => self.goto_frame_now(context, goto_info),
+            }
+
+            // In SWFv10+, the goto above will trigger an inner goto
             // frame, which will call `construct_frame`. However, this is not
             // the case in SWFv9, where inner goto frames are no-ops, so we need
             // to manually run `construct_frame` to ensure that children are
@@ -3401,10 +3427,12 @@ impl<'gc> MovieClipData<'gc> {
     }
 
     fn play(&self) {
+        self.set_flag(MovieClipFlags::STOPPED_BY_QUEUED_GOTO, false);
         self.set_playing(true);
     }
 
     fn stop(&self, context: &mut UpdateContext<'gc>) {
+        self.set_flag(MovieClipFlags::STOPPED_BY_QUEUED_GOTO, false);
         self.set_playing(false);
         self.stop_audio_stream(context);
     }
@@ -5029,7 +5057,7 @@ pub enum QueuedTagAction {
 bitflags! {
     /// Boolean state flags used by `MovieClip`.
     #[derive(Clone, Copy)]
-    struct MovieClipFlags: u8 {
+    struct MovieClipFlags: u16 {
         /// Whether this `MovieClip` has run its initial frame.
         const INITIALIZED             = 1 << 0;
 
@@ -5060,6 +5088,10 @@ bitflags! {
 
         /// Whether the AVM2 constructor of this `MovieClip` threw an error.
         const AVM2_CONSTRUCTOR_FAILED = 1 << 7;
+
+        /// The clip was stopped by a queued goto, but AS3's `isPlaying` still
+        /// says that it's playing until `play` or `stop` is called.
+        const STOPPED_BY_QUEUED_GOTO = 1 << 8;
     }
 }
 

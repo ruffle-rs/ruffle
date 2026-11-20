@@ -321,7 +321,7 @@ pub fn get_is_playing<'gc>(
         .as_display_object()
         .and_then(|dobj| dobj.as_movie_clip())
     {
-        return Ok((mc.programmatically_played() && mc.playing()).into());
+        return Ok(mc.is_playing_for_avm2().into());
     }
 
     Ok(Value::Undefined)
@@ -357,8 +357,6 @@ pub fn goto_and_play<'gc>(
         .as_display_object()
         .and_then(|dobj| dobj.as_movie_clip())
     {
-        mc.set_programmatically_played();
-
         let frame_or_label = args.get_value(0);
         let scene = args.try_get_string(1);
 
