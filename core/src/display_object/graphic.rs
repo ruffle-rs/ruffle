@@ -231,7 +231,7 @@ impl<'gc> TDisplayObject<'gc> for Graphic<'gc> {
         {
             self.set_shared(context.gc(), new_graphic.0.shared.get());
         } else {
-            tracing::warn!("PlaceObject: expected Graphic at character ID {}", id);
+            warn!("PlaceObject: expected Graphic at character ID {}", id);
         }
         self.invalidate_cached_bitmap();
     }

@@ -209,7 +209,7 @@ impl Hash for Class<'_> {
 }
 
 impl core::fmt::Debug for Class<'_> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> Result<(), fmt::Error> {
         f.debug_struct("Class").field("name", &self.name()).finish()
     }
 }

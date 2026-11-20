@@ -876,7 +876,7 @@ pub fn set_blend_mode<'gc>(
         if let Ok(mode) = ExtendedBlendMode::from_str(&mode.to_string()) {
             dobj.set_blend_mode(mode);
         } else {
-            tracing::error!("Unknown blend mode {}", mode);
+            error!("Unknown blend mode {}", mode);
             return Err(make_error_2008(activation, "blendMode"));
         }
     }

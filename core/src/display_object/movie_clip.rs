@@ -514,10 +514,10 @@ impl<'gc> MovieClip<'gc> {
                     }
                 }
                 Some(unk) => {
-                    tracing::error!("Symbol {symbol} changed to unexpected type {unk:?}");
+                    error!("Symbol {symbol} changed to unexpected type {unk:?}");
                 }
                 None => {
-                    tracing::error!("Symbol {symbol} disappeared during preloading");
+                    error!("Symbol {symbol} disappeared during preloading");
                 }
             }
         }
@@ -642,7 +642,7 @@ impl<'gc> MovieClip<'gc> {
         loop {
             let shared = target.0.shared.get();
             if shared.movie().is_declared_action_script_3() {
-                tracing::warn!("DoInitAction tag in AVM2 movie");
+                warn!("DoInitAction tag in AVM2 movie");
                 return Ok(());
             }
 
@@ -775,9 +775,7 @@ impl<'gc> MovieClip<'gc> {
         }
 
         if context.allow_networking == NetworkingAccessMode::None {
-            tracing::warn!(
-                "Blocked asset import from {asset_url} because allowNetworking is set to none"
-            );
+            warn!("Blocked asset import from {asset_url} because allowNetworking is set to none");
             return Ok(());
         }
 
@@ -1459,7 +1457,7 @@ impl<'gc> MovieClip<'gc> {
         };
         let _ = tag_utils::decode_tags(&mut reader, tag_callback);
         if let Err(e) = self.run_abc_and_symbol_tags(context, self.0.current_frame()) {
-            tracing::error!("Error running abc/symbol in frame: {e:?}");
+            error!("Error running abc/symbol in frame: {e:?}");
         }
 
         // On AS3, we deliberately run all removals before the frame number or
@@ -1476,7 +1474,7 @@ impl<'gc> MovieClip<'gc> {
             };
 
             if let Err(e) = self.remove_object(context, &mut reader, version) {
-                tracing::error!("Error running queued tag: {:?}, got {}", tag.tag_type, e);
+                error!("Error running queued tag: {:?}, got {}", tag.tag_type, e);
             }
         }
 
@@ -1590,7 +1588,7 @@ impl<'gc> MovieClip<'gc> {
                 Some(child)
             }
             None => {
-                tracing::error!("Unable to instantiate display node id {}", id,);
+                error!("Unable to instantiate display node id {}", id,);
                 None
             }
         }
@@ -1766,7 +1764,7 @@ impl<'gc> MovieClip<'gc> {
             };
             let _ = tag_utils::decode_tags(&mut reader, tag_callback);
             if let Err(e) = self.run_abc_and_symbol_tags(context, self.current_frame() - 1) {
-                tracing::error!("Error running abc/symbols in goto: {e:?}");
+                error!("Error running abc/symbols in goto: {e:?}");
             }
         }
         let hit_target_frame = self.0.current_frame() == frame;
@@ -1851,10 +1849,10 @@ impl<'gc> MovieClip<'gc> {
                     }
                 }
                 _ => {
-                    tracing::error!(
+                    error!(
                         "Unexpected PlaceObject during goto: {:?}",
                         params.place_object
-                    )
+                    );
                 }
             }
         };
@@ -2582,7 +2580,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
                 };
 
                 if let Err(e) = self.place_object(context, &mut reader, version) {
-                    tracing::error!("Error running queued tag: {:?}, got {}", tag.tag_type, e);
+                    error!("Error running queued tag: {:?}, got {}", tag.tag_type, e);
                 }
             }
         }
@@ -3521,7 +3519,7 @@ impl<'gc, 'a> MovieClipShared<'gc> {
             if let Character::MovieClip(clip) = character {
                 clip.set_scaling_grid(rect);
             } else {
-                tracing::warn!("DefineScalingGrid for invalid ID {}", id);
+                warn!("DefineScalingGrid for invalid ID {}", id);
             }
         }
         Ok(())
@@ -3579,13 +3577,13 @@ impl<'gc, 'a> MovieClipShared<'gc> {
                 edit_text.set_render_settings(settings.into());
             }
             Some(_) => {
-                tracing::warn!(
+                warn!(
                     "Tried to apply CSMTextSettings to non-text character ID {}",
                     settings.id
                 );
             }
             None => {
-                tracing::warn!(
+                warn!(
                     "Tried to apply CSMTextSettings to unregistered character ID {}",
                     settings.id
                 );
@@ -3741,17 +3739,15 @@ impl<'gc, 'a> MovieClipShared<'gc> {
                 button.set_colors(&button_colors.color_transforms);
             }
             Some(_) => {
-                tracing::warn!(
+                warn!(
                     "DefineButtonCxform: Tried to apply on non-button ID {}",
                     button_colors.id
                 );
             }
-            None => {
-                tracing::warn!(
-                    "DefineButtonCxform: Character ID {} doesn't exist",
-                    button_colors.id
-                );
-            }
+            None => warn!(
+                "DefineButtonCxform: Character ID {} doesn't exist",
+                button_colors.id
+            ),
         }
         Ok(())
     }
@@ -3771,17 +3767,15 @@ impl<'gc, 'a> MovieClipShared<'gc> {
                 button.set_sounds(button_sounds);
             }
             Some(_) => {
-                tracing::warn!(
+                warn!(
                     "DefineButtonSound: Tried to apply on non-button ID {}",
                     button_sounds.id
                 );
             }
-            None => {
-                tracing::warn!(
-                    "DefineButtonSound: Character ID {} doesn't exist",
-                    button_sounds.id
-                );
-            }
+            None => warn!(
+                "DefineButtonSound: Character ID {} doesn't exist",
+                button_sounds.id
+            ),
         }
         Ok(())
     }
@@ -3925,7 +3919,7 @@ impl<'gc, 'a> MovieClipShared<'gc> {
             self.library_mut(context)
                 .register_character(sound.id, Character::Sound(handle));
         } else {
-            tracing::error!(
+            error!(
                 "MovieClip::define_sound: Unable to register sound ID {}",
                 sound.id
             );
@@ -4073,10 +4067,9 @@ impl<'gc, 'a> MovieClipShared<'gc> {
                 // This is fairly common, don't log anything here
             }
         } else {
-            tracing::warn!(
+            warn!(
                 "Can't register export {}: Character ID {} doesn't exist",
-                name,
-                id,
+                name, id
             );
         }
     }
@@ -4116,10 +4109,9 @@ impl<'gc, 'a> MovieClipShared<'gc> {
                     }
                 }
             } else {
-                tracing::error!(
+                error!(
                     "Export asset: {} (ID: {}) not found in library",
-                    name,
-                    export.id
+                    name, export.id
                 );
             }
         }
@@ -4148,7 +4140,7 @@ impl<'gc, 'a> MovieClipShared<'gc> {
         if let std::collections::hash_map::Entry::Vacant(v) = shared.frame_labels_map.entry(label) {
             v.insert(cur_frame);
         } else {
-            tracing::warn!("Movie clip {}: Duplicated frame label", self.id);
+            warn!("Movie clip {}: Duplicated frame label", self.id);
         }
         Ok(())
     }
@@ -4178,7 +4170,7 @@ impl<'gc, 'a> MovieClipShared<'gc> {
             {
                 v.insert(scene);
             } else {
-                tracing::warn!("Movie clip {}: Duplicated scene label", self.id);
+                warn!("Movie clip {}: Duplicated scene label", self.id);
             }
         }
 
@@ -4192,7 +4184,7 @@ impl<'gc, 'a> MovieClipShared<'gc> {
             {
                 v.insert(frame_num as u16 + 1);
             } else {
-                tracing::warn!("Movie clip {}: Duplicated frame label", self.id);
+                warn!("Movie clip {}: Duplicated frame label", self.id);
             }
         }
 
@@ -4242,8 +4234,8 @@ impl<'gc, 'a> MovieClipShared<'gc> {
     ) -> Result<(), Error> {
         if !self.movie().is_action_script_3() {
             match tag_code {
-                TagCode::DoAbc => tracing::warn!("DoABC tag in AVM1 movie"),
-                TagCode::DoAbc2 => tracing::warn!("DoABC2 tag in AVM1 movie"),
+                TagCode::DoAbc => warn!("DoABC tag in AVM1 movie"),
+                TagCode::DoAbc2 => warn!("DoABC2 tag in AVM1 movie"),
                 _ => unreachable!(),
             }
 
@@ -4297,7 +4289,7 @@ impl<'gc, 'a> MovieClip<'gc> {
         reader: &mut SwfStream<'a>,
     ) -> Result<(), Error> {
         if self.movie().is_declared_action_script_3() {
-            tracing::warn!("DoAction tag in AVM2 movie");
+            warn!("DoAction tag in AVM2 movie");
             return Ok(());
         }
 
@@ -4398,7 +4390,7 @@ impl<'gc, 'a> MovieClip<'gc> {
                                         activation.gc(),
                                     );
                                 } else {
-                                    tracing::error!(
+                                    error!(
                                         "Associated class {:?} for symbol {} must extend flash.display.Bitmap or BitmapData, does neither",
                                         class_object.inner_class_definition().name(),
                                         id
@@ -4424,9 +4416,7 @@ impl<'gc, 'a> MovieClip<'gc> {
                                 library.register_character(id, Character::MovieClip(instantiated));
                             }
                             _ => {
-                                tracing::warn!(
-                                    "Symbol class {name} cannot be assigned to character id {id}",
-                                );
+                                warn!("Symbol class {name} cannot be assigned to character id {id}")
                             }
                         }
                     }
@@ -4960,7 +4950,7 @@ impl QueuedTagList {
             QueuedTagList::Add(existing) => {
                 // Flash player traces "Warning: Failed to place object at depth 1.",
                 // so let's log a warning too.
-                tracing::warn!("Ignoring queued tag {add_tag:?} at same depth as {existing:?}");
+                warn!("Ignoring queued tag {add_tag:?} at same depth as {existing:?}");
                 QueuedTagList::Add(*existing)
             }
             QueuedTagList::Remove(r) => QueuedTagList::RemoveThenAdd(*r, add_tag),

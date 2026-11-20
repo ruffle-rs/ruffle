@@ -23,14 +23,14 @@ pub struct EvalParameters {
     pub kerning: bool,
 
     /// The color to render the font with.
-    pub color: swf::Color,
+    pub color: Color,
 }
 
 impl EvalParameters {
     /// Convert the formatting on a text span over to font evaluation
     /// parameters.
     pub fn from_span(span: &TextSpan) -> Self {
-        let color = swf::Color::from_rgb(span.font.color.to_rgb(), 0xFF);
+        let color = Color::from_rgb(span.font.color.to_rgb(), 0xFF);
         Self {
             height: Twips::from_pixels(span.font.size),
             letter_spacing: Twips::from_pixels(span.font.letter_spacing),

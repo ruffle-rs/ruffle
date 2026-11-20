@@ -238,7 +238,7 @@ impl<'gc> Video<'gc> {
                 let mut frames = swf_source.frames.borrow_mut();
 
                 if frames.contains_key(&tag.frame_num.into()) {
-                    tracing::warn!("Duplicate frame {}", tag.frame_num);
+                    warn!("Duplicate frame {}", tag.frame_num);
                 }
 
                 frames.insert(tag.frame_num.into(), (subslice.start, subslice.end));
@@ -328,7 +328,7 @@ impl<'gc> Video<'gc> {
         let stream = if let VideoStream::Instantiated(stream) = self.0.stream.get() {
             stream
         } else {
-            tracing::error!("Attempted to seek uninstantiated video stream.");
+            error!("Attempted to seek uninstantiated video stream.");
             return;
         };
 
@@ -362,7 +362,7 @@ impl<'gc> Video<'gc> {
                 self.invalidate_cached_bitmap();
                 *context.needs_render = true;
             }
-            Err(e) => tracing::error!("Got error when seeking to video frame {}: {}", frame_id, e),
+            Err(e) => error!("Got error when seeking to video frame {}: {}", frame_id, e),
         }
     }
 }
@@ -399,7 +399,7 @@ impl<'gc> TDisplayObject<'gc> for Video<'gc> {
                         streamdef.deblocking,
                     );
                     if let Err(err) = stream {
-                        tracing::error!("Got error when post-instantiating video: {err}",);
+                        error!("Got error when post-instantiating video: {err}");
                         return;
                     }
 
@@ -421,9 +421,7 @@ impl<'gc> TDisplayObject<'gc> for Video<'gc> {
                                 keyframes.insert(*frame_id);
                             }
                             Ok(_) => {}
-                            Err(e) => {
-                                tracing::error!("Got error when pre-loading video frame: {}", e);
-                            }
+                            Err(e) => error!("Got error when pre-loading video frame: {e}"),
                         }
                     }
 
@@ -437,7 +435,7 @@ impl<'gc> TDisplayObject<'gc> for Video<'gc> {
         let starting_seek = if let VideoStream::Uninstantiated(seek_to) = self.0.stream.get() {
             seek_to
         } else {
-            tracing::warn!("Reinstantiating already-instantiated video stream!");
+            warn!("Reinstantiating already-instantiated video stream!");
             0
         };
 
@@ -581,7 +579,7 @@ impl<'gc> TDisplayObject<'gc> for Video<'gc> {
                 region,
             );
         } else if codec != Some(VideoCodec::None) {
-            tracing::warn!("Video has no decoded frame to render.");
+            warn!("Video has no decoded frame to render.");
         }
 
         if options.apply_transform {

@@ -427,4 +427,4 @@ pub struct LookupSwitch {
 }
 
 #[cfg(target_pointer_width = "64")]
-const _: () = assert!(std::mem::size_of::<Op>() == 16);
+const _: () = assert!(size_of::<Op>() == 16);

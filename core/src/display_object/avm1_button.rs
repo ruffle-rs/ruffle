@@ -311,10 +311,9 @@ impl<'gc> TDisplayObject<'gc> for Avm1Button<'gc> {
                             new_children.push((child, record.depth.into()));
                         }
                         None => {
-                            tracing::error!(
+                            error!(
                                 "Button ID {}: could not instantiate child ID {}",
-                                self.0.shared.id,
-                                record.id,
+                                self.0.shared.id, record.id,
                             );
                         }
                     }

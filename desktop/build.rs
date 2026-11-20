@@ -39,7 +39,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     // around `goto`s). Increase the stack size on Windows
     // accommodate this (the default on Linux is high enough). We
     // do the same thing for wasm in web/build.rs.
-    let target = std::env::var("TARGET").expect("TARGET not set");
+    let target = env::var("TARGET").expect("TARGET not set");
 
     if target.contains("windows") {
         if target.contains("msvc") {

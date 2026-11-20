@@ -40,9 +40,7 @@ impl BindLayouts {
                 ty: wgpu::BindingType::Buffer {
                     ty: wgpu::BufferBindingType::Uniform,
                     has_dynamic_offset: false,
-                    min_binding_size: wgpu::BufferSize::new(
-                        std::mem::size_of::<GlobalsUniform>() as u64
-                    ),
+                    min_binding_size: wgpu::BufferSize::new(size_of::<GlobalsUniform>() as u64),
                 },
                 count: None,
             }],
@@ -114,7 +112,7 @@ impl BindLayouts {
                         ty: wgpu::BufferBindingType::Uniform,
                         has_dynamic_offset: false,
                         min_binding_size: wgpu::BufferSize::new(
-                            std::mem::size_of::<GradientUniforms>() as u64,
+                            size_of::<GradientUniforms>() as u64
                         ),
                     },
                     count: None,

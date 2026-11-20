@@ -78,7 +78,7 @@ impl<'gc> TDisplayObject<'gc> for MorphShape<'gc> {
             unlock!(Gc::write(context.gc(), self.0), MorphShapeData, shared)
                 .set(new_morph_shape.0.shared.get())
         } else {
-            tracing::warn!("PlaceObject: expected morph shape at character ID {}", id);
+            warn!("PlaceObject: expected morph shape at character ID {id}");
         }
         self.invalidate_cached_bitmap();
     }
@@ -159,7 +159,7 @@ impl<'gc> TDisplayObject<'gc> for MorphShape<'gc> {
                     &local_matrix,
                 );
             } else {
-                tracing::warn!("Missing ratio for morph shape");
+                warn!("Missing ratio for morph shape");
             }
         }
 
@@ -481,10 +481,9 @@ fn lerp_fill(start: &swf::FillStyle, end: &swf::FillStyle, a: f32, b: f32) -> sw
         // If you happened to make, say, a solid color-to-radial gradient tween in the IDE, this would get baked down into
         // a radial-to-radial gradient on export.
         _ => {
-            tracing::warn!(
+            warn!(
                 "Unexpected morph shape fill style combination: {:#?}, {:#?}",
-                start,
-                end
+                start, end
             );
             start.clone()
         }
@@ -611,7 +610,7 @@ fn lerp_gradient(start: &swf::Gradient, end: &swf::Gradient, a: f32, b: f32) -> 
         .records
         .iter()
         .zip(end.records.iter())
-        .map(|(start, end)| swf::GradientRecord {
+        .map(|(start, end)| GradientRecord {
             ratio: (f32::from(start.ratio) * a + f32::from(end.ratio) * b) as u8,
             color: lerp_color(start.color, end.color, a, b),
         })

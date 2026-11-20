@@ -40,7 +40,7 @@ pub use common::panic_on_invalid_length;
 /// Flattens a slice of strings, placing `sep` as a separator between each.
 #[inline]
 pub fn join<E: Borrow<WStr>, S: Borrow<WStr>>(elems: &[E], sep: &S) -> WString {
-    crate::ops::str_join(elems, sep.borrow())
+    ops::str_join(elems, sep.borrow())
 }
 
 /// Converts a borrowed UTF-8 string to a `WStr` slice.

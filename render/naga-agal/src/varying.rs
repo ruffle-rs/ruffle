@@ -57,7 +57,7 @@ impl NagaBuilder<'_> {
                                 ty: self.vec4f,
                                 binding: Some(Binding::Location {
                                     location: index as u32,
-                                    interpolation: Some(naga::Interpolation::Perspective),
+                                    interpolation: Some(Interpolation::Perspective),
                                     sampling: None,
                                     blend_src: None,
                                     per_primitive: false,

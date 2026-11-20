@@ -6,7 +6,7 @@ use crate::avm1::globals::matrix::gradient_object_to_matrix;
 use crate::avm1::globals::{self, AVM_DEPTH_BIAS, AVM_MAX_DEPTH, bitmap_filter};
 use crate::avm1::object::NativeObject;
 use crate::avm1::property_decl::{DeclContext, PropertyOrder, StaticDeclarations, SystemClass};
-use crate::avm1::{self, ArrayBuilder, Object, Value};
+use crate::avm1::{ArrayBuilder, Object, Value};
 use crate::backend::navigator::NavigationMethod;
 use crate::context::UpdateContext;
 use crate::display_object::{
@@ -586,7 +586,7 @@ fn begin_bitmap_fill<'gc>(
             };
             let id = movie_clip.drawing_mut().add_bitmap(bitmap);
 
-            let mut matrix = avm1::globals::matrix::object_to_matrix_or_default(
+            let mut matrix = globals::matrix::object_to_matrix_or_default(
                 args.get(1)
                     .unwrap_or(&Value::Undefined)
                     .coerce_to_object_or_bare(activation)?,
@@ -1201,7 +1201,7 @@ fn remove_movie_clip<'gc>(
     // `removeMovieClip` can remove all types of display object,
     // e.g. `MovieClip.prototype.removeMovieClip.apply(textField);`
     if let Some(this) = this.as_display_object() {
-        crate::avm1::globals::remove_display_object(this, activation);
+        globals::remove_display_object(this, activation);
     }
 
     Ok(Value::Undefined)
@@ -1369,7 +1369,7 @@ fn swap_depths<'gc>(
 
     let mut depth = None;
     if let Value::Number(n) = arg {
-        depth = Some(crate::ecma_conversions::f64_to_wrapping_i32(n).wrapping_add(AVM_DEPTH_BIAS));
+        depth = Some(f64_to_wrapping_i32(n).wrapping_add(AVM_DEPTH_BIAS));
     } else if let Some(target) =
         activation.resolve_target_display_object(movie_clip.into(), arg, false)?
     {
@@ -1726,7 +1726,7 @@ fn set_blend_mode<'gc>(
     if let Some(mode) = value.as_blend_mode() {
         this.set_blend_mode(mode.into());
     } else {
-        tracing::error!("Unknown blend mode {value:?}");
+        error!("Unknown blend mode {value:?}");
     }
     Ok(())
 }

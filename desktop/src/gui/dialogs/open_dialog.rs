@@ -355,7 +355,7 @@ impl OpenDialog {
                 });
 
                 ui.horizontal(|ui| {
-                    ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                    ui.with_layout(Layout::right_to_left(egui::Align::Center), |ui| {
                         if ui
                             .add_enabled(is_valid, Button::new(text(locale, "start")))
                             .clicked()

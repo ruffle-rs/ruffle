@@ -420,7 +420,7 @@ impl<'gc> NetStream<'gc> {
     pub fn bytes_total(self) -> usize {
         let source = self.source();
         let buflen = source.buffer.borrow().len();
-        std::cmp::max(source.expected_length.get().unwrap_or(buflen), buflen)
+        max(source.expected_length.get().unwrap_or(buflen), buflen)
     }
 
     pub fn time(self) -> f64 {

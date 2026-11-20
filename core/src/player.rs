@@ -2420,7 +2420,7 @@ impl Player {
                     if let Err(e) =
                         crate::avm1::globals::shared_object::flush(&mut avm1_activation, *so, &[])
                     {
-                        tracing::error!("Error flushing AVM1 shared object `{:?}`: {:?}", so, e);
+                        error!("Error flushing AVM1 shared object `{:?}`: {:?}", so, e);
                     }
                 }
             }
@@ -2434,7 +2434,7 @@ impl Player {
                 )
                 .is_err()
                 {
-                    tracing::error!("Error flushing AVM2 shared object");
+                    error!("Error flushing AVM2 shared object");
                 }
             }
         });
@@ -2492,7 +2492,7 @@ impl Player {
             if let Some(callback) = context.external_interface.get_callback(name) {
                 callback.call(context, name, args)
             } else {
-                tracing::warn!("Calling unknown internal interface: {}", name);
+                warn!("Calling unknown internal interface: {}", name);
                 ExternalValue::Null
             }
         })
@@ -3164,7 +3164,7 @@ impl PlayerBuilder {
 
         player_lock.mutate_with_update_context(|context| {
             if !self.avm2_early_binding_enabled {
-                tracing::warn!(
+                warn!(
                     "AVM2 early binding optimizations disabled, some bytecode may behave incorrectly"
                 );
             }

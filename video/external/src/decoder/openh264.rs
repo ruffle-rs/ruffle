@@ -31,7 +31,7 @@ impl Display for OpenH264Version {
 #[derive(Debug, Error)]
 pub enum OpenH264Error {
     #[error("Error while loading OpenH264: {0}")]
-    LibraryLoadingError(#[from] ::libloading::Error),
+    LibraryLoadingError(#[from] libloading::Error),
 
     #[error("OpenH264 version mismatch, expected {0}, was {1}")]
     VersionMismatchError(OpenH264Version, OpenH264Version),
@@ -156,7 +156,7 @@ impl OpenH264Codec {
     /// Loads an existing OpenH264 library from the given path.
     fn load_existing<P>(filename: P) -> Result<Self, OpenH264Error>
     where
-        P: AsRef<::std::ffi::OsStr>,
+        P: AsRef<std::ffi::OsStr>,
     {
         let openh264 = unsafe { OpenH264::new(filename)? };
 

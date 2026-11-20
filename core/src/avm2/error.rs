@@ -1525,7 +1525,7 @@ fn error_constructor<'a, 'gc>(
     ErrorObject::from_info(activation, class, message, code)
 }
 
-impl std::fmt::Display for Error<'_> {
+impl Display for Error<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{self:?}")
     }
