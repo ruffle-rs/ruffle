@@ -1,0 +1,20 @@
+frame1 start: frame 1, isPlaying: false
+after play(): frame 1, isPlaying: true
+after nextFrame(): frame 1, isPlaying: true
+frame2 start (step 1): frame 2, isPlaying: false
+after play(): frame 2, isPlaying: true
+enterFrame 1: frame 3, isPlaying: true
+frame3 start (step 2): frame 3, isPlaying: true
+after prevFrame(): frame 3, isPlaying: true
+frame2 start (step 3): frame 2, isPlaying: false
+enterFrame 2: frame 2, isPlaying: false
+enterFrame 3: frame 2, isPlaying: false
+enterFrame 4: frame 2, isPlaying: false
+enterFrame 5: frame 2, isPlaying: false
+enterFrame 6: frame 2, isPlaying: false
+enterFrame 7: frame 2, isPlaying: false
+enterFrame 8: frame 2, isPlaying: false
+enterFrame 9: frame 2, isPlaying: false
+enterFrame 10: frame 2, isPlaying: false
+enterFrame 11: frame 2, isPlaying: false
+enterFrame 12: frame 2, isPlaying: false
