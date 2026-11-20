@@ -228,7 +228,7 @@ impl PixelSource for &[f32] {
     }
 }
 
-impl<'gc> PixelSource for &[Value<'gc>] {
+impl PixelSource for &[Value<'_>] {
     fn collect<const N: usize>(&self, num_pixels: usize) -> Option<Vec<[f32; N]>> {
         let (chunks, _) = self.as_chunks::<N>();
         Some(

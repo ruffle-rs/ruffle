@@ -564,7 +564,7 @@ pub enum MovieLoaderVMData<'gc> {
     },
 }
 
-impl<'gc> MovieLoaderVMData<'gc> {
+impl MovieLoaderVMData<'_> {
     fn load_bytes_info(&self) -> Option<LoadBytesInfo> {
         match self {
             MovieLoaderVMData::Avm2 {
@@ -1415,8 +1415,8 @@ pub fn load_sound_avm1_blocking<'gc>(
     load_sound_avm1_data(uc, sound_object, response, load_id)
 }
 
-fn load_sound_avm1_data<'gc>(
-    uc: &mut UpdateContext<'gc>,
+fn load_sound_avm1_data(
+    uc: &mut UpdateContext,
     sound_object: ObjectHandle,
     response: Result<(Vec<u8>, String, u16, bool), ErrorResponse>,
     load_id: u32,

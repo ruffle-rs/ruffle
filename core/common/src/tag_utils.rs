@@ -33,7 +33,7 @@ impl<'gc> SwfMovie<'gc> {
     }
 }
 
-impl<'gc> Deref for SwfMovie<'gc> {
+impl Deref for SwfMovie<'_> {
     type Target = SwfMovieData;
 
     fn deref(&self) -> &Self::Target {

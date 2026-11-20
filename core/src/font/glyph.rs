@@ -181,11 +181,11 @@ impl Glyph {
         }
     }
 
-    pub fn renderable<'gc>(&self, context: &mut RenderContext<'_, 'gc>) -> bool {
+    pub fn renderable(&self, context: &mut RenderContext) -> bool {
         self.glyph_render_data(context.renderer).is_some()
     }
 
-    pub fn render<'gc>(&self, context: &mut RenderContext<'_, 'gc>) {
+    pub fn render(&self, context: &mut RenderContext) {
         use ruffle_render::commands::CommandHandler;
 
         let Some(render_data) = self.glyph_render_data(context.renderer) else {
@@ -228,7 +228,7 @@ pub enum GlyphRef<'a> {
     Ref(Ref<'a, Glyph>),
 }
 
-impl<'a> std::ops::Deref for GlyphRef<'a> {
+impl std::ops::Deref for GlyphRef<'_> {
     type Target = Glyph;
 
     fn deref(&self) -> &Self::Target {

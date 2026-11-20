@@ -151,7 +151,7 @@ pub fn color_transform_from_transform_object(transform_object: Object<'_>) -> Co
 
 // FIXME - handle clamping. We're throwing away precision here in converting to an integer:
 // is that what we should be doing?
-pub fn object_to_color_transform<'gc>(object: Object<'gc>) -> ColorTransform {
+pub fn object_to_color_transform(object: Object) -> ColorTransform {
     let red_multiplier = object.get_slot(ct_slots::RED_MULTIPLIER).as_f64();
     let green_multiplier = object.get_slot(ct_slots::GREEN_MULTIPLIER).as_f64();
     let blue_multiplier = object.get_slot(ct_slots::BLUE_MULTIPLIER).as_f64();
@@ -237,7 +237,7 @@ pub fn matrix_to_object<'gc>(
     Ok(object)
 }
 
-pub fn object_to_matrix<'gc>(object: Object<'gc>) -> Matrix {
+pub fn object_to_matrix(object: Object) -> Matrix {
     let a = object.get_slot(matrix_slots::A).as_f64() as f32;
     let b = object.get_slot(matrix_slots::B).as_f64() as f32;
     let c = object.get_slot(matrix_slots::C).as_f64() as f32;

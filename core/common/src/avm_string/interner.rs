@@ -151,7 +151,7 @@ struct VacantEntry<'a, 'gc, T: 'gc> {
     hash: u64,
 }
 
-impl<'a, 'gc, T: Hash + 'gc> VacantEntry<'a, 'gc, T> {
+impl<'gc, T: Hash + 'gc> VacantEntry<'_, 'gc, T> {
     fn insert(self, mc: &Mutation<'gc>, key: Gc<'gc, T>) -> Gc<'gc, T> {
         self.set.insert_fresh(mc, self.hash, key)
     }

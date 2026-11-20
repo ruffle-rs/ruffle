@@ -6,7 +6,7 @@ use ruffle_common::tag_utils::{SwfMovie, SwfSlice};
 pub struct BinaryData(SwfSlice);
 
 impl BinaryData {
-    pub fn from_swf_tag<'gc>(movie: SwfMovie<'gc>, tag: &swf::DefineBinaryData) -> Self {
+    pub fn from_swf_tag(movie: SwfMovie, tag: &swf::DefineBinaryData) -> Self {
         Self(SwfSlice::from(movie).to_subslice(tag.data))
     }
 

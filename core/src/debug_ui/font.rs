@@ -17,10 +17,10 @@ pub struct FontWindow {
 }
 
 impl FontWindow {
-    pub fn show<'gc>(
+    pub fn show(
         &mut self,
         egui_ctx: &egui::Context,
-        font: Font<'gc>,
+        font: Font,
         messages: &mut Vec<Message>,
     ) -> bool {
         let mut keep_open = true;
