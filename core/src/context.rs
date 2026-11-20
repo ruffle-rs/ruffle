@@ -53,6 +53,7 @@ use ruffle_video::backend::VideoBackend;
 use std::collections::{HashMap, VecDeque};
 use std::sync::{Arc, Mutex, Weak};
 use std::time::Duration;
+use swf::Twips;
 use web_time::Instant;
 
 /// `UpdateContext` holds shared data that is used by the various subsystems of Ruffle.

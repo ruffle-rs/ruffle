@@ -19,7 +19,7 @@ use gc_arena::{Collect, Gc, GcWeak, Mutation};
 use ruffle_common::utils::HasPrefixField;
 use ruffle_render::bitmap::{BitmapFormat, PixelSnapping};
 use std::cell::Cell;
-use swf::CharacterId;
+use swf::{CharacterId, Twips};
 
 #[derive(Clone, Debug, Collect, Copy)]
 #[collect(no_drop)]

@@ -18,11 +18,11 @@ pub use glyph::Glyph;
 pub use text_render_settings::TextRenderSettings;
 
 use crate::font::glyph::GlyphRef;
-use crate::prelude::*;
 use crate::string::WStr;
 use gc_arena::{Collect, Gc, Mutation};
 use ruffle_render::backend::RenderBackend;
 use std::hash::{Hash, Hasher};
+use swf::Twips;
 
 pub use swf::TextGridFit;
 

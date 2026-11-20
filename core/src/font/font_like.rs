@@ -1,9 +1,9 @@
 use crate::font::glyph::GlyphRef;
 use crate::font::{Font, FontMetrics, FontType, Glyph};
 use crate::html::TextSpan;
-use crate::prelude::*;
 use crate::string::WStr;
 use ruffle_render::transform::Transform;
+use swf::Twips;
 
 /// Parameters necessary to evaluate a font.
 #[derive(Copy, Clone, Debug)]

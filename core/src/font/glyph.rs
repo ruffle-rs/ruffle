@@ -6,6 +6,7 @@ use ruffle_render::backend::null::NullBitmapSource;
 use ruffle_render::backend::{RenderBackend, ShapeHandle};
 use ruffle_render::transform::Transform;
 use std::cell::{Ref, RefCell};
+use swf::Twips;
 
 #[derive(Debug, Clone)]
 enum SwfGlyphOrShape {

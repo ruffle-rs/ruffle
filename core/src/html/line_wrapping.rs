@@ -1,7 +1,7 @@
 use crate::font::{EvalParameters, FontLike};
-use crate::prelude::*;
 use crate::string::WStr;
 use ruffle_wstr::utils::{swf_is_cjk_like, swf_is_closing, swf_is_opening};
+use swf::Twips;
 
 use itertools::Itertools;
 
