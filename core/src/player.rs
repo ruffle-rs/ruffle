@@ -2030,7 +2030,7 @@ impl Player {
     }
 
     pub fn render(&mut self) {
-        self.render_impl(true);
+        self.render_impl::<true>();
     }
 
     /// Does everything `render` does, except drawing the frame itself.
@@ -2039,11 +2039,11 @@ impl Player {
     /// `scrollRect` changes are applied) and bitmap caches are drawn, but the
     /// frame isn't. This is for frames that nobody looks at, like in tests.
     pub fn render_no_draw(&mut self) {
-        self.render_impl(false);
+        self.render_impl::<false>();
     }
 
     #[instrument(name = "render", level = "debug", skip_all)]
-    fn render_impl(&mut self, draw_frame: bool) {
+    fn render_impl<const DRAW_FRAME: bool>(&mut self) {
         let invalidated = self.enter_arena(|_, gc_root, _| gc_root.stage.invalidated());
 
         if invalidated {
@@ -2095,7 +2095,7 @@ impl Player {
             (cache_draws, commands)
         });
 
-        let commands = if draw_frame {
+        let commands = if DRAW_FRAME {
             commands
         } else {
             CommandList::new()
