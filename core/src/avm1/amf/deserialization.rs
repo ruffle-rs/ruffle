@@ -1,6 +1,6 @@
 //! Shared AMF0 value deserialization.
 
-use super::MAX_AMF0_REFERENCES;
+pub(super) const MAX_AMF0_REFERENCES: usize = u16::MAX as usize + 1;
 use crate::avm1::globals::date::DeferredAmf0Date;
 use crate::avm1::globals::date::from_amf0 as date_from_amf0;
 use crate::avm1::globals::date::from_local_connection_amf0 as local_date_from_amf0;

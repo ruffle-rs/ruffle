@@ -1,5 +1,3 @@
-const MAX_AMF0_REFERENCES: usize = u16::MAX as usize + 1;
-
 mod deserialization;
 mod local_connection;
 mod serialization;
