@@ -2487,7 +2487,7 @@ impl<'gc> EditText<'gc> {
     fn open_url(self, context: &mut UpdateContext<'gc>, url: &WStr, target: &WStr) {
         if let Some(address) = url.strip_prefix_ignore_case(WStr::from_units(b"asfunction:")) {
             if let Err(e) = self.execute_avm1_asfunction(context, address) {
-                error!("Couldn't execute URL \"{url:?}\": {e:?}");
+                tracing::error!("Couldn't execute URL \"{url:?}\": {e:?}");
             }
         } else if let Some(address) = url.strip_prefix_ignore_case(WStr::from_units(b"event:")) {
             if let Some(object) = self.object2() {
