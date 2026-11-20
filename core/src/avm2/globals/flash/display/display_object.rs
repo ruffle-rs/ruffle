@@ -27,7 +27,7 @@ use crate::{avm2_stub_getter, avm2_stub_setter};
 use ruffle_render::blend::ExtendedBlendMode;
 use ruffle_render::filters::Filter;
 use std::str::FromStr;
-use swf::{Color, Twips};
+use swf::{Color, Point, Twips};
 
 /// Initializes a DisplayObject created from ActionScript.
 /// This should be called from the AVM2 class's native allocator
