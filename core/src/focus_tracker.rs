@@ -21,6 +21,9 @@ use swf::{Color, Rectangle, Twips};
 #[collect(no_drop)]
 pub struct FocusTrackerData<'gc> {
     focus: Lock<Option<InteractiveObject<'gc>>>,
+    /// The focus last requested by a script or by tabbing.
+    /// See [`FocusTracker::set_requested`].
+    request: Lock<Option<InteractiveObject<'gc>>>,
     highlight: Cell<Highlight>,
 }
 
@@ -63,6 +66,7 @@ impl<'gc> FocusTracker<'gc> {
             mc,
             FocusTrackerData {
                 focus: Lock::new(None),
+                request: Lock::new(None),
                 highlight: Cell::new(Highlight::Inactive),
             },
         ))
@@ -88,7 +92,7 @@ impl<'gc> FocusTracker<'gc> {
 
     /// Set the focus programmatically.
     pub fn set(&self, new: Option<InteractiveObject<'gc>>, context: &mut UpdateContext<'gc>) {
-        self.set_internal(new, context, false);
+        self.set_requested(new, context, false);
         self.update_edittext_selection();
     }
 
@@ -137,16 +141,50 @@ impl<'gc> FocusTracker<'gc> {
             return;
         }
 
-        self.set_internal(new, context, true);
+        self.set_requested(new, context, true);
         self.update_edittext_selection();
     }
 
-    fn set_internal(
+    /// Set the focus as requested by a script or by tabbing.
+    ///
+    /// Focus handlers may request another focus while the focus is changing.
+    /// When the focus moves to an AVM1 text field, Flash Player applies the
+    /// last of those requests once the change is done, a single time.
+    /// For example, a text field whose `onKillFocus` handler sets the focus
+    /// back to itself keeps the focus when a script focuses another text field.
+    /// Focus changes caused by the mouse don't do this.
+    fn set_requested(
         &self,
         new: Option<InteractiveObject<'gc>>,
         context: &mut UpdateContext<'gc>,
         run_actions: bool,
     ) {
+        unlock!(Gc::write(context.gc(), self.0), FocusTrackerData, request).set(new);
+
+        let new = self.set_internal(new, context, run_actions);
+
+        let request = self.0.request.get();
+        let is_avm1_text_field = new.is_some_and(|new| {
+            let new = new.as_displayobject();
+            new.as_edit_text().is_some() && new.object1().is_some()
+        });
+        if is_avm1_text_field
+            && let Some(request) = request
+            && !request.as_displayobject().avm1_removed()
+            && !InteractiveObject::option_ptr_eq(Some(request), self.0.focus.get())
+        {
+            self.set_internal(Some(request), context, false);
+        }
+    }
+
+    /// Returns the object that was given the focus. It differs from `new`
+    /// when an AVM1 `onKillFocus` handler removed `new` or cleared the focus.
+    fn set_internal(
+        &self,
+        new: Option<InteractiveObject<'gc>>,
+        context: &mut UpdateContext<'gc>,
+        run_actions: bool,
+    ) -> Option<InteractiveObject<'gc>> {
         Self::roll_over(context, new);
 
         if run_actions {
@@ -178,44 +216,98 @@ impl<'gc> FocusTracker<'gc> {
             }
         }
 
+        let is_avm1 = |int: &InteractiveObject<'gc>| int.as_displayobject().object1().is_some();
+        let is_removed = |int: &InteractiveObject<'gc>| int.as_displayobject().avm1_removed();
+
+        let mut new = new;
+
         // Check if the focused element changed.
         if !InteractiveObject::option_ptr_eq(old, new) {
-            let focus = unlock!(Gc::write(context.gc(), self.0), FocusTrackerData, focus);
-            focus.set(new);
+            // The old focus, as passed to the focus handlers.
+            let mut previous = old;
 
-            // The highlight always follows the focus.
-            self.update_highlight(context);
+            if let Some(old) = old.filter(is_avm1) {
+                // AVM1's onKillFocus handler runs while the old object still has
+                // the focus, so `Selection.getFocus()` returns it there.
+                old.on_focus_changed(context, false, new);
+                old.call_focus_handler(context, false, new);
+
+                // The handler may have changed the focus or removed objects.
+                // Removed objects are replaced with null. When the handler
+                // cleared the focus without removing the old object,
+                // the focus stays cleared.
+                previous = previous.filter(|int| !is_removed(int));
+                new = new.filter(|int| !is_removed(int));
+                if previous.is_some() && self.0.focus.get().is_none() {
+                    new = None;
+                }
+            }
+
+            let current = self.0.focus.get();
+            if !InteractiveObject::option_ptr_eq(current, new) {
+                let focus = unlock!(Gc::write(context.gc(), self.0), FocusTrackerData, focus);
+                focus.set(new);
+
+                // The highlight always follows the focus.
+                self.update_highlight(context);
+
+                if let Some(current) = current {
+                    if InteractiveObject::option_ptr_eq(Some(current), old) {
+                        // AVM2 objects lose the focus with their focusOut event below.
+                        if is_avm1(&current) {
+                            current.set_has_focus(false);
+                        }
+                    } else {
+                        // An onKillFocus handler focused this object,
+                        // which loses the focus without any events.
+                        current.set_has_focus(false);
+                        current.on_focus_changed(context, false, new);
+                    }
+                }
+            }
 
             // AVM2's focus events shouldn't fire yet, as that only happens
             // after all of AVM1's focus handlers have been fired.
-            handle_focus_change(old, false, new, |dobj| dobj.object1().is_some(), context);
-            handle_focus_change(new, true, old, |dobj| dobj.object1().is_some(), context);
+            handle_focus_change(
+                new,
+                true,
+                previous,
+                |dobj| dobj.object1().is_some(),
+                context,
+            );
 
             if let Some(level0) = context.stage.root_clip() {
+                // Objects removed by a handler are passed as null.
+                let [previous, new] = [previous, new].map(|int| {
+                    int.filter(|int| !is_removed(int))
+                        .map(|int| int.as_displayobject().object1_or_null())
+                        .unwrap_or(Value::Null)
+                });
                 Avm1::notify_system_listeners(
                     level0,
                     istr!(context, "Selection"),
                     istr!(context, "onSetFocus"),
-                    &[
-                        old.map(|o| o.as_displayobject())
-                            .map(|v| v.object1_or_null())
-                            .unwrap_or(Value::Null),
-                        new.map(|o| o.as_displayobject())
-                            .map(|v| v.object1_or_null())
-                            .unwrap_or(Value::Null),
-                    ],
+                    &[previous, new],
                     context,
                 );
             }
 
             // Now we fire the AVM2 focus events.
             handle_focus_change(old, false, new, |dobj| dobj.object2().is_some(), context);
-            handle_focus_change(new, true, old, |dobj| dobj.object2().is_some(), context);
+            handle_focus_change(
+                new,
+                true,
+                previous,
+                |dobj| dobj.object2().is_some(),
+                context,
+            );
 
             tracing::info!("Focus is now on {:?}", new);
         }
 
         self.update_virtual_keyboard(context);
+
+        new
     }
 
     fn update_virtual_keyboard(self, context: &mut UpdateContext<'gc>) {

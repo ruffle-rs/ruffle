@@ -1,0 +1,373 @@
+== t1 -> t2, t1.onKillFocus focuses c1
+  t1.onKillFocus, new: _level0.t2, focus: _level0.t1
+  -> setFocus(c1) in t1.onKillFocus
+  t1.onKillFocus, new: _level0.c1, focus: _level0.t1
+  c1.onSetFocus, old: _level0.t1, focus: _level0.c1
+  Selection.onSetFocus, _level0.t1 -> _level0.c1, focus: _level0.c1
+  <- back in t1.onKillFocus, focus: _level0.c1
+  t2.onSetFocus, old: _level0.t1, focus: _level0.t2
+  Selection.onSetFocus, _level0.t1 -> _level0.t2, focus: _level0.t2
+  t2.onKillFocus, new: _level0.c1, focus: _level0.t2
+  c1.onSetFocus, old: _level0.t2, focus: _level0.c1
+  Selection.onSetFocus, _level0.t2 -> _level0.c1, focus: _level0.c1
+Returned true, focus: _level0.c1
+== t1 -> t2, t1.onKillFocus clears the focus
+  t1.onKillFocus, new: _level0.t2, focus: _level0.t1
+  -> setFocus(null) in t1.onKillFocus
+  t1.onKillFocus, new: null, focus: _level0.t1
+  Selection.onSetFocus, _level0.t1 -> null, focus: null
+  <- back in t1.onKillFocus, focus: null
+  Selection.onSetFocus, _level0.t1 -> null, focus: null
+Returned true, focus: null
+== t1 -> t2, t1.onKillFocus focuses t2
+  t1.onKillFocus, new: _level0.t2, focus: _level0.t1
+  -> setFocus(t2) in t1.onKillFocus
+  t1.onKillFocus, new: _level0.t2, focus: _level0.t1
+  t2.onSetFocus, old: _level0.t1, focus: _level0.t2
+  Selection.onSetFocus, _level0.t1 -> _level0.t2, focus: _level0.t2
+  <- back in t1.onKillFocus, focus: _level0.t2
+  t2.onSetFocus, old: _level0.t1, focus: _level0.t2
+  Selection.onSetFocus, _level0.t1 -> _level0.t2, focus: _level0.t2
+Returned true, focus: _level0.t2
+== t1 -> t2, t1.onKillFocus focuses t3
+  t1.onKillFocus, new: _level0.t2, focus: _level0.t1
+  -> setFocus(t3) in t1.onKillFocus
+  t1.onKillFocus, new: _level0.t3, focus: _level0.t1
+  t3.onSetFocus, old: _level0.t1, focus: _level0.t3
+  Selection.onSetFocus, _level0.t1 -> _level0.t3, focus: _level0.t3
+  <- back in t1.onKillFocus, focus: _level0.t3
+  t2.onSetFocus, old: _level0.t1, focus: _level0.t2
+  Selection.onSetFocus, _level0.t1 -> _level0.t2, focus: _level0.t2
+  t2.onKillFocus, new: _level0.t3, focus: _level0.t2
+  t3.onSetFocus, old: _level0.t2, focus: _level0.t3
+  Selection.onSetFocus, _level0.t2 -> _level0.t3, focus: _level0.t3
+Returned true, focus: _level0.t3
+== t1 -> t2, t1.onKillFocus focuses t1
+  t1.onKillFocus, new: _level0.t2, focus: _level0.t1
+  -> setFocus(t1) in t1.onKillFocus
+  <- back in t1.onKillFocus, focus: _level0.t1
+  t2.onSetFocus, old: _level0.t1, focus: _level0.t2
+  Selection.onSetFocus, _level0.t1 -> _level0.t2, focus: _level0.t2
+  t2.onKillFocus, new: _level0.t1, focus: _level0.t2
+  t1.onSetFocus, old: _level0.t2, focus: _level0.t1
+  Selection.onSetFocus, _level0.t2 -> _level0.t1, focus: _level0.t1
+Returned true, focus: _level0.t1
+== c1 -> c2, c1.onKillFocus focuses t1
+  c1.onKillFocus, new: _level0.c2, focus: _level0.c1
+  -> setFocus(t1) in c1.onKillFocus
+  c1.onKillFocus, new: _level0.t1, focus: _level0.c1
+  t1.onSetFocus, old: _level0.c1, focus: _level0.t1
+  Selection.onSetFocus, _level0.c1 -> _level0.t1, focus: _level0.t1
+  <- back in c1.onKillFocus, focus: _level0.t1
+  c2.onSetFocus, old: _level0.c1, focus: _level0.c2
+  Selection.onSetFocus, _level0.c1 -> _level0.c2, focus: _level0.c2
+Returned true, focus: _level0.c2
+== c1 -> c2, c1.onKillFocus focuses c1
+  c1.onKillFocus, new: _level0.c2, focus: _level0.c1
+  -> setFocus(c1) in c1.onKillFocus
+  <- back in c1.onKillFocus, focus: _level0.c1
+  c2.onSetFocus, old: _level0.c1, focus: _level0.c2
+  Selection.onSetFocus, _level0.c1 -> _level0.c2, focus: _level0.c2
+Returned true, focus: _level0.c2
+== c1 -> c2, c1.onKillFocus focuses c3
+  c1.onKillFocus, new: _level0.c2, focus: _level0.c1
+  -> setFocus(c3) in c1.onKillFocus
+  c1.onKillFocus, new: _level0.c3, focus: _level0.c1
+  c3.onSetFocus, old: _level0.c1, focus: _level0.c3
+  Selection.onSetFocus, _level0.c1 -> _level0.c3, focus: _level0.c3
+  <- back in c1.onKillFocus, focus: _level0.c3
+  c2.onSetFocus, old: _level0.c1, focus: _level0.c2
+  Selection.onSetFocus, _level0.c1 -> _level0.c2, focus: _level0.c2
+Returned true, focus: _level0.c2
+== c1 -> c2, c1.onKillFocus clears the focus
+  c1.onKillFocus, new: _level0.c2, focus: _level0.c1
+  -> setFocus(null) in c1.onKillFocus
+  c1.onKillFocus, new: null, focus: _level0.c1
+  Selection.onSetFocus, _level0.c1 -> null, focus: null
+  <- back in c1.onKillFocus, focus: null
+  Selection.onSetFocus, _level0.c1 -> null, focus: null
+Returned true, focus: null
+== t1 -> c1, t1.onKillFocus focuses t2
+  t1.onKillFocus, new: _level0.c1, focus: _level0.t1
+  -> setFocus(t2) in t1.onKillFocus
+  t1.onKillFocus, new: _level0.t2, focus: _level0.t1
+  t2.onSetFocus, old: _level0.t1, focus: _level0.t2
+  Selection.onSetFocus, _level0.t1 -> _level0.t2, focus: _level0.t2
+  <- back in t1.onKillFocus, focus: _level0.t2
+  c1.onSetFocus, old: _level0.t1, focus: _level0.c1
+  Selection.onSetFocus, _level0.t1 -> _level0.c1, focus: _level0.c1
+Returned true, focus: _level0.c1
+== t1 -> c1, t1.onKillFocus focuses t1
+  t1.onKillFocus, new: _level0.c1, focus: _level0.t1
+  -> setFocus(t1) in t1.onKillFocus
+  <- back in t1.onKillFocus, focus: _level0.t1
+  c1.onSetFocus, old: _level0.t1, focus: _level0.c1
+  Selection.onSetFocus, _level0.t1 -> _level0.c1, focus: _level0.c1
+Returned true, focus: _level0.c1
+== c1 -> t1, c1.onKillFocus focuses c2
+  c1.onKillFocus, new: _level0.t1, focus: _level0.c1
+  -> setFocus(c2) in c1.onKillFocus
+  c1.onKillFocus, new: _level0.c2, focus: _level0.c1
+  c2.onSetFocus, old: _level0.c1, focus: _level0.c2
+  Selection.onSetFocus, _level0.c1 -> _level0.c2, focus: _level0.c2
+  <- back in c1.onKillFocus, focus: _level0.c2
+  t1.onSetFocus, old: _level0.c1, focus: _level0.t1
+  Selection.onSetFocus, _level0.c1 -> _level0.t1, focus: _level0.t1
+  t1.onKillFocus, new: _level0.c2, focus: _level0.t1
+  c2.onSetFocus, old: _level0.t1, focus: _level0.c2
+  Selection.onSetFocus, _level0.t1 -> _level0.c2, focus: _level0.c2
+Returned true, focus: _level0.c2
+== c1 -> t1, c1.onKillFocus focuses c1
+  c1.onKillFocus, new: _level0.t1, focus: _level0.c1
+  -> setFocus(c1) in c1.onKillFocus
+  <- back in c1.onKillFocus, focus: _level0.c1
+  t1.onSetFocus, old: _level0.c1, focus: _level0.t1
+  Selection.onSetFocus, _level0.c1 -> _level0.t1, focus: _level0.t1
+  t1.onKillFocus, new: _level0.c1, focus: _level0.t1
+  c1.onSetFocus, old: _level0.t1, focus: _level0.c1
+  Selection.onSetFocus, _level0.t1 -> _level0.c1, focus: _level0.c1
+Returned true, focus: _level0.c1
+== t1 -> null, t1.onKillFocus focuses t2
+  t1.onKillFocus, new: null, focus: _level0.t1
+  -> setFocus(t2) in t1.onKillFocus
+  t1.onKillFocus, new: _level0.t2, focus: _level0.t1
+  t2.onSetFocus, old: _level0.t1, focus: _level0.t2
+  Selection.onSetFocus, _level0.t1 -> _level0.t2, focus: _level0.t2
+  <- back in t1.onKillFocus, focus: _level0.t2
+  Selection.onSetFocus, _level0.t1 -> null, focus: null
+Returned true, focus: null
+== t1 -> null, t1.onKillFocus focuses t1
+  t1.onKillFocus, new: null, focus: _level0.t1
+  -> setFocus(t1) in t1.onKillFocus
+  <- back in t1.onKillFocus, focus: _level0.t1
+  Selection.onSetFocus, _level0.t1 -> null, focus: null
+Returned true, focus: null
+== c1 -> null, c1.onKillFocus focuses c2
+  c1.onKillFocus, new: null, focus: _level0.c1
+  -> setFocus(c2) in c1.onKillFocus
+  c1.onKillFocus, new: _level0.c2, focus: _level0.c1
+  c2.onSetFocus, old: _level0.c1, focus: _level0.c2
+  Selection.onSetFocus, _level0.c1 -> _level0.c2, focus: _level0.c2
+  <- back in c1.onKillFocus, focus: _level0.c2
+  Selection.onSetFocus, _level0.c1 -> null, focus: null
+Returned true, focus: null
+== t1 -> t2, t1.onKillFocus focuses c1, which clears the focus
+  t1.onKillFocus, new: _level0.t2, focus: _level0.t1
+  -> setFocus(c1) and c1.onSetFocus clears the focus in t1.onKillFocus
+  t1.onKillFocus, new: _level0.c1, focus: _level0.t1
+  c1.onSetFocus (replaced), old: _level0.t1, focus: _level0.c1
+  c1.onKillFocus, new: null, focus: _level0.c1
+  Selection.onSetFocus, _level0.c1 -> null, focus: null
+  Selection.onSetFocus, _level0.t1 -> _level0.c1, focus: null
+  <- back in t1.onKillFocus, focus: null
+  Selection.onSetFocus, _level0.t1 -> null, focus: null
+Returned true, focus: null
+== t1 -> t2, t1.onKillFocus clears the focus, then focuses c1
+  t1.onKillFocus, new: _level0.t2, focus: _level0.t1
+  -> setFocus(null), then setFocus(c1) in t1.onKillFocus
+  t1.onKillFocus, new: null, focus: _level0.t1
+  Selection.onSetFocus, _level0.t1 -> null, focus: null
+  c1.onSetFocus, old: null, focus: _level0.c1
+  Selection.onSetFocus, null -> _level0.c1, focus: _level0.c1
+  <- back in t1.onKillFocus, focus: _level0.c1
+  t2.onSetFocus, old: _level0.t1, focus: _level0.t2
+  Selection.onSetFocus, _level0.t1 -> _level0.t2, focus: _level0.t2
+  t2.onKillFocus, new: _level0.c1, focus: _level0.t2
+  c1.onSetFocus, old: _level0.t2, focus: _level0.c1
+  Selection.onSetFocus, _level0.t2 -> _level0.c1, focus: _level0.c1
+Returned true, focus: _level0.c1
+== t1 -> t2, t1.onKillFocus focuses c1, then t1
+  t1.onKillFocus, new: _level0.t2, focus: _level0.t1
+  -> setFocus(c1), then setFocus(t1) in t1.onKillFocus
+  t1.onKillFocus, new: _level0.c1, focus: _level0.t1
+  c1.onSetFocus, old: _level0.t1, focus: _level0.c1
+  Selection.onSetFocus, _level0.t1 -> _level0.c1, focus: _level0.c1
+  c1.onKillFocus, new: _level0.t1, focus: _level0.c1
+  t1.onSetFocus, old: _level0.c1, focus: _level0.t1
+  Selection.onSetFocus, _level0.c1 -> _level0.t1, focus: _level0.t1
+  <- back in t1.onKillFocus, focus: _level0.t1
+  t2.onSetFocus, old: _level0.t1, focus: _level0.t2
+  Selection.onSetFocus, _level0.t1 -> _level0.t2, focus: _level0.t2
+  t2.onKillFocus, new: _level0.t1, focus: _level0.t2
+  t1.onSetFocus, old: _level0.t2, focus: _level0.t1
+  Selection.onSetFocus, _level0.t2 -> _level0.t1, focus: _level0.t1
+Returned true, focus: _level0.t1
+== t1 -> t2, t2.onSetFocus focuses t3
+  t1.onKillFocus, new: _level0.t2, focus: _level0.t1
+  t2.onSetFocus, old: _level0.t1, focus: _level0.t2
+  -> setFocus(t3) in t2.onSetFocus
+  t2.onKillFocus, new: _level0.t3, focus: _level0.t2
+  t3.onSetFocus, old: _level0.t2, focus: _level0.t3
+  Selection.onSetFocus, _level0.t2 -> _level0.t3, focus: _level0.t3
+  <- back in t2.onSetFocus, focus: _level0.t3
+  Selection.onSetFocus, _level0.t1 -> _level0.t2, focus: _level0.t3
+Returned true, focus: _level0.t3
+== t1 -> t2, t2.onSetFocus clears the focus
+  t1.onKillFocus, new: _level0.t2, focus: _level0.t1
+  t2.onSetFocus, old: _level0.t1, focus: _level0.t2
+  -> setFocus(null) in t2.onSetFocus
+  t2.onKillFocus, new: null, focus: _level0.t2
+  Selection.onSetFocus, _level0.t2 -> null, focus: null
+  <- back in t2.onSetFocus, focus: null
+  Selection.onSetFocus, _level0.t1 -> _level0.t2, focus: null
+Returned true, focus: null
+== t1 -> t2, t2.onSetFocus focuses t1
+  t1.onKillFocus, new: _level0.t2, focus: _level0.t1
+  t2.onSetFocus, old: _level0.t1, focus: _level0.t2
+  -> setFocus(t1) in t2.onSetFocus
+  t2.onKillFocus, new: _level0.t1, focus: _level0.t2
+  t1.onSetFocus, old: _level0.t2, focus: _level0.t1
+  Selection.onSetFocus, _level0.t2 -> _level0.t1, focus: _level0.t1
+  <- back in t2.onSetFocus, focus: _level0.t1
+  Selection.onSetFocus, _level0.t1 -> _level0.t2, focus: _level0.t1
+Returned true, focus: _level0.t1
+== c1 -> c2, c2.onSetFocus clears the focus
+  c1.onKillFocus, new: _level0.c2, focus: _level0.c1
+  c2.onSetFocus, old: _level0.c1, focus: _level0.c2
+  -> setFocus(null) in c2.onSetFocus
+  c2.onKillFocus, new: null, focus: _level0.c2
+  Selection.onSetFocus, _level0.c2 -> null, focus: null
+  <- back in c2.onSetFocus, focus: null
+  Selection.onSetFocus, _level0.c1 -> _level0.c2, focus: null
+Returned true, focus: null
+== t1 -> t2, Selection.onSetFocus focuses t3
+  t1.onKillFocus, new: _level0.t2, focus: _level0.t1
+  t2.onSetFocus, old: _level0.t1, focus: _level0.t2
+  Selection.onSetFocus, _level0.t1 -> _level0.t2, focus: _level0.t2
+  -> setFocus(t3) in Selection.onSetFocus
+  t2.onKillFocus, new: _level0.t3, focus: _level0.t2
+  t3.onSetFocus, old: _level0.t2, focus: _level0.t3
+  Selection.onSetFocus, _level0.t2 -> _level0.t3, focus: _level0.t3
+  <- back in Selection.onSetFocus, focus: _level0.t3
+Returned true, focus: _level0.t3
+== c1 -> c2, Selection.onSetFocus clears the focus
+  c1.onKillFocus, new: _level0.c2, focus: _level0.c1
+  c2.onSetFocus, old: _level0.c1, focus: _level0.c2
+  Selection.onSetFocus, _level0.c1 -> _level0.c2, focus: _level0.c2
+  -> setFocus(null) in Selection.onSetFocus
+  c2.onKillFocus, new: null, focus: _level0.c2
+  Selection.onSetFocus, _level0.c2 -> null, focus: null
+  <- back in Selection.onSetFocus, focus: null
+Returned true, focus: null
+== t1 -> null, Selection.onSetFocus focuses t1
+  t1.onKillFocus, new: null, focus: _level0.t1
+  Selection.onSetFocus, _level0.t1 -> null, focus: null
+  -> setFocus(t1) in Selection.onSetFocus
+  t1.onSetFocus, old: null, focus: _level0.t1
+  Selection.onSetFocus, null -> _level0.t1, focus: _level0.t1
+  <- back in Selection.onSetFocus, focus: _level0.t1
+Returned true, focus: _level0.t1
+== r1 -> r2, r1.onKillFocus removes r2
+  r1.onKillFocus, new: _level0.r2, focus: _level0.r1
+  -> remove r2 in r1.onKillFocus
+  <- back in r1.onKillFocus, focus: _level0.r1
+  Selection.onSetFocus, _level0.r1 -> null, focus: null
+Returned true, focus: null
+== r3 -> r4, r3.onKillFocus removes r4
+  r3.onKillFocus, new: _level0.r4, focus: _level0.r3
+  -> remove r4 in r3.onKillFocus
+  <- back in r3.onKillFocus, focus: _level0.r3
+  Selection.onSetFocus, _level0.r3 -> null, focus: null
+Returned true, focus: null
+== r5 -> t2, r5.onKillFocus removes r5
+  r5.onKillFocus, new: _level0.t2, focus: _level0.r5
+  -> remove r5 in r5.onKillFocus
+  r5.onKillFocus, new: null, focus: _level0.r5
+  Selection.onSetFocus, _level0.r5 -> null, focus: null
+  <- back in r5.onKillFocus, focus: null
+  t2.onSetFocus, old: null, focus: _level0.t2
+  Selection.onSetFocus, null -> _level0.t2, focus: _level0.t2
+Returned true, focus: _level0.t2
+== t1 -> r6, r6.onSetFocus removes r6
+  t1.onKillFocus, new: _level0.r6, focus: _level0.t1
+  r6.onSetFocus, old: _level0.t1, focus: _level0.r6
+  -> remove r6 in r6.onSetFocus
+  r6.onKillFocus, new: null, focus: _level0.r6
+  Selection.onSetFocus, _level0.r6 -> null, focus: null
+  <- back in r6.onSetFocus, focus: null
+  Selection.onSetFocus, _level0.t1 -> null, focus: null
+Returned true, focus: null
+== t1 -> t2, t1.onKillFocus hides t2
+  t1.onKillFocus, new: _level0.t2, focus: _level0.t1
+  -> hide t2 in t1.onKillFocus
+  <- back in t1.onKillFocus, focus: _level0.t1
+  t2.onSetFocus, old: _level0.t1, focus: _level0.t2
+  Selection.onSetFocus, _level0.t1 -> _level0.t2, focus: _level0.t2
+Returned true, focus: _level0.t2
+== t1 and t2 both take the focus back in onKillFocus
+  t1.onKillFocus, new: _level0.t2, focus: _level0.t1
+  t2.onSetFocus, old: _level0.t1, focus: _level0.t2
+  Selection.onSetFocus, _level0.t1 -> _level0.t2, focus: _level0.t2
+  t2.onKillFocus, new: _level0.t1, focus: _level0.t2
+  t1.onSetFocus, old: _level0.t2, focus: _level0.t1
+  Selection.onSetFocus, _level0.t2 -> _level0.t1, focus: _level0.t1
+Returned true, focus: _level0.t1, onKillFocus calls: 2
+-- Next: click t2, t1.onKillFocus focuses c1
+== Mouse down at 60,75, focus: _level0.t1
+  t1.onKillFocus, new: _level0.t2, focus: _level0.t1
+  -> setFocus(c1) in t1.onKillFocus
+  t1.onKillFocus, new: _level0.c1, focus: _level0.t1
+  c1.onSetFocus, old: _level0.t1, focus: _level0.c1
+  Selection.onSetFocus, _level0.t1 -> _level0.c1, focus: _level0.c1
+  <- back in t1.onKillFocus, focus: _level0.c1
+  t2.onSetFocus, old: _level0.t1, focus: _level0.t2
+  Selection.onSetFocus, _level0.t1 -> _level0.t2, focus: _level0.t2
+Mouse up, focus: _level0.t2
+-- Next: Tab, t1.onKillFocus clears the focus
+== Key down 9, focus: _level0.t1
+  t1.onKillFocus, new: _level0.t2, focus: _level0.t1
+  -> setFocus(null) in t1.onKillFocus
+  t1.onKillFocus, new: null, focus: _level0.t1
+  Selection.onSetFocus, _level0.t1 -> null, focus: null
+  <- back in t1.onKillFocus, focus: null
+  Selection.onSetFocus, _level0.t1 -> null, focus: null
+Key up 9, focus: null
+-- Next: Tab, t1.onKillFocus focuses c1
+== Key down 9, focus: _level0.t1
+  t1.onKillFocus, new: _level0.t2, focus: _level0.t1
+  -> setFocus(c1) in t1.onKillFocus
+  t1.onKillFocus, new: _level0.c1, focus: _level0.t1
+  c1.onSetFocus, old: _level0.t1, focus: _level0.c1
+  Selection.onSetFocus, _level0.t1 -> _level0.c1, focus: _level0.c1
+  <- back in t1.onKillFocus, focus: _level0.c1
+  t2.onSetFocus, old: _level0.t1, focus: _level0.t2
+  Selection.onSetFocus, _level0.t1 -> _level0.t2, focus: _level0.t2
+  t2.onKillFocus, new: _level0.c1, focus: _level0.t2
+  c1.onSetFocus, old: _level0.t2, focus: _level0.c1
+  Selection.onSetFocus, _level0.t2 -> _level0.c1, focus: _level0.c1
+Key up 9, focus: _level0.c1
+-- Next: Tab, t1.onKillFocus focuses t1
+== Key down 9, focus: _level0.t1
+  t1.onKillFocus, new: _level0.t2, focus: _level0.t1
+  -> setFocus(t1) in t1.onKillFocus
+  <- back in t1.onKillFocus, focus: _level0.t1
+  t2.onSetFocus, old: _level0.t1, focus: _level0.t2
+  Selection.onSetFocus, _level0.t1 -> _level0.t2, focus: _level0.t2
+  t2.onKillFocus, new: _level0.t1, focus: _level0.t2
+  t1.onSetFocus, old: _level0.t2, focus: _level0.t1
+  Selection.onSetFocus, _level0.t2 -> _level0.t1, focus: _level0.t1
+Key up 9, focus: _level0.t1
+-- Next: click t2, t1.onKillFocus focuses t1
+== Mouse down at 60,75, focus: _level0.t1
+  t1.onKillFocus, new: _level0.t2, focus: _level0.t1
+  -> setFocus(t1) in t1.onKillFocus
+  <- back in t1.onKillFocus, focus: _level0.t1
+  t2.onSetFocus, old: _level0.t1, focus: _level0.t2
+  Selection.onSetFocus, _level0.t1 -> _level0.t2, focus: _level0.t2
+Mouse up, focus: _level0.t2
+-- Next: click t2, t1.onKillFocus clears the focus
+== Mouse down at 60,75, focus: _level0.t1
+  t1.onKillFocus, new: _level0.t2, focus: _level0.t1
+  -> setFocus(null) in t1.onKillFocus
+  t1.onKillFocus, new: null, focus: _level0.t1
+  Selection.onSetFocus, _level0.t1 -> null, focus: null
+  <- back in t1.onKillFocus, focus: null
+  Selection.onSetFocus, _level0.t1 -> null, focus: null
+Mouse up, focus: null
+-- Next: click the stage, t1.onKillFocus focuses t1
+== Mouse down at 400,300, focus: _level0.t1
+  t1.onKillFocus, new: null, focus: _level0.t1
+  -> setFocus(t1) in t1.onKillFocus
+  <- back in t1.onKillFocus, focus: _level0.t1
+  Selection.onSetFocus, _level0.t1 -> null, focus: null
+Mouse up, focus: null

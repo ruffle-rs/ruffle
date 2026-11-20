@@ -1,0 +1,95 @@
+== null -> t1
+  t1.onSetFocus, old: null, focus: _level0.t1
+  Selection.onSetFocus, null -> _level0.t1, focus: _level0.t1
+After: _level0.t1
+== t1 -> t2
+  t1.onKillFocus, new: _level0.t2, focus: _level0.t1
+  t2.onSetFocus, old: _level0.t1, focus: _level0.t2
+  Selection.onSetFocus, _level0.t1 -> _level0.t2, focus: _level0.t2
+After: _level0.t2
+== t2 -> c1
+  t2.onKillFocus, new: _level0.c1, focus: _level0.t2
+  c1.onSetFocus, old: _level0.t2, focus: _level0.c1
+  Selection.onSetFocus, _level0.t2 -> _level0.c1, focus: _level0.c1
+After: _level0.c1
+== c1 -> c2
+  c1.onKillFocus, new: _level0.c2, focus: _level0.c1
+  c2.onSetFocus, old: _level0.c1, focus: _level0.c2
+  Selection.onSetFocus, _level0.c1 -> _level0.c2, focus: _level0.c2
+After: _level0.c2
+== c2 -> t1
+  c2.onKillFocus, new: _level0.t1, focus: _level0.c2
+  t1.onSetFocus, old: _level0.c2, focus: _level0.t1
+  Selection.onSetFocus, _level0.c2 -> _level0.t1, focus: _level0.t1
+After: _level0.t1
+== t1 -> null
+  t1.onKillFocus, new: null, focus: _level0.t1
+  Selection.onSetFocus, _level0.t1 -> null, focus: null
+After: null
+== null -> c1
+  c1.onSetFocus, old: null, focus: _level0.c1
+  Selection.onSetFocus, null -> _level0.c1, focus: _level0.c1
+After: _level0.c1
+== c1 -> null
+  c1.onKillFocus, new: null, focus: _level0.c1
+  Selection.onSetFocus, _level0.c1 -> null, focus: null
+After: null
+== focused text field hidden
+  t1.onSetFocus, old: null, focus: _level0.t1
+  Selection.onSetFocus, null -> _level0.t1, focus: _level0.t1
+  t1.onKillFocus, new: null, focus: _level0.t1
+  Selection.onSetFocus, _level0.t1 -> null, focus: null
+After: null
+== focused clip hidden
+  c1.onSetFocus, old: null, focus: _level0.c1
+  Selection.onSetFocus, null -> _level0.c1, focus: _level0.c1
+  c1.onKillFocus, new: null, focus: _level0.c1
+  Selection.onSetFocus, _level0.c1 -> null, focus: null
+After: null
+== focused text field removed
+  t3.onSetFocus, old: null, focus: _level0.t3
+  Selection.onSetFocus, null -> _level0.t3, focus: _level0.t3
+  t3.onKillFocus, new: null, focus: _level0.t3
+  Selection.onSetFocus, _level0.t3 -> null, focus: null
+After: null
+== focused clip removed
+  c3.onSetFocus, old: null, focus: _level0.c3
+  Selection.onSetFocus, null -> _level0.c3, focus: _level0.c3
+  c3.onKillFocus, new: null, focus: _level0.c3
+  Selection.onSetFocus, _level0.c3 -> null, focus: null
+After: null
+== Mouse down at 60,25, focus: null
+  t1.onSetFocus, old: null, focus: _level0.t1
+  Selection.onSetFocus, null -> _level0.t1, focus: _level0.t1
+Mouse up, focus: _level0.t1
+== Mouse down at 60,75, focus: _level0.t1
+  t1.onKillFocus, new: _level0.t2, focus: _level0.t1
+  t2.onSetFocus, old: _level0.t1, focus: _level0.t2
+  Selection.onSetFocus, _level0.t1 -> _level0.t2, focus: _level0.t2
+Mouse up, focus: _level0.t2
+== Mouse down at 60,125, focus: _level0.t2
+  t2.onKillFocus, new: null, focus: _level0.t2
+  Selection.onSetFocus, _level0.t2 -> null, focus: null
+Mouse up, focus: null
+== Mouse down at 60,25, focus: null
+  t1.onSetFocus, old: null, focus: _level0.t1
+  Selection.onSetFocus, null -> _level0.t1, focus: _level0.t1
+Mouse up, focus: _level0.t1
+== Mouse down at 400,300, focus: _level0.t1
+  t1.onKillFocus, new: null, focus: _level0.t1
+  Selection.onSetFocus, _level0.t1 -> null, focus: null
+Mouse up, focus: null
+== Key down 9, focus: null
+  t1.onSetFocus, old: null, focus: _level0.t1
+  Selection.onSetFocus, null -> _level0.t1, focus: _level0.t1
+Key up 9, focus: _level0.t1
+== Key down 9, focus: _level0.t1
+  t1.onKillFocus, new: _level0.t2, focus: _level0.t1
+  t2.onSetFocus, old: _level0.t1, focus: _level0.t2
+  Selection.onSetFocus, _level0.t1 -> _level0.t2, focus: _level0.t2
+Key up 9, focus: _level0.t2
+== Key down 9, focus: _level0.t2
+  t2.onKillFocus, new: _level0.c1, focus: _level0.t2
+  c1.onSetFocus, old: _level0.t2, focus: _level0.c1
+  Selection.onSetFocus, _level0.t2 -> _level0.c1, focus: _level0.c1
+Key up 9, focus: _level0.c1
