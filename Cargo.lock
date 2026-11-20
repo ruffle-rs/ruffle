@@ -4545,15 +4545,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "realfft"
-version = "3.5.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "538895ccf2006b473aafbe8d72770e21038961ab67aae34f3c577485fc703a7d"
-dependencies = [
- "rustfft",
-]
-
-[[package]]
 name = "redox_syscall"
 version = "0.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4826,13 +4817,13 @@ dependencies = [
  "png",
  "quick-xml",
  "rand",
- "realfft",
  "regress",
  "ruffle_common",
  "ruffle_macros",
  "ruffle_render",
  "ruffle_video",
  "ruffle_wstr",
+ "rustfft",
  "scopeguard",
  "serde",
  "serde_json",
