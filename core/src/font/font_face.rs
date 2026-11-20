@@ -5,7 +5,7 @@ use ruffle_render::shape_utils::{DrawCommand, FillRule};
 
 use std::cell::OnceCell;
 use std::sync::Arc;
-use swf::FillStyle;
+use swf::{FillStyle, Twips};
 
 struct GlyphToDrawing<'a>(&'a mut Drawing);
 

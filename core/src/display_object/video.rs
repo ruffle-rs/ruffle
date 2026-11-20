@@ -25,7 +25,7 @@ use ruffle_video::error::Error;
 use ruffle_video::frame::EncodedFrame;
 use std::cell::{Cell, Ref, RefCell, RefMut};
 use std::collections::{BTreeMap, BTreeSet};
-use swf::{CharacterId, DefineVideoStream, VideoCodec, VideoFrame};
+use swf::{CharacterId, DefineVideoStream, Twips, VideoCodec, VideoFrame};
 
 /// A Video display object is a high-level interface to a video player.
 ///
