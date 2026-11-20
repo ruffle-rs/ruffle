@@ -7,10 +7,8 @@ use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
 use crate::avm2_stub_getter;
 use crate::display_object::SoundTransform;
-use std::{
-    ops::Deref,
-    sync::{Arc, LazyLock},
-};
+use rustfft::{Fft, FftDirection, algorithm::Radix4, num_complex::Complex};
+use std::{ops::Deref, sync::LazyLock};
 
 /// Implements `soundTransform`'s getter
 ///
@@ -108,32 +106,31 @@ pub fn compute_spectrum<'gc>(
 
     if fft {
         // Flash Player appears to do a 2048-long FFT with only the first 512 samples filled in...
-        static FFT: LazyLock<Arc<dyn realfft::RealToComplex<f32>>> =
-            LazyLock::new(|| realfft::RealFftPlanner::new().plan_fft_forward(2048));
+        // The input is real, so the first half of the output is the same as
+        // that of a real FFT. A fixed size algorithm avoids instantiating
+        // every algorithm that a planner could choose from.
+        static FFT: LazyLock<Radix4<f32>> =
+            LazyLock::new(|| Radix4::new(2048, FftDirection::Forward));
 
         let fft = FFT.deref();
 
-        let mut in_left = fft.make_input_vec();
-        let mut in_right = fft.make_input_vec();
+        // The samples go in, and the FFT replaces them with the spectrum.
+        let mut left = vec![Complex::default(); 2048];
+        let mut right = vec![Complex::default(); 2048];
 
-        for ((il, ir), h) in in_left
+        for ((l, r), h) in left
             .iter_mut()
-            .zip(in_right.iter_mut())
-            .zip(hist)
+            .zip(right.iter_mut())
+            .zip(hist.iter())
             .take(512)
         {
-            *il = h[0];
-            *ir = h[1];
+            l.re = h[0];
+            r.re = h[1];
         }
 
-        let mut out_left = fft.make_output_vec();
-        let mut out_right = fft.make_output_vec();
-
-        // An error is only returned if any of the slices are the wrong size,
-        // but they can't be, because the fft made them itself.
-        let mut scratch = fft.make_scratch_vec();
-        let _ = fft.process_with_scratch(&mut in_left, &mut out_left, &mut scratch);
-        let _ = fft.process_with_scratch(&mut in_right, &mut out_right, &mut scratch);
+        let mut scratch = vec![Complex::default(); fft.get_inplace_scratch_len()];
+        fft.process_with_scratch(&mut left, &mut scratch);
+        fft.process_with_scratch(&mut right, &mut scratch);
 
         // This function was reverse-engineered with blood and tears.
         #[inline]
@@ -141,12 +138,12 @@ pub fn compute_spectrum<'gc>(
             x.abs().ln().max(0.0) / 4.0
         }
 
-        for (h, (ol, or)) in hist
+        for (h, (l, r)) in hist
             .iter_mut()
-            .zip((out_left.iter()).zip(out_right.iter()))
+            .zip((left.iter()).zip(right.iter()))
             .take(512)
         {
-            *h = [postproc(ol.re), postproc(or.re)];
+            *h = [postproc(l.re), postproc(r.re)];
         }
     }
 
