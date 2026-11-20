@@ -261,11 +261,11 @@ impl PixelBenderWgpuShader {
     }
 }
 
-/// The texture format to use for the temporary texture we create when reading/writing
-/// from raw bytes (ByteArray to Vector.<Number>). We use a Float texture to be able to
+/// The texture format to use for the temporary texture we create when passing
+/// raw bytes (ByteArray or Vector.<Number>) as a shader input. We use a Float texture to be able to
 /// pass in floating-point values directly, without converting on the host side.
 /// In the special case with 3 channels, we use `Rgba32Float` since wgpu lacks a `Rgb32Float`
-/// texture. We handle this by manually inserting and removing padding to keep the pixels
+/// texture. We handle this by manually inserting padding to keep the pixels
 /// at the correct positions. This isn't ideal, but allows us to keep the naga code generation
 /// simple.
 pub(super) fn temporary_texture_format_for_channels(channels: u32) -> wgpu::TextureFormat {
