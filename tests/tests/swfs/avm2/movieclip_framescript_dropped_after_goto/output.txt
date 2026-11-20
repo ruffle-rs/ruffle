@@ -1,0 +1,9 @@
+root frame 1 script
+clip.gotoAndStop(2)
+beforeGoto: frame 1 script, stop()
+root frame 1 script end
+tick 1: beforeGoto=1, afterGoto=1
+tick 2: beforeGoto=1, afterGoto=2
+tick 3: beforeGoto=1, afterGoto=3
+tick 4: beforeGoto=1, afterGoto=4
+afterGoto: frame 1 script, stop()
