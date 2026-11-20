@@ -20,7 +20,7 @@ use gc_arena::lock::Lock;
 use gc_arena::{Collect, Gc, Mutation};
 use ruffle_common::utils::HasPrefixField;
 use std::cell::Cell;
-use swf::Twips;
+use swf::{CharacterId, Twips};
 
 #[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]

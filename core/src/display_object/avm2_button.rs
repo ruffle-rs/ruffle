@@ -28,6 +28,7 @@ use gc_arena::{Collect, Gc, Mutation};
 use ruffle_common::utils::HasPrefixField;
 use ruffle_render::filters::Filter;
 use std::cell::{Cell, RefCell};
+use swf::CharacterId;
 
 #[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]

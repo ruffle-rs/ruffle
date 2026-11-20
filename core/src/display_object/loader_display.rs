@@ -19,6 +19,7 @@ use gc_arena::lock::{Lock, RefLock};
 use gc_arena::{Collect, Gc, GcWeak, Mutation};
 use ruffle_common::utils::HasPrefixField;
 use std::cell::{Ref, RefMut};
+use swf::CharacterId;
 
 use super::interactive::Avm2MousePick;
 
