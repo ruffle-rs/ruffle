@@ -1,9 +1,10 @@
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::globals::bitmap_filter;
+use crate::avm1::globals::object::define_listeners;
 use crate::avm1::object::NativeObject;
 use crate::avm1::property_decl::{DeclContext, PropertyOrder, StaticDeclarations, SystemClass};
-use crate::avm1::{ArrayBuilder, Object, Value, globals};
+use crate::avm1::{ArrayBuilder, Attribute, Object, Value, globals};
 use crate::display_object::{
     AutoSizeMode, EditText, TDisplayObject, TInteractiveObject, TextSelection,
 };
@@ -104,9 +105,25 @@ pub fn create_class<'gc>(
     context: &mut DeclContext<'_, 'gc>,
     super_proto: Object<'gc>,
 ) -> SystemClass<'gc> {
-    let class = context.empty_class(super_proto, PropertyOrder::PrototypeFirst);
+    let class = context.class(constructor, super_proto, PropertyOrder::PrototypeFirst);
     context.define_properties_on(class.proto, PROTO_DECLS(context));
     class
+}
+
+fn constructor<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    // Like text fields on the display list, every `TextField` object listens
+    // to itself.
+    define_listeners(
+        activation,
+        this,
+        [this.into()],
+        Attribute::DONT_ENUM | Attribute::DONT_DELETE,
+    );
+    Ok(Value::Undefined)
 }
 
 pub fn password<'gc>(

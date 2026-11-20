@@ -1,8 +1,9 @@
 //! `EditText` display object and support code.
 
+use crate::avm1::globals::object::define_listeners;
 use crate::avm1::{
-    Activation as Avm1Activation, ActivationIdentifier, ArrayBuilder, Attribute, Avm1,
-    ExecutionReason, NativeObject as Avm1NativeObject, Object as Avm1Object,
+    Activation as Avm1Activation, ActivationIdentifier, Attribute, Avm1, ExecutionReason,
+    NativeObject as Avm1NativeObject, Object as Avm1Object,
 };
 use crate::avm2::object::{
     ClassObject as Avm2ClassObject, EventObject as Avm2EventObject, StageObject as Avm2StageObject,
@@ -2118,11 +2119,10 @@ impl<'gc> EditText<'gc> {
 
         // Set the TextField as its own listener to match Flash's behavior.
         // This makes it so that the TextField's handlers are called before other listeners'.
-        let listeners = ArrayBuilder::new(activation).with([object.into()]);
-        object.define_value(
-            activation.gc(),
-            istr!("_listeners"),
-            listeners.into(),
+        define_listeners(
+            activation,
+            object,
+            [object.into()],
             Attribute::DONT_ENUM | Attribute::DONT_DELETE,
         );
     }
