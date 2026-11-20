@@ -306,11 +306,10 @@ impl<'gc> MovieClip<'gc> {
     pub fn new_with_data(
         mc: &Mutation<'gc>,
         id: CharacterId,
-        movie: SwfMovie<'gc>,
         swf: SwfSlice<'gc>,
         num_frames: u16,
     ) -> Self {
-        let shared = MovieClipShared::with_data(id, movie, swf, num_frames, None, None);
+        let shared = MovieClipShared::with_data(id, swf, num_frames, None, None);
         let data = MovieClipData::new(shared, mc);
         data.flags.set(MovieClipFlags::PLAYING);
         MovieClip(Gc::new(mc, data))
@@ -492,7 +491,7 @@ impl<'gc> MovieClip<'gc> {
         chunk_limit: &mut ExecutionLimit,
     ) -> bool {
         let shared = Gc::as_ref(self.0.shared.get());
-        let (swf, progress) = (&shared.swf_data, &shared.preload_progress);
+        let (swf, progress) = (&shared.swf, &shared.preload_progress);
 
         if progress.awaiting_import.get() {
             // No matter how much of this movie we have loaded, we must not continue preloading
@@ -667,7 +666,7 @@ impl<'gc> MovieClip<'gc> {
         // of the character itself, which is probably nonsense.
         let _sprite_id = reader.read_u16()?;
 
-        let slice = self.0.shared.get().swf_data.resize_to_reader(reader);
+        let slice = self.0.shared.get().swf.resize_to_reader(reader);
 
         if !slice.is_empty() {
             Avm1::run_stack_frame_for_init_action(target.into(), slice, context);
@@ -1341,7 +1340,7 @@ impl<'gc> MovieClip<'gc> {
         if frame > 0 && frame <= self.header_frames() {
             let mut cur_frame = 1;
             let shared = self.0.shared.get();
-            let mut reader = shared.swf_data.read_from(0);
+            let mut reader = shared.swf.read_from(0);
             while cur_frame <= frame && !reader.get_ref().is_empty() {
                 let tag_callback = |reader: &mut Reader<'_>, tag_code| {
                     match tag_code {
@@ -1351,7 +1350,7 @@ impl<'gc> MovieClip<'gc> {
                         }
                         TagCode::DoAction if cur_frame == frame => {
                             // On the target frame, add any DoAction tags to the array.
-                            let slice = shared.swf_data.resize_to_reader(reader);
+                            let slice = shared.swf.resize_to_reader(reader);
                             if !slice.is_empty() {
                                 actions.push(slice);
                             }
@@ -1414,8 +1413,8 @@ impl<'gc> MovieClip<'gc> {
             NextFrame::Same => self.stop(context),
         }
 
-        let tag_stream_start = shared.swf_data.as_ref().as_ptr() as u64;
-        let data = shared.swf_data.clone();
+        let tag_stream_start = shared.swf.as_ref().as_ptr() as u64;
+        let data = shared.swf.clone();
         let mut reader = data.read_from(self.0.tag_stream_pos.get());
 
         let tag_callback = |reader: &mut SwfStream<'_>, tag_code| {
@@ -1718,7 +1717,7 @@ impl<'gc> MovieClip<'gc> {
         }
 
         // Step through the intermediate frames, and aggregate the deltas of each frame.
-        let data = self.0.shared.get().swf_data.clone();
+        let data = self.0.shared.get().swf.clone();
         let tag_stream_start = data.as_ref().as_ptr() as u64;
         let mut frame_pos = self.0.tag_stream_pos.get();
         let mut index = 0;
@@ -2581,7 +2580,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
             // PlaceObject tags execute at this time.
             // Note that this is NOT when constructors run; that happens later
             // after tags have executed.
-            let data = self.0.shared.get().swf_data.clone();
+            let data = self.0.shared.get().swf.clone();
             let place_actions = self.unqueue_filtered(|q| q.unqueue_add());
 
             for (_, tag) in place_actions {
@@ -3420,7 +3419,7 @@ impl<'gc> MovieClipData<'gc> {
     }
 
     fn tag_stream_len(&self) -> usize {
-        self.shared.get().swf_data.len()
+        self.shared.get().swf.len()
     }
 
     /// Handles a PlaceObject tag when running a goto action.
@@ -3433,7 +3432,7 @@ impl<'gc> MovieClipData<'gc> {
         is_rewind: bool,
         index: usize,
     ) -> Result<(), Error> {
-        let swf_ptr = self.shared.get().swf_data.as_ref().as_ptr();
+        let swf_ptr = self.shared.get().swf.as_ref().as_ptr();
         let tag_ptr = reader.get_ref().as_ptr();
         let tag_start = (tag_ptr.addr() - swf_ptr.addr()) as u64;
         let place_object = read_place_object(reader, version)?;
@@ -3729,8 +3728,7 @@ impl<'gc, 'a> MovieClipShared<'gc> {
         } else {
             Character::Avm1Button(Avm1Button::from_swf_tag(
                 &swf_button,
-                self.movie(),
-                &self.swf_data,
+                &self.swf,
                 context.gc(),
             ))
         };
@@ -3969,8 +3967,7 @@ impl<'gc, 'a> MovieClipShared<'gc> {
         let movie_clip = MovieClip::new_with_data(
             context.gc(),
             id,
-            self.movie(),
-            self.swf_data.resize_to_reader(reader),
+            self.swf.resize_to_reader(reader),
             num_frames,
         );
 
@@ -4226,7 +4223,7 @@ impl<'gc, 'a> MovieClipShared<'gc> {
 
         #[cfg(feature = "timeline_debug")]
         {
-            let tag_stream_start = self.swf_data.as_ref().as_ptr().addr();
+            let tag_stream_start = self.swf.as_ref().as_ptr().addr();
             // We grab the *end* of the SomeFrame tag. Strictly speaking ShowFrame should not have
             // tag data, but who *knows* what weird obfuscation hacks people have done with it.
             let tag_show_end = reader.get_ref().as_ptr_range().end.addr();
@@ -4263,7 +4260,7 @@ impl<'gc, 'a> MovieClipShared<'gc> {
         let cur_frame = self.preload_progress.cur_preload_frame.get() - 1;
         let abc = match tag_code {
             TagCode::DoAbc | TagCode::DoAbc2 => self
-                .swf_data
+                .swf
                 .data()
                 .subslice_range(reader.get_ref())
                 .unwrap_or_default(),
@@ -4316,7 +4313,7 @@ impl<'gc, 'a> MovieClip<'gc> {
         }
 
         // Queue the actions.
-        let slice = self.0.shared.get().swf_data.resize_to_reader(reader);
+        let slice = self.0.shared.get().swf.resize_to_reader(reader);
         if !slice.is_empty() {
             context.action_queue.queue_action(
                 self.into(),
@@ -4356,7 +4353,7 @@ impl<'gc, 'a> MovieClip<'gc> {
         let mut eager_scripts = Vec::new();
 
         for (tag_code, range) in eager_tags.abc_tags {
-            let abc = shared.swf_data.slice(range);
+            let abc = shared.swf.slice(range);
             let mut reader = abc.read_from(0);
             let eager_script = match tag_code {
                 TagCode::DoAbc => self.do_abc(context, &mut reader)?,
@@ -4474,7 +4471,7 @@ impl<'gc, 'a> MovieClip<'gc> {
     }
 
     fn queue_place_object(self, reader: &mut SwfStream<'a>, version: u8) -> Result<(), Error> {
-        let swf_ptr = self.0.shared.get().swf_data.as_ref().as_ptr();
+        let swf_ptr = self.0.shared.get().swf.as_ref().as_ptr();
         let tag_ptr = reader.get_ref().as_ptr();
         let tag_start = (tag_ptr.addr() - swf_ptr.addr()) as u64;
         let place_object = read_place_object(reader, version)?;
@@ -4550,7 +4547,7 @@ impl<'gc, 'a> MovieClip<'gc> {
 
     #[inline]
     fn queue_remove_object(self, reader: &mut SwfStream<'a>, version: u8) -> Result<(), Error> {
-        let swf_ptr = self.0.shared.get().swf_data.as_ref().as_ptr();
+        let swf_ptr = self.0.shared.get().swf.as_ref().as_ptr();
         let tag_ptr = reader.get_ref().as_ptr();
         let tag_start = (tag_ptr.addr() - swf_ptr.addr()) as u64;
         let remove_object = if version == 1 {
@@ -4601,7 +4598,7 @@ impl<'gc, 'a> MovieClip<'gc> {
             if let (Some(stream_info), None) = (&read.audio_stream_info, self.0.audio_stream.get())
             {
                 let start = self.0.tag_stream_pos.get() as usize;
-                let swf = &self.0.shared.get().swf_data;
+                let swf = &self.0.shared.get().swf;
                 let slice = swf.to_subslice(&swf.data()[start..]);
                 Some(context.start_stream(self, self.0.current_frame(), slice, stream_info))
             } else {
@@ -4712,8 +4709,7 @@ pub enum StopOrPlay {
 struct MovieClipShared<'gc> {
     cell: RefCell<MovieClipSharedMut>,
     id: CharacterId,
-    movie: SwfMovie<'gc>,
-    swf_data: SwfSlice<'gc>,
+    swf: SwfSlice<'gc>,
     header_frames: FrameNumber,
     /// Preload progress for the given clip's tag stream.
     #[collect(require_static)]
@@ -4761,7 +4757,7 @@ struct EagerTags {
 
 impl<'gc> MovieClipShared<'gc> {
     fn empty(movie: SwfMovie<'gc>) -> Self {
-        let mut s = Self::with_data(0, movie, SwfSlice::empty(movie), 1, None, None);
+        let mut s = Self::with_data(0, SwfSlice::empty(movie), 1, None, None);
 
         *s.preload_progress.cur_preload_frame.get_mut() = s.header_frames + 1;
 
@@ -4775,20 +4771,12 @@ impl<'gc> MovieClipShared<'gc> {
     ) -> Self {
         let num_frames = movie.num_frames();
 
-        Self::with_data(
-            0,
-            movie,
-            movie.into(),
-            num_frames,
-            loader_info,
-            importer_movie,
-        )
+        Self::with_data(0, movie.into(), num_frames, loader_info, importer_movie)
     }
 
     fn with_data(
         id: CharacterId,
-        movie: SwfMovie<'gc>,
-        swf_data: SwfSlice<'gc>,
+        swf: SwfSlice<'gc>,
         header_frames: FrameNumber,
         loader_info: Option<LoaderInfoObject<'gc>>,
         importer_movie: Option<MovieClip<'gc>>,
@@ -4796,8 +4784,7 @@ impl<'gc> MovieClipShared<'gc> {
         Self {
             cell: Default::default(),
             id,
-            movie,
-            swf_data,
+            swf,
             header_frames,
             preload_progress: Default::default(),
             exported_name: Lock::new(None),
@@ -4808,7 +4795,7 @@ impl<'gc> MovieClipShared<'gc> {
     }
 
     fn movie(&self) -> SwfMovie<'gc> {
-        self.movie
+        self.swf.movie()
     }
 
     fn library<'a>(&self, context: &'a UpdateContext<'gc>) -> Option<&'a MovieLibrary<'gc>> {
