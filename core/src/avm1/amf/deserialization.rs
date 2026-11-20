@@ -248,3 +248,30 @@ pub(super) fn deserialize_object_entries<'gc, 'a>(
 
     root
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::avm1::error::Error;
+    use crate::avm1::test_utils::with_avm;
+
+    #[test]
+    fn reference_cache_stops_at_the_amf0_reference_limit() {
+        with_avm(8, |_activation, _this| -> Result<(), Error> {
+            let mut reference_cache = Amf0ReferenceCache::default();
+
+            // AMF0 references use a 16-bit index, so indices 0 through 65535
+            // are the complete set of representable references.
+            for _ in 0..=u16::MAX {
+                reference_cache.insert(Value::Undefined);
+            }
+            assert_eq!(reference_cache.values.len(), MAX_AMF0_REFERENCES);
+
+            // Additional objects cannot be addressed by an AMF0 reference.
+            reference_cache.insert(Value::Null);
+            assert_eq!(reference_cache.values.len(), MAX_AMF0_REFERENCES);
+
+            Ok(())
+        });
+    }
+}
