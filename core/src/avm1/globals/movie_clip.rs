@@ -22,7 +22,7 @@ use ruffle_macros::istr;
 use ruffle_render::matrix::Matrix;
 use ruffle_render::shape_utils::{DrawCommand, GradientType};
 use swf::{
-    FillStyle, Fixed8, Gradient, GradientInterpolation, GradientRecord, GradientSpread,
+    Color, FillStyle, Fixed8, Gradient, GradientInterpolation, GradientRecord, GradientSpread,
     LineCapStyle, LineJoinStyle, LineStyle, Twips,
 };
 

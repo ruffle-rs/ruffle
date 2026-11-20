@@ -80,7 +80,7 @@ use std::rc::{Rc, Weak as RcWeak};
 use std::str::FromStr;
 use std::sync::{Arc, Mutex, Weak};
 use std::time::Duration;
-use swf::Twips;
+use swf::{Color, Twips};
 use tracing::instrument;
 use web_time::Instant;
 
