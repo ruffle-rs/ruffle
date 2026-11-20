@@ -1,6 +1,4 @@
-pub use crate::display_object::{
-    DisplayObject, HitTestOptions, TDisplayObject, TDisplayObjectContainer,
-};
+pub use crate::display_object::{DisplayObject, TDisplayObject, TDisplayObjectContainer};
 pub use ruffle_render::matrix::Matrix;
 pub use swf::{CharacterId, Color, Point, Rectangle, Twips};
 

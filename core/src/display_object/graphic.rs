@@ -4,7 +4,7 @@ use crate::avm2::{
     StageObject as Avm2StageObject,
 };
 use crate::context::{RenderContext, UpdateContext};
-use crate::display_object::{BoundsMode, DisplayObjectBase};
+use crate::display_object::{BoundsMode, DisplayObjectBase, HitTestOptions};
 use crate::drawing::Drawing;
 use crate::library::MovieLibrarySource;
 use crate::prelude::*;
