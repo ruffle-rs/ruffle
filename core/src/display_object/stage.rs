@@ -9,7 +9,7 @@ use crate::avm2::{
 use crate::backend::ui::MouseCursor;
 use crate::config::Letterbox;
 use crate::context::{RenderContext, UpdateContext};
-use crate::display_object::container::ChildContainer;
+use crate::display_object::container::{ChildContainer, TDisplayObjectContainer};
 use crate::display_object::interactive::{InteractiveObjectBase, TInteractiveObject};
 use crate::display_object::{BoundsMode, DisplayObjectBase};
 use crate::events::{ClipEvent, ClipEventResult};
