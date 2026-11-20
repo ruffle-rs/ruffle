@@ -1,0 +1,26 @@
+Tests VP6 decoding of inter (P) frames, in particular motion compensation:
+ - the chroma motion vector of 4MV macroblocks must be rounded, not truncated
+ - the loop filter in motion compensation must only run if the frame
+   header enables it (which simple profile streams never do)
+
+The video is 1 keyframe followed by 15 inter frames, simple profile, VP6.0,
+256x144 at 8 fps, with a moving camera, so most macroblocks have non-zero
+motion vectors, and many of them use 4MV.
+
+The clip is 2 seconds (from 0:49) of Big Buck Bunny,
+(c) copyright 2008, Blender Foundation / www.bigbuckbunny.org,
+licensed under the Creative Commons Attribution 3.0 license.
+Source: https://download.blender.org/peach/bigbuckbunny_movies/BigBuckBunny_640x360.m4v.zip
+
+Encoded with nihav-encoder (https://nihav.org/vp6enc.html):
+
+ffmpeg -ss 49 -i BigBuckBunny_640x360.m4v -an -vf "fps=8,scale=256:144:flags=lanczos,format=yuv420p" -frames:v 16 bbb.y4m
+nihav-encoder --input bbb.y4m --output bbb.flv -an --ostream0 encoder=vp6f,key_int=128,quant=40
+ffmpeg -i bbb.flv -vcodec copy -r 8 test.swf
+
+Note that key_int=0 ("automatic") would make every frame a keyframe.
+
+The NihAV encoder itself reconstructs reference frames with the same two
+quirks as the (unfixed) decoder, so the stream decodes differently in
+reference decoders (FFmpeg, Flash Player). This only amplifies the
+difference, which is good for this test.
