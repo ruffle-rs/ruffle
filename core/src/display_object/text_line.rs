@@ -8,6 +8,7 @@ use crate::context::{RenderContext, UpdateContext};
 use crate::display_object::interactive::{InteractiveObjectBase, TInteractiveObject};
 use crate::display_object::{
     Avm2MousePick, BoundsMode, DisplayObjectBase, EditText, HitTestOptions, InteractiveObject,
+    TDisplayObject,
 };
 use crate::events::{ClipEvent, ClipEventResult};
 use crate::fte::TextLineValidity;

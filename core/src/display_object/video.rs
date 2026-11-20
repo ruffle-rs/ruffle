@@ -6,7 +6,9 @@ use crate::avm1::{
 };
 use crate::avm2::StageObject as Avm2StageObject;
 use crate::context::{RenderContext, UpdateContext};
-use crate::display_object::{Avm1TextFieldBinding, BoundsMode, DisplayObjectBase, RenderOptions};
+use crate::display_object::{
+    Avm1TextFieldBinding, BoundsMode, DisplayObjectBase, RenderOptions, TDisplayObject,
+};
 use crate::prelude::*;
 use crate::streams::NetStream;
 use crate::tag_utils::{SwfMovie, SwfSlice};

@@ -8,7 +8,9 @@ use crate::avm2::{
 };
 use crate::bitmap::bitmap_data::BitmapData;
 use crate::context::{RenderContext, UpdateContext};
-use crate::display_object::{BoundsMode, DisplayObjectBase, DisplayObjectPtr, DisplayObjectWeak};
+use crate::display_object::{
+    BoundsMode, DisplayObjectBase, DisplayObjectPtr, DisplayObjectWeak, TDisplayObject,
+};
 use crate::prelude::*;
 use crate::tag_utils::SwfMovie;
 use crate::vminterface::Instantiator;

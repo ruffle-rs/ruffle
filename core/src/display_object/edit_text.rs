@@ -14,7 +14,9 @@ use crate::context::{RenderContext, UpdateContext};
 use crate::display_object::interactive::{
     InteractiveObject, InteractiveObjectBase, TInteractiveObject,
 };
-use crate::display_object::{Avm1TextFieldBinding, BoundsMode, DisplayObjectBase, HitTestOptions};
+use crate::display_object::{
+    Avm1TextFieldBinding, BoundsMode, DisplayObjectBase, HitTestOptions, TDisplayObject,
+};
 use crate::events::{
     ClipEvent, ClipEventResult, ImeCursorArea, ImeEvent, ImeNotification, ImePurpose,
     PlayerNotification, TextControlCode,

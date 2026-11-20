@@ -1,4 +1,4 @@
-pub use crate::display_object::{DisplayObject, TDisplayObject};
+pub use crate::display_object::DisplayObject;
 pub use swf::Rectangle;
 
 /// A depth for a Flash display object in AVM1.

@@ -27,7 +27,7 @@ use crate::display_object::interactive::{
 };
 use crate::display_object::{
     Avm1Button, Avm1TextFieldBinding, Avm2Button, BoundsMode, DisplayObjectBase, DisplayObjectPtr,
-    EditText, Graphic, HitTestOptions, MorphShape, Text, Video,
+    EditText, Graphic, HitTestOptions, MorphShape, TDisplayObject, Text, Video,
 };
 use crate::drawing::Drawing;
 use crate::events::{ButtonKeyCode, ClipEvent, ClipEventResult};
