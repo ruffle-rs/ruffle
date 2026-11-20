@@ -32,7 +32,7 @@ use ruffle_common::utils::HasPrefixField;
 use ruffle_render::filters::Filter;
 use ruffle_render::matrix::Matrix;
 use std::cell::{Cell, RefCell};
-use swf::{CharacterId, Point, Twips};
+use swf::{CharacterId, Point, Rectangle, Twips};
 
 #[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]

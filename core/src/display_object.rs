@@ -26,7 +26,7 @@ use std::cell::{Cell, Ref, RefCell, RefMut};
 use std::fmt::Debug;
 use std::hash::Hash;
 use std::num::NonZero;
-use swf::{CharacterId, Color, ColorTransform, Fixed8, Point, Twips};
+use swf::{CharacterId, Color, ColorTransform, Fixed8, Point, Rectangle, Twips};
 
 mod avm1_button;
 mod avm2_button;
