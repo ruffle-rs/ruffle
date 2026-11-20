@@ -664,20 +664,20 @@ impl<'gc> RenderContext<'_, 'gc> {
 pub enum ActionType<'gc> {
     /// Normal frame or event actions.
     Normal {
-        bytecode: SwfSlice,
+        bytecode: SwfSlice<'gc>,
         name: &'static str,
     },
 
     /// AVM1 initialize clip event.
     Initialize {
-        bytecode: SwfSlice,
+        bytecode: SwfSlice<'gc>,
         name: &'static str,
     },
 
     /// Construct a movie with a custom class or on(construct) events.
     Construct {
         constructor: Option<Avm1Object<'gc>>,
-        events: Vec<SwfSlice>,
+        events: Vec<SwfSlice<'gc>>,
     },
 
     /// An event handler method, e.g. `onEnterFrame`.

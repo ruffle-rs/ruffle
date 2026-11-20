@@ -67,7 +67,7 @@ impl<'gc> Avm1Button<'gc> {
     pub fn from_swf_tag(
         button: &swf::Button,
         movie: SwfMovie<'gc>,
-        swf_data: &SwfSlice,
+        swf_data: &SwfSlice<'gc>,
         mc: &Mutation<'gc>,
     ) -> Self {
         let actions = button
@@ -651,9 +651,11 @@ impl From<ButtonState> for swf::ButtonState {
     }
 }
 
-#[derive(Clone, Debug)]
-struct ButtonAction {
-    action_data: SwfSlice,
+#[derive(Collect, Clone, Debug)]
+#[collect(no_drop)]
+struct ButtonAction<'gc> {
+    action_data: SwfSlice<'gc>,
+    #[collect(require_static)]
     conditions: ButtonActionCondition,
 }
 
@@ -670,8 +672,7 @@ struct ButtonShared<'gc> {
     swf: SwfMovie<'gc>,
     id: CharacterId,
 
-    #[collect(require_static)]
-    actions: Vec<ButtonAction>,
+    actions: Vec<ButtonAction<'gc>>,
 
     #[collect(require_static)]
     cell: RefCell<ButtonSharedMut>,

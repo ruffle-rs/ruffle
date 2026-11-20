@@ -2,11 +2,11 @@ use gc_arena::Collect;
 use ruffle_common::tag_utils::{SwfMovie, SwfSlice};
 
 #[derive(Collect, Debug)]
-#[collect(require_static)]
-pub struct BinaryData(SwfSlice);
+#[collect(no_drop)]
+pub struct BinaryData<'gc>(SwfSlice<'gc>);
 
-impl BinaryData {
-    pub fn from_swf_tag<'gc>(movie: SwfMovie<'gc>, tag: &swf::DefineBinaryData) -> Self {
+impl<'gc> BinaryData<'gc> {
+    pub fn from_swf_tag(movie: SwfMovie<'gc>, tag: &swf::DefineBinaryData) -> Self {
         Self(SwfSlice::from(movie).to_subslice(tag.data))
     }
 
