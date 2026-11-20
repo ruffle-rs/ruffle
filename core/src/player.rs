@@ -2095,14 +2095,16 @@ impl Player {
             (cache_draws, commands)
         });
 
-        let commands = if DRAW_FRAME {
-            commands
-        } else {
-            CommandList::new()
-        };
-
-        self.renderer
-            .submit_frame(background_color, commands, cache_draws);
+        if DRAW_FRAME {
+            self.renderer
+                .submit_frame(background_color, commands, cache_draws);
+        } else if !cache_draws.is_empty() {
+            // Even an empty frame gets cleared and copied to the target, which
+            // is expensive on software renderers, so only submit it when the
+            // bitmap caches need updating.
+            self.renderer
+                .submit_frame(background_color, CommandList::new(), cache_draws);
+        }
 
         self.needs_render = false;
     }
