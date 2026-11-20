@@ -28,7 +28,7 @@ impl Avm2ClassWindow {
     ) -> bool {
         let mut keep_open = true;
         Window::new(class_name(context.gc(), class))
-            .id(Id::new(class.as_ptr()))
+            .id(Id::unique(class.as_ptr()))
             .open(&mut keep_open)
             .scroll([true, true])
             .show(egui_ctx, |ui| {
@@ -57,7 +57,7 @@ impl Avm2ClassWindow {
         context: &mut UpdateContext<'gc>,
         ui: &mut Ui,
     ) {
-        Grid::new(ui.id().with("class"))
+        Grid::new(ui.scope_id().with("class"))
             .num_columns(2)
             .striped(true)
             .spacing([8.0, 8.0])
@@ -104,7 +104,7 @@ impl Avm2ClassWindow {
         context: &mut UpdateContext<'gc>,
         ui: &mut Ui,
     ) {
-        Grid::new(ui.id().with("class"))
+        Grid::new(ui.scope_id().with("class"))
             .num_columns(2)
             .striped(true)
             .spacing([8.0, 8.0])

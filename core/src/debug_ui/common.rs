@@ -2,7 +2,7 @@ use crate::html::{StyleSheet, TextFormat};
 use egui::{CollapsingHeader, Grid, Ui};
 
 pub fn show_text_format(ui: &mut Ui, tf: &TextFormat, skip_none: bool) {
-    Grid::new(ui.id().with("text_format_table"))
+    Grid::new(ui.scope_id().with("text_format_table"))
         .num_columns(2)
         .striped(true)
         .show(ui, |ui| {
@@ -51,7 +51,7 @@ pub fn show_style_sheet(ui: &mut Ui, style_sheet: StyleSheet<'_>) {
     selectors.sort();
     for selector in selectors {
         CollapsingHeader::new(selector.to_utf8_lossy())
-            .id_salt(ui.id().with(selector.to_utf8_lossy()))
+            .id_salt(ui.scope_id().with(selector.to_utf8_lossy()))
             .show(ui, |ui| {
                 if let Some(tf) = style_sheet.get_style(&selector) {
                     show_text_format(ui, &tf, true);

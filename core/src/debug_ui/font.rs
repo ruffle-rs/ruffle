@@ -39,7 +39,7 @@ impl FontWindow {
     }
 
     fn show_font_info(&self, ui: &mut Ui, font: Font<'_>) {
-        Grid::new(ui.id().with("font-info"))
+        Grid::new(ui.scope_id().with("font-info"))
             .num_columns(2)
             .striped(true)
             .show(ui, |ui| {
@@ -77,11 +77,11 @@ impl FontWindow {
 
     fn show_font_metrics(&self, ui: &mut Ui, font: Font<'_>) {
         CollapsingHeader::new("Font Metrics")
-            .id_salt(ui.id().with("metrics"))
+            .id_salt(ui.scope_id().with("metrics"))
             .show(ui, |ui| {
                 let metrics = font.metrics();
 
-                Grid::new(ui.id().with("font-metrics"))
+                Grid::new(ui.scope_id().with("font-metrics"))
                     .num_columns(2)
                     .striped(true)
                     .show(ui, |ui| {
@@ -106,7 +106,7 @@ impl FontWindow {
 
     fn show_glyph_info(&mut self, ui: &mut Ui, font: Font<'_>) {
         CollapsingHeader::new("Glyph Info")
-            .id_salt(ui.id().with("glyph-info"))
+            .id_salt(ui.scope_id().with("glyph-info"))
             .show(ui, |ui| {
                 ui.add(
                     TextEdit::singleline(&mut self.glyph_info_text)
@@ -118,7 +118,7 @@ impl FontWindow {
                     return;
                 }
 
-                Grid::new(ui.id().with("glyph-info-table"))
+                Grid::new(ui.scope_id().with("glyph-info-table"))
                     .num_columns(4)
                     .striped(true)
                     .show(ui, |ui| {
@@ -162,7 +162,7 @@ impl FontWindow {
         };
 
         CollapsingHeader::new(format!("Glyph Source: {kind}"))
-            .id_salt(ui.id().with("glyph-source"))
+            .id_salt(ui.scope_id().with("glyph-source"))
             .show(ui, |ui| match source {
                 GlyphSource::Memory {
                     glyphs,
@@ -187,7 +187,7 @@ impl FontWindow {
         glyphs: &[Glyph],
         kerning_pairs: &FnvHashMap<(u16, u16), Twips>,
     ) {
-        Grid::new(ui.id().with("glyph-source-table"))
+        Grid::new(ui.scope_id().with("glyph-source-table"))
             .num_columns(2)
             .striped(true)
             .show(ui, |ui| {
@@ -208,7 +208,7 @@ impl FontWindow {
         face: &FontFace,
         messages: &mut Vec<Message>,
     ) {
-        Grid::new(ui.id().with("glyph-source-table"))
+        Grid::new(ui.scope_id().with("glyph-source-table"))
             .num_columns(2)
             .striped(true)
             .show(ui, |ui| {
@@ -230,7 +230,7 @@ impl FontWindow {
         ui: &mut Ui,
         glyph_source: &FontRendererGlyphSource,
     ) {
-        Grid::new(ui.id().with("glyph-source-table"))
+        Grid::new(ui.scope_id().with("glyph-source-table"))
             .num_columns(2)
             .striped(true)
             .show(ui, |ui| {
@@ -278,7 +278,7 @@ impl FontWindow {
 
     fn show_glyph_atlas(&self, ui: &mut Ui, atlas: &FontAtlas, name: &str) {
         CollapsingHeader::new(format!("Glyph Atlas ({name})"))
-            .id_salt(ui.id().with(format!("atlas-{name}")))
+            .id_salt(ui.scope_id().with(format!("atlas-{name}")))
             .show(ui, |ui| {
                 ui.label(format!("Atlas: {:p}", atlas.as_ptr()));
 
@@ -297,7 +297,7 @@ impl FontWindow {
                     }
 
                     CollapsingHeader::new(format!("Page {i}"))
-                        .id_salt(ui.id().with("page").with(i))
+                        .id_salt(ui.scope_id().with("page").with(i))
                         .show(ui, |ui| {
                             let texture = self
                                 .atlas_page_textures

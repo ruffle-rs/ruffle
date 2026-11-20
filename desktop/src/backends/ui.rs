@@ -178,7 +178,10 @@ impl DesktopUiBackend {
     ) -> Result<Self, Error> {
         // The window handle is only relevant to linux/wayland
         // If it fails it'll fallback to x11 or wlr-data-control
-        let clipboard = Clipboard::new(window.display_handle().ok().map(|handle| handle.as_raw()));
+        let handle = window.display_handle().ok().map(|handle| handle.as_raw());
+        // SAFETY: The declaration order of the `clipboard` and `window` fields
+        // ensures that `handle` remains valid for the lifetime of `clipboard`.
+        let clipboard = unsafe { Clipboard::new(handle) };
         Ok(Self {
             window,
             event_loop,

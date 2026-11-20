@@ -150,7 +150,7 @@ impl MovieWindow {
         let mut keep_open = true;
 
         Window::new(movie_name(movie))
-            .id(Id::new(movie.as_ptr()))
+            .id(Id::unique(movie.as_ptr()))
             .open(&mut keep_open)
             .scroll([true, true])
             .show(egui_ctx, |ui| {
@@ -190,7 +190,7 @@ impl MovieWindow {
             .hint_text("Search for name or ID")
             .show(ui);
 
-        Grid::new(ui.id().with("characters"))
+        Grid::new(ui.scope_id().with("characters"))
             .num_columns(3)
             .show(ui, |ui| {
                 let mut sorted_keys: Vec<CharacterId> = characters.keys().cloned().collect();
@@ -228,7 +228,7 @@ impl MovieWindow {
             save_swf(movie, messages);
         }
 
-        Grid::new(ui.id().with("information"))
+        Grid::new(ui.scope_id().with("information"))
             .num_columns(2)
             .show(ui, |ui| {
                 ui.label("URL");
@@ -296,10 +296,10 @@ impl MovieWindow {
 
         if !movie.parameters().is_empty() {
             CollapsingHeader::new("Parameters")
-                .id_salt(ui.id().with("parameters"))
+                .id_salt(ui.scope_id().with("parameters"))
                 .default_open(false)
                 .show(ui, |ui| {
-                    Grid::new(ui.id().with("parameters"))
+                    Grid::new(ui.scope_id().with("parameters"))
                         .num_columns(2)
                         .show(ui, |ui| {
                             for (key, value) in movie.parameters() {

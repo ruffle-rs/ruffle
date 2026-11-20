@@ -52,7 +52,7 @@ impl Avm2ObjectWindow {
         let domain = context.avm2.stage_domain();
         let mut activation = Activation::from_domain(context, domain);
         Window::new(object_name(activation.gc(), object))
-            .id(Id::new(object.as_ptr()))
+            .id(Id::unique(object.as_ptr()))
             .open(&mut keep_open)
             .scroll([true, true])
             .show(egui_ctx, |ui| {
@@ -105,7 +105,7 @@ impl Avm2ObjectWindow {
         activation: &mut Activation<'_, 'gc>,
         ui: &mut Ui,
     ) {
-        Grid::new(ui.id().with("info"))
+        Grid::new(ui.scope_id().with("info"))
             .num_columns(2)
             .striped(true)
             .show(ui, |ui| {
@@ -242,7 +242,7 @@ impl Avm2ObjectWindow {
         context: &mut UpdateContext<'gc>,
         ui: &mut Ui,
     ) {
-        Grid::new(ui.id().with("class"))
+        Grid::new(ui.scope_id().with("class"))
             .num_columns(2)
             .striped(true)
             .spacing([8.0, 8.0])

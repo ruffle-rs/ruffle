@@ -181,7 +181,7 @@ impl DisplayObjectWindow {
         self.hovered_debug_rect = None;
 
         Window::new(summary_name(object))
-            .id(Id::new(object.as_ptr()))
+            .id(Id::unique(object.as_ptr()))
             .open(&mut keep_open)
             .scroll([true, true])
             .show(egui_ctx, |ui| {
@@ -249,7 +249,7 @@ impl DisplayObjectWindow {
         context: &mut UpdateContext<'gc>,
         object: InteractiveObject<'gc>,
     ) {
-        Grid::new(ui.id().with("interactive"))
+        Grid::new(ui.scope_id().with("interactive"))
             .num_columns(2)
             .show(ui, |ui| {
                 ui.label("Mouse Enabled");
@@ -310,7 +310,7 @@ impl DisplayObjectWindow {
                 ui.label("Focus Rect");
                 let focus_rect = object.focus_rect();
                 let mut new_focus_rect = focus_rect;
-                ComboBox::from_id_salt(ui.id().with("focus_rect"))
+                ComboBox::from_id_salt(ui.scope_id().with("focus_rect"))
                     .selected_text(optional_boolean_switch_value(focus_rect))
                     .show_ui(ui, |ui| {
                         for value in [None, Some(true), Some(false)] {
@@ -360,7 +360,7 @@ impl DisplayObjectWindow {
         object: EditText<'gc>,
         messages: &mut Vec<Message>,
     ) {
-        Grid::new(ui.id().with("edittext"))
+        Grid::new(ui.scope_id().with("edittext"))
             .num_columns(2)
             .show(ui, |ui| {
                 ui.label("Is FTE");
@@ -519,7 +519,7 @@ impl DisplayObjectWindow {
                 ui.label("Autosize");
                 ui.horizontal(|ui| {
                     let mut autosize = object.autosize();
-                    ComboBox::from_id_salt(ui.id().with("autosize"))
+                    ComboBox::from_id_salt(ui.scope_id().with("autosize"))
                         .selected_text(format!("{autosize:?}"))
                         .show_ui(ui, |ui| {
                             for value in [
@@ -650,9 +650,9 @@ impl DisplayObjectWindow {
             });
 
         CollapsingHeader::new("Span List")
-            .id_salt(ui.id().with("spans"))
+            .id_salt(ui.scope_id().with("spans"))
             .show(ui, |ui| {
-                Grid::new(ui.id().with("spans"))
+                Grid::new(ui.scope_id().with("spans"))
                     .num_columns(7)
                     .striped(true)
                     .show(ui, |ui| {
@@ -675,12 +675,12 @@ impl DisplayObjectWindow {
             });
 
         CollapsingHeader::new("Layout")
-            .id_salt(ui.id().with("layout"))
+            .id_salt(ui.scope_id().with("layout"))
             .show(ui, |ui| {
                 let text = object.spans().text().to_owned();
                 let layout = object.layout();
 
-                Grid::new(ui.id().with("layout-props"))
+                Grid::new(ui.scope_id().with("layout-props"))
                     .num_columns(2)
                     .striped(true)
                     .show(ui, |ui| {
@@ -706,7 +706,7 @@ impl DisplayObjectWindow {
             });
 
         let html_text_response = CollapsingHeader::new("HTML Text")
-            .id_salt(ui.id().with("html-text"))
+            .id_salt(ui.scope_id().with("html-text"))
             .show(ui, |ui| {
                 ui.add_sized(
                     ui.available_size(),
@@ -743,9 +743,9 @@ impl DisplayObjectWindow {
         )
         .expect("Serializing string shouldn't fail");
         CollapsingHeader::new(format!("Line {line_index:0>2} ({line_text})"))
-            .id_salt(ui.id().with("line").with(line_index))
+            .id_salt(ui.scope_id().with("line").with(line_index))
             .show(ui, |ui| {
-                Grid::new(ui.id().with("line-props"))
+                Grid::new(ui.scope_id().with("line-props"))
                     .num_columns(2)
                     .striped(true)
                     .show(ui, |ui| {
@@ -789,9 +789,9 @@ impl DisplayObjectWindow {
         messages: &mut Vec<Message>,
     ) {
         CollapsingHeader::new("Characters")
-            .id_salt(ui.id().with("chars"))
+            .id_salt(ui.scope_id().with("chars"))
             .show(ui, |ui| {
-                Grid::new(ui.id().with("box-props"))
+                Grid::new(ui.scope_id().with("box-props"))
                     .num_columns(2)
                     .striped(true)
                     .show(ui, |ui| {
@@ -854,9 +854,9 @@ impl DisplayObjectWindow {
         .expect("Serializing string shouldn't fail");
 
         CollapsingHeader::new(format!("{box_type} {index:0>2} ({box_text})"))
-            .id_salt(ui.id().with("box").with(index))
+            .id_salt(ui.scope_id().with("box").with(index))
             .show(ui, |ui| {
-                Grid::new(ui.id().with("box-props"))
+                Grid::new(ui.scope_id().with("box-props"))
                     .num_columns(2)
                     .striped(true)
                     .show(ui, |ui| {
@@ -898,7 +898,7 @@ impl DisplayObjectWindow {
         object: Avm2Button<'gc>,
         messages: &mut Vec<Message>,
     ) {
-        Grid::new(ui.id().with("avm2_button"))
+        Grid::new(ui.scope_id().with("avm2_button"))
             .num_columns(2)
             .show(ui, |ui| {
                 ui.label("Enabled");
@@ -915,7 +915,7 @@ impl DisplayObjectWindow {
                 ui.horizontal(|ui| {
                     let original_state = object.state();
                     let mut state = original_state;
-                    ComboBox::from_id_salt(ui.id().with("state"))
+                    ComboBox::from_id_salt(ui.scope_id().with("state"))
                         .selected_text(format!("{state:?}"))
                         .show_ui(ui, |ui| {
                             for value in [ButtonState::Up, ButtonState::Over, ButtonState::Down] {
@@ -969,7 +969,7 @@ impl DisplayObjectWindow {
         context: &mut UpdateContext<'gc>,
         object: Bitmap<'gc>,
     ) {
-        Grid::new(ui.id().with("bitmap"))
+        Grid::new(ui.scope_id().with("bitmap"))
             .num_columns(2)
             .show(ui, |ui| {
                 let bitmap_data = object.bitmap_data();
@@ -1015,7 +1015,7 @@ impl DisplayObjectWindow {
             });
 
         CollapsingHeader::new("Preview")
-            .id_salt(ui.id().with("bitmap-preview"))
+            .id_salt(ui.scope_id().with("bitmap-preview"))
             .show(ui, |ui| {
                 let bitmap_data = object.bitmap_data();
                 let bitmap_data = bitmap_data.sync(context.renderer).borrow();
@@ -1047,7 +1047,7 @@ impl DisplayObjectWindow {
         context: &mut UpdateContext<'gc>,
         object: MovieClip<'gc>,
     ) {
-        Grid::new(ui.id().with("movieclip"))
+        Grid::new(ui.scope_id().with("movieclip"))
             .num_columns(2)
             .show(ui, |ui| {
                 let label = object.current_label();
@@ -1100,7 +1100,7 @@ impl DisplayObjectWindow {
             });
 
         CollapsingHeader::new("Frame List")
-            .id_salt(ui.id().with("frames"))
+            .id_salt(ui.scope_id().with("frames"))
             .show(ui, |ui| {
                 ui.checkbox(&mut self.track_current_frame, "Track current");
                 // Height of a table row. 2.0 is used for text "padding" between rows
@@ -1239,7 +1239,7 @@ impl DisplayObjectWindow {
     ) {
         let focus_tracker = object.focus_tracker();
         let focus = focus_tracker.get();
-        Grid::new(ui.id().with("stage"))
+        Grid::new(ui.scope_id().with("stage"))
             .num_columns(2)
             .show(ui, |ui| {
                 ui.label("Stage Focus Rect");
@@ -1293,9 +1293,9 @@ impl DisplayObjectWindow {
             "automatic"
         };
         CollapsingHeader::new(format!("Tab Order ({tab_order_suffix})"))
-            .id_salt(ui.id().with("tab_order"))
+            .id_salt(ui.scope_id().with("tab_order"))
             .show(ui, |ui| {
-                Grid::new(ui.id().with("tab_order_grid"))
+                Grid::new(ui.scope_id().with("tab_order_grid"))
                     .num_columns(3)
                     .show(ui, |ui| {
                         ui.label("#");
@@ -1338,7 +1338,7 @@ impl DisplayObjectWindow {
         object: DisplayObject<'gc>,
         messages: &mut Vec<Message>,
     ) {
-        Grid::new(ui.id().with("display"))
+        Grid::new(ui.scope_id().with("display"))
             .num_columns(2)
             .show(ui, |ui| {
                 ui.label("Parent");
@@ -1469,7 +1469,7 @@ impl DisplayObjectWindow {
                 ui.label("Blend mode");
                 let old_blend = object.blend_mode();
                 let mut new_blend = old_blend;
-                ComboBox::from_id_salt(ui.id().with("blendmode"))
+                ComboBox::from_id_salt(ui.scope_id().with("blendmode"))
                     .selected_text(blend_mode_name(old_blend))
                     .show_ui(ui, |ui| {
                         for mode in ALL_BLEND_MODES {
@@ -1513,7 +1513,7 @@ impl DisplayObjectWindow {
         let filters = object.filters();
         if !filters.is_empty() {
             CollapsingHeader::new(format!("Filters ({})", filters.len()))
-                .id_salt(ui.id().with("filters"))
+                .id_salt(ui.scope_id().with("filters"))
                 .show(ui, |ui| {
                     for filter in &*filters {
                         ui.label(format!("{filter:?}"));
@@ -1529,7 +1529,7 @@ impl DisplayObjectWindow {
         object: DisplayObject<'gc>,
         messages: &mut Vec<Message>,
     ) {
-        Grid::new(ui.id().with("preview-settings"))
+        Grid::new(ui.scope_id().with("preview-settings"))
             .num_columns(2)
             .show(ui, |ui| {
                 ui.label("Scale");
@@ -1542,7 +1542,7 @@ impl DisplayObjectWindow {
                 ui.end_row();
 
                 ui.label("Quality");
-                ComboBox::from_id_salt(ui.id().with("preview-quality"))
+                ComboBox::from_id_salt(ui.scope_id().with("preview-quality"))
                     .selected_text(match self.preview_quality {
                         Some(quality) => quality.to_string(),
                         None => "Stage Quality".to_string(),
@@ -1628,7 +1628,7 @@ impl DisplayObjectWindow {
         object: DisplayObject<'gc>,
         messages: &mut Vec<Message>,
     ) {
-        Grid::new(ui.id().with("position"))
+        Grid::new(ui.scope_id().with("position"))
             .num_columns(2)
             .show(ui, |ui| {
                 ui.label("Name");
@@ -1726,32 +1726,34 @@ impl DisplayObjectWindow {
         hoverable_bounds: bool,
     ) {
         ui.collapsing(name, |ui| {
-            Grid::new(ui.id().with(name)).num_columns(2).show(ui, |ui| {
-                ui.label("Bounds");
-                let no_hover = &mut None;
-                bounds_label(
-                    ui,
-                    object.bounds_with_transform(matrix, BoundsMode::Engine),
-                    if hoverable_bounds {
-                        &mut self.hovered_bounds
-                    } else {
-                        no_hover
-                    },
-                );
-                ui.end_row();
+            Grid::new(ui.scope_id().with(name))
+                .num_columns(2)
+                .show(ui, |ui| {
+                    ui.label("Bounds");
+                    let no_hover = &mut None;
+                    bounds_label(
+                        ui,
+                        object.bounds_with_transform(matrix, BoundsMode::Engine),
+                        if hoverable_bounds {
+                            &mut self.hovered_bounds
+                        } else {
+                            no_hover
+                        },
+                    );
+                    ui.end_row();
 
-                ui.label("Position");
-                ui.label(format!("{:.2}, {:.2}", matrix.tx, matrix.ty));
-                ui.end_row();
+                    ui.label("Position");
+                    ui.label(format!("{:.2}, {:.2}", matrix.tx, matrix.ty));
+                    ui.end_row();
 
-                ui.label("Rotation");
-                ui.label(format!("{}, {}", matrix.b, matrix.c));
-                ui.end_row();
+                    ui.label("Rotation");
+                    ui.label(format!("{}, {}", matrix.b, matrix.c));
+                    ui.end_row();
 
-                ui.label("Scale");
-                ui.label(format!("{}, {}", matrix.a, matrix.d));
-                ui.end_row();
-            });
+                    ui.label("Scale");
+                    ui.label(format!("{}, {}", matrix.a, matrix.d));
+                    ui.end_row();
+                });
         });
     }
 
@@ -1787,26 +1789,30 @@ impl DisplayObjectWindow {
             return;
         }
         if let Some(ctr) = object.as_container().filter(|x| x.num_children() > 0) {
-            CollapsingState::load_with_default_open(ui.ctx(), ui.id().with(object.as_ptr()), false)
-                .show_header(ui, |ui| {
-                    open_display_object_button(
-                        ui,
-                        context,
-                        messages,
-                        object,
-                        &mut self.hovered_debug_rect,
-                    );
-                })
-                .body(|ui| {
-                    for child in ctr.iter_render_list() {
-                        self.show_display_tree(ui, context, child, messages, search);
-                    }
-                });
+            CollapsingState::load_with_default_open(
+                ui.ctx(),
+                ui.scope_id().with(object.as_ptr()),
+                false,
+            )
+            .show_header(ui, |ui| {
+                open_display_object_button(
+                    ui,
+                    context,
+                    messages,
+                    object,
+                    &mut self.hovered_debug_rect,
+                );
+            })
+            .body(|ui| {
+                for child in ctr.iter_render_list() {
+                    self.show_display_tree(ui, context, child, messages, search);
+                }
+            });
         } else {
             // This item is not expandable, but we want to keep
             // the space empty where the expand button would be,
             // so it doesn't look like a sibling of the parent.
-            ui.indent(ui.id().with(object.as_ptr()), |ui| {
+            ui.indent(ui.scope_id().with(object.as_ptr()), |ui| {
                 open_display_object_button(
                     ui,
                     context,
