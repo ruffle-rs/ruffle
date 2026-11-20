@@ -1,7 +1,9 @@
 //! LocalConnection class
 
 use crate::avm1::activation::Activation;
-use crate::avm1::amf::{deserialize_local_connection_value, serialize_local_connection};
+use crate::avm1::amf::{
+    SerializationContext, deserialize_local_connection_value, serialize_with_context,
+};
 use crate::avm1::error::Error;
 use crate::avm1::globals::date::DeferredAmf0Date;
 use crate::avm1::property_decl::{DeclContext, PropertyOrder, StaticDeclarations, SystemClass};
@@ -238,7 +240,11 @@ pub fn send<'gc>(
 
     let mut amf_arguments = Vec::with_capacity(args.len() - 2);
     for arg in &args[2..] {
-        amf_arguments.push(serialize_local_connection(activation, *arg));
+        amf_arguments.push(serialize_with_context(
+            activation,
+            *arg,
+            SerializationContext::LocalConnection,
+        ));
     }
 
     activation.context.local_connections.send(

@@ -64,22 +64,6 @@ fn object_class_name<'gc>(
     }
 }
 
-/// Serialize AMF data for LocalConnection.send.
-pub fn serialize_local_connection<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    value: Value<'gc>,
-) -> AmfValue {
-    serialize_with_context(activation, value, SerializationContext::LocalConnection)
-}
-
-/// Serialize AMF data for NetConnection.addHeader and NetConnection.call.
-pub fn serialize_net_connection<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    value: Value<'gc>,
-) -> AmfValue {
-    serialize_with_context(activation, value, SerializationContext::NetConnection)
-}
-
 fn serialize_primitive_value(value: Value<'_>) -> AmfValue {
     match value {
         Value::Undefined => AmfValue::Undefined,
@@ -145,7 +129,7 @@ fn classify_amf0_value<'gc>(
     }
 }
 
-fn serialize_with_context<'gc>(
+pub(crate) fn serialize_with_context<'gc>(
     activation: &mut Activation<'_, 'gc>,
     value: Value<'gc>,
     serialization_context: SerializationContext,
