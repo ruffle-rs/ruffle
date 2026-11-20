@@ -19,7 +19,9 @@ use crate::binary_data::BinaryData;
 use crate::character::{BitmapCharacter, Character, CompressedBitmap};
 use crate::config::NetworkingAccessMode;
 use crate::context::{ActionType, RenderContext, UpdateContext};
-use crate::display_object::container::{ChildContainer, dispatch_removed_event};
+use crate::display_object::container::{
+    ChildContainer, TDisplayObjectContainer, dispatch_removed_event,
+};
 use crate::display_object::interactive::{
     InteractiveObject, InteractiveObjectBase, TInteractiveObject,
 };

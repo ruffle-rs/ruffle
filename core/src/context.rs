@@ -18,7 +18,7 @@ use crate::backend::{
 };
 use crate::config::NetworkingAccessMode;
 use crate::context_menu::ContextMenuState;
-use crate::display_object::{EditText, MovieClip, SoundTransform, Stage};
+use crate::display_object::{EditText, MovieClip, SoundTransform, Stage, TDisplayObjectContainer};
 use crate::events::PlayerNotification;
 use crate::external::ExternalInterface;
 use crate::focus_tracker::FocusTracker;

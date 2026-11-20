@@ -1,7 +1,9 @@
 use crate::avm1::Object as Avm1Object;
 use crate::avm2::StageObject as Avm2StageObject;
 use crate::context::{RenderContext, UpdateContext};
-use crate::display_object::{BoundsMode, DisplayObjectBase, HitTestOptions, MovieClip};
+use crate::display_object::{
+    BoundsMode, DisplayObjectBase, HitTestOptions, MovieClip, TDisplayObjectContainer,
+};
 use crate::font::{FontLike, TextRenderSettings};
 use crate::prelude::*;
 use crate::tag_utils::SwfMovie;

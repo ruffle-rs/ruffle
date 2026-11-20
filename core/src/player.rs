@@ -32,7 +32,7 @@ use crate::context_menu::{
 use crate::display_object::Avm2MousePick;
 use crate::display_object::{
     EditText, GotoInfo, InteractiveObject, Stage, StageAlign, StageDisplayState, StageScaleMode,
-    StopOrPlay, TInteractiveObject, WindowMode,
+    StopOrPlay, TDisplayObjectContainer, TInteractiveObject, WindowMode,
 };
 use crate::events::GamepadButton;
 use crate::events::PlayerNotification;

@@ -1,5 +1,3 @@
-use super::container::dispatch_added_to_stage_event;
-use super::dispatch_added_event_only;
 use super::interactive::Avm2MousePick;
 use crate::avm1::Object as Avm1Object;
 use crate::avm2::{
@@ -10,7 +8,10 @@ use crate::backend::audio::AudioManager;
 use crate::backend::ui::MouseCursor;
 use crate::context::{RenderContext, UpdateContext};
 use crate::display_object::avm1_button::{ButtonState, ButtonTracking};
-use crate::display_object::container::{dispatch_added_event, dispatch_removed_event};
+use crate::display_object::container::{
+    TDisplayObjectContainer, dispatch_added_event, dispatch_added_event_only,
+    dispatch_added_to_stage_event, dispatch_removed_event,
+};
 use crate::display_object::interactive::{InteractiveObjectBase, TInteractiveObject};
 use crate::display_object::{BoundsMode, DisplayObjectBase, HitTestOptions, MovieClip};
 use crate::events::{ClipEvent, ClipEventResult};

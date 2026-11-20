@@ -9,7 +9,7 @@ use crate::display_object::{BoundsMode, DisplayObjectBase, DisplayObjectPtr, Hit
 use crate::events::{ClipEvent, ClipEventResult};
 use crate::prelude::*;
 
-use crate::display_object::container::ChildContainer;
+use crate::display_object::container::{ChildContainer, TDisplayObjectContainer};
 use crate::display_object::interactive::InteractiveObjectBase;
 use crate::tag_utils::SwfMovie;
 use crate::vminterface::Instantiator;
