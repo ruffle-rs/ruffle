@@ -1,0 +1,7 @@
+before: movieclip, _level0, string, test.swf, 1
+// Unloading _level0
+right after: movieclip, _level0, string, test.swf, 1
+onUnload: _level0
+after 1 intervals: movieclip, _level0, string, , 0
+after 2 intervals: movieclip, _level0, string, , 0
+after 3 intervals: movieclip, _level0, string, , 0

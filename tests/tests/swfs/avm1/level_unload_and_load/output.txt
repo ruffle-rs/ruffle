@@ -1,0 +1,20 @@
+// Before
+_level1 (unloadMovieNum, then loadMovieNum): movieclip, _level1, string, first.swf
+_level2 (unloadClip, then loadClip): movieclip, _level2, string, first.swf
+_level3 (loadMovieNum, then unloadMovieNum): undefined, undefined, undefined, undefined
+_level5 (loadMovieNum with an empty URL, never loaded): undefined, undefined, undefined, undefined
+_level6 (loadMovieNum with an empty URL in a variable, never loaded): undefined, undefined, undefined, undefined
+// Right after
+_level1 (unloadMovieNum, then loadMovieNum): movieclip, _level1, string, first.swf
+_level2 (unloadClip, then loadClip): movieclip, _level2, string, first.swf
+_level3 (loadMovieNum, then unloadMovieNum): undefined, undefined, undefined, undefined
+_level5 (loadMovieNum with an empty URL, never loaded): undefined, undefined, undefined, undefined
+_level6 (loadMovieNum with an empty URL in a variable, never loaded): undefined, undefined, undefined, undefined
+// second.swf loaded into _level2
+// second.swf loaded into _level1
+// After
+_level1 (unloadMovieNum, then loadMovieNum): movieclip, _level1, string, second.swf
+_level2 (unloadClip, then loadClip): movieclip, _level2, string, second.swf
+_level3 (loadMovieNum, then unloadMovieNum): undefined, undefined, undefined, undefined
+_level5 (loadMovieNum with an empty URL, never loaded): undefined, undefined, undefined, undefined
+_level6 (loadMovieNum with an empty URL in a variable, never loaded): undefined, undefined, undefined, undefined

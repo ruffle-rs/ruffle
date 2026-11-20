@@ -1,0 +1,17 @@
+// Loads started
+_level1 loader: onLoadError, _level1, URLNotFound
+_level1 loader: unloading _level1
+_level2 loader: onLoadStart, _level2
+_level2 loader: onLoadComplete, _level2
+_level2 loader: unloading _level2
+_level3 loader B: onLoadStart, _level3
+_level3 loader B: onLoadComplete, _level3
+second.swf runs on _level3
+first.swf runs on _level2
+_level3 loader B: onLoadInit, _level3
+_level2 loader: onLoadInit, _level2
+// After the loads
+_level1: undefined, undefined, undefined, undefined
+_level2: undefined, undefined, undefined, undefined
+_level3: movieclip, _level3, string, second.swf
+_level4: undefined, undefined, undefined, undefined

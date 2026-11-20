@@ -2368,6 +2368,11 @@ impl<'gc> MovieClip<'gc> {
         unqueued
     }
 
+    /// Returns whether this is a level other than `_level0`.
+    fn is_nonzero_level(self) -> bool {
+        self.depth() != 0 && matches!(self.parent(), Some(DisplayObject::Stage(_)))
+    }
+
     /// This unloads the MovieClip.
     ///
     /// This means that one frame after this method has been called, avm1_unload and
@@ -2386,7 +2391,18 @@ impl<'gc> MovieClip<'gc> {
         // Ruffle is probably replacing a MovieClip differently to Flash, therefore
         // introducing these regressions when trying to emulate that delay.
 
-        if self.is_root() {
+        // Levels are unloaded like roots, even an empty level that a movie is
+        // only starting to load into.
+        if self.is_root() || self.is_nonzero_level() {
+            // When a level is both loaded and unloaded in the same frame, the
+            // last call wins, as in Flash Player, so earlier loads into the
+            // level are cancelled.
+            if self.is_nonzero_level() {
+                context
+                    .load_manager
+                    .cancel_pending_movie_loads_into(self.into());
+            }
+
             let player = context.player_handle();
             let mc = MovieClipHandle::stash(context, self);
             let future = Box::pin(async move {
@@ -2395,8 +2411,28 @@ impl<'gc> MovieClip<'gc> {
                     .unwrap()
                     .update(|uc| -> Result<(), loader::Error> {
                         let mc = mc.fetch(uc);
-                        mc.avm1_unload(uc);
-                        mc.transform_to_unloaded_state(uc);
+
+                        // A load into the level that started after the unload
+                        // wins, so the level isn't unloaded.
+                        if mc.is_nonzero_level() && uc.load_manager.has_pending_movie_load_into(mc.into()) {
+                            return Ok(());
+                        }
+
+                        // Unloaded levels other than `_level0` are removed, as in
+                        // Flash Player.
+                        // TODO: Unloading `_level0` stops all levels in Flash Player.
+                        if mc.is_nonzero_level()
+                            && let Some(DisplayObject::Stage(stage)) = mc.parent()
+                        {
+                            // The level is removed right away, so its queued `onUnload`
+                            // handlers don't run (methods of removed clips can't be
+                            // called), as in Flash Player. `remove_child` would keep a
+                            // level with an `onUnload` handler until the handler has run.
+                            stage.remove_child_directly(uc, mc.into());
+                        } else {
+                            mc.avm1_unload(uc);
+                            mc.transform_to_unloaded_state(uc);
+                        }
                         Ok(())
                     })?;
                 Ok(())
