@@ -530,7 +530,7 @@ impl<'gc> Library<'gc> {
             let name = &query.name;
             let is_bold = query.is_bold;
             let is_italic = query.is_italic;
-            warn!("Unknown device font \"{name}\" (bold: {is_bold}, italic: {is_italic})");
+            tracing::warn!("Unknown device font \"{name}\" (bold: {is_bold}, italic: {is_italic})");
         }
 
         None
@@ -654,7 +654,7 @@ impl<'gc> Library<'gc> {
                     );
                     self.device_fonts.register(font);
                 } else {
-                    warn!("Failed to load device font from file");
+                    tracing::warn!("Failed to load device font from file");
                 }
             }
             FontDefinition::ExternalRenderer {

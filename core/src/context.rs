@@ -365,7 +365,7 @@ impl<'gc> UpdateContext<'gc> {
             *self.frame_rate = movie.frame_rate().into();
         }
 
-        info!(
+        tracing::info!(
             "Loaded SWF version {}, resolution {}x{} @ {} FPS",
             movie.version(),
             movie.width(),
