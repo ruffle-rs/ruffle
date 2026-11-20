@@ -1,0 +1,10 @@
+// A reference to an existing clip
+attachMovie: first
+duplicateMovieClip: first
+
+// A reference to a removed clip, so it refers to the clip at its path
+attachMovie: second
+duplicateMovieClip: second
+
+// A plain object
+attachMovie: plain

@@ -800,11 +800,7 @@ fn attach_movie<'gc>(
         // Set name and attach to parent.
         new_clip.set_name(activation.gc(), new_instance_name);
         movie_clip.replace_at_depth(activation.context, new_clip, depth);
-        let init_object = if let Some(Value::Object(init_object)) = init_object {
-            Some(init_object.to_owned())
-        } else {
-            None
-        };
+        let init_object = init_object.and_then(|v| v.as_object(activation));
         new_clip.post_instantiation(activation.context, init_object, Instantiator::Avm1, true);
 
         Ok(new_clip.object1_or_undef())
