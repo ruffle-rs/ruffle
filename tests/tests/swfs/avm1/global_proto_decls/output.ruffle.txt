@@ -1470,10 +1470,9 @@ Testing _global.SharedObject.prototype
   constructor, own, type=[function with prototype]
 Testing _global.Microphone
   names, own, READ_ONLY, type=[object]
-  get, own, type=[function]
+  get, own, type=[function with prototype]
   prototype, own, DONT_ENUM, type=[object]
   __proto__, own, type=[object]
-  constructor, own, type=[function with prototype]
 Testing _global.Microphone.prototype
   setEncodeQuality, own, DONT_ENUM, type=[function]
   setFramesPerPacket, own, DONT_ENUM, type=[function]
@@ -1482,14 +1481,13 @@ Testing _global.Microphone.prototype
   setGain, own, DONT_ENUM, type=[function]
   setRate, own, DONT_ENUM, type=[function]
   setSilenceLevel, own, DONT_ENUM, type=[function]
-  __proto__, own, type=[object]
   constructor, own, type=[function with prototype]
+  __proto__, own, type=[object]
 Testing _global.Camera
   names, own, READ_ONLY, type=[object]
   get, own, type=[function with prototype]
   prototype, own, DONT_ENUM, type=[object]
   __proto__, own, type=[object]
-  constructor, own, type=[function with prototype]
 Testing _global.Camera.prototype
   setCursor, own, DONT_ENUM, type=[function]
   setLoopback, own, DONT_ENUM, type=[function]
@@ -1497,8 +1495,8 @@ Testing _global.Camera.prototype
   setKeyFrameInterval, own, DONT_ENUM, type=[function]
   setQuality, own, DONT_ENUM, type=[function]
   setMode, own, DONT_ENUM, type=[function]
-  __proto__, own, type=[object]
   constructor, own, type=[function with prototype]
+  __proto__, own, type=[object]
 Testing _global.NetStream
   __proto__, own, type=[object]
   constructor, own, type=[function with prototype]
