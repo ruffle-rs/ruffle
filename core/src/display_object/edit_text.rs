@@ -26,6 +26,7 @@ use crate::html::{
     FormatSpans, Layout, LayoutBox, LayoutContent, LayoutContext, LayoutLine, LayoutMetrics,
     Position, TextFormat,
 };
+use crate::player::PlayerRuntime;
 use crate::prelude::*;
 use crate::string::{AvmString, SwfStrExt as _, WStr, WString, utils as string_utils};
 use crate::tag_utils::SwfMovie;
@@ -1194,11 +1195,16 @@ impl<'gc> EditText<'gc> {
         let width = x_end - x_start;
         let height = line_bounds.height() + leading;
 
-        let color = if self.has_focus() {
-            Color::BLACK
-        } else {
-            Color::GRAY
+        // Flash Player draws the selection in black, or dark gray when the
+        // text field isn't focused, and the selected text in white. AIR uses
+        // light colors instead and draws the selected text in black.
+        let color = match (context.player_runtime, self.has_focus()) {
+            (PlayerRuntime::FlashPlayer, true) => Color::BLACK,
+            (PlayerRuntime::FlashPlayer, false) => Color::GRAY,
+            (PlayerRuntime::AIR, true) => Color::from_rgb(0xB5D5FF, 255),
+            (PlayerRuntime::AIR, false) => Color::from_rgb(0xD4D4D4, 255),
         };
+
         let selection_box = context.transform_stack.transform().matrix
             * Matrix::create_box(
                 width.to_pixels() as f32,
@@ -1296,10 +1302,14 @@ impl<'gc> EditText<'gc> {
                     if glyph.renderable(context) {
                         // If it's highlighted, override the color.
                         if matches!(visible_selection, Some(visible_selection) if visible_selection.contains(start + pos)) {
-                            // Set text color to white
+                            // Selected text is white in Flash Player and black in AIR.
+                            let color_transform = match context.player_runtime {
+                                PlayerRuntime::AIR => ColorTransform::multiply_from(Color::BLACK),
+                                PlayerRuntime::FlashPlayer => ColorTransform::IDENTITY,
+                            };
                             context.transform_stack.push(&Transform {
                                 matrix: transform.matrix,
-                                color_transform: ColorTransform::IDENTITY,
+                                color_transform,
                                 perspective_projection: transform.perspective_projection,
                                 tz: transform.tz,
                             });
