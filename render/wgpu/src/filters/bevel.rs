@@ -35,7 +35,7 @@ pub struct BevelFilter {
 
 impl BevelFilter {
     pub fn new(device: &wgpu::Device) -> Self {
-        let uniform_size = std::mem::size_of::<BevelUniform>() as u64;
+        let uniform_size = size_of::<BevelUniform>() as u64;
         let bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
             entries: &[
                 wgpu::BindGroupLayoutEntry {
@@ -78,7 +78,7 @@ impl BevelFilter {
             label: create_debug_label!("Bevel filter binds").as_deref(),
         });
 
-        let vertices_size = std::mem::size_of::<[FilterVertexWithDoubleBlur; 4]>() as u64;
+        let vertices_size = size_of::<[FilterVertexWithDoubleBlur; 4]>() as u64;
         let vertex_buffer = device.create_buffer(&wgpu::BufferDescriptor {
             label: None,
             size: vertices_size,

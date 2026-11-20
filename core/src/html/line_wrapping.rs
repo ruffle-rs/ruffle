@@ -78,7 +78,7 @@ pub fn wrap_line<'gc, T: FontLike<'gc>>(
 
         debug_assert!(!word.is_empty());
         if word.is_empty() {
-            tracing::error!("Tried to fit an empty span during line breaking");
+            error!("Tried to fit an empty span during line breaking");
             continue;
         }
 
@@ -208,7 +208,7 @@ mod tests {
             height,
             letter_spacing,
             kerning,
-            color: swf::Color::BLACK,
+            color: Color::BLACK,
         }
     }
 

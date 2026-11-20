@@ -71,11 +71,9 @@ impl<'gc> Avm2ClassRegistry<'gc> {
                 // is processed first will *win*, and the second one will be ignored.
                 // We still log a warning, since we wouldn't expect this to happen outside
                 // of deliberately crafted SWFs.
-                tracing::warn!(
+                warn!(
                     "Tried to overwrite class {:?} id={:?} with symbol id={:?} from same movie",
-                    class_def,
-                    old.1,
-                    symbol,
+                    class_def, old.1, symbol,
                 );
             }
             // If we're trying to overwrite the class with a symbol from a *different* SwfMovie,
@@ -128,7 +126,7 @@ impl<'gc> MovieLibrary<'gc> {
                 true
             }
             Entry::Occupied(_) => {
-                tracing::error!("Character ID collision: Tried to register ID {} twice", id);
+                error!("Character ID collision: Tried to register ID {} twice", id);
                 false
             }
         }
@@ -140,9 +138,7 @@ impl<'gc> MovieLibrary<'gc> {
         let character_exists = self.contains_character(id);
         debug_assert!(character_exists);
         if !character_exists {
-            tracing::error!(
-                "Tried to register export '{export_name}' for a non-existent character {id}"
-            );
+            error!("Tried to register export '{export_name}' for a non-existent character {id}");
             return;
         }
 
@@ -205,7 +201,7 @@ impl<'gc> MovieLibrary<'gc> {
         if let Some(&character) = self.characters.get(&id) {
             self.instantiate_display_object(id, character, mc)
         } else {
-            tracing::error!("Tried to instantiate a non-registered character ID {id}");
+            error!("Tried to instantiate a non-registered character ID {id}");
             None
         }
     }
@@ -220,7 +216,7 @@ impl<'gc> MovieLibrary<'gc> {
         if let Some((id, character)) = self.character_by_export_name(export_name) {
             self.instantiate_display_object(id, character, mc)
         } else {
-            tracing::error!("Tried to instantiate a non-registered character {export_name}");
+            error!("Tried to instantiate a non-registered character {export_name}");
             None
         }
     }
@@ -310,7 +306,7 @@ impl<'gc> MovieLibrary<'gc> {
         if self.jpeg_tables.is_some() {
             // SWF spec says there should only be one JPEGTables tag.
             // TODO: What is the behavior when there are multiples?
-            tracing::warn!("SWF contains multiple JPEGTables tags");
+            warn!("SWF contains multiple JPEGTables tags");
             return;
         }
         // Some SWFs have a JPEGTables tag with 0 length; ignore these.
@@ -366,7 +362,7 @@ impl ruffle_render::bitmap::BitmapSource for MovieLibrarySource<'_, '_> {
         match bitmap.bitmap_handle(backend) {
             Ok(handle) => Some(handle),
             Err(e) => {
-                tracing::error!("Failed to register bitmap character {id}: {e}");
+                error!("Failed to register bitmap character {id}: {e}");
                 None
             }
         }

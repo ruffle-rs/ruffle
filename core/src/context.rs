@@ -460,7 +460,7 @@ impl<'gc> UpdateContext<'gc> {
         if let Some(notification_sender) = self.notification_sender
             && let Err(e) = notification_sender.try_send(notification)
         {
-            tracing::error!("Failed to send player notification: {e}");
+            error!("Failed to send player notification: {e}");
         }
     }
 }

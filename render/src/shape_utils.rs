@@ -61,8 +61,8 @@ impl FillRule {
     }
 }
 
-pub fn calculate_shape_bounds(shape_records: &[swf::ShapeRecord]) -> swf::Rectangle<Twips> {
-    let mut bounds = swf::Rectangle {
+pub fn calculate_shape_bounds(shape_records: &[ShapeRecord]) -> Rectangle<Twips> {
+    let mut bounds = Rectangle {
         x_min: Twips::new(i32::MAX),
         y_min: Twips::new(i32::MAX),
         x_max: Twips::new(i32::MIN),
@@ -71,7 +71,7 @@ pub fn calculate_shape_bounds(shape_records: &[swf::ShapeRecord]) -> swf::Rectan
     let mut cursor = swf::Point::ZERO;
     for record in shape_records {
         match record {
-            swf::ShapeRecord::StyleChange(style_change) => {
+            ShapeRecord::StyleChange(style_change) => {
                 if let Some(move_to) = &style_change.move_to {
                     cursor = *move_to;
                     bounds.x_min = bounds.x_min.min(cursor.x);
@@ -80,14 +80,14 @@ pub fn calculate_shape_bounds(shape_records: &[swf::ShapeRecord]) -> swf::Rectan
                     bounds.y_max = bounds.y_max.max(cursor.y);
                 }
             }
-            swf::ShapeRecord::StraightEdge { delta } => {
+            ShapeRecord::StraightEdge { delta } => {
                 cursor += *delta;
                 bounds.x_min = bounds.x_min.min(cursor.x);
                 bounds.x_max = bounds.x_max.max(cursor.x);
                 bounds.y_min = bounds.y_min.min(cursor.y);
                 bounds.y_max = bounds.y_max.max(cursor.y);
             }
-            swf::ShapeRecord::CurvedEdge {
+            ShapeRecord::CurvedEdge {
                 control_delta,
                 anchor_delta,
             } => {
@@ -138,7 +138,7 @@ pub struct DistilledShape<'a> {
     pub id: CharacterId,
 }
 
-impl<'a> From<&'a swf::Shape> for DistilledShape<'a> {
+impl<'a> From<&'a Shape> for DistilledShape<'a> {
     fn from(shape: &'a Shape) -> Self {
         Self {
             paths: ShapeConverter::from_shape(shape).into_commands(),
@@ -373,15 +373,15 @@ impl ActivePath {
 
 pub struct ShapeConverter<'a> {
     // SWF shape commands.
-    iter: std::slice::Iter<'a, swf::ShapeRecord>,
+    iter: std::slice::Iter<'a, ShapeRecord>,
 
     // Pen position.
     cursor: swf::Point<Twips>,
 
     // Fill styles and line styles.
     // These change from StyleChangeRecords, and a flush occurs when these change.
-    fill_styles: &'a [swf::FillStyle],
-    line_styles: &'a [swf::LineStyle],
+    fill_styles: &'a [FillStyle],
+    line_styles: &'a [LineStyle],
 
     fill_style0: ActivePath,
     fill_style1: ActivePath,
@@ -399,7 +399,7 @@ pub struct ShapeConverter<'a> {
 impl<'a> ShapeConverter<'a> {
     const DEFAULT_CAPACITY: usize = 512;
 
-    fn from_shape(shape: &'a swf::Shape) -> Self {
+    fn from_shape(shape: &'a Shape) -> Self {
         ShapeConverter {
             iter: shape.shape.iter(),
 
@@ -600,11 +600,7 @@ impl<'a> ShapeConverter<'a> {
 
 /// Test whether the given point in object space is contained within the contour of the given shape.
 /// local_matrix is used to calculate the proper stroke widths.
-pub fn shape_hit_test(
-    shape: &swf::Shape,
-    test_point: swf::Point<Twips>,
-    local_matrix: &Matrix,
-) -> bool {
+pub fn shape_hit_test(shape: &Shape, test_point: swf::Point<Twips>, local_matrix: &Matrix) -> bool {
     let mut cursor = swf::Point::ZERO;
     let fill_rule = FillRule::from_flags(shape.flags);
     let mut winding = 0;
@@ -618,7 +614,7 @@ pub fn shape_hit_test(
 
     for record in &shape.shape {
         match record {
-            swf::ShapeRecord::StyleChange(style_change) => {
+            ShapeRecord::StyleChange(style_change) => {
                 // New styles indicates a new layer;
                 // Check if the point is within the current layer, then reset winding.
                 if let Some(new_styles) = &style_change.new_styles {
@@ -654,7 +650,7 @@ pub fn shape_hit_test(
                     };
                 }
             }
-            swf::ShapeRecord::StraightEdge { delta } => {
+            ShapeRecord::StraightEdge { delta } => {
                 let end = cursor + *delta;
 
                 // If this edge has a fill style on only one-side, check for a crossing.
@@ -674,7 +670,7 @@ pub fn shape_hit_test(
 
                 cursor = end;
             }
-            swf::ShapeRecord::CurvedEdge {
+            ShapeRecord::CurvedEdge {
                 control_delta,
                 anchor_delta,
             } => {
@@ -1210,7 +1206,7 @@ fn solve_cubic(a: f64, b: f64, c: f64, d: f64) -> SmallVec<[f64; 3]> {
 }
 
 /// Converts an SWF glyph into an SWF shape, for ease of use by rendering backends.
-pub fn swf_glyph_to_shape(glyph: swf::Glyph) -> swf::Shape {
+pub fn swf_glyph_to_shape(glyph: swf::Glyph) -> Shape {
     // Per SWF19 p.164, the FontBoundsTable can contain empty bounds for every glyph (reserved).
     // SWF19 says this is true through SWFv7, but it seems like it might be generally true?
     // In any case, we have to be sure to calculate the shape bounds ourselves to make a proper
@@ -1219,14 +1215,14 @@ pub fn swf_glyph_to_shape(glyph: swf::Glyph) -> swf::Shape {
         .bounds
         .filter(|b| b.x_min != b.x_max || b.y_min != b.y_max)
         .unwrap_or_else(|| calculate_shape_bounds(&glyph.shape_records));
-    swf::Shape {
+    Shape {
         version: 2,
         id: 0,
         shape_bounds: bounds,
         edge_bounds: bounds,
         flags: swf::ShapeFlag::HAS_SCALING_STROKES | swf::ShapeFlag::NON_ZERO_WINDING_RULE,
         styles: swf::ShapeStyles {
-            fill_styles: vec![swf::FillStyle::Color(swf::Color {
+            fill_styles: vec![FillStyle::Color(swf::Color {
                 r: 255,
                 g: 255,
                 b: 255,
@@ -1372,9 +1368,9 @@ mod tests {
     const LINE_STYLES: [LineStyle; 0] = [];
 
     /// Convenience method to quickly make a shape,
-    fn build_shape(records: Vec<ShapeRecord>) -> swf::Shape {
+    fn build_shape(records: Vec<ShapeRecord>) -> Shape {
         let bounds = calculate_shape_bounds(&records);
-        swf::Shape {
+        Shape {
             version: 2,
             id: 1,
             shape_bounds: bounds,

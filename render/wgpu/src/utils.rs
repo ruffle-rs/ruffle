@@ -14,21 +14,21 @@ macro_rules! create_debug_label {
     )
 }
 
-pub fn remove_srgb(format: wgpu::TextureFormat) -> wgpu::TextureFormat {
+pub fn remove_srgb(format: TextureFormat) -> TextureFormat {
     match format {
-        wgpu::TextureFormat::Rgba8UnormSrgb => wgpu::TextureFormat::Rgba8Unorm,
-        wgpu::TextureFormat::Bgra8UnormSrgb => wgpu::TextureFormat::Bgra8Unorm,
-        wgpu::TextureFormat::Bc1RgbaUnormSrgb => wgpu::TextureFormat::Bc1RgbaUnorm,
-        wgpu::TextureFormat::Bc2RgbaUnormSrgb => wgpu::TextureFormat::Bc2RgbaUnorm,
-        wgpu::TextureFormat::Bc3RgbaUnormSrgb => wgpu::TextureFormat::Bc3RgbaUnorm,
-        wgpu::TextureFormat::Bc7RgbaUnormSrgb => wgpu::TextureFormat::Bc7RgbaUnorm,
-        wgpu::TextureFormat::Etc2Rgb8UnormSrgb => wgpu::TextureFormat::Etc2Rgb8Unorm,
-        wgpu::TextureFormat::Etc2Rgb8A1UnormSrgb => wgpu::TextureFormat::Etc2Rgb8A1Unorm,
-        wgpu::TextureFormat::Etc2Rgba8UnormSrgb => wgpu::TextureFormat::Etc2Rgba8Unorm,
-        wgpu::TextureFormat::Astc {
+        TextureFormat::Rgba8UnormSrgb => TextureFormat::Rgba8Unorm,
+        TextureFormat::Bgra8UnormSrgb => TextureFormat::Bgra8Unorm,
+        TextureFormat::Bc1RgbaUnormSrgb => TextureFormat::Bc1RgbaUnorm,
+        TextureFormat::Bc2RgbaUnormSrgb => TextureFormat::Bc2RgbaUnorm,
+        TextureFormat::Bc3RgbaUnormSrgb => TextureFormat::Bc3RgbaUnorm,
+        TextureFormat::Bc7RgbaUnormSrgb => TextureFormat::Bc7RgbaUnorm,
+        TextureFormat::Etc2Rgb8UnormSrgb => TextureFormat::Etc2Rgb8Unorm,
+        TextureFormat::Etc2Rgb8A1UnormSrgb => TextureFormat::Etc2Rgb8A1Unorm,
+        TextureFormat::Etc2Rgba8UnormSrgb => TextureFormat::Etc2Rgba8Unorm,
+        TextureFormat::Astc {
             block,
             channel: wgpu::AstcChannel::UnormSrgb,
-        } => wgpu::TextureFormat::Astc {
+        } => TextureFormat::Astc {
             block,
             channel: wgpu::AstcChannel::Unorm,
         },
@@ -182,7 +182,7 @@ pub fn buffer_to_image(
 pub fn supported_sample_count(
     adapter: &wgpu::Adapter,
     mut sample_count: u32,
-    format: wgpu::TextureFormat,
+    format: TextureFormat,
 ) -> u32 {
     let features = adapter.get_texture_format_features(format).flags;
 
@@ -197,7 +197,7 @@ pub fn supported_sample_count(
 
 pub fn run_copy_pipeline(
     descriptors: &Descriptors,
-    format: wgpu::TextureFormat,
+    format: TextureFormat,
     frame_view: &wgpu::TextureView,
     input: &wgpu::TextureView,
     sample_count: u32,

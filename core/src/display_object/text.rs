@@ -126,7 +126,7 @@ impl<'gc> TDisplayObject<'gc> for Text<'gc> {
         {
             self.set_shared(context, new_text.0.shared.get());
         } else {
-            tracing::warn!("PlaceObject: expected text at character ID {}", id);
+            warn!("PlaceObject: expected text at character ID {}", id);
         }
         self.invalidate_cached_bitmap();
     }
@@ -147,7 +147,7 @@ impl<'gc> TDisplayObject<'gc> for Text<'gc> {
             ..Default::default()
         });
 
-        let mut color = swf::Color {
+        let mut color = Color {
             r: 0,
             g: 0,
             b: 0,

@@ -261,7 +261,7 @@ pub fn derive_has_prefix_field(input: TokenStream) -> TokenStream {
     }
 
     let Some(first_field) = ({
-        if let syn::Data::Struct(data) = &input.data {
+        if let Data::Struct(data) = &input.data {
             data.fields
                 .iter()
                 .next()

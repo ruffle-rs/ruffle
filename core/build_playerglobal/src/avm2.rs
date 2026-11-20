@@ -86,17 +86,17 @@ pub fn build_avm2_playerglobal(
     asc::run_asc(asc_config)?;
 
     let playerglobal = out_dir.join("playerglobal_avm2");
-    let mut bytes = std::fs::read(playerglobal.with_extension("abc"))?;
+    let mut bytes = fs::read(playerglobal.with_extension("abc"))?;
 
     // Keep a copy of the raw ABC for use as an asc.jar import library.
-    std::fs::rename(
+    fs::rename(
         playerglobal.with_extension("abc"),
         out_dir.join("playerglobal_import.abc"),
     )?;
 
     // Cleanup the temporary files written out by 'asc.jar'
-    std::fs::remove_file(playerglobal.with_extension("cpp"))?;
-    std::fs::remove_file(playerglobal.with_extension("h"))?;
+    fs::remove_file(playerglobal.with_extension("cpp"))?;
+    fs::remove_file(playerglobal.with_extension("h"))?;
 
     if with_stubs {
         collect_stubs(&classes_dir, out_dir)?;
@@ -457,7 +457,7 @@ fn trait_has_metadata(abc: &AbcFile, trait_: &Trait, metadata_value: &str) -> bo
 /// Returns a modified version of 'data' that should be saved to disk
 /// in our generated SWF
 fn write_native_table(data: &[u8], out_dir: &Path) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
-    let mut reader = swf::avm2::read::Reader::new(data);
+    let mut reader = Reader::new(data);
     let mut abc = reader.read()?;
 
     check_weird_namespace_lookup(&abc)?;

@@ -98,7 +98,7 @@ impl H264Decoder {
                 })),
                 VideoPixelFormat::Bgrx => Ok((BitmapFormat::Rgba, &|data| {
                     for [b, _g, r, x] in data.as_chunks_mut::<4>().0 {
-                        std::mem::swap(b, r);
+                        mem::swap(b, r);
                         *x = 0xff;
                     }
                 })),

@@ -24,5 +24,5 @@ fn main() {
     ];
     let file = std::fs::File::create("tests/swfs/SimpleRedBackground.swf").unwrap();
     let writer = std::io::BufWriter::new(file);
-    swf::write_swf(&header, &tags, writer).unwrap();
+    write_swf(&header, &tags, writer).unwrap();
 }

@@ -82,7 +82,7 @@ pub trait RenderBackend: Any {
 
     fn submit_frame(
         &mut self,
-        clear: swf::Color,
+        clear: Color,
         commands: CommandList,
         cache_entries: Vec<BitmapCacheEntry>,
     );

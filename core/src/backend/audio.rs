@@ -108,7 +108,7 @@ pub trait AudioBackend: Any {
     fn start_sound(
         &mut self,
         sound: SoundHandle,
-        settings: &swf::SoundInfo,
+        settings: &SoundInfo,
     ) -> Result<SoundInstanceHandle, DecodeError>;
 
     /// Starts playing a "stream" sound, which is an audio stream that is distributed
@@ -270,7 +270,7 @@ impl AudioBackend for NullAudioBackend {
     fn start_sound(
         &mut self,
         _sound: SoundHandle,
-        _sound_info: &swf::SoundInfo,
+        _sound_info: &SoundInfo,
     ) -> Result<SoundInstanceHandle, DecodeError> {
         Ok(SoundInstanceHandle::null())
     }
@@ -457,7 +457,7 @@ impl<'gc> AudioManager<'gc> {
         &mut self,
         audio: &mut dyn AudioBackend,
         sound: SoundHandle,
-        settings: &swf::SoundInfo,
+        settings: &SoundInfo,
         transform: Option<display_object::SoundTransform>,
         display_object: Option<DisplayObject<'gc>>,
         avm1_object: Option<Avm1Object<'gc>>,

@@ -67,7 +67,7 @@ impl WString {
         unsafe {
             Self {
                 data: NonNull::new_unchecked(ptr),
-                meta: ptr::WStrMetadata::new(len, is_wide),
+                meta: WStrMetadata::new(len, is_wide),
                 capacity: cap as u32,
             }
         }
@@ -343,7 +343,7 @@ impl WString {
     /// Truncates this `WString`, removing all contents.
     #[inline]
     pub fn clear(&mut self) {
-        self.meta = ptr::WStrMetadata::new32(0, self.meta.is_wide());
+        self.meta = WStrMetadata::new32(0, self.meta.is_wide());
     }
 
     /// Appends a UTF-16 code unit to `self`.

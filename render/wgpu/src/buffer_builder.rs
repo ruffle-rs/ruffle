@@ -33,7 +33,7 @@ impl BufferBuilder {
     pub fn add<T: NoUninit + AnyBitPattern>(
         &mut self,
         value: &[T],
-    ) -> Result<Range<wgpu::BufferAddress>, BufferFull> {
+    ) -> Result<Range<BufferAddress>, BufferFull> {
         let start_pos = if !self.inner.is_empty() {
             if self.align_mask > 0 {
                 // Pad the internal buffer to match alignment requirements
@@ -56,7 +56,7 @@ impl BufferBuilder {
         }
 
         self.inner.extend_from_slice(slice);
-        Ok((start_pos as wgpu::BufferAddress)..(self.inner.len() as wgpu::BufferAddress))
+        Ok((start_pos as BufferAddress)..(self.inner.len() as BufferAddress))
     }
 
     pub fn finish(

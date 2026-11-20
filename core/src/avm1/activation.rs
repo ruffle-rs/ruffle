@@ -4,7 +4,7 @@ use crate::avm1::function::{Avm1Function, ExecutionReason, FunctionObject};
 use crate::avm1::property::Attribute;
 use crate::avm1::runtime::skip_actions;
 use crate::avm1::scope::{Scope, ScopeClass};
-use crate::avm1::{ArrayBuilder, Object, Value, fscommand, globals, scope};
+use crate::avm1::{ArrayBuilder, Object, Value, fscommand, globals};
 use crate::backend::navigator::{NavigationMethod, Request};
 use crate::context::UpdateContext;
 use crate::display_object::{
@@ -235,7 +235,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         &mut self.context.strings
     }
 
-    pub fn prototypes(&self) -> &crate::avm1::globals::SystemPrototypes<'gc> {
+    pub fn prototypes(&self) -> &globals::SystemPrototypes<'gc> {
         self.context.avm1.prototypes(self.swf_version())
     }
 
@@ -453,7 +453,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             self.gc(),
             Scope::new(
                 self.context.avm1.global_scope(active_clip.swf_version()),
-                scope::ScopeClass::Target,
+                ScopeClass::Target,
                 clip_obj,
             ),
         );
@@ -491,7 +491,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             self.gc(),
             Scope::new(
                 self.context.avm1.global_scope(swf_version),
-                scope::ScopeClass::Target,
+                ScopeClass::Target,
                 clip_obj,
             ),
         );
@@ -1944,7 +1944,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let target_clip = self.resolve_target_display_object(start_clip, target, true)?;
 
         if let Some(target_clip) = target_clip {
-            crate::avm1::globals::remove_display_object(target_clip, self);
+            globals::remove_display_object(target_clip, self);
             if self.target_clip().is_some_and(|clip| clip.avm1_removed()) {
                 // Revert the target to the base clip, or `None` if the base was also removed
                 self.set_target_clip(Some(self.base_clip()));
@@ -2455,10 +2455,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         }
     }
 
-    fn action_unknown(
-        &mut self,
-        unknown: swf::avm1::types::Unknown,
-    ) -> Result<FrameControl<'gc>, Error<'gc>> {
+    fn action_unknown(&mut self, unknown: Unknown) -> Result<FrameControl<'gc>, Error<'gc>> {
         avm_error!(self, "Unknown AVM1 opcode: {:?}", unknown);
         Ok(FrameControl::Continue)
     }
@@ -3056,12 +3053,8 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     pub fn in_local_scope(&self) -> bool {
         for scope in Scope::ancestors(self.scope) {
             match scope.class() {
-                scope::ScopeClass::Local => {
-                    return true;
-                }
-                scope::ScopeClass::Target => {
-                    return false;
-                }
+                ScopeClass::Local => return true,
+                ScopeClass::Target => return false,
                 _ => (),
             };
         }

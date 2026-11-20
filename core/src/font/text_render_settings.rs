@@ -125,7 +125,7 @@ impl TextRenderSettings {
         }
     }
 
-    pub fn grid_fit(&self) -> swf::TextGridFit {
+    pub fn grid_fit(&self) -> TextGridFit {
         match self {
             TextRenderSettings::Normal { grid_fit, .. } => *grid_fit,
             TextRenderSettings::Advanced { grid_fit, .. } => *grid_fit,

@@ -504,7 +504,7 @@ impl PreferencesDialog {
                 self.openh264_license_visible = true;
             };
             let available_size = egui_ctx.content_rect().size();
-            egui::Window::new(text(locale, "openh264-license"))
+            Window::new(text(locale, "openh264-license"))
                 .collapsible(false)
                 .resizable(false)
                 .anchor(Align2::CENTER_CENTER, egui::Vec2::ZERO)

@@ -674,8 +674,8 @@ impl<'a> NagaBuilder<'a> {
         let constant_registers_global = module.global_variables.append(
             GlobalVariable {
                 name: Some("constant_registers".to_string()),
-                space: naga::AddressSpace::Uniform,
-                binding: Some(naga::ResourceBinding {
+                space: AddressSpace::Uniform,
+                binding: Some(ResourceBinding {
                     group: 0,
                     binding: binding_num,
                 }),
@@ -691,7 +691,7 @@ impl<'a> NagaBuilder<'a> {
                                 })
                                 .unwrap(),
                             ),
-                            stride: std::mem::size_of::<f32>() as u32 * 4,
+                            stride: size_of::<f32>() as u32 * 4,
                         },
                     },
                     Span::UNDEFINED,
@@ -865,8 +865,8 @@ impl<'a> NagaBuilder<'a> {
             let sampler_var = self.module.global_variables.append(
                 GlobalVariable {
                     name: Some(format!("sampler{index}")),
-                    space: naga::AddressSpace::Handle,
-                    binding: Some(naga::ResourceBinding {
+                    space: AddressSpace::Handle,
+                    binding: Some(ResourceBinding {
                         group: 0,
                         binding: TEXTURE_SAMPLER_START_BIND_INDEX + index as u32,
                     }),
@@ -1418,7 +1418,7 @@ impl<'a> NagaBuilder<'a> {
                     .append(Expression::Literal(Literal::F32(1.0)), Span::UNDEFINED);
 
                 let vec_one = self.evaluate_expr(Expression::Splat {
-                    size: naga::VectorSize::Quad,
+                    size: VectorSize::Quad,
                     value: f32_one,
                 });
 

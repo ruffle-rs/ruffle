@@ -651,7 +651,7 @@ pub fn init_builtin_system_classes(activation: &mut Activation<'_, '_>) {
         ]
     );
 
-    crate::avm2::globals::vector::init_vector_class_objects(activation);
+    vector::init_vector_class_objects(activation);
 }
 
 pub fn init_builtin_system_class_defs(activation: &mut Activation<'_, '_>) {
@@ -683,7 +683,7 @@ pub fn init_builtin_system_class_defs(activation: &mut Activation<'_, '_>) {
     class_defs.string.mark_builtin_type(BuiltinType::String);
     class_defs.void.mark_builtin_type(BuiltinType::Void);
 
-    crate::avm2::globals::vector::init_vector_class_defs(activation);
+    vector::init_vector_class_defs(activation);
 }
 
 pub fn init_native_system_classes(activation: &mut Activation<'_, '_>) {

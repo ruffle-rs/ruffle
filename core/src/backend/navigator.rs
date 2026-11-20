@@ -88,7 +88,7 @@ impl NavigationMethod {
     }
 }
 
-impl fmt::Display for NavigationMethod {
+impl Display for NavigationMethod {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let method = match self {
             Self::Get => "GET",
@@ -617,8 +617,8 @@ pub fn fetch_path<NavigatorType: NavigatorBackend>(
 
         fn next_chunk(&mut self) -> OwnedFuture<Option<Vec<u8>>, Error> {
             if self.open_file.is_none() {
-                let result = std::fs::File::open(self.path.clone())
-                    .map_err(|e| Error::FetchError(e.to_string()));
+                let result =
+                    File::open(self.path.clone()).map_err(|e| Error::FetchError(e.to_string()));
 
                 match result {
                     Ok(file) => self.open_file = Some(file),
@@ -643,9 +643,7 @@ pub fn fetch_path<NavigatorType: NavigatorBackend>(
         }
 
         fn expected_length(&self) -> Result<Option<u64>, Error> {
-            Ok(Some(
-                std::fs::File::open(self.path.clone())?.metadata()?.len(),
-            ))
+            Ok(Some(File::open(self.path.clone())?.metadata()?.len()))
         }
     }
 

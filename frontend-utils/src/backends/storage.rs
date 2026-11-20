@@ -44,7 +44,7 @@ impl DiskStorageBackend {
 impl StorageBackend for DiskStorageBackend {
     fn get(&self, name: &str) -> Option<Vec<u8>> {
         let path = self.get_shared_object_path(name)?;
-        match std::fs::read(path) {
+        match fs::read(path) {
             Ok(data) => Some(data),
             Err(e) => {
                 tracing::warn!("Unable to read file \"{}\": {:?}", name, e);

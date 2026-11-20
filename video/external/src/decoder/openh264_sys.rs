@@ -40,7 +40,7 @@ pub const videoFormatInternal: EVideoFormatType = 25;
 pub const videoFormatNV12: EVideoFormatType = 26;
 pub const videoFormatVFlip: EVideoFormatType = 2147483648;
 #[doc = " @brief Enumerate the type of video format"]
-pub type EVideoFormatType = ::std::os::raw::c_uint;
+pub type EVideoFormatType = std::os::raw::c_uint;
 #[doc = "< encoder not ready or parameters are invalidate"]
 pub const videoFrameTypeInvalid: EVideoFrameType = 0;
 #[doc = "< IDR frame in H.264"]
@@ -54,7 +54,7 @@ pub const videoFrameTypeSkip: EVideoFrameType = 4;
 #[doc = "< a frame where I and P slices are mixing, not supported yet"]
 pub const videoFrameTypeIPMixed: EVideoFrameType = 5;
 #[doc = " @brief Enumerate  video frame type"]
-pub type EVideoFrameType = ::std::os::raw::c_uint;
+pub type EVideoFrameType = std::os::raw::c_uint;
 #[doc = "< successful"]
 pub const cmResultSuccess: CM_RETURN = 0;
 #[doc = "< parameters are invalid"]
@@ -66,7 +66,7 @@ pub const cmMallocMemeError: CM_RETURN = 3;
 pub const cmInitExpected: CM_RETURN = 4;
 pub const cmUnsupportedData: CM_RETURN = 5;
 #[doc = " @brief Enumerate  return type"]
-pub type CM_RETURN = ::std::os::raw::c_uint;
+pub type CM_RETURN = std::os::raw::c_uint;
 pub const NAL_UNKNOWN: ENalUnitType = 0;
 pub const NAL_SLICE: ENalUnitType = 1;
 pub const NAL_SLICE_DPA: ENalUnitType = 2;
@@ -79,19 +79,19 @@ pub const NAL_SEI: ENalUnitType = 6;
 pub const NAL_SPS: ENalUnitType = 7;
 pub const NAL_PPS: ENalUnitType = 8;
 #[doc = " @brief Enumulate the nal unit type"]
-pub type ENalUnitType = ::std::os::raw::c_uint;
+pub type ENalUnitType = std::os::raw::c_uint;
 pub const NAL_PRIORITY_DISPOSABLE: ENalPriority = 0;
 pub const NAL_PRIORITY_LOW: ENalPriority = 1;
 pub const NAL_PRIORITY_HIGH: ENalPriority = 2;
 pub const NAL_PRIORITY_HIGHEST: ENalPriority = 3;
 #[doc = " @brief NRI: eNalRefIdc"]
-pub type ENalPriority = ::std::os::raw::c_uint;
+pub type ENalPriority = std::os::raw::c_uint;
 pub const DEBLOCKING_IDC_0: _bindgen_ty_1 = 0;
 pub const DEBLOCKING_IDC_1: _bindgen_ty_1 = 1;
 pub const DEBLOCKING_IDC_2: _bindgen_ty_1 = 2;
 #[doc = " @brief eDeblockingIdc"]
-pub type _bindgen_ty_1 = ::std::os::raw::c_uint;
-pub type ERR_TOOL = ::std::os::raw::c_ushort;
+pub type _bindgen_ty_1 = std::os::raw::c_uint;
+pub type ERR_TOOL = std::os::raw::c_ushort;
 #[doc = "< NONE Error Tools"]
 pub const ET_NONE: _bindgen_ty_2 = 0;
 #[doc = "< IP Scalable"]
@@ -111,31 +111,31 @@ pub const ET_FEC_FULL: _bindgen_ty_2 = 64;
 #[doc = "< Reference Frame Selection"]
 pub const ET_RFS: _bindgen_ty_2 = 128;
 #[doc = "@brief to do"]
-pub type _bindgen_ty_2 = ::std::os::raw::c_uint;
+pub type _bindgen_ty_2 = std::os::raw::c_uint;
 #[doc = " @brief Information of coded Slice(=NAL)(s)"]
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
 pub struct SliceInformation {
     #[doc = "< base buffer of coded slice(s)"]
-    pub pBufferOfSlices: *mut ::std::os::raw::c_uchar,
+    pub pBufferOfSlices: *mut std::os::raw::c_uchar,
     #[doc = "< number of coded slices"]
-    pub iCodedSliceCount: ::std::os::raw::c_int,
+    pub iCodedSliceCount: std::os::raw::c_int,
     #[doc = "< array of slices length accordingly by number of slice"]
-    pub pLengthOfSlices: *mut ::std::os::raw::c_uint,
+    pub pLengthOfSlices: *mut std::os::raw::c_uint,
     #[doc = "< FEC type[0, 50%FEC, 100%FEC]"]
-    pub iFecType: ::std::os::raw::c_int,
+    pub iFecType: std::os::raw::c_int,
     #[doc = "< index of slice in frame [FMO: 0,..,uiSliceCount-1; No FMO: 0]"]
-    pub uiSliceIdx: ::std::os::raw::c_uchar,
+    pub uiSliceIdx: std::os::raw::c_uchar,
     #[doc = "< count number of slice in frame [FMO: 2-8; No FMO: 1]"]
-    pub uiSliceCount: ::std::os::raw::c_uchar,
+    pub uiSliceCount: std::os::raw::c_uchar,
     #[doc = "< index of frame[-1, .., idr_interval-1]"]
-    pub iFrameIndex: ::std::os::raw::c_char,
+    pub iFrameIndex: std::os::raw::c_char,
     #[doc = "< NRI, priority level of slice(NAL)"]
-    pub uiNalRefIdc: ::std::os::raw::c_uchar,
+    pub uiNalRefIdc: std::os::raw::c_uchar,
     #[doc = "< NAL type"]
-    pub uiNalType: ::std::os::raw::c_uchar,
+    pub uiNalType: std::os::raw::c_uchar,
     #[doc = "< whether final NAL is involved in buffer of coded slices, flag used in Pause feature in T27"]
-    pub uiContainingFinalNal: ::std::os::raw::c_uchar,
+    pub uiContainingFinalNal: std::os::raw::c_uchar,
 }
 #[doc = " @brief Information of coded Slice(=NAL)(s)"]
 pub type SliceInfo = SliceInformation;
@@ -146,21 +146,21 @@ pub type PSliceInfo = *mut SliceInformation;
 #[derive(Debug, Copy, Clone)]
 pub struct SRateThresholds {
     #[doc = "< frame width"]
-    pub iWidth: ::std::os::raw::c_int,
+    pub iWidth: std::os::raw::c_int,
     #[doc = "< frame height"]
-    pub iHeight: ::std::os::raw::c_int,
+    pub iHeight: std::os::raw::c_int,
     #[doc = "< threshold of initial rate"]
-    pub iThresholdOfInitRate: ::std::os::raw::c_int,
+    pub iThresholdOfInitRate: std::os::raw::c_int,
     #[doc = "< threshold of maximal rate"]
-    pub iThresholdOfMaxRate: ::std::os::raw::c_int,
+    pub iThresholdOfMaxRate: std::os::raw::c_int,
     #[doc = "< threshold of minimal rate"]
-    pub iThresholdOfMinRate: ::std::os::raw::c_int,
+    pub iThresholdOfMinRate: std::os::raw::c_int,
     #[doc = "< min frame rate min"]
-    pub iMinThresholdFrameRate: ::std::os::raw::c_int,
+    pub iMinThresholdFrameRate: std::os::raw::c_int,
     #[doc = "< skip to frame rate min"]
-    pub iSkipFrameRate: ::std::os::raw::c_int,
+    pub iSkipFrameRate: std::os::raw::c_int,
     #[doc = "< how many frames to skip"]
-    pub iSkipFrameStep: ::std::os::raw::c_int,
+    pub iSkipFrameStep: std::os::raw::c_int,
 }
 #[doc = " @brief thresholds of the initial, maximal and minimal rate"]
 pub type PRateThresholds = *mut SRateThresholds;
@@ -169,13 +169,13 @@ pub type PRateThresholds = *mut SRateThresholds;
 #[derive(Debug, Copy, Clone)]
 pub struct TagSysMemBuffer {
     #[doc = "< width of decoded pic for display"]
-    pub iWidth: ::std::os::raw::c_int,
+    pub iWidth: std::os::raw::c_int,
     #[doc = "< height of decoded pic for display"]
-    pub iHeight: ::std::os::raw::c_int,
+    pub iHeight: std::os::raw::c_int,
     #[doc = "< type is \"EVideoFormatType\""]
-    pub iFormat: ::std::os::raw::c_int,
+    pub iFormat: std::os::raw::c_int,
     #[doc = "< stride of 2 component"]
-    pub iStride: [::std::os::raw::c_int; 2usize],
+    pub iStride: [std::os::raw::c_int; 2usize],
 }
 #[doc = " @brief  Structure for decoder memery"]
 pub type SSysMEMBuffer = TagSysMemBuffer;
@@ -184,14 +184,14 @@ pub type SSysMEMBuffer = TagSysMemBuffer;
 #[derive(Copy, Clone)]
 pub struct TagBufferInfo {
     #[doc = "< 0: one frame data is not ready; 1: one frame data is ready"]
-    pub iBufferStatus: ::std::os::raw::c_int,
+    pub iBufferStatus: std::os::raw::c_int,
     #[doc = "< input BS timestamp"]
-    pub uiInBsTimeStamp: ::std::os::raw::c_ulonglong,
+    pub uiInBsTimeStamp: std::os::raw::c_ulonglong,
     #[doc = "< output YUV timestamp, when bufferstatus is 1"]
-    pub uiOutYuvTimeStamp: ::std::os::raw::c_ulonglong,
+    pub uiOutYuvTimeStamp: std::os::raw::c_ulonglong,
     #[doc = "<  output buffer info"]
     pub UsrData: TagBufferInfo__bindgen_ty_1,
-    pub pDst: [*mut ::std::os::raw::c_uchar; 3usize],
+    pub pDst: [*mut std::os::raw::c_uchar; 3usize],
 }
 #[repr(C)]
 #[derive(Copy, Clone)]
@@ -206,13 +206,13 @@ pub type SBufferInfo = TagBufferInfo;
 #[derive(Debug, Copy, Clone)]
 pub struct _tagVersion {
     #[doc = "< The major version number"]
-    pub uMajor: ::std::os::raw::c_uint,
+    pub uMajor: std::os::raw::c_uint,
     #[doc = "< The minor version number"]
-    pub uMinor: ::std::os::raw::c_uint,
+    pub uMinor: std::os::raw::c_uint,
     #[doc = "< The revision number"]
-    pub uRevision: ::std::os::raw::c_uint,
+    pub uRevision: std::os::raw::c_uint,
     #[doc = "< The reserved number, it should be 0."]
-    pub uReserved: ::std::os::raw::c_uint,
+    pub uReserved: std::os::raw::c_uint,
 }
 #[doc = " @brief Struct of OpenH264 version\n/\n///\n/// E.g. SDK version is 1.2.0.0, major version number is 1, minor version number is 2, and revision number is 0."]
 pub type OpenH264Version = _tagVersion;
@@ -241,7 +241,7 @@ pub const dsOutOfMemory: DECODING_STATE = 16384;
 #[doc = "< actual picture size exceeds size of dst pBuffer feed in decoder, so need expand its size"]
 pub const dsDstBufNeedExpan: DECODING_STATE = 32768;
 #[doc = " @brief Decoding status"]
-pub type DECODING_STATE = ::std::os::raw::c_uint;
+pub type DECODING_STATE = std::os::raw::c_uint;
 pub const ENCODER_OPTION_DATAFORMAT: ENCODER_OPTION = 0;
 #[doc = "< IDR period,0/-1 means no Intra period (only the first frame); lager than 0 means the desired IDR period, must be multiple of (2^temporal_layer)"]
 pub const ENCODER_OPTION_IDR_INTERVAL: ENCODER_OPTION = 1;
@@ -296,7 +296,7 @@ pub const ENCODER_OPTION_IS_LOSSLESS_LINK: ENCODER_OPTION = 30;
 #[doc = "< bit vary percentage"]
 pub const ENCODER_OPTION_BITS_VARY_PERCENTAGE: ENCODER_OPTION = 31;
 #[doc = " @brief Option types introduced in SVC encoder application"]
-pub type ENCODER_OPTION = ::std::os::raw::c_uint;
+pub type ENCODER_OPTION = std::os::raw::c_uint;
 #[doc = "< end of stream flag"]
 pub const DECODER_OPTION_END_OF_STREAM: DECODER_OPTION = 1;
 #[doc = "< feedback whether or not have VCL NAL in current AU for application layer"]
@@ -335,7 +335,7 @@ pub const DECODER_OPTION_NUM_OF_FRAMES_REMAINING_IN_BUFFER: DECODER_OPTION = 18;
 #[doc = "< number of decoding threads. The maximum thread count is equal or less than lesser of (cpu core counts and 16)."]
 pub const DECODER_OPTION_NUM_OF_THREADS: DECODER_OPTION = 19;
 #[doc = " @brief Option types introduced in decoder application"]
-pub type DECODER_OPTION = ::std::os::raw::c_uint;
+pub type DECODER_OPTION = std::os::raw::c_uint;
 pub const ERROR_CON_DISABLE: ERROR_CON_IDC = 0;
 pub const ERROR_CON_FRAME_COPY: ERROR_CON_IDC = 1;
 pub const ERROR_CON_SLICE_COPY: ERROR_CON_IDC = 2;
@@ -345,28 +345,28 @@ pub const ERROR_CON_SLICE_COPY_CROSS_IDR_FREEZE_RES_CHANGE: ERROR_CON_IDC = 5;
 pub const ERROR_CON_SLICE_MV_COPY_CROSS_IDR: ERROR_CON_IDC = 6;
 pub const ERROR_CON_SLICE_MV_COPY_CROSS_IDR_FREEZE_RES_CHANGE: ERROR_CON_IDC = 7;
 #[doc = " @brief Enumerate the type of error concealment methods"]
-pub type ERROR_CON_IDC = ::std::os::raw::c_uint;
+pub type ERROR_CON_IDC = std::os::raw::c_uint;
 pub const FEEDBACK_NON_VCL_NAL: FEEDBACK_VCL_NAL_IN_AU = 0;
 pub const FEEDBACK_VCL_NAL: FEEDBACK_VCL_NAL_IN_AU = 1;
 pub const FEEDBACK_UNKNOWN_NAL: FEEDBACK_VCL_NAL_IN_AU = 2;
 #[doc = " @brief Feedback that whether or not have VCL NAL in current AU"]
-pub type FEEDBACK_VCL_NAL_IN_AU = ::std::os::raw::c_uint;
+pub type FEEDBACK_VCL_NAL_IN_AU = std::os::raw::c_uint;
 pub const NON_VIDEO_CODING_LAYER: LAYER_TYPE = 0;
 pub const VIDEO_CODING_LAYER: LAYER_TYPE = 1;
 #[doc = " @brief Type of layer being encoded"]
-pub type LAYER_TYPE = ::std::os::raw::c_uint;
+pub type LAYER_TYPE = std::os::raw::c_uint;
 pub const SPATIAL_LAYER_0: LAYER_NUM = 0;
 pub const SPATIAL_LAYER_1: LAYER_NUM = 1;
 pub const SPATIAL_LAYER_2: LAYER_NUM = 2;
 pub const SPATIAL_LAYER_3: LAYER_NUM = 3;
 pub const SPATIAL_LAYER_ALL: LAYER_NUM = 4;
 #[doc = " @brief Spatial layer num"]
-pub type LAYER_NUM = ::std::os::raw::c_uint;
+pub type LAYER_NUM = std::os::raw::c_uint;
 pub const VIDEO_BITSTREAM_AVC: VIDEO_BITSTREAM_TYPE = 0;
 pub const VIDEO_BITSTREAM_SVC: VIDEO_BITSTREAM_TYPE = 1;
 pub const VIDEO_BITSTREAM_DEFAULT: VIDEO_BITSTREAM_TYPE = 1;
 #[doc = " @brief Enumerate the type of video bitstream which is provided to decoder"]
-pub type VIDEO_BITSTREAM_TYPE = ::std::os::raw::c_uint;
+pub type VIDEO_BITSTREAM_TYPE = std::os::raw::c_uint;
 pub const NO_RECOVERY_REQUSET: KEY_FRAME_REQUEST_TYPE = 0;
 pub const LTR_RECOVERY_REQUEST: KEY_FRAME_REQUEST_TYPE = 1;
 pub const IDR_RECOVERY_REQUEST: KEY_FRAME_REQUEST_TYPE = 2;
@@ -374,31 +374,31 @@ pub const NO_LTR_MARKING_FEEDBACK: KEY_FRAME_REQUEST_TYPE = 3;
 pub const LTR_MARKING_SUCCESS: KEY_FRAME_REQUEST_TYPE = 4;
 pub const LTR_MARKING_FAILED: KEY_FRAME_REQUEST_TYPE = 5;
 #[doc = " @brief Enumerate the type of key frame request"]
-pub type KEY_FRAME_REQUEST_TYPE = ::std::os::raw::c_uint;
+pub type KEY_FRAME_REQUEST_TYPE = std::os::raw::c_uint;
 #[doc = " @brief Structure for LTR recover request"]
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
 pub struct SLTRRecoverRequest {
     #[doc = "< IDR request or LTR recovery request"]
-    pub uiFeedbackType: ::std::os::raw::c_uint,
+    pub uiFeedbackType: std::os::raw::c_uint,
     #[doc = "< distinguish request from different IDR"]
-    pub uiIDRPicId: ::std::os::raw::c_uint,
-    pub iLastCorrectFrameNum: ::std::os::raw::c_int,
+    pub uiIDRPicId: std::os::raw::c_uint,
+    pub iLastCorrectFrameNum: std::os::raw::c_int,
     #[doc = "< specify current decoder frame_num."]
-    pub iCurrentFrameNum: ::std::os::raw::c_int,
-    pub iLayerId: ::std::os::raw::c_int,
+    pub iCurrentFrameNum: std::os::raw::c_int,
+    pub iLayerId: std::os::raw::c_int,
 }
 #[doc = " @brief Structure for LTR marking feedback"]
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
 pub struct SLTRMarkingFeedback {
     #[doc = "< mark failed or successful"]
-    pub uiFeedbackType: ::std::os::raw::c_uint,
+    pub uiFeedbackType: std::os::raw::c_uint,
     #[doc = "< distinguish request from different IDR"]
-    pub uiIDRPicId: ::std::os::raw::c_uint,
+    pub uiIDRPicId: std::os::raw::c_uint,
     #[doc = "< specify current decoder frame_num"]
-    pub iLTRFrameNum: ::std::os::raw::c_int,
-    pub iLayerId: ::std::os::raw::c_int,
+    pub iLTRFrameNum: std::os::raw::c_int,
+    pub iLayerId: std::os::raw::c_int,
 }
 #[doc = " @brief Structure for LTR configuration"]
 #[repr(C)]
@@ -407,7 +407,7 @@ pub struct SLTRConfig {
     #[doc = "< 1: on, 0: off"]
     pub bEnableLongTermReference: bool,
     #[doc = "< TODO: not supported to set it arbitrary yet"]
-    pub iLTRRefNum: ::std::os::raw::c_int,
+    pub iLTRRefNum: std::os::raw::c_int,
 }
 #[doc = "< quality mode"]
 pub const RC_QUALITY_MODE: RC_MODES = 0;
@@ -421,7 +421,7 @@ pub const RC_BITRATE_MODE_POST_SKIP: RC_MODES = 4;
 #[doc = "< rate control off mode"]
 pub const RC_OFF_MODE: RC_MODES = -1;
 #[doc = " @brief Enumerate the type of rate control mode"]
-pub type RC_MODES = ::std::os::raw::c_int;
+pub type RC_MODES = std::os::raw::c_int;
 pub const PRO_UNKNOWN: EProfileIdc = 0;
 pub const PRO_BASELINE: EProfileIdc = 66;
 pub const PRO_MAIN: EProfileIdc = 77;
@@ -434,7 +434,7 @@ pub const PRO_CAVLC444: EProfileIdc = 244;
 pub const PRO_SCALABLE_BASELINE: EProfileIdc = 83;
 pub const PRO_SCALABLE_HIGH: EProfileIdc = 86;
 #[doc = " @brief Enumerate the type of profile id"]
-pub type EProfileIdc = ::std::os::raw::c_uint;
+pub type EProfileIdc = std::os::raw::c_uint;
 pub const LEVEL_UNKNOWN: ELevelIdc = 0;
 pub const LEVEL_1_0: ELevelIdc = 10;
 pub const LEVEL_1_B: ELevelIdc = 9;
@@ -454,7 +454,7 @@ pub const LEVEL_5_0: ELevelIdc = 50;
 pub const LEVEL_5_1: ELevelIdc = 51;
 pub const LEVEL_5_2: ELevelIdc = 52;
 #[doc = " @brief Enumerate the type of level id"]
-pub type ELevelIdc = ::std::os::raw::c_uint;
+pub type ELevelIdc = std::os::raw::c_uint;
 #[doc = "< quiet mode"]
 pub const WELS_LOG_QUIET: _bindgen_ty_3 = 0;
 #[doc = "< error log iLevel"]
@@ -473,7 +473,7 @@ pub const WELS_LOG_LEVEL_COUNT: _bindgen_ty_3 = 6;
 #[doc = "< default log iLevel in Wels codec"]
 pub const WELS_LOG_DEFAULT: _bindgen_ty_3 = 2;
 #[doc = " @brief Enumerate the type of wels log"]
-pub type _bindgen_ty_3 = ::std::os::raw::c_uint;
+pub type _bindgen_ty_3 = std::os::raw::c_uint;
 #[doc = "< | SliceNum==1"]
 pub const SM_SINGLE_SLICE: SliceModeEnum = 0;
 #[doc = "< | according to SliceNum        | enabled dynamic slicing for multi-thread"]
@@ -484,7 +484,7 @@ pub const SM_RASTER_SLICE: SliceModeEnum = 2;
 pub const SM_SIZELIMITED_SLICE: SliceModeEnum = 3;
 pub const SM_RESERVED: SliceModeEnum = 4;
 #[doc = " @brief Enumerate the type of slice mode"]
-pub type SliceModeEnum = ::std::os::raw::c_uint;
+pub type SliceModeEnum = std::os::raw::c_uint;
 #[doc = " @brief Structure for slice argument"]
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
@@ -492,11 +492,11 @@ pub struct SSliceArgument {
     #[doc = "< by default, uiSliceMode will be SM_SINGLE_SLICE"]
     pub uiSliceMode: SliceModeEnum,
     #[doc = "< only used when uiSliceMode=1, when uiSliceNum=0 means auto design it with cpu core number"]
-    pub uiSliceNum: ::std::os::raw::c_uint,
+    pub uiSliceNum: std::os::raw::c_uint,
     #[doc = "< only used when uiSliceMode=2; when =0 means setting one MB row a slice"]
-    pub uiSliceMbNum: [::std::os::raw::c_uint; 35usize],
+    pub uiSliceMbNum: [std::os::raw::c_uint; 35usize],
     #[doc = "< now only used when uiSliceMode=4"]
-    pub uiSliceSizeConstraint: ::std::os::raw::c_uint,
+    pub uiSliceSizeConstraint: std::os::raw::c_uint,
 }
 pub const VF_COMPONENT: EVideoFormatSPS = 0;
 pub const VF_PAL: EVideoFormatSPS = 1;
@@ -506,7 +506,7 @@ pub const VF_MAC: EVideoFormatSPS = 4;
 pub const VF_UNDEF: EVideoFormatSPS = 5;
 pub const VF_NUM_ENUM: EVideoFormatSPS = 6;
 #[doc = " @brief Enumerate the type of video format"]
-pub type EVideoFormatSPS = ::std::os::raw::c_uint;
+pub type EVideoFormatSPS = std::os::raw::c_uint;
 pub const CP_RESERVED0: EColorPrimaries = 0;
 pub const CP_BT709: EColorPrimaries = 1;
 pub const CP_UNDEF: EColorPrimaries = 2;
@@ -519,7 +519,7 @@ pub const CP_FILM: EColorPrimaries = 8;
 pub const CP_BT2020: EColorPrimaries = 9;
 pub const CP_NUM_ENUM: EColorPrimaries = 10;
 #[doc = " @brief Enumerate the type of color primaries"]
-pub type EColorPrimaries = ::std::os::raw::c_uint;
+pub type EColorPrimaries = std::os::raw::c_uint;
 pub const TRC_RESERVED0: ETransferCharacteristics = 0;
 pub const TRC_BT709: ETransferCharacteristics = 1;
 pub const TRC_UNDEF: ETransferCharacteristics = 2;
@@ -538,7 +538,7 @@ pub const TRC_BT2020_10: ETransferCharacteristics = 14;
 pub const TRC_BT2020_12: ETransferCharacteristics = 15;
 pub const TRC_NUM_ENUM: ETransferCharacteristics = 16;
 #[doc = " @brief Enumerate the type of transfer characteristics"]
-pub type ETransferCharacteristics = ::std::os::raw::c_uint;
+pub type ETransferCharacteristics = std::os::raw::c_uint;
 pub const CM_GBR: EColorMatrix = 0;
 pub const CM_BT709: EColorMatrix = 1;
 pub const CM_UNDEF: EColorMatrix = 2;
@@ -552,7 +552,7 @@ pub const CM_BT2020NC: EColorMatrix = 9;
 pub const CM_BT2020C: EColorMatrix = 10;
 pub const CM_NUM_ENUM: EColorMatrix = 11;
 #[doc = " @brief Enumerate the type of color matrix"]
-pub type EColorMatrix = ::std::os::raw::c_uint;
+pub type EColorMatrix = std::os::raw::c_uint;
 pub const ASP_UNSPECIFIED: ESampleAspectRatio = 0;
 pub const ASP_1x1: ESampleAspectRatio = 1;
 pub const ASP_12x11: ESampleAspectRatio = 2;
@@ -569,43 +569,43 @@ pub const ASP_64x33: ESampleAspectRatio = 12;
 pub const ASP_160x99: ESampleAspectRatio = 13;
 pub const ASP_EXT_SAR: ESampleAspectRatio = 255;
 #[doc = " @brief Enumerate the type of sample aspect ratio"]
-pub type ESampleAspectRatio = ::std::os::raw::c_uint;
+pub type ESampleAspectRatio = std::os::raw::c_uint;
 #[doc = " @brief  Structure for spatial layer configuration"]
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
 pub struct SSpatialLayerConfig {
     #[doc = "< width of picture in luminance samples of a layer"]
-    pub iVideoWidth: ::std::os::raw::c_int,
+    pub iVideoWidth: std::os::raw::c_int,
     #[doc = "< height of picture in luminance samples of a layer"]
-    pub iVideoHeight: ::std::os::raw::c_int,
+    pub iVideoHeight: std::os::raw::c_int,
     #[doc = "< frame rate specified for a layer"]
     pub fFrameRate: f32,
     #[doc = "< target bitrate for a spatial layer, in unit of bps"]
-    pub iSpatialBitrate: ::std::os::raw::c_int,
+    pub iSpatialBitrate: std::os::raw::c_int,
     #[doc = "< maximum  bitrate for a spatial layer, in unit of bps"]
-    pub iMaxSpatialBitrate: ::std::os::raw::c_int,
+    pub iMaxSpatialBitrate: std::os::raw::c_int,
     #[doc = "< value of profile IDC (PRO_UNKNOWN for auto-detection)"]
     pub uiProfileIdc: EProfileIdc,
     #[doc = "< value of profile IDC (0 for auto-detection)"]
     pub uiLevelIdc: ELevelIdc,
     #[doc = "< value of level IDC (0 for auto-detection)"]
-    pub iDLayerQp: ::std::os::raw::c_int,
+    pub iDLayerQp: std::os::raw::c_int,
     pub sSliceArgument: SSliceArgument,
     pub bVideoSignalTypePresent: bool,
-    pub uiVideoFormat: ::std::os::raw::c_uchar,
+    pub uiVideoFormat: std::os::raw::c_uchar,
     pub bFullRange: bool,
     pub bColorDescriptionPresent: bool,
-    pub uiColorPrimaries: ::std::os::raw::c_uchar,
-    pub uiTransferCharacteristics: ::std::os::raw::c_uchar,
-    pub uiColorMatrix: ::std::os::raw::c_uchar,
+    pub uiColorPrimaries: std::os::raw::c_uchar,
+    pub uiTransferCharacteristics: std::os::raw::c_uchar,
+    pub uiColorMatrix: std::os::raw::c_uchar,
     #[doc = "< aspect ratio present in VUI"]
     pub bAspectRatioPresent: bool,
     #[doc = "< aspect ratio idc"]
     pub eAspectRatio: ESampleAspectRatio,
     #[doc = "< use if aspect ratio idc == 255"]
-    pub sAspectRatioExtWidth: ::std::os::raw::c_ushort,
+    pub sAspectRatioExtWidth: std::os::raw::c_ushort,
     #[doc = "< use if aspect ratio idc == 255"]
-    pub sAspectRatioExtHeight: ::std::os::raw::c_ushort,
+    pub sAspectRatioExtHeight: std::os::raw::c_ushort,
 }
 #[doc = "< camera video for real-time communication"]
 pub const CAMERA_VIDEO_REAL_TIME: EUsageType = 0;
@@ -615,7 +615,7 @@ pub const CAMERA_VIDEO_NON_REAL_TIME: EUsageType = 2;
 pub const SCREEN_CONTENT_NON_REAL_TIME: EUsageType = 3;
 pub const INPUT_CONTENT_TYPE_ALL: EUsageType = 4;
 #[doc = " @brief Encoder usage type"]
-pub type EUsageType = ::std::os::raw::c_uint;
+pub type EUsageType = std::os::raw::c_uint;
 #[doc = "< the lowest compleixty,the fastest speed,"]
 pub const LOW_COMPLEXITY: ECOMPLEXITY_MODE = 0;
 #[doc = "< medium complexity, medium speed,medium quality"]
@@ -623,7 +623,7 @@ pub const MEDIUM_COMPLEXITY: ECOMPLEXITY_MODE = 1;
 #[doc = "< high complexity, lowest speed, high quality"]
 pub const HIGH_COMPLEXITY: ECOMPLEXITY_MODE = 2;
 #[doc = " @brief Enumulate the complexity mode"]
-pub type ECOMPLEXITY_MODE = ::std::os::raw::c_uint;
+pub type ECOMPLEXITY_MODE = std::os::raw::c_uint;
 #[doc = "< constant id in SPS/PPS"]
 pub const CONSTANT_ID: EParameterSetStrategy = 0;
 #[doc = "< SPS/PPS id increases at each IDR"]
@@ -633,7 +633,7 @@ pub const SPS_LISTING: EParameterSetStrategy = 2;
 pub const SPS_LISTING_AND_PPS_INCREASING: EParameterSetStrategy = 3;
 pub const SPS_PPS_LISTING: EParameterSetStrategy = 6;
 #[doc = " @brief Enumulate for the stategy of SPS/PPS strategy"]
-pub type EParameterSetStrategy = ::std::os::raw::c_uint;
+pub type EParameterSetStrategy = std::os::raw::c_uint;
 #[doc = " @brief SVC Encoding Parameters"]
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
@@ -641,11 +641,11 @@ pub struct TagEncParamBase {
     #[doc = "< application type; please refer to the definition of EUsageType"]
     pub iUsageType: EUsageType,
     #[doc = "< width of picture in luminance samples (the maximum of all layers if multiple spatial layers presents)"]
-    pub iPicWidth: ::std::os::raw::c_int,
+    pub iPicWidth: std::os::raw::c_int,
     #[doc = "< height of picture in luminance samples((the maximum of all layers if multiple spatial layers presents)"]
-    pub iPicHeight: ::std::os::raw::c_int,
+    pub iPicHeight: std::os::raw::c_int,
     #[doc = "< target bitrate desired, in unit of bps"]
-    pub iTargetBitrate: ::std::os::raw::c_int,
+    pub iTargetBitrate: std::os::raw::c_int,
     #[doc = "< rate control mode"]
     pub iRCMode: RC_MODES,
     #[doc = "< maximal input frame rate"]
@@ -662,25 +662,25 @@ pub struct TagEncParamExt {
     #[doc = "< same as in TagEncParamBase"]
     pub iUsageType: EUsageType,
     #[doc = "< same as in TagEncParamBase"]
-    pub iPicWidth: ::std::os::raw::c_int,
+    pub iPicWidth: std::os::raw::c_int,
     #[doc = "< same as in TagEncParamBase"]
-    pub iPicHeight: ::std::os::raw::c_int,
+    pub iPicHeight: std::os::raw::c_int,
     #[doc = "< same as in TagEncParamBase"]
-    pub iTargetBitrate: ::std::os::raw::c_int,
+    pub iTargetBitrate: std::os::raw::c_int,
     #[doc = "< same as in TagEncParamBase"]
     pub iRCMode: RC_MODES,
     #[doc = "< same as in TagEncParamBase"]
     pub fMaxFrameRate: f32,
     #[doc = "< temporal layer number, max temporal layer = 4"]
-    pub iTemporalLayerNum: ::std::os::raw::c_int,
+    pub iTemporalLayerNum: std::os::raw::c_int,
     #[doc = "< spatial layer number,1<= iSpatialLayerNum <= MAX_SPATIAL_LAYER_NUM, MAX_SPATIAL_LAYER_NUM = 4"]
-    pub iSpatialLayerNum: ::std::os::raw::c_int,
+    pub iSpatialLayerNum: std::os::raw::c_int,
     pub sSpatialLayers: [SSpatialLayerConfig; 4usize],
     pub iComplexityMode: ECOMPLEXITY_MODE,
     #[doc = "< period of Intra frame"]
-    pub uiIntraPeriod: ::std::os::raw::c_uint,
+    pub uiIntraPeriod: std::os::raw::c_uint,
     #[doc = "< number of reference frame used"]
-    pub iNumRefFrame: ::std::os::raw::c_int,
+    pub iNumRefFrame: std::os::raw::c_int,
     #[doc = "< different stategy in adjust ID in SPS/PPS: 0- constant ID, 1-additional ID, 6-mapping and additional"]
     pub eSpsPpsIdStrategy: EParameterSetStrategy,
     #[doc = "< false:not use Prefix NAL; true: use Prefix NAL"]
@@ -690,35 +690,35 @@ pub struct TagEncParamExt {
     #[doc = "< (when encoding more than 1 spatial layer) false: use SVC syntax for higher layers; true: use Simulcast AVC"]
     pub bSimulcastAVC: bool,
     #[doc = "< 0:disable padding;1:padding"]
-    pub iPaddingFlag: ::std::os::raw::c_int,
+    pub iPaddingFlag: std::os::raw::c_int,
     #[doc = "< 0:CAVLC  1:CABAC."]
-    pub iEntropyCodingModeFlag: ::std::os::raw::c_int,
+    pub iEntropyCodingModeFlag: std::os::raw::c_int,
     #[doc = "< False: don't skip frame even if VBV buffer overflow.True: allow skipping frames to keep the bitrate within limits"]
     pub bEnableFrameSkip: bool,
     #[doc = "< the maximum bitrate, in unit of bps, set it to UNSPECIFIED_BIT_RATE if not needed"]
-    pub iMaxBitrate: ::std::os::raw::c_int,
+    pub iMaxBitrate: std::os::raw::c_int,
     #[doc = "< the maximum QP encoder supports"]
-    pub iMaxQp: ::std::os::raw::c_int,
+    pub iMaxQp: std::os::raw::c_int,
     #[doc = "< the minmum QP encoder supports"]
-    pub iMinQp: ::std::os::raw::c_int,
+    pub iMinQp: std::os::raw::c_int,
     #[doc = "< the maximum NAL size.  This value should be not 0 for dynamic slice mode"]
-    pub uiMaxNalSize: ::std::os::raw::c_uint,
+    pub uiMaxNalSize: std::os::raw::c_uint,
     #[doc = "< 1: on, 0: off"]
     pub bEnableLongTermReference: bool,
     #[doc = "< the number of LTR(long term reference),TODO: not supported to set it arbitrary yet"]
-    pub iLTRRefNum: ::std::os::raw::c_int,
+    pub iLTRRefNum: std::os::raw::c_int,
     #[doc = "< the LTR marked period that is used in feedback."]
-    pub iLtrMarkPeriod: ::std::os::raw::c_uint,
+    pub iLtrMarkPeriod: std::os::raw::c_uint,
     #[doc = "< 1 # 0: auto(dynamic imp. internal encoder); 1: multiple threads imp. disabled; lager than 1: count number of threads;"]
-    pub iMultipleThreadIdc: ::std::os::raw::c_ushort,
+    pub iMultipleThreadIdc: std::os::raw::c_ushort,
     #[doc = "< only used when uiSliceMode=1 or 3, will change slicing of a picture during the run-time of multi-thread encoding, so the result of each run may be different"]
     pub bUseLoadBalancing: bool,
     #[doc = "< 0: on, 1: off, 2: on except for slice boundaries"]
-    pub iLoopFilterDisableIdc: ::std::os::raw::c_int,
+    pub iLoopFilterDisableIdc: std::os::raw::c_int,
     #[doc = "< AlphaOffset: valid range [-6, 6], default 0"]
-    pub iLoopFilterAlphaC0Offset: ::std::os::raw::c_int,
+    pub iLoopFilterAlphaC0Offset: std::os::raw::c_int,
     #[doc = "< BetaOffset: valid range [-6, 6], default 0"]
-    pub iLoopFilterBetaOffset: ::std::os::raw::c_int,
+    pub iLoopFilterBetaOffset: std::os::raw::c_int,
     #[doc = "< denoise control"]
     pub bEnableDenoise: bool,
     #[doc = "< background detection control //VAA_BACKGROUND_DETECTION //BGD cmd"]
@@ -733,7 +733,7 @@ pub struct TagEncParamExt {
     #[doc = "< fix rate control overshooting"]
     pub bFixRCOverShoot: bool,
     #[doc = "< the target bits of IDR is (idr_bitrate_ratio/100) * average target bit per frame."]
-    pub iIdrBitrateRatio: ::std::os::raw::c_int,
+    pub iIdrBitrateRatio: std::os::raw::c_int,
     #[doc = "< get Y PSNR stats for the whole video sequence"]
     pub bPsnrY: bool,
     #[doc = "< get U PSNR stats for the whole video sequence"]
@@ -748,7 +748,7 @@ pub type SEncParamExt = TagEncParamExt;
 #[derive(Debug, Copy, Clone)]
 pub struct SVideoProperty {
     #[doc = "< size of the struct"]
-    pub size: ::std::os::raw::c_uint,
+    pub size: std::os::raw::c_uint,
     #[doc = "< video stream type (AVC/SVC)"]
     pub eVideoBsType: VIDEO_BITSTREAM_TYPE,
 }
@@ -757,11 +757,11 @@ pub struct SVideoProperty {
 #[derive(Debug, Copy, Clone)]
 pub struct TagSVCDecodingParam {
     #[doc = "< file name of reconstructed frame used for PSNR calculation based debug"]
-    pub pFileNameRestructed: *mut ::std::os::raw::c_char,
+    pub pFileNameRestructed: *mut std::os::raw::c_char,
     #[doc = "< CPU load"]
-    pub uiCpuLoad: ::std::os::raw::c_uint,
+    pub uiCpuLoad: std::os::raw::c_uint,
     #[doc = "< setting target dq layer id"]
-    pub uiTargetDqLayer: ::std::os::raw::c_uchar,
+    pub uiTargetDqLayer: std::os::raw::c_uchar,
     #[doc = "< whether active error concealment feature in decoder"]
     pub eEcActiveIdc: ERROR_CON_IDC,
     #[doc = "< decoder for parse only, no reconstruction. When it is true, SPS/PPS size should not exceed SPS_PPS_BS_SIZE (128). Otherwise, it will return error info"]
@@ -777,19 +777,19 @@ pub type PDecodingParam = *mut TagSVCDecodingParam;
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
 pub struct SLayerBSInfo {
-    pub uiTemporalId: ::std::os::raw::c_uchar,
-    pub uiSpatialId: ::std::os::raw::c_uchar,
-    pub uiQualityId: ::std::os::raw::c_uchar,
+    pub uiTemporalId: std::os::raw::c_uchar,
+    pub uiSpatialId: std::os::raw::c_uchar,
+    pub uiQualityId: std::os::raw::c_uchar,
     pub eFrameType: EVideoFrameType,
-    pub uiLayerType: ::std::os::raw::c_uchar,
+    pub uiLayerType: std::os::raw::c_uchar,
     #[doc = "< refer to D.2.11 Sub-sequence information SEI message semantics"]
-    pub iSubSeqId: ::std::os::raw::c_int,
+    pub iSubSeqId: std::os::raw::c_int,
     #[doc = "< count number of NAL coded already"]
-    pub iNalCount: ::std::os::raw::c_int,
+    pub iNalCount: std::os::raw::c_int,
     #[doc = "< length of NAL size in byte from 0 to iNalCount-1"]
-    pub pNalLengthInByte: *mut ::std::os::raw::c_int,
+    pub pNalLengthInByte: *mut std::os::raw::c_int,
     #[doc = "< buffer of bitstream contained"]
-    pub pBsBuf: *mut ::std::os::raw::c_uchar,
+    pub pBsBuf: *mut std::os::raw::c_uchar,
     #[doc = "< PSNR values for Y/U/V"]
     pub rPsnr: [f32; 3usize],
 }
@@ -799,11 +799,11 @@ pub type PLayerBSInfo = *mut SLayerBSInfo;
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
 pub struct SFrameBSInfo {
-    pub iLayerNum: ::std::os::raw::c_int,
+    pub iLayerNum: std::os::raw::c_int,
     pub sLayerInfo: [SLayerBSInfo; 128usize],
     pub eFrameType: EVideoFrameType,
-    pub iFrameSizeInBytes: ::std::os::raw::c_int,
-    pub uiTimeStamp: ::std::os::raw::c_longlong,
+    pub iFrameSizeInBytes: std::os::raw::c_int,
+    pub uiTimeStamp: std::os::raw::c_longlong,
 }
 #[doc = " @brief Frame bit stream info"]
 pub type PFrameBSInfo = *mut SFrameBSInfo;
@@ -812,17 +812,17 @@ pub type PFrameBSInfo = *mut SFrameBSInfo;
 #[derive(Debug, Copy, Clone)]
 pub struct Source_Picture_s {
     #[doc = "< color space type"]
-    pub iColorFormat: ::std::os::raw::c_int,
+    pub iColorFormat: std::os::raw::c_int,
     #[doc = "< stride for each plane pData"]
-    pub iStride: [::std::os::raw::c_int; 4usize],
+    pub iStride: [std::os::raw::c_int; 4usize],
     #[doc = "< plane pData"]
-    pub pData: [*mut ::std::os::raw::c_uchar; 4usize],
+    pub pData: [*mut std::os::raw::c_uchar; 4usize],
     #[doc = "< luma picture width in x coordinate"]
-    pub iPicWidth: ::std::os::raw::c_int,
+    pub iPicWidth: std::os::raw::c_int,
     #[doc = "< luma picture height in y coordinate"]
-    pub iPicHeight: ::std::os::raw::c_int,
+    pub iPicHeight: std::os::raw::c_int,
     #[doc = "< timestamp of the source picture, unit: millisecond"]
-    pub uiTimeStamp: ::std::os::raw::c_longlong,
+    pub uiTimeStamp: std::os::raw::c_longlong,
     #[doc = "< get Y PSNR for this frame"]
     pub bPsnrY: bool,
     #[doc = "< get U PSNR for this frame"]
@@ -838,7 +838,7 @@ pub type SSourcePicture = Source_Picture_s;
 pub struct TagBitrateInfo {
     pub iLayer: LAYER_NUM,
     #[doc = "< the maximum bitrate"]
-    pub iBitrate: ::std::os::raw::c_int,
+    pub iBitrate: std::os::raw::c_int,
 }
 #[doc = " @brief Structure for bit rate info"]
 pub type SBitrateInfo = TagBitrateInfo;
@@ -846,8 +846,8 @@ pub type SBitrateInfo = TagBitrateInfo;
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
 pub struct TagDumpLayer {
-    pub iLayer: ::std::os::raw::c_int,
-    pub pFileName: *mut ::std::os::raw::c_char,
+    pub iLayer: std::os::raw::c_int,
+    pub pFileName: *mut std::os::raw::c_char,
 }
 #[doc = " @brief Structure for dump layer info"]
 pub type SDumpLayer = TagDumpLayer;
@@ -855,7 +855,7 @@ pub type SDumpLayer = TagDumpLayer;
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
 pub struct TagProfileInfo {
-    pub iLayer: ::std::os::raw::c_int,
+    pub iLayer: std::os::raw::c_int,
     #[doc = "< the profile info"]
     pub uiProfileIdc: EProfileIdc,
 }
@@ -865,7 +865,7 @@ pub type SProfileInfo = TagProfileInfo;
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
 pub struct TagLevelInfo {
-    pub iLayer: ::std::os::raw::c_int,
+    pub iLayer: std::os::raw::c_int,
     #[doc = "< the level info"]
     pub uiLevelIdc: ELevelIdc,
 }
@@ -878,9 +878,9 @@ pub struct TagDeliveryStatus {
     #[doc = "< 0: the previous frame isn't delivered,1: the previous frame is delivered"]
     pub bDeliveryFlag: bool,
     #[doc = "< the frame type that is dropped; reserved"]
-    pub iDropFrameType: ::std::os::raw::c_int,
+    pub iDropFrameType: std::os::raw::c_int,
     #[doc = "< the frame size that is dropped; reserved"]
-    pub iDropFrameSize: ::std::os::raw::c_int,
+    pub iDropFrameSize: std::os::raw::c_int,
 }
 #[doc = " @brief Structure for dilivery status"]
 pub type SDeliveryStatus = TagDeliveryStatus;
@@ -889,21 +889,21 @@ pub type SDeliveryStatus = TagDeliveryStatus;
 #[derive(Debug, Copy, Clone)]
 pub struct TagDecoderCapability {
     #[doc = "< profile_idc"]
-    pub iProfileIdc: ::std::os::raw::c_int,
+    pub iProfileIdc: std::os::raw::c_int,
     #[doc = "< profile-iop"]
-    pub iProfileIop: ::std::os::raw::c_int,
+    pub iProfileIop: std::os::raw::c_int,
     #[doc = "< level_idc"]
-    pub iLevelIdc: ::std::os::raw::c_int,
+    pub iLevelIdc: std::os::raw::c_int,
     #[doc = "< max-mbps"]
-    pub iMaxMbps: ::std::os::raw::c_int,
+    pub iMaxMbps: std::os::raw::c_int,
     #[doc = "< max-fs"]
-    pub iMaxFs: ::std::os::raw::c_int,
+    pub iMaxFs: std::os::raw::c_int,
     #[doc = "< max-cpb"]
-    pub iMaxCpb: ::std::os::raw::c_int,
+    pub iMaxCpb: std::os::raw::c_int,
     #[doc = "< max-dpb"]
-    pub iMaxDpb: ::std::os::raw::c_int,
+    pub iMaxDpb: std::os::raw::c_int,
     #[doc = "< max-br"]
-    pub iMaxBr: ::std::os::raw::c_int,
+    pub iMaxBr: std::os::raw::c_int,
     #[doc = "< redundant-pic-cap"]
     pub bRedPicCap: bool,
 }
@@ -914,19 +914,19 @@ pub type SDecoderCapability = TagDecoderCapability;
 #[derive(Debug, Copy, Clone)]
 pub struct TagParserBsInfo {
     #[doc = "< total NAL number in current AU"]
-    pub iNalNum: ::std::os::raw::c_int,
+    pub iNalNum: std::os::raw::c_int,
     #[doc = "< each nal length"]
-    pub pNalLenInByte: *mut ::std::os::raw::c_int,
+    pub pNalLenInByte: *mut std::os::raw::c_int,
     #[doc = "< outputted dst buffer for parsed bitstream"]
-    pub pDstBuff: *mut ::std::os::raw::c_uchar,
+    pub pDstBuff: *mut std::os::raw::c_uchar,
     #[doc = "< required SPS width info"]
-    pub iSpsWidthInPixel: ::std::os::raw::c_int,
+    pub iSpsWidthInPixel: std::os::raw::c_int,
     #[doc = "< required SPS height info"]
-    pub iSpsHeightInPixel: ::std::os::raw::c_int,
+    pub iSpsHeightInPixel: std::os::raw::c_int,
     #[doc = "< input BS timestamp"]
-    pub uiInBsTimeStamp: ::std::os::raw::c_ulonglong,
+    pub uiInBsTimeStamp: std::os::raw::c_ulonglong,
     #[doc = "< output BS timestamp"]
-    pub uiOutBsTimeStamp: ::std::os::raw::c_ulonglong,
+    pub uiOutBsTimeStamp: std::os::raw::c_ulonglong,
 }
 #[doc = " @brief Structure for parse only output"]
 pub type SParserBsInfo = TagParserBsInfo;
@@ -937,9 +937,9 @@ pub type PParserBsInfo = *mut TagParserBsInfo;
 #[derive(Debug, Copy, Clone)]
 pub struct TagVideoEncoderStatistics {
     #[doc = "< the width of encoded frame"]
-    pub uiWidth: ::std::os::raw::c_uint,
+    pub uiWidth: std::os::raw::c_uint,
     #[doc = "< the height of encoded frame"]
-    pub uiHeight: ::std::os::raw::c_uint,
+    pub uiHeight: std::os::raw::c_uint,
     #[doc = "< average_Encoding_Time"]
     pub fAverageFrameSpeedInMs: f32,
     #[doc = "< the average frame rate in, calculate since encoding starts, supposed that the input timestamp is in unit of ms"]
@@ -947,26 +947,26 @@ pub struct TagVideoEncoderStatistics {
     #[doc = "< the frame rate in, in the last second, supposed that the input timestamp is in unit of ms (? useful for checking BR, but is it easy to calculate?"]
     pub fLatestFrameRate: f32,
     #[doc = "< sendrate in Bits per second, calculated within the set time-window"]
-    pub uiBitRate: ::std::os::raw::c_uint,
+    pub uiBitRate: std::os::raw::c_uint,
     #[doc = "< the average QP of last encoded frame"]
-    pub uiAverageFrameQP: ::std::os::raw::c_uint,
+    pub uiAverageFrameQP: std::os::raw::c_uint,
     #[doc = "< number of frames"]
-    pub uiInputFrameCount: ::std::os::raw::c_uint,
+    pub uiInputFrameCount: std::os::raw::c_uint,
     #[doc = "< number of frames"]
-    pub uiSkippedFrameCount: ::std::os::raw::c_uint,
+    pub uiSkippedFrameCount: std::os::raw::c_uint,
     #[doc = "< uiResolutionChangeTimes"]
-    pub uiResolutionChangeTimes: ::std::os::raw::c_uint,
+    pub uiResolutionChangeTimes: std::os::raw::c_uint,
     #[doc = "< number of IDR requests"]
-    pub uiIDRReqNum: ::std::os::raw::c_uint,
+    pub uiIDRReqNum: std::os::raw::c_uint,
     #[doc = "< number of actual IDRs sent"]
-    pub uiIDRSentNum: ::std::os::raw::c_uint,
+    pub uiIDRSentNum: std::os::raw::c_uint,
     #[doc = "< number of LTR sent/marked"]
-    pub uiLTRSentNum: ::std::os::raw::c_uint,
+    pub uiLTRSentNum: std::os::raw::c_uint,
     #[doc = "< Timestamp of updating the statistics"]
-    pub iStatisticsTs: ::std::os::raw::c_longlong,
-    pub iTotalEncodedBytes: ::std::os::raw::c_ulong,
-    pub iLastStatisticsBytes: ::std::os::raw::c_ulong,
-    pub iLastStatisticsFrameCount: ::std::os::raw::c_ulong,
+    pub iStatisticsTs: std::os::raw::c_longlong,
+    pub iTotalEncodedBytes: std::os::raw::c_ulong,
+    pub iLastStatisticsBytes: std::os::raw::c_ulong,
+    pub iLastStatisticsFrameCount: std::os::raw::c_ulong,
 }
 #[doc = " @brief Structure for encoder statistics"]
 pub type SEncoderStatistics = TagVideoEncoderStatistics;
@@ -975,57 +975,57 @@ pub type SEncoderStatistics = TagVideoEncoderStatistics;
 #[derive(Debug, Copy, Clone)]
 pub struct TagVideoDecoderStatistics {
     #[doc = "< the width of encode/decode frame"]
-    pub uiWidth: ::std::os::raw::c_uint,
+    pub uiWidth: std::os::raw::c_uint,
     #[doc = "< the height of encode/decode frame"]
-    pub uiHeight: ::std::os::raw::c_uint,
+    pub uiHeight: std::os::raw::c_uint,
     #[doc = "< average_Decoding_Time"]
     pub fAverageFrameSpeedInMs: f32,
     #[doc = "< actual average_Decoding_Time, including freezing pictures"]
     pub fActualAverageFrameSpeedInMs: f32,
     #[doc = "< number of frames"]
-    pub uiDecodedFrameCount: ::std::os::raw::c_uint,
+    pub uiDecodedFrameCount: std::os::raw::c_uint,
     #[doc = "< uiResolutionChangeTimes"]
-    pub uiResolutionChangeTimes: ::std::os::raw::c_uint,
+    pub uiResolutionChangeTimes: std::os::raw::c_uint,
     #[doc = "< number of correct IDR received"]
-    pub uiIDRCorrectNum: ::std::os::raw::c_uint,
+    pub uiIDRCorrectNum: std::os::raw::c_uint,
     #[doc = "< when EC is on, the average ratio of total EC areas, can be an indicator of reconstruction quality"]
-    pub uiAvgEcRatio: ::std::os::raw::c_uint,
+    pub uiAvgEcRatio: std::os::raw::c_uint,
     #[doc = "< when EC is on, the rough average ratio of propogate EC areas, can be an indicator of reconstruction quality"]
-    pub uiAvgEcPropRatio: ::std::os::raw::c_uint,
+    pub uiAvgEcPropRatio: std::os::raw::c_uint,
     #[doc = "< number of actual unintegrity IDR or not received but eced"]
-    pub uiEcIDRNum: ::std::os::raw::c_uint,
+    pub uiEcIDRNum: std::os::raw::c_uint,
     #[doc = "<"]
-    pub uiEcFrameNum: ::std::os::raw::c_uint,
+    pub uiEcFrameNum: std::os::raw::c_uint,
     #[doc = "< number of whole lost IDR"]
-    pub uiIDRLostNum: ::std::os::raw::c_uint,
+    pub uiIDRLostNum: std::os::raw::c_uint,
     #[doc = "< number of freezing IDR with error (partly received), under resolution change"]
-    pub uiFreezingIDRNum: ::std::os::raw::c_uint,
+    pub uiFreezingIDRNum: std::os::raw::c_uint,
     #[doc = "< number of freezing non-IDR with error"]
-    pub uiFreezingNonIDRNum: ::std::os::raw::c_uint,
+    pub uiFreezingNonIDRNum: std::os::raw::c_uint,
     #[doc = "< average luma QP. default: -1, no correct frame outputted"]
-    pub iAvgLumaQp: ::std::os::raw::c_int,
+    pub iAvgLumaQp: std::os::raw::c_int,
     #[doc = "< number of Sps Invalid report"]
-    pub iSpsReportErrorNum: ::std::os::raw::c_int,
+    pub iSpsReportErrorNum: std::os::raw::c_int,
     #[doc = "< number of SubSps Invalid report"]
-    pub iSubSpsReportErrorNum: ::std::os::raw::c_int,
+    pub iSubSpsReportErrorNum: std::os::raw::c_int,
     #[doc = "< number of Pps Invalid report"]
-    pub iPpsReportErrorNum: ::std::os::raw::c_int,
+    pub iPpsReportErrorNum: std::os::raw::c_int,
     #[doc = "< number of Sps NoExist Nal"]
-    pub iSpsNoExistNalNum: ::std::os::raw::c_int,
+    pub iSpsNoExistNalNum: std::os::raw::c_int,
     #[doc = "< number of SubSps NoExist Nal"]
-    pub iSubSpsNoExistNalNum: ::std::os::raw::c_int,
+    pub iSubSpsNoExistNalNum: std::os::raw::c_int,
     #[doc = "< number of Pps NoExist Nal"]
-    pub iPpsNoExistNalNum: ::std::os::raw::c_int,
+    pub iPpsNoExistNalNum: std::os::raw::c_int,
     #[doc = "< Profile idc in syntax"]
-    pub uiProfile: ::std::os::raw::c_uint,
+    pub uiProfile: std::os::raw::c_uint,
     #[doc = "< level idc according to Annex A-1"]
-    pub uiLevel: ::std::os::raw::c_uint,
+    pub uiLevel: std::os::raw::c_uint,
     #[doc = "< current active SPS id"]
-    pub iCurrentActiveSpsId: ::std::os::raw::c_int,
+    pub iCurrentActiveSpsId: std::os::raw::c_int,
     #[doc = "< current active PPS id"]
-    pub iCurrentActivePpsId: ::std::os::raw::c_int,
+    pub iCurrentActivePpsId: std::os::raw::c_int,
     #[doc = "< frame interval of statistics log"]
-    pub iStatisticsLogInterval: ::std::os::raw::c_uint,
+    pub iStatisticsLogInterval: std::os::raw::c_uint,
 }
 #[doc = " @brief  Structure for decoder statistics"]
 pub type SDecoderStatistics = TagVideoDecoderStatistics;
@@ -1034,9 +1034,9 @@ pub type SDecoderStatistics = TagVideoDecoderStatistics;
 #[derive(Debug, Copy, Clone)]
 pub struct TagVuiSarInfo {
     #[doc = "< SAR width"]
-    pub uiSarWidth: ::std::os::raw::c_uint,
+    pub uiSarWidth: std::os::raw::c_uint,
     #[doc = "< SAR height"]
-    pub uiSarHeight: ::std::os::raw::c_uint,
+    pub uiSarHeight: std::os::raw::c_uint,
     #[doc = "< SAR overscan flag"]
     pub bOverscanAppropriateFlag: bool,
 }
@@ -1048,189 +1048,184 @@ pub type ISVCEncoder = *const ISVCEncoderVtbl;
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
 pub struct ISVCEncoderVtbl {
-    pub Initialize: ::std::option::Option<
+    pub Initialize: Option<
         unsafe extern "C" fn(
             arg1: *mut ISVCEncoder,
             pParam: *const SEncParamBase,
-        ) -> ::std::os::raw::c_int,
+        ) -> std::os::raw::c_int,
     >,
-    pub InitializeExt: ::std::option::Option<
+    pub InitializeExt: Option<
         unsafe extern "C" fn(
             arg1: *mut ISVCEncoder,
             pParam: *const SEncParamExt,
-        ) -> ::std::os::raw::c_int,
+        ) -> std::os::raw::c_int,
     >,
-    pub GetDefaultParams: ::std::option::Option<
+    pub GetDefaultParams: Option<
         unsafe extern "C" fn(
             arg1: *mut ISVCEncoder,
             pParam: *mut SEncParamExt,
-        ) -> ::std::os::raw::c_int,
+        ) -> std::os::raw::c_int,
     >,
-    pub Uninitialize: ::std::option::Option<
-        unsafe extern "C" fn(arg1: *mut ISVCEncoder) -> ::std::os::raw::c_int,
-    >,
-    pub EncodeFrame: ::std::option::Option<
+    pub Uninitialize: Option<unsafe extern "C" fn(arg1: *mut ISVCEncoder) -> std::os::raw::c_int>,
+    pub EncodeFrame: Option<
         unsafe extern "C" fn(
             arg1: *mut ISVCEncoder,
             kpSrcPic: *const SSourcePicture,
             pBsInfo: *mut SFrameBSInfo,
-        ) -> ::std::os::raw::c_int,
+        ) -> std::os::raw::c_int,
     >,
-    pub EncodeParameterSets: ::std::option::Option<
+    pub EncodeParameterSets: Option<
         unsafe extern "C" fn(
             arg1: *mut ISVCEncoder,
             pBsInfo: *mut SFrameBSInfo,
-        ) -> ::std::os::raw::c_int,
+        ) -> std::os::raw::c_int,
     >,
-    pub ForceIntraFrame: ::std::option::Option<
-        unsafe extern "C" fn(arg1: *mut ISVCEncoder, bIDR: bool) -> ::std::os::raw::c_int,
-    >,
-    pub SetOption: ::std::option::Option<
+    pub ForceIntraFrame:
+        Option<unsafe extern "C" fn(arg1: *mut ISVCEncoder, bIDR: bool) -> std::os::raw::c_int>,
+    pub SetOption: Option<
         unsafe extern "C" fn(
             arg1: *mut ISVCEncoder,
             eOptionId: ENCODER_OPTION,
-            pOption: *mut ::std::os::raw::c_void,
-        ) -> ::std::os::raw::c_int,
+            pOption: *mut std::os::raw::c_void,
+        ) -> std::os::raw::c_int,
     >,
-    pub GetOption: ::std::option::Option<
+    pub GetOption: Option<
         unsafe extern "C" fn(
             arg1: *mut ISVCEncoder,
             eOptionId: ENCODER_OPTION,
-            pOption: *mut ::std::os::raw::c_void,
-        ) -> ::std::os::raw::c_int,
+            pOption: *mut std::os::raw::c_void,
+        ) -> std::os::raw::c_int,
     >,
 }
 pub type ISVCDecoder = *const ISVCDecoderVtbl;
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
 pub struct ISVCDecoderVtbl {
-    pub Initialize: ::std::option::Option<
+    pub Initialize: Option<
         unsafe extern "C" fn(
             arg1: *mut ISVCDecoder,
             pParam: *const SDecodingParam,
-        ) -> ::std::os::raw::c_long,
+        ) -> std::os::raw::c_long,
     >,
-    pub Uninitialize: ::std::option::Option<
-        unsafe extern "C" fn(arg1: *mut ISVCDecoder) -> ::std::os::raw::c_long,
-    >,
-    pub DecodeFrame: ::std::option::Option<
+    pub Uninitialize: Option<unsafe extern "C" fn(arg1: *mut ISVCDecoder) -> std::os::raw::c_long>,
+    pub DecodeFrame: Option<
         unsafe extern "C" fn(
             arg1: *mut ISVCDecoder,
-            pSrc: *const ::std::os::raw::c_uchar,
-            iSrcLen: ::std::os::raw::c_int,
-            ppDst: *mut *mut ::std::os::raw::c_uchar,
-            pStride: *mut ::std::os::raw::c_int,
-            iWidth: *mut ::std::os::raw::c_int,
-            iHeight: *mut ::std::os::raw::c_int,
+            pSrc: *const std::os::raw::c_uchar,
+            iSrcLen: std::os::raw::c_int,
+            ppDst: *mut *mut std::os::raw::c_uchar,
+            pStride: *mut std::os::raw::c_int,
+            iWidth: *mut std::os::raw::c_int,
+            iHeight: *mut std::os::raw::c_int,
         ) -> DECODING_STATE,
     >,
-    pub DecodeFrameNoDelay: ::std::option::Option<
+    pub DecodeFrameNoDelay: Option<
         unsafe extern "C" fn(
             arg1: *mut ISVCDecoder,
-            pSrc: *const ::std::os::raw::c_uchar,
-            iSrcLen: ::std::os::raw::c_int,
-            ppDst: *mut *mut ::std::os::raw::c_uchar,
+            pSrc: *const std::os::raw::c_uchar,
+            iSrcLen: std::os::raw::c_int,
+            ppDst: *mut *mut std::os::raw::c_uchar,
             pDstInfo: *mut SBufferInfo,
         ) -> DECODING_STATE,
     >,
-    pub DecodeFrame2: ::std::option::Option<
+    pub DecodeFrame2: Option<
         unsafe extern "C" fn(
             arg1: *mut ISVCDecoder,
-            pSrc: *const ::std::os::raw::c_uchar,
-            iSrcLen: ::std::os::raw::c_int,
-            ppDst: *mut *mut ::std::os::raw::c_uchar,
+            pSrc: *const std::os::raw::c_uchar,
+            iSrcLen: std::os::raw::c_int,
+            ppDst: *mut *mut std::os::raw::c_uchar,
             pDstInfo: *mut SBufferInfo,
         ) -> DECODING_STATE,
     >,
-    pub FlushFrame: ::std::option::Option<
+    pub FlushFrame: Option<
         unsafe extern "C" fn(
             arg1: *mut ISVCDecoder,
-            ppDst: *mut *mut ::std::os::raw::c_uchar,
+            ppDst: *mut *mut std::os::raw::c_uchar,
             pDstInfo: *mut SBufferInfo,
         ) -> DECODING_STATE,
     >,
-    pub DecodeParser: ::std::option::Option<
+    pub DecodeParser: Option<
         unsafe extern "C" fn(
             arg1: *mut ISVCDecoder,
-            pSrc: *const ::std::os::raw::c_uchar,
-            iSrcLen: ::std::os::raw::c_int,
+            pSrc: *const std::os::raw::c_uchar,
+            iSrcLen: std::os::raw::c_int,
             pDstInfo: *mut SParserBsInfo,
         ) -> DECODING_STATE,
     >,
-    pub DecodeFrameEx: ::std::option::Option<
+    pub DecodeFrameEx: Option<
         unsafe extern "C" fn(
             arg1: *mut ISVCDecoder,
-            pSrc: *const ::std::os::raw::c_uchar,
-            iSrcLen: ::std::os::raw::c_int,
-            pDst: *mut ::std::os::raw::c_uchar,
-            iDstStride: ::std::os::raw::c_int,
-            iDstLen: *mut ::std::os::raw::c_int,
-            iWidth: *mut ::std::os::raw::c_int,
-            iHeight: *mut ::std::os::raw::c_int,
-            iColorFormat: *mut ::std::os::raw::c_int,
+            pSrc: *const std::os::raw::c_uchar,
+            iSrcLen: std::os::raw::c_int,
+            pDst: *mut std::os::raw::c_uchar,
+            iDstStride: std::os::raw::c_int,
+            iDstLen: *mut std::os::raw::c_int,
+            iWidth: *mut std::os::raw::c_int,
+            iHeight: *mut std::os::raw::c_int,
+            iColorFormat: *mut std::os::raw::c_int,
         ) -> DECODING_STATE,
     >,
-    pub SetOption: ::std::option::Option<
+    pub SetOption: Option<
         unsafe extern "C" fn(
             arg1: *mut ISVCDecoder,
             eOptionId: DECODER_OPTION,
-            pOption: *mut ::std::os::raw::c_void,
-        ) -> ::std::os::raw::c_long,
+            pOption: *mut std::os::raw::c_void,
+        ) -> std::os::raw::c_long,
     >,
-    pub GetOption: ::std::option::Option<
+    pub GetOption: Option<
         unsafe extern "C" fn(
             arg1: *mut ISVCDecoder,
             eOptionId: DECODER_OPTION,
-            pOption: *mut ::std::os::raw::c_void,
-        ) -> ::std::os::raw::c_long,
+            pOption: *mut std::os::raw::c_void,
+        ) -> std::os::raw::c_long,
     >,
 }
-pub type WelsTraceCallback = ::std::option::Option<
+pub type WelsTraceCallback = Option<
     unsafe extern "C" fn(
-        ctx: *mut ::std::os::raw::c_void,
-        level: ::std::os::raw::c_int,
-        string: *const ::std::os::raw::c_char,
+        ctx: *mut std::os::raw::c_void,
+        level: std::os::raw::c_int,
+        string: *const std::os::raw::c_char,
     ),
 >;
 pub struct OpenH264 {
-    __library: ::libloading::Library,
-    pub kiKeyNumMultiple: Result<*mut [::std::os::raw::c_char; 6usize], ::libloading::Error>,
+    __library: libloading::Library,
+    pub kiKeyNumMultiple: Result<*mut [std::os::raw::c_char; 6usize], libloading::Error>,
     pub WelsCreateSVCEncoder: Result<
-        unsafe extern "C" fn(ppEncoder: *mut *mut ISVCEncoder) -> ::std::os::raw::c_int,
-        ::libloading::Error,
+        unsafe extern "C" fn(ppEncoder: *mut *mut ISVCEncoder) -> std::os::raw::c_int,
+        libloading::Error,
     >,
     pub WelsDestroySVCEncoder:
-        Result<unsafe extern "C" fn(pEncoder: *mut ISVCEncoder), ::libloading::Error>,
+        Result<unsafe extern "C" fn(pEncoder: *mut ISVCEncoder), libloading::Error>,
     pub WelsGetDecoderCapability: Result<
-        unsafe extern "C" fn(pDecCapability: *mut SDecoderCapability) -> ::std::os::raw::c_int,
-        ::libloading::Error,
+        unsafe extern "C" fn(pDecCapability: *mut SDecoderCapability) -> std::os::raw::c_int,
+        libloading::Error,
     >,
     pub WelsCreateDecoder: Result<
-        unsafe extern "C" fn(ppDecoder: *mut *mut ISVCDecoder) -> ::std::os::raw::c_long,
-        ::libloading::Error,
+        unsafe extern "C" fn(ppDecoder: *mut *mut ISVCDecoder) -> std::os::raw::c_long,
+        libloading::Error,
     >,
     pub WelsDestroyDecoder:
-        Result<unsafe extern "C" fn(pDecoder: *mut ISVCDecoder), ::libloading::Error>,
-    pub WelsGetCodecVersion: Result<unsafe extern "C" fn() -> OpenH264Version, ::libloading::Error>,
+        Result<unsafe extern "C" fn(pDecoder: *mut ISVCDecoder), libloading::Error>,
+    pub WelsGetCodecVersion: Result<unsafe extern "C" fn() -> OpenH264Version, libloading::Error>,
     pub WelsGetCodecVersionEx:
-        Result<unsafe extern "C" fn(pVersion: *mut OpenH264Version), ::libloading::Error>,
+        Result<unsafe extern "C" fn(pVersion: *mut OpenH264Version), libloading::Error>,
 }
 impl OpenH264 {
-    pub unsafe fn new<P>(path: P) -> Result<Self, ::libloading::Error>
+    pub unsafe fn new<P>(path: P) -> Result<Self, libloading::Error>
     where
-        P: AsRef<::std::ffi::OsStr>,
+        P: AsRef<std::ffi::OsStr>,
     {
         let path = path.as_ref();
-        let library = ::libloading::Library::new(path)?;
+        let library = libloading::Library::new(path)?;
         Self::from_library(library)
     }
-    pub unsafe fn from_library<L>(library: L) -> Result<Self, ::libloading::Error>
+    pub unsafe fn from_library<L>(library: L) -> Result<Self, libloading::Error>
     where
-        L: Into<::libloading::Library>,
+        L: Into<libloading::Library>,
     {
         let __library = library.into();
         let kiKeyNumMultiple = __library
-            .get::<*mut [::std::os::raw::c_char; 6usize]>(b"kiKeyNumMultiple\0")
+            .get::<*mut [std::os::raw::c_char; 6usize]>(b"kiKeyNumMultiple\0")
             .map(|sym| *sym);
         let WelsCreateSVCEncoder = __library.get(b"WelsCreateSVCEncoder\0").map(|sym| *sym);
         let WelsDestroySVCEncoder = __library.get(b"WelsDestroySVCEncoder\0").map(|sym| *sym);
@@ -1251,7 +1246,7 @@ impl OpenH264 {
             WelsGetCodecVersionEx,
         })
     }
-    pub unsafe fn kiKeyNumMultiple(&self) -> *mut [::std::os::raw::c_char; 6usize] {
+    pub unsafe fn kiKeyNumMultiple(&self) -> *mut [std::os::raw::c_char; 6usize] {
         *self
             .kiKeyNumMultiple
             .as_ref()
@@ -1261,7 +1256,7 @@ impl OpenH264 {
     pub unsafe fn WelsCreateSVCEncoder(
         &self,
         ppEncoder: *mut *mut ISVCEncoder,
-    ) -> ::std::os::raw::c_int {
+    ) -> std::os::raw::c_int {
         (self
             .WelsCreateSVCEncoder
             .as_ref()
@@ -1278,7 +1273,7 @@ impl OpenH264 {
     pub unsafe fn WelsGetDecoderCapability(
         &self,
         pDecCapability: *mut SDecoderCapability,
-    ) -> ::std::os::raw::c_int {
+    ) -> std::os::raw::c_int {
         (self
             .WelsGetDecoderCapability
             .as_ref()
@@ -1288,7 +1283,7 @@ impl OpenH264 {
     pub unsafe fn WelsCreateDecoder(
         &self,
         ppDecoder: *mut *mut ISVCDecoder,
-    ) -> ::std::os::raw::c_long {
+    ) -> std::os::raw::c_long {
         (self
             .WelsCreateDecoder
             .as_ref()

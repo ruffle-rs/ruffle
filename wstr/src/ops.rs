@@ -88,7 +88,7 @@ pub fn str_fmt(s: &WStr, f: &mut fmt::Formatter<'_>) -> fmt::Result {
 pub fn str_debug_fmt(s: &WStr, f: &mut fmt::Formatter<'_>) -> fmt::Result {
     f.write_char('"')?;
 
-    for c in core::char::decode_utf16(s.iter()) {
+    for c in char::decode_utf16(s.iter()) {
         match c {
             Ok(c) => c.escape_debug().try_for_each(|c| f.write_char(c))?,
             Err(err) => write!(f, "\\u{{{:x}}}", err.unpaired_surrogate())?,
@@ -166,7 +166,7 @@ pub fn str_offset_in(s: &WStr, other: &WStr) -> Option<usize> {
         }
         (Units::Wide(a), Units::Wide(b)) => (a.as_ptr() as usize)
             .checked_sub(b.as_ptr() as usize)
-            .map(|n| n / core::mem::size_of::<u16>()),
+            .map(|n| n / size_of::<u16>()),
         _ => None,
     };
 
