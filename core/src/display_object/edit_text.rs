@@ -15,7 +15,8 @@ use crate::display_object::interactive::{
     InteractiveObject, InteractiveObjectBase, TInteractiveObject,
 };
 use crate::display_object::{
-    Avm1TextFieldBinding, BoundsMode, DisplayObjectBase, HitTestOptions, TDisplayObject,
+    Avm1TextFieldBinding, BoundsMode, DisplayObject, DisplayObjectBase, HitTestOptions,
+    TDisplayObject,
 };
 use crate::events::{
     ClipEvent, ClipEventResult, ImeCursorArea, ImeEvent, ImeNotification, ImePurpose,
@@ -28,7 +29,6 @@ use crate::html::{
     FormatSpans, Layout, LayoutBox, LayoutContent, LayoutContext, LayoutLine, LayoutMetrics,
     Position, TextFormat,
 };
-use crate::prelude::*;
 use crate::string::{AvmString, SwfStrExt as _, WStr, WString, utils as string_utils};
 use crate::tag_utils::SwfMovie;
 use crate::vminterface::{AvmObject, Instantiator};

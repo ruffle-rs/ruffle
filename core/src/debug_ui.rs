@@ -20,8 +20,7 @@ use crate::debug_ui::handle::{
     MovieHandle,
 };
 use crate::debug_ui::movie::{MovieListWindow, MovieWindow};
-use crate::display_object::TDisplayObject;
-use crate::prelude::DisplayObject;
+use crate::display_object::{DisplayObject, TDisplayObject};
 use gc_arena::DynamicRootSet;
 use hashbrown::HashMap;
 use std::fmt::{Debug, Formatter};

@@ -31,8 +31,9 @@ use crate::context_menu::{
 };
 use crate::display_object::Avm2MousePick;
 use crate::display_object::{
-    EditText, GotoInfo, InteractiveObject, Stage, StageAlign, StageDisplayState, StageScaleMode,
-    StopOrPlay, TDisplayObject, TDisplayObjectContainer, TInteractiveObject, WindowMode,
+    DisplayObject, EditText, GotoInfo, InteractiveObject, Stage, StageAlign, StageDisplayState,
+    StageScaleMode, StopOrPlay, TDisplayObject, TDisplayObjectContainer, TInteractiveObject,
+    WindowMode,
 };
 use crate::events::GamepadButton;
 use crate::events::PlayerNotification;
@@ -50,7 +51,6 @@ use crate::loader::{LoadBehavior, LoadManager};
 use crate::local_connection::LocalConnections;
 use crate::net_connection::NetConnections;
 use crate::orphan_manager::OrphanManager;
-use crate::prelude::*;
 use crate::socket::Sockets;
 use crate::streams::StreamManager;
 use crate::string::{AvmString, AvmStringInterner, StringContext};

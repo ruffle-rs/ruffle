@@ -2,10 +2,8 @@ use crate::avm1::{PropertyMap as Avm1PropertyMap, PropertyMap};
 use crate::avm2::{Class as Avm2Class, Domain as Avm2Domain};
 use crate::backend::audio::SoundHandle;
 use crate::character::Character;
-
-use crate::display_object::{Bitmap, Graphic, MorphShape, Text};
+use crate::display_object::{Bitmap, DisplayObject, Graphic, MorphShape, Text};
 use crate::font::{Font, FontDescriptor, FontLike, FontQuery, FontType};
-use crate::prelude::*;
 use crate::string::AvmString;
 use crate::tag_utils::SwfMovie;
 use gc_arena::{Collect, Mutation};
