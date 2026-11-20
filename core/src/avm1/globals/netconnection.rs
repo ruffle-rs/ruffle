@@ -1,5 +1,6 @@
 use crate::avm1::amf::{
-    Amf0ReferenceCache, SerializationContext, deserialize_value, serialize_with_context,
+    Amf0ReferenceCache, DeserializationContext, SerializationContext, deserialize_value,
+    serialize_with_context,
 };
 use crate::avm1::property_decl::{DeclContext, PropertyOrder, StaticDeclarations, SystemClass};
 use crate::avm1::{
@@ -118,7 +119,12 @@ impl<'gc> NetConnection<'gc> {
             ResponderCallback::Status => istr!("onStatus"),
         };
         let mut reference_cache = Amf0ReferenceCache::default();
-        let value = deserialize_value(&mut activation, message, &mut reference_cache);
+        let value = deserialize_value(
+            &mut activation,
+            message,
+            &mut reference_cache,
+            DeserializationContext::NetConnection,
+        );
         responder.call_method(
             method_name,
             &[value],

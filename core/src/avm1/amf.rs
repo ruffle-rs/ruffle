@@ -608,7 +608,7 @@ pub(crate) fn recursive_serialize<'gc>(
 
 /// Selects the Flash-specific behavior used when deserializing an AMF0 value.
 #[derive(Clone, Copy)]
-enum DeserializationContext {
+pub(crate) enum DeserializationContext {
     /// NetConnection remoting: XML values participate in the reference table.
     NetConnection,
     /// LocalConnection: Date construction is deferred and XML is not referenceable.
@@ -617,52 +617,20 @@ enum DeserializationContext {
     SharedObject,
 }
 
-/// Deserialize an AmfValue to a Value, using AMF remoting reference-table semantics.
-pub fn deserialize_value<'gc>(
+/// Deserialize an AMF0 value using the transport's reference-table semantics.
+pub(crate) fn deserialize_value<'gc>(
     activation: &mut Activation<'_, 'gc>,
     val: &AmfValue,
     reference_cache: &mut Amf0ReferenceCache<'gc>,
+    deserialization_context: DeserializationContext,
 ) -> Value<'gc> {
     let mut deferred_dates = Vec::new();
     deserialize_value_inner(
         activation,
         val,
         reference_cache,
-        DeserializationContext::NetConnection,
+        deserialization_context,
         &mut deferred_dates,
-    )
-}
-
-/// Deserialize an LSO value, where XML values do not occupy reference-table slots.
-/// Used by SharedObject deserialization.
-pub(crate) fn deserialize_lso_value<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    val: &AmfValue,
-    reference_cache: &mut Amf0ReferenceCache<'gc>,
-) -> Value<'gc> {
-    let mut deferred_dates = Vec::new();
-    deserialize_value_inner(
-        activation,
-        val,
-        reference_cache,
-        DeserializationContext::SharedObject,
-        &mut deferred_dates,
-    )
-}
-
-/// Deserialize a LocalConnection LSO value, applying LocalConnection-specific class behavior.
-fn deserialize_local_connection_lso_value<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    val: &AmfValue,
-    reference_cache: &mut Amf0ReferenceCache<'gc>,
-    deferred_dates: &mut Vec<DeferredAmf0Date<'gc>>,
-) -> Value<'gc> {
-    deserialize_value_inner(
-        activation,
-        val,
-        reference_cache,
-        DeserializationContext::LocalConnection,
-        deferred_dates,
     )
 }
 
@@ -939,6 +907,7 @@ fn deserialize_local_connection_array<'gc, 'a>(
     activation: &mut Activation<'_, 'gc>,
     obj: Object<'gc>,
     entries: impl Iterator<Item = Amf0ArrayEntry<'a>>,
+    deserialization_context: DeserializationContext,
     deferred_dates: &mut Vec<DeferredAmf0Date<'gc>>,
 ) -> Value<'gc> {
     let root: Value<'gc> = obj.into();
@@ -946,10 +915,11 @@ fn deserialize_local_connection_array<'gc, 'a>(
 
     deserialize_array_entries(activation, obj, entries, |activation, value| {
         let mut reference_cache = reference_state.cache_for_property(root);
-        let child = deserialize_local_connection_lso_value(
+        let child = deserialize_value_inner(
             activation,
             value,
             &mut reference_cache,
+            deserialization_context,
             deferred_dates,
         );
         reference_state.advance(value);
@@ -963,6 +933,7 @@ fn deserialize_local_connection_array<'gc, 'a>(
 pub(crate) fn deserialize_local_connection_value<'gc>(
     activation: &mut Activation<'_, 'gc>,
     val: &AmfValue,
+    deserialization_context: DeserializationContext,
     deferred_dates: &mut Vec<DeferredAmf0Date<'gc>>,
 ) -> Value<'gc> {
     match val {
@@ -980,10 +951,11 @@ pub(crate) fn deserialize_local_connection_value<'gc>(
                 data.elements.iter(),
                 |activation, value| {
                     let mut reference_cache = reference_state.cache_for_property(root);
-                    let child = deserialize_local_connection_lso_value(
+                    let child = deserialize_value_inner(
                         activation,
                         value,
                         &mut reference_cache,
+                        deserialization_context,
                         deferred_dates,
                     );
                     reference_state.advance(value);
@@ -1009,6 +981,7 @@ pub(crate) fn deserialize_local_connection_value<'gc>(
                 activation,
                 obj,
                 dense_entries.chain(property_entries),
+                deserialization_context,
                 deferred_dates,
             )
         }
@@ -1025,14 +998,21 @@ pub(crate) fn deserialize_local_connection_value<'gc>(
                 .enumerate()
                 .map(|(index, value)| Amf0ArrayEntry::Dense { index, value });
 
-            deserialize_local_connection_array(activation, obj, entries, deferred_dates)
+            deserialize_local_connection_array(
+                activation,
+                obj,
+                entries,
+                deserialization_context,
+                deferred_dates,
+            )
         }
         _ => {
             let mut reference_cache = Amf0ReferenceCache::default();
-            deserialize_local_connection_lso_value(
+            deserialize_value_inner(
                 activation,
                 val,
                 &mut reference_cache,
+                deserialization_context,
                 deferred_dates,
             )
         }
@@ -1287,9 +1267,14 @@ mod tests {
             };
 
             let mut deferred_dates = Vec::new();
-            let array = deserialize_local_connection_value(activation, &value, &mut deferred_dates)
-                .as_object(activation)
-                .expect("LocalConnection strict array should deserialize to an array");
+            let array = deserialize_local_connection_value(
+                activation,
+                &value,
+                DeserializationContext::LocalConnection,
+                &mut deferred_dates,
+            )
+            .as_object(activation)
+            .expect("LocalConnection strict array should deserialize to an array");
 
             assert_eq!(array.get_element(activation, 0), 42.0.into());
 
@@ -1322,9 +1307,14 @@ mod tests {
             };
 
             let mut deferred_dates = Vec::new();
-            let array = deserialize_local_connection_value(activation, &value, &mut deferred_dates)
-                .as_object(activation)
-                .expect("LocalConnection ECMA array should deserialize to an array");
+            let array = deserialize_local_connection_value(
+                activation,
+                &value,
+                DeserializationContext::LocalConnection,
+                &mut deferred_dates,
+            )
+            .as_object(activation)
+            .expect("LocalConnection ECMA array should deserialize to an array");
 
             let Value::Object(first) = array.get_element(activation, 0) else {
                 panic!("First dense ECMA array value should be an object");

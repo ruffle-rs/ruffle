@@ -2,7 +2,8 @@
 
 use crate::avm1::activation::Activation;
 use crate::avm1::amf::{
-    SerializationContext, deserialize_local_connection_value, serialize_with_context,
+    DeserializationContext, SerializationContext, deserialize_local_connection_value,
+    serialize_with_context,
 };
 use crate::avm1::error::Error;
 use crate::avm1::globals::date::DeferredAmf0Date;
@@ -117,6 +118,7 @@ impl<'gc> LocalConnection<'gc> {
             args.push(deserialize_local_connection_value(
                 &mut activation,
                 &arg,
+                DeserializationContext::LocalConnection,
                 &mut deferred_dates,
             ));
         }
