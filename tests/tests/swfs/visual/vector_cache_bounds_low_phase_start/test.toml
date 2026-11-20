@@ -1,0 +1,21 @@
+num_frames = 91
+
+[image_comparisons.frame05]
+trigger = 5
+tolerance = 0
+
+[image_comparisons.frame06]
+trigger = 6
+tolerance = 0
+
+[image_comparisons.frame07]
+trigger = 7
+tolerance = 0
+
+[image_comparisons.frame08]
+trigger = 8
+tolerance = 0
+
+[player_options]
+with_renderer = { optional = false, quality = "low" }
+viewport_dimensions = { width = 550, height = 240, scale_factor = 1.0 }
