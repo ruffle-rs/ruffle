@@ -352,7 +352,7 @@ struct TextSnapshotChunk<'gc> {
     global_index: usize,
 }
 
-impl<'gc> TextSnapshotChunk<'gc> {
+impl TextSnapshotChunk<'_> {
     fn sub_string(&self, global_index_start: usize, global_index_end: usize) -> &WStr {
         let start = global_index_start.saturating_sub(self.global_index);
         let end = global_index_end

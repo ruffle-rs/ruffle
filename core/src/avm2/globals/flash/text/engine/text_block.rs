@@ -565,8 +565,8 @@ enum HandleContentError {
     NullElementFormat,
 }
 
-fn get_spans_from_content<'gc>(
-    content: ContentElementObject<'gc>,
+fn get_spans_from_content(
+    content: ContentElementObject,
 ) -> Result<FormatSpans, HandleContentError> {
     let mut all_text = WString::new();
     let mut all_spans = Vec::new();
@@ -578,8 +578,8 @@ fn get_spans_from_content<'gc>(
     Ok(spans)
 }
 
-fn handle_content_element<'gc>(
-    content: ContentElementObject<'gc>,
+fn handle_content_element(
+    content: ContentElementObject,
     all_text: &mut WString,
     all_spans: &mut Vec<TextSpan>,
 ) -> Result<(), HandleContentError> {

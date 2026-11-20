@@ -1210,7 +1210,7 @@ impl TriangleData {
     }
 }
 
-fn make_point<'gc>([x, y]: &[Value<'gc>; 2]) -> Point<Twips> {
+fn make_point([x, y]: &[Value; 2]) -> Point<Twips> {
     let x = Twips::from_pixels(x.as_f64());
     let y = Twips::from_pixels(y.as_f64());
 

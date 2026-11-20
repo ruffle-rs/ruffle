@@ -441,13 +441,13 @@ impl<'a> PushValues<'a> {
     }
 }
 
-impl<'a> fmt::Debug for PushValues<'a> {
+impl fmt::Debug for PushValues<'_> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         f.write_str("PushValues { .. }")
     }
 }
 
-impl<'a> PartialEq for PushValues<'a> {
+impl PartialEq for PushValues<'_> {
     fn eq(&self, other: &Self) -> bool {
         Iterator::eq(self.clone().map(Result::ok), other.clone().map(Result::ok))
     }

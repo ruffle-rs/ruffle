@@ -142,6 +142,7 @@ dbg_macro = "warn"
 enum_glob_use = "deny"
 branches_sharing_code = "warn"
 needless_pass_by_ref_mut = "warn"
+elidable_lifetime_names = "warn"
 
 # TODO Enable used_underscore_binding when false positives get fixed.
 

@@ -188,7 +188,7 @@ pub struct FunctionArgsIter<'a, 'gc> {
     back: usize,
 }
 
-impl<'a, 'gc> Iterator for FunctionArgsIter<'a, 'gc> {
+impl<'gc> Iterator for FunctionArgsIter<'_, 'gc> {
     type Item = Value<'gc>;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -206,7 +206,7 @@ impl<'a, 'gc> Iterator for FunctionArgsIter<'a, 'gc> {
     }
 }
 
-impl<'a, 'gc> DoubleEndedIterator for FunctionArgsIter<'a, 'gc> {
+impl DoubleEndedIterator for FunctionArgsIter<'_, '_> {
     fn next_back(&mut self) -> Option<Self::Item> {
         if self.next >= self.back {
             None
@@ -378,7 +378,7 @@ impl fmt::Debug for BoundMethod<'_> {
     }
 }
 
-pub fn display_function<'gc>(output: &mut WString, method: Method<'gc>) {
+pub fn display_function(output: &mut WString, method: Method) {
     let bound_class = method.bound_class();
 
     if let Some(bound_class) = bound_class {

@@ -220,9 +220,9 @@ fn process_jump(
 }
 
 #[expect(clippy::too_many_arguments)]
-fn run_dse<'gc>(
+fn run_dse(
     start_index: usize,
-    ops: &[Cell<Op<'gc>>],
+    ops: &[Cell<Op>],
     initial_state: Locals,
     stores_map: &mut HashMap<usize, bool>,
     abstract_states: &mut [Option<Locals>],

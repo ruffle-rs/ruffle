@@ -163,7 +163,7 @@ impl Default for InteractiveObjectBase<'_> {
     }
 }
 
-impl<'gc> InteractiveObjectBase<'gc> {
+impl InteractiveObjectBase<'_> {
     fn contains_flag(&self, flag: InteractiveObjectFlags) -> bool {
         self.flags.get().contains(flag)
     }

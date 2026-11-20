@@ -206,7 +206,7 @@ fn sync_from_display_object<'gc>(
     Ok(())
 }
 
-fn sync_to_display_object<'gc>(this: Object<'gc>) -> Result<(), Error<'gc>> {
+fn sync_to_display_object(this: Object) -> Result<(), Error> {
     let Some(dobj) = this.get_slot(pp_slots::DISPLAY_OBJECT).as_object() else {
         // Not associated with DO. Unnecessary to sync.
         return Ok(());

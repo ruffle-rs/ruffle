@@ -93,7 +93,7 @@ impl<'gc> OrphanManager<'gc> {
     }
 }
 
-impl<'gc> Default for OrphanManager<'gc> {
+impl Default for OrphanManager<'_> {
     fn default() -> Self {
         Self {
             orphans: Rc::new(Vec::new()),

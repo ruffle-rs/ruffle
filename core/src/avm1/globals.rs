@@ -487,7 +487,7 @@ pub struct SystemPrototypes<'gc> {
     pub object_constructor: Object<'gc>,
 }
 
-pub fn load_playerglobal<'gc>(context: &mut UpdateContext<'gc>) {
+pub fn load_playerglobal(context: &mut UpdateContext) {
     let movie_data = SwfMovieData::from_data(PLAYERGLOBAL, "file:///".into(), None, None)
         .expect("playerglobal_avm1.swf should be valid");
     let movie = SwfMovie::new(context.gc(), movie_data);

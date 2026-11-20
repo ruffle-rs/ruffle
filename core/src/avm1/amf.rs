@@ -758,10 +758,10 @@ fn count_amf0_references(value: &AmfValue) -> usize {
 /// and placeholders for objects in earlier properties. Those earlier objects
 /// keep their wire indices, but Flash does not preserve their identity when a
 /// later property refers to them.
-fn local_connection_reference_cache<'gc>(
-    root: Value<'gc>,
+fn local_connection_reference_cache(
+    root: Value,
     references_before_property: usize,
-) -> Amf0ReferenceCache<'gc> {
+) -> Amf0ReferenceCache {
     let mut reference_cache = Amf0ReferenceCache::default();
     reference_cache.insert(root);
     for _ in 1..references_before_property.min(MAX_AMF0_REFERENCES) {

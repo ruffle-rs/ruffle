@@ -5078,9 +5078,9 @@ pub struct ClipEventHandler {
 
 impl ClipEventHandler {
     /// Build an event handler from a SWF movie and a parsed ClipAction.
-    pub fn new<'gc>(
-        swf_action: swf::ClipAction<'_>,
-        movie: SwfMovie<'gc>,
+    pub fn new(
+        swf_action: swf::ClipAction,
+        movie: SwfMovie,
         all_event_flags: ClipEventFlag,
     ) -> Self {
         let declared_events = swf_action.events;
