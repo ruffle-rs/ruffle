@@ -1,0 +1,9 @@
+initial scroll=1 bottomScroll=2
+scroll=1 line1(10,8)=0x000000
+scroll=1 line2(10,28)=0x000000
+scroll=1 culled_line3(10,45)=0xffffff
+scrolled scroll=2 bottomScroll=3
+scroll=2 line2(10,8)=0x000000
+scroll=2 line3(10,28)=0x000000
+tiny scroll=1 bottomScroll=1
+tiny line1(10,5)=0x000000
