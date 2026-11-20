@@ -1,5 +1,7 @@
 use crate::custom_event::{OpenType, RuffleEvent};
 use crate::gui::{GuiController, MENU_HEIGHT};
+#[cfg(target_os = "macos")]
+use crate::macos::OpenDocuments;
 use crate::player::{LaunchOptions, PlayerController};
 use crate::preferences::GlobalPreferences;
 use crate::util::{
@@ -442,6 +444,8 @@ pub struct App {
     event_loop_proxy: EventLoopProxy<RuffleEvent>,
     preferences: GlobalPreferences,
     font_database: fontdb::Database,
+    #[cfg(target_os = "macos")]
+    open_documents: OpenDocuments,
 }
 
 /// Enters the tokio runtime context.
@@ -467,6 +471,9 @@ impl App {
         let event_loop_proxy = event_loop.create_proxy();
         let runtime = tokio::runtime::Runtime::new()?;
 
+        #[cfg(target_os = "macos")]
+        let open_documents = OpenDocuments::new(event_loop_proxy.clone(), preferences.clone());
+
         Ok((
             Self {
                 main_window: None,
@@ -475,6 +482,8 @@ impl App {
                 event_loop_proxy,
                 font_database,
                 preferences,
+                #[cfg(target_os = "macos")]
+                open_documents,
             },
             event_loop,
         ))
@@ -487,6 +496,8 @@ impl ApplicationHandler<RuffleEvent> for App {
 
         if cause == StartCause::Init {
             let movie_url = self.preferences.cli.movie_url.clone();
+            #[cfg(target_os = "macos")]
+            let movie_url = self.open_documents.start().or(movie_url);
             let icon_bytes = include_bytes!("../assets/favicon-32.rgba");
             let icon =
                 Icon::from_rgba(icon_bytes.to_vec(), 32, 32).expect("App icon should be correct");
