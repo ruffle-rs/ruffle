@@ -15,6 +15,7 @@ use ruffle_render::transform::Transform;
 use ruffle_wstr::{WStr, WString};
 use std::borrow::Cow;
 use std::cell::RefCell;
+use swf::CharacterId;
 
 #[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]

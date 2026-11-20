@@ -13,6 +13,7 @@ use ruffle_render::backend::RenderBackend;
 use ruffle_render::bitmap::BitmapHandle;
 use ruffle_render::utils::remove_invalid_jpeg_data;
 use ruffle_wstr::{WStr, WString};
+use swf::CharacterId;
 
 use crate::backend::ui::{FontDefinition, UiBackend};
 use crate::font::DefaultFont;

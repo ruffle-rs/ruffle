@@ -32,6 +32,7 @@ use ruffle_render::transform::Transform;
 use std::cell::{Cell, Ref, RefMut};
 use std::fmt::{self, Display, Formatter};
 use std::str::FromStr;
+use swf::CharacterId;
 
 /// The Stage is the root of the display object hierarchy. It contains all AVM1
 /// levels as well as AVM2 movies.

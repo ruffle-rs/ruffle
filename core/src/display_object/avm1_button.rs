@@ -24,7 +24,7 @@ use ruffle_macros::istr;
 use ruffle_render::filters::Filter;
 use std::cell::{Cell, Ref, RefCell, RefMut};
 use std::collections::BTreeMap;
-use swf::ButtonActionCondition;
+use swf::{ButtonActionCondition, CharacterId};
 
 #[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]
