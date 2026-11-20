@@ -1,0 +1,29 @@
+num_ticks = 90
+
+[[compilers]]
+type = "Asc"
+target = "test.swf"
+class = "Test"
+scripts = ["Test.as", "parentns/Choice.as", "parentns/FreshChoice.as"]
+swf_version = 9
+
+[[compilers]]
+type = "Asc"
+target = "child.swf"
+class = "Child"
+scripts = ["Child.as", "utils/Timer.as", "childns/Choice.as", "child/shared/Collision.as", "childns/FreshChoice.as", "child/pending/dormantValue.as"]
+swf_version = 9
+
+[[compilers]]
+type = "Asc"
+target = "lookup.swf"
+class = "LookupMovie"
+scripts = ["LookupMovie.as", "utils/Lookup.as"]
+swf_version = 9
+
+[[compilers]]
+type = "Asc"
+target = "late.swf"
+class = "Late"
+scripts = ["Late.as", "late/shared/Collision.as", "late/pending/dormantValue.as"]
+swf_version = 9
