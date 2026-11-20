@@ -10,11 +10,10 @@ use crate::display_object::interactive::{
     Avm2MousePick, InteractiveObject, InteractiveObjectBase, TInteractiveObject,
 };
 use crate::display_object::{
-    Avm1TextFieldBinding, BoundsMode, DisplayObject, DisplayObjectBase, HitTestOptions,
+    Avm1TextFieldBinding, BoundsMode, Depth, DisplayObject, DisplayObjectBase, HitTestOptions,
     TDisplayObject,
 };
 use crate::events::{ClipEvent, ClipEventResult};
-use crate::prelude::*;
 use crate::string::AvmString;
 use crate::tag_utils::{SwfMovie, SwfSlice};
 use crate::vminterface::Instantiator;
