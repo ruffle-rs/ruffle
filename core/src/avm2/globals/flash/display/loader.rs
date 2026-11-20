@@ -293,9 +293,10 @@ pub fn load_bytes<'gc>(
         .caller_domain()
         .expect("Missing caller domain in Loader.loadBytes");
 
-    let loader_url = activation.caller_movie_or_root().url().to_string();
-
-    let loader_sandbox_type = activation.caller_movie_or_root().sandbox_type();
+    let caller_movie = activation.caller_movie_or_root();
+    let loader_url = caller_movie.url().to_string();
+    let inherited_url = caller_movie.inherited_url().to_string();
+    let inherited_sandbox_type = caller_movie.sandbox_type();
 
     if let Err(e) = LoadManager::load_movie_into_clip_bytes(
         activation.context,
@@ -307,7 +308,8 @@ pub fn load_bytes<'gc>(
             context,
             default_domain,
             load_bytes_info: Some(LoadBytesInfo {
-                loader_sandbox_type,
+                inherited_sandbox_type,
+                inherited_url,
             }),
         },
     ) {

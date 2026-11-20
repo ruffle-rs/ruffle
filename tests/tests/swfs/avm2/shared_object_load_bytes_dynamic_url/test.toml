@@ -1,0 +1,39 @@
+num_ticks = 40
+known_failure = true
+
+[[compilers]]
+type = "Asc"
+target = "test.swf"
+class = "Test"
+scripts = ["Test.as"]
+swf_version = 21
+
+[[compilers]]
+type = "Asc"
+target = "[[DYNAMIC]]/1/loader.swf"
+class = "Middle"
+scripts = ["Middle.as"]
+swf_version = 21
+
+[[compilers]]
+type = "Asc"
+target = "[[DYNAMIC]]/2"
+class = "Middle"
+scripts = ["Middle.as"]
+swf_version = 21
+
+[[compilers]]
+type = "Asc"
+target = "child.swf"
+class = "Child"
+scripts = ["Child.as"]
+swf_version = 21
+
+[shared_objects."localhost/test.swf/so"]
+expected = "sols/root"
+
+[shared_objects."localhost/[[DYNAMIC]]/1/loader.swf/so"]
+expected = "sols/dynamic_1_loader"
+
+[shared_objects."localhost/[[DYNAMIC]]/2/so"]
+expected = "sols/dynamic_2"

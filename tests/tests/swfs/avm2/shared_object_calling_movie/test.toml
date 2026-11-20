@@ -1,0 +1,15 @@
+num_ticks = 20
+
+[[compilers]]
+type = "Asc"
+target = "test.swf"
+class = "Test"
+scripts = ["Test.as"]
+swf_version = 21
+
+[[compilers]]
+type = "Asc"
+target = "sub/child.swf"
+class = "Child"
+scripts = ["Child.as"]
+swf_version = 21

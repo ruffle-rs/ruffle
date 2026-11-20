@@ -1,0 +1,24 @@
+// Before the loaders load another movie
+root, null: new, flushed
+root, /: new, flushed
+child, null: new, flushed
+child, /: same as root, /
+// After the loaders loaded another movie, or failed to
+foo:///nonexistent/a.swf: ioError
+foo://host/nonexistent/a.swf: ioError
+foo:/nonexistent/a.swf: ioError
+foo:nonexistent/a.swf: ioError
+nonexistent/a.swf: ioError
+other/child.swf: complete
+child, after loader0 loaded, null: same as child, null
+child, after loader0 loaded, /: same as root, /
+child, after loader1 loaded, null: same as child, null
+child, after loader1 loaded, /: same as root, /
+child, after loader2 loaded, null: same as child, null
+child, after loader2 loaded, /: same as root, /
+child, after loader3 loaded, null: same as child, null
+child, after loader3 loaded, /: same as root, /
+child, after loader4 loaded, null: same as child, null
+child, after loader4 loaded, /: same as root, /
+child, after loader5 loaded, null: same as child, null
+child, after loader5 loaded, /: same as root, /

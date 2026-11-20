@@ -101,12 +101,13 @@ pub struct SwfMovieData {
     /// header declares.
     force_avm1: bool,
 
-    /// Whether this movie was loaded using `Loader.loadBytes`.
+    /// Extra information provided if this movie was loaded using
+    /// `Loader.loadBytes`.
     ///
-    /// If this is `true`, the `url` field is likely meaningless, as the movie
-    /// was loaded from bytes, not a URL. If this is `true`, an HTTP status
+    /// If this is `Some`, the `url` field is likely meaningless, as the movie
+    /// was loaded from bytes, not a URL. If this is `Some`, an HTTP status
     /// event will not be fired on the `loaderInfo` of this movie.
-    is_from_bytes: bool,
+    load_bytes_info: Option<LoadBytesInfo>,
 
     /// Security sandbox type enforced for this movie.
     ///
@@ -133,7 +134,7 @@ impl SwfMovieData {
             compressed_len: 0,
             is_movie: false,
             force_avm1: false,
-            is_from_bytes: false,
+            load_bytes_info: None,
             sandbox_type,
         }
     }
@@ -162,7 +163,7 @@ impl SwfMovieData {
             encoding: swf::UTF_8,
             is_movie: false,
             force_avm1: false,
-            is_from_bytes: false,
+            load_bytes_info: None,
             sandbox_type,
         }
     }
@@ -189,7 +190,7 @@ impl SwfMovieData {
             encoding: swf::UTF_8,
             is_movie: false,
             force_avm1: false,
-            is_from_bytes: false,
+            load_bytes_info: None,
             sandbox_type,
         }
     }
@@ -214,7 +215,7 @@ impl SwfMovieData {
             compressed_len: 0,
             is_movie: false,
             force_avm1: false,
-            is_from_bytes: false,
+            load_bytes_info: None,
             sandbox_type,
         }
     }
@@ -238,7 +239,8 @@ impl SwfMovieData {
         // use the sandbox type of the loader SWF, to ensure that it can't load
         // a child SWF with different sandboxing.
         let sandbox_type = load_bytes_info
-            .map(|i| i.loader_sandbox_type)
+            .as_ref()
+            .map(|i| i.inherited_sandbox_type)
             .unwrap_or_else(|| SandboxType::infer(url.as_str(), &swf_buf.header));
 
         let mut movie = Self {
@@ -251,7 +253,7 @@ impl SwfMovieData {
             compressed_len,
             is_movie: true,
             force_avm1: false,
-            is_from_bytes: load_bytes_info.is_some(),
+            load_bytes_info,
             sandbox_type,
         };
         movie.append_parameters_from_url();
@@ -261,7 +263,7 @@ impl SwfMovieData {
     /// Construct a movie based on a loaded image (JPEG, GIF or PNG).
     pub fn from_loaded_image(
         url: String,
-        is_from_bytes: bool,
+        load_bytes_info: Option<LoadBytesInfo>,
         length: usize,
         width: u32,
         height: u32,
@@ -281,7 +283,7 @@ impl SwfMovieData {
             compressed_len: length,
             is_movie: false,
             force_avm1: false,
-            is_from_bytes,
+            load_bytes_info,
             sandbox_type,
         };
         movie.append_parameters_from_url();
@@ -349,7 +351,15 @@ impl SwfMovieData {
     }
 
     pub fn is_from_bytes(&self) -> bool {
-        self.is_from_bytes
+        self.load_bytes_info.is_some()
+    }
+
+    /// Get the URL of this movie, or the URL inherited from its loader if
+    /// this movie was loaded using `Loader.loadBytes`.
+    pub fn inherited_url(&self) -> &str {
+        self.load_bytes_info
+            .as_ref()
+            .map_or(&self.url, |info| &info.inherited_url)
     }
 
     /// Get the URL that triggered the fetch of this SWF.
@@ -561,7 +571,13 @@ impl SwfSlice {
 
 /// Extra information provided when a SWF is loaded using `Loader.loadBytes`
 /// (as opposed to when it is loaded from a URL).
-#[derive(Clone, Copy)]
+#[derive(Clone)]
 pub struct LoadBytesInfo {
-    pub loader_sandbox_type: SandboxType,
+    pub inherited_sandbox_type: SandboxType,
+
+    /// The URL inherited from the movie that called `Loader.loadBytes`.
+    ///
+    /// This is the loader's own URL, or its inherited URL if it was also
+    /// loaded using `Loader.loadBytes`.
+    pub inherited_url: String,
 }

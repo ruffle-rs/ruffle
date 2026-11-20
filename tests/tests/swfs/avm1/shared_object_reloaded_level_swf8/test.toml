@@ -1,0 +1,21 @@
+num_ticks = 60
+# Ruffle keeps the URL of a level whose movie failed to load.
+known_failure = true
+
+[[compilers]]
+type = "Rascal"
+target = "test.swf"
+scripts = ["test.as"]
+swf_version = 8
+
+[[compilers]]
+type = "Rascal"
+target = "sub/child.swf"
+scripts = ["child.as"]
+swf_version = 8
+
+[[compilers]]
+type = "Rascal"
+target = "other/child.swf"
+scripts = ["child.as"]
+swf_version = 8

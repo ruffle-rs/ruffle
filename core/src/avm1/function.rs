@@ -12,7 +12,7 @@ use crate::avm1::value::Value;
 use crate::avm1::{ArrayBuilder, Object};
 use crate::display_object::TDisplayObject;
 use crate::string::{AvmString, StringContext, SwfStrExt as _};
-use crate::tag_utils::SwfSlice;
+use crate::tag_utils::{SwfMovie, SwfSlice};
 use gc_arena::{Collect, Gc, Mutation};
 use ruffle_macros::istr;
 use std::{borrow::Cow, cell::Cell, num::NonZeroU8};
@@ -78,8 +78,10 @@ pub struct Avm1Function<'gc> {
     /// The constant pool the function executes with.
     constant_pool: Gc<'gc, Vec<Value<'gc>>>,
 
+    /// The movie that contains the function's bytecode.
+    defining_movie: SwfMovie<'gc>,
+
     /// The base movie clip that the function was defined on.
-    /// This is the movie clip that contains the bytecode.
     base_clip: MovieClipReference<'gc>,
 
     /// The flags that define the preloaded registers of the function.
@@ -89,6 +91,7 @@ pub struct Avm1Function<'gc> {
 
 impl<'gc> Avm1Function<'gc> {
     /// Construct a function from a DefineFunction2 action.
+    #[expect(clippy::too_many_arguments)]
     pub fn from_swf_function(
         gc_context: &Mutation<'gc>,
         swf_version: u8,
@@ -96,6 +99,7 @@ impl<'gc> Avm1Function<'gc> {
         swf_function: swf::avm1::types::DefineFunction2,
         scope: Gc<'gc, Scope<'gc>>,
         constant_pool: Gc<'gc, Vec<Value<'gc>>>,
+        defining_movie: SwfMovie<'gc>,
         base_clip: MovieClipReference<'gc>,
     ) -> Self {
         let encoding = SwfStr::encoding_for_version(swf_version);
@@ -125,6 +129,7 @@ impl<'gc> Avm1Function<'gc> {
             params,
             scope,
             constant_pool,
+            defining_movie,
             base_clip,
             flags: swf_function.flags,
         }
@@ -132,6 +137,10 @@ impl<'gc> Avm1Function<'gc> {
 
     pub fn swf_version(&self) -> u8 {
         self.swf_version
+    }
+
+    pub fn defining_movie(&self) -> SwfMovie<'gc> {
+        self.defining_movie
     }
 
     pub fn name(&self) -> Option<AvmString<'gc>> {
@@ -589,6 +598,15 @@ impl<'gc> FunctionObject<'gc> {
         Self {
             function: Executable::Native(function.unwrap_or(|_, _, _| Ok(Value::Undefined))),
             constructor: Some(constructor),
+        }
+    }
+
+    /// Returns the movie that contains the bytecode of this function,
+    /// or `None` if it's a native function.
+    pub fn defining_movie(&self) -> Option<SwfMovie<'gc>> {
+        match self.function {
+            Executable::Action(function) => Some(function.defining_movie()),
+            Executable::Native(_) | Executable::TableNative { .. } => None,
         }
     }
 

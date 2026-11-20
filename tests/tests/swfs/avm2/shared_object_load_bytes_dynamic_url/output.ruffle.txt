@@ -1,0 +1,14 @@
+root: new
+root: flushed
+[[DYNAMIC]]/1/loader.swf: url [[DYNAMIC]]/1/loader.swf, loaderURL test.swf
+[[DYNAMIC]]/1/loader.swf: new
+[[DYNAMIC]]/1/loader.swf: flushed
+[[DYNAMIC]]/2: url [[DYNAMIC]]/2, loaderURL test.swf
+[[DYNAMIC]]/2: new
+[[DYNAMIC]]/2: flushed
+child loaded by [[DYNAMIC]]/1/loader.swf: url [[DYNAMIC]]/1/loader.swf/[[DYNAMIC]]/1, loaderURL [[DYNAMIC]]/1/loader.swf
+child loaded by [[DYNAMIC]]/1/loader.swf: same as [[DYNAMIC]]/1/loader.swf
+child loaded by [[DYNAMIC]]/1/loader.swf: flushed
+child loaded by [[DYNAMIC]]/2: url [[DYNAMIC]]/2/[[DYNAMIC]]/1, loaderURL [[DYNAMIC]]/2
+child loaded by [[DYNAMIC]]/2: same as [[DYNAMIC]]/2
+child loaded by [[DYNAMIC]]/2: flushed

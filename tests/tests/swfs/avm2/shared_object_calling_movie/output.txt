@@ -1,0 +1,20 @@
+// Bytecode called by its own movie
+root, null: new, flushed
+root, /: new, flushed
+child constructor, null: new, flushed
+// Bytecode called by the other movie
+child method, called by root, null: same as child constructor, null
+child method, called by root, /: same as root, /
+child closure, called by root, null: same as child constructor, null
+child closure, called by root, /: same as root, /
+root method, called by child, null: same as root, null
+root method, called by child, /: same as root, /
+root closure, called by child, null: same as root, null
+root closure, called by child, /: same as root, /
+// Bytecode with the other movie's object as this
+root closure, called with child as this, null: same as root, null
+root closure, called with child as this, /: same as root, /
+child closure, called with root as this, null: same as child constructor, null
+child closure, called with root as this, /: same as root, /
+// Root bytecode called back by the child
+root listener, dispatched by child, null: same as root, null
