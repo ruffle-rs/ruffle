@@ -1,5 +1,4 @@
 pub use crate::display_object::{DisplayObject, TDisplayObject};
-pub use ruffle_render::matrix::Matrix;
 pub use swf::{Color, Point, Rectangle};
 
 /// A depth for a Flash display object in AVM1.

@@ -40,6 +40,7 @@ use ruffle_common::utils::HasPrefixField;
 use ruffle_macros::istr;
 use ruffle_render::commands::Command as RenderCommand;
 use ruffle_render::commands::CommandHandler;
+use ruffle_render::matrix::Matrix;
 use ruffle_render::quality::StageQuality;
 use ruffle_render::transform::Transform;
 use ruffle_wstr::WStrToUtf8;
