@@ -1,2 +1,2 @@
 # Regression test for issue #20080
-num_frames = 2
+num_ticks = 2

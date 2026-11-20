@@ -1,4 +1,4 @@
-num_frames = 1
+num_ticks = 1
 
 # FIXME: Ruffle is pretty bad due to shape scaling and off-by-1 bounds.
 

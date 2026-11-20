@@ -7,7 +7,7 @@
 # but we need to figure out how to generate such an image,
 # and modify this test with it.
 
-num_frames = 3
+num_ticks = 3
 
 [image_comparisons.output]
 tolerance = 48

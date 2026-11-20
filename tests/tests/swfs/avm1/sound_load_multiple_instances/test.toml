@@ -1,4 +1,4 @@
-num_frames = 19
+num_ticks = 19
 
 [player_options]
 with_audio = true

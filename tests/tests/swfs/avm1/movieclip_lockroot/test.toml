@@ -1,4 +1,4 @@
-num_frames = 10
+num_ticks = 10
 
 [[compilers]]
 type = "Rascal"

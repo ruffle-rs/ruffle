@@ -1,6 +1,6 @@
 # SWF was manually made as Flash doesn't generate these normally
 
-num_frames = 1
+num_ticks = 1
 
 [image_comparisons.output]
 tolerance = 0

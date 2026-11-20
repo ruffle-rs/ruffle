@@ -215,6 +215,8 @@ source = "test.swfasm"
 target = "test.swf"
 ```
 
+AVM2 code can be embedded the same way, compiled with asc like in the `Asc` compiler, e.g. `DoAbc(Asc(file: "Test.as", scripts: ["Box.as"]))` together with `SymbolClass([(character: 0, name: "Test")])`.
+
 swfasm doesn't support all SWF tags yet. A tag that isn't supported can be written using the `Raw` tag, which takes the tag code and its body as bytes, e.g. `Raw(code: 26, data: InlineBytes("01 02 ff"))`. Once swfasm supports that tag, the `Raw` tag should be replaced with it.
 
 There is also the ability to only compile the test and not run it - use `cargo testutils compile` to compile all swfs (which takes the same filters as tests does, e.g. `cargo testutils compile avm1/movieclip_lockroot`).

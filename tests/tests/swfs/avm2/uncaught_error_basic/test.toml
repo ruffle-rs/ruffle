@@ -1,4 +1,4 @@
-num_frames = 1
+num_ticks = 1
 
 [[compilers]]
 type = "Asc"

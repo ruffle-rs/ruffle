@@ -286,8 +286,9 @@ impl TestRunner {
             let mut player = self.player.lock().unwrap();
             perform_automated_event(evt, &mut player);
         });
-        // Rendering has side-effects (such as processing 'DisplayObject.scrollRect' updates)
-        self.player.lock().unwrap().render();
+        // Rendering has side-effects (such as processing 'DisplayObject.scrollRect' updates).
+        // The frame itself doesn't have to be drawn, as capturing an image renders again.
+        self.player.lock().unwrap().render_no_draw();
 
         let trigger = ImageTrigger::SpecificIteration(self.current_iteration);
         if let Some((name, comp)) = self.take_image_comparison_by_trigger(trigger) {

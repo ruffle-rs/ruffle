@@ -1,4 +1,4 @@
-num_frames = 30
+num_ticks = 30
 known_failure.panic = "Gotos must start from the correct tag position for frame 1"
 
 [subtests.fp9]

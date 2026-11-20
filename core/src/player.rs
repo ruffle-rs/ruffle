@@ -2029,8 +2029,21 @@ impl Player {
         self.needs_render = true;
     }
 
-    #[instrument(level = "debug", skip_all)]
     pub fn render(&mut self) {
+        self.render_impl::<true>();
+    }
+
+    /// Does everything `render` does, except drawing the frame itself.
+    ///
+    /// `Event.RENDER` is dispatched, the display list is updated (e.g. pending
+    /// `scrollRect` changes are applied) and bitmap caches are drawn, but the
+    /// frame isn't. This is for frames that nobody looks at, like in tests.
+    pub fn render_no_draw(&mut self) {
+        self.render_impl::<false>();
+    }
+
+    #[instrument(name = "render", level = "debug", skip_all)]
+    fn render_impl<const DRAW_FRAME: bool>(&mut self) {
         let invalidated = self.enter_arena(|_, gc_root, _| gc_root.stage.invalidated());
 
         if invalidated {
@@ -2082,8 +2095,16 @@ impl Player {
             (cache_draws, commands)
         });
 
-        self.renderer
-            .submit_frame(background_color, commands, cache_draws);
+        if DRAW_FRAME {
+            self.renderer
+                .submit_frame(background_color, commands, cache_draws);
+        } else if !cache_draws.is_empty() {
+            // Even an empty frame gets cleared and copied to the target, which
+            // is expensive on software renderers, so only submit it when the
+            // bitmap caches need updating.
+            self.renderer
+                .submit_frame(background_color, CommandList::new(), cache_draws);
+        }
 
         self.needs_render = false;
     }

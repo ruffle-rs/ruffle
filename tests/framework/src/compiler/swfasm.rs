@@ -1,7 +1,9 @@
 use crate::compiler::SwfCompiler;
 use crate::util::{read_bytes, write_bytes_and_verify_if_changed};
+use ruffle_core::PLAYERGLOBAL_ABC_PATH;
 use serde::Deserialize;
 use swfasm::Compiler;
+use swfasm::asc::{AscConfig, AscFile};
 use swfasm::files::FileProvider;
 use vfs::VfsPath;
 
@@ -38,8 +40,13 @@ impl SwfCompiler for SwfasmCompiler {
 
         // Paths in the source are relative to the directory of the source.
         let files = VfsFileProvider(source_path.parent());
+        let asc = AscConfig {
+            jar: AscFile::Path(asc::jar_path()),
+            playerglobal: AscFile::Path(PLAYERGLOBAL_ABC_PATH.into()),
+        };
         let swf = Compiler::new()
             .with_files(&files)
+            .with_asc(asc)
             .compile_str(&source)
             .map_err(|e| anyhow::anyhow!("Failed to compile '{}': {e:#}", self.source))?;
         let output_path = root_dir.join(&self.target)?;

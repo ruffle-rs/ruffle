@@ -48,7 +48,7 @@ edition = "2024"
 homepage = "https://ruffle.rs"
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/ruffle-rs/ruffle"
-version = "0.7.1"
+version = "0.8.0"
 
 [workspace.dependencies]
 rand = { version = "0.10.1", default-features = false }
@@ -207,3 +207,7 @@ lto = "off"
 incremental = true
 # Right between the defaults of 16 and 256, for crate fragment caching.
 codegen-units = 64
+# Tests have to unwind. With `panic = "abort"` (from `release`), the binaries
+# built along with the tests and all of their dependencies would get a full
+# second build.
+panic = "unwind"
