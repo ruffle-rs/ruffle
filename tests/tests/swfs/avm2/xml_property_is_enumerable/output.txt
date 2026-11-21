@@ -1,0 +1,33 @@
+XML.prototype.hasOwnProperty('hasOwnProperty'): true
+XML.prototype.hasOwnProperty('propertyIsEnumerable'): true
+XML.prototype.hasOwnProperty('valueOf'): true
+XML.prototype.propertyIsEnumerable('hasOwnProperty'): false
+XML.prototype.propertyIsEnumerable('propertyIsEnumerable'): false
+XML.prototype.propertyIsEnumerable('valueOf'): false
+XMLList.prototype.hasOwnProperty('hasOwnProperty'): true
+XMLList.prototype.hasOwnProperty('propertyIsEnumerable'): true
+XMLList.prototype.hasOwnProperty('valueOf'): true
+XMLList.prototype.propertyIsEnumerable('hasOwnProperty'): false
+XMLList.prototype.propertyIsEnumerable('propertyIsEnumerable'): false
+XMLList.prototype.propertyIsEnumerable('valueOf'): false
+XML.prototype enumKeys.length: 0
+XMLList.prototype enumKeys.length: 0
+xml.AS3::hasOwnProperty('@attr'): true
+xml.AS3::hasOwnProperty('child'): true
+xml.AS3::hasOwnProperty('toXMLString'): false
+xml.AS3::propertyIsEnumerable('@attr'): false
+xml.AS3::propertyIsEnumerable('child'): false
+xml.AS3::propertyIsEnumerable(0): false
+xml.AS3::propertyIsEnumerable('0'): false
+XML.prototype.hasOwnProperty.call(xml, 'child'): true
+XML.prototype.propertyIsEnumerable.call(xml, 0): false
+XML.prototype.valueOf.call(xml) === xml: true
+list.AS3::hasOwnProperty(0): true
+list.AS3::hasOwnProperty('0'): true
+list.AS3::hasOwnProperty(1): false
+list.AS3::propertyIsEnumerable(0): false
+list.AS3::propertyIsEnumerable('0'): false
+list.AS3::propertyIsEnumerable(1): false
+XMLList.prototype.hasOwnProperty.call(list, 0): true
+XMLList.prototype.propertyIsEnumerable.call(list, 0): false
+XMLList.prototype.valueOf.call(list) === list: true

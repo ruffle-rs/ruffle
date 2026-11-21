@@ -361,6 +361,27 @@ package {
             self.AS3::setLocalName(name);
         }
 
+        prototype.hasOwnProperty = function(name:* = null):Boolean {
+            if (this === prototype) {
+                return Object.prototype.hasOwnProperty.call(this, name);
+            }
+            var self:XML = this;
+            return self.AS3::hasOwnProperty(name);
+        };
+
+        prototype.propertyIsEnumerable = function(name:* = null):Boolean {
+            if (this === prototype) {
+                return Object.prototype.propertyIsEnumerable.call(this, name);
+            }
+            var self:XML = this;
+            return self.AS3::propertyIsEnumerable(name);
+        };
+
+        prototype.valueOf = function():XML {
+            var self:XML = this;
+            return self.AS3::valueOf();
+        };
+
         prototype.setPropertyIsEnumerable("hasComplexContent", false);
         prototype.setPropertyIsEnumerable("hasSimpleContent", false);
         prototype.setPropertyIsEnumerable("name", false);
@@ -398,6 +419,9 @@ package {
         prototype.setPropertyIsEnumerable("replace", false);
         prototype.setPropertyIsEnumerable("setChildren", false);
         prototype.setPropertyIsEnumerable("setLocalName", false);
+        prototype.setPropertyIsEnumerable("hasOwnProperty", false);
+        prototype.setPropertyIsEnumerable("propertyIsEnumerable", false);
+        prototype.setPropertyIsEnumerable("valueOf", false);
 
         XML.settings = function() {
             return XML.AS3::settings();
