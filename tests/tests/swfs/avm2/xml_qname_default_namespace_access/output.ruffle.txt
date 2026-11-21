@@ -20,5 +20,5 @@ default xml namespace = "http://put"
   new element from x[q] = v: [http://put=v]
   x[q] = v: [=plain, http://created=created, http://put=v]
 QName created without a default namespace: [=plain]
-explicit empty namespace: []
-QName("", name): []
+explicit empty namespace: [=foo]
+QName("", name): [=foo]

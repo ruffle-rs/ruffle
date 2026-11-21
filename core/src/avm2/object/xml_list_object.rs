@@ -511,7 +511,7 @@ impl<'gc> TObject<'gc> for XmlListObject<'gc> {
         let mut children = self.children_mut(activation.gc());
 
         // 1. If ToString(ToUint32(P)) == P
-        if !name.has_explicit_namespace()
+        if !name.is_attribute()
             && let Some(local_name) = name.local_name()
             && let Ok(index) = local_name.parse::<usize>()
         {

@@ -5,7 +5,7 @@
 5 PASSED!
 6 PASSED!
 7 PASSED!
-8 FAILED! expected: |foo| got: ||
+8 PASSED!
 9 PASSED!
 10 PASSED!
 11 PASSED!

@@ -355,7 +355,7 @@ impl<'gc> TObject<'gc> for XmlObject<'gc> {
     ) -> Result<Value<'gc>, Error<'gc>> {
         // FIXME - implement everything from E4X spec (XMLObject::getMultinameProperty in avmplus)
 
-        if !name.has_explicit_namespace()
+        if !name.is_attribute()
             && let Some(local_name) = name.local_name()
             && let Ok(index) = local_name.parse::<usize>()
         {

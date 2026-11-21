@@ -37,6 +37,8 @@ pub fn q_name_constructor<'gc>(
     activation: &mut Activation<'_, 'gc>,
     args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let mut explicit = false;
+
     let (namespace, local_name) = if args.len() >= 2 {
         let ns_arg = args.get_value(0);
         let local_arg = args.get_value(1);
@@ -61,6 +63,7 @@ pub fn q_name_constructor<'gc>(
                 activation.strings(),
             )),
         };
+        explicit = !matches!(ns_arg, Value::Undefined);
 
         // Parse the local name
         let local_name = match local_arg {
@@ -97,6 +100,7 @@ pub fn q_name_constructor<'gc>(
     if let Some(namespace) = namespace {
         multiname.set_single_namespace(namespace);
         multiname.set_is_qname(true);
+        multiname.set_has_explicit_ns(explicit);
     }
     if let Some(local_name) = local_name {
         multiname.set_local_name(local_name);
