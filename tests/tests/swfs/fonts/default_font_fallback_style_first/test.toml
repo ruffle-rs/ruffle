@@ -1,0 +1,41 @@
+num_ticks = 1
+
+[fonts.a]
+family = "TestFontA"
+path = "TestFontA.ttf"
+
+[fonts.b]
+family = "TestFontB"
+path = "TestFontB.ttf"
+
+[default_fonts]
+sans = ["TestFontA", "TestFontB"]
+
+[[compilers]]
+type = "Rascal"
+target = "test.swf"
+scripts = ["test.as"]
+swf_version = 15
+
+# Flash reference: these families only provide regular faces.
+# Styled default-font requests must still expose both fallback fonts.
+
+[font_sorts.a_bold]
+family = "TestFontA"
+bold = true
+sort = ["a"]
+
+[font_sorts.b_bold]
+family = "TestFontB"
+bold = true
+sort = ["b"]
+
+[font_sorts.a_italic]
+family = "TestFontA"
+italic = true
+sort = ["a"]
+
+[font_sorts.b_italic]
+family = "TestFontB"
+italic = true
+sort = ["b"]
