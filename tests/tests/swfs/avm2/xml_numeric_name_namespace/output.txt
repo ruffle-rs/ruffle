@@ -1,0 +1,17 @@
+get empty: [a=first]
+get other: [a=first]
+get ns::["1"]: [b=second]
+in empty: true
+in other: false
+set empty: [a=replaced, b=second]
+delete empty: [b=second]
+xml get empty: [x=<x>
+  <a>first</a>
+</x>]
+xml get other: [x=<x>
+  <a>first</a>
+</x>]
+xml in empty: true
+xml attr 0: 0
+list attr 0: 0 0
+xml attr qname 0: 0

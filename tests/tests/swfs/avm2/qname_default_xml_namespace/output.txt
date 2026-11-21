@@ -1,0 +1,13 @@
+no default namespace: uri= localName=a toString=a
+QName(name): uri=http://someuri localName=a toString=http://someuri::a
+QName(*): uri=null localName=* toString=*::*
+QName(): uri=http://someuri localName= toString=http://someuri::
+QName(undefined, name): uri=http://someuri localName=a toString=http://someuri::a
+QName(null, name): uri=null localName=a toString=*::a
+QName("", name): uri= localName=a toString=a
+QName(ns, name): uri=other localName=a toString=other::a
+QName(name) as function: uri=http://someuri localName=a toString=http://someuri::a
+QName(qname): uri=http://someuri localName=b toString=http://someuri::b
+created before changing: uri=http://someuri localName=c toString=http://someuri::c
+in function: uri=http://inner localName=a toString=http://inner::a
+x[q] = bar: uri= value=bar

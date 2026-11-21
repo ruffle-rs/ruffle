@@ -1,0 +1,24 @@
+default xml namespace = ""
+  x[q]: [=plain]
+  x[explicitQ]: [http://created=created]
+  q in x: true
+  after delete x[q]: [http://created=created, http://put=put]
+  new element from x[q] = v: [=v]
+  x[q] = v: [=v, http://created=created, http://put=put]
+default xml namespace = "http://created"
+  x[q]: [http://created=created]
+  x[explicitQ]: [http://created=created]
+  q in x: false
+  after delete x[q]: [=plain, http://put=put]
+  new element from x[q] = v: [http://created=v]
+  x[q] = v: [=plain, http://created=v, http://put=put]
+default xml namespace = "http://put"
+  x[q]: [http://put=put]
+  x[explicitQ]: [http://created=created]
+  q in x: false
+  after delete x[q]: [=plain, http://created=created]
+  new element from x[q] = v: [http://put=v]
+  x[q] = v: [=plain, http://created=created, http://put=v]
+QName created without a default namespace: [=plain]
+explicit empty namespace: []
+QName("", name): []
