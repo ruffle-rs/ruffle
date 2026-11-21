@@ -1,6 +1,6 @@
 # Test adapted from Shumway at https://github.com/mozilla/shumway/tree/master/test/swfs/avm1/filters
 
-num_frames = 1
+num_ticks = 1
 
 [approximations]
 number_patterns = ["angle (.+)"]

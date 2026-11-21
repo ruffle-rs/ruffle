@@ -1,4 +1,4 @@
-num_frames = 1
+num_ticks = 1
 
 
 # FIXME: High max_outliers. FP renders objects with a matrix3D transformation in a different way from 2D objects especially around the object edges.

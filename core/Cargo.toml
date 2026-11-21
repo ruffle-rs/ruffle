@@ -60,7 +60,7 @@ png = { workspace = true, optional = true }
 flv-rs = { path = "../flv" }
 async-channel = { workspace = true }
 jpegxr = { workspace = true, optional = true }
-image = { workspace = true, features = ["tiff"] }
+image = { workspace = true, features = ["tiff", "png", "jpeg"] }
 enum-map = { workspace = true }
 ttf-parser = "0.25"
 num-bigint = "0.4"

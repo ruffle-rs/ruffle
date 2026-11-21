@@ -1,0 +1,17 @@
+--- Starting StrictArray deserialization test ---
+Connecting...
+Sending NetConnection.call...
+NetConnection.call returned
+Navigator::fetch:
+  URL: http://localhost:8000/test1
+  Method: POST
+  Mime-Type: application/x-amf
+  Body: [00, 00, 00, 00, 00, 01, 00, 1D, 74, 65, 73, 74, 2E, 73, 74, 72, 69, 63, 74, 41, 72, 72, 61, 79, 57, 69, 74, 68, 55, 6E, 64, 65, 66, 69, 6E, 65, 64, 00, 02, 2F, 31, 00, 00, 00, 05, 0A, 00, 00, 00, 00]
+--- Received StrictArray ---
+Length: 2
+Has own index 0: true
+Index 0 type: undefined
+Index 0: undefined
+Has own index 1: true
+Index 1 type: string
+Index 1: keep

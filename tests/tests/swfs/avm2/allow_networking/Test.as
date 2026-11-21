@@ -1,6 +1,8 @@
 package {
     import flash.display.MovieClip;
+    import flash.display.Loader;
     import flash.net.*;
+    import flash.media.Sound;
     import flash.system.fscommand;
 
     public class Test extends MovieClip {
@@ -33,6 +35,43 @@ package {
             check("URLStream.load", function() {
                 var stream = new URLStream();
                 stream.load(new URLRequest("http://example3.com"));
+            });
+
+            check("Loader.load", function() {
+                var loader = new Loader();
+                loader.load(new URLRequest("http://example4.com"));
+            });
+
+            check("new Sound", function() {
+                new Sound(new URLRequest("http://example5.com"));
+            });
+
+            check("Sound.load", function() {
+                var sound = new Sound();
+                sound.load(new URLRequest("http://example6.com"));
+            });
+
+            check("Sound.load(null)", function() {
+                var sound = new Sound();
+                sound.load(null);
+            });
+
+            check("new Socket", function() {
+                new Socket("localhost", 8000);
+            });
+
+            check("Socket.connect", function() {
+                var socket = new Socket();
+                socket.connect("example.com", 8000);
+            });
+
+            check("new XMLSocket", function() {
+                new XMLSocket("8.8.8.8", 8000);
+            });
+
+            check("XMLSocket.connect", function() {
+                var socket = new XMLSocket();
+                socket.connect("localhost", 8000);
             });
         }
 

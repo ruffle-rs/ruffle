@@ -1,0 +1,12 @@
+== AMF3 ==
+empty: 0a 03 01 => Object {}
+single: 0a 03 01 => Object {}
+multiple: 0a 03 01 => Object {}
+nested in object: 0a 0b 01 09 6c 69 73 74 0a 03 01 01 => Object {list=Object}
+== AMF0 ==
+empty: 03 00 00 09 => Object {}
+single: 03 00 00 09 => Object {}
+multiple: 03 00 00 09 => Object {}
+nested in object: 03 00 04 6c 69 73 74 03 00 00 09 00 00 09 => Object {list=Object}
+== AMF3 with alias ==
+aliased: 0a 03 05 58 4c => XMLList length=0

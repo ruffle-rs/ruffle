@@ -595,19 +595,6 @@ pub trait TObject<'gc>: 'gc + Collect<'gc> + Debug + Into<Object<'gc>> + Clone +
         base.set_local_property_is_enumerable(mc, name, is_enumerable)
     }
 
-    /// Install a bound method on an object.
-    #[no_dynamic]
-    fn install_bound_method(
-        &self,
-        mc: &Mutation<'gc>,
-        disp_id: usize,
-        function: FunctionObject<'gc>,
-    ) {
-        let base = self.base();
-
-        base.install_bound_method(mc, disp_id, function)
-    }
-
     /// Construct a parameterization of this particular type and return it.
     ///
     /// This is called specifically to parameterize generic types, of which
@@ -715,12 +702,6 @@ pub trait TObject<'gc>: 'gc + Collect<'gc> + Debug + Into<Object<'gc>> + Clone +
     fn vtable(&self) -> VTable<'gc> {
         let base = self.base();
         base.vtable()
-    }
-
-    #[no_dynamic]
-    fn get_bound_method(&self, id: usize) -> Option<FunctionObject<'gc>> {
-        let base = self.base();
-        base.get_bound_method(id)
     }
 
     /// Get this object's class's `Class`, if it has one.

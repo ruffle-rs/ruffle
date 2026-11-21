@@ -69,7 +69,7 @@ pub enum Action<'a> {
     Play,
     Pop,
     PreviousFrame,
-    Push(Push<'a>),
+    Push(PushValues<'a>),
     PushDuplicate,
     RandomNumber,
     RemoveSprite,
@@ -106,6 +106,8 @@ pub enum Action<'a> {
     With(With<'a>),
     Unknown(Unknown<'a>),
 }
+
+pub use crate::avm1::read::PushValues;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct ConstantPool<'a> {
@@ -284,11 +286,6 @@ pub struct Jump {
 }
 
 #[derive(Clone, Debug, PartialEq)]
-pub struct Push<'a> {
-    pub values: Vec<Value<'a>>,
-}
-
-#[derive(Clone, Debug, PartialEq)]
 pub enum Value<'a> {
     Undefined,
     Null,
@@ -299,6 +296,7 @@ pub enum Value<'a> {
     Str(&'a SwfStr),
     Register(u8),
     ConstantPool(u16),
+    Invalid { kind: u8 },
 }
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]

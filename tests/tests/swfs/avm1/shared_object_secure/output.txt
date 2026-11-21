@@ -1,0 +1,20 @@
+omitted: created
+true: null
+false: created
+"true": created
+"false": created
+"1": created
+"0": created
+"abc": created
+"": created
+1: created
+0: created
+-1: created
+NaN: created
+Infinity: created
+null: created
+undefined: created
+object: created
+noisy object: created
+throwing valueOf: created
+throwing toString: created

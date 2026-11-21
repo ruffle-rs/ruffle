@@ -1,14 +1,16 @@
-use crate::avm1::amf::{Amf0ReferenceCache, deserialize_lso_value, recursive_serialize};
+use crate::avm1::amf::{
+    Amf0ReferenceCache, SerializationContext, deserialize_lso_value, recursive_serialize,
+};
 use crate::avm1::property_decl::{DeclContext, PropertyOrder, StaticDeclarations, SystemClass};
 use crate::avm1::{Activation, Attribute, Error, NativeObject, Object, Value};
 use crate::avm1_stub;
 use crate::display_object::TDisplayObject;
+use crate::shared_object::local_shared_object_key;
 use crate::string::AvmString;
 use flash_lso::amf0::writer::{Amf0Writer, CacheKey, ObjWriter};
 use flash_lso::types::Lso;
 use gc_arena::{Collect, Gc};
 use ruffle_macros::istr;
-use std::borrow::Cow;
 
 #[derive(Default, Clone, Collect)]
 #[collect(require_static)]
@@ -29,24 +31,20 @@ impl SharedObject {
 }
 
 const PROTO_DECLS: StaticDeclarations = declare_static_properties! {
-    "connect" => method(connect; DONT_ENUM | DONT_DELETE);
-    "send" => method(send; DONT_ENUM | DONT_DELETE);
-    "flush" => method(flush; DONT_ENUM | DONT_DELETE);
-    "close" => method(close; DONT_ENUM | DONT_DELETE);
-    "getSize" => method(get_size; DONT_ENUM | DONT_DELETE);
-    "setFps" => method(set_fps; DONT_ENUM | DONT_DELETE);
-    "clear" => method(clear; DONT_ENUM | DONT_DELETE);
-
-    // TODO Looks like onStatus & onSync are not built-in properties.
-    "onStatus" => method(on_status; DONT_ENUM | DONT_DELETE);
-    "onSync" => method(on_sync; DONT_ENUM | DONT_DELETE);
+    "connect" => method(connect; DONT_ENUM | DONT_DELETE | VERSION_6);
+    "send" => method(send; DONT_ENUM | DONT_DELETE | VERSION_6);
+    "flush" => method(flush; DONT_ENUM | DONT_DELETE | VERSION_6);
+    "close" => method(close; DONT_ENUM | DONT_DELETE | VERSION_6);
+    "getSize" => method(get_size; DONT_ENUM | DONT_DELETE | VERSION_6);
+    "setFps" => method(set_fps; DONT_ENUM | DONT_DELETE | VERSION_6);
+    "clear" => method(clear; DONT_ENUM | DONT_DELETE | VERSION_6);
 };
 
 const OBJECT_DECLS: StaticDeclarations = declare_static_properties! {
-    "deleteAll" => method(delete_all; DONT_ENUM);
-    "getDiskUsage" => method(get_disk_usage; DONT_ENUM);
-    "getLocal" => method(get_local);
-    "getRemote" => method(get_remote);
+    "deleteAll" => method(@As2 delete_all; DONT_ENUM);
+    "getDiskUsage" => method(@As2 get_disk_usage; DONT_ENUM);
+    "getLocal" => method(@As2 get_local);
+    "getRemote" => method(@As2 get_remote);
 };
 
 pub fn create_class<'gc>(
@@ -114,7 +112,7 @@ fn new_lso<'gc>(activation: &mut Activation<'_, 'gc>, name: &str, data: Object<'
     let root_reference = w.make_reference();
     w.cache_add(CacheKey::from_ptr(data.as_ptr()), root_reference);
 
-    recursive_serialize(activation, data, &mut w, false);
+    recursive_serialize(activation, data, &mut w, SerializationContext::SharedObject);
     w.commit_lso(
         &name
             .split('/')
@@ -129,114 +127,27 @@ fn get_local<'gc>(
     _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    // TODO: It appears that Flash does some kind of escaping here:
-    // the name "foo\uD800" correspond to a file named "fooE#FB#FB#D.sol".
-
     let name = args
         .get(0)
         .unwrap_or(&Value::Undefined)
         .coerce_to_string(activation)?;
-    let name = name.to_utf8_lossy();
-
-    const INVALID_CHARS: &str = "~%&\\;:\"',<>?# ";
-    if name.contains(|c| INVALID_CHARS.contains(c)) {
-        tracing::error!("SharedObject::get_local: Invalid character in name");
-        return Ok(Value::Null);
-    }
+    let local_path = if let Some(Value::String(local_path)) = args.get(1) {
+        Some(local_path.to_utf8_lossy())
+    } else {
+        None
+    };
+    // Only the boolean `true` is secure, other values aren't converted.
+    let secure = matches!(args.get(2), Some(Value::Bool(true)));
 
     let movie = activation.base_clip().movie();
-
-    let mut movie_url = if let Ok(url) = url::Url::parse(movie.url()) {
-        url
-    } else {
-        tracing::error!("SharedObject::get_local: Unable to parse movie URL");
+    let Some(full_name) = local_shared_object_key(
+        movie.url(),
+        &name.to_utf8_lossy(),
+        local_path.as_deref(),
+        secure,
+    ) else {
         return Ok(Value::Null);
     };
-    movie_url.set_query(None);
-    movie_url.set_fragment(None);
-
-    let secure = args
-        .get(2)
-        .unwrap_or(&Value::Undefined)
-        .as_bool(activation.swf_version());
-
-    // Secure parameter disallows using the shared object from non-HTTPS.
-    if secure && movie_url.scheme() != "https" {
-        tracing::warn!(
-            "SharedObject.get_local: Tried to load a secure shared object from non-HTTPS origin"
-        );
-        return Ok(Value::Null);
-    }
-
-    // Shared objects are sandboxed per-domain.
-    // By default, they are keyed based on the SWF URL, but the `localHost` parameter can modify this path.
-    let mut movie_path = movie_url.path();
-    // Remove leading/trailing slashes.
-    movie_path = movie_path.strip_prefix('/').unwrap_or(movie_path);
-    movie_path = movie_path.strip_suffix('/').unwrap_or(movie_path);
-
-    let movie_host = if movie_url.scheme() == "file" {
-        // Remove drive letter on Windows (TODO: move this logic into DiskStorageBackend?)
-        if let [_, b':', b'/', ..] = movie_path.as_bytes() {
-            movie_path = &movie_path[3..];
-        }
-        "localhost"
-    } else {
-        movie_url.host_str().unwrap_or_default()
-    };
-
-    let local_path = if let Some(Value::String(local_path)) = args.get(1) {
-        // Empty local path always fails.
-        if local_path.is_empty() {
-            return Ok(Value::Null);
-        }
-
-        // Remove leading/trailing slashes.
-        let mut local_path = local_path.to_utf8_lossy();
-        if local_path.ends_with('/') {
-            match &mut local_path {
-                Cow::Owned(p) => {
-                    p.pop();
-                }
-                Cow::Borrowed(p) => *p = &p[..p.len() - 1],
-            }
-        }
-        if local_path.starts_with('/') {
-            match &mut local_path {
-                Cow::Owned(p) => {
-                    p.remove(0);
-                }
-                Cow::Borrowed(p) => *p = &p[1..],
-            }
-        }
-
-        // Verify that local_path is a prefix of the SWF path.
-        if movie_path.starts_with(local_path.as_ref())
-            && (local_path.is_empty()
-                || movie_path.len() == local_path.len()
-                || movie_path[local_path.len()..].starts_with('/'))
-        {
-            local_path
-        } else {
-            tracing::warn!("SharedObject.get_local: localPath parameter does not match SWF path");
-            return Ok(Value::Null);
-        }
-    } else {
-        Cow::Borrowed(movie_path)
-    };
-
-    // Final SO path: foo.com/folder/game.swf/SOName
-    // SOName may be a path containing slashes. In this case, prefix with # to mimic Flash Player behavior.
-    let prefix = if name.contains('/') { "#" } else { "" };
-    let full_name = format!("{movie_host}/{local_path}/{prefix}{name}");
-
-    // Avoid any paths with `..` to prevent SWFs from crawling the file system on desktop.
-    // Flash will generally fail to save shared objects with a path component starting with `.`,
-    // so let's disallow them altogether.
-    if full_name.split('/').any(|s| s.starts_with('.')) {
-        tracing::error!("SharedObject.get_local: Invalid path with .. segments");
-        return Ok(Value::Null);
-    }
 
     // Check if this is referencing an existing shared object
     if let Some(so) = activation.context.avm1_shared_objects.get(&full_name) {
@@ -391,24 +302,6 @@ fn set_fps<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     avm1_stub!(activation, "SharedObject", "setFps");
-    Ok(Value::Undefined)
-}
-
-fn on_status<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
-    _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    avm1_stub!(activation, "SharedObject", "onStatus");
-    Ok(Value::Undefined)
-}
-
-fn on_sync<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
-    _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    avm1_stub!(activation, "SharedObject", "onSync");
     Ok(Value::Undefined)
 }
 

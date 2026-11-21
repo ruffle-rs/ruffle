@@ -4,8 +4,9 @@ use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::globals::array::ArrayBuilder;
 use crate::avm1::globals::file_reference::parse_file_filters;
+use crate::avm1::globals::object::define_listeners;
 use crate::avm1::property_decl::{DeclContext, PropertyOrder, StaticDeclarations, SystemClass};
-use crate::avm1::{NativeObject, Object, Value};
+use crate::avm1::{Attribute, NativeObject, Object, Value};
 use crate::backend::ui::FileDialogSelection;
 
 use ruffle_macros::istr;
@@ -24,10 +25,12 @@ pub fn create_class<'gc>(
 }
 
 fn constructor<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
+    activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    define_listeners(activation, this, [], Attribute::empty());
+
     Ok(Value::Undefined)
 }
 

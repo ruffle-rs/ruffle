@@ -497,7 +497,7 @@ impl<'a> Reader<'a> {
             }
             TagCode::ImportAssets2 => {
                 let import_assets = tag_reader.read_import_assets_2()?;
-                Tag::ImportAssets {
+                Tag::ImportAssets2 {
                     url: import_assets.0,
                     imports: import_assets.1,
                 }

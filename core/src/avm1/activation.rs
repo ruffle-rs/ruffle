@@ -511,7 +511,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     }
 
     pub fn run_actions(&mut self, code: SwfSlice) -> Result<ReturnType<'gc>, Error<'gc>> {
-        let mut read = Reader::new(&code.entire_data()[code.start..], self.swf_version());
+        let mut read = Reader::new(&code.entire_data()[code.start..]);
 
         loop {
             let result = self.do_action(&code, &mut read);
@@ -1879,10 +1879,10 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         Ok(FrameControl::Continue)
     }
 
-    fn action_push(&mut self, action: Push) -> Result<FrameControl<'gc>, Error<'gc>> {
-        for value in action.values {
+    fn action_push(&mut self, action: PushValues) -> Result<FrameControl<'gc>, Error<'gc>> {
+        for value in action {
             use swf::avm1::types::Value as SwfValue;
-            let value = match value {
+            let value = match value? {
                 SwfValue::Undefined => Value::Undefined,
                 SwfValue::Null => Value::Null,
                 SwfValue::Bool(v) => v.into(),
@@ -1903,6 +1903,15 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                         );
                         Value::Undefined
                     }
+                }
+                SwfValue::Invalid { kind } => {
+                    // Newest Flash Player exits on unknown value types. However, older versions
+                    // (at least FP9) just ignore them and continue to the next value.
+                    // We follow the lenient behavior in order to support more content (e.g. #8389
+                    // doesn't work on newest Flash Player).
+                    // TODO: Return an error depending on the player version?
+                    avm_warn!(self, "Invalid value type in ActionPush: {kind}");
+                    continue;
                 }
             };
             self.stack_push(value); // Needs to handle MovieClipReferences, in case pushing a register

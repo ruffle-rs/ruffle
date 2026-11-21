@@ -1,0 +1,21 @@
+valid: object
+invalid name: [class Error]
+Error: Error #2134: Cannot create SharedObject.
+	at flash.net::SharedObject$/getLocal()
+	at Test/test()
+	at Test()
+empty localPath: [class Error]
+Error: Error #2134: Cannot create SharedObject.
+	at flash.net::SharedObject$/getLocal()
+	at Test/test()
+	at Test()
+unrelated localPath: [class Error]
+Error: Error #2134: Cannot create SharedObject.
+	at flash.net::SharedObject$/getLocal()
+	at Test/test()
+	at Test()
+secure: [class Error]
+Error: Error #2134: Cannot create SharedObject.
+	at flash.net::SharedObject$/getLocal()
+	at Test/test()
+	at Test()

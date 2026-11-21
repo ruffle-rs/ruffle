@@ -1,4 +1,4 @@
-num_frames = 3
+num_ticks = 3
 
 [image_comparisons.output]
 tolerance = 0

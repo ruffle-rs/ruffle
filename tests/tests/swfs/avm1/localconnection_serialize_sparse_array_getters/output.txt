@@ -1,0 +1,26 @@
+--- Source Array ---
+Length: 3
+Has own index 0: false
+Has own index 1: true
+Has own index 2: true
+Getter index enumerable: true
+Getter calls before sending: 0
+Connected: true
+Getter calls after direct send: 0
+Getter calls after nested send: 0
+--- Direct Array Result ---
+Length: 3
+Has own index 0: false
+Index 0: undefined
+Has own index 1: true
+Index 1: undefined
+Has own index 2: true
+Index 2: own_two
+--- Nested Array Result ---
+Length: 3
+Has own index 0: false
+Index 0: undefined
+Has own index 1: true
+Index 1: undefined
+Has own index 2: true
+Index 2: own_two

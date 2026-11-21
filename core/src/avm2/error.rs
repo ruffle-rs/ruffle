@@ -224,7 +224,6 @@ pub enum XmlErrorCode {
     /// Error #1091: XML parser failure: Unterminated CDATA section.
     UnterminatedCData = 1091,
     /// Error #1092: XML parser failure: Unterminated XML declaration.
-    #[allow(unused)]
     UnterminatedXmlDecl = 1092,
     /// Error #1093: XML parser failure: Unterminated DOCTYPE declaration.
     UnterminatedDoctype = 1093,
@@ -1122,6 +1121,7 @@ pub fn make_error_2109<'gc>(
 
 make_error_fn!(make_error_2126, 2126, argument_error);
 make_error_fn!(make_error_2130, 2130, error);
+make_error_fn!(make_error_2134, 2134, error);
 
 #[inline(never)]
 #[cold]
@@ -1215,6 +1215,7 @@ make_error_fn!(make_error_3669, 3669, error);
 make_error_fn!(make_error_3670, 3670, argument_error);
 make_error_fn!(make_error_3671, 3671, argument_error);
 make_error_fn!(make_error_3692, 3692, error);
+make_error_fn!(make_error_3699, 3699, error);
 
 // This isn't used if the `jpegxr` feature is disabled, see
 // `globals::flash::display3D::textures::atf_jpegxr`

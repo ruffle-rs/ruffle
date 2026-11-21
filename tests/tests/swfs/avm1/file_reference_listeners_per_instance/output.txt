@@ -1,0 +1,20 @@
+list own _listeners: true
+list shared: false
+list proto _listeners: 
+a len: 1, b len: 0
+a len: 1, b len: 1
+la.onSelect
+ref own _listeners: true
+ref shared: false
+c len: 1, d len: 0
+ref shares with list: false
+ref _listeners enumerable: true
+list _listeners enumerable: true
+delete ref _listeners: true
+ref falls back to the prototype's _listeners: true
+addListener after delete: true
+ref own _listeners after addListener: false
+proto _listeners len: 1
+d len: 0
+new ref len: 0
+lc.onSelect

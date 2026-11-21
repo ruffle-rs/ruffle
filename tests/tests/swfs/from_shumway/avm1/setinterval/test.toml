@@ -1,4 +1,4 @@
 # Test adapted from Shumway at https://github.com/mozilla/shumway/tree/master/test/swfs/avm1/setinterval
 
-num_frames = 50
+num_ticks = 50
 sleep_to_meet_frame_rate = true

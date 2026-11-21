@@ -1,0 +1,16 @@
+== sealed Proxy ==
+0a 03 01 => {}
+== dynamic Proxy ==
+  dynamic nextNameIndex 0
+  dynamic nextName 1
+  dynamic nextValue 1
+  dynamic nextNameIndex 1
+0a 0b 01 03 6b 04 01 01 => {k=1}
+== QName ==
+0a 03 01 => {}
+== sealed Proxy with alias ==
+0a 03 05 53 50 => SealedProxy
+== sealed class with a public property ==
+0a 13 01 0b 76 61 6c 75 65 04 2a => {value=42}
+03 00 05 76 61 6c 75 65 00 40 45 00 00 00 00 00 00 00 00 09 => {value=42}
+done

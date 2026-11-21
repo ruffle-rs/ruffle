@@ -7,3 +7,11 @@ rules:
   media-feature-range-notation: "prefix"
   selector-no-vendor-prefix: [true, {ignoreSelectors: [":-webkit-full-screen"]}]
   color-function-notation: ["modern", {ignore: ["with-var-inside"]}]
+overrides:
+  # The `inset` shorthand has only been supported since Chrome 87, and the
+  # player is also embedded by older browsers (e.g. Electron apps bundling
+  # Flash Player).
+  - files: ["packages/core/**/*.css"]
+    rules:
+      declaration-block-no-redundant-longhand-properties: [true, {ignoreShorthands: ["inset"]}]
+      property-disallowed-list: ["inset"]

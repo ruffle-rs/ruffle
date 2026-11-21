@@ -698,13 +698,12 @@ impl<W: Write> Writer<W> {
 
             Tag::End => self.write_tag_header(TagCode::End, 0)?,
 
-            Tag::ImportAssets { url, ref imports } => {
+            Tag::ImportAssets { url, ref imports } | Tag::ImportAssets2 { url, ref imports } => {
                 let len = imports.iter().map(|e| e.name.len() as u32 + 3).sum::<u32>()
                     + url.len() as u32
                     + 1
                     + 2;
-                // SWF v8 and later use ImportAssets2 tag.
-                if self.version >= 8 {
+                if matches!(tag, Tag::ImportAssets2 { .. }) {
                     self.write_tag_header(TagCode::ImportAssets2, len + 2)?;
                     self.write_string(url)?;
                     self.write_u8(1)?;

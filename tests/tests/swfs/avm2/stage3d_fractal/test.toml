@@ -1,4 +1,4 @@
-num_frames = 2
+num_ticks = 2
 
 # TODO The text overlay differs from FP (font, layout);
 # the fractal's pixel channel values differ by 1-2

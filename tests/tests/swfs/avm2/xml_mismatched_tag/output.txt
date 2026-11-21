@@ -35,3 +35,11 @@ result: <root>
   <a/>
   <test/>
 </root>
+input: <a>text</a/>
+result: <a>text</a>
+input: <a>x &amp; y</a/>
+result: <a>x &amp; y</a>
+input: <root><a>x &amp; y</a b="c"></root>
+result: <root>
+  <a>x &amp; y</a>
+</root>

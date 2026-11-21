@@ -1,6 +1,6 @@
 # Test adapted from Shumway at https://github.com/mozilla/shumway/tree/master/test/swfs/acid
 
-num_frames = 18
+num_ticks = 18
 
 image_comparisons."output.01".trigger = 1
 image_comparisons."output.02".trigger = 2

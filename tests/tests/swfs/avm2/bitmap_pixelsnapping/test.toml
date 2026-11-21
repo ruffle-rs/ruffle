@@ -1,4 +1,4 @@
-num_frames = 1
+num_ticks = 1
 ignore = true # big differences across rendering backends :(
 
 [image_comparisons.output]

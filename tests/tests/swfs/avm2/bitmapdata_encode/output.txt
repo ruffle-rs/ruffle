@@ -1,0 +1,148 @@
+
+// PNG default, full rect, transparent bd
+class: flash.utils::ByteArray
+length > 0: true
+PNG sig: 89 50 4e 47 0d 0a 1a 0a
+IHDR len=13 type=IHDR w=20 h=20 bitDepth=8 colorType=6
+
+// PNG fastCompression=true, full rect, transparent bd
+class: flash.utils::ByteArray
+length > 0: true
+PNG sig: 89 50 4e 47 0d 0a 1a 0a
+IHDR len=13 type=IHDR w=20 h=20 bitDepth=8 colorType=6
+
+// PNG default, subrect (2,3,5,7), transparent bd
+class: flash.utils::ByteArray
+length > 0: true
+PNG sig: 89 50 4e 47 0d 0a 1a 0a
+IHDR len=13 type=IHDR w=5 h=7 bitDepth=8 colorType=6
+
+// PNG default, full rect, opaque bd
+class: flash.utils::ByteArray
+length > 0: true
+PNG sig: 89 50 4e 47 0d 0a 1a 0a
+IHDR len=13 type=IHDR w=20 h=20 bitDepth=8 colorType=2
+
+// JPEG quality=80, full rect, opaque bd
+class: flash.utils::ByteArray
+length > 0: true
+SOI: ff d8
+SOF segLen=17 precision=8 w=20 h=20 components=3
+EOI present: true
+
+// JPEG quality=1, full rect, opaque bd
+class: flash.utils::ByteArray
+length > 0: true
+SOI: ff d8
+SOF segLen=17 precision=8 w=20 h=20 components=3
+EOI present: true
+
+// JPEG quality=100, full rect, opaque bd
+class: flash.utils::ByteArray
+length > 0: true
+SOI: ff d8
+SOF segLen=17 precision=8 w=20 h=20 components=3
+EOI present: true
+
+// JPEG quality=80, subrect (2,3,5,7)
+class: flash.utils::ByteArray
+length > 0: true
+SOI: ff d8
+SOF segLen=17 precision=8 w=5 h=7 components=3
+EOI present: true
+
+// Default output ByteArray (third arg omitted)
+class: flash.utils::ByteArray
+length > 0: true
+endian: bigEndian
+
+// Provided output ByteArray, returned === provided
+ret === provided: true
+length > 0: true
+
+// Provided output ByteArray with existing data is overwritten from position 0
+length > 0: true
+byte[0..2]: 137,80,78
+
+// Provided output ByteArray, position past existing data preserves earlier bytes
+byte[0]: 17
+
+// Zero-area rect: width=0
+threw ArgumentError #2006
+
+// Zero-area rect: height=0
+threw ArgumentError #2006
+
+// Negative width rect
+threw ArgumentError #2006
+
+// Negative width/height with positive origin
+(x=10, y=0, w=-5, h=5): threw ArgumentError #2006
+(x=0, y=10, w=5, h=-5): threw ArgumentError #2006
+(x=25, y=0, w=-10, h=5): threw ArgumentError #2006
+
+// Out-of-bounds rect (partially overlapping)
+length > 0: true
+IHDR len=13 type=IHDR w=5 h=5 bitDepth=8 colorType=6
+
+// Rect fully outside bounds
+threw ArgumentError #2006
+
+// Negative origin rect
+length > 0: true
+IHDR len=13 type=IHDR w=5 h=5 bitDepth=8 colorType=6
+
+// Null rect
+threw TypeError #2007
+
+// Null compressor
+threw TypeError #2007
+
+// Deterministic: same input -> same length
+same length: true
+
+// PNG color type
+IHDR len=13 type=IHDR w=8 h=8 bitDepth=8 colorType=2
+IHDR len=13 type=IHDR w=4 h=4 bitDepth=8 colorType=2
+IHDR len=13 type=IHDR w=8 h=8 bitDepth=8 colorType=6
+IHDR len=13 type=IHDR w=8 h=8 bitDepth=8 colorType=6
+
+// JPEG quality bounds
+quality 0: length > 0: true
+quality 100: length > 0: true
+quality 101: threw RangeError #2006
+quality 4294967295: threw RangeError #2006
+
+// Compressor of the wrong type
+threw ArgumentError #2004
+
+// Large dimensions
+65500x1 JPEG: did not throw
+IHDR len=13 type=IHDR w=65500 h=1 bitDepth=8 colorType=2
+1x65500 JPEG: did not throw
+IHDR len=13 type=IHDR w=1 h=65500 bitDepth=8 colorType=2
+65501x1 JPEG: threw Error #3699
+IHDR len=13 type=IHDR w=65501 h=1 bitDepth=8 colorType=2
+1x65501 JPEG: threw Error #3699
+IHDR len=13 type=IHDR w=1 h=65501 bitDepth=8 colorType=2
+
+// Error precedence
+disposed + null rect: threw ArgumentError #2015
+disposed + null compressor: threw ArgumentError #2015
+disposed + invalid compressor: threw ArgumentError #2015
+disposed + negative rect: threw ArgumentError #2015
+disposed + quality 101: threw ArgumentError #2015
+null rect + quality 101: threw TypeError #2007
+null rect + null compressor: threw TypeError #2007
+null rect + invalid compressor: threw TypeError #2007
+negative rect + null compressor: threw TypeError #2007
+negative rect + invalid compressor: threw ArgumentError #2006
+negative rect + quality 101: threw ArgumentError #2006
+outside rect + invalid compressor: threw ArgumentError #2006
+outside rect + quality 101: threw ArgumentError #2006
+too large for JPEG + quality 101: threw RangeError #2006
+too large for JPEG + negative rect: threw ArgumentError #2006
+too large for JPEG + outside rect: threw ArgumentError #2006
+
+// Disposed bitmap
+threw ArgumentError #2015
