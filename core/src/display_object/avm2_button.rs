@@ -614,7 +614,11 @@ impl<'gc> TDisplayObject<'gc> for Avm2Button<'gc> {
     ) -> Rectangle<Twips> {
         let mut bounds = *matrix * self.self_bounds(BoundsMode::Engine);
 
-        if let Some(child) = self.get_state_child(self.0.state.get().into()) {
+        if let Some(child) = self.get_state_child(self.0.state.get().into())
+            // Some invisible children with changing filter causes jittering of the render bound,
+            // and they should not contribute to the render bound.
+            && child.visible()
+        {
             let matrix = *matrix * child.base().matrix();
             bounds = bounds.union(&child.render_bounds_with_transform(&matrix, true, view_matrix));
         }
