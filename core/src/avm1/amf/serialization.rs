@@ -560,17 +560,12 @@ pub(crate) fn recursive_serialize<'gc>(
     // Note that because get_keys can recurse, this may result in an OS stack overflow
     // This is still better than Flash's behavior, which results in a memory leak/crash
     for element_name in obj.get_keys(activation, false).into_iter().rev() {
-        let elem = if obj.is_property_virtual(activation, element_name) {
-            // Flash never evaluates getters during AMF serialization;
-            // it serializes them as `undefined` (0x06).
-            Value::Undefined
-        } else {
-            // Not a getter, safe to retrieve
-            match obj.get(element_name, activation) {
-                Ok(val) => val,
-                Err(_) => continue,
-            }
-        };
+        // Read stored properties directly so inherited data properties are not
+        // lost to the ordinary AVM1 prototype lookup depth. This also avoids
+        // invoking getters, which AMF serialization represents as `undefined`.
+        let elem = obj
+            .get_stored_property(activation, element_name)
+            .unwrap_or(Value::Undefined);
 
         let name = element_name.to_utf8_lossy();
         serialize_value_to_writer(

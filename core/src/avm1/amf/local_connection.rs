@@ -5,9 +5,8 @@ use super::deserialization::{
     deserialize_array_entries, deserialize_object_entries, deserialize_value_inner,
 };
 use crate::avm1::globals::date::DeferredAmf0Date;
-use crate::avm1::{Activation, Object, Value};
+use crate::avm1::{Activation, ArrayBuilder, Object, Value};
 use flash_lso::types::Value as AmfValue;
-use ruffle_macros::istr;
 
 /// Count the referenceable values contained in an AMF0 value, including the
 /// value itself when it is a complex type.
@@ -108,6 +107,16 @@ fn deserialize_local_connection_array<'gc, 'a>(
     })
 }
 
+/// Create a LocalConnection array, even when the script-visible Array binding is absent.
+fn create_local_connection_array<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    length: i32,
+) -> Object<'gc> {
+    // Flash's LocalConnection decoder does not invoke the script-visible Array
+    // constructor, which may have been replaced or made to throw.
+    ArrayBuilder::empty_with_len(activation, length)
+}
+
 /// Deserialize a LocalConnection argument. Reference indices are still counted
 /// across the argument, but values from earlier sibling properties are not
 /// carried into a later property's cache.
@@ -145,11 +154,10 @@ pub(crate) fn deserialize_local_connection_value<'gc>(
             )
         }
         AmfValue::ECMAArray { data, .. } => {
-            let Ok(Some(Value::Object(obj))) =
-                activation.instantiate_class_fast([istr!("Array")], &[Value::from(data.length)])
-            else {
-                return Value::Undefined;
-            };
+            let obj = create_local_connection_array(
+                activation,
+                i32::try_from(data.length).unwrap_or(i32::MAX),
+            );
 
             let dense_entries = data
                 .dense
@@ -167,12 +175,10 @@ pub(crate) fn deserialize_local_connection_value<'gc>(
             )
         }
         AmfValue::StrictArray { values, .. } => {
-            let args = &[Value::from_usize_lossy(values.len())];
-            let Ok(Some(Value::Object(obj))) =
-                activation.instantiate_class_fast([istr!("Array")], args)
-            else {
-                return Value::Undefined;
-            };
+            let obj = create_local_connection_array(
+                activation,
+                i32::try_from(values.len()).unwrap_or(i32::MAX),
+            );
 
             let entries = values
                 .iter()

@@ -1,8 +1,0 @@
---- Starting LocalConnection Array constructor error test ---
-Connected: true
-Original Array constructor is callable: true
---- Received LocalConnection arrays ---
-ECMAArray result type: undefined
-StrictArray result type: undefined
-Throwing Array constructor calls: 2
-Restored Array constructor: true

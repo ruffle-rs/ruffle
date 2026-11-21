@@ -1,6 +1,6 @@
 // An enumerable data property at the end of a very deep prototype chain is
-// returned by property enumeration, but reading it exceeds AVM1's prototype
-// lookup limit. AMF serialization should skip that property and continue.
+// returned by property enumeration, but is beyond AVM1's prototype lookup
+// limit. AMF serialization should still include that property.
 trace("--- Starting LocalConnection deep prototype serialization test ---");
 
 var payload = new Object();

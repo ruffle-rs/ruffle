@@ -1,6 +1,0 @@
---- Starting LocalConnection deep prototype serialization test ---
-Connected: true
---- Received LocalConnection object ---
-Received visible property: retained
-Received deep property type: undefined
-Received own deep property: false

@@ -1,5 +1,0 @@
-Connected: true
-Original Array constructor: true
-ECMAArray result type: undefined
-StrictArray result type: undefined
-Restored Array constructor: true
