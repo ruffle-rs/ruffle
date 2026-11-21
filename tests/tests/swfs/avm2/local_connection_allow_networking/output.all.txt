@@ -1,0 +1,30 @@
+TEST: send null connection
+TypeError: Error #2007: Parameter connectionName must be non-null.
+END
+TEST: send null method
+TypeError: Error #2007: Parameter methodName must be non-null.
+END
+TEST: send empty method
+ArgumentError: Error #2085: Parameter methodName must be non-empty string.
+END
+TEST: send empty connection + reserved method
+ArgumentError: Error #2085: Parameter connectionName must be non-empty string.
+END
+TEST: send valid connection + reserved method
+ArgumentError: Error #2004: One of the parameters is invalid.
+END
+TEST: send valid connection + valid method
+no error
+END
+TEST: connect empty name
+ArgumentError: Error #2085: Parameter connectionName must be non-empty string.
+END
+TEST: connect null name
+TypeError: Error #2007: Parameter connectionName must be non-null.
+END
+TEST: connect name containing colon
+ArgumentError: Error #2004: One of the parameters is invalid.
+END
+TEST: connect valid name
+no error
+END

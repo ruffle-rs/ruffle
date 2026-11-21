@@ -1,0 +1,30 @@
+TEST: send null connection
+SecurityError: Error #2146: Security sandbox violation: <SWF URL> cannot call LocalConnection.send because the HTML/container parameter allowNetworking has the value none.
+END
+TEST: send null method
+SecurityError: Error #2146: Security sandbox violation: <SWF URL> cannot call LocalConnection.send because the HTML/container parameter allowNetworking has the value none.
+END
+TEST: send empty method
+SecurityError: Error #2146: Security sandbox violation: <SWF URL> cannot call LocalConnection.send because the HTML/container parameter allowNetworking has the value none.
+END
+TEST: send empty connection + reserved method
+SecurityError: Error #2146: Security sandbox violation: <SWF URL> cannot call LocalConnection.send because the HTML/container parameter allowNetworking has the value none.
+END
+TEST: send valid connection + reserved method
+SecurityError: Error #2146: Security sandbox violation: <SWF URL> cannot call LocalConnection.send because the HTML/container parameter allowNetworking has the value none.
+END
+TEST: send valid connection + valid method
+SecurityError: Error #2146: Security sandbox violation: <SWF URL> cannot call LocalConnection.send because the HTML/container parameter allowNetworking has the value none.
+END
+TEST: connect empty name
+ArgumentError: Error #2085: Parameter connectionName must be non-empty string.
+END
+TEST: connect null name
+TypeError: Error #2007: Parameter connectionName must be non-null.
+END
+TEST: connect name containing colon
+SecurityError: Error #2146: Security sandbox violation: <SWF URL> cannot call LocalConnection.connect because the HTML/container parameter allowNetworking has the value none.
+END
+TEST: connect valid name
+SecurityError: Error #2146: Security sandbox violation: <SWF URL> cannot call LocalConnection.connect because the HTML/container parameter allowNetworking has the value none.
+END
