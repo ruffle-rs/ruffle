@@ -1,0 +1,41 @@
+=== MATRIX3D OWNERSHIP BEGIN ===
+=== rejected assignment ===
+same owner accepted
+second owner [class ArgumentError]
+ArgumentError: Error #2189: A Matrix3D can not be assigned to more than one DisplayObject.
+	at flash.geom::Transform/set matrix3D()
+	at Test/assign()
+	at Test/rejectedAssignment()
+	at Test()
+target position after rejection 11 22 33
+target still owns previous matrix [class ArgumentError]
+ArgumentError: Error #2189: A Matrix3D can not be assigned to more than one DisplayObject.
+	at flash.geom::Transform/set matrix3D()
+	at Test/assign()
+	at Test/rejectedAssignment()
+	at Test()
+=== release === replacement
+reuse released matrix accepted
+new owner rejects sharing [class ArgumentError]
+ArgumentError: Error #2189: A Matrix3D can not be assigned to more than one DisplayObject.
+	at flash.geom::Transform/set matrix3D()
+	at Test/assign()
+	at Test/release()
+	at Test()
+=== release === null
+reuse released matrix accepted
+new owner rejects sharing [class ArgumentError]
+ArgumentError: Error #2189: A Matrix3D can not be assigned to more than one DisplayObject.
+	at flash.geom::Transform/set matrix3D()
+	at Test/assign()
+	at Test/release()
+	at Test()
+=== release === 2D matrix
+reuse released matrix accepted
+new owner rejects sharing [class ArgumentError]
+ArgumentError: Error #2189: A Matrix3D can not be assigned to more than one DisplayObject.
+	at flash.geom::Transform/set matrix3D()
+	at Test/assign()
+	at Test/release()
+	at Test()
+=== MATRIX3D OWNERSHIP END ===

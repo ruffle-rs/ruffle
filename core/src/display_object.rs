@@ -1,6 +1,7 @@
 use crate::avm1::{
     ActivationIdentifier as Avm1ActivationIdentifier, Object as Avm1Object, Value as Avm1Value,
 };
+use crate::avm2::object::Matrix3DObject;
 use crate::avm2::{
     Activation as Avm2Activation, Avm2, Error as Avm2Error, LoaderInfoObject,
     Multiname as Avm2Multiname, Object as Avm2Object, StageObject as Avm2StageObject, TObject as _,
@@ -269,6 +270,7 @@ pub struct DisplayObjectBase<'gc> {
     // The transform of this display object.
     // (Split into several fields for easier access)
     matrix: Cell<Matrix>,
+    owned_matrix3d: Lock<Option<Matrix3DObject<'gc>>>,
     color_transform: Cell<ColorTransform>,
     perspective_projection: Cell<Option<PerspectiveProjection>>,
     tz: Cell<f64>,
@@ -346,6 +348,7 @@ impl Default for DisplayObjectBase<'_> {
             name: Lock::new(None),
             clip_depth: Default::default(),
             matrix: Default::default(),
+            owned_matrix3d: Lock::new(None),
             color_transform: Default::default(),
             perspective_projection: Default::default(),
             tz: Cell::new(0.0),
@@ -415,6 +418,10 @@ impl<'gc> DisplayObjectBase<'gc> {
 
     pub fn matrix(&self) -> Matrix {
         self.matrix.get()
+    }
+
+    fn set_owned_matrix3d(this: &Write<Self>, matrix: Option<Matrix3DObject<'gc>>) {
+        unlock!(this, Self, owned_matrix3d).set(matrix);
     }
 
     pub fn set_matrix(&self, matrix: Matrix) {
@@ -1483,6 +1490,18 @@ pub trait TDisplayObject<'gc>:
     #[no_dynamic]
     fn set_place_frame(self, frame: u16) {
         self.base().set_place_frame(frame)
+    }
+
+    /// Track the assigned Matrix3D so replacements can release its ownership.
+    fn set_matrix3d_owner(self, mc: &Mutation<'gc>, matrix: Option<Matrix3DObject<'gc>>) {
+        let base = self.base();
+        if let Some(previous) = base.owned_matrix3d.get() {
+            previous.set_owner(mc, None);
+        }
+        DisplayObjectBase::set_owned_matrix3d(Gc::write(mc, base), matrix);
+        if let Some(matrix) = matrix {
+            matrix.set_owner(mc, Some(base));
+        }
     }
 
     /// Sets the matrix of this object.
