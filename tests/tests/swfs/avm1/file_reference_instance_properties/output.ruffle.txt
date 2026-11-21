@@ -1,0 +1,16 @@
+FileReference: _listeners
+FileReference, in enumeration order: _listeners
+FileReferenceList: _listeners
+FileReferenceList, in enumeration order: _listeners
+frl.fileList: undefined undefined, own: false
+fr.name own: false, proto: true
+fr2.name after set: undefined
+fr2.postData after set: pd
+delete fr2.name: false, own after: false
+frl2.fileList.length: undefined, instanceof Array: false
+delete frl2.fileList: false, own after: false
+two lists share fileList: true
+new postData: string []
+postData = undefined: string undefined
+postData = null: string null
+postData = 5: string 5
