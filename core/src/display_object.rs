@@ -1459,6 +1459,11 @@ pub trait TDisplayObject<'gc>:
 
         if let Some(ctr) = self.as_container() {
             for child in ctr.iter_render_list() {
+                // Masks clip other children without contributing visible pixels.
+                // Their animation must not move the bitmap cache's origin.
+                if (child.clip_depth() > 0 && child.allow_as_mask()) || child.maskee().is_some() {
+                    continue;
+                }
                 let matrix = *matrix * child.base().matrix();
                 bounds =
                     bounds.union(&child.render_bounds_with_transform(&matrix, true, view_matrix));
