@@ -1,4 +1,4 @@
-fileList = undefined
+fileList = 
 browse returned true
 onSelect
 target.fileList.length = 3

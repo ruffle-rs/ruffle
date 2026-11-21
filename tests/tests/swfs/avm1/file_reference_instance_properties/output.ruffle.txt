@@ -1,15 +1,15 @@
-FileReference: _listeners
-FileReference, in enumeration order: _listeners
-FileReferenceList: _listeners
-FileReferenceList, in enumeration order: _listeners
-frl.fileList: undefined undefined, own: false
-fr.name own: false, proto: true
+FileReference: _listeners,creationDate,creator,modificationDate,name,postData,size,type
+FileReference, in enumeration order: _listeners,postData,creator,creationDate,modificationDate,size,type,name
+FileReferenceList: _listeners,fileList
+FileReferenceList, in enumeration order: _listeners,fileList
+frl.fileList: object , own: true
+fr.name own: true, proto: false
 fr2.name after set: undefined
 fr2.postData after set: pd
-delete fr2.name: false, own after: false
-frl2.fileList.length: undefined, instanceof Array: false
-delete frl2.fileList: false, own after: false
-two lists share fileList: true
+delete fr2.name: true, own after: false
+frl2.fileList.length: 0, instanceof Array: true
+delete frl2.fileList: true, own after: false
+two lists share fileList: false
 new postData: string []
 postData = undefined: string undefined
 postData = null: string null
