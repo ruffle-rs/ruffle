@@ -1,5 +1,4 @@
 num_ticks = 31
-known_failure.ruffle_check = false
 
 [[compilers]]
 type = "Asc"

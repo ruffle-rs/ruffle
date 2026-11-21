@@ -374,6 +374,17 @@ pub struct Player {
     /// Faked time passage for fooling hand-written busy-loop FPS limiters.
     time_offset: u32,
 
+    /// The lowest value `getTimer()` may return during the current frame.
+    ///
+    /// Frames in Flash Player are always at least a millisecond apart, so
+    /// `getTimer()` increases between frames. When Ruffle runs several frames
+    /// at once (e.g. to catch up), this keeps that true, as some content
+    /// divides by the time between frames.
+    timer_floor: u32,
+
+    /// The last value returned by `getTimer()`.
+    last_timer: u32,
+
     input: InputManager,
 
     mouse_in_stage: bool,
@@ -2029,6 +2040,8 @@ impl Player {
             return;
         }
 
+        self.timer_floor = self.last_timer.wrapping_add(1);
+
         self.update(|context| {
             // TODO: Is this order correct?
             run_all_phases_avm2(context);
@@ -2342,6 +2355,8 @@ impl Player {
                 focus_tracker: stage.focus_tracker(),
                 times_get_time_called: 0,
                 time_offset: &mut this.time_offset,
+                timer_floor: this.timer_floor,
+                last_timer: &mut this.last_timer,
                 audio_manager,
                 frame_rate: &mut this.frame_rate,
                 forced_frame_rate: this.forced_frame_rate,
@@ -3099,6 +3114,8 @@ impl PlayerBuilder {
                 recent_run_frame_timings: VecDeque::with_capacity(10),
                 start_time: Instant::now(),
                 time_offset: 0,
+                timer_floor: 0,
+                last_timer: 0,
                 time_til_next_timer: None,
                 max_execution_duration: self.max_execution_duration,
                 actions_since_timeout_check: 0,
