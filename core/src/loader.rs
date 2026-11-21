@@ -1,5 +1,7 @@
 //! Management of async loaders
 
+use crate::avm1::globals::file_reference::FileReferenceObject as Avm1FileReferenceObject;
+use crate::avm1::globals::object::broadcast_internal;
 use crate::avm1::{Activation, ActivationIdentifier};
 use crate::avm1::{Attribute, Avm1};
 use crate::avm1::{ExecutionReason, NativeObject};
@@ -2617,170 +2619,218 @@ pub fn download_file_dialog<'gc>(
         // Dialog is done, allow opening new dialogs
         player.lock().unwrap().ui_mut().close_file_dialog();
 
-        // Download the data
-        let req = Request::get(url.clone());
-        // Doing this in two steps to prevent holding the player lock during fetch
-        let future = player.lock().unwrap().fetch(req, FetchReason::Other);
-        let download_res = wait_for_full_response(future).await;
-
-        // Fire the load handler.
-        player.lock().unwrap().update(|uc| -> Result<(), Error> {
-            let target_object = target_object.fetch(uc);
-
-            let file_ref = match target_object.native() {
-                NativeObject::FileReference(fr) => fr,
-                _ => panic!("NativeObject must be FileReference"),
-            };
-
-            let mut activation =
-                Activation::from_stub(uc, ActivationIdentifier::root("[File Dialog]"));
-            use crate::avm1::globals::object::broadcast_internal;
-
-            match dialog_result {
-                Ok(FileDialogResult::Selection(mut selection)) => {
-                    // onSelect and onOpen should be called before the download begins
-                    // We simulate this by using the initial dialog result
-                    file_ref.init_from_file_selection(&mut activation, &*selection);
-
-                    broadcast_internal(
-                        target_object,
-                        &[target_object.into()],
-                        istr!("onSelect"),
-                        &mut activation,
-                    )?;
-
-                    match download_res {
-                        Ok((body, _, _, _)) => {
-                            broadcast_internal(
-                                target_object,
-                                &[target_object.into()],
-                                istr!("onOpen"),
-                                &mut activation,
-                            )?;
-
-                            // onProgress and onComplete expect to receive the current state
-                            // of the file, as we simulate an instant 100% download from the
-                            // perspective of AS, we want to refresh the file_ref internal data
-                            // before invoking the callbacks
-
-                            selection.write_and_refresh(&body);
-                            file_ref.init_from_file_selection(&mut activation, &*selection);
-
-                            let total_bytes = body.len();
-
-                            broadcast_internal(
-                                target_object,
-                                &[
-                                    target_object.into(),
-                                    Value::from_usize_lossy(total_bytes),
-                                    Value::from_usize_lossy(total_bytes),
-                                ],
-                                istr!("onProgress"),
-                                &mut activation,
-                            )?;
-
-                            broadcast_internal(
-                                target_object,
-                                &[target_object.into()],
-                                istr!("onComplete"),
-                                &mut activation,
-                            )?;
-                        }
-                        Err(err) => {
-                            match err.error {
-                                Error::InvalidDomain(_) => {
-                                    activation
-                                        .context
-                                        .avm_trace(&format!("Error opening URL '{url}'"));
-
-                                    broadcast_internal(
-                                        target_object,
-                                        &[target_object.into()],
-                                        istr!("onIOError"),
-                                        &mut activation,
-                                    )?;
-                                }
-                                Error::HttpNotOk(_, _, _, body_len) => {
-                                    // If the error happens before the connection is
-                                    // established, then don't invoke onOpen
-                                    broadcast_internal(
-                                        target_object,
-                                        &[target_object.into()],
-                                        istr!("onOpen"),
-                                        &mut activation,
-                                    )?;
-
-                                    activation
-                                        .context
-                                        .avm_trace(&format!("Error opening URL '{url}'"));
-
-                                    broadcast_internal(
-                                        target_object,
-                                        &[target_object.into()],
-                                        istr!("onIOError"),
-                                        &mut activation,
-                                    )?;
-
-                                    // Flash still executes the onProgress callback, even after an error
-                                    // However it should only be called if the error occurred after the connection was established
-                                    broadcast_internal(
-                                        target_object,
-                                        &[
-                                            target_object.into(),
-                                            Value::from_u64_lossy(body_len),
-                                            Value::from_u64_lossy(body_len),
-                                        ],
-                                        istr!("onProgress"),
-                                        &mut activation,
-                                    )?;
-                                }
-                                Error::FetchError(_) => {
-                                    // If the error happens before the connection is
-                                    // established, then don't invoke onOpen
-                                    broadcast_internal(
-                                        target_object,
-                                        &[target_object.into()],
-                                        istr!("onOpen"),
-                                        &mut activation,
-                                    )?;
-
-                                    activation
-                                        .context
-                                        .avm_trace(&format!("Error opening URL '{url}'"));
-
-                                    broadcast_internal(
-                                        target_object,
-                                        &[target_object.into()],
-                                        istr!("onIOError"),
-                                        &mut activation,
-                                    )?;
-                                }
-                                _ => {
-                                    tracing::warn!(
-                                        "Unhandled non-fetch error on download: {:?}",
-                                        err.error
-                                    );
-                                }
-                            }
-                        }
+        // onSelect and onCancel are called as soon as the dialog is closed,
+        // before the download starts.
+        let post_data =
+            with_file_reference(&player, &target_object, |activation, object, file_ref| {
+                match &dialog_result {
+                    Ok(FileDialogResult::Selection(selection)) => {
+                        file_ref.init_from_file_selection(activation, &**selection);
+                        broadcast_avm1_file_event(object, istr!("onSelect"), activation)?;
                     }
+                    Ok(FileDialogResult::Canceled) => {
+                        broadcast_avm1_file_event(object, istr!("onCancel"), activation)?;
+                    }
+                    Err(err) => tracing::warn!("Download dialog had an error {:?}", err),
                 }
-                Ok(FileDialogResult::Canceled) => {
-                    broadcast_internal(
-                        target_object,
-                        &[target_object.into()],
-                        istr!("onCancel"),
-                        &mut activation,
-                    )?;
+
+                Ok(file_ref.post_data().map(|post_data| post_data.to_string()))
+            })?;
+
+        let Ok(FileDialogResult::Selection(mut selection)) = dialog_result else {
+            return Ok(());
+        };
+
+        // Like Flash Player, send `postData` as the body of a POST request.
+        let request = match post_data {
+            Some(post_data) if !post_data.is_empty() => Request::post(
+                url.clone(),
+                Some((
+                    post_data.into_bytes(),
+                    "application/x-www-form-urlencoded".to_string(),
+                )),
+            ),
+            _ => Request::get(url.clone()),
+        };
+
+        // Doing this in two steps to prevent holding the player lock during fetch
+        let future = player.lock().unwrap().fetch(request, FetchReason::Other);
+        let mut response = match future.await {
+            Ok(response) => response,
+            Err(response) => {
+                return with_file_reference(&player, &target_object, |activation, object, _| {
+                    report_download_error(activation, object, &url, response.error)
+                });
+            }
+        };
+
+        let total_bytes = response.expected_length().ok().flatten();
+        with_file_reference(&player, &target_object, |activation, object, _| {
+            broadcast_avm1_file_event(object, istr!("onOpen"), activation)?;
+            Ok(())
+        })?;
+
+        // Like Flash Player, report the progress for every chunk of the
+        // response as it arrives.
+        let mut body = Vec::new();
+        loop {
+            match response.next_chunk().await {
+                Ok(Some(chunk)) => {
+                    body.extend_from_slice(&chunk);
+                    let loaded = body.len() as u64;
+                    let total = total_bytes.unwrap_or(loaded);
+
+                    with_file_reference(&player, &target_object, |activation, object, _| {
+                        let args = [
+                            object.into(),
+                            Value::from_u64_lossy(loaded),
+                            Value::from_u64_lossy(total),
+                        ];
+                        broadcast_internal(object, &args, istr!("onProgress"), activation)?;
+                        Ok(())
+                    })?;
+                }
+                Ok(None) => {
+                    // onComplete expects to receive the current state of the
+                    // file, so write it before invoking the callback.
+                    selection.write_and_refresh(&body);
+
+                    return with_file_reference(
+                        &player,
+                        &target_object,
+                        |activation, object, file_ref| {
+                            file_ref.init_from_file_selection(activation, &*selection);
+                            broadcast_avm1_file_event(object, istr!("onComplete"), activation)?;
+                            Ok(())
+                        },
+                    );
                 }
                 Err(err) => {
-                    tracing::warn!("Download dialog had an error {:?}", err);
+                    tracing::warn!("Download of {url} failed: {err:?}");
+
+                    return with_file_reference(
+                        &player,
+                        &target_object,
+                        |activation, object, _| {
+                            activation
+                                .context
+                                .avm_trace(&format!("Error opening URL '{url}'"));
+                            broadcast_avm1_file_event(object, istr!("onIOError"), activation)?;
+
+                            Ok(())
+                        },
+                    );
                 }
             }
-
-            Ok(())
-        })
+        }
     })
+}
+
+/// Runs `f` with the AVM1 `FileReference` object `target` of a file
+/// operation, in a new update of the player.
+fn with_file_reference<R>(
+    player: &Mutex<Player>,
+    target: &ObjectHandle,
+    f: impl for<'gc> FnOnce(
+        &mut Activation<'_, 'gc>,
+        Object<'gc>,
+        Avm1FileReferenceObject<'gc>,
+    ) -> Result<R, Error>,
+) -> Result<R, Error> {
+    player.lock().unwrap().update(|uc| {
+        let object = target.fetch(uc);
+        let NativeObject::FileReference(file_ref) = object.native() else {
+            panic!("NativeObject must be FileReference");
+        };
+
+        let mut activation = Activation::from_stub(uc, ActivationIdentifier::root("[File Dialog]"));
+
+        f(&mut activation, object, file_ref)
+    })
+}
+
+/// Calls the listeners of an AVM1 `FileReference` for a download that failed
+/// before receiving a response.
+fn report_download_error<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    target_object: Object<'gc>,
+    url: &str,
+    error: Error,
+) -> Result<(), Error> {
+    match error {
+        Error::InvalidDomain(_) => {
+            activation
+                .context
+                .avm_trace(&format!("Error opening URL '{url}'"));
+
+            broadcast_internal(
+                target_object,
+                &[target_object.into()],
+                istr!("onIOError"),
+                activation,
+            )?;
+        }
+        Error::HttpNotOk(_, _, _, body_len) => {
+            // If the error happens before the connection is
+            // established, then don't invoke onOpen
+            broadcast_internal(
+                target_object,
+                &[target_object.into()],
+                istr!("onOpen"),
+                activation,
+            )?;
+
+            activation
+                .context
+                .avm_trace(&format!("Error opening URL '{url}'"));
+
+            broadcast_internal(
+                target_object,
+                &[target_object.into()],
+                istr!("onIOError"),
+                activation,
+            )?;
+
+            // Flash still executes the onProgress callback, even after an error
+            // However it should only be called if the error occurred after the connection was established
+            broadcast_internal(
+                target_object,
+                &[
+                    target_object.into(),
+                    Value::from_u64_lossy(body_len),
+                    Value::from_u64_lossy(body_len),
+                ],
+                istr!("onProgress"),
+                activation,
+            )?;
+        }
+        Error::FetchError(_) => {
+            // If the error happens before the connection is
+            // established, then don't invoke onOpen
+            broadcast_internal(
+                target_object,
+                &[target_object.into()],
+                istr!("onOpen"),
+                activation,
+            )?;
+
+            activation
+                .context
+                .avm_trace(&format!("Error opening URL '{url}'"));
+
+            broadcast_internal(
+                target_object,
+                &[target_object.into()],
+                istr!("onIOError"),
+                activation,
+            )?;
+        }
+        _ => {
+            tracing::warn!("Unhandled non-fetch error on download: {:?}", error);
+        }
+    }
+
+    Ok(())
 }
 
 /// Uploads the given `data` to the provided `url`.
