@@ -1,6 +1,7 @@
 use crate::avm1::{
     ActivationIdentifier as Avm1ActivationIdentifier, Object as Avm1Object, Value as Avm1Value,
 };
+use crate::avm2::object::Matrix3DObject;
 use crate::avm2::{
     Activation as Avm2Activation, Avm2, Error as Avm2Error, LoaderInfoObject,
     Multiname as Avm2Multiname, Object as Avm2Object, StageObject as Avm2StageObject, TObject as _,
@@ -272,6 +273,9 @@ pub struct DisplayObjectBase<'gc> {
     color_transform: Cell<ColorTransform>,
     perspective_projection: Cell<Option<PerspectiveProjection>>,
     tz: Cell<f64>,
+    // When matrix3d is None, the matrix(2d) is used.
+    // Otherwise, matrix3d is used for transform.
+    matrix3d: Lock<Option<Matrix3DObject<'gc>>>,
 
     // Cached transform properties `_xscale`, `_yscale`, `_rotation`.
     // These are expensive to calculate, so they will be calculated and cached
@@ -349,6 +353,7 @@ impl Default for DisplayObjectBase<'_> {
             color_transform: Default::default(),
             perspective_projection: Default::default(),
             tz: Cell::new(0.0),
+            matrix3d: Lock::new(None),
             rotation: Cell::new(Degrees::from_radians(0.0)),
             scale_x: Cell::new(Percent::from_unit(1.0)),
             scale_y: Cell::new(Percent::from_unit(1.0)),
@@ -420,6 +425,15 @@ impl<'gc> DisplayObjectBase<'gc> {
     pub fn set_matrix(&self, matrix: Matrix) {
         self.matrix.set(matrix);
         self.set_scale_rotation_cached(false);
+    }
+
+    pub fn matrix3d(&self) -> Option<Matrix3DObject<'gc>> {
+        self.matrix3d.get()
+    }
+
+    pub fn set_matrix3d(this: &Write<Self>, matrix3d: Option<Matrix3DObject<'gc>>) {
+        unlock!(this, Self, matrix3d).set(matrix3d);
+        this.set_scale_rotation_cached(false);
     }
 
     pub fn color_transform(&self) -> ColorTransform {
@@ -1490,6 +1504,13 @@ pub trait TDisplayObject<'gc>:
     /// It is the callers responsibility to do so.
     fn set_matrix(self, matrix: Matrix) {
         self.base().set_matrix(matrix);
+    }
+
+    /// Sets the matrix3d of this object.
+    /// This does NOT invalidate the cache, as it's often used with other operations.
+    /// It is the callers responsibility to do so.
+    fn set_matrix3d(self, mc: &Mutation<'gc>, matrix: Option<Matrix3DObject<'gc>>) {
+        DisplayObjectBase::set_matrix3d(Gc::write(mc, self.base()), matrix);
     }
 
     /// Sets the color transform of this object.
