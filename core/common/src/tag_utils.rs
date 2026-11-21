@@ -7,6 +7,7 @@ use std::ops::Deref;
 use std::sync::Arc;
 use swf::{Fixed8, HeaderExt, Rectangle, Twips};
 use url::Url;
+use yoke::Yoke;
 
 pub type SwfStream<'a> = swf::read::Reader<'a>;
 
@@ -40,6 +41,19 @@ impl<'gc> Deref for SwfMovie<'gc> {
         &self.0
     }
 }
+
+// SAFETY:
+// - Moving or copying a `Gc` doesn't affect the data it points to.
+// - `SwfMovieData` is `'static`, so it cannot contain any nested mutable `Gc`s.
+//   This is *NECESSARY* for soundness: otherwise, a projected reference could
+//   be made to point into an untracked `Gc`, leading to a possible use-after-free.
+//   For example, from a `Lock<Gc<'gc, T>>`, one can obtain a long-lived `&'gc T`
+//   with `Gc::as_ref(t.get())`; then, the inner `Gc` can later be swapped with
+//   another one, leaving the reference dangling when the old `Gc` is deallocated.
+//
+//  TODO: consider upstreaming yoke support into gc-arena?
+unsafe impl<'gc> stable_deref_trait::StableDeref for SwfMovie<'gc> {}
+unsafe impl<'gc> yoke::CloneableCart for SwfMovie<'gc> {}
 
 impl PartialEq for SwfMovie<'_> {
     fn eq(&self, other: &Self) -> bool {
@@ -424,78 +438,63 @@ impl Debug for SwfMovieData {
     }
 }
 
+pub type YokeArc<Y, C = dyn yoke::erased::ErasedDestructor + Send + Sync> = Yoke<Y, Arc<C>>;
+
 /// A shared-ownership reference to some portion of an SWF datastream.
-#[derive(Debug, Clone, Collect)]
-#[collect(no_drop)]
-pub struct SwfSlice {
-    entire_data: Arc<Vec<u8>>,
-    swf_version: u8,
+#[derive(Clone, Debug)]
+pub struct SwfSlice<'gc>(Yoke<&'static [u8], SwfMovie<'gc>>);
 
-    pub start: usize,
-    pub end: usize,
-}
-
-impl<'gc> From<SwfMovie<'gc>> for SwfSlice {
-    fn from(movie: SwfMovie<'gc>) -> Self {
-        let end = movie.data().len();
-
-        Self {
-            entire_data: movie.data.clone(),
-            swf_version: movie.version(),
-            start: 0,
-            end,
-        }
+// SAFETY:
+// The "yoked" data points into its `SwfMovie` cart, so it doesn't need to be traced.
+unsafe impl<'gc> Collect<'gc> for SwfSlice<'gc> {
+    fn trace<T: gc_arena::collect::Trace<'gc>>(&self, cc: &mut T) {
+        self.0.backing_cart().0.trace(cc);
     }
 }
 
-impl AsRef<[u8]> for SwfSlice {
+impl<'gc> From<SwfMovie<'gc>> for SwfSlice<'gc> {
+    fn from(movie: SwfMovie<'gc>) -> Self {
+        Self(Yoke::attach_to_cart(movie, |m| m.data.as_slice()))
+    }
+}
+
+impl AsRef<[u8]> for SwfSlice<'_> {
     #[inline]
     fn as_ref(&self) -> &[u8] {
         self.data()
     }
 }
 
-impl SwfSlice {
+impl<'gc> SwfSlice<'gc> {
     /// Creates an empty SwfSlice.
     #[inline]
-    pub fn empty(movie: SwfMovie<'_>) -> Self {
-        Self {
-            entire_data: movie.data.clone(),
-            swf_version: movie.version(),
-            start: 0,
-            end: 0,
-        }
+    pub fn empty(movie: SwfMovie<'gc>) -> Self {
+        // Not `&[]`; we want to preserve the proper address.
+        Self(Yoke::attach_to_cart(movie, |m| &m.data[..0]))
     }
 
     /// Creates an empty SwfSlice of the same movie.
     #[inline]
     pub fn copy_empty(&self) -> Self {
-        Self {
-            entire_data: self.entire_data.clone(),
-            swf_version: self.swf_version,
-            start: 0,
-            end: 0,
-        }
+        // Not `&[]`; we want to preserve the proper address.
+        Self(self.0.map_project_cloned(|data, _| &data[..0]))
+    }
+
+    pub fn slice<R>(&self, range: R) -> Self
+    where
+        [u8]: std::ops::Index<R, Output = [u8]>,
+    {
+        Self(self.0.map_project_cloned(|data, _| &data[range]))
     }
 
     /// Construct a new SwfSlice from a regular slice.
     ///
-    /// This function panics if the given slice is not a subslice of the current
-    /// slice.
+    /// The parameter `slice` must be derived from the same buffer this slice
+    /// was, and must also be within bounds of this slice. If not, then the
+    /// returned slice will be empty.
     pub fn to_subslice(&self, slice: &[u8]) -> Self {
-        let self_pval = self.entire_data.as_ptr() as usize;
-        let slice_pval = slice.as_ptr() as usize;
-
-        if (self_pval + self.start) <= slice_pval && slice_pval < (self_pval + self.end) {
-            Self {
-                entire_data: self.entire_data.clone(),
-                swf_version: self.swf_version,
-                start: slice_pval - self_pval,
-                end: (slice_pval - self_pval) + slice.len(),
-            }
-        } else {
-            self.copy_empty()
-        }
+        let range = self.data().subslice_range(slice).unwrap_or_default();
+        Self(self.0.map_project_cloned(|data, _| &data[range]))
     }
 
     /// Construct a new SwfSlice from a movie subslice.
@@ -503,20 +502,9 @@ impl SwfSlice {
     /// This function allows subslices outside the current slice to be formed,
     /// as long as they are valid subslices of the movie itself.
     pub fn to_unbounded_subslice(&self, slice: &[u8]) -> Self {
-        let self_pval = self.entire_data.as_ptr() as usize;
-        let self_len = self.entire_data.len();
-        let slice_pval = slice.as_ptr() as usize;
-
-        if self_pval <= slice_pval && slice_pval < (self_pval + self_len) {
-            Self {
-                entire_data: self.entire_data.clone(),
-                swf_version: self.swf_version,
-                start: slice_pval - self_pval,
-                end: (slice_pval - self_pval) + slice.len(),
-            }
-        } else {
-            self.copy_empty()
-        }
+        let movie = self.0.backing_cart();
+        let range = movie.data.subslice_range(slice).unwrap_or_default();
+        Self(Yoke::attach_to_cart(*movie, |m| &m.data[range]))
     }
 
     /// Construct a new SwfSlice from a SwfStream.
@@ -531,31 +519,60 @@ impl SwfSlice {
         self.to_subslice(reader.get_ref())
     }
 
+    pub fn with_mut(&mut self, f: impl FnOnce(&mut &[u8]) + 'static) {
+        self.0.with_mut(f)
+    }
+
     /// Convert the SwfSlice into a standard data slice.
     pub fn data(&self) -> &[u8] {
-        &self.entire_data[self.start..self.end]
+        self.0.get()
     }
 
     /// Access the entire data of the movie backing this SwfSlice.
     pub fn entire_data(&self) -> &[u8] {
-        &self.entire_data
+        self.0.backing_cart().data()
+    }
+
+    /// Returns the SWF movie backing this SwfSlice.
+    pub fn movie(&self) -> SwfMovie<'gc> {
+        *self.0.backing_cart()
+    }
+
+    /// Get the version of the SWF this data comes from.
+    pub fn version(&self) -> u8 {
+        self.movie().version()
+    }
+
+    /// Returns the data from the start of this slice up to the end of the whole movie.
+    pub fn data_until_end(&self) -> &[u8] {
+        let entire_data = self.entire_data();
+        let range = entire_data.subslice_range(&self.data()[..0]);
+        &entire_data[range.unwrap_or_default().start..]
     }
 
     /// Checks if this slice is empty
     pub fn is_empty(&self) -> bool {
-        self.end == self.start
+        self.data().is_empty()
     }
 
     /// Construct a reader for this slice.
     ///
     /// The `from` parameter is the offset to start reading the slice from.
     pub fn read_from(&self, from: u64) -> swf::read::Reader<'_> {
-        swf::read::Reader::new(&self.data()[from as usize..], self.swf_version)
+        swf::read::Reader::new(&self.data()[from as usize..], self.version())
     }
 
     /// Get the length of the SwfSlice.
     pub fn len(&self) -> usize {
-        self.end - self.start
+        self.data().len()
+    }
+
+    /// Convert the SwfSlice into an erased `Arc` slice.
+    pub fn into_erased_yoke(self) -> YokeArc<&'static [u8]> {
+        let entire_data = Arc::clone(&self.movie().data);
+        let range = entire_data.subslice_range(self.data()).unwrap_or_default();
+        let yoke = Yoke::attach_to_cart(entire_data, |d| &d[range]);
+        yoke.erase_arc_cart()
     }
 }
 

@@ -64,8 +64,7 @@ struct Avm1ButtonDataMut<'gc> {
 impl<'gc> Avm1Button<'gc> {
     pub fn from_swf_tag(
         button: &swf::Button,
-        movie: SwfMovie<'gc>,
-        swf_data: &SwfSlice,
+        swf_data: &SwfSlice<'gc>,
         mc: &Mutation<'gc>,
     ) -> Self {
         let actions = button
@@ -82,7 +81,7 @@ impl<'gc> Avm1Button<'gc> {
             Avm1ButtonData {
                 base: Default::default(),
                 cell: RefLock::new(Avm1ButtonDataMut {
-                    container: ChildContainer::new(&movie),
+                    container: ChildContainer::new(&swf_data.movie()),
                     hit_area: BTreeMap::new(),
                     hit_bounds: Default::default(),
                     text_field_bindings: Vec::new(),
@@ -90,7 +89,7 @@ impl<'gc> Avm1Button<'gc> {
                 shared: Gc::new(
                     mc,
                     ButtonShared {
-                        swf: movie,
+                        swf: swf_data.movie(),
                         id: button.id,
                         actions,
                         cell: RefCell::new(ButtonSharedMut {
@@ -649,9 +648,11 @@ impl From<ButtonState> for swf::ButtonState {
     }
 }
 
-#[derive(Clone, Debug)]
-struct ButtonAction {
-    action_data: SwfSlice,
+#[derive(Collect, Clone, Debug)]
+#[collect(no_drop)]
+struct ButtonAction<'gc> {
+    action_data: SwfSlice<'gc>,
+    #[collect(require_static)]
     conditions: ButtonActionCondition,
 }
 
@@ -668,8 +669,7 @@ struct ButtonShared<'gc> {
     swf: SwfMovie<'gc>,
     id: CharacterId,
 
-    #[collect(require_static)]
-    actions: Vec<ButtonAction>,
+    actions: Vec<ButtonAction<'gc>>,
 
     #[collect(require_static)]
     cell: RefCell<ButtonSharedMut>,

@@ -142,7 +142,7 @@ impl<'gc> Avm1<'gc> {
     pub fn run_stack_frame_for_action(
         active_clip: DisplayObject<'gc>,
         name: &str,
-        code: SwfSlice,
+        code: SwfSlice<'gc>,
         context: &mut UpdateContext<'gc>,
     ) {
         if context.avm1.halted {
@@ -179,7 +179,7 @@ impl<'gc> Avm1<'gc> {
     /// Add a stack frame that executes code in globals scope
     ///
     /// This creates a new frame stack.
-    pub fn run_stack_frame_for_globals(code: SwfSlice, context: &mut UpdateContext<'gc>) {
+    pub fn run_stack_frame_for_globals(code: SwfSlice<'gc>, context: &mut UpdateContext<'gc>) {
         if context.avm1.halted {
             // We've been told to ignore all future execution.
             return;
@@ -247,7 +247,7 @@ impl<'gc> Avm1<'gc> {
     /// This creates a new frame stack.
     pub fn run_stack_frame_for_init_action(
         active_clip: DisplayObject<'gc>,
-        code: SwfSlice,
+        code: SwfSlice<'gc>,
         context: &mut UpdateContext<'gc>,
     ) {
         if context.avm1.halted {
