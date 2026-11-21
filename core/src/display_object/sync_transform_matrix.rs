@@ -1,9 +1,7 @@
 // Synchronization/computation between matrix and transform (i.e. scale/rotation/skew).
 
-use ruffle_render::matrix::Matrix;
-use swf::Fixed16;
-
 use crate::types::{Degrees, Percent};
+use ruffle_render::matrix::Matrix;
 
 pub(crate) fn props_from_matrix(matrix: Matrix) -> (Degrees, Percent, Percent, f64) {
     let atan2 = |x: f64, y: f64| {
@@ -113,11 +111,8 @@ pub(crate) fn from_swf_matrix(swf_matrix: swf::Matrix) -> (Degrees, Percent, Per
     let matrix: Matrix = swf_matrix.into();
     let (mut rotation, mut scale_x, mut scale_y, mut skew) = props_from_matrix(matrix);
 
-    let negate_scale_x = swf_matrix.a < Fixed16::ZERO
-        && (swf_matrix.b, swf_matrix.c) == (Fixed16::ZERO, Fixed16::ZERO)
-        && swf_matrix.d > Fixed16::ZERO;
-    let negate_scale_y =
-        !negate_scale_x && swf_matrix.a * swf_matrix.d < swf_matrix.b * swf_matrix.c;
+    let negate_scale_x = matrix.a < 0.0 && (matrix.b, matrix.c) == (0.0, 0.0) && matrix.d > 0.0;
+    let negate_scale_y = !negate_scale_x && matrix.a * matrix.d < matrix.b * matrix.c;
 
     if negate_scale_x {
         scale_x = Percent::from(-scale_x.percent());
@@ -133,21 +128,17 @@ pub(crate) fn from_swf_matrix(swf_matrix: swf::Matrix) -> (Degrees, Percent, Per
     }
 
     // atan2(0, 0) is generally arbitrary.
-    if (swf_matrix.a, swf_matrix.b) == (Fixed16::ZERO, Fixed16::ZERO) {
+    if (matrix.a, matrix.b) == (0.0, 0.0) {
         rotation = Degrees::from_radians(std::f64::consts::PI / 2.0);
     }
 
     // TODO: Refactoring
     // I think it's possible to simplify/merge those logics to props_from_matrix.
-    if (swf_matrix.b, swf_matrix.c, swf_matrix.d) == (Fixed16::ZERO, Fixed16::ZERO, Fixed16::ZERO)
-        && swf_matrix.a > Fixed16::ZERO
-    {
-        skew = std::f64::consts::PI / 2.0 - f64::atan2(swf_matrix.b.into(), swf_matrix.a.into());
+    if (matrix.b, matrix.c, matrix.d) == (0.0, 0.0, 0.0) && matrix.a > 0.0 {
+        skew = (std::f32::consts::PI / 2.0 - f32::atan2(matrix.b, matrix.a)) as f64;
     }
-    if (swf_matrix.a, swf_matrix.b, swf_matrix.c) == (Fixed16::ZERO, Fixed16::ZERO, Fixed16::ZERO)
-        && swf_matrix.d > Fixed16::ZERO
-    {
-        skew = f64::atan2((-swf_matrix.c).into(), swf_matrix.d.into()) - std::f64::consts::PI / 2.0;
+    if (matrix.a, matrix.b, matrix.c) == (0.0, 0.0, 0.0) && matrix.d > 0.0 {
+        skew = (f32::atan2(-matrix.c, matrix.d) - std::f32::consts::PI / 2.0) as f64;
     }
 
     (rotation, scale_x, scale_y, skew, matrix)
