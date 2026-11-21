@@ -1,5 +1,6 @@
 // testEq
 t.matrix === t.matrix false
+t.matrix3D === t.matrix3D true
 t.perspectiveProjection === t.perspectiveProjection false
 t.colorTransform === t.colorTransform false
 
@@ -40,24 +41,27 @@ mat3D.rawData 1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1
 // sprite3D: update mat3D
 sprite3D.transform.matrix null
 sprite3D.transform.matrix3D [object Matrix3D]
-mat3D.rawData 2,3,0,0,4,5,0,0,0,0,1,0,6,7,8,1
+sprite3D.transform.matrix3D.rawData 2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17
+mat3D.rawData 2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17
 // sprite3D: .matrix3D = mat3D
 sprite3D.transform.matrix null
 sprite3D.transform.matrix3D [object Matrix3D]
-sprite3D.transform.matrix3D.rawData 2,3,0,0,4,5,0,0,0,0,1,0,6,7,8,1
-mat3D.rawData 2,3,0,0,4,5,0,0,0,0,1,0,6,7,8,1
+sprite3D.transform.matrix3D.rawData 2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17
+mat3D.rawData 2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17
 // sprite3D: .matrix = null
 sprite3D.transform.matrix null
 sprite3D.transform.matrix3D [object Matrix3D]
-sprite3D.transform.matrix3D.rawData 2,3,0,0,4,5,0,0,0,0,1,0,6,7,8,1
-mat3D.rawData 2,3,0,0,4,5,0,0,0,0,1,0,6,7,8,1
-// sprite3D: set x = 30, y = 50
+sprite3D.transform.matrix3D.rawData 2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17
+mat3D.rawData 2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17
+// sprite3D: set x = 30, y = 50, z = 70
 sprite3D.transform.matrix null
 sprite3D.transform.matrix3D [object Matrix3D]
-sprite3D.transform.matrix3D.rawData 2,3,0,0,4,5,0,0,0,0,1,0,30,50,8,1
+sprite3D.transform.matrix3D.rawData 2,3,4,5,6,7,8,9,10,11,12,13,30,50,70,17
+mat3D.rawData 2,3,4,5,6,7,8,9,10,11,12,13,30,50,70,17
 // sprite3D: .matrix3D = null
 sprite3D.transform.matrix (a=1, b=0, c=0, d=1, tx=0, ty=0)
 sprite3D.transform.matrix3D null
+mat3D.rawData 2,3,4,5,6,7,8,9,10,11,12,13,30,50,70,17
 
 // Copy2D
 sprite1.transform.matrix (a=1, b=2, c=3, d=4, tx=5, ty=6)
@@ -68,8 +72,8 @@ sprite2.transform.matrix3D null
 // Copy3D
 sprite1.transform.matrix null
 sprite1.transform.matrix3D [object Matrix3D]
-sprite1.transform.matrix3D.rawData 1.9996954202651978,0.05235721915960312,0,0,-0.03490481153130531,2.9995431900024414,0,0,0,0,1,0,5,6,0,1
+sprite1.transform.matrix3D.rawData 1.9997968673706055,0.03038075938820839,-0.04010153189301491,0,-0.020050765946507454,2.999695301055908,0.04050767794251442,0,0.02025383897125721,-0.030076149851083755,3.999593734741211,0,5,6,7,1
 sprite2.transform.matrix null
 sprite2.transform.matrix3D [object Matrix3D]
-sprite2.transform.matrix3D.rawData 1.9996954202651978,0.05235721915960312,0,0,-0.03490481153130531,2.9995431900024414,0,0,0,0,1,0,5,6,0,1
+sprite2.transform.matrix3D.rawData 1.9997968673706055,0.03038075938820839,-0.04010153189301491,0,-0.020050765946507454,2.999695301055908,0.04050767794251442,0,0.02025383897125721,-0.030076149851083755,3.999593734741211,0,5,6,7,1
 
