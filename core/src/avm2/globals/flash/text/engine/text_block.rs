@@ -511,7 +511,14 @@ pub fn do_create_text_line<'gc>(
 
     let subtext = &text[previous_position..next_position];
 
-    fallback.set_text(subtext, activation.context);
+    // Flash treats CRLF as a single line terminator, while the fallback text
+    // field would break the line twice.
+    let displayed_text = if subtext.ends_with(WStr::from_units(b"\r\n")) {
+        &subtext[..subtext.len() - 1]
+    } else {
+        subtext
+    };
+    fallback.set_text(displayed_text, activation.context);
 
     let format = spans
         .span(0)
@@ -526,6 +533,7 @@ pub fn do_create_text_line<'gc>(
 
     text_line.set_text_block(Some(block), activation.gc());
     text_line.set_specified_width(width);
+    text_line.set_baseline_zero(block.baseline_zero());
     text_line.set_raw_text_length(subtext.len() as u32);
     text_line.set_begin_index(previous_position as u32);
     text_line.set_end_index(next_position as u32);
@@ -659,6 +667,7 @@ fn apply_format<'gc>(
 
     let measured_text = edit_text.measure_text(activation.context);
 
-    edit_text.set_height(activation.context, measured_text.1.to_pixels());
+    let height = measured_text.1 + EditText::GUTTER * 2;
+    edit_text.set_height(activation.context, height.to_pixels());
     edit_text.set_y(measured_text.1 * line_index as i32);
 }

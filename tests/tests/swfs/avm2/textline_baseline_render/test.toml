@@ -1,0 +1,9 @@
+num_ticks = 1
+
+[image_comparisons.output]
+# Anti-aliasing on the glyph edges differs slightly.
+tolerance = 20
+max_outliers = 10
+
+[player_options]
+with_renderer = { optional = false }

@@ -1,0 +1,2 @@
+width=50 line 0: rawTextLength=11 bounds=(x=0, y=-16, w=44, h=60)
+width=30 line 0: rawTextLength=11 bounds=(x=0, y=-16, w=26, h=120)
