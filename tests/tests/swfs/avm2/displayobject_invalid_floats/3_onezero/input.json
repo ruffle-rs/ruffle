@@ -1,0 +1,11 @@
+[
+  {
+    "type": "KeyDown",
+    "key": {
+      "Numpad": "3"
+    }
+  },
+  {
+    "type": "Wait"
+  }
+]
