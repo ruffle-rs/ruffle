@@ -1,0 +1,23 @@
+Band offset at x=0, columns [offset, growth]: 0,0 0.25,0 0.45,0 0.5,0 0.55,0 0.75,0
+Band scale at x=96, columns [offset, growth]: 0,0.25 0,0.5 0,0.75 0,1
+Band offset+scale at x=160, columns [offset, growth]: 0.25,0.25 0.5,0.25 0.75,0.25 0.25,0.75 0.5,0.75 0.75,0.75
+Row at y=0: kind=vector, cacheAsBitmap=none
+Row at y=16: kind=vector, cacheAsBitmap=self
+Row at y=32: kind=vector, cacheAsBitmap=parent
+Row at y=48: kind=vector, cacheAsBitmap=movedParent
+Row at y=64: kind=bitmapNever, cacheAsBitmap=none
+Row at y=80: kind=bitmapNever, cacheAsBitmap=self
+Row at y=96: kind=bitmapNever, cacheAsBitmap=parent
+Row at y=112: kind=bitmapNever, cacheAsBitmap=movedParent
+Row at y=128: kind=bitmapNeverSmooth, cacheAsBitmap=none
+Row at y=144: kind=bitmapNeverSmooth, cacheAsBitmap=self
+Row at y=160: kind=bitmapNeverSmooth, cacheAsBitmap=parent
+Row at y=176: kind=bitmapNeverSmooth, cacheAsBitmap=movedParent
+Row at y=192: kind=bitmapAlways, cacheAsBitmap=none
+Row at y=208: kind=bitmapAlways, cacheAsBitmap=self
+Row at y=224: kind=bitmapAlways, cacheAsBitmap=parent
+Row at y=240: kind=bitmapAlways, cacheAsBitmap=movedParent
+Row at y=256: kind=bitmapAlwaysSmooth, cacheAsBitmap=none
+Row at y=272: kind=bitmapAlwaysSmooth, cacheAsBitmap=self
+Row at y=288: kind=bitmapAlwaysSmooth, cacheAsBitmap=parent
+Row at y=304: kind=bitmapAlwaysSmooth, cacheAsBitmap=movedParent
