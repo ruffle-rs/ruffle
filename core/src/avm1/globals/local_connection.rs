@@ -1,8 +1,12 @@
 //! LocalConnection class
 
 use crate::avm1::activation::Activation;
-use crate::avm1::amf::{deserialize_local_connection_value, serialize_local_connection};
+use crate::avm1::amf::{
+    DeserializationContext, SerializationContext, deserialize_local_connection_value,
+    serialize_with_context,
+};
 use crate::avm1::error::Error;
+use crate::avm1::globals::date::DeferredAmf0Date;
 use crate::avm1::property_decl::{DeclContext, PropertyOrder, StaticDeclarations, SystemClass};
 use crate::avm1::{ActivationIdentifier, ExecutionReason, NativeObject, Object, Value};
 use crate::avm1_stub;
@@ -109,15 +113,29 @@ impl<'gc> LocalConnection<'gc> {
             root_clip,
         );
         let mut args = Vec::with_capacity(amf_arguments.len());
+        let mut deferred_dates = Vec::<DeferredAmf0Date<'gc>>::new();
         for arg in amf_arguments {
-            args.push(deserialize_local_connection_value(&mut activation, &arg));
+            args.push(deserialize_local_connection_value(
+                &mut activation,
+                &arg,
+                DeserializationContext::LocalConnection,
+                &mut deferred_dates,
+            ));
         }
-        this.call_method(
+        let callback_result = this.call_method(
             method_name,
             &args,
             &mut activation,
             ExecutionReason::Special,
-        )?;
+        );
+
+        // Flash invokes LocalConnection Date constructors after the receiving
+        // method has returned, not while its arguments are being decoded.
+        for date in deferred_dates {
+            date.initialize(&mut activation);
+        }
+
+        callback_result?;
         Ok(())
     }
 }
@@ -224,7 +242,11 @@ pub fn send<'gc>(
 
     let mut amf_arguments = Vec::with_capacity(args.len() - 2);
     for arg in &args[2..] {
-        amf_arguments.push(serialize_local_connection(activation, *arg));
+        amf_arguments.push(serialize_with_context(
+            activation,
+            *arg,
+            SerializationContext::LocalConnection,
+        ));
     }
 
     activation.context.local_connections.send(

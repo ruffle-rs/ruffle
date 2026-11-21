@@ -1,4 +1,7 @@
-use crate::avm1::amf::{Amf0ReferenceCache, deserialize_value, serialize_net_connection};
+use crate::avm1::amf::{
+    Amf0ReferenceCache, DeserializationContext, SerializationContext, deserialize_value,
+    serialize_with_context,
+};
 use crate::avm1::property_decl::{DeclContext, PropertyOrder, StaticDeclarations, SystemClass};
 use crate::avm1::{
     Activation, ActivationIdentifier, Error, ExecutionReason, NativeObject, Object, Value,
@@ -116,7 +119,12 @@ impl<'gc> NetConnection<'gc> {
             ResponderCallback::Status => istr!("onStatus"),
         };
         let mut reference_cache = Amf0ReferenceCache::default();
-        let value = deserialize_value(&mut activation, message, &mut reference_cache);
+        let value = deserialize_value(
+            &mut activation,
+            message,
+            &mut reference_cache,
+            DeserializationContext::NetConnection,
+        );
         responder.call_method(
             method_name,
             &[value],
@@ -233,7 +241,11 @@ fn add_header<'gc>(
         .unwrap_or(&Value::Bool(true))
         .as_bool(activation.swf_version());
 
-    let value = serialize_net_connection(activation, *args.get(2).unwrap_or(&Value::Null));
+    let value = serialize_with_context(
+        activation,
+        *args.get(2).unwrap_or(&Value::Null),
+        SerializationContext::NetConnection,
+    );
 
     if let Some(handle) = net_connection.handle() {
         activation.context.net_connections.set_header(
@@ -266,7 +278,11 @@ fn call<'gc>(
 
     if args.len() > 2 {
         for arg in &args[2..] {
-            arguments.push(serialize_net_connection(activation, *arg));
+            arguments.push(serialize_with_context(
+                activation,
+                *arg,
+                SerializationContext::NetConnection,
+            ));
         }
     }
 

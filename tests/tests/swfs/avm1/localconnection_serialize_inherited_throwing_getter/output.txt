@@ -1,0 +1,5 @@
+Connected: true
+Getter calls after send: 0
+Received visible property: retained
+Received throwing property type: undefined
+Getter calls at receive: 0

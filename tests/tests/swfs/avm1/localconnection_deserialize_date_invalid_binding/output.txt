@@ -1,0 +1,7 @@
+Connected: true
+--- LocalConnection with Date = null ---
+Date type: undefined
+Date value: undefined
+--- LocalConnection with Date = {} ---
+Date type: undefined
+Date value: undefined
