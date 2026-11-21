@@ -1,0 +1,126 @@
+// upload 0: http://localhost:8000/upload?debug-success&q=1
+onSelect(test.txt)
+upload() returned true
+Navigator::fetch:
+  URL: http://localhost:8000/upload?debug-success&q=1
+  Method: POST
+  Mime-Type: multipart/form-data; boundary=----------ruffleformboundaryei4cH2ei4gL6
+  Body: ------------ruffleformboundaryei4cH2ei4gL6\r
+Content-Disposition: form-data; name="Filename"\r
+\r
+test.txt\r
+------------ruffleformboundaryei4cH2ei4gL6\r
+Content-Disposition: form-data; name="a"\r
+\r
+1\r
+------------ruffleformboundaryei4cH2ei4gL6\r
+Content-Disposition: form-data; name="b"\r
+\r
+two words\r
+------------ruffleformboundaryei4cH2ei4gL6\r
+Content-Disposition: form-data; name="MyField"; filename="test.txt"\r
+Content-Type: application/octet-stream\r
+\r
+Hello, World!\r
+------------ruffleformboundaryei4cH2ei4gL6\r
+Content-Disposition: form-data; name="Upload"\r
+\r
+Submit Query\r
+------------ruffleformboundaryei4cH2ei4gL6--\r
+
+onOpen(test.txt)
+onComplete(test.txt)
+onUploadCompleteData(test.txt, Hello, World!)
+// upload 1: http://localhost:8000/upload?debug-success-empty
+onSelect(test.txt)
+upload() returned true
+Navigator::fetch:
+  URL: http://localhost:8000/upload?debug-success-empty
+  Method: POST
+  Mime-Type: multipart/form-data; boundary=----------ruffleformboundaryei4cH2ei4gL6
+  Body: ------------ruffleformboundaryei4cH2ei4gL6\r
+Content-Disposition: form-data; name="Filename"\r
+\r
+test.txt\r
+------------ruffleformboundaryei4cH2ei4gL6\r
+Content-Disposition: form-data; name="a"\r
+\r
+1\r
+------------ruffleformboundaryei4cH2ei4gL6\r
+Content-Disposition: form-data; name="b"\r
+\r
+two words\r
+------------ruffleformboundaryei4cH2ei4gL6\r
+Content-Disposition: form-data; name="Filedata"; filename="test.txt"\r
+Content-Type: application/octet-stream\r
+\r
+Hello, World!\r
+------------ruffleformboundaryei4cH2ei4gL6\r
+Content-Disposition: form-data; name="Upload"\r
+\r
+Submit Query\r
+------------ruffleformboundaryei4cH2ei4gL6--\r
+
+onOpen(test.txt)
+onComplete(test.txt)
+// upload 2: http://localhost:8000/upload?debug-error-statuscode=404
+onSelect(test.txt)
+upload() returned true
+Navigator::fetch:
+  URL: http://localhost:8000/upload?debug-error-statuscode=404
+  Method: POST
+  Mime-Type: multipart/form-data; boundary=----------ruffleformboundaryei4cH2ei4gL6
+  Body: ------------ruffleformboundaryei4cH2ei4gL6\r
+Content-Disposition: form-data; name="Filename"\r
+\r
+test.txt\r
+------------ruffleformboundaryei4cH2ei4gL6\r
+Content-Disposition: form-data; name="a"\r
+\r
+1\r
+------------ruffleformboundaryei4cH2ei4gL6\r
+Content-Disposition: form-data; name="b"\r
+\r
+two words\r
+------------ruffleformboundaryei4cH2ei4gL6\r
+Content-Disposition: form-data; name="Filedata"; filename="test.txt"\r
+Content-Type: application/octet-stream\r
+\r
+Hello, World!\r
+------------ruffleformboundaryei4cH2ei4gL6\r
+Content-Disposition: form-data; name="Upload"\r
+\r
+Submit Query\r
+------------ruffleformboundaryei4cH2ei4gL6--\r
+
+onOpen(test.txt)
+onHTTPError(test.txt, 404)
+// upload 3: http://localhost:8000/upload?debug-error-statuscode=500
+onSelect(test.txt)
+upload() returned true
+Navigator::fetch:
+  URL: http://localhost:8000/upload?debug-error-statuscode=500
+  Method: POST
+  Mime-Type: multipart/form-data; boundary=----------ruffleformboundaryei4cH2ei4gL6
+  Body: ------------ruffleformboundaryei4cH2ei4gL6\r
+Content-Disposition: form-data; name="Filename"\r
+\r
+test.txt\r
+------------ruffleformboundaryei4cH2ei4gL6\r
+Content-Disposition: form-data; name="x"\r
+\r
+1\r
+------------ruffleformboundaryei4cH2ei4gL6\r
+Content-Disposition: form-data; name="Other"; filename="test.txt"\r
+Content-Type: application/octet-stream\r
+\r
+Hello, World!\r
+------------ruffleformboundaryei4cH2ei4gL6\r
+Content-Disposition: form-data; name="Upload"\r
+\r
+Submit Query\r
+------------ruffleformboundaryei4cH2ei4gL6--\r
+
+onOpen(test.txt)
+onHTTPError(test.txt, 500)
+// done
