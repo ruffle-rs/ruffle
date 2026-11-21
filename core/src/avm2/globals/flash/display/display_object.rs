@@ -407,7 +407,6 @@ pub fn set_z<'gc>(
 
         let z = args.get_f64(0);
         dobj.set_z(z);
-        dobj.base().set_has_matrix3d_stub(true);
     }
     Ok(Value::Undefined)
 }
@@ -844,11 +843,9 @@ pub fn set_transform<'gc>(
 
     if let Some(matrix3d) = matrix3d_from_transform_object(transform) {
         dobj.set_matrix3d(activation.gc(), Some(matrix3d));
-        dobj.base().set_has_matrix3d_stub(true);
     } else {
         let matrix = matrix_from_transform_object(transform);
         dobj.set_matrix(matrix);
-        dobj.base().set_has_matrix3d_stub(false);
     }
 
     let color_transform = color_transform_from_transform_object(transform);

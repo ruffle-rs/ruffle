@@ -60,7 +60,7 @@ pub fn get_matrix<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
-    if get_display_object(this).base().has_matrix3d_stub() {
+    if get_display_object(this).base().matrix3d().is_some() {
         Ok(Value::Null)
     } else {
         let matrix = matrix_from_transform_object(this);
@@ -93,11 +93,9 @@ pub fn set_matrix<'gc>(
                 )),
             );
             dobj.set_matrix(Matrix::IDENTITY);
-            dobj.base().set_has_matrix3d_stub(true);
             return Ok(Value::Undefined);
         }
         (None, Some(_mat3dobj)) => {
-            dobj.base().set_has_matrix3d_stub(true);
             return Ok(Value::Undefined);
         }
     }
@@ -108,7 +106,6 @@ pub fn set_matrix<'gc>(
         // we only want to inform ancestors to avoid unnecessary invalidations for tx/ty
         parent.invalidate_cached_bitmap();
     }
-    dobj.base().set_has_matrix3d_stub(false);
     Ok(Value::Undefined)
 }
 
@@ -295,19 +292,14 @@ fn rectangle_to_object<'gc>(
 }
 
 pub fn get_matrix_3d<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
-    let display_object = get_display_object(this);
-    if display_object.base().has_matrix3d_stub() {
-        let mobj = get_display_object(this)
-            .base()
-            .matrix3d()
-            .expect("has_matrix3d_stub must be with a matrix3d");
-        Ok(Matrix3DObject::new(activation.context, mobj.matrix()).into())
+    if let Some(mobj) = get_display_object(this).base().matrix3d() {
+        Ok(mobj.into())
     } else {
         Ok(Value::Null)
     }
@@ -325,18 +317,11 @@ pub fn set_matrix_3d<'gc>(
 
     let display_object = get_display_object(this);
 
-    let (matrix3d, has_matrix3d) = {
-        match args.try_get_object(0) {
-            Some(obj) => {
-                let matrix3d = obj.as_matrix3d_object().unwrap();
-                (Some(matrix3d), true)
-            }
-            None => (None, false),
-        }
-    };
+    let matrix3d = args
+        .try_get_object(0)
+        .map(|object| object.as_matrix3d_object().unwrap());
 
     display_object.set_matrix3d(activation.gc(), matrix3d);
-    display_object.base().set_has_matrix3d_stub(has_matrix3d);
 
     Ok(Value::Undefined)
 }
@@ -404,7 +389,7 @@ pub fn get_relative_matrix_3d<'gc>(
     avm2_stub_method!(activation, "flash.geom.Transform", "getRelativeMatrix3D");
 
     let display_object = get_display_object(this);
-    if !display_object.base().has_matrix3d_stub() {
+    if display_object.base().matrix3d().is_none() {
         return Ok(Value::Null);
     }
 
