@@ -8,7 +8,7 @@ use crate::avm2::object::Matrix3DObject;
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::{Activation, Error, Object, TObject as _, Value};
 use crate::display_object::{BoundsMode, DisplayObject, TDisplayObject};
-use crate::{avm2_stub_getter, avm2_stub_method, avm2_stub_setter};
+use crate::{avm2_stub_method, avm2_stub_setter};
 use ruffle_render::matrix::Matrix;
 use ruffle_render::matrix3d::Matrix3D;
 use ruffle_render::perspective_projection::PerspectiveProjection;
@@ -301,11 +301,6 @@ pub fn get_matrix_3d<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
-    // FIXME: This Matrix3D is generated from the 2D Matrix.
-    // It does not work when the matrix contains any transformation in 3D.
-    // Support native Matrix3D.
-    avm2_stub_getter!(activation, "flash.geom.Transform", "matrix3D");
-
     let display_object = get_display_object(this);
     if display_object.base().has_matrix3d_stub() {
         let mobj = get_display_object(this)
@@ -325,8 +320,7 @@ pub fn set_matrix_3d<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
-    // FIXME: This sets 2D Matrix generated from the given Matrix3D, ignoring 3D parameters.
-    // Support native Matrix3D.
+    // FIXME: Support full Matrix3D rendering.
     avm2_stub_setter!(activation, "flash.geom.Transform", "matrix3D");
 
     let display_object = get_display_object(this);
