@@ -8,7 +8,6 @@ use crate::avm2::{
 };
 use crate::context::{RenderContext, UpdateContext};
 use crate::drawing::Drawing;
-use crate::prelude::*;
 use crate::string::{AvmString, WString};
 use crate::tag_utils::SwfMovie;
 use crate::types::{Degrees, Percent};
@@ -18,6 +17,7 @@ use gc_arena::barrier::{Write, unlock};
 use gc_arena::lock::Lock;
 use gc_arena::{Collect, Gc, Mutation};
 use ruffle_macros::{enum_trait_object, istr};
+use ruffle_render::matrix::Matrix;
 use ruffle_render::perspective_projection::PerspectiveProjection;
 use ruffle_render::pixel_bender::PixelBenderShaderHandle;
 use ruffle_render::transform::{Transform, TransformStack};
@@ -25,7 +25,7 @@ use std::cell::{Cell, Ref, RefCell, RefMut};
 use std::fmt::Debug;
 use std::hash::Hash;
 use std::num::NonZero;
-use swf::{ColorTransform, Fixed8};
+use swf::{CharacterId, Color, ColorTransform, Fixed8, Point, Rectangle, Twips};
 
 mod avm1_button;
 mod avm2_button;
@@ -3266,6 +3266,12 @@ impl Default for SoundTransform {
         }
     }
 }
+
+/// A depth for a Flash display object in AVM1.
+/// This is different than defined in `swf`; during execution, clips
+/// created from SWF tags have their depth biased to negative numbers,
+/// and clips can be dynamically switched by AS to depths in the range of 32-bits.
+pub type Depth = i32;
 
 /// A version of `DisplayObject` that holds weak pointers.
 /// Currently, this is only used by orphan handling, so we only

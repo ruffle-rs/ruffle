@@ -1,9 +1,11 @@
 use crate::avm1::Object as Avm1Object;
 use crate::avm2::StageObject as Avm2StageObject;
 use crate::context::{RenderContext, UpdateContext};
-use crate::display_object::{BoundsMode, DisplayObjectBase, MovieClip};
+use crate::display_object::{
+    BoundsMode, DisplayObjectBase, HitTestOptions, MovieClip, TDisplayObject,
+    TDisplayObjectContainer,
+};
 use crate::font::{FontLike, TextRenderSettings};
-use crate::prelude::*;
 use crate::tag_utils::SwfMovie;
 use crate::vminterface::Instantiator;
 use core::fmt;
@@ -11,10 +13,12 @@ use gc_arena::Lock;
 use gc_arena::barrier::unlock;
 use gc_arena::{Collect, Gc, Mutation};
 use ruffle_common::utils::HasPrefixField;
+use ruffle_render::matrix::Matrix;
 use ruffle_render::transform::Transform;
 use ruffle_wstr::{WStr, WString};
 use std::borrow::Cow;
 use std::cell::RefCell;
+use swf::{CharacterId, Point, Rectangle, Twips};
 
 #[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]

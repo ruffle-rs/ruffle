@@ -31,8 +31,9 @@ use crate::context_menu::{
 };
 use crate::display_object::Avm2MousePick;
 use crate::display_object::{
-    EditText, GotoInfo, InteractiveObject, Stage, StageAlign, StageDisplayState, StageScaleMode,
-    StopOrPlay, TInteractiveObject, WindowMode,
+    DisplayObject, EditText, GotoInfo, InteractiveObject, Stage, StageAlign, StageDisplayState,
+    StageScaleMode, StopOrPlay, TDisplayObject, TDisplayObjectContainer, TInteractiveObject,
+    WindowMode,
 };
 use crate::events::GamepadButton;
 use crate::events::PlayerNotification;
@@ -50,7 +51,6 @@ use crate::loader::{LoadBehavior, LoadManager};
 use crate::local_connection::LocalConnections;
 use crate::net_connection::NetConnections;
 use crate::orphan_manager::OrphanManager;
-use crate::prelude::*;
 use crate::socket::Sockets;
 use crate::streams::StreamManager;
 use crate::string::{AvmString, AvmStringInterner, StringContext};
@@ -68,6 +68,7 @@ use ruffle_common::duration::FloatDuration;
 use ruffle_macros::istr;
 use ruffle_render::backend::{RenderBackend, ViewportDimensions, null::NullRenderer};
 use ruffle_render::commands::CommandList;
+use ruffle_render::matrix::Matrix;
 use ruffle_render::quality::StageQuality;
 use ruffle_render::transform::TransformStack;
 use ruffle_video::backend::VideoBackend;
@@ -79,6 +80,7 @@ use std::rc::{Rc, Weak as RcWeak};
 use std::str::FromStr;
 use std::sync::{Arc, Mutex, Weak};
 use std::time::Duration;
+use swf::{Color, Point, Rectangle, Twips};
 use tracing::instrument;
 use web_time::Instant;
 

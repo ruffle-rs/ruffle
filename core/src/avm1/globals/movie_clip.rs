@@ -10,18 +10,19 @@ use crate::avm1::{self, ArrayBuilder, Object, Value};
 use crate::backend::navigator::NavigationMethod;
 use crate::context::UpdateContext;
 use crate::display_object::{
-    Bitmap, BoundsMode, EditText, GotoInfo, MovieClip, StopOrPlay, TInteractiveObject,
+    Bitmap, BoundsMode, Depth, DisplayObject, EditText, GotoInfo, HitTestOptions, MovieClip,
+    StopOrPlay, TDisplayObject, TDisplayObjectContainer, TInteractiveObject,
 };
 use crate::ecma_conversions::f64_to_wrapping_i32;
-use crate::prelude::*;
 use crate::string::AvmString;
 use crate::vminterface::Instantiator;
 use crate::{avm_error, avm_warn, avm1_stub};
 use ruffle_macros::istr;
+use ruffle_render::matrix::Matrix;
 use ruffle_render::shape_utils::{DrawCommand, GradientType};
 use swf::{
-    FillStyle, Fixed8, Gradient, GradientInterpolation, GradientRecord, GradientSpread,
-    LineCapStyle, LineJoinStyle, LineStyle,
+    Color, FillStyle, Fixed8, Gradient, GradientInterpolation, GradientRecord, GradientSpread,
+    LineCapStyle, LineJoinStyle, LineStyle, Point, Rectangle, Twips,
 };
 
 macro_rules! mc_method {

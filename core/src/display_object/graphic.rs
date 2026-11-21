@@ -4,10 +4,9 @@ use crate::avm2::{
     StageObject as Avm2StageObject,
 };
 use crate::context::{RenderContext, UpdateContext};
-use crate::display_object::{BoundsMode, DisplayObjectBase};
+use crate::display_object::{BoundsMode, DisplayObjectBase, HitTestOptions, TDisplayObject};
 use crate::drawing::Drawing;
 use crate::library::MovieLibrarySource;
-use crate::prelude::*;
 use crate::tag_utils::SwfMovie;
 use crate::tessellation_cache::TessellationCache;
 use crate::vminterface::Instantiator;
@@ -20,6 +19,7 @@ use ruffle_render::backend::ShapeHandle;
 use ruffle_render::commands::CommandHandler;
 use ruffle_render::shape_utils::TessellationScale;
 use std::cell::{OnceCell, RefCell, RefMut};
+use swf::{CharacterId, Point, Rectangle, Twips};
 
 #[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]

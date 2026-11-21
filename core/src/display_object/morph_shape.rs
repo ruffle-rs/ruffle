@@ -1,9 +1,8 @@
 use crate::avm1::Object as Avm1Object;
 use crate::avm2::StageObject as Avm2StageObject;
 use crate::context::{RenderContext, UpdateContext};
-use crate::display_object::{BoundsMode, DisplayObjectBase};
+use crate::display_object::{BoundsMode, DisplayObjectBase, HitTestOptions, TDisplayObject};
 use crate::library::MovieLibrarySource;
-use crate::prelude::*;
 use crate::tag_utils::SwfMovie;
 use crate::vminterface::Instantiator;
 use core::fmt;
@@ -14,7 +13,7 @@ use ruffle_common::utils::HasPrefixField;
 use ruffle_render::backend::ShapeHandle;
 use ruffle_render::commands::CommandHandler;
 use std::cell::{RefCell, RefMut};
-use swf::{Fixed8, Fixed16};
+use swf::{CharacterId, Color, Fixed8, Fixed16, Point, Rectangle, Twips};
 
 #[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]

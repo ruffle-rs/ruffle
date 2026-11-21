@@ -2,7 +2,9 @@
 
 use crate::avm1::object::NativeObject;
 use crate::avm1::parameters::{ParametersExt, UndefinedAs};
-use crate::avm1::property_decl::{DeclContext, PropertyOrder, StaticDeclarations, SystemClass};
+use crate::avm1::property_decl::{
+    self, DeclContext, PropertyOrder, StaticDeclarations, SystemClass,
+};
 use crate::avm1::{Activation, ArrayBuilder, Error, Object, Value};
 use crate::display_object::{AutoSizeMode, EditText, TDisplayObject};
 use crate::ecma_conversions::round_to_even;
@@ -45,8 +47,15 @@ macro_rules! method {
     };
 }
 
-const PROTO_DECLS: StaticDeclarations = declare_static_properties! {
-    "getTextExtent" => method(method!(get_text_extent); DONT_ENUM | DONT_DELETE);
+/// Defined on each new TextFormat by the constructor, see
+/// `define_instance_properties`.
+const INSTANCE_DECLS: StaticDeclarations = declare_static_properties! {
+    "getTextExtent" => method(method!(get_text_extent));
+};
+
+/// Defined lazily by the constructor, see
+/// [`property_decl::define_lazy_proto_properties`].
+const LAZY_PROTO_DECLS: StaticDeclarations = declare_static_properties! {
     "font" => property(getter!(font), setter!(set_font));
     "size" => property(getter!(size), setter!(set_size));
     "color" => property(getter!(color), setter!(set_color));
@@ -72,14 +81,12 @@ pub fn create_class<'gc>(
     context: &mut DeclContext<'_, 'gc>,
     super_proto: Object<'gc>,
 ) -> SystemClass<'gc> {
-    let class = context.native_class(
+    context.native_class(
         constructor,
         None,
         super_proto,
         PropertyOrder::PrototypeFirst,
-    );
-    context.define_properties_on(class.proto, PROTO_DECLS(context));
-    class
+    )
 }
 
 fn font<'gc>(activation: &mut Activation<'_, 'gc>, text_format: &TextFormat) -> Value<'gc> {
@@ -637,9 +644,34 @@ fn constructor<'gc>(
     text_format.right_margin = get_arg_as_i32(activation, args.get(10))?;
     text_format.indent = get_arg_as_i32(activation, args.get(11))?;
     text_format.leading = get_arg_as_i32(activation, args.get(12))?;
-    this.set_native(
+    // Flash Player still converts the arguments above, but doesn't define
+    // anything if `this` already has native data (of any class).
+    let is_new = this.set_native(
         activation.gc(),
         NativeObject::TextFormat(Gc::new(activation.gc(), text_format.into())),
     );
+    if is_new {
+        define_instance_properties(activation, this);
+        if let Some(Value::Object(proto)) = this.get_data(istr!("__proto__"), activation) {
+            define_lazy_proto_properties(activation, proto);
+        }
+    }
     Ok(this.into())
+}
+
+/// Defines `getTextExtent` on `object`, a newly created TextFormat.
+///
+/// Flash Player doesn't define it on the prototype, but on every TextFormat,
+/// as an ordinary property, with a new function object each time.
+pub fn define_instance_properties<'gc>(activation: &mut Activation<'_, 'gc>, object: Object<'gc>) {
+    let mut context = DeclContext::from_activation(activation);
+    context.define_properties_on(object, INSTANCE_DECLS(&context));
+}
+
+/// Defines the properties of TextFormat on `proto`, the prototype of a newly
+/// created TextFormat.
+///
+/// See [`property_decl::define_lazy_proto_properties`].
+pub fn define_lazy_proto_properties<'gc>(activation: &mut Activation<'_, 'gc>, proto: Object<'gc>) {
+    property_decl::define_lazy_proto_properties(activation, proto, LAZY_PROTO_DECLS);
 }

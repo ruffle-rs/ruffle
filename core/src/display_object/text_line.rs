@@ -7,11 +7,11 @@ use crate::backend::ui::MouseCursor;
 use crate::context::{RenderContext, UpdateContext};
 use crate::display_object::interactive::{InteractiveObjectBase, TInteractiveObject};
 use crate::display_object::{
-    Avm2MousePick, BoundsMode, DisplayObjectBase, EditText, InteractiveObject,
+    Avm2MousePick, BoundsMode, DisplayObject, DisplayObjectBase, EditText, HitTestOptions,
+    InteractiveObject, TDisplayObject,
 };
 use crate::events::{ClipEvent, ClipEventResult};
 use crate::fte::TextLineValidity;
-use crate::prelude::*;
 use crate::tag_utils::SwfMovie;
 use crate::vminterface::Instantiator;
 use core::fmt;
@@ -20,7 +20,7 @@ use gc_arena::lock::Lock;
 use gc_arena::{Collect, Gc, Mutation};
 use ruffle_common::utils::HasPrefixField;
 use std::cell::Cell;
-use swf::Twips;
+use swf::{CharacterId, Point, Rectangle, Twips};
 
 #[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]

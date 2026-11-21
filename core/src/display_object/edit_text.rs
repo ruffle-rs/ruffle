@@ -14,7 +14,10 @@ use crate::context::{RenderContext, UpdateContext};
 use crate::display_object::interactive::{
     InteractiveObject, InteractiveObjectBase, TInteractiveObject,
 };
-use crate::display_object::{Avm1TextFieldBinding, BoundsMode, DisplayObjectBase};
+use crate::display_object::{
+    Avm1TextFieldBinding, BoundsMode, DisplayObject, DisplayObjectBase, HitTestOptions,
+    TDisplayObject,
+};
 use crate::events::{
     ClipEvent, ClipEventResult, ImeCursorArea, ImeEvent, ImeNotification, ImePurpose,
     PlayerNotification, TextControlCode,
@@ -26,7 +29,6 @@ use crate::html::{
     FormatSpans, Layout, LayoutBox, LayoutContent, LayoutContext, LayoutLine, LayoutMetrics,
     Position, TextFormat,
 };
-use crate::prelude::*;
 use crate::string::{AvmString, SwfStrExt as _, WStr, WString, utils as string_utils};
 use crate::tag_utils::SwfMovie;
 use crate::vminterface::{AvmObject, Instantiator};
@@ -40,12 +42,13 @@ use ruffle_common::utils::HasPrefixField;
 use ruffle_macros::istr;
 use ruffle_render::commands::Command as RenderCommand;
 use ruffle_render::commands::CommandHandler;
+use ruffle_render::matrix::Matrix;
 use ruffle_render::quality::StageQuality;
 use ruffle_render::transform::Transform;
 use ruffle_wstr::WStrToUtf8;
 use std::cell::{Cell, Ref, RefCell, RefMut};
 use std::collections::VecDeque;
-use swf::ColorTransform;
+use swf::{CharacterId, Color, ColorTransform, Point, Rectangle, Twips};
 use unicode_segmentation::UnicodeSegmentation;
 
 use super::interactive::Avm2MousePick;
@@ -2487,7 +2490,7 @@ impl<'gc> EditText<'gc> {
     fn open_url(self, context: &mut UpdateContext<'gc>, url: &WStr, target: &WStr) {
         if let Some(address) = url.strip_prefix_ignore_case(WStr::from_units(b"asfunction:")) {
             if let Err(e) = self.execute_avm1_asfunction(context, address) {
-                error!("Couldn't execute URL \"{url:?}\": {e:?}");
+                tracing::error!("Couldn't execute URL \"{url:?}\": {e:?}");
             }
         } else if let Some(address) = url.strip_prefix_ignore_case(WStr::from_units(b"event:")) {
             if let Some(object) = self.object2() {

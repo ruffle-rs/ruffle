@@ -19,13 +19,16 @@ use crate::binary_data::BinaryData;
 use crate::character::{BitmapCharacter, Character, CompressedBitmap};
 use crate::config::NetworkingAccessMode;
 use crate::context::{ActionType, RenderContext, UpdateContext};
-use crate::display_object::container::{ChildContainer, dispatch_removed_event};
+use crate::display_object::container::{
+    ChildContainer, TDisplayObjectContainer, dispatch_removed_event,
+};
 use crate::display_object::interactive::{
     InteractiveObject, InteractiveObjectBase, TInteractiveObject,
 };
 use crate::display_object::{
-    Avm1Button, Avm1TextFieldBinding, Avm2Button, BoundsMode, DisplayObjectBase, DisplayObjectPtr,
-    EditText, Graphic, MorphShape, Text, Video,
+    Avm1Button, Avm1TextFieldBinding, Avm2Button, BoundsMode, Depth, DisplayObject,
+    DisplayObjectBase, DisplayObjectPtr, EditText, Graphic, HitTestOptions, MorphShape,
+    TDisplayObject, Text, Video,
 };
 use crate::drawing::Drawing;
 use crate::events::{ButtonKeyCode, ClipEvent, ClipEventResult};
@@ -35,7 +38,6 @@ use crate::library::MovieLibrary;
 use crate::limits::ExecutionLimit;
 use crate::loader::LoadManager;
 use crate::loader::{self, ContentType};
-use crate::prelude::*;
 use crate::streams::NetStream;
 use crate::string::{AvmString, SwfStrExt as _, WStr, WString};
 use crate::tag_utils::{self, ControlFlow, Error, SwfMovie, SwfMovieData, SwfSlice, SwfStream};
@@ -54,7 +56,10 @@ use std::cell::{Cell, OnceCell, Ref, RefCell, RefMut};
 use std::cmp::max;
 use std::collections::HashMap;
 use swf::extensions::ReadSwfExt;
-use swf::{ClipEventFlag, DefineBitsLossless, FrameLabelData, TagCode, UTF_8};
+use swf::{
+    CharacterId, ClipEventFlag, DefineBitsLossless, FrameLabelData, Point, Rectangle, TagCode,
+    Twips, UTF_8,
+};
 
 use super::BitmapClass;
 use super::interactive::Avm2MousePick;

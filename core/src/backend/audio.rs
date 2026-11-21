@@ -435,6 +435,8 @@ impl<'gc> AudioManager<'gc> {
                 }
 
                 if let Some(object) = sound.avm2_object {
+                    object.set_position(duration.as_millis());
+
                     event_targets.push(object);
                 }
 

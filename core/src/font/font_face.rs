@@ -1,11 +1,10 @@
 use crate::drawing::Drawing;
 use crate::font::{FontMetrics, Glyph};
-use crate::prelude::*;
 use ruffle_render::shape_utils::{DrawCommand, FillRule};
 
 use std::cell::OnceCell;
 use std::sync::Arc;
-use swf::FillStyle;
+use swf::{Color, FillStyle, Point, Twips};
 
 struct GlyphToDrawing<'a>(&'a mut Drawing);
 

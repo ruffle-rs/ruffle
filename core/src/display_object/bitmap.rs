@@ -8,8 +8,9 @@ use crate::avm2::{
 };
 use crate::bitmap::bitmap_data::BitmapData;
 use crate::context::{RenderContext, UpdateContext};
-use crate::display_object::{BoundsMode, DisplayObjectBase, DisplayObjectPtr, DisplayObjectWeak};
-use crate::prelude::*;
+use crate::display_object::{
+    BoundsMode, DisplayObjectBase, DisplayObjectPtr, DisplayObjectWeak, TDisplayObject,
+};
 use crate::tag_utils::SwfMovie;
 use crate::vminterface::Instantiator;
 use core::fmt;
@@ -19,6 +20,7 @@ use gc_arena::{Collect, Gc, GcWeak, Mutation};
 use ruffle_common::utils::HasPrefixField;
 use ruffle_render::bitmap::{BitmapFormat, PixelSnapping};
 use std::cell::Cell;
+use swf::{CharacterId, Rectangle, Twips};
 
 #[derive(Clone, Debug, Collect, Copy)]
 #[collect(no_drop)]

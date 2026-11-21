@@ -1,0 +1,6 @@
+num_ticks = 3
+
+[[compilers]]
+type = "Swfasm"
+source = "test.swfasm"
+target = "test.swf"

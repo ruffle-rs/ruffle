@@ -18,7 +18,10 @@ use crate::backend::{
 };
 use crate::config::NetworkingAccessMode;
 use crate::context_menu::ContextMenuState;
-use crate::display_object::{EditText, MovieClip, SoundTransform, Stage};
+use crate::display_object::{
+    DisplayObject, EditText, MovieClip, SoundTransform, Stage, TDisplayObject,
+    TDisplayObjectContainer,
+};
 use crate::events::PlayerNotification;
 use crate::external::ExternalInterface;
 use crate::focus_tracker::FocusTracker;
@@ -31,7 +34,6 @@ use crate::net_connection::NetConnections;
 use crate::orphan_manager::OrphanManager;
 use crate::player::PostFrameCallback;
 use crate::player::{MouseData, Player};
-use crate::prelude::*;
 use crate::socket::Sockets;
 use crate::streams::StreamManager;
 use crate::string::HasStringContext;
@@ -48,11 +50,13 @@ use enum_map::EnumMap;
 use gc_arena::{Collect, Mutation};
 use ruffle_render::backend::{BitmapCacheEntry, RenderBackend};
 use ruffle_render::commands::{CommandHandler, CommandList};
+use ruffle_render::matrix::Matrix;
 use ruffle_render::transform::TransformStack;
 use ruffle_video::backend::VideoBackend;
 use std::collections::{HashMap, VecDeque};
 use std::sync::{Arc, Mutex, Weak};
 use std::time::Duration;
+use swf::{Color, Point, Rectangle, Twips};
 use web_time::Instant;
 
 /// `UpdateContext` holds shared data that is used by the various subsystems of Ruffle.
@@ -365,7 +369,7 @@ impl<'gc> UpdateContext<'gc> {
             *self.frame_rate = movie.frame_rate().into();
         }
 
-        info!(
+        tracing::info!(
             "Loaded SWF version {}, resolution {}x{} @ {} FPS",
             movie.version(),
             movie.width(),

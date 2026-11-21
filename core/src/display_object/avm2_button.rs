@@ -1,5 +1,3 @@
-use super::container::dispatch_added_to_stage_event;
-use super::dispatch_added_event_only;
 use super::interactive::Avm2MousePick;
 use crate::avm1::Object as Avm1Object;
 use crate::avm2::{
@@ -10,14 +8,18 @@ use crate::backend::audio::AudioManager;
 use crate::backend::ui::MouseCursor;
 use crate::context::{RenderContext, UpdateContext};
 use crate::display_object::avm1_button::{ButtonState, ButtonTracking};
-use crate::display_object::container::{dispatch_added_event, dispatch_removed_event};
+use crate::display_object::container::{
+    TDisplayObjectContainer, dispatch_added_event, dispatch_added_event_only,
+    dispatch_added_to_stage_event, dispatch_removed_event,
+};
 use crate::display_object::interactive::{InteractiveObjectBase, TInteractiveObject};
-use crate::display_object::{BoundsMode, DisplayObjectBase, MovieClip};
+use crate::display_object::{
+    BoundsMode, DisplayObject, DisplayObjectBase, HitTestOptions, MovieClip, TDisplayObject,
+};
 use crate::events::{ClipEvent, ClipEventResult};
 use crate::frame_lifecycle::{
     broadcast_frame_constructed, broadcast_frame_exited, catchup_display_object_to_frame,
 };
-use crate::prelude::*;
 use crate::tag_utils::SwfMovie;
 use crate::vminterface::Instantiator;
 use core::fmt;
@@ -27,7 +29,9 @@ use gc_arena::lock::Lock;
 use gc_arena::{Collect, Gc, Mutation};
 use ruffle_common::utils::HasPrefixField;
 use ruffle_render::filters::Filter;
+use ruffle_render::matrix::Matrix;
 use std::cell::{Cell, RefCell};
+use swf::{CharacterId, Point, Rectangle, Twips};
 
 #[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]

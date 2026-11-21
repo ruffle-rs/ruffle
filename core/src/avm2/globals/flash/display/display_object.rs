@@ -17,9 +17,8 @@ use crate::avm2::value::Value;
 use crate::avm2::{ArrayObject, ArrayStorage};
 use crate::avm2::{ClassObject, Error};
 use crate::context::UpdateContext;
-use crate::display_object::BoundsMode;
+use crate::display_object::{BoundsMode, DisplayObject, HitTestOptions, TDisplayObject};
 use crate::ecma_conversions::round_to_even;
-use crate::prelude::*;
 use crate::string::AvmString;
 use crate::types::{Degrees, Percent};
 use crate::vminterface::Instantiator;
@@ -27,6 +26,7 @@ use crate::{avm2_stub_getter, avm2_stub_setter};
 use ruffle_render::blend::ExtendedBlendMode;
 use ruffle_render::filters::Filter;
 use std::str::FromStr;
+use swf::{Color, Point, Rectangle, Twips};
 
 /// Initializes a DisplayObject created from ActionScript.
 /// This should be called from the AVM2 class's native allocator

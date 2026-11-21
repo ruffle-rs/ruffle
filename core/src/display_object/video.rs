@@ -6,8 +6,9 @@ use crate::avm1::{
 };
 use crate::avm2::StageObject as Avm2StageObject;
 use crate::context::{RenderContext, UpdateContext};
-use crate::display_object::{Avm1TextFieldBinding, BoundsMode, DisplayObjectBase, RenderOptions};
-use crate::prelude::*;
+use crate::display_object::{
+    Avm1TextFieldBinding, BoundsMode, DisplayObjectBase, RenderOptions, TDisplayObject,
+};
 use crate::streams::NetStream;
 use crate::tag_utils::{SwfMovie, SwfSlice};
 use crate::vminterface::{AvmObject, Instantiator};
@@ -19,13 +20,14 @@ use ruffle_common::utils::HasPrefixField;
 use ruffle_macros::istr;
 use ruffle_render::bitmap::{BitmapInfo, PixelSnapping};
 use ruffle_render::commands::CommandHandler;
+use ruffle_render::matrix::Matrix;
 use ruffle_render::quality::StageQuality;
 use ruffle_video::VideoStreamHandle;
 use ruffle_video::error::Error;
 use ruffle_video::frame::EncodedFrame;
 use std::cell::{Cell, Ref, RefCell, RefMut};
 use std::collections::{BTreeMap, BTreeSet};
-use swf::{DefineVideoStream, VideoCodec, VideoFrame};
+use swf::{CharacterId, DefineVideoStream, Rectangle, Twips, VideoCodec, VideoFrame};
 
 /// A Video display object is a high-level interface to a video player.
 ///

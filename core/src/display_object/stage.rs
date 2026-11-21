@@ -9,13 +9,12 @@ use crate::avm2::{
 use crate::backend::ui::MouseCursor;
 use crate::config::Letterbox;
 use crate::context::{RenderContext, UpdateContext};
-use crate::display_object::container::ChildContainer;
+use crate::display_object::container::{ChildContainer, TDisplayObjectContainer};
 use crate::display_object::interactive::{InteractiveObjectBase, TInteractiveObject};
-use crate::display_object::{BoundsMode, DisplayObjectBase};
+use crate::display_object::{BoundsMode, DisplayObject, DisplayObjectBase, TDisplayObject};
 use crate::events::{ClipEvent, ClipEventResult};
 use crate::focus_tracker::FocusTracker;
 use crate::frame_lifecycle::broadcast_frame_entered;
-use crate::prelude::*;
 use crate::string::{FromWStr, WStr};
 use crate::tag_utils::SwfMovie;
 use crate::vminterface::Instantiator;
@@ -26,12 +25,14 @@ use ruffle_common::utils::HasPrefixField;
 use ruffle_macros::istr;
 use ruffle_render::backend::ViewportDimensions;
 use ruffle_render::commands::CommandHandler;
+use ruffle_render::matrix::Matrix;
 use ruffle_render::perspective_projection::PerspectiveProjection;
 use ruffle_render::quality::StageQuality;
 use ruffle_render::transform::Transform;
 use std::cell::{Cell, Ref, RefMut};
 use std::fmt::{self, Display, Formatter};
 use std::str::FromStr;
+use swf::{CharacterId, Color, Rectangle, Twips};
 
 /// The Stage is the root of the display object hierarchy. It contains all AVM1
 /// levels as well as AVM2 movies.

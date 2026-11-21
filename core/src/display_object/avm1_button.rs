@@ -4,14 +4,16 @@ use crate::backend::audio::AudioManager;
 use crate::backend::ui::MouseCursor;
 use crate::context::{ActionType, RenderContext, UpdateContext};
 use crate::display_object::container::{
-    ChildContainer, dispatch_added_event, dispatch_removed_event,
+    ChildContainer, TDisplayObjectContainer, dispatch_added_event, dispatch_removed_event,
 };
 use crate::display_object::interactive::{
     Avm2MousePick, InteractiveObject, InteractiveObjectBase, TInteractiveObject,
 };
-use crate::display_object::{Avm1TextFieldBinding, BoundsMode, DisplayObjectBase};
+use crate::display_object::{
+    Avm1TextFieldBinding, BoundsMode, Depth, DisplayObject, DisplayObjectBase, HitTestOptions,
+    TDisplayObject,
+};
 use crate::events::{ClipEvent, ClipEventResult};
-use crate::prelude::*;
 use crate::string::AvmString;
 use crate::tag_utils::{SwfMovie, SwfSlice};
 use crate::vminterface::Instantiator;
@@ -24,7 +26,7 @@ use ruffle_macros::istr;
 use ruffle_render::filters::Filter;
 use std::cell::{Cell, Ref, RefCell, RefMut};
 use std::collections::BTreeMap;
-use swf::ButtonActionCondition;
+use swf::{ButtonActionCondition, CharacterId, Point, Rectangle, Twips};
 
 #[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]

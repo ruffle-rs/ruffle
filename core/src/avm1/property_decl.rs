@@ -217,9 +217,10 @@ pub type StaticDeclarations = for<'gc> fn(&DeclContext<'_, 'gc>) -> &'gc [Declar
 /// Flash Player doesn't define some properties of native classes on their
 /// prototype up front, but only when an instance with a native object is
 /// created, on the prototype that instance gets. This happens at most once for
-/// each prototype object, regardless of what it contains: existing values are
-/// overwritten, and deleted properties are never defined on that prototype
-/// again.
+/// each prototype object, regardless of what it contains, and regardless of the
+/// class: existing values are overwritten, deleted properties are never defined
+/// on that prototype again, and a prototype that got the properties of one
+/// class doesn't get those of another class.
 pub fn define_lazy_proto_properties<'gc>(
     activation: &mut Activation<'_, 'gc>,
     proto: Object<'gc>,

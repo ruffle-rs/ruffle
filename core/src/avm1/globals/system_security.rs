@@ -3,7 +3,7 @@ use crate::avm1::error::Error;
 use crate::avm1::property_decl::{DeclContext, StaticDeclarations};
 use crate::avm1::{Object, Value};
 use crate::avm1_stub;
-use crate::prelude::TDisplayObject;
+use crate::display_object::TDisplayObject;
 use crate::string::AvmString;
 
 use ruffle_common::sandbox::SandboxType;

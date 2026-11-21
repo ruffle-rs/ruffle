@@ -4,13 +4,12 @@ use crate::avm2::StageObject as Avm2StageObject;
 use crate::backend::ui::MouseCursor;
 use crate::context::RenderContext;
 use crate::context::UpdateContext;
-use crate::display_object::TInteractiveObject;
-use crate::display_object::{BoundsMode, DisplayObjectBase, DisplayObjectPtr};
+use crate::display_object::container::{ChildContainer, TDisplayObjectContainer};
+use crate::display_object::interactive::{InteractiveObjectBase, TInteractiveObject};
+use crate::display_object::{
+    BoundsMode, DisplayObject, DisplayObjectBase, DisplayObjectPtr, HitTestOptions, TDisplayObject,
+};
 use crate::events::{ClipEvent, ClipEventResult};
-use crate::prelude::*;
-
-use crate::display_object::container::ChildContainer;
-use crate::display_object::interactive::InteractiveObjectBase;
 use crate::tag_utils::SwfMovie;
 use crate::vminterface::Instantiator;
 use core::fmt;
@@ -19,6 +18,7 @@ use gc_arena::lock::{Lock, RefLock};
 use gc_arena::{Collect, Gc, GcWeak, Mutation};
 use ruffle_common::utils::HasPrefixField;
 use std::cell::{Ref, RefMut};
+use swf::{CharacterId, Point, Rectangle, Twips};
 
 use super::interactive::Avm2MousePick;
 
