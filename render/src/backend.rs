@@ -7,7 +7,7 @@ use crate::filters::Filter;
 use crate::pixel_bender::{PixelBenderShader, PixelBenderShaderHandle};
 use crate::pixel_bender_support::PixelBenderShaderArgument;
 use crate::quality::StageQuality;
-use crate::shape_utils::DistilledShape;
+use crate::shape_utils::{DistilledShape, TessellationScale};
 use ruffle_wstr::{FromWStr, WStr};
 use std::any::Any;
 use std::borrow::Cow;
@@ -40,7 +40,7 @@ pub trait RenderBackend: Any {
         &mut self,
         shape: DistilledShape,
         bitmap_source: &dyn BitmapSource,
-        _scale: f32,
+        _scale: TessellationScale,
     ) -> ShapeHandle {
         // Default implementation ignores scale
         self.register_shape(shape, bitmap_source)

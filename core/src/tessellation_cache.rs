@@ -1,18 +1,21 @@
 use ruffle_render::backend::ShapeHandle;
+use ruffle_render::shape_utils::TessellationScale;
 
 /// The scale ratio threshold beyond which a graphic or a drawing will be retessellated.
 const RETESSELLATION_SCALE_THRESHOLD: f32 = 2.0;
 
-/// The inverse of the retessellation scale threshold
-/// Used to avoid computing the inverse repeatedly when comparing scale ratios against the threshold.
-const RETESSELLATION_SCALE_THRESHOLD_INVERSE: f32 = 1.0 / RETESSELLATION_SCALE_THRESHOLD;
+/// The stretch threshold beyond which a graphic or a drawing will be retessellated.
+///
+/// Thin strokes are tessellated with their width on screen, so reusing a tessellation
+/// made for a different aspect ratio would visibly stretch them.
+const RETESSELLATION_STRETCH_THRESHOLD: f32 = 1.1;
 
 /// The maximum number of retessellated shapes to cache per original shape.
 const RETESSELLATION_CACHE_SIZE: usize = 4;
 
 #[derive(Clone, Debug)]
 pub(crate) struct TessellationCache {
-    entries: [Option<(f32, ShapeHandle)>; RETESSELLATION_CACHE_SIZE],
+    entries: [Option<(TessellationScale, ShapeHandle)>; RETESSELLATION_CACHE_SIZE],
     len: usize,
 }
 
@@ -34,22 +37,25 @@ impl TessellationCache {
 
     /// Finds the cached shape handle with the closest scale to the target scale.
     ///
-    /// If the closest scale is NOT within the retessellation threshold,
+    /// If the closest scale is NOT within the retessellation thresholds,
     /// then `None` is returned, indicating that the shape should be retessellated at the target scale.
-    pub(crate) fn find_near_and_touch(&mut self, target_scale: f32) -> Option<ShapeHandle> {
+    pub(crate) fn find_near_and_touch(
+        &mut self,
+        target_scale: TessellationScale,
+    ) -> Option<ShapeHandle> {
         let mut best_index = None;
         let mut best_deviation = f32::INFINITY;
 
         for (index, entry) in self.entries[..self.len].iter().enumerate() {
             if let Some((cached_scale, _)) = entry {
-                let ratio = f32::abs(target_scale / cached_scale);
+                let distortion = cached_scale.distortion(&target_scale);
 
-                // Check if the cached scale is within the retessellation threshold of the target scale.
-                if ratio <= RETESSELLATION_SCALE_THRESHOLD
-                    && ratio >= RETESSELLATION_SCALE_THRESHOLD_INVERSE
+                // Check if the cached scale is within the retessellation thresholds of the target scale.
+                if distortion.scale <= RETESSELLATION_SCALE_THRESHOLD
+                    && distortion.stretch <= RETESSELLATION_STRETCH_THRESHOLD
                 {
                     // Choose the cached entry with the smallest deviation from the target scale.
-                    let deviation = f32::abs(ratio - 1.0);
+                    let deviation = distortion.scale * distortion.stretch;
 
                     if deviation < best_deviation {
                         best_deviation = deviation;
@@ -67,7 +73,7 @@ impl TessellationCache {
     ///
     /// If the cache is full, the least recently used entry will be evicted to make room for the new entry.
     /// We assume that the caller has already checked that the new entry is not too similar to existing entries.
-    pub(crate) fn insert(&mut self, scale: f32, handle: ShapeHandle) {
+    pub(crate) fn insert(&mut self, scale: TessellationScale, handle: ShapeHandle) {
         if self.len < RETESSELLATION_CACHE_SIZE {
             // If the cache is not full, simply add the new entry at the end.
             self.entries[self.len] = Some((scale, handle));
