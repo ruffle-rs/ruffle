@@ -83,6 +83,11 @@ bitflags! {
         /// `QName(ns, name)`), so E4X treats it as qualified even if it's the
         /// public namespace.
         const EXPLICIT_NS = 1 << 5;
+
+        /// Whether the namespace is the default XML namespace at the time a
+        /// `QName` was created. E4X lookups with such a name also match the
+        /// current default XML namespace, and new elements are created in it.
+        const DEFAULT_NS = 1 << 6;
     }
 }
 
@@ -148,6 +153,14 @@ impl<'gc> Multiname<'gc> {
 
     pub fn set_has_explicit_ns(&mut self, explicit: bool) {
         self.flags.set(MultinameFlags::EXPLICIT_NS, explicit);
+    }
+
+    pub fn has_default_ns(&self) -> bool {
+        self.flags.contains(MultinameFlags::DEFAULT_NS)
+    }
+
+    pub fn set_has_default_ns(&mut self, default: bool) {
+        self.flags.set(MultinameFlags::DEFAULT_NS, default);
     }
 
     #[inline(always)]

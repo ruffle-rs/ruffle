@@ -44,9 +44,29 @@ pub fn namespace_for_multiname<'gc>(
 }
 
 pub fn handle_input_multiname<'gc>(
-    name: Multiname<'gc>,
+    mut name: Multiname<'gc>,
     activation: &mut Activation<'_, 'gc>,
 ) -> Multiname<'gc> {
+    // A `QName` created in a default XML namespace also matches the current one.
+    if name.has_default_ns() {
+        let current = match activation.default_xml_namespace() {
+            Some(uri) => Namespace::package(
+                uri,
+                activation.avm2().root_api_version,
+                activation.strings(),
+            ),
+            None => activation.avm2().namespaces.public_all(),
+        };
+
+        let mut ns = name.namespace_set().to_vec();
+        ns.push(current);
+
+        name.set_ns(NamespaceSet::new(ns, activation.gc()));
+        name.set_has_default_ns(false);
+
+        return name;
+    }
+
     // Special case to handle code like: xml["@attr"]
     // FIXME: Figure out the exact semantics.
     // NOTE: It is very important the code within the if-statement is not run
