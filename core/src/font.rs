@@ -318,6 +318,10 @@ struct FontData {
     /// Fonts without a layout are used only to describe a font,
     /// not to provide glyphs.
     has_layout: bool,
+
+    /// Whether this font was defined by `DefineFont`, which has no style
+    /// flags. Its bold and italic flags come from `DefineFontInfo` instead.
+    is_define_font_1: bool,
 }
 
 impl<'gc> Font<'gc> {
@@ -338,6 +342,7 @@ impl<'gc> Font<'gc> {
                 descriptor,
                 font_type,
                 has_layout: true,
+                is_define_font_1: false,
             },
         )))
     }
@@ -414,6 +419,7 @@ impl<'gc> Font<'gc> {
                 descriptor,
                 font_type,
                 has_layout: tag.layout.is_some(),
+                is_define_font_1: tag.version == 0,
             },
         ))
     }
@@ -459,6 +465,7 @@ impl<'gc> Font<'gc> {
                 descriptor,
                 font_type: FontType::Device,
                 has_layout: true,
+                is_define_font_1: false,
             },
         ))
     }
@@ -479,6 +486,7 @@ impl<'gc> Font<'gc> {
                 descriptor,
                 font_type,
                 has_layout: true,
+                is_define_font_1: false,
             },
         ))
     }
@@ -528,6 +536,10 @@ impl<'gc> Font<'gc> {
 
     pub fn has_layout(self) -> bool {
         self.0.has_layout
+    }
+
+    pub fn is_define_font_1(self) -> bool {
+        self.0.is_define_font_1
     }
 
     pub fn sweep_caches(&self) {
