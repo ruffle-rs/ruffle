@@ -1,0 +1,6 @@
+num_ticks = 1
+
+[approximations]
+number_patterns = [
+    "rotation = ([0-9.-]+)"
+]
