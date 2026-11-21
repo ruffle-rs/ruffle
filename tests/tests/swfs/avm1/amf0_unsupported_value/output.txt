@@ -1,0 +1,8 @@
+--- AMF0 Unsupported value deserialization ---
+Navigator::fetch:
+  URL: http://localhost:8000/test1
+  Method: POST
+  Mime-Type: application/x-amf
+  Body: [00, 00, 00, 00, 00, 01, 00, 10, 74, 65, 73, 74, 2E, 75, 6E, 73, 75, 70, 70, 6F, 72, 74, 65, 64, 00, 02, 2F, 31, 00, 00, 00, 05, 0A, 00, 00, 00, 00]
+Result type: undefined
+Result value: undefined
