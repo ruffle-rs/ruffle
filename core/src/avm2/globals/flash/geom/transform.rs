@@ -69,20 +69,39 @@ pub fn get_matrix<'gc>(
 }
 
 pub fn set_matrix<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
     let dobj = get_display_object(this);
-    let Some(obj) = args.try_get_object(0) else {
-        dobj.base().set_has_matrix3d_stub(true);
-        return Ok(Value::Undefined);
-    };
 
-    let matrix = object_to_matrix(obj);
-    dobj.set_matrix(matrix);
+    match (args.try_get_object(0), dobj.base().matrix3d()) {
+        (Some(obj), _) => {
+            let matrix = object_to_matrix(obj);
+            dobj.set_matrix3d(activation.gc(), None);
+            dobj.set_matrix(matrix);
+        }
+        (None, None) => {
+            let matrix = dobj.base().matrix();
+            dobj.set_matrix3d(
+                activation.gc(),
+                Some(Matrix3DObject::new(
+                    activation.context,
+                    Matrix3D::from_matrix(matrix),
+                )),
+            );
+            dobj.set_matrix(Matrix::IDENTITY);
+            dobj.base().set_has_matrix3d_stub(true);
+            return Ok(Value::Undefined);
+        }
+        (None, Some(_mat3dobj)) => {
+            dobj.base().set_has_matrix3d_stub(true);
+            return Ok(Value::Undefined);
+        }
+    }
+
     dobj.set_transformed_by_script(true);
     if let Some(parent) = dobj.parent() {
         // Self-transform changes are automatically handled,
@@ -133,14 +152,14 @@ pub fn get_concatenated_matrix<'gc>(
     }
 }
 
-pub fn has_matrix3d_from_transform_object(transform_object: Object<'_>) -> bool {
-    get_display_object(transform_object)
-        .base()
-        .has_matrix3d_stub()
-}
-
 pub fn matrix_from_transform_object(transform_object: Object<'_>) -> Matrix {
     get_display_object(transform_object).base().matrix()
+}
+
+pub fn matrix3d_from_transform_object<'gc>(
+    transform_object: Object<'gc>,
+) -> Option<Matrix3DObject<'gc>> {
+    get_display_object(transform_object).base().matrix3d()
 }
 
 pub fn color_transform_from_transform_object(transform_object: Object<'_>) -> ColorTransform {
@@ -289,10 +308,11 @@ pub fn get_matrix_3d<'gc>(
 
     let display_object = get_display_object(this);
     if display_object.base().has_matrix3d_stub() {
-        let matrix = get_display_object(this).base().matrix();
-        let mut matrix3d = Matrix3D::from_matrix(matrix);
-        matrix3d.set_tz(display_object.z() as f32);
-        Ok(Matrix3DObject::new(activation.context, matrix3d).into())
+        let mobj = get_display_object(this)
+            .base()
+            .matrix3d()
+            .expect("has_matrix3d_stub must be with a matrix3d");
+        Ok(Matrix3DObject::new(activation.context, mobj.matrix()).into())
     } else {
         Ok(Value::Null)
     }
@@ -311,20 +331,17 @@ pub fn set_matrix_3d<'gc>(
 
     let display_object = get_display_object(this);
 
-    let (matrix, has_matrix3d, tz) = {
+    let (matrix3d, has_matrix3d) = {
         match args.try_get_object(0) {
             Some(obj) => {
-                let matrix3d = obj.as_matrix3d_object().unwrap().matrix();
-                let matrix = matrix3d.to_matrix();
-                let tz = matrix3d.tz();
-                (matrix, true, tz)
+                let matrix3d = obj.as_matrix3d_object().unwrap();
+                (Some(matrix3d), true)
             }
-            None => (Matrix::IDENTITY, false, 0.0),
+            None => (None, false),
         }
     };
 
-    display_object.set_matrix(matrix);
-    display_object.set_z(tz as f64);
+    display_object.set_matrix3d(activation.gc(), matrix3d);
     display_object.base().set_has_matrix3d_stub(has_matrix3d);
 
     Ok(Value::Undefined)
