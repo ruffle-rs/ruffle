@@ -481,11 +481,17 @@ pub fn deserialize_value_impl<'gc>(
 
             obj
         }
-        AmfValue::Date { data, .. } => activation
-            .avm2()
-            .classes()
-            .date
-            .construct(activation, &[data.time.into()])?,
+        AmfValue::Date { id, data } => {
+            let obj = activation
+                .avm2()
+                .classes()
+                .date
+                .construct(activation, &[data.time.into()])?;
+            if *id != ObjectId::INVALID {
+                object_map.insert(*id, obj.as_object().unwrap());
+            }
+            obj
+        }
         AmfValue::XML { value: content, .. } => activation.avm2().classes().xml.construct(
             activation,
             &[Value::String(AvmString::new_utf8(activation.gc(), content))],

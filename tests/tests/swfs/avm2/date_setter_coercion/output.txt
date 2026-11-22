@@ -1,0 +1,9 @@
+coerced UTC hour
+invalid UTC result: NaN
+coerced local hour
+local NaN stops coercion: NaN
+coerced first UTC argument
+coerced second UTC argument
+UTC setter sees the date after both conversions: true
+local setter sees changed date: true
+UTC setter sees invalidation: NaN

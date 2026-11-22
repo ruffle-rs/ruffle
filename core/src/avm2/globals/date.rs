@@ -31,106 +31,75 @@ fn local_date(date: Date, timezone: FixedOffset) -> Date {
     Date::from_millis_unclipped(date.time() + f64::from(timezone.local_minus_utc()) * 1000.0)
 }
 
-#[allow(clippy::too_many_arguments)]
-fn apply_local_adjustment<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    object: DateObject<'gc>,
-    year: Option<Value<'gc>>,
-    month: Option<Value<'gc>>,
-    day: Option<Value<'gc>>,
-    hour: Option<Value<'gc>>,
-    minute: Option<Value<'gc>>,
-    second: Option<Value<'gc>>,
-    millisecond: Option<Value<'gc>>,
-    recover_invalid: bool,
-) -> Result<f64, Error<'gc>> {
-    let timezone = activation.context.locale.get_timezone();
-    let current = object.date();
-
-    let base = if current.is_valid() {
-        local_date(current, timezone)
-    } else if recover_invalid {
-        Date::from_millis_unclipped(0.0)
-    } else {
-        object.set_date(Date::INVALID);
-        return Ok(f64::NAN);
-    };
-
-    let read = |value: Option<Value<'gc>>, fallback: f64, activation: &mut Activation<'_, 'gc>| {
-        match value {
-            Some(value) => value.coerce_to_number(activation),
-            None => Ok(fallback),
-        }
-    };
-
-    let year = read(year, base.year() as f64, activation)?;
-    let month = read(month, base.month() as f64, activation)?;
-    let day = read(day, base.date() as f64, activation)?;
-    let hour = read(hour, base.hours() as f64, activation)?;
-    let minute = read(minute, base.minutes() as f64, activation)?;
-    let second = read(second, base.seconds() as f64, activation)?;
-    let millisecond = read(millisecond, base.milliseconds() as f64, activation)?;
-
-    let local = Date::make_date(
-        Date::make_day(year, month, day),
-        Date::make_time(hour, minute, second, millisecond),
-    );
-
-    let result =
-        Date::from_millis_unclipped(local.time() - f64::from(timezone.local_minus_utc()) * 1000.0)
-            .clip();
-
-    object.set_date(result);
-    Ok(result.time())
+enum DateField {
+    Year,
+    Month,
+    Day,
+    Hour,
+    Minute,
+    Second,
+    Millisecond,
 }
 
-#[allow(clippy::too_many_arguments)]
-fn apply_utc_adjustment<'gc>(
+fn apply_adjustment<'gc>(
     activation: &mut Activation<'_, 'gc>,
     object: DateObject<'gc>,
-    year: Option<Value<'gc>>,
-    month: Option<Value<'gc>>,
-    day: Option<Value<'gc>>,
-    hour: Option<Value<'gc>>,
-    minute: Option<Value<'gc>>,
-    second: Option<Value<'gc>>,
-    millisecond: Option<Value<'gc>>,
-    recover_invalid: bool,
-) -> Result<f64, Error<'gc>> {
-    let current = object.date();
+    args: FunctionArgs<'_, 'gc>,
+    first_field: DateField,
+    utc: bool,
+) -> Result<Value<'gc>, Error<'gc>> {
+    let first_field = first_field as usize;
 
-    let base = if current.is_valid() {
-        current
-    } else if recover_invalid {
-        Date::from_millis_unclipped(0.0)
-    } else {
-        object.set_date(Date::INVALID);
-        return Ok(f64::NAN);
-    };
-
-    let read = |value: Option<Value<'gc>>, fallback: f64, activation: &mut Activation<'_, 'gc>| {
-        match value {
-            Some(value) => value.coerce_to_number(activation),
-            None => Ok(fallback),
+    // Coercion can call back into ActionScript and mutate this Date.
+    let mut fields = [None; 7];
+    for (field, arg) in fields[first_field..].iter_mut().zip(args) {
+        let value = arg.coerce_to_number(activation)?;
+        if value.is_nan() {
+            object.set_date(Date::INVALID);
+            return Ok(f64::NAN.into());
         }
+        *field = Some(value);
+    }
+
+    let current = object.date();
+    let [year, month, day, hour, minute, second, millisecond] = fields;
+    let offset = if utc {
+        0.0
+    } else {
+        f64::from(activation.context.locale.get_timezone().local_minus_utc()) * 1000.0
+    };
+    let base = if current.is_valid() {
+        Date::from_millis_unclipped(current.time() + offset)
+    } else if year.is_some() {
+        Date::EPOCH
+    } else {
+        return Ok(f64::NAN.into());
     };
 
-    let year = read(year, base.year() as f64, activation)?;
-    let month = read(month, base.month() as f64, activation)?;
-    let day = read(day, base.date() as f64, activation)?;
-    let hour = read(hour, base.hours() as f64, activation)?;
-    let minute = read(minute, base.minutes() as f64, activation)?;
-    let second = read(second, base.seconds() as f64, activation)?;
-    let millisecond = read(millisecond, base.milliseconds() as f64, activation)?;
-
-    let result = Date::make_date(
-        Date::make_day(year, month, day),
-        Date::make_time(hour, minute, second, millisecond),
-    )
-    .clip();
-
+    let (day, time) = if first_field < DateField::Hour as usize {
+        // The raw time within the day preserves the timestamp at hour rounding boundaries.
+        (
+            Date::make_day(
+                year.unwrap_or_else(|| f64::from(base.year())),
+                month.unwrap_or_else(|| f64::from(base.month())),
+                day.unwrap_or_else(|| f64::from(base.date())),
+            ),
+            base.time_within_day(),
+        )
+    } else {
+        (
+            base.day(),
+            Date::make_time(
+                hour.unwrap_or_else(|| f64::from(base.hours())),
+                minute.unwrap_or_else(|| f64::from(base.minutes())),
+                second.unwrap_or_else(|| f64::from(base.seconds())),
+                millisecond.unwrap_or_else(|| f64::from(base.milliseconds())),
+            ),
+        )
+    };
+    let result = Date::from_millis_unclipped(Date::make_date(day, time).time() - offset).clip();
     object.set_date(result);
-    Ok(result.time())
+    Ok(result.time().into())
 }
 
 pub fn init_custom_prototype<'gc>(
@@ -279,19 +248,7 @@ pub fn _set_milliseconds<'gc>(
     args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap().as_date_object().unwrap();
-    Ok(apply_local_adjustment(
-        activation,
-        this,
-        None,
-        None,
-        None,
-        None,
-        None,
-        None,
-        args.get_optional(0),
-        false,
-    )?
-    .into())
+    apply_adjustment(activation, this, args, DateField::Millisecond, false)
 }
 
 /// Implements the `getSeconds` method.
@@ -320,19 +277,7 @@ pub fn _set_seconds<'gc>(
     args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap().as_date_object().unwrap();
-    Ok(apply_local_adjustment(
-        activation,
-        this,
-        None,
-        None,
-        None,
-        None,
-        None,
-        args.get_optional(0),
-        args.get_optional(1),
-        false,
-    )?
-    .into())
+    apply_adjustment(activation, this, args, DateField::Second, false)
 }
 
 /// Implements `getMinutes` method.
@@ -361,19 +306,7 @@ pub fn _set_minutes<'gc>(
     args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap().as_date_object().unwrap();
-    Ok(apply_local_adjustment(
-        activation,
-        this,
-        None,
-        None,
-        None,
-        None,
-        args.get_optional(0),
-        args.get_optional(1),
-        args.get_optional(2),
-        false,
-    )?
-    .into())
+    apply_adjustment(activation, this, args, DateField::Minute, false)
 }
 
 /// Implements the `getHours` method.
@@ -402,19 +335,7 @@ pub fn _set_hours<'gc>(
     args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap().as_date_object().unwrap();
-    Ok(apply_local_adjustment(
-        activation,
-        this,
-        None,
-        None,
-        None,
-        args.get_optional(0),
-        args.get_optional(1),
-        args.get_optional(2),
-        args.get_optional(3),
-        false,
-    )?
-    .into())
+    apply_adjustment(activation, this, args, DateField::Hour, false)
 }
 
 /// Implements `getDate` method.
@@ -443,19 +364,7 @@ pub fn _set_date<'gc>(
     args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap().as_date_object().unwrap();
-    Ok(apply_local_adjustment(
-        activation,
-        this,
-        None,
-        None,
-        args.get_optional(0),
-        None,
-        None,
-        None,
-        None,
-        false,
-    )?
-    .into())
+    apply_adjustment(activation, this, args, DateField::Day, false)
 }
 
 /// Implements the `getMonth` method.
@@ -484,19 +393,7 @@ pub fn _set_month<'gc>(
     args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap().as_date_object().unwrap();
-    Ok(apply_local_adjustment(
-        activation,
-        this,
-        None,
-        args.get_optional(0),
-        args.get_optional(1),
-        None,
-        None,
-        None,
-        None,
-        false,
-    )?
-    .into())
+    apply_adjustment(activation, this, args, DateField::Month, false)
 }
 
 /// Implements the `getFullYear` method.
@@ -525,19 +422,7 @@ pub fn _set_full_year<'gc>(
     args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap().as_date_object().unwrap();
-    Ok(apply_local_adjustment(
-        activation,
-        this,
-        args.get_optional(0),
-        args.get_optional(1),
-        args.get_optional(2),
-        None,
-        None,
-        None,
-        None,
-        true,
-    )?
-    .into())
+    apply_adjustment(activation, this, args, DateField::Year, false)
 }
 
 /// Implements the `getDay` method.
@@ -584,23 +469,8 @@ pub fn _set_utc_milliseconds<'gc>(
     this: Value<'gc>,
     args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let this = this.as_object().unwrap();
-
-    let this = this.as_date_object().unwrap();
-
-    let timestamp = apply_utc_adjustment(
-        activation,
-        this,
-        None,
-        None,
-        None,
-        None,
-        None,
-        None,
-        args.get_optional(0),
-        false,
-    )?;
-    Ok(timestamp.into())
+    let this = this.as_object().unwrap().as_date_object().unwrap();
+    apply_adjustment(activation, this, args, DateField::Millisecond, true)
 }
 
 /// Implements the `getUTCSeconds` method.
@@ -628,23 +498,8 @@ pub fn _set_utc_seconds<'gc>(
     this: Value<'gc>,
     args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let this = this.as_object().unwrap();
-
-    let this = this.as_date_object().unwrap();
-
-    let timestamp = apply_utc_adjustment(
-        activation,
-        this,
-        None,
-        None,
-        None,
-        None,
-        None,
-        args.get_optional(0),
-        args.get_optional(1),
-        false,
-    )?;
-    Ok(timestamp.into())
+    let this = this.as_object().unwrap().as_date_object().unwrap();
+    apply_adjustment(activation, this, args, DateField::Second, true)
 }
 
 /// Implements the `getUTCMinutes` method.
@@ -672,23 +527,8 @@ pub fn _set_utc_minutes<'gc>(
     this: Value<'gc>,
     args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let this = this.as_object().unwrap();
-
-    let this = this.as_date_object().unwrap();
-
-    let timestamp = apply_utc_adjustment(
-        activation,
-        this,
-        None,
-        None,
-        None,
-        None,
-        args.get_optional(0),
-        args.get_optional(1),
-        args.get_optional(2),
-        false,
-    )?;
-    Ok(timestamp.into())
+    let this = this.as_object().unwrap().as_date_object().unwrap();
+    apply_adjustment(activation, this, args, DateField::Minute, true)
 }
 
 /// Implements the `getUTCHours` method.
@@ -716,23 +556,8 @@ pub fn _set_utc_hours<'gc>(
     this: Value<'gc>,
     args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let this = this.as_object().unwrap();
-
-    let this = this.as_date_object().unwrap();
-
-    let timestamp = apply_utc_adjustment(
-        activation,
-        this,
-        None,
-        None,
-        None,
-        args.get_optional(0),
-        args.get_optional(1),
-        args.get_optional(2),
-        args.get_optional(3),
-        false,
-    )?;
-    Ok(timestamp.into())
+    let this = this.as_object().unwrap().as_date_object().unwrap();
+    apply_adjustment(activation, this, args, DateField::Hour, true)
 }
 
 /// Implements the `getUTCDate` method.
@@ -760,23 +585,8 @@ pub fn _set_utc_date<'gc>(
     this: Value<'gc>,
     args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let this = this.as_object().unwrap();
-
-    let this = this.as_date_object().unwrap();
-
-    let timestamp = apply_utc_adjustment(
-        activation,
-        this,
-        None,
-        None,
-        args.get_optional(0),
-        None,
-        None,
-        None,
-        None,
-        false,
-    )?;
-    Ok(timestamp.into())
+    let this = this.as_object().unwrap().as_date_object().unwrap();
+    apply_adjustment(activation, this, args, DateField::Day, true)
 }
 
 /// Implements the `getUTCMonth` method.
@@ -804,23 +614,8 @@ pub fn _set_utc_month<'gc>(
     this: Value<'gc>,
     args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let this = this.as_object().unwrap();
-
-    let this = this.as_date_object().unwrap();
-
-    let timestamp = apply_utc_adjustment(
-        activation,
-        this,
-        None,
-        args.get_optional(0),
-        args.get_optional(1),
-        None,
-        None,
-        None,
-        None,
-        false,
-    )?;
-    Ok(timestamp.into())
+    let this = this.as_object().unwrap().as_date_object().unwrap();
+    apply_adjustment(activation, this, args, DateField::Month, true)
 }
 
 /// Implements the `getUTCFullYear` method.
@@ -848,23 +643,8 @@ pub fn _set_utc_full_year<'gc>(
     this: Value<'gc>,
     args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let this = this.as_object().unwrap();
-
-    let this = this.as_date_object().unwrap();
-
-    let timestamp = apply_utc_adjustment(
-        activation,
-        this,
-        args.get_optional(0),
-        args.get_optional(1),
-        args.get_optional(2),
-        None,
-        None,
-        None,
-        None,
-        true,
-    )?;
-    Ok(timestamp.into())
+    let this = this.as_object().unwrap().as_date_object().unwrap();
+    apply_adjustment(activation, this, args, DateField::Year, true)
 }
 
 /// Implements the `getUTCDay` method.

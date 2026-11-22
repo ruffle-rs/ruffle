@@ -1,4 +1,6 @@
 Repeated Array reference: true
 Repeated Vector reference: true
 Repeated Dictionary reference: true
+Repeated Date reference: true
+Date timestamp: 8639999999999999
 Shared child reference: true

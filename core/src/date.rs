@@ -53,6 +53,11 @@ impl Date {
         (self.0 / f64::from(Self::MS_PER_DAY)).floor()
     }
 
+    /// ECMA-262 TimeWithinDay.
+    pub(crate) fn time_within_day(self) -> f64 {
+        self.0.rem_euclid(f64::from(Self::MS_PER_DAY))
+    }
+
     /// ECMA-262 DayFromYear.
     pub(crate) fn day_from_year(year: f64) -> f64 {
         (365.0 * (year - 1970.0)) + ((year - 1969.0) / 4.0).floor()
@@ -69,8 +74,10 @@ impl Date {
     pub(crate) fn year(self) -> i32 {
         let day = self.day();
 
-        let mut low = (day / if self < Self::EPOCH { 365.0 } else { 366.0 }).floor() as i32 + 1970;
-        let mut high = (day / if self < Self::EPOCH { 366.0 } else { 365.0 }).ceil() as i32 + 1970;
+        let mut low =
+            Self::year_search_bound((day / if self < Self::EPOCH { 365.0 } else { 366.0 }).floor());
+        let mut high =
+            Self::year_search_bound((day / if self < Self::EPOCH { 366.0 } else { 365.0 }).ceil());
 
         while low < high {
             let pivot = ((f64::from(low) + f64::from(high)) / 2.0) as i32;
@@ -87,6 +94,17 @@ impl Date {
         }
 
         low
+    }
+
+    fn year_search_bound(offset: f64) -> i32 {
+        // Flash's signed conversion returns i32::MIN for out-of-range bounds.
+        // The subsequent addition wraps at the signed 32-bit boundary.
+        let offset = if (f64::from(i32::MIN)..=f64::from(i32::MAX)).contains(&offset) {
+            offset as i32
+        } else {
+            i32::MIN
+        };
+        offset.wrapping_add(1970)
     }
 
     pub(crate) const fn is_leap_year(year: i32) -> bool {

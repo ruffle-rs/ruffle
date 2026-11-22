@@ -38,6 +38,14 @@ package {
                 );
                 trace("---");
             }
+
+            var extreme:Number = 8639999999999999;
+            d = new Date(extreme);
+            trace("setUTCFullYear:", d.setUTCFullYear(275760));
+            d = new Date(extreme);
+            trace("setUTCMonth:", d.setUTCMonth(8));
+            d = new Date(extreme);
+            trace("setUTCDate:", d.setUTCDate(12));
         }
     }
 }

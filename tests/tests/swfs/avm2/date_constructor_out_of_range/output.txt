@@ -108,3 +108,4 @@ timezoneOffset: NaN
 local: NaN,NaN,NaN,NaN,NaN,NaN,NaN
 utc: NaN,NaN,NaN,NaN,NaN,NaN,NaN
 ---
+year at int.MAX_VALUE: 2143039064

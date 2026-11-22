@@ -36,6 +36,8 @@ package {
             testTimestamp(8640000000000001);
             testTimestamp(8640000003600000);
             testTimestamp(8640000057600000);
+
+            trace("year at int.MAX_VALUE:", new Date(2147483647, 0, 1).getUTCFullYear());
         }
 
         private function testDate(
