@@ -22,3 +22,5 @@ swf = { path = "../../swf" }
 thiserror = { workspace = true }
 tracing = { workspace = true }
 url = { workspace = true }
+yoke = { workspace = true, features = ["alloc"] }
+stable_deref_trait = "1.2.1"
