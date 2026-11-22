@@ -56,7 +56,6 @@ pub fn main_execute(options: ExecuteOptions) {
     let tests = runner.find_tests();
     for (test_dir, test) in tests {
         let swf_path_real = test_dir.join(test.swf_path.as_str().trim_start_matches(['/']));
-        let environment = PlayerEnvironment::new(test.options.log_warnings);
         let version = test
             .options
             .player_options
@@ -78,6 +77,7 @@ pub fn main_execute(options: ExecuteOptions) {
             }
         };
 
+        let environment = PlayerEnvironment::new(test.options.log_warnings, definition);
         let player = FlashPlayer::new(definition);
         test.compile(match options.compile {
             true => CompileMode::CompileSilently,

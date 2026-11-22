@@ -228,6 +228,8 @@ version = 32
 path = "/path/to/flashplayerdebugger"
 ```
 
+Flash Player runs on a virtual display, so `Xvfb` has to be installed. Set `xvfb = false` for a player to use the current display instead.
+
 ### Flash authoring tool
 
 Create a new ActionScript project. Save the `.fla` file and export an `.swf` (File -> Export -> Export Movie...).

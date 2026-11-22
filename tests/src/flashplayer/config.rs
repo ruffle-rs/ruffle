@@ -5,6 +5,15 @@ use std::path::PathBuf;
 pub struct FlashPlayerDefinition {
     pub version: u8,
     pub path: PathBuf,
+
+    /// Whether to run the player on a virtual display (Xvfb) instead of the
+    /// current one. Only used on Linux.
+    #[serde(default = "default_xvfb")]
+    pub xvfb: bool,
+}
+
+fn default_xvfb() -> bool {
+    true
 }
 
 #[derive(Deserialize, Debug, Default)]
@@ -19,6 +28,9 @@ static CONFIG_TEMPLATE: &str = r#"# To use `cargo testutils` to execute tests wi
 # [[players]]
 # version = 32
 # path = "/path/to/a/flashplayer/debugger"
+# On Linux, the player runs on a virtual display (Xvfb) by default.
+# Set this to false to use the current display instead.
+# xvfb = false
 
 # [[players]]
 # version = 15
