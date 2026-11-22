@@ -7,77 +7,62 @@ tolerance = 1
 [image_comparisons."output.02"]
 trigger = 2
 tolerance = 1
-known_failure = true
 
 [image_comparisons."output.03"]
 trigger = 3
 tolerance = 1
-known_failure = true
 
 [image_comparisons."output.04"]
 trigger = 4
 tolerance = 1
-known_failure = true
 
 [image_comparisons."output.05"]
 trigger = 5
 tolerance = 1
-known_failure = true
 
 [image_comparisons."output.06"]
 trigger = 6
 tolerance = 1
-known_failure = true
 
 [image_comparisons."output.07"]
 trigger = 7
 tolerance = 1
-known_failure = true
 
 [image_comparisons."output.08"]
 trigger = 8
 tolerance = 1
-known_failure = true
 
 [image_comparisons."output.09"]
 trigger = 9
 tolerance = 1
-known_failure = true
 
 [image_comparisons."output.10"]
 trigger = 10
 tolerance = 1
-known_failure = true
 
 [image_comparisons."output.11"]
 trigger = 11
 tolerance = 1
-known_failure = true
 
 [image_comparisons."output.12"]
 trigger = 12
 tolerance = 1
-known_failure = true
 
 [image_comparisons."output.13"]
 trigger = 13
 tolerance = 1
-known_failure = true
 
 [image_comparisons."output.14"]
 trigger = 14
 tolerance = 1
-known_failure = true
 
 [image_comparisons."output.15"]
 trigger = 15
 tolerance = 1
-known_failure = true
 
 [image_comparisons."output.16"]
 trigger = 16
 tolerance = 1
-known_failure = true
 
 [player_options]
 with_renderer = { optional = false, quality = "low" }
