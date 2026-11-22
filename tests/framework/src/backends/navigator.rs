@@ -13,6 +13,7 @@ use ruffle_core::socket::{ConnectionState, SocketAction, SocketHandle};
 use ruffle_core::swf::Encoding;
 use ruffle_socket_format::SocketEvent;
 use std::borrow::Cow;
+use std::num::NonZeroUsize;
 use std::time::Duration;
 use url::{ParseError, Url};
 use vfs::VfsPath;
@@ -20,7 +21,15 @@ use vfs::VfsPath;
 struct TestResponse {
     url: String,
     body: Vec<u8>,
-    chunk_gotten: bool,
+    /// The size of the chunks `next_chunk` returns, or `None` to return the
+    /// whole body at once.
+    chunk_size: Option<NonZeroUsize>,
+    /// How many bytes of the body `next_chunk` returned so far, or `None` if
+    /// it wasn't called yet.
+    position: Option<usize>,
+    /// Whether the length of the body is known before reading it, like with
+    /// a `Content-Length` header.
+    has_length: bool,
     status: u16,
     redirected: bool,
 }
@@ -51,17 +60,27 @@ impl SuccessResponse for TestResponse {
     }
 
     fn next_chunk(&mut self) -> OwnedFuture<Option<Vec<u8>>, Error> {
-        if !self.chunk_gotten {
-            self.chunk_gotten = true;
-            let body = self.body.clone();
-            Box::pin(async move { Ok(Some(body)) })
+        let start = self.position.unwrap_or(0);
+
+        // The first call always returns a chunk, even for an empty body.
+        let chunk = if self.position.is_none() || start < self.body.len() {
+            let end = match self.chunk_size {
+                Some(chunk_size) => (start + chunk_size.get()).min(self.body.len()),
+                None => self.body.len(),
+            };
+
+            self.position = Some(end);
+
+            Some(self.body[start..end].to_vec())
         } else {
-            Box::pin(async move { Ok(None) })
-        }
+            None
+        };
+
+        Box::pin(async move { Ok(chunk) })
     }
 
     fn expected_length(&self) -> Result<Option<u64>, Error> {
-        Ok(Some(self.body.len() as u64))
+        Ok(self.has_length.then_some(self.body.len() as u64))
     }
 }
 
@@ -126,7 +145,9 @@ impl NavigatorBackend for TestNavigatorBackend {
                 let response: Box<dyn SuccessResponse> = Box::new(TestResponse {
                     url: request.url().to_string(),
                     body: b"Hello, World!".to_vec(),
-                    chunk_gotten: false,
+                    chunk_size: None,
+                    position: None,
+                    has_length: true,
                     status: 200,
                     redirected: false,
                 });
@@ -186,6 +207,19 @@ impl NavigatorBackend for TestNavigatorBackend {
 
         let base_path = self.relative_base_path.clone();
 
+        // `?debug-chunk-size=<bytes>` makes the response arrive in chunks of
+        // that size, like over a network.
+        let chunk_size = url
+            .query_pairs()
+            .find(|(key, _)| key == "debug-chunk-size")
+            .and_then(|(_, size)| size.parse().ok());
+
+        // `?debug-no-content-length` leaves the length of the response
+        // unknown until it's read, like without a `Content-Length` header.
+        let has_length = !url
+            .query_pairs()
+            .any(|(key, _)| key == "debug-no-content-length");
+
         Box::pin(async move {
             let path = if url.scheme() == "file" {
                 // Flash supports query parameters with local urls.
@@ -240,7 +274,9 @@ impl NavigatorBackend for TestNavigatorBackend {
             let response: Box<dyn SuccessResponse> = Box::new(TestResponse {
                 url: url.to_string(),
                 body,
-                chunk_gotten: false,
+                chunk_size,
+                position: None,
+                has_length,
                 status: 0,
                 redirected: false,
             });
