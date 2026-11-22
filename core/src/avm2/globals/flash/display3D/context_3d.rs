@@ -4,7 +4,8 @@ use crate::avm2::TObject as _;
 use crate::avm2::Value;
 use crate::avm2::error::{
     make_error_2008, make_error_3669, make_error_3670, make_error_3671, make_error_3692,
-    make_error_3771, make_error_3772, make_error_3773, make_error_3780, make_error_3781,
+    make_error_3745, make_error_3771, make_error_3772, make_error_3773, make_error_3780,
+    make_error_3781,
 };
 use crate::avm2::function::FunctionArgs;
 use crate::avm2::globals::slots::flash_geom_rectangle as rectangle_slots;
@@ -12,7 +13,7 @@ use crate::avm2::parameters::ParametersExt;
 use crate::avm2_stub_method;
 use ruffle_macros::istr;
 use ruffle_render::backend::BufferUsage;
-use ruffle_render::backend::{Context3DProfile, Context3DTextureFilter};
+use ruffle_render::backend::{Context3DProfile, Context3DTextureFilter, Context3DTextureFormat};
 use ruffle_render::bitmap::{PixelRegion, PixelSnapping};
 use ruffle_render::commands::{CommandHandler, CommandList};
 use ruffle_render::quality::StageQuality;
@@ -504,6 +505,8 @@ pub fn create_texture<'gc>(
         let optimize_for_render_to_texture = args.get_bool(3);
         let streaming_levels = args.get_i32(4) as u32;
 
+        check_compressed_texture_size(activation, format, width, height)?;
+
         let class = activation.avm2().classes().texture;
 
         return context.create_texture(
@@ -568,6 +571,8 @@ pub fn create_cube_texture<'gc>(
         let optimize_for_render_to_texture = args.get_bool(2);
         let streaming_levels = args.get_i32(3) as u32;
 
+        check_compressed_texture_size(activation, format, size, size)?;
+
         return context.create_cube_texture(
             size,
             format,
@@ -577,6 +582,24 @@ pub fn create_cube_texture<'gc>(
         );
     }
     Ok(Value::Undefined)
+}
+
+fn check_compressed_texture_size<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    format: Context3DTextureFormat,
+    width: u32,
+    height: u32,
+) -> Result<(), Error<'gc>> {
+    let is_compressed = matches!(
+        format,
+        Context3DTextureFormat::Compressed | Context3DTextureFormat::CompressedAlpha
+    );
+
+    if is_compressed && (width < 4 || height < 4) {
+        return Err(make_error_3745(activation));
+    }
+
+    Ok(())
 }
 
 pub fn set_texture_at<'gc>(

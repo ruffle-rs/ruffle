@@ -1,0 +1,28 @@
+compressed texture 1x1: [class ArgumentError] 3745 Error #3745: Compressed texture size is too small. The minimum size for compressed textures is 4x4.
+compressed texture 2x2: [class ArgumentError] 3745 Error #3745: Compressed texture size is too small. The minimum size for compressed textures is 4x4.
+compressed texture 4x4: ok
+compressed texture 8x2: [class ArgumentError] 3745 Error #3745: Compressed texture size is too small. The minimum size for compressed textures is 4x4.
+compressed texture 2x8: [class ArgumentError] 3745 Error #3745: Compressed texture size is too small. The minimum size for compressed textures is 4x4.
+compressed texture 8x4: ok
+compressed cube 1: [class ArgumentError] 3745 Error #3745: Compressed texture size is too small. The minimum size for compressed textures is 4x4.
+compressed cube 2: [class ArgumentError] 3745 Error #3745: Compressed texture size is too small. The minimum size for compressed textures is 4x4.
+compressed cube 4: ok
+compressedAlpha texture 1x1: [class ArgumentError] 3745 Error #3745: Compressed texture size is too small. The minimum size for compressed textures is 4x4.
+compressedAlpha texture 2x2: [class ArgumentError] 3745 Error #3745: Compressed texture size is too small. The minimum size for compressed textures is 4x4.
+compressedAlpha texture 4x4: ok
+compressedAlpha texture 8x2: [class ArgumentError] 3745 Error #3745: Compressed texture size is too small. The minimum size for compressed textures is 4x4.
+compressedAlpha texture 2x8: [class ArgumentError] 3745 Error #3745: Compressed texture size is too small. The minimum size for compressed textures is 4x4.
+compressedAlpha texture 8x4: ok
+compressedAlpha cube 1: [class ArgumentError] 3745 Error #3745: Compressed texture size is too small. The minimum size for compressed textures is 4x4.
+compressedAlpha cube 2: [class ArgumentError] 3745 Error #3745: Compressed texture size is too small. The minimum size for compressed textures is 4x4.
+compressedAlpha cube 4: ok
+bgra texture 1x1: ok
+bgra texture 2x2: ok
+bgra texture 4x4: ok
+bgra texture 8x2: ok
+bgra texture 2x8: ok
+bgra texture 8x4: ok
+bgra cube 1: ok
+bgra cube 2: ok
+bgra cube 4: ok
+done
