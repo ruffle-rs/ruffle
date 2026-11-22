@@ -1,3 +1,0 @@
-holderchild.swf: unloadMovie(reference to a removed clip)
-unloadMovie(this)
-  after: marker true, root.x root variable, root.loaded undefined
