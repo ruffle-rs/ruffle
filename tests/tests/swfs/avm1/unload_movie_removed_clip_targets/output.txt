@@ -1,0 +1,14 @@
+holderchild.swf: unloadMovie(reference to a removed clip)
+unloadMovie(this)
+  after: marker true, root.x root variable, root.loaded undefined
+unloadMovie("")
+  after: marker true, root.x root variable, root.loaded undefined
+loadMovie("child.swf", this)
+  after: marker true, root.x root variable, root.loaded undefined
+loadVariables("vars.txt", this)
+  after: marker true, root.x root variable, root.loaded undefined
+tellTarget(this)
+  in tellTarget: _target undefined, this 
+  after: marker true, root.x root variable, root.loaded undefined
+frame 8: marker true, root.x root variable, root.loaded undefined
+frame 8: holder true, holder.marker false

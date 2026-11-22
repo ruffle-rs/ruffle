@@ -1,0 +1,19 @@
+num_ticks = 10
+known_failure = true
+
+[[compilers]]
+type = "Swfasm"
+target = "test.swf"
+source = "test.swfasm"
+
+[[compilers]]
+type = "Rascal"
+target = "child.swf"
+scripts = ["child.as"]
+swf_version = 8
+
+[[compilers]]
+type = "Rascal"
+target = "holderchild.swf"
+scripts = ["holderchild.as"]
+swf_version = 8
