@@ -1,8 +1,9 @@
 """Server for comparing the downloads of test.swf in Flash Player and Ruffle.
 
-Serves `localhost/download.txt` in chunks of the size given by the
-`debug-chunk-size` query parameter (like the test runner does), and saves
-every request it receives to the `requests` directory.
+Serves the files in `localhost` in chunks of the size given by the
+`debug-chunk-size` query parameter, and without a `Content-Length` with
+`debug-no-content-length` (like the test runner does), and saves every
+request it receives to the `requests` directory.
 """
 
 import http.server
@@ -37,24 +38,36 @@ class Handler(http.server.BaseHTTPRequestHandler):
             f.write(body)
         print("Saved", self.requestline, "to", name)
 
-        if url.path != "/download.txt":
+        path = os.path.join(HERE, "localhost", url.path.lstrip("/"))
+        if not os.path.isfile(path):
             return self.reply(b"", "text/plain", None, 404)
 
-        query = urllib.parse.parse_qs(url.query)
+        query = urllib.parse.parse_qs(url.query, keep_blank_values=True)
         chunk_size = int(query.get("debug-chunk-size", ["0"])[0]) or None
-        with open(os.path.join(HERE, "localhost", "download.txt"), "rb") as f:
-            self.reply(f.read(), "text/plain", chunk_size)
+        has_length = "debug-no-content-length" not in query
+        with open(path, "rb") as f:
+            self.reply(f.read(), "text/plain", chunk_size, has_length=has_length)
 
-    def reply(self, body, content_type, chunk_size, status=200):
+    def reply(self, body, content_type, chunk_size, status=200, has_length=True):
         self.send_response(status)
         self.send_header("Content-Type", content_type)
-        self.send_header("Content-Length", str(len(body)))
+        if has_length:
+            self.send_header("Content-Length", str(len(body)))
+        else:
+            self.send_header("Transfer-Encoding", "chunked")
         self.end_headers()
-        for i in range(0, len(body), chunk_size or len(body) or 1):
-            self.wfile.write(body[i : i + (chunk_size or len(body))])
+        step = chunk_size or len(body) or 1
+        for i in range(0, len(body), step):
+            chunk = body[i : i + step]
+            if not has_length:
+                chunk = b"%x\r\n" % len(chunk) + chunk + b"\r\n"
+            self.wfile.write(chunk)
             self.wfile.flush()
             if chunk_size:
                 time.sleep(0.1)
+        if not has_length:
+            self.wfile.write(b"0\r\n\r\n")
+            self.wfile.flush()
 
     do_GET = handle_request
     do_POST = handle_request

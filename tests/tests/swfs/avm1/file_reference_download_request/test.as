@@ -5,6 +5,10 @@
 
 var downloads = [
     { url: "http://localhost:8000/download.txt?debug-chunk-size=16", postData: undefined },
+    // Without a Content-Length, Flash Player reports the total as -1.
+    { url: "http://localhost:8000/download.txt?debug-chunk-size=16&debug-no-content-length", postData: undefined },
+    // An empty response is an error.
+    { url: "http://localhost:8000/empty.txt", postData: undefined },
     { url: "http://localhost:8000/download.txt?debug-chunk-size=16", postData: "x=1&y=two%20words" }
 ];
 var current = -1;
