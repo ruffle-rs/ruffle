@@ -8,7 +8,7 @@ meta "version", int(1i)
 param.out "dst", float4, f0.rgba
 
 param.in "boolInput", bool, i1.g
-meta2 "defaultValue", bool(false)
+meta2 "defaultValue", bool(0i)
 
 param.in "intInput", int, i1.b
 meta2 "defaultValue", int(0i)
