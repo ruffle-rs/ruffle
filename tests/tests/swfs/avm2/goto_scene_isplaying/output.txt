@@ -1,0 +1,24 @@
+frame1 (step 0): S1 frame 1, isPlaying: false
+frame1: after stop(): S1 frame 1, isPlaying: false
+frame1: after nextScene(): S1 frame 1, isPlaying: false
+frame3 (step 1): S2 frame 1, isPlaying: true
+enterFrame 1: S2 frame 2, isPlaying: true
+enterFrame 2: S1 frame 1, isPlaying: true
+frame1 (step 2): S1 frame 1, isPlaying: true
+enterFrame 3: S1 frame 2, isPlaying: true
+enterFrame 4: S2 frame 1, isPlaying: true
+frame3 (step 2): S2 frame 1, isPlaying: true
+enterFrame 5: S2 frame 2, isPlaying: true
+enterFrame 6: S1 frame 1, isPlaying: true
+enterFrame: after stop(): S1 frame 1, isPlaying: false
+frame1 (step 3): S1 frame 1, isPlaying: true
+enterFrame: after prevScene(): S1 frame 1, isPlaying: true
+enterFrame 7: S1 frame 2, isPlaying: true
+enterFrame 8: S2 frame 1, isPlaying: true
+frame3 (step 3): S2 frame 1, isPlaying: true
+enterFrame 9: S2 frame 2, isPlaying: true
+enterFrame 10: S1 frame 1, isPlaying: true
+frame1 (step 3): S1 frame 1, isPlaying: true
+enterFrame 11: S1 frame 2, isPlaying: true
+enterFrame 12: S2 frame 1, isPlaying: true
+frame3 (step 3): S2 frame 1, isPlaying: true
