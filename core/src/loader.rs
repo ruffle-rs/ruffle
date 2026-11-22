@@ -2674,23 +2674,26 @@ pub fn download_file_dialog<'gc>(
         // Like Flash Player, report the progress for every chunk of the
         // response as it arrives.
         let mut body = Vec::new();
-        loop {
+        let is_read_error = loop {
             match response.next_chunk().await {
+                Ok(Some(chunk)) if chunk.is_empty() => {}
                 Ok(Some(chunk)) => {
                     body.extend_from_slice(&chunk);
                     let loaded = body.len() as u64;
-                    let total = total_bytes.unwrap_or(loaded);
+                    // Flash Player reports an unknown length as -1.
+                    let total = total_bytes.map_or(-1.0, |total| total as f64);
 
                     with_file_reference(&player, &target_object, |activation, object, _| {
-                        let args = [
-                            object.into(),
-                            Value::from_u64_lossy(loaded),
-                            Value::from_u64_lossy(total),
-                        ];
+                        let args = [object.into(), Value::from_u64_lossy(loaded), total.into()];
                         broadcast_internal(object, &args, istr!("onProgress"), activation)?;
 
                         Ok(())
                     })?;
+                }
+                // Flash Player treats an empty response as an error.
+                Ok(None) if body.is_empty() => {
+                    tracing::warn!("Download of {url} returned no data");
+                    break false;
                 }
                 Ok(None) => {
                     // onComplete expects to receive the current state of the
@@ -2710,22 +2713,22 @@ pub fn download_file_dialog<'gc>(
                 }
                 Err(err) => {
                     tracing::warn!("Download of {url} failed: {err:?}");
-
-                    return with_file_reference(
-                        &player,
-                        &target_object,
-                        |activation, object, _| {
-                            activation
-                                .context
-                                .avm_trace(&format!("Error opening URL '{url}'"));
-                            broadcast_avm1_file_event(object, istr!("onIOError"), activation)?;
-
-                            Ok(())
-                        },
-                    );
+                    break true;
                 }
             }
-        }
+        };
+
+        with_file_reference(&player, &target_object, |activation, object, _| {
+            if is_read_error {
+                activation
+                    .context
+                    .avm_trace(&format!("Error opening URL '{url}'"));
+            }
+
+            broadcast_avm1_file_event(object, istr!("onIOError"), activation)?;
+
+            Ok(())
+        })
     })
 }
 
