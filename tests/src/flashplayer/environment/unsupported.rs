@@ -1,10 +1,11 @@
+use crate::flashplayer::config::FlashPlayerDefinition;
 use std::time::SystemTime;
 
 #[derive(Debug)]
 pub struct PlayerEnvironment;
 
 impl PlayerEnvironment {
-    pub fn new(_log_warnings: bool) -> Self {
+    pub fn new(_log_warnings: bool, _player: &FlashPlayerDefinition) -> Self {
         panic!("Unsupported platform :( Feel free to add support and open a PR!");
     }
 
