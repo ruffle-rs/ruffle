@@ -1,0 +1,60 @@
+// upload before browse
+Error: Error #2037: Functions called in incorrect sequence, or earlier call was unsuccessful.
+select: test.txt, 13 bytes
+// upload: GET, whose URLVariables go in the URL, and a field name
+Navigator::fetch:
+  URL: upload_response.xml?s=1%2Ea%2Db%20c
+  Method: POST
+  Mime-Type: multipart/form-data; boundary=----------34pcyz7xba7l32irkt2j6ehzmfvyky
+  Body:
+    ------------34pcyz7xba7l32irkt2j6ehzmfvyky
+    Content-Disposition: form-data; name="Filename"
+    
+    test.txt
+    ------------34pcyz7xba7l32irkt2j6ehzmfvyky
+    Content-Disposition: form-data; name="upfile"; filename="test.txt"
+    Content-Type: application/octet-stream
+    
+    Hello, World!
+    ------------34pcyz7xba7l32irkt2j6ehzmfvyky
+    Content-Disposition: form-data; name="Upload"
+    
+    Submit Query
+    ------------34pcyz7xba7l32irkt2j6ehzmfvyky--
+    
+open
+complete
+uploadCompleteData: <response id="7"/>
+// upload: POST with URLVariables
+Navigator::fetch:
+  URL: upload_response.xml
+  Method: POST
+  Mime-Type: multipart/form-data; boundary=----------34pcyz7xba7l32irkt2j6ehzmfvyky
+  Body:
+    ------------34pcyz7xba7l32irkt2j6ehzmfvyky
+    Content-Disposition: form-data; name="Filename"
+    
+    test.txt
+    ------------34pcyz7xba7l32irkt2j6ehzmfvyky
+    Content-Disposition: form-data; name="type"
+    
+    background-image
+    ------------34pcyz7xba7l32irkt2j6ehzmfvyky
+    Content-Disposition: form-data; name="Filedata"; filename="test.txt"
+    Content-Type: application/octet-stream
+    
+    Hello, World!
+    ------------34pcyz7xba7l32irkt2j6ehzmfvyky
+    Content-Disposition: form-data; name="Upload"
+    
+    Submit Query
+    ------------34pcyz7xba7l32irkt2j6ehzmfvyky--
+    
+open
+complete
+uploadCompleteData: <response id="7"/>
+// upload: HTTP error
+open
+httpStatus
+ioError 2038
+// done

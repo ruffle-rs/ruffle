@@ -80,8 +80,13 @@ package flash.net {
             uploadDataFieldName:String = "Filedata",
             testUpload:Boolean = false
         ):void {
-            stub_method("flash.net.FileReference", "upload");
+            if (testUpload) {
+                stub_method("flash.net.FileReference", "upload", "with testUpload");
+            }
+            this.uploadInternal(request, uploadDataFieldName);
         }
+
+        private native function uploadInternal(request:URLRequest, uploadDataFieldName:String):void;
 
         [API("681")]
         public function uploadUnencoded(request:URLRequest):void {

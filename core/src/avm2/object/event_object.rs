@@ -227,6 +227,29 @@ impl<'gc> EventObject<'gc> {
         )
     }
 
+    pub fn data_event(
+        activation: &mut Activation<'_, 'gc>,
+        event_type: &str,
+        data: AvmString<'gc>,
+    ) -> EventObject<'gc> {
+        let event_type = AvmString::new_utf8(activation.gc(), event_type);
+
+        let data_event_cls = activation.avm2().classes().dataevent;
+        Self::from_class_and_args(
+            activation,
+            data_event_cls,
+            &[
+                event_type.into(),
+                // bubbles
+                false.into(),
+                // cancelable
+                false.into(),
+                // data
+                data.into(),
+            ],
+        )
+    }
+
     pub fn net_status_event<'a>(
         activation: &mut Activation<'_, 'gc>,
         info: impl IntoIterator<Item = (&'a str, &'a str)>,

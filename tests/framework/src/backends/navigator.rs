@@ -173,6 +173,12 @@ impl NavigatorBackend for TestNavigatorBackend {
                 log.avm_trace(&format!("  Mime-Type: {mime_type}"));
                 if mime_type == "application/x-www-form-urlencoded" {
                     log.avm_trace(&format!("  Body: {}", String::from_utf8_lossy(body)));
+                } else if mime_type.starts_with("multipart/form-data") {
+                    // One trace per line, so that the CRLFs show as line breaks.
+                    log.avm_trace("  Body:");
+                    for line in String::from_utf8_lossy(body).split("\r\n") {
+                        log.avm_trace(&format!("    {line}"));
+                    }
                 } else {
                     log.avm_trace(&format!("  Body: {body:02X?}"));
                 }
