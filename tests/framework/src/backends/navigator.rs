@@ -27,6 +27,9 @@ struct TestResponse {
     /// How many bytes of the body `next_chunk` returned so far, or `None` if
     /// it wasn't called yet.
     position: Option<usize>,
+    /// Whether the length of the body is known before reading it, like with
+    /// a `Content-Length` header.
+    has_length: bool,
     status: u16,
     redirected: bool,
 }
@@ -77,7 +80,7 @@ impl SuccessResponse for TestResponse {
     }
 
     fn expected_length(&self) -> Result<Option<u64>, Error> {
-        Ok(Some(self.body.len() as u64))
+        Ok(self.has_length.then_some(self.body.len() as u64))
     }
 }
 
@@ -144,6 +147,7 @@ impl NavigatorBackend for TestNavigatorBackend {
                     body: b"Hello, World!".to_vec(),
                     chunk_size: None,
                     position: None,
+                    has_length: true,
                     status: 200,
                     redirected: false,
                 });
@@ -210,6 +214,12 @@ impl NavigatorBackend for TestNavigatorBackend {
             .find(|(key, _)| key == "debug-chunk-size")
             .and_then(|(_, size)| size.parse().ok());
 
+        // `?debug-no-content-length` leaves the length of the response
+        // unknown until it's read, like without a `Content-Length` header.
+        let has_length = !url
+            .query_pairs()
+            .any(|(key, _)| key == "debug-no-content-length");
+
         Box::pin(async move {
             let path = if url.scheme() == "file" {
                 // Flash supports query parameters with local urls.
@@ -266,6 +276,7 @@ impl NavigatorBackend for TestNavigatorBackend {
                 body,
                 chunk_size,
                 position: None,
+                has_length,
                 status: 0,
                 redirected: false,
             });
