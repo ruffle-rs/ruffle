@@ -1,11 +1,10 @@
 num_ticks = 5
 
 [image_comparisons.output]
-# The TLF text is positioned with getBaselinePosition, but the TextLines
-# are still drawn from their top-left corner instead of their baseline.
-known_failure = true
+# Glyph rasterization differs from Flash Player, but misplaced text
+# produces far more outliers.
 tolerance = 128
 max_outliers = 1500
 
 [player_options]
-with_renderer = { optional = false, quality = "low" }
+with_renderer = { optional = false, quality = "high" }

@@ -1,7 +1,6 @@
 num_ticks = 1
 
 [image_comparisons.output]
-known_failure = true
 # Anti-aliasing on the glyph edges differs slightly.
 tolerance = 20
 max_outliers = 10

@@ -1,5 +1,5 @@
 recreated is the same object: true
 specifiedWidth: 1000
 rawTextLength: 29 29
-width: 1000 1000
+width: 579.75 579.75
 height: 20 20
