@@ -10,19 +10,6 @@ version.workspace = true
 [lints]
 workspace = true
 
-[features]
-# Enable running image comparison tests. This is off by default,
-# since the images we compare against are generated on CI, and may
-# not match your local machine's Vulkan version / image output.
-imgtests = [
-    "ruffle_render_wgpu",
-    "ruffle_test_framework/ruffle_video_software",
-    "ruffle_test_framework/ruffle_video_external",
-]
-freetype = ["ruffle_test_framework/freetype"]
-jpegxr = ["ruffle_test_framework/jpegxr"]
-lzma = ["ruffle_test_framework/lzma"]
-
 [dependencies]
 ruffle_render_wgpu = { path = "../render/wgpu", optional = true }
 ruffle_fs_tests_runner = { path = "fs-tests-runner" }
@@ -42,6 +29,19 @@ futures = { workspace = true }
 env_logger = "0.11.10"
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
+
+[features]
+# Enable running image comparison tests. This is off by default,
+# since the images we compare against are generated on CI, and may
+# not match your local machine's Vulkan version / image output.
+imgtests = [
+    "ruffle_render_wgpu",
+    "ruffle_test_framework/ruffle_video_software",
+    "ruffle_test_framework/ruffle_video_external",
+]
+freetype = ["ruffle_test_framework/freetype"]
+jpegxr = ["ruffle_test_framework/jpegxr"]
+lzma = ["ruffle_test_framework/lzma"]
 
 [[test]]
 name = "tests"

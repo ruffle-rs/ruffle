@@ -37,14 +37,14 @@ naga-agal = { path = "naga-agal" }
 jpegxr = { workspace = true, optional = true }
 guillotiere = "0.7.0"
 
+[dependencies.jpeg-decoder]
+version = "0.3.2"
+default-features = false # can't use rayon on web
+
 # This crate has a `compile_error!` on apple platforms
 [target.'cfg(not(target_vendor = "apple"))'.dependencies.renderdoc]
 version = "0.12.1"
 optional = true
-
-[dependencies.jpeg-decoder]
-version = "0.3.2"
-default-features = false # can't use rayon on web
 
 [dev-dependencies]
 approx = { workspace = true }

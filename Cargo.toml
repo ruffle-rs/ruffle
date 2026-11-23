@@ -155,20 +155,8 @@ byte_char_slices = "allow"       # Less expressive: Suggests `b"abc"` byte strin
                                  # `[b'a', b'b', b'c']` array. The array form is clearer when the elements
                                  # represent a set of alternatives (any-of) rather than a byte sequence.
 
-# Don't optimize build scripts and macros.
-[profile.release.build-override]
-opt-level = 0
-
 [profile.dev]
 panic = "unwind"
-
-[profile.release]
-panic = "abort"
-
-[profile.dist]
-inherits = "release"
-lto = true
-codegen-units = 1
 
 [profile.dev.package.h263-rs]
 opt-level = 3
@@ -184,6 +172,18 @@ opt-level = 3
 
 [profile.dev.package.nihav_duck]
 opt-level = 3
+
+[profile.release]
+panic = "abort"
+
+# Don't optimize build scripts and macros.
+[profile.release.build-override]
+opt-level = 0
+
+[profile.dist]
+inherits = "release"
+lto = true
+codegen-units = 1
 
 # TODO: Set rustflags here instead of in tools/build_wasm.ts, when that
 # feature becomes stable. See: https://github.com/rust-lang/cargo/issues/10271

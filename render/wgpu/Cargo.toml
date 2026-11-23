@@ -7,6 +7,12 @@ license.workspace = true
 repository.workspace = true
 version.workspace = true
 
+[package.metadata.cargo-machete]
+ignored = [
+    # Not used directly, declared only to enable its `profile-with-tracy` feature.
+    "profiling"
+]
+
 [lints]
 workspace = true
 
@@ -43,9 +49,3 @@ render_debug_labels = []
 webgl = ["wgpu/webgl"]
 profile-with-tracy = ["profiling", "profiling/profile-with-tracy", "wgpu-profiler/tracy"]
 tracy_images = ["profile-with-tracy"]
-
-[package.metadata.cargo-machete]
-ignored = [
-    # Not used directly, declared only to enable its `profile-with-tracy` feature.
-    "profiling"
-]
