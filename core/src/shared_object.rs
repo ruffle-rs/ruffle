@@ -1,6 +1,39 @@
 //! Shared object logic common to AVM1 and AVM2.
 
-/// Returns the storage key of the local shared object accessed by
+use crate::backend::storage::StorageBackend;
+
+/// The keys of a local shared object.
+#[derive(Debug, PartialEq)]
+pub struct LocalSharedObjectKey {
+    instance: String,
+    storage: String,
+    legacy_storage: Option<String>,
+}
+
+impl LocalSharedObjectKey {
+    /// `getLocal` returns the same object for the same instance key.
+    pub fn instance(&self) -> &str {
+        &self.instance
+    }
+
+    /// The key the shared object is stored under.
+    pub fn storage(&self) -> &str {
+        &self.storage
+    }
+
+    /// Reads the saved shared object.
+    ///
+    /// Ruffle used to store names starting with `/` under `#` followed by the
+    /// whole name, so their data is read from there if there's nothing under
+    /// the current key yet.
+    pub fn load(&self, storage: &dyn StorageBackend) -> Option<Vec<u8>> {
+        storage
+            .get(&self.storage)
+            .or_else(|| storage.get(self.legacy_storage.as_deref()?))
+    }
+}
+
+/// Returns the keys of the local shared object accessed by
 /// `SharedObject.getLocal(name, local_path, secure)` from a movie at `movie_url`,
 /// or `None` when the shared object can't be created.
 pub fn local_shared_object_key(
@@ -8,7 +41,7 @@ pub fn local_shared_object_key(
     name: &str,
     local_path: Option<&str>,
     secure: bool,
-) -> Option<String> {
+) -> Option<LocalSharedObjectKey> {
     // TODO: It appears that Flash does some kind of escaping here:
     // the name "foo\uD800" correspond to a file named "fooE#FB#FB#D.sol".
 
@@ -82,17 +115,143 @@ pub fn local_shared_object_key(
     };
 
     // Final SO path: foo.com/folder/game.swf/SOName
-    // SOName may be a path containing slashes. In this case, prefix with # to mimic Flash Player behavior.
-    let prefix = if name.contains('/') { "#" } else { "" };
-    let full_name = format!("{movie_host}/{local_path}/{prefix}{name}");
+    let path = format!("{movie_host}/{local_path}");
 
     // Avoid any paths with `..` to prevent SWFs from crawling the file system on desktop.
-    // Flash will generally fail to save shared objects with a path component starting with `.`,
-    // so let's disallow them altogether.
-    if full_name.split('/').any(|s| s.starts_with('.')) {
-        tracing::error!("SharedObject.get_local: Invalid path with .. segments");
+    if path.split('/').any(|s| matches!(s, "." | "..")) {
+        tracing::error!("SharedObject.get_local: Invalid path with . or .. segments");
         return None;
     }
 
-    Some(full_name)
+    let Some(storage_name) = storage_name(name) else {
+        tracing::error!("SharedObject.get_local: Invalid name");
+        return None;
+    };
+
+    Some(LocalSharedObjectKey {
+        instance: format!("{path}/{}", instance_name(name)),
+        storage: format!("{path}/{storage_name}"),
+        legacy_storage: name.starts_with('/').then(|| format!("{path}/#{name}")),
+    })
+}
+
+/// Returns the name that the shared object `name` is stored under, or `None` when it's invalid.
+///
+/// Like in Flash Player, folders named `.` are skipped, and folders named `..` or empty ones
+/// (except for a leading slash) are invalid. The last segment is the file name, which can be
+/// anything, including `.` and `..`, as the storage appends an extension to it. A name with
+/// folders is prefixed with `#`.
+fn storage_name(name: &str) -> Option<String> {
+    if name.is_empty() {
+        return None;
+    }
+
+    let (folders, file_name) = name.rsplit_once('/').unwrap_or(("", name));
+    let mut kept_folders = Vec::new();
+
+    for (i, folder) in folders.split('/').enumerate() {
+        match folder {
+            "" if i == 0 => {}
+            "." => {}
+            "" | ".." => return None,
+            folder => kept_folders.push(folder),
+        }
+    }
+
+    if kept_folders.is_empty() {
+        Some(file_name.to_owned())
+    } else {
+        Some(format!("#{}/{file_name}", kept_folders.join("/")))
+    }
+}
+
+/// Flash Player returns the same object for names that only differ in leading `/` and `./`,
+/// but not for other `.` folders, even though such names are stored under the same name.
+fn instance_name(mut name: &str) -> &str {
+    loop {
+        if let Some(rest) = name.strip_prefix('/') {
+            name = rest;
+        } else if let Some(rest) = name.strip_prefix("./") {
+            name = rest;
+        } else {
+            return name;
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{LocalSharedObjectKey, local_shared_object_key};
+    use crate::backend::storage::{MemoryStorageBackend, StorageBackend};
+
+    fn key(movie_url: &str, name: &str, local_path: Option<&str>) -> Option<LocalSharedObjectKey> {
+        local_shared_object_key(movie_url, name, local_path, false)
+    }
+
+    #[test]
+    fn movie_in_hidden_directory() {
+        let storage = |movie_url, local_path| {
+            key(movie_url, "save", local_path).map(|k| k.storage().to_owned())
+        };
+        assert_eq!(
+            storage("file:///home/user/.cache/game.swf", None).as_deref(),
+            Some("localhost/home/user/.cache/game.swf/save")
+        );
+        assert_eq!(
+            storage(
+                "file:///home/user/.cache/game.swf",
+                Some("/home/user/.cache")
+            )
+            .as_deref(),
+            Some("localhost/home/user/.cache/save")
+        );
+        assert_eq!(
+            storage("https://example.com/.games/game.swf", None).as_deref(),
+            Some("example.com/.games/game.swf/save")
+        );
+    }
+
+    #[test]
+    fn name_segments() {
+        let storage = |name| key("file:///game.swf", name, None).map(|k| k.storage().to_owned());
+        assert_eq!(
+            storage(".save").as_deref(),
+            Some("localhost/game.swf/.save")
+        );
+        assert_eq!(storage("a/./b").as_deref(), Some("localhost/game.swf/#a/b"));
+        assert_eq!(storage("./a/b").as_deref(), Some("localhost/game.swf/#a/b"));
+        assert_eq!(storage("/save").as_deref(), Some("localhost/game.swf/save"));
+        assert_eq!(
+            storage("save/").as_deref(),
+            Some("localhost/game.swf/#save/")
+        );
+        assert_eq!(
+            storage("save/..").as_deref(),
+            Some("localhost/game.swf/#save/..")
+        );
+        assert_eq!(storage(""), None);
+        assert_eq!(storage("a//b"), None);
+        assert_eq!(storage("../save"), None);
+        assert_eq!(storage("a/./../b"), None);
+    }
+
+    #[test]
+    fn instances() {
+        let instance = |name| key("file:///game.swf", name, None).map(|k| k.instance().to_owned());
+        assert_eq!(instance("././save"), instance("save"));
+        assert_eq!(instance("/save"), instance("save"));
+        assert_ne!(instance("a/./b"), instance("a/b"));
+    }
+
+    #[test]
+    fn legacy_storage() {
+        let key = key("file:///game.swf", "/save", None).unwrap();
+        let mut storage = MemoryStorageBackend::default();
+
+        storage.put("localhost/game.swf/#/save", b"old");
+        assert_eq!(key.load(&storage).as_deref(), Some(&b"old"[..]));
+
+        storage.put("localhost/game.swf/save", b"new");
+        assert_eq!(key.load(&storage).as_deref(), Some(&b"new"[..]));
+    }
 }

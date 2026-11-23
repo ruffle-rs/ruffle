@@ -140,7 +140,7 @@ fn get_local<'gc>(
     let secure = matches!(args.get(2), Some(Value::Bool(true)));
 
     let movie = activation.base_clip().movie();
-    let Some(full_name) = local_shared_object_key(
+    let Some(key) = local_shared_object_key(
         movie.url(),
         &name.to_utf8_lossy(),
         local_path.as_deref(),
@@ -150,7 +150,7 @@ fn get_local<'gc>(
     };
 
     // Check if this is referencing an existing shared object
-    if let Some(so) = activation.context.avm1_shared_objects.get(&full_name) {
+    if let Some(so) = activation.context.avm1_shared_objects.get(key.instance()) {
         return Ok((*so).into());
     }
 
@@ -162,13 +162,15 @@ fn get_local<'gc>(
 
     // Set the internal name
     if let NativeObject::SharedObject(shared_object) = this.native() {
-        shared_object.borrow_mut().set_name(full_name.clone());
+        shared_object
+            .borrow_mut()
+            .set_name(key.storage().to_owned());
     }
 
     let mut data = Value::Undefined;
 
     // Load the data object from storage if it existed prior
-    if let Some(saved) = activation.context.storage.get(&full_name) {
+    if let Some(saved) = key.load(activation.context.storage) {
         let mut reader = flash_lso::read::Reader::default();
         if let Ok(lso) = reader.parse(&saved) {
             data = deserialize_lso(activation, &lso)?.into();
@@ -189,7 +191,7 @@ fn get_local<'gc>(
     activation
         .context
         .avm1_shared_objects
-        .insert(full_name, this);
+        .insert(key.instance().to_owned(), this);
 
     Ok(this.into())
 }
