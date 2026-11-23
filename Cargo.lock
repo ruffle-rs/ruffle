@@ -932,7 +932,7 @@ dependencies = [
  "mach2",
  "ndk",
  "ndk-context",
- "num-derive",
+ "num-derive 0.4.2",
  "num-traits",
  "objc2-audio-toolbox",
  "objc2-core-audio",
@@ -3318,7 +3318,7 @@ dependencies = [
  "bitflags 2.13.2",
  "insta",
  "naga",
- "num-derive",
+ "num-derive 0.5.1",
  "num-traits",
 ]
 
@@ -3511,6 +3511,17 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 2.0.119",
+]
+
+[[package]]
+name = "num-derive"
+version = "0.5.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e4e98dc3b890f6c23a0f9d3d491a2823d0dea0fa656302a13dd225fa924112a8"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 3.0.10",
 ]
 
 [[package]]
@@ -4208,7 +4219,7 @@ name = "pixel_bender"
 version = "0.8.0"
 dependencies = [
  "byteorder",
- "num-derive",
+ "num-derive 0.5.1",
  "num-traits",
  "pest",
  "pest_derive",
@@ -4821,7 +4832,7 @@ dependencies = [
  "naga-agal",
  "nellymoser-rs",
  "num-bigint",
- "num-derive",
+ "num-derive 0.5.1",
  "num-traits",
  "percent-encoding",
  "png",
@@ -4991,7 +5002,7 @@ dependencies = [
  "lyon",
  "lyon_geom",
  "naga-agal",
- "num-derive",
+ "num-derive 0.5.1",
  "num-traits",
  "pixel_bender",
  "png",
@@ -5797,7 +5808,7 @@ dependencies = [
  "flate2",
  "log",
  "lzma-rs",
- "num-derive",
+ "num-derive 0.4.2",
  "num-traits",
  "simple_asn1",
 ]
@@ -5813,7 +5824,7 @@ dependencies = [
  "flate2",
  "log",
  "lzma-rs",
- "num-derive",
+ "num-derive 0.5.1",
  "num-traits",
  "simple_asn1",
 ]
@@ -5831,7 +5842,7 @@ dependencies = [
  "flate2",
  "log",
  "lzma-rs",
- "num-derive",
+ "num-derive 0.4.2",
  "num-traits",
  "simple_asn1",
 ]
