@@ -11,66 +11,66 @@ version.workspace = true
 workspace = true
 
 [dependencies]
-linkme = { version = "0.3", optional = true }
-byteorder = { workspace = true }
+async-channel = { workspace = true }
+bitflags = { workspace = true }
 bitstream-io = { workspace = true }
+bytemuck = { workspace = true, features = ["derive"] }
+byteorder = { workspace = true }
+chardetng = "0.1.17"
+chrono = { workspace = true, features = ["clock"] }
+clap = { workspace = true, optional=true }
+dasp = { version = "0.11.0", features = ["interpolate", "interpolate-linear", "signal"], optional = true }
+egui = { workspace = true, optional = true }
+egui_extras = { workspace = true, default-features = false, optional = true }
+either = "1.16.0"
+encoding_rs = { workspace = true }
+enum-map = { workspace = true }
+enumset = "1.1.13"
+flash-lso = { git = "https://github.com/ruffle-rs/rust-flash-lso", rev = "11a0836a52c4aacbca96d8299bffd12f9715eec2" }
 flate2 = { workspace = true }
+fluent-templates = { workspace = true }
+flv-rs = { path = "../flv" }
 fnv = { workspace = true }
 gc-arena = { workspace = true }
-slotmap = { workspace = true }
+hashbrown = { workspace = true }
+id3 = "1.17.0"
+image = { workspace = true, features = ["tiff", "png", "jpeg"] }
 indexmap = { workspace = true }
-tracing = { workspace = true }
+itertools = "0.14.0"
+jpegxr = { workspace = true, optional = true }
+linkme = { version = "0.3", optional = true }
+lzma-rs = { workspace = true, optional = true }
+memchr = "2.8.3"
+naga-agal = { path = "../render/naga-agal" }
+nellymoser-rs = { git = "https://github.com/ruffle-rs/nellymoser", rev = "073eb48d907201f46dea0c8feb4e8d9a1d92208c", optional = true }
+num-bigint = "0.4"
+num-derive = { workspace = true }
+num-traits = { workspace = true }
+percent-encoding = { workspace = true }
+png = { workspace = true, optional = true }
+quick-xml = { workspace = true }
+rand = { workspace = true, features = ["std", "sys_rng"] }
+realfft = "3.5.0"
+regress = { workspace = true }
 ruffle_common = { path = "common" }
 ruffle_macros = { path = "macros" }
-naga-agal = { path = "../render/naga-agal" }
 ruffle_render = { path = "../render", features = ["tessellator"] }
 ruffle_video = { path = "../video" }
 ruffle_wstr = { path = "../wstr" }
-swf = { path = "../swf" }
-bitflags = { workspace = true }
-smallvec = { workspace = true }
-num-traits = { workspace = true }
-num-derive = { workspace = true }
-quick-xml = { workspace = true }
-url = { workspace = true }
-percent-encoding = { workspace = true }
-thiserror = { workspace = true }
-chrono = { workspace = true, features = ["clock"] }
-web-time = "1.1.0"
-encoding_rs = { workspace = true }
-rand = { workspace = true, features = ["std", "sys_rng"] }
+scopeguard = "1.2.0"
 serde = { workspace = true }
 serde_json = { workspace = true, features = ["preserve_order"] }
-nellymoser-rs = { git = "https://github.com/ruffle-rs/nellymoser", rev = "073eb48d907201f46dea0c8feb4e8d9a1d92208c", optional = true }
-regress = { workspace = true }
-flash-lso = { git = "https://github.com/ruffle-rs/rust-flash-lso", rev = "11a0836a52c4aacbca96d8299bffd12f9715eec2" }
-lzma-rs = { workspace = true, optional = true }
-dasp = { version = "0.11.0", features = ["interpolate", "interpolate-linear", "signal"], optional = true }
+slotmap = { workspace = true }
+smallvec = { workspace = true }
+swf = { path = "../swf" }
 symphonia = { version = "0.5.5", default-features = false, optional = true }
-enumset = "1.1.13"
-bytemuck = { workspace = true, features = ["derive"] }
-clap = { workspace = true, optional=true }
-realfft = "3.5.0"
-hashbrown = { workspace = true }
-scopeguard = "1.2.0"
-fluent-templates = { workspace = true }
-egui = { workspace = true, optional = true }
-egui_extras = { workspace = true, default-features = false, optional = true }
-png = { workspace = true, optional = true }
-flv-rs = { path = "../flv" }
-async-channel = { workspace = true }
-jpegxr = { workspace = true, optional = true }
-image = { workspace = true, features = ["tiff", "png", "jpeg"] }
-enum-map = { workspace = true }
-ttf-parser = "0.25"
-num-bigint = "0.4"
-unicode-segmentation = "1.13.3"
-id3 = "1.17.0"
-either = "1.16.0"
-chardetng = "0.1.17"
+thiserror = { workspace = true }
+tracing = { workspace = true }
 tracy-client = { version = "0.18.4", optional = true, default-features = false }
-itertools = "0.14.0"
-memchr = "2.8.3"
+ttf-parser = "0.25"
+unicode-segmentation = "1.13.3"
+url = { workspace = true }
+web-time = "1.1.0"
 
 [target.'cfg(not(target_family = "wasm"))'.dependencies.futures]
 workspace = true

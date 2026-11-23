@@ -13,25 +13,25 @@ workspace = true
 [dependencies]
 ruffle_render = { path = "../../render" }
 ruffle_video = { path = ".." }
-swf = { path = "../../swf" }
-slotmap = { workspace = true }
-tracing = { workspace = true }
 ruffle_video_software = { path = "../software" }
+slotmap = { workspace = true }
+swf = { path = "../../swf" }
 thiserror = { workspace = true }
+tracing = { workspace = true }
 
 # Needed for OpenH264:
+bzip2 = { version = "0.6.1", features = ["static"], optional = true }
+hex = { version = "0.4.3", optional = true }
 libloading = { version = "0.8.9", optional = true }
 reqwest = { workspace = true, features = ["blocking", "native-tls"], optional = true }
-hex = { version = "0.4.3", optional = true }
-bzip2 = { version = "0.6.1", features = ["static"], optional = true }
-tempfile = { workspace = true, optional = true }
 sha2 = { workspace = true, optional = true }
+tempfile = { workspace = true, optional = true }
 
 # Needed for WebCodecs:
 js-sys = { workspace = true, optional = true }
-wasm-bindgen = { workspace = true, optional = true }
 tracing-subscriber = { workspace = true, features = ["registry"], optional = true }
 tracing-wasm = { workspace = true, optional = true }
+wasm-bindgen = { workspace = true, optional = true }
 
 [dependencies.web-sys]
 workspace = true

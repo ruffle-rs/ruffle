@@ -11,15 +11,15 @@ version.workspace = true
 workspace = true
 
 [dependencies]
+anyhow = { workspace = true }
 clap = { workspace = true }
 futures = { workspace = true }
-ruffle_core = { path = "../core", features = ["default_font"] }
-ruffle_render_wgpu = { path = "../render/wgpu", features = ["clap"] }
 image = { workspace = true, features = ["png"] }
-walkdir = { workspace = true }
 indicatif = { workspace = true }
 rayon = { workspace = true }
-anyhow = { workspace = true }
+ruffle_core = { path = "../core", features = ["default_font"] }
+ruffle_render_wgpu = { path = "../render/wgpu", features = ["clap"] }
+walkdir = { workspace = true }
 
 [features]
 avm2_debug = ["ruffle_core/avm2_debug"]

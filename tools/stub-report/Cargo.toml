@@ -11,8 +11,8 @@ version.workspace = true
 workspace = true
 
 [dependencies]
-clap = { workspace = true }
 anyhow = { workspace = true }
-tempfile = { workspace = true }
-ruffle_core = { path = "../../core", features = ["known_stubs"] }
+clap = { workspace = true }
 ruffle_api_report = { git = "https://github.com/ruffle-rs/api-report", rev = "5d9eab96fa1db90944e51450113c532505e52bd6" }
+ruffle_core = { path = "../../core", features = ["known_stubs"] }
+tempfile = { workspace = true }

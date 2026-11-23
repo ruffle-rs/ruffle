@@ -15,12 +15,12 @@ workspace = true
 bitflags = { workspace = true }
 bitstream-io = { workspace = true }
 encoding_rs = { workspace = true }
+enum-map = { workspace = true }
+flate2 = { workspace = true, optional = true }
+log = { workspace = true }
+lzma-rs = { workspace = true, optional = true }
 num-derive = { workspace = true }
 num-traits = { workspace = true }
-log = { workspace = true }
-flate2 = { workspace = true, optional = true }
-lzma-rs = { workspace = true, optional = true }
-enum-map = { workspace = true }
 simple_asn1 = "0.6.4"
 
 [features]

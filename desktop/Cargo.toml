@@ -21,51 +21,50 @@ OriginalFilename = "ruffle.exe"
 workspace = true
 
 [dependencies]
+anyhow = { workspace = true }
+async-channel.workspace = true
+async-task = "4.7.1"
+bytemuck = { workspace = true }
+chrono = { workspace = true }
 clap = { workspace = true }
 clap_complete = { workspace = true, optional = true }
 cpal = { workspace = true }
+dirs = "6.0"
 egui = { workspace = true }
-egui_extras = { workspace = true, default-features = false, features = ["image"] }
 egui-wgpu = { workspace = true, features = ["winit"] }
-image = { workspace = true, features = ["png"] }
 egui-winit = { workspace = true }
+egui_extras = { workspace = true, default-features = false, features = ["image"] }
+fluent-templates = { workspace = true }
 fontdb = "0.23"
+futures = { workspace = true }
+gilrs = "0.11"
+image = { workspace = true, features = ["png"] }
+memmap2.workspace = true
+os_info = { version = "3", default-features = false }
+rand = { workspace = true, default-features = true }
+rfd = { workspace = true }
 ruffle_common = { path = "../core/common" }
 ruffle_core = { path = "../core", features = ["audio", "clap", "mp3", "aac", "nellymoser", "default_compatibility_rules", "egui"] }
+ruffle_frontend_utils = { path = "../frontend-utils", features = ["cpal", "fs", "navigator"] }
 ruffle_render = { path = "../render", features = ["clap"] }
 ruffle_render_wgpu = { path = "../render/wgpu", features = ["clap"] }
-ruffle_video_software = { path = "../video/software", optional = true }
 ruffle_video_external = { path = "../video/external", features = ["openh264"], optional = true }
-ruffle_frontend_utils = { path = "../frontend-utils", features = ["cpal", "fs", "navigator"] }
-tracing = { workspace = true }
-tracing-subscriber = { workspace = true }
-tracing-appender = "0.2.5"
-winit = "0.30.13"
-webbrowser = "1.2.4"
-url = { workspace = true }
-dirs = "6.0"
-rfd = { workspace = true }
-anyhow = { workspace = true }
-bytemuck = { workspace = true }
-os_info = { version = "3", default-features = false }
-unic-langid = "0.9.6"
+ruffle_video_software = { path = "../video/software", optional = true }
 sys-locale = "0.3.2"
-wgpu = { workspace = true }
-futures = { workspace = true }
-chrono = { workspace = true }
-fluent-templates = { workspace = true }
-toml_edit = { workspace = true, features = ["parse"] }
-gilrs = "0.11"
-tokio = { workspace = true, features = ["rt-multi-thread", "macros", "fs"] }
-
-tracing-tracy = { version = "0.11.3", optional = true, features = ["demangle"] }
-rand = { workspace = true, default-features = true }
 thiserror.workspace = true
-async-channel.workspace = true
+tokio = { workspace = true, features = ["rt-multi-thread", "macros", "fs"] }
+toml_edit = { workspace = true, features = ["parse"] }
+tracing = { workspace = true }
+tracing-appender = "0.2.5"
+tracing-subscriber = { workspace = true }
+tracing-tracy = { version = "0.11.3", optional = true, features = ["demangle"] }
+unic-langid = "0.9.6"
 unicode-bidi = "0.3.18"
-memmap2.workspace = true
+url = { workspace = true }
 walkdir.workspace = true
-async-task = "4.7.1"
+webbrowser = "1.2.4"
+wgpu = { workspace = true }
+winit = "0.30.13"
 
 [target.'cfg(target_os = "linux")'.dependencies]
 ashpd = { version = "0.14.0", features = ["settings", "game_mode"] }

@@ -11,8 +11,8 @@ version.workspace = true
 workspace = true
 
 [dependencies]
-regex = { workspace = true }
-libtest-mimic = { workspace = true }
-walkdir = { workspace = true }
 anyhow = { workspace = true }
+libtest-mimic = { workspace = true }
+regex = { workspace = true }
 vfs = { workspace = true }
+walkdir = { workspace = true }

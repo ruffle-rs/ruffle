@@ -11,8 +11,8 @@ edition = "2024"
 cargo-fuzz = true
 
 [dependencies]
-libfuzzer-sys = { version = "0.4", optional = true }
 afl = { version = "0.15", optional = true }
+libfuzzer-sys = { version = "0.4", optional = true }
 swf = { path = "../swf" }
 [features]
 default = ["libfuzzer"]
