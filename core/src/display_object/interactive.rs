@@ -18,6 +18,7 @@ use crate::display_object::{
     BoundsMode, DisplayObject, DisplayObjectBase, TDisplayObject, TDisplayObjectContainer,
 };
 use crate::events::{ClipEvent, ClipEventResult, MouseButton};
+use crate::string::AvmString;
 use bitflags::bitflags;
 use either::Either;
 use gc_arena::barrier::unlock;
@@ -65,6 +66,51 @@ fn lowest_common_ancestor<'gc>(
     }
 
     hca
+}
+
+/// Dispatch a non-bubbling `rollOut` or `rollOver` event to `object` and each
+/// of its ancestors that isn't also an ancestor of `related` (or of the stage,
+/// if there is no related object).
+fn dispatch_roll_events<'gc>(
+    activation: &mut Avm2Activation<'_, 'gc>,
+    event_type: AvmString<'gc>,
+    object: DisplayObject<'gc>,
+    related: Option<InteractiveObject<'gc>>,
+) -> bool {
+    let lca = lowest_common_ancestor(
+        object,
+        related
+            .map(|r| r.as_displayobject())
+            .unwrap_or_else(|| activation.context.stage.into()),
+    );
+
+    let mut handled = false;
+    let mut target = Some(object);
+
+    while let Some(tgt) = target {
+        if DisplayObject::option_ptr_eq(target, lca) {
+            break;
+        }
+
+        let avm2_event = Avm2EventObject::mouse_event(
+            activation,
+            event_type,
+            tgt,
+            related,
+            0,
+            false,
+            MouseButton::Left,
+        );
+
+        if let Some(avm2_target) = tgt.object2() {
+            handled =
+                Avm2::dispatch_event(activation.context, avm2_event, avm2_target.into()) || handled;
+        }
+
+        target = tgt.parent();
+    }
+
+    handled
 }
 
 bitflags! {
@@ -421,79 +467,24 @@ pub trait TInteractiveObject<'gc>:
 
                 let mut handled = Avm2::dispatch_event(activation.context, avm2_event, target);
 
-                let lca = lowest_common_ancestor(
+                let string_roll_out = istr!("rollOut");
+                handled = dispatch_roll_events(
+                    &mut activation,
+                    string_roll_out,
                     self.as_displayobject(),
-                    to.map(|t| t.as_displayobject())
-                        .unwrap_or_else(|| activation.context.stage.into()),
-                );
-
-                let mut rollout_target = Some(self.as_displayobject());
-                while let Some(tgt) = rollout_target {
-                    if DisplayObject::option_ptr_eq(rollout_target, lca) {
-                        break;
-                    }
-
-                    let string_roll_out = istr!("rollOut");
-
-                    let avm2_event = Avm2EventObject::mouse_event(
-                        &mut activation,
-                        string_roll_out,
-                        tgt,
-                        to,
-                        0,
-                        false,
-                        MouseButton::Left,
-                    );
-
-                    if let Some(avm2_target) = tgt.object2() {
-                        handled = Avm2::dispatch_event(
-                            activation.context,
-                            avm2_event,
-                            avm2_target.into(),
-                        ) || handled;
-                    }
-
-                    rollout_target = tgt.parent();
-                }
+                    to,
+                ) || handled;
 
                 handled.into()
             }
             ClipEvent::RollOver { from } | ClipEvent::DragOver { from } => {
-                let lca = lowest_common_ancestor(
+                let string_roll_over = istr!("rollOver");
+                let mut handled = dispatch_roll_events(
+                    &mut activation,
+                    string_roll_over,
                     self.as_displayobject(),
-                    from.map(|t| t.as_displayobject())
-                        .unwrap_or_else(|| activation.context.stage.into()),
+                    from,
                 );
-
-                let mut handled = false;
-                let mut rollover_target = Some(self.as_displayobject());
-                while let Some(tgt) = rollover_target {
-                    if DisplayObject::option_ptr_eq(rollover_target, lca) {
-                        break;
-                    }
-
-                    let string_roll_over = istr!("rollOver");
-
-                    let avm2_event = Avm2EventObject::mouse_event(
-                        &mut activation,
-                        string_roll_over,
-                        tgt,
-                        from,
-                        0,
-                        false,
-                        MouseButton::Left,
-                    );
-
-                    if let Some(avm2_target) = tgt.object2() {
-                        handled = Avm2::dispatch_event(
-                            activation.context,
-                            avm2_event,
-                            avm2_target.into(),
-                        ) || handled;
-                    }
-
-                    rollover_target = tgt.parent();
-                }
 
                 let string_mouse_over = istr!("mouseOver");
 
