@@ -539,13 +539,13 @@ impl<'a> ShapeConverter<'a> {
 
         // Draw fills, and then strokes.
         // Paths are drawn in order of style id, not based on the order of the draw commands.
-        for (i, path) in self.fills.iter_mut().enumerate() {
-            // These invariants are checked above (any invalid/empty fill ID should not have been added).
-            debug_assert!(i < self.fill_styles.len());
+        assert_eq!(self.fills.len(), self.fill_styles.len());
+
+        for (path, style) in self.fills.iter_mut().zip(self.fill_styles) {
             if path.segments.is_empty() {
                 continue;
             }
-            let style = unsafe { self.fill_styles.get_unchecked(i) };
+
             self.commands.push(DrawPath::Fill {
                 style,
                 commands: path.to_draw_commands().collect(),
@@ -557,9 +557,9 @@ impl<'a> ShapeConverter<'a> {
         // Strokes are drawn last because they always appear on top of fills in the same layer.
         // Because path segments can either be open or closed, we convert each stroke segment into
         // a separate draw command.
-        for (i, path) in self.strokes.iter_mut().enumerate() {
-            debug_assert!(i < self.line_styles.len());
-            let style = unsafe { self.line_styles.get_unchecked(i) };
+        assert_eq!(self.strokes.len(), self.line_styles.len());
+
+        for (path, style) in self.strokes.iter_mut().zip(self.line_styles) {
             for segment in &path.segments {
                 if segment.is_empty() {
                     continue;
