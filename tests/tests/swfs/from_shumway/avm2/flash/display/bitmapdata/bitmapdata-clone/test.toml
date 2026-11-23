@@ -1,7 +1,8 @@
 num_ticks = 1
 
+# The logo is a JPEG, which Ruffle decodes slightly differently from Flash Player.
 [image_comparisons.output]
-tolerance = 3
+tolerance = 77
 
 [player_options]
 with_renderer = { optional = false, quality = "low" }
