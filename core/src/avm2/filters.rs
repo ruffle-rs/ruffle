@@ -504,8 +504,8 @@ fn avm2_to_displacement_map_filter<'gc>(
         };
     Ok(Filter::DisplacementMapFilter(DisplacementMapFilter {
         color: Color::from_rgb(color, (alpha * 255.0) as u8),
-        component_x: component_x as u8,
-        component_y: component_y as u8,
+        component_x,
+        component_y,
         map_bitmap,
         map_point,
         mode,
