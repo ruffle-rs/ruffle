@@ -1,6 +1,7 @@
 //! flash.display.BitmapData object
 
 use super::matrix::object_to_matrix;
+use crate::avm_error;
 use crate::avm1::globals::bitmap_filter;
 use crate::avm1::globals::color_transform::ColorTransformObject;
 use crate::avm1::globals::movie_clip::object_to_rectangle;
@@ -14,8 +15,7 @@ use crate::bitmap::bitmap_data::{ChannelOptions, ThresholdOperation};
 use crate::bitmap::{is_size_valid, operations};
 use crate::character::Character;
 use crate::display_object::DisplayObject;
-use crate::swf::BlendMode;
-use crate::{avm_error, avm1_stub};
+use crate::swf::{BlendMode, Rectangle};
 use ruffle_macros::istr;
 use ruffle_render::transform::Transform;
 
@@ -659,14 +659,97 @@ fn apply_filter<'gc>(
 fn generate_filter_rect<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
-    _args: &[Value<'gc>],
+    args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let BitmapDataResult::Valid(_bitmap_data) = get_bitmap_data(this) else {
+    if args.len() < 2 {
+        return Ok((-1).into());
+    }
+
+    let BitmapDataResult::Valid(bitmap_data) = get_bitmap_data(this) else {
         return Ok((-1).into());
     };
 
-    avm1_stub!(activation, "BitmapData", "generateFilterRect");
-    Ok(Value::Undefined)
+    let source_rect = args.get_object(activation, 0)?;
+    let Some(source_rect) = filter_source_rect(activation, source_rect)? else {
+        return Ok((-1).into());
+    };
+
+    let filter_object = args.get_object(activation, 1)?;
+    let Some(filter) = bitmap_filter::avm1_to_filter(filter_object, activation.context) else {
+        return Ok((-2).into());
+    };
+
+    let displacement_map = match filter_object.native() {
+        NativeObject::DisplacementMapFilter(map_filter) => {
+            map_filter.map_bitmap_data().filter(|map| !map.disposed())
+        }
+        _ => None,
+    };
+    let rect = operations::generate_filter_rect(
+        activation.context.renderer,
+        bitmap_data.width(),
+        bitmap_data.height(),
+        source_rect,
+        &filter,
+        displacement_map,
+    );
+
+    let rect = activation.instantiate_class_fast(
+        [istr!("flash"), istr!("geom"), istr!("Rectangle")],
+        &[
+            rect.x_min.into(),
+            rect.y_min.into(),
+            rect.x_max.wrapping_sub(rect.x_min).into(),
+            rect.y_max.wrapping_sub(rect.y_min).into(),
+        ],
+    )?;
+
+    Ok(rect.unwrap_or_else(|| (-1).into()))
+}
+
+/// Reads the source rectangle of `BitmapData.generateFilterRect` in whole
+/// pixels. Flash Player only reads properties of the object itself, truncates
+/// the position and then the position plus the size, and treats NaN, infinite
+/// and out-of-range values as `i32::MIN`.
+fn filter_source_rect<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    object: Object<'gc>,
+) -> Result<Option<Rectangle<i32>>, Error<'gc>> {
+    let names = [istr!("x"), istr!("y"), istr!("width"), istr!("height")];
+
+    if !names
+        .iter()
+        .all(|&name| object.has_own_property(activation, name))
+    {
+        return Ok(None);
+    }
+
+    let mut values = [0.0; 4];
+
+    for (value, name) in values.iter_mut().zip(names) {
+        *value = object.get(name, activation)?.coerce_to_f64(activation)?;
+    }
+
+    let [x, y, width, height] = values;
+    let x_min = truncate_to_i32(x);
+    let y_min = truncate_to_i32(y);
+
+    Ok(Some(Rectangle {
+        x_min,
+        x_max: truncate_to_i32(f64::from(x_min) + width),
+        y_min,
+        y_max: truncate_to_i32(f64::from(y_min) + height),
+    }))
+}
+
+fn truncate_to_i32(value: f64) -> i32 {
+    let value = value.trunc();
+
+    if value >= f64::from(i32::MIN) && value <= f64::from(i32::MAX) {
+        value as i32
+    } else {
+        i32::MIN
+    }
 }
 
 fn color_transform<'gc>(

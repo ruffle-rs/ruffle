@@ -7,7 +7,7 @@ use crate::avm2::error::{
     Error2004Type, Error2006Type, make_error_2004, make_error_2005, make_error_2006,
     make_error_2008, make_error_2015, make_error_2027, make_error_3699,
 };
-use crate::avm2::filters::FilterAvm2Ext;
+use crate::avm2::filters::{FilterAvm2Ext, shader_filter_extensions};
 use crate::avm2::function::FunctionArgs;
 use crate::avm2::globals::flash::display::display_object::object_to_rectangle;
 use crate::avm2::globals::flash::geom::transform::object_to_color_transform;
@@ -15,6 +15,7 @@ use crate::avm2::globals::flash::geom::transform::object_to_matrix;
 use crate::avm2::globals::slots::{
     flash_display_jpeg_encoder_options as jpeg_encoder_options_slots,
     flash_display_png_encoder_options as png_encoder_options_slots,
+    flash_filters_displacement_map_filter as displacement_map_filter_slots,
     flash_geom_point as point_slots, flash_geom_rectangle as rectangle_slots,
 };
 pub use crate::avm2::object::bitmap_data_allocator;
@@ -1166,6 +1167,98 @@ pub fn apply_filter<'gc>(
         );
     }
     Ok(Value::Undefined)
+}
+
+/// Implements `BitmapData.generateFilterRect`
+pub fn generate_filter_rect<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Value<'gc>,
+    args: FunctionArgs<'_, 'gc>,
+) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
+    let Some(bitmap_data) = this.as_bitmap_data() else {
+        return Ok(Value::Undefined);
+    };
+
+    bitmap_data.check_valid(activation)?;
+    let source_rect = args.get_object(activation, 0, "sourceRect")?;
+    let filter = args.get_object(activation, 1, "filterObject")?;
+    let source_rect = rectangle_to_pixel_edges(activation, source_rect)?;
+    let classes = activation.avm2().classes();
+
+    let rect = if filter.is_of_type(classes.shaderfilter.inner_class_definition()) {
+        // Only the extensions matter, so this works without a shader too.
+        let (left, top, right, bottom) = shader_filter_extensions(activation, filter)?;
+
+        operations::generate_shader_filter_rect(
+            bitmap_data.width(),
+            bitmap_data.height(),
+            left,
+            top,
+            right,
+            bottom,
+        )
+    } else {
+        let displacement_map =
+            if filter.is_of_type(classes.displacementmapfilter.inner_class_definition()) {
+                filter
+                    .get_slot(displacement_map_filter_slots::MAP_BITMAP)
+                    .as_object()
+                    .and_then(|map| map.as_bitmap_data())
+                    .filter(|map| !map.disposed())
+            } else {
+                None
+            };
+        let filter = Filter::from_avm2_object(activation, filter)?;
+
+        operations::generate_filter_rect(
+            activation.context.renderer,
+            bitmap_data.width(),
+            bitmap_data.height(),
+            source_rect,
+            &filter,
+            displacement_map,
+        )
+    };
+
+    activation.avm2().classes().rectangle.construct(
+        activation,
+        &[
+            rect.x_min.into(),
+            rect.y_min.into(),
+            rect.x_max.wrapping_sub(rect.x_min).into(),
+            rect.y_max.wrapping_sub(rect.y_min).into(),
+        ],
+    )
+}
+
+/// Converts a `Rectangle` to whole pixels by rounding its edges to even, as
+/// `BitmapData.generateFilterRect` does. Out-of-range edges are saturated and
+/// NaN edges become 0.
+fn rectangle_to_pixel_edges<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    rectangle: Object<'gc>,
+) -> Result<Rectangle<i32>, Error<'gc>> {
+    let x = rectangle
+        .get_slot(rectangle_slots::X)
+        .coerce_to_number(activation)?;
+    let y = rectangle
+        .get_slot(rectangle_slots::Y)
+        .coerce_to_number(activation)?;
+    let width = rectangle
+        .get_slot(rectangle_slots::WIDTH)
+        .coerce_to_number(activation)?;
+    let height = rectangle
+        .get_slot(rectangle_slots::HEIGHT)
+        .coerce_to_number(activation)?;
+
+    Ok(Rectangle {
+        x_min: x.round_ties_even() as i32,
+        x_max: (x + width).round_ties_even() as i32,
+        y_min: y.round_ties_even() as i32,
+        y_max: (y + height).round_ties_even() as i32,
+    })
 }
 
 /// Implement `BitmapData.clone`

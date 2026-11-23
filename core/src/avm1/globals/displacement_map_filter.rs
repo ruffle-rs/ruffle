@@ -281,6 +281,10 @@ impl<'gc> DisplacementMapFilter<'gc> {
         Ok(())
     }
 
+    pub fn map_bitmap_data(self) -> Option<BitmapData<'gc>> {
+        self.0.map_bitmap.get()
+    }
+
     pub fn filter(
         self,
         context: &mut UpdateContext<'gc>,
