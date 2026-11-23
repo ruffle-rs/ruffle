@@ -2,9 +2,11 @@
 # The prints were sorted to avoid relying on object iteration order
 num_ticks = 1
 
+# Dithering turns the small differences in how Ruffle decodes and scales the
+# JPEG into flips between 0 and 255.
 [image_comparisons.output]
 tolerance = 1
-max_outliers = 19929
+max_outliers = 32500
 
 [player_options]
 with_renderer = { optional = false, quality = "low" }
