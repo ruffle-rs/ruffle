@@ -2664,6 +2664,10 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
     }
 
     fn set_width(self, context: &mut UpdateContext<'gc>, value: f64) {
+        if value.is_nan() || value < 0.0 {
+            return;
+        }
+
         self.apply_autosize_bounds();
 
         let bounds = &self.0.bounds;
@@ -2680,6 +2684,10 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
     }
 
     fn set_height(self, context: &mut UpdateContext<'gc>, value: f64) {
+        if value.is_nan() || value < 0.0 {
+            return;
+        }
+
         self.apply_autosize_bounds();
 
         let bounds = &self.0.bounds;
