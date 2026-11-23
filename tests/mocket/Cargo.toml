@@ -13,6 +13,6 @@ workspace = true
 [dependencies]
 anyhow = { workspace = true }
 clap = { workspace = true }
+ruffle_socket_format = { path = "../socket-format" }
 tracing = { workspace = true}
 tracing-subscriber = { workspace = true }
-ruffle_socket_format = { path = "../socket-format" }

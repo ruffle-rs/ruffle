@@ -12,14 +12,14 @@ workspace = true
 
 [dependencies]
 clap = { workspace = true }
-ruffle_core = { path = "../core" }
-log = { workspace = true }
-walkdir = { workspace = true }
-serde = { workspace = true, features = ["derive"] }
+crossbeam-channel = "0.5"
 csv = "1.4"
 indicatif = { workspace = true }
+log = { workspace = true }
 path-slash = "0.2.1"
-swf = { path = "../swf" }
 rayon = { workspace = true }
-crossbeam-channel = "0.5"
+ruffle_core = { path = "../core" }
+serde = { workspace = true, features = ["derive"] }
 sha2 = { workspace = true }
+swf = { path = "../swf" }
+walkdir = { workspace = true }

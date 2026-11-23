@@ -11,32 +11,32 @@ version.workspace = true
 workspace = true
 
 [dependencies]
-ruffle_core = { path = "../../core", features = ["timeline_debug", "avm2_debug", "audio", "mp3", "aac", "default_font", "serde"] }
-ruffle_render = { path = "../../render", features = ["serde"] }
-ruffle_input_format = { path = "../input-format" }
-ruffle_socket_format = { path = "../socket-format" }
-ruffle_video_software = { path = "../../video/software", optional = true }
-ruffle_video_external = { path = "../../video/external", features = ["openh264"], optional = true }
-asc = { path = "../../tools/asc" }
-image = { workspace = true, features = ["png"] }
-regex = { workspace = true }
-url = { workspace = true }
-chrono = { workspace = true }
-approx = { workspace = true }
-pretty_assertions = "1.4.1"
-serde = { workspace = true }
-toml = { workspace = true }
 anyhow = { workspace = true }
+approx = { workspace = true }
+asc = { path = "../../tools/asc" }
 async-channel = { workspace = true }
-vfs = { workspace = true }
-percent-encoding = { workspace = true }
 cfg-expr = "0.20.8"
-oxipng = "10.1.1"
-rascal = { workspace = true }
-swfasm = { workspace = true }
-sha2 = { workspace = true }
+chrono = { workspace = true }
 clap = { workspace = true, optional = true }
+image = { workspace = true, features = ["png"] }
+oxipng = "10.1.1"
+percent-encoding = { workspace = true }
+pretty_assertions = "1.4.1"
+rascal = { workspace = true }
+regex = { workspace = true }
+ruffle_core = { path = "../../core", features = ["timeline_debug", "avm2_debug", "audio", "mp3", "aac", "default_font", "serde"] }
+ruffle_input_format = { path = "../input-format" }
+ruffle_render = { path = "../../render", features = ["serde"] }
+ruffle_socket_format = { path = "../socket-format" }
+ruffle_video_external = { path = "../../video/external", features = ["openh264"], optional = true }
+ruffle_video_software = { path = "../../video/software", optional = true }
+serde = { workspace = true }
+sha2 = { workspace = true }
+swfasm = { workspace = true }
 tempfile = { workspace = true }
+toml = { workspace = true }
+url = { workspace = true }
+vfs = { workspace = true }
 
 [target.'cfg(target_os = "linux")'.dependencies]
 ruffle_frontend_utils = { path = "../../frontend-utils", default-features = false, features = [

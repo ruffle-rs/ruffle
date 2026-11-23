@@ -11,40 +11,40 @@ version.workspace = true
 workspace = true
 
 [dependencies]
-ruffle_wstr = { path = "../wstr" }
-swf = { path = "../swf"}
-pixel_bender = { path = "pixel_bender"}
-tracing = { workspace = true }
-gif = "0.14.2"
-png = { workspace = true }
-image = { workspace = true }
+byteorder = { workspace = true }
+clap = { workspace = true, optional = true }
+enum-map = { workspace = true }
 flate2 = { workspace = true }
-smallvec = { workspace = true }
+gif = "0.14.2"
+guillotiere = "0.7.0"
+h263-rs-yuv = { git = "https://github.com/ruffle-rs/h263-rs", rev = "8215bc7a716f0aa7e0a9bbe97af76c97ac0bfb82" }
+image = { workspace = true }
+indexmap = { workspace = true }
+jpegxr = { workspace = true, optional = true }
 lyon = { version = "1.0.1", optional = true }
 lyon_geom = "1.0.6"
-thiserror = { workspace = true }
-wasm-bindgen = { workspace = true, optional = true }
-enum-map = { workspace = true }
-serde = { workspace = true, features = ["derive"], optional = true }
-clap = { workspace = true, optional = true }
-h263-rs-yuv = { git = "https://github.com/ruffle-rs/h263-rs", rev = "8215bc7a716f0aa7e0a9bbe97af76c97ac0bfb82" }
-num-traits = { workspace = true }
-num-derive = { workspace = true }
-byteorder = { workspace = true }
-wgpu = { workspace = true, optional = true }
-indexmap = { workspace = true }
 naga-agal = { path = "naga-agal" }
-jpegxr = { workspace = true, optional = true }
-guillotiere = "0.7.0"
+num-derive = { workspace = true }
+num-traits = { workspace = true }
+pixel_bender = { path = "pixel_bender"}
+png = { workspace = true }
+ruffle_wstr = { path = "../wstr" }
+serde = { workspace = true, features = ["derive"], optional = true }
+smallvec = { workspace = true }
+swf = { path = "../swf"}
+thiserror = { workspace = true }
+tracing = { workspace = true }
+wasm-bindgen = { workspace = true, optional = true }
+wgpu = { workspace = true, optional = true }
+
+[dependencies.jpeg-decoder]
+version = "0.3.2"
+default-features = false # can't use rayon on web
 
 # This crate has a `compile_error!` on apple platforms
 [target.'cfg(not(target_vendor = "apple"))'.dependencies.renderdoc]
 version = "0.12.1"
 optional = true
-
-[dependencies.jpeg-decoder]
-version = "0.3.2"
-default-features = false # can't use rayon on web
 
 [dev-dependencies]
 approx = { workspace = true }

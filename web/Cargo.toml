@@ -9,55 +9,44 @@ repository.workspace = true
 version.workspace = true
 publish = false # This crate is useless alone, people should use the npm package
 
+# Not used directly, declared only to enable its `wasm_js` feature on WASM.
+[package.metadata.cargo-machete]
+ignored = ["getrandom", "getrandom_03"]
+
 [lints]
 workspace = true
 
 [lib]
 crate-type = ["cdylib", "rlib"]
 
-[features]
-default = ["canvas", "console_error_panic_hook", "webgl", "wgpu-webgl", "webgpu"]
-
-# core features
-avm2_debug = ["ruffle_core/avm2_debug"]
-lzma = ["ruffle_core/lzma"]
-jpegxr = ["ruffle_core/jpegxr"]
-
-# web features
-canvas = ["ruffle_render_canvas"]
-webgl = ["ruffle_render_webgl"]
-webgpu = ["ruffle_render_wgpu"]
-wgpu-webgl = ["ruffle_render_wgpu", "ruffle_render_wgpu/webgl"]
-profiling = []
-
 [dependencies]
+async-channel = { workspace = true }
+base64 = "0.23.1"
+chrono = { workspace = true, features = ["wasmbind", "clock"] }
 console_error_panic_hook = { version = "0.1.7", optional = true }
-slotmap = { workspace = true }
+futures = { workspace = true }
+futures-util = { version = "0.3.30", features = ["sink"] }
+gloo-net =  { version = "0.7.0", default-features = false, features = ["websocket"] }
 js-sys = { workspace = true }
-tracing = { workspace = true, features = ["log"] }
-tracing-subscriber = { version = "0.3.23", default-features = false, features = ["registry"] }
-tracing-log = "0.2.0"
-tracing-wasm = { workspace = true }
-ruffle_render_canvas = { path = "../render/canvas", optional = true }
-ruffle_web_common = { path = "common" }
+rfd = { workspace = true, features = ["file-handle-inner"] }
 ruffle_render = { path = "../render" }
+ruffle_render_canvas = { path = "../render/canvas", optional = true }
 ruffle_render_webgl = { path = "../render/webgl", optional = true }
 ruffle_render_wgpu = { path = "../render/wgpu", optional = true }
 ruffle_video_external = { path = "../video/external", features = ["webcodecs"] }
+ruffle_web_common = { path = "common" }
+serde = { workspace = true, features = ["derive"] }
+serde-wasm-bindgen = "0.6.5"
+slotmap = { workspace = true }
+thiserror = { workspace = true }
+tracing = { workspace = true, features = ["log"] }
+tracing-log = "0.2.0"
+tracing-subscriber = { version = "0.3.23", default-features = false, features = ["registry"] }
+tracing-wasm = { workspace = true }
 url = { workspace = true }
 wasm-bindgen = { workspace = true }
 wasm-bindgen-futures = "0.4.77"
-serde-wasm-bindgen = "0.6.5"
-chrono = { workspace = true, features = ["wasmbind", "clock"] }
-serde = { workspace = true, features = ["derive"] }
-thiserror = { workspace = true }
-base64 = "0.23.1"
-async-channel = { workspace = true }
-futures-util = { version = "0.3.30", features = ["sink"] }
-gloo-net =  { version = "0.7.0", default-features = false, features = ["websocket"] }
-rfd = { workspace = true, features = ["file-handle-inner"] }
 wasm-streams = "0.7.0"
-futures = { workspace = true }
 zip = { workspace = true }
 
 [dependencies.ruffle_core]
@@ -78,9 +67,20 @@ features = [
 ]
 
 [target.'cfg(target_family = "wasm")'.dependencies]
-getrandom_03 = { package = "getrandom", version = "0.3", features = ["wasm_js"] }
 getrandom = { version = "0.4", features = ["wasm_js"] }
+getrandom_03 = { package = "getrandom", version = "0.3", features = ["wasm_js"] }
 
-# Not used directly, declared only to enable its `wasm_js` feature on WASM.
-[package.metadata.cargo-machete]
-ignored = ["getrandom", "getrandom_03"]
+[features]
+default = ["canvas", "console_error_panic_hook", "webgl", "wgpu-webgl", "webgpu"]
+
+# core features
+avm2_debug = ["ruffle_core/avm2_debug"]
+lzma = ["ruffle_core/lzma"]
+jpegxr = ["ruffle_core/jpegxr"]
+
+# web features
+canvas = ["ruffle_render_canvas"]
+webgl = ["ruffle_render_webgl"]
+webgpu = ["ruffle_render_wgpu"]
+wgpu-webgl = ["ruffle_render_wgpu", "ruffle_render_wgpu/webgl"]
+profiling = []

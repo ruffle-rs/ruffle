@@ -11,12 +11,12 @@ version.workspace = true
 workspace = true
 
 [dependencies]
+asc = { path = "../../tools/asc" }
+clap = { workspace = true }
 convert_case = "0.12.0"
 proc-macro2 = { workspace = true }
 quote = { workspace = true }
-swf = { path = "../../swf" }
-asc = { path = "../../tools/asc" }
-clap = { workspace = true }
-regex = { workspace = true }
-walkdir = { workspace = true }
 rascal = { workspace = true }
+regex = { workspace = true }
+swf = { path = "../../swf" }
+walkdir = { workspace = true }

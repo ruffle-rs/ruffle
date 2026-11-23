@@ -11,14 +11,14 @@ version.workspace = true
 workspace = true
 
 [dependencies]
+bytemuck = { workspace = true, features = ["derive"] }
 js-sys = { workspace = true }
 log = { workspace = true }
-ruffle_web_common = { path = "../../web/common" }
 ruffle_render = { path = "..", features = ["tessellator", "web"] }
-wasm-bindgen = { workspace = true }
-bytemuck = { workspace = true, features = ["derive"] }
+ruffle_web_common = { path = "../../web/common" }
 swf = { path = "../../swf" }
 thiserror = { workspace = true }
+wasm-bindgen = { workspace = true }
 
 [dependencies.web-sys]
 workspace = true

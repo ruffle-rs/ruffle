@@ -11,13 +11,13 @@ version.workspace = true
 workspace = true
 
 [dev-dependencies]
-pixel_bender = { path = "..", features = ["assembly"]}
-ruffle_fs_tests_runner = { path = "../../../tests/fs-tests-runner" }
-libtest-mimic = { workspace = true }
-serde = { workspace = true, features = ["derive"] }
-toml = { workspace = true }
 anyhow = { workspace = true }
 clap = { workspace = true }
+libtest-mimic = { workspace = true }
+pixel_bender = { path = "..", features = ["assembly"]}
+ruffle_fs_tests_runner = { path = "../../../tests/fs-tests-runner" }
+serde = { workspace = true, features = ["derive"] }
+toml = { workspace = true }
 vfs = { workspace = true }
 
 [[test]]

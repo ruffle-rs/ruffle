@@ -11,6 +11,6 @@ version.workspace = true
 workspace = true
 
 [dependencies]
+bitflags = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true }
-bitflags = { workspace = true }

@@ -13,10 +13,10 @@ workspace = true
 [dependencies]
 js-sys = { workspace = true }
 log = { workspace = true }
-ruffle_web_common = { path = "../../web/common" }
-wasm-bindgen = { workspace = true }
 ruffle_render = { path = "..", features = ["web"] }
+ruffle_web_common = { path = "../../web/common" }
 swf = { path = "../../swf" }
+wasm-bindgen = { workspace = true }
 
 [dependencies.web-sys]
 workspace = true

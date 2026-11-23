@@ -1,0 +1,3 @@
+# Used by `cargo sort --workspace --grouped --no-format . fuzz`, which has to
+# run from here (see .github/workflows/test_rust.yml).
+table_order = ["workspace", "package", "lints", "lib", "dependencies", "target", "dev-dependencies", "build-dependencies", "features", "bin", "test", "profile"]

@@ -1,18 +1,13 @@
 [workspace]
 members = [
     "core",
-    "core/macros",
     "core/build_playerglobal",
+    "core/macros",
     "desktop",
-    "swf",
-    "flv",
-    "web",
-    "web/packages/extension/safari",
-    "wstr",
-    "scanner",
 
     "exporter",
     "exporter/integration_tests",
+    "flv",
 
     "frontend-utils",
 
@@ -21,23 +16,28 @@ members = [
     "render/naga-agal",
     "render/pixel_bender",
     "render/pixel_bender/assembly_tests",
-    "render/wgpu",
     "render/webgl",
-
-    "video",
-    "video/software",
-    "video/external",
+    "render/wgpu",
+    "scanner",
+    "swf",
 
     "tests",
+    "tests/framework",
     "tests/fs-tests-runner",
     "tests/input-format",
-    "tests/socket-format",
     "tests/mocket",
-    "tests/framework",
+    "tests/socket-format",
 
     "tools/asc",
     "tools/fuzzer",
     "tools/stub-report",
+
+    "video",
+    "video/external",
+    "video/software",
+    "web",
+    "web/packages/extension/safari",
+    "wstr",
 ]
 default-members = ["desktop"]
 resolver = "2"
@@ -51,76 +51,76 @@ repository = "https://github.com/ruffle-rs/ruffle"
 version = "0.8.0"
 
 [workspace.dependencies]
-rand = { version = "0.10.1", default-features = false }
-png = "0.18.1"
-proc-macro2 = "1.0.106"
-zip = { version = "9.0.5", default-features = false }
-quote = "1.0.45"
-tracing = "0.1.43"
-tracing-subscriber = { version = "0.3.23", features = ["env-filter"] }
-naga = { version = "30.0.2", features = ["wgsl-out"] }
-wgpu = "30.0.2"
-wgpu-profiler = "0.28.0"
-egui = "0.36.1"
-egui_extras = { version = "0.36.1", default-features = false }
-egui-wgpu = "0.36.1"
-egui-winit = "0.36.1"
+anyhow = "1.0"
+approx = "0.5.1"
+async-channel = "2.5.0"
+bitflags = "2.12.1"
+bitstream-io = "4.10.0"
+bytemuck = "1.25.0"
+byteorder = "1.5"
+chrono = { version = "0.4.44", default-features = false }
 clap = { version = "4.6.1", features = ["derive"] }
 clap_complete = "4.6"
 cpal = "0.16.0"
-anyhow = "1.0"
-gc-arena = { version = "0.7.0", features = ["enum-map", "hashbrown", "indexmap", "slotmap", "smallvec"] }
-slotmap = "1.1.1"
-async-channel = "2.5.0"
-bitflags = "2.12.1"
-bytemuck = "1.25.0"
-chrono = { version = "0.4.44", default-features = false }
+egui = "0.36.1"
+egui-wgpu = "0.36.1"
+egui-winit = "0.36.1"
+egui_extras = { version = "0.36.1", default-features = false }
+encoding_rs = "0.8.35"
 enum-map = "2.7.3"
 flate2 = "1.1.9"
+fluent-templates = "0.15.1"
+fnv = "1.0.7"
 futures = "0.3.32"
+gc-arena = { version = "0.7.0", features = ["enum-map", "hashbrown", "indexmap", "slotmap", "smallvec"] }
+hashbrown = "0.17.1"
 image = { version = "0.25.10", default-features = false }
+indexmap = "2.13.0"
+indicatif = "0.18"
+jpegxr = { git = "https://github.com/ruffle-rs/jpegxr", rev = "86cc1749d493288f53d7290ac3eb7082c475b5d9" }
 js-sys = "0.3.97"
-web-sys = "0.3.97"
+libtest-mimic = "0.8.2"
 log = "0.4"
+lzma-rs = "0.3.0"
+memmap2 = "0.9.10"
+naga = { version = "30.0.2", features = ["wgsl-out"] }
 num-derive = "0.4.2"
 num-traits = "0.2.19"
-serde = "1.0.228"
-thiserror = "2.0.18"
-url = "2.5.9"
+percent-encoding = "2.3.2"
+png = "0.18.1"
+proc-macro2 = "1.0.106"
 quick-xml = "0.41.0"
-regress = { git = "https://github.com/ruffle-rs/regras3", rev = "6d48179d6bd448f2cc66b76352c9f048dde968d1" }
-# Make sure to match wasm-bindgen-cli version to this everywhere.
-wasm-bindgen = "=0.2.127"
-walkdir = "2.5.0"
-tokio = "1.52.3"
-rfd = { version = "0.17.2", default-features = false, features = ["wayland", "xdg-portal"] }
-memmap2 = "0.9.10"
-libtest-mimic = "0.8.2"
+quote = "1.0.45"
+rand = { version = "0.10.1", default-features = false }
+rascal = "0.3.5"
+rayon = "1.12.0"
 regex = "1.12.3"
+regress = { git = "https://github.com/ruffle-rs/regras3", rev = "6d48179d6bd448f2cc66b76352c9f048dde968d1" }
 reqwest = { version = "0.13.5", default-features = false }
+rfd = { version = "0.17.2", default-features = false, features = ["wayland", "xdg-portal"] }
+serde = "1.0.228"
+serde_json = "1.0.150"
+sha2 = "0.10.9"
+slotmap = "1.1.1"
+smallvec = { version = "1.15.1", features = ["const_new", "union"] }
+swfasm = "0.2.0"
+tempfile = "3.27.0"
+thiserror = "2.0.18"
+tokio = "1.52.3"
 toml = "1.0.6"
 toml_edit = "0.25.4"
-vfs = "0.13.0"
-smallvec = { version = "1.15.1", features = ["const_new", "union"] }
-serde_json = "1.0.150"
-percent-encoding = "2.3.2"
-approx = "0.5.1"
-encoding_rs = "0.8.35"
-byteorder = "1.5"
-bitstream-io = "4.10.0"
-indicatif = "0.18"
-rayon = "1.12.0"
-sha2 = "0.10.9"
-indexmap = "2.13.0"
-fnv = "1.0.7"
-hashbrown = "0.17.1"
-fluent-templates = "0.15.1"
-lzma-rs = "0.3.0"
-tempfile = "3.27.0"
+tracing = "0.1.43"
+tracing-subscriber = { version = "0.3.23", features = ["env-filter"] }
 tracing-wasm = "0.2.1"
-rascal = "0.3.5"
-swfasm = "0.2.0"
-jpegxr = { git = "https://github.com/ruffle-rs/jpegxr", rev = "86cc1749d493288f53d7290ac3eb7082c475b5d9" }
+url = "2.5.9"
+vfs = "0.13.0"
+walkdir = "2.5.0"
+# Make sure to match wasm-bindgen-cli version to this everywhere.
+wasm-bindgen = "=0.2.127"
+web-sys = "0.3.97"
+wgpu = "30.0.2"
+wgpu-profiler = "0.28.0"
+zip = { version = "9.0.5", default-features = false }
 
 [workspace.lints.rust]
 # Clippy nightly often adds new/buggy lints that we want to ignore.
@@ -155,20 +155,8 @@ byte_char_slices = "allow"       # Less expressive: Suggests `b"abc"` byte strin
                                  # `[b'a', b'b', b'c']` array. The array form is clearer when the elements
                                  # represent a set of alternatives (any-of) rather than a byte sequence.
 
-# Don't optimize build scripts and macros.
-[profile.release.build-override]
-opt-level = 0
-
 [profile.dev]
 panic = "unwind"
-
-[profile.release]
-panic = "abort"
-
-[profile.dist]
-inherits = "release"
-lto = true
-codegen-units = 1
 
 [profile.dev.package.h263-rs]
 opt-level = 3
@@ -184,6 +172,18 @@ opt-level = 3
 
 [profile.dev.package.nihav_duck]
 opt-level = 3
+
+[profile.release]
+panic = "abort"
+
+# Don't optimize build scripts and macros.
+[profile.release.build-override]
+opt-level = 0
+
+[profile.dist]
+inherits = "release"
+lto = true
+codegen-units = 1
 
 # TODO: Set rustflags here instead of in tools/build_wasm.ts, when that
 # feature becomes stable. See: https://github.com/rust-lang/cargo/issues/10271
