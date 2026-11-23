@@ -1,0 +1,19 @@
+# The shader is orderedDither.pbk from
+# https://github.com/FlashBacks1998/Custom-Pixel-Bender-Example-Ordered-Dithering-
+# (Apache-2.0), the same one avm2/pixelbender_dithering uses.
+num_ticks = 2
+
+[player_options]
+with_renderer = { optional = false }
+
+[[compilers]]
+type = "Asc"
+target = "test.swf"
+class = "Test"
+scripts = ["Test.as"]
+swf_version = 15
+
+# DX12 renders a few white pixels as 254. Any wrong dithering would be off
+# by 255.
+[image_comparisons.output]
+tolerance = 1

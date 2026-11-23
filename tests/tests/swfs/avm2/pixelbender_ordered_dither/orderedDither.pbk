@@ -1,0 +1,65 @@
+// Copyright 2023 FlashBacks1998
+// https://github.com/FlashBacks1998/Custom-Pixel-Bender-Example-Ordered-Dithering-
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+<languageVersion : 1.0;>
+
+kernel OrderDithering
+<   namespace : "YourNamespace";
+    vendor : "YourVendor";
+    version : 1;
+    description : "Ordered Dithering";
+>
+{
+    input image4 src;
+    output pixel4 dst;
+
+    parameter float matrixWidth
+    <   
+        minValue: 1.0;
+        maxValue: 8.0;
+        defaultValue: 4.0;
+    >;
+
+    parameter float matrixHeight
+    <   
+        minValue: 1.0;
+        maxValue: 8.0;
+        defaultValue: 4.0;
+    >;
+
+    void evaluatePixel()
+    {
+        // Get the pixel value from the source image
+	float2 coord = outCoord();
+        pixel4 pixel = sampleNearest(src, coord);
+
+        // Calculate matrix indices based on the input matrix size
+        float rowIndex = mod(coord.y, matrixHeight);
+        float colIndex = mod(coord.x, matrixWidth);
+
+        // Calculate the index manually
+        float index = rowIndex * matrixWidth + colIndex;
+
+        // Ordered dithering threshold based on the calculated index
+        float threshold = index / (matrixWidth * matrixHeight);
+
+        // Apply ordered dithering
+        //dst = sourcePixel <= threshold ? 0.0 : 1.0;
+        dst.r = pixel.r <= threshold ? 0.0 : 1.0;
+        dst.g = pixel.g <= threshold ? 0.0 : 1.0;
+        dst.b = pixel.b <= threshold ? 0.0 : 1.0;
+        dst.a = 1.0;
+    }
+}
