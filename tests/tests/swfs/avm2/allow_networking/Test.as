@@ -73,6 +73,10 @@ package {
                 var socket = new XMLSocket();
                 socket.connect("localhost", 8000);
             });
+
+            check("SharedObject.getLocal", function() {
+                SharedObject.getLocal("Test");
+            });
         }
 
         private function check(name:String, f:Function):void {

@@ -58,6 +58,9 @@ Navigator::connect_socket
     Host: localhost; Port: 8000
 no error
 END
+TEST: SharedObject.getLocal
+no error
+END
 Navigator::fetch:
   URL: http://example1.com
   Method: GET
