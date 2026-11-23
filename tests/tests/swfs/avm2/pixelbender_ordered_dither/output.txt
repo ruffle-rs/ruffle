@@ -1,0 +1,16 @@
+// 4x4 matrix
+alpha 255, row 0: 40 56 72 88
+alpha 255, row 1: 104 120 136 152
+alpha 255, row 2: 168 184 200 216
+alpha 255, row 3: 232 248 none none
+alpha 128, row 0: 79 111 143 175
+alpha 128, row 1: 207 239 none none
+alpha 128, row 2: none none none none
+alpha 128, row 3: none none none none
+// 6x3 matrix
+alpha 255, row 0: 50 64 78 93 107 121
+alpha 255, row 1: 135 149 163 178 192 206
+alpha 255, row 2: 220 234 248 none none none
+alpha 128, row 0: 99 127 155 185 213 241
+alpha 128, row 1: none none none none none none
+alpha 128, row 2: none none none none none none
