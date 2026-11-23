@@ -313,6 +313,17 @@ jobs:
         # So the previous step failing doesn't prevent this one from running.
         if: always()
 
+      - name: Install cargo-sort
+        uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-sort@2.1.5
+        if: always()
+
+      # To fix: run the same command without `--check`.
+      - name: Check that dependencies are sorted
+        run: cargo sort --workspace --grouped --check --no-format . fuzz
+        if: always()
+
   # The rest is needed only because otherwise the real jobs couldn't be made required for merging PRs,
   # as they would fail the entire workflow run if skipped - this makes GitHub happy instead.
   # See:
