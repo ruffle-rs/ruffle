@@ -1,7 +1,7 @@
 use crate::font::glyph::GlyphRef;
 use crate::font::{Font, FontMetrics, FontType, Glyph};
 use crate::html::TextSpan;
-use crate::string::WStr;
+use crate::string::{Units, WStr};
 use ruffle_render::transform::Transform;
 use swf::Twips;
 use unicode_bidi::{Level, utf16::BidiInfo};
@@ -168,10 +168,16 @@ pub trait FontLike<'gc> {
         run_breaks: &[usize],
         mut glyph_func: impl FnMut(usize, &Transform, GlyphRef, Twips, Twips),
     ) {
-        if !self.font_type().is_device() || text.iter().all(|c| c < 0x80) {
+        if !self.font_type().is_device() {
             self.evaluate(text, params, glyph_func);
             return;
         }
+
+        // Latin-1 contains neither right-to-left characters nor bidi controls.
+        let Units::Wide(units) = text.units() else {
+            self.evaluate(text, params, glyph_func);
+            return;
+        };
 
         // The legacy iterator can produce out-of-range indices for unpaired surrogates.
         if text.chars().any(|c| c.is_err()) {
@@ -179,9 +185,9 @@ pub trait FontLike<'gc> {
             return;
         }
 
-        let units: Vec<u16> = text.iter().collect();
-        let bidi = BidiInfo::new(&units, Some(Level::ltr()));
-        if !bidi.has_rtl() || bidi.paragraphs.len() != 1 {
+        let bidi = BidiInfo::new(units, Some(Level::ltr()));
+        let has_rtl_embedding = units.iter().any(|&unit| matches!(unit, 0x202B | 0x202E));
+        if (!bidi.has_rtl() && !has_rtl_embedding) || bidi.paragraphs.len() != 1 {
             self.evaluate(text, params, glyph_func);
             return;
         }
@@ -191,17 +197,45 @@ pub trait FontLike<'gc> {
             advances.push((pos, advance));
         });
 
-        let positions = if run_breaks.is_empty() {
+        let has_selection_break = run_breaks
+            .iter()
+            .any(|&offset| offset > 0 && offset < units.len());
+        let positions = if has_selection_break {
+            visual_glyph_positions_for_runs(units, run_breaks, &advances)
+        } else {
             let paragraph = &bidi.paragraphs[0];
             let levels = bidi.reordered_levels(paragraph, paragraph.range.clone());
             visual_glyph_positions(text, &levels, &advances)
-        } else {
-            visual_glyph_positions_for_runs(text, run_breaks, &advances)
         };
 
+        // Flash leaves a gap the width of a space at the start of explicit RTL
+        // embeddings and overrides. Apply it only while drawing their glyphs.
+        let rtl_embedding_space = if has_rtl_embedding {
+            self.resolve_glyph(' ').map_or(Twips::ZERO, |resolution| {
+                let scale = f64::from(params.height.get()) / f64::from(resolution.font.scale());
+                let advance = f64::from(resolution.glyph.advance().get()) * scale;
+                Twips::from_pixels((advance / f64::from(Twips::TWIPS_PER_PIXEL)).ceil())
+            })
+        } else {
+            Twips::ZERO
+        };
+        let mut explicit_directions = Vec::new();
         self.evaluate(text, params, |pos, transform, glyph, advance, logical_x| {
+            if has_rtl_embedding {
+                match units[pos] {
+                    0x202B | 0x202E => explicit_directions.push(true),
+                    0x202A | 0x202D => explicit_directions.push(false),
+                    0x202C => {
+                        explicit_directions.pop();
+                    }
+                    _ => {}
+                }
+            }
             let mut visual_transform = transform.clone();
             visual_transform.matrix.tx = positions[pos];
+            if explicit_directions.last() == Some(&true) {
+                visual_transform.matrix.tx += rtl_embedding_space;
+            }
             glyph_func(pos, &visual_transform, glyph, advance, logical_x);
         });
     }
@@ -219,24 +253,23 @@ pub trait FontLike<'gc> {
 }
 
 fn visual_glyph_positions_for_runs(
-    text: &WStr,
+    units: &[u16],
     run_breaks: &[usize],
     advances: &[(usize, Twips)],
 ) -> Vec<Twips> {
-    let mut positions = vec![Twips::ZERO; text.len()];
+    let mut positions = vec![Twips::ZERO; units.len()];
     let mut start = 0;
     let mut x = Twips::ZERO;
     for end in run_breaks
         .iter()
         .copied()
-        .chain(std::iter::once(text.len()))
+        .chain(std::iter::once(units.len()))
     {
         if start == end {
             continue;
         }
-        let run = &text[start..end];
-        let units: Vec<u16> = run.iter().collect();
-        let bidi = BidiInfo::new(&units, Some(Level::ltr()));
+        let run = &units[start..end];
+        let bidi = BidiInfo::new(run, Some(Level::ltr()));
         let paragraph = &bidi.paragraphs[0];
         let levels = bidi.reordered_levels(paragraph, paragraph.range.clone());
         let first = advances.partition_point(|&(pos, _)| pos < start);
@@ -245,7 +278,7 @@ fn visual_glyph_positions_for_runs(
             .iter()
             .map(|&(pos, advance)| (pos - start, advance))
             .collect();
-        let run_positions = visual_glyph_positions(run, &levels, &run_advances);
+        let run_positions = visual_glyph_positions(WStr::from_units(run), &levels, &run_advances);
         let run_x = x;
         for &(pos, advance) in &run_advances {
             positions[start + pos] = run_x + run_positions[pos];
@@ -316,7 +349,6 @@ mod tests {
     #[test]
     fn selection_boundaries_restart_visual_order_without_changing_advances() {
         let units: Vec<_> = "שלום".encode_utf16().collect();
-        let text = WStr::from_units(units.as_slice());
         let advances =
             [(0, 10), (1, 20), (2, 30), (3, 40)].map(|(pos, advance)| (pos, Twips::new(advance)));
         for (breaks, expected) in [
@@ -326,7 +358,7 @@ mod tests {
             ([0, 0], [90, 70, 40, 0]),
             ([4, 4], [90, 70, 40, 0]),
         ] {
-            let positions: Vec<_> = visual_glyph_positions_for_runs(text, &breaks, &advances)
+            let positions: Vec<_> = visual_glyph_positions_for_runs(&units, &breaks, &advances)
                 .into_iter()
                 .map(Twips::get)
                 .collect();
