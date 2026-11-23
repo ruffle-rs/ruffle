@@ -192,10 +192,9 @@ pub fn parse_level<'gc>(name: &WStr, activation: &mut Activation<'_, 'gc>) -> Op
 }
 
 fn parse_level_id(digits: &WStr) -> i32 {
-    // TODO: Use `split_first`?
-    let (is_negative, digits) = match digits.get(0) {
-        Some(45) => (true, &digits[1..]),
-        _ => (false, digits),
+    let (is_negative, digits) = match digits.strip_prefix(b'-') {
+        Some(digits) => (true, digits),
+        None => (false, digits),
     };
     let mut level_id: i32 = 0;
     for digit in digits
