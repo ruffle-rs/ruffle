@@ -282,8 +282,6 @@ impl Eq for FontHandle {}
 
 // Movie
 
-/// TODO: Once `SwfMovie` is behind a `Gc` instead of an `Arc`, this should
-/// use a proper `DynamicRoot`.
 #[derive(Clone)]
 pub struct MovieHandle {
     root: DynamicRoot<Rootable![SwfMovie<'_>]>,
