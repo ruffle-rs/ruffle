@@ -51,7 +51,8 @@ pub struct Activation<'a, 'gc: 'a> {
 
     /// The movie that called this builtin method.
     /// This is intended to be used only for builtin methods- if this activation's method
-    /// is a bytecode method, the movie will instead be the movie that the bytecode method came from.
+    /// is a bytecode method, the movie will instead be the movie that the bytecode method came from,
+    /// unless the method comes from playerglobals.
     caller_movie: Option<SwfMovie<'gc>>,
 
     /// The superclass of the class that yielded the currently executing method.
@@ -344,6 +345,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         stack_frame: StackFrame<'a, 'gc>,
         bound_superclass_object: Option<ClassObject<'gc>>,
         callee: Option<FunctionObject<'gc>>,
+        caller_movie: Option<SwfMovie<'gc>>,
         caller_dxns: Option<AvmString<'gc>>,
     ) -> Result<(), Error<'gc>> {
         let body = method
@@ -358,7 +360,19 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
         self.outer = outer;
         self.caller_domain = Some(outer.domain());
-        self.caller_movie = Some(method.owner_movie());
+
+        // Bytecode methods from playerglobals act on behalf of their caller,
+        // like native methods do.
+        self.caller_movie = if method
+            .translation_unit()
+            .domain()
+            .is_playerglobals_domain(self.avm2())
+        {
+            caller_movie
+        } else {
+            Some(method.owner_movie())
+        };
+
         self.bound_superclass_object = bound_superclass_object;
         self.stack = stack_frame;
         self.scope_depth = self.context.avm2.scope_stack.len();

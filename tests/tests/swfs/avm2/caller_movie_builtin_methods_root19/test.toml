@@ -1,0 +1,29 @@
+num_ticks = 15
+
+[[compilers]]
+type = "Asc"
+target = "test.swf"
+class = "Test"
+scripts = ["Test.as", "Checks.as"]
+swf_version = 19
+
+[[compilers]]
+type = "Asc"
+target = "child10.swf"
+class = "Child"
+scripts = ["Child.as", "Checks.as"]
+swf_version = 10
+
+[[compilers]]
+type = "Asc"
+target = "child12.swf"
+class = "Child"
+scripts = ["Child.as", "Checks.as"]
+swf_version = 12
+
+[[compilers]]
+type = "Asc"
+target = "child19.swf"
+class = "Child"
+scripts = ["Child.as", "Checks.as"]
+swf_version = 19

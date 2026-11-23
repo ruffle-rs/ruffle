@@ -320,6 +320,8 @@ pub fn exec<'gc>(
             let stack = activation.context.avm2.stack;
             let stack_frame = stack.get_frame_for_method(method);
 
+            let caller_movie = activation.caller_movie();
+
             // This used to be a one step called Activation::from_method,
             // but avoiding moving an Activation around helps perf
             let mut activation = Activation::from_nothing(activation.context);
@@ -331,6 +333,7 @@ pub fn exec<'gc>(
                 stack_frame,
                 bound_superclass,
                 callee,
+                caller_movie,
                 caller_dxns,
             ) {
                 // If an error is thrown during verification or argument coercion,
