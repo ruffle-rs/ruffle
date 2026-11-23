@@ -1,10 +1,11 @@
 //! `flash.net.SharedObject` builtin/prototype
 
-use crate::avm2::error::{make_error_2130, make_error_2134};
+use crate::avm2::error::{make_error_2130, make_error_2134, make_error_2146};
 use crate::avm2::function::FunctionArgs;
 use crate::avm2::object::{ScriptObject, SharedObjectObject};
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::{Activation, Error, Object, Value};
+use crate::config::NetworkingAccessMode;
 use crate::shared_object::local_shared_object_key;
 use crate::string::AvmString;
 use crate::{avm2_stub_getter, avm2_stub_method, avm2_stub_setter};
@@ -44,6 +45,10 @@ pub fn get_local<'gc>(
     let local_path = args.try_get_string(1);
     let local_path = local_path.as_ref().map(|p| p.to_utf8_lossy());
     let secure = args.get_bool(2);
+
+    if activation.context.allow_networking == NetworkingAccessMode::None {
+        return Err(make_error_2146(activation, "SharedObject.getLocal"));
+    }
 
     let Some(full_name) = local_shared_object_key(
         activation.context.root_swf.url(),
