@@ -1,0 +1,28 @@
+constructor: frame 1, isPlaying: false
+single frame clip: isPlaying false
+single frame clip after play(): isPlaying false
+single frame clip after stop(): isPlaying false
+tick 1: frame 2, isPlaying: false
+nextFrame() without play(): frame 3, isPlaying: false
+tick 2: frame 3, isPlaying: false
+play(): frame 3, isPlaying: true
+nextFrame(): frame 4, isPlaying: false
+tick 3: frame 4, isPlaying: false
+play(), prevFrame(): frame 3, isPlaying: false
+tick 4: frame 3, isPlaying: false
+play(), gotoAndStop(1): frame 1, isPlaying: false
+tick 5: frame 1, isPlaying: false
+gotoAndPlay(2): frame 2, isPlaying: true
+tick 6: frame 3, isPlaying: true
+stop(): frame 3, isPlaying: false
+gotoAndPlay(3): frame 3, isPlaying: true
+tick 7: frame 4, isPlaying: true
+stop(), nextScene() with a single scene: frame 4, isPlaying: false
+tick 8: frame 4, isPlaying: false
+stop(), prevScene() with a single scene: frame 4, isPlaying: false
+tick 9: frame 4, isPlaying: false
+play(), gotoAndStop(currentFrame): frame 4, isPlaying: false
+tick 10: frame 4, isPlaying: false
+gotoAndPlay(currentFrame): frame 4, isPlaying: true
+tick 11: frame 1, isPlaying: true
+tick 12: frame 2, isPlaying: true
