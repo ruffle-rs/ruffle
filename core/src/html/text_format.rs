@@ -2042,10 +2042,7 @@ impl<'a> FormatState<'a> {
             // simply append the bytes directly without converting from UTF8.
             self.result.push_str(WStr::from_units(escaped.as_bytes()));
         } else {
-            // TODO: updating our quick_xml fork to upstream will allow removing this UTF8 check.
-            let escaped =
-                std::str::from_utf8(escaped.as_bytes()).expect("escaped text should be utf8");
-            self.result.push_utf8(escaped);
+            self.result.push_utf8(&escaped);
         }
     }
 }
