@@ -71,6 +71,16 @@ fn get_rectangle_x_y_width_height<'gc>(
     Ok((x_int, y_int, width_int, height_int))
 }
 
+fn get_point_x_y<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    point: Object<'gc>,
+) -> Result<(i32, i32), Error<'gc>> {
+    let x = point.get_slot(point_slots::X).coerce_to_i32(activation)?;
+    let y = point.get_slot(point_slots::Y).coerce_to_i32(activation)?;
+
+    Ok((x, y))
+}
+
 /// Copy the static data from a given Bitmap into a new BitmapData.
 ///
 /// `bd` is assumed to be an uninstantiated library symbol, associated with the
@@ -246,12 +256,7 @@ pub fn copy_pixels<'gc>(
 
         let dest_point = args.get_object(activation, 2, "destPoint")?;
 
-        let dest_x = dest_point
-            .get_slot(point_slots::X)
-            .coerce_to_i32(activation)?;
-        let dest_y = dest_point
-            .get_slot(point_slots::Y)
-            .coerce_to_i32(activation)?;
+        let (dest_x, dest_y) = get_point_x_y(activation, dest_point)?;
 
         if let Some(src_bitmap) = source_bitmap.as_bitmap_data() {
             src_bitmap.check_valid(activation)?;
@@ -265,12 +270,7 @@ pub fn copy_pixels<'gc>(
                 let mut y = 0;
 
                 if let Some(alpha_point) = args.try_get_object(4) {
-                    x = alpha_point
-                        .get_slot(point_slots::X)
-                        .coerce_to_i32(activation)?;
-                    y = alpha_point
-                        .get_slot(point_slots::Y)
-                        .coerce_to_i32(activation)?;
+                    (x, y) = get_point_x_y(activation, alpha_point)?;
                 }
 
                 alpha_source = Some((alpha_bitmap, (x, y)));
@@ -590,12 +590,7 @@ pub fn copy_channel<'gc>(
         let source_rect = args.get_object(activation, 1, "sourceRect")?;
         let dest_point = args.get_object(activation, 2, "destPoint")?;
 
-        let dest_x = dest_point
-            .get_slot(point_slots::X)
-            .coerce_to_i32(activation)?;
-        let dest_y = dest_point
-            .get_slot(point_slots::Y)
-            .coerce_to_i32(activation)?;
+        let (dest_x, dest_y) = get_point_x_y(activation, dest_point)?;
 
         let source_channel = args.get_i32(3);
 
@@ -790,14 +785,7 @@ pub fn hit_test<'gc>(
     };
 
     let first_point = args.get_object(activation, 0, "firstPoint")?;
-    let top_left = (
-        first_point
-            .get_slot(point_slots::X)
-            .coerce_to_i32(activation)?,
-        first_point
-            .get_slot(point_slots::Y)
-            .coerce_to_i32(activation)?,
-    );
+    let top_left = get_point_x_y(activation, first_point)?;
     let source_threshold = args.get_u32(1).clamp(0, u8::MAX.into()) as u8;
     let compare_object = args.get_value(2);
     let point_class = activation.avm2().classes().point.inner_class_definition();
@@ -813,16 +801,8 @@ pub fn hit_test<'gc>(
     };
 
     if compare_object.is_of_type(point_class) {
-        let test_point = (
-            compare_object
-                .get_slot(point_slots::X)
-                .coerce_to_i32(activation)?
-                - top_left.0,
-            compare_object
-                .get_slot(point_slots::Y)
-                .coerce_to_i32(activation)?
-                - top_left.1,
-        );
+        let (x, y) = get_point_x_y(activation, compare_object)?;
+        let test_point = (x - top_left.0, y - top_left.1);
 
         Ok(Value::Bool(operations::hit_test_point(
             activation.context.renderer,
@@ -860,14 +840,7 @@ pub fn hit_test<'gc>(
     } else if let Some(other_bmd) = compare_object.as_bitmap_data() {
         other_bmd.check_valid(activation)?;
         let second_point = args.get_object(activation, 3, "secondBitmapDataPoint")?;
-        let second_point = (
-            second_point
-                .get_slot(point_slots::X)
-                .coerce_to_i32(activation)?,
-            second_point
-                .get_slot(point_slots::Y)
-                .coerce_to_i32(activation)?,
-        );
+        let second_point = get_point_x_y(activation, second_point)?;
         let second_threshold = args.get_u32(4).clamp(0, u8::MAX.into()) as u8;
 
         let result = operations::hit_test_bitmapdata(
@@ -888,14 +861,7 @@ pub fn hit_test<'gc>(
         let other_bmd = bitmap.bitmap_data();
         other_bmd.check_valid(activation)?;
         let second_point = args.get_object(activation, 3, "secondBitmapDataPoint")?;
-        let second_point = (
-            second_point
-                .get_slot(point_slots::X)
-                .coerce_to_i32(activation)?,
-            second_point
-                .get_slot(point_slots::Y)
-                .coerce_to_i32(activation)?,
-        );
+        let second_point = get_point_x_y(activation, second_point)?;
         let second_threshold = args.get_u32(4).clamp(0, u8::MAX.into()) as u8;
 
         Ok(Value::Bool(operations::hit_test_bitmapdata(
@@ -1187,14 +1153,7 @@ pub fn apply_filter<'gc>(
             source_rect.height().to_pixels().ceil() as u32,
         );
         let dest_point = args.get_object(activation, 2, "destPoint")?;
-        let dest_point = (
-            dest_point
-                .get_slot(point_slots::X)
-                .coerce_to_i32(activation)?,
-            dest_point
-                .get_slot(point_slots::Y)
-                .coerce_to_i32(activation)?,
-        );
+        let dest_point = get_point_x_y(activation, dest_point)?;
 
         operations::apply_filter(
             activation.context,
@@ -1257,14 +1216,7 @@ pub fn palette_map<'gc>(
             source_rect.height().to_pixels().ceil() as i32,
         );
         let dest_point = args.get_object(activation, 2, "destPoint")?;
-        let dest_point = (
-            dest_point
-                .get_slot(point_slots::X)
-                .coerce_to_i32(activation)?,
-            dest_point
-                .get_slot(point_slots::Y)
-                .coerce_to_i32(activation)?,
-        );
+        let dest_point = get_point_x_y(activation, dest_point)?;
 
         let mut get_channel = |index: usize, shift: usize| -> Result<[u32; 256], Error<'gc>> {
             let arg = args.try_get_object(index);
@@ -1376,14 +1328,7 @@ pub fn threshold<'gc>(
         let src_bitmap = args.get_object(activation, 0, "sourceBitmapData")?;
         let source_rect = args.get_object(activation, 1, "sourceRect")?;
         let dest_point = args.get_object(activation, 2, "destPoint")?;
-        let dest_point = (
-            dest_point
-                .get_slot(point_slots::X)
-                .coerce_to_i32(activation)?,
-            dest_point
-                .get_slot(point_slots::Y)
-                .coerce_to_i32(activation)?,
-        );
+        let dest_point = get_point_x_y(activation, dest_point)?;
         let operation = args.get_string_non_null(activation, 3, "operationStr")?;
         let threshold = args.get_u32(4);
         let color = args.get_u32(5);
@@ -1509,14 +1454,7 @@ pub fn pixel_dissolve<'gc>(
             get_rectangle_x_y_width_height(activation, source_rect)?;
 
         let dest_point = args.get_object(activation, 2, "destPoint")?;
-        let dest_point = (
-            dest_point
-                .get_slot(point_slots::X)
-                .coerce_to_i32(activation)?,
-            dest_point
-                .get_slot(point_slots::Y)
-                .coerce_to_i32(activation)?,
-        );
+        let dest_point = get_point_x_y(activation, dest_point)?;
 
         let random_seed = args.get_i32(3);
 
@@ -1566,19 +1504,8 @@ pub fn merge<'gc>(
             get_rectangle_x_y_width_height(activation, source_rect)?
         };
 
-        let dest_point = {
-            let dest_point = args.get_object(activation, 2, "destPoint")?;
-
-            let x = dest_point
-                .get_slot(point_slots::X)
-                .coerce_to_i32(activation)?;
-
-            let y = dest_point
-                .get_slot(point_slots::Y)
-                .coerce_to_i32(activation)?;
-
-            (x, y)
-        };
+        let dest_point = args.get_object(activation, 2, "destPoint")?;
+        let dest_point = get_point_x_y(activation, dest_point)?;
 
         let red_mult = args.get_i32(3);
         let green_mult = args.get_i32(4);
