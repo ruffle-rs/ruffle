@@ -1,0 +1,1 @@
+getTimer() never decreased: true
