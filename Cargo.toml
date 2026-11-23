@@ -1,18 +1,13 @@
 [workspace]
 members = [
     "core",
-    "core/macros",
     "core/build_playerglobal",
+    "core/macros",
     "desktop",
-    "swf",
-    "flv",
-    "web",
-    "web/packages/extension/safari",
-    "wstr",
-    "scanner",
 
     "exporter",
     "exporter/integration_tests",
+    "flv",
 
     "frontend-utils",
 
@@ -21,23 +16,28 @@ members = [
     "render/naga-agal",
     "render/pixel_bender",
     "render/pixel_bender/assembly_tests",
-    "render/wgpu",
     "render/webgl",
-
-    "video",
-    "video/software",
-    "video/external",
+    "render/wgpu",
+    "scanner",
+    "swf",
 
     "tests",
+    "tests/framework",
     "tests/fs-tests-runner",
     "tests/input-format",
-    "tests/socket-format",
     "tests/mocket",
-    "tests/framework",
+    "tests/socket-format",
 
     "tools/asc",
     "tools/fuzzer",
     "tools/stub-report",
+
+    "video",
+    "video/external",
+    "video/software",
+    "web",
+    "web/packages/extension/safari",
+    "wstr",
 ]
 default-members = ["desktop"]
 resolver = "2"
