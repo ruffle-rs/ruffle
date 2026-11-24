@@ -33,7 +33,7 @@ use crate::display_object::{
 use crate::drawing::Drawing;
 use crate::events::{ButtonKeyCode, ClipEvent, ClipEventResult};
 use crate::font::{Font, FontType};
-use crate::frame_lifecycle::{FramePhase, run_inner_goto_frame};
+use crate::frame_lifecycle::{FramePhase, construct_deferred_goto_frames, run_inner_goto_frame};
 use crate::library::MovieLibrary;
 use crate::limits::ExecutionLimit;
 use crate::loader::LoadManager;
@@ -952,9 +952,37 @@ impl<'gc> MovieClip<'gc> {
                 }
             }
         } else {
+            let phase = *context.frame_phase;
+            let old_frame = self.current_frame();
+            let had_waiting_script = self.has_pending_script()
+                && self.last_queued_script_frame() != Some(self.0.queued_script_frame.get());
+
             // If we're not currently running a frame script, we can just perform
             // the goto right now.
-            self.goto_frame_now(context, goto_info)
+            self.goto_frame_now(context, goto_info);
+
+            // In SWFv9, the new frame of a goto run during the frame script
+            // phase isn't constructed by the goto itself, but once the current
+            // frame script returns. The frame script of the new frame is
+            // queued like for a queued goto, but only if the goto reached its
+            // frame. It only runs before that if the clip still had a frame
+            // script to run in this frame.
+            let is_deferred = self.swf_version() <= 9
+                && self.movie().is_action_script_3()
+                && phase == FramePhase::FrameScripts
+                && self.current_frame() != old_frame;
+
+            if is_deferred {
+                context.deferred_goto_clips.push(self);
+
+                let reached_frame = self.current_frame() == goto_info.frame;
+
+                self.set_has_pending_script(had_waiting_script && reached_frame);
+
+                if reached_frame && self.has_frame_script(self.current_frame()) {
+                    context.frame_script_cleanup_queue.push_back(self);
+                }
+            }
         }
     }
 
@@ -2516,6 +2544,8 @@ impl<'gc> MovieClip<'gc> {
 
                     self.0
                         .set_flag(MovieClipFlags::EXECUTING_AVM2_FRAME_SCRIPT, false);
+
+                    construct_deferred_goto_frames(context);
                 }
             }
         }
@@ -2532,6 +2562,7 @@ impl<'gc> MovieClip<'gc> {
             // queued to run on this frame seeing not-yet-constructed children.
             if self.swf_version() <= 9 {
                 self.construct_frame(context);
+                construct_deferred_goto_frames(context);
             }
         }
     }

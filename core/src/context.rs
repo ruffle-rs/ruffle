@@ -247,6 +247,10 @@ pub struct UpdateContext<'gc> {
     // Movie clips whose frame scripts were registered during frame script phase
     // requires a separate clean-up pass when running frame-scripts instead of executing them in place
     pub frame_script_cleanup_queue: VecDeque<MovieClip<'gc>>,
+
+    /// The clips that SWFv9 gotos were run on during the frame script phase,
+    /// whose new frames haven't been constructed yet.
+    pub deferred_goto_clips: Vec<MovieClip<'gc>>,
 }
 
 impl<'gc> HasStringContext<'gc> for UpdateContext<'gc> {

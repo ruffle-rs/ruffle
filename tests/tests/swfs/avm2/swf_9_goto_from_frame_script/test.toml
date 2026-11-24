@@ -1,5 +1,4 @@
 num_ticks = 5
-known_failure = true
 
 [[compilers]]
 type = "Swfasm"
