@@ -1,0 +1,6 @@
+Test frame1: a.gotoAndStop(2)
+caller frame1: a.gotoAndStop(3)
+-- exitFrame 0
+a frame3, inner = [object MovieClip]
+-- exitFrame 1
+Done
