@@ -1,0 +1,37 @@
+Swf(
+    version: 9,
+    frame_rate: 24.0,
+    tags: [
+        FileAttributes(action_script_3: true),
+        DefineSprite(id: 3, tags: [ShowFrame, End]),
+        DefineSprite(id: 6, tags: [ShowFrame, End]),
+        DefineSprite(id: 1, tags: [
+            ShowFrame,
+            PlaceObject2(depth: 1, character: 6, name: "added"),
+            ShowFrame,
+            End,
+        ]),
+        DefineSprite(id: 2, tags: [
+            ShowFrame,
+            PlaceObject2(depth: 1, character: 3, name: "kid"),
+            ShowFrame,
+            End,
+        ]),
+        DefineSprite(id: 4, tags: [
+            ShowFrame,
+            PlaceObject2(depth: 1, character: 6, name: "otherKid"),
+            ShowFrame,
+            End,
+        ]),
+        DoAbc(Asc(file: "Test.as", scripts: ["Adder.as", "Target.as", "Kid.as", "Other.as", "Named.as"])),
+        SymbolClass([(character: 1, name: "Adder"), (character: 2, name: "Target"), (character: 3, name: "Kid"), (character: 4, name: "Other"), (character: 6, name: "Named"), (character: 0, name: "Test")]),
+        PlaceObject2(depth: 1, character: 2, name: "targetBefore"),
+        PlaceObject2(depth: 2, character: 1, name: "adder"),
+        PlaceObject2(depth: 3, character: 2, name: "targetAfter"),
+        PlaceObject2(depth: 4, character: 4, name: "other"),
+        ShowFrame,
+        PlaceObject2(depth: 5, character: 6, name: "later"),
+        ShowFrame,
+        End,
+    ],
+)
