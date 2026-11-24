@@ -1,0 +1,30 @@
+Swf(
+    version: 9,
+    frame_rate: 24.0,
+    tags: [
+        FileAttributes(action_script_3: true),
+        DefineSprite(id: 4, tags: [ShowFrame, End]),
+        DefineSprite(id: 1, tags: [
+            ShowFrame,
+            ShowFrame,
+            PlaceObject2(depth: 1, character: 4, name: "inner"),
+            ShowFrame,
+            End,
+        ]),
+        DefineSprite(id: 6, tags: [ShowFrame, End]),
+        DefineSprite(id: 2, tags: [
+            ShowFrame,
+            PlaceObject2(depth: 1, character: 6, name: "starter"),
+            ShowFrame,
+            End,
+        ]),
+        DoAbc(Asc(file: "Test.as", scripts: ["Target.as", "Inner.as", "Jumper.as", "Starter.as"])),
+        SymbolClass([(character: 1, name: "Target"), (character: 2, name: "Jumper"), (character: 4, name: "Inner"), (character: 6, name: "Starter"), (character: 0, name: "Test")]),
+        PlaceObject2(depth: 1, character: 2, name: "jumper"),
+        PlaceObject2(depth: 2, character: 1, name: "target"),
+        ShowFrame,
+        ShowFrame,
+        ShowFrame,
+        End,
+    ],
+)
