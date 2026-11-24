@@ -2384,7 +2384,7 @@ impl<'gc> MovieLoader<'gc> {
                     base_clip,
                 } = self.vm_data
                 {
-                    queue.queue_action(
+                    queue.queue_action_with_removal_guard(
                         base_clip,
                         ActionType::Method {
                             object: broadcaster,
@@ -2395,6 +2395,7 @@ impl<'gc> MovieLoader<'gc> {
                             ],
                         },
                         false,
+                        Some(self.target_clip),
                     );
                 }
                 // If the movie was loaded from avm1, clean it up now. If a movie (including an AVM1 movie)

@@ -2168,13 +2168,17 @@ impl Player {
         &mut *self.ui
     }
 
+    fn clip_avm1_removed<'gc>(dobj: DisplayObject<'gc>) -> bool {
+        !dobj.movie().is_action_script_3() && (dobj.avm1_removed() || dobj.avm1_pending_removal())
+    }
+
     pub fn run_actions(context: &mut UpdateContext<'_>) {
         // Note that actions can queue further actions, so a while loop is necessary here.
         while let Some(action) = context.action_queue.pop_action() {
-            // We don't run frame actions if the clip was removed (or scheduled to be removed) after it queued the action.
+            // We don't run frame actions if the clip (or the guard) was removed (or scheduled to be removed) after it queued the action.
             if !action.is_unload
-                && (!action.clip.movie().is_action_script_3()
-                    && (action.clip.avm1_removed() || action.clip.avm1_pending_removal()))
+                && (Self::clip_avm1_removed(action.clip)
+                    || action.removal_guard.is_some_and(Self::clip_avm1_removed))
             {
                 continue;
             }
