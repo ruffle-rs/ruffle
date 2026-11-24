@@ -260,6 +260,14 @@ impl<'gc> LoadManager<'gc> {
         self.0.get_mut(handle)
     }
 
+    /// Whether a movie loader targeting `clip` is still around, i.e. `clip` is
+    /// being loaded into, or its loaded content hasn't finished its first frame yet.
+    pub fn is_loading_into(&self, clip: DisplayObject<'gc>) -> bool {
+        self.0
+            .values()
+            .any(|loader| DisplayObject::ptr_eq(loader.target_clip, clip))
+    }
+
     /// Checks if the target clip on the given handle's loader
     /// has been `avm1_removed()`. If so, it will set the `loader_status`
     /// to `Failed` and return `true`.
