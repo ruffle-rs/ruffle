@@ -1,0 +1,22 @@
+// The root's frame script replaces the frame script of `a1`, and removes and
+// then re-adds the frame script of `a2`, before either has run on this frame.
+// Which of them run during the frame script traversal, and which run again
+// afterwards?
+Swf(
+    version: 16,
+    stage: (width: 100.0, height: 100.0),
+    frame_rate: 24.0,
+    tags: [
+        FileAttributes(action_script_3: true),
+        DefineSprite(id: 1, tags: [ShowFrame]),
+        DoAbc(Asc(file: "Main.as", scripts: ["A.as"])),
+        SymbolClass([
+            (character: 0, name: "Main"),
+            (character: 1, name: "A"),
+        ]),
+        PlaceObject2(depth: 1, character: 1, name: "a1"),
+        PlaceObject2(depth: 2, character: 1, name: "a2"),
+        ShowFrame,
+        End,
+    ],
+)
