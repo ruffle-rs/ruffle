@@ -1,0 +1,26 @@
+-- frameConstructed content=null comp=null
+-- exitFrame content=null comp=null
+-- enterFrame 0 content=null comp=null
+-- frameConstructed content=null comp=null
+-- exitFrame content=null comp=null
+-- enterFrame 1 content=null comp=null
+popup.gotoAndPlay(2)
+after popup.gotoAndPlay(2): content=null comp=null
+Popup ADDED content, gotoAndStop(3)
+after gotoAndStop(3): content=null comp=null
+Named constructor sib
+Named constructor later
+-- frameConstructed content=3 comp=null
+Content frame3, comp = null
+-- exitFrame content=3 comp=null
+-- enterFrame 2 content=3 comp=null
+Comp constructor comp
+-- frameConstructed content=3 comp=enter text
+-- exitFrame content=3 comp=enter text
+-- enterFrame 3 content=3 comp=enter text
+-- frameConstructed content=3 comp=enter text
+-- exitFrame content=3 comp=enter text
+-- enterFrame 4 content=3 comp=enter text
+-- frameConstructed content=3 comp=enter text
+-- exitFrame content=3 comp=enter text
+Done
