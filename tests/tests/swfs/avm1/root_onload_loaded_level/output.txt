@@ -1,0 +1,4 @@
+initial root onLoad
+child1 frame 1
+child2 frame 1
+child3 frame 1

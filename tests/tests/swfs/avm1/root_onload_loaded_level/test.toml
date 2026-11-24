@@ -1,0 +1,25 @@
+num_ticks = 20
+
+[[compilers]]
+type = "Rascal"
+target = "test.swf"
+scripts = ["test.as"]
+swf_version = 8
+
+[[compilers]]
+type = "Rascal"
+target = "child1.swf"
+scripts = ["child1.as"]
+swf_version = 8
+
+[[compilers]]
+type = "Rascal"
+target = "child2.swf"
+scripts = ["child2.as"]
+swf_version = 8
+
+[[compilers]]
+type = "Rascal"
+target = "child3.swf"
+scripts = ["child3.as"]
+swf_version = 8

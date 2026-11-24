@@ -458,8 +458,19 @@ impl<'gc> MovieClip<'gc> {
         if !self.movie().is_action_script_3() {
             // Run my load/enterFrame clip event.
             let is_load_frame = !self.0.contains_flag(MovieClipFlags::INITIALIZED);
+            // The initial root movie's load event comes after its first frame's actions,
+            // so that `_root.onLoad` can be defined there. Movies loaded into a level or
+            // a clip later on never get their frame-1 `onLoad` called, and a clip whose
+            // content was replaced by `loadMovie` still fires its load event first.
+            // A loaded movie's loader is only removed in `LoadManager::movie_clip_on_load`,
+            // after all clips ran their frame, so it is still present here on its first frame.
+            let is_initial_root_load_frame = is_load_frame
+                && matches!(self.parent(), Some(DisplayObject::Stage(_)))
+                && !context.load_manager.is_loading_into(self.into());
             if is_load_frame {
-                self.event_dispatch(context, ClipEvent::Load);
+                if !is_initial_root_load_frame {
+                    self.event_dispatch(context, ClipEvent::Load);
+                }
                 self.0.set_initialized(true);
             } else {
                 self.event_dispatch(context, ClipEvent::EnterFrame);
@@ -469,6 +480,10 @@ impl<'gc> MovieClip<'gc> {
             // In AVM2, SWF tags are processed at enterFrame time.
             if self.playing() {
                 self.run_frame_internal(context, true, true, false);
+            }
+
+            if is_initial_root_load_frame {
+                self.event_dispatch(context, ClipEvent::Load);
             }
         }
     }
