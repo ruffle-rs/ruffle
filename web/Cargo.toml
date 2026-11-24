@@ -78,9 +78,8 @@ features = [
 ]
 
 [target.'cfg(target_family = "wasm")'.dependencies]
-getrandom_03 = { package = "getrandom", version = "0.3", features = ["wasm_js"] }
 getrandom = { version = "0.4", features = ["wasm_js"] }
 
 # Not used directly, declared only to enable its `wasm_js` feature on WASM.
 [package.metadata.cargo-machete]
-ignored = ["getrandom", "getrandom_03"]
+ignored = ["getrandom"]
