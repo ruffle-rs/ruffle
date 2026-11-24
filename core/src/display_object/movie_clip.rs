@@ -944,10 +944,12 @@ impl<'gc> MovieClip<'gc> {
 
                 self.0.queued_goto.set(Some(goto_info));
 
-                // If we have a frame script on that frame, add ourselves to the
-                // frame script cleanup queue so that that frame script is
-                // correctly run.
-                if self.has_frame_script(goto_info.frame) {
+                // In SWFv9, the goto doesn't run a nested frame, so if we have
+                // a frame script on that frame, add ourselves to the frame
+                // script cleanup queue so that that frame script is correctly
+                // run. On later versions, the nested frame runs it, and it
+                // clears the queue before that anyway.
+                if self.swf_version() <= 9 && self.has_frame_script(goto_info.frame) {
                     context.frame_script_cleanup_queue.push_back(self);
                 }
             }
