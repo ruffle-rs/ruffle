@@ -1,0 +1,23 @@
+// `b`'s frame script replaces the frame script of `a`, which already ran on
+// this frame, and then queues a goto to its own current frame. Is the
+// replaced script of `a` run by the nested frame of the goto?
+Swf(
+    version: 16,
+    stage: (width: 100.0, height: 100.0),
+    frame_rate: 24.0,
+    tags: [
+        FileAttributes(action_script_3: true),
+        DefineSprite(id: 1, tags: [ShowFrame]),
+        DefineSprite(id: 2, tags: [ShowFrame]),
+        DoAbc(Asc(file: "Main.as", scripts: ["A.as", "B.as"])),
+        SymbolClass([
+            (character: 0, name: "Main"),
+            (character: 1, name: "A"),
+            (character: 2, name: "B"),
+        ]),
+        PlaceObject2(depth: 1, character: 1, name: "a"),
+        PlaceObject2(depth: 2, character: 2, name: "b"),
+        ShowFrame,
+        End,
+    ],
+)

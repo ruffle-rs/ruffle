@@ -1,0 +1,19 @@
+Main constructor
+Main frame1 start
+Early constructor, currentFrame 1
+Early after super(), currentFrame 1
+Late constructor, currentFrame 1
+Late after super(), currentFrame 1
+UnlinkedEarly constructor, currentFrame 0
+UnlinkedEarly after super(), currentFrame 0
+UnlinkedLate constructor, currentFrame 0
+UnlinkedLate after super(), currentFrame 0
+Main frame1 end
+d frame1 (frame 1)
+Early frame1 (frame 1)
+Late frame1 (frame 1)
+exitFrame 1
+enterFrame 2
+exitFrame 2
+enterFrame 3
+exitFrame 3
