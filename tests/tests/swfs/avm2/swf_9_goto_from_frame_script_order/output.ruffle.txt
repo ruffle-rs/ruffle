@@ -1,0 +1,22 @@
+-- frameConstructed 0 A=null B=null C=null D=null held=null
+Test frame1
+Test frame1 end A=null B=null C=null D=null held=null (frame 3)
+dkA frame3, inner = null
+dkB frame3, inner = null
+dkD frame3, inner = null
+-- exitFrame 0 A=null B=null C=null D=null held=null (frame 3)
+-- enterFrame 1 A=null B=null C=null D=null held=null (frame 3)
+Inner constructor (parent off)
+Inner constructor (parent dkA)
+Inner constructor (parent dkB)
+Inner constructor (parent dkD)
+  dkC.gotoAndStop(3) from Inner of dkD
+  after: dkC.inner = null
+-- frameConstructed 1 A=[Inner of dkA] B=[Inner of dkB] C=null D=[Inner of dkD] held=[Inner of off] (frame 3)
+dkC frame3, inner = null
+-- exitFrame 1 A=[Inner of dkA] B=[Inner of dkB] C=null D=[Inner of dkD] held=[Inner of off] (frame 3)
+-- enterFrame 2 A=[Inner of dkA] B=[Inner of dkB] C=null D=[Inner of dkD] held=[Inner of off] (frame 3)
+Inner constructor (parent dkC)
+-- frameConstructed 2 A=[Inner of dkA] B=[Inner of dkB] C=[Inner of dkC] D=[Inner of dkD] held=[Inner of off] (frame 3)
+-- exitFrame 2 A=[Inner of dkA] B=[Inner of dkB] C=[Inner of dkC] D=[Inner of dkD] held=[Inner of off] (frame 3)
+Done
