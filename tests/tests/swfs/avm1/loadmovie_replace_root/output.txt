@@ -3,3 +3,4 @@ Stage.width: 300
 Stage.height: 300
 _global.bar: 1
 _root.foo: undefined
+Frame tick
