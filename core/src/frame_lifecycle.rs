@@ -138,8 +138,12 @@ pub fn run_inner_goto_frame<'gc>(
     let old_phase = *context.frame_phase;
 
     // When performing goto, frame scripts behave the same as when entering a new frame
-    // so no separate cleanup is performed on ones registered during frame script phase
-    context.frame_script_cleanup_queue.clear();
+    // so no separate cleanup is performed on ones registered during frame script phase.
+    // Instead, the nested frame runs them, even if a script was replaced after it
+    // already ran on this frame.
+    for clip in std::mem::take(&mut context.frame_script_cleanup_queue) {
+        clip.set_last_queued_script_frame(None);
+    }
 
     // Note - we do *not* call `enter_frame` or dispatch an `enterFrame` event
 
