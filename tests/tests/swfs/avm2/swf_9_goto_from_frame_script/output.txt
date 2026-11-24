@@ -1,0 +1,39 @@
+-- frameConstructed A=null B=null C=null D=null
+Test frame1
+after dkA.gotoAndStop(3): A=null B=null C=null D=null
+after dkB.gotoAndStop(3): A=null B=null C=null D=null
+after dkD.gotoAndPlay(3): A=null B=null C=null D=null
+Inner constructor (parent dkA)
+Inner constructor (parent dkB)
+Inner constructor (parent dkD)
+dkA frame3, inner = [object Inner]
+dkC frame1, inner = null
+dkD frame3, inner = [object Inner]
+dkE frame1, inner = null
+caller frame1
+after dkE.gotoAndStop(3): E=null
+after dkF.gotoAndStop(3): F=null
+after last.gotoAndStop(9999): last.currentFrame=2
+Inner constructor (parent dkE)
+Inner constructor (parent dkF)
+dkF frame3, inner = [object Inner]
+last frame2
+dkA frame3, inner = [object Inner]
+dkD frame3, inner = [object Inner]
+Inner frame1 (parent dkA)
+Inner frame1 (parent dkB)
+Inner frame1 (parent dkD)
+dkE frame3, inner = [object Inner]
+dkF frame3, inner = [object Inner]
+Inner frame1 (parent dkE)
+Inner frame1 (parent dkF)
+-- exitFrame A=[object Inner] B=[object Inner] C=null D=[object Inner]
+-- enterFrame 0
+after dkC.gotoAndStop(3): A=[object Inner] B=[object Inner] C=null D=[object Inner]
+Inner constructor (parent dkC)
+-- frameConstructed A=[object Inner] B=[object Inner] C=[object Inner] D=[object Inner]
+Test frame2 A=[object Inner] B=[object Inner] C=[object Inner] D=[object Inner]
+dkC frame3, inner = [object Inner]
+Inner frame1 (parent dkC)
+-- exitFrame A=[object Inner] B=[object Inner] C=[object Inner] D=[object Inner]
+Done
