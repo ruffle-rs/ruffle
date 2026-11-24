@@ -1,0 +1,21 @@
+-- frameConstructed
+-- exitFrame
+-- enterFrame 0
+Named constructor added (parent adder)
+adder ADDED added
+after targetBefore/targetAfter.gotoAndStop(2): targetBefore currentFrame = 2, kid = null, targetAfter currentFrame = 2, kid = null
+Named constructor otherKid (parent other)
+Named constructor later (parent root1)
+Kid constructor (parent targetBefore)
+Kid constructor (parent targetAfter)
+-- frameConstructed
+Test frame2
+targetBefore frame2, currentFrame = 2, kid = [object Kid]
+adder frame2
+targetAfter frame2, currentFrame = 2, kid = [object Kid]
+other frame2
+-- exitFrame
+-- enterFrame 1
+-- frameConstructed
+-- exitFrame
+Done
