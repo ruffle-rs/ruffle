@@ -204,7 +204,6 @@ pub fn broadcast_frame_exited<'gc>(context: &mut UpdateContext<'gc>) {
 /// each clip in the queue.
 fn run_frame_script_cleanup<'gc>(context: &mut UpdateContext<'gc>) {
     while let Some(clip) = context.frame_script_cleanup_queue.pop_front() {
-        clip.set_has_pending_script(true);
         clip.set_last_queued_script_frame(None);
         clip.run_local_frame_scripts(context);
     }

@@ -43,6 +43,9 @@ pub fn initialize_for_allocator<'gc>(
     // [NA] Should these run for everything?
     dobj.post_instantiation(context, None, Instantiator::Avm2, false);
     dobj.enter_frame(context);
+    if let Some(clip) = dobj.as_movie_clip() {
+        clip.skip_queued_frame_script();
+    }
     dobj.construct_frame(context);
 
     // Movie clips created from ActionScript skip the next enterFrame,

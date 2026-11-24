@@ -216,8 +216,6 @@ pub struct MovieClipData<'gc> {
     flags: Cell<MovieClipFlags>,
     clip_event_flags: Cell<ClipEventFlag>,
 
-    has_pending_script: Cell<bool>,
-
     /// Force enable button mode, which causes all mouse-related events to
     /// trigger on this clip rather than any input-eligible children.
     button_mode: Cell<bool>,
@@ -261,7 +259,6 @@ impl<'gc> MovieClipData<'gc> {
             button_mode: Cell::new(false),
             last_queued_script_frame: Cell::new(None),
             queued_script_frame: Cell::new(0),
-            has_pending_script: Cell::new(false),
             queued_goto: Cell::new(None),
             drop_target: Lock::new(None),
             queued_tags: Default::default(),
@@ -840,14 +837,6 @@ impl<'gc> MovieClip<'gc> {
 
     pub fn set_drop_target(self, mc: &Mutation<'gc>, drop_target: Option<DisplayObject<'gc>>) {
         unlock!(Gc::write(mc, self.0), MovieClipData, drop_target).set(drop_target);
-    }
-
-    pub fn has_pending_script(self) -> bool {
-        self.0.has_pending_script.get()
-    }
-
-    pub fn set_has_pending_script(self, value: bool) {
-        self.0.has_pending_script.set(value);
     }
 
     pub fn last_queued_script_frame(self) -> Option<FrameNumber> {
@@ -2190,7 +2179,6 @@ impl<'gc> MovieClip<'gc> {
                     // Ensure newly registered frame scripts are executed,
                     // even if the frame is repeated due to goto.
                     self.set_last_queued_script_frame(None);
-                    self.set_has_pending_script(true);
                 }
             }
         } else if frame_scripts.len() > index {
@@ -2473,9 +2461,7 @@ impl<'gc> MovieClip<'gc> {
     pub fn run_local_frame_scripts(self, context: &mut UpdateContext<'gc>) {
         let avm2_object = self.0.object2.get();
 
-        if let Some(avm2_object) = avm2_object
-            && self.has_pending_script()
-        {
+        if let Some(avm2_object) = avm2_object {
             let frame_id = self.0.queued_script_frame.get();
             // If we are already executing frame scripts, then we shouldn't
             // run frame scripts recursively. This is because AVM2 can run
@@ -2490,7 +2476,6 @@ impl<'gc> MovieClip<'gc> {
                     let callable = Avm2Value::from(callable);
 
                     self.set_last_queued_script_frame(Some(frame_id));
-                    self.set_has_pending_script(false);
                     self.0
                         .set_flag(MovieClipFlags::EXECUTING_AVM2_FRAME_SCRIPT, true);
 
@@ -2538,9 +2523,16 @@ impl<'gc> MovieClip<'gc> {
         }
     }
 
-    fn check_has_pending_script(self) {
-        let has_pending_script = self.has_frame_script(self.0.current_frame.get());
-        self.set_has_pending_script(has_pending_script);
+    /// Marks the frame script of the queued frame as already handled, so that
+    /// the frame script traversal doesn't run it. A script registered on this
+    /// frame during the frame script phase is then run only by the frame script
+    /// cleanup pass.
+    ///
+    /// This is also used for a newly created clip before its constructor
+    /// runs, since it had no frame script before. Scripts that the constructor
+    /// registers outside of the frame script phase still run.
+    pub fn skip_queued_frame_script(self) {
+        self.set_last_queued_script_frame(Some(self.0.queued_script_frame.get()));
     }
 }
 
@@ -2619,6 +2611,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
             let is_load_frame = !self.0.initialized();
             let needs_construction = if self.0.object2.get().is_none() {
                 self.allocate_as_avm2_object(context, self.into());
+                self.skip_queued_frame_script();
                 true
             } else {
                 false
@@ -2667,10 +2660,12 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
             }
         }
 
-        if *context.frame_phase == FramePhase::Construct {
+        if *context.frame_phase == FramePhase::Construct
+            && !self.has_frame_script(self.0.current_frame.get())
+        {
             // Check for frame-scripts before starting the frame-script phase,
             // to differentiate the pre-existing scripts from those introduced during frame-script phase.
-            self.check_has_pending_script();
+            self.skip_queued_frame_script();
         }
     }
 
