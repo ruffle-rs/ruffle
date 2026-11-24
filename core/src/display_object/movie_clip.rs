@@ -205,7 +205,9 @@ pub struct MovieClipData<'gc> {
     #[collect(require_static)]
     drawing: OnceCell<Box<RefCell<Drawing>>>,
 
-    last_queued_script_frame: Cell<Option<FrameNumber>>,
+    /// Whether the frame script of `queued_script_frame` already ran, or
+    /// shouldn't run in the frame script traversal.
+    queued_script_ran: Cell<bool>,
     queued_script_frame: Cell<FrameNumber>,
 
     #[collect(require_static)]
@@ -257,7 +259,7 @@ impl<'gc> MovieClipData<'gc> {
             avm2_enabled: Cell::new(true),
             avm2_use_hand_cursor: Cell::new(true),
             button_mode: Cell::new(false),
-            last_queued_script_frame: Cell::new(None),
+            queued_script_ran: Cell::new(false),
             queued_script_frame: Cell::new(0),
             queued_goto: Cell::new(None),
             drop_target: Lock::new(None),
@@ -839,12 +841,8 @@ impl<'gc> MovieClip<'gc> {
         unlock!(Gc::write(mc, self.0), MovieClipData, drop_target).set(drop_target);
     }
 
-    pub fn last_queued_script_frame(self) -> Option<FrameNumber> {
-        self.0.last_queued_script_frame.get()
-    }
-
-    pub fn set_last_queued_script_frame(self, frame: Option<FrameNumber>) {
-        self.0.last_queued_script_frame.set(frame);
+    pub fn set_queued_script_ran(self, ran: bool) {
+        self.0.queued_script_ran.set(ran);
     }
 
     pub fn set_programmatically_played(self) {
@@ -1508,13 +1506,13 @@ impl<'gc> MovieClip<'gc> {
             self.0.increment_current_frame();
         }
 
-        self.0.queued_script_frame.set(self.0.current_frame.get());
-        if self.last_queued_script_frame() != Some(self.0.current_frame.get()) {
+        if self.0.queued_script_frame.get() != self.0.current_frame.get() {
             // We explicitly clear this variable since AS3 may later GOTO back
             // to the already-ran frame. Since the frame number *has* changed
             // in the meantime, it should absolutely run again.
-            self.set_last_queued_script_frame(None);
+            self.set_queued_script_ran(false);
         }
+        self.0.queued_script_frame.set(self.0.current_frame.get());
     }
 
     /// Instantiate a given child object on the timeline at a given depth.
@@ -2178,7 +2176,7 @@ impl<'gc> MovieClip<'gc> {
                 } else {
                     // Ensure newly registered frame scripts are executed,
                     // even if the frame is repeated due to goto.
-                    self.set_last_queued_script_frame(None);
+                    self.set_queued_script_ran(false);
                 }
             }
         } else if frame_scripts.len() > index {
@@ -2470,12 +2468,12 @@ impl<'gc> MovieClip<'gc> {
             // scripts on us AGAIN, we should allow the current stack to
             // wind down before handling that.
             if !self.is_executing_avm2_frame_script() {
-                let is_fresh_frame = self.last_queued_script_frame() != Some(frame_id);
+                let is_fresh_frame = !self.0.queued_script_ran.get();
 
                 if is_fresh_frame && let Some(callable) = self.frame_script(frame_id) {
                     let callable = Avm2Value::from(callable);
 
-                    self.set_last_queued_script_frame(Some(frame_id));
+                    self.set_queued_script_ran(true);
                     self.0
                         .set_flag(MovieClipFlags::EXECUTING_AVM2_FRAME_SCRIPT, true);
 
@@ -2532,7 +2530,7 @@ impl<'gc> MovieClip<'gc> {
     /// runs, since it had no frame script before. Scripts that the constructor
     /// registers outside of the frame script phase still run.
     pub fn skip_queued_frame_script(self) {
-        self.set_last_queued_script_frame(Some(self.0.queued_script_frame.get()));
+        self.set_queued_script_ran(true);
     }
 }
 

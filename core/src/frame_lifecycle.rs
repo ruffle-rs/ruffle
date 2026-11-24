@@ -142,7 +142,7 @@ pub fn run_inner_goto_frame<'gc>(
     // Instead, the nested frame runs them, even if a script was replaced after it
     // already ran on this frame.
     for clip in std::mem::take(&mut context.frame_script_cleanup_queue) {
-        clip.set_last_queued_script_frame(None);
+        clip.set_queued_script_ran(false);
     }
 
     // Note - we do *not* call `enter_frame` or dispatch an `enterFrame` event
@@ -204,7 +204,7 @@ pub fn broadcast_frame_exited<'gc>(context: &mut UpdateContext<'gc>) {
 /// each clip in the queue.
 fn run_frame_script_cleanup<'gc>(context: &mut UpdateContext<'gc>) {
     while let Some(clip) = context.frame_script_cleanup_queue.pop_front() {
-        clip.set_last_queued_script_frame(None);
+        clip.set_queued_script_ran(false);
         clip.run_local_frame_scripts(context);
     }
 }
