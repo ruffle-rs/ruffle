@@ -1,0 +1,35 @@
+tile0 onRollOver
+tile0 onRollOut
+tile1 onRollOver
+tile1 onRollOut
+tile2 onRollOver
+tile2 onRollOut
+80,80,80
+tile0 onRollOver
+tile0 onRollOut
+tile1 onRollOver
+tile1 onRollOut
+tile2 onRollOver
+tile2 onRollOut
+80,80,80
+tile0 onRollOver
+tile0 onPress
+tile0 onDragOut
+tile0 onReleaseOutside
+80,80,80
+tile0 onRollOver
+tile0 onPress
+tile0 onDragOut
+tile0 onDragOver
+tile0 onRelease
+tile0 onRollOut
+80,80,80
+80,80,80
+tile0 onRollOver
+tile0 onPress
+tile0 onDragOut
+tile0 onReleaseOutside
+tile1 onRollOver
+tile1 onRollOut
+80,80,80
+tile1 onDragOver
