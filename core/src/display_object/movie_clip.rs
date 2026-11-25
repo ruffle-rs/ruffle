@@ -1945,7 +1945,10 @@ impl<'gc> MovieClip<'gc> {
         let is_candidate_for_removal = if self.movie().is_action_script_3() {
             old_object.place_frame() > frame || old_object.placed_by_avm2_script()
         } else {
+            // Objects at depths reserved for scripts are only affected by the
+            // rewind when the timeline places something at their depth.
             old_object.depth() < AVM_DEPTH_BIAS
+                || final_placements.contains_key(&old_object.depth())
         };
 
         if !is_candidate_for_removal && old_object.as_morph_shape().is_none() {
@@ -1957,10 +1960,7 @@ impl<'gc> MovieClip<'gc> {
 
         let new_params = &final_placement.place_object;
 
-        if !old_object.movie().is_action_script_3()
-            && old_object.placed_by_avm1_script()
-            && old_object.depth() < AVM_DEPTH_BIAS
-        {
+        if !old_object.movie().is_action_script_3() && old_object.placed_by_avm1_script() {
             return false;
         }
 
