@@ -7,7 +7,6 @@ use crate::{
 };
 use bitstream_io::BitRead;
 use simple_asn1::ASN1Block;
-use std::borrow::Cow;
 use std::io::{self, Read};
 
 /// Maximum buffer capacity for reading the SWF.
@@ -2531,7 +2530,10 @@ impl<'a> Reader<'a> {
         })
     }
 
-    pub fn read_define_bits_lossless(&mut self, version: u8) -> Result<DefineBitsLossless<'a>> {
+    pub fn read_define_bits_lossless(
+        &mut self,
+        version: u8,
+    ) -> Result<DefineBitsLossless<&'a [u8]>> {
         let id = self.read_character_id()?;
         let format = self.read_u8()?;
         let width = self.read_u16()?;
@@ -2548,14 +2550,13 @@ impl<'a> Reader<'a> {
             5 => BitmapFormat::Rgb32,
             _ => return Err(Error::invalid_data("Invalid bitmap format.")),
         };
-        let data = self.read_slice_to_end();
         Ok(DefineBitsLossless {
             version,
             id,
             format,
             width,
             height,
-            data: Cow::Borrowed(data),
+            data: self.read_slice_to_end(),
         })
     }
 

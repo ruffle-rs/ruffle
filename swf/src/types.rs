@@ -7,7 +7,6 @@
 use crate::string::SwfStr;
 use bitflags::bitflags;
 use enum_map::Enum;
-use std::borrow::Cow;
 use std::fmt::{self, Display, Formatter};
 use std::num::NonZeroU8;
 use std::str::FromStr;
@@ -530,7 +529,7 @@ pub enum Tag<'a> {
         jpeg_data: &'a [u8],
     },
     DefineBitsJpeg3(DefineBitsJpeg3<'a>),
-    DefineBitsLossless(DefineBitsLossless<'a>),
+    DefineBitsLossless(DefineBitsLossless<&'a [u8]>),
     DefineButton(Box<Button<'a>>),
     DefineButton2(Box<Button<'a>>),
     DefineButtonColorTransform(ButtonColorTransform),
@@ -1705,13 +1704,13 @@ impl TextGridFit {
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub struct DefineBitsLossless<'a> {
+pub struct DefineBitsLossless<D> {
     pub version: u8,
     pub id: CharacterId,
     pub format: BitmapFormat,
     pub width: u16,
     pub height: u16,
-    pub data: Cow<'a, [u8]>,
+    pub data: D,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]

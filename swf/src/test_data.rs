@@ -9,7 +9,6 @@ use crate::string::{SwfStr, WINDOWS_1252};
 use crate::tag_code::TagCode;
 use crate::types::*;
 use crate::write::write_swf;
-use std::borrow::Cow;
 use std::fs::File;
 
 #[expect(dead_code)]
@@ -166,9 +165,9 @@ pub fn tag_tests() -> Vec<TagTestData> {
                 format: BitmapFormat::Rgb32,
                 width: 8,
                 height: 8,
-                data: Cow::Borrowed(&[
+                data: &[
                     120, 218, 251, 207, 192, 240, 255, 255, 8, 198, 0, 4, 128, 127, 129,
-                ]),
+                ],
             }),
             read_tag_bytes_from_file(
                 "tests/swfs/DefineBitsLossless.swf",
@@ -183,9 +182,9 @@ pub fn tag_tests() -> Vec<TagTestData> {
                 format: BitmapFormat::Rgb32,
                 width: 8,
                 height: 8,
-                data: Cow::Borrowed(&[
+                data: &[
                     120, 218, 107, 96, 96, 168, 107, 24, 193, 24, 0, 227, 81, 63, 129,
-                ]),
+                ],
             }),
             read_tag_bytes_from_file(
                 "tests/swfs/DefineBitsLossless2.swf",
