@@ -393,7 +393,6 @@ Ruffle depends on third-party libraries with compatible licenses.
 | [jni](https://github.com/jni-rs/jni-rs) | [Apache-2.0](#Apache-20)/[MIT](#MIT) | Copyright (c) 2016 Prevoty, Inc. and jni-rs contributors  |
 | [jni-sys](https://github.com/sfackler/rust-jni-sys) | [Apache-2.0](#Apache-20)/[MIT](#MIT) | Copyright (c) 2015 The rust-jni-sys Developers  |
 | [jobserver](https://github.com/alexcrichton/jobserver-rs) | [Apache-2.0](#Apache-20)/[MIT](#MIT) | Copyright (c) 2014 Alex Crichton  |
-| [jpeg-decoder](https://github.com/image-rs/jpeg-decoder) | [Apache-2.0](#Apache-20)/[MIT](#MIT) | Copyright (c) 2016 The jpeg-decoder Developers  |
 | [js-sys](https://github.com/rustwasm/wasm-bindgen/tree/master/crates/js-sys) | [Apache-2.0](#Apache-20)/[MIT](#MIT) | Copyright (c) 2014 Alex Crichton  |
 | [json](https://github.com/maciejhirsz/json-rust) | [Apache-2.0](#Apache-20)/[MIT](#MIT) | Copyright (c) 2016 Maciej Hirsz <maciej.hirsz@gmail.com>  |
 | [kernel32-sys](https://github.com/retep998/winapi-rs) | [MIT](#MIT) | Copyright (c) 2015-2018 The winapi-rs Developers  |
@@ -630,6 +629,8 @@ Ruffle depends on third-party libraries with compatible licenses.
 | [xcursor](https://github.com/esposm03/xcursor-rs) | [MIT](#MIT) | Copyright (c) 2020 Samuele Esposito  |
 | [xdg](https://github.com/whitequark/rust-xdg) | [Apache-2.0](#Apache-20)/[MIT](#MIT) | Copyright (c) 2014 The Rust Project Developers  |
 | [xml-rs](https://github.com/netvl/xml-rs) | [MIT](#MIT) | Copyright (c) 2014 Vladimir Matveev  |
+| [zune-core](https://github.com/etemesi254/zune-image) | [Apache-2.0](#Apache-20)/[MIT](#MIT)/[Zlib](#Zlib) | Copyright (c) zune-image developers  |
+| [zune-jpeg](https://github.com/etemesi254/zune-image/tree/dev/crates/zune-jpeg) | [Apache-2.0](#Apache-20)/[MIT](#MIT)/[Zlib](#Zlib) | Copyright (c) zune-image developers  |
 
 # Licenses of Third-Party Libraries
 
