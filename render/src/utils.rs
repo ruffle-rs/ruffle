@@ -252,12 +252,12 @@ fn decode_jpeg(jpeg_data: &[u8], alpha_data: Option<&[u8]>) -> Result<Bitmap<'st
 /// DefineBitsLossless is Zlib encoded pixel data (similar to PNG), possibly
 /// palletized.
 pub fn decode_define_bits_lossless(
-    swf_tag: &swf::DefineBitsLossless,
+    swf_tag: &swf::DefineBitsLossless<impl AsRef<[u8]>>,
 ) -> Result<Bitmap<'static>, Error> {
     validate_size(swf_tag.width.into(), swf_tag.height.into())?;
 
     // Decompress the image data (DEFLATE compression).
-    let mut decoded_data = decompress_zlib(&swf_tag.data)?;
+    let mut decoded_data = decompress_zlib(swf_tag.data.as_ref())?;
 
     let has_alpha = swf_tag.version == 2;
 

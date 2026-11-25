@@ -6,6 +6,7 @@ use crate::display_object::{
     Avm1Button, Avm2Button, BitmapClass, EditText, Graphic, MorphShape, MovieClip, Text, Video,
 };
 use crate::font::Font;
+use crate::tag_utils::SwfSlice;
 use gc_arena::barrier::unlock;
 use gc_arena::lock::Lock;
 use gc_arena::{Collect, Gc, Mutation};
@@ -93,7 +94,7 @@ pub enum CompressedBitmap {
         width: u32,
         height: u32,
     },
-    Lossless(DefineBitsLossless<'static>),
+    Lossless(DefineBitsLossless<SwfSlice>),
 }
 
 impl CompressedBitmap {

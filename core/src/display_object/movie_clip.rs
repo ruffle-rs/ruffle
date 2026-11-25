@@ -51,7 +51,6 @@ use ruffle_common::utils::HasPrefixField;
 use ruffle_macros::istr;
 use ruffle_render::perspective_projection::PerspectiveProjection;
 use smallvec::SmallVec;
-use std::borrow::Cow;
 use std::cell::{Cell, OnceCell, Ref, RefCell, RefMut};
 use std::cmp::max;
 use std::collections::HashMap;
@@ -3521,7 +3520,7 @@ impl<'gc, 'a> MovieClipShared<'gc> {
                 width: define_bits_lossless.width,
                 height: define_bits_lossless.height,
                 version: define_bits_lossless.version,
-                data: Cow::Owned(define_bits_lossless.data.into_owned()),
+                data: self.swf_data.to_subslice(define_bits_lossless.data),
             })),
         );
         self.library_mut(context)
