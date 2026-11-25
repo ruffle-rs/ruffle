@@ -4198,7 +4198,7 @@ impl<'gc, 'a> MovieClipShared<'gc> {
         context: &mut UpdateContext<'gc>,
         reader: &mut SwfStream<'a>,
     ) -> Result<(), Error> {
-        let jpeg_data = reader.read_slice_to_end();
+        let jpeg_data = reader.read_slice_to_end().to_owned();
         self.library_mut(context).set_jpeg_tables(jpeg_data);
         Ok(())
     }

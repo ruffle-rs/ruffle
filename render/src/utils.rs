@@ -46,14 +46,25 @@ pub fn determine_jpeg_tag_format(data: &[u8]) -> JpegTagFormat {
 pub fn decode_define_bits_jpeg(
     data: &[u8],
     alpha_data: Option<&[u8]>,
+    jpeg_tables: Option<&[u8]>,
 ) -> Result<Bitmap<'static>, Error> {
     let format = determine_jpeg_tag_format(data);
-    if format != JpegTagFormat::Jpeg && alpha_data.is_some() {
-        // Only DefineBitsJPEG3 with true JPEG data should have separate alpha data.
-        tracing::warn!("DefineBitsJPEG contains non-JPEG data with alpha; probably incorrect")
+    if format != JpegTagFormat::Jpeg {
+        if alpha_data.is_some() {
+            // Only DefineBitsJPEG3 with true JPEG data should have separate alpha data.
+            tracing::warn!("DefineBitsJPEG contains non-JPEG data with alpha; probably incorrect");
+        }
+
+        if jpeg_tables.is_some() {
+            // Only DefineBits (which can only hold JPEG data) should have separate JPEG tables.
+            tracing::warn!(
+                "DefineBitsJPEG contains non-JPEG data with separate JPEG tables; probably incorrect"
+            );
+        }
     }
+
     match format {
-        JpegTagFormat::Jpeg => decode_jpeg(data, alpha_data),
+        JpegTagFormat::Jpeg => decode_jpeg(data, alpha_data, jpeg_tables),
         JpegTagFormat::JpegXr => decode_jpegxr(data),
         JpegTagFormat::Png => decode_png(data),
         JpegTagFormat::Gif => decode_gif(data),
@@ -74,10 +85,7 @@ pub fn decode_define_bits_jpeg_dimensions(data: &[u8]) -> Result<(u32, u32), Err
 
 /// Glues the JPEG encoding tables from a JPEGTables SWF tag to the JPEG data
 /// in a DefineBits tag, producing complete JPEG data suitable for a decoder.
-pub fn glue_tables_to_jpeg<'a>(
-    jpeg_data: &'a [u8],
-    jpeg_tables: Option<&'a [u8]>,
-) -> Cow<'a, [u8]> {
+fn glue_tables_to_jpeg<'a>(jpeg_data: &'a [u8], jpeg_tables: Option<&'a [u8]>) -> Cow<'a, [u8]> {
     if let Some(jpeg_tables) = jpeg_tables
         && jpeg_tables.len() >= 2
     {
@@ -101,7 +109,7 @@ pub fn glue_tables_to_jpeg<'a>(
 
 /// Removes potential invalid JPEG data from SWF DefineBitsJPEG tags.
 /// These bytes need to be removed for the JPEG to decode properly.
-pub fn remove_invalid_jpeg_data(data: &[u8]) -> Cow<'_, [u8]> {
+fn remove_invalid_jpeg_data(data: &[u8]) -> Cow<'_, [u8]> {
     // SWF19 errata p.138:
     // "Before version 8 of the SWF file format, SWF files could contain an erroneous header of 0xFF, 0xD9, 0xFF, 0xD8
     // before the JPEG SOI marker."
@@ -197,10 +205,15 @@ fn decode_jpeg_dimensions(jpeg_data: &[u8]) -> Result<(u16, u16), Error> {
     Ok((width, height))
 }
 
-/// Decodes a JPEG with optional alpha data.
+/// Decodes a JPEG with optional alpha data and optional external tables.
 /// The decoded bitmap will have pre-multiplied alpha.
-fn decode_jpeg(jpeg_data: &[u8], alpha_data: Option<&[u8]>) -> Result<Bitmap<'static>, Error> {
-    let jpeg_data = remove_invalid_jpeg_data(jpeg_data);
+fn decode_jpeg(
+    jpeg_data: &[u8],
+    alpha_data: Option<&[u8]>,
+    jpeg_tables: Option<&[u8]>,
+) -> Result<Bitmap<'static>, Error> {
+    let jpeg_data = glue_tables_to_jpeg(jpeg_data, jpeg_tables);
+    let jpeg_data = remove_invalid_jpeg_data(&jpeg_data);
     let (mut decoder, width, height) = read_jpeg_headers(&jpeg_data)?;
     let decoded_data = decoder.decode()?;
 
