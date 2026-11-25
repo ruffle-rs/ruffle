@@ -1,0 +1,14 @@
+num_ticks = 20
+known_failure = true
+
+[[compilers]]
+type = "Rascal"
+target = "test.swf"
+scripts = ["test.as"]
+swf_version = 8
+
+[[compilers]]
+type = "Rascal"
+target = "child.swf"
+scripts = ["child.as"]
+swf_version = 8
