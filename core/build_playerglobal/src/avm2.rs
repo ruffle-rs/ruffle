@@ -111,7 +111,7 @@ pub fn build_avm2_playerglobal(
     })];
 
     let header = Header::default_with_swf_version(19);
-    let out_file = File::create(out_path).unwrap();
+    let out_file = File::create(out_path)?;
     swf::write_swf(&header, &tags, out_file)?;
 
     Ok(())

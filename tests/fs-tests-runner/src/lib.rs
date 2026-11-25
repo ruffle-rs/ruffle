@@ -201,7 +201,7 @@ impl<T> FsTestsRunner<T> {
         let root = &self.root_dir;
 
         let name = filter_to_test_name(self.filter.as_ref().unwrap());
-        let absolute_root = std::fs::canonicalize(root).unwrap();
+        let absolute_root = std::fs::canonicalize(root)?;
         let path = absolute_root
             .join(&name)
             .join(self.descriptor_name.as_ref())

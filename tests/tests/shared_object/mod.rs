@@ -35,7 +35,7 @@ pub fn shared_object_avm1(environment: &impl Environment) -> Result<(), libtest_
 
     // Save the storage backend for next run.
     {
-        let mut player = runner.player().lock().unwrap();
+        let mut player = runner.player().lock()?;
         player.swap_storage(&mut memory_storage_backend);
     }
 
@@ -62,7 +62,7 @@ pub fn shared_object_avm1(environment: &impl Environment) -> Result<(), libtest_
     let mut runner = test2.create_test_runner(environment)?;
     {
         // Swap in the previous storage backend.
-        let mut player = runner.player().lock().unwrap();
+        let mut player = runner.player().lock()?;
         player.swap_storage(&mut memory_storage_backend);
     }
 
@@ -114,7 +114,7 @@ pub fn shared_object_self_ref_avm1(
 
     {
         // Save the storage backend for next run.
-        let mut player = runner.player().lock().unwrap();
+        let mut player = runner.player().lock()?;
         player.swap_storage(&mut memory_storage_backend);
     }
 
@@ -131,7 +131,7 @@ pub fn shared_object_self_ref_avm1(
     let mut runner = test2.create_test_runner(environment)?;
     {
         // Swap in the previous storage backend.
-        let mut player = runner.player().lock().unwrap();
+        let mut player = runner.player().lock()?;
         player.swap_storage(&mut memory_storage_backend);
     }
 
@@ -174,7 +174,7 @@ pub fn shared_object_avm2(environment: &impl Environment) -> Result<(), libtest_
 
     {
         // Save the storage backend for next run.
-        let mut player = runner.player().lock().unwrap();
+        let mut player = runner.player().lock()?;
         player.swap_storage(&mut memory_storage_backend);
     }
 
@@ -200,7 +200,7 @@ pub fn shared_object_avm2(environment: &impl Environment) -> Result<(), libtest_
     let mut runner = test2.create_test_runner(environment)?;
     {
         // Swap in the previous storage backend.
-        let mut player = runner.player().lock().unwrap();
+        let mut player = runner.player().lock()?;
         player.swap_storage(&mut memory_storage_backend);
     }
 

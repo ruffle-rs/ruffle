@@ -2622,7 +2622,7 @@ pub mod tests {
     }
 
     fn try_read_from_file(path: &str) -> Result<SwfBuf> {
-        let data = std::fs::read(path).unwrap();
+        let data = std::fs::read(path)?;
         decompress_swf(&data[..])
     }
 
