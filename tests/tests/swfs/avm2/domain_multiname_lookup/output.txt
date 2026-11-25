@@ -1,0 +1,51 @@
+BEGIN DOMAIN_MULTINAME_LOOKUP
+parent Choice=parent namespace
+parent has Collision before child=false
+=== before late parent definition ===
+guarded false=skipped
+-- first --
+multiname FreshChoice=fresh parent namespace
+multiname Choice=parent namespace
+qualified parent Choice=parent namespace
+qualified child Choice=child namespace
+qualified Collision=child definition
+domain Collision=child definition
+multiname Timer=flash.utils::Timer delay=25 repeatCount=1
+qualified custom Timer=utils::Timer
+-- repeat --
+multiname FreshChoice=fresh parent namespace
+multiname Choice=parent namespace
+qualified parent Choice=parent namespace
+qualified child Choice=child namespace
+qualified Collision=child definition
+domain Collision=child definition
+multiname Timer=flash.utils::Timer delay=25 repeatCount=1
+qualified custom Timer=utils::Timer
+parent has Collision after child=false
+late movie Collision=late parent definition
+=== after late parent definition ===
+parent Collision=late parent definition
+fresh dormant lookup=child function
+guarded true=child function
+-- after late --
+multiname FreshChoice=fresh parent namespace
+multiname Choice=parent namespace
+qualified parent Choice=parent namespace
+qualified child Choice=child namespace
+qualified Collision=child definition
+domain Collision=child definition
+multiname Timer=flash.utils::Timer delay=25 repeatCount=1
+qualified custom Timer=utils::Timer
+-- after late repeat --
+multiname FreshChoice=fresh parent namespace
+multiname Choice=parent namespace
+qualified parent Choice=parent namespace
+qualified child Choice=child namespace
+qualified Collision=child definition
+domain Collision=child definition
+multiname Timer=flash.utils::Timer delay=25 repeatCount=1
+qualified custom Timer=utils::Timer
+-- qualified Timer first --
+qualified custom Timer=utils::Timer
+multiname Timer after qualified lookup=utils::Timer
+DOMAIN_MULTINAME_LOOKUP_COMPLETE
