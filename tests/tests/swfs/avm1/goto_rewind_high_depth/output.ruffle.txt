@@ -1,0 +1,482 @@
+== frame 1
+f1 d110: c1a m=undefined x=0 y=0 a=100 v=undefined
+f1 d120: c2a m=undefined x=0 y=0 a=100 v=undefined
+f1 d130: c3a m=undefined x=0 y=0 a=100 v=undefined
+f1 d140: c4a m=undefined x=0 y=0 a=100 v=undefined
+f1 d150: c5a m=undefined x=0 y=0 a=100 v=undefined
+f1 d160: c6a m=undefined x=0 y=0 a=100 v=undefined
+f1 d165: c6b m=undefined x=0 y=0 a=100 v=undefined
+f1 d170: c7a m=undefined x=0 y=0 a=100 v=undefined
+f1 d175: -
+f1 d180: -
+f1 d190: c9a m=undefined x=0 y=0 a=100 v=undefined
+f1 d200: c10a m=undefined x=0 y=0 a=100 v=undefined
+f1 d210: c11a m=undefined x=0 y=0 a=100 v=undefined
+f1 d220: c12a m=undefined x=0 y=0 a=100 v=undefined
+f1 d230: c13a m=undefined x=0 y=0 a=100 v=undefined
+f1 d240: c14a m=undefined x=0 y=0 a=100 v=undefined
+f1 d250: c15a m=undefined x=0 y=0 a=100 v=undefined
+f1 d260: c16b m=undefined x=0 y=0 a=100 v=undefined
+f1 d270: c17a m=undefined x=0 y=0 a=100 v=undefined
+f1 d280: c18a m=undefined x=0 y=0 a=100 v=undefined
+f1 d290: c19a m=undefined x=0 y=0 a=100 v=undefined
+f1 d300: c20a m=undefined x=0 y=0 a=100 v=undefined
+f1 d310: c21a m=undefined x=0 y=0 a=100 v=undefined
+f1 d320: c22a m=undefined x=0 y=0 a=100 v=undefined
+f1 d330: c23a m=undefined x=0 y=0 a=100 v=undefined
+f1 d340: c24a m=undefined x=0 y=0 a=100 v=undefined
+f1 d345: -
+f1 d350: c25a m=undefined x=0 y=0 a=100 v=undefined
+f1 d360: c26a m=undefined x=0 y=0 a=100 v=undefined
+f1 d365: -
+f1 d370: c27a m=undefined x=0 y=0 a=100 v=undefined
+f1 d380: c28a m=undefined x=0 y=0 a=100 v=undefined
+f1 d385: -
+f1 d390: c29a m=undefined x=0 y=0 a=100 v=undefined
+f1 d395: -
+f1 d400: c30a m=undefined x=0 y=0 a=100 v=undefined
+f1 d405: -
+f1 d410: c31a m=undefined x=0 y=0 a=100 v=undefined
+f1 d420: c32a m=undefined x=0 y=0 a=100 v=undefined
+f1 d430: c33a m=undefined x=0 y=0 a=100 v=undefined
+f1 d440: c34a m=undefined x=0 y=0 a=100 v=undefined
+f1 d450: c35a m=undefined x=0 y=0 a=100 v=undefined
+f1 d460: -
+f1 d470: c37a m=undefined x=0 y=0 a=100 v=undefined
+f1 d480: -
+f1 d490: c39a m=undefined x=0 y=0 a=100 v=undefined
+f1 d500: -
+f1 d510: c41e m=undefined x=0 y=200 a=100 v=undefined
+f1 d520: c42e m=undefined x=0 y=200 a=100 v=undefined
+f1 d530: c43e m=undefined x=0 y=200 a=100 v=undefined
+f1 d540: c44e m=undefined x=0 y=200 a=100 v=undefined
+f1 d550: -
+f1 k46 d560: (no object) bounds=0,0 10,10 chars=0
+f1 k47 d570: (no object) bounds=0,0 10,10 chars=0
+f1 k48 d580: (no object) bounds=0,0 10,10 chars=0
+f1 k49 d590: - bounds=empty chars=0
+f1 k50 d600: (no object) bounds=0,0 12,12 chars=1
+f1 k51 d610: (no object) bounds=0,0 12,12 chars=1
+f1 k52 d620: (no object) bounds=0,0 12,12 chars=1
+f1 k53 d630: - bounds=empty chars=0
+f1 r3 d640: q54a m=undefined x=0 y=0 a=100 v=undefined
+f1 r3 d650: q55a m=undefined x=0 y=0 a=100 v=undefined
+f1 r3 d660: q56a m=undefined x=0 y=0 a=100 v=undefined
+f1 r4 d640: q54a m=undefined x=0 y=0 a=100 v=undefined
+f1 r4 d650: q55a m=undefined x=0 y=0 a=100 v=undefined
+f1 r4 d660: q56a m=undefined x=0 y=0 a=100 v=undefined
+== frame 2
+f2 d110: c1b m=undefined x=0 y=0 a=100 v=undefined
+f2 d120: c2a m=f1 x=0 y=0 a=100 v=undefined
+f2 d130: c3b m=undefined x=5 y=0 a=100 v=undefined
+f2 d140: c4b m=undefined x=0 y=0 a=50 v=undefined
+f2 d150: c5b m=undefined x=0 y=0 a=100 v=1
+f2 d160: c6b m=undefined x=0 y=0 a=100 v=undefined
+f2 d165: c6a m=undefined x=0 y=0 a=100 v=undefined
+f2 d170: -
+f2 d175: c7a m=f1 x=0 y=0 a=100 v=undefined
+f2 d180: c8b m=undefined x=0 y=0 a=100 v=undefined
+f2 d190: c9a m=f1 x=7 y=3 a=100 v=undefined
+f2 d200: c10a m=f1 x=7 y=3 a=100 v=undefined
+f2 d210: c11x m=undefined x=0 y=0 a=100 v=undefined
+f2 d220: -
+f2 d230: c13d m=undefined x=0 y=0 a=100 v=undefined
+f2 d240: -
+f2 d250: c15b m=undefined x=0 y=0 a=100 v=undefined
+f2 d260: c16b m=f1 x=7 y=3 a=100 v=undefined
+f2 d270: c17b m=undefined x=0 y=0 a=100 v=undefined
+f2 d280: c18x m=undefined x=0 y=0 a=100 v=undefined
+f2 d290: c19b m=undefined x=0 y=0 a=100 v=undefined
+f2 d300: c20a m=f1 x=0 y=0 a=100 v=undefined
+f2 d310: c21b m=undefined x=5 y=0 a=100 v=undefined
+f2 d320: c22b m=undefined x=0 y=0 a=100 v=1
+f2 d330: c23b m=undefined x=0 y=0 a=50 v=undefined
+f2 d340: c24b m=undefined x=0 y=0 a=100 v=undefined
+f2 d345: c24a m=undefined x=0 y=0 a=100 v=undefined
+f2 d350: c25a m=f1 x=0 y=0 a=100 v=undefined
+f2 d360: c26b m=undefined x=0 y=0 a=100 v=undefined
+f2 d365: -
+f2 d370: -
+f2 d380: c28a m=f1 x=0 y=0 a=100 v=undefined
+f2 d385: c28d m=undefined x=0 y=0 a=100 v=undefined
+f2 d390: -
+f2 d395: c29a m=f1 x=0 y=0 a=100 v=undefined
+f2 d400: c30b m=undefined x=0 y=0 a=100 v=undefined
+f2 d405: c30a m=f1 x=0 y=0 a=100 v=undefined
+f2 d410: c31b m=undefined x=0 y=0 a=100 v=undefined
+f2 d420: c32b m=undefined x=0 y=0 a=100 v=undefined
+f2 d430: c33b m=undefined x=0 y=0 a=100 v=undefined
+f2 d440: c34b m=undefined x=0 y=0 a=100 v=undefined
+f2 d450: c35s m=undefined x=0 y=0 a=100 v=undefined
+f2 d460: c36s m=undefined x=0 y=0 a=100 v=undefined
+f2 d470: c37s m=undefined x=0 y=0 a=100 v=undefined
+f2 d480: c38s m=undefined x=0 y=0 a=100 v=undefined
+f2 d490: c39s m=undefined x=0 y=0 a=100 v=undefined
+f2 d500: c40s m=undefined x=0 y=0 a=100 v=undefined
+f2 d510: c41e m=undefined x=0 y=200 a=100 v=undefined
+f2 d520: c42e m=undefined x=7 y=203 a=100 v=undefined
+f2 d530: c43e m=undefined x=0 y=200 a=100 v=undefined
+f2 d540: c44e m=f1 x=7 y=3 a=100 v=undefined
+f2 d550: c45e m=undefined x=0 y=200 a=100 v=undefined
+f2 k46 d560: (no object) bounds=0,0 10,10 chars=0
+f2 k47 d570: (no object) bounds=0,20 10,30 chars=0
+f2 k48 d580: (no object) bounds=0,40 10,50 chars=0
+f2 k49 d590: (no object) bounds=0,0 10,10 chars=0
+f2 k50 d600: (no object) bounds=0,0 12,12 chars=1
+f2 k51 d610: (no object) bounds=0,20 12,32 chars=1
+f2 k52 d620: (no object) bounds=0,0 24,12 chars=1
+f2 k53 d630: (no object) bounds=0,0 12,12 chars=1
+f2 r3 d640: q54a m=undefined x=0 y=0 a=100 v=undefined
+f2 r3 d650: q55a m=undefined x=0 y=0 a=100 v=undefined
+f2 r3 d660: q56a m=undefined x=0 y=0 a=100 v=undefined
+f2 r4 d640: q54a m=undefined x=0 y=0 a=100 v=undefined
+f2 r4 d650: q55a m=undefined x=0 y=0 a=100 v=undefined
+f2 r4 d660: q56a m=undefined x=0 y=0 a=100 v=undefined
+== frame 3
+f3 d110: c1b m=undefined x=0 y=0 a=100 v=undefined
+f3 d120: c2a m=f1 x=0 y=0 a=100 v=undefined
+f3 d130: c3b m=undefined x=5 y=0 a=100 v=undefined
+f3 d140: c4b m=undefined x=0 y=0 a=50 v=undefined
+f3 d150: c5b m=undefined x=0 y=0 a=100 v=1
+f3 d160: c6b m=undefined x=0 y=0 a=100 v=undefined
+f3 d165: c6a m=undefined x=0 y=0 a=100 v=undefined
+f3 d170: -
+f3 d175: c7a m=f1 x=0 y=0 a=100 v=undefined
+f3 d180: c8b m=undefined x=0 y=0 a=100 v=undefined
+f3 d190: c9a m=f1 x=7 y=3 a=100 v=undefined
+f3 d200: c10a m=f1 x=7 y=3 a=100 v=undefined
+f3 d210: c11x m=f2 x=0 y=0 a=100 v=undefined
+f3 d220: -
+f3 d230: c13d m=undefined x=0 y=0 a=100 v=undefined
+f3 d240: c14b m=undefined x=0 y=0 a=100 v=undefined
+f3 d250: c15b m=undefined x=7 y=3 a=100 v=undefined
+f3 d260: c16b m=f1 x=7 y=3 a=100 v=undefined
+f3 d270: c17b m=undefined x=0 y=0 a=100 v=undefined
+f3 d280: c18x m=f2 x=0 y=0 a=100 v=undefined
+f3 d290: c19b m=undefined x=0 y=0 a=100 v=undefined
+f3 d300: c20a m=f1 x=0 y=0 a=100 v=undefined
+f3 d310: c21b m=undefined x=5 y=0 a=100 v=undefined
+f3 d320: c22b m=undefined x=0 y=0 a=100 v=1
+f3 d330: c23b m=undefined x=0 y=0 a=50 v=undefined
+f3 d340: c24b m=undefined x=0 y=0 a=100 v=undefined
+f3 d345: c24a m=undefined x=0 y=0 a=100 v=undefined
+f3 d350: c25a m=f1 x=0 y=0 a=100 v=undefined
+f3 d360: c26b m=undefined x=0 y=0 a=100 v=undefined
+f3 d365: -
+f3 d370: -
+f3 d380: c28a m=f1 x=0 y=0 a=100 v=undefined
+f3 d385: c28d m=undefined x=0 y=0 a=100 v=undefined
+f3 d390: -
+f3 d395: c29a m=f1 x=0 y=0 a=100 v=undefined
+f3 d400: c30b m=f2 x=0 y=0 a=100 v=undefined
+f3 d405: c30a m=f1 x=0 y=0 a=100 v=undefined
+f3 d410: c31b m=undefined x=0 y=0 a=100 v=undefined
+f3 d420: c32b m=undefined x=0 y=0 a=100 v=undefined
+f3 d430: c33b m=undefined x=0 y=0 a=100 v=undefined
+f3 d440: c34b m=undefined x=0 y=0 a=100 v=undefined
+f3 d450: c35s m=undefined x=0 y=0 a=100 v=undefined
+f3 d460: c36s m=undefined x=0 y=0 a=100 v=undefined
+f3 d470: c37s m=undefined x=0 y=0 a=100 v=undefined
+f3 d480: c38s m=undefined x=0 y=0 a=100 v=undefined
+f3 d490: c39s m=undefined x=0 y=0 a=100 v=undefined
+f3 d500: c40s m=undefined x=0 y=0 a=100 v=undefined
+f3 d510: c41e m=f2 x=0 y=200 a=100 v=undefined
+f3 d520: c42e m=f2 x=7 y=203 a=100 v=undefined
+f3 d530: c43e m=f2 x=0 y=200 a=100 v=undefined
+f3 d540: c44e m=f1 x=7 y=3 a=100 v=undefined
+f3 d550: c45e m=undefined x=0 y=200 a=100 v=undefined
+f3 k46 d560: (no object) bounds=0,0 10,10 chars=0
+f3 k47 d570: (no object) bounds=0,20 10,30 chars=0
+f3 k48 d580: (no object) bounds=0,40 10,50 chars=0
+f3 k49 d590: (no object) bounds=0,0 10,10 chars=0
+f3 k50 d600: (no object) bounds=0,0 12,12 chars=1
+f3 k51 d610: (no object) bounds=0,20 12,32 chars=1
+f3 k52 d620: (no object) bounds=0,0 24,12 chars=1
+f3 k53 d630: (no object) bounds=0,0 12,12 chars=1
+f3 r3 d640: q54a m=undefined x=0 y=0 a=100 v=undefined
+f3 r3 d650: q55a m=undefined x=0 y=0 a=100 v=undefined
+f3 r3 d660: q56a m=undefined x=0 y=0 a=100 v=undefined
+f3 r4 d640: q54a m=undefined x=0 y=0 a=100 v=undefined
+f3 r4 d650: q55a m=undefined x=0 y=0 a=100 v=undefined
+f3 r4 d660: q56a m=undefined x=0 y=0 a=100 v=undefined
+f3 r3 frame 3 d640: q54c m=undefined x=0 y=0 a=100 v=undefined
+f3 r3 frame 3 d650: q55c m=undefined x=0 y=0 a=100 v=undefined
+f3 r3 frame 3 d660: q56c m=undefined x=0 y=0 a=100 v=undefined
+f3 r3 frame 3 to 2 d640: q54c m=undefined x=0 y=0 a=100 v=undefined
+f3 r3 frame 3 to 2 d650: q55c m=undefined x=0 y=0 a=100 v=undefined
+f3 r3 frame 3 to 2 d660: q56c m=undefined x=0 y=0 a=100 v=undefined
+f3 r4 frame 4 d640: q54c m=undefined x=0 y=0 a=100 v=undefined
+f3 r4 frame 4 d650: q55c m=undefined x=0 y=0 a=100 v=undefined
+f3 r4 frame 4 d660: q56c m=undefined x=0 y=0 a=100 v=undefined
+f3 r4 frame 4 to 2 d640: q54c m=undefined x=0 y=0 a=100 v=undefined
+f3 r4 frame 4 to 2 d650: q55c m=undefined x=0 y=0 a=100 v=undefined
+f3 r4 frame 4 to 2 d660: q56c m=undefined x=0 y=0 a=100 v=undefined
+== after gotoAndStop(1)
+g d110: c1b m=undefined x=0 y=0 a=100 v=undefined
+g d120: c2a m=f1 x=0 y=0 a=100 v=undefined
+g d130: c3b m=undefined x=5 y=0 a=100 v=undefined
+g d140: c4b m=undefined x=0 y=0 a=50 v=undefined
+g d150: c5b m=undefined x=0 y=0 a=100 v=1
+g d160: c6b m=undefined x=0 y=0 a=100 v=undefined
+g d165: c6a m=undefined x=0 y=0 a=100 v=undefined
+g d170: c7a m=undefined x=0 y=0 a=100 v=undefined
+g d175: c7a m=f1 x=0 y=0 a=100 v=undefined
+g d180: c8b m=undefined x=0 y=0 a=100 v=undefined
+g d190: c9a m=f1 x=0 y=0 a=100 v=undefined
+g d200: c10a m=f1 x=0 y=0 a=100 v=undefined
+g d210: c11x m=f2 x=0 y=0 a=100 v=undefined
+g d220: c12a m=undefined x=0 y=0 a=100 v=undefined
+g d230: c13d m=undefined x=0 y=0 a=100 v=undefined
+g d240: c14b m=undefined x=0 y=0 a=100 v=undefined
+g d250: c15b m=undefined x=0 y=0 a=100 v=undefined
+g d260: c16b m=f1 x=0 y=0 a=100 v=undefined
+g d270: c17b m=undefined x=0 y=0 a=100 v=undefined
+g d280: c18x m=f2 x=0 y=0 a=100 v=undefined
+g d290: c19b m=undefined x=0 y=0 a=100 v=undefined
+g d300: c20a m=f1 x=0 y=0 a=100 v=undefined
+g d310: c21b m=undefined x=5 y=0 a=100 v=undefined
+g d320: c22b m=undefined x=0 y=0 a=100 v=1
+g d330: c23b m=undefined x=0 y=0 a=50 v=undefined
+g d340: c24b m=undefined x=0 y=0 a=100 v=undefined
+g d345: c24a m=undefined x=0 y=0 a=100 v=undefined
+g d350: c25a m=f1 x=0 y=0 a=100 v=undefined
+g d360: c26b m=undefined x=0 y=0 a=100 v=undefined
+g d365: -
+g d370: c27a m=undefined x=0 y=0 a=100 v=undefined
+g d380: c28a m=f1 x=0 y=0 a=100 v=undefined
+g d385: c28d m=undefined x=0 y=0 a=100 v=undefined
+g d390: c29a m=undefined x=0 y=0 a=100 v=undefined
+g d395: c29a m=f1 x=0 y=0 a=100 v=undefined
+g d400: c30b m=f2 x=0 y=0 a=100 v=undefined
+g d405: c30a m=f1 x=0 y=0 a=100 v=undefined
+g d410: c31b m=undefined x=0 y=0 a=100 v=undefined
+g d420: c32b m=undefined x=0 y=0 a=100 v=undefined
+g d430: c33b m=undefined x=0 y=0 a=100 v=undefined
+g d440: c34b m=undefined x=0 y=0 a=100 v=undefined
+g d450: c35s m=undefined x=0 y=0 a=100 v=undefined
+g d460: c36s m=undefined x=0 y=0 a=100 v=undefined
+g d470: c37s m=undefined x=0 y=0 a=100 v=undefined
+g d480: c38s m=undefined x=0 y=0 a=100 v=undefined
+g d490: c39s m=undefined x=0 y=0 a=100 v=undefined
+g d500: c40s m=undefined x=0 y=0 a=100 v=undefined
+g d510: c41e m=f2 x=0 y=200 a=100 v=undefined
+g d520: c42e m=f2 x=0 y=200 a=100 v=undefined
+g d530: c43e m=f2 x=0 y=200 a=100 v=undefined
+g d540: c44e m=f1 x=0 y=200 a=100 v=undefined
+g d550: c45e m=undefined x=0 y=200 a=100 v=undefined
+g k46 d560: (no object) bounds=0,0 10,10 chars=0
+g k47 d570: (no object) bounds=0,0 10,10 chars=0
+g k48 d580: (no object) bounds=0,40 10,50 chars=0
+g k49 d590: (no object) bounds=0,0 10,10 chars=0
+g k50 d600: (no object) bounds=0,0 12,12 chars=1
+g k51 d610: (no object) bounds=0,0 12,12 chars=1
+g k52 d620: (no object) bounds=0,0 24,12 chars=1
+g k53 d630: (no object) bounds=0,0 12,12 chars=1
+g r3 d640: q54c m=undefined x=0 y=0 a=100 v=undefined
+g r3 d650: q55c m=undefined x=0 y=0 a=100 v=undefined
+g r3 d660: q56c m=undefined x=0 y=0 a=100 v=undefined
+g r4 d640: q54c m=undefined x=0 y=0 a=100 v=undefined
+g r4 d650: q55c m=undefined x=0 y=0 a=100 v=undefined
+g r4 d660: q56c m=undefined x=0 y=0 a=100 v=undefined
+== frame 1 (after rewind)
+f1r d110: c1b m=undefined x=0 y=0 a=100 v=undefined
+f1r d120: c2a m=f1 x=0 y=0 a=100 v=undefined
+f1r d130: c3b m=undefined x=5 y=0 a=100 v=undefined
+f1r d140: c4b m=undefined x=0 y=0 a=50 v=undefined
+f1r d150: c5b m=undefined x=0 y=0 a=100 v=1
+f1r d160: c6b m=undefined x=0 y=0 a=100 v=undefined
+f1r d165: c6a m=undefined x=0 y=0 a=100 v=undefined
+f1r d170: c7a m=undefined x=0 y=0 a=100 v=undefined
+f1r d175: c7a m=f1 x=0 y=0 a=100 v=undefined
+f1r d180: c8b m=undefined x=0 y=0 a=100 v=undefined
+f1r d190: c9a m=f1 x=0 y=0 a=100 v=undefined
+f1r d200: c10a m=f1 x=0 y=0 a=100 v=undefined
+f1r d210: c11x m=f2 x=0 y=0 a=100 v=undefined
+f1r d220: c12a m=undefined x=0 y=0 a=100 v=undefined
+f1r d230: c13d m=undefined x=0 y=0 a=100 v=undefined
+f1r d240: c14b m=undefined x=0 y=0 a=100 v=undefined
+f1r d250: c15b m=undefined x=0 y=0 a=100 v=undefined
+f1r d260: c16b m=f1 x=0 y=0 a=100 v=undefined
+f1r d270: c17b m=undefined x=0 y=0 a=100 v=undefined
+f1r d280: c18x m=f2 x=0 y=0 a=100 v=undefined
+f1r d290: c19b m=undefined x=0 y=0 a=100 v=undefined
+f1r d300: c20a m=f1 x=0 y=0 a=100 v=undefined
+f1r d310: c21b m=undefined x=5 y=0 a=100 v=undefined
+f1r d320: c22b m=undefined x=0 y=0 a=100 v=1
+f1r d330: c23b m=undefined x=0 y=0 a=50 v=undefined
+f1r d340: c24b m=undefined x=0 y=0 a=100 v=undefined
+f1r d345: c24a m=undefined x=0 y=0 a=100 v=undefined
+f1r d350: c25a m=f1 x=0 y=0 a=100 v=undefined
+f1r d360: c26b m=undefined x=0 y=0 a=100 v=undefined
+f1r d365: -
+f1r d370: c27a m=undefined x=0 y=0 a=100 v=undefined
+f1r d380: c28a m=f1 x=0 y=0 a=100 v=undefined
+f1r d385: c28d m=undefined x=0 y=0 a=100 v=undefined
+f1r d390: c29a m=undefined x=0 y=0 a=100 v=undefined
+f1r d395: c29a m=f1 x=0 y=0 a=100 v=undefined
+f1r d400: c30b m=f2 x=0 y=0 a=100 v=undefined
+f1r d405: c30a m=f1 x=0 y=0 a=100 v=undefined
+f1r d410: c31b m=undefined x=0 y=0 a=100 v=undefined
+f1r d420: c32b m=undefined x=0 y=0 a=100 v=undefined
+f1r d430: c33b m=undefined x=0 y=0 a=100 v=undefined
+f1r d440: c34b m=undefined x=0 y=0 a=100 v=undefined
+f1r d450: c35s m=undefined x=0 y=0 a=100 v=undefined
+f1r d460: c36s m=undefined x=0 y=0 a=100 v=undefined
+f1r d470: c37s m=undefined x=0 y=0 a=100 v=undefined
+f1r d480: c38s m=undefined x=0 y=0 a=100 v=undefined
+f1r d490: c39s m=undefined x=0 y=0 a=100 v=undefined
+f1r d500: c40s m=undefined x=0 y=0 a=100 v=undefined
+f1r d510: c41e m=f2 x=0 y=200 a=100 v=undefined
+f1r d520: c42e m=f2 x=0 y=200 a=100 v=undefined
+f1r d530: c43e m=f2 x=0 y=200 a=100 v=undefined
+f1r d540: c44e m=f1 x=0 y=200 a=100 v=undefined
+f1r d550: c45e m=undefined x=0 y=200 a=100 v=undefined
+f1r k46 d560: (no object) bounds=0,0 10,10 chars=0
+f1r k47 d570: (no object) bounds=0,0 10,10 chars=0
+f1r k48 d580: (no object) bounds=0,40 10,50 chars=0
+f1r k49 d590: (no object) bounds=0,0 10,10 chars=0
+f1r k50 d600: (no object) bounds=0,0 12,12 chars=1
+f1r k51 d610: (no object) bounds=0,0 12,12 chars=1
+f1r k52 d620: (no object) bounds=0,0 24,12 chars=1
+f1r k53 d630: (no object) bounds=0,0 12,12 chars=1
+f1r r3 d640: q54c m=undefined x=0 y=0 a=100 v=undefined
+f1r r3 d650: q55c m=undefined x=0 y=0 a=100 v=undefined
+f1r r3 d660: q56c m=undefined x=0 y=0 a=100 v=undefined
+f1r r4 d640: q54c m=undefined x=0 y=0 a=100 v=undefined
+f1r r4 d650: q55c m=undefined x=0 y=0 a=100 v=undefined
+f1r r4 d660: q56c m=undefined x=0 y=0 a=100 v=undefined
+== enterFrame 1
+e1 d110: c1b m=undefined x=0 y=0 a=100 v=undefined
+e1 d120: c2a m=f1 x=0 y=0 a=100 v=undefined
+e1 d130: c3b m=undefined x=5 y=0 a=100 v=undefined
+e1 d140: c4b m=undefined x=0 y=0 a=50 v=undefined
+e1 d150: c5b m=undefined x=0 y=0 a=100 v=1
+e1 d160: c6b m=undefined x=0 y=0 a=100 v=undefined
+e1 d165: c6a m=undefined x=0 y=0 a=100 v=undefined
+e1 d170: c7a m=undefined x=0 y=0 a=100 v=undefined
+e1 d175: c7a m=f1 x=0 y=0 a=100 v=undefined
+e1 d180: c8b m=undefined x=0 y=0 a=100 v=undefined
+e1 d190: c9a m=f1 x=0 y=0 a=100 v=undefined
+e1 d200: c10a m=f1 x=0 y=0 a=100 v=undefined
+e1 d210: c11x m=f2 x=0 y=0 a=100 v=undefined
+e1 d220: c12a m=undefined x=0 y=0 a=100 v=undefined
+e1 d230: c13d m=undefined x=0 y=0 a=100 v=undefined
+e1 d240: c14b m=undefined x=0 y=0 a=100 v=undefined
+e1 d250: c15b m=undefined x=0 y=0 a=100 v=undefined
+e1 d260: c16b m=f1 x=0 y=0 a=100 v=undefined
+e1 d270: c17b m=undefined x=0 y=0 a=100 v=undefined
+e1 d280: c18x m=f2 x=0 y=0 a=100 v=undefined
+e1 d290: c19b m=undefined x=0 y=0 a=100 v=undefined
+e1 d300: c20a m=f1 x=0 y=0 a=100 v=undefined
+e1 d310: c21b m=undefined x=5 y=0 a=100 v=undefined
+e1 d320: c22b m=undefined x=0 y=0 a=100 v=1
+e1 d330: c23b m=undefined x=0 y=0 a=50 v=undefined
+e1 d340: c24b m=undefined x=0 y=0 a=100 v=undefined
+e1 d345: c24a m=undefined x=0 y=0 a=100 v=undefined
+e1 d350: c25a m=f1 x=0 y=0 a=100 v=undefined
+e1 d360: c26b m=undefined x=0 y=0 a=100 v=undefined
+e1 d365: -
+e1 d370: c27a m=undefined x=0 y=0 a=100 v=undefined
+e1 d380: c28a m=f1 x=0 y=0 a=100 v=undefined
+e1 d385: c28d m=undefined x=0 y=0 a=100 v=undefined
+e1 d390: c29a m=undefined x=0 y=0 a=100 v=undefined
+e1 d395: c29a m=f1 x=0 y=0 a=100 v=undefined
+e1 d400: c30b m=f2 x=0 y=0 a=100 v=undefined
+e1 d405: c30a m=f1 x=0 y=0 a=100 v=undefined
+e1 d410: c31b m=undefined x=0 y=0 a=100 v=undefined
+e1 d420: c32b m=undefined x=0 y=0 a=100 v=undefined
+e1 d430: c33b m=undefined x=0 y=0 a=100 v=undefined
+e1 d440: c34b m=undefined x=0 y=0 a=100 v=undefined
+e1 d450: c35s m=undefined x=0 y=0 a=100 v=undefined
+e1 d460: c36s m=undefined x=0 y=0 a=100 v=undefined
+e1 d470: c37s m=undefined x=0 y=0 a=100 v=undefined
+e1 d480: c38s m=undefined x=0 y=0 a=100 v=undefined
+e1 d490: c39s m=undefined x=0 y=0 a=100 v=undefined
+e1 d500: c40s m=undefined x=0 y=0 a=100 v=undefined
+e1 d510: c41e m=f2 x=0 y=200 a=100 v=undefined
+e1 d520: c42e m=f2 x=0 y=200 a=100 v=undefined
+e1 d530: c43e m=f2 x=0 y=200 a=100 v=undefined
+e1 d540: c44e m=f1 x=0 y=200 a=100 v=undefined
+e1 d550: c45e m=undefined x=0 y=200 a=100 v=undefined
+e1 k46 d560: (no object) bounds=0,0 10,10 chars=0
+e1 k47 d570: (no object) bounds=0,0 10,10 chars=0
+e1 k48 d580: (no object) bounds=0,40 10,50 chars=0
+e1 k49 d590: (no object) bounds=0,0 10,10 chars=0
+e1 k50 d600: (no object) bounds=0,0 12,12 chars=1
+e1 k51 d610: (no object) bounds=0,0 12,12 chars=1
+e1 k52 d620: (no object) bounds=0,0 24,12 chars=1
+e1 k53 d630: (no object) bounds=0,0 12,12 chars=1
+e1 r3 d640: q54c m=undefined x=0 y=0 a=100 v=undefined
+e1 r3 d650: q55c m=undefined x=0 y=0 a=100 v=undefined
+e1 r3 d660: q56c m=undefined x=0 y=0 a=100 v=undefined
+e1 r4 d640: q54c m=undefined x=0 y=0 a=100 v=undefined
+e1 r4 d650: q55c m=undefined x=0 y=0 a=100 v=undefined
+e1 r4 d660: q56c m=undefined x=0 y=0 a=100 v=undefined
+== enterFrame 2
+e2 d110: c1b m=undefined x=0 y=0 a=100 v=undefined
+e2 d120: c2a m=f1 x=0 y=0 a=100 v=undefined
+e2 d130: c3b m=undefined x=5 y=0 a=100 v=undefined
+e2 d140: c4b m=undefined x=0 y=0 a=50 v=undefined
+e2 d150: c5b m=undefined x=0 y=0 a=100 v=1
+e2 d160: c6b m=undefined x=0 y=0 a=100 v=undefined
+e2 d165: c6a m=undefined x=0 y=0 a=100 v=undefined
+e2 d170: c7a m=undefined x=0 y=0 a=100 v=undefined
+e2 d175: c7a m=f1 x=0 y=0 a=100 v=undefined
+e2 d180: c8b m=undefined x=0 y=0 a=100 v=undefined
+e2 d190: c9a m=f1 x=0 y=0 a=100 v=undefined
+e2 d200: c10a m=f1 x=0 y=0 a=100 v=undefined
+e2 d210: c11x m=f2 x=0 y=0 a=100 v=undefined
+e2 d220: c12a m=undefined x=0 y=0 a=100 v=undefined
+e2 d230: c13d m=undefined x=0 y=0 a=100 v=undefined
+e2 d240: c14b m=undefined x=0 y=0 a=100 v=undefined
+e2 d250: c15b m=undefined x=0 y=0 a=100 v=undefined
+e2 d260: c16b m=f1 x=0 y=0 a=100 v=undefined
+e2 d270: c17b m=undefined x=0 y=0 a=100 v=undefined
+e2 d280: c18x m=f2 x=0 y=0 a=100 v=undefined
+e2 d290: c19b m=undefined x=0 y=0 a=100 v=undefined
+e2 d300: c20a m=f1 x=0 y=0 a=100 v=undefined
+e2 d310: c21b m=undefined x=5 y=0 a=100 v=undefined
+e2 d320: c22b m=undefined x=0 y=0 a=100 v=1
+e2 d330: c23b m=undefined x=0 y=0 a=50 v=undefined
+e2 d340: c24b m=undefined x=0 y=0 a=100 v=undefined
+e2 d345: c24a m=undefined x=0 y=0 a=100 v=undefined
+e2 d350: c25a m=f1 x=0 y=0 a=100 v=undefined
+e2 d360: c26b m=undefined x=0 y=0 a=100 v=undefined
+e2 d365: -
+e2 d370: c27a m=undefined x=0 y=0 a=100 v=undefined
+e2 d380: c28a m=f1 x=0 y=0 a=100 v=undefined
+e2 d385: c28d m=undefined x=0 y=0 a=100 v=undefined
+e2 d390: c29a m=undefined x=0 y=0 a=100 v=undefined
+e2 d395: c29a m=f1 x=0 y=0 a=100 v=undefined
+e2 d400: c30b m=f2 x=0 y=0 a=100 v=undefined
+e2 d405: c30a m=f1 x=0 y=0 a=100 v=undefined
+e2 d410: c31b m=undefined x=0 y=0 a=100 v=undefined
+e2 d420: c32b m=undefined x=0 y=0 a=100 v=undefined
+e2 d430: c33b m=undefined x=0 y=0 a=100 v=undefined
+e2 d440: c34b m=undefined x=0 y=0 a=100 v=undefined
+e2 d450: c35s m=undefined x=0 y=0 a=100 v=undefined
+e2 d460: c36s m=undefined x=0 y=0 a=100 v=undefined
+e2 d470: c37s m=undefined x=0 y=0 a=100 v=undefined
+e2 d480: c38s m=undefined x=0 y=0 a=100 v=undefined
+e2 d490: c39s m=undefined x=0 y=0 a=100 v=undefined
+e2 d500: c40s m=undefined x=0 y=0 a=100 v=undefined
+e2 d510: c41e m=f2 x=0 y=200 a=100 v=undefined
+e2 d520: c42e m=f2 x=0 y=200 a=100 v=undefined
+e2 d530: c43e m=f2 x=0 y=200 a=100 v=undefined
+e2 d540: c44e m=f1 x=0 y=200 a=100 v=undefined
+e2 d550: c45e m=undefined x=0 y=200 a=100 v=undefined
+e2 k46 d560: (no object) bounds=0,0 10,10 chars=0
+e2 k47 d570: (no object) bounds=0,0 10,10 chars=0
+e2 k48 d580: (no object) bounds=0,40 10,50 chars=0
+e2 k49 d590: (no object) bounds=0,0 10,10 chars=0
+e2 k50 d600: (no object) bounds=0,0 12,12 chars=1
+e2 k51 d610: (no object) bounds=0,0 12,12 chars=1
+e2 k52 d620: (no object) bounds=0,0 24,12 chars=1
+e2 k53 d630: (no object) bounds=0,0 12,12 chars=1
+e2 r3 d640: q54c m=undefined x=0 y=0 a=100 v=undefined
+e2 r3 d650: q55c m=undefined x=0 y=0 a=100 v=undefined
+e2 r3 d660: q56c m=undefined x=0 y=0 a=100 v=undefined
+e2 r4 d640: q54c m=undefined x=0 y=0 a=100 v=undefined
+e2 r4 d650: q55c m=undefined x=0 y=0 a=100 v=undefined
+e2 r4 d660: q56c m=undefined x=0 y=0 a=100 v=undefined
+== done
