@@ -695,6 +695,7 @@ pub fn init_native_system_classes(activation: &mut Activation<'_, '_>) {
             ("flash.display", "AVM1Movie", avm1movie),
             ("flash.display", "Bitmap", bitmap),
             ("flash.display", "BitmapData", bitmapdata),
+            ("flash.display", "DisplayObject", display_object),
             ("flash.display", "Scene", scene),
             ("flash.display", "FrameLabel", framelabel),
             ("flash.display", "Graphics", graphics),
