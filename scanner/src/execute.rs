@@ -44,7 +44,7 @@ fn checkpoint<W: Write>(
     let has_error = file_result.error.is_some();
 
     file_result.testing_time = start.elapsed().as_millis();
-    writer.serialize(file_result).unwrap();
+    writer.serialize(file_result)?;
 
     if has_error {
         Err(std::io::Error::other("Error encountered, test terminated"))

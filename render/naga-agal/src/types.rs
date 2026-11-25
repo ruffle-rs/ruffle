@@ -207,7 +207,7 @@ impl SamplerField {
         let load_bias = ((val >> 16) & 0xFF) as i8;
         let reg_type = RegisterType::from_u64((val >> 32) & 0xF).unwrap();
         let dimension = Dimension::from_u64((val >> 44) & 0xF).unwrap();
-        let special = Special::parse(((val >> 48) & 0xF) as u8).unwrap();
+        let special = Special::parse(((val >> 48) & 0xF) as u8)?;
         let wrapping = Wrapping::from_u64((val >> 52) & 0xF).unwrap();
         let mipmap = Mipmap::from_u64((val >> 56) & 0xF).unwrap();
         let filter = Filter::from_u64((val >> 60) & 0xF).unwrap();

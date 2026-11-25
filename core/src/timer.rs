@@ -183,7 +183,7 @@ impl<'gc> Timers<'gc> {
 
             // We need a mutable reference to the timer for the rest.
             // Just checked that there is still at least one timer active, so unwrap must succeed.
-            let mut timer = context.timers.peek_mut().unwrap();
+            let mut timer = context.timers.peek_mut()?;
 
             if timer.id == expected_id {
                 // The timer next in line is still the same, so we need to remove or reset it.

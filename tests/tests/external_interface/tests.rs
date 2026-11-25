@@ -23,8 +23,7 @@ pub fn external_interface_avm1(
 
     runner
         .player()
-        .lock()
-        .unwrap()
+        .lock()?
         .set_external_interface_provider(Some(Box::new(ExternalInterfaceTestProvider::new())));
 
     let mut first = true;
@@ -42,7 +41,7 @@ pub fn external_interface_avm1(
 
         if first {
             first = false;
-            let mut player_locked = runner.player().lock().unwrap();
+            let mut player_locked = runner.player().lock()?;
 
             let parroted = player_locked.call_internal_interface("parrot", ["Hello World!".into()]);
             player_locked.log_backend().avm_trace(&format!(
@@ -93,8 +92,7 @@ pub fn external_interface_avm2(
     let mut runner = test.create_test_runner(environment)?;
     runner
         .player()
-        .lock()
-        .unwrap()
+        .lock()?
         .set_external_interface_provider(Some(Box::new(ExternalInterfaceTestProvider::new())));
 
     let mut first = true;
@@ -112,7 +110,7 @@ pub fn external_interface_avm2(
 
         if first {
             first = false;
-            let mut player_locked = runner.player().lock().unwrap();
+            let mut player_locked = runner.player().lock()?;
 
             let parroted = player_locked.call_internal_interface("parrot", ["Hello World!".into()]);
             player_locked.log_backend().avm_trace(&format!(

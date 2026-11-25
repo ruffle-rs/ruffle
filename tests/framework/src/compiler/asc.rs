@@ -101,7 +101,7 @@ pub struct AscCompiler {
 
 impl SwfCompiler for AscCompiler {
     fn compile(self: Box<Self>, root_dir: &VfsPath, verify_if_changed: bool) -> anyhow::Result<()> {
-        let tmp_dir = TempDir::new().unwrap();
+        let tmp_dir = TempDir::new()?;
         let tmp_dir = tmp_dir.as_ref();
 
         let mut java_args = vec!["-AS3", "-md", "-import", ruffle_core::PLAYERGLOBAL_ABC_PATH];
@@ -195,7 +195,7 @@ fn read_swf_metadata(abc_bytes: &[u8], class: &str) -> anyhow::Result<SwfMetadat
     use ruffle_core::swf::avm2::read::Reader;
     use ruffle_core::swf::avm2::types::Multiname;
 
-    let abc = Reader::new(abc_bytes).read().unwrap();
+    let abc = Reader::new(abc_bytes).read()?;
     let strings = &abc.constant_pool.strings;
 
     let mut ret = SwfMetadata {
@@ -235,7 +235,7 @@ fn read_swf_metadata(abc_bytes: &[u8], class: &str) -> anyhow::Result<SwfMetadat
             continue;
         }
         let key = &strings[item.key.0 as usize - 1];
-        let value = std::str::from_utf8(&strings[item.value.0 as usize - 1]).unwrap();
+        let value = std::str::from_utf8(&strings[item.value.0 as usize - 1])?;
 
         match key.as_slice() {
             b"width" => ret.width = value.parse()?,

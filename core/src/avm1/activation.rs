@@ -2743,7 +2743,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                             .map_or(Value::Undefined, Value::from)
                     } else {
                         let name = AvmString::new(self.gc(), name);
-                        object.get(name, self).unwrap()
+                        object.get(name, self)?
                     }
                 }
             };
