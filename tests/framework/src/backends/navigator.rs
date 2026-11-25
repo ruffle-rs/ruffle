@@ -13,6 +13,10 @@ use ruffle_core::socket::{ConnectionState, SocketAction, SocketHandle};
 use ruffle_core::swf::Encoding;
 use ruffle_socket_format::SocketEvent;
 use std::borrow::Cow;
+use std::cell::RefCell;
+use std::pin::Pin;
+use std::rc::Rc;
+use std::task::{Context, Poll, Waker};
 use std::time::Duration;
 use url::{ParseError, Url};
 use vfs::VfsPath;
@@ -73,6 +77,7 @@ impl SuccessResponse for TestResponse {
 /// * "?debug-success" -> Simulates a successful fetch, with body "Hello, World!"
 /// * "?debug-error-statuscode" -> Simulates a failed fetch due to a unsuccessful status
 /// * "?debug-error-dns" -> Simulates a failed fetch due to a dns resolution error
+/// * "?debug-delay=N" -> Delivers the response of a local file fetch only after N test runner ticks
 ///
 /// These are formatted as query params, rather than domains/whole URLs, so that real/real-invalid
 /// URLs can be used in Flash Player when writing tests
@@ -81,6 +86,7 @@ pub struct TestNavigatorBackend {
     relative_base_path: VfsPath,
     socket_events: Option<Vec<SocketEvent>>,
     log: Option<TestLogBackend>,
+    delayed_fetches: DelayedFetches,
 }
 
 impl TestNavigatorBackend {
@@ -89,13 +95,57 @@ impl TestNavigatorBackend {
         executor: &NullExecutor,
         socket_events: Option<Vec<SocketEvent>>,
         log: Option<TestLogBackend>,
+        delayed_fetches: DelayedFetches,
     ) -> Result<Self, std::io::Error> {
         Ok(Self {
             spawner: executor.spawner(),
             relative_base_path: path,
             socket_events,
             log,
+            delayed_fetches,
         })
+    }
+}
+
+/// Fetches delayed with `?debug-delay=N`, which wait for the test runner to tick.
+#[derive(Clone, Default)]
+pub struct DelayedFetches(Rc<RefCell<Vec<Waker>>>);
+
+impl DelayedFetches {
+    /// Advances all delayed fetches by one tick.
+    pub fn tick(&self) {
+        let wakers = self.0.take();
+
+        for waker in wakers {
+            waker.wake();
+        }
+    }
+
+    fn wait(&self, ticks: u32) -> TickDelay {
+        TickDelay {
+            remaining: ticks,
+            fetches: self.clone(),
+        }
+    }
+}
+
+struct TickDelay {
+    remaining: u32,
+    fetches: DelayedFetches,
+}
+
+impl Future for TickDelay {
+    type Output = ();
+
+    fn poll(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<()> {
+        let Some(remaining) = self.remaining.checked_sub(1) else {
+            return Poll::Ready(());
+        };
+
+        self.remaining = remaining;
+        self.fetches.0.borrow_mut().push(cx.waker().clone());
+
+        Poll::Pending
     }
 }
 
@@ -201,8 +251,18 @@ impl NavigatorBackend for TestNavigatorBackend {
         };
 
         let base_path = self.relative_base_path.clone();
+        let delay = request.url().split_once("?debug-delay=").map(|(_, rest)| {
+            let ticks = rest.split('&').next().unwrap_or_default();
+            let ticks = ticks.parse().expect("invalid ?debug-delay value");
+
+            self.delayed_fetches.wait(ticks)
+        });
 
         Box::pin(async move {
+            if let Some(delay) = delay {
+                delay.await;
+            }
+
             let path = if url.scheme() == "file" {
                 // Flash supports query parameters with local urls.
                 // SwfMovieData takes care of exposing those to ActionScript -

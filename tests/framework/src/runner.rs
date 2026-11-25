@@ -3,7 +3,8 @@ mod image_test;
 mod trace;
 
 use crate::backends::{
-    TestAudioBackend, TestLogBackend, TestNavigatorBackend, TestStorageBackend, TestUiBackend,
+    DelayedFetches, TestAudioBackend, TestLogBackend, TestNavigatorBackend, TestStorageBackend,
+    TestUiBackend,
 };
 use crate::environment::RenderInterface;
 use crate::fs_commands::{FsCommand, TestFsCommandProvider};
@@ -47,6 +48,7 @@ pub struct TestRunner {
     player: Arc<Mutex<Player>>,
     injector: InputInjector,
     executor: NullExecutor,
+    delayed_fetches: DelayedFetches,
     frame_time: FloatDuration,
     frame_time_duration: Duration,
     log: TestLogBackend,
@@ -87,11 +89,13 @@ impl TestRunner {
 
         let log = TestLogBackend::new(test.options.log_warnings);
         let (fs_command_provider, fs_commands) = TestFsCommandProvider::new();
+        let delayed_fetches = DelayedFetches::default();
         let navigator = TestNavigatorBackend::new(
             test.root_path.clone(),
             &executor,
             socket_events,
             test.options.log_fetch.then(|| log.clone()),
+            delayed_fetches.clone(),
         )?;
 
         let mut builder = PlayerBuilder::new()
@@ -147,6 +151,7 @@ impl TestRunner {
             injector,
             render_interface,
             executor,
+            delayed_fetches,
             frame_time,
             frame_time_duration,
             log,
@@ -243,6 +248,7 @@ impl TestRunner {
         }
         self.remaining_iterations -= 1;
         self.current_iteration += 1;
+        self.delayed_fetches.tick();
         self.executor.run();
     }
 
