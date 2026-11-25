@@ -68,12 +68,9 @@ impl TestRunner {
         renderer: Option<(Box<dyn RenderInterface>, Box<dyn RenderBackend>)>,
         viewport_dimensions: ViewportDimensions,
     ) -> Result<Self> {
-        if test.options.num_frames.is_none() && test.options.num_ticks.is_none() {
-            return Err(anyhow!(
-                "Test {} must specify at least one of num_frames or num_ticks",
-                test.name
-            ));
-        }
+        let Some(remaining_iterations) = test.options.num_ticks else {
+            return Err(anyhow!("Test {} must specify num_ticks", test.name));
+        };
 
         let executor = NullExecutor::new();
 
@@ -133,12 +130,6 @@ impl TestRunner {
             .apply(&mut player.lock().unwrap());
 
         let images = test.options.image_comparisons.clone();
-
-        let remaining_iterations = test
-            .options
-            .num_frames
-            .or(test.options.num_ticks)
-            .expect("valid iteration count");
 
         Ok(Self {
             root_path: test.root_path.clone(),
@@ -234,13 +225,7 @@ impl TestRunner {
         }
         self.preloaded = true;
 
-        if self.options.num_ticks.is_some() {
-            self.player.lock().unwrap().tick(self.frame_time);
-        } else {
-            self.player.lock().unwrap().run_frame();
-            self.player.lock().unwrap().update_timers(self.frame_time);
-            self.player.lock().unwrap().audio_mut().tick();
-        }
+        self.player.lock().unwrap().tick(self.frame_time);
         self.remaining_iterations -= 1;
         self.current_iteration += 1;
         self.executor.run();

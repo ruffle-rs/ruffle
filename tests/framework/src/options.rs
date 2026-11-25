@@ -139,7 +139,6 @@ pub struct TestOptions {
     #[serde(skip, default = "TestSharedOptions::default_arc")]
     pub shared: Arc<TestSharedOptions>,
 
-    pub num_frames: Option<u32>,
     pub num_ticks: Option<u32>,
     pub tick_rate: Option<f64>,
     pub output_path: String,
@@ -165,7 +164,6 @@ impl Default for TestOptions {
         Self {
             subtest_name: None,
             shared: TestSharedOptions::default_arc(),
-            num_frames: None,
             num_ticks: None,
             tick_rate: None,
             output_path: "output.txt".to_string(),
