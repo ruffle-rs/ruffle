@@ -1,0 +1,16 @@
+// Before unloading
+_level1 (targeting the level): advancing
+// After unloading
+_level1 (targeting the level): advancing
+onSoundComplete: sound of undefined
+// Before unloading
+_level2 (without a target): advancing
+// After unloading
+_level2 (without a target): advancing
+onSoundComplete: sound of undefined
+// Before unloading
+_level3 (streamed): advancing
+// After unloading
+_level3 (streamed): advancing
+onSoundComplete: sound of undefined
+// End

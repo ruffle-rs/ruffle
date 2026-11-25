@@ -1,0 +1,60 @@
+// Before unloading
+_level1 (unloadMovieNum): movieclip, _level1, string, child.swf
+_level2 (loadMovieNum with an empty URL): movieclip, _level2, string, child.swf
+_level3 (unloadMovie method): movieclip, _level3, string, child.swf
+_level4 (unloadMovieNum, never loaded): undefined, undefined, undefined, undefined
+reference to _level1: movieclip, _level1, string, child.swf
+reference to _level1.inner: movieclip, _level1.inner, string, child.swf
+reference to _level2: movieclip, _level2, string, child.swf
+reference to _level2.inner: movieclip, _level2.inner, string, child.swf
+reference to _level3: movieclip, _level3, string, child.swf
+reference to _level3.inner: movieclip, _level3.inner, string, child.swf
+_level1: onEnterFrame running, interval running
+_level2: onEnterFrame running, interval running
+_level3: onEnterFrame running, interval running
+_level1 function: function of _level1
+_level2 function: function of _level2
+_level3 function: function of _level3
+// Right after unloading
+_level1 (unloadMovieNum): movieclip, _level1, string, child.swf
+_level2 (loadMovieNum with an empty URL): movieclip, _level2, string, child.swf
+_level3 (unloadMovie method): movieclip, _level3, string, child.swf
+_level4 (unloadMovieNum, never loaded): undefined, undefined, undefined, undefined
+reference to _level1: movieclip, _level1, string, child.swf
+reference to _level1.inner: movieclip, _level1.inner, string, child.swf
+reference to _level2: movieclip, _level2, string, child.swf
+reference to _level2.inner: movieclip, _level2.inner, string, child.swf
+reference to _level3: movieclip, _level3, string, child.swf
+reference to _level3.inner: movieclip, _level3.inner, string, child.swf
+// After unloading
+_level1 (unloadMovieNum): undefined, undefined, undefined, undefined
+_level2 (loadMovieNum with an empty URL): undefined, undefined, undefined, undefined
+_level3 (unloadMovie method): undefined, undefined, undefined, undefined
+_level4 (unloadMovieNum, never loaded): undefined, undefined, undefined, undefined
+reference to _level1: movieclip, , undefined, undefined
+reference to _level1.inner: undefined, undefined, undefined, undefined
+reference to _level2: movieclip, , undefined, undefined
+reference to _level2.inner: undefined, undefined, undefined, undefined
+reference to _level3: movieclip, , undefined, undefined
+reference to _level3.inner: undefined, undefined, undefined, undefined
+_level1: onEnterFrame called 0 times
+_level2: onEnterFrame called 0 times
+_level3: onEnterFrame called 0 times
+_level1: onEnterFrame stopped, interval stopped
+_level2: onEnterFrame stopped, interval stopped
+_level3: onEnterFrame stopped, interval stopped
+// Later
+_level1: onEnterFrame stopped, interval stopped
+_level2: onEnterFrame stopped, interval stopped
+_level3: onEnterFrame stopped, interval stopped
+_level1 function: function of undefined
+_level2 function: function of undefined
+_level3 function: function of undefined
+// Loading a movie into _level1 again
+// Child loaded into _level1
+// After loading again
+_level1: movieclip, _level1, string, child.swf
+reference to _level1: movieclip, _level1, string, child.swf
+_level1: onEnterFrame running, interval running
+_level2: onEnterFrame stopped, interval stopped
+_level3: onEnterFrame stopped, interval stopped
