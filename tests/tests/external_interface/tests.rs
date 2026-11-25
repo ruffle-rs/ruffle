@@ -13,7 +13,7 @@ pub fn external_interface_avm1(
 ) -> Result<(), libtest_mimic::Failed> {
     let test = &Test::from_options(
         TestOptions {
-            num_frames: Some(2),
+            num_ticks: Some(2),
             ..Default::default()
         },
         VfsPath::new(PhysicalFS::new("tests/swfs/avm1/external_interface/")),
@@ -84,7 +84,7 @@ pub fn external_interface_avm2(
 ) -> Result<(), libtest_mimic::Failed> {
     let test = &Test::from_options(
         TestOptions {
-            num_frames: Some(2),
+            num_ticks: Some(2),
             ..Default::default()
         },
         VfsPath::new(PhysicalFS::new("tests/swfs/avm2/external_interface/")),
