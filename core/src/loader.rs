@@ -1880,7 +1880,7 @@ impl<'gc> MovieLoader<'gc> {
 
                 // This will construct AVM2-side objects even under AVM1, but it doesn't matter,
                 // since Bitmap and BitmapData never have AVM1-side objects.
-                let bitmap = ruffle_render::utils::decode_define_bits_jpeg(data, None)?;
+                let bitmap = ruffle_render::utils::decode_define_bits_jpeg(data, None, None)?;
 
                 let transparency = bitmap.format().supports_transparency();
                 let bitmapdata = BitmapData::new_with_pixels(

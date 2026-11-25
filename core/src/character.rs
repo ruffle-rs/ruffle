@@ -91,6 +91,9 @@ pub enum CompressedBitmap {
     Jpeg {
         data: Vec<u8>,
         alpha: Option<Vec<u8>>,
+        // Ideally we'd fetch the jpeg tables from the movie library instead of storing
+        // them here, but this wouldn't be very practical.
+        jpeg_tables: Option<Vec<u8>>,
         width: u32,
         height: u32,
     },
@@ -99,15 +102,16 @@ pub enum CompressedBitmap {
 
 impl CompressedBitmap {
     pub fn from_jpeg(
-        jpeg_data: &[u8],
+        data: &[u8],
         alpha: Option<&[u8]>,
         jpeg_tables: Option<&[u8]>,
     ) -> Result<Self, RenderError> {
-        let data = ruffle_render::utils::glue_tables_to_jpeg(jpeg_data, jpeg_tables);
-        let (width, height) = ruffle_render::utils::decode_define_bits_jpeg_dimensions(&data)?;
+        // No need to append JPEG tables here.
+        let (width, height) = ruffle_render::utils::decode_define_bits_jpeg_dimensions(data)?;
         Ok(CompressedBitmap::Jpeg {
-            data: data.into_owned(),
+            data: data.to_owned(),
             alpha: alpha.map(|a| a.to_owned()),
+            jpeg_tables: jpeg_tables.map(|t| t.to_owned()),
             width,
             height,
         })
@@ -131,9 +135,14 @@ impl CompressedBitmap {
             CompressedBitmap::Jpeg {
                 data,
                 alpha,
+                jpeg_tables,
                 width: _,
                 height: _,
-            } => ruffle_render::utils::decode_define_bits_jpeg(data, alpha.as_deref()),
+            } => ruffle_render::utils::decode_define_bits_jpeg(
+                data,
+                alpha.as_deref(),
+                jpeg_tables.as_deref(),
+            ),
             CompressedBitmap::Lossless(define_bits_lossless) => {
                 ruffle_render::utils::decode_define_bits_lossless(define_bits_lossless)
             }
