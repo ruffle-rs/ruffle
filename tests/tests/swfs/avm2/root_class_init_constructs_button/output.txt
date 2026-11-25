@@ -1,0 +1,4 @@
+Holder: constructor
+Main: constructor, root is Main: true
+holder: [object Holder], numChildren: 1
+button: [object SimpleButton]

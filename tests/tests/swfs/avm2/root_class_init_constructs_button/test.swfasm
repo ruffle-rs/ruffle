@@ -1,0 +1,37 @@
+// See Main.as.
+Swf(
+    version: 15,
+    frame_rate: 24,
+    tags: [
+        FileAttributes(action_script_3: true),
+        SetBackgroundColor(0xFFFFFF),
+
+        // The state of the button.
+        DefineSprite(id: 1, tags: [ShowFrame]),
+        // DefineButton2 (not supported by swfasm yet): character 2, not a
+        // menu, no actions, one record with all states showing character 1
+        // at depth 1, with an identity matrix and color transform.
+        Raw(code: 34, data: InlineBytes([
+            "0200", "00", "0000",
+            "0f", "0100", "0100", "00", "00",
+            "00",
+        ])),
+
+        // A clip with the button on its timeline.
+        DefineSprite(id: 3, tags: [
+            PlaceObject2(depth: 1, character: 2, name: "button"),
+            ShowFrame,
+        ]),
+
+        // Separate scripts, so that looking up Holder doesn't run the class
+        // initializer of Main before Holder is linked to its symbol.
+        DoAbc(Asc(file: "Holder.as")),
+        DoAbc(Asc(file: "Main.as", scripts: ["Holder.as"])),
+        SymbolClass([
+            (character: 3, name: "Holder"),
+            (character: 0, name: "Main"),
+        ]),
+        ShowFrame,
+        End,
+    ],
+)
