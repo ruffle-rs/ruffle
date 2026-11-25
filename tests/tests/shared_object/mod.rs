@@ -16,7 +16,7 @@ pub fn shared_object_avm1(environment: &impl Environment) -> Result<(), libtest_
     // Initial run; no shared object data.
     let test1 = &Test::from_options(
         TestOptions {
-            num_frames: Some(1),
+            num_ticks: Some(1),
             output_path: "output1.txt".into(),
             ..Default::default()
         },
@@ -51,7 +51,7 @@ pub fn shared_object_avm1(environment: &impl Environment) -> Result<(), libtest_
     // Re-run the SWF, verifying that the shared object persists.
     let test2 = &Test::from_options(
         TestOptions {
-            num_frames: Some(1),
+            num_ticks: Some(1),
             output_path: "output2.txt".into(),
             ..Default::default()
         },
@@ -88,7 +88,7 @@ pub fn shared_object_self_ref_avm1(
     // Initial run; no shared object data.
     let test1 = &Test::from_options(
         TestOptions {
-            num_frames: Some(1),
+            num_ticks: Some(1),
             output_path: "output1.txt".into(),
             shared_objects: HashMap::from([(
                 "localhost//RuffleTestRef".to_string(),
@@ -121,7 +121,7 @@ pub fn shared_object_self_ref_avm1(
     // Re-run the SWF, verifying that the shared object persists.
     let test2 = &Test::from_options(
         TestOptions {
-            num_frames: Some(1),
+            num_ticks: Some(1),
             output_path: "output2.txt".into(),
             ..Default::default()
         },
@@ -155,7 +155,7 @@ pub fn shared_object_avm2(environment: &impl Environment) -> Result<(), libtest_
     // Initial run; no shared object data.
     let test1 = &Test::from_options(
         TestOptions {
-            num_frames: Some(1),
+            num_ticks: Some(1),
             output_path: "output1.txt".into(),
             ..Default::default()
         },
@@ -190,7 +190,7 @@ pub fn shared_object_avm2(environment: &impl Environment) -> Result<(), libtest_
     // Re-run the SWF, verifying that the shared object persists.
     let test2 = &Test::from_options(
         TestOptions {
-            num_frames: Some(1),
+            num_ticks: Some(1),
             output_path: "output2.txt".into(),
             ..Default::default()
         },
