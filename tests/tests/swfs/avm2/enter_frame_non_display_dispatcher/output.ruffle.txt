@@ -1,0 +1,53 @@
+EventDispatcher: frameConstructed on frame 0
+SubDispatcher: frameConstructed on frame 0
+Sprite off the display list: frameConstructed on frame 0
+EventDispatcher: exitFrame on frame 0
+SubDispatcher: exitFrame on frame 0
+Sprite off the display list: exitFrame on frame 0
+EventDispatcher: enterFrame on frame 0
+SubDispatcher: enterFrame on frame 0
+Sprite off the display list: enterFrame on frame 0
+Test: enterFrame on frame 1
+EventDispatcher: frameConstructed on frame 1
+SubDispatcher: frameConstructed on frame 1
+Sprite off the display list: frameConstructed on frame 1
+EventDispatcher: exitFrame on frame 1
+SubDispatcher: exitFrame on frame 1
+Sprite off the display list: exitFrame on frame 1
+EventDispatcher: render on frame 1
+SubDispatcher: render on frame 1
+Test: render on frame 1
+EventDispatcher: enterFrame on frame 1
+SubDispatcher: enterFrame on frame 1
+Sprite off the display list: enterFrame on frame 1
+Test: enterFrame on frame 2
+Dispatching enterFrame explicitly
+EventDispatcher: enterFrame on frame 2
+SubDispatcher: enterFrame on frame 2
+EventDispatcher: frameConstructed on frame 2
+SubDispatcher: frameConstructed on frame 2
+Sprite off the display list: frameConstructed on frame 2
+EventDispatcher: exitFrame on frame 2
+SubDispatcher: exitFrame on frame 2
+Sprite off the display list: exitFrame on frame 2
+EventDispatcher: render on frame 2
+SubDispatcher: render on frame 2
+Test: render on frame 2
+EventDispatcher: enterFrame on frame 2
+SubDispatcher: enterFrame on frame 2
+Sprite off the display list: enterFrame on frame 2
+Test: enterFrame on frame 3
+EventDispatcher: frameConstructed on frame 3
+SubDispatcher: frameConstructed on frame 3
+Sprite off the display list: frameConstructed on frame 3
+EventDispatcher: exitFrame on frame 3
+SubDispatcher: exitFrame on frame 3
+Sprite off the display list: exitFrame on frame 3
+EventDispatcher: render on frame 3
+SubDispatcher: render on frame 3
+Test: render on frame 3
+EventDispatcher: enterFrame on frame 3
+SubDispatcher: enterFrame on frame 3
+Sprite off the display list: enterFrame on frame 3
+Test: enterFrame on frame 4
+Done
