@@ -363,22 +363,6 @@ output_path = "output.fp10.txt"
 player_options.version = 10
 ```
 
-## Frame-based tests
-
-Some older tests break with tick timing, so they instead use frames.
-When `num_frames` is specified, Ruffle's `tick` method will not be called and tick-based processing will not occur.
-Instead, `run_frame` will be called directly.
-
-Tests that use video or other tick processing must not use `num_frames`, and in general its use is deprecated.
-
-```toml
-# The number of frames of the SWF to run.
-num_frames = 1
-
-# If true, slow the tick rate to match the movie's requested FPS rate.
-sleep_to_meet_frame_rate = false
-```
-
 ## Quit on demand
 
 `fscommand("quit")` is enabled for tests, and will end the test at the end of this frame or tick.
