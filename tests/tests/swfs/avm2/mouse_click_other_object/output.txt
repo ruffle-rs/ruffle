@@ -1,0 +1,6 @@
+left: mouseDown
+right: mouseUp
+left: mouseDown
+left: mouseUp
+left: click
+stage: click on left
