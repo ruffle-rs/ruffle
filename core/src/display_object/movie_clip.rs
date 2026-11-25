@@ -3638,6 +3638,7 @@ impl<'gc, 'a> MovieClipShared<'gc> {
         let mc = context.gc();
         let library = self.library_mut(context);
         let (id, jpeg_data) = reader.read_define_bits()?;
+        let jpeg_data = self.swf_data.to_subslice(jpeg_data);
         let compressed = CompressedBitmap::from_jpeg(jpeg_data, None, library.jpeg_tables())?;
         let bitmap = Character::Bitmap(Gc::new(mc, BitmapCharacter::new(compressed)));
         library.register_character(id, bitmap);
@@ -3651,6 +3652,7 @@ impl<'gc, 'a> MovieClipShared<'gc> {
         reader: &mut SwfStream<'a>,
     ) -> Result<(), Error> {
         let (id, jpeg_data) = reader.read_define_bits_jpeg_2()?;
+        let jpeg_data = self.swf_data.to_subslice(jpeg_data);
         let compressed = CompressedBitmap::from_jpeg(jpeg_data, None, None)?;
         let mc = context.gc();
         let bitmap = Character::Bitmap(Gc::new(mc, BitmapCharacter::new(compressed)));
@@ -3666,7 +3668,9 @@ impl<'gc, 'a> MovieClipShared<'gc> {
         version: u8,
     ) -> Result<(), Error> {
         let jpeg = reader.read_define_bits_jpeg_3(version)?;
-        let compressed = CompressedBitmap::from_jpeg(jpeg.data, Some(jpeg.alpha_data), None)?;
+        let jpeg_data = self.swf_data.to_subslice(jpeg.data);
+        let alpha_data = self.swf_data.to_subslice(jpeg.alpha_data);
+        let compressed = CompressedBitmap::from_jpeg(jpeg_data, Some(alpha_data), None)?;
         let mc = context.gc();
         let bitmap = Character::Bitmap(Gc::new(mc, BitmapCharacter::new(compressed)));
         self.library_mut(context)
@@ -4198,7 +4202,7 @@ impl<'gc, 'a> MovieClipShared<'gc> {
         context: &mut UpdateContext<'gc>,
         reader: &mut SwfStream<'a>,
     ) -> Result<(), Error> {
-        let jpeg_data = reader.read_slice_to_end().to_owned();
+        let jpeg_data = self.swf_data.to_subslice(reader.read_slice_to_end());
         self.library_mut(context).set_jpeg_tables(jpeg_data);
         Ok(())
     }

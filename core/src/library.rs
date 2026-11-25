@@ -5,7 +5,7 @@ use crate::character::Character;
 use crate::display_object::{Bitmap, DisplayObject, Graphic, MorphShape, Text};
 use crate::font::{Font, FontDescriptor, FontLike, FontQuery, FontType};
 use crate::string::AvmString;
-use crate::tag_utils::SwfMovie;
+use crate::tag_utils::{SwfMovie, SwfSlice};
 use gc_arena::{Collect, Mutation};
 use ruffle_render::backend::RenderBackend;
 use ruffle_render::bitmap::BitmapHandle;
@@ -95,7 +95,7 @@ pub struct MovieLibrary<'gc> {
     characters: HashMap<CharacterId, Character<'gc>>,
     export_characters: Avm1PropertyMap<'gc, CharacterId>,
     imported_assets: HashMap<AvmString<'gc>, CharacterId>,
-    jpeg_tables: Option<Vec<u8>>,
+    jpeg_tables: Option<SwfSlice>,
     fonts: FontMap<'gc>,
     avm2_domain: Option<Avm2Domain<'gc>>,
 }
@@ -304,7 +304,7 @@ impl<'gc> MovieLibrary<'gc> {
         }
     }
 
-    pub fn set_jpeg_tables(&mut self, data: Vec<u8>) {
+    pub fn set_jpeg_tables(&mut self, data: SwfSlice) {
         if self.jpeg_tables.is_some() {
             // SWF spec says there should only be one JPEGTables tag.
             // TODO: What is the behavior when there are multiples?
@@ -316,8 +316,8 @@ impl<'gc> MovieLibrary<'gc> {
         self.jpeg_tables = if data.is_empty() { None } else { Some(data) }
     }
 
-    pub fn jpeg_tables(&self) -> Option<&[u8]> {
-        self.jpeg_tables.as_deref()
+    pub fn jpeg_tables(&self) -> Option<SwfSlice> {
+        self.jpeg_tables.clone()
     }
 
     pub fn set_avm2_domain(&mut self, avm2_domain: Avm2Domain<'gc>) {
