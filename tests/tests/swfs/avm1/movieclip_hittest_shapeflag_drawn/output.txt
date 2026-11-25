@@ -1,0 +1,15 @@
+never rendered, moved to x=200: shape(50,50)=false shape(250,50)=true bounds(50,50)=false bounds(250,50)=true
+rendered at x=0, then _x=200: shape(50,50)=false shape(250,50)=false bounds(50,50)=false bounds(250,50)=true
+rendered at x=0, then _xscale=300: shape(50,50)=true shape(250,50)=false bounds(50,50)=true bounds(250,50)=true
+rendered at x=0, then _rotation=180: shape(50,50)=false shape(250,50)=false bounds(50,50)=false bounds(250,50)=false
+rendered at x=0, then _x=200 and back to 0: shape(50,50)=true shape(250,50)=false bounds(50,50)=true bounds(250,50)=false
+parent moved to x=200: child: shape(50,50)=false shape(250,50)=false bounds(50,50)=false bounds(250,50)=true
+was at x=-1000 (off stage), then _x=0: shape(50,50)=true shape(250,50)=false bounds(50,50)=true bounds(250,50)=false
+invisible at x=0, then _x=200 and made visible: shape(50,50)=false shape(250,50)=true bounds(50,50)=false bounds(250,50)=true
+rendered at x=0, then made invisible: shape(50,50)=true shape(250,50)=false bounds(50,50)=true bounds(250,50)=false
+rendered at x=0, then made invisible and _x=200: shape(50,50)=false shape(250,50)=false bounds(50,50)=false bounds(250,50)=true
+rendered at x=0, then _xscale=300 _x=-100: shape(50,50)=true shape(250,50)=false bounds(50,50)=true bounds(250,50)=false
+rendered at x=0, then _xscale=300 and BitmapData.draw: shape(50,50)=true shape(250,50)=true bounds(50,50)=true bounds(250,50)=true
+next frame: b: shape(50,50)=false shape(250,50)=true bounds(50,50)=false bounds(250,50)=true
+next frame: inv2 (invisible since last frame): shape(50,50)=false shape(250,50)=true bounds(50,50)=false bounds(250,50)=true
+next frame: inv2 made visible: shape(50,50)=false shape(250,50)=true bounds(50,50)=false bounds(250,50)=true
