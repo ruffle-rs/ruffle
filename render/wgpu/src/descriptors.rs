@@ -16,6 +16,7 @@ pub struct Descriptors {
     pub device: wgpu::Device,
     pub limits: wgpu::Limits,
     pub backend: Backend,
+    pub supports_multisampled_blending: bool,
     pub queue: wgpu::Queue,
     pub bitmap_samplers: BitmapSamplers,
     pub bind_layouts: BindLayouts,
@@ -46,6 +47,14 @@ impl Descriptors {
         let quad = Quad::new(&device);
         let filters = Filters::new(&device);
         let backend = adapter.get_info().backend;
+        // WebGL cannot allocate multisampled textures for sampling. Other
+        // downlevel adapters can also lack sample-rate shading.
+        let supports_multisampled_blending = !(cfg!(target_family = "wasm")
+            && backend == Backend::Gl)
+            && adapter
+                .get_downlevel_capabilities()
+                .flags
+                .contains(wgpu::DownlevelFlags::MULTISAMPLED_SHADING);
 
         Self {
             wgpu_instance: instance,
@@ -53,6 +62,7 @@ impl Descriptors {
             device,
             limits,
             backend,
+            supports_multisampled_blending,
             queue,
             bitmap_samplers,
             bind_layouts,
