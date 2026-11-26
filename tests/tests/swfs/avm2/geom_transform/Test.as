@@ -196,7 +196,7 @@ package {
             var bd2 : BitmapData = new BitmapData(50, 50, false, 0x00FF00);
             var b2 : Bitmap = new Bitmap(bd2);
             m.identity();
-            m.appendScale(1.5, 3, 1);
+            m.appendScale(1.5, 3, 1); // FIXME: scaleZ should be updated to non-obvious value once rendering is implemented.
             b2.transform.matrix3D = m.clone();
             s2.addChild(b2);
             addChild(s2);
@@ -208,7 +208,7 @@ package {
             var bd3 : BitmapData = new BitmapData(50, 50, false, 0x00FFFF);
             var b3 : Bitmap = new Bitmap(bd3);
             m.identity();
-            m.appendRotation(30, Vector3D.Z_AXIS);
+            m.appendRotation(30, Vector3D.Z_AXIS); // FIXME: axis should be updated to non-obvious one once its rendering is implemented.
             b3.transform.matrix3D = m.clone();
             s3.addChild(b3);
             addChild(s3);
@@ -232,8 +232,8 @@ package {
             var bd5 : BitmapData = new BitmapData(50, 50, false, 0xFF00FF);
             var b5 : Bitmap = new Bitmap(bd5);
             m.identity();
-            m.appendScale(2, 3, 1);
-            m.appendRotation(30, Vector3D.Z_AXIS);
+            m.appendScale(2, 3, 1); // FIXME: scaleZ should be updated to non-obvious value once rendering is implemented.
+            m.appendRotation(30, Vector3D.Z_AXIS); // FIXME: axis should be updated to non-obvious one once its rendering is implemented.
             m.appendTranslation(50, 50, 100);
             b5.transform.matrix3D = m.clone();
             s5.addChild(b5);
