@@ -1,0 +1,74 @@
+// before any new XML
+XML.prototype: own false, typeof undefined, value undefined
+XMLNode.prototype: own false, typeof undefined, value undefined
+Object.prototype: own false, typeof undefined, value undefined
+XML.prototype status own false
+// after new XML
+a: own false, typeof undefined, value undefined
+XML.prototype: own true, typeof undefined, value undefined
+XMLNode.prototype: own false, typeof undefined, value undefined
+XML.prototype status own true
+a.__proto__ == XML.prototype: true
+XML.prototype enumerates loaded: true
+a enumerates loaded: true
+// a.loaded = 5
+a: own false, typeof boolean, value true
+XML.prototype: own true, typeof undefined, value undefined
+b (new XML): own false, typeof undefined, value undefined
+// a.loaded = 0
+a: own false, typeof boolean, value false
+// a.loaded = 'false'
+a: own false, typeof boolean, value true
+// a.loaded = undefined
+a: own false, typeof boolean, value true
+// a.loaded = null
+a: own false, typeof boolean, value false
+// a.loaded = {}
+a: own false, typeof boolean, value true
+// a.loaded = false, then undefined
+a: own false, typeof boolean, value false
+// a.loaded = true, then undefined
+a: own false, typeof boolean, value true
+// fresh XML, loaded = undefined
+u: own false, typeof undefined, value undefined
+// a.loaded = NaN
+a: own false, typeof boolean, value false
+// a.loaded = ''
+a: own false, typeof boolean, value false
+// a.loaded = true
+a: own false, typeof boolean, value true
+// delete a.loaded
+returned false
+a: own false, typeof boolean, value true
+// XMLNode
+n: own true, typeof number, value 5
+// object with XML.prototype as __proto__
+o: own false, typeof undefined, value undefined
+o: own false, typeof undefined, value undefined
+// XML with custom __proto__
+c: own false, typeof boolean, value true
+p: own false, typeof undefined, value undefined
+// XML whose __proto__ is a plain object
+d: own true, typeof number, value 5
+d (proto restored): own true, typeof number, value 5
+// subclass
+m: own false, typeof undefined, value undefined
+MyXML.prototype: own false, typeof undefined, value undefined
+m: own false, typeof undefined, value undefined
+MyXML.prototype: own false, typeof undefined, value undefined
+// subclass calling super
+m2: own false, typeof boolean, value true
+// own loaded via addProperty on XML
+e getter
+e getter
+e: own true, typeof string, value g
+e setter 5
+// XML.prototype.loaded attributes
+XML.prototype enumerates loaded after unhide: true
+returned true
+XML.prototype: own false, typeof undefined, value undefined
+f: own false, typeof undefined, value undefined
+g (new XML after delete): own false, typeof undefined, value undefined
+XML.prototype: own false, typeof undefined, value undefined
+g: own true, typeof number, value 5
+Done
