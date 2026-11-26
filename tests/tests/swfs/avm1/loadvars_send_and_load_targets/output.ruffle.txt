@@ -1,0 +1,46 @@
+LoadVars: returned true
+XML: returned true
+Object: returned true
+Array: returned true
+clip: returned true
+TextField: returned true
+string: returned false
+number: returned false
+undefined: returned false
+null: returned false
+no target: returned false
+no arguments: returned false
+null URL: returned true
+undefined URL: returned true
+GET: returned true
+XML as this: returned true
+Object as this: returned true
+URL converted
+method converted
+logging URL, LoadVars target: returned true
+URL converted
+logging URL, number target: returned false
+URL converted
+method converted
+logging URL, clip target: returned true
+URL converted
+method converted
+value read
+logging this, LoadVars target: returned true
+URL converted
+logging this, number target: returned false
+LoadVars: onData(a=1&b=2)
+XML: onData(a=1&b=2)
+Object: onData(a=1&b=2)
+Array: onData(a=1&b=2)
+clip: onData(a=1&b=2)
+TextField: onData(a=1&b=2)
+null URL: onData(undefined)
+undefined URL: onData(undefined)
+GET: onData(a=1&b=2)
+XML as this: onData(a=1&b=2)
+Object as this: onData(a=1&b=2)
+logging URL: onData(a=1&b=2)
+clip: onData(a=1&b=2)
+logging this: onData(a=1&b=2)
+Done
