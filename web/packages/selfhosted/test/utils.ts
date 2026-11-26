@@ -231,7 +231,7 @@ export async function closeAllModals(
     browser: WebdriverIO.Browser,
     player: WebdriverIO.Element,
 ) {
-    const modals = await player.$$(".modal:not(.hidden)");
+    const modals = Array.from(await player.$$(".modal:not(.hidden)"));
     await browser.execute((modals) => {
         for (const m of modals) {
             const cl = m.querySelector(".close-modal")! as HTMLElement;
