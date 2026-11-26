@@ -430,21 +430,17 @@ fn send_and_load<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let url_val = args.get(0).cloned().unwrap_or(Value::Undefined);
-
-    if let Value::Null = url_val {
-        return Ok(Value::Undefined);
-    }
+    let url = url_val.coerce_to_string(activation)?;
+    let data = Value::from(this).coerce_to_string(activation)?;
 
     let target = match args.get(1) {
-        Some(&Value::Object(o)) => o,
-        _ => return Ok(Value::Undefined),
+        Some(&Value::Object(o)) if o.as_display_object().is_none() => o,
+        _ => return Ok(false.into()),
     };
 
-    if let NativeObject::Xml(xml) = this.native() {
-        let url = url_val.coerce_to_string(activation)?;
-        spawn_xml_fetch(activation, this, target, url, Some(xml.root()))?;
-    }
-    Ok(Value::Undefined)
+    spawn_xml_fetch(activation, target, url, Some(&data))?;
+
+    Ok(true.into())
 }
 
 fn load<'gc>(
@@ -460,7 +456,7 @@ fn load<'gc>(
 
     if let NativeObject::Xml(_) = this.native() {
         let url = url_val.coerce_to_string(activation)?;
-        spawn_xml_fetch(activation, this, this, url, None)?;
+        spawn_xml_fetch(activation, this, url, None)?;
 
         Ok(true.into())
     } else {
@@ -589,20 +585,17 @@ fn set_loaded<'gc>(
 
 fn spawn_xml_fetch<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
     loader_object: Object<'gc>,
     url: AvmString<'gc>,
-    send_object: Option<XmlNode<'gc>>,
+    send_data: Option<&WStr>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let url = url.to_utf8_lossy().into_owned();
 
-    let request = if let Some(node) = send_object {
-        // Send `node` as string.
-        let string = node.into_string(activation)?;
+    let request = if let Some(data) = send_data {
         Request::post(
             url,
             Some((
-                string.to_utf8_lossy().into_owned().into_bytes(),
+                data.to_utf8_lossy().into_owned().into_bytes(),
                 "application/x-www-form-urlencoded".to_string(),
             )),
         )
@@ -614,41 +607,41 @@ fn spawn_xml_fetch<'gc>(
     // Create hidden properties on object.
     let bytes_loaded_string = istr!("_bytesLoaded");
 
-    if !this.has_property(activation, bytes_loaded_string) {
-        this.define_value(
+    if !loader_object.has_property(activation, bytes_loaded_string) {
+        loader_object.define_value(
             activation.gc(),
             bytes_loaded_string,
             0.into(),
             Attribute::DONT_DELETE | Attribute::DONT_ENUM,
         );
     } else {
-        this.set(bytes_loaded_string, 0, activation)?;
+        loader_object.set(bytes_loaded_string, 0, activation)?;
     }
 
     let bytes_total_string = istr!("_bytesTotal");
 
-    if !this.has_property(activation, bytes_total_string) {
-        this.define_value(
+    if !loader_object.has_property(activation, bytes_total_string) {
+        loader_object.define_value(
             activation.gc(),
             bytes_total_string,
             Value::Undefined,
             Attribute::DONT_DELETE | Attribute::DONT_ENUM,
         );
     } else {
-        this.set(bytes_total_string, Value::Undefined, activation)?;
+        loader_object.set(bytes_total_string, Value::Undefined, activation)?;
     }
 
     let loaded_string = istr!("loaded");
 
-    if !this.has_property(activation, loaded_string) {
-        this.define_value(
+    if !loader_object.has_property(activation, loaded_string) {
+        loader_object.define_value(
             activation.gc(),
             loaded_string,
             false.into(),
             Attribute::DONT_DELETE | Attribute::DONT_ENUM,
         );
     } else {
-        this.set(loaded_string, false, activation)?;
+        loader_object.set(loaded_string, false, activation)?;
     }
 
     let future =
