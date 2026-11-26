@@ -1,0 +1,66 @@
+XML: returned true
+clip: returned false
+TextField: returned false
+Object: returned true
+LoadVars: returned true
+Array: returned true
+Function: returned true
+string: returned false
+number: returned false
+undefined: returned false
+null: returned false
+no target: returned false
+no arguments: returned false
+null URL: returned true
+undefined URL: returned true
+LoadVars as this: returned true
+Object as this: returned true
+URL converted
+logging URL, XML target: returned true
+URL converted
+logging URL, number target: returned false
+URL converted
+this converted
+logging this, XML target: returned true
+URL converted
+this converted
+logging this, number target: returned false
+URL converted
+XML converted
+logging XML, XML target: returned true
+URL converted
+XML converted
+logging XML, number target: returned false
+sender: loaded false undefined, _bytesLoaded false undefined, _bytesTotal false undefined
+target: loaded true false, _bytesLoaded true 0, _bytesTotal true undefined
+XML: onData(<root><a>1</a></root>
+)
+XML: onLoad(true), loaded = true
+Object: onData(<root><a>1</a></root>
+)
+LoadVars: onData(<root><a>1</a></root>
+)
+Array: onData(<root><a>1</a></root>
+)
+Function: onData(<root><a>1</a></root>
+)
+null URL: onData(undefined)
+null URL: onLoad(true), loaded = true
+undefined URL: onData(undefined)
+undefined URL: onLoad(true), loaded = true
+LoadVars as this: onData(<root><a>1</a></root>
+)
+LoadVars as this: onLoad(true), loaded = true
+Object as this: onData(<root><a>1</a></root>
+)
+Object as this: onLoad(true), loaded = true
+logging URL: onData(<root><a>1</a></root>
+)
+logging URL: onLoad(true), loaded = true
+logging this: onData(<root><a>1</a></root>
+)
+logging this: onLoad(true), loaded = true
+logging XML: onData(<root><a>1</a></root>
+)
+logging XML: onLoad(true), loaded = true
+Done
