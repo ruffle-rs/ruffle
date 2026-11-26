@@ -7,6 +7,7 @@ use crate::avm2::error::{
     make_error_1115,
 };
 use crate::avm2::function::{FunctionArgs, exec};
+use crate::avm2::globals::SystemClasses;
 use crate::avm2::index::ArrayIndex;
 use crate::avm2::object::{NamespaceObject, Object, TObject};
 use crate::avm2::property::Property;
@@ -1684,8 +1685,10 @@ impl<'gc> Value<'gc> {
     /// This function will panic if called on null or undefined.
     #[inline]
     pub fn proto(&self, activation: &mut Activation<'_, 'gc>) -> Option<Object<'gc>> {
-        let classes = activation.avm2().classes();
+        self.proto_with_classes(activation.avm2().classes())
+    }
 
+    pub(super) fn proto_with_classes(&self, classes: &SystemClasses<'gc>) -> Option<Object<'gc>> {
         match self {
             Value::Bool(_) => Some(classes.boolean.prototype()),
             Value::Number(_) | Value::Integer(_) => Some(classes.number.prototype()),
