@@ -149,6 +149,8 @@ package {
             prototype.setPropertyIsEnumerable("toLocaleString", false);
             prototype.setPropertyIsEnumerable("toString", false);
             prototype.setPropertyIsEnumerable("unshift", false);
+            prototype.setPropertyIsEnumerable("isEmpty", false);
+            prototype.setPropertyIsEnumerable("includes", false);
         }
 
         public function Array(...args) {
@@ -186,6 +188,12 @@ package {
 
         [API("708")]
         AS3 native function insertAt(index:int, element:*):void;
+
+        [API("740")]
+        AS3 native function includes(item:*):Boolean;
+
+        [API("740")]
+        AS3 native function isEmpty():Boolean;
 
         AS3 native function join(separator:* = void 0):String;
 
