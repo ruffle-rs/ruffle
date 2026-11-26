@@ -1,9 +1,0 @@
-transparent zero alpha sum: 0x00000000
-transparent half alpha sum: 0x80122234
-transparent full alpha sum: 0xFF112233
-transparent alpha only: 0x7F000000
-opaque zero alpha sum: 0x00000000
-opaque half alpha sum: 0x8009111A
-opaque full alpha sum: 0xFF112233
-opaque alpha only: 0x7F000000
-Done
