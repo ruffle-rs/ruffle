@@ -1118,6 +1118,12 @@ impl<'gc> EditText<'gc> {
         }
     }
 
+    fn visible_line_range(self) -> (usize, usize) {
+        let lines_to_skip = self.scroll().saturating_sub(1);
+        let lines_to_take = self.bottom_scroll().saturating_sub(lines_to_skip).max(1);
+        (lines_to_skip, lines_to_take)
+    }
+
     /// Render lines according to the given procedure.
     ///
     /// This skips invisible lines.
@@ -1125,9 +1131,18 @@ impl<'gc> EditText<'gc> {
     where
         F: FnMut(&mut RenderContext<'_, 'gc>, &LayoutLine<'gc>),
     {
-        // Skip lines that are off-screen.
-        let lines_to_skip = self.scroll().saturating_sub(1);
-        for line in self.0.layout.borrow().lines().iter().skip(lines_to_skip) {
+        // Skip lines that are off-screen above `scroll` or past `bottom_scroll`
+        // (always keeping the first visible line, matching Flash Player).
+        let (lines_to_skip, lines_to_take) = self.visible_line_range();
+        for line in self
+            .0
+            .layout
+            .borrow()
+            .lines()
+            .iter()
+            .skip(lines_to_skip)
+            .take(lines_to_take)
+        {
             f(context, line);
         }
     }
