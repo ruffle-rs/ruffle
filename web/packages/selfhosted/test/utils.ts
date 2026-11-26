@@ -1,5 +1,6 @@
 import { expect } from "chai";
 import { Player, Setup } from "ruffle-core";
+import type { ChainablePromiseElement } from "webdriverio";
 
 declare global {
     interface Window {
@@ -198,6 +199,20 @@ export async function openTest(
     filename: string = "index.html",
 ) {
     await browser.url(`http://localhost:4567/test/${directory}/${filename}`);
+}
+
+/**
+ * Returns the inner HTML of `element`, without its shadow DOM.
+ *
+ * This is used instead of `getHTML({ pierceShadowRoot: false })`, which in
+ * WebdriverIO 10 always runs in the top-level document, so it fails for
+ * elements inside a frame.
+ */
+export async function getInnerHTML(
+    element: ChainablePromiseElement,
+): Promise<string> {
+    const resolved = await element.getElement();
+    return await resolved.execute((el) => el.innerHTML);
 }
 
 /** Test set-up for JS API testing. */
