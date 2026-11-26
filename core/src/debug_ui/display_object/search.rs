@@ -1,6 +1,6 @@
 use crate::context::UpdateContext;
 use crate::debug_ui::Message;
-use crate::debug_ui::display_object::{DEFAULT_DEBUG_COLORS, open_display_object_button};
+use crate::debug_ui::display_object::{DEFAULT_DEBUG_COLORS, display_object_row_ui};
 use crate::debug_ui::handle::DisplayObjectHandle;
 use crate::display_object::{
     DisplayObject, TDisplayObject, TDisplayObjectContainer, TInteractiveObject,
@@ -202,7 +202,7 @@ fn show_item(
             Vec2::new(ui.spacing().interact_size.y, ui.spacing().interact_size.y),
         );
         let object = tree.handle.fetch(context.dynamic_root);
-        open_display_object_button(
+        display_object_row_ui(
             ui,
             context,
             messages,
