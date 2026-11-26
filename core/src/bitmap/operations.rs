@@ -737,7 +737,7 @@ pub fn palette_map<'gc>(
             let a = channel_arrays.3[source_color.alpha() as usize];
 
             let sum = u32::wrapping_add(u32::wrapping_add(r, g), u32::wrapping_add(b, a));
-            let mix_color = Color::from(sum).to_premultiplied_alpha(true);
+            let mix_color = Color::from(sum).to_premultiplied_alpha(write.transparency());
 
             write.set_pixel32_raw(dest_x, dest_y, mix_color);
         }
