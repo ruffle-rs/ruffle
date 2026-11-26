@@ -577,6 +577,11 @@ impl<'gc> FunctionObject<'gc> {
         }
     }
 
+    /// Whether this function uses a native constructor implementation.
+    pub fn has_native_constructor(self) -> bool {
+        self.constructor.is_some()
+    }
+
     /// A native constructor.
     ///
     /// This differs from [`Self::native`] in two important ways:

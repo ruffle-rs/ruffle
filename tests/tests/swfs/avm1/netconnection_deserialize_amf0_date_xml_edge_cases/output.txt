@@ -1,0 +1,41 @@
+--- Starting AMF0 Date deserialization edge-case test ---
+Navigator::fetch:
+  URL: http://localhost:8000/test2
+  Method: POST
+  Mime-Type: application/x-amf
+  Body: [00, 00, 00, 00, 00, 01, 00, 0F, 74, 65, 73, 74, 2E, 6E, 61, 74, 69, 76, 65, 44, 61, 74, 65, 00, 02, 2F, 31, 00, 00, 00, 05, 0A, 00, 00, 00, 00]
+--- Native AMF0 Date ---
+Date type: object
+Date is native: true
+Date getTime: 1234567890000
+Navigator::fetch:
+  URL: http://localhost:8000/test2
+  Method: POST
+  Mime-Type: application/x-amf
+  Body: [00, 00, 00, 00, 00, 01, 00, 0F, 74, 65, 73, 74, 2E, 6E, 61, 74, 69, 76, 65, 44, 61, 74, 65, 00, 02, 2F, 31, 00, 00, 00, 05, 0A, 00, 00, 00, 00]
+--- Script-defined AMF0 Date ---
+Date type: object
+Constructor calls: 0
+Constructor argument count: -1
+Date marker: undefined
+Date prototype marker: script-date-prototype
+Date getTime type: undefined
+Date is ScriptDate: true
+Navigator::fetch:
+  URL: http://localhost:8000/test2
+  Method: POST
+  Mime-Type: application/x-amf
+  Body: [00, 00, 00, 00, 00, 01, 00, 0F, 74, 65, 73, 74, 2E, 6E, 61, 74, 69, 76, 65, 44, 61, 74, 65, 00, 02, 2F, 31, 00, 00, 00, 05, 0A, 00, 00, 00, 00]
+Navigator::fetch:
+  URL: http://localhost:8000/test2
+  Method: POST
+  Mime-Type: application/x-amf
+  Body: [00, 00, 00, 00, 00, 01, 00, 0F, 74, 65, 73, 74, 2E, 6E, 61, 74, 69, 76, 65, 44, 61, 74, 65, 00, 02, 2F, 31, 00, 00, 00, 05, 0A, 00, 00, 00, 00]
+Navigator::fetch:
+  URL: http://localhost:8000/test2
+  Method: POST
+  Mime-Type: application/x-amf
+  Body: [00, 00, 00, 00, 00, 01, 00, 0F, 74, 65, 73, 74, 2E, 6E, 61, 74, 69, 76, 65, 44, 61, 74, 65, 00, 02, 2F, 31, 00, 00, 00, 05, 0A, 00, 00, 00, 00]
+--- Missing AMF0 Date binding ---
+Date type: undefined
+Date value: undefined

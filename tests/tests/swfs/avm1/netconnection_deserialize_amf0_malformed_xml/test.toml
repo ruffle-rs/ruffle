@@ -1,0 +1,9 @@
+num_ticks = 20
+log_fetch = true
+log_warnings = false
+
+[[compilers]]
+type = "Rascal"
+target = "test.swf"
+scripts = ["test.as"]
+swf_version = 8
