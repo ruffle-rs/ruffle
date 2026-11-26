@@ -106,8 +106,6 @@ _Note: because it is HEAD-only, you'll need to run `brew upgrade --fetch-HEAD ru
 Follow [the instructions in the web directory](web/README.md#building-from-source) for building
 either the web or browser extension version of Ruffle.
 
-This project is tested with BrowserStack.
-
 ### Android
 
 Follow the [instructions](https://github.com/ruffle-rs/ruffle-android/blob/main/CONTRIBUTING.md#building-from-source) in the `ruffle-android` project for building the Android application of Ruffle.
