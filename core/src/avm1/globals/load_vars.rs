@@ -1,7 +1,7 @@
 //! AVM1 LoadVars object
 //! TODO: bytesLoaded, bytesTotal, contentType, addRequestHeader
 
-use crate::avm1::activation::Activation;
+use crate::avm1::activation::{Activation, form_request};
 use crate::avm1::error::Error;
 use crate::avm1::function::ExecutionReason;
 use crate::avm1::property::Attribute;
@@ -195,18 +195,24 @@ fn send_and_load<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let url_val = args.get(0).cloned().unwrap_or(Value::Undefined);
     let url = url_val.coerce_to_string(activation)?;
-    let target = match args.get(1) {
-        Some(&Value::Object(o)) => o,
-        _ => return Ok(false.into()),
-    };
-
     let method_name = args
         .get(2)
         .unwrap_or(&Value::Undefined)
         .coerce_to_string(activation)?;
     let method = NavigationMethod::from_method_str(&method_name).unwrap_or(NavigationMethod::Post);
+    let data = Value::from(this).coerce_to_string(activation)?;
 
-    spawn_load_var_fetch(activation, target, url, Some((this, method)))?;
+    let target = match args.get(1) {
+        Some(&Value::Object(o)) if o.as_display_object().is_none() => o,
+        _ => return Ok(false.into()),
+    };
+
+    spawn_load_var_fetch(
+        activation,
+        target,
+        url,
+        Some((&data.to_utf8_lossy(), method)),
+    )?;
 
     Ok(true.into())
 }
@@ -252,11 +258,10 @@ fn spawn_load_var_fetch<'gc>(
     activation: &mut Activation<'_, 'gc>,
     loader_object: Object<'gc>,
     url: AvmString<'gc>,
-    send_object: Option<(Object<'gc>, NavigationMethod)>,
+    send_data: Option<(&str, NavigationMethod)>,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let request = if let Some((send_object, method)) = send_object {
-        // Send properties from `send_object`.
-        activation.object_into_request(send_object, url, Some(method))
+    let request = if let Some((data, method)) = send_data {
+        form_request(&url, data, method)
     } else {
         // Not sending any parameters.
         Request::get(url.to_utf8_lossy().into_owned())
