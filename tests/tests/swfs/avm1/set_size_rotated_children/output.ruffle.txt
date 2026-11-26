@@ -1,0 +1,63 @@
+diagonal rot 0 before: _width 40, _height 40, _xscale 100, _yscale 100
+diagonal rot 0 size reset: _width 40, _height 40, _xscale 100, _yscale 100
+nested rot 0 before: _width 42.4, _height 42.45, _xscale 100, _yscale 100
+nested rot 0 size reset: _width 42.4, _height 42.45, _xscale 100, _yscale 100
+single rot 0 before: _width 30, _height 30, _xscale 100, _yscale 100
+single rot 0 _width = 60: _width 60, _height 30, _xscale 200, _yscale 100
+diagonal rot 45 before: _width 28.3, _height 56.6, _xscale 100, _yscale 100
+diagonal rot 45 size reset: _width 21.25, _height 35.4, _xscale 50, _yscale 75.1547303271441
+nested rot 45 before: _width 30, _height 30, _xscale 100, _yscale 100
+nested rot 45 size reset: _width 7.5, _height 7.5, _xscale 25, _yscale 25
+single rot 45 before: _width 42.4, _height 42.45, _xscale 100, _yscale 100
+single rot 45 _width = 60: _width 51.2, _height 51.25, _xscale 141.509433962264, _yscale 100
+diagonal rot 59 before: _width 34.3, _height 54.9, _xscale 100, _yscale 100
+diagonal rot 59 size reset: _width 26.25, _height 37.2, _xscale 62.4772313296903, _yscale 76.5027322404372
+nested rot 59 before: _width 36.35, _height 36.35, _xscale 100, _yscale 100
+nested rot 59 size reset: _width 14.15, _height 14.2, _xscale 38.9699570815451, _yscale 38.9175257731959
+single rot 59 before: _width 41.15, _height 41.15, _xscale 100, _yscale 100
+single rot 59 _width = 60: _width 48.25, _height 52.95, _xscale 145.808019441069, _yscale 100
+diagonal rot -59 before: _width 54.9, _height 34.3, _xscale 100, _yscale 100
+diagonal rot -59 size reset: _width 37.2, _height 26.25, _xscale 76.5027322404372, _yscale 62.4772313296903
+nested rot -59 before: _width 36.35, _height 36.35, _xscale 100, _yscale 100
+nested rot -59 size reset: _width 14.15, _height 14.2, _xscale 38.9699570815451, _yscale 38.9175257731959
+single rot -59 before: _width 41.15, _height 41.15, _xscale 100, _yscale 100
+single rot -59 _width = 60: _width 48.25, _height 52.95, _xscale 145.808019441069, _yscale 100
+diagonal rot 121 before: _width 54.9, _height 34.3, _xscale 100, _yscale 100
+diagonal rot 121 size reset: _width 37.2, _height 26.25, _xscale 76.5027322404372, _yscale 62.4772313296903
+nested rot 121 before: _width 36.35, _height 36.35, _xscale 100, _yscale 100
+nested rot 121 size reset: _width 14.15, _height 14.2, _xscale 38.9699570815451, _yscale 38.9175257731959
+single rot 121 before: _width 41.15, _height 41.15, _xscale 100, _yscale 100
+single rot 121 _width = 60: _width 48.25, _height 52.95, _xscale 145.808019441069, _yscale 100
+diagonal rot -121 before: _width 34.3, _height 54.9, _xscale 100, _yscale 100
+diagonal rot -121 size reset: _width 26.25, _height 37.2, _xscale 62.4772313296903, _yscale 76.5027322404372
+nested rot -121 before: _width 36.35, _height 36.35, _xscale 100, _yscale 100
+nested rot -121 size reset: _width 14.15, _height 14.2, _xscale 38.9699570815451, _yscale 38.9175257731959
+single rot -121 before: _width 41.15, _height 41.15, _xscale 100, _yscale 100
+single rot -121 _width = 60: _width 48.25, _height 52.95, _xscale 145.808019441069, _yscale 100
+diagonal rot 180 before: _width 40, _height 40, _xscale 100, _yscale 100
+diagonal rot 180 size reset: _width 40, _height 40, _xscale 100, _yscale 100
+nested rot 180 before: _width 42.4, _height 42.45, _xscale 100, _yscale 100
+nested rot 180 size reset: _width 42.4, _height 42.45, _xscale 100, _yscale 100
+single rot 180 before: _width 30, _height 30, _xscale 100, _yscale 100
+single rot 180 _width = 60: _width 60, _height 30, _xscale 200, _yscale 100
+diagonal scale -100/100 rot 45 before: _width 56.6, _height 28.3, _xscale -100, _yscale 100
+diagonal scale -100/100 rot 45 size reset: _width 21.2, _height 35.3, _xscale 50, _yscale 74.9778956675508
+diagonal scale 100/-100 rot 45 before: _width 56.6, _height 28.3, _xscale 100, _yscale -100
+diagonal scale 100/-100 rot 45 size reset: _width 21.2, _height 35.3, _xscale 50, _yscale 74.9778956675508
+diagonal scale -100/100 rot 121 before: _width 34.3, _height 54.9, _xscale -100, _yscale 100
+diagonal scale -100/100 rot 121 size reset: _width 31.1, _height 29.45, _xscale 85.9744990892532, _yscale 38.9799635701275
+diagonal scale -100/-100 rot 59 before: _width 34.3, _height 54.9, _xscale -100, _yscale -100
+diagonal scale -100/-100 rot 59 size reset: _width 26.25, _height 37.2, _xscale 62.4772313296903, _yscale 76.5027322404372
+text child rot 0 before: _width 60, _height 40, _xscale 100, _yscale 100
+text child rot 0 size reset: _width 60, _height 40, _xscale 100, _yscale 100
+scroll rect rot 0 before: _width 40, _height 40, _xscale 100, _yscale 100
+scroll rect rot 0 size reset: _width 40, _height 40, _xscale 100, _yscale 100
+text child rot 59 before: _width 37.75, _height 72.05, _xscale 100, _yscale 100
+text child rot 59 size reset: _width 23.95, _height 41.45, _xscale 52.6073619631902, _yscale 69.9514226231783
+scroll rect rot 59 before: _width 34.3, _height 54.9, _xscale 100, _yscale 100
+scroll rect rot 59 size reset: _width 26.25, _height 37.2, _xscale 62.4772313296903, _yscale 76.5027322404372
+text child rot -121 before: _width 37.75, _height 72.05, _xscale 100, _yscale 100
+text child rot -121 size reset: _width 23.95, _height 41.45, _xscale 52.6073619631902, _yscale 69.9514226231783
+scroll rect rot -121 before: _width 34.3, _height 54.9, _xscale 100, _yscale 100
+scroll rect rot -121 size reset: _width 26.25, _height 37.2, _xscale 62.4772313296903, _yscale 76.5027322404372
+Done
