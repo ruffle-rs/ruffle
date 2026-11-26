@@ -1,4 +1,10 @@
-import { openTest, injectRuffleAndWait, getInnerHTML } from "../../utils.js";
+import {
+    openTest,
+    injectRuffleAndWait,
+    getFrame,
+    getInnerHTML,
+    getTopDocument,
+} from "../../utils.js";
 import { expect, use } from "chai";
 import chaiHtml from "chai-html";
 import fs from "fs";
@@ -6,16 +12,18 @@ import fs from "fs";
 use(chaiHtml);
 
 describe("Flash inside iframe with injected ruffle", () => {
+    let page: WebdriverIO.BrowsingContext;
+
     it("loads the test", async () => {
-        await openTest(browser, `polyfill/iframes_injected`);
+        page = await openTest(browser, `polyfill/iframes_injected`);
     });
 
     it("polyfills inside an iframe", async () => {
         await injectRuffleAndWait(browser);
-        await browser.switchFrame(await browser.$("#test-frame"));
-        await browser.$("<ruffle-object />").waitForExist();
+        const frame = await getFrame(browser, page, "#test-frame");
+        await frame.$("<ruffle-object />").waitForExist();
 
-        const actual = await getInnerHTML(browser.$("#test-container"));
+        const actual = await getInnerHTML(frame.$("#test-container"));
         const expected = fs.readFileSync(
             `${import.meta.dirname}/expected.html`,
             "utf8",
@@ -25,20 +33,20 @@ describe("Flash inside iframe with injected ruffle", () => {
 
     it("polyfills even after a reload", async () => {
         // Contaminate the old contents, to ensure we get a "fresh" state
-        await browser.execute(() => {
+        let frame = await getFrame(browser, page, "#test-frame");
+        await frame.execute(() => {
             document.getElementById("test-container")?.remove();
         });
 
         // Then reload
-        await browser.switchFrame(null);
-        await browser.$("#reload-link").click();
+        const top = await getTopDocument(browser, page);
+        await top.$("#reload-link").click();
 
         // And finally, check
-        await browser.switchFrame(null);
-        await browser.switchFrame(await browser.$("#test-frame"));
-        await browser.$("<ruffle-object />").waitForExist();
+        frame = await getFrame(browser, page, "#test-frame");
+        await frame.$("<ruffle-object />").waitForExist();
 
-        const actual = await getInnerHTML(browser.$("#test-container"));
+        const actual = await getInnerHTML(frame.$("#test-container"));
         const expected = fs.readFileSync(
             `${import.meta.dirname}/expected.html`,
             "utf8",
