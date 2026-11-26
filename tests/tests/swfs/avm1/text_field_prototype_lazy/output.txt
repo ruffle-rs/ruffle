@@ -1,0 +1,9 @@
+startup, TextField.prototype.text: false
+new TextField(): styleSheet,mouseWheelEnabled,condenseWhite,restrict,textHeight,textWidth,bottomScroll,length,selectable,multiline,password,wordWrap,background,border,html,embedFonts,maxChars,maxhscroll,hscroll,variable,htmlText,type,text,autoSize,tabIndex,textColor,backgroundColor,borderColor,maxscroll,scroll
+createTextField: 30
+placed: 30
+TextField() without new: 0
+createTextField with a replaced TextField class: 0
+super() in a subclass: 30 on its prototype, 0 on TextField.prototype
+text deleted, created again: true -> false
+done

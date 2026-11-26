@@ -1,0 +1,8 @@
+startup, XML.prototype.status: false
+new XML(): xmlDecl,status,ignoreWhite,docTypeDecl,contentType
+new XML(1): 5
+XML() without new: 0
+super() in a subclass: 5 on its prototype, 0 on XML.prototype
+status deleted, created again: true -> false
+parsed with ignoreWhite = true on the prototype: childNodes.length=1
+done

@@ -1,0 +1,9 @@
+startup, NetStream.prototype.time: false
+new NetStream(nc): bytesTotal,bytesLoaded,bufferLength,bufferTime,time
+new NetStream(): 0
+new NetStream(unconnected): 0
+new NetStream(closed): 0
+NetStream(nc) without new: 5
+super() in a subclass: 5 on its prototype, 0 on NetStream.prototype
+time deleted, created again: true -> false
+done

@@ -2,7 +2,9 @@
 
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
-use crate::avm1::property_decl::{DeclContext, PropertyOrder, StaticDeclarations, SystemClass};
+use crate::avm1::property_decl::{
+    self, DeclContext, PropertyOrder, StaticDeclarations, SystemClass,
+};
 use crate::avm1::{Object, Value};
 use crate::avm1_stub;
 
@@ -10,28 +12,39 @@ const PROTO_DECLS: StaticDeclarations = declare_static_properties! {
     "start" => method(start; DONT_ENUM | DONT_DELETE | VERSION_7);
     "addPage" => method(add_page; DONT_ENUM | DONT_DELETE | VERSION_7);
     "send" => method(send; DONT_ENUM | DONT_DELETE | VERSION_7);
-    "paperHeight" => property(paper_height; DONT_DELETE | READ_ONLY);
-    "paperWidth" => property(paper_width; DONT_DELETE | READ_ONLY);
-    "pageHeight" => property(page_height; DONT_DELETE | READ_ONLY);
-    "pageWidth" => property(page_width; DONT_DELETE | READ_ONLY);
-    "orientation" => property(orientation; DONT_DELETE | READ_ONLY);
+};
+
+/// Defined lazily by the constructor, see
+/// [`property_decl::define_lazy_proto_properties`].
+const LAZY_PROTO_DECLS: StaticDeclarations = declare_static_properties! {
+    "paperHeight" => property(paper_height; READ_ONLY);
+    "paperWidth" => property(paper_width; READ_ONLY);
+    "pageHeight" => property(page_height; READ_ONLY);
+    "pageWidth" => property(page_width; READ_ONLY);
+    "orientation" => property(orientation; READ_ONLY);
 };
 
 pub fn create_class<'gc>(
     context: &mut DeclContext<'_, 'gc>,
     super_proto: Object<'gc>,
 ) -> SystemClass<'gc> {
-    let class = context.class(constructor, super_proto, PropertyOrder::PrototypeFirst);
+    let class = context.native_class(
+        constructor,
+        None,
+        super_proto,
+        PropertyOrder::PrototypeFirst,
+    );
     context.define_properties_on(class.proto, PROTO_DECLS(context));
     class
 }
 
 fn constructor<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
+    activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    Ok(Value::Undefined)
+    property_decl::define_lazy_proto_properties_of(activation, this, LAZY_PROTO_DECLS);
+    Ok(this.into())
 }
 
 fn start<'gc>(

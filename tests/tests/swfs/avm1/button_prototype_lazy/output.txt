@@ -1,0 +1,7 @@
+startup, Button.prototype.tabIndex: false
+new Button(): tabIndex
+placed: 1
+Button() without new: 0
+super() in a subclass: 1 on its prototype, 0 on Button.prototype
+tabIndex deleted, created again: true -> false
+done

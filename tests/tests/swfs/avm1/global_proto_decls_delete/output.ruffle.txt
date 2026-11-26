@@ -10,11 +10,6 @@ Testing _global.PrintJob
   constructor, DONT_DELETE
   prototype, DONT_DELETE
 Testing _global.PrintJob.prototype
-  orientation, DONT_DELETE
-  pageWidth, DONT_DELETE
-  pageHeight, DONT_DELETE
-  paperWidth, DONT_DELETE
-  paperHeight, DONT_DELETE
   send, DONT_DELETE
   addPage, DONT_DELETE
   start, DONT_DELETE

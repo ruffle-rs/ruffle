@@ -1,0 +1,9 @@
+startup, NetStream.prototype.time: false
+new NetStream(nc): audiocodec,videocodec,decodedFrames,bytesTotal,bytesLoaded,liveDelay,bufferLength,bufferTime,currentFps,time
+new NetStream(): 0
+new NetStream(unconnected): 0
+new NetStream(closed): 0
+NetStream(nc) without new: 10
+super() in a subclass: 10 on its prototype, 0 on NetStream.prototype
+time deleted, created again: true -> false
+done

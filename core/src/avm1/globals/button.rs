@@ -5,7 +5,9 @@ use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::globals::bitmap_filter;
 use crate::avm1::globals::movie_clip::{new_rectangle, object_to_rectangle};
-use crate::avm1::property_decl::{DeclContext, PropertyOrder, StaticDeclarations, SystemClass};
+use crate::avm1::property_decl::{
+    self, DeclContext, PropertyOrder, StaticDeclarations, SystemClass,
+};
 use crate::avm1::{Object, Value, globals};
 use crate::avm1_stub;
 use crate::display_object::{Avm1Button, TDisplayObject, TInteractiveObject};
@@ -46,8 +48,12 @@ const PROTO_DECLS: StaticDeclarations = declare_static_properties! {
     "filters" => property(button_getter!(filters), button_setter!(set_filters); READ_ONLY | VERSION_8);
     "cacheAsBitmap" => property(button_getter!(cache_as_bitmap), button_setter!(set_cache_as_bitmap); READ_ONLY | VERSION_8);
     "blendMode" => property(button_getter!(blend_mode), button_setter!(set_blend_mode); READ_ONLY | VERSION_8);
+};
+
+/// Defined lazily by the constructor, see
+/// [`property_decl::define_lazy_proto_properties`].
+const LAZY_PROTO_DECLS: StaticDeclarations = declare_static_properties! {
     // NOTE: `tabEnabled` is not a built-in property of Button.
-    // TODO tabIndex shouldn't be defined here
     "tabIndex" => property(button_getter!(tab_index), button_setter!(set_tab_index); VERSION_6);
 };
 
@@ -55,9 +61,26 @@ pub fn create_class<'gc>(
     context: &mut DeclContext<'_, 'gc>,
     super_proto: Object<'gc>,
 ) -> SystemClass<'gc> {
-    let class = context.empty_class(super_proto, PropertyOrder::PrototypeFirst);
+    let class = context.native_class(
+        constructor,
+        None,
+        super_proto,
+        PropertyOrder::PrototypeFirst,
+    );
     context.define_properties_on(class.proto, PROTO_DECLS(context));
     class
+}
+
+/// The constructor, also called on the objects of Button display objects.
+/// It's only observable by defining the lazily defined properties, which
+/// happens even for `new Button()` without a display object.
+fn constructor<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    property_decl::define_lazy_proto_properties_of(activation, this, LAZY_PROTO_DECLS);
+    Ok(this.into())
 }
 
 fn blend_mode<'gc>(

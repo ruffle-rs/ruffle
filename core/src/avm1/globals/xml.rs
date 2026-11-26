@@ -4,7 +4,9 @@ use std::cell::Cell;
 
 use crate::avm_warn;
 use crate::avm1::function::ExecutionReason;
-use crate::avm1::property_decl::{DeclContext, PropertyOrder, StaticDeclarations, SystemClass};
+use crate::avm1::property_decl::{
+    self, DeclContext, PropertyOrder, StaticDeclarations, SystemClass,
+};
 use crate::avm1::xml::{ELEMENT_NODE, TEXT_NODE, XmlNode};
 use crate::avm1::{Activation, Attribute, Error, NativeObject, Object, Value};
 use crate::backend::navigator::Request;
@@ -288,13 +290,21 @@ const PROTO_DECLS: StaticDeclarations = declare_static_properties! {
     "onData" => method(@As2 on_data);
     "getBytesLoaded" => method(@As2 get_bytes_loaded);
     "getBytesTotal" => method(@As2 get_bytes_total);
+    // TODO Looks like idMap is not a built-in property.
+    "idMap" => property(id_map);
+};
+
+/// Defined lazily by the constructor, see
+/// [`property_decl::define_lazy_proto_properties`].
+///
+/// TODO: In Flash Player, `contentType` and `ignoreWhite` are properties
+/// too, and `loaded` is also defined this way.
+const LAZY_PROTO_DECLS: StaticDeclarations = declare_static_properties! {
     "contentType" => value("application/x-www-form-urlencoded"; READ_ONLY);
     "docTypeDecl" => property(doc_type_decl; READ_ONLY);
     "ignoreWhite" => value(false);
     "status" => property(status);
     "xmlDecl" => property(xml_decl);
-    // TODO Looks like idMap is not a built-in property.
-    "idMap" => property(id_map);
 };
 
 pub fn create_class<'gc>(
@@ -330,6 +340,10 @@ fn constructor<'gc>(
             avm_warn!(activation, "XML parsing error: {}", e);
         }
     }
+
+    // After parsing, as `ignoreWhite` is read from the prototype before it's
+    // overwritten.
+    property_decl::define_lazy_proto_properties_of(activation, this, LAZY_PROTO_DECLS);
 
     Ok(this.into())
 }
