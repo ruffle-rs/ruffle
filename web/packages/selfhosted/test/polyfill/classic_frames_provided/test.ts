@@ -1,4 +1,4 @@
-import { openTest } from "../../utils.js";
+import { openTest, getInnerHTML } from "../../utils.js";
 import { expect, use } from "chai";
 import chaiHtml from "chai-html";
 import fs from "fs";
@@ -14,9 +14,7 @@ describe("Flash inside frame with provided ruffle", () => {
         await browser.switchFrame(await browser.$("#test-frame"));
         await browser.$("<ruffle-object />").waitForExist();
 
-        const actual = await browser
-            .$("#test-container")
-            .getHTML({ includeSelectorTag: false, pierceShadowRoot: false });
+        const actual = await getInnerHTML(browser.$("#test-container"));
         const expected = fs.readFileSync(
             `${import.meta.dirname}/expected.html`,
             "utf8",
@@ -40,9 +38,7 @@ describe("Flash inside frame with provided ruffle", () => {
         await browser.switchFrame(await browser.$("#test-frame"));
         await browser.$("<ruffle-object />").waitForExist();
 
-        const actual = await browser
-            .$("#test-container")
-            .getHTML({ includeSelectorTag: false, pierceShadowRoot: false });
+        const actual = await getInnerHTML(browser.$("#test-container"));
         const expected = fs.readFileSync(
             `${import.meta.dirname}/expected.html`,
             "utf8",
