@@ -43,16 +43,16 @@
 -1
 --
 0xaabbccdc 0xaabbccdc 0xaabbccdc
-0xaabbccdc 0xff00019a 0xff00019a
-0xaabbccdc 0xff00019a 0xff00019d
+0xaabbccdc 0xff00029a 0xff00029a
+0xaabbccdc 0xff00029a 0xff00029d
 --
 
 // paletteMap(opaqueBmd, rect, point, arrayZeroToTwoFiveSix, arrayTwoFiveSixToFiveTwelve, arrayZeroToTwoFiveSix)
 -1
 --
 0xaabbccdc 0xaabbccdc 0xaabbccdc
-0xaabbccdc 0xff0001aa 0xff0001aa
-0xaabbccdc 0xff0001aa 0xff000147
+0xaabbccdc 0xff0002aa 0xff0002aa
+0xaabbccdc 0xff0002aa 0xff000247
 --
 
 // paletteMap(opaqueBmd, rect, point, arrayZeroToTwoFiveSix, arrayTwoFiveSixToFiveTwelve, arrayZeroToTwoFiveSix, arrayTwoFiveSixToFiveTwelve)
@@ -323,16 +323,16 @@
 -1
 --
 0xaabbccdc 0xaabbccdc 0xaabbccdc
-0xaabbccdc 0xff0001aa 0xff0001aa
-0xaabbccdc 0xff0001aa 0xff000147
+0xaabbccdc 0xff0002aa 0xff0002aa
+0xaabbccdc 0xff0002aa 0xff000247
 --
 
 // paletteMap(opaqueBmd, rect, point, arrayZeroToTwoFiveSix, arrayTwoFiveSixToFiveTwelve, arrayZeroToTwoFiveSix, undefined)
 -1
 --
 0xaabbccdc 0xaabbccdc 0xaabbccdc
-0xaabbccdc 0xff0001aa 0xff0001aa
-0xaabbccdc 0xff0001aa 0xff000147
+0xaabbccdc 0xff0002aa 0xff0002aa
+0xaabbccdc 0xff0002aa 0xff000247
 --
 
 // paletteMap(opaqueBmd, rect, point, arrayZeroToTwoFiveSix, arrayTwoFiveSixToFiveTwelve, arrayZeroToTwoFiveSix, {})
@@ -406,16 +406,16 @@
 -1
 --
 0xffbbccdd 0xffbbccdd 0xffbbccdd
-0xffbbccdd 0xff00019a 0xff00019a
-0xffbbccdd 0xff00019a 0xff00019d
+0xffbbccdd 0xff00029a 0xff00029a
+0xffbbccdd 0xff00029a 0xff00029d
 --
 
 // paletteMap(opaqueBmd, rect, point, arrayZeroToTwoFiveSix, arrayTwoFiveSixToFiveTwelve, arrayZeroToTwoFiveSix)
 -1
 --
 0xffbbccdd 0xffbbccdd 0xffbbccdd
-0xffbbccdd 0xff0001aa 0xff0001aa
-0xffbbccdd 0xff0001aa 0xff000147
+0xffbbccdd 0xff0002aa 0xff0002aa
+0xffbbccdd 0xff0002aa 0xff000247
 --
 
 // paletteMap(opaqueBmd, rect, point, arrayZeroToTwoFiveSix, arrayTwoFiveSixToFiveTwelve, arrayZeroToTwoFiveSix, arrayTwoFiveSixToFiveTwelve)
@@ -686,16 +686,16 @@
 -1
 --
 0xffbbccdd 0xffbbccdd 0xffbbccdd
-0xffbbccdd 0xff0001aa 0xff0001aa
-0xffbbccdd 0xff0001aa 0xff000147
+0xffbbccdd 0xff0002aa 0xff0002aa
+0xffbbccdd 0xff0002aa 0xff000247
 --
 
 // paletteMap(opaqueBmd, rect, point, arrayZeroToTwoFiveSix, arrayTwoFiveSixToFiveTwelve, arrayZeroToTwoFiveSix, undefined)
 -1
 --
 0xffbbccdd 0xffbbccdd 0xffbbccdd
-0xffbbccdd 0xff0001aa 0xff0001aa
-0xffbbccdd 0xff0001aa 0xff000147
+0xffbbccdd 0xff0002aa 0xff0002aa
+0xffbbccdd 0xff0002aa 0xff000247
 --
 
 // paletteMap(opaqueBmd, rect, point, arrayZeroToTwoFiveSix, arrayTwoFiveSixToFiveTwelve, arrayZeroToTwoFiveSix, {})
