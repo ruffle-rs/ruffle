@@ -1076,7 +1076,6 @@ fn palette_map<'gc>(
             *item = if let Value::Object(arg) = arg {
                 arg.get_element(activation, i as i32)
                     .coerce_to_u32(activation)?
-                    & 0xFF
             } else {
                 // This is an "identity mapping", fulfilling the part of the spec that
                 // says that channels which have no array provided are simply copied.
