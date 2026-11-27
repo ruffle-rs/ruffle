@@ -8,12 +8,14 @@ use crate::avm2::function::FunctionArgs;
 use crate::avm2::globals::array::ArrayIter;
 use crate::avm2::object::{ArrayObject, FunctionObject, Object, ScriptObject, TObject};
 use crate::avm2::parameters::ParametersExt;
-use crate::avm2::value::Value;
+use crate::avm2::value::{Value, f64_to_string_finite_nonzero};
 use crate::string::{AvmString, Units};
 use ruffle_macros::istr;
 use serde::Serialize;
+use serde_json::ser::{CompactFormatter, Formatter, PrettyFormatter};
 use serde_json::{Map as JsonObject, Value as JsonValue};
 use std::borrow::Cow;
+use std::io;
 use std::ops::Deref;
 
 fn deserialize_json_inner<'gc>(
@@ -293,6 +295,80 @@ pub fn parse_core<'gc>(
     deserialize_json(activation, parsed, reviver)
 }
 
+/// A serde_json formatter that writes numbers the way Flash does.
+///
+/// Flash writes numbers in JSON with the same conversion as `String(number)`,
+/// so `268435456` stays `268435456`. serde_json would write `268435456.0` instead.
+/// NaN and infinities never get here, serde_json writes them as `null`.
+///
+/// Everything else is passed through to the wrapped formatter (CompactFormatter or PrettyFormatter).
+struct FlashFormatter<F>(F);
+
+impl<F: Formatter> Formatter for FlashFormatter<F> {
+    fn write_f64<W: ?Sized + io::Write>(&mut self, writer: &mut W, value: f64) -> io::Result<()> {
+        if value == 0.0 {
+            // Also covers -0, which Flash writes as 0.
+            writer.write_all(b"0")
+        } else {
+            writer.write_all(f64_to_string_finite_nonzero(value).as_bytes())
+        }
+    }
+
+    fn begin_array<W: ?Sized + io::Write>(&mut self, writer: &mut W) -> io::Result<()> {
+        self.0.begin_array(writer)
+    }
+
+    fn end_array<W: ?Sized + io::Write>(&mut self, writer: &mut W) -> io::Result<()> {
+        self.0.end_array(writer)
+    }
+
+    fn begin_array_value<W: ?Sized + io::Write>(
+        &mut self,
+        writer: &mut W,
+        first: bool,
+    ) -> io::Result<()> {
+        self.0.begin_array_value(writer, first)
+    }
+
+    fn end_array_value<W: ?Sized + io::Write>(&mut self, writer: &mut W) -> io::Result<()> {
+        self.0.end_array_value(writer)
+    }
+
+    fn begin_object<W: ?Sized + io::Write>(&mut self, writer: &mut W) -> io::Result<()> {
+        self.0.begin_object(writer)
+    }
+
+    fn end_object<W: ?Sized + io::Write>(&mut self, writer: &mut W) -> io::Result<()> {
+        self.0.end_object(writer)
+    }
+
+    fn begin_object_key<W: ?Sized + io::Write>(
+        &mut self,
+        writer: &mut W,
+        first: bool,
+    ) -> io::Result<()> {
+        self.0.begin_object_key(writer, first)
+    }
+
+    fn end_object_key<W: ?Sized + io::Write>(&mut self, writer: &mut W) -> io::Result<()> {
+        self.0.end_object_key(writer)
+    }
+
+    fn begin_object_value<W: ?Sized + io::Write>(&mut self, writer: &mut W) -> io::Result<()> {
+        self.0.begin_object_value(writer)
+    }
+
+    fn end_object_value<W: ?Sized + io::Write>(&mut self, writer: &mut W) -> io::Result<()> {
+        self.0.end_object_value(writer)
+    }
+}
+
+fn write_json(output: &mut Vec<u8>, json: &JsonValue, formatter: impl Formatter) {
+    let mut serializer = serde_json::Serializer::with_formatter(output, FlashFormatter(formatter));
+    json.serialize(&mut serializer)
+        .expect("JSON serialization cannot fail");
+}
+
 /// Implements `JSON.stringify`.
 pub fn stringify<'gc>(
     activation: &mut Activation<'_, 'gc>,
@@ -346,16 +422,10 @@ pub fn stringify<'gc>(
 
     let mut serializer = AvmSerializer::new(replacer);
     let json = serializer.serialize(activation, val)?;
-    let result = match indent {
-        Some(indent) => {
-            let mut result = Vec::with_capacity(128);
-            let formatter = serde_json::ser::PrettyFormatter::with_indent(&indent);
-            let mut serializer = serde_json::Serializer::with_formatter(&mut result, formatter);
-            json.serialize(&mut serializer)
-                .expect("JSON serialization cannot fail");
-            result
-        }
-        None => serde_json::to_vec(&json).expect("JSON serialization cannot fail"),
-    };
+    let mut result = Vec::with_capacity(128);
+    match indent {
+        Some(indent) => write_json(&mut result, &json, PrettyFormatter::with_indent(&indent)),
+        None => write_json(&mut result, &json, CompactFormatter),
+    }
     Ok(AvmString::new_utf8_bytes(activation.gc(), &result).into())
 }
