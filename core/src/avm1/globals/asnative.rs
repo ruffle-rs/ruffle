@@ -213,13 +213,13 @@ pub fn as_set_native_method<'gc>(
                 minor += 1;
 
                 if !prop.is_empty()
-                    && let Some(getter) = getter.as_object(activation)
+                    && let Some(getter) = getter.as_object_resolving_clip(activation)
                 {
                     object.add_property(
                         activation.gc(),
                         prop,
                         getter,
-                        setter.as_object(activation),
+                        setter.as_object_resolving_clip(activation),
                         Attribute::empty(),
                     );
                     object.set_attributes(

@@ -2304,7 +2304,7 @@ impl<'gc> MovieClip<'gc> {
         );
         let value = object.get(istr!("hitArea"), &mut activation).ok()?;
         value
-            .as_object(&mut activation)
+            .as_object_resolving_clip(&mut activation)
             .and_then(|o| o.as_display_object())
     }
 

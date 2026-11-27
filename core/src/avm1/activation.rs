@@ -672,7 +672,9 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             .map(|_| {
                 let arg = self.context.avm1.pop();
                 // Unwrap MovieClipReferences, if possible.
-                arg.as_object(self).map(Value::from).unwrap_or(arg)
+                arg.as_object_resolving_clip(self)
+                    .map(Value::from)
+                    .unwrap_or(arg)
             })
             .collect()
     }
@@ -1027,7 +1029,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let name = name_val.coerce_to_string(self)?;
         let object = self.context.avm1.pop();
 
-        let success = if let Some(object) = object.as_object(self) {
+        let success = if let Some(object) = object.as_object_resolving_clip(self) {
             object.delete(self, name)
         } else {
             avm_warn!(self, "Cannot delete property {} from {:?}", name, object);
@@ -1047,7 +1049,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             let var_name = AvmString::new(self.gc(), var_name);
 
             let var: Value<'gc> = self.get_variable(path)?.into();
-            if let Some(obj) = var.as_object(self) {
+            if let Some(obj) = var.as_object_resolving_clip(self) {
                 obj.delete(self, var_name)
             } else {
                 if !matches!(var, Value::Null | Value::Undefined) {
@@ -1102,7 +1104,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let value: Value<'gc> = self.get_variable(name)?.into();
         self.context.avm1.push(Value::Undefined); // Sentinel that indicates end of enumeration
 
-        if let Some(object) = value.as_object(self) {
+        if let Some(object) = value.as_object_resolving_clip(self) {
             for k in object.get_keys(self, false).into_iter().rev() {
                 self.stack_push(k.into());
             }
@@ -1118,7 +1120,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
         self.context.avm1.push(Value::Undefined); // Sentinel that indicates end of enumeration
 
-        if let Some(object) = value.as_object(self) {
+        if let Some(object) = value.as_object_resolving_clip(self) {
             for k in object.get_keys(self, false).into_iter().rev() {
                 self.stack_push(k.into());
             }
@@ -1343,7 +1345,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let mut clip_target: Option<DisplayObject<'gc>> = if level_target > -1 {
             self.get_level(level_target)
         } else if action.is_load_vars() || action.is_target_sprite() {
-            if let Some(target) = target_val.as_object(self) {
+            if let Some(target) = target_val.as_object_resolving_clip(self) {
                 target.as_display_object()
             } else {
                 let start = self.target_clip_or_root();
@@ -1582,7 +1584,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         // Old Flash Players used to coerce primitives as well. However, this was changed and
         // now the following is logged:
         // Parameters of primitive types are no longer coerced into the required type - Object.
-        let constructor = self.context.avm1.pop().as_object(self);
+        let constructor = self.context.avm1.pop().as_object_resolving_clip(self);
         if constructor.is_none() {
             avm_warn!(self, "ImplementsOp: primitive not coerced into object");
         }
@@ -1608,7 +1610,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                 // Old Flash Players used to coerce primitives as well. However, this was changed and
                 // now the following is logged:
                 // Parameters of primitive types are no longer coerced into the required type - Object.
-                if let Some(obj) = self.context.avm1.pop().as_object(self) {
+                if let Some(obj) = self.context.avm1.pop().as_object_resolving_clip(self) {
                     if let Some(Value::Object(prototype)) = obj.prototype(self) {
                         interfaces.push(prototype);
                     }
@@ -1620,7 +1622,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             if let Some(prototype) = constructor
                 .filter(|_| self.swf_version() >= 7)
                 .and_then(|o| o.prototype(self))
-                .and_then(|p| p.as_object(self))
+                .and_then(|p| p.as_object_resolving_clip(self))
             {
                 prototype.set_interfaces(self.gc(), interfaces);
             }
@@ -2752,7 +2754,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             first_element = false;
 
             // Resolve the value to an object while traversing the path.
-            object = if let Some(o) = val.as_object(self) {
+            object = if let Some(o) = val.as_object_resolving_clip(self) {
                 o
             } else {
                 return Ok(None);
