@@ -1,0 +1,8 @@
+ref._x: 100, twin._x: 300
+probe.getBounds(ref).xMin: -100
+probe.hitTest(ref) at older: true
+probe.hitTest(ref) at newer: false
+getProperty(ref, _x): 300
+setProperty(ref, _y, 5): older._y: 0, newer._y: 5
+with (ref) { _y = 6; }: older._y: 6, newer._y: 5
+probe.swapDepths(ref): probe: 50, older: 1, newer: 40
