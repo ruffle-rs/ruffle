@@ -10,6 +10,7 @@ package flash.display {
     import flash.display.Stage;
     import flash.geom.Point;
     import flash.geom.Vector3D;
+    import flash.geom.Matrix3D;
     import flash.events.EventDispatcher;
 
     [Ruffle(Abstract)]
@@ -145,5 +146,23 @@ package flash.display {
 
         [API("662")]
         public native function set blendShader(value:Shader):void;
+
+
+        // Convert the .transform.matrix to .transform.matrix3D.
+        [Ruffle(NativeCallable)]
+        private function assignMatrix3D(): void {
+            if (this.transform.matrix3D) {
+                return;
+            }
+            var matrix = this.transform.matrix;
+            var matrix3d = new Matrix3D(new <Number>[
+                matrix.a, matrix.b, 0, 0,
+                matrix.c, matrix.d, 0, 0,
+                0, 0, 1, 0,
+                matrix.tx, matrix.ty, 0, 1,
+            ]);
+            this.transform.matrix3D = matrix3d;
+            return;
+        }
     }
 }

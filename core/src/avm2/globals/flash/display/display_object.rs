@@ -9,10 +9,11 @@ use crate::avm2::globals::flash::geom::transform::{
     color_transform_from_transform_object, matrix_from_transform_object,
     matrix3d_from_transform_object,
 };
+use crate::avm2::globals::methods::flash_display_display_object as display_object_methods;
 use crate::avm2::globals::slots::flash_display_shader as shader_slots;
 use crate::avm2::globals::slots::flash_geom_point as point_slots;
 use crate::avm2::globals::slots::flash_geom_rectangle as rectangle_slots;
-use crate::avm2::object::{Matrix3DObject, Object, TObject as _};
+use crate::avm2::object::{Object, TObject as _};
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
 use crate::avm2::{ArrayObject, ArrayStorage};
@@ -26,7 +27,6 @@ use crate::vminterface::Instantiator;
 use crate::{avm2_stub_getter, avm2_stub_setter};
 use ruffle_render::blend::ExtendedBlendMode;
 use ruffle_render::filters::Filter;
-use ruffle_render::matrix3d::Matrix3D;
 use std::str::FromStr;
 use swf::{Color, Point, Rectangle, Twips};
 
@@ -393,18 +393,10 @@ pub fn set_z<'gc>(
     args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     avm2_stub_setter!(activation, "flash.display.DisplayObject", "z");
-    let this = this.as_object().unwrap();
+    let thisobj = this.as_object().unwrap();
 
-    if let Some(dobj) = this.as_display_object() {
-        // Initialize Matrix3D if not yet before setting z.
-        if dobj.base().matrix3d().is_none() {
-            let matrix3d = Matrix3DObject::new(
-                activation.context,
-                Matrix3D::from_matrix(dobj.base().matrix()),
-            );
-            dobj.set_matrix3d(activation.gc(), Some(matrix3d));
-        }
-
+    if let Some(dobj) = thisobj.as_display_object() {
+        this.call_method(display_object_methods::ASSIGN_MATRIX_3D, &[], activation)?;
         let z = args.get_f64(0);
         dobj.set_z(z);
     }
