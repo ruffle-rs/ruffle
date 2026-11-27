@@ -11,6 +11,7 @@ use crate::avm2::object::{
 use crate::avm2::{Activation as Avm2Activation, Avm2};
 use crate::backend::ui::MouseCursor;
 use crate::context::{RenderContext, UpdateContext};
+use crate::display_object::container::TDisplayObjectContainer;
 use crate::display_object::interactive::{
     InteractiveObject, InteractiveObjectBase, TInteractiveObject,
 };
@@ -102,6 +103,11 @@ pub struct EditTextData<'gc> {
 
     /// The (AVM1) display object that the variable binding is bound to.
     bound_display_object: Lock<Option<DisplayObject<'gc>>>,
+
+    /// The path of the display object that the variable binding was last bound to,
+    /// and the bound property. Flash rebinds through this path, without running
+    /// any ActionScript, after that display object is removed.
+    last_binding: Lock<Option<(AvmString<'gc>, AvmString<'gc>)>>,
 
     /// Other AVM1 text fields bound to *this* text field.
     avm1_text_field_bindings: RefLock<Vec<Avm1TextFieldBinding<'gc>>>,
@@ -340,6 +346,7 @@ impl<'gc> EditText<'gc> {
                 autosize: Cell::new(autosize),
                 variable: Lock::new(variable),
                 bound_display_object: Lock::new(None),
+                last_binding: Lock::new(None),
                 class: Lock::new(None),
                 selection: Cell::new(selection),
                 render_settings: Default::default(),
@@ -789,6 +796,10 @@ impl<'gc> EditText<'gc> {
         unlock!(Gc::write(mc, self.0), EditTextData, bound_display_object).set(value);
     }
 
+    fn set_last_binding(self, value: Option<(AvmString<'gc>, AvmString<'gc>)>, mc: &Mutation<'gc>) {
+        unlock!(Gc::write(mc, self.0), EditTextData, last_binding).set(value);
+    }
+
     fn device_font_scale_x(self) -> f32 {
         let m = self.local_to_global_matrix();
         m.d / m.a
@@ -878,6 +889,7 @@ impl<'gc> EditText<'gc> {
         self.set_text(&text, activation.context);
 
         unlock!(Gc::write(activation.gc(), self.0), EditTextData, variable).set(variable);
+        self.set_last_binding(None, activation.gc());
         self.try_bind_text_field_variable(activation, true);
     }
 
@@ -1406,8 +1418,28 @@ impl<'gc> EditText<'gc> {
             return true;
         };
 
-        // Any previous binding should have been cleared.
-        debug_assert!(self.0.bound_display_object.get().is_none());
+        // Binding other text fields can run ActionScript, which can remove this
+        // one or bind it by setting its variable while it's still in the list
+        // of unbound text fields.
+        if self.avm1_removed() || self.0.bound_display_object.get().is_some() {
+            return true;
+        }
+
+        if !set_initial_value && let Some((path, property)) = self.0.last_binding.get() {
+            let Some(dobj) = resolve_display_object_path(activation, &path) else {
+                return false;
+            };
+
+            self.set_bound_display_object(Some(dobj), activation.gc());
+
+            let binding = Avm1TextFieldBinding {
+                text_field: self,
+                variable_name: property,
+            };
+            binding.register_binding(dobj, activation.gc());
+
+            return true;
+        }
 
         let Some(mut parent) = self.avm1_parent() else {
             return false;
@@ -1457,11 +1489,16 @@ impl<'gc> EditText<'gc> {
 
                     if let Some(dobj) = object.as_display_object() {
                         self.set_bound_display_object(Some(dobj), activation.gc());
+
+                        let path = AvmString::new(activation.gc(), dobj.path());
+                        self.set_last_binding(Some((path, property)), activation.gc());
+
                         let binding = Avm1TextFieldBinding {
                             text_field: self,
                             variable_name: property,
                         };
                         binding.register_binding(dobj, activation.gc());
+
                         bound = true;
                     }
                 }
@@ -3693,4 +3730,26 @@ struct EditTextRenderState {
     /// Used for delaying rendering the caret, so that it's
     /// rendered outside of the text mask.
     draw_caret_command: Option<RenderCommand>,
+}
+
+/// Resolves a path returned by `DisplayObject::path`, e.g. `_level0.foo.clip`,
+/// using only the display list.
+fn resolve_display_object_path<'gc>(
+    activation: &mut Avm1Activation<'_, 'gc>,
+    path: &WStr,
+) -> Option<DisplayObject<'gc>> {
+    let mut names = path.split(b'.');
+    let level_id = names
+        .next()?
+        .strip_prefix(WStr::from_units(b"_level"))?
+        .parse()
+        .ok()?;
+    let mut dobj = activation.get_level(level_id)?;
+    let case_sensitive = activation.is_case_sensitive();
+
+    for name in names {
+        dobj = dobj.as_container()?.child_by_name(name, case_sensitive)?;
+    }
+
+    Some(dobj)
 }
