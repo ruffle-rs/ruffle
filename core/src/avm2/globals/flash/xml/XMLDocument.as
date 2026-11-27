@@ -1,5 +1,4 @@
 package flash.xml {
-    import __ruffle__.stub_method;
 
     import flash.xml.XMLNode;
     import flash.xml.XMLNodeType;
@@ -101,8 +100,22 @@ package flash.xml {
         }
 
         override public function toString():String {
-            stub_method("flash.xml.XMLDocument", "toString");
-            return super.toString();
+            var result:String = "";
+            if (this.xmlDecl != null) {
+                result += this.xmlDecl;
+            }
+            if (this.docTypeDecl != null) {
+                result += this.docTypeDecl;
+            }
+            if (!hasChildNodes()) {
+                return result + "<>";
+            }
+            var child:XMLNode = this.firstChild;
+            while (child != null) {
+                result += child.toString();
+                child = child.nextSibling;
+            }
+            return result;
         }
     }
 }
