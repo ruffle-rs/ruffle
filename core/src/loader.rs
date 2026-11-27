@@ -708,6 +708,11 @@ impl<'gc> MovieLoader<'gc> {
 
             let fetch = player.lock().unwrap().fetch(request, FetchReason::LoadSwf);
 
+            // Flash keeps the target clip untouched (including its `_url`) until data
+            // of the new movie arrives. As we only process the movie once it has been
+            // fully downloaded, enter the initial loading state just before that.
+            let response = wait_for_full_response(fetch).await;
+
             let mut replacing_root_movie = false;
             player.lock().unwrap().update(|uc| -> Result<(), Error> {
                 let clip = match uc.load_manager.get_loader(handle) {
@@ -749,14 +754,12 @@ impl<'gc> MovieLoader<'gc> {
                         }
                     }
 
-                    // Before the actual SWF is loaded, an initial loading state is entered.
                     MovieLoader::load_initial_loading_swf(mc, uc, &request_url, resolved_url);
                 }
 
                 MovieLoader::movie_loader_start(handle, uc)
             })?;
 
-            let response = wait_for_full_response(fetch).await;
             let player = player.lock().unwrap();
             match response {
                 Ok((body, url, status, redirected)) if replacing_root_movie => {

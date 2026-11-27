@@ -6,7 +6,7 @@ mod ui;
 
 pub use audio::TestAudioBackend;
 pub use log::TestLogBackend;
-pub use navigator::TestNavigatorBackend;
+pub use navigator::{DelayedFetches, TestNavigatorBackend};
 pub use storage::TestStorageBackend;
 pub use ui::FontRendererKind;
 pub use ui::TestUiBackend;
