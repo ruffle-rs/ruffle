@@ -37,6 +37,9 @@ pub fn q_name_constructor<'gc>(
     activation: &mut Activation<'_, 'gc>,
     args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let mut from_default = false;
+    let mut explicit = false;
+
     let (namespace, local_name) = if args.len() >= 2 {
         let ns_arg = args.get_value(0);
         let local_arg = args.get_value(1);
@@ -50,17 +53,19 @@ pub fn q_name_constructor<'gc>(
                 .uri(activation.strings())
                 .map(|uri| Namespace::package(uri, ApiVersion::AllVersions, activation.strings())),
             Value::Null => None,
-            Value::Undefined => Some(Namespace::package(
-                istr!(""),
-                api_version,
-                activation.strings(),
-            )),
+            Value::Undefined => {
+                let (namespace, is_default) = default_namespace(activation);
+                from_default = is_default;
+
+                Some(namespace)
+            }
             v => Some(Namespace::package(
                 v.coerce_to_string(activation)?,
                 api_version,
                 activation.strings(),
             )),
         };
+        explicit = !matches!(ns_arg, Value::Undefined);
 
         // Parse the local name
         let local_name = match local_arg {
@@ -86,7 +91,10 @@ pub fn q_name_constructor<'gc>(
         };
 
         if &*local != b"*" {
-            (Some(activation.avm2().find_public_namespace()), Some(local))
+            let (namespace, is_default) = default_namespace(activation);
+            from_default = is_default;
+
+            (Some(namespace), Some(local))
         } else {
             (None, None)
         }
@@ -97,6 +105,8 @@ pub fn q_name_constructor<'gc>(
     if let Some(namespace) = namespace {
         multiname.set_single_namespace(namespace);
         multiname.set_is_qname(true);
+        multiname.set_has_explicit_ns(explicit);
+        multiname.set_has_default_ns(from_default);
     }
     if let Some(local_name) = local_name {
         multiname.set_local_name(local_name);
@@ -104,6 +114,25 @@ pub fn q_name_constructor<'gc>(
 
     let created_qname = QNameObject::from_name(activation, multiname);
     Ok(created_qname.into())
+}
+
+/// The namespace of a `QName` created without one: the default XML namespace
+/// at the time of creation, or the public namespace if there's none.
+///
+/// Also returns whether the namespace is the default XML namespace.
+fn default_namespace<'gc>(activation: &mut Activation<'_, 'gc>) -> (Namespace<'gc>, bool) {
+    match activation.default_xml_namespace() {
+        Some(uri) => {
+            let namespace = Namespace::package(
+                uri,
+                activation.avm2().root_api_version,
+                activation.strings(),
+            );
+
+            (namespace, true)
+        }
+        None => (activation.avm2().find_public_namespace(), false),
+    }
 }
 
 /// Implements `QName.localName`'s getter

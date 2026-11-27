@@ -78,6 +78,16 @@ bitflags! {
         /// Whether this multiname was initially a Multiname, MultinameA,
         /// MultinameL, or MultinameLA.
         const HAS_MULTIPLE_NS = 1 << 4;
+
+        /// Whether the namespace was given explicitly at runtime (`ns::name`,
+        /// `QName(ns, name)`), so E4X treats it as qualified even if it's the
+        /// public namespace.
+        const EXPLICIT_NS = 1 << 5;
+
+        /// Whether the namespace is the default XML namespace at the time a
+        /// `QName` was created. E4X lookups with such a name also match the
+        /// current default XML namespace, and new elements are created in it.
+        const DEFAULT_NS = 1 << 6;
     }
 }
 
@@ -139,6 +149,18 @@ impl<'gc> Multiname<'gc> {
 
     pub fn set_is_qname(&mut self, is_qname: bool) {
         self.flags.set(MultinameFlags::IS_QNAME, is_qname);
+    }
+
+    pub fn set_has_explicit_ns(&mut self, explicit: bool) {
+        self.flags.set(MultinameFlags::EXPLICIT_NS, explicit);
+    }
+
+    pub fn has_default_ns(&self) -> bool {
+        self.flags.contains(MultinameFlags::DEFAULT_NS)
+    }
+
+    pub fn set_has_default_ns(&mut self, default: bool) {
+        self.flags.set(MultinameFlags::DEFAULT_NS, default);
     }
 
     #[inline(always)]
@@ -328,11 +350,14 @@ impl<'gc> Multiname<'gc> {
             self.ns
         };
 
+        let mut flags = self.flags & !(MultinameFlags::HAS_LAZY_NS | MultinameFlags::HAS_LAZY_NAME);
+        flags.set(MultinameFlags::EXPLICIT_NS, self.has_lazy_ns());
+
         Ok(Self {
             ns,
             name,
             param: self.param,
-            flags: self.flags & !(MultinameFlags::HAS_LAZY_NS | MultinameFlags::HAS_LAZY_NAME),
+            flags,
         })
     }
 
@@ -395,9 +420,15 @@ impl<'gc> Multiname<'gc> {
 
     pub fn has_explicit_namespace(&self) -> bool {
         match self.ns {
-            NamespaceSet::Single(ns) => ns.is_namespace() && !ns.is_public(),
+            NamespaceSet::Single(ns) => {
+                ns.is_namespace() && (!ns.is_public() || self.has_explicit_ns())
+            }
             NamespaceSet::Multiple(_) => false,
         }
+    }
+
+    fn has_explicit_ns(&self) -> bool {
+        self.flags.contains(MultinameFlags::EXPLICIT_NS)
     }
 
     pub fn has_nonempty_namespace(&self) -> bool {
@@ -409,7 +440,11 @@ impl<'gc> Multiname<'gc> {
 
     pub fn explicit_namespace(&self) -> Option<AvmString<'gc>> {
         match self.ns {
-            NamespaceSet::Single(ns) if ns.is_namespace() && !ns.is_public() => ns.as_uri_opt(),
+            NamespaceSet::Single(ns)
+                if ns.is_namespace() && (!ns.is_public() || self.has_explicit_ns()) =>
+            {
+                ns.as_uri_opt()
+            }
             _ => None,
         }
     }
