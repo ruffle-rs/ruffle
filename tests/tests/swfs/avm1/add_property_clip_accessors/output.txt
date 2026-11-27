@@ -1,0 +1,7 @@
+addProperty("a", clip, null): false
+object.a: undefined
+addProperty("b", clip, setter): false
+object.b: undefined
+addProperty("c", getter, clip): false
+object.c: assigned, stored: initial
+registerClass("symbol", clip): false
