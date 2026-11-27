@@ -1,0 +1,3 @@
+apply(null, clip): 2: clip0, clip1
+apply(null, object): 2: object0, object1
+apply(null, array): 2: array0, array1
