@@ -14,7 +14,7 @@ env:
   FEATURES: lzma,jpegxr,imgtests
   TEST_OPTS: --workspace --locked --no-fail-fast -j 4
   LLVM_COV_OPTS: --branch --profile ci
-  LLVM_COV_TEST_OPTS: ${LLVM_COV_OPTS} ${TEST_OPTS} --features ${FEATURES},imgtests,freetype
+  LLVM_COV_NEXTEST_OPTS: --branch --profile ci --cargo-profile ci ${TEST_OPTS} --features ${FEATURES},imgtests,freetype
 
   # This is to counteract the disabling by rust-cache.
   # See: https://github.com/Swatinem/rust-cache/issues/43
@@ -230,16 +230,19 @@ jobs:
         with:
           components: llvm-tools
 
-      - name: Install llvm-cov
+      - name: Install llvm-cov and nextest
         uses: taiki-e/install-action@v2
         with:
-          tool: cargo-llvm-cov
+          tool: cargo-llvm-cov,cargo-nextest
 
       - name: Install Linux dependencies
         run: |
           sudo apt-get update
           sudo apt install -y $(cat .github/linux-dependencies.txt)
 
+      # Using nextest, so each test runs in its own process, like in the other
+      # test jobs. With plain `cargo llvm-cov` (one multithreaded process),
+      # a few tests (e.g. argstest) were ~40x slower than in the regular nextest jobs.
       - name: Run llvm-cov for SWF tests
         working-directory: tests
         env:
@@ -254,7 +257,7 @@ jobs:
             --exclude ruffle_web_common
             --exclude ruffle_web_safari
             --exclude build_playerglobal
-        run: cargo llvm-cov --no-report ${{ env.LLVM_COV_TEST_OPTS }} ${LLVM_COV_EXCLUDE}
+        run: cargo llvm-cov nextest --no-report ${{ env.LLVM_COV_NEXTEST_OPTS }} ${LLVM_COV_EXCLUDE}
 
       - name: Generate llvm-cov reports
         run: |
