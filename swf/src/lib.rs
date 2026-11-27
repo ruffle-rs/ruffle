@@ -19,6 +19,7 @@ pub mod error;
 // TODO: Make this private?
 pub mod extensions;
 pub mod read;
+mod shapes;
 mod string;
 mod tag_code;
 mod types;
