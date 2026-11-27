@@ -47,7 +47,7 @@ package flash.xml {
         }
 
         public function hasChildNodes():Boolean {
-            return _children.length > 0;
+            return firstChild != null;
         }
 
         public function cloneNode(deep:Boolean):XMLNode {
