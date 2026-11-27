@@ -1537,7 +1537,7 @@ package flash.geom {
 
             this.rawData = mr;
 
-            return !(scale.x == 0 || scale.y == 0 || scale.y == 0);
+            return !(scale.x == 0 || scale.y == 0 || scale.z == 0);
         }
 
         /**
