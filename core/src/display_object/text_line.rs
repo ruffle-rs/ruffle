@@ -11,7 +11,10 @@ use crate::display_object::{
     InteractiveObject, TDisplayObject,
 };
 use crate::events::{ClipEvent, ClipEventResult};
-use crate::fte::TextLineValidity;
+use crate::font::FontLike;
+use crate::fte::{TextBaselineValue, TextLineValidity};
+use crate::html::LayoutContent;
+use crate::string::WStr;
 use crate::tag_utils::SwfMovie;
 use crate::vminterface::Instantiator;
 use core::fmt;
@@ -19,6 +22,8 @@ use gc_arena::barrier::unlock;
 use gc_arena::lock::Lock;
 use gc_arena::{Collect, Gc, Mutation};
 use ruffle_common::utils::HasPrefixField;
+use ruffle_render::matrix::Matrix;
+use ruffle_render::transform::Transform;
 use std::cell::Cell;
 use swf::{CharacterId, Point, Rectangle, Twips};
 
@@ -50,6 +55,10 @@ pub struct TextLineData<'gc> {
 
     specified_width: Cell<f64>,
 
+    /// The `baselineZero` of the block when this line was created. Flash keeps
+    /// using it after the line is released from its block.
+    baseline_zero: Cell<TextBaselineValue>,
+
     raw_text_length: Cell<u32>,
 
     begin_index: Cell<u32>,
@@ -77,6 +86,7 @@ impl<'gc> TextLine<'gc> {
                 text_block: Lock::new(None),
                 hide_block_from_script: Cell::new(false),
                 specified_width: Cell::new(0.0),
+                baseline_zero: Cell::new(TextBaselineValue::Roman),
                 raw_text_length: Cell::new(0),
                 begin_index: Cell::new(0),
                 end_index: Cell::new(0),
@@ -100,6 +110,7 @@ impl<'gc> TextLine<'gc> {
         self.set_hide_block_from_script(false);
 
         self.set_specified_width(0.0);
+        self.set_baseline_zero(TextBaselineValue::Roman);
         self.set_raw_text_length(0);
         self.set_begin_index(0);
         self.set_end_index(0);
@@ -169,6 +180,61 @@ impl<'gc> TextLine<'gc> {
 
     pub fn fallback(self) -> EditText<'gc> {
         self.0.fallback
+    }
+
+    /// The number of atoms in the line, taking each character as an atom,
+    /// except for CRLF, which is a single atom.
+    // TODO: Ligatures aren't handled; Flash makes each of them a single atom.
+    pub fn atom_count(self) -> u32 {
+        self.0.fallback.text().len() as u32
+    }
+
+    pub fn baseline_zero(self) -> TextBaselineValue {
+        self.0.baseline_zero.get()
+    }
+
+    pub fn set_baseline_zero(self, value: TextBaselineValue) {
+        self.0.baseline_zero.set(value);
+    }
+
+    /// The advance of a space in the line's font, which Flash uses as the
+    /// width of the line terminator's atom.
+    pub fn space_advance(self) -> Twips {
+        let layout = self.0.fallback.layout();
+        let text_box = layout.lines().first().and_then(|line| {
+            line.boxes_iter()
+                .find_map(|layout_box| match layout_box.content() {
+                    LayoutContent::Text {
+                        font_set, params, ..
+                    } => Some((*font_set, *params)),
+                    _ => None,
+                })
+        });
+
+        let mut advance = Twips::ZERO;
+
+        if let Some((font_set, params)) = text_box {
+            font_set.evaluate(WStr::from_units(b" "), params, |_, _, _, space, _| {
+                advance = space;
+            });
+        }
+
+        advance
+    }
+
+    /// The fallback text field lays out its text below its top edge, inset by
+    /// its gutter, while a `TextLine`'s origin is the start of its baseline.
+    fn fallback_to_local_matrix(self) -> Matrix {
+        let ascent = self
+            .0
+            .fallback
+            .layout()
+            .lines()
+            .first()
+            .map(|line| line.ascent())
+            .unwrap_or_default();
+
+        Matrix::translate(-EditText::GUTTER, -(EditText::GUTTER + ascent))
     }
 
     pub fn validity(self) -> TextLineValidity<'gc> {
@@ -290,11 +356,28 @@ impl<'gc> TDisplayObject<'gc> for TextLine<'gc> {
     fn replace_with(self, _context: &mut UpdateContext<'gc>, _id: CharacterId) {}
 
     fn render_self(self, context: &mut RenderContext<'_, 'gc>) {
+        context.transform_stack.push(&Transform {
+            matrix: self.fallback_to_local_matrix(),
+            ..Default::default()
+        });
         self.0.fallback.render_self(context);
+        context.transform_stack.pop();
     }
 
-    fn self_bounds(self, mode: BoundsMode) -> Rectangle<Twips> {
-        self.0.fallback.self_bounds(mode)
+    fn self_bounds(self, _mode: BoundsMode) -> Rectangle<Twips> {
+        let layout = self.0.fallback.layout();
+        let Some(line) = layout.lines().first() else {
+            return Rectangle::default();
+        };
+
+        Rectangle {
+            x_min: Twips::ZERO,
+            y_min: -line.ascent(),
+            x_max: layout.text_size().width(),
+            // Unlike Flash, Ruffle doesn't break lines to fit the specified
+            // width, so the fallback text field may wrap into more rows.
+            y_max: layout.text_size().height() - line.ascent(),
+        }
     }
 
     fn hit_test_shape(

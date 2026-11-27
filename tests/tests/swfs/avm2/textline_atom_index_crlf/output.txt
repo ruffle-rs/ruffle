@@ -1,0 +1,8 @@
+text ab%0D%0Acd line 0: begin 0, rawTextLength 4, atomCount 3 | c0->a0:ok c1->a1:ok c2->a2:ok c3->a2:ok
+text ab%0D%0Acd line 1: begin 4, rawTextLength 2, atomCount 2 | c4->a0:ok c5->a1:ok
+text ab%0Acd line 0: begin 0, rawTextLength 3, atomCount 3 | c0->a0:ok c1->a1:ok c2->a2:ok
+text ab%0Acd line 1: begin 3, rawTextLength 2, atomCount 2 | c3->a0:ok c4->a1:ok
+text ab%0Dcd line 0: begin 0, rawTextLength 3, atomCount 3 | c0->a0:ok c1->a1:ok c2->a2:ok
+text ab%0Dcd line 1: begin 3, rawTextLength 2, atomCount 2 | c3->a0:ok c4->a1:ok
+text ab%u2028cd line 0: begin 0, rawTextLength 3, atomCount 3 | c0->a0:ok c1->a1:ok c2->a2:ok
+text ab%u2028cd line 1: begin 3, rawTextLength 2, atomCount 2 | c3->a0:ok c4->a1:ok

@@ -60,17 +60,40 @@ package flash.text.engine {
             return false;
         }
 
-        public function get atomCount():int {
-            stub_getter("flash.text.engine.TextLine", "atomCount");
-            return this.rawTextLength;
-        }
+        public native function get atomCount():int;
 
         public native function get previousLine():TextLine;
         public native function get nextLine():TextLine;
 
         public function getBaselinePosition(baseline:String):Number {
-            stub_method("flash.text.engine.TextLine", "getBaselinePosition");
-            return 0.0;
+            if (baseline == null) {
+                throw new TypeError("Error #2007: Parameter baseline must be non-null.", 2007);
+            }
+
+            // TODO: Flash also applies baselineZero to the ascent and descent,
+            // the bounds and the rendering of the line, which still use the
+            // roman baseline here.
+            var position:Number = this.romanRelativeBaseline(baseline);
+            return position - this.romanRelativeBaseline(this.getBaselineZero());
+        }
+
+        private native function getBaselineZero():String;
+
+        private function romanRelativeBaseline(baseline:String):Number {
+            switch (baseline) {
+                case TextBaseline.ROMAN:
+                    return 0;
+                case TextBaseline.ASCENT:
+                case TextBaseline.IDEOGRAPHIC_TOP:
+                    return -this.ascent;
+                case TextBaseline.DESCENT:
+                case TextBaseline.IDEOGRAPHIC_BOTTOM:
+                    return this.descent;
+                case TextBaseline.IDEOGRAPHIC_CENTER:
+                    return (this.descent - this.ascent) / 2;
+                default:
+                    throw new ArgumentError("Error #2008: Parameter baseline must be one of the accepted values.", 2008);
+            }
         }
 
         public native function get hasTabs():Boolean;
@@ -86,7 +109,8 @@ package flash.text.engine {
             if (index < 0 || index >= this.rawTextLength) {
                 return -1;
             }
-            return index;
+            // A CRLF at the end of the line is a single atom.
+            return Math.min(index, this.atomCount - 1);
         }
 
         public function getAtomBidiLevel(index:int):int {
@@ -94,10 +118,7 @@ package flash.text.engine {
             return 0;
         }
 
-        public function getAtomBounds(index:int):Rectangle {
-            stub_method("flash.text.engine.TextLine", "getAtomBounds");
-            return new Rectangle(0, 0, 0, 0);
-        }
+        public native function getAtomBounds(index:int):Rectangle;
 
         public function getAtomCenter(index:int):Number {
             stub_method("flash.text.engine.TextLine", "getAtomCenter");
