@@ -294,7 +294,7 @@ pub fn parse_file_filters<'gc>(
     value: Option<Value<'gc>>,
 ) -> Result<Option<Vec<FileFilter>>, Error<'gc>> {
     match value {
-        Some(value) => match value.as_object_ignoring_clip() {
+        Some(value) => match value.as_object_resolving_clip(activation) {
             Some(array) => parse_file_filter_array(activation, array),
             None => Ok(None),
         },

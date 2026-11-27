@@ -1,3 +1,0 @@
-clip: 112233
-clip with length: 112233
-array: 112233

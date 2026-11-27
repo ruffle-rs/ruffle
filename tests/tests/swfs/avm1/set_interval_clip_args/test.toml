@@ -1,5 +1,4 @@
 num_ticks = 6
-known_failure = true
 
 [[compilers]]
 type = "Rascal"

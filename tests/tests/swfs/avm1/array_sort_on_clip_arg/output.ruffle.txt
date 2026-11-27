@@ -1,4 +1,0 @@
-x: C, A, B; _level0.fields: B, C, A; toString: A, B, C
-sortOn(clip): A,B,C / A,B,C
-sortOn(clip, DESCENDING): A,B,C / A,B,C
-sortOn(["x"], clip): C,A,B / C,A,B

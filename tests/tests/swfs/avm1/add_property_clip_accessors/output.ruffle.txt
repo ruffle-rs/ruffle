@@ -1,7 +1,0 @@
-addProperty("a", clip, null): true
-object.a: undefined
-addProperty("b", clip, setter): true
-object.b: undefined
-addProperty("c", getter, clip): true
-object.c: initial, stored: initial
-registerClass("symbol", clip): false

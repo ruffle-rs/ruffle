@@ -1,7 +1,0 @@
-onFoo: first clip, this = _level0.listener
-after removing: broadcastMessage returned true
-after recreating: broadcastMessage returned true
-removeListener(recreated): true, length 0
-onFoo: renamed clip, this = _level0.renamedMoved
-color of the recreated clip: 0
-Done
