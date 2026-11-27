@@ -1,0 +1,71 @@
+// A clip that removed itself calls unloadMovie, loadMovie, loadVariables and
+// tellTarget targeting itself, through a reference to itself or the empty
+// path, and traces whether the root and its variables are untouched. The
+// main timeline of holderchild.swf unloads its own clip through a reference
+// to a removed clip.
+Swf(
+    version: 8,
+    frame_rate: 30.0,
+    tags: [
+        FileAttributes(),
+        DefineSprite(
+            id: 1,
+            tags: [
+                DoAction(Rascal(r#"
+                    stop();
+                    onEnterFrame = function() {
+                        onEnterFrame = null;
+                        var mode = this.mode;
+                        removeMovieClip(this);
+                        if (mode == 1) {
+                            trace("unloadMovie(this)");
+                            unloadMovie(this);
+                        } else if (mode == 2) {
+                            trace("unloadMovie(\"\")");
+                            unloadMovie("");
+                        } else if (mode == 3) {
+                            trace("loadMovie(\"child.swf\", this)");
+                            loadMovie("child.swf", this);
+                        } else if (mode == 4) {
+                            trace("loadVariables(\"vars.txt\", this)");
+                            loadVariables("vars.txt", this);
+                        } else if (mode == 5) {
+                            trace("tellTarget(this)");
+                            tellTarget(this) {
+                                trace("  in tellTarget: _target " + _target + ", this " + this);
+                            }
+                        }
+                        _root.describe("  after");
+                    };
+                "#)),
+                ShowFrame,
+                End,
+            ],
+        ),
+        ExportAssets([(character: 1, name: "removed")]),
+        DoAction(Rascal(r#"
+            function describe(label) {
+                trace(label + ": marker " + (_root.marker != undefined) + ", root.x " + _root.x + ", root.loaded " + _root.loaded);
+            }
+            var x = "root variable";
+            var frames = 0;
+            _root.createEmptyMovieClip("marker", 100);
+            var world = _root.createEmptyMovieClip("world", 1);
+            var holder = _root.createEmptyMovieClip("holder", 2);
+            holder.loadMovie("holderchild.swf");
+            var watcher = _root.createEmptyMovieClip("watcher", 200);
+            watcher.onEnterFrame = function() {
+                _root.frames = _root.frames + 1;
+                if (_root.frames <= 5) {
+                    _root.world.attachMovie("removed", "removed" + _root.frames, 10 + _root.frames, {mode: _root.frames});
+                } else if (_root.frames == 8) {
+                    _root.describe("frame 8");
+                    trace("frame 8: holder " + (_root.holder != undefined) + ", holder.marker " + (_root.holder.marker != undefined));
+                    delete this.onEnterFrame;
+                }
+            };
+        "#)),
+        ShowFrame,
+        End,
+    ],
+)

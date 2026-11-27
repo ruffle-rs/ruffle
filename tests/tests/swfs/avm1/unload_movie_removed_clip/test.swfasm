@@ -1,0 +1,50 @@
+// Calls unloadMovie(this) after removeMovieClip(this), in a function defined
+// on the timeline of the removed clip (like Burger Beatdown, Slasher Click 2
+// and Electricman do), and traces whether the root is still there.
+Swf(
+    version: 15,
+    frame_rate: 30.0,
+    tags: [
+        FileAttributes(),
+        DefineSprite(
+            id: 1,
+            tags: [
+                DoAction(Rascal(r#"
+                    stop();
+                    this.createEmptyMovieClip("child", 1);
+                    onEnterFrame = function() {
+                        trace("slash: removeMovieClip(this), then unloadMovie(this)");
+                        onEnterFrame = null;
+                        removeMovieClip(this);
+                        unloadMovie(this);
+                        _root.describe("slash: after unloadMovie(this)");
+                    };
+                "#)),
+                ShowFrame,
+                End,
+            ],
+        ),
+        ExportAssets([(character: 1, name: "slash")]),
+        DoAction(Rascal(r#"
+            function describe(label) {
+                trace(label + ": marker " + (_root.marker != undefined) + ", world.child " + (_root.world.child != undefined) + ", world.slash1 " + (_root.world.slash1 != undefined) + ", root.x " + _root.x);
+            }
+            var x = "root variable";
+            var frames = 0;
+            _root.createEmptyMovieClip("marker", 100);
+            var world = _root.createEmptyMovieClip("world", 1);
+            world.createEmptyMovieClip("child", 50);
+            world.attachMovie("slash", "slash1", world.getNextHighestDepth());
+            var watcher = _root.createEmptyMovieClip("watcher", 200);
+            watcher.onEnterFrame = function() {
+                _root.frames = _root.frames + 1;
+                _root.describe("frame " + _root.frames);
+                if (_root.frames == 3) {
+                    delete this.onEnterFrame;
+                }
+            };
+        "#)),
+        ShowFrame,
+        End,
+    ],
+)

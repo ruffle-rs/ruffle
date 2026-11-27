@@ -1345,6 +1345,13 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         } else if action.is_load_vars() || action.is_target_sprite() {
             if let Some(target) = target_val.as_object(self) {
                 target.as_display_object()
+            } else if target.is_empty()
+                && self.target_clip().is_none()
+                && self.base_clip().avm1_removed()
+            {
+                // A reference to a removed clip also resolves to the empty
+                // path. In a clip that removed itself, it targets nothing.
+                None
             } else {
                 let start = self.target_clip_or_root();
                 self.resolve_target_display_object(start, target_val, true)?
