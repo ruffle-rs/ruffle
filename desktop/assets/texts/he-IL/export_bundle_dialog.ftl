@@ -1,0 +1,11 @@
+export-bundle-dialog-title = ייצוא חבילת Ruffle
+export-bundle-dialog-bundle-name = שם החבילה:
+export-bundle-dialog-files-description = בחר קבצים שייכללו בחבילה:
+export-bundle-dialog-files-select-all = בחר הכול
+export-bundle-dialog-export = ייצוא
+export-bundle-dialog-exporting = מייצא...
+export-bundle-dialog-exporting-failed = הייצוא נכשל.
+export-bundle-dialog-error-user-canceled = הפעולה בוטלה על ידי המשתמש.
+export-bundle-dialog-error-failed-to-show-picker = לא ניתן להציג את בורר הקבצים.
+export-bundle-dialog-error-io-error = אירעה שגיאה בעת כתיבת החבילה.
+export-bundle-dialog-info-title = מהי חבילת Ruffle?

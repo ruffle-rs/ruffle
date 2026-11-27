@@ -57,7 +57,7 @@
         "message": "Renderizador de fontes do dispositivo"
     },
     "device_font_renderer_embedded": {
-        "message": "Embutido"
+        "message": "Integrado"
     },
     "settings_advanced_options": {
         "message": "Opções avançadas"
