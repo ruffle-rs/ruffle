@@ -3,6 +3,7 @@ use ruffle_render::backend::Context3DTextureFormat;
 use super::atf_jpegxr::do_compressed_upload;
 use crate::avm2::Activation;
 use crate::avm2::Value;
+use crate::avm2::error::make_error_3675;
 use crate::avm2::function::FunctionArgs;
 use crate::avm2::object::TextureObject;
 use crate::avm2::parameters::ParametersExt;
@@ -10,6 +11,25 @@ use crate::avm2::{Error, Object};
 use crate::avm2_stub_method;
 use crate::bitmap::bitmap_data::BitmapData;
 use crate::bitmap::bitmap_data::Color;
+
+/// Flash Player only allows uploading a `BitmapData` to a compressed texture
+/// when the root movie is SWF version 17 or later, regardless of the version
+/// of the movie making the call.
+pub fn check_bitmap_data_upload<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    texture: TextureObject<'gc>,
+) -> Result<(), Error<'gc>> {
+    let is_compressed = matches!(
+        texture.original_format(),
+        Context3DTextureFormat::Compressed | Context3DTextureFormat::CompressedAlpha
+    );
+
+    if is_compressed && activation.context.root_swf.version() < 17 {
+        return Err(make_error_3675(activation));
+    }
+
+    Ok(())
+}
 
 pub fn do_copy<'gc>(
     activation: &mut Activation<'_, 'gc>,
@@ -124,6 +144,8 @@ pub fn upload_from_bitmap_data<'gc>(
         let source_obj = args.get_object(activation, 0, "source")?;
 
         if let Some(source) = source_obj.as_bitmap_data() {
+            check_bitmap_data_upload(activation, texture)?;
+
             let mip_level = args.get_u32(1);
             if mip_level == 0 {
                 texture.context3d().copy_bitmapdata_to_texture(

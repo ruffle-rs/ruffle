@@ -1,0 +1,17 @@
+num_ticks = 1
+
+[image_comparisons.output]
+# Ruffle uses texpresso for BC3 compression, while Flash uses a different
+# compressor. Both produce valid but different results: up to 3 inside the
+# left circle, and up to 32 on its edge, where the alpha values in a block
+# vary and get quantized differently. The Rgba16Float circle matches.
+tolerance = 32
+max_outliers = 10
+
+[player_options]
+with_renderer = { optional = false, quality = "high" }
+
+[[compilers]]
+type = "Swfasm"
+target = "test.swf"
+source = "test.swfasm"

@@ -1236,6 +1236,7 @@ make_error_fn!(
 );
 
 make_error_fn!(make_error_3732, 3732, illegal_operation_error);
+make_error_fn!(make_error_3745, 3745, argument_error);
 make_error_fn!(make_error_3771, 3771, argument_error);
 make_error_fn!(make_error_3772, 3772, argument_error);
 make_error_fn!(make_error_3773, 3773, argument_error);
