@@ -1,0 +1,13 @@
+== writing
+[date, obj, obj]: 08 00 00 00 03 00 01 30 0b 00 00 00 00 00 00 00 00 tz tz 00 01 31 03 00 01 78 00 3f f0 00 00 00 00 00 00 00 00 09 00 01 32 03 00 01 78 00 3f f0 00 00 00 00 00 00 00 00 09 00 00 09
+[obj, date, obj]: 08 00 00 00 03 00 01 30 03 00 01 78 00 3f f0 00 00 00 00 00 00 00 00 09 00 01 31 0b 00 00 00 00 00 00 00 00 tz tz 00 01 32 03 00 01 78 00 3f f0 00 00 00 00 00 00 00 00 09 00 00 09
+== reading [date, obj, reference]
+reference 0: undefined
+reference 1: undefined
+reference 2: undefined
+reference 3: undefined
+== reading [xml document, obj, reference]
+reference 0: undefined
+reference 1: undefined
+reference 2: undefined
+reference 3: undefined
