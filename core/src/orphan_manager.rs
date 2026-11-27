@@ -5,8 +5,9 @@ use crate::display_object::{DisplayObject, DisplayObjectWeak, TDisplayObject};
 use gc_arena::{Collect, Mutation};
 use std::rc::Rc;
 
-/// The list of 'orphan' objects - these objects have no parent,
-/// so we need to manually run their frames in `run_all_phases_avm2` to match
+/// The list of objects that need frames run outside display-list traversal.
+/// Embedded objects have an owner but no display-list parent.
+/// We manually run their frames in `run_all_phases_avm2` to match
 /// Flash's behavior. Clips are added to this list with `add_orphan_movie`.
 /// and are removed automatically by `cleanup_dead_orphans`.
 ///
@@ -60,8 +61,7 @@ impl<'gc> OrphanManager<'gc> {
     }
 
     /// Called at the end of `run_all_phases_avm2` - removes any movies
-    /// that have been garbage collected, or are no longer orphans
-    /// (they've since acquired a parent).
+    /// that have been garbage collected or no longer need orphan processing.
     pub fn cleanup_dead_orphans(&mut self, mc: &Mutation<'gc>) {
         self.orphans_mut().retain(|d| {
             if let Some(dobj) = valid_orphan(*d, mc) {
@@ -108,5 +108,6 @@ fn valid_orphan<'gc>(
     dobj: DisplayObjectWeak<'gc>,
     mc: &Mutation<'gc>,
 ) -> Option<DisplayObject<'gc>> {
-    dobj.upgrade(mc).filter(|dobj| dobj.parent().is_none())
+    dobj.upgrade(mc)
+        .filter(|dobj| dobj.display_list_parent().is_none())
 }
