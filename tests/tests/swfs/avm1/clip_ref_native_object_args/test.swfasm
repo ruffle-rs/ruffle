@@ -1,0 +1,16 @@
+// An exported symbol for attachMovie, and the code from test.as.
+Swf(
+    version: 8,
+    tags: [
+        DefineSprite(
+            id: 1,
+            tags: [
+                ShowFrame,
+            ],
+        ),
+        ExportAssets([(character: 1, name: "symbol")]),
+        DoAction(Rascal(file: "test.as")),
+        ShowFrame,
+        End,
+    ],
+)
