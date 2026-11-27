@@ -99,6 +99,7 @@ pub struct HeaderExt {
     pub(crate) file_attributes: FileAttributes,
     pub(crate) background_color: Option<SetBackgroundColor>,
     pub(crate) uncompressed_len: i32,
+    pub(crate) actual_uncompressed_len: u32,
 }
 
 impl HeaderExt {
@@ -110,6 +111,7 @@ impl HeaderExt {
             file_attributes: Default::default(),
             background_color: None,
             uncompressed_len: 0,
+            actual_uncompressed_len: 0,
         }
     }
 
@@ -121,6 +123,7 @@ impl HeaderExt {
             file_attributes: Default::default(),
             background_color: None,
             uncompressed_len: -1,
+            actual_uncompressed_len: 0,
         }
     }
 
@@ -138,6 +141,7 @@ impl HeaderExt {
             file_attributes: Default::default(),
             background_color: None,
             uncompressed_len: length,
+            actual_uncompressed_len: length.max(0) as u32,
         }
     }
 
@@ -202,6 +206,14 @@ impl HeaderExt {
     #[inline]
     pub fn uncompressed_len(&self) -> i32 {
         self.uncompressed_len
+    }
+
+    /// The actual length of the decompressed SWF data, capped at the
+    /// header-declared length. May be smaller than `uncompressed_len` for
+    /// corrupt SWFs whose header overstates the real size.
+    #[inline]
+    pub fn actual_uncompressed_len(&self) -> u32 {
+        self.actual_uncompressed_len
     }
 
     /// Whether this SWF requests hardware acceleration to blit to the screen.
