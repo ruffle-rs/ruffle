@@ -78,7 +78,7 @@ fn shallow_copy<'gc>(
     activation: &mut Activation<'_, 'gc>,
     value: Value<'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Value::Object(object) = value {
+    if let Some(object) = value.as_object_ignoring_clip() {
         let object_proto = activation.prototypes().object;
         let result = Object::new(activation.strings(), Some(object_proto));
 
@@ -212,8 +212,7 @@ fn transform<'gc>(
         Value::Undefined | Value::Null => {
             return Ok(Value::Null);
         }
-        Value::Object(object) => Some(object),
-        _ => None,
+        value => value.as_object_ignoring_clip(),
     };
 
     if let Some(style_object) = style_object {

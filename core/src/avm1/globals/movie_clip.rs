@@ -271,7 +271,7 @@ fn attach_bitmap<'gc>(
     activation: &mut Activation<'_, 'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let [Value::Object(bitmap_data), ..] = args
+    if let Some(bitmap_data) = args.get(0).and_then(|v| v.as_object_ignoring_clip())
         && let NativeObject::BitmapData(bitmap_data) = bitmap_data.native()
         && let Some(depth) = args.get(1)
     {
@@ -310,7 +310,7 @@ fn attach_audio<'gc>(
     activation: &mut Activation<'_, 'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let [Value::Object(netstream_obj), ..] = args {
+    if let Some(netstream_obj) = args.get(0).and_then(|v| v.as_object_ignoring_clip()) {
         if let NativeObject::NetStream(netstream) = netstream_obj.native() {
             movie_clip.attach_audio(activation.context, Some(netstream));
         }
@@ -576,7 +576,9 @@ fn begin_bitmap_fill<'gc>(
     activation: &mut Activation<'_, 'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let fill_style = if let [Value::Object(bitmap_data), ..] = args {
+    let bitmap_data = args.get(0).and_then(|v| v.as_object_ignoring_clip());
+
+    let fill_style = if let Some(bitmap_data) = bitmap_data {
         if let NativeObject::BitmapData(bitmap_data) = bitmap_data.native() {
             // Register the bitmap data with the drawing.
             let handle = bitmap_data.bitmap_handle(activation.gc(), activation.context.renderer);
@@ -801,11 +803,7 @@ fn attach_movie<'gc>(
         // Set name and attach to parent.
         new_clip.set_name(activation.gc(), new_instance_name);
         movie_clip.replace_at_depth(activation.context, new_clip, depth);
-        let init_object = if let Some(Value::Object(init_object)) = init_object {
-            Some(init_object.to_owned())
-        } else {
-            None
-        };
+        let init_object = init_object.and_then(|v| v.as_object_ignoring_clip());
         new_clip.post_instantiation(activation.context, init_object, Instantiator::Avm1, true);
 
         Ok(new_clip.object1_or_undef())
@@ -1408,7 +1406,7 @@ fn local_to_global<'gc>(
     activation: &mut Activation<'_, 'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Value::Object(point) = args.get(0).unwrap_or(&Value::Undefined) {
+    if let Some(point) = args.get(0).and_then(|v| v.as_object_ignoring_clip()) {
         // localToGlobal does no coercion; it fails if the properties are not numbers.
         // It does not search the prototype chain and ignores virtual properties.
         if let (Value::Number(x), Value::Number(y)) = (
@@ -1574,7 +1572,7 @@ fn global_to_local<'gc>(
     activation: &mut Activation<'_, 'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Value::Object(point) = args.get(0).unwrap_or(&Value::Undefined) {
+    if let Some(point) = args.get(0).and_then(|v| v.as_object_ignoring_clip()) {
         // globalToLocal does no coercion; it fails if the properties are not numbers.
         // It does not search the prototype chain and ignores virtual properties.
         if let (Value::Number(x), Value::Number(y)) = (

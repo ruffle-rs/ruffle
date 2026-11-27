@@ -56,14 +56,11 @@ pub fn add_callback<'gc>(
     let this = args.get(1).unwrap().to_owned();
     let method = args.get(2).unwrap();
 
-    if let Value::Object(method) = method {
-        activation.context.external_interface.add_callback(
-            name.to_string(),
-            Callback::Avm1 {
-                this,
-                method: *method,
-            },
-        );
+    if let Some(method) = method.as_object_ignoring_clip() {
+        activation
+            .context
+            .external_interface
+            .add_callback(name.to_string(), Callback::Avm1 { this, method });
         Ok(true.into())
     } else {
         Ok(false.into())

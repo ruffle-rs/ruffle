@@ -418,9 +418,8 @@ fn send_and_load<'gc>(
         return Ok(Value::Undefined);
     }
 
-    let target = match args.get(1) {
-        Some(&Value::Object(o)) => o,
-        _ => return Ok(Value::Undefined),
+    let Some(target) = args.get(1).and_then(|v| v.as_object_ignoring_clip()) else {
+        return Ok(Value::Undefined);
     };
 
     if let NativeObject::Xml(xml) = this.native() {

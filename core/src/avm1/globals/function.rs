@@ -93,9 +93,9 @@ pub fn apply<'gc>(
         .unwrap_or_else(|| activation.global_object());
 
     let args_object = myargs.get(1).cloned().unwrap_or(Value::Undefined);
-    let length = match args_object {
-        Value::Object(a) => a.length(activation)? as usize,
-        _ => 0,
+    let length = match args_object.as_object_ignoring_clip() {
+        Some(a) => a.length(activation)? as usize,
+        None => 0,
     };
 
     let mut child_args = Vec::with_capacity(length);

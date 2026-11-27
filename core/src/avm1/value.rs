@@ -383,6 +383,14 @@ impl<'gc> Value<'gc> {
         }
     }
 
+    /// Returns the object if `self` is one, without resolving clip references.
+    pub fn as_object_ignoring_clip(self) -> Option<Object<'gc>> {
+        match self {
+            Value::Object(obj) => Some(obj),
+            _ => None,
+        }
+    }
+
     /// Coerce `self` to a script object, unconditionally.
     ///
     /// If `self` isn't coercible, returns a fresh bare object instead.

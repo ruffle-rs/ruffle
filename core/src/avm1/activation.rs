@@ -2612,7 +2612,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         allow_empty: bool,
     ) -> Result<Option<DisplayObject<'gc>>, Error<'gc>> {
         // If the value you got was a display object, we can just toss it straight back.
-        if let Value::Object(o) = target
+        if let Some(o) = target.as_object_ignoring_clip()
             && let Some(o) = o.as_display_object()
         {
             return Ok(Some(o));
