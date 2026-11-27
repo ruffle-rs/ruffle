@@ -1,0 +1,8 @@
+clip, GET: false
+clip, POST: false
+clip in a variable: false
+LoadVars: true
+loadVarsTarget.onLoad: true
+target.b: undefined
+loadVarsTarget.b: 2
+Done
