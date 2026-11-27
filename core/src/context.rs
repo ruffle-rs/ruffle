@@ -500,6 +500,9 @@ pub struct QueuedAction<'gc> {
     /// The movie clip this ActionScript is running on.
     pub clip: DisplayObject<'gc>,
 
+    /// An additional clip whose removal prevents this action from running.
+    pub removal_guard: Option<DisplayObject<'gc>>,
+
     /// The type of action this is, along with the corresponding bytecode/method data.
     pub action_type: ActionType<'gc>,
 
@@ -547,11 +550,23 @@ impl<'gc> ActionQueue<'gc> {
         action_type: ActionType<'gc>,
         is_unload: bool,
     ) {
+        self.queue_action_with_removal_guard(clip, action_type, is_unload, None);
+    }
+
+    /// Queues an action that also depends on another clip remaining present.
+    pub fn queue_action_with_removal_guard(
+        &mut self,
+        clip: DisplayObject<'gc>,
+        action_type: ActionType<'gc>,
+        is_unload: bool,
+        removal_guard: Option<DisplayObject<'gc>>,
+    ) {
         let priority = action_type.priority();
         let queue = &mut self.action_queue[priority];
 
         queue.push_back(QueuedAction {
             clip,
+            removal_guard,
             action_type,
             is_unload,
         });
