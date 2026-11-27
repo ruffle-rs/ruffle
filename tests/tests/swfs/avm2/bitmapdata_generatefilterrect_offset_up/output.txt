@@ -1,0 +1,11 @@
+drop shadow, distance -255.5: (x=9, y=-247, w=27, h=282)
+bevel, distance -255.5: (x=9, y=-247, w=27, h=539)
+drop shadow, distance -256: (x=9, y=-247, w=27, h=282)
+bevel, distance -256: (x=9, y=-247, w=27, h=539)
+drop shadow, distance -256.004: (x=9, y=-247, w=27, h=282)
+bevel, distance -256.004: (x=9, y=-247, w=27, h=539)
+drop shadow, distance -261.796: (x=9, y=-252, w=27, h=287)
+bevel, distance -261.796: (x=9, y=-252, w=27, h=549)
+drop shadow, distance -1000.5: (x=9, y=-991, w=27, h=1026)
+bevel, distance -1000.5: (x=9, y=-991, w=27, h=2027)
+Done
