@@ -1,0 +1,3 @@
+owner.tick: this = _level0.owner, label = clip
+callback: ref = _level0.stale_moved, _x = 3
+Done

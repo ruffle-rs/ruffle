@@ -1,0 +1,3 @@
+owner.tick: this = _level0.owner, label = clip
+callback: ref = _level0.stale, _x = 9
+Done
