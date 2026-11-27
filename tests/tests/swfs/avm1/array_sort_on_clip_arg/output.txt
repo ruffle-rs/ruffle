@@ -1,0 +1,4 @@
+x: C, A, B; _level0.fields: B, C, A; toString: A, B, C
+sortOn(clip): B,C,A / B,C,A
+sortOn(clip, DESCENDING): A,C,B / A,C,B
+sortOn(["x"], clip): C,A,B / C,A,B
