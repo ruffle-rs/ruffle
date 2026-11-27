@@ -1,0 +1,32 @@
+default: <root><child>hello</child></root>
+with xmlDecl: <?xml version="1.0"?><root><child>hello</child></root>
+with xmlDecl and docTypeDecl: <?xml version="1.0"?><!DOCTYPE root SYSTEM "root.dtd"><root><child>hello</child></root>
+with docTypeDecl only: <!DOCTYPE root SYSTEM "root.dtd"><root><child>hello</child></root>
+empty default: [<>]
+empty with xmlDecl: [<?xml version="1.0"?><>]
+empty with both: [<?xml version="1.0"?><!DOCTYPE root SYSTEM "root.dtd"><>]
+empty with nodeName and decls: [<?xml version="1.0"?><!DOCTYPE root SYSTEM "root.dtd"><>]
+non-empty with nodeName and docTypeDecl: <!DOCTYPE root SYSTEM "root.dtd"><root><child>hello</child></root>
+multiple children: <a>1</a><b>2</b>text<c>3</c>
+null parentNode on middle child: <one /><two /><three />
+modified lastChild: <one /><two /><three />
+modified nextSibling: <one /><three />
+null firstChild: <>
+reversed childNodes: <x /><y />
+SubXMLDocument.hasChildNodes() called
+subEmpty.toString(): <>
+SubXMLDocument.hasChildNodes() called
+subFull.toString(): <item />
+SubXMLDocument.hasChildNodes() called
+subFull forced hasChildNodes=false: <>
+SubXMLDocument.hasChildNodes() called
+subEmpty forced hasChildNodes=true: []
+CustomXMLNode.toString() called for c1
+CustomXMLNode.toString() called for c2
+CustomXMLNode.toString() called for c3
+child toString override: [c1][c2][c3]
+CustomXMLNode.toString() called for c1
+CustomXMLNode.toString() called for c3
+child toString mutates nextSibling to c3: [c1][c3]
+CustomXMLNode.toString() called for c1
+child toString mutates nextSibling to null: [c1]
