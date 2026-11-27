@@ -2183,7 +2183,12 @@ impl<'gc> MovieClip<'gc> {
             frame_scripts[index] = Some(callable);
             if frame_id == current_frame {
                 if *context.frame_phase == FramePhase::FrameScripts {
-                    context.frame_script_cleanup_queue.push_back(self);
+                    if context.frame_script_cleanup_skip_next {
+                        context.frame_script_cleanup_skip_next = false;
+                        context.frame_script_cleanup_dropped.push(self);
+                    } else {
+                        context.frame_script_cleanup_queue.push_back(self);
+                    }
                 } else {
                     // Ensure newly registered frame scripts are executed,
                     // even if the frame is repeated due to goto.
