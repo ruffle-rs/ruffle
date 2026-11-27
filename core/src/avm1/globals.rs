@@ -319,7 +319,9 @@ pub fn create_timer<'gc>(
     // `setInterval` was added in Flash Player 6 but is not version-gated.
     use crate::timer::TimerCallback;
 
-    let callback_object = args.get(0).and_then(|v| v.as_object_ignoring_clip());
+    let callback_object = args
+        .get(0)
+        .and_then(|v| v.as_object_resolving_clip(activation));
 
     let (callback, interval) = match callback_object {
         Some(o) if o.as_function().is_some() => (

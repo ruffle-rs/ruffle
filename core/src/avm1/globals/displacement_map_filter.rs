@@ -126,7 +126,7 @@ impl<'gc> DisplacementMapFilter<'gc> {
             }
         }
 
-        if let Some(object) = value.as_object_ignoring_clip() {
+        if let Some(object) = value.as_object_resolving_clip(activation) {
             let x = object
                 .get_local_stored(istr!("x"), activation)
                 .map(|x| x.coerce_to_f64(activation));

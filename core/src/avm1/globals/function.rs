@@ -93,7 +93,7 @@ pub fn apply<'gc>(
         .unwrap_or_else(|| activation.global_object());
 
     let args_object = myargs.get(1).cloned().unwrap_or(Value::Undefined);
-    let length = match args_object.as_object_ignoring_clip() {
+    let length = match args_object.as_object_resolving_clip(activation) {
         Some(a) => a.length(activation)? as usize,
         None => 0,
     };

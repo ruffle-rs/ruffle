@@ -212,7 +212,7 @@ fn transform<'gc>(
         Value::Undefined | Value::Null => {
             return Ok(Value::Null);
         }
-        value => value.as_object_ignoring_clip(),
+        value => value.as_object_resolving_clip(activation),
     };
 
     if let Some(style_object) = style_object {

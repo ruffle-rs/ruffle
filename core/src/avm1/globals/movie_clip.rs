@@ -803,7 +803,7 @@ fn attach_movie<'gc>(
         // Set name and attach to parent.
         new_clip.set_name(activation.gc(), new_instance_name);
         movie_clip.replace_at_depth(activation.context, new_clip, depth);
-        let init_object = init_object.and_then(|v| v.as_object_ignoring_clip());
+        let init_object = init_object.and_then(|v| v.as_object_resolving_clip(activation));
         new_clip.post_instantiation(activation.context, init_object, Instantiator::Avm1, true);
 
         Ok(new_clip.object1_or_undef())
@@ -1406,7 +1406,10 @@ fn local_to_global<'gc>(
     activation: &mut Activation<'_, 'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(point) = args.get(0).and_then(|v| v.as_object_ignoring_clip()) {
+    if let Some(point) = args
+        .get(0)
+        .and_then(|v| v.as_object_resolving_clip(activation))
+    {
         // localToGlobal does no coercion; it fails if the properties are not numbers.
         // It does not search the prototype chain and ignores virtual properties.
         if let (Value::Number(x), Value::Number(y)) = (
@@ -1572,7 +1575,10 @@ fn global_to_local<'gc>(
     activation: &mut Activation<'_, 'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(point) = args.get(0).and_then(|v| v.as_object_ignoring_clip()) {
+    if let Some(point) = args
+        .get(0)
+        .and_then(|v| v.as_object_resolving_clip(activation))
+    {
         // globalToLocal does no coercion; it fails if the properties are not numbers.
         // It does not search the prototype chain and ignores virtual properties.
         if let (Value::Number(x), Value::Number(y)) = (

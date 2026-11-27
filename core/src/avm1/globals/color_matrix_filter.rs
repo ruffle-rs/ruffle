@@ -83,7 +83,7 @@ impl<'gc> ColorMatrixFilter<'gc> {
 
         let object = match value {
             None | Some(Value::Null | Value::Undefined) => return Ok(()),
-            Some(value) => value.as_object_ignoring_clip(),
+            Some(value) => value.as_object_resolving_clip(activation),
         };
 
         if let Some(object) = object {
