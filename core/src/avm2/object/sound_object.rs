@@ -4,9 +4,10 @@ use crate::avm2::Avm2;
 use crate::avm2::Error;
 use crate::avm2::EventObject;
 use crate::avm2::activation::Activation;
+use crate::avm2::bytearray::ByteArrayStorage;
 use crate::avm2::globals::slots::flash_media_id3info as id3_slots;
 use crate::avm2::object::script_object::ScriptObjectData;
-use crate::avm2::object::{ClassObject, Object, TObject};
+use crate::avm2::object::{ByteArrayObject, ClassObject, Object, TObject};
 use crate::backend::audio::{AudioManager, SoundHandle};
 use crate::context::UpdateContext;
 use crate::display_object::SoundTransform;
@@ -15,7 +16,7 @@ use core::fmt;
 use gc_arena::barrier::unlock;
 use gc_arena::{
     Collect, DynamicRoot, Gc, GcWeak, Mutation, Rootable,
-    lock::{Lock, RefLock},
+    lock::{Lock, OnceLock, RefLock},
 };
 use id3::{Tag, TagLike};
 use ruffle_common::utils::HasPrefixField;
@@ -41,6 +42,8 @@ pub fn sound_allocator<'gc>(
                 queued_plays: Vec::new(),
             }),
             id3: Lock::new(None),
+            sample_data: OnceLock::new(),
+            extract_position: Cell::new(0),
         },
     ))
     .into())
@@ -90,6 +93,15 @@ pub struct SoundObjectData<'gc> {
 
     /// ID3Info Object
     id3: Lock<Option<Object<'gc>>>,
+
+    /// The `ByteArray` that `sampleData` listeners write generated samples
+    /// into. Like in Flash, every request reuses it, rewound but not cleared,
+    /// whichever channel it is for.
+    sample_data: OnceLock<ByteArrayObject<'gc>>,
+
+    /// The sample frame where `extract()` goes on when it is not given a
+    /// position: where the last call ended.
+    extract_position: Cell<usize>,
 }
 
 #[derive(Collect)]
@@ -120,6 +132,9 @@ pub enum SoundLoadingState {
     New,
     Loading,
     Loaded,
+    /// Played with no data, so its `sampleData` listeners generate what it
+    /// plays, and `load` throws.
+    Generated,
 }
 
 impl<'gc> SoundObject<'gc> {
@@ -180,6 +195,27 @@ impl<'gc> SoundObject<'gc> {
             }
         }
         self.set_loading_state(SoundLoadingState::Loaded);
+    }
+
+    /// The `ByteArray` that `sampleData` listeners write generated samples into.
+    pub fn sample_data(self, context: &mut UpdateContext<'gc>) -> ByteArrayObject<'gc> {
+        *unlock!(
+            Gc::write(context.gc(), self.0),
+            SoundObjectData,
+            sample_data
+        )
+        .get_or_init(|| {
+            let storage = ByteArrayStorage::new(context);
+            ByteArrayObject::from_storage(context, storage)
+        })
+    }
+
+    pub fn extract_position(self) -> usize {
+        self.0.extract_position.get()
+    }
+
+    pub fn set_extract_position(self, position: usize) {
+        self.0.extract_position.set(position);
     }
 
     pub fn id3(self) -> Option<Object<'gc>> {

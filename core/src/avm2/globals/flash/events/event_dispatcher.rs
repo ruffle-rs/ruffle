@@ -8,6 +8,7 @@ use crate::avm2::object::{DispatchObject, Object, TObject as _};
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
 use crate::avm2::{Avm2, Error};
+use crate::string::AvmString;
 
 /// Get an object's dispatch list, lazily initializing it if necessary.
 fn dispatch_list<'gc>(
@@ -79,16 +80,23 @@ pub fn has_event_listener<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
-    let dispatch_list = dispatch_list(activation, this)?;
     let event_type = args.get_string(activation, 0);
 
-    let does_have = dispatch_list
+    Ok(object_has_event_listener(activation, this, event_type)?.into())
+}
+
+/// Whether `this` has a listener registered for `event_type`.
+pub fn object_has_event_listener<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
+    event_type: AvmString<'gc>,
+) -> Result<bool, Error<'gc>> {
+    let dispatch_list = dispatch_list(activation, this)?;
+
+    Ok(dispatch_list
         .as_dispatch_mut(activation.gc())
         .expect("Internal properties should have what I put in them")
-        .has_event_listener(event_type)
-        .into();
-
-    Ok(does_have)
+        .has_event_listener(event_type))
 }
 
 /// Implements `EventDispatcher.willTrigger`.
