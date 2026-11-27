@@ -1,0 +1,34 @@
+XML: returned true
+Navigator::fetch:
+  URL: http://localhost:8000/send?debug-success
+  Method: POST
+  Mime-Type: application/x-www-form-urlencoded
+  Body: <request a="1">two words</request>
+XML: onData(Hello, World!)
+overridden XML: returned true
+Navigator::fetch:
+  URL: http://localhost:8000/send?debug-success
+  Method: POST
+  Mime-Type: application/x-www-form-urlencoded
+  Body: <overridden/>
+overridden XML: onData(Hello, World!)
+LoadVars POST: returned true
+Navigator::fetch:
+  URL: http://localhost:8000/send?debug-success
+  Method: POST
+  Mime-Type: application/x-www-form-urlencoded
+  Body: c=x%26y%3Dz&b=two+words&a=1
+LoadVars POST: onData(Hello, World!)
+LoadVars GET: returned true
+Navigator::fetch:
+  URL: http://localhost:8000/send?c=x%26y%3Dz&b=two+words&a=1
+  Method: GET
+LoadVars GET: onData(undefined)
+overridden LoadVars: returned true
+Navigator::fetch:
+  URL: http://localhost:8000/send?debug-success
+  Method: POST
+  Mime-Type: application/x-www-form-urlencoded
+  Body: toString=%5Btype+Function%5D&a=1
+overridden LoadVars: onData(Hello, World!)
+Done
