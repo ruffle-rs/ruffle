@@ -1305,9 +1305,12 @@ pub fn apply_standard_mask_and_scroll<'gc, F>(
 
 /// The width and height of the AABB of a display object at a scale of 1
 /// but with its rotation, with each corner rounded to whole twips.
+///
+/// Like `width()` and `height()`, this transforms the bounds of each child
+/// separately, so it can be smaller than the rotated AABB of `bounds()`.
 fn unscaled_size<'gc>(object: impl TDisplayObject<'gc>) -> (f64, f64) {
     let rotation = Matrix::rotate(object.rotation().into_radians() as f32);
-    let bounds = rotation * object.bounds(BoundsMode::Script);
+    let bounds = object.bounds_with_transform(&rotation, BoundsMode::Script);
 
     (bounds.width().to_pixels(), bounds.height().to_pixels())
 }
