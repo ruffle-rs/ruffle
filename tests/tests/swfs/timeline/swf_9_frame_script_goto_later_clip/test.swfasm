@@ -1,0 +1,20 @@
+// In SWFv9, the root's frame script moves `b`, which comes later in the
+// frame script traversal, to a frame with a frame script. Its previous frame
+// has no frame script. Is the new frame's script run on the same frame?
+Swf(
+    version: 9,
+    stage: (width: 100.0, height: 100.0),
+    frame_rate: 24.0,
+    tags: [
+        FileAttributes(action_script_3: true),
+        DefineSprite(id: 1, tags: [ShowFrame, ShowFrame]),
+        DoAbc(Asc(file: "Main.as", scripts: ["B.as"])),
+        SymbolClass([
+            (character: 0, name: "Main"),
+            (character: 1, name: "B"),
+        ]),
+        PlaceObject2(depth: 1, character: 1, name: "b"),
+        ShowFrame,
+        End,
+    ],
+)

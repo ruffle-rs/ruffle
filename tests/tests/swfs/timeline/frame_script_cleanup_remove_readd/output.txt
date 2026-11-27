@@ -1,0 +1,17 @@
+a1 constructor
+a2 constructor
+Main constructor
+Main frame1 start
+a1 replacing its frame script
+a2 removing its frame script
+a2 replacing its frame script
+Main frame1 end
+a1 frame1b
+a2 frame1b
+a1 frame1b
+a2 frame1b
+exitFrame 1
+enterFrame 2
+exitFrame 2
+enterFrame 3
+exitFrame 3
