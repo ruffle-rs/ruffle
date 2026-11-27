@@ -1,0 +1,6 @@
+localToGlobal(clip): 110, 70
+globalToLocal(clip): 10, 20
+localToGlobal.call: 110, 70
+globalToLocal.call: 10, 20
+localToGlobal.apply: 10, 20
+globalToLocal.apply: 10, 20
