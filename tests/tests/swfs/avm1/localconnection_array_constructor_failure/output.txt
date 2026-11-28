@@ -1,0 +1,5 @@
+Connected: true
+Original Array constructor: true
+ECMAArray result type: object
+StrictArray result type: object
+Restored Array constructor: true

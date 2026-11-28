@@ -1,0 +1,10 @@
+--- Starting malformed AMF0 XML test ---
+Navigator::fetch:
+  URL: http://localhost:8000/test1
+  Method: POST
+  Mime-Type: application/x-amf
+  Body: [00, 00, 00, 00, 00, 01, 00, 11, 74, 65, 73, 74, 2E, 6D, 61, 6C, 66, 6F, 72, 6D, 65, 64, 58, 6D, 6C, 00, 02, 2F, 31, 00, 00, 00, 05, 0A, 00, 00, 00, 00]
+--- Malformed AMF0 XML response ---
+XML type: object
+XML status: -10
+XML string: <a />

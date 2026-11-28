@@ -1,5 +1,6 @@
 use crate::avm1::amf::{
-    Amf0ReferenceCache, SerializationContext, deserialize_lso_value, recursive_serialize,
+    Amf0ReferenceCache, DeserializationContext, SerializationContext, deserialize_value,
+    recursive_serialize,
 };
 use crate::avm1::property_decl::{DeclContext, PropertyOrder, StaticDeclarations, SystemClass};
 use crate::avm1::{Activation, Attribute, Error, NativeObject, Object, Value};
@@ -95,7 +96,12 @@ fn deserialize_lso<'gc>(
         obj.define_value(
             activation.gc(),
             AvmString::new_utf8(activation.gc(), &child.name),
-            deserialize_lso_value(activation, child.value(), &mut reference_cache),
+            deserialize_value(
+                activation,
+                child.value(),
+                &mut reference_cache,
+                DeserializationContext::SharedObject,
+            ),
             Attribute::empty(),
         );
     }
