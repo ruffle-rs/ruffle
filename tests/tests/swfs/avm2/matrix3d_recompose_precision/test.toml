@@ -1,0 +1,11 @@
+# The expected output comes from Flash Player 32 for Linux. Flash Player 32 for
+# Windows differs in the last bit of a few cells (the general quaternion and
+# axis-angle cases).
+num_ticks = 1
+
+[[compilers]]
+type = "Asc"
+target = "test.swf"
+class = "Test"
+scripts = ["Test.as"]
+swf_version = 15

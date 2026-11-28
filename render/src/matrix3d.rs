@@ -1,4 +1,6 @@
 use crate::matrix::Matrix;
+use std::array;
+use std::iter::zip;
 use swf::Twips;
 
 /// The transformation matrix for 3D used by Flash display objects.
@@ -200,10 +202,134 @@ impl Matrix3D {
         Self { raw_data: result }
     }
 
+    /// Splits this matrix into its translation, scale and rotation, like
+    /// `Matrix3D.decompose` in Flash Player.
+    ///
+    /// Flash Player removes any skew by orthonormalizing the columns at f32
+    /// precision (Gram-Schmidt). The lengths of the columns only use their X,
+    /// Y and Z components, but the projections onto the previous columns use
+    /// their W components too.
+    pub fn decompose(&self) -> Decomposed {
+        let raw = self.raw_data;
+        let translation = [raw[12], raw[13], raw[14]].map(f64::from);
+
+        let normalize = |v: [f32; 4], length: f32| {
+            let inverse = 1.0 / length;
+
+            v.map(|c| c * inverse)
+        };
+        let (columns, _) = raw.as_chunks::<4>();
+        let [x_column, y_column, z_column] = [columns[0], columns[1], columns[2]];
+
+        let scale_x = dot(&x_column[..3], &x_column[..3]).sqrt();
+        let x_axis = normalize(x_column, scale_x);
+
+        let xy = dot(&x_axis, &y_column);
+        let y_axis: [f32; 4] = array::from_fn(|i| y_column[i] - xy * x_axis[i]);
+        let scale_y = dot(&y_axis[..3], &y_axis[..3]).sqrt();
+        let y_axis = normalize(y_axis, scale_y);
+
+        let xz = dot(&x_axis, &z_column);
+        let yz = dot(&y_axis, &z_column);
+        let z_axis: [f32; 4] = array::from_fn(|i| z_column[i] - xz * x_axis[i] - yz * y_axis[i]);
+        let mut scale_z = dot(&z_axis[..3], &z_axis[..3]).sqrt();
+        let mut z_axis = normalize(z_axis, scale_z);
+
+        // The axes are only treated as mirrored when they're (almost) exactly
+        // orthonormal, which they might not be when the W components are used.
+        let cross = [
+            x_axis[1] * y_axis[2] - x_axis[2] * y_axis[1],
+            x_axis[2] * y_axis[0] - x_axis[0] * y_axis[2],
+            x_axis[0] * y_axis[1] - x_axis[1] * y_axis[0],
+        ];
+
+        if dot(&cross, &z_axis[..3]) < -0.99999 {
+            scale_z = -scale_z;
+            z_axis = z_axis.map(|c| -c);
+        }
+
+        // Scales close to 1 are reported as exactly 1.
+        let scale = [scale_x, scale_y, scale_z].map(|s| {
+            if (f64::from(s) - 1.0).abs() < 0.001 {
+                1.0
+            } else {
+                f64::from(s)
+            }
+        });
+
+        let axes = [x_axis, y_axis, z_axis].map(|[x, y, z, _]| [x, y, z]);
+
+        Decomposed {
+            translation,
+            scale,
+            axes,
+        }
+    }
+
     pub fn tz(&self) -> f32 {
         self.raw_data[14]
     }
     pub fn set_tz(&mut self, tz: f32) {
         self.raw_data[14] = tz;
     }
+}
+
+/// The parts of a [`Matrix3D`], as returned by [`Matrix3D::decompose`].
+#[derive(Copy, Clone, Debug)]
+pub struct Decomposed {
+    pub translation: [f64; 3],
+    pub scale: [f64; 3],
+    /// The orthonormal X, Y and Z axes of the rotation, i.e. the columns of
+    /// the matrix with the scale and skew removed.
+    pub axes: [[f32; 3]; 3],
+}
+
+impl Decomposed {
+    /// The rotation as a quaternion `[x, y, z, w]`, calculated at f32
+    /// precision like Flash Player does.
+    pub fn quaternion(&self) -> [f32; 4] {
+        let [[m0, m1, m2], [m4, m5, m6], [m8, m9, m10]] = self.axes;
+        let trace = m0 + m5 + m10;
+        let half_sqrt = |v: f32| (v + 1.0).sqrt() / 2.0;
+
+        if trace > 0.0 {
+            let w = half_sqrt(trace);
+            let k = 1.0 / (4.0 * w);
+
+            [(m6 - m9) * k, (m8 - m2) * k, (m1 - m4) * k, w]
+        } else if m0 > m5 && m0 > m10 {
+            let x = half_sqrt(m0 - (m5 + m10));
+            let k = 1.0 / (4.0 * x);
+
+            [x, (m1 + m4) * k, (m8 + m2) * k, (m6 - m9) * k]
+        } else if m5 > m10 {
+            let y = half_sqrt(m5 - (m0 + m10));
+            let k = 1.0 / (4.0 * y);
+
+            [(m1 + m4) * k, y, (m6 + m9) * k, (m8 - m2) * k]
+        } else {
+            let z = half_sqrt(m10 - (m0 + m5));
+            let k = 1.0 / (4.0 * z);
+
+            [(m8 + m2) * k, (m6 + m9) * k, z, (m1 - m4) * k]
+        }
+    }
+
+    /// The rotation as Euler angles in radians, i.e. the rotation around the
+    /// X axis, then the Y axis, then the Z axis.
+    pub fn euler_angles(&self) -> [f64; 3] {
+        let [[m0, m1, m2], [m4, m5, m6], [_, _, m10]] = self.axes;
+        let [m0, m1, m2, m4, m5, m6, m10] = [m0, m1, m2, m4, m5, m6, m10].map(f64::from);
+        let rotation_y = (-m2).asin();
+
+        if rotation_y.is_nan() {
+            [m4.atan2(m5), rotation_y, 0.0]
+        } else {
+            [m6.atan2(m10), rotation_y, m1.atan2(m0)]
+        }
+    }
+}
+
+fn dot(a: &[f32], b: &[f32]) -> f32 {
+    zip(a, b).map(|(a, b)| a * b).sum()
 }

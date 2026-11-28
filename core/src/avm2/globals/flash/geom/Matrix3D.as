@@ -29,11 +29,7 @@ package flash.geom {
         public native function prepend(rhs:Matrix3D):void;
         public native function prependTranslation(x:Number, y:Number, z:Number):void;
         public native function prependScale(xScale:Number, yScale:Number, zScale:Number):void;
-        public function prependRotation(degrees:Number, axis:Vector3D, pivotPoint:Vector3D = null):void {
-            var m:Matrix3D = new Matrix3D();
-            m.appendRotation(degrees, axis, pivotPoint);
-            this.prepend(m);
-        }
+        public native function prependRotation(degrees:Number, axis:Vector3D, pivotPoint:Vector3D = null):void;
 
         public native function deltaTransformVector(vector:Vector3D):Vector3D;
         public native function transformVector(vector:Vector3D):Vector3D;
