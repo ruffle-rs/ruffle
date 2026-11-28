@@ -4,7 +4,9 @@ use std::cell::Cell;
 
 use crate::avm_warn;
 use crate::avm1::function::ExecutionReason;
-use crate::avm1::property_decl::{DeclContext, PropertyOrder, StaticDeclarations, SystemClass};
+use crate::avm1::property_decl::{
+    self, DeclContext, PropertyOrder, StaticDeclarations, SystemClass,
+};
 use crate::avm1::xml::{ELEMENT_NODE, TEXT_NODE, XmlNode};
 use crate::avm1::{Activation, Attribute, Error, NativeObject, Object, Value};
 use crate::backend::navigator::Request;
@@ -81,6 +83,9 @@ pub struct XmlData<'gc> {
 
     /// The last parse error encountered, if any.
     status: Cell<XmlStatus>,
+
+    /// The value of `loaded`, if it was ever set.
+    loaded: Cell<Option<bool>>,
 }
 
 impl<'gc> Xml<'gc> {
@@ -99,6 +104,7 @@ impl<'gc> Xml<'gc> {
                 doctype: Lock::new(None),
                 id_map: Object::new_without_proto(context.gc()),
                 status: Cell::new(XmlStatus::NoError),
+                loaded: Cell::new(None),
             },
         ));
         object.set_native(gc_context, NativeObject::Xml(xml));
@@ -289,12 +295,19 @@ const PROTO_DECLS: StaticDeclarations = declare_static_properties! {
     "getBytesLoaded" => method(@As2 get_bytes_loaded);
     "getBytesTotal" => method(@As2 get_bytes_total);
     "contentType" => value("application/x-www-form-urlencoded"; READ_ONLY);
-    "docTypeDecl" => property(doc_type_decl; READ_ONLY);
     "ignoreWhite" => value(false);
-    "status" => property(status);
-    "xmlDecl" => property(xml_decl);
     // TODO Looks like idMap is not a built-in property.
     "idMap" => property(id_map);
+};
+
+/// Defined lazily, when the first XML object is created on a prototype.
+///
+/// See [`property_decl::define_lazy_proto_properties`].
+const LAZY_PROTO_DECLS: StaticDeclarations = declare_static_properties! {
+    "docTypeDecl" => property(doc_type_decl; READ_ONLY);
+    "loaded" => property(loaded, set_loaded);
+    "status" => property(status);
+    "xmlDecl" => property(xml_decl);
 };
 
 pub fn create_class<'gc>(
@@ -318,6 +331,10 @@ fn constructor<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let xml = Xml::empty(&activation.context.strings, this);
+
+    if let Some(Value::Object(proto)) = this.get_data(istr!("__proto__"), activation) {
+        property_decl::define_lazy_proto_properties(activation, proto, LAZY_PROTO_DECLS);
+    }
 
     if let [text, ..] = args {
         let text = text.coerce_to_string(activation)?;
@@ -534,6 +551,37 @@ fn status<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let NativeObject::Xml(xml) = this.native() {
         return Ok((xml.status() as i8).into());
+    }
+
+    Ok(Value::Undefined)
+}
+
+fn loaded<'gc>(
+    _activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    if let NativeObject::Xml(xml) = this.native()
+        && let Some(value) = xml.0.loaded.get()
+    {
+        return Ok(value.into());
+    }
+
+    Ok(Value::Undefined)
+}
+
+fn set_loaded<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    if let NativeObject::Xml(xml) = this.native()
+        && let Some(value) = args.get(0)
+        && !matches!(value, Value::Undefined)
+    {
+        xml.0
+            .loaded
+            .set(Some(value.as_bool(activation.swf_version())));
     }
 
     Ok(Value::Undefined)
