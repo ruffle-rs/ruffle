@@ -1786,6 +1786,7 @@ impl Player {
                     if let Some(down) = context.mouse_data.pressed(button)
                         && let Some(over) = context.mouse_data.hovered
                         && !released_inside
+                        && !down.as_displayobject().movie().is_action_script_3()
                     {
                         released_inside = Self::check_display_object_equality(
                             down.as_displayobject(),
