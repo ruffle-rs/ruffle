@@ -1,0 +1,20 @@
+num_frames = 240
+
+[player_options]
+with_renderer = { optional = false, quality = "high" }
+
+[image_comparisons.frame01]
+trigger = "fs_command"
+tolerance = 54
+
+[image_comparisons.frame02]
+trigger = "fs_command"
+tolerance = 54
+
+[image_comparisons.frame03]
+trigger = "fs_command"
+tolerance = 54
+
+[image_comparisons.frame04]
+trigger = "fs_command"
+tolerance = 54
