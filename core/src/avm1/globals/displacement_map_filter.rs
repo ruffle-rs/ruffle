@@ -289,8 +289,8 @@ impl<'gc> DisplacementMapFilter<'gc> {
         let map_point = filter.map_point.get();
         ruffle_render::filters::DisplacementMapFilter {
             color: filter.color.get(),
-            component_x: filter.component_x.get() as u8,
-            component_y: filter.component_y.get() as u8,
+            component_x: filter.component_x.get() as u32,
+            component_y: filter.component_y.get() as u32,
             map_bitmap: filter
                 .map_bitmap
                 .get()
