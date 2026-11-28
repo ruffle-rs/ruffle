@@ -2549,19 +2549,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                     .extend_pairs(vars.iter())
                     .finish();
 
-                match method {
-                    NavigationMethod::Get if !url.contains(b'?') => {
-                        Request::get(format!("{url}?{qstring}"))
-                    }
-                    NavigationMethod::Get => Request::get(format!("{url}&{qstring}")),
-                    NavigationMethod::Post => Request::post(
-                        url.to_utf8_lossy().into_owned(),
-                        Some((
-                            qstring.as_bytes().to_owned(),
-                            "application/x-www-form-urlencoded".to_string(),
-                        )),
-                    ),
-                }
+                form_request(&url, &qstring, method)
             }
             None => Request::get(url.to_utf8_lossy().into_owned()),
         }
@@ -3168,5 +3156,20 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
         self.set_scope(Scope::new_target_scope(self.scope(), clip_obj, self.gc()));
         Ok(FrameControl::Continue)
+    }
+}
+
+/// Construct a request that sends `qstring` as form data in the request body or URL.
+pub fn form_request(url: &WStr, qstring: &str, method: NavigationMethod) -> Request {
+    match method {
+        NavigationMethod::Get if !url.contains(b'?') => Request::get(format!("{url}?{qstring}")),
+        NavigationMethod::Get => Request::get(format!("{url}&{qstring}")),
+        NavigationMethod::Post => Request::post(
+            url.to_utf8_lossy().into_owned(),
+            Some((
+                qstring.as_bytes().to_owned(),
+                "application/x-www-form-urlencoded".to_string(),
+            )),
+        ),
     }
 }
