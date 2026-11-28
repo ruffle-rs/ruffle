@@ -1,8 +1,8 @@
 //! `EditText` display object and support code.
 
 use crate::avm1::{
-    Activation as Avm1Activation, ActivationIdentifier, ArrayBuilder, Attribute, Avm1,
-    ExecutionReason, NativeObject as Avm1NativeObject, Object as Avm1Object,
+    Activation as Avm1Activation, ActivationIdentifier, Avm1, ExecutionReason,
+    NativeObject as Avm1NativeObject, Object as Avm1Object,
 };
 use crate::avm2::object::{
     ClassObject as Avm2ClassObject, EventObject as Avm2EventObject, StageObject as Avm2StageObject,
@@ -2114,22 +2114,6 @@ impl<'gc> EditText<'gc> {
         self.on_changed(&mut activation);
     }
 
-    fn initialize_listeners(self, activation: &mut Avm1Activation<'_, 'gc>) {
-        let Some(object) = self.object1() else {
-            return;
-        };
-
-        // Set the TextField as its own listener to match Flash's behavior.
-        // This makes it so that the TextField's handlers are called before other listeners'.
-        let listeners = ArrayBuilder::new(activation).with([object.into()]);
-        object.define_value(
-            activation.gc(),
-            istr!("_listeners"),
-            listeners.into(),
-            Attribute::DONT_ENUM | Attribute::DONT_DELETE,
-        );
-    }
-
     fn on_changed(self, activation: &mut Avm1Activation<'_, 'gc>) {
         if let Some(object) = self.object1() {
             let _ = object.call_method(
@@ -2182,7 +2166,6 @@ impl<'gc> EditText<'gc> {
 
             self.set_object(Some(object.into()), activation.gc());
 
-            // The constructor is called, even though it does nothing by default.
             if let Some(constr) = constr {
                 let _ = constr.construct_on_existing(&mut activation, object, &[]);
             }
@@ -2195,8 +2178,6 @@ impl<'gc> EditText<'gc> {
             }
             // People can bind to properties of TextFields the same as other display objects.
             Avm1TextFieldBinding::bind_variables(activation);
-
-            self.initialize_listeners(activation);
         });
     }
 
