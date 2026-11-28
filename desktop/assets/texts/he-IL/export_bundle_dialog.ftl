@@ -9,3 +9,4 @@ export-bundle-dialog-error-user-canceled = הפעולה בוטלה על ידי �
 export-bundle-dialog-error-failed-to-show-picker = לא ניתן להציג את בורר הקבצים.
 export-bundle-dialog-error-io-error = אירעה שגיאה בעת כתיבת החבילה.
 export-bundle-dialog-info-title = מהי חבילת Ruffle?
+export-bundle-dialog-info-description = חבילת Ruffle היא חבילה אוניברסלית הכוללת את כל הדרוש להפעלת קובץ SWF, כולל כל המשאבים וההגדרות הנדרשים. באמצעות חבילה, קובץ ה SWF שלך מוכן לפעולה מיד, ללא קבצים חסרים וללא צורך בהגדרה ידנית. פשוט מפעילים וזה עובד.

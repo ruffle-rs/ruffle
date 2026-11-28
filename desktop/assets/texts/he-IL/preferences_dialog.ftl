@@ -38,4 +38,5 @@ ime-enabled-default = ברירת מחדל
 device-font-renderer = מנוע רינדור גופני המכשיר
 device-font-renderer-tooltip = בוחר את מנוע הרינדור המשמש להצגת גופני המכשיר.
 device-font-renderer-default = ברירת מחדל
+device-font-renderer-embedded = מובנה
 device-font-renderer-freetype = FreeType

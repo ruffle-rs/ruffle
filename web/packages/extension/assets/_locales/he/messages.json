@@ -56,6 +56,9 @@
     "settings_device_font_renderer": {
         "message": "מנוע רינדור גופני המכשיר"
     },
+    "device_font_renderer_embedded": {
+        "message": "מוטמע"
+    },
     "settings_advanced_options": {
         "message": "אפשרויות מתקדמות"
     },

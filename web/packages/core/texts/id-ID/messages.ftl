@@ -1,6 +1,7 @@
 message-cant-embed =
     Ruffle tidak dapat menjalankan Flash yang disematkan di halaman ini.
     Anda dapat mencoba membuka berkas di tab terpisah, untuk menghindari masalah ini.
+message-restored-from-bfcache = Browser anda memulihkan konten Flash ini dari sesi sebelumnya. Untuk memulai ulang, muat ulang laman ini.
 panic-title = Terjadi kesalahan :(
 more-info = Info lebih lanjut
 run-anyway = Jalankan
@@ -10,13 +11,21 @@ update-ruffle = Perbarui Ruffle
 ruffle-demo = Demo Web
 ruffle-desktop = Aplikasi Desktop
 ruffle-wiki = Kunjungi Wiki Ruffle
-view-error-details = Tunjukan Detail Error
+enable-hardware-acceleration = Sepertinya akselerasi perangkat keras dimatikan. Meskipun Ruffle akan bekerja, Ruffle mungkin akan bekerja sangat lambat. Anda dapat mencari tahu cara mengaktifkan akselerasi perangkat keras dengan mengikuti tautan dibawah:
+enable-hardware-acceleration-link = SSD - Akselerasi Perangkat Keras Chrome
+view-error-details = Tunjukkan Keterangan Error
 open-in-new-tab = Buka di Tab Baru
 click-to-unmute = Tekan untuk menyalakan suara
 clipboard-message-title = Menyalin dan Menempel di Ruffle
+clipboard-message-description =
+    { $variant ->
+       *[unsupported] Browser Anda tidak mendukung akses penuh papan kerani,
+        [access-denied]  Akses untuk papan kerani tidak diizinkan,
+    } Anda tetap dapat menggunakan pintasan ini:
 clipboard-message-copy = { " " } untuk menyalin
 clipboard-message-cut = { " " } untuk memotong
 clipboard-message-paste = { " " } untuk menempel
+error-canvas-reload = Tidak dapat memuat dengan renderer canvas saat renderer canvas sedang digunakan.
 error-file-protocol =
     Sepertinya anda menjalankan Ruffle di protokol "file:".
     Ini tidak berfungsi karena browser memblokir fitur ini dengan alasan keamanan.
@@ -61,6 +70,10 @@ error-wasm-disabled-on-edge =
     Untuk mengatasinya, coba buka pengaturan peramban Anda, klik "Privasi, pencarian, dan layanan", turun ke bawah, dan matikan "Tingkatkan keamanan Anda di web".
     Ini akan memungkinkan browser Anda memuat berkas ".wasm" yang diperlukan.
     Jika masalah berlanjut, Anda mungkin harus menggunakan browser yang berbeda.
+error-wasm-unsupported-browser =
+    Browser yang anda gunakan tidak mendukung ekstensi WebAssembly yang diperlukan Ruffle untuk berjalan.
+    Silakan menggunakan browser yang mendukung.
+    Anda dapat menemukan daftar browser yang didukung di Wiki.
 error-javascript-conflict =
     Ruffle mengalami masalah besar ketika mencoba melakukan inisialisasi.
     Sepertinya situs web ini menggunakan kode JavaScript yang bertentangan dengan Ruffle.
@@ -70,6 +83,9 @@ error-csp-conflict =
     Ruffle mengalami masalah besar ketika mencoba melakukan inisialisasi.
     Kebijakan Keamanan Konten server web ini tidak mengizinkan komponen ".wasm" yang diperlukan untuk dijalankan.
     Jika Anda adalah administrator server ini, silakan baca wiki Ruffle untuk mendapatkan bantuan.
+error-url-invalid =
+    Ruffle tidak dapat memuat berkas Flash SWF.
+    Kemungkinan terbesar adalah tautan yang diberikan kepada Ruffle untuk memuat berkas SWF tidak valid.
 error-unknown =
     Ruffle mengalami masalah besar saat menampilkan konten Flash ini.
     { $outdated ->

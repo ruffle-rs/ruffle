@@ -1,6 +1,6 @@
-save-delete-prompt = Bu kayıt dosyasını silmek istediğinize emin misiniz?
+save-delete-prompt = Bu kayıt dosyasını silmek istediğinizden emin misiniz?
 save-reload-prompt =
-    Bu kaydetme dosyasını potansiyel çakışma olmadan { $action ->
+    Bu kaydetme dosyasını çakışma ihtimali olmadan { $action ->
         [delete] silmenin
        *[replace] değiştirmenin
     } tek yolu, bu içeriği yeniden yüklemektir. Yine de devam etmek istiyor musunuz?
