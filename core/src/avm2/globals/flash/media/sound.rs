@@ -3,8 +3,9 @@
 use crate::avm2::Avm2;
 use crate::avm2::Error;
 use crate::avm2::activation::Activation;
-use crate::avm2::error::{make_error_2037, make_error_2084, make_error_2146};
+use crate::avm2::error::{make_error_2037, make_error_2068, make_error_2084, make_error_2146};
 use crate::avm2::function::FunctionArgs;
+use crate::avm2::globals::flash::events::event_dispatcher::object_has_event_listener;
 use crate::avm2::globals::slots::flash_net_url_request as url_request_slots;
 use crate::avm2::object::{
     EventObject, QueuedPlay, SoundChannelObject, SoundLoadingState, TObject as _,
@@ -16,6 +17,7 @@ use crate::character::Character;
 use crate::config::NetworkingAccessMode;
 use crate::display_object::SoundTransform;
 use crate::{avm2_stub_getter, avm2_stub_method};
+use ruffle_macros::istr;
 use swf::{SoundEvent, SoundInfo};
 
 pub use crate::avm2::object::sound_allocator;
@@ -171,6 +173,28 @@ pub fn play<'gc>(
             None
         };
 
+        if sound_object.sound_handle().is_none()
+            && matches!(
+                sound_object.loading_state(),
+                SoundLoadingState::New | SoundLoadingState::Generated
+            )
+        {
+            // A sound with no data plays what its `sampleData` listeners
+            // generate, and is invalid without any.
+            let has_listener = object_has_event_listener(activation, this, istr!("sampleData"))?;
+            if !has_listener {
+                return Err(make_error_2068(activation));
+            }
+
+            sound_object.set_loading_state(SoundLoadingState::Generated);
+            let sound_channel = SoundChannelObject::generated(activation, sound_object);
+            let start = in_sample.unwrap_or(0);
+            if sound_channel.start_generator(activation.context, sound_transform, start) {
+                return Ok(sound_channel.into());
+            }
+            return Ok(Value::Null);
+        }
+
         let sound_channel = SoundChannelObject::empty(activation);
 
         let queued_play = QueuedPlay {
@@ -222,8 +246,8 @@ pub fn close<'gc>(
     Ok(Value::Undefined)
 }
 
-/// `Sound.load`
-pub fn load<'gc>(
+/// `Sound._load`, called by `Sound.load`
+pub fn _load<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     args: FunctionArgs<'_, 'gc>,

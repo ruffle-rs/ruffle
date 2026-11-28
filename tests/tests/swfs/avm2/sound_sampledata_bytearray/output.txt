@@ -1,0 +1,8 @@
+first channel: sampleData, position 0, data.length 0, data.position 0, same data as the first channel true
+second channel: sampleData, position 0, data.length 8000, data.position 0, same data as the first channel true
+second channel: soundComplete
+later channel: sampleData, position 0, data.length 8000, data.position 0, same data as the first channel true
+later channel: soundComplete
+other sound: sampleData, position 0, data.length 0, data.position 0, same data as the first channel false
+other sound: soundComplete
+done
