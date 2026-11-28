@@ -1,0 +1,17 @@
+frame1 typeof b: object
+frame1 b: _level0.btn
+frame1 b._x: 100
+frame1 b == btn: true
+frame1 typeof t: object
+frame1 t: _level0.txt
+frame1 t._x: 100
+frame1 t == txt: true
+frame2 typeof b: object
+frame2 b: _level0.btn
+frame2 b._x: 300
+frame2 b == btn: true
+frame2 typeof t: object
+frame2 t: _level0.txt
+frame2 t._x: 300
+frame2 t == txt: true
+onRelease fired on b._x = 300

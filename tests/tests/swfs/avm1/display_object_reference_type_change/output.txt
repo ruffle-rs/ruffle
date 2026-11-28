@@ -1,0 +1,39 @@
+f1 MovieClip: typeof obj: movieclip
+f1 MovieClip: typeof r: movieclip
+f1 MovieClip: r: _level0.obj
+f1 MovieClip: r == obj: true
+f2 Button: typeof obj: object
+f2 Button: typeof r: object
+f2 Button: r: _level0.obj
+f2 Button: r == obj: true
+f2 Button: typeof rb: object
+f3 TextField: typeof obj: object
+f3 TextField: typeof r: object
+f3 TextField: typeof rb: object
+f3 TextField: r: _level0.obj
+f3 TextField: r == obj: true
+f3 TextField: rb == obj: true
+f3 TextField: typeof rt: object
+f4 MovieClip: typeof obj: movieclip
+f4 MovieClip: typeof r: movieclip
+f4 MovieClip: typeof rb: movieclip
+f4 MovieClip: typeof rt: movieclip
+f4 MovieClip: rb: _level0.obj
+f4 MovieClip: r == obj: true
+f4 MovieClip: rb == obj: true
+f4 MovieClip: rt == obj: true
+f5 removed: typeof obj: undefined
+f5 removed: typeof r: movieclip
+f5 removed: typeof rb: movieclip
+f5 removed: typeof rt: movieclip
+f5 removed: r: 
+f5 removed: rb: 
+f5 removed: rt: 
+f6 Button: typeof obj: object
+f6 Button: typeof r: object
+f6 Button: typeof rb: object
+f6 Button: typeof rt: object
+f6 Button: rt: _level0.obj
+f6 Button: r == obj: true
+f6 Button: rb == obj: true
+f6 Button: rt == obj: true

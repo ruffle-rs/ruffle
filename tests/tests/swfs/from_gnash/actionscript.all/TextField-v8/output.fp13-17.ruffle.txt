@@ -383,13 +383,13 @@ PASSED: typeof(softref) == 'object' [./TextField.as:806]
 PASSED: softref.prop == 5 [./TextField.as:807]
 PASSED: softref.getDepth() == 23 [./TextField.as:808]
 PASSED: typeof(hardref) == 'undefined' [./TextField.as:810]
-FAILED: expected: 'movieclip' obtained: object [./TextField.as:811]
-FAILED: expected: 'undefined' obtained: number [./TextField.as:812]
+PASSED: typeof(softref) == 'movieclip' [./TextField.as:811]
+PASSED: typeof(softref.prop) == 'undefined' [./TextField.as:812]
 PASSED: typeof(hardref) == 'movieclip' [./TextField.as:814]
-FAILED: expected: 'movieclip' obtained: object [./TextField.as:816]
-FAILED: expected: 7 obtained: 5 [./TextField.as:817]
+PASSED: typeof(softref) == 'movieclip' [./TextField.as:816]
+PASSED: softref.prop == 7 [./TextField.as:817]
 PASSED: typeof(softref) == 'object' [./TextField.as:821]
-FAILED: expected: 9 obtained: 5 [./TextField.as:822]
+PASSED: softref.prop == 9 [./TextField.as:822]
 PASSED: typeof(tf._visible) == 'boolean' [./TextField.as:829]
 PASSED: ! tf.hasOwnProperty('_visible') [./TextField.as:830]
 PASSED: ! tf.__proto__.hasOwnProperty('_visible') [./TextField.as:831]
@@ -566,6 +566,6 @@ FAILED: expected: 0 obtained: 3 [./TextField.as:1289]
 PASSED: this[2] == 3 [./TextField.as:1290]
 FAILED: expected: "number" obtained: undefined [./TextField.as:1295]
 PASSED: typeof(this.getTime()) == "undefined" [./TextField.as:1299]
-#passed: 487
-#failed: 69
+#passed: 492
+#failed: 64
 #total tests run: 556

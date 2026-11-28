@@ -479,7 +479,12 @@ impl<'gc> Value<'gc> {
             Value::Bool(_) => istr!("boolean"),
             Value::String(_) => istr!("string"),
             Value::Object(object) if object.as_function().is_some() => istr!("function"),
-            Value::MovieClip(_) => istr!("movieclip"),
+            // Only references to MovieClips (or dangling references) report "movieclip";
+            // references to other display objects (Buttons, TextFields) are "object".
+            Value::MovieClip(mcr) => match mcr.resolve_reference(activation) {
+                Some((_, _, dobj)) if dobj.as_movie_clip().is_none() => istr!("object"),
+                _ => istr!("movieclip"),
+            },
             Value::Object(_) => istr!("object"),
         }
     }
