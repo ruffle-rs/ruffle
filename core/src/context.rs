@@ -209,6 +209,12 @@ pub struct UpdateContext<'gc> {
     /// This frame's current fake time offset, used to pretend passage of time in time functions
     pub time_offset: &'gc mut u32,
 
+    /// The lowest value `getTimer()` may return during this frame.
+    pub timer_floor: u32,
+
+    /// The last value returned by `getTimer()`.
+    pub last_timer: &'gc mut u32,
+
     /// The current stage frame rate.
     pub frame_rate: &'gc mut f64,
 
@@ -253,6 +259,23 @@ impl<'gc> HasStringContext<'gc> for UpdateContext<'gc> {
     #[inline(always)]
     fn strings_ref(&self) -> &StringContext<'gc> {
         &self.strings
+    }
+}
+
+impl<'gc> UpdateContext<'gc> {
+    /// Returns the value of `getTimer()`: the milliseconds since the player
+    /// started. It never decreases, and it increases between frames.
+    pub fn timer(&mut self) -> u32 {
+        let elapsed = Instant::now().duration_since(self.start_time).as_millis() as u32;
+
+        let time = elapsed
+            .wrapping_add(*self.time_offset)
+            .max(self.timer_floor)
+            .max(*self.last_timer);
+
+        *self.last_timer = time;
+
+        time
     }
 }
 

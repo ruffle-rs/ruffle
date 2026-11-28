@@ -8,7 +8,6 @@ use crate::avm2::{Activation, Error, Value};
 use crate::string::AvmString;
 use crate::string::WString;
 use std::fmt::Write;
-use web_time::Instant;
 
 pub mod byte_array;
 pub mod dictionary;
@@ -21,10 +20,7 @@ pub fn get_timer<'gc>(
     _this: Value<'gc>,
     _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    Ok((Instant::now()
-        .duration_since(activation.context.start_time)
-        .as_millis() as u32)
-        .into())
+    Ok(activation.context.timer().into())
 }
 
 /// Implements `flash.utils.setInterval`
