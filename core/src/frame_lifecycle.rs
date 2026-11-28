@@ -16,6 +16,7 @@ use crate::context::UpdateContext;
 use crate::display_object::{DisplayObject, MovieClip, TDisplayObject};
 use crate::loader::LoadManager;
 use crate::orphan_manager::OrphanManager;
+use std::mem;
 use tracing::instrument;
 
 /// Which phase of the frame we're currently in.
@@ -111,6 +112,23 @@ pub fn run_all_phases_avm2(context: &mut UpdateContext<'_>) {
     context.orphan_manager.cleanup_dead_orphans(context.gc());
 
     *context.frame_phase = FramePhase::Idle;
+}
+
+/// Constructs the new frames of deferred SWFv9 gotos. This runs whenever a
+/// frame script returns, and again once the frame of its queued goto is
+/// constructed.
+pub fn construct_deferred_goto_frames(context: &mut UpdateContext<'_>) {
+    loop {
+        let clips = mem::take(&mut context.deferred_goto_clips);
+
+        if clips.is_empty() {
+            break;
+        }
+
+        for clip in clips {
+            clip.construct_frame(context);
+        }
+    }
 }
 
 /// Like `run_all_phases_avm2`, but specialized for the "nested frame" triggered
