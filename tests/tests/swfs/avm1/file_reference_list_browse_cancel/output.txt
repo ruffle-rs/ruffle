@@ -1,4 +1,4 @@
-fileList = undefined
+fileList = 
 browse returned true
 onCancel
-target.fileList = undefined
+target.fileList = 

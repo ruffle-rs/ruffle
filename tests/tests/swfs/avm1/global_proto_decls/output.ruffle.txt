@@ -242,13 +242,6 @@ Testing _global.flash.net.FileReference.prototype
   download, own, DONT_ENUM, type=[function]
   upload, own, DONT_ENUM, type=[function]
   browse, own, DONT_ENUM, type=[function]
-  postData, own, DONT_ENUM, READ_ONLY, type=[undefined]
-  creator, own, DONT_ENUM, READ_ONLY, type=[undefined]
-  creationDate, own, DONT_ENUM, READ_ONLY, type=[undefined]
-  modificationDate, own, DONT_ENUM, READ_ONLY, type=[undefined]
-  size, own, DONT_ENUM, READ_ONLY, type=[undefined]
-  type, own, DONT_ENUM, READ_ONLY, type=[undefined]
-  name, own, DONT_ENUM, READ_ONLY, type=[undefined]
   __proto__, own, type=[object]
   constructor, own, type=[function with prototype]
 Testing _global.flash.geom

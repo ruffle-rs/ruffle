@@ -85,13 +85,6 @@ pub struct FileReferenceData<'gc> {
 }
 
 const PROTO_DECLS: StaticDeclarations = declare_static_properties! {
-    "name" => property(name; DONT_ENUM);
-    "type" => property(file_type; DONT_ENUM);
-    "size" => property(size; DONT_ENUM);
-    "modificationDate" => property(modification_date; DONT_ENUM);
-    "creationDate" => property(creation_date; DONT_ENUM);
-    "creator" => property(creator; DONT_ENUM);
-    "postData" => property(post_data, set_post_data; DONT_ENUM);
     "browse" => method(browse; DONT_ENUM);
     "upload" => method(upload; DONT_ENUM);
     "download" => method(download; DONT_ENUM);
@@ -99,6 +92,16 @@ const PROTO_DECLS: StaticDeclarations = declare_static_properties! {
 };
 
 const OBJECT_DECLS: StaticDeclarations = declare_static_properties! {};
+
+const INSTANCE_DECLS: StaticDeclarations = declare_static_properties! {
+    "name" => property(name);
+    "type" => property(file_type);
+    "size" => property(size);
+    "modificationDate" => property(modification_date);
+    "creationDate" => property(creation_date);
+    "creator" => property(creator);
+    "postData" => property(post_data, set_post_data);
+};
 
 pub fn create_class<'gc>(
     context: &mut DeclContext<'_, 'gc>,
@@ -162,13 +165,13 @@ pub fn name<'gc>(
 }
 
 pub fn post_data<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let NativeObject::FileReference(file_ref) = this.native() {
         let post_data = file_ref.0.post_data.get();
-        return Ok(post_data.unwrap_or_else(|| istr!("")).into());
+        return Ok(post_data.map_or(Value::Undefined, Into::into));
     }
 
     Ok(Value::Undefined)
@@ -179,10 +182,12 @@ pub fn set_post_data<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let post_data = args
-        .get(0)
-        .unwrap_or(&Value::Undefined)
-        .coerce_to_string(activation)?;
+    // Flash Player stores `null` as "undefined".
+    let post_data = match args.get(0).unwrap_or(&Value::Undefined) {
+        Value::Null => Value::Undefined,
+        value => *value,
+    }
+    .coerce_to_string(activation)?;
 
     if let NativeObject::FileReference(file_ref) = this.native() {
         let write = Gc::write(activation.gc(), file_ref.0);
@@ -459,6 +464,9 @@ fn constructor<'gc>(
         activation.gc(),
         NativeObject::FileReference(FileReferenceObject::new(activation.gc())),
     );
+
+    let mut context = DeclContext::from_activation(activation);
+    context.define_properties_on(this, INSTANCE_DECLS(&context));
 
     define_listeners(activation, this, [], Attribute::empty());
 
