@@ -1,0 +1,15 @@
+[
+  { "type": "TextInput", "codepoint": "a" },
+  { "type": "TextControl", "code": "Enter" },
+  { "type": "TextInput", "codepoint": "b" },
+  { "type": "SetClipboardText", "text": "c!@#\nd" },
+  { "type": "TextControl", "code": "Paste" },
+  { "type": "KeyDown", "key": "Escape" },
+
+  { "type": "TextInput", "codepoint": "a" },
+  { "type": "TextControl", "code": "Enter" },
+  { "type": "TextInput", "codepoint": "b" },
+  { "type": "SetClipboardText", "text": "c!@#\nd" },
+  { "type": "TextControl", "code": "Paste" },
+  { "type": "KeyDown", "key": "Escape" }
+]
