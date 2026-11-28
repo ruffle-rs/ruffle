@@ -1,0 +1,52 @@
+
+a progress 1367/1367
+stage enterFrame (root currentFrame=2, a.numChildren=0, b.numChildren=0)
+loadee a constructor: parent=null stage=null currentFrame=1
+loadee a added: parent=null
+loadee a added: parent=[object Loader]
+loadee a addedToStage
+TimelineChild constructor: parent=[object Test]
+stage frameConstructed (root currentFrame=2, a.numChildren=1, b.numChildren=0)
+root frame 2 script
+loadee a frame 1 script
+stage exitFrame (root currentFrame=2, a.numChildren=1, b.numChildren=0)
+a init: content=[object Loadee]
+a complete
+stage enterFrame (root currentFrame=2, a.numChildren=1, b.numChildren=0)
+loadee a enterFrame: currentFrame=2
+stage frameConstructed (root currentFrame=2, a.numChildren=1, b.numChildren=0)
+loadee a frame 2 script
+stage exitFrame (root currentFrame=2, a.numChildren=1, b.numChildren=0)
+stage enterFrame (root currentFrame=2, a.numChildren=1, b.numChildren=0)
+loadee a enterFrame: currentFrame=2
+stage frameConstructed (root currentFrame=2, a.numChildren=1, b.numChildren=0)
+stage exitFrame (root currentFrame=2, a.numChildren=1, b.numChildren=0)
+
+b progress 1367/1367
+progress handler: gotoAndStop(3)
+progress handler: gotoAndStop(3) returned
+enterFrame handler: gotoAndStop(4)
+enterFrame handler: gotoAndStop(4) returned
+stage enterFrame (root currentFrame=4, a.numChildren=1, b.numChildren=0)
+loadee a enterFrame: currentFrame=2
+loadee b constructor: parent=null stage=null currentFrame=1
+loadee b added: parent=null
+loadee b added: parent=[object Loader]
+loadee b addedToStage
+stage frameConstructed (root currentFrame=4, a.numChildren=1, b.numChildren=1)
+root frame 4 script
+loadee b frame 1 script
+stage exitFrame (root currentFrame=4, a.numChildren=1, b.numChildren=1)
+b init: content=[object Loadee]
+b complete
+stage enterFrame (root currentFrame=4, a.numChildren=1, b.numChildren=1)
+loadee a enterFrame: currentFrame=2
+loadee b enterFrame: currentFrame=2
+stage frameConstructed (root currentFrame=4, a.numChildren=1, b.numChildren=1)
+loadee b frame 2 script
+stage exitFrame (root currentFrame=4, a.numChildren=1, b.numChildren=1)
+stage enterFrame (root currentFrame=4, a.numChildren=1, b.numChildren=1)
+loadee a enterFrame: currentFrame=2
+loadee b enterFrame: currentFrame=2
+stage frameConstructed (root currentFrame=4, a.numChildren=1, b.numChildren=1)
+stage exitFrame (root currentFrame=4, a.numChildren=1, b.numChildren=1)
