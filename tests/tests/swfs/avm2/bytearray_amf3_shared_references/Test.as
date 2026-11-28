@@ -16,13 +16,17 @@ package {
             var repeatedDictionary:Dictionary = new Dictionary();
             repeatedDictionary["shared"] = shared;
 
+            var repeatedDate:Date = new Date(8639999999999999);
+
             var original:Object = {
                 array1: repeatedArray,
                 array2: repeatedArray,
                 vector1: repeatedVector,
                 vector2: repeatedVector,
                 dictionary1: repeatedDictionary,
-                dictionary2: repeatedDictionary
+                dictionary2: repeatedDictionary,
+                date1: repeatedDate,
+                date2: repeatedDate
             };
 
             var bytes:ByteArray = new ByteArray();
@@ -35,6 +39,8 @@ package {
             trace("Repeated Array reference: " + (result.array1 === result.array2));
             trace("Repeated Vector reference: " + (result.vector1 === result.vector2));
             trace("Repeated Dictionary reference: " + (result.dictionary1 === result.dictionary2));
+            trace("Repeated Date reference: " + (result.date1 === result.date2));
+            trace("Date timestamp: " + result.date1.getTime());
             trace("Shared child reference: " +
                 (result.array1[0] === result.vector1[0] &&
                  result.array1[0] === result.dictionary1["shared"]));

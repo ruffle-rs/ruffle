@@ -155,13 +155,6 @@ pub fn serialize_value<'gc>(
                     }
                 }
             } else if let Some(date) = o.as_date_object() {
-                let time = date
-                    .date_time()
-                    .map(|date_time| date_time.timestamp_millis() as f64);
-
-                // "Invalid Date" is serialized as a NaN
-                let time = time.unwrap_or(f64::NAN);
-
                 let id = match get_or_create_object_id(o, object_table, amf_version) {
                     Ok(id) => id,
                     Err(reference) => return reference,
@@ -169,7 +162,7 @@ pub fn serialize_value<'gc>(
                 AmfValue::Date {
                     id,
                     data: DateValue {
-                        time,
+                        time: date.date().time(),
                         timezone_or_utc: None,
                     },
                 }
@@ -488,11 +481,17 @@ pub fn deserialize_value_impl<'gc>(
 
             obj
         }
-        AmfValue::Date { data, .. } => activation
-            .avm2()
-            .classes()
-            .date
-            .construct(activation, &[data.time.into()])?,
+        AmfValue::Date { id, data } => {
+            let obj = activation
+                .avm2()
+                .classes()
+                .date
+                .construct(activation, &[data.time.into()])?;
+            if *id != ObjectId::INVALID {
+                object_map.insert(*id, obj.as_object().unwrap());
+            }
+            obj
+        }
         AmfValue::XML { value: content, .. } => activation.avm2().classes().xml.construct(
             activation,
             &[Value::String(AvmString::new_utf8(activation.gc(), content))],
