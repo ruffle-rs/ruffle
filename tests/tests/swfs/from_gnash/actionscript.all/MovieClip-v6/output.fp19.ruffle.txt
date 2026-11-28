@@ -613,11 +613,11 @@ PASSED: b.yMin == -15 [./MovieClip.as:1514]
 PASSED: b.yMax == -5 [./MovieClip.as:1515]
 PASSED: draw._width == 10 [./MovieClip.as:1518]
 PASSED: draw._xscale == 100 [./MovieClip.as:1519]
-FAILED: expected: 50 obtained: -50 [./MovieClip.as:1520]
+PASSED: draw._yscale == 50 [./MovieClip.as:1520]
 PASSED: b.xMin == 10 [./MovieClip.as:1526]
 PASSED: b.xMax == 20 [./MovieClip.as:1527]
-FAILED: expected: 5 obtained: -15 [./MovieClip.as:1528]
-FAILED: expected: 15 obtained: -5 [./MovieClip.as:1529]
+PASSED: b.yMin == 5 [./MovieClip.as:1528]
+PASSED: b.yMax == 15 [./MovieClip.as:1529]
 PASSED: draw._yscale == 50 [./MovieClip.as:1532]
 PASSED: b.xMin == 10 [./MovieClip.as:1538]
 PASSED: b.xMax == 20 [./MovieClip.as:1539]
@@ -931,6 +931,6 @@ PASSED: arguments.length == 0 [./MovieClip.as:2207]
 FAILED: expected: 'val1' obtained:  [./MovieClip.as:2209]
 PASSED: _root.var2 == 'val2' [./MovieClip.as:2214]
 PASSED: _root.var3 == 'val3\n' [./MovieClip.as:2215]
-#passed: 868
-#failed: 59
+#passed: 871
+#failed: 56
 #total tests run: 927
